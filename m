@@ -1,105 +1,362 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757296Ab2GKLSj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 07:18:39 -0400
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:50888 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753247Ab2GKLSg (ORCPT
+	id S1757303Ab2GKLUo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 07:20:44 -0400
+Received: from na3sys009aog130.obsmtp.com ([74.125.149.143]:39747 "EHLO
+	na3sys009aog130.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757148Ab2GKLUm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 07:18:36 -0400
-Message-ID: <4FFD6100.8050202@de.ibm.com>
-Date: Wed, 11 Jul 2012 13:18:24 +0200
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Wed, 11 Jul 2012 07:20:42 -0400
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Rik van Riel <riel@redhat.com>, S390 <linux-s390@vger.kernel.org>,
-        Carsten Otte <cotte@de.ibm.com>, KVM <kvm@vger.kernel.org>,
-        chegu vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
-        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Joerg Roedel <joerg.roedel@amd.com>,
-        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
-        Alexander Graf <agraf@suse.de>, Paul Mackerras <paulus@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH RFC 0/2] kvm: Improving directed yield in PLE handler
-References: <20120709062012.24030.37154.sendpatchset@codeblue> <4FFA8E5E.3070108@de.ibm.com> <4FFD422B.9060008@redhat.com> <4FFD52CD.7040403@de.ibm.com> <4FFD5DA3.3010001@redhat.com>
-In-Reply-To: <4FFD5DA3.3010001@redhat.com>
+In-Reply-To: <CAKdam54gZoMEaH93FDL9D--GB=TqcSTEGz69TcZ99NdnvnQzsg@mail.gmail.com>
+References: <1339152780-25301-1-git-send-email-sourav.poddar@ti.com>
+	<20120710061326.GA29257@core.coreip.homeip.net>
+	<CAKdam54gZoMEaH93FDL9D--GB=TqcSTEGz69TcZ99NdnvnQzsg@mail.gmail.com>
+Date: Wed, 11 Jul 2012 16:50:39 +0530
+Message-ID: <CAKdam551a9gXJ4gWmpqpT8S33-PhS5JPr6Ok-g4rNA0yAoL3kA@mail.gmail.com>
+Subject: Re: [RESEND/PATCHv5 1/2] drivers: input: keypad: Add device tree support
+From: "Poddar, Sourav" <sourav.poddar@ti.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: devicetree-discuss@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>, Felipe Balbi <balbi@ti.com>,
+        Randy Dunlap <rdunlap@xenotime.net>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12071111-3548-0000-0000-00000282ABA3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/12 13:04, Avi Kivity wrote:
-> On 07/11/2012 01:17 PM, Christian Borntraeger wrote:
->> On 11/07/12 11:06, Avi Kivity wrote:
->> [...]
->>>> Almost all s390 kernels use diag9c (directed yield to a given guest cpu) for spinlocks, though.
->>>
->>> Perhaps x86 should copy this.
+Hi Dmitry,
+
+On Wed, Jul 11, 2012 at 3:15 PM, Poddar, Sourav <sourav.poddar@ti.com> wrote:
+> Hi Dmitry,
+>
+> On Tue, Jul 10, 2012 at 11:43 AM, Dmitry Torokhov
+> <dmitry.torokhov@gmail.com> wrote:
+>> Hi Sourav,
 >>
->> See arch/s390/lib/spinlock.c
->> The basic idea is using several heuristics:
->> - loop for a given amount of loops
->> - check if the lock holder is currently scheduled by the hypervisor
->>   (smp_vcpu_scheduled, which uses the sigp sense running instruction)
->>   Dont know if such thing is available for x86. It must be a lot cheaper
->>   than a guest exit to be useful
-> 
-> We could make it available via shared memory, updated using preempt
-> notifiers.  Of course piling on more pv makes this less attractive.
-> 
->> - if lock holder is not running and we looped for a while do a directed
->>   yield to that cpu.
+>> On Fri, Jun 08, 2012 at 04:22:59PM +0530, Sourav Poddar wrote:
+>>> Update the Documentation with omap4 keypad device tree
+>>> binding information.
+>>> Add device tree support for omap4 keypad driver.
+>>>
+>>> Tested on omap4430 sdp.
+>>>
+>>
+>> Sorry for the delay, I have a few comments:
 >>
 >>>
->>>> So there is no win here, but there are other cases were diag44 is used, e.g. cpu_relax.
->>>> I have to double check with others, if these cases are critical, but for now, it seems 
->>>> that your dummy implementation  for s390 is just fine. After all it is a no-op until 
->>>> we implement something.
+>>>       /* platform data */
+>>>       pdata = pdev->dev.platform_data;
+>>> -     if (!pdata) {
+>>> +     if (np) {
+>>> +             of_property_read_u32(np, "keypad,num-rows", &num_rows);
+>>> +             of_property_read_u32(np, "keypad,num-columns", &num_cols);
+>>> +             if (!num_rows || !num_cols) {
+>>> +                     dev_err(&pdev->dev, "number of keypad rows/columns not specified\n");
+>>> +                     return -EINVAL;
+>>> +             }
+>>> +     } else if (pdata) {
+>>> +             num_rows = pdata->rows;
+>>> +             num_cols = pdata->cols;
+>>> +     } else {
+>>>               dev_err(&pdev->dev, "no platform data defined\n");
+>>>               return -EINVAL;
+>>>       }
 >>>
->>> Does the data structure make sense for you?  If so we can move it to
->>> common code (and manage it in kvm_vcpu_on_spin()).  We can guard it with
->>> CONFIG_KVM_HAVE_CPU_RELAX_INTERCEPT or something, so other archs don't
->>> have to pay anything.
 >>
->> Ignoring the name,
-> 
-> What name would you suggest?
-
-maybe vcpu_no_progress instead of pause_loop_exited
-
-> 
->> yes the data structure itself seems based on the algorithm
->> and not on arch specific things. That should work. If we move that to common 
->> code then s390 will use that scheme automatically for the cases were we call 
->> kvm_vcpu_on_spin(). All others archs as well.
-> 
-> ARM doesn't have an instruction for cpu_relax(), so it can't intercept
-> it.  Given ppc's dislike of overcommit, and the way it implements
-> cpu_relax() by adjusting hw thread priority, I'm guessing it doesn't
-> intercept those either, but I'm copying the ppc people in case I'm
-> wrong.  So it's s390 and x86.
-> 
->> So this would probably improve guests that uses cpu_relax, for example
->> stop_machine_run. I have no measurements, though.
-> 
-> smp_call_function() too (though that can be converted to directed yield
-> too).  It seems worthwhile.
-
-Indeed. For those places where is is possible I would like to see an
-architecture primitive for directed yield. That could be useful for 
-other places as well (e.g. maybe lib/spinlock_debug.c, which has no 
-yielding at all)
-
-Christian
-
-
-
+>> I believe drivers should use platform data if it is supplied and use DT
+>> data if platform data is omitted. This way one can override firmware
+>> data if needed.
+>>
+>> Does the patch below (if applied on top of your) work for you?
+>>
+> Yes, the above patch works fine for me.
+> Acked-by: Sourav Poddar <sourav.poddar@ti.com>
+>
+> Note, I did some mux setting changes in the bootloader for DT case.
+>
+To be explicit, these was done throughout for testing. Nothing specific to your
+incremental patch.
+> Thanks,
+> Sourav
+>> Thanks.
+>>
+>> --
+>> Dmitry
+>>
+>> Input: omap4-keypad - misc fixes
+>>
+>> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+>> ---
+>>
+>>  drivers/input/keyboard/omap4-keypad.c |  152 ++++++++++++++++-----------------
+>>  1 file changed, 74 insertions(+), 78 deletions(-)
+>>
+>>
+>> diff --git a/drivers/input/keyboard/omap4-keypad.c b/drivers/input/keyboard/omap4-keypad.c
+>> index d5a2d1a..033168e 100644
+>> --- a/drivers/input/keyboard/omap4-keypad.c
+>> +++ b/drivers/input/keyboard/omap4-keypad.c
+>> @@ -76,7 +76,6 @@ enum {
+>>
+>>  struct omap4_keypad {
+>>         struct input_dev *input;
+>> -       struct matrix_keymap_data *keymap_data;
+>>
+>>         void __iomem *base;
+>>         unsigned int irq;
+>> @@ -88,7 +87,7 @@ struct omap4_keypad {
+>>         unsigned int row_shift;
+>>         bool no_autorepeat;
+>>         unsigned char key_state[8];
+>> -       unsigned short keymap[];
+>> +       unsigned short *keymap;
+>>  };
+>>
+>>  static int kbd_readl(struct omap4_keypad *keypad_data, u32 offset)
+>> @@ -211,74 +210,52 @@ static void omap4_keypad_close(struct input_dev *input)
+>>         pm_runtime_put_sync(input->dev.parent);
+>>  }
+>>
+>> -static struct omap4_keypad *omap_keypad_parse_dt(struct device *dev,
+>> -                               uint32_t rows, uint32_t cols,
+>> -                               struct input_dev *input_dev)
+>> +#ifdef CONFIG_OF
+>> +static int __devinit omap4_keypad_parse_dt(struct device *dev,
+>> +                                          struct omap4_keypad *keypad_data)
+>>  {
+>>         struct device_node *np = dev->of_node;
+>> -       struct platform_device *pdev = to_platform_device(dev);
+>> -       struct omap4_keypad *keypad_data = platform_get_drvdata(pdev);
+>>         int error;
+>>
+>> -       error = matrix_keypad_build_keymap(NULL, "linux,keymap",
+>> -                               rows, cols, keypad_data->keymap, input_dev);
+>> -       if (error) {
+>> -               dev_err(&pdev->dev, "failed to build keymap\n");
+>> -               input_free_device(input_dev);
+>> +       if (!np) {
+>> +               dev_err(dev, "missing DT data");
+>> +               return -EINVAL;
+>> +       }
+>> +
+>> +       of_property_read_u32(np, "keypad,num-rows", &keypad_data->rows);
+>> +       of_property_read_u32(np, "keypad,num-columns", &keypad_data->cols);
+>> +       if (!keypad_data->rows || !keypad_data->cols) {
+>> +               dev_err(dev, "number of keypad rows/columns not specified\n");
+>> +               return -EINVAL;
+>>         }
+>>
+>>         if (of_get_property(np, "linux,input-no-autorepeat", NULL))
+>>                 keypad_data->no_autorepeat = true;
+>>
+>> -       return keypad_data;
+>> +       return 0;
+>> +}
+>> +#else
+>> +static inline int omap4_keypad_parse_dt(struct device *dev,
+>> +                                       struct omap4_keypad *keypad_data)
+>> +{
+>> +       return -ENOSYS;
+>>  }
+>> +#endif
+>>
+>>  static int __devinit omap4_keypad_probe(struct platform_device *pdev)
+>>  {
+>> -       struct device *dev = &pdev->dev;
+>> -       struct device_node *np = dev->of_node;
+>> -       const struct omap4_keypad_platform_data *pdata;
+>> +       const struct omap4_keypad_platform_data *pdata =
+>> +                               dev_get_platdata(&pdev->dev);
+>> +       const struct matrix_keymap_data *keymap_data =
+>> +                               pdata ? pdata->keymap_data : NULL;
+>>         struct omap4_keypad *keypad_data;
+>>         struct input_dev *input_dev;
+>>         struct resource *res;
+>> -       resource_size_t size;
+>> -       unsigned int row_shift = 0, max_keys = 0;
+>> -       uint32_t num_rows = 0, num_cols = 0;
+>> +       unsigned int max_keys;
+>>         int rev;
+>>         int irq;
+>>         int error;
+>>
+>> -       /* platform data */
+>> -       pdata = pdev->dev.platform_data;
+>> -       if (np) {
+>> -               of_property_read_u32(np, "keypad,num-rows", &num_rows);
+>> -               of_property_read_u32(np, "keypad,num-columns", &num_cols);
+>> -               if (!num_rows || !num_cols) {
+>> -                       dev_err(&pdev->dev, "number of keypad rows/columns not specified\n");
+>> -                       return -EINVAL;
+>> -               }
+>> -       } else if (pdata) {
+>> -               num_rows = pdata->rows;
+>> -               num_cols = pdata->cols;
+>> -       } else {
+>> -               dev_err(&pdev->dev, "no platform data defined\n");
+>> -               return -EINVAL;
+>> -       }
+>> -
+>> -       row_shift = get_count_order(num_cols);
+>> -       max_keys = num_rows << row_shift;
+>> -
+>> -       keypad_data = devm_kzalloc(dev, sizeof(struct omap4_keypad) +
+>> -                       max_keys * sizeof(keypad_data->keymap[0]),
+>> -                               GFP_KERNEL);
+>> -
+>> -       if (!keypad_data) {
+>> -               dev_err(&pdev->dev, "keypad_data memory allocation failed\n");
+>> -               return -ENOMEM;
+>> -       }
+>> -
+>> -       platform_set_drvdata(pdev, keypad_data);
+>> -
+>>         res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>>         if (!res) {
+>>                 dev_err(&pdev->dev, "no base address specified\n");
+>> @@ -291,9 +268,24 @@ static int __devinit omap4_keypad_probe(struct platform_device *pdev)
+>>                 return -EINVAL;
+>>         }
+>>
+>> -       size = resource_size(res);
+>> +       keypad_data = kzalloc(sizeof(struct omap4_keypad), GFP_KERNEL);
+>> +       if (!keypad_data) {
+>> +               dev_err(&pdev->dev, "keypad_data memory allocation failed\n");
+>> +               return -ENOMEM;
+>> +       }
+>> +
+>> +       keypad_data->irq = irq;
+>> +
+>> +       if (pdata) {
+>> +               keypad_data->rows = pdata->rows;
+>> +               keypad_data->cols = pdata->cols;
+>> +       } else {
+>> +               error = omap4_keypad_parse_dt(&pdev->dev, keypad_data);
+>> +               if (error)
+>> +                       return error;
+>> +       }
+>>
+>> -       res = request_mem_region(res->start, size, pdev->name);
+>> +       res = request_mem_region(res->start, resource_size(res), pdev->name);
+>>         if (!res) {
+>>                 dev_err(&pdev->dev, "can't request mem region\n");
+>>                 error = -EBUSY;
+>> @@ -307,15 +299,11 @@ static int __devinit omap4_keypad_probe(struct platform_device *pdev)
+>>                 goto err_release_mem;
+>>         }
+>>
+>> -       keypad_data->rows = num_rows;
+>> -       keypad_data->cols = num_cols;
+>> -       keypad_data->irq = irq;
+>> -       keypad_data->row_shift = row_shift;
+>>
+>>         /*
+>> -       * Enable clocks for the keypad module so that we can read
+>> -       * revision register.
+>> -       */
+>> +        * Enable clocks for the keypad module so that we can read
+>> +        * revision register.
+>> +        */
+>>         pm_runtime_enable(&pdev->dev);
+>>         error = pm_runtime_get_sync(&pdev->dev);
+>>         if (error) {
+>> @@ -358,29 +346,30 @@ static int __devinit omap4_keypad_probe(struct platform_device *pdev)
+>>         input_dev->open = omap4_keypad_open;
+>>         input_dev->close = omap4_keypad_close;
+>>
+>> -       if (np) {
+>> -               keypad_data = omap_keypad_parse_dt(&pdev->dev,
+>> -                               keypad_data->rows, keypad_data->cols,
+>> -                               input_dev);
+>> -       } else {
+>> -               keypad_data->keymap_data =
+>> -                       (struct matrix_keymap_data *)pdata->keymap_data;
+>> -               error = matrix_keypad_build_keymap(keypad_data->keymap_data,
+>> -                               NULL, keypad_data->rows, keypad_data->cols,
+>> -                               keypad_data->keymap, input_dev);
+>> -               if (error) {
+>> -                       dev_err(&pdev->dev, "failed to build keymap\n");
+>> -                       goto err_free_input;
+>> -               }
+>> -       }
+>> -
+>> +       input_set_capability(input_dev, EV_MSC, MSC_SCAN);
+>>         if (!keypad_data->no_autorepeat)
+>>                 __set_bit(EV_REP, input_dev->evbit);
+>>
+>> -       input_set_capability(input_dev, EV_MSC, MSC_SCAN);
+>> -
+>>         input_set_drvdata(input_dev, keypad_data);
+>>
+>> +       keypad_data->row_shift = get_count_order(keypad_data->cols);
+>> +       max_keys = keypad_data->rows << keypad_data->row_shift;
+>> +       keypad_data->keymap = kzalloc(max_keys * sizeof(keypad_data->keymap[0]),
+>> +                                     GFP_KERNEL);
+>> +       if (!keypad_data->keymap) {
+>> +               dev_err(&pdev->dev, "Not enough memory for keymap\n");
+>> +               error = -ENOMEM;
+>> +               goto err_free_input;
+>> +       }
+>> +
+>> +       error = matrix_keypad_build_keymap(keymap_data, NULL,
+>> +                                          keypad_data->rows, keypad_data->cols,
+>> +                                          keypad_data->keymap, input_dev);
+>> +       if (error) {
+>> +               dev_err(&pdev->dev, "failed to build keymap\n");
+>> +               goto err_free_keymap;
+>> +       }
+>> +
+>>         error = request_irq(keypad_data->irq, omap4_keypad_interrupt,
+>>                              IRQF_TRIGGER_RISING,
+>>                              "omap4-keypad", keypad_data);
+>> @@ -397,11 +386,14 @@ static int __devinit omap4_keypad_probe(struct platform_device *pdev)
+>>                 goto err_pm_disable;
+>>         }
+>>
+>> +       platform_set_drvdata(pdev, keypad_data);
+>>         return 0;
+>>
+>>  err_pm_disable:
+>>         pm_runtime_disable(&pdev->dev);
+>>         free_irq(keypad_data->irq, keypad_data);
+>> +err_free_keymap:
+>> +       kfree(keypad_data->keymap);
+>>  err_free_input:
+>>         input_free_device(input_dev);
+>>  err_pm_put_sync:
+>> @@ -409,7 +401,7 @@ err_pm_put_sync:
+>>  err_unmap:
+>>         iounmap(keypad_data->base);
+>>  err_release_mem:
+>> -       release_mem_region(res->start, size);
+>> +       release_mem_region(res->start, resource_size(res));
+>>  err_free_keypad:
+>>         kfree(keypad_data);
+>>         return error;
+>> @@ -431,17 +423,21 @@ static int __devexit omap4_keypad_remove(struct platform_device *pdev)
+>>         res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>>         release_mem_region(res->start, resource_size(res));
+>>
+>> +       kfree(keypad_data->keymap);
+>>         kfree(keypad_data);
+>> +
+>>         platform_set_drvdata(pdev, NULL);
+>>
+>>         return 0;
+>>  }
+>>
+>> +#ifdef CONFIG_OF
+>>  static const struct of_device_id omap_keypad_dt_match[] = {
+>>         { .compatible = "ti,omap4-keypad" },
+>>         {},
+>>  };
+>>  MODULE_DEVICE_TABLE(of, omap_keypad_dt_match);
+>> +#endif
+>>
+>>  static struct platform_driver omap4_keypad_driver = {
+>>         .probe          = omap4_keypad_probe,
