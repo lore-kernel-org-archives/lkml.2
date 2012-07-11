@@ -1,46 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756610Ab2GKRpb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 13:45:31 -0400
-Received: from mga09.intel.com ([134.134.136.24]:61378 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755289Ab2GKRp3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 13:45:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="164391977"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Borislav Petkov <bp@alien8.de>,
-        "the arch/x86 maintainers" <x86@kernel.org>
-In-Reply-To: <CA+8MBbJjhVgEM7bJzZOSFvT6+RBLUQV6KtdzShuBxBH_nDxo4w@mail.gmail.com>
-Subject: [GIT PULL v2] x86/mce fix (ready for 3.6 merge window)
-Date: Wed, 11 Jul 2012 10:45:29 -0700
-Message-Id: <4ffdbbb9135702cfae@agluck-desktop.sc.intel.com>
+	id S932239Ab2GKRsP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 13:48:15 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:56511 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754032Ab2GKRsN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 13:48:13 -0400
+Date: Wed, 11 Jul 2012 18:48:02 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Hillf Danton <dhillf@gmail.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH] mm: hugetlb: flush dcache before returning zeroed huge
+ page to userspace
+Message-ID: <20120711174802.GG13498@mudshark.cambridge.arm.com>
+References: <1341412376-6272-1-git-send-email-will.deacon@arm.com>
+ <20120709122523.GC4627@tiehlicka.suse.cz>
+ <20120709141324.GK7315@mudshark.cambridge.arm.com>
+ <alpine.LSU.2.00.1207091622470.2261@eggly.anvils>
+ <20120710094513.GB9108@mudshark.cambridge.arm.com>
+ <20120710104234.GI9108@mudshark.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120710104234.GI9108@mudshark.cambridge.arm.com>
+Thread-Topic: [PATCH] mm: hugetlb: flush dcache before returning zeroed huge
+ page to userspace
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 6887a4131da3adaab011613776d865f4bcfb5678:
+On Tue, Jul 10, 2012 at 11:42:34AM +0100, Will Deacon wrote:
+> On Tue, Jul 10, 2012 at 10:45:13AM +0100, Will Deacon wrote:
+> > On Tue, Jul 10, 2012 at 12:57:14AM +0100, Hugh Dickins wrote:
+> > > If I start to grep the architectures for non-empty flush_dcache_page(),
+> > > I soon find things in arch/arm such as v4_mc_copy_user_highpage() doing
+> > > if (!test_and_set_bit(PG_dcache_clean,)) __flush_dcache_page() - where
+> > > the naming suggests that I'm right, it's the architecture's responsibility
+> > > to arrange whatever flushing is needed in its copy and clear page functions.
 
-  Linux 3.5-rc5 (2012-06-30 16:08:57 -0700)
+[...]
 
-are available in the git repository at:
+> Ok, so this is exactly the problem. The hugetlb allocator uses its own
+> pool of huge pages, so free_huge_page followed by a later alloc_huge_page
+> will give you something where the page flags of the compound head do not
+> guarantee that PG_arch_1 is clear.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git mce-ripvfix
+Just to confirm, the following quick hack at least results in the correct
+flushing for me (on ARM):
 
-for you to fetch changes up to 6751ed65dc6642af64f7b8a440a75563c8aab7ae:
 
-  x86/mce: Fix siginfo_t->si_addr value for non-recoverable memory faults (2012-07-11 10:20:47 -0700)
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index e198831..7a7c9d3 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -1141,6 +1141,7 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+        }
+ 
+        set_page_private(page, (unsigned long)spool);
++       clear_bit(PG_arch_1, &page->flags);
+ 
+        vma_commit_reservation(h, vma, addr);
+ 
 
-----------------------------------------------------------------
-Fix application level machine check recovery
 
-----------------------------------------------------------------
-Tony Luck (1):
-      x86/mce: Fix siginfo_t->si_addr value for non-recoverable memory faults
+The question is whether we should tidy that up for the core code or get
+architectures to clear the bit in arch_make_huge_pte (which also seems to
+work).
 
- arch/x86/kernel/cpu/mcheck/mce.c |  6 ++++--
- include/linux/mm.h               |  1 +
- mm/memory-failure.c              | 14 ++++++++------
- 3 files changed, 13 insertions(+), 8 deletions(-)
+Will
