@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964798Ab2GKRDQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 13:03:16 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:53876 "EHLO zene.cmpxchg.org"
+	id S933142Ab2GKRDW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 13:03:22 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:53883 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933017Ab2GKRCz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 13:02:55 -0400
+	id S933022Ab2GKRC7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 13:02:59 -0400
 From: Johannes Weiner <hannes@cmpxchg.org>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
@@ -13,9 +13,9 @@ Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         David Rientjes <rientjes@google.com>,
         Wanpeng Li <liwp.linux@gmail.com>, linux-mm@kvack.org,
         cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [patch 05/10] mm: memcg: move swapin charge functions above callsites
-Date: Wed, 11 Jul 2012 19:02:17 +0200
-Message-Id: <1342026142-7284-6-git-send-email-hannes@cmpxchg.org>
+Subject: [patch 09/10] mm: memcg: only check swap cache pages for repeated charging
+Date: Wed, 11 Jul 2012 19:02:21 +0200
+Message-Id: <1342026142-7284-10-git-send-email-hannes@cmpxchg.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1342026142-7284-1-git-send-email-hannes@cmpxchg.org>
 References: <1342026142-7284-1-git-send-email-hannes@cmpxchg.org>
@@ -23,112 +23,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Charging cache pages may require swapin in the shmem case.  Save the
-forward declaration and just move the swapin functions above the cache
-charging functions.
+Only anon and shmem pages in the swap cache are attempted to be
+charged multiple times, from every swap pte fault or from
+shmem_unuse().  No other pages require checking PageCgroupUsed().
+
+Charging pages in the swap cache is also serialized by the page lock,
+and since both the try_charge and commit_charge are called under the
+same page lock section, the PageCgroupUsed() check might as well
+happen before the counter charging, let alone reclaim.
 
 Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Acked-by: Michal Hocko <mhocko@suse.cz>
 ---
- mm/memcontrol.c |   68 +++++++++++++++++++++++++-----------------------------
- 1 files changed, 32 insertions(+), 36 deletions(-)
+ mm/memcontrol.c |   17 ++++++++++++-----
+ 1 files changed, 12 insertions(+), 5 deletions(-)
 
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index a5c0693..081780b 100644
+index 36e6d73..9433bff 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -2797,37 +2797,6 @@ int mem_cgroup_newpage_charge(struct page *page,
- 					MEM_CGROUP_CHARGE_TYPE_ANON);
- }
+@@ -2539,11 +2539,7 @@ static void __mem_cgroup_commit_charge(struct mem_cgroup *memcg,
+ 	bool anon;
  
--static void
--__mem_cgroup_commit_charge_swapin(struct page *page, struct mem_cgroup *ptr,
--					enum charge_type ctype);
--
--int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
--				gfp_t gfp_mask)
--{
--	struct mem_cgroup *memcg = NULL;
--	enum charge_type type = MEM_CGROUP_CHARGE_TYPE_CACHE;
--	int ret;
--
--	if (mem_cgroup_disabled())
--		return 0;
--	if (PageCompound(page))
--		return 0;
--
--	if (unlikely(!mm))
--		mm = &init_mm;
--	if (!page_is_file_cache(page))
--		type = MEM_CGROUP_CHARGE_TYPE_SHMEM;
--
--	if (!PageSwapCache(page))
--		ret = mem_cgroup_charge_common(page, mm, gfp_mask, type);
--	else { /* page is swapcache/shmem */
--		ret = mem_cgroup_try_charge_swapin(mm, page, gfp_mask, &memcg);
--		if (!ret)
--			__mem_cgroup_commit_charge_swapin(page, memcg, type);
+ 	lock_page_cgroup(pc);
+-	if (unlikely(PageCgroupUsed(pc))) {
+-		unlock_page_cgroup(pc);
+-		__mem_cgroup_cancel_charge(memcg, nr_pages);
+-		return;
 -	}
--	return ret;
--}
--
- /*
-  * While swap-in, try_charge -> commit or cancel, the page is locked.
-  * And when try_charge() successfully returns, one refcnt to memcg without
-@@ -2874,6 +2843,15 @@ int mem_cgroup_try_charge_swapin(struct mm_struct *mm,
- 	return ret;
- }
- 
-+void mem_cgroup_cancel_charge_swapin(struct mem_cgroup *memcg)
-+{
-+	if (mem_cgroup_disabled())
-+		return;
-+	if (!memcg)
-+		return;
-+	__mem_cgroup_cancel_charge(memcg, 1);
-+}
-+
- static void
- __mem_cgroup_commit_charge_swapin(struct page *page, struct mem_cgroup *memcg,
- 					enum charge_type ctype)
-@@ -2911,13 +2889,31 @@ void mem_cgroup_commit_charge_swapin(struct page *page,
- 					  MEM_CGROUP_CHARGE_TYPE_ANON);
- }
- 
--void mem_cgroup_cancel_charge_swapin(struct mem_cgroup *memcg)
-+int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
-+				gfp_t gfp_mask)
++	VM_BUG_ON(PageCgroupUsed(pc));
+ 	/*
+ 	 * we don't need page_cgroup_lock about tail pages, becase they are not
+ 	 * accessed by any other context at this point.
+@@ -2808,8 +2804,19 @@ static int __mem_cgroup_try_charge_swapin(struct mm_struct *mm,
+ 					  struct mem_cgroup **memcgp)
  {
-+	struct mem_cgroup *memcg = NULL;
-+	enum charge_type type = MEM_CGROUP_CHARGE_TYPE_CACHE;
-+	int ret;
-+
- 	if (mem_cgroup_disabled())
--		return;
--	if (!memcg)
--		return;
--	__mem_cgroup_cancel_charge(memcg, 1);
-+		return 0;
-+	if (PageCompound(page))
-+		return 0;
-+
-+	if (unlikely(!mm))
-+		mm = &init_mm;
-+	if (!page_is_file_cache(page))
-+		type = MEM_CGROUP_CHARGE_TYPE_SHMEM;
-+
-+	if (!PageSwapCache(page))
-+		ret = mem_cgroup_charge_common(page, mm, gfp_mask, type);
-+	else { /* page is swapcache/shmem */
-+		ret = mem_cgroup_try_charge_swapin(mm, page, gfp_mask, &memcg);
-+		if (!ret)
-+			__mem_cgroup_commit_charge_swapin(page, memcg, type);
-+	}
-+	return ret;
- }
+ 	struct mem_cgroup *memcg;
++	struct page_cgroup *pc;
+ 	int ret;
  
- static void mem_cgroup_do_uncharge(struct mem_cgroup *memcg,
++	pc = lookup_page_cgroup(page);
++	/*
++	 * Every swap fault against a single page tries to charge the
++	 * page, bail as early as possible.  shmem_unuse() encounters
++	 * already charged pages, too.  The USED bit is protected by
++	 * the page lock, which serializes swap cache removal, which
++	 * in turn serializes uncharging.
++	 */
++	if (PageCgroupUsed(pc))
++		return 0;
+ 	if (!do_swap_account)
+ 		goto charge_cur_mm;
+ 	/*
 -- 
 1.7.7.6
 
