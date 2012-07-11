@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757129Ab2GKKVM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 06:21:12 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:9330 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751764Ab2GKKVJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 06:21:09 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Wed, 11 Jul 2012 03:20:55 -0700
-Message-ID: <4FFD5202.9080206@nvidia.com>
-Date: Wed, 11 Jul 2012 15:44:26 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	id S1757232Ab2GKKdT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 06:33:19 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:51585 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757215Ab2GKKdO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 06:33:14 -0400
+Message-ID: <4FFD5665.7040901@mev.co.uk>
+Date: Wed, 11 Jul 2012 11:33:09 +0100
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120616 Thunderbird/13.0
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "spi-devel-general@lists.sourceforge.net" 
-	<spi-devel-general@lists.sourceforge.net>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH RESEND] spi: tegra: use dmaengine based dma driver
-References: <1341927517-4584-1-git-send-email-ldewangan@nvidia.com> <20120711095504.GD3938@opensource.wolfsonmicro.com> <4FFD4ECA.8090304@nvidia.com> <20120711101527.GE3938@opensource.wolfsonmicro.com>
-In-Reply-To: <20120711101527.GE3938@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Ian Abbott <ian.abbott@mev.co.uk>
+CC: H Hartley Sweeten <hartleys@visionengravers.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 00/83] staging: comedi: rtd520: initial cleanup
+References: <201207101636.23561.hartleys@visionengravers.com> <4FFD536B.8010603@mev.co.uk>
+In-Reply-To: <4FFD536B.8010603@mev.co.uk>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 11 July 2012 03:45 PM, Mark Brown wrote:
-> * PGP Signed by an unknown key
+On 2012-07-11 11:20, Ian Abbott wrote:
+> On 2012-07-11 00:36, H Hartley Sweeten wrote:
+> My main concern with this series of patches is they make it harder to
+> determine what the register accesses actually do, mainly due to the
+> removal of useful comments.  For example:
 >
-> On Wed, Jul 11, 2012 at 03:30:42PM +0530, Laxman Dewangan wrote:
->> On Wednesday 11 July 2012 03:25 PM, Mark Brown wrote:
+> -	RtdPacerStart(dev);	/* Start PACER */
+> +	readl(devpriv->las0 + LAS0_PACER);
 >
->> I believe you have applied for the ASoC one. This is for spi one.
-> No, there's a dmaengine patch in my SPI branch too which I applied
-> yesterday.
+> And:
 >
->    git://git.kernel.org/pub/scm/linux/kernel/git/broonie/misc.git spi-next
->
+> -	RtdPacerStop(dev);	/* Stop PACER */
+> +	writel(0, devpriv->las0 + LAS0_PACER);
 
-Looked at your misc/spi-next and you have already applied. This was just 
-resend.
+It would be too much work to redo all those patches though.  I'll just 
+make a patch to add back in the useful-looking comments.
 
-Thanks for taking care.
-
->
-> I'm sorry, I can't parse this sentance at all.
->
-Just wanted to know that spi changes will be in regulator/for-next or 
-some other tree. It is in misc/spi-next.
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
 
 
