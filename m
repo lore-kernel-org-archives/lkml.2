@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756375Ab2GKATZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 20:19:25 -0400
-Received: from mail209.messagelabs.com ([216.82.255.3]:47262 "EHLO
-	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754836Ab2GKATX (ORCPT
+	id S932237Ab2GKAUJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 20:20:09 -0400
+Received: from mail127.messagelabs.com ([216.82.250.115]:2673 "EHLO
+	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932197Ab2GKAUB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 20:19:23 -0400
+	Tue, 10 Jul 2012 20:20:01 -0400
 X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-15.tower-209.messagelabs.com!1341965961!8315862!5
-X-Originating-IP: [216.166.12.99]
+X-Msg-Ref: server-12.tower-127.messagelabs.com!1341965996!8247451!4
+X-Originating-IP: [216.166.12.180]
 X-StarScan-Version: 6.5.10; banners=-,-,-
 X-VirusChecked: Checked
 From: H Hartley Sweeten <hartleys@visionengravers.com>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 69/83] staging: comedi: rtd520: remove RtdDma1Mode macro
-Date: Tue, 10 Jul 2012 17:19:17 -0700
+Subject: [PATCH 70/83] staging: comedi: rtd520: remove RtdDma1PciAddr macro
+Date: Tue, 10 Jul 2012 17:19:49 -0700
 User-Agent: KMail/1.9.9
 CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
         <gregkh@linuxfoundation.org>
@@ -23,7 +23,7 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Message-ID: <201207101719.18066.hartleys@visionengravers.com>
+Message-ID: <201207101719.50172.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -39,20 +39,20 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
  1 file changed, 4 deletions(-)
 
 diff --git a/drivers/staging/comedi/drivers/rtd520.c b/drivers/staging/comedi/drivers/rtd520.c
-index 5296723..ded65aa 100644
+index ded65aa..ef41fcc 100644
 --- a/drivers/staging/comedi/drivers/rtd520.c
 +++ b/drivers/staging/comedi/drivers/rtd520.c
 @@ -406,10 +406,6 @@ struct rtdPrivate {
  
  /* Macros to access registers */
  
--/* Set  mode for DMA 1 */
--#define RtdDma1Mode(dev, m) \
--	writel((m), devpriv->lcfg+LCFG_DMAMODE1)
+-/* Set PCI address for DMA 1 */
+-#define RtdDma1PciAddr(dev, a) \
+-	writel((a), devpriv->lcfg+LCFG_DMAADR1)
 -
- /* Set PCI address for DMA 1 */
- #define RtdDma1PciAddr(dev, a) \
- 	writel((a), devpriv->lcfg+LCFG_DMAADR1)
+ /* Set local address for DMA 1 */
+ #define RtdDma1LocalAddr(dev, a) \
+ 	writel((a), devpriv->lcfg+LCFG_DMALADR1)
 -- 
 1.7.11
 
