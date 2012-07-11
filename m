@@ -1,49 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932506Ab2GKNE3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 09:04:29 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48139 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932486Ab2GKNEZ (ORCPT
+	id S1757567Ab2GKNFh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 09:05:37 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:52772 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754662Ab2GKNFg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 09:04:25 -0400
-Date: Wed, 11 Jul 2012 06:04:20 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>
-Cc: Gustavo Padovan <gustavo@padovan.org>, linux-bluetooth@vger.kernel.org,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
-        "open list:USB SUBSYSTEM" <linux-usb@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] USB: add USB_VENDOR_AND_INTERFACE_INFO() macro
-Message-ID: <20120711130420.GA6892@kroah.com>
-References: <1341957063-11989-1-git-send-email-gustavo@padovan.org>
- <20120710220108.GA28387@kroah.com>
- <877guahext.fsf@nemi.mork.no>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <877guahext.fsf@nemi.mork.no>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 11 Jul 2012 09:05:36 -0400
+Message-ID: <1342011904.3462.152.camel@twins>
+Subject: Re: [PATCH 1/6] hrtimer: Provide clock_was_set_delayed()
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Prarit Bhargava <prarit@redhat.com>, John Stultz <johnstul@us.ibm.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, stable@vger.kernel.org
+Date: Wed, 11 Jul 2012 15:05:04 +0200
+In-Reply-To: <alpine.LFD.2.02.1207111425260.32033@ionos>
+References: <1341960205-56738-1-git-send-email-johnstul@us.ibm.com>
+	 <1341960205-56738-2-git-send-email-johnstul@us.ibm.com>
+	 <4FFD6E5A.9060206@redhat.com> <alpine.LFD.2.02.1207111425260.32033@ionos>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 11, 2012 at 10:36:46AM +0200, Bjørn Mork wrote:
-> Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
-> > On Tue, Jul 10, 2012 at 06:51:03PM -0300, Gustavo Padovan wrote:
-> >
-> >> { USB_VENDOR_AND_INTERFACE_INFO(0x0a5c, 0xff, 0x01, 0x01) }
-> >
-> > Two entries in the cdc_wdm driver can also be converted to use this
-> > interface.  Do you want to send a patch doing that, or do you want me to
-> > do it?
+On Wed, 2012-07-11 at 14:45 +0200, Thomas Gleixner wrote:
+> On Wed, 11 Jul 2012, Prarit Bhargava wrote:
+> > On 07/10/2012 06:43 PM, John Stultz wrote:
+> > > clock_was_set() cannot be called from hard interrupt context because
+> > > it calls on_each_cpu(). For fixing the widely reported leap seconds
+> > > issue it's necessary to call it from the timer interrupt context.
+> > > 
+> > > Provide a new function which denotes it in the hrtimer cpu base
+> > > structure of the cpu on which it is called and raising the timer
+> > > softirq.
+> > > 
+> > > We then execute the clock_was_set() notificiation in the timer softirq
+> > > context in hrtimer_run_pending().
+> > 
+> > I wish there was a nicer way to do this ... but looking at the code I can't
+> > figure out a better way.  (no offense John, it's just the way the code is ;) )
 > 
-> Only if you decide to take this change in 3.4 and 3.5.  Those entries
-> are gone in 3.6.
+> Yeah, I had the same discussion with Peter earlier today. There is
+> only a rather limited set of options.
+> 
+> 1) Retrigger the timer interrupt vectors on all CPUs - except the one
+>    we are running on, but we have no interface for that at the moment
+> 
+> 2) Do the nasty __smp_call_function_single() hack
+> 
+>    Preallocate call_single_data for all cpus and do a
+>    __smp_call_function_single() on all online cpus.
+> 
+>    This can be called from hard interrupt context or irq disabled
+>    regions.
+> 
+>    That would allow to get rid of the whole delay magic all
+>    together.
+> 
+> Thoughts?
 
-Ah, the joys of looking at the wrong branch in git :)
+The __smp_call_function_single() thing isn't particularly pretty either
+and a lot more code to boot.. 
 
-Nevermind...
+static DEFINE_PER_CPU(struct call_single_data, cws_csd);
 
-greg k-h
+void clock_was_set(void)
+{
+	int cpu;
+
+	for_each_online_cpu(cpu) {
+		struct call_single_data *csd = &per_cpu(cws_csd, cpu);
+
+		if (csd->flags & CSD_FLAG_LOCK)
+			continue; /* a pending request is good enough */
+
+		csd->func = retrigger_next_event;
+
+		__smp_call_function_single(cpu, csd, 0);
+	}
+
+	timerfd_clock_was_set();
+}
+
+It also is a for_each_cpu loop with preemption disabled, not pretty :/
