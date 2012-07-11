@@ -1,102 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754879Ab2GKBZK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 21:25:10 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:48595 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753326Ab2GKBZI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 21:25:08 -0400
-Message-ID: <1341969908.13724.33.camel@joe2Laptop>
-Subject: Re: [PATCH] resource: make sure requested range intersects root
- range
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Octavian Purdila <octavian.purdila@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        Ram Pai <linuxram@us.ibm.com>, Jesse Barnes <jbarnes@virtuousgeek.org>
-Date: Tue, 10 Jul 2012 18:25:08 -0700
-In-Reply-To: <20120710143348.d977da44.akpm@linux-foundation.org>
-References: <1341057657-7823-1-git-send-email-octavian.purdila@intel.com>
-	 <20120710143348.d977da44.akpm@linux-foundation.org>
+	id S1755158Ab2GKB2I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 21:28:08 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:55551 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754120Ab2GKB2G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jul 2012 21:28:06 -0400
+Message-ID: <1341970074.11561.1.camel@phoenix>
+Subject: [PATCH] mfd: Fix checking return value of regmap_read()
+From: Axel Lin <axel.lin@gmail.com>
+To: SamuelOrtiz <sameo@linux.intel.com>
+Cc: Qiao Zhou <zhouqiao@marvell.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org
+Date: Wed, 11 Jul 2012 09:27:54 +0800
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-07-10 at 14:33 -0700, Andrew Morton wrote:
-> On Sat, 30 Jun 2012 15:00:57 +0300
-> Octavian Purdila <octavian.purdila@intel.com> wrote:
-> 
-> > When the requested and root ranges do not intersect the logic in
-> > __reserve_region_with_split will cause an infinite recursion which
-> > will overflow the stack as seen in the warning bellow.
-> > 
-> > This particular stack overflow was caused by requesting the
-> > (100000000-107ffffff) range while the root range was (0-ffffffff). In
-> > this case __request_resource would return the whole root range as
-> > conflict range (i.e. 0-ffffffff). Then, the logic in
-> > __reserve_region_with_split would continue the recursion requesting
-> > the new range as (conflict->end+1, end) which incidentally in this
-> > case equals the originally requested range.
-> > 
-> > This patch aborts looking for a usable range when the requested one is
-> > completely outside the root range to avoid the infinite recursion, and
-> > since this indicates a problem in the layers above, it also prints an
-> > error message indicating the requested and root range in order to make
-> > the problem more easily traceable.
-> 
-> I think we should also emit a stack trace so the faulty caller can be
-> pinpointed.
-> 
-> > ...
-> >
-> > --- a/kernel/resource.c
-> > +++ b/kernel/resource.c
-> > @@ -789,7 +789,13 @@ void __init reserve_region_with_split(struct resource *root,
-> >  		const char *name)
-> >  {
-> >  	write_lock(&resource_lock);
-> > -	__reserve_region_with_split(root, start, end, name);
-> > +	if (start > root->end || end < root->start)
-> > +		pr_err("Requested range (0x%llx-0x%llx) not in root range (0x%llx-0x%llx)\n",
-> > +		       (unsigned long long)start, (unsigned long long)end,
-> > +		       (unsigned long long)root->start,
-> > +		       (unsigned long long)root->end);
-> > +	else
-> > +		__reserve_region_with_split(root, start, end, name);
-> >  	write_unlock(&resource_lock);
-> >  }
-> 
-> The fancy way of doing that is
-> 
-> 	if (!WARN(start > root->end || end < root->start),
-> 		  "Requested range (0x%llx-0x%llx) not in root range (0x%llx-0x%llx)\n",
-> 		       (unsigned long long)start, (unsigned long long)end,
-> 		       (unsigned long long)root->start,
-> 		       (unsigned long long)root->end)
-> 		__reserve_region_with_split(root, start, end, name);
-> 
-> but that's quite the eyesore.  How about doing it the simple way?
-> 
-> --- a/kernel/resource.c~resource-make-sure-requested-range-intersects-root-range-fix
-> +++ a/kernel/resource.c
-> @@ -792,13 +792,15 @@ void __init reserve_region_with_split(st
->  		const char *name)
->  {
->  	write_lock(&resource_lock);
-> -	if (start > root->end || end < root->start)
-> +	if (start > root->end || end < root->start) {
->  		pr_err("Requested range (0x%llx-0x%llx) not in root range (0x%llx-0x%llx)\n",
+Check the return value of regmap_read() rather than the read value.
 
-Maybe use %pr?
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/mfd/88pm800.c |   16 +++++++++-------
+ drivers/mfd/88pm805.c |    5 +++--
+ 2 files changed, 12 insertions(+), 9 deletions(-)
 
-		pr_err("Requested range [0x%llx-0x%llx] not in root %pr\n"
-		       (unsigned long long)start, (unsigned long long)end,
-		       root);
-
+diff --git a/drivers/mfd/88pm800.c b/drivers/mfd/88pm800.c
+index ec7d9b8..b67a301 100644
+--- a/drivers/mfd/88pm800.c
++++ b/drivers/mfd/88pm800.c
+@@ -419,22 +419,24 @@ static int __devinit device_800_init(struct pm80x_chip *chip,
+ 				     struct pm80x_platform_data *pdata)
+ {
+ 	int ret, pmic_id;
++	unsigned int val;
+ 
+-	regmap_read(chip->regmap, PM800_CHIP_ID, &ret);
++	ret = regmap_read(chip->regmap, PM800_CHIP_ID, &val);
+ 	if (ret < 0) {
+ 		dev_err(chip->dev, "Failed to read CHIP ID: %d\n", ret);
+ 		goto out;
+ 	}
+ 
+-	pmic_id = ret & PM80X_VERSION_MASK;
++	pmic_id = val & PM80X_VERSION_MASK;
+ 
+ 	if ((pmic_id >= PM800_CHIP_A0) && (pmic_id <= PM800_CHIP_END)) {
+-		chip->version = ret;
++		chip->version = val;
+ 		dev_info(chip->dev,
+-			 "88PM80x:Marvell 88PM800 (ID:0x%x) detected\n", ret);
++			 "88PM80x:Marvell 88PM800 (ID:0x%x) detected\n", val);
+ 	} else {
+ 		dev_err(chip->dev,
+-			"Failed to detect Marvell 88PM800:ChipID[0x%x]\n", ret);
++			"Failed to detect Marvell 88PM800:ChipID[0x%x]\n", val);
++		ret = -EINVAL;
+ 		goto out;
+ 	}
+ 
+@@ -442,12 +444,12 @@ static int __devinit device_800_init(struct pm80x_chip *chip,
+ 	 * alarm wake up bit will be clear in device_irq_init(),
+ 	 * read before that
+ 	 */
+-	regmap_read(chip->regmap, PM800_RTC_CONTROL, &ret);
++	ret = regmap_read(chip->regmap, PM800_RTC_CONTROL, &val);
+ 	if (ret < 0) {
+ 		dev_err(chip->dev, "Failed to read RTC register: %d\n", ret);
+ 		goto out;
+ 	}
+-	if (ret & PM800_ALARM_WAKEUP) {
++	if (val & PM800_ALARM_WAKEUP) {
+ 		if (pdata && pdata->rtc)
+ 			pdata->rtc->rtc_wakeup = 1;
+ 	}
+diff --git a/drivers/mfd/88pm805.c b/drivers/mfd/88pm805.c
+index d59ca6b..6146583 100644
+--- a/drivers/mfd/88pm805.c
++++ b/drivers/mfd/88pm805.c
+@@ -192,6 +192,7 @@ static struct regmap_irq_chip pm805_irq_chip = {
+ static int __devinit device_805_init(struct pm80x_chip *chip)
+ {
+ 	int ret = 0;
++	unsigned int val;
+ 	struct regmap *map = chip->regmap;
+ 
+ 	if (!map) {
+@@ -199,12 +200,12 @@ static int __devinit device_805_init(struct pm80x_chip *chip)
+ 		return -EINVAL;
+ 	}
+ 
+-	regmap_read(map, PM805_CHIP_ID, &ret);
++	ret = regmap_read(map, PM805_CHIP_ID, &val);
+ 	if (ret < 0) {
+ 		dev_err(chip->dev, "Failed to read CHIP ID: %d\n", ret);
+ 		goto out_irq_init;
+ 	}
+-	chip->version = ret;
++	chip->version = val;
+ 
+ 	chip->regmap_irq_chip = &pm805_irq_chip;
+ 
+-- 
+1.7.9.5
 
 
 
