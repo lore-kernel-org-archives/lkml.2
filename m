@@ -1,89 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757225Ab2GKStc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 14:49:32 -0400
-Received: from mail-yw0-f52.google.com ([209.85.213.52]:36400 "EHLO
-	mail-yw0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755476Ab2GKSta (ORCPT
+	id S1757533Ab2GKSv2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 14:51:28 -0400
+Received: from mga11.intel.com ([192.55.52.93]:26939 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755329Ab2GKSv0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 14:49:30 -0400
-Date: Wed, 11 Jul 2012 11:48:54 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Michal Hocko <mhocko@suse.cz>
-cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 03/11] mm: shmem: do not try to uncharge known swapcache
- pages
-In-Reply-To: <20120710171628.GB29114@tiehlicka.suse.cz>
-Message-ID: <alpine.LSU.2.00.1207111118310.1797@eggly.anvils>
-References: <1341449103-1986-1-git-send-email-hannes@cmpxchg.org> <1341449103-1986-4-git-send-email-hannes@cmpxchg.org> <20120709144657.GF4627@tiehlicka.suse.cz> <alpine.LSU.2.00.1207091311300.1842@eggly.anvils> <20120710171628.GB29114@tiehlicka.suse.cz>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Wed, 11 Jul 2012 14:51:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="191387445"
+From: "Dave, Tushar N" <tushar.n.dave@intel.com>
+To: Joe Jin <joe.jin@oracle.com>
+CC: "e1000-devel@lists.sf.net" <e1000-devel@lists.sf.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Dave, Tushar N" <tushar.n.dave@intel.com>
+Subject: RE: 82571EB: Detected Hardware Unit Hang
+Thread-Topic: 82571EB: Detected Hardware Unit Hang
+Thread-Index: AQHNXbA0O4dj/qIKzEaqpnXp2Y+l0pcimGMAgABDhtCAANf7AP//lehggAB9gwD//6IHIIAAe14A//+RAgAAESU+AAANp23A
+Date: Wed, 11 Jul 2012 18:51:21 +0000
+Message-ID: <061C8A8601E8EE4CA8D8FD6990CEA891274EF8AD@ORSMSX102.amr.corp.intel.com>
+References: <4FFA9B96.6040901@oracle.com> <4FFBDC50.5090800@oracle.com>
+ <061C8A8601E8EE4CA8D8FD6990CEA891274EE41F@ORSMSX102.amr.corp.intel.com>
+ <4FFCCA22.8060006@oracle.com>
+ <061C8A8601E8EE4CA8D8FD6990CEA891274EEC8B@ORSMSX102.amr.corp.intel.com>
+ <4FFCDA6C.8020708@oracle.com>
+ <061C8A8601E8EE4CA8D8FD6990CEA891274EED74@ORSMSX102.amr.corp.intel.com>
+ <4FFCF314.6020400@oracle.com>
+ <061C8A8601E8EE4CA8D8FD6990CEA891274EEDD7@ORSMSX102.amr.corp.intel.com>
+ <4FFD0908.6080506@oracle.com>
+In-Reply-To: <4FFD0908.6080506@oracle.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Jul 2012, Michal Hocko wrote:
-> On Mon 09-07-12 13:37:39, Hugh Dickins wrote:
-> > On Mon, 9 Jul 2012, Michal Hocko wrote:
-> > > 
-> > > Maybe I am missing something but who does the uncharge from:
-> > > shmem_unuse
-> > >   mem_cgroup_cache_charge
-> > >   shmem_unuse_inode
-> > >     shmem_add_to_page_cache
-> > 
-> > There isn't any special uncharge for shmem_unuse(): once the swapcache
-> > page is matched up with its memcg, it will get uncharged by one of the
-> > usual routes to swapcache_free() when the page is freed: maybe in the
-> > call from __remove_mapping(), maybe when free_page_and_swap_cache()
-> > ends up calling it.
-> > 
-> > Perhaps you're worrying about error (or unfound) paths in shmem_unuse()?
-> 
-> Yes that was exactly my concern.
-> 
-> > By the time we make the charge, we know for sure that it's a shmem page,
-> > and make the charge appropriately; in racy cases it might get uncharged
-> > again in the delete_from_swap_cache().  Can the unfound case occur these
-> > days?  
-> 
-> I cannot find a change that would prevent from that.
+>-----Original Message-----
+>From: Joe Jin [mailto:joe.jin@oracle.com]
+>Sent: Tuesday, July 10, 2012 10:03 PM
+>To: Dave, Tushar N
+>Cc: e1000-devel@lists.sf.net; netdev@vger.kernel.org; linux-
+>kernel@vger.kernel.org
+>Subject: Re: 82571EB: Detected Hardware Unit Hang
+>
+>On 07/11/12 12:05, Dave, Tushar N wrote:
+>> When you said you had this issue with RHEL5 and RHEL6 drivers, have you
+>install RHEl5/6 kernel and reproduced it? If so I think I should install
+>RHEL6 and try reproduce it locally!
+>>
+>Yes I reproduced this on both RHEL5 and RHEL6.
+>
+>So far I tried to scp big file (~1GB) will hit it at once.
+>
+>Thanks,
+>Joe
 
-Yes.
+Joe,
 
-> 
-> > I'd have to think more deeply to answer that, but the charge will
-> > not go missing.
+I see couple of errors in lspci output.
+Device capability status register shows UnCorrectable PCIe error. This means there is certainly something went wrong. The only way to recover from Uncorrectable errors is reset.
+   
+	DevSta:	CorrErr- *UncorrErr+ FatalErr+ UnsuppReq+ AuxPwr+ TransPend-
 
-Yes, the unfound case certainly can still occur these days.  It's very
-similar to the race with truncation/eviction which shmem_unuse_inode()
-already allows for (-ENOENT from shmem_add_to_page_cache()).  In that
-"error" case, the swap entry got removed after we found it in the
-file's radix tree, before we get to replace it there.  Whereas in the
-"unfound" case, the swap entry got removed from the file's radix tree
-before we even found it there, so we haven't a clue which file it ever
-belonged to.
+Also AER sections in lspci output shows PCIe completion timeout.
+	
+	Capabilities: [100 v1] Advanced Error Reporting
+		UESta:	DLP- SDES- TLP- FCP- *CmpltTO+ CmpltAbrt- UnxCmplt- RxOF- MalfTLP+ ECRC- UnsupReq+ ACSViol-
 
-But it doesn't matter.  We have charged the memcg (the original memcg if
-memsw is enabled, or swapoff's own if memsw is disabled), and the charge
-is redundant now that the page has been truncated; but it's a common
-occurrence with swapcache (most common while PageWriteback or PageLocked)
-that the swap and charge cannot be released immediately, and it sorts
-itself out under pressure once the page reaches the bottom of the
-inactive anon and __remove_mapping()'s swapcache_free().
+I suggest you should load AER driver and check for any error messages in log. Also please check any error message reported by system in BIOS log. Are there any machine check errors? 
 
-The worst of it is misleading stats meanwhile; but SwapCache has
-always been tiresome that way (duplicated in memory and on swap).
+When did you notice this issue? have 82571 ever been working before on this server?
 
-The crucial change with regard to unfound entries was back in 2.6.33,
-when we added SWAP_MAP_SHMEM: prior to that, we didn't know in advance
-if the swap belonged to shmem or to task, and had to be more careful
-about when we charge.
+One more thing, Cache line size 256 is little unusual( I never seen this value before, mostly it's 64). Does BIOS settings have been changed? Are you using default BIOS setting?
 
-Hugh
+Thanks.
+
+-Tushar
+
+  
+		
+
+
