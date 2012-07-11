@@ -1,55 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757524Ab2GKSOo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 14:14:44 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:56724 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754672Ab2GKSOn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 14:14:43 -0400
-Message-ID: <1342030482.22278.8.camel@joe2Laptop>
-Subject: Re: [PATCH] Documentation/CodingStyle: Mention multi-line macros
- using expressions
-From: Joe Perches <joe@perches.com>
-To: "Robert P. J. Day" <rpjday@crashcourse.ca>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Wed, 11 Jul 2012 11:14:42 -0700
-In-Reply-To: <alpine.DEB.2.02.1207111329280.3642@oneiric>
-References: <alpine.DEB.2.02.1207111329280.3642@oneiric>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S933017Ab2GKSQi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 14:16:38 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:58309 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932256Ab2GKSQg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 14:16:36 -0400
+Date: Wed, 11 Jul 2012 11:15:54 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Johannes Weiner <hannes@cmpxchg.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] shmem: fix negative rss in memcg memory.stat
+In-Reply-To: <20120710124107.GE1779@cmpxchg.org>
+Message-ID: <alpine.LSU.2.00.1207111048410.1797@eggly.anvils>
+References: <alpine.LSU.2.00.1207091533001.2051@eggly.anvils> <alpine.LSU.2.00.1207091541310.2051@eggly.anvils> <20120710124107.GE1779@cmpxchg.org>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-11 at 13:32 -0400, Robert P. J. Day wrote:
-[]
-> diff --git a/Documentation/CodingStyle b/Documentation/CodingStyle
-[]
-> +A newer technique is to use the GCC extension of being able to place
-> +statements and declarations in an expression, as with this example from
-> +the <linux/kernel.h> header file:
-> +
-> +#define roundup(x, y) (				\
-> +{						\
-> +        const typeof(y) __y = y;		\
-> +        (((x) + (__y - 1)) / __y) * __y;	\
-> +}						\
-> +)
+On Tue, 10 Jul 2012, Johannes Weiner wrote:
+> 
+> I couldn't see anything wrong with shmem_replace_page(), either, but
+> maybe the comment in its error path could be updated as the callsite
+> does not rely on page_private alone anymore to confirm correct swap.
 
-Hi Robert.
+I went in to make an incremental fix to update that comment as you
+suggest, but found that actually the comment should stay as is.
 
-How about the phrase "GCC's statement expression extension"
-or maybe give a link like:
-http://gcc.gnu.org/onlinedocs/gcc/Statement-Exprs.html
+We're dealing with two different radix trees here: shmem_confirm_swap()
+and shmem_add_to_page_cache() are operating on the tmpfs file radix tree,
+but shmem_replace_page() is using shmem_radix_tree_replace() to operate
+on the "swapper_space" radix tree, exchanging the page pointer there.
 
-Please put the opening ({ and closing )} on a single line.
-It's shorter and makes grep easier.
+The preliminary page_private test (under page lock) should indeed be
+guaranteeing that the page pointer found in the swapper_space radix
+tree at that (swp_entry_t) offset is the one we expect there, as before.
 
-#define statement_expression(args)		\
-({						\
-	etc					\
-})
+Whereas the new shmem_confirm_swap() test doesn't help to guarantee that
+part at all: it's for confirming that the swap entry is still being used
+for the offset in the file that we're interested in.
 
+The comment I would like to change is the "nice clean interface" one!
+While it does make for a nice old-page-in/new-page-out interface to that
+function, I've come to feel that it would be much better not to mess with
+the swapcache at all there - leave the old page in the swapcache, and
+remove it at the same time as inserting the new page into filecache.
 
+But I'm also reluctant to mess with what's working: I'm in no rush
+to change that around, I'd be sure to screw it up at first.
+
+> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+
+Thanks,
+Hugh
