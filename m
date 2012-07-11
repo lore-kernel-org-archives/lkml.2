@@ -1,138 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753463Ab2GKI7V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 04:59:21 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:61910 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751771Ab2GKI7S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 04:59:18 -0400
-From: Toshiaki Yamane <yamanetoshi@gmail.com>
-To: greg@kroah.com, willy@meta-x.org
-Cc: linux-kernel@vger.kernel.org, Toshiaki Yamane <yamanetoshi@gmail.com>
-Subject: [PATCH v2] panel: Use pr_err(...) rather than printk(KERN_ERR ...)
-Date: Wed, 11 Jul 2012 17:59:07 +0900
-Message-Id: <1341997147-25417-1-git-send-email-yamanetoshi@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	id S1752956Ab2GKJAm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 05:00:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52455 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751342Ab2GKJAk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 05:00:40 -0400
+Message-ID: <4FFD4091.8040804@redhat.com>
+Date: Wed, 11 Jul 2012 12:00:01 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+MIME-Version: 1.0
+To: habanero@linux.vnet.ibm.com
+CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Rik van Riel <riel@redhat.com>, S390 <linux-s390@vger.kernel.org>,
+        Carsten Otte <cotte@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
+        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: Re: [PATCH RFC 0/2] kvm: Improving directed yield in PLE handler
+References: <20120709062012.24030.37154.sendpatchset@codeblue> <1341870457.2909.27.camel@oc2024037011.ibm.com>
+In-Reply-To: <1341870457.2909.27.camel@oc2024037011.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change is inspired by checkpatch.
+On 07/10/2012 12:47 AM, Andrew Theurer wrote:
+>          
+> For the cpu threads in the host that are actually active (in this case
+> 1/2 of them), ~50% of their time is in kernel and ~43% in guest.  This
+> is for a no-IO workload, so that's just incredible to see so much cpu
+> wasted.  I feel that 2 important areas to tackle are a more scalable
+> yield_to() and reducing the number of pause exits itself (hopefully by
+> just tuning ple_window for the latter).
 
-Signed-off-by: Toshiaki Yamane <yamanetoshi@gmail.com>
----
- drivers/staging/panel/panel.c |   42 +++++++++++++++++-----------------------
- 1 files changed, 18 insertions(+), 24 deletions(-)
+One thing we can do is autotune ple_window.  If a ple exit fails to wake
+anybody (because all vcpus are either running, sleeping, or in ple
+exits) then we deduce we are not overcommitted and we can increase the
+ple window.  There's the question of how to decrease it again though.
 
-diff --git a/drivers/staging/panel/panel.c b/drivers/staging/panel/panel.c
-index 7365089..4b038e1 100644
---- a/drivers/staging/panel/panel.c
-+++ b/drivers/staging/panel/panel.c
-@@ -34,6 +34,8 @@
-  *
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/module.h>
- 
- #include <linux/types.h>
-@@ -1987,10 +1989,9 @@ static struct logical_input *panel_bind_key(char *name, char *press,
- 	struct logical_input *key;
- 
- 	key = kzalloc(sizeof(struct logical_input), GFP_KERNEL);
--	if (!key) {
--		printk(KERN_ERR "panel: not enough memory\n");
-+	if (!key)
- 		return NULL;
--	}
-+
- 	if (!input_name2mask(name, &key->mask, &key->value, &scan_mask_i,
- 			     &scan_mask_o)) {
- 		kfree(key);
-@@ -2030,10 +2031,9 @@ static struct logical_input *panel_bind_callback(char *name,
- 	struct logical_input *callback;
- 
- 	callback = kmalloc(sizeof(struct logical_input), GFP_KERNEL);
--	if (!callback) {
--		printk(KERN_ERR "panel: not enough memory\n");
-+	if (!callback)
- 		return NULL;
--	}
-+
- 	memset(callback, 0, sizeof(struct logical_input));
- 	if (!input_name2mask(name, &callback->mask, &callback->value,
- 			     &scan_mask_i, &scan_mask_o))
-@@ -2110,10 +2110,8 @@ static void panel_attach(struct parport *port)
- 		return;
- 
- 	if (pprt) {
--		printk(KERN_ERR
--		       "panel_attach(): port->number=%d parport=%d, "
--		       "already registered !\n",
--		       port->number, parport);
-+		pr_err("%s: port->number=%d parport=%d, already registerd !\n",
-+		       __func__, port->number, parport);
- 		return;
- 	}
- 
-@@ -2122,16 +2120,14 @@ static void panel_attach(struct parport *port)
- 				       /*PARPORT_DEV_EXCL */
- 				       0, (void *)&pprt);
- 	if (pprt == NULL) {
--		pr_err("panel_attach(): port->number=%d parport=%d, "
--		       "parport_register_device() failed\n",
--		       port->number, parport);
-+		pr_err("%s: port->number=%d parport=%d, parport_register_device() failed\n",
-+		       __func__, port->number, parport);
- 		return;
- 	}
- 
- 	if (parport_claim(pprt)) {
--		printk(KERN_ERR
--		       "Panel: could not claim access to parport%d. "
--		       "Aborting.\n", parport);
-+		pr_err("%s: could not claim access to parport%d. Aborting.\n",
-+		       __func__, parport);
- 		goto err_unreg_device;
- 	}
- 
-@@ -2165,10 +2161,8 @@ static void panel_detach(struct parport *port)
- 		return;
- 
- 	if (!pprt) {
--		printk(KERN_ERR
--		       "panel_detach(): port->number=%d parport=%d, "
--		       "nothing to unregister.\n",
--		       port->number, parport);
-+		pr_err("%s: port->number=%d parport=%d, nothing to unregister.\n",
-+		       __func__, port->number, parport);
- 		return;
- 	}
- 
-@@ -2278,8 +2272,8 @@ int panel_init(void)
- 	init_in_progress = 1;
- 
- 	if (parport_register_driver(&panel_driver)) {
--		printk(KERN_ERR
--		       "Panel: could not register with parport. Aborting.\n");
-+		pr_err("%s: could not register with parport. Aborting.\n",
-+		       __func__);
- 		return -EIO;
- 	}
- 
-@@ -2291,8 +2285,8 @@ int panel_init(void)
- 			pprt = NULL;
- 		}
- 		parport_unregister_driver(&panel_driver);
--		printk(KERN_ERR "Panel driver version " PANEL_VERSION
--		       " disabled.\n");
-+		pr_err("%s: Panel driver version " PANEL_VERSION " disabled.\n",
-+		       __func__);
- 		return -ENODEV;
- 	}
- 
 -- 
-1.7.5.4
+error compiling committee.c: too many arguments to function
+
 
