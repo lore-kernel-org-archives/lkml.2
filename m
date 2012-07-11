@@ -1,100 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756947Ab2GKKHV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 06:07:21 -0400
-Received: from na3sys009aog126.obsmtp.com ([74.125.149.155]:46246 "EHLO
-	na3sys009aog126.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752593Ab2GKKHT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 06:07:19 -0400
+	id S1757036Ab2GKKHd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 06:07:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37813 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756958Ab2GKKH2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 06:07:28 -0400
+Date: Wed, 11 Jul 2012 12:07:26 +0200
+From: Jan Kara <jack@suse.cz>
+To: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: Theodore Tso <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
+        Ext4 Mailing List <linux-ext4@vger.kernel.org>
+Subject: Re: [PATCHv6 3/5] ext4: remove unnecessary superblock dirtying
+Message-ID: <20120711100726.GE1316@quack.suse.cz>
+References: <1342000698-13556-1-git-send-email-dedekind1@gmail.com>
+ <1342000698-13556-4-git-send-email-dedekind1@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAGF5oy_QVyYKFcS_62dffkRRZhBZrG4RTpYG9HKT8zMoLue1Xw@mail.gmail.com>
-References: <1341647872-15267-1-git-send-email-eduardo.valentin@ti.com>
-	<1341647872-15267-2-git-send-email-eduardo.valentin@ti.com>
-	<20120709193130.GA12982@kroah.com>
-	<CAGF5oy_QVyYKFcS_62dffkRRZhBZrG4RTpYG9HKT8zMoLue1Xw@mail.gmail.com>
-Date: Wed, 11 Jul 2012 13:07:17 +0300
-Message-ID: <CAGF5oy-Ey7mB+_gjDWxm7H5muvpGrksTmjBsrn-Pva6N=JHNoQ@mail.gmail.com>
-Subject: Re: [PATCHv2 1/4] staging: OMAP4+: thermal: introduce bandgap
- temperature sensor
-From: "Valentin, Eduardo" <eduardo.valentin@ti.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, b-cousson@ti.com, j-keerthy@ti.com,
-        linux-kernel@vger.kernel.org, kbaidarov@dev.rtsoft.ru,
-        grant.likely@secretlab.ca
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1342000698-13556-4-git-send-email-dedekind1@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Greg,
+On Wed 11-07-12 12:58:16, Artem Bityutskiy wrote:
+> From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+> 
+> This patch changes the '__ext4_handle_dirty_super()' function which submits
+> the superblock for I/O in the following cases:
+> 
+> 1. When creating the first large file on a file system without
+>    EXT4_FEATURE_RO_COMPAT_LARGE_FILE feature.
+> 2. When re-sizing the file-system.
+> 3. When creating an xattr on a file-system without the
+>    EXT4_FEATURE_COMPAT_EXT_ATTR feature.
+> 4. When adding or deleting an orphan which happens on every delete operation
+>    (because we update the 's_last_orphan' superblock field).
+> 
+> If the file-system has journal enabled, the superblock is written via the
+> journal. We do not modify this path.
+> 
+> If the file-system has no journal, this function, falls back to just marking
+> the superblock as dirty using the 's_dirt' superblock flag. This means that it
+> delays the actual superblock I/O submission by 5 seconds (default setting).
+> Namely, the 'sync_supers()' kernel thread will call 'ext4_write_super()' later
+> and will actually submit the superblock for I/O.
+> 
+> And this is the behavior this patch modifies: we stop using 's_dirt' and just
+> mark the superblock buffer as dirty right away. Indeed:
+> 
+> 1. It does not add any value to delay the I/O submission for cases 1-3 above.
+>    They are rare.
+> 2. Case number 4 above depends on whether we have file-system checksumming
+>    enabled or disables.
+>    a) If it is disabled (most common scenario), then it is all-right to just
+>       mark the superblock buffer as dirty right away and it should affect
+>       performance.
+>    b) If it is enabled, then we'll end up doing a bit more work on deletion
+>       because we'll re-calculate superblock checksum every time.
+> 
+> So case 2.b is a bit controversial, but I think it is acceptable. After all, by
+> enabling checksumming we already sign up for paying the price of calculating
+> it. The way to improve checksumming performance globally would be to calculate
+> it just before sending buffers to the I/O queue. We'd need some kind of
+> call-back which could be registered by file-systems.
+> 
+> This patch also removes 's_dirt' condition on the unmount path because we never
+> set it anymore, so we should not test it.
+> 
+> Tested using xfstests for both journalled and non-journalled ext4.
+> 
+> Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+  Looks good. Thanks for doing this work! You can add:
+Reviewed-by: Jan Kara <jack@suse.cz>
 
-On Mon, Jul 9, 2012 at 11:33 PM, Valentin, Eduardo
-<eduardo.valentin@ti.com> wrote:
-> Hello Greg,
->
-> On Mon, Jul 9, 2012 at 10:31 PM, Greg Kroah-Hartman
-> <gregkh@linuxfoundation.org> wrote:
->> On Sat, Jul 07, 2012 at 10:57:49AM +0300, Eduardo Valentin wrote:
->>> In the System Control Module, OMAP supplies a voltage reference
->>> and a temperature sensor feature that are gathered in the band
->>> gap voltage and temperature sensor (VBGAPTS) module. The band
->>> gap provides current and voltage reference for its internal
->>> circuits and other analog IP blocks. The analog-to-digital
->>> converter (ADC) produces an output value that is proportional
->>> to the silicon temperature.
->>>
->>> This patch provides a platform driver which expose this feature.
->>> It is moduled as a MFD child of the System Control Module core
->>> MFD driver.
->>>
->>> This driver provides only APIs to access the device properties,
->>> like temperature, thresholds and update rate.
->>>
->>> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
->>> Signed-off-by: Keerthy <j-keerthy@ti.com>
->>
->> As much as I enjoy interesting names, odds are, "Keerthy" is not the
->> real name of this person, right?  In fact, based on the copyright
->> comments in the code, I can almost guarantee it...
->>
->> I need a full-name please, no aliases or fake names allowed in kernel
->> signed-off-by lines.
->>
->> Please resend these with that fixed up.
->
-> Actually, his name is in fact Keerthy J.  I can resend with the
-> additional "J" the way it is in the copyrights.
-
-While looking into his commits, I believe the SOB in this patch is one
-of the ways he uses to sign:
-commit f99c1d4f94f91fd3a20bd2eaa3be9c5e7d2668eb
-Author: Keerthy <j-keerthy@ti.com>
-Date:   Tue Mar 1 19:12:26 2011 +0530
-
-    mfd: Add twl4030 madc driver
-
-    Introducing a driver for MADC on TWL4030 powerIC. MADC stands for monitoring
-    ADC. This driver monitors the real time conversion of analog signals like
-    battery temperature, battery cuurent etc.
-
-    Signed-off-by: Keerthy <j-keerthy@ti.com>
-    Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
-
-So, I'd prefer to keep the way it is.
-
->
->>
->> greg k-h
->
->
->
-> --
->
-> Eduardo Valentin
-
-
-
+								Honza
+> ---
+>  fs/ext4/ext4_jbd2.c |    5 ++---
+>  fs/ext4/super.c     |    2 +-
+>  2 files changed, 3 insertions(+), 4 deletions(-)
+> 
+> diff --git a/fs/ext4/ext4_jbd2.c b/fs/ext4/ext4_jbd2.c
+> index 90f7c2e..c19ab6a 100644
+> --- a/fs/ext4/ext4_jbd2.c
+> +++ b/fs/ext4/ext4_jbd2.c
+> @@ -151,11 +151,10 @@ int __ext4_handle_dirty_super(const char *where, unsigned int line,
+>  		if (err)
+>  			ext4_journal_abort_handle(where, line, __func__,
+>  						  bh, handle, err);
+> -	} else if (now) {
+> +	} else {
+>  		ext4_superblock_csum_set(sb,
+>  				(struct ext4_super_block *)bh->b_data);
+>  		mark_buffer_dirty(bh);
+> -	} else
+> -		sb->s_dirt = 1;
+> +	}
+>  	return err;
+>  }
+> diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+> index eb7aa3e..a391c53 100644
+> --- a/fs/ext4/super.c
+> +++ b/fs/ext4/super.c
+> @@ -896,7 +896,7 @@ static void ext4_put_super(struct super_block *sb)
+>  		EXT4_CLEAR_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_RECOVER);
+>  		es->s_state = cpu_to_le16(sbi->s_mount_state);
+>  	}
+> -	if (sb->s_dirt || !(sb->s_flags & MS_RDONLY))
+> +	if (!(sb->s_flags & MS_RDONLY))
+>  		ext4_commit_super(sb, 1);
+>  
+>  	if (sbi->s_proc) {
+> -- 
+> 1.7.7.6
+> 
 -- 
-
-Eduardo Valentin
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
