@@ -1,44 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753548Ab2GKJfg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 05:35:36 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:41843 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751069Ab2GKJff convert rfc822-to-8bit (ORCPT
+	id S1752440Ab2GKJph (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 05:45:37 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:49159 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752158Ab2GKJpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 05:35:35 -0400
+	Wed, 11 Jul 2012 05:45:25 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Wanpeng Li <liwp.linux@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Li Zefan <lizefan@huawei.com>,
+        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <liwp.linux@gmail.com>
+Subject: Re: [PATCH] mm/hugetlb_cgroup: Add list_del to remove unused page from hugepage_activelist when hugepage migration
+In-Reply-To: <20120711091648.GA10841@kernel>
+References: <1341978718-6423-1-git-send-email-liwp.linux@gmail.com> <87wr2aitpk.fsf@skywalker.in.ibm.com> <20120711091648.GA10841@kernel>
+User-Agent: Notmuch/0.13.2+63~g548a9bf (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Wed, 11 Jul 2012 15:15:19 +0530
+Message-ID: <87txxeiqc0.fsf@skywalker.in.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <CAFub=KSx+uU0KMG+cQOgd_y7J3EH7TFNPhCNGLBfDMYQWVxdTg@mail.gmail.com>
-References: <20120704153443.4055.53130.stgit@bluebook>
-	<20120710131526.e64cf710.akpm@linux-foundation.org>
-	<829BE905228AE14A9AE1A46E6F2E371605542A19B8@VA3DIAXVS891.RED001.local>
-	<CAFub=KSx+uU0KMG+cQOgd_y7J3EH7TFNPhCNGLBfDMYQWVxdTg@mail.gmail.com>
-Date: Wed, 11 Jul 2012 11:35:32 +0200
-Message-ID: <CAFLxGvwrfRsgXhZdDjO6+e2A2=2gmOkNuRr6cHLzwZGYRDBOvQ@mail.gmail.com>
-Subject: Re: [PATCH] kernel: fix mishandling of out of memory in poweroff
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: =?UTF-8?B?T3phbiDDh2HEn2xheWFu?= <ozancag@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Scan Subscription <scan-subscription@coverity.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+x-cbid: 12071109-2000-0000-0000-0000083A6D51
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 11, 2012 at 11:30 AM, Ozan Çağlayan <ozancag@gmail.com> wrote:
->> It would be nice to have a Reported-by here, but we were only given
->> "Scan Subscription <scan-subscription@coverity.com>".
+Wanpeng Li <liwp.linux@gmail.com> writes:
+
+> On Wed, Jul 11, 2012 at 02:02:23PM +0530, Aneesh Kumar K.V wrote:
+>>Wanpeng Li <liwp.linux@gmail.com> writes:
 >>
->> Is there some human behind these reports?  If so, can that person's
->> details please be included?
+>>> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+>>>
+>>> hugepage_activelist is used to track currently used HugeTLB pages.
+>>> We can find the in-use HugeTLB pages to support HugeTLB cgroup
+>>> removal. Don't keep unused page in hugetlb_activelist too long.
+>>> Otherwise, on cgroup removal we should update the unused page's 
+>>> charge to parent count. To reduce this overhead, remove unused page 
+>>> from hugepage_activelist immediately.
+>>>
+>>> Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
+>>> ---
+>>>  mm/hugetlb_cgroup.c |    1 +
+>>>  1 files changed, 1 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
+>>> index b834e8d..d819d66 100644
+>>> --- a/mm/hugetlb_cgroup.c
+>>> +++ b/mm/hugetlb_cgroup.c
+>>> @@ -398,6 +398,7 @@ void hugetlb_cgroup_migrate(struct page *oldhpage, struct page *newhpage)
+>>>  	spin_lock(&hugetlb_lock);
+>>>  	h_cg = hugetlb_cgroup_from_page(oldhpage);
+>>>  	set_hugetlb_cgroup(oldhpage, NULL);
+>>> +	list_del(&oldhpage->lru);
+>>>
+>>>  	/* move the h_cg details to new cgroup */
+>>>  	set_hugetlb_cgroup(newhpage, h_cg);
+>>
+>>put_page on the oldhpage will do that. If we do list_del here
+>>free_huge_page() will have error list_move().
 >
-> Also note that gmail marks these as "Spam" probably because of the
-> word "subscription".
+> I don't know if move the page to other lists when migration in order 
+> to reduce overhead I mentioned make sense. :-)
+>
 
-Not here.
+Even if we are in the active_list, we don't get anything wrong because
+hugetlb cgroup is set to NULL for the old hugetlb page. The above patch is
+wrong and will result in crash when we try to put_page the oldhpage.
 
--- 
-Thanks,
-//richard
+-aneesh
+
