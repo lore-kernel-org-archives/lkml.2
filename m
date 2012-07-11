@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755147Ab2GKFE3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 01:04:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32456 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751382Ab2GKFE1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 01:04:27 -0400
-Date: Wed, 11 Jul 2012 14:04:23 +0900 (JST)
-Message-Id: <20120711.140423.1598510269265721139.yamato@redhat.com>
-To: andrei.emeltchenko.news@gmail.com
-Cc: linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org
-Subject: [PATCH v3 8/8] bluetooth: Added /proc/net/sco via bt_procfs_init()
-From: Masatake YAMATO <yamato@redhat.com>
-In-Reply-To: <20120711.135831.1712662939552441872.yamato@redhat.com>
-References: <20120629.020253.963694178693689545.yamato@redhat.com>
-	<20120710140400.GA15795@aemeltch-MOBL1>
-	<20120711.135831.1712662939552441872.yamato@redhat.com>
-Organization: Red Hat Japan, Inc.
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1754912Ab2GKFOj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 01:14:39 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:48897 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752998Ab2GKFOi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 01:14:38 -0400
+MIME-Version: 1.0
+In-Reply-To: <4FFCE2DC.1090201@gmail.com>
+References: <CACV3sbK7jUCDZxGBs3RUYnQ4s+VyEt7VYeRKD50F07zZrYKgCg@mail.gmail.com>
+	<4FFCE2DC.1090201@gmail.com>
+Date: Wed, 11 Jul 2012 13:14:37 +0800
+Message-ID: <CACV3sbLMOVm=WFofjc8-3pRvy1JduYVKWGY=EakjfhtftZPQ9A@mail.gmail.com>
+Subject: Re: [PATCH] perf: fix perf-lock report coredump
+From: Jovi Zhang <bookjovi@gmail.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Masatake YAMATO <yamato@redhat.com>
----
- net/bluetooth/sco.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+On Wed, Jul 11, 2012 at 10:20 AM, David Ahern <dsahern@gmail.com> wrote:
+> On 7/10/12 7:06 PM, Jovi Zhang wrote:
+>>
+>>  From 4b363bf16c12b76788fbace1475123b7214ae58d Mon Sep 17 00:00:00 2001
+>> From: Jovi Zhang <bookjovi@gmail.com>
+>> Date: Wed, 11 Jul 2012 16:53:57 +0800
+>> Subject: [PATCH] perf: fix perf-lock report coredump
+>>
+>> Check sample type event raw_data is existed in perf.data firstly,
+>> then invoke process_raw_event, otherwise it will coredump.
+>
+>
+> Does this fix it for you:
+> http://lkml.org/lkml/2012/7/6/405
+>
+Yeah, same problem.
+But the question is if there have some sample event with raw data in
+perf.data, are we still just exit(1)?
+or let perf-lock only report those sample events with raw data?
 
-diff --git a/net/bluetooth/sco.c b/net/bluetooth/sco.c
-index 40bbe25..85efd9f 100644
---- a/net/bluetooth/sco.c
-+++ b/net/bluetooth/sco.c
-@@ -1026,6 +1026,13 @@ int __init sco_init(void)
- 		goto error;
- 	}
- 
-+	err = bt_procfs_init(THIS_MODULE, &init_net, "sco", &sco_sk_list, NULL);
-+	if (err < 0) {
-+		BT_ERR("Failed to create SCO proc file");
-+		bt_sock_unregister(BTPROTO_SCO);
-+		goto error;
-+	}
-+
- 	if (bt_debugfs) {
- 		sco_debugfs = debugfs_create_file("sco", 0444, bt_debugfs,
- 						  NULL, &sco_debugfs_fops);
-@@ -1044,6 +1051,8 @@ error:
- 
- void __exit sco_exit(void)
- {
-+	bt_procfs_cleanup(&init_net, "sco");
-+
- 	debugfs_remove(sco_debugfs);
- 
- 	if (bt_sock_unregister(BTPROTO_SCO) < 0)
--- 
-1.7.10.4
+> Also does 'perf lock record' work for you? If so can you send me your kernel
+> config file?
+Not working. I assume LOCKDEP is not configured in my test machine.
 
+>
+> Thanks,
+>
+> David
