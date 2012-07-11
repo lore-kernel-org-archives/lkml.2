@@ -1,89 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757139Ab2GKMmA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 08:42:00 -0400
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:42447 "EHLO
-	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752072Ab2GKMl6 (ORCPT
+	id S1757538Ab2GKMpp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 08:45:45 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33029 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754693Ab2GKMpo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 08:41:58 -0400
-Date: Wed, 11 Jul 2012 08:41:39 -0400 (EDT)
-From: Andrew Jones <drjones@redhat.com>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Rik van Riel <riel@redhat.com>, S390 <linux-s390@vger.kernel.org>,
-        Carsten Otte <cotte@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
-        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Joerg Roedel <joerg.roedel@amd.com>, Avi Kivity <avi@redhat.com>
-Subject: Re: [PATCH RFC 1/2] kvm vcpu: Note down pause loop exit
-Message-ID: <d0f10496-d51c-4ba6-8f78-8021f3cf5a15@zmail17.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <4FFD69DF.1070107@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	Wed, 11 Jul 2012 08:45:44 -0400
+Date: Wed, 11 Jul 2012 14:45:39 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Prarit Bhargava <prarit@redhat.com>
+cc: John Stultz <johnstul@us.ibm.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, stable@vger.kernel.org
+Subject: Re: [PATCH 1/6] hrtimer: Provide clock_was_set_delayed()
+In-Reply-To: <4FFD6E5A.9060206@redhat.com>
+Message-ID: <alpine.LFD.2.02.1207111425260.32033@ionos>
+References: <1341960205-56738-1-git-send-email-johnstul@us.ibm.com> <1341960205-56738-2-git-send-email-johnstul@us.ibm.com> <4FFD6E5A.9060206@redhat.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-X-Originating-IP: [10.36.7.202]
-X-Mailer: Zimbra 7.1.2_GA_3268 (ZimbraWebClient - FF3.0 (Linux)/7.1.2_GA_3268)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
------ Original Message -----
-> >
-> > Hm, suppose we're the next-in-line for a ticket lock and exit due
-> > to
-> > PLE.  The lock holder completes and unlocks, which really assigns
-> > the
-> > lock to us.  So now we are the lock owner, yet we are marked as
-> > don't
-> > yield-to-us in the PLE code.
+On Wed, 11 Jul 2012, Prarit Bhargava wrote:
+> On 07/10/2012 06:43 PM, John Stultz wrote:
+> > clock_was_set() cannot be called from hard interrupt context because
+> > it calls on_each_cpu(). For fixing the widely reported leap seconds
+> > issue it's necessary to call it from the timer interrupt context.
+> > 
+> > Provide a new function which denotes it in the hrtimer cpu base
+> > structure of the cpu on which it is called and raising the timer
+> > softirq.
+> > 
+> > We then execute the clock_was_set() notificiation in the timer softirq
+> > context in hrtimer_run_pending().
 > 
-> Yes.. off-topic but that is solved by kicked flag in PV spinlocks.
-> 
+> I wish there was a nicer way to do this ... but looking at the code I can't
+> figure out a better way.  (no offense John, it's just the way the code is ;) )
 
-Yeah, this is a different, but related, topic. pvticketlocks not
-only help yield spinning vcpus, but also allow the use of ticketlocks
-for the guaranteed fairness. If we want that fairness we'll always
-need some pv-ness, even if it's a mostly PLE solution. I see that as
-a reasonable reason to take the pvticketlock series, assuming it
-performs at least as well as PLE. The following options have all been
-brought up at some point by various people, and all have their own
-pluses and minuses;
+Yeah, I had the same discussion with Peter earlier today. There is
+only a rather limited set of options.
 
-PLE-only best-effort:
-   + hardware-only, algorithm improvements can be made independent of
-     guest OSes
-   - has limited info about spinning vcpus, making it hard to improve
-     the algorithm (improved with an auto-adjusting ple_window?)
-   - perf enhancement/degradation is workload/ple_window dependant
-   - impossible? to guarantee FIFO order
+1) Retrigger the timer interrupt vectors on all CPUs - except the one
+   we are running on, but we have no interface for that at the moment
 
-pvticketlocks:
-   - have to maintain pv code, both hosts and guests
-   + perf is only workload dependant (should disable ple to avoid
-     interference?)
-   + guarantees FIFO order
-   + can fall-back on PLE-only if the guest doesn't support it
+2) Do the nasty __smp_call_function_single() hack
 
-hybrid:
-   + takes advantage of the hw support
-   - still requires host and guest pv code
-   - will likely make perf dependant on ple_window again
-   + guarantees FIFO order
+   Preallocate call_single_data for all cpus and do a
+   __smp_call_function_single() on all online cpus.
 
-???: did I miss any?
+   This can be called from hard interrupt context or irq disabled
+   regions.
 
-I think more benchmarking of PLE vs. pvticketlocks is needed, which
-I'm working on. If we see that it performs just as well or better,
-then IMHO, we should consider committing Raghu's latest version of
-the pvticketlock series, perhaps with and additional patch that
-auto-disables PLE when pvticketlocks are enabled.
+   That would allow to get rid of the whole delay magic all
+   together.
 
-Drew
+Thoughts?
+
+	tglx
+
