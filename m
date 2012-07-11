@@ -1,82 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753733Ab2GKJCE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 05:02:04 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:36601 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751571Ab2GKJCC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 05:02:02 -0400
-Message-ID: <4FFD4105.4050504@arm.com>
-Date: Wed, 11 Jul 2012 10:01:57 +0100
-From: viresh kumar <viresh.kumar2@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1753971Ab2GKJCZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 05:02:25 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:34935 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753844Ab2GKJCV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 05:02:21 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] ACPI / PCI: Make _SxD/_SxW check follow ACPI 4.0a spec
+Date: Wed, 11 Jul 2012 11:07:56 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>, linux-pci@vger.kernel.org,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "Oleksij Rempel (fishor)" <bug-track@fisher-privat.net>,
+        LKML <linux-kernel@vger.kernel.org>
+References: <201204292244.16467.rjw@sisk.pl> <20120711000850.GD18128@kroah.com>
+In-Reply-To: <20120711000850.GD18128@kroah.com>
 MIME-Version: 1.0
-To: Julia Lawall <Julia.Lawall@lip6.fr>, Shiraz Hashim <shiraz.hashim@st.com>
-CC: David Woodhouse <dwmw2@infradead.org>, Stefan Roese <sr@denx.de>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        spear-devel <spear-devel@list.st.com>
-Subject: Re: [PATCH] drivers/mtd/devices/spear_smi.c: failure test for null
- rather than negative integer
-References: <1341997118-25042-1-git-send-email-Julia.Lawall@lip6.fr>
-In-Reply-To: <1341997118-25042-1-git-send-email-Julia.Lawall@lip6.fr>
-X-MC-Unique: 112071110015900201
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201207111107.56500.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding spear-devel mailing list in cc.
+On Wednesday, July 11, 2012, Greg KH wrote:
+> On Sun, Apr 29, 2012 at 10:44:16PM +0200, Rafael J. Wysocki wrote:
+> > From: Oleksij Rempel <bug-track@fisher-privat.net>
+> > 
+> > This patch makes _SxD/_SxW check follow the ACPI 4.0a specification
+> > more closely and fixes suspend bug found on ASUS Zenbook UX31E.
+> > 
+> > Some OEM use _SxD fileds do blacklist brocken Dx states.
+> > If _SxD/_SxW return values are check before suspend as appropriate,
+> > some nasty suspend/resume issues may be avoided.
+> > 
+> > References: https://bugzilla.kernel.org/show_bug.cgi?id=42728
+> > Signed-off-by: Oleksij Rempel <bug-track@fisher-privat.net>
+> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> > ---
+> > 
+> > Bjorn, Len,
+> > 
+> > This is -stable material and therefore v3.4 as well, IMO.  Please let me
+> > know if one of you can take it or whether you want me to handle it all the
+> > way to Linus.
+> 
+> What ever hapened to this patch?
 
-@Shiraz: Can you update ST's mailing list address in entire MAINTAINERS file, so
-that people can include ST's list easily?
+It was split and partially merged.  As far as the other part is concerned,
+the jury is still out.
 
-On 11/07/12 09:58, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
->
-> dev_get_platdata returns a pointer, so the failure value would be NULL
-> rather than a negative integer.
->
-> The semantic match that finds this problem is: (http://coccinelle.lip6.fr/)
->
-> // <smpl>
-> @@
-> expression x,e;
-> statement S1,S2;
-> @@
->
-> *x = dev_get_platdata(...)
-> ... when != x = e
-> *if (x < 0) S1 else S2
-> // </smpl>
->
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
->
-> ---
->  drivers/mtd/devices/spear_smi.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/mtd/devices/spear_smi.c b/drivers/mtd/devices/spear_smi.c
-> index b85f183..7c10466 100644
-> --- a/drivers/mtd/devices/spear_smi.c
-> +++ b/drivers/mtd/devices/spear_smi.c
-> @@ -935,7 +935,7 @@ static int __devinit spear_smi_probe(struct platform_device *pdev)
->               }
->       } else {
->               pdata = dev_get_platdata(&pdev->dev);
-> -             if (pdata < 0) {
-> +             if (!pdata) {
->                       ret = -ENODEV;
->                       dev_err(&pdev->dev, "no platform data\n");
->                       goto err;
-
-Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
-
---
-Viresh
-
--- IMPORTANT NOTICE: The contents of this email and any attachments are confidential and may also be privileged. If you are not the intended recipient, please notify the sender immediately and do not disclose the contents to any other person, use it for any purpose, or store or copy the information in any medium.  Thank you.
-
+Thanks,
+Rafael
