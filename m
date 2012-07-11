@@ -1,48 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932982Ab2GKQsQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 12:48:16 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:36499 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932958Ab2GKQsN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 12:48:13 -0400
-Message-ID: <4FFDAE1D.3050008@us.ibm.com>
-Date: Wed, 11 Jul 2012 09:47:25 -0700
-From: John Stultz <johnstul@us.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, stable@vger.kernel.org
-Subject: Re: [PATCH 1/6] hrtimer: Provide clock_was_set_delayed()
-References: <1341960205-56738-1-git-send-email-johnstul@us.ibm.com> <1341960205-56738-2-git-send-email-johnstul@us.ibm.com> <4FFD6E5A.9060206@redhat.com> <alpine.LFD.2.02.1207111425260.32033@ionos> <1342011904.3462.152.camel@twins> <alpine.LFD.2.02.1207111539060.32033@ionos>
-In-Reply-To: <alpine.LFD.2.02.1207111539060.32033@ionos>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S933002Ab2GKQzp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 12:55:45 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:33084 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932081Ab2GKQzo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 12:55:44 -0400
+Message-ID: <1342025743.13724.102.camel@joe2Laptop>
+Subject: Re: pr_cat() + CATSTR(name, size)?
+From: Joe Perches <joe@perches.com>
+To: Kay Sievers <kay@vrfy.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Wed, 11 Jul 2012 09:55:43 -0700
+In-Reply-To: <CAPXgP13ff+eFH_jJ+0FDX0-GkuZj3RSv7VCp3ftcsGzA412FVQ@mail.gmail.com>
+References: <1342002808.810.12.camel@mop>
+	 <1342018897.13724.61.camel@joe2Laptop>
+	 <CAPXgP11XnrFayb-g5HFu3wPtw8=xLfSY7HNCCbiSoehj8KsGcw@mail.gmail.com>
+	 <1342020647.13724.71.camel@joe2Laptop>
+	 <CAPXgP13ff+eFH_jJ+0FDX0-GkuZj3RSv7VCp3ftcsGzA412FVQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12071116-4242-0000-0000-00000249BAE8
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11/2012 08:18 AM, Thomas Gleixner wrote:
-> That leaves NOHZ enabled systems and there we might be clever and
-> avoid the IPIs to those cores which are not idle and let the tick
-> interrupt deal with it. And we can make the calls async and just let
-> them raise the hrtimer softirq on those cores, which will run the
-> hrtimer interrupt code and take care of everything.
+On Wed, 2012-07-11 at 17:48 +0200, Kay Sievers wrote:
+> On Wed, Jul 11, 2012 at 5:30 PM, Joe Perches <joe@perches.com> wrote:
+> > Well, I think the malloc costs are pretty low
+> > and could devolve pretty easily when OOM.
+> 
+> We need to avoid allocating memory in situations where we want to
+> printk(), it's just not possible.
 
-I'm not familiar with the details of the code that tracks which cores 
-are idle or not, but I'd worry with this approach that there might be 
-further races in determining which cores are idle and which cores are 
-about to go idle with stale base offsets.
+"it's just not possible???"  Kay, them's fightin' words. :)
 
-I'll see if my worry is unfounded, but it might be a bit too clever for 
-rare events.
+> That's why all the kmsg/printk can
+> not really do any plain malloc. All printk memory needs to be static,
+> on the stack or somehow pre-allocated.
 
-thanks
--john
+Maybe, I was planning to play with it after
+refactoring printk in the next couple releases.
+
+> > Anyway, interesting idea, keep at it, see what
+> > comes out of it.
+> 
+> Just depends on us, I guess. :)
+
+Yup.
+
+If your solution is just for the dev_<level> messages
+(ie: with vprintk_emit descriptors), then it's not
+too ugly.
+
+Did you look at the remaining dev_<level> and printk
+continuations grep pattern?  There really aren't too
+many to fix up.
+
+Maybe in 3.6.  None of them appear particularly urgent.
+
+One trivial style note:
+
+Maybe CATSTR could use a struct and a DECLARE_ macro?
+
+struct printk_continuation_buffer {
+	size_t length;
+	size_t pos;
+	char buf[];
+}
+
+It's a pity gcc doesn't allow non-static declarations like:
+
+#define DECLARE_PRINTK_BUF(name, size)		\
+struct printk_continuation_buffer name = {	\
+	.length = size;				\
+	.pos = 0;				\
+	.buf[size] = {0};			\
+}
+
+So maybe a DECLARE/DESTROY thing could work
+with the appropriate malloc/free.
+
+cheers, Joe
 
