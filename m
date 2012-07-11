@@ -1,56 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758637Ab2GLDfF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 23:35:05 -0400
+	id S1030588Ab2GLDf7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 23:35:59 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:63616 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751202Ab2GLDfB (ORCPT
+	with ESMTP id S1754175Ab2GLDfB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 11 Jul 2012 23:35:01 -0400
 From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [RFC PATCH 1/2] irq_domain: correct a minor wrong comment for linear revmap
-To: Dong Aisheng <b29396@freescale.com>, linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, tglx@linutronix.de,
-        benh@kernel.crashing.org
-In-Reply-To: <1340182831-10477-1-git-send-email-b29396@freescale.com>
-References: <1340182831-10477-1-git-send-email-b29396@freescale.com>
-Date: Wed, 11 Jul 2012 15:07:38 +0100
-Message-Id: <20120711140738.ABA533E0E16@localhost>
+Subject: Re: [PATCH] irq_domain: Standardise legacy/linear domain selection
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+In-Reply-To: <1341487159-3919-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1341487159-3919-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Date: Wed, 11 Jul 2012 15:06:03 +0100
+Message-Id: <20120711140603.446033E0DDA@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Jun 2012 17:00:30 +0800, Dong Aisheng <b29396@freescale.com> wrote:
-> From: Dong Aisheng <dong.aisheng@linaro.org>
+On Thu,  5 Jul 2012 12:19:19 +0100, Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
+> A large proportion of interrupt controllers that support legacy mappings
+> do so because non-DT systems need to use fixed IRQ numbers when registering
+> devices via buses but can otherwise use a linear mapping. The interrupt
+> controller itself typically is not affected by the mapping used and best
+> practice is to use a linear mapping where possible so drivers frequently
+> select at runtime depending on if a legacy range has been allocated to
+> them.
 > 
-> The revmap type should be linear for irq_domain_add_linear function.
+> Standardise this behaviour by providing irq_domain_register_simple() which
+> will allocate a linear mapping unless a positive first_irq is provided in
+> which case it will fall back to a legacy mapping. This helps make best
+> practice for irq_domain adoption clearer.
 > 
-> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
 Applied, thanks.
 
 g.
 
 > ---
->  kernel/irq/irqdomain.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+>  Documentation/IRQ-domain.txt |    5 +++++
+>  include/linux/irqdomain.h    |    5 +++++
+>  kernel/irq/irqdomain.c       |   30 ++++++++++++++++++++++++++++++
+>  3 files changed, 40 insertions(+)
 > 
+> diff --git a/Documentation/IRQ-domain.txt b/Documentation/IRQ-domain.txt
+> index 27dcaab..1401cec 100644
+> --- a/Documentation/IRQ-domain.txt
+> +++ b/Documentation/IRQ-domain.txt
+> @@ -93,6 +93,7 @@ Linux IRQ number into the hardware.
+>  Most drivers cannot use this mapping.
+>  
+>  ==== Legacy ====
+> +irq_domain_add_simple()
+>  irq_domain_add_legacy()
+>  irq_domain_add_legacy_isa()
+>  
+> @@ -115,3 +116,7 @@ The legacy map should only be used if fixed IRQ mappings must be
+>  supported.  For example, ISA controllers would use the legacy map for
+>  mapping Linux IRQs 0-15 so that existing ISA drivers get the correct IRQ
+>  numbers.
+> +
+> +Most users of legacy mappings should use irq_domain_add_simple() which
+> +will use a legacy domain only if an IRQ range is supplied by the
+> +system and will otherwise use a linear domain mapping.
+> diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
+> index 5abb533e..17b60be 100644
+> --- a/include/linux/irqdomain.h
+> +++ b/include/linux/irqdomain.h
+> @@ -112,6 +112,11 @@ struct irq_domain {
+>  };
+>  
+>  #ifdef CONFIG_IRQ_DOMAIN
+> +struct irq_domain *irq_domain_add_simple(struct device_node *of_node,
+> +					 unsigned int size,
+> +					 unsigned int first_irq,
+> +					 const struct irq_domain_ops *ops,
+> +					 void *host_data);
+>  struct irq_domain *irq_domain_add_legacy(struct device_node *of_node,
+>  					 unsigned int size,
+>  					 unsigned int first_irq,
 > diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-> index 3e4ea85..cb83554 100644
+> index d3968e9..0c51958 100644
 > --- a/kernel/irq/irqdomain.c
 > +++ b/kernel/irq/irqdomain.c
-> @@ -219,7 +219,7 @@ struct irq_domain *irq_domain_add_legacy(struct device_node *of_node,
->  EXPORT_SYMBOL_GPL(irq_domain_add_legacy);
+> @@ -140,6 +140,36 @@ static unsigned int irq_domain_legacy_revmap(struct irq_domain *domain,
+>  }
 >  
 >  /**
-> - * irq_domain_add_linear() - Allocate and register a legacy revmap irq_domain.
-> + * irq_domain_add_linear() - Allocate and register a linear revmap irq_domain.
+> + * irq_domain_add_simple() - Allocate and register a simple irq_domain.
+> + * @of_node: pointer to interrupt controller's device tree node.
+> + * @size: total number of irqs in mapping
+> + * @first_irq: first number of irq block assigned to the domain
+> + * @ops: map/unmap domain callbacks
+> + * @host_data: Controller private data pointer
+> + *
+> + * Allocates a legacy irq_domain if irq_base is positive or a linear
+> + * domain otherwise.
+> + *
+> + * This is intended to implement the expected behaviour for most
+> + * interrupt controllers which is that a linear mapping should
+> + * normally be used unless the system requires a legacy mapping in
+> + * order to support supplying interrupt numbers during non-DT
+> + * registration of devices.
+> + */
+> +struct irq_domain *irq_domain_add_simple(struct device_node *of_node,
+> +					 unsigned int size,
+> +					 unsigned int first_irq,
+> +					 const struct irq_domain_ops *ops,
+> +					 void *host_data)
+> +{
+> +	if (first_irq > 0)
+> +		return irq_domain_add_legacy(of_node, size, first_irq, 0,
+> +					     ops, host_data);
+> +	else
+> +		return irq_domain_add_linear(of_node, size, ops, host_data);
+> +}
+> +
+> +/**
+>   * irq_domain_add_legacy() - Allocate and register a legacy revmap irq_domain.
 >   * @of_node: pointer to interrupt controller's device tree node.
->   * @size: Number of interrupts in the domain.
->   * @ops: map/unmap domain callbacks
+>   * @size: total number of irqs in legacy mapping
 > -- 
-> 1.7.0.4
-> 
+> 1.7.10
 > 
 
 -- 
