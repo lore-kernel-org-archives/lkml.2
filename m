@@ -1,76 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933090Ab2GKTXg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 15:23:36 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:36068 "EHLO ogre.sisk.pl"
+	id S932794Ab2GKTWW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 15:22:22 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:35946 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932392Ab2GKTXd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 15:23:33 -0400
+	id S932191Ab2GKTWT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 15:22:19 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] ACPI / PCI: Make _SxD/_SxW check follow ACPI 4.0a spec
-Date: Wed, 11 Jul 2012 21:29:09 +0200
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 4/7] i2c-pnx: Use struct dev_pm_ops for power management
+Date: Wed, 11 Jul 2012 21:25:17 +0200
 User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>, linux-pci@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "Oleksij Rempel (fishor)" <bug-track@fisher-privat.net>,
-        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org
-References: <201204292244.16467.rjw@sisk.pl> <201207112104.49173.rjw@sisk.pl> <20120711192016.GA2857@kroah.com>
-In-Reply-To: <20120711192016.GA2857@kroah.com>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-i2c@vger.kernel.org, Sonic Zhang <sonic.zhang@analog.com>,
+        Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Peter Korsgaard <jacmet@sunsite.dk>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Vitaly Wool <vitalywool@gmail.com>, Colin Cross <ccross@android.com>,
+        Stephen Warren <swarren@wwwdotorg.org>
+References: <201207112121.11046.rjw@sisk.pl>
+In-Reply-To: <201207112121.11046.rjw@sisk.pl>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-1"
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201207112129.09397.rjw@sisk.pl>
+Message-Id: <201207112125.18040.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, July 11, 2012, Greg KH wrote:
-> On Wed, Jul 11, 2012 at 09:04:48PM +0200, Rafael J. Wysocki wrote:
-> > On Wednesday, July 11, 2012, Greg KH wrote:
-> > > On Wed, Jul 11, 2012 at 11:07:56AM +0200, Rafael J. Wysocki wrote:
-> > > > On Wednesday, July 11, 2012, Greg KH wrote:
-> > > > > On Sun, Apr 29, 2012 at 10:44:16PM +0200, Rafael J. Wysocki wrote:
-> > > > > > From: Oleksij Rempel <bug-track@fisher-privat.net>
-> > > > > > 
-> > > > > > This patch makes _SxD/_SxW check follow the ACPI 4.0a specification
-> > > > > > more closely and fixes suspend bug found on ASUS Zenbook UX31E.
-> > > > > > 
-> > > > > > Some OEM use _SxD fileds do blacklist brocken Dx states.
-> > > > > > If _SxD/_SxW return values are check before suspend as appropriate,
-> > > > > > some nasty suspend/resume issues may be avoided.
-> > > > > > 
-> > > > > > References: https://bugzilla.kernel.org/show_bug.cgi?id=42728
-> > > > > > Signed-off-by: Oleksij Rempel <bug-track@fisher-privat.net>
-> > > > > > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> > > > > > ---
-> > > > > > 
-> > > > > > Bjorn, Len,
-> > > > > > 
-> > > > > > This is -stable material and therefore v3.4 as well, IMO.  Please let me
-> > > > > > know if one of you can take it or whether you want me to handle it all the
-> > > > > > way to Linus.
-> > > > > 
-> > > > > What ever hapened to this patch?
-> > > > 
-> > > > It was split and partially merged.  As far as the other part is concerned,
-> > > > the jury is still out.
-> > > 
-> > > Ok, I'll wait for someone to ask for it to be added to the stable tree
-> > > before I do anything.
-> > 
-> > In fact, it should have been marked as -stable material, so please add:
-> > 
-> > commit dbe9a2edd17d843d80faf2b99f20a691c1853418
-> > Author: Rafael J. Wysocki <rjw@sisk.pl>
-> > Date:   Tue May 29 21:21:07 2012 +0200
-> > 
-> >     ACPI / PM: Make acpi_pm_device_sleep_state() follow the specification
-> 
-> Ah, the name changed, that's why I couldn't find it.  Thanks, I've now
-> queued it up.
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Thanks!
+Make the PNX I2C controller driver define its PM callbacks through
+a struct dev_pm_ops object rather than by using legacy PM hooks
+in struct platform_driver.
+
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ drivers/i2c/busses/i2c-pnx.c |   19 ++++++++++---------
+ 1 file changed, 10 insertions(+), 9 deletions(-)
+
+Index: linux/drivers/i2c/busses/i2c-pnx.c
+===================================================================
+--- linux.orig/drivers/i2c/busses/i2c-pnx.c
++++ linux/drivers/i2c/busses/i2c-pnx.c
+@@ -587,25 +587,27 @@ static struct i2c_algorithm pnx_algorith
+ };
+ 
+ #ifdef CONFIG_PM
+-static int i2c_pnx_controller_suspend(struct platform_device *pdev,
+-				      pm_message_t state)
++static int i2c_pnx_controller_suspend(struct device *dev)
+ {
+-	struct i2c_pnx_algo_data *alg_data = platform_get_drvdata(pdev);
++	struct i2c_pnx_algo_data *alg_data = dev_get_drvdata(dev);
+ 
+ 	clk_disable(alg_data->clk);
+ 
+ 	return 0;
+ }
+ 
+-static int i2c_pnx_controller_resume(struct platform_device *pdev)
++static int i2c_pnx_controller_resume(struct device *dev)
+ {
+-	struct i2c_pnx_algo_data *alg_data = platform_get_drvdata(pdev);
++	struct i2c_pnx_algo_data *alg_data = dev_get_drvdata(dev);
+ 
+ 	return clk_enable(alg_data->clk);
+ }
++
++static SIMPLE_DEV_PM_OPS(i2c_pnx_pm,
++			 i2c_pnx_controller_suspend, i2c_pnx_controller_resume);
++#define PNX_I2C_PM	(&i2c_pnx_pm)
+ #else
+-#define i2c_pnx_controller_suspend	NULL
+-#define i2c_pnx_controller_resume	NULL
++#define PNX_I2C_PM	NULL
+ #endif
+ 
+ static int __devinit i2c_pnx_probe(struct platform_device *pdev)
+@@ -783,11 +785,10 @@ static struct platform_driver i2c_pnx_dr
+ 		.name = "pnx-i2c",
+ 		.owner = THIS_MODULE,
+ 		.of_match_table = of_match_ptr(i2c_pnx_of_match),
++		.pm = PNX_I2C_PM,
+ 	},
+ 	.probe = i2c_pnx_probe,
+ 	.remove = __devexit_p(i2c_pnx_remove),
+-	.suspend = i2c_pnx_controller_suspend,
+-	.resume = i2c_pnx_controller_resume,
+ };
+ 
+ static int __init i2c_adap_pnx_init(void)
+
