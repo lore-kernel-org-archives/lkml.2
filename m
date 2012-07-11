@@ -1,80 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756012Ab2GKGLT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 02:11:19 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:58851 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755672Ab2GKGLS (ORCPT
+	id S1756022Ab2GKGOx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 02:14:53 -0400
+Received: from mail-yw0-f52.google.com ([209.85.213.52]:39378 "EHLO
+	mail-yw0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755672Ab2GKGOw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 02:11:18 -0400
-Date: Wed, 11 Jul 2012 08:11:14 +0200
-From: Heinz Diehl <htd@fancy-poultry.org>
-To: linux-kernel@vger.kernel.org
-Cc: Frederik Himpe <fhimpe@telenet.be>, USB list <linux-usb@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: Logitech HD Webcam C525 does not work when connected to USB 2
- port, works on USB 3
-Message-ID: <20120711061114.GA1596@fancy-poultry.org>
-References: <1341516932.4164.10.camel@piranha.localdomain>
- <Pine.LNX.4.44L0.1207051712170.13212-100000@netrider.rowland.org>
+	Wed, 11 Jul 2012 02:14:52 -0400
+X-Greylist: delayed 25463 seconds by postgrey-1.27 at vger.kernel.org; Wed, 11 Jul 2012 02:14:52 EDT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1207051712170.13212-100000@netrider.rowland.org>
-Organization: private site
-OpenPGP: id=898F89DE; url=http://www.fritha.org/htd.asc
-User-Agent: Mutt/1.5.21+59 (8fabaffc2c00) (2011-07-01)
-X-Provags-ID: V02:K0:pwvaNYRb3eTAG9xnBz3Uh65UxPRTGAOfDL0k/+vQLMs
- fhd8louN6nz88WteSufMVLQJ+cTyrYmn6AlUoWyo3FcYbMga6l
- rm4L39nLN4dw/Xqv3NxZDj7qc7SezSezZUu1xb8egCFnReDAVz
- CqCoSI4nfPrxE1ImsFA0wmai//FHmhBcl2tT9x6CiqdNNH6wig
- /iz5DYBfNAhzg0jdNXinXFt7eKz5xVGKLYL75PmZkWWtU8Qd60
- wetsxdVNFN976r2Tbe3FNJoM+8hkJ7ISUK2TMkVoNIKRJ6s6hv
- 5wUUireP+zg+KwhElh+OjrkBBjw36XvGyF+tWyuEUpIvCpbaWc
- r5zhaPb0Jwb5FX0JbiuaP3ScFhdlFuGKmbq3fhGC9
+In-Reply-To: <op.wg8cv6x53l0zgt@mpn-glaptop>
+References: <1341876923-12469-1-git-send-email-walken@google.com>
+	<1341876923-12469-6-git-send-email-walken@google.com>
+	<op.wg8cv6x53l0zgt@mpn-glaptop>
+Date: Tue, 10 Jul 2012 23:14:51 -0700
+Message-ID: <CANN689EEHe+_W=pnnvf1u+BxpvY+BK6bLNZ-0Y-eoKNS=9L+rg@mail.gmail.com>
+Subject: Re: [PATCH 05/13] rbtree: performance and correctness test
+From: Michel Lespinasse <walken@google.com>
+To: Michal Nazarewicz <mina86@mina86.com>
+Cc: aarcange@redhat.com, dwmw2@infradead.org, riel@redhat.com,
+        peterz@infradead.org, daniel.santos@pobox.com, axboe@kernel.dk,
+        ebiederm@xmission.com, linux-mm@kvack.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Jul 10, 2012 at 5:27 AM, Michal Nazarewicz <mina86@mina86.com> wrote:
+> On Tue, 10 Jul 2012 01:35:15 +0200, Michel Lespinasse <walken@google.com> wrote:
+>> +       u32 prev_key = 0;
+>> +
+>> +       for (rb = rb_first(&root); rb; rb = rb_next(rb)) {
+>> +               struct test_node *node = rb_entry(rb, struct test_node,
+>> rb);
+>> +               WARN_ON_ONCE(node->key < prev_key);
+>
+> What if for some reason we generate node with key equal zero or two keys
+> with the same value?  It may not be the case for current code, but someone
+> might change it in the future.  I think <= is safer here.
 
-I have exactly the same webcam, lsusb says "Bus 002 Device 004: ID
-046d:0826 Logitech, Inc."...
+No, it's not illegal for two nodes to have the same key; the second
+one to be inserted will just get placed after the first one. The
+rbtree library doesn't care either way as it's not even aware of the
+key values :)
 
-On 06.07.2012, Alan Stern wrote: 
-
-> On Thu, 5 Jul 2012, Frederik Himpe wrote:
-
-> > I tried setting to on again, and then this appears in the logs:
-> > Jul  5 21:21:59 piranha kernel: [ 9788.223118] usb 1-1.2: USB disconnect, device number 6
-> > Jul  5 21:22:00 piranha kernel: [ 9788.330415] usb 1-1.2: new full-speed USB device number 7 using ehci_hcd
-> > Jul  5 21:22:00 piranha kernel: [ 9788.402207] usb 1-1.2: device descriptor read/64, error -32
-> > Jul  5 21:22:00 piranha kernel: [ 9788.577706] usb 1-1.2: device descriptor read/64, error -32
-> > Jul  5 21:22:00 piranha kernel: [ 9788.753203] usb 1-1.2: new full-speed USB device number 8 using ehci_hcd
-> > Jul  5 21:22:00 piranha kernel: [ 9788.824996] usb 1-1.2: device descriptor read/64, error -32
-> > Jul  5 21:22:00 piranha kernel: [ 9789.000493] usb 1-1.2: device descriptor read/64, error -32
-[....]
-
-...and I do not have these messages at all, with or without
-autosuspend enabled...
- 
-> In the long run, it may be necessary to add a quirk entry to always
-> use a reset-resume with this device.  You can find similar entries in 
-> drivers/usb/core/quirks.c for other Logitech webcams, which makes it 
-> seem very likely that one is needed for yours.  If you want you 
-> can try adding the appropriate entry and submit it as a patch.
-
-...and it runs fine with or without the quirk, which I added for
-testing purposes. 
-
-> None of this explains why there isn't any problem when the webcam is 
-> plugged into a USB-3 port, unfortunately.
-
-All this is purely on USB-2, my machine doesn't have any USB-3 port,
-with vanilla 3.4.4 kernel. If nobody did, should I submit a patch 
-containing the quirk anyway?
-
-If I can help testing, feel free to contact me.
-
-
-
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
