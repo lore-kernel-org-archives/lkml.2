@@ -1,55 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030473Ab2GKWuq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 18:50:46 -0400
-Received: from mga06.intel.com ([134.134.136.21]:61285 "EHLO
-	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751439Ab2GKWup (ORCPT
+	id S1758421Ab2GKWx3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 18:53:29 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:33914 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752901Ab2GKWx1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 18:50:45 -0400
+	Wed, 11 Jul 2012 18:53:27 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120711154232.165cbca9.akpm@linux-foundation.org>
-References: <1341817465.4579.5.camel@ThinkPad-T420>
-	<20120711154232.165cbca9.akpm@linux-foundation.org>
-Date: Wed, 11 Jul 2012 15:50:43 -0700
-Message-ID: <CABE8wwsqyo=BPCy4xy1PAVKFWe=GqYRdYowXkQ6UZoXdtEdCZA@mail.gmail.com>
-Subject: Re: [PATCH RESEND] Fix a dead loop in async_synchronize_full()
-From: Dan Williams <dan.j.williams@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Li Zhong <zhong@linux.vnet.ibm.com>, LKML <linux-kernel@vger.kernel.org>,
-        arjan@linux.intel.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Christian Kujau <lists@nerdbynature.de>,
-        Cong Wang <xiyou.wangcong@gmail.com>
+In-Reply-To: <1340657687.36341.178.camel@localhost.localdomain>
+References: <1340222160.77018.19.camel@localhost.localdomain>
+ <1340322477.56127.2.camel@localhost.localdomain> <CAErSpo7AWQCofnTRhtMKVP3pm_BDq9v+axGpide0RbmignsV9A@mail.gmail.com>
+ <1340657687.36341.178.camel@localhost.localdomain>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 11 Jul 2012 16:53:05 -0600
+Message-ID: <CAErSpo49u=NP0MwY6AVPJJC0YqvDmo092cbV4DzTT10m4jPHSA@mail.gmail.com>
+Subject: Re: [PATCH] pci: support alignments upto 8Gb in pbus_size_mem()
+To: Nikhil P Rao <nikhil.rao@intel.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Yinghai Lu <yinghai@kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 11, 2012 at 3:42 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> The patch is fairly wordwrapped - please fix up your email client.
+On Mon, Jun 25, 2012 at 2:54 PM, Nikhil P Rao <nikhil.rao@intel.com> wrote:
+> On Sat, 2012-06-23 at 12:15 -0600, Bjorn Helgaas wrote:
+>> On Thu, Jun 21, 2012 at 5:47 PM, Nikhil P Rao <nikhil.rao@intel.com> wrote:
+>> > I ran into the "disabling BAR .." error message when
+>> > trying to use a 8Gb PCIe card on a system with a BIOS
+>> > that didnt have support for BAR size > 2Gb.
+>>
+>> So the BIOS left the 8Gb BAR unassigned, and you got the "disabling
+>> BAR ... (bad alignment)" message when Linux tried to enable it?
 >
-> More seriously, it does not apply to linux-next due to some fairly
-> significant changes which have been sitting in Dan's tree since May.
-> What's going on?
+> Yes.
 >
+>> How do we know 8Gb is the correct new limit?  Are we going to be
+>> fixing this again when we see a 16Gb or a 32Gb BAR?  Do we need a
+>> better algorithm that doesn't have a limit like this?
+>>
+>
+> The original error message seems applicable to 32bit archs. and not to
+> 64 bit archs. How about the patch below - is aligns[44] (256bytes more)
+> acceptable ?
+>
+>
+> From: Nikhil P Rao <nikhil.rao@intel.com>
+> Date: Mon, 25 Jun 2012 13:33:55 -0700
+> Subject: [PATCH] pci: fix resource size check
+>
+> Support a PCI BAR alignment of > 2Gb, the original check was
+> only applicable to 32 bit kernels,
+>
+> Signed-off-by: Nikhil P Rao <nikhil.rao@intel.com>
+> ---
+>  drivers/pci/setup-bus.c |    5 +++--
+>  1 files changed, 3 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
+> index 8fa2d4b..9f8d9ea 100644
+> --- a/drivers/pci/setup-bus.c
+> +++ b/drivers/pci/setup-bus.c
+> @@ -780,7 +780,7 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
+>  {
+>         struct pci_dev *dev;
+>         resource_size_t min_align, align, size, size0, size1;
+> -       resource_size_t aligns[12];     /* Alignments from 1Mb to 2Gb */
+> +       resource_size_t aligns[44];     /* Alignments from 1Mb to 2^63 */
+>         int order, max_order;
+>         struct resource *b_res = find_free_bus_resource(bus, type);
+>         unsigned int mem64_mask = 0;
+> @@ -819,7 +819,8 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
+>                         /* For bridges size != alignment */
+>                         align = pci_resource_alignment(dev, r);
+>                         order = __ffs(align) - 20;
+> -                       if (order > 11) {
+> +                       if ((sizeof(size_t) == 4 && order > 11) ||
+> +                                       (sizeof(size_t) == 8 && order > 43)) {
+>                                 dev_warn(&dev->dev, "disabling BAR %d: %pR "
+>                                          "(bad alignment %#llx)\n", i, r,
+>                                          (unsigned long long) align);
 
-Those changes missed the 3.5 merge window, but now that they have
-Arjan's ack they should head upstream via James for 3.6.  Right now
-they are on his pending [1] branch.
+Yinghai, what's your opinion on this?  The aligns[] array on the stack
+is currently 96 bytes and would grow to 352 with this patch, which
+does seem like quite a bit.
 
-As far as the comment:
+I do think the 2GB limit here is out-of-date.
 
-> It seems async_synchronize_full() wants to synchronize all entries in
-> all running lists(domains), so maybe we could just check the entry_count
-> to know whether all works are finished.
-
-...at first glance this is what the new async patches achieve.
-async_synchronize_full should now sync work across all domains, but if
-you can reproduce this bug it would be nice to confirm that the
-pending changes fix it.
-
---
-Dan
-
-[1]: http://git.kernel.org/?p=linux/kernel/git/jejb/scsi.git;a=shortlog;h=refs/heads/pending
+Bjorn
