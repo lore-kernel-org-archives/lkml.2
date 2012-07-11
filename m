@@ -1,78 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932239Ab2GKRsP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 13:48:15 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:56511 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754032Ab2GKRsN (ORCPT
+	id S1757085Ab2GKRvP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 13:51:15 -0400
+Received: from utopia.booyaka.com ([72.9.107.138]:53423 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756538Ab2GKRvN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 13:48:13 -0400
-Date: Wed, 11 Jul 2012 18:48:02 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Hillf Danton <dhillf@gmail.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH] mm: hugetlb: flush dcache before returning zeroed huge
- page to userspace
-Message-ID: <20120711174802.GG13498@mudshark.cambridge.arm.com>
-References: <1341412376-6272-1-git-send-email-will.deacon@arm.com>
- <20120709122523.GC4627@tiehlicka.suse.cz>
- <20120709141324.GK7315@mudshark.cambridge.arm.com>
- <alpine.LSU.2.00.1207091622470.2261@eggly.anvils>
- <20120710094513.GB9108@mudshark.cambridge.arm.com>
- <20120710104234.GI9108@mudshark.cambridge.arm.com>
+	Wed, 11 Jul 2012 13:51:13 -0400
+Date: Wed, 11 Jul 2012 11:51:12 -0600 (MDT)
+From: Paul Walmsley <paul@pwsan.com>
+To: Tarun Kanti DebBarma <tarun.kanti@ti.com>
+cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Kevin Hilman <khilman@ti.com>,
+        Rajendra Nayak <rnayak@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        "Cousson, Benoit" <b-cousson@ti.com>
+Subject: Re: [PATCH 1/2] gpio/omap: move bank->dbck initialization to
+ omap_gpio_mod_init()
+In-Reply-To: <1341997995-14020-2-git-send-email-tarun.kanti@ti.com>
+Message-ID: <alpine.DEB.2.00.1207111148400.25585@utopia.booyaka.com>
+References: <1341997995-14020-1-git-send-email-tarun.kanti@ti.com> <1341997995-14020-2-git-send-email-tarun.kanti@ti.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120710104234.GI9108@mudshark.cambridge.arm.com>
-Thread-Topic: [PATCH] mm: hugetlb: flush dcache before returning zeroed huge
- page to userspace
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 10, 2012 at 11:42:34AM +0100, Will Deacon wrote:
-> On Tue, Jul 10, 2012 at 10:45:13AM +0100, Will Deacon wrote:
-> > On Tue, Jul 10, 2012 at 12:57:14AM +0100, Hugh Dickins wrote:
-> > > If I start to grep the architectures for non-empty flush_dcache_page(),
-> > > I soon find things in arch/arm such as v4_mc_copy_user_highpage() doing
-> > > if (!test_and_set_bit(PG_dcache_clean,)) __flush_dcache_page() - where
-> > > the naming suggests that I'm right, it's the architecture's responsibility
-> > > to arrange whatever flushing is needed in its copy and clear page functions.
+On Wed, 11 Jul 2012, Tarun Kanti DebBarma wrote:
 
-[...]
+> Since the bank->dbck initialization in a one time operation there
+> is no need to keep this within gpio_debounce(). Therefore, moving
+> clk_get(bank->dbck) to omap_gpio_mod_init(). Since the value of
+> bank->dbck would be NULL at the beginning, this check has been
+> removed.
+> 
+> Signed-off-by: Tarun Kanti DebBarma <tarun.kanti@ti.com>
+> Reported-by: Paul Walmsley <paul@pwsan.com>
+> Reviewed-by: Jon Hunter <jon-hunter@ti.com>
+> Cc: Kevin Hilman <khilman@ti.com>
+> Cc: Rajendra Nayak <rnayak@ti.com>
+> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Cc: Cousson, Benoit <b-cousson@ti.com>
+> Cc: Paul Walmsley <paul@pwsan.com>
+> ---
+>  drivers/gpio/gpio-omap.c |   10 ++++------
+>  1 files changed, 4 insertions(+), 6 deletions(-)
 
-> Ok, so this is exactly the problem. The hugetlb allocator uses its own
-> pool of huge pages, so free_huge_page followed by a later alloc_huge_page
-> will give you something where the page flags of the compound head do not
-> guarantee that PG_arch_1 is clear.
+Reviewed-by: Paul Walmsley <paul@pwsan.com>
 
-Just to confirm, the following quick hack at least results in the correct
-flushing for me (on ARM):
+These drivers are maintained by Grant Likely and Linus Walleij:
 
+GPIO SUBSYSTEM
+M:      Grant Likely <grant.likely@secretlab.ca>
+M:      Linus Walleij <linus.walleij@stericsson.com>
+S:      Maintained
+T:      git git://git.secretlab.ca/git/linux-2.6.git
+F:      Documentation/gpio.txt
+F:      drivers/gpio/
+F:      include/linux/gpio*
 
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index e198831..7a7c9d3 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -1141,6 +1141,7 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
-        }
- 
-        set_page_private(page, (unsigned long)spool);
-+       clear_bit(PG_arch_1, &page->flags);
- 
-        vma_commit_reservation(h, vma, addr);
- 
+So you'll want to cc them.  They are probably also who should merge these.
 
 
-The question is whether we should tidy that up for the core code or get
-architectures to clear the bit in arch_make_huge_pte (which also seems to
-work).
-
-Will
+- Paul
