@@ -1,44 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932882Ab2GKPlK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 11:41:10 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:65223 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932837Ab2GKPlJ (ORCPT
+	id S1758151Ab2GKPsp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 11:48:45 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:36527 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755423Ab2GKPsn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 11:41:09 -0400
-From: Masanari Iida <standby24x7@gmail.com>
-To: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        marek.belisko@gmail.com
-Cc: linux-kernel@vger.kernel.org, Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH] staging: ft1000: Fix typo in ft1000_usb.c
-Date: Thu, 12 Jul 2012 00:41:44 +0900
-Message-Id: <1342021304-27728-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.7.11.1.104.ge7b44f1
+	Wed, 11 Jul 2012 11:48:43 -0400
+MIME-Version: 1.0
+In-Reply-To: <1342020647.13724.71.camel@joe2Laptop>
+References: <1342002808.810.12.camel@mop> <1342018897.13724.61.camel@joe2Laptop>
+ <CAPXgP11XnrFayb-g5HFu3wPtw8=xLfSY7HNCCbiSoehj8KsGcw@mail.gmail.com> <1342020647.13724.71.camel@joe2Laptop>
+From: Kay Sievers <kay@vrfy.org>
+Date: Wed, 11 Jul 2012 17:48:21 +0200
+Message-ID: <CAPXgP13ff+eFH_jJ+0FDX0-GkuZj3RSv7VCp3ftcsGzA412FVQ@mail.gmail.com>
+Subject: Re: pr_cat() + CATSTR(name, size)?
+To: Joe Perches <joe@perches.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling typo within debug message of ft1000_usb.c
+On Wed, Jul 11, 2012 at 5:30 PM, Joe Perches <joe@perches.com> wrote:
+> On Wed, 2012-07-11 at 17:14 +0200, Kay Sievers wrote:
+>> On Wed, Jul 11, 2012 at 5:01 PM, Joe Perches <joe@perches.com> wrote:
+> []
+>> There are _many_ cases the console lock is held, and we don't print
+>> stuff immediately out to the console, and we never ensured that in the
+>> past. There was never a guarantee that stuff ended up on the console,
+>> kmsg was always and needs to be a store+forward model.
+>
+> I'm less concerned with kmsg than you.
+> I think it's more a nicety than anything.
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- drivers/staging/ft1000/ft1000-usb/ft1000_usb.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Sure, just saying, that there is never a guarantee that stuff lands
+directly on the console  at print time, we never had that. It just
+usually gets there directly. There is trylock(console_sem), if we can
+not get that, we always leave the data in the buffer and let someone
+else push it with the next unlock, and that can be later. That
+behaviour was always the case.
 
-diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c
-index 84c38d5..75381af 100644
---- a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c
-+++ b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c
-@@ -239,7 +239,7 @@ static void ft1000_disconnect(struct usb_interface *interface)
- 			ft1000_destroy_dev(pft1000info->pFt1000Dev->net);
- 			unregister_netdev(pft1000info->pFt1000Dev->net);
- 			DEBUG
--			    ("ft1000_disconnect: network device unregisterd\n");
-+			    ("ft1000_disconnect: network device unregistered\n");
- 			free_netdev(pft1000info->pFt1000Dev->net);
- 
- 		}
--- 
-1.7.11.1.104.ge7b44f1
+>> > It would require all sites with continuation lines
+>> > be modified.  Because it requires in-situ code
+>> > modifications, I'd prefer a cookie based approach.
+>>
+>> Well, it would be mostly for the dev_printk() stuff, which should
+>> ideally never be merged with stuff that could go wrong.
+>
+> Perhaps that's ideal, but not practical.
+> printk continuations are more prevalent.
 
+We can't have everything. We can not merge the data at least, for
+integrity reasons. We can only make it *look* like it belonged
+together, like we do when we run into a race or the console is locked
+and we can not merge continuation fragments into one record.
+
+>> > I think it's more flexible, allows the cookie to be
+>> > passed into extending functions and doesn't demand
+>> > (much) extra stack.
+>> >
+>> > Something like:
+>> > https://lkml.org/lkml/2012/4/3/231
+>> > https://lkml.org/lkml/2011/11/14/349
+>>
+>> Hmm, how do we manage memory allocations here? We can get around that
+>> somehow? It's something the common printk() must really avoid.
+>
+> Well, I think the malloc costs are pretty low
+> and could devolve pretty easily when OOM.
+
+We need to avoid allocating memory in situations where we want to
+printk(), it's just not possible. That's why all the kmsg/printk can
+not really do any plain malloc. All printk memory needs to be static,
+on the stack or somehow pre-allocated.
+
+> Anyway, interesting idea, keep at it, see what
+> comes out of it.
+
+Just depends on us, I guess. :)
+
+Thanks,
+Kay
