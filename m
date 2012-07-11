@@ -1,143 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756808Ab2GKHvT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 03:51:19 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:49880 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754258Ab2GKHvR (ORCPT
+	id S932306Ab2GKHwm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 03:52:42 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:41143 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754258Ab2GKHwk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 03:51:17 -0400
-Date: Wed, 11 Jul 2012 00:49:24 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Fengguang Wu <wfg@linux.intel.com>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: rcu_dyntick and suspicious RCU usage
-Message-ID: <20120711074924.GD3819@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120709135637.GA26040@localhost>
- <20120709145724.GA27095@localhost>
- <20120710044700.GA9462@localhost>
+	Wed, 11 Jul 2012 03:52:40 -0400
+Date: Wed, 11 Jul 2012 00:52:35 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Roland Stigge <stigge@antcom.de>
+Cc: axel.lin@gmail.com, riyer@nvidia.com, michael.hennerich@analog.com,
+        grant.likely@secretlab.ca, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kevin.wells@nxp.com, srinivas.bakki@nxp.com,
+        devicetree-discuss@lists.ozlabs.org, rob.herring@calxeda.com,
+        aletes.xgr@gmail.com
+Subject: Re: [PATCH v9] input: keyboard: Add keys driver for the LPC32xx SoC
+Message-ID: <20120711075235.GA27353@core.coreip.homeip.net>
+References: <1341948910-6530-1-git-send-email-stigge@antcom.de>
+ <20120710205507.GA377@core.coreip.homeip.net>
+ <4FFD2FF0.8030000@antcom.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120710044700.GA9462@localhost>
+In-Reply-To: <4FFD2FF0.8030000@antcom.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12071107-7606-0000-0000-000001E84731
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 10, 2012 at 12:47:00PM +0800, Fengguang Wu wrote:
-> Hi Paul,
+On Wed, Jul 11, 2012 at 09:49:04AM +0200, Roland Stigge wrote:
+> On 07/10/2012 10:55 PM, Dmitry Torokhov wrote:
+> > Hi Roland,
+> > 
+> > On Tue, Jul 10, 2012 at 09:35:10PM +0200, Roland Stigge wrote:
+> >> This patch adds a driver for the key scan interface of the LPC32xx SoC
+> >>
+> > 
+> > Could of more things that I had in my patch but forgot to specifically
+> > call out:
+> > 
+> >> +
+> >> +	/* Configure the key scanner */
+> >> +	clk_prepare_enable(kscandat->clk);
+> > 
+> > This may fail so we should handle errors.
+> > 
+> >> +	writel(kscandat->deb_clks, LPC32XX_KS_DEB(kscandat->kscan_base));
+> >> +	writel(kscandat->scan_delay, LPC32XX_KS_SCAN_CTL(kscandat->kscan_base));
+> >> +	writel(LPC32XX_KSCAN_FTST_USE32K_CLK,
+> >> +	       LPC32XX_KS_FAST_TST(kscandat->kscan_base));
+> >> +	writel(kscandat->matrix_sz,
+> >> +	       LPC32XX_KS_MATRIX_DIM(kscandat->kscan_base));
+> >> +	writel(1, LPC32XX_KS_IRQ(kscandat->kscan_base));
+> >> +	clk_disable_unprepare(kscandat->clk);
+> >> +
+> >> +	error = request_irq(irq, lpc32xx_kscan_irq, 0, pdev->name, kscandat);
+> > 
+> > ...
+> > 
+> >> +
+> >> +	free_irq(platform_get_irq(pdev, 0), pdev);
+> > 
+> > You are requesting IRQ with kscandat as an argument but freeing it with
+> > 'pdev' which will fail.
+> > 
+> >> +
+> >> +	if (kscandat->input->users) {
+> >> +		/* Enable clock and clear IRQ */
+> >> +		clk_prepare_enable(kscandat->clk);
+> > 
+> > Need to handle errors here as well.
+> > 
+> > Since I am partial to my rearrangement (basically I started preferring
+> > err_<action> style of error labels as they more explanatory than out2 or
+> > fail3 style of labels), could you try this version of my patch (on top
+> > of your v9 one). Third time is a charm maybe? :)
 > 
-> Fortunately this bug is bisectable and the first bad commit is:
+> Yes, works fine!
 > 
->         commit 9b2e4f1880b789be1f24f9684f7a54b90310b5c0
->         Author: Paul E. McKenney <paul.mckenney@linaro.org>
->         Date:   Fri Sep 30 12:10:22 2011 -0700
+> Thanks!
 > 
->             rcu: Track idleness independent of idle tasks
+> Acked-by: Roland Stigge <stigge@antcom.de>
 
-OK, there is a problem in TINY_RCU's handling of dyntick-idle: it
-traces while in idle.  The confusion on my part was that in TREE_RCU,
-the nesting and dyntick-idle indication are different, while in
-TINY_RCU they are one and the same.
+Excellent, I'll fold it up into your original v9 patch and queue for
+3.6.
 
-Does the following patch help?
+Thank you for your patience.
 
-							Thanx, Paul
-
-------------------------------------------------------------------------
-
-rcu: Pull TINY_RCU dyntick-idle tracing into non-idle region
-
-Because TINY_RCU's idle detection keys directly off of the nesting
-level, rather than from a separate variable as in TREE_RCU, the
-TINY_RCU dyntick-idle tracing on transition to idle must happen
-before the change to the nesting level.  This commit therefore makes
-this change by passing the desired new value (rather than the old value)
-of the nesting level in to rcu_idle_enter_common().
-
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
-diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
-index 547b1fe..ca3741d 100644
---- a/kernel/rcutiny.c
-+++ b/kernel/rcutiny.c
-@@ -56,24 +56,26 @@ static void __call_rcu(struct rcu_head *head,
- static long long rcu_dynticks_nesting = DYNTICK_TASK_EXIT_IDLE;
- 
- /* Common code for rcu_idle_enter() and rcu_irq_exit(), see kernel/rcutree.c. */
--static void rcu_idle_enter_common(long long oldval)
-+static void rcu_idle_enter_common(long long newval)
- {
- 	if (rcu_dynticks_nesting) {
- 		RCU_TRACE(trace_rcu_dyntick("--=",
--					    oldval, rcu_dynticks_nesting));
-+					    rcu_dynticks_nesting, newval));
- 		return;
- 	}
--	RCU_TRACE(trace_rcu_dyntick("Start", oldval, rcu_dynticks_nesting));
-+	RCU_TRACE(trace_rcu_dyntick("Start", rcu_dynticks_nesting, newval));
- 	if (!is_idle_task(current)) {
- 		struct task_struct *idle = idle_task(smp_processor_id());
- 
- 		RCU_TRACE(trace_rcu_dyntick("Error on entry: not idle task",
--					    oldval, rcu_dynticks_nesting));
-+					    rcu_dynticks_nesting, newval));
- 		ftrace_dump(DUMP_ALL);
- 		WARN_ONCE(1, "Current pid: %d comm: %s / Idle pid: %d comm: %s",
- 			  current->pid, current->comm,
- 			  idle->pid, idle->comm); /* must be idle task! */
- 	}
-+	barrier();
-+	rcu_dynticks_nesting = newval;
- 	rcu_sched_qs(0); /* implies rcu_bh_qsctr_inc(0) */
- }
- 
-@@ -84,17 +86,16 @@ static void rcu_idle_enter_common(long long oldval)
- void rcu_idle_enter(void)
- {
- 	unsigned long flags;
--	long long oldval;
-+	long long newval;
- 
- 	local_irq_save(flags);
--	oldval = rcu_dynticks_nesting;
- 	WARN_ON_ONCE((rcu_dynticks_nesting & DYNTICK_TASK_NEST_MASK) == 0);
- 	if ((rcu_dynticks_nesting & DYNTICK_TASK_NEST_MASK) ==
- 	    DYNTICK_TASK_NEST_VALUE)
--		rcu_dynticks_nesting = 0;
-+		newval = 0;
- 	else
--		rcu_dynticks_nesting  -= DYNTICK_TASK_NEST_VALUE;
--	rcu_idle_enter_common(oldval);
-+		newval = rcu_dynticks_nesting - DYNTICK_TASK_NEST_VALUE;
-+	rcu_idle_enter_common(newval);
- 	local_irq_restore(flags);
- }
- EXPORT_SYMBOL_GPL(rcu_idle_enter);
-@@ -105,13 +106,12 @@ EXPORT_SYMBOL_GPL(rcu_idle_enter);
- void rcu_irq_exit(void)
- {
- 	unsigned long flags;
--	long long oldval;
-+	long long newval;
- 
- 	local_irq_save(flags);
--	oldval = rcu_dynticks_nesting;
--	rcu_dynticks_nesting--;
--	WARN_ON_ONCE(rcu_dynticks_nesting < 0);
--	rcu_idle_enter_common(oldval);
-+	newval = rcu_dynticks_nesting - 1;
-+	WARN_ON_ONCE(newval < 0);
-+	rcu_idle_enter_common(newval);
- 	local_irq_restore(flags);
- }
- 
-
+-- 
+Dmitry
