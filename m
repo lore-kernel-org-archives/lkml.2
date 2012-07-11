@@ -1,150 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758170Ab2GKPtz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 11:49:55 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:33122 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755264Ab2GKPtw (ORCPT
+	id S932903Ab2GKPxH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 11:53:07 -0400
+Received: from plainfield.sei.cmu.edu ([192.58.107.45]:50343 "EHLO
+	plainfield.sei.cmu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932734Ab2GKPxF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 11:49:52 -0400
-From: Rafal Krypa <r.krypa@samsung.com>
-To: Casey Schaufler <casey@schaufler-ca.com>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, Rafal Krypa <r.krypa@samsung.com>
-Subject: [PATCH] Smack: implement revoking all rules for a subject label
-Date: Wed, 11 Jul 2012 17:49:30 +0200
-Message-id: <1342021770-23684-1-git-send-email-r.krypa@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
-X-TM-AS-MML: No
+	Wed, 11 Jul 2012 11:53:05 -0400
+X-Greylist: delayed 773 seconds by postgrey-1.27 at vger.kernel.org; Wed, 11 Jul 2012 11:53:04 EDT
+From: "Jonathan M. Foote" <jmfoote@cert.org>
+To: Denys Vlasenko <vda.linux@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. J. Lu" <hjl.tools@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <ak@suse.de>
+CC: Oleg Nesterov <oleg@redhat.com>, Denys Vlasenko <dvlasenk@redhat.com>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>
+Date: Wed, 11 Jul 2012 11:40:01 -0400
+Subject: RE: [PATCH] Extend core dump note section to contain file names of
+ mapped files
+Thread-Topic: [PATCH] Extend core dump note section to contain file names of
+ mapped files
+Thread-Index: Ac1fUP/3xyoRDZUtR6WYCGC79yCAswAKeFlQ
+Message-ID: <A32A045574615B4FAB96C4952BA5768BB8FABF1289@EXCHANGE.sei.cmu.edu>
+References: <CAK1hOcNWo2mV2nKmVEuzKzEs7pCveFCBFWrYSrMbj4Y7M8zQ6Q@mail.gmail.com>
+In-Reply-To: <CAK1hOcNWo2mV2nKmVEuzKzEs7pCveFCBFWrYSrMbj4Y7M8zQ6Q@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add /smack/revoke-subject special file. Writing a SMACK label to this file will
-set the access to '-' for all access rules with that subject label.
+Hello all,
 
-Targeted for git://git.gitorious.org/smack-next/kernel.git
+For what it's worth several security teams that use the CERT Triage Tools have requested a feature (post-mortem analysis of core files) that will be supported by this functionality. This feature in the CERT Triage Tools would be more complete if siginfo was included in the core files as well, but this is a good start.
 
-Signed-off-by: Rafal Krypa <r.krypa@samsung.com>
----
- Documentation/security/Smack.txt |    3 ++
- security/smack/smackfs.c         |   75 ++++++++++++++++++++++++++++++++++++++
- 2 files changed, 78 insertions(+)
+Jon
 
-diff --git a/Documentation/security/Smack.txt b/Documentation/security/Smack.txt
-index a416479..e68536d 100644
---- a/Documentation/security/Smack.txt
-+++ b/Documentation/security/Smack.txt
-@@ -194,6 +194,9 @@ onlycap
- 	these capabilities are effective at for processes with any
- 	label. The value is set by writing the desired label to the
- 	file or cleared by writing "-" to the file.
-+revoke-subject
-+	Writing a Smack label here sets the access to '-' for all access
-+	rules with that subject label.
- 
- You can add access rules in /etc/smack/accesses. They take the form:
- 
-diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
-index d31e6d9..c434441 100644
---- a/security/smack/smackfs.c
-+++ b/security/smack/smackfs.c
-@@ -49,6 +49,7 @@ enum smk_inos {
- 	SMK_LOAD_SELF2	= 15,	/* load task specific rules with long labels */
- 	SMK_ACCESS2	= 16,	/* make an access check with long labels */
- 	SMK_CIPSO2	= 17,	/* load long label -> CIPSO mapping */
-+	SMK_REVOKE_SUBJ	= 18,	/* set rules with subject label to '-' */
- };
- 
- /*
-@@ -1992,6 +1993,77 @@ static const struct file_operations smk_access2_ops = {
- };
- 
- /**
-+ * smk_write_revoke_subj - write() for /smack/revoke-subject
-+ * @file: file pointer
-+ * @buf: data from user space
-+ * @count: bytes sent
-+ * @ppos: where to start - must be 0
-+ */
-+static ssize_t smk_write_revoke_subj(struct file *file, const char __user *buf,
-+				size_t count, loff_t *ppos)
-+{
-+	char *data = NULL;
-+	const char *cp = NULL;
-+	struct smack_known *skp;
-+	struct smack_rule *sp;
-+	struct list_head *rule_list;
-+	struct mutex *rule_lock;
-+	int rc = count;
-+
-+	if (*ppos != 0)
-+		return -EINVAL;
-+
-+	if (!smack_privileged(CAP_MAC_ADMIN))
-+		return -EPERM;
-+
-+	if (count == 0 || count > SMK_LONGLABEL)
-+		return -EINVAL;
-+
-+	data = kzalloc(count, GFP_KERNEL);
-+	if (data == NULL)
-+		return -ENOMEM;
-+
-+	if (copy_from_user(data, buf, count) != 0) {
-+		rc = -EFAULT;
-+		goto free_out;
-+	}
-+
-+	cp = smk_parse_smack(data, count);
-+	if (cp == NULL) {
-+		rc = -EINVAL;
-+		goto free_out;
-+	}
-+
-+	skp = smk_find_entry(cp);
-+	if (skp == NULL) {
-+		rc = -EINVAL;
-+		goto free_out;
-+	}
-+
-+	rule_list = &skp->smk_rules;
-+	rule_lock = &skp->smk_rules_lock;
-+
-+	mutex_lock(rule_lock);
-+
-+	list_for_each_entry_rcu(sp, rule_list, list)
-+		sp->smk_access = 0;
-+
-+	mutex_unlock(rule_lock);
-+
-+free_out:
-+	kfree(data);
-+	kfree(cp);
-+	return rc;
-+}
-+
-+static const struct file_operations smk_revoke_subj_ops = {
-+	.write		= smk_write_revoke_subj,
-+	.read		= simple_transaction_read,
-+	.release	= simple_transaction_release,
-+	.llseek		= generic_file_llseek,
-+};
-+
-+/**
-  * smk_fill_super - fill the /smackfs superblock
-  * @sb: the empty superblock
-  * @data: unused
-@@ -2037,6 +2109,9 @@ static int smk_fill_super(struct super_block *sb, void *data, int silent)
- 			"access2", &smk_access2_ops, S_IRUGO|S_IWUGO},
- 		[SMK_CIPSO2] = {
- 			"cipso2", &smk_cipso2_ops, S_IRUGO|S_IWUSR},
-+		[SMK_REVOKE_SUBJ] = {
-+			"revoke-subject", &smk_revoke_subj_ops,
-+			S_IRUGO|S_IWUSR},
- 		/* last one */
- 			{""}
- 	};
--- 
-1.7.10.4
+-----Original Message-----
+From: Denys Vlasenko [mailto:vda.linux@gmail.com] 
+Sent: Wednesday, July 11, 2012 6:36 AM
+To: linux-kernel@vger.kernel.org; Jonathan M. Foote; H. J. Lu; Ingo Molnar; H. Peter Anvin; Andi Kleen
+Cc: Oleg Nesterov; Denys Vlasenko; Jan Kratochvil
+Subject: [PATCH] Extend core dump note section to contain file names of mapped files
 
+Hi,
+
+Resending the patch after a while.
+Jonathan, developer of CERT Triage Tools, expressed the need to have this information, CCing him.
+
+But before looking at the attached patch, we need a ruling.
+
+In the last review it was proposed to maybe generate this information in the form of ASCII text, a-la /proc/PID/maps.
+
+This actually is a good idea, but regretfully, it come a few decades too late, the rest of core file auxiliary information is traditionally encoded in binary structures.
+
+Please, can someone with authority in this area decide whether we want to be unorthodox and use ASCII encoding for the whole thing, or not?
+
+If the decision will be to use ASCII, I will need to rework the patch.
+
+Otherwise, please take a look at attached patch which implements creation of a new note in binary format and let me know what do you think of it.
+
+Original patch and description follows
+
+* * * * * * * * * * * * * * * * * * * *
+
+While working with core dump analysis, it struck me how much PITA is caused merely by the fact that names of loaded binary and libraries are not known.
+
+gdb retrieves loaded library names by examining dynamic loader's data stored in the core dump's data segments. It uses intimate knowledge how and where dynamic loader keeps the list of loaded libraries. (Meaning that it will break if non-standard loader is used).
+
+And, as Jan explained to me, it depends on knowing where the linked list of libraries starts, which requires knowing binary which was running. IIRC there is no easy and reasonably foolproof way to determine binary's name. (Looking at argv[0] on stack is not reasonably foolproof).
+
+Which is *ridiculous*. We *know* the list of mapped files at core dump generation time.
+
+I propose to save this information in core dump, as a new note in note segment.
+
+This note has the following format:
+
+long count     // how many files are mapped
+long page_size // units for file_ofs
+array of [COUNT] elements of
+   long start
+   long end
+   long file_ofs
+followed by COUNT filenames in ASCII: "FILE1" NUL "FILE2" NUL...
+The attached patch implements this.
+
+Since list of mapped files can be large (/proc/`pidof firefox`/maps on my machine right now is 38k), I allocate the space for note via vmalloc, and also have a sanity limit of 4 megabytes.
+(Maybe we should make it smaller?)
+Oleg suggested using a linked list of smaller structures instead of using a potentially large contiguous block, and I tried it, but resulting code was significantly more ugly (for my taste).
+
+The patch is run-tested.
+
+For testing, I sent ABRT signal to a running /usr/bin/md5sum.
+
+"readelf -aW core" shows the new note as:
+
+Notes at offset 0x00000274 with length 0x00000990:
+ Owner                 Data size       Description
+ CORE                 0x00000090       NT_PRSTATUS (prstatus structure)
+ CORE                 0x0000007c       NT_PRPSINFO (prpsinfo structure)
+ CORE                 0x000000a0       NT_AUXV (auxiliary vector)
+ CORE                 0x00000168       Unknown note type: (0x46494c45)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^new note^^^^^^^^^^ In hex format:
+                                               05 00 00 00  |................|
+00000460  68 01 00 00 45 4c 49 46  46 49 4c 45 00 00 00 00  |h...ELIFCORE....|
+00000470  0b 00 00 00 00 10 00 00  00 80 17 00 00 f0 31 00  |..............1.|
+00000480  00 00 00 00 00 f0 31 00  00 00 32 00 a7 01 00 00  |......1...2.....|
+00000490  00 00 32 00 00 20 32 00  a7 01 00 00 00 20 32 00  |..2.. 2...... 2.|
+000004a0  00 30 32 00 a9 01 00 00  00 50 69 00 00 60 6b 00  |.02......Pi..`k.|
+000004b0  00 00 00 00 00 60 6b 00  00 70 6b 00 20 00 00 00  |.....`k..pk. ...|
+000004c0  00 70 6b 00 00 80 6b 00  21 00 00 00 00 80 04 08  |.pk...k.!.......|
+000004d0  00 00 05 08 00 00 00 00  00 00 05 08 00 10 05 08  |................|
+000004e0  07 00 00 00 00 10 05 08  00 20 05 08 08 00 00 00  |......... ......|
+000004f0  00 20 52 b7 00 20 72 b7  00 00 00 00 2f 6c 69 62  |. R.. r...../lib|
+00000500  2f 6c 69 62 63 2d 32 2e  31 34 2e 39 30 2e 73 6f  |/libc-2.14.90.so|
+00000510  00 2f 6c 69 62 2f 6c 69  62 63 2d 32 2e 31 34 2e  |./lib/libc-2.14.|
+00000520  39 30 2e 73 6f 00 2f 6c  69 62 2f 6c 69 62 63 2d  |90.so./lib/libc-|
+00000530  32 2e 31 34 2e 39 30 2e  73 6f 00 2f 6c 69 62 2f  |2.14.90.so./lib/|
+00000540  6c 69 62 63 2d 32 2e 31  34 2e 39 30 2e 73 6f 00  |libc-2.14.90.so.|
+00000550  2f 6c 69 62 2f 6c 64 2d  32 2e 31 34 2e 39 30 2e  |/lib/ld-2.14.90.|
+00000560  73 6f 00 2f 6c 69 62 2f  6c 64 2d 32 2e 31 34 2e  |so./lib/ld-2.14.|
+00000570  39 30 2e 73 6f 00 2f 6c  69 62 2f 6c 64 2d 32 2e  |90.so./lib/ld-2.|
+00000580  31 34 2e 39 30 2e 73 6f  00 2f 75 73 72 2f 62 69  |14.90.so./usr/bi|
+00000590  6e 2f 6d 64 35 73 75 6d  00 2f 75 73 72 2f 62 69  |n/md5sum./usr/bi|
+000005a0  6e 2f 6d 64 35 73 75 6d  00 2f 75 73 72 2f 62 69  |n/md5sum./usr/bi|
+000005b0  6e 2f 6d 64 35 73 75 6d  00 2f 75 73 72 2f 6c 69  |n/md5sum./usr/li|
+000005c0  62 2f 6c 6f 63 61 6c 65  2f 6c 6f 63 61 6c 65 2d  |b/locale/locale-|
+000005d0  61 72 63 68 69 76 65 00                           |archive.
+
+--
+vda
