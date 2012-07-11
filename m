@@ -1,51 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758363Ab2GKVzZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 17:55:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58141 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758098Ab2GKVzV (ORCPT
+	id S1030283Ab2GKVzi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 17:55:38 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:63991 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933334Ab2GKVzd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 17:55:21 -0400
-Date: Wed, 11 Jul 2012 14:55:19 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Wen Congyang <wency@cn.fujitsu.com>
-Cc: lenb@kernel.org, linux-acpi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Brown, Len" <len.brown@intel.com>
-Subject: Re: [PATCH 1/7 v2] fix memory leak when memory device is unbound
- from the module acpi_memhotplug
-Message-Id: <20120711145519.e94cd183.akpm@linux-foundation.org>
-In-Reply-To: <4FFD2F76.9000508@cn.fujitsu.com>
-References: <4FFD2F1E.10006@cn.fujitsu.com>
-	<4FFD2F76.9000508@cn.fujitsu.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 11 Jul 2012 17:55:33 -0400
+MIME-Version: 1.0
+In-Reply-To: <1341418663-24432-4-git-send-email-g.liakhovetski@gmx.de>
+References: <1341418663-24432-1-git-send-email-g.liakhovetski@gmx.de>
+	<1341418663-24432-4-git-send-email-g.liakhovetski@gmx.de>
+Date: Thu, 12 Jul 2012 06:55:32 +0900
+Message-ID: <CANqRtoRz2NF6BEEYcy_BwZ7Hm5EF9zP2Z0eoQcbxaSfUuc2i9Q@mail.gmail.com>
+Subject: Re: [PATCH 3/4] dma: sh: provide a migration path for slave drivers
+ to stop using .private
+From: Magnus Damm <magnus.damm@gmail.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Vinod Koul <vinod.koul@intel.com>, linux-sh@vger.kernel.org,
+        linux-mmc@vger.kernel.org, Chris Ball <cjb@laptop.org>,
+        linux-kernel@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Jul 2012 15:47:02 +0800
-Wen Congyang <wency@cn.fujitsu.com> wrote:
+Hi Guennadi,
 
-> To: lenb@kernel.org
+[CC Paul]
 
-I'm still not sure if that email address works?  I've been cc'ing
-len.brown@intel.com lately as well.  
+On Thu, Jul 5, 2012 at 1:17 AM, Guennadi Liakhovetski
+<g.liakhovetski@gmx.de> wrote:
+> This patch extends the sh dmaengine driver to support the preferred channel
+> selection and configuration method, instead of using the "private" field
+> from struct dma_chan. We add a standard filter function to be used by
+> slave drivers instead of implementing their own ones, and add support for
+> the DMA_SLAVE_CONFIG control operation, which must accompany the new
+> channel selection method. We still support the legacy .private channel
+> allocation method to cater for a smooth driver migration.
+>
+> Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> ---
 
-There are some pretty serious-looking bugfixes in this series.
+Thanks for your efforts on this. Something that caught my eye in this
+patch is this portion:
 
++bool shdma_chan_filter(struct dma_chan *chan, void *arg);
 
-I merged your patches into my tree to get them a bit of testing. 
-Please note that I renamed them all so their titles reflect the
-subsystem which they are patching.  Documentation/SubmittingPatches
-section 15 goes into details on this convention.
+If we would use this function in our DMA Engine slave drivers (MMCIF,
+SDHI, SCIF, FSI, SIU and so on) then wouldn't we add a strict
+dependency on this symbol provided by this particular DMA Engine
+driver implementation for the DMAC hardware (that your patch
+modifies)?
 
-Having done that rename, it becomes obvious that patches 1-6 are acpi
-memhotplug changes, but the seventh patch is a fix against core MM
-code.  I've sent that patch to Linus earlier today.
+And what do we do if we want to use the same DMA Engine slave driver
+with a different DMA Engine driver implementation?
+
+>From my point of view, there must be some better way to not have such
+tight dependencies between the DMA Engine slave consumer and the DMA
+Engine driver. Not sure what that looks like though. This symbol
+dependency is pretty far from great IMO.
+
+Thanks,
+
+/ magnus
