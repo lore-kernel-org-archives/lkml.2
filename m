@@ -1,36 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756047Ab2GKG1K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 02:27:10 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:44290 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751869Ab2GKG1I (ORCPT
+	id S1756054Ab2GKGa7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 02:30:59 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33205 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754017Ab2GKGa5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 02:27:08 -0400
-Date: Tue, 10 Jul 2012 23:27:07 -0700 (PDT)
-Message-Id: <20120710.232707.261670879145165.davem@davemloft.net>
-To: robherring2@gmail.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rob.herring@calxeda.com
-Subject: Re: [PATCH 0/4] Calxeda xgmac fixes and performance improvements
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1341879370-23385-1-git-send-email-robherring2@gmail.com>
-References: <1341879370-23385-1-git-send-email-robherring2@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.0.97 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 11 Jul 2012 02:30:57 -0400
+Date: Tue, 10 Jul 2012 23:28:58 -0700
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Colin Cross <ccross@android.com>, Tony Luck <tony.luck@intel.com>,
+        Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
+        Shuah Khan <shuahkhan@gmail.com>, arve@android.com,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Subject: Re: [PATCH resend 0/3] pstore/ram: Configurable ECC size
+Message-ID: <20120711062857.GA11927@lizard>
+References: <20120709234559.GA22203@lizard>
+ <CAGXu5jLw_r895LPg7MweU3J7QEUYMdD6gJV8hBoF-=xdF9ow2w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAGXu5jLw_r895LPg7MweU3J7QEUYMdD6gJV8hBoF-=xdF9ow2w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Herring <robherring2@gmail.com>
-Date: Mon,  9 Jul 2012 19:16:06 -0500
-
-> From: Rob Herring <rob.herring@calxeda.com>
+On Tue, Jul 10, 2012 at 01:17:48PM -0700, Kees Cook wrote:
+> On Mon, Jul 9, 2012 at 4:45 PM, Anton Vorontsov
+> <anton.vorontsov@linaro.org> wrote:
+> > Just a few patches left from the series that used to add configurable
+> > ECC size for pstore/ram backend. Most patches were merged into -next,
+> > and this is just a resend of the leftovers.
 > 
-> A few fixes and performance improvements for the Calxeda xgmac driver for
-> 3.6. It would be nice to get the 2 fixes into 3.5, but since it is a bit
-> late in the cycle they can wait.
+> Feel free to add my:
+> 
+> Acked-by: Kees Cook <keescook@chromium.org>
+> 
+> to this series. Looks good to me.
 
-All applied to net-nex, thanks.
+Thanks for looking at this, Kees!
+
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
