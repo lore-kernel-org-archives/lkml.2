@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756854Ab2GKJOM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 05:14:12 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:45440 "EHLO comal.ext.ti.com"
+	id S1755557Ab2GKJOL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 05:14:11 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:55728 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754391Ab2GKJOI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754393Ab2GKJOI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 11 Jul 2012 05:14:08 -0400
 From: Tarun Kanti DebBarma <tarun.kanti@ti.com>
 To: <linux-omap@vger.kernel.org>
@@ -13,9 +13,9 @@ CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         Kevin Hilman <khilman@ti.com>, Rajendra Nayak <rnayak@ti.com>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>,
         "Cousson, Benoit" <b-cousson@ti.com>, Paul Walmsley <paul@pwsan.com>
-Subject: [PATCH 2/2] gpio/omap: add *remove* callback in platform_driver
-Date: Wed, 11 Jul 2012 14:43:15 +0530
-Message-ID: <1341997995-14020-3-git-send-email-tarun.kanti@ti.com>
+Subject: [PATCH 1/2] gpio/omap: move bank->dbck initialization to omap_gpio_mod_init()
+Date: Wed, 11 Jul 2012 14:43:14 +0530
+Message-ID: <1341997995-14020-2-git-send-email-tarun.kanti@ti.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1341997995-14020-1-git-send-email-tarun.kanti@ti.com>
 References: <1341997995-14020-1-git-send-email-tarun.kanti@ti.com>
@@ -25,11 +25,11 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add *remove* callback so that necessary cleanup operations are
-performed when device is unregistered. The device is deleted
-from the list and associated clock handle is released by
-calling clk_put() and irq descriptor is released using the
-irq_free_desc() api.
+Since the bank->dbck initialization in a one time operation there
+is no need to keep this within gpio_debounce(). Therefore, moving
+clk_get(bank->dbck) to omap_gpio_mod_init(). Since the value of
+bank->dbck would be NULL at the beginning, this check has been
+removed.
 
 Signed-off-by: Tarun Kanti DebBarma <tarun.kanti@ti.com>
 Reported-by: Paul Walmsley <paul@pwsan.com>
@@ -40,57 +40,37 @@ Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
 Cc: Cousson, Benoit <b-cousson@ti.com>
 Cc: Paul Walmsley <paul@pwsan.com>
 ---
- drivers/gpio/gpio-omap.c |   30 ++++++++++++++++++++++++++++++
- 1 files changed, 30 insertions(+), 0 deletions(-)
+ drivers/gpio/gpio-omap.c |   10 ++++------
+ 1 files changed, 4 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/gpio/gpio-omap.c b/drivers/gpio/gpio-omap.c
-index afecdcc..08929d5 100644
+index c4ed172..afecdcc 100644
 --- a/drivers/gpio/gpio-omap.c
 +++ b/drivers/gpio/gpio-omap.c
-@@ -1140,6 +1140,35 @@ static int __devinit omap_gpio_probe(struct platform_device *pdev)
- 	return ret;
+@@ -889,12 +889,6 @@ static int gpio_debounce(struct gpio_chip *chip, unsigned offset,
+ 
+ 	bank = container_of(chip, struct gpio_bank, chip);
+ 
+-	if (!bank->dbck) {
+-		bank->dbck = clk_get(bank->dev, "dbclk");
+-		if (IS_ERR(bank->dbck))
+-			dev_err(bank->dev, "Could not get gpio dbck\n");
+-	}
+-
+ 	spin_lock_irqsave(&bank->lock, flags);
+ 	_set_gpio_debounce(bank, offset, debounce);
+ 	spin_unlock_irqrestore(&bank->lock, flags);
+@@ -966,6 +960,10 @@ static void omap_gpio_mod_init(struct gpio_bank *bank)
+ 	 /* Initialize interface clk ungated, module enabled */
+ 	if (bank->regs->ctrl)
+ 		__raw_writel(0, base + bank->regs->ctrl);
++
++	bank->dbck = clk_get(bank->dev, "dbclk");
++	if (IS_ERR(bank->dbck))
++		dev_err(bank->dev, "Could not get gpio dbck\n");
  }
  
-+/**
-+ * omap_gpio_remove - cleanup a registered gpio device
-+ * @pdev:       pointer to current gpio platform device
-+ *
-+ * Called by driver framework whenever a gpio device is unregistered.
-+ * GPIO is deleted from the list and associated clock handle freed.
-+ */
-+static int __devexit omap_gpio_remove(struct platform_device *pdev)
-+{
-+	struct device *dev = &pdev->dev;
-+	struct gpio_bank *bank;
-+	unsigned long flags;
-+	int ret = -EINVAL;
-+
-+	list_for_each_entry(bank, &omap_gpio_list, node) {
-+		spin_lock_irqsave(&bank->lock, flags);
-+		if (bank->dev == dev) {
-+			list_del(&bank->node);
-+			clk_put(bank->dbck);
-+			irq_free_desc(bank->irq_base);
-+			ret = 0;
-+			spin_unlock_irqrestore(&bank->lock, flags);
-+			break;
-+		}
-+		spin_unlock_irqrestore(&bank->lock, flags);
-+	}
-+	return ret;
-+}
-+
- #ifdef CONFIG_ARCH_OMAP2PLUS
- 
- #if defined(CONFIG_PM_RUNTIME)
-@@ -1466,6 +1495,7 @@ MODULE_DEVICE_TABLE(of, omap_gpio_match);
- 
- static struct platform_driver omap_gpio_driver = {
- 	.probe		= omap_gpio_probe,
-+	.remove = __devexit_p(omap_gpio_remove),
- 	.driver		= {
- 		.name	= "omap_gpio",
- 		.pm	= &gpio_pm_ops,
+ static __devinit void
 -- 
 1.7.0.4
 
