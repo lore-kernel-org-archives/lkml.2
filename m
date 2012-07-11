@@ -1,47 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030340Ab2GKWIH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 18:08:07 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:50177 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030280Ab2GKWIE (ORCPT
+	id S1030375Ab2GKWId (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 18:08:33 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:21691 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030280Ab2GKWIb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 18:08:04 -0400
-MIME-Version: 1.0
-In-Reply-To: <f77496c24aa05320ad8cdc81759dd16d7bbb9d65.1341925681.git.cmahapatra@ti.com>
-References: <cover.1341925681.git.cmahapatra@ti.com>
-	<f77496c24aa05320ad8cdc81759dd16d7bbb9d65.1341925681.git.cmahapatra@ti.com>
-Date: Thu, 12 Jul 2012 00:08:03 +0200
-Message-ID: <CACRpkdYZRzK4jTiQxra46KgSt8x1Vrq4GCFWyc62e303HVoZ+w@mail.gmail.com>
-Subject: Re: [PATCH 3/4] OMAP: Define TCA6424 max number of possible IRQs
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Chandrabhanu Mahapatra <cmahapatra@ti.com>,
-        Tony Lindgren <tony@atomide.com>
-Cc: grant.likely@secretlab.ca, linus.walleij@stericsson.com,
-        rob.herring@calxeda.com, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, leed.aguilar@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 11 Jul 2012 18:08:31 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-pci@vger.kernel.org,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH] PCI, pciehp: Remove not used code
+Date: Wed, 11 Jul 2012 15:08:16 -0700
+Message-Id: <1342044496-2604-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 10, 2012 at 3:36 PM, Chandrabhanu Mahapatra
-<cmahapatra@ti.com> wrote:
-> From: Leed Aguilar <leed.aguilar@ti.com>
->
-> TCA6424 being a 24 bit I2C and SMBus I/O expander has 24 available GPIO lines
-> that can be used as IRQs lines. So, the support for 24 more IRQ lines has been
-> added to the kernel.
->
-> Change-Id: I22e4fbb3a1e4c4b53ae698a9b22cdb0f4ad7f4e6
+Cc: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
-Gerrit crap, delete it.
+---
+ drivers/pci/hotplug/pciehp.h     |    4 -
+ drivers/pci/hotplug/pciehp_hpc.c |  101 ---------------------------------------
+ 2 files changed, 105 deletions(-)
 
-> Signed-off-by: Leed Aguilar <leed.aguilar@ti.com>
-> Signed-off-by: Chandrabhanu Mahapatra <cmahapatra@ti.com>
-
-I need an ACK from Tony Lindgren for this patch if I shall take it through
-the GPIO tree.
-
-Yours,
-Linus Walleij
+Index: linux-2.6/drivers/pci/hotplug/pciehp.h
+===================================================================
+--- linux-2.6.orig/drivers/pci/hotplug/pciehp.h
++++ linux-2.6/drivers/pci/hotplug/pciehp.h
+@@ -149,10 +149,6 @@ int pciehp_get_attention_status(struct s
+ int pciehp_set_attention_status(struct slot *slot, u8 status);
+ int pciehp_get_latch_status(struct slot *slot, u8 *status);
+ int pciehp_get_adapter_status(struct slot *slot, u8 *status);
+-int pciehp_get_max_link_speed(struct slot *slot, enum pci_bus_speed *speed);
+-int pciehp_get_max_link_width(struct slot *slot, enum pcie_link_width *val);
+-int pciehp_get_cur_link_speed(struct slot *slot, enum pci_bus_speed *speed);
+-int pciehp_get_cur_link_width(struct slot *slot, enum pcie_link_width *val);
+ int pciehp_query_power_fault(struct slot *slot);
+ void pciehp_green_led_on(struct slot *slot);
+ void pciehp_green_led_off(struct slot *slot);
+Index: linux-2.6/drivers/pci/hotplug/pciehp_hpc.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/hotplug/pciehp_hpc.c
++++ linux-2.6/drivers/pci/hotplug/pciehp_hpc.c
+@@ -705,107 +705,6 @@ static irqreturn_t pcie_isr(int irq, voi
+ 	return IRQ_HANDLED;
+ }
+ 
+-int pciehp_get_max_lnk_width(struct slot *slot,
+-				 enum pcie_link_width *value)
+-{
+-	struct controller *ctrl = slot->ctrl;
+-	enum pcie_link_width lnk_wdth;
+-	u32	lnk_cap;
+-	int retval = 0;
+-
+-	retval = pciehp_readl(ctrl, PCI_EXP_LNKCAP, &lnk_cap);
+-	if (retval) {
+-		ctrl_err(ctrl, "%s: Cannot read LNKCAP register\n", __func__);
+-		return retval;
+-	}
+-
+-	switch ((lnk_cap & PCI_EXP_LNKSTA_NLW) >> 4){
+-	case 0:
+-		lnk_wdth = PCIE_LNK_WIDTH_RESRV;
+-		break;
+-	case 1:
+-		lnk_wdth = PCIE_LNK_X1;
+-		break;
+-	case 2:
+-		lnk_wdth = PCIE_LNK_X2;
+-		break;
+-	case 4:
+-		lnk_wdth = PCIE_LNK_X4;
+-		break;
+-	case 8:
+-		lnk_wdth = PCIE_LNK_X8;
+-		break;
+-	case 12:
+-		lnk_wdth = PCIE_LNK_X12;
+-		break;
+-	case 16:
+-		lnk_wdth = PCIE_LNK_X16;
+-		break;
+-	case 32:
+-		lnk_wdth = PCIE_LNK_X32;
+-		break;
+-	default:
+-		lnk_wdth = PCIE_LNK_WIDTH_UNKNOWN;
+-		break;
+-	}
+-
+-	*value = lnk_wdth;
+-	ctrl_dbg(ctrl, "Max link width = %d\n", lnk_wdth);
+-
+-	return retval;
+-}
+-
+-int pciehp_get_cur_lnk_width(struct slot *slot,
+-				 enum pcie_link_width *value)
+-{
+-	struct controller *ctrl = slot->ctrl;
+-	enum pcie_link_width lnk_wdth = PCIE_LNK_WIDTH_UNKNOWN;
+-	int retval = 0;
+-	u16 lnk_status;
+-
+-	retval = pciehp_readw(ctrl, PCI_EXP_LNKSTA, &lnk_status);
+-	if (retval) {
+-		ctrl_err(ctrl, "%s: Cannot read LNKSTATUS register\n",
+-			 __func__);
+-		return retval;
+-	}
+-
+-	switch ((lnk_status & PCI_EXP_LNKSTA_NLW) >> 4){
+-	case 0:
+-		lnk_wdth = PCIE_LNK_WIDTH_RESRV;
+-		break;
+-	case 1:
+-		lnk_wdth = PCIE_LNK_X1;
+-		break;
+-	case 2:
+-		lnk_wdth = PCIE_LNK_X2;
+-		break;
+-	case 4:
+-		lnk_wdth = PCIE_LNK_X4;
+-		break;
+-	case 8:
+-		lnk_wdth = PCIE_LNK_X8;
+-		break;
+-	case 12:
+-		lnk_wdth = PCIE_LNK_X12;
+-		break;
+-	case 16:
+-		lnk_wdth = PCIE_LNK_X16;
+-		break;
+-	case 32:
+-		lnk_wdth = PCIE_LNK_X32;
+-		break;
+-	default:
+-		lnk_wdth = PCIE_LNK_WIDTH_UNKNOWN;
+-		break;
+-	}
+-
+-	*value = lnk_wdth;
+-	ctrl_dbg(ctrl, "Current link width = %d\n", lnk_wdth);
+-
+-	return retval;
+-}
+-
+ int pcie_enable_notification(struct controller *ctrl)
+ {
+ 	u16 cmd, mask;
