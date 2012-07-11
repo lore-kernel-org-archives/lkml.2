@@ -1,102 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757562Ab2GKM4J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 08:56:09 -0400
-Received: from mga11.intel.com ([192.55.52.93]:35058 "EHLO mga11.intel.com"
+	id S932482Ab2GKNEE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 09:04:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57379 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753901Ab2GKM4H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 08:56:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="175994494"
-Date: Wed, 11 Jul 2012 20:55:59 +0800
-From: Fengguang Wu <wfg@linux.intel.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: rcu_dyntick and suspicious RCU usage
-Message-ID: <20120711125559.GA27383@localhost>
-References: <20120709135637.GA26040@localhost>
- <20120709145724.GA27095@localhost>
- <20120710044700.GA9462@localhost>
- <20120711074924.GD3819@linux.vnet.ibm.com>
- <20120711123616.GA27086@localhost>
+	id S1754701Ab2GKNEC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 09:04:02 -0400
+Date: Wed, 11 Jul 2012 09:03:56 -0400
+From: Dave Jones <davej@redhat.com>
+To: netdev@vger.kernel.org
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: 3.5-rc6: kernel BUG at kernel/timer.c:711!
+Message-ID: <20120711130356.GA3936@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>, netdev@vger.kernel.org,
+	Linux Kernel <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120711123616.GA27086@localhost>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 11, 2012 at 08:36:16PM +0800, Fengguang Wu wrote:
-> On Wed, Jul 11, 2012 at 12:49:24AM -0700, Paul E. McKenney wrote:
-> > On Tue, Jul 10, 2012 at 12:47:00PM +0800, Fengguang Wu wrote:
-> > > Hi Paul,
-> > > 
-> > > Fortunately this bug is bisectable and the first bad commit is:
-> > > 
-> > >         commit 9b2e4f1880b789be1f24f9684f7a54b90310b5c0
-> > >         Author: Paul E. McKenney <paul.mckenney@linaro.org>
-> > >         Date:   Fri Sep 30 12:10:22 2011 -0700
-> > > 
-> > >             rcu: Track idleness independent of idle tasks
-> > 
-> > OK, there is a problem in TINY_RCU's handling of dyntick-idle: it
-> > traces while in idle.  The confusion on my part was that in TREE_RCU,
-> > the nesting and dyntick-idle indication are different, while in
-> > TINY_RCU they are one and the same.
-> > 
-> > Does the following patch help?
-> 
-> Not exactly, but the error message is now changed to:
+[34323.844970] ------------[ cut here ]------------
+[34323.845555] kernel BUG at kernel/timer.c:711!
+[34323.846110] invalid opcode: 0000 [#1] PREEMPT SMP 
+[34323.846657] CPU 6 
+[34323.846670] Modules linked in:
+[34323.853968]  ebtables
+[34323.866941]  xt_cpu
+[34323.890355]  msdos
+[34323.920927]  ppp_synctty
+[34323.959787]  raid6_pq
+[34323.964221]  raid10 shpchp fakephp aer_inject ptp pps_core target_core_file target_core_iblock target_core_pscsi tcm_loop target_core_mod vga16fb sysimgblt fb_sys_fops syscopyarea vgastate output platform_lcd lcd sysfillrect n_r3964 n_gsm nozomi jsm serio_raw altera_ps2 input_polldev sparse_keymap uinput fuse ipt_ULOG nfnetlink tun binfmt_misc sctp libcrc32c caif_socket caif phonet bluetooth rfkill can llc2 pppoe pppox ppp_generic slhc irda crc_ccitt rds af_key decnet rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables kvm_intel kvm crc32c_intel ghash_clmulni_intel microcode pcspkr usb_debug i2c_i801 e1000e nfsd nfs_acl auth_rpcgss lockd sunrpc i915 video i2c_algo_bit drm_kms_helper drm i2c_core [last unloaded: scsi_wait_scan]
+[34323.997915] 
+[34323.999802] Pid: 15419, comm: trinity-child6 Not tainted 3.5.0-rc6+ #102
+[34324.004383] RIP: 0010:[<ffffffff8107de30>]  [<ffffffff8107de30>] mod_timer+0x4a0/0x4c0
+[34324.006791] RSP: 0018:ffff88004567be08  EFLAGS: 00010246
+[34324.008623] RAX: 0000000000000000 RBX: ffff88010eb916b0 RCX: 000000000000000b
+[34324.010443] RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffff88004567be10
+[34324.012731] RBP: ffff88004567be48 R08: 0000000000000000 R09: 0000000000000000
+[34324.014511] R10: 0000000000000001 R11: 0000000000000000 R12: 00000001003f0800
+[34324.016552] R13: 00000001003f0b71 R14: ffff880123269600 R15: 00000000ffffff01
+[34324.018297] FS:  00007fc0dc317740(0000) GS:ffff880148800000(0000) knlGS:0000000000000000
+[34324.020111] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[34324.021834] CR2: 00007fc0da305000 CR3: 000000001bad8000 CR4: 00000000001407e0
+[34324.023532] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[34324.025221] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[34324.026874] Process trinity-child6 (pid: 15419, threadinfo ffff88004567a000, task ffff88002ee58000)
+[34324.028515] Stack:
+[34324.030127]  ffffffff8154108d 0000000000000b04 ffff88004567be28 ffff88010eb91290
+[34324.031914]  0000000000000009 0000000000000004 ffff880123269600 00000000ffffff01
+[34324.034029]  ffff88004567be68 ffffffff81540d1c ffffffff8154518c ffff88010eb91290
+[34324.036201] Call Trace:
+[34324.037779]  [<ffffffff8154108d>] ? lock_sock_nested+0x8d/0xa0
+[34324.039370]  [<ffffffff81540d1c>] sk_reset_timer+0x1c/0x30
+[34324.040921]  [<ffffffff8154518c>] ? sock_setsockopt+0x8c/0x950
+[34324.042454]  [<ffffffff8159d350>] inet_csk_reset_keepalive_timer+0x20/0x30
+[34324.043950]  [<ffffffff815b491d>] tcp_set_keepalive+0x3d/0x50
+[34324.045483]  [<ffffffff81545a13>] sock_setsockopt+0x913/0x950
+[34324.046946]  [<ffffffff811d5b0a>] ? fget_light+0x3ca/0x500
+[34324.048379]  [<ffffffff81696b19>] ? sysret_check+0x22/0x5d
+[34324.050103]  [<ffffffff8153f536>] sys_setsockopt+0xc6/0xe0
+[34324.051593]  [<ffffffff81696aed>] system_call_fastpath+0x1a/0x1f
+[34324.052966] Code: 4d ff ff ff 48 c7 c7 60 10 c3 81 e8 7b 6e 05 00 85 c0 0f 85 b8 fd ff ff eb 93 48 8b 75 08 48 89 df e8 85 f0 ff ff e9 df fb ff ff <0f> 0b 4d 89 f5 e9 ad fc ff ff 66 0f 1f 44 00 00 e8 c6 38 60 00 
+[34324.057257] RIP  [<ffffffff8107de30>] mod_timer+0x4a0/0x4c0
+[34324.059070]  RSP <ffff88004567be08>
+[34324.062014] ---[ end trace fedc8673629f8303 ]---
 
-Then I think it may help to test the linux-next tree that contains
-latest RCU fixes. And it somehow helped. There are no warnings in
-the linux-next tree 1 or 2 days ago; there is a maybe unrelated warning
-in today's linux-next tree.
+That's...
 
-[    0.013241] Performance Events: 
-[    0.014222] ------------[ cut here ]------------
-[    0.014975] WARNING: at /c/wfg/linux/kernel/workqueue.c:1217 worker_enter_idle+0x2fa/0x37c()
-[    0.016000] Hardware name: Bochs
-[    0.016000] Modules linked in:
-[    0.016000] Pid: 1, comm: swapper Not tainted 3.5.0-rc6-next-20120710+ #58
-[    0.016000] Call Trace:
-[    0.016000]  [<c10374bc>] warn_slowpath_common+0xfc/0x13b
-[    0.016000]  [<c106530f>] ? worker_enter_idle+0x2fa/0x37c
-[    0.016000]  [<c106530f>] ? worker_enter_idle+0x2fa/0x37c
-[    0.016000]  [<c1037539>] warn_slowpath_null+0x3e/0x4e
-[    0.016000]  [<c106530f>] worker_enter_idle+0x2fa/0x37c
-[    0.016000]  [<c143d177>] ? _raw_spin_lock_irq+0xc3/0xe5
-[    0.016000]  [<c10653bb>] start_worker+0x2a/0x51
-[    0.016000]  [<c174ec11>] init_workqueues+0x29f/0x656
-[    0.016000]  [<c174e972>] ? usermodehelper_init+0xac/0xac
-[    0.016000]  [<c1001145>] do_one_initcall+0xf7/0x272
-[    0.016000]  [<c1124cb6>] ? trace_preempt_on+0x1c/0x7c
-[    0.016000]  [<c173d60e>] kernel_init+0x1a4/0x4da
-[    0.016000]  [<c173d46a>] ? start_kernel+0x8ff/0x8ff
-[    0.016000]  [<c144a942>] kernel_thread_helper+0x6/0x10
-[    0.016000] ---[ end trace 50864a5de9c2f446 ]---
-[    0.020353] Testing tracer nop: PASSED
+	BUG_ON(!timer->function);
 
-Both trees freeze after this point:
-
-modprobe: FATAL: Could not load /lib/modules/3.5.0-rc6-next-20120710+/modules.dep: No such file or directory
-^M
-modprobe: FATAL: Could not load /lib/modules/3.5.0-rc6-next-20120710+/modules.dep: No such file or directory
-^M
-[   31.223314] CPA self-test:
-[   31.224750]  4k 3069 large 61 gb 0 x 3130[c0000000-cfffc000] miss 0
-[   31.239798]  4k 65533 large 0 gb 0 x 65533[c0000000-cfffc000] miss 0
-[   31.249441]  4k 65533 large 0 gb 0 x 65533[c0000000-cfffc000] miss 0
-[   31.250402] ok.
-
-So I'd better to base the test on one of your RCU branches..
-Which branch would your recommend?
-
-Thanks,
-Fengguang
