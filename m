@@ -1,122 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754848Ab2GKCGm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 22:06:42 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:46385 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754606Ab2GKCGl (ORCPT
+	id S1754659Ab2GKCJM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 22:09:12 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:43423 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753991Ab2GKCJK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 22:06:41 -0400
-Message-ID: <1341972394.25495.3.camel@phoenix>
-Subject: [PATCH] mfd: Remove unneeded io_mutex from struct twl6040
-From: Axel Lin <axel.lin@gmail.com>
-To: SamuelOrtiz <sameo@linux.intel.com>
-Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Misael Lopez Cruz <misael.lopez@ti.com>, linux-kernel@vger.kernel.org
-Date: Wed, 11 Jul 2012 10:06:34 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 10 Jul 2012 22:09:10 -0400
+Date: Wed, 11 Jul 2012 10:09:02 +0800
+From: Ram Pai <linuxram@us.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Octavian Purdila <octavian.purdila@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        Ram Pai <linuxram@us.ibm.com>, Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: [PATCH] resource: make sure requested range intersects root range
+Message-ID: <20120711020902.GC13885@ram-ThinkPad-T61>
+Reply-To: Ram Pai <linuxram@us.ibm.com>
+References: <1341057657-7823-1-git-send-email-octavian.purdila@intel.com>
+ <20120710143348.d977da44.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120710143348.d977da44.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12071102-5518-0000-0000-000005EE9037
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current code has been converted to use regmap APIs, the io_mutex is not needed.
-Thus remove the io_mutex.
+On Tue, Jul 10, 2012 at 02:33:48PM -0700, Andrew Morton wrote:
+> On Sat, 30 Jun 2012 15:00:57 +0300
+> Octavian Purdila <octavian.purdila@intel.com> wrote:
+> 
+> > When the requested and root ranges do not intersect the logic in
+> > __reserve_region_with_split will cause an infinite recursion which
+> > will overflow the stack as seen in the warning bellow.
+> > 
+> > This particular stack overflow was caused by requesting the
+> > (100000000-107ffffff) range while the root range was (0-ffffffff). In
+> > this case __request_resource would return the whole root range as
+> > conflict range (i.e. 0-ffffffff). Then, the logic in
+> > __reserve_region_with_split would continue the recursion requesting
+> > the new range as (conflict->end+1, end) which incidentally in this
+> > case equals the originally requested range.
+> > 
+> > This patch aborts looking for a usable range when the requested one is
+> > completely outside the root range to avoid the infinite recursion, and
+> > since this indicates a problem in the layers above, it also prints an
+> > error message indicating the requested and root range in order to make
+> > the problem more easily traceable.
+> 
+> I think we should also emit a stack trace so the faulty caller can be
+> pinpointed.
+> 
+> > ...
+> >
+> > --- a/kernel/resource.c
+> > +++ b/kernel/resource.c
+> > @@ -789,7 +789,13 @@ void __init reserve_region_with_split(struct resource *root,
+> >  		const char *name)
+> >  {
+> >  	write_lock(&resource_lock);
+> > -	__reserve_region_with_split(root, start, end, name);
+> > +	if (start > root->end || end < root->start)
+> > +		pr_err("Requested range (0x%llx-0x%llx) not in root range (0x%llx-0x%llx)\n",
+> > +		       (unsigned long long)start, (unsigned long long)end,
+> > +		       (unsigned long long)root->start,
+> > +		       (unsigned long long)root->end);
+> > +	else
+> > +		__reserve_region_with_split(root, start, end, name);
+> >  	write_unlock(&resource_lock);
+> >  }
+> 
+> The fancy way of doing that is
+> 
+> 	if (!WARN(start > root->end || end < root->start),
+> 		  "Requested range (0x%llx-0x%llx) not in root range (0x%llx-0x%llx)\n",
+> 		       (unsigned long long)start, (unsigned long long)end,
+> 		       (unsigned long long)root->start,
+> 		       (unsigned long long)root->end)
+> 		__reserve_region_with_split(root, start, end, name);
+> 
+> but that's quite the eyesore.  How about doing it the simple way?
+> 
+> --- a/kernel/resource.c~resource-make-sure-requested-range-intersects-root-range-fix
+> +++ a/kernel/resource.c
+> @@ -792,13 +792,15 @@ void __init reserve_region_with_split(st
+>  		const char *name)
+>  {
+>  	write_lock(&resource_lock);
+> -	if (start > root->end || end < root->start)
+> +	if (start > root->end || end < root->start) {
+>  		pr_err("Requested range (0x%llx-0x%llx) not in root range (0x%llx-0x%llx)\n",
+>  		       (unsigned long long)start, (unsigned long long)end,
+>  		       (unsigned long long)root->start,
+>  		       (unsigned long long)root->end);
+> -	else
+> +		dump_stack();
+> +	} else {
+>  		__reserve_region_with_split(root, start, end, name);
+> +	}
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/mfd/twl6040-core.c  |   23 +++--------------------
- include/linux/mfd/twl6040.h |    1 -
- 2 files changed, 3 insertions(+), 21 deletions(-)
+Wait.. I am not sure this will fix the problem entirely. The above check
+will handle the case where the range requested is entirey out of the
+root's range.  But if the requested range overlapps that of the root
+range, we will still call __reserve_region_with_split() and end up with 
+a recursion if there is a overflow. Wont we?
 
-diff --git a/drivers/mfd/twl6040-core.c b/drivers/mfd/twl6040-core.c
-index 4ded9e7..5f620ae 100644
---- a/drivers/mfd/twl6040-core.c
-+++ b/drivers/mfd/twl6040-core.c
-@@ -64,19 +64,15 @@ int twl6040_reg_read(struct twl6040 *twl6040, unsigned int reg)
- 	int ret;
- 	unsigned int val;
- 
--	mutex_lock(&twl6040->io_mutex);
- 	/* Vibra control registers from cache */
- 	if (unlikely(reg == TWL6040_REG_VIBCTLL ||
- 		     reg == TWL6040_REG_VIBCTLR)) {
- 		val = twl6040->vibra_ctrl_cache[VIBRACTRL_MEMBER(reg)];
- 	} else {
- 		ret = regmap_read(twl6040->regmap, reg, &val);
--		if (ret < 0) {
--			mutex_unlock(&twl6040->io_mutex);
-+		if (ret < 0)
- 			return ret;
--		}
- 	}
--	mutex_unlock(&twl6040->io_mutex);
- 
- 	return val;
- }
-@@ -86,12 +82,10 @@ int twl6040_reg_write(struct twl6040 *twl6040, unsigned int reg, u8 val)
- {
- 	int ret;
- 
--	mutex_lock(&twl6040->io_mutex);
- 	ret = regmap_write(twl6040->regmap, reg, val);
- 	/* Cache the vibra control registers */
- 	if (reg == TWL6040_REG_VIBCTLL || reg == TWL6040_REG_VIBCTLR)
- 		twl6040->vibra_ctrl_cache[VIBRACTRL_MEMBER(reg)] = val;
--	mutex_unlock(&twl6040->io_mutex);
- 
- 	return ret;
- }
-@@ -99,23 +93,13 @@ EXPORT_SYMBOL(twl6040_reg_write);
- 
- int twl6040_set_bits(struct twl6040 *twl6040, unsigned int reg, u8 mask)
- {
--	int ret;
--
--	mutex_lock(&twl6040->io_mutex);
--	ret = regmap_update_bits(twl6040->regmap, reg, mask, mask);
--	mutex_unlock(&twl6040->io_mutex);
--	return ret;
-+	return regmap_update_bits(twl6040->regmap, reg, mask, mask);
- }
- EXPORT_SYMBOL(twl6040_set_bits);
- 
- int twl6040_clear_bits(struct twl6040 *twl6040, unsigned int reg, u8 mask)
- {
--	int ret;
--
--	mutex_lock(&twl6040->io_mutex);
--	ret = regmap_update_bits(twl6040->regmap, reg, mask, 0);
--	mutex_unlock(&twl6040->io_mutex);
--	return ret;
-+	return regmap_update_bits(twl6040->regmap, reg, mask, 0);
- }
- EXPORT_SYMBOL(twl6040_clear_bits);
- 
-@@ -573,7 +557,6 @@ static int __devinit twl6040_probe(struct i2c_client *client,
- 	twl6040->irq = client->irq;
- 
- 	mutex_init(&twl6040->mutex);
--	mutex_init(&twl6040->io_mutex);
- 	init_completion(&twl6040->ready);
- 
- 	twl6040->rev = twl6040_reg_read(twl6040, TWL6040_REG_ASICREV);
-diff --git a/include/linux/mfd/twl6040.h b/include/linux/mfd/twl6040.h
-index 6659487..dcc0e12 100644
---- a/include/linux/mfd/twl6040.h
-+++ b/include/linux/mfd/twl6040.h
-@@ -206,7 +206,6 @@ struct twl6040 {
- 	struct regmap *regmap;
- 	struct regulator_bulk_data supplies[2]; /* supplies for vio, v2v1 */
- 	struct mutex mutex;
--	struct mutex io_mutex;
- 	struct mutex irq_mutex;
- 	struct mfd_cell cells[TWL6040_CELLS];
- 	struct completion ready;
+
+>  	write_unlock(&resource_lock);
+>  }
+> 
+RP
+
 -- 
-1.7.9.5
-
-
+Ram Pai
 
