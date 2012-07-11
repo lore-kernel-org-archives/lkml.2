@@ -1,65 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757438Ab2GKL6i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 07:58:38 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:43667 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753659Ab2GKL6g (ORCPT
+	id S1757415Ab2GKMGZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 08:06:25 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:33658 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754063Ab2GKMGY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 07:58:36 -0400
-Date: Wed, 11 Jul 2012 12:57:55 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "ksummit-2012-discuss@lists.linux-foundation.org" 
-	<ksummit-2012-discuss@lists.linux-foundation.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Olof Johansson <olof@lixom.net>, Will Deacon <Will.Deacon@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [Ksummit-2012-discuss] ARM mini-summit
-Message-ID: <20120711115755.GF22437@arm.com>
-References: <1341994155.3522.16.camel@dabdike.int.hansenpartnership.com>
- <201207111128.29924.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201207111128.29924.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 11 Jul 2012 08:06:24 -0400
+X-AuditID: cbfee61b-b7f566d000005c8a-3f-4ffd6c3f3138
+From: Sangbeom Kim <sbkim73@samsung.com>
+To: sameo@linux.intel.com,
+        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>
+Cc: "'Liam Girdwood'" <lrg@ti.com>, linux-kernel@vger.kernel.org,
+        sbkim01@gmail.com
+Subject: [PATCH V3 0/7] Initial release of Samsung S2MPS11 pmic driver
+Date: Wed, 11 Jul 2012 21:06:24 +0900
+Message-id: <012801cd5f5d$977580f0$c66082d0$@com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac1fXZdF3pLgM6caQYKBFji49i7NkQ==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMLMWRmVeSWpSXmKPExsVy+t9jQV37nL/+Bg8b2C0u75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfG4RkPGAuusVdce9bL3sA4l62LkZNDQsBE4t2qXawQtpjEhXvr
+	geJcHEIC0xkl7l5pYoRw5jJJ/F/7iBGkik1AQ2Ll7rdg3SICvhK/p21m6mLk4GAWCJbYeloP
+	JCws4CYx+cljsKEsAqoSRw7vAGvlFTCU2Nb2mgnCFpT4MfkeC4jNLKAlsX7ncSYIW15i85q3
+	zCAjJQTUJR791QUxRQT0JM7dTYSoEJHY9+Id4wRGgVlIBs1CMmgWkkGzkLQsYGRZxSiaWpBc
+	UJyUnmukV5yYW1yal66XnJ+7iREclM+kdzCuarA4xCjAwajEw3sg66+/EGtiWXFl7iFGCQ5m
+	JRHeGh+gEG9KYmVValF+fFFpTmrxIUZpDhYlcV4T76/+QgLpiSWp2ampBalFMFkmDk6pBkbG
+	/f+WBgVpP5WOr8to/l4aHd69tIPreuwpvmnHr21JEdv/Rz1f0kFty6HUmGebF+r/F79XbxF4
+	Zn9f0bvCgusqojObdm/NnrukR9Cw9Ou+27WOQmkRrWodU3UNJnL0RG7enacdPf3mrNcPvkS9
+	WXTg3MOfc1L0rK4V/n7812uRWYfP3aLw2ZxKLMUZiYZazEXFiQBkI3+yRgIAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 11, 2012 at 12:28:29PM +0100, Arnd Bergmann wrote:
-> On Wednesday 11 July 2012, James Bottomley wrote:
-> > Hi All,
-> > 
-> > We have set aside the second day of the kernel summit (Tuesday 28
-> > August) as mini-summit day.  So far we have only the PCI mini summit on
-> > this day, so if you can think of other topics, please send them to the
-> > kernel summit discuss list:
-> > 
-> > ksummit-2012-discuss@lists.linux-foundation.org
-> > 
-> > Looking at the available rooms, we think we can run about four or five
-> > mini summits.
-> > 
-> > As an added incentive, mini summit organisers get to pick who they
-> > invite and all the people they pick will get an automatic invitation to
-> > the third day of the kernel summit (but not the core first day) and the
-> > evening events.
-> 
-> There is a lot of interest in having another ARM mini-summit, as we had last
-> year. Previously, Grant Likely organized this with Olof and me, but right now
-> Grant is in an extended offline period and Olof is currently on vacation
-> as well. Will Deacon already contacted me and he is interested in helping
-> out with organizing the mini-summit, so the two of us could be the primary
-> contacts, with Grant and Olof joining in as time permits.
-> 
-> I'm planning to send out an initial email to potential participants today
-> or tomorrow to get an idea of who would be joining.
+The S2MPS11 is comprised of high efficient Buck converters,
+various LDOs, and an RTC and tightly coupled with Multi Core Samsung 
+Application Processors, which is used in a wide variety of mobile applications
+such as smart phones and tablet PCs.
+S2MPS11 provide 10 high efficiency buck converters and 38 LDO regulators.
+Especially, Buck2 can support 7.0A current capacity for high performance
+samsung application processor.
+Most of S2MPS11 feature are similar to S5M series.
+and Instead of using s5m prefix, Samsung decide to use s2m prefix.
+So, I try to make common mfd driver for S2M and S5M series.
+Most of s5m prefix is changed into sec prefix.
 
-I'm definitely interested in attending this.
+This patch is based on the samuel's mfd/for-next branch.
 
--- 
-Catalin
+Changed since V2:
+1. Apply regmap standard api in s2mps11 regulator driver
+2. To avoid build breakage, squash some patches
+
+Changes since V1:
+1. Replace list_voltage with standard framework
+2. Apply regmap_irq
+3. Minor changes.
+
+Thanks,
+Sangbeom.
+
