@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754673Ab2GKFCU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 01:02:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5201 "EHLO mx1.redhat.com"
+	id S1754874Ab2GKFCy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 01:02:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22936 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753136Ab2GKFCQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 01:02:16 -0400
-Date: Wed, 11 Jul 2012 14:02:13 +0900 (JST)
-Message-Id: <20120711.140213.1311656548405365501.yamato@redhat.com>
+	id S1751497Ab2GKFCx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 01:02:53 -0400
+Date: Wed, 11 Jul 2012 14:02:49 +0900 (JST)
+Message-Id: <20120711.140249.2140295207701429925.yamato@redhat.com>
 To: andrei.emeltchenko.news@gmail.com
 Cc: linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org
-Subject: [PATCH v3 3/8] bluetooth: Added /proc/net/cmtp via bt_procfs_init()
+Subject: [PATCH v3 4/8] bluetooth: Added /proc/net/hci via bt_procfs_init()
 From: Masatake YAMATO <yamato@redhat.com>
 In-Reply-To: <20120711.135831.1712662939552441872.yamato@redhat.com>
 References: <20120629.020253.963694178693689545.yamato@redhat.com>
@@ -26,74 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Masatake YAMATO <yamato@redhat.com>
 ---
- net/bluetooth/cmtp/sock.c |   23 +++++++++++++++++++++--
- 1 file changed, 21 insertions(+), 2 deletions(-)
+ net/bluetooth/hci_sock.c |   13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
 
-diff --git a/net/bluetooth/cmtp/sock.c b/net/bluetooth/cmtp/sock.c
-index 311668d..d5cacef 100644
---- a/net/bluetooth/cmtp/sock.c
-+++ b/net/bluetooth/cmtp/sock.c
-@@ -42,6 +42,10 @@
- 
- #include "cmtp.h"
- 
-+static struct bt_sock_list cmtp_sk_list = {
-+	.lock = __RW_LOCK_UNLOCKED(cmtp_sk_list.lock)
-+};
-+
- static int cmtp_sock_release(struct socket *sock)
- {
- 	struct sock *sk = sock->sk;
-@@ -51,6 +55,8 @@ static int cmtp_sock_release(struct socket *sock)
- 	if (!sk)
- 		return 0;
- 
-+	bt_sock_unlink(&cmtp_sk_list, sk);
-+
- 	sock_orphan(sk);
- 	sock_put(sk);
- 
-@@ -214,6 +220,8 @@ static int cmtp_sock_create(struct net *net, struct socket *sock, int protocol,
- 	sk->sk_protocol = protocol;
- 	sk->sk_state    = BT_OPEN;
- 
-+	bt_sock_link(&cmtp_sk_list, sk);
-+
- 	return 0;
- }
- 
-@@ -232,19 +240,30 @@ int cmtp_init_sockets(void)
+diff --git a/net/bluetooth/hci_sock.c b/net/bluetooth/hci_sock.c
+index a7f04de..7c3d6c7 100644
+--- a/net/bluetooth/hci_sock.c
++++ b/net/bluetooth/hci_sock.c
+@@ -1100,21 +1100,30 @@ int __init hci_sock_init(void)
  		return err;
  
- 	err = bt_sock_register(BTPROTO_CMTP, &cmtp_sock_family_ops);
+ 	err = bt_sock_register(BTPROTO_HCI, &hci_sock_family_ops);
 -	if (err < 0)
 +	if (err < 0) {
-+		BT_ERR("Can't register CMTP socket");
++		BT_ERR("HCI socket registration failed");
  		goto error;
 +	}
 +
-+	err = bt_procfs_init(THIS_MODULE, &init_net, "cmtp", &cmtp_sk_list, NULL);
++	err = bt_procfs_init(THIS_MODULE, &init_net, "hci", &hci_sk_list, NULL);
 +	if (err < 0) {
-+		BT_ERR("Failed to create CMTP proc file");
-+		bt_sock_unregister(BTPROTO_HIDP);
++		BT_ERR("Failed to create HCI proc file");
++		bt_sock_unregister(BTPROTO_HCI);
 +		goto error;
 +	}
-+
-+	BT_INFO("CMTP socket layer initialized");
+ 
+ 	BT_INFO("HCI socket layer initialized");
  
  	return 0;
  
  error:
--	BT_ERR("Can't register CMTP socket");
- 	proto_unregister(&cmtp_proto);
+-	BT_ERR("HCI socket registration failed");
+ 	proto_unregister(&hci_sk_proto);
  	return err;
  }
  
- void cmtp_cleanup_sockets(void)
+ void hci_sock_cleanup(void)
  {
-+	bt_procfs_cleanup(&init_net, "cmtp");
- 	if (bt_sock_unregister(BTPROTO_CMTP) < 0)
- 		BT_ERR("Can't unregister CMTP socket");
++	bt_procfs_cleanup(&init_net, "hci");
+ 	if (bt_sock_unregister(BTPROTO_HCI) < 0)
+ 		BT_ERR("HCI socket unregistration failed");
  
 -- 
 1.7.10.4
