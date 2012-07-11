@@ -1,56 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756826Ab2GKH4h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 03:56:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49814 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754780Ab2GKH4f (ORCPT
+	id S932459Ab2GKH5a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 03:57:30 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37034 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932100Ab2GKH53 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 03:56:35 -0400
-Date: Wed, 11 Jul 2012 00:59:26 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: dedekind1@gmail.com
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org
-Subject: Re: mmotm 2012-07-10-16-59 uploaded
-Message-Id: <20120711005926.25acc6c6.akpm@linux-foundation.org>
-In-Reply-To: <1341993193.2963.132.camel@sauron>
-References: <20120711000148.BAD1E5C0050@hpza9.eem.corp.google.com>
-	<1341988680.2963.128.camel@sauron>
-	<20120711004430.0d14f0b6.akpm@linux-foundation.org>
-	<1341993193.2963.132.camel@sauron>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 11 Jul 2012 03:57:29 -0400
+Date: Wed, 11 Jul 2012 00:57:23 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Yuri Khan <yurivkhan@gmail.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [PATCH v4 1/1] Input: xpad - Handle all variations of Mad Catz
+ Beat Pad
+Message-ID: <20120711075723.GA8425@core.coreip.homeip.net>
+References: <1341592324-665-1-git-send-email-yurivkhan@gmail.com>
+ <1341990139-3864-1-git-send-email-yurivkhan@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1341990139-3864-1-git-send-email-yurivkhan@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Jul 2012 10:53:13 +0300 Artem Bityutskiy <dedekind1@gmail.com> wrote:
-
-> On Wed, 2012-07-11 at 00:44 -0700, Andrew Morton wrote:
-> > On Wed, 11 Jul 2012 09:38:00 +0300 Artem Bityutskiy <dedekind1@gmail.com> wrote:
-> > 
-> > > Andrew, thanks for picking my changes!
-> > > 
-> > > On Tue, 2012-07-10 at 17:01 -0700, akpm@linux-foundation.org wrote:
-> > > > * hfs-get-rid-of-hfs_sync_super-checkpatch-fixes.patch
-> > > 
-> > > > * hfsplus-get-rid-of-write_super-checkpatch-fixes.patch
-> > > 
-> > > I sent updated versions which would fix checkpatch.pl complaints. I
-> > > guess you did not notice them or was unable to pick because I think I
-> > > PGP-signed them?
-> > 
-> > I looked at them, but they're identical to what I now have, so nothing
-> > needed doing.
+On Wed, Jul 11, 2012 at 02:02:19PM +0700, Yuri Khan wrote:
+> * Add this device to usbhid ignore list
 > 
-> Strange, I thought they had the white-spaces issue solved. 
+> Signed-off-by: Yuri Khan <yurivkhan@gmail.com>
+> Acked-by: Jiri Kosina <jkosina@suse.cz>
 
-They did, but I'd already fixed everything.  That's what those emails
-in your inbox were about.
+Applied, thank you Yuri.
 
-> I'll resend the entire series.
-
-argh, no, not again.
+-- 
+Dmitry
