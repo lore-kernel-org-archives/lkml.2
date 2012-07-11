@@ -1,111 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932324Ab2GKTMH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 15:12:07 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:40173 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932242Ab2GKTLu (ORCPT
+	id S932441Ab2GKTSH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 15:18:07 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:45487 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932191Ab2GKTSF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 15:11:50 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org
-Cc: xen-devel@lists.xensource.com,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 1/3] xen/perf: Define .glob for the different hypercalls.
-Date: Wed, 11 Jul 2012 15:03:18 -0400
-Message-Id: <1342033400-22505-2-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1342033400-22505-1-git-send-email-konrad.wilk@oracle.com>
-References: <1342033400-22505-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Wed, 11 Jul 2012 15:18:05 -0400
+Message-ID: <4FFDD12B.1050909@linux.vnet.ibm.com>
+Date: Wed, 11 Jul 2012 14:16:59 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Minchan Kim <minchan@kernel.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] zsmalloc improvements
+References: <1341263752-10210-1-git-send-email-sjenning@linux.vnet.ibm.com> <4FFD2524.2050300@kernel.org>
+In-Reply-To: <4FFD2524.2050300@kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12071119-7606-0000-0000-000001ECDCEE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows us in perf to have this:
+On 07/11/2012 02:03 AM, Minchan Kim wrote:
+> Today, I tested zsmapbench in my embedded board(ARM).
+> tlb-flush is 30% faster than copy-based so it's always not win.
+> I think it depends on CPU speed/cache size.
 
- 99.67%  [kernel]             [k] xen_hypercall_sched_op
-  0.11%  [kernel]             [k] xen_hypercall_xen_version
+After you pointed this out, I decided to test this on my
+Raspberry Pi, the only ARM system I have that is open enough
+for me to work with.
 
-instead of the borring ever-encompassing:
+I pulled some of the cycle counting stuff out of
+arch/arm/kernel/perf_event_v6.c.  I've pushed that code to
+the github repo.
 
- 99.13%  [kernel]              [k] hypercall_page
+git://github.com/spartacus06/zsmapbench.git
 
-[v2: Use a macro to define the name and skip]
-[v3: Use balign per Jan's suggestion]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/xen/xen-head.S |   56 +++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 54 insertions(+), 2 deletions(-)
+My results were in agreement with your findings.  I got 2040
+cycles/map for the copy method and 947 cycles/map for the
+page-table method.  I think memory speed is playing a big
+roll in the difference.
 
-diff --git a/arch/x86/xen/xen-head.S b/arch/x86/xen/xen-head.S
-index aaa7291..7faed58 100644
---- a/arch/x86/xen/xen-head.S
-+++ b/arch/x86/xen/xen-head.S
-@@ -28,9 +28,61 @@ ENTRY(startup_xen)
- 	__FINIT
- 
- .pushsection .text
--	.align PAGE_SIZE
-+	.balign PAGE_SIZE
- ENTRY(hypercall_page)
--	.skip PAGE_SIZE
-+#define NEXT_HYPERCALL(x) \
-+	ENTRY(xen_hypercall_##x) \
-+	.skip 32
-+
-+NEXT_HYPERCALL(set_trap_table)
-+NEXT_HYPERCALL(mmu_update)
-+NEXT_HYPERCALL(set_gdt)
-+NEXT_HYPERCALL(stack_switch)
-+NEXT_HYPERCALL(set_callbacks)
-+NEXT_HYPERCALL(fpu_taskswitch)
-+NEXT_HYPERCALL(sched_op_compat)
-+NEXT_HYPERCALL(platform_op)
-+NEXT_HYPERCALL(set_debugreg)
-+NEXT_HYPERCALL(get_debugreg)
-+NEXT_HYPERCALL(update_descriptor)
-+NEXT_HYPERCALL(ni)
-+NEXT_HYPERCALL(memory_op)
-+NEXT_HYPERCALL(multicall)
-+NEXT_HYPERCALL(update_va_mapping)
-+NEXT_HYPERCALL(set_timer_op)
-+NEXT_HYPERCALL(event_channel_op_compat)
-+NEXT_HYPERCALL(xen_version)
-+NEXT_HYPERCALL(console_io)
-+NEXT_HYPERCALL(physdev_op_compat)
-+NEXT_HYPERCALL(grant_table_op)
-+NEXT_HYPERCALL(vm_assist)
-+NEXT_HYPERCALL(update_va_mapping_otherdomain)
-+NEXT_HYPERCALL(iret)
-+NEXT_HYPERCALL(vcpu_op)
-+NEXT_HYPERCALL(set_segment_base)
-+NEXT_HYPERCALL(mmuext_op)
-+NEXT_HYPERCALL(xsm_op)
-+NEXT_HYPERCALL(nmi_op)
-+NEXT_HYPERCALL(sched_op)
-+NEXT_HYPERCALL(callback_op)
-+NEXT_HYPERCALL(xenoprof_op)
-+NEXT_HYPERCALL(event_channel_op)
-+NEXT_HYPERCALL(physdev_op)
-+NEXT_HYPERCALL(hvm_op)
-+NEXT_HYPERCALL(sysctl)
-+NEXT_HYPERCALL(domctl)
-+NEXT_HYPERCALL(kexec_op)
-+NEXT_HYPERCALL(tmem_op) /* 38 */
-+ENTRY(xen_hypercall_rsvr)
-+	.skip 320
-+NEXT_HYPERCALL(mca) /* 48 */
-+NEXT_HYPERCALL(arch_1)
-+NEXT_HYPERCALL(arch_2)
-+NEXT_HYPERCALL(arch_3)
-+NEXT_HYPERCALL(arch_4)
-+NEXT_HYPERCALL(arch_5)
-+NEXT_HYPERCALL(arch_6)
-+	.balign PAGE_SIZE
- .popsection
- 
- 	ELFNOTE(Xen, XEN_ELFNOTE_GUEST_OS,       .asciz "linux")
--- 
-1.7.7.6
+I agree that the page-table method should be restored since
+the performance difference is so significant on ARM, a
+platform that benefits a lot from memory compression IMHO.
+
+Still, the question remains how to implement the selection
+logic, since not all archs that support the page-table
+method will necessarily perform better with it.
+
+Thanks,
+Seth
 
