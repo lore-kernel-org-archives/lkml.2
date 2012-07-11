@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756882Ab2GKIct (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 04:32:49 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:53020 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751031Ab2GKIco (ORCPT
+	id S1756887Ab2GKIha (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 04:37:30 -0400
+Received: from canardo.mork.no ([148.122.252.1]:56294 "EHLO canardo.mork.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756860Ab2GKIh1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 04:32:44 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Wanpeng Li <liwp.linux@gmail.com>, linux-mm@kvack.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, Li Zefan <lizefan@huawei.com>,
-        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Wanpeng Li <liwp.linux@gmail.com>
-Subject: Re: [PATCH] mm/hugetlb_cgroup: Add list_del to remove unused page from hugepage_activelist when hugepage migration
-In-Reply-To: <1341978718-6423-1-git-send-email-liwp.linux@gmail.com>
-References: <1341978718-6423-1-git-send-email-liwp.linux@gmail.com>
-User-Agent: Notmuch/0.13.2+63~g548a9bf (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Wed, 11 Jul 2012 14:02:23 +0530
-Message-ID: <87wr2aitpk.fsf@skywalker.in.ibm.com>
+	Wed, 11 Jul 2012 04:37:27 -0400
+From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Gustavo Padovan <gustavo@padovan.org>, linux-bluetooth@vger.kernel.org,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
+        "open list\:USB SUBSYSTEM" <linux-usb@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] USB: add USB_VENDOR_AND_INTERFACE_INFO() macro
+Organization: m
+References: <1341957063-11989-1-git-send-email-gustavo@padovan.org>
+	<20120710220108.GA28387@kroah.com>
+Date: Wed, 11 Jul 2012 10:36:46 +0200
+In-Reply-To: <20120710220108.GA28387@kroah.com> (Greg Kroah-Hartman's message
+	of "Tue, 10 Jul 2012 15:01:08 -0700")
+Message-ID: <877guahext.fsf@nemi.mork.no>
+User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-x-cbid: 12071022-7014-0000-0000-0000018A6680
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wanpeng Li <liwp.linux@gmail.com> writes:
-
-> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
+> On Tue, Jul 10, 2012 at 06:51:03PM -0300, Gustavo Padovan wrote:
 >
-> hugepage_activelist is used to track currently used HugeTLB pages.
-> We can find the in-use HugeTLB pages to support HugeTLB cgroup
-> removal. Don't keep unused page in hugetlb_activelist too long.
-> Otherwise, on cgroup removal we should update the unused page's 
-> charge to parent count. To reduce this overhead, remove unused page 
-> from hugepage_activelist immediately.
+>> { USB_VENDOR_AND_INTERFACE_INFO(0x0a5c, 0xff, 0x01, 0x01) }
 >
-> Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
-> ---
->  mm/hugetlb_cgroup.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
->
-> diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
-> index b834e8d..d819d66 100644
-> --- a/mm/hugetlb_cgroup.c
-> +++ b/mm/hugetlb_cgroup.c
-> @@ -398,6 +398,7 @@ void hugetlb_cgroup_migrate(struct page *oldhpage, struct page *newhpage)
->  	spin_lock(&hugetlb_lock);
->  	h_cg = hugetlb_cgroup_from_page(oldhpage);
->  	set_hugetlb_cgroup(oldhpage, NULL);
-> +	list_del(&oldhpage->lru);
->
->  	/* move the h_cg details to new cgroup */
->  	set_hugetlb_cgroup(newhpage, h_cg);
+> Two entries in the cdc_wdm driver can also be converted to use this
+> interface.  Do you want to send a patch doing that, or do you want me to
+> do it?
 
-put_page on the oldhpage will do that. If we do list_del here
-free_huge_page() will have error list_move().
+Only if you decide to take this change in 3.4 and 3.5.  Those entries
+are gone in 3.6.
 
--aneesh
 
+
+Bjørn
