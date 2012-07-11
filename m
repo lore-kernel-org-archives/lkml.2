@@ -1,69 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030479Ab2GKWi0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 18:38:26 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:42176 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030421Ab2GKWiY (ORCPT
+	id S1758403Ab2GKWla (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 18:41:30 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:37878 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751166Ab2GKWl3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 18:38:24 -0400
+	Wed, 11 Jul 2012 18:41:29 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX1+iAlkkItGixmDGQ3nJJ/MbJkVGfm6zrTR40PrCFl
+	YCmWbunGiKJFFm
+Message-ID: <4FFE011C.7020902@gmx.de>
+Date: Wed, 11 Jul 2012 22:41:32 +0000
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120613 Icedove/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <20120711140944.GB11432@fieldses.org>
-References: <1341717459-7297-1-git-send-email-linkinjeon@gmail.com>
-	<20120710145937.GA1947@fieldses.org>
-	<CAKYAXd97ir=tvxWTC4eVmrrXBEpK=XCX3-e8XUjCPy16eHoibQ@mail.gmail.com>
-	<20120711140944.GB11432@fieldses.org>
-Date: Thu, 12 Jul 2012 07:38:22 +0900
-Message-ID: <CAKYAXd__BLFPOw=+tt=cqZgyM45y5mSOTamVaFTU26BNSNa=2A@mail.gmail.com>
-Subject: Re: [PATCH] nfs-util: Add cache_flush in mountd UMNT procedure.
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: SteveD@redhat.com, Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Vivek Trivedi <vtrivedi018@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>
+Subject: [GIT PULL] fbdev fixes for 3.5#2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/7/11, J. Bruce Fields <bfields@fieldses.org>:
-> On Wed, Jul 11, 2012 at 01:10:53PM +0900, Namjae Jeon wrote:
->> 2012/7/10, J. Bruce Fields <bfields@fieldses.org>:
->> > On Sat, Jul 07, 2012 at 11:17:39PM -0400, Namjae Jeon wrote:
->> >> For removing storage device - user needs to safely un-mount the device
->> >> and then eject. But if 'EBUSY' occurs in umount then it will create
->> >> confusion for the user as it will mean some I/O is in progress - and
->> >> won't allow user to safely ejecting device.
->> >
->> Hi James.
->> > The one drawback is that recovering from the cache flushes might be a
->> > little expensive if you have a lot of exports in use.
->> Good point. I will look for more there is the method flush only mount
->> entry.
->
-> I don't think there's a good way to flush only one entry.
->
-> Also, this isn't going to help for NFSv4 since a v4 client won't do an
-> unmount call.
-Okay.
->
->> > I'm curious, since you said this was for a usb disk: are users expected
->> > to just unplug it (in which case--is it read only?) or do they have
->> > some
->> > way of unmounting before they pull the plug?
->> Users expected to unplug it on both read only and read/write.
->> And there is no way that system be prepared to know about the
->> intelligence when the user is going to unplug.
->> if the user really want to detach the device safely. There is an
->> option like the desktop PC - where, we can say - umount/eject the
->> device. There is a proper user interface for safe removal.
->> but they can not unplug safely if usb device is mounted with nfs
->> because of this issue.
->
-> Ideal might be to get some way to notify nfsd when the device
-> diseappears or the filesystem wants to unmount.  I don't know how to do
-> that.
-Okay. I will look for good solution for this issue.
-Thanks.
->
-> --b.
->
+Hi Linus,
+
+please pull the fixes below.
+
+
+Thanks,
+
+Florian Tobias Schandinat
+
+
+The following changes since commit b67989515defba7412acff01162e5bb1f0f5923a:
+
+  video: s3c-fb: fix possible division by zero in s3c_fb_calc_pixclk (2012-06-13 17:34:16 +0000)
+
+are available in the git repository at:
+
+  git://github.com/schandinat/linux-2.6.git fbdev-fixes-for-3.5-2
+
+for you to fetch changes up to 373b43652150c9342168c846a1efbd81438ea241:
+
+  OMAPDSS: fix warnings if CONFIG_PM_RUNTIME=n (2012-07-08 14:00:27 +0000)
+
+----------------------------------------------------------------
+fbdev fixes for 3.5
+
+- two fixes for OMAPDSS by Tomi Valkeinen
+  one to avoid warnings when runtime PM is not enabled
+  one workaround to dependancy issues during suspend/resume
+
+----------------------------------------------------------------
+Tomi Valkeinen (2):
+      OMAPDSS: Use PM notifiers for system suspend
+      OMAPDSS: fix warnings if CONFIG_PM_RUNTIME=n
+
+ drivers/video/omap2/dss/core.c  |   43 ++++++++++++++++++++++++--------------
+ drivers/video/omap2/dss/dispc.c |    2 +-
+ drivers/video/omap2/dss/dsi.c   |    2 +-
+ drivers/video/omap2/dss/dss.c   |    2 +-
+ drivers/video/omap2/dss/hdmi.c  |    2 +-
+ drivers/video/omap2/dss/rfbi.c  |    2 +-
+ drivers/video/omap2/dss/venc.c  |    2 +-
+ 7 files changed, 33 insertions(+), 22 deletions(-)
