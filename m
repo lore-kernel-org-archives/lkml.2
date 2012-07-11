@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757799Ab2GKNmN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 09:42:13 -0400
-Received: from co1ehsobe005.messaging.microsoft.com ([216.32.180.188]:40158
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757758Ab2GKNj1 (ORCPT
+	id S1757755Ab2GKNjZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 09:39:25 -0400
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:49660
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757603Ab2GKNjR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 09:39:27 -0400
+	Wed, 11 Jul 2012 09:39:17 -0400
 X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
 X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah)
-X-WSS-ID: 0M700LL-02-1PM-02
+X-BigFish: VPS0(zzzz1202hzz8275bh8275dhz2dh668h839hd24he5bhf0ah)
+X-WSS-ID: 0M700L7-02-1P5-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: <iommu@lists.linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 22/27] iommu/amd: Add call-back routine for HPET MSI
-Date: Wed, 11 Jul 2012 15:39:07 +0200
-Message-ID: <1342013952-10174-23-git-send-email-joerg.roedel@amd.com>
+CC: <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>,
+        <x86@kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: [PATCH 01/27] x86/irq: Add data structure to keep AMD specific irq remapping information
+Date: Wed, 11 Jul 2012 15:38:46 +0200
+Message-ID: <1342013952-10174-2-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1342013952-10174-1-git-send-email-joerg.roedel@amd.com>
 References: <1342013952-10174-1-git-send-email-joerg.roedel@amd.com>
@@ -28,48 +30,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a routine to setup a HPET MSI interrupt for remapping.
+Add a data structure to store information the IOMMU driver
+can use to get from a 'struct irq_cfg' to the remapping
+entry.
 
+Cc: x86@kernel.org
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- drivers/iommu/amd_iommu.c |   26 ++++++++++++++++++++++++++
- 1 file changed, 26 insertions(+)
+ arch/x86/include/asm/hw_irq.h       |   14 +++++++++++++-
+ arch/x86/kernel/apic/io_apic.c      |    2 +-
+ drivers/iommu/intel_irq_remapping.c |    2 +-
+ 3 files changed, 15 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-index 9a24a1b..ac6e731 100644
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -4128,4 +4128,30 @@ static int msi_setup_irq(struct pci_dev *pdev, unsigned int irq,
- 	return 0;
+diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
+index eb92a6e..b6171e6 100644
+--- a/arch/x86/include/asm/hw_irq.h
++++ b/arch/x86/include/asm/hw_irq.h
+@@ -101,6 +101,7 @@ static inline void set_io_apic_irq_attr(struct io_apic_irq_attr *irq_attr,
+ 	irq_attr->polarity	= polarity;
  }
  
-+static int setup_hpet_msi(unsigned int irq, unsigned int id)
-+{
-+	struct irq_2_irte *irte_info;
-+	struct irq_cfg *cfg;
-+	int index, devid;
++/* Intel specific interrupt remapping information */
+ struct irq_2_iommu {
+ 	struct intel_iommu *iommu;
+ 	u16 irte_index;
+@@ -108,6 +109,17 @@ struct irq_2_iommu {
+ 	u8  irte_mask;
+ };
+ 
++/* AMD specific interrupt remapping information */
++struct irq_2_irte {
++	u16 devid; /* Device ID for IRTE table */
++	u16 index; /* Index into IRTE table*/
++};
 +
-+	cfg = irq_get_chip_data(irq);
-+	if (!cfg)
-+		return -EINVAL;
++union irq_remap_info {
++	struct irq_2_iommu irq_2_iommu;
++	struct irq_2_irte  irq_2_irte;
++};
 +
-+	irte_info = &cfg->irq_remap_info.irq_2_irte;
-+	devid     = get_hpet_devid(id);
-+	if (devid < 0)
-+		return devid;
-+
-+	index = alloc_irq_index(cfg, devid, 1);
-+	if (index < 0)
-+		return index;
-+
-+	irte_info->devid = devid;
-+	irte_info->index = index;
-+	cfg->remapped    = true;
-+
-+	return 0;
-+}
-+
+ /*
+  * This is performance-critical, we want to do it O(1)
+  *
+@@ -120,7 +132,7 @@ struct irq_cfg {
+ 	u8			vector;
+ 	u8			move_in_progress : 1;
+ #ifdef CONFIG_IRQ_REMAP
+-	struct irq_2_iommu	irq_2_iommu;
++	union irq_remap_info    irq_remap_info;
  #endif
+ };
+ 
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 5f0ff59..08f666c 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -72,7 +72,7 @@
+ static void irq_remap_modify_chip_defaults(struct irq_chip *chip);
+ static inline bool irq_remapped(struct irq_cfg *cfg)
+ {
+-	return cfg->irq_2_iommu.iommu != NULL;
++	return cfg->irq_remap_info.irq_2_iommu.iommu != NULL;
+ }
+ #else
+ static inline bool irq_remapped(struct irq_cfg *cfg)
+diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
+index 6d34706..e4e4334 100644
+--- a/drivers/iommu/intel_irq_remapping.c
++++ b/drivers/iommu/intel_irq_remapping.c
+@@ -43,7 +43,7 @@ static DEFINE_RAW_SPINLOCK(irq_2_ir_lock);
+ static struct irq_2_iommu *irq_2_iommu(unsigned int irq)
+ {
+ 	struct irq_cfg *cfg = irq_get_chip_data(irq);
+-	return cfg ? &cfg->irq_2_iommu : NULL;
++	return cfg ? &cfg->irq_remap_info.irq_2_iommu : NULL;
+ }
+ 
+ int get_irte(int irq, struct irte *entry)
 -- 
 1.7.9.5
 
