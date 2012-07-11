@@ -1,59 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757026Ab2GKKLx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 06:11:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38311 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752683Ab2GKKLv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 06:11:51 -0400
-Date: Wed, 11 Jul 2012 12:11:50 +0200
-From: Jan Kara <jack@suse.cz>
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: Theodore Tso <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
-        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
-        Ext4 Mailing List <linux-ext4@vger.kernel.org>
-Subject: Re: [PATCHv6 3/5] ext4: remove unnecessary superblock dirtying
-Message-ID: <20120711101150.GH1316@quack.suse.cz>
-References: <1342000698-13556-1-git-send-email-dedekind1@gmail.com>
- <1342000698-13556-4-git-send-email-dedekind1@gmail.com>
- <20120711100726.GE1316@quack.suse.cz>
+	id S1756992Ab2GKKPa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 06:15:30 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:32869 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752323Ab2GKKP3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 06:15:29 -0400
+Date: Wed, 11 Jul 2012 11:15:27 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "spi-devel-general@lists.sourceforge.net" 
+	<spi-devel-general@lists.sourceforge.net>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH RESEND] spi: tegra: use dmaengine based dma driver
+Message-ID: <20120711101527.GE3938@opensource.wolfsonmicro.com>
+References: <1341927517-4584-1-git-send-email-ldewangan@nvidia.com>
+ <20120711095504.GD3938@opensource.wolfsonmicro.com>
+ <4FFD4ECA.8090304@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="9l24NVCWtSuIVIod"
 Content-Disposition: inline
-In-Reply-To: <20120711100726.GE1316@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4FFD4ECA.8090304@nvidia.com>
+X-Cookie: If you can read this, you're too close.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 11-07-12 12:07:26, Jan Kara wrote:
-> On Wed 11-07-12 12:58:16, Artem Bityutskiy wrote:
-...
-> > And this is the behavior this patch modifies: we stop using 's_dirt' and just
-> > mark the superblock buffer as dirty right away. Indeed:
-> > 
-> > 1. It does not add any value to delay the I/O submission for cases 1-3 above.
-> >    They are rare.
-> > 2. Case number 4 above depends on whether we have file-system checksumming
-> >    enabled or disables.
-> >    a) If it is disabled (most common scenario), then it is all-right to just
-> >       mark the superblock buffer as dirty right away and it should affect
-> >       performance.
-> >    b) If it is enabled, then we'll end up doing a bit more work on deletion
-> >       because we'll re-calculate superblock checksum every time.
-> > 
-> > So case 2.b is a bit controversial, but I think it is acceptable. After all, by
-> > enabling checksumming we already sign up for paying the price of calculating
-> > it. The way to improve checksumming performance globally would be to calculate
-> > it just before sending buffers to the I/O queue. We'd need some kind of
-> > call-back which could be registered by file-systems.
-  Actually, the most common case of adding orphan inode used
-ext4_handle_dirty_super_now() so for that case there is no difference. And
-other cases are so rare it really does not matter... So there shouldn't be
-any measurable difference.
 
-									Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+--9l24NVCWtSuIVIod
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Wed, Jul 11, 2012 at 03:30:42PM +0530, Laxman Dewangan wrote:
+> On Wednesday 11 July 2012 03:25 PM, Mark Brown wrote:
+
+> >Is this any different to the version of the patch that I already
+> >applied?
+
+> I believe you have applied for the ASoC one. This is for spi one.
+
+No, there's a dmaengine patch in my SPI branch too which I applied
+yesterday.
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/misc.git spi-next
+
+> BTW, are you taking the same in regulator subsystem or created new
+> for spi? I can verify from there.
+
+I'm sorry, I can't parse this sentance at all.
+
+--9l24NVCWtSuIVIod
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP/VHjAAoJEBus8iNuMP3dATcQAJSp5EkUW6n6U4eRDRRDrswD
+EsaI+6S5V/wYeCV0jlCwaSrgczRktXV0MAtFBC4UChN/VY3f+2SwbOnBnfIBaFwF
+xhL2dINshAApt5bGzbBXt2Ho2bRGKAwuriE8lpy0RkD7McrINozlx1FM5nTaSmTs
+sJ4zIgJTHWGjxG2maFz/Z1/xZ9V5R+u+H+YulVGx2x6XsVzp8OP3XOOHJT7xqHHR
+F5DdBbNhzXkRfYiG0ZrJ7TA8DpjH7qYYwaENIWh/R5iU0oT4pCab7FAw84MCEP5M
+/ZZZNDEUALWImyjUf3+CMNciWYwoN1qU5SxXIZRQR4i6hmyHCXKTdqnRCnxJgqca
+yndShAtnDhGACFGnzo0lVFS7FDfj9id/l7MSu8Ga5ctKlCseppBiW1+/KNgJfdcn
+NVxntrqrA6ch9fckCQxXkAKwX0ykAXggECCkDuwRnDsOltHQJvmqY5fP99BEHt6q
+vRaEM9wET3Yy7aGmFB5iCrIXwB/qGI7QXdV94EbbGzNUXataMbsyo6Agzw0Nvp3Z
+u0R204XnlN9QqDNN76m/1aP/msaozE2yyzdo8IjAqqSWtBAVE4bY3qrRxHOTalwl
+iJp7ZIOuW2JwLxWBZD43IWt/ih/OiK/yMOKRCy4G9D1lMX31TVLnzxO35e2ImW3E
+qnnNQ10k/V4CzZLIe18A
+=//6h
+-----END PGP SIGNATURE-----
+
+--9l24NVCWtSuIVIod--
