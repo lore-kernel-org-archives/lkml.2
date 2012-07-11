@@ -1,81 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756970Ab2GKJ4w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 05:56:52 -0400
-Received: from mga09.intel.com ([134.134.136.24]:29919 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756929Ab2GKJ4r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 05:56:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="164196349"
-From: Artem Bityutskiy <dedekind1@gmail.com>
-To: Theodore Tso <tytso@mit.edu>, Jan Kara <jack@suse.cz>
-Cc: Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
-        Ext4 Mailing List <linux-ext4@vger.kernel.org>
-Subject: [PATCHv6 4/5] ext4: weed out ext4_write_super
-Date: Wed, 11 Jul 2012 12:58:17 +0300
-Message-Id: <1342000698-13556-5-git-send-email-dedekind1@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1342000698-13556-1-git-send-email-dedekind1@gmail.com>
-References: <1342000698-13556-1-git-send-email-dedekind1@gmail.com>
+	id S1757029Ab2GKJ5s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 05:57:48 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56413 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756984Ab2GKJ5q convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 05:57:46 -0400
+Message-ID: <1342000654.3462.137.camel@twins>
+Subject: Re: [PATCH V2 5/5] perf/x86: Add Intel Nehalem-EX uncore support
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: eranian@google.com, mingo@elte.hu, andi@firstfloor.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 11 Jul 2012 11:57:34 +0200
+In-Reply-To: <4FFCDF8C.9060204@intel.com>
+References: <1341381616-12229-1-git-send-email-zheng.z.yan@intel.com>
+	   <1341381616-12229-6-git-send-email-zheng.z.yan@intel.com>
+	  <1341396293.2507.77.camel@laptop> <4FF534F1.3030307@intel.com>
+	 <1341922621.3462.130.camel@twins> <4FFCDF8C.9060204@intel.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+On Wed, 2012-07-11 at 10:06 +0800, Yan, Zheng wrote:
+> This doesn't work. The MSRs for Cbox 8/9 in WSM-EX aren't contiguous with
+> Cbox 0~7.
 
-We do not depend on VFS's '->write_super()' anymore and do not need the
-'s_dirt' flag anymore, so weed out 'ext4_write_super()' and 's_dirt'.
+Argh!
 
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
----
- fs/ext4/super.c |   10 ----------
- 1 files changed, 0 insertions(+), 10 deletions(-)
+>  Furthermore the encoding for the FVC register in the Mbox are
+> different between NHM-EX and WSM-EX.
 
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index a391c53..622d5c7 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -74,7 +74,6 @@ static const char *ext4_decode_error(struct super_block *sb, int errno,
- static int ext4_remount(struct super_block *sb, int *flags, char *data);
- static int ext4_statfs(struct dentry *dentry, struct kstatfs *buf);
- static int ext4_unfreeze(struct super_block *sb);
--static void ext4_write_super(struct super_block *sb);
- static int ext4_freeze(struct super_block *sb);
- static struct dentry *ext4_mount(struct file_system_type *fs_type, int flags,
- 		       const char *dev_name, void *data);
-@@ -1194,7 +1193,6 @@ static const struct super_operations ext4_nojournal_sops = {
- 	.dirty_inode	= ext4_dirty_inode,
- 	.drop_inode	= ext4_drop_inode,
- 	.evict_inode	= ext4_evict_inode,
--	.write_super	= ext4_write_super,
- 	.put_super	= ext4_put_super,
- 	.statfs		= ext4_statfs,
- 	.remount_fs	= ext4_remount,
-@@ -4203,7 +4201,6 @@ static int ext4_commit_super(struct super_block *sb, int sync)
- 	es->s_free_inodes_count =
- 		cpu_to_le32(percpu_counter_sum_positive(
- 				&EXT4_SB(sb)->s_freeinodes_counter));
--	sb->s_dirt = 0;
- 	BUFFER_TRACE(sbh, "marking dirty");
- 	ext4_superblock_csum_set(sb, es);
- 	mark_buffer_dirty(sbh);
-@@ -4310,13 +4307,6 @@ int ext4_force_commit(struct super_block *sb)
- 	return ret;
- }
- 
--static void ext4_write_super(struct super_block *sb)
--{
--	lock_super(sb);
--	ext4_commit_super(sb, 1);
--	unlock_super(sb);
--}
--
- static int ext4_sync_fs(struct super_block *sb, int wait)
- {
- 	int ret = 0;
--- 
-1.7.7.6
+OK, 18.7.1 from Vol. 3B doesn't mention that.. where did you find this?
 
+> Please don't merge this patch, I will send a new one with WSM-EX support
+> and some fixes soon. 
+
+Found it in the inbox, thanks!
