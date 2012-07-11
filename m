@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755112Ab2GKJxV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 05:53:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30377 "EHLO mx1.redhat.com"
+	id S1756879Ab2GKJxn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 05:53:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26707 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752014Ab2GKJxT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 05:53:19 -0400
-Message-ID: <4FFD4D0A.2000202@redhat.com>
-Date: Wed, 11 Jul 2012 12:53:14 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1752790Ab2GKJxm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 05:53:42 -0400
+Date: Wed, 11 Jul 2012 12:53:37 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: David Ahern <dsahern@gmail.com>, Avi Kivity <avi@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: perf with precise attribute kills all KVM based VMs
+Message-ID: <20120711095337.GJ23898@redhat.com>
+References: <20120709141904.GC7298@redhat.com>
+ <1341843844.3462.75.camel@twins>
+ <4FFAED16.7050204@redhat.com>
+ <4FFAEF13.7010108@gmail.com>
+ <1341845396.3462.81.camel@twins>
+ <4FFAEFF1.9000706@redhat.com>
+ <1341845999.3462.86.camel@twins>
+ <4FFCBD00.1030109@gmail.com>
+ <20120711071006.GF23898@redhat.com>
+ <1342000187.3462.134.camel@twins>
 MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: mst@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Subject: Re: [PATCH v3 0/2] kvm: level irqfd and new eoifd
-References: <20120703191106.6735.78272.stgit@bling.home>
-In-Reply-To: <20120703191106.6735.78272.stgit@bling.home>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1342000187.3462.134.camel@twins>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/03/2012 10:21 PM, Alex Williamson wrote:
-> Here's the latest iteration of adding an interface to assert and
-> de-assert level interrupts from external drivers like vfio.  These
-> apply on top of the previous argument cleanup, documentation, and
-> sanitization patches for irqfd.  It would be great to get this queued
-> in next for linux 3.6.
+On Wed, Jul 11, 2012 at 11:49:47AM +0200, Peter Zijlstra wrote:
+> On Wed, 2012-07-11 at 10:10 +0300, Gleb Natapov wrote:
 > 
-> I believe I've addressed all the previous comments, including fixing
-> the locking problems in eoifd.  I've run this with lockdep adding
-> and removing level irqfd/eoifd pairs without any problems.  Please
-> let me know if there are any further comments.  Thanks,
+> > Looks like Avi is right about the overshoot. Can you test something like this?
+> > 
+> > diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+> > index 166546e..5fb371a 100644
+> > --- a/arch/x86/kernel/cpu/perf_event_intel.c
+> > +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+> > @@ -1374,8 +1374,11 @@ static struct perf_guest_switch_msr *intel_guest_get_msrs(int *nr)
+> >  	arr[0].msr = MSR_CORE_PERF_GLOBAL_CTRL;
+> >  	arr[0].host = x86_pmu.intel_ctrl & ~cpuc->intel_ctrl_guest_mask;
+> >  	arr[0].guest = x86_pmu.intel_ctrl & ~cpuc->intel_ctrl_host_mask;
+> > +	arr[1].msr = MSR_IA32_PEBS_ENABLE;
+> > +	arr[1].host = cpuc->pebs_enabled;
+> > +	arr[1].guest = 0;
+> > +	*nr = 2;
+> >  
+> > -	*nr = 1;
+> >  	return arr;
+> >  }
+> 
+> 
+> You also need to clear TR, BTS, BTINT from MSR_IA32_DEBUGCTLMSR and
+> ideally you'd also clear MSR_IA32_DS_AREA so that any write will be a
+> proper NULL deref or such.
+Yes. With the patch above :pp modifier does not crash guest for me, but
+in theory it should since BTS are still written to DS. May be BTS writes do
+not overshoot guest entry. Will have to ask Intel for clarification.
 
-Is there any performance justification for level irqfd?  Don't all
-new/high bandwidth devices support msi, and this is just a legacy path?
-
-eoifd does add new functionality (which parallels the existing ack
-notifier usage in kvm device assignment); it's not just an optimization.
-
--- 
-error compiling committee.c: too many arguments to function
-
-
+--
+			Gleb.
