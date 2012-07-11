@@ -1,44 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758351Ab2GKWEL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 18:04:11 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:42250 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752664Ab2GKWEI (ORCPT
+	id S1030350Ab2GKWF1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 18:05:27 -0400
+Received: from www.linutronix.de ([62.245.132.108]:35520 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030318Ab2GKWFW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 18:04:08 -0400
-MIME-Version: 1.0
-In-Reply-To: <d2503bb0719da649800c67f70953685da582543f.1341925681.git.cmahapatra@ti.com>
-References: <cover.1341925681.git.cmahapatra@ti.com>
-	<d2503bb0719da649800c67f70953685da582543f.1341925681.git.cmahapatra@ti.com>
-Date: Thu, 12 Jul 2012 00:04:07 +0200
-Message-ID: <CACRpkdbv9miT=jHnv1uDf5fquqRFzYEXxnm4n7zsapc0oS1w_A@mail.gmail.com>
-Subject: Re: [PATCH 2/4] gpio/pca953x: increase variables size to support 24
- bit of data
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Chandrabhanu Mahapatra <cmahapatra@ti.com>
-Cc: grant.likely@secretlab.ca, linus.walleij@stericsson.com,
-        rob.herring@calxeda.com, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, leed.aguilar@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 11 Jul 2012 18:05:22 -0400
+Message-Id: <20120711215612.277149292@linutronix.de>
+User-Agent: quilt/0.48-1
+Date: Wed, 11 Jul 2012 22:05:21 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        RT-users <linux-rt-users@vger.kernel.org>,
+        Carsten Emde <cbe@osadl.org>, Yong Zhang <yong.zhang0@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [patch RT 7/7] perf: Make swevent hrtimer run in irq instead of
+ softirq
+References: <20120711214552.036760674@linutronix.de>
+Content-Disposition: inline;
+ filename=perf-make-swevent-hrtimer-run-in-irq-instead-of-softirq.patch
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 10, 2012 at 3:35 PM, Chandrabhanu Mahapatra
-<cmahapatra@ti.com> wrote:
+From: Yong Zhang <yong.zhang@windriver.com>
 
-> From: Leed Aguilar <leed.aguilar@ti.com>
->
-> Increase variable size from u16 to u32 to allocate 24 bit of data required for
-> the TCA6424 I/O expander device type.
->
-> Signed-off-by: Leed Aguilar <leed.aguilar@ti.com>
-> Signed-off-by: Chandrabhanu Mahapatra <cmahapatra@ti.com>
+Otherwise we get a deadlock like below:
 
-Looks good.
+[ 1044.042749] BUG: scheduling while atomic: ksoftirqd/21/141/0x00010003
+[ 1044.042752] INFO: lockdep is turned off.
+[ 1044.042754] Modules linked in:
+[ 1044.042757] Pid: 141, comm: ksoftirqd/21 Tainted: G        W    3.4.0-rc2-rt3-23676-ga723175-dirty #29
+[ 1044.042759] Call Trace:
+[ 1044.042761]  <IRQ>  [<ffffffff8107d8e5>] __schedule_bug+0x65/0x80
+[ 1044.042770]  [<ffffffff8168978c>] __schedule+0x83c/0xa70
+[ 1044.042775]  [<ffffffff8106bdd2>] ? prepare_to_wait+0x32/0xb0
+[ 1044.042779]  [<ffffffff81689a5e>] schedule+0x2e/0xa0
+[ 1044.042782]  [<ffffffff81071ebd>] hrtimer_wait_for_timer+0x6d/0xb0
+[ 1044.042786]  [<ffffffff8106bb30>] ? wake_up_bit+0x40/0x40
+[ 1044.042790]  [<ffffffff81071f20>] hrtimer_cancel+0x20/0x40
+[ 1044.042794]  [<ffffffff8111da0c>] perf_swevent_cancel_hrtimer+0x3c/0x50
+[ 1044.042798]  [<ffffffff8111da31>] task_clock_event_stop+0x11/0x40
+[ 1044.042802]  [<ffffffff8111da6e>] task_clock_event_del+0xe/0x10
+[ 1044.042805]  [<ffffffff8111c568>] event_sched_out+0x118/0x1d0
+[ 1044.042809]  [<ffffffff8111c649>] group_sched_out+0x29/0x90
+[ 1044.042813]  [<ffffffff8111ed7e>] __perf_event_disable+0x18e/0x200
+[ 1044.042817]  [<ffffffff8111c343>] remote_function+0x63/0x70
+[ 1044.042821]  [<ffffffff810b0aae>] generic_smp_call_function_single_interrupt+0xce/0x120
+[ 1044.042826]  [<ffffffff81022bc7>] smp_call_function_single_interrupt+0x27/0x40
+[ 1044.042831]  [<ffffffff8168d50c>] call_function_single_interrupt+0x6c/0x80
+[ 1044.042833]  <EOI>  [<ffffffff811275b0>] ? perf_event_overflow+0x20/0x20
+[ 1044.042840]  [<ffffffff8168b970>] ? _raw_spin_unlock_irq+0x30/0x70
+[ 1044.042844]  [<ffffffff8168b976>] ? _raw_spin_unlock_irq+0x36/0x70
+[ 1044.042848]  [<ffffffff810702e2>] run_hrtimer_softirq+0xc2/0x200
+[ 1044.042853]  [<ffffffff811275b0>] ? perf_event_overflow+0x20/0x20
+[ 1044.042857]  [<ffffffff81045265>] __do_softirq_common+0xf5/0x3a0
+[ 1044.042862]  [<ffffffff81045c3d>] __thread_do_softirq+0x15d/0x200
+[ 1044.042865]  [<ffffffff81045dda>] run_ksoftirqd+0xfa/0x210
+[ 1044.042869]  [<ffffffff81045ce0>] ? __thread_do_softirq+0x200/0x200
+[ 1044.042873]  [<ffffffff81045ce0>] ? __thread_do_softirq+0x200/0x200
+[ 1044.042877]  [<ffffffff8106b596>] kthread+0xb6/0xc0
+[ 1044.042881]  [<ffffffff8168b97b>] ? _raw_spin_unlock_irq+0x3b/0x70
+[ 1044.042886]  [<ffffffff8168d994>] kernel_thread_helper+0x4/0x10
+[ 1044.042889]  [<ffffffff8107d98c>] ? finish_task_switch+0x8c/0x110
+[ 1044.042894]  [<ffffffff8168b97b>] ? _raw_spin_unlock_irq+0x3b/0x70
+[ 1044.042897]  [<ffffffff8168bd5d>] ? retint_restore_args+0xe/0xe
+[ 1044.042900]  [<ffffffff8106b4e0>] ? kthreadd+0x1e0/0x1e0
+[ 1044.042902]  [<ffffffff8168d990>] ? gs_change+0xb/0xb
 
-Applied.
+Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1341476476-5666-1-git-send-email-yong.zhang0@gmail.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/events/core.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-Yours,
-Linus Walleij
+Index: linux-stable-rt/kernel/events/core.c
+===================================================================
+--- linux-stable-rt.orig/kernel/events/core.c
++++ linux-stable-rt/kernel/events/core.c
+@@ -5403,6 +5403,7 @@ static void perf_swevent_init_hrtimer(st
+ 
+ 	hrtimer_init(&hwc->hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+ 	hwc->hrtimer.function = perf_swevent_hrtimer;
++	hwc->hrtimer.irqsafe = 1;
+ 
+ 	/*
+ 	 * Since hrtimers have a fixed rate, we can do a static freq->period
+
+
