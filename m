@@ -1,69 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933321Ab2GKVyL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 17:54:11 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:28130 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753147Ab2GKVyK (ORCPT
+	id S933338Ab2GKVy1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 17:54:27 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:43032 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755076Ab2GKVyY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 17:54:10 -0400
-Message-ID: <1342043432.16730.899.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 2/2] x86: don't panic if master CPU haven't set
- cpu_callout_mask
-From: Toshi Kani <toshi.kani@hp.com>
-To: imammedo@redhat.com
-Cc: linux-kernel@vger.kernel.org, prarit@redhat.com, oleg@redhat.com,
-        rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org, luto@mit.edu, suresh.b.siddha@intel.com,
-        avi@redhat.com, a.p.zijlstra@chello.nl, johnstul@us.ibm.com,
-        toshi.kani@hp.com
-Date: Wed, 11 Jul 2012 15:50:32 -0600
-In-Reply-To: <1340108061-5128-3-git-send-email-imammedo@redhat.com>
-References: <1340108061-5128-1-git-send-email-imammedo@redhat.com>
-	 <1340108061-5128-3-git-send-email-imammedo@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 11 Jul 2012 17:54:24 -0400
+MIME-Version: 1.0
+In-Reply-To: <1341997995-14020-3-git-send-email-tarun.kanti@ti.com>
+References: <1341997995-14020-1-git-send-email-tarun.kanti@ti.com>
+	<1341997995-14020-3-git-send-email-tarun.kanti@ti.com>
+Date: Wed, 11 Jul 2012 23:54:23 +0200
+Message-ID: <CACRpkdYxE7rj8HHAy3+HbQHW4+WbqK2suggfBqKX=TbhHzraDg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] gpio/omap: add *remove* callback in platform_driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Tarun Kanti DebBarma <tarun.kanti@ti.com>
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Kevin Hilman <khilman@ti.com>,
+        Rajendra Nayak <rnayak@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        "Cousson, Benoit" <b-cousson@ti.com>, Paul Walmsley <paul@pwsan.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-11 at 14:22 -0600, Toshi Kani wrote:
-> Gracefully cancel CPU initialization instead of panic when master
-> CPU haven't managed to set cpu_callout_mask in time.
-> 
-> Signed-off-by: Igor Mammedov <imammedo@redhat.com>
-> ---
->  arch/x86/kernel/smpboot.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-> index 95948b9..6470470 100644
-> --- a/arch/x86/kernel/smpboot.c
-> +++ b/arch/x86/kernel/smpboot.c
-> @@ -175,8 +175,9 @@ static void __cpuinit smp_callin(void)
->  	}
->  
->  	if (!time_before(jiffies, timeout)) {
-> -		panic("%s: CPU%d started up but did not get a callout!\n",
-> +		pr_debug("%s: CPU%d started up but did not get a callout!\n",
->  		      __func__, cpuid);
+On Wed, Jul 11, 2012 at 11:13 AM, Tarun Kanti DebBarma
+<tarun.kanti@ti.com> wrote:
 
-Shouldn't we use pr_err() here?
+> Add *remove* callback so that necessary cleanup operations are
+> performed when device is unregistered. The device is deleted
+> from the list and associated clock handle is released by
+> calling clk_put() and irq descriptor is released using the
+> irq_free_desc() api.
+>
+> Signed-off-by: Tarun Kanti DebBarma <tarun.kanti@ti.com>
 
-> +		goto die;
+Looks good, applied.
 
-Is it safe to call remove_siblinginfo() in this code path?  It has not
-called set_cpu_sibling_map() yet.
-
-Thanks,
--Toshi
-
-
-
->  	}
->  
->  	/*
-
-
+Yours,
+Linus Walleij
