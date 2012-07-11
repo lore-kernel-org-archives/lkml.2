@@ -1,28 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757918Ab2GKOGo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 10:06:44 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:51648 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757475Ab2GKOGm (ORCPT
+	id S1757931Ab2GKOHN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 10:07:13 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:40336 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755214Ab2GKOHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 10:06:42 -0400
+	Wed, 11 Jul 2012 10:07:11 -0400
 From: Ben Minerds <puzzleduck@gmail.com>
 To: alan@lxorguk.ukuu.org.uk
 Cc: gregkh@linuxfoundation.org, richard.weinberger@gmail.com,
         linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
         puzzleduck@gmail.com
-Subject: [PATCH 0/6] USB: serial: Changes to conform with checkpatch.
-Date: Thu, 12 Jul 2012 00:10:14 +1000
-Message-Id: <1342015820-10229-1-git-send-email-puzzleduck@gmail.com>
+Subject: [PATCH 1/6] USB: serial: Removed space before tabs.
+Date: Thu, 12 Jul 2012 00:10:15 +1000
+Message-Id: <1342015820-10229-2-git-send-email-puzzleduck@gmail.com>
 X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1342015820-10229-1-git-send-email-puzzleduck@gmail.com>
+References: <1342015820-10229-1-git-send-email-puzzleduck@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed various checkpatch.sh warnings and errors. 
-Split patch by warning/error type.
-Corrected line wraps in emails.
+Changes to conform with checkpatch.sh script. - no space before tabs. 
+Removed 52 checkpatch.sh warnings.
 
 Signed-off-by: Ben Minerds <puzzleduck@gmail.com>
 ---
