@@ -1,75 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756384Ab2GKHDI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 03:03:08 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:45463 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754057Ab2GKHCm (ORCPT
+	id S1756552Ab2GKHD0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 03:03:26 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:64318 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754175Ab2GKHDH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 03:02:42 -0400
-From: Yuri Khan <yurivkhan@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Yuri Khan <yurivkhan@gmail.com>
-Subject: [PATCH v4 1/1] Input: xpad - Handle all variations of Mad Catz Beat Pad
-Date: Wed, 11 Jul 2012 14:02:19 +0700
-Message-Id: <1341990139-3864-1-git-send-email-yurivkhan@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1341592324-665-1-git-send-email-yurivkhan@gmail.com>
-References: <1341592324-665-1-git-send-email-yurivkhan@gmail.com>
+	Wed, 11 Jul 2012 03:03:07 -0400
+X-AuditID: 9c93016f-b7cb9ae000000dfd-eb-4ffd2523972c
+Message-ID: <4FFD2524.2050300@kernel.org>
+Date: Wed, 11 Jul 2012 16:03:00 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] zsmalloc improvements
+References: <1341263752-10210-1-git-send-email-sjenning@linux.vnet.ibm.com>
+In-Reply-To: <1341263752-10210-1-git-send-email-sjenning@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Add this device to usbhid ignore list
+Hi everybody,
 
-Signed-off-by: Yuri Khan <yurivkhan@gmail.com>
-Acked-by: Jiri Kosina <jkosina@suse.cz>
----
- drivers/hid/hid-core.c        |    1 +
- drivers/hid/hid-ids.h         |    3 +++
- drivers/input/joystick/xpad.c |    1 +
- 3 files changed, 5 insertions(+)
+I realized it by Seth's mention yesterday that Greg already merged this series 
+I should have hurried but last week I have no time. :(
 
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 6ac0286..1540934 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1995,6 +1995,7 @@ static const struct hid_device_id hid_ignore_list[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LD, USB_DEVICE_ID_LD_MCT) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LD, USB_DEVICE_ID_LD_HYBRID) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LD, USB_DEVICE_ID_LD_HEATCONTROL) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_MADCATZ, USB_DEVICE_ID_MADCATZ_BEATPAD) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_MCC, USB_DEVICE_ID_MCC_PMD1024LS) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_MCC, USB_DEVICE_ID_MCC_PMD1208LS) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROCHIP, USB_DEVICE_ID_PICKIT1) },
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index d1cdd2d..43c3d75 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -518,6 +518,9 @@
- #define USB_DEVICE_ID_CRYSTALTOUCH	0x0006
- #define USB_DEVICE_ID_CRYSTALTOUCH_DUAL	0x0007
- 
-+#define USB_VENDOR_ID_MADCATZ		0x0738
-+#define USB_DEVICE_ID_MADCATZ_BEATPAD	0x4540
-+
- #define USB_VENDOR_ID_MCC		0x09db
- #define USB_DEVICE_ID_MCC_PMD1024LS	0x0076
- #define USB_DEVICE_ID_MCC_PMD1208LS	0x007a
-diff --git a/drivers/input/joystick/xpad.c b/drivers/input/joystick/xpad.c
-index ee16fb6..16974ef 100644
---- a/drivers/input/joystick/xpad.c
-+++ b/drivers/input/joystick/xpad.c
-@@ -238,6 +238,7 @@ static struct usb_device_id xpad_table [] = {
- 	XPAD_XBOX360_VENDOR(0x045e),		/* Microsoft X-Box 360 controllers */
- 	XPAD_XBOX360_VENDOR(0x046d),		/* Logitech X-Box 360 style controllers */
- 	XPAD_XBOX360_VENDOR(0x0738),		/* Mad Catz X-Box 360 controllers */
-+	{ USB_DEVICE(0x0738, 0x4540) },		/* Mad Catz Beat Pad */
- 	XPAD_XBOX360_VENDOR(0x0e6f),		/* 0x0e6f X-Box 360 controllers */
- 	XPAD_XBOX360_VENDOR(0x12ab),		/* X-Box 360 dance pads */
- 	XPAD_XBOX360_VENDOR(0x1430),		/* RedOctane X-Box 360 controllers */
+On 07/03/2012 06:15 AM, Seth Jennings wrote:
+> This patchset removes the current x86 dependency for zsmalloc
+> and introduces some performance improvements in the object
+> mapping paths.
+> 
+> It was meant to be a follow-on to my previous patchest
+> 
+> https://lkml.org/lkml/2012/6/26/540
+> 
+> However, this patchset differed so much in light of new performance
+> information that I mostly started over.
+> 
+> In the past, I attempted to compare different mapping methods
+> via the use of zcache and frontswap.  However, the nature of those
+> two features makes comparing mapping method efficiency difficult
+> since the mapping is a very small part of the overall code path.
+> 
+> In an effort to get more useful statistics on the mapping speed,
+> I wrote a microbenchmark module named zsmapbench, designed to
+> measure mapping speed by calling straight into the zsmalloc
+> paths.
+> 
+> https://github.com/spartacus06/zsmapbench
+> 
+> This exposed an interesting and unexpected result: in all
+> cases that I tried, copying the objects that span pages instead
+> of using the page table to map them, was _always_ faster.  I could
+> not find a case in which the page table mapping method was faster.
+> 
+> zsmapbench measures the copy-based mapping at ~560 cycles for a
+> map/unmap operation on spanned object for both KVM guest and bare-metal,
+> while the page table mapping was ~1500 cycles on a VM and ~760 cycles
+> bare-metal.  The cycles for the copy method will vary with
+> allocation size, however, it is still faster even for the largest
+> allocation that zsmalloc supports.
+> 
+> The result is convenient though, as mempcy is very portable :)
+
+Today, I tested zsmapbench in my embedded board(ARM).
+tlb-flush is 30% faster than copy-based so it's always not win.
+I think it depends on CPU speed/cache size.
+
+zram is already very popular on embedded systems so I want to use
+it continuously without 30% big demage so I want to keep our old approach
+which supporting local tlb flush. 
+
+Of course, in case of KVM guest, copy-based would be always bin win.
+So shouldn't we support both approach? It could make code very ugly
+but I think it has enough value.
+
+Any thought?
+
+
+> 
+> This patchset replaces the x86-only page table mapping code with
+> copy-based mapping code. It also makes changes to optimize this
+> new method further.
+> 
+> There are no changes in arch/x86 required.
+> 
+> Patchset is based on greg's staging-next.
+> 
+> Seth Jennings (4):
+>   zsmalloc: remove x86 dependency
+>   zsmalloc: add single-page object fastpath in unmap
+>   zsmalloc: add details to zs_map_object boiler plate
+>   zsmalloc: add mapping modes
+> 
+>  drivers/staging/zcache/zcache-main.c     |    6 +-
+>  drivers/staging/zram/zram_drv.c          |    7 +-
+>  drivers/staging/zsmalloc/Kconfig         |    4 -
+>  drivers/staging/zsmalloc/zsmalloc-main.c |  124 ++++++++++++++++++++++--------
+>  drivers/staging/zsmalloc/zsmalloc.h      |   14 +++-
+>  drivers/staging/zsmalloc/zsmalloc_int.h  |    6 +-
+>  6 files changed, 114 insertions(+), 47 deletions(-)
+> 
+
+
 -- 
-1.7.9.5
+Kind regards,
+Minchan Kim
+
 
