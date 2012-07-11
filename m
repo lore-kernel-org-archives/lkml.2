@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932713Ab2GKNvd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 09:51:33 -0400
-Received: from smtp3.mundo-r.com ([212.51.32.191]:64298 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757682Ab2GKNuX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 09:50:23 -0400
+	id S932721Ab2GKNvr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 09:51:47 -0400
+Received: from smtp3.mundo-r.com ([212.51.32.191]:7961 "EHLO smtp4.mundo-r.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757675Ab2GKNuW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 09:50:22 -0400
 X-IronPort-Anti-Spam-Filtered: true
 X-IronPort-Anti-Spam-Result: Av0EAG6E/U9bdWOb/2dsb2JhbABFt16BB4IgAQEFJ1IQIDE8GwcSiBG9V5EuA5U6iSaGYIJh
 X-IronPort-AV: E=Sophos;i="4.77,568,1336341600"; 
-   d="scan'208";a="541808138"
+   d="scan'208";a="541808135"
 From: "Javier M. Mellid" <jmunhoz@igalia.com>
 To: gregkh@linuxfoundation.org, gewang@siliconmotion.com
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         "Javier M. Mellid" <jmunhoz@igalia.com>
-Subject: [PATCH 9/9] staging: sm7xxfb: cleanup on smtc_alloc_fb_info
-Date: Wed, 11 Jul 2012 15:49:41 +0200
-Message-Id: <1342014581-2979-10-git-send-email-jmunhoz@igalia.com>
+Subject: [PATCH 6/9] staging: sm7xxfb: rename sm712_set_timing to sm7xx_set_timing
+Date: Wed, 11 Jul 2012 15:49:38 +0200
+Message-Id: <1342014581-2979-7-git-send-email-jmunhoz@igalia.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1342014581-2979-1-git-send-email-jmunhoz@igalia.com>
 References: <1342014581-2979-1-git-send-email-jmunhoz@igalia.com>
@@ -27,76 +26,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Javier M. Mellid" <jmunhoz@igalia.com>
 
-This patch improves coding style on smtc_alloc_fb_info.
+sm712_set_timing handles timing for 0x710, 0x712 and 0x720 chips. This
+patch renames the name of the function of sm712_set_timing to
+sm7xx_set_timing.
 
 Tested with SM712.
 
 Signed-off-by: Javier M. Mellid <jmunhoz@igalia.com>
 ---
- drivers/staging/sm7xxfb/sm7xxfb.c |   36 ++++++++++++++++++------------------
- 1 file changed, 18 insertions(+), 18 deletions(-)
+ drivers/staging/sm7xxfb/sm7xxfb.c |   24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
 diff --git a/drivers/staging/sm7xxfb/sm7xxfb.c b/drivers/staging/sm7xxfb/sm7xxfb.c
-index baee015..d9b1cd3 100644
+index ac49c98..119f6d1 100644
 --- a/drivers/staging/sm7xxfb/sm7xxfb.c
 +++ b/drivers/staging/sm7xxfb/sm7xxfb.c
-@@ -673,7 +673,7 @@ static struct fb_ops smtcfb_ops = {
- };
+@@ -135,7 +135,7 @@ static int __init sm7xx_vga_setup(char *options)
+ }
+ __setup("vga=", sm7xx_vga_setup);
  
- /*
-- * Alloc struct smtcfb_info and assign the default value
-+ * alloc struct smtcfb_info and assign the default value
-  */
- static struct smtcfb_info *smtc_alloc_fb_info(struct pci_dev *pdev, char *name)
+-static void sm712_set_timing(struct smtcfb_info *sfb)
++static void sm7xx_set_timing(struct smtcfb_info *sfb)
  {
-@@ -686,30 +686,30 @@ static struct smtcfb_info *smtc_alloc_fb_info(struct pci_dev *pdev, char *name)
+ 	int i = 0, j = 0;
+ 	u32 m_nScreenStride;
+@@ -243,6 +243,17 @@ static void sm712_set_timing(struct smtcfb_info *sfb)
  
- 	sfb->pdev = pdev;
+ }
  
--	/*** Init sfb->fb with default value ***/
-+	/* init sfb->fb with default value */
++static void smtc_set_timing(struct smtcfb_info *sfb)
++{
++	switch (sfb->chip_id) {
++	case 0x710:
++	case 0x712:
++	case 0x720:
++		sm7xx_set_timing(sfb);
++		break;
++	}
++}
 +
- 	sfb->fb.flags = FBINFO_FLAG_DEFAULT;
- 	sfb->fb.fbops = &smtcfb_ops;
--	sfb->fb.var = smtcfb_var;
--	sfb->fb.fix = smtcfb_fix;
+ static void sm712_setpalette(int regno, unsigned red, unsigned green,
+ 			     unsigned blue, struct fb_info *info)
+ {
+@@ -255,17 +266,6 @@ static void sm712_setpalette(int regno, unsigned red, unsigned green,
+ 	smtc_mmiowb(blue >> 10, dac_val);
+ }
  
-+	sfb->fb.fix = smtcfb_fix;
- 	strcpy(sfb->fb.fix.id, name);
- 
--	sfb->fb.fix.type = FB_TYPE_PACKED_PIXELS;
--	sfb->fb.fix.type_aux = 0;
--	sfb->fb.fix.xpanstep = 0;
--	sfb->fb.fix.ypanstep = 0;
--	sfb->fb.fix.ywrapstep = 0;
--	sfb->fb.fix.accel = FB_ACCEL_SMI_LYNX;
+-static void smtc_set_timing(struct smtcfb_info *sfb)
+-{
+-	switch (sfb->chip_id) {
+-	case 0x710:
+-	case 0x712:
+-	case 0x720:
+-		sm712_set_timing(sfb);
+-		break;
+-	}
+-}
 -
--	sfb->fb.var.nonstd = 0;
--	sfb->fb.var.activate = FB_ACTIVATE_NOW;
--	sfb->fb.var.height = -1;
--	sfb->fb.var.width = -1;
--	/* text mode acceleration */
-+	sfb->fb.fix.type        = FB_TYPE_PACKED_PIXELS;
-+	sfb->fb.fix.type_aux    = 0;
-+	sfb->fb.fix.xpanstep    = 0;
-+	sfb->fb.fix.ypanstep    = 0;
-+	sfb->fb.fix.ywrapstep   = 0;
-+	sfb->fb.fix.accel       = FB_ACCEL_SMI_LYNX;
-+
-+	sfb->fb.var             = smtcfb_var;
-+	sfb->fb.var.nonstd      = 0;
-+	sfb->fb.var.activate    = FB_ACTIVATE_NOW;
-+	sfb->fb.var.height      = -1;
-+	sfb->fb.var.width       = -1;
- 	sfb->fb.var.accel_flags = FB_ACCELF_TEXT;
--	sfb->fb.var.vmode = FB_VMODE_NONINTERLACED;
-+	sfb->fb.var.vmode       = FB_VMODE_NONINTERLACED;
- 
--	sfb->fb.pseudo_palette = sfb->colreg;
-+	sfb->fb.pseudo_palette  = sfb->colreg;
- 
- 	sfb->fb.par = sfb;
- 
+ /* chan_to_field
+  *
+  * convert a colour value into a field position
 -- 
 1.7.10
 
