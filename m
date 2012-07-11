@@ -1,51 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757015Ab2GKJ5B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 05:57:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49445 "EHLO mx1.redhat.com"
+	id S1756970Ab2GKJ4w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 05:56:52 -0400
+Received: from mga09.intel.com ([134.134.136.24]:29919 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756995Ab2GKJ46 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 05:56:58 -0400
-Message-ID: <4FFD4DE5.6080409@redhat.com>
-Date: Wed, 11 Jul 2012 12:56:53 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: mtosatti@redhat.com, mst@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Subject: Re: [PATCH] kvm: Fix device assignment threaded irq handler
-References: <20120709165152.30002.32440.stgit@bling.home>
-In-Reply-To: <20120709165152.30002.32440.stgit@bling.home>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1756929Ab2GKJ4r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 05:56:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="164196349"
+From: Artem Bityutskiy <dedekind1@gmail.com>
+To: Theodore Tso <tytso@mit.edu>, Jan Kara <jack@suse.cz>
+Cc: Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
+        Ext4 Mailing List <linux-ext4@vger.kernel.org>
+Subject: [PATCHv6 4/5] ext4: weed out ext4_write_super
+Date: Wed, 11 Jul 2012 12:58:17 +0300
+Message-Id: <1342000698-13556-5-git-send-email-dedekind1@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1342000698-13556-1-git-send-email-dedekind1@gmail.com>
+References: <1342000698-13556-1-git-send-email-dedekind1@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09/2012 07:53 PM, Alex Williamson wrote:
-> The kernel no longer allows us to pass NULL for the hard handler
-> without also specifying IRQF_ONESHOT.  IRQF_ONESHOT imposes latency
-> in the exit path that we don't need for MSI interrupts.  Long term
-> we'd like to inject these interrupts from the hard handler when
-> possible.  In the short term, we can create dummy hard handlers
-> that return us to the previous behavior.  Credit to Michael for
-> original patch.
-> 
-> Fixes: https://bugzilla.kernel.org/show_bug.cgi?id=43328
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> ---
-> 
-> Patch against kvm/master for v3.5
-> 
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
+We do not depend on VFS's '->write_super()' anymore and do not need the
+'s_dirt' flag anymore, so weed out 'ext4_write_super()' and 's_dirt'.
 
-Thanks, queued for 3.5.
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+---
+ fs/ext4/super.c |   10 ----------
+ 1 files changed, 0 insertions(+), 10 deletions(-)
 
-
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index a391c53..622d5c7 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -74,7 +74,6 @@ static const char *ext4_decode_error(struct super_block *sb, int errno,
+ static int ext4_remount(struct super_block *sb, int *flags, char *data);
+ static int ext4_statfs(struct dentry *dentry, struct kstatfs *buf);
+ static int ext4_unfreeze(struct super_block *sb);
+-static void ext4_write_super(struct super_block *sb);
+ static int ext4_freeze(struct super_block *sb);
+ static struct dentry *ext4_mount(struct file_system_type *fs_type, int flags,
+ 		       const char *dev_name, void *data);
+@@ -1194,7 +1193,6 @@ static const struct super_operations ext4_nojournal_sops = {
+ 	.dirty_inode	= ext4_dirty_inode,
+ 	.drop_inode	= ext4_drop_inode,
+ 	.evict_inode	= ext4_evict_inode,
+-	.write_super	= ext4_write_super,
+ 	.put_super	= ext4_put_super,
+ 	.statfs		= ext4_statfs,
+ 	.remount_fs	= ext4_remount,
+@@ -4203,7 +4201,6 @@ static int ext4_commit_super(struct super_block *sb, int sync)
+ 	es->s_free_inodes_count =
+ 		cpu_to_le32(percpu_counter_sum_positive(
+ 				&EXT4_SB(sb)->s_freeinodes_counter));
+-	sb->s_dirt = 0;
+ 	BUFFER_TRACE(sbh, "marking dirty");
+ 	ext4_superblock_csum_set(sb, es);
+ 	mark_buffer_dirty(sbh);
+@@ -4310,13 +4307,6 @@ int ext4_force_commit(struct super_block *sb)
+ 	return ret;
+ }
+ 
+-static void ext4_write_super(struct super_block *sb)
+-{
+-	lock_super(sb);
+-	ext4_commit_super(sb, 1);
+-	unlock_super(sb);
+-}
+-
+ static int ext4_sync_fs(struct super_block *sb, int wait)
+ {
+ 	int ret = 0;
 -- 
-error compiling committee.c: too many arguments to function
-
+1.7.7.6
 
