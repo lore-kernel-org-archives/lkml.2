@@ -1,46 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932625Ab2GKO1r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 10:27:47 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52449 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753968Ab2GKO1p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 10:27:45 -0400
-Message-ID: <4FFD8D58.6060601@gmail.com>
-Date: Wed, 11 Jul 2012 22:27:36 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Taku Izumi <izumi.taku@jp.fujitsu.com>
-CC: Bjorn Helgaas <bhelgaas@google.com>, Don Dutile <ddutile@redhat.com>,
-        Yijing Wang <wangyijing@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Keping Chen <chenkeping@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [RFC PATCH 01/14] PCI: add pcie_flags into struct pci_dev to
- cache PCIe capabilities register
-References: <1341935655-5381-1-git-send-email-jiang.liu@huawei.com> <1341935655-5381-2-git-send-email-jiang.liu@huawei.com> <20120711180112.3ae76a2e.izumi.taku@jp.fujitsu.com>
-In-Reply-To: <20120711180112.3ae76a2e.izumi.taku@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S932746Ab2GKO2I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 10:28:08 -0400
+Received: from mga11.intel.com ([192.55.52.93]:5962 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932521Ab2GKO2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 10:28:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="191275026"
+Message-ID: <1342017141.18274.57.camel@sauron.fi.intel.com>
+Subject: Re: [PATCHv7 0/5] ext4: stop using write_supers and s_dirt
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Theodore Tso <tytso@mit.edu>
+Cc: Jan Kara <jack@suse.cz>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
+        Ext4 Mailing List <linux-ext4@vger.kernel.org>
+Date: Wed, 11 Jul 2012 17:32:21 +0300
+In-Reply-To: <1342014404-14834-1-git-send-email-dedekind1@gmail.com>
+References: <1342014404-14834-1-git-send-email-dedekind1@gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-fG1AhFxsLS9nIHkcvnJf"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11/2012 05:01 PM, Taku Izumi wrote:
->> +++ b/include/linux/pci.h
->> @@ -258,6 +258,7 @@ struct pci_dev {
->>  	u8		pcie_mpss:3;	/* PCI-E Max Payload Size Supported */
->>  	u8		rom_base_reg;	/* which config register controls the ROM */
->>  	u8		pin;  		/* which interrupt pin this device uses */
->> +	u16		pcie_flags;	/* cached PCI-E Capabilities Register */
-> 
->  "xxx_flags" sounds like a bit flag. This variable stores a value of PCIe capability 
->  register, doesn't it?   How about "pcie_cap_reg" ?
-Hi Taku,
-	Good suggestion, will change it.
 
-	Thanks!
-	Gerry
+--=-fG1AhFxsLS9nIHkcvnJf
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+On Wed, 2012-07-11 at 16:46 +0300, Artem Bityutskiy wrote:
+> This patch-set makes ext4 file-system stop using the VFS '->write_supers(=
+)'
+> call-back and the '->s_dirt' superblock field because I plan to remove th=
+em
+> once all users are gone.
+
+Hi Ted, is there any chance for this stuff to hit 3.6?
+
+Basically I have 3 pending file-systems:
+1. ext4 (these patches)
+2. sysv - trivial, I hope Andrew would pick them.
+3. ufs - should be straight-forward to change the same way I changed
+hfs. I'll send patches soon. I hope Andrew would pick them as well.
+
+Everything else - either in upstream or in -mm or in sub-system trees.
+
+After this, I can kill sync_supers and have a chance that Linus would
+accept the patches at 3.6-rc1, and end up with sync_super-less 3.6.
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-fG1AhFxsLS9nIHkcvnJf
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJP/Y51AAoJECmIfjd9wqK00i0P/Riv9H4w/5mJHWksCxYkJvk5
+p+JxXiF4NGdwqur++B0g2EFBnYsNg1Zg8GThUB0T+9z5Ooopb5tm+KFDcvUXFUBQ
+MqfOhbRRJ46Vc+7j02XSIm3L+oJWPVdfgWZOmYhfHZrUnxdSXe1LemoE8TAkDY5z
+5C0wdmj6c1gJHxS5Z63bcAm51FAfZS67GdL+A7fmPiZSMZnm5w9UoaPhcqg5DWss
+c52H82vNW4/R+k3InkR8KccqvWbm7zipP4sE/wyo0EvGVsq0OEof3zzcMd8JDeS1
+wCXQjBbQuejaP3UUk/Vr1iQa5hzIF+XFTAciZT0UAEqhJR5J5i+a44uUECHzAjHh
+behhtYJh7NUwt2WJZoMJTW7w/lVER1Rk+w4qeJmflSVOtLFG03FIfwGlnF4xIpy1
+Bto6+KdEfwAkQ0HDa/Nf0jCUSIu/5tsGKlGsN05T9ESqzfB8SDW+q2WeHZQmSQ9G
+cvuSNx76D0deHCdd674hluADz5V8rlleJBK8ePVw9JdbHFJuKPkSLfqMHC+WS1ZH
+S4eQ9dE3D2LzAmcVxT1Tq+tYK5lIE0YSCID0E9RvdUd8Vdtv98NtShVqua045ans
+sJGp3WoiA9O0UCFbG/UD2IuLWP3JVw27DMsauWmKDwHb820YZf9oQnatjidNrRlc
+0zVs84QRuCf0ET5YL+tY
+=//t4
+-----END PGP SIGNATURE-----
+
+--=-fG1AhFxsLS9nIHkcvnJf--
+
