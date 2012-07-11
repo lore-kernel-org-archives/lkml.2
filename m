@@ -1,49 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757493Ab2GKMQS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 08:16:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24446 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751014Ab2GKMQQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 08:16:16 -0400
-Message-ID: <4FFD6E84.7000702@redhat.com>
-Date: Wed, 11 Jul 2012 08:16:04 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
+	id S1757501Ab2GKMRE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 08:17:04 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:54429 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751014Ab2GKMRA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 08:17:00 -0400
+Message-ID: <4FFD6E8D.4040508@mvista.com>
+Date: Wed, 11 Jul 2012 16:16:13 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: John Stultz <johnstul@us.ibm.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, stable@vger.kernel.org
-Subject: Re: [PATCH 0/6] Fix for leapsecond caused hrtimer/futex issue (updated)
-References: <1341960205-56738-1-git-send-email-johnstul@us.ibm.com>
-In-Reply-To: <1341960205-56738-1-git-send-email-johnstul@us.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Gerard Snitselaar <dev@snitselaar.org>
+CC: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        gregkh@linuxfoundation.org, balbi@ti.com, kishon@ti.com
+Subject: Re: [PATCH] usb: twl6030-usb: variable otg not declared in twl6030_usbotg_irq()
+ in linux-next
+References: <1341901940-12277-1-git-send-email-dev@snitselaar.org>
+In-Reply-To: <1341901940-12277-1-git-send-email-dev@snitselaar.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello.
 
+On 10-07-2012 10:32, Gerard Snitselaar wrote:
 
-On 07/10/2012 06:43 PM, John Stultz wrote:
-> Over the weekend, Thomas got a chance to review the leap second fix
-> in more detail and had a few additional changes he wanted to make
-> to improve performance as well as style.
-> 
-> So this iteration includes his modifications.
-> 
-> Once merged, I'll be working to get the backports finished as quickly
-> as I can and sent to -stable.
-> 
-> thanks
-> -john
-> 
+> commit ff9cce82 added back 2 lines that were removed by commit
+> c83a8542
 
-Add an Acked-by: Prarit Bhargava <prarit@redhat.com>
+    Please also specify the summaries of those 2 commits in parens.
 
-John -- I'll do some testing of this patchset today and tomorrow and let you
-know the results.
+> causing build of twl6030-usb to get an error due to otg being
+> referenced, but not declared. This patch removes those 2 lines again
+> to restore intent of commit c83a8542.
 
-P.
+> Signed-off-by: Gerard Snitselaar <dev@snitselaar.org>
+
+WBR, Sergei
+
