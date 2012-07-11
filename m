@@ -1,67 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757618Ab2GKNeb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 09:34:31 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48150 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754959Ab2GKNea (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 09:34:30 -0400
-Message-ID: <4FFD80E5.2010700@gmail.com>
-Date: Wed, 11 Jul 2012 07:34:29 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1757638Ab2GKNhk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 09:37:40 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53030 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755010Ab2GKNhi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 09:37:38 -0400
+Date: Wed, 11 Jul 2012 15:37:35 +0200
+From: Jan Kara <jack@suse.cz>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: linux-fsdevel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Jens Axboe <jaxboe@fusionio.com>
+Subject: Deadlocks due to per-process plugging
+Message-ID: <20120711133735.GA8122@quack.suse.cz>
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: perf with precise attribute kills all KVM based VMs
-References: <20120709141904.GC7298@redhat.com> <1341843844.3462.75.camel@twins> <4FFAED16.7050204@redhat.com> <4FFAEF13.7010108@gmail.com> <1341845396.3462.81.camel@twins> <4FFAEFF1.9000706@redhat.com> <1341845999.3462.86.camel@twins> <4FFCBD00.1030109@gmail.com> <20120711071006.GF23898@redhat.com> <1342000187.3462.134.camel@twins> <20120711095337.GJ23898@redhat.com>
-In-Reply-To: <20120711095337.GJ23898@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/11/12 3:53 AM, Gleb Natapov wrote:
-> On Wed, Jul 11, 2012 at 11:49:47AM +0200, Peter Zijlstra wrote:
->> On Wed, 2012-07-11 at 10:10 +0300, Gleb Natapov wrote:
->>
->>> Looks like Avi is right about the overshoot. Can you test something like this?
+  Hello,
 
-I head to the airport in a few minutes; I'll try it out tonight or 
-tomorrow morning.
+  we've recently hit a deadlock in our QA runs which is caused by the
+per-process plugging code. The problem is as follows:
+  process A					process B (kjournald)
+  generic_file_aio_write()
+    blk_start_plug(&plug);
+    ...
+    somewhere in here we allocate memory and
+    direct reclaim submits buffer X for IO
+    ...
+    ext3_write_begin()
+      ext3_journal_start()
+        we need more space in a journal
+        so we want to checkpoint old transactions,
+        we block waiting for kjournald to commit
+        a currently running transaction.
+						journal_commit_transaction()
+						  wait for IO on buffer X
+						  to complete as it is part
+						  of the current transaction
 
-David
+  => deadlock since A waits for B and B waits for A to do unplug.
+BTW: I don't think this is really ext3/ext4 specific. I think other
+filesystems can get into problems as well when direct reclaim submits some
+IO and the process subsequently blocks without submitting the IO.
 
->>> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
->>> index 166546e..5fb371a 100644
->>> --- a/arch/x86/kernel/cpu/perf_event_intel.c
->>> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
->>> @@ -1374,8 +1374,11 @@ static struct perf_guest_switch_msr *intel_guest_get_msrs(int *nr)
->>>   	arr[0].msr = MSR_CORE_PERF_GLOBAL_CTRL;
->>>   	arr[0].host = x86_pmu.intel_ctrl & ~cpuc->intel_ctrl_guest_mask;
->>>   	arr[0].guest = x86_pmu.intel_ctrl & ~cpuc->intel_ctrl_host_mask;
->>> +	arr[1].msr = MSR_IA32_PEBS_ENABLE;
->>> +	arr[1].host = cpuc->pebs_enabled;
->>> +	arr[1].guest = 0;
->>> +	*nr = 2;
->>>
->>> -	*nr = 1;
->>>   	return arr;
->>>   }
->>
->>
->> You also need to clear TR, BTS, BTINT from MSR_IA32_DEBUGCTLMSR and
->> ideally you'd also clear MSR_IA32_DS_AREA so that any write will be a
->> proper NULL deref or such.
-> Yes. With the patch above :pp modifier does not crash guest for me, but
-> in theory it should since BTS are still written to DS. May be BTS writes do
-> not overshoot guest entry. Will have to ask Intel for clarification.
->
-> --
-> 			Gleb.
->
+Effectively the per process plugging introduces a lock dependency
+buffer_lock -> any lock acquired after IO submission before the process'
+queue is unplugged. This certainly creates lots of cycles in the lock
+dependency graph...
 
+I'm wondering how we should fix this best. Trivial fix would be to flush
+the IO plug on every schedule, not just io_schedule(), but that can have
+some peformance implications I guess (the effect of plugging would be very
+limited). Better (although more tedious) solution would be to push the
+plugs from higher levels down into the filesystems where they could be
+managed to not create problematic lock dependencies (but e.g. for ext3/ext4
+that means we have to unplug after writing each page so it is effectively
+rather similar to unplugging on every schedule()).
 
+Thoughts?
+
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
