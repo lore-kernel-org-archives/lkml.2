@@ -1,49 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932511Ab2GKNZT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 09:25:19 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:51479 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932455Ab2GKNZM (ORCPT
+	id S1757578Ab2GKN2o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 09:28:44 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45245 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754965Ab2GKN2n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 09:25:12 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Roland Stigge <stigge@antcom.de>
-Subject: Re: [PATCH v2 04/23] ARM: LPC32xx: Add DMA configuration to platform data
-Date: Wed, 11 Jul 2012 13:25:02 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>, arm@kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kevin.wells@nxp.com, srinivas.bakki@nxp.com, aletes.xgr@gmail.com
-References: <1339692673-7848-1-git-send-email-stigge@antcom.de> <201207111233.24780.arnd@arndb.de> <4FFD744F.8060204@antcom.de>
-In-Reply-To: <4FFD744F.8060204@antcom.de>
+	Wed, 11 Jul 2012 09:28:43 -0400
+Date: Wed, 11 Jul 2012 14:28:41 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Krystian Garbaciak <krystian.garbaciak@diasemi.com>
+Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator: Fix bug in regulator_mode_to_status() core
+ function.
+Message-ID: <20120711132655.GG3938@opensource.wolfsonmicro.com>
+References: <201207111221.q6BCLW8L014872@sw-eng-lt-dc-vm2>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207111325.03195.arnd@arndb.de>
-X-Provags-ID: V02:K0:DFTYRgcXMy5zsUFB9hsxgjAqvMZ9XE9hOLeMdcpYtQ6
- p/K7XXtAdW7GNi0njYz0d7kmuzI+tiMYPkw73WnktcFMKrQ4qo
- 6rI14kS4eL0CecggntqxzeSPa0ZqDq2v4SPhyXdescLsPfj2UB
- k07DyMEdN6hDuM+a+02HrWBa2hkkpQJkbqhm8x3hyBcwVqKYzw
- D3suJHVemRojPtUoWL/RQXOw7L66wBZ5+IJ6PefTk219hK1Lzf
- vX7ENlqNg2tmHz3bB9C3TjviXrhDGGHxh2zhnS88GgKtZBL5Iu
- L6j+K6IqwO8YefPTnxcfkmAzEoO5D77+GhQZc5KTltYdCH3vWU
- GpFnE1ktuN7YxGsMKzKU=
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="CEUtFxTsmBsHRLs3"
+Content-Disposition: inline
+In-Reply-To: <201207111221.q6BCLW8L014872@sw-eng-lt-dc-vm2>
+X-Cookie: If you can read this, you're too close.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 11 July 2012, Roland Stigge wrote:
-> OK, thanks!
-> 
-> Is a patch on top of the already provided lpc32xx-next branches the
-> preferred form for a fix? On top of which branch do you need it?
-> 
 
-Yes, I think in this case, changing it on top of that branch is best.
+--CEUtFxTsmBsHRLs3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I'm not sure how that works for the nand drivers though, since they
-are in another tree.
+On Wed, Jul 11, 2012 at 01:10:01PM +0100, Krystian Garbaciak wrote:
+> Fix typo for case REGULATOR_STATUS_STANDBY -> REGULATOR_MODE_STANDBY.
+> For undefined mode, return REGULATOR_STATUS_ERROR (0 is not valid status).
 
-	Arnd
+This is deliberate.  It's not reporting an error, it's reporting an
+indeterminate status which is a different thing.
+
+--CEUtFxTsmBsHRLs3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP/X8nAAoJEBus8iNuMP3dFF0P/3of0bSCZbm00mEulO/z/LHO
+/leErSMgLvKbkMLf4Ln4N3W/yWZn8T/ppXAYCx8oZ0ObNX0/Pijq2mkw2+JSD0dk
+j6h92YPT8mgShJiWRRKnciF0u+5NAb9j5T3/GV/94J1O2ZLs0P+EBvTTU+Goqd6n
+ZwYlKuFOmjSYndfOekYbnxCXAOLB6aY3iVKLFz4wIk5fhqxrZxegBX4VjBw9JOLV
+xoYzM0yNK51ZzEJa5VbYqba3IAy6mx0EnfKAzOAdL7Pda51sS8wHTn3SEbcMFHNd
+s6+1lvqMec1CRCSAvovZRypuF7hyvm3HU6ldJT+8GKw8hKhBgZr3E00icuGCohY3
+T8vz7uhU1VKIAay5+eTVJkoB8cSZlk5mOPD8Iq66RooTNe1eB1OdaIUcQ9jUCaOM
+8pd1AIHJr9H/POytY5J70dsOtugVlt8CcSJOXYAszuaov/8fmKieU2Gwm9T9ZETy
+BMcde5mnE6OeZAKfECvUQ5IaWlzIbw48cgEkwVY1B5eVra9Yu7jh5K71t3+rMrhM
+p2azMQtvvVOmxch5dfTGwbtbaPHF6da2+rQlKEeJXkEvwH3HX9rfMwgCxHDyZIPc
+v8afLAJMAZbE1BL3SpSIspvMm+QYzKkNoypbduGADoCZzr7qZ79Gs8jV1x8G3pxC
+/WQBNFXF13t+Bt85YLS+
+=FrF3
+-----END PGP SIGNATURE-----
+
+--CEUtFxTsmBsHRLs3--
