@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964786Ab2GKRDP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 13:03:15 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:53877 "EHLO zene.cmpxchg.org"
+	id S933101Ab2GKRDN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 13:03:13 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:53879 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933014Ab2GKRCz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933018Ab2GKRCz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 11 Jul 2012 13:02:55 -0400
 From: Johannes Weiner <hannes@cmpxchg.org>
 To: Andrew Morton <akpm@linux-foundation.org>
@@ -13,9 +13,9 @@ Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         David Rientjes <rientjes@google.com>,
         Wanpeng Li <liwp.linux@gmail.com>, linux-mm@kvack.org,
         cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [patch 04/10] mm: memcg: only check for PageSwapCache when uncharging anon
-Date: Wed, 11 Jul 2012 19:02:16 +0200
-Message-Id: <1342026142-7284-5-git-send-email-hannes@cmpxchg.org>
+Subject: [patch 06/10] mm: memcg: remove unneeded shmem charge type
+Date: Wed, 11 Jul 2012 19:02:18 +0200
+Message-Id: <1342026142-7284-7-git-send-email-hannes@cmpxchg.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1342026142-7284-1-git-send-email-hannes@cmpxchg.org>
 References: <1342026142-7284-1-git-send-email-hannes@cmpxchg.org>
@@ -23,57 +23,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Only anon pages that are uncharged at the time of the last page table
-mapping vanishing may be in swapcache.
-
-When shmem pages, file pages, swap-freed anon pages, or just migrated
-pages are uncharged, they are known for sure to be not in swapcache.
+shmem page charges have not needed a separate charge type to tell them
+from regular file pages since 08e552c 'memcg: synchronized LRU'.
 
 Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Acked-by: Michal Hocko <mhocko@suse.cz>
 ---
- mm/memcontrol.c |   13 ++++---------
- 1 files changed, 4 insertions(+), 9 deletions(-)
+ mm/memcontrol.c |   11 +----------
+ 1 files changed, 1 insertions(+), 10 deletions(-)
 
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index fb8d525..a5c0693 100644
+index 081780b..2c7d164c 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -3094,8 +3094,6 @@ void mem_cgroup_uncharge_cache_page(struct page *page)
- {
- 	VM_BUG_ON(page_mapped(page));
- 	VM_BUG_ON(page->mapping);
--	if (PageSwapCache(page))
--		return;
- 	__mem_cgroup_uncharge_common(page, MEM_CGROUP_CHARGE_TYPE_CACHE, false);
- }
+@@ -379,7 +379,6 @@ static bool move_file(void)
+ enum charge_type {
+ 	MEM_CGROUP_CHARGE_TYPE_CACHE = 0,
+ 	MEM_CGROUP_CHARGE_TYPE_ANON,
+-	MEM_CGROUP_CHARGE_TYPE_SHMEM,	/* used by page migration of shmem */
+ 	MEM_CGROUP_CHARGE_TYPE_SWAPOUT,	/* for accounting swapcache */
+ 	MEM_CGROUP_CHARGE_TYPE_DROP,	/* a page was unused swap cache */
+ 	NR_CHARGE_TYPE,
+@@ -2903,8 +2902,6 @@ int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
  
-@@ -3160,8 +3158,6 @@ mem_cgroup_uncharge_swapcache(struct page *page, swp_entry_t ent, bool swapout)
- 	if (!swapout) /* this was a swap cache but the swap is unused ! */
- 		ctype = MEM_CGROUP_CHARGE_TYPE_DROP;
+ 	if (unlikely(!mm))
+ 		mm = &init_mm;
+-	if (!page_is_file_cache(page))
+-		type = MEM_CGROUP_CHARGE_TYPE_SHMEM;
  
--	if (PageSwapCache(page))
--		return;
- 	memcg = __mem_cgroup_uncharge_common(page, ctype, false);
- 
+ 	if (!PageSwapCache(page))
+ 		ret = mem_cgroup_charge_common(page, mm, gfp_mask, type);
+@@ -3311,10 +3308,8 @@ void mem_cgroup_prepare_migration(struct page *page, struct page *newpage,
+ 	 */
+ 	if (PageAnon(page))
+ 		ctype = MEM_CGROUP_CHARGE_TYPE_ANON;
+-	else if (page_is_file_cache(page))
+-		ctype = MEM_CGROUP_CHARGE_TYPE_CACHE;
+ 	else
+-		ctype = MEM_CGROUP_CHARGE_TYPE_SHMEM;
++		ctype = MEM_CGROUP_CHARGE_TYPE_CACHE;
  	/*
-@@ -3351,11 +3347,10 @@ void mem_cgroup_end_migration(struct mem_cgroup *memcg,
- 		unused = oldpage;
- 	}
- 	anon = PageAnon(used);
--	if (!PageSwapCache(unused))
--		__mem_cgroup_uncharge_common(unused,
--					     anon ? MEM_CGROUP_CHARGE_TYPE_ANON
--					     : MEM_CGROUP_CHARGE_TYPE_CACHE,
--					     true);
-+	__mem_cgroup_uncharge_common(unused,
-+				     anon ? MEM_CGROUP_CHARGE_TYPE_ANON
-+				     : MEM_CGROUP_CHARGE_TYPE_CACHE,
-+				     true);
- 	css_put(&memcg->css);
+ 	 * The page is committed to the memcg, but it's not actually
+ 	 * charged to the res_counter since we plan on replacing the
+@@ -3408,10 +3403,6 @@ void mem_cgroup_replace_page_cache(struct page *oldpage,
+ 	 */
+ 	if (!memcg)
+ 		return;
+-
+-	if (PageSwapBacked(oldpage))
+-		type = MEM_CGROUP_CHARGE_TYPE_SHMEM;
+-
  	/*
- 	 * We disallowed uncharge of pages under migration because mapcount
+ 	 * Even if newpage->mapping was NULL before starting replacement,
+ 	 * the newpage may be on LRU(or pagevec for LRU) already. We lock
 -- 
 1.7.7.6
 
