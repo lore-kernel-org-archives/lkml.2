@@ -1,145 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757350Ab2GKLiY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 07:38:24 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:44034 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753103Ab2GKLiW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 07:38:22 -0400
-Message-ID: <1342006696.810.19.camel@mop>
-Subject: Re: pr_cat() + CATSTR(name, size)?
-From: Kay Sievers <kay@vrfy.org>
-To: Joe Perches <joe@perches.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 11 Jul 2012 13:38:16 +0200
-In-Reply-To: <1342002808.810.12.camel@mop>
-References: <1342002808.810.12.camel@mop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.5.3.1 (3.5.3.1-4.fc18) 
-Mime-Version: 1.0
+	id S1757368Ab2GKLjo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 07:39:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6131 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753636Ab2GKLjm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 07:39:42 -0400
+Message-ID: <4FFD65E0.500@redhat.com>
+Date: Wed, 11 Jul 2012 14:39:12 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+MIME-Version: 1.0
+To: Christian Borntraeger <borntraeger@de.ibm.com>
+CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Rik van Riel <riel@redhat.com>, S390 <linux-s390@vger.kernel.org>,
+        Carsten Otte <cotte@de.ibm.com>, KVM <kvm@vger.kernel.org>,
+        chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Joerg Roedel <joerg.roedel@amd.com>,
+        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
+        Alexander Graf <agraf@suse.de>, Paul Mackerras <paulus@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH RFC 0/2] kvm: Improving directed yield in PLE handler
+References: <20120709062012.24030.37154.sendpatchset@codeblue> <4FFA8E5E.3070108@de.ibm.com> <4FFD422B.9060008@redhat.com> <4FFD52CD.7040403@de.ibm.com> <4FFD5DA3.3010001@redhat.com> <4FFD6100.8050202@de.ibm.com>
+In-Reply-To: <4FFD6100.8050202@de.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-11 at 12:33 +0200, Kay Sievers wrote:
-> Hey Joe,
+On 07/11/2012 02:18 PM, Christian Borntraeger wrote:
+> On 11/07/12 13:04, Avi Kivity wrote:
+>> On 07/11/2012 01:17 PM, Christian Borntraeger wrote:
+>>> On 11/07/12 11:06, Avi Kivity wrote:
+>>> [...]
+>>>>> Almost all s390 kernels use diag9c (directed yield to a given guest cpu) for spinlocks, though.
+>>>>
+>>>> Perhaps x86 should copy this.
+>>>
+>>> See arch/s390/lib/spinlock.c
+>>> The basic idea is using several heuristics:
+>>> - loop for a given amount of loops
+>>> - check if the lock holder is currently scheduled by the hypervisor
+>>>   (smp_vcpu_scheduled, which uses the sigp sense running instruction)
+>>>   Dont know if such thing is available for x86. It must be a lot cheaper
+>>>   than a guest exit to be useful
+>> 
+>> We could make it available via shared memory, updated using preempt
+>> notifiers.  Of course piling on more pv makes this less attractive.
+>> 
+>>> - if lock holder is not running and we looped for a while do a directed
+>>>   yield to that cpu.
+>>>
+>>>>
+>>>>> So there is no win here, but there are other cases were diag44 is used, e.g. cpu_relax.
+>>>>> I have to double check with others, if these cases are critical, but for now, it seems 
+>>>>> that your dummy implementation  for s390 is just fine. After all it is a no-op until 
+>>>>> we implement something.
+>>>>
+>>>> Does the data structure make sense for you?  If so we can move it to
+>>>> common code (and manage it in kvm_vcpu_on_spin()).  We can guard it with
+>>>> CONFIG_KVM_HAVE_CPU_RELAX_INTERCEPT or something, so other archs don't
+>>>> have to pay anything.
+>>>
+>>> Ignoring the name,
+>> 
+>> What name would you suggest?
 > 
-> what do you think of this?
-> 
-> It would make composing continuation lines at the caller side entirely
-> race-free, and it might fit into the usual pattern.
-> 
-> The more interesting thing, this would allow us to completely race-free
-> use the dev_printk() calls with continuation content, which we should
-> avoid otherwise for integrity reasons.
+> maybe vcpu_no_progress instead of pause_loop_exited
 
-Better version with better range checking and _INIT() to reset the
-string for re-use. It prints:
-  [    0.000000] Kernel command line: root=/dev/sda2 ...
-  [    0.000000] 1:-12 -34 -56 -78 -90
-  [    0.000000] 2:-12 -34 -56 --90
-  [    0.000000] 3:-12 -34 --90
-  [    0.000000] 4:+12 +34 +-90
-  [    0.000000] 5:~12 ~34 ~-90
-  [    0.000000] PID hash table entries: 2048 (order: 2, 16384 bytes)
+Ah, I thouht you objected to the CONFIG var.  Maybe call it
+cpu_relax_intercepted since that's the linuxy name for the instruction.
 
-Thanks,
-Kay
+-- 
+error compiling committee.c: too many arguments to function
 
-
-diff --git a/kernel/printk.c b/kernel/printk.c
-index dba1821..1490153 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -48,6 +48,39 @@
- #define CREATE_TRACE_POINTS
- #include <trace/events/printk.h>
- 
-+#define CATSTR_INIT(name)		\
-+	name##_len = 0;
-+
-+#define CATSTR_DEFINE(name, max)	\
-+	char name[max];			\
-+	size_t name##_len = 0;		\
-+	size_t name##_max = max;
-+
-+#define pr_cat(name, fmt, ...)		\
-+	_catstr(name, &name##_len, name##_max, fmt, ##__VA_ARGS__)
-+
-+ssize_t _catstr(char *s, size_t *len, size_t size, const char *fmt, ...)
-+{
-+	va_list args;
-+	size_t r;
-+
-+	if (*len == size)
-+		return -EINVAL;
-+
-+	va_start(args, fmt);
-+	r = vsnprintf(s + *len, size - *len, fmt, args);
-+	va_end(args);
-+
-+	if (r >= size - *len) {
-+		*len = size;
-+		return -EINVAL;
-+	}
-+
-+	*len += r;
-+	s[*len] = '\0';
-+	return r;
-+}
-+
- /*
-  * Architectures can override it:
-  */
-@@ -668,6 +701,47 @@ void __init setup_log_buf(int early)
- 	char *new_log_buf;
- 	int free;
- 
-+	CATSTR_DEFINE(line, 24)
-+	CATSTR_DEFINE(line2, 16)
-+	CATSTR_DEFINE(line3, 12)
-+
-+	pr_cat(line, "1:");
-+	pr_cat(line, "-%i ", 12);
-+	pr_cat(line, "-%i ", 34);
-+	pr_cat(line, "-%i ", 56);
-+	pr_cat(line, "-%i ", 78);
-+	pr_warn("%s-%i\n", line, 90);
-+
-+	pr_cat(line2, "2:");
-+	pr_cat(line2, "-%i ", 12);
-+	pr_cat(line2, "-%i ", 34);
-+	pr_cat(line2, "-%i ", 56);
-+	pr_cat(line2, "-%i ", 78);
-+	pr_warn("%s-%i\n", line2, 90);
-+
-+	pr_cat(line3, "3:");
-+	pr_cat(line3, "-%i ", 12);
-+	pr_cat(line3, "-%i ", 34);
-+	pr_cat(line3, "-%i ", 56);
-+	pr_cat(line3, "-%i ", 78);
-+	pr_warn("%s-%i\n", line3, 90);
-+
-+	CATSTR_INIT(line3)
-+	pr_cat(line3, "4:");
-+	pr_cat(line3, "+%i ", 12);
-+	pr_cat(line3, "+%i ", 34);
-+	pr_cat(line3, "+%i ", 56);
-+	pr_cat(line3, "+%i ", 78);
-+	pr_warn("%s-%i\n", line3, 90);
-+
-+	CATSTR_INIT(line3)
-+	pr_cat(line3, "5:");
-+	pr_cat(line3, "~%i ", 12);
-+	pr_cat(line3, "~%i ", 34);
-+	pr_cat(line3, "~%i ", 56);
-+	pr_cat(line3, "~%i ", 78);
-+	pr_warn("%s-%i\n", line3, 90);
-+
- 	if (!new_log_buf_len)
- 		return;
- 
 
