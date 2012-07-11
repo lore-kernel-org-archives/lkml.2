@@ -1,67 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757538Ab2GKMpp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 08:45:45 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33029 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754693Ab2GKMpo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 08:45:44 -0400
-Date: Wed, 11 Jul 2012 14:45:39 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Prarit Bhargava <prarit@redhat.com>
-cc: John Stultz <johnstul@us.ibm.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, stable@vger.kernel.org
-Subject: Re: [PATCH 1/6] hrtimer: Provide clock_was_set_delayed()
-In-Reply-To: <4FFD6E5A.9060206@redhat.com>
-Message-ID: <alpine.LFD.2.02.1207111425260.32033@ionos>
-References: <1341960205-56738-1-git-send-email-johnstul@us.ibm.com> <1341960205-56738-2-git-send-email-johnstul@us.ibm.com> <4FFD6E5A.9060206@redhat.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1757548Ab2GKMtV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 08:49:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1702 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754663Ab2GKMtT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 08:49:19 -0400
+Message-ID: <4FFD762A.3060106@redhat.com>
+Date: Wed, 11 Jul 2012 15:48:42 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Alexander Graf <agraf@suse.de>
+CC: Christian Borntraeger <borntraeger@de.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Rik van Riel <riel@redhat.com>, S390 <linux-s390@vger.kernel.org>,
+        Carsten Otte <cotte@de.ibm.com>, KVM <kvm@vger.kernel.org>,
+        chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Joerg Roedel <joerg.roedel@amd.com>,
+        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH RFC 0/2] kvm: Improving directed yield in PLE handler
+References: <20120709062012.24030.37154.sendpatchset@codeblue> <4FFA8E5E.3070108@de.ibm.com> <4FFD422B.9060008@redhat.com> <4FFD52CD.7040403@de.ibm.com> <4FFD5DA3.3010001@redhat.com> <39DA3B9A-87D6-4EA5-B1FF-B6E30733EF7B@suse.de> <4FFD621D.5090607@redhat.com> <794FFD35-579D-48CE-890F-8FCC785032F3@suse.de>
+In-Reply-To: <794FFD35-579D-48CE-890F-8FCC785032F3@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Jul 2012, Prarit Bhargava wrote:
-> On 07/10/2012 06:43 PM, John Stultz wrote:
-> > clock_was_set() cannot be called from hard interrupt context because
-> > it calls on_each_cpu(). For fixing the widely reported leap seconds
-> > issue it's necessary to call it from the timer interrupt context.
-> > 
-> > Provide a new function which denotes it in the hrtimer cpu base
-> > structure of the cpu on which it is called and raising the timer
-> > softirq.
-> > 
-> > We then execute the clock_was_set() notificiation in the timer softirq
-> > context in hrtimer_run_pending().
+On 07/11/2012 02:52 PM, Alexander Graf wrote:
 > 
-> I wish there was a nicer way to do this ... but looking at the code I can't
-> figure out a better way.  (no offense John, it's just the way the code is ;) )
+> On 11.07.2012, at 13:23, Avi Kivity wrote:
+> 
+>> On 07/11/2012 02:16 PM, Alexander Graf wrote:
+>>>> 
+>>>>> yes the data structure itself seems based on the algorithm
+>>>>> and not on arch specific things. That should work. If we move that to common 
+>>>>> code then s390 will use that scheme automatically for the cases were we call 
+>>>>> kvm_vcpu_on_spin(). All others archs as well.
+>>>> 
+>>>> ARM doesn't have an instruction for cpu_relax(), so it can't intercept
+>>>> it.  Given ppc's dislike of overcommit,
+>>> 
+>>> What dislike of overcommit?
+>> 
+>> I understood ppc virtualization is more of the partitioning sort.
+>> Perhaps I misunderstood it.  But the reliance on device assignment, the
+>> restrictions on scheduling, etc. all point to it.
+> 
+> Well, you need to distinguish the different PPC targets here. In the embedded world, partitioning is obviously the biggest use case, though overcommit is possible. For big servers however, we usually do want overcommit and we do support it within the constraints hardware gives us.
+> 
+> It's really no different from x86 when it comes to the use case wideness :).
 
-Yeah, I had the same discussion with Peter earlier today. There is
-only a rather limited set of options.
+Okay, thanks for the correction.
 
-1) Retrigger the timer interrupt vectors on all CPUs - except the one
-   we are running on, but we have no interface for that at the moment
+> 
+>> 
+>>> 
+>>>> and the way it implements cpu_relax() by adjusting hw thread priority,
+>>> 
+>>> Yeah, I don't think we can intercept relaxing.
+>> 
+>> ... and the lack of ability to intercept cpu_relax() ...
+>> 
+>>> It's basically a nop-like instruction that gives hardware hints on its current priorities.
+>> 
+>> That's what x88 PAUSE does.  But we can intercept it (and not just any
+>> execution - we can restrict intercept to tight loops executed more than
+>> a specific number of times).
+> 
+> Yeah, it's pretty hard to fetch that information from PPC, since unlike x86 we split the hint from the loop. But I'll let Ben speak to that, he certainly knows way better how the hardware works.
 
-2) Do the nasty __smp_call_function_single() hack
+On x86 it's split from the loop as well (inside cpu_relax() like ppc).
+But the hardware detects the loop and lets us know about it.
 
-   Preallocate call_single_data for all cpus and do a
-   __smp_call_function_single() on all online cpus.
+> 
+>> 
+>>> That said, we can always add PV code.
+>> 
+>> Sure, but that's defeated by advancements like self-tuning PLE exits.
+>> It's hard to get this right.
+> 
+> Well, eventually everything we do in PV is going to be moot as soon as hardware catches up. In most cases from what I've seen it's only useful as an interim solution. But for that time it's good to have :).
 
-   This can be called from hard interrupt context or irq disabled
-   regions.
+Depends on how interim it is.  If better hardware is coming, I'd rather
+not add more pv-ness.
 
-   That would allow to get rid of the whole delay magic all
-   together.
 
-Thoughts?
+-- 
+error compiling committee.c: too many arguments to function
 
-	tglx
 
