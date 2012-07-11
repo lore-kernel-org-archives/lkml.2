@@ -1,93 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932645Ab2GKNqs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 09:46:48 -0400
-Received: from mga14.intel.com ([143.182.124.37]:23534 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932576Ab2GKNpM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 09:45:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="121164797"
-From: Artem Bityutskiy <dedekind1@gmail.com>
-To: Theodore Tso <tytso@mit.edu>, Jan Kara <jack@suse.cz>
-Cc: Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
-        Ext4 Mailing List <linux-ext4@vger.kernel.org>
-Subject: [PATCHv7 2/5] ext4: Convert last user of ext4_mark_super_dirty() to ext4_handle_dirty_super()
-Date: Wed, 11 Jul 2012 16:46:41 +0300
-Message-Id: <1342014404-14834-3-git-send-email-dedekind1@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1342014404-14834-1-git-send-email-dedekind1@gmail.com>
-References: <1342014404-14834-1-git-send-email-dedekind1@gmail.com>
+	id S932553Ab2GKNoT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 09:44:19 -0400
+Received: from co1ehsobe002.messaging.microsoft.com ([216.32.180.185]:40060
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757735Ab2GKNjX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 09:39:23 -0400
+X-Greylist: delayed 10195 seconds by postgrey-1.27 at vger.kernel.org; Wed, 11 Jul 2012 09:39:23 EDT
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah)
+X-WSS-ID: 0M700LF-02-1PE-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: <iommu@lists.linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
+Subject: [PATCH 23/27] iommu/amd: Add initialization routines for AMD interrupt remapping
+Date: Wed, 11 Jul 2012 15:39:08 +0200
+Message-ID: <1342013952-10174-24-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1342013952-10174-1-git-send-email-joerg.roedel@amd.com>
+References: <1342013952-10174-1-git-send-email-joerg.roedel@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Kara <jack@suse.cz>
+Add the six routines required to setup interrupt remapping
+with the AMD IOMMU. Also put it all together into the AMD
+specific irq_remap_ops.
 
-The last user of ext4_mark_super_dirty() in ext4_file_open() is so rare it
-can well be modifying the superblock properly by journalling the change.
-Change it and get rid of ext4_mark_super_dirty() as it's not needed anymore.
-
-Artem: small amendments.
-Artem: tested using xfstests for both journalled and non-journalled ext4.
-
-Signed-off-by: Jan Kara <jack@suse.cz>
-Tested-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- fs/ext4/ext4.h |    9 ---------
- fs/ext4/file.c |   14 +++++++++++++-
- 2 files changed, 13 insertions(+), 10 deletions(-)
+ drivers/iommu/amd_iommu.c       |   18 +++++++++++++++++
+ drivers/iommu/amd_iommu_init.c  |   42 +++++++++++++++++++++++++++++++++++++++
+ drivers/iommu/amd_iommu_proto.h |    8 ++++++++
+ drivers/iommu/irq_remapping.h   |    1 +
+ 4 files changed, 69 insertions(+)
 
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index cfc4e01..0c4042e 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -2321,15 +2321,6 @@ static inline void ext4_unlock_group(struct super_block *sb,
- 	spin_unlock(ext4_group_lock_ptr(sb, group));
+diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
+index ac6e731..439f03c 100644
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -45,6 +45,7 @@
+ 
+ #include "amd_iommu_proto.h"
+ #include "amd_iommu_types.h"
++#include "irq_remapping.h"
+ 
+ #define CMD_SET_TYPE(cmd, t) ((cmd)->data[1] |= ((t) << 28))
+ 
+@@ -4154,4 +4155,21 @@ static int setup_hpet_msi(unsigned int irq, unsigned int id)
+ 	return 0;
  }
  
--static inline void ext4_mark_super_dirty(struct super_block *sb)
--{
--	struct ext4_super_block *es = EXT4_SB(sb)->s_es;
--
--	ext4_superblock_csum_set(sb, es);
--	if (EXT4_SB(sb)->s_journal == NULL)
--		sb->s_dirt =1;
--}
--
- /*
-  * Block validity checking
-  */
-diff --git a/fs/ext4/file.c b/fs/ext4/file.c
-index 8c7642a..3a77494 100644
---- a/fs/ext4/file.c
-+++ b/fs/ext4/file.c
-@@ -181,9 +181,21 @@ static int ext4_file_open(struct inode * inode, struct file * filp)
- 		path.dentry = mnt->mnt_root;
- 		cp = d_path(&path, buf, sizeof(buf));
- 		if (!IS_ERR(cp)) {
-+			handle_t *handle;
-+			int err;
++struct irq_remap_ops amd_iommu_irq_ops = {
++	.supported		= amd_iommu_supported,
++	.prepare		= amd_iommu_prepare,
++	.enable			= amd_iommu_enable,
++	.disable		= amd_iommu_disable,
++	.reenable		= amd_iommu_reenable,
++	.enable_faulting	= amd_iommu_enable_faulting,
++	.setup_ioapic_entry	= setup_ioapic_entry,
++#ifdef CONFIG_SMP
++	.set_affinity		= set_affinity,
++#endif
++	.free_irq		= free_irq,
++	.compose_msi_msg	= compose_msi_msg,
++	.msi_alloc_irq		= msi_alloc_irq,
++	.msi_setup_irq		= msi_setup_irq,
++	.setup_hpet_msi		= setup_hpet_msi,
++};
+ #endif
+diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
+index 820f688..d195d22 100644
+--- a/drivers/iommu/amd_iommu_init.c
++++ b/drivers/iommu/amd_iommu_init.c
+@@ -34,6 +34,7 @@
+ #include <asm/x86_init.h>
+ #include <asm/iommu_table.h>
+ #include <asm/io_apic.h>
++#include <asm/irq_remapping.h>
+ 
+ #include "amd_iommu_proto.h"
+ #include "amd_iommu_types.h"
+@@ -1894,7 +1895,48 @@ static int __init iommu_go_to_state(enum iommu_init_state state)
+ 	return ret;
+ }
+ 
++#ifdef CONFIG_IRQ_REMAP
++int __init amd_iommu_prepare(void)
++{
++	return iommu_go_to_state(IOMMU_ACPI_FINISHED);
++}
 +
-+			handle = ext4_journal_start_sb(sb, 1);
-+			if (IS_ERR(handle))
-+				return PTR_ERR(handle);
-+			err = ext4_journal_get_write_access(handle, sbi->s_sbh);
-+			if (err) {
-+				ext4_journal_stop(handle);
-+				return err;
-+			}
- 			strlcpy(sbi->s_es->s_last_mounted, cp,
- 				sizeof(sbi->s_es->s_last_mounted));
--			ext4_mark_super_dirty(sb);
-+			ext4_handle_dirty_super(handle, sb);
-+			ext4_journal_stop(handle);
- 		}
- 	}
- 	/*
++int __init amd_iommu_supported(void)
++{
++	return amd_iommu_irq_remap ? 1 : 0;
++}
++
++int __init amd_iommu_enable(void)
++{
++	int ret;
++
++	ret = iommu_go_to_state(IOMMU_ENABLED);
++	if (ret)
++		return ret;
+ 
++	irq_remapping_enabled = 1;
++
++	return 0;
++}
++
++void amd_iommu_disable(void)
++{
++	amd_iommu_suspend();
++}
++
++int amd_iommu_reenable(int mode)
++{
++	amd_iommu_resume();
++
++	return 0;
++}
++
++int __init amd_iommu_enable_faulting(void)
++{
++	/* We enable MSI later when PCI is initialized */
++	return 0;
++}
++#endif
+ 
+ /*
+  * This is the core init function for AMD IOMMU hardware in the system.
+diff --git a/drivers/iommu/amd_iommu_proto.h b/drivers/iommu/amd_iommu_proto.h
+index 1a7f41c..c294961 100644
+--- a/drivers/iommu/amd_iommu_proto.h
++++ b/drivers/iommu/amd_iommu_proto.h
+@@ -32,6 +32,14 @@ extern void amd_iommu_uninit_devices(void);
+ extern void amd_iommu_init_notifier(void);
+ extern void amd_iommu_init_api(void);
+ 
++/* Needed for interrupt remapping */
++extern int amd_iommu_supported(void);
++extern int amd_iommu_prepare(void);
++extern int amd_iommu_enable(void);
++extern void amd_iommu_disable(void);
++extern int amd_iommu_reenable(int);
++extern int amd_iommu_enable_faulting(void);
++
+ /* IOMMUv2 specific functions */
+ struct iommu_domain;
+ 
+diff --git a/drivers/iommu/irq_remapping.h b/drivers/iommu/irq_remapping.h
+index b3f70c9..915a247 100644
+--- a/drivers/iommu/irq_remapping.h
++++ b/drivers/iommu/irq_remapping.h
+@@ -84,6 +84,7 @@ struct irq_remap_ops {
+ };
+ 
+ extern struct irq_remap_ops intel_irq_remap_ops;
++extern struct irq_remap_ops amd_iommu_irq_ops;
+ 
+ #else  /* CONFIG_IRQ_REMAP */
+ 
 -- 
-1.7.7.6
+1.7.9.5
+
 
