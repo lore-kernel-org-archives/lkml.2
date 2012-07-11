@@ -1,131 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755202Ab2GKCXK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 22:23:10 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:65497 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753576Ab2GKCXH (ORCPT
+	id S1755341Ab2GKCXS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 22:23:18 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38042 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753598Ab2GKCXP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 22:23:07 -0400
-X-AuditID: 9c930197-b7b49ae0000027b8-20-4ffce38819b9
-Date: Wed, 11 Jul 2012 11:23:04 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH v2] mm: Warn about costly page allocation
-Message-ID: <20120711022304.GA17425@bbox>
-References: <1341878153-10757-1-git-send-email-minchan@kernel.org>
- <20120709170856.ca67655a.akpm@linux-foundation.org>
- <20120710002510.GB5935@bbox>
- <alpine.DEB.2.00.1207101756070.684@chino.kir.corp.google.com>
+	Tue, 10 Jul 2012 22:23:15 -0400
+Message-ID: <4FFCE1EF.7000602@gmail.com>
+Date: Tue, 10 Jul 2012 20:16:15 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1207101756070.684@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: Namhyung Kim <namhyung@kernel.org>
+CC: acme@ghostprotocols.net, mingo@kernel.org, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 4/4] perf kvm: fix bug resolving guest kernel syms
+References: <1341956894-69284-1-git-send-email-dsahern@gmail.com> <1341956894-69284-5-git-send-email-dsahern@gmail.com> <874npf86dp.fsf@sejong.aot.lge.com>
+In-Reply-To: <874npf86dp.fsf@sejong.aot.lge.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+On 7/10/12 6:54 PM, Namhyung Kim wrote:
+> Hi, David
+>
+> On Tue, 10 Jul 2012 15:48:14 -0600, David Ahern wrote:
+>> Guest kernel symbols are not resolved despite passing the information
+>> needed to resolve them. e.g.,
+>>
+>> perf kvm --guest --guestmount=/tmp/guest-mount record -a -- sleep 1
+>> perf kvm --guest --guestmount=/tmp/guest-mount report --stdio
+>>
+>>      36.55%  [guest/11399]  [unknown]         [g] 0xffffffff81600bc8
+>>      33.19%  [guest/10474]  [unknown]         [g] 0x00000000c0116e00
+>>      30.26%  [guest/11094]  [unknown]         [g] 0xffffffff8100a288
+>>
+>>      43.69%  [guest/10474]  [unknown]         [g] 0x00000000c0103d90
+>>      37.38%  [guest/11399]  [unknown]         [g] 0xffffffff81600bc8
+>>      12.24%  [guest/11094]  [unknown]         [g] 0xffffffff810aa91d
+>>       6.69%  [guest/11094]  [unknown]         [u] 0x00007fa784d721c3
+>>
+>> which is just pathetic.
+>>
+>> After a maddening 2 days sifting through perf minutia I found it --
+>> id_hdr_size is not initialized for guest machines. This shows up on the
+>> report side as random garbage for the cpu and timestamp, e.g.,
+>>
+>> 29816 7310572949125804849 0x1ac0 [0x50]: PERF_RECORD_MMAP ...
+>>
+>> that messes up the sample sorting such that synthesized guest maps are
+>> processed last.
+>>
+>> With this patch you get a much more helpful report:
+>>
+>>    12.11%  [guest/11399]  [guest.kernel.kallsyms.11399]  [g] irqtime_account_process_tick
+>>    10.58%  [guest/11399]  [guest.kernel.kallsyms.11399]  [g] run_timer_softirq
+>>     6.95%  [guest/11094]  [guest.kernel.kallsyms.11094]  [g] printk_needs_cpu
+>>     6.50%  [guest/11094]  [guest.kernel.kallsyms.11094]  [g] do_timer
+>>     6.45%  [guest/11399]  [guest.kernel.kallsyms.11399]  [g] idle_balance
+>>     4.90%  [guest/11094]  [guest.kernel.kallsyms.11094]  [g] native_read_tsc
+>> ...
+>>
+>> Signed-off-by: David Ahern <dsahern@gmail.com>
+>> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+>> Cc: Ingo Molnar <mingo@kernel.org>
+>> Cc: Jiri Olsa <jolsa@redhat.com>
+>> Cc: Namhyung Kim <namhyung@gmail.com>
+>> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+>> Cc: Peter Zijlstra <peterz@infradead.org>
+>> ---
+>>   tools/perf/util/map.c     |   24 ++++++++++++++++++++++++
+>>   tools/perf/util/map.h     |    1 +
+>>   tools/perf/util/session.c |    1 +
+>>   3 files changed, 26 insertions(+)
+>>
+>> diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+>> index 641377e..da3411b 100644
+>> --- a/tools/perf/util/map.c
+>> +++ b/tools/perf/util/map.c
+>> @@ -730,3 +730,27 @@ char *machine__mmap_name(struct machine *self, char *bf, size_t size)
+>>
+>>   	return bf;
+>>   }
+>> +
+>> +void machines__set_id_hdr_size(struct rb_root *self, u16 id_hdr_size)
+>> +{
+>> +	struct rb_node *p;
+>> +	struct machine *machine;
+>> +
+>> +    p = self->rb_node;
+>> +	while (p != NULL) {
+>> +		machine = rb_entry(p, struct machine, rb_node);
+>> +		machine->id_hdr_size = id_hdr_size;
+>> +        p = rb_next(p);
+>> +	}
+>> +
+>
+> Looks like white-space damaged. :(
 
-On Tue, Jul 10, 2012 at 06:02:06PM -0700, David Rientjes wrote:
-> On Tue, 10 Jul 2012, Minchan Kim wrote:
-> 
-> > > So I dunno, this all looks like we have a kernel problem and we're
-> > > throwing our problem onto hopelessly ill-equipped users of that kernel?
-> > 
-> > As you know, this patch isn't for solving regular high-order allocations.
-> > As I wrote down, The problem is that we removed lumpy reclaim without any
-> > notification for user who might have used it implicitly.
-> 
-> And so now they're running with CONFIG_DEBUG_VM to try to figure out why 
-> they have seen a regression, which is required for your patch to have an 
-> effect?
+bleah, something on my dev server converted tabs to spaces. Will fix.
 
-Enabling that warning if some debug option is enabled was Mel's comment by
-private discussion and I thought new debug option is overkill for it
-so I added in CONFIG_DEBUG_VM.
+>
+> The loop itself looks fine, or you might use this form:
+>
+> 	for (p = rb_first(self); p; p = rb_next(p))
 
-> 
-> > If such user disable compaction which is a replacement of lumpy reclaim,
-> > their system might be broken in real practice while test is passing.
-> > So, the goal is that let them know it in advance so that I expect they can
-> > test it stronger than old.
-> > 
-> 
-> So what are they supposed to do?  Enable CONFIG_COMPACTION as soon as they 
-> see the warning?  When they have seen the warning a specific number of 
-> times?  How much is "very few" high-order allocations over what time 
-> period?  This is what anybody seeing these messages for the first time is 
-> going to ask.
+Doesn't work - I still see machines not updated.
+>
+>
+> Is there a something like rb_for_each_entry() ?
 
-I admit that is a bit vague but we don't have a way to specify it because
-it depends on workload(ex, how many we have movable pages and swap system at
-the moment) so it's the best I can do for achieve the goal
-which is alert for careful investigating/tuning the system
-since lumpy reclaim is gone.
+Didn't see one.
 
-If you have a better idea, please suggest me.
+>
+>
+>> +    p = self->rb_node;
+>> +    if (p)
+>> +        p = rb_prev(p);
+>> +	while (p != NULL) {
+>> +		machine = rb_entry(p, struct machine, rb_node);
+>> +		machine->id_hdr_size = id_hdr_size;
+>> +        p = rb_prev(p);
+>> +	}
+>> +
+>
+> I don't see why this second loop is necessary?
 
-> 
-> > Although they see the page allocation failure with compaction, it would
-> > be very helpful reports. It means we need to make compaction more
-> > aggressive about reclaiming pages.
-> > 
-> 
-> If CONFIG_COMPACTION is disabled, then how will making compaction more 
-> aggressive about reclaiming pages help?
+To get the left half of the tree I believe. First loop walks the root 
+and all of the leaves to the right; this loop walks all of the leaves to 
+the left.
 
-I mentioned "Although they see the page allocation failture with *compaction*"
-
-> 
-> Should we consider enabling CONFIG_COMPACTION in defconfig?  If not, would 
-
-I hope so but Mel didn't like it because some users want to have a smallest
-kernel if they don't care of high-order allocation.
-
-
-> it be possible with a different extfrag_threshold (and more aggressive 
-> when things like THP are enabled)?
-
-Anyway, we should enable compaction for it although the system doesn't 
-care about high-order allocation and it ends up make bloting kernel unnecessary.
-
-I tend to agree Andrew and your concern but I don't have a good idea but
-alert vague warning message. Anyway, we need *alert* this fact which removed
-lumpy reclaim for being able to disabling CONFIG_COMPACTION.
-Then, what do you think about this?
-
-At least, it would give a chance to think over about disabing
-this options more carefully so then it depends on their choices which are
-more hard testing, ask it to the community or just turn off.
-
-diff --git a/mm/Kconfig b/mm/Kconfig
-index 16f6b42..099e681 100644
---- a/mm/Kconfig
-+++ b/mm/Kconfig
-@@ -195,6 +195,10 @@ config COMPACTION
-        depends on MMU
-        help
-          Allows the compaction of memory for the allocation of huge pages.
-+         Notice. We replaced lumpy reclaim which was scheme of helping
-+         high-order allocations with compaction at 3.4 so if you don't
-+         care about high-order allocations but want the smallest kernel,
-+         you could select "N", otherwise, "y" is preferred.
- 
- #
- # support for page migration
-
-
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+David
