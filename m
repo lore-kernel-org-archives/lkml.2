@@ -1,109 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932921Ab2GKQ1v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 12:27:51 -0400
-Received: from mail209.messagelabs.com ([216.82.255.3]:45203 "EHLO
-	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755809Ab2GKQ1u (ORCPT
+	id S932956Ab2GKQ2O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 12:28:14 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25389 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932738Ab2GKQ2M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 12:27:50 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-16.tower-209.messagelabs.com!1342024067!8384210!6
-X-Originating-IP: [216.166.12.99]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Ian Abbott <abbotti@mev.co.uk>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Ian Abbott <ian.abbott@mev.co.uk>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Date: Wed, 11 Jul 2012 11:27:46 -0500
-Subject: RE: [PATCH 00/83] staging: comedi: rtd520: initial cleanup
-Thread-Topic: [PATCH 00/83] staging: comedi: rtd520: initial cleanup
-Thread-Index: Ac1fTs7+Pp90VJYXTvukaBuKr2kfFQAMonsw
-Message-ID: <ADE657CA350FB648AAC2C43247A983F0020698FEE715@AUSP01VMBX24.collaborationhost.net>
-References: <201207101636.23561.hartleys@visionengravers.com>
- <4FFD536B.8010603@mev.co.uk>
-In-Reply-To: <4FFD536B.8010603@mev.co.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	Wed, 11 Jul 2012 12:28:12 -0400
+X-Authority-Analysis: v=2.0 cv=AtpsLZBP c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=t8C3CB5ssRAA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=XyIT4aO6M0Qy3YRtcYoA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1342024090.14828.45.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 5/6] ftrace/x86: Add separate function to save regs
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, yrl.pp-manager.tt@hitachi.com
+Date: Wed, 11 Jul 2012 12:28:10 -0400
+In-Reply-To: <1342023754.14828.43.camel@gandalf.stny.rr.com>
+References: <20120702200322.573660631@goodmis.org>
+	 <20120702201821.510485400@goodmis.org> <4FF2AD59.6080006@hitachi.com>
+	 <1342023754.14828.43.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1+b1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q6BGRvhB032446
 
-On Wednesday, July 11, 2012 3:20 AM, Ian Abbott wrote:
-> On 2012-07-11 00:36, H Hartley Sweeten wrote:
->> The 'devpriv' macro usage in this driver is holding up other cleanup
->> of the comedi drivers.
->>
->> This patch series removes all the macros used to read/write the
->> hardware registers. All of them are simple wrappers around standard
->> {read,write}[rwl] calls with some of them caching the write value
->> in a shadow variable in the private data.
->>
->> Each of the macros is removed in a separate patch to ease reviewing.
->> They can all be squashed into one patch if desired.
->>
->> After all the macros are gone, the devpriv macro itself can be removed
->> along with the boardinfo macro.
->>
->> The "find pci device" code is also refactored to follow the style of
->> the other comedi pci drivers.
->>
->> The range tables are also cleaned up for aesthetic reasons. The large
->> whitespace causes some pretty nasty line breaks in order to keep the
->> lines < 80 characters.
->
-> My main concern with this series of patches is they make it harder to 
-> determine what the register accesses actually do, mainly due to the 
-> removal of useful comments.  For example:
->
-> -	RtdPacerStart(dev);	/* Start PACER */
-> +	readl(devpriv->las0 + LAS0_PACER);
->
-> And:
->
-> -	RtdPacerStop(dev);	/* Stop PACER */
-> +	writel(0, devpriv->las0 + LAS0_PACER);
->
-> The comments in the original code were quite superfluous, but they would 
-> be useful for the replacement code.  In the above cases you could figure 
-> it out after looking at the rtd520.h header file where its reasonably 
-> clear that reading the LAS0_PACER register starts the pacer and writing 
-> the register (presumably with any value) stops the pacer.  But it's less 
-> clear in cases such as:
->
-> -		RtdAdcConversionSource(dev, 2);	/* BURST triggers ADC */
-> +		writel(2, devpriv->las0 + LAS0_ADC_CONVERSION);
->
-> Since the values for the LAS0_ADC_CONVERSION register are no longer 
-> documented anywhere.
+On Wed, 2012-07-11 at 12:22 -0400, Steven Rostedt wrote:
+> On Tue, 2012-07-03 at 17:29 +0900, Masami Hiramatsu wrote:
+> 
+> 
+> > 
+> > > +	/* Restore flags */
+> > > +	pushq EFLAGS(%rsp)
+> > > +	popfq
+> > > +
+> > > +	MCOUNT_RESTORE_FRAME
+> > 
+> > Here, if MCOUNT_RESTORE_FRAME has skip too, I think you don't
+> > need to restore flags before restoring other registers, like
+> > below;
+> > 
+> > 	MCOUNT_RESTORE_FRAME 8
+> > 	popfq
+> > 
+> > And also, this will prevent to modify flags before return by
+> > addq in MCOUNT_RESTORE_FRAME.
+> 
+> Ah, because the addq will modify flags :-/
+> 
+> Grumble, I guess I should implement this, even though it will make it a
+> little more complex. I thought it was better to restore flags
+> explicitly, but that's not the case.
 > 
 
-Sorry about that. I meant to leave some of the comments as appropriate
-but overlooked them during the cleanup.
+I know why I did this. Do you want kprobes to be able to modify flags?
+If so, then I need to add, before the restore:
 
-Some of the magic write values are actually documented in the header with
-#define'd values. But, the header is a bit of a mess and it's hard to determine
-which bit values go with which register.
+	movq EFLAGS(%rsp), %rax
+	movq %rax, SS(%rsp)
 
-The header really needs to be cleaned up and then merged directly into the
-source. It's only used by this driver so the defines shouldn't be exposed for
-external use. I located the manual for the device and plan on doing that cleanup
-eventually.
+-- Steve
 
-Regardless, thanks for adding back the comments. I'll look them over and
-give you a Reviewed-by shortly.
 
-Thanks,
-Hartley
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
