@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932441Ab2GKTSH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 15:18:07 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:45487 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932191Ab2GKTSF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 15:18:05 -0400
-Message-ID: <4FFDD12B.1050909@linux.vnet.ibm.com>
-Date: Wed, 11 Jul 2012 14:16:59 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S932548Ab2GKTS6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 15:18:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5895 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932191Ab2GKTS5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 15:18:57 -0400
+Date: Wed, 11 Jul 2012 15:18:52 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: 3.5-rc6 dentry related GPF
+Message-ID: <20120711191852.GA1016@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20120711183239.GA7122@redhat.com>
+ <CA+55aFz5E4NMDF+OXDoGkHz2Mr2sBXf6nYcOXomDZHmnUSdWHA@mail.gmail.com>
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] zsmalloc improvements
-References: <1341263752-10210-1-git-send-email-sjenning@linux.vnet.ibm.com> <4FFD2524.2050300@kernel.org>
-In-Reply-To: <4FFD2524.2050300@kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12071119-7606-0000-0000-000001ECDCEE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFz5E4NMDF+OXDoGkHz2Mr2sBXf6nYcOXomDZHmnUSdWHA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11/2012 02:03 AM, Minchan Kim wrote:
-> Today, I tested zsmapbench in my embedded board(ARM).
-> tlb-flush is 30% faster than copy-based so it's always not win.
-> I think it depends on CPU speed/cache size.
+On Wed, Jul 11, 2012 at 12:10:12PM -0700, Linus Torvalds wrote:
+ > On Wed, Jul 11, 2012 at 11:32 AM, Dave Jones <davej@redhat.com> wrote:
+ > >
+ > > What's puzzling me though is how we got from do_dentry_open to try_module_get ?
+ > 
+ > It's the
+ > 
+ >     f->f_op = fops_get(inode->i_fop);
+ > 
+ > that does it.
+ > 
+ > I have no idea what the actual bug is, though, but the code decodes to
+ > 
+ >    0:	89 75 f0             	mov    %esi,-0x10(%rbp)
+ >    3:	4c 89 7d f8          	mov    %r15,-0x8(%rbp)
+ >    7:	66 66 66 66 90       	data32 data32 data32 xchg %ax,%ax
+ >    c:	b8 01 00 00 00       	mov    $0x1,%eax
+ >   11:	48 85 ff             	test   %rdi,%rdi
+ >   14:	48 89 fb             	mov    %rdi,%rbx
+ >   17:	74 42                	je     0x5b
+ >   19:	65 48 8b 04 25 b0 c8 	mov    %gs:0xc8b0,%rax
+ >   20:	00 00
+ >   22:	83 80 44 e0 ff ff 01 	addl   $0x1,-0x1fbc(%rax)
+ >   29:*	83 3f 02             	cmpl   $0x2,(%rdi)     <-- trapping instruction
+ >   2c:	0f 84 54 01 00 00    	je     0x186
+ >   32:	48 8b 87 50 02 00 00 	mov    0x250(%rdi),%rax
+ >   39:	65 48 ff 00          	incq   %gs:(%rax)
+ > 
+ > where that "cmpl $2" is the "module_is_live(module)" test, as far as I
+ > can tell. And %rdi should be the module pointer, but it is obviously
+ > garbage:
+ > 
+ >   rdi = 54415541e5894855
+ > 
+ > which looks like some odd corrupted ASCII to me ("UH\211\345AUAT") but
+ > that makes no sense either.
 
-After you pointed this out, I decided to test this on my
-Raspberry Pi, the only ARM system I have that is open enough
-for me to work with.
+I fixed some really stupid braino in my fuzzer last night, so oopses are
+falling out left and right since then. It's probably only a matter of
+time before I walk into this again. Perhaps with more data it'll start
+to make sense.
 
-I pulled some of the cycle counting stuff out of
-arch/arm/kernel/perf_event_v6.c.  I've pushed that code to
-the github repo.
-
-git://github.com/spartacus06/zsmapbench.git
-
-My results were in agreement with your findings.  I got 2040
-cycles/map for the copy method and 947 cycles/map for the
-page-table method.  I think memory speed is playing a big
-roll in the difference.
-
-I agree that the page-table method should be restored since
-the performance difference is so significant on ARM, a
-platform that benefits a lot from memory compression IMHO.
-
-Still, the question remains how to implement the selection
-logic, since not all archs that support the page-table
-method will necessarily perform better with it.
-
-Thanks,
-Seth
+	Dave
 
