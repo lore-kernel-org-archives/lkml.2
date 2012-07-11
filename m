@@ -1,133 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030186Ab2GKUcs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 16:32:48 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:40328 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754486Ab2GKUcq (ORCPT
+	id S933254Ab2GKUl2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 16:41:28 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:44458 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933226Ab2GKUlZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 16:32:46 -0400
-Message-ID: <4FFDE2E2.7050901@linux.vnet.ibm.com>
-Date: Wed, 11 Jul 2012 15:32:34 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Wed, 11 Jul 2012 16:41:25 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: <devel@driverdev.osuosl.org>, <linux-kernel@vger.kernel.org>,
+        <j-keerthy@ti.com>, <grant.likely@secretlab.ca>, <b-cousson@ti.com>,
+        <kbaidarov@dev.rtsoft.ru>, Eduardo Valentin <eduardo.valentin@ti.com>
+Subject: [PATCHv3 0/4] staging: adding OMAP bandgap driver
+Date: Wed, 11 Jul 2012 23:41:05 +0300
+Message-ID: <1342039269-13968-1-git-send-email-eduardo.valentin@ti.com>
+X-Mailer: git-send-email 1.7.7.1.488.ge8e1c
 MIME-Version: 1.0
-To: Nitin Gupta <ngupta@vflare.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] zsmalloc: remove x86 dependency
-References: <1341263752-10210-1-git-send-email-sjenning@linux.vnet.ibm.com> <1341263752-10210-2-git-send-email-sjenning@linux.vnet.ibm.com> <4FFDC54F.5030402@vflare.org>
-In-Reply-To: <4FFDC54F.5030402@vflare.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12071120-4242-0000-0000-0000024A8061
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11/2012 01:26 PM, Nitin Gupta wrote:
-> On 07/02/2012 02:15 PM, Seth Jennings wrote:
->> This patch replaces the page table assisted object mapping
->> method, which has x86 dependencies, with a arch-independent
->> method that does a simple copy into a temporary per-cpu
->> buffer.
->>
->> While a copy seems like it would be worse than mapping the pages,
->> tests demonstrate the copying is always faster and, in the case of
->> running inside a KVM guest, roughly 4x faster.
->>
->> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
->> ---
->>  drivers/staging/zsmalloc/Kconfig         |    4 --
->>  drivers/staging/zsmalloc/zsmalloc-main.c |   99 +++++++++++++++++++++---------
->>  drivers/staging/zsmalloc/zsmalloc_int.h  |    5 +-
->>  3 files changed, 72 insertions(+), 36 deletions(-)
->>
-> 
-> 
->>  struct mapping_area {
->> -	struct vm_struct *vm;
->> -	pte_t *vm_ptes[2];
->> -	char *vm_addr;
->> +	char *vm_buf; /* copy buffer for objects that span pages */
->> +	char *vm_addr; /* address of kmap_atomic()'ed pages */
->>  };
->>  
-> 
-> I think we can reduce the copying overhead by not copying an entire
-> compressed object to another (per-cpu) buffer. The basic idea of the
-> method below is to:
->  - Copy only the amount of data that spills over into the next page
->  - No need for a separate buffer to copy into
-> 
-> Currently, we store objects that split across pages as:
-> 
-> +-Page1-+
-> |	|
-> |	|
-> |-------| <-- obj-1 off: 0
-> |<ob1'>	|
-> +-------+ <-- obj-1 off: s'
-> 
-> +-Page2-+ <-- obj-1 off: s'
-> |<ob1''>|
-> |-------| <-- obj-1 off: obj1_size, obj-2 off: 0
-> |<ob2>	|
-> |-------| <-- obj-2 off: obj2_size
-> +-------+
-> 
-> But now we would store it as:
-> 
-> +-Page1-+
-> |	|
-> |-------| <-- obj-1 off: s''
-> |	|
-> |<ob1'>	|
-> +-------+ <-- obj-1 off: obj1_size
-> 
-> +-Page2-+ <-- obj-1 off: 0
-> |<ob1''>|
-> |-------| <-- obj-1 off: s'', obj-2 off: 0
-> |<ob2>	|
-> |-------| <-- obj-2 off: obj2_size
-> +-------+
-> 
-> When object-1 (ob1) is to be mapped, part (size: s'-0) of object-2 will
-> be swapped with ob1'. This swapping can be done in-place using simple
-> xor swap algorithm. So, after swap, page-1 and page-2 will look like:
-> 
-> +-Page1-+
-> |	|
-> |-------| <-- obj-2 off: 0
-> |	|
-> |<ob2''>|
-> +-------+ <-- obj-2 off: (obj1_size - s'')
-> 
-> +-Page2-+ <-- obj-1 off: 0
-> |	|
-> |<ob1>	|
-> |-------| <-- obj-1 off: obj1_size, obj-2 off: (obj1_size - s'')
-> |<ob2'>	|
-> +-------+ <-- obj-2 off: obj2_size
-> 
-> Now obj-1 lies completely within page-2, so can be kmap'ed as usual. On
-> zs_unmap_object() we would just do the reverse and restore objects as in
-> figure-1.
+Greg,
 
-Hey Nitin, thanks for the feedback.
+On top of the compilation fix, now Keerthy's SOB is just like
+in the files' copyright notice. I also changed patch 01 so that
+it does not add an empty line in the end of the Kconfig, so
+patches 01 and 02 are different from V2. That's why I sent the
+complete series with v3 mark.
 
-Correct me if I'm wrong, but it seems like you wouldn't be able to map
-ob2 while ob1 was mapped with this design.  You'd need some sort of
-zspage level protection against concurrent object mappings.  The
-code for that protection might cancel any benefit you would gain by
-doing it this way.
+Cheers,
 
-Thanks,
-Seth
+
+Eduardo Valentin (4):
+  staging: OMAP4+: thermal: introduce bandgap temperature sensor
+  staging: omap-thermal: common code to expose driver to thermal
+    framework
+  staging: omap-thermal: add OMAP4 data structures
+  staging: omap-thermal: add OMAP5 data structures
+
+ drivers/staging/Kconfig                            |    2 +
+ drivers/staging/Makefile                           |    1 +
+ drivers/staging/omap-thermal/Kconfig               |   45 +
+ drivers/staging/omap-thermal/Makefile              |    5 +
+ drivers/staging/omap-thermal/TODO                  |   27 +
+ drivers/staging/omap-thermal/omap-bandgap.c        | 1186 ++++++++++++++++++++
+ drivers/staging/omap-thermal/omap-bandgap.h        |  441 ++++++++
+ drivers/staging/omap-thermal/omap-thermal-common.c |  397 +++++++
+ drivers/staging/omap-thermal/omap-thermal.h        |  108 ++
+ drivers/staging/omap-thermal/omap4-thermal.c       |  259 +++++
+ drivers/staging/omap-thermal/omap5-thermal.c       |  297 +++++
+ drivers/staging/omap-thermal/omap_bandgap.txt      |   30 +
+ 12 files changed, 2798 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/staging/omap-thermal/Kconfig
+ create mode 100644 drivers/staging/omap-thermal/Makefile
+ create mode 100644 drivers/staging/omap-thermal/TODO
+ create mode 100644 drivers/staging/omap-thermal/omap-bandgap.c
+ create mode 100644 drivers/staging/omap-thermal/omap-bandgap.h
+ create mode 100644 drivers/staging/omap-thermal/omap-thermal-common.c
+ create mode 100644 drivers/staging/omap-thermal/omap-thermal.h
+ create mode 100644 drivers/staging/omap-thermal/omap4-thermal.c
+ create mode 100644 drivers/staging/omap-thermal/omap5-thermal.c
+ create mode 100644 drivers/staging/omap-thermal/omap_bandgap.txt
+
+-- 
+1.7.7.1.488.ge8e1c
 
