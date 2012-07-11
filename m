@@ -1,79 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758196Ab2GKP4v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 11:56:51 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:37553 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755494Ab2GKP4u convert rfc822-to-8bit (ORCPT
+	id S932907Ab2GKQDr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 12:03:47 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:53029 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932467Ab2GKQDp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 11:56:50 -0400
-Message-ID: <1342022185.3462.176.camel@twins>
-Subject: Re: [PATCH 1/6] hrtimer: Provide clock_was_set_delayed()
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Prarit Bhargava <prarit@redhat.com>, John Stultz <johnstul@us.ibm.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, stable@vger.kernel.org
-Date: Wed, 11 Jul 2012 17:56:25 +0200
-In-Reply-To: <alpine.LFD.2.02.1207111539060.32033@ionos>
-References: <1341960205-56738-1-git-send-email-johnstul@us.ibm.com>
-	  <1341960205-56738-2-git-send-email-johnstul@us.ibm.com>
-	  <4FFD6E5A.9060206@redhat.com> <alpine.LFD.2.02.1207111425260.32033@ionos>
-	 <1342011904.3462.152.camel@twins>
-	 <alpine.LFD.2.02.1207111539060.32033@ionos>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Wed, 11 Jul 2012 12:03:45 -0400
+From: Yuri Khan <yurivkhan@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yuri Khan <yurivkhan@gmail.com>
+Subject: [PATCH 0/1] Input: xpad - Add Andamiro Pump It Up pad
+Date: Wed, 11 Jul 2012 23:03:26 +0700
+Message-Id: <1342022607-6147-1-git-send-email-yurivkhan@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-11 at 17:18 +0200, Thomas Gleixner wrote:
+Hello all,
 
-> Right. I think with the atomic update of the offset in the timer
-> interrupt we are on the safe side. The main problem of timers expiring
-> early forever is covered by this.
-> 
-> Thinking more about it.
-> 
-> If time goes backwards, then the IPI is pointless. The already armed
-> clockevent device will fire too early, hrtimer_interrupt will update
-> and just rearm it. That's one "spurious" event.
-> 
-> So we only need it in the case of time going forward. 
-> 
-> Though with the leap second the maximum observable delay is 1 second
-> on a completely idle core. Surely nothing to worry about for an event
-> which happens rarely. So we could safely avoid the whole delayed
-> business and just do the timerfd notification, though I wonder if even
-> that is necessary in the leap second case.
-> 
-> On NOHZ=n systems the IPI is pointless as well. The maximum lateness
-> will be 10ms for HZ=100. Nothing we should worry about.
-> 
-> That leaves NOHZ enabled systems and there we might be clever and
-> avoid the IPIs to those cores which are not idle and let the tick
-> interrupt deal with it. And we can make the calls async and just let
-> them raise the hrtimer softirq on those cores, which will run the
-> hrtimer interrupt code and take care of everything.
-> 
-> Thoughts?
+while I'm at it, I'd like to add my other dance mat to xpad's database 
+of known devices, so that the user does not have to specify the 
+dpad_to_buttons option.
 
+I couldn't find the vendor ID in any of the online databases, but this 
+mat has a Pump It Up logo on the top side of the controller compartment, 
+and a disclaimer stating that Andamiro will not be liable on the bottom.
 
-static void nohz_hrtimer_softirq(void *unused)
-{
-	raise_softirq(HRTIMER_SOFTIRQ);
-}
+checkpath.pl flagged this patch for adding an overlong line but the 
+surrounding code does not adhere to the 80-column rule.
 
-static void kick_nohz_cpus(void)
-{
-	smp_call_function_many(nohz.idle_cpus_mask, nohz_hrtimer_softirq, NULL, 0);
-}
+Yuri Khan (1):
+  Input: xpad - Add Andamiro Pump It Up pad
 
-Same problem as before though, can't be sending IPIs while in hardirq
-context.. 
+ drivers/input/joystick/xpad.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-And you cannot do the same trick with a CFD as with the CSD, some CPUs
-might need it again while others are still pending.
+-- 
+1.7.9.5
 
