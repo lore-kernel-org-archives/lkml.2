@@ -1,75 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932967Ab2GKQrg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 12:47:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54275 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932897Ab2GKQre (ORCPT
+	id S932982Ab2GKQsQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 12:48:16 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:36499 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932958Ab2GKQsN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 12:47:34 -0400
-Date: Wed, 11 Jul 2012 09:50:30 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: James Morris <jmorris@namei.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Eric Paris <eparis@redhat.com>, Stephen Smalley <sds@tycho.nsa.gov>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT] selinux: fix regression
-Message-Id: <20120711095030.f2db0ed9.akpm@linux-foundation.org>
-In-Reply-To: <alpine.LRH.2.02.1207120211140.24051@tundra.namei.org>
-References: <alpine.LRH.2.02.1207120211140.24051@tundra.namei.org>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 11 Jul 2012 12:48:13 -0400
+Message-ID: <4FFDAE1D.3050008@us.ibm.com>
+Date: Wed, 11 Jul 2012 09:47:25 -0700
+From: John Stultz <johnstul@us.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, stable@vger.kernel.org
+Subject: Re: [PATCH 1/6] hrtimer: Provide clock_was_set_delayed()
+References: <1341960205-56738-1-git-send-email-johnstul@us.ibm.com> <1341960205-56738-2-git-send-email-johnstul@us.ibm.com> <4FFD6E5A.9060206@redhat.com> <alpine.LFD.2.02.1207111425260.32033@ionos> <1342011904.3462.152.camel@twins> <alpine.LFD.2.02.1207111539060.32033@ionos>
+In-Reply-To: <alpine.LFD.2.02.1207111539060.32033@ionos>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12071116-4242-0000-0000-00000249BAE8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Jul 2012 02:11:53 +1000 (EST) James Morris <jmorris@namei.org> wrote:
+On 07/11/2012 08:18 AM, Thomas Gleixner wrote:
+> That leaves NOHZ enabled systems and there we might be clever and
+> avoid the IPIs to those cores which are not idle and let the tick
+> interrupt deal with it. And we can make the calls async and just let
+> them raise the hrtimer softirq on those cores, which will run the
+> hrtimer interrupt code and take care of everything.
 
-> Please pull.
-> 
-> The following changes since commit 055c9fa8874fa7261eec7a268366565db84af474:
->   Linus Torvalds (1):
->         Merge tag 'fixes-for-v3.5' of git://git.kernel.org/.../linusw/linux-gpio
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git for-linus
-> 
-> Andrew Morton (1):
->       selinux: fix regression in selinux_inode_setattr()
-> 
->  security/selinux/hooks.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> commit 17c284ce9688ece1fff024ef4a66f8f115017c06
-> Author: Andrew Morton <akpm@linux-foundation.org>
-> Date:   Tue Jul 10 23:24:24 2012 -0700
-> 
->     selinux: fix regression in selinux_inode_setattr()
->     
->     akpm: This patch is needed to fix a box-killing post-3.4 X11 regression on
->     my test machine.
->     
->     Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
->     Signed-off-by: James Morris <james.l.morris@oracle.com>
-> 
-> diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-> index 372ec65..4c62155 100644
-> --- a/security/selinux/hooks.c
-> +++ b/security/selinux/hooks.c
-> @@ -2717,7 +2717,7 @@ static int selinux_inode_setattr(struct dentry *dentry, struct iattr *iattr)
->  			ATTR_ATIME_SET | ATTR_MTIME_SET | ATTR_TIMES_SET))
->  		return dentry_has_perm(cred, dentry, FILE__SETATTR);
->  
-> -	if (ia_valid & ATTR_SIZE)
-> +	if ((ia_valid & ATTR_SIZE) && selinux_policycap_openperm)
->  		av |= FILE__OPEN;
->  
->  	return dentry_has_perm(cred, dentry, av);
+I'm not familiar with the details of the code that tracks which cores 
+are idle or not, but I'd worry with this approach that there might be 
+further races in determining which cores are idle and which cores are 
+about to go idle with stale base offsets.
 
-The patch was authored by eparis, not me.  I don't even know what it does (I
-never looked).  But it lets me log into my (old) Fedora test box, which
-is a distinct improvement over mainline.
+I'll see if my worry is unfounded, but it might be a bit too clever for 
+rare events.
+
+thanks
+-john
 
