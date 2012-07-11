@@ -1,72 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932246Ab2GKR4e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 13:56:34 -0400
-Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:39358 "EHLO
-	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755363Ab2GKR4d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 13:56:33 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1207111148400.25585@utopia.booyaka.com>
-References: <1341997995-14020-1-git-send-email-tarun.kanti@ti.com>
-	<1341997995-14020-2-git-send-email-tarun.kanti@ti.com>
-	<alpine.DEB.2.00.1207111148400.25585@utopia.booyaka.com>
-Date: Wed, 11 Jul 2012 23:26:31 +0530
-Message-ID: <CAC83ZvK614pB0Jx56OMXfmFf89cTAP+AAf=H-imbH2Y1Qv7DSg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] gpio/omap: move bank->dbck initialization to omap_gpio_mod_init()
-From: "DebBarma, Tarun Kanti" <tarun.kanti@ti.com>
-To: Paul Walmsley <paul@pwsan.com>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Kevin Hilman <khilman@ti.com>,
-        Rajendra Nayak <rnayak@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        "Cousson, Benoit" <b-cousson@ti.com>, linus.walleij@stericsson.com,
-        grant.likely@secretlab.ca
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757524Ab2GKSOo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 14:14:44 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:56724 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754672Ab2GKSOn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 14:14:43 -0400
+Message-ID: <1342030482.22278.8.camel@joe2Laptop>
+Subject: Re: [PATCH] Documentation/CodingStyle: Mention multi-line macros
+ using expressions
+From: Joe Perches <joe@perches.com>
+To: "Robert P. J. Day" <rpjday@crashcourse.ca>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Wed, 11 Jul 2012 11:14:42 -0700
+In-Reply-To: <alpine.DEB.2.02.1207111329280.3642@oneiric>
+References: <alpine.DEB.2.02.1207111329280.3642@oneiric>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 11, 2012 at 11:21 PM, Paul Walmsley <paul@pwsan.com> wrote:
-> On Wed, 11 Jul 2012, Tarun Kanti DebBarma wrote:
->
->> Since the bank->dbck initialization in a one time operation there
->> is no need to keep this within gpio_debounce(). Therefore, moving
->> clk_get(bank->dbck) to omap_gpio_mod_init(). Since the value of
->> bank->dbck would be NULL at the beginning, this check has been
->> removed.
->>
->> Signed-off-by: Tarun Kanti DebBarma <tarun.kanti@ti.com>
->> Reported-by: Paul Walmsley <paul@pwsan.com>
->> Reviewed-by: Jon Hunter <jon-hunter@ti.com>
->> Cc: Kevin Hilman <khilman@ti.com>
->> Cc: Rajendra Nayak <rnayak@ti.com>
->> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
->> Cc: Cousson, Benoit <b-cousson@ti.com>
->> Cc: Paul Walmsley <paul@pwsan.com>
->> ---
->>  drivers/gpio/gpio-omap.c |   10 ++++------
->>  1 files changed, 4 insertions(+), 6 deletions(-)
->
-> Reviewed-by: Paul Walmsley <paul@pwsan.com>
->
-> These drivers are maintained by Grant Likely and Linus Walleij:
->
-> GPIO SUBSYSTEM
-> M:      Grant Likely <grant.likely@secretlab.ca>
-> M:      Linus Walleij <linus.walleij@stericsson.com>
-> S:      Maintained
-> T:      git git://git.secretlab.ca/git/linux-2.6.git
-> F:      Documentation/gpio.txt
-> F:      drivers/gpio/
-> F:      include/linux/gpio*
->
-> So you'll want to cc them.  They are probably also who should merge these.
-Ok, I wanted Kevin to have a look first. Anyways, I have cc'ed.
-Thanks.
---
-Tarun
->
->
-> - Paul
+On Wed, 2012-07-11 at 13:32 -0400, Robert P. J. Day wrote:
+[]
+> diff --git a/Documentation/CodingStyle b/Documentation/CodingStyle
+[]
+> +A newer technique is to use the GCC extension of being able to place
+> +statements and declarations in an expression, as with this example from
+> +the <linux/kernel.h> header file:
+> +
+> +#define roundup(x, y) (				\
+> +{						\
+> +        const typeof(y) __y = y;		\
+> +        (((x) + (__y - 1)) / __y) * __y;	\
+> +}						\
+> +)
+
+Hi Robert.
+
+How about the phrase "GCC's statement expression extension"
+or maybe give a link like:
+http://gcc.gnu.org/onlinedocs/gcc/Statement-Exprs.html
+
+Please put the opening ({ and closing )} on a single line.
+It's shorter and makes grep easier.
+
+#define statement_expression(args)		\
+({						\
+	etc					\
+})
+
+
