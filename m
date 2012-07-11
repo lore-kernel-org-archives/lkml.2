@@ -1,73 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757532Ab2GKMbK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 08:31:10 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:52190 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753486Ab2GKMbI (ORCPT
+	id S1754258Ab2GKMdj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 08:33:39 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:51533 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751642Ab2GKMdh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 08:31:08 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID q6BCV1MG009858, This message is released by code: ctlocs8528
-From: Hayes Wang <hayeswang@realtek.com>
-To: <romieu@fr.zoreil.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next] r8169: Remove rtl_ocpdr_cond
-Date: Wed, 11 Jul 2012 20:31:56 +0800
-Message-ID: <1342009916-1519-1-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 11 Jul 2012 08:33:37 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Roland Stigge <stigge@antcom.de>
+Subject: Re: [PATCH v2 04/23] ARM: LPC32xx: Add DMA configuration to platform data
+Date: Wed, 11 Jul 2012 12:33:24 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>, arm@kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kevin.wells@nxp.com, srinivas.bakki@nxp.com, aletes.xgr@gmail.com
+References: <1339692673-7848-1-git-send-email-stigge@antcom.de> <201207102136.35944.arnd@arndb.de> <4FFD393F.1070104@antcom.de>
+In-Reply-To: <4FFD393F.1070104@antcom.de>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201207111233.24780.arnd@arndb.de>
+X-Provags-ID: V02:K0:GUjd1052bPcKkUrPjTAVTIvYZRLAJFY7MvzFEg/ZmMo
+ bptjQxAaSYytX3urRmMBftWJUxWg/H+d4auRSb1504XHIWWMlx
+ Vjh2V6EOaY7vBtyfZo1Vqr0wsfXnEX8J75jlV5FT5dkuOtHkhe
+ yyzkTXKwdkEkQXcYQDq+77dVwm6qyrPDEhehRcAuvEILXVM+Kf
+ Q8/FGw7U94HH6D+lwhwHjrL3ztyOLqJRaAOMk7kxu5YMiABp3o
+ l+jF8bFyHeun+XWgW6xYM1JYPkJr6YFy0gmx0AgfEJjTe9zyWN
+ zcK0wnknIf3/iRsITaybG/Wa4ausXyJ4EQ8vlMT2aOeQz4KP0B
+ /nYisWBFRA8ySkFojIqk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No waiting is needed for mac_ocp_{write / read}. And the bit 31 of
-OCPDR would not change, so rtl_udelay_loop_wait_high always return
-false. That is, the r8168_mac_ocp_read always retuen ~0.
+On Wednesday 11 July 2012, Roland Stigge wrote:
+> Thanks for the note! Looks like the interface consolidated to replace
+> ch->cd->min_signal with sth. like cd->min_signal directly.
+> 
+> Accessing the signal id/number is/was quite convenient because as you
+> can see in the 3 above cases that now get compile errors with the pl08x
+> changes, the LPC32xx chip hard-wires those numbers, and the respective
+> code is LPC32xx specific anyway.
+> 
+> So can we make an exception here to compare static dma channel numbers?
+> Or is there any other interface to access the static dma channel numbers
+> that I'm currently not aware of?
+> 
+> Depending on what we agree upon, I can then provide fixes to the
+> lpc32xx-next branch.
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/ethernet/realtek/r8169.c |   12 +-----------
- 1 file changed, 1 insertion(+), 11 deletions(-)
+I'm not familiar with this code, but I think the solution for now
+(while we don't have a DT binding) is to do the same thing that
+spear3xx does: pass a pointer to the global pl08x_filter_id
+function and an identifier for the channel in the platform data
+for that device.
 
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index c29c5fb..1f27318 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -1043,13 +1043,6 @@ static void rtl_w1w0_phy_ocp(struct rtl8169_private *tp, int reg, int p, int m)
- 	r8168_phy_ocp_write(tp, reg, (val | p) & ~m);
- }
- 
--DECLARE_RTL_COND(rtl_ocpdr_cond)
--{
--	void __iomem *ioaddr = tp->mmio_addr;
--
--	return RTL_R32(OCPDR) & OCPAR_FLAG;
--}
--
- static void r8168_mac_ocp_write(struct rtl8169_private *tp, u32 reg, u32 data)
- {
- 	void __iomem *ioaddr = tp->mmio_addr;
-@@ -1058,8 +1051,6 @@ static void r8168_mac_ocp_write(struct rtl8169_private *tp, u32 reg, u32 data)
- 		return;
- 
- 	RTL_W32(OCPDR, OCPAR_FLAG | (reg << 15) | data);
--
--	rtl_udelay_loop_wait_low(tp, &rtl_ocpdr_cond, 25, 10);
- }
- 
- static u16 r8168_mac_ocp_read(struct rtl8169_private *tp, u32 reg)
-@@ -1071,8 +1062,7 @@ static u16 r8168_mac_ocp_read(struct rtl8169_private *tp, u32 reg)
- 
- 	RTL_W32(OCPDR, reg << 15);
- 
--	return rtl_udelay_loop_wait_high(tp, &rtl_ocpdr_cond, 25, 10) ?
--		RTL_R32(OCPDR) : ~0;
-+	return RTL_R32(OCPDR);
- }
- 
- #define OCP_STD_PHY_BASE	0xa400
--- 
-1.7.10.4
-
+	Arnd
