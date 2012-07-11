@@ -1,45 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757068Ab2GKKHx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 06:07:53 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:9068 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757061Ab2GKKHu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 06:07:50 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 11 Jul 2012 03:07:11 -0700
-Message-ID: <4FFD4ECA.8090304@nvidia.com>
-Date: Wed, 11 Jul 2012 15:30:42 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	id S1757094Ab2GKKII (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 06:08:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37888 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757078Ab2GKKIE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 06:08:04 -0400
+Date: Wed, 11 Jul 2012 12:08:03 +0200
+From: Jan Kara <jack@suse.cz>
+To: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: Theodore Tso <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
+        Ext4 Mailing List <linux-ext4@vger.kernel.org>
+Subject: Re: [PATCHv6 4/5] ext4: weed out ext4_write_super
+Message-ID: <20120711100803.GF1316@quack.suse.cz>
+References: <1342000698-13556-1-git-send-email-dedekind1@gmail.com>
+ <1342000698-13556-5-git-send-email-dedekind1@gmail.com>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "spi-devel-general@lists.sourceforge.net" 
-	<spi-devel-general@lists.sourceforge.net>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH RESEND] spi: tegra: use dmaengine based dma driver
-References: <1341927517-4584-1-git-send-email-ldewangan@nvidia.com> <20120711095504.GD3938@opensource.wolfsonmicro.com>
-In-Reply-To: <20120711095504.GD3938@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1342000698-13556-5-git-send-email-dedekind1@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 11 July 2012 03:25 PM, Mark Brown wrote:
-> * PGP Signed by an unknown key
->
-> On Tue, Jul 10, 2012 at 07:08:37PM +0530, Laxman Dewangan wrote:
->> The new driver is selected if legacy driver is not
->> selected and new DMA driver is enabled through config
->> file.
-> Is this any different to the version of the patch that I already
-> applied?
-I believe you have applied for the ASoC one. This is for spi one.
-BTW, are you taking the same in regulator subsystem or created new for 
-spi? I can verify from there.
+On Wed 11-07-12 12:58:17, Artem Bityutskiy wrote:
+> From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+> 
+> We do not depend on VFS's '->write_super()' anymore and do not need the
+> 's_dirt' flag anymore, so weed out 'ext4_write_super()' and 's_dirt'.
+> 
+> Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+  Looks good. You can add:
+Reviewed-by: Jan Kara <jack@suse.cz>
 
+								Honza
+
+> ---
+>  fs/ext4/super.c |   10 ----------
+>  1 files changed, 0 insertions(+), 10 deletions(-)
+> 
+> diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+> index a391c53..622d5c7 100644
+> --- a/fs/ext4/super.c
+> +++ b/fs/ext4/super.c
+> @@ -74,7 +74,6 @@ static const char *ext4_decode_error(struct super_block *sb, int errno,
+>  static int ext4_remount(struct super_block *sb, int *flags, char *data);
+>  static int ext4_statfs(struct dentry *dentry, struct kstatfs *buf);
+>  static int ext4_unfreeze(struct super_block *sb);
+> -static void ext4_write_super(struct super_block *sb);
+>  static int ext4_freeze(struct super_block *sb);
+>  static struct dentry *ext4_mount(struct file_system_type *fs_type, int flags,
+>  		       const char *dev_name, void *data);
+> @@ -1194,7 +1193,6 @@ static const struct super_operations ext4_nojournal_sops = {
+>  	.dirty_inode	= ext4_dirty_inode,
+>  	.drop_inode	= ext4_drop_inode,
+>  	.evict_inode	= ext4_evict_inode,
+> -	.write_super	= ext4_write_super,
+>  	.put_super	= ext4_put_super,
+>  	.statfs		= ext4_statfs,
+>  	.remount_fs	= ext4_remount,
+> @@ -4203,7 +4201,6 @@ static int ext4_commit_super(struct super_block *sb, int sync)
+>  	es->s_free_inodes_count =
+>  		cpu_to_le32(percpu_counter_sum_positive(
+>  				&EXT4_SB(sb)->s_freeinodes_counter));
+> -	sb->s_dirt = 0;
+>  	BUFFER_TRACE(sbh, "marking dirty");
+>  	ext4_superblock_csum_set(sb, es);
+>  	mark_buffer_dirty(sbh);
+> @@ -4310,13 +4307,6 @@ int ext4_force_commit(struct super_block *sb)
+>  	return ret;
+>  }
+>  
+> -static void ext4_write_super(struct super_block *sb)
+> -{
+> -	lock_super(sb);
+> -	ext4_commit_super(sb, 1);
+> -	unlock_super(sb);
+> -}
+> -
+>  static int ext4_sync_fs(struct super_block *sb, int wait)
+>  {
+>  	int ret = 0;
+> -- 
+> 1.7.7.6
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
