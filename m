@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756685Ab2GKBCL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 21:02:11 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:55573 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753079Ab2GKBCJ (ORCPT
+	id S1756693Ab2GKBG5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 21:06:57 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:55231 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752681Ab2GKBG4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 21:02:09 -0400
-Date: Tue, 10 Jul 2012 18:02:06 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Minchan Kim <minchan@kernel.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH v2] mm: Warn about costly page allocation
-In-Reply-To: <20120710002510.GB5935@bbox>
-Message-ID: <alpine.DEB.2.00.1207101756070.684@chino.kir.corp.google.com>
-References: <1341878153-10757-1-git-send-email-minchan@kernel.org> <20120709170856.ca67655a.akpm@linux-foundation.org> <20120710002510.GB5935@bbox>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 10 Jul 2012 21:06:56 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Date: Wed, 11 Jul 2012 09:06:55 +0800
+Message-ID: <CACV3sbK7jUCDZxGBs3RUYnQ4s+VyEt7VYeRKD50F07zZrYKgCg@mail.gmail.com>
+Subject: [PATCH] perf: fix perf-lock report coredump
+From: Jovi Zhang <bookjovi@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Jul 2012, Minchan Kim wrote:
+>From 4b363bf16c12b76788fbace1475123b7214ae58d Mon Sep 17 00:00:00 2001
+From: Jovi Zhang <bookjovi@gmail.com>
+Date: Wed, 11 Jul 2012 16:53:57 +0800
+Subject: [PATCH] perf: fix perf-lock report coredump
 
-> > So I dunno, this all looks like we have a kernel problem and we're
-> > throwing our problem onto hopelessly ill-equipped users of that kernel?
-> 
-> As you know, this patch isn't for solving regular high-order allocations.
-> As I wrote down, The problem is that we removed lumpy reclaim without any
-> notification for user who might have used it implicitly.
+Check sample type event raw_data is existed in perf.data firstly,
+then invoke process_raw_event, otherwise it will coredump.
 
-And so now they're running with CONFIG_DEBUG_VM to try to figure out why 
-they have seen a regression, which is required for your patch to have an 
-effect?
+Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
+---
+ tools/perf/builtin-lock.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-> If such user disable compaction which is a replacement of lumpy reclaim,
-> their system might be broken in real practice while test is passing.
-> So, the goal is that let them know it in advance so that I expect they can
-> test it stronger than old.
-> 
+diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
+index fd53319..4b0c230 100644
+--- a/tools/perf/builtin-lock.c
++++ b/tools/perf/builtin-lock.c
+@@ -860,7 +860,9 @@ static int process_sample_event(struct perf_tool
+*tool __used,
+ 		return -1;
+ 	}
 
-So what are they supposed to do?  Enable CONFIG_COMPACTION as soon as they 
-see the warning?  When they have seen the warning a specific number of 
-times?  How much is "very few" high-order allocations over what time 
-period?  This is what anybody seeing these messages for the first time is 
-going to ask.
+-	process_raw_event(sample->raw_data, sample->cpu, sample->time, thread);
++	if (sample->raw_data)
++		process_raw_event(sample->raw_data, sample->cpu, sample->time,
++				  thread);
 
-> Although they see the page allocation failure with compaction, it would
-> be very helpful reports. It means we need to make compaction more
-> aggressive about reclaiming pages.
-> 
-
-If CONFIG_COMPACTION is disabled, then how will making compaction more 
-aggressive about reclaiming pages help?
-
-Should we consider enabling CONFIG_COMPACTION in defconfig?  If not, would 
-it be possible with a different extfrag_threshold (and more aggressive 
-when things like THP are enabled)?
+ 	return 0;
+ }
+-- 
+1.7.9.7
