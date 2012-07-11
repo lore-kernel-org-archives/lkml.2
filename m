@@ -1,66 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758056Ab2GKPJy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 11:09:54 -0400
-Received: from casper.infradead.org ([85.118.1.10]:33329 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755629Ab2GKPJx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 11:09:53 -0400
-Message-ID: <1342019376.3462.166.camel@twins>
-Subject: Re: [PATCH] trace: add ability to set a target task for events (v2)
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andrew Vagin <avagin@openvz.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Arun Sharma <asharma@fb.com>
-Date: Wed, 11 Jul 2012 17:09:36 +0200
-In-Reply-To: <1342016098-213063-1-git-send-email-avagin@openvz.org>
-References: <1342016098-213063-1-git-send-email-avagin@openvz.org>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S932764Ab2GKPLd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 11:11:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38909 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932139Ab2GKPLb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 11:11:31 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] MN10300: Fix a missing semicolon
+To: torvalds@osdl.org
+Cc: dhowells@redhat.com, linux-am33-list@redhat.com,
+        linux-kernel@vger.kernel.org
+Date: Wed, 11 Jul 2012 16:11:20 +0100
+Message-ID: <20120711151120.25703.18598.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-11 at 18:14 +0400, Andrew Vagin wrote:
-> @@ -5226,6 +5227,29 @@ void perf_tp_event(u64 addr, u64 count, void *record, int entry_size,
->                         perf_swevent_event(event, count, &data, regs);
->         }
->  
-> +       /*
-> +        * If we got specified a target task, also iterate its context and
-> +        * deliver this event there too.
-> +        */
-> +       if (task && task != current) {
-> +               struct perf_event_context *ctx;
-> +               struct trace_entry *entry = record;
-> +
-> +               rcu_read_lock();
-> +               ctx = rcu_dereference(task->perf_event_ctxp[perf_sw_context]);
-> +               if (!ctx)
-> +                       goto unlock;
-> +
-> +               list_for_each_entry_rcu(event, &ctx->event_list, event_entry) {
+The declaration of arch_release_thread_info() needs a semicolon.
 
-I added:
-			if (event->attr.type != PERF_TYPE_TRACEPOINT)
-				continue;
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
 
-> +                       if (entry->type != event->attr.config)
-> +                               continue;
-> +                       if (perf_tp_event_match(event, &data, regs))
-> +                               perf_swevent_event(event, count, &data, regs);
-> +               }
-> +unlock:
-> +               rcu_read_unlock();
-> +       }
-> +
->         perf_swevent_put_recursion_context(rctx);
->  } 
+ arch/mn10300/include/asm/thread_info.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Otherwise I've applied the patch.. Thanks!
+diff --git a/arch/mn10300/include/asm/thread_info.h b/arch/mn10300/include/asm/thread_info.h
+index 08251d6..ac519bb 100644
+--- a/arch/mn10300/include/asm/thread_info.h
++++ b/arch/mn10300/include/asm/thread_info.h
+@@ -123,7 +123,7 @@ static inline unsigned long current_stack_pointer(void)
+ }
+ 
+ #ifndef CONFIG_KGDB
+-void arch_release_thread_info(struct thread_info *ti)
++void arch_release_thread_info(struct thread_info *ti);
+ #endif
+ #define get_thread_info(ti)	get_task_struct((ti)->task)
+ #define put_thread_info(ti)	put_task_struct((ti)->task)
+
