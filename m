@@ -1,44 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757644Ab2GKNc6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 09:32:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21048 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757624Ab2GKNcz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 09:32:55 -0400
-Message-ID: <4FFD807D.1020509@redhat.com>
-Date: Wed, 11 Jul 2012 16:32:45 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1757618Ab2GKNeb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 09:34:31 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48150 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754959Ab2GKNea (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 09:34:30 -0400
+Message-ID: <4FFD80E5.2010700@gmail.com>
+Date: Wed, 11 Jul 2012 07:34:29 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>,
-        Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v7 02/10] KVM: MMU: abstract spte write-protect
-References: <4FE1822D.8010002@linux.vnet.ibm.com> <4FE1825B.1030402@linux.vnet.ibm.com> <20120620180254.8b3a42f8.yoshikawa.takuya@oss.ntt.co.jp> <4FE193AA.8010801@linux.vnet.ibm.com> <20120620215653.15930f3467bc13748d548b0d@gmail.com> <4FE1CE43.9080203@linux.vnet.ibm.com> <20120620231112.440df9ae19c1aca36100b746@gmail.com> <4FE27D55.4040805@linux.vnet.ibm.com>
-In-Reply-To: <4FE27D55.4040805@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+To: Gleb Natapov <gleb@redhat.com>
+CC: Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: perf with precise attribute kills all KVM based VMs
+References: <20120709141904.GC7298@redhat.com> <1341843844.3462.75.camel@twins> <4FFAED16.7050204@redhat.com> <4FFAEF13.7010108@gmail.com> <1341845396.3462.81.camel@twins> <4FFAEFF1.9000706@redhat.com> <1341845999.3462.86.camel@twins> <4FFCBD00.1030109@gmail.com> <20120711071006.GF23898@redhat.com> <1342000187.3462.134.camel@twins> <20120711095337.GJ23898@redhat.com>
+In-Reply-To: <20120711095337.GJ23898@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/21/2012 04:48 AM, Xiao Guangrong wrote:
-> On 06/20/2012 10:11 PM, Takuya Yoshikawa wrote:
-> 
-> 
->> We can change the debug message later if needed.
-> 
-> 
-> Actually, i am going to use tracepoint instead of
-> these debug code.
+On 7/11/12 3:53 AM, Gleb Natapov wrote:
+> On Wed, Jul 11, 2012 at 11:49:47AM +0200, Peter Zijlstra wrote:
+>> On Wed, 2012-07-11 at 10:10 +0300, Gleb Natapov wrote:
+>>
+>>> Looks like Avi is right about the overshoot. Can you test something like this?
 
-Yes, these should be in the kvmmmu namespace.
+I head to the airport in a few minutes; I'll try it out tonight or 
+tomorrow morning.
 
+David
 
--- 
-error compiling committee.c: too many arguments to function
+>>> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+>>> index 166546e..5fb371a 100644
+>>> --- a/arch/x86/kernel/cpu/perf_event_intel.c
+>>> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+>>> @@ -1374,8 +1374,11 @@ static struct perf_guest_switch_msr *intel_guest_get_msrs(int *nr)
+>>>   	arr[0].msr = MSR_CORE_PERF_GLOBAL_CTRL;
+>>>   	arr[0].host = x86_pmu.intel_ctrl & ~cpuc->intel_ctrl_guest_mask;
+>>>   	arr[0].guest = x86_pmu.intel_ctrl & ~cpuc->intel_ctrl_host_mask;
+>>> +	arr[1].msr = MSR_IA32_PEBS_ENABLE;
+>>> +	arr[1].host = cpuc->pebs_enabled;
+>>> +	arr[1].guest = 0;
+>>> +	*nr = 2;
+>>>
+>>> -	*nr = 1;
+>>>   	return arr;
+>>>   }
+>>
+>>
+>> You also need to clear TR, BTS, BTINT from MSR_IA32_DEBUGCTLMSR and
+>> ideally you'd also clear MSR_IA32_DS_AREA so that any write will be a
+>> proper NULL deref or such.
+> Yes. With the patch above :pp modifier does not crash guest for me, but
+> in theory it should since BTS are still written to DS. May be BTS writes do
+> not overshoot guest entry. Will have to ask Intel for clarification.
+>
+> --
+> 			Gleb.
+>
 
 
