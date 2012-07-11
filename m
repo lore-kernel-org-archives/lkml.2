@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933060Ab2GKRDI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 13:03:08 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:53870 "EHLO zene.cmpxchg.org"
+	id S933042Ab2GKRDF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 13:03:05 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:53867 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933013Ab2GKRCx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932171Ab2GKRCx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 11 Jul 2012 13:02:53 -0400
 From: Johannes Weiner <hannes@cmpxchg.org>
 To: Andrew Morton <akpm@linux-foundation.org>
@@ -13,9 +13,9 @@ Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         David Rientjes <rientjes@google.com>,
         Wanpeng Li <liwp.linux@gmail.com>, linux-mm@kvack.org,
         cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [patch 03/10] mm: memcg: push down PageSwapCache check into uncharge entry functions
-Date: Wed, 11 Jul 2012 19:02:15 +0200
-Message-Id: <1342026142-7284-4-git-send-email-hannes@cmpxchg.org>
+Subject: [patch 02/10] mm: swapfile: clean up unuse_pte race handling
+Date: Wed, 11 Jul 2012 19:02:14 +0200
+Message-Id: <1342026142-7284-3-git-send-email-hannes@cmpxchg.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1342026142-7284-1-git-send-email-hannes@cmpxchg.org>
 References: <1342026142-7284-1-git-send-email-hannes@cmpxchg.org>
@@ -23,75 +23,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not all uncharge paths need to check if the page is swapcache, some of
-them can know for sure.
-
-Push down the check into all callsites of uncharge_common() so that
-the patch that removes some of them is more obvious.
+The conditional mem_cgroup_cancel_charge_swapin() is a leftover from
+when the function would continue to reestablish the page even after
+mem_cgroup_try_charge_swapin() failed.  After 85d9fc8 "memcg: fix
+refcnt handling at swapoff", the condition is always true when this
+code is reached.
 
 Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Acked-by: Michal Hocko <mhocko@suse.cz>
 ---
- mm/memcontrol.c |   18 ++++++++++++------
- 1 files changed, 12 insertions(+), 6 deletions(-)
+ mm/swapfile.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 12ee2de..fb8d525 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2988,8 +2988,7 @@ __mem_cgroup_uncharge_common(struct page *page, enum charge_type ctype,
- 	if (mem_cgroup_disabled())
- 		return NULL;
+diff --git a/mm/swapfile.c b/mm/swapfile.c
+index 64408be..75881ca 100644
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -845,8 +845,7 @@ static int unuse_pte(struct vm_area_struct *vma, pmd_t *pmd,
  
--	if (PageSwapCache(page))
--		return NULL;
-+	VM_BUG_ON(PageSwapCache(page));
- 
- 	if (PageTransHuge(page)) {
- 		nr_pages <<= compound_order(page);
-@@ -3086,6 +3085,8 @@ void mem_cgroup_uncharge_page(struct page *page)
- 	if (page_mapped(page))
- 		return;
- 	VM_BUG_ON(page->mapping && !PageAnon(page));
-+	if (PageSwapCache(page))
-+		return;
- 	__mem_cgroup_uncharge_common(page, MEM_CGROUP_CHARGE_TYPE_ANON, false);
- }
- 
-@@ -3093,6 +3094,8 @@ void mem_cgroup_uncharge_cache_page(struct page *page)
- {
- 	VM_BUG_ON(page_mapped(page));
- 	VM_BUG_ON(page->mapping);
-+	if (PageSwapCache(page))
-+		return;
- 	__mem_cgroup_uncharge_common(page, MEM_CGROUP_CHARGE_TYPE_CACHE, false);
- }
- 
-@@ -3157,6 +3160,8 @@ mem_cgroup_uncharge_swapcache(struct page *page, swp_entry_t ent, bool swapout)
- 	if (!swapout) /* this was a swap cache but the swap is unused ! */
- 		ctype = MEM_CGROUP_CHARGE_TYPE_DROP;
- 
-+	if (PageSwapCache(page))
-+		return;
- 	memcg = __mem_cgroup_uncharge_common(page, ctype, false);
- 
- 	/*
-@@ -3346,10 +3351,11 @@ void mem_cgroup_end_migration(struct mem_cgroup *memcg,
- 		unused = oldpage;
+ 	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
+ 	if (unlikely(!pte_same(*pte, swp_entry_to_pte(entry)))) {
+-		if (ret > 0)
+-			mem_cgroup_cancel_charge_swapin(memcg);
++		mem_cgroup_cancel_charge_swapin(memcg);
+ 		ret = 0;
+ 		goto out;
  	}
- 	anon = PageAnon(used);
--	__mem_cgroup_uncharge_common(unused,
--		anon ? MEM_CGROUP_CHARGE_TYPE_ANON
--		     : MEM_CGROUP_CHARGE_TYPE_CACHE,
--		true);
-+	if (!PageSwapCache(unused))
-+		__mem_cgroup_uncharge_common(unused,
-+					     anon ? MEM_CGROUP_CHARGE_TYPE_ANON
-+					     : MEM_CGROUP_CHARGE_TYPE_CACHE,
-+					     true);
- 	css_put(&memcg->css);
- 	/*
- 	 * We disallowed uncharge of pages under migration because mapcount
 -- 
 1.7.7.6
 
