@@ -1,73 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758257Ab2GKWQs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 18:16:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58430 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753208Ab2GKWQq (ORCPT
+	id S1758138Ab2GKWTF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 18:19:05 -0400
+Received: from mail209.messagelabs.com ([216.82.255.3]:46966 "EHLO
+	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753876Ab2GKWTD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 18:16:46 -0400
-Date: Wed, 11 Jul 2012 15:16:44 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: linux-kernel@vger.kernel.org,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-next@vger.kernel.org, Mike Lockwood <lockwood@android.com>,
-        Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-Subject: Re: mmotm 2012-07-10-16-59 uploaded (staging/ccg)
-Message-Id: <20120711151644.23016bd8.akpm@linux-foundation.org>
-In-Reply-To: <4FFDF7BC.6050602@xenotime.net>
-References: <20120711000148.BAD1E5C0050@hpza9.eem.corp.google.com>
-	<4FFDF7BC.6050602@xenotime.net>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 11 Jul 2012 18:19:03 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-15.tower-209.messagelabs.com!1342045140!8421002!3
+X-Originating-IP: [216.166.12.98]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 04/30] staging: comedi: adl_pci7230: remove private data
+Date: Wed, 11 Jul 2012 15:18:57 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <gregkh@linuxfoundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201207111518.57768.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Jul 2012 15:01:32 -0700
-Randy Dunlap <rdunlap@xenotime.net> wrote:
+The private data is no longer needed by this driver. Remove it.
 
-> In file included from drivers/staging/ccg/ccg.c:59:0:
-> drivers/staging/ccg/../../usb/gadget/f_fs.c:41:0: warning: "pr_vdebug" redefined
-> drivers/staging/ccg/../../usb/gadget/u_serial.c:138:0: note: this is the location of the previous definition
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/staging/comedi/drivers/adl_pci7230.c | 9 ---------
+ 1 file changed, 9 deletions(-)
 
-<looks at drivers/staging/ccg/ccg.c>
-
-: /*
-:  * Kbuild is not very cooperative with respect to linking separately
-:  * compiled library objects into one module.  So for now we won't use
-:  * separate compilation ... ensuring init/exit sections work to shrink
-:  * the runtime footprint, and giving us at least some parts of what
-:  * a "gcc --combine ... part1.c part2.c part3.c ... " build would.
-:  */
-: #include "../../usb/gadget/usbstring.c"
-: #include "../../usb/gadget/config.c"
-: #include "../../usb/gadget/epautoconf.c"
-: #include "../../usb/gadget/composite.c"
-: 
-: #include "../../usb/gadget/f_mass_storage.c"
-: #include "../../usb/gadget/u_serial.c"
-: #include "../../usb/gadget/f_acm.c"
-: #define USB_ETH_RNDIS y
-: #include "../../usb/gadget/f_rndis.c"
-: #include "../../usb/gadget/rndis.c"
-: #include "../../usb/gadget/u_ether.c"
-: #include "../../usb/gadget/f_fs.c"
-
-What nonsense is this?
-
-Who wrote that rotten comment?  What does "not very cooperative" mean? 
-This alleged lack of cooperation is the central issue, but you couldn't
-be bothered actually describing it?  How the heck is anyone else to
-understand the problem and suggest fixes?  argh.
-
-It talks about library objects.  Really?  Is there a .a file
-involved here, or is that just a thinko?  If there is indeed a .a file
-then I'm not surprised there are problems: don't do that.  If instead
-we're just talking about a bunch of .o files then I'm rather curious to
-know what "not very cooperative" means.
+diff --git a/drivers/staging/comedi/drivers/adl_pci7230.c b/drivers/staging/comedi/drivers/adl_pci7230.c
+index b61dafe..c1f83ea 100644
+--- a/drivers/staging/comedi/drivers/adl_pci7230.c
++++ b/drivers/staging/comedi/drivers/adl_pci7230.c
+@@ -42,12 +42,6 @@ Configuration Options:
+ 
+ #define PCI_DEVICE_ID_PCI7230 0x7230
+ 
+-struct adl_pci7230_private {
+-	int data;
+-};
+-
+-#define devpriv ((struct adl_pci7230_private *)dev->private)
+-
+ static int adl_pci7230_do_insn_bits(struct comedi_device *dev,
+ 	struct comedi_subdevice *s,
+ 	struct comedi_insn *insn,
+@@ -107,9 +101,6 @@ static int adl_pci7230_attach(struct comedi_device *dev,
+ 
+ 	dev->board_name = "pci7230";
+ 
+-	if (alloc_private(dev, sizeof(struct adl_pci7230_private)) < 0)
+-		return -ENOMEM;
+-
+ 	ret = comedi_alloc_subdevices(dev, 2);
+ 	if (ret)
+ 		return ret;
+-- 
+1.7.11
 
