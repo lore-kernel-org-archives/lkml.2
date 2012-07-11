@@ -1,75 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030366Ab2GKWLl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 18:11:41 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:36909 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030280Ab2GKWLj (ORCPT
+	id S1030412Ab2GKWMz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 18:12:55 -0400
+Received: from violet.fr.zoreil.com ([92.243.8.30]:36952 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932203Ab2GKWMv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 18:11:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <d0bd829760aba6c8e686f3b864b3831aa6bdcaa1.1341925681.git.cmahapatra@ti.com>
-References: <cover.1341925681.git.cmahapatra@ti.com>
-	<d0bd829760aba6c8e686f3b864b3831aa6bdcaa1.1341925681.git.cmahapatra@ti.com>
-Date: Thu, 12 Jul 2012 00:11:39 +0200
-Message-ID: <CACRpkdbKbQGKGsqnSKB5NgVG+yuBfHSLSS_bYWWJVXe1_tCByA@mail.gmail.com>
-Subject: Re: [PATCH 4/4] gpio/pca953x: register the device irq using
- appropriate api's
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Chandrabhanu Mahapatra <cmahapatra@ti.com>
-Cc: grant.likely@secretlab.ca, linus.walleij@stericsson.com,
-        rob.herring@calxeda.com, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, leed.aguilar@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 11 Jul 2012 18:12:51 -0400
+Date: Thu, 12 Jul 2012 00:00:45 +0200
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Hayes Wang <hayeswang@realtek.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next] r8169: Remove rtl_ocpdr_cond
+Message-ID: <20120711220045.GA8913@electric-eye.fr.zoreil.com>
+References: <1342009916-1519-1-git-send-email-hayeswang@realtek.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1342009916-1519-1-git-send-email-hayeswang@realtek.com>
+User-Agent: Mutt/1.4.2.2i
+X-Organisation: Land of Sunshine Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 10, 2012 at 3:36 PM, Chandrabhanu Mahapatra
-<cmahapatra@ti.com> wrote:
+Hayes Wang <hayeswang@realtek.com> :
+> No waiting is needed for mac_ocp_{write / read}. And the bit 31 of
+> OCPDR would not change, so rtl_udelay_loop_wait_high always return
+> false. That is, the r8168_mac_ocp_read always retuen ~0.
 
-> From: Leed Aguilar <leed.aguilar@ti.com>
->
-> Here, the implementation of registration of requested IRQs has been corrected
-> with appropiate api's. The gpio number is requested through gpio_request_one()
-> API and conversion of the gpio to irq is done using the gpio_to_irq() API.
->
-> Change-Id: I964145e2a280d6553ea2c05ea8049810a1983930
+(testing with davem's 48ee3569f31d91084dc694fef5517eb782428083)
 
-Delete that.
+It seemed right at first sight but testing without firmware produces
+unexpected results. While it is not exactly fast if I ask it to emit
+packets with ping -qf, it turns really slow when I use the -l preload
+option: at most a few hundreds pps.
 
-> Signed-off-by: Leed Aguilar <leed.aguilar@ti.com>
-> Signed-off-by: Chandrabhanu Mahapatra <cmahapatra@ti.com>
-> ---
->  drivers/gpio/gpio-pca953x.c |    8 +++++++-
->  1 file changed, 7 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/gpio/gpio-pca953x.c b/drivers/gpio/gpio-pca953x.c
-> index c3ca7d8..27486da 100644
-> --- a/drivers/gpio/gpio-pca953x.c
-> +++ b/drivers/gpio/gpio-pca953x.c
-> @@ -509,7 +509,13 @@ static int pca953x_irq_setup(struct pca953x_chip *chip,
->  #endif
->                 }
->
-> -               ret = request_threaded_irq(client->irq,
-> +               ret = gpio_request_one(client->irq, GPIOF_IN, "pca953x");
+An old pcie 8168b in the same computer behaves correctly with the same
+kernel.
 
-Not that it's really related to this one patch, but why is a GPIO number named
-"irq" in client->irq??
+I'll try again tomorrow evening.
 
-> +               if (ret) {
-> +                       dev_err(&client->dev, "gpio request failure\n");
-> +                       goto out_failed;
-> +               }
-> +
-> +               ret = request_threaded_irq(gpio_to_irq(client->irq),
-
-It gets ever more confused as you're seemingly converting an IRQ to
-an IRQ. Can we rename this variable in a separate patch?
-
-Apart from this it looks good, but do I dare apply it without applying
-3/4 (that needs ACK:ing)?
-
-Yours,
-Linus Walleij
+-- 
+Ueimor
