@@ -1,1003 +1,1081 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755747Ab2GKRhe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 13:37:34 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:54343 "EHLO
+	id S1756499Ab2GKRhu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 13:37:50 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:65017 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752252Ab2GKRh1 (ORCPT
+	with ESMTP id S1752291Ab2GKRhm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 13:37:27 -0400
-Date: Wed, 11 Jul 2012 19:37:21 +0200
+	Wed, 11 Jul 2012 13:37:42 -0400
+Date: Wed, 11 Jul 2012 19:37:37 +0200
 From: Johannes Goetzfried 
 	<Johannes.Goetzfried@informatik.stud.uni-erlangen.de>
 To: Herbert Xu <herbert@gondor.hengli.com.au>
 Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
         Tilo Mueller <tilo.mueller@informatik.uni-erlangen.de>
-Subject: [PATCH 2/6] crypto: testmgr - add larger cast5 testvectors
-Message-ID: <b77efe7d89c9eb0904ca7b2be2330f822e6be52c.1342027375.git.johannes@goetzfried-amberg.de>
+Subject: [PATCH 3/6] crypto: cast5 - add x86_64/avx assembler implementation
+Message-ID: <12709467413e5203c750482d9aed7a6c525c5f7c.1342027375.git.johannes@goetzfried-amberg.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 In-Reply-To: <cover.1342027375.git.johannes@goetzfried-amberg.de>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Provags-ID: V02:K0:HtpT8q0mdzvY8Bzm+fLtUuVf/mAdIZgkRyqTBghMSxE
- n9thmKbWHIaTu7Wm7LMwU3PkZLVssauwbX6WMRNfeP42dfwDMR
- zFtbEnXQvNeFWNPeXGD1t0ZQs2A6mfhowgV2FtW+WWqaQ1ecLT
- RG4DPekn0827t9n7weHh8fz3jAQYHe/2shaFwb212fQNIE4y6z
- OvqZyKjH9hVtShqYByeL8CO6s6C9+uvQNPavK336C12RotjFrN
- qsWxa/MAxf89ITuqIMowBgaJ0/rb+V96mFJZI4qyS6aowXAuwM
- UJTWCnMdb6I335q6IO57rQOOqh9Mqtag6p4StiI4eAiGWxdOQD
- ELPyFH/+FT/AUviOTQlOvTmDa25Cjqvaht6CsO+08Ne6C48X+8
- PvCrmDgCmGRwP8uUenfZjxlrcABvSqfBEN5e6r46TnRgbVM7MU
- lzlag
+X-Provags-ID: V02:K0:WewALgorHvTG6ZESDiy2oVxvPSyTcEIMZ7qyp6LDGg3
+ NuZfpVOv8HiH5nAME0FPFVUu+jlLd8yZVYC9KHZKFAaKLCs+Ft
+ KUC33g1A/QPG3Vvu2XvrRzfF+DRjDQZfJmE1YSyoBZ6U8fxn5h
+ ZkHi3PX1uQFVVvT6gDwVEQEzMnlxdJSncoBPsliOwSuy9S7Pvo
+ EU3e1bxm4wB7GvX8azr6tSxsEft2ExubcIOmke3ZEok+Ffjn5Y
+ MVTVWMz6bCiROfAYDSmIEjj6v68nEEKad1BrGCwNQS8rzlBc5m
+ iVjVqri7lBZNcsqcNx/DIpuaDZWeQEWgjceK9i8Gr7L6c82r9j
+ w3vhnRiJ8/93MhGUul2xy4Ziyb9WH+M8Ap0DzTlYZyyuiUPG2L
+ 4d37DmbBu7QlmEZp0vTDC63wLCAzMkf9GpGaRsBE6eXCPm9gzA
+ bkAox
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-New ECB, CBC and CTR testvectors for cast5. We need larger testvectors to check
-parallel code paths in the optimized implementation. Tests have also been added
-to the tcrypt module.
+This patch adds a x86_64/avx assembler implementation of the Cast5 block
+cipher. The implementation processes sixteen blocks in parallel (four 4 block
+chunk AVX operations). The table-lookups are done in general-purpose registers.
+For small blocksizes the functions from the generic module are called. A good
+performance increase is provided for blocksizes greater or equal to 128B.
+
+Patch has been tested with tcrypt and automated filesystem tests.
+
+Tcrypt benchmark results:
+
+Intel Core i5-2500 CPU (fam:6, model:42, step:7)
+
+cast5-avx-x86_64 vs. cast5-generic
+64bit key:
+size    ecb-enc ecb-dec cbc-enc cbc-dec ctr-enc ctr-dec
+16B     0.99x   0.99x   1.00x   1.00x   1.02x   1.01x
+64B     1.00x   1.00x   0.98x   1.00x   1.01x   1.02x
+256B    2.03x   2.01x   0.95x   2.11x   2.12x   2.13x
+1024B   2.30x   2.24x   0.95x   2.29x   2.35x   2.35x
+8192B   2.31x   2.27x   0.95x   2.31x   2.39x   2.39x
+
+128bit key:
+size    ecb-enc ecb-dec cbc-enc cbc-dec ctr-enc ctr-dec
+16B     0.99x   0.99x   1.00x   1.00x   1.01x   1.01x
+64B     1.00x   1.00x   0.98x   1.01x   1.02x   1.01x
+256B    2.17x   2.13x   0.96x   2.19x   2.19x   2.19x
+1024B   2.29x   2.32x   0.95x   2.34x   2.37x   2.38x
+8192B   2.35x   2.32x   0.95x   2.35x   2.39x   2.39x
 
 Signed-off-by: Johannes Goetzfried <Johannes.Goetzfried@informatik.stud.uni-erlangen.de>
 ---
- crypto/tcrypt.c  |   32 +++
- crypto/tcrypt.h  |    1 +
- crypto/testmgr.c |   30 ++
- crypto/testmgr.h |  810 +++++++++++++++++++++++++++++++++++++++++++++++++++++-
- 4 files changed, 871 insertions(+), 2 deletions(-)
+ arch/x86/crypto/Makefile                  |    2 +
+ arch/x86/crypto/cast5-avx-x86_64-asm_64.S |  323 ++++++++++++++++++
+ arch/x86/crypto/cast5_avx_glue.c          |  530 +++++++++++++++++++++++++++++
+ crypto/Kconfig                            |   14 +
+ crypto/testmgr.c                          |   60 ++++
+ 5 files changed, 929 insertions(+), 0 deletions(-)
+ create mode 100644 arch/x86/crypto/cast5-avx-x86_64-asm_64.S
+ create mode 100644 arch/x86/crypto/cast5_avx_glue.c
 
-diff --git a/crypto/tcrypt.c b/crypto/tcrypt.c
-index 5cf2ccb..a94bbd7 100644
---- a/crypto/tcrypt.c
-+++ b/crypto/tcrypt.c
-@@ -1037,6 +1037,8 @@ static int do_test(int m)
+diff --git a/arch/x86/crypto/Makefile b/arch/x86/crypto/Makefile
+index e908e5d..565e82b 100644
+--- a/arch/x86/crypto/Makefile
++++ b/arch/x86/crypto/Makefile
+@@ -12,6 +12,7 @@ obj-$(CONFIG_CRYPTO_SERPENT_SSE2_586) += serpent-sse2-i586.o
  
- 	case 14:
- 		ret += tcrypt_test("ecb(cast5)");
-+		ret += tcrypt_test("cbc(cast5)");
-+		ret += tcrypt_test("ctr(cast5)");
- 		break;
+ obj-$(CONFIG_CRYPTO_AES_X86_64) += aes-x86_64.o
+ obj-$(CONFIG_CRYPTO_CAMELLIA_X86_64) += camellia-x86_64.o
++obj-$(CONFIG_CRYPTO_CAST5_AVX_X86_64) += cast5-avx-x86_64.o
+ obj-$(CONFIG_CRYPTO_BLOWFISH_X86_64) += blowfish-x86_64.o
+ obj-$(CONFIG_CRYPTO_TWOFISH_X86_64) += twofish-x86_64.o
+ obj-$(CONFIG_CRYPTO_TWOFISH_X86_64_3WAY) += twofish-x86_64-3way.o
+@@ -32,6 +33,7 @@ serpent-sse2-i586-y := serpent-sse2-i586-asm_32.o serpent_sse2_glue.o
  
- 	case 15:
-@@ -1359,6 +1361,21 @@ static int do_test(int m)
- 				  speed_template_8);
- 		break;
- 
-+	case 209:
-+		test_cipher_speed("ecb(cast5)", ENCRYPT, sec, NULL, 0,
-+				  speed_template_8_16);
-+		test_cipher_speed("ecb(cast5)", DECRYPT, sec, NULL, 0,
-+				  speed_template_8_16);
-+		test_cipher_speed("cbc(cast5)", ENCRYPT, sec, NULL, 0,
-+				  speed_template_8_16);
-+		test_cipher_speed("cbc(cast5)", DECRYPT, sec, NULL, 0,
-+				  speed_template_8_16);
-+		test_cipher_speed("ctr(cast5)", ENCRYPT, sec, NULL, 0,
-+				  speed_template_8_16);
-+		test_cipher_speed("ctr(cast5)", DECRYPT, sec, NULL, 0,
-+				  speed_template_8_16);
-+		break;
+ aes-x86_64-y := aes-x86_64-asm_64.o aes_glue.o
+ camellia-x86_64-y := camellia-x86_64-asm_64.o camellia_glue.o
++cast5-avx-x86_64-y := cast5-avx-x86_64-asm_64.o cast5_avx_glue.o
+ blowfish-x86_64-y := blowfish-x86_64-asm_64.o blowfish_glue.o
+ twofish-x86_64-y := twofish-x86_64-asm_64.o twofish_glue.o
+ twofish-x86_64-3way-y := twofish-x86_64-asm_64-3way.o twofish_glue_3way.o
+diff --git a/arch/x86/crypto/cast5-avx-x86_64-asm_64.S b/arch/x86/crypto/cast5-avx-x86_64-asm_64.S
+new file mode 100644
+index 0000000..df06735
+--- /dev/null
++++ b/arch/x86/crypto/cast5-avx-x86_64-asm_64.S
+@@ -0,0 +1,323 @@
++/*
++ * Cast5 Cipher 16-way parallel algorithm (AVX/x86_64)
++ *
++ * Copyright (C) 2012 Johannes Goetzfried
++ *     <Johannes.Goetzfried@informatik.stud.uni-erlangen.de>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
++ * USA
++ *
++ */
 +
- 	case 300:
- 		/* fall through */
- 
-@@ -1639,6 +1656,21 @@ static int do_test(int m)
- 				   speed_template_8);
- 		break;
- 
-+	case 506:
-+		test_acipher_speed("ecb(cast5)", ENCRYPT, sec, NULL, 0,
-+				   speed_template_8_16);
-+		test_acipher_speed("ecb(cast5)", DECRYPT, sec, NULL, 0,
-+				   speed_template_8_16);
-+		test_acipher_speed("cbc(cast5)", ENCRYPT, sec, NULL, 0,
-+				   speed_template_8_16);
-+		test_acipher_speed("cbc(cast5)", DECRYPT, sec, NULL, 0,
-+				   speed_template_8_16);
-+		test_acipher_speed("ctr(cast5)", ENCRYPT, sec, NULL, 0,
-+				   speed_template_8_16);
-+		test_acipher_speed("ctr(cast5)", DECRYPT, sec, NULL, 0,
-+				   speed_template_8_16);
-+		break;
++.file "cast5-avx-x86_64-asm_64.S"
++.text
 +
- 	case 1000:
- 		test_available();
- 		break;
-diff --git a/crypto/tcrypt.h b/crypto/tcrypt.h
-index 5be1fc8..cd20685 100644
---- a/crypto/tcrypt.h
-+++ b/crypto/tcrypt.h
-@@ -47,6 +47,7 @@ static struct cipher_speed_template des3_speed_template[] = {
-  */
- static u8 speed_template_8[] = {8, 0};
- static u8 speed_template_24[] = {24, 0};
-+static u8 speed_template_8_16[] = {8, 16, 0};
- static u8 speed_template_8_32[] = {8, 32, 0};
- static u8 speed_template_16_32[] = {16, 32, 0};
- static u8 speed_template_16_24_32[] = {16, 24, 32, 0};
++.extern cast5_s1
++.extern cast5_s2
++.extern cast5_s3
++.extern cast5_s4
++
++/* structure of crypto context */
++#define km	0
++#define kr	(16*4)
++#define rr	((16*4)+16)
++
++/* s-boxes */
++#define s1	cast5_s1
++#define s2	cast5_s2
++#define s3	cast5_s3
++#define s4	cast5_s4
++
++/**********************************************************************
++  16-way AVX cast5
++ **********************************************************************/
++#define CTX %rdi
++
++#define RL1 %xmm0
++#define RR1 %xmm1
++#define RL2 %xmm2
++#define RR2 %xmm3
++#define RL3 %xmm4
++#define RR3 %xmm5
++#define RL4 %xmm6
++#define RR4 %xmm7
++
++#define RX %xmm8
++
++#define RKM  %xmm9
++#define RKRF %xmm10
++#define RKRR %xmm11
++
++#define RTMP  %xmm12
++#define RMASK %xmm13
++#define R32   %xmm14
++
++#define RID1  %rax
++#define RID1b %al
++#define RID2  %rbx
++#define RID2b %bl
++
++#define RGI1   %rdx
++#define RGI1bl %dl
++#define RGI1bh %dh
++#define RGI2   %rcx
++#define RGI2bl %cl
++#define RGI2bh %ch
++
++#define RFS1  %r8
++#define RFS1d %r8d
++#define RFS2  %r9
++#define RFS2d %r9d
++#define RFS3  %r10
++#define RFS3d %r10d
++
++
++#define lookup_32bit(src, dst, op1, op2, op3) \
++	movb		src ## bl,     RID1b;    \
++	movb		src ## bh,     RID2b;    \
++	movl		s1(, RID1, 4), dst ## d; \
++	op1		s2(, RID2, 4), dst ## d; \
++	shrq $16,	src;                     \
++	movb		src ## bl,     RID1b;    \
++	movb		src ## bh,     RID2b;    \
++	op2		s3(, RID1, 4), dst ## d; \
++	op3		s4(, RID2, 4), dst ## d;
++
++#define F(a, x, op0, op1, op2, op3) \
++	op0	a,	RKM,  x;                 \
++	vpslld  RKRF,	x,    RTMP;              \
++	vpsrld  RKRR,	x,    x;                 \
++	vpor	RTMP,	x,    x;                 \
++	\
++	vpshufb	RMASK,	x,    x;                 \
++	vmovq		x,    RGI1;              \
++	vpsrldq $8,	x,    x;                 \
++	vmovq		x,    RGI2;              \
++	\
++	lookup_32bit(RGI1, RFS1, op1, op2, op3); \
++	shrq $16,	RGI1;                    \
++	lookup_32bit(RGI1, RFS2, op1, op2, op3); \
++	shlq $32,	RFS2;                    \
++	orq		RFS1, RFS2;              \
++	\
++	lookup_32bit(RGI2, RFS1, op1, op2, op3); \
++	shrq $16,	RGI2;                    \
++	lookup_32bit(RGI2, RFS3, op1, op2, op3); \
++	shlq $32,	RFS3;                    \
++	orq		RFS1, RFS3;              \
++	\
++	vmovq		RFS2, x;                 \
++	vpinsrq $1,	RFS3, x, x;
++
++#define F1(b, x) F(b, x, vpaddd, xorl, subl, addl)
++#define F2(b, x) F(b, x, vpxor,  subl, addl, xorl)
++#define F3(b, x) F(b, x, vpsubd, addl, xorl, subl)
++
++#define subround(a, b, x, n, f) \
++	F ## f(b, x);  \
++	vpxor a, x, a;
++
++#define round(l, r, n, f) \
++	vbroadcastss 	(km+(4*n))(CTX), RKM;        \
++	vpinsrb $0,	(kr+n)(CTX),     RKRF, RKRF; \
++	vpsubq		RKRF,            R32,  RKRR; \
++	subround(l ## 1, r ## 1, RX, n, f);          \
++	subround(l ## 2, r ## 2, RX, n, f);          \
++	subround(l ## 3, r ## 3, RX, n, f);          \
++	subround(l ## 4, r ## 4, RX, n, f);
++
++
++#define transpose_2x4(x0, x1, t0, t1) \
++	vpunpckldq		x1, x0, t0; \
++	vpunpckhdq		x1, x0, t1; \
++	\
++	vpunpcklqdq		t1, t0, x0; \
++	vpunpckhqdq		t1, t0, x1;
++
++#define inpack_blocks(in, x0, x1, t0, t1) \
++	vmovdqu (0*4*4)(in),	x0; \
++	vmovdqu (1*4*4)(in),	x1; \
++	vpshufb RMASK, x0,	x0; \
++	vpshufb RMASK, x1,	x1; \
++	\
++	transpose_2x4(x0, x1, t0, t1)
++
++#define outunpack_blocks(out, x0, x1, t0, t1) \
++	transpose_2x4(x0, x1, t0, t1) \
++	\
++	vpshufb RMASK,	x0, x0;           \
++	vpshufb RMASK,	x1, x1;           \
++	vmovdqu 	x0, (0*4*4)(out); \
++	vmovdqu		x1, (1*4*4)(out);
++
++#define outunpack_xor_blocks(out, x0, x1, t0, t1) \
++	transpose_2x4(x0, x1, t0, t1) \
++	\
++	vpshufb RMASK,	x0, x0;               \
++	vpshufb RMASK,	x1, x1;               \
++	vpxor		(0*4*4)(out), x0, x0; \
++	vmovdqu 	x0, (0*4*4)(out);     \
++	vpxor		(1*4*4)(out), x1, x1; \
++	vmovdqu	        x1, (1*4*4)(out);
++
++.align 16
++.Lbswap_mask:
++	.byte 3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12
++.L32_mask:
++	.byte 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ,0, 0, 0, 0, 0
++
++.align 16
++.global __cast5_enc_blk_16way
++.type   __cast5_enc_blk_16way,@function;
++
++__cast5_enc_blk_16way:
++	/* input:
++	 *	%rdi: ctx, CTX
++	 *	%rsi: dst
++	 *	%rdx: src
++	 *	%rcx: bool, if true: xor output
++	 */
++
++	pushq %rbx;
++	pushq %rcx;
++
++	vmovdqu .Lbswap_mask, RMASK;
++	vmovdqu .L32_mask, R32;
++	vpxor RKRF, RKRF, RKRF;
++
++	inpack_blocks(%rdx, RL1, RR1, RTMP, RX);
++	leaq (2*4*4)(%rdx), %rax;
++	inpack_blocks(%rax, RL2, RR2, RTMP, RX);
++	leaq (2*4*4)(%rax), %rax;
++	inpack_blocks(%rax, RL3, RR3, RTMP, RX);
++	leaq (2*4*4)(%rax), %rax;
++	inpack_blocks(%rax, RL4, RR4, RTMP, RX);
++
++	xorq RID1, RID1;
++	xorq RID2, RID2;
++
++	round(RL, RR, 0, 1);
++	round(RR, RL, 1, 2);
++	round(RL, RR, 2, 3);
++	round(RR, RL, 3, 1);
++	round(RL, RR, 4, 2);
++	round(RR, RL, 5, 3);
++	round(RL, RR, 6, 1);
++	round(RR, RL, 7, 2);
++	round(RL, RR, 8, 3);
++	round(RR, RL, 9, 1);
++	round(RL, RR, 10, 2);
++	round(RR, RL, 11, 3);
++
++	movb rr(CTX), %al;
++	testb %al, %al;
++	jnz __skip_enc;
++
++	round(RL, RR, 12, 1);
++	round(RR, RL, 13, 2);
++	round(RL, RR, 14, 3);
++	round(RR, RL, 15, 1);
++
++__skip_enc:
++	popq %rcx;
++	popq %rbx;
++
++	testb %cl, %cl;
++	jnz __enc_xor16;
++
++	outunpack_blocks(%rsi, RR1, RL1, RTMP, RX);
++	leaq (2*4*4)(%rsi), %rax;
++	outunpack_blocks(%rax, RR2, RL2, RTMP, RX);
++	leaq (2*4*4)(%rax), %rax;
++	outunpack_blocks(%rax, RR3, RL3, RTMP, RX);
++	leaq (2*4*4)(%rax), %rax;
++	outunpack_blocks(%rax, RR4, RL4, RTMP, RX);
++
++	ret;
++
++__enc_xor16:
++	outunpack_xor_blocks(%rsi, RR1, RL1, RTMP, RX);
++	leaq (2*4*4)(%rsi), %rax;
++	outunpack_xor_blocks(%rax, RR2, RL2, RTMP, RX);
++	leaq (2*4*4)(%rax), %rax;
++	outunpack_xor_blocks(%rax, RR3, RL3, RTMP, RX);
++	leaq (2*4*4)(%rax), %rax;
++	outunpack_xor_blocks(%rax, RR4, RL4, RTMP, RX);
++
++	ret;
++
++.align 16
++.global cast5_dec_blk_16way
++.type   cast5_dec_blk_16way,@function;
++
++cast5_dec_blk_16way:
++	/* input:
++	 *	%rdi: ctx, CTX
++	 *	%rsi: dst
++	 *	%rdx: src
++	 */
++
++	pushq %rbx;
++
++	vmovdqu .Lbswap_mask, RMASK;
++	vmovdqu .L32_mask, R32;
++	vpxor RKRF, RKRF, RKRF;
++
++	inpack_blocks(%rdx, RL1, RR1, RTMP, RX);
++	leaq (2*4*4)(%rdx), %rax;
++	inpack_blocks(%rax, RL2, RR2, RTMP, RX);
++	leaq (2*4*4)(%rax), %rax;
++	inpack_blocks(%rax, RL3, RR3, RTMP, RX);
++	leaq (2*4*4)(%rax), %rax;
++	inpack_blocks(%rax, RL4, RR4, RTMP, RX);
++
++	xorq RID1, RID1;
++	xorq RID2, RID2;
++
++	movb rr(CTX), %al;
++	testb %al, %al;
++	jnz __skip_dec;
++
++	round(RL, RR, 15, 1);
++	round(RR, RL, 14, 3);
++	round(RL, RR, 13, 2);
++	round(RR, RL, 12, 1);
++
++__skip_dec:
++	round(RL, RR, 11, 3);
++	round(RR, RL, 10, 2);
++	round(RL, RR, 9, 1);
++	round(RR, RL, 8, 3);
++	round(RL, RR, 7, 2);
++	round(RR, RL, 6, 1);
++	round(RL, RR, 5, 3);
++	round(RR, RL, 4, 2);
++	round(RL, RR, 3, 1);
++	round(RR, RL, 2, 3);
++	round(RL, RR, 1, 2);
++	round(RR, RL, 0, 1);
++
++	popq %rbx;
++
++	outunpack_blocks(%rsi, RR1, RL1, RTMP, RX);
++	leaq (2*4*4)(%rsi), %rax;
++	outunpack_blocks(%rax, RR2, RL2, RTMP, RX);
++	leaq (2*4*4)(%rax), %rax;
++	outunpack_blocks(%rax, RR3, RL3, RTMP, RX);
++	leaq (2*4*4)(%rax), %rax;
++	outunpack_blocks(%rax, RR4, RL4, RTMP, RX);
++
++	ret;
++
+diff --git a/arch/x86/crypto/cast5_avx_glue.c b/arch/x86/crypto/cast5_avx_glue.c
+new file mode 100644
+index 0000000..445aab0
+--- /dev/null
++++ b/arch/x86/crypto/cast5_avx_glue.c
+@@ -0,0 +1,530 @@
++/*
++ * Glue Code for the AVX assembler implemention of the Cast5 Cipher
++ *
++ * Copyright (C) 2012 Johannes Goetzfried
++ *     <Johannes.Goetzfried@informatik.stud.uni-erlangen.de>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
++ * USA
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/hardirq.h>
++#include <linux/types.h>
++#include <linux/crypto.h>
++#include <linux/err.h>
++#include <crypto/algapi.h>
++#include <crypto/cast5.h>
++#include <crypto/cryptd.h>
++#include <crypto/ctr.h>
++#include <asm/xcr.h>
++#include <asm/xsave.h>
++#include <asm/crypto/ablk_helper.h>
++#include <asm/crypto/glue_helper.h>
++
++#define CAST5_PARALLEL_BLOCKS 16
++
++asmlinkage void __cast5_enc_blk_16way(struct cast5_ctx *ctx, u8 *dst,
++				      const u8 *src, bool xor);
++asmlinkage void cast5_dec_blk_16way(struct cast5_ctx *ctx, u8 *dst,
++				    const u8 *src);
++
++static inline void cast5_enc_blk_xway(struct cast5_ctx *ctx, u8 *dst,
++				      const u8 *src)
++{
++	__cast5_enc_blk_16way(ctx, dst, src, false);
++}
++
++static inline void cast5_enc_blk_xway_xor(struct cast5_ctx *ctx, u8 *dst,
++					  const u8 *src)
++{
++	__cast5_enc_blk_16way(ctx, dst, src, true);
++}
++
++static inline void cast5_dec_blk_xway(struct cast5_ctx *ctx, u8 *dst,
++				      const u8 *src)
++{
++	cast5_dec_blk_16way(ctx, dst, src);
++}
++
++
++static inline bool cast5_fpu_begin(bool fpu_enabled, unsigned int nbytes)
++{
++	return glue_fpu_begin(CAST5_BLOCK_SIZE, CAST5_PARALLEL_BLOCKS,
++			      NULL, fpu_enabled, nbytes);
++}
++
++static inline void cast5_fpu_end(bool fpu_enabled)
++{
++	return glue_fpu_end(fpu_enabled);
++}
++
++static int ecb_crypt(struct blkcipher_desc *desc, struct blkcipher_walk *walk,
++		     bool enc)
++{
++	bool fpu_enabled = false;
++	struct cast5_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
++	const unsigned int bsize = CAST5_BLOCK_SIZE;
++	unsigned int nbytes;
++	int err;
++
++	err = blkcipher_walk_virt(desc, walk);
++	desc->flags &= ~CRYPTO_TFM_REQ_MAY_SLEEP;
++
++	while ((nbytes = walk->nbytes)) {
++		u8 *wsrc = walk->src.virt.addr;
++		u8 *wdst = walk->dst.virt.addr;
++
++		fpu_enabled = cast5_fpu_begin(fpu_enabled, nbytes);
++
++		/* Process multi-block batch */
++		if (nbytes >= bsize * CAST5_PARALLEL_BLOCKS) {
++			do {
++				if (enc)
++					cast5_enc_blk_xway(ctx, wdst, wsrc);
++				else
++					cast5_dec_blk_xway(ctx, wdst, wsrc);
++
++				wsrc += bsize * CAST5_PARALLEL_BLOCKS;
++				wdst += bsize * CAST5_PARALLEL_BLOCKS;
++				nbytes -= bsize * CAST5_PARALLEL_BLOCKS;
++			} while (nbytes >= bsize * CAST5_PARALLEL_BLOCKS);
++
++			if (nbytes < bsize)
++				goto done;
++		}
++
++		/* Handle leftovers */
++		do {
++			if (enc)
++				__cast5_encrypt(ctx, wdst, wsrc);
++			else
++				__cast5_decrypt(ctx, wdst, wsrc);
++
++			wsrc += bsize;
++			wdst += bsize;
++			nbytes -= bsize;
++		} while (nbytes >= bsize);
++
++done:
++		err = blkcipher_walk_done(desc, walk, nbytes);
++	}
++
++	cast5_fpu_end(fpu_enabled);
++	return err;
++}
++
++static int ecb_encrypt(struct blkcipher_desc *desc, struct scatterlist *dst,
++		       struct scatterlist *src, unsigned int nbytes)
++{
++	struct blkcipher_walk walk;
++
++	blkcipher_walk_init(&walk, dst, src, nbytes);
++	return ecb_crypt(desc, &walk, true);
++}
++
++static int ecb_decrypt(struct blkcipher_desc *desc, struct scatterlist *dst,
++		       struct scatterlist *src, unsigned int nbytes)
++{
++	struct blkcipher_walk walk;
++
++	blkcipher_walk_init(&walk, dst, src, nbytes);
++	return ecb_crypt(desc, &walk, false);
++}
++
++static unsigned int __cbc_encrypt(struct blkcipher_desc *desc,
++				  struct blkcipher_walk *walk)
++{
++	struct cast5_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
++	const unsigned int bsize = CAST5_BLOCK_SIZE;
++	unsigned int nbytes = walk->nbytes;
++	u64 *src = (u64 *)walk->src.virt.addr;
++	u64 *dst = (u64 *)walk->dst.virt.addr;
++	u64 *iv = (u64 *)walk->iv;
++
++	do {
++		*dst = *src ^ *iv;
++		__cast5_encrypt(ctx, (u8 *)dst, (u8 *)dst);
++		iv = dst;
++
++		src += 1;
++		dst += 1;
++		nbytes -= bsize;
++	} while (nbytes >= bsize);
++
++	*(u64 *)walk->iv ^= *iv;
++	return nbytes;
++}
++
++static int cbc_encrypt(struct blkcipher_desc *desc, struct scatterlist *dst,
++		       struct scatterlist *src, unsigned int nbytes)
++{
++	struct blkcipher_walk walk;
++	int err;
++
++	blkcipher_walk_init(&walk, dst, src, nbytes);
++	err = blkcipher_walk_virt(desc, &walk);
++
++	while ((nbytes = walk.nbytes)) {
++		nbytes = __cbc_encrypt(desc, &walk);
++		err = blkcipher_walk_done(desc, &walk, nbytes);
++	}
++
++	return err;
++}
++
++static unsigned int __cbc_decrypt(struct blkcipher_desc *desc,
++				  struct blkcipher_walk *walk)
++{
++	struct cast5_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
++	const unsigned int bsize = CAST5_BLOCK_SIZE;
++	unsigned int nbytes = walk->nbytes;
++	u64 *src = (u64 *)walk->src.virt.addr;
++	u64 *dst = (u64 *)walk->dst.virt.addr;
++	u64 ivs[CAST5_PARALLEL_BLOCKS - 1];
++	u64 last_iv;
++	int i;
++
++	/* Start of the last block. */
++	src += nbytes / bsize - 1;
++	dst += nbytes / bsize - 1;
++
++	last_iv = *src;
++
++	/* Process multi-block batch */
++	if (nbytes >= bsize * CAST5_PARALLEL_BLOCKS) {
++		do {
++			nbytes -= bsize * (CAST5_PARALLEL_BLOCKS - 1);
++			src -= CAST5_PARALLEL_BLOCKS - 1;
++			dst -= CAST5_PARALLEL_BLOCKS - 1;
++
++			for (i = 0; i < CAST5_PARALLEL_BLOCKS - 1; i++)
++				ivs[i] = src[i];
++
++			cast5_dec_blk_xway(ctx, (u8 *)dst, (u8 *)src);
++
++			for (i = 0; i < CAST5_PARALLEL_BLOCKS - 1; i++)
++				*(dst + (i + 1)) ^= *(ivs + i);
++
++			nbytes -= bsize;
++			if (nbytes < bsize)
++				goto done;
++
++			*dst ^= *(src - 1);
++			src -= 1;
++			dst -= 1;
++		} while (nbytes >= bsize * CAST5_PARALLEL_BLOCKS);
++
++		if (nbytes < bsize)
++			goto done;
++	}
++
++	/* Handle leftovers */
++	for (;;) {
++		__cast5_decrypt(ctx, (u8 *)dst, (u8 *)src);
++
++		nbytes -= bsize;
++		if (nbytes < bsize)
++			break;
++
++		*dst ^= *(src - 1);
++		src -= 1;
++		dst -= 1;
++	}
++
++done:
++	*dst ^= *(u64 *)walk->iv;
++	*(u64 *)walk->iv = last_iv;
++
++	return nbytes;
++}
++
++static int cbc_decrypt(struct blkcipher_desc *desc, struct scatterlist *dst,
++		       struct scatterlist *src, unsigned int nbytes)
++{
++	bool fpu_enabled = false;
++	struct blkcipher_walk walk;
++	int err;
++
++	blkcipher_walk_init(&walk, dst, src, nbytes);
++	err = blkcipher_walk_virt(desc, &walk);
++	desc->flags &= ~CRYPTO_TFM_REQ_MAY_SLEEP;
++
++	while ((nbytes = walk.nbytes)) {
++		fpu_enabled = cast5_fpu_begin(fpu_enabled, nbytes);
++		nbytes = __cbc_decrypt(desc, &walk);
++		err = blkcipher_walk_done(desc, &walk, nbytes);
++	}
++
++	cast5_fpu_end(fpu_enabled);
++	return err;
++}
++
++static void ctr_crypt_final(struct blkcipher_desc *desc,
++			    struct blkcipher_walk *walk)
++{
++	struct cast5_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
++	u8 *ctrblk = walk->iv;
++	u8 keystream[CAST5_BLOCK_SIZE];
++	u8 *src = walk->src.virt.addr;
++	u8 *dst = walk->dst.virt.addr;
++	unsigned int nbytes = walk->nbytes;
++
++	__cast5_encrypt(ctx, keystream, ctrblk);
++	crypto_xor(keystream, src, nbytes);
++	memcpy(dst, keystream, nbytes);
++
++	crypto_inc(ctrblk, CAST5_BLOCK_SIZE);
++}
++
++static unsigned int __ctr_crypt(struct blkcipher_desc *desc,
++				struct blkcipher_walk *walk)
++{
++	struct cast5_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
++	const unsigned int bsize = CAST5_BLOCK_SIZE;
++	unsigned int nbytes = walk->nbytes;
++	u64 *src = (u64 *)walk->src.virt.addr;
++	u64 *dst = (u64 *)walk->dst.virt.addr;
++	u64 ctrblk = be64_to_cpu(*(__be64 *)walk->iv);
++	__be64 ctrblocks[CAST5_PARALLEL_BLOCKS];
++	int i;
++
++	/* Process multi-block batch */
++	if (nbytes >= bsize * CAST5_PARALLEL_BLOCKS) {
++		do {
++			/* create ctrblks for parallel encrypt */
++			for (i = 0; i < CAST5_PARALLEL_BLOCKS; i++) {
++				if (dst != src)
++					dst[i] = src[i];
++
++				ctrblocks[i] = cpu_to_be64(ctrblk++);
++			}
++
++			cast5_enc_blk_xway_xor(ctx, (u8 *)dst,
++					       (u8 *)ctrblocks);
++
++			src += CAST5_PARALLEL_BLOCKS;
++			dst += CAST5_PARALLEL_BLOCKS;
++			nbytes -= bsize * CAST5_PARALLEL_BLOCKS;
++		} while (nbytes >= bsize * CAST5_PARALLEL_BLOCKS);
++
++		if (nbytes < bsize)
++			goto done;
++	}
++
++	/* Handle leftovers */
++	do {
++		if (dst != src)
++			*dst = *src;
++
++		ctrblocks[0] = cpu_to_be64(ctrblk++);
++
++		__cast5_encrypt(ctx, (u8 *)ctrblocks, (u8 *)ctrblocks);
++		*dst ^= ctrblocks[0];
++
++		src += 1;
++		dst += 1;
++		nbytes -= bsize;
++	} while (nbytes >= bsize);
++
++done:
++	*(__be64 *)walk->iv = cpu_to_be64(ctrblk);
++	return nbytes;
++}
++
++static int ctr_crypt(struct blkcipher_desc *desc, struct scatterlist *dst,
++		     struct scatterlist *src, unsigned int nbytes)
++{
++	bool fpu_enabled = false;
++	struct blkcipher_walk walk;
++	int err;
++
++	blkcipher_walk_init(&walk, dst, src, nbytes);
++	err = blkcipher_walk_virt_block(desc, &walk, CAST5_BLOCK_SIZE);
++	desc->flags &= ~CRYPTO_TFM_REQ_MAY_SLEEP;
++
++	while ((nbytes = walk.nbytes) >= CAST5_BLOCK_SIZE) {
++		fpu_enabled = cast5_fpu_begin(fpu_enabled, nbytes);
++		nbytes = __ctr_crypt(desc, &walk);
++		err = blkcipher_walk_done(desc, &walk, nbytes);
++	}
++
++	cast5_fpu_end(fpu_enabled);
++
++	if (walk.nbytes) {
++		ctr_crypt_final(desc, &walk);
++		err = blkcipher_walk_done(desc, &walk, 0);
++	}
++
++	return err;
++}
++
++
++static struct crypto_alg cast5_algs[6] = { {
++	.cra_name		= "__ecb-cast5-avx",
++	.cra_driver_name	= "__driver-ecb-cast5-avx",
++	.cra_priority		= 0,
++	.cra_flags		= CRYPTO_ALG_TYPE_BLKCIPHER,
++	.cra_blocksize		= CAST5_BLOCK_SIZE,
++	.cra_ctxsize		= sizeof(struct cast5_ctx),
++	.cra_alignmask		= 0,
++	.cra_type		= &crypto_blkcipher_type,
++	.cra_module		= THIS_MODULE,
++	.cra_u = {
++		.blkcipher = {
++			.min_keysize	= CAST5_MIN_KEY_SIZE,
++			.max_keysize	= CAST5_MAX_KEY_SIZE,
++			.setkey		= cast5_setkey,
++			.encrypt	= ecb_encrypt,
++			.decrypt	= ecb_decrypt,
++		},
++	},
++}, {
++	.cra_name		= "__cbc-cast5-avx",
++	.cra_driver_name	= "__driver-cbc-cast5-avx",
++	.cra_priority		= 0,
++	.cra_flags		= CRYPTO_ALG_TYPE_BLKCIPHER,
++	.cra_blocksize		= CAST5_BLOCK_SIZE,
++	.cra_ctxsize		= sizeof(struct cast5_ctx),
++	.cra_alignmask		= 0,
++	.cra_type		= &crypto_blkcipher_type,
++	.cra_module		= THIS_MODULE,
++	.cra_u = {
++		.blkcipher = {
++			.min_keysize	= CAST5_MIN_KEY_SIZE,
++			.max_keysize	= CAST5_MAX_KEY_SIZE,
++			.setkey		= cast5_setkey,
++			.encrypt	= cbc_encrypt,
++			.decrypt	= cbc_decrypt,
++		},
++	},
++}, {
++	.cra_name		= "__ctr-cast5-avx",
++	.cra_driver_name	= "__driver-ctr-cast5-avx",
++	.cra_priority		= 0,
++	.cra_flags		= CRYPTO_ALG_TYPE_BLKCIPHER,
++	.cra_blocksize		= 1,
++	.cra_ctxsize		= sizeof(struct cast5_ctx),
++	.cra_alignmask		= 0,
++	.cra_type		= &crypto_blkcipher_type,
++	.cra_module		= THIS_MODULE,
++	.cra_u = {
++		.blkcipher = {
++			.min_keysize	= CAST5_MIN_KEY_SIZE,
++			.max_keysize	= CAST5_MAX_KEY_SIZE,
++			.ivsize		= CAST5_BLOCK_SIZE,
++			.setkey		= cast5_setkey,
++			.encrypt	= ctr_crypt,
++			.decrypt	= ctr_crypt,
++		},
++	},
++}, {
++	.cra_name		= "ecb(cast5)",
++	.cra_driver_name	= "ecb-cast5-avx",
++	.cra_priority		= 200,
++	.cra_flags		= CRYPTO_ALG_TYPE_ABLKCIPHER | CRYPTO_ALG_ASYNC,
++	.cra_blocksize		= CAST5_BLOCK_SIZE,
++	.cra_ctxsize		= sizeof(struct async_helper_ctx),
++	.cra_alignmask		= 0,
++	.cra_type		= &crypto_ablkcipher_type,
++	.cra_module		= THIS_MODULE,
++	.cra_init		= ablk_init,
++	.cra_exit		= ablk_exit,
++	.cra_u = {
++		.ablkcipher = {
++			.min_keysize	= CAST5_MIN_KEY_SIZE,
++			.max_keysize	= CAST5_MAX_KEY_SIZE,
++			.setkey		= ablk_set_key,
++			.encrypt	= ablk_encrypt,
++			.decrypt	= ablk_decrypt,
++		},
++	},
++}, {
++	.cra_name		= "cbc(cast5)",
++	.cra_driver_name	= "cbc-cast5-avx",
++	.cra_priority		= 200,
++	.cra_flags		= CRYPTO_ALG_TYPE_ABLKCIPHER | CRYPTO_ALG_ASYNC,
++	.cra_blocksize		= CAST5_BLOCK_SIZE,
++	.cra_ctxsize		= sizeof(struct async_helper_ctx),
++	.cra_alignmask		= 0,
++	.cra_type		= &crypto_ablkcipher_type,
++	.cra_module		= THIS_MODULE,
++	.cra_init		= ablk_init,
++	.cra_exit		= ablk_exit,
++	.cra_u = {
++		.ablkcipher = {
++			.min_keysize	= CAST5_MIN_KEY_SIZE,
++			.max_keysize	= CAST5_MAX_KEY_SIZE,
++			.ivsize		= CAST5_BLOCK_SIZE,
++			.setkey		= ablk_set_key,
++			.encrypt	= __ablk_encrypt,
++			.decrypt	= ablk_decrypt,
++		},
++	},
++}, {
++	.cra_name		= "ctr(cast5)",
++	.cra_driver_name	= "ctr-cast5-avx",
++	.cra_priority		= 200,
++	.cra_flags		= CRYPTO_ALG_TYPE_ABLKCIPHER | CRYPTO_ALG_ASYNC,
++	.cra_blocksize		= 1,
++	.cra_ctxsize		= sizeof(struct async_helper_ctx),
++	.cra_alignmask		= 0,
++	.cra_type		= &crypto_ablkcipher_type,
++	.cra_module		= THIS_MODULE,
++	.cra_init		= ablk_init,
++	.cra_exit		= ablk_exit,
++	.cra_u = {
++		.ablkcipher = {
++			.min_keysize	= CAST5_MIN_KEY_SIZE,
++			.max_keysize	= CAST5_MAX_KEY_SIZE,
++			.ivsize		= CAST5_BLOCK_SIZE,
++			.setkey		= ablk_set_key,
++			.encrypt	= ablk_encrypt,
++			.decrypt	= ablk_encrypt,
++			.geniv		= "chainiv",
++		},
++	},
++} };
++
++static int __init cast5_init(void)
++{
++	u64 xcr0;
++
++	if (!cpu_has_avx || !cpu_has_osxsave) {
++		pr_info("AVX instructions are not detected.\n");
++		return -ENODEV;
++	}
++
++	xcr0 = xgetbv(XCR_XFEATURE_ENABLED_MASK);
++	if ((xcr0 & (XSTATE_SSE | XSTATE_YMM)) != (XSTATE_SSE | XSTATE_YMM)) {
++		pr_info("AVX detected but unusable.\n");
++		return -ENODEV;
++	}
++
++	return crypto_register_algs(cast5_algs, ARRAY_SIZE(cast5_algs));
++}
++
++static void __exit cast5_exit(void)
++{
++	crypto_unregister_algs(cast5_algs, ARRAY_SIZE(cast5_algs));
++}
++
++module_init(cast5_init);
++module_exit(cast5_exit);
++
++MODULE_DESCRIPTION("Cast5 Cipher Algorithm, AVX optimized");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("cast5");
+diff --git a/crypto/Kconfig b/crypto/Kconfig
+index a323805..cda97fc 100644
+--- a/crypto/Kconfig
++++ b/crypto/Kconfig
+@@ -692,6 +692,20 @@ config CRYPTO_CAST5
+ 	  The CAST5 encryption algorithm (synonymous with CAST-128) is
+ 	  described in RFC2144.
+ 
++config CRYPTO_CAST5_AVX_X86_64
++	tristate "CAST5 (CAST-128) cipher algorithm (x86_64/AVX)"
++	depends on X86 && 64BIT
++	select CRYPTO_ALGAPI
++	select CRYPTO_CRYPTD
++	select CRYPTO_ABLK_HELPER_X86
++	select CRYPTO_CAST5
++	help
++	  The CAST5 encryption algorithm (synonymous with CAST-128) is
++	  described in RFC2144.
++
++	  This module provides the Cast5 cipher algorithm that processes
++	  sixteen blocks parallel using the AVX instruction set.
++
+ config CRYPTO_CAST6
+ 	tristate "CAST6 (CAST-256) cipher algorithm"
+ 	select CRYPTO_ALGAPI
 diff --git a/crypto/testmgr.c b/crypto/testmgr.c
-index a2ca743..7a91e54 100644
+index 7a91e54..def0f43 100644
 --- a/crypto/testmgr.c
 +++ b/crypto/testmgr.c
-@@ -1818,6 +1818,21 @@ static const struct alg_test_desc alg_test_descs[] = {
- 			}
- 		}
- 	}, {
-+		.alg = "cbc(cast5)",
-+		.test = alg_test_skcipher,
-+		.suite = {
-+			.cipher = {
-+				.enc = {
-+					.vecs = cast5_cbc_enc_tv_template,
-+					.count = CAST5_CBC_ENC_TEST_VECTORS
-+				},
-+				.dec = {
-+					.vecs = cast5_cbc_dec_tv_template,
-+					.count = CAST5_CBC_DEC_TEST_VECTORS
-+				}
-+			}
-+		}
-+	}, {
- 		.alg = "cbc(des)",
- 		.test = alg_test_skcipher,
- 		.suite = {
-@@ -2054,6 +2069,21 @@ static const struct alg_test_desc alg_test_descs[] = {
- 			}
- 		}
- 	}, {
-+		.alg = "ctr(cast5)",
-+		.test = alg_test_skcipher,
-+		.suite = {
-+			.cipher = {
-+				.enc = {
-+					.vecs = cast5_ctr_enc_tv_template,
-+					.count = CAST5_CTR_ENC_TEST_VECTORS
-+				},
-+				.dec = {
-+					.vecs = cast5_ctr_dec_tv_template,
-+					.count = CAST5_CTR_DEC_TEST_VECTORS
-+				}
-+			}
-+		}
-+	}, {
- 		.alg = "ctr(serpent)",
- 		.test = alg_test_skcipher,
- 		.suite = {
-diff --git a/crypto/testmgr.h b/crypto/testmgr.h
-index f8179e0..9309948 100644
---- a/crypto/testmgr.h
-+++ b/crypto/testmgr.h
-@@ -12125,8 +12125,12 @@ static struct cprng_testvec ansi_cprng_aes_tv_template[] = {
- };
- 
- /* Cast5 test vectors from RFC 2144 */
--#define CAST5_ENC_TEST_VECTORS	3
--#define CAST5_DEC_TEST_VECTORS	3
-+#define CAST5_ENC_TEST_VECTORS		4
-+#define CAST5_DEC_TEST_VECTORS		4
-+#define CAST5_CBC_ENC_TEST_VECTORS	1
-+#define CAST5_CBC_DEC_TEST_VECTORS	1
-+#define CAST5_CTR_ENC_TEST_VECTORS	1
-+#define CAST5_CTR_DEC_TEST_VECTORS	1
- 
- static struct cipher_testvec cast5_enc_tv_template[] = {
+@@ -1534,6 +1534,21 @@ static int alg_test_null(const struct alg_test_desc *desc,
+ /* Please keep this list sorted by algorithm name. */
+ static const struct alg_test_desc alg_test_descs[] = {
  	{
-@@ -12152,6 +12156,137 @@ static struct cipher_testvec cast5_enc_tv_template[] = {
- 		.ilen	= 8,
- 		.result	= "\x7a\xc8\x16\xd1\x6e\x9b\x30\x2e",
- 		.rlen	= 8,
-+	}, { /* Generated from TF test vectors */
-+		.key	= "\x85\x62\x3F\x1C\xF9\xD6\x1C\xF9"
-+			  "\xD6\xB3\x90\x6D\x4A\x90\x6D\x4A",
-+		.klen	= 16,
-+		.iv	= "\xE2\x24\x89\xEE\x53\xB8\x1D\x5F",
-+		.input	= "\x56\xED\x84\x1B\x8F\x26\xBD\x31"
-+			  "\xC8\x5F\xF6\x6A\x01\x98\x0C\xA3"
-+			  "\x3A\xD1\x45\xDC\x73\x0A\x7E\x15"
-+			  "\xAC\x20\xB7\x4E\xE5\x59\xF0\x87"
-+			  "\x1E\x92\x29\xC0\x34\xCB\x62\xF9"
-+			  "\x6D\x04\x9B\x0F\xA6\x3D\xD4\x48"
-+			  "\xDF\x76\x0D\x81\x18\xAF\x23\xBA"
-+			  "\x51\xE8\x5C\xF3\x8A\x21\x95\x2C"
-+			  "\xC3\x37\xCE\x65\xFC\x70\x07\x9E"
-+			  "\x12\xA9\x40\xD7\x4B\xE2\x79\x10"
-+			  "\x84\x1B\xB2\x26\xBD\x54\xEB\x5F"
-+			  "\xF6\x8D\x01\x98\x2F\xC6\x3A\xD1"
-+			  "\x68\xFF\x73\x0A\xA1\x15\xAC\x43"
-+			  "\xDA\x4E\xE5\x7C\x13\x87\x1E\xB5"
-+			  "\x29\xC0\x57\xEE\x62\xF9\x90\x04"
-+			  "\x9B\x32\xC9\x3D\xD4\x6B\x02\x76"
-+			  "\x0D\xA4\x18\xAF\x46\xDD\x51\xE8"
-+			  "\x7F\x16\x8A\x21\xB8\x2C\xC3\x5A"
-+			  "\xF1\x65\xFC\x93\x07\x9E\x35\xCC"
-+			  "\x40\xD7\x6E\x05\x79\x10\xA7\x1B"
-+			  "\xB2\x49\xE0\x54\xEB\x82\x19\x8D"
-+			  "\x24\xBB\x2F\xC6\x5D\xF4\x68\xFF"
-+			  "\x96\x0A\xA1\x38\xCF\x43\xDA\x71"
-+			  "\x08\x7C\x13\xAA\x1E\xB5\x4C\xE3"
-+			  "\x57\xEE\x85\x1C\x90\x27\xBE\x32"
-+			  "\xC9\x60\xF7\x6B\x02\x99\x0D\xA4"
-+			  "\x3B\xD2\x46\xDD\x74\x0B\x7F\x16"
-+			  "\xAD\x21\xB8\x4F\xE6\x5A\xF1\x88"
-+			  "\x1F\x93\x2A\xC1\x35\xCC\x63\xFA"
-+			  "\x6E\x05\x9C\x10\xA7\x3E\xD5\x49"
-+			  "\xE0\x77\x0E\x82\x19\xB0\x24\xBB"
-+			  "\x52\xE9\x5D\xF4\x8B\x22\x96\x2D"
-+			  "\xC4\x38\xCF\x66\xFD\x71\x08\x9F"
-+			  "\x13\xAA\x41\xD8\x4C\xE3\x7A\x11"
-+			  "\x85\x1C\xB3\x27\xBE\x55\xEC\x60"
-+			  "\xF7\x8E\x02\x99\x30\xC7\x3B\xD2"
-+			  "\x69\x00\x74\x0B\xA2\x16\xAD\x44"
-+			  "\xDB\x4F\xE6\x7D\x14\x88\x1F\xB6"
-+			  "\x2A\xC1\x58\xEF\x63\xFA\x91\x05"
-+			  "\x9C\x33\xCA\x3E\xD5\x6C\x03\x77"
-+			  "\x0E\xA5\x19\xB0\x47\xDE\x52\xE9"
-+			  "\x80\x17\x8B\x22\xB9\x2D\xC4\x5B"
-+			  "\xF2\x66\xFD\x94\x08\x9F\x36\xCD"
-+			  "\x41\xD8\x6F\x06\x7A\x11\xA8\x1C"
-+			  "\xB3\x4A\xE1\x55\xEC\x83\x1A\x8E"
-+			  "\x25\xBC\x30\xC7\x5E\xF5\x69\x00"
-+			  "\x97\x0B\xA2\x39\xD0\x44\xDB\x72"
-+			  "\x09\x7D\x14\xAB\x1F\xB6\x4D\xE4"
-+			  "\x58\xEF\x86\x1D\x91\x28\xBF\x33"
-+			  "\xCA\x61\xF8\x6C\x03\x9A\x0E\xA5"
-+			  "\x3C\xD3\x47\xDE\x75\x0C\x80\x17"
-+			  "\xAE\x22\xB9\x50\xE7\x5B\xF2\x89"
-+			  "\x20\x94\x2B\xC2\x36\xCD\x64\xFB"
-+			  "\x6F\x06\x9D\x11\xA8\x3F\xD6\x4A"
-+			  "\xE1\x78\x0F\x83\x1A\xB1\x25\xBC"
-+			  "\x53\xEA\x5E\xF5\x8C\x00\x97\x2E"
-+			  "\xC5\x39\xD0\x67\xFE\x72\x09\xA0"
-+			  "\x14\xAB\x42\xD9\x4D\xE4\x7B\x12"
-+			  "\x86\x1D\xB4\x28\xBF\x56\xED\x61"
-+			  "\xF8\x8F\x03\x9A\x31\xC8\x3C\xD3"
-+			  "\x6A\x01\x75\x0C\xA3\x17\xAE\x45"
-+			  "\xDC\x50\xE7\x7E\x15\x89\x20\xB7",
-+		.ilen	= 496,
-+		.result	= "\x8D\xFC\x81\x9C\xCB\xAA\x5A\x1C"
-+			  "\x7E\x95\xCF\x40\xAB\x4D\x6F\xEA"
-+			  "\xD3\xD9\xB0\x9A\xB7\xC7\xE0\x2E"
-+			  "\xD1\x39\x34\x92\x8F\xFA\x14\xF1"
-+			  "\xD5\xD2\x7B\x59\x1F\x35\x28\xC2"
-+			  "\x20\xD9\x42\x06\xC9\x0B\x10\x04"
-+			  "\xF8\x79\xCD\x32\x86\x75\x4C\xB6"
-+			  "\x7B\x1C\x52\xB1\x91\x64\x22\x4B"
-+			  "\x13\xC7\xAE\x98\x0E\xB5\xCF\x6F"
-+			  "\x3F\xF4\x43\x96\x73\x0D\xA2\x05"
-+			  "\xDB\xFD\x28\x90\x2C\x56\xB9\x37"
-+			  "\x5B\x69\x0C\xAD\x84\x67\xFF\x15"
-+			  "\x4A\xD4\xA7\xD3\xDD\x99\x47\x3A"
-+			  "\xED\x34\x35\x78\x6B\x91\xC9\x32"
-+			  "\xE1\xBF\xBC\xB4\x04\x85\x6A\x39"
-+			  "\xC0\xBA\x51\xD0\x0F\x4E\xD1\xE2"
-+			  "\x1C\xFD\x0E\x05\x07\xF4\x10\xED"
-+			  "\xA2\x17\xFF\xF5\x64\xC6\x1A\x22"
-+			  "\xAD\x78\xE7\xD7\x11\xE9\x99\xB9"
-+			  "\xAA\xEC\x6F\xF8\x3B\xBF\xCE\x77"
-+			  "\x93\xE8\xAD\x1D\x50\x6C\xAE\xBC"
-+			  "\xBA\x5C\x80\xD1\x91\x65\x51\x1B"
-+			  "\xE8\x0A\xCD\x99\x96\x71\x3D\xB6"
-+			  "\x78\x75\x37\x55\xC1\xF5\x90\x40"
-+			  "\x34\xF4\x7E\xC8\xCC\x3A\x5F\x6E"
-+			  "\x36\xA1\xA1\xC2\x3A\x72\x42\x8E"
-+			  "\x0E\x37\x88\xE8\xCE\x83\xCB\xAD"
-+			  "\xE0\x69\x77\x50\xC7\x0C\x99\xCA"
-+			  "\x19\x5B\x30\x25\x9A\xEF\x9B\x0C"
-+			  "\xEF\x8F\x74\x4C\xCF\x49\x4E\xB9"
-+			  "\xC5\xAE\x9E\x2E\x78\x9A\xB9\x48"
-+			  "\xD5\x81\xE4\x37\x1D\xBF\x27\xD9"
-+			  "\xC5\xD6\x65\x43\x45\x8C\xBB\xB6"
-+			  "\x55\xF4\x06\xBB\x49\x53\x8B\x1B"
-+			  "\x07\xA9\x96\x69\x5B\xCB\x0F\xBC"
-+			  "\x93\x85\x90\x0F\x0A\x68\x40\x2A"
-+			  "\x95\xED\x2D\x88\xBF\x71\xD0\xBB"
-+			  "\xEC\xB0\x77\x6C\x79\xFC\x3C\x05"
-+			  "\x49\x3F\xB8\x24\xEF\x8E\x09\xA2"
-+			  "\x1D\xEF\x92\x02\x96\xD4\x7F\xC8"
-+			  "\x03\xB2\xCA\xDB\x17\x5C\x52\xCF"
-+			  "\xDD\x70\x37\x63\xAA\xA5\x83\x20"
-+			  "\x52\x02\xF6\xB9\xE7\x6E\x0A\xB6"
-+			  "\x79\x03\xA0\xDA\xA3\x79\x21\xBD"
-+			  "\xE3\x37\x3A\xC0\xF7\x2C\x32\xBE"
-+			  "\x8B\xE8\xA6\x00\xC7\x32\xD5\x06"
-+			  "\xBB\xE3\xAB\x06\x21\x82\xB8\x32"
-+			  "\x31\x34\x2A\xA7\x1F\x64\x99\xBF"
-+			  "\xFA\xDA\x3D\x75\xF7\x48\xD5\x48"
-+			  "\x4B\x52\x7E\xF6\x7C\xAB\x67\x59"
-+			  "\xC5\xDC\xA8\xC6\x63\x85\x4A\xDF"
-+			  "\xF0\x40\x5F\xCF\xE3\x58\x52\x67"
-+			  "\x7A\x24\x32\xC5\xEC\x9E\xA9\x6F"
-+			  "\x58\x56\xDD\x94\x1F\x71\x8D\xF4"
-+			  "\x6E\xFF\x2C\xA7\xA5\xD8\xBA\xAF"
-+			  "\x1D\x8B\xA2\x46\xB5\xC4\x9F\x57"
-+			  "\x8D\xD8\xB3\x3C\x02\x0D\xBB\x84"
-+			  "\xC7\xBD\xB4\x9A\x6E\xBB\xB1\x37"
-+			  "\x95\x79\xC4\xA7\xEA\x1D\xDC\x33"
-+			  "\x5D\x0B\x3F\x03\x8F\x30\xF9\xAE"
-+			  "\x4F\xFE\x24\x9C\x9A\x02\xE5\x57"
-+			  "\xF5\xBC\x25\xD6\x02\x56\x57\x1C",
-+		.rlen	= 496,
- 	},
- };
- 
-@@ -12179,6 +12314,677 @@ static struct cipher_testvec cast5_dec_tv_template[] = {
- 		.ilen	= 8,
- 		.result	= "\x01\x23\x45\x67\x89\xab\xcd\xef",
- 		.rlen	= 8,
-+	}, { /* Generated from TF test vectors */
-+		.key	= "\x85\x62\x3F\x1C\xF9\xD6\x1C\xF9"
-+			  "\xD6\xB3\x90\x6D\x4A\x90\x6D\x4A",
-+		.klen	= 16,
-+		.iv	= "\xE2\x24\x89\xEE\x53\xB8\x1D\x5F",
-+		.input	= "\x8D\xFC\x81\x9C\xCB\xAA\x5A\x1C"
-+			  "\x7E\x95\xCF\x40\xAB\x4D\x6F\xEA"
-+			  "\xD3\xD9\xB0\x9A\xB7\xC7\xE0\x2E"
-+			  "\xD1\x39\x34\x92\x8F\xFA\x14\xF1"
-+			  "\xD5\xD2\x7B\x59\x1F\x35\x28\xC2"
-+			  "\x20\xD9\x42\x06\xC9\x0B\x10\x04"
-+			  "\xF8\x79\xCD\x32\x86\x75\x4C\xB6"
-+			  "\x7B\x1C\x52\xB1\x91\x64\x22\x4B"
-+			  "\x13\xC7\xAE\x98\x0E\xB5\xCF\x6F"
-+			  "\x3F\xF4\x43\x96\x73\x0D\xA2\x05"
-+			  "\xDB\xFD\x28\x90\x2C\x56\xB9\x37"
-+			  "\x5B\x69\x0C\xAD\x84\x67\xFF\x15"
-+			  "\x4A\xD4\xA7\xD3\xDD\x99\x47\x3A"
-+			  "\xED\x34\x35\x78\x6B\x91\xC9\x32"
-+			  "\xE1\xBF\xBC\xB4\x04\x85\x6A\x39"
-+			  "\xC0\xBA\x51\xD0\x0F\x4E\xD1\xE2"
-+			  "\x1C\xFD\x0E\x05\x07\xF4\x10\xED"
-+			  "\xA2\x17\xFF\xF5\x64\xC6\x1A\x22"
-+			  "\xAD\x78\xE7\xD7\x11\xE9\x99\xB9"
-+			  "\xAA\xEC\x6F\xF8\x3B\xBF\xCE\x77"
-+			  "\x93\xE8\xAD\x1D\x50\x6C\xAE\xBC"
-+			  "\xBA\x5C\x80\xD1\x91\x65\x51\x1B"
-+			  "\xE8\x0A\xCD\x99\x96\x71\x3D\xB6"
-+			  "\x78\x75\x37\x55\xC1\xF5\x90\x40"
-+			  "\x34\xF4\x7E\xC8\xCC\x3A\x5F\x6E"
-+			  "\x36\xA1\xA1\xC2\x3A\x72\x42\x8E"
-+			  "\x0E\x37\x88\xE8\xCE\x83\xCB\xAD"
-+			  "\xE0\x69\x77\x50\xC7\x0C\x99\xCA"
-+			  "\x19\x5B\x30\x25\x9A\xEF\x9B\x0C"
-+			  "\xEF\x8F\x74\x4C\xCF\x49\x4E\xB9"
-+			  "\xC5\xAE\x9E\x2E\x78\x9A\xB9\x48"
-+			  "\xD5\x81\xE4\x37\x1D\xBF\x27\xD9"
-+			  "\xC5\xD6\x65\x43\x45\x8C\xBB\xB6"
-+			  "\x55\xF4\x06\xBB\x49\x53\x8B\x1B"
-+			  "\x07\xA9\x96\x69\x5B\xCB\x0F\xBC"
-+			  "\x93\x85\x90\x0F\x0A\x68\x40\x2A"
-+			  "\x95\xED\x2D\x88\xBF\x71\xD0\xBB"
-+			  "\xEC\xB0\x77\x6C\x79\xFC\x3C\x05"
-+			  "\x49\x3F\xB8\x24\xEF\x8E\x09\xA2"
-+			  "\x1D\xEF\x92\x02\x96\xD4\x7F\xC8"
-+			  "\x03\xB2\xCA\xDB\x17\x5C\x52\xCF"
-+			  "\xDD\x70\x37\x63\xAA\xA5\x83\x20"
-+			  "\x52\x02\xF6\xB9\xE7\x6E\x0A\xB6"
-+			  "\x79\x03\xA0\xDA\xA3\x79\x21\xBD"
-+			  "\xE3\x37\x3A\xC0\xF7\x2C\x32\xBE"
-+			  "\x8B\xE8\xA6\x00\xC7\x32\xD5\x06"
-+			  "\xBB\xE3\xAB\x06\x21\x82\xB8\x32"
-+			  "\x31\x34\x2A\xA7\x1F\x64\x99\xBF"
-+			  "\xFA\xDA\x3D\x75\xF7\x48\xD5\x48"
-+			  "\x4B\x52\x7E\xF6\x7C\xAB\x67\x59"
-+			  "\xC5\xDC\xA8\xC6\x63\x85\x4A\xDF"
-+			  "\xF0\x40\x5F\xCF\xE3\x58\x52\x67"
-+			  "\x7A\x24\x32\xC5\xEC\x9E\xA9\x6F"
-+			  "\x58\x56\xDD\x94\x1F\x71\x8D\xF4"
-+			  "\x6E\xFF\x2C\xA7\xA5\xD8\xBA\xAF"
-+			  "\x1D\x8B\xA2\x46\xB5\xC4\x9F\x57"
-+			  "\x8D\xD8\xB3\x3C\x02\x0D\xBB\x84"
-+			  "\xC7\xBD\xB4\x9A\x6E\xBB\xB1\x37"
-+			  "\x95\x79\xC4\xA7\xEA\x1D\xDC\x33"
-+			  "\x5D\x0B\x3F\x03\x8F\x30\xF9\xAE"
-+			  "\x4F\xFE\x24\x9C\x9A\x02\xE5\x57"
-+			  "\xF5\xBC\x25\xD6\x02\x56\x57\x1C",
-+		.ilen	= 496,
-+		.result	= "\x56\xED\x84\x1B\x8F\x26\xBD\x31"
-+			  "\xC8\x5F\xF6\x6A\x01\x98\x0C\xA3"
-+			  "\x3A\xD1\x45\xDC\x73\x0A\x7E\x15"
-+			  "\xAC\x20\xB7\x4E\xE5\x59\xF0\x87"
-+			  "\x1E\x92\x29\xC0\x34\xCB\x62\xF9"
-+			  "\x6D\x04\x9B\x0F\xA6\x3D\xD4\x48"
-+			  "\xDF\x76\x0D\x81\x18\xAF\x23\xBA"
-+			  "\x51\xE8\x5C\xF3\x8A\x21\x95\x2C"
-+			  "\xC3\x37\xCE\x65\xFC\x70\x07\x9E"
-+			  "\x12\xA9\x40\xD7\x4B\xE2\x79\x10"
-+			  "\x84\x1B\xB2\x26\xBD\x54\xEB\x5F"
-+			  "\xF6\x8D\x01\x98\x2F\xC6\x3A\xD1"
-+			  "\x68\xFF\x73\x0A\xA1\x15\xAC\x43"
-+			  "\xDA\x4E\xE5\x7C\x13\x87\x1E\xB5"
-+			  "\x29\xC0\x57\xEE\x62\xF9\x90\x04"
-+			  "\x9B\x32\xC9\x3D\xD4\x6B\x02\x76"
-+			  "\x0D\xA4\x18\xAF\x46\xDD\x51\xE8"
-+			  "\x7F\x16\x8A\x21\xB8\x2C\xC3\x5A"
-+			  "\xF1\x65\xFC\x93\x07\x9E\x35\xCC"
-+			  "\x40\xD7\x6E\x05\x79\x10\xA7\x1B"
-+			  "\xB2\x49\xE0\x54\xEB\x82\x19\x8D"
-+			  "\x24\xBB\x2F\xC6\x5D\xF4\x68\xFF"
-+			  "\x96\x0A\xA1\x38\xCF\x43\xDA\x71"
-+			  "\x08\x7C\x13\xAA\x1E\xB5\x4C\xE3"
-+			  "\x57\xEE\x85\x1C\x90\x27\xBE\x32"
-+			  "\xC9\x60\xF7\x6B\x02\x99\x0D\xA4"
-+			  "\x3B\xD2\x46\xDD\x74\x0B\x7F\x16"
-+			  "\xAD\x21\xB8\x4F\xE6\x5A\xF1\x88"
-+			  "\x1F\x93\x2A\xC1\x35\xCC\x63\xFA"
-+			  "\x6E\x05\x9C\x10\xA7\x3E\xD5\x49"
-+			  "\xE0\x77\x0E\x82\x19\xB0\x24\xBB"
-+			  "\x52\xE9\x5D\xF4\x8B\x22\x96\x2D"
-+			  "\xC4\x38\xCF\x66\xFD\x71\x08\x9F"
-+			  "\x13\xAA\x41\xD8\x4C\xE3\x7A\x11"
-+			  "\x85\x1C\xB3\x27\xBE\x55\xEC\x60"
-+			  "\xF7\x8E\x02\x99\x30\xC7\x3B\xD2"
-+			  "\x69\x00\x74\x0B\xA2\x16\xAD\x44"
-+			  "\xDB\x4F\xE6\x7D\x14\x88\x1F\xB6"
-+			  "\x2A\xC1\x58\xEF\x63\xFA\x91\x05"
-+			  "\x9C\x33\xCA\x3E\xD5\x6C\x03\x77"
-+			  "\x0E\xA5\x19\xB0\x47\xDE\x52\xE9"
-+			  "\x80\x17\x8B\x22\xB9\x2D\xC4\x5B"
-+			  "\xF2\x66\xFD\x94\x08\x9F\x36\xCD"
-+			  "\x41\xD8\x6F\x06\x7A\x11\xA8\x1C"
-+			  "\xB3\x4A\xE1\x55\xEC\x83\x1A\x8E"
-+			  "\x25\xBC\x30\xC7\x5E\xF5\x69\x00"
-+			  "\x97\x0B\xA2\x39\xD0\x44\xDB\x72"
-+			  "\x09\x7D\x14\xAB\x1F\xB6\x4D\xE4"
-+			  "\x58\xEF\x86\x1D\x91\x28\xBF\x33"
-+			  "\xCA\x61\xF8\x6C\x03\x9A\x0E\xA5"
-+			  "\x3C\xD3\x47\xDE\x75\x0C\x80\x17"
-+			  "\xAE\x22\xB9\x50\xE7\x5B\xF2\x89"
-+			  "\x20\x94\x2B\xC2\x36\xCD\x64\xFB"
-+			  "\x6F\x06\x9D\x11\xA8\x3F\xD6\x4A"
-+			  "\xE1\x78\x0F\x83\x1A\xB1\x25\xBC"
-+			  "\x53\xEA\x5E\xF5\x8C\x00\x97\x2E"
-+			  "\xC5\x39\xD0\x67\xFE\x72\x09\xA0"
-+			  "\x14\xAB\x42\xD9\x4D\xE4\x7B\x12"
-+			  "\x86\x1D\xB4\x28\xBF\x56\xED\x61"
-+			  "\xF8\x8F\x03\x9A\x31\xC8\x3C\xD3"
-+			  "\x6A\x01\x75\x0C\xA3\x17\xAE\x45"
-+			  "\xDC\x50\xE7\x7E\x15\x89\x20\xB7",
-+		.rlen	= 496,
-+	},
-+};
-+
-+static struct cipher_testvec cast5_cbc_enc_tv_template[] = {
-+	{ /* Generated from TF test vectors */
-+		.key	= "\x85\x62\x3F\x1C\xF9\xD6\x1C\xF9"
-+			  "\xD6\xB3\x90\x6D\x4A\x90\x6D\x4A",
-+		.klen	= 16,
-+		.iv	= "\xE2\x24\x89\xEE\x53\xB8\x1D\x5F",
-+		.input	= "\x56\xED\x84\x1B\x8F\x26\xBD\x31"
-+			  "\xC8\x5F\xF6\x6A\x01\x98\x0C\xA3"
-+			  "\x3A\xD1\x45\xDC\x73\x0A\x7E\x15"
-+			  "\xAC\x20\xB7\x4E\xE5\x59\xF0\x87"
-+			  "\x1E\x92\x29\xC0\x34\xCB\x62\xF9"
-+			  "\x6D\x04\x9B\x0F\xA6\x3D\xD4\x48"
-+			  "\xDF\x76\x0D\x81\x18\xAF\x23\xBA"
-+			  "\x51\xE8\x5C\xF3\x8A\x21\x95\x2C"
-+			  "\xC3\x37\xCE\x65\xFC\x70\x07\x9E"
-+			  "\x12\xA9\x40\xD7\x4B\xE2\x79\x10"
-+			  "\x84\x1B\xB2\x26\xBD\x54\xEB\x5F"
-+			  "\xF6\x8D\x01\x98\x2F\xC6\x3A\xD1"
-+			  "\x68\xFF\x73\x0A\xA1\x15\xAC\x43"
-+			  "\xDA\x4E\xE5\x7C\x13\x87\x1E\xB5"
-+			  "\x29\xC0\x57\xEE\x62\xF9\x90\x04"
-+			  "\x9B\x32\xC9\x3D\xD4\x6B\x02\x76"
-+			  "\x0D\xA4\x18\xAF\x46\xDD\x51\xE8"
-+			  "\x7F\x16\x8A\x21\xB8\x2C\xC3\x5A"
-+			  "\xF1\x65\xFC\x93\x07\x9E\x35\xCC"
-+			  "\x40\xD7\x6E\x05\x79\x10\xA7\x1B"
-+			  "\xB2\x49\xE0\x54\xEB\x82\x19\x8D"
-+			  "\x24\xBB\x2F\xC6\x5D\xF4\x68\xFF"
-+			  "\x96\x0A\xA1\x38\xCF\x43\xDA\x71"
-+			  "\x08\x7C\x13\xAA\x1E\xB5\x4C\xE3"
-+			  "\x57\xEE\x85\x1C\x90\x27\xBE\x32"
-+			  "\xC9\x60\xF7\x6B\x02\x99\x0D\xA4"
-+			  "\x3B\xD2\x46\xDD\x74\x0B\x7F\x16"
-+			  "\xAD\x21\xB8\x4F\xE6\x5A\xF1\x88"
-+			  "\x1F\x93\x2A\xC1\x35\xCC\x63\xFA"
-+			  "\x6E\x05\x9C\x10\xA7\x3E\xD5\x49"
-+			  "\xE0\x77\x0E\x82\x19\xB0\x24\xBB"
-+			  "\x52\xE9\x5D\xF4\x8B\x22\x96\x2D"
-+			  "\xC4\x38\xCF\x66\xFD\x71\x08\x9F"
-+			  "\x13\xAA\x41\xD8\x4C\xE3\x7A\x11"
-+			  "\x85\x1C\xB3\x27\xBE\x55\xEC\x60"
-+			  "\xF7\x8E\x02\x99\x30\xC7\x3B\xD2"
-+			  "\x69\x00\x74\x0B\xA2\x16\xAD\x44"
-+			  "\xDB\x4F\xE6\x7D\x14\x88\x1F\xB6"
-+			  "\x2A\xC1\x58\xEF\x63\xFA\x91\x05"
-+			  "\x9C\x33\xCA\x3E\xD5\x6C\x03\x77"
-+			  "\x0E\xA5\x19\xB0\x47\xDE\x52\xE9"
-+			  "\x80\x17\x8B\x22\xB9\x2D\xC4\x5B"
-+			  "\xF2\x66\xFD\x94\x08\x9F\x36\xCD"
-+			  "\x41\xD8\x6F\x06\x7A\x11\xA8\x1C"
-+			  "\xB3\x4A\xE1\x55\xEC\x83\x1A\x8E"
-+			  "\x25\xBC\x30\xC7\x5E\xF5\x69\x00"
-+			  "\x97\x0B\xA2\x39\xD0\x44\xDB\x72"
-+			  "\x09\x7D\x14\xAB\x1F\xB6\x4D\xE4"
-+			  "\x58\xEF\x86\x1D\x91\x28\xBF\x33"
-+			  "\xCA\x61\xF8\x6C\x03\x9A\x0E\xA5"
-+			  "\x3C\xD3\x47\xDE\x75\x0C\x80\x17"
-+			  "\xAE\x22\xB9\x50\xE7\x5B\xF2\x89"
-+			  "\x20\x94\x2B\xC2\x36\xCD\x64\xFB"
-+			  "\x6F\x06\x9D\x11\xA8\x3F\xD6\x4A"
-+			  "\xE1\x78\x0F\x83\x1A\xB1\x25\xBC"
-+			  "\x53\xEA\x5E\xF5\x8C\x00\x97\x2E"
-+			  "\xC5\x39\xD0\x67\xFE\x72\x09\xA0"
-+			  "\x14\xAB\x42\xD9\x4D\xE4\x7B\x12"
-+			  "\x86\x1D\xB4\x28\xBF\x56\xED\x61"
-+			  "\xF8\x8F\x03\x9A\x31\xC8\x3C\xD3"
-+			  "\x6A\x01\x75\x0C\xA3\x17\xAE\x45"
-+			  "\xDC\x50\xE7\x7E\x15\x89\x20\xB7",
-+		.ilen	= 496,
-+		.result	= "\x05\x28\xCE\x61\x90\x80\xE1\x78"
-+			  "\xB9\x2A\x97\x7C\xB0\x83\xD8\x1A"
-+			  "\xDE\x58\x7F\xD7\xFD\x72\xB8\xFB"
-+			  "\xDA\xF0\x6E\x77\x14\x47\x82\xBA"
-+			  "\x29\x0E\x25\x6E\xB4\x39\xD9\x7F"
-+			  "\x05\xA7\xA7\x3A\xC1\x5D\x9E\x39"
-+			  "\xA7\xFB\x0D\x05\x00\xF3\x58\x67"
-+			  "\x60\xEC\x73\x77\x46\x85\x9B\x6A"
-+			  "\x08\x3E\xBE\x59\xFB\xE4\x96\x34"
-+			  "\xB4\x05\x49\x1A\x97\x43\xAD\xA0"
-+			  "\xA9\x1E\x6E\x74\xF1\x94\xEC\xA8"
-+			  "\xB5\x8A\x20\xEA\x89\x6B\x19\xAA"
-+			  "\xA7\xF1\x33\x67\x90\x23\x0D\xEE"
-+			  "\x81\xD5\x78\x4F\xD3\x63\xEA\x46"
-+			  "\xB5\xB2\x6E\xBB\xCA\x76\x06\x10"
-+			  "\x96\x2A\x0A\xBA\xF9\x41\x5A\x1D"
-+			  "\x36\x7C\x56\x14\x54\x83\xFA\xA1"
-+			  "\x27\xDD\xBA\x8A\x90\x29\xD6\xA6"
-+			  "\xFA\x48\x3E\x1E\x23\x6E\x98\xA8"
-+			  "\xA7\xD9\x67\x92\x5C\x13\xB4\x71"
-+			  "\xA8\xAA\x89\x4A\xA4\xB3\x49\x7C"
-+			  "\x7D\x7F\xCE\x6F\x29\x2E\x7E\x37"
-+			  "\xC8\x52\x60\xD9\xE7\xCA\x60\x98"
-+			  "\xED\xCD\xE8\x60\x83\xAD\x34\x4D"
-+			  "\x96\x4A\x99\x2B\xB7\x14\x75\x66"
-+			  "\x6C\x2C\x1A\xBA\x4B\xBB\x49\x56"
-+			  "\xE1\x86\xA2\x0E\xD0\xF0\x07\xD3"
-+			  "\x18\x38\x09\x9C\x0E\x8B\x86\x07"
-+			  "\x90\x12\x37\x49\x27\x98\x69\x18"
-+			  "\xB0\xCC\xFB\xD3\xBD\x04\xA0\x85"
-+			  "\x4B\x22\x97\x07\xB6\x97\xE9\x95"
-+			  "\x0F\x88\x36\xA9\x44\x00\xC6\xE9"
-+			  "\x27\x53\x5C\x5B\x1F\xD3\xE2\xEE"
-+			  "\xD0\xCD\x63\x30\xA9\xC0\xDD\x49"
-+			  "\xFE\x16\xA4\x07\x0D\xE2\x5D\x97"
-+			  "\xDE\x89\xBA\x2E\xF3\xA9\x5E\xBE"
-+			  "\x03\x55\x0E\x02\x41\x4A\x45\x06"
-+			  "\xBE\xEA\x32\xF2\xDC\x91\x5C\x20"
-+			  "\x94\x02\x30\xD2\xFC\x29\xFA\x8E"
-+			  "\x34\xA0\x31\xB8\x34\xBA\xAE\x54"
-+			  "\xB5\x88\x1F\xDC\x43\xDC\x22\x9F"
-+			  "\xDC\xCE\xD3\xFA\xA4\xA8\xBC\x8A"
-+			  "\xC7\x5A\x43\x21\xA5\xB1\xDB\xC3"
-+			  "\x84\x3B\xB4\x9B\xB5\xA7\xF1\x0A"
-+			  "\xB6\x37\x21\x19\x55\xC2\xBD\x99"
-+			  "\x49\x24\xBB\x7C\xB3\x8E\xEF\xD2"
-+			  "\x3A\xCF\xA0\x31\x28\x0E\x25\xA2"
-+			  "\x11\xB4\x18\x17\x1A\x65\x92\x56"
-+			  "\xE8\xE0\x52\x9C\x61\x18\x2A\xB1"
-+			  "\x1A\x01\x22\x45\x17\x62\x52\x6C"
-+			  "\x91\x44\xCF\x98\xC7\xC0\x79\x26"
-+			  "\x32\x66\x6F\x23\x7F\x94\x36\x88"
-+			  "\x3C\xC9\xD0\xB7\x45\x30\x31\x86"
-+			  "\x3D\xC6\xA3\x98\x62\x84\x1A\x8B"
-+			  "\x16\x88\xC7\xA3\xE9\x4F\xE0\x86"
-+			  "\xA4\x93\xA8\x34\x5A\xCA\xDF\xCA"
-+			  "\x46\x38\xD2\xF4\xE0\x2D\x1E\xC9"
-+			  "\x7C\xEF\x53\xB7\x60\x72\x41\xBF"
-+			  "\x29\x00\x87\x02\xAF\x44\x4C\xB7"
-+			  "\x8C\xF5\x3F\x19\xF4\x80\x45\xA7"
-+			  "\x15\x5F\xDB\xE9\xB1\x83\xD2\xE6"
-+			  "\x1D\x18\x66\x44\x5B\x8F\x14\xEB",
-+		.rlen	= 496,
-+	},
-+};
-+
-+static struct cipher_testvec cast5_cbc_dec_tv_template[] = {
-+	{ /* Generated from TF test vectors */
-+		.key	= "\x85\x62\x3F\x1C\xF9\xD6\x1C\xF9"
-+			  "\xD6\xB3\x90\x6D\x4A\x90\x6D\x4A",
-+		.klen	= 16,
-+		.iv	= "\xE2\x24\x89\xEE\x53\xB8\x1D\x5F",
-+		.input	= "\x05\x28\xCE\x61\x90\x80\xE1\x78"
-+			  "\xB9\x2A\x97\x7C\xB0\x83\xD8\x1A"
-+			  "\xDE\x58\x7F\xD7\xFD\x72\xB8\xFB"
-+			  "\xDA\xF0\x6E\x77\x14\x47\x82\xBA"
-+			  "\x29\x0E\x25\x6E\xB4\x39\xD9\x7F"
-+			  "\x05\xA7\xA7\x3A\xC1\x5D\x9E\x39"
-+			  "\xA7\xFB\x0D\x05\x00\xF3\x58\x67"
-+			  "\x60\xEC\x73\x77\x46\x85\x9B\x6A"
-+			  "\x08\x3E\xBE\x59\xFB\xE4\x96\x34"
-+			  "\xB4\x05\x49\x1A\x97\x43\xAD\xA0"
-+			  "\xA9\x1E\x6E\x74\xF1\x94\xEC\xA8"
-+			  "\xB5\x8A\x20\xEA\x89\x6B\x19\xAA"
-+			  "\xA7\xF1\x33\x67\x90\x23\x0D\xEE"
-+			  "\x81\xD5\x78\x4F\xD3\x63\xEA\x46"
-+			  "\xB5\xB2\x6E\xBB\xCA\x76\x06\x10"
-+			  "\x96\x2A\x0A\xBA\xF9\x41\x5A\x1D"
-+			  "\x36\x7C\x56\x14\x54\x83\xFA\xA1"
-+			  "\x27\xDD\xBA\x8A\x90\x29\xD6\xA6"
-+			  "\xFA\x48\x3E\x1E\x23\x6E\x98\xA8"
-+			  "\xA7\xD9\x67\x92\x5C\x13\xB4\x71"
-+			  "\xA8\xAA\x89\x4A\xA4\xB3\x49\x7C"
-+			  "\x7D\x7F\xCE\x6F\x29\x2E\x7E\x37"
-+			  "\xC8\x52\x60\xD9\xE7\xCA\x60\x98"
-+			  "\xED\xCD\xE8\x60\x83\xAD\x34\x4D"
-+			  "\x96\x4A\x99\x2B\xB7\x14\x75\x66"
-+			  "\x6C\x2C\x1A\xBA\x4B\xBB\x49\x56"
-+			  "\xE1\x86\xA2\x0E\xD0\xF0\x07\xD3"
-+			  "\x18\x38\x09\x9C\x0E\x8B\x86\x07"
-+			  "\x90\x12\x37\x49\x27\x98\x69\x18"
-+			  "\xB0\xCC\xFB\xD3\xBD\x04\xA0\x85"
-+			  "\x4B\x22\x97\x07\xB6\x97\xE9\x95"
-+			  "\x0F\x88\x36\xA9\x44\x00\xC6\xE9"
-+			  "\x27\x53\x5C\x5B\x1F\xD3\xE2\xEE"
-+			  "\xD0\xCD\x63\x30\xA9\xC0\xDD\x49"
-+			  "\xFE\x16\xA4\x07\x0D\xE2\x5D\x97"
-+			  "\xDE\x89\xBA\x2E\xF3\xA9\x5E\xBE"
-+			  "\x03\x55\x0E\x02\x41\x4A\x45\x06"
-+			  "\xBE\xEA\x32\xF2\xDC\x91\x5C\x20"
-+			  "\x94\x02\x30\xD2\xFC\x29\xFA\x8E"
-+			  "\x34\xA0\x31\xB8\x34\xBA\xAE\x54"
-+			  "\xB5\x88\x1F\xDC\x43\xDC\x22\x9F"
-+			  "\xDC\xCE\xD3\xFA\xA4\xA8\xBC\x8A"
-+			  "\xC7\x5A\x43\x21\xA5\xB1\xDB\xC3"
-+			  "\x84\x3B\xB4\x9B\xB5\xA7\xF1\x0A"
-+			  "\xB6\x37\x21\x19\x55\xC2\xBD\x99"
-+			  "\x49\x24\xBB\x7C\xB3\x8E\xEF\xD2"
-+			  "\x3A\xCF\xA0\x31\x28\x0E\x25\xA2"
-+			  "\x11\xB4\x18\x17\x1A\x65\x92\x56"
-+			  "\xE8\xE0\x52\x9C\x61\x18\x2A\xB1"
-+			  "\x1A\x01\x22\x45\x17\x62\x52\x6C"
-+			  "\x91\x44\xCF\x98\xC7\xC0\x79\x26"
-+			  "\x32\x66\x6F\x23\x7F\x94\x36\x88"
-+			  "\x3C\xC9\xD0\xB7\x45\x30\x31\x86"
-+			  "\x3D\xC6\xA3\x98\x62\x84\x1A\x8B"
-+			  "\x16\x88\xC7\xA3\xE9\x4F\xE0\x86"
-+			  "\xA4\x93\xA8\x34\x5A\xCA\xDF\xCA"
-+			  "\x46\x38\xD2\xF4\xE0\x2D\x1E\xC9"
-+			  "\x7C\xEF\x53\xB7\x60\x72\x41\xBF"
-+			  "\x29\x00\x87\x02\xAF\x44\x4C\xB7"
-+			  "\x8C\xF5\x3F\x19\xF4\x80\x45\xA7"
-+			  "\x15\x5F\xDB\xE9\xB1\x83\xD2\xE6"
-+			  "\x1D\x18\x66\x44\x5B\x8F\x14\xEB",
-+		.ilen	= 496,
-+		.result	= "\x56\xED\x84\x1B\x8F\x26\xBD\x31"
-+			  "\xC8\x5F\xF6\x6A\x01\x98\x0C\xA3"
-+			  "\x3A\xD1\x45\xDC\x73\x0A\x7E\x15"
-+			  "\xAC\x20\xB7\x4E\xE5\x59\xF0\x87"
-+			  "\x1E\x92\x29\xC0\x34\xCB\x62\xF9"
-+			  "\x6D\x04\x9B\x0F\xA6\x3D\xD4\x48"
-+			  "\xDF\x76\x0D\x81\x18\xAF\x23\xBA"
-+			  "\x51\xE8\x5C\xF3\x8A\x21\x95\x2C"
-+			  "\xC3\x37\xCE\x65\xFC\x70\x07\x9E"
-+			  "\x12\xA9\x40\xD7\x4B\xE2\x79\x10"
-+			  "\x84\x1B\xB2\x26\xBD\x54\xEB\x5F"
-+			  "\xF6\x8D\x01\x98\x2F\xC6\x3A\xD1"
-+			  "\x68\xFF\x73\x0A\xA1\x15\xAC\x43"
-+			  "\xDA\x4E\xE5\x7C\x13\x87\x1E\xB5"
-+			  "\x29\xC0\x57\xEE\x62\xF9\x90\x04"
-+			  "\x9B\x32\xC9\x3D\xD4\x6B\x02\x76"
-+			  "\x0D\xA4\x18\xAF\x46\xDD\x51\xE8"
-+			  "\x7F\x16\x8A\x21\xB8\x2C\xC3\x5A"
-+			  "\xF1\x65\xFC\x93\x07\x9E\x35\xCC"
-+			  "\x40\xD7\x6E\x05\x79\x10\xA7\x1B"
-+			  "\xB2\x49\xE0\x54\xEB\x82\x19\x8D"
-+			  "\x24\xBB\x2F\xC6\x5D\xF4\x68\xFF"
-+			  "\x96\x0A\xA1\x38\xCF\x43\xDA\x71"
-+			  "\x08\x7C\x13\xAA\x1E\xB5\x4C\xE3"
-+			  "\x57\xEE\x85\x1C\x90\x27\xBE\x32"
-+			  "\xC9\x60\xF7\x6B\x02\x99\x0D\xA4"
-+			  "\x3B\xD2\x46\xDD\x74\x0B\x7F\x16"
-+			  "\xAD\x21\xB8\x4F\xE6\x5A\xF1\x88"
-+			  "\x1F\x93\x2A\xC1\x35\xCC\x63\xFA"
-+			  "\x6E\x05\x9C\x10\xA7\x3E\xD5\x49"
-+			  "\xE0\x77\x0E\x82\x19\xB0\x24\xBB"
-+			  "\x52\xE9\x5D\xF4\x8B\x22\x96\x2D"
-+			  "\xC4\x38\xCF\x66\xFD\x71\x08\x9F"
-+			  "\x13\xAA\x41\xD8\x4C\xE3\x7A\x11"
-+			  "\x85\x1C\xB3\x27\xBE\x55\xEC\x60"
-+			  "\xF7\x8E\x02\x99\x30\xC7\x3B\xD2"
-+			  "\x69\x00\x74\x0B\xA2\x16\xAD\x44"
-+			  "\xDB\x4F\xE6\x7D\x14\x88\x1F\xB6"
-+			  "\x2A\xC1\x58\xEF\x63\xFA\x91\x05"
-+			  "\x9C\x33\xCA\x3E\xD5\x6C\x03\x77"
-+			  "\x0E\xA5\x19\xB0\x47\xDE\x52\xE9"
-+			  "\x80\x17\x8B\x22\xB9\x2D\xC4\x5B"
-+			  "\xF2\x66\xFD\x94\x08\x9F\x36\xCD"
-+			  "\x41\xD8\x6F\x06\x7A\x11\xA8\x1C"
-+			  "\xB3\x4A\xE1\x55\xEC\x83\x1A\x8E"
-+			  "\x25\xBC\x30\xC7\x5E\xF5\x69\x00"
-+			  "\x97\x0B\xA2\x39\xD0\x44\xDB\x72"
-+			  "\x09\x7D\x14\xAB\x1F\xB6\x4D\xE4"
-+			  "\x58\xEF\x86\x1D\x91\x28\xBF\x33"
-+			  "\xCA\x61\xF8\x6C\x03\x9A\x0E\xA5"
-+			  "\x3C\xD3\x47\xDE\x75\x0C\x80\x17"
-+			  "\xAE\x22\xB9\x50\xE7\x5B\xF2\x89"
-+			  "\x20\x94\x2B\xC2\x36\xCD\x64\xFB"
-+			  "\x6F\x06\x9D\x11\xA8\x3F\xD6\x4A"
-+			  "\xE1\x78\x0F\x83\x1A\xB1\x25\xBC"
-+			  "\x53\xEA\x5E\xF5\x8C\x00\x97\x2E"
-+			  "\xC5\x39\xD0\x67\xFE\x72\x09\xA0"
-+			  "\x14\xAB\x42\xD9\x4D\xE4\x7B\x12"
-+			  "\x86\x1D\xB4\x28\xBF\x56\xED\x61"
-+			  "\xF8\x8F\x03\x9A\x31\xC8\x3C\xD3"
-+			  "\x6A\x01\x75\x0C\xA3\x17\xAE\x45"
-+			  "\xDC\x50\xE7\x7E\x15\x89\x20\xB7",
-+		.rlen	= 496,
-+	},
-+};
-+
-+static struct cipher_testvec cast5_ctr_enc_tv_template[] = {
-+	{ /* Generated from TF test vectors */
-+		.key	= "\x85\x62\x3F\x1C\xF9\xD6\x1C\xF9"
-+			  "\xD6\xB3\x90\x6D\x4A\x90\x6D\x4A",
-+		.klen	= 16,
-+		.iv	= "\xE2\x24\x89\xEE\x53\xB8\x1D\x5F",
-+		.input	= "\x56\xED\x84\x1B\x8F\x26\xBD\x31"
-+			  "\xC8\x5F\xF6\x6A\x01\x98\x0C\xA3"
-+			  "\x3A\xD1\x45\xDC\x73\x0A\x7E\x15"
-+			  "\xAC\x20\xB7\x4E\xE5\x59\xF0\x87"
-+			  "\x1E\x92\x29\xC0\x34\xCB\x62\xF9"
-+			  "\x6D\x04\x9B\x0F\xA6\x3D\xD4\x48"
-+			  "\xDF\x76\x0D\x81\x18\xAF\x23\xBA"
-+			  "\x51\xE8\x5C\xF3\x8A\x21\x95\x2C"
-+			  "\xC3\x37\xCE\x65\xFC\x70\x07\x9E"
-+			  "\x12\xA9\x40\xD7\x4B\xE2\x79\x10"
-+			  "\x84\x1B\xB2\x26\xBD\x54\xEB\x5F"
-+			  "\xF6\x8D\x01\x98\x2F\xC6\x3A\xD1"
-+			  "\x68\xFF\x73\x0A\xA1\x15\xAC\x43"
-+			  "\xDA\x4E\xE5\x7C\x13\x87\x1E\xB5"
-+			  "\x29\xC0\x57\xEE\x62\xF9\x90\x04"
-+			  "\x9B\x32\xC9\x3D\xD4\x6B\x02\x76"
-+			  "\x0D\xA4\x18\xAF\x46\xDD\x51\xE8"
-+			  "\x7F\x16\x8A\x21\xB8\x2C\xC3\x5A"
-+			  "\xF1\x65\xFC\x93\x07\x9E\x35\xCC"
-+			  "\x40\xD7\x6E\x05\x79\x10\xA7\x1B"
-+			  "\xB2\x49\xE0\x54\xEB\x82\x19\x8D"
-+			  "\x24\xBB\x2F\xC6\x5D\xF4\x68\xFF"
-+			  "\x96\x0A\xA1\x38\xCF\x43\xDA\x71"
-+			  "\x08\x7C\x13\xAA\x1E\xB5\x4C\xE3"
-+			  "\x57\xEE\x85\x1C\x90\x27\xBE\x32"
-+			  "\xC9\x60\xF7\x6B\x02\x99\x0D\xA4"
-+			  "\x3B\xD2\x46\xDD\x74\x0B\x7F\x16"
-+			  "\xAD\x21\xB8\x4F\xE6\x5A\xF1\x88"
-+			  "\x1F\x93\x2A\xC1\x35\xCC\x63\xFA"
-+			  "\x6E\x05\x9C\x10\xA7\x3E\xD5\x49"
-+			  "\xE0\x77\x0E\x82\x19\xB0\x24\xBB"
-+			  "\x52\xE9\x5D\xF4\x8B\x22\x96\x2D"
-+			  "\xC4\x38\xCF\x66\xFD\x71\x08\x9F"
-+			  "\x13\xAA\x41\xD8\x4C\xE3\x7A\x11"
-+			  "\x85\x1C\xB3\x27\xBE\x55\xEC\x60"
-+			  "\xF7\x8E\x02\x99\x30\xC7\x3B\xD2"
-+			  "\x69\x00\x74\x0B\xA2\x16\xAD\x44"
-+			  "\xDB\x4F\xE6\x7D\x14\x88\x1F\xB6"
-+			  "\x2A\xC1\x58\xEF\x63\xFA\x91\x05"
-+			  "\x9C\x33\xCA\x3E\xD5\x6C\x03\x77"
-+			  "\x0E\xA5\x19\xB0\x47\xDE\x52\xE9"
-+			  "\x80\x17\x8B\x22\xB9\x2D\xC4\x5B"
-+			  "\xF2\x66\xFD\x94\x08\x9F\x36\xCD"
-+			  "\x41\xD8\x6F\x06\x7A\x11\xA8\x1C"
-+			  "\xB3\x4A\xE1\x55\xEC\x83\x1A\x8E"
-+			  "\x25\xBC\x30\xC7\x5E\xF5\x69\x00"
-+			  "\x97\x0B\xA2\x39\xD0\x44\xDB\x72"
-+			  "\x09\x7D\x14\xAB\x1F\xB6\x4D\xE4"
-+			  "\x58\xEF\x86\x1D\x91\x28\xBF\x33"
-+			  "\xCA\x61\xF8\x6C\x03\x9A\x0E\xA5"
-+			  "\x3C\xD3\x47\xDE\x75\x0C\x80\x17"
-+			  "\xAE\x22\xB9\x50\xE7\x5B\xF2\x89"
-+			  "\x20\x94\x2B\xC2\x36\xCD\x64\xFB"
-+			  "\x6F\x06\x9D\x11\xA8\x3F\xD6\x4A"
-+			  "\xE1\x78\x0F\x83\x1A\xB1\x25\xBC"
-+			  "\x53\xEA\x5E\xF5\x8C\x00\x97\x2E"
-+			  "\xC5\x39\xD0\x67\xFE\x72\x09\xA0"
-+			  "\x14\xAB\x42\xD9\x4D\xE4\x7B\x12"
-+			  "\x86\x1D\xB4\x28\xBF\x56\xED\x61"
-+			  "\xF8\x8F\x03\x9A\x31\xC8\x3C\xD3"
-+			  "\x6A\x01\x75\x0C\xA3\x17\xAE\x45"
-+			  "\xDC\x50\xE7\x7E\x15\x89\x20\xB7",
-+		.ilen	= 496,
-+		.result	= "\xFF\xC4\x2E\x82\x3D\xF8\xA8\x39"
-+			  "\x7C\x52\xC4\xD3\xBB\x62\xC6\xA8"
-+			  "\x0C\x63\xA5\x55\xE3\xF8\x1C\x7F"
-+			  "\xDC\x59\xF9\xA0\x52\xAD\x83\xDF"
-+			  "\xD5\x3B\x53\x4A\xAA\x1F\x49\x44"
-+			  "\xE8\x20\xCC\xF8\x97\xE6\xE0\x3C"
-+			  "\x5A\xD2\x83\xEC\xEE\x25\x3F\xCF"
-+			  "\x0D\xC2\x79\x80\x99\x6E\xFF\x7B"
-+			  "\x64\xB0\x7B\x86\x29\x1D\x9F\x17"
-+			  "\x10\xA5\xA5\xEB\x16\x55\x9E\xE3"
-+			  "\x88\x18\x52\x56\x48\x58\xD1\x6B"
-+			  "\xE8\x74\x6E\x48\xB0\x2E\x69\x63"
-+			  "\x32\xAA\xAC\x26\x55\x45\x94\xDE"
-+			  "\x30\x26\x26\xE6\x08\x82\x2F\x5F"
-+			  "\xA7\x15\x94\x07\x75\x2D\xC6\x3A"
-+			  "\x1B\xA0\x39\xFB\xBA\xB9\x06\x56"
-+			  "\xF6\x9F\xF1\x2F\x9B\xF3\x89\x8B"
-+			  "\x08\xC8\x9D\x5E\x6B\x95\x09\xC7"
-+			  "\x98\xB7\x62\xA4\x1D\x25\xFA\xC5"
-+			  "\x62\xC8\x5D\x6B\xB4\x85\x88\x7F"
-+			  "\x3B\x29\xF9\xB4\x32\x62\x69\xBF"
-+			  "\x32\xB8\xEB\xFD\x0E\x26\xAA\xA3"
-+			  "\x44\x67\x90\x20\xAC\x41\xDF\x43"
-+			  "\xC6\xC7\x19\x9F\x2C\x28\x74\xEB"
-+			  "\x3E\x7F\x7A\x80\x5B\xE4\x08\x60"
-+			  "\xC7\xC9\x71\x34\x44\xCE\x05\xFD"
-+			  "\xA8\x91\xA8\x44\x5E\xD3\x89\x2C"
-+			  "\xAE\x59\x0F\x07\x88\x79\x53\x26"
-+			  "\xAF\xAC\xCB\x1D\x6F\x08\x25\x62"
-+			  "\xD0\x82\x65\x66\xE4\x2A\x29\x1C"
-+			  "\x9C\x64\x5F\x49\x9D\xF8\x62\xF9"
-+			  "\xED\xC4\x13\x52\x75\xDC\xE4\xF9"
-+			  "\x68\x0F\x8A\xCD\xA6\x8D\x75\xAA"
-+			  "\x49\xA1\x86\x86\x37\x5C\x6B\x3D"
-+			  "\x56\xE5\x6F\xBE\x27\xC0\x10\xF8"
-+			  "\x3C\x4D\x17\x35\x14\xDC\x1C\xA0"
-+			  "\x6E\xAE\xD1\x10\xDD\x83\x06\xC2"
-+			  "\x23\xD3\xC7\x27\x15\x04\x2C\x27"
-+			  "\xDD\x1F\x2E\x97\x09\x9C\x33\x7D"
-+			  "\xAC\x50\x1B\x2E\xC9\x52\x0C\x14"
-+			  "\x4B\x78\xC4\xDE\x07\x6A\x12\x02"
-+			  "\x6E\xD7\x4B\x91\xB9\x88\x4D\x02"
-+			  "\xC3\xB5\x04\xBC\xE0\x67\xCA\x18"
-+			  "\x22\xA1\xAE\x9A\x21\xEF\xB2\x06"
-+			  "\x35\xCD\xEC\x37\x70\x2D\xFC\x1E"
-+			  "\xA8\x31\xE7\xFC\xE5\x8E\x88\x66"
-+			  "\x16\xB5\xC8\x45\x21\x37\xBD\x24"
-+			  "\xA9\xD5\x36\x12\x9F\x6E\x67\x80"
-+			  "\x87\x54\xD5\xAF\x97\xE1\x15\xA7"
-+			  "\x11\xF0\x63\x7B\xE1\x44\x14\x1C"
-+			  "\x06\x32\x05\x8C\x6C\xDB\x9B\x36"
-+			  "\x6A\x6B\xAD\x3A\x27\x55\x20\x4C"
-+			  "\x76\x36\x43\xE8\x16\x60\xB5\xF3"
-+			  "\xDF\x5A\xC6\xA5\x69\x78\x59\x51"
-+			  "\x54\x68\x65\x06\x84\xDE\x3D\xAE"
-+			  "\x38\x91\xBD\xCC\xA2\x8A\xEC\xE6"
-+			  "\x9E\x83\xAE\x1E\x8E\x34\x5D\xDE"
-+			  "\x91\xCE\x8F\xED\x40\xF7\xC8\x8B"
-+			  "\x9A\x13\x4C\xAD\x89\x97\x9E\xD1"
-+			  "\x91\x01\xD7\x21\x23\x28\x1E\xCC"
-+			  "\x8C\x98\xDB\xDE\xFC\x72\x94\xAA"
-+			  "\xC0\x0D\x96\xAA\x23\xF8\xFE\x13",
-+		.rlen	= 496,
-+	},
-+};
-+
-+static struct cipher_testvec cast5_ctr_dec_tv_template[] = {
-+	{ /* Generated from TF test vectors */
-+		.key	= "\x85\x62\x3F\x1C\xF9\xD6\x1C\xF9"
-+			  "\xD6\xB3\x90\x6D\x4A\x90\x6D\x4A",
-+		.klen	= 16,
-+		.iv	= "\xE2\x24\x89\xEE\x53\xB8\x1D\x5F",
-+		.input	= "\xFF\xC4\x2E\x82\x3D\xF8\xA8\x39"
-+			  "\x7C\x52\xC4\xD3\xBB\x62\xC6\xA8"
-+			  "\x0C\x63\xA5\x55\xE3\xF8\x1C\x7F"
-+			  "\xDC\x59\xF9\xA0\x52\xAD\x83\xDF"
-+			  "\xD5\x3B\x53\x4A\xAA\x1F\x49\x44"
-+			  "\xE8\x20\xCC\xF8\x97\xE6\xE0\x3C"
-+			  "\x5A\xD2\x83\xEC\xEE\x25\x3F\xCF"
-+			  "\x0D\xC2\x79\x80\x99\x6E\xFF\x7B"
-+			  "\x64\xB0\x7B\x86\x29\x1D\x9F\x17"
-+			  "\x10\xA5\xA5\xEB\x16\x55\x9E\xE3"
-+			  "\x88\x18\x52\x56\x48\x58\xD1\x6B"
-+			  "\xE8\x74\x6E\x48\xB0\x2E\x69\x63"
-+			  "\x32\xAA\xAC\x26\x55\x45\x94\xDE"
-+			  "\x30\x26\x26\xE6\x08\x82\x2F\x5F"
-+			  "\xA7\x15\x94\x07\x75\x2D\xC6\x3A"
-+			  "\x1B\xA0\x39\xFB\xBA\xB9\x06\x56"
-+			  "\xF6\x9F\xF1\x2F\x9B\xF3\x89\x8B"
-+			  "\x08\xC8\x9D\x5E\x6B\x95\x09\xC7"
-+			  "\x98\xB7\x62\xA4\x1D\x25\xFA\xC5"
-+			  "\x62\xC8\x5D\x6B\xB4\x85\x88\x7F"
-+			  "\x3B\x29\xF9\xB4\x32\x62\x69\xBF"
-+			  "\x32\xB8\xEB\xFD\x0E\x26\xAA\xA3"
-+			  "\x44\x67\x90\x20\xAC\x41\xDF\x43"
-+			  "\xC6\xC7\x19\x9F\x2C\x28\x74\xEB"
-+			  "\x3E\x7F\x7A\x80\x5B\xE4\x08\x60"
-+			  "\xC7\xC9\x71\x34\x44\xCE\x05\xFD"
-+			  "\xA8\x91\xA8\x44\x5E\xD3\x89\x2C"
-+			  "\xAE\x59\x0F\x07\x88\x79\x53\x26"
-+			  "\xAF\xAC\xCB\x1D\x6F\x08\x25\x62"
-+			  "\xD0\x82\x65\x66\xE4\x2A\x29\x1C"
-+			  "\x9C\x64\x5F\x49\x9D\xF8\x62\xF9"
-+			  "\xED\xC4\x13\x52\x75\xDC\xE4\xF9"
-+			  "\x68\x0F\x8A\xCD\xA6\x8D\x75\xAA"
-+			  "\x49\xA1\x86\x86\x37\x5C\x6B\x3D"
-+			  "\x56\xE5\x6F\xBE\x27\xC0\x10\xF8"
-+			  "\x3C\x4D\x17\x35\x14\xDC\x1C\xA0"
-+			  "\x6E\xAE\xD1\x10\xDD\x83\x06\xC2"
-+			  "\x23\xD3\xC7\x27\x15\x04\x2C\x27"
-+			  "\xDD\x1F\x2E\x97\x09\x9C\x33\x7D"
-+			  "\xAC\x50\x1B\x2E\xC9\x52\x0C\x14"
-+			  "\x4B\x78\xC4\xDE\x07\x6A\x12\x02"
-+			  "\x6E\xD7\x4B\x91\xB9\x88\x4D\x02"
-+			  "\xC3\xB5\x04\xBC\xE0\x67\xCA\x18"
-+			  "\x22\xA1\xAE\x9A\x21\xEF\xB2\x06"
-+			  "\x35\xCD\xEC\x37\x70\x2D\xFC\x1E"
-+			  "\xA8\x31\xE7\xFC\xE5\x8E\x88\x66"
-+			  "\x16\xB5\xC8\x45\x21\x37\xBD\x24"
-+			  "\xA9\xD5\x36\x12\x9F\x6E\x67\x80"
-+			  "\x87\x54\xD5\xAF\x97\xE1\x15\xA7"
-+			  "\x11\xF0\x63\x7B\xE1\x44\x14\x1C"
-+			  "\x06\x32\x05\x8C\x6C\xDB\x9B\x36"
-+			  "\x6A\x6B\xAD\x3A\x27\x55\x20\x4C"
-+			  "\x76\x36\x43\xE8\x16\x60\xB5\xF3"
-+			  "\xDF\x5A\xC6\xA5\x69\x78\x59\x51"
-+			  "\x54\x68\x65\x06\x84\xDE\x3D\xAE"
-+			  "\x38\x91\xBD\xCC\xA2\x8A\xEC\xE6"
-+			  "\x9E\x83\xAE\x1E\x8E\x34\x5D\xDE"
-+			  "\x91\xCE\x8F\xED\x40\xF7\xC8\x8B"
-+			  "\x9A\x13\x4C\xAD\x89\x97\x9E\xD1"
-+			  "\x91\x01\xD7\x21\x23\x28\x1E\xCC"
-+			  "\x8C\x98\xDB\xDE\xFC\x72\x94\xAA"
-+			  "\xC0\x0D\x96\xAA\x23\xF8\xFE\x13",
-+		.ilen	= 496,
-+		.result	= "\x56\xED\x84\x1B\x8F\x26\xBD\x31"
-+			  "\xC8\x5F\xF6\x6A\x01\x98\x0C\xA3"
-+			  "\x3A\xD1\x45\xDC\x73\x0A\x7E\x15"
-+			  "\xAC\x20\xB7\x4E\xE5\x59\xF0\x87"
-+			  "\x1E\x92\x29\xC0\x34\xCB\x62\xF9"
-+			  "\x6D\x04\x9B\x0F\xA6\x3D\xD4\x48"
-+			  "\xDF\x76\x0D\x81\x18\xAF\x23\xBA"
-+			  "\x51\xE8\x5C\xF3\x8A\x21\x95\x2C"
-+			  "\xC3\x37\xCE\x65\xFC\x70\x07\x9E"
-+			  "\x12\xA9\x40\xD7\x4B\xE2\x79\x10"
-+			  "\x84\x1B\xB2\x26\xBD\x54\xEB\x5F"
-+			  "\xF6\x8D\x01\x98\x2F\xC6\x3A\xD1"
-+			  "\x68\xFF\x73\x0A\xA1\x15\xAC\x43"
-+			  "\xDA\x4E\xE5\x7C\x13\x87\x1E\xB5"
-+			  "\x29\xC0\x57\xEE\x62\xF9\x90\x04"
-+			  "\x9B\x32\xC9\x3D\xD4\x6B\x02\x76"
-+			  "\x0D\xA4\x18\xAF\x46\xDD\x51\xE8"
-+			  "\x7F\x16\x8A\x21\xB8\x2C\xC3\x5A"
-+			  "\xF1\x65\xFC\x93\x07\x9E\x35\xCC"
-+			  "\x40\xD7\x6E\x05\x79\x10\xA7\x1B"
-+			  "\xB2\x49\xE0\x54\xEB\x82\x19\x8D"
-+			  "\x24\xBB\x2F\xC6\x5D\xF4\x68\xFF"
-+			  "\x96\x0A\xA1\x38\xCF\x43\xDA\x71"
-+			  "\x08\x7C\x13\xAA\x1E\xB5\x4C\xE3"
-+			  "\x57\xEE\x85\x1C\x90\x27\xBE\x32"
-+			  "\xC9\x60\xF7\x6B\x02\x99\x0D\xA4"
-+			  "\x3B\xD2\x46\xDD\x74\x0B\x7F\x16"
-+			  "\xAD\x21\xB8\x4F\xE6\x5A\xF1\x88"
-+			  "\x1F\x93\x2A\xC1\x35\xCC\x63\xFA"
-+			  "\x6E\x05\x9C\x10\xA7\x3E\xD5\x49"
-+			  "\xE0\x77\x0E\x82\x19\xB0\x24\xBB"
-+			  "\x52\xE9\x5D\xF4\x8B\x22\x96\x2D"
-+			  "\xC4\x38\xCF\x66\xFD\x71\x08\x9F"
-+			  "\x13\xAA\x41\xD8\x4C\xE3\x7A\x11"
-+			  "\x85\x1C\xB3\x27\xBE\x55\xEC\x60"
-+			  "\xF7\x8E\x02\x99\x30\xC7\x3B\xD2"
-+			  "\x69\x00\x74\x0B\xA2\x16\xAD\x44"
-+			  "\xDB\x4F\xE6\x7D\x14\x88\x1F\xB6"
-+			  "\x2A\xC1\x58\xEF\x63\xFA\x91\x05"
-+			  "\x9C\x33\xCA\x3E\xD5\x6C\x03\x77"
-+			  "\x0E\xA5\x19\xB0\x47\xDE\x52\xE9"
-+			  "\x80\x17\x8B\x22\xB9\x2D\xC4\x5B"
-+			  "\xF2\x66\xFD\x94\x08\x9F\x36\xCD"
-+			  "\x41\xD8\x6F\x06\x7A\x11\xA8\x1C"
-+			  "\xB3\x4A\xE1\x55\xEC\x83\x1A\x8E"
-+			  "\x25\xBC\x30\xC7\x5E\xF5\x69\x00"
-+			  "\x97\x0B\xA2\x39\xD0\x44\xDB\x72"
-+			  "\x09\x7D\x14\xAB\x1F\xB6\x4D\xE4"
-+			  "\x58\xEF\x86\x1D\x91\x28\xBF\x33"
-+			  "\xCA\x61\xF8\x6C\x03\x9A\x0E\xA5"
-+			  "\x3C\xD3\x47\xDE\x75\x0C\x80\x17"
-+			  "\xAE\x22\xB9\x50\xE7\x5B\xF2\x89"
-+			  "\x20\x94\x2B\xC2\x36\xCD\x64\xFB"
-+			  "\x6F\x06\x9D\x11\xA8\x3F\xD6\x4A"
-+			  "\xE1\x78\x0F\x83\x1A\xB1\x25\xBC"
-+			  "\x53\xEA\x5E\xF5\x8C\x00\x97\x2E"
-+			  "\xC5\x39\xD0\x67\xFE\x72\x09\xA0"
-+			  "\x14\xAB\x42\xD9\x4D\xE4\x7B\x12"
-+			  "\x86\x1D\xB4\x28\xBF\x56\xED\x61"
-+			  "\xF8\x8F\x03\x9A\x31\xC8\x3C\xD3"
-+			  "\x6A\x01\x75\x0C\xA3\x17\xAE\x45"
-+			  "\xDC\x50\xE7\x7E\x15\x89\x20\xB7",
-+		.rlen	= 496,
- 	},
- };
- 
++		.alg = "__cbc-cast5-avx",
++		.test = alg_test_null,
++		.suite = {
++			.cipher = {
++				.enc = {
++					.vecs = NULL,
++					.count = 0
++				},
++				.dec = {
++					.vecs = NULL,
++					.count = 0
++				}
++			}
++		}
++	}, {
+ 		.alg = "__cbc-serpent-avx",
+ 		.test = alg_test_null,
+ 		.suite = {
+@@ -1595,6 +1610,21 @@ static const struct alg_test_desc alg_test_descs[] = {
+ 			}
+ 		}
+ 	}, {
++		.alg = "__driver-cbc-cast5-avx",
++		.test = alg_test_null,
++		.suite = {
++			.cipher = {
++				.enc = {
++					.vecs = NULL,
++					.count = 0
++				},
++				.dec = {
++					.vecs = NULL,
++					.count = 0
++				}
++			}
++		}
++	}, {
+ 		.alg = "__driver-cbc-serpent-avx",
+ 		.test = alg_test_null,
+ 		.suite = {
+@@ -1656,6 +1686,21 @@ static const struct alg_test_desc alg_test_descs[] = {
+ 			}
+ 		}
+ 	}, {
++		.alg = "__driver-ecb-cast5-avx",
++		.test = alg_test_null,
++		.suite = {
++			.cipher = {
++				.enc = {
++					.vecs = NULL,
++					.count = 0
++				},
++				.dec = {
++					.vecs = NULL,
++					.count = 0
++				}
++			}
++		}
++	}, {
+ 		.alg = "__driver-ecb-serpent-avx",
+ 		.test = alg_test_null,
+ 		.suite = {
+@@ -1952,6 +1997,21 @@ static const struct alg_test_desc alg_test_descs[] = {
+ 			}
+ 		}
+ 	}, {
++		.alg = "cryptd(__driver-ecb-cast5-avx)",
++		.test = alg_test_null,
++		.suite = {
++			.cipher = {
++				.enc = {
++					.vecs = NULL,
++					.count = 0
++				},
++				.dec = {
++					.vecs = NULL,
++					.count = 0
++				}
++			}
++		}
++	}, {
+ 		.alg = "cryptd(__driver-ecb-serpent-avx)",
+ 		.test = alg_test_null,
+ 		.suite = {
 -- 
 1.7.2.5
 
