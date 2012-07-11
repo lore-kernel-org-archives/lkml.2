@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758400Ab2GKS2V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 14:28:21 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:52358 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758340Ab2GKS1r (ORCPT
+	id S932317Ab2GKS24 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 14:28:56 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:49710 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758287Ab2GKS1b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 14:27:47 -0400
+	Wed, 11 Jul 2012 14:27:31 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -24,9 +24,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 11/11] rcu: Userspace RCU extended QS selftest
-Date: Wed, 11 Jul 2012 20:26:40 +0200
-Message-Id: <1342031200-22731-12-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 08/11] rcu: Exit RCU extended QS on user preemption
+Date: Wed, 11 Jul 2012 20:26:37 +0200
+Message-Id: <1342031200-22731-9-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1342031200-22731-1-git-send-email-fweisbec@gmail.com>
 References: <1342031200-22731-1-git-send-email-fweisbec@gmail.com>
@@ -34,10 +34,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide a config option that enables the userspace
-RCU extended quiescent state on every CPUs by default.
+When exceptions or irq are about to resume userspace, if
+the task needs to be rescheduled, the arch low level code
+calls schedule() directly.
 
-This is for testing purpose.
+At that time we may be in extended quiescent state from RCU
+POV: the exception is not anymore protected inside
+rcu_user_exit() - rcu_user_enter() and the irq has called
+rcu_irq_exit() already.
+
+Create a new API schedule_user() that calls schedule() inside
+rcu_user_exit()-rcu_user_enter() in order to protect it. Archs
+will need to rely on it now to implement user preemption safely.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -59,42 +67,27 @@ Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- init/Kconfig     |    8 ++++++++
- kernel/rcutree.c |    2 +-
- 2 files changed, 9 insertions(+), 1 deletions(-)
+ kernel/sched/core.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-diff --git a/init/Kconfig b/init/Kconfig
-index 3a4af8f..7d1db2e 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -451,6 +451,14 @@ config RCU_USER_QS
- 	  excluded from the global RCU state machine and thus doesn't
- 	  to keep the timer tick on for RCU.
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 1e0fa5b..a37619a 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3332,6 +3332,13 @@ asmlinkage void __sched schedule(void)
+ }
+ EXPORT_SYMBOL(schedule);
  
-+config RCU_USER_QS_FORCE
-+	bool "Force userspace extended QS by default"
-+	depends on RCU_USER_QS
-+	help
-+	  Set the hooks in user/kernel boundaries by default in order to
-+	  test this feature that treats userspace as an extended quiescent
-+	  state until we have a real user like a full adaptive nohz option.
++asmlinkage void __sched schedule_user(void)
++{
++	rcu_user_exit();
++	schedule();
++	rcu_user_enter();
++}
 +
- config RCU_FANOUT
- 	int "Tree-based hierarchical RCU fanout value"
- 	range 2 64 if 64BIT
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 2d79308..9427aba 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -209,7 +209,7 @@ EXPORT_SYMBOL_GPL(rcu_note_context_switch);
- DEFINE_PER_CPU(struct rcu_dynticks, rcu_dynticks) = {
- 	.dynticks_nesting = DYNTICK_TASK_EXIT_IDLE,
- 	.dynticks = ATOMIC_INIT(1),
--#ifdef CONFIG_RCU_USER_QS
-+#if defined(CONFIG_RCU_USER_QS) && !defined(CONFIG_RCU_USER_QS_FORCE)
- 	.ignore_user_qs = true,
- #endif
- };
+ /**
+  * schedule_preempt_disabled - called with preemption disabled
+  *
 -- 
 1.7.5.4
 
