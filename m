@@ -1,144 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933039Ab2GKRMB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 13:12:01 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55935 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932996Ab2GKRMA (ORCPT
+	id S1752960Ab2GKRYJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 13:24:09 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:34703 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751746Ab2GKRYG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 13:12:00 -0400
-Date: Wed, 11 Jul 2012 10:11:53 -0700
-From: Tyler Hicks <tyhicks@canonical.com>
-To: Tim Sally <tsally@atomicpeace.com>
-Cc: dustin.kirkland@gazzang.com, ecryptfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] eCryptfs: check for eCryptfs cipher support at mount
-Message-ID: <20120711171152.GA16475@boyd>
-References: <1341968751-28331-1-git-send-email-tsally@atomicpeace.com>
- <1341968751-28331-2-git-send-email-tsally@atomicpeace.com>
+	Wed, 11 Jul 2012 13:24:06 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="yrj/dFKFPuw6o+aM"
-Content-Disposition: inline
-In-Reply-To: <1341968751-28331-2-git-send-email-tsally@atomicpeace.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1341716749-6733-1-git-send-email-linkinjeon@gmail.com>
+References: <1341716749-6733-1-git-send-email-linkinjeon@gmail.com>
+Date: Wed, 11 Jul 2012 22:54:04 +0530
+Message-ID: <CADDb1s3TM23FjoDdJCcDkPBXwhvw9M1KqPAPhKMTQRyGnF2HLg@mail.gmail.com>
+Subject: Re: [PATCH RESEND 3/3] usb: storage: update usb devices for write
+ cache quirk in quirk list.
+From: Amit Sahrawat <amit.sahrawat83@gmail.com>
+To: Jej B <James.Bottomley@hansenpartnership.com>
+Cc: gregkh@linuxfoundation.org, mdharm-usb@one-eyed-alien.net,
+        stern@rowland.harvard.edu, sshtylyov@mvista.com, bvanassche@acm.org,
+        akpm@linux-foundation.org, linux-usb@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Pankaj Kumar <pankaj.km@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>,
+        Namjae Jeon <linkinjeon@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi James,
+Please have a look at the patchset and share your opinion.
+If there is anything more to it - please let us know.
 
---yrj/dFKFPuw6o+aM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thanks & Regards,
+Amit Sahrawat
 
-On 2012-07-10 21:05:51, Tim Sally wrote:
-> The issue occurs when eCryptfs is mounted with a cipher supported by
-> the crypto subsystem but not by eCryptfs. The mount succeeds and an
-> error does not occur until a write. This change checks for eCryptfs
-> cipher support at mount time.
->=20
-> Resolves Launchpad issue #338914, reported by Tyler Hicks in 03/2009.
-> https://bugs.launchpad.net/ecryptfs/+bug/338914
 
-Hey Tim - Thanks for digging this one out of the bug tracker. :)
-
->=20
-> Signed-off-by: Tim Sally <tsally@atomicpeace.com>
+On Sun, Jul 8, 2012 at 8:35 AM, Namjae Jeon <linkinjeon@gmail.com> wrote:
+> From: Namjae Jeon <namjae.jeon@samsung.com>
+>
+> Update information of Seagate Portable HDD and WD My Passport HDD in
+> quirk list.
+>
+> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+> Signed-off-by: Pankaj Kumar <pankaj.km@samsung.com>
+> Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
+> Acked-by: Alan Stern <stern@rowland.harvard.edu>
 > ---
->  fs/ecryptfs/main.c |   24 ++++++++++++++++++++++++
->  1 file changed, 24 insertions(+)
->=20
-> diff --git a/fs/ecryptfs/main.c b/fs/ecryptfs/main.c
-> index df217dc..4eb1fc6 100644
-> --- a/fs/ecryptfs/main.c
-> +++ b/fs/ecryptfs/main.c
-> @@ -279,6 +279,8 @@ static int ecryptfs_parse_options(struct ecryptfs_sb_=
-info *sbi, char *options,
->  	char *fnek_src;
->  	char *cipher_key_bytes_src;
->  	char *fn_cipher_key_bytes_src;
-> +	struct ecryptfs_key_tfm *key_tfm =3D NULL;
-> +	u8 cipher_code;
-> =20
->  	*check_ruid =3D 0;
-> =20
-> @@ -456,6 +458,28 @@ static int ecryptfs_parse_options(struct ecryptfs_sb=
-_info *sbi, char *options,
->  			goto out;
->  		}
->  	}
+>  drivers/usb/storage/unusual_devs.h |   12 ++++++++++++
+>  1 file changed, 12 insertions(+)
+>
+> diff --git a/drivers/usb/storage/unusual_devs.h b/drivers/usb/storage/unusual_devs.h
+> index 1719886..62a31be 100644
+> --- a/drivers/usb/storage/unusual_devs.h
+> +++ b/drivers/usb/storage/unusual_devs.h
+> @@ -1267,6 +1267,12 @@ UNUSUAL_DEV( 0x0af0, 0xd357, 0x0000, 0x0000,
+>                 USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+>                 0 ),
+>
+> +/* Reported by Namjae Jeon <namjae.jeon@samsung.com> */
+> +UNUSUAL_DEV(0x0bc2, 0x2300, 0x0000, 0x9999,
+> +               "Seagate",
+> +               "Portable HDD",
+> +               USB_SC_DEVICE, USB_PR_DEVICE, NULL, US_FL_WRITE_CACHE),
 > +
-> +	if (!ecryptfs_tfm_exists(mount_crypt_stat->global_default_cipher_name,
-> +					&key_tfm)) {
-> +		ecryptfs_printk(KERN_ERR,
-> +				"Cipher %s was not initalized correctly.\n",
-> +				mount_crypt_stat->global_default_cipher_name);
-> +		rc =3D -EINVAL;
-> +		mutex_unlock(&key_tfm_list_mutex);
-> +		goto out;
-> +	}
-
-We already know that the tfm exists because we already checked for its
-existence and added it if it didn't exist. We shouldn't need to do it
-again here.
-
+>  /* Reported by Ben Efros <ben@pc-doctor.com> */
+>  UNUSUAL_DEV( 0x0bc2, 0x3010, 0x0000, 0x0000,
+>                 "Seagate",
+> @@ -1468,6 +1474,12 @@ UNUSUAL_DEV(  0x1058, 0x0704, 0x0000, 0x9999,
+>                 USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+>                 US_FL_SANE_SENSE),
+>
+> +/* Reported by Namjae Jeon <namjae.jeon@samsung.com> */
+> +UNUSUAL_DEV(0x1058, 0x070a, 0x0000, 0x9999,
+> +               "Western Digital",
+> +               "My Passport HDD",
+> +               USB_SC_DEVICE, USB_PR_DEVICE, NULL, US_FL_WRITE_CACHE),
 > +
-> +	cipher_code =3D ecryptfs_code_for_cipher_string(key_tfm->cipher_name,
-> +						key_tfm->key_size);
-> +	if (!cipher_code) {
-> +		ecryptfs_printk(KERN_ERR,
-> +				"eCryptfs doesn't support: %s blocksize %zu.\n",
-> +				key_tfm->cipher_name, key_tfm->key_size);
-> +		rc =3D -EINVAL;
-> +		mutex_unlock(&key_tfm_list_mutex);
-> +		goto out;
-> +	}
-
-How about just calling
-
-ecryptfs_code_for_cipher_string(mount_crypt_stat->global_default_cipher_nam=
-e,
-			mount_crypt_stat->global_default_cipher_key_size);
-
-even before we lock the key_tfm_list_mutex a little above here? If that
-fails, we don't even need to check for the tfm's existence or do
-anything else besides error out.
-
-Tyler
-
-> +
->  	mutex_unlock(&key_tfm_list_mutex);
->  	rc =3D ecryptfs_init_global_auth_toks(mount_crypt_stat);
->  	if (rc)
-> --=20
-> 1.7.10.4
->=20
+>  /* Reported by Fabio Venturi <f.venturi@tdnet.it>
+>   * The device reports a vendor-specific bDeviceClass.
+>   */
 > --
-> To unsubscribe from this list: send the line "unsubscribe ecryptfs" in
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
---yrj/dFKFPuw6o+aM
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCgAGBQJP/bPYAAoJENaSAD2qAscKF5gP/itU4IMP5rD2OWaTrmuPMbST
-PAwQJvkdMfiN2luUeRF5VMbEaY/smiZWbki9DyGNfXW843cVKwkv3RdIvKFmQR4b
-SZ0hF2/gOoKrKyfwtU5hFRRNcEcFUJrXgDspIZEgpiv2cPE7geW4Vr9EqzF3rfOR
-5ePUi7YDj/pLudcFGpUQutq5erR1gjxKOx9vm7/oE+Wb7D08iFGY/Iq2WAYHCUGB
-ftQgra7u0LTans2XGbTVRKOdmOXqMsv/TS+3JaCHgyrshc6w/HC6R1FAw4CcPSFV
-pq/AGICB/juZVtEaAeUWoszjXaZGXxFZv/i/AKTZ+JaAhuqxli9aulovKl0W8FAs
-qMUPPLnQBgzYtWq9i9AujcA/GDMo3An8YlwTfnBpoy/rquYyxsd18ZqTRrYZTTtB
-FE9l+1T+YUjB2GdrdeDSVJvn2MCzYIUVa0rH05FwI1fl5ttGUSz3tnX5P7raGz7Q
-YNdBaxKpMWOt+yGoVbH/xkYwMbWTVRyG9Sk+se9ExC90wU9Ti+nPp/sB1PgFegXU
-0ceLuAoUsCgHQtcwt3uUnkMYHHbi6L+jifdsHxaNC9vYedtpOlDj4fcxwWo6sgJW
-dSPTEewyxzWcPSKzOAiSZCVTHU29Fxn3p7fmEHTUkH8GjukYJn8s7dqGagDI+dSO
-WJ32VhsmLDusJNEEHT4e
-=16Kr
------END PGP SIGNATURE-----
-
---yrj/dFKFPuw6o+aM--
+> Please read the FAQ at  http://www.tux.org/lkml/
