@@ -1,95 +1,370 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757908Ab2GKOGG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 10:06:06 -0400
-Received: from ams-iport-1.cisco.com ([144.254.224.140]:58249 "EHLO
-	ams-iport-1.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757848Ab2GKOGE (ORCPT
+	id S1757918Ab2GKOGo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 10:06:44 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:51648 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757475Ab2GKOGm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 10:06:04 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AiIFAISH/U+Q/khL/2dsb2JhbABFtASDWoEHgiABAQEDARIBFFIFCwsYLlcGNYdlBp08oBmLQIVuA4gWjSSOIIFmgmE
-X-IronPort-AV: E=Sophos;i="4.77,567,1336348800"; 
-   d="scan'208";a="140994704"
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Federico Vaga <federico.vaga@gmail.com>
-Subject: Re: [PATCH RFC] [media] adv7180.c: convert to v4l2 control framework
-Date: Wed, 11 Jul 2012 16:05:49 +0200
-User-Agent: KMail/1.13.7 (Linux/3.3-0.slh.4-aptosid-amd64; KDE/4.7.4; x86_64; ; )
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1341974086-27887-1-git-send-email-federico.vaga@gmail.com> <201207110834.53760.hverkuil@xs4all.nl> <1460334.RCi3doz24X@harkonnen>
-In-Reply-To: <1460334.RCi3doz24X@harkonnen>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207111605.49470.hverkuil@xs4all.nl>
+	Wed, 11 Jul 2012 10:06:42 -0400
+From: Ben Minerds <puzzleduck@gmail.com>
+To: alan@lxorguk.ukuu.org.uk
+Cc: gregkh@linuxfoundation.org, richard.weinberger@gmail.com,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        puzzleduck@gmail.com
+Subject: [PATCH 0/6] USB: serial: Changes to conform with checkpatch.
+Date: Thu, 12 Jul 2012 00:10:14 +1000
+Message-Id: <1342015820-10229-1-git-send-email-puzzleduck@gmail.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 11 July 2012 15:36:25 Federico Vaga wrote:
-> Hi Hans,
-> 
-> Thank you for your review
-> 
-> > > +static int adv7180_init_controls(struct adv7180_state *state)
-> > > +{
-> > > +	v4l2_ctrl_handler_init(&state->ctrl_hdl, 2);
-> > 
-> > 2 -> 4, since there are 4 controls. It's a hint only, but it helps
-> > optimizing the internal hash data structure.
-> 
-> Sure :)
-> 
-> > > 
-> > > @@ -445,9 +402,9 @@ static const struct v4l2_subdev_video_ops
-> > > adv7180_video_ops = {> 
-> > >  static const struct v4l2_subdev_core_ops adv7180_core_ops = {
-> > >  
-> > >  	.g_chip_ident = adv7180_g_chip_ident,
-> > >  	.s_std = adv7180_s_std,
-> > > 
-> > > -	.queryctrl = adv7180_queryctrl,
-> > > -	.g_ctrl = adv7180_g_ctrl,
-> > > -	.s_ctrl = adv7180_s_ctrl,
-> > > +	.queryctrl = v4l2_subdev_queryctrl,
-> > > +	.g_ctrl = v4l2_subdev_g_ctrl,
-> > > +	.s_ctrl = v4l2_subdev_s_ctrl,
-> > 
-> > If adv7180 is currently *only* used by bridge/platform drivers that
-> > also use the control framework, then you can remove
-> > queryctrl/g/s_ctrl altogether.
-> 
-> I'm not sure to undestand this point. I "grepped" for the adv7180 and it 
-> seem that I'm the only user of the adv7180 (sta2x11 VIP driver). In the
-> VIP driver I don't use the control framework (there aren't controls), so 
-> I think these lines must be there. Am I wrong?
+Removed various checkpatch.sh warnings and errors. 
+Split patch by warning/error type.
+Corrected line wraps in emails.
 
-Correct. But once sta2x11 is converted to using the control framework, then
-these lines can be dropped since no one else is using this subdevice driver.
+Signed-off-by: Ben Minerds <puzzleduck@gmail.com>
+---
+ drivers/usb/serial/keyspan.c |  106 +++++++++++++++++++++---------------------
+ 1 files changed, 53 insertions(+), 53 deletions(-)
 
-> I think you are thinking at the "Inheriting Controls" section of the 
-> v4l2-controls.txt document. Right?
+diff --git a/drivers/usb/serial/keyspan.c b/drivers/usb/serial/keyspan.c
+index a1b9924..23cc8ec 100644
+--- a/drivers/usb/serial/keyspan.c
++++ b/drivers/usb/serial/keyspan.c
+@@ -135,7 +135,7 @@ module_usb_serial_driver(serial_drivers, keyspan_ids_combined);
+ static void keyspan_break_ctl(struct tty_struct *tty, int break_state)
+ {
+ 	struct usb_serial_port *port = tty->driver_data;
+-	struct keyspan_port_private 	*p_priv;
++	struct keyspan_port_private	*p_priv;
+ 
+ 	p_priv = usb_get_serial_port_data(port);
+ 
+@@ -152,9 +152,9 @@ static void keyspan_set_termios(struct tty_struct *tty,
+ 		struct usb_serial_port *port, struct ktermios *old_termios)
+ {
+ 	int				baud_rate, device_port;
+-	struct keyspan_port_private 	*p_priv;
++	struct keyspan_port_private	*p_priv;
+ 	const struct keyspan_device_details	*d_details;
+-	unsigned int 			cflag;
++	unsigned int			cflag;
+ 
+ 	p_priv = usb_get_serial_port_data(port);
+ 	d_details = p_priv->device_details;
+@@ -223,12 +223,12 @@ static int keyspan_tiocmset(struct tty_struct *tty,
+ static int keyspan_write(struct tty_struct *tty,
+ 	struct usb_serial_port *port, const unsigned char *buf, int count)
+ {
+-	struct keyspan_port_private 	*p_priv;
++	struct keyspan_port_private	*p_priv;
+ 	const struct keyspan_device_details	*d_details;
+ 	int				flip;
+-	int 				left, todo;
++	int				left, todo;
+ 	struct urb			*this_urb;
+-	int 				err, maxDataLen, dataOffset;
++	int				err, maxDataLen, dataOffset;
+ 
+ 	p_priv = usb_get_serial_port_data(port);
+ 	d_details = p_priv->device_details;
+@@ -299,7 +299,7 @@ static void	usa26_indat_callback(struct urb *urb)
+ 	int			endpoint;
+ 	struct usb_serial_port	*port;
+ 	struct tty_struct	*tty;
+-	unsigned char 		*data = urb->transfer_buffer;
++	unsigned char		*data = urb->transfer_buffer;
+ 	int status = urb->status;
+ 
+ 	endpoint = usb_pipeendpoint(urb->pipe);
+@@ -382,11 +382,11 @@ static void	usa26_outcont_callback(struct urb *urb)
+ 
+ static void	usa26_instat_callback(struct urb *urb)
+ {
+-	unsigned char 				*data = urb->transfer_buffer;
++	unsigned char				*data = urb->transfer_buffer;
+ 	struct keyspan_usa26_portStatusMessage	*msg;
+ 	struct usb_serial			*serial;
+ 	struct usb_serial_port			*port;
+-	struct keyspan_port_private	 	*p_priv;
++	struct keyspan_port_private		*p_priv;
+ 	struct tty_struct			*tty;
+ 	int old_dcd_state, err;
+ 	int status = urb->status;
+@@ -514,11 +514,11 @@ static void	usa28_outcont_callback(struct urb *urb)
+ static void	usa28_instat_callback(struct urb *urb)
+ {
+ 	int					err;
+-	unsigned char 				*data = urb->transfer_buffer;
++	unsigned char				*data = urb->transfer_buffer;
+ 	struct keyspan_usa28_portStatusMessage	*msg;
+ 	struct usb_serial			*serial;
+ 	struct usb_serial_port			*port;
+-	struct keyspan_port_private	 	*p_priv;
++	struct keyspan_port_private		*p_priv;
+ 	struct tty_struct			*tty;
+ 	int old_dcd_state;
+ 	int status = urb->status;
+@@ -602,11 +602,11 @@ static void	usa49_glocont_callback(struct urb *urb)
+ static void	usa49_instat_callback(struct urb *urb)
+ {
+ 	int					err;
+-	unsigned char 				*data = urb->transfer_buffer;
++	unsigned char				*data = urb->transfer_buffer;
+ 	struct keyspan_usa49_portStatusMessage	*msg;
+ 	struct usb_serial			*serial;
+ 	struct usb_serial_port			*port;
+-	struct keyspan_port_private	 	*p_priv;
++	struct keyspan_port_private		*p_priv;
+ 	int old_dcd_state;
+ 	int status = urb->status;
+ 
+@@ -670,7 +670,7 @@ static void	usa49_indat_callback(struct urb *urb)
+ 	int			endpoint;
+ 	struct usb_serial_port	*port;
+ 	struct tty_struct	*tty;
+-	unsigned char 		*data = urb->transfer_buffer;
++	unsigned char		*data = urb->transfer_buffer;
+ 	int status = urb->status;
+ 
+ 	endpoint = usb_pipeendpoint(urb->pipe);
+@@ -719,7 +719,7 @@ static void usa49wg_indat_callback(struct urb *urb)
+ 	struct usb_serial	*serial;
+ 	struct usb_serial_port	*port;
+ 	struct tty_struct	*tty;
+-	unsigned char 		*data = urb->transfer_buffer;
++	unsigned char		*data = urb->transfer_buffer;
+ 	int status = urb->status;
+ 
+ 	serial = urb->context;
+@@ -791,9 +791,9 @@ static void usa90_indat_callback(struct urb *urb)
+ 	int			i, err;
+ 	int			endpoint;
+ 	struct usb_serial_port	*port;
+-	struct keyspan_port_private	 	*p_priv;
++	struct keyspan_port_private		*p_priv;
+ 	struct tty_struct	*tty;
+-	unsigned char 		*data = urb->transfer_buffer;
++	unsigned char		*data = urb->transfer_buffer;
+ 	int status = urb->status;
+ 
+ 	endpoint = usb_pipeendpoint(urb->pipe);
+@@ -856,11 +856,11 @@ static void usa90_indat_callback(struct urb *urb)
+ 
+ static void	usa90_instat_callback(struct urb *urb)
+ {
+-	unsigned char 				*data = urb->transfer_buffer;
++	unsigned char				*data = urb->transfer_buffer;
+ 	struct keyspan_usa90_portStatusMessage	*msg;
+ 	struct usb_serial			*serial;
+ 	struct usb_serial_port			*port;
+-	struct keyspan_port_private	 	*p_priv;
++	struct keyspan_port_private		*p_priv;
+ 	struct tty_struct			*tty;
+ 	int old_dcd_state, err;
+ 	int status = urb->status;
+@@ -924,11 +924,11 @@ static void	usa90_outcont_callback(struct urb *urb)
+ static void	usa67_instat_callback(struct urb *urb)
+ {
+ 	int					err;
+-	unsigned char 				*data = urb->transfer_buffer;
++	unsigned char				*data = urb->transfer_buffer;
+ 	struct keyspan_usa67_portStatusMessage	*msg;
+ 	struct usb_serial			*serial;
+ 	struct usb_serial_port			*port;
+-	struct keyspan_port_private	 	*p_priv;
++	struct keyspan_port_private		*p_priv;
+ 	int old_dcd_state;
+ 	int status = urb->status;
+ 
+@@ -1035,9 +1035,9 @@ static int keyspan_write_room(struct tty_struct *tty)
+ 
+ static int keyspan_open(struct tty_struct *tty, struct usb_serial_port *port)
+ {
+-	struct keyspan_port_private 	*p_priv;
+-	struct keyspan_serial_private 	*s_priv;
+-	struct usb_serial 		*serial = port->serial;
++	struct keyspan_port_private	*p_priv;
++	struct keyspan_serial_private	*s_priv;
++	struct usb_serial		*serial = port->serial;
+ 	const struct keyspan_device_details	*d_details;
+ 	int				i, err;
+ 	int				baud_rate, device_port;
+@@ -1130,8 +1130,8 @@ static void keyspan_close(struct usb_serial_port *port)
+ {
+ 	int			i;
+ 	struct usb_serial	*serial = port->serial;
+-	struct keyspan_serial_private 	*s_priv;
+-	struct keyspan_port_private 	*p_priv;
++	struct keyspan_serial_private	*s_priv;
++	struct keyspan_port_private	*p_priv;
+ 
+ 	s_priv = usb_get_serial_data(serial);
+ 	p_priv = usb_get_serial_port_data(port);
+@@ -1167,8 +1167,8 @@ static void keyspan_close(struct usb_serial_port *port)
+ /* download the firmware to a pre-renumeration device */
+ static int keyspan_fake_startup(struct usb_serial *serial)
+ {
+-	int 				response;
+-	const struct ihex_binrec 	*record;
++	int				response;
++	const struct ihex_binrec	*record;
+ 	char				*fw_name;
+ 	const struct firmware		*fw;
+ 
+@@ -1398,7 +1398,7 @@ static struct callbacks {
+ static void keyspan_setup_urbs(struct usb_serial *serial)
+ {
+ 	int				i, j;
+-	struct keyspan_serial_private 	*s_priv;
++	struct keyspan_serial_private	*s_priv;
+ 	const struct keyspan_device_details	*d_details;
+ 	struct usb_serial_port		*port;
+ 	struct keyspan_port_private	*p_priv;
+@@ -1472,7 +1472,7 @@ static void keyspan_setup_urbs(struct usb_serial *serial)
+ static int keyspan_usa19_calc_baud(u32 baud_rate, u32 baudclk, u8 *rate_hi,
+ 				   u8 *rate_low, u8 *prescaler, int portnum)
+ {
+-	u32 	b16,	/* baud rate times 16 (actual rate used internally) */
++	u32	b16,	/* baud rate times 16 (actual rate used internally) */
+ 		div,	/* divisor */
+ 		cnt;	/* inverse of divisor (programmed into 8051) */
+ 
+@@ -1512,7 +1512,7 @@ static int keyspan_usa19_calc_baud(u32 baud_rate, u32 baudclk, u8 *rate_hi,
+ static int keyspan_usa19hs_calc_baud(u32 baud_rate, u32 baudclk, u8 *rate_hi,
+ 				   u8 *rate_low, u8 *prescaler, int portnum)
+ {
+-	u32 	b16,	/* baud rate times 16 (actual rate used internally) */
++	u32	b16,	/* baud rate times 16 (actual rate used internally) */
+ 			div;	/* divisor */
+ 
+ 	dbg("%s - %d.", __func__, baud_rate);
+@@ -1547,7 +1547,7 @@ static int keyspan_usa19hs_calc_baud(u32 baud_rate, u32 baudclk, u8 *rate_hi,
+ static int keyspan_usa19w_calc_baud(u32 baud_rate, u32 baudclk, u8 *rate_hi,
+ 				    u8 *rate_low, u8 *prescaler, int portnum)
+ {
+-	u32 	b16,	/* baud rate times 16 (actual rate used internally) */
++	u32	b16,	/* baud rate times 16 (actual rate used internally) */
+ 		clk,	/* clock with 13/8 prescaler */
+ 		div,	/* divisor using 13/8 prescaler */
+ 		res,	/* resulting baud rate using 13/8 prescaler */
+@@ -1610,7 +1610,7 @@ static int keyspan_usa19w_calc_baud(u32 baud_rate, u32 baudclk, u8 *rate_hi,
+ static int keyspan_usa28_calc_baud(u32 baud_rate, u32 baudclk, u8 *rate_hi,
+ 				    u8 *rate_low, u8 *prescaler, int portnum)
+ {
+-	u32 	b16,	/* baud rate times 16 (actual rate used internally) */
++	u32	b16,	/* baud rate times 16 (actual rate used internally) */
+ 		div,	/* divisor */
+ 		cnt;	/* inverse of divisor (programmed into 8051) */
+ 
+@@ -1656,12 +1656,12 @@ static int keyspan_usa26_send_setup(struct usb_serial *serial,
+ 				    int reset_port)
+ {
+ 	struct keyspan_usa26_portControlMessage	msg;
+-	struct keyspan_serial_private 		*s_priv;
+-	struct keyspan_port_private 		*p_priv;
++	struct keyspan_serial_private		*s_priv;
++	struct keyspan_port_private		*p_priv;
+ 	const struct keyspan_device_details	*d_details;
+-	int 					outcont_urb;
++	int					outcont_urb;
+ 	struct urb				*this_urb;
+-	int 					device_port, err;
++	int					device_port, err;
+ 
+ 	dbg("%s reset=%d", __func__, reset_port);
+ 
+@@ -1812,11 +1812,11 @@ static int keyspan_usa28_send_setup(struct usb_serial *serial,
+ 				    int reset_port)
+ {
+ 	struct keyspan_usa28_portControlMessage	msg;
+-	struct keyspan_serial_private	 	*s_priv;
+-	struct keyspan_port_private 		*p_priv;
++	struct keyspan_serial_private		*s_priv;
++	struct keyspan_port_private		*p_priv;
+ 	const struct keyspan_device_details	*d_details;
+ 	struct urb				*this_urb;
+-	int 					device_port, err;
++	int					device_port, err;
+ 
+ 	s_priv = usb_get_serial_data(serial);
+ 	p_priv = usb_get_serial_port_data(port);
+@@ -1936,12 +1936,12 @@ static int keyspan_usa49_send_setup(struct usb_serial *serial,
+ 				    int reset_port)
+ {
+ 	struct keyspan_usa49_portControlMessage	msg;
+-	struct usb_ctrlrequest 			*dr = NULL;
+-	struct keyspan_serial_private 		*s_priv;
+-	struct keyspan_port_private 		*p_priv;
++	struct usb_ctrlrequest			*dr = NULL;
++	struct keyspan_serial_private		*s_priv;
++	struct keyspan_port_private		*p_priv;
+ 	const struct keyspan_device_details	*d_details;
+ 	struct urb				*this_urb;
+-	int 					err, device_port;
++	int					err, device_port;
+ 
+ 	s_priv = usb_get_serial_data(serial);
+ 	p_priv = usb_get_serial_port_data(port);
+@@ -2122,11 +2122,11 @@ static int keyspan_usa90_send_setup(struct usb_serial *serial,
+ 				    int reset_port)
+ {
+ 	struct keyspan_usa90_portControlMessage	msg;
+-	struct keyspan_serial_private 		*s_priv;
+-	struct keyspan_port_private 		*p_priv;
++	struct keyspan_serial_private		*s_priv;
++	struct keyspan_port_private		*p_priv;
+ 	const struct keyspan_device_details	*d_details;
+ 	struct urb				*this_urb;
+-	int 					err;
++	int					err;
+ 	u8						prescaler;
+ 
+ 	s_priv = usb_get_serial_data(serial);
+@@ -2253,11 +2253,11 @@ static int keyspan_usa67_send_setup(struct usb_serial *serial,
+ 				    int reset_port)
+ {
+ 	struct keyspan_usa67_portControlMessage	msg;
+-	struct keyspan_serial_private 		*s_priv;
+-	struct keyspan_port_private 		*p_priv;
++	struct keyspan_serial_private		*s_priv;
++	struct keyspan_port_private		*p_priv;
+ 	const struct keyspan_device_details	*d_details;
+ 	struct urb				*this_urb;
+-	int 					err, device_port;
++	int					err, device_port;
+ 
+ 	s_priv = usb_get_serial_data(serial);
+ 	p_priv = usb_get_serial_port_data(port);
+@@ -2428,7 +2428,7 @@ static int keyspan_startup(struct usb_serial *serial)
+ {
+ 	int				i, err;
+ 	struct usb_serial_port		*port;
+-	struct keyspan_serial_private 	*s_priv;
++	struct keyspan_serial_private	*s_priv;
+ 	struct keyspan_port_private	*p_priv;
+ 	const struct keyspan_device_details	*d_details;
+ 
+@@ -2488,7 +2488,7 @@ static void keyspan_disconnect(struct usb_serial *serial)
+ {
+ 	int				i, j;
+ 	struct usb_serial_port		*port;
+-	struct keyspan_serial_private 	*s_priv;
++	struct keyspan_serial_private	*s_priv;
+ 	struct keyspan_port_private	*p_priv;
+ 
+ 	s_priv = usb_get_serial_data(serial);
+@@ -2528,7 +2528,7 @@ static void keyspan_release(struct usb_serial *serial)
+ {
+ 	int				i;
+ 	struct usb_serial_port		*port;
+-	struct keyspan_serial_private 	*s_priv;
++	struct keyspan_serial_private	*s_priv;
+ 
+ 	s_priv = usb_get_serial_data(serial);
+ 
+-- 
+1.7.2.5
 
-Right.
-
-Regards,
-
-	Hans
-
-> 
-> 
-> > > -	ret = i2c_smbus_write_byte_data(client, ADV7180_HUE_REG,
-> > > state->hue); +	ret = i2c_smbus_write_byte_data(client,
-> > > ADV7180_HUE_REG,
-> > > +					ADV7180_HUE_DEF);
-> > 
-> > It shouldn't be necessary to initialize the controls since
-> > v4l2_ctrl_handler_setup does that for you already.
-> 
-> Removed
-> 
-> 
