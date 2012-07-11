@@ -1,202 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932445Ab2GKDk3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 23:40:29 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:62556 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753638Ab2GKDk1 (ORCPT
+	id S1755049Ab2GKDpv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 23:45:51 -0400
+Received: from db3ehsobe002.messaging.microsoft.com ([213.199.154.140]:4904
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753737Ab2GKDpu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 23:40:27 -0400
+	Tue, 10 Jul 2012 23:45:50 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 2
+X-BigFish: VS2(z37d4lz98dI1432Izz1202hzz8275dhz2dh87h2a8h668h839h944hd25he96hf0ah107ah)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Wed, 11 Jul 2012 11:46:15 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: John Stultz <john.stultz@linaro.org>, <linux-kernel@vger.kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] alarmtimer: add .remove_dev hook to put device
+Message-ID: <20120711034613.GA16212@S2101-09.ap.freescale.net>
+References: <1341418387-10038-1-git-send-email-shawn.guo@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <4FFCEDDE.2080907@huawei.com>
-References: <CAErSpo70NtEJFaQmDtdTLkSB3fQRNy78juAQO-KbXeceZkunkw@mail.gmail.com>
- <1341935655-5381-1-git-send-email-jiang.liu@huawei.com> <1341935655-5381-6-git-send-email-jiang.liu@huawei.com>
- <CAErSpo7k3=nUSTR+n1iX0Rddv2FQm+HzcqnC5VHxh1JKUdoNAw@mail.gmail.com> <4FFCEDDE.2080907@huawei.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 10 Jul 2012 21:40:05 -0600
-Message-ID: <CAErSpo4JrgU2RHoNDWcm13otgdKVXuGxahE0pbuAD73nZvTZFQ@mail.gmail.com>
-Subject: Re: [RFC PATCH 05/14] PCI: add access functions for PCIe capabilities
- to hide PCIe spec differences
-To: Jiang Liu <jiang.liu@huawei.com>
-Cc: Jiang Liu <liuj97@gmail.com>, Don Dutile <ddutile@redhat.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        Keping Chen <chenkeping@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1341418387-10038-1-git-send-email-shawn.guo@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 10, 2012 at 9:07 PM, Jiang Liu <jiang.liu@huawei.com> wrote:
-> On 2012-7-11 2:35, Bjorn Helgaas wrote:
->>> diff --git a/drivers/pci/access.c b/drivers/pci/access.c
->>> index ba91a7e..80ae022 100644
->>> --- a/drivers/pci/access.c
->>> +++ b/drivers/pci/access.c
->>> @@ -469,3 +469,91 @@ void pci_cfg_access_unlock(struct pci_dev *dev)
->>>         raw_spin_unlock_irqrestore(&pci_lock, flags);
->>>  }
->>>  EXPORT_SYMBOL_GPL(pci_cfg_access_unlock);
->>> +
->>> +static int
->>> +pci_pcie_cap_get_offset(struct pci_dev *dev, int where, size_t sz)
->>> +{
->>> +       bool valid;
->>> +
->>> +       if (!pci_is_pcie(dev))
->>> +               return -EINVAL;
->>> +       if (where & (sz - 1))
->>> +               return -EINVAL;
->>> +
->>> +       if (where < 0)
->>> +               valid = false;
->>> +       else if (where < PCI_EXP_DEVCAP)
->>> +               valid = true;
->>> +       else if (where < PCI_EXP_LNKCAP)
->>> +               valid = pci_pcie_cap_has_devctl(dev);
->>> +       else if (where < PCI_EXP_SLTCAP)
->>> +               valid = pci_pcie_cap_has_lnkctl(dev);
->>> +       else if (where < PCI_EXP_RTCTL)
->>> +               valid = pci_pcie_cap_has_sltctl(dev);
->>> +       else if (where < PCI_EXP_DEVCAP2)
->>> +               valid = pci_pcie_cap_has_rtctl(dev);
->>> +       else if (where < PCI_EXP_CAP2_SIZE)
->>> +               valid = pci_pcie_cap_has_cap2(dev);
->>> +       else
->>> +               valid = false;
->>> +
->>> +       return valid ? where + pci_pcie_cap(dev) : -EINVAL;
->>> +}
->>> +
->>> +int pci_pcie_cap_read_word(struct pci_dev *dev, int where, u16 *valp)
->>> +{
->>> +       *valp = 0;
->>> +       where = pci_pcie_cap_get_offset(dev, where, sizeof(u16));
->>
->> This is a really slick factorization; I like it much better than my
->> proposal.  I would like it even *better* if it read something like
->> this:
->>
->>     bool implemented;
->>
->>     *valp = 0;
->>     if (!pci_is_pcie(dev) || where & 1)
->>         return -EINVAL;
->>
->>     implemented = pci_pcie_cap_implemented(dev, where);
->>     if (implemented)
->>         return pci_read_config_word(dev, pci_pcie_cap(dev) + where, valp);
->>
->>     if (pci_is_pcie(dev) && where == PCI_EXP_SLTSTA ...
->>
->> because I think it's useful to have the "pos + where" visual pattern
->> in the pci_read_config_word() arguments.
-> Sure, for better readability.
->
->>
->>> +       if (where >= 0)
->>> +               return pci_read_config_word(dev, where, valp);
->>> +
->>> +       if (pci_is_pcie(dev) && where == PCI_EXP_SLTSTA &&
->>> +           pci_pcie_type(dev) == PCI_EXP_TYPE_DOWNSTREAM)
->>> +               *valp = PCI_EXP_SLTSTA_PDS;
->>
->> I think we should be returning success in this case (SLTSTA for
->> downstream port).  In fact, I think we should return success even when
->> we're emulating the read of an unimplemented register from a v1
->> capability.  The caller should not be aware at all that there is a
->> difference between v1 and v2 capabilities.
->>
->> I'd put the spec reference here rather than in read_dword(), since
->> SLTSTA is a u16 and this is the natural way to read it.  Then maybe a
->> short comment in read_dword() below.
-> Good point. Return success when reading unimplemented registeres, that
-> may simplify code. For we still should return -EINVAL when writing
-> unimplemented registers, right?
+Hi John,
 
-Yeah, I guess it's OK to return -EINVAL when *writing* to an
-unimplemented register.  Hopefully the caller is structured such that
-we don't even try to write in that case.  It'd be interesting to audit
-the callers and explore that, but I haven't done that.
+Is this patch a valid fix or just a noise?
 
->>> +EXPORT_SYMBOL(pci_pcie_cap_write_dword);
->>> diff --git a/include/linux/pci.h b/include/linux/pci.h
->>> index 346b2d9..78767b2 100644
->>> --- a/include/linux/pci.h
->>> +++ b/include/linux/pci.h
->>> @@ -1703,6 +1703,11 @@ static inline bool pci_pcie_cap_has_rtctl(const struct pci_dev *pdev)
->>>                type == PCI_EXP_TYPE_RC_EC;
->>>  }
->>>
->>> +extern int pci_pcie_cap_read_word(struct pci_dev *dev, int where, u16 *valp);
->>> +extern int pci_pcie_cap_read_dword(struct pci_dev *dev, int where, u32 *valp);
->>> +extern int pci_pcie_cap_write_word(struct pci_dev *dev, int where, u16 val);
->>> +extern int pci_pcie_cap_write_dword(struct pci_dev *dev, int where, u32 val);
->>
->> You don't need the "extern" here (and I think you'll probably remove
->> these altogether, see below).
->>
->>> +
->>>  void pci_request_acs(void);
->>>  bool pci_acs_enabled(struct pci_dev *pdev, u16 acs_flags);
->>>  bool pci_acs_path_enabled(struct pci_dev *start,
->>> @@ -1843,5 +1848,10 @@ static inline struct eeh_dev *pci_dev_to_eeh_dev(struct pci_dev *pdev)
->>>   */
->>>  struct pci_dev *pci_find_upstream_pcie_bridge(struct pci_dev *pdev);
->>>
->>> +int pci_pcie_capability_read_word(struct pci_dev *dev, int where, u16 *val);
->>> +int pci_pcie_capability_read_dword(struct pci_dev *dev, int where, u32 *val);
->>> +int pci_pcie_capability_write_word(struct pci_dev *dev, int where, u16 val);
->>> +int pci_pcie_capability_write_dword(struct pci_dev *dev, int where, u32 val);
->>
->> There's some confusion here: pci_pcie_cap_* versus
->> pci_pcie_capability_*.  I think you only need one set, and I prefer
->> pci_pcie_capability_* to follow the example of
->> pci_bus_find_capability().
-> The above confusion was caused by a dirty merge.
->
->>
->>> +
->>>  #endif /* __KERNEL__ */
->>>  #endif /* LINUX_PCI_H */
->>> diff --git a/include/linux/pci_regs.h b/include/linux/pci_regs.h
->>> index 53274bf..ac60e22 100644
->>> --- a/include/linux/pci_regs.h
->>> +++ b/include/linux/pci_regs.h
->>> @@ -542,9 +542,24 @@
->>>  #define  PCI_EXP_OBFF_MSGA_EN  0x2000  /* OBFF enable with Message type A */
->>>  #define  PCI_EXP_OBFF_MSGB_EN  0x4000  /* OBFF enable with Message type B */
->>>  #define  PCI_EXP_OBFF_WAKE_EN  0x6000  /* OBFF using WAKE# signaling */
->>> -#define PCI_CAP_EXP_ENDPOINT_SIZEOF_V2 44      /* v2 endpoints end here */
->>> +#define PCI_EXP_DEVSTA2                42      /* Device Status 2 */
->>> +#define PCI_CAP_EXP_ENDPOINT_SIZEOF_V2 44 /* v2 endpoints end here */
->>> +#define PCI_EXP_LNKCAP2                44      /* Link Capabilities 2 */
->>>  #define PCI_EXP_LNKCTL2                48      /* Link Control 2 */
->>> -#define PCI_EXP_SLTCTL2                56      /* Slot Control 2 */
->>> +#define  PCI_EXP_LNKCTL2_TLS   0x0f    /* Target Link Speed */
->>> +#define  PCI_EXP_LNKCTL2_EC    0x10    /* Enter Compliance */
->>> +#define  PCI_EXP_LNKCTL2_HASD  0x20    /* Hardware Autonomous Speed Disable */
->>> +#define  PCI_EXP_LNKCTL2_SD    0x40    /* Selectable De-emphasis */
->>> +#define  PCI_EXP_LNKCTL2_TM    0x380   /* Transmit Margin */
->>> +#define  PCI_EXP_LNKCTL2_EMC   0x400   /* Enter Modified Compliance */
->>> +#define  PCI_EXP_LNKCTL2_CS    0x800   /* Compliance SOS */
->>> +#define  PCI_EXP_LNKCTL2_CD    0x1000  /* Compliance De-emphasis */
->>> +#define PCI_EXP_LNKSTA2                50      /* Link Status 2 */
->>> +#define  PCI_EXP_LNKSTA2_CDL   0x01    /* Current De-emphasis Level */
->>> +#define PCI_EXP_SLTCAP2                52      /* Slot Capabilities 2 */
->>> +#define PCI_EXP_SLTCTL2                56      /* Slot Control 2*/
->>> +#define PCI_EXP_SLTSTA2                58      /* Slot Status 2*/
->>> +#define        PCI_EXP_CAP2_SIZE       60
->>
->> Most of these changes look unrelated to the current patch.  They
->> should be moved to a patch that uses the symbols you're adding.
-> Good point, create on demand:)
->
-> Thanks!
-> Gerry
->
+Regards,
+Shawn
+
+On Thu, Jul 05, 2012 at 12:13:07AM +0800, Shawn Guo wrote:
+> The following is a test sequence that installs a rtc module, remove it
+> and installs it again.
+> 
+> $ insmod rtc-snvs.ko
+> snvs_rtc 20cc034.snvs-rtc-lp: rtc core: registered 20cc034.snvs-rtc-lp as rtc0
+> $ hwclock
+> Thu Jul  5 08:53:35 2012  0.000000 seconds
+> $ rmmod rtc-snvs.ko
+> $ insmod rtc-snvs.ko
+> snvs_rtc 20cc034.snvs-rtc-lp: rtc core: registered 20cc034.snvs-rtc-lp as rtc1
+> $ hwclock
+> hwclock: can't open '/dev/misc/rtc': No such file or directory
+> $
+> 
+> The device is registered as rtc0 for the first time insmod, while it
+> becomes rtc1 with the later insmod.
+> 
+> It's root caused by alarmtimer which never puts the device even when
+> the rtc is removed.  The patch adds a .remove_dev hook to have device
+> properly put, so that above insmod/rmmod sequence can the rtc device
+> registered in a consistent behavior.
+> 
+> Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+> ---
+>  kernel/time/alarmtimer.c |   12 ++++++++++++
+>  1 files changed, 12 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/time/alarmtimer.c b/kernel/time/alarmtimer.c
+> index aa27d39..39e8773 100644
+> --- a/kernel/time/alarmtimer.c
+> +++ b/kernel/time/alarmtimer.c
+> @@ -96,6 +96,17 @@ static int alarmtimer_rtc_add_device(struct device *dev,
+>  	return 0;
+>  }
+>  
+> +static void alarmtimer_rtc_remove_device(struct device *dev,
+> +				struct class_interface *class_intf)
+> +{
+> +	unsigned long flags;
+> +
+> +	spin_lock_irqsave(&rtcdev_lock, flags);
+> +	rtcdev = NULL;
+> +	put_device(dev);
+> +	spin_unlock_irqrestore(&rtcdev_lock, flags);
+> +}
+> +
+>  static inline void alarmtimer_rtc_timer_init(void)
+>  {
+>  	rtc_timer_init(&rtctimer, NULL, NULL);
+> @@ -103,6 +114,7 @@ static inline void alarmtimer_rtc_timer_init(void)
+>  
+>  static struct class_interface alarmtimer_rtc_interface = {
+>  	.add_dev = &alarmtimer_rtc_add_device,
+> +	.remove_dev = &alarmtimer_rtc_remove_device,
+>  };
+>  
+>  static int alarmtimer_rtc_interface_setup(void)
+> -- 
+> 1.7.5.4
+> 
+> 
+
