@@ -1,139 +1,409 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932845Ab2GKP0S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 11:26:18 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33874 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932826Ab2GKP0Q (ORCPT
+	id S932867Ab2GKP0g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 11:26:36 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51365 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932847Ab2GKP0a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 11:26:16 -0400
-X-Sasl-enc: fuCk+bYuOZQtmCBrKHvaITUv5sU1k7/hYdbY01SM5xGU 1342020375
-Date: Wed, 11 Jul 2012 08:26:14 -0700
-From: Greg KH <greg@kroah.com>
-To: Igor Seletskiy <iseletsk@cloudlinux.com>
-Cc: fa.linux.kernel@googlegroups.com, Alex Lyashkov <umka@cloudlinux.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, linux-kernel@vger.kernel.org,
-        rusty@rustcorp.com.au
-Subject: Re: [PATCH] Taint kernel when lve module is loaded
-Message-ID: <20120711152614.GA31086@kroah.com>
-References: <fa.WTHIDfGYg3w7zn9rxlDshNfnPtI@ifi.uio.no>
- <fa.lxvUw3/2JBxq1zvQzI4sJk8pEOQ@ifi.uio.no>
- <fa.Fdbx7aeDSXKMF/2ajG0IUf0AAKs@ifi.uio.no>
- <fa.TAjdtaR/BMl+PZAWwtAit9BevAo@ifi.uio.no>
- <fa.cm6Pl6ITE2qRnrdz/DXqaOSgExs@ifi.uio.no>
- <8dc680a1-4a03-462d-b381-bf5c1470aa7e@googlegroups.com>
- <20120624063518.GA11266@kroah.com>
- <CA+-XxSG8mpERvUwKgG4M8=ZuSd3P+ZYfw5mL3R4zLTAYGPW3Mw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+-XxSG8mpERvUwKgG4M8=ZuSd3P+ZYfw5mL3R4zLTAYGPW3Mw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 11 Jul 2012 11:26:30 -0400
+From: Federico Vaga <federico.vaga@gmail.com>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Hans Verkuil <hverkuil@xs4all.nl>,
+        Federico Vaga <federico.vaga@gmail.com>
+Subject: [PATCH] [media] adv7180.c: convert to v4l2 control framework
+Date: Wed, 11 Jul 2012 17:29:33 +0200
+Message-Id: <1342020573-22536-1-git-send-email-federico.vaga@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 07, 2012 at 11:19:53PM -0400, Igor Seletskiy wrote:
-> Greg,
-> 
-> I hope you don't mind -- I will respond to few other things / other question
-> that were raised in this thread one email 
-> 1. Source code for RPMs is out our source RPM repositories.
-> Here is one for CL6 http://repo.cloudlinux.com/cloudlinux/6.3/updates-testing/SRPMS/
-> And here is one for CL5 http://repo.cloudlinux.com/cloudlinux/5.8/updates-testing/SRPMS/
-> We might be missing some older versions. If someone needs them -- please, give
-> exact version.
+Signed-off-by: Federico Vaga <federico.vaga@gmail.com>
+---
+ drivers/media/video/adv7180.c |  235 +++++++++++++++--------------------------
+ 1 file changed, 84 insertions(+), 151 deletions(-)
 
-Thank you for publishing this.  Unfortunatly your source code is still
-lying about the license of the kernel module to the kernel, and as such,
-I'm totally confused.  The package says it is covered under the
-"CloudLinux Commercial License" which you include in the
-lve-kmod-1.1-9.2.4.el6.src.rpm package, yet the code says it is released
-under the GPL with the following lines:
-	//MODULE_LICENSE("CloudLinux Commercial License");
-	/* Temporary solution to use GPL-only symbol 'put_fs_struct' */
-	MODULE_LICENSE("GPL");
-and then you include the GPL v3 license in the tarball as well, which
-makes no sense at all as the v3 license isn't compatible with the
-kernel's v2 license, as you know.
+diff --git a/drivers/media/video/adv7180.c b/drivers/media/video/adv7180.c
+index 174bffa..07bb550 100644
+--- a/drivers/media/video/adv7180.c
++++ b/drivers/media/video/adv7180.c
+@@ -26,11 +26,10 @@
+ #include <media/v4l2-ioctl.h>
+ #include <linux/videodev2.h>
+ #include <media/v4l2-device.h>
++#include <media/v4l2-ctrls.h>
+ #include <media/v4l2-chip-ident.h>
+ #include <linux/mutex.h>
+ 
+-#define DRIVER_NAME "adv7180"
+-
+ #define ADV7180_INPUT_CONTROL_REG			0x00
+ #define ADV7180_INPUT_CONTROL_AD_PAL_BG_NTSC_J_SECAM	0x00
+ #define ADV7180_INPUT_CONTROL_AD_PAL_BG_NTSC_J_SECAM_PED 0x10
+@@ -55,21 +54,21 @@
+ 
+ #define ADV7180_AUTODETECT_ENABLE_REG			0x07
+ #define ADV7180_AUTODETECT_DEFAULT			0x7f
+-
++/* Contrast */
+ #define ADV7180_CON_REG		0x08	/*Unsigned */
+-#define CON_REG_MIN		0
+-#define CON_REG_DEF		128
+-#define CON_REG_MAX		255
+-
++#define ADV7180_CON_MIN		0
++#define ADV7180_CON_DEF		128
++#define ADV7180_CON_MAX		255
++/* Brightness*/
+ #define ADV7180_BRI_REG		0x0a	/*Signed */
+-#define BRI_REG_MIN		-128
+-#define BRI_REG_DEF		0
+-#define BRI_REG_MAX		127
+-
++#define ADV7180_BRI_MIN		-128
++#define ADV7180_BRI_DEF		0
++#define ADV7180_BRI_MAX		127
++/* Hue */
+ #define ADV7180_HUE_REG		0x0b	/*Signed, inverted */
+-#define HUE_REG_MIN		-127
+-#define HUE_REG_DEF		0
+-#define HUE_REG_MAX		128
++#define ADV7180_HUE_MIN		-127
++#define ADV7180_HUE_DEF		0
++#define ADV7180_HUE_MAX		128
+ 
+ #define ADV7180_ADI_CTRL_REG				0x0e
+ #define ADV7180_ADI_CTRL_IRQ_SPACE			0x20
+@@ -98,12 +97,12 @@
+ #define ADV7180_ICONF1_ACTIVE_LOW	0x01
+ #define ADV7180_ICONF1_PSYNC_ONLY	0x10
+ #define ADV7180_ICONF1_ACTIVE_TO_CLR	0xC0
+-
++/* Saturation */
+ #define ADV7180_SD_SAT_CB_REG	0xe3	/*Unsigned */
+ #define ADV7180_SD_SAT_CR_REG	0xe4	/*Unsigned */
+-#define SAT_REG_MIN		0
+-#define SAT_REG_DEF		128
+-#define SAT_REG_MAX		255
++#define ADV7180_SAT_MIN		0
++#define ADV7180_SAT_DEF		128
++#define ADV7180_SAT_MAX		255
+ 
+ #define ADV7180_IRQ1_LOCK	0x01
+ #define ADV7180_IRQ1_UNLOCK	0x02
+@@ -121,18 +120,18 @@
+ #define ADV7180_NTSC_V_BIT_END_MANUAL_NVEND	0x4F
+ 
+ struct adv7180_state {
++	struct v4l2_ctrl_handler ctrl_hdl;
+ 	struct v4l2_subdev	sd;
+ 	struct work_struct	work;
+ 	struct mutex		mutex; /* mutual excl. when accessing chip */
+ 	int			irq;
+ 	v4l2_std_id		curr_norm;
+ 	bool			autodetect;
+-	s8			brightness;
+-	s16			hue;
+-	u8			contrast;
+-	u8			saturation;
+ 	u8			input;
+ };
++#define to_adv7180_sd(_ctrl) &container_of(_ctrl->handler,		\
++					   struct adv7180_state,	\
++					   ctrl_hdl)->sd
+ 
+ static v4l2_std_id adv7180_std_to_v4l2(u8 status1)
+ {
+@@ -237,7 +236,7 @@ static int adv7180_s_routing(struct v4l2_subdev *sd, u32 input,
+ 	if (ret)
+ 		return ret;
+ 
+-	/*We cannot discriminate between LQFP and 40-pin LFCSP, so accept
++	/* We cannot discriminate between LQFP and 40-pin LFCSP, so accept
+ 	 * all inputs and let the card driver take care of validation
+ 	 */
+ 	if ((input & ADV7180_INPUT_CONTROL_INSEL_MASK) != input)
+@@ -316,117 +315,39 @@ out:
+ 	return ret;
+ }
+ 
+-static int adv7180_queryctrl(struct v4l2_subdev *sd, struct v4l2_queryctrl *qc)
+-{
+-	switch (qc->id) {
+-	case V4L2_CID_BRIGHTNESS:
+-		return v4l2_ctrl_query_fill(qc, BRI_REG_MIN, BRI_REG_MAX,
+-					    1, BRI_REG_DEF);
+-	case V4L2_CID_HUE:
+-		return v4l2_ctrl_query_fill(qc, HUE_REG_MIN, HUE_REG_MAX,
+-					    1, HUE_REG_DEF);
+-	case V4L2_CID_CONTRAST:
+-		return v4l2_ctrl_query_fill(qc, CON_REG_MIN, CON_REG_MAX,
+-					    1, CON_REG_DEF);
+-	case V4L2_CID_SATURATION:
+-		return v4l2_ctrl_query_fill(qc, SAT_REG_MIN, SAT_REG_MAX,
+-					    1, SAT_REG_DEF);
+-	default:
+-		break;
+-	}
+-
+-	return -EINVAL;
+-}
+-
+-static int adv7180_g_ctrl(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
+-{
+-	struct adv7180_state *state = to_state(sd);
+-	int ret = mutex_lock_interruptible(&state->mutex);
+-	if (ret)
+-		return ret;
+-
+-	switch (ctrl->id) {
+-	case V4L2_CID_BRIGHTNESS:
+-		ctrl->value = state->brightness;
+-		break;
+-	case V4L2_CID_HUE:
+-		ctrl->value = state->hue;
+-		break;
+-	case V4L2_CID_CONTRAST:
+-		ctrl->value = state->contrast;
+-		break;
+-	case V4L2_CID_SATURATION:
+-		ctrl->value = state->saturation;
+-		break;
+-	default:
+-		ret = -EINVAL;
+-	}
+-
+-	mutex_unlock(&state->mutex);
+-	return ret;
+-}
+-
+-static int adv7180_s_ctrl(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
++static int adv7180_s_ctrl(struct v4l2_ctrl *ctrl)
+ {
++	struct v4l2_subdev *sd = to_adv7180_sd(ctrl);
+ 	struct adv7180_state *state = to_state(sd);
+ 	struct i2c_client *client = v4l2_get_subdevdata(sd);
+ 	int ret = mutex_lock_interruptible(&state->mutex);
++	int val;
++
+ 	if (ret)
+ 		return ret;
+-
++	val = ctrl->val;
+ 	switch (ctrl->id) {
+ 	case V4L2_CID_BRIGHTNESS:
+-		if ((ctrl->value > BRI_REG_MAX)
+-		    || (ctrl->value < BRI_REG_MIN)) {
+-			ret = -ERANGE;
+-			break;
+-		}
+-		state->brightness = ctrl->value;
+-		ret = i2c_smbus_write_byte_data(client,
+-						ADV7180_BRI_REG,
+-						state->brightness);
++		ret = i2c_smbus_write_byte_data(client, ADV7180_BRI_REG, val);
+ 		break;
+ 	case V4L2_CID_HUE:
+-		if ((ctrl->value > HUE_REG_MAX)
+-		    || (ctrl->value < HUE_REG_MIN)) {
+-			ret = -ERANGE;
+-			break;
+-		}
+-		state->hue = ctrl->value;
+ 		/*Hue is inverted according to HSL chart */
+-		ret = i2c_smbus_write_byte_data(client,
+-						ADV7180_HUE_REG, -state->hue);
++		ret = i2c_smbus_write_byte_data(client, ADV7180_HUE_REG, -val);
+ 		break;
+ 	case V4L2_CID_CONTRAST:
+-		if ((ctrl->value > CON_REG_MAX)
+-		    || (ctrl->value < CON_REG_MIN)) {
+-			ret = -ERANGE;
+-			break;
+-		}
+-		state->contrast = ctrl->value;
+-		ret = i2c_smbus_write_byte_data(client,
+-						ADV7180_CON_REG,
+-						state->contrast);
++		ret = i2c_smbus_write_byte_data(client, ADV7180_CON_REG, val);
+ 		break;
+ 	case V4L2_CID_SATURATION:
+-		if ((ctrl->value > SAT_REG_MAX)
+-		    || (ctrl->value < SAT_REG_MIN)) {
+-			ret = -ERANGE;
+-			break;
+-		}
+ 		/*
+ 		 *This could be V4L2_CID_BLUE_BALANCE/V4L2_CID_RED_BALANCE
+ 		 *Let's not confuse the user, everybody understands saturation
+ 		 */
+-		state->saturation = ctrl->value;
+-		ret = i2c_smbus_write_byte_data(client,
+-						ADV7180_SD_SAT_CB_REG,
+-						state->saturation);
++		ret = i2c_smbus_write_byte_data(client, ADV7180_SD_SAT_CB_REG,
++						val);
+ 		if (ret < 0)
+ 			break;
+-		ret = i2c_smbus_write_byte_data(client,
+-						ADV7180_SD_SAT_CR_REG,
+-						state->saturation);
++		ret = i2c_smbus_write_byte_data(client, ADV7180_SD_SAT_CR_REG,
++						val);
+ 		break;
+ 	default:
+ 		ret = -EINVAL;
+@@ -436,6 +357,42 @@ static int adv7180_s_ctrl(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
+ 	return ret;
+ }
+ 
++static const struct v4l2_ctrl_ops adv7180_ctrl_ops = {
++	.s_ctrl = adv7180_s_ctrl,
++};
++
++static int adv7180_init_controls(struct adv7180_state *state)
++{
++	v4l2_ctrl_handler_init(&state->ctrl_hdl, 4);
++
++	v4l2_ctrl_new_std(&state->ctrl_hdl, &adv7180_ctrl_ops,
++			  V4L2_CID_BRIGHTNESS, ADV7180_BRI_MIN,
++			  ADV7180_BRI_MAX, 1, ADV7180_BRI_DEF);
++	v4l2_ctrl_new_std(&state->ctrl_hdl, &adv7180_ctrl_ops,
++			  V4L2_CID_CONTRAST, ADV7180_CON_MIN,
++			  ADV7180_CON_MAX, 1, ADV7180_CON_DEF);
++	v4l2_ctrl_new_std(&state->ctrl_hdl, &adv7180_ctrl_ops,
++			  V4L2_CID_SATURATION, ADV7180_SAT_MIN,
++			  ADV7180_SAT_MAX, 1, ADV7180_SAT_DEF);
++	v4l2_ctrl_new_std(&state->ctrl_hdl, &adv7180_ctrl_ops,
++			  V4L2_CID_HUE, ADV7180_HUE_MIN,
++			  ADV7180_HUE_MAX, 1, ADV7180_HUE_DEF);
++	state->sd.ctrl_handler = &state->ctrl_hdl;
++	if (state->ctrl_hdl.error) {
++		int err = state->ctrl_hdl.error;
++
++		v4l2_ctrl_handler_free(&state->ctrl_hdl);
++		return err;
++	}
++	v4l2_ctrl_handler_setup(&state->ctrl_hdl);
++
++	return 0;
++}
++static void adv7180_exit_controls(struct adv7180_state *state)
++{
++	v4l2_ctrl_handler_free(&state->ctrl_hdl);
++}
++
+ static const struct v4l2_subdev_video_ops adv7180_video_ops = {
+ 	.querystd = adv7180_querystd,
+ 	.g_input_status = adv7180_g_input_status,
+@@ -445,9 +402,9 @@ static const struct v4l2_subdev_video_ops adv7180_video_ops = {
+ static const struct v4l2_subdev_core_ops adv7180_core_ops = {
+ 	.g_chip_ident = adv7180_g_chip_ident,
+ 	.s_std = adv7180_s_std,
+-	.queryctrl = adv7180_queryctrl,
+-	.g_ctrl = adv7180_g_ctrl,
+-	.s_ctrl = adv7180_s_ctrl,
++	.queryctrl = v4l2_subdev_queryctrl,
++	.g_ctrl = v4l2_subdev_g_ctrl,
++	.s_ctrl = v4l2_subdev_s_ctrl,
+ };
+ 
+ static const struct v4l2_subdev_ops adv7180_ops = {
+@@ -539,7 +496,7 @@ static int init_device(struct i2c_client *client, struct adv7180_state *state)
+ 
+ 	/* register for interrupts */
+ 	if (state->irq > 0) {
+-		ret = request_irq(state->irq, adv7180_irq, 0, DRIVER_NAME,
++		ret = request_irq(state->irq, adv7180_irq, 0, KBUILD_MODNAME,
+ 				  state);
+ 		if (ret)
+ 			return ret;
+@@ -580,31 +537,6 @@ static int init_device(struct i2c_client *client, struct adv7180_state *state)
+ 			return ret;
+ 	}
+ 
+-	/*Set default value for controls */
+-	ret = i2c_smbus_write_byte_data(client, ADV7180_BRI_REG,
+-					state->brightness);
+-	if (ret < 0)
+-		return ret;
+-
+-	ret = i2c_smbus_write_byte_data(client, ADV7180_HUE_REG, state->hue);
+-	if (ret < 0)
+-		return ret;
+-
+-	ret = i2c_smbus_write_byte_data(client, ADV7180_CON_REG,
+-					state->contrast);
+-	if (ret < 0)
+-		return ret;
+-
+-	ret = i2c_smbus_write_byte_data(client, ADV7180_SD_SAT_CB_REG,
+-					state->saturation);
+-	if (ret < 0)
+-		return ret;
+-
+-	ret = i2c_smbus_write_byte_data(client, ADV7180_SD_SAT_CR_REG,
+-					state->saturation);
+-	if (ret < 0)
+-		return ret;
+-
+ 	return 0;
+ }
+ 
+@@ -632,25 +564,26 @@ static __devinit int adv7180_probe(struct i2c_client *client,
+ 	INIT_WORK(&state->work, adv7180_work);
+ 	mutex_init(&state->mutex);
+ 	state->autodetect = true;
+-	state->brightness = BRI_REG_DEF;
+-	state->hue = HUE_REG_DEF;
+-	state->contrast = CON_REG_DEF;
+-	state->saturation = SAT_REG_DEF;
+ 	state->input = 0;
+ 	sd = &state->sd;
+ 	v4l2_i2c_subdev_init(sd, client, &adv7180_ops);
+ 
+-	ret = init_device(client, state);
+-	if (0 != ret)
++	ret = adv7180_init_controls(state);
++	if (ret)
+ 		goto err_unreg_subdev;
++	ret = init_device(client, state);
++	if (ret)
++		goto err_free_ctrl;
+ 	return 0;
+ 
++err_free_ctrl:
++	adv7180_exit_controls(state);
+ err_unreg_subdev:
+ 	mutex_destroy(&state->mutex);
+ 	v4l2_device_unregister_subdev(sd);
+ 	kfree(state);
+ err:
+-	printk(KERN_ERR DRIVER_NAME ": Failed to probe: %d\n", ret);
++	printk(KERN_ERR KBUILD_MODNAME ": Failed to probe: %d\n", ret);
+ 	return ret;
+ }
+ 
+@@ -678,7 +611,7 @@ static __devexit int adv7180_remove(struct i2c_client *client)
+ }
+ 
+ static const struct i2c_device_id adv7180_id[] = {
+-	{DRIVER_NAME, 0},
++	{KBUILD_MODNAME, 0},
+ 	{},
+ };
+ 
+@@ -716,7 +649,7 @@ MODULE_DEVICE_TABLE(i2c, adv7180_id);
+ static struct i2c_driver adv7180_driver = {
+ 	.driver = {
+ 		   .owner = THIS_MODULE,
+-		   .name = DRIVER_NAME,
++		   .name = KBUILD_MODNAME,
+ 		   },
+ 	.probe = adv7180_probe,
+ 	.remove = __devexit_p(adv7180_remove),
+-- 
+1.7.10.4
 
-So, what is the real license for the code you have published here?
-
-> 2. The delay was due to a few things:
-> a) We released many versions of RPMs for lve-kmod -- and it was my
-> understanding that to comply with GPL, I have to release a source code for each
-> version.
-
-Yes, which should come directly from the tool you used to generate those
-rpms, you had to create them somehow, right?  It should be simple to
-just put them on the site as well, as you do have them.
-
-> b) I didn't know the actual size of the work involved, and I wanted to make
-> sure I can deliver in time specified.
-
-There should not be any new work, it's just posting the same source you
-used to build the binaries from.
-
-> c) We had planned several major releases & have to prepare for the HostingCon
-> in mid July which is stressing resources of our company as it is.
-
-I don't understand how that has any relvance to the delay of posting the
-code you already have.
-
-> 3. We did originally put .htaccess in pretty much every directory, but that
-> didn't work well, as it broke bunch of software. Right now we are putting those
-> files in all the directories that we consider as "sensitive", like:
-> /etc/httpd/conf/
-> /etc/valiases/
-> /etc/vdomainaliases
-> /etc/vfilters
-> etc...
-> And we give our users a way to add more directories. We know it is not perfect,
-> but we were protecting against real attacks happening at the moment.
-> Maybe we went overboard with trying to protect /proc & /sys -- I don't know.
-> Those were not targeted yet.
-> Good, long term solution would be correcting apache module. Yet, once again --
-> we don't control apache, and it is hard for us to push out new modules for
-> apache. It would probably take us 6 to 12 months to get it into the hands of
-> all our customers.
-> We do control kernel (not just kernel module) -- and could deliver some
-> protection right away.
-
-It's easier to change the kernel than a userspace package?  Something is
-really wrong with that model :)
-
-> 4. This brings us to the 3rd part. We change the kernel, and anyone using our
-> module also using our kernel. It just that regular kernel wouldn't work, and we
-> use slightly patched kernel from OpenVZ. 
-
-That's fine, nothing wrong with that.
-
-> 5. The reason we want to keep our LVE module closed source is due to the market
-> we serve.
-
-So you are saying that somehow the market drives you to violate the
-license of the product you are using to serve that market?  That seems
-very odd, and should have been considered before deciding to enter that
-market, right?
-
-That argument is "interesting" it sounds like you have made a business
-decision to assume this risk, which is fine.  But you do fully
-understand the risk involved here, right?  Hopefully your customers and
-investors also understand this, as it's a pretty huge risk to them as
-well.
-
-> 6. Once again, I want to re-iterate that even though we want to keep our module
-> closed source, we still want to play things right, and if we will have to
-> license anything as GPL -- we will. The issue with the module was internal
-> mis-communication -- that I hope is corrected.
-
-See the above license questions for why I don't think it is corrected.
-Also, I do feel you need to release your code under the GPL, as that is
-what you have told the kernel it is licensed under.  Please contact your
-lawyer if you have further questions about the license issues involved
-here, I'm sure they will be glad to straighten this out.
-
-thanks,
-
-greg k-h
