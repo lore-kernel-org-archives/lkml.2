@@ -1,63 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757578Ab2GKN2o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 09:28:44 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45245 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754965Ab2GKN2n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 09:28:43 -0400
-Date: Wed, 11 Jul 2012 14:28:41 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Krystian Garbaciak <krystian.garbaciak@diasemi.com>
-Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: Fix bug in regulator_mode_to_status() core
- function.
-Message-ID: <20120711132655.GG3938@opensource.wolfsonmicro.com>
-References: <201207111221.q6BCLW8L014872@sw-eng-lt-dc-vm2>
+	id S1757609Ab2GKN2s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 09:28:48 -0400
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:9538
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754965Ab2GKN2p convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 09:28:45 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -7
+X-BigFish: VS-7(zz98dI9371I542M1432Izz1202hzz8275dhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah107ahbe9i)
+From: Sethi Varun-B16395 <B16395@freescale.com>
+To: Joerg Roedel <joerg.roedel@amd.com>
+CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 2/7] iommu/amd: Implement DOMAIN_ATTR_GEOMETRY attribute
+Thread-Topic: [PATCH 2/7] iommu/amd: Implement DOMAIN_ATTR_GEOMETRY attribute
+Thread-Index: AQHNX1Lf1mZ3xwjNGEGZYEQuF0W4P5cj6ygQgABoMgD//73XsA==
+Date: Wed, 11 Jul 2012 13:28:40 +0000
+Message-ID: <C5ECD7A89D1DC44195F34B25E172658D13ABC3@039-SN2MPN1-013.039d.mgd.msft.net>
+References: <1342003763-8139-1-git-send-email-joerg.roedel@amd.com>
+ <1342003763-8139-3-git-send-email-joerg.roedel@amd.com>
+ <C5ECD7A89D1DC44195F34B25E172658D13AA64@039-SN2MPN1-013.039d.mgd.msft.net>
+ <20120711121708.GF25282@amd.com>
+In-Reply-To: <20120711121708.GF25282@amd.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [122.176.146.105]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="CEUtFxTsmBsHRLs3"
-Content-Disposition: inline
-In-Reply-To: <201207111221.q6BCLW8L014872@sw-eng-lt-dc-vm2>
-X-Cookie: If you can read this, you're too close.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---CEUtFxTsmBsHRLs3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 
-On Wed, Jul 11, 2012 at 01:10:01PM +0100, Krystian Garbaciak wrote:
-> Fix typo for case REGULATOR_STATUS_STANDBY -> REGULATOR_MODE_STANDBY.
-> For undefined mode, return REGULATOR_STATUS_ERROR (0 is not valid status).
+> -----Original Message-----
+> From: Joerg Roedel [mailto:joerg.roedel@amd.com]
+> Sent: Wednesday, July 11, 2012 5:47 PM
+> To: Sethi Varun-B16395
+> Cc: iommu@lists.linux-foundation.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH 2/7] iommu/amd: Implement DOMAIN_ATTR_GEOMETRY
+> attribute
+> 
+> Hi Sethi,
+> 
+> On Wed, Jul 11, 2012 at 11:47:39AM +0000, Sethi Varun-B16395 wrote:
+> > I am currently working on upstreaming the Freescale IOMMU driver. As
+> > discussed (with Scott Wood) a while back, this representation of the
+> > GEOMETRY attribute doesn't go well with our IOMMU implementation. Our
+> > representation of the geometry would be more complex and is certainly
+> > modifiable.  Our IOMMU allows for creating custom DMA mappings by
+> > defining a set of DMA sub windows within a given window. We need a
+> > mechanism for specifying the number of DMA subwindows as a part of the
+> > domain geometry. My suggestion would be to make the GEOMETRY attribute
+> > implementation dependent
+> 
+> Yeah, we had some discussions in the past and I came to the conclusion
+> that its best to wait for your code and decide then if and how to change
+> the interface to better suit your needs. The interface is not exposed to
+> userspace so we can easily change it.
+> 
+> People are waiting for this feature and I don't want to delay it further
+> unless it is absolutly necessary.
+The API call for setting domain attributes is an essential part of our implementation and
+GEOMETRY is a critical attribute for us. I am currently working on our driver and hopefully 
+should be able to submit it in the next two weeks. In my case I was planning on letting the
+geometry attribute be implementation dependent.
 
-This is deliberate.  It's not reporting an error, it's reporting an
-indeterminate status which is a different thing.
+-Varun
 
---CEUtFxTsmBsHRLs3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJP/X8nAAoJEBus8iNuMP3dFF0P/3of0bSCZbm00mEulO/z/LHO
-/leErSMgLvKbkMLf4Ln4N3W/yWZn8T/ppXAYCx8oZ0ObNX0/Pijq2mkw2+JSD0dk
-j6h92YPT8mgShJiWRRKnciF0u+5NAb9j5T3/GV/94J1O2ZLs0P+EBvTTU+Goqd6n
-ZwYlKuFOmjSYndfOekYbnxCXAOLB6aY3iVKLFz4wIk5fhqxrZxegBX4VjBw9JOLV
-xoYzM0yNK51ZzEJa5VbYqba3IAy6mx0EnfKAzOAdL7Pda51sS8wHTn3SEbcMFHNd
-s6+1lvqMec1CRCSAvovZRypuF7hyvm3HU6ldJT+8GKw8hKhBgZr3E00icuGCohY3
-T8vz7uhU1VKIAay5+eTVJkoB8cSZlk5mOPD8Iq66RooTNe1eB1OdaIUcQ9jUCaOM
-8pd1AIHJr9H/POytY5J70dsOtugVlt8CcSJOXYAszuaov/8fmKieU2Gwm9T9ZETy
-BMcde5mnE6OeZAKfECvUQ5IaWlzIbw48cgEkwVY1B5eVra9Yu7jh5K71t3+rMrhM
-p2azMQtvvVOmxch5dfTGwbtbaPHF6da2+rQlKEeJXkEvwH3HX9rfMwgCxHDyZIPc
-v8afLAJMAZbE1BL3SpSIspvMm+QYzKkNoypbduGADoCZzr7qZ79Gs8jV1x8G3pxC
-/WQBNFXF13t+Bt85YLS+
-=FrF3
------END PGP SIGNATURE-----
-
---CEUtFxTsmBsHRLs3--
