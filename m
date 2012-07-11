@@ -1,109 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755982Ab2GKJSA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 05:18:00 -0400
-Received: from b.relay.invitel.net ([62.77.203.4]:37996 "EHLO
-	b.relay.invitel.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751835Ab2GKJR6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 05:17:58 -0400
-X-Greylist: delayed 533 seconds by postgrey-1.27 at vger.kernel.org; Wed, 11 Jul 2012 05:17:58 EDT
-Date: Wed, 11 Jul 2012 11:08:58 +0200
-From: Heiko Schocher <hs@denx.de>
-Subject: Re: [RFC] kernel, logbuf: add support for external log buffer
-In-reply-to: <1339395188-10166-1-git-send-email-hs@denx.de>
-To: Heiko Schocher <hs@denx.de>
-Cc: linux-arm-kernel@lists.infradead.org, Igor Lisitsin <igor@emcraft.com>,
-        Wolfgang Denk <wd@denx.de>, Grant Erickson <gerickson@nuovations.com>,
-        linux-kernel@vger.kernel.org, Tim Bird <tim.bird@am.sony.com>,
-        CE Linux Developers List <celinux-dev@lists.celinuxforum.org>,
-        Kay Sievers <kay@vrfy.org>
-Reply-to: hs@denx.de
-Message-id: <4FFD42AA.8090301@denx.de>
-Organization: DENX Software Engineering
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-15; format=flowed
-Content-transfer-encoding: 7BIT
-References: <1339395188-10166-1-git-send-email-hs@denx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120421
- Thunderbird/12.0
+	id S1754787Ab2GKJTf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 05:19:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32942 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751835Ab2GKJTe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 05:19:34 -0400
+Date: Wed, 11 Jul 2012 18:19:31 +0900 (JST)
+Message-Id: <20120711.181931.1000444653721042650.yamato@redhat.com>
+To: andrei.emeltchenko.news@gmail.com
+Cc: linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org
+Subject: Re: [PATCH v3 6/8] bluetooth: Added /proc/net/l2cap via
+ bt_procfs_init()
+From: Masatake YAMATO <yamato@redhat.com>
+In-Reply-To: <20120711084824.GA3470@aemeltch-MOBL1>
+References: <20120711.135831.1712662939552441872.yamato@redhat.com>
+	<20120711.140337.6492431783697495.yamato@redhat.com>
+	<20120711084824.GA3470@aemeltch-MOBL1>
+Organization: Red Hat Japan, Inc.
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Andrei, thank you for taking time.
 
-On 11.06.2012 08:13, Heiko Schocher wrote:
-> This merges support for the previously DENX-only kernel
-> feature of specifying an alternative, "external" buffer
-> for kernel printk messages and their associated metadata.
-> This patch is based on DENX-only kernel commit:
->
-> commit 212f61c7fd3b952a81d1459dd32a86a32ddfd4ce
-> Author: Igor Lisitsin<igor@emcraft.com>
-> Date:   Wed Apr 18 14:55:19 2007 +0400
->
-> Add support for external log buffer.
->
-> Add support for external log buffer, for example passed by U-Boot,
-> which may already contain messages (from the boot loader and/or POST).
->
-> Signed-off-by: Igor Lisitsin<igor@emcraft.com>
->
-> see:
-> http://git.denx.de/?p=linux-denx.git;a=commit;h=212f61c7fd3b952a81d1459dd32a86a32ddfd4ce
->
-> When this option is enabled, an architecture- or machine-specific log
-> buffer is used for all printk messages. This allows entities such as
-> boot loaders (e.g. U-Boot) to place printk-compatible messages into
-> this buffer and for the kernel to coalesce them with its normal
-> messages. This patch support this feature for arch/arm based
-> boards.
->
-> Signed-off-by: Heiko Schocher<hs@denx.de>
-> Cc: Wolfgang Denk<wd@denx.de>
-> Cc: Igor Lisitsin<igor@emcraft.com>
-> Cc: Grant Erickson<gerickson@nuovations.com>
-> Cc: linux-kernel@vger.kernel.org
-> Cc: Tim Bird<tim.bird@am.sony.com>
-> Cc: CE Linux Developers List<celinux-dev@lists.celinuxforum.org>
-> Cc: Kay Sievers<kay@vrfy.org>
->
-> ---
-> restage prior discussion from lkml:
->
-> https://lkml.org/lkml/2009/1/21/250
->
-> Discussion stopped, and I want to reanimate it, also there is a
-> Project Proposal on the "CE Linux Developers List" for such a feature,
-> see here:
->
-> http://www.mail-archive.com/celinux-dev@lists.celinuxforum.org/msg00103.html
->
-> Maybe it is now the time to discuss this again?
->
-> Is it worth to try to get this old code in current kernel, or
-> should we investigate Kay Sievers proposal for a structured logging
-> system, which will alter the format of the messages as they are
-> stored in the log buffer, and discuss for this a "logbuffer support"?
->
-> See this discussion here:
->
-> http://thread.gmane.org/gmane.linux.kernel/1277619
->
->   arch/arm/mm/init.c      |   25 ++++++++++
->   include/linux/logbuff.h |   51 ++++++++++++++++++++
->   init/Kconfig            |   12 +++++
->   init/main.c             |    5 ++
->   kernel/printk.c         |  117 +++++++++++++++++++++++++++++++++++++++++++++--
->   5 files changed, 206 insertions(+), 4 deletions(-)
->   create mode 100644 include/linux/logbuff.h
+I've rebased again and I applied my patches with git am.
+They are applied without problem.
 
-ping? I got no respond to this RFC ... no chance to get this to
-mainline?
+I've regenerated the patches again and compared the new
+ones with the older ones.
 
-bye,
-Heiko
+About
+
+	[PATCH v3 6/8] bluetooth: Added /proc/net/l2cap via bt_procfs_init()
+
+One line slided. I've paste the new one to this mail. About 
+
+        [PATCH v3 7/8] bluetooth: Added /proc/net/rfcomm via bt_procfs_init()
+
+I cannot find any change between new one and older one.
+What can I do?
+
+
+Masatake YAMATO
+
+
+>From c56754680ec4005de7586b6afa7155228e0bbd6e Mon Sep 17 00:00:00 2001
+From: Masatake YAMATO <yamato@redhat.com>
+Date: Thu, 14 Jun 2012 23:52:08 +0900
+Subject: [PATCH 6/8] Added /proc/net/l2cap via bt_procfs_init()
+
+Signed-off-by: Masatake YAMATO <yamato@redhat.com>
+---
+ net/bluetooth/l2cap_sock.c |   20 ++++++++++++++++++--
+ 1 file changed, 18 insertions(+), 2 deletions(-)
+
+diff --git a/net/bluetooth/l2cap_sock.c b/net/bluetooth/l2cap_sock.c
+index a4bb27e..04bd647 100644
+--- a/net/bluetooth/l2cap_sock.c
++++ b/net/bluetooth/l2cap_sock.c
+@@ -34,6 +34,10 @@
+ #include <net/bluetooth/l2cap.h>
+ #include <net/bluetooth/smp.h>
+ 
++static struct bt_sock_list l2cap_sk_list = {
++	.lock = __RW_LOCK_UNLOCKED(l2cap_sk_list.lock)
++};
++
+ static const struct proto_ops l2cap_sock_ops;
+ static void l2cap_sock_init(struct sock *sk, struct sock *parent);
+ static struct sock *l2cap_sock_alloc(struct net *net, struct socket *sock, int proto, gfp_t prio);
+@@ -886,6 +890,8 @@ static int l2cap_sock_release(struct socket *sock)
+ 	if (!sk)
+ 		return 0;
+ 
++	bt_sock_unlink(&l2cap_sk_list, sk);
++
+ 	err = l2cap_sock_shutdown(sock, 2);
+ 
+ 	sock_orphan(sk);
+@@ -1210,6 +1216,7 @@ static int l2cap_sock_create(struct net *net, struct socket *sock, int protocol,
+ 		return -ENOMEM;
+ 
+ 	l2cap_sock_init(sk, NULL);
++	bt_sock_link(&l2cap_sk_list, sk);
+ 	return 0;
+ }
+ 
+@@ -1248,21 +1255,30 @@ int __init l2cap_init_sockets(void)
+ 		return err;
+ 
+ 	err = bt_sock_register(BTPROTO_L2CAP, &l2cap_sock_family_ops);
+-	if (err < 0)
++	if (err < 0) {
++		BT_ERR("L2CAP socket registration failed");
+ 		goto error;
++	}
++
++	err = bt_procfs_init(THIS_MODULE, &init_net, "l2cap", &l2cap_sk_list, NULL);
++	if (err < 0) {
++		BT_ERR("Failed to create L2CAP proc file");
++		bt_sock_unregister(BTPROTO_L2CAP);
++		goto error;
++	}
+ 
+ 	BT_INFO("L2CAP socket layer initialized");
+ 
+ 	return 0;
+ 
+ error:
+-	BT_ERR("L2CAP socket registration failed");
+ 	proto_unregister(&l2cap_proto);
+ 	return err;
+ }
+ 
+ void l2cap_cleanup_sockets(void)
+ {
++	bt_procfs_cleanup(&init_net, "l2cap");
+ 	if (bt_sock_unregister(BTPROTO_L2CAP) < 0)
+ 		BT_ERR("L2CAP socket unregistration failed");
+ 
 -- 
-DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
-HRB 165235 Munich, Office: Kirchenstr.5, D-82194 Groebenzell, Germany
+1.7.10.4
+
