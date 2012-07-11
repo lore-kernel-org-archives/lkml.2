@@ -1,86 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756786Ab2GKHtB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 03:49:01 -0400
-Received: from mga01.intel.com ([192.55.52.88]:60044 "EHLO mga01.intel.com"
+	id S1756811Ab2GKHtL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 03:49:11 -0400
+Received: from antcom.de ([188.40.178.216]:58602 "EHLO chuck.antcom.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754253Ab2GKHs6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 03:48:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="175899654"
-Message-ID: <1341993193.2963.132.camel@sauron>
-Subject: Re: mmotm 2012-07-10-16-59 uploaded
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org
-Date: Wed, 11 Jul 2012 10:53:13 +0300
-In-Reply-To: <20120711004430.0d14f0b6.akpm@linux-foundation.org>
-References: <20120711000148.BAD1E5C0050@hpza9.eem.corp.google.com>
-	 <1341988680.2963.128.camel@sauron>
-	 <20120711004430.0d14f0b6.akpm@linux-foundation.org>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-TKtQ4fCInahKiz/mbV1T"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1754253Ab2GKHtH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 03:49:07 -0400
+Message-ID: <4FFD2FF0.8030000@antcom.de>
+Date: Wed, 11 Jul 2012 09:49:04 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+MIME-Version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: axel.lin@gmail.com, riyer@nvidia.com, michael.hennerich@analog.com,
+        grant.likely@secretlab.ca, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kevin.wells@nxp.com, srinivas.bakki@nxp.com,
+        devicetree-discuss@lists.ozlabs.org, rob.herring@calxeda.com,
+        aletes.xgr@gmail.com
+Subject: Re: [PATCH v9] input: keyboard: Add keys driver for the LPC32xx SoC
+References: <1341948910-6530-1-git-send-email-stigge@antcom.de> <20120710205507.GA377@core.coreip.homeip.net>
+In-Reply-To: <20120710205507.GA377@core.coreip.homeip.net>
+X-Enigmail-Version: 1.4
+OpenPGP: url=subkeys.pgp.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/10/2012 10:55 PM, Dmitry Torokhov wrote:
+> Hi Roland,
+> 
+> On Tue, Jul 10, 2012 at 09:35:10PM +0200, Roland Stigge wrote:
+>> This patch adds a driver for the key scan interface of the LPC32xx SoC
+>>
+> 
+> Could of more things that I had in my patch but forgot to specifically
+> call out:
+> 
+>> +
+>> +	/* Configure the key scanner */
+>> +	clk_prepare_enable(kscandat->clk);
+> 
+> This may fail so we should handle errors.
+> 
+>> +	writel(kscandat->deb_clks, LPC32XX_KS_DEB(kscandat->kscan_base));
+>> +	writel(kscandat->scan_delay, LPC32XX_KS_SCAN_CTL(kscandat->kscan_base));
+>> +	writel(LPC32XX_KSCAN_FTST_USE32K_CLK,
+>> +	       LPC32XX_KS_FAST_TST(kscandat->kscan_base));
+>> +	writel(kscandat->matrix_sz,
+>> +	       LPC32XX_KS_MATRIX_DIM(kscandat->kscan_base));
+>> +	writel(1, LPC32XX_KS_IRQ(kscandat->kscan_base));
+>> +	clk_disable_unprepare(kscandat->clk);
+>> +
+>> +	error = request_irq(irq, lpc32xx_kscan_irq, 0, pdev->name, kscandat);
+> 
+> ...
+> 
+>> +
+>> +	free_irq(platform_get_irq(pdev, 0), pdev);
+> 
+> You are requesting IRQ with kscandat as an argument but freeing it with
+> 'pdev' which will fail.
+> 
+>> +
+>> +	if (kscandat->input->users) {
+>> +		/* Enable clock and clear IRQ */
+>> +		clk_prepare_enable(kscandat->clk);
+> 
+> Need to handle errors here as well.
+> 
+> Since I am partial to my rearrangement (basically I started preferring
+> err_<action> style of error labels as they more explanatory than out2 or
+> fail3 style of labels), could you try this version of my patch (on top
+> of your v9 one). Third time is a charm maybe? :)
 
---=-TKtQ4fCInahKiz/mbV1T
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Yes, works fine!
 
-On Wed, 2012-07-11 at 00:44 -0700, Andrew Morton wrote:
-> On Wed, 11 Jul 2012 09:38:00 +0300 Artem Bityutskiy <dedekind1@gmail.com>=
- wrote:
->=20
-> > Andrew, thanks for picking my changes!
-> >=20
-> > On Tue, 2012-07-10 at 17:01 -0700, akpm@linux-foundation.org wrote:
-> > > * hfs-get-rid-of-hfs_sync_super-checkpatch-fixes.patch
-> >=20
-> > > * hfsplus-get-rid-of-write_super-checkpatch-fixes.patch
-> >=20
-> > I sent updated versions which would fix checkpatch.pl complaints. I
-> > guess you did not notice them or was unable to pick because I think I
-> > PGP-signed them?
->=20
-> I looked at them, but they're identical to what I now have, so nothing
-> needed doing.
+Thanks!
 
-Strange, I thought they had the white-spaces issue solved. I'll resend
-the entire series. Thanks!
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-TKtQ4fCInahKiz/mbV1T
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJP/TDpAAoJECmIfjd9wqK0Op8P/14ZezDA/Ag/M2iBmGNIU08J
-2rwtfpPR3QGtB1VPTmvBnfvGKYMcUgQWWyodwoujQmTA0VH/eWFcsh9P4R4KGxAq
-OXhFYW+Jllc5YOZKDwvGHlXp2h1yEpIonQDkGXTPuqR9Lnkgtu+GnBMIeMPC8KCr
-izLtyTiSDz4pzB7FRsMavxyWRgjMmTN0wZkNZBw0kn1BdqBVsORKi9KSitLpJu+7
-VtnjVJzGf0lD5oDjs4csZmMhTi0fSPAcwaAsQj0SnpRqj84S6ixgXnwm8rdcwhl5
-4/DBB2K8W+IlvRMLIJOCLXuSA+51CLELzsnGkj/Jpv6T63m4FYvf/gWzXNxxTisH
-4UE5gzVRI5J5IuhclMsE0ZJlKhVYw//EF3+chVsB7eVvoYMBB7VpiXTTQ09Yvzu3
-28ZarIOzU5qVAN6IXiRGDG3E6+YkgOS4/G+Ypus4lT4aCUxX35s4+VEBypyrNPlw
-paHRQ2/Bx0DUty12qnqnNRQMzlwVVbMsUg6JxuTK9nlIwZt1jrsuCCfDPs+ltZfx
-RM2hmwi3p+3KkRLStxnhScFTx3COpmmYODtXquCTwEnBSZrA0qswn7hqxvwRvPEW
-Wtnbe2GCAf6JG+nO52F73euL2CE6zeWNXMqMne5THV47G7fNtQ7FRsqIxarXkf7K
-lDt23SR4cTmPVLUYNAvn
-=fSvh
------END PGP SIGNATURE-----
-
---=-TKtQ4fCInahKiz/mbV1T--
-
+Acked-by: Roland Stigge <stigge@antcom.de>
