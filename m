@@ -1,54 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932950Ab2GKQkB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 12:40:01 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:36621 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756418Ab2GKQj7 (ORCPT
+	id S932967Ab2GKQrg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 12:47:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54275 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932897Ab2GKQre (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 12:39:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+icZUX565WsuJNHKsohXi=vp34Acn+2D-nj8mQQtCfi=Pw_Nw@mail.gmail.com>
-References: <CA+icZUX565WsuJNHKsohXi=vp34Acn+2D-nj8mQQtCfi=Pw_Nw@mail.gmail.com>
-Date: Wed, 11 Jul 2012 18:39:59 +0200
-Message-ID: <CACRpkdbazoCztqbT00_oBsRyee=VBDH+NiGEpzNk8uV7mvsNwQ@mail.gmail.com>
-Subject: Re: linux-next: Tree for July 10 (gpio/gpio-tps65910.c)
-From: Linus Walleij <linus.walleij@linaro.org>
-To: sedat.dilek@gmail.com
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-next <linux-next@vger.kernel.org>,
-        Randy Dunlap <rdunlap@xenotime.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 11 Jul 2012 12:47:34 -0400
+Date: Wed, 11 Jul 2012 09:50:30 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: James Morris <jmorris@namei.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Eric Paris <eparis@redhat.com>, Stephen Smalley <sds@tycho.nsa.gov>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT] selinux: fix regression
+Message-Id: <20120711095030.f2db0ed9.akpm@linux-foundation.org>
+In-Reply-To: <alpine.LRH.2.02.1207120211140.24051@tundra.namei.org>
+References: <alpine.LRH.2.02.1207120211140.24051@tundra.namei.org>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 11, 2012 at 2:29 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+On Thu, 12 Jul 2012 02:11:53 +1000 (EST) James Morris <jmorris@namei.org> wrote:
 
-> I see the same build-error as Randy in latest linux.git
-> (055c9fa8874fa7261eec7a268366565db84af474).
+> Please pull.
+> 
+> The following changes since commit 055c9fa8874fa7261eec7a268366565db84af474:
+>   Linus Torvalds (1):
+>         Merge tag 'fixes-for-v3.5' of git://git.kernel.org/.../linusw/linux-gpio
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git for-linus
+> 
+> Andrew Morton (1):
+>       selinux: fix regression in selinux_inode_setattr()
+> 
+>  security/selinux/hooks.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> commit 17c284ce9688ece1fff024ef4a66f8f115017c06
+> Author: Andrew Morton <akpm@linux-foundation.org>
+> Date:   Tue Jul 10 23:24:24 2012 -0700
+> 
+>     selinux: fix regression in selinux_inode_setattr()
+>     
+>     akpm: This patch is needed to fix a box-killing post-3.4 X11 regression on
+>     my test machine.
+>     
+>     Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+>     Signed-off-by: James Morris <james.l.morris@oracle.com>
+> 
+> diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+> index 372ec65..4c62155 100644
+> --- a/security/selinux/hooks.c
+> +++ b/security/selinux/hooks.c
+> @@ -2717,7 +2717,7 @@ static int selinux_inode_setattr(struct dentry *dentry, struct iattr *iattr)
+>  			ATTR_ATIME_SET | ATTR_MTIME_SET | ATTR_TIMES_SET))
+>  		return dentry_has_perm(cred, dentry, FILE__SETATTR);
+>  
+> -	if (ia_valid & ATTR_SIZE)
+> +	if ((ia_valid & ATTR_SIZE) && selinux_policycap_openperm)
+>  		av |= FILE__OPEN;
+>  
+>  	return dentry_has_perm(cred, dentry, av);
 
-Yes, it is there.
+The patch was authored by eparis, not me.  I don't even know what it does (I
+never looked).  But it lets me log into my (old) Fedora test box, which
+is a distinct improvement over mainline.
 
-> Where is this patch queued up (see original posting)?
-
-Here:
-http://git.kernel.org/?p=linux/kernel/git/linusw/linux-gpio.git;a=shortlog;h=refs/heads/fixes
-
-> I do not see any patch in [2].
-
-Grant asked me to take over for a while, 10 days ago.
-
-> I also do not see any patch sent to LKML.
-
-But there was such a patch:
-http://lkml.org/lkml/2012/7/10/16
-
-And it's queued in my tree and on the for-next branch.
-
-And as noted, I also tried to send it to Linus (Torvalds)
-as an update to my last pull request. I guess I'll just have
-to send another request.
-
-Yours,
-Linus Walleij
