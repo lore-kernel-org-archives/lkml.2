@@ -1,52 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752956Ab2GKJAm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 05:00:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52455 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751342Ab2GKJAk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 05:00:40 -0400
-Message-ID: <4FFD4091.8040804@redhat.com>
-Date: Wed, 11 Jul 2012 12:00:01 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: habanero@linux.vnet.ibm.com
-CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Rik van Riel <riel@redhat.com>, S390 <linux-s390@vger.kernel.org>,
-        Carsten Otte <cotte@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
-        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
-        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Subject: Re: [PATCH RFC 0/2] kvm: Improving directed yield in PLE handler
-References: <20120709062012.24030.37154.sendpatchset@codeblue> <1341870457.2909.27.camel@oc2024037011.ibm.com>
-In-Reply-To: <1341870457.2909.27.camel@oc2024037011.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1753525Ab2GKJB2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 05:01:28 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:37384 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751522Ab2GKJB0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 05:01:26 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Date: Wed, 11 Jul 2012 18:01:12 +0900
+From: Taku Izumi <izumi.taku@jp.fujitsu.com>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Don Dutile <ddutile@redhat.com>,
+        Yijing Wang <wangyijing@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Keping Chen <chenkeping@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [RFC PATCH 01/14] PCI: add pcie_flags into struct pci_dev to
+ cache PCIe capabilities register
+Message-Id: <20120711180112.3ae76a2e.izumi.taku@jp.fujitsu.com>
+In-Reply-To: <1341935655-5381-2-git-send-email-jiang.liu@huawei.com>
+References: <1341935655-5381-1-git-send-email-jiang.liu@huawei.com>
+	<1341935655-5381-2-git-send-email-jiang.liu@huawei.com>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/10/2012 12:47 AM, Andrew Theurer wrote:
->          
-> For the cpu threads in the host that are actually active (in this case
-> 1/2 of them), ~50% of their time is in kernel and ~43% in guest.  This
-> is for a no-IO workload, so that's just incredible to see so much cpu
-> wasted.  I feel that 2 important areas to tackle are a more scalable
-> yield_to() and reducing the number of pause exits itself (hopefully by
-> just tuning ple_window for the latter).
+On Tue, 10 Jul 2012 23:54:02 +0800
+Jiang Liu <liuj97@gmail.com> wrote:
 
-One thing we can do is autotune ple_window.  If a ple exit fails to wake
-anybody (because all vcpus are either running, sleeping, or in ple
-exits) then we deduce we are not overcommitted and we can increase the
-ple window.  There's the question of how to decrease it again though.
+> From: Yijing Wang <wangyijing@huawei.com>
+> 
+> From: Yijing Wang <wangyijing@huawei.com>
+> 
+> Since PCI Express Capabilities Register is read only, cache its value
+> into struct pci_dev to avoid repeatedly calling pci_read_config_*().
+> 
+> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+> Signed-off-by: Jiang Liu <liuj97@gmail.com>
+> ---
+>  drivers/pci/probe.c |    1 +
+>  include/linux/pci.h |    1 +
+>  2 files changed, 2 insertions(+)
+> 
+> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+> index 6c143b4..65e82e3 100644
+> --- a/drivers/pci/probe.c
+> +++ b/drivers/pci/probe.c
+> @@ -929,6 +929,7 @@ void set_pcie_port_type(struct pci_dev *pdev)
+>  	pdev->is_pcie = 1;
+>  	pdev->pcie_cap = pos;
+>  	pci_read_config_word(pdev, pos + PCI_EXP_FLAGS, &reg16);
+> +	pdev->pcie_flags = reg16;
+>  	pdev->pcie_type = (reg16 & PCI_EXP_FLAGS_TYPE) >> 4;
+>  	pci_read_config_word(pdev, pos + PCI_EXP_DEVCAP, &reg16);
+>  	pdev->pcie_mpss = reg16 & PCI_EXP_DEVCAP_PAYLOAD;
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index 5faa831..f4a7ad6 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -258,6 +258,7 @@ struct pci_dev {
+>  	u8		pcie_mpss:3;	/* PCI-E Max Payload Size Supported */
+>  	u8		rom_base_reg;	/* which config register controls the ROM */
+>  	u8		pin;  		/* which interrupt pin this device uses */
+> +	u16		pcie_flags;	/* cached PCI-E Capabilities Register */
+
+ "xxx_flags" sounds like a bit flag. This variable stores a value of PCIe capability 
+ register, doesn't it?   How about "pcie_cap_reg" ?
+
+>  
+>  	struct pci_driver *driver;	/* which driver has allocated this device */
+>  	u64		dma_mask;	/* Mask of the bits of bus address this
+> -- 
+> 1.7.9.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
 
 -- 
-error compiling committee.c: too many arguments to function
-
+Taku Izumi <izumi.taku@jp.fujitsu.com>
 
