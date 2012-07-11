@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756380Ab2GKGzA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 02:55:00 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:39905 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754186Ab2GKGy6 (ORCPT
+	id S1756384Ab2GKHDI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 03:03:08 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:45463 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754057Ab2GKHCm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 02:54:58 -0400
-Date: Wed, 11 Jul 2012 16:54:54 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: no tree for July 11
-Message-Id: <20120711165454.c25c1848a457233c1ea46d97@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__11_Jul_2012_16_54_54_+1000_M4bL4J8gKxGW6cze"
+	Wed, 11 Jul 2012 03:02:42 -0400
+From: Yuri Khan <yurivkhan@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Yuri Khan <yurivkhan@gmail.com>
+Subject: [PATCH v4 1/1] Input: xpad - Handle all variations of Mad Catz Beat Pad
+Date: Wed, 11 Jul 2012 14:02:19 +0700
+Message-Id: <1341990139-3864-1-git-send-email-yurivkhan@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1341592324-665-1-git-send-email-yurivkhan@gmail.com>
+References: <1341592324-665-1-git-send-email-yurivkhan@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__11_Jul_2012_16_54_54_+1000_M4bL4J8gKxGW6cze
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+* Add this device to usbhid ignore list
 
-Normal service will resume tomorrow.
+Signed-off-by: Yuri Khan <yurivkhan@gmail.com>
+Acked-by: Jiri Kosina <jkosina@suse.cz>
+---
+ drivers/hid/hid-core.c        |    1 +
+ drivers/hid/hid-ids.h         |    3 +++
+ drivers/input/joystick/xpad.c |    1 +
+ 3 files changed, 5 insertions(+)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index 6ac0286..1540934 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1995,6 +1995,7 @@ static const struct hid_device_id hid_ignore_list[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LD, USB_DEVICE_ID_LD_MCT) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LD, USB_DEVICE_ID_LD_HYBRID) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LD, USB_DEVICE_ID_LD_HEATCONTROL) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_MADCATZ, USB_DEVICE_ID_MADCATZ_BEATPAD) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_MCC, USB_DEVICE_ID_MCC_PMD1024LS) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_MCC, USB_DEVICE_ID_MCC_PMD1208LS) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROCHIP, USB_DEVICE_ID_PICKIT1) },
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index d1cdd2d..43c3d75 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -518,6 +518,9 @@
+ #define USB_DEVICE_ID_CRYSTALTOUCH	0x0006
+ #define USB_DEVICE_ID_CRYSTALTOUCH_DUAL	0x0007
+ 
++#define USB_VENDOR_ID_MADCATZ		0x0738
++#define USB_DEVICE_ID_MADCATZ_BEATPAD	0x4540
++
+ #define USB_VENDOR_ID_MCC		0x09db
+ #define USB_DEVICE_ID_MCC_PMD1024LS	0x0076
+ #define USB_DEVICE_ID_MCC_PMD1208LS	0x007a
+diff --git a/drivers/input/joystick/xpad.c b/drivers/input/joystick/xpad.c
+index ee16fb6..16974ef 100644
+--- a/drivers/input/joystick/xpad.c
++++ b/drivers/input/joystick/xpad.c
+@@ -238,6 +238,7 @@ static struct usb_device_id xpad_table [] = {
+ 	XPAD_XBOX360_VENDOR(0x045e),		/* Microsoft X-Box 360 controllers */
+ 	XPAD_XBOX360_VENDOR(0x046d),		/* Logitech X-Box 360 style controllers */
+ 	XPAD_XBOX360_VENDOR(0x0738),		/* Mad Catz X-Box 360 controllers */
++	{ USB_DEVICE(0x0738, 0x4540) },		/* Mad Catz Beat Pad */
+ 	XPAD_XBOX360_VENDOR(0x0e6f),		/* 0x0e6f X-Box 360 controllers */
+ 	XPAD_XBOX360_VENDOR(0x12ab),		/* X-Box 360 dance pads */
+ 	XPAD_XBOX360_VENDOR(0x1430),		/* RedOctane X-Box 360 controllers */
+-- 
+1.7.9.5
 
---Signature=_Wed__11_Jul_2012_16_54_54_+1000_M4bL4J8gKxGW6cze
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJP/SM+AAoJEECxmPOUX5FEzokP/1a6hrArlWJoBoZcjRIqvqiR
-hL26+5/QUJjaW6LqQvHRv3inzQwWV5asLvpvfLiNaYGMI7t42ou7LBN4P27dw0c9
-Caf6YgVd6s7rLiLsiIHITXiaFLg5GvcdRHMj7a0o7tXjR9esZbQetz6HxmV10CfC
-56FoW/jdmQ0CjBTwluDqZx0g5tg0UZKbTUaqO4NuzCHWw/O/Y0DGCxHNrBRGTd1f
-FFfh0bz2yQfz4E+AdN5/ujtCeAujWF6JWNntrPXuUTwoMW1JrmCvfHfwvT7XAHvi
-AqbfnframjEMaohtPWk1yu/s60aC52h4kji4H2fecQ7GLUVHegZvJFnPWMjnEwl3
-D1L6jKg94gp66ruB6A86LvLTimfdbVbxs33PFjJnBJ7RplECqZ/w9L+Ij1zJnrdK
-1p9wb56PiPCULN4qnkuWPd6tQDW2QJIxyZ2+tMSvAJe/pVfX5NhGf9141czQuU8/
-nGqkhVomid1gLHx8+vVE4QfRWhIQwmBCiK6NhCPF+z3VAv+1lYEOmEh+e2czVcmq
-6uFTgAsOG66PZeeUj5pCyiXKyo26OISmgHEJ6aoHzVeWZQe1H2Ksx7U8kD3wOVLs
-Xc+BaI6fVBsjPJ09OvXg9iPEDHQ5YfwY+DoTyEGpf6SwbXc+NmdehxEreGrjIp/t
-5aHm5H3a2GgBxGvPnlN7
-=CLzC
------END PGP SIGNATURE-----
-
---Signature=_Wed__11_Jul_2012_16_54_54_+1000_M4bL4J8gKxGW6cze--
