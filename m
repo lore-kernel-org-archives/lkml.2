@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932274Ab2GKTCw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 15:02:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39340 "EHLO mx1.redhat.com"
+	id S1758303Ab2GKTCu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 15:02:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30773 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756668Ab2GKTCS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758062Ab2GKTCS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 11 Jul 2012 15:02:18 -0400
 From: Aristeu Rozanski <arozansk@redhat.com>
 To: aris@redhat.com, "Eric W. Biederman" <ebiederm@xmission.com>
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 2/5] userns: Convert ADFS to use kuid and kgid where appropriate
-Date: Wed, 11 Jul 2012 15:01:19 -0400
-Message-Id: <1342033282-24933-3-git-send-email-arozansk@redhat.com>
+Subject: [PATCH 3/5] userns: Convert AFFS to use kuid and kgid where appropriate
+Date: Wed, 11 Jul 2012 15:01:20 -0400
+Message-Id: <1342033282-24933-4-git-send-email-arozansk@redhat.com>
 In-Reply-To: <1342033282-24933-1-git-send-email-arozansk@redhat.com>
 References: <1342033282-24933-1-git-send-email-arozansk@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -22,122 +22,200 @@ From: Aristeu Rozanski <aris@redhat.com>
 
 Signed-off-by: Aristeu Rozanski <aris@redhat.com>
 ---
- fs/adfs/inode.c |   12 ++++++++----
- fs/adfs/super.c |   26 +++++++++++++++++---------
+ fs/affs/inode.c |   30 ++++++++++++++------------
+ fs/affs/super.c |   60 +++++++++++++++++++++++++++++++++++++++++++++++-------
  init/Kconfig    |    1 -
- 3 files changed, 25 insertions(+), 14 deletions(-)
+ 3 files changed, 68 insertions(+), 23 deletions(-)
 
-diff --git a/fs/adfs/inode.c b/fs/adfs/inode.c
-index 1dab6a1..4a2acea 100644
---- a/fs/adfs/inode.c
-+++ b/fs/adfs/inode.c
-@@ -243,8 +243,8 @@ adfs_iget(struct super_block *sb, struct object_info *obj)
- 	if (!inode)
- 		goto out;
+diff --git a/fs/affs/inode.c b/fs/affs/inode.c
+index 88a4b0b..04eba35 100644
+--- a/fs/affs/inode.c
++++ b/fs/affs/inode.c
+@@ -78,24 +78,24 @@ struct inode *affs_iget(struct super_block *sb, unsigned long ino)
  
--	inode->i_uid	 = ADFS_SB(sb)->s_uid;
--	inode->i_gid	 = ADFS_SB(sb)->s_gid;
-+	i_uid_write(inode, ADFS_SB(sb)->s_uid);
-+	i_gid_write(inode, ADFS_SB(sb)->s_gid);
- 	inode->i_ino	 = obj->file_id;
- 	inode->i_size	 = obj->size;
- 	set_nlink(inode, 2);
-@@ -297,6 +297,8 @@ adfs_notify_change(struct dentry *dentry, struct iattr *attr)
- 	struct super_block *sb = inode->i_sb;
- 	unsigned int ia_valid = attr->ia_valid;
- 	int error;
-+	kuid_t kuid;
-+	kgid_t kgid;
- 	
- 	error = inode_change_ok(inode, attr);
+ 	id = be16_to_cpu(tail->uid);
+ 	if (id == 0 || sbi->s_flags & SF_SETUID)
+-		inode->i_uid = sbi->s_uid;
++		i_uid_write(inode, sbi->s_uid);
+ 	else if (id == 0xFFFF && sbi->s_flags & SF_MUFS)
+-		inode->i_uid = 0;
++		inode->i_uid = GLOBAL_ROOT_UID;
+ 	else
+-		inode->i_uid = id;
++		i_uid_write(inode, id);
  
-@@ -304,8 +306,10 @@ adfs_notify_change(struct dentry *dentry, struct iattr *attr)
- 	 * we can't change the UID or GID of any file -
- 	 * we have a global UID/GID in the superblock
- 	 */
--	if ((ia_valid & ATTR_UID && attr->ia_uid != ADFS_SB(sb)->s_uid) ||
--	    (ia_valid & ATTR_GID && attr->ia_gid != ADFS_SB(sb)->s_gid))
-+	kuid = make_kuid(&init_user_ns, ADFS_SB(sb)->s_uid);
-+	kgid = make_kgid(&init_user_ns, ADFS_SB(sb)->s_gid);
-+	if ((ia_valid & ATTR_UID && !uid_eq(attr->ia_uid, kuid)) ||
-+	    (ia_valid & ATTR_GID && !gid_eq(attr->ia_gid, kgid)))
- 		error = -EPERM;
+ 	id = be16_to_cpu(tail->gid);
+ 	if (id == 0 || sbi->s_flags & SF_SETGID)
+-		inode->i_gid = sbi->s_gid;
++		i_gid_write(inode, sbi->s_gid);
+ 	else if (id == 0xFFFF && sbi->s_flags & SF_MUFS)
+-		inode->i_gid = 0;
++		inode->i_gid = GLOBAL_ROOT_GID;
+ 	else
+-		inode->i_gid = id;
++		i_gid_write(inode, id);
  
- 	if (error)
-diff --git a/fs/adfs/super.c b/fs/adfs/super.c
-index 06fdcc9..2e27e82 100644
---- a/fs/adfs/super.c
-+++ b/fs/adfs/super.c
-@@ -129,11 +129,15 @@ static void adfs_put_super(struct super_block *sb)
- static int adfs_show_options(struct seq_file *seq, struct dentry *root)
+ 	switch (be32_to_cpu(tail->stype)) {
+ 	case ST_ROOT:
+-		inode->i_uid = sbi->s_uid;
+-		inode->i_gid = sbi->s_gid;
++		i_uid_write(inode, sbi->s_uid);
++		i_gid_write(inode, sbi->s_gid);
+ 		/* fall through */
+ 	case ST_USERDIR:
+ 		if (be32_to_cpu(tail->stype) == ST_USERDIR ||
+@@ -193,13 +193,15 @@ affs_write_inode(struct inode *inode, struct writeback_control *wbc)
+ 		tail->size = cpu_to_be32(inode->i_size);
+ 		secs_to_datestamp(inode->i_mtime.tv_sec,&tail->change);
+ 		if (!(inode->i_ino == AFFS_SB(sb)->s_root_block)) {
+-			uid = inode->i_uid;
+-			gid = inode->i_gid;
++			uid = from_kuid_munged(&init_user_ns, inode->i_uid);
++			gid = from_kgid_munged(&init_user_ns, inode->i_gid);
+ 			if (AFFS_SB(sb)->s_flags & SF_MUFS) {
+-				if (inode->i_uid == 0 || inode->i_uid == 0xFFFF)
+-					uid = inode->i_uid ^ ~0;
+-				if (inode->i_gid == 0 || inode->i_gid == 0xFFFF)
+-					gid = inode->i_gid ^ ~0;
++				if (uid_eq(inode->i_uid, GLOBAL_ROOT_UID) ||
++				    uid == 0xFFFF)
++					uid ^= ~0;
++				if (gid_eq(inode->i_gid, GLOBAL_ROOT_GID) ||
++				    gid == 0xFFFF)
++					gid ^= ~0;
+ 			}
+ 			if (!(AFFS_SB(sb)->s_flags & SF_SETUID))
+ 				tail->uid = cpu_to_be16(uid);
+diff --git a/fs/affs/super.c b/fs/affs/super.c
+index 0782653..49d6e3e 100644
+--- a/fs/affs/super.c
++++ b/fs/affs/super.c
+@@ -176,11 +176,13 @@ parse_options(char *options, uid_t *uid, gid_t *gid, int *mode, int *reserved, s
  {
- 	struct adfs_sb_info *asb = ADFS_SB(root->d_sb);
--
--	if (asb->s_uid != 0)
--		seq_printf(seq, ",uid=%u", asb->s_uid);
--	if (asb->s_gid != 0)
--		seq_printf(seq, ",gid=%u", asb->s_gid);
-+	kuid_t kuid = make_kuid(&init_user_ns, asb->s_uid);
-+	kgid_t kgid = make_kgid(&init_user_ns, asb->s_gid);
-+
-+	if (!uid_eq(kuid, GLOBAL_ROOT_UID))
-+		seq_printf(seq, ",uid=%u", from_kuid_munged(current_user_ns(),
-+							    kuid));
-+	if (!gid_eq(kgid, GLOBAL_ROOT_GID))
-+		seq_printf(seq, ",gid=%u", from_kgid_munged(current_user_ns(),
-+							    kgid));
- 	if (asb->s_owner_mask != ADFS_DEFAULT_OWNER_MASK)
- 		seq_printf(seq, ",ownmask=%o", asb->s_owner_mask);
- 	if (asb->s_other_mask != ADFS_DEFAULT_OTHER_MASK)
-@@ -160,6 +164,8 @@ static int parse_options(struct super_block *sb, char *options)
  	char *p;
- 	struct adfs_sb_info *asb = ADFS_SB(sb);
- 	int option;
+ 	substring_t args[MAX_OPT_ARGS];
 +	kuid_t kuid;
 +	kgid_t kgid;
  
- 	if (!options)
- 		return 0;
-@@ -175,12 +181,14 @@ static int parse_options(struct super_block *sb, char *options)
- 		case Opt_uid:
- 			if (match_int(args, &option))
- 				return -EINVAL;
--			asb->s_uid = option;
-+			kuid = make_kuid(current_user_ns(), option);
-+			asb->s_uid = from_kuid_munged(&init_user_ns, kuid);
- 			break;
- 		case Opt_gid:
- 			if (match_int(args, &option))
- 				return -EINVAL;
--			asb->s_gid = option;
-+			kgid = make_kgid(current_user_ns(), option);
-+			asb->s_gid = from_kgid_munged(&init_user_ns, kgid);
- 			break;
- 		case Opt_ownmask:
- 			if (match_octal(args, &option))
-@@ -370,8 +378,8 @@ static int adfs_fill_super(struct super_block *sb, void *data, int silent)
- 	sb->s_fs_info = asb;
+ 	/* Fill in defaults */
  
- 	/* set default options */
--	asb->s_uid = 0;
--	asb->s_gid = 0;
-+	asb->s_uid = from_kuid_munged(&init_user_ns, GLOBAL_ROOT_UID);
-+	asb->s_gid = from_kgid_munged(&init_user_ns, GLOBAL_ROOT_GID);
- 	asb->s_owner_mask = ADFS_DEFAULT_OWNER_MASK;
- 	asb->s_other_mask = ADFS_DEFAULT_OTHER_MASK;
- 	asb->s_ftsuffix = 0;
+-	*uid        = current_uid();
+-	*gid        = current_gid();
++	*uid        = from_kuid_munged(&init_user_ns, current_uid());
++	*gid        = from_kgid_munged(&init_user_ns, current_gid());
+ 	*reserved   = 2;
+ 	*root       = -1;
+ 	*blocksize  = -1;
+@@ -236,13 +238,23 @@ parse_options(char *options, uid_t *uid, gid_t *gid, int *mode, int *reserved, s
+ 		case Opt_setgid:
+ 			if (match_int(&args[0], &option))
+ 				return 0;
+-			*gid = option;
++			kgid = make_kgid(current_user_ns(), option);
++			if (!gid_valid(kgid)) {
++				printk(KERN_INFO "AFFS: invalid GID\n");
++				return 0;
++			}
++			*gid = from_kgid_munged(&init_user_ns, kgid);
+ 			*mount_opts |= SF_SETGID;
+ 			break;
+ 		case Opt_setuid:
+ 			if (match_int(&args[0], &option))
+ 				return 0;
+-			*uid = option;
++			kuid = make_kuid(current_user_ns(), option);
++			if (!uid_valid(kuid)) {
++				printk(KERN_INFO "AFFS: invalid UID\n");
++				return 0;
++			}
++			*uid = from_kuid_munged(&init_user_ns, kuid);
+ 			*mount_opts |= SF_SETUID;
+ 			break;
+ 		case Opt_verbose:
+@@ -291,6 +303,8 @@ static int affs_fill_super(struct super_block *sb, void *data, int silent)
+ 	int			 tmp_flags;	/* fix remount prototype... */
+ 	u8			 sig[4];
+ 	int			 ret = -EINVAL;
++	kuid_t			 kuid;
++	kgid_t			 kgid;
+ 
+ 	save_mount_options(sb, data);
+ 
+@@ -318,10 +332,24 @@ static int affs_fill_super(struct super_block *sb, void *data, int silent)
+ 	}
+ 	/* N.B. after this point s_prefix must be released */
+ 
++	kuid = make_kuid(current_user_ns(), uid);
++	if (!uid_valid(kuid)) {
++		printk(KERN_ERR "AFFS: Invalid UID\n");
++		kfree(sbi->s_prefix);
++		kfree(sbi);
++		return -EINVAL;
++	}
++	kgid = make_kgid(current_user_ns(), gid);
++	if (!gid_valid(kgid)) {
++		printk(KERN_ERR "AFFS: Invalid GID\n");
++		kfree(sbi->s_prefix);
++		kfree(sbi);
++		return -EINVAL;
++	}
+ 	sbi->s_flags   = mount_flags;
+ 	sbi->s_mode    = i;
+-	sbi->s_uid     = uid;
+-	sbi->s_gid     = gid;
++	sbi->s_uid     = from_kuid_munged(&init_user_ns, kuid);
++	sbi->s_gid     = from_kgid_munged(&init_user_ns, kgid);
+ 	sbi->s_reserved= reserved;
+ 
+ 	/* Get the size of the device in 512-byte blocks.
+@@ -517,6 +545,8 @@ affs_remount(struct super_block *sb, int *flags, char *data)
+ 	char			*new_opts = kstrdup(data, GFP_KERNEL);
+ 	char			 volume[32];
+ 	char			*prefix = NULL;
++	kuid_t			 kuid;
++	kgid_t			 kgid;
+ 
+ 	pr_debug("AFFS: remount(flags=0x%x,opts=\"%s\")\n",*flags,data);
+ 
+@@ -533,10 +563,24 @@ affs_remount(struct super_block *sb, int *flags, char *data)
+ 
+ 	replace_mount_options(sb, new_opts);
+ 
++	kuid = make_kuid(current_user_ns(), uid);
++	if (!uid_valid(kuid)) {
++		printk(KERN_ERR "AFFS: Invalid UID\n");
++		kfree(prefix);
++		kfree(new_opts);
++		return -EINVAL;
++	}
++	kgid = make_kgid(current_user_ns(), gid);
++	if (!gid_valid(kgid)) {
++		printk(KERN_ERR "AFFS: Invalid GID\n");
++		kfree(prefix);
++		kfree(new_opts);
++		return -EINVAL;
++	}
+ 	sbi->s_flags = mount_flags;
+ 	sbi->s_mode  = mode;
+-	sbi->s_uid   = uid;
+-	sbi->s_gid   = gid;
++	sbi->s_uid   = from_kuid_munged(&init_user_ns, kuid);
++	sbi->s_gid   = from_kgid_munged(&init_user_ns, kgid);
+ 	/* protect against readers */
+ 	spin_lock(&sbi->symlink_lock);
+ 	if (prefix) {
 diff --git a/init/Kconfig b/init/Kconfig
-index 589d558..4d8d44d 100644
+index 4d8d44d..52a3736 100644
 --- a/init/Kconfig
 +++ b/init/Kconfig
 @@ -909,7 +909,6 @@ config UIDGID_CONVERTED
  	depends on DEVTMPFS = n
  	depends on XENFS = n
  
--	depends on ADFS_FS = n
- 	depends on AFFS_FS = n
+-	depends on AFFS_FS = n
  	depends on AFS_FS = n
  	depends on AUTOFS4_FS = n
+ 	depends on BEFS_FS = n
 -- 
 1.7.1
 
