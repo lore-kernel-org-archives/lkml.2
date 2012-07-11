@@ -1,85 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932746Ab2GKO2I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 10:28:08 -0400
-Received: from mga11.intel.com ([192.55.52.93]:5962 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932521Ab2GKO2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 10:28:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="191275026"
-Message-ID: <1342017141.18274.57.camel@sauron.fi.intel.com>
-Subject: Re: [PATCHv7 0/5] ext4: stop using write_supers and s_dirt
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Theodore Tso <tytso@mit.edu>
-Cc: Jan Kara <jack@suse.cz>,
-        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
-        Ext4 Mailing List <linux-ext4@vger.kernel.org>
-Date: Wed, 11 Jul 2012 17:32:21 +0300
-In-Reply-To: <1342014404-14834-1-git-send-email-dedekind1@gmail.com>
-References: <1342014404-14834-1-git-send-email-dedekind1@gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-fG1AhFxsLS9nIHkcvnJf"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1757964Ab2GKObc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 10:31:32 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:37675 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753968Ab2GKOba (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 10:31:30 -0400
+Date: Wed, 11 Jul 2012 16:31:24 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Andrew Vagin <avagin@openvz.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Arun Sharma <asharma@fb.com>
+Subject: Re: [PATCH] trace: add ability to set a target task for events (v2)
+Message-ID: <20120711143121.GA17991@somewhere>
+References: <1342016098-213063-1-git-send-email-avagin@openvz.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1342016098-213063-1-git-send-email-avagin@openvz.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jul 11, 2012 at 06:14:58PM +0400, Andrew Vagin wrote:
+> A few events are interesting not only for a current task.
+> For example, sched_stat_* are interesting for a task, which
+> wake up. For this reason, it will be good, if such events will
+> be delivered to a target task too.
+> 
+> Now a target task can be set by using __perf_task().
+> 
+> The original idea and a draft patch belongs to Peter Zijlstra.
+> 
+> I need this events for profiling sleep times.  sched_switch is used for
+> getting callchains and sched_stat_* is used for getting time periods.
+> This events are combined in user space, then it can be analized by
+> perf tools.
 
---=-fG1AhFxsLS9nIHkcvnJf
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+We've talked about that numerous times. But I still don't really
+understand why you're not using sched switch events and compute
+the difference between schedule in and schedule out.
 
-On Wed, 2012-07-11 at 16:46 +0300, Artem Bityutskiy wrote:
-> This patch-set makes ext4 file-system stop using the VFS '->write_supers(=
-)'
-> call-back and the '->s_dirt' superblock field because I plan to remove th=
-em
-> once all users are gone.
+I think you said that's because you got too much events with sched
+switch. Are you loosing events? Otherwise I don't see why it's
+a problem.
 
-Hi Ted, is there any chance for this stuff to hit 3.6?
+Also the sched_stat_sleep event produce an event which period equals the
+time slept. Internally, perf split this into as many events as that period
+because the requested period for trace events is 1 by default. We probably
+should allow to send events with a higher number than the one requested. This
+this produce sometimes a huge pile of events, and that even often result in
+tons of lost events. We definetly need to fix that.
 
-Basically I have 3 pending file-systems:
-1. ext4 (these patches)
-2. sysv - trivial, I hope Andrew would pick them.
-3. ufs - should be straight-forward to change the same way I changed
-hfs. I'll send patches soon. I hope Andrew would pick them as well.
-
-Everything else - either in upstream or in -mm or in sub-system trees.
-
-After this, I can kill sync_supers and have a chance that Linus would
-accept the patches at 3.6-rc1, and end up with sync_super-less 3.6.
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-fG1AhFxsLS9nIHkcvnJf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJP/Y51AAoJECmIfjd9wqK00i0P/Riv9H4w/5mJHWksCxYkJvk5
-p+JxXiF4NGdwqur++B0g2EFBnYsNg1Zg8GThUB0T+9z5Ooopb5tm+KFDcvUXFUBQ
-MqfOhbRRJ46Vc+7j02XSIm3L+oJWPVdfgWZOmYhfHZrUnxdSXe1LemoE8TAkDY5z
-5C0wdmj6c1gJHxS5Z63bcAm51FAfZS67GdL+A7fmPiZSMZnm5w9UoaPhcqg5DWss
-c52H82vNW4/R+k3InkR8KccqvWbm7zipP4sE/wyo0EvGVsq0OEof3zzcMd8JDeS1
-wCXQjBbQuejaP3UUk/Vr1iQa5hzIF+XFTAciZT0UAEqhJR5J5i+a44uUECHzAjHh
-behhtYJh7NUwt2WJZoMJTW7w/lVER1Rk+w4qeJmflSVOtLFG03FIfwGlnF4xIpy1
-Bto6+KdEfwAkQ0HDa/Nf0jCUSIu/5tsGKlGsN05T9ESqzfB8SDW+q2WeHZQmSQ9G
-cvuSNx76D0deHCdd674hluADz5V8rlleJBK8ePVw9JdbHFJuKPkSLfqMHC+WS1ZH
-S4eQ9dE3D2LzAmcVxT1Tq+tYK5lIE0YSCID0E9RvdUd8Vdtv98NtShVqua045ans
-sJGp3WoiA9O0UCFbG/UD2IuLWP3JVw27DMsauWmKDwHb820YZf9oQnatjidNrRlc
-0zVs84QRuCf0ET5YL+tY
-=//t4
------END PGP SIGNATURE-----
-
---=-fG1AhFxsLS9nIHkcvnJf--
-
+In the meantime you'll certainly get saner results by just recording
+sched switch events.
