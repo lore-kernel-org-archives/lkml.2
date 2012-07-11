@@ -1,385 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757376Ab2GKLo1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 07:44:27 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:37862 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754225Ab2GKLoY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 07:44:24 -0400
-Message-ID: <1342007053.4362.2.camel@phoenix>
-Subject: [PATCH RFT] regulator: tps65910: Remvoe
- tps65910_reg_[read|modify_bits|read_locked|write_locked] functions
-From: Axel Lin <axel.lin@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>,
-        Graeme Gregory <gg@slimlogic.co.uk>, Liam Girdwood <lrg@ti.com>,
-        linux-kernel@vger.kernel.org, SamuelOrtiz <sameo@linux.intel.com>
-Date: Wed, 11 Jul 2012 19:44:13 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1757372Ab2GKLsJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 07:48:09 -0400
+Received: from db3ehsobe004.messaging.microsoft.com ([213.199.154.142]:10811
+	"EHLO DB3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753554Ab2GKLsH convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 07:48:07 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -6
+X-BigFish: VS-6(zz9371I542M1432Izz1202hzz8275bh8275dhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah107ahbe9i)
+From: Sethi Varun-B16395 <B16395@freescale.com>
+To: Joerg Roedel <joerg.roedel@amd.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 2/7] iommu/amd: Implement DOMAIN_ATTR_GEOMETRY attribute
+Thread-Topic: [PATCH 2/7] iommu/amd: Implement DOMAIN_ATTR_GEOMETRY attribute
+Thread-Index: AQHNX1Lf1mZ3xwjNGEGZYEQuF0W4P5cj6ygQ
+Date: Wed, 11 Jul 2012 11:47:39 +0000
+Message-ID: <C5ECD7A89D1DC44195F34B25E172658D13AA64@039-SN2MPN1-013.039d.mgd.msft.net>
+References: <1342003763-8139-1-git-send-email-joerg.roedel@amd.com>
+ <1342003763-8139-3-git-send-email-joerg.roedel@amd.com>
+In-Reply-To: <1342003763-8139-3-git-send-email-joerg.roedel@amd.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.232.134.90]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The tps65910 mfd driver has been converted to regmap APIs.
-This patch adds tps65910_reg_update_bits() in include/linux/mfd/tps65910.h.
-Thus we can use tps65910_reg_read/tps65910_reg_write/tps65910_reg_update_bits
-directly and remove tps65910_reg_[read|modify_bits|read_locked|write_locked]
-functions. With this change, we can also remove the mutex in struct tps65910_reg.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/tps65910-regulator.c |  184 +++++++++++++-------------------
- include/linux/mfd/tps65910.h           |    6 ++
- 2 files changed, 79 insertions(+), 111 deletions(-)
 
-diff --git a/drivers/regulator/tps65910-regulator.c b/drivers/regulator/tps65910-regulator.c
-index 64c93e0..d2ba066 100644
---- a/drivers/regulator/tps65910-regulator.c
-+++ b/drivers/regulator/tps65910-regulator.c
-@@ -296,7 +296,6 @@ struct tps65910_reg {
- 	struct tps65910 *mfd;
- 	struct regulator_dev **rdev;
- 	struct tps_info **info;
--	struct mutex mutex;
- 	int num_regulators;
- 	int mode;
- 	int  (*get_ctrl_reg)(int);
-@@ -304,71 +303,6 @@ struct tps65910_reg {
- 	unsigned int board_ext_control[TPS65910_NUM_REGS];
- };
- 
--static inline int tps65910_read(struct tps65910_reg *pmic, u8 reg)
--{
--	unsigned int val;
--	int err;
--
--	err = tps65910_reg_read(pmic->mfd, reg, &val);
--	if (err)
--		return err;
--
--	return val;
--}
--
--static int tps65910_modify_bits(struct tps65910_reg *pmic, u8 reg,
--					u8 set_mask, u8 clear_mask)
--{
--	int err, data;
--
--	mutex_lock(&pmic->mutex);
--
--	data = tps65910_read(pmic, reg);
--	if (data < 0) {
--		dev_err(pmic->mfd->dev, "Read from reg 0x%x failed\n", reg);
--		err = data;
--		goto out;
--	}
--
--	data &= ~clear_mask;
--	data |= set_mask;
--	err = tps65910_reg_write(pmic->mfd, reg, data);
--	if (err)
--		dev_err(pmic->mfd->dev, "Write for reg 0x%x failed\n", reg);
--
--out:
--	mutex_unlock(&pmic->mutex);
--	return err;
--}
--
--static int tps65910_reg_read_locked(struct tps65910_reg *pmic, u8 reg)
--{
--	int data;
--
--	mutex_lock(&pmic->mutex);
--
--	data = tps65910_read(pmic, reg);
--	if (data < 0)
--		dev_err(pmic->mfd->dev, "Read from reg 0x%x failed\n", reg);
--
--	mutex_unlock(&pmic->mutex);
--	return data;
--}
--
--static int tps65910_reg_write_locked(struct tps65910_reg *pmic, u8 reg, u8 val)
--{
--	int err;
--
--	mutex_lock(&pmic->mutex);
--
--	err = tps65910_reg_write(pmic->mfd, reg, val);
--	if (err < 0)
--		dev_err(pmic->mfd->dev, "Write for reg 0x%x failed\n", reg);
--
--	mutex_unlock(&pmic->mutex);
--	return err;
--}
--
- static int tps65910_get_ctrl_register(int id)
- {
- 	switch (id) {
-@@ -449,8 +383,9 @@ static int tps65910_set_mode(struct regulator_dev *dev, unsigned int mode)
- 
- 	switch (mode) {
- 	case REGULATOR_MODE_NORMAL:
--		return tps65910_modify_bits(pmic, reg, LDO_ST_ON_BIT,
--							LDO_ST_MODE_BIT);
-+		return tps65910_reg_update_bits(pmic->mfd, reg,
-+						LDO_ST_MODE_BIT | LDO_ST_ON_BIT,
-+						LDO_ST_ON_BIT);
- 	case REGULATOR_MODE_IDLE:
- 		value = LDO_ST_ON_BIT | LDO_ST_MODE_BIT;
- 		return tps65910_reg_set_bits(mfd, reg, value);
-@@ -464,15 +399,15 @@ static int tps65910_set_mode(struct regulator_dev *dev, unsigned int mode)
- static unsigned int tps65910_get_mode(struct regulator_dev *dev)
- {
- 	struct tps65910_reg *pmic = rdev_get_drvdata(dev);
--	int reg, value, id = rdev_get_id(dev);
-+	int ret, reg, value, id = rdev_get_id(dev);
- 
- 	reg = pmic->get_ctrl_reg(id);
- 	if (reg < 0)
- 		return reg;
- 
--	value = tps65910_reg_read_locked(pmic, reg);
--	if (value < 0)
--		return value;
-+	ret = tps65910_reg_read(pmic->mfd, reg, &value);
-+	if (ret < 0)
-+		return ret;
- 
- 	if (!(value & LDO_ST_ON_BIT))
- 		return REGULATOR_MODE_STANDBY;
-@@ -485,33 +420,51 @@ static unsigned int tps65910_get_mode(struct regulator_dev *dev)
- static int tps65910_get_voltage_dcdc_sel(struct regulator_dev *dev)
- {
- 	struct tps65910_reg *pmic = rdev_get_drvdata(dev);
--	int id = rdev_get_id(dev);
-+	int ret, id = rdev_get_id(dev);
- 	int opvsel = 0, srvsel = 0, vselmax = 0, mult = 0, sr = 0;
- 
- 	switch (id) {
- 	case TPS65910_REG_VDD1:
--		opvsel = tps65910_reg_read_locked(pmic, TPS65910_VDD1_OP);
--		mult = tps65910_reg_read_locked(pmic, TPS65910_VDD1);
-+		ret = tps65910_reg_read(pmic->mfd, TPS65910_VDD1_OP, &opvsel);
-+		if (ret < 0)
-+			return ret;
-+		ret = tps65910_reg_read(pmic->mfd, TPS65910_VDD1, &mult);
-+		if (ret < 0)
-+			return ret;
- 		mult = (mult & VDD1_VGAIN_SEL_MASK) >> VDD1_VGAIN_SEL_SHIFT;
--		srvsel = tps65910_reg_read_locked(pmic, TPS65910_VDD1_SR);
-+		ret = tps65910_reg_read(pmic->mfd, TPS65910_VDD1_SR, &srvsel);
-+		if (ret < 0)
-+			return ret;
- 		sr = opvsel & VDD1_OP_CMD_MASK;
- 		opvsel &= VDD1_OP_SEL_MASK;
- 		srvsel &= VDD1_SR_SEL_MASK;
- 		vselmax = 75;
- 		break;
- 	case TPS65910_REG_VDD2:
--		opvsel = tps65910_reg_read_locked(pmic, TPS65910_VDD2_OP);
--		mult = tps65910_reg_read_locked(pmic, TPS65910_VDD2);
-+		ret = tps65910_reg_read(pmic->mfd, TPS65910_VDD2_OP, &opvsel);
-+		if (ret < 0)
-+			return ret;
-+		ret = tps65910_reg_read(pmic->mfd, TPS65910_VDD2, &mult);
-+		if (ret < 0)
-+			return ret;
- 		mult = (mult & VDD2_VGAIN_SEL_MASK) >> VDD2_VGAIN_SEL_SHIFT;
--		srvsel = tps65910_reg_read_locked(pmic, TPS65910_VDD2_SR);
-+		ret = tps65910_reg_read(pmic->mfd, TPS65910_VDD2_SR, &srvsel);
-+		if (ret < 0)
-+			return ret;
- 		sr = opvsel & VDD2_OP_CMD_MASK;
- 		opvsel &= VDD2_OP_SEL_MASK;
- 		srvsel &= VDD2_SR_SEL_MASK;
- 		vselmax = 75;
- 		break;
- 	case TPS65911_REG_VDDCTRL:
--		opvsel = tps65910_reg_read_locked(pmic, TPS65911_VDDCTRL_OP);
--		srvsel = tps65910_reg_read_locked(pmic, TPS65911_VDDCTRL_SR);
-+		ret = tps65910_reg_read(pmic->mfd, TPS65911_VDDCTRL_OP,
-+					&opvsel);
-+		if (ret < 0)
-+			return ret;
-+		ret = tps65910_reg_read(pmic->mfd, TPS65911_VDDCTRL_SR,
-+					&srvsel);
-+		if (ret < 0)
-+			return ret;
- 		sr = opvsel & VDDCTRL_OP_CMD_MASK;
- 		opvsel &= VDDCTRL_OP_SEL_MASK;
- 		srvsel &= VDDCTRL_SR_SEL_MASK;
-@@ -545,15 +498,15 @@ static int tps65910_get_voltage_dcdc_sel(struct regulator_dev *dev)
- static int tps65910_get_voltage_sel(struct regulator_dev *dev)
- {
- 	struct tps65910_reg *pmic = rdev_get_drvdata(dev);
--	int reg, value, id = rdev_get_id(dev);
-+	int ret, reg, value, id = rdev_get_id(dev);
- 
- 	reg = pmic->get_ctrl_reg(id);
- 	if (reg < 0)
- 		return reg;
- 
--	value = tps65910_reg_read_locked(pmic, reg);
--	if (value < 0)
--		return value;
-+	ret = tps65910_reg_read(pmic->mfd, reg, &value);
-+	if (ret < 0)
-+		return ret;
- 
- 	switch (id) {
- 	case TPS65910_REG_VIO:
-@@ -583,12 +536,14 @@ static int tps65910_get_voltage_vdd3(struct regulator_dev *dev)
- static int tps65911_get_voltage_sel(struct regulator_dev *dev)
- {
- 	struct tps65910_reg *pmic = rdev_get_drvdata(dev);
--	int id = rdev_get_id(dev);
--	u8 value, reg;
-+	int ret, id = rdev_get_id(dev);
-+	unsigned int value, reg;
- 
- 	reg = pmic->get_ctrl_reg(id);
- 
--	value = tps65910_reg_read_locked(pmic, reg);
-+	ret = tps65910_reg_read(pmic->mfd, reg, &value);
-+	if (ret < 0)
-+		return ret;
- 
- 	switch (id) {
- 	case TPS65911_REG_LDO1:
-@@ -630,10 +585,10 @@ static int tps65910_set_voltage_dcdc_sel(struct regulator_dev *dev,
- 			dcdc_mult--;
- 		vsel = (selector % VDD1_2_NUM_VOLT_FINE) + 3;
- 
--		tps65910_modify_bits(pmic, TPS65910_VDD1,
--				(dcdc_mult << VDD1_VGAIN_SEL_SHIFT),
--						VDD1_VGAIN_SEL_MASK);
--		tps65910_reg_write_locked(pmic, TPS65910_VDD1_OP, vsel);
-+		tps65910_reg_update_bits(pmic->mfd, TPS65910_VDD1,
-+					 VDD1_VGAIN_SEL_MASK,
-+					 dcdc_mult << VDD1_VGAIN_SEL_SHIFT);
-+		tps65910_reg_write(pmic->mfd, TPS65910_VDD1_OP, vsel);
- 		break;
- 	case TPS65910_REG_VDD2:
- 		dcdc_mult = (selector / VDD1_2_NUM_VOLT_FINE) + 1;
-@@ -641,14 +596,14 @@ static int tps65910_set_voltage_dcdc_sel(struct regulator_dev *dev,
- 			dcdc_mult--;
- 		vsel = (selector % VDD1_2_NUM_VOLT_FINE) + 3;
- 
--		tps65910_modify_bits(pmic, TPS65910_VDD2,
--				(dcdc_mult << VDD2_VGAIN_SEL_SHIFT),
--						VDD1_VGAIN_SEL_MASK);
--		tps65910_reg_write_locked(pmic, TPS65910_VDD2_OP, vsel);
-+		tps65910_reg_update_bits(pmic->mfd, TPS65910_VDD2,
-+					 VDD1_VGAIN_SEL_MASK,
-+					 dcdc_mult << VDD2_VGAIN_SEL_SHIFT);
-+		tps65910_reg_write(pmic->mfd, TPS65910_VDD2_OP, vsel);
- 		break;
- 	case TPS65911_REG_VDDCTRL:
- 		vsel = selector + 3;
--		tps65910_reg_write_locked(pmic, TPS65911_VDDCTRL_OP, vsel);
-+		tps65910_reg_write(pmic->mfd, TPS65911_VDDCTRL_OP, vsel);
- 	}
- 
- 	return 0;
-@@ -674,8 +629,8 @@ static int tps65910_set_voltage_sel(struct regulator_dev *dev,
- 	case TPS65910_REG_VAUX2:
- 	case TPS65910_REG_VAUX33:
- 	case TPS65910_REG_VMMC:
--		return tps65910_modify_bits(pmic, reg,
--				(selector << LDO_SEL_SHIFT), LDO_SEL_MASK);
-+		return tps65910_reg_update_bits(pmic->mfd, reg, LDO_SEL_MASK,
-+						selector << LDO_SEL_SHIFT);
- 	}
- 
- 	return -EINVAL;
-@@ -695,18 +650,18 @@ static int tps65911_set_voltage_sel(struct regulator_dev *dev,
- 	case TPS65911_REG_LDO1:
- 	case TPS65911_REG_LDO2:
- 	case TPS65911_REG_LDO4:
--		return tps65910_modify_bits(pmic, reg,
--				(selector << LDO_SEL_SHIFT), LDO1_SEL_MASK);
-+		return tps65910_reg_update_bits(pmic->mfd, reg, LDO1_SEL_MASK,
-+						selector << LDO_SEL_SHIFT);
- 	case TPS65911_REG_LDO3:
- 	case TPS65911_REG_LDO5:
- 	case TPS65911_REG_LDO6:
- 	case TPS65911_REG_LDO7:
- 	case TPS65911_REG_LDO8:
--		return tps65910_modify_bits(pmic, reg,
--				(selector << LDO_SEL_SHIFT), LDO3_SEL_MASK);
-+		return tps65910_reg_update_bits(pmic->mfd, reg, LDO3_SEL_MASK,
-+						selector << LDO_SEL_SHIFT);
- 	case TPS65910_REG_VIO:
--		return tps65910_modify_bits(pmic, reg,
--				(selector << LDO_SEL_SHIFT), LDO_SEL_MASK);
-+		return tps65910_reg_update_bits(pmic->mfd, reg, LDO_SEL_MASK,
-+						selector << LDO_SEL_SHIFT);
- 	}
- 
- 	return -EINVAL;
-@@ -918,19 +873,27 @@ static int tps65910_set_ext_sleep_config(struct tps65910_reg *pmic,
- 				(tps65910_chip_id(mfd) == TPS65911))) {
- 		int op_reg_add = pmic->get_ctrl_reg(id) + 1;
- 		int sr_reg_add = pmic->get_ctrl_reg(id) + 2;
--		int opvsel = tps65910_reg_read_locked(pmic, op_reg_add);
--		int srvsel = tps65910_reg_read_locked(pmic, sr_reg_add);
-+		int opvsel, srvsel;
-+
-+		ret = tps65910_reg_read(pmic->mfd, op_reg_add, &opvsel);
-+		if (ret < 0)
-+			return ret;
-+		ret = tps65910_reg_read(pmic->mfd, sr_reg_add, &srvsel);
-+		if (ret < 0)
-+			return ret;
-+
- 		if (opvsel & VDD1_OP_CMD_MASK) {
- 			u8 reg_val = srvsel & VDD1_OP_SEL_MASK;
--			ret = tps65910_reg_write_locked(pmic, op_reg_add,
--							reg_val);
-+
-+			ret = tps65910_reg_write(pmic->mfd, op_reg_add,
-+						 reg_val);
- 			if (ret < 0) {
- 				dev_err(mfd->dev,
- 					"Error in configuring op register\n");
- 				return ret;
- 			}
- 		}
--		ret = tps65910_reg_write_locked(pmic, sr_reg_add, 0);
-+		ret = tps65910_reg_write(pmic->mfd, sr_reg_add, 0);
- 		if (ret < 0) {
- 			dev_err(mfd->dev, "Error in settting sr register\n");
- 			return ret;
-@@ -1100,7 +1063,6 @@ static __devinit int tps65910_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 	}
- 
--	mutex_init(&pmic->mutex);
- 	pmic->mfd = tps65910;
- 	platform_set_drvdata(pdev, pmic);
- 
-diff --git a/include/linux/mfd/tps65910.h b/include/linux/mfd/tps65910.h
-index c5f8060..1aca1fb 100644
---- a/include/linux/mfd/tps65910.h
-+++ b/include/linux/mfd/tps65910.h
-@@ -882,4 +882,10 @@ static inline int tps65910_reg_clear_bits(struct tps65910 *tps65910, u8 reg,
- 	return regmap_update_bits(tps65910->regmap, reg, mask, 0);
- }
- 
-+static inline int tps65910_reg_update_bits(struct tps65910 *tps65910, u8 reg,
-+					   u8 mask, u8 val)
-+{
-+	return regmap_update_bits(tps65910->regmap, reg, mask, val);
-+}
-+
- #endif /*  __LINUX_MFD_TPS65910_H */
--- 
-1.7.9.5
+> -----Original Message-----
+> From: iommu-bounces@lists.linux-foundation.org [mailto:iommu-
+> bounces@lists.linux-foundation.org] On Behalf Of Joerg Roedel
+> Sent: Wednesday, July 11, 2012 4:19 PM
+> To: iommu@lists.linux-foundation.org
+> Cc: linux-kernel@vger.kernel.org
+> Subject: [PATCH 2/7] iommu/amd: Implement DOMAIN_ATTR_GEOMETRY attribute
+> 
+> Implement the attribute itself and add the code for the AMD IOMMU driver.
+> 
+> Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+> ---
+>  drivers/iommu/amd_iommu.c |    4 ++++
+>  drivers/iommu/iommu.c     |   19 ++++++++++++++++---
+>  include/linux/iommu.h     |    8 ++++++++
+>  3 files changed, 28 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c index
+> a2e418c..259a6be 100644
+> --- a/drivers/iommu/amd_iommu.c
+> +++ b/drivers/iommu/amd_iommu.c
+> @@ -3069,6 +3069,10 @@ static int amd_iommu_domain_init(struct
+> iommu_domain *dom)
+> 
+>  	dom->priv = domain;
+> 
+> +	dom->geometry.aperture_start = 0;
+> +	dom->geometry.aperture_end   = ~0ULL;
+> +	dom->geometry.force_aperture = true;
+> +
+>  	return 0;
+> 
+>  out_free:
+> diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c index
+> c39972d..ed5e0a5 100644
+> --- a/drivers/iommu/iommu.c
+> +++ b/drivers/iommu/iommu.c
+> @@ -348,10 +348,23 @@ EXPORT_SYMBOL_GPL(iommu_device_group);
+>  int iommu_domain_get_attr(struct iommu_domain *domain,
+>  			  enum iommu_attr attr, void *data)
+>  {
+> -	if (!domain->ops->domain_get_attr)
+> -		return -EINVAL;
+> +	struct iommu_domain_geometry *geometry;
+> +	int ret = 0;
+> +
+> +	switch (attr) {
+> +	case DOMAIN_ATTR_GEOMETRY:
+> +		geometry  = data;
+> +		*geometry = domain->geometry;
+> +
+> +		break;
+> +	default:
+> +		if (!domain->ops->domain_get_attr)
+> +			return -EINVAL;
+> 
+> -	return domain->ops->domain_get_attr(domain, attr, data);
+> +		ret = domain->ops->domain_get_attr(domain, attr, data);
+> +	}
+> +
+> +	return ret;
+>  }
+>  EXPORT_SYMBOL_GPL(iommu_domain_get_attr);
+> 
+> diff --git a/include/linux/iommu.h b/include/linux/iommu.h index
+> 0eef096..f7df4aa 100644
+> --- a/include/linux/iommu.h
+> +++ b/include/linux/iommu.h
+> @@ -37,11 +37,18 @@ struct iommu_domain;  typedef int
+> (*iommu_fault_handler_t)(struct iommu_domain *,
+>  			struct device *, unsigned long, int, void *);
+> 
+> +struct iommu_domain_geometry {
+> +	dma_addr_t aperture_start; /* First address that can be mapped
+> */
+> +	dma_addr_t aperture_end;   /* Last address that can be mapped
+> */
+> +	bool force_aperture;       /* DMA only allowed in mappable range?
+> */
+> +};
+> +
+>  struct iommu_domain {
+>  	struct iommu_ops *ops;
+>  	void *priv;
+>  	iommu_fault_handler_t handler;
+>  	void *handler_token;
+> +	struct iommu_domain_geometry geometry;
+>  };
+> 
+Hi Joerg,
+I am currently working on upstreaming the Freescale IOMMU driver. As discussed (with Scott Wood)
+a while back, this representation of the GEOMETRY attribute doesn't go well with our IOMMU
+implementation. Our representation of the geometry would be more complex and is certainly modifiable.
+Our IOMMU allows for creating custom DMA mappings by defining a set of DMA sub windows within
+a given window. We need a mechanism for specifying the number of DMA subwindows as a part of the 
+domain geometry. My suggestion would be to make the GEOMETRY attribute implementation dependent
 
+Regards
+Varun
 
 
