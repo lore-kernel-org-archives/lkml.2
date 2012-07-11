@@ -1,120 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758292Ab2GKVmI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 17:42:08 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:52177 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758240Ab2GKVmE (ORCPT
+	id S1758307Ab2GKVmz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 17:42:55 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50154 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755102Ab2GKVmx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 17:42:04 -0400
+	Wed, 11 Jul 2012 17:42:53 -0400
+Date: Wed, 11 Jul 2012 14:42:32 -0700
+From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
+Message-ID: <tip-5b9fe759a678e05be4937ddf03d50e950207c1c0@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, johnstul@us.ibm.com, tglx@linutronix.de,
+        prarit@redhat.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        johnstul@us.ibm.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        prarit@redhat.com
+In-Reply-To: <1341960205-56738-4-git-send-email-johnstul@us.ibm.com>
+References: <1341960205-56738-4-git-send-email-johnstul@us.ibm.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/urgent] timekeeping:
+  Maintain ktime_t based offsets for hrtimers
+Git-Commit-ID: 5b9fe759a678e05be4937ddf03d50e950207c1c0
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <1342013952-10174-2-git-send-email-joerg.roedel@amd.com>
-References: <1342013952-10174-1-git-send-email-joerg.roedel@amd.com>
-	<1342013952-10174-2-git-send-email-joerg.roedel@amd.com>
-Date: Wed, 11 Jul 2012 14:42:03 -0700
-X-Google-Sender-Auth: spRfNzbohtiGPt1g1yjxLCPBiic
-Message-ID: <CAE9FiQUEYVMi46WYfLDDUO=PuTHYbmqXreZnCWLRdUjBH2iH4Q@mail.gmail.com>
-Subject: Re: [PATCH 01/27] x86/irq: Add data structure to keep AMD specific
- irq remapping information
-From: Yinghai Lu <yinghai@kernel.org>
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Suresh Siddha <suresh.b.siddha@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 11 Jul 2012 14:42:38 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 11, 2012 at 6:38 AM, Joerg Roedel <joerg.roedel@amd.com> wrote:
-> Add a data structure to store information the IOMMU driver
-> can use to get from a 'struct irq_cfg' to the remapping
-> entry.
->
-> Cc: x86@kernel.org
-> Cc: Yinghai Lu <yinghai@kernel.org>
-> Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-> Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
-> ---
->  arch/x86/include/asm/hw_irq.h       |   14 +++++++++++++-
->  arch/x86/kernel/apic/io_apic.c      |    2 +-
->  drivers/iommu/intel_irq_remapping.c |    2 +-
->  3 files changed, 15 insertions(+), 3 deletions(-)
->
-> diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
-> index eb92a6e..b6171e6 100644
-> --- a/arch/x86/include/asm/hw_irq.h
-> +++ b/arch/x86/include/asm/hw_irq.h
-> @@ -101,6 +101,7 @@ static inline void set_io_apic_irq_attr(struct io_apic_irq_attr *irq_attr,
->         irq_attr->polarity      = polarity;
->  }
->
-> +/* Intel specific interrupt remapping information */
->  struct irq_2_iommu {
->         struct intel_iommu *iommu;
->         u16 irte_index;
-> @@ -108,6 +109,17 @@ struct irq_2_iommu {
->         u8  irte_mask;
->  };
->
-> +/* AMD specific interrupt remapping information */
-> +struct irq_2_irte {
-> +       u16 devid; /* Device ID for IRTE table */
-> +       u16 index; /* Index into IRTE table*/
-> +};
-> +
-> +union irq_remap_info {
-> +       struct irq_2_iommu irq_2_iommu;
-> +       struct irq_2_irte  irq_2_irte;
-> +};
-> +
->  /*
->   * This is performance-critical, we want to do it O(1)
->   *
-> @@ -120,7 +132,7 @@ struct irq_cfg {
->         u8                      vector;
->         u8                      move_in_progress : 1;
->  #ifdef CONFIG_IRQ_REMAP
-> -       struct irq_2_iommu      irq_2_iommu;
-> +       union irq_remap_info    irq_remap_info;
+Commit-ID:  5b9fe759a678e05be4937ddf03d50e950207c1c0
+Gitweb:     http://git.kernel.org/tip/5b9fe759a678e05be4937ddf03d50e950207c1c0
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Tue, 10 Jul 2012 18:43:21 -0400
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Wed, 11 Jul 2012 23:34:38 +0200
 
-how about
-+union {
-+       struct irq_2_iommu irq_2_iommu;
-+       struct irq_2_irte  irq_2_irte;
-+};
+timekeeping: Maintain ktime_t based offsets for hrtimers
 
-instead?
+We need to update the hrtimer clock offsets from the hrtimer interrupt
+context. To avoid conversions from timespec to ktime_t maintain a
+ktime_t based representation of those offsets in the timekeeper. This
+puts the conversion overhead into the code which updates the
+underlying offsets and provides fast accessible values in the hrtimer
+interrupt.
 
->  #endif
->  };
->
-> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-> index 5f0ff59..08f666c 100644
-> --- a/arch/x86/kernel/apic/io_apic.c
-> +++ b/arch/x86/kernel/apic/io_apic.c
-> @@ -72,7 +72,7 @@
->  static void irq_remap_modify_chip_defaults(struct irq_chip *chip);
->  static inline bool irq_remapped(struct irq_cfg *cfg)
->  {
-> -       return cfg->irq_2_iommu.iommu != NULL;
-> +       return cfg->irq_remap_info.irq_2_iommu.iommu != NULL;
->  }
->  #else
->  static inline bool irq_remapped(struct irq_cfg *cfg)
-> diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
-> index 6d34706..e4e4334 100644
-> --- a/drivers/iommu/intel_irq_remapping.c
-> +++ b/drivers/iommu/intel_irq_remapping.c
-> @@ -43,7 +43,7 @@ static DEFINE_RAW_SPINLOCK(irq_2_ir_lock);
->  static struct irq_2_iommu *irq_2_iommu(unsigned int irq)
->  {
->         struct irq_cfg *cfg = irq_get_chip_data(irq);
-> -       return cfg ? &cfg->irq_2_iommu : NULL;
-> +       return cfg ? &cfg->irq_remap_info.irq_2_iommu : NULL;
->  }
->
->  int get_irte(int irq, struct irte *entry)
-> --
-> 1.7.9.5
->
->
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Reviewed-by: Ingo Molnar <mingo@kernel.org>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Prarit Bhargava <prarit@redhat.com>
+Cc: stable@vger.kernel.org
+Link: http://lkml.kernel.org/r/1341960205-56738-4-git-send-email-johnstul@us.ibm.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/time/timekeeping.c |   25 +++++++++++++++++++++++--
+ 1 files changed, 23 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index a413e59..1c038da 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -70,6 +70,12 @@ struct timekeeper {
+ 	/* The raw monotonic time for the CLOCK_MONOTONIC_RAW posix clock. */
+ 	struct timespec raw_time;
+ 
++	/* Offset clock monotonic -> clock realtime */
++	ktime_t offs_real;
++
++	/* Offset clock monotonic -> clock boottime */
++	ktime_t offs_boot;
++
+ 	/* Seqlock for all timekeeper values */
+ 	seqlock_t lock;
+ };
+@@ -172,6 +178,14 @@ static inline s64 timekeeping_get_ns_raw(void)
+ 	return clocksource_cyc2ns(cycle_delta, clock->mult, clock->shift);
+ }
+ 
++static void update_rt_offset(void)
++{
++	struct timespec tmp, *wtm = &timekeeper.wall_to_monotonic;
++
++	set_normalized_timespec(&tmp, -wtm->tv_sec, -wtm->tv_nsec);
++	timekeeper.offs_real = timespec_to_ktime(tmp);
++}
++
+ /* must hold write on timekeeper.lock */
+ static void timekeeping_update(bool clearntp)
+ {
+@@ -179,6 +193,7 @@ static void timekeeping_update(bool clearntp)
+ 		timekeeper.ntp_error = 0;
+ 		ntp_clear();
+ 	}
++	update_rt_offset();
+ 	update_vsyscall(&timekeeper.xtime, &timekeeper.wall_to_monotonic,
+ 			 timekeeper.clock, timekeeper.mult);
+ }
+@@ -604,6 +619,7 @@ void __init timekeeping_init(void)
+ 	}
+ 	set_normalized_timespec(&timekeeper.wall_to_monotonic,
+ 				-boot.tv_sec, -boot.tv_nsec);
++	update_rt_offset();
+ 	timekeeper.total_sleep_time.tv_sec = 0;
+ 	timekeeper.total_sleep_time.tv_nsec = 0;
+ 	write_sequnlock_irqrestore(&timekeeper.lock, flags);
+@@ -612,6 +628,12 @@ void __init timekeeping_init(void)
+ /* time in seconds when suspend began */
+ static struct timespec timekeeping_suspend_time;
+ 
++static void update_sleep_time(struct timespec t)
++{
++	timekeeper.total_sleep_time = t;
++	timekeeper.offs_boot = timespec_to_ktime(t);
++}
++
+ /**
+  * __timekeeping_inject_sleeptime - Internal function to add sleep interval
+  * @delta: pointer to a timespec delta value
+@@ -630,8 +652,7 @@ static void __timekeeping_inject_sleeptime(struct timespec *delta)
+ 	timekeeper.xtime = timespec_add(timekeeper.xtime, *delta);
+ 	timekeeper.wall_to_monotonic =
+ 			timespec_sub(timekeeper.wall_to_monotonic, *delta);
+-	timekeeper.total_sleep_time = timespec_add(
+-					timekeeper.total_sleep_time, *delta);
++	update_sleep_time(timespec_add(timekeeper.total_sleep_time, *delta));
+ }
+ 
+ 
