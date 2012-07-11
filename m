@@ -1,306 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756260Ab2GKGtE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 02:49:04 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:45156 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752464Ab2GKGtB (ORCPT
+	id S1756336Ab2GKGxF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 02:53:05 -0400
+Received: from smtp-out-150.synserver.de ([212.40.185.150]:1075 "EHLO
+	smtp-out-150.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756082Ab2GKGxD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 02:49:01 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FFD21C2.6000201@jp.fujitsu.com>
-Date: Wed, 11 Jul 2012 15:48:34 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Wed, 11 Jul 2012 02:53:03 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 13933
+Message-ID: <4FFD23BA.8070502@metafoo.de>
+Date: Wed, 11 Jul 2012 08:56:58 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
 MIME-Version: 1.0
-To: Wen Congyang <wency@cn.fujitsu.com>
-CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>,
-        <rientjes@google.com>, <liuj97@gmail.com>, <len.brown@intel.com>,
-        <benh@kernel.crashing.org>, <paulus@samba.org>, <cl@linux.com>,
-        <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
-        <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [RFC PATCH v3 11/13] memory-hotplug : free memmap of sparse-vmemmap
-References: <4FFAB0A2.8070304@jp.fujitsu.com> <4FFAB37F.1060105@jp.fujitsu.com> <4FFD09D5.8010605@cn.fujitsu.com> <4FFD14B0.9010606@jp.fujitsu.com> <4FFD1C71.2020404@cn.fujitsu.com>
-In-Reply-To: <4FFD1C71.2020404@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
+To: Gerard Snitselaar <dev@snitselaar.org>
+CC: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-iio@vger.kernel.org, jic23@cam.ac.uk, gregkh@linuxfoundation.org
+Subject: Re: [PATCH] iio: dac: ad5064: fix section mismatch in ad5064_init()
+ in linux-next
+References: <1341979502-27440-1-git-send-email-dev@snitselaar.org>
+In-Reply-To: <1341979502-27440-1-git-send-email-dev@snitselaar.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wen,
+On 07/11/2012 06:05 AM, Gerard Snitselaar wrote:
+> ad5064_init() calls ad5064_spi_unregister_driver() which is annotated
+> __exit.
+> 
+> Signed-off-by: Gerard Snitselaar <dev@snitselaar.org>
 
-2012/07/11 15:25, Wen Congyang wrote:
-> At 07/11/2012 01:52 PM, Yasuaki Ishimatsu Wrote:
->> 2012/07/11 14:06, Wen Congyang wrote:
->> Hi Wen,
->>
->>> At 07/09/2012 06:33 PM, Yasuaki Ishimatsu Wrote:
->>>> I don't think that all pages of virtual mapping in removed memory can be
->>>> freed, since page which type is MIX_SECTION_INFO is difficult to free.
->>>> So, the patch only frees page which type is SECTION_INFO at first.
->>>>
->>>> CC: David Rientjes <rientjes@google.com>
->>>> CC: Jiang Liu <liuj97@gmail.com>
->>>> CC: Len Brown <len.brown@intel.com>
->>>> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
->>>> CC: Paul Mackerras <paulus@samba.org>
->>>> CC: Christoph Lameter <cl@linux.com>
->>>> Cc: Minchan Kim <minchan.kim@gmail.com>
->>>> CC: Andrew Morton <akpm@linux-foundation.org>
->>>> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->>>> CC: Wen Congyang <wency@cn.fujitsu.com>
->>>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->>>>
->>>> ---
->>>>    arch/x86/mm/init_64.c |   91 ++++++++++++++++++++++++++++++++++++++++++++++++++
->>>>    include/linux/mm.h    |    2 +
->>>>    mm/memory_hotplug.c   |    5 ++
->>>>    mm/sparse.c           |    5 +-
->>>>    4 files changed, 101 insertions(+), 2 deletions(-)
->>>>
->>>> Index: linux-3.5-rc4/include/linux/mm.h
->>>> ===================================================================
->>>> --- linux-3.5-rc4.orig/include/linux/mm.h	2012-07-03 14:22:18.530011567 +0900
->>>> +++ linux-3.5-rc4/include/linux/mm.h	2012-07-03 14:22:20.999983872 +0900
->>>> @@ -1588,6 +1588,8 @@ int vmemmap_populate(struct page *start_
->>>>    void vmemmap_populate_print_last(void);
->>>>    void register_page_bootmem_memmap(unsigned long section_nr, struct page *map,
->>>>    				  unsigned long size);
->>>> +void vmemmap_kfree(struct page *memmpa, unsigned long nr_pages);
->>>> +void vmemmap_free_bootmem(struct page *memmpa, unsigned long nr_pages);
->>>>
->>>>    enum mf_flags {
->>>>    	MF_COUNT_INCREASED = 1 << 0,
->>>> Index: linux-3.5-rc4/mm/sparse.c
->>>> ===================================================================
->>>> --- linux-3.5-rc4.orig/mm/sparse.c	2012-07-03 14:21:45.071429805 +0900
->>>> +++ linux-3.5-rc4/mm/sparse.c	2012-07-03 14:22:21.000983767 +0900
->>>> @@ -614,12 +614,13 @@ static inline struct page *kmalloc_secti
->>>>    	/* This will make the necessary allocations eventually. */
->>>>    	return sparse_mem_map_populate(pnum, nid);
->>>>    }
->>>> -static void __kfree_section_memmap(struct page *memmap, unsigned long nr_pages)
->>>> +static void __kfree_section_memmap(struct page *page, unsigned long nr_pages)
->>>>    {
->>>> -	return; /* XXX: Not implemented yet */
->>>> +	vmemmap_kfree(page, nr_pages);
->>>
->>> Hmm, I think you try to free the memory allocated in kmalloc_section_memmap().
->>
->> Yes.
->>
->>>
->>>>    }
->>>>    static void free_map_bootmem(struct page *page, unsigned long nr_pages)
->>>>    {
->>>> +	vmemmap_free_bootmem(page, nr_pages);
->>>>    }
->>>
->>> Hmm, which function is the memory you try to free allocated in?
->>
->> The function try to free memory allocated from bootmem. The memory has
->> been registered by get_page_bootmem(). So we can free the memory by
->> put_page_bootmem().
-> 
-> OK, I will read these codes, and check it.
-> 
->>
->>>
->>>>    #else
->>>>    static struct page *__kmalloc_section_memmap(unsigned long nr_pages)
->>>> Index: linux-3.5-rc4/arch/x86/mm/init_64.c
->>>> ===================================================================
->>>> --- linux-3.5-rc4.orig/arch/x86/mm/init_64.c	2012-07-03 14:22:18.538011465 +0900
->>>> +++ linux-3.5-rc4/arch/x86/mm/init_64.c	2012-07-03 14:22:21.007983103 +0900
->>>> @@ -978,6 +978,97 @@ vmemmap_populate(struct page *start_page
->>>>    	return 0;
->>>>    }
->>>>
->>>> +unsigned long find_and_clear_pte_page(unsigned long addr, unsigned long end,
->>>> +				      struct page **pp)
->>>> +{
->>>> +	pgd_t *pgd;
->>>> +	pud_t *pud;
->>>> +	pmd_t *pmd;
->>>> +	pte_t *pte;
->>>> +	unsigned long next;
->>>> +
->>>> +	*pp = NULL;
->>>> +
->>>> +	pgd = pgd_offset_k(addr);
->>>> +	if (pgd_none(*pgd))
->>>> +		return (addr + PAGE_SIZE) & PAGE_MASK;
->>>
->>> Hmm, why not goto next pgd?
->>
->> Does it mean "return (addr + PGDIR_SIZE) & PGDIR_MASK"?
->>
->>>
->>>> +
->>>> +	pud = pud_offset(pgd, addr);
->>>> +	if (pud_none(*pud))
->>>> +		return (addr + PAGE_SIZE) & PAGE_MASK;
->>>> +
->>>> +	if (!cpu_has_pse) {
->>>> +		next = (addr + PAGE_SIZE) & PAGE_MASK;
->>>> +		pmd = pmd_offset(pud, addr);
->>>> +		if (pmd_none(*pmd))
->>>> +			return next;
->>>> +
->>>> +		pte = pte_offset_kernel(pmd, addr);
->>>> +		if (pte_none(*pte))
->>>> +			return next;
->>>> +
->>>> +		*pp = pte_page(*pte);
->>>> +		pte_clear(&init_mm, addr, pte);
->>>
->>> I think you should flush tlb here.
->>
->> Thanks, I'll update it.
->>
->>>
->>>> +	} else {
->>>> +		next = pmd_addr_end(addr, end);
->>>> +
->>>> +		pmd = pmd_offset(pud, addr);
->>>> +		if (pmd_none(*pmd))
->>>> +			return next;
->>>> +
->>>> +		*pp = pmd_page(*pmd);
->>>> +		pmd_clear(pmd);
->>>> +	}
->>>> +
->>>> +	return next;
->>>> +}
->>>> +
->>>> +void __meminit
->>>> +vmemmap_kfree(struct page *memmap, unsigned long nr_pages)
->>>> +{
->>>> +	unsigned long addr = (unsigned long)memmap;
->>>> +	unsigned long end = (unsigned long)(memmap + nr_pages);
->>>> +	unsigned long next;
->>>> +	unsigned int order;
->>>> +	struct page *page;
->>>> +
->>>> +	for (; addr < end; addr = next) {
->>>> +		page = NULL;
->>>> +		next = find_and_clear_pte_page(addr, end, &page);
->>>> +		if (!page)
->>>> +			continue;
->>>> +
->>>> +		if (is_vmalloc_addr(page_address(page)))
->>>> +			vfree(page_address(page));
->>>
->>> Hmm, the memory is allocated in vmemmap_alloc_block(), and the address
->>> can not be vmalloc address.
->>
->> Does it mean the if sentence is unnecessary?
->>
->>>
->>>> +		else {
->>>> +			order = next - addr;
->>>> +			free_pages((unsigned long)page_address(page),
->>>> +				   get_order(order));
->>>
->>> OOPS. I think we cannot free pages here.
->>>
->>> sizeof(struct page) is less than PAGE_SIZE. We store more than one struct
->>> page in the same page. If you free it here while the other struct page
->>> is in use, it is very dangerous.
->>
->> The memory has page structures for hot-removed memory. So nobody is using
->> these pages, since the hot-removed memory has been offlined.
-> 
-> The memory has page structures for hot-removed memory, but it may contain
-> page structures for the other hot-added memory.
+Thanks,
 
-Yes. There may be such corner case. But when does the corner case appear?
-When removed memory is not aligned to PMD_SIZE/PAGE_SIZE, does the corner
-case appear? Do you know it?
+Acked-by: Lars-Peter Clausen <lars@metafoo.de>
 
-Thank,
-Yasuaki Ishimatsu
-
+> ---
+>  drivers/iio/dac/ad5064.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> IIUC, If we use sparse-vmemmap, all page structures is stored here.
-> 
-> Thanks
-> Wen Congyang
-> 
->>
->>>> +		}
->>>> +	}
->>>> +}
->>>> +
->>>> +void __meminit
->>>> +vmemmap_free_bootmem(struct page *memmap, unsigned long nr_pages)
->>>> +{
->>>> +	unsigned long addr = (unsigned long)memmap;
->>>> +	unsigned long end = (unsigned long)(memmap + nr_pages);
->>>> +	unsigned long next;
->>>> +	struct page *page;
->>>> +	unsigned long magic;
->>>> +
->>>> +	for (; addr < end; addr = next) {
->>>> +		page = NULL;
->>>> +		next = find_and_clear_pte_page(addr, end, &page);
->>>> +		if (!page)
->>>> +			continue;
->>>> +
->>>> +		magic = (unsigned long) page->lru.next;
->>>> +		if (magic == SECTION_INFO)
->>>> +			put_page_bootmem(page);
->>>> +	}
->>>> +}
->>>> +
->>>>    void __meminit
->>>>    register_page_bootmem_memmap(unsigned long section_nr, struct page *start_page,
->>>>    			     unsigned long size)
->>>> Index: linux-3.5-rc4/mm/memory_hotplug.c
->>>> ===================================================================
->>>> --- linux-3.5-rc4.orig/mm/memory_hotplug.c	2012-07-03 14:22:18.522011667 +0900
->>>> +++ linux-3.5-rc4/mm/memory_hotplug.c	2012-07-03 14:22:21.012982694 +0900
->>>> @@ -303,6 +303,8 @@ static int __meminit __add_section(int n
->>>>    #ifdef CONFIG_SPARSEMEM_VMEMMAP
->>>
->>> I think this line can be removed now.
->>
->> I'll update it.
->>
->> Thanks,
->> Yasuaki Ishimatsu
->>
->>>
->>> Thanks
->>> Wen Congyang
->>>
->>>>    static int __remove_section(struct zone *zone, struct mem_section *ms)
->>>>    {
->>>> +	unsigned long flags;
->>>> +	struct pglist_data *pgdat = zone->zone_pgdat;
->>>>    	int ret;
->>>>
->>>>    	if (!valid_section(ms))
->>>> @@ -310,6 +312,9 @@ static int __remove_section(struct zone
->>>>
->>>>    	ret = unregister_memory_section(ms);
->>>>
->>>> +	pgdat_resize_lock(pgdat, &flags);
->>>> +	sparse_remove_one_section(zone, ms);
->>>> +	pgdat_resize_unlock(pgdat, &flags);
->>>>    	return ret;
->>>>    }
->>>>    #else
->>>>
->>>>
->>>
->>
->>
->>
->>
-> 
-
-
+> diff --git a/drivers/iio/dac/ad5064.c b/drivers/iio/dac/ad5064.c
+> index aa739c4..6ec1319 100644
+> --- a/drivers/iio/dac/ad5064.c
+> +++ b/drivers/iio/dac/ad5064.c
+> @@ -582,7 +582,7 @@ static int __init ad5064_spi_register_driver(void)
+>  	return spi_register_driver(&ad5064_spi_driver);
+>  }
+>  
+> -static void __exit ad5064_spi_unregister_driver(void)
+> +static void ad5064_spi_unregister_driver(void)
+>  {
+>  	spi_unregister_driver(&ad5064_spi_driver);
+>  }
 
