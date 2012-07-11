@@ -1,83 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758214Ab2GKVQV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 17:16:21 -0400
-Received: from inca-roads.misterjones.org ([213.251.177.50]:52187 "EHLO
-	inca-roads.misterjones.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753482Ab2GKVQU (ORCPT
+	id S1030276Ab2GKVSq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 17:18:46 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:52379 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755268Ab2GKVSo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 17:16:20 -0400
-To: Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [Ksummit-2012-discuss] ARM mini-summit
-X-PHP-Originating-Script: 0:func.inc
+	Wed, 11 Jul 2012 17:18:44 -0400
 MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.00.1207111337430.3635@chino.kir.corp.google.com>
+References: <1341878153-10757-1-git-send-email-minchan@kernel.org>
+	<20120709170856.ca67655a.akpm@linux-foundation.org>
+	<20120710002510.GB5935@bbox>
+	<alpine.DEB.2.00.1207101756070.684@chino.kir.corp.google.com>
+	<20120711022304.GA17425@bbox>
+	<alpine.DEB.2.00.1207102223000.26591@chino.kir.corp.google.com>
+	<4FFD15B2.6020001@kernel.org>
+	<alpine.DEB.2.00.1207111337430.3635@chino.kir.corp.google.com>
+Date: Thu, 12 Jul 2012 06:18:43 +0900
+X-Google-Sender-Auth: R7LqOh0E4oKe8ZstsJE4Ab_Sp6A
+Message-ID: <CAEwNFnB1Z92f22ms=EsBEOOY4Q_JRA8rMPUvQmoqik7rt-EgcQ@mail.gmail.com>
+Subject: Re: [PATCH v2] mm: Warn about costly page allocation
+From: Minchan Kim <minchan@kernel.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Date: Wed, 11 Jul 2012 23:16:09 +0200
-From: Marc Zyngier <marc.zyngier@arm.com>
-Cc: <ksummit-2012-discuss@lists.linux-foundation.org>, <konrad@darnok.org>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Organization: ARM Ltd
-In-Reply-To: <201207112006.28632.arnd@arndb.de>
-References: <1341994155.3522.16.camel@dabdike.int.hansenpartnership.com> <20120711140536.GC16523@phenom.dumpdata.com> <CAPbh3rsnNNFNWEf651M-mO2UFOK8pFYTMV2x7RPhjHOAyf9OJw@mail.gmail.com> <201207112006.28632.arnd@arndb.de>
-Message-ID: <061ef00be9b475973e5df22fcd096308@localhost>
-User-Agent: RoundCube Webmail/0.3.1
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Rcpt-To: arnd@arndb.de, ksummit-2012-discuss@lists.linux-foundation.org, konrad@darnok.org, James.Bottomley@hansenpartnership.com, linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org, konrad.wilk@oracle.com
-X-SA-Exim-Mail-From: marc.zyngier@arm.com
-X-SA-Exim-Scanned: No (on inca-roads.misterjones.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Jul 2012 20:06:28 +0000, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Wednesday 11 July 2012, Konrad Rzeszutek Wilk wrote:
->> >> > contacts, with Grant and Olof joining in as time permits.
->> >>
->> >> Acked-by: Grant Likely <grant.likely@secretlab.ca>
->> >
->> > I would be interested in attending it as well. I believe Stefano has
-a
->> > strong
->> > interest as well (since he and Ian Campbell are leading the Xen ARM
->> > work).
->> 
->> And Stefano is out on vacation right now so I will serve as his phantom
->> voice
->> and say: "Yes, I am interested as well."
-> 
-> Ok. So are you mostly interested in discussion ARM virtualization or
-other
-> topics
-> as well? Last time we had organized this explicitly as the "ARM subarch
-> maintainer
-> summit" and we might again limit the participants to the subarch
-> maintainers and
-> a few more people if we're running out of space, but then again if a lot
-> of them
-> are interested in discussion virtualization, we should probably have you
-> both and 
-> the ARM KVM people included as well.
-> 
-> We haven't even started discussing an agenda, but I'll note down your
-> names as
-> candidates and Xen and/or KVM as proposed topics. I'll follow up with a
-> more
-> formal call for topics once I have a positive confirmation from James
-and
-> the
-> linux-foundation that we can go ahead with the ARM mini-summit.
+On Thu, Jul 12, 2012 at 5:40 AM, David Rientjes <rientjes@google.com> wrote:
+> On Wed, 11 Jul 2012, Minchan Kim wrote:
+>
+>> I agree it's an ideal but the problem is that it's too late.
+>> Once product is released, we have to recall all products in the worst case.
+>> The fact is that lumpy have helped high order allocation implicitly but we removed it
+>> without any notification or information. It's a sort of regression and we can't say
+>> them "Please report us if it happens". It's irresponsible, too.
+>> IMHO, at least, what we can do is to warn about it before it's too late.
+>>
+>
+> High order allocations that fail should still display a warning message
+> when __GFP_NOWARN is not set, so I don't see what this additional warning
+> adds.  I don't think it's responsible to ask admins to know what lumpy
+> reclaim is, what memory compaction is, or when a system tends to have more
+> high order allocations when memory compaction would be helpful.
+>
+> What we can do, though, is address bug reports as they are reported when
+> high order allocations fail and previous kernels are successful.  I
+> haven't seen any lately.
 
-Putting on my KVM/ARM hacker hat this time: I'd be very glad to contribute
-to the discussion. There is a number of ARM-specific topics that would be
-interesting to discuss regarding KVM/ARM (mainlining the damn thing, common
-hypercalls?, HYP mode booting), and probably a couple of other things.
+Did you read my description?
 
-Cheers,
+"
+Let's think this scenario.
 
-        M.
+There is QA team in embedded company and they have tested their product.
+In test scenario, they can allocate 100 high order allocation.
+(they don't matter how many high order allocations in kernel are needed
+during test. their concern is just only working well or fail of their
+middleware/application) High order allocation will be serviced well
+by natural buddy allocation without lumpy's help. So they released
+the product and sold out all over the world.
+Unfortunately, in real practice, sometime, 105 high order allocation was
+needed rarely and fortunately, lumpy reclaim could help it so the product
+doesn't have a problem until now.
+
+If they use latest kernel, they will see the new config CONFIG_COMPACTION
+which is very poor documentation, and they can't know it's replacement of
+lumpy reclaim(even, they don't know lumpy reclaim) so they simply disable
+that option for size optimization. Of course, QA team still test it but they
+can't find the problem if they don't do test stronger than old.
+It ends up release the product and sold out all over the world, again.
+But in this time, we don't have both lumpy and compaction so the problem
+would happen in real practice. A poor enginner from Korea have to flight
+to the USA for the fix a ton of products. Otherwise, should recall products
+from all over the world. Maybe he can lose a job. :(
+"
+It's not much exaggerated. who should we blame?
+
 -- 
-Fast, cheap, reliable. Pick two.
+Kind regards,
+Minchan Kim
