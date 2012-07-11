@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932553Ab2GKNoT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 09:44:19 -0400
-Received: from co1ehsobe002.messaging.microsoft.com ([216.32.180.185]:40060
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757735Ab2GKNjX (ORCPT
+	id S1757732Ab2GKNjW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 09:39:22 -0400
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:39631
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757631Ab2GKNjR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 09:39:23 -0400
-X-Greylist: delayed 10195 seconds by postgrey-1.27 at vger.kernel.org; Wed, 11 Jul 2012 09:39:23 EDT
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+	Wed, 11 Jul 2012 09:39:17 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
 X-SpamScore: 0
 X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah)
-X-WSS-ID: 0M700LF-02-1PE-02
+X-WSS-ID: 0M700LD-01-AXD-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: <iommu@lists.linux-foundation.org>
 CC: <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 23/27] iommu/amd: Add initialization routines for AMD interrupt remapping
-Date: Wed, 11 Jul 2012 15:39:08 +0200
-Message-ID: <1342013952-10174-24-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 06/27] iommu/amd: Move informational prinks out of iommu_enable
+Date: Wed, 11 Jul 2012 15:38:51 +0200
+Message-ID: <1342013952-10174-7-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1342013952-10174-1-git-send-email-joerg.roedel@amd.com>
 References: <1342013952-10174-1-git-send-email-joerg.roedel@amd.com>
@@ -29,143 +28,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the six routines required to setup interrupt remapping
-with the AMD IOMMU. Also put it all together into the AMD
-specific irq_remap_ops.
+This function will be called before the PCI subsystem is
+initialized. Therefore dev_name doen't work and IOMMU
+information can't be printed to the klog as before. Move the
+code to print that information to a later point where PCI
+initializtion has already happened.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- drivers/iommu/amd_iommu.c       |   18 +++++++++++++++++
- drivers/iommu/amd_iommu_init.c  |   42 +++++++++++++++++++++++++++++++++++++++
- drivers/iommu/amd_iommu_proto.h |    8 ++++++++
- drivers/iommu/irq_remapping.h   |    1 +
- 4 files changed, 69 insertions(+)
+ drivers/iommu/amd_iommu_init.c |   44 ++++++++++++++++++++++++----------------
+ 1 file changed, 27 insertions(+), 17 deletions(-)
 
-diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-index ac6e731..439f03c 100644
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -45,6 +45,7 @@
- 
- #include "amd_iommu_proto.h"
- #include "amd_iommu_types.h"
-+#include "irq_remapping.h"
- 
- #define CMD_SET_TYPE(cmd, t) ((cmd)->data[1] |= ((t) << 28))
- 
-@@ -4154,4 +4155,21 @@ static int setup_hpet_msi(unsigned int irq, unsigned int id)
- 	return 0;
- }
- 
-+struct irq_remap_ops amd_iommu_irq_ops = {
-+	.supported		= amd_iommu_supported,
-+	.prepare		= amd_iommu_prepare,
-+	.enable			= amd_iommu_enable,
-+	.disable		= amd_iommu_disable,
-+	.reenable		= amd_iommu_reenable,
-+	.enable_faulting	= amd_iommu_enable_faulting,
-+	.setup_ioapic_entry	= setup_ioapic_entry,
-+#ifdef CONFIG_SMP
-+	.set_affinity		= set_affinity,
-+#endif
-+	.free_irq		= free_irq,
-+	.compose_msi_msg	= compose_msi_msg,
-+	.msi_alloc_irq		= msi_alloc_irq,
-+	.msi_setup_irq		= msi_setup_irq,
-+	.setup_hpet_msi		= setup_hpet_msi,
-+};
- #endif
 diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
-index 820f688..d195d22 100644
+index fa6ca8b..bcdcaac 100644
 --- a/drivers/iommu/amd_iommu_init.c
 +++ b/drivers/iommu/amd_iommu_init.c
-@@ -34,6 +34,7 @@
- #include <asm/x86_init.h>
- #include <asm/iommu_table.h>
- #include <asm/io_apic.h>
-+#include <asm/irq_remapping.h>
- 
- #include "amd_iommu_proto.h"
- #include "amd_iommu_types.h"
-@@ -1894,7 +1895,48 @@ static int __init iommu_go_to_state(enum iommu_init_state state)
- 	return ret;
+@@ -312,23 +312,6 @@ static void iommu_set_inv_tlb_timeout(struct amd_iommu *iommu, int timeout)
+ /* Function to enable the hardware */
+ static void iommu_enable(struct amd_iommu *iommu)
+ {
+-	static const char * const feat_str[] = {
+-		"PreF", "PPR", "X2APIC", "NX", "GT", "[5]",
+-		"IA", "GA", "HE", "PC", NULL
+-	};
+-	int i;
+-
+-	printk(KERN_INFO "AMD-Vi: Enabling IOMMU at %s cap 0x%hx",
+-	       dev_name(&iommu->dev->dev), iommu->cap_ptr);
+-
+-	if (iommu->cap & (1 << IOMMU_CAP_EFR)) {
+-		printk(KERN_CONT " extended features: ");
+-		for (i = 0; feat_str[i]; ++i)
+-			if (iommu_feature(iommu, (1ULL << i)))
+-				printk(KERN_CONT " %s", feat_str[i]);
+-	}
+-	printk(KERN_CONT "\n");
+-
+ 	iommu_feature_enable(iommu, CONTROL_IOMMU_EN);
  }
  
-+#ifdef CONFIG_IRQ_REMAP
-+int __init amd_iommu_prepare(void)
+@@ -1096,6 +1079,31 @@ static int iommu_init_pci(struct amd_iommu *iommu)
+ 	return pci_enable_device(iommu->dev);
+ }
+ 
++static void print_iommu_info(void)
 +{
-+	return iommu_go_to_state(IOMMU_ACPI_FINISHED);
++	static const char * const feat_str[] = {
++		"PreF", "PPR", "X2APIC", "NX", "GT", "[5]",
++		"IA", "GA", "HE", "PC"
++	};
++	struct amd_iommu *iommu;
++
++	for_each_iommu(iommu) {
++		int i;
++
++		pr_info("AMD-Vi: Found IOMMU at %s cap 0x%hx\n",
++			dev_name(&iommu->dev->dev), iommu->cap_ptr);
++
++		if (iommu->cap & (1 << IOMMU_CAP_EFR)) {
++			pr_info("AMD-Vi:  Extended features: ");
++			for (i = 0; ARRAY_SIZE(feat_str); ++i) {
++				if (iommu_feature(iommu, (1ULL << i)))
++					pr_cont(" %s", feat_str[i]);
++			}
++		}
++		pr_cont("\n");
++	}
 +}
 +
-+int __init amd_iommu_supported(void)
-+{
-+	return amd_iommu_irq_remap ? 1 : 0;
-+}
-+
-+int __init amd_iommu_enable(void)
-+{
-+	int ret;
-+
-+	ret = iommu_go_to_state(IOMMU_ENABLED);
-+	if (ret)
-+		return ret;
+ static int amd_iommu_init_pci(void)
+ {
+ 	struct amd_iommu *iommu;
+@@ -1112,6 +1120,8 @@ static int amd_iommu_init_pci(void)
  
-+	irq_remapping_enabled = 1;
-+
-+	return 0;
-+}
-+
-+void amd_iommu_disable(void)
-+{
-+	amd_iommu_suspend();
-+}
-+
-+int amd_iommu_reenable(int mode)
-+{
-+	amd_iommu_resume();
-+
-+	return 0;
-+}
-+
-+int __init amd_iommu_enable_faulting(void)
-+{
-+	/* We enable MSI later when PCI is initialized */
-+	return 0;
-+}
-+#endif
+ 	ret = amd_iommu_init_devices();
  
- /*
-  * This is the core init function for AMD IOMMU hardware in the system.
-diff --git a/drivers/iommu/amd_iommu_proto.h b/drivers/iommu/amd_iommu_proto.h
-index 1a7f41c..c294961 100644
---- a/drivers/iommu/amd_iommu_proto.h
-+++ b/drivers/iommu/amd_iommu_proto.h
-@@ -32,6 +32,14 @@ extern void amd_iommu_uninit_devices(void);
- extern void amd_iommu_init_notifier(void);
- extern void amd_iommu_init_api(void);
- 
-+/* Needed for interrupt remapping */
-+extern int amd_iommu_supported(void);
-+extern int amd_iommu_prepare(void);
-+extern int amd_iommu_enable(void);
-+extern void amd_iommu_disable(void);
-+extern int amd_iommu_reenable(int);
-+extern int amd_iommu_enable_faulting(void);
++	print_iommu_info();
 +
- /* IOMMUv2 specific functions */
- struct iommu_domain;
- 
-diff --git a/drivers/iommu/irq_remapping.h b/drivers/iommu/irq_remapping.h
-index b3f70c9..915a247 100644
---- a/drivers/iommu/irq_remapping.h
-+++ b/drivers/iommu/irq_remapping.h
-@@ -84,6 +84,7 @@ struct irq_remap_ops {
- };
- 
- extern struct irq_remap_ops intel_irq_remap_ops;
-+extern struct irq_remap_ops amd_iommu_irq_ops;
- 
- #else  /* CONFIG_IRQ_REMAP */
+ 	return ret;
+ }
  
 -- 
 1.7.9.5
