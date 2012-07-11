@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757781Ab2GKNrr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 09:47:47 -0400
-Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:12848
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757717Ab2GKNjU (ORCPT
+	id S932622Ab2GKNss (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 09:48:48 -0400
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:9861
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757675Ab2GKNjT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 09:39:20 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+	Wed, 11 Jul 2012 09:39:19 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
 X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bh8275dhz2dh668h839hd24he5bhf0ah)
-X-WSS-ID: 0M700L8-01-AX4-02
+X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah)
+X-WSS-ID: 0M700LC-02-1P8-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: <iommu@lists.linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>,
-        <x86@kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: [PATCH 02/27] x86/irq: Introduce irq_cfg->remapped
-Date: Wed, 11 Jul 2012 15:38:47 +0200
-Message-ID: <1342013952-10174-3-git-send-email-joerg.roedel@amd.com>
+CC: <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
+Subject: [PATCH 03/27] iommu/amd: Fix sparse warnings
+Date: Wed, 11 Jul 2012 15:38:48 +0200
+Message-ID: <1342013952-10174-4-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1342013952-10174-1-git-send-email-joerg.roedel@amd.com>
 References: <1342013952-10174-1-git-send-email-joerg.roedel@amd.com>
@@ -30,80 +28,142 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This flag will show whether the interrupt is remapped in a
-way that works for VT-d and AMD-Vi.
+A few sparse warnings fire in drivers/iommu/amd_iommu_init.c.
+Fix most of them with this patch. Also fix the sparse
+warnings in drivers/iommu/irq_remapping.c while at it.
 
-Cc: x86@kernel.org
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- arch/x86/include/asm/hw_irq.h       |    1 +
- arch/x86/kernel/apic/io_apic.c      |    2 +-
- drivers/iommu/intel_irq_remapping.c |    4 ++++
- 3 files changed, 6 insertions(+), 1 deletion(-)
+ drivers/iommu/amd_iommu.c       |    2 +-
+ drivers/iommu/amd_iommu_init.c  |   16 +++++-----------
+ drivers/iommu/amd_iommu_types.h |    8 +++++++-
+ drivers/iommu/amd_iommu_v2.c    |    2 +-
+ drivers/iommu/irq_remapping.c   |    5 +++++
+ 5 files changed, 19 insertions(+), 14 deletions(-)
 
-diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
-index b6171e6..71bb327 100644
---- a/arch/x86/include/asm/hw_irq.h
-+++ b/arch/x86/include/asm/hw_irq.h
-@@ -132,6 +132,7 @@ struct irq_cfg {
- 	u8			vector;
- 	u8			move_in_progress : 1;
- #ifdef CONFIG_IRQ_REMAP
-+	bool			remapped;
- 	union irq_remap_info    irq_remap_info;
- #endif
- };
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 08f666c..d5bccc0 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -72,7 +72,7 @@
- static void irq_remap_modify_chip_defaults(struct irq_chip *chip);
- static inline bool irq_remapped(struct irq_cfg *cfg)
+diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
+index a2e418c..a0ccdcb 100644
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -2071,7 +2071,7 @@ out_err:
+ /* FIXME: Move this to PCI code */
+ #define PCI_PRI_TLP_OFF		(1 << 15)
+ 
+-bool pci_pri_tlp_required(struct pci_dev *pdev)
++static bool pci_pri_tlp_required(struct pci_dev *pdev)
  {
--	return cfg->irq_remap_info.irq_2_iommu.iommu != NULL;
-+	return cfg->remapped;
+ 	u16 status;
+ 	int pos;
+diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
+index 542024b..1b3f699 100644
+--- a/drivers/iommu/amd_iommu_init.c
++++ b/drivers/iommu/amd_iommu_init.c
+@@ -190,12 +190,6 @@ static u32 dev_table_size;	/* size of the device table */
+ static u32 alias_table_size;	/* size of the alias table */
+ static u32 rlookup_table_size;	/* size if the rlookup table */
+ 
+-/*
+- * This function flushes all internal caches of
+- * the IOMMU used by this driver.
+- */
+-extern void iommu_flush_all_caches(struct amd_iommu *iommu);
+-
+ static int amd_iommu_enable_interrupts(void);
+ 
+ static inline void update_last_devid(u16 devid)
+@@ -358,7 +352,7 @@ static void iommu_disable(struct amd_iommu *iommu)
+  * mapping and unmapping functions for the IOMMU MMIO space. Each AMD IOMMU in
+  * the system has one.
+  */
+-static u8 * __init iommu_map_mmio_space(u64 address)
++static u8 __iomem * __init iommu_map_mmio_space(u64 address)
+ {
+ 	if (!request_mem_region(address, MMIO_REGION_LENGTH, "amd_iommu")) {
+ 		pr_err("AMD-Vi: Can not reserve memory region %llx for mmio\n",
+@@ -367,7 +361,7 @@ static u8 * __init iommu_map_mmio_space(u64 address)
+ 		return NULL;
+ 	}
+ 
+-	return ioremap_nocache(address, MMIO_REGION_LENGTH);
++	return (u8 __iomem *)ioremap_nocache(address, MMIO_REGION_LENGTH);
  }
- #else
- static inline bool irq_remapped(struct irq_cfg *cfg)
-diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
-index e4e4334..29411ed 100644
---- a/drivers/iommu/intel_irq_remapping.c
-+++ b/drivers/iommu/intel_irq_remapping.c
-@@ -68,6 +68,7 @@ static int alloc_irte(struct intel_iommu *iommu, int irq, u16 count)
+ 
+ static void __init iommu_unmap_mmio_space(struct amd_iommu *iommu)
+@@ -1217,7 +1211,7 @@ static int __init init_exclusion_range(struct ivmd_header *m)
+ /* called for unity map ACPI definition */
+ static int __init init_unity_map_range(struct ivmd_header *m)
  {
- 	struct ir_table *table = iommu->ir_table;
- 	struct irq_2_iommu *irq_iommu = irq_2_iommu(irq);
-+	struct irq_cfg *cfg = irq_get_chip_data(irq);
- 	u16 index, start_index;
- 	unsigned int mask = 0;
- 	unsigned long flags;
-@@ -115,6 +116,7 @@ static int alloc_irte(struct intel_iommu *iommu, int irq, u16 count)
- 	for (i = index; i < index + count; i++)
- 		table->base[i].present = 1;
+-	struct unity_map_entry *e = 0;
++	struct unity_map_entry *e = NULL;
+ 	char *s;
  
-+	cfg->remapped = true;
- 	irq_iommu->iommu = iommu;
- 	irq_iommu->irte_index =  index;
- 	irq_iommu->sub_handle = 0;
-@@ -155,6 +157,7 @@ static int map_irq_to_irte_handle(int irq, u16 *sub_handle)
- static int set_irte_irq(int irq, struct intel_iommu *iommu, u16 index, u16 subhandle)
+ 	e = kzalloc(sizeof(*e), GFP_KERNEL);
+@@ -1727,8 +1721,8 @@ __setup("amd_iommu=", parse_amd_iommu_options);
+ 
+ IOMMU_INIT_FINISH(amd_iommu_detect,
+ 		  gart_iommu_hole_init,
+-		  0,
+-		  0);
++		  NULL,
++		  NULL);
+ 
+ bool amd_iommu_v2_supported(void)
  {
- 	struct irq_2_iommu *irq_iommu = irq_2_iommu(irq);
-+	struct irq_cfg *cfg = irq_get_chip_data(irq);
- 	unsigned long flags;
+diff --git a/drivers/iommu/amd_iommu_types.h b/drivers/iommu/amd_iommu_types.h
+index 2435555..594faaf 100644
+--- a/drivers/iommu/amd_iommu_types.h
++++ b/drivers/iommu/amd_iommu_types.h
+@@ -487,7 +487,7 @@ struct amd_iommu {
+ 	/* physical address of MMIO space */
+ 	u64 mmio_phys;
+ 	/* virtual address of MMIO space */
+-	u8 *mmio_base;
++	u8 __iomem *mmio_base;
  
- 	if (!irq_iommu)
-@@ -162,6 +165,7 @@ static int set_irte_irq(int irq, struct intel_iommu *iommu, u16 index, u16 subha
+ 	/* capabilities of that IOMMU read from ACPI */
+ 	u32 cap;
+@@ -664,6 +664,12 @@ extern bool amd_iommu_force_isolation;
+ /* Max levels of glxval supported */
+ extern int amd_iommu_max_glx_val;
  
- 	raw_spin_lock_irqsave(&irq_2_ir_lock, flags);
++/*
++ * This function flushes all internal caches of
++ * the IOMMU used by this driver.
++ */
++extern void iommu_flush_all_caches(struct amd_iommu *iommu);
++
+ /* takes bus and device/function and returns the device id
+  * FIXME: should that be in generic PCI code? */
+ static inline u16 calc_devid(u8 bus, u8 devfn)
+diff --git a/drivers/iommu/amd_iommu_v2.c b/drivers/iommu/amd_iommu_v2.c
+index 036fe9b..77c28b7 100644
+--- a/drivers/iommu/amd_iommu_v2.c
++++ b/drivers/iommu/amd_iommu_v2.c
+@@ -81,7 +81,7 @@ struct fault {
+ 	u16 flags;
+ };
  
-+	cfg->remapped = true;
- 	irq_iommu->iommu = iommu;
- 	irq_iommu->irte_index = index;
- 	irq_iommu->sub_handle = subhandle;
+-struct device_state **state_table;
++static struct device_state **state_table;
+ static spinlock_t state_lock;
+ 
+ /* List and lock for all pasid_states */
+diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
+index 40cda8e..9276996 100644
+--- a/drivers/iommu/irq_remapping.c
++++ b/drivers/iommu/irq_remapping.c
+@@ -1,6 +1,11 @@
+ #include <linux/kernel.h>
+ #include <linux/string.h>
++#include <linux/cpumask.h>
+ #include <linux/errno.h>
++#include <linux/msi.h>
++
++#include <asm/hw_irq.h>
++#include <asm/irq_remapping.h>
+ 
+ #include "irq_remapping.h"
+ 
 -- 
 1.7.9.5
 
