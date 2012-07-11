@@ -1,162 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030439Ab2GKW3f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 18:29:35 -0400
-Received: from mail160.messagelabs.com ([216.82.253.99]:64579 "EHLO
-	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753638Ab2GKW3d (ORCPT
+	id S1030450Ab2GKW34 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 18:29:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58456 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030333Ab2GKW3z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 18:29:33 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-3.tower-160.messagelabs.com!1342045768!9397447!5
-X-Originating-IP: [216.166.12.178]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 19/30] staging: comedi: contec_pci_dio: factor out the "find pci device" code
-Date: Wed, 11 Jul 2012 15:29:25 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <gregkh@linuxfoundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Wed, 11 Jul 2012 18:29:55 -0400
+Date: Wed, 11 Jul 2012 15:29:53 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+Cc: Len Brown <len.brown@intel.com>, Joe Perches <joe@perches.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
+        linux-kernel@vger.kernel.org, Magnus <magnus.damm@gmail.com>
+Subject: Re: [PATCH] thermal: add Renesas R-Car thermal sensor support
+Message-Id: <20120711152953.ea267370.akpm@linux-foundation.org>
+In-Reply-To: <87ipdw9oj3.wl%kuninori.morimoto.gx@renesas.com>
+References: <87ipdw9oj3.wl%kuninori.morimoto.gx@renesas.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201207111529.25773.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Factor the "find pci device" code out of the attach function.
+On Tue, 10 Jul 2012 11:59:42 +0900
+Kuninori Morimoto <kuninori.morimoto.gx@renesas.com> wrote:
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/staging/comedi/drivers/contec_pci_dio.c | 91 +++++++++++++------------
- 1 file changed, 49 insertions(+), 42 deletions(-)
+> This patch add basic Renesas R-Car thermal sensor support.
+> It was tested on R-Car H1 Marzen board.
+> 
+> ...
+>
+> +static void rcar_thermal_bset(struct rcar_thermal_priv *priv, u32 reg,
+> +			      u32 mask, u32 data)
+> +{
+> +	u32 val = rcar_thermal_read(priv, reg);
+> +
+> +	val &= ~mask;
+> +	val |= (data & mask);
+> +
+> +	rcar_thermal_write(priv, reg, val);
+> +}
 
-diff --git a/drivers/staging/comedi/drivers/contec_pci_dio.c b/drivers/staging/comedi/drivers/contec_pci_dio.c
-index ee769e0..b7313be 100644
---- a/drivers/staging/comedi/drivers/contec_pci_dio.c
-+++ b/drivers/staging/comedi/drivers/contec_pci_dio.c
-@@ -97,22 +97,10 @@ static int contec_di_insn_bits(struct comedi_device *dev,
- 	return insn->n;
- }
- 
--static int contec_attach(struct comedi_device *dev, struct comedi_devconfig *it)
-+static struct pci_dev *contec_find_pci_dev(struct comedi_device *dev,
-+					   struct comedi_devconfig *it)
- {
- 	struct pci_dev *pcidev = NULL;
--	struct comedi_subdevice *s;
--	int ret;
--
--	printk("comedi%d: contec: ", dev->minor);
--
--	dev->board_name = thisboard->name;
--
--	if (alloc_private(dev, sizeof(struct contec_private)) < 0)
--		return -ENOMEM;
--
--	ret = comedi_alloc_subdevices(dev, 2);
--	if (ret)
--		return ret;
- 
- 	for_each_pci_dev(pcidev) {
- 		if (pcidev->vendor == PCI_VENDOR_ID_CONTEC &&
-@@ -124,43 +112,62 @@ static int contec_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 					continue;
- 				}
- 			}
--			devpriv->pci_dev = pcidev;
--			if (comedi_pci_enable(pcidev, "contec_pci_dio")) {
--				printk
--				    ("error enabling PCI device and request regions!\n");
--				return -EIO;
--			}
--			dev->iobase = pci_resource_start(pcidev, 0);
--			printk(" base addr %lx ", dev->iobase);
--
- 			dev->board_ptr = contec_boards + 0;
-+			return pcidev;
-+		}
-+	}
-+	printk("card not present!\n");
-+	return NULL;
-+}
- 
--			s = dev->subdevices + 0;
-+static int contec_attach(struct comedi_device *dev, struct comedi_devconfig *it)
-+{
-+	struct comedi_subdevice *s;
-+	int ret;
- 
--			s->type = COMEDI_SUBD_DI;
--			s->subdev_flags = SDF_READABLE;
--			s->n_chan = 16;
--			s->maxdata = 1;
--			s->range_table = &range_digital;
--			s->insn_bits = contec_di_insn_bits;
-+	printk("comedi%d: contec: ", dev->minor);
- 
--			s = dev->subdevices + 1;
--			s->type = COMEDI_SUBD_DO;
--			s->subdev_flags = SDF_WRITABLE;
--			s->n_chan = 16;
--			s->maxdata = 1;
--			s->range_table = &range_digital;
--			s->insn_bits = contec_do_insn_bits;
-+	if (alloc_private(dev, sizeof(struct contec_private)) < 0)
-+		return -ENOMEM;
- 
--			printk("attached\n");
-+	ret = comedi_alloc_subdevices(dev, 2);
-+	if (ret)
-+		return ret;
- 
--			return 1;
--		}
-+	devpriv->pci_dev = contec_find_pci_dev(dev, it);
-+	if (!devpriv->pci_dev)
-+		return -EIO;
-+
-+	dev->board_name = thisboard->name;
-+
-+	if (comedi_pci_enable(devpriv->pci_dev, "contec_pci_dio")) {
-+		printk("error enabling PCI device and request regions!\n");
-+		return -EIO;
- 	}
- 
--	printk("card not present!\n");
-+	dev->iobase = pci_resource_start(devpriv->pci_dev, 0);
-+	printk(" base addr %lx ", dev->iobase);
-+
-+	s = dev->subdevices + 0;
-+
-+	s->type = COMEDI_SUBD_DI;
-+	s->subdev_flags = SDF_READABLE;
-+	s->n_chan = 16;
-+	s->maxdata = 1;
-+	s->range_table = &range_digital;
-+	s->insn_bits = contec_di_insn_bits;
-+
-+	s = dev->subdevices + 1;
-+	s->type = COMEDI_SUBD_DO;
-+	s->subdev_flags = SDF_WRITABLE;
-+	s->n_chan = 16;
-+	s->maxdata = 1;
-+	s->range_table = &range_digital;
-+	s->insn_bits = contec_do_insn_bits;
-+
-+	printk("attached\n");
- 
--	return -EIO;
-+	return 1;
- }
- 
- static void contec_detach(struct comedi_device *dev)
--- 
-1.7.11
+The driver generally looks terribly racy on SMP or uniprocessor with
+preemption.
 
+> +/*
+> + *		zone device functions
+> + */
+> +static int rcar_thermal_get_temp(struct thermal_zone_device *zone,
+> +			   unsigned long *temp)
+> +{
+> +	struct rcar_thermal_priv *priv = zone->devdata;
+> +	int val, min, max, tmp;
+> +
+> +	tmp = -200; /* default */
+> +	while (1) {
+> +		if (priv->comp < 1 || priv->comp > 12) {
+> +			dev_err(priv->dev,
+> +				"THSSR invalid data (%d)\n", priv->comp);
+> +			priv->comp = 4; /* for next thermal */
+> +			return -EINVAL;
+> +		}
+> +
+> +		/*
+> +		 * THS comparator offset and the reference temperature
+> +		 *
+> +		 * Comparator	| reference	| Temperature field
+> +		 * offset	| temperature	| measurement
+> +		 *		| (degrees C)	| (degrees C)
+> +		 * -------------+---------------+-------------------
+> +		 *  1		|  -45		|  -45 to  -30
+> +		 *  2		|  -30		|  -30 to  -15
+> +		 *  3		|  -15		|  -15 to    0
+> +		 *  4		|    0		|    0 to  +15
+> +		 *  5		|  +15		|  +15 to  +30
+> +		 *  6		|  +30		|  +30 to  +45
+> +		 *  7		|  +45		|  +45 to  +60
+> +		 *  8		|  +60		|  +60 to  +75
+> +		 *  9		|  +75		|  +75 to  +90
+> +		 * 10		|  +90		|  +90 to +105
+> +		 * 11		| +105		| +105 to +120
+> +		 * 12		| +120		| +120 to +135
+> +		 */
+> +
+> +		rcar_thermal_bset(priv, THSCR, CPTAP, priv->comp);
+> +		udelay(300);
+
+Please try to avoid bare a udelay() like this.  It is very hard for the
+reader to understand why the delay is in there, and why it has tahe
+particular duration So a comment explaining the reasons is often
+beneficial.
+
+> +		/*
+> +		 * calculate thermal limitation.
+> +		 * see above "Temperature field measurement"
+> +		 */
+> +		min = (priv->comp * 15) - 60;
+> +		max = min + 15;
+> +
+> +		/*
+> +		 * get current temperature,
+> +		 */
+> +		val = rcar_thermal_read(priv, THSSR) & CTEMP;
+> +		val = (val * 5) - 65;
+> +
+> +		dev_dbg(priv->dev, "comp/min/max/val = %d/%d/%d/%d\n",
+> +			priv->comp, min, max, val);
+> +
+> +		/*
+> +		 * If val is same as min/max, then,
+> +		 * it should try again on next comparator.
+> +		 * But the val might be correct temperature.
+> +		 * Keep it on "tmp" and compare with next val.
+> +		 */
+> +		if (val <= min) {
+> +			if (tmp == min)
+> +				break;
+> +
+> +			tmp = min;
+> +			priv->comp--; /* try again */
+> +		} else if (val >= max) {
+> +			if (tmp == max)
+> +				break;
+> +
+> +			tmp = max;
+> +			priv->comp++; /* try again */
+> +		} else {
+> +			tmp = val;
+> +			break;
+> +		}
+> +	}
+> +
+> +	*temp = tmp;
+> +	return 0;
+> +}
+>
+> ...
+>
+
+> +	priv->comp	= 4; /* basic setup */
+> +	priv->dev	= &pdev->dev;
+> +
+> +	priv->base	= devm_ioremap_nocache(&pdev->dev,
+> +					       res->start, resource_size(res));
+
+A single space before the "=" is conventional.
