@@ -1,187 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932470Ab2GKI3z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 04:29:55 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:47633 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751347Ab2GKI3t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 04:29:49 -0400
-X-IronPort-AV: E=Sophos;i="4.77,567,1336320000"; 
-   d="scan'208";a="5372161"
-From: Gao feng <gaofeng@cn.fujitsu.com>
-To: nhorman@tuxdriver.com
-Cc: eric.dumazet@gmail.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, lizefan@huawei.com, tj@kernel.org,
-        davem@davemloft.net, Gao feng <gaofeng@cn.fujitsu.com>,
-        Eric Dumazet <edumazet@google.com>
-Subject: [PATCH v3] net: cgroup: fix access the unallocated memory in netprio cgroup
-Date: Wed, 11 Jul 2012 16:30:06 +0800
-Message-Id: <1341995406-12719-1-git-send-email-gaofeng@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.7.6
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/11 16:29:37,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/11 16:29:39,
-	Serialize complete at 2012/07/11 16:29:39
+	id S1756866Ab2GKIbM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 04:31:12 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:37601 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751031Ab2GKIbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 04:31:07 -0400
+Date: Wed, 11 Jul 2012 10:31:01 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: "Luck, Tony" <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
+        the arch/x86 maintainers <x86@kernel.org>
+Subject: Re: [GIT PULL] x86/mce fix (ready for 3.6 merge window)
+Message-ID: <20120711083101.GA23206@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Ingo Molnar <mingo@kernel.org>, "Luck, Tony" <tony.luck@intel.com>,
+	linux-kernel@vger.kernel.org,
+	the arch/x86 maintainers <x86@kernel.org>
+References: <4ffc6b7b63006ca92@agluck-desktop.sc.intel.com>
+ <20120711080446.GA17713@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120711080446.GA17713@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-there are some out of bound accesses in netprio cgroup.
+On Wed, Jul 11, 2012 at 10:04:46AM +0200, Ingo Molnar wrote:
+> A couple of commit log details:
+> 
+>  - If it's for v3.6 then the Cc: stable backport is not 
+>    justified. Either it's for tip:x86/urgent and then we'll 
+>    merge it straight away, or for tip:x86/mce for v3.6 and then 
+>    there's no Cc: stable tag.
 
-now before accessing the dev->priomap.priomap array,we only check
-if the dev->priomap exist.and because we don't want to see
-additional bound checkings in fast path, so we should make sure
-that dev->priomap is null or array size of dev->priomap.priomap
-is equal to max_prioidx + 1;
+This could be part of checkpatch - whenever a stable tag is added to a
+patch commit msg, it should at least warn the patch author to check with
+<Documentation/stable_kernel_rules.txt> first.
 
-and it's not needed to call extend_netdev_tabel in write_priomap,
-we can only allocate the net device's priomap which we change through
-net_prio.ifpriomap.
+>  - This reference to a commit is a bit unusual:
+> 
+> In commit dad1743e5993f19b3d7e7bd0fb35dc45b5326626
+> x86/mce: Only restart instruction after machine check recovery if it is safe
+> 
+>    the canonical format is something like:
+> 
+>   In commit dad1743e5993f1 ("x86/mce: Only restart instruction 
+>   after machine check recovery if it is safe") ...
 
-this patch add a return value for update_netdev_tables & extend_netdev_table,
-so when new_priomap is allocated failed,write_priomap will stop to access
-the priomap,and return -ENOMEM back to the userspace to tell the user
-what happend.
+Commit referencing in commit messages doesn't come up for the first time
+so can we get this as a rule into checkpatch so that we can have unified
+commit reference format?
 
-Change From v2:
-1. protect extend_netdev_table by RTNL.
-2. when extend_netdev_table failed,call dev_put to reduce device's refcount.
+The regex would be probably hairy and generate a couple of false
+positives but sure it will help in a lot of other situations.
 
-Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
-Cc: Neil Horman <nhorman@tuxdriver.com>
-Cc: Eric Dumazet <edumazet@google.com>
----
- net/core/netprio_cgroup.c |   54 ++++++++++++++++++++++++++++++++------------
- 1 files changed, 39 insertions(+), 15 deletions(-)
+Also, how many chars of the commit id we keep? The first 12, 14, 15? I'm
+thinking of commit id uniqueness sometime far in the future.
 
-diff --git a/net/core/netprio_cgroup.c b/net/core/netprio_cgroup.c
-index aa907ed..05b961d 100644
---- a/net/core/netprio_cgroup.c
-+++ b/net/core/netprio_cgroup.c
-@@ -65,7 +65,7 @@ static void put_prioidx(u32 idx)
- 	spin_unlock_irqrestore(&prioidx_map_lock, flags);
- }
- 
--static void extend_netdev_table(struct net_device *dev, u32 new_len)
-+static int extend_netdev_table(struct net_device *dev, u32 new_len)
- {
- 	size_t new_size = sizeof(struct netprio_map) +
- 			   ((sizeof(u32) * new_len));
-@@ -77,7 +77,7 @@ static void extend_netdev_table(struct net_device *dev, u32 new_len)
- 
- 	if (!new_priomap) {
- 		pr_warn("Unable to alloc new priomap!\n");
--		return;
-+		return -ENOMEM;
- 	}
- 
- 	for (i = 0;
-@@ -90,10 +90,12 @@ static void extend_netdev_table(struct net_device *dev, u32 new_len)
- 	rcu_assign_pointer(dev->priomap, new_priomap);
- 	if (old_priomap)
- 		kfree_rcu(old_priomap, rcu);
-+	return 0;
- }
- 
--static void update_netdev_tables(void)
-+static int update_netdev_tables(void)
- {
-+	int ret = 0;
- 	struct net_device *dev;
- 	u32 max_len = atomic_read(&max_prioidx) + 1;
- 	struct netprio_map *map;
-@@ -101,35 +103,49 @@ static void update_netdev_tables(void)
- 	rtnl_lock();
- 	for_each_netdev(&init_net, dev) {
- 		map = rtnl_dereference(dev->priomap);
--		if ((!map) ||
--		    (map->priomap_len < max_len))
--			extend_netdev_table(dev, max_len);
-+		/*
-+		 * don't allocate priomap if we didn't
-+		 * change net_prio.ifpriomap,this will
-+		 * speed up skb_update_prio.
-+		 */
-+		if (map) {
-+			ret = extend_netdev_table(dev, max_len);
-+			if (ret < 0)
-+				break;
-+		}
- 	}
- 	rtnl_unlock();
-+	return ret;
- }
- 
- static struct cgroup_subsys_state *cgrp_create(struct cgroup *cgrp)
- {
- 	struct cgroup_netprio_state *cs;
--	int ret;
-+	int ret = -EINVAL;
- 
- 	cs = kzalloc(sizeof(*cs), GFP_KERNEL);
- 	if (!cs)
- 		return ERR_PTR(-ENOMEM);
- 
--	if (cgrp->parent && cgrp_netprio_state(cgrp->parent)->prioidx) {
--		kfree(cs);
--		return ERR_PTR(-EINVAL);
--	}
-+	if (cgrp->parent && cgrp_netprio_state(cgrp->parent)->prioidx)
-+		goto out;
- 
- 	ret = get_prioidx(&cs->prioidx);
--	if (ret != 0) {
-+	if (ret < 0) {
- 		pr_warn("No space in priority index array\n");
--		kfree(cs);
--		return ERR_PTR(ret);
-+		goto out;
-+	}
-+
-+	ret = update_netdev_tables();
-+	if (ret < 0) {
-+		put_prioidx(cs->prioidx);
-+		goto out;
- 	}
- 
- 	return &cs->css;
-+out:
-+	kfree(cs);
-+	return ERR_PTR(ret);
- }
- 
- static void cgrp_destroy(struct cgroup *cgrp)
-@@ -179,6 +195,7 @@ static int write_priomap(struct cgroup *cgrp, struct cftype *cft,
- 	char *devname = kstrdup(buffer, GFP_KERNEL);
- 	int ret = -EINVAL;
- 	u32 prioidx = cgrp_netprio_state(cgrp)->prioidx;
-+	u32 max_len = atomic_read(&max_prioidx) + 1;
- 	unsigned long priority;
- 	char *priostr;
- 	struct net_device *dev;
-@@ -221,13 +238,20 @@ static int write_priomap(struct cgroup *cgrp, struct cftype *cft,
- 	if (!dev)
- 		goto out_free_devname;
- 
--	update_netdev_tables();
-+	rtnl_lock();
-+	ret = extend_netdev_table(dev, max_len);
-+	rtnl_unlock();
-+	if (ret < 0)
-+		goto out_put_dev;
-+
- 	ret = 0;
- 	rcu_read_lock();
- 	map = rcu_dereference(dev->priomap);
- 	if (map)
- 		map->priomap[prioidx] = priority;
- 	rcu_read_unlock();
-+
-+out_put_dev:
- 	dev_put(dev);
- 
- out_free_devname:
+>  - We tend to use such an ordering of tags:
+> 
+>   Signed-off-by: Tony Luck <tony.luck@intel.com>
+>   Acked-by: Borislav Petkov <borislav.petkov@amd.com>
+>   Cc: stable@kernel.org    # 3.4+
+> 
+>   I.e. Tested-by and Reported-by tags first (if any), then 
+>   author SOB, then SOB chain (if any), then Reviewed-by
+>   and Acked-by, then stable tags, then Cc:s.
+
+patch tags order could be checked for in checkpatch too?
+
+[ … ]
+
+>  - Style nit, this:
+> 
+>        if (mi->restartable == 0)
+> 
+>    is better written as:
+> 
+>        if (!mi->restartable)
+> 
+>    because mi->restartable's role here is not really an integer 
+>    value, but a boolean in essence.
+
+Yes, we talked about this but having a bool as a u8 there would add
+padding to the struct so it's the same thing, space-wise. It could be
+converted to a bitfield if more flags are added/needed.
+
+>  - The 'doit' flag was significantly misnamed when kill_procs() 
+>    was written and now it spreads further, it's a totally opaque 
+>    name that tells nothing about the role of the flag.
+> 
+>    How about 'force'?
+
+Even better, make it even more descriptive: 'force_kill' or 'do_kill' or
+'really_kill' - this way one knows exactly what one is looking at.
+
+Thanks.
+
 -- 
-1.7.7.6
-
+Regards/Gruss,
+    Boris.
