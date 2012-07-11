@@ -1,47 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758174Ab2GKPjo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 11:39:44 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:57672 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758147Ab2GKPjl convert rfc822-to-8bit (ORCPT
+	id S932882Ab2GKPlK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 11:41:10 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:65223 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932837Ab2GKPlJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 11:39:41 -0400
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: alan@lxorguk.ukuu.org.uk, "Ben Minerds" <puzzleduck@gmail.com>
-Cc: gregkh@linuxfoundation.org, richard.weinberger@gmail.com,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/6] USB: serial: Changes to conform with checkpatch.
-References: <1342015820-10229-1-git-send-email-puzzleduck@gmail.com>
-Date: Wed, 11 Jul 2012 17:39:32 +0200
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Message-ID: <op.whagf6k23l0zgt@mpn-glaptop>
-In-Reply-To: <1342015820-10229-1-git-send-email-puzzleduck@gmail.com>
-User-Agent: Opera Mail/12.01 (Linux)
+	Wed, 11 Jul 2012 11:41:09 -0400
+From: Masanari Iida <standby24x7@gmail.com>
+To: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        marek.belisko@gmail.com
+Cc: linux-kernel@vger.kernel.org, Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] staging: ft1000: Fix typo in ft1000_usb.c
+Date: Thu, 12 Jul 2012 00:41:44 +0900
+Message-Id: <1342021304-27728-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.7.11.1.104.ge7b44f1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Jul 2012 16:10:14 +0200, Ben Minerds <puzzleduck@gmail.com> wrote:
-> Removed various checkpatch.sh warnings and errors.
+Correct spelling typo within debug message of ft1000_usb.c
 
-You've meant chekpatch.pl, right?
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ drivers/staging/ft1000/ft1000-usb/ft1000_usb.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> Split patch by warning/error type.
-> Corrected line wraps in emails.
->
-> Signed-off-by: Ben Minerds <puzzleduck@gmail.com>
-
-This 0/6 also confuses me -- like Greg have said the 0/n mail should not
-contain any diff, just a summary -- but all the other patches look good
-to me as they are only whitespace changes -- if only there was a diff
-tool that understood C and compared stream of C tokens rather then a plain
-text file.
-
+diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c
+index 84c38d5..75381af 100644
+--- a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c
++++ b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c
+@@ -239,7 +239,7 @@ static void ft1000_disconnect(struct usb_interface *interface)
+ 			ft1000_destroy_dev(pft1000info->pFt1000Dev->net);
+ 			unregister_netdev(pft1000info->pFt1000Dev->net);
+ 			DEBUG
+-			    ("ft1000_disconnect: network device unregisterd\n");
++			    ("ft1000_disconnect: network device unregistered\n");
+ 			free_netdev(pft1000info->pFt1000Dev->net);
+ 
+ 		}
 -- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
-ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
+1.7.11.1.104.ge7b44f1
+
