@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757842Ab2GKNj5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 09:39:57 -0400
-Received: from co1ehsobe003.messaging.microsoft.com ([216.32.180.186]:42584
+	id S1757803Ab2GKNk7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 09:40:59 -0400
+Received: from co1ehsobe006.messaging.microsoft.com ([216.32.180.189]:7688
 	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757796Ab2GKNje (ORCPT
+	by vger.kernel.org with ESMTP id S1757666Ab2GKNj3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 09:39:34 -0400
+	Wed, 11 Jul 2012 09:39:29 -0400
 X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
 X-SpamScore: 0
 X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah)
-X-WSS-ID: 0M700LG-02-1PG-02
+X-WSS-ID: 0M700LN-02-1PS-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: <iommu@lists.linux-foundation.org>
 CC: <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 13/27] iommu/amd: Add slab-cache for irq remapping tables
-Date: Wed, 11 Jul 2012 15:38:58 +0200
-Message-ID: <1342013952-10174-14-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 20/27] iommu/amd: Add IOAPIC remapping routines
+Date: Wed, 11 Jul 2012 15:39:05 +0200
+Message-ID: <1342013952-10174-21-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1342013952-10174-1-git-send-email-joerg.roedel@amd.com>
 References: <1342013952-10174-1-git-send-email-joerg.roedel@amd.com>
@@ -28,128 +28,144 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The irq remapping tables for the AMD IOMMU need to be
-aligned on a 128 byte boundary. Create a seperate slab-cache
-to guarantee this alignment.
+Add the routine to setup interrupt remapping for ioapic
+interrupts. Also add a routine to change the affinity of an
+irq and to free an irq allocation for interrupt remapping.
+The last two functions will also be used for MSI interrupts.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- drivers/iommu/amd_iommu.c       |    2 ++
- drivers/iommu/amd_iommu_init.c  |   23 +++++++++++++++++++++++
- drivers/iommu/amd_iommu_types.h |    9 +++++++++
- drivers/iommu/irq_remapping.h   |    4 ++++
- 4 files changed, 38 insertions(+)
+ drivers/iommu/amd_iommu.c |  119 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 119 insertions(+)
 
 diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-index 2e98cf3..b02db09 100644
+index 8bfcf29..713f84c 100644
 --- a/drivers/iommu/amd_iommu.c
 +++ b/drivers/iommu/amd_iommu.c
-@@ -93,6 +93,8 @@ struct iommu_cmd {
- 	u32 data[4];
- };
- 
-+struct kmem_cache *amd_iommu_irq_cache;
-+
- static void update_domain(struct protection_domain *domain);
- static int __init alloc_passthrough_domain(void);
- 
-diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
-index 5789525..49e72b9 100644
---- a/drivers/iommu/amd_iommu_init.c
-+++ b/drivers/iommu/amd_iommu_init.c
-@@ -36,6 +36,7 @@
- 
- #include "amd_iommu_proto.h"
- #include "amd_iommu_types.h"
-+#include "irq_remapping.h"
- 
- /*
-  * definitions for the ACPI scanning code
-@@ -124,6 +125,7 @@ struct ivmd_header {
- } __attribute__((packed));
- 
- bool amd_iommu_dump;
-+bool amd_iommu_irq_remap __read_mostly;
- 
- static bool amd_iommu_detected;
- static bool __initdata amd_iommu_disabled;
-@@ -1530,6 +1532,11 @@ static struct syscore_ops amd_iommu_syscore_ops = {
- 
- static void __init free_on_init_error(void)
- {
-+	if (amd_iommu_irq_cache) {
-+		kmem_cache_destroy(amd_iommu_irq_cache);
-+		amd_iommu_irq_cache = NULL;
-+	}
-+
- 	amd_iommu_uninit_devices();
- 
- 	free_pages((unsigned long)amd_iommu_pd_alloc_bitmap,
-@@ -1669,6 +1676,19 @@ static int __init early_amd_iommu_init(void)
- 	if (ret)
- 		goto out;
- 
-+	if (amd_iommu_irq_remap) {
-+		/*
-+		 * Interrupt remapping enabled, create kmem_cache for the
-+		 * remapping tables.
-+		 */
-+		amd_iommu_irq_cache = kmem_cache_create("irq_remap_cache",
-+				MAX_IRQS_PER_TABLE * sizeof(u32),
-+				IRQ_TABLE_ALIGNMENT,
-+				0, NULL);
-+		if (!amd_iommu_irq_cache)
-+			goto out;
-+	}
-+
- 	ret = init_memory_definitions(ivrs_base);
- 	if (ret)
- 		goto out;
-@@ -1713,6 +1733,9 @@ static bool detect_ivrs(void)
- 
- 	early_acpi_os_unmap_memory((char __iomem *)ivrs_base, ivrs_size);
- 
-+	if (!disable_irq_remap)
-+		amd_iommu_irq_remap = true;
-+
- 	return true;
+@@ -3935,4 +3935,123 @@ static void free_irte(u16 devid, int index)
+ 	iommu_completion_wait(iommu);
  }
  
-diff --git a/drivers/iommu/amd_iommu_types.h b/drivers/iommu/amd_iommu_types.h
-index 7795b71..0e15e78 100644
---- a/drivers/iommu/amd_iommu_types.h
-+++ b/drivers/iommu/amd_iommu_types.h
-@@ -334,6 +334,15 @@ extern bool amd_iommu_np_cache;
- /* Only true if all IOMMUs support device IOTLBs */
- extern bool amd_iommu_iotlb_sup;
- 
-+#define MAX_IRQS_PER_TABLE	256
-+#define IRQ_TABLE_ALIGNMENT	128
++static int setup_ioapic_entry(int irq, struct IO_APIC_route_entry *entry,
++			      unsigned int destination, int vector,
++			      struct io_apic_irq_attr *attr)
++{
++	struct irq_remap_table *table;
++	struct irq_2_irte *irte_info;
++	struct irq_cfg *cfg;
++	union irte irte;
++	int ioapic_id;
++	int index;
++	int devid;
++	int ret;
 +
-+/* Interrupt remapping feature used? */
-+extern bool amd_iommu_irq_remap;
++	cfg = irq_get_chip_data(irq);
++	if (!cfg)
++		return -EINVAL;
 +
-+/* kmem_cache to get tables with 128 byte alignement */
-+extern struct kmem_cache *amd_iommu_irq_cache;
++	irte_info = &cfg->irq_remap_info.irq_2_irte;
++	ioapic_id = mpc_ioapic_id(attr->ioapic);
++	devid     = get_ioapic_devid(ioapic_id);
 +
- /*
-  * Make iterating over all IOMMUs easier
-  */
-diff --git a/drivers/iommu/irq_remapping.h b/drivers/iommu/irq_remapping.h
-index be9d729..b3f70c9 100644
---- a/drivers/iommu/irq_remapping.h
-+++ b/drivers/iommu/irq_remapping.h
-@@ -85,6 +85,10 @@ struct irq_remap_ops {
- 
- extern struct irq_remap_ops intel_irq_remap_ops;
- 
-+#else  /* CONFIG_IRQ_REMAP */
++	if (devid < 0)
++		return devid;
 +
-+#define disable_irq_remap	1
++	table = get_irq_table(devid, true);
++	if (table == NULL)
++		return -ENOMEM;
 +
- #endif /* CONFIG_IRQ_REMAP */
- 
- #endif /* __IRQ_REMAPPING_H */
++	index = attr->ioapic_pin;
++
++	/* Setup IRQ remapping info */
++	irte_info->devid = devid;
++	irte_info->index = index;
++	cfg->remapped    = true;
++
++	/* Setup IRTE for IOMMU */
++	irte.val		= 0;
++	irte.fields.vector      = vector;
++	irte.fields.int_type    = apic->irq_delivery_mode;
++	irte.fields.destination = destination;
++	irte.fields.dm          = apic->irq_dest_mode;
++	irte.fields.valid       = 1;
++
++	ret = modify_irte(devid, index, irte);
++	if (ret)
++		return ret;
++
++	/* Setup IOAPIC entry */
++	memset(entry, 0, sizeof(*entry));
++
++	entry->vector        = index;
++	entry->mask          = 0;
++	entry->trigger       = attr->trigger;
++	entry->polarity      = attr->polarity;
++
++	/*
++	 * Mask level triggered irqs.
++	 * Use IRQ_DELAYED_DISABLE for edge triggered irqs.
++	 */
++	if (attr->trigger)
++		entry->mask = 1;
++
++	return 0;
++}
++
++#ifdef CONFIG_SMP
++static int set_affinity(struct irq_data *data, const struct cpumask *mask,
++			bool force)
++{
++	struct irq_2_irte *irte_info;
++	unsigned int dest, irq;
++	struct irq_cfg *cfg;
++	union irte irte;
++
++	cfg       = data->chip_data;
++	irq       = data->irq;
++	irte_info = &cfg->irq_remap_info.irq_2_irte;
++
++	if (!cpumask_intersects(mask, cpu_online_mask))
++		return -EINVAL;
++
++	if (get_irte(irte_info->devid, irte_info->index, &irte))
++		return -EBUSY;
++
++	if (assign_irq_vector(irq, cfg, mask))
++		return -EBUSY;
++
++	dest = apic->cpu_mask_to_apicid_and(cfg->domain, mask);
++
++	irte.fields.vector      = cfg->vector;
++	irte.fields.destination = dest;
++
++	modify_irte(irte_info->devid, irte_info->index, irte);
++
++	if (cfg->move_in_progress)
++		send_cleanup_vector(cfg);
++
++	cpumask_copy(data->affinity, mask);
++
++	return 0;
++}
++#endif /* CONFIG_SMP */
++
++static int free_irq(int irq)
++{
++	struct irq_2_irte *irte_info;
++	struct irq_cfg *cfg;
++
++	cfg = irq_get_chip_data(irq);
++	if (!cfg)
++		return -EINVAL;
++
++	irte_info = &cfg->irq_remap_info.irq_2_irte;
++
++	free_irte(irte_info->devid, irte_info->index);
++
++	return 0;
++}
++
+ #endif
 -- 
 1.7.9.5
 
