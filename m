@@ -1,145 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932372Ab2GKAzD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 20:55:03 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:48247 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932328Ab2GKAzB (ORCPT
+	id S932463Ab2GKA6r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 20:58:47 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:48535 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932362Ab2GKA6q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 20:55:01 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FFCCEC3.4050800@jp.fujitsu.com>
-Date: Wed, 11 Jul 2012 09:54:27 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Tue, 10 Jul 2012 20:58:46 -0400
+X-AuditID: 9c930197-b7b49ae0000027b8-06-4ffccfc02455
+From: Namhyung Kim <namhyung@kernel.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: acme@ghostprotocols.net, mingo@kernel.org, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 4/4] perf kvm: fix bug resolving guest kernel syms
+References: <1341956894-69284-1-git-send-email-dsahern@gmail.com>
+	<1341956894-69284-5-git-send-email-dsahern@gmail.com>
+Date: Wed, 11 Jul 2012 09:54:10 +0900
+In-Reply-To: <1341956894-69284-5-git-send-email-dsahern@gmail.com> (David
+	Ahern's message of "Tue, 10 Jul 2012 15:48:14 -0600")
+Message-ID: <874npf86dp.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
 MIME-Version: 1.0
-To: Jiang Liu <liuj97@gmail.com>
-CC: Christoph Lameter <cl@linux.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-acpi@vger.kernel.org>, <rientjes@google.com>,
-        <len.brown@intel.com>, <benh@kernel.crashing.org>, <paulus@samba.org>,
-        <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
-        <kosaki.motohiro@jp.fujitsu.com>, <wency@cn.fujitsu.com>
-Subject: Re: [RFC PATCH v3 0/13] memory-hotplug : hot-remove physical memory
-References: <4FFAB0A2.8070304@jp.fujitsu.com> <alpine.DEB.2.00.1207091015570.30060@router.home> <4FFBFCAC.4010007@jp.fujitsu.com> <4FFC5D43.7040206@gmail.com> <4FFCC438.4080004@jp.fujitsu.com> <4FFCC6F1.5060908@gmail.com>
-In-Reply-To: <4FFCC6F1.5060908@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiang,
+Hi, David
 
-2012/07/11 9:21, Jiang Liu wrote:
-> On 07/11/2012 08:09 AM, Yasuaki Ishimatsu wrote:
->> Hi Jiang,
->>
->> 2012/07/11 1:50, Jiang Liu wrote:
->>> On 07/10/2012 05:58 PM, Yasuaki Ishimatsu wrote:
->>>> Hi Christoph,
->>>>
->>>> 2012/07/10 0:18, Christoph Lameter wrote:
->>>>>
->>>>> On Mon, 9 Jul 2012, Yasuaki Ishimatsu wrote:
->>>>>
->>>>>> Even if you apply these patches, you cannot remove the physical memory
->>>>>> completely since these patches are still under development. I want you to
->>>>>> cooperate to improve the physical memory hot-remove. So please review these
->>>>>> patches and give your comment/idea.
->>>>>
->>>>> Could you at least give a method on how you want to do physical memory
->>>>> removal?
->>>>
->>>> We plan to release a dynamic hardware partitionable system. It will be
->>>> able to hot remove/add a system board which included memory and cpu.
->>>> But as you know, Linux does not support memory hot-remove on x86 box.
->>>> So I try to develop it.
->>>>
->>>> Current plan to hot remove system board is to use container driver.
->>>> Thus I define the system board in ACPI DSDT table as a container device.
->>>> It have supported hot-add a container device. And if container device
->>>> has _EJ0 ACPI method, "eject" file to remove the container device is
->>>> prepared as follow:
->>>>
->>>> # ls -l /sys/bus/acpi/devices/ACPI0004\:01/eject
->>>> --w-------. 1 root root 4096 Jul 10 18:19 /sys/bus/acpi/devices/ACPI0004:01/eject
->>>>
->>>> When I hot-remove the container device, I echo 1 to the file as follow:
->>>>
->>>> #echo 1 > /sys/bus/acpi/devices/ACPI0004\:02/eject
->>>>
->>>> Then acpi_bus_trim() is called. And it calls acpi_memory_device_remove()
->>>> for removing memory device. But the code does not do nothing.
->>>> So I developed the continuation of the function.
->>>>
->>>>> You would have to remove all objects from the range you want to
->>>>> physically remove. That is only possible under special circumstances and
->>>>> with a limited set of objects. Even if you exclusively use ZONE_MOVEABLE
->>>>> you still may get cases where pages are pinned for a long time.
->>>>
->>>> I know it. So my memory hot-remove plan is as follows:
->>>>
->>>> 1. hot-added a system board
->>>>      All memory which included the system board is offline.
->>>>
->>>> 2. online the memory as removable page
->>>>      The function has not supported yet. It is being developed by Lai as follow:
->>>>      http://lkml.indiana.edu/hypermail/linux/kernel/1207.0/01478.html
->>>>      If it is supported, I will be able to create movable memory.
->>>>
->>>> 3. hot-remove the memory by container device's eject file
->>> We have implemented a prototype to do physical node (mem + CPU + IOH) hotplug
->>> for Itanium and is now porting it to x86. But with currently solution, memory
->>> hotplug functionality may cause 10-20% performance decrease because we concentrate
->>> all DMA/Normal memory to the first NUMA node, and all other NUMA nodes only
->>> hosts ZONE_MOVABLE. We are working on solution to minimize the performance
->>> drop now.
->>
->> Thank you for your interesting response.
->>
->> I have a question. How do you move all other NUMA nodes to ZONE_MOVABLE?
->> To use ZONE_MOVABLE, we need to use boot options like kernelcore or movablecore.
->> But it is not enough, since the requested amount is spread evenly throughout
->> all nodes in the system. So I think we do not have way to move all other NUMA
->> node to ZONE_MOVABLE.
-> We have modified the ZONE_MOVABLE spreading and bootmem allocation. If the kernelcore
-> or movablecore kernel parameters are present, we follow current behavior. If those
-> parameter are absent and the platform supports physical hotplug, we will concentrate
-> DMA/NORMAL memory to specific nodes.
+On Tue, 10 Jul 2012 15:48:14 -0600, David Ahern wrote:
+> Guest kernel symbols are not resolved despite passing the information
+> needed to resolve them. e.g.,
+>
+> perf kvm --guest --guestmount=/tmp/guest-mount record -a -- sleep 1
+> perf kvm --guest --guestmount=/tmp/guest-mount report --stdio
+>
+>     36.55%  [guest/11399]  [unknown]         [g] 0xffffffff81600bc8
+>     33.19%  [guest/10474]  [unknown]         [g] 0x00000000c0116e00
+>     30.26%  [guest/11094]  [unknown]         [g] 0xffffffff8100a288
+>
+>     43.69%  [guest/10474]  [unknown]         [g] 0x00000000c0103d90
+>     37.38%  [guest/11399]  [unknown]         [g] 0xffffffff81600bc8
+>     12.24%  [guest/11094]  [unknown]         [g] 0xffffffff810aa91d
+>      6.69%  [guest/11094]  [unknown]         [u] 0x00007fa784d721c3
+>
+> which is just pathetic.
+>
+> After a maddening 2 days sifting through perf minutia I found it --
+> id_hdr_size is not initialized for guest machines. This shows up on the
+> report side as random garbage for the cpu and timestamp, e.g.,
+>
+> 29816 7310572949125804849 0x1ac0 [0x50]: PERF_RECORD_MMAP ...
+>
+> that messes up the sample sorting such that synthesized guest maps are
+> processed last.
+>
+> With this patch you get a much more helpful report:
+>
+>   12.11%  [guest/11399]  [guest.kernel.kallsyms.11399]  [g] irqtime_account_process_tick
+>   10.58%  [guest/11399]  [guest.kernel.kallsyms.11399]  [g] run_timer_softirq
+>    6.95%  [guest/11094]  [guest.kernel.kallsyms.11094]  [g] printk_needs_cpu
+>    6.50%  [guest/11094]  [guest.kernel.kallsyms.11094]  [g] do_timer
+>    6.45%  [guest/11399]  [guest.kernel.kallsyms.11399]  [g] idle_balance
+>    4.90%  [guest/11094]  [guest.kernel.kallsyms.11094]  [g] native_read_tsc
+> ...
+>
+> Signed-off-by: David Ahern <dsahern@gmail.com>
+> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> Cc: Namhyung Kim <namhyung@gmail.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> ---
+>  tools/perf/util/map.c     |   24 ++++++++++++++++++++++++
+>  tools/perf/util/map.h     |    1 +
+>  tools/perf/util/session.c |    1 +
+>  3 files changed, 26 insertions(+)
+>
+> diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+> index 641377e..da3411b 100644
+> --- a/tools/perf/util/map.c
+> +++ b/tools/perf/util/map.c
+> @@ -730,3 +730,27 @@ char *machine__mmap_name(struct machine *self, char *bf, size_t size)
+>  
+>  	return bf;
+>  }
+> +
+> +void machines__set_id_hdr_size(struct rb_root *self, u16 id_hdr_size)
+> +{
+> +	struct rb_node *p;
+> +	struct machine *machine;
+> +
+> +    p = self->rb_node;
+> +	while (p != NULL) {
+> +		machine = rb_entry(p, struct machine, rb_node);
+> +		machine->id_hdr_size = id_hdr_size;
+> +        p = rb_next(p);
+> +	}
+> +
 
-That's interesting. I want to know more details, if you do not mind.
-Current kernel doesn't do the behavior, does it? So I think you have some
-patches for changing the behavior. Will you merge these patches into
-community kernel?
+Looks like white-space damaged. :(
+
+The loop itself looks fine, or you might use this form:
+
+	for (p = rb_first(self); p; p = rb_next(p))
+
+
+Is there a something like rb_for_each_entry() ?
+
+
+> +    p = self->rb_node;
+> +    if (p)
+> +        p = rb_prev(p);
+> +	while (p != NULL) {
+> +		machine = rb_entry(p, struct machine, rb_node);
+> +		machine->id_hdr_size = id_hdr_size;
+> +        p = rb_prev(p);
+> +	}
+> +
+
+I don't see why this second loop is necessary?
 
 Thanks,
-Yasuaki Ishimatsu
-
->
->>
->> Thanks,
->> Yasuaki Ishimatsu
->>
->>>
->>>>
->>>> Thanks,
->>>> Yasuaki Ishimatsu
->>>>
->>>>>
->>>>> I am not sure that these patches are useful unless we know where you are
->>>>> going with this. If we end up with a situation where we still cannot
->>>>> remove physical memory then this patchset is not helpful.
->>>>
->>>>
->>>>
->>>
->>>
->>
->>
->>
->
->
+Namhyung
 
 
-
+> +	return;
+> +}
+> diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
+> index 81371ba..7159b3c 100644
+> --- a/tools/perf/util/map.h
+> +++ b/tools/perf/util/map.h
+> @@ -151,6 +151,7 @@ struct machine *machines__add(struct rb_root *self, pid_t pid,
+>  struct machine *machines__find_host(struct rb_root *self);
+>  struct machine *machines__find(struct rb_root *self, pid_t pid);
+>  struct machine *machines__findnew(struct rb_root *self, pid_t pid);
+> +void machines__set_id_hdr_size(struct rb_root *self, u16 id_hdr_size);
+>  char *machine__mmap_name(struct machine *self, char *bf, size_t size);
+>  int machine__init(struct machine *self, const char *root_dir, pid_t pid);
+>  void machine__exit(struct machine *self);
+> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+> index 7c31623..fcf9498 100644
+> --- a/tools/perf/util/session.c
+> +++ b/tools/perf/util/session.c
+> @@ -86,6 +86,7 @@ void perf_session__update_sample_type(struct perf_session *self)
+>  	self->sample_id_all = perf_evlist__sample_id_all(self->evlist);
+>  	self->id_hdr_size = perf_evlist__id_hdr_size(self->evlist);
+>  	self->host_machine.id_hdr_size = self->id_hdr_size;
+> +    machines__set_id_hdr_size(&self->machines, self->id_hdr_size);
+>  }
+>  
+>  int perf_session__create_kernel_maps(struct perf_session *self)
