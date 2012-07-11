@@ -1,90 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757614Ab2GKNcC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 09:32:02 -0400
-Received: from mga01.intel.com ([192.55.52.88]:62981 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754932Ab2GKNcA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 09:32:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="176007785"
-Message-ID: <1342013776.18274.52.camel@sauron.fi.intel.com>
-Subject: Re: [PATCHv6 3/5] ext4: remove unnecessary superblock dirtying
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Jan Kara <jack@suse.cz>
-Cc: Theodore Tso <tytso@mit.edu>,
-        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
-        Ext4 Mailing List <linux-ext4@vger.kernel.org>
-Date: Wed, 11 Jul 2012 16:36:16 +0300
-In-Reply-To: <20120711101150.GH1316@quack.suse.cz>
-References: <1342000698-13556-1-git-send-email-dedekind1@gmail.com>
-	 <1342000698-13556-4-git-send-email-dedekind1@gmail.com>
-	 <20120711100726.GE1316@quack.suse.cz> <20120711101150.GH1316@quack.suse.cz>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-M09F2wkXjz6TraIu71G9"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1757621Ab2GKNcz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 09:32:55 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:45167 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754212Ab2GKNcx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 09:32:53 -0400
+From: Federico Vaga <federico.vaga@gmail.com>
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] [media] adv7180.c: convert to v4l2 control framework
+Date: Wed, 11 Jul 2012 15:36:25 +0200
+Message-ID: <1460334.RCi3doz24X@harkonnen>
+User-Agent: KMail/4.8.4 (Linux/3.4.4-5.fc17.x86_64; KDE/4.8.4; x86_64; ; )
+In-Reply-To: <201207110834.53760.hverkuil@xs4all.nl>
+References: <1341974086-27887-1-git-send-email-federico.vaga@gmail.com> <201207110834.53760.hverkuil@xs4all.nl>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Hans,
 
---=-M09F2wkXjz6TraIu71G9
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Thank you for your review
 
-On Wed, 2012-07-11 at 12:11 +0200, Jan Kara wrote:
-> > > So case 2.b is a bit controversial, but I think it is acceptable. Aft=
-er all, by
-> > > enabling checksumming we already sign up for paying the price of calc=
-ulating
-> > > it. The way to improve checksumming performance globally would be to =
-calculate
-> > > it just before sending buffers to the I/O queue. We'd need some kind =
-of
-> > > call-back which could be registered by file-systems.
->   Actually, the most common case of adding orphan inode used
-> ext4_handle_dirty_super_now() so for that case there is no difference. An=
-d
-> other cases are so rare it really does not matter... So there shouldn't b=
-e
-> any measurable difference.
+> > +static int adv7180_init_controls(struct adv7180_state *state)
+> > +{
+> > +	v4l2_ctrl_handler_init(&state->ctrl_hdl, 2);
+> 
+> 2 -> 4, since there are 4 controls. It's a hint only, but it helps
+> optimizing the internal hash data structure.
 
-Actually, the entire "orphan" case uses 'ext4_handle_dirty_super_now()',
-so this code-path is actually unaffected by my patch-set, so I do not
-have to even worry about it. My changes affect only the
-'ext4_handle_dirty_super()' users, and there are only 3 of them, and
-they are extremely rare one-time events.
+Sure :)
 
---=20
-Best Regards,
-Artem Bityutskiy
+> > 
+> > @@ -445,9 +402,9 @@ static const struct v4l2_subdev_video_ops
+> > adv7180_video_ops = {> 
+> >  static const struct v4l2_subdev_core_ops adv7180_core_ops = {
+> >  
+> >  	.g_chip_ident = adv7180_g_chip_ident,
+> >  	.s_std = adv7180_s_std,
+> > 
+> > -	.queryctrl = adv7180_queryctrl,
+> > -	.g_ctrl = adv7180_g_ctrl,
+> > -	.s_ctrl = adv7180_s_ctrl,
+> > +	.queryctrl = v4l2_subdev_queryctrl,
+> > +	.g_ctrl = v4l2_subdev_g_ctrl,
+> > +	.s_ctrl = v4l2_subdev_s_ctrl,
+> 
+> If adv7180 is currently *only* used by bridge/platform drivers that
+> also use the control framework, then you can remove
+> queryctrl/g/s_ctrl altogether.
 
---=-M09F2wkXjz6TraIu71G9
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+I'm not sure to undestand this point. I "grepped" for the adv7180 and it 
+seem that I'm the only user of the adv7180 (sta2x11 VIP driver). In the
+VIP driver I don't use the control framework (there aren't controls), so 
+I think these lines must be there. Am I wrong?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+I think you are thinking at the "Inheriting Controls" section of the 
+v4l2-controls.txt document. Right?
 
-iQIcBAABAgAGBQJP/YFQAAoJECmIfjd9wqK0ux4QAL3OCUVT3fbTMwzacISAGrMW
-c0Ak/XyQy8ecXA6nAsiZPvTpuUg8LuVkvsq5v1YcOooL4TVJHxTvxHwo72sPSNEo
-RdVf5XxnEUJasKecAz7aBB7U5DIrVQPi3UrWW3aEWwARiXzE7X3Wix68cq5hykm5
-XCVgGBcREqj3P57hInyMWQF9ev/aR/OtOehNNA086XOd75RXfd8T6HgbGJ7G83nM
-ItZcRHxDWjwtZ5/+5olh7ayouxA3tPfg45hudY9i9dUeEwqH4XYsxEHGfDCL6qT3
-8PXmF5dnWnz/13EXQajs27sUpdFqMtQqeqFjpcWQc2/qwwPAjF+7OxsHoxICZZZA
-T8pUez+ER/WKzgKdMCKN5aequM0VeSciXdum9ylBPK7+kozrd2TONBxyk53/dOBJ
-RLC7vTFIfYIWQ7KbqR4OTVhYACJos/Rl5/IscsABRYFoIDhfXfxXly1oW0RSGhD4
-z6MDKRWvH6i+UCKlM4+cZSUSfUR7xanU/DETp2AQYoyZoPQ3apuBvlyIbE1+D9Rq
-hBMESsIJ2N6cZrBJjyKxO9njglU4z1JN4QPf7hWwc3PYrIHx2NaU9bMohvR9vQc+
-fFgphFnyw/KbveF1Ahku3lfryZbsgvzTZoBUPxPqEpR0Yz1/oxFUyWKJuy64vgOD
-75zgfpqE7EQTpJ1Oup2L
-=vHqr
------END PGP SIGNATURE-----
 
---=-M09F2wkXjz6TraIu71G9--
+> > -	ret = i2c_smbus_write_byte_data(client, ADV7180_HUE_REG,
+> > state->hue); +	ret = i2c_smbus_write_byte_data(client,
+> > ADV7180_HUE_REG,
+> > +					ADV7180_HUE_DEF);
+> 
+> It shouldn't be necessary to initialize the controls since
+> v4l2_ctrl_handler_setup does that for you already.
 
+Removed
+
+-- 
+Federico Vaga
