@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755528Ab2GKFhN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 01:37:13 -0400
-Received: from gate.crashing.org ([63.228.1.57]:49390 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750899Ab2GKFhL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 01:37:11 -0400
-Message-ID: <1341985013.18850.29.camel@pasglop>
-Subject: Re: [PATCH] [powerpc] Export memory limit via device tree
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: "Suzuki K. Poulose" <suzuki@in.ibm.com>
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        mahesh@linux.vnet.ibm.com, hbabu@us.ibm.com
-Date: Wed, 11 Jul 2012 15:36:53 +1000
-In-Reply-To: <20120702114855.22333.95335.stgit@suzukikp.in.ibm.com>
-References: <20120702114855.22333.95335.stgit@suzukikp.in.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1755301Ab2GKFl1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 01:41:27 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:47051 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751382Ab2GKFl0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 01:41:26 -0400
+Date: Tue, 10 Jul 2012 22:33:31 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Minchan Kim <minchan@kernel.org>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH v2] mm: Warn about costly page allocation
+In-Reply-To: <20120711022304.GA17425@bbox>
+Message-ID: <alpine.DEB.2.00.1207102223000.26591@chino.kir.corp.google.com>
+References: <1341878153-10757-1-git-send-email-minchan@kernel.org> <20120709170856.ca67655a.akpm@linux-foundation.org> <20120710002510.GB5935@bbox> <alpine.DEB.2.00.1207101756070.684@chino.kir.corp.google.com> <20120711022304.GA17425@bbox>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> diff --git a/arch/powerpc/kernel/machine_kexec.c b/arch/powerpc/kernel/machine_kexec.c
-> index c957b12..0c9695d 100644
-> --- a/arch/powerpc/kernel/machine_kexec.c
-> +++ b/arch/powerpc/kernel/machine_kexec.c
-> @@ -207,6 +207,12 @@ static struct property crashk_size_prop = {
->  	.value = &crashk_size,
->  };
->  
-> +static struct property memory_limit_prop = {
-> +	.name = "linux,memory-limit",
-> +	.length = sizeof(phys_addr_t),
-> +	.value = &memory_limit,
-> +};
-> +
+On Wed, 11 Jul 2012, Minchan Kim wrote:
 
-AFAIK. phys_addr_t can change size, so instead make it point to a known
-fixes size quantity (a u64).
+> > Should we consider enabling CONFIG_COMPACTION in defconfig?  If not, would 
+> 
+> I hope so but Mel didn't like it because some users want to have a smallest
+> kernel if they don't care of high-order allocation.
+> 
 
-> +
-> +	/* memory-limit is needed for constructing the crash regions */
-> +	prop = of_find_property(node, memory_limit_prop.name, NULL);
-> +	if (prop)
-> +		prom_remove_property(node, prop);
-> +
-> +	if (memory_limit)
-> +		prom_add_property(node, &memory_limit_prop);
-> +
+CONFIG_COMPACTION adds 0.1% to my kernel image using x86_64 defconfig, 
+that's the only reason we don't enable it by default?
 
-There's a patch floating around making prom_update_property properly
-handle both pre-existing and non-pre-existing props, you should probably
-base yourself on top of it. I'm about to stick that patch in powerpc
--next
+> > it be possible with a different extfrag_threshold (and more aggressive 
+> > when things like THP are enabled)?
+> 
+> Anyway, we should enable compaction for it although the system doesn't 
+> care about high-order allocation and it ends up make bloting kernel unnecessary.
+> 
 
-Cheers,
-Ben.
+The problem with this approach (and the appended patch) is that we can't 
+define a system that "doesn't care about high-order allocations."  Even if 
+you discount thp, an admin has no way of knowing how many high-order 
+allocations his or her kernel will be doing and it will change between 
+kernel versions.  Almost 50% of slab caches on my desktop machine running 
+with slub have a default order greater than 0.
 
+So I don't believe that adding this warning will be helpful and will 
+simply lead to confusion.
 
+> I tend to agree Andrew and your concern but I don't have a good idea but
+> alert vague warning message. Anyway, we need *alert* this fact which removed
+> lumpy reclaim for being able to disabling CONFIG_COMPACTION.
+
+Can we ignore the fact that lumpy reclaim was removed and look at 
+individual issues as they arise and address them by fixing the VM or by 
+making a case for enabling CONFIG_COMPACTION by default?
