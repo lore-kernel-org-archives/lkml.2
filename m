@@ -1,70 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756851Ab2GKJz2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 05:55:28 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55216 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752320Ab2GKJz0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 05:55:26 -0400
-Date: Wed, 11 Jul 2012 10:55:04 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: grant.likely@secretlab.ca, spi-devel-general@lists.sourceforge.net,
-        swarren@wwwdotorg.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH RESEND] spi: tegra: use dmaengine based dma driver
-Message-ID: <20120711095504.GD3938@opensource.wolfsonmicro.com>
-References: <1341927517-4584-1-git-send-email-ldewangan@nvidia.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="OaZoDhBhXzo6bW1J"
-Content-Disposition: inline
-In-Reply-To: <1341927517-4584-1-git-send-email-ldewangan@nvidia.com>
-X-Cookie: If you can read this, you're too close.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756939Ab2GKJ4r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 05:56:47 -0400
+Received: from mga09.intel.com ([134.134.136.24]:29919 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756922Ab2GKJ4p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 05:56:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="164196344"
+From: Artem Bityutskiy <dedekind1@gmail.com>
+To: Theodore Tso <tytso@mit.edu>, Jan Kara <jack@suse.cz>
+Cc: Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
+        Ext4 Mailing List <linux-ext4@vger.kernel.org>
+Subject: [PATCHv6 3/5] ext4: remove unnecessary superblock dirtying
+Date: Wed, 11 Jul 2012 12:58:16 +0300
+Message-Id: <1342000698-13556-4-git-send-email-dedekind1@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1342000698-13556-1-git-send-email-dedekind1@gmail.com>
+References: <1342000698-13556-1-git-send-email-dedekind1@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
---OaZoDhBhXzo6bW1J
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This patch changes the '__ext4_handle_dirty_super()' function which submits
+the superblock for I/O in the following cases:
 
-On Tue, Jul 10, 2012 at 07:08:37PM +0530, Laxman Dewangan wrote:
-> Use the dmaengine based Tegra APB DMA driver for
-> data transfer between SPI FIFO and memory in
-> place of legacy Tegra APB DMA.
->=20
-> The new driver is selected if legacy driver is not
-> selected and new DMA driver is enabled through config
-> file.
+1. When creating the first large file on a file system without
+   EXT4_FEATURE_RO_COMPAT_LARGE_FILE feature.
+2. When re-sizing the file-system.
+3. When creating an xattr on a file-system without the
+   EXT4_FEATURE_COMPAT_EXT_ATTR feature.
+4. When adding or deleting an orphan which happens on every delete operation
+   (because we update the 's_last_orphan' superblock field).
 
-Is this any different to the version of the patch that I already
-applied?
+If the file-system has journal enabled, the superblock is written via the
+journal. We do not modify this path.
 
---OaZoDhBhXzo6bW1J
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+If the file-system has no journal, this function, falls back to just marking
+the superblock as dirty using the 's_dirt' superblock flag. This means that it
+delays the actual superblock I/O submission by 5 seconds (default setting).
+Namely, the 'sync_supers()' kernel thread will call 'ext4_write_super()' later
+and will actually submit the superblock for I/O.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+And this is the behavior this patch modifies: we stop using 's_dirt' and just
+mark the superblock buffer as dirty right away. Indeed:
 
-iQIcBAEBAgAGBQJP/U1rAAoJEBus8iNuMP3dRq4P/1A9KG0kjV5UVr/W/Wxt7gag
-9L/tU3LcQw3KdNSWSGX76U6Z0AdC6VQTEKhEHIaTd5LqgCt4heajdWlvEBe2y9Ho
-5j7SX+2Xcey74svIzRAi9SqfLa5V9xEN9akm93LeZ3S9XKoU2udi/kCyNs1mephN
-xFPt1ImL/gNfTIA9LQYlILjCjyL+oviz+UZVWV5Ev5+z/FVn0u06S6wUdttWmzVc
-h/lmr9c6ji6QIWSQLkfa35bJD8XbTkgeh7DjSBdEqy7bWDBHyKdCXfxFVZKe/MaO
-LXdZtKhyeDlna/ROOIcD+BgCarb9kxMmFZ/Io3j6la4sr8rIDXISEMaZ608ijd89
-h0995TG2j4WjTCoyynvxjuqlbLFXCIcKpI8HnDjutvahv0qCcJ8i2jPVtpDPcLln
-PnyGbbpH/i/qq9YwI1gKhBvpF6MC6HysJmw1Sem4fFVnwesq8Jnkv68SJS11GV/a
-a5D0/YfF/8tlyoKPrqGTJc1V0ShjCTMVrC6/8r2W6oPX8hUD2peGJ6Z4Gnmfsa3U
-q2jCaFVKPESNkugbzerVceApt3lg1O6usoEU04r2vncGSErQlFQumcuzEN6Z1Lfs
-h82lfGPeLCT3+ByIsiHpRdq5/YLebwPA+rTB5NoawE4cIaOFZzqr7UfoQ0kAGQbH
-byvXaNKpcRej8uDshgjx
-=AVt/
------END PGP SIGNATURE-----
+1. It does not add any value to delay the I/O submission for cases 1-3 above.
+   They are rare.
+2. Case number 4 above depends on whether we have file-system checksumming
+   enabled or disables.
+   a) If it is disabled (most common scenario), then it is all-right to just
+      mark the superblock buffer as dirty right away and it should affect
+      performance.
+   b) If it is enabled, then we'll end up doing a bit more work on deletion
+      because we'll re-calculate superblock checksum every time.
 
---OaZoDhBhXzo6bW1J--
+So case 2.b is a bit controversial, but I think it is acceptable. After all, by
+enabling checksumming we already sign up for paying the price of calculating
+it. The way to improve checksumming performance globally would be to calculate
+it just before sending buffers to the I/O queue. We'd need some kind of
+call-back which could be registered by file-systems.
+
+This patch also removes 's_dirt' condition on the unmount path because we never
+set it anymore, so we should not test it.
+
+Tested using xfstests for both journalled and non-journalled ext4.
+
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+---
+ fs/ext4/ext4_jbd2.c |    5 ++---
+ fs/ext4/super.c     |    2 +-
+ 2 files changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/fs/ext4/ext4_jbd2.c b/fs/ext4/ext4_jbd2.c
+index 90f7c2e..c19ab6a 100644
+--- a/fs/ext4/ext4_jbd2.c
++++ b/fs/ext4/ext4_jbd2.c
+@@ -151,11 +151,10 @@ int __ext4_handle_dirty_super(const char *where, unsigned int line,
+ 		if (err)
+ 			ext4_journal_abort_handle(where, line, __func__,
+ 						  bh, handle, err);
+-	} else if (now) {
++	} else {
+ 		ext4_superblock_csum_set(sb,
+ 				(struct ext4_super_block *)bh->b_data);
+ 		mark_buffer_dirty(bh);
+-	} else
+-		sb->s_dirt = 1;
++	}
+ 	return err;
+ }
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index eb7aa3e..a391c53 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -896,7 +896,7 @@ static void ext4_put_super(struct super_block *sb)
+ 		EXT4_CLEAR_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_RECOVER);
+ 		es->s_state = cpu_to_le16(sbi->s_mount_state);
+ 	}
+-	if (sb->s_dirt || !(sb->s_flags & MS_RDONLY))
++	if (!(sb->s_flags & MS_RDONLY))
+ 		ext4_commit_super(sb, 1);
+ 
+ 	if (sbi->s_proc) {
+-- 
+1.7.7.6
+
