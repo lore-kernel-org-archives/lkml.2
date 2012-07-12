@@ -1,66 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161508Ab2GLRoP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 13:44:15 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.161]:25526 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161495Ab2GLRoO (ORCPT
+	id S1161521Ab2GLRo0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 13:44:26 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:36634 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161495Ab2GLRoX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 13:44:14 -0400
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFGjS0PFkFT
-X-RZG-CLASS-ID: mo00
-Date: Thu, 12 Jul 2012 19:44:11 +0200
-From: Olaf Hering <olaf@aepfle.de>
+	Thu, 12 Jul 2012 13:44:23 -0400
+X-IronPort-AV: E=Sophos;i="4.77,575,1336348800"; 
+   d="scan'208";a="13508697"
+Date: Thu, 12 Jul 2012 18:43:43 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
 To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] [PATCH] xen pv-on-hvm: add pfn_is_ram helper for
- kdump
-Message-ID: <20120712174411.GA24313@aepfle.de>
-References: <1342113639-19728-1-git-send-email-olaf@aepfle.de>
- <20120712172424.GA5895@phenom.dumpdata.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "Tim (Xen.org)" <tim@xen.org>, Ian Campbell <Ian.Campbell@citrix.com>
+Subject: Re: [Xen-devel] [PATCH WIP 3/6] xen/arm: get privilege status
+In-Reply-To: <20120709144129.GB12102@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.02.1207121840230.23783@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1206221644370.27860@kaball.uk.xensource.com> <1340381685-22529-1-git-send-email-stefano.stabellini@eu.citrix.com> <1340381685-22529-3-git-send-email-stefano.stabellini@eu.citrix.com> <20120709144129.GB12102@phenom.dumpdata.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120712172424.GA5895@phenom.dumpdata.com>
-User-Agent: Mutt/1.5.21.rev5543 (2011-12-20)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 12, Konrad Rzeszutek Wilk wrote:
-
-> > +++ b/include/xen/interface/hvm/hvm_op.h
-> > @@ -43,4 +43,24 @@ struct xen_hvm_pagetable_dying {
-> >  typedef struct xen_hvm_pagetable_dying xen_hvm_pagetable_dying_t;
-> >  DEFINE_GUEST_HANDLE_STRUCT(xen_hvm_pagetable_dying_t);
-> >   
-> > +typedef enum {
-> > +    HVMMEM_ram_rw,             /* Normal read/write guest RAM */
-> > +    HVMMEM_ram_ro,             /* Read-only; writes are discarded */
-> > +    HVMMEM_mmio_dm,            /* Reads and write go to the device model */
-> > +} hvmmem_type_t;
+On Mon, 9 Jul 2012, Konrad Rzeszutek Wilk wrote:
+> On Fri, Jun 22, 2012 at 05:14:42PM +0100, Stefano Stabellini wrote:
+> > Use Xen features to figure out if we are privileged.
 > 
-> Does this have to be a typdef?
-> 
-> > +
-> > +#define HVMOP_get_mem_type    15
-> > +/* Return hvmmem_type_t for the specified pfn. */
-> > +struct xen_hvm_get_mem_type {
-> > +    /* Domain to be queried. */
-> > +    domid_t domid;
-> > +    /* OUT variable. */
-> > +    uint16_t mem_type;
-> > +    uint16_t pad[2]; /* align next field on 8-byte boundary */
-> > +    /* IN variable. */
-> > +    uint64_t pfn;
-> > +};
-> > +typedef struct xen_hvm_get_mem_type xen_hvm_get_mem_type_t;
-> 
-> Please no typdefs. I can fix this up, but in the future pls don't add
-> more of them.
+> Is there a corresponding Xen c/s for the XNEFEAT_dom0?
 
-Its just a forward port from what went into linux-2.6.18.
+Yes, that would be 23735
+(http://xenbits.xensource.com/hg/xen-unstable.hg/rev/537918f518ee).
 
+> Why can't the existing SIF_PRIVILIGED call work? Isn't that
+> somethign that the hypervisor sets for the guest?
 
-Olaf
+SIF_PRIVILIGED is in the start_info page that ARM guests don't have.
