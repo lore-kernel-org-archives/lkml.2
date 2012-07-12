@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162282Ab2GLWxQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:53:16 -0400
+	id S1162240Ab2GLWoq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:44:46 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:58752 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162245Ab2GLWos (ORCPT
+	with ESMTP id S1162155Ab2GLWoi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:44:48 -0400
+	Thu, 12 Jul 2012 18:44:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 159/187] SUNRPC: move per-net operations from svc_destroy()
-Date: Thu, 12 Jul 2012 15:35:15 -0700
-Message-Id: <20120712191538.064020459@linuxfoundation.org>
+        Davide Gerhard <rainbow@irh.it>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 156/187] ipheth: add support for iPad
+Date: Thu, 12 Jul 2012 15:35:12 -0700
+Message-Id: <20120712191536.867413341@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -31,281 +31,41 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
+From: Davide Gerhard <rainbow@irh.it>
 
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+commit 6de0298ec9c1edaf330b71b57346241ece8f3346 upstream.
 
-upstream commit 786185b5f8abefa6a8a16695bb4a59c164d5a071.
+This adds support for the iPad to the ipheth driver.
+(product id = 0x129a)
 
-The idea is to separate service destruction and per-net operations,
-because these are two different things and the mix looks ugly.
-
-Notes:
-
-1) For NFS server this patch looks ugly (sorry for that). But these
-place will be rewritten soon during NFSd containerization.
-
-2) LockD per-net counter increase int lockd_up() was moved prior to
-make_socks() to make lockd_down_net() call safe in case of error.
-
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Davide Gerhard <rainbow@irh.it>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- fs/lockd/svc.c    |   27 +++++++++++++++------------
- fs/nfs/callback.c |    3 +++
- fs/nfsd/nfsctl.c  |   12 +++++++++---
- fs/nfsd/nfssvc.c  |   14 ++++++++++++++
- net/sunrpc/svc.c  |    4 ----
- 5 files changed, 41 insertions(+), 19 deletions(-)
 
---- a/fs/lockd/svc.c
-+++ b/fs/lockd/svc.c
-@@ -257,7 +257,7 @@ static int lockd_up_net(struct net *net)
- 	struct svc_serv *serv = nlmsvc_rqst->rq_server;
- 	int error;
+---
+ drivers/net/usb/ipheth.c |    5 +++++
+ 1 file changed, 5 insertions(+)
+
+--- a/drivers/net/usb/ipheth.c
++++ b/drivers/net/usb/ipheth.c
+@@ -59,6 +59,7 @@
+ #define USB_PRODUCT_IPHONE_3G   0x1292
+ #define USB_PRODUCT_IPHONE_3GS  0x1294
+ #define USB_PRODUCT_IPHONE_4	0x1297
++#define USB_PRODUCT_IPAD 0x129a
+ #define USB_PRODUCT_IPHONE_4_VZW 0x129c
+ #define USB_PRODUCT_IPHONE_4S	0x12a0
  
--	if (ln->nlmsvc_users)
-+	if (ln->nlmsvc_users++)
- 		return 0;
- 
- 	error = svc_rpcb_setup(serv, net);
-@@ -272,6 +272,7 @@ static int lockd_up_net(struct net *net)
- err_socks:
- 	svc_rpcb_cleanup(serv, net);
- err_rpcb:
-+	ln->nlmsvc_users--;
- 	return error;
- }
- 
-@@ -299,6 +300,7 @@ int lockd_up(struct net *net)
- {
- 	struct svc_serv *serv;
- 	int		error = 0;
-+	struct lockd_net *ln = net_generic(net, lockd_net_id);
- 
- 	mutex_lock(&nlmsvc_mutex);
- 	/*
-@@ -330,9 +332,11 @@ int lockd_up(struct net *net)
- 		goto destroy_and_out;
- 	}
- 
-+	ln->nlmsvc_users++;
-+
- 	error = make_socks(serv, net);
- 	if (error < 0)
--		goto destroy_and_out;
-+		goto err_start;
- 
- 	/*
- 	 * Create the kernel thread and wait for it to start.
-@@ -344,7 +348,7 @@ int lockd_up(struct net *net)
- 		printk(KERN_WARNING
- 			"lockd_up: svc_rqst allocation failed, error=%d\n",
- 			error);
--		goto destroy_and_out;
-+		goto err_start;
- 	}
- 
- 	svc_sock_update_bufs(serv);
-@@ -358,7 +362,7 @@ int lockd_up(struct net *net)
- 		nlmsvc_rqst = NULL;
- 		printk(KERN_WARNING
- 			"lockd_up: kthread_run failed, error=%d\n", error);
--		goto destroy_and_out;
-+		goto err_start;
- 	}
- 
- 	/*
-@@ -368,14 +372,14 @@ int lockd_up(struct net *net)
- destroy_and_out:
- 	svc_destroy(serv);
- out:
--	if (!error) {
--		struct lockd_net *ln = net_generic(net, lockd_net_id);
--
--		ln->nlmsvc_users++;
-+	if (!error)
- 		nlmsvc_users++;
--	}
- 	mutex_unlock(&nlmsvc_mutex);
- 	return error;
-+
-+err_start:
-+	lockd_down_net(net);
-+	goto destroy_and_out;
- }
- EXPORT_SYMBOL_GPL(lockd_up);
- 
-@@ -386,11 +390,10 @@ void
- lockd_down(struct net *net)
- {
- 	mutex_lock(&nlmsvc_mutex);
-+	lockd_down_net(net);
- 	if (nlmsvc_users) {
--		if (--nlmsvc_users) {
--			lockd_down_net(net);
-+		if (--nlmsvc_users)
- 			goto out;
--		}
- 	} else {
- 		printk(KERN_ERR "lockd_down: no users! task=%p\n",
- 			nlmsvc_task);
---- a/fs/nfs/callback.c
-+++ b/fs/nfs/callback.c
-@@ -314,6 +314,8 @@ out_err:
- 	dprintk("NFS: Couldn't create callback socket or server thread; "
- 		"err = %d\n", ret);
- 	cb_info->users--;
-+	if (serv)
-+		svc_shutdown_net(serv, net);
- 	goto out;
- }
- 
-@@ -328,6 +330,7 @@ void nfs_callback_down(int minorversion)
- 	cb_info->users--;
- 	if (cb_info->users == 0 && cb_info->task != NULL) {
- 		kthread_stop(cb_info->task);
-+		svc_shutdown_net(cb_info->serv, current->nsproxy->net_ns);
- 		svc_exit_thread(cb_info->rqst);
- 		cb_info->serv = NULL;
- 		cb_info->rqst = NULL;
---- a/fs/nfsd/nfsctl.c
-+++ b/fs/nfsd/nfsctl.c
-@@ -651,6 +651,7 @@ static ssize_t __write_ports_addfd(char
- {
- 	char *mesg = buf;
- 	int fd, err;
-+	struct net *net = &init_net;
- 
- 	err = get_int(&mesg, &fd);
- 	if (err != 0 || fd < 0)
-@@ -662,6 +663,8 @@ static ssize_t __write_ports_addfd(char
- 
- 	err = svc_addsock(nfsd_serv, fd, buf, SIMPLE_TRANSACTION_LIMIT);
- 	if (err < 0) {
-+		if (nfsd_serv->sv_nrthreads == 1)
-+			svc_shutdown_net(nfsd_serv, net);
- 		svc_destroy(nfsd_serv);
- 		return err;
- 	}
-@@ -699,6 +702,7 @@ static ssize_t __write_ports_addxprt(cha
- 	char transport[16];
- 	struct svc_xprt *xprt;
- 	int port, err;
-+	struct net *net = &init_net;
- 
- 	if (sscanf(buf, "%15s %4u", transport, &port) != 2)
- 		return -EINVAL;
-@@ -710,12 +714,12 @@ static ssize_t __write_ports_addxprt(cha
- 	if (err != 0)
- 		return err;
- 
--	err = svc_create_xprt(nfsd_serv, transport, &init_net,
-+	err = svc_create_xprt(nfsd_serv, transport, net,
- 				PF_INET, port, SVC_SOCK_ANONYMOUS);
- 	if (err < 0)
- 		goto out_err;
- 
--	err = svc_create_xprt(nfsd_serv, transport, &init_net,
-+	err = svc_create_xprt(nfsd_serv, transport, net,
- 				PF_INET6, port, SVC_SOCK_ANONYMOUS);
- 	if (err < 0 && err != -EAFNOSUPPORT)
- 		goto out_close;
-@@ -724,12 +728,14 @@ static ssize_t __write_ports_addxprt(cha
- 	nfsd_serv->sv_nrthreads--;
- 	return 0;
- out_close:
--	xprt = svc_find_xprt(nfsd_serv, transport, &init_net, PF_INET, port);
-+	xprt = svc_find_xprt(nfsd_serv, transport, net, PF_INET, port);
- 	if (xprt != NULL) {
- 		svc_close_xprt(xprt);
- 		svc_xprt_put(xprt);
- 	}
- out_err:
-+	if (nfsd_serv->sv_nrthreads == 1)
-+		svc_shutdown_net(nfsd_serv, net);
- 	svc_destroy(nfsd_serv);
- 	return err;
- }
---- a/fs/nfsd/nfssvc.c
-+++ b/fs/nfsd/nfssvc.c
-@@ -382,6 +382,7 @@ int nfsd_set_nrthreads(int n, int *nthre
- 	int i = 0;
- 	int tot = 0;
- 	int err = 0;
-+	struct net *net = &init_net;
- 
- 	WARN_ON(!mutex_is_locked(&nfsd_mutex));
- 
-@@ -426,6 +427,9 @@ int nfsd_set_nrthreads(int n, int *nthre
- 		if (err)
- 			break;
- 	}
-+
-+	if (nfsd_serv->sv_nrthreads == 1)
-+		svc_shutdown_net(nfsd_serv, net);
- 	svc_destroy(nfsd_serv);
- 
- 	return err;
-@@ -441,6 +445,7 @@ nfsd_svc(unsigned short port, int nrserv
- {
- 	int	error;
- 	bool	nfsd_up_before;
-+	struct net *net = &init_net;
- 
- 	mutex_lock(&nfsd_mutex);
- 	dprintk("nfsd: creating service\n");
-@@ -473,6 +478,8 @@ out_shutdown:
- 	if (error < 0 && !nfsd_up_before)
- 		nfsd_shutdown();
- out_destroy:
-+	if (nfsd_serv->sv_nrthreads == 1)
-+		svc_shutdown_net(nfsd_serv, net);
- 	svc_destroy(nfsd_serv);		/* Release server */
- out:
- 	mutex_unlock(&nfsd_mutex);
-@@ -556,6 +563,9 @@ nfsd(void *vrqstp)
- 	nfsdstats.th_cnt --;
- 
- out:
-+	if (rqstp->rq_server->sv_nrthreads == 1)
-+		svc_shutdown_net(rqstp->rq_server, &init_net);
-+
- 	/* Release the thread */
- 	svc_exit_thread(rqstp);
- 
-@@ -668,8 +678,12 @@ int nfsd_pool_stats_open(struct inode *i
- int nfsd_pool_stats_release(struct inode *inode, struct file *file)
- {
- 	int ret = seq_release(inode, file);
-+	struct net *net = &init_net;
-+
- 	mutex_lock(&nfsd_mutex);
- 	/* this function really, really should have been called svc_put() */
-+	if (nfsd_serv->sv_nrthreads == 1)
-+		svc_shutdown_net(nfsd_serv, net);
- 	svc_destroy(nfsd_serv);
- 	mutex_unlock(&nfsd_mutex);
- 	return ret;
---- a/net/sunrpc/svc.c
-+++ b/net/sunrpc/svc.c
-@@ -537,8 +537,6 @@ EXPORT_SYMBOL_GPL(svc_shutdown_net);
- void
- svc_destroy(struct svc_serv *serv)
- {
--	struct net *net = current->nsproxy->net_ns;
--
- 	dprintk("svc: svc_destroy(%s, %d)\n",
- 				serv->sv_program->pg_name,
- 				serv->sv_nrthreads);
-@@ -553,8 +551,6 @@ svc_destroy(struct svc_serv *serv)
- 
- 	del_timer_sync(&serv->sv_temptimer);
- 
--	svc_shutdown_net(serv, net);
--
- 	/*
- 	 * The last user is gone and thus all sockets have to be destroyed to
- 	 * the point. Check this.
+@@ -101,6 +102,10 @@ static struct usb_device_id ipheth_table
+ 		IPHETH_USBINTF_CLASS, IPHETH_USBINTF_SUBCLASS,
+ 		IPHETH_USBINTF_PROTO) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(
++		USB_VENDOR_APPLE, USB_PRODUCT_IPAD,
++		IPHETH_USBINTF_CLASS, IPHETH_USBINTF_SUBCLASS,
++		IPHETH_USBINTF_PROTO) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(
+ 		USB_VENDOR_APPLE, USB_PRODUCT_IPHONE_4_VZW,
+ 		IPHETH_USBINTF_CLASS, IPHETH_USBINTF_SUBCLASS,
+ 		IPHETH_USBINTF_PROTO) },
 
 
