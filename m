@@ -1,111 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758095Ab2GLTzP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 15:55:15 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:47283 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755741Ab2GLTzM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 15:55:12 -0400
-MIME-Version: 1.0
-Message-ID: <367d9a88-7819-401a-8210-c32503cdd458@default>
-Date: Thu, 12 Jul 2012 12:54:54 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Minchan Kim <minchan@kernel.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Wilk <konrad.wilk@oracle.com>, Nitin Gupta <ngupta@vflare.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: RE: [PATCH 3/4] zsmalloc: add details to zs_map_object boiler plate
-References: <1341263752-10210-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <1341263752-10210-4-git-send-email-sjenning@linux.vnet.ibm.com>
- <4FFB94FF.8030401@kernel.org> <4FFC478C.4050505@linux.vnet.ibm.com>
- <4FFD2E65.5080307@kernel.org> <4FFD8A8F.6030603@linux.vnet.ibm.com>
- <20120712011555.GB5503@bbox>
-In-Reply-To: <20120712011555.GB5503@bbox>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.6  (510070) [OL
- 12.0.6607.1000 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	id S1758148Ab2GLT6g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 15:58:36 -0400
+Received: from mga09.intel.com ([134.134.136.24]:47666 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755864Ab2GLT6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 15:58:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="asc'?scan'208";a="165068118"
+Message-ID: <1342123110.1783.83.camel@jtkirshe-mobl>
+Subject: Re: [trivial PATCH 2/7] ixgbe: remove unused #define
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Reply-To: jeffrey.t.kirsher@intel.com
+To: Jon Mason <jdmason@kudzu.us>
+Cc: trivial@kernel.org, linux-kernel@vger.kernel.org,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        John Ronciak <john.ronciak@intel.com>, netdev <netdev@vger.kernel.org>
+Date: Thu, 12 Jul 2012 12:58:30 -0700
+In-Reply-To: <CAPoiz9wcj7tbgVUf+D=HdonXnaMYFHb+TmSb77f2R2mpwGQM7g@mail.gmail.com>
+References: <1341959492-31389-1-git-send-email-jdmason@kudzu.us>
+	 <1341959492-31389-2-git-send-email-jdmason@kudzu.us>
+	 <1341960208.3336.43.camel@jtkirshe-mobl>
+	 <1342116938.1783.57.camel@jtkirshe-mobl>
+	 <CAPoiz9wcj7tbgVUf+D=HdonXnaMYFHb+TmSb77f2R2mpwGQM7g@mail.gmail.com>
+Organization: Intel Corporation
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-Ux2wp4co9mXK8xyPo1CN"
+X-Mailer: Evolution 3.4.3 (3.4.3-1.fc17) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Minchan Kim [mailto:minchan@kernel.org]
-> Subject: Re: [PATCH 3/4] zsmalloc: add details to zs_map_object boiler plate
-> 
-> On Wed, Jul 11, 2012 at 09:15:43AM -0500, Seth Jennings wrote:
-> > On 07/11/2012 02:42 AM, Minchan Kim wrote:
-> > > On 07/11/2012 12:17 AM, Seth Jennings wrote:
-> > >> On 07/09/2012 09:35 PM, Minchan Kim wrote:
-> > >>> Maybe we need local_irq_save/restore in zs_[un]map_object path.
-> > >>
-> > >> I'd rather not disable interrupts since that will create
-> > >> unnecessary interrupt latency for all users, even if they
-> > >
-> > > Agreed.
-> > > Although we guide k[un]map atomic is so fast, it isn't necessary
-> > > to force irq_[enable|disable]. Okay.
-> > >
-> > >> don't need interrupt protection.  If a particular user uses
-> > >> zs_map_object() in an interrupt path, it will be up to that
-> > >> user to disable interrupts to ensure safety.
-> > >
-> > > Nope. It shouldn't do that.
-> > > Any user in interrupt context can't assume that there isn't any other user using per-cpu buffer
-> > > right before interrupt happens.
-> > >
-> > > The concern is that if such bug happens, it's very hard to find a bug.
-> > > So, how about adding this?
-> > >
-> > > void zs_map_object(...)
-> > > {
-> > > 	BUG_ON(in_interrupt());
-> > > }
+
+--=-Ux2wp4co9mXK8xyPo1CN
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+On Thu, 2012-07-12 at 12:49 -0700, Jon Mason wrote:
+> On Thu, Jul 12, 2012 at 11:15 AM, Jeff Kirsher
+> <jeffrey.t.kirsher@intel.com> wrote:
+> > On Tue, 2012-07-10 at 15:43 -0700, Jeff Kirsher wrote:
+> >> On Tue, 2012-07-10 at 15:31 -0700, Jon Mason wrote:
+> >> > Remove unused IXGBE_INTEL_VENDOR_ID #define
+> >> >
+> >> > Signed-off-by: Jon Mason <jdmason@kudzu.us>
+> >> > Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+> >> > Cc: Jesse Brandeburg <jesse.brandeburg@intel.com>
+> >> > Cc: Bruce Allan <bruce.w.allan@intel.com>
+> >> > Cc: Carolyn Wyborny <carolyn.wyborny@intel.com>
+> >> > Cc: Don Skidmore <donald.c.skidmore@intel.com>
+> >> > Cc: Greg Rose <gregory.v.rose@intel.com>
+> >> > Cc: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+> >> > Cc: Alex Duyck <alexander.h.duyck@intel.com>
+> >> > Cc: John Ronciak <john.ronciak@intel.com>
+> >> > ---
+> >> >  drivers/net/ethernet/intel/ixgbe/ixgbe_type.h |    3 ---
+> >> >  1 file changed, 3 deletions(-)
+> >>
+> >> This should also go through David Miller's networking tree's.
+> Adding
+> >> netdev mailing list.
+> >>
+> >> Acked-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 > >
-> > I not completely following you, but I think I'm following
-> > enough.  Your point is that the per-cpu buffers are shared
-> > by all zsmalloc users and one user doesn't know if another
-> > user is doing a zs_map_object() in an interrupt path.
-> 
-> And vise versa is yes.
-> 
-> > However, I think what you are suggesting is to disallow
-> > mapping in interrupt context.  This is a problem for zcache
-> > as it already does mapping in interrupt context, namely for
-> > page decompression in the page fault handler.
-> 
-> I don't get it.
-> Page fault handler isn't interrupt context.
-> 
-> > What do you think about making the per-cpu buffers local to
-> > each zsmalloc pool? That way each user has their own per-cpu
-> > buffers and don't step on each other's toes.
-> 
-> Maybe, It could be a solution if you really need it in interrupt context.
-> But the concern is it could hurt zsmalloc's goal which is memory
-> space efficiency if your system has lots of CPUs.
+> > After looking at this further, I rescind my ACK.
+> >
+> > NAK, this define is used in several places in ixgbe_main.c and the
+> > driver will not compile with this patch.
+>=20
+> My apologies, I was a bit sloppy and simply rebased my old patches
+> without retesting them.  The code has changed since I originally
+> pushed the patch (http://www.spinics.net/lists/netdev/msg171523.html).
+>  I will fix and resubmit.
+>=20
+> Thanks,
+> Jon=20
 
-Sorry to be so far behind on this thread.
+Also note, that when you fix up the patch and resend it, could you
+resend patch 1 (ixgb) as well to netdev@vger.kernel.org.  That way
+netdev patchwork will pickup the patches and I can get them into my
+queue.
 
-For frontswap and zram, the "put" calls are not in interrupt
-context.  For cleancache, the put call IS in interrupt context.
-So if you want to use zsmalloc for zcache+cleancache, interrupt
-context is a concern.  As discussed previously in a separate
-thread though, zsmalloc will take a lot of work to support the full
-needs of zcache.  So, pick your poison.
+Thanks!
+Jeff
 
-The x86 architecture is far ahead of ARM on many CPU optimizations
-including fast copying.  Most x86 systems are also now 64-bit,
-which means 64-bit+ data buses.  These differences probably account
-for the difference in copy-vs-TLBmapping performance between (64-bit)
-x86 and (32-bit ARM).  However, ARM may eventually catch up, especially
-when 64-bit ARM chips are more common, so
-it would be nice if zsmalloc could determine at runtime which
-is faster and use it.
 
-Dan
+
+--=-Ux2wp4co9mXK8xyPo1CN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABCgAGBQJP/yxmAAoJEOVv75VaS+3OaAwQAIEpZkq72fyAT0Nt0mtJiYhP
+KyhaX1oevPrEibEKI+Dz8TvKK1SFidhprNxRvSTn9zilq9gxAOmTGbMOUvIKdhBE
+H2fhGJoFf0IaVYso/adBR/BZJwOg+gN1ahaCAZ8VRHtwUMvYaHu+lAZ5BBvkWsy2
+UjSgfr9nbpoey7MPSRWs+1Yi5EkkgAJCb8hGGRXvyLgw5jsPrnfIcl83mB9Dk61H
+Q7I/zMsFbAl8TIaLxAv5SEbUmWFeQcJ5oXWQuQjw+oBZFXuTXQEeDnqPM7MO3mEM
+zjEnoFNRIZFkBbh7JRmzvT+enFWhgkuVQd1GX52GSdCZKhJmHP6KddNdZFlFag+g
+8IK7gCa72Rjw2zVTCU0lh3LUkr7pj2Vm7FpyFElh14nDq8ALmwzFUxbUlvdLWSKi
+lqCR2C03OFIiHrH0polBDDOEaqfWRnyppd5BbZVMu7PJZzSTwuoeOBCZD3lBtfF9
+PecQe7NthR/bY0/myFIeqLq9jysVsXMPHuuHYMctwbfPaC+Wo1vWx7eJ8mqpzFHM
+TKylbOu0Y7W595fD5GhG3zaDlvWNllZi414s2T9STx63lAvTW8N1EDX1fEY64fE9
+rVoO954nV9QPNixvHMqM+aewlNUOLYE1kl0JenibR0pUGl3EJnxbDBnl2kcNaDTG
+2jQColCgEpssSNM5sIyp
+=K9sK
+-----END PGP SIGNATURE-----
+
+--=-Ux2wp4co9mXK8xyPo1CN--
+
