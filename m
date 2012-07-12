@@ -1,44 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759124Ab2GLLzn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 07:55:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61769 "EHLO mx1.redhat.com"
+	id S933770Ab2GLL5P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 07:57:15 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59513 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754437Ab2GLLzm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 07:55:42 -0400
-Message-ID: <4FFEBB39.8090308@redhat.com>
-Date: Thu, 12 Jul 2012 14:55:37 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S933726Ab2GLL5K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 07:57:10 -0400
+Date: Thu, 12 Jul 2012 13:57:08 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Hillf Danton <dhillf@gmail.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH] mm: hugetlb: flush dcache before returning zeroed huge
+ page to userspace
+Message-ID: <20120712115708.GG21013@tiehlicka.suse.cz>
+References: <1341412376-6272-1-git-send-email-will.deacon@arm.com>
+ <20120709122523.GC4627@tiehlicka.suse.cz>
+ <20120709141324.GK7315@mudshark.cambridge.arm.com>
+ <alpine.LSU.2.00.1207091622470.2261@eggly.anvils>
+ <20120710094513.GB9108@mudshark.cambridge.arm.com>
+ <20120710104234.GI9108@mudshark.cambridge.arm.com>
+ <20120711174802.GG13498@mudshark.cambridge.arm.com>
+ <20120712111659.GF21013@tiehlicka.suse.cz>
+ <20120712112645.GG2816@mudshark.cambridge.arm.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>
-Subject: [GIT PULL] KVM fixes for 3.5-rc6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120712112645.GG2816@mudshark.cambridge.arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus, please pull a couple of KVM fixes from:
+On Thu 12-07-12 12:26:45, Will Deacon wrote:
+> On Thu, Jul 12, 2012 at 12:16:59PM +0100, Michal Hocko wrote:
+> > On Wed 11-07-12 18:48:02, Will Deacon wrote:
+> > > Just to confirm, the following quick hack at least results in the correct
+> > > flushing for me (on ARM):
+> > > 
+> > > 
+> > > diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> > > index e198831..7a7c9d3 100644
+> > > --- a/mm/hugetlb.c
+> > > +++ b/mm/hugetlb.c
+> > > @@ -1141,6 +1141,7 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+> > >         }
+> > >  
+> > >         set_page_private(page, (unsigned long)spool);
+> > > +       clear_bit(PG_arch_1, &page->flags);
+> > >  
+> > >         vma_commit_reservation(h, vma, addr);
+> > >  
+> > > 
+> > > 
+> > > The question is whether we should tidy that up for the core code or get
+> > > architectures to clear the bit in arch_make_huge_pte (which also seems to
+> > > work).
+> > 
+> > This should go into arch specific code IMO. Even the page flag name
+> > suggests this shouldn't be in the base code.
+> 
+> Well, the comment in linux/page-flags.h does state that:
+> 
+>  * PG_arch_1 is an architecture specific page state bit.  The generic code
+>  * guarantees that this bit is cleared for a page when it first is entered into
+>  * the page cache.
+> 
+> so it's not completely clear cut that the architecture should be responsible
+> for clearing this bit when allocating pages from the hugepage pool.
 
-  git://git.kernel.org/pub/scm/virt/kvm/kvm.git master
-
-One is an adjustment for an irq layer change that affected device
-assignment, the other a one-liner ppc fix.
-
-----------------------------------------------------------------
-
-Alex Williamson (1):
-      KVM: Fix device assignment threaded irq handler
-
-Avi Kivity (1):
-      Merge branch 'for-upstream-master' of git://github.com/agraf/linux-2.6
-
-Benjamin Herrenschmidt (1):
-      powerpc/kvm: Fix "PR" KVM implementation of H_CEDE
+I think the wording is quite clear. It guarantees it gets cleared not
+clears it. So it is up to an arch specific functions called from the
+generic code to do that.
 
 -- 
-error compiling committee.c: too many arguments to function
-
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
