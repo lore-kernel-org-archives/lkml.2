@@ -1,98 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030647Ab2GLLID (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 07:08:03 -0400
-Received: from www.linutronix.de ([62.245.132.108]:38319 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030357Ab2GLLIA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 07:08:00 -0400
-Date: Thu, 12 Jul 2012 13:07:58 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Mike Galbraith <efault@gmx.de>
-cc: "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: 3.4.4-rt13: btrfs + xfstests 006 = BOOM.. and a bonus rt_mutex
- deadlock report for absolutely free!
-In-Reply-To: <1342072060.7338.102.camel@marge.simpson.net>
-Message-ID: <alpine.LFD.2.02.1207121253170.32033@ionos>
-References: <1342072060.7338.102.camel@marge.simpson.net>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1030654Ab2GLLIm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 07:08:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56272 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030357Ab2GLLIl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 07:08:41 -0400
+Date: Thu, 12 Jul 2012 13:08:38 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Wanpeng Li <liwp.linux@gmail.com>
+Cc: linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] mm/memcg: recalculate chargeable space after waiting
+ migrating charges
+Message-ID: <20120712110838.GE21013@tiehlicka.suse.cz>
+References: <1342089561-11211-1-git-send-email-liwp.linux@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1342089561-11211-1-git-send-email-liwp.linux@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Jul 2012, Mike Galbraith wrote:
-> crash> struct rt_mutex 0xffff8801770601c8
-> struct rt_mutex {
->   wait_lock = {
->     raw_lock = {
->       slock = 7966
->     }
->   }, 
->   wait_list = {
->     node_list = {
->       next = 0xffff880175eedbe0, 
->       prev = 0xffff880175eedbe0
->     }, 
->     rawlock = 0xffff880175eedbd8, 
-
-Urgh. Here is something completely wrong. That should point to
-wait_lock, i.e. the rt_mutex itself, but that points into lala land.
-
->     spinlock = 0x0
->   }, 
->   owner = 0x1, 
->   save_state = 0, 
->   file = 0x0, 
->   name = 0xffffffff81781b9b "&(&device->io_lock)->lock", 
->   line = 0, 
->   magic = 0x0
-> }
-> crash> struct list_head 0xffff880175eedbe0
-> struct list_head {
->   next = 0x6b6b6b6b6b6b6b6b, 
->   prev = 0x6b6b6b6b6b6b6b6b
-> }
-
-That's POISON_FREE. How the heck can this happen ?
-
- 
-> Reproducer2: dbench -t 30 8
+On Thu 12-07-12 18:39:21, Wanpeng Li wrote:
+> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
 > 
-> [  692.857164] 
-> [  692.857165] ============================================
-> [  692.863963] [ BUG: circular locking deadlock detected! ]
-> [  692.869264] Not tainted
-> [  692.871708] --------------------------------------------
-> [  692.877008] btrfs-delayed-m/1404 is deadlocking current task dbench/7937
-> [  692.877009] 
-> [  692.885183] 
-> [  692.885184] 1) dbench/7937 is trying to acquire this lock:
-> [  692.892149]  [ffff88014d6aea80] {&(&eb->lock)->lock}
-> [  692.897102] .. ->owner: ffff880175808501
-> [  692.901018] .. held by:   btrfs-delayed-m: 1404 [ffff880175808500, 120]
-> [  692.907657] 
-> [  692.907657] 2) btrfs-delayed-m/1404 is blocked on this lock:
-> [  692.914797]  [ffff88014bf58d60] {&(&eb->lock)->lock}
-> [  692.919751] .. ->owner: ffff880175186101
-> [  692.923672] .. held by:            dbench: 7937 [ffff880175186100, 120]
-> [  692.930309] 
-> [  692.930309] btrfs-delayed-m/1404's [blocked] stackdump:
+> Function mem_cgroup_do_charge will call mem_cgroup_reclaim,
+> there are two break points in mem_cgroup_reclaim:
+> if (total && (flag & MEM_CGROUP_RECLAIM_SHIRINK))
+> 	break;
+> if (mem_cgroup_margin(memcg))
+> 	break;
+> so mem_cgroup_reclaim can't guarantee reclaim enough pages(nr_pages) 
+> which is requested from mem_cgroup_do_charge, if mem_cgroup_margin
+> (mem_over_limit) >= nr_pages is not true, the process will go to
+> mem_cgroup_wait_acct_move to wait doubly charge counted caused by
+> task move. 
 
-Hrmm. Both locks are rw_locks and we prevent multiple readers for the
-known reasons in RT. No idea how to deal with that one :(
+I am sorry but I have no idea what you are trying to say. The
+mem_cgroup_wait_acct_move just makes sure that we are waiting until
+charge is moved (which can potentially free some charges) rather than
+OOM which should be the last resort so it makes sense to retry the
+charge.
 
-Thanks,
+> But this time still can't guarantee enough pages(nr_pages) is
+> ready, directly return CHARGE_RETRY is incorret. 
 
-	tglx
+So you think it is better to oom? Why? What prevents you from a race
+that your mem_cgroup_margin returns true but another CPU consumes those
+charges right after that. See? The check is pointless. It doesn't
+guarantee anything.
 
+> We should add a check to confirm enough pages is ready, otherwise go
+> to oom.
 
+What you are trying to fix? How have you tested it? Why do you think it
+makes any sense at all?
+You are just changing the behavior without any rationale. And that's a
+_no_go_!
+
+> 
+> Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
+> ---
+>  mm/memcontrol.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index f72b5e5..4ae3848 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -2210,7 +2210,8 @@ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
+>  	 * At task move, charge accounts can be doubly counted. So, it's
+>  	 * better to wait until the end of task_move if something is going on.
+>  	 */
+> -	if (mem_cgroup_wait_acct_move(mem_over_limit))
+> +	if (mem_cgroup_wait_acct_move(mem_over_limit)
+> +			&& mem_cgroup_margin(mem_over_limit) >= nr_pages)
+>  		return CHARGE_RETRY;
+>  
+>  	/* If we don't need to call oom-killer at el, return immediately */
+> -- 
+> 1.7.5.4
+> 
+
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
