@@ -1,69 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754395Ab2GLFvc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 01:51:32 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:54312 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752513Ab2GLFvb (ORCPT
+	id S1755908Ab2GLF5G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 01:57:06 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:37435 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753057Ab2GLF5E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 01:51:31 -0400
-Date: Thu, 12 Jul 2012 15:51:20 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Pekka Enberg <penberg@cs.helsinki.fi>,
-        Christoph Lameter <cl@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Glauber Costa <glommer@parallels.com>
-Subject: linux-next: build warning after merge of the slab tree
-Message-Id: <20120712155120.6382db5535bf8d099793b351@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__12_Jul_2012_15_51_20_+1000_CE7QGP4Xh3uXthPO"
+	Thu, 12 Jul 2012 01:57:04 -0400
+Date: Thu, 12 Jul 2012 11:26:55 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Joe Perches <joe@perches.com>, Ingo Molnar <mingo@elte.hu>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/5] uprobes: fix overflow in
+ vma_address/find_active_uprobe
+Message-ID: <20120712055655.GB3598@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120708203006.GA18233@redhat.com>
+ <1341782304.13174.21.camel@joe2Laptop>
+ <20120709105445.GA32699@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20120709105445.GA32699@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12071205-7606-0000-0000-000001F024D2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__12_Jul_2012_15_51_20_+1000_CE7QGP4Xh3uXthPO
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+* Oleg Nesterov <oleg@redhat.com> [2012-07-09 12:54:45]:
 
-Hi all,
+> On 07/08, Joe Perches wrote:
+> >
+> > On Sun, 2012-07-08 at 22:30 +0200, Oleg Nesterov wrote:
+> > > @@ -1450,7 +1450,7 @@ static struct uprobe *find_active_uprobe(unsigned long bp_vaddr, int *is_swbp)
+> > >
+> > >  			inode = vma->vm_file->f_mapping->host;
+> > >  			offset = bp_vaddr - vma->vm_start;
+> > > -			offset += (vma->vm_pgoff << PAGE_SHIFT);
+> > > +			offset += ((loff_t)vma->vm_pgoff << PAGE_SHIFT);
+> >
+> > It's be nice to take remove the unnecessary parenthesis
+> > and make it consistent with the vaddr use above it too.
+> 
+> OK, please find v2 below.
+> 
+> ------------------------------------------------------------------------------
+> Subject: [PATCH] uprobes: fix overflow in vma_address/find_active_uprobe
+> 
+> vma->vm_pgoff is "unsigned long", it should be promoted to loff_t
+> before the multiplication to avoid the overflow.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-After merging the slab tree, today's linux-next build (i386_defconfig)
-produced this warning:
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
-mm/slab_common.c: In function 'kmem_cache_create':
-mm/slab_common.c:101:1: warning: label 'oops' defined but not used [-Wunuse=
-d-label]
+> ---
+>  kernel/events/uprobes.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+> index 47c4e24..6194edb 100644
+> --- a/kernel/events/uprobes.c
+> +++ b/kernel/events/uprobes.c
+> @@ -117,7 +117,7 @@ static loff_t vma_address(struct vm_area_struct *vma, loff_t offset)
+>  	loff_t vaddr;
+> 
+>  	vaddr = vma->vm_start + offset;
+> -	vaddr -= vma->vm_pgoff << PAGE_SHIFT;
+> +	vaddr -= (loff_t)vma->vm_pgoff << PAGE_SHIFT;
+> 
+>  	return vaddr;
+>  }
+> @@ -1450,7 +1450,7 @@ static struct uprobe *find_active_uprobe(unsigned long bp_vaddr, int *is_swbp)
+> 
+>  			inode = vma->vm_file->f_mapping->host;
+>  			offset = bp_vaddr - vma->vm_start;
+> -			offset += (vma->vm_pgoff << PAGE_SHIFT);
+> +			offset += (loff_t)vma->vm_pgoff << PAGE_SHIFT;
+>  			uprobe = find_uprobe(inode, offset);
+>  		}
+> 
 
-Introduced by commit 20cea9683ecc ("mm, sl[aou]b: Move kmem_cache_create
-mutex handling to common code") from the slab tree.  The label is only
-used when CONFIG_DEBUG_VM is defined.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__12_Jul_2012_15_51_20_+1000_CE7QGP4Xh3uXthPO
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJP/mXYAAoJEECxmPOUX5FE7RYQAIJqCjx7UZ3eCsl8sJoQ7chM
-hwLkRzF1bvy5kksrVZBKJhzYCqrgveHLHEcQqrZqY8m0cISRWQrSjWgxLtM4yAmq
-aVEpCh15NaLvE0Ao5RYHVcGK6/Ceo9NP5ziHPvZW5iE+i434hgd4mkBGvf+FD6T/
-QmNFEI/6zcSJkf0x1OttE6ZVohy5UCHgv4WLB5KXf4BAjweYf76WFHYGfFYBkvXQ
-GlUVIUwGAbgUW+fDzaNUQVHD1wBEpf3z6Whvw81DhU9YgLquaFTYYnYSM0P9rJlA
-MF/qaPCLQtj5TINq7fO3poUVPtZ8HTRtPAGGJtB6tvoExdCG8JbgL9/0OCNvOAW7
-rInONSNrxw6GQiD/SMnXPDUOhUa97cowqW8/wCeXaPqWYfsV/H9vrC08+a8BPMgZ
-KihuYF9ujoyB1HS2Mr90bltFLvJs1D0j+9mAnakR3vIfoj81IZOzy1MHqdtER4o4
-o1AUyXf3gxN3weXWpKCTspLyPkoRCH4dEo1D85a5yGiW8zYY3yG3qPXBSfk+XXsO
-5IjnoXNuz9p2U7AyvK82JkA1/l5A3f1ruomgyYFTDiNoJ9+54gkv7qyRMXjHG504
-XjJ6J+5OgH532r7OIfYGW2P55rTd39G99/LLDsvApiPgb/jc7Gx0HeleKNYDVrgg
-bhfrfFvglanPmtEyk4Dy
-=TlCa
------END PGP SIGNATURE-----
-
---Signature=_Thu__12_Jul_2012_15_51_20_+1000_CE7QGP4Xh3uXthPO--
