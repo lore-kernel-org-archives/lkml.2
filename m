@@ -1,87 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758622Ab2GLDAh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 23:00:37 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:56367 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753267Ab2GLDAg (ORCPT
+	id S1758633Ab2GLDHo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 23:07:44 -0400
+Received: from mga14.intel.com ([143.182.124.37]:11329 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753016Ab2GLDHn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 23:00:36 -0400
-X-AuditID: 9c930179-b7bdcae000003d91-b4-4ffe3dd2fda3
-Date: Thu, 12 Jul 2012 12:00:39 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH v2] mm: Warn about costly page allocation
-Message-ID: <20120712030039.GA29650@bbox>
-References: <20120710002510.GB5935@bbox>
- <alpine.DEB.2.00.1207101756070.684@chino.kir.corp.google.com>
- <20120711022304.GA17425@bbox>
- <alpine.DEB.2.00.1207102223000.26591@chino.kir.corp.google.com>
- <4FFD15B2.6020001@kernel.org>
- <alpine.DEB.2.00.1207111337430.3635@chino.kir.corp.google.com>
- <CAEwNFnB1Z92f22ms=EsBEOOY4Q_JRA8rMPUvQmoqik7rt-EgcQ@mail.gmail.com>
- <alpine.DEB.2.00.1207111556190.24516@chino.kir.corp.google.com>
- <20120711235504.GA5204@bbox>
- <alpine.DEB.2.00.1207111930020.9370@chino.kir.corp.google.com>
+	Wed, 11 Jul 2012 23:07:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="121408629"
+From: "Dave, Tushar N" <tushar.n.dave@intel.com>
+To: Joe Jin <joe.jin@oracle.com>
+CC: "e1000-devel@lists.sf.net" <e1000-devel@lists.sf.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: 82571EB: Detected Hardware Unit Hang
+Thread-Topic: 82571EB: Detected Hardware Unit Hang
+Thread-Index: AQHNXbA0O4dj/qIKzEaqpnXp2Y+l0pcimGMAgABDhtCAANf7AP//lehggAB9gwD//6IHIIAAe14A//+RAgAAESU+AAANp23AAB8MOIAADbt9YP//m9aAgAB1KHA=
+Date: Thu, 12 Jul 2012 03:07:40 +0000
+Message-ID: <061C8A8601E8EE4CA8D8FD6990CEA891274F01BE@ORSMSX102.amr.corp.intel.com>
+References: <4FFA9B96.6040901@oracle.com> <4FFBDC50.5090800@oracle.com>
+ <061C8A8601E8EE4CA8D8FD6990CEA891274EE41F@ORSMSX102.amr.corp.intel.com>
+ <4FFCCA22.8060006@oracle.com>
+ <061C8A8601E8EE4CA8D8FD6990CEA891274EEC8B@ORSMSX102.amr.corp.intel.com>
+ <4FFCDA6C.8020708@oracle.com>
+ <061C8A8601E8EE4CA8D8FD6990CEA891274EED74@ORSMSX102.amr.corp.intel.com>
+ <4FFCF314.6020400@oracle.com>
+ <061C8A8601E8EE4CA8D8FD6990CEA891274EEDD7@ORSMSX102.amr.corp.intel.com>
+ <4FFD0908.6080506@oracle.com>
+ <061C8A8601E8EE4CA8D8FD6990CEA891274EF8AD@ORSMSX102.amr.corp.intel.com>
+ <4FFE3505.8060407@oracle.com>
+ <061C8A8601E8EE4CA8D8FD6990CEA891274F018D@ORSMSX102.amr.corp.intel.com>
+ <4FFE3D27.7020500@oracle.com>
+In-Reply-To: <4FFE3D27.7020500@oracle.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1207111930020.9370@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 11, 2012 at 07:33:41PM -0700, David Rientjes wrote:
-> On Thu, 12 Jul 2012, Minchan Kim wrote:
-> 
-> > Agreed and that's why I suggested following patch.
-> > It's not elegant but at least, it could attract interest of configuration
-> > people and they could find a regression during test phase.
-> > This description could be improved later by writing new documenation which
-> > includes more detailed story and method for capturing high order allocation
-> > by ftrace once we see regression report.
-> > 
-> > At the moment, I would like to post this patch, simply.
-> > (Of course, I hope fluent native people will correct a sentence. :) )
-> > 
-> > Any objections, Andrew, David?
-> > 
-> 
-> There are other config options like CONFIG_SLOB that are used for a very 
-> small memory footprint on systems like this.  We used to have 
-> CONFIG_EMBEDDED to suggest options like this but that has since been 
-> renamed as CONFIG_EXPERT and has become obscured.
-> 
-> If size is really the only difference, I would think that people who want 
-> the smallest kernel possible would be doing allnoconfig and then 
-> selectively enabling what they need, so defconfig isn't really relevant 
-> here.  And it's very difficult for an admin to know whether or not they 
-> "care about high-order allocations."
-> 
-> I'd reconsider disabling compaction by default unless there are other 
-> considerations that haven't been mentioned.
+>-----Original Message-----
+>From: Joe Jin [mailto:joe.jin@oracle.com]
+>Sent: Wednesday, July 11, 2012 7:58 PM
+>To: Dave, Tushar N
+>Cc: e1000-devel@lists.sf.net; netdev@vger.kernel.org; linux-
+>kernel@vger.kernel.org
+>Subject: Re: 82571EB: Detected Hardware Unit Hang
+>
+>On 07/12/12 10:52, Dave, Tushar N wrote:
+>> What is the exact error messages in BIOS log?
+>
+>Error message from BIOS event log:
+>07/12/12 05:54:00
+>    PCI Express Non-Fatal Error
+>
+>Thanks,
+>Joe
 
-I agree but it doesn't matter with current problem.
-The point of current problem is to let admin know dangerous of regression
-about high order allocation before releasing the product.
+Thanks.  Well, I will check with team tomorrow if this  (max payload size) can be treated as solution to this issue. 
+We can know more about what exact non-fatal error occurred if we capture bus trace.
+We should check the eeprom on this device to make sure they are up-to-date.
+Send me the full eeprom dump in a file and I will confirm with team that it is up-to-date.
+Thanks for your work.
 
-Although we enable it by defaut, he can change it with "N" unless he
-knows removing of lumpy reclaim.
-
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
+-Tushar
