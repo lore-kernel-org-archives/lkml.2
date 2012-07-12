@@ -1,28 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964905Ab2GLXLt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:11:49 -0400
+	id S1162794Ab2GLXFa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:05:30 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:63192 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162798Ab2GLXFe (ORCPT
+	with ESMTP id S1162759Ab2GLXFV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 19:05:34 -0400
+	Thu, 12 Jul 2012 19:05:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
-Subject: =?UTF-8?q?=5B=2049/68=5D=20USB=3A=20option=3A=20add=20ZTE=20MF60?=
-Date: Thu, 12 Jul 2012 16:02:23 -0700
-Message-Id: <20120712175039.777394674@linuxfoundation.org>
+        Tyler Hicks <tyhicks@canonical.com>,
+        Sasha Levin <levinsasha928@gmail.com>
+Subject: [ 45/68] eCryptfs: Gracefully refuse miscdev file ops on inherited/passed files
+Date: Thu, 12 Jul 2012 16:02:19 -0700
+Message-Id: <20120712175039.425349073@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712175035.530652872@linuxfoundation.org>
 References: <20120712175057.GA9917@kroah.com>
  <20120712175035.530652872@linuxfoundation.org>
 User-Agent: quilt/0.60-20.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,64 +31,95 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+From: Tyler Hicks <tyhicks@canonical.com>
 
-commit 8e16e33c168a6efd0c9f7fa9dd4c1e1db9a74553 upstream.
+commit 8dc6780587c99286c0d3de747a2946a76989414a upstream.
 
-Switches into a composite device by ejecting the initial
-driver CD.  The four interfaces are: QCDM, AT, QMI/wwan
-and mass storage.  Let this driver manage the two serial
-interfaces:
+File operations on /dev/ecryptfs would BUG() when the operations were
+performed by processes other than the process that originally opened the
+file. This could happen with open files inherited after fork() or file
+descriptors passed through IPC mechanisms. Rather than calling BUG(), an
+error code can be safely returned in most situations.
 
-T:  Bus=02 Lev=01 Prnt=01 Port=01 Cnt=01 Dev#= 28 Spd=480  MxCh= 0
-D:  Ver= 2.00 Cls=00(>ifc ) Sub=00 Prot=00 MxPS=64 #Cfgs=  1
-P:  Vendor=19d2 ProdID=1402 Rev= 0.00
-S:  Manufacturer=ZTE,Incorporated
-S:  Product=ZTE WCDMA Technologies MSM
-S:  SerialNumber=xxxxx
-C:* #Ifs= 4 Cfg#= 1 Atr=c0 MxPwr=500mA
-I:* If#= 0 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
-E:  Ad=81(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=01(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
-I:* If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
-E:  Ad=82(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=02(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
-I:* If#= 2 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=ff Prot=ff Driver=qmi_wwan
-E:  Ad=83(I) Atr=03(Int.) MxPS=  64 Ivl=2ms
-E:  Ad=84(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=03(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
-I:* If#= 3 Alt= 0 #EPs= 2 Cls=08(stor.) Sub=06 Prot=50 Driver=usb-storage
-E:  Ad=04(O) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=85(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+In ecryptfs_miscdev_release(), eCryptfs still needs to handle the
+release even if the last file reference is being held by a process that
+didn't originally open the file. ecryptfs_find_daemon_by_euid() will not
+be successful, so a pointer to the daemon is stored in the file's
+private_data. The private_data pointer is initialized when the miscdev
+file is opened and only used when the file is released.
 
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
+https://launchpad.net/bugs/994247
+
+Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
+Reported-by: Sasha Levin <levinsasha928@gmail.com>
+Tested-by: Sasha Levin <levinsasha928@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ fs/ecryptfs/miscdev.c |   23 ++++++++++++++++-------
+ 1 file changed, 16 insertions(+), 7 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -554,6 +554,10 @@ static const struct option_blacklist_inf
- 	.reserved = BIT(1),
- };
+--- a/fs/ecryptfs/miscdev.c
++++ b/fs/ecryptfs/miscdev.c
+@@ -49,7 +49,10 @@ ecryptfs_miscdev_poll(struct file *file,
+ 	mutex_lock(&ecryptfs_daemon_hash_mux);
+ 	/* TODO: Just use file->private_data? */
+ 	rc = ecryptfs_find_daemon_by_euid(&daemon, euid, current_user_ns());
+-	BUG_ON(rc || !daemon);
++	if (rc || !daemon) {
++		mutex_unlock(&ecryptfs_daemon_hash_mux);
++		return -EINVAL;
++	}
+ 	mutex_lock(&daemon->mux);
+ 	mutex_unlock(&ecryptfs_daemon_hash_mux);
+ 	if (daemon->flags & ECRYPTFS_DAEMON_ZOMBIE) {
+@@ -122,6 +125,7 @@ ecryptfs_miscdev_open(struct inode *inod
+ 		goto out_unlock_daemon;
+ 	}
+ 	daemon->flags |= ECRYPTFS_DAEMON_MISCDEV_OPEN;
++	file->private_data = daemon;
+ 	atomic_inc(&ecryptfs_num_miscdev_opens);
+ out_unlock_daemon:
+ 	mutex_unlock(&daemon->mux);
+@@ -152,9 +156,9 @@ ecryptfs_miscdev_release(struct inode *i
  
-+static const struct option_blacklist_info net_intf2_blacklist = {
-+	.reserved = BIT(2),
-+};
-+
- static const struct option_blacklist_info net_intf3_blacklist = {
- 	.reserved = BIT(3),
- };
-@@ -1097,6 +1101,8 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1298, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1299, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1300, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1402, 0xff, 0xff, 0xff),
-+		.driver_info = (kernel_ulong_t)&net_intf2_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x2002, 0xff,
- 	  0xff, 0xff), .driver_info = (kernel_ulong_t)&zte_k3765_z_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x2003, 0xff, 0xff, 0xff) },
+ 	mutex_lock(&ecryptfs_daemon_hash_mux);
+ 	rc = ecryptfs_find_daemon_by_euid(&daemon, euid, current_user_ns());
+-	BUG_ON(rc || !daemon);
++	if (rc || !daemon)
++		daemon = file->private_data;
+ 	mutex_lock(&daemon->mux);
+-	BUG_ON(daemon->pid != task_pid(current));
+ 	BUG_ON(!(daemon->flags & ECRYPTFS_DAEMON_MISCDEV_OPEN));
+ 	daemon->flags &= ~ECRYPTFS_DAEMON_MISCDEV_OPEN;
+ 	atomic_dec(&ecryptfs_num_miscdev_opens);
+@@ -246,8 +250,16 @@ ecryptfs_miscdev_read(struct file *file,
+ 	mutex_lock(&ecryptfs_daemon_hash_mux);
+ 	/* TODO: Just use file->private_data? */
+ 	rc = ecryptfs_find_daemon_by_euid(&daemon, euid, current_user_ns());
+-	BUG_ON(rc || !daemon);
++	if (rc || !daemon) {
++		mutex_unlock(&ecryptfs_daemon_hash_mux);
++		return -EINVAL;
++	}
+ 	mutex_lock(&daemon->mux);
++	if (task_pid(current) != daemon->pid) {
++		mutex_unlock(&daemon->mux);
++		mutex_unlock(&ecryptfs_daemon_hash_mux);
++		return -EPERM;
++	}
+ 	if (daemon->flags & ECRYPTFS_DAEMON_ZOMBIE) {
+ 		rc = 0;
+ 		mutex_unlock(&ecryptfs_daemon_hash_mux);
+@@ -284,9 +296,6 @@ check_list:
+ 		 * message from the queue; try again */
+ 		goto check_list;
+ 	}
+-	BUG_ON(euid != daemon->euid);
+-	BUG_ON(current_user_ns() != daemon->user_ns);
+-	BUG_ON(task_pid(current) != daemon->pid);
+ 	msg_ctx = list_first_entry(&daemon->msg_ctx_out_queue,
+ 				   struct ecryptfs_msg_ctx, daemon_out_list);
+ 	BUG_ON(!msg_ctx);
 
 
