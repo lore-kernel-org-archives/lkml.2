@@ -1,69 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934008Ab2GLOyA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 10:54:00 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:38936 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932595Ab2GLOx6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 10:53:58 -0400
-Date: Thu, 12 Jul 2012 09:45:29 -0500
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: "Zhang, Xiaoyan" <xiaoyan.zhang@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Cihula, Joseph" <joseph.cihula@intel.com>,
-        "Wei, Gang" <gang.wei@intel.com>,
-        "tpmdd-devel@lists.sourceforge.net" 
-	<tpmdd-devel@lists.sourceforge.net>,
-        "debora@linux.vnet.ibm.com" <debora@linux.vnet.ibm.com>,
-        "srajiv@linux.vnet.ibm.com" <srajiv@linux.vnet.ibm.com>,
-        "m.selhorst@sirrix.com" <m.selhorst@sirrix.com>,
-        "shpedoikal@gmail.com" <shpedoikal@gmail.com>,
-        "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>,
-        "james.l.morris@oracle.com" <james.l.morris@oracle.com>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
-Subject: Re: [PATCH V3 1/2] driver: add PPI support in tpm driver
-Message-ID: <20120712144529.GA32640@linux.vnet.ibm.com>
-References: <1340203963.24516.2.camel@localhost>
- <20120711152430.GC21153@linux.vnet.ibm.com>
- <953B7F5DA8C0F44CBD2621D8763F4F600C8A32@SHSMSX101.ccr.corp.intel.com>
+	id S1161198Ab2GLOyR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 10:54:17 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:34531 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S934010Ab2GLOyN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 10:54:13 -0400
+Date: Thu, 12 Jul 2012 10:54:12 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Udo van den Heuvel <udovdh@xs4all.nl>
+cc: linux-usb@vger.kernel.org, Jan Ceuleers <jan.ceuleers@computer.org>,
+        Clemens Ladisch <clemens@ladisch.de>,
+        Simon Jones <sijones2010@gmail.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: 3.4.4: disabling irq
+In-Reply-To: <4FFED900.1020606@xs4all.nl>
+Message-ID: <Pine.LNX.4.44L0.1207121049590.1413-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <953B7F5DA8C0F44CBD2621D8763F4F600C8A32@SHSMSX101.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12071214-5112-0000-0000-000009FEBDC5
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 12, 2012 at 02:38:56AM +0000, Zhang, Xiaoyan wrote:
-> Hi Kent,
+On Thu, 12 Jul 2012, Udo van den Heuvel wrote:
+
+> # cat /proc/interrupts
+>            CPU0       CPU1       CPU2       CPU3
+>   0:         40          0          0          0   IO-APIC-edge      timer
+>   1:          1          4      91884        418   IO-APIC-edge      i8042
+>   4:          1         25     607223       1584   IO-APIC-edge      serial
+>   6:          0          0          8          0   IO-APIC-edge      floppy
+>   7:          1          0          0          0   IO-APIC-edge
+> parport0
+>   9:          0          0          0          0   IO-APIC-fasteoi   acpi
+>  12:          3        106     980333       3914   IO-APIC-edge      i8042
+>  14:          0          5     169732        457   IO-APIC-edge
+> pata_atiixp
+>  15:          0          0          0          0   IO-APIC-edge
+> pata_atiixp
+>  16:          0          0       3038         33   IO-APIC-fasteoi
+> sata_sil24, ohci_hcd:usb1, ohci_hcd:usb2, snd_hda_intel
+>  17:          0          4      24053        119   IO-APIC-fasteoi
+> ehci_hcd:usb3
+>  18:         25        190   18052161      21311   IO-APIC-fasteoi
+> ohci_hcd:usb5, ohci_hcd:usb6, ohci_hcd:usb7
+>  19:          1          9     187895        487   IO-APIC-fasteoi
+> ehci_hcd:usb4
+>  20:          7        135    3756346       8907   IO-APIC-fasteoi   serial
+>  22:        127        719   14673690      33318   IO-APIC-fasteoi   ahci
+>  43:        115       1072   33699508      73116   PCI-MSI-edge      eth0
+>  44:         27        252    3044666      11507   PCI-MSI-edge      radeon
+>  45:          0          0         21          0   PCI-MSI-edge
+> snd_hda_intel
+> NMI:          0          0          0          0   Non-maskable interrupts
+> LOC:   15971203   15548951   13031603   13145359   Local timer interrupts
+> SPU:          0          0          0          0   Spurious interrupts
+> PMI:          0          0          0          0   Performance
+> monitoring interrupts
+> IWI:          0          0          0          0   IRQ work interrupts
+> RTR:          0          0          0          0   APIC ICR read retries
+> RES:   57916374   44634814   19199377   43219640   Rescheduling interrupts
+> CAL:       2241       2293       2327       2196   Function call interrupts
+> TLB:     577983     648537     579293     635466   TLB shootdowns
+> THR:          0          0          0          0   Threshold APIC interrupts
+> MCE:          0          0          0          0   Machine check exceptions
+> MCP:        581        581        581        581   Machine check polls
+> ERR:          0
+> MIS:          0
 > 
-> Thanks for your comment on the patch. But there's some confusion on my side.
-> You mentioned not to change the tpm driver name. But the driver is linked from tpm.c and tpm_ppi.c, so I should change the original tpm.c file name, right? Is it acceptable to change tpm.c to tpm_common.c or tpm_utils.c or else?
-
-  I think you can just add tpm_ppi.c like this:
-
-diff --git a/drivers/char/tpm/Makefile b/drivers/char/tpm/Makefile
-index beac52f6..96b9222 100644
---- a/drivers/char/tpm/Makefile
-+++ b/drivers/char/tpm/Makefile
-@@ -4,7 +4,7 @@
- obj-$(CONFIG_TCG_TPM) += tpm.o
- ifdef CONFIG_ACPI
-        obj-$(CONFIG_TCG_TPM) += tpm_bios.o
--       tpm_bios-objs += tpm_eventlog.o tpm_acpi.o
-+       tpm_bios-objs += tpm_eventlog.o tpm_acpi.o tpm_ppi.o
- endif
- obj-$(CONFIG_TCG_TIS) += tpm_tis.o
- obj-$(CONFIG_TCG_TIS_I2C_INFINEON) += tpm_i2c_infineon.o
-
-Kent
-
 > 
-> Thanks,
-> Xiaoyan
+> 
+> So what can we conclude?
+
+The conclusion is that ohci-hcd is the only driver using IRQ 18.  If 
+you build a kernel with CONFIG_USB_DEBUG enabled, it will be possible 
+to see if the OHCI hardware is responsible for the IRQ problem.
+
+When the IRQ line gets disabled again, make a copy of the
+
+	/sys/kernel/debug/usb/ohci/*/registers
+
+files and post them, along with a copy of 
+/sys/kernel/debug/usb/devices.
+
+Alan Stern
 
