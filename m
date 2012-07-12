@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162292Ab2GLWpN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:45:13 -0400
+	id S1162294Ab2GLWpc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:45:32 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:61447 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162266Ab2GLWo7 (ORCPT
+	with ESMTP id S1162289Ab2GLWpM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:44:59 -0400
+	Thu, 12 Jul 2012 18:45:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stanislaw Ledwon <staszek.ledwon@linux.intel.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Andiry Xu <andiry.xu@amd.com>
-Subject: [ 153/187] usb: Add support for root hub port status CAS
-Date: Thu, 12 Jul 2012 15:35:09 -0700
-Message-Id: <20120712191536.589700455@linuxfoundation.org>
+        Shaohua Li <shli@fusionio.com>, NeilBrown <neilb@suse.de>
+Subject: [ 166/187] raid5: delayed stripe fix
+Date: Thu, 12 Jul 2012 15:35:22 -0700
+Message-Id: <20120712191538.724516688@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -32,164 +30,41 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Stanislaw Ledwon <staszek.ledwon@linux.jf.intel.com>
+From: Shaohua Li <shli@kernel.org>
 
-commit 8bea2bd37df08aaa599aa361a9f8b836ba98e554 upstream.
+commit fab363b5ff502d1b39ddcfec04271f5858d9f26e upstream.
 
-The host controller port status register supports CAS (Cold Attach
-Status) bit. This bit could be set when USB3.0 device is connected
-when system is in Sx state. When the system wakes to S0 this port
-status with CAS bit is reported and this port can't be used by any
-device.
+There isn't locking setting STRIPE_DELAYED and STRIPE_PREREAD_ACTIVE bits, but
+the two bits have relationship. A delayed stripe can be moved to hold list only
+when preread active stripe count is below IO_THRESHOLD. If a stripe has both
+the bits set, such stripe will be in delayed list and preread count not 0,
+which will make such stripe never leave delayed list.
 
-When CAS bit is set the port should be reset by warm reset. This
-was not supported by xhci driver.
-
-The issue was found when pendrive was connected to suspended
-platform. The link state of "Compliance Mode" was reported together
-with CAS bit. This link state was also not supported by xhci and
-core/hub.c.
-
-The CAS bit is defined only for xhci root hub port and it is
-not supported on regular hubs. The link status is used to force
-warm reset on port. Make the USB core issue a warm reset when port
-is in ether the 'inactive' or 'compliance mode'. Change the xHCI driver
-to report 'compliance mode' when the CAS is set. This force warm reset
-on the root hub port.
-
-This patch should be backported to stable kernels as old as 3.2, that
-contain the commit 10d674a82e553cb8a1f41027bb3c3e309b3f6804 "USB: When
-hot reset for USB3 fails, try warm reset."
-
-Signed-off-by: Stanislaw Ledwon <staszek.ledwon@linux.intel.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Acked-by: Andiry Xu <andiry.xu@amd.com>
+Signed-off-by: Shaohua Li <shli@fusionio.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hub.c      |   18 ++++++++++--------
- drivers/usb/host/xhci-hub.c |   44 ++++++++++++++++++++++++++++++++++++++------
- drivers/usb/host/xhci.h     |    6 +++++-
- 3 files changed, 53 insertions(+), 15 deletions(-)
+ drivers/md/raid5.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -2102,12 +2102,16 @@ static unsigned hub_is_wusb(struct usb_h
- static int hub_port_reset(struct usb_hub *hub, int port1,
- 			struct usb_device *udev, unsigned int delay, bool warm);
- 
--/* Is a USB 3.0 port in the Inactive state? */
--static bool hub_port_inactive(struct usb_hub *hub, u16 portstatus)
-+/* Is a USB 3.0 port in the Inactive or Complinance Mode state?
-+ * Port worm reset is required to recover
-+ */
-+static bool hub_port_warm_reset_required(struct usb_hub *hub, u16 portstatus)
- {
- 	return hub_is_superspeed(hub->hdev) &&
--		(portstatus & USB_PORT_STAT_LINK_STATE) ==
--		USB_SS_PORT_LS_SS_INACTIVE;
-+		(((portstatus & USB_PORT_STAT_LINK_STATE) ==
-+		  USB_SS_PORT_LS_SS_INACTIVE) ||
-+		 ((portstatus & USB_PORT_STAT_LINK_STATE) ==
-+		  USB_SS_PORT_LS_COMP_MOD)) ;
- }
- 
- static int hub_port_wait_reset(struct usb_hub *hub, int port1,
-@@ -2143,7 +2147,7 @@ static int hub_port_wait_reset(struct us
- 			 *
- 			 * See https://bugzilla.kernel.org/show_bug.cgi?id=41752
- 			 */
--			if (hub_port_inactive(hub, portstatus)) {
-+			if (hub_port_warm_reset_required(hub, portstatus)) {
- 				int ret;
- 
- 				if ((portchange & USB_PORT_STAT_C_CONNECTION))
-@@ -3757,9 +3761,7 @@ static void hub_events(void)
- 			/* Warm reset a USB3 protocol port if it's in
- 			 * SS.Inactive state.
- 			 */
--			if (hub_is_superspeed(hub->hdev) &&
--				(portstatus & USB_PORT_STAT_LINK_STATE)
--					== USB_SS_PORT_LS_SS_INACTIVE) {
-+			if (hub_port_warm_reset_required(hub, portstatus)) {
- 				dev_dbg(hub_dev, "warm reset port %d\n", i);
- 				hub_port_reset(hub, i, NULL,
- 						HUB_BH_RESET_TIME, true);
---- a/drivers/usb/host/xhci-hub.c
-+++ b/drivers/usb/host/xhci-hub.c
-@@ -462,6 +462,42 @@ void xhci_test_and_clear_bit(struct xhci
- 	}
- }
- 
-+/* Updates Link Status for super Speed port */
-+static void xhci_hub_report_link_state(u32 *status, u32 status_reg)
-+{
-+	u32 pls = status_reg & PORT_PLS_MASK;
-+
-+	/* resume state is a xHCI internal state.
-+	 * Do not report it to usb core.
-+	 */
-+	if (pls == XDEV_RESUME)
-+		return;
-+
-+	/* When the CAS bit is set then warm reset
-+	 * should be performed on port
-+	 */
-+	if (status_reg & PORT_CAS) {
-+		/* The CAS bit can be set while the port is
-+		 * in any link state.
-+		 * Only roothubs have CAS bit, so we
-+		 * pretend to be in compliance mode
-+		 * unless we're already in compliance
-+		 * or the inactive state.
-+		 */
-+		if (pls != USB_SS_PORT_LS_COMP_MOD &&
-+		    pls != USB_SS_PORT_LS_SS_INACTIVE) {
-+			pls = USB_SS_PORT_LS_COMP_MOD;
-+		}
-+		/* Return also connection bit -
-+		 * hub state machine resets port
-+		 * when this bit is set.
-+		 */
-+		pls |= USB_PORT_STAT_CONNECTION;
-+	}
-+	/* update status field */
-+	*status |= pls;
-+}
-+
- int xhci_hub_control(struct usb_hcd *hcd, u16 typeReq, u16 wValue,
- 		u16 wIndex, char *buf, u16 wLength)
- {
-@@ -605,13 +641,9 @@ int xhci_hub_control(struct usb_hcd *hcd
- 			else
- 				status |= USB_PORT_STAT_POWER;
- 		}
--		/* Port Link State */
-+		/* Update Port Link State for super speed ports*/
- 		if (hcd->speed == HCD_USB3) {
--			/* resume state is a xHCI internal state.
--			 * Do not report it to usb core.
--			 */
--			if ((temp & PORT_PLS_MASK) != XDEV_RESUME)
--				status |= (temp & PORT_PLS_MASK);
-+			xhci_hub_report_link_state(&status, temp);
- 		}
- 		if (bus_state->port_c_suspend & (1 << wIndex))
- 			status |= 1 << USB_PORT_FEAT_C_SUSPEND;
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -341,7 +341,11 @@ struct xhci_op_regs {
- #define PORT_PLC	(1 << 22)
- /* port configure error change - port failed to configure its link partner */
- #define PORT_CEC	(1 << 23)
--/* bit 24 reserved */
-+/* Cold Attach Status - xHC can set this bit to report device attached during
-+ * Sx state. Warm port reset should be perfomed to clear this bit and move port
-+ * to connected state.
-+ */
-+#define PORT_CAS	(1 << 24)
- /* wake on connect (enable) */
- #define PORT_WKCONN_E	(1 << 25)
- /* wake on disconnect (enable) */
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -196,12 +196,14 @@ static void __release_stripe(struct r5co
+ 		BUG_ON(!list_empty(&sh->lru));
+ 		BUG_ON(atomic_read(&conf->active_stripes)==0);
+ 		if (test_bit(STRIPE_HANDLE, &sh->state)) {
+-			if (test_bit(STRIPE_DELAYED, &sh->state))
++			if (test_bit(STRIPE_DELAYED, &sh->state) &&
++			    !test_bit(STRIPE_PREREAD_ACTIVE, &sh->state))
+ 				list_add_tail(&sh->lru, &conf->delayed_list);
+ 			else if (test_bit(STRIPE_BIT_DELAY, &sh->state) &&
+ 				   sh->bm_seq - conf->seq_write > 0)
+ 				list_add_tail(&sh->lru, &conf->bitmap_list);
+ 			else {
++				clear_bit(STRIPE_DELAYED, &sh->state);
+ 				clear_bit(STRIPE_BIT_DELAY, &sh->state);
+ 				list_add_tail(&sh->lru, &conf->handle_list);
+ 			}
 
 
