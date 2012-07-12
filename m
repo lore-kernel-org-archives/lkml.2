@@ -1,85 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756004Ab2GLANa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 20:13:30 -0400
+	id S933549Ab2GLANR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 20:13:17 -0400
 Received: from mail-vb0-f46.google.com ([209.85.212.46]:60608 "EHLO
 	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753604Ab2GLAN1 (ORCPT
+	with ESMTP id S1753604Ab2GLANE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 20:13:27 -0400
+	Wed, 11 Jul 2012 20:13:04 -0400
 MIME-Version: 1.0
-In-Reply-To: <1341415974.19870.4.camel@laptop>
-References: <20120628022413.30496.32798.stgit@kitami.mtv.corp.google.com>
- <20120628022414.30496.98256.stgit@kitami.mtv.corp.google.com> <1341415974.19870.4.camel@laptop>
-From: Paul Turner <pjt@google.com>
-Date: Wed, 11 Jul 2012 17:12:56 -0700
-Message-ID: <CAPM31RJsv5pUiy7H0Rt5f7k1pntaKKbXPBM=u-Prygdx-t+aOw@mail.gmail.com>
-Subject: Re: [PATCH 01/16] sched: track the runnable average on a per-task
- entitiy basis
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, Venki Pallipadi <venki@google.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ben Segall <bsegall@google.com>, Ingo Molnar <mingo@elte.hu>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+In-Reply-To: <CAErSpo49u=NP0MwY6AVPJJC0YqvDmo092cbV4DzTT10m4jPHSA@mail.gmail.com>
+References: <1340222160.77018.19.camel@localhost.localdomain>
+	<1340322477.56127.2.camel@localhost.localdomain>
+	<CAErSpo7AWQCofnTRhtMKVP3pm_BDq9v+axGpide0RbmignsV9A@mail.gmail.com>
+	<1340657687.36341.178.camel@localhost.localdomain>
+	<CAErSpo49u=NP0MwY6AVPJJC0YqvDmo092cbV4DzTT10m4jPHSA@mail.gmail.com>
+Date: Wed, 11 Jul 2012 17:13:04 -0700
+X-Google-Sender-Auth: ZLbU2noXAMFlVIJTtZpKNha7jeg
+Message-ID: <CAE9FiQXtsKomU3U=+HNB8K+6L1btJLtuV7S04K=T-PcQomdxJg@mail.gmail.com>
+Subject: Re: [PATCH] pci: support alignments upto 8Gb in pbus_size_mem()
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Nikhil P Rao <nikhil.rao@intel.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 4, 2012 at 8:32 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Wed, 2012-06-27 at 19:24 -0700, Paul Turner wrote:
->> Instead of tracking averaging the load parented by a cfs_rq, we can track
->> entity load directly.  With the load for a given cfs_Rq then being the sum of
->> its children.
+On Wed, Jul 11, 2012 at 3:53 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Mon, Jun 25, 2012 at 2:54 PM, Nikhil P Rao <nikhil.rao@intel.com> wrote:
+>> On Sat, 2012-06-23 at 12:15 -0600, Bjorn Helgaas wrote:
+>>> On Thu, Jun 21, 2012 at 5:47 PM, Nikhil P Rao <nikhil.rao@intel.com> wrote:
+>>> > I ran into the "disabling BAR .." error message when
+>>> > trying to use a 8Gb PCIe card on a system with a BIOS
+>>> > that didnt have support for BAR size > 2Gb.
+>>>
+>>> So the BIOS left the 8Gb BAR unassigned, and you got the "disabling
+>>> BAR ... (bad alignment)" message when Linux tried to enable it?
 >>
->> To do this we represent the historical contribution to runnable average within each
->> trailing 1024us of execution as the coefficients of a geometric series.
+>> Yes.
 >>
->> We can express this for a given task t as:
->>   runnable_sum(t) = \Sum u_i * y^i ,
->>   load(t) = weight_t * runnable_sum(t) / (\Sum 1024 * y^i)
+>>> How do we know 8Gb is the correct new limit?  Are we going to be
+>>> fixing this again when we see a 16Gb or a 32Gb BAR?  Do we need a
+>>> better algorithm that doesn't have a limit like this?
+>>>
 >>
->> Where: u_i is the usage in the last i`th 1024us period (approximately 1ms) ~ms
->> and y is chosen such that y^k = 1/2.  We currently choose k to be 32 which
->> roughly translates to about a sched period.
+>> The original error message seems applicable to 32bit archs. and not to
+>> 64 bit archs. How about the patch below - is aligns[44] (256bytes more)
+>> acceptable ?
 >>
->> Signed-off-by: Paul Turner <pjt@google.com>
+>>
+>> From: Nikhil P Rao <nikhil.rao@intel.com>
+>> Date: Mon, 25 Jun 2012 13:33:55 -0700
+>> Subject: [PATCH] pci: fix resource size check
+>>
+>> Support a PCI BAR alignment of > 2Gb, the original check was
+>> only applicable to 32 bit kernels,
+>>
+>> Signed-off-by: Nikhil P Rao <nikhil.rao@intel.com>
 >> ---
->>  include/linux/sched.h |    8 +++
->>  kernel/sched/debug.c  |    4 ++
->>  kernel/sched/fair.c   |  128 +++++++++++++++++++++++++++++++++++++++++++++++++
->>  3 files changed, 140 insertions(+), 0 deletions(-)
+>>  drivers/pci/setup-bus.c |    5 +++--
+>>  1 files changed, 3 insertions(+), 2 deletions(-)
 >>
->> diff --git a/include/linux/sched.h b/include/linux/sched.h
->> index 9dced2e..5bf5c79 100644
->> --- a/include/linux/sched.h
->> +++ b/include/linux/sched.h
->> @@ -1136,6 +1136,11 @@ struct load_weight {
->>         unsigned long weight, inv_weight;
->>  };
->>
->> +struct sched_avg {
->> +       u32 runnable_avg_sum, runnable_avg_period;
->> +       u64 last_runnable_update;
->> +};
+>> diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
+>> index 8fa2d4b..9f8d9ea 100644
+>> --- a/drivers/pci/setup-bus.c
+>> +++ b/drivers/pci/setup-bus.c
+>> @@ -780,7 +780,7 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
+>>  {
+>>         struct pci_dev *dev;
+>>         resource_size_t min_align, align, size, size0, size1;
+>> -       resource_size_t aligns[12];     /* Alignments from 1Mb to 2Gb */
+>> +       resource_size_t aligns[44];     /* Alignments from 1Mb to 2^63 */
+>>         int order, max_order;
+>>         struct resource *b_res = find_free_bus_resource(bus, type);
+>>         unsigned int mem64_mask = 0;
+>> @@ -819,7 +819,8 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
+>>                         /* For bridges size != alignment */
+>>                         align = pci_resource_alignment(dev, r);
+>>                         order = __ffs(align) - 20;
+>> -                       if (order > 11) {
+>> +                       if ((sizeof(size_t) == 4 && order > 11) ||
+>> +                                       (sizeof(size_t) == 8 && order > 43)) {
+>>                                 dev_warn(&dev->dev, "disabling BAR %d: %pR "
+>>                                          "(bad alignment %#llx)\n", i, r,
+>>                                          (unsigned long long) align);
 >
+> Yinghai, what's your opinion on this?  The aligns[] array on the stack
+> is currently 96 bytes and would grow to 352 with this patch, which
+> does seem like quite a bit.
 >
-> So we can use u32 because:
->
->              n         1
-> lim n->inf \Sum y^i = --- = ~ 46.66804636511427012122 ; y^32 = 0.5
->              i=0      1-y
->
-> So the values should never be larger than ~47k, right?
+> I do think the 2GB limit here is out-of-date.
 
-Yes -- this is made explicit later in the series.
->
-> /me goes add something like that in a comment.
->
+yeah,  should be ok.
+
+only thing that sanity checking is not complete enough, for example,
+for bar that only support 32bit, we will have get range for under 4g.
+that will still need 2g limitation to fend off some bad
+devices.
+
+Thanks
+
+Yinghai
