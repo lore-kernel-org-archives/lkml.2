@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162804Ab2GLX1q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:27:46 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60450 "EHLO
+	id S1162507Ab2GLX2G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:28:06 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44509 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161949Ab2GLWl7 (ORCPT
+	with ESMTP id S1161962Ab2GLWlx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:41:59 -0400
+	Thu, 12 Jul 2012 18:41:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jean Delvare <khali@linux-fr.org>, Jan Beulich <JBeulich@suse.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 112/187] x86, cpufeature: Rename X86_FEATURE_DTS to X86_FEATURE_DTHERM
-Date: Thu, 12 Jul 2012 15:34:28 -0700
-Message-Id: <20120712191532.756824567@linuxfoundation.org>
+        Matt Fleming <matt@console-pimps.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>,
+        Robert Richter <robert.richter@amd.com>
+Subject: [ 110/187] oprofile: perf: use NR_CPUS instead or nr_cpumask_bits for static array
+Date: Thu, 12 Jul 2012 15:34:26 -0700
+Message-Id: <20120712191532.567470140@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -31,74 +33,41 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 4ad33411308596f2f918603509729922a1ec4411 upstream.
+commit e734568b675c985db2026848fefaac01c22977a5 upstream.
 
-It makes sense to label "Digital Thermal Sensor" as "DTS", but
-unfortunately the string "dts" was already used for "Debug Store", and
-/proc/cpuinfo is a user space ABI.
+The OProfile perf backend uses a static array to keep track of the
+perf events on the system. When compiling with CONFIG_CPUMASK_OFFSTACK=y
+&& SMP, nr_cpumask_bits is not a compile-time constant and the build
+will fail with:
 
-Therefore, rename this to "dtherm".
+oprofile_perf.c:28: error: variably modified 'perf_events' at file scope
 
-This conflict went into mainline via the hwmon tree without any x86
-maintainer ack, and without any kind of hint in the subject.
+This patch uses NR_CPUs instead of nr_cpumask_bits for the array
+initialisation. If this causes space problems in the future, we can
+always move to dynamic allocation for the events array.
 
-    a4659053 x86/hwmon: fix initialization of coretemp
-
-Reported-by: Jean Delvare <khali@linux-fr.org>
-Link: http://lkml.kernel.org/r/4FE34BCB.5050305@linux.intel.com
-Cc: Jan Beulich <JBeulich@suse.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Matt Fleming <matt@console-pimps.org>
+Reported-by: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Robert Richter <robert.richter@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/cpufeature.h |    2 +-
- arch/x86/kernel/cpu/scattered.c   |    2 +-
- drivers/hwmon/coretemp.c          |    4 ++--
- 3 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/oprofile/oprofile_perf.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -176,7 +176,7 @@
- #define X86_FEATURE_XSAVEOPT	(7*32+ 4) /* Optimized Xsave */
- #define X86_FEATURE_PLN		(7*32+ 5) /* Intel Power Limit Notification */
- #define X86_FEATURE_PTS		(7*32+ 6) /* Intel Package Thermal Status */
--#define X86_FEATURE_DTS		(7*32+ 7) /* Digital Thermal Sensor */
-+#define X86_FEATURE_DTHERM	(7*32+ 7) /* Digital Thermal Sensor */
- #define X86_FEATURE_HW_PSTATE	(7*32+ 8) /* AMD HW-PState */
+--- a/drivers/oprofile/oprofile_perf.c
++++ b/drivers/oprofile/oprofile_perf.c
+@@ -25,7 +25,7 @@ static int oprofile_perf_enabled;
+ static DEFINE_MUTEX(oprofile_perf_mutex);
  
- /* Virtualization flags: Linux defined, word 8 */
---- a/arch/x86/kernel/cpu/scattered.c
-+++ b/arch/x86/kernel/cpu/scattered.c
-@@ -31,7 +31,7 @@ void __cpuinit init_scattered_cpuid_feat
- 	const struct cpuid_bit *cb;
+ static struct op_counter_config *counter_config;
+-static struct perf_event **perf_events[nr_cpumask_bits];
++static struct perf_event **perf_events[NR_CPUS];
+ static int num_counters;
  
- 	static const struct cpuid_bit __cpuinitconst cpuid_bits[] = {
--		{ X86_FEATURE_DTS,		CR_EAX, 0, 0x00000006, 0 },
-+		{ X86_FEATURE_DTHERM,		CR_EAX, 0, 0x00000006, 0 },
- 		{ X86_FEATURE_IDA,		CR_EAX, 1, 0x00000006, 0 },
- 		{ X86_FEATURE_ARAT,		CR_EAX, 2, 0x00000006, 0 },
- 		{ X86_FEATURE_PLN,		CR_EAX, 4, 0x00000006, 0 },
---- a/drivers/hwmon/coretemp.c
-+++ b/drivers/hwmon/coretemp.c
-@@ -664,7 +664,7 @@ static void __cpuinit get_core_online(un
- 	 * sensors. We check this bit only, all the early CPUs
- 	 * without thermal sensors will be filtered out.
- 	 */
--	if (!cpu_has(c, X86_FEATURE_DTS))
-+	if (!cpu_has(c, X86_FEATURE_DTHERM))
- 		return;
- 
- 	if (!pdev) {
-@@ -765,7 +765,7 @@ static struct notifier_block coretemp_cp
- };
- 
- static const struct x86_cpu_id coretemp_ids[] = {
--	{ X86_VENDOR_INTEL, X86_FAMILY_ANY, X86_MODEL_ANY, X86_FEATURE_DTS },
-+	{ X86_VENDOR_INTEL, X86_FAMILY_ANY, X86_MODEL_ANY, X86_FEATURE_DTHERM },
- 	{}
- };
- MODULE_DEVICE_TABLE(x86cpu, coretemp_ids);
+ /*
 
 
