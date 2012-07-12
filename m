@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162223Ab2GLWpx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:45:53 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:51498 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162250Ab2GLWpe (ORCPT
+	id S1162385Ab2GLWqK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:46:10 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60450 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162362Ab2GLWp7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:45:34 -0400
+	Thu, 12 Jul 2012 18:45:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jason Wang <jasowang@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Josh Boyer <jwboyer@redhat.com>
-Subject: [ 172/187] macvtap: zerocopy: validate vectors before building skb
-Date: Thu, 12 Jul 2012 15:35:28 -0700
-Message-Id: <20120712191539.247999600@linuxfoundation.org>
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Jonathan Cameron <jic23@kernel.org>,
+        "Herton R. Krzesinski" <herton@canonical.com>
+Subject: [ 179/187] staging:iio:ad7606: Re-add missing scale attribute
+Date: Thu, 12 Jul 2012 15:35:35 -0700
+Message-Id: <20120712191539.881122678@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -31,82 +32,34 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit b92946e2919134ebe2a4083e4302236295ea2a73 upstream.
+commit 279bf2e57c30c9a4482b2b6ede11b31c41e35e78 upstream.
 
-There're several reasons that the vectors need to be validated:
+Commit 50ac23be ("staging:iio:adc:ad7606 add local define for chan_spec
+structures.") accidentally removed the scale info_mask flag. This patch
+adds it back again.
 
-- Return error when caller provides vectors whose num is greater than UIO_MAXIOV.
-- Linearize part of skb when userspace provides vectors grater than MAX_SKB_FRAGS.
-- Return error when userspace provides vectors whose total length may exceed
-- MAX_SKB_FRAGS * PAGE_SIZE.
-
-Signed-off-by: Jason Wang <jasowang@redhat.com>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Cc: Josh Boyer <jwboyer@redhat.com>
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Acked-by: Jonathan Cameron <jic23@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[herton: Backported to 3.4: info_mask was not used yet with another flag]
+Signed-off-by: Herton R. Krzesinski <herton@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/macvtap.c |   25 +++++++++++++++++++++----
- 1 file changed, 21 insertions(+), 4 deletions(-)
+ drivers/staging/iio/adc/ad7606_core.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/macvtap.c
-+++ b/drivers/net/macvtap.c
-@@ -528,9 +528,10 @@ static int zerocopy_sg_from_iovec(struct
- 		}
- 		base = (unsigned long)from->iov_base + offset1;
- 		size = ((base & ~PAGE_MASK) + len + ~PAGE_MASK) >> PAGE_SHIFT;
-+		if (i + size > MAX_SKB_FRAGS)
-+			return -EMSGSIZE;
- 		num_pages = get_user_pages_fast(base, size, 0, &page[i]);
--		if ((num_pages != size) ||
--		    (num_pages > MAX_SKB_FRAGS - skb_shinfo(skb)->nr_frags))
-+		if (num_pages != size)
- 			/* put_page is in skb free */
- 			return -EFAULT;
- 		skb->data_len += len;
-@@ -647,7 +648,7 @@ static ssize_t macvtap_get_user(struct m
- 	int err;
- 	struct virtio_net_hdr vnet_hdr = { 0 };
- 	int vnet_hdr_len = 0;
--	int copylen;
-+	int copylen = 0;
- 	bool zerocopy = false;
- 
- 	if (q->flags & IFF_VNET_HDR) {
-@@ -676,15 +677,31 @@ static ssize_t macvtap_get_user(struct m
- 	if (unlikely(len < ETH_HLEN))
- 		goto err;
- 
-+	err = -EMSGSIZE;
-+	if (unlikely(count > UIO_MAXIOV))
-+		goto err;
-+
- 	if (m && m->msg_control && sock_flag(&q->sk, SOCK_ZEROCOPY))
- 		zerocopy = true;
- 
- 	if (zerocopy) {
-+		/* Userspace may produce vectors with count greater than
-+		 * MAX_SKB_FRAGS, so we need to linearize parts of the skb
-+		 * to let the rest of data to be fit in the frags.
-+		 */
-+		if (count > MAX_SKB_FRAGS) {
-+			copylen = iov_length(iv, count - MAX_SKB_FRAGS);
-+			if (copylen < vnet_hdr_len)
-+				copylen = 0;
-+			else
-+				copylen -= vnet_hdr_len;
-+		}
- 		/* There are 256 bytes to be copied in skb, so there is enough
- 		 * room for skb expand head in case it is used.
- 		 * The rest buffer is mapped from userspace.
- 		 */
--		copylen = vnet_hdr.hdr_len;
-+		if (copylen < vnet_hdr.hdr_len)
-+			copylen = vnet_hdr.hdr_len;
- 		if (!copylen)
- 			copylen = GOODCOPY_LEN;
- 	} else
+--- a/drivers/staging/iio/adc/ad7606_core.c
++++ b/drivers/staging/iio/adc/ad7606_core.c
+@@ -235,6 +235,7 @@ static const struct attribute_group ad76
+ 		.indexed = 1,				\
+ 		.channel = num,				\
+ 		.address = num,				\
++		.info_mask = IIO_CHAN_INFO_SCALE_SHARED_BIT, \
+ 		.scan_index = num,			\
+ 		.scan_type = IIO_ST('s', 16, 16, 0),	\
+ 	}
 
 
