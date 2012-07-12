@@ -1,27 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162197Ab2GLWoW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:44:22 -0400
+	id S1162226Ab2GLWoh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:44:37 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:48386 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162175Ab2GLWoC (ORCPT
+	with ESMTP id S1162155Ab2GLWoQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:44:02 -0400
+	Thu, 12 Jul 2012 18:44:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mark Rustad <mark.d.rustad@intel.com>,
-        Marcus Dennis <marcusx.e.dennis@intel.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 146/187] SCSI: Fix NULL dereferences in scsi_cmd_to_driver
-Date: Thu, 12 Jul 2012 15:35:02 -0700
-Message-Id: <20120712191535.939016335@linuxfoundation.org>
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        Oliver Neukum <oneukum@suse.de>
+Subject: =?y?q?=5B=20150/187=5D=20USB=3A=20cdc-wdm=3A=20fix=20lockup=20on=20error=20in=20wdm=5Fread?=
+Date: Thu, 12 Jul 2012 15:35:06 -0700
+Message-Id: <20120712191536.295590217@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
  <20120712191522.742634173@linuxfoundation.org>
 User-Agent: quilt/0.60-20.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset=y
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,72 +34,72 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Mark Rustad <mark.d.rustad@intel.com>
+From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
 
-commit 222a806af830fda34ad1f6bc991cd226916de060 upstream.
+commit b086b6b10d9f182cd8d2f0dcfd7fd11edba93fc9 upstream.
 
-Avoid crashing if the private_data pointer happens to be NULL. This has
-been seen sometimes when a host reset happens, notably when there are
-many LUNs:
+Clear the WDM_READ flag on empty reads to avoid running
+forever in an infinite tight loop, causing lockups:
 
-host3: Assigned Port ID 0c1601
-scsi host3: libfc: Host reset succeeded on port (0c1601)
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000350
-IP: [<ffffffff81352bb8>] scsi_send_eh_cmnd+0x58/0x3a0
-<snip>
-Process scsi_eh_3 (pid: 4144, threadinfo ffff88030920c000, task ffff880326b160c0)
-Stack:
- 000000010372e6ba 0000000000000282 000027100920dca0 ffffffffa0038ee0
- 0000000000000000 0000000000030003 ffff88030920dc80 ffff88030920dc80
- 00000002000e0000 0000000a00004000 ffff8803242f7760 ffff88031326ed80
-Call Trace:
- [<ffffffff8105b590>] ? lock_timer_base+0x70/0x70
- [<ffffffff81352fbe>] scsi_eh_tur+0x3e/0xc0
- [<ffffffff81353a36>] scsi_eh_test_devices+0x76/0x170
- [<ffffffff81354125>] scsi_eh_host_reset+0x85/0x160
- [<ffffffff81354291>] scsi_eh_ready_devs+0x91/0x110
- [<ffffffff813543fd>] scsi_unjam_host+0xed/0x1f0
- [<ffffffff813546a8>] scsi_error_handler+0x1a8/0x200
- [<ffffffff81354500>] ? scsi_unjam_host+0x1f0/0x1f0
- [<ffffffff8106ec3e>] kthread+0x9e/0xb0
- [<ffffffff81509264>] kernel_thread_helper+0x4/0x10
- [<ffffffff8106eba0>] ? kthread_freezable_should_stop+0x70/0x70
- [<ffffffff81509260>] ? gs_change+0x13/0x13
-Code: 25 28 00 00 00 48 89 45 c8 31 c0 48 8b 87 80 00 00 00 48 8d b5 60 ff ff ff 89 d1 48 89 fb 41 89 d6 4c 89 fa 48 8b 80 b8 00 00 00
- <48> 8b 80 50 03 00 00 48 8b 00 48 89 85 38 ff ff ff 48 8b 07 4c
-RIP  [<ffffffff81352bb8>] scsi_send_eh_cmnd+0x58/0x3a0
- RSP <ffff88030920dc50>
-CR2: 0000000000000350
+Jul  1 21:58:11 nemi kernel: [ 3658.898647] qmi_wwan 2-1:1.2: Unexpected error -71
+Jul  1 21:58:36 nemi kernel: [ 3684.072021] BUG: soft lockup - CPU#0 stuck for 23s! [qmi.pl:12235]
+Jul  1 21:58:36 nemi kernel: [ 3684.072212] CPU 0
+Jul  1 21:58:36 nemi kernel: [ 3684.072355]
+Jul  1 21:58:36 nemi kernel: [ 3684.072367] Pid: 12235, comm: qmi.pl Tainted: P           O 3.5.0-rc2+ #13 LENOVO 2776LEG/2776LEG
+Jul  1 21:58:36 nemi kernel: [ 3684.072383] RIP: 0010:[<ffffffffa0635008>]  [<ffffffffa0635008>] spin_unlock_irq+0x8/0xc [cdc_wdm]
+Jul  1 21:58:36 nemi kernel: [ 3684.072388] RSP: 0018:ffff88022dca1e70  EFLAGS: 00000282
+Jul  1 21:58:36 nemi kernel: [ 3684.072393] RAX: ffff88022fc3f650 RBX: ffffffff811c56f7 RCX: 00000001000ce8c1
+Jul  1 21:58:36 nemi kernel: [ 3684.072398] RDX: 0000000000000010 RSI: 000000000267d810 RDI: ffff88022fc3f650
+Jul  1 21:58:36 nemi kernel: [ 3684.072403] RBP: ffff88022dca1eb0 R08: ffffffffa063578e R09: 0000000000000000
+Jul  1 21:58:36 nemi kernel: [ 3684.072407] R10: 0000000000000008 R11: 0000000000000246 R12: 0000000000000002
+Jul  1 21:58:36 nemi kernel: [ 3684.072412] R13: 0000000000000246 R14: ffffffff00000002 R15: ffff8802281d8c88
+Jul  1 21:58:36 nemi kernel: [ 3684.072418] FS:  00007f666a260700(0000) GS:ffff88023bc00000(0000) knlGS:0000000000000000
+Jul  1 21:58:36 nemi kernel: [ 3684.072423] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+Jul  1 21:58:36 nemi kernel: [ 3684.072428] CR2: 000000000270d9d8 CR3: 000000022e865000 CR4: 00000000000007f0
+Jul  1 21:58:36 nemi kernel: [ 3684.072433] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+Jul  1 21:58:36 nemi kernel: [ 3684.072438] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Jul  1 21:58:36 nemi kernel: [ 3684.072444] Process qmi.pl (pid: 12235, threadinfo ffff88022dca0000, task ffff88022ff76380)
+Jul  1 21:58:36 nemi kernel: [ 3684.072448] Stack:
+Jul  1 21:58:36 nemi kernel: [ 3684.072458]  ffffffffa063592e 0000000100020000 ffff88022fc3f650 ffff88022fc3f6a8
+Jul  1 21:58:36 nemi kernel: [ 3684.072466]  0000000000000200 0000000100000000 000000000267d810 0000000000000000
+Jul  1 21:58:36 nemi kernel: [ 3684.072475]  0000000000000000 ffff880212cfb6d0 0000000000000200 ffff880212cfb6c0
+Jul  1 21:58:36 nemi kernel: [ 3684.072479] Call Trace:
+Jul  1 21:58:36 nemi kernel: [ 3684.072489]  [<ffffffffa063592e>] ? wdm_read+0x1a0/0x263 [cdc_wdm]
+Jul  1 21:58:36 nemi kernel: [ 3684.072500]  [<ffffffff8110adb7>] ? vfs_read+0xa1/0xfb
+Jul  1 21:58:36 nemi kernel: [ 3684.072509]  [<ffffffff81040589>] ? alarm_setitimer+0x35/0x64
+Jul  1 21:58:36 nemi kernel: [ 3684.072517]  [<ffffffff8110aec7>] ? sys_read+0x45/0x6e
+Jul  1 21:58:36 nemi kernel: [ 3684.072525]  [<ffffffff813725f9>] ? system_call_fastpath+0x16/0x1b
+Jul  1 21:58:36 nemi kernel: [ 3684.072557] Code: <66> 66 90 c3 83 ff ed 89 f8 74 16 7f 06 83 ff a1 75 0a c3 83 ff f4
 
+The WDM_READ flag is normally cleared by wdm_int_callback
+before resubmitting the read urb, and set by wdm_in_callback
+when this urb returns with data or an error.  But a crashing
+device may cause both a read error and cancelling all urbs.
+Make sure that the flag is cleared by wdm_read if the buffer
+is empty.
 
-Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
-Tested-by: Marcus Dennis <marcusx.e.dennis@intel.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+We don't clear the flag on errors, as there may be pending
+data in the buffer which should be processed.  The flag will
+instead be cleared on the next wdm_read call.
+
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Acked-by: Oliver Neukum <oneukum@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/scsi/scsi_cmnd.h |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/usb/class/cdc-wdm.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/include/scsi/scsi_cmnd.h
-+++ b/include/scsi/scsi_cmnd.h
-@@ -134,10 +134,16 @@ struct scsi_cmnd {
- 
- static inline struct scsi_driver *scsi_cmd_to_driver(struct scsi_cmnd *cmd)
- {
-+	struct scsi_driver **sdp;
-+
- 	if (!cmd->request->rq_disk)
- 		return NULL;
- 
--	return *(struct scsi_driver **)cmd->request->rq_disk->private_data;
-+	sdp = (struct scsi_driver **)cmd->request->rq_disk->private_data;
-+	if (!sdp)
-+		return NULL;
-+
-+	return *sdp;
- }
- 
- extern struct scsi_cmnd *scsi_get_command(struct scsi_device *, gfp_t);
+--- a/drivers/usb/class/cdc-wdm.c
++++ b/drivers/usb/class/cdc-wdm.c
+@@ -497,6 +497,8 @@ retry:
+ 			goto retry;
+ 		}
+ 		if (!desc->reslength) { /* zero length read */
++			dev_dbg(&desc->intf->dev, "%s: zero length - clearing WDM_READ\n", __func__);
++			clear_bit(WDM_READ, &desc->flags);
+ 			spin_unlock_irq(&desc->iuspin);
+ 			goto retry;
+ 		}
 
 
