@@ -1,133 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161227Ab2GLPxu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 11:53:50 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28196 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757439Ab2GLPxs (ORCPT
+	id S1161249Ab2GLPyX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 11:54:23 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:60659 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932676Ab2GLPyV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 11:53:48 -0400
-X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=kEgnM1vrZgIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=D19gQVrFAAAA:8 a=F4dZniw7DhOjSGhZ70YA:9 a=PUjeQqilurYA:10 a=0Z2l2F6ITLjqO5gN:21 a=6O92X066t3RsTv7M:21 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1342108425.14868.4.camel@gandalf.stny.rr.com>
-Subject: Re: [RFC][PATCH 2/4 v4] ftrace/x86: Add save_regs for i386 function
- calls
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, yrl.pp-manager.tt@hitachi.com
-Date: Thu, 12 Jul 2012 11:53:45 -0400
-In-Reply-To: <4FFEC58E.5070202@hitachi.com>
-References: <20120711195048.885039013@goodmis.org>
-	 <20120711195745.379060003@goodmis.org> <4FFEC58E.5070202@hitachi.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1+b1 
+	Thu, 12 Jul 2012 11:54:21 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the i2c-embedded tree
+Date: Thu, 12 Jul 2012 15:54:02 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Olof Johansson <olof@lixom.net>,
+        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
+        Alessandro Rubini <rubini@gnudd.com>,
+        Linus Walleij <linus.walleij@stericsson.com>
+References: <20120710164130.f38e4d1673f925ddb13914c9@canb.auug.org.au> <20120712131231.GH2194@pengutronix.de>
+In-Reply-To: <20120712131231.GH2194@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Message-Id: <201207121554.03240.arnd@arndb.de>
+X-Provags-ID: V02:K0:ot8MRLRDdJN4kCz7siP4NDV5a34os+65HkuWosbtPQz
+ 9Igi96YB6rsh5ykMtPoeqO/PSA8OsxLp81nvNIIViKQyHgo9rb
+ g1I3shgbD76iCYYPonRya2l6tv6Q7oBGDEA5NpbBJBYb0kNMwX
+ 1CtCLrWetD5lCxwY8Zoa5D3q4XdWzMBAyvoV9P7Cvk+WJJr9s8
+ vmIuZS9Aq3k1cev6lyqEvwSeF5e/Ph3PCHAhrMxq7FxDpNbQEx
+ vG+EfHD/wmyqxU+JY6jD5OKx8Ald76ea81K0CO9uRIvO/T0BNK
+ 4tKL8tIny7SqPHjJQVEdVW9drllibQOtB/mG2NC+THvR0cSuQR
+ /IjPQn2a1QkYB5xjNaXo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm slowly getting this patch set into working order ;-)
-
-
-On Thu, 2012-07-12 at 21:39 +0900, Masami Hiramatsu wrote:
->  
-> > +ENTRY(ftrace_regs_caller)
-> > +	pushf	/* push flags before compare (in ss location) */
-> > +	cmpl $0, function_trace_stop
-> > +	jne ftrace_restore_flags
-> > +
-> > +	pushl %esp	/* Save stack in sp location */
-> > +	subl $4, (%esp) /* Adjust saved stack to skip saved flags */
-> > +	pushl 4(%esp)	/* Save flags in correct position */
-> > +	movl $__KERNEL_DS, 8(%esp)	/* Save ss */
-> > +	pushl $__KERNEL_CS
-> > +	pushl 4*4(%esp)	/* Save the ip */
-> > +	subl $MCOUNT_INSN_SIZE, (%esp)	/* Adjust ip */
-> > +	pushl $0	/* Load 0 into orig_ax */
+On Thursday 12 July 2012, Wolfram Sang wrote:
 > 
-> Oops, you might forget that the i386's interrupt stack layout is a bit
-> different from x86-64.
+> > I fixed it up (I think - see below) and can carry the fix as necessary.
+> > Please check this and talk to each other ...
 > 
-> On x86-64, regs->sp directly points the top of stack.
-> On the other hand (i386), regs->sp IS the top of stack. You can see
-> below code in arch/x86/include/asm/ptrace.h
-> ---
-> /*
->  * X86_32 CPUs don't save ss and esp if the CPU is already in kernel mode
->  * when it traps.  The previous stack will be directly underneath the saved
->  * registers, and 'sp/ss' won't even have been saved. Thus the '&regs->sp'.
->  *
->  * This is valid only for kernel mode traps.
->  */
-> static inline unsigned long kernel_stack_pointer(struct pt_regs *regs)
-> {
-> #ifdef CONFIG_X86_32
->         return (unsigned long)(&regs->sp);
-> #else
->         return regs->sp;
-> #endif
-
-
-Yuck yuck yuck!
-
-> }
-> ---
+> I also noticed the bindings today [1]. They came in via a seperate
+> patch (suboptimal) which has no ack by a devicetree maintainer which I'd
+> really like to see here, because the bindings look suspicious to me.
+> They look like they mostly export register settings which is usually
+> questionable since we might want to abstract bindings so they can be
+> useful for a number of drivers.
 > 
-> This means that you need a trick here.
-> 
-> 	 sp-> [retaddr]
-> 	(*)-> [orig_stack]
-> 
-> Here is the stack layout when the ftrace_regs_caller is called.
-> (*) points the original stack pointer. this means that regs->sp has
-> placed at (*). After doing pushf, it changed as below.
-> 
-> 	                    (what user expects)
-> 	 sp-> [flags]      <- regs.cs
-> 	      [retaddr]    <- regs.flags
-> 	(*)-> [orig_stack] <- regs.sp
-> 
-> So we have to change this stack layout as the user expected. That is
-> what I did it in my previous series;
+> Arnd, since you committed the patches, can you please comment? I'd
+> prefer to drop this DT conversion for now, otherwise we might have to
+> support this possibly rushed bindings forever? LinusW, what do you
+> think?
 
-Yeah, I saw that you did this, but didn't fully understand why. I
-completely forgot about that hack in x86_32 :-(
+I've dropped the ux500/dt branch for now. and will wait for a new one
+to get submitted as a replacement. There were other things wrong with
+the submission that Lee already knows about, so I think it's better
+to do this the proper way now.
 
-This is why I'm insisting to get your Reviewed-by, as you seem to be
-more up-to-date on the subtleties between 32 and 64 than I am.
- 
-> 
-> https://lkml.org/lkml/2012/6/5/119
-> 
-> In this patch, I clobbered the return address on the stack and
-> stores it in the local stack because of that reason.
-> 
-> +	movl 14*4(%esp), %eax	/* Load return address */
-> +	pushl %eax		/* Save return address (+4) */
-> +	subl $MCOUNT_INSN_SIZE, %eax
-> +	movl %eax, 12*4+4(%esp)	/* Store IP */
-> +	movl 13*4+4(%esp), %edx	/* Load flags */
-> +	movl %edx, 14*4+4(%esp)	/* Store flags */
-> +	movl $__KERNEL_CS, %edx
-> +	movl %edx, 13*4+4(%esp)
-
-Well the change log does say that my patch set was influenced by your
-code. I started to veer from that. I shouldn't have.
- 
-> 
-> Thank you,
-> 
-
-No, thank you!
-
-/me goes to work on v5.
-
--- Steve
-
-
+	Arnd
