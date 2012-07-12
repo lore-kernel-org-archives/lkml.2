@@ -1,88 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755908Ab2GLF5G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 01:57:06 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:37435 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753057Ab2GLF5E (ORCPT
+	id S1755640Ab2GLF5D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 01:57:03 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37274 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753057Ab2GLF5A convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 01:57:04 -0400
-Date: Thu, 12 Jul 2012 11:26:55 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Joe Perches <joe@perches.com>, Ingo Molnar <mingo@elte.hu>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/5] uprobes: fix overflow in
- vma_address/find_active_uprobe
-Message-ID: <20120712055655.GB3598@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120708203006.GA18233@redhat.com>
- <1341782304.13174.21.camel@joe2Laptop>
- <20120709105445.GA32699@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20120709105445.GA32699@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12071205-7606-0000-0000-000001F024D2
+	Thu, 12 Jul 2012 01:57:00 -0400
+Subject: Re: linux-next: manual merge of the kvm-ppc tree with the powerpc tree
+Mime-Version: 1.0 (Apple Message framework v1278)
+Content-Type: text/plain; charset=us-ascii
+From: Alexander Graf <agraf@suse.de>
+In-Reply-To: <20120712135735.7678a50ffb107e3094af27b8@canb.auug.org.au>
+Date: Thu, 12 Jul 2012 07:56:46 +0200
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Bharat Bhushan <r65777@freescale.com>,
+        Michael Neuling <mikey@neuling.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <B6C6F6EC-BDD9-41DC-9677-4B7A4A52BDF0@suse.de>
+References: <20120712135735.7678a50ffb107e3094af27b8@canb.auug.org.au>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+X-Mailer: Apple Mail (2.1278)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2012-07-09 12:54:45]:
 
-> On 07/08, Joe Perches wrote:
-> >
-> > On Sun, 2012-07-08 at 22:30 +0200, Oleg Nesterov wrote:
-> > > @@ -1450,7 +1450,7 @@ static struct uprobe *find_active_uprobe(unsigned long bp_vaddr, int *is_swbp)
-> > >
-> > >  			inode = vma->vm_file->f_mapping->host;
-> > >  			offset = bp_vaddr - vma->vm_start;
-> > > -			offset += (vma->vm_pgoff << PAGE_SHIFT);
-> > > +			offset += ((loff_t)vma->vm_pgoff << PAGE_SHIFT);
-> >
-> > It's be nice to take remove the unnecessary parenthesis
-> > and make it consistent with the vaddr use above it too.
-> 
-> OK, please find v2 below.
-> 
-> ------------------------------------------------------------------------------
-> Subject: [PATCH] uprobes: fix overflow in vma_address/find_active_uprobe
-> 
-> vma->vm_pgoff is "unsigned long", it should be promoted to loff_t
-> before the multiplication to avoid the overflow.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+On 12.07.2012, at 05:57, Stephen Rothwell wrote:
 
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> Hi Alexander,
+> 
+> Today's linux-next merge of the kvm-ppc tree got a conflict in
+> arch/powerpc/kvm/booke_interrupts.S between commit c75df6f96c59
+> ("powerpc: Fix usage of register macros getting ready for %r0 change")
+> from the powerpc tree and commit fc372c0843b8 ("booke: Added crit/mc
+> exception handler for e500v2") from the kvm-ppc tree.
+> 
+> I fixed it up (see below - could do with checking) and can carry the fix
+> as necessary.
 
-> ---
->  kernel/events/uprobes.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
+Hrm. Ben already warned me that this will happen, so I did a test merge a few days ago. Back then I also had to change 2 other bits that were not conflicting, to get to code to actually compile.
+
+Could you please do an s/VCPU_GPR(r/VCPU_GPR/R/g in arch/powerpc/kvm/booke_interrupts.S? I'd check if you actually need it myself, but the tree doesn't seem to be pushed out yet :).
+
+
+Alex
+
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
 > 
-> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-> index 47c4e24..6194edb 100644
-> --- a/kernel/events/uprobes.c
-> +++ b/kernel/events/uprobes.c
-> @@ -117,7 +117,7 @@ static loff_t vma_address(struct vm_area_struct *vma, loff_t offset)
->  	loff_t vaddr;
+> diff --cc arch/powerpc/kvm/booke_interrupts.S
+> index 8fd4b2a,09456c4..0000000
+> --- a/arch/powerpc/kvm/booke_interrupts.S
+> +++ b/arch/powerpc/kvm/booke_interrupts.S
+> @@@ -52,16 -53,21 +52,21 @@@
+>                         (1<<BOOKE_INTERRUPT_PROGRAM) | \
+>                         (1<<BOOKE_INTERRUPT_DTLB_MISS))
 > 
->  	vaddr = vma->vm_start + offset;
-> -	vaddr -= vma->vm_pgoff << PAGE_SHIFT;
-> +	vaddr -= (loff_t)vma->vm_pgoff << PAGE_SHIFT;
+> - .macro KVM_HANDLER ivor_nr
+> + .macro KVM_HANDLER ivor_nr scratch srr0
+>  _GLOBAL(kvmppc_handler_\ivor_nr)
+>  	/* Get pointer to vcpu and record exit number. */
+> - 	mtspr	SPRN_SPRG_WSCRATCH0, r4
+> + 	mtspr	\scratch , r4
+>  	mfspr	r4, SPRN_SPRG_RVCPU
+> -	stw	r3, VCPU_GPR(r3)(r4)
+> -	stw	r5, VCPU_GPR(r5)(r4)
+> -	stw	r6, VCPU_GPR(r6)(r4)
+> ++	stw	r3, VCPU_GPR(R3)(r4)
+> +	stw	r5, VCPU_GPR(R5)(r4)
+> +	stw	r6, VCPU_GPR(R6)(r4)
+> + 	mfspr	r3, \scratch
+>  	mfctr	r5
+> - 	lis	r6, kvmppc_resume_host@h
+> -	stw	r3, VCPU_GPR(r4)(r4)
+> ++	stw	r3, VCPU_GPR(R4)(r4)
+>  	stw	r5, VCPU_CTR(r4)
+> + 	mfspr	r3, \srr0
+> + 	lis	r6, kvmppc_resume_host@h
+> + 	stw	r3, VCPU_PC(r4)
+>  	li	r5, \ivor_nr
+>  	ori	r6, r6, kvmppc_resume_host@l
+>  	mtctr	r6
+> @@@ -99,12 -104,11 +103,11 @@@ _GLOBAL(kvmppc_handler_len
+>   *  r5: KVM exit number
+>   */
+>  _GLOBAL(kvmppc_resume_host)
+> - 	stw	r3, VCPU_GPR(R3)(r4)
+>  	mfcr	r3
+>  	stw	r3, VCPU_CR(r4)
+> -	stw	r7, VCPU_GPR(r7)(r4)
+> -	stw	r8, VCPU_GPR(r8)(r4)
+> -	stw	r9, VCPU_GPR(r9)(r4)
+> +	stw	r7, VCPU_GPR(R7)(r4)
+> +	stw	r8, VCPU_GPR(R8)(r4)
+> +	stw	r9, VCPU_GPR(R9)(r4)
 > 
->  	return vaddr;
->  }
-> @@ -1450,7 +1450,7 @@ static struct uprobe *find_active_uprobe(unsigned long bp_vaddr, int *is_swbp)
-> 
->  			inode = vma->vm_file->f_mapping->host;
->  			offset = bp_vaddr - vma->vm_start;
-> -			offset += (vma->vm_pgoff << PAGE_SHIFT);
-> +			offset += (loff_t)vma->vm_pgoff << PAGE_SHIFT;
->  			uprobe = find_uprobe(inode, offset);
->  		}
-> 
+>  	li	r6, 1
+>  	slw	r6, r6, r5
 
