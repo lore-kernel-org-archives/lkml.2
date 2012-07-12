@@ -1,102 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933816Ab2GLNiD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 09:38:03 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:60069 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932480Ab2GLNiA (ORCPT
+	id S933825Ab2GLNih (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 09:38:37 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60899 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932480Ab2GLNif (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 09:38:00 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18r4o89WGgr+iLipEreMjUaxi1/3Rd7b402SdpwY+
-	U0iOrd3wWYVfdQ
-Message-ID: <1342100270.7707.20.camel@marge.simpson.net>
-Subject: Re: 3.4.4-rt13: btrfs + xfstests 006 = BOOM.. and a bonus rt_mutex
- deadlock report for absolutely free!
-From: Mike Galbraith <efault@gmx.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Date: Thu, 12 Jul 2012 15:37:50 +0200
-In-Reply-To: <alpine.LFD.2.02.1207121514240.32033@ionos>
-References: <1342072060.7338.102.camel@marge.simpson.net>
-	 <1342082648.7338.171.camel@marge.simpson.net>
-	 <1342086792.7707.9.camel@marge.simpson.net>
-	 <alpine.LFD.2.02.1207121310420.32033@ionos>
-	 <1342094233.7707.12.camel@marge.simpson.net>
-	 <alpine.LFD.2.02.1207121514240.32033@ionos>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	Thu, 12 Jul 2012 09:38:35 -0400
+Date: Thu, 12 Jul 2012 21:38:22 +0800
+From: Wanpeng Li <liwp.linux@gmail.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <liwp.linux@gmail.com>
+Subject: Re: [PATCH RFC] mm/memcg: recalculate chargeable space after waiting
+ migrating charges
+Message-ID: <20120712133822.GA2432@kernel>
+Reply-To: Wanpeng Li <liwp.linux@gmail.com>
+References: <1342089561-11211-1-git-send-email-liwp.linux@gmail.com>
+ <20120712110838.GE21013@tiehlicka.suse.cz>
+ <20120712115125.GA11103@kernel>
+ <20120712122912.GH21013@tiehlicka.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120712122912.GH21013@tiehlicka.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-07-12 at 15:31 +0200, Thomas Gleixner wrote: 
-> On Thu, 12 Jul 2012, Mike Galbraith wrote:
-> > On Thu, 2012-07-12 at 13:43 +0200, Thomas Gleixner wrote: 
-> > > rawlock points to ...968 and the node_list to ...970.
-> > > 
-> > > struct rt_mutex {
-> > >         raw_spinlock_t          wait_lock;
-> > >         struct plist_head       wait_list;
-> > > 
-> > > The raw_lock pointer of the plist_head is initialized in
-> > > __rt_mutex_init() so it points to wait_lock. 
-> > > 
-> > > Can you check the offset of wait_list vs. the rt_mutex itself?
-> > > 
-> > > I wouldn't be surprised if it's exactly 8 bytes. And then this thing
-> > > looks like a copied lock with stale pointers to hell. Eew.
-> > 
-> > crash> struct rt_mutex -o
-> > struct rt_mutex {
-> >    [0] raw_spinlock_t wait_lock;
-> >    [8] struct plist_head wait_list;
-> 
-> Bingo, that makes it more likely that this is caused by copying w/o
-> initializing the lock and then freeing the original structure.
-> 
-> A quick check for memcpy finds that __btrfs_close_devices() does a
-> memcpy of btrfs_device structs w/o initializing the lock in the new
-> copy, but I have no idea whether that's the place we are looking for.
+On Thu, Jul 12, 2012 at 02:29:38PM +0200, Michal Hocko wrote:
+>On Thu 12-07-12 19:51:25, Wanpeng Li wrote:
+>> On Thu, Jul 12, 2012 at 01:08:38PM +0200, Michal Hocko wrote:
+>> >On Thu 12-07-12 18:39:21, Wanpeng Li wrote:
+>> >> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+>> >> 
+>> >> Function mem_cgroup_do_charge will call mem_cgroup_reclaim,
+>> >> there are two break points in mem_cgroup_reclaim:
+>> >> if (total && (flag & MEM_CGROUP_RECLAIM_SHIRINK))
+>> >> 	break;
+>> >> if (mem_cgroup_margin(memcg))
+>> >> 	break;
+>> >> so mem_cgroup_reclaim can't guarantee reclaim enough pages(nr_pages) 
+>> >> which is requested from mem_cgroup_do_charge, if mem_cgroup_margin
+>> >> (mem_over_limit) >= nr_pages is not true, the process will go to
+>> >> mem_cgroup_wait_acct_move to wait doubly charge counted caused by
+>> >> task move. 
+>> >
+>> >I am sorry but I have no idea what you are trying to say. The
+>> >mem_cgroup_wait_acct_move just makes sure that we are waiting until
+>> >charge is moved (which can potentially free some charges) rather than
+>> >OOM which should be the last resort so it makes sense to retry them
+>> >charge.
+>> >
+>> >> But this time still can't guarantee enough pages(nr_pages) is
+>> >> ready, directly return CHARGE_RETRY is incorret. 
+>> >
+>> >So you think it is better to oom? Why? What prevents you from a race
+>> >that your mem_cgroup_margin returns true but another CPU consumes those
+>> >charges right after that. See? The check is pointless. It doesn't
+>> 
+>> Hmm, if there are a race as you mentioned it can't guarantee enough pages 
+>> is ready. 
+>
+>And there is no point in guaranteeing anything which I tried to tell you
+>by the example... The only thing that matters is whether we get the charge
+>on the next attempt and if not whether we are able to reclaim something.
+>See?
+>
+>> But it also means that available memory is too low if this
+>> race happen. If available charges still less than nr_pages
+>> after mem_cgroup_wait_acct_move(which can potentially
+>> free some charges) return, the CHAGE_RETRY will trigged,
+>> and then mem_cgroup_do_charge=>meory_cgroup_reclaim
+>> =>mem_cgroup_wait_acct_move, if available charges still less than
+>> nr_pages in this round, CHAGE_RETRY.....
+>
+>> To avoid this infinite retry when available memory 
+>
+>I do not see a realistic scenario which would cause this to be infinite loop
+>withou OOM jumping in.
+>We would have to hit the wait for move after each reclaim and the move would
+>have to keep the the usage constant (move is really fast without moving
+>charges).
+>So what you are trying to address (if I understand it at all) is to fix
+>an almost impossible to trigger issue with a bogus change which doesn't
+>help at all because it is racy as well.
 
+OK. Thank you Michal! :-)
 
-Cool, you found one, thanks!  I'm setting boobytraps.
+Thanks & Best Regards,
+Wanpeng Li
 
-Um, correction, box says I'm setting _buggy_ boobytraps :)
-
-Tomorrow-man will test this and frob traps anew.
-
-> 
-> Thanks,
-> 
-> 	tglx
-> 
-> diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
-> index 43baaf0..06c8ced 100644
-> --- a/fs/btrfs/volumes.c
-> +++ b/fs/btrfs/volumes.c
-> @@ -512,6 +512,7 @@ static int __btrfs_close_devices(struct btrfs_fs_devices *fs_devices)
->  		new_device->writeable = 0;
->  		new_device->in_fs_metadata = 0;
->  		new_device->can_discard = 0;
-> +		spin_lock_init(&new_device->io_lock);
->  		list_replace_rcu(&device->dev_list, &new_device->dev_list);
->  
->  		call_rcu(&device->rcu, free_device);
-> 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
+>
+>> in this memcg is very low, go to OOM if mem_cgroup_margin(mem_over_limit) 
+>> < nr_pages is a better way I think. Because the codes have already try
+>> its best to reclaim some pages. :-)
+>
+>
+>> 
+>[...]
+>-- 
+>Michal Hocko
+>SUSE Labs
+>SUSE LINUX s.r.o.
+>Lihovarska 1060/12
+>190 00 Praha 9    
+>Czech Republic
