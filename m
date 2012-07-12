@@ -1,110 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758027Ab2GLTUq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 15:20:46 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:51477 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757888Ab2GLTUn (ORCPT
+	id S1757971Ab2GLTVu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 15:21:50 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:44175 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755774Ab2GLTVs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 15:20:43 -0400
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Avi Kivity <avi@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Rik van Riel <riel@redhat.com>
-Cc: S390 <linux-s390@vger.kernel.org>, Carsten Otte <cotte@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        KVM <kvm@vger.kernel.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        chegu vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
-        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Date: Fri, 13 Jul 2012 00:48:24 +0530
-Message-Id: <20120712191822.30440.56318.sendpatchset@codeblue>
-In-Reply-To: <20120712191712.30440.68944.sendpatchset@codeblue>
-References: <20120712191712.30440.68944.sendpatchset@codeblue>
-Subject: [PATCH RFC V3 3/3] kvm: Choose better candidate for directed yield
-x-cbid: 12071209-7014-0000-0000-0000018CD8E8
+	Thu, 12 Jul 2012 15:21:48 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: "Steven J. Magnani" <steve@digidescorp.com>
+Cc: Stevie Trujillo <stevie.trujillo@gmail.com>, linux-kernel@vger.kernel.org,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: mount -o loop with truncated dosdisk.img uses 100% cpu and can't be killed
+References: <20120712162828.3f561315@localhost>
+	<1342106206.2156.2.camel@iscandar.digidescorp.com>
+Date: Fri, 13 Jul 2012 04:21:44 +0900
+In-Reply-To: <1342106206.2156.2.camel@iscandar.digidescorp.com> (Steven
+	J. Magnani's message of "Thu, 12 Jul 2012 10:16:46 -0500")
+Message-ID: <87k3y8yed3.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+"Steven J. Magnani" <steve@digidescorp.com> writes:
 
-Currently, on a large vcpu guests, there is a high probability of
-yielding to the same vcpu who had recently done a pause-loop exit or
-cpu relax intercepted. Such a yield can lead to the vcpu spinning
-again and hence degrade the performance.
+> On Thu, 2012-07-12 at 16:28 +0200, Stevie Trujillo wrote: 
+>> Hello,
+>> 
+>> I was trying to create a bootdisk to update my BIOS, and accidentially
+>> made a 512byte image with only the FreeDOS header in it.
+>> 
+>> ( Linux 3.4.4 )
+>> # mount -o loop dosdisk.img /tmp
+>> ^C^C^C
+>> It uses 100% CPU and doesn't listen to me when I do ^C, kill -9 etc. I
+>> think this means it's stuck in the kernel?
+>
+> Here is the stack trace I get for the mount process:
+>
+> [root@telezart smagnani]# cat /proc/1334/stack
+> [<ffffffff81077a5a>] __cond_resched+0x2a/0x40
+> [<ffffffff8110c4bb>] find_lock_page+0x3b/0x80
+> [<ffffffff8110cbaf>] find_or_create_page+0x3f/0xb0
+> [<ffffffff8119a692>] __getblk+0xf2/0x2a0
+> [<ffffffff8119a893>] __bread+0x13/0xb0
+> [<ffffffffa00fd1fe>] fat__get_entry+0x14e/0x220 [fat]
+> [<ffffffffa00fd596>] fat_get_short_entry+0x66/0xc0 [fat]
+> [<ffffffffa00ff765>] fat_subdirs+0x55/0x80 [fat]
+> [<ffffffffa0103d30>] fat_fill_super+0x810/0xa80 [fat]
+> [<ffffffffa00e821a>] vfat_fill_super+0x1a/0x20 [vfat]
+> [<ffffffff8116d61b>] mount_bdev+0x1cb/0x210
+> [<ffffffffa00e81f5>] vfat_mount+0x15/0x20 [vfat]
+> [<ffffffff8116e410>] mount_fs+0x20/0xd0
+> [<ffffffff81186e4f>] vfs_kern_mount+0x6f/0x100
+> [<ffffffff81187804>] do_kern_mount+0x54/0x110
+> [<ffffffff811891d6>] do_mount+0x306/0x8b0
+> [<ffffffff811898cd>] sys_mount+0x8d/0xe0
+> [<ffffffff81583629>] system_call_fastpath+0x16/0x1b
+> [<ffffffffffffffff>] 0xffffffffffffffff
+>
+> I would think this is more likely a bug in the loopback driver than the
+> FAT filesystem...
 
-The patchset keeps track of the pause loop exit/cpu relax interception
-and gives chance to a vcpu which:
- (a) Has not done pause loop exit or cpu relax intercepted at all
-     (probably he is preempted lock-holder)
- (b) Was skipped in last iteration because it did pause loop exit or
-     cpu relax intercepted, and probably has become eligible now
-     (next eligible lock holder)
+It looks like the bug of __getblk_slow(). If requested block was beyond
+end of device, __find_get_block() will find buffer_mapped()'s buffer,
+but block >= end_block is unmapped. So, it can be loop.
 
-Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+The following patch fixes it? If it fix, there are some options to check
+it.
+
+a) Check it like this patch and warn.
+b) (a), but without warn.
+c) Check it in init_page_buffers() and return -EIO or such
+
+Well, anyway, Cc to Jens.
+
+Signed-off-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
 ---
-v2 patches were:
-Reviewed-by: Rik van Riel <riel@redhat.com>
 
- virt/kvm/kvm_main.c |   34 ++++++++++++++++++++++++++++++++++
- 1 files changed, 34 insertions(+), 0 deletions(-)
+ fs/buffer.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 4ec0120..50f6e60 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -1570,6 +1570,38 @@ bool kvm_vcpu_yield_to(struct kvm_vcpu *target)
- }
- EXPORT_SYMBOL_GPL(kvm_vcpu_yield_to);
+diff -puN fs/buffer.c~debug fs/buffer.c
+--- tux3fs/fs/buffer.c~debug	2012-07-13 04:10:40.000000000 +0900
++++ tux3fs-hirofumi/fs/buffer.c	2012-07-13 04:11:50.000000000 +0900
+@@ -1055,6 +1055,13 @@ __getblk_slow(struct block_device *bdev,
+ 		dump_stack();
+ 		return NULL;
+ 	}
++	if (block >= blkdev_max_block(I_BDEV(bdev->bd_inode))) {
++		printk(KERN_ERR "getblk(): block %llu, end_block %llu\n",
++		       (unsigned long long)block,
++		       (unsigned long long)blkdev_max_block(I_BDEV(bdev->bd_inode)));
++		dump_stack();
++		return NULL;
++	}
  
-+/*
-+ * Helper that checks whether a VCPU is eligible for directed yield.
-+ * Most eligible candidate to yield is decided by following heuristics:
-+ *
-+ *  (a) VCPU which has not done pl-exit or cpu relax intercepted recently
-+ *  (preempted lock holder), indicated by @cpu_relax_intercepted.
-+ *  Set at the beiginning and cleared at the end of interception/PLE handler.
-+ *
-+ *  (b) VCPU which has done pl-exit/ cpu relax intercepted but did not get
-+ *  chance last time (mostly it has become eligible now since we have probably
-+ *  yielded to lockholder in last iteration. This is done by toggling
-+ *  @dy_eligible each time a VCPU checked for eligibility.)
-+ *
-+ *  Yielding to a recently pl-exited/cpu relax intercepted VCPU before yielding
-+ *  to preempted lock-holder could result in wrong VCPU selection and CPU
-+ *  burning. Giving priority for a potential lock-holder increases lock
-+ *  progress.
-+ */
-+bool kvm_vcpu_check_and_update_eligible(struct kvm_vcpu *vcpu)
-+{
-+	bool eligible;
-+
-+	eligible = !vcpu->ple.cpu_relax_intercepted ||
-+			(vcpu->ple.cpu_relax_intercepted &&
-+			 vcpu->ple.dy_eligible);
-+
-+	if (vcpu->ple.cpu_relax_intercepted)
-+		vcpu->ple.dy_eligible = !vcpu->ple.dy_eligible;
-+
-+	return eligible;
-+}
-+
- void kvm_vcpu_on_spin(struct kvm_vcpu *me)
- {
- 	struct kvm *kvm = me->kvm;
-@@ -1598,6 +1630,8 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
- 				continue;
- 			if (waitqueue_active(&vcpu->wq))
- 				continue;
-+			if (!kvm_vcpu_check_and_update_eligible(vcpu))
-+				continue;
- 			if (kvm_vcpu_yield_to(vcpu)) {
- 				kvm->last_boosted_vcpu = i;
- 				yielded = 1;
+ 	for (;;) {
+ 		struct buffer_head * bh;
+_
 
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
