@@ -1,115 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758105Ab2GLToi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 15:44:38 -0400
-Received: from www.hansjkoch.de ([178.63.77.200]:49875 "EHLO www.hansjkoch.de"
+	id S1758121Ab2GLTpj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 15:45:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11236 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755748Ab2GLTog (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 15:44:36 -0400
-Date: Thu, 12 Jul 2012 21:44:33 +0200
-From: "Hans J. Koch" <hjk@hansjkoch.de>
-To: Andreas Schallenberg <embedded@gmx.net>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dominic Eschweiler <eschweiler@fias.uni-frankfurt.de>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, kvm@vger.kernel.org
-Subject: Re: UIO: missing resource mapping
-Message-ID: <20120712194432.GA2592@local>
-References: <4FFE7C1F.7080702@gmx.net>
+	id S1755864Ab2GLTpi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 15:45:38 -0400
+Date: Thu, 12 Jul 2012 21:43:10 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Konrad Rzeszutek Wilk <konrad@darnok.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
+        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Don Morris <don.morris@hp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH 36/40] autonuma: page_autonuma
+Message-ID: <20120712194310.GP20382@redhat.com>
+References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
+ <1340888180-15355-37-git-send-email-aarcange@redhat.com>
+ <20120630052404.GH3975@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FFE7C1F.7080702@gmx.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120630052404.GH3975@localhost.localdomain>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 12, 2012 at 09:26:23AM +0200, Andreas Schallenberg wrote:
+On Sat, Jun 30, 2012 at 01:24:05AM -0400, Konrad Rzeszutek Wilk wrote:
+> I think you are better using a different name.
+> 
+> Perhaps 'if (autonuma_on())'
 
-[Added more people to Cc:]
+I changed it to AUTONUMA_POSSIBLE_FLAG/autonuma_possible() and
+optimized the implementation to a single test_bit on the read mostly
+flag variable.
 
-> Hello,
-> 
-> I'm doing experiments with the Userspace IO driver (UIO_PCI_GENERIC)
-> and a set of PCIe cards. The kernel version is 3.4.4, CPU is a
-> Marvell MV78200 (ARMv5te). Example with an Intel ethernet card:
-> 
-> This makes /dev/uio0 appear
-> echo -n "8086 10d3" >/sys/bus/pci/drivers/uio_pci_generic/new_id
-> 
-> # lspci -v -k -s 0000:00:01.0
-> 00:01.0 Ethernet controller: Intel Corporation 82574L Gigabit
-> Network Connection
->         Subsystem: Intel Corporation Gigabit CT Desktop Adapter
->         Flags: bus master, fast devsel, latency 0, IRQ 36
->         Memory at c00c0000 (32-bit, non-prefetchable) [size=128K]
->         Memory at c0000000 (32-bit, non-prefetchable) [size=512K]
->         I/O ports at f0800000 [size=32]
->         Memory at c00e0000 (32-bit, non-prefetchable) [size=16K]
->         [virtual] Expansion ROM at c0080000 [disabled] [size=256K]
->         Capabilities: [c8] Power Management version 2
->         Capabilities: [d0] MSI: Enable- Count=1/1 Maskable- 64bit+
->         Capabilities: [e0] Express Endpoint, MSI 00
->         Capabilities: [a0] MSI-X: Enable- Count=5 Masked-
->         Capabilities: [100] Advanced Error Reporting
->         Capabilities: [140] Device Serial Number 00-1b-21-ff-ff-c4-f7-2f
->         Kernel driver in use: uio_pci_generic
-> 
-> Suprisingly, there is no "maps" directory in /sys/class/uio/uio0
-> now. I made a small change to the UIO code:
-> 
-> diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
-> index a783d53..b639654 100644
-> --- a/drivers/uio/uio.c
-> +++ b/drivers/uio/uio.c
-> @@ -274,8 +274,10 @@ static int uio_dev_add_attributes(struct
-> uio_device *idev)
-> 
->         for (mi = 0; mi < MAX_UIO_MAPS; mi++) {
->                 mem = &idev->info->mem[mi];
-> -               if (mem->size == 0)
-> -                       break;
-> +               if (mem->size == 0) {
-> +                       dev_err(idev->dev, "map %d has zero size\n", mi);
-> +                       continue; // was: break
-> +               }
->                 if (!map_found) {
->                         map_found = 1;
->                         idev->map_dir = kobject_create_and_add("maps",
-> 
-> If I have this in the kernel and give the "echo" command as shown
-> above I get:
-> [   43.761723] uio uio0: map 0 has zero size
-> [   43.765760] uio uio0: map 1 has zero size
-> [   43.769787] uio uio0: map 2 has zero size
-> [   43.774298] uio uio0: map 3 has zero size
-> [   43.778333] uio uio0: map 4 has zero size
-> 
-> On the other hand, I can see the resources:
-> # cat /sys/class/uio/uio0/device/resource
-> 0x00000000c00c0000 0x00000000c00dffff 0x0000000000040200
-> 0x00000000c0000000 0x00000000c007ffff 0x0000000000040200
-> 0x00000000f0800000 0x00000000f080001f 0x0000000000040101
-> 0x00000000c00e0000 0x00000000c00e3fff 0x0000000000040200
-> ...more...
-> 
-> Looking further at the code, I cannot see where the mem fields are
-> being filled at all.
-> Which code is supposed to write the struct uio_mem?
-
-In my opinion, the driver should. However, Michael's idea is to use
-/sys/bus/pci/devices/XXXXXresourceX for mapping purposes.
-
-That is of course also possible, but obviously it leads to confusion.
-We already had a long thread about this:
-
-http://www.spinics.net/lists/kvm/msg73837.html
-
-Michael, can we change the driver to offer all available PCI BARs in the
-normal UIO way? I'm afraid otherwise we'll have the same discussion over
-and over again.
-
-Thanks,
-Hans
-
+"possible" is the term all NUMA code in the kernel already uses with
+almost the same meaning (modulo noautonuma parameter) as
+num_possible_nodes() etc...
