@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759311Ab2GLWf4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:35:56 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:59878 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751900Ab2GLWfx (ORCPT
+	id S1759346Ab2GLWgF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:36:05 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:34671 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759318Ab2GLWf7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:35:53 -0400
+	Thu, 12 Jul 2012 18:35:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Luis Henriques <luis.henriques@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 005/187] ALSA: hda - Fix power-map regression for HP dv6 & co
-Date: Thu, 12 Jul 2012 15:32:41 -0700
-Message-Id: <20120712191522.742634173@linuxfoundation.org>
+        Michael Neuling <mikey@neuling.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 007/187] powerpc: Fix uninitialised error in numa.c
+Date: Thu, 12 Jul 2012 15:32:43 -0700
+Message-Id: <20120712191522.919684980@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
-In-Reply-To: <20120712192421.GA28926@kroah.com>
+In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
+ <20120712191522.742634173@linuxfoundation.org>
 User-Agent: quilt/0.60-20.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,50 +31,34 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Michael Neuling <mikey@neuling.org>
 
-commit 6e1c39c6b00d9141a82c231ba7c5e5b1716974b2 upstream.
+commit 82b2521d257b5c0efd51821cf5fa306e53bbb6ba upstream.
 
-The recent fix for power-map controls (commit b0791dda813) caused
-regressions on some other HP laptops.  They have fixed pins but these
-pins are exposed as jack-detectable.  Thus the driver tries to control
-the power-map dynamically per jack detection where it never gets on.
+chroma_defconfig currently gives me this with gcc 4.6:
+  arch/powerpc/mm/numa.c:638:13: error: 'dm' may be used uninitialized in this function [-Werror=uninitialized]
 
-This patch corrects the condition check for fixed pins so that the
-power-map is set always for these pins.
+It's a bogus warning/error since of_get_drconf_memory() only writes it
+anyway.
 
-NOTE: this is no simple backport from 3.5 kernel.  Since 3.5 kernel
-had significant code change in the relevant part, I fixed this
-differently.
-
-BugLink: http://bugs.launchpad.net/bugs/1013183
-Reported-by: Luis Henriques <luis.henriques@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Michael Neuling <mikey@neuling.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_sigmatel.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/powerpc/mm/numa.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_sigmatel.c
-+++ b/sound/pci/hda/patch_sigmatel.c
-@@ -4388,7 +4388,7 @@ static int stac92xx_init(struct hda_code
- 					 AC_PINCTL_IN_EN);
- 	for (i = 0; i < spec->num_pwrs; i++)  {
- 		hda_nid_t nid = spec->pwr_nids[i];
--		int pinctl, def_conf;
-+		unsigned int pinctl, def_conf;
- 
- 		/* power on when no jack detection is available */
- 		/* or when the VREF is used for controlling LED */
-@@ -4415,7 +4415,7 @@ static int stac92xx_init(struct hda_code
- 		def_conf = get_defcfg_connect(def_conf);
- 		/* skip any ports that don't have jacks since presence
-  		 * detection is useless */
--		if (def_conf != AC_JACK_PORT_NONE &&
-+		if (def_conf != AC_JACK_PORT_COMPLEX ||
- 		    !is_jack_detectable(codec, nid)) {
- 			stac_toggle_power_map(codec, nid, 1);
- 			continue;
+--- a/arch/powerpc/mm/numa.c
++++ b/arch/powerpc/mm/numa.c
+@@ -635,7 +635,7 @@ static inline int __init read_usm_ranges
+  */
+ static void __init parse_drconf_memory(struct device_node *memory)
+ {
+-	const u32 *dm, *usm;
++	const u32 *uninitialized_var(dm), *usm;
+ 	unsigned int n, rc, ranges, is_kexec_kdump = 0;
+ 	unsigned long lmb_size, base, size, sz;
+ 	int nid;
 
 
