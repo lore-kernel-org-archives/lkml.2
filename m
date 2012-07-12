@@ -1,104 +1,300 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933549Ab2GLANR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 20:13:17 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:60608 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753604Ab2GLANE (ORCPT
+	id S933554Ab2GLAOn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 20:14:43 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:54315 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933471Ab2GLAOl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 20:13:04 -0400
+	Wed, 11 Jul 2012 20:14:41 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo49u=NP0MwY6AVPJJC0YqvDmo092cbV4DzTT10m4jPHSA@mail.gmail.com>
-References: <1340222160.77018.19.camel@localhost.localdomain>
-	<1340322477.56127.2.camel@localhost.localdomain>
-	<CAErSpo7AWQCofnTRhtMKVP3pm_BDq9v+axGpide0RbmignsV9A@mail.gmail.com>
-	<1340657687.36341.178.camel@localhost.localdomain>
-	<CAErSpo49u=NP0MwY6AVPJJC0YqvDmo092cbV4DzTT10m4jPHSA@mail.gmail.com>
-Date: Wed, 11 Jul 2012 17:13:04 -0700
-X-Google-Sender-Auth: ZLbU2noXAMFlVIJTtZpKNha7jeg
-Message-ID: <CAE9FiQXtsKomU3U=+HNB8K+6L1btJLtuV7S04K=T-PcQomdxJg@mail.gmail.com>
-Subject: Re: [PATCH] pci: support alignments upto 8Gb in pbus_size_mem()
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Nikhil P Rao <nikhil.rao@intel.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>
+In-Reply-To: <87pq8kx965.fsf@sejong.aot.lge.com>
+References: <20120628022413.30496.32798.stgit@kitami.mtv.corp.google.com>
+ <20120628022414.30496.98256.stgit@kitami.mtv.corp.google.com> <87pq8kx965.fsf@sejong.aot.lge.com>
+From: Paul Turner <pjt@google.com>
+Date: Wed, 11 Jul 2012 17:14:10 -0700
+Message-ID: <CAPM31R+2ZjT_BWH+3uGmi4wQWtHno4jvVg3H6RCwiwr76kWCrA@mail.gmail.com>
+Subject: Re: [PATCH 01/16] sched: track the runnable average on a per-task
+ entitiy basis
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Venki Pallipadi <venki@google.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ben Segall <bsegall@google.com>, Ingo Molnar <mingo@elte.hu>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 11, 2012 at 3:53 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Mon, Jun 25, 2012 at 2:54 PM, Nikhil P Rao <nikhil.rao@intel.com> wrote:
->> On Sat, 2012-06-23 at 12:15 -0600, Bjorn Helgaas wrote:
->>> On Thu, Jun 21, 2012 at 5:47 PM, Nikhil P Rao <nikhil.rao@intel.com> wrote:
->>> > I ran into the "disabling BAR .." error message when
->>> > trying to use a 8Gb PCIe card on a system with a BIOS
->>> > that didnt have support for BAR size > 2Gb.
->>>
->>> So the BIOS left the 8Gb BAR unassigned, and you got the "disabling
->>> BAR ... (bad alignment)" message when Linux tried to enable it?
+On Wed, Jun 27, 2012 at 11:06 PM, Namhyung Kim <namhyung@kernel.org> wrote:
+> Hi,
+>
+> Some nitpicks and questions.
+>
+>
+> On Wed, 27 Jun 2012 19:24:14 -0700, Paul Turner wrote:
+>> Instead of tracking averaging the load parented by a cfs_rq, we can track
+>> entity load directly.  With the load for a given cfs_Rq then being the sum of
+>
+> s/cfs_Rq/cfs_rq/
+>
+>
+>> its children.
 >>
->> Yes.
+>> To do this we represent the historical contribution to runnable average within each
+>> trailing 1024us of execution as the coefficients of a geometric series.
 >>
->>> How do we know 8Gb is the correct new limit?  Are we going to be
->>> fixing this again when we see a 16Gb or a 32Gb BAR?  Do we need a
->>> better algorithm that doesn't have a limit like this?
->>>
+>> We can express this for a given task t as:
+>>   runnable_sum(t) = \Sum u_i * y^i ,
+>>   load(t) = weight_t * runnable_sum(t) / (\Sum 1024 * y^i)
 >>
->> The original error message seems applicable to 32bit archs. and not to
->> 64 bit archs. How about the patch below - is aligns[44] (256bytes more)
->> acceptable ?
+>
+> This "\Sum 1024 *y^i" is the runnable(_avg)_period, right?
+
+Yes.
+
+>
+>
+>> Where: u_i is the usage in the last i`th 1024us period (approximately 1ms) ~ms
+>> and y is chosen such that y^k = 1/2.  We currently choose k to be 32 which
+>> roughly translates to about a sched period.
 >>
->>
->> From: Nikhil P Rao <nikhil.rao@intel.com>
->> Date: Mon, 25 Jun 2012 13:33:55 -0700
->> Subject: [PATCH] pci: fix resource size check
->>
->> Support a PCI BAR alignment of > 2Gb, the original check was
->> only applicable to 32 bit kernels,
->>
->> Signed-off-by: Nikhil P Rao <nikhil.rao@intel.com>
+>> Signed-off-by: Paul Turner <pjt@google.com>
 >> ---
->>  drivers/pci/setup-bus.c |    5 +++--
->>  1 files changed, 3 insertions(+), 2 deletions(-)
+>>  include/linux/sched.h |    8 +++
+>>  kernel/sched/debug.c  |    4 ++
+>>  kernel/sched/fair.c   |  128 +++++++++++++++++++++++++++++++++++++++++++++++++
+>>  3 files changed, 140 insertions(+), 0 deletions(-)
 >>
->> diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
->> index 8fa2d4b..9f8d9ea 100644
->> --- a/drivers/pci/setup-bus.c
->> +++ b/drivers/pci/setup-bus.c
->> @@ -780,7 +780,7 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
+>> diff --git a/include/linux/sched.h b/include/linux/sched.h
+>> index 9dced2e..5bf5c79 100644
+>> --- a/include/linux/sched.h
+>> +++ b/include/linux/sched.h
+>> @@ -1136,6 +1136,11 @@ struct load_weight {
+>>       unsigned long weight, inv_weight;
+>>  };
+>>
+>> +struct sched_avg {
+>> +     u32 runnable_avg_sum, runnable_avg_period;
+>> +     u64 last_runnable_update;
+>> +};
+>> +
+>>  #ifdef CONFIG_SCHEDSTATS
+>>  struct sched_statistics {
+>>       u64                     wait_start;
+>> @@ -1196,6 +1201,9 @@ struct sched_entity {
+>>       /* rq "owned" by this entity/group: */
+>>       struct cfs_rq           *my_q;
+>>  #endif
+>> +#ifdef CONFIG_SMP
+>> +     struct sched_avg        avg;
+>> +#endif
+>>  };
+>>
+>>  struct sched_rt_entity {
+>> diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+>> index c09a4e7..cd5ef23 100644
+>> --- a/kernel/sched/debug.c
+>> +++ b/kernel/sched/debug.c
+>> @@ -85,6 +85,10 @@ static void print_cfs_group_stats(struct seq_file *m, int cpu, struct task_group
+>>       P(se->statistics.wait_count);
+>>  #endif
+>>       P(se->load.weight);
+>> +#ifdef CONFIG_SMP
+>> +     P(se->avg.runnable_avg_sum);
+>> +     P(se->avg.runnable_avg_period);
+>> +#endif
+>>  #undef PN
+>>  #undef P
+>>  }
+>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>> index 3704ad3..864a122 100644
+>> --- a/kernel/sched/fair.c
+>> +++ b/kernel/sched/fair.c
+>> @@ -976,6 +976,125 @@ static inline void update_entity_shares_tick(struct cfs_rq *cfs_rq)
+>>  }
+>>  #endif /* CONFIG_FAIR_GROUP_SCHED */
+>>
+>> +#ifdef CONFIG_SMP
+>> +/*
+>> + * Approximate:
+>> + *   val * y^n,    where y^32 ~= 0.5 (~1 scheduling period)
+>> + */
+>> +static __always_inline u64 decay_load(u64 val, int n)
+>> +{
+>> +     for (; n && val; n--) {
+>> +             val *= 4008;
+>> +             val >>= 12;
+>> +     }
+>> +
+>> +     return val;
+>> +}
+>> +
+>> +/* We can represent the historical contribution to runnable average as the
+>> + * coefficients of a geometric series.  To do this we sub-divide our runnable
+>> + * history into segments of approximately 1ms (1024us); label the segment that
+>> + * occurred N-ms ago p_N, with p_0 corresponding to the current period, e.g.
+>> + *
+>> + * [<- 1024us ->|<- 1024us ->|<- 1024us ->| ...
+>> + *      p0            p1           p1
+>                                       p2
+>
+>> + *     (now)       (~1ms ago)  (~2ms ago)
+>> + *
+>> + * Let u_i denote the fraction of p_i that the entity was runnable.
+>> + *
+>> + * We then designate the fractions u_i as our co-efficients, yielding the
+>> + * following representation of historical load:
+>> + *   u_0 + u_1*y + u_2*y^2 + u_3*y^3 + ...
+>> + *
+>> + * We choose y based on the with of a reasonably scheduling period, fixing:
+>                                width ?
+>> + *   y^32 = 0.5
+>> + *
+>> + * This means that the contribution to load ~32ms ago (u_32) will be weighted
+>> + * approximately half as much as the contribution to load within the last ms
+>> + * (u_0).
+>> + *
+>> + * When a period "rolls over" and we have new u_0`, multiplying the previous
+>> + * sum again by y is sufficient to update:
+>> + *   load_avg = u_0` + y*(u_0 + u_1*y + u_2*y^2 + ... )
+>> + *            = u_0 + u_1*y + u_2*y^2 + ... [re-labeling u_i --> u_{i+1]
+>                                                                     u_{i+1}]
+>
+>> + */
+>> +static __always_inline int __update_entity_runnable_avg(u64 now,
+>
+> Is the return value used by elsewhere?
+>
+
+Yes, it's later used to trigger updates as we accumulate new usage
+periods (1024us increments).
+
+> Thanks,
+> Namhyung
+>
+>
+>> +                                                     struct sched_avg *sa,
+>> +                                                     int runnable)
+>> +{
+>> +     u64 delta;
+>> +     int delta_w, decayed = 0;
+>> +
+>> +     delta = now - sa->last_runnable_update;
+>> +     /*
+>> +      * This should only happen when time goes backwards, which it
+>> +      * unfortunately does during sched clock init when we swap over to TSC.
+>> +      */
+>> +     if ((s64)delta < 0) {
+>> +             sa->last_runnable_update = now;
+>> +             return 0;
+>> +     }
+>> +
+>> +     /*
+>> +      * Use 1024ns as the unit of measurement since it's a reasonable
+>> +      * approximation of 1us and fast to compute.
+>> +      */
+>> +     delta >>= 10;
+>> +     if (!delta)
+>> +             return 0;
+>> +     sa->last_runnable_update = now;
+>> +
+>> +     /* delta_w is the amount already accumulated against our next period */
+>> +     delta_w = sa->runnable_avg_period % 1024;
+>> +     if (delta + delta_w >= 1024) {
+>> +             /* period roll-over */
+>> +             decayed = 1;
+>> +
+>> +             /*
+>> +              * Now that we know we're crossing a period boundary, figure
+>> +              * out how much from delta we need to complete the current
+>> +              * period and accrue it.
+>> +              */
+>> +             delta_w = 1024 - delta_w;
+>> +             BUG_ON(delta_w > delta);
+>> +             do {
+>> +                     if (runnable)
+>> +                             sa->runnable_avg_sum += delta_w;
+>> +                     sa->runnable_avg_period += delta_w;
+>> +
+>> +                     /*
+>> +                      * Remainder of delta initiates a new period, roll over
+>> +                      * the previous.
+>> +                      */
+>> +                     sa->runnable_avg_sum =
+>> +                             decay_load(sa->runnable_avg_sum, 1);
+>> +                     sa->runnable_avg_period =
+>> +                             decay_load(sa->runnable_avg_period, 1);
+>> +
+>> +                     delta -= delta_w;
+>> +                     /* New period is empty */
+>> +                     delta_w = 1024;
+>> +             } while (delta >= 1024);
+>> +     }
+>> +
+>> +     /* Remainder of delta accrued against u_0` */
+>> +     if (runnable)
+>> +             sa->runnable_avg_sum += delta;
+>> +     sa->runnable_avg_period += delta;
+>> +
+>> +     return decayed;
+>> +}
+>> +
+>> +/* Update a sched_entity's runnable average */
+>> +static inline void update_entity_load_avg(struct sched_entity *se)
+>> +{
+>> +     __update_entity_runnable_avg(rq_of(cfs_rq_of(se))->clock_task, &se->avg,
+>> +                                  se->on_rq);
+>> +}
+>> +#else
+>> +static inline void update_entity_load_avg(struct sched_entity *se) {}
+>> +#endif
+>> +
+>>  static void enqueue_sleeper(struct cfs_rq *cfs_rq, struct sched_entity *se)
 >>  {
->>         struct pci_dev *dev;
->>         resource_size_t min_align, align, size, size0, size1;
->> -       resource_size_t aligns[12];     /* Alignments from 1Mb to 2Gb */
->> +       resource_size_t aligns[44];     /* Alignments from 1Mb to 2^63 */
->>         int order, max_order;
->>         struct resource *b_res = find_free_bus_resource(bus, type);
->>         unsigned int mem64_mask = 0;
->> @@ -819,7 +819,8 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
->>                         /* For bridges size != alignment */
->>                         align = pci_resource_alignment(dev, r);
->>                         order = __ffs(align) - 20;
->> -                       if (order > 11) {
->> +                       if ((sizeof(size_t) == 4 && order > 11) ||
->> +                                       (sizeof(size_t) == 8 && order > 43)) {
->>                                 dev_warn(&dev->dev, "disabling BAR %d: %pR "
->>                                          "(bad alignment %#llx)\n", i, r,
->>                                          (unsigned long long) align);
->
-> Yinghai, what's your opinion on this?  The aligns[] array on the stack
-> is currently 96 bytes and would grow to 352 with this patch, which
-> does seem like quite a bit.
->
-> I do think the 2GB limit here is out-of-date.
-
-yeah,  should be ok.
-
-only thing that sanity checking is not complete enough, for example,
-for bar that only support 32bit, we will have get range for under 4g.
-that will still need 2g limitation to fend off some bad
-devices.
-
-Thanks
-
-Yinghai
+>>  #ifdef CONFIG_SCHEDSTATS
+>> @@ -1102,6 +1221,7 @@ enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
+>>        */
+>>       update_curr(cfs_rq);
+>>       update_cfs_load(cfs_rq, 0);
+>> +     update_entity_load_avg(se);
+>>       account_entity_enqueue(cfs_rq, se);
+>>       update_cfs_shares(cfs_rq);
+>>
+>> @@ -1176,6 +1296,7 @@ dequeue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
+>>        * Update run-time statistics of the 'current'.
+>>        */
+>>       update_curr(cfs_rq);
+>> +     update_entity_load_avg(se);
+>>
+>>       update_stats_dequeue(cfs_rq, se);
+>>       if (flags & DEQUEUE_SLEEP) {
+>> @@ -1345,6 +1466,8 @@ static void put_prev_entity(struct cfs_rq *cfs_rq, struct sched_entity *prev)
+>>               update_stats_wait_start(cfs_rq, prev);
+>>               /* Put 'current' back into the tree. */
+>>               __enqueue_entity(cfs_rq, prev);
+>> +             /* in !on_rq case, update occurred at dequeue */
+>> +             update_entity_load_avg(prev);
+>>       }
+>>       cfs_rq->curr = NULL;
+>>  }
+>> @@ -1358,6 +1481,11 @@ entity_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr, int queued)
+>>       update_curr(cfs_rq);
+>>
+>>       /*
+>> +      * Ensure that runnable average is periodically updated.
+>> +      */
+>> +     update_entity_load_avg(curr);
+>> +
+>> +     /*
+>>        * Update share accounting for long-running entities.
+>>        */
+>>       update_entity_shares_tick(cfs_rq);
