@@ -1,100 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758557Ab2GLCof (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 22:44:35 -0400
-Received: from mprc.pku.edu.cn ([162.105.203.9]:47760 "EHLO mprc.pku.edu.cn"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756344Ab2GLCod (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 22:44:33 -0400
-From: guanxuetao@mprc.pku.edu.cn
-Message-ID: <50122.162.105.203.8.1342063494.squirrel@mprc.pku.edu.cn>
-In-Reply-To: <201207112125.55418.rjw@sisk.pl>
-References: <201207112121.11046.rjw@sisk.pl>
-    <201207112125.55418.rjw@sisk.pl>
-Date: Thu, 12 Jul 2012 11:24:54 +0800 (CST)
-Subject: Re: [PATCH 5/7] i2c-puv3: Use struct dev_pm_ops for power 
-     management
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: "LKML" <linux-kernel@vger.kernel.org>,
-        "Linux PM list" <linux-pm@vger.kernel.org>,
-        "Linus Walleij" <linus.walleij@stericsson.com>,
-        linux-i2c@vger.kernel.org, "Sonic Zhang" <sonic.zhang@analog.com>,
-        "Jean Delvare" <khali@linux-fr.org>, "Ben Dooks" <ben-linux@fluff.org>,
-        "Wolfram Sang" <w.sang@pengutronix.de>,
-        "Peter Korsgaard" <jacmet@sunsite.dk>,
-        "Guan Xuetao" <gxt@mprc.pku.edu.cn>,
-        "Vitaly Wool" <vitalywool@gmail.com>,
-        "Colin Cross" <ccross@android.com>,
-        "Stephen Warren" <swarren@wwwdotorg.org>
-User-Agent: SquirrelMail/1.4.8-4.0.1.el5
+	id S1758564Ab2GLCp4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 22:45:56 -0400
+Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:35423 "EHLO
+	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756504Ab2GLCpy convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 22:45:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;charset=gb2312
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
+In-Reply-To: <20120712003216.GA9827@kroah.com>
+References: <1342039269-13968-1-git-send-email-eduardo.valentin@ti.com>
+	<1342039269-13968-2-git-send-email-eduardo.valentin@ti.com>
+	<20120712003216.GA9827@kroah.com>
+Date: Thu, 12 Jul 2012 05:45:52 +0300
+Message-ID: <CAGF5oy8585Lb6ibsgzo+3aDJEc-vcRwiu4hxtNS=GFUEy7LDqQ@mail.gmail.com>
+Subject: Re: [PATCHv3 1/4] staging: OMAP4+: thermal: introduce bandgap
+ temperature sensor
+From: "Valentin, Eduardo" <eduardo.valentin@ti.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, b-cousson@ti.com, j-keerthy@ti.com,
+        linux-kernel@vger.kernel.org, kbaidarov@dev.rtsoft.ru,
+        grant.likely@secretlab.ca
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Rafael J. Wysocki <rjw@sisk.pl>
->
-> Make the PKUnity-v3 SoC I2C controller driver define its suspend
-> callback through a struct dev_pm_ops object rather than by using
-> a legacy PM hook in struct platform_driver.  The empty resume
-> callback is not necessary, so remove it.
->
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Hello,
 
-Thanks.
+On Thu, Jul 12, 2012 at 3:32 AM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Wed, Jul 11, 2012 at 11:41:06PM +0300, Eduardo Valentin wrote:
+>> In the System Control Module, OMAP supplies a voltage reference
+>> and a temperature sensor feature that are gathered in the band
+>> gap voltage and temperature sensor (VBGAPTS) module. The band
+>> gap provides current and voltage reference for its internal
+>> circuits and other analog IP blocks. The analog-to-digital
+>> converter (ADC) produces an output value that is proportional
+>> to the silicon temperature.
+>>
+>> This patch provides a platform driver which expose this feature.
+>> It is moduled as a MFD child of the System Control Module core
+>> MFD driver.
+>>
+>> This driver provides only APIs to access the device properties,
+>> like temperature, thresholds and update rate.
+>>
+>> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+>> Signed-off-by: J Keerthy <j-keerthy@ti.com>
+>
+> This patch gives me the following build error:
+>
+> rivers/staging/omap-thermal/omap-bandgap.c: In function ‘omap_bandgap_build’:
+> drivers/staging/omap-thermal/omap-bandgap.c:805:2: error: implicit declaration of function ‘of_match_device’ [-Werror=implicit-function-declaration]
+> drivers/staging/omap-thermal/omap-bandgap.c:805:8: warning: assignment makes pointer from integer without a cast [enabled by default]
 
-Acked-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
+OK. Those I didn't see while testing on my side. I didn't use
+-Werror=implicit-function-declaration though.
 
-> ---
->  drivers/i2c/busses/i2c-puv3.c |   15 ++++++---------
->  1 file changed, 6 insertions(+), 9 deletions(-)
 >
-> Index: linux/drivers/i2c/busses/i2c-puv3.c
-> ===================================================================
-> --- linux.orig/drivers/i2c/busses/i2c-puv3.c
-> +++ linux/drivers/i2c/busses/i2c-puv3.c
-> @@ -254,7 +254,7 @@ static int __devexit puv3_i2c_remove(str
->  }
->
->  #ifdef CONFIG_PM
-> -static int puv3_i2c_suspend(struct platform_device *dev, pm_message_t
-> state)
-> +static int puv3_i2c_suspend(struct device *dev)
->  {
->  	int poll_count;
->  	/* Disable the IIC */
-> @@ -267,23 +267,20 @@ static int puv3_i2c_suspend(struct platf
->  	return 0;
->  }
->
-> -static int puv3_i2c_resume(struct platform_device *dev)
-> -{
-> -	return 0 ;
-> -}
-> +static SIMPLE_DEV_PM_OPS(puv3_i2c_pm, puv3_i2c_suspend, NULL);
-> +#define PUV3_I2C_PM	(&puv3_i2c_pm)
-> +
->  #else
-> -#define puv3_i2c_suspend NULL
-> -#define puv3_i2c_resume NULL
-> +#define PUV3_I2C_PM	NULL
->  #endif
->
->  static struct platform_driver puv3_i2c_driver = {
->  	.probe		= puv3_i2c_probe,
->  	.remove		= __devexit_p(puv3_i2c_remove),
-> -	.suspend	= puv3_i2c_suspend,
-> -	.resume		= puv3_i2c_resume,
->  	.driver		= {
->  		.name	= "PKUnity-v3-I2C",
->  		.owner	= THIS_MODULE,
-> +		.pm	= PUV3_I2C_PM,
->  	}
->  };
->
->
+> So of course I can't accept it :(
 
+That's for sure.
+
+>
+> How hard is it to test that the patches build before sending them to me?
+
+It should not be. I will check with those compiling flags.
+
+>
+> ugh,
+>
+> greg k-h
+
+
+
+-- 
+
+Eduardo Valentin
