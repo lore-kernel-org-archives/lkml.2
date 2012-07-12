@@ -1,133 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161067Ab2GLNn1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 09:43:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25600 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161029Ab2GLNnY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 09:43:24 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Linux Torvalds <torvalds@linux-foundation.org>,
-        Jens Axboe <jaxboe@fusionio.com>
-Cc: Nick Piggin <npiggin@kernel.dk>, LKML List <linux-kernel@vger.kernel.org>,
-        torsten.hilbrich@secunet.com, Richard Jones <rjones@redhat.com>,
-        stable@vger.kernel.org, Marcos Mello <marcosfrm@gmail.com>
-Subject: [patch] block: fix infinite loop in __getblk_slow
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Thu, 12 Jul 2012 09:43:14 -0400
-Message-ID: <x498vepjdsd.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1161081Ab2GLNnx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 09:43:53 -0400
+Received: from www.linutronix.de ([62.245.132.108]:39097 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161017Ab2GLNnw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 09:43:52 -0400
+Date: Thu, 12 Jul 2012 15:43:50 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Mike Galbraith <efault@gmx.de>
+cc: "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: 3.4.4-rt13: btrfs + xfstests 006 = BOOM.. and a bonus rt_mutex
+ deadlock report for absolutely free!
+In-Reply-To: <1342100270.7707.20.camel@marge.simpson.net>
+Message-ID: <alpine.LFD.2.02.1207121542510.32033@ionos>
+References: <1342072060.7338.102.camel@marge.simpson.net>  <1342082648.7338.171.camel@marge.simpson.net>  <1342086792.7707.9.camel@marge.simpson.net>  <alpine.LFD.2.02.1207121310420.32033@ionos>  <1342094233.7707.12.camel@marge.simpson.net> 
+ <alpine.LFD.2.02.1207121514240.32033@ionos> <1342100270.7707.20.camel@marge.simpson.net>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Linus,
+On Thu, 12 Jul 2012, Mike Galbraith wrote:
+> On Thu, 2012-07-12 at 15:31 +0200, Thomas Gleixner wrote: 
+> > A quick check for memcpy finds that __btrfs_close_devices() does a
+> > memcpy of btrfs_device structs w/o initializing the lock in the new
+> > copy, but I have no idea whether that's the place we are looking for.
+> 
+> 
+> Cool, you found one, thanks!  I'm setting boobytraps.
+> 
+> Um, correction, box says I'm setting _buggy_ boobytraps :)
+> 
+> Tomorrow-man will test this and frob traps anew.
 
-Jens is still on vacation, and this is a pretty important patch to get
-merged.  Would you mind taking a look?
+What kind of test setup do you have? i.e. raid, single disk ...
 
-This commit:
+Thanks,
 
-commit 080399aaaf3531f5b8761ec0ac30ff98891e8686
-Author: Jeff Moyer <jmoyer@redhat.com>
-Date:   Fri May 11 16:34:10 2012 +0200
-
-    block: don't mark buffers beyond end of disk as mapped
-
-exposed a bug in __getblk_slow that causes mount to hang as it loops
-infinitely waiting for a buffer that lies beyond the end of the disk to
-become uptodate.  The problem was initially reported by Torsten Hilbrich
-here: https://lkml.org/lkml/2012/6/18/54, and also reported
-independently here:
-http://www.sysresccd.org/forums/viewtopic.php?f=13&t=4511, and then
-Richard W.M. Jones and Marcos Mello noted a few separate bugzillas also
-associated with the same issue.
-
-The main problem is here, in __getblk_slow:
-
-        for (;;) {
-                struct buffer_head * bh;
-                int ret;
-
-                bh = __find_get_block(bdev, block, size);
-                if (bh)
-                        return bh;
-
-                ret = grow_buffers(bdev, block, size);
-                if (ret < 0)
-                        return NULL;
-                if (ret == 0)
-                        free_more_memory();
-        }
-
-__find_get_block does not find the block, since it will not be marked as
-mapped, and so grow_buffers is called to fill in the buffers for the
-associated page.  I believe the for (;;) loop is there primarily to
-retry in the case of memory pressure keeping grow_buffers from
-succeeding.  However, we also continue to loop for other cases, like the
-block lying beond the end of the disk.  So, the fix I came up with is to
-only loop when grow_buffers fails due to memory allocation issues
-(return value of 0).
-
-The attached patch was tested by myself, Torsten, and Rich, and was
-found to resolve the problem in call cases.
-
-Comments, as always, are appreciated.
-
-Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
-Reported-and-Tested-by: Torsten Hilbrich <torsten.hilbrich@secunet.com>
-Tested-by: Richard W.M. Jones <rjones@redhat.com>
-Cc: Stable <stable@vger.kernel.org>
-
---
-Stable Notes: this patch requires backport to 3.0, 3.2 and 3.3.
-
-diff --git a/fs/buffer.c b/fs/buffer.c
-index 838a9cf..c7062c8 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -1036,6 +1036,9 @@ grow_buffers(struct block_device *bdev, sector_t block, int size)
- static struct buffer_head *
- __getblk_slow(struct block_device *bdev, sector_t block, int size)
- {
-+	int ret;
-+	struct buffer_head *bh;
-+
- 	/* Size must be multiple of hard sectorsize */
- 	if (unlikely(size & (bdev_logical_block_size(bdev)-1) ||
- 			(size < 512 || size > PAGE_SIZE))) {
-@@ -1048,20 +1051,21 @@ __getblk_slow(struct block_device *bdev, sector_t block, int size)
- 		return NULL;
- 	}
- 
--	for (;;) {
--		struct buffer_head * bh;
--		int ret;
-+retry:
-+	bh = __find_get_block(bdev, block, size);
-+	if (bh)
-+		return bh;
- 
-+	ret = grow_buffers(bdev, block, size);
-+	if (ret == 0) {
-+		free_more_memory();
-+		goto retry;
-+	} else if (ret > 0) {
- 		bh = __find_get_block(bdev, block, size);
- 		if (bh)
- 			return bh;
--
--		ret = grow_buffers(bdev, block, size);
--		if (ret < 0)
--			return NULL;
--		if (ret == 0)
--			free_more_memory();
- 	}
-+	return NULL;
- }
- 
- /*
+	tglx
