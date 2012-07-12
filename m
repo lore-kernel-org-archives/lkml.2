@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161718Ab2GLXiG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:38:06 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:58753 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161638Ab2GLWjW (ORCPT
+	id S1161674Ab2GLXi3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:38:29 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58752 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161642Ab2GLWjS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:39:22 -0400
+	Thu, 12 Jul 2012 18:39:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Felix Fietkau <nbd@openwrt.org>,
+        Michael Leun <lkml20120218@newton.leun.net>,
+        Rajkumar Manoharan <rmanohar@qca.qualcomm.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 066/187] ath9k: fix dynamic WEP related regression
-Date: Thu, 12 Jul 2012 15:33:42 -0700
-Message-Id: <20120712191528.515953821@linuxfoundation.org>
+Subject: [ 065/187] ath9k_htc: configure bssid on ASSOC/IBSS change
+Date: Thu, 12 Jul 2012 15:33:41 -0700
+Message-Id: <20120712191528.429299730@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -32,74 +32,49 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
 
-commit bed3d9c0b71f9afbfec905cb6db3b9f16be29d4d upstream.
+commit 931cb03afed7b541392295f3afc4638da32f08a0 upstream.
 
-commit 7a532fe7131216a02c81a6c1b1f8632da1195a58
-ath9k_hw: fix interpretation of the rx KeyMiss flag
+After the change "mac80211: remove spurious BSSID change flag",
+BSS_CHANGED_BSSID will not be passed on association or IBSS
+status changes. So it could be better to program bssid on ASSOC
+or IBSS change notification. Not doing so, is affecting the
+packet transmission.
 
-This commit used the rx key miss indication to detect packets that were
-passed from the hardware without being decrypted, however it seems that
-this bit is not only undefined in the static WEP case, but also for
-dynamically allocated WEP keys. This caused a regression when using
-WEP-LEAP.
-
-This patch fixes the regression by keeping track of which key indexes
-refer to CCMP keys and only using the key miss indication for those.
-
-Reported-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Reported-by: Michael Leun <lkml20120218@newton.leun.net>
+Signed-off-by: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath.h        |    1 +
- drivers/net/wireless/ath/ath9k/recv.c |    3 ++-
- drivers/net/wireless/ath/key.c        |    4 ++++
- 3 files changed, 7 insertions(+), 1 deletion(-)
+ drivers/net/wireless/ath/ath9k/htc_drv_main.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/drivers/net/wireless/ath/ath.h
-+++ b/drivers/net/wireless/ath/ath.h
-@@ -143,6 +143,7 @@ struct ath_common {
- 	u32 keymax;
- 	DECLARE_BITMAP(keymap, ATH_KEYMAX);
- 	DECLARE_BITMAP(tkip_keymap, ATH_KEYMAX);
-+	DECLARE_BITMAP(ccmp_keymap, ATH_KEYMAX);
- 	enum ath_crypt_caps crypt_caps;
+--- a/drivers/net/wireless/ath/ath9k/htc_drv_main.c
++++ b/drivers/net/wireless/ath/ath9k/htc_drv_main.c
+@@ -1496,6 +1496,7 @@ static void ath9k_htc_bss_info_changed(s
+ 			priv->num_sta_assoc_vif++ : priv->num_sta_assoc_vif--;
  
- 	unsigned int clockrate;
---- a/drivers/net/wireless/ath/ath9k/recv.c
-+++ b/drivers/net/wireless/ath/ath9k/recv.c
-@@ -821,7 +821,8 @@ static bool ath9k_rx_accept(struct ath_c
- 	 * descriptor does contain a valid key index. This has been observed
- 	 * mostly with CCMP encryption.
- 	 */
--	if (rx_stats->rs_keyix == ATH9K_RXKEYIX_INVALID)
-+	if (rx_stats->rs_keyix == ATH9K_RXKEYIX_INVALID ||
-+	    !test_bit(rx_stats->rs_keyix, common->ccmp_keymap))
- 		rx_stats->rs_status &= ~ATH9K_RXERR_KEYMISS;
+ 		if (priv->ah->opmode == NL80211_IFTYPE_STATION) {
++			ath9k_htc_choose_set_bssid(priv);
+ 			if (bss_conf->assoc && (priv->num_sta_assoc_vif == 1))
+ 				ath9k_htc_start_ani(priv);
+ 			else if (priv->num_sta_assoc_vif == 0)
+@@ -1503,13 +1504,11 @@ static void ath9k_htc_bss_info_changed(s
+ 		}
+ 	}
  
- 	if (!rx_stats->rs_datalen)
---- a/drivers/net/wireless/ath/key.c
-+++ b/drivers/net/wireless/ath/key.c
-@@ -556,6 +556,9 @@ int ath_key_config(struct ath_common *co
- 		return -EIO;
- 
- 	set_bit(idx, common->keymap);
-+	if (key->cipher == WLAN_CIPHER_SUITE_CCMP)
-+		set_bit(idx, common->ccmp_keymap);
-+
- 	if (key->cipher == WLAN_CIPHER_SUITE_TKIP) {
- 		set_bit(idx + 64, common->keymap);
- 		set_bit(idx, common->tkip_keymap);
-@@ -582,6 +585,7 @@ void ath_key_delete(struct ath_common *c
- 		return;
- 
- 	clear_bit(key->hw_key_idx, common->keymap);
-+	clear_bit(key->hw_key_idx, common->ccmp_keymap);
- 	if (key->cipher != WLAN_CIPHER_SUITE_TKIP)
- 		return;
+-	if (changed & BSS_CHANGED_BSSID) {
++	if (changed & BSS_CHANGED_IBSS) {
+ 		if (priv->ah->opmode == NL80211_IFTYPE_ADHOC) {
+ 			common->curaid = bss_conf->aid;
+ 			memcpy(common->curbssid, bss_conf->bssid, ETH_ALEN);
+ 			ath9k_htc_set_bssid(priv);
+-		} else if (priv->ah->opmode == NL80211_IFTYPE_STATION) {
+-			ath9k_htc_choose_set_bssid(priv);
+ 		}
+ 	}
  
 
 
