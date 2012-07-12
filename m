@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161777Ab2GLXfp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:35:45 -0400
+	id S1161765Ab2GLXgJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:36:09 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:58752 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755625Ab2GLWjw (ORCPT
+	with ESMTP id S1161700Ab2GLWjp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:39:52 -0400
+	Thu, 12 Jul 2012 18:39:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Igor Murzov <intergalactic.anonymous@gmail.com>,
-        Zhang Rui <rui.zhang@intel.com>, Len Brown <len.brown@intel.com>
-Subject: [ 075/187] ACPI video: Still use ACPI backlight control if _DOS doesnt exist
-Date: Thu, 12 Jul 2012 15:33:51 -0700
-Message-Id: <20120712191529.373756326@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>, Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 073/187] drm/i915: Fix eDP blank screen after S3 resume on HP desktops
+Date: Thu, 12 Jul 2012 15:33:49 -0700
+Message-Id: <20120712191529.184423506@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -31,39 +30,43 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Zhang Rui <rui.zhang@intel.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit b03738430c7537d5f87948e0b35d8aaf2688c6b4 upstream.
+commit 6db65cbb941f9d433659bdad02b307f6d94465df upstream.
 
-This fixes a regression in 3.4-rc1 caused by commit
-ea9f8856bd6d4ed45885b06a338f7362cd6c60e5
-(ACPI video: Harden video bus adding.)
+This patch fixes the problem on some HP desktop machines with eDP
+which give blank screens after S3 resume.
 
-Some platforms don't have _DOS control method, but the ACPI
-backlight still works.
-We should not invoke _DOS for these platforms.
+It turned out that BLC_PWM_CPU_CTL must be written after
+BLC_PWM_CPU_CTL2.  Otherwise it doesn't take effect on these
+SNB machines.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=43168
+Tested with 3.5-rc3 kernel.
 
-Cc: Igor Murzov <intergalactic.anonymous@gmail.com>
-Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-Signed-off-by: Len Brown <len.brown@intel.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=49233
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/video.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/gpu/drm/i915/i915_suspend.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/acpi/video.c
-+++ b/drivers/acpi/video.c
-@@ -558,6 +558,8 @@ acpi_video_bus_DOS(struct acpi_video_bus
- 	union acpi_object arg0 = { ACPI_TYPE_INTEGER };
- 	struct acpi_object_list args = { 1, &arg0 };
- 
-+	if (!video->cap._DOS)
-+		return 0;
- 
- 	if (bios_flag < 0 || bios_flag > 3 || lcd_flag < 0 || lcd_flag > 1)
- 		return -EINVAL;
+--- a/drivers/gpu/drm/i915/i915_suspend.c
++++ b/drivers/gpu/drm/i915/i915_suspend.c
+@@ -740,8 +740,11 @@ static void i915_restore_display(struct
+ 	if (HAS_PCH_SPLIT(dev)) {
+ 		I915_WRITE(BLC_PWM_PCH_CTL1, dev_priv->saveBLC_PWM_CTL);
+ 		I915_WRITE(BLC_PWM_PCH_CTL2, dev_priv->saveBLC_PWM_CTL2);
+-		I915_WRITE(BLC_PWM_CPU_CTL, dev_priv->saveBLC_CPU_PWM_CTL);
++		/* NOTE: BLC_PWM_CPU_CTL must be written after BLC_PWM_CPU_CTL2;
++		 * otherwise we get blank eDP screen after S3 on some machines
++		 */
+ 		I915_WRITE(BLC_PWM_CPU_CTL2, dev_priv->saveBLC_CPU_PWM_CTL2);
++		I915_WRITE(BLC_PWM_CPU_CTL, dev_priv->saveBLC_CPU_PWM_CTL);
+ 		I915_WRITE(PCH_PP_ON_DELAYS, dev_priv->savePP_ON_DELAYS);
+ 		I915_WRITE(PCH_PP_OFF_DELAYS, dev_priv->savePP_OFF_DELAYS);
+ 		I915_WRITE(PCH_PP_DIVISOR, dev_priv->savePP_DIVISOR);
 
 
