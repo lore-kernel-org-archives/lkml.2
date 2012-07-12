@@ -1,81 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758564Ab2GLCp4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 22:45:56 -0400
-Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:35423 "EHLO
-	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756504Ab2GLCpy convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 22:45:54 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120712003216.GA9827@kroah.com>
-References: <1342039269-13968-1-git-send-email-eduardo.valentin@ti.com>
-	<1342039269-13968-2-git-send-email-eduardo.valentin@ti.com>
-	<20120712003216.GA9827@kroah.com>
-Date: Thu, 12 Jul 2012 05:45:52 +0300
-Message-ID: <CAGF5oy8585Lb6ibsgzo+3aDJEc-vcRwiu4hxtNS=GFUEy7LDqQ@mail.gmail.com>
-Subject: Re: [PATCHv3 1/4] staging: OMAP4+: thermal: introduce bandgap
- temperature sensor
-From: "Valentin, Eduardo" <eduardo.valentin@ti.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, b-cousson@ti.com, j-keerthy@ti.com,
-        linux-kernel@vger.kernel.org, kbaidarov@dev.rtsoft.ru,
-        grant.likely@secretlab.ca
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+	id S1758575Ab2GLCtn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 22:49:43 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:43797 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756735Ab2GLCtl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 22:49:41 -0400
+Message-ID: <1342061369.4091.21.camel@ThinkPad-T420>
+Subject: Re: [PATCH RESEND] Fix a dead loop in async_synchronize_full()
+From: Li Zhong <zhong@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, arjan@linux.intel.com,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Christian Kujau <lists@nerdbynature.de>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        Dan Williams <dan.j.williams@intel.com>
+Date: Thu, 12 Jul 2012 10:49:29 +0800
+In-Reply-To: <20120711154232.165cbca9.akpm@linux-foundation.org>
+References: <1341817465.4579.5.camel@ThinkPad-T420>
+	 <20120711154232.165cbca9.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+x-cbid: 12071116-1396-0000-0000-0000018BD6D4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, 2012-07-11 at 15:42 -0700, Andrew Morton wrote:
+> On Mon, 09 Jul 2012 15:04:25 +0800
+> Li Zhong <zhong@linux.vnet.ibm.com> wrote:
+> 
+> > This patch tries to fix a dead loop in  async_synchronize_full(), which
+> > could be seen when preemption is disabled on a single cpu machine. 
+> > 
+> > void async_synchronize_full(void)
+> > {
+> >         do {
+> >                 async_synchronize_cookie(next_cookie);
+> >         } while (!list_empty(&async_running) || !
+> > list_empty(&async_pending));
+> > }
+> > 
+> > async_synchronize_cookie() calls async_synchronize_cookie_domain() with
+> > &async_running as the default domain to synchronize. 
+> > 
+> > However, there might be some works in the async_pending list from other
+> > domains. On a single cpu system, without preemption, there is no chance
+> > for the other works to finish, so async_synchronize_full() enters a dead
+> > loop. 
+> > 
+> > It seems async_synchronize_full() wants to synchronize all entries in
+> > all running lists(domains), so maybe we could just check the entry_count
+> > to know whether all works are finished. 
+> > 
+> > Currently, async_synchronize_cookie_domain() expects a non-NULL running
+> > list ( if NULL, there would be NULL pointer dereference ), so maybe a
+> > NULL pointer could be used as an indication for the functions to
+> > synchronize all works in all domains. 
+> 
+> The patch is fairly wordwrapped - please fix up your email client.
 
-On Thu, Jul 12, 2012 at 3:32 AM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Wed, Jul 11, 2012 at 11:41:06PM +0300, Eduardo Valentin wrote:
->> In the System Control Module, OMAP supplies a voltage reference
->> and a temperature sensor feature that are gathered in the band
->> gap voltage and temperature sensor (VBGAPTS) module. The band
->> gap provides current and voltage reference for its internal
->> circuits and other analog IP blocks. The analog-to-digital
->> converter (ADC) produces an output value that is proportional
->> to the silicon temperature.
->>
->> This patch provides a platform driver which expose this feature.
->> It is moduled as a MFD child of the System Control Module core
->> MFD driver.
->>
->> This driver provides only APIs to access the device properties,
->> like temperature, thresholds and update rate.
->>
->> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
->> Signed-off-by: J Keerthy <j-keerthy@ti.com>
->
-> This patch gives me the following build error:
->
-> rivers/staging/omap-thermal/omap-bandgap.c: In function ‘omap_bandgap_build’:
-> drivers/staging/omap-thermal/omap-bandgap.c:805:2: error: implicit declaration of function ‘of_match_device’ [-Werror=implicit-function-declaration]
-> drivers/staging/omap-thermal/omap-bandgap.c:805:8: warning: assignment makes pointer from integer without a cast [enabled by default]
+Ah, sorry for that, I will check it. 
 
-OK. Those I didn't see while testing on my side. I didn't use
--Werror=implicit-function-declaration though.
+> 
+> More seriously, it does not apply to linux-next due to some fairly
+> significant changes which have been sitting in Dan's tree since May. 
+> What's going on?
+> 
 
->
-> So of course I can't accept it :(
+Just went through Dan's patches, it seems that they also had
+async_synchronize_full() to sync all domains. I will test/check those
+patches, and drop this one if the result is good. 
 
-That's for sure.
-
->
-> How hard is it to test that the patches build before sending them to me?
-
-It should not be. I will check with those compiling flags.
-
->
-> ugh,
->
-> greg k-h
-
-
-
--- 
-
-Eduardo Valentin
