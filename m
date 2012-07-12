@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162179Ab2GLWoG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:44:06 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:47681 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162116Ab2GLWn4 (ORCPT
+	id S1162197Ab2GLWoW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:44:22 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48386 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162175Ab2GLWoC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:43:56 -0400
+	Thu, 12 Jul 2012 18:44:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Benjamin Tissoires <benjamin.tissoires@enac.fr>,
-        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>
-Subject: [ 144/187] HID: hid-multitouch: fix wrong protocol detection
-Date: Thu, 12 Jul 2012 15:35:00 -0700
-Message-Id: <20120712191535.760384887@linuxfoundation.org>
+        Mark Rustad <mark.d.rustad@intel.com>,
+        Marcus Dennis <marcusx.e.dennis@intel.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 146/187] SCSI: Fix NULL dereferences in scsi_cmd_to_driver
+Date: Thu, 12 Jul 2012 15:35:02 -0700
+Message-Id: <20120712191535.939016335@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -31,193 +32,72 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+From: Mark Rustad <mark.d.rustad@intel.com>
 
-commit 3ac36d15557d1bedfb1151d9911b9587b2d40759 upstream.
+commit 222a806af830fda34ad1f6bc991cd226916de060 upstream.
 
-The previous implementation introduced a randomness in the splitting
-of the different touches reported by the device. This version is more
-robust as we don't rely on hi->input->absbit, but on our own structure.
+Avoid crashing if the private_data pointer happens to be NULL. This has
+been seen sometimes when a host reset happens, notably when there are
+many LUNs:
 
-This also prepares hid-multitouch to better support Win8 devices.
+host3: Assigned Port ID 0c1601
+scsi host3: libfc: Host reset succeeded on port (0c1601)
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000350
+IP: [<ffffffff81352bb8>] scsi_send_eh_cmnd+0x58/0x3a0
+<snip>
+Process scsi_eh_3 (pid: 4144, threadinfo ffff88030920c000, task ffff880326b160c0)
+Stack:
+ 000000010372e6ba 0000000000000282 000027100920dca0 ffffffffa0038ee0
+ 0000000000000000 0000000000030003 ffff88030920dc80 ffff88030920dc80
+ 00000002000e0000 0000000a00004000 ffff8803242f7760 ffff88031326ed80
+Call Trace:
+ [<ffffffff8105b590>] ? lock_timer_base+0x70/0x70
+ [<ffffffff81352fbe>] scsi_eh_tur+0x3e/0xc0
+ [<ffffffff81353a36>] scsi_eh_test_devices+0x76/0x170
+ [<ffffffff81354125>] scsi_eh_host_reset+0x85/0x160
+ [<ffffffff81354291>] scsi_eh_ready_devs+0x91/0x110
+ [<ffffffff813543fd>] scsi_unjam_host+0xed/0x1f0
+ [<ffffffff813546a8>] scsi_error_handler+0x1a8/0x200
+ [<ffffffff81354500>] ? scsi_unjam_host+0x1f0/0x1f0
+ [<ffffffff8106ec3e>] kthread+0x9e/0xb0
+ [<ffffffff81509264>] kernel_thread_helper+0x4/0x10
+ [<ffffffff8106eba0>] ? kthread_freezable_should_stop+0x70/0x70
+ [<ffffffff81509260>] ? gs_change+0x13/0x13
+Code: 25 28 00 00 00 48 89 45 c8 31 c0 48 8b 87 80 00 00 00 48 8d b5 60 ff ff ff 89 d1 48 89 fb 41 89 d6 4c 89 fa 48 8b 80 b8 00 00 00
+ <48> 8b 80 50 03 00 00 48 8b 00 48 89 85 38 ff ff ff 48 8b 07 4c
+RIP  [<ffffffff81352bb8>] scsi_send_eh_cmnd+0x58/0x3a0
+ RSP <ffff88030920dc50>
+CR2: 0000000000000350
 
-[Jiri Kosina <jkosina@suse.cz>: fix build]
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-Acked-by: Henrik Rydberg <rydberg@euromail.se>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
+Tested-by: Marcus Dennis <marcusx.e.dennis@intel.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- drivers/hid/hid-multitouch.c |   58 ++++++++++++++++++++++++++++++++++---------
- 1 file changed, 46 insertions(+), 12 deletions(-)
+ include/scsi/scsi_cmnd.h |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -70,9 +70,16 @@ struct mt_class {
- 	bool is_indirect;	/* true for touchpads */
- };
+--- a/include/scsi/scsi_cmnd.h
++++ b/include/scsi/scsi_cmnd.h
+@@ -134,10 +134,16 @@ struct scsi_cmnd {
  
-+struct mt_fields {
-+	unsigned usages[HID_MAX_FIELDS];
-+	unsigned int length;
-+};
-+
- struct mt_device {
- 	struct mt_slot curdata;	/* placeholder of incoming data */
- 	struct mt_class mtclass;	/* our mt device class */
-+	struct mt_fields *fields;	/* temporary placeholder for storing the
-+					   multitouch fields */
- 	unsigned last_field_index;	/* last field index of the report */
- 	unsigned last_slot_field;	/* the last field of a slot */
- 	__s8 inputmode;		/* InputMode HID feature, -1 if non-existent */
-@@ -275,11 +282,15 @@ static void set_abs(struct input_dev *in
- 	input_set_abs_params(input, code, fmin, fmax, fuzz, 0);
- }
- 
--static void set_last_slot_field(struct hid_usage *usage, struct mt_device *td,
-+static void mt_store_field(struct hid_usage *usage, struct mt_device *td,
- 		struct hid_input *hi)
+ static inline struct scsi_driver *scsi_cmd_to_driver(struct scsi_cmnd *cmd)
  {
--	if (!test_bit(usage->hid, hi->input->absbit))
--		td->last_slot_field = usage->hid;
-+	struct mt_fields *f = td->fields;
++	struct scsi_driver **sdp;
 +
-+	if (f->length >= HID_MAX_FIELDS)
-+		return;
+ 	if (!cmd->request->rq_disk)
+ 		return NULL;
+ 
+-	return *(struct scsi_driver **)cmd->request->rq_disk->private_data;
++	sdp = (struct scsi_driver **)cmd->request->rq_disk->private_data;
++	if (!sdp)
++		return NULL;
 +
-+	f->usages[f->length++] = usage->hid;
++	return *sdp;
  }
  
- static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
-@@ -330,7 +341,7 @@ static int mt_input_mapping(struct hid_d
- 				cls->sn_move);
- 			/* touchscreen emulation */
- 			set_abs(hi->input, ABS_X, field, cls->sn_move);
--			set_last_slot_field(usage, td, hi);
-+			mt_store_field(usage, td, hi);
- 			td->last_field_index = field->index;
- 			return 1;
- 		case HID_GD_Y:
-@@ -340,7 +351,7 @@ static int mt_input_mapping(struct hid_d
- 				cls->sn_move);
- 			/* touchscreen emulation */
- 			set_abs(hi->input, ABS_Y, field, cls->sn_move);
--			set_last_slot_field(usage, td, hi);
-+			mt_store_field(usage, td, hi);
- 			td->last_field_index = field->index;
- 			return 1;
- 		}
-@@ -349,24 +360,24 @@ static int mt_input_mapping(struct hid_d
- 	case HID_UP_DIGITIZER:
- 		switch (usage->hid) {
- 		case HID_DG_INRANGE:
--			set_last_slot_field(usage, td, hi);
-+			mt_store_field(usage, td, hi);
- 			td->last_field_index = field->index;
- 			return 1;
- 		case HID_DG_CONFIDENCE:
--			set_last_slot_field(usage, td, hi);
-+			mt_store_field(usage, td, hi);
- 			td->last_field_index = field->index;
- 			return 1;
- 		case HID_DG_TIPSWITCH:
- 			hid_map_usage(hi, usage, bit, max, EV_KEY, BTN_TOUCH);
- 			input_set_capability(hi->input, EV_KEY, BTN_TOUCH);
--			set_last_slot_field(usage, td, hi);
-+			mt_store_field(usage, td, hi);
- 			td->last_field_index = field->index;
- 			return 1;
- 		case HID_DG_CONTACTID:
- 			if (!td->maxcontacts)
- 				td->maxcontacts = MT_DEFAULT_MAXCONTACT;
- 			input_mt_init_slots(hi->input, td->maxcontacts);
--			td->last_slot_field = usage->hid;
-+			mt_store_field(usage, td, hi);
- 			td->last_field_index = field->index;
- 			td->touches_by_report++;
- 			return 1;
-@@ -375,7 +386,7 @@ static int mt_input_mapping(struct hid_d
- 					EV_ABS, ABS_MT_TOUCH_MAJOR);
- 			set_abs(hi->input, ABS_MT_TOUCH_MAJOR, field,
- 				cls->sn_width);
--			set_last_slot_field(usage, td, hi);
-+			mt_store_field(usage, td, hi);
- 			td->last_field_index = field->index;
- 			return 1;
- 		case HID_DG_HEIGHT:
-@@ -385,7 +396,7 @@ static int mt_input_mapping(struct hid_d
- 				cls->sn_height);
- 			input_set_abs_params(hi->input,
- 					ABS_MT_ORIENTATION, 0, 1, 0, 0);
--			set_last_slot_field(usage, td, hi);
-+			mt_store_field(usage, td, hi);
- 			td->last_field_index = field->index;
- 			return 1;
- 		case HID_DG_TIPPRESSURE:
-@@ -396,7 +407,7 @@ static int mt_input_mapping(struct hid_d
- 			/* touchscreen emulation */
- 			set_abs(hi->input, ABS_PRESSURE, field,
- 				cls->sn_pressure);
--			set_last_slot_field(usage, td, hi);
-+			mt_store_field(usage, td, hi);
- 			td->last_field_index = field->index;
- 			return 1;
- 		case HID_DG_CONTACTCOUNT:
-@@ -635,6 +646,16 @@ static void mt_set_maxcontacts(struct hi
- 	}
- }
- 
-+static void mt_post_parse(struct mt_device *td)
-+{
-+	struct mt_fields *f = td->fields;
-+
-+	if (td->touches_by_report > 0) {
-+		int field_count_per_touch = f->length / td->touches_by_report;
-+		td->last_slot_field = f->usages[field_count_per_touch - 1];
-+	}
-+}
-+
- static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
- {
- 	int ret, i;
-@@ -666,6 +687,13 @@ static int mt_probe(struct hid_device *h
- 	td->maxcontact_report_id = -1;
- 	hid_set_drvdata(hdev, td);
- 
-+	td->fields = kzalloc(sizeof(struct mt_fields), GFP_KERNEL);
-+	if (!td->fields) {
-+		dev_err(&hdev->dev, "cannot allocate multitouch fields data\n");
-+		ret = -ENOMEM;
-+		goto fail;
-+	}
-+
- 	ret = hid_parse(hdev);
- 	if (ret != 0)
- 		goto fail;
-@@ -674,6 +702,8 @@ static int mt_probe(struct hid_device *h
- 	if (ret)
- 		goto fail;
- 
-+	mt_post_parse(td);
-+
- 	if (!id && td->touches_by_report == 1) {
- 		/* the device has been sent by hid-generic */
- 		mtclass = &td->mtclass;
-@@ -697,9 +727,13 @@ static int mt_probe(struct hid_device *h
- 	mt_set_maxcontacts(hdev);
- 	mt_set_input_mode(hdev);
- 
-+	kfree(td->fields);
-+	td->fields = NULL;
-+
- 	return 0;
- 
- fail:
-+	kfree(td->fields);
- 	kfree(td);
- 	return ret;
- }
+ extern struct scsi_cmnd *scsi_get_command(struct scsi_device *, gfp_t);
 
 
