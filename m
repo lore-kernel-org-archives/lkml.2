@@ -1,108 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161868Ab2GLXkH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:40:07 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54985 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933040Ab2GLWij (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:38:39 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
-        Lauro Ramos Venancio <lauro.venancio@openbossa.org>,
-        Aloisio Almeida Jr <aloisio.almeida@openbossa.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "David S. Miller" <davem@davemloft.net>, Ilan Elias <ilane@ti.com>,
-        security@kernel.org
-Subject: [ 046/187] NFC: Prevent multiple buffer overflows in NCI
-Date: Thu, 12 Jul 2012 15:33:22 -0700
-Message-Id: <20120712191526.629346123@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.10.1.362.g242cab3
-In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
-References: <20120712192421.GA28926@kroah.com>
- <20120712191522.742634173@linuxfoundation.org>
-User-Agent: quilt/0.60-20.3
+	id S1758315Ab2GLXkX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:40:23 -0400
+Received: from www.hansjkoch.de ([178.63.77.200]:49887 "EHLO www.hansjkoch.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932302Ab2GLXkQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 19:40:16 -0400
+Date: Fri, 13 Jul 2012 01:40:11 +0200
+From: "Hans J. Koch" <hjk@hansjkoch.de>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: "Hans J. Koch" <hjk@hansjkoch.de>, Andreas Schallenberg <embedded@gmx.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dominic Eschweiler <eschweiler@fias.uni-frankfurt.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, kvm@vger.kernel.org
+Subject: Re: UIO: missing resource mapping
+Message-ID: <20120712234011.GE2592@local>
+References: <4FFE7C1F.7080702@gmx.net>
+ <20120712194432.GA2592@local>
+ <20120712231632.GC9317@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120712231632.GC9317@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg KH <gregkh@linuxfoundation.org>
+On Fri, Jul 13, 2012 at 02:16:32AM +0300, Michael S. Tsirkin wrote:
+> On Thu, Jul 12, 2012 at 09:44:33PM +0200, Hans J. Koch wrote:
+> > > Looking further at the code, I cannot see where the mem fields are
+> > > being filled at all.
+> > > Which code is supposed to write the struct uio_mem?
+> > 
+> > In my opinion, the driver should. However, Michael's idea is to use
+> > /sys/bus/pci/devices/XXXXXresourceX for mapping purposes.
+> > 
+> > That is of course also possible, but obviously it leads to confusion.
+> > We already had a long thread about this:
+> > 
+> > http://www.spinics.net/lists/kvm/msg73837.html
+> > 
+> > Michael, can we change the driver to offer all available PCI BARs in the
+> > normal UIO way? I'm afraid otherwise we'll have the same discussion over
+> > and over again.
+> > 
+> > Thanks,
+> > Hans
+> 
+> My concern was people will ask for more and more stuff that pci
+> sysfs already has.
+> If we do add these is there a way to not duplicate code from pci?
+> Export pci_mmap_resource and use it? Or make the uio attributes
+> softlinks to pci sysfs somehow?
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+I understand your concern. Of course I'm also not in favor of duplicating
+code, but I don't think there's much overhead. PCI already exports all
+information needed by pci_resource_start(dev, bar) and
+pci_resource_len(dev, bar). Have a look at other UIO PCI drivers like
+uio_cif.c or uio_netx.c to see how it works. It's just a few more lines
+of code to loop through all BARs and add the to info->mem[i].
 
-------------------
+By the way, the current size of the info->mem[] array was exactly made
+with PCI in mind...
 
-From: Dan Rosenberg <dan.j.rosenberg@gmail.com>
-
-commit 67de956ff5dc1d4f321e16cfbd63f5be3b691b43 upstream.
-
-Fix multiple remotely-exploitable stack-based buffer overflows due to
-the NCI code pulling length fields directly from incoming frames and
-copying too much data into statically-sized arrays.
-
-Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
-Cc: security@kernel.org
-Cc: Lauro Ramos Venancio <lauro.venancio@openbossa.org>
-Cc: Aloisio Almeida Jr <aloisio.almeida@openbossa.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Cc: David S. Miller <davem@davemloft.net>
-Acked-by: Ilan Elias <ilane@ti.com>
-Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- net/nfc/nci/ntf.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
-
---- a/net/nfc/nci/ntf.c
-+++ b/net/nfc/nci/ntf.c
-@@ -106,7 +106,7 @@ static __u8 *nci_extract_rf_params_nfca_
- 	nfca_poll->sens_res = __le16_to_cpu(*((__u16 *)data));
- 	data += 2;
- 
--	nfca_poll->nfcid1_len = *data++;
-+	nfca_poll->nfcid1_len = min_t(__u8, *data++, NFC_NFCID1_MAXSIZE);
- 
- 	pr_debug("sens_res 0x%x, nfcid1_len %d\n",
- 		 nfca_poll->sens_res, nfca_poll->nfcid1_len);
-@@ -130,7 +130,7 @@ static __u8 *nci_extract_rf_params_nfcb_
- 			struct rf_tech_specific_params_nfcb_poll *nfcb_poll,
- 						     __u8 *data)
- {
--	nfcb_poll->sensb_res_len = *data++;
-+	nfcb_poll->sensb_res_len = min_t(__u8, *data++, NFC_SENSB_RES_MAXSIZE);
- 
- 	pr_debug("sensb_res_len %d\n", nfcb_poll->sensb_res_len);
- 
-@@ -145,7 +145,7 @@ static __u8 *nci_extract_rf_params_nfcf_
- 						     __u8 *data)
- {
- 	nfcf_poll->bit_rate = *data++;
--	nfcf_poll->sensf_res_len = *data++;
-+	nfcf_poll->sensf_res_len = min_t(__u8, *data++, NFC_SENSF_RES_MAXSIZE);
- 
- 	pr_debug("bit_rate %d, sensf_res_len %d\n",
- 		 nfcf_poll->bit_rate, nfcf_poll->sensf_res_len);
-@@ -331,7 +331,7 @@ static int nci_extract_activation_params
- 	switch (ntf->activation_rf_tech_and_mode) {
- 	case NCI_NFC_A_PASSIVE_POLL_MODE:
- 		nfca_poll = &ntf->activation_params.nfca_poll_iso_dep;
--		nfca_poll->rats_res_len = *data++;
-+		nfca_poll->rats_res_len = min_t(__u8, *data++, 20);
- 		pr_debug("rats_res_len %d\n", nfca_poll->rats_res_len);
- 		if (nfca_poll->rats_res_len > 0) {
- 			memcpy(nfca_poll->rats_res,
-@@ -341,7 +341,7 @@ static int nci_extract_activation_params
- 
- 	case NCI_NFC_B_PASSIVE_POLL_MODE:
- 		nfcb_poll = &ntf->activation_params.nfcb_poll_iso_dep;
--		nfcb_poll->attrib_res_len = *data++;
-+		nfcb_poll->attrib_res_len = min_t(__u8, *data++, 50);
- 		pr_debug("attrib_res_len %d\n", nfcb_poll->attrib_res_len);
- 		if (nfcb_poll->attrib_res_len > 0) {
- 			memcpy(nfcb_poll->attrib_res,
-
+Thanks,
+Hans
 
