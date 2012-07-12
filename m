@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161841Ab2GLXgz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:36:55 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:63399 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161720Ab2GLXgv (ORCPT
+	id S1161684Ab2GLWja (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:39:30 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60450 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161660Ab2GLWjZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 19:36:51 -0400
-Date: Thu, 12 Jul 2012 16:36:45 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Tony Luck <tony.luck@gmail.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, joshhunt00@gmail.com, axboe@kernel.dk,
-        rni@google.com, vgoyal@redhat.com, vwadekar@nvidia.com,
-        herbert@gondor.hengli.com.au, davem@davemloft.net,
-        linux-crypto@vger.kernel.org, swhiteho@redhat.com, bpm@sgi.com,
-        elder@kernel.org, xfs@oss.sgi.com, marcel@holtmann.org,
-        gustavo@padovan.org, johan.hedberg@gmail.com,
-        linux-bluetooth@vger.kernel.org, martin.petersen@oracle.com
-Subject: Re: [PATCH 6/6] workqueue: reimplement WQ_HIGHPRI using a separate
- worker_pool
-Message-ID: <20120712233645.GG20167@google.com>
-References: <1341859315-17759-7-git-send-email-tj@kernel.org>
- <20120712130648.GA19214@localhost>
- <20120712170519.GA20167@google.com>
- <20120712214514.GD20167@google.com>
- <CA+8MBb+ghRpmtrk=t5-6MqrPMZt+a69UoAWaubyKBeptGdBrWA@mail.gmail.com>
- <20120712223221.GF20167@google.com>
- <CA+8MBbJQVF3-CUU8MPWgm7OifD-C8=U2=uPF3JH9XNvAWVAX6A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+8MBbJQVF3-CUU8MPWgm7OifD-C8=U2=uPF3JH9XNvAWVAX6A@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 12 Jul 2012 18:39:25 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Panayiotis Karabassis <panayk@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 067/187] ath9k: enable serialize_regmode for non-PCIE AR9287
+Date: Thu, 12 Jul 2012 15:33:43 -0700
+Message-Id: <20120712191528.610688804@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
+References: <20120712192421.GA28926@kroah.com>
+ <20120712191522.742634173@linuxfoundation.org>
+User-Agent: quilt/0.60-20.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Tony.
+From: Greg KH <gregkh@linuxfoundation.org>
 
-On Thu, Jul 12, 2012 at 04:24:47PM -0700, Tony Luck wrote:
-> On Thu, Jul 12, 2012 at 3:32 PM, Tejun Heo <tj@kernel.org> wrote:
-> > Can you please try the following debug patch instead?  Yours is
-> > different from Fengguang's.
-> 
-> New dmesg from mext-20120712 + this new patch (instead of previous one)
-> 
-> [Note - I see some XXX traces, but no WARN_ON stack dump this time]
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-The debug patch didn't do anything for the bug itself.  I suppose it's
-timing dependent and doesn't always happen (it never reproduces here
-for some reason).  Can you please repeat several times and see whether
-the warning can be triggered?
+------------------
 
-Thank you very much!
+From: Panayiotis Karabassis <panayk@gmail.com>
 
--- 
-tejun
+commit 7508b657967cf664b5aa0f6367d05016e7e3bc2a upstream.
+
+https://bugzilla.kernel.org/show_bug.cgi?id=42903
+
+Based on the work of <fynivx@gmail.com>
+
+Signed-off-by: Panayiotis Karabassis <panayk@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/net/wireless/ath/ath9k/hw.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/net/wireless/ath/ath9k/hw.c
++++ b/drivers/net/wireless/ath/ath9k/hw.c
+@@ -558,7 +558,7 @@ static int __ath9k_hw_init(struct ath_hw
+ 
+ 	if (NR_CPUS > 1 && ah->config.serialize_regmode == SER_REG_MODE_AUTO) {
+ 		if (ah->hw_version.macVersion == AR_SREV_VERSION_5416_PCI ||
+-		    ((AR_SREV_9160(ah) || AR_SREV_9280(ah)) &&
++		    ((AR_SREV_9160(ah) || AR_SREV_9280(ah) || AR_SREV_9287(ah)) &&
+ 		     !ah->is_pciexpress)) {
+ 			ah->config.serialize_regmode =
+ 				SER_REG_MODE_ON;
+
+
