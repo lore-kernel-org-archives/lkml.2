@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161606Ab2GLWYz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:24:55 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55669 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759274Ab2GLWYH (ORCPT
+	id S1759280Ab2GLW1J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:27:09 -0400
+Received: from violet.fr.zoreil.com ([92.243.8.30]:39946 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755729Ab2GLW1G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:24:07 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Richard Crossley <richardcrossley@o2.co.uk>,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 003/187] ALSA: hda - Add Realtek ALC280 codec support
-Date: Thu, 12 Jul 2012 15:23:31 -0700
-Message-Id: <20120712191522.546901471@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.10.1.362.g242cab3
-In-Reply-To: <20120712191522.378465973@linuxfoundation.org>
-References: <20120712192421.GA28926@kroah.com>
- <20120712191522.378465973@linuxfoundation.org>
-User-Agent: quilt/0.60-20.3
+	Thu, 12 Jul 2012 18:27:06 -0400
+Date: Fri, 13 Jul 2012 00:14:53 +0200
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Hayes Wang <hayeswang@realtek.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next] r8169: Remove rtl_ocpdr_cond
+Message-ID: <20120712221453.GA1982@electric-eye.fr.zoreil.com>
+References: <1342009916-1519-1-git-send-email-hayeswang@realtek.com> <20120711220045.GA8913@electric-eye.fr.zoreil.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120711220045.GA8913@electric-eye.fr.zoreil.com>
+User-Agent: Mutt/1.4.2.2i
+X-Organisation: Land of Sunshine Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg KH <gregkh@linuxfoundation.org>
+Francois Romieu <romieu@fr.zoreil.com> :
+[...]
+> I'll try again tomorrow evening.
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+W/o firmware does not seem to make a difference.
 
-------------------
+# ping -qf -l 4 -s 81 -c 60 10.0.3.1
+PING 10.0.3.1 (10.0.3.1) 81(109) bytes of data.
 
-From: David Henningsson <david.henningsson@canonical.com>
+--- 10.0.3.1 ping statistics ---
+60 packets transmitted, 60 received, 0% packet loss, time 153ms
+rtt min/avg/max/mdev = 0.047/0.064/0.117/0.016 ms, pipe 4, ipg/ewma 2.607/0.058 ms
 
-commit befae82e2906cb7155020876a531b0b8c6c8d8c8 upstream.
+# ping -qf -l 4 -s 82 -c 60 10.0.3.1                                                     
+PING 10.0.3.1 (10.0.3.1) 82(110) bytes of data.
 
-This chip looks very similar to ALC269 and ALC27* variants. The bug reporter
-has verified that sound was working after this patch had been applied.
+--- 10.0.3.1 ping statistics ---
+60 packets transmitted, 60 received, 0% packet loss, time 3ms
+rtt min/avg/max/mdev = 0.195/0.210/0.281/0.018 ms, pipe 4, ipg/ewma 0.057/0.205 ms
 
-BugLink: https://bugs.launchpad.net/bugs/1017017
-Tested-by: Richard Crossley <richardcrossley@o2.co.uk>
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+It would translate into a 127/128 cutoff after inclusion of the FCS.
 
----
- sound/pci/hda/patch_realtek.c |    1 +
- 1 file changed, 1 insertion(+)
+Any idea ?
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -6976,6 +6976,7 @@ static const struct hda_codec_preset snd
- 	{ .id = 0x10ec0272, .name = "ALC272", .patch = patch_alc662 },
- 	{ .id = 0x10ec0275, .name = "ALC275", .patch = patch_alc269 },
- 	{ .id = 0x10ec0276, .name = "ALC276", .patch = patch_alc269 },
-+	{ .id = 0x10ec0280, .name = "ALC280", .patch = patch_alc269 },
- 	{ .id = 0x10ec0861, .rev = 0x100340, .name = "ALC660",
- 	  .patch = patch_alc861 },
- 	{ .id = 0x10ec0660, .name = "ALC660-VD", .patch = patch_alc861vd },
-
-
+-- 
+Ueimor
