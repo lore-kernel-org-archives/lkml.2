@@ -1,101 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161179Ab2GLOZX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 10:25:23 -0400
-Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:52668 "EHLO
-	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1161027Ab2GLOZU convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 10:25:20 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAGF5oy8585Lb6ibsgzo+3aDJEc-vcRwiu4hxtNS=GFUEy7LDqQ@mail.gmail.com>
-References: <1342039269-13968-1-git-send-email-eduardo.valentin@ti.com>
-	<1342039269-13968-2-git-send-email-eduardo.valentin@ti.com>
-	<20120712003216.GA9827@kroah.com>
-	<CAGF5oy8585Lb6ibsgzo+3aDJEc-vcRwiu4hxtNS=GFUEy7LDqQ@mail.gmail.com>
-Date: Thu, 12 Jul 2012 17:25:18 +0300
-Message-ID: <CAGF5oy-K6bUteVcwV_Z8oZ3P2D4Bm=L-3aGemyC+w2BENVqKog@mail.gmail.com>
-Subject: Re: [PATCHv3 1/4] staging: OMAP4+: thermal: introduce bandgap
- temperature sensor
-From: "Valentin, Eduardo" <eduardo.valentin@ti.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, b-cousson@ti.com, j-keerthy@ti.com,
-        linux-kernel@vger.kernel.org, kbaidarov@dev.rtsoft.ru,
-        grant.likely@secretlab.ca
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+	id S933929Ab2GLO0S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 10:26:18 -0400
+Received: from mga14.intel.com ([143.182.124.37]:10781 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161124Ab2GLOY5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 10:24:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="121595880"
+From: Artem Bityutskiy <dedekind1@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Subject: [PATCHv3 3/4] hfsplus: remove useless check
+Date: Thu, 12 Jul 2012 17:26:30 +0300
+Message-Id: <1342103191-17406-4-git-send-email-dedekind1@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1342103191-17406-1-git-send-email-dedekind1@gmail.com>
+References: <1342103191-17406-1-git-send-email-dedekind1@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Greg,
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-On Thu, Jul 12, 2012 at 5:45 AM, Valentin, Eduardo
-<eduardo.valentin@ti.com> wrote:
-> Hello,
->
-> On Thu, Jul 12, 2012 at 3:32 AM, Greg Kroah-Hartman
-> <gregkh@linuxfoundation.org> wrote:
->> On Wed, Jul 11, 2012 at 11:41:06PM +0300, Eduardo Valentin wrote:
->>> In the System Control Module, OMAP supplies a voltage reference
->>> and a temperature sensor feature that are gathered in the band
->>> gap voltage and temperature sensor (VBGAPTS) module. The band
->>> gap provides current and voltage reference for its internal
->>> circuits and other analog IP blocks. The analog-to-digital
->>> converter (ADC) produces an output value that is proportional
->>> to the silicon temperature.
->>>
->>> This patch provides a platform driver which expose this feature.
->>> It is moduled as a MFD child of the System Control Module core
->>> MFD driver.
->>>
->>> This driver provides only APIs to access the device properties,
->>> like temperature, thresholds and update rate.
->>>
->>> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
->>> Signed-off-by: J Keerthy <j-keerthy@ti.com>
->>
->> This patch gives me the following build error:
->>
->> rivers/staging/omap-thermal/omap-bandgap.c: In function ‘omap_bandgap_build’:
->> drivers/staging/omap-thermal/omap-bandgap.c:805:2: error: implicit declaration of function ‘of_match_device’ [-Werror=implicit-function-declaration]
->> drivers/staging/omap-thermal/omap-bandgap.c:805:8: warning: assignment makes pointer from integer without a cast [enabled by default]
->
-> OK. Those I didn't see while testing on my side. I didn't use
-> -Werror=implicit-function-declaration though.
->
+This check is useless because we always have 'sb->s_fs_info' to be non-NULL.
 
-Actually this is put to all compilation processes, no matter what.
-Thing is that my codesourcery toolchain is somehow ignoring this flag.
-That's why I didn't see it. Besides this driver should not compile for
-x86 arch. So, I fixed that up and will resend soon. Hope it doesnt
-break things a part this time...
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+---
+ fs/hfsplus/super.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
->>
->> So of course I can't accept it :(
->
-> That's for sure.
-
-Sorry for this mess.
->
->>
->> How hard is it to test that the patches build before sending them to me?
->
-> It should not be. I will check with those compiling flags.
->
->>
->> ugh,
->>
->> greg k-h
->
->
->
-> --
->
-> Eduardo Valentin
-
-
-
+diff --git a/fs/hfsplus/super.c b/fs/hfsplus/super.c
+index 9e9c2788..f4f3d54 100644
+--- a/fs/hfsplus/super.c
++++ b/fs/hfsplus/super.c
+@@ -240,9 +240,6 @@ static void hfsplus_put_super(struct super_block *sb)
+ 
+ 	dprint(DBG_SUPER, "hfsplus_put_super\n");
+ 
+-	if (!sb->s_fs_info)
+-		return;
+-
+ 	if (!(sb->s_flags & MS_RDONLY) && sbi->s_vhdr) {
+ 		struct hfsplus_vh *vhdr = sbi->s_vhdr;
+ 
 -- 
+1.7.7.6
 
-Eduardo Valentin
