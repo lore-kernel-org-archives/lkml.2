@@ -1,80 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758607Ab2GLCvT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 22:51:19 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:59302 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756735Ab2GLCus (ORCPT
+	id S1758591Ab2GLCvh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 22:51:37 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:34812 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756735Ab2GLCve (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 22:50:48 -0400
-X-AuditID: 9c93016f-b7b08ae00000790d-28-4ffe3b8513e0
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Mel Gorman <mgorman@suse.de>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Aaditya Kumar <aaditya.kumar@ap.sony.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: [PATCH 2/3 v3] mm: bug fix free page check in zone_watermark_ok
-Date: Thu, 12 Jul 2012 11:50:48 +0900
-Message-Id: <1342061449-29590-2-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1342061449-29590-1-git-send-email-minchan@kernel.org>
-References: <1342061449-29590-1-git-send-email-minchan@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 11 Jul 2012 22:51:34 -0400
+Date: Wed, 11 Jul 2012 19:50:53 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Dave Chinner <david@fromorbit.com>
+cc: Cong Wang <xiyou.wangcong@gmail.com>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] tmpfs: revert SEEK_DATA and SEEK_HOLE
+In-Reply-To: <20120711230122.GZ19223@dastard>
+Message-ID: <alpine.LSU.2.00.1207111920210.1455@eggly.anvils>
+References: <alpine.LSU.2.00.1207091533001.2051@eggly.anvils> <alpine.LSU.2.00.1207091535480.2051@eggly.anvils> <jtj574$tb7$2@dough.gmane.org> <alpine.LSU.2.00.1207111149580.1797@eggly.anvils> <20120711230122.GZ19223@dastard>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In __zone_watermark_ok, free and min are signed long type
-while z->lowmem_reserve[classzone_idx] is unsigned long type.
-So comparision of them could be wrong due to type conversion
-to unsigned although free_pages is minus value.
+On Thu, 12 Jul 2012, Dave Chinner wrote:
+> On Wed, Jul 11, 2012 at 11:55:34AM -0700, Hugh Dickins wrote:
+> > On Wed, 11 Jul 2012, Cong Wang wrote:
+> > > 
+> > > If you don't have burden to maintain it, I'd prefer to leave as it is,
+> > > I don't think 752-bytes is the reason we revert it.
+> > 
+> > Thank you, your vote has been counted ;)
+> > and I'll be glad if yours stimulates some agreement or disagreement.
+> > 
+> > But your vote would count for a lot more if you know of some app which
+> > would really benefit from this functionality in tmpfs: I've heard of none.
+> 
+> So what? I've heard of no apps that use this functionality on XFS,
+> either, but I have heard of a lot of people asking for it to be
+> implemented over the past couple of years so they can use it.
 
-It could return true instead of false in case of order-0 check
-so that kswapd could sleep forever. It means livelock because
-direct reclaimer loops forever until kswapd set
-zone->all_unreclaimable.
+I'd certainly not ask you to remove your support for it from XFS:
+nobody would call XFS a minimal filesystem.
 
-Aaditya reported this problem when he test my hotplug patch.
+But tmpfs has a tradition and a duty to keep fairly small:
+it needs to be useful, but it shouldn't be carrying unused baggage.
 
-Reported-off-by: Aaditya Kumar <aaditya.kumar@ap.sony.com>
-Tested-by: Aaditya Kumar <aaditya.kumar@ap.sony.com>
-Signed-off-by: Aaditya Kumar <aaditya.kumar@ap.sony.com>
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
-This patch isn't dependent with this series.
-It seems to be candidate for -stable but I'm not sure because of this part.
-So, pass the decision to akpm.
+> There's been patches written to make coreutils (cp) make use of it
+> instead of parsing FIEMAP output to find holes, though I don't know
+> if that's gone beyond more than "here's some patches"....
+> 
+> Besides, given that you can punch holes in tmpfs files, it seems
+> strange to then say "we don't need a method of skipping holes to
+> find data quickly"....
 
-" - It must fix a real bug that bothers people (not a, "This could be a
-   problem..." type thing)."
+tmpfs has been punching holes (via MADV_REMOVE) since 2.6.16 (and
+that wasn't added on my whim, IBM wanted and did it).  But I haven't
+heard of anybody asking for a method of skipping them in six years.
 
- mm/page_alloc.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> Besides, seek-hole/data is still shiny new and lots of developers
+> aren't even aware of it's presence in recent kernels. Removing new
+> functionality saying "no-one is using it" is like smashing the egg
+> before the chicken hatches (or is it cutting of the chickes's head
+> before it lays the egg?).
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index f17e6e4..627653c 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1594,6 +1594,7 @@ static bool __zone_watermark_ok(struct zone *z, int order, unsigned long mark,
- {
- 	/* free_pages my go negative - that's OK */
- 	long min = mark;
-+	long lowmem_reserve = z->lowmem_reserve[classzone_idx];
- 	int o;
- 
- 	free_pages -= (1 << order) - 1;
-@@ -1602,7 +1603,7 @@ static bool __zone_watermark_ok(struct zone *z, int order, unsigned long mark,
- 	if (alloc_flags & ALLOC_HARDER)
- 		min -= min / 4;
- 
--	if (free_pages <= min + z->lowmem_reserve[classzone_idx])
-+	if (free_pages <= min + lowmem_reserve)
- 		return false;
- 	for (o = 0; o < order; o++) {
- 		/* At the next order, this order's pages become unavailable */
--- 
-1.7.9.5
+(You remind me of my chicken-and-egg sandwiches - you can't get them,
+you see, it's chicken and egg.)
 
+I'm not trying to remove SEEK_HOLE/SEEK_DATA support from the kernel:
+I'm just saying that nobody has yet made the case for their usefulness
+in tmpfs, so they're better removed from it before v3.5 is released.
+
+Once we see how useful they have become in the grown-up filesystems,
+or someone shows how useful they can be on tmpfs, then we reinstate.
+
+Of course, I'm on both sides of this argument: I wrote that code,
+I like it, I'll be glad to put it back when it's useful to someone.
+
+Hugh
