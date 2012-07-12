@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759435Ab2GLXt7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:49:59 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:40725 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753930Ab2GLWga (ORCPT
+	id S1162987Ab2GLXuz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:50:55 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44509 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759374Ab2GLWgQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:36:30 -0400
+	Thu, 12 Jul 2012 18:36:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Hiroaki SHIMODA <shimoda.hiroaki@gmail.com>,
-        Tom Herbert <therbert@google.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Denys Fedoryshchenko <denys@visp.net.lb>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 017/187] bql: Avoid unneeded limit decrement.
-Date: Thu, 12 Jul 2012 15:32:53 -0700
-Message-Id: <20120712191523.849621112@linuxfoundation.org>
+        Nicolas Pitre <nico@linaro.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        "R, Sricharan" <r.sricharan@ti.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 012/187] ARM: 7438/1: fill possible PMD empty section gaps
+Date: Thu, 12 Jul 2012 15:32:48 -0700
+Message-Id: <20120712191523.385805840@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -35,73 +34,123 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
 
-From: Hiroaki SHIMODA <shimoda.hiroaki@gmail.com>
+commit 19b52abe3c5d759661500a1dc810924369b2ad46 upstream.
 
-[ Upstream commit 25426b794efdc70dde7fd3134dc56fac3e7d562d ]
+On ARM with the 2-level page table format, a PMD entry is represented by
+two consecutive section entries covering 2MB of virtual space.
 
-When below pattern is observed,
+However, static mappings always were allowed to use separate 1MB section
+entries.  This means in practice that a static mapping may create half
+populated PMDs via create_mapping().
 
-                                               TIME
-       dql_queued()         dql_completed()     |
-      a) initial state                          |
-                                                |
-      b) X bytes queued                         V
+Since commit 0536bdf33f (ARM: move iotable mappings within the vmalloc
+region) those static mappings are located in the vmalloc area. We must
+ensure no such half populated PMDs are accessible once vmalloc() or
+ioremap() start looking at the vmalloc area for nearby free virtual
+address ranges, or various things leading to a kernel crash will happen.
 
-      c) Y bytes queued
-                           d) X bytes completed
-      e) Z bytes queued
-                           f) Y bytes completed
-
-a) dql->limit has already some value and there is no in-flight packet.
-b) X bytes queued.
-c) Y bytes queued and excess limit.
-d) X bytes completed and dql->prev_ovlimit is set and also
-   dql->prev_num_queued is set Y.
-e) Z bytes queued.
-f) Y bytes completed. inprogress and prev_inprogress are true.
-
-At f), according to the comment, all_prev_completed becomes
-true and limit should be increased. But POSDIFF() ignores
-(completed == dql->prev_num_queued) case, so limit is decreased.
-
-Signed-off-by: Hiroaki SHIMODA <shimoda.hiroaki@gmail.com>
-Cc: Tom Herbert <therbert@google.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Denys Fedoryshchenko <denys@visp.net.lb>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Nicolas Pitre <nico@linaro.org>
+Reported-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Tested-by: "R, Sricharan" <r.sricharan@ti.com>
+Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- lib/dynamic_queue_limits.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/lib/dynamic_queue_limits.c
-+++ b/lib/dynamic_queue_limits.c
-@@ -11,12 +11,14 @@
- #include <linux/dynamic_queue_limits.h>
+---
+ arch/arm/mm/mmu.c |   74 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 74 insertions(+)
+
+--- a/arch/arm/mm/mmu.c
++++ b/arch/arm/mm/mmu.c
+@@ -783,6 +783,79 @@ void __init iotable_init(struct map_desc
+ 	}
+ }
  
- #define POSDIFF(A, B) ((int)((A) - (B)) > 0 ? (A) - (B) : 0)
-+#define AFTER_EQ(A, B) ((int)((A) - (B)) >= 0)
++#ifndef CONFIG_ARM_LPAE
++
++/*
++ * The Linux PMD is made of two consecutive section entries covering 2MB
++ * (see definition in include/asm/pgtable-2level.h).  However a call to
++ * create_mapping() may optimize static mappings by using individual
++ * 1MB section mappings.  This leaves the actual PMD potentially half
++ * initialized if the top or bottom section entry isn't used, leaving it
++ * open to problems if a subsequent ioremap() or vmalloc() tries to use
++ * the virtual space left free by that unused section entry.
++ *
++ * Let's avoid the issue by inserting dummy vm entries covering the unused
++ * PMD halves once the static mappings are in place.
++ */
++
++static void __init pmd_empty_section_gap(unsigned long addr)
++{
++	struct vm_struct *vm;
++
++	vm = early_alloc_aligned(sizeof(*vm), __alignof__(*vm));
++	vm->addr = (void *)addr;
++	vm->size = SECTION_SIZE;
++	vm->flags = VM_IOREMAP | VM_ARM_STATIC_MAPPING;
++	vm->caller = pmd_empty_section_gap;
++	vm_area_add_early(vm);
++}
++
++static void __init fill_pmd_gaps(void)
++{
++	struct vm_struct *vm;
++	unsigned long addr, next = 0;
++	pmd_t *pmd;
++
++	/* we're still single threaded hence no lock needed here */
++	for (vm = vmlist; vm; vm = vm->next) {
++		if (!(vm->flags & VM_ARM_STATIC_MAPPING))
++			continue;
++		addr = (unsigned long)vm->addr;
++		if (addr < next)
++			continue;
++
++		/*
++		 * Check if this vm starts on an odd section boundary.
++		 * If so and the first section entry for this PMD is free
++		 * then we block the corresponding virtual address.
++		 */
++		if ((addr & ~PMD_MASK) == SECTION_SIZE) {
++			pmd = pmd_off_k(addr);
++			if (pmd_none(*pmd))
++				pmd_empty_section_gap(addr & PMD_MASK);
++		}
++
++		/*
++		 * Then check if this vm ends on an odd section boundary.
++		 * If so and the second section entry for this PMD is empty
++		 * then we block the corresponding virtual address.
++		 */
++		addr += vm->size;
++		if ((addr & ~PMD_MASK) == SECTION_SIZE) {
++			pmd = pmd_off_k(addr) + 1;
++			if (pmd_none(*pmd))
++				pmd_empty_section_gap(addr);
++		}
++
++		/* no need to look at any vm entry until we hit the next PMD */
++		next = (addr + PMD_SIZE - 1) & PMD_MASK;
++	}
++}
++
++#else
++#define fill_pmd_gaps() do { } while (0)
++#endif
++
+ static void * __initdata vmalloc_min =
+ 	(void *)(VMALLOC_END - (240 << 20) - VMALLOC_OFFSET);
  
- /* Records completed count and recalculates the queue limit */
- void dql_completed(struct dql *dql, unsigned int count)
- {
- 	unsigned int inprogress, prev_inprogress, limit;
--	unsigned int ovlimit, all_prev_completed, completed;
-+	unsigned int ovlimit, completed;
-+	bool all_prev_completed;
+@@ -1064,6 +1137,7 @@ static void __init devicemaps_init(struc
+ 	 */
+ 	if (mdesc->map_io)
+ 		mdesc->map_io();
++	fill_pmd_gaps();
  
- 	/* Can't complete more than what's in queue */
- 	BUG_ON(count > dql->num_queued - dql->num_completed);
-@@ -26,7 +28,7 @@ void dql_completed(struct dql *dql, unsi
- 	ovlimit = POSDIFF(dql->num_queued - dql->num_completed, limit);
- 	inprogress = dql->num_queued - completed;
- 	prev_inprogress = dql->prev_num_queued - dql->num_completed;
--	all_prev_completed = POSDIFF(completed, dql->prev_num_queued);
-+	all_prev_completed = AFTER_EQ(completed, dql->prev_num_queued);
- 
- 	if ((ovlimit && !inprogress) ||
- 	    (dql->prev_ovlimit && all_prev_completed)) {
+ 	/*
+ 	 * Finally flush the caches and tlb to ensure that we're in a
 
 
