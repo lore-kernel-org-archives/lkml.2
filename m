@@ -1,91 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161121Ab2GLOYx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 10:24:53 -0400
+	id S1161163Ab2GLOZB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 10:25:01 -0400
 Received: from mga14.intel.com ([143.182.124.37]:10781 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932580Ab2GLOYw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 10:24:52 -0400
+	id S1161027Ab2GLOYx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 10:24:53 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="121595862"
+   d="scan'208";a="121595867"
 From: Artem Bityutskiy <dedekind1@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         Al Viro <viro@ZenIV.linux.org.uk>
 Cc: Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
         Linux Kernel Maling List <linux-kernel@vger.kernel.org>
-Subject: [PATCHv3 0/4] hfsplus: stop using write_supers and s_dirt
-Date: Thu, 12 Jul 2012 17:26:27 +0300
-Message-Id: <1342103191-17406-1-git-send-email-dedekind1@gmail.com>
+Subject: [PATCHv3 1/4] hfsplus: make hfsplus_sync_fs static
+Date: Thu, 12 Jul 2012 17:26:28 +0300
+Message-Id: <1342103191-17406-2-git-send-email-dedekind1@gmail.com>
 X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1342103191-17406-1-git-send-email-dedekind1@gmail.com>
+References: <1342103191-17406-1-git-send-email-dedekind1@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew, here is v3 of the patches, could you please pick them instead of the
-ones you have in your tree? The differences to v2 are:
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-1. checkpatch.pl warnings fixed
-2. removed 'cancel_delayed_work()' from 'hfsplus_sync_fs()' because it is not
-   enough to just cancel the job, we need to set the work_queued flag to zero
-   as well. I could do this, but it is simpler to just remove this tiny
-   optimization - we do not gain much with it. I caught this bug while doing
-   some more testing.
+... because it is used only in fs/hfsplus/super.c.
 
-This patch-set makes hfsplus file-system stop using the VFS '->write_supers()'
-call-back and the '->s_dirt' superblock field because I plan to remove them
-once all users are gone.
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+---
+ fs/hfsplus/hfsplus_fs.h |    1 -
+ fs/hfsplus/super.c      |    2 +-
+ 2 files changed, 1 insertions(+), 2 deletions(-)
 
-Like some other similar patch-sets (affs, hfs, ufs, reiserfs), we switch to
-a delayed job for writing out the superblock instead of using the 's_dirt'
-flag. Additionally, this patch-set includes several clean-ups.
+diff --git a/fs/hfsplus/hfsplus_fs.h b/fs/hfsplus/hfsplus_fs.h
+index 4e75ac6..66a9365 100644
+--- a/fs/hfsplus/hfsplus_fs.h
++++ b/fs/hfsplus/hfsplus_fs.h
+@@ -428,7 +428,6 @@ int hfsplus_show_options(struct seq_file *, struct dentry *);
+ 
+ /* super.c */
+ struct inode *hfsplus_iget(struct super_block *, unsigned long);
+-int hfsplus_sync_fs(struct super_block *sb, int wait);
+ 
+ /* tables.c */
+ extern u16 hfsplus_case_fold_table[];
+diff --git a/fs/hfsplus/super.c b/fs/hfsplus/super.c
+index a9bca4b..5df771e 100644
+--- a/fs/hfsplus/super.c
++++ b/fs/hfsplus/super.c
+@@ -161,7 +161,7 @@ static void hfsplus_evict_inode(struct inode *inode)
+ 	}
+ }
+ 
+-int hfsplus_sync_fs(struct super_block *sb, int wait)
++static int hfsplus_sync_fs(struct super_block *sb, int wait)
+ {
+ 	struct hfsplus_sb_info *sbi = HFSPLUS_SB(sb);
+ 	struct hfsplus_vh *vhdr = sbi->s_vhdr;
+-- 
+1.7.7.6
 
-Tested using the fsstress test from the LTP project.
-
- fs/hfsplus/bitmap.c     |    4 ++--
- fs/hfsplus/dir.c        |    2 +-
- fs/hfsplus/hfsplus_fs.h |    7 +++++--
- fs/hfsplus/inode.c      |    6 +++---
- fs/hfsplus/super.c      |   46 +++++++++++++++++++++++++++++++++-------------
- 5 files changed, 44 insertions(+), 21 deletions(-)
-
-Reminder
-========
-
-The goal is to get rid of the 'sync_supers()' kernel thread. This kernel thread
-wakes up every 5 seconds (by default) and calls '->write_super()' for all
-mounted file-systems. And the bad thing is that this is done even if all the
-superblocks are clean. Moreover, many file-systems do not even need this and
-they do not even register the '->write_super()' method at all (e.g., btrfs).
-
-So 'sync_supers()' mostly just generates useless wake-ups and wastes power.
-I am trying to make all file-systems independent of '->write_super()' and plan
-to remove 'sync_supers()' and '->write_super()' completely once there are no
-more users.
-
-Overall status
-==============
-
-1.  ext4: patches submitted (v7)
-    http://thread.gmane.org/gmane.linux.kernel/1326181/focus=33332
-2.  ufs: patches submitted,
-    https://lkml.org/lkml/2012/7/12/248
-3.  exofs: patch submitted,
-    https://lkml.org/lkml/2012/6/4/211
-4.  sysv: patches submitted,
-    http://lkml.org/lkml/2012/7/3/250
-5.  udf: patch sits in Jan Kara's tree:
-    https://lkml.org/lkml/2012/6/4/233
-    git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs for_testing
-6.  affs: patches sit in Al Viro's tree:
-    https://lkml.org/lkml/2012/6/6/400
-    git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs for-next
-7.  hfs: patches sit in Andrew Morton's tree (-mm, visible in linux-next)
-8.  hfsplus: patches sit in Andrew Morton's tree (-mm, visible in linux-next)
-9.  ext2:     done, see commit f72cf5e223a28d3b3ea7dc9e40464fd534e359e8
-10. vfat:     done, see commit 78491189ddb6d84d4a4abae992ed891a236d0263
-11. jffs2:    done, see commit 208b14e507c00ff7f108e1a388dd3d8cc805a443
-12. reiserfs: done, see commit 033369d1af1264abc23bea2e174aa47cdd212f6f
-
-Thanks,
-Artem.
