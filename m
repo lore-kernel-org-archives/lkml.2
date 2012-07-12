@@ -1,27 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162778Ab2GLXFT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:05:19 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63192 "EHLO
+	id S1162785Ab2GLXFh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:05:37 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46543 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162759Ab2GLXFH (ORCPT
+	with ESMTP id S1162795Ab2GLXFb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 19:05:07 -0400
+	Thu, 12 Jul 2012 19:05:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stone Piao <piaoyun@marvell.com>, Avinash Patil <patila@marvell.com>,
-        Kiran Divekar <dkiran@marvell.com>, Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 41/68] mwifiex: fix 11n rx packet drop issue
-Date: Thu, 12 Jul 2012 16:02:15 -0700
-Message-Id: <20120712175039.088569258@linuxfoundation.org>
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        Oliver Neukum <oneukum@suse.de>
+Subject: =?UTF-8?q?=5B=2048/68=5D=20USB=3A=20cdc-wdm=3A=20fix=20lockup=20on=20error=20in=20wdm=5Fread?=
+Date: Thu, 12 Jul 2012 16:02:22 -0700
+Message-Id: <20120712175039.694011552@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712175035.530652872@linuxfoundation.org>
 References: <20120712175057.GA9917@kroah.com>
  <20120712175035.530652872@linuxfoundation.org>
 User-Agent: quilt/0.60-20.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,82 +34,72 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Stone Piao <piaoyun@marvell.com>
+From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
 
-commit 925839243dc9aa4ef25305f5afd10ed18258a4ac upstream.
+commit b086b6b10d9f182cd8d2f0dcfd7fd11edba93fc9 upstream.
 
-Currently we check the sequence number of last packet received
-against start_win. If a sequence hole is detected, start_win is
-updated to next sequence number.
+Clear the WDM_READ flag on empty reads to avoid running
+forever in an infinite tight loop, causing lockups:
 
-Since the rx sequence number is initialized to 0, a corner case
-exists when BA setup happens immediately after association. As
-0 is a valid sequence number, start_win gets increased to 1
-incorrectly. This causes the first packet with sequence number 0
-being dropped.
+Jul  1 21:58:11 nemi kernel: [ 3658.898647] qmi_wwan 2-1:1.2: Unexpected error -71
+Jul  1 21:58:36 nemi kernel: [ 3684.072021] BUG: soft lockup - CPU#0 stuck for 23s! [qmi.pl:12235]
+Jul  1 21:58:36 nemi kernel: [ 3684.072212] CPU 0
+Jul  1 21:58:36 nemi kernel: [ 3684.072355]
+Jul  1 21:58:36 nemi kernel: [ 3684.072367] Pid: 12235, comm: qmi.pl Tainted: P           O 3.5.0-rc2+ #13 LENOVO 2776LEG/2776LEG
+Jul  1 21:58:36 nemi kernel: [ 3684.072383] RIP: 0010:[<ffffffffa0635008>]  [<ffffffffa0635008>] spin_unlock_irq+0x8/0xc [cdc_wdm]
+Jul  1 21:58:36 nemi kernel: [ 3684.072388] RSP: 0018:ffff88022dca1e70  EFLAGS: 00000282
+Jul  1 21:58:36 nemi kernel: [ 3684.072393] RAX: ffff88022fc3f650 RBX: ffffffff811c56f7 RCX: 00000001000ce8c1
+Jul  1 21:58:36 nemi kernel: [ 3684.072398] RDX: 0000000000000010 RSI: 000000000267d810 RDI: ffff88022fc3f650
+Jul  1 21:58:36 nemi kernel: [ 3684.072403] RBP: ffff88022dca1eb0 R08: ffffffffa063578e R09: 0000000000000000
+Jul  1 21:58:36 nemi kernel: [ 3684.072407] R10: 0000000000000008 R11: 0000000000000246 R12: 0000000000000002
+Jul  1 21:58:36 nemi kernel: [ 3684.072412] R13: 0000000000000246 R14: ffffffff00000002 R15: ffff8802281d8c88
+Jul  1 21:58:36 nemi kernel: [ 3684.072418] FS:  00007f666a260700(0000) GS:ffff88023bc00000(0000) knlGS:0000000000000000
+Jul  1 21:58:36 nemi kernel: [ 3684.072423] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+Jul  1 21:58:36 nemi kernel: [ 3684.072428] CR2: 000000000270d9d8 CR3: 000000022e865000 CR4: 00000000000007f0
+Jul  1 21:58:36 nemi kernel: [ 3684.072433] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+Jul  1 21:58:36 nemi kernel: [ 3684.072438] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Jul  1 21:58:36 nemi kernel: [ 3684.072444] Process qmi.pl (pid: 12235, threadinfo ffff88022dca0000, task ffff88022ff76380)
+Jul  1 21:58:36 nemi kernel: [ 3684.072448] Stack:
+Jul  1 21:58:36 nemi kernel: [ 3684.072458]  ffffffffa063592e 0000000100020000 ffff88022fc3f650 ffff88022fc3f6a8
+Jul  1 21:58:36 nemi kernel: [ 3684.072466]  0000000000000200 0000000100000000 000000000267d810 0000000000000000
+Jul  1 21:58:36 nemi kernel: [ 3684.072475]  0000000000000000 ffff880212cfb6d0 0000000000000200 ffff880212cfb6c0
+Jul  1 21:58:36 nemi kernel: [ 3684.072479] Call Trace:
+Jul  1 21:58:36 nemi kernel: [ 3684.072489]  [<ffffffffa063592e>] ? wdm_read+0x1a0/0x263 [cdc_wdm]
+Jul  1 21:58:36 nemi kernel: [ 3684.072500]  [<ffffffff8110adb7>] ? vfs_read+0xa1/0xfb
+Jul  1 21:58:36 nemi kernel: [ 3684.072509]  [<ffffffff81040589>] ? alarm_setitimer+0x35/0x64
+Jul  1 21:58:36 nemi kernel: [ 3684.072517]  [<ffffffff8110aec7>] ? sys_read+0x45/0x6e
+Jul  1 21:58:36 nemi kernel: [ 3684.072525]  [<ffffffff813725f9>] ? system_call_fastpath+0x16/0x1b
+Jul  1 21:58:36 nemi kernel: [ 3684.072557] Code: <66> 66 90 c3 83 ff ed 89 f8 74 16 7f 06 83 ff a1 75 0a c3 83 ff f4
 
-Initialize rx sequence number as 0xffff and skip adjusting
-start_win if the sequence number remains 0xffff. The sequence
-number will be updated once the first packet is received.
+The WDM_READ flag is normally cleared by wdm_int_callback
+before resubmitting the read urb, and set by wdm_in_callback
+when this urb returns with data or an error.  But a crashing
+device may cause both a read error and cancelling all urbs.
+Make sure that the flag is cleared by wdm_read if the buffer
+is empty.
 
-Signed-off-by: Stone Piao <piaoyun@marvell.com>
-Signed-off-by: Avinash Patil <patila@marvell.com>
-Signed-off-by: Kiran Divekar <dkiran@marvell.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+We don't clear the flag on errors, as there may be pending
+data in the buffer which should be processed.  The flag will
+instead be cleared on the next wdm_read call.
+
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Acked-by: Oliver Neukum <oneukum@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/mwifiex/11n_rxreorder.c |    5 +++--
- drivers/net/wireless/mwifiex/11n_rxreorder.h |    7 +++++++
- drivers/net/wireless/mwifiex/wmm.c           |    2 ++
- 3 files changed, 12 insertions(+), 2 deletions(-)
+ drivers/usb/class/cdc-wdm.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/net/wireless/mwifiex/11n_rxreorder.c
-+++ b/drivers/net/wireless/mwifiex/11n_rxreorder.c
-@@ -267,7 +267,8 @@ mwifiex_11n_create_rx_reorder_tbl(struct
- 	else
- 		last_seq = priv->rx_seq[tid];
- 
--	if (last_seq >= new_node->start_win)
-+	if (last_seq != MWIFIEX_DEF_11N_RX_SEQ_NUM &&
-+	    last_seq >= new_node->start_win)
- 		new_node->start_win = last_seq + 1;
- 
- 	new_node->win_size = win_size;
-@@ -612,5 +613,5 @@ void mwifiex_11n_cleanup_reorder_tbl(str
- 	spin_unlock_irqrestore(&priv->rx_reorder_tbl_lock, flags);
- 
- 	INIT_LIST_HEAD(&priv->rx_reorder_tbl_ptr);
--	memset(priv->rx_seq, 0, sizeof(priv->rx_seq));
-+	mwifiex_reset_11n_rx_seq_num(priv);
- }
---- a/drivers/net/wireless/mwifiex/11n_rxreorder.h
-+++ b/drivers/net/wireless/mwifiex/11n_rxreorder.h
-@@ -37,6 +37,13 @@
- 
- #define ADDBA_RSP_STATUS_ACCEPT 0
- 
-+#define MWIFIEX_DEF_11N_RX_SEQ_NUM	0xffff
-+
-+static inline void mwifiex_reset_11n_rx_seq_num(struct mwifiex_private *priv)
-+{
-+	memset(priv->rx_seq, 0xff, sizeof(priv->rx_seq));
-+}
-+
- int mwifiex_11n_rx_reorder_pkt(struct mwifiex_private *,
- 			       u16 seqNum,
- 			       u16 tid, u8 *ta,
---- a/drivers/net/wireless/mwifiex/wmm.c
-+++ b/drivers/net/wireless/mwifiex/wmm.c
-@@ -406,6 +406,8 @@ mwifiex_wmm_init(struct mwifiex_adapter
- 		priv->add_ba_param.tx_win_size = MWIFIEX_AMPDU_DEF_TXWINSIZE;
- 		priv->add_ba_param.rx_win_size = MWIFIEX_AMPDU_DEF_RXWINSIZE;
- 
-+		mwifiex_reset_11n_rx_seq_num(priv);
-+
- 		atomic_set(&priv->wmm.tx_pkts_queued, 0);
- 		atomic_set(&priv->wmm.highest_queued_prio, HIGH_PRIO_TID);
- 	}
+--- a/drivers/usb/class/cdc-wdm.c
++++ b/drivers/usb/class/cdc-wdm.c
+@@ -457,6 +457,8 @@ retry:
+ 			goto retry;
+ 		}
+ 		if (!desc->reslength) { /* zero length read */
++			dev_dbg(&desc->intf->dev, "%s: zero length - clearing WDM_READ\n", __func__);
++			clear_bit(WDM_READ, &desc->flags);
+ 			spin_unlock_irq(&desc->iuspin);
+ 			goto retry;
+ 		}
 
 
