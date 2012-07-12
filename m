@@ -1,79 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933861Ab2GLNwk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 09:52:40 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54972 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932387Ab2GLNwi (ORCPT
+	id S933866Ab2GLNzk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 09:55:40 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:38632 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932387Ab2GLNzi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 09:52:38 -0400
+	Thu, 12 Jul 2012 09:55:38 -0400
+Date: Thu, 12 Jul 2012 09:47:03 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Olaf Hering <olaf@aepfle.de>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [PATCH] xen pv-on-hvm: add pfn_is_ram helper for
+ kdump
+Message-ID: <20120712134703.GD5204@phenom.dumpdata.com>
+References: <1342083605-15371-1-git-send-email-olaf@aepfle.de>
 MIME-Version: 1.0
-In-Reply-To: <20120712005405.GA1613@redhat.com>
-References: <20120709180328.GA4105@redhat.com> <CAPXgP11oP4aKyg=HUNrb3z_ZbPjU+_u338sD6uhxKyJ43Z8sgQ@mail.gmail.com>
- <1341859731.801.0.camel@mop> <20120712005405.GA1613@redhat.com>
-From: Kay Sievers <kay@vrfy.org>
-Date: Thu, 12 Jul 2012 15:52:17 +0200
-Message-ID: <CAPXgP13J98an3GW1-aBOEk=5Vyr+is1DaPhz-UFWHBOJ2nHkKA@mail.gmail.com>
-Subject: Re: 3.5-rc6 printk formatting problem during oom-kill.
-To: Dave Jones <davej@redhat.com>, Kay Sievers <kay@vrfy.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartmann <greg@kroah.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1342083605-15371-1-git-send-email-olaf@aepfle.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 12, 2012 at 2:54 AM, Dave Jones <davej@redhat.com> wrote:
-> On Mon, Jul 09, 2012 at 08:48:51PM +0200, Kay Sievers wrote:
+On Thu, Jul 12, 2012 at 11:00:05AM +0200, Olaf Hering wrote:
+> Register pfn_is_ram helper speed up reading /proc/vmcore in the kdump
+> kernel. See commit message of 997c136f518c ("fs/proc/vmcore.c: add hook
+> to read_from_oldmem() to check for non-ram pages") for details.
 
->  > It looks fine here with the above mentioned patch:
->
-> Now that that patch is in Linus tree, I've hit what's probably a different case.
-> Look at the modules list in this oops..
->
-> [10016.460020] BUG: soft lockup - CPU#1 stuck for 22s! [trinity-child1:24295]
-> [10016.470008]  rose<4>[10016.470008]  ip_set_bitmap_ipmac<4>[10016.470008]
+What about the 'unregister_oldmem_pfn_is_ram' call? Should this
+be implemented here as well?
 
-> Also, I have no idea how the hell the 'Modules linked in:' line (9th line) ended up being printed /after/ the
-> module listing began (2nd line).
+Comments below.
 
-It's the output of 'dmesg' you pasted, right?
+> 
+> The new function is currently only enabled for reading /proc/vmcore.
+> Later it will be used also for the kexec kernel. Since that requires
+> more changes in the generic kernel make it static.
+> 
+> Signed-off-by: Olaf Hering <olaf@aepfle.de>
+> ---
+>  arch/x86/xen/mmu.c |   39 +++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 39 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+> index 3a73785..ac876c2 100644
+> --- a/arch/x86/xen/mmu.c
+> +++ b/arch/x86/xen/mmu.c
+> @@ -47,6 +47,7 @@
+>  #include <linux/gfp.h>
+>  #include <linux/memblock.h>
+>  #include <linux/seq_file.h>
+> +#include <linux/crash_dump.h>
 
-I tried to force all sorts of racy print_modules() calls, and kept
-your trinity tool from git for hours, it looks all fine here:
+Should this also have an #idef CONFIG_PROC_VMCORE?
+Or is it going to compile OK without CONFIG_PROC_VMCORE defined?
 
-[   54.664301] NET: Registered protocol family 24
-[   54.684721] Netfilter messages via NETLINK v0.30.
-[   63.103847] ------------[ cut here ]------------
-[   63.103857] WARNING: at kernel/futex.c:2452 sys_get_robust_list+0x28e/0x2a0()
-[   63.103859] Hardware name: 4174NEG
-[   63.103861] deprecated: get_robust_list will be deleted in 2013.
-[   63.103862] Modules linked in: binfmt_misc nfnetlink pppoe pppox
-ppp_generic slhc atm fuse arc4 i915 hid_generic i2c_algo_bit
-drm_kms_helper drm snd_usb_audio snd_usbmidi_lib snd_rawmidi
-snd_seq_device bnep bluetooth snd_hda_codec_hdmi
-snd_hda_codec_conexant uvcvideo videobuf2_vmalloc videobuf2_memops
-videobuf2_core videodev media coretemp kvm_intel kvm crc32c_intel
-microcode i2c_i801 i2c_core iwlwifi snd_hda_intel snd_hda_codec
-mac80211 snd_hwdep lpc_ich snd_pcm mfd_core sdhci_pci sdhci mmc_core
-snd_page_alloc cfg80211 snd_timer thinkpad_acpi snd e1000e soundcore
-rfkill video cdc_ncm wmi usbnet mii cdc_wdm cdc_acm
-[   63.103921] Pid: 837, comm: trinity-child1 Not tainted
-3.5.0-0.rc6.git2.1.fc18.x86_64 #1
-[   63.103923] Call Trace:
-[   63.103930]  [<ffffffff8106310f>] warn_slowpath_common+0x7f/0xc0
-[   63.103934]  [<ffffffff81063206>] warn_slowpath_fmt+0x46/0x50
-[   63.103938]  [<ffffffff810d253d>] ? trace_hardirqs_on_caller+0x10d/0x1a0
-[   63.103941]  [<ffffffff810d6ffe>] sys_get_robust_list+0x28e/0x2a0
-[   63.103946]  [<ffffffff816d7d29>] system_call_fastpath+0x16/0x1b
-[   63.103948] ---[ end trace 796993e76a8397be ]---
-[   63.126701] NET: Registered protocol family 23
-[   63.397208] trinity-child3 (839): Using mlock ulimits for
-SHM_HUGETLB is deprecated
+>  
+>  #include <trace/events/xen.h>
+>  
+> @@ -2245,6 +2246,41 @@ void xen_destroy_contiguous_region(unsigned long vstart, unsigned int order)
+>  EXPORT_SYMBOL_GPL(xen_destroy_contiguous_region);
+>  
+>  #ifdef CONFIG_XEN_PVHVM
+> +#ifdef CONFIG_PROC_VMCORE
+> +/*
+> + * This function is used in two contexts:
+> + * - the kdump kernel has to check wether a pfn of the crashed kernel
 
-Can you easily reproduce the issue you pasted?  If, could you give me
-the /dev/kmsg output?
+s/wether/whether
 
-Thanks,
-Kay
+> + *   was a ballooned page. vmcore is using this function to decide
+> + *   wether to access a pfn of the crashed kernel.
+
+s/wether/wheter
+
+> + * - the kexec kernel has to check wether a pfn was ballooned by the
+
+Ditto.
+
+> + *   previous kernel. If the pfn is ballooned, handle it properly.
+
+. and by handle it properly you mean return -ENXIO?
+
+> + * Returns 0 if the pfn is not backed by a RAM page.
+> + */
+> +static int xen_oldmem_pfn_is_ram(unsigned long pfn)
+> +{
+> +	struct xen_hvm_get_mem_type a;
+
+Can you make this have already initialized values, like:
+
+	struct xen_hvm_get_mem_type a = {
+		.domid = DOMID_SELF;
+		.pfn = pfn
+	};
+
+Also is this hypercall new? Or has it been in existence for some time?
+
+> +	int ram;
+> +
+> +	a.domid = DOMID_SELF;
+> +	a.pfn = pfn;
+> +	if (HYPERVISOR_hvm_op(HVMOP_get_mem_type, &a))
+> +		return -ENXIO;
+> +
+> +	switch (a.mem_type) {
+> +		case HVMMEM_mmio_dm:
+> +			ram = 0;
+> +			break;
+> +		case HVMMEM_ram_rw:
+> +		case HVMMEM_ram_ro:
+> +		default:
+> +			ram = 1;
+> +			break;
+> +	}
+> +
+> +	return ram;
+> +}
+> +#endif
+> +
+>  static void xen_hvm_exit_mmap(struct mm_struct *mm)
+>  {
+>  	struct xen_hvm_pagetable_dying a;
+> @@ -2275,6 +2311,9 @@ void __init xen_hvm_init_mmu_ops(void)
+>  {
+>  	if (is_pagetable_dying_supported())
+>  		pv_mmu_ops.exit_mmap = xen_hvm_exit_mmap;
+> +#ifdef CONFIG_PROC_VMCORE
+> +	register_oldmem_pfn_is_ram(&xen_oldmem_pfn_is_ram);
+> +#endif
+>  }
+>  #endif
+>  
+> -- 
+> 1.7.3.4
+> 
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
