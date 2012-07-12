@@ -1,44 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161376Ab2GLQ6i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 12:58:38 -0400
-Received: from casper.infradead.org ([85.118.1.10]:54239 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161360Ab2GLQ6g convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 12:58:36 -0400
-Message-ID: <1342112309.28010.14.camel@twins>
-Subject: Re: perf with precise attribute kills all KVM based VMs
-From: Peter Zijlstra <peterz@infradead.org>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: David Ahern <dsahern@gmail.com>, Avi Kivity <avi@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 12 Jul 2012 18:58:29 +0200
-In-Reply-To: <20120712161359.GJ7298@redhat.com>
-References: <4FFAEFF1.9000706@redhat.com> <1341845999.3462.86.camel@twins>
-	 <4FFCBD00.1030109@gmail.com> <20120711071006.GF23898@redhat.com>
-	 <1342000187.3462.134.camel@twins> <20120711095337.GJ23898@redhat.com>
-	 <4FFE4E8D.90606@gmail.com> <20120712042923.GG7298@redhat.com>
-	 <4FFEEB55.5070009@gmail.com> <20120712160634.GI7298@redhat.com>
-	 <20120712161359.GJ7298@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S934151Ab2GLRCv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 13:02:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41845 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934096Ab2GLRCu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 13:02:50 -0400
+Date: Thu, 12 Jul 2012 13:02:42 -0400
+From: Dave Jones <davej@redhat.com>
+To: Kay Sievers <kay@vrfy.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartmann <greg@kroah.com>
+Subject: Re: 3.5-rc6 printk formatting problem during oom-kill.
+Message-ID: <20120712170242.GA11890@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>, Kay Sievers <kay@vrfy.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Greg Kroah-Hartmann <greg@kroah.com>
+References: <20120709180328.GA4105@redhat.com>
+ <CAPXgP11oP4aKyg=HUNrb3z_ZbPjU+_u338sD6uhxKyJ43Z8sgQ@mail.gmail.com>
+ <1341859731.801.0.camel@mop>
+ <20120712005405.GA1613@redhat.com>
+ <CAPXgP13J98an3GW1-aBOEk=5Vyr+is1DaPhz-UFWHBOJ2nHkKA@mail.gmail.com>
+ <20120712140552.GA13745@redhat.com>
+ <CAPXgP134KL_hxnsH4OcwGX-mv6hfaRiH9r7Tn4a5XXYzh6EZqA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPXgP134KL_hxnsH4OcwGX-mv6hfaRiH9r7Tn4a5XXYzh6EZqA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-07-12 at 19:13 +0300, Gleb Natapov wrote:
-> BTW what is you host cpu? My patch works only for those that have global
-> control register to disable PMU events, but that should cover most of
-> moder cpus. 
+On Thu, Jul 12, 2012 at 06:47:57PM +0200, Kay Sievers wrote:
+ 
+ > >  > > Also, I have no idea how the hell the 'Modules linked in:' line (9th line) ended up being printed /after/ the
+ > >  > > module listing began (2nd line).
+ > 
+ > They do not belong together. The second line is just another call to
+ > the same print_modules() done from:
+ >     arch/x86/kernel/dumpstack_64.c :: show_regs()
+ > 
+ > While we already called print_modules() a few cycles earlier from:
+ >    kernel/watchdog :: watchdog_timer_fn()
 
-That covers everything but core and p4, and I don't think we support
-PEBS on either of those.
+ah, derp. Good spotting.
+ 
+ > Hmm, it does not trigger your pattern. I tried adding an rmmod in that
+ > loop, but that crashes after a few seconds. Some modules are just not
+ > meant to be removed. :)
 
-that said, you might want to also clear EN on the individual counters,
-just in case the PEBS clear and DS_AREA clear aren't working.
+yeah, that's bothersome. TTBOMK, we've never survived a 'load all modules/unload all modules' ever.
+ 
+ > I forced the watchdog to trigger by setting the timeout to 1s, but all
+ > looks still fine:
+ > 
+ > Could it possibly be that we get some sort of corruption somewhere
+ > else while running trinity and load modules?
 
-The SDM is pretty clear on what you _should_ do to enable/disable PEBS,
-doing less _might_ work but...
+I suppose anything is possible, but it's surprisingly consistent.
+
+	Dave
