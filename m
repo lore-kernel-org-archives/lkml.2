@@ -1,57 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030327Ab2GLKNw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 06:13:52 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:44068 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933271Ab2GLKNs (ORCPT
+	id S1030416Ab2GLKOD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 06:14:03 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:33496 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030343Ab2GLKN5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 06:13:48 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Ravishankar N <cyberax82@gmail.com>,
-        Amit Sahrawat <amit.sahrawat83@gmail.com>
-Subject: Re: [PATCH] fat: Support fallocate on fat.
-References: <1341716859-6768-1-git-send-email-linkinjeon@gmail.com>
-	<87sjd2766n.fsf@devron.myhome.or.jp>
-	<CAKYAXd9mDfDpUj1T1NrY2LUKfwvk94CTXUh5xrEGq8b_rW41rA@mail.gmail.com>
-	<871uklp5j7.fsf@devron.myhome.or.jp>
-	<CAKYAXd-OD_3Z8=6mBQMvBApje9sN0EiPX8drMXc6pSeMgG8Nnw@mail.gmail.com>
-	<87wr2dnp9r.fsf@devron.myhome.or.jp>
-	<CAKYAXd_sWKMOQqyPyteoPbcy8_z6=e53DC8sYTcHgMX4EC10Cw@mail.gmail.com>
-Date: Thu, 12 Jul 2012 19:13:44 +0900
-In-Reply-To: <CAKYAXd_sWKMOQqyPyteoPbcy8_z6=e53DC8sYTcHgMX4EC10Cw@mail.gmail.com>
-	(Namjae Jeon's message of "Wed, 11 Jul 2012 13:22:31 +0900")
-Message-ID: <87r4shp9rb.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1.50 (gnu/linux)
+	Thu, 12 Jul 2012 06:13:57 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: HAYASAKA Mitsuo <mitsuo.hayasaka.hu@hitachi.com>
+Cc: hanwen@xs4all.nl, Han-Wen Nienhuys <hanwenn@gmail.com>,
+        Liu Yuan <namei.unix@gmail.com>, fuse-devel@lists.sourceforge.net,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: [fuse-devel] [RFC PATCH 0/5] fuse: make maximum read/write request size tunable
+References: <20120705105017.17812.95542.stgit@ltc137.sdl.hitachi.co.jp>
+	<4FF67D6A.8060707@gmail.com>
+	<CAOw_e7ZGdSVrNfPe8iE8BtmNWU+BrvbaMFVsUP+g+3MR0Pegqw@mail.gmail.com>
+	<4FFE6785.80201@hitachi.com>
+Date: Thu, 12 Jul 2012 12:13:53 +0200
+In-Reply-To: <4FFE6785.80201@hitachi.com> (HAYASAKA Mitsuo's message of "Thu,
+	12 Jul 2012 14:58:29 +0900")
+Message-ID: <878vep478e.fsf@tucsk.pomaz.szeredi.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namjae Jeon <linkinjeon@gmail.com> writes:
+HAYASAKA Mitsuo <mitsuo.hayasaka.hu@hitachi.com> writes:
 
->> I guess, if Windows truncates the above clusters than file size, it may
->> be prefer to truncate on linux too. We really need it over umount?
->> We never know the file whether corrupted or preallocated.
+> Hi Yuan and Han-Wen,
+>
+> Thank you for your comments.
+>
+> (2012/07/06 22:58), Han-Wen Nienhuys wrote:
+>> On Fri, Jul 6, 2012 at 2:53 AM, Liu Yuan<namei.unix@gmail.com>  wrote:
+>>> On 07/05/2012 06:50 PM, Mitsuo Hayasaka wrote:
+>>>> One of the ways to solve this is to make them tunable.
+>>>> In this series, the new sysfs parameter max_pages_per_req is introduced.
+>>>> It limits the maximum read/write size in fuse request and it can be
+>>>> changed from 32 to 256 pages in current implementations. When the
+>>>> max_read/max_write mount option is specified, FUSE request size is set
+>>>> per mount. (The size is rounded-up to page size and limited up to
+>>>> max_pages_per_req.)
+>>>
+>>> Why maxim 256 pages? If we are here, we can go further: most of object
+>>> storage system has object size of multiple to dozens of megabytes. So I
+>>> think probably 1M is too small. Our distribution storage system has 4M
+>>> per object, so I think at least maxim size could be bigger than 4M.
 >>
->> And at least for now, it would be better to put under CONFIG_FAT_FALLOC
->> or such, and warn it as unofficial way to preallocation on the
->> explanation of CONFIG_FAT_FALLOC.
+>> The maximum pipe size on my system is 1M, so if you go beyond that,
+>> splicing from the FD won't work.
 >>
->> Sorry, I'm still not reviewing the detail of code yet, like locking. And
->> I'm still not convinced whether we should add this hack (unofficial way)...
-> Hi OGAWA.
-> Sorry for late response.
-> Currently I am looking for best solution for fallocate support.
-> next patch will be upated like the following.
-> 1. There is no security bug.
-> 2. Fix issue takes long time while preallocating.
-> 3. No compatibility issue.
-> Let' discuss after seeing next version's patch again.
+>> Also, the userspace client must reserve a buffer this size so it can
+>> receive a write, which is a waste since most requests are much
+>> smaller.
+>>
+>
+> I checked the maximum pipe size can be changed using fcntl(2) or
+> /proc/sys/fs/pipe-max-size. It is clear that it is not a fixed value.
+>
+> Also, it seems that there is a request for setting the maximum number
+> of pages per fuse request to 4M (1024 pages). One of the reasons to
+> introduce the sysfs max_pages_per_req parameter is to set a threshold
+> of the maximum number of pages dynamically according to the
+> administrator's demand, and root can only change it.
+>
+> So, when the maximum value is required to be set to not more than the
+> pipe-max-size, the max_pages_per_req should be changed considering it.
+> It seems that the upper limit of this parameter does not have to be
+> not more than it.
+>
+> I'm planning to limit max_pages_per_req up to 1024 pages and add the
+> document to /Documentation/filesystems/fuse.txt, as follows.
+>
+> "the sysfs max_pages_per_req parameter can be changed from 32 to 1024.
+> The default is 32 pages. Generally, the pipe-max-size is 1M (256 pages)
+> and it is better to set it to not more than the pipe-max-size."
 
-Sure, thanks.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Can't we just use pipe-max-size for the limit?
+
+Then we'll use the minimum of pipe-max-size and max_read/max_write for
+sizing the requests.
+
+Another comment: do we really need to allocate each and every request
+with space for the pages?  I don't think that makes sense.  Let's leave
+some small number of pages inline in the request and allocate a separate
+array if the number of pages is too large.  There may even be some utilities
+in the kernel to handle dynamically sized page arrays (I haven't looked
+but I suspect there is).
+
+Thanks,
+Miklos
