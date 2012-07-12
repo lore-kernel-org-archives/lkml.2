@@ -1,86 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161354Ab2GLR5n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 13:57:43 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:38730 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932762Ab2GLR5l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 13:57:41 -0400
-Date: Thu, 12 Jul 2012 13:57:37 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Cc: Richard Fontana <fontana2012@gmail.com>, "Bradley M. Kuhn" <bkuhn@ebb.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] copyleft-next: embrace the Signed-off-by practice
-Message-ID: <20120712175737.GA18349@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	"Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-	Richard Fontana <fontana2012@gmail.com>,
-	"Bradley M. Kuhn" <bkuhn@ebb.org>, linux-kernel@vger.kernel.org
-References: <1342053889-32066-1-git-send-email-mcgrof@do-not-panic.com>
- <1342053889-32066-5-git-send-email-mcgrof@do-not-panic.com>
- <20120712152740.GB14792@thunk.org>
- <CAB=NE6Vw0AR-eOZ90T=45M=O=7YkujFOYz7S3fviKYuTDa=JCQ@mail.gmail.com>
+	id S934200Ab2GLSB6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 14:01:58 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:16747 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932762Ab2GLSB4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 14:01:56 -0400
+X-IronPort-AV: E=Sophos;i="4.77,575,1336363200"; 
+   d="scan'208";a="201975233"
+Message-ID: <1342116057.8586.192.camel@hastur.hellion.org.uk>
+Subject: Re: [Xen-devel] [PATCH WIP 2/6] xen/arm: Introduce xen_guest_init
+From: Ian Campbell <ian.campbell@citrix.com>
+To: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+CC: David Vrabel <david.vrabel@citrix.com>,
+        Roger Pau Monne <roger.pau@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "Tim (Xen.org)" <tim@xen.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 12 Jul 2012 12:00:57 -0600
+In-Reply-To: <alpine.DEB.2.02.1207121845420.23783@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1206221644370.27860@kaball.uk.xensource.com>
+	 <1340381685-22529-1-git-send-email-stefano.stabellini@eu.citrix.com>
+	 <1340381685-22529-2-git-send-email-stefano.stabellini@eu.citrix.com>
+	 <20120709144505.GD12102@phenom.dumpdata.com> <4FFAF3E3.7070306@citrix.com>
+	 <4FFEB9B4.2040307@citrix.com> <4FFEBD42.80001@citrix.com>
+	 <alpine.DEB.2.02.1207121845420.23783@kaball.uk.xensource.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2-1+b1 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAB=NE6Vw0AR-eOZ90T=45M=O=7YkujFOYz7S3fviKYuTDa=JCQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 12, 2012 at 10:30:59AM -0700, Luis R. Rodriguez wrote:
-> Its unclear to me if this is the case for copyleft-next, so lets test
-> it out and get this clarified once and for all. Even though one may be
-> supportive of the philosophical evolutions of the ideas of copyleft I
-> have been wondering and personally hoping Fontana would consider
-> copyleft-next not as an effort to lead *philosophical evolutions* with
-> regards to *freedoms on copyleft* but instead -- addressing practical
-> issues that prevented the GPLv3 from being embraced in Linux. That is
-> bug fixing the GPLv3 in so far as Linux is concerned. Its worth being
-> explicitly clear so I'll send a patch to try to remove the Tivoization
-> clauses. This can then formally be NACKed or ACKed, or issues be
-> addressed. I should note that Fontana has indicated that he views
-> copyleft-next not as his project but that of the community's. I'm
-> hoping the Linux kernel community is part of this community.
+On Thu, 2012-07-12 at 13:50 -0400, Stefano Stabellini wrote:
+> On Thu, 12 Jul 2012, David Vrabel wrote:
+> > On 12/07/12 12:49, Roger Pau Monne wrote:
+> > > David Vrabel wrote:
+> > >> On 09/07/12 15:45, Konrad Rzeszutek Wilk wrote:
+> > >>> On Fri, Jun 22, 2012 at 05:14:41PM +0100, Stefano Stabellini wrote:
+> > >>>> We used to rely on a core_initcall to initialize Xen on ARM, however
+> > >>>> core_initcalls are actually called after early consoles are initialized.
+> > >>>> That means that hvc_xen.c is going to be initialized before Xen.
+> > >>>>
+> > >>>> Given the lack of a better alternative, just call a new Xen
+> > >>>> initialization function (xen_guest_init) from xen_cons_init.
+> > >>>>
+> > >>>> xen_guest_init has to be arch independant, so write both an ARM and an
+> > >>>> x86 implementation. The x86 implementation is currently empty because we
+> > >>>> can be sure that xen_hvm_guest_init is called early enough.
+> > >>>>
+> > >>>> Probably we can get rid of this as soon as we have better DT support.
+> > >>> What is DT?
+> > >>
+> > >> Device Tree.  It's a binary describing the hardware and some system
+> > >> configuration that is passed to the kernel by the boot loader or (in
+> > >> this case) the hypervisor.  Vaguely analogous to ACPI except it's not
+> > >> crazy ;).
+> > >>
+> > >> We really should get the device tree bindings sorted out before
+> > >> accepting any kernel side patches.  I think we can do this even if Xen's
+> > >> device tree support is incomplete.
+> > > 
+> > > Will this be passed from the hypervisor to the linux kernel using a
+> > > specific mechanism (different than the native one)?
+> > 
+> > The same mechanism.  The kernel is booted with the physical address of
+> > the device tree blob in a register (r2 I think) .  Xen sorts this out
+> > for dom0 and the toolstack is responsible for this for domUs.
+> > 
+> > I would expect the device tree to include the physical address of the
+> > shared page with something like this.
+> > 
+> > hypervisor {
+> >    xen {
+> >        shared-info = <0x00 0x12345678 0 4096>;
+> >    };
+> > };
+> > 
+> > Arch code in ARM would check for the hypervisor node (very) early on and
+> > call a hypervisor specific init function based on the name of the child
+> > node (xen in this case).
+>  
+> There is no need to specify the shared-info page address in the DT as we
+> already have a mechanism to map it dynamically (XENMAPSPACE_shared_info).
+> 
+> However we could use DT to pass the address of the grant table pages
+> instead of introducing HVM_PARAM_GRANT_START_PFN (see
+> http://marc.info/?l=linux-kernel&m=134140077708602&w=2).
 
-Well, at the risk of starting a long flame war on licensing issues on
-LKML, which I'm sure would not get us thanks from anyone, we do need
-to acknowledge that there are people "in the community" who believe
-very strongly in the anti-Tivoization clause.  Indeed, there are
-others who are even more extreme, and would have preferred that the
-restrictions embodied in the Affero General Public License would get
-incorporated into the GPLv3.  Very fortunately (IMHO) this idea did
-not get traction, but the point remains that there's a very wide
-diversity of opinion "in the community" about what sort of
-restrictions and how viral a Copyleft license "should" be.
+We need to be sure there is something there which signals "running under
+Xen" in the general sense too so we can detect it early on. Perhaps
+something explicitly for that purpose or perhaps one of these required
+items could serve as a key. 
 
-> It does make me wonder -- if the goal of copyleft-next is not to help
-> address *our* concerns with evolutions on copyleft in the Linux kernel
-> community if we ourselves can simply consider doing something similar
-> where we *do* address such things.
+Ian
 
-Yes, but is it worth it?  The patent language could get a bit
-stronger, and legal language would get a bit more clear; but the GPLv2
-has the advantage that it's time tested and well understood.  A new
-license would take a huge amount of work, and it's not clear the
-benefits outweigh the costs.
 
-And I'm not just talking about the work of revising the license,
-getting lawyers to sign off on it, etc., but also the work of getting
-all of the copyright holders (including the corporate ones) to sign
-off on the license change.  Then there's also the license
-incompatibility issue problem....  Bottom line is, even if the
-Copyright Next license, or some fork of the Copyright Next License,
-had the anti-Tivoization issue addressed to the kernel community's
-satisfaction, is it worth the effort to move the Linux Kernel to a
-newer license?  There are benefits, definitely; but there are also a
-large set of costs.
-
-Regards,
-
-					- Ted
