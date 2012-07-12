@@ -1,134 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030588Ab2GLDf7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 23:35:59 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63616 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754175Ab2GLDfB (ORCPT
+	id S1030598Ab2GLDgD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 23:36:03 -0400
+Received: from co1ehsobe001.messaging.microsoft.com ([216.32.180.184]:57809
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758640Ab2GLDf0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 23:35:01 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] irq_domain: Standardise legacy/linear domain selection
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-In-Reply-To: <1341487159-3919-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1341487159-3919-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-Date: Wed, 11 Jul 2012 15:06:03 +0100
-Message-Id: <20120711140603.446033E0DDA@localhost>
+	Wed, 11 Jul 2012 23:35:26 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zz98dI1432I1447Izz1202h1082kzz8275dhz2dh2a8h668h839h944hd25hf0ah107ah)
+Date: Thu, 12 Jul 2012 11:26:25 +0800
+From: Dong Aisheng <b29396@freescale.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>
+Subject: Re: [RFC PATCH 2/2] irq: add irq_desc_initialize to remove some
+ duplicated lines
+Message-ID: <20120712032624.GC22640@shlinux2.ap.freescale.net>
+References: <1340182831-10477-1-git-send-email-b29396@freescale.com>
+ <1340182831-10477-2-git-send-email-b29396@freescale.com>
+ <alpine.LFD.2.02.1207120017590.32033@ionos>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1207120017590.32033@ionos>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  5 Jul 2012 12:19:19 +0100, Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
-> A large proportion of interrupt controllers that support legacy mappings
-> do so because non-DT systems need to use fixed IRQ numbers when registering
-> devices via buses but can otherwise use a linear mapping. The interrupt
-> controller itself typically is not affected by the mapping used and best
-> practice is to use a linear mapping where possible so drivers frequently
-> select at runtime depending on if a legacy range has been allocated to
-> them.
-> 
-> Standardise this behaviour by providing irq_domain_register_simple() which
-> will allocate a linear mapping unless a positive first_irq is provided in
-> which case it will fall back to a legacy mapping. This helps make best
-> practice for irq_domain adoption clearer.
-> 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Hi Thomas,
 
-Applied, thanks.
+Thanks for the review firstly.
 
-g.
-
-> ---
->  Documentation/IRQ-domain.txt |    5 +++++
->  include/linux/irqdomain.h    |    5 +++++
->  kernel/irq/irqdomain.c       |   30 ++++++++++++++++++++++++++++++
->  3 files changed, 40 insertions(+)
+On Thu, Jul 12, 2012 at 06:19:18AM +0800, Thomas Gleixner wrote:
+> On Wed, 20 Jun 2012, Dong Aisheng wrote:
+> > From: Dong Aisheng <dong.aisheng@linaro.org>
+> > 
+> > There're two copies of irq_desc initialization code, reform them into
+> > an irq_desc_initialize function to call.
+> > 
+> > Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+> > ---
+> >  kernel/irq/irqdesc.c |   51 +++++++++++++++++++++++++++----------------------
+> >  1 files changed, 28 insertions(+), 23 deletions(-)
 > 
-> diff --git a/Documentation/IRQ-domain.txt b/Documentation/IRQ-domain.txt
-> index 27dcaab..1401cec 100644
-> --- a/Documentation/IRQ-domain.txt
-> +++ b/Documentation/IRQ-domain.txt
-> @@ -93,6 +93,7 @@ Linux IRQ number into the hardware.
->  Most drivers cannot use this mapping.
->  
->  ==== Legacy ====
-> +irq_domain_add_simple()
->  irq_domain_add_legacy()
->  irq_domain_add_legacy_isa()
->  
-> @@ -115,3 +116,7 @@ The legacy map should only be used if fixed IRQ mappings must be
->  supported.  For example, ISA controllers would use the legacy map for
->  mapping Linux IRQs 0-15 so that existing ISA drivers get the correct IRQ
->  numbers.
-> +
-> +Most users of legacy mappings should use irq_domain_add_simple() which
-> +will use a legacy domain only if an IRQ range is supplied by the
-> +system and will otherwise use a linear domain mapping.
-> diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
-> index 5abb533e..17b60be 100644
-> --- a/include/linux/irqdomain.h
-> +++ b/include/linux/irqdomain.h
-> @@ -112,6 +112,11 @@ struct irq_domain {
->  };
->  
->  #ifdef CONFIG_IRQ_DOMAIN
-> +struct irq_domain *irq_domain_add_simple(struct device_node *of_node,
-> +					 unsigned int size,
-> +					 unsigned int first_irq,
-> +					 const struct irq_domain_ops *ops,
-> +					 void *host_data);
->  struct irq_domain *irq_domain_add_legacy(struct device_node *of_node,
->  					 unsigned int size,
->  					 unsigned int first_irq,
-> diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-> index d3968e9..0c51958 100644
-> --- a/kernel/irq/irqdomain.c
-> +++ b/kernel/irq/irqdomain.c
-> @@ -140,6 +140,36 @@ static unsigned int irq_domain_legacy_revmap(struct irq_domain *domain,
->  }
->  
->  /**
-> + * irq_domain_add_simple() - Allocate and register a simple irq_domain.
-> + * @of_node: pointer to interrupt controller's device tree node.
-> + * @size: total number of irqs in mapping
-> + * @first_irq: first number of irq block assigned to the domain
-> + * @ops: map/unmap domain callbacks
-> + * @host_data: Controller private data pointer
-> + *
-> + * Allocates a legacy irq_domain if irq_base is positive or a linear
-> + * domain otherwise.
-> + *
-> + * This is intended to implement the expected behaviour for most
-> + * interrupt controllers which is that a linear mapping should
-> + * normally be used unless the system requires a legacy mapping in
-> + * order to support supplying interrupt numbers during non-DT
-> + * registration of devices.
-> + */
-> +struct irq_domain *irq_domain_add_simple(struct device_node *of_node,
-> +					 unsigned int size,
-> +					 unsigned int first_irq,
-> +					 const struct irq_domain_ops *ops,
-> +					 void *host_data)
-> +{
-> +	if (first_irq > 0)
-> +		return irq_domain_add_legacy(of_node, size, first_irq, 0,
-> +					     ops, host_data);
-> +	else
-> +		return irq_domain_add_linear(of_node, size, ops, host_data);
-> +}
-> +
-> +/**
->   * irq_domain_add_legacy() - Allocate and register a legacy revmap irq_domain.
->   * @of_node: pointer to interrupt controller's device tree node.
->   * @size: total number of irqs in legacy mapping
-> -- 
-> 1.7.10
+> We add more code by removing redundant copies?
 > 
+I also had this strange question.
+I looked the code a bit more, i guess the main problem is that the redundant copies
+is not too big, so we can not see great savings.
 
--- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies, Ltd.
+Compare to the init code of irq_desc in original alloc_desc function,
+the new irq_desc_initialize function saves 4 lines.
+However, the new function also add 4 lines for defining extra function name,
+parameter and etc.
+And alloc_desc still needs to call irq_desc_initialize and checking return value
+which needs extra 6 lines.
+The main saving is another copy of irq_desc initialization in early_irq_init,
+but this copy does not check any return values which cause we did not save too much,
+only about 4 lines.
+Plus extra blan lines added, so totally it does not save more than new added.
+
+However, i was thinking it could make code looks a bit better.
+So i sent out this RFC patch.
+Do you think if it's reasonable?
+
+BTW, there's an issue in my patch, should change like:
+        if (alloc_masks(desc, GFP_KERNEL, node)) {
+-               kfree(desc->kstat_irqs);
++               free_percpu(desc->kstat_irqs);
+                return -ENOMEM;
+        }
+
+Regards
+Dong Aisheng
+
