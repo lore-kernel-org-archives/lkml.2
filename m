@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758660Ab2GLGkr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 02:40:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39762 "EHLO mx2.suse.de"
+	id S1758674Ab2GLGtw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 02:49:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39800 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752803Ab2GLGko (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 02:40:44 -0400
+	id S1752760Ab2GLGkr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 02:40:47 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
@@ -17,9 +17,9 @@ Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
         Eric Dumazet <eric.dumazet@gmail.com>,
         Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 06/16] mm: Ignore mempolicies when using ALLOC_NO_WATERMARK
-Date: Thu, 12 Jul 2012 07:40:22 +0100
-Message-Id: <1342075232-29267-7-git-send-email-mgorman@suse.de>
+Subject: [PATCH 08/16] netvm: Allow the use of __GFP_MEMALLOC by specific sockets
+Date: Thu, 12 Jul 2012 07:40:24 +0100
+Message-Id: <1342075232-29267-9-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1342075232-29267-1-git-send-email-mgorman@suse.de>
 References: <1342075232-29267-1-git-send-email-mgorman@suse.de>
@@ -27,44 +27,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The reserve is proportionally distributed over all !highmem zones
-in the system. So we need to allow an emergency allocation access to
-all zones.  In order to do that we need to break out of any mempolicy
-boundaries we might have.
+Allow specific sockets to be tagged SOCK_MEMALLOC and use
+__GFP_MEMALLOC for their allocations. These sockets will be able to go
+below watermarks and allocate from the emergency reserve. Such sockets
+are to be used to service the VM (iow. to swap over). They must be
+handled kernel side, exposing such a socket to user-space is a bug.
 
-In my opinion that does not break mempolicies as those are user
-oriented and not system oriented. That is, system allocations are
-not guaranteed to be within mempolicy boundaries. For instance IRQs
-do not even have a mempolicy.
+There is a risk that the reserves be depleted so for now, the
+administrator is responsible for increasing min_free_kbytes as
+necessary to prevent deadlock for their workloads.
 
-So breaking out of mempolicy boundaries for 'rare' emergency
-allocations, which are always system allocations (as opposed to user)
-is ok.
-
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+[a.p.zijlstra@chello.nl: Original patches]
 Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: David S. Miller <davem@davemloft.net>
 ---
- mm/page_alloc.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ include/net/sock.h |    5 ++++-
+ net/core/sock.c    |   22 ++++++++++++++++++++++
+ 2 files changed, 26 insertions(+), 1 deletion(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index f88519b..cdc1536 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2350,6 +2350,13 @@ rebalance:
+diff --git a/include/net/sock.h b/include/net/sock.h
+index d6ee4c6..a52e02a 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -621,6 +621,7 @@ enum sock_flags {
+ 	SOCK_RCVTSTAMPNS, /* %SO_TIMESTAMPNS setting */
+ 	SOCK_LOCALROUTE, /* route locally only, %SO_DONTROUTE setting */
+ 	SOCK_QUEUE_SHRUNK, /* write queue has been shrunk recently */
++	SOCK_MEMALLOC, /* VM depends on this socket for swapping */
+ 	SOCK_TIMESTAMPING_TX_HARDWARE,  /* %SOF_TIMESTAMPING_TX_HARDWARE */
+ 	SOCK_TIMESTAMPING_TX_SOFTWARE,  /* %SOF_TIMESTAMPING_TX_SOFTWARE */
+ 	SOCK_TIMESTAMPING_RX_HARDWARE,  /* %SOF_TIMESTAMPING_RX_HARDWARE */
+@@ -660,7 +661,7 @@ static inline bool sock_flag(const struct sock *sk, enum sock_flags flag)
  
- 	/* Allocate without watermarks if the context allows */
- 	if (alloc_flags & ALLOC_NO_WATERMARKS) {
-+		/*
-+		 * Ignore mempolicies if ALLOC_NO_WATERMARKS on the grounds
-+		 * the allocation is high priority and these type of
-+		 * allocations are system rather than user orientated
-+		 */
-+		zonelist = node_zonelist(numa_node_id(), gfp_mask);
+ static inline gfp_t sk_gfp_atomic(struct sock *sk, gfp_t gfp_mask)
+ {
+-	return GFP_ATOMIC;
++	return GFP_ATOMIC | (sk->sk_allocation & __GFP_MEMALLOC);
+ }
+ 
+ static inline void sk_acceptq_removed(struct sock *sk)
+@@ -803,6 +804,8 @@ extern int sk_stream_wait_memory(struct sock *sk, long *timeo_p);
+ extern void sk_stream_wait_close(struct sock *sk, long timeo_p);
+ extern int sk_stream_error(struct sock *sk, int flags, int err);
+ extern void sk_stream_kill_queues(struct sock *sk);
++extern void sk_set_memalloc(struct sock *sk);
++extern void sk_clear_memalloc(struct sock *sk);
+ 
+ extern int sk_wait_data(struct sock *sk, long *timeo);
+ 
+diff --git a/net/core/sock.c b/net/core/sock.c
+index a42c772..b6bb8fd 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -271,6 +271,28 @@ __u32 sysctl_rmem_default __read_mostly = SK_RMEM_MAX;
+ int sysctl_optmem_max __read_mostly = sizeof(unsigned long)*(2*UIO_MAXIOV+512);
+ EXPORT_SYMBOL(sysctl_optmem_max);
+ 
++/**
++ * sk_set_memalloc - sets %SOCK_MEMALLOC
++ * @sk: socket to set it on
++ *
++ * Set %SOCK_MEMALLOC on a socket for access to emergency reserves.
++ * It's the responsibility of the admin to adjust min_free_kbytes
++ * to meet the requirements
++ */
++void sk_set_memalloc(struct sock *sk)
++{
++	sock_set_flag(sk, SOCK_MEMALLOC);
++	sk->sk_allocation |= __GFP_MEMALLOC;
++}
++EXPORT_SYMBOL_GPL(sk_set_memalloc);
 +
- 		page = __alloc_pages_high_priority(gfp_mask, order,
- 				zonelist, high_zoneidx, nodemask,
- 				preferred_zone, migratetype);
++void sk_clear_memalloc(struct sock *sk)
++{
++	sock_reset_flag(sk, SOCK_MEMALLOC);
++	sk->sk_allocation &= ~__GFP_MEMALLOC;
++}
++EXPORT_SYMBOL_GPL(sk_clear_memalloc);
++
+ #if defined(CONFIG_CGROUPS)
+ #if !defined(CONFIG_NET_CLS_CGROUP)
+ int net_cls_subsys_id = -1;
 -- 
 1.7.9.2
 
