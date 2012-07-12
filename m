@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161684Ab2GLWja (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:39:30 -0400
+	id S1161670Ab2GLWj1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:39:27 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:60450 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161660Ab2GLWjZ (ORCPT
+	with ESMTP id S1161639Ab2GLWjO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:39:25 -0400
+	Thu, 12 Jul 2012 18:39:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Panayiotis Karabassis <panayk@gmail.com>,
+        Rolf Offermanns <rolf.offermanns@gmx.net>,
+        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+        Senthil Balasubramanian <senthilb@qca.qualcomm.com>,
+        Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 067/187] ath9k: enable serialize_regmode for non-PCIE AR9287
-Date: Thu, 12 Jul 2012 15:33:43 -0700
-Message-Id: <20120712191528.610688804@linuxfoundation.org>
+Subject: [ 064/187] ath9k_hw: avoid possible infinite loop in ar9003_get_pll_sqsum_dvc
+Date: Thu, 12 Jul 2012 15:33:40 -0700
+Message-Id: <20120712191528.336775659@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -31,32 +34,16 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Panayiotis Karabassis <panayk@gmail.com>
+From: Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>
 
-commit 7508b657967cf664b5aa0f6367d05016e7e3bc2a upstream.
+commit f18e3c6b67f448ec47b3a5b242789bd3d5644879 upstream.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=42903
-
-Based on the work of <fynivx@gmail.com>
-
-Signed-off-by: Panayiotis Karabassis <panayk@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/net/wireless/ath/ath9k/hw.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/drivers/net/wireless/ath/ath9k/hw.c
-+++ b/drivers/net/wireless/ath/ath9k/hw.c
-@@ -558,7 +558,7 @@ static int __ath9k_hw_init(struct ath_hw
- 
- 	if (NR_CPUS > 1 && ah->config.serialize_regmode == SER_REG_MODE_AUTO) {
- 		if (ah->hw_version.macVersion == AR_SREV_VERSION_5416_PCI ||
--		    ((AR_SREV_9160(ah) || AR_SREV_9280(ah)) &&
-+		    ((AR_SREV_9160(ah) || AR_SREV_9280(ah) || AR_SREV_9287(ah)) &&
- 		     !ah->is_pciexpress)) {
- 			ah->config.serialize_regmode =
- 				SER_REG_MODE_ON;
-
+"ath9k: Fix softlockup in AR9485" with commit id
+64bc1239c790e051ff677e023435d770d2ffa174 fixed the reported
+issue, yet its better to avoid the possible infinite loop
+in ar9003_get_pll_sqsum_dvc by having a timeout as suggested
+by ath9k maintainers.
+http://www.spinics.net/lists/linux-wireless/msg92126.html.
+Based on my testing PLL's locking measurement is done in
+~200us (2 iterations).
 
