@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162323Ab2GLW5n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:57:43 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:46727 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162067Ab2GLWnl (ORCPT
+	id S934302Ab2GLW6u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:58:50 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:61447 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162114Ab2GLWnb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:43:41 -0400
+	Thu, 12 Jul 2012 18:43:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: [ 140/187] mm/memblock: fix memory leak on extending regions
-Date: Thu, 12 Jul 2012 15:34:56 -0700
-Message-Id: <20120712191535.377307899@linuxfoundation.org>
+        Tyler Hicks <tyhicks@canonical.com>
+Subject: [ 137/187] eCryptfs: Fix lockdep warning in miscdev operations
+Date: Thu, 12 Jul 2012 15:34:53 -0700
+Message-Id: <20120712191535.093469985@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -31,103 +30,103 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Gavin Shan <shangw@linux.vnet.ibm.com>
+From: Tyler Hicks <tyhicks@canonical.com>
 
-commit 181eb39425f2b9275afcb015eaa547d11f71a02f upstream.
+commit 60d65f1f07a7d81d3eb3b91fc13fca80f2fdbb12 upstream.
 
-The overall memblock has been organized into the memory regions and
-reserved regions.  Initially, the memory regions and reserved regions are
-stored in the predetermined arrays of "struct memblock _region".  It's
-possible for the arrays to be enlarged when we have newly added regions,
-but no free space left there.  The policy here is to create double-sized
-array either by slab allocator or memblock allocator.  Unfortunately, we
-didn't free the old array, which might be allocated through slab allocator
-before.  That would cause memory leak.
+Don't grab the daemon mutex while holding the message context mutex.
+Addresses this lockdep warning:
 
-The patch introduces 2 variables to trace where (slab or memblock) the
-memory and reserved regions come from.  The memory for the memory or
-reserved regions will be deallocated by kfree() if that was allocated by
-slab allocator.  Thus to fix the memory leak issue.
+ ecryptfsd/2141 is trying to acquire lock:
+  (&ecryptfs_msg_ctx_arr[i].mux){+.+.+.}, at: [<ffffffffa029c213>] ecryptfs_miscdev_read+0x143/0x470 [ecryptfs]
 
-Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+ but task is already holding lock:
+  (&(*daemon)->mux){+.+...}, at: [<ffffffffa029c2ec>] ecryptfs_miscdev_read+0x21c/0x470 [ecryptfs]
+
+ which lock already depends on the new lock.
+
+ the existing dependency chain (in reverse order) is:
+
+ -> #1 (&(*daemon)->mux){+.+...}:
+        [<ffffffff810a3b8d>] lock_acquire+0x9d/0x220
+        [<ffffffff8151c6da>] __mutex_lock_common+0x5a/0x4b0
+        [<ffffffff8151cc64>] mutex_lock_nested+0x44/0x50
+        [<ffffffffa029c5d7>] ecryptfs_send_miscdev+0x97/0x120 [ecryptfs]
+        [<ffffffffa029b744>] ecryptfs_send_message+0x134/0x1e0 [ecryptfs]
+        [<ffffffffa029a24e>] ecryptfs_generate_key_packet_set+0x2fe/0xa80 [ecryptfs]
+        [<ffffffffa02960f8>] ecryptfs_write_metadata+0x108/0x250 [ecryptfs]
+        [<ffffffffa0290f80>] ecryptfs_create+0x130/0x250 [ecryptfs]
+        [<ffffffff811963a4>] vfs_create+0xb4/0x120
+        [<ffffffff81197865>] do_last+0x8c5/0xa10
+        [<ffffffff811998f9>] path_openat+0xd9/0x460
+        [<ffffffff81199da2>] do_filp_open+0x42/0xa0
+        [<ffffffff81187998>] do_sys_open+0xf8/0x1d0
+        [<ffffffff81187a91>] sys_open+0x21/0x30
+        [<ffffffff81527d69>] system_call_fastpath+0x16/0x1b
+
+ -> #0 (&ecryptfs_msg_ctx_arr[i].mux){+.+.+.}:
+        [<ffffffff810a3418>] __lock_acquire+0x1bf8/0x1c50
+        [<ffffffff810a3b8d>] lock_acquire+0x9d/0x220
+        [<ffffffff8151c6da>] __mutex_lock_common+0x5a/0x4b0
+        [<ffffffff8151cc64>] mutex_lock_nested+0x44/0x50
+        [<ffffffffa029c213>] ecryptfs_miscdev_read+0x143/0x470 [ecryptfs]
+        [<ffffffff811887d3>] vfs_read+0xb3/0x180
+        [<ffffffff811888ed>] sys_read+0x4d/0x90
+        [<ffffffff81527d69>] system_call_fastpath+0x16/0x1b
+
+Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/memblock.c |   37 ++++++++++++++++++++++++-------------
- 1 file changed, 24 insertions(+), 13 deletions(-)
+ fs/ecryptfs/miscdev.c |   25 +++++++++++++------------
+ 1 file changed, 13 insertions(+), 12 deletions(-)
 
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -37,6 +37,8 @@ struct memblock memblock __initdata_memb
+--- a/fs/ecryptfs/miscdev.c
++++ b/fs/ecryptfs/miscdev.c
+@@ -195,31 +195,32 @@ int ecryptfs_send_miscdev(char *data, si
+ 			  struct ecryptfs_msg_ctx *msg_ctx, u8 msg_type,
+ 			  u16 msg_flags, struct ecryptfs_daemon *daemon)
+ {
+-	int rc = 0;
++	struct ecryptfs_message *msg;
  
- int memblock_debug __initdata_memblock;
- static int memblock_can_resize __initdata_memblock;
-+static int memblock_memory_in_slab __initdata_memblock = 0;
-+static int memblock_reserved_in_slab __initdata_memblock = 0;
- 
- /* inline so we don't get a warning when pr_debug is compiled out */
- static inline const char *memblock_type_name(struct memblock_type *type)
-@@ -187,6 +189,7 @@ static int __init_memblock memblock_doub
- 	struct memblock_region *new_array, *old_array;
- 	phys_addr_t old_size, new_size, addr;
- 	int use_slab = slab_is_available();
-+	int *in_slab;
- 
- 	/* We don't allow resizing until we know about the reserved regions
- 	 * of memory that aren't suitable for allocation
-@@ -198,6 +201,12 @@ static int __init_memblock memblock_doub
- 	old_size = type->max * sizeof(struct memblock_region);
- 	new_size = old_size << 1;
- 
-+	/* Retrieve the slab flag */
-+	if (type == &memblock.memory)
-+		in_slab = &memblock_memory_in_slab;
-+	else
-+		in_slab = &memblock_reserved_in_slab;
+-	mutex_lock(&msg_ctx->mux);
+-	msg_ctx->msg = kmalloc((sizeof(*msg_ctx->msg) + data_size),
+-			       GFP_KERNEL);
+-	if (!msg_ctx->msg) {
+-		rc = -ENOMEM;
++	msg = kmalloc((sizeof(*msg) + data_size), GFP_KERNEL);
++	if (!msg) {
+ 		printk(KERN_ERR "%s: Out of memory whilst attempting "
+ 		       "to kmalloc(%zd, GFP_KERNEL)\n", __func__,
+-		       (sizeof(*msg_ctx->msg) + data_size));
+-		goto out_unlock;
++		       (sizeof(*msg) + data_size));
++		return -ENOMEM;
+ 	}
 +
- 	/* Try to find some space for it.
- 	 *
- 	 * WARNING: We assume that either slab_is_available() and we use it or
-@@ -235,22 +244,24 @@ static int __init_memblock memblock_doub
- 	type->regions = new_array;
- 	type->max <<= 1;
- 
--	/* If we use SLAB that's it, we are done */
--	if (use_slab)
--		return 0;
--
--	/* Add the new reserved region now. Should not fail ! */
--	BUG_ON(memblock_reserve(addr, new_size));
--
--	/* If the array wasn't our static init one, then free it. We only do
--	 * that before SLAB is available as later on, we don't know whether
--	 * to use kfree or free_bootmem_pages(). Shouldn't be a big deal
--	 * anyways
-+	/* Free old array. We needn't free it if the array is the
-+	 * static one
- 	 */
--	if (old_array != memblock_memory_init_regions &&
--	    old_array != memblock_reserved_init_regions)
-+	if (*in_slab)
-+		kfree(old_array);
-+	else if (old_array != memblock_memory_init_regions &&
-+		 old_array != memblock_reserved_init_regions)
- 		memblock_free(__pa(old_array), old_size);
- 
-+	/* Reserve the new array if that comes from the memblock.
-+	 * Otherwise, we needn't do it
-+	 */
-+	if (!use_slab)
-+		BUG_ON(memblock_reserve(addr, new_size));
++	mutex_lock(&msg_ctx->mux);
++	msg_ctx->msg = msg;
+ 	msg_ctx->msg->index = msg_ctx->index;
+ 	msg_ctx->msg->data_len = data_size;
+ 	msg_ctx->type = msg_type;
+ 	memcpy(msg_ctx->msg->data, data, data_size);
+ 	msg_ctx->msg_size = (sizeof(*msg_ctx->msg) + data_size);
+-	mutex_lock(&daemon->mux);
+ 	list_add_tail(&msg_ctx->daemon_out_list, &daemon->msg_ctx_out_queue);
++	mutex_unlock(&msg_ctx->mux);
 +
-+	/* Update slab flag */
-+	*in_slab = use_slab;
++	mutex_lock(&daemon->mux);
+ 	daemon->num_queued_msg_ctx++;
+ 	wake_up_interruptible(&daemon->wait);
+ 	mutex_unlock(&daemon->mux);
+-out_unlock:
+-	mutex_unlock(&msg_ctx->mux);
+-	return rc;
 +
- 	return 0;
++	return 0;
  }
  
+ /*
 
 
