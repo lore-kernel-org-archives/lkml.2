@@ -1,63 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161124Ab2GLOkb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 10:40:31 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:45743 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932530Ab2GLOka convert rfc822-to-8bit (ORCPT
+	id S933950Ab2GLOnP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 10:43:15 -0400
+Received: from ims-d14.mx.aol.com ([205.188.249.151]:49288 "EHLO
+	ims-d14.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932530Ab2GLOnO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 10:40:30 -0400
-Message-ID: <1342104015.28010.11.camel@twins>
-Subject: Re: [PATCH 12/16] sched: refactor update_shares_cpu() ->
- update_blocked_avgs()
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Paul Turner <pjt@google.com>
-Cc: linux-kernel@vger.kernel.org, Venki Pallipadi <venki@google.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
-Date: Thu, 12 Jul 2012 16:40:15 +0200
-In-Reply-To: <CAPM31RJoLTCM+DPpPk7bsks6Nb8mLNba9CC+Et4vBnMM3rdENw@mail.gmail.com>
-References: <20120628022413.30496.32798.stgit@kitami.mtv.corp.google.com>
-	 <20120628022415.30496.57167.stgit@kitami.mtv.corp.google.com>
-	 <1341489508.19870.30.camel@laptop>
-	 <CAPM31RJoLTCM+DPpPk7bsks6Nb8mLNba9CC+Et4vBnMM3rdENw@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Thu, 12 Jul 2012 10:43:14 -0400
+Message-Id: <201207121321.q6CDLxph018203@ims-d14.mx.aol.com>
+Content-Type: multipart/mixed; boundary="===============1411531090=="
+MIME-Version: 1.0
+Subject: PAYMENT OF YOUR CONTRACT FUND
+To: Recipients <katkoliver@aol.com>
+From: "Dr. GLADIS UKACHI" <katkoliver@aol.com>
+Date: Thu, 12 Jul 2012 13:19:49 -0700
+Reply-To: cbnpaymentoffice031@yahoo.es
+x-aol-global-disposition: S
+X-SPAM-FLAG: YES
+X-AOL-VSS-INFO: 5400.1158/82172
+X-AOL-VSS-CODE: clean
+X-AOL-SCOLL-SCORE: 0:2:268504384:93952408  
+X-AOL-SCOLL-URL_COUNT: 0  
+X-AOL-REROUTE: YES 
+x-aol-sid: 3039ac1d33814ffecf1405e4
+X-AOL-IP: 178.32.51.216
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-11 at 17:11 -0700, Paul Turner wrote:
-> >>       for_each_leaf_cfs_rq(rq, cfs_rq) {
-> >> +             __update_blocked_averages_cpu(cfs_rq->tg, rq->cpu);
-> >>
-> >> +             /*
-> >> +              * Periodically release the lock so that a cfs_rq with many
-> >> +              * children cannot hold it for an arbitrary period of time.
-> >> +              */
-> >> +             if (num_updates++ % 20 == 0) {
-> >> +                     raw_spin_unlock_irqrestore(&rq->lock, flags);
-> >> +                     cpu_relax();
-> >> +                     raw_spin_lock_irqsave(&rq->lock, flags);
-> >
-> > Gack.. that's not real pretty is it.. Esp. since we're still holding RCU
-> > lock and are thus (mostly) still not preemptable.
-> >
-> > How much of a problem was this?, the changelog is silent on this.
-> 
-> So the holding of RCU about these operations is nothing new (and
-> indeed they should be much faster than before).
-> 
-> As above, the bound is only for the crazy-large-numbers of cgroups
-> case where we don't want to sit on with interrupts disabled forever.
-> I suspect it wants to be larger, but picked a fairly conservative
-> number to start with since I also think it's not a big performance
-> factor either way.
+You will not see this in a MIME-aware mail reader.
+--===============1411531090==
+Content-Type: text/plain; charset="iso-8859-1"
+MIME-Version: 1.0
+Content-Transfer-Encoding: quoted-printable
+Content-Description: Mail message body
 
-How about you leave this ugly out for now (its unrelated to the rest of
-the changes anyway).. and we can revisit this later?
+OPEN AND READ MY ATTACHMENT LETTER..
+--===============1411531090==
+Content-Type: application/octet-stream
+MIME-Version: 1.0
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="UKACHI.rtf"
 
-
+e1xydGYxXGFuc2lcYW5zaWNwZzEyNTJcZGVmZjBcZGVmbGFuZzEwMzN7XGZvbnR0Ymx7XGYwXGZz
+d2lzc1xmY2hhcnNldDAgQXJpYWw7fX0NCntcKlxnZW5lcmF0b3IgTXNmdGVkaXQgNS40MS4yMS4y
+NTA5O31cdmlld2tpbmQ0XHVjMVxwYXJkXGYwXGZzMjAgT0ZGSUNFIE9GIFRIRSBBVURJVE9SIEdF
+TkVSQUwgT0YgVEhFIEZFREVSQVRJT05ccGFyDQpDRU5UUkFMIEJBTksgT0YgTklHRVJJQS5ccGFy
+DQpJTlRFUk5BVElPTkFMIFJFTUlUVEFOQ0UgT0ZGSUNFXHBhcg0KVEVMRVggQU5EIENSRURJVCBV
+TklUICBccGFyDQpQQVlNRU5UIE9GIFlPVVIgQ09OVFJBQ1QgRlVORFxwYXINCkNPTlRSQUNUICM6
+IE1BVi9OTlBDL0ZHTi9NSU4vMDA5LFxwYXINClN3aWZ0IENvZGU6IEJQSCBLUEwgUEssXHBhcg0K
+QS9DIzogMzI5NjA2PTEwMTI0ND0xNjk9Njc4XHBhcg0KRk9SRUlHTiBSRU1JVFRBTkNFIERFUEFS
+VE1FTlRccGFyDQpDRU5UUkFMIEJBTksgTklHRVJJQVxwYXINCk91ciBSZWY6IENCTi9JUkQvQ0JY
+LzAyMS8wMTJccGFyDQpEYXRlOiAxMi0wNy0gMjAxMVxwYXINCiBccGFyDQpBVFROOlxwYXINCiBc
+cGFyDQogVGhlIFNlbmF0ZSBjb21taXR0ZWUgb24gZm9yZWlnbiBwYXltZW50IGluIGl0cyBsYXN0
+IG1lZXRpbmcgd2l0aCB0aGUgR292ZXJub3IsIERlcHV0eSBHb3Zlcm5vciBDZW50cmFsIEJhbmsg
+b2YgTmlnZXJpYSBnYXZlIGEgZmluYWwgYXBwcm92YWwgZm9yIHRoZSBpbW1lZGlhdGUgcGF5bWVu
+dCBvZiBhbGwgdGhlIGZvcmVpZ24gY29udHJhY3RvcnMgd2hvIGZvciBsb25nIGV4ZWN1dGVkIHRo
+ZWlyIGNvbnRyYWN0IGluIE5pZ2VyaWEgd2l0aG91dCByZWNlaXZpbmcgdGhlaXIgY29udHJhY3Qg
+cGF5bWVudC5ccGFyDQpccGFyDQpJbiB2aWV3IG9mIHRoaXMgcHJlc2VudCBkZXZlbG9wbWVudCwg
+d2Ugd2lzaCB0byBpbmZvcm0geW91IHRoYXQgeW91ciBVU0QkNSBNaWxsaW9uIGNvbnRyYWN0IGZ1
+bmQgaGFzIGJlZW4gc3RhdGVkIGZvciBpbW1lZGlhdGUgcmVtaXR0YW5jZXMgYnV0IGFjdGlvbiBp
+cyBvbiB5b3VyIGNvbnRyYWN0IHBheW1lbnQgZm9sbG93aW5nIGEgY2hhbmdlIG9mIGFjY291bnQg
+YXBwbGljYXRpb24gZmlsbGVkIGluIGJ5IG9uZSBNci4gR2VvcmdlIEFkYW1zIHdpdGggdGhlIG5l
+dyBhY2NvdW50IGRldGFpbHMgYXMgZm9sbG93czpccGFyDQpccGFyDQpIb25nLWtvbmctc2hhbiBn
+aGFpIGJhbmsgY29ycHMgR3JhbmQtTG9uZG9uIEVuZ2xhbmQ6IEJlbmVmaWNpYXJ5OiBHZW9yZ2Ug
+QWRhbXM6IEFjY291bnQgTk86IDAwMS0yMjktMjIxOlRoaXMgYWNjb3VudCBpbmZvcm1hdGlvbiB3
+aGljaCB3YXMgc3VibWl0dGVkIGJ5IEdlb3JnZSBBZGFtcyBkaWQgbm90IGNvbWUgIHdpdGggVkFM
+SUQgUE9XRVIgT0YgQVRUT1JORVksIGl0IGlzIHRoaXMgaXNzdWUgdGhhdCBjb21wZWxsZWQgbWUg
+dG8gY29udGFjdCB5b3Ugc28gYXMgdG8gcmVjZWl2ZSBjb25maXJtYXRpb24gZnJvbSB5b3Ugb24g
+dGhlIGNoYW5nZSBvZiBhY2NvdW50LiBJZiB0aGlzIGNoYW5nZSBvZiBhY2NvdW50IHdhcyBhdXRo
+b3JpemVkIGJ5IHlvdSwgaXQgaGFzIHRvIGJlIHdyaXR0ZW4gaW4gY29tcGFueSBsZXR0ZXIgaGVh
+ZGVkIHBhcGVyIHN0YW1wZWQgYW5kIHNpZ25lZCBieSB5b3U7IFJlY29uZmlybWluZyB0byBtZSB0
+aGUgZm9sbG93aW5nLi5ccGFyDQpccGFyDQoxLiBUaGF0IHRoZSBhcHBsaWNhdGlvbiBmb3IgdGhl
+IGNoYW5nZSBvZiBiZW5lZmljaWFyeSB3YXMgZG9uZSB3aXRoIHlvdXIgY29uc2VudC5ccGFyDQoy
+LiBUaGF0IHRoZSBzYWlkIGZ1bmQgc2hvdWxkIGJlIHRyYW5zZmVycmVkIGludG8gdGhlIGFib3Zl
+IGFjY291bnQuXHBhcg0KXHBhcg0KXHBhcg0KVGhpcyBoYXZlIHRvIGJlIGRvbmUgaW1tZWRpYXRl
+bHkgYmVjYXVzZSB3ZSB3aWxsIG5vdCBlbnRlcnRhaW4gYW55IGVzcXVpcmUgZnJvbSB5b3VyIHNv
+IGNhbGxlZCBhZ2VudCB3aG8gY2FtZSB0byB0aGlzIG9mZmljZSBkZW1hbmRpbmcgeW91ciBjb250
+cmFjdCBwYXltZW50IGJ5IGNhc2hpZXIgY2hlcnViLCB0ZWxlZ3JhcGhpYyB0cmFuc2ZlciBvciBj
+ZXJ0aWZpZWQgYmFuayBkcmFmdDogSWYgaW4gdGhlIGFsdGVybmF0aXZlIHlvdSBkaWQgbm90IHBl
+cm1pdCBhbnlccGFyDQpib2R5IHRvIGVmZmVjdCBzdWNoIGEgY2hhbmdlIG9mIGFjY291bnQsIGF1
+dGhlbnRpY2F0ZSB5b3VyICBkaXNhcHByb3ZhbCB0byB0aGlzIG9mZmljZSBpbiB5b3VyIGxldHRl
+ciBoZWFkZWQgcGFwZXIgd2l0aCBhbGwgdGhlIGNvbnRyYWN0IGFuZCBhY2NvdW50IGRldGFpbHMg
+Y2xlYXJseSBzdGF0ZWQuIFRoaXMgaXMgdG8gZW5hYmxlIHVzIGF2b2lkIGVycm9ycyBpbiB0aGUg
+dHJhbnNmZXJyaW5nIG9mIHRoaXMgZnVuZC4gXHBhcg0KXHBhcg0KQ2VudHJhbCBiYW5rIG9mIE5p
+Z2VyaWEgd2lsbCBub3QgYmUgaGVsZCByZXNwb25zaWJsZSBmb3IgYW55IHdyb25nIGluZm9ybWF0
+aW9uIGdpdmVuIHRvIHVzLiBccGFyDQogXHBhcg0KWW91IGFyZSBleHBlY3RlZCB0byByZXBseSB0
+aGlzIHVyZ2VudGx5LlxwYXINClxwYXINCllvdXIgdXJnZW50IHJlc3BvbnNlICBpcyBoaWdobHkg
+bmVlZGVkLlxwYXINCllvdXJzIGZhaXRoZnVsbHksXHBhcg0KRHIuIEdMQURJUyBVS0FDSElccGFy
+DQpccGFyDQpccGFyDQp9DQoA
+--===============1411531090==--
