@@ -1,320 +1,294 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161494Ab2GLU4K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 16:56:10 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:45250 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161164Ab2GLU4F (ORCPT
+	id S1161193Ab2GLVBi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 17:01:38 -0400
+Received: from grace.univie.ac.at ([131.130.3.115]:38941 "EHLO
+	grace.univie.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932897Ab2GLVBf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 16:56:05 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6770"; a="210040367"
-Message-ID: <01e04d3a64b3adeb1d491088b7b4970e.squirrel@www.codeaurora.org>
-In-Reply-To: <1341231337-6921-3-git-send-email-merez@codeaurora.org>
-References: <n> <1341231337-6921-3-git-send-email-merez@codeaurora.org>
-Date: Thu, 12 Jul 2012 13:56:05 -0700 (PDT)
-Subject: Re: [PATCH v4 2/2] mmc: block: Add write packing control
-From: merez@codeaurora.org
-To: "Maya Erez" <merez@codeaurora.org>
-Cc: linux-mmc@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        "Maya Erez" <merez@codeaurora.org>,
-        "DOCUMENTATION" <linux-doc@vger.kernel.org>,
-        "open list" <linux-kernel@vger.kernel.org>
-User-Agent: SquirrelMail/1.4.17
+	Thu, 12 Jul 2012 17:01:35 -0400
+X-Greylist: delayed 334 seconds by postgrey-1.27 at vger.kernel.org; Thu, 12 Jul 2012 17:01:34 EDT
+Message-ID: <dee325378a2d3b7792da9640fc14905f.squirrel@webmail.univie.ac.at>
+Date: Thu, 12 Jul 2012 22:55:57 +0200
+Subject: resurrecting tcphealth
+From: "Piotr Sawuk" <a9702387@unet.univie.ac.at>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.19
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: text/plain;charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Univie-Virus-Scan: scanned by ClamAV on justin.univie.ac.at
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris,
+hello! I haven't done any kernel-hacking before, so be patient.
 
-Can we push this change to mmc-next?
+I got as far as to make tcphealth run, but now I need some help:
+how does read-locking work in the tcp_sock struct?
+the original code (for 2.5.1) made a read_lock(&head->lock) with
+struct tcp_ehash_bucket *head = &tcp_ehash[i];
+at the beginning of the for-loop over all sk=head->chain.
+i.e.
+       for (i=0; i < tcp_ehash_size; i++) {
+               struct tcp_ehash_bucket *head = &tcp_ehash[i];
+               struct sock *sk;
+               struct tcp_opt *tp;
 
-Thanks,
-Maya
-On Mon, July 2, 2012 5:15 am, Maya Erez wrote:
-> The write packing control will ensure that read requests latency is
-> not increased due to long write packed commands.
->
-> The trigger for enabling the write packing is managing to pack several
-> write requests. The number of potential packed requests that will trigger
-> the packing can be configured via sysfs by writing the required value to:
-> /sys/block/<block_dev_name>/num_wr_reqs_to_start_packing.
-> The trigger for disabling the write packing is fetching a read request.
->
-> Signed-off-by: Maya Erez <merez@codeaurora.org>
->
-> diff --git a/Documentation/mmc/mmc-dev-attrs.txt
-> b/Documentation/mmc/mmc-dev-attrs.txt
-> index 22ae844..f4a48a8 100644
-> --- a/Documentation/mmc/mmc-dev-attrs.txt
-> +++ b/Documentation/mmc/mmc-dev-attrs.txt
-> @@ -8,6 +8,23 @@ The following attributes are read/write.
->
->  	force_ro		Enforce read-only access even if write protect switch is off.
->
-> +	num_wr_reqs_to_start_packing 	This attribute is used to determine
-> +	the trigger for activating the write packing, in case the write
-> +	packing control feature is enabled.
-> +
-> +	When the MMC manages to reach a point where num_wr_reqs_to_start_packing
-> +	write requests could be packed, it enables the write packing feature.
-> +	This allows us to start the write packing only when it is beneficial
-> +	and has minimum affect on the read latency.
-> +
-> +	The number of potential packed requests that will trigger the packing
-> +	can be configured via sysfs by writing the required value to:
-> +	/sys/block/<block_dev_name>/mmc/num_wr_reqs_to_start_packing.
-> +
-> +	The default value of num_wr_reqs_to_start_packing was determined by
-> +	running parallel lmdd write and lmdd read operations and calculating
-> +	the max number of packed writes requests.
-> +
->  SD and MMC Device Attributes
->  ============================
->
-> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
-> index c23034d..3d13d5f 100644
-> --- a/drivers/mmc/card/block.c
-> +++ b/drivers/mmc/card/block.c
-> @@ -114,6 +114,7 @@ struct mmc_blk_data {
->  	struct device_attribute force_ro;
->  	struct device_attribute power_ro_lock;
->  	int	area_type;
-> +	struct device_attribute num_wr_reqs_to_start_packing;
->
->  	struct kobject kobj;
->  	struct kobj_type kobj_type;
-> @@ -329,6 +330,38 @@ out:
->  	return ret;
->  }
->
-> +static ssize_t
-> +num_wr_reqs_to_start_packing_show(struct device *dev,
-> +				  struct device_attribute *attr, char *buf)
-> +{
-> +	struct mmc_blk_data *md = mmc_blk_get(dev_to_disk(dev));
-> +	int num_wr_reqs_to_start_packing;
-> +	int ret;
-> +
-> +	num_wr_reqs_to_start_packing = md->queue.num_wr_reqs_to_start_packing;
-> +
-> +	ret = snprintf(buf, PAGE_SIZE, "%d\n", num_wr_reqs_to_start_packing);
-> +
-> +	mmc_blk_put(md);
-> +	return ret;
-> +}
-> +
-> +static ssize_t
-> +num_wr_reqs_to_start_packing_store(struct device *dev,
-> +				 struct device_attribute *attr,
-> +				 const char *buf, size_t count)
-> +{
-> +	int value;
-> +	struct mmc_blk_data *md = mmc_blk_get(dev_to_disk(dev));
-> +
-> +	sscanf(buf, "%d", &value);
-> +	if (value >= 0)
-> +		md->queue.num_wr_reqs_to_start_packing = value;
-> +
-> +	mmc_blk_put(md);
-> +	return count;
-> +}
-> +
->  static int mmc_blk_open(struct block_device *bdev, fmode_t mode)
->  {
->  	struct mmc_blk_data *md = mmc_blk_get(bdev->bd_disk);
-> @@ -1344,6 +1377,49 @@ static void mmc_blk_rw_rq_prep(struct mmc_queue_req
-> *mqrq,
->  	mmc_queue_bounce_pre(mqrq);
->  }
->
-> +static void mmc_blk_write_packing_control(struct mmc_queue *mq,
-> +					  struct request *req)
-> +{
-> +	struct mmc_host *host = mq->card->host;
-> +	int data_dir;
-> +
-> +	if (!(host->caps2 & MMC_CAP2_PACKED_WR))
-> +		return;
-> +
-> +	/*
-> +	 * In case the packing control is not supported by the host, it should
-> +	 * not have an effect on the write packing. Therefore we have to enable
-> +	 * the write packing
-> +	 */
-> +	if (!(host->caps2 & MMC_CAP2_PACKED_WR_CONTROL)) {
-> +		mq->wr_packing_enabled = true;
-> +		return;
-> +	}
-> +
-> +	if (!req || (req && (req->cmd_flags & REQ_FLUSH))) {
-> +		if (mq->num_of_potential_packed_wr_reqs >
-> +				mq->num_wr_reqs_to_start_packing)
-> +			mq->wr_packing_enabled = true;
-> +		mq->num_of_potential_packed_wr_reqs = 0;
-> +		return;
-> +	}
-> +
-> +	data_dir = rq_data_dir(req);
-> +
-> +	if (data_dir == READ) {
-> +		mq->num_of_potential_packed_wr_reqs = 0;
-> +		mq->wr_packing_enabled = false;
-> +		return;
-> +	} else if (data_dir == WRITE) {
-> +		mq->num_of_potential_packed_wr_reqs++;
-> +	}
-> +
-> +	if (mq->num_of_potential_packed_wr_reqs >
-> +			mq->num_wr_reqs_to_start_packing)
-> +		mq->wr_packing_enabled = true;
-> +
-> +}
-> +
->  static u8 mmc_blk_prep_packed_list(struct mmc_queue *mq, struct request
-> *req)
->  {
->  	struct request_queue *q = mq->queue;
-> @@ -1363,6 +1439,9 @@ static u8 mmc_blk_prep_packed_list(struct mmc_queue
-> *mq, struct request *req)
->  			!card->ext_csd.packed_event_en)
->  		goto no_packed;
->
-> +	if (!mq->wr_packing_enabled)
-> +		goto no_packed;
-> +
->  	if ((rq_data_dir(cur) == WRITE) &&
->  			(card->host->caps2 & MMC_CAP2_PACKED_WR))
->  		max_packed_rw = card->ext_csd.max_packed_writes;
-> @@ -1436,6 +1515,8 @@ static u8 mmc_blk_prep_packed_list(struct mmc_queue
-> *mq, struct request *req)
->  			break;
->  		}
->
-> +		if (rq_data_dir(next) == WRITE)
-> +			mq->num_of_potential_packed_wr_reqs++;
->  		list_add_tail(&next->queuelist, &mq->mqrq_cur->packed_list);
->  		cur = next;
->  		reqs++;
-> @@ -1821,7 +1902,9 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq,
-> struct request *req)
->  		goto out;
->  	}
->
-> -	if (req && req->cmd_flags & REQ_DISCARD) {
-> +	mmc_blk_write_packing_control(mq, req);
-> +
-> +	if (req && req->cmd_flags & REQ_DISCARD) {
->  		/* complete ongoing async transfer before issuing discard */
->  		if (card->host->areq)
->  			mmc_blk_issue_rw_rq(mq, NULL);
-> @@ -2057,6 +2140,8 @@ static void mmc_blk_remove_req(struct mmc_blk_data
-> *md)
->  					card->ext_csd.boot_ro_lockable)
->  				sysfs_remove_file(&md->kobj,
->  					&md->power_ro_lock.attr);
-> +			sysfs_remove_file(&md->kobj,
-> +				&md->num_wr_reqs_to_start_packing.attr);
->
->  			/* Stop new requests from getting into the queue */
->  			del_gendisk(md->disk);
-> @@ -2124,8 +2209,26 @@ static int mmc_add_disk(struct mmc_blk_data *md)
->  		if (ret)
->  			goto power_ro_lock_fail;
->  	}
-> +
-> +	md->num_wr_reqs_to_start_packing.show =
-> +		num_wr_reqs_to_start_packing_show;
-> +	md->num_wr_reqs_to_start_packing.store =
-> +		num_wr_reqs_to_start_packing_store;
-> +	sysfs_attr_init(&md->num_wr_reqs_to_start_packing.attr);
-> +	md->num_wr_reqs_to_start_packing.attr.name =
-> +		"num_wr_reqs_to_start_packing";
-> +	md->num_wr_reqs_to_start_packing.attr.mode = S_IRUGO | S_IWUSR;
-> +	ret = sysfs_create_file(&md->kobj,
-> +				&md->num_wr_reqs_to_start_packing.attr);
-> +	if (ret)
-> +		goto num_wr_reqs_to_start_packing_fail;
-> +
->  	return ret;
->
-> +num_wr_reqs_to_start_packing_fail:
-> +	if ((md->area_type & MMC_BLK_DATA_AREA_BOOT) &&
-> +	     card->ext_csd.boot_ro_lockable)
-> +		sysfs_remove_file(&md->kobj, &md->power_ro_lock.attr);
->  power_ro_lock_fail:
->  	sysfs_remove_file(&md->kobj, &md->force_ro.attr);
->  force_ro_fail:
-> diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c
-> index 165d85a..79ef91b 100644
-> --- a/drivers/mmc/card/queue.c
-> +++ b/drivers/mmc/card/queue.c
-> @@ -25,6 +25,13 @@
->  #define MMC_QUEUE_SUSPENDED	(1 << 0)
->
->  /*
-> + * Based on benchmark tests the default num of requests to trigger the
-> write
-> + * packing was determined, to keep the read latency as low as possible
-> and
-> + * manage to keep the high write throughput.
-> + */
-> +#define DEFAULT_NUM_REQS_TO_START_PACK 17
-> +
-> +/*
->   * Prepare a MMC request. This just filters out odd stuff.
->   */
->  static int mmc_prep_request(struct request_queue *q, struct request *req)
-> @@ -181,6 +188,7 @@ int mmc_init_queue(struct mmc_queue *mq, struct
-> mmc_card *card,
->  	mq->mqrq_cur = mqrq_cur;
->  	mq->mqrq_prev = mqrq_prev;
->  	mq->queue->queuedata = mq;
-> +	mq->num_wr_reqs_to_start_packing = DEFAULT_NUM_REQS_TO_START_PACK;
->
->  	blk_queue_prep_rq(mq->queue, mmc_prep_request);
->  	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, mq->queue);
-> diff --git a/drivers/mmc/card/queue.h b/drivers/mmc/card/queue.h
-> index 5e04938..93e4b59 100644
-> --- a/drivers/mmc/card/queue.h
-> +++ b/drivers/mmc/card/queue.h
-> @@ -45,6 +45,9 @@ struct mmc_queue {
->  	struct mmc_queue_req	mqrq[2];
->  	struct mmc_queue_req	*mqrq_cur;
->  	struct mmc_queue_req	*mqrq_prev;
-> +	bool			wr_packing_enabled;
-> +	int			num_of_potential_packed_wr_reqs;
-> +	int			num_wr_reqs_to_start_packing;
->  };
->
->  extern int mmc_init_queue(struct mmc_queue *, struct mmc_card *,
-> spinlock_t *,
-> diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
-> index bb19b98..6a439ae 100644
-> --- a/include/linux/mmc/host.h
-> +++ b/include/linux/mmc/host.h
-> @@ -249,6 +249,7 @@ struct mmc_host {
->  #define MMC_CAP2_PACKED_WR	(1 << 11)	/* Allow packed write */
->  #define MMC_CAP2_PACKED_CMD	(MMC_CAP2_PACKED_RD | \
->  				 MMC_CAP2_PACKED_WR) /* Allow packed commands */
-> +#define MMC_CAP2_PACKED_WR_CONTROL (1 << 12) /* Allow write packing
-> control */
->
->  	mmc_pm_flag_t		pm_caps;	/* supported pm features */
->  	unsigned int        power_notify_type;
-> --
-> 1.7.3.3
-> --
-> Sent by a consultant of the Qualcomm Innovation Center, Inc.
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
->
+               read_lock(&head->lock);
+               for (sk=head->chain; sk; sk=sk->next) {
+                       if (!TCP_INET_FAMILY(sk->family))
+                               continue;
 
+and in the new kernel this construction has been replaced by
 
--- 
-Sent by consultant of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+        if (st->state==TCP_SEQ_STATE_ESTABLISHED)
+...
+static struct tcp_seq_afinfo tcphealth_seq_afinfo
+...
+
+and the example with proc/net/tcp is seemingly not locking anything. do I
+actually need a read-lock for diagnostic data from tcp_sock? why did the
+original author need to lock the whole chain of tcp_sock?
+
+here's my patch against 3.4.4 so far, any further comments welcome:
+
+diff -rub linux-3.4.4/include/linux/tcp.h
+linux-3.4.4-heal-lsm/include/linux/tcp.h
+--- linux-3.4.4/include/linux/tcp.h	2012-06-22 20:37:50.000000000 +0200
++++ linux-3.4.4-heal-lsm/include/linux/tcp.h	2012-07-06 10:23:13.000000000
++0200
+@@ -7,6 +7,8 @@
+  *
+  * Version:	@(#)tcp.h	1.0.2	04/28/93
+  *
++ *      Federico D. Sacerdoti	:	Added TCP health counters.
++ *
+  * Author:	Fred N. van Kempen, <waltje@uWalt.NL.Mugnet.ORG>
+  *
+  *		This program is free software; you can redistribute it and/or
+@@ -472,6 +474,15 @@
+ 	 * contains related tcp_cookie_transactions fields.
+ 	 */
+ 	struct tcp_cookie_values  *cookie_values;
++
++	/*
++	 * TCP health monitoring counters.
++	 */
++	__u32	dup_acks_sent;
++	__u32	dup_pkts_recv;
++	__u32	acks_sent;
++	__u32	pkts_recv;
++		__u32	last_ack_sent;	/* Sequence number of the last ack we sent. */
+ };
+
+ static inline struct tcp_sock *tcp_sk(const struct sock *sk)
+diff -rub linux-3.4.4/net/ipv4/tcp_input.c
+linux-3.4.4-heal-lsm/net/ipv4/tcp_input.c
+--- linux-3.4.4/net/ipv4/tcp_input.c	2012-06-22 20:37:50.000000000 +0200
++++ linux-3.4.4-heal-lsm/net/ipv4/tcp_input.c	2012-07-06
+10:12:12.000000000 +0200
+@@ -59,7 +59,8 @@
+  *		Panu Kuhlberg:		Experimental audit of TCP (re)transmission
+  *					engine. Lots of bugs are found.
+  *		Pasi Sarolahti:		F-RTO for dealing with spurious RTOs
+- */
++ *		Federico D. Sacerdoti:	Added TCP health monitoring.
++*/
+
+ #define pr_fmt(fmt) "TCP: " fmt
+
+@@ -4414,6 +4415,8 @@
+ 		}
+
+ 		if (!after(TCP_SKB_CB(skb)->end_seq, tp->rcv_nxt)) {
++			/* Course retransmit inefficiency- this packet has been received
+twice. */
++			tp->dup_pkts_recv++;
+ 			SOCK_DEBUG(sk, "ofo packet was already received\n");
+ 			__skb_unlink(skb, &tp->out_of_order_queue);
+ 			__kfree_skb(skb);
+@@ -4664,6 +4667,10 @@
+ 		return;
+ 	}
+
++	/* A packet is a "duplicate" if it contains bytes we have already
+received. */
++	if (before(TCP_SKB_CB(skb)->seq, tp->rcv_nxt))
++		tp->dup_pkts_recv++;
++
+ 	if (!after(TCP_SKB_CB(skb)->end_seq, tp->rcv_nxt)) {
+ 		/* A retransmit, 2nd most common case.  Force an immediate ack. */
+ 		NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_DELAYEDACKLOST);
+@@ -5375,6 +5382,14 @@
+
+ 	tp->rx_opt.saw_tstamp = 0;
+
++	/*
++	 *	Tcp health monitoring is interested in
++	 *	total per-connection packet arrivals.
++	 *	This is in the fast path, but is quick.
++	 */
++
++	tp->pkts_recv++;
++
+ 	/*	pred_flags is 0xS?10 << 16 + snd_wnd
+ 	 *	if header_prediction is to be made
+ 	 *	'S' will always be tp->tcp_header_len >> 2
+diff -rub linux-3.4.4/net/ipv4/tcp_ipv4.c
+linux-3.4.4-heal-lsm/net/ipv4/tcp_ipv4.c
+--- linux-3.4.4/net/ipv4/tcp_ipv4.c	2012-06-22 20:37:50.000000000 +0200
++++ linux-3.4.4-heal-lsm/net/ipv4/tcp_ipv4.c	2012-07-11 09:34:22.000000000
++0200
+@@ -2533,6 +2533,82 @@
+ 	return 0;
+ }
+
++
++/*
++ *	Output /proc/net/tcphealth
++ */
++#define LINESZ 128
++
++int tcp_health_seq_show(struct seq_file *seq, void *v)
++{
++	int len, num;
++       char srcIP[32], destIP[32];
++
++	unsigned long  SmoothedRttEstimate,
++		AcksSent, DupAcksSent, PktsRecv, DupPktsRecv;
++	struct tcp_iter_state *st;
++
++	if (v == SEQ_START_TOKEN) {
++		seq_printf(seq,
++		"TCP Health Monitoring (established connections only)\n"
++		" -Duplicate ACKs indicate lost or reordered packets on the connection.\n"
++		" -Duplicate Packets Received signal a slow and badly inefficient
+connection.\n"
++		" -RttEst estimates how long future packets will take on a round trip
+over the connection.\n"
++		"id   Local Address        Remote Address       RttEst(ms) AcksSent "
++		"DupAcksSent PktsRecv DupPktsRecv\n");
++		goto out;
++	}
++
++	/* Loop through established TCP connections */
++	st = seq->private;
++
++
++	if (st->state==TCP_SEQ_STATE_ESTABLISHED)
++	{
++/*	; //insert read-lock here */
++		const struct tcp_sock *tp = tcp_sk(v);
++		const struct inet_sock *inet = inet_sk(v);
++		__be32 dest = inet->inet_daddr;
++		__be32 src = inet->inet_rcv_saddr;
++		__u16 destp = ntohs(inet->inet_dport);
++		__u16 srcp = ntohs(inet->inet_sport);
++
++		num=st->num;
++		SmoothedRttEstimate = (tp->srtt >> 3);
++		AcksSent = tp->acks_sent;
++		DupAcksSent = tp->dup_acks_sent;
++		PktsRecv = tp->pkts_recv;
++		DupPktsRecv = tp->dup_pkts_recv;
++
++		sprintf(srcIP, "%lu.%lu.%lu.%lu:%u",
++			((src >> 24) & 0xFF), ((src >> 16) & 0xFF), ((src >> 8) & 0xFF), (src
+& 0xFF),
++			srcp);
++		sprintf(destIP, "%3d.%3d.%3d.%3d:%u",
++			((dest >> 24) & 0xFF), ((dest >> 16) & 0xFF), ((dest >> 8) & 0xFF),
+(dest & 0xFF),
++			destp);
++
++		seq_printf(seq, "%d: %-21s %-21s "
++				"%8lu %8lu %8lu %8lu %8lu%n",
++				num,
++				srcIP,
++				destIP,
++				SmoothedRttEstimate,
++				AcksSent,
++				DupAcksSent,
++				PktsRecv,
++				DupPktsRecv,
++
++				&len
++			);
++
++		seq_printf(seq, "%*s\n", LINESZ - 1 - len, "");
++/*	; //insert read-unlock here */
++	}
++
++out:
++	return 0;
++}
++
+ static const struct file_operations tcp_afinfo_seq_fops = {
+ 	.owner   = THIS_MODULE,
+ 	.open    = tcp_seq_open,
+@@ -2541,6 +2617,15 @@
+ 	.release = seq_release_net
+ };
+
++static struct tcp_seq_afinfo tcphealth_seq_afinfo = {
++	.name		= "tcphealth",
++	.family		= AF_INET,
++	.seq_fops	= &tcp_afinfo_seq_fops,
++	.seq_ops	= {
++		.show		= tcp_health_seq_show,
++	},
++};
++
+ static struct tcp_seq_afinfo tcp4_seq_afinfo = {
+ 	.name		= "tcp",
+ 	.family		= AF_INET,
+@@ -2552,12 +2637,15 @@
+
+ static int __net_init tcp4_proc_init_net(struct net *net)
+ {
+-	return tcp_proc_register(net, &tcp4_seq_afinfo);
++	int ret=tcp_proc_register(net, &tcp4_seq_afinfo);
++	if(ret==0) ret=tcp_proc_register(net, &tcphealth_seq_afinfo);
++	return ret;
+ }
+
+ static void __net_exit tcp4_proc_exit_net(struct net *net)
+ {
+ 	tcp_proc_unregister(net, &tcp4_seq_afinfo);
++	tcp_proc_unregister(net, &tcphealth_seq_afinfo);
+ }
+
+ static struct pernet_operations tcp4_net_ops = {
+diff -rub linux-3.4.4/net/ipv4/tcp_output.c
+linux-3.4.4-heal-lsm/net/ipv4/tcp_output.c
+--- linux-3.4.4/net/ipv4/tcp_output.c	2012-06-22 20:37:50.000000000 +0200
++++ linux-3.4.4-heal-lsm/net/ipv4/tcp_output.c	2012-07-06
+17:15:14.000000000 +0200
+@@ -31,6 +31,7 @@
+  *		Andrea Arcangeli:	SYNACK carry ts_recent in tsecr.
+  *		Cacophonix Gaul :	draft-minshall-nagle-01
+  *		J Hadi Salim	:	ECN support
++ *	Federico D. Sacerdoti	:	Added TCP health monitoring.
+  *
+  */
+
+@@ -2754,8 +2755,15 @@
+ 	skb_reserve(buff, MAX_TCP_HEADER);
+ 	tcp_init_nondata_skb(buff, tcp_acceptable_seq(sk), TCPHDR_ACK);
+
++		/* If the rcv_nxt has not advanced since sending our last ACK, this is
+a duplicate. */
++		if (tcp_sk(sk)->rcv_nxt == tcp_sk(sk)->last_ack_sent)
++			tcp_sk(sk)->dup_acks_sent++;
++		/* Record the total number of acks sent on this connection. */
++		tcp_sk(sk)->acks_sent++;
++
+ 	/* Send it off, this clears delayed acks for us. */
+ 	TCP_SKB_CB(buff)->when = tcp_time_stamp;
++		tcp_sk(sk)->last_ack_sent = tcp_sk(sk)->rcv_nxt;
+ 	tcp_transmit_skb(sk, buff, 0, GFP_ATOMIC);
+ }
+
 
