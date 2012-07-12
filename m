@@ -1,51 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933811Ab2GLNcN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 09:32:13 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:37016 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932504Ab2GLNcL (ORCPT
+	id S933816Ab2GLNiD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 09:38:03 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:60069 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932480Ab2GLNiA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 09:32:11 -0400
-X-IronPort-AV: E=Sophos;i="4.77,573,1336348800"; 
-   d="scan'208";a="13503437"
-Date: Thu, 12 Jul 2012 14:31:31 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad@darnok.org>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "ksummit-2012-discuss@lists.linux-foundation.org" 
-	<ksummit-2012-discuss@lists.linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [Ksummit-2012-discuss] ARM mini-summit
-In-Reply-To: <CAPbh3rsnNNFNWEf651M-mO2UFOK8pFYTMV2x7RPhjHOAyf9OJw@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1207121429420.23783@kaball.uk.xensource.com>
-References: <1341994155.3522.16.camel@dabdike.int.hansenpartnership.com> <201207111128.29924.arnd@arndb.de> <CACxGe6vOXaJaTdob8MZ7NGw8v-QQ0wnycnYK6JTK+YT5vA2EfQ@mail.gmail.com> <20120711140536.GC16523@phenom.dumpdata.com>
- <CAPbh3rsnNNFNWEf651M-mO2UFOK8pFYTMV2x7RPhjHOAyf9OJw@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Thu, 12 Jul 2012 09:38:00 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18r4o89WGgr+iLipEreMjUaxi1/3Rd7b402SdpwY+
+	U0iOrd3wWYVfdQ
+Message-ID: <1342100270.7707.20.camel@marge.simpson.net>
+Subject: Re: 3.4.4-rt13: btrfs + xfstests 006 = BOOM.. and a bonus rt_mutex
+ deadlock report for absolutely free!
+From: Mike Galbraith <efault@gmx.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Date: Thu, 12 Jul 2012 15:37:50 +0200
+In-Reply-To: <alpine.LFD.2.02.1207121514240.32033@ionos>
+References: <1342072060.7338.102.camel@marge.simpson.net>
+	 <1342082648.7338.171.camel@marge.simpson.net>
+	 <1342086792.7707.9.camel@marge.simpson.net>
+	 <alpine.LFD.2.02.1207121310420.32033@ionos>
+	 <1342094233.7707.12.camel@marge.simpson.net>
+	 <alpine.LFD.2.02.1207121514240.32033@ionos>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Jul 2012, Konrad Rzeszutek Wilk wrote:
-> >> > contacts, with Grant and Olof joining in as time permits.
-> >>
-> >> Acked-by: Grant Likely <grant.likely@secretlab.ca>
-> >
-> > I would be interested in attending it as well. I believe Stefano has a strong
-> > interest as well (since he and Ian Campbell are leading the Xen ARM work).
+On Thu, 2012-07-12 at 15:31 +0200, Thomas Gleixner wrote: 
+> On Thu, 12 Jul 2012, Mike Galbraith wrote:
+> > On Thu, 2012-07-12 at 13:43 +0200, Thomas Gleixner wrote: 
+> > > rawlock points to ...968 and the node_list to ...970.
+> > > 
+> > > struct rt_mutex {
+> > >         raw_spinlock_t          wait_lock;
+> > >         struct plist_head       wait_list;
+> > > 
+> > > The raw_lock pointer of the plist_head is initialized in
+> > > __rt_mutex_init() so it points to wait_lock. 
+> > > 
+> > > Can you check the offset of wait_list vs. the rt_mutex itself?
+> > > 
+> > > I wouldn't be surprised if it's exactly 8 bytes. And then this thing
+> > > looks like a copied lock with stale pointers to hell. Eew.
+> > 
+> > crash> struct rt_mutex -o
+> > struct rt_mutex {
+> >    [0] raw_spinlock_t wait_lock;
+> >    [8] struct plist_head wait_list;
 > 
-> And Stefano is out on vacation right now so I will serve as his phantom voice
-> and say: "Yes, I am interested as well."
+> Bingo, that makes it more likely that this is caused by copying w/o
+> initializing the lock and then freeing the original structure.
 > 
+> A quick check for memcpy finds that __btrfs_close_devices() does a
+> memcpy of btrfs_device structs w/o initializing the lock in the new
+> copy, but I have no idea whether that's the place we are looking for.
 
-Indeed I am very interested in the ARM mini-summit!
 
-Thanks Konrad for speaking on my behalf during my time AFK.
+Cool, you found one, thanks!  I'm setting boobytraps.
+
+Um, correction, box says I'm setting _buggy_ boobytraps :)
+
+Tomorrow-man will test this and frob traps anew.
+
+> 
+> Thanks,
+> 
+> 	tglx
+> 
+> diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
+> index 43baaf0..06c8ced 100644
+> --- a/fs/btrfs/volumes.c
+> +++ b/fs/btrfs/volumes.c
+> @@ -512,6 +512,7 @@ static int __btrfs_close_devices(struct btrfs_fs_devices *fs_devices)
+>  		new_device->writeable = 0;
+>  		new_device->in_fs_metadata = 0;
+>  		new_device->can_discard = 0;
+> +		spin_lock_init(&new_device->io_lock);
+>  		list_replace_rcu(&device->dev_list, &new_device->dev_list);
+>  
+>  		call_rcu(&device->rcu, free_device);
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
