@@ -1,26 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934327Ab2GLXDM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:03:12 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:52623 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162475Ab2GLXC4 (ORCPT
+	id S1162540Ab2GLXYY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:24:24 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:58924 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934329Ab2GLXDN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 19:02:56 -0400
+	Thu, 12 Jul 2012 19:03:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        UCHINO Satoshi <satoshi.uchino@toshiba.co.jp>
-Subject: [ 04/68] ARM: fix rcu stalls on SMP platforms
-Date: Thu, 12 Jul 2012 16:01:38 -0700
-Message-Id: <20120712175035.807940289@linuxfoundation.org>
+        =?UTF-8?q?Micha=A9=A9=20Miros=A9=A9aw?= <mirq-linux@rere.qmqm.pl>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: =?UTF-8?q?=5B=2009/68=5D=20ethtool=3A=20allow=20ETHTOOL=5FGSSET=5FINFO=20for=20users?=
+Date: Thu, 12 Jul 2012 16:01:43 -0700
+Message-Id: <20120712175036.238441302@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712175035.530652872@linuxfoundation.org>
 References: <20120712175057.GA9917@kroah.com>
  <20120712175035.530652872@linuxfoundation.org>
 User-Agent: quilt/0.60-20.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,78 +35,31 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit 7deabca0acfe02b8e18f59a4c95676012f49a304 upstream.
+From: =?UTF-8?q?Micha=C5=82=20Miros=C5=82aw?= <mirq-linux@rere.qmqm.pl>
 
-We can stall RCU processing on SMP platforms if a CPU sits in its idle
-loop for a long time.  This happens because we don't call irq_enter()
-and irq_exit() around generic_smp_call_function_interrupt() and
-friends.  Add the necessary calls, and remove the one from within
-ipi_timer(), so that they're all in a common place.
+[ Upstream commit f80400a26a2e8bff541de12834a1134358bb6642 ]
 
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-[add irq_enter()/irq_exit() in do_local_timer]
-Signed-off-by: UCHINO Satoshi <satoshi.uchino@toshiba.co.jp>
+Allow ETHTOOL_GSSET_INFO ethtool ioctl() for unprivileged users.
+ETHTOOL_GSTRINGS is already allowed, but is unusable without this one.
+
+Signed-off-by: Micha©© Miros©©aw <mirq-linux@rere.qmqm.pl>
+Acked-by: Ben Hutchings <bhutchings@solarflare.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/arm/kernel/smp.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ net/core/ethtool.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -445,9 +445,7 @@ static DEFINE_PER_CPU(struct clock_event
- static void ipi_timer(void)
- {
- 	struct clock_event_device *evt = &__get_cpu_var(percpu_clockevent);
--	irq_enter();
- 	evt->event_handler(evt);
--	irq_exit();
- }
- 
- #ifdef CONFIG_LOCAL_TIMERS
-@@ -458,7 +456,9 @@ asmlinkage void __exception_irq_entry do
- 
- 	if (local_timer_ack()) {
- 		__inc_irq_stat(cpu, local_timer_irqs);
-+		irq_enter();
- 		ipi_timer();
-+		irq_exit();
- 	}
- 
- 	set_irq_regs(old_regs);
-@@ -568,7 +568,9 @@ asmlinkage void __exception_irq_entry do
- 
- 	switch (ipinr) {
- 	case IPI_TIMER:
-+		irq_enter();
- 		ipi_timer();
-+		irq_exit();
- 		break;
- 
- 	case IPI_RESCHEDULE:
-@@ -576,15 +578,21 @@ asmlinkage void __exception_irq_entry do
- 		break;
- 
- 	case IPI_CALL_FUNC:
-+		irq_enter();
- 		generic_smp_call_function_interrupt();
-+		irq_exit();
- 		break;
- 
- 	case IPI_CALL_FUNC_SINGLE:
-+		irq_enter();
- 		generic_smp_call_function_single_interrupt();
-+		irq_exit();
- 		break;
- 
- 	case IPI_CPU_STOP:
-+		irq_enter();
- 		ipi_cpu_stop(cpu);
-+		irq_exit();
- 		break;
- 
- 	default:
+--- a/net/core/ethtool.c
++++ b/net/core/ethtool.c
+@@ -1964,6 +1964,7 @@ int dev_ethtool(struct net *net, struct
+ 	case ETHTOOL_GRXCSUM:
+ 	case ETHTOOL_GTXCSUM:
+ 	case ETHTOOL_GSG:
++	case ETHTOOL_GSSET_INFO:
+ 	case ETHTOOL_GSTRINGS:
+ 	case ETHTOOL_GTSO:
+ 	case ETHTOOL_GPERMADDR:
 
 
