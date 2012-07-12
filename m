@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162529Ab2GLXDa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:03:30 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:52623 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162037Ab2GLXDX (ORCPT
+	id S932266Ab2GLXDr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:03:47 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46543 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162530Ab2GLXDm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 19:03:23 -0400
+	Thu, 12 Jul 2012 19:03:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Michael Krufky <mkrufky@linuxtv.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [ 03/68] media: smsusb: add autodetection support for USB ID 2040:f5a0
-Date: Thu, 12 Jul 2012 16:01:37 -0700
-Message-Id: <20120712175035.720543767@linuxfoundation.org>
+        Jan Kara <jack@suse.cz>
+Subject: [ 18/68] udf: Use ret instead of abusing i in udf_load_logicalvol()
+Date: Thu, 12 Jul 2012 16:01:52 -0700
+Message-Id: <20120712175037.043938341@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712175035.530652872@linuxfoundation.org>
 References: <20120712175057.GA9917@kroah.com>
@@ -31,28 +30,32 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Michael Krufky <mkrufky@linuxtv.org>
+From: Jan Kara <jack@suse.cz>
 
-commit 3e1141e2ce5667301a74ca2ef396d9bd5e995f7f upstream.
+commit cb14d340ef1737c24125dd663eff77734a482d47 upstream.
 
-Signed-off-by: Michael Krufky <mkrufky@linuxtv.org>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/dvb/siano/smsusb.c |    2 ++
- 1 file changed, 2 insertions(+)
+ fs/udf/super.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
---- a/drivers/media/dvb/siano/smsusb.c
-+++ b/drivers/media/dvb/siano/smsusb.c
-@@ -543,6 +543,8 @@ static const struct usb_device_id smsusb
- 		.driver_info = SMS1XXX_BOARD_HAUPPAUGE_WINDHAM },
- 	{ USB_DEVICE(0x2040, 0xc0a0),
- 		.driver_info = SMS1XXX_BOARD_HAUPPAUGE_WINDHAM },
-+	{ USB_DEVICE(0x2040, 0xf5a0),
-+		.driver_info = SMS1XXX_BOARD_HAUPPAUGE_WINDHAM },
- 	{ } /* Terminating entry */
- 	};
+--- a/fs/udf/super.c
++++ b/fs/udf/super.c
+@@ -1262,11 +1262,9 @@ static int udf_load_logicalvol(struct su
+ 	BUG_ON(ident != TAG_IDENT_LVD);
+ 	lvd = (struct logicalVolDesc *)bh->b_data;
  
+-	i = udf_sb_alloc_partition_maps(sb, le32_to_cpu(lvd->numPartitionMaps));
+-	if (i != 0) {
+-		ret = i;
++	ret = udf_sb_alloc_partition_maps(sb, le32_to_cpu(lvd->numPartitionMaps));
++	if (ret)
+ 		goto out_bh;
+-	}
+ 
+ 	for (i = 0, offset = 0;
+ 	     i < sbi->s_partitions && offset < le32_to_cpu(lvd->mapTableLength);
 
 
