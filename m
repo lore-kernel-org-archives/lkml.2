@@ -1,57 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933003Ab2GLI6g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 04:58:36 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60234 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932106Ab2GLI6d (ORCPT
+	id S933121Ab2GLI6o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 04:58:44 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:59332 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932106Ab2GLI6j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 04:58:33 -0400
-From: Devendra Naga <devendra.aaru@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Javier M. Mellid" <jmunhoz@igalia.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Fengguang Wu <fengguang.wu@intel.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Devendra Naga <devendra.aaru@gmail.com>
-Subject: [PATCH] staging/sm7xxfb: select sm7xxfb only when CONFIG_PCI is enabled
-Date: Thu, 12 Jul 2012 14:43:21 +0545
-Message-Id: <1342083501-10799-1-git-send-email-devendra.aaru@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 12 Jul 2012 04:58:39 -0400
+Date: Thu, 12 Jul 2012 10:02:13 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Ian Abbott <abbotti@mev.co.uk>
+Cc: H Hartley Sweeten <hartleys@visionengravers.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Ian Abbott <ian.abbott@mev.co.uk>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 00/30] staging: comedi: move 'struct pci_dev *' into
+ comedi_device
+Message-ID: <20120712100213.4be0e50f@pyramind.ukuu.org.uk>
+In-Reply-To: <4FFE9102.2090204@mev.co.uk>
+References: <201207111447.47402.hartleys@visionengravers.com>
+	<4FFE9102.2090204@mev.co.uk>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-the sm7xxfb is a pci device, and should depend on the PCI.
-And also if we wont' depend on the PCI sub-system, the following warns
-will be triggered,
+> I suppose at a later date we could turn that into a union with a short
+> name like u (so comedidev->pcidev would become something like
+> comedidev->u.pcidev), which would allow us to stick a 'struct
+> usb_interface *' or some other hardware device wrapper struct pointer in
+> the same hole.  (Maybe 'h' for 'hardware' would be better than 'u'.)
 
-drivers/staging/sm7xxfb/sm7xxfb.c:1061:1: warning: data definition has no type or storage class [enabled by default]
-drivers/staging/sm7xxfb/sm7xxfb.c:1061:1: warning: type defaults to 'int' in declaration of 'module_pci_driver' [-Wimplicit-int]
-drivers/staging/sm7xxfb/sm7xxfb.c:1061:1: warning: parameter names (without types) in function declaration [enabled by default]
+The "usual" pattern is to make it a struct device pointer. Then you can
+get to any other kind of device from it.
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
----
-	Hello Fengguang Wu,
-
-		I think this solves the build warnings told by you,
-		sorry for my bad english :(.
-
- drivers/staging/sm7xxfb/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/staging/sm7xxfb/Kconfig b/drivers/staging/sm7xxfb/Kconfig
-index d5013f8..e2922ae 100644
---- a/drivers/staging/sm7xxfb/Kconfig
-+++ b/drivers/staging/sm7xxfb/Kconfig
-@@ -1,6 +1,6 @@
- config FB_SM7XX
- 	tristate "Silicon Motion SM7XX framebuffer support"
--	depends on FB
-+	depends on FB && PCI
- 	select FB_CFB_FILLRECT
- 	select FB_CFB_COPYAREA
- 	select FB_CFB_IMAGEBLIT
--- 
-1.7.9.5
-
+Alan
+ 
