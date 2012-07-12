@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161436Ab2GLRNl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 13:13:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13964 "EHLO mx1.redhat.com"
+	id S1161421Ab2GLRN7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 13:13:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17938 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161371Ab2GLRNj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 13:13:39 -0400
-Date: Thu, 12 Jul 2012 19:10:22 +0200
+	id S1161399Ab2GLRNM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 13:13:12 -0400
+Date: Thu, 12 Jul 2012 19:10:25 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Anton Arapov <anton@redhat.com>, Hugh Dickins <hughd@google.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 3/4] uprobes: rename vma_address() and make it return
-	"unsigned long"
-Message-ID: <20120712171022.GA25507@redhat.com>
+Subject: [PATCH 4/4] uprobes: __replace_page() needs munlock_vma_page()
+Message-ID: <20120712171025.GA25510@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -25,66 +24,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1. vma_address() returns loff_t, this looks confusing and this is
-   unnecessary after the previous change. Make it return "ulong",
-   all callers truncate the result anyway.
+Like do_wp_page(), __replace_page() should do munlock_vma_page()
+for the case when the old page still has other !VM_LOCKED mappings.
+Unfortunately this needs mm/internal.h.
 
-2. Its name conflicts with mm/rmap.c:vma_address(), rename it to
-   offset_to_vaddr(), this matches vaddr_to_offset().
+Also, move put_page() outside of ptl lock. This doesn't really
+matter but looks a bit better.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- kernel/events/uprobes.c |   15 +++++----------
- 1 files changed, 5 insertions(+), 10 deletions(-)
+ kernel/events/uprobes.c |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 734e199..fc1df43 100644
+index fc1df43..aeea41b 100644
 --- a/kernel/events/uprobes.c
 +++ b/kernel/events/uprobes.c
-@@ -112,14 +112,9 @@ static bool valid_vma(struct vm_area_struct *vma, bool is_register)
- 	return false;
- }
+@@ -32,6 +32,7 @@
+ #include <linux/swap.h>		/* try_to_free_swap */
+ #include <linux/ptrace.h>	/* user_enable_single_step */
+ #include <linux/kdebug.h>	/* notifier mechanism */
++#include "../../mm/internal.h"	/* munlock_vma_page */
  
--static loff_t vma_address(struct vm_area_struct *vma, loff_t offset)
-+static unsigned long offset_to_vaddr(struct vm_area_struct *vma, loff_t offset)
- {
--	loff_t vaddr;
--
--	vaddr = vma->vm_start + offset;
--	vaddr -= (loff_t)vma->vm_pgoff << PAGE_SHIFT;
--
--	return vaddr;
-+	return vma->vm_start + offset - ((loff_t)vma->vm_pgoff << PAGE_SHIFT);
- }
+ #include <linux/uprobes.h>
  
- static loff_t vaddr_to_offset(struct vm_area_struct *vma, unsigned long vaddr)
-@@ -775,7 +770,7 @@ build_map_info(struct address_space *mapping, loff_t offset, bool is_register)
- 		curr = info;
+@@ -141,7 +142,7 @@ static int __replace_page(struct vm_area_struct *vma, unsigned long addr,
+ 	pte_t *ptep;
+ 	int err;
  
- 		info->mm = vma->vm_mm;
--		info->vaddr = vma_address(vma, offset);
-+		info->vaddr = offset_to_vaddr(vma, offset);
- 	}
- 	mutex_unlock(&mapping->i_mmap_mutex);
+-	/* freeze PageSwapCache() for try_to_free_swap() below */
++	/* For try_to_free_swap() and munlock_vma_page() below */
+ 	lock_page(page);
  
-@@ -1042,7 +1037,7 @@ int uprobe_mmap(struct vm_area_struct *vma)
+ 	err = -EAGAIN;
+@@ -164,9 +165,12 @@ static int __replace_page(struct vm_area_struct *vma, unsigned long addr,
+ 	page_remove_rmap(page);
+ 	if (!page_mapped(page))
+ 		try_to_free_swap(page);
+-	put_page(page);
+ 	pte_unmap_unlock(ptep, ptl);
  
- 	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
- 		if (!ret) {
--			loff_t vaddr = vma_address(vma, uprobe->offset);
-+			loff_t vaddr = offset_to_vaddr(vma, uprobe->offset);
- 
- 			ret = install_breakpoint(uprobe, vma->vm_mm, vma, vaddr);
- 			/*
-@@ -1103,7 +1098,7 @@ void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned lon
- 	build_probe_list(inode, vma, start, end, &tmp_list);
- 
- 	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
--		loff_t vaddr = vma_address(vma, uprobe->offset);
-+		loff_t vaddr = offset_to_vaddr(vma, uprobe->offset);
- 		/*
- 		 * An unregister could have removed the probe before
- 		 * unmap. So check before we decrement the count.
++	if (vma->vm_flags & VM_LOCKED)
++		munlock_vma_page(page);
++	put_page(page);
++
+ 	err = 0;
+  unlock:
+ 	unlock_page(page);
 -- 
 1.5.5.1
 
