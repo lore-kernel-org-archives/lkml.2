@@ -1,176 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161170Ab2GLO1q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 10:27:46 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:50114 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933910Ab2GLO10 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 10:27:26 -0400
-MIME-Version: 1.0
-In-Reply-To: <4FFEA2D4.9050308@nvidia.com>
-References: <1341814105-20690-1-git-send-email-acourbot@nvidia.com>
-	<1341814105-20690-4-git-send-email-acourbot@nvidia.com>
-	<CAPnjgZ1QbjE+-tr0c01K2feUdEE2wMBfR=bKpTxnyDOJbY8+1Q@mail.gmail.com>
-	<4FFEA2D4.9050308@nvidia.com>
-Date: Thu, 12 Jul 2012 16:27:25 +0200
-X-Google-Sender-Auth: DHGSwlki-C473fl_wVADtrzLn5E
-Message-ID: <CAPnjgZ2=Ga2P-40trA_=UABm=i7Uy4NTAM=ehea11mE22VfDew@mail.gmail.com>
-Subject: Re: [RFC][PATCH V2 3/3] tegra: add pwm backlight device tree nodes
-From: Simon Glass <sjg@chromium.org>
-To: Alex Courbot <acourbot@nvidia.com>
-Cc: Thierry Reding <thierry.reding@avionic-design.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	id S1161174Ab2GLO2Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 10:28:16 -0400
+Received: from mga03.intel.com ([143.182.124.21]:52463 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933943Ab2GLO1R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 10:27:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="167258320"
+From: Artem Bityutskiy <dedekind1@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Subject: [PATCHv2 4/6] hfs: simplify a bit checking for R/O
+Date: Thu, 12 Jul 2012 17:28:47 +0300
+Message-Id: <1342103329-17526-5-git-send-email-dedekind1@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1342103329-17526-1-git-send-email-dedekind1@gmail.com>
+References: <1342103329-17526-1-git-send-email-dedekind1@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alex,
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-On Thu, Jul 12, 2012 at 12:11 PM, Alex Courbot <acourbot@nvidia.com> wrote:
-> Hi Simon,
->
->
-> On Thu 12 Jul 2012 06:37:33 PM JST, Simon Glass wrote:
->>
->> I would like to do something similar in U-Boot for Tegra, although
->> perhaps not right away. For now I will go with something considerably
->> simpler! But if this is merged into the kernel we will move to it in
->> U-Boot.
->
->
-> Cool, I'd love to see that used in U-Boot as well.
->
->
->>> +               default-brightness-level = <12>;
->>> +
->>> +               pwms = <&pwm 2 5000000>;
->>> +               pwm-names = "backlight";
->>> +               power-supply = <&backlight_reg>;
->>> +               enable-gpios = <&gpio 28 0>;
->>> +
->>> +               power-on-sequence = "REGULATOR", "power", <1>,
->>> +                                   "DELAY", <10>,
->>> +                                   "PWM", "backlight", <1>,
->>> +                                   "GPIO", "enable", <1>;
->>
->>
->> So the names REGULATOR, DELAY, etc. here are looked up through some
->> existing mechanism? In general I am not a big fan of mixing strings
->> and numbers in a property.
->
->
-> Yes, these are strings we are looking up to know the type of the next
-> element to power on/off in the sequence. I don't like these, honestly, and
-> would rather have them replaced by constants - however there is no way to
-> define constants in the DT AFAIK (but I have heard some other persons are
-> interested in having them too), and this is the only way I have found to
-> keep the sequence readable.
+We have the following pattern in 2 places in HFS
 
-That might be the 100th time that I have heard this. I have brought a
-patch from Stephen Warren into our tree to solve this locally, but it
-is not merged upstream.
+if (!RDONLY)
+	hfs_mdb_commit();
 
->
->
->> Maybe something like:
->>
->> power_on_sequence {
->>     step@0 {
->>        phandle = <&backlight_reg>;
->>        enable = <1>;
->>        post-delay = <10>;
->>     }
->>     step@1 {
->>        phandle = <&pwm 2 5000000>;
->>     }
->>     step@2 {
->>        phandle = <&gpio 28 0>;
->>        enable = <1>;
->>     }
->
->
-> I see a few problems with this: first, how do you know the types of your
-> phandles? At step 0, we should get a regulator, step 1 is a PWM and step 2
-> is a GPIO. This is why I have used strings to identify the type of the
-> phandle and the number (and type) of additional arguments to parse for a
-> step.
+This patch pushes the RDONLY check down to 'hfs_mdb_commit()'. This will
+make the following patches a bit simpler.
 
-Well it's similar to giving them names - you would need to look up the
-phandle and see its compatible string or which driver type owns it.
-Maybe too complicated, and no such infrastructure exists, so:
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+---
+ fs/hfs/inode.c |    3 +--
+ fs/hfs/mdb.c   |    3 +++
+ fs/hfs/super.c |    3 +--
+ 3 files changed, 5 insertions(+), 4 deletions(-)
 
->> power_on_sequence {
->>     step@0 {
-            type = "regulator";
->>        phandle = <&backlight_reg>;
->>        enable = <1>;
->>        post-delay = <10>;
->>     }
->>     step@1 {
-            type = "pwm";
->>        phandle = <&pwm 2 5000000>;
->>     }
->>     step@2 {
-            type = "gpio";
->>        phandle = <&gpio 28 0>;
->>        enable = <1>;
->>     }
+diff --git a/fs/hfs/inode.c b/fs/hfs/inode.c
+index daf3d63..629eba4 100644
+--- a/fs/hfs/inode.c
++++ b/fs/hfs/inode.c
+@@ -646,8 +646,7 @@ static int hfs_file_fsync(struct file *filp, loff_t start, loff_t end,
+ 	sb = inode->i_sb;
+ 	if (sb->s_dirt) {
+ 		sb->s_dirt = 0;
+-		if (!(sb->s_flags & MS_RDONLY))
+-			hfs_mdb_commit(sb);
++		hfs_mdb_commit(sb);
+ 	}
+ 	/* .. finally sync the buffers to disk */
+ 	err = sync_blockdev(sb->s_bdev);
+diff --git a/fs/hfs/mdb.c b/fs/hfs/mdb.c
+index 7a32240..5fd51a5 100644
+--- a/fs/hfs/mdb.c
++++ b/fs/hfs/mdb.c
+@@ -260,6 +260,9 @@ void hfs_mdb_commit(struct super_block *sb)
+ {
+ 	struct hfs_mdb *mdb = HFS_SB(sb)->mdb;
+ 
++	if (sb->s_flags & MS_RDONLY)
++		return;
++
+ 	lock_buffer(HFS_SB(sb)->mdb_bh);
+ 	if (test_and_clear_bit(HFS_FLG_MDB_DIRTY, &HFS_SB(sb)->flags)) {
+ 		/* These parameters may have been modified, so write them back */
+diff --git a/fs/hfs/super.c b/fs/hfs/super.c
+index 47e4119..0730135 100644
+--- a/fs/hfs/super.c
++++ b/fs/hfs/super.c
+@@ -53,8 +53,7 @@ static void hfs_write_super(struct super_block *sb)
+ 	sb->s_dirt = 0;
+ 
+ 	/* sync everything to the buffers */
+-	if (!(sb->s_flags & MS_RDONLY))
+-		hfs_mdb_commit(sb);
++	hfs_mdb_commit(sb);
+ }
+ 
+ static int hfs_sync_fs(struct super_block *sb, int wait)
+-- 
+1.7.7.6
 
->
-> Second, I am afraid the representation in memory would be significantly
-> bigger since the properties names would have to be stored as well (I am no
-> DT expert, please correct me if I am wrong). Lastly, the additional freedom
-> of having extra properties might make the parser more complicated.
-
-The property names are only stored one, in the string table. I am not
-sure about parsing complexity, but it might actually be easier.
-
->
-> I agree the type strings are a problem in the current form - if we could get
-> constants in the device tree, that would be much better. Your way of
-> representing the sequences is interesting though, if we can solve the type
-> issue (and also evaluate its cost in terms of memory footprint), it would be
-> interesting to consider it as well.
-
-At a guess:
-
->>> +               power-on-sequence = "REGULATOR", "power", <1>,
->>> +                                   "DELAY", <10>,
->>> +                                   "PWM", "backlight", <1>,
->>> +                                   "GPIO", "enable", <1>;
-
-About 106 bytes I think
-
->>     step@0 { 16
-            type = "regulator"; 24
->>        phandle = <&backlight_reg>; 16
->>        enable = <1>; 16
->>        post-delay = <10>; 16
->>     }
->>     step@1 { 16
-            type = "pwm"; 16
->>        phandle = <&pwm 2 5000000>; 24
->>     }
->>     step@2 { 16
-            type = "gpio"; 20
->>        phandle = <&gpio 28 0>; 24
->>        enable = <1>; 16
->>     }
-
-220?
-
->From my understanding mixing strings and numbers in a property is
-frowned on though.
-
->
-> Alex.
-
-Regards,
-Simon
