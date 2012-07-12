@@ -1,63 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162552Ab2GLXWO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:22:14 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:17418 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162570Ab2GLXT6 (ORCPT
+	id S1162916Ab2GLXWr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:22:47 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60424 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162538Ab2GLXDk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 19:19:58 -0400
-X-Authority-Analysis: v=2.0 cv=AtpsLZBP c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ciwy3NGCPMMA:10 a=diFq7EHsLK0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=D_SbEOMbAAAA:8 a=iq8gveTgglRJqZf6-awA:9 a=7KbvKZvEaC0A:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-Id: <20120712231956.390641844@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Thu, 12 Jul 2012 19:18:31 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Subject: [PATCH RT 4/8] Latency histograms: Detect another yet overlooked sharedprio
- condition
-References: <20120712231827.084920483@goodmis.org>
-Content-Disposition: inline; filename=0004-Latency-histograms-Detect-another-yet-overlooked-sha.patch
+	Thu, 12 Jul 2012 19:03:40 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Subject: [ 17/68] nilfs2: ensure proper cache clearing for gc-inodes
+Date: Thu, 12 Jul 2012 16:01:51 -0700
+Message-Id: <20120712175036.954495724@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120712175035.530652872@linuxfoundation.org>
+References: <20120712175057.GA9917@kroah.com>
+ <20120712175035.530652872@linuxfoundation.org>
+User-Agent: quilt/0.60-20.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Carsten Emde <C.Emde@osadl.org>
+From: Greg KH <gregkh@linuxfoundation.org>
 
-While waiting for an RT process to be woken up, the previous process may
-go to wait and switch to another one with the same priority which then
-becomes current. This condition was not correctly recognized and led to
-erroneously high latency recordings during periods of low CPU load.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-This patch correctly marks such latencies as sharedprio and prevents
-them from being recorded as actual system latency.
+------------------
 
-Signed-off-by: Carsten Emde <C.Emde@osadl.org>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+
+commit fbb24a3a915f105016f1c828476be11aceac8504 upstream.
+
+A gc-inode is a pseudo inode used to buffer the blocks to be moved by
+garbage collection.
+
+Block caches of gc-inodes must be cleared every time a garbage collection
+function (nilfs_clean_segments) completes.  Otherwise, stale blocks
+buffered in the caches may be wrongly reused in successive calls of the GC
+function.
+
+For user files, this is not a problem because their gc-inodes are
+distinguished by a checkpoint number as well as an inode number.  They
+never buffer different blocks if either an inode number, a checkpoint
+number, or a block offset differs.
+
+However, gc-inodes of sufile, cpfile and DAT file can store different data
+for the same block offset.  Thus, the nilfs_clean_segments function can
+move incorrect block for these meta-data files if an old block is cached.
+I found this is really causing meta-data corruption in nilfs.
+
+This fixes the issue by ensuring cache clear of gc-inodes and resolves
+reported GC problems including checkpoint file corruption, b-tree
+corruption, and the following warning during GC.
+
+  nilfs_palloc_freev: entry number 307234 already freed.
+  ...
+
+Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Tested-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- kernel/trace/latency_hist.c |    3 +++
- 1 file changed, 3 insertions(+)
+ fs/nilfs2/gcinode.c |    2 ++
+ fs/nilfs2/segment.c |    2 ++
+ 2 files changed, 4 insertions(+)
 
-diff --git a/kernel/trace/latency_hist.c b/kernel/trace/latency_hist.c
-index d514eef..6a4c869 100644
---- a/kernel/trace/latency_hist.c
-+++ b/kernel/trace/latency_hist.c
-@@ -935,6 +935,9 @@ static notrace void probe_wakeup_latency_hist_stop(void *v,
- 		goto out;
+--- a/fs/nilfs2/gcinode.c
++++ b/fs/nilfs2/gcinode.c
+@@ -191,6 +191,8 @@ void nilfs_remove_all_gcinodes(struct th
+ 	while (!list_empty(head)) {
+ 		ii = list_first_entry(head, struct nilfs_inode_info, i_dirty);
+ 		list_del_init(&ii->i_dirty);
++		truncate_inode_pages(&ii->vfs_inode.i_data, 0);
++		nilfs_btnode_cache_clear(&ii->i_btnode_cache);
+ 		iput(&ii->vfs_inode);
  	}
- 
-+	if (current->prio == cpu_wakeup_task->prio)
-+		per_cpu(wakeup_sharedprio, cpu) = 1;
-+
- 	/*
- 	 * The task we are waiting for is about to be switched to.
- 	 * Calculate latency and store it in histogram.
--- 
-1.7.10.4
+ }
+--- a/fs/nilfs2/segment.c
++++ b/fs/nilfs2/segment.c
+@@ -2309,6 +2309,8 @@ nilfs_remove_written_gcinodes(struct the
+ 		if (!test_bit(NILFS_I_UPDATED, &ii->i_state))
+ 			continue;
+ 		list_del_init(&ii->i_dirty);
++		truncate_inode_pages(&ii->vfs_inode.i_data, 0);
++		nilfs_btnode_cache_clear(&ii->i_btnode_cache);
+ 		iput(&ii->vfs_inode);
+ 	}
+ }
 
 
