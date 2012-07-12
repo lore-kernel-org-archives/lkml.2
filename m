@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161930Ab2GLWmK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:42:10 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:48960 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161974Ab2GLWl5 (ORCPT
+	id S1162011Ab2GLWm0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:42:26 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:34801 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162001Ab2GLWmL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:41:57 -0400
+	Thu, 12 Jul 2012 18:42:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        Phil Schmitt <phillip.j.schmitt@intel.com>,
-        Ross Brattain <ross.b.brattain@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 103/187] ixgbe: Do not pad FCoE frames as this can cause issues with FCoE DDP
-Date: Thu, 12 Jul 2012 15:34:19 -0700
-Message-Id: <20120712191531.949307644@linuxfoundation.org>
+        Ido Yariv <ido@wizery.com>, Eliad Peller <eliad@wizery.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 115/187] mac80211: clear ifmgd->bssid only after building DELBA
+Date: Thu, 12 Jul 2012 15:34:31 -0700
+Message-Id: <20120712191533.029845013@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -34,107 +31,77 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Alexander Duyck <alexander.h.duyck@intel.com>
+From: Eliad Peller <eliad@wizery.com>
 
-commit 57efd44c8cad440fb00ef8078cb018ab2f221373 upstream.
+commit 88a9e31c506c00c8b7a2f1611406d0e38dcb33b3 upstream.
 
-FCoE target mode was experiencing issues due to the fact that we were
-sending up data frames that were padded to 60 bytes after the DDP logic had
-already stripped the frame down to 52 or 56 depending on the use of VLANs.
-This was resulting in the FCoE DDP logic having issues since it thought the
-frame still had data in it due to the padding.
+ieee80211_set_disassoc() clears ifmgd->bssid before
+building DELBA frames, resulting in frames with invalid
+bssid ("00:00:00:00:00:00").
 
-To resolve this, adding code so that we do not pad FCoE frames prior to
-handling them to the stack.
+Fix it by clearing ifmgd->bssid only after building
+all the needed frames.
 
-Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
-Tested-by: Phil Schmitt <phillip.j.schmitt@intel.com>
-Tested-by: Ross Brattain <ross.b.brattain@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+After this change, we no longer need to save the
+bssid (before clearing it), so remove the local array.
+
+Reported-by: Ido Yariv <ido@wizery.com>
+Signed-off-by: Eliad Peller <eliad@wizery.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/intel/ixgbe/ixgbe.h      |    4 ++--
- drivers/net/ethernet/intel/ixgbe/ixgbe_lib.c  |    2 +-
- drivers/net/ethernet/intel/ixgbe/ixgbe_main.c |   14 ++++++++++----
- 3 files changed, 13 insertions(+), 7 deletions(-)
+ net/mac80211/mlme.c |   13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
 
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe.h
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe.h
-@@ -189,7 +189,7 @@ enum ixgbe_ring_state_t {
- 	__IXGBE_HANG_CHECK_ARMED,
- 	__IXGBE_RX_RSC_ENABLED,
- 	__IXGBE_RX_CSUM_UDP_ZERO_ERR,
--	__IXGBE_RX_FCOE_BUFSZ,
-+	__IXGBE_RX_FCOE,
- };
+--- a/net/mac80211/mlme.c
++++ b/net/mac80211/mlme.c
+@@ -1375,7 +1375,6 @@ static void ieee80211_set_disassoc(struc
+ 	struct ieee80211_local *local = sdata->local;
+ 	struct sta_info *sta;
+ 	u32 changed = 0;
+-	u8 bssid[ETH_ALEN];
  
- #define check_for_tx_hang(ring) \
-@@ -283,7 +283,7 @@ struct ixgbe_ring_feature {
- #if defined(IXGBE_FCOE) && (PAGE_SIZE < 8192)
- static inline unsigned int ixgbe_rx_pg_order(struct ixgbe_ring *ring)
- {
--	return test_bit(__IXGBE_RX_FCOE_BUFSZ, &ring->state) ? 1 : 0;
-+	return test_bit(__IXGBE_RX_FCOE, &ring->state) ? 1 : 0;
- }
- #else
- #define ixgbe_rx_pg_order(_ring) 0
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_lib.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_lib.c
-@@ -628,7 +628,7 @@ static int ixgbe_alloc_q_vector(struct i
- 			f = &adapter->ring_feature[RING_F_FCOE];
- 			if ((rxr_idx >= f->mask) &&
- 			    (rxr_idx < f->mask + f->indices))
--				set_bit(__IXGBE_RX_FCOE_BUFSZ, &ring->state);
-+				set_bit(__IXGBE_RX_FCOE, &ring->state);
- 		}
+ 	ASSERT_MGD_MTX(ifmgd);
  
- #endif /* IXGBE_FCOE */
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-@@ -1036,17 +1036,17 @@ static inline void ixgbe_rx_hash(struct
- #ifdef IXGBE_FCOE
- /**
-  * ixgbe_rx_is_fcoe - check the rx desc for incoming pkt type
-- * @adapter: address of board private structure
-+ * @ring: structure containing ring specific data
-  * @rx_desc: advanced rx descriptor
-  *
-  * Returns : true if it is FCoE pkt
-  */
--static inline bool ixgbe_rx_is_fcoe(struct ixgbe_adapter *adapter,
-+static inline bool ixgbe_rx_is_fcoe(struct ixgbe_ring *ring,
- 				    union ixgbe_adv_rx_desc *rx_desc)
- {
- 	__le16 pkt_info = rx_desc->wb.lower.lo_dword.hs_rss.pkt_info;
+@@ -1385,10 +1384,7 @@ static void ieee80211_set_disassoc(struc
+ 	if (WARN_ON(!ifmgd->associated))
+ 		return;
  
--	return (adapter->flags & IXGBE_FLAG_FCOE_ENABLED) &&
-+	return test_bit(__IXGBE_RX_FCOE, &ring->state) &&
- 	       ((pkt_info & cpu_to_le16(IXGBE_RXDADV_PKTTYPE_ETQF_MASK)) ==
- 		(cpu_to_le16(IXGBE_ETQF_FILTER_FCOE <<
- 			     IXGBE_RXDADV_PKTTYPE_ETQF_SHIFT)));
-@@ -1519,6 +1519,12 @@ static bool ixgbe_cleanup_headers(struct
- 		skb->truesize -= ixgbe_rx_bufsz(rx_ring);
- 	}
+-	memcpy(bssid, ifmgd->associated->bssid, ETH_ALEN);
+-
+ 	ifmgd->associated = NULL;
+-	memset(ifmgd->bssid, 0, ETH_ALEN);
  
-+#ifdef IXGBE_FCOE
-+	/* do not attempt to pad FCoE Frames as this will disrupt DDP */
-+	if (ixgbe_rx_is_fcoe(rx_ring, rx_desc))
-+		return false;
+ 	/*
+ 	 * we need to commit the associated = NULL change because the
+@@ -1408,7 +1404,7 @@ static void ieee80211_set_disassoc(struc
+ 	netif_carrier_off(sdata->dev);
+ 
+ 	mutex_lock(&local->sta_mtx);
+-	sta = sta_info_get(sdata, bssid);
++	sta = sta_info_get(sdata, ifmgd->bssid);
+ 	if (sta) {
+ 		set_sta_flag(sta, WLAN_STA_BLOCK_BA);
+ 		ieee80211_sta_tear_down_BA_sessions(sta, tx);
+@@ -1417,13 +1413,16 @@ static void ieee80211_set_disassoc(struc
+ 
+ 	/* deauthenticate/disassociate now */
+ 	if (tx || frame_buf)
+-		ieee80211_send_deauth_disassoc(sdata, bssid, stype, reason,
+-					       tx, frame_buf);
++		ieee80211_send_deauth_disassoc(sdata, ifmgd->bssid, stype,
++					       reason, tx, frame_buf);
+ 
+ 	/* flush out frame */
+ 	if (tx)
+ 		drv_flush(local, false);
+ 
++	/* clear bssid only after building the needed mgmt frames */
++	memset(ifmgd->bssid, 0, ETH_ALEN);
 +
-+#endif
- 	/* if skb_pad returns an error the skb was freed */
- 	if (unlikely(skb->len < 60)) {
- 		int pad_len = 60 - skb->len;
-@@ -1745,7 +1751,7 @@ static bool ixgbe_clean_rx_irq(struct ix
+ 	/* remove AP and TDLS peers */
+ 	sta_info_flush(local, sdata);
  
- #ifdef IXGBE_FCOE
- 		/* if ddp, not passing to ULD unless for FCP_RSP or error */
--		if (ixgbe_rx_is_fcoe(adapter, rx_desc)) {
-+		if (ixgbe_rx_is_fcoe(rx_ring, rx_desc)) {
- 			ddp_bytes = ixgbe_fcoe_ddp(adapter, rx_desc, skb);
- 			if (!ddp_bytes) {
- 				dev_kfree_skb_any(skb);
 
 
