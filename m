@@ -1,393 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933635Ab2GLKCS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 06:02:18 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:44062 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932983Ab2GLKCQ (ORCPT
+	id S1759006Ab2GLKFG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 06:05:06 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:59811 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752578Ab2GLKFC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 06:02:16 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: "Steven J. Magnani" <steve@digidescorp.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] fat (exportfs): move NFS support code
-References: <1341930053-10689-1-git-send-email-steve@digidescorp.com>
-	<1341930053-10689-2-git-send-email-steve@digidescorp.com>
-Date: Thu, 12 Jul 2012 19:02:12 +0900
-In-Reply-To: <1341930053-10689-2-git-send-email-steve@digidescorp.com> (Steven
-	J. Magnani's message of "Tue, 10 Jul 2012 09:20:52 -0500")
-Message-ID: <87zk75paaj.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1.50 (gnu/linux)
+	Thu, 12 Jul 2012 06:05:02 -0400
+Date: Thu, 12 Jul 2012 12:04:56 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Simon Glass <sjg@chromium.org>
+Cc: Alexandre Courbot <acourbot@nvidia.com>, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [RFC][PATCH V2 3/3] tegra: add pwm backlight device tree nodes
+Message-ID: <20120712100456.GA1949@avionic-0098.adnet.avionic-design.de>
+References: <1341814105-20690-1-git-send-email-acourbot@nvidia.com>
+ <1341814105-20690-4-git-send-email-acourbot@nvidia.com>
+ <CAPnjgZ1QbjE+-tr0c01K2feUdEE2wMBfR=bKpTxnyDOJbY8+1Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="bp/iNruPH9dso1Pn"
+Content-Disposition: inline
+In-Reply-To: <CAPnjgZ1QbjE+-tr0c01K2feUdEE2wMBfR=bKpTxnyDOJbY8+1Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:8WOO8cTlmrZbApD4XnWLeqFmcwyTWWuXjj/wQBbObE6
+ sZW5m4sZbtE8izTE1psswUU50+Lw01K2r5LztcRacGdD+B2wsy
+ yIm3unExS6wWi+i2Yfs/3KG/V7EuNT6J07ovEkC3C670GHDL8v
+ wlFr5brME9jZjxBB0g7piWgMz45KOXwz/R9AOkhx+4Xbao0X0/
+ sqQIHzd34OlE4cUWiMoXIFYsd3uckIEHWuweMUyyMclzEoysHo
+ zPvErbNTV1EiC9qAo2ipdZo09HUxkb2r1ALF4vkCLIybzxWDDa
+ Adb7c90YdMX5few/okDfilTjwnO+vGZgTn2UZC4N0Ie9L+S0cO
+ PjChvVFm678dAP1u2fGyzR5q5gglkd8cbSGcqvvYuU5mtOh+9Z
+ wgDawHnDNixuqB1zYjQgqefvoW2/Nt0k0A=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Steven J. Magnani" <steve@digidescorp.com> writes:
 
-> Move NFS-related code into its own C file.
-> No functional changes.
+--bp/iNruPH9dso1Pn
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Looks good.
+On Thu, Jul 12, 2012 at 11:37:33AM +0200, Simon Glass wrote:
+> Hi Alex,
+>=20
+> On Mon, Jul 9, 2012 at 8:08 AM, Alexandre Courbot <acourbot@nvidia.com> w=
+rote:
+> > Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> > ---
+> >  arch/arm/boot/dts/tegra20-ventana.dts | 31 +++++++++++++++++++++++++++=
+++++
+> >  arch/arm/boot/dts/tegra20.dtsi        |  2 +-
+> >  2 files changed, 32 insertions(+), 1 deletion(-)
+> >
+> > diff --git a/arch/arm/boot/dts/tegra20-ventana.dts b/arch/arm/boot/dts/=
+tegra20-ventana.dts
+> > index be90544..c67d9e1 100644
+> > --- a/arch/arm/boot/dts/tegra20-ventana.dts
+> > +++ b/arch/arm/boot/dts/tegra20-ventana.dts
+> > @@ -317,6 +317,37 @@
+> >                 bus-width =3D <8>;
+> >         };
+> >
+>=20
+> I would like to do something similar in U-Boot for Tegra, although
+> perhaps not right away. For now I will go with something considerably
+> simpler! But if this is merged into the kernel we will move to it in
+> U-Boot. Anyway here are my comments:
+>=20
+> > +       backlight {
+> > +               compatible =3D "pwm-backlight";
+> > +               brightness-levels =3D <0 16 32 48 64 80 96 112 128 144 =
+160 176 192 208 224 240 255>;
+>=20
+> We seem to have a lot of these - should we move to a range and step size?
 
-Acked-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+These actually seem to be a little bogus. The reason for introducing the
+levels was to allow calibration of these values because they in fact
+usually do not scale linearly. Instead, a linear brightness increase
+usually maps to something like a logarithmic (at best) increase of the
+duty cycle.
 
-> Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
-> ---
-> diff -uprN a/fs/fat/fat.h b/fs/fat/fat.h
-> --- a/fs/fat/fat.h	2012-07-09 08:33:25.206615179 -0500
-> +++ b/fs/fat/fat.h	2012-07-10 09:10:14.064615822 -0500
-> @@ -341,6 +341,20 @@ extern int fat_fill_super(struct super_b
->  
->  extern int fat_flush_inodes(struct super_block *sb, struct inode *i1,
->  		            struct inode *i2);
-> +static inline loff_t fat_i_pos_read(struct msdos_sb_info *sbi,
-> +				    struct inode *inode)
-> +{
-> +	loff_t i_pos;
-> +#if BITS_PER_LONG == 32
-> +	spin_lock(&sbi->inode_hash_lock);
-> +#endif
-> +	i_pos = MSDOS_I(inode)->i_pos;
-> +#if BITS_PER_LONG == 32
-> +	spin_unlock(&sbi->inode_hash_lock);
-> +#endif
-> +	return i_pos;
-> +}
-> +
->  /* fat/misc.c */
->  extern __printf(3, 4) __cold
->  void __fat_fs_error(struct super_block *sb, int report, const char *fmt, ...);
-> @@ -366,6 +380,14 @@ extern int fat_sync_bhs(struct buffer_he
->  int fat_cache_init(void);
->  void fat_cache_destroy(void);
->  
-> +/* fat/nfs.c */
-> +struct fid;
-> +extern int fat_encode_fh(struct inode *inode, __u32 *fh, int *lenp,
-> +			 struct inode *parent);
-> +extern struct dentry *fat_fh_to_dentry(struct super_block *sb, struct fid *fid,
-> +				       int fh_len, int fh_type);
-> +extern struct dentry *fat_get_parent(struct dentry *child_dir);
-> +
->  /* helper for printk */
->  typedef unsigned long long	llu;
->  
-> diff -uprN a/fs/fat/inode.c b/fs/fat/inode.c
-> --- a/fs/fat/inode.c	2012-07-09 08:33:25.249614939 -0500
-> +++ b/fs/fat/inode.c	2012-07-10 09:09:58.654691584 -0500
-> @@ -557,20 +557,6 @@ static int fat_statfs(struct dentry *den
->  	return 0;
->  }
->  
-> -static inline loff_t fat_i_pos_read(struct msdos_sb_info *sbi,
-> -				    struct inode *inode)
-> -{
-> -	loff_t i_pos;
-> -#if BITS_PER_LONG == 32
-> -	spin_lock(&sbi->inode_hash_lock);
-> -#endif
-> -	i_pos = MSDOS_I(inode)->i_pos;
-> -#if BITS_PER_LONG == 32
-> -	spin_unlock(&sbi->inode_hash_lock);
-> -#endif
-> -	return i_pos;
-> -}
-> -
->  static int __fat_write_inode(struct inode *inode, int wait)
->  {
->  	struct super_block *sb = inode->i_sb;
-> @@ -663,122 +649,6 @@ static const struct super_operations fat
->  	.show_options	= fat_show_options,
->  };
->  
-> -/*
-> - * a FAT file handle with fhtype 3 is
-> - *  0/  i_ino - for fast, reliable lookup if still in the cache
-> - *  1/  i_generation - to see if i_ino is still valid
-> - *          bit 0 == 0 iff directory
-> - *  2/  i_pos(8-39) - if ino has changed, but still in cache
-> - *  3/  i_pos(4-7)|i_logstart - to semi-verify inode found at i_pos
-> - *  4/  i_pos(0-3)|parent->i_logstart - maybe used to hunt for the file on disc
-> - *
-> - * Hack for NFSv2: Maximum FAT entry number is 28bits and maximum
-> - * i_pos is 40bits (blocknr(32) + dir offset(8)), so two 4bits
-> - * of i_logstart is used to store the directory entry offset.
-> - */
-> -
-> -static struct dentry *fat_fh_to_dentry(struct super_block *sb,
-> -		struct fid *fid, int fh_len, int fh_type)
-> -{
-> -	struct inode *inode = NULL;
-> -	u32 *fh = fid->raw;
-> -
-> -	if (fh_len < 5 || fh_type != 3)
-> -		return NULL;
-> -
-> -	inode = ilookup(sb, fh[0]);
-> -	if (!inode || inode->i_generation != fh[1]) {
-> -		if (inode)
-> -			iput(inode);
-> -		inode = NULL;
-> -	}
-> -	if (!inode) {
-> -		loff_t i_pos;
-> -		int i_logstart = fh[3] & 0x0fffffff;
-> -
-> -		i_pos = (loff_t)fh[2] << 8;
-> -		i_pos |= ((fh[3] >> 24) & 0xf0) | (fh[4] >> 28);
-> -
-> -		/* try 2 - see if i_pos is in F-d-c
-> -		 * require i_logstart to be the same
-> -		 * Will fail if you truncate and then re-write
-> -		 */
-> -
-> -		inode = fat_iget(sb, i_pos);
-> -		if (inode && MSDOS_I(inode)->i_logstart != i_logstart) {
-> -			iput(inode);
-> -			inode = NULL;
-> -		}
-> -	}
-> -
-> -	/*
-> -	 * For now, do nothing if the inode is not found.
-> -	 *
-> -	 * What we could do is:
-> -	 *
-> -	 *	- follow the file starting at fh[4], and record the ".." entry,
-> -	 *	  and the name of the fh[2] entry.
-> -	 *	- then follow the ".." file finding the next step up.
-> -	 *
-> -	 * This way we build a path to the root of the tree. If this works, we
-> -	 * lookup the path and so get this inode into the cache.  Finally try
-> -	 * the fat_iget lookup again.  If that fails, then we are totally out
-> -	 * of luck.  But all that is for another day
-> -	 */
-> -	return d_obtain_alias(inode);
-> -}
-> -
-> -static int
-> -fat_encode_fh(struct inode *inode, __u32 *fh, int *lenp, struct inode *parent)
-> -{
-> -	int len = *lenp;
-> -	struct msdos_sb_info *sbi = MSDOS_SB(inode->i_sb);
-> -	loff_t i_pos;
-> -
-> -	if (len < 5) {
-> -		*lenp = 5;
-> -		return 255; /* no room */
-> -	}
-> -
-> -	i_pos = fat_i_pos_read(sbi, inode);
-> -	*lenp = 5;
-> -	fh[0] = inode->i_ino;
-> -	fh[1] = inode->i_generation;
-> -	fh[2] = i_pos >> 8;
-> -	fh[3] = ((i_pos & 0xf0) << 24) | MSDOS_I(inode)->i_logstart;
-> -	fh[4] = (i_pos & 0x0f) << 28;
-> -	if (parent)
-> -		fh[4] |= MSDOS_I(parent)->i_logstart;
-> -	return 3;
-> -}
-> -
-> -static struct dentry *fat_get_parent(struct dentry *child)
-> -{
-> -	struct super_block *sb = child->d_sb;
-> -	struct buffer_head *bh;
-> -	struct msdos_dir_entry *de;
-> -	loff_t i_pos;
-> -	struct dentry *parent;
-> -	struct inode *inode;
-> -	int err;
-> -
-> -	lock_super(sb);
-> -
-> -	err = fat_get_dotdot_entry(child->d_inode, &bh, &de, &i_pos);
-> -	if (err) {
-> -		parent = ERR_PTR(err);
-> -		goto out;
-> -	}
-> -	inode = fat_build_inode(sb, de, i_pos);
-> -	brelse(bh);
-> -
-> -	parent = d_obtain_alias(inode);
-> -out:
-> -	unlock_super(sb);
-> -
-> -	return parent;
-> -}
-> -
->  static const struct export_operations fat_export_ops = {
->  	.encode_fh	= fat_encode_fh,
->  	.fh_to_dentry	= fat_fh_to_dentry,
-> diff -uprN a/fs/fat/Makefile b/fs/fat/Makefile
-> --- a/fs/fat/Makefile	2012-07-09 08:33:25.240614990 -0500
-> +++ b/fs/fat/Makefile	2012-07-09 08:33:25.370614268 -0500
-> @@ -6,6 +6,6 @@ obj-$(CONFIG_FAT_FS) += fat.o
->  obj-$(CONFIG_VFAT_FS) += vfat.o
->  obj-$(CONFIG_MSDOS_FS) += msdos.o
->  
-> -fat-y := cache.o dir.o fatent.o file.o inode.o misc.o
-> +fat-y := cache.o dir.o fatent.o file.o inode.o misc.o nfs.o
->  vfat-y := namei_vfat.o
->  msdos-y := namei_msdos.o
-> diff -uprN a/fs/fat/nfs.c b/fs/fat/nfs.c
-> --- a/fs/fat/nfs.c	1969-12-31 18:00:00.000000000 -0600
-> +++ b/fs/fat/nfs.c	2012-07-10 08:53:24.272703129 -0500
-> @@ -0,0 +1,151 @@
-> +/* fs/fat/nfs.c
-> + *
-> + * This software is licensed under the terms of the GNU General Public
-> + * License version 2, as published by the Free Software Foundation, and
-> + * may be copied, distributed, and modified under those terms.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + */
-> +
-> +#include <linux/exportfs.h>
-> +#include "fat.h"
-> +
-> +/*
-> + * a FAT file handle with fhtype 3 is
-> + *  0/  i_ino - for fast, reliable lookup if still in the cache
-> + *  1/  i_generation - to see if i_ino is still valid
-> + *          bit 0 == 0 iff directory
-> + *  2/  i_pos(8-39) - if ino has changed, but still in cache
-> + *  3/  i_pos(4-7)|i_logstart - to semi-verify inode found at i_pos
-> + *  4/  i_pos(0-3)|parent->i_logstart - maybe used to hunt for the file on disc
-> + *
-> + * Hack for NFSv2: Maximum FAT entry number is 28bits and maximum
-> + * i_pos is 40bits (blocknr(32) + dir offset(8)), so two 4bits
-> + * of i_logstart is used to store the directory entry offset.
-> + */
-> +
-> +int
-> +fat_encode_fh(struct inode *inode, __u32 *fh, int *lenp, struct inode *parent)
-> +{
-> +	int len = *lenp;
-> +	struct msdos_sb_info *sbi = MSDOS_SB(inode->i_sb);
-> +	loff_t i_pos;
-> +
-> +	if (len < 5) {
-> +		*lenp = 5;
-> +		return 255; /* no room */
-> +	}
-> +
-> +	i_pos = fat_i_pos_read(sbi, inode);
-> +	*lenp = 5;
-> +	fh[0] = inode->i_ino;
-> +	fh[1] = inode->i_generation;
-> +	fh[2] = i_pos >> 8;
-> +	fh[3] = ((i_pos & 0xf0) << 24) | MSDOS_I(inode)->i_logstart;
-> +	fh[4] = (i_pos & 0x0f) << 28;
-> +	if (parent)
-> +		fh[4] |= MSDOS_I(parent)->i_logstart;
-> +	return 3;
-> +}
-> +
-> +static int fat_is_valid_fh(int fh_len, int fh_type)
-> +{
-> +	return ((fh_len >= 5) && (fh_type == 3));
-> +}
-> +
-> +/**
-> + * Map a NFS file handle to a corresponding dentry.
-> + * The dentry may or may not be connected to the filesystem root.
-> + */
-> +struct dentry *fat_fh_to_dentry(struct super_block *sb, struct fid *fid,
-> +				int fh_len, int fh_type)
-> +{
-> +	struct inode *inode = NULL;
-> +	u32 *fh = fid->raw;
-> +	loff_t i_pos;
-> +	unsigned long i_ino;
-> +	__u32 i_generation;
-> +	int i_logstart;
-> +
-> +	if (!fat_is_valid_fh(fh_len, fh_type))
-> +		return NULL;
-> +
-> +	i_ino = fh[0];
-> +	i_generation = fh[1];
-> +	i_logstart = fh[3] & 0x0fffffff;
-> +
-> +	/* Try i_ino lookup first - fastest and most reliable */
-> +	inode = ilookup(sb, i_ino);
-> +	if (inode && (inode->i_generation != i_generation)) {
-> +		iput(inode);
-> +		inode = NULL;
-> +	}
-> +	if (!inode) {
-> +		i_pos = (loff_t)fh[2] << 8;
-> +		i_pos |= ((fh[3] >> 24) & 0xf0) | (fh[4] >> 28);
-> +
-> +		/* try 2 - see if i_pos is in F-d-c
-> +		 * require i_logstart to be the same
-> +		 * Will fail if you truncate and then re-write
-> +		 */
-> +
-> +		inode = fat_iget(sb, i_pos);
-> +		if (inode && MSDOS_I(inode)->i_logstart != i_logstart) {
-> +			iput(inode);
-> +			inode = NULL;
-> +		}
-> +	}
-> +
-> +	/*
-> +	 * For now, do nothing if the inode is not found.
-> +	 *
-> +	 * What we could do is:
-> +	 *
-> +	 *	- follow the file starting at fh[4], and record the ".." entry,
-> +	 *	  and the name of the fh[2] entry.
-> +	 *	- then follow the ".." file finding the next step up.
-> +	 *
-> +	 * This way we build a path to the root of the tree. If this works, we
-> +	 * lookup the path and so get this inode into the cache.  Finally try
-> +	 * the fat_iget lookup again.  If that fails, then we are totally out
-> +	 * of luck.  But all that is for another day
-> +	 */
-> +	return d_obtain_alias(inode);
-> +}
-> +
-> +/*
-> + * Find the parent for a directory that is not currently connected to
-> + * the filesystem root.
-> + *
-> + * On entry, the caller holds child_dir->d_inode->i_mutex.
-> + */
-> +struct dentry *fat_get_parent(struct dentry *child_dir)
-> +{
-> +	struct super_block *sb = child_dir->d_sb;
-> +	struct buffer_head *bh = NULL;
-> +	struct msdos_dir_entry *de;
-> +	loff_t i_pos;
-> +	struct dentry *parent;
-> +	struct inode *inode;
-> +	int err;
-> +
-> +	lock_super(sb);
-> +
-> +	err = fat_get_dotdot_entry(child_dir->d_inode, &bh, &de, &i_pos);
-> +	if (err) {
-> +		parent = ERR_PTR(err);
-> +		goto out;
-> +	}
-> +	inode = fat_build_inode(sb, de, i_pos);
-> +
-> +	parent = d_obtain_alias(inode);
-> +out:
-> +	brelse(bh);
-> +	unlock_super(sb);
-> +
-> +	return parent;
-> +}
->
+> > +               default-brightness-level =3D <12>;
+> > +
+> > +               pwms =3D <&pwm 2 5000000>;
+> > +               pwm-names =3D "backlight";
+> > +               power-supply =3D <&backlight_reg>;
+> > +               enable-gpios =3D <&gpio 28 0>;
+> > +
+> > +               power-on-sequence =3D "REGULATOR", "power", <1>,
+> > +                                   "DELAY", <10>,
+> > +                                   "PWM", "backlight", <1>,
+> > +                                   "GPIO", "enable", <1>;
+>=20
+> So the names REGULATOR, DELAY, etc. here are looked up through some
+> existing mechanism? In general I am not a big fan of mixing strings
+> and numbers in a property. Maybe something like:
+>=20
+> power_on_sequence {
+>    step@0 {
+>       phandle =3D <&backlight_reg>;
+>       enable =3D <1>;
+>       post-delay =3D <10>;
+>    }
+>    step@1 {
+>       phandle =3D <&pwm 2 5000000>;
+>    }
+>    step@2 {
+>       phandle =3D <&gpio 28 0>;
+>       enable =3D <1>;
+>    }
 
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+I actually like that a lot. What's missing from your example is a way to
+specify the type of the phandle because it cannot be safely inferred.
+Perhaps this could be done by just the property name:
+
+	power_on_sequence {
+		step@0 {
+			power-supply =3D <&backlight_reg>;
+			enable =3D <1>;
+			post-delay =3D <10>;
+		};
+		step@1 {
+			pwm =3D <&pwm 2 5000000>;
+		};
+		step@2 {
+			enable-gpios =3D <&gpio 28 0>;
+			enable =3D <1>;
+		};
+	};
+
+However I think one of the reasons for Alex to choose his particular
+representation is that people want this to be representable in the
+platform data as well, which unfortunately can't deal very well with
+this kind of situation.
+
+Usually in the kernel you have one API to obtain a resource (pwm_get(),
+regulator_get(), ...) which takes as an argument a device handle and a
+name. For device tree, that API will lookup the resource by phandle,
+while the non-DT code path typically uses a static lookup table.
+
+It's a shame that we have to keep this kind of backwards compatibility
+because it prevents these things from being represented in a logic way
+in the DT sense.
+
+Thierry
+
+--bp/iNruPH9dso1Pn
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP/qFIAAoJEN0jrNd/PrOhx8IQAKlUx6mLvkbPu7V+iX8DpWE3
+chGdHh8cSoXBS5WrW0bTPlmYMzIgSUBa64eBZVT0e7nbyrgeltY04LSPydoHlfyK
+tQYWv4i5hmD8m9zo4e0IMp85SVite+QEhFNPapCyTiL7Os3BoyX8olOxPlrPC7Rg
+NpbYItUaqRM2sEIAyTHpgVGuPSocrva9dgFWlxr8dwvfHL3qCbT9gylj1hOMhlit
+k7V6Vdg9WWu+lyboLGMbgVTmZDWqFcj51enuNnaL7UW9DPB9AMSA9jxZKtVBnffX
+xwAc4SWkNqQ2PlOBhvyZ8IcO47p8JQ423+HaNHMlPGaXZZkmnU8VSlDWYlJFFbIa
+Fzskn92DUibgvc3K8V6GHXtrpeW+ci5ng3swxj9gTNiGGF3SR42Zb+S3uERvelfG
+E8TOAzKpO5a12L6lYrrBhMVwKjl5HWjShhiyCwVkEGhcRa6dJp6eGWZ8K3y6jqCB
+T6dRaJy6Up0m3C29RSV6tbDAIP8bUq47Ko1HiTotMVB422mIRWTQFV9LI3ciogIL
+aEhRsJk8bYF8244KFsn1FAKWQz8ZnrxTpuRXP2GsEdf6LOyt5Rng1EMzYMOMAXoG
+sFO8BBdIeIDRrcy7ZourtEp9wh9S+mHOTrAwEzwcjcCZAPd+ZZxiwrJC22jZ69XZ
+gU/YMjRyIHjwV2KU6rEc
+=P1Hh
+-----END PGP SIGNATURE-----
+
+--bp/iNruPH9dso1Pn--
