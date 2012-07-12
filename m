@@ -1,74 +1,832 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759228Ab2GLNIf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 09:08:35 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:46210 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757369Ab2GLNIe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 09:08:34 -0400
-Message-ID: <4FFECC4E.4070001@googlemail.com>
-Date: Thu, 12 Jul 2012 15:08:30 +0200
-From: Sebastian Hesselbarh <sebastian.hesselbarth@googlemail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111114 Icedove/3.1.16
+	id S1759243Ab2GLNIy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 09:08:54 -0400
+Received: from zfrontend2.aha.ru ([195.2.83.148]:62022 "EHLO aha.ru"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1759230Ab2GLNIv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 09:08:51 -0400
+X-Greylist: delayed 3603 seconds by postgrey-1.27 at vger.kernel.org; Thu, 12 Jul 2012 09:08:51 EDT
+From: "werner" <w.landgraf@ru.ru>
+Subject: 3.5-rcX : Big problem with root device returning
+To: linux-kernel@vger.kernel.org
+X-Mailer: CommuniGate Pro WebUser Interface v.4.3.12
+Date: Thu, 12 Jul 2012 08:08:42 -0400
+Message-ID: <web-768955641@zbackend1.aha.ru>
 MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: Grant Likely <grant.likely@secretlab.ca>, Rob Landley <rob@landley.net>,
-        Mike Turquette <mturquette@ti.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RESEND PATCH 1/1] clk: add DT support for clock gating control
-References: <4FFE7979.4060000@googlemail.com> <4FFEBF8A.1020700@gmail.com>
-In-Reply-To: <4FFEBF8A.1020700@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"; format="flowed"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/12/2012 02:14 PM, Rob Herring wrote:
->> +Required child properties:
->> +- reg : should contain the individual bit and polarity to control
->> +        the clock gate. A polarity of 0 means that by setting the
->> +        bit to 1 the clock passes through the clock gate while
->> +    setting the bit to 0 disables the clock. Any other value
->> +         for polarity inverts the meaning of the control bit.
->
-> This is a bit of overloading reg to specify the polarity.
+There is a big problem since 3.5-rc1 which potentially 
+mess the installations
 
-Well, yes it is overloading but still matches reg somehow, as the
-extra information is required to access the resource. But I agree,
-expecially wrt more-than-one-bit clk-gate (see below).
+rdev   don't give longer back the root device like 
+/dev/sda1  , but in the bios form like 0x80010300
 
->> +        /* SATA clock gate with different parent clock */
->> +        cg_sata: clockgate@3 {
->> +            reg =<3 0>; /* register bit 3, normal polarity */
->> +            clocks =<&sata_clk>;
->> +        };
->
-> I'm not sure I like the node per bit. What about a bit mask for valid
-> bits and polarities. Then add a clock cell to specify the bit or index.
->
-> i.MX has 2-bit enable fields for its leaf clocks, so how and if you
-> would support that is something to think about.
+rdev is essential for the installation programs  and for 
+the installation f.ex. of lilo .   It's not conveniente to 
+rely on the bios numbers, because on some meinbords they 
+change depending which boot order you select in BIOS, or 
+only if you select another boot device in the bios boot 
+menu with F12.   Whilst /dev/sdXY is more reliable.
 
-Yeah, I thought of "what if the clk_gate needs to be enabled with more
-than 1 bit" already. But this is a short-comming of the current clk-gate
-implementation.
+   rdev is an old basical function which always worked 
+correctly, until now.
 
-Just to get it right, i.MX requires to set more than one bit to change
-the state of the gate for one leaf clock?
+The error starts with 3.5-rc1 and is not corrected until 
+3.5-rc6 .    If I go back to an earlier kernel, 3.4 or 
+older, then the same installation works correct (rdev 
+gives /dev/sda1 ) and if I go back then again to 3.5-rcX 
+it's again wrong (rdev gives 0x80010300).    Thus, this 
+seems a wrong manner how the kernel gives back the root 
+device,  or interact with rdev.      It's also possible 
+that this problem happens only under any kernel 
+compilation option,   so that below I give the differences 
+in config between 3.4 and 3.5-rc1
 
-If this is true, that would require a change of the generic clk-gate
-anyway.
+This problem should be fixed most quickly,  rdev always 
+have to work correctly.
 
-I had a look at pinctrl-bindings.txt maybe this is the way to go for
-clock gating control, too. That would require clk-gate to handle an
-'active' and 'gated' state and leave it to a clock gate control to
-actually set the required bits in any registers. This would allow
-other special implementations of clock gating controllers to reuse
-clk-gate DT description. Additionally, there could be a
-simple-clock-gating-control that can set states by reg address and
-for each controlled gate a mask, enable value, and disable value.
+wl
 
-Sebastian
+
+======================================
+3c3
+< # Linux/i386 3.5.0-rc1 Kernel Configuration
+---
+> # Linux/i386 3.4.0 Kernel Configuration
+11a12,15
+> CONFIG_GENERIC_CMOS_UPDATE=y
+> CONFIG_CLOCKSOURCE_WATCHDOG=y
+> CONFIG_GENERIC_CLOCKEVENTS=y
+> CONFIG_GENERIC_CLOCKEVENTS_BROADCAST=y
+24a29
+> CONFIG_ARCH_HAS_CPU_IDLE_WAIT=y
+25a31
+> # CONFIG_GENERIC_TIME_VSYSCALL is not set
+42a49
+> CONFIG_KTIME_SCALAR=y
+44d50
+< CONFIG_ARCH_SUPPORTS_UPROBES=y
+48d53
+< CONFIG_BUILDTIME_EXTABLE_SORT=y
+100,113d104
+< CONFIG_CLOCKSOURCE_WATCHDOG=y
+< CONFIG_KTIME_SCALAR=y
+< CONFIG_GENERIC_CLOCKEVENTS=y
+< CONFIG_GENERIC_CLOCKEVENTS_BUILD=y
+< CONFIG_GENERIC_CLOCKEVENTS_BROADCAST=y
+< CONFIG_GENERIC_CLOCKEVENTS_MIN_ADJUST=y
+< CONFIG_GENERIC_CMOS_UPDATE=y
+< 
+< #
+< # Timers subsystem
+< #
+< CONFIG_TICK_ONESHOT=y
+< # CONFIG_NO_HZ is not set
+< CONFIG_HIGH_RES_TIMERS=y
+121d111
+< CONFIG_RCU_FANOUT_LEAF=16
+144a135
+> CONFIG_USER_NS=y
+186a178
+> # CONFIG_PERF_COUNTERS is not set
+201c193
+< CONFIG_KPROBES=y
+---
+> # CONFIG_KPROBES is not set
+203d194
+< CONFIG_OPTPROBES=y
+205d195
+< CONFIG_KRETPROBES=y
+213d202
+< CONFIG_HAVE_DMA_CONTIGUOUS=y
+215d203
+< CONFIG_GENERIC_SMP_IDLE_THREAD=y
+227,228d214
+< CONFIG_HAVE_ARCH_SECCOMP_FILTER=y
+< CONFIG_SECCOMP_FILTER=y
+325a312,316
+> CONFIG_TICK_ONESHOT=y
+> # CONFIG_NO_HZ is not set
+> CONFIG_HIGH_RES_TIMERS=y
+> CONFIG_GENERIC_CLOCKEVENTS_BUILD=y
+> CONFIG_GENERIC_CLOCKEVENTS_MIN_ADJUST=y
+467d457
+< CONFIG_CROSS_MEMORY_ATTACH=y
+511,512d500
+< # CONFIG_PM_AUTOSLEEP is not set
+< # CONFIG_PM_WAKELOCKS is not set
+649a638,640
+> CONFIG_MCA=y
+> CONFIG_MCA_LEGACY=y
+> CONFIG_MCA_PROC_FS=y
+657c648
+< CONFIG_ALIX=y
+---
+> # CONFIG_ALIX is not set
+696d686
+< # CONFIG_RAPIDIO_DMA_ENGINE is not set
+724d713
+< CONFIG_XFRM_ALGO=y
+866d854
+< CONFIG_NETFILTER_XT_TARGET_HMARK=m
+1025a1014
+> CONFIG_IP6_NF_QUEUE=m
+1084d1072
+< # CONFIG_NET_DCCPPROBE is not set
+1086d1073
+< # CONFIG_NET_SCTPPROBE is not set
+1125c1112
+< CONFIG_LLC=m
+---
+> CONFIG_LLC=y
+1139a1127,1129
+> CONFIG_ECONET=m
+> CONFIG_ECONET_AUNUDP=y
+> CONFIG_ECONET_NATIVE=y
+1144d1133
+< CONFIG_MAC802154=m
+1168,1169d1156
+< CONFIG_NET_SCH_CODEL=m
+< CONFIG_NET_SCH_FQ_CODEL=m
+1205d1191
+< CONFIG_BATMAN_ADV_BLA=y
+1218d1203
+< # CONFIG_NET_TCPPROBE is not set
+1428,1429d1412
+< CONFIG_NFC_HCI=m
+< CONFIG_NFC_SHDLC=y
+1436d1418
+< CONFIG_PN544_HCI_NFC=m
+1464d1445
+< # CONFIG_CMA is not set
+1627a1609
+> # CONFIG_MTD_UBI_DEBUG is not set
+1638a1621
+> CONFIG_OF_GPIO=y
+1640a1624
+> CONFIG_OF_SPI=y
+1711c1695
+< CONFIG_BLK_DEV_NVME=y
+---
+> # CONFIG_BLK_DEV_NVME is not set
+1757,1759c1741
+< CONFIG_BMP085=y
+< CONFIG_BMP085_I2C=m
+< CONFIG_BMP085_SPI=m
+---
+> CONFIG_BMP085=m
+1761a1744
+> CONFIG_MAX8997_MUIC=m
+1791d1773
+< CONFIG_INTEL_MEI=m
+1983a1966
+> CONFIG_SCSI_FD_MCS=y
+1988a1972,1974
+> CONFIG_SCSI_IBMMCA=y
+> CONFIG_IBMMCA_SCSI_ORDER_STANDARD=y
+> CONFIG_IBMMCA_SCSI_DEV_RESET=y
+1996a1983
+> CONFIG_SCSI_NCR_D700=y
+2005a1993,1996
+> CONFIG_SCSI_NCR_Q720=y
+> CONFIG_SCSI_NCR53C8XX_DEFAULT_TAGS=8
+> CONFIG_SCSI_NCR53C8XX_MAX_TAGS=32
+> CONFIG_SCSI_NCR53C8XX_SYNC=20
+2010d2000
+< CONFIG_TCM_QLA2XXX=m
+2187d2176
+< CONFIG_SBP_TARGET=m
+2225d2213
+< # CONFIG_IEEE802154_FAKELB is not set
+2230d2217
+< CONFIG_NET_TEAM_MODE_LOADBALANCE=m
+2387a2375,2382
+> CONFIG_NET_VENDOR_IBM=y
+> # CONFIG_IBM_EMAC_ZMII is not set
+> # CONFIG_IBM_EMAC_RGMII is not set
+> # CONFIG_IBM_EMAC_TAH is not set
+> # CONFIG_IBM_EMAC_EMAC4 is not set
+> # CONFIG_IBM_EMAC_NO_FLOW_CTRL is not set
+> # CONFIG_IBM_EMAC_MAL_CLR_ICINTSTAT is not set
+> # CONFIG_IBM_EMAC_MAL_COMMON_ERR is not set
+2394d2388
+< CONFIG_IGB_PTP=y
+2398d2391
+< CONFIG_IXGBE_HWMON=y
+2401d2393
+< # CONFIG_IXGBE_PTP is not set
+2405a2398,2399
+> CONFIG_ELMC=m
+> CONFIG_ELMC_II=m
+2422d2415
+< CONFIG_MLX4_EN_DCB=y
+2437a2431
+> CONFIG_IBMLANA=m
+2449a2444
+> CONFIG_NE2_MCA=m
+2452a2448
+> CONFIG_ULTRAMCA=m
+2519,2524d2514
+< CONFIG_NET_VENDOR_WIZNET=y
+< CONFIG_WIZNET_W5100=m
+< CONFIG_WIZNET_W5300=m
+< # CONFIG_WIZNET_BUS_DIRECT is not set
+< # CONFIG_WIZNET_BUS_INDIRECT is not set
+< CONFIG_WIZNET_BUS_ANY=y
+2558,2559d2547
+< CONFIG_MDIO_BUS_MUX=m
+< CONFIG_MDIO_BUS_MUX_GPIO=m
+2578a2567,2580
+> CONFIG_TR=y
+> CONFIG_WANT_LLC=y
+> CONFIG_PCMCIA_IBMTR=m
+> CONFIG_IBMTR=m
+> CONFIG_IBMOL=m
+> CONFIG_IBMLS=m
+> CONFIG_3C359=m
+> CONFIG_TMS380TR=m
+> CONFIG_TMSPCI=m
+> CONFIG_SKISA=m
+> CONFIG_PROTEON=m
+> CONFIG_ABYSS=m
+> CONFIG_MADGEMC=m
+> CONFIG_SMCTR=m
+2662c2664
+< CONFIG_B43_BCMA_EXTRA=y
+---
+> # CONFIG_B43_BCMA_EXTRA is not set
+2691d2692
+< # CONFIG_BRCMFMAC_SDIO_OOB is not set
+2785d2785
+< CONFIG_WL_TI=y
+2788a2789
+> CONFIG_WL12XX_MENU=m
+2790,2792c2791,2792
+< CONFIG_WLCORE=m
+< CONFIG_WLCORE_SPI=m
+< CONFIG_WLCORE_SDIO=m
+---
+> CONFIG_WL12XX_SPI=m
+> CONFIG_WL12XX_SDIO=m
+2799d2798
+< CONFIG_MWIFIEX_USB=m
+2996d2994
+< CONFIG_INPUT_MATRIXKMAP=y
+3026d3023
+< CONFIG_KEYBOARD_LM8333=y
+3037c3034
+< CONFIG_KEYBOARD_TWL4030=y
+---
+> # CONFIG_KEYBOARD_TWL4030 is not set
+3114d3110
+< CONFIG_TOUCHSCREEN_DA9052=y
+3124d3119
+< CONFIG_TOUCHSCREEN_WACOM_I2C=y
+3170a3166
+> CONFIG_INPUT_AB8500_PONKEY=y
+3192,3194c3188,3190
+< CONFIG_INPUT_TWL4030_PWRBUTTON=y
+< CONFIG_INPUT_TWL4030_VIBRA=y
+< CONFIG_INPUT_TWL6040_VIBRA=y
+---
+> # CONFIG_INPUT_TWL4030_PWRBUTTON is not set
+> # CONFIG_INPUT_TWL4030_VIBRA is not set
+> # CONFIG_INPUT_TWL6040_VIBRA is not set
+3278a3275
+> CONFIG_SERIAL_8250_MCA=m
+3348a3346
+> CONFIG_RAMOOPS=m
+3494d3491
+< CONFIG_OF_GPIO=y
+3506d3502
+< CONFIG_GPIO_ICH=y
+3518d3513
+< CONFIG_GPIO_RC5T583=y
+3523c3518
+< CONFIG_GPIO_TWL4030=y
+---
+> # CONFIG_GPIO_TWL4030 is not set
+3538c3533
+< CONFIG_GPIO_SODAVILLE=y
+---
+> # CONFIG_GPIO_SODAVILLE is not set
+3583,3584c3578,3579
+< CONFIG_W1_SLAVE_DS2780=y
+< CONFIG_W1_SLAVE_DS2781=y
+---
+> CONFIG_W1_SLAVE_DS2780=m
+> CONFIG_W1_SLAVE_DS2781=m
+3588,3593c3583,3588
+< CONFIG_PDA_POWER=y
+< CONFIG_MAX8925_POWER=y
+< CONFIG_WM831X_BACKUP=y
+< CONFIG_WM831X_POWER=y
+< CONFIG_WM8350_POWER=y
+< CONFIG_TEST_POWER=y
+---
+> CONFIG_PDA_POWER=m
+> CONFIG_MAX8925_POWER=m
+> CONFIG_WM831X_BACKUP=m
+> CONFIG_WM831X_POWER=m
+> CONFIG_WM8350_POWER=m
+> CONFIG_TEST_POWER=m
+3595,3598c3590,3593
+< CONFIG_BATTERY_DS2780=y
+< CONFIG_BATTERY_DS2781=y
+< CONFIG_BATTERY_DS2782=y
+< CONFIG_BATTERY_OLPC=y
+---
+> CONFIG_BATTERY_DS2780=m
+> CONFIG_BATTERY_DS2781=m
+> CONFIG_BATTERY_DS2782=m
+> CONFIG_BATTERY_OLPC=m
+3600,3601c3595,3596
+< CONFIG_BATTERY_SBS=y
+< CONFIG_BATTERY_BQ27x00=y
+---
+> CONFIG_BATTERY_SBS=m
+> CONFIG_BATTERY_BQ27x00=m
+3604,3606c3599,3601
+< CONFIG_BATTERY_DA9030=y
+< CONFIG_BATTERY_MAX17040=y
+< CONFIG_BATTERY_MAX17042=y
+---
+> CONFIG_BATTERY_DA9030=m
+> CONFIG_BATTERY_MAX17040=m
+> CONFIG_BATTERY_MAX17042=m
+3608,3612c3603,3607
+< CONFIG_CHARGER_ISP1704=y
+< CONFIG_CHARGER_MAX8903=y
+< CONFIG_CHARGER_TWL4030=y
+< CONFIG_CHARGER_LP8727=y
+< CONFIG_CHARGER_GPIO=y
+---
+> CONFIG_CHARGER_ISP1704=m
+> CONFIG_CHARGER_MAX8903=m
+> # CONFIG_CHARGER_TWL4030 is not set
+> CONFIG_CHARGER_LP8727=m
+> CONFIG_CHARGER_GPIO=m
+3616c3611,3613
+< CONFIG_CHARGER_SMB347=y
+---
+> CONFIG_CHARGER_SMB347=m
+> CONFIG_AB8500_BM=y
+> CONFIG_AB8500_BATTERY_THERM_ON_BATCTRL=y
+3723d3719
+< CONFIG_SENSORS_INA2XX=m
+3728c3724
+< CONFIG_SENSORS_TWL4030_MADC=m
+---
+> # CONFIG_SENSORS_TWL4030_MADC is not set
+3763d3758
+< CONFIG_DA9052_WATCHDOG=m
+3766c3761
+< CONFIG_TWL4030_WATCHDOG=m
+---
+> # CONFIG_TWL4030_WATCHDOG is not set
+3781d3775
+< CONFIG_IE6XX_WDT=m
+3860c3854
+< CONFIG_MFD_SM501=y
+---
+> CONFIG_MFD_SM501=m
+3862c3856
+< CONFIG_HTC_PASIC3=y
+---
+> CONFIG_HTC_PASIC3=m
+3864,3869c3858,3862
+< CONFIG_UCB1400_CORE=y
+< CONFIG_MFD_LM3533=y
+< CONFIG_TPS6105X=y
+< CONFIG_TPS65010=y
+< CONFIG_TPS6507X=y
+< CONFIG_MFD_TPS65217=y
+---
+> CONFIG_UCB1400_CORE=m
+> CONFIG_TPS6105X=m
+> CONFIG_TPS65010=m
+> CONFIG_TPS6507X=m
+> CONFIG_MFD_TPS65217=m
+3876c3869
+< CONFIG_TWL4030_MADC=y
+---
+> CONFIG_TWL4030_MADC=m
+3878c3871
+< CONFIG_TWL6030_PWM=y
+---
+> CONFIG_TWL6030_PWM=m
+3894d3886
+< CONFIG_MFD_MAX77693=y
+3899c3891
+< CONFIG_MFD_WM8400=y
+---
+> CONFIG_MFD_WM8400=m
+3906,3912c3898,3902
+< CONFIG_MFD_PCF50633=y
+< CONFIG_PCF50633_ADC=y
+< CONFIG_PCF50633_GPIO=y
+< CONFIG_MFD_MC13783=y
+< CONFIG_MFD_MC13XXX=y
+< CONFIG_MFD_MC13XXX_SPI=y
+< CONFIG_MFD_MC13XXX_I2C=y
+---
+> CONFIG_MFD_PCF50633=m
+> CONFIG_PCF50633_ADC=m
+> CONFIG_PCF50633_GPIO=m
+> CONFIG_MFD_MC13783=m
+> CONFIG_MFD_MC13XXX=m
+3915c3905
+< CONFIG_AB3100_OTP=y
+---
+> CONFIG_AB3100_OTP=m
+3917c3907,3910
+< CONFIG_MFD_CS5535=y
+---
+> CONFIG_AB8500_CORE=y
+> CONFIG_AB8500_DEBUG=y
+> CONFIG_AB8500_GPADC=y
+> CONFIG_MFD_CS5535=m
+3920d3912
+< CONFIG_LPC_ICH=y
+3922c3914
+< CONFIG_MFD_JANZ_CMODIO=y
+---
+> CONFIG_MFD_JANZ_CMODIO=m
+3924c3916
+< CONFIG_MFD_WL1273_CORE=y
+---
+> CONFIG_MFD_WL1273_CORE=m
+3928d3919
+< CONFIG_MFD_PALMAS=y
+3932c3923
+< CONFIG_REGULATOR_FIXED_VOLTAGE=y
+---
+> CONFIG_REGULATOR_FIXED_VOLTAGE=m
+3956d3946
+< CONFIG_REGULATOR_RC5T583=m
+3959c3949
+< CONFIG_REGULATOR_PALMAS=m
+---
+> CONFIG_REGULATOR_AB8500=y
+3964d3953
+< CONFIG_REGULATOR_TPS65090=m
+4016c4005
+< CONFIG_IR_GPIO_CIR=m
+---
+> # CONFIG_IR_GPIO_CIR is not set
+4045,4047d4033
+< CONFIG_MEDIA_TUNER_FC0011=m
+< CONFIG_MEDIA_TUNER_FC0012=m
+< CONFIG_MEDIA_TUNER_FC0013=m
+4049d4034
+< CONFIG_MEDIA_TUNER_TUA9001=m
+4143d4127
+< CONFIG_VIDEO_AU0828=m
+4201c4185
+< CONFIG_VIDEO_EM28XX_RC=m
+---
+> CONFIG_VIDEO_EM28XX_RC=y
+4210a4195
+> CONFIG_USB_ET61X251=m
+4219a4205
+> CONFIG_VIDEO_AU0828=m
+4371d4356
+< CONFIG_DVB_USB_AF9035=m
+4528d4512
+< CONFIG_DVB_LG2160=m
+4531,4532d4514
+< CONFIG_DVB_AU8522_DTV=m
+< CONFIG_DVB_AU8522_V4L=m
+4565d4546
+< CONFIG_DVB_AF9033=m
+4619,4621d4599
+< CONFIG_DRM_AST=y
+< CONFIG_DRM_MGAG200=y
+< CONFIG_DRM_CIRRUS_QEMU=y
+4738d4715
+< # CONFIG_FB_AUO_K190X is not set
+4754d4730
+< CONFIG_BACKLIGHT_LM3533=m
+4806c4782
+< CONFIG_SND_RAWMIDI=y
+---
+> CONFIG_SND_RAWMIDI=m
+4825c4801
+< CONFIG_SND_RAWMIDI_SEQ=y
+---
+> CONFIG_SND_RAWMIDI_SEQ=m
+5017d4992
+< CONFIG_SND_SOC_CS42L52=m
+5026d5000
+< CONFIG_SND_SOC_LM49453=m
+5092,5093d5065
+< CONFIG_SND_SOC_MC13783=m
+< CONFIG_SND_SOC_ML26124=m
+5095d5066
+< CONFIG_SND_SIMPLE_CARD=m
+5102c5073
+< # CONFIG_SOUND_VMIDI is not set
+---
+> CONFIG_SOUND_VMIDI=m
+5134d5104
+< CONFIG_HID_GENERIC=y
+5139d5108
+< CONFIG_HID_AUREAL=y
+5143c5112
+< CONFIG_HID_PRODIKEYS=y
+---
+> CONFIG_HID_PRODIKEYS=m
+5150c5119
+< CONFIG_HID_HOLTEK=y
+---
+> CONFIG_HID_HOLTEK=m
+5161c5130
+< CONFIG_HID_LOGITECH_DJ=y
+---
+> CONFIG_HID_LOGITECH_DJ=m
+5194a5164
+> CONFIG_HID_WACOM_POWER_SUPPLY=y
+5212a5183,5184
+> # CONFIG_USB_DEVICEFS is not set
+> CONFIG_USB_DEVICE_CLASS=y
+5240,5241c5212,5213
+< CONFIG_USB_OHCI_HCD_PLATFORM=y
+< CONFIG_USB_EHCI_HCD_PLATFORM=y
+---
+> # CONFIG_USB_OHCI_HCD_PLATFORM is not set
+> # CONFIG_USB_EHCI_HCD_PLATFORM is not set
+5254,5255d5225
+< CONFIG_USB_HCD_BCMA=m
+< CONFIG_USB_HCD_SSB=m
+5259,5262d5228
+< CONFIG_USB_CHIPIDEA=m
+< # CONFIG_USB_CHIPIDEA_UDC is not set
+< CONFIG_USB_CHIPIDEA_HOST=y
+< # CONFIG_USB_CHIPIDEA_DEBUG is not set
+5302,5303c5268,5269
+< CONFIG_USB_MDC800=y
+< CONFIG_USB_MICROTEK=y
+---
+> CONFIG_USB_MDC800=m
+> CONFIG_USB_MICROTEK=m
+5308,5310c5274,5275
+< CONFIG_USB_USS720=y
+< CONFIG_USB_SERIAL=y
+< CONFIG_USB_SERIAL_CONSOLE=y
+---
+> CONFIG_USB_USS720=m
+> CONFIG_USB_SERIAL=m
+5365d5329
+< CONFIG_USB_SERIAL_QT2=m
+5371,5372c5335,5336
+< CONFIG_USB_EMI62=y
+< CONFIG_USB_EMI26=y
+---
+> CONFIG_USB_EMI62=m
+> CONFIG_USB_EMI26=m
+5392,5396d5355
+< 
+< #
+< # USB Physical Layer drivers
+< #
+< CONFIG_USB_ISP1301=m
+5408,5411d5366
+< 
+< #
+< # USB Peripheral Controller
+< #
+5418a5374
+> CONFIG_USB_CI13XXX_PCI=m
+5422a5379
+> CONFIG_USB_LANGWELL=m
+5443d5399
+< # CONFIG_USB_GADGET_TARGET is not set
+5466a5423
+> CONFIG_AB8500_USB=m
+5522d5478
+< CONFIG_LEDS_LM3533=m
+5537d5492
+< CONFIG_LEDS_DA9052=m
+5564d5518
+< CONFIG_LEDS_TRIGGER_TRANSIENT=m
+5582d5535
+< CONFIG_INFINIBAND_OCRDMA=m
+5689a5643
+> CONFIG_RTC_DRV_AB8500=m
+5738d5691
+< # CONFIG_VIRTIO_MMIO_CMDLINE_DEVICES is not set
+5756,5757d5708
+< CONFIG_COMEDI_DEFAULT_BUF_SIZE_KB=2048
+< CONFIG_COMEDI_DEFAULT_BUF_MAXSIZE_KB=20480
+5777,5779d5727
+< CONFIG_COMEDI_AMPLC_DIO200_ISA=m
+< CONFIG_COMEDI_AMPLC_PC236_ISA=m
+< CONFIG_COMEDI_AMPLC_PC263_ISA=m
+5783d5730
+< CONFIG_COMEDI_DAS08_ISA=m
+5835,5837c5782,5784
+< CONFIG_COMEDI_AMPLC_DIO200_PCI=m
+< CONFIG_COMEDI_AMPLC_PC236_PCI=m
+< CONFIG_COMEDI_AMPLC_PC263_PCI=m
+---
+> CONFIG_COMEDI_AMPLC_DIO200=m
+> CONFIG_COMEDI_AMPLC_PC236=m
+> CONFIG_COMEDI_AMPLC_PC263=m
+5841d5787
+< CONFIG_COMEDI_DAS08_PCI=m
+5888,5891d5833
+< CONFIG_COMEDI_FC=m
+< CONFIG_COMEDI_AMPLC_DIO200=m
+< CONFIG_COMEDI_AMPLC_PC236=m
+< CONFIG_COMEDI_AMPLC_PC263=m
+5892a5835
+> CONFIG_COMEDI_FC=m
+5922a5866
+> CONFIG_USB_SERIAL_QUATECH_USB2=m
+5925c5869,5875
+< CONFIG_DX_SEP=m
+---
+> CONFIG_VME_BUS=m
+> 
+> #
+> # VME Bridge Drivers
+> #
+> CONFIG_VME_CA91CX42=m
+> CONFIG_VME_TSI148=m
+5928c5878
+< # IIO staging drivers
+---
+> # VME Device Drivers
+5929a5880,5888
+> CONFIG_VME_USER=m
+> CONFIG_VME_PIO2=m
+> 
+> #
+> # VME Board Drivers
+> #
+> CONFIG_VMIVME_7805=m
+> CONFIG_DX_SEP=m
+> CONFIG_IIO=m
+5930a5890
+> CONFIG_IIO_BUFFER=y
+5931a5892,5894
+> CONFIG_IIO_KFIFO_BUF=m
+> CONFIG_IIO_TRIGGER=y
+> CONFIG_IIO_CONSUMERS_PER_TRIGGER=2
+6033d5995
+< CONFIG_SENSORS_ISL29028=m
+6036d5997
+< CONFIG_TSL2x7x=m
+6108a6070
+> CONFIG_INTEL_MEI=m
+6146a6109,6110
+> CONFIG_ANDROID_PERSISTENT_RAM=y
+> CONFIG_ANDROID_RAM_CONSOLE=y
+6149a6114,6116
+> CONFIG_ANDROID_SWITCH=y
+> CONFIG_ANDROID_SWITCH_GPIO=y
+> CONFIG_ANDROID_INTF_ALARM=y
+6150a6118
+> CONFIG_ANDROID_ALARM_OLDDRV_COMPAT=y
+6155,6164d6122
+< CONFIG_IPACK_BUS=m
+< CONFIG_BOARD_TPCI200=m
+< CONFIG_SERIAL_IPOCTAL=m
+< CONFIG_WIMAX_GDM72XX=m
+< CONFIG_WIMAX_GDM72XX_QOS=y
+< CONFIG_WIMAX_GDM72XX_K_MODE=y
+< CONFIG_WIMAX_GDM72XX_WIMAX2=y
+< CONFIG_WIMAX_GDM72XX_USB=y
+< # CONFIG_WIMAX_GDM72XX_SDIO is not set
+< CONFIG_WIMAX_GDM72XX_USB_PM=y
+6212c6170
+< CONFIG_APPLE_GMUX=m
+---
+> CONFIG_APPLE_GMUX=y
+6249,6288d6206
+< CONFIG_EXTCON=m
+< 
+< #
+< # Extcon Device Drivers
+< #
+< # CONFIG_EXTCON_GPIO is not set
+< # CONFIG_EXTCON_MAX8997 is not set
+< CONFIG_MEMORY=y
+< CONFIG_IIO=m
+< CONFIG_IIO_BUFFER=y
+< CONFIG_IIO_KFIFO_BUF=m
+< CONFIG_IIO_TRIGGER=y
+< CONFIG_IIO_CONSUMERS_PER_TRIGGER=2
+< 
+< #
+< # Analog to digital converters
+< #
+< 
+< #
+< # Amplifiers
+< #
+< CONFIG_AD8366=m
+< CONFIG_VME_BUS=m
+< 
+< #
+< # VME Bridge Drivers
+< #
+< CONFIG_VME_CA91CX42=m
+< CONFIG_VME_TSI148=m
+< 
+< #
+< # VME Board Drivers
+< #
+< CONFIG_VMIVME_7805=m
+< 
+< #
+< # VME Device Drivers
+< #
+< CONFIG_VME_USER=m
+< CONFIG_VME_PIO2=m
+6454a6373
+> CONFIG_UBIFS_FS_XATTR=y
+6457a6377
+> # CONFIG_UBIFS_FS_DEBUG is not set
+6482d6401
+< # CONFIG_PSTORE_RAM is not set
+6492d6410
+< CONFIG_NFS_V2=y
+6587,6597d6504
+< CONFIG_NLS_MAC_ROMAN=m
+< CONFIG_NLS_MAC_CELTIC=m
+< CONFIG_NLS_MAC_CENTEURO=m
+< CONFIG_NLS_MAC_CROATIAN=m
+< CONFIG_NLS_MAC_CYRILLIC=m
+< CONFIG_NLS_MAC_GAELIC=m
+< CONFIG_NLS_MAC_GREEK=m
+< CONFIG_NLS_MAC_ICELAND=m
+< CONFIG_NLS_MAC_INUIT=m
+< CONFIG_NLS_MAC_ROMANIAN=m
+< CONFIG_NLS_MAC_TURKISH=m
+6613d6519
+< # CONFIG_READABLE_ASM is not set
+6636,6639c6542
+< CONFIG_DEBUG_KMEMLEAK=y
+< CONFIG_DEBUG_KMEMLEAK_EARLY_LOG_SIZE=400
+< # CONFIG_DEBUG_KMEMLEAK_TEST is not set
+< CONFIG_DEBUG_KMEMLEAK_DEFAULT_OFF=y
+---
+> # CONFIG_DEBUG_KMEMLEAK is not set
+6648d6550
+< CONFIG_TRACE_IRQFLAGS=y
+6671c6573
+< CONFIG_RCU_CPU_STALL_INFO=y
+---
+> # CONFIG_RCU_CPU_STALL_INFO is not set
+6673d6574
+< # CONFIG_KPROBES_SANITY_TEST is not set
+6675c6576
+< CONFIG_DEBUG_BLOCK_EXT_DEVT=y
+---
+> # CONFIG_DEBUG_BLOCK_EXT_DEVT is not set
+6679c6580
+< CONFIG_CPU_NOTIFIER_ERROR_INJECT=y
+---
+> # CONFIG_CPU_NOTIFIER_ERROR_INJECT is not set
+6693d6593
+< CONFIG_TRACER_MAX_TRACE=y
+6704,6706c6604,6606
+< CONFIG_IRQSOFF_TRACER=y
+< CONFIG_SCHED_TRACER=y
+< CONFIG_FTRACE_SYSCALLS=y
+---
+> # CONFIG_IRQSOFF_TRACER is not set
+> # CONFIG_SCHED_TRACER is not set
+> # CONFIG_FTRACE_SYSCALLS is not set
+6712,6714d6611
+< CONFIG_KPROBE_EVENT=y
+< # CONFIG_UPROBE_EVENT is not set
+< CONFIG_PROBE_EVENTS=y
+6732c6629
+< CONFIG_TEST_KSTRTOX=y
+---
+> # CONFIG_TEST_KSTRTOX is not set
+6746d6642
+< # CONFIG_X86_DECODER_SELFTEST is not set
+6760c6656
+< CONFIG_DEBUG_NMI_SELFTEST=y
+---
+> # CONFIG_DEBUG_NMI_SELFTEST is not set
+6919d6814
+< CONFIG_HAVE_KVM_MSI=y
+6934,6935d6828
+< CONFIG_GENERIC_STRNCPY_FROM_USER=y
+< CONFIG_GENERIC_STRNLEN_USER=y
+6973a6867,6868
+> CONFIG_REED_SOLOMON_ENC8=y
+> CONFIG_REED_SOLOMON_DEC8=y
+6992d6886
+< CONFIG_DDR=y
+---
+Professional hosting for everyone - http://www.host.ru
