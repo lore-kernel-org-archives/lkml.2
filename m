@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162203Ab2GLWov (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:44:51 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52130 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162193Ab2GLWol (ORCPT
+	id S1162273Ab2GLWpB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:45:01 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:33763 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162192Ab2GLWow (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:44:41 -0400
+	Thu, 12 Jul 2012 18:44:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Stanislav Kinsbursky <skinsbursky@parallels.com>,
         "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 157/187] Lockd: pass network namespace to creation and destruction routines
-Date: Thu, 12 Jul 2012 15:35:13 -0700
-Message-Id: <20120712191536.961387028@linuxfoundation.org>
+Subject: [ 160/187] NFS: hard-code init_net for NFS callback transports
+Date: Thu, 12 Jul 2012 15:35:16 -0700
+Message-Id: <20120712191538.185903641@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -34,150 +34,75 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
-upstream commit e3f70eadb7dddfb5a2bb9afff7abfc6ee17a29d0.
+upstream commit 12918b10d59e975fd5241eef03ef9e6d5ea3dcfe.
 
-v2: dereference of most probably already released nlm_host removed in
-nlmclnt_done() and reclaimer().
-
-These routines are called from locks reclaimer() kernel thread. This thread
-works in "init_net" network context and currently relays on persence on lockd
-thread and it's per-net resources. Thus lockd_up() and lockd_down() can't relay
-on current network context. So let's pass corrent one into them.
+In case of destroying mount namespace on child reaper exit, nsproxy is zeroed
+to the point already. So, dereferencing of it is invalid.
+This patch hard-code "init_net" for all network namespace references for NFS
+callback services. This will be fixed with proper NFS callback
+containerization.
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- fs/lockd/clntlock.c        |   13 ++++++++-----
- fs/lockd/svc.c             |    7 +++----
- fs/nfsd/nfssvc.c           |    6 +++---
- include/linux/lockd/bind.h |    4 ++--
- 4 files changed, 16 insertions(+), 14 deletions(-)
+ fs/nfs/callback.c |   11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
 
---- a/fs/lockd/clntlock.c
-+++ b/fs/lockd/clntlock.c
-@@ -56,7 +56,7 @@ struct nlm_host *nlmclnt_init(const stru
- 	u32 nlm_version = (nlm_init->nfs_version == 2) ? 1 : 4;
- 	int status;
+--- a/fs/nfs/callback.c
++++ b/fs/nfs/callback.c
+@@ -17,7 +17,6 @@
+ #include <linux/kthread.h>
+ #include <linux/sunrpc/svcauth_gss.h>
+ #include <linux/sunrpc/bc_xprt.h>
+-#include <linux/nsproxy.h>
  
--	status = lockd_up();
-+	status = lockd_up(nlm_init->net);
- 	if (status < 0)
- 		return ERR_PTR(status);
+ #include <net/inet_sock.h>
  
-@@ -65,7 +65,7 @@ struct nlm_host *nlmclnt_init(const stru
- 				   nlm_init->hostname, nlm_init->noresvport,
- 				   nlm_init->net);
- 	if (host == NULL) {
--		lockd_down();
-+		lockd_down(nlm_init->net);
- 		return ERR_PTR(-ENOLCK);
- 	}
- 
-@@ -80,8 +80,10 @@ EXPORT_SYMBOL_GPL(nlmclnt_init);
-  */
- void nlmclnt_done(struct nlm_host *host)
+@@ -107,7 +106,7 @@ nfs4_callback_up(struct svc_serv *serv,
  {
-+	struct net *net = host->net;
-+
- 	nlmclnt_release_host(host);
--	lockd_down();
-+	lockd_down(net);
- }
- EXPORT_SYMBOL_GPL(nlmclnt_done);
+ 	int ret;
  
-@@ -220,11 +222,12 @@ reclaimer(void *ptr)
- 	struct nlm_wait	  *block;
- 	struct file_lock *fl, *next;
- 	u32 nsmstate;
-+	struct net *net = host->net;
+-	ret = svc_create_xprt(serv, "tcp", xprt->xprt_net, PF_INET,
++	ret = svc_create_xprt(serv, "tcp", &init_net, PF_INET,
+ 				nfs_callback_set_tcpport, SVC_SOCK_ANONYMOUS);
+ 	if (ret <= 0)
+ 		goto out_err;
+@@ -115,7 +114,7 @@ nfs4_callback_up(struct svc_serv *serv,
+ 	dprintk("NFS: Callback listener port = %u (af %u)\n",
+ 			nfs_callback_tcpport, PF_INET);
  
- 	allow_signal(SIGKILL);
- 
- 	down_write(&host->h_rwsem);
--	lockd_up();	/* note: this cannot fail as lockd is already running */
-+	lockd_up(net);	/* note: this cannot fail as lockd is already running */
- 
- 	dprintk("lockd: reclaiming locks for host %s\n", host->h_name);
- 
-@@ -275,6 +278,6 @@ restart:
- 
- 	/* Release host handle after use */
- 	nlmclnt_release_host(host);
--	lockd_down();
-+	lockd_down(net);
- 	return 0;
- }
---- a/fs/lockd/svc.c
-+++ b/fs/lockd/svc.c
-@@ -295,11 +295,10 @@ static void lockd_down_net(struct net *n
- /*
-  * Bring up the lockd process if it's not already up.
-  */
--int lockd_up(void)
-+int lockd_up(struct net *net)
- {
- 	struct svc_serv *serv;
- 	int		error = 0;
+-	ret = svc_create_xprt(serv, "tcp", xprt->xprt_net, PF_INET6,
++	ret = svc_create_xprt(serv, "tcp", &init_net, PF_INET6,
+ 				nfs_callback_set_tcpport, SVC_SOCK_ANONYMOUS);
+ 	if (ret > 0) {
+ 		nfs_callback_tcpport6 = ret;
+@@ -184,7 +183,7 @@ nfs41_callback_up(struct svc_serv *serv,
+ 	 * fore channel connection.
+ 	 * Returns the input port (0) and sets the svc_serv bc_xprt on success
+ 	 */
+-	ret = svc_create_xprt(serv, "tcp-bc", xprt->xprt_net, PF_INET, 0,
++	ret = svc_create_xprt(serv, "tcp-bc", &init_net, PF_INET, 0,
+ 			      SVC_SOCK_ANONYMOUS);
+ 	if (ret < 0) {
+ 		rqstp = ERR_PTR(ret);
+@@ -254,7 +253,7 @@ int nfs_callback_up(u32 minorversion, st
+ 	char svc_name[12];
+ 	int ret = 0;
+ 	int minorversion_setup;
 -	struct net *net = current->nsproxy->net_ns;
++	struct net *net = &init_net;
  
- 	mutex_lock(&nlmsvc_mutex);
- 	/*
-@@ -378,12 +377,12 @@ EXPORT_SYMBOL_GPL(lockd_up);
-  * Decrement the user count and bring down lockd if we're the last.
-  */
- void
--lockd_down(void)
-+lockd_down(struct net *net)
- {
- 	mutex_lock(&nlmsvc_mutex);
- 	if (nlmsvc_users) {
- 		if (--nlmsvc_users) {
--			lockd_down_net(current->nsproxy->net_ns);
-+			lockd_down_net(net);
- 			goto out;
- 		}
- 	} else {
---- a/fs/nfsd/nfssvc.c
-+++ b/fs/nfsd/nfssvc.c
-@@ -220,7 +220,7 @@ static int nfsd_startup(unsigned short p
- 	ret = nfsd_init_socks(port);
- 	if (ret)
- 		goto out_racache;
--	ret = lockd_up();
-+	ret = lockd_up(&init_net);
- 	if (ret)
- 		goto out_racache;
- 	ret = nfs4_state_start();
-@@ -229,7 +229,7 @@ static int nfsd_startup(unsigned short p
- 	nfsd_up = true;
- 	return 0;
- out_lockd:
--	lockd_down();
-+	lockd_down(&init_net);
- out_racache:
- 	nfsd_racache_shutdown();
- 	return ret;
-@@ -246,7 +246,7 @@ static void nfsd_shutdown(void)
- 	if (!nfsd_up)
- 		return;
- 	nfs4_state_shutdown();
--	lockd_down();
-+	lockd_down(&init_net);
- 	nfsd_racache_shutdown();
- 	nfsd_up = false;
- }
---- a/include/linux/lockd/bind.h
-+++ b/include/linux/lockd/bind.h
-@@ -54,7 +54,7 @@ extern void	nlmclnt_done(struct nlm_host
- 
- extern int	nlmclnt_proc(struct nlm_host *host, int cmd,
- 					struct file_lock *fl);
--extern int	lockd_up(void);
--extern void	lockd_down(void);
-+extern int	lockd_up(struct net *net);
-+extern void	lockd_down(struct net *net);
- 
- #endif /* LINUX_LOCKD_BIND_H */
+ 	mutex_lock(&nfs_callback_mutex);
+ 	if (cb_info->users++ || cb_info->task != NULL) {
+@@ -330,7 +329,7 @@ void nfs_callback_down(int minorversion)
+ 	cb_info->users--;
+ 	if (cb_info->users == 0 && cb_info->task != NULL) {
+ 		kthread_stop(cb_info->task);
+-		svc_shutdown_net(cb_info->serv, current->nsproxy->net_ns);
++		svc_shutdown_net(cb_info->serv, &init_net);
+ 		svc_exit_thread(cb_info->rqst);
+ 		cb_info->serv = NULL;
+ 		cb_info->rqst = NULL;
 
 
