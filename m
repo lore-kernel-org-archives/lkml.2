@@ -1,109 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933854Ab2GLNvJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 09:51:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37994 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932387Ab2GLNvG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 09:51:06 -0400
-Date: Thu, 12 Jul 2012 15:51:02 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Hugh Dickins <hughd@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 03/11] mm: shmem: do not try to uncharge known swapcache
- pages
-Message-ID: <20120712135102.GI21013@tiehlicka.suse.cz>
-References: <1341449103-1986-1-git-send-email-hannes@cmpxchg.org>
- <1341449103-1986-4-git-send-email-hannes@cmpxchg.org>
- <20120709144657.GF4627@tiehlicka.suse.cz>
- <alpine.LSU.2.00.1207091311300.1842@eggly.anvils>
- <20120710171628.GB29114@tiehlicka.suse.cz>
- <alpine.LSU.2.00.1207111118310.1797@eggly.anvils>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1207111118310.1797@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933869Ab2GLNv3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 09:51:29 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:57336 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932387Ab2GLNv1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 09:51:27 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18Hv/RboAMHh0WvCUChr1MEc3+XM3tXPdHUitjLOo
+	Of30+Qkq3uKbE+
+Message-ID: <1342101083.7707.22.camel@marge.simpson.net>
+Subject: Re: 3.4.4-rt13: btrfs + xfstests 006 = BOOM.. and a bonus rt_mutex
+ deadlock report for absolutely free!
+From: Mike Galbraith <efault@gmx.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Date: Thu, 12 Jul 2012 15:51:23 +0200
+In-Reply-To: <1342100889.7707.21.camel@marge.simpson.net>
+References: <1342072060.7338.102.camel@marge.simpson.net>
+	 <1342082648.7338.171.camel@marge.simpson.net>
+	 <1342086792.7707.9.camel@marge.simpson.net>
+	 <alpine.LFD.2.02.1207121310420.32033@ionos>
+	 <1342094233.7707.12.camel@marge.simpson.net>
+	 <alpine.LFD.2.02.1207121514240.32033@ionos>
+	 <1342100270.7707.20.camel@marge.simpson.net>
+	 <alpine.LFD.2.02.1207121542510.32033@ionos>
+	 <1342100889.7707.21.camel@marge.simpson.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 11-07-12 11:48:54, Hugh Dickins wrote:
-> On Tue, 10 Jul 2012, Michal Hocko wrote:
-> > On Mon 09-07-12 13:37:39, Hugh Dickins wrote:
-> > > On Mon, 9 Jul 2012, Michal Hocko wrote:
-> > > > 
-> > > > Maybe I am missing something but who does the uncharge from:
-> > > > shmem_unuse
-> > > >   mem_cgroup_cache_charge
-> > > >   shmem_unuse_inode
-> > > >     shmem_add_to_page_cache
+On Thu, 2012-07-12 at 15:48 +0200, Mike Galbraith wrote: 
+> On Thu, 2012-07-12 at 15:43 +0200, Thomas Gleixner wrote: 
+> > On Thu, 12 Jul 2012, Mike Galbraith wrote:
+> > > On Thu, 2012-07-12 at 15:31 +0200, Thomas Gleixner wrote: 
+> > > > A quick check for memcpy finds that __btrfs_close_devices() does a
+> > > > memcpy of btrfs_device structs w/o initializing the lock in the new
+> > > > copy, but I have no idea whether that's the place we are looking for.
 > > > 
-> > > There isn't any special uncharge for shmem_unuse(): once the swapcache
-> > > page is matched up with its memcg, it will get uncharged by one of the
-> > > usual routes to swapcache_free() when the page is freed: maybe in the
-> > > call from __remove_mapping(), maybe when free_page_and_swap_cache()
-> > > ends up calling it.
 > > > 
-> > > Perhaps you're worrying about error (or unfound) paths in shmem_unuse()?
+> > > Cool, you found one, thanks!  I'm setting boobytraps.
+> > > 
+> > > Um, correction, box says I'm setting _buggy_ boobytraps :)
+> > > 
+> > > Tomorrow-man will test this and frob traps anew.
 > > 
-> > Yes that was exactly my concern.
-> > 
-> > > By the time we make the charge, we know for sure that it's a shmem page,
-> > > and make the charge appropriately; in racy cases it might get uncharged
-> > > again in the delete_from_swap_cache().  Can the unfound case occur these
-> > > days?  
-> > 
-> > I cannot find a change that would prevent from that.
+> > What kind of test setup do you have? i.e. raid, single disk ...
 > 
-> Yes.
-> 
-> > 
-> > > I'd have to think more deeply to answer that, but the charge will
-> > > not go missing.
-> 
-> Yes, the unfound case certainly can still occur these days.  It's very
-> similar to the race with truncation/eviction which shmem_unuse_inode()
-> already allows for (-ENOENT from shmem_add_to_page_cache()).  In that
-> "error" case, the swap entry got removed after we found it in the
-> file's radix tree, before we get to replace it there.  Whereas in the
-> "unfound" case, the swap entry got removed from the file's radix tree
-> before we even found it there, so we haven't a clue which file it ever
-> belonged to.
-> 
-> But it doesn't matter.  We have charged the memcg (the original memcg if
-> memsw is enabled, or swapoff's own if memsw is disabled), and the charge
-> is redundant now that the page has been truncated; but it's a common
-> occurrence with swapcache (most common while PageWriteback or PageLocked)
-> that the swap and charge cannot be released immediately, and it sorts
-> itself out under pressure once the page reaches the bottom of the
-> inactive anon and __remove_mapping()'s swapcache_free().
-> 
-> The worst of it is misleading stats meanwhile; but SwapCache has
-> always been tiresome that way (duplicated in memory and on swap).
+> Yeah, megaraid sas.. x3550 M3.
 
-Indeed
+(one disk for OS, one disk for xfstests to mangle)
 
-> 
-> The crucial change with regard to unfound entries was back in 2.6.33,
-> when we added SWAP_MAP_SHMEM: prior to that, we didn't know in advance
-> if the swap belonged to shmem or to task, and had to be more careful
-> about when we charge.
-
-Thanks a lot for the clarification Hugh! The code is really tricky and
-easy to get wrong.
-
-> 
-> Hugh
-
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
