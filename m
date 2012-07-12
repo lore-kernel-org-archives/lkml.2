@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759708Ab2GLWjA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:39:00 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44509 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759666Ab2GLWix (ORCPT
+	id S1161636Ab2GLWjM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:39:12 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:38743 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759710Ab2GLWjB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:38:53 -0400
+	Thu, 12 Jul 2012 18:39:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Suresh Jayaraman <sjayaraman@suse.com>,
-        Sachin Prabhu <sprabhu@redhat.com>, Steve French <sfrench@us.ibm.com>
-Subject: [ 058/187] cifs: fix parsing of password mount option
-Date: Thu, 12 Jul 2012 15:33:34 -0700
-Message-Id: <20120712191527.751421797@linuxfoundation.org>
+        Rajkumar Manoharan <rmanohar@qca.qualcomm.com>,
+        Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 060/187] ath9k: Fix a WARNING on suspend/resume with IBSS
+Date: Thu, 12 Jul 2012 15:33:36 -0700
+Message-Id: <20120712191527.949280658@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -31,86 +32,72 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Suresh Jayaraman <sjayaraman@suse.com>
+From: Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>
 
-commit e73f843a3235a19de38359c91586e9eadef12238 upstream.
+commit 2031b4c2b4904f7448ab9e4bc6b9bf16e32709f5 upstream.
 
-The double delimiter check that allows a comma in the password parsing code is
-unconditional. We set "tmp_end" to the end of the string and we continue to
-check for double delimiter. In the case where the password doesn't contain a
-comma we end up setting tmp_end to NULL and eventually setting "options" to
-"end". This results in the premature termination of the options string and hence
-the values of UNCip and UNC are being set to NULL. This results in mount failure
-with "Connecting to DFS root not implemented yet" error.
+this patch is dependent on the patch "cfg80211: fix interface
+combinations"
 
-This error is usually not noticable as we have password as the last option in
-the superblock mountdata. But when we call expand_dfs_referral() from
-cifs_mount() and try to compose mount options for the submount, the resulting
-mountdata will be of the form
+In ath9k currently we have ADHOC interface as a single incompatible
+interface. when drv_add_interface is called during resume we got to
+consider number of vifs already present in addition to checking the
+drivers 'opmode' information about ADHOC.  we incorrectly assume
+an ADHOC interface is already present. Then we may miss some driver
+specific data for the ADHOC interface after resume.
 
-   ",ver=1,user=foo,pass=bar,ip=x.x.x.x,unc=\\server\share"
+The above mentioned checks can be removed from the driver,
+as the patch 'cfg80211: fix interface combinations' ensures that
+if an interface type is not advertised by the driver in any of the
+interface combinations(via ieee80211_iface_combination) then it shall
+be treated as a single incompatible interface. Fixes the following
+warning on suspend/resume with ibss interface.
 
-and hence results in the above error. This bug has been seen with older NAS
-servers running Samba 3.0.24.
+        ath: phy0: Cannot create ADHOC interface when other
+        interfaces already exist.
+        WARNING: at net/mac80211/driver-ops.h:12
+        ieee80211_reconfig+0x1882/0x1ca0 [mac80211]()
+        Hardware name: 2842RK1
+        wlan2:  Failed check-sdata-in-driver check, flags: 0x0
 
-Fix this by moving the double delimiter check inside the conditional loop.
+        Call Trace:
+        [<c01361b2>] warn_slowpath_common+0x72/0xa0
+        [<f8aaa7c2>] ? ieee80211_reconfig+0x1882/0x1ca0
+        [mac80211]
+        [<f8aaa7c2>] ? ieee80211_reconfig+0x1882/0x1ca0
+        [mac80211]
+        [<c0136283>] warn_slowpath_fmt+0x33/0x40
+        [<f8aaa7c2>] ieee80211_reconfig+0x1882/0x1ca0 [mac80211]
+        [<c06c1d1a>] ? mutex_lock_nested+0x23a/0x2f0
+        [<f8a95097>] ieee80211_resume+0x27/0x70 [mac80211]
+        [<fd177edf>] wiphy_resume+0x8f/0xa0 [cfg80211]
 
-Changes since -v1
-
-   - removed the wrong strlen() micro optimization.
-
-Signed-off-by: Suresh Jayaraman <sjayaraman@suse.com>
-Acked-by: Sachin Prabhu <sprabhu@redhat.com>
-Signed-off-by: Steve French <sfrench@us.ibm.com>
+Cc: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
+Signed-off-by: Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/connect.c |   32 +++++++++++++++++---------------
- 1 file changed, 17 insertions(+), 15 deletions(-)
+ drivers/net/wireless/ath/ath9k/main.c |    9 ---------
+ 1 file changed, 9 deletions(-)
 
---- a/fs/cifs/connect.c
-+++ b/fs/cifs/connect.c
-@@ -1585,24 +1585,26 @@ cifs_parse_mount_options(const char *mou
- 			 * If yes, we have encountered a double deliminator
- 			 * reset the NULL character to the deliminator
- 			 */
--			if (tmp_end < end && tmp_end[1] == delim)
-+			if (tmp_end < end && tmp_end[1] == delim) {
- 				tmp_end[0] = delim;
+--- a/drivers/net/wireless/ath/ath9k/main.c
++++ b/drivers/net/wireless/ath/ath9k/main.c
+@@ -1419,15 +1419,6 @@ static int ath9k_add_interface(struct ie
+ 		}
+ 	}
  
--			/* Keep iterating until we get to a single deliminator
--			 * OR the end
--			 */
--			while ((tmp_end = strchr(tmp_end, delim)) != NULL &&
--			       (tmp_end[1] == delim)) {
--				tmp_end = (char *) &tmp_end[2];
--			}
-+				/* Keep iterating until we get to a single
-+				 * deliminator OR the end
-+				 */
-+				while ((tmp_end = strchr(tmp_end, delim))
-+					!= NULL && (tmp_end[1] == delim)) {
-+						tmp_end = (char *) &tmp_end[2];
-+				}
+-	if ((ah->opmode == NL80211_IFTYPE_ADHOC) ||
+-	    ((vif->type == NL80211_IFTYPE_ADHOC) &&
+-	     sc->nvifs > 0)) {
+-		ath_err(common, "Cannot create ADHOC interface when other"
+-			" interfaces already exist.\n");
+-		ret = -EINVAL;
+-		goto out;
+-	}
+-
+ 	ath_dbg(common, CONFIG, "Attach a VIF of type: %d\n", vif->type);
  
--			/* Reset var options to point to next element */
--			if (tmp_end) {
--				tmp_end[0] = '\0';
--				options = (char *) &tmp_end[1];
--			} else
--				/* Reached the end of the mount option string */
--				options = end;
-+				/* Reset var options to point to next element */
-+				if (tmp_end) {
-+					tmp_end[0] = '\0';
-+					options = (char *) &tmp_end[1];
-+				} else
-+					/* Reached the end of the mount option
-+					 * string */
-+					options = end;
-+			}
- 
- 			/* Now build new password string */
- 			temp_len = strlen(value);
+ 	sc->nvifs++;
 
 
