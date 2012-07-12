@@ -1,104 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755640Ab2GLF5D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 01:57:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37274 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753057Ab2GLF5A convert rfc822-to-8bit (ORCPT
+	id S1756508Ab2GLF5S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 01:57:18 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:41844 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753057Ab2GLF5O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 01:57:00 -0400
-Subject: Re: linux-next: manual merge of the kvm-ppc tree with the powerpc tree
-Mime-Version: 1.0 (Apple Message framework v1278)
-Content-Type: text/plain; charset=us-ascii
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <20120712135735.7678a50ffb107e3094af27b8@canb.auug.org.au>
-Date: Thu, 12 Jul 2012 07:56:46 +0200
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bharat Bhushan <r65777@freescale.com>,
-        Michael Neuling <mikey@neuling.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <B6C6F6EC-BDD9-41DC-9677-4B7A4A52BDF0@suse.de>
-References: <20120712135735.7678a50ffb107e3094af27b8@canb.auug.org.au>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-X-Mailer: Apple Mail (2.1278)
+	Thu, 12 Jul 2012 01:57:14 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
+        Gavin Shan <shangw@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>, stable@vger.kernel.org
+Subject: [PATCH] bootmem: Make ___alloc_bootmem_node_nopanic() to be real nopanic
+Date: Wed, 11 Jul 2012 22:56:59 -0700
+Message-Id: <1342072619-13357-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <20120711210254.AFF6D20004E@hpza10.eem.corp.google.com>
+References: <20120711210254.AFF6D20004E@hpza10.eem.corp.google.com>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+after
+| From 99ab7b19440a72ebdf225f99b20f8ef40decee86 Mon Sep 17 00:00:00 2001
+| Date: Wed, 11 Jul 2012 14:02:53 -0700
+| Subject: [PATCH] mm: sparse: fix usemap allocation above node descriptor
+ section
 
-On 12.07.2012, at 05:57, Stephen Rothwell wrote:
+Johannes said:
+| while backporting the below patch, I realised that your fix busted
+| f5bf18fa22f8 again.  The problem was not a panicking version on
+| allocation failure but when the usemap size was too large such that
+| goal + size > limit triggers the BUG_ON in the bootmem allocator.  So
+| we need a version that passes limit ONLY if the usemap is smaller than
+| the section.
 
-> Hi Alexander,
-> 
-> Today's linux-next merge of the kvm-ppc tree got a conflict in
-> arch/powerpc/kvm/booke_interrupts.S between commit c75df6f96c59
-> ("powerpc: Fix usage of register macros getting ready for %r0 change")
-> from the powerpc tree and commit fc372c0843b8 ("booke: Added crit/mc
-> exception handler for e500v2") from the kvm-ppc tree.
-> 
-> I fixed it up (see below - could do with checking) and can carry the fix
-> as necessary.
+after checking the code, the name of ___alloc_bootmem_node_nopanic() does not
+reflect the fact.
 
-Hrm. Ben already warned me that this will happen, so I did a test merge a few days ago. Back then I also had to change 2 other bits that were not conflicting, to get to code to actually compile.
+Make bootmem really not panic.
 
-Could you please do an s/VCPU_GPR(r/VCPU_GPR/R/g in arch/powerpc/kvm/booke_interrupts.S? I'd check if you actually need it myself, but the tree doesn't seem to be pushed out yet :).
+Hope will kill bootmem sooner.
 
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: stable@vger.kernel.org
 
-Alex
+---
+ mm/bootmem.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> 
-> diff --cc arch/powerpc/kvm/booke_interrupts.S
-> index 8fd4b2a,09456c4..0000000
-> --- a/arch/powerpc/kvm/booke_interrupts.S
-> +++ b/arch/powerpc/kvm/booke_interrupts.S
-> @@@ -52,16 -53,21 +52,21 @@@
->                         (1<<BOOKE_INTERRUPT_PROGRAM) | \
->                         (1<<BOOKE_INTERRUPT_DTLB_MISS))
-> 
-> - .macro KVM_HANDLER ivor_nr
-> + .macro KVM_HANDLER ivor_nr scratch srr0
->  _GLOBAL(kvmppc_handler_\ivor_nr)
->  	/* Get pointer to vcpu and record exit number. */
-> - 	mtspr	SPRN_SPRG_WSCRATCH0, r4
-> + 	mtspr	\scratch , r4
->  	mfspr	r4, SPRN_SPRG_RVCPU
-> -	stw	r3, VCPU_GPR(r3)(r4)
-> -	stw	r5, VCPU_GPR(r5)(r4)
-> -	stw	r6, VCPU_GPR(r6)(r4)
-> ++	stw	r3, VCPU_GPR(R3)(r4)
-> +	stw	r5, VCPU_GPR(R5)(r4)
-> +	stw	r6, VCPU_GPR(R6)(r4)
-> + 	mfspr	r3, \scratch
->  	mfctr	r5
-> - 	lis	r6, kvmppc_resume_host@h
-> -	stw	r3, VCPU_GPR(r4)(r4)
-> ++	stw	r3, VCPU_GPR(R4)(r4)
->  	stw	r5, VCPU_CTR(r4)
-> + 	mfspr	r3, \srr0
-> + 	lis	r6, kvmppc_resume_host@h
-> + 	stw	r3, VCPU_PC(r4)
->  	li	r5, \ivor_nr
->  	ori	r6, r6, kvmppc_resume_host@l
->  	mtctr	r6
-> @@@ -99,12 -104,11 +103,11 @@@ _GLOBAL(kvmppc_handler_len
->   *  r5: KVM exit number
->   */
->  _GLOBAL(kvmppc_resume_host)
-> - 	stw	r3, VCPU_GPR(R3)(r4)
->  	mfcr	r3
->  	stw	r3, VCPU_CR(r4)
-> -	stw	r7, VCPU_GPR(r7)(r4)
-> -	stw	r8, VCPU_GPR(r8)(r4)
-> -	stw	r9, VCPU_GPR(r9)(r4)
-> +	stw	r7, VCPU_GPR(R7)(r4)
-> +	stw	r8, VCPU_GPR(R8)(r4)
-> +	stw	r9, VCPU_GPR(R9)(r4)
-> 
->  	li	r6, 1
->  	slw	r6, r6, r5
-
+Index: linux-2.6/mm/bootmem.c
+===================================================================
+--- linux-2.6.orig/mm/bootmem.c
++++ linux-2.6/mm/bootmem.c
+@@ -710,6 +710,10 @@ again:
+ 	if (ptr)
+ 		return ptr;
+ 
++	/* do not panic in alloc_bootmem_bdata() */
++	if (limit && goal + size > limit)
++		limit = 0;
++
+ 	ptr = alloc_bootmem_bdata(pgdat->bdata, size, align, goal, limit);
+ 	if (ptr)
+ 		return ptr;
