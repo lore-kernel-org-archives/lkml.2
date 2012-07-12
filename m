@@ -1,102 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758002Ab2GLCHS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 22:07:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59199 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756460Ab2GLCHQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 22:07:16 -0400
-Message-ID: <1342058827.7338.5.camel@marge.simpson.net>
-Subject: Re: Deadlocks due to per-process plugging
-From: Mike Galbraith <mgalbraith@suse.de>
-To: Jan Kara <jack@suse.cz>
-Cc: Jeff Moyer <jmoyer@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Jens Axboe <jaxboe@fusionio.com>, mgalbraith@suse.com,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Thu, 12 Jul 2012 04:07:07 +0200
-In-Reply-To: <20120711201601.GB9779@quack.suse.cz>
-References: <20120711133735.GA8122@quack.suse.cz>
-	 <x49ehoii8ps.fsf@segfault.boston.devel.redhat.com>
-	 <20120711201601.GB9779@quack.suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	id S1758522Ab2GLCIn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 22:08:43 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:37606 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756722Ab2GLCIl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 22:08:41 -0400
+X-AuditID: b753bd60-9ea82ba000000655-71-4ffe31a79631
+X-AuditID: b753bd60-9ea82ba000000655-71-4ffe31a79631
+Message-ID: <4FFE31A5.2030806@hitachi.com>
+Date: Thu, 12 Jul 2012 11:08:37 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH 5/6] ftrace/x86: Add separate function to save regs
+References: <20120702200322.573660631@goodmis.org>  <20120702201821.510485400@goodmis.org> <4FF2AD59.6080006@hitachi.com>  <1342023754.14828.43.camel@gandalf.stny.rr.com> <1342024090.14828.45.camel@gandalf.stny.rr.com>
+In-Reply-To: <1342024090.14828.45.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-11 at 22:16 +0200, Jan Kara wrote: 
-> On Wed 11-07-12 12:05:51, Jeff Moyer wrote:
-> > Jan Kara <jack@suse.cz> writes:
-> > 
-> > >   Hello,
-> > >
-> > >   we've recently hit a deadlock in our QA runs which is caused by the
-> > > per-process plugging code. The problem is as follows:
-> > >   process A					process B (kjournald)
-> > >   generic_file_aio_write()
-> > >     blk_start_plug(&plug);
-> > >     ...
-> > >     somewhere in here we allocate memory and
-> > >     direct reclaim submits buffer X for IO
-> > >     ...
-> > >     ext3_write_begin()
-> > >       ext3_journal_start()
-> > >         we need more space in a journal
-> > >         so we want to checkpoint old transactions,
-> > >         we block waiting for kjournald to commit
-> > >         a currently running transaction.
-> > > 						journal_commit_transaction()
-> > > 						  wait for IO on buffer X
-> > > 						  to complete as it is part
-> > > 						  of the current transaction
-> > >
-> > >   => deadlock since A waits for B and B waits for A to do unplug.
-> > > BTW: I don't think this is really ext3/ext4 specific. I think other
-> > > filesystems can get into problems as well when direct reclaim submits some
-> > > IO and the process subsequently blocks without submitting the IO.
-> > 
-> > So, I thought schedule would do the flush.  Checking the code:
-> > 
-> > asmlinkage void __sched schedule(void)
-> > {
-> >         struct task_struct *tsk = current;
-> > 
-> >         sched_submit_work(tsk);
-> >         __schedule();
-> > }
-> > 
-> > And sched_submit_work looks like this:
-> > 
-> > static inline void sched_submit_work(struct task_struct *tsk)
-> > {
-> >         if (!tsk->state || tsk_is_pi_blocked(tsk))
-> >                 return;
-> >         /*
-> >          * If we are going to sleep and we have plugged IO queued,
-> >          * make sure to submit it to avoid deadlocks.
-> >          */
-> >         if (blk_needs_flush_plug(tsk))
-> >                 blk_schedule_flush_plug(tsk);
-> > }
-> > 
-> > This eventually ends in a call to blk_run_queue_async(q) after
-> > submitting the I/O from the plug list.  Right?  So is the question
-> > really why doesn't the kblockd workqueue get scheduled?
->   Ah, I didn't know this. Thanks for the hint. So in the kdump I have I can
-> see requests queued in tsk->plug despite the process is sleeping in
-> TASK_UNINTERRUPTIBLE state.  So the only way how unplug could have been
-> omitted is if tsk_is_pi_blocked() was true. Rummaging through the dump...
-> indeed task has pi_blocked_on = 0xffff8802717d79c8. The dump is from an -rt
-> kernel (I just didn't originally thought that makes any difference) so
-> actually any mutex is rtmutex and thus tsk_is_pi_blocked() is true whenever
-> we are sleeping on a mutex. So this seems like a bug in rtmutex code.
-> Thomas, you seemed to have added that condition... Any idea how to avoid
-> the deadlock?
+(2012/07/12 1:28), Steven Rostedt wrote:
+> On Wed, 2012-07-11 at 12:22 -0400, Steven Rostedt wrote:
+>> On Tue, 2012-07-03 at 17:29 +0900, Masami Hiramatsu wrote:
+>>
+>>
+>>>
+>>>> +	/* Restore flags */
+>>>> +	pushq EFLAGS(%rsp)
+>>>> +	popfq
+>>>> +
+>>>> +	MCOUNT_RESTORE_FRAME
+>>>
+>>> Here, if MCOUNT_RESTORE_FRAME has skip too, I think you don't
+>>> need to restore flags before restoring other registers, like
+>>> below;
+>>>
+>>> 	MCOUNT_RESTORE_FRAME 8
+>>> 	popfq
+>>>
+>>> And also, this will prevent to modify flags before return by
+>>> addq in MCOUNT_RESTORE_FRAME.
+>>
+>> Ah, because the addq will modify flags :-/
+>>
+>> Grumble, I guess I should implement this, even though it will make it a
+>> little more complex. I thought it was better to restore flags
+>> explicitly, but that's not the case.
+>>
+> 
+> I know why I did this. Do you want kprobes to be able to modify flags?
+> If so, then I need to add, before the restore:
+> 
+> 	movq EFLAGS(%rsp), %rax
+> 	movq %rax, SS(%rsp)
 
-Tsk tsk, I completely overlooked sched_submit_work().
+Yes, kprobes might be used for modifying flags, so, please :)
 
--Mike
+Thank you,
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
