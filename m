@@ -1,59 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756790Ab2GLCdp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 22:33:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34322 "EHLO
+	id S1758221Ab2GLCft (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 22:35:49 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41140 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756526Ab2GLCdn (ORCPT
+	with ESMTP id S1756526Ab2GLCfs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 22:33:43 -0400
-Date: Wed, 11 Jul 2012 19:33:41 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Minchan Kim <minchan@kernel.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH v2] mm: Warn about costly page allocation
-In-Reply-To: <20120711235504.GA5204@bbox>
-Message-ID: <alpine.DEB.2.00.1207111930020.9370@chino.kir.corp.google.com>
-References: <1341878153-10757-1-git-send-email-minchan@kernel.org> <20120709170856.ca67655a.akpm@linux-foundation.org> <20120710002510.GB5935@bbox> <alpine.DEB.2.00.1207101756070.684@chino.kir.corp.google.com> <20120711022304.GA17425@bbox>
- <alpine.DEB.2.00.1207102223000.26591@chino.kir.corp.google.com> <4FFD15B2.6020001@kernel.org> <alpine.DEB.2.00.1207111337430.3635@chino.kir.corp.google.com> <CAEwNFnB1Z92f22ms=EsBEOOY4Q_JRA8rMPUvQmoqik7rt-EgcQ@mail.gmail.com>
- <alpine.DEB.2.00.1207111556190.24516@chino.kir.corp.google.com> <20120711235504.GA5204@bbox>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 11 Jul 2012 22:35:48 -0400
+From: Toshiaki Yamane <yamanetoshi@gmail.com>
+To: greg@kroah.com, willy@meta-x.org
+Cc: linux-kernel@vger.kernel.org, Toshiaki Yamane <yamanetoshi@gmail.com>
+Subject: [PATCH v3] panel: Use pr_err(...) rather than printk(KERN_ERR ...)
+Date: Thu, 12 Jul 2012 11:35:41 +0900
+Message-Id: <1342060541-9648-1-git-send-email-yamanetoshi@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Jul 2012, Minchan Kim wrote:
+This change is inspired by checkpatch.
 
-> Agreed and that's why I suggested following patch.
-> It's not elegant but at least, it could attract interest of configuration
-> people and they could find a regression during test phase.
-> This description could be improved later by writing new documenation which
-> includes more detailed story and method for capturing high order allocation
-> by ftrace once we see regression report.
-> 
-> At the moment, I would like to post this patch, simply.
-> (Of course, I hope fluent native people will correct a sentence. :) )
-> 
-> Any objections, Andrew, David?
-> 
+Signed-off-by: Toshiaki Yamane <yamanetoshi@gmail.com>
+---
+ drivers/staging/panel/panel.c |   42 +++++++++++++++++-----------------------
+ 1 files changed, 18 insertions(+), 24 deletions(-)
 
-There are other config options like CONFIG_SLOB that are used for a very 
-small memory footprint on systems like this.  We used to have 
-CONFIG_EMBEDDED to suggest options like this but that has since been 
-renamed as CONFIG_EXPERT and has become obscured.
+diff --git a/drivers/staging/panel/panel.c b/drivers/staging/panel/panel.c
+index 7365089..a6d71fd 100644
+--- a/drivers/staging/panel/panel.c
++++ b/drivers/staging/panel/panel.c
+@@ -34,6 +34,8 @@
+  *
+  */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/module.h>
+ 
+ #include <linux/types.h>
+@@ -1987,10 +1989,9 @@ static struct logical_input *panel_bind_key(char *name, char *press,
+ 	struct logical_input *key;
+ 
+ 	key = kzalloc(sizeof(struct logical_input), GFP_KERNEL);
+-	if (!key) {
+-		printk(KERN_ERR "panel: not enough memory\n");
++	if (!key)
+ 		return NULL;
+-	}
++
+ 	if (!input_name2mask(name, &key->mask, &key->value, &scan_mask_i,
+ 			     &scan_mask_o)) {
+ 		kfree(key);
+@@ -2030,10 +2031,9 @@ static struct logical_input *panel_bind_callback(char *name,
+ 	struct logical_input *callback;
+ 
+ 	callback = kmalloc(sizeof(struct logical_input), GFP_KERNEL);
+-	if (!callback) {
+-		printk(KERN_ERR "panel: not enough memory\n");
++	if (!callback)
+ 		return NULL;
+-	}
++
+ 	memset(callback, 0, sizeof(struct logical_input));
+ 	if (!input_name2mask(name, &callback->mask, &callback->value,
+ 			     &scan_mask_i, &scan_mask_o))
+@@ -2110,10 +2110,8 @@ static void panel_attach(struct parport *port)
+ 		return;
+ 
+ 	if (pprt) {
+-		printk(KERN_ERR
+-		       "panel_attach(): port->number=%d parport=%d, "
+-		       "already registered !\n",
+-		       port->number, parport);
++		pr_err("%s: port->number=%d parport=%d, already registered !\n",
++		       __func__, port->number, parport);
+ 		return;
+ 	}
+ 
+@@ -2122,16 +2120,14 @@ static void panel_attach(struct parport *port)
+ 				       /*PARPORT_DEV_EXCL */
+ 				       0, (void *)&pprt);
+ 	if (pprt == NULL) {
+-		pr_err("panel_attach(): port->number=%d parport=%d, "
+-		       "parport_register_device() failed\n",
+-		       port->number, parport);
++		pr_err("%s: port->number=%d parport=%d, parport_register_device() failed\n",
++		       __func__, port->number, parport);
+ 		return;
+ 	}
+ 
+ 	if (parport_claim(pprt)) {
+-		printk(KERN_ERR
+-		       "Panel: could not claim access to parport%d. "
+-		       "Aborting.\n", parport);
++		pr_err("%s: could not claim access to parport%d. Aborting.\n",
++		       __func__, parport);
+ 		goto err_unreg_device;
+ 	}
+ 
+@@ -2165,10 +2161,8 @@ static void panel_detach(struct parport *port)
+ 		return;
+ 
+ 	if (!pprt) {
+-		printk(KERN_ERR
+-		       "panel_detach(): port->number=%d parport=%d, "
+-		       "nothing to unregister.\n",
+-		       port->number, parport);
++		pr_err("%s: port->number=%d parport=%d, nothing to unregister.\n",
++		       __func__, port->number, parport);
+ 		return;
+ 	}
+ 
+@@ -2278,8 +2272,8 @@ int panel_init(void)
+ 	init_in_progress = 1;
+ 
+ 	if (parport_register_driver(&panel_driver)) {
+-		printk(KERN_ERR
+-		       "Panel: could not register with parport. Aborting.\n");
++		pr_err("%s: could not register with parport. Aborting.\n",
++		       __func__);
+ 		return -EIO;
+ 	}
+ 
+@@ -2291,8 +2285,8 @@ int panel_init(void)
+ 			pprt = NULL;
+ 		}
+ 		parport_unregister_driver(&panel_driver);
+-		printk(KERN_ERR "Panel driver version " PANEL_VERSION
+-		       " disabled.\n");
++		pr_err("%s: Panel driver version " PANEL_VERSION " disabled.\n",
++		       __func__);
+ 		return -ENODEV;
+ 	}
+ 
+-- 
+1.7.5.4
 
-If size is really the only difference, I would think that people who want 
-the smallest kernel possible would be doing allnoconfig and then 
-selectively enabling what they need, so defconfig isn't really relevant 
-here.  And it's very difficult for an admin to know whether or not they 
-"care about high-order allocations."
-
-I'd reconsider disabling compaction by default unless there are other 
-considerations that haven't been mentioned.
