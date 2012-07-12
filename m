@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030591Ab2GLKut (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 06:50:49 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:65157 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933641Ab2GLKur (ORCPT
+	id S933724Ab2GLKxZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 06:53:25 -0400
+Received: from mailrelay1.diasemi.com ([82.210.246.133]:54142 "EHLO
+	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933667Ab2GLKxX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 06:50:47 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120711234229.GF2772@gmail.com>
-References: <1341439772-649-1-git-send-email-linus.walleij@linaro.org>
-	<20120711234229.GF2772@gmail.com>
-Date: Thu, 12 Jul 2012 12:50:46 +0200
-Message-ID: <CACRpkdZOgquPF1FXo7LBeFOYhheqx+_ENTn6w4qcKGBqeHnvFQ@mail.gmail.com>
-Subject: Re: [PATCH] clk: allow clocks without parents to change rate
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mike Turquette <mturquette@ti.com>, Pawel Moll <pawel.moll@arm.com>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        stable@kernel.org, Ulf Hansson <ulf.hansson@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 12 Jul 2012 06:53:23 -0400
+Message-Id: <201207121052.q6CAq3Ix004450@sw-eng-lt-dc-vm2>
+From: Krystian Garbaciak <krystian.garbaciak@diasemi.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@ti.com>, <linux-kernel@vger.kernel.org>
+In-Reply-To: <20120711174257.GN3938@opensource.wolfsonmicro.com>
+References: <20120711142606.GK3938@opensource.wolfsonmicro.com>
+	<201207111221.q6BCLW8L014872@sw-eng-lt-dc-vm2>
+	<20120711132655.GG3938@opensource.wolfsonmicro.com>
+	<201207111421.q6BELFoF006060@sw-eng-lt-dc-vm2>
+	<201207111513.q6BFDR1x016181@sw-eng-lt-dc-vm2>
+	<20120711174257.GN3938@opensource.wolfsonmicro.com>
+Date: Thu, 12 Jul 2012 11:50:38 +0100
+Subject: [PATCH] regulator: Fix a typo in regulator_mode_to_status() core function.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 12, 2012 at 1:42 AM, Mike Turquette <mturquette@ti.com> wrote:
+Case REGULATOR_STATUS_STANDBY -> REGULATOR_MODE_STANDBY.
 
-> This has been fixed in Pawell's patch, "clk: Check parent for NULL in
-> clk_change_rate".
+Signed-off-by: Krystian Garbaciak <krystian.garbaciak@diasemi.com>
+---
+ drivers/regulator/core.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Yes, that'll probably work.
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 09a737c..af44b94 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -2909,7 +2909,7 @@ int regulator_mode_to_status(unsigned int mode)
+ 		return REGULATOR_STATUS_NORMAL;
+ 	case REGULATOR_MODE_IDLE:
+ 		return REGULATOR_STATUS_IDLE;
+-	case REGULATOR_STATUS_STANDBY:
++	case REGULATOR_MODE_STANDBY:
+ 		return REGULATOR_STATUS_STANDBY;
+ 	default:
+ 		return 0;
+-- 
+1.7.0.4
 
-A small nitpick though:
-
-I have slightly different semantics, Pawel's patch assigns zero if
-parent is NULL, then use that as fallback, whereas I check for the
-parent being NULL all the way. I was worried that the old sematics
-could change like this:
-
-So here it takes that:
-
-+       if (clk->parent)
-+               best_parent_rate = clk->parent->rate;
-+
-
-And I was cautious that if this changes the parent rate:
-
-+               clk->ops->set_rate(clk->hw, clk->new_rate, best_parent_rate);
-
-Then this passes the old parent rate to the recalc function:
-
-+               clk->rate = clk->ops->recalc_rate(clk->hw, best_parent_rate);
-
-It has no side-effects on my system but I worried about
-others, so I just left the behaviour to re-read the rate from the parent
-every time if possible.
-
-Yours,
-Linus Walleij
