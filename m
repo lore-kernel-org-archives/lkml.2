@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161413Ab2GLRNO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 13:13:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34494 "EHLO mx1.redhat.com"
+	id S1161425Ab2GLRNX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 13:13:23 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:46311 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161398Ab2GLRNL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 13:13:11 -0400
-Date: Thu, 12 Jul 2012 19:10:20 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, Hugh Dickins <hughd@google.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/4] uprobes: fix register_for_each_vma()->vma_address()
-	check
-Message-ID: <20120712171020.GA25500@redhat.com>
+	id S1161398Ab2GLRNU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 13:13:20 -0400
+Date: Thu, 12 Jul 2012 10:02:42 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Fengguang Wu <wfg@linux.intel.com>
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: rcu_dyntick and suspicious RCU usage
+Message-ID: <20120712170242.GB31396@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120709135637.GA26040@localhost>
+ <20120709145724.GA27095@localhost>
+ <20120710044700.GA9462@localhost>
+ <20120711074924.GD3819@linux.vnet.ibm.com>
+ <20120712164308.GA31584@linux.vnet.ibm.com>
+ <20120712165738.GA21630@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120712170934.GA25455@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20120712165738.GA21630@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12071217-5806-0000-0000-0000173C1BEE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1. register_for_each_vma() checks that vma_address() == vaddr but
-   this is not enough. We should also ensure that vaddr >= vm_start,
-   find_vma() guarantees "vaddr < vm_end" only.
+On Fri, Jul 13, 2012 at 12:57:38AM +0800, Fengguang Wu wrote:
+> On Thu, Jul 12, 2012 at 09:43:08AM -0700, Paul E. McKenney wrote:
+> > On Wed, Jul 11, 2012 at 12:49:24AM -0700, Paul E. McKenney wrote:
+> > > On Tue, Jul 10, 2012 at 12:47:00PM +0800, Fengguang Wu wrote:
+> > > > Hi Paul,
+> > > > 
+> > > > Fortunately this bug is bisectable and the first bad commit is:
+> > > > 
+> > > >         commit 9b2e4f1880b789be1f24f9684f7a54b90310b5c0
+> > > >         Author: Paul E. McKenney <paul.mckenney@linaro.org>
+> > > >         Date:   Fri Sep 30 12:10:22 2011 -0700
+> > > > 
+> > > >             rcu: Track idleness independent of idle tasks
+> > > 
+> > > OK, there is a problem in TINY_RCU's handling of dyntick-idle: it
+> > > traces while in idle.  The confusion on my part was that in TREE_RCU,
+> > > the nesting and dyntick-idle indication are different, while in
+> > > TINY_RCU they are one and the same.
+> > > 
+> > > Does the following patch help?
+> > 
+> > This one failed in my testing.  Please see the end for the fixed
+> > version, with on small but important change.
+> 
+> It worked, thanks!
+> 
+> Tested-by: Fengguang Wu <wfg@linux.intel.com>
 
-2. After the prevous changes, register_for_each_vma() is the only
-   reason why vma_address() has to return loff_t, all other users
-   know that we have the valid mapping at this offset and thus the
-   overflow is not possible.
+Very good!  (And please ignore my resend of the same patch.)
 
-   Change the code to use vaddr_to_offset() instead, imho this looks
-   more clean/understandable and now we can change vma_address().
+I will queue this.
 
-3. While at it, remove the unnecessary type-cast.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- kernel/events/uprobes.c |    9 +++++----
- 1 files changed, 5 insertions(+), 4 deletions(-)
-
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 5c87042..734e199 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -823,12 +823,13 @@ static int register_for_each_vma(struct uprobe *uprobe, bool is_register)
- 			goto free;
- 
- 		down_write(&mm->mmap_sem);
--		vma = find_vma(mm, (unsigned long)info->vaddr);
--		if (!vma || !valid_vma(vma, is_register))
-+		vma = find_vma(mm, info->vaddr);
-+		if (!vma || !valid_vma(vma, is_register) ||
-+		    vma->vm_file->f_mapping->host != uprobe->inode)
- 			goto unlock;
- 
--		if (vma->vm_file->f_mapping->host != uprobe->inode ||
--		    vma_address(vma, uprobe->offset) != info->vaddr)
-+		if (vma->vm_start > info->vaddr ||
-+		    vaddr_to_offset(vma, info->vaddr) != uprobe->offset)
- 			goto unlock;
- 
- 		if (is_register) {
--- 
-1.5.5.1
+							Thanx, Paul
 
