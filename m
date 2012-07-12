@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161781Ab2GLXex (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:34:53 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60450 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161748Ab2GLWkC (ORCPT
+	id S1161790Ab2GLXfV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:35:21 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:58753 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161740Ab2GLWj7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:40:02 -0400
+	Thu, 12 Jul 2012 18:39:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Feng Tang <feng.tang@intel.com>, Len Brown <len.brown@intel.com>
-Subject: [ 078/187] ACPI: Make acpi_skip_timer_override cover all source_irq==0 cases
-Date: Thu, 12 Jul 2012 15:33:54 -0700
-Message-Id: <20120712191529.640054658@linuxfoundation.org>
+        Pawel Sikora <pluto@agmk.net>, Huang Ying <ying.huang@intel.com>,
+        Jean Delvare <khali@linux-fr.org>, Len Brown <len.brown@intel.com>
+Subject: [ 077/187] ACPI, APEI, Avoid too much error reporting in runtime
+Date: Thu, 12 Jul 2012 15:33:53 -0700
+Message-Id: <20120712191529.540426952@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -30,75 +31,124 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Feng Tang <feng.tang@intel.com>
+From: Huang Ying <ying.huang@intel.com>
 
-commit ae10ccdc3093486f8c2369d227583f9d79f628e5 upstream.
+commit 34ddeb035d704eafdcdb3cbc781894300136c3c4 upstream.
 
-Currently when acpi_skip_timer_override is set, it only cover the
-(source_irq == 0 && global_irq == 2) cases. While there is also
-platform which need use this option and its global_irq is not 2.
-This patch will extend acpi_skip_timer_override to cover all
-timer overriding cases as long as the source irq is 0.
+This patch fixed the following bug.
 
-This is the first part of a fix to kernel bug bugzilla 40002:
-	"IRQ 0 assigned to VGA"
-https://bugzilla.kernel.org/show_bug.cgi?id=40002
+https://bugzilla.kernel.org/show_bug.cgi?id=43282
 
-Reported-and-tested-by: Szymon Kowalczyk <fazerxlo@o2.pl>
-Signed-off-by: Feng Tang <feng.tang@intel.com>
+This is caused by a firmware bug checking (checking generic address
+register provided by firmware) in runtime.  The checking should be
+done in address mapping time instead of runtime to avoid too much
+error reporting in runtime.
+
+Reported-by: Pawel Sikora <pluto@agmk.net>
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+Tested-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/acpi/boot.c |   14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+ drivers/acpi/apei/apei-base.c     |   17 +++++++++++++++--
+ drivers/acpi/apei/apei-internal.h |    9 +++++++++
+ drivers/acpi/apei/ghes.c          |    6 +++---
+ 3 files changed, 27 insertions(+), 5 deletions(-)
 
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -422,12 +422,14 @@ acpi_parse_int_src_ovr(struct acpi_subta
- 		return 0;
- 	}
+--- a/drivers/acpi/apei/apei-base.c
++++ b/drivers/acpi/apei/apei-base.c
+@@ -243,7 +243,7 @@ static int pre_map_gar_callback(struct a
+ 	u8 ins = entry->instruction;
  
--	if (intsrc->source_irq == 0 && intsrc->global_irq == 2) {
-+	if (intsrc->source_irq == 0) {
- 		if (acpi_skip_timer_override) {
--			printk(PREFIX "BIOS IRQ0 pin2 override ignored.\n");
-+			printk(PREFIX "BIOS IRQ0 override ignored.\n");
- 			return 0;
- 		}
--		if (acpi_fix_pin2_polarity && (intsrc->inti_flags & ACPI_MADT_POLARITY_MASK)) {
-+
-+		if ((intsrc->global_irq == 2) && acpi_fix_pin2_polarity
-+			&& (intsrc->inti_flags & ACPI_MADT_POLARITY_MASK)) {
- 			intsrc->inti_flags &= ~ACPI_MADT_POLARITY_MASK;
- 			printk(PREFIX "BIOS IRQ0 pin2 override: forcing polarity to high active.\n");
- 		}
-@@ -1334,7 +1336,7 @@ static int __init dmi_disable_acpi(const
+ 	if (ctx->ins_table[ins].flags & APEI_EXEC_INS_ACCESS_REGISTER)
+-		return acpi_os_map_generic_address(&entry->register_region);
++		return apei_map_generic_address(&entry->register_region);
+ 
+ 	return 0;
+ }
+@@ -276,7 +276,7 @@ static int post_unmap_gar_callback(struc
+ 	u8 ins = entry->instruction;
+ 
+ 	if (ctx->ins_table[ins].flags & APEI_EXEC_INS_ACCESS_REGISTER)
+-		acpi_os_unmap_generic_address(&entry->register_region);
++		apei_unmap_generic_address(&entry->register_region);
+ 
+ 	return 0;
+ }
+@@ -606,6 +606,19 @@ static int apei_check_gar(struct acpi_ge
+ 	return 0;
  }
  
- /*
-- * Force ignoring BIOS IRQ0 pin2 override
-+ * Force ignoring BIOS IRQ0 override
-  */
- static int __init dmi_ignore_irq0_timer_override(const struct dmi_system_id *d)
++int apei_map_generic_address(struct acpi_generic_address *reg)
++{
++	int rc;
++	u32 access_bit_width;
++	u64 address;
++
++	rc = apei_check_gar(reg, &address, &access_bit_width);
++	if (rc)
++		return rc;
++	return acpi_os_map_generic_address(reg);
++}
++EXPORT_SYMBOL_GPL(apei_map_generic_address);
++
+ /* read GAR in interrupt (including NMI) or process context */
+ int apei_read(u64 *val, struct acpi_generic_address *reg)
  {
-@@ -1344,7 +1346,7 @@ static int __init dmi_ignore_irq0_timer_
- 	 */
- 	if (!acpi_skip_timer_override) {
- 		WARN(1, KERN_ERR "ati_ixp4x0 quirk not complete.\n");
--		pr_notice("%s detected: Ignoring BIOS IRQ0 pin2 override\n",
-+		pr_notice("%s detected: Ignoring BIOS IRQ0 override\n",
- 			d->ident);
- 		acpi_skip_timer_override = 1;
- 	}
-@@ -1438,7 +1440,7 @@ static struct dmi_system_id __initdata a
- 	 * is enabled.  This input is incorrectly designated the
- 	 * ISA IRQ 0 via an interrupt source override even though
- 	 * it is wired to the output of the master 8259A and INTIN0
--	 * is not connected at all.  Force ignoring BIOS IRQ0 pin2
-+	 * is not connected at all.  Force ignoring BIOS IRQ0
- 	 * override in that cases.
- 	 */
- 	{
+--- a/drivers/acpi/apei/apei-internal.h
++++ b/drivers/acpi/apei/apei-internal.h
+@@ -7,6 +7,8 @@
+ #define APEI_INTERNAL_H
+ 
+ #include <linux/cper.h>
++#include <linux/acpi.h>
++#include <linux/acpi_io.h>
+ 
+ struct apei_exec_context;
+ 
+@@ -68,6 +70,13 @@ static inline int apei_exec_run_optional
+ /* IP has been set in instruction function */
+ #define APEI_EXEC_SET_IP	1
+ 
++int apei_map_generic_address(struct acpi_generic_address *reg);
++
++static inline void apei_unmap_generic_address(struct acpi_generic_address *reg)
++{
++	acpi_os_unmap_generic_address(reg);
++}
++
+ int apei_read(u64 *val, struct acpi_generic_address *reg);
+ int apei_write(u64 val, struct acpi_generic_address *reg);
+ 
+--- a/drivers/acpi/apei/ghes.c
++++ b/drivers/acpi/apei/ghes.c
+@@ -301,7 +301,7 @@ static struct ghes *ghes_new(struct acpi
+ 	if (!ghes)
+ 		return ERR_PTR(-ENOMEM);
+ 	ghes->generic = generic;
+-	rc = acpi_os_map_generic_address(&generic->error_status_address);
++	rc = apei_map_generic_address(&generic->error_status_address);
+ 	if (rc)
+ 		goto err_free;
+ 	error_block_length = generic->error_block_length;
+@@ -321,7 +321,7 @@ static struct ghes *ghes_new(struct acpi
+ 	return ghes;
+ 
+ err_unmap:
+-	acpi_os_unmap_generic_address(&generic->error_status_address);
++	apei_unmap_generic_address(&generic->error_status_address);
+ err_free:
+ 	kfree(ghes);
+ 	return ERR_PTR(rc);
+@@ -330,7 +330,7 @@ err_free:
+ static void ghes_fini(struct ghes *ghes)
+ {
+ 	kfree(ghes->estatus);
+-	acpi_os_unmap_generic_address(&ghes->generic->error_status_address);
++	apei_unmap_generic_address(&ghes->generic->error_status_address);
+ }
+ 
+ enum {
 
 
