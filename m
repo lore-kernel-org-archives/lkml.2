@@ -1,96 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933571Ab2GLJmO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 05:42:14 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:53962 "EHLO zene.cmpxchg.org"
+	id S1758961Ab2GLJqO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 05:46:14 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:37219 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932983Ab2GLJmM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 05:42:12 -0400
-Date: Thu, 12 Jul 2012 11:42:03 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Wanpeng Li <liwp.linux@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, David Rientjes <rientjes@google.com>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 01/10] mm: memcg: fix compaction/migration failing due to
- memcg limits
-Message-ID: <20120712094202.GB1239@cmpxchg.org>
-References: <1342026142-7284-1-git-send-email-hannes@cmpxchg.org>
- <1342026142-7284-2-git-send-email-hannes@cmpxchg.org>
- <20120712085354.GA3181@kernel>
- <20120712091043.GB3181@kernel>
+	id S1753231Ab2GLJqM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 05:46:12 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Greg KH <gregkh@linuxfoundation.org>
+Subject: [PATCH] PM / Runtime: Do not increment device usage counts before probing
+Date: Thu, 12 Jul 2012 11:51:48 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>, Kevin Hilman <khilman@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120712091043.GB3181@kernel>
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201207121151.48819.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 12, 2012 at 05:10:43PM +0800, Wanpeng Li wrote:
-> On Thu, Jul 12, 2012 at 04:54:07PM +0800, Wanpeng Li wrote:
-> >On Wed, Jul 11, 2012 at 07:02:13PM +0200, Johannes Weiner wrote:
-> >>Compaction (and page migration in general) can currently be hindered
-> >>through pages being owned by memory cgroups that are at their limits
-> >>and unreclaimable.
-> >>
-> >>The reason is that the replacement page is being charged against the
-> >>limit while the page being replaced is also still charged.  But this
-> >>seems unnecessary, given that only one of the two pages will still be
-> >>in use after migration finishes.
-> >>
-> >>This patch changes the memcg migration sequence so that the
-> >>replacement page is not charged.  Whatever page is still in use after
-> >>successful or failed migration gets to keep the charge of the page
-> >>that was going to be replaced.
-> >>
-> >>The replacement page will still show up temporarily in the rss/cache
-> >>statistics, this can be fixed in a later patch as it's less urgent.
-> >>
-> >
-> >So I want to know after this patch be merged if mem_cgroup_wait_acct_move
-> >still make sense, if the answer is no, I will send a patch to remove it.
-> 
-> And if this still make sense, I want to change check in
-> mem_cgroup_do_charge:
-> 
-> if (mem_cgroup_wait_acct_move(mem_over_limit))
-> 	return CHARGE_RETRY;
-> 
-> =>
-> 
-> if (mem_cgroup_wait_acct_move(mem_over_limit) && 
->                        mem_cgroup_margin(mem_over_limit) >= nr_pages)
-> 	return CHARGE_RETRY;
-> 
-> Since mem_cgroup_relcaim can reclaim some pages, but in
-> mem_cgroup_reclaim function there are some exit condition:
-> 
-> total += try_to_free_mem_cgroup_pages(memcg, gfp_mask, noswap);
-> if(total && (flag & MEM_CGROUP_RECLAIM_SHRINK))
-> 	break;
-> 
-> and 
-> 
-> if (mem_cgroup_margin(memcg))
-> 	break;
-> 
-> So maybe mem_cgroup_reclaim not reclaim enough pages >= nr_pages, this
-> time we should go to mem_cgroup_handle_oom instead of return
-> CHARGE_RETRY.
-> 
-> Hopefully, you can verify if my idea make sense.
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Sorry, but this is a waste of your time, my time, and that of
-everybody else in this thread.
+The pm_runtime_get_noresume() calls before really_probe() and
+before executing __device_attach() for each driver on the
+device's bus cause problems to happen if probing fails and if the
+driver has enabled runtime PM for the device in its .probe()
+callback.  Namely, in that case, if the device has been resumed
+by the driver after enabling its runtime PM and if it turns out that
+.probe() should return an error, the driver is supposed to suspend
+the device and disable its runtime PM before exiting .probe().
+However, because the device's runtime PM usage counter was
+incremented by the core before calling .probe(), the driver's attempt
+to suspend the device will not succeed and the device will remain in
+the full-power state after the failing .probe() has returned.
 
-I will ignore any subsequent proposals from you unless they start with
-a coherent description of an actual problem.  Something that has
-impact on userspace, or significant impact on kernel development.
+To fix this issue, remove the pm_runtime_get_noresume() calls from
+driver_probe_device() and from device_attach() and replace the
+corresponding pm_runtime_put_sync() calls with pm_runtime_idle()
+to preserve the existing behavior (which is to check if the device
+is idle and to suspend it eventually in that case after probing).
 
-If there is a bug I don't see in your description above, than please
-explain how it affects userspace.  If the code or comments are cryptic
-and can be simplified or clarified, please explain.
+Reported-and-tested-by: Kevin Hilman <khilman@ti.com>
+Reviewed-by: Kevin Hilman <khilman@ti.com>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ drivers/base/dd.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
+
+Index: linux/drivers/base/dd.c
+===================================================================
+--- linux.orig/drivers/base/dd.c
++++ linux/drivers/base/dd.c
+@@ -356,10 +356,9 @@ int driver_probe_device(struct device_dr
+ 	pr_debug("bus: '%s': %s: matched device %s with driver %s\n",
+ 		 drv->bus->name, __func__, dev_name(dev), drv->name);
+ 
+-	pm_runtime_get_noresume(dev);
+ 	pm_runtime_barrier(dev);
+ 	ret = really_probe(dev, drv);
+-	pm_runtime_put_sync(dev);
++	pm_runtime_idle(dev);
+ 
+ 	return ret;
+ }
+@@ -406,9 +405,8 @@ int device_attach(struct device *dev)
+ 			ret = 0;
+ 		}
+ 	} else {
+-		pm_runtime_get_noresume(dev);
+ 		ret = bus_for_each_drv(dev->bus, NULL, dev, __device_attach);
+-		pm_runtime_put_sync(dev);
++		pm_runtime_idle(dev);
+ 	}
+ out_unlock:
+ 	device_unlock(dev);
