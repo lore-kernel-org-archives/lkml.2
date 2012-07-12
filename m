@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161890Ab2GLWlU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:41:20 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:49910 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161877Ab2GLWlO (ORCPT
+	id S1161938Ab2GLWlk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:41:40 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54985 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161893Ab2GLWlY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:41:14 -0400
+	Thu, 12 Jul 2012 18:41:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>
-Subject: [ 099/187] usb-storage: revert commit afff07e61a52 (Add 090c:1000 to unusal-devs)
-Date: Thu, 12 Jul 2012 15:34:15 -0700
-Message-Id: <20120712191531.580274734@linuxfoundation.org>
+        Marek Lindner <lindner_marek@yahoo.de>,
+        Antonio Quartulli <ordex@autistici.org>
+Subject: [ 102/187] batman-adv: only drop packets of known wifi clients
+Date: Thu, 12 Jul 2012 15:34:18 -0700
+Message-Id: <20120712191531.858175888@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -32,40 +31,53 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Marek Lindner <lindner_marek@yahoo.de>
 
-commit 0070513b5e005161a7a7fd9a3f48f982b41eb094 upstream.
+commit 5870adc68fc39d81089f1e80efdf64b97e5c37a1 upstream.
 
-This patch (as1560) reverts commit
-afff07e61a5243e14ee3f0a272a0380cd744a8a3 (usb-storage: Add 090c:1000
-to unusal-devs).  It is no longer needed, because usb-storage now
-tells the sd driver to try READ CAPACITY(10) before READ CAPACITY(16)
-for every USB mass-storage device.
+bug introduced with 59b699cdee039d75915c354da06937102d1f9a84
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Acked-by: Hans de Goede <hdegoede@redhat.com>
-CC: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
+If the source or destination mac address of an ethernet packet
+could not be found in the translation table the packet was
+dropped if AP isolation was turned on. This behavior would
+make it impossible to send broadcast packets over the mesh as
+the broadcast address will never enter the translation table.
+
+Signed-off-by: Marek Lindner <lindner_marek@yahoo.de>
+Acked-by: Antonio Quartulli <ordex@autistici.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/storage/unusual_devs.h |    7 -------
- 1 file changed, 7 deletions(-)
+ net/batman-adv/translation-table.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/usb/storage/unusual_devs.h
-+++ b/drivers/usb/storage/unusual_devs.h
-@@ -1107,13 +1107,6 @@ UNUSUAL_DEV( 0x090a, 0x1200, 0x0000, 0x9
- 		USB_SC_RBC, USB_PR_BULK, NULL,
- 		0 ),
+--- a/net/batman-adv/translation-table.c
++++ b/net/batman-adv/translation-table.c
+@@ -1803,10 +1803,10 @@ bool is_ap_isolated(struct bat_priv *bat
+ {
+ 	struct tt_local_entry *tt_local_entry = NULL;
+ 	struct tt_global_entry *tt_global_entry = NULL;
+-	bool ret = true;
++	bool ret = false;
  
--/* Feiya QDI U2 DISK, reported by Hans de Goede <hdegoede@redhat.com> */
--UNUSUAL_DEV( 0x090c, 0x1000, 0x0000, 0xffff,
--		"Feiya",
--		"QDI U2 DISK",
--		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
--		US_FL_NO_READ_CAPACITY_16 ),
--
- /* aeb */
- UNUSUAL_DEV( 0x090c, 0x1132, 0x0000, 0xffff,
- 		"Feiya",
+ 	if (!atomic_read(&bat_priv->ap_isolation))
+-		return false;
++		goto out;
+ 
+ 	tt_local_entry = tt_local_hash_find(bat_priv, dst);
+ 	if (!tt_local_entry)
+@@ -1816,10 +1816,10 @@ bool is_ap_isolated(struct bat_priv *bat
+ 	if (!tt_global_entry)
+ 		goto out;
+ 
+-	if (_is_ap_isolated(tt_local_entry, tt_global_entry))
++	if (!_is_ap_isolated(tt_local_entry, tt_global_entry))
+ 		goto out;
+ 
+-	ret = false;
++	ret = true;
+ 
+ out:
+ 	if (tt_global_entry)
 
 
