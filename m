@@ -1,112 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756630Ab2GLMxJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 08:53:09 -0400
-Received: from fieldses.org ([174.143.236.118]:52232 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752506Ab2GLMxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 08:53:07 -0400
-Date: Thu, 12 Jul 2012 08:53:03 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Michael Tokarev <mjt@tls.msk.ru>
-Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: 3.0+ NFS issues
-Message-ID: <20120712125303.GC16822@fieldses.org>
-References: <4FBF2C57.3070203@msgid.tls.msk.ru>
- <20120529152416.GC3441@fieldses.org>
- <4FC5C82E.4020806@msgid.tls.msk.ru>
- <20120530132518.GA13794@fieldses.org>
- <4FC713ED.5040807@msgid.tls.msk.ru>
- <1338469169.2420.7.camel@lade.trondhjem.org>
- <4FC77128.9090206@msgid.tls.msk.ru>
- <1338471975.7732.5.camel@lade.trondhjem.org>
- <4FC77755.5060606@msgid.tls.msk.ru>
- <4FFC2573.8040804@msgid.tls.msk.ru>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FFC2573.8040804@msgid.tls.msk.ru>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756710Ab2GLM5Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 08:57:24 -0400
+Received: from mailrelay1.diasemi.com ([82.210.246.133]:25884 "EHLO
+	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752853Ab2GLM5X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 08:57:23 -0400
+Message-Id: <201207121255.q6CCtdE6028265@sw-eng-lt-dc-vm2>
+From: Krystian Garbaciak <krystian.garbaciak@diasemi.com>
+Date: Thu, 12 Jul 2012 13:53:35 +0100
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Liam Girdwood <lrg@ti.com>, <linux-kernel@vger.kernel.org>
+References: <20120711142606.GK3938@opensource.wolfsonmicro.com>
+	<201207111221.q6BCLW8L014872@sw-eng-lt-dc-vm2>
+	<20120711132655.GG3938@opensource.wolfsonmicro.com>
+	<201207111421.q6BELFoF006060@sw-eng-lt-dc-vm2>
+	<201207111513.q6BFDR1x016181@sw-eng-lt-dc-vm2>
+	<20120711174257.GN3938@opensource.wolfsonmicro.com>
+	<201207121052.q6CAq3Ix004450@sw-eng-lt-dc-vm2>
+In-Reply-To: <201207121052.q6CAq3Ix004450@sw-eng-lt-dc-vm2>
+Subject: [PATCH] regulator: Add REGULATOR_STATUS_UNDEFINED.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 10, 2012 at 04:52:03PM +0400, Michael Tokarev wrote:
-> I tried to debug this again, maybe to reproduce in a virtual machine,
-> and found out that it is only 32bit server code shows this issue:
-> after updating the kernel on the server to 64bit (the same version)
-> I can't reproduce this issue anymore.  Rebooting back to 32bit,
-> and voila, it is here again.
-> 
-> Something apparenlty isn't right on 32bits... ;)
-> 
-> (And yes, the prob is still present and is very annoying :)
+REGULATOR_STATUS_UNDEFINED is to be returned by regulator, if any other state
+doesn't really apply.
 
-OK, that's very useful, thanks.  So probably a bug got introduced in the
-32-bit case between 2.6.32 and 3.0.
+Signed-off-by: Krystian Garbaciak <krystian.garbaciak@diasemi.com>
+---
+ drivers/regulator/core.c         |    5 ++++-
+ include/linux/regulator/driver.h |    2 ++
+ 2 files changed, 6 insertions(+), 1 deletions(-)
 
-My personal upstream testing is normally all x86_64 only.  I'll kick off
-a 32-bit install and see if I can reproduce this quickly.
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index af44b94..f042a8a 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -427,6 +427,9 @@ static ssize_t regulator_status_show(struct device *dev,
+ 	case REGULATOR_STATUS_STANDBY:
+ 		label = "standby";
+ 		break;
++	case REGULATOR_STATUS_UNDEFINED:
++		label = "undefined";
++		break;
+ 	default:
+ 		return -ERANGE;
+ 	}
+@@ -2912,7 +2915,7 @@ int regulator_mode_to_status(unsigned int mode)
+ 	case REGULATOR_MODE_STANDBY:
+ 		return REGULATOR_STATUS_STANDBY;
+ 	default:
+-		return 0;
++		return REGULATOR_STATUS_UNDEFINED;
+ 	}
+ }
+ EXPORT_SYMBOL_GPL(regulator_mode_to_status);
+diff --git a/include/linux/regulator/driver.h b/include/linux/regulator/driver.h
+index b0432cc..180ac49 100644
+--- a/include/linux/regulator/driver.h
++++ b/include/linux/regulator/driver.h
+@@ -32,6 +32,8 @@ enum regulator_status {
+ 	REGULATOR_STATUS_NORMAL,
+ 	REGULATOR_STATUS_IDLE,
+ 	REGULATOR_STATUS_STANDBY,
++	/* in case that any other status doesn't apply */
++	REGULATOR_STATUS_UNDEFINED,
+ };
+ 
+ /**
+-- 
+1.7.0.4
 
-Let me know if you're able to narrow this down any more.
-
---b.
-
-> 
-> Thanks,
-> 
-> /mjt
-> 
-> 
-> On 31.05.2012 17:51, Michael Tokarev wrote:
-> > On 31.05.2012 17:46, Myklebust, Trond wrote:
-> >> On Thu, 2012-05-31 at 17:24 +0400, Michael Tokarev wrote:
-> > []
-> >>> I started tcpdump:
-> >>>
-> >>>  tcpdump -npvi br0 -s 0 host 192.168.88.4 and \( proto ICMP or port 2049 \) -w nfsdump
-> >>>
-> >>> on the client (192.168.88.2).  Next I mounted a directory on the client,
-> >>> and started reading (tar'ing) a directory into /dev/null.  It captured a
-> >>> few stalls.  Tcpdump shows number of packets it got, the stalls are at
-> >>> packet counts 58090, 97069 and 97071.  I cancelled the capture after that.
-> >>>
-> >>> The resulting file is available at http://www.corpit.ru/mjt/tmp/nfsdump.xz ,
-> >>> it is 220Mb uncompressed and 1.3Mb compressed.  The source files are
-> >>> 10 files of 1Gb each, all made by using `truncate' utility, so does not
-> >>> take place on disk at all.  This also makes it obvious that the issue
-> >>> does not depend on the speed of disk on the server (since in this case,
-> >>> the server disk isn't even in use).
-> >>
-> >> OK. So from the above file it looks as if the traffic is mainly READ
-> >> requests.
-> > 
-> > The issue here happens only with reads.
-> > 
-> >> In 2 places the server stops responding. In both cases, the client seems
-> >> to be sending a single TCP frame containing several COMPOUNDS containing
-> >> READ requests (which should be legal) just prior to the hang. When the
-> >> server doesn't respond, the client pings it with a RENEW, before it ends
-> >> up severing the TCP connection and then retransmitting.
-> > 
-> > And sometimes -- speaking only from the behavour I've seen, not from the
-> > actual frames sent -- server does not respond to the RENEW too, in which
-> > case the client reports "nfs server no responding", and on the next
-> > renew it may actually respond.  This happens too, but much more rare.
-> > 
-> > During these stalls, ie, when there's no network activity at all,
-> > the server NFSD threads are busy eating all available CPU.
-> > 
-> > What does it all tell us? :)
-> > 
-> > Thank you!
-> > 
-> > /mjt
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> 
