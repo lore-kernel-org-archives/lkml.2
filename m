@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162352Ab2GLWvk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:51:40 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60450 "EHLO
+	id S1162355Ab2GLWv4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:51:56 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44509 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162253Ab2GLWpU (ORCPT
+	with ESMTP id S1162283Ab2GLWpJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:45:20 -0400
+	Thu, 12 Jul 2012 18:45:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tom Hughes <tom@compton.nu>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Josh Boyer <jwboyer@redhat.com>
-Subject: [ 168/187] ath9k: fix panic caused by returning a descriptor we have queued for reuse
-Date: Thu, 12 Jul 2012 15:35:24 -0700
-Message-Id: <20120712191538.890885389@linuxfoundation.org>
+        Antonio Ospite <ospite@studenti.unina.it>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [ 165/187] gspca-core: Fix buffers staying in queued state after a stream_off
+Date: Thu, 12 Jul 2012 15:35:21 -0700
+Message-Id: <20120712191538.630827881@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -32,67 +32,45 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Tom Hughes <tom@compton.nu>
 
-commit 6bb51c70cabaadddc54a6454844eceba91a56083 upstream.
+From: Hans de Goede <hdegoede@redhat.com>
 
-Commit 3a2923e83c introduced a bug when a corrupt descriptor
-is encountered - although the following descriptor is discarded
-and returned to the queue for reuse the associated frame is
-also returned for processing. This leads to a panic:
+commit af05ef01e9cde84620c6855a8d8ab9c8a1db9009 upstream.
 
-BUG: unable to handle kernel NULL pointer dereference at 000000000000003a
-IP: [<ffffffffa02599a5>] ath_rx_tasklet+0x165/0x1b00 [ath9k]
-Call Trace:
-<IRQ>
-[<ffffffff812d7fa0>] ? map_single+0x60/0x60
-[<ffffffffa028f044>] ? ath9k_ioread32+0x34/0x90 [ath9k]
-[<ffffffffa0292eec>] athk9k_tasklet+0xdc/0x160 [ath9k]
-[<ffffffff8105e133>] tasklet_action+0x63/0xd0
-[<ffffffff8105dbc0>] __do_softirq+0xc0/0x1e0
-[<ffffffff8101a873>] ? native_sched_clock+0x13/0x80
-[<ffffffff815f9d5c>] call_softirq+0x1c/0x30
-[<ffffffff810151f5>] do_softirq+0x75/0xb0
-[<ffffffff8105df95>] irq_exit+0xb5/0xc0
-[<ffffffff815fa5b3>] do_IRQ+0x63/0xe0
-[<ffffffff815f0cea>] common_interrupt+0x6a/0x6a
-<EOI>
-[<ffffffff8131840a>] ? intel_idle+0xea/0x150
-[<ffffffff813183eb>] ? intel_idle+0xcb/0x150
-[<ffffffff814a1db9>] cpuidle_enter+0x19/0x20
-[<ffffffff814a23d9>] cpuidle_idle_call+0xa9/0x240
-[<ffffffff8101c4bf>] cpu_idle+0xaf/0x120
-[<ffffffff815cda8e>] rest_init+0x72/0x74
-[<ffffffff81cf4c1a>] start_kernel+0x3b7/0x3c4
-[<ffffffff81cf4662>] ? repair_env_string+0x5e/0x5e
-[<ffffffff81cf4346>] x86_64_start_reservations+0x131/0x135
-[<ffffffff81cf444a>] x86_64_start_kernel+0x100/0x10f
+[Backport to linux-stable by Antonio Ospite <ospite@studenti.unina.it>]
 
-Making sure bf is cleared to NULL in this case restores the
-old behaviour.
+This fixes a regression introduced by commit f7059ea and should be
+backported to all supported stable kernels which have this commit.
 
-Signed-off-by: Tom Hughes <tom@compton.nu>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Cc: Josh Boyer <jwboyer@redhat.com>
+Signed-off-by: Antonio Ospite <ospite@studenti.unina.it>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Tested-by: Antonio Ospite <ospite@studenti.unina.it>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/recv.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/media/video/gspca/gspca.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/ath/ath9k/recv.c
-+++ b/drivers/net/wireless/ath/ath9k/recv.c
-@@ -695,9 +695,9 @@ static bool ath_edma_get_buffers(struct
- 			__skb_unlink(skb, &rx_edma->rx_fifo);
- 			list_add_tail(&bf->list, &sc->rx.rxbuf);
- 			ath_rx_edma_buf_link(sc, qtype);
--		} else {
--			bf = NULL;
- 		}
-+
-+		bf = NULL;
- 	}
+--- a/drivers/media/video/gspca/gspca.c
++++ b/drivers/media/video/gspca/gspca.c
+@@ -1723,7 +1723,7 @@ static int vidioc_streamoff(struct file
+ 				enum v4l2_buf_type buf_type)
+ {
+ 	struct gspca_dev *gspca_dev = priv;
+-	int ret;
++	int i, ret;
  
- 	*dest = bf;
+ 	if (buf_type != V4L2_BUF_TYPE_VIDEO_CAPTURE)
+ 		return -EINVAL;
+@@ -1754,6 +1754,8 @@ static int vidioc_streamoff(struct file
+ 	wake_up_interruptible(&gspca_dev->wq);
+ 
+ 	/* empty the transfer queues */
++	for (i = 0; i < gspca_dev->nframes; i++)
++		gspca_dev->frame[i].v4l2_buf.flags &= ~BUF_ALL_FLAGS;
+ 	atomic_set(&gspca_dev->fr_q, 0);
+ 	atomic_set(&gspca_dev->fr_i, 0);
+ 	gspca_dev->fr_o = 0;
 
 
