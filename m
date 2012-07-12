@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933089Ab2GLI4v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 04:56:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35500 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932960Ab2GLI4q (ORCPT
+	id S933003Ab2GLI6g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 04:58:36 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60234 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932106Ab2GLI6d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 04:56:46 -0400
-Date: Thu, 12 Jul 2012 01:59:49 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "chris@zankel.net" <chris@zankel.net>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>
-Subject: Re: [PATCH 2/3] ipc: allow compat IPC version field parsing if
- !ARCH_WANT_OLD_COMPAT_IPC
-Message-Id: <20120712015949.88692ecf.akpm@linux-foundation.org>
-In-Reply-To: <20120712084756.GB2816@mudshark.cambridge.arm.com>
-References: <1342020741-12758-1-git-send-email-will.deacon@arm.com>
-	<1342020741-12758-3-git-send-email-will.deacon@arm.com>
-	<20120711144001.b1f7c21d.akpm@linux-foundation.org>
-	<20120712084756.GB2816@mudshark.cambridge.arm.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 12 Jul 2012 04:58:33 -0400
+From: Devendra Naga <devendra.aaru@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Javier M. Mellid" <jmunhoz@igalia.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Fengguang Wu <fengguang.wu@intel.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Devendra Naga <devendra.aaru@gmail.com>
+Subject: [PATCH] staging/sm7xxfb: select sm7xxfb only when CONFIG_PCI is enabled
+Date: Thu, 12 Jul 2012 14:43:21 +0545
+Message-Id: <1342083501-10799-1-git-send-email-devendra.aaru@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Jul 2012 09:47:56 +0100 Will Deacon <will.deacon@arm.com> wrote:
+the sm7xxfb is a pci device, and should depend on the PCI.
+And also if we wont' depend on the PCI sub-system, the following warns
+will be triggered,
 
-> > >  static inline int compat_ipc_parse_version(int *cmd)
-> > >  {
-> > > -#ifdef CONFIG_ARCH_WANT_OLD_COMPAT_IPC
-> > > +#ifdef	__ARCH_WANT_COMPAT_IPC_PARSE_VERSION
-> > >  	int version = *cmd & IPC_64;
-> > >  
-> > >  	/* this is tricky: architectures that have support for the old
-> > 
-> > Could we do this purely in Kconfig?  Add a new
-> > CONFIG_ARCH_WANT_COMPAT_IPC_PARSE_VERSION and always set it true if
-> > CONFIG_ARCH_WANT_OLD_COMPAT_IPC?
-> 
-> That would also work, although the current approach mirrors what is done for
-> the native case (i.e. this is the compat equivalent of
-> __ARCH_WANT_IPC_PARSE_VERSION).
-> 
-> I'm not too fussed either way, so I can change it if you prefer?
+drivers/staging/sm7xxfb/sm7xxfb.c:1061:1: warning: data definition has no type or storage class [enabled by default]
+drivers/staging/sm7xxfb/sm7xxfb.c:1061:1: warning: type defaults to 'int' in declaration of 'module_pci_driver' [-Wimplicit-int]
+drivers/staging/sm7xxfb/sm7xxfb.c:1061:1: warning: parameter names (without types) in function declaration [enabled by default]
 
-It would be best to change both as a separate patch.
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+---
+	Hello Fengguang Wu,
 
-It's not a big deal: just a matter of consistency and use of up-to-date
-idioms.
+		I think this solves the build warnings told by you,
+		sorry for my bad english :(.
+
+ drivers/staging/sm7xxfb/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/staging/sm7xxfb/Kconfig b/drivers/staging/sm7xxfb/Kconfig
+index d5013f8..e2922ae 100644
+--- a/drivers/staging/sm7xxfb/Kconfig
++++ b/drivers/staging/sm7xxfb/Kconfig
+@@ -1,6 +1,6 @@
+ config FB_SM7XX
+ 	tristate "Silicon Motion SM7XX framebuffer support"
+-	depends on FB
++	depends on FB && PCI
+ 	select FB_CFB_FILLRECT
+ 	select FB_CFB_COPYAREA
+ 	select FB_CFB_IMAGEBLIT
+-- 
+1.7.9.5
 
