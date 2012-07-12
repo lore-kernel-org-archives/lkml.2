@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934165Ab2GLRHT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 13:07:19 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53821 "EHLO
+	id S1161383Ab2GLRHf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 13:07:35 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53823 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932725Ab2GLRHR (ORCPT
+	by vger.kernel.org with ESMTP id S932725Ab2GLRHe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 13:07:17 -0400
-Date: Thu, 12 Jul 2012 18:07:14 +0100
+	Thu, 12 Jul 2012 13:07:34 -0400
+Date: Thu, 12 Jul 2012 18:07:33 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Axel Lin <axel.lin@gmail.com>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>,
-        Graeme Gregory <gg@slimlogic.co.uk>, Liam Girdwood <lrg@ti.com>,
-        linux-kernel@vger.kernel.org, SamuelOrtiz <sameo@linux.intel.com>
-Subject: Re: [PATCH RFT] regulator: tps65910: Remvoe
- tps65910_reg_[read|modify_bits|read_locked|write_locked] functions
-Message-ID: <20120712170714.GH7256@opensource.wolfsonmicro.com>
-References: <1342007053.4362.2.camel@phoenix>
+Cc: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lrg@ti.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] regulator: s2mps11: Fixup missing commas
+Message-ID: <20120712170732.GI7256@opensource.wolfsonmicro.com>
+References: <1342056950.19192.0.camel@phoenix>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Fnm8lRGFTVS/3GuM"
+	protocol="application/pgp-signature"; boundary="Hlh2aiwFLCZwGcpw"
 Content-Disposition: inline
-In-Reply-To: <1342007053.4362.2.camel@phoenix>
+In-Reply-To: <1342056950.19192.0.camel@phoenix>
 X-Cookie: Advancement in position.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -29,36 +27,35 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---Fnm8lRGFTVS/3GuM
+--Hlh2aiwFLCZwGcpw
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Wed, Jul 11, 2012 at 07:44:13PM +0800, Axel Lin wrote:
-> The tps65910 mfd driver has been converted to regmap APIs.
-> This patch adds tps65910_reg_update_bits() in include/linux/mfd/tps65910.h.
+On Thu, Jul 12, 2012 at 09:35:50AM +0800, Axel Lin wrote:
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-Applied, thanks.
+Applied all, thanks.
 
---Fnm8lRGFTVS/3GuM
+--Hlh2aiwFLCZwGcpw
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJP/wQ7AAoJEBus8iNuMP3dyMAP/RcD+nvg3sDJ62i7IuFTWlTm
-r/Ac+GKuwELN7FSJid5ehJChxsNuvRRYCK9NMsNJ1HxxEiposQU+5k6ZIgP3V7us
-S3WdBLQyOjN1jJF3itKVaAXiE6MTULMChRq3O6ucHX4iEGVOFr2pkXx8W4nWO6Le
-vh1vtV7nJ/wkAd6upPdJ0+0aD7zU+5MaD2HSWUDmmX7DFZRVcRu0TDDhKwqbb0s6
-yL+M3wn0duXhf9o+O2Y1v20j5Sv4FBBpaz8NXlWhOmc2i8R5C5evyn/Oe83hAQfG
-UM9ozAsa8lErbQSWG1CTqaIGCy8ssMnvgpMkuLsJMLJ80j+ZQwvWST9oBVzgvAOd
-kxQ4UDu7P0FdOB7NW5ITAOGEJFAuhOduJGyIvsFoV/UfnrJX9hK9gHPcze7g5jtP
-uYyKfcVnwzxzexws5P8kXYulWxKwNRfapv0GtG0bp2JLoNzTguDzI+g2rZDyJCtI
-2dTlozk2FlkTCQMnTDOYgdxLLQ534wwtjiWbU1+rxZshgLTsglu28X1V2OVYYLAq
-doFEoLcB7Ub5xQfmbIGIOhvhjLLErlcvSe8uIwxNSuGLl8czFQxLmQcf7mvMvtaK
-1ZCm4ddQg3KxX1gHbe4jwFsl4tm+iw5PuODb1e4bXZ8Rpv3oCYOVJneOZCIdmY+S
-1ARs9csUoN0hwWi3hzgM
-=pnJz
+iQIcBAEBAgAGBQJP/wRKAAoJEBus8iNuMP3dSAAP/jGcKatfeR5dqBsU765rQcwS
+FjsGpwvXYps5KbFWW3hH9XOjFQiRoiAEgqmHDPGkhfY5yEJm9Y3Af6ogv/Mxe6l4
+GH5mSD9RxC5PCa4J2W3yw/KO3ZVukVcNsw80yVYKO4d3F8mthuMuoHPQXKhGkQhO
+atDMKTJasET8i69hMG94Bx/XkN0Dijc1yCfL62fDjDT1jfFkRgW2i+yUS8Q7i2z6
+Tx9j0mXsaAEBL1qMl3u9Q9bBsbrU0FQkamM7jAWeY5f/3b1JOSiHwXPUyw4mc3Eo
+M3crf/SpyrtXFCDgoMRtP2k5ncoeRioMm3Qy5HVd4k+pMiZDTPT0p+bLpyAJSJWL
+XwLCTwItRteY0S/KgF70fyKQ3xY4wA1YKLG9PLUC6NDl/2DJJVC/3y4ExogJY++V
+50LfMYdPmGVJAfUphB+jOPZ1+mpy0UP7r/2QZ1fZL1wGBBn8PQgok/Nu54qs6gQB
+oN8j9TDaByW4QoLDcQfC4WVNZPV09BihtU9s4uuuAm3TLJ9j446dd72L9PGFeoYT
+H/pv4iynwMNyLy2kvmxQ1x9ySpws2yAwm/DQzKU/BCupFCkv9m/u4R04tvp0BR0n
+r9GW3KjUFX26YJ6Jq/b2ovvWDwdY10GLaFvPZJmm1SRfZtmNFY6ONGAG/XTvLURq
+/cePryAApo/GYHVDaUj/
+=LmEb
 -----END PGP SIGNATURE-----
 
---Fnm8lRGFTVS/3GuM--
+--Hlh2aiwFLCZwGcpw--
