@@ -1,45 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932733Ab2GLGse (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 02:48:34 -0400
-Received: from mk-outboundfilter-5-a-3.mail.uk.tiscali.com ([212.74.114.9]:2971
-	"EHLO mk-outboundfilter-5-a-3.mail.uk.tiscali.com"
+	id S932819Ab2GLGtA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 02:49:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39831 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932414Ab2GLGs3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 02:48:29 -0400
-X-Trace: 543111672/mk-outboundfilter-5.mail.uk.tiscali.com/PIPEX/$ON_NET_AUTH_ACCEPTED/pipex-tiscali-ips/212.74.113.222/None/franz@msn.com
-X-SBRS: None
-X-RemoteIP: 212.74.113.222
-X-IP-MAIL-FROM: franz@msn.com
-X-SMTP-AUTH: 
-X-Originating-Country: GB/UNITED KINGDOM
-X-MUA: Pipex Webmail (IMP3.1)
-X-IP-BHB: Once
-X-IP-Webmail: TRUE
-X-IP-Added: To/mk-outboundfilter-5.mail.uk.tiscali.com
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AuQdAEZv/k/USnHe/2dsb2JhbABED4M3o26PM4ERgQeCHBYgBwFpAQQUNCABDgEJGIVZB4IkCQEBDgScM4ZOiEIJiAoREgMBiX6RLgONTBuNFjVYiFpcgisCMw
-X-IronPort-AV: E=Sophos;i="4.77,573,1336345200"; 
-   d="scan'208";a="543111672"
-X-IP-Direction: IN
-Message-ID: <1342075059.4ffe70b3a9192@netmail.pipex.net>
-Date: Thu, 12 Jul 2012 07:37:39 +0100
-From: franz <franz@msn.com>
-Reply-to: switzerlllandss@hotmail.com
-Subject: Darlehen
-MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
-User-Agent: Pipex Webmail (IMP3.1)
-X-Originating-IP: 172.190.146.142
-X-Pipex-Username: sarah.evans@dsl.pipex.com
-X-Usage: Pipex Webmail is subject to the standard Pipex terms and conditions of use
-To: unlisted-recipients:; (no To-header on input)
+	id S1758669Ab2GLGkt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 02:40:49 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 10/16] netvm: Propagate page->pfmemalloc to skb
+Date: Thu, 12 Jul 2012 07:40:26 +0100
+Message-Id: <1342075232-29267-11-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1342075232-29267-1-git-send-email-mgorman@suse.de>
+References: <1342075232-29267-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wir bieten legitimen Darlehen wie persönliche Kredite & Business-Darlehen ohne Sicherheiten (nur Identifikation) mit 
-maximaler Garantie, € 5.000 bis € 90.000.000, die Zinsen niedrig wie 3% in 1 Jahr bis 50 Jahre Tilgungsfrist überall 
-in der Welt
+The skb->pfmemalloc flag gets set to true iff during the slab
+allocation of data in __alloc_skb that the the PFMEMALLOC reserves
+were used. If the packet is fragmented, it is possible that pages
+will be allocated from the PFMEMALLOC reserve without propagating
+this information to the skb. This patch propagates page->pfmemalloc
+from pages allocated for fragments to the skb.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: David S. Miller <davem@davemloft.net>
+---
+ include/linux/skbuff.h |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index 0336f02..b814bb8 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -1247,6 +1247,17 @@ static inline void __skb_fill_page_desc(struct sk_buff *skb, int i,
+ {
+ 	skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
+ 
++	/*
++	 * Propagate page->pfmemalloc to the skb if we can. The problem is
++	 * that not all callers have unique ownership of the page. If
++	 * pfmemalloc is set, we check the mapping as a mapping implies
++	 * page->index is set (index and pfmemalloc share space).
++	 * If it's a valid mapping, we cannot use page->pfmemalloc but we
++	 * do not lose pfmemalloc information as the pages would not be
++	 * allocated using __GFP_MEMALLOC.
++	 */
++	if (page->pfmemalloc && !page->mapping)
++		skb->pfmemalloc	= true;
+ 	frag->page.p		  = page;
+ 	frag->page_offset	  = off;
+ 	skb_frag_size_set(frag, size);
+-- 
+1.7.9.2
 
