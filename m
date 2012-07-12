@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162431Ab2GLWsp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:48:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58752 "EHLO
+	id S1162360Ab2GLWp7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:45:59 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60450 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162367Ab2GLWqC (ORCPT
+	with ESMTP id S1162323Ab2GLWps (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:46:02 -0400
+	Thu, 12 Jul 2012 18:45:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Hin-Tak Leung <htl10@users.sourceforge.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Josh Boyer <jwboyer@redhat.com>
-Subject: [ 171/187] rtl8187: ->brightness_set can not sleep
-Date: Thu, 12 Jul 2012 15:35:27 -0700
-Message-Id: <20120712191539.152446807@linuxfoundation.org>
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 176/187] drm/i915: rip out the PM_IIR WARN
+Date: Thu, 12 Jul 2012 15:35:32 -0700
+Message-Id: <20120712191539.608543998@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -34,55 +31,58 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 0fde0a8cfd0ede7f310d6a681c8e5a7cb3e32406 upstream.
+commit 58bf8062d0b293b8e1028e5b0342082002886bd4 upstream.
 
-Fix:
+After banging my head against this for the past few months, I still
+don't see how this could possible race under the premise that once an
+irq bit is masked in PM_IMR and reset in PM_IIR it won't show up again
+until we unmask it in PM_IMR.
 
-BUG: sleeping function called from invalid context at kernel/workqueue.c:2547
-in_atomic(): 1, irqs_disabled(): 0, pid: 629, name: wpa_supplicant
-2 locks held by wpa_supplicant/629:
- #0:  (rtnl_mutex){+.+.+.}, at: [<c08b2b84>] rtnl_lock+0x14/0x20
- #1:  (&trigger->leddev_list_lock){.+.?..}, at: [<c0867f41>] led_trigger_event+0x21/0x80
-Pid: 629, comm: wpa_supplicant Not tainted 3.3.0-0.rc3.git5.1.fc17.i686
-Call Trace:
- [<c046a9f6>] __might_sleep+0x126/0x1d0
- [<c0457d6c>] wait_on_work+0x2c/0x1d0
- [<c045a09a>] __cancel_work_timer+0x6a/0x120
- [<c045a160>] cancel_delayed_work_sync+0x10/0x20
- [<f7dd3c22>] rtl8187_led_brightness_set+0x82/0xf0 [rtl8187]
- [<c0867f7c>] led_trigger_event+0x5c/0x80
- [<f7ff5e6d>] ieee80211_led_radio+0x1d/0x40 [mac80211]
- [<f7ff3583>] ieee80211_stop_device+0x13/0x230 [mac80211]
+Still, we have reports of this being seen in the wild. Now Bspec has
+this little bit of lovely language in the PMIIR register:
 
-Removing _sync is ok, because if led_on work is currently running
-it will be finished before led_off work start to perform, since
-they are always queued on the same mac80211 local->workqueue.
+Public SNB Docs, Vol3Part2, 2.5.14 "PMIIR":
 
-Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=795176
+"For each bit, the IIR can store a second pending interrupt if two or
+more of the same interrupt conditions occur before the first condition
+is cleared. Upon clearing the interrupt, the IIR bit will momentarily
+go low, then return high to indicate there is another interrupt
+pending."
 
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
-Acked-by: Hin-Tak Leung <htl10@users.sourceforge.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Cc: Josh Boyer <jwboyer@redhat.com>
+Now if we presume that PMIMR only prevent new interrupts from being
+queued, we could easily end up masking an interrupt and clearing it,
+but the 2nd pending interrupt setting the bit in PMIIR right away
+again. Which leads, the next time the irq handler runs, to hitting the
+WARN.
+
+Also, no bad side effects of this have ever been reported. And we've
+tracked down our issues with the gpu turbo getting stuck to bogus
+interrupt generation limits in th RPLIMIT register.
+
+So let's just rip out this WARN as bogus and call it a day. The only
+shallow thing here is that this 2-deep irq queue in the hw makes you
+wonder how racy the windows irq handler is ...
+
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=42907
+Acked-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtl818x/rtl8187/leds.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/i915/i915_irq.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/net/wireless/rtl818x/rtl8187/leds.c
-+++ b/drivers/net/wireless/rtl818x/rtl8187/leds.c
-@@ -117,7 +117,7 @@ static void rtl8187_led_brightness_set(s
- 			radio_on = true;
- 		} else if (radio_on) {
- 			radio_on = false;
--			cancel_delayed_work_sync(&priv->led_on);
-+			cancel_delayed_work(&priv->led_on);
- 			ieee80211_queue_delayed_work(hw, &priv->led_off, 0);
- 		}
- 	} else if (radio_on) {
+--- a/drivers/gpu/drm/i915/i915_irq.c
++++ b/drivers/gpu/drm/i915/i915_irq.c
+@@ -440,7 +440,6 @@ static void gen6_queue_rps_work(struct d
+ 	 */
+ 
+ 	spin_lock_irqsave(&dev_priv->rps_lock, flags);
+-	WARN(dev_priv->pm_iir & pm_iir, "Missed a PM interrupt\n");
+ 	dev_priv->pm_iir |= pm_iir;
+ 	I915_WRITE(GEN6_PMIMR, dev_priv->pm_iir);
+ 	POSTING_READ(GEN6_PMIMR);
 
 
