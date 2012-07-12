@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162671Ab2GLXSO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:18:14 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47532 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162610Ab2GLXEG (ORCPT
+	id S1162784Ab2GLXSg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:18:36 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:34853 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162597Ab2GLXD4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 19:04:06 -0400
+	Thu, 12 Jul 2012 19:03:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Chris Mason <chris.mason@fusionio.com>
-Subject: [ 25/68] Btrfs: run delayed directory updates during log replay
-Date: Thu, 12 Jul 2012 16:01:59 -0700
-Message-Id: <20120712175037.675064141@linuxfoundation.org>
+        Thomas Graf <tgraf@suug.ch>, "David S. Miller" <davem@davemloft.net>
+Subject: [ 12/68] ipv6: Move ipv6 proc file registration to end of init order
+Date: Thu, 12 Jul 2012 16:01:46 -0700
+Message-Id: <20120712175036.491419215@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712175035.530652872@linuxfoundation.org>
 References: <20120712175057.GA9917@kroah.com>
@@ -30,54 +30,123 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Chris Mason <chris.mason@fusionio.com>
 
-commit b6305567e7d31b0bec1b8cb9ec0cadd7f7086f5f upstream.
+From: Thomas Graf <tgraf@suug.ch>
 
-While we are resolving directory modifications in the
-tree log, we are triggering delayed metadata updates to
-the filesystem btrees.
+[ Upstream commit d189634ecab947c10f6f832258b103d0bbfe73cc ]
 
-This commit forces the delayed updates to run so the
-replay code can find any modifications done.  It stops
-us from crashing because the directory deleltion replay
-expects items to be removed immediately from the tree.
+/proc/net/ipv6_route reflects the contents of fib_table_hash. The proc
+handler is installed in ip6_route_net_init() whereas fib_table_hash is
+allocated in fib6_net_init() _after_ the proc handler has been installed.
 
-Signed-off-by: Chris Mason <chris.mason@fusionio.com>
+This opens up a short time frame to access fib_table_hash with its pants
+down.
+
+Move the registration of the proc files to a later point in the init
+order to avoid the race.
+
+Tested :-)
+
+Signed-off-by: Thomas Graf <tgraf@suug.ch>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/btrfs/tree-log.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ net/ipv6/route.c |   41 +++++++++++++++++++++++++++++++----------
+ 1 file changed, 31 insertions(+), 10 deletions(-)
 
---- a/fs/btrfs/tree-log.c
-+++ b/fs/btrfs/tree-log.c
-@@ -691,6 +691,8 @@ static noinline int drop_one_dir_item(st
- 	kfree(name);
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -2846,10 +2846,6 @@ static int __net_init ip6_route_net_init
+ 	net->ipv6.sysctl.ip6_rt_mtu_expires = 10*60*HZ;
+ 	net->ipv6.sysctl.ip6_rt_min_advmss = IPV6_MIN_MTU - 20 - 40;
  
- 	iput(inode);
-+
-+	btrfs_run_delayed_items(trans, root);
- 	return ret;
+-#ifdef CONFIG_PROC_FS
+-	proc_net_fops_create(net, "ipv6_route", 0, &ipv6_route_proc_fops);
+-	proc_net_fops_create(net, "rt6_stats", S_IRUGO, &rt6_stats_seq_fops);
+-#endif
+ 	net->ipv6.ip6_rt_gc_expire = 30*HZ;
+ 
+ 	ret = 0;
+@@ -2870,10 +2866,6 @@ out_ip6_dst_ops:
+ 
+ static void __net_exit ip6_route_net_exit(struct net *net)
+ {
+-#ifdef CONFIG_PROC_FS
+-	proc_net_remove(net, "ipv6_route");
+-	proc_net_remove(net, "rt6_stats");
+-#endif
+ 	kfree(net->ipv6.ip6_null_entry);
+ #ifdef CONFIG_IPV6_MULTIPLE_TABLES
+ 	kfree(net->ipv6.ip6_prohibit_entry);
+@@ -2882,11 +2874,33 @@ static void __net_exit ip6_route_net_exi
+ 	dst_entries_destroy(&net->ipv6.ip6_dst_ops);
  }
  
-@@ -896,6 +898,7 @@ again:
- 				ret = btrfs_unlink_inode(trans, root, dir,
- 							 inode, victim_name,
- 							 victim_name_len);
-+				btrfs_run_delayed_items(trans, root);
- 			}
- 			kfree(victim_name);
- 			ptr = (unsigned long)(victim_ref + 1) + victim_name_len;
-@@ -1476,6 +1479,9 @@ again:
- 			ret = btrfs_unlink_inode(trans, root, dir, inode,
- 						 name, name_len);
- 			BUG_ON(ret);
++static int __net_init ip6_route_net_init_late(struct net *net)
++{
++#ifdef CONFIG_PROC_FS
++	proc_net_fops_create(net, "ipv6_route", 0, &ipv6_route_proc_fops);
++	proc_net_fops_create(net, "rt6_stats", S_IRUGO, &rt6_stats_seq_fops);
++#endif
++	return 0;
++}
 +
-+			btrfs_run_delayed_items(trans, root);
++static void __net_exit ip6_route_net_exit_late(struct net *net)
++{
++#ifdef CONFIG_PROC_FS
++	proc_net_remove(net, "ipv6_route");
++	proc_net_remove(net, "rt6_stats");
++#endif
++}
 +
- 			kfree(name);
- 			iput(inode);
+ static struct pernet_operations ip6_route_net_ops = {
+ 	.init = ip6_route_net_init,
+ 	.exit = ip6_route_net_exit,
+ };
  
++static struct pernet_operations ip6_route_net_late_ops = {
++	.init = ip6_route_net_init_late,
++	.exit = ip6_route_net_exit_late,
++};
++
+ static struct notifier_block ip6_route_dev_notifier = {
+ 	.notifier_call = ip6_route_dev_notify,
+ 	.priority = 0,
+@@ -2936,19 +2950,25 @@ int __init ip6_route_init(void)
+ 	if (ret)
+ 		goto xfrm6_init;
+ 
++	ret = register_pernet_subsys(&ip6_route_net_late_ops);
++	if (ret)
++		goto fib6_rules_init;
++
+ 	ret = -ENOBUFS;
+ 	if (__rtnl_register(PF_INET6, RTM_NEWROUTE, inet6_rtm_newroute, NULL) ||
+ 	    __rtnl_register(PF_INET6, RTM_DELROUTE, inet6_rtm_delroute, NULL) ||
+ 	    __rtnl_register(PF_INET6, RTM_GETROUTE, inet6_rtm_getroute, NULL))
+-		goto fib6_rules_init;
++		goto out_register_late_subsys;
+ 
+ 	ret = register_netdevice_notifier(&ip6_route_dev_notifier);
+ 	if (ret)
+-		goto fib6_rules_init;
++		goto out_register_late_subsys;
+ 
+ out:
+ 	return ret;
+ 
++out_register_late_subsys:
++	unregister_pernet_subsys(&ip6_route_net_late_ops);
+ fib6_rules_init:
+ 	fib6_rules_cleanup();
+ xfrm6_init:
+@@ -2967,6 +2987,7 @@ out_kmem_cache:
+ void ip6_route_cleanup(void)
+ {
+ 	unregister_netdevice_notifier(&ip6_route_dev_notifier);
++	unregister_pernet_subsys(&ip6_route_net_late_ops);
+ 	fib6_rules_cleanup();
+ 	xfrm6_fini();
+ 	fib6_gc_cleanup();
 
 
