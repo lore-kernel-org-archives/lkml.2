@@ -1,38 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933660Ab2GLKPK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 06:15:10 -0400
-Received: from nm27-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.232]:42558 "HELO
-	nm27-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757359Ab2GLKPJ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 06:15:09 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 587975.83635.bm@omp1015.access.mail.mud.yahoo.com
-X-YMail-OSG: 96Llf4IVM1m.aFAWbzhitvt.PtQ43xbZykv23EjdnmoC5V2
- XuGGV98gBKLdsIPXC4upNwWpKucehWrYQeALl1JmMhw8jqv8VEggVshiT4qU
- d4CwR9Gh0sM3KOF3bQiWmK.MDRUlizlTFfQ3EKKHvqh.YBfR6GVCWP5QVjWf
- k2tC2U9Glr9godIE_UTiGgKHt1900YKvswi2HK2lfdTEp2JZKg0vET4Omya9
- t.rVAbRTOWtlrM4PA5yt_OvfB3lEnni8ddMxHV2DKL2FyPFjMoljlyMQ9_DG
- aq6oI0nqVfGRNVkXvx2xRJWirmxFGfYvoOQRiR3Cg1Bntl0bxI5W25oerE0P
- dGUm.mcklXjrerA6UYEKRzy99jLFFFvlzpnxPFLc5OqYVr3mAmJbP8h3lfL0
- MMKZjpOxCUOsMI0KHcLuaAcHN8yyA5eDeoaflALVOaHjB0ieHrqOU2mjAWgU
- fr5ZBnQ--
-X-RocketYMMF: webweb430
-X-Mailer: YahooMailClassic/15.0.8 YahooMailWebService/0.8.120.356233
-Message-ID: <1342088047.32647.YahooMailClassic@web5708.biz.mail.ne1.yahoo.com>
-Date: Thu, 12 Jul 2012 03:14:07 -0700 (PDT)
-From: Standard Credit International Finance 
-	<thomasdavidmarkloanfirm@gmail.com>
-Reply-To: scif_loanfirm@yahoo.co.uk
-To: undisclosed recipients:;
+	id S1030398Ab2GLKQf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 06:16:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53743 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030216Ab2GLKQd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 06:16:33 -0400
+Date: Thu, 12 Jul 2012 12:16:28 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Mel Gorman <mgorman@suse.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Aaditya Kumar <aaditya.kumar@ap.sony.com>
+Subject: Re: [PATCH 2/3 v3] mm: bug fix free page check in zone_watermark_ok
+Message-ID: <20120712101628.GC21013@tiehlicka.suse.cz>
+References: <1342061449-29590-1-git-send-email-minchan@kernel.org>
+ <1342061449-29590-2-git-send-email-minchan@kernel.org>
+ <20120712081922.GA21018@tiehlicka.suse.cz>
+ <20120712090519.GA30892@bbox>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120712090519.GA30892@bbox>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu 12-07-12 18:05:19, Minchan Kim wrote:
+> Hi Michal,
+> 
+> On Thu, Jul 12, 2012 at 10:19:23AM +0200, Michal Hocko wrote:
+> > On Thu 12-07-12 11:50:48, Minchan Kim wrote:
+> > > In __zone_watermark_ok, free and min are signed long type
+> > > while z->lowmem_reserve[classzone_idx] is unsigned long type.
+> > > So comparision of them could be wrong due to type conversion
+> > > to unsigned although free_pages is minus value.
+> > 
+> > Agreed on that
+> > but
+> > > 
+> > > It could return true instead of false in case of order-0 check
+> > > so that kswapd could sleep forever. 
+> > 
+> > I am kind of lost here. How can we have negative free_pages with
+> > order-0? It would need to come with a negative value because 
+> > free_pages -= (1 << order) - 1;
+> > won't make it negative.
+> 
+> Right you are. I missed that part.
+> 
+> The reason Aaditya reported this problem is caused by my patch[1] in
+> this series. zone_watermark_ok_safe didn't reset free_pages to zero
+> although free_pages becomes minus value(Please, look at [1])
+> 
+> [1] memory-hotplug: fix kswapd looping forever problem
+> 
+> I think we have no problem in current code because if order isn't zero 
+> and free_pages is minus value, it could exit in the middle of loop with
+> false.
 
-Do you need business loan or personal loan if yes contact us today?
+Yes, but it would be still nice to not rely on the loop and make the
+first test effective. So I think the patch still makes sense.
 
+> 
+> So I think it was totally patch's problem. :(
+> But I agree auto type casting problem is subtle error-prone so it's valuable
+> to fix, too. As you mentiond, I should rewrite description and subject for it.
+> 
+> Thanks for the review!
+> 
+> > 
+> > > It means livelock because direct reclaimer loops forever until kswapd
+> > > set zone->all_unreclaimable.
+> > > 
+> > > Aaditya reported this problem when he test my hotplug patch.
+> > > 
+> > > Reported-off-by: Aaditya Kumar <aaditya.kumar@ap.sony.com>
+> > > Tested-by: Aaditya Kumar <aaditya.kumar@ap.sony.com>
+> > > Signed-off-by: Aaditya Kumar <aaditya.kumar@ap.sony.com>
+> > > Signed-off-by: Minchan Kim <minchan@kernel.org>
+> > 
+> > So you can add my Reviewed-by: Michal Hocko <mhocko@suse.cz>
+> > but the changelog could be more clear.
+> > 
+> > > ---
+> > > This patch isn't dependent with this series.
+> > > It seems to be candidate for -stable but I'm not sure because of this part.
+> > > So, pass the decision to akpm.
+> > > 
+> > > " - It must fix a real bug that bothers people (not a, "This could be a
+> > >    problem..." type thing)."
+> > 
+> > I am wondering what Testted-by means if "This could be a problem..."
+> > type thing)."
+> 
+> He reported it during testing this series so I don't think it will happen
+> in current code because zone_page_state and zone_page_state_snapshot
+> can't set free_pages to minus.
+> 
+> > 
+> > > 
+> > >  mm/page_alloc.c |    3 ++-
+> > >  1 file changed, 2 insertions(+), 1 deletion(-)
+> > > 
+> > > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > > index f17e6e4..627653c 100644
+> > > --- a/mm/page_alloc.c
+> > > +++ b/mm/page_alloc.c
+> > > @@ -1594,6 +1594,7 @@ static bool __zone_watermark_ok(struct zone *z, int order, unsigned long mark,
+> > >  {
+> > >  	/* free_pages my go negative - that's OK */
+> > >  	long min = mark;
+> > > +	long lowmem_reserve = z->lowmem_reserve[classzone_idx];
+> > >  	int o;
+> > >  
+> > >  	free_pages -= (1 << order) - 1;
+> > > @@ -1602,7 +1603,7 @@ static bool __zone_watermark_ok(struct zone *z, int order, unsigned long mark,
+> > >  	if (alloc_flags & ALLOC_HARDER)
+> > >  		min -= min / 4;
+> > >  
+> > > -	if (free_pages <= min + z->lowmem_reserve[classzone_idx])
+> > > +	if (free_pages <= min + lowmem_reserve)
+> > >  		return false;
+> > >  	for (o = 0; o < order; o++) {
+> > >  		/* At the next order, this order's pages become unavailable */
+> > > -- 
+> > > 1.7.9.5
+> > > 
+> > > --
+> > > To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> > > the body to majordomo@kvack.org.  For more info on Linux MM,
+> > > see: http://www.linux-mm.org/ .
+> > > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> > 
+> > -- 
+> > Michal Hocko
+> > SUSE Labs
+> > SUSE LINUX s.r.o.
+> > Lihovarska 1060/12
+> > 190 00 Praha 9    
+> > Czech Republic
+> > 
+> > --
+> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> > the body to majordomo@kvack.org.  For more info on Linux MM,
+> > see: http://www.linux-mm.org/ .
+> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+> -- 
+> Kind regards,
+> Minchan Kim
+
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
