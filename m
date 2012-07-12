@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757541Ab2GLACe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 20:02:34 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:57590 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754477Ab2GLACc (ORCPT
+	id S933530Ab2GLADj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 20:03:39 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:48935 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933379Ab2GLADi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 20:02:32 -0400
+	Wed, 11 Jul 2012 20:03:38 -0400
 MIME-Version: 1.0
-In-Reply-To: <1341431285.19870.15.camel@laptop>
+In-Reply-To: <87pq8iwp9l.fsf@sejong.aot.lge.com>
 References: <20120628022413.30496.32798.stgit@kitami.mtv.corp.google.com>
- <20120628022414.30496.11931.stgit@kitami.mtv.corp.google.com> <1341431285.19870.15.camel@laptop>
+ <20120628022415.30496.57167.stgit@kitami.mtv.corp.google.com> <87pq8iwp9l.fsf@sejong.aot.lge.com>
 From: Paul Turner <pjt@google.com>
-Date: Wed, 11 Jul 2012 17:02:01 -0700
-Message-ID: <CAPM31R+JdOUpFCtxj79Z9srDQ8MPSqCSecQEHXdHfz8T4DqB8A@mail.gmail.com>
-Subject: Re: [PATCH 09/16] sched: normalize tg load contributions against
- runnable time
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Wed, 11 Jul 2012 17:03:06 -0700
+Message-ID: <CAPM31RK6kE_6wJKSEX=_zs8xbm0K8n_OFRLb2QGhUxeNbJnESA@mail.gmail.com>
+Subject: Re: [PATCH 12/16] sched: refactor update_shares_cpu() -> update_blocked_avgs()
+To: Namhyung Kim <namhyung@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Venki Pallipadi <venki@google.com>,
         Srivatsa Vaddagiri <vatsa@in.ibm.com>,
         Vincent Guittot <vincent.guittot@linaro.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>,
         Mike Galbraith <efault@gmx.de>,
         Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
@@ -33,63 +33,141 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 4, 2012 at 12:48 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+On Fri, Jun 29, 2012 at 12:28 AM, Namhyung Kim <namhyung@kernel.org> wrote:
+> On Wed, 27 Jun 2012 19:24:15 -0700, Paul Turner wrote:
+>> Now that running entities maintain their own load-averages the work we must do
+>> in update_shares() is largely restricted to the periodic decay of blocked
+>> entities.  This allows us to be a little less pessimistic regarding our
+>> occupancy on rq->lock and the associated rq->clock updates required.
+>>
+>> Signed-off-by: Paul Turner <pjt@google.com>
+>> ---
+>>  kernel/sched/fair.c |   59 +++++++++++++++++++++++++++++----------------------
+>>  1 files changed, 33 insertions(+), 26 deletions(-)
+>>
+>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>> index 4a9a828..dd1ef8a 100644
+>> --- a/kernel/sched/fair.c
+>> +++ b/kernel/sched/fair.c
+>> @@ -3678,23 +3678,20 @@ out:
+>>  /*
+>>   * update tg->load_weight by folding this cpu's load_avg
+>>   */
+>> -static int update_shares_cpu(struct task_group *tg, int cpu)
+>> +static void __update_blocked_averages_cpu(struct task_group *tg, int cpu)
+>>  {
+>> -     struct sched_entity *se;
+>> -     struct cfs_rq *cfs_rq;
+>> -     unsigned long flags;
+>> -     struct rq *rq;
+>> -
+>> -
+>> -     rq = cpu_rq(cpu);
+>> -     se = tg->se[cpu];
+>> -     cfs_rq = tg->cfs_rq[cpu];
+>> +     struct sched_entity *se = tg->se[cpu];
+>> +     struct cfs_rq *cfs_rq = tg->cfs_rq[cpu];
+>>
+>> -     raw_spin_lock_irqsave(&rq->lock, flags);
+>> +     /* throttled entities do not contribute to load */
+>> +     if (throttled_hierarchy(cfs_rq))
+>> +             return;
+>>
+>> -     update_rq_clock(rq);
+>>       update_cfs_rq_blocked_load(cfs_rq, 1);
+>> -     update_entity_load_avg(tg->se[cpu], 1);
+>> +     if (se)
+>> +             update_entity_load_avg(se, 1);
+>> +     else
+>> +             update_rq_runnable_avg(rq_of(cfs_rq), 1);
+>>
+>>       if (se) {
+>>               /*
+>> @@ -3707,29 +3704,39 @@ static int update_shares_cpu(struct task_group *tg, int cpu)
+>>               else
+>>                       list_del_leaf_cfs_rq(cfs_rq);
+>>       }
+>> -
+>> -     raw_spin_unlock_irqrestore(&rq->lock, flags);
+>> -
+>> -     return 0;
+>>  }
+>>
+>> -static void update_shares(int cpu)
+>> +static void update_blocked_averages(int cpu)
+>>  {
+>> -     struct cfs_rq *cfs_rq;
+>>       struct rq *rq = cpu_rq(cpu);
+>> +     struct cfs_rq *cfs_rq;
+>> +
+>> +     unsigned long flags;
+>> +     int num_updates = 0;
+>>
+>>       rcu_read_lock();
+>> +     raw_spin_lock_irqsave(&rq->lock, flags);
+>> +     update_rq_clock(rq);
+>>       /*
+>>        * Iterates the task_group tree in a bottom up fashion, see
+>>        * list_add_leaf_cfs_rq() for details.
+>>        */
+>>       for_each_leaf_cfs_rq(rq, cfs_rq) {
+>> -             /* throttled entities do not contribute to load */
+>> -             if (throttled_hierarchy(cfs_rq))
+>> -                     continue;
+>> +             __update_blocked_averages_cpu(cfs_rq->tg, rq->cpu);
+>>
+>> -             update_shares_cpu(cfs_rq->tg, cpu);
+>> +             /*
+>> +              * Periodically release the lock so that a cfs_rq with many
+>> +              * children cannot hold it for an arbitrary period of time.
+>> +              */
+>> +             if (num_updates++ % 20 == 0) {
 >
-> On Wed, 2012-06-27 at 19:24 -0700, Paul Turner wrote:
-> > Entities of equal weight should receive equitable distribution of cpu time.
-> > This is challenging in the case of a task_group's shares as execution may be
-> > occurring on multiple cpus simultaneously.
-> >
-> > To handle this we divide up the shares into weights proportionate with the load
-> > on each cfs_rq.  This does not however, account for the fact that the sum of
-> > the parts may be less than one cpu and so we need to normalize:
-> >   load(tg) = min(runnable_avg(tg), 1) * tg->shares
-> > Where runnable_avg is the aggregate time in which the task_group had runnable
-> > children.
->
-> I remember we had a bit of a discussion on this last time, I thought you
-> were going to convince me this approximation was 'right'.
+> Should it be '++num_updates'? Otherwise, it'll release the lock at the
+> first iteration?
 
-
-I thought I had :-)
-
-Here's what I wrote previously:
-
-"""
-So, as an estimate it has the nice property that it's always a lower
-bound on the true value.
-
-Consider the two cases for runnable contributions across a pair of cpus:
-
-Either they are disjoint by wall time, in which case they would have
-accounted for the same amount were they actually on the same cpu.
-Or they overlap, in which case that over-lap period would be an
-additional run-delay incurred on one of them.
-
-Then, the maximum amount we understate for a given overlap is n(n+1)/2
-* k where k is the the width of the overlap and n is the number of
-cpus we over-lapped on.
-
-But then, n is bounded by num_cpus -- so on a small machine our error
-is bounded (e.g. we can be no more than 1/3 less than true on 2
-cpus). On a larger machine this term can be larger, however, if k is
-of consequential size we know we accounted at least n*k so we're still
-going to approach the ceiling of 1 very quickly at which point it
-doesn't matter that we under-estimated. The flip side on a larger
-machine is that if k is of inconsequential size then n*2 * k is still
-tiny relative to the size of the machine and the accuracy of the
-approximation matters less.
-"""
-
-I approach it from a slightly different angle, nonetheless, it's
-coherent with your analysis in your next reply.
-
-What I forgot to do here was add the comments to this effect.  Will do.
-
+Yes -- applied.  Thanks!
 
 >
+> Thanks,
+> Namhyung
 >
-> Care to still do so.. the rationale used should at least live in a
-> comment somewhere, otherwise someone will go silly trying to understand
-> things later on.
 >
+>> +                     raw_spin_unlock_irqrestore(&rq->lock, flags);
+>> +                     cpu_relax();
+>> +                     raw_spin_lock_irqsave(&rq->lock, flags);
+>> +                     update_rq_clock(rq);
+>> +             }
+>>       }
+>> +
+>> +     raw_spin_unlock_irqrestore(&rq->lock, flags);
+>>       rcu_read_unlock();
+>>  }
+>>
+>> @@ -3774,7 +3781,7 @@ unsigned long task_h_load(struct task_struct *p)
+>>       return load;
+>>  }
+>>  #else
+>> -static inline void update_shares(int cpu)
+>> +static inline void update_blocked_averages(int cpu)
+>>  {
+>>  }
+>>
+>> @@ -4936,7 +4943,7 @@ void idle_balance(int this_cpu, struct rq *this_rq)
+>>        */
+>>       raw_spin_unlock(&this_rq->lock);
+>>
+>> -     update_shares(this_cpu);
+>> +     update_blocked_averages(this_cpu);
+>>       rcu_read_lock();
+>>       for_each_domain(this_cpu, sd) {
+>>               unsigned long interval;
+>> @@ -5196,7 +5203,7 @@ static void rebalance_domains(int cpu, enum cpu_idle_type idle)
+>>       int update_next_balance = 0;
+>>       int need_serialize;
+>>
+>> -     update_shares(cpu);
+>> +     update_blocked_averages(cpu);
+>>
+>>       rcu_read_lock();
+>>       for_each_domain(cpu, sd) {
