@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161816Ab2GLXir (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:38:47 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58752 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759661Ab2GLWjE (ORCPT
+	id S1161693Ab2GLXip (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:38:45 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:34975 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932162Ab2GLWjI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:39:04 -0400
+	Thu, 12 Jul 2012 18:39:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Rolf Offermanns <rolf.offermanns@gmx.net>,
-        Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 061/187] ath9k: Fix softlockup in AR9485
-Date: Thu, 12 Jul 2012 15:33:37 -0700
-Message-Id: <20120712191528.038098926@linuxfoundation.org>
+        Stefan Assmann <sassmann@redhat.com>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: [ 054/187] iommu/amd: Initialize dma_ops for hotplug and sriov devices
+Date: Thu, 12 Jul 2012 15:33:30 -0700
+Message-Id: <20120712191527.356049087@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -32,66 +31,49 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>
+From: Joerg Roedel <joerg.roedel@amd.com>
 
-commit bcb7ad7bcbef030e6ba71ede1f9866368aca7c99 upstream.
+commit ac1534a55d1e87d59a21c09c570605933b551480 upstream.
 
-steps to recreate:
-load latest ath9k driver with AR9485
-stop the network-manager and wpa_supplicant
-bring the interface up
+When a device is added to the system at runtime the AMD
+IOMMU driver initializes the necessary data structures to
+handle translation for it. But it forgets to change the
+per-device dma_ops to point to the AMD IOMMU driver. So
+mapping actually never happens and all DMA accesses end in
+an IO_PAGE_FAULT. Fix this.
 
-	Call Trace:
-	[<ffffffffa0517490>] ? ath_hw_check+0xe0/0xe0 [ath9k]
-	[<ffffffff812cd1e8>] __const_udelay+0x28/0x30
-	[<ffffffffa03bae7a>] ar9003_get_pll_sqsum_dvc+0x4a/0x80 [ath9k_hw]
-	[<ffffffffa05174eb>] ath_hw_pll_work+0x5b/0xe0 [ath9k]
-	[<ffffffff810744fe>] process_one_work+0x11e/0x470
-	[<ffffffff8107530f>] worker_thread+0x15f/0x360
-	[<ffffffff810751b0>] ? manage_workers+0x230/0x230
-	[<ffffffff81079af3>] kthread+0x93/0xa0
-	[<ffffffff815fd3a4>] kernel_thread_helper+0x4/0x10
-	[<ffffffff81079a60>] ? kthread_freezable_should_stop+0x70/0x70
-	[<ffffffff815fd3a0>] ? gs_change+0x13/0x13
-
-ensure that the PLL-WAR for AR9485/AR9340 is executed only if the STA is
-associated (or) IBSS/AP mode had started beaconing. Ideally this WAR
-is needed to recover from some rare beacon stuck during stress testing.
-Before the STA is associated/IBSS had started beaconing, PLL4(0x1618c)
-always seem to have zero even though we had configured PLL3(0x16188) to
-query about PLL's locking status. When we keep on polling infinitely PLL4's
-8th bit(ie check for PLL locking measurements is done), machine hangs
-due to softlockup.
-
-fixes https://bugzilla.redhat.com/show_bug.cgi?id=811142
-
-Reported-by: Rolf Offermanns <rolf.offermanns@gmx.net>
-Tested-by: Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>
-Signed-off-by: Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reported-by: Stefan Assmann <sassmann@redhat.com>
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/main.c |    9 +++++++++
+ drivers/iommu/amd_iommu.c |    9 +++++++++
  1 file changed, 9 insertions(+)
 
---- a/drivers/net/wireless/ath/ath9k/main.c
-+++ b/drivers/net/wireless/ath/ath9k/main.c
-@@ -960,6 +960,15 @@ void ath_hw_pll_work(struct work_struct
- 					    hw_pll_work.work);
- 	u32 pll_sqsum;
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -83,6 +83,8 @@ static struct iommu_ops amd_iommu_ops;
+ static ATOMIC_NOTIFIER_HEAD(ppr_notifier);
+ int amd_iommu_max_glx_val = -1;
  
-+	/*
-+	 * ensure that the PLL WAR is executed only
-+	 * after the STA is associated (or) if the
-+	 * beaconing had started in interfaces that
-+	 * uses beacons.
-+	 */
-+	if (!(sc->sc_flags & SC_OP_BEACONS))
-+		return;
++static struct dma_map_ops amd_iommu_dma_ops;
 +
- 	if (AR_SREV_9485(sc->sc_ah)) {
+ /*
+  * general struct to manage commands send to an IOMMU
+  */
+@@ -2267,6 +2269,13 @@ static int device_change_notifier(struct
+ 		list_add_tail(&dma_domain->list, &iommu_pd_list);
+ 		spin_unlock_irqrestore(&iommu_pd_list_lock, flags);
  
- 		ath9k_ps_wakeup(sc);
++		dev_data = get_dev_data(dev);
++
++		if (!dev_data->passthrough)
++			dev->archdata.dma_ops = &amd_iommu_dma_ops;
++		else
++			dev->archdata.dma_ops = &nommu_dma_ops;
++
+ 		break;
+ 	case BUS_NOTIFY_DEL_DEVICE:
+ 
 
 
