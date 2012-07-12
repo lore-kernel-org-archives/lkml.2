@@ -1,158 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753573Ab2GLMjr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 08:39:47 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:56840 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752026Ab2GLMjq (ORCPT
+	id S1754027Ab2GLMkn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 08:40:43 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:34014 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751225Ab2GLMkl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 08:39:46 -0400
-X-AuditID: b753bd60-967eaba000006894-2c-4ffec58fe3d0
-X-AuditID: b753bd60-967eaba000006894-2c-4ffec58fe3d0
-Message-ID: <4FFEC58E.5070202@hitachi.com>
-Date: Thu, 12 Jul 2012 21:39:42 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [RFC][PATCH 2/4 v4] ftrace/x86: Add save_regs for i386 function
- calls
-References: <20120711195048.885039013@goodmis.org> <20120711195745.379060003@goodmis.org>
-In-Reply-To: <20120711195745.379060003@goodmis.org>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 12 Jul 2012 08:40:41 -0400
+X-AuditID: cbfee61a-b7f616d000004b7e-02-4ffec5c8247c
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: linux-mmc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        cjb@laptop.org, grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
+        patches@linaro.org
+Subject: [PATCH v3 0/6] mmc: dw_mmc: add support for device tree based
+ instantiation
+Date: Thu, 12 Jul 2012 18:24:22 +0530
+Message-id: <1342097668-25243-1-git-send-email-thomas.abraham@linaro.org>
+X-Mailer: git-send-email 1.6.6.rc2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKJMWRmVeSWpSXmKPExsVy+t9jAd0TR//5G1xdI2pxedccNosj//sZ
+	LWac38fkwOzxeZNcAGMUl01Kak5mWWqRvl0CV0bn6wvMBe/4Ky7vfMPUwDiPp4uRk0NCwETi
+	+qHfjBC2mMSFe+vZuhi5OIQEFjFK7Ph2hR3CaWOSmNVwlxWkik3AQOLRwnfsILaIgJPEkrkT
+	mEGKmAXuMEo8mnUSbJSwQJjEvI9bwRpYBFQllp25DGbzCnhKND5tYoVYpySxofco0wRG7gWM
+	DKsYRVMLkguKk9JzDfWKE3OLS/PS9ZLzczcxgj37TGoH48oGi0OMAhyMSjy8Hw788xdiTSwr
+	rsw9xCjBwawkwtufCxTiTUmsrEotyo8vKs1JLT7EKM3BoiTOa+z91V9IID2xJDU7NbUgtQgm
+	y8TBKdXAGJ8SWud0O+DKtAeXKzy+lmwwKTfM3h6ad+zYqVX2LPOnXglMaXnr/yBGfokO38a/
+	E+X/rZq9qskureSmlyfPYmGF9s6vWm9+VKVvbnxy4WX158/z173LrurWEWy9aXCI+ciqXKVC
+	t4wtX+rPv9j+0fPuivTi+YJv2J+9WX7Dd/KigLy8D+vk7ymxFGckGmoxFxUnAgCDYnjg6AEA	AA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/07/12 4:50), Steven Rostedt wrote:
-> From: Steven Rostedt <srostedt@redhat.com>
-> 
-> Add saving full regs for function tracing on i386.
-> The saving of regs was influenced by patches sent out by
-> Masami Hiramatsu.
-> 
-> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  arch/x86/include/asm/ftrace.h |    2 --
->  arch/x86/kernel/entry_32.S    |   58 +++++++++++++++++++++++++++++++++++++++++
->  arch/x86/kernel/ftrace.c      |    4 ---
->  3 files changed, 58 insertions(+), 6 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/ftrace.h b/arch/x86/include/asm/ftrace.h
-> index a847501..a6cae0c 100644
-> --- a/arch/x86/include/asm/ftrace.h
-> +++ b/arch/x86/include/asm/ftrace.h
-> @@ -40,10 +40,8 @@
->  
->  #ifdef CONFIG_DYNAMIC_FTRACE
->  #define ARCH_SUPPORTS_FTRACE_OPS 1
-> -#ifdef CONFIG_X86_64
->  #define ARCH_SUPPORTS_FTRACE_SAVE_REGS
->  #endif
-> -#endif
->  
->  #ifndef __ASSEMBLY__
->  extern void mcount(void);
-> diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-> index 5da11d1..8ef138f 100644
-> --- a/arch/x86/kernel/entry_32.S
-> +++ b/arch/x86/kernel/entry_32.S
-> @@ -1123,6 +1123,7 @@ ftrace_call:
->  	popl %edx
->  	popl %ecx
->  	popl %eax
-> +ftrace_ret:
->  #ifdef CONFIG_FUNCTION_GRAPH_TRACER
->  .globl ftrace_graph_call
->  ftrace_graph_call:
-> @@ -1134,6 +1135,63 @@ ftrace_stub:
->  	ret
->  END(ftrace_caller)
->  
-> +ENTRY(ftrace_regs_caller)
-> +	pushf	/* push flags before compare (in ss location) */
-> +	cmpl $0, function_trace_stop
-> +	jne ftrace_restore_flags
-> +
-> +	pushl %esp	/* Save stack in sp location */
-> +	subl $4, (%esp) /* Adjust saved stack to skip saved flags */
-> +	pushl 4(%esp)	/* Save flags in correct position */
-> +	movl $__KERNEL_DS, 8(%esp)	/* Save ss */
-> +	pushl $__KERNEL_CS
-> +	pushl 4*4(%esp)	/* Save the ip */
-> +	subl $MCOUNT_INSN_SIZE, (%esp)	/* Adjust ip */
-> +	pushl $0	/* Load 0 into orig_ax */
+This patch series adds device tree support for Synopsis Designware Mobile
+Storage Host Controller.
 
-Oops, you might forget that the i386's interrupt stack layout is a bit
-different from x86-64.
+The first patch converts the copy of controller device instance into a
+reference. This is need to allow device resource management api to correctly
+manage the resources allocated by the driver. The second patch fixes the
+incorrect abort of the probe in case a slot initialization fails. This is
+fixed by allowing as many slots to be initialized successfully and failing
+only if there are no slots that were initialized.
 
-On x86-64, regs->sp directly points the top of stack.
-On the other hand (i386), regs->sp IS the top of stack. You can see
-below code in arch/x86/include/asm/ptrace.h
----
-/*
- * X86_32 CPUs don't save ss and esp if the CPU is already in kernel mode
- * when it traps.  The previous stack will be directly underneath the saved
- * registers, and 'sp/ss' won't even have been saved. Thus the '&regs->sp'.
- *
- * This is valid only for kernel mode traps.
- */
-static inline unsigned long kernel_stack_pointer(struct pt_regs *regs)
-{
-#ifdef CONFIG_X86_32
-        return (unsigned long)(&regs->sp);
-#else
-        return regs->sp;
-#endif
-}
----
+The third patch adds clock lookup in the driver and this is optional. Platforms
+that do not need any clock gating and control for the dw_mmc controllers will
+not be affected with this change. The fourth patch adds a quirk to notify the
+controller about the absence of the write protect line.
 
-This means that you need a trick here.
+The fifth patch adds device tree based discovery support for the dw_mmc driver.
+The sixth patch add Samsung Exynos5250 specific extentions to the driver.
 
-	 sp-> [retaddr]
-	(*)-> [orig_stack]
+This patchset is based on Samsung kernel tree's for-next branch with the
+mmc tree's mmc-next branch merged.
 
-Here is the stack layout when the ftrace_regs_caller is called.
-(*) points the original stack pointer. this means that regs->sp has
-placed at (*). After doing pushf, it changed as below.
+Thomas Abraham (6):
+  mmc: dw_mmc: convert copy of struct device in struct dw_mci to a reference
+  mmc: dw_mmc: allow probe to succeed even if one slot is initialized
+  mmc: dw_mmc: lookup for optional biu and ciu clocks
+  mmc: dw_mmc: add quirk to indicate missing write protect line
+  mmc: dw_mmc: add device tree support
+  mmc: dw_mmc: add samsung exynos5250 specific extentions
 
-	                    (what user expects)
-	 sp-> [flags]      <- regs.cs
-	      [retaddr]    <- regs.flags
-	(*)-> [orig_stack] <- regs.sp
-
-So we have to change this stack layout as the user expected. That is
-what I did it in my previous series;
-
-https://lkml.org/lkml/2012/6/5/119
-
-In this patch, I clobbered the return address on the stack and
-stores it in the local stack because of that reason.
-
-+	movl 14*4(%esp), %eax	/* Load return address */
-+	pushl %eax		/* Save return address (+4) */
-+	subl $MCOUNT_INSN_SIZE, %eax
-+	movl %eax, 12*4+4(%esp)	/* Store IP */
-+	movl 13*4+4(%esp), %edx	/* Load flags */
-+	movl %edx, 14*4+4(%esp)	/* Store flags */
-+	movl $__KERNEL_CS, %edx
-+	movl %edx, 13*4+4(%esp)
-
-Thank you,
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+ .../devicetree/bindings/mmc/synposis-dw-mshc.txt   |  144 ++++++++
+ drivers/mmc/host/dw_mmc-pci.c                      |    2 +-
+ drivers/mmc/host/dw_mmc-pltfm.c                    |   41 +++-
+ drivers/mmc/host/dw_mmc.c                          |  364 +++++++++++++++++---
+ drivers/mmc/host/dw_mmc.h                          |   23 ++
+ include/linux/mmc/dw_mmc.h                         |   17 +-
+ 6 files changed, 538 insertions(+), 53 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mmc/synposis-dw-mshc.txt
 
