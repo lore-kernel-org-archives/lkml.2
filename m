@@ -1,64 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161476Ab2GLRcY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 13:32:24 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:37765 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755397Ab2GLRcW (ORCPT
+	id S1161484Ab2GLRdB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 13:33:01 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:24837 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161442Ab2GLRdA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 13:32:22 -0400
+	Thu, 12 Jul 2012 13:33:00 -0400
+Date: Thu, 12 Jul 2012 13:24:24 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Olaf Hering <olaf@aepfle.de>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [PATCH] xen pv-on-hvm: add pfn_is_ram helper for
+ kdump
+Message-ID: <20120712172424.GA5895@phenom.dumpdata.com>
+References: <1342113639-19728-1-git-send-email-olaf@aepfle.de>
 MIME-Version: 1.0
-In-Reply-To: <4FFE8FEB.2020606@redhat.com>
-References: <CAB7xdinLSMBFtNa2sLBvNKE0H7cmfOr05+jVStd63MS5maP9VQ@mail.gmail.com>
-	<4FFE8FEB.2020606@redhat.com>
-Date: Thu, 12 Jul 2012 12:32:21 -0500
-Message-ID: <CAB7xdinaGFxyn3OHmsq0Lqtkfs9XST0j0Tj4kBvQGNf5UxWLvw@mail.gmail.com>
-Subject: Re: lots of APIC_TMICT exit on VM with assigned NIC
-From: sheng qiu <herbert1984106@gmail.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: kvm <kvm@vger.kernel.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1342113639-19728-1-git-send-email-olaf@aepfle.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-thanks for your reply.
-the value is very large. is there anyway that i  can avoid such
-frequent exits due to APIC_TMICT? do i need to modify some codes in
-kvm kernel module or adapt some parameters?
+On Thu, Jul 12, 2012 at 07:20:39PM +0200, Olaf Hering wrote:
+> Register pfn_is_ram helper speed up reading /proc/vmcore in the kdump
+> kernel. See commit message of 997c136f518c ("fs/proc/vmcore.c: add hook
+> to read_from_oldmem() to check for non-ram pages") for details.
+> 
+> It makes use of a new hvmop HVMOP_get_mem_type which was introduced in
+> xen 4.2 (23298:26413986e6e0) and backported to 4.1.1.
+> 
+> The new function is currently only enabled for reading /proc/vmcore.
+> Later it will be used also for the kexec kernel. Since that requires
+> more changes in the generic kernel make it static for the time being.
+> 
+> Signed-off-by: Olaf Hering <olaf@aepfle.de>
+> ---
+>  arch/x86/xen/mmu.c                 |   41 ++++++++++++++++++++++++++++++++++++
+>  include/xen/interface/hvm/hvm_op.h |   20 ++++++++++++++++++
+>  2 Dateien geändert, 61 Zeilen hinzugefügt(+)
+> 
+> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+> index 3a73785..54de84d 100644
+> --- a/arch/x86/xen/mmu.c
+> +++ b/arch/x86/xen/mmu.c
+> @@ -47,6 +47,7 @@
+>  #include <linux/gfp.h>
+>  #include <linux/memblock.h>
+>  #include <linux/seq_file.h>
+> +#include <linux/crash_dump.h>
+>  
+>  #include <trace/events/xen.h>
+>  
+> @@ -2245,6 +2246,43 @@ void xen_destroy_contiguous_region(unsigned long vstart, unsigned int order)
+>  EXPORT_SYMBOL_GPL(xen_destroy_contiguous_region);
+>  
+>  #ifdef CONFIG_XEN_PVHVM
+> +#ifdef CONFIG_PROC_VMCORE
+> +/*
+> + * This function is used in two contexts:
+> + * - the kdump kernel has to check whether a pfn of the crashed kernel
+> + *   was a ballooned page. vmcore is using this function to decide
+> + *   whether to access a pfn of the crashed kernel.
+> + * - the kexec kernel has to check whether a pfn was ballooned by the
+> + *   previous kernel. If the pfn is ballooned, handle it properly.
+> + * Returns 0 if the pfn is not backed by a RAM page, the caller may
+> + * handle the pfn special in this case.
+> + */
+> +static int xen_oldmem_pfn_is_ram(unsigned long pfn)
+> +{
+> +	struct xen_hvm_get_mem_type a = {
+> +		.domid = DOMID_SELF,
+> +		.pfn = pfn,
+> +	};
+> +	int ram;
+> +
+> +	if (HYPERVISOR_hvm_op(HVMOP_get_mem_type, &a))
+> +		return -ENXIO;
+> +
+> +	switch (a.mem_type) {
+> +		case HVMMEM_mmio_dm:
+> +			ram = 0;
+> +			break;
+> +		case HVMMEM_ram_rw:
+> +		case HVMMEM_ram_ro:
+> +		default:
+> +			ram = 1;
+> +			break;
+> +	}
+> +
+> +	return ram;
+> +}
+> +#endif
+> +
+>  static void xen_hvm_exit_mmap(struct mm_struct *mm)
+>  {
+>  	struct xen_hvm_pagetable_dying a;
+> @@ -2275,6 +2313,9 @@ void __init xen_hvm_init_mmu_ops(void)
+>  {
+>  	if (is_pagetable_dying_supported())
+>  		pv_mmu_ops.exit_mmap = xen_hvm_exit_mmap;
+> +#ifdef CONFIG_PROC_VMCORE
+> +	register_oldmem_pfn_is_ram(&xen_oldmem_pfn_is_ram);
+> +#endif
+>  }
+>  #endif
+>  
+> diff --git a/include/xen/interface/hvm/hvm_op.h b/include/xen/interface/hvm/hvm_op.h
+> index a4827f4..0816ae4 100644
+> --- a/include/xen/interface/hvm/hvm_op.h
+> +++ b/include/xen/interface/hvm/hvm_op.h
+> @@ -43,4 +43,24 @@ struct xen_hvm_pagetable_dying {
+>  typedef struct xen_hvm_pagetable_dying xen_hvm_pagetable_dying_t;
+>  DEFINE_GUEST_HANDLE_STRUCT(xen_hvm_pagetable_dying_t);
+>   
+> +typedef enum {
+> +    HVMMEM_ram_rw,             /* Normal read/write guest RAM */
+> +    HVMMEM_ram_ro,             /* Read-only; writes are discarded */
+> +    HVMMEM_mmio_dm,            /* Reads and write go to the device model */
+> +} hvmmem_type_t;
 
-Thanks,
-Sheng
+Does this have to be a typdef?
 
-On Thu, Jul 12, 2012 at 3:50 AM, Avi Kivity <avi@redhat.com> wrote:
-> On 07/12/2012 02:54 AM, sheng qiu wrote:
->> Hi all,
->>
->> i saw lots of APIC_TMICT exits while running a linux guest with
->> assigned NIC. The APIC_TMICT exits is only a little fewer than the
->> number of injected interrupts while handling network traffic on the
->> assigned NIC.
->> The network traffic was generated by running netperf on another
->> machine targeted at the VM.
->>
->> Is this normal? if not, what kind of problem may cause it?
->
-> I'm guessing the driver sets a timer on every interrupt.
->
-> What is the value written?  If it's large, perhaps we can set some slack
-> on the timer so it's not re-set every time.
->
->
-> --
-> error compiling committee.c: too many arguments to function
->
->
+> +
+> +#define HVMOP_get_mem_type    15
+> +/* Return hvmmem_type_t for the specified pfn. */
+> +struct xen_hvm_get_mem_type {
+> +    /* Domain to be queried. */
+> +    domid_t domid;
+> +    /* OUT variable. */
+> +    uint16_t mem_type;
+> +    uint16_t pad[2]; /* align next field on 8-byte boundary */
+> +    /* IN variable. */
+> +    uint64_t pfn;
+> +};
+> +typedef struct xen_hvm_get_mem_type xen_hvm_get_mem_type_t;
+
+Please no typdefs. I can fix this up, but in the future pls don't add
+more of them.
 
 
-
--- 
-Sheng Qiu
-Texas A & M University
-Room 332B Wisenbaker
-email: herbert1984106@gmail.com
-College Station, TX 77843-3259
+> +DEFINE_GUEST_HANDLE_STRUCT(xen_hvm_get_mem_type_t);
+> +
+>  #endif /* __XEN_PUBLIC_HVM_HVM_OP_H__ */
+> -- 
+> 1.7.10.4
+> 
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
