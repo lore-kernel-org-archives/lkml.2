@@ -1,58 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161537Ab2GLSPa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 14:15:30 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:60192 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932690Ab2GLSP3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 14:15:29 -0400
-Date: Thu, 12 Jul 2012 19:19:03 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Cc: Richard Fontana <fontana2012@gmail.com>, "Bradley M. Kuhn" <bkuhn@ebb.org>,
-        tytso@mit.edu, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 5/6] copyleft-next: remove section 7 -
- anti-tivoization
-Message-ID: <20120712191903.3fba11aa@pyramind.ukuu.org.uk>
-In-Reply-To: <1342115325-9443-6-git-send-email-mcgrof@do-not-panic.com>
-References: <1342115325-9443-1-git-send-email-mcgrof@do-not-panic.com>
-	<1342115325-9443-6-git-send-email-mcgrof@do-not-panic.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	id S1161566Ab2GLSPn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 14:15:43 -0400
+Received: from mga14.intel.com ([143.182.124.37]:27850 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932690Ab2GLSPk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 14:15:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="121685418"
+Message-ID: <1342116938.1783.57.camel@jtkirshe-mobl>
+Subject: Re: [trivial PATCH 2/7] ixgbe: remove unused #define
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Reply-To: jeffrey.t.kirsher@intel.com
+To: Jon Mason <jdmason@kudzu.us>
+Cc: trivial@kernel.org, linux-kernel@vger.kernel.org,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        John Ronciak <john.ronciak@intel.com>, netdev <netdev@vger.kernel.org>
+Date: Thu, 12 Jul 2012 11:15:38 -0700
+In-Reply-To: <1341960208.3336.43.camel@jtkirshe-mobl>
+References: <1341959492-31389-1-git-send-email-jdmason@kudzu.us>
+	 <1341959492-31389-2-git-send-email-jdmason@kudzu.us>
+	 <1341960208.3336.43.camel@jtkirshe-mobl>
+Organization: Intel Corporation
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-WmKfEnkVjb2fYf4OVnMI"
+X-Mailer: Evolution 3.4.3 (3.4.3-1.fc17) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Jul 2012 10:48:44 -0700
-"Luis R. Rodriguez" <mcgrof@do-not-panic.com> wrote:
 
-> From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-> 
-> The anti-tivoization clauses must go if we want this license
-> to be ever considered for usage with the Linux kernel.
-> This patch removes that entire section.
+--=-WmKfEnkVjb2fYf4OVnMI
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-The kernel license won't be changing anyway. It's too big a task to
-figure out. Plus if you want to change license and the new license
-doesn't contain protection against DRM abusers then I for one will be
-withholding my permission to change it until one is added, because the
-existing GPLv2 protection while unclear is there and remains to be
-litigated.
+On Tue, 2012-07-10 at 15:43 -0700, Jeff Kirsher wrote:
+> On Tue, 2012-07-10 at 15:31 -0700, Jon Mason wrote:
+> > Remove unused IXGBE_INTEL_VENDOR_ID #define
+> >=20
+> > Signed-off-by: Jon Mason <jdmason@kudzu.us>
+> > Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+> > Cc: Jesse Brandeburg <jesse.brandeburg@intel.com>
+> > Cc: Bruce Allan <bruce.w.allan@intel.com>
+> > Cc: Carolyn Wyborny <carolyn.wyborny@intel.com>
+> > Cc: Don Skidmore <donald.c.skidmore@intel.com>
+> > Cc: Greg Rose <gregory.v.rose@intel.com>
+> > Cc: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+> > Cc: Alex Duyck <alexander.h.duyck@intel.com>
+> > Cc: John Ronciak <john.ronciak@intel.com>
+> > ---
+> >  drivers/net/ethernet/intel/ixgbe/ixgbe_type.h |    3 ---
+> >  1 file changed, 3 deletions(-)
+>=20
+> This should also go through David Miller's networking tree's.  Adding
+> netdev mailing list.
+>=20
+> Acked-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 
-Given there are people who hold the reverse true your lock detector
-should have spewed ...
+After looking at this further, I rescind my ACK.
+
+NAK, this define is used in several places in ixgbe_main.c and the
+driver will not compile with this patch.
+
+>=20
+> >=20
+> > diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h b/drivers/ne=
+t/ethernet/intel/ixgbe/ixgbe_type.h
+> > index 204848d..c8d8040 100644
+> > --- a/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h
+> > +++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h
+> > @@ -32,9 +32,6 @@
+> >  #include <linux/mdio.h>
+> >  #include <linux/netdevice.h>
+> > =20
+> > -/* Vendor ID */
+> > -#define IXGBE_INTEL_VENDOR_ID   0x8086
+> > -
+> >  /* Device IDs */
+> >  #define IXGBE_DEV_ID_82598               0x10B6
+> >  #define IXGBE_DEV_ID_82598_BX            0x1508
+>=20
+>=20
 
 
-There are much more important things a GPL-next needs because of its use
-beyond software - protection against "design right" and "design patent"
-abuses. Without that the current habit of using the GPL for 3D print
-designs is potentially going to end in tears.
+--=-WmKfEnkVjb2fYf4OVnMI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-The way to allow DRM abuse is to have a "lesser" license which allows
-abuse, just as with lesser licenses for linking.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Alan
+iQIcBAABCgAGBQJP/xRKAAoJEOVv75VaS+3OXD4P/2+CREWgOn/B6f8nhE5iPfpN
++GVG0mt2p5Fa+vRA8h+MaoviBEp7LQKYExC35iyqiuaguevdvkJWv9oZS3vhozhi
+8GJ4SedxwTO+A4mcoWDoCPhUHYoIfcZXl+f3EmSnLD/u8T+l2oBfnI4fTAQA8+Sh
+VhixDsQsEYl0KYqOlA17qCy1V5WTOCZCDA6y4pcXbM0z97DepUTpxAPBZUax1b8C
+F3UKMulcUQz9foixt6puPejvJPvfuBJEX6UCW1kg/d3lEFT//9XTjLzUViPbT7pf
+9y17COLPyMg6I2s2gkCpvMScs+uy9BfRV+IuRWO5JSJch1EIPiiHeZ+nDHCecotj
+FmFx8OBUjS87C7dJxVLAsgr8HzO+2CgDY2xGRVXIBNMegRK8P1vctzxDsADJeWCV
+n3yXTAVuQOLOXBBrEJAC8rsfUo2qevC+85LO424hf1rtWj6wikIuYp7vPTrrm8xU
+zOOloSOKbklFeOhnjwxSXaQ3pKVU09YpnyAfvXntHeDJYCpqyq4EPKmNmjD7YTaL
+u9oEIs+EJpO9AtgY6U6OPRSojTxwaeP5KTsL/WGAo7bDdxU9+ugVZnsJIiepvsq/
+u7kZnaLfgJer4RNqIAMzY4eU+xj0ZFWRQ2aeTYyT+NnDuZTBCFNeC6JI836aguoB
+TeN0fKqpSQex+MxVKXh1
+=ZJ2X
+-----END PGP SIGNATURE-----
+
+--=-WmKfEnkVjb2fYf4OVnMI--
+
