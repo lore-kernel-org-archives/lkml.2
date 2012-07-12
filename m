@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161952Ab2GLXar (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:30:47 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:63475 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161814Ab2GLWlH (ORCPT
+	id S1161911Ab2GLXap (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:30:45 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54985 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161828Ab2GLWlK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:41:07 -0400
+	Thu, 12 Jul 2012 18:41:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Craig Shelley <craig@microtron.org.uk>
-Subject: [ 097/187] USB: CP210x Add 10 Device IDs
-Date: Thu, 12 Jul 2012 15:34:13 -0700
-Message-Id: <20120712191531.402721325@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>,
+        Hans de Goede <hdegoede@redhat.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Matthew Dharm <mdharm-usb@one-eyed-alien.net>
+Subject: [ 098/187] SCSI & usb-storage: add try_rc_10_first flag
+Date: Thu, 12 Jul 2012 15:34:14 -0700
+Message-Id: <20120712191531.491468837@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -30,58 +33,80 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Craig Shelley <craig@microtron.org.uk>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 3fcc8f96829776cf181918461923d1e3bbb831a2 upstream.
+commit 6a0bdffa0073857870a4ed1b4489762146359eb4 upstream.
 
-This patch adds 10 device IDs for CP210x based devices from the following manufacturers:
-Timewave
-Clipsal
-Festo
-Link Instruments
+Several bug reports have been received recently for USB mass-storage
+devices that don't handle READ CAPACITY(16) commands properly.  They
+report bogus sizes, in some cases becoming unusable as a result.
 
-Signed-off-by: Craig Shelley <craig@microtron.org.uk>
+The bugs were triggered by commit
+09b6b51b0b6c1b9bb61815baf205e4d74c89ff04 (SCSI & usb-storage: add
+flags for VPD pages and REPORT LUNS), which caused usb-storage to stop
+overriding the SCSI level reported by devices.  By default, the sd
+driver will try READ CAPACITY(16) first for any device whose level is
+above SCSI_SPC_2.
+
+It seems likely that any device large enough to require the use of
+READ CAPACITY(16) (i.e., 2 TB or more) would be able to handle READ
+CAPACITY(10) commands properly.  Indeed, I don't know of any devices
+that don't handle READ CAPACITY(10) properly.
+
+Therefore this patch (as1559) adds a new flag telling the sd driver
+to try READ CAPACITY(10) before READ CAPACITY(16), and sets this flag
+for every USB mass-storage device.  If a device really is larger than
+2 TB, sd will fall back to READ CAPACITY(16) just as it used to.
+
+This fixes Bugzilla #43391.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Acked-by: Hans de Goede <hdegoede@redhat.com>
+CC: "James E.J. Bottomley" <JBottomley@parallels.com>
+CC: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/cp210x.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ drivers/scsi/sd.c              |    2 ++
+ drivers/usb/storage/scsiglue.c |    6 ++++++
+ include/scsi/scsi_device.h     |    1 +
+ 3 files changed, 9 insertions(+)
 
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -93,6 +93,7 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(0x10C4, 0x814B) }, /* West Mountain Radio RIGtalk */
- 	{ USB_DEVICE(0x10C4, 0x8156) }, /* B&G H3000 link cable */
- 	{ USB_DEVICE(0x10C4, 0x815E) }, /* Helicomm IP-Link 1220-DVM */
-+	{ USB_DEVICE(0x10C4, 0x815F) }, /* Timewave HamLinkUSB */
- 	{ USB_DEVICE(0x10C4, 0x818B) }, /* AVIT Research USB to TTL */
- 	{ USB_DEVICE(0x10C4, 0x819F) }, /* MJS USB Toslink Switcher */
- 	{ USB_DEVICE(0x10C4, 0x81A6) }, /* ThinkOptics WavIt */
-@@ -134,7 +135,13 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(0x10CE, 0xEA6A) }, /* Silicon Labs MobiData GPRS USB Modem 100EU */
- 	{ USB_DEVICE(0x13AD, 0x9999) }, /* Baltech card reader */
- 	{ USB_DEVICE(0x1555, 0x0004) }, /* Owen AC4 USB-RS485 Converter */
-+	{ USB_DEVICE(0x166A, 0x0201) }, /* Clipsal 5500PACA C-Bus Pascal Automation Controller */
-+	{ USB_DEVICE(0x166A, 0x0301) }, /* Clipsal 5800PC C-Bus Wireless PC Interface */
- 	{ USB_DEVICE(0x166A, 0x0303) }, /* Clipsal 5500PCU C-Bus USB interface */
-+	{ USB_DEVICE(0x166A, 0x0304) }, /* Clipsal 5000CT2 C-Bus Black and White Touchscreen */
-+	{ USB_DEVICE(0x166A, 0x0305) }, /* Clipsal C-5000CT2 C-Bus Spectrum Colour Touchscreen */
-+	{ USB_DEVICE(0x166A, 0x0401) }, /* Clipsal L51xx C-Bus Architectural Dimmer */
-+	{ USB_DEVICE(0x166A, 0x0101) }, /* Clipsal 5560884 C-Bus Multi-room Audio Matrix Switcher */
- 	{ USB_DEVICE(0x16D6, 0x0001) }, /* Jablotron serial interface */
- 	{ USB_DEVICE(0x16DC, 0x0010) }, /* W-IE-NE-R Plein & Baus GmbH PL512 Power Supply */
- 	{ USB_DEVICE(0x16DC, 0x0011) }, /* W-IE-NE-R Plein & Baus GmbH RCM Remote Control for MARATON Power Supply */
-@@ -146,7 +153,11 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(0x1843, 0x0200) }, /* Vaisala USB Instrument Cable */
- 	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
- 	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
-+	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
-+	{ USB_DEVICE(0x1E29, 0x0501) }, /* Festo CMSP */
- 	{ USB_DEVICE(0x3195, 0xF190) }, /* Link Instruments MSO-19 */
-+	{ USB_DEVICE(0x3195, 0xF280) }, /* Link Instruments MSO-28 */
-+	{ USB_DEVICE(0x3195, 0xF281) }, /* Link Instruments MSO-28 */
- 	{ USB_DEVICE(0x413C, 0x9500) }, /* DW700 GPS USB interface */
- 	{ } /* Terminating Entry */
- };
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -1898,6 +1898,8 @@ static int sd_try_rc16_first(struct scsi
+ {
+ 	if (sdp->host->max_cmd_len < 16)
+ 		return 0;
++	if (sdp->try_rc_10_first)
++		return 0;
+ 	if (sdp->scsi_level > SCSI_SPC_2)
+ 		return 1;
+ 	if (scsi_device_protection(sdp))
+--- a/drivers/usb/storage/scsiglue.c
++++ b/drivers/usb/storage/scsiglue.c
+@@ -202,6 +202,12 @@ static int slave_configure(struct scsi_d
+ 		if (us->fflags & US_FL_NO_READ_CAPACITY_16)
+ 			sdev->no_read_capacity_16 = 1;
+ 
++		/*
++		 * Many devices do not respond properly to READ_CAPACITY_16.
++		 * Tell the SCSI layer to try READ_CAPACITY_10 first.
++		 */
++		sdev->try_rc_10_first = 1;
++
+ 		/* assume SPC3 or latter devices support sense size > 18 */
+ 		if (sdev->scsi_level > SCSI_SPC_2)
+ 			us->fflags |= US_FL_SANE_SENSE;
+--- a/include/scsi/scsi_device.h
++++ b/include/scsi/scsi_device.h
+@@ -151,6 +151,7 @@ struct scsi_device {
+ 					   SD_LAST_BUGGY_SECTORS */
+ 	unsigned no_read_disc_info:1;	/* Avoid READ_DISC_INFO cmds */
+ 	unsigned no_read_capacity_16:1; /* Avoid READ_CAPACITY_16 cmds */
++	unsigned try_rc_10_first:1;	/* Try READ_CAPACACITY_10 first */
+ 	unsigned is_visible:1;	/* is the device visible in sysfs */
+ 
+ 	DECLARE_BITMAP(supported_events, SDEV_EVT_MAXBITS); /* supported events */
 
 
