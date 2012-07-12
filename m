@@ -1,37 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162478Ab2GLW6N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:58:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45118 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162107Ab2GLW6J (ORCPT
+	id S1162323Ab2GLW5n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:57:43 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:46727 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162067Ab2GLWnl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:58:09 -0400
-Date: Thu, 12 Jul 2012 15:58:08 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, Evgeniy Dushistov <dushistov@mail.ru>,
-        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] fs/ufs: stop using write_supers and s_dirt
-Message-Id: <20120712155808.807ec3f5.akpm@linux-foundation.org>
-In-Reply-To: <1342099688-14894-1-git-send-email-dedekind1@gmail.com>
-References: <1342099688-14894-1-git-send-email-dedekind1@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 12 Jul 2012 18:43:41 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Gavin Shan <shangw@linux.vnet.ibm.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: [ 140/187] mm/memblock: fix memory leak on extending regions
+Date: Thu, 12 Jul 2012 15:34:56 -0700
+Message-Id: <20120712191535.377307899@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
+References: <20120712192421.GA28926@kroah.com>
+ <20120712191522.742634173@linuxfoundation.org>
+User-Agent: quilt/0.60-20.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Jul 2012 16:28:05 +0300
-Artem Bityutskiy <dedekind1@gmail.com> wrote:
+From: Greg KH <gregkh@linuxfoundation.org>
 
-> Note, checkpatch.pl complains about these patches, but the complaints are about
-> the code which is already in UFS, not my code. We really need to fix
-> checkpatch.pl to be smarter.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Just fix them up as you go - the code is already a mixture of "right"
-and "wrong" (a consequence of a lot of it being "wrong") - we might as
-well tip it further in the "right" direction.
+------------------
+
+From: Gavin Shan <shangw@linux.vnet.ibm.com>
+
+commit 181eb39425f2b9275afcb015eaa547d11f71a02f upstream.
+
+The overall memblock has been organized into the memory regions and
+reserved regions.  Initially, the memory regions and reserved regions are
+stored in the predetermined arrays of "struct memblock _region".  It's
+possible for the arrays to be enlarged when we have newly added regions,
+but no free space left there.  The policy here is to create double-sized
+array either by slab allocator or memblock allocator.  Unfortunately, we
+didn't free the old array, which might be allocated through slab allocator
+before.  That would cause memory leak.
+
+The patch introduces 2 variables to trace where (slab or memblock) the
+memory and reserved regions come from.  The memory for the memory or
+reserved regions will be deallocated by kfree() if that was allocated by
+slab allocator.  Thus to fix the memory leak issue.
+
+Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ mm/memblock.c |   37 ++++++++++++++++++++++++-------------
+ 1 file changed, 24 insertions(+), 13 deletions(-)
+
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -37,6 +37,8 @@ struct memblock memblock __initdata_memb
+ 
+ int memblock_debug __initdata_memblock;
+ static int memblock_can_resize __initdata_memblock;
++static int memblock_memory_in_slab __initdata_memblock = 0;
++static int memblock_reserved_in_slab __initdata_memblock = 0;
+ 
+ /* inline so we don't get a warning when pr_debug is compiled out */
+ static inline const char *memblock_type_name(struct memblock_type *type)
+@@ -187,6 +189,7 @@ static int __init_memblock memblock_doub
+ 	struct memblock_region *new_array, *old_array;
+ 	phys_addr_t old_size, new_size, addr;
+ 	int use_slab = slab_is_available();
++	int *in_slab;
+ 
+ 	/* We don't allow resizing until we know about the reserved regions
+ 	 * of memory that aren't suitable for allocation
+@@ -198,6 +201,12 @@ static int __init_memblock memblock_doub
+ 	old_size = type->max * sizeof(struct memblock_region);
+ 	new_size = old_size << 1;
+ 
++	/* Retrieve the slab flag */
++	if (type == &memblock.memory)
++		in_slab = &memblock_memory_in_slab;
++	else
++		in_slab = &memblock_reserved_in_slab;
++
+ 	/* Try to find some space for it.
+ 	 *
+ 	 * WARNING: We assume that either slab_is_available() and we use it or
+@@ -235,22 +244,24 @@ static int __init_memblock memblock_doub
+ 	type->regions = new_array;
+ 	type->max <<= 1;
+ 
+-	/* If we use SLAB that's it, we are done */
+-	if (use_slab)
+-		return 0;
+-
+-	/* Add the new reserved region now. Should not fail ! */
+-	BUG_ON(memblock_reserve(addr, new_size));
+-
+-	/* If the array wasn't our static init one, then free it. We only do
+-	 * that before SLAB is available as later on, we don't know whether
+-	 * to use kfree or free_bootmem_pages(). Shouldn't be a big deal
+-	 * anyways
++	/* Free old array. We needn't free it if the array is the
++	 * static one
+ 	 */
+-	if (old_array != memblock_memory_init_regions &&
+-	    old_array != memblock_reserved_init_regions)
++	if (*in_slab)
++		kfree(old_array);
++	else if (old_array != memblock_memory_init_regions &&
++		 old_array != memblock_reserved_init_regions)
+ 		memblock_free(__pa(old_array), old_size);
+ 
++	/* Reserve the new array if that comes from the memblock.
++	 * Otherwise, we needn't do it
++	 */
++	if (!use_slab)
++		BUG_ON(memblock_reserve(addr, new_size));
++
++	/* Update slab flag */
++	*in_slab = use_slab;
++
+ 	return 0;
+ }
+ 
+
+
