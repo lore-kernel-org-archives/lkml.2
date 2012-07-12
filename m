@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162794Ab2GLXFa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:05:30 -0400
+	id S1162803Ab2GLXMR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:12:17 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:63192 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162759Ab2GLXFV (ORCPT
+	with ESMTP id S1162786Ab2GLXF1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 19:05:21 -0400
+	Thu, 12 Jul 2012 19:05:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Tyler Hicks <tyhicks@canonical.com>,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: [ 45/68] eCryptfs: Gracefully refuse miscdev file ops on inherited/passed files
-Date: Thu, 12 Jul 2012 16:02:19 -0700
-Message-Id: <20120712175039.425349073@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>
+Subject: [ 47/68] eCryptfs: Properly check for O_RDONLY flag before doing privileged open
+Date: Thu, 12 Jul 2012 16:02:21 -0700
+Message-Id: <20120712175039.602715483@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712175035.530652872@linuxfoundation.org>
 References: <20120712175057.GA9917@kroah.com>
@@ -33,93 +33,40 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 From: Tyler Hicks <tyhicks@canonical.com>
 
-commit 8dc6780587c99286c0d3de747a2946a76989414a upstream.
+commit 9fe79d7600497ed8a95c3981cbe5b73ab98222f0 upstream.
 
-File operations on /dev/ecryptfs would BUG() when the operations were
-performed by processes other than the process that originally opened the
-file. This could happen with open files inherited after fork() or file
-descriptors passed through IPC mechanisms. Rather than calling BUG(), an
-error code can be safely returned in most situations.
+If the first attempt at opening the lower file read/write fails,
+eCryptfs will retry using a privileged kthread. However, the privileged
+retry should not happen if the lower file's inode is read-only because a
+read/write open will still be unsuccessful.
 
-In ecryptfs_miscdev_release(), eCryptfs still needs to handle the
-release even if the last file reference is being held by a process that
-didn't originally open the file. ecryptfs_find_daemon_by_euid() will not
-be successful, so a pointer to the daemon is stored in the file's
-private_data. The private_data pointer is initialized when the miscdev
-file is opened and only used when the file is released.
-
-https://launchpad.net/bugs/994247
+The check for determining if the open should be retried was intended to
+be based on the access mode of the lower file's open flags being
+O_RDONLY, but the check was incorrectly performed. This would cause the
+open to be retried by the privileged kthread, resulting in a second
+failed open of the lower file. This patch corrects the check to
+determine if the open request should be handled by the privileged
+kthread.
 
 Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
-Reported-by: Sasha Levin <levinsasha928@gmail.com>
-Tested-by: Sasha Levin <levinsasha928@gmail.com>
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ecryptfs/miscdev.c |   23 ++++++++++++++++-------
- 1 file changed, 16 insertions(+), 7 deletions(-)
+ fs/ecryptfs/kthread.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/ecryptfs/miscdev.c
-+++ b/fs/ecryptfs/miscdev.c
-@@ -49,7 +49,10 @@ ecryptfs_miscdev_poll(struct file *file,
- 	mutex_lock(&ecryptfs_daemon_hash_mux);
- 	/* TODO: Just use file->private_data? */
- 	rc = ecryptfs_find_daemon_by_euid(&daemon, euid, current_user_ns());
--	BUG_ON(rc || !daemon);
-+	if (rc || !daemon) {
-+		mutex_unlock(&ecryptfs_daemon_hash_mux);
-+		return -EINVAL;
-+	}
- 	mutex_lock(&daemon->mux);
- 	mutex_unlock(&ecryptfs_daemon_hash_mux);
- 	if (daemon->flags & ECRYPTFS_DAEMON_ZOMBIE) {
-@@ -122,6 +125,7 @@ ecryptfs_miscdev_open(struct inode *inod
- 		goto out_unlock_daemon;
+--- a/fs/ecryptfs/kthread.c
++++ b/fs/ecryptfs/kthread.c
+@@ -149,7 +149,7 @@ int ecryptfs_privileged_open(struct file
+ 	(*lower_file) = dentry_open(lower_dentry, lower_mnt, flags, cred);
+ 	if (!IS_ERR(*lower_file))
+ 		goto out;
+-	if (flags & O_RDONLY) {
++	if ((flags & O_ACCMODE) == O_RDONLY) {
+ 		rc = PTR_ERR((*lower_file));
+ 		goto out;
  	}
- 	daemon->flags |= ECRYPTFS_DAEMON_MISCDEV_OPEN;
-+	file->private_data = daemon;
- 	atomic_inc(&ecryptfs_num_miscdev_opens);
- out_unlock_daemon:
- 	mutex_unlock(&daemon->mux);
-@@ -152,9 +156,9 @@ ecryptfs_miscdev_release(struct inode *i
- 
- 	mutex_lock(&ecryptfs_daemon_hash_mux);
- 	rc = ecryptfs_find_daemon_by_euid(&daemon, euid, current_user_ns());
--	BUG_ON(rc || !daemon);
-+	if (rc || !daemon)
-+		daemon = file->private_data;
- 	mutex_lock(&daemon->mux);
--	BUG_ON(daemon->pid != task_pid(current));
- 	BUG_ON(!(daemon->flags & ECRYPTFS_DAEMON_MISCDEV_OPEN));
- 	daemon->flags &= ~ECRYPTFS_DAEMON_MISCDEV_OPEN;
- 	atomic_dec(&ecryptfs_num_miscdev_opens);
-@@ -246,8 +250,16 @@ ecryptfs_miscdev_read(struct file *file,
- 	mutex_lock(&ecryptfs_daemon_hash_mux);
- 	/* TODO: Just use file->private_data? */
- 	rc = ecryptfs_find_daemon_by_euid(&daemon, euid, current_user_ns());
--	BUG_ON(rc || !daemon);
-+	if (rc || !daemon) {
-+		mutex_unlock(&ecryptfs_daemon_hash_mux);
-+		return -EINVAL;
-+	}
- 	mutex_lock(&daemon->mux);
-+	if (task_pid(current) != daemon->pid) {
-+		mutex_unlock(&daemon->mux);
-+		mutex_unlock(&ecryptfs_daemon_hash_mux);
-+		return -EPERM;
-+	}
- 	if (daemon->flags & ECRYPTFS_DAEMON_ZOMBIE) {
- 		rc = 0;
- 		mutex_unlock(&ecryptfs_daemon_hash_mux);
-@@ -284,9 +296,6 @@ check_list:
- 		 * message from the queue; try again */
- 		goto check_list;
- 	}
--	BUG_ON(euid != daemon->euid);
--	BUG_ON(current_user_ns() != daemon->user_ns);
--	BUG_ON(task_pid(current) != daemon->pid);
- 	msg_ctx = list_first_entry(&daemon->msg_ctx_out_queue,
- 				   struct ecryptfs_msg_ctx, daemon_out_list);
- 	BUG_ON(!msg_ctx);
 
 
