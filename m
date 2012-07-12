@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161812Ab2GLXeD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:34:03 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:50446 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161790Ab2GLWkT (ORCPT
+	id S1758261Ab2GLXdp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:33:45 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54985 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161792Ab2GLWkW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:40:19 -0400
+	Thu, 12 Jul 2012 18:40:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Andrew Lunn <andrew@lunn.ch>, Olof Johansson <olof@lixom.net>
-Subject: [ 083/187] ARM: Orion: Fix Virtual/Physical mixup with watchdog
-Date: Thu, 12 Jul 2012 15:33:59 -0700
-Message-Id: <20120712191530.107447221@linuxfoundation.org>
+        Nicolas Pitre <nico@fluxnic.net>, Andrew Lunn <andrew@lunn.ch>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [ 084/187] ARM: Orion: Fix WDT compile for Dove and MV78xx0
+Date: Thu, 12 Jul 2012 15:34:00 -0700
+Message-Id: <20120712191530.189518440@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -32,79 +33,71 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 From: Andrew Lunn <andrew@lunn.ch>
 
-commit 0fa1f0609a0c1fe8b2be3c0089a2cb48f7fda521 upstream.
+commit 1e0c1ce00d83834d03f4d8d039734ca4703298df upstream.
 
-The orion watchdog is expecting to be passed the physcial address of
-the hardware, and will ioremap() it to give a virtual address it will
-use as the base address for the hardware. However, when creating the
-platform resource record, a virtual address was being used.
+Commit 0fa1f0609a0c1fe8b2be3c0089a2cb48f7fda521 (ARM: Orion: Fix
+Virtual/Physical mixup with watchdog) broke the Dove & MV78xx0
+build. Although these two SoC don't use the watchdog, the shared
+platform code still needs to build. Add the necessary defines.
 
-Add the necassary #define's so we can pass the physical address as
-expected.
-
-Tested on Kirkwood and Orion5x.
-
+Reported-by: Nicolas Pitre <nico@fluxnic.net>
 Signed-off-by: Andrew Lunn <andrew@lunn.ch>
-Signed-off-by: Olof Johansson <olof@lixom.net>
+Tested-by: Nicolas Pitre <nico@fluxnic.net>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-kirkwood/include/mach/bridge-regs.h |    1 +
- arch/arm/mach-kirkwood/include/mach/kirkwood.h    |    1 +
- arch/arm/mach-orion5x/include/mach/bridge-regs.h  |    2 +-
- arch/arm/mach-orion5x/include/mach/orion5x.h      |    1 +
- arch/arm/plat-orion/common.c                      |    2 +-
- 5 files changed, 5 insertions(+), 2 deletions(-)
+ arch/arm/mach-dove/include/mach/bridge-regs.h    |    1 +
+ arch/arm/mach-dove/include/mach/dove.h           |    1 +
+ arch/arm/mach-mv78xx0/include/mach/bridge-regs.h |    1 +
+ arch/arm/mach-mv78xx0/include/mach/mv78xx0.h     |    2 ++
+ 4 files changed, 5 insertions(+)
 
---- a/arch/arm/mach-kirkwood/include/mach/bridge-regs.h
-+++ b/arch/arm/mach-kirkwood/include/mach/bridge-regs.h
-@@ -38,6 +38,7 @@
+--- a/arch/arm/mach-dove/include/mach/bridge-regs.h
++++ b/arch/arm/mach-dove/include/mach/bridge-regs.h
+@@ -50,5 +50,6 @@
+ #define POWER_MANAGEMENT	(BRIDGE_VIRT_BASE | 0x011c)
+ 
+ #define TIMER_VIRT_BASE		(BRIDGE_VIRT_BASE | 0x0300)
++#define TIMER_PHYS_BASE         (BRIDGE_PHYS_BASE | 0x0300)
+ 
+ #endif
+--- a/arch/arm/mach-dove/include/mach/dove.h
++++ b/arch/arm/mach-dove/include/mach/dove.h
+@@ -78,6 +78,7 @@
+ 
+ /* North-South Bridge */
+ #define BRIDGE_VIRT_BASE	(DOVE_SB_REGS_VIRT_BASE | 0x20000)
++#define BRIDGE_PHYS_BASE	(DOVE_SB_REGS_PHYS_BASE | 0x20000)
+ 
+ /* Cryptographic Engine */
+ #define DOVE_CRYPT_PHYS_BASE	(DOVE_SB_REGS_PHYS_BASE | 0x30000)
+--- a/arch/arm/mach-mv78xx0/include/mach/bridge-regs.h
++++ b/arch/arm/mach-mv78xx0/include/mach/bridge-regs.h
+@@ -31,5 +31,6 @@
  #define IRQ_MASK_HIGH_OFF	0x0014
  
  #define TIMER_VIRT_BASE		(BRIDGE_VIRT_BASE | 0x0300)
 +#define TIMER_PHYS_BASE		(BRIDGE_PHYS_BASE | 0x0300)
  
- #define L2_CONFIG_REG		(BRIDGE_VIRT_BASE | 0x0128)
- #define L2_WRITETHROUGH		0x00000010
---- a/arch/arm/mach-kirkwood/include/mach/kirkwood.h
-+++ b/arch/arm/mach-kirkwood/include/mach/kirkwood.h
-@@ -80,6 +80,7 @@
- #define  UART1_VIRT_BASE	(DEV_BUS_VIRT_BASE | 0x2100)
- 
- #define BRIDGE_VIRT_BASE	(KIRKWOOD_REGS_VIRT_BASE | 0x20000)
-+#define BRIDGE_PHYS_BASE	(KIRKWOOD_REGS_PHYS_BASE | 0x20000)
- 
- #define CRYPTO_PHYS_BASE	(KIRKWOOD_REGS_PHYS_BASE | 0x30000)
- 
---- a/arch/arm/mach-orion5x/include/mach/bridge-regs.h
-+++ b/arch/arm/mach-orion5x/include/mach/bridge-regs.h
-@@ -35,5 +35,5 @@
- #define MAIN_IRQ_MASK		(ORION5X_BRIDGE_VIRT_BASE | 0x204)
- 
- #define TIMER_VIRT_BASE		(ORION5X_BRIDGE_VIRT_BASE | 0x300)
--
-+#define TIMER_PHYS_BASE		(ORION5X_BRIDGE_PHYS_BASE | 0x300)
  #endif
---- a/arch/arm/mach-orion5x/include/mach/orion5x.h
-+++ b/arch/arm/mach-orion5x/include/mach/orion5x.h
-@@ -82,6 +82,7 @@
- #define  UART1_VIRT_BASE		(ORION5X_DEV_BUS_VIRT_BASE | 0x2100)
+--- a/arch/arm/mach-mv78xx0/include/mach/mv78xx0.h
++++ b/arch/arm/mach-mv78xx0/include/mach/mv78xx0.h
+@@ -42,6 +42,7 @@
+ #define MV78XX0_CORE0_REGS_PHYS_BASE	0xf1020000
+ #define MV78XX0_CORE1_REGS_PHYS_BASE	0xf1024000
+ #define MV78XX0_CORE_REGS_VIRT_BASE	0xfe400000
++#define MV78XX0_CORE_REGS_PHYS_BASE	0xfe400000
+ #define MV78XX0_CORE_REGS_SIZE		SZ_16K
  
- #define ORION5X_BRIDGE_VIRT_BASE	(ORION5X_REGS_VIRT_BASE | 0x20000)
-+#define ORION5X_BRIDGE_PHYS_BASE	(ORION5X_REGS_PHYS_BASE | 0x20000)
+ #define MV78XX0_PCIE_IO_PHYS_BASE(i)	(0xf0800000 + ((i) << 20))
+@@ -59,6 +60,7 @@
+  * Core-specific peripheral registers.
+  */
+ #define BRIDGE_VIRT_BASE	(MV78XX0_CORE_REGS_VIRT_BASE)
++#define BRIDGE_PHYS_BASE	(MV78XX0_CORE_REGS_PHYS_BASE)
  
- #define ORION5X_PCI_VIRT_BASE		(ORION5X_REGS_VIRT_BASE | 0x30000)
- 
---- a/arch/arm/plat-orion/common.c
-+++ b/arch/arm/plat-orion/common.c
-@@ -570,7 +570,7 @@ void __init orion_spi_1_init(unsigned lo
- static struct orion_wdt_platform_data orion_wdt_data;
- 
- static struct resource orion_wdt_resource =
--		DEFINE_RES_MEM(TIMER_VIRT_BASE, 0x28);
-+		DEFINE_RES_MEM(TIMER_PHYS_BASE, 0x28);
- 
- static struct platform_device orion_wdt_device = {
- 	.name		= "orion_wdt",
+ /*
+  * Register Map
 
 
