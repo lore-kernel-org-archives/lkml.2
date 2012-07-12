@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759620Ab2GLWiY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:38:24 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:48634 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759531Ab2GLWiQ (ORCPT
+	id S1759650Ab2GLWig (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:38:36 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:34975 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759550Ab2GLWi0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:38:16 -0400
+	Thu, 12 Jul 2012 18:38:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [ 047/187] hwmon: (applesmc) Limit key length in warning messages
-Date: Thu, 12 Jul 2012 15:33:23 -0700
-Message-Id: <20120712191526.716215496@linuxfoundation.org>
+        Jan Kara <jack@suse.cz>
+Subject: [ 050/187] udf: Use ret instead of abusing i in udf_load_logicalvol()
+Date: Thu, 12 Jul 2012 15:33:26 -0700
+Message-Id: <20120712191526.986033280@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -31,41 +30,32 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Henrik Rydberg <rydberg@euromail.se>
+From: Jan Kara <jack@suse.cz>
 
-commit ac852edb47b15900886ba2564eeeb13b3b526e3e upstream.
+commit cb14d340ef1737c24125dd663eff77734a482d47 upstream.
 
-Key lookups may call read_smc() with a fixed-length key string,
-and if the lookup fails, trailing stack content may appear in the
-kernel log. Fixed with this patch.
-
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/applesmc.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/udf/super.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
---- a/drivers/hwmon/applesmc.c
-+++ b/drivers/hwmon/applesmc.c
-@@ -215,7 +215,7 @@ static int read_smc(u8 cmd, const char *
- 	int i;
+--- a/fs/udf/super.c
++++ b/fs/udf/super.c
+@@ -1233,11 +1233,9 @@ static int udf_load_logicalvol(struct su
+ 	BUG_ON(ident != TAG_IDENT_LVD);
+ 	lvd = (struct logicalVolDesc *)bh->b_data;
  
- 	if (send_command(cmd) || send_argument(key)) {
--		pr_warn("%s: read arg fail\n", key);
-+		pr_warn("%.4s: read arg fail\n", key);
- 		return -EIO;
- 	}
+-	i = udf_sb_alloc_partition_maps(sb, le32_to_cpu(lvd->numPartitionMaps));
+-	if (i != 0) {
+-		ret = i;
++	ret = udf_sb_alloc_partition_maps(sb, le32_to_cpu(lvd->numPartitionMaps));
++	if (ret)
+ 		goto out_bh;
+-	}
  
-@@ -223,7 +223,7 @@ static int read_smc(u8 cmd, const char *
- 
- 	for (i = 0; i < len; i++) {
- 		if (__wait_status(0x05)) {
--			pr_warn("%s: read data fail\n", key);
-+			pr_warn("%.4s: read data fail\n", key);
- 			return -EIO;
- 		}
- 		buffer[i] = inb(APPLESMC_DATA_PORT);
+ 	for (i = 0, offset = 0;
+ 	     i < sbi->s_partitions && offset < le32_to_cpu(lvd->mapTableLength);
 
 
