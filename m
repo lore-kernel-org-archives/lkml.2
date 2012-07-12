@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758757Ab2GLGlP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 02:41:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39968 "EHLO mx2.suse.de"
+	id S1758841Ab2GLGlf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 02:41:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40103 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758680Ab2GLGlK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 02:41:10 -0400
+	id S1758755Ab2GLGlX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 02:41:23 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
@@ -19,141 +19,157 @@ Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
         Eric B Munson <emunson@mgebm.net>,
         Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 00/12] Swap-over-NFS without deadlocking V9
-Date: Thu, 12 Jul 2012 07:40:54 +0100
-Message-Id: <1342075266-29593-1-git-send-email-mgorman@suse.de>
+Subject: [PATCH 09/12] nfs: disable data cache revalidation for swapfiles
+Date: Thu, 12 Jul 2012 07:41:03 +0100
+Message-Id: <1342075266-29593-10-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1342075266-29593-1-git-send-email-mgorman@suse.de>
+References: <1342075266-29593-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changelog since V8
-  o Rebase to linux-next 20120710
+The VM does not like PG_private set on PG_swapcache pages. As suggested
+by Trond in http://lkml.org/lkml/2006/8/25/348, this patch disables
+NFS data cache revalidation on swap files.  as it does not make
+sense to have other clients change the file while it is being used as
+swap. This avoids setting PG_private on swap pages, since there ought
+to be no further races with invalidate_inode_pages2() to deal with.
 
-Changelog since V7
-  o Rebase to linux-next 20120629
-  o bi->page_dma instead of bi->page in intel driver
-  o Build fix for !CONFIG_NET					(sebastian)
-  o Restore PF_MEMALLOC flags correctly in all cases		(jlayton)
+Since we cannot set PG_private we cannot use page->private which
+is already used by PG_swapcache pages to store the nfs_page. Thus
+augment the new nfs_page_find_request logic.
 
-Changelog since V6
-  o Rebase to linux-next 20120622
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Rik van Riel <riel@redhat.com>
+---
+ fs/nfs/inode.c |    4 ++++
+ fs/nfs/write.c |   49 +++++++++++++++++++++++++++++++++++--------------
+ 2 files changed, 39 insertions(+), 14 deletions(-)
 
-Changelog since V5
-  o Rebase to v3.5-rc3
-
-Changelog since V4
-  o Catch if SOCK_MEMALLOC flag is cleared with rmem tokens	(davem)
-
-Changelog since V3
-  o Rebase to 3.4-rc5
-  o kmap pages for writing to swap				(akpm)
-  o Move forward declaration to reduce chance of duplication	(akpm)
-
-Changelog since V2
-  o Nothing significant, just rebases. A radix tree lookup is replaced with
-    a linear search would be the biggest rebase artifact
-
-This patch series is based on top of "Swap-over-NBD without deadlocking v15"
-as it depends on the same reservation of PF_MEMALLOC reserves logic.
-
-When a user or administrator requires swap for their application, they
-create a swap partition and file, format it with mkswap and activate it with
-swapon. In diskless systems this is not an option so if swap if required
-then swapping over the network is considered.  The two likely scenarios
-are when blade servers are used as part of a cluster where the form factor
-or maintenance costs do not allow the use of disks and thin clients.
-
-The Linux Terminal Server Project recommends the use of the Network
-Block Device (NBD) for swap but this is not always an option.  There is
-no guarantee that the network attached storage (NAS) device is running
-Linux or supports NBD. However, it is likely that it supports NFS so there
-are users that want support for swapping over NFS despite any performance
-concern. Some distributions currently carry patches that support swapping
-over NFS but it would be preferable to support it in the mainline kernel.
-
-Patch 1 avoids a stream-specific deadlock that potentially affects TCP.
-
-Patch 2 is a small modification to SELinux to avoid using PFMEMALLOC
-	reserves.
-
-Patch 3 adds three helpers for filesystems to handle swap cache pages.
-	For example, page_file_mapping() returns page->mapping for
-	file-backed pages and the address_space of the underlying
-	swap file for swap cache pages.
-
-Patch 4 adds two address_space_operations to allow a filesystem
-	to pin all metadata relevant to a swapfile in memory. Upon
-	successful activation, the swapfile is marked SWP_FILE and
-	the address space operation ->direct_IO is used for writing
-	and ->readpage for reading in swap pages.
-
-Patch 5 notes that patch 3 is bolting
-	filesystem-specific-swapfile-support onto the side and that
-	the default handlers have different information to what
-	is available to the filesystem. This patch refactors the
-	code so that there are generic handlers for each of the new
-	address_space operations.
-
-Patch 6 adds an API to allow a vector of kernel addresses to be
-	translated to struct pages and pinned for IO.
-
-Patch 7 adds support for using highmem pages for swap by kmapping
-	the pages before calling the direct_IO handler.
-
-Patch 8 updates NFS to use the helpers from patch 3 where necessary.
-
-Patch 9 avoids setting PF_private on PG_swapcache pages within NFS.
-
-Patch 10 implements the new swapfile-related address_space operations
-	for NFS and teaches the direct IO handler how to manage
-	kernel addresses.
-
-Patch 11 prevents page allocator recursions in NFS by using GFP_NOIO
-	where appropriate.
-
-Patch 12 fixes a NULL pointer dereference that occurs when using
-	swap-over-NFS.
-
-With the patches applied, it is possible to mount a swapfile that is on an
-NFS filesystem. Swap performance is not great with a swap stress test taking
-roughly twice as long to complete than if the swap device was backed by NBD.
-
- Documentation/filesystems/Locking |   13 ++++
- Documentation/filesystems/vfs.txt |   12 +++
- fs/nfs/Kconfig                    |    8 ++
- fs/nfs/direct.c                   |   82 ++++++++++++++-------
- fs/nfs/file.c                     |   28 +++++--
- fs/nfs/inode.c                    |    4 +
- fs/nfs/internal.h                 |    7 +-
- fs/nfs/pagelist.c                 |    4 +-
- fs/nfs/read.c                     |    6 +-
- fs/nfs/write.c                    |   89 ++++++++++++++---------
- include/linux/blk_types.h         |    2 +
- include/linux/fs.h                |    8 ++
- include/linux/highmem.h           |    7 ++
- include/linux/mm.h                |   29 ++++++++
- include/linux/nfs_fs.h            |    4 +-
- include/linux/pagemap.h           |    5 ++
- include/linux/sunrpc/xprt.h       |    3 +
- include/linux/swap.h              |    8 ++
- include/net/sock.h                |    8 +-
- mm/highmem.c                      |   12 +++
- mm/memory.c                       |   52 +++++++++++++
- mm/page_io.c                      |  145 +++++++++++++++++++++++++++++++++++++
- mm/swap_state.c                   |    2 +-
- mm/swapfile.c                     |  141 ++++++++++++++----------------------
- net/caif/caif_socket.c            |    2 +-
- net/core/sock.c                   |   14 +++-
- net/ipv4/tcp_input.c              |   21 +++---
- net/sctp/ulpevent.c               |    3 +-
- net/sunrpc/Kconfig                |    5 ++
- net/sunrpc/clnt.c                 |    2 +
- net/sunrpc/sched.c                |    7 +-
- net/sunrpc/xprtsock.c             |   54 ++++++++++++++
- security/selinux/avc.c            |    2 +-
- 33 files changed, 604 insertions(+), 185 deletions(-)
-
+diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
+index 4d02a25..3db1ab7 100644
+--- a/fs/nfs/inode.c
++++ b/fs/nfs/inode.c
+@@ -883,6 +883,10 @@ int nfs_revalidate_mapping(struct inode *inode, struct address_space *mapping)
+ 	struct nfs_inode *nfsi = NFS_I(inode);
+ 	int ret = 0;
+ 
++	/* swapfiles are not supposed to be shared. */
++	if (IS_SWAPFILE(inode))
++		goto out;
++
+ 	if (nfs_mapping_need_revalidate_inode(inode)) {
+ 		ret = __nfs_revalidate_inode(NFS_SERVER(inode), inode);
+ 		if (ret < 0)
+diff --git a/fs/nfs/write.c b/fs/nfs/write.c
+index d0feca3..974e9c2 100644
+--- a/fs/nfs/write.c
++++ b/fs/nfs/write.c
+@@ -139,15 +139,28 @@ static void nfs_context_set_write_error(struct nfs_open_context *ctx, int error)
+ 	set_bit(NFS_CONTEXT_ERROR_WRITE, &ctx->flags);
+ }
+ 
+-static struct nfs_page *nfs_page_find_request_locked(struct page *page)
++static struct nfs_page *
++nfs_page_find_request_locked(struct nfs_inode *nfsi, struct page *page)
+ {
+ 	struct nfs_page *req = NULL;
+ 
+-	if (PagePrivate(page)) {
++	if (PagePrivate(page))
+ 		req = (struct nfs_page *)page_private(page);
+-		if (req != NULL)
+-			kref_get(&req->wb_kref);
++	else if (unlikely(PageSwapCache(page))) {
++		struct nfs_page *freq, *t;
++
++		/* Linearly search the commit list for the correct req */
++		list_for_each_entry_safe(freq, t, &nfsi->commit_info.list, wb_list) {
++			if (freq->wb_page == page) {
++				req = freq;
++				break;
++			}
++		}
+ 	}
++
++	if (req)
++		kref_get(&req->wb_kref);
++
+ 	return req;
+ }
+ 
+@@ -157,7 +170,7 @@ static struct nfs_page *nfs_page_find_request(struct page *page)
+ 	struct nfs_page *req = NULL;
+ 
+ 	spin_lock(&inode->i_lock);
+-	req = nfs_page_find_request_locked(page);
++	req = nfs_page_find_request_locked(NFS_I(inode), page);
+ 	spin_unlock(&inode->i_lock);
+ 	return req;
+ }
+@@ -258,7 +271,7 @@ static struct nfs_page *nfs_find_and_lock_request(struct page *page, bool nonblo
+ 
+ 	spin_lock(&inode->i_lock);
+ 	for (;;) {
+-		req = nfs_page_find_request_locked(page);
++		req = nfs_page_find_request_locked(NFS_I(inode), page);
+ 		if (req == NULL)
+ 			break;
+ 		if (nfs_lock_request(req))
+@@ -413,9 +426,15 @@ static void nfs_inode_add_request(struct inode *inode, struct nfs_page *req)
+ 	spin_lock(&inode->i_lock);
+ 	if (!nfsi->npages && NFS_PROTO(inode)->have_delegation(inode, FMODE_WRITE))
+ 		inode->i_version++;
+-	set_bit(PG_MAPPED, &req->wb_flags);
+-	SetPagePrivate(req->wb_page);
+-	set_page_private(req->wb_page, (unsigned long)req);
++	/*
++	 * Swap-space should not get truncated. Hence no need to plug the race
++	 * with invalidate/truncate.
++	 */
++	if (likely(!PageSwapCache(req->wb_page))) {
++		set_bit(PG_MAPPED, &req->wb_flags);
++		SetPagePrivate(req->wb_page);
++		set_page_private(req->wb_page, (unsigned long)req);
++	}
+ 	nfsi->npages++;
+ 	kref_get(&req->wb_kref);
+ 	spin_unlock(&inode->i_lock);
+@@ -432,9 +451,11 @@ static void nfs_inode_remove_request(struct nfs_page *req)
+ 	BUG_ON (!NFS_WBACK_BUSY(req));
+ 
+ 	spin_lock(&inode->i_lock);
+-	set_page_private(req->wb_page, 0);
+-	ClearPagePrivate(req->wb_page);
+-	clear_bit(PG_MAPPED, &req->wb_flags);
++	if (likely(!PageSwapCache(req->wb_page))) {
++		set_page_private(req->wb_page, 0);
++		ClearPagePrivate(req->wb_page);
++		clear_bit(PG_MAPPED, &req->wb_flags);
++	}
+ 	nfsi->npages--;
+ 	spin_unlock(&inode->i_lock);
+ 	nfs_release_request(req);
+@@ -730,7 +751,7 @@ static struct nfs_page *nfs_try_to_update_request(struct inode *inode,
+ 	spin_lock(&inode->i_lock);
+ 
+ 	for (;;) {
+-		req = nfs_page_find_request_locked(page);
++		req = nfs_page_find_request_locked(NFS_I(inode), page);
+ 		if (req == NULL)
+ 			goto out_unlock;
+ 
+@@ -1744,7 +1765,7 @@ int nfs_wb_page_cancel(struct inode *inode, struct page *page)
+  */
+ int nfs_wb_page(struct inode *inode, struct page *page)
+ {
+-	loff_t range_start = page_offset(page);
++	loff_t range_start = page_file_offset(page);
+ 	loff_t range_end = range_start + (loff_t)(PAGE_CACHE_SIZE - 1);
+ 	struct writeback_control wbc = {
+ 		.sync_mode = WB_SYNC_ALL,
 -- 
 1.7.9.2
 
