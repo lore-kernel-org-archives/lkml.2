@@ -1,209 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758742Ab2GLHuT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 03:50:19 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:57034 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1757378Ab2GLHuR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 03:50:17 -0400
-X-IronPort-AV: E=Sophos;i="4.77,573,1336320000"; 
-   d="scan'208";a="5381282"
-From: Gao feng <gaofeng@cn.fujitsu.com>
-To: nhorman@tuxdriver.com
-Cc: eric.dumazet@gmail.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, davem@davemloft.net,
-        Gao feng <gaofeng@cn.fujitsu.com>, Eric Dumazet <edumazet@google.com>
-Subject: [PATCH v4] net: cgroup: fix access the unallocated memory in netprio cgroup
-Date: Thu, 12 Jul 2012 15:50:15 +0800
-Message-Id: <1342079415-9631-1-git-send-email-gaofeng@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.7.6
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/12 15:49:59,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/12 15:50:06,
-	Serialize complete at 2012/07/12 15:50:06
+	id S1758761Ab2GLIK1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 04:10:27 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:38061 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752759Ab2GLIKX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 04:10:23 -0400
+Message-ID: <4FFE8665.3080705@linux.vnet.ibm.com>
+Date: Thu, 12 Jul 2012 16:10:13 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [RFC PATCH] sched: add load balance cpumask pointer into lb_env
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12071122-1396-0000-0000-0000018C5459
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-there are some out of bound accesses in netprio cgroup.
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
 
-now before accessing the dev->priomap.priomap array,we only check
-if the dev->priomap exist.and because we don't want to see
-additional bound checkings in fast path, so we should make sure
-that dev->priomap is null or array size of dev->priomap.priomap
-is equal to max_prioidx + 1;
+with this patch, ld_env will have a pointer of load balance cpumask,
+and we don't need to pass cpus anymore.
 
-so in write_priomap logic,we should call extend_netdev_table when
-dev->priomap is null and dev->priomap.priomap_len < max_len.
-and in cgrp_create->update_netdev_tables logic,we should call
-extend_netdev_table only when dev->priomap exist and
-dev->priomap.priomap_len < max_len.
-
-and it's not needed to call update_netdev_tables in write_priomap,
-we can only allocate the net device's priomap which we change through
-net_prio.ifpriomap.
-
-this patch also add a return value for update_netdev_tables &
-extend_netdev_table, so when new_priomap is allocated failed,
-write_priomap will stop to access the priomap,and return -ENOMEM
-back to the userspace to tell the user what happend.
-
-Change From v3:
-1. add rtnl protect when reading max_prioidx in write_priomap.
-
-2. only call extend_netdev_table when map->priomap_len < max_len,
-   this will make sure array size of dev->map->priomap always
-   bigger than any prioidx.
-
-3. add a function write_update_netdev_table to make codes clear.
-
-Change From v2:
-1. protect extend_netdev_table by RTNL.
-2. when extend_netdev_table failed,call dev_put to reduce device's refcount.
-
-Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
-Cc: Neil Horman <nhorman@tuxdriver.com>
-Cc: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
 ---
- net/core/netprio_cgroup.c |   71 ++++++++++++++++++++++++++++++++++-----------
- 1 files changed, 54 insertions(+), 17 deletions(-)
+ kernel/sched/fair.c |   34 ++++++++++++++++------------------
+ 1 files changed, 16 insertions(+), 18 deletions(-)
 
-diff --git a/net/core/netprio_cgroup.c b/net/core/netprio_cgroup.c
-index aa907ed..9b17d54 100644
---- a/net/core/netprio_cgroup.c
-+++ b/net/core/netprio_cgroup.c
-@@ -65,7 +65,7 @@ static void put_prioidx(u32 idx)
- 	spin_unlock_irqrestore(&prioidx_map_lock, flags);
- }
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 77f1ed7..5e6a1ef 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -3102,14 +3102,16 @@ struct lb_env {
  
--static void extend_netdev_table(struct net_device *dev, u32 new_len)
-+static int extend_netdev_table(struct net_device *dev, u32 new_len)
+ 	struct list_head	*tasks;
+ 
++	/* The set of CPUs under consideration for load-balancing */
++	struct cpumask		*cpus;
++
+ 	unsigned int		flags;
+ 	unsigned int		loop;
+ 	unsigned int		loop_break;
+ 	unsigned int		loop_max;
+ 
+ 	struct rq *		(*find_busiest_queue)(struct lb_env *,
+-						      struct sched_group *,
+-						      const struct cpumask *);
++						      struct sched_group *);
+ };
+ 
+ /*
+@@ -3847,8 +3849,7 @@ fix_small_capacity(struct sched_domain *sd, struct sched_group *group)
+  */
+ static inline void update_sg_lb_stats(struct lb_env *env,
+ 			struct sched_group *group, int load_idx,
+-			int local_group, const struct cpumask *cpus,
+-			int *balance, struct sg_lb_stats *sgs)
++			int local_group, int *balance, struct sg_lb_stats *sgs)
  {
- 	size_t new_size = sizeof(struct netprio_map) +
- 			   ((sizeof(u32) * new_len));
-@@ -77,7 +77,7 @@ static void extend_netdev_table(struct net_device *dev, u32 new_len)
+ 	unsigned long nr_running, max_nr_running, min_nr_running;
+ 	unsigned long load, max_cpu_load, min_cpu_load;
+@@ -3865,7 +3866,7 @@ static inline void update_sg_lb_stats(struct lb_env *env,
+ 	max_nr_running = 0;
+ 	min_nr_running = ~0UL;
  
- 	if (!new_priomap) {
- 		pr_warn("Unable to alloc new priomap!\n");
--		return;
-+		return -ENOMEM;
+-	for_each_cpu_and(i, sched_group_cpus(group), cpus) {
++	for_each_cpu_and(i, sched_group_cpus(group), env->cpus) {
+ 		struct rq *rq = cpu_rq(i);
+ 
+ 		nr_running = rq->nr_running;
+@@ -3995,9 +3996,8 @@ static bool update_sd_pick_busiest(struct lb_env *env,
+  * @balance: Should we balance.
+  * @sds: variable to hold the statistics for this sched_domain.
+  */
+-static inline void update_sd_lb_stats(struct lb_env *env,
+-				      const struct cpumask *cpus,
+-				      int *balance, struct sd_lb_stats *sds)
++static inline void update_sd_lb_stats(struct lb_env *env, 
++					int *balance, struct sd_lb_stats *sds)
+ {
+ 	struct sched_domain *child = env->sd->child;
+ 	struct sched_group *sg = env->sd->groups;
+@@ -4014,8 +4014,7 @@ static inline void update_sd_lb_stats(struct lb_env *env,
+ 
+ 		local_group = cpumask_test_cpu(env->dst_cpu, sched_group_cpus(sg));
+ 		memset(&sgs, 0, sizeof(sgs));
+-		update_sg_lb_stats(env, sg, load_idx, local_group,
+-				   cpus, balance, &sgs);
++		update_sg_lb_stats(env, sg, load_idx, local_group, balance, &sgs);
+ 
+ 		if (local_group && !(*balance))
+ 			return;
+@@ -4253,7 +4252,6 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
+  * to restore balance.
+  *
+  * @env: The load balancing environment.
+- * @cpus: The set of CPUs under consideration for load-balancing.
+  * @balance: Pointer to a variable indicating if this_cpu
+  *	is the appropriate cpu to perform load balancing at this_level.
+  *
+@@ -4263,7 +4261,7 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
+  *		   put to idle by rebalancing its tasks onto our group.
+  */
+ static struct sched_group *
+-find_busiest_group(struct lb_env *env, const struct cpumask *cpus, int *balance)
++find_busiest_group(struct lb_env *env, int *balance)
+ {
+ 	struct sd_lb_stats sds;
+ 
+@@ -4273,7 +4271,7 @@ find_busiest_group(struct lb_env *env, const struct cpumask *cpus, int *balance)
+ 	 * Compute the various statistics relavent for load balancing at
+ 	 * this level.
+ 	 */
+-	update_sd_lb_stats(env, cpus, balance, &sds);
++	update_sd_lb_stats(env, balance, &sds);
+ 
+ 	/*
+ 	 * this_cpu is not the appropriate cpu to perform load balancing at
+@@ -4356,8 +4354,7 @@ ret:
+  * find_busiest_queue - find the busiest runqueue among the cpus in group.
+  */
+ static struct rq *find_busiest_queue(struct lb_env *env,
+-				     struct sched_group *group,
+-				     const struct cpumask *cpus)
++				     struct sched_group *group)
+ {
+ 	struct rq *busiest = NULL, *rq;
+ 	unsigned long max_load = 0;
+@@ -4372,7 +4369,7 @@ static struct rq *find_busiest_queue(struct lb_env *env,
+ 		if (!capacity)
+ 			capacity = fix_small_capacity(env->sd, group);
+ 
+-		if (!cpumask_test_cpu(i, cpus))
++		if (!cpumask_test_cpu(i, env->cpus))
+ 			continue;
+ 
+ 		rq = cpu_rq(i);
+@@ -4456,6 +4453,7 @@ static int load_balance(int this_cpu, struct rq *this_rq,
+ 		.dst_grpmask	    = sched_group_cpus(sd->groups),
+ 		.idle		    = idle,
+ 		.loop_break	    = sched_nr_migrate_break,
++		.cpus		    = cpus,
+ 		.find_busiest_queue = find_busiest_queue,
+ 	};
+ 
+@@ -4465,7 +4463,7 @@ static int load_balance(int this_cpu, struct rq *this_rq,
+ 	schedstat_inc(sd, lb_count[idle]);
+ 
+ redo:
+-	group = find_busiest_group(&env, cpus, balance);
++	group = find_busiest_group(&env, balance);
+ 
+ 	if (*balance == 0)
+ 		goto out_balanced;
+@@ -4475,7 +4473,7 @@ redo:
+ 		goto out_balanced;
  	}
  
- 	for (i = 0;
-@@ -90,46 +90,79 @@ static void extend_netdev_table(struct net_device *dev, u32 new_len)
- 	rcu_assign_pointer(dev->priomap, new_priomap);
- 	if (old_priomap)
- 		kfree_rcu(old_priomap, rcu);
-+	return 0;
- }
- 
--static void update_netdev_tables(void)
-+static int write_update_netdev_table(struct net_device *dev)
- {
-+	int ret = 0;
-+	u32 max_len;
-+	struct netprio_map *map;
-+
-+	rtnl_lock();
-+	max_len = atomic_read(&max_prioidx) + 1;
-+	map = rtnl_dereference(dev->priomap);
-+	if (!map || map->priomap_len < max_len)
-+		ret = extend_netdev_table(dev, max_len);
-+	rtnl_unlock();
-+
-+	return ret;
-+}
-+
-+static int update_netdev_tables(void)
-+{
-+	int ret = 0;
- 	struct net_device *dev;
--	u32 max_len = atomic_read(&max_prioidx) + 1;
-+	u32 max_len;
- 	struct netprio_map *map;
- 
- 	rtnl_lock();
-+	max_len = atomic_read(&max_prioidx) + 1;
- 	for_each_netdev(&init_net, dev) {
- 		map = rtnl_dereference(dev->priomap);
--		if ((!map) ||
--		    (map->priomap_len < max_len))
--			extend_netdev_table(dev, max_len);
-+		/*
-+		 * don't allocate priomap if we didn't
-+		 * change net_prio.ifpriomap (map == NULL),
-+		 * this will speed up skb_update_prio.
-+		 */
-+		if (map && map->priomap_len < max_len) {
-+			ret = extend_netdev_table(dev, max_len);
-+			if (ret < 0)
-+				break;
-+		}
- 	}
- 	rtnl_unlock();
-+	return ret;
- }
- 
- static struct cgroup_subsys_state *cgrp_create(struct cgroup *cgrp)
- {
- 	struct cgroup_netprio_state *cs;
--	int ret;
-+	int ret = -EINVAL;
- 
- 	cs = kzalloc(sizeof(*cs), GFP_KERNEL);
- 	if (!cs)
- 		return ERR_PTR(-ENOMEM);
- 
--	if (cgrp->parent && cgrp_netprio_state(cgrp->parent)->prioidx) {
--		kfree(cs);
--		return ERR_PTR(-EINVAL);
--	}
-+	if (cgrp->parent && cgrp_netprio_state(cgrp->parent)->prioidx)
-+		goto out;
- 
- 	ret = get_prioidx(&cs->prioidx);
--	if (ret != 0) {
-+	if (ret < 0) {
- 		pr_warn("No space in priority index array\n");
--		kfree(cs);
--		return ERR_PTR(ret);
-+		goto out;
-+	}
-+
-+	ret = update_netdev_tables();
-+	if (ret < 0) {
-+		put_prioidx(cs->prioidx);
-+		goto out;
- 	}
- 
- 	return &cs->css;
-+out:
-+	kfree(cs);
-+	return ERR_PTR(ret);
- }
- 
- static void cgrp_destroy(struct cgroup *cgrp)
-@@ -221,13 +254,17 @@ static int write_priomap(struct cgroup *cgrp, struct cftype *cft,
- 	if (!dev)
- 		goto out_free_devname;
- 
--	update_netdev_tables();
--	ret = 0;
-+	ret = write_update_netdev_table(dev);
-+	if (ret < 0)
-+		goto out_put_dev;
-+
- 	rcu_read_lock();
- 	map = rcu_dereference(dev->priomap);
- 	if (map)
- 		map->priomap[prioidx] = priority;
- 	rcu_read_unlock();
-+
-+out_put_dev:
- 	dev_put(dev);
- 
- out_free_devname:
+-	busiest = env.find_busiest_queue(&env, group, cpus);
++	busiest = env.find_busiest_queue(&env, group);
+ 	if (!busiest) {
+ 		schedstat_inc(sd, lb_nobusyq[idle]);
+ 		goto out_balanced;
 -- 
-1.7.7.6
+1.7.4.1
 
