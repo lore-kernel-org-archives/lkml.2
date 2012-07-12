@@ -1,64 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162473Ab2GLW5p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:57:45 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41629 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1162095Ab2GLWnl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:43:41 -0400
-Date: Fri, 13 Jul 2012 00:43:34 +0200
-From: Jiri Bohac <jbohac@suse.cz>
-To: John Stultz <johnstul@us.ibm.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, stable@vger.kernel.org
-Subject: Re: [PATCH 0/6] Fix for leapsecond caused hrtimer/futex issue
- (updated)
-Message-ID: <20120712224334.GA32620@midget.suse.cz>
-References: <1341960205-56738-1-git-send-email-johnstul@us.ibm.com>
- <4FFCB287.80701@us.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FFCB287.80701@us.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1162478Ab2GLW6N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:58:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45118 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162107Ab2GLW6J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 18:58:09 -0400
+Date: Thu, 12 Jul 2012 15:58:08 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, Evgeniy Dushistov <dushistov@mail.ru>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] fs/ufs: stop using write_supers and s_dirt
+Message-Id: <20120712155808.807ec3f5.akpm@linux-foundation.org>
+In-Reply-To: <1342099688-14894-1-git-send-email-dedekind1@gmail.com>
+References: <1342099688-14894-1-git-send-email-dedekind1@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 10, 2012 at 03:53:59PM -0700, John Stultz wrote:
-> On 07/10/2012 03:43 PM, John Stultz wrote:
-> >Over the weekend, Thomas got a chance to review the leap second fix
-> >in more detail and had a few additional changes he wanted to make
-> >to improve performance as well as style.
-> >
-> >So this iteration includes his modifications.
-> >
-> >Once merged, I'll be working to get the backports finished as quickly
-> >as I can and sent to -stable.
+On Thu, 12 Jul 2012 16:28:05 +0300
+Artem Bityutskiy <dedekind1@gmail.com> wrote:
 
-looking at the proposed 2.6.32.y stable patch at:
-http://git.linaro.org/gitweb?p=people/jstultz/linux.git;a=commitdiff;h=18d208632bf17aed56c581b882868b2be44be71e;hp=6d224606bb8eec78027522d6dd5abfea8108c41a
-Is this the final version you are about to send to -stable?
+> Note, checkpatch.pl complains about these patches, but the complaints are about
+> the code which is already in UFS, not my code. We really need to fix
+> checkpatch.pl to be smarter.
 
-In 2.6.32 timekeeping_leap_insert() is not called from the timer
-interrupt, but from the leap_timer hrtimer.
-
-I think the new clock_was_set_timer will thus not be called by
-irq_exit() because TIMER_SOFTIRQ has not been raised. Unless
-TIMER_SOFTIRQ is raised, clock_was_set() will not be called until
-the next periodic timer interrupt, correct?
-
-Wouldn't the original schedule_work() approach work better for
-2.6.32?
-
-Or do you plan backporting the most recent version to 2.6.32?
-
-Thanks,
-
--- 
-Jiri Bohac <jbohac@suse.cz>
-SUSE Labs, SUSE CZ
-
+Just fix them up as you go - the code is already a mixture of "right"
+and "wrong" (a consequence of a lot of it being "wrong") - we might as
+well tip it further in the "right" direction.
