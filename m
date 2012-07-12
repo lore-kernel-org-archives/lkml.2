@@ -1,134 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759307Ab2GLWca (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:32:30 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34153 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754898Ab2GLWc0 (ORCPT
+	id S1759311Ab2GLWf4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:35:56 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:59878 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751900Ab2GLWfx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:32:26 -0400
-Date: Thu, 12 Jul 2012 15:32:21 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Tony Luck <tony.luck@gmail.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, joshhunt00@gmail.com, axboe@kernel.dk,
-        rni@google.com, vgoyal@redhat.com, vwadekar@nvidia.com,
-        herbert@gondor.hengli.com.au, davem@davemloft.net,
-        linux-crypto@vger.kernel.org, swhiteho@redhat.com, bpm@sgi.com,
-        elder@kernel.org, xfs@oss.sgi.com, marcel@holtmann.org,
-        gustavo@padovan.org, johan.hedberg@gmail.com,
-        linux-bluetooth@vger.kernel.org, martin.petersen@oracle.com
-Subject: Re: [PATCH 6/6] workqueue: reimplement WQ_HIGHPRI using a separate
- worker_pool
-Message-ID: <20120712223221.GF20167@google.com>
-References: <1341859315-17759-7-git-send-email-tj@kernel.org>
- <20120712130648.GA19214@localhost>
- <20120712170519.GA20167@google.com>
- <20120712214514.GD20167@google.com>
- <CA+8MBb+ghRpmtrk=t5-6MqrPMZt+a69UoAWaubyKBeptGdBrWA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+8MBb+ghRpmtrk=t5-6MqrPMZt+a69UoAWaubyKBeptGdBrWA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 12 Jul 2012 18:35:53 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Luis Henriques <luis.henriques@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 005/187] ALSA: hda - Fix power-map regression for HP dv6 & co
+Date: Thu, 12 Jul 2012 15:32:41 -0700
+Message-Id: <20120712191522.742634173@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120712192421.GA28926@kroah.com>
+References: <20120712192421.GA28926@kroah.com>
+User-Agent: quilt/0.60-20.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Tony.
+From: Greg KH <gregkh@linuxfoundation.org>
 
-On Thu, Jul 12, 2012 at 03:16:30PM -0700, Tony Luck wrote:
-> On Thu, Jul 12, 2012 at 2:45 PM, Tejun Heo <tj@kernel.org> wrote:
-> > I was wrong and am now dazed and confused.  That's from
-> > init_workqueues() where only cpu0 is running.  How the hell did
-> > nr_running manage to become non-zero at that point?  Can you please
-> > apply the following patch and report the boot log?  Thank you.
-> 
-> Patch applied on top of next-20120712 (which still has the same problem).
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Can you please try the following debug patch instead?  Yours is
-different from Fengguang's.
+------------------
 
-Thanks a lot!
+From: Takashi Iwai <tiwai@suse.de>
+
+commit 6e1c39c6b00d9141a82c231ba7c5e5b1716974b2 upstream.
+
+The recent fix for power-map controls (commit b0791dda813) caused
+regressions on some other HP laptops.  They have fixed pins but these
+pins are exposed as jack-detectable.  Thus the driver tries to control
+the power-map dynamically per jack detection where it never gets on.
+
+This patch corrects the condition check for fixed pins so that the
+power-map is set always for these pins.
+
+NOTE: this is no simple backport from 3.5 kernel.  Since 3.5 kernel
+had significant code change in the relevant part, I fixed this
+differently.
+
+BugLink: http://bugs.launchpad.net/bugs/1013183
+Reported-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- kernel/workqueue.c |   40 ++++++++++++++++++++++++++++++++++++----
- 1 file changed, 36 insertions(+), 4 deletions(-)
+ sound/pci/hda/patch_sigmatel.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -699,8 +699,10 @@ void wq_worker_waking_up(struct task_str
- {
- 	struct worker *worker = kthread_data(task);
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -4388,7 +4388,7 @@ static int stac92xx_init(struct hda_code
+ 					 AC_PINCTL_IN_EN);
+ 	for (i = 0; i < spec->num_pwrs; i++)  {
+ 		hda_nid_t nid = spec->pwr_nids[i];
+-		int pinctl, def_conf;
++		unsigned int pinctl, def_conf;
  
--	if (!(worker->flags & WORKER_NOT_RUNNING))
-+	if (!(worker->flags & WORKER_NOT_RUNNING)) {
-+		WARN_ON_ONCE(cpu != worker->pool->gcwq->cpu);
- 		atomic_inc(get_pool_nr_running(worker->pool));
-+	}
- }
- 
- /**
-@@ -730,6 +732,7 @@ struct task_struct *wq_worker_sleeping(s
- 
- 	/* this can only happen on the local cpu */
- 	BUG_ON(cpu != raw_smp_processor_id());
-+	WARN_ON_ONCE(cpu != worker->pool->gcwq->cpu);
- 
- 	/*
- 	 * The counterpart of the following dec_and_test, implied mb,
-@@ -1212,9 +1215,30 @@ static void worker_enter_idle(struct wor
- 	 * between setting %WORKER_ROGUE and zapping nr_running, the
- 	 * warning may trigger spuriously.  Check iff trustee is idle.
- 	 */
--	WARN_ON_ONCE(gcwq->trustee_state == TRUSTEE_DONE &&
--		     pool->nr_workers == pool->nr_idle &&
--		     atomic_read(get_pool_nr_running(pool)));
-+	if (WARN_ON_ONCE(gcwq->trustee_state == TRUSTEE_DONE &&
-+			 pool->nr_workers == pool->nr_idle &&
-+			 atomic_read(get_pool_nr_running(pool)))) {
-+		static bool once = false;
-+		int cpu;
-+
-+		if (once)
-+			return;
-+		once = true;
-+
-+		printk("XXX nr_running mismatch on gcwq[%d] pool[%ld]\n",
-+		       gcwq->cpu, pool - gcwq->pools);
-+
-+		for_each_gcwq_cpu(cpu) {
-+			gcwq = get_gcwq(cpu);
-+
-+			printk("XXX gcwq[%d] flags=0x%x\n", gcwq->cpu, gcwq->flags);
-+			for_each_worker_pool(pool, gcwq)
-+				printk("XXX gcwq[%d] pool[%ld] nr_workers=%d nr_idle=%d nr_running=%d\n",
-+				       gcwq->cpu, pool - gcwq->pools,
-+				       pool->nr_workers, pool->nr_idle,
-+				       atomic_read(get_pool_nr_running(pool)));
-+		}
-+	}
- }
- 
- /**
-@@ -3855,6 +3879,10 @@ static int __init init_workqueues(void)
- 		for (i = 0; i < BUSY_WORKER_HASH_SIZE; i++)
- 			INIT_HLIST_HEAD(&gcwq->busy_hash[i]);
- 
-+		if (cpu != WORK_CPU_UNBOUND)
-+			printk("XXX cpu=%d gcwq=%p base=%p\n", cpu, gcwq,
-+			       per_cpu_ptr(&pool_nr_running, cpu));
-+
- 		for_each_worker_pool(pool, gcwq) {
- 			pool->gcwq = gcwq;
- 			INIT_LIST_HEAD(&pool->worklist);
-@@ -3868,6 +3896,10 @@ static int __init init_workqueues(void)
- 				    (unsigned long)pool);
- 
- 			ida_init(&pool->worker_ida);
-+
-+			printk("XXX cpu=%d nr_running=%d @ %p\n", gcwq->cpu,
-+			       atomic_read(get_pool_nr_running(pool)),
-+			       get_pool_nr_running(pool));
- 		}
- 
- 		gcwq->trustee_state = TRUSTEE_DONE;
+ 		/* power on when no jack detection is available */
+ 		/* or when the VREF is used for controlling LED */
+@@ -4415,7 +4415,7 @@ static int stac92xx_init(struct hda_code
+ 		def_conf = get_defcfg_connect(def_conf);
+ 		/* skip any ports that don't have jacks since presence
+  		 * detection is useless */
+-		if (def_conf != AC_JACK_PORT_NONE &&
++		if (def_conf != AC_JACK_PORT_COMPLEX ||
+ 		    !is_jack_detectable(codec, nid)) {
+ 			stac_toggle_power_map(codec, nid, 1);
+ 			continue;
+
+
