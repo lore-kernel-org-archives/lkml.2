@@ -1,95 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758848Ab2GLIem (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 04:34:42 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:33770 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757058Ab2GLIei (ORCPT
+	id S1758920Ab2GLIfS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 04:35:18 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:51307 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758774Ab2GLIfD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 04:34:38 -0400
-Message-ID: <4FFE8BA1.8000507@linux.vnet.ibm.com>
-Date: Thu, 12 Jul 2012 14:02:33 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	Thu, 12 Jul 2012 04:35:03 -0400
+Date: Thu, 12 Jul 2012 10:34:49 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Paul Mundt <lethal@linux-sh.org>
+cc: Magnus Damm <magnus.damm@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
+        linux-sh@vger.kernel.org, linux-mmc@vger.kernel.org,
+        Chris Ball <cjb@laptop.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] dma: sh: provide a migration path for slave drivers
+ to stop using .private
+In-Reply-To: <20120712040018.GB11440@linux-sh.org>
+Message-ID: <Pine.LNX.4.64.1207121025020.19866@axis700.grange>
+References: <1341418663-24432-1-git-send-email-g.liakhovetski@gmx.de>
+ <1341418663-24432-4-git-send-email-g.liakhovetski@gmx.de>
+ <CANqRtoRz2NF6BEEYcy_BwZ7Hm5EF9zP2Z0eoQcbxaSfUuc2i9Q@mail.gmail.com>
+ <20120712040018.GB11440@linux-sh.org>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Christian Borntraeger <borntraeger@de.ibm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Rik van Riel <riel@redhat.com>, S390 <linux-s390@vger.kernel.org>,
-        Carsten Otte <cotte@de.ibm.com>, KVM <kvm@vger.kernel.org>,
-        chegu vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
-        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Joerg Roedel <joerg.roedel@amd.com>,
-        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
-        Alexander Graf <agraf@suse.de>, Paul Mackerras <paulus@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH RFC 0/2] kvm: Improving directed yield in PLE handler
-References: <20120709062012.24030.37154.sendpatchset@codeblue> <4FFA8E5E.3070108@de.ibm.com> <4FFD422B.9060008@redhat.com> <4FFD52CD.7040403@de.ibm.com> <4FFD5DA3.3010001@redhat.com> <4FFD6100.8050202@de.ibm.com> <4FFD65E0.500@redhat.com> <4FFE5C9C.9070001@linux.vnet.ibm.com> <4FFE86A4.2010809@redhat.com>
-In-Reply-To: <4FFE86A4.2010809@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 12071122-1396-0000-0000-0000018C5C65
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:LanSnM8X/ZxxUyac6DknIdu8B8E3vO6hYNh6FwCyiBH
+ tuYjqmvH+/l2mvJbVbqoX4qyeK+0la1XgJxA5HHG8mmfZtLGIg
+ 1tWEcyyPu0RGo2dupCVTBh/H6nJgP9fdfuCsY6iec6QZ25qgC7
+ 1OMyZtxT+U6EctOSIX9o5uPTIflvOAnToBiCmcjhwYgK65I/tj
+ zDQ+J3m/PX7vLMUIJHn38QLWn/8S6BN247KlaKQhRw1R0+by/S
+ Ccm8CFDY25mFKQv5WGD0bY9e6saF+73NZWL1zWqK7r+jyXIjsV
+ rDCvl+QeSwGW4C8ARIUKQ0l23+6e76Ay9/AeteI/AkDSzyVId4
+ NpLTRd6NvbKFLV4y4yfyrCvK8XQYgxo7AWCkMrAWK+zjPbJClB
+ Qh0SUz9Tn2c7A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/12/2012 01:41 PM, Avi Kivity wrote:
-> On 07/12/2012 08:11 AM, Raghavendra K T wrote:
->>> Ah, I thouht you objected to the CONFIG var.  Maybe call it
->>> cpu_relax_intercepted since that's the linuxy name for the instruction.
->>>
->>
->> Ok, just to be on same page. 'll have :
->> 1. cpu_relax_intercepted instead of  pause_loop_exited.
->>
->> 2. CONFIG_KVM_HAVE_CPU_RELAX_INTERCEPT which is unconditionally
->> selected for x86 and s390
->>
->> 3. make request mechanism to clear cpu_relax_intercepted.
->>
->> ('ll do same thing for s390 also but have not seen s390 code using
->> request mechanism, so not sure if it ok.. otherwise we have to clear
->> unconditionally for s390 before guest enter and for x86 we have to move
->> make_request back to vmx/svm).
->> will post V3 with these changes.
->
-> You can leave the s390 changes to the s390 people; just make sure the
-> generic code is ready.
->
-Yep,
-Checked the following logic with make_request and it works fine,
+Hi Paul, Magnus
 
-vcpu_spin()
-{
-  ple_exited = true;
-.
-.
-make_request(KVM_REQ_CLEAR_PLE, vcpu);
-}
+On Thu, 12 Jul 2012, Paul Mundt wrote:
 
-vcpu_enter_guest()
-{
-  if(check_request(KVM_REQ_CLEAR_PLE))
-     ple_exited = false;
-.
-.
-}
+> On Thu, Jul 12, 2012 at 06:55:32AM +0900, Magnus Damm wrote:
+> > Hi Guennadi,
+> > 
+> > [CC Paul]
+> > 
+> > On Thu, Jul 5, 2012 at 1:17 AM, Guennadi Liakhovetski
+> > <g.liakhovetski@gmx.de> wrote:
+> > > This patch extends the sh dmaengine driver to support the preferred channel
+> > > selection and configuration method, instead of using the "private" field
+> > > from struct dma_chan. We add a standard filter function to be used by
+> > > slave drivers instead of implementing their own ones, and add support for
+> > > the DMA_SLAVE_CONFIG control operation, which must accompany the new
+> > > channel selection method. We still support the legacy .private channel
+> > > allocation method to cater for a smooth driver migration.
+> > >
+> > > Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> > > ---
+> > 
+> > Thanks for your efforts on this. Something that caught my eye in this
+> > patch is this portion:
+> > 
+> > +bool shdma_chan_filter(struct dma_chan *chan, void *arg);
+> > 
+> > If we would use this function in our DMA Engine slave drivers (MMCIF,
+> > SDHI, SCIF, FSI, SIU and so on) then wouldn't we add a strict
+> > dependency on this symbol provided by this particular DMA Engine
+> > driver implementation for the DMAC hardware (that your patch
+> > modifies)?
 
-But there is following approach that is working perfectly fine.
-vcpu_spin()
-{
-  ple_exited = true;
-.
-.
+This dependency is nothing new. Now all those drivers depend on shdma too, 
+though, in a softer way - by using struct sh_dmae_slave. That struct is 
+defined in include/linux/sh_dma.h and so we _could_ reuse it between 
+several sh(-mobile) DMAC variants, but IIUC, there's currently no truly 
+reliable way to make DMA slave drive drivers completely generic. And this 
+will remain this way as long as DMA channel filtering is relying on an 
+opaque argument, specific to each DMAC driver.
 
-  ple_exited = false;
-}
+Russell has shown in a mail, how this hard dependency can be sort of 
+eliminated by passing a string as a filter parameter. But then again - 
+this _only_ works with drivers, that use this method. Similarly any non 
+hardware-specific type could be used, e.g., an integer slave ID.
 
-I hope to go with second approach. let me know if you find any loop
-hole.
+Moreover, I've been told explicitly, that exporting filter functions from 
+respective DMAC drivers _is_ the correct way to use the current API...
 
+> > And what do we do if we want to use the same DMA Engine slave driver
+> > with a different DMA Engine driver implementation?
+> > 
+> > From my point of view, there must be some better way to not have such
+> > tight dependencies between the DMA Engine slave consumer and the DMA
+> > Engine driver. Not sure what that looks like though. This symbol
+> > dependency is pretty far from great IMO.
+> > 
+> I vaguely recall this coming up before, and it wasn't acceptable then
+> either.
+> 
+> We will by no means be adding driver-specific hooks in to other drivers
+> that really couldn't care less what the underlying DMA engine driving
+> them is.
+> 
+> We already have CPUs with different DMA engines that can be used by the
+> same drivers. As I said the last time, this needs to be fixed in the
+> dmaengine framework, period.
+
+Sure, that's what my DMA mux-driver idea [1] is aiming to achieve.
+
+Thanks
+Guennadi
+
+[1] http://article.gmane.org/gmane.linux.ports.arm.omap/80357
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
