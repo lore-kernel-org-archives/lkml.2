@@ -1,112 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934230Ab2GLSTz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 14:19:55 -0400
-Received: from mga02.intel.com ([134.134.136.20]:12258 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932690Ab2GLSTv convert rfc822-to-8bit (ORCPT
+	id S1757816Ab2GLS0G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 14:26:06 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34162 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751112Ab2GLS0C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 14:19:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="165025485"
-From: "Dave, Tushar N" <tushar.n.dave@intel.com>
-To: Joe Jin <joe.jin@oracle.com>
-CC: "e1000-devel@lists.sf.net" <e1000-devel@lists.sf.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: 82571EB: Detected Hardware Unit Hang
-Thread-Topic: 82571EB: Detected Hardware Unit Hang
-Thread-Index: AQHNXbA0O4dj/qIKzEaqpnXp2Y+l0pcimGMAgABDhtCAANf7AP//lehggAB9gwD//6IHIIAAe14A//+RAgAAESU+AAANp23AAB8MOIAADbt9YP//m9aAgAB1KHD//48GgIAASC6A///rKICAAG8OoP//oCeA//++GYA=
-Date: Thu, 12 Jul 2012 18:19:49 +0000
-Message-ID: <061C8A8601E8EE4CA8D8FD6990CEA891274F0ACC@ORSMSX102.amr.corp.intel.com>
-References: <4FFA9B96.6040901@oracle.com> <4FFBDC50.5090800@oracle.com>
- <061C8A8601E8EE4CA8D8FD6990CEA891274EE41F@ORSMSX102.amr.corp.intel.com>
- <4FFCCA22.8060006@oracle.com>
- <061C8A8601E8EE4CA8D8FD6990CEA891274EEC8B@ORSMSX102.amr.corp.intel.com>
- <4FFCDA6C.8020708@oracle.com>
- <061C8A8601E8EE4CA8D8FD6990CEA891274EED74@ORSMSX102.amr.corp.intel.com>
- <4FFCF314.6020400@oracle.com>
- <061C8A8601E8EE4CA8D8FD6990CEA891274EEDD7@ORSMSX102.amr.corp.intel.com>
- <4FFD0908.6080506@oracle.com>
- <061C8A8601E8EE4CA8D8FD6990CEA891274EF8AD@ORSMSX102.amr.corp.intel.com>
- <4FFE3505.8060407@oracle.com>
- <061C8A8601E8EE4CA8D8FD6990CEA891274F018D@ORSMSX102.amr.corp.intel.com>
- <4FFE3D27.7020500@oracle.com>
- <061C8A8601E8EE4CA8D8FD6990CEA891274F01BE@ORSMSX102.amr.corp.intel.com>
- <4FFE40A9.4060807@oracle.com>
- <061C8A8601E8EE4CA8D8FD6990CEA891274F02D7@ORSMSX102.amr.corp.intel.com>
- <4FFE6BB9.4060106@oracle.com>
- <061C8A8601E8EE4CA8D8FD6990CEA891274F033B@ORSMSX102.amr.corp.intel.com>
- <4FFE787B.9050201@oracle.com>
-In-Reply-To: <4FFE787B.9050201@oracle.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 12 Jul 2012 14:26:02 -0400
 MIME-Version: 1.0
+In-Reply-To: <CA+55aFyue0ivxx541BSfL1kkL76KZjwPdGc7=6OXcnArKGyxMw@mail.gmail.com>
+References: <20120709180328.GA4105@redhat.com> <CAPXgP11oP4aKyg=HUNrb3z_ZbPjU+_u338sD6uhxKyJ43Z8sgQ@mail.gmail.com>
+ <1341859731.801.0.camel@mop> <20120712005405.GA1613@redhat.com>
+ <CAPXgP13J98an3GW1-aBOEk=5Vyr+is1DaPhz-UFWHBOJ2nHkKA@mail.gmail.com>
+ <20120712140552.GA13745@redhat.com> <CA+55aFyue0ivxx541BSfL1kkL76KZjwPdGc7=6OXcnArKGyxMw@mail.gmail.com>
+From: Kay Sievers <kay@vrfy.org>
+Date: Thu, 12 Jul 2012 20:25:41 +0200
+Message-ID: <CAPXgP12USC2LETFz2gy8yubMQbrNA6ou_hByH+UqHdo6-hfkGQ@mail.gmail.com>
+Subject: Re: 3.5-rc6 printk formatting problem during oom-kill.
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartmann <greg@kroah.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->-----Original Message-----
->From: Joe Jin [mailto:joe.jin@oracle.com]
->Sent: Thursday, July 12, 2012 12:11 AM
->To: Dave, Tushar N
->Cc: e1000-devel@lists.sf.net; netdev@vger.kernel.org; linux-
->kernel@vger.kernel.org
->Subject: Re: 82571EB: Detected Hardware Unit Hang
->
->On 07/12/12 14:41, Dave, Tushar N wrote:
->>> On 07/12/12 13:57, Dave, Tushar N wrote:
->>>>> -----Original Message-----
->>>>> From: Joe Jin [mailto:joe.jin@oracle.com]
->>>>> Sent: Wednesday, July 11, 2012 8:13 PM
->>>>> To: Dave, Tushar N
->>>>> Cc: e1000-devel@lists.sf.net; netdev@vger.kernel.org; linux-
->>>>> kernel@vger.kernel.org
->>>>> Subject: Re: 82571EB: Detected Hardware Unit Hang
->>>>>
->>>>> On 07/12/12 11:07, Dave, Tushar N wrote:
->>>>>>> -----Original Message-----
->>>>>>> From: Joe Jin [mailto:joe.jin@oracle.com]
->>>>>>> Sent: Wednesday, July 11, 2012 7:58 PM
->>>>>>> To: Dave, Tushar N
->>>>>>> Cc: e1000-devel@lists.sf.net; netdev@vger.kernel.org; linux-
->>>>>>> kernel@vger.kernel.org
->>>>>>> Subject: Re: 82571EB: Detected Hardware Unit Hang
->>>>>>>
->>>>>>> On 07/12/12 10:52, Dave, Tushar N wrote:
->>>>>>>> What is the exact error messages in BIOS log?
->>>>>>>
->>>>>>> Error message from BIOS event log:
->>>>>>> 07/12/12 05:54:00
->>>>>>>    PCI Express Non-Fatal Error
->>>>>>>
->>>>>>> Thanks,
->>>>>>> Joe
->>>>> Hi Tushar,
->>>>>
->>>>> Please find eeprom from attachment.
->>>>
->>>> Do you have lspci -vvv dump of entire system before and after issue
->>> occurs? If you have can you send it to me?
->>>>
->>>
->> Sorry but I meant the full lspci -vvv of *entire system* before and
->after issue occurs and not of 82571 only.
+On Thu, Jul 12, 2012 at 7:11 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Thu, Jul 12, 2012 at 7:05 AM, Dave Jones <davej@redhat.com> wrote:
 >>
+>> I've seen it a few times, always with the soft lockup trace.
 >
->Before:
->=======
->00:00.0 Host bridge: Intel Corporation 5500 I/O Hub to ESI Port (rev 22)
->	Subsystem: Oracle Corporation Device 5352
+> I bet it's because you have tons of modules, and the line ends up
+> being *really* long. And overflows LOG_LINE_MAX. I suspect something
+> odd happens.
 
-Joe, thanks for all the data.
-You said you have changed max payload size and issue stop occurring. How did you change it? Where did you make that change in BIOS or EEPROM or in PCIe config space?
-Also please send me the full dmesg of entire system after you change max payload size.
+Straight to the point. That's the issue, combined with the later
+safety range checks, we produce somehow "ugly" output.
 
-Thanks.
+We already flush the line out of the buffer when we can not add stuff
+anymore. The line length is then close to LOG_LINE_MAX, and we want to
+add a prefix with the timestamp during output and we reach the limit
+of LOG_LINE_MAX.
+
+> There are tons of odd special cases for LOG_LINE_MAX, and I bet Kay
+> doesn't see it for the simple reason that he's not totally insane, and
+> hasn't loaded hundreds of modules.
+
+Yeah, I just added a loop now that prints over-long continuation
+lines, and I can see parts of the effect Dave sees.
+
+> Kay, I suspect the "continuation line" logic could easily have a rule like
+>
+>   "If the old line is already > 80 characters, do a line break here
+> and add TAB to the beginning of the new line"
+>
+> In fact, that could be really nice for things like stack dumps etc -
+> we wouldn't have to worry about line breaks and crap, if the printk
+> logic just makes "KERN_CONT" do a line break automatically if it
+> doesn't fit on the screen.
+>
+> People who use KERN_CONT don't do it because they *need* things to be
+> on one line (it's not guaranteed anyway), they do it because they want
+> the output to be dense and readable. Doing auto-line-break would
+> actually *help*. And would mean that you never hit the odd
+> LOG_LINE_MAX cases just because somebody is printing lots of modules.
+
+That sounds good. I'll look into that.
+
+Kay
