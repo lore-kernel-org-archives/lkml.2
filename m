@@ -1,226 +1,317 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759295Ab2GLW2W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:28:22 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:54866 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752323Ab2GLW2R (ORCPT
+	id S1759304Ab2GLW34 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:29:56 -0400
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:47486 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756397Ab2GLW3w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:28:17 -0400
-Message-ID: <1342132092.8274.17.camel@mop>
-Subject: Re: 3.5-rc6 printk formatting problem during oom-kill.
-From: Kay Sievers <kay@vrfy.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartmann <greg@kroah.com>
-Date: Fri, 13 Jul 2012 00:28:12 +0200
-In-Reply-To: <CAPXgP12USC2LETFz2gy8yubMQbrNA6ou_hByH+UqHdo6-hfkGQ@mail.gmail.com>
-References: <20120709180328.GA4105@redhat.com>
-	 <CAPXgP11oP4aKyg=HUNrb3z_ZbPjU+_u338sD6uhxKyJ43Z8sgQ@mail.gmail.com>
-	 <1341859731.801.0.camel@mop> <20120712005405.GA1613@redhat.com>
-	 <CAPXgP13J98an3GW1-aBOEk=5Vyr+is1DaPhz-UFWHBOJ2nHkKA@mail.gmail.com>
-	 <20120712140552.GA13745@redhat.com>
-	 <CA+55aFyue0ivxx541BSfL1kkL76KZjwPdGc7=6OXcnArKGyxMw@mail.gmail.com>
-	 <CAPXgP12USC2LETFz2gy8yubMQbrNA6ou_hByH+UqHdo6-hfkGQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.5.3.1 (3.5.3.1-4.fc18) 
-Mime-Version: 1.0
+	Thu, 12 Jul 2012 18:29:52 -0400
+Message-ID: <4FFF4FB2.8050202@xenotime.net>
+Date: Thu, 12 Jul 2012 15:29:06 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Piotr Sawuk <a9702387@unet.univie.ac.at>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: resurrecting tcphealth
+References: <dee325378a2d3b7792da9640fc14905f.squirrel@webmail.univie.ac.at>
+In-Reply-To: <dee325378a2d3b7792da9640fc14905f.squirrel@webmail.univie.ac.at>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-07-12 at 20:25 +0200, Kay Sievers wrote:
-> On Thu, Jul 12, 2012 at 7:11 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> > On Thu, Jul 12, 2012 at 7:05 AM, Dave Jones <davej@redhat.com> wrote:
-> >>
-> >> I've seen it a few times, always with the soft lockup trace.
-> >
-> > I bet it's because you have tons of modules, and the line ends up
-> > being *really* long. And overflows LOG_LINE_MAX. I suspect something
-> > odd happens.
+On 07/12/2012 01:55 PM, Piotr Sawuk wrote:
+
+> hello! I haven't done any kernel-hacking before, so be patient.
 > 
-> Straight to the point. That's the issue, combined with the later
-> safety range checks, we produce somehow "ugly" output.
+> I got as far as to make tcphealth run, but now I need some help:
+> how does read-locking work in the tcp_sock struct?
+> the original code (for 2.5.1) made a read_lock(&head->lock) with
+> struct tcp_ehash_bucket *head = &tcp_ehash[i];
+> at the beginning of the for-loop over all sk=head->chain.
+> i.e.
+>        for (i=0; i < tcp_ehash_size; i++) {
+>                struct tcp_ehash_bucket *head = &tcp_ehash[i];
+>                struct sock *sk;
+>                struct tcp_opt *tp;
 > 
-> We already flush the line out of the buffer when we can not add stuff
-> anymore. The line length is then close to LOG_LINE_MAX, and we want to
-> add a prefix with the timestamp during output and we reach the limit
-> of LOG_LINE_MAX.
+>                read_lock(&head->lock);
+>                for (sk=head->chain; sk; sk=sk->next) {
+>                        if (!TCP_INET_FAMILY(sk->family))
+>                                continue;
 > 
-> > There are tons of odd special cases for LOG_LINE_MAX, and I bet Kay
-> > doesn't see it for the simple reason that he's not totally insane, and
-> > hasn't loaded hundreds of modules.
+> and in the new kernel this construction has been replaced by
 > 
-> Yeah, I just added a loop now that prints over-long continuation
-> lines, and I can see parts of the effect Dave sees.
+>         if (st->state==TCP_SEQ_STATE_ESTABLISHED)
+> ...
+> static struct tcp_seq_afinfo tcphealth_seq_afinfo
+> ...
 > 
-> > Kay, I suspect the "continuation line" logic could easily have a rule like
-> >
-> >   "If the old line is already > 80 characters, do a line break here
-> > and add TAB to the beginning of the new line"
-
-This seems to fix the issue for me, which Dave has posted. I was able to
-partly reproduce it by printing continuation lines larger than 1000
-bytes. The overlong lines did not leave enough room for the later syslog
-and timestamp prefixing.
-
-I'll look into the automatic split of lines later, it is not as trivial
-as this fix.
-
-While we are at the over-long log line topic, Harald just pointed me to
-this unrelated mail, sent an hour ago. :)
-
-  "The "Modules linked in:" lines say only <omitted>,
-  because the lines become too long and cause netconsole to eat most of
-  the message."
-
-  https://lkml.org/lkml/2012/7/12/484
+> and the example with proc/net/tcp is seemingly not locking anything. do I
+> actually need a read-lock for diagnostic data from tcp_sock? why did the
+> original author need to lock the whole chain of tcp_sock?
+> 
+> here's my patch against 3.4.4 so far, any further comments welcome:
 
 
-Thanks,
-Kay
+Along with what Mr. Hemminger said:
+
+Don't make patches to a stable kernel version.  Just make them
+to mainline (e.g., 3.5-rc6).
+
+More comments below.
 
 
-From: Kay Sievers <kay@vrfy.org>
-Subject: kmsg - properly print over-long continuation lines
-
-Reserve PREFIX_MAX bytes in the LOG_LINE_MAX line when buffering a
-continuation line, to be able to properly prefix the LOG_LINE_MAX
-line with the syslog prefix and timestamp when printing it.
-
-Reported-By: Dave Jones <davej@redhat.com>
-Signed-off-by: Kay Sievers <kay@vrfy.org>
----
-
- kernel/printk.c |   33 +++++++++++++++++++--------------
- 1 file changed, 19 insertions(+), 14 deletions(-)
-
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -235,7 +235,8 @@ static u32 log_next_idx;
- static u64 clear_seq;
- static u32 clear_idx;
- 
--#define LOG_LINE_MAX 1024
-+#define PREFIX_MAX		32
-+#define LOG_LINE_MAX		1024 - PREFIX_MAX
- 
- /* record buffer */
- #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
-@@ -876,7 +877,7 @@ static size_t msg_print_text(const struc
- 
- 		if (buf) {
- 			if (print_prefix(msg, syslog, NULL) +
--			    text_len + 1>= size - len)
-+			    text_len + 1 >= size - len)
- 				break;
- 
- 			if (prefix)
-@@ -907,7 +908,7 @@ static int syslog_print(char __user *buf
- 	struct log *msg;
- 	int len = 0;
- 
--	text = kmalloc(LOG_LINE_MAX, GFP_KERNEL);
-+	text = kmalloc(LOG_LINE_MAX + PREFIX_MAX, GFP_KERNEL);
- 	if (!text)
- 		return -ENOMEM;
- 
-@@ -930,7 +931,8 @@ static int syslog_print(char __user *buf
- 
- 		skip = syslog_partial;
- 		msg = log_from_idx(syslog_idx);
--		n = msg_print_text(msg, syslog_prev, true, text, LOG_LINE_MAX);
-+		n = msg_print_text(msg, syslog_prev, true, text,
-+				   LOG_LINE_MAX + PREFIX_MAX);
- 		if (n - syslog_partial <= size) {
- 			/* message fits into buffer, move forward */
- 			syslog_idx = log_next(syslog_idx);
-@@ -969,7 +971,7 @@ static int syslog_print_all(char __user
- 	char *text;
- 	int len = 0;
- 
--	text = kmalloc(LOG_LINE_MAX, GFP_KERNEL);
-+	text = kmalloc(LOG_LINE_MAX + PREFIX_MAX, GFP_KERNEL);
- 	if (!text)
- 		return -ENOMEM;
- 
-@@ -1022,7 +1024,8 @@ static int syslog_print_all(char __user
- 			struct log *msg = log_from_idx(idx);
- 			int textlen;
- 
--			textlen = msg_print_text(msg, prev, true, text, LOG_LINE_MAX);
-+			textlen = msg_print_text(msg, prev, true, text,
-+						 LOG_LINE_MAX + PREFIX_MAX);
- 			if (textlen < 0) {
- 				len = textlen;
- 				break;
-@@ -1367,15 +1370,15 @@ static struct cont {
- 	bool flushed:1;			/* buffer sealed and committed */
- } cont;
- 
--static void cont_flush(void)
-+static void cont_flush(enum log_flags flags)
- {
- 	if (cont.flushed)
- 		return;
- 	if (cont.len == 0)
- 		return;
- 
--	log_store(cont.facility, cont.level, LOG_NOCONS, cont.ts_nsec,
--		  NULL, 0, cont.buf, cont.len);
-+	log_store(cont.facility, cont.level, LOG_NOCONS | flags,
-+		  cont.ts_nsec, NULL, 0, cont.buf, cont.len);
- 
- 	cont.flushed = true;
- }
-@@ -1386,7 +1389,8 @@ static bool cont_add(int facility, int l
- 		return false;
- 
- 	if (cont.len + len > sizeof(cont.buf)) {
--		cont_flush();
-+		/* the line gets too long, split it up in separate records */
-+		cont_flush(LOG_CONT);
- 		return false;
- 	}
- 
-@@ -1522,7 +1526,7 @@ asmlinkage int vprintk_emit(int facility
- 		 * or another task also prints continuation lines.
- 		 */
- 		if (cont.len && (lflags & LOG_PREFIX || cont.owner != current))
--			cont_flush();
-+			cont_flush(0);
- 
- 		/* buffer line if possible, otherwise store it right away */
- 		if (!cont_add(facility, level, text, text_len))
-@@ -1540,7 +1544,7 @@ asmlinkage int vprintk_emit(int facility
- 		if (cont.len && cont.owner == current) {
- 			if (!(lflags & LOG_PREFIX))
- 				stored = cont_add(facility, level, text, text_len);
--			cont_flush();
-+			cont_flush(0);
- 		}
- 
- 		if (!stored)
-@@ -1633,7 +1637,8 @@ EXPORT_SYMBOL(printk);
- 
- #else
- 
--#define LOG_LINE_MAX 0
-+#define LOG_LINE_MAX		0
-+#define PREFIX_MAX		0
- static struct cont {
- 	size_t len;
- 	size_t cons;
-@@ -1938,7 +1943,7 @@ static enum log_flags console_prev;
-  */
- void console_unlock(void)
- {
--	static char text[LOG_LINE_MAX];
-+	static char text[LOG_LINE_MAX + PREFIX_MAX];
- 	static u64 seen_seq;
- 	unsigned long flags;
- 	bool wake_klogd = false;
+> 
+> diff -rub linux-3.4.4/include/linux/tcp.h
+> linux-3.4.4-heal-lsm/include/linux/tcp.h
+> --- linux-3.4.4/include/linux/tcp.h	2012-06-22 20:37:50.000000000 +0200
+> +++ linux-3.4.4-heal-lsm/include/linux/tcp.h	2012-07-06 10:23:13.000000000
+> +0200
 
 
+
+See the 2 lines above.  They should be all on one line (the +0200 is
+on a separate line).  Something along the way split this long line for
+you, but this is bad.  It corrupts the patch.
+
+
+> @@ -472,6 +474,15 @@
+>  	 * contains related tcp_cookie_transactions fields.
+>  	 */
+>  	struct tcp_cookie_values  *cookie_values;
+> +
+> +	/*
+> +	 * TCP health monitoring counters.
+> +	 */
+> +	__u32	dup_acks_sent;
+> +	__u32	dup_pkts_recv;
+> +	__u32	acks_sent;
+> +	__u32	pkts_recv;
+> +		__u32	last_ack_sent;	/* Sequence number of the last ack we sent.
+
+
+Extra tab before __u32 above.
+
+ */
+>  };
+> 
+>  static inline struct tcp_sock *tcp_sk(const struct sock *sk)
+> diff -rub linux-3.4.4/net/ipv4/tcp_input.c
+> linux-3.4.4-heal-lsm/net/ipv4/tcp_input.c
+> --- linux-3.4.4/net/ipv4/tcp_input.c	2012-06-22 20:37:50.000000000 +0200
+> +++ linux-3.4.4-heal-lsm/net/ipv4/tcp_input.c	2012-07-06
+> 10:12:12.000000000 +0200
+
+
+Bad line(s) above.
+
+> @@ -5375,6 +5382,14 @@
+> 
+>  	tp->rx_opt.saw_tstamp = 0;
+> 
+> +	/*
+> +	 *	Tcp health monitoring is interested in
+> +	 *	total per-connection packet arrivals.
+> +	 *	This is in the fast path, but is quick.
+> +	 */
+> +
+
+
+The	*/
+is enough white space; don't add an extra line.
+
+> +	tp->pkts_recv++;
+> +
+>  	/*	pred_flags is 0xS?10 << 16 + snd_wnd
+>  	 *	if header_prediction is to be made
+>  	 *	'S' will always be tp->tcp_header_len >> 2
+> diff -rub linux-3.4.4/net/ipv4/tcp_ipv4.c
+> linux-3.4.4-heal-lsm/net/ipv4/tcp_ipv4.c
+> --- linux-3.4.4/net/ipv4/tcp_ipv4.c	2012-06-22 20:37:50.000000000 +0200
+> +++ linux-3.4.4-heal-lsm/net/ipv4/tcp_ipv4.c	2012-07-11 09:34:22.000000000
+> +0200
+> @@ -2533,6 +2533,82 @@
+>  	return 0;
+>  }
+> 
+> +
+> +/*
+> + *	Output /proc/net/tcphealth
+> + */
+> +#define LINESZ 128
+> +
+> +int tcp_health_seq_show(struct seq_file *seq, void *v)
+> +{
+> +	int len, num;
+> +       char srcIP[32], destIP[32];
+
+
+Use tab above for indentation (don't use spaces).
+
+> +
+> +	unsigned long  SmoothedRttEstimate,
+> +		AcksSent, DupAcksSent, PktsRecv, DupPktsRecv;
+> +	struct tcp_iter_state *st;
+> +
+> +	if (v == SEQ_START_TOKEN) {
+> +		seq_printf(seq,
+> +		"TCP Health Monitoring (established connections only)\n"
+> +		" -Duplicate ACKs indicate lost or reordered packets on the connection.\n"
+> +		" -Duplicate Packets Received signal a slow and badly inefficient
+> connection.\n"
+> +		" -RttEst estimates how long future packets will take on a round trip
+> over the connection.\n"
+> +		"id   Local Address        Remote Address       RttEst(ms) AcksSent "
+> +		"DupAcksSent PktsRecv DupPktsRecv\n");
+> +		goto out;
+> +	}
+> +
+> +	/* Loop through established TCP connections */
+> +	st = seq->private;
+> +
+> +
+> +	if (st->state==TCP_SEQ_STATE_ESTABLISHED)
+> +	{
+
+
+Kernel style is:
+
+	if (st->state == TCP_SEQ_STATE_ESTABLISHED) {
+
+
+> +/*	; //insert read-lock here */
+> +		const struct tcp_sock *tp = tcp_sk(v);
+> +		const struct inet_sock *inet = inet_sk(v);
+> +		__be32 dest = inet->inet_daddr;
+> +		__be32 src = inet->inet_rcv_saddr;
+> +		__u16 destp = ntohs(inet->inet_dport);
+> +		__u16 srcp = ntohs(inet->inet_sport);
+> +
+> +		num=st->num;
+
+
+		num = st->num;
+
+> +		SmoothedRttEstimate = (tp->srtt >> 3);
+> +		AcksSent = tp->acks_sent;
+> +		DupAcksSent = tp->dup_acks_sent;
+> +		PktsRecv = tp->pkts_recv;
+> +		DupPktsRecv = tp->dup_pkts_recv;
+> +
+> +		sprintf(srcIP, "%lu.%lu.%lu.%lu:%u",
+> +			((src >> 24) & 0xFF), ((src >> 16) & 0xFF), ((src >> 8) & 0xFF), (src
+> & 0xFF),
+> +			srcp);
+> +		sprintf(destIP, "%3d.%3d.%3d.%3d:%u",
+> +			((dest >> 24) & 0xFF), ((dest >> 16) & 0xFF), ((dest >> 8) & 0xFF),
+> (dest & 0xFF),
+> +			destp);
+> +
+> +		seq_printf(seq, "%d: %-21s %-21s "
+> +				"%8lu %8lu %8lu %8lu %8lu%n",
+> +				num,
+> +				srcIP,
+> +				destIP,
+> +				SmoothedRttEstimate,
+> +				AcksSent,
+> +				DupAcksSent,
+> +				PktsRecv,
+> +				DupPktsRecv,
+> +
+> +				&len
+> +			);
+> +
+> +		seq_printf(seq, "%*s\n", LINESZ - 1 - len, "");
+> +/*	; //insert read-unlock here */
+> +	}
+> +
+> +out:
+> +	return 0;
+> +}
+> +
+>  static const struct file_operations tcp_afinfo_seq_fops = {
+>  	.owner   = THIS_MODULE,
+>  	.open    = tcp_seq_open,
+> @@ -2541,6 +2617,15 @@
+>  	.release = seq_release_net
+>  };
+> 
+> +static struct tcp_seq_afinfo tcphealth_seq_afinfo = {
+> +	.name		= "tcphealth",
+> +	.family		= AF_INET,
+> +	.seq_fops	= &tcp_afinfo_seq_fops,
+> +	.seq_ops	= {
+> +		.show		= tcp_health_seq_show,
+> +	},
+> +};
+> +
+>  static struct tcp_seq_afinfo tcp4_seq_afinfo = {
+>  	.name		= "tcp",
+>  	.family		= AF_INET,
+> @@ -2552,12 +2637,15 @@
+> 
+>  static int __net_init tcp4_proc_init_net(struct net *net)
+>  {
+> -	return tcp_proc_register(net, &tcp4_seq_afinfo);
+> +	int ret=tcp_proc_register(net, &tcp4_seq_afinfo);
+
+
+	int ret = tcp_proc_register(...);
+
+> +	if(ret==0) ret=tcp_proc_register(net, &tcphealth_seq_afinfo);
+
+
+	if (ret == 0)
+		ret = tcp_proc_register(...);
+
+> +	return ret;
+>  }
+> 
+>  static void __net_exit tcp4_proc_exit_net(struct net *net)
+>  {
+>  	tcp_proc_unregister(net, &tcp4_seq_afinfo);
+> +	tcp_proc_unregister(net, &tcphealth_seq_afinfo);
+>  }
+> 
+>  static struct pernet_operations tcp4_net_ops = {
+> diff -rub linux-3.4.4/net/ipv4/tcp_output.c
+> linux-3.4.4-heal-lsm/net/ipv4/tcp_output.c
+> --- linux-3.4.4/net/ipv4/tcp_output.c	2012-06-22 20:37:50.000000000 +0200
+> +++ linux-3.4.4-heal-lsm/net/ipv4/tcp_output.c	2012-07-06
+> 17:15:14.000000000 +0200
+
+
+Bad split lines above.
+
+> @@ -2754,8 +2755,15 @@
+>  	skb_reserve(buff, MAX_TCP_HEADER);
+>  	tcp_init_nondata_skb(buff, tcp_acceptable_seq(sk), TCPHDR_ACK);
+> 
+> +		/* If the rcv_nxt has not advanced since sending our last ACK, this is
+> a duplicate. */
+> +		if (tcp_sk(sk)->rcv_nxt == tcp_sk(sk)->last_ack_sent)
+> +			tcp_sk(sk)->dup_acks_sent++;
+> +		/* Record the total number of acks sent on this connection. */
+> +		tcp_sk(sk)->acks_sent++;
+> +
+>  	/* Send it off, this clears delayed acks for us. */
+>  	TCP_SKB_CB(buff)->when = tcp_time_stamp;
+> +		tcp_sk(sk)->last_ack_sent = tcp_sk(sk)->rcv_nxt;
+
+
+Extra tab indentation above.
+
+>  	tcp_transmit_skb(sk, buff, 0, GFP_ATOMIC);
+>  }
+> 
+> 
+> --
+
+
+-- 
+~Randy
