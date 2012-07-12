@@ -1,119 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161246Ab2GLPkj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 11:40:39 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:34955
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1161233Ab2GLPkd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 11:40:33 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -12
-X-BigFish: VPS-12(zz98dI1432Izz1202hzz15d4R8275bh8275dhz2dh668h839h944hd25he5bhf0ah)
-X-WSS-ID: 0M720VB-02-314-02
-X-M-MSG: 
-Date: Thu, 12 Jul 2012 17:40:31 +0200
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Yinghai Lu <yinghai@kernel.org>
-CC: <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <x86@kernel.org>, Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: Re: [PATCH 01/27] x86/irq: Add data structure to keep AMD specific
- irq remapping information
-Message-ID: <20120712154031.GA4213@amd.com>
-References: <1342013952-10174-1-git-send-email-joerg.roedel@amd.com>
- <1342013952-10174-2-git-send-email-joerg.roedel@amd.com>
- <CAE9FiQUEYVMi46WYfLDDUO=PuTHYbmqXreZnCWLRdUjBH2iH4Q@mail.gmail.com>
+	id S1161236Ab2GLPnf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 11:43:35 -0400
+Received: from fieldses.org ([174.143.236.118]:51836 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933947Ab2GLPnd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 11:43:33 -0400
+Date: Thu, 12 Jul 2012 11:43:31 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org,
+        bjschuma@netapp.com
+Subject: Re: [PATCH v2] NFSd: fix locking in nfsd_forget_delegations()
+Message-ID: <20120712154331.GC21577@fieldses.org>
+References: <20120525143843.15863.27213.stgit@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAE9FiQUEYVMi46WYfLDDUO=PuTHYbmqXreZnCWLRdUjBH2iH4Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+In-Reply-To: <20120525143843.15863.27213.stgit@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 11, 2012 at 02:42:03PM -0700, Yinghai Lu wrote:
-> >  #ifdef CONFIG_IRQ_REMAP
-> > -       struct irq_2_iommu      irq_2_iommu;
-> > +       union irq_remap_info    irq_remap_info;
+On Fri, May 25, 2012 at 06:38:50PM +0400, Stanislav Kinsbursky wrote:
+> v2: dl_recall_lru list is used for delegations collect because it's modified
+> both in unhash_delegation() and nfsd_break_one_deleg().
 > 
-> how about
-> +union {
-> +       struct irq_2_iommu irq_2_iommu;
-> +       struct irq_2_irte  irq_2_irte;
-> +};
+> This patch adds recall_lock hold to nfsd_forget_delegations() to protect
+> nfsd_process_n_delegations() call.
+> Also, looks like it would be better to collect delegations to some local
+> on-stack list, and then unhash collected list. This split allows to
+> simplify locking, because delegation traversing is protected by recall_lock,
+> when delegation unhash is protected by client_mutex.
+
+Thanks, applying for 3.6 (assuming Bryan doesn't have any objection).
+
+--b.
+
 > 
-> instead?
-
-Yes, that is better. I updated the patch (and 4-5 more patches in the
-series to adapt them to this data structure change). I will update the
-branch on my tree today and push the version with this change included.
-Here is the new patch:
-
->From a0fd5f10f015629592adc28cb9b79d61d0ba1bfb Mon Sep 17 00:00:00 2001
-From: Joerg Roedel <joerg.roedel@amd.com>
-Date: Tue, 19 Jun 2012 16:07:45 +0200
-Subject: [PATCH 01/27] x86/irq: Add data structure to keep AMD specific irq
- remapping information
-
-Add a data structure to store information the IOMMU driver
-can use to get from a 'struct irq_cfg' to the remapping
-entry.
-
-Cc: x86@kernel.org
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
----
- arch/x86/include/asm/hw_irq.h |   12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
-
-diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
-index eb92a6e..fc89a2a 100644
---- a/arch/x86/include/asm/hw_irq.h
-+++ b/arch/x86/include/asm/hw_irq.h
-@@ -101,6 +101,7 @@ static inline void set_io_apic_irq_attr(struct io_apic_irq_attr *irq_attr,
- 	irq_attr->polarity	= polarity;
- }
- 
-+/* Intel specific interrupt remapping information */
- struct irq_2_iommu {
- 	struct intel_iommu *iommu;
- 	u16 irte_index;
-@@ -108,6 +109,12 @@ struct irq_2_iommu {
- 	u8  irte_mask;
- };
- 
-+/* AMD specific interrupt remapping information */
-+struct irq_2_irte {
-+	u16 devid; /* Device ID for IRTE table */
-+	u16 index; /* Index into IRTE table*/
-+};
-+
- /*
-  * This is performance-critical, we want to do it O(1)
-  *
-@@ -120,7 +127,10 @@ struct irq_cfg {
- 	u8			vector;
- 	u8			move_in_progress : 1;
- #ifdef CONFIG_IRQ_REMAP
--	struct irq_2_iommu	irq_2_iommu;
-+	union {
-+		struct irq_2_iommu irq_2_iommu;
-+		struct irq_2_irte  irq_2_irte;
-+	};
- #endif
- };
- 
--- 
-1.7.9.5
-
-
--- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> ---
+>  fs/nfsd/nfs4state.c |   21 +++++++++++++++++----
+>  1 files changed, 17 insertions(+), 4 deletions(-)
+> 
+> diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+> index 21266c7..3d6848b 100644
+> --- a/fs/nfsd/nfs4state.c
+> +++ b/fs/nfsd/nfs4state.c
+> @@ -4694,7 +4694,7 @@ void nfsd_forget_openowners(u64 num)
+>  	printk(KERN_INFO "NFSD: Forgot %d open owners", count);
+>  }
+>  
+> -int nfsd_process_n_delegations(u64 num, void (*deleg_func)(struct nfs4_delegation *))
+> +int nfsd_process_n_delegations(u64 num, struct list_head *list)
+>  {
+>  	int i, count = 0;
+>  	struct nfs4_file *fp, *fnext;
+> @@ -4703,7 +4703,7 @@ int nfsd_process_n_delegations(u64 num, void (*deleg_func)(struct nfs4_delegatio
+>  	for (i = 0; i < FILE_HASH_SIZE; i++) {
+>  		list_for_each_entry_safe(fp, fnext, &file_hashtbl[i], fi_hash) {
+>  			list_for_each_entry_safe(dp, dnext, &fp->fi_delegations, dl_perfile) {
+> -				deleg_func(dp);
+> +				list_move(&dp->dl_recall_lru, list);
+>  				if (++count == num)
+>  					return count;
+>  			}
+> @@ -4716,9 +4716,16 @@ int nfsd_process_n_delegations(u64 num, void (*deleg_func)(struct nfs4_delegatio
+>  void nfsd_forget_delegations(u64 num)
+>  {
+>  	unsigned int count;
+> +	LIST_HEAD(victims);
+> +	struct nfs4_delegation *dp, *dnext;
+> +
+> +	spin_lock(&recall_lock);
+> +	count = nfsd_process_n_delegations(num, &victims);
+> +	spin_unlock(&recall_lock);
+>  
+>  	nfs4_lock_state();
+> -	count = nfsd_process_n_delegations(num, unhash_delegation);
+> +	list_for_each_entry_safe(dp, dnext, &victims, dl_recall_lru)
+> +		unhash_delegation(dp);
+>  	nfs4_unlock_state();
+>  
+>  	printk(KERN_INFO "NFSD: Forgot %d delegations", count);
+> @@ -4727,10 +4734,16 @@ void nfsd_forget_delegations(u64 num)
+>  void nfsd_recall_delegations(u64 num)
+>  {
+>  	unsigned int count;
+> +	LIST_HEAD(victims);
+> +	struct nfs4_delegation *dp, *dnext;
+>  
+>  	nfs4_lock_state();
+>  	spin_lock(&recall_lock);
+> -	count = nfsd_process_n_delegations(num, nfsd_break_one_deleg);
+> +	count = nfsd_process_n_delegations(num, &victims);
+> +	list_for_each_entry_safe(dp, dnext, &victims, dl_recall_lru) {
+> +		list_del(&dp->dl_recall_lru);
+> +		nfsd_break_one_deleg(dp);
+> +	}
+>  	spin_unlock(&recall_lock);
+>  	nfs4_unlock_state();
+>  
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
