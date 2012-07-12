@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162056Ab2GLXCj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:02:39 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:56311 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162018Ab2GLWmd (ORCPT
+	id S1162145Ab2GLXCv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:02:51 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63192 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162024Ab2GLXCs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:42:33 -0400
+	Thu, 12 Jul 2012 19:02:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Junxiao Bi <junxiao.bi@oracle.com>, Jeff Moyer <jmoyer@redhat.com>,
-        Joel Becker <jlbec@evilplan.org>
-Subject: [ 121/187] aio: make kiocb->private NUll in init_sync_kiocb()
-Date: Thu, 12 Jul 2012 15:34:37 -0700
-Message-Id: <20120712191533.579605191@linuxfoundation.org>
+        Richard Crossley <richardcrossley@o2.co.uk>,
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 01/68] ALSA: hda - Add Realtek ALC280 codec support
+Date: Thu, 12 Jul 2012 16:01:35 -0700
+Message-Id: <20120712175035.530652872@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
-In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
-References: <20120712192421.GA28926@kroah.com>
- <20120712191522.742634173@linuxfoundation.org>
+In-Reply-To: <20120712175057.GA9917@kroah.com>
+References: <20120712175057.GA9917@kroah.com>
 User-Agent: quilt/0.60-20.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,41 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Greg KH <gregkh@linuxfoundation.org>
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Junxiao Bi <junxiao.bi@oracle.com>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit 2dfd06036ba7ae8e7be2daf5a2fff1dac42390bf upstream.
+commit befae82e2906cb7155020876a531b0b8c6c8d8c8 upstream.
 
-Ocfs2 uses kiocb.*private as a flag of unsigned long size. In
-commit a11f7e6 ocfs2: serialize unaligned aio, the unaligned
-io flag is involved in it to serialize the unaligned aio. As
-*private is not initialized in init_sync_kiocb() of do_sync_write(),
-this unaligned io flag may be unexpectly set in an aligned dio.
-And this will cause OCFS2_I(inode)->ip_unaligned_aio decreased
-to -1 in ocfs2_dio_end_io(), thus the following unaligned dio
-will hang forever at ocfs2_aiodio_wait() in ocfs2_file_aio_write().
+This chip looks very similar to ALC269 and ALC27* variants. The bug reporter
+has verified that sound was working after this patch had been applied.
 
-Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
-Acked-by: Jeff Moyer <jmoyer@redhat.com>
-Signed-off-by: Joel Becker <jlbec@evilplan.org>
+BugLink: https://bugs.launchpad.net/bugs/1017017
+Tested-by: Richard Crossley <richardcrossley@o2.co.uk>
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/aio.h |    1 +
+ sound/pci/hda/patch_realtek.c |    1 +
  1 file changed, 1 insertion(+)
 
---- a/include/linux/aio.h
-+++ b/include/linux/aio.h
-@@ -140,6 +140,7 @@ struct kiocb {
- 		(x)->ki_dtor = NULL;			\
- 		(x)->ki_obj.tsk = tsk;			\
- 		(x)->ki_user_data = 0;                  \
-+		(x)->private = NULL;			\
- 	} while (0)
- 
- #define AIO_RING_MAGIC			0xa10a10a1
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -20132,6 +20132,7 @@ static const struct hda_codec_preset snd
+ 	{ .id = 0x10ec0272, .name = "ALC272", .patch = patch_alc662 },
+ 	{ .id = 0x10ec0275, .name = "ALC275", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0276, .name = "ALC276", .patch = patch_alc269 },
++	{ .id = 0x10ec0280, .name = "ALC280", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0861, .rev = 0x100340, .name = "ALC660",
+ 	  .patch = patch_alc861 },
+ 	{ .id = 0x10ec0660, .name = "ALC660-VD", .patch = patch_alc861vd },
 
 
