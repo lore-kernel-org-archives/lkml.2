@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759561Ab2GLWhw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:37:52 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:57335 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759481Ab2GLWhm (ORCPT
+	id S1759572Ab2GLWh6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:37:58 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54985 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759558Ab2GLWhw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:37:42 -0400
+	Thu, 12 Jul 2012 18:37:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <edumazet@google.com>,
-        Eilon Greenstein <eilong@broadcom.com>,
-        Yaniv Rosner <yanivr@broadcom.com>, Merav Sicron <meravs@broadcom.com>,
-        Tom Herbert <therbert@google.com>, Robert Evans <evansr@google.com>,
-        Willem de Bruijn <willemb@google.com>,
+        Thomas Graf <tgraf@suug.ch>, Stephen Hemminger <shemminger@vyatta.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 037/187] bnx2x: fix checksum validation
-Date: Thu, 12 Jul 2012 15:33:13 -0700
-Message-Id: <20120712191525.759316508@linuxfoundation.org>
+Subject: [ 040/187] bridge: Assign rtnl_link_ops to bridge devices created via ioctl (v2)
+Date: Thu, 12 Jul 2012 15:33:16 -0700
+Message-Id: <20120712191526.046251183@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -36,105 +32,54 @@ From: Greg KH <gregkh@linuxfoundation.org>
 ------------------
 
 
-From: Eric Dumazet <edumazet@google.com>
+From: stephen hemminger <shemminger@vyatta.com>
 
-[ Upstream commit d6cb3e41386f20fb0777d0b59a2def82c65d37f7 ]
+[ Upstream commit 149ddd83a92b02c658d6c61f3276eb6500d585e8 ]
 
-bnx2x driver incorrectly sets ip_summed to CHECKSUM_UNNECESSARY on
-encapsulated segments. TCP stack happily accepts frames with bad
-checksums, if they are inside a GRE or IPIP encapsulation.
+This ensures that bridges created with brctl(8) or ioctl(2) directly
+also carry IFLA_LINKINFO when dumped over netlink. This also allows
+to create a bridge with ioctl(2) and delete it with RTM_DELLINK.
 
-Our understanding is that if no IP or L4 csum validation was done by the
-hardware, we should leave ip_summed as is (CHECKSUM_NONE), since
-hardware doesn't provide CHECKSUM_COMPLETE support in its cqe.
-
-Then, if IP/L4 checksumming was done by the hardware, set
-CHECKSUM_UNNECESSARY if no error was flagged.
-
-Patch based on findings and analysis from Robert Evans
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Eilon Greenstein <eilong@broadcom.com>
-Cc: Yaniv Rosner <yanivr@broadcom.com>
-Cc: Merav Sicron <meravs@broadcom.com>
-Cc: Tom Herbert <therbert@google.com>
-Cc: Robert Evans <evansr@google.com>
-Cc: Willem de Bruijn <willemb@google.com>
-Acked-by: Eilon Greenstein <eilong@broadcom.com>
+Signed-off-by: Thomas Graf <tgraf@suug.ch>
+Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/broadcom/bnx2x/bnx2x.h     |   15 -------------
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c |   27 ++++++++++++++++++------
- 2 files changed, 21 insertions(+), 21 deletions(-)
+ net/bridge/br_if.c      |    1 +
+ net/bridge/br_netlink.c |    2 +-
+ net/bridge/br_private.h |    1 +
+ 3 files changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x.h
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x.h
-@@ -744,21 +744,6 @@ struct bnx2x_fastpath {
+--- a/net/bridge/br_if.c
++++ b/net/bridge/br_if.c
+@@ -240,6 +240,7 @@ int br_add_bridge(struct net *net, const
+ 		return -ENOMEM;
  
- #define ETH_RX_ERROR_FALGS		ETH_FAST_PATH_RX_CQE_PHY_DECODE_ERR_FLG
+ 	dev_net_set(dev, net);
++	dev->rtnl_link_ops = &br_link_ops;
  
--#define BNX2X_IP_CSUM_ERR(cqe) \
--			(!((cqe)->fast_path_cqe.status_flags & \
--			   ETH_FAST_PATH_RX_CQE_IP_XSUM_NO_VALIDATION_FLG) && \
--			 ((cqe)->fast_path_cqe.type_error_flags & \
--			  ETH_FAST_PATH_RX_CQE_IP_BAD_XSUM_FLG))
--
--#define BNX2X_L4_CSUM_ERR(cqe) \
--			(!((cqe)->fast_path_cqe.status_flags & \
--			   ETH_FAST_PATH_RX_CQE_L4_XSUM_NO_VALIDATION_FLG) && \
--			 ((cqe)->fast_path_cqe.type_error_flags & \
--			  ETH_FAST_PATH_RX_CQE_L4_BAD_XSUM_FLG))
--
--#define BNX2X_RX_CSUM_OK(cqe) \
--			(!(BNX2X_L4_CSUM_ERR(cqe) || BNX2X_IP_CSUM_ERR(cqe)))
--
- #define BNX2X_PRS_FLAG_OVERETH_IPV4(flags) \
- 				(((le16_to_cpu(flags) & \
- 				   PARSING_FLAGS_OVER_ETHERNET_PROTOCOL) >> \
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-@@ -568,6 +568,25 @@ drop:
- 	fp->eth_q_stats.rx_skb_alloc_failed++;
+ 	res = register_netdev(dev);
+ 	if (res)
+--- a/net/bridge/br_netlink.c
++++ b/net/bridge/br_netlink.c
+@@ -211,7 +211,7 @@ static int br_validate(struct nlattr *tb
+ 	return 0;
  }
  
-+static void bnx2x_csum_validate(struct sk_buff *skb, union eth_rx_cqe *cqe,
-+				struct bnx2x_fastpath *fp)
-+{
-+	/* Do nothing if no IP/L4 csum validation was done */
-+
-+	if (cqe->fast_path_cqe.status_flags &
-+	    (ETH_FAST_PATH_RX_CQE_IP_XSUM_NO_VALIDATION_FLG |
-+	     ETH_FAST_PATH_RX_CQE_L4_XSUM_NO_VALIDATION_FLG))
-+		return;
-+
-+	/* If both IP/L4 validation were done, check if an error was found. */
-+
-+	if (cqe->fast_path_cqe.type_error_flags &
-+	    (ETH_FAST_PATH_RX_CQE_IP_BAD_XSUM_FLG |
-+	     ETH_FAST_PATH_RX_CQE_L4_BAD_XSUM_FLG))
-+		fp->eth_q_stats.hw_csum_err++;
-+	else
-+		skb->ip_summed = CHECKSUM_UNNECESSARY;
-+}
+-static struct rtnl_link_ops br_link_ops __read_mostly = {
++struct rtnl_link_ops br_link_ops __read_mostly = {
+ 	.kind		= "bridge",
+ 	.priv_size	= sizeof(struct net_bridge),
+ 	.setup		= br_dev_setup,
+--- a/net/bridge/br_private.h
++++ b/net/bridge/br_private.h
+@@ -538,6 +538,7 @@ extern int (*br_fdb_test_addr_hook)(stru
+ #endif
  
- int bnx2x_rx_int(struct bnx2x_fastpath *fp, int budget)
- {
-@@ -757,13 +776,9 @@ reuse_rx:
- 
- 		skb_checksum_none_assert(skb);
- 
--		if (bp->dev->features & NETIF_F_RXCSUM) {
-+		if (bp->dev->features & NETIF_F_RXCSUM)
-+			bnx2x_csum_validate(skb, cqe, fp);
- 
--			if (likely(BNX2X_RX_CSUM_OK(cqe)))
--				skb->ip_summed = CHECKSUM_UNNECESSARY;
--			else
--				fp->eth_q_stats.hw_csum_err++;
--		}
- 
- 		skb_record_rx_queue(skb, fp->rx_queue);
- 
+ /* br_netlink.c */
++extern struct rtnl_link_ops br_link_ops;
+ extern int br_netlink_init(void);
+ extern void br_netlink_fini(void);
+ extern void br_ifinfo_notify(int event, struct net_bridge_port *port);
 
 
