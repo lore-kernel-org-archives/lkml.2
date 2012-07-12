@@ -1,62 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759623Ab2GLXqw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:46:52 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:36965 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759581Ab2GLXqk (ORCPT
+	id S1759597Ab2GLXrf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:47:35 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44509 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759418Ab2GLWhQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 19:46:40 -0400
-X-AuditID: cbfee61a-b7f616d000004b7e-1b-4fff61df1cee
-Message-id: <4FFF61DF.4030309@samsung.com>
-Date: Fri, 13 Jul 2012 08:46:39 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
- Thunderbird/10.0.2
-MIME-version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: gregkh@linuxfoundation.org, sameo@linux.intel.com,
-        myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] extcon: Remove CONFIG_EXTCON_MODULE config to fix build
- break
-References: <1342067547-6276-1-git-send-email-cw00.choi@samsung.com>
- <20120712161621.GB7256@opensource.wolfsonmicro.com>
-In-reply-to: <20120712161621.GB7256@opensource.wolfsonmicro.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOLMWRmVeSWpSXmKPExsVy+t9jAd37if/9Dd6ek7W4vGsOmwOjx+dN
-	cgGMUVw2Kak5mWWpRfp2CVwZ3Y/YCu6wVdxr/MHUwLiGtYuRk0NCwETi+Kp2dghbTOLCvfVs
-	XYxcHEICixglZl9uAksICXQxSfx9kwZi8wpoSTQu+gPWzCKgKrFu+i4mEJsNKL7/xQ2gZg4O
-	UYEIiV/9HBDlghI/Jt9jAQmLAO36fb8SZDyzQA+jRPuDb2CtwgIhEs8/z2CGWFUlsavtBNh4
-	TgEHiYe/d4LZzAI6Evtbp7FB2PISm9e8ZZ7AKDALyYpZSMpmISlbwMi8ilE0tSC5oDgpPddQ
-	rzgxt7g0L10vOT93EyM4+J5J7WBc2WBxiFGAg1GJh3dB9H9/IdbEsuLK3EOMEhzMSiK86+yB
-	QrwpiZVVqUX58UWlOanFhxilOViUxHmNvb/6CwmkJ5akZqemFqQWwWSZODilGhgP776Sc/Gt
-	z7Ji3oPJZxbaBfXxMJ1X1bKZvexLUM/evSmyi8X2vozSqFH94vZgzu4K1zkayskLuqdO4Uhr
-	yMm9wd5jrPJVc/6Wm6qfL5XkP2+NmfrRcdGMfLYmF67Ql635jTOEk+f4tFplFX4P3cVqOdnD
-	JGHXvqiHE9+Eme9YLWvB8Nxvd50SS3FGoqEWc1FxIgB2x8CxOgIAAA==
-X-TM-AS-MML: No
+	Thu, 12 Jul 2012 18:37:16 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Thomas Graf <tgraf@suug.ch>, "David S. Miller" <davem@davemloft.net>
+Subject: [ 030/187] ipv6: Move ipv6 proc file registration to end of init order
+Date: Thu, 12 Jul 2012 15:33:06 -0700
+Message-Id: <20120712191525.076358583@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
+References: <20120712192421.GA28926@kroah.com>
+ <20120712191522.742634173@linuxfoundation.org>
+User-Agent: quilt/0.60-20.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/13/2012 01:16 AM, Mark Brown wrote:
+From: Greg KH <gregkh@linuxfoundation.org>
 
-> On Thu, Jul 12, 2012 at 01:32:27PM +0900, Chanwoo Choi wrote:
->> This patch modify 'Kconfig' of EXTCON Subsystem to support either
->> active or inactive of EXTCON Subsystem. The various subsystem refer
->> to EXTCON subsystem for controlling external connector, so core class
->> of EXTCON should be included in kernel image. If EXTCON subsystem is
->> builded with MODULE, other subsystem have build break because of
->> linking the core class of EXTCON.
-> 
-> By this logic very little in the kernel should be a module.  We usually
-> only force things to be built in if there's a technical need for it like
-> init ordering constraints.  Generally this is just a case of making sure
-> the Kconfig stuff is set up with appropriate dependencies.
+3.4-stable review patch.  If anyone has any objections, please let me know.
+
+------------------
 
 
-As you said, I will fix it.
+From: Thomas Graf <tgraf@suug.ch>
 
-Thank you,
-Chanwoo Choi
+[ Upstream commit d189634ecab947c10f6f832258b103d0bbfe73cc ]
+
+/proc/net/ipv6_route reflects the contents of fib_table_hash. The proc
+handler is installed in ip6_route_net_init() whereas fib_table_hash is
+allocated in fib6_net_init() _after_ the proc handler has been installed.
+
+This opens up a short time frame to access fib_table_hash with its pants
+down.
+
+Move the registration of the proc files to a later point in the init
+order to avoid the race.
+
+Tested :-)
+
+Signed-off-by: Thomas Graf <tgraf@suug.ch>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/ipv6/route.c |   41 +++++++++++++++++++++++++++++++----------
+ 1 file changed, 31 insertions(+), 10 deletions(-)
+
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -2953,10 +2953,6 @@ static int __net_init ip6_route_net_init
+ 	net->ipv6.sysctl.ip6_rt_mtu_expires = 10*60*HZ;
+ 	net->ipv6.sysctl.ip6_rt_min_advmss = IPV6_MIN_MTU - 20 - 40;
+ 
+-#ifdef CONFIG_PROC_FS
+-	proc_net_fops_create(net, "ipv6_route", 0, &ipv6_route_proc_fops);
+-	proc_net_fops_create(net, "rt6_stats", S_IRUGO, &rt6_stats_seq_fops);
+-#endif
+ 	net->ipv6.ip6_rt_gc_expire = 30*HZ;
+ 
+ 	ret = 0;
+@@ -2977,10 +2973,6 @@ out_ip6_dst_ops:
+ 
+ static void __net_exit ip6_route_net_exit(struct net *net)
+ {
+-#ifdef CONFIG_PROC_FS
+-	proc_net_remove(net, "ipv6_route");
+-	proc_net_remove(net, "rt6_stats");
+-#endif
+ 	kfree(net->ipv6.ip6_null_entry);
+ #ifdef CONFIG_IPV6_MULTIPLE_TABLES
+ 	kfree(net->ipv6.ip6_prohibit_entry);
+@@ -2989,11 +2981,33 @@ static void __net_exit ip6_route_net_exi
+ 	dst_entries_destroy(&net->ipv6.ip6_dst_ops);
+ }
+ 
++static int __net_init ip6_route_net_init_late(struct net *net)
++{
++#ifdef CONFIG_PROC_FS
++	proc_net_fops_create(net, "ipv6_route", 0, &ipv6_route_proc_fops);
++	proc_net_fops_create(net, "rt6_stats", S_IRUGO, &rt6_stats_seq_fops);
++#endif
++	return 0;
++}
++
++static void __net_exit ip6_route_net_exit_late(struct net *net)
++{
++#ifdef CONFIG_PROC_FS
++	proc_net_remove(net, "ipv6_route");
++	proc_net_remove(net, "rt6_stats");
++#endif
++}
++
+ static struct pernet_operations ip6_route_net_ops = {
+ 	.init = ip6_route_net_init,
+ 	.exit = ip6_route_net_exit,
+ };
+ 
++static struct pernet_operations ip6_route_net_late_ops = {
++	.init = ip6_route_net_init_late,
++	.exit = ip6_route_net_exit_late,
++};
++
+ static struct notifier_block ip6_route_dev_notifier = {
+ 	.notifier_call = ip6_route_dev_notify,
+ 	.priority = 0,
+@@ -3043,19 +3057,25 @@ int __init ip6_route_init(void)
+ 	if (ret)
+ 		goto xfrm6_init;
+ 
++	ret = register_pernet_subsys(&ip6_route_net_late_ops);
++	if (ret)
++		goto fib6_rules_init;
++
+ 	ret = -ENOBUFS;
+ 	if (__rtnl_register(PF_INET6, RTM_NEWROUTE, inet6_rtm_newroute, NULL, NULL) ||
+ 	    __rtnl_register(PF_INET6, RTM_DELROUTE, inet6_rtm_delroute, NULL, NULL) ||
+ 	    __rtnl_register(PF_INET6, RTM_GETROUTE, inet6_rtm_getroute, NULL, NULL))
+-		goto fib6_rules_init;
++		goto out_register_late_subsys;
+ 
+ 	ret = register_netdevice_notifier(&ip6_route_dev_notifier);
+ 	if (ret)
+-		goto fib6_rules_init;
++		goto out_register_late_subsys;
+ 
+ out:
+ 	return ret;
+ 
++out_register_late_subsys:
++	unregister_pernet_subsys(&ip6_route_net_late_ops);
+ fib6_rules_init:
+ 	fib6_rules_cleanup();
+ xfrm6_init:
+@@ -3074,6 +3094,7 @@ out_kmem_cache:
+ void ip6_route_cleanup(void)
+ {
+ 	unregister_netdevice_notifier(&ip6_route_dev_notifier);
++	unregister_pernet_subsys(&ip6_route_net_late_ops);
+ 	fib6_rules_cleanup();
+ 	xfrm6_fini();
+ 	fib6_gc_cleanup();
+
+
