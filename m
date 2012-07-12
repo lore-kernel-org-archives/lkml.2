@@ -1,137 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030716Ab2GLSzI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 14:55:08 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35443 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755649Ab2GLSzF (ORCPT
+	id S1030546Ab2GLTDT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 15:03:19 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:47624 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755385Ab2GLTDP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 14:55:05 -0400
-Date: Thu, 12 Jul 2012 13:54:52 -0500
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Doug Ledford <dledford@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-kernel@vger.kernel.org, "Dmitry V. Levin" <ldv@altlinux.org>,
-        Pavel Emelyanov <xemul@openvz.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: Re: [RFC, PATCH] CLONE_NEWIPC and exit_group()
-Message-ID: <20120712185452.GA24342@sergelap>
-References: <20120626120425.GA10275@otc-wbsnb-06>
- <20120710085034.GA24645@otc-wbsnb-06>
- <20120711152422.a1f07bd5.akpm@linux-foundation.org>
- <20120712150702.GA1897@otc-wbsnb-06>
+	Thu, 12 Jul 2012 15:03:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120712150702.GA1897@otc-wbsnb-06>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1342114028-21407-1-git-send-email-octavian.purdila@intel.com>
+References: <1342114028-21407-1-git-send-email-octavian.purdila@intel.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 12 Jul 2012 13:02:53 -0600
+Message-ID: <CAErSpo6X6PzXCy3a2DfctvAtiWDoO81-5AfRy7rN=qBBOytFYg@mail.gmail.com>
+Subject: Re: [PATCH v2] resource: make sure requested range is included in the
+ root range
+To: Octavian Purdila <octavian.purdila@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Ram Pai <linuxram@us.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Kirill A. Shutemov (kirill.shutemov@linux.intel.com):
-> On Wed, Jul 11, 2012 at 03:24:22PM -0700, Andrew Morton wrote:
-> > Am I reading that right?  1000 forks take 33 seconds, with basically
-> > all of it just sitting there asleep?  This look quite terrible - what
-> > causes this?
-> 
-> It seems free_nsproxy() + synchronize_rcu() are too heavy to be in
-> exit_group() path. Patch below helps: 8s -> ~0.5s for me.
+On Thu, Jul 12, 2012 at 11:27 AM, Octavian Purdila
+<octavian.purdila@intel.com> wrote:
+> When the requested range is outside of the root range the logic in
+> __reserve_region_with_split will cause an infinite recursion which
+> will overflow the stack as seen in the warning bellow.
 
-And sys time goes down by that much too, or only user time?
+I think reserve_region_with_split() is a dubious design to begin with.
+ We're trying to mark these regions as "not available for devices,"
+and we have to do all these contortions like reserving some things
+early, reserving other things late, and doing
+reserve_region_with_split() because of the restriction that resources
+must be strictly hierarchical.
 
-Given that, with user namespaces, it'll soon be possible for users who
-are unprivileged toward the host to be able to create and destroy
-namespaces, if the patch ends up making it easy for a user to consume a
-bunch of system time and not have it accounted at all to himself, then
-I think we should keep it as is.
+The hierarchy might be important in some cases, but for "do not use
+this region," it's not, and it just gets in the way.
 
-> I'll prepare cleaner patch later if the approach is good enough.
-> 
-> Also, I noticed that put_nsproxy() calls free_nsproxy() without
-> synchronize_rcu(). It looks wrong.
-> 
-> diff --git a/include/linux/nsproxy.h b/include/linux/nsproxy.h
-> index cc37a55..1d26be7 100644
-> --- a/include/linux/nsproxy.h
-> +++ b/include/linux/nsproxy.h
-> @@ -24,6 +24,7 @@ struct fs_struct;
+> This particular stack overflow was caused by requesting the
+> (100000000-107ffffff) range while the root range was (0-ffffffff). In
+> this case __request_resource would return the whole root range as
+> conflict range (i.e. 0-ffffffff). Then, the logic in
+> __reserve_region_with_split would continue the recursion requesting
+> the new range as (conflict->end+1, end) which incidentally in this
+> case equals the originally requested range.
+
+Why don't you fix this right where the problem occurs, in
+__reserve_region_with_split(), with something like this:
+
+        if (end > conflict->start && conflict->start > start)
+                __reserve_region_with_split(root, start,
+conflict->start-1, name);
+        if (start < conflict->end && conflict->end < end && )
+                __reserve_region_with_split(root, conflict->end+1, end, name);
+
+Here's my visualization (O=root, -=new, *=overlap):
+    ----- OOOOOOOOO     no overlap              => returns r, reserve
+nothing (currently broken)
+    ---**OOOOOOOOOO     overlap root start      => returns r, reserve
+[start,c->start-1]
+    OOOOO*****OOOOO     full overlap            => returns 0, done
+    OOOOOOOOOO**---     overlap root end        => returns r, reserve
+[c->end+1,end]
+    OOOOOOOOO -----     no overlap              => returns r, reserve
+nothing (currently broken)
+
+> This patch aborts looking for an usable range when the request does
+> not intersect with the root range. When the request partially overlaps
+> with the root range, it ajust the request to fall in the root range
+> and then continues with the new request.
+>
+> When the request is modified or aborted errors and a stack trace are
+> logged to allow catching the errors in the upper layers.
+>
+> [    5.968374] WARNING: at kernel/sched.c:4129 sub_preempt_count+0x63/0x89()
+> [    5.975150] Modules linked in:
+> [    5.978184] Pid: 1, comm: swapper Not tainted 3.0.22-mid27-00004-gb72c817 #46
+> [    5.985324] Call Trace:
+> [    5.987759]  [<c1039dfc>] ? console_unlock+0x17b/0x18d
+> [    5.992891]  [<c1039620>] warn_slowpath_common+0x48/0x5d
+> [    5.998194]  [<c1031758>] ? sub_preempt_count+0x63/0x89
+> [    6.003412]  [<c1039644>] warn_slowpath_null+0xf/0x13
+> [    6.008453]  [<c1031758>] sub_preempt_count+0x63/0x89
+> [    6.013499]  [<c14d60c4>] _raw_spin_unlock+0x27/0x3f
+> [    6.018453]  [<c10c6349>] add_partial+0x36/0x3b
+> [    6.022973]  [<c10c7c0a>] deactivate_slab+0x96/0xb4
+> [    6.027842]  [<c14cf9d9>] __slab_alloc.isra.54.constprop.63+0x204/0x241
+> [    6.034456]  [<c103f78f>] ? kzalloc.constprop.5+0x29/0x38
+> [    6.039842]  [<c103f78f>] ? kzalloc.constprop.5+0x29/0x38
+> [    6.045232]  [<c10c7dc9>] kmem_cache_alloc_trace+0x51/0xb0
+> [    6.050710]  [<c103f78f>] ? kzalloc.constprop.5+0x29/0x38
+> [    6.056100]  [<c103f78f>] kzalloc.constprop.5+0x29/0x38
+> [    6.061320]  [<c17b45e9>] __reserve_region_with_split+0x1c/0xd1
+> [    6.067230]  [<c17b4693>] __reserve_region_with_split+0xc6/0xd1
+> ...
+> [    7.179057]  [<c17b4693>] __reserve_region_with_split+0xc6/0xd1
+> [    7.184970]  [<c17b4779>] reserve_region_with_split+0x30/0x42
+> [    7.190709]  [<c17a8ebf>] e820_reserve_resources_late+0xd1/0xe9
+> [    7.196623]  [<c17c9526>] pcibios_resource_survey+0x23/0x2a
+> [    7.202184]  [<c17cad8a>] pcibios_init+0x23/0x35
+> [    7.206789]  [<c17ca574>] pci_subsys_init+0x3f/0x44
+> [    7.211659]  [<c1002088>] do_one_initcall+0x72/0x122
+> [    7.216615]  [<c17ca535>] ? pci_legacy_init+0x3d/0x3d
+> [    7.221659]  [<c17a27ff>] kernel_init+0xa6/0x118
+> [    7.226265]  [<c17a2759>] ? start_kernel+0x334/0x334
+> [    7.231223]  [<c14d7482>] kernel_thread_helper+0x6/0x10
+>
+> Cc: Ram Pai <linuxram@us.ibm.com>
+>
+> Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
+> ---
+>  kernel/resource.c |   25 ++++++++++++++++++++++++-
+>  1 file changed, 24 insertions(+), 1 deletion(-)
+>
+> diff --git a/kernel/resource.c b/kernel/resource.c
+> index e1d2b8e..84e3aa4 100644
+> --- a/kernel/resource.c
+> +++ b/kernel/resource.c
+> @@ -7,6 +7,8 @@
+>   * Arbitrary resource management.
 >   */
->  struct nsproxy {
->  	atomic_t count;
-> +	struct work_struct free_nsproxy_work;
->  	struct uts_namespace *uts_ns;
->  	struct ipc_namespace *ipc_ns;
->  	struct mnt_namespace *mnt_ns;
-> diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
-> index b576f7f..63618cc 100644
-> --- a/kernel/nsproxy.c
-> +++ b/kernel/nsproxy.c
-> @@ -41,13 +41,17 @@ struct nsproxy init_nsproxy = {
->  #endif
->  };
->  
-> +static void free_nsproxy_synced(struct work_struct *work);
+>
+> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 > +
->  static inline struct nsproxy *create_nsproxy(void)
+>  #include <linux/export.h>
+>  #include <linux/errno.h>
+>  #include <linux/ioport.h>
+> @@ -788,8 +790,29 @@ void __init reserve_region_with_split(struct resource *root,
+>                 resource_size_t start, resource_size_t end,
+>                 const char *name)
 >  {
->  	struct nsproxy *nsproxy;
->  
->  	nsproxy = kmem_cache_alloc(nsproxy_cachep, GFP_KERNEL);
-> -	if (nsproxy)
-> +	if (nsproxy) {
->  		atomic_set(&nsproxy->count, 1);
-> +		INIT_WORK(&nsproxy->free_nsproxy_work, free_nsproxy_synced);
-> +	}
->  	return nsproxy;
->  }
->  
-> @@ -178,6 +182,23 @@ void free_nsproxy(struct nsproxy *ns)
->  	kmem_cache_free(nsproxy_cachep, ns);
->  }
->  
-> +static void free_nsproxy_synced(struct work_struct *work)
-> +{
-> +	struct nsproxy *ns = container_of(work, struct nsproxy,
-> +			free_nsproxy_work);
+> +       int abort = 0;
 > +
-> +	/*
-> +	 * wait for others to get what they want from this nsproxy.
-> +	 *
-> +	 * cannot release this nsproxy via the call_rcu() since
-> +	 * put_mnt_ns() will want to sleep
-> +	 */
-> +	synchronize_rcu();
-> +
-> +	free_nsproxy(ns);
-> +}
-> +
-> +
->  /*
->   * Called from unshare. Unshare all the namespaces part of nsproxy.
->   * On success, returns the new nsproxy.
-> @@ -215,16 +236,8 @@ void switch_task_namespaces(struct task_struct *p, struct nsproxy *new)
->  
->  	rcu_assign_pointer(p->nsproxy, new);
->  
-> -	if (ns && atomic_dec_and_test(&ns->count)) {
-> -		/*
-> -		 * wait for others to get what they want from this nsproxy.
-> -		 *
-> -		 * cannot release this nsproxy via the call_rcu() since
-> -		 * put_mnt_ns() will want to sleep
-> -		 */
-> -		synchronize_rcu();
-> -		free_nsproxy(ns);
-> -	}
-> +	if (ns && atomic_dec_and_test(&ns->count))
-> +		schedule_work(&ns->free_nsproxy_work);
->  }
->  
->  void exit_task_namespaces(struct task_struct *p)
-> -- 
->  Kirill A. Shutemov
+>         write_lock(&resource_lock);
+> -       __reserve_region_with_split(root, start, end, name);
+> +       if (root->start > start || root->end < end) {
+> +               pr_err("requested range [0x%llx-0x%llx] not in root %pr\n",
+> +                      (unsigned long long)start, (unsigned long long)end,
+> +                      root);
+> +               if (start > root->end || end < root->start) {
+> +                       abort = 1;
+> +                       pr_err("unable to fix request, aborting it\n");
 
+This message doesn't contain any useful information (range/root/etc).
 
+> +               } else {
+> +                       if (end > root->end)
+> +                               end = root->end;
+> +                       if (start < root->start)
+> +                               start = root->start;
+> +                       pr_err("fixing request to [0x%llx-0x%llx]\n",
+> +                              (unsigned long long)start,
+> +                              (unsigned long long)end);
+> +               }
+> +               dump_stack();
+> +       }
+> +       if (!abort)
+> +               __reserve_region_with_split(root, start, end, name);
+>         write_unlock(&resource_lock);
+>  }
+>
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
