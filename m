@@ -1,59 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758668Ab2GLHmJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 03:42:09 -0400
-Received: from mga14.intel.com ([143.182.124.37]:53559 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757130Ab2GLHmI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 03:42:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="167118260"
-Date: Thu, 12 Jul 2012 10:42:02 +0300
-From: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>
-To: Masatake YAMATO <yamato@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org
-Subject: Re: [PATCH v3 1/8] bluetooth: /proc/net/ entries for bluetooth
- protocols
-Message-ID: <20120712074200.GA12931@aemeltch-MOBL1>
-Mail-Followup-To: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>,
-	Masatake YAMATO <yamato@redhat.com>, linux-kernel@vger.kernel.org,
-	linux-bluetooth@vger.kernel.org
-References: <20120710140400.GA15795@aemeltch-MOBL1>
- <20120711.135831.1712662939552441872.yamato@redhat.com>
- <20120711112308.GA3044@aemeltch-MOBL1>
- <20120711.211906.1087916687452547370.yamato@redhat.com>
+	id S1758699Ab2GLHpp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 03:45:45 -0400
+Received: from Mailrelay020.isp.belgacom.be ([195.238.6.95]:51520 "EHLO
+	mailrelay020.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757130Ab2GLHpn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 03:45:43 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AhAFAGB//k9XQD44/2dsb2JhbABFtB2DWIEIgiABAQVWIgEQCxgJFg8JAwIBAgEnHgYNAQcBAYgNvXGLQIV8A5sQg1CGYIJh
+Message-ID: <4FFE804A.8070205@computer.org>
+Date: Thu, 12 Jul 2012 09:44:10 +0200
+From: Jan Ceuleers <jan.ceuleers@computer.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120711.211906.1087916687452547370.yamato@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: John Stultz <johnstul@us.ibm.com>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, stable@vger.kernel.org
+Subject: Re: [PATCH 1/6] hrtimer: Provide clock_was_set_delayed()
+References: <1341960205-56738-1-git-send-email-johnstul@us.ibm.com> <1341960205-56738-2-git-send-email-johnstul@us.ibm.com> <4FFD6E5A.9060206@redhat.com> <alpine.LFD.2.02.1207111425260.32033@ionos> <1342011904.3462.152.camel@twins> <alpine.LFD.2.02.1207111539060.32033@ionos> <4FFDAE1D.3050008@us.ibm.com>
+In-Reply-To: <4FFDAE1D.3050008@us.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Masatake,
+On 07/11/2012 06:47 PM, John Stultz wrote:
+> I'll see if my worry is unfounded, but it might be a bit too clever for rare events.
 
-On Wed, Jul 11, 2012 at 09:19:06PM +0900, Masatake YAMATO wrote:
-> > I've tested the patch and it creates entries in /proc/net
-> 
-> Thanks.
->  
-> > BTW: Shall lsof be able to identify l2cap protocol?
-> > 
-> > for l2test it prints: "can't identify protocol"
-> 
-> No. I'll work on lsof side after the kernel side
-> patches are merged to the main line.
+Full ACK.
 
-OK, patch looks good though I would eliminate 2 new sparse warnings with
-__acquires and __releases attributes.
+There is an unfortunate history of critical-to-moderately-serious bugs in
+the leap second handling, so I submit that what is needed is a simple,
+obviously-correct and robust mechanism. Robust statically, but also in the
+face of code churn because these code paths are exercised so rarely out in
+the wild.
 
-net/bluetooth/af_bluetooth.c:540:13: warning: context imbalance in
-'bt_seq_start' - wrong count at exit
-net/bluetooth/af_bluetooth.c:557:13: warning: context imbalance in
-'bt_seq_stop' - unexpected unlock
+Just my opinion, FWIW.
 
-Best regards 
-Andrei Emeltchenko
-
+Jan
