@@ -1,73 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933737Ab2GLLXf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 07:23:35 -0400
-Received: from gate.crashing.org ([63.228.1.57]:40525 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932381Ab2GLLXd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 07:23:33 -0400
-Message-ID: <1342092201.15597.0.camel@pasglop>
-Subject: Re: [PATCH] powerpc: remove rejected merge file from
- arch/powerpc/kernel in linux-next
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Gerard Snitselaar <dev@snitselaar.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, stuart.yoder@freescale.com
-Date: Thu, 12 Jul 2012 21:23:21 +1000
-In-Reply-To: <1342076734-30996-1-git-send-email-dev@snitselaar.org>
-References: <1342076734-30996-1-git-send-email-dev@snitselaar.org>
+	id S933729Ab2GLL0i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 07:26:38 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:53603 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754192Ab2GLL0h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 07:26:37 -0400
+Message-ID: <1342092392.3021.33.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [PATCH] mm: hugetlb: flush dcache before returning zeroed huge
+ page to userspace
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Will Deacon <will.deacon@arm.com>, Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hillf Danton <dhillf@gmail.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Date: Thu, 12 Jul 2012 12:26:32 +0100
+In-Reply-To: <20120712111659.GF21013@tiehlicka.suse.cz>
+References: <1341412376-6272-1-git-send-email-will.deacon@arm.com>
+	 <20120709122523.GC4627@tiehlicka.suse.cz>
+	 <20120709141324.GK7315@mudshark.cambridge.arm.com>
+	 <alpine.LSU.2.00.1207091622470.2261@eggly.anvils>
+	 <20120710094513.GB9108@mudshark.cambridge.arm.com>
+	 <20120710104234.GI9108@mudshark.cambridge.arm.com>
+	 <20120711174802.GG13498@mudshark.cambridge.arm.com>
+	 <20120712111659.GF21013@tiehlicka.suse.cz>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-07-12 at 00:05 -0700, Gerard Snitselaar wrote:
-> Commit 9778b696 (powerpc: Use CURRENT_THREAD_INFO instead of open
-> coded assembly) got a rejected merge file iommu.c.rej committed with
-> it.
-
-Oops, that's me having too much coffee & using git citool ... I'll get
-rid of it, thanks.
-
-Cheers,
-Ben.
-
-> Signed-off-by: Gerard Snitselaar <dev@snitselaar.org>
-> ---
->  arch/powerpc/kernel/iommu.c.rej | 22 ----------------------
->  1 file changed, 22 deletions(-)
->  delete mode 100644 arch/powerpc/kernel/iommu.c.rej
+On Thu, 2012-07-12 at 13:16 +0200, Michal Hocko wrote:
+> On Wed 11-07-12 18:48:02, Will Deacon wrote:
+> > On Tue, Jul 10, 2012 at 11:42:34AM +0100, Will Deacon wrote:
+> > > On Tue, Jul 10, 2012 at 10:45:13AM +0100, Will Deacon wrote:
+> > > > On Tue, Jul 10, 2012 at 12:57:14AM +0100, Hugh Dickins wrote:
+> > > > > If I start to grep the architectures for non-empty flush_dcache_page(),
+> > > > > I soon find things in arch/arm such as v4_mc_copy_user_highpage() doing
+> > > > > if (!test_and_set_bit(PG_dcache_clean,)) __flush_dcache_page() - where
+> > > > > the naming suggests that I'm right, it's the architecture's responsibility
+> > > > > to arrange whatever flushing is needed in its copy and clear page functions.
+> > 
+> > [...]
+> > 
+> > > Ok, so this is exactly the problem. The hugetlb allocator uses its own
+> > > pool of huge pages, so free_huge_page followed by a later alloc_huge_page
+> > > will give you something where the page flags of the compound head do not
+> > > guarantee that PG_arch_1 is clear.
+> > 
+> > Just to confirm, the following quick hack at least results in the correct
+> > flushing for me (on ARM):
+> > 
+> > 
+> > diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> > index e198831..7a7c9d3 100644
+> > --- a/mm/hugetlb.c
+> > +++ b/mm/hugetlb.c
+> > @@ -1141,6 +1141,7 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+> >         }
+> >  
+> >         set_page_private(page, (unsigned long)spool);
+> > +       clear_bit(PG_arch_1, &page->flags);
+> >  
+> >         vma_commit_reservation(h, vma, addr);
+> >  
+> > 
+> > 
+> > The question is whether we should tidy that up for the core code or get
+> > architectures to clear the bit in arch_make_huge_pte (which also seems to
+> > work).
 > 
-> diff --git a/arch/powerpc/kernel/iommu.c.rej b/arch/powerpc/kernel/iommu.c.rej
-> deleted file mode 100644
-> index 9d10d34..0000000
-> --- a/arch/powerpc/kernel/iommu.c.rej
-> +++ /dev/null
-> @@ -1,22 +0,0 @@
-> ---- arch/powerpc/kernel/iommu.c	2012-06-08 09:01:02.785709100 +1000
-> -+++ arch/powerpc/kernel/iommu.c	2012-06-08 09:01:07.489784856 +1000
-> -@@ -33,7 +33,9 @@
-> - #include <linux/bitmap.h>
-> - #include <linux/iommu-helper.h>
-> - #include <linux/crash_dump.h>
-> -+#include <linux/fault-inject.h>
-> - #include <asm/io.h>
-> -+#include <asm/vio.h>
-> - #include <asm/prom.h>
-> - #include <asm/iommu.h>
-> - #include <asm/pci-bridge.h>
-> -@@ -171,6 +261,9 @@
-> - 		return DMA_ERROR_CODE;
-> - 	}
-> - 
-> -+	if (should_fail_iommu(dev))
-> -+		return DMA_ERROR_CODE;
-> -+
-> - 	if (handle && *handle)
-> - 		start = *handle;
-> - 	else
+> This should go into arch specific code IMO. Even the page flag name
+> suggests this shouldn't be in the base code.
+
+Agree completely.
+
+PG_Arch_1 is mostly used for flushing implementations, but it's meaning
+isn't unified.  For instance Arm and Parisc have opposite meanings for
+this flag.  Touching it in generic code can therefore *never* be the
+right thing to do.  What you're looking for here is the correct flushing
+(or rather flush notification) interface.
+
+James
 
 
