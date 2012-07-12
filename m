@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162100Ab2GLXBk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:01:40 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:54248 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162042Ab2GLWmr (ORCPT
+	id S1162466Ab2GLXB7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:01:59 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54985 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162030Ab2GLWmk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:42:47 -0400
+	Thu, 12 Jul 2012 18:42:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Aaron Brown <aaron.f.brown@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 125/187] e1000e: remove use of IP payload checksum
-Date: Thu, 12 Jul 2012 15:34:41 -0700
-Message-Id: <20120712191533.964171178@linuxfoundation.org>
+        Meenakshi Venkataraman <meenakshi.venkataraman@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 123/187] iwlwifi: fix activating inactive stations
+Date: Thu, 12 Jul 2012 15:34:39 -0700
+Message-Id: <20120712191533.768080742@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -33,186 +33,54 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Bruce Allan <bruce.w.allan@intel.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 2e1706f234f86ff71056ef69683d734fbf7e9e40 upstream.
+commit eac9ac6d1f5d0e9d33e4ded682187b630e7606cd upstream.
 
-Currently only used when packet split mode is enabled with jumbo frames,
-IP payload checksum (for fragmented UDP packets) is mutually exclusive with
-receive hashing offload since the hardware uses the same space in the
-receive descriptor for the hardware-provided packet checksum and the RSS
-hash, respectively.  Users currently must disable jumbos when receive
-hashing offload is enabled, or vice versa, because of this incompatibility.
-Since testing has shown that IP payload checksum does not provide any real
-benefit, just remove it so that there is no longer a choice between jumbos
-or receive hashing offload but not both as done in other Intel GbE drivers
-(e.g. e1000, igb).
+When authentication/association timed out, the driver would
+complain bitterly, printing the message
+ACTIVATE a non DRIVER active station id ... addr ...
 
-Also, add a missing check for IP checksum error reported by the hardware;
-let the stack verify the checksum when this happens.
+The cause turns out to be that when the AP station is added
+but we don't associate, the IWL_STA_UCODE_INPROGRESS is set
+but never cleared. This then causes iwl_restore_stations()
+to attempt to resend it because it uses the flag internally
+and uploads even if it didn't set it itself.
 
-Signed-off-by: Bruce Allan <bruce.w.allan@intel.com>
-Tested-by: Aaron Brown <aaron.f.brown@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+To fix this issue and not upload the station again when it
+has already been removed by mac80211, clear the flag after
+adding it in case we add it only for association.
+
+Reviewed-by: Meenakshi Venkataraman <meenakshi.venkataraman@intel.com>
+Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/intel/e1000e/defines.h |    1 
- drivers/net/ethernet/intel/e1000e/netdev.c  |   75 +++++-----------------------
- 2 files changed, 15 insertions(+), 61 deletions(-)
+ drivers/net/wireless/iwlwifi/iwl-mac80211.c |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
---- a/drivers/net/ethernet/intel/e1000e/defines.h
-+++ b/drivers/net/ethernet/intel/e1000e/defines.h
-@@ -101,6 +101,7 @@
- #define E1000_RXD_ERR_SEQ       0x04    /* Sequence Error */
- #define E1000_RXD_ERR_CXE       0x10    /* Carrier Extension Error */
- #define E1000_RXD_ERR_TCPE      0x20    /* TCP/UDP Checksum Error */
-+#define E1000_RXD_ERR_IPE       0x40    /* IP Checksum Error */
- #define E1000_RXD_ERR_RXE       0x80    /* Rx Data Error */
- #define E1000_RXD_SPC_VLAN_MASK 0x0FFF  /* VLAN ID is in lower 12 bits */
- 
---- a/drivers/net/ethernet/intel/e1000e/netdev.c
-+++ b/drivers/net/ethernet/intel/e1000e/netdev.c
-@@ -495,7 +495,7 @@ static void e1000_receive_skb(struct e10
-  * @sk_buff: socket buffer with received data
-  **/
- static void e1000_rx_checksum(struct e1000_adapter *adapter, u32 status_err,
--			      __le16 csum, struct sk_buff *skb)
-+			      struct sk_buff *skb)
- {
- 	u16 status = (u16)status_err;
- 	u8 errors = (u8)(status_err >> 24);
-@@ -510,8 +510,8 @@ static void e1000_rx_checksum(struct e10
- 	if (status & E1000_RXD_STAT_IXSM)
- 		return;
- 
--	/* TCP/UDP checksum error bit is set */
--	if (errors & E1000_RXD_ERR_TCPE) {
-+	/* TCP/UDP checksum error bit or IP checksum error bit is set */
-+	if (errors & (E1000_RXD_ERR_TCPE | E1000_RXD_ERR_IPE)) {
- 		/* let the stack verify checksum errors */
- 		adapter->hw_csum_err++;
- 		return;
-@@ -522,19 +522,7 @@ static void e1000_rx_checksum(struct e10
- 		return;
- 
- 	/* It must be a TCP or UDP packet with a valid checksum */
--	if (status & E1000_RXD_STAT_TCPCS) {
--		/* TCP checksum is good */
--		skb->ip_summed = CHECKSUM_UNNECESSARY;
--	} else {
--		/*
--		 * IP fragment with UDP payload
--		 * Hardware complements the payload checksum, so we undo it
--		 * and then put the value in host order for further stack use.
--		 */
--		__sum16 sum = (__force __sum16)swab16((__force u16)csum);
--		skb->csum = csum_unfold(~sum);
--		skb->ip_summed = CHECKSUM_COMPLETE;
--	}
-+	skb->ip_summed = CHECKSUM_UNNECESSARY;
- 	adapter->hw_csum_good++;
- }
- 
-@@ -978,8 +966,7 @@ static bool e1000_clean_rx_irq(struct e1
- 		skb_put(skb, length);
- 
- 		/* Receive Checksum Offload */
--		e1000_rx_checksum(adapter, staterr,
--				  rx_desc->wb.lower.hi_dword.csum_ip.csum, skb);
-+		e1000_rx_checksum(adapter, staterr, skb);
- 
- 		e1000_rx_hash(netdev, rx_desc->wb.lower.hi_dword.rss, skb);
- 
-@@ -1360,8 +1347,7 @@ copydone:
- 		total_rx_bytes += skb->len;
- 		total_rx_packets++;
- 
--		e1000_rx_checksum(adapter, staterr,
--				  rx_desc->wb.lower.hi_dword.csum_ip.csum, skb);
-+		e1000_rx_checksum(adapter, staterr, skb);
- 
- 		e1000_rx_hash(netdev, rx_desc->wb.lower.hi_dword.rss, skb);
- 
-@@ -1531,9 +1517,8 @@ static bool e1000_clean_jumbo_rx_irq(str
- 			}
- 		}
- 
--		/* Receive Checksum Offload XXX recompute due to CRC strip? */
--		e1000_rx_checksum(adapter, staterr,
--				  rx_desc->wb.lower.hi_dword.csum_ip.csum, skb);
-+		/* Receive Checksum Offload */
-+		e1000_rx_checksum(adapter, staterr, skb);
- 
- 		e1000_rx_hash(netdev, rx_desc->wb.lower.hi_dword.rss, skb);
- 
-@@ -3120,19 +3105,10 @@ static void e1000_configure_rx(struct e1
- 
- 	/* Enable Receive Checksum Offload for TCP and UDP */
- 	rxcsum = er32(RXCSUM);
--	if (adapter->netdev->features & NETIF_F_RXCSUM) {
-+	if (adapter->netdev->features & NETIF_F_RXCSUM)
- 		rxcsum |= E1000_RXCSUM_TUOFL;
--
--		/*
--		 * IPv4 payload checksum for UDP fragments must be
--		 * used in conjunction with packet-split.
--		 */
--		if (adapter->rx_ps_pages)
--			rxcsum |= E1000_RXCSUM_IPPCSE;
--	} else {
-+	else
- 		rxcsum &= ~E1000_RXCSUM_TUOFL;
--		/* no need to clear IPPCSE as it defaults to 0 */
--	}
- 	ew32(RXCSUM, rxcsum);
- 
- 	if (adapter->hw.mac.type == e1000_pch2lan) {
-@@ -5260,22 +5236,10 @@ static int e1000_change_mtu(struct net_d
- 	int max_frame = new_mtu + ETH_HLEN + ETH_FCS_LEN;
- 
- 	/* Jumbo frame support */
--	if (max_frame > ETH_FRAME_LEN + ETH_FCS_LEN) {
--		if (!(adapter->flags & FLAG_HAS_JUMBO_FRAMES)) {
--			e_err("Jumbo Frames not supported.\n");
--			return -EINVAL;
--		}
--
--		/*
--		 * IP payload checksum (enabled with jumbos/packet-split when
--		 * Rx checksum is enabled) and generation of RSS hash is
--		 * mutually exclusive in the hardware.
--		 */
--		if ((netdev->features & NETIF_F_RXCSUM) &&
--		    (netdev->features & NETIF_F_RXHASH)) {
--			e_err("Jumbo frames cannot be enabled when both receive checksum offload and receive hashing are enabled.  Disable one of the receive offload features before enabling jumbos.\n");
--			return -EINVAL;
--		}
-+	if ((max_frame > ETH_FRAME_LEN + ETH_FCS_LEN) &&
-+	    !(adapter->flags & FLAG_HAS_JUMBO_FRAMES)) {
-+		e_err("Jumbo Frames not supported.\n");
-+		return -EINVAL;
- 	}
- 
- 	/* Supported frame sizes */
-@@ -6049,17 +6013,6 @@ static int e1000_set_features(struct net
- 			 NETIF_F_RXALL)))
- 		return 0;
- 
--	/*
--	 * IP payload checksum (enabled with jumbos/packet-split when Rx
--	 * checksum is enabled) and generation of RSS hash is mutually
--	 * exclusive in the hardware.
--	 */
--	if (adapter->rx_ps_pages &&
--	    (features & NETIF_F_RXCSUM) && (features & NETIF_F_RXHASH)) {
--		e_err("Enabling both receive checksum offload and receive hashing is not possible with jumbo frames.  Disable jumbos or enable only one of the receive offload features.\n");
--		return -EINVAL;
--	}
--
- 	if (changed & NETIF_F_RXFCS) {
- 		if (features & NETIF_F_RXFCS) {
- 			adapter->flags2 &= ~FLAG2_CRC_STRIPPING;
+--- a/drivers/net/wireless/iwlwifi/iwl-mac80211.c
++++ b/drivers/net/wireless/iwlwifi/iwl-mac80211.c
+@@ -788,6 +788,18 @@ static int iwlagn_mac_sta_state(struct i
+ 	switch (op) {
+ 	case ADD:
+ 		ret = iwlagn_mac_sta_add(hw, vif, sta);
++		if (ret)
++			break;
++		/*
++		 * Clear the in-progress flag, the AP station entry was added
++		 * but we'll initialize LQ only when we've associated (which
++		 * would also clear the in-progress flag). This is necessary
++		 * in case we never initialize LQ because association fails.
++		 */
++		spin_lock_bh(&priv->sta_lock);
++		priv->stations[iwl_sta_id(sta)].used &=
++			~IWL_STA_UCODE_INPROGRESS;
++		spin_unlock_bh(&priv->sta_lock);
+ 		break;
+ 	case REMOVE:
+ 		ret = iwlagn_mac_sta_remove(hw, vif, sta);
 
 
