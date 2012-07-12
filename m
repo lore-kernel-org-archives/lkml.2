@@ -1,832 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759243Ab2GLNIy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 09:08:54 -0400
-Received: from zfrontend2.aha.ru ([195.2.83.148]:62022 "EHLO aha.ru"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1759230Ab2GLNIv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 09:08:51 -0400
-X-Greylist: delayed 3603 seconds by postgrey-1.27 at vger.kernel.org; Thu, 12 Jul 2012 09:08:51 EDT
-From: "werner" <w.landgraf@ru.ru>
-Subject: 3.5-rcX : Big problem with root device returning
-To: linux-kernel@vger.kernel.org
-X-Mailer: CommuniGate Pro WebUser Interface v.4.3.12
-Date: Thu, 12 Jul 2012 08:08:42 -0400
-Message-ID: <web-768955641@zbackend1.aha.ru>
+	id S1757472Ab2GLNMr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 09:12:47 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:47942 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754931Ab2GLNMq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 09:12:46 -0400
+Date: Thu, 12 Jul 2012 15:12:31 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
+        Alessandro Rubini <rubini@gnudd.com>,
+        Linus Walleij <linus.walleij@stericsson.com>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the
+ i2c-embedded tree
+Message-ID: <20120712131231.GH2194@pengutronix.de>
+References: <20120710164130.f38e4d1673f925ddb13914c9@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"; format="flowed"
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Uu2n37VG4rOBDVuR"
+Content-Disposition: inline
+In-Reply-To: <20120710164130.f38e4d1673f925ddb13914c9@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a big problem since 3.5-rc1 which potentially 
-mess the installations
 
-rdev   don't give longer back the root device like 
-/dev/sda1  , but in the bios form like 0x80010300
-
-rdev is essential for the installation programs  and for 
-the installation f.ex. of lilo .   It's not conveniente to 
-rely on the bios numbers, because on some meinbords they 
-change depending which boot order you select in BIOS, or 
-only if you select another boot device in the bios boot 
-menu with F12.   Whilst /dev/sdXY is more reliable.
-
-   rdev is an old basical function which always worked 
-correctly, until now.
-
-The error starts with 3.5-rc1 and is not corrected until 
-3.5-rc6 .    If I go back to an earlier kernel, 3.4 or 
-older, then the same installation works correct (rdev 
-gives /dev/sda1 ) and if I go back then again to 3.5-rcX 
-it's again wrong (rdev gives 0x80010300).    Thus, this 
-seems a wrong manner how the kernel gives back the root 
-device,  or interact with rdev.      It's also possible 
-that this problem happens only under any kernel 
-compilation option,   so that below I give the differences 
-in config between 3.4 and 3.5-rc1
-
-This problem should be fixed most quickly,  rdev always 
-have to work correctly.
-
-wl
+--Uu2n37VG4rOBDVuR
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
 
-======================================
-3c3
-< # Linux/i386 3.5.0-rc1 Kernel Configuration
----
-> # Linux/i386 3.4.0 Kernel Configuration
-11a12,15
-> CONFIG_GENERIC_CMOS_UPDATE=y
-> CONFIG_CLOCKSOURCE_WATCHDOG=y
-> CONFIG_GENERIC_CLOCKEVENTS=y
-> CONFIG_GENERIC_CLOCKEVENTS_BROADCAST=y
-24a29
-> CONFIG_ARCH_HAS_CPU_IDLE_WAIT=y
-25a31
-> # CONFIG_GENERIC_TIME_VSYSCALL is not set
-42a49
-> CONFIG_KTIME_SCALAR=y
-44d50
-< CONFIG_ARCH_SUPPORTS_UPROBES=y
-48d53
-< CONFIG_BUILDTIME_EXTABLE_SORT=y
-100,113d104
-< CONFIG_CLOCKSOURCE_WATCHDOG=y
-< CONFIG_KTIME_SCALAR=y
-< CONFIG_GENERIC_CLOCKEVENTS=y
-< CONFIG_GENERIC_CLOCKEVENTS_BUILD=y
-< CONFIG_GENERIC_CLOCKEVENTS_BROADCAST=y
-< CONFIG_GENERIC_CLOCKEVENTS_MIN_ADJUST=y
-< CONFIG_GENERIC_CMOS_UPDATE=y
-< 
-< #
-< # Timers subsystem
-< #
-< CONFIG_TICK_ONESHOT=y
-< # CONFIG_NO_HZ is not set
-< CONFIG_HIGH_RES_TIMERS=y
-121d111
-< CONFIG_RCU_FANOUT_LEAF=16
-144a135
-> CONFIG_USER_NS=y
-186a178
-> # CONFIG_PERF_COUNTERS is not set
-201c193
-< CONFIG_KPROBES=y
----
-> # CONFIG_KPROBES is not set
-203d194
-< CONFIG_OPTPROBES=y
-205d195
-< CONFIG_KRETPROBES=y
-213d202
-< CONFIG_HAVE_DMA_CONTIGUOUS=y
-215d203
-< CONFIG_GENERIC_SMP_IDLE_THREAD=y
-227,228d214
-< CONFIG_HAVE_ARCH_SECCOMP_FILTER=y
-< CONFIG_SECCOMP_FILTER=y
-325a312,316
-> CONFIG_TICK_ONESHOT=y
-> # CONFIG_NO_HZ is not set
-> CONFIG_HIGH_RES_TIMERS=y
-> CONFIG_GENERIC_CLOCKEVENTS_BUILD=y
-> CONFIG_GENERIC_CLOCKEVENTS_MIN_ADJUST=y
-467d457
-< CONFIG_CROSS_MEMORY_ATTACH=y
-511,512d500
-< # CONFIG_PM_AUTOSLEEP is not set
-< # CONFIG_PM_WAKELOCKS is not set
-649a638,640
-> CONFIG_MCA=y
-> CONFIG_MCA_LEGACY=y
-> CONFIG_MCA_PROC_FS=y
-657c648
-< CONFIG_ALIX=y
----
-> # CONFIG_ALIX is not set
-696d686
-< # CONFIG_RAPIDIO_DMA_ENGINE is not set
-724d713
-< CONFIG_XFRM_ALGO=y
-866d854
-< CONFIG_NETFILTER_XT_TARGET_HMARK=m
-1025a1014
-> CONFIG_IP6_NF_QUEUE=m
-1084d1072
-< # CONFIG_NET_DCCPPROBE is not set
-1086d1073
-< # CONFIG_NET_SCTPPROBE is not set
-1125c1112
-< CONFIG_LLC=m
----
-> CONFIG_LLC=y
-1139a1127,1129
-> CONFIG_ECONET=m
-> CONFIG_ECONET_AUNUDP=y
-> CONFIG_ECONET_NATIVE=y
-1144d1133
-< CONFIG_MAC802154=m
-1168,1169d1156
-< CONFIG_NET_SCH_CODEL=m
-< CONFIG_NET_SCH_FQ_CODEL=m
-1205d1191
-< CONFIG_BATMAN_ADV_BLA=y
-1218d1203
-< # CONFIG_NET_TCPPROBE is not set
-1428,1429d1412
-< CONFIG_NFC_HCI=m
-< CONFIG_NFC_SHDLC=y
-1436d1418
-< CONFIG_PN544_HCI_NFC=m
-1464d1445
-< # CONFIG_CMA is not set
-1627a1609
-> # CONFIG_MTD_UBI_DEBUG is not set
-1638a1621
-> CONFIG_OF_GPIO=y
-1640a1624
-> CONFIG_OF_SPI=y
-1711c1695
-< CONFIG_BLK_DEV_NVME=y
----
-> # CONFIG_BLK_DEV_NVME is not set
-1757,1759c1741
-< CONFIG_BMP085=y
-< CONFIG_BMP085_I2C=m
-< CONFIG_BMP085_SPI=m
----
-> CONFIG_BMP085=m
-1761a1744
-> CONFIG_MAX8997_MUIC=m
-1791d1773
-< CONFIG_INTEL_MEI=m
-1983a1966
-> CONFIG_SCSI_FD_MCS=y
-1988a1972,1974
-> CONFIG_SCSI_IBMMCA=y
-> CONFIG_IBMMCA_SCSI_ORDER_STANDARD=y
-> CONFIG_IBMMCA_SCSI_DEV_RESET=y
-1996a1983
-> CONFIG_SCSI_NCR_D700=y
-2005a1993,1996
-> CONFIG_SCSI_NCR_Q720=y
-> CONFIG_SCSI_NCR53C8XX_DEFAULT_TAGS=8
-> CONFIG_SCSI_NCR53C8XX_MAX_TAGS=32
-> CONFIG_SCSI_NCR53C8XX_SYNC=20
-2010d2000
-< CONFIG_TCM_QLA2XXX=m
-2187d2176
-< CONFIG_SBP_TARGET=m
-2225d2213
-< # CONFIG_IEEE802154_FAKELB is not set
-2230d2217
-< CONFIG_NET_TEAM_MODE_LOADBALANCE=m
-2387a2375,2382
-> CONFIG_NET_VENDOR_IBM=y
-> # CONFIG_IBM_EMAC_ZMII is not set
-> # CONFIG_IBM_EMAC_RGMII is not set
-> # CONFIG_IBM_EMAC_TAH is not set
-> # CONFIG_IBM_EMAC_EMAC4 is not set
-> # CONFIG_IBM_EMAC_NO_FLOW_CTRL is not set
-> # CONFIG_IBM_EMAC_MAL_CLR_ICINTSTAT is not set
-> # CONFIG_IBM_EMAC_MAL_COMMON_ERR is not set
-2394d2388
-< CONFIG_IGB_PTP=y
-2398d2391
-< CONFIG_IXGBE_HWMON=y
-2401d2393
-< # CONFIG_IXGBE_PTP is not set
-2405a2398,2399
-> CONFIG_ELMC=m
-> CONFIG_ELMC_II=m
-2422d2415
-< CONFIG_MLX4_EN_DCB=y
-2437a2431
-> CONFIG_IBMLANA=m
-2449a2444
-> CONFIG_NE2_MCA=m
-2452a2448
-> CONFIG_ULTRAMCA=m
-2519,2524d2514
-< CONFIG_NET_VENDOR_WIZNET=y
-< CONFIG_WIZNET_W5100=m
-< CONFIG_WIZNET_W5300=m
-< # CONFIG_WIZNET_BUS_DIRECT is not set
-< # CONFIG_WIZNET_BUS_INDIRECT is not set
-< CONFIG_WIZNET_BUS_ANY=y
-2558,2559d2547
-< CONFIG_MDIO_BUS_MUX=m
-< CONFIG_MDIO_BUS_MUX_GPIO=m
-2578a2567,2580
-> CONFIG_TR=y
-> CONFIG_WANT_LLC=y
-> CONFIG_PCMCIA_IBMTR=m
-> CONFIG_IBMTR=m
-> CONFIG_IBMOL=m
-> CONFIG_IBMLS=m
-> CONFIG_3C359=m
-> CONFIG_TMS380TR=m
-> CONFIG_TMSPCI=m
-> CONFIG_SKISA=m
-> CONFIG_PROTEON=m
-> CONFIG_ABYSS=m
-> CONFIG_MADGEMC=m
-> CONFIG_SMCTR=m
-2662c2664
-< CONFIG_B43_BCMA_EXTRA=y
----
-> # CONFIG_B43_BCMA_EXTRA is not set
-2691d2692
-< # CONFIG_BRCMFMAC_SDIO_OOB is not set
-2785d2785
-< CONFIG_WL_TI=y
-2788a2789
-> CONFIG_WL12XX_MENU=m
-2790,2792c2791,2792
-< CONFIG_WLCORE=m
-< CONFIG_WLCORE_SPI=m
-< CONFIG_WLCORE_SDIO=m
----
-> CONFIG_WL12XX_SPI=m
-> CONFIG_WL12XX_SDIO=m
-2799d2798
-< CONFIG_MWIFIEX_USB=m
-2996d2994
-< CONFIG_INPUT_MATRIXKMAP=y
-3026d3023
-< CONFIG_KEYBOARD_LM8333=y
-3037c3034
-< CONFIG_KEYBOARD_TWL4030=y
----
-> # CONFIG_KEYBOARD_TWL4030 is not set
-3114d3110
-< CONFIG_TOUCHSCREEN_DA9052=y
-3124d3119
-< CONFIG_TOUCHSCREEN_WACOM_I2C=y
-3170a3166
-> CONFIG_INPUT_AB8500_PONKEY=y
-3192,3194c3188,3190
-< CONFIG_INPUT_TWL4030_PWRBUTTON=y
-< CONFIG_INPUT_TWL4030_VIBRA=y
-< CONFIG_INPUT_TWL6040_VIBRA=y
----
-> # CONFIG_INPUT_TWL4030_PWRBUTTON is not set
-> # CONFIG_INPUT_TWL4030_VIBRA is not set
-> # CONFIG_INPUT_TWL6040_VIBRA is not set
-3278a3275
-> CONFIG_SERIAL_8250_MCA=m
-3348a3346
-> CONFIG_RAMOOPS=m
-3494d3491
-< CONFIG_OF_GPIO=y
-3506d3502
-< CONFIG_GPIO_ICH=y
-3518d3513
-< CONFIG_GPIO_RC5T583=y
-3523c3518
-< CONFIG_GPIO_TWL4030=y
----
-> # CONFIG_GPIO_TWL4030 is not set
-3538c3533
-< CONFIG_GPIO_SODAVILLE=y
----
-> # CONFIG_GPIO_SODAVILLE is not set
-3583,3584c3578,3579
-< CONFIG_W1_SLAVE_DS2780=y
-< CONFIG_W1_SLAVE_DS2781=y
----
-> CONFIG_W1_SLAVE_DS2780=m
-> CONFIG_W1_SLAVE_DS2781=m
-3588,3593c3583,3588
-< CONFIG_PDA_POWER=y
-< CONFIG_MAX8925_POWER=y
-< CONFIG_WM831X_BACKUP=y
-< CONFIG_WM831X_POWER=y
-< CONFIG_WM8350_POWER=y
-< CONFIG_TEST_POWER=y
----
-> CONFIG_PDA_POWER=m
-> CONFIG_MAX8925_POWER=m
-> CONFIG_WM831X_BACKUP=m
-> CONFIG_WM831X_POWER=m
-> CONFIG_WM8350_POWER=m
-> CONFIG_TEST_POWER=m
-3595,3598c3590,3593
-< CONFIG_BATTERY_DS2780=y
-< CONFIG_BATTERY_DS2781=y
-< CONFIG_BATTERY_DS2782=y
-< CONFIG_BATTERY_OLPC=y
----
-> CONFIG_BATTERY_DS2780=m
-> CONFIG_BATTERY_DS2781=m
-> CONFIG_BATTERY_DS2782=m
-> CONFIG_BATTERY_OLPC=m
-3600,3601c3595,3596
-< CONFIG_BATTERY_SBS=y
-< CONFIG_BATTERY_BQ27x00=y
----
-> CONFIG_BATTERY_SBS=m
-> CONFIG_BATTERY_BQ27x00=m
-3604,3606c3599,3601
-< CONFIG_BATTERY_DA9030=y
-< CONFIG_BATTERY_MAX17040=y
-< CONFIG_BATTERY_MAX17042=y
----
-> CONFIG_BATTERY_DA9030=m
-> CONFIG_BATTERY_MAX17040=m
-> CONFIG_BATTERY_MAX17042=m
-3608,3612c3603,3607
-< CONFIG_CHARGER_ISP1704=y
-< CONFIG_CHARGER_MAX8903=y
-< CONFIG_CHARGER_TWL4030=y
-< CONFIG_CHARGER_LP8727=y
-< CONFIG_CHARGER_GPIO=y
----
-> CONFIG_CHARGER_ISP1704=m
-> CONFIG_CHARGER_MAX8903=m
-> # CONFIG_CHARGER_TWL4030 is not set
-> CONFIG_CHARGER_LP8727=m
-> CONFIG_CHARGER_GPIO=m
-3616c3611,3613
-< CONFIG_CHARGER_SMB347=y
----
-> CONFIG_CHARGER_SMB347=m
-> CONFIG_AB8500_BM=y
-> CONFIG_AB8500_BATTERY_THERM_ON_BATCTRL=y
-3723d3719
-< CONFIG_SENSORS_INA2XX=m
-3728c3724
-< CONFIG_SENSORS_TWL4030_MADC=m
----
-> # CONFIG_SENSORS_TWL4030_MADC is not set
-3763d3758
-< CONFIG_DA9052_WATCHDOG=m
-3766c3761
-< CONFIG_TWL4030_WATCHDOG=m
----
-> # CONFIG_TWL4030_WATCHDOG is not set
-3781d3775
-< CONFIG_IE6XX_WDT=m
-3860c3854
-< CONFIG_MFD_SM501=y
----
-> CONFIG_MFD_SM501=m
-3862c3856
-< CONFIG_HTC_PASIC3=y
----
-> CONFIG_HTC_PASIC3=m
-3864,3869c3858,3862
-< CONFIG_UCB1400_CORE=y
-< CONFIG_MFD_LM3533=y
-< CONFIG_TPS6105X=y
-< CONFIG_TPS65010=y
-< CONFIG_TPS6507X=y
-< CONFIG_MFD_TPS65217=y
----
-> CONFIG_UCB1400_CORE=m
-> CONFIG_TPS6105X=m
-> CONFIG_TPS65010=m
-> CONFIG_TPS6507X=m
-> CONFIG_MFD_TPS65217=m
-3876c3869
-< CONFIG_TWL4030_MADC=y
----
-> CONFIG_TWL4030_MADC=m
-3878c3871
-< CONFIG_TWL6030_PWM=y
----
-> CONFIG_TWL6030_PWM=m
-3894d3886
-< CONFIG_MFD_MAX77693=y
-3899c3891
-< CONFIG_MFD_WM8400=y
----
-> CONFIG_MFD_WM8400=m
-3906,3912c3898,3902
-< CONFIG_MFD_PCF50633=y
-< CONFIG_PCF50633_ADC=y
-< CONFIG_PCF50633_GPIO=y
-< CONFIG_MFD_MC13783=y
-< CONFIG_MFD_MC13XXX=y
-< CONFIG_MFD_MC13XXX_SPI=y
-< CONFIG_MFD_MC13XXX_I2C=y
----
-> CONFIG_MFD_PCF50633=m
-> CONFIG_PCF50633_ADC=m
-> CONFIG_PCF50633_GPIO=m
-> CONFIG_MFD_MC13783=m
-> CONFIG_MFD_MC13XXX=m
-3915c3905
-< CONFIG_AB3100_OTP=y
----
-> CONFIG_AB3100_OTP=m
-3917c3907,3910
-< CONFIG_MFD_CS5535=y
----
-> CONFIG_AB8500_CORE=y
-> CONFIG_AB8500_DEBUG=y
-> CONFIG_AB8500_GPADC=y
-> CONFIG_MFD_CS5535=m
-3920d3912
-< CONFIG_LPC_ICH=y
-3922c3914
-< CONFIG_MFD_JANZ_CMODIO=y
----
-> CONFIG_MFD_JANZ_CMODIO=m
-3924c3916
-< CONFIG_MFD_WL1273_CORE=y
----
-> CONFIG_MFD_WL1273_CORE=m
-3928d3919
-< CONFIG_MFD_PALMAS=y
-3932c3923
-< CONFIG_REGULATOR_FIXED_VOLTAGE=y
----
-> CONFIG_REGULATOR_FIXED_VOLTAGE=m
-3956d3946
-< CONFIG_REGULATOR_RC5T583=m
-3959c3949
-< CONFIG_REGULATOR_PALMAS=m
----
-> CONFIG_REGULATOR_AB8500=y
-3964d3953
-< CONFIG_REGULATOR_TPS65090=m
-4016c4005
-< CONFIG_IR_GPIO_CIR=m
----
-> # CONFIG_IR_GPIO_CIR is not set
-4045,4047d4033
-< CONFIG_MEDIA_TUNER_FC0011=m
-< CONFIG_MEDIA_TUNER_FC0012=m
-< CONFIG_MEDIA_TUNER_FC0013=m
-4049d4034
-< CONFIG_MEDIA_TUNER_TUA9001=m
-4143d4127
-< CONFIG_VIDEO_AU0828=m
-4201c4185
-< CONFIG_VIDEO_EM28XX_RC=m
----
-> CONFIG_VIDEO_EM28XX_RC=y
-4210a4195
-> CONFIG_USB_ET61X251=m
-4219a4205
-> CONFIG_VIDEO_AU0828=m
-4371d4356
-< CONFIG_DVB_USB_AF9035=m
-4528d4512
-< CONFIG_DVB_LG2160=m
-4531,4532d4514
-< CONFIG_DVB_AU8522_DTV=m
-< CONFIG_DVB_AU8522_V4L=m
-4565d4546
-< CONFIG_DVB_AF9033=m
-4619,4621d4599
-< CONFIG_DRM_AST=y
-< CONFIG_DRM_MGAG200=y
-< CONFIG_DRM_CIRRUS_QEMU=y
-4738d4715
-< # CONFIG_FB_AUO_K190X is not set
-4754d4730
-< CONFIG_BACKLIGHT_LM3533=m
-4806c4782
-< CONFIG_SND_RAWMIDI=y
----
-> CONFIG_SND_RAWMIDI=m
-4825c4801
-< CONFIG_SND_RAWMIDI_SEQ=y
----
-> CONFIG_SND_RAWMIDI_SEQ=m
-5017d4992
-< CONFIG_SND_SOC_CS42L52=m
-5026d5000
-< CONFIG_SND_SOC_LM49453=m
-5092,5093d5065
-< CONFIG_SND_SOC_MC13783=m
-< CONFIG_SND_SOC_ML26124=m
-5095d5066
-< CONFIG_SND_SIMPLE_CARD=m
-5102c5073
-< # CONFIG_SOUND_VMIDI is not set
----
-> CONFIG_SOUND_VMIDI=m
-5134d5104
-< CONFIG_HID_GENERIC=y
-5139d5108
-< CONFIG_HID_AUREAL=y
-5143c5112
-< CONFIG_HID_PRODIKEYS=y
----
-> CONFIG_HID_PRODIKEYS=m
-5150c5119
-< CONFIG_HID_HOLTEK=y
----
-> CONFIG_HID_HOLTEK=m
-5161c5130
-< CONFIG_HID_LOGITECH_DJ=y
----
-> CONFIG_HID_LOGITECH_DJ=m
-5194a5164
-> CONFIG_HID_WACOM_POWER_SUPPLY=y
-5212a5183,5184
-> # CONFIG_USB_DEVICEFS is not set
-> CONFIG_USB_DEVICE_CLASS=y
-5240,5241c5212,5213
-< CONFIG_USB_OHCI_HCD_PLATFORM=y
-< CONFIG_USB_EHCI_HCD_PLATFORM=y
----
-> # CONFIG_USB_OHCI_HCD_PLATFORM is not set
-> # CONFIG_USB_EHCI_HCD_PLATFORM is not set
-5254,5255d5225
-< CONFIG_USB_HCD_BCMA=m
-< CONFIG_USB_HCD_SSB=m
-5259,5262d5228
-< CONFIG_USB_CHIPIDEA=m
-< # CONFIG_USB_CHIPIDEA_UDC is not set
-< CONFIG_USB_CHIPIDEA_HOST=y
-< # CONFIG_USB_CHIPIDEA_DEBUG is not set
-5302,5303c5268,5269
-< CONFIG_USB_MDC800=y
-< CONFIG_USB_MICROTEK=y
----
-> CONFIG_USB_MDC800=m
-> CONFIG_USB_MICROTEK=m
-5308,5310c5274,5275
-< CONFIG_USB_USS720=y
-< CONFIG_USB_SERIAL=y
-< CONFIG_USB_SERIAL_CONSOLE=y
----
-> CONFIG_USB_USS720=m
-> CONFIG_USB_SERIAL=m
-5365d5329
-< CONFIG_USB_SERIAL_QT2=m
-5371,5372c5335,5336
-< CONFIG_USB_EMI62=y
-< CONFIG_USB_EMI26=y
----
-> CONFIG_USB_EMI62=m
-> CONFIG_USB_EMI26=m
-5392,5396d5355
-< 
-< #
-< # USB Physical Layer drivers
-< #
-< CONFIG_USB_ISP1301=m
-5408,5411d5366
-< 
-< #
-< # USB Peripheral Controller
-< #
-5418a5374
-> CONFIG_USB_CI13XXX_PCI=m
-5422a5379
-> CONFIG_USB_LANGWELL=m
-5443d5399
-< # CONFIG_USB_GADGET_TARGET is not set
-5466a5423
-> CONFIG_AB8500_USB=m
-5522d5478
-< CONFIG_LEDS_LM3533=m
-5537d5492
-< CONFIG_LEDS_DA9052=m
-5564d5518
-< CONFIG_LEDS_TRIGGER_TRANSIENT=m
-5582d5535
-< CONFIG_INFINIBAND_OCRDMA=m
-5689a5643
-> CONFIG_RTC_DRV_AB8500=m
-5738d5691
-< # CONFIG_VIRTIO_MMIO_CMDLINE_DEVICES is not set
-5756,5757d5708
-< CONFIG_COMEDI_DEFAULT_BUF_SIZE_KB=2048
-< CONFIG_COMEDI_DEFAULT_BUF_MAXSIZE_KB=20480
-5777,5779d5727
-< CONFIG_COMEDI_AMPLC_DIO200_ISA=m
-< CONFIG_COMEDI_AMPLC_PC236_ISA=m
-< CONFIG_COMEDI_AMPLC_PC263_ISA=m
-5783d5730
-< CONFIG_COMEDI_DAS08_ISA=m
-5835,5837c5782,5784
-< CONFIG_COMEDI_AMPLC_DIO200_PCI=m
-< CONFIG_COMEDI_AMPLC_PC236_PCI=m
-< CONFIG_COMEDI_AMPLC_PC263_PCI=m
----
-> CONFIG_COMEDI_AMPLC_DIO200=m
-> CONFIG_COMEDI_AMPLC_PC236=m
-> CONFIG_COMEDI_AMPLC_PC263=m
-5841d5787
-< CONFIG_COMEDI_DAS08_PCI=m
-5888,5891d5833
-< CONFIG_COMEDI_FC=m
-< CONFIG_COMEDI_AMPLC_DIO200=m
-< CONFIG_COMEDI_AMPLC_PC236=m
-< CONFIG_COMEDI_AMPLC_PC263=m
-5892a5835
-> CONFIG_COMEDI_FC=m
-5922a5866
-> CONFIG_USB_SERIAL_QUATECH_USB2=m
-5925c5869,5875
-< CONFIG_DX_SEP=m
----
-> CONFIG_VME_BUS=m
-> 
-> #
-> # VME Bridge Drivers
-> #
-> CONFIG_VME_CA91CX42=m
-> CONFIG_VME_TSI148=m
-5928c5878
-< # IIO staging drivers
----
-> # VME Device Drivers
-5929a5880,5888
-> CONFIG_VME_USER=m
-> CONFIG_VME_PIO2=m
-> 
-> #
-> # VME Board Drivers
-> #
-> CONFIG_VMIVME_7805=m
-> CONFIG_DX_SEP=m
-> CONFIG_IIO=m
-5930a5890
-> CONFIG_IIO_BUFFER=y
-5931a5892,5894
-> CONFIG_IIO_KFIFO_BUF=m
-> CONFIG_IIO_TRIGGER=y
-> CONFIG_IIO_CONSUMERS_PER_TRIGGER=2
-6033d5995
-< CONFIG_SENSORS_ISL29028=m
-6036d5997
-< CONFIG_TSL2x7x=m
-6108a6070
-> CONFIG_INTEL_MEI=m
-6146a6109,6110
-> CONFIG_ANDROID_PERSISTENT_RAM=y
-> CONFIG_ANDROID_RAM_CONSOLE=y
-6149a6114,6116
-> CONFIG_ANDROID_SWITCH=y
-> CONFIG_ANDROID_SWITCH_GPIO=y
-> CONFIG_ANDROID_INTF_ALARM=y
-6150a6118
-> CONFIG_ANDROID_ALARM_OLDDRV_COMPAT=y
-6155,6164d6122
-< CONFIG_IPACK_BUS=m
-< CONFIG_BOARD_TPCI200=m
-< CONFIG_SERIAL_IPOCTAL=m
-< CONFIG_WIMAX_GDM72XX=m
-< CONFIG_WIMAX_GDM72XX_QOS=y
-< CONFIG_WIMAX_GDM72XX_K_MODE=y
-< CONFIG_WIMAX_GDM72XX_WIMAX2=y
-< CONFIG_WIMAX_GDM72XX_USB=y
-< # CONFIG_WIMAX_GDM72XX_SDIO is not set
-< CONFIG_WIMAX_GDM72XX_USB_PM=y
-6212c6170
-< CONFIG_APPLE_GMUX=m
----
-> CONFIG_APPLE_GMUX=y
-6249,6288d6206
-< CONFIG_EXTCON=m
-< 
-< #
-< # Extcon Device Drivers
-< #
-< # CONFIG_EXTCON_GPIO is not set
-< # CONFIG_EXTCON_MAX8997 is not set
-< CONFIG_MEMORY=y
-< CONFIG_IIO=m
-< CONFIG_IIO_BUFFER=y
-< CONFIG_IIO_KFIFO_BUF=m
-< CONFIG_IIO_TRIGGER=y
-< CONFIG_IIO_CONSUMERS_PER_TRIGGER=2
-< 
-< #
-< # Analog to digital converters
-< #
-< 
-< #
-< # Amplifiers
-< #
-< CONFIG_AD8366=m
-< CONFIG_VME_BUS=m
-< 
-< #
-< # VME Bridge Drivers
-< #
-< CONFIG_VME_CA91CX42=m
-< CONFIG_VME_TSI148=m
-< 
-< #
-< # VME Board Drivers
-< #
-< CONFIG_VMIVME_7805=m
-< 
-< #
-< # VME Device Drivers
-< #
-< CONFIG_VME_USER=m
-< CONFIG_VME_PIO2=m
-6454a6373
-> CONFIG_UBIFS_FS_XATTR=y
-6457a6377
-> # CONFIG_UBIFS_FS_DEBUG is not set
-6482d6401
-< # CONFIG_PSTORE_RAM is not set
-6492d6410
-< CONFIG_NFS_V2=y
-6587,6597d6504
-< CONFIG_NLS_MAC_ROMAN=m
-< CONFIG_NLS_MAC_CELTIC=m
-< CONFIG_NLS_MAC_CENTEURO=m
-< CONFIG_NLS_MAC_CROATIAN=m
-< CONFIG_NLS_MAC_CYRILLIC=m
-< CONFIG_NLS_MAC_GAELIC=m
-< CONFIG_NLS_MAC_GREEK=m
-< CONFIG_NLS_MAC_ICELAND=m
-< CONFIG_NLS_MAC_INUIT=m
-< CONFIG_NLS_MAC_ROMANIAN=m
-< CONFIG_NLS_MAC_TURKISH=m
-6613d6519
-< # CONFIG_READABLE_ASM is not set
-6636,6639c6542
-< CONFIG_DEBUG_KMEMLEAK=y
-< CONFIG_DEBUG_KMEMLEAK_EARLY_LOG_SIZE=400
-< # CONFIG_DEBUG_KMEMLEAK_TEST is not set
-< CONFIG_DEBUG_KMEMLEAK_DEFAULT_OFF=y
----
-> # CONFIG_DEBUG_KMEMLEAK is not set
-6648d6550
-< CONFIG_TRACE_IRQFLAGS=y
-6671c6573
-< CONFIG_RCU_CPU_STALL_INFO=y
----
-> # CONFIG_RCU_CPU_STALL_INFO is not set
-6673d6574
-< # CONFIG_KPROBES_SANITY_TEST is not set
-6675c6576
-< CONFIG_DEBUG_BLOCK_EXT_DEVT=y
----
-> # CONFIG_DEBUG_BLOCK_EXT_DEVT is not set
-6679c6580
-< CONFIG_CPU_NOTIFIER_ERROR_INJECT=y
----
-> # CONFIG_CPU_NOTIFIER_ERROR_INJECT is not set
-6693d6593
-< CONFIG_TRACER_MAX_TRACE=y
-6704,6706c6604,6606
-< CONFIG_IRQSOFF_TRACER=y
-< CONFIG_SCHED_TRACER=y
-< CONFIG_FTRACE_SYSCALLS=y
----
-> # CONFIG_IRQSOFF_TRACER is not set
-> # CONFIG_SCHED_TRACER is not set
-> # CONFIG_FTRACE_SYSCALLS is not set
-6712,6714d6611
-< CONFIG_KPROBE_EVENT=y
-< # CONFIG_UPROBE_EVENT is not set
-< CONFIG_PROBE_EVENTS=y
-6732c6629
-< CONFIG_TEST_KSTRTOX=y
----
-> # CONFIG_TEST_KSTRTOX is not set
-6746d6642
-< # CONFIG_X86_DECODER_SELFTEST is not set
-6760c6656
-< CONFIG_DEBUG_NMI_SELFTEST=y
----
-> # CONFIG_DEBUG_NMI_SELFTEST is not set
-6919d6814
-< CONFIG_HAVE_KVM_MSI=y
-6934,6935d6828
-< CONFIG_GENERIC_STRNCPY_FROM_USER=y
-< CONFIG_GENERIC_STRNLEN_USER=y
-6973a6867,6868
-> CONFIG_REED_SOLOMON_ENC8=y
-> CONFIG_REED_SOLOMON_DEC8=y
-6992d6886
-< CONFIG_DDR=y
----
-Professional hosting for everyone - http://www.host.ru
+> I fixed it up (I think - see below) and can carry the fix as necessary.
+> Please check this and talk to each other ...
+
+I also noticed the bindings today [1]. They came in via a seperate
+patch (suboptimal) which has no ack by a devicetree maintainer which I'd
+really like to see here, because the bindings look suspicious to me.
+They look like they mostly export register settings which is usually
+questionable since we might want to abstract bindings so they can be
+useful for a number of drivers.
+
+Arnd, since you committed the patches, can you please comment? I'd
+prefer to drop this DT conversion for now, otherwise we might have to
+support this possibly rushed bindings forever? LinusW, what do you
+think?
+
+Thanks,
+
+   Wolfram
+
+[1] http://git.kernel.org/?p=3Dlinux/kernel/git/next/linux-next.git;a=3Dcom=
+mitdiff;h=3D87a174f3d7cea1b9c7596911c39616768f441629
+
+>=20
+> --=20
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+>=20
+> diff --cc drivers/i2c/busses/i2c-nomadik.c
+> index e6b93f3,5471303..0000000
+> --- a/drivers/i2c/busses/i2c-nomadik.c
+> +++ b/drivers/i2c/busses/i2c-nomadik.c
+> @@@ -24,8 -23,10 +24,9 @@@
+>   #include <linux/io.h>
+>   #include <linux/regulator/consumer.h>
+>   #include <linux/pm_runtime.h>
+>  +#include <linux/platform_data/i2c-nomadik.h>
+> + #include <linux/of.h>
+>  =20
+>  -#include <plat/i2c.h>
+>  -
+>   #define DRIVER_NAME "nmk-i2c"
+>  =20
+>   /* I2C Controller register offsets */
+> @@@ -911,23 -896,93 +908,94 @@@ static const struct i2c_algorithm nmk_i
+>   	.functionality	=3D nmk_i2c_functionality
+>   };
+>  =20
+> + static struct nmk_i2c_controller u8500_i2c =3D {
+> + 	/*
+> + 	 * Slave data setup time; 250ns, 100ns, and 10ns, which
+> + 	 * is 14, 6 and 2 respectively for a 48Mhz i2c clock.
+> + 	 */
+> + 	.slsu           =3D 0xe,
+> + 	.tft            =3D 1,      /* Tx FIFO threshold */
+> + 	.rft            =3D 8,      /* Rx FIFO threshold */
+> + 	.clk_freq       =3D 400000, /* std. mode operation */
+> + 	.timeout        =3D 200,    /* Slave response timeout(ms) */
+> + 	.sm             =3D I2C_FREQ_MODE_FAST,
+> + };
+> +=20
+> + static int __devinit
+> + nmk_i2c_of_probe(struct device_node *np, struct nmk_i2c_controller *pda=
+ta)
+> + {
+> + 	of_property_read_u32(np, "clock-frequency", (u32*)&pdata->clk_freq);
+> + 	if (!pdata->clk_freq) {
+> + 		pr_warn("%s: Clock frequency not found\n", np->full_name);
+> + 		return -EINVAL;
+> + 	}
+> +=20
+> + 	of_property_read_u32(np, "stericsson,slsu", (u32*)&pdata->slsu);
+> + 	if (!pdata->slsu) {
+> + 		pr_warn("%s: Data line delay not found\n", np->full_name);
+> + 		return -EINVAL;
+> + 	}
+> +=20
+> + 	of_property_read_u32(np, "stericsson,tft", (u32*)&pdata->tft);
+> + 	if (!pdata->tft) {
+> + 		pr_warn("%s: Tx FIFO threshold not found\n", np->full_name);
+> + 		return -EINVAL;
+> + 	}
+> +=20
+> + 	of_property_read_u32(np, "stericsson,rft", (u32*)&pdata->rft);
+> + 	if (!pdata->rft) {
+> + 		pr_warn("%s: Rx FIFO threshold not found\n", np->full_name);
+> + 		return -EINVAL;
+> + 	}
+> +=20
+> + 	of_property_read_u32(np, "stericsson,timeout", (u32*)&pdata->timeout);
+> + 	if (!pdata->timeout) {
+> + 		pr_warn("%s: Timeout not found\n", np->full_name);
+> + 		return -EINVAL;
+> + 	}
+> +=20
+> + 	/*
+> + 	 * This driver only supports fast and standard frequency
+> + 	 * modes. If anything else is requested fall-back to standard.
+> + 	 */
+> + 	if (of_get_property(np, "stericsson,i2c_freq_mode_fast", NULL))
+> + 		pdata->sm =3D I2C_FREQ_MODE_FAST;
+> + 	else
+> + 		pdata->sm =3D I2C_FREQ_MODE_STANDARD;
+> +=20
+> + 	return 0;
+> + }
+> +=20
+>  -static int __devinit nmk_i2c_probe(struct platform_device *pdev)
+>  +static atomic_t adapter_id =3D ATOMIC_INIT(0);
+>  +
+>  +static int nmk_i2c_probe(struct amba_device *adev, const struct amba_id=
+ *id)
+>   {
+>   	int ret =3D 0;
+> - 	struct nmk_i2c_controller *pdata =3D
+> - 			adev->dev.platform_data;
+>  -	struct resource *res;
+>  -	struct nmk_i2c_controller *pdata =3D pdev->dev.platform_data;
+>  -	struct device_node *np =3D pdev->dev.of_node;
+> ++	struct nmk_i2c_controller *pdata =3D adev->dev.platform_data;
+> ++	struct device_node *np =3D adev->dev.of_node;
+>   	struct nmk_i2c_dev	*dev;
+>   	struct i2c_adapter *adap;
+>  =20
+> - 	if (!pdata) {
+> - 		dev_warn(&adev->dev, "no platform data\n");
+> - 		return -ENODEV;
+> + 	if (np) {
+> + 		if (!pdata) {
+>  -			pdata =3D devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
+> ++			pdata =3D devm_kzalloc(&adev->dev, sizeof(*pdata), GFP_KERNEL);
+> + 			if (!pdata) {
+> + 				ret =3D -ENOMEM;
+> + 				goto err_no_mem;
+> + 			}
+> + 		}
+> + 		ret =3D nmk_i2c_of_probe(np, pdata);
+> + 		if (ret)
+> + 			kfree(pdata);
+>   	}
+> +=20
+> + 	if (!pdata)
+> + 		/* No i2c configuration found, using the default. */
+> + 		pdata =3D &u8500_i2c;
+> +=20
+>   	dev =3D kzalloc(sizeof(struct nmk_i2c_dev), GFP_KERNEL);
+>   	if (!dev) {
+>  -		dev_err(&pdev->dev, "cannot allocate memory\n");
+>  +		dev_err(&adev->dev, "cannot allocate memory\n");
+>   		ret =3D -ENOMEM;
+>   		goto err_no_mem;
+>   	}
+> @@@ -969,12 -1037,12 +1037,11 @@@
+>   	adap->owner	=3D THIS_MODULE;
+>   	adap->class	=3D I2C_CLASS_HWMON | I2C_CLASS_SPD;
+>   	adap->algo	=3D &nmk_i2c_algo;
+> - 	adap->timeout	=3D pdata->timeout ? msecs_to_jiffies(pdata->timeout) :
+> - 		msecs_to_jiffies(20000);
+> + 	adap->timeout	=3D msecs_to_jiffies(pdata->timeout);
+>  +	adap->nr =3D atomic_read(&adapter_id);
+>   	snprintf(adap->name, sizeof(adap->name),
+>  -		 "Nomadik I2C%d at %lx", pdev->id, (unsigned long)res->start);
+>  -
+>  -	/* fetch the controller id */
+>  -	adap->nr	=3D pdev->id;
+>  +		 "Nomadik I2C%d at %pR", adap->nr, &adev->res);
+>  +	atomic_inc(&adapter_id);
+>  =20
+>   	/* fetch the controller configuration from machine */
+>   	dev->cfg.clk_freq =3D pdata->clk_freq;
+> @@@ -1040,29 -1110,20 +1107,35 @@@ static int nmk_i2c_remove(struct amba_d
+>   	return 0;
+>   }
+>  =20
+>  +static struct amba_id nmk_i2c_ids[] =3D {
+>  +	{
+>  +		.id	=3D 0x00180024,
+>  +		.mask	=3D 0x00ffffff,
+>  +	},
+>  +	{
+>  +		.id	=3D 0x00380024,
+>  +		.mask	=3D 0x00ffffff,
+>  +	},
+>  +	{},
+>  +};
+>  +
+>  +MODULE_DEVICE_TABLE(amba, nmk_i2c_ids);
+>  +
+> + static const struct of_device_id nmk_gpio_match[] =3D {
+> + 	{ .compatible =3D "st,nomadik-i2c", },
+> + 	{},
+> + };
+> +=20
+>  -static struct platform_driver nmk_i2c_driver =3D {
+>  -	.driver =3D {
+>  +static struct amba_driver nmk_i2c_driver =3D {
+>  +	.drv =3D {
+>   		.owner =3D THIS_MODULE,
+>   		.name =3D DRIVER_NAME,
+>   		.pm =3D &nmk_i2c_pm,
+> + 		.of_match_table =3D nmk_gpio_match,
+>   	},
+>  +	.id_table =3D nmk_i2c_ids,
+>   	.probe =3D nmk_i2c_probe,
+>  -	.remove =3D __devexit_p(nmk_i2c_remove),
+>  +	.remove =3D nmk_i2c_remove,
+>   };
+>  =20
+>   static int __init nmk_i2c_init(void)
+
+
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--Uu2n37VG4rOBDVuR
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAk/+zT8ACgkQD27XaX1/VRs3vQCeLXwApR2wCJ97gypkPnujdZQH
+EBwAn3bYckGhFhEWsgJQkGFcapLn5IDw
+=PYXp
+-----END PGP SIGNATURE-----
+
+--Uu2n37VG4rOBDVuR--
