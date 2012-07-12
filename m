@@ -1,96 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933908Ab2GLONI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 10:13:08 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:42980 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932514Ab2GLONG convert rfc822-to-8bit (ORCPT
+	id S933916Ab2GLOPj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 10:15:39 -0400
+Received: from www.linutronix.de ([62.245.132.108]:39236 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933801Ab2GLOPh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 10:13:06 -0400
-Message-ID: <1342102376.28010.7.camel@twins>
-Subject: Re: [PATCH 00/13] rbtree updates
-From: Peter Zijlstra <peterz@infradead.org>
-To: Michel Lespinasse <walken@google.com>
-Cc: aarcange@redhat.com, dwmw2@infradead.org, riel@redhat.com,
-        daniel.santos@pobox.com, axboe@kernel.dk, ebiederm@xmission.com,
-        linux-mm@kvack.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
-Date: Thu, 12 Jul 2012 16:12:56 +0200
-In-Reply-To: <20120712011208.GA1152@google.com>
-References: <1341876923-12469-1-git-send-email-walken@google.com>
-	 <1342012996.3462.154.camel@twins> <20120712011208.GA1152@google.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Thu, 12 Jul 2012 10:15:37 -0400
+Date: Thu, 12 Jul 2012 16:15:29 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Jan Kara <jack@suse.cz>
+cc: Jeff Moyer <jmoyer@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Jens Axboe <jaxboe@fusionio.com>, mgalbraith@suse.com
+Subject: Re: Deadlocks due to per-process plugging
+In-Reply-To: <20120711201601.GB9779@quack.suse.cz>
+Message-ID: <alpine.LFD.2.02.1207121552111.32033@ionos>
+References: <20120711133735.GA8122@quack.suse.cz> <x49ehoii8ps.fsf@segfault.boston.devel.redhat.com> <20120711201601.GB9779@quack.suse.cz>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-11 at 18:12 -0700, Michel Lespinasse wrote:
-> 
-> In __rb_erase_color(), some of the cases are more complicated than you drew however, because some node colors aren't known.
+On Wed, 11 Jul 2012, Jan Kara wrote:
+> On Wed 11-07-12 12:05:51, Jeff Moyer wrote:
+> > Jan Kara <jack@suse.cz> writes:
+> > 
+> > >   Hello,
+> > >
+> > >   we've recently hit a deadlock in our QA runs which is caused by the
+> > > per-process plugging code. The problem is as follows:
+> > >   process A					process B (kjournald)
+> > >   generic_file_aio_write()
+> > >     blk_start_plug(&plug);
+> > >     ...
+> > >     somewhere in here we allocate memory and
+> > >     direct reclaim submits buffer X for IO
+> > >     ...
+> > >     ext3_write_begin()
+> > >       ext3_journal_start()
+> > >         we need more space in a journal
+> > >         so we want to checkpoint old transactions,
+> > >         we block waiting for kjournald to commit
+> > >         a currently running transaction.
+> > > 						journal_commit_transaction()
+> > > 						  wait for IO on buffer X
+> > > 						  to complete as it is part
+> > > 						  of the current transaction
+> > >
+> > >   => deadlock since A waits for B and B waits for A to do unplug.
+> > > BTW: I don't think this is really ext3/ext4 specific. I think other
+> > > filesystems can get into problems as well when direct reclaim submits some
+> > > IO and the process subsequently blocks without submitting the IO.
+> > 
+> > So, I thought schedule would do the flush.  Checking the code:
+> > 
+> > asmlinkage void __sched schedule(void)
+> > {
+> >         struct task_struct *tsk = current;
+> > 
+> >         sched_submit_work(tsk);
+> >         __schedule();
+> > }
+> > 
+> > And sched_submit_work looks like this:
+> > 
+> > static inline void sched_submit_work(struct task_struct *tsk)
+> > {
+> >         if (!tsk->state || tsk_is_pi_blocked(tsk))
+> >                 return;
+> >         /*
+> >          * If we are going to sleep and we have plugged IO queued,
+> >          * make sure to submit it to avoid deadlocks.
+> >          */
+> >         if (blk_needs_flush_plug(tsk))
+> >                 blk_schedule_flush_plug(tsk);
+> > }
+> > 
+> > This eventually ends in a call to blk_run_queue_async(q) after
+> > submitting the I/O from the plug list.  Right?  So is the question
+> > really why doesn't the kblockd workqueue get scheduled?
 
-Right, the wikipedia article draws them blank, I couldn't come up with a
-3rd case, although maybe we can annotate them like (P) to mean blank..
+>   Ah, I didn't know this. Thanks for the hint. So in the kdump I have I can
+> see requests queued in tsk->plug despite the process is sleeping in
+> TASK_UNINTERRUPTIBLE state.  So the only way how unplug could have been
+> omitted is if tsk_is_pi_blocked() was true. Rummaging through the dump...
+> indeed task has pi_blocked_on = 0xffff8802717d79c8. The dump is from an -rt
+> kernel (I just didn't originally thought that makes any difference) so
+> actually any mutex is rtmutex and thus tsk_is_pi_blocked() is true whenever
+> we are sleeping on a mutex. So this seems like a bug in rtmutex code.
 
+Well, the reason why this check is there is that the task which is
+blocked on a lock can hold another lock which might cause a deadlock
+in the flush path.
 
-> This is what I ended up with:
-> 
->   *  5), then the longest possible path due to 4 is 2B.
->   *
->   *  We shall indicate color with case, where black nodes are uppercase and red
-> - *  nodes will be lowercase.
-> + *  nodes will be lowercase. Unknown color nodes shall be drawn as red with
-> + *  some accompanying text comment.
->   */
-> 
-> +                                       /*
-> +                                        * Case 2 - sibling color flip
-> +                                        * (p could be either color here)
-> +                                        *
-> +                                        *     p             p
-> +                                        *    / \           / \
-> +                                        *   N   S    -->  N   s
-> +                                        *      / \           / \
-> +                                        *     Sl  Sr        Sl  Sr
-> +                                        *
-> +                                        * This leaves us violating 5), so
-> +                                        * recurse at p. If p is red, the
-> +                                        * recursion will just flip it to black
-> +                                        * and exit. If coming from Case 1,
-> +                                        * p is known to be red.
-> +                                        */
-> 
-> +                               /*
-> +                                * Case 3 - right rotate at sibling
-> +                                * (p could be either color here)
-> +                                *
-> +                                *    p             p
-> +                                *   / \           / \
-> +                                *  N   S    -->  N   Sl
-> +                                *     / \             \
-> +                                *    sl  Sr            s
-> +                                *                       \
-> +                                *                        Sr
-> +                                */
-> 
-> +                       /*
-> +                        * Case 4 - left rotate at parent + color flips
-> +                        * (p and sl could be either color here.
-> +                        *  After rotation, p becomes black, s acquires
-> +                        *  p's color, and sl keeps its color)
-> +                        *
-> +                        *       p               s
-> +                        *      / \             / \
-> +                        *     N   S     -->   P   Sr
-> +                        *        / \         / \
-> +                        *       sl  sr      N   sl
-> +                        */ 
+> Thomas, you seemed to have added that condition... Any idea how to avoid
+> the deadlock?
 
+Good question. We could do the flush when the blocked task does not
+hold a lock itself. Might be worth a try.
 
-Yes, very nice.. someday when I'm bored I might expand the comments with
-the reason why we're doing the given operation.
+Thanks,
 
-Also, I was sorely tempted to rename your tmp1,tmp2 variables to sl and
-sr.
+	tglx
+
