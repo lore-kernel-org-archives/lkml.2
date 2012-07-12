@@ -1,45 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932344Ab2GLGsV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 02:48:21 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:57989 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757089Ab2GLGrs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 02:47:48 -0400
-From: Mathias Krause <minipli@googlemail.com>
-To: Al Viro <viro@zeniv.linux.org.uk>, Jan Kara <jack@suse.cz>
-Cc: linux-kernel@vger.kernel.org, Mathias Krause <minipli@googlemail.com>
-Subject: [PATCH 2/2] udf: avoid info leak on export
-Date: Thu, 12 Jul 2012 08:46:55 +0200
-Message-Id: <1342075615-24683-3-git-send-email-minipli@googlemail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1342075615-24683-1-git-send-email-minipli@googlemail.com>
-References: <1342075615-24683-1-git-send-email-minipli@googlemail.com>
+	id S932733Ab2GLGse (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 02:48:34 -0400
+Received: from mk-outboundfilter-5-a-3.mail.uk.tiscali.com ([212.74.114.9]:2971
+	"EHLO mk-outboundfilter-5-a-3.mail.uk.tiscali.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932414Ab2GLGs3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 02:48:29 -0400
+X-Trace: 543111672/mk-outboundfilter-5.mail.uk.tiscali.com/PIPEX/$ON_NET_AUTH_ACCEPTED/pipex-tiscali-ips/212.74.113.222/None/franz@msn.com
+X-SBRS: None
+X-RemoteIP: 212.74.113.222
+X-IP-MAIL-FROM: franz@msn.com
+X-SMTP-AUTH: 
+X-Originating-Country: GB/UNITED KINGDOM
+X-MUA: Pipex Webmail (IMP3.1)
+X-IP-BHB: Once
+X-IP-Webmail: TRUE
+X-IP-Added: To/mk-outboundfilter-5.mail.uk.tiscali.com
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AuQdAEZv/k/USnHe/2dsb2JhbABED4M3o26PM4ERgQeCHBYgBwFpAQQUNCABDgEJGIVZB4IkCQEBDgScM4ZOiEIJiAoREgMBiX6RLgONTBuNFjVYiFpcgisCMw
+X-IronPort-AV: E=Sophos;i="4.77,573,1336345200"; 
+   d="scan'208";a="543111672"
+X-IP-Direction: IN
+Message-ID: <1342075059.4ffe70b3a9192@netmail.pipex.net>
+Date: Thu, 12 Jul 2012 07:37:39 +0100
+From: franz <franz@msn.com>
+Reply-to: switzerlllandss@hotmail.com
+Subject: Darlehen
+MIME-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+User-Agent: Pipex Webmail (IMP3.1)
+X-Originating-IP: 172.190.146.142
+X-Pipex-Username: sarah.evans@dsl.pipex.com
+X-Usage: Pipex Webmail is subject to the standard Pipex terms and conditions of use
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For type 0x51 the udf.parent_partref member in struct fid gets copied
-uninitialized to userland. Fix this by initializing it to 0.
-
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
----
- fs/udf/namei.c |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/fs/udf/namei.c b/fs/udf/namei.c
-index 1802417..c31deb3 100644
---- a/fs/udf/namei.c
-+++ b/fs/udf/namei.c
-@@ -1279,6 +1279,7 @@ static int udf_encode_fh(struct inode *inode, __u32 *fh, int *lenp,
- 	*lenp = 3;
- 	fid->udf.block = location.logicalBlockNum;
- 	fid->udf.partref = location.partitionReferenceNum;
-+	fid->udf.parent_partref = 0;
- 	fid->udf.generation = inode->i_generation;
- 
- 	if (parent) {
--- 
-1.7.10.4
+Wir bieten legitimen Darlehen wie persönliche Kredite & Business-Darlehen ohne Sicherheiten (nur Identifikation) mit 
+maximaler Garantie, € 5.000 bis € 90.000.000, die Zinsen niedrig wie 3% in 1 Jahr bis 50 Jahre Tilgungsfrist überall 
+in der Welt
 
