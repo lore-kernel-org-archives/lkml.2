@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161552Ab2GLRtm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 13:49:42 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50224 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161503Ab2GLRtD (ORCPT
+	id S1161533Ab2GLRuP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 13:50:15 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:52734 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932690Ab2GLRsz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 13:49:03 -0400
+	Thu, 12 Jul 2012 13:48:55 -0400
 From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 To: Richard Fontana <fontana2012@gmail.com>
 Cc: "Bradley M. Kuhn" <bkuhn@ebb.org>, tytso@mit.edu,
         linux-kernel@vger.kernel.org,
         "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Subject: [PATCH v2 5/6] copyleft-next: remove section 7 - anti-tivoization
-Date: Thu, 12 Jul 2012 10:48:44 -0700
-Message-Id: <1342115325-9443-6-git-send-email-mcgrof@do-not-panic.com>
+Subject: [PATCH v2 2/6] copyleft-next: more project name updates Copyleft.next->copyleft-next
+Date: Thu, 12 Jul 2012 10:48:41 -0700
+Message-Id: <1342115325-9443-3-git-send-email-mcgrof@do-not-panic.com>
 X-Mailer: git-send-email 1.7.10.rc1.22.gf5241
 In-Reply-To: <1342115325-9443-1-git-send-email-mcgrof@do-not-panic.com>
 References: <1342115325-9443-1-git-send-email-mcgrof@do-not-panic.com>
@@ -24,95 +24,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 
-The anti-tivoization clauses must go if we want this license
-to be ever considered for usage with the Linux kernel.
-This patch removes that entire section.
-
-The re-enumerating of the sections is done separately
-to make it easier for review.
-
-Signed-off-by: Luis R. Rodriguez <mcgrof@do-not-panic.com>
+This reflects the present gitorious.org name and reflects
+better with other foo-next git trees out there.
 ---
- copyleft-next |   56 ++++++--------------------------------------------------
- 1 file changed, 6 insertions(+), 50 deletions(-)
+ ABOUT         |   10 +++++-----
+ COPYLEFT.next |    6 +++---
+ 2 files changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/copyleft-next b/copyleft-next
-index 32f1274..fdb20c2 100644
---- a/copyleft-next
-+++ b/copyleft-next
-@@ -153,17 +153,15 @@ conditions:
-     You modified the Program, and giving a relevant date.
+diff --git a/ABOUT b/ABOUT
+index eaaa878..6eeef4b 100644
+--- a/ABOUT
++++ b/ABOUT
+@@ -1,14 +1,14 @@
+-Copyleft.next
++copyleft-next
+ =============
  
-     b) The Derivative Work must carry prominent notices stating that
--    it is released under this License and any conditions added under
--    section 7.  This requirement modifies the requirement in section 3
--    to "keep intact all notices".
-+    it is released under this License. This requirement modifies the
-+    requirement in section 3 to "keep intact all notices".
+ "Exploring ideas for a modified copyleft license can't hurt."
+     - Richard M. Stallman, July 2012
  
-     c) You must license the entire Derivative Work, as a whole, under
-     this License to anyone who comes into possession of a copy.  This
--    License will therefore apply, along with any applicable section 7
--    additional terms, to the whole of the Derivative Work, and all its
--    parts, regardless of how they are packaged. However, if We license
--    a Covered Work under Proprietary Terms, this subsection c shall
--    not apply to Your Derivative Work.
-+    License will therefore apply to the whole of the Derivative Work,
-+    and all its parts, regardless of how they are packaged. However,
-+    if We license a Covered Work under Proprietary Terms, this
-+    subsection c shall not apply to Your Derivative Work.
+-Copyleft.next is an experimental "-ng"-type modification of the GNU
++copyleft-next is an experimental "-ng"-type modification of the GNU
+ General Public License, version 3. (It is *not* a fork.)
+ Contributions of patches, ideas, and criticism are welcome.  Needless
+ to say, no one should actually *use* a development version of
+-Copyleft.next as an actual license. Anyone interested in actually
++copyleft-next as an actual license. Anyone interested in actually
+ *using* a strong copyleft license for code will wish to use one or
+ more of the following licenses: GNU GPLv2, GNU GPLv3, GNU AGPLv3,
+ and/or later versions of those licenses. For more information, see
+@@ -20,7 +20,7 @@ with (e.g.) Red Hat, or any other corporate entity.** Contributors are
+ expected to participate in their individual capacity.
  
-     d) If the Program's interactive user interfaces display Legal
-     Notices, such Legal Notices must be preserved by Your Derivative
-@@ -221,48 +219,6 @@ ways:
-          noncommercially, and only if You received the Object Code
-          with such an offer, in accord with the preceding option.
+ All communications with journalists shall be handled by the
+-Copyleft.next Marketing Committee, which does not exist yet and
++copyleft-next Marketing Committee, which does not exist yet and
+ probably won't exist for at least another year or three. For the
+ avoidance of doubt, Simon Phipps is not considered a
+ journalist.
+@@ -35,7 +35,7 @@ existing (and future) versions of the GNU GPL, which addresses one of
+ the FSF's concerns about modified versions of the GNU GPL.
  
--  7. User Product Lockdown.
--
--  A "User Product" is either (1) a "consumer product", which means any
--tangible personal property which is normally used for personal, family,
--or household purposes, or (2) anything designed or sold for incorporation
--into a dwelling.  In determining whether a product is a consumer product,
--doubtful cases shall be resolved in favor of coverage.  For a particular
--product received by a particular user, "normally used" refers to a
--typical or common use of that class of product, regardless of the status
--of the particular user or of the way in which the particular user
--actually uses, or expects or is expected to use, the product.  A product
--is a consumer product regardless of whether the product has substantial
--commercial, industrial or non-consumer uses, unless such uses represent
--the only significant mode of use of the product.
--
--  "Installation Information" for a User Product means any methods,
--procedures, authorization keys, or other information required to
--install and execute Derivative Works of a Covered Work in that User
--Product from a Derivative Work of its Corresponding Source.  The
--information must suffice to ensure that the continued functioning of
--the Object Code Derivative Work is in no case prevented or interfered
--with solely because modification has been made.
--
--  If You distribute an Object Code work under section 5 in, or with,
--or specifically for use in, a User Product, and the distributing
--occurs as part of a transaction in which the right of possession and
--use of the User Product is transferred to the recipient in perpetuity
--or for a fixed term (regardless of how the transaction is
--characterized), the Corresponding Source distributed under this
--section must be accompanied by the Installation Information.  But this
--requirement does not apply if neither You nor any third party retains
--the ability to install modified Object Code on the User Product (for
--example, the work has been installed in non-field-modifiable ROM).
--
--  The requirement to provide Installation Information does not include a
--requirement to continue to provide support service, warranty, or updates
--for a work that has been modified or installed by the recipient, or for
--the User Product in which it has been modified or installed.  Access to a
--network may be denied when the modification itself materially and
--adversely affects the operation of the network or violates the rules and
--protocols for communication across the network.
--
-   8. Additional Terms.
+ The meta-license from the FSF stated in its FAQ shall be the license
+-of all versions of the Copyleft.next license text (to the extent that
++of all versions of the copyleft-next license text (to the extent that
+ such versions retain any copyrightable material from versions of the
+ GNU GPL in which the FSF has asserted copyright). Based on the FSF
+ FAQ, that meta-license may be stated as follows:
+diff --git a/COPYLEFT.next b/COPYLEFT.next
+index ec2fc07..32f1274 100644
+--- a/COPYLEFT.next
++++ b/COPYLEFT.next
+@@ -1,4 +1,4 @@
+-                             Copyleft.next
++                             copyleft-next
  
-   Notwithstanding any other provision of this License, for material
+   0. Definitions.
+ 
+@@ -392,9 +392,9 @@ survive such relicensing.
+   14. New Versions of this License.
+ 
+   The initial License Steward is [?]. The License Steward may publish
+-new versions of Copyleft.next.  Each version will be given a
++new versions of copyleft-next.  Each version will be given a
+ distinguishing version number. You may distribute a Covered Work under
+-the terms of the version of Copyleft.next under which the Program is
++the terms of the version of copyleft-next under which the Program is
+ licensed, or under the terms of any subsequent version published by
+ the License Steward.
+ 
 -- 
 1.7.10.rc1.22.gf5241
 
