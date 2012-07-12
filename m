@@ -1,87 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757423Ab2GLLRF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 07:17:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56648 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754063Ab2GLLRC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 07:17:02 -0400
-Date: Thu, 12 Jul 2012 13:16:59 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Hillf Danton <dhillf@gmail.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH] mm: hugetlb: flush dcache before returning zeroed huge
- page to userspace
-Message-ID: <20120712111659.GF21013@tiehlicka.suse.cz>
-References: <1341412376-6272-1-git-send-email-will.deacon@arm.com>
- <20120709122523.GC4627@tiehlicka.suse.cz>
- <20120709141324.GK7315@mudshark.cambridge.arm.com>
- <alpine.LSU.2.00.1207091622470.2261@eggly.anvils>
- <20120710094513.GB9108@mudshark.cambridge.arm.com>
- <20120710104234.GI9108@mudshark.cambridge.arm.com>
- <20120711174802.GG13498@mudshark.cambridge.arm.com>
+	id S1757445Ab2GLLWT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 07:22:19 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:45566 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751495Ab2GLLWR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 07:22:17 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FFEB35A.6030500@jp.fujitsu.com>
+Date: Thu, 12 Jul 2012 20:22:02 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120711174802.GG13498@mudshark.cambridge.arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: <linux-acpi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <lenb@kernel.org>, <srivatsa.bhat@linux.vnet.ibm.com>,
+        <toshi.kani@hp.com>
+Subject: [PATCH v3 1/3] acpi : cpu hot-remove returns error when cpu_down()
+ fails
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 11-07-12 18:48:02, Will Deacon wrote:
-> On Tue, Jul 10, 2012 at 11:42:34AM +0100, Will Deacon wrote:
-> > On Tue, Jul 10, 2012 at 10:45:13AM +0100, Will Deacon wrote:
-> > > On Tue, Jul 10, 2012 at 12:57:14AM +0100, Hugh Dickins wrote:
-> > > > If I start to grep the architectures for non-empty flush_dcache_page(),
-> > > > I soon find things in arch/arm such as v4_mc_copy_user_highpage() doing
-> > > > if (!test_and_set_bit(PG_dcache_clean,)) __flush_dcache_page() - where
-> > > > the naming suggests that I'm right, it's the architecture's responsibility
-> > > > to arrange whatever flushing is needed in its copy and clear page functions.
-> 
-> [...]
-> 
-> > Ok, so this is exactly the problem. The hugetlb allocator uses its own
-> > pool of huge pages, so free_huge_page followed by a later alloc_huge_page
-> > will give you something where the page flags of the compound head do not
-> > guarantee that PG_arch_1 is clear.
-> 
-> Just to confirm, the following quick hack at least results in the correct
-> flushing for me (on ARM):
-> 
-> 
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index e198831..7a7c9d3 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -1141,6 +1141,7 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
->         }
->  
->         set_page_private(page, (unsigned long)spool);
-> +       clear_bit(PG_arch_1, &page->flags);
->  
->         vma_commit_reservation(h, vma, addr);
->  
-> 
-> 
-> The question is whether we should tidy that up for the core code or get
-> architectures to clear the bit in arch_make_huge_pte (which also seems to
-> work).
+Even if cpu_down() fails, acpi_processor_remove() continues to remove the cpu.
+But in this case, it should return error number since some process may run on
+the cpu. If the cpu has a running process and the cpu is turned the power off,
+the system may not work well.
 
-This should go into arch specific code IMO. Even the page flag name
-suggests this shouldn't be in the base code.
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-> 
-> Will
+---
+ drivers/acpi/processor_driver.c |   18 ++++++++++++------
+ 1 file changed, 12 insertions(+), 6 deletions(-)
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Index: linux-3.5-rc4/drivers/acpi/processor_driver.c
+===================================================================
+--- linux-3.5-rc4.orig/drivers/acpi/processor_driver.c	2012-06-25 04:53:04.000000000 +0900
++++ linux-3.5-rc4/drivers/acpi/processor_driver.c	2012-07-05 21:02:58.711285382 +0900
+@@ -610,7 +610,7 @@ err_free_pr:
+ static int acpi_processor_remove(struct acpi_device *device, int type)
+ {
+ 	struct acpi_processor *pr = NULL;
+-
++	int ret;
+
+ 	if (!device || !acpi_driver_data(device))
+ 		return -EINVAL;
+@@ -621,8 +621,9 @@ static int acpi_processor_remove(struct
+ 		goto free;
+
+ 	if (type == ACPI_BUS_REMOVAL_EJECT) {
+-		if (acpi_processor_handle_eject(pr))
+-			return -EINVAL;
++		ret = acpi_processor_handle_eject(pr);
++		if (ret)
++			return ret;
+ 	}
+
+ 	acpi_processor_power_exit(pr, device);
+@@ -841,12 +842,17 @@ static acpi_status acpi_processor_hotadd
+
+ static int acpi_processor_handle_eject(struct acpi_processor *pr)
+ {
+-	if (cpu_online(pr->id))
+-		cpu_down(pr->id);
++	int ret;
++
++	if (cpu_online(pr->id)) {
++		ret = cpu_down(pr->id);
++		if (ret)
++			return ret;
++	}
+
+ 	arch_unregister_cpu(pr->id);
+ 	acpi_unmap_lsapic(pr->id);
+-	return (0);
++	return ret;
+ }
+ #else
+ static acpi_status acpi_processor_hotadd_init(struct acpi_processor *pr)
+
