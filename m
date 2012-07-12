@@ -1,58 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758915Ab2GLIn4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 04:43:56 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:5920 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752989Ab2GLInm (ORCPT
+	id S1758941Ab2GLIoU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 04:44:20 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:40539 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758923Ab2GLIoM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 04:43:42 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 12 Jul 2012 01:39:49 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <stern@rowland.harvard.edu>, <gregkh@linuxfoundation.org>
-CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>, <swarren@nvidia.com>,
-        <vbyravarasu@nvidia.com>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH] usb: host: tegra: pass correct pointer in ehci_setup()
-Date: Thu, 12 Jul 2012 14:06:48 +0530
-Message-ID: <1342082208-14184-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 12 Jul 2012 04:44:12 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX196aOclgeV6qKbjtH+LcUG/dM5QZPy1alNy8r300X
+	fHuz2apdCmaGSJ
+Message-ID: <1342082648.7338.171.camel@marge.simpson.net>
+Subject: Re: 3.4.4-rt13: btrfs + xfstests 006 = BOOM..  and a bonus rt_mutex
+ deadlock report for absolutely free!
+From: Mike Galbraith <efault@gmx.de>
+To: "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Date: Thu, 12 Jul 2012 10:44:08 +0200
+In-Reply-To: <1342072060.7338.102.camel@marge.simpson.net>
+References: <1342072060.7338.102.camel@marge.simpson.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ehci_setup() require the pointer of usb_hcd.
-Passing the correct pointer in place of ehci_hcd
-pointer.
+On Thu, 2012-07-12 at 07:47 +0200, Mike Galbraith wrote: 
+> Greetings,
+> 
+> I'm chasing btrfs critters in an enterprise 3.0-rt kernel, and just
+> checked to see if they're alive in virgin latest/greatest rt kernel.  
+> 
+> Both are indeed alive and well, ie I didn't break it, nor did the
+> zillion patches in enterprise base kernel, so others may have an
+> opportunity to meet these critters up close and personal as well.
 
-This is side effetct of change:
-commit 1a49e2ac9651df7349867a5cf44e2c83de1046af
-Author: Alan Stern <stern@rowland.harvard.edu>
+3.2-rt both explodes and deadlocks as well.  3.0-rt (virgin I mean) does
+neither, so with enough re-integrate investment, it might be bisectable.
 
-    EHCI: centralize controller initialization
+Rummaging in btrfs, that begins to look down right attractive ;-)
 
-
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
- drivers/usb/host/ehci-tegra.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
-index 9e44b1f..d2a7c95 100644
---- a/drivers/usb/host/ehci-tegra.c
-+++ b/drivers/usb/host/ehci-tegra.c
-@@ -285,7 +285,7 @@ static int tegra_ehci_setup(struct usb_hcd *hcd)
- 	/* switch to host mode */
- 	hcd->has_tt = 1;
- 
--	retval = ehci_setup(ehci);
-+	retval = ehci_setup(hcd);
- 	if (retval)
- 		return retval;
- 
--- 
-1.7.1.1
+-Mike
 
