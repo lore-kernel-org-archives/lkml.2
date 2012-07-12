@@ -1,81 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162484Ab2GLW5q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:57:46 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60450 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162133Ab2GLWnh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:43:37 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: [ 139/187] mm/memblock: cleanup on duplicate VA/PA conversion
-Date: Thu, 12 Jul 2012 15:34:55 -0700
-Message-Id: <20120712191535.277809408@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.10.1.362.g242cab3
-In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
-References: <20120712192421.GA28926@kroah.com>
- <20120712191522.742634173@linuxfoundation.org>
-User-Agent: quilt/0.60-20.3
+	id S1162473Ab2GLW5p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:57:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41629 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1162095Ab2GLWnl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 18:43:41 -0400
+Date: Fri, 13 Jul 2012 00:43:34 +0200
+From: Jiri Bohac <jbohac@suse.cz>
+To: John Stultz <johnstul@us.ibm.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, stable@vger.kernel.org
+Subject: Re: [PATCH 0/6] Fix for leapsecond caused hrtimer/futex issue
+ (updated)
+Message-ID: <20120712224334.GA32620@midget.suse.cz>
+References: <1341960205-56738-1-git-send-email-johnstul@us.ibm.com>
+ <4FFCB287.80701@us.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FFCB287.80701@us.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg KH <gregkh@linuxfoundation.org>
+On Tue, Jul 10, 2012 at 03:53:59PM -0700, John Stultz wrote:
+> On 07/10/2012 03:43 PM, John Stultz wrote:
+> >Over the weekend, Thomas got a chance to review the leap second fix
+> >in more detail and had a few additional changes he wanted to make
+> >to improve performance as well as style.
+> >
+> >So this iteration includes his modifications.
+> >
+> >Once merged, I'll be working to get the backports finished as quickly
+> >as I can and sent to -stable.
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+looking at the proposed 2.6.32.y stable patch at:
+http://git.linaro.org/gitweb?p=people/jstultz/linux.git;a=commitdiff;h=18d208632bf17aed56c581b882868b2be44be71e;hp=6d224606bb8eec78027522d6dd5abfea8108c41a
+Is this the final version you are about to send to -stable?
 
-------------------
+In 2.6.32 timekeeping_leap_insert() is not called from the timer
+interrupt, but from the leap_timer hrtimer.
 
-From: Gavin Shan <shangw@linux.vnet.ibm.com>
+I think the new clock_was_set_timer will thus not be called by
+irq_exit() because TIMER_SOFTIRQ has not been raised. Unless
+TIMER_SOFTIRQ is raised, clock_was_set() will not be called until
+the next periodic timer interrupt, correct?
 
-commit 4e2f07750d9a94e8f23e86408df5ab95be88bf11 upstream.
+Wouldn't the original schedule_work() approach work better for
+2.6.32?
 
-The overall memblock has been organized into the memory regions and
-reserved regions.  Initially, the memory regions and reserved regions are
-stored in the predetermined arrays of "struct memblock _region".  It's
-possible for the arrays to be enlarged when we have newly added regions
-for them, but no enough space there.  Under the situation, We will created
-double-sized array to meet the requirement.  However, the original
-implementation converted the VA (Virtual Address) of the newly allocated
-array of regions to PA (Physical Address), then translate back when we
-allocates the new array from slab.  That's actually unnecessary.
+Or do you plan backporting the most recent version to 2.6.32?
 
-The patch removes the duplicate VA/PA conversion.
+Thanks,
 
-Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- mm/memblock.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -212,14 +212,15 @@ static int __init_memblock memblock_doub
- 	if (use_slab) {
- 		new_array = kmalloc(new_size, GFP_KERNEL);
- 		addr = new_array ? __pa(new_array) : 0;
--	} else
-+	} else {
- 		addr = memblock_find_in_range(0, MEMBLOCK_ALLOC_ACCESSIBLE, new_size, sizeof(phys_addr_t));
-+		new_array = addr ? __va(addr) : 0;
-+	}
- 	if (!addr) {
- 		pr_err("memblock: Failed to double %s array from %ld to %ld entries !\n",
- 		       memblock_type_name(type), type->max, type->max * 2);
- 		return -1;
- 	}
--	new_array = __va(addr);
- 
- 	memblock_dbg("memblock: %s array is doubled to %ld at [%#010llx-%#010llx]",
- 		 memblock_type_name(type), type->max * 2, (u64)addr, (u64)addr + new_size - 1);
-
+-- 
+Jiri Bohac <jbohac@suse.cz>
+SUSE Labs, SUSE CZ
 
