@@ -1,84 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757445Ab2GLLWT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 07:22:19 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:45566 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751495Ab2GLLWR (ORCPT
+	id S933709Ab2GLLXX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 07:23:23 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:34676 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751495Ab2GLLXV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 07:22:17 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FFEB35A.6030500@jp.fujitsu.com>
-Date: Thu, 12 Jul 2012 20:22:02 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Thu, 12 Jul 2012 07:23:21 -0400
 MIME-Version: 1.0
-To: <linux-acpi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <lenb@kernel.org>, <srivatsa.bhat@linux.vnet.ibm.com>,
-        <toshi.kani@hp.com>
-Subject: [PATCH v3 1/3] acpi : cpu hot-remove returns error when cpu_down()
- fails
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1290084457-26422-1-git-send-email-tlinder@codeaurora.org>
+References: <1290084457-26422-1-git-send-email-tlinder@codeaurora.org>
+Date: Thu, 12 Jul 2012 16:53:20 +0530
+Message-ID: <CAOiXhaKXfVVr8Q6UREp3zZYqpwmJxU1vEyJ_ETH0Uo0FNxm51g@mail.gmail.com>
+Subject: Re: [PATCH v4 2/4] usb gadget: Configure endpoint according to gadget speed.
+From: Rajaram R <rajaram.officemail@gmail.com>
+To: Tatyana Brokhman <tlinder@codeaurora.org>
+Cc: gregkh@suse.de, linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Even if cpu_down() fails, acpi_processor_remove() continues to remove the cpu.
-But in this case, it should return error number since some process may run on
-the cpu. If the cpu has a running process and the cpu is turned the power off,
-the system may not work well.
+Hi
 
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
----
- drivers/acpi/processor_driver.c |   18 ++++++++++++------
- 1 file changed, 12 insertions(+), 6 deletions(-)
+On Thu, Nov 18, 2010 at 6:17 PM, Tatyana Brokhman
+<tlinder@codeaurora.org> wrote:
+>
+> Add config_ep_by_speed() to configure the endpoint according to the gadget
+> speed. Using this function will spare the FDs from handling the endpoint
+> chosen descriptor.
+>
+> Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
+> ---
+>  drivers/usb/gadget/composite.c  |   76 +++++++++++++++++++++++++++++++++++++++
+>  drivers/usb/gadget/epautoconf.c |    1 +
+>  include/linux/usb/composite.h   |   21 +++++++++++
+>  include/linux/usb/gadget.h      |    3 ++
+>  4 files changed, 101 insertions(+), 0 deletions(-)
+>
+---cut---
 
-Index: linux-3.5-rc4/drivers/acpi/processor_driver.c
-===================================================================
---- linux-3.5-rc4.orig/drivers/acpi/processor_driver.c	2012-06-25 04:53:04.000000000 +0900
-+++ linux-3.5-rc4/drivers/acpi/processor_driver.c	2012-07-05 21:02:58.711285382 +0900
-@@ -610,7 +610,7 @@ err_free_pr:
- static int acpi_processor_remove(struct acpi_device *device, int type)
- {
- 	struct acpi_processor *pr = NULL;
--
-+	int ret;
+> + */
+> +int config_ep_by_speed(struct usb_gadget *g,
+> +                       struct usb_function *f,
+> +                       struct usb_ep *_ep)
+> +{
+> +       struct usb_endpoint_descriptor *chosen_desc = NULL;
+> +       struct usb_descriptor_header **speed_desc = NULL;
+> +
+> +       struct usb_descriptor_header **d_spd; /* cursor for speed desc */
+> +
+> +       if (!g || !f || !_ep)
+> +               return -EIO;
+> +
+> +       /* select desired speed */
+> +       switch (g->speed) {
+> +       case USB_SPEED_HIGH:
+> +               if (gadget_is_dualspeed(g)) {
+> +                       speed_desc = f->hs_descriptors;
+> +                       break;
+> +               }
+> +               /* else: fall through */
+> +       default:
+> +               speed_desc = f->descriptors;
+> +       }
+> +       /* find descriptors */
+> +       for (d_spd = next_ep_desc(speed_desc); d_spd;
+> +             d_spd = next_ep_desc(d_spd+1)) {
+> +               chosen_desc = (struct usb_endpoint_descriptor *)*d_spd;
+> +               if (chosen_desc->bEndpointAddress == _ep->bEndpointAddress)
+> +                       goto ep_found;
+> +       }
+> +       return -EIO;
+> +
+> +ep_found:
+> +       /* commit results */
+> +       _ep->maxpacket = le16_to_cpu(chosen_desc->wMaxPacketSize);
+> +       _ep->desc = chosen_desc;
 
- 	if (!device || !acpi_driver_data(device))
- 		return -EINVAL;
-@@ -621,8 +621,9 @@ static int acpi_processor_remove(struct
- 		goto free;
+Could you please comment on why do we need to update gadget's ep list
+with function's maxpacket ? Will this not affect when we switch
+functions ?
 
- 	if (type == ACPI_BUS_REMOVAL_EJECT) {
--		if (acpi_processor_handle_eject(pr))
--			return -EINVAL;
-+		ret = acpi_processor_handle_eject(pr);
-+		if (ret)
-+			return ret;
- 	}
-
- 	acpi_processor_power_exit(pr, device);
-@@ -841,12 +842,17 @@ static acpi_status acpi_processor_hotadd
-
- static int acpi_processor_handle_eject(struct acpi_processor *pr)
- {
--	if (cpu_online(pr->id))
--		cpu_down(pr->id);
-+	int ret;
-+
-+	if (cpu_online(pr->id)) {
-+		ret = cpu_down(pr->id);
-+		if (ret)
-+			return ret;
-+	}
-
- 	arch_unregister_cpu(pr->id);
- 	acpi_unmap_lsapic(pr->id);
--	return (0);
-+	return ret;
- }
- #else
- static acpi_status acpi_processor_hotadd_init(struct acpi_processor *pr)
-
+> +
+> +       return 0;
+> +}
