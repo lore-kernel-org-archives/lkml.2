@@ -1,74 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933762Ab2GLL1I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 07:27:08 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:59565 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932632Ab2GLL1D (ORCPT
+	id S1030644Ab2GLL2L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 07:28:11 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:41760 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932632Ab2GLL2I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 07:27:03 -0400
-Date: Thu, 12 Jul 2012 12:26:45 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Hillf Danton <dhillf@gmail.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH] mm: hugetlb: flush dcache before returning zeroed huge
- page to userspace
-Message-ID: <20120712112645.GG2816@mudshark.cambridge.arm.com>
-References: <1341412376-6272-1-git-send-email-will.deacon@arm.com>
- <20120709122523.GC4627@tiehlicka.suse.cz>
- <20120709141324.GK7315@mudshark.cambridge.arm.com>
- <alpine.LSU.2.00.1207091622470.2261@eggly.anvils>
- <20120710094513.GB9108@mudshark.cambridge.arm.com>
- <20120710104234.GI9108@mudshark.cambridge.arm.com>
- <20120711174802.GG13498@mudshark.cambridge.arm.com>
- <20120712111659.GF21013@tiehlicka.suse.cz>
+	Thu, 12 Jul 2012 07:28:08 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FFEB4BA.8010800@jp.fujitsu.com>
+Date: Thu, 12 Jul 2012 20:27:54 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120712111659.GF21013@tiehlicka.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: <linux-acpi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <lenb@kernel.org>, <srivatsa.bhat@linux.vnet.ibm.com>,
+        <toshi.kani@hp.com>
+Subject: [PATCH v3 2/3] acpi : prevent cpu from becoming online
+References: <4FFEB35A.6030500@jp.fujitsu.com>
+In-Reply-To: <4FFEB35A.6030500@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 12, 2012 at 12:16:59PM +0100, Michal Hocko wrote:
-> On Wed 11-07-12 18:48:02, Will Deacon wrote:
-> > Just to confirm, the following quick hack at least results in the correct
-> > flushing for me (on ARM):
-> > 
-> > 
-> > diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> > index e198831..7a7c9d3 100644
-> > --- a/mm/hugetlb.c
-> > +++ b/mm/hugetlb.c
-> > @@ -1141,6 +1141,7 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
-> >         }
-> >  
-> >         set_page_private(page, (unsigned long)spool);
-> > +       clear_bit(PG_arch_1, &page->flags);
-> >  
-> >         vma_commit_reservation(h, vma, addr);
-> >  
-> > 
-> > 
-> > The question is whether we should tidy that up for the core code or get
-> > architectures to clear the bit in arch_make_huge_pte (which also seems to
-> > work).
-> 
-> This should go into arch specific code IMO. Even the page flag name
-> suggests this shouldn't be in the base code.
+Even if acpi_processor_handle_eject() offlines cpu, there is a chance
+to online the cpu after that. So the patch closes the window by using
+get/put_online_cpus().
 
-Well, the comment in linux/page-flags.h does state that:
+Why does the patch change _cpu_up() logic?
 
- * PG_arch_1 is an architecture specific page state bit.  The generic code
- * guarantees that this bit is cleared for a page when it first is entered into
- * the page cache.
+The patch cares the race of hot-remove cpu and _cpu_up(). If the patch
+does not change it, there is the following race.
 
-so it's not completely clear cut that the architecture should be responsible
-for clearing this bit when allocating pages from the hugepage pool.
+hot-remove cpu                         |  _cpu_up()
+------------------------------------- ------------------------------------
+call acpi_processor_handle_eject()     |
+     call cpu_down()                   |
+     call get_online_cpus()            |
+                                       | call cpu_hotplug_begin() and stop here
+     call arch_unregister_cpu()        |
+     call acpi_unmap_lsapic()          |
+     call put_online_cpus()            |
+                                       | start and continue _cpu_up()
+     return acpi_processor_remove()    |
+continue hot-remove the cpu            |
 
-Will
+So _cpu_up() can continue to itself. And hot-remove cpu can also continue
+itself. If the patch changes _cpu_up() logic, the race disappears as below:
+
+hot-remove cpu                         | _cpu_up()
+-----------------------------------------------------------------------
+call acpi_processor_handle_eject()     |
+     call cpu_down()                   |
+     call get_online_cpus()            |
+                                       | call cpu_hotplug_begin() and stop here
+     call arch_unregister_cpu()        |
+     call acpi_unmap_lsapic()          |
+          cpu's cpu_present is set     |
+          to false by set_cpu_present()|
+     call put_online_cpus()            |
+                                       | start _cpu_up()
+                                       | check cpu_present() and return -EINVAL
+     return acpi_processor_remove()    |
+continue hot-remove the cpu            |
+
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+
+---
+ drivers/acpi/processor_driver.c |   14 ++++++++++++++
+ kernel/cpu.c                    |    8 +++++---
+ 2 files changed, 19 insertions(+), 3 deletions(-)
+
+Index: linux-3.5-rc6/drivers/acpi/processor_driver.c
+===================================================================
+--- linux-3.5-rc6.orig/drivers/acpi/processor_driver.c	2012-07-12 20:16:17.985934856 +0900
++++ linux-3.5-rc6/drivers/acpi/processor_driver.c	2012-07-12 20:16:20.122908531 +0900
+@@ -850,8 +850,22 @@ static int acpi_processor_handle_eject(s
+ 			return ret;
+ 	}
+
++	get_online_cpus();
++	/*
++	 * The cpu might become online again at this point. So we check whether
++	 * the cpu has been onlined or not. If the cpu became online, it means
++	 * that someone wants to use the cpu. So acpi_processor_handle_eject()
++	 * returns -EAGAIN.
++	 */
++	if (unlikely(cpu_online(pr->id))) {
++		put_online_cpus();
++		printk("Failed to remove CPU %d, since someone onlines it\n"
++			, pr->id);
++		return -EAGAIN;
++	}
+ 	arch_unregister_cpu(pr->id);
+ 	acpi_unmap_lsapic(pr->id);
++	put_online_cpus();
+ 	return ret;
+ }
+ #else
+Index: linux-3.5-rc6/kernel/cpu.c
+===================================================================
+--- linux-3.5-rc6.orig/kernel/cpu.c	2012-07-12 20:16:17.985934856 +0900
++++ linux-3.5-rc6/kernel/cpu.c	2012-07-12 20:25:07.940309872 +0900
+@@ -343,11 +343,13 @@ static int __cpuinit _cpu_up(unsigned in
+ 	unsigned long mod = tasks_frozen ? CPU_TASKS_FROZEN : 0;
+ 	struct task_struct *idle;
+
+-	if (cpu_online(cpu) || !cpu_present(cpu))
+-		return -EINVAL;
+-
+ 	cpu_hotplug_begin();
+
++	if (cpu_online(cpu) || !cpu_present(cpu)) {
++		ret =  -EINVAL;
++		goto out;
++	}
++
+ 	idle = idle_thread_get(cpu);
+ 	if (IS_ERR(idle)) {
+ 		ret = PTR_ERR(idle);
+
