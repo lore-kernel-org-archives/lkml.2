@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162940Ab2GLX0o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:26:44 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:56311 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161997Ab2GLWmH (ORCPT
+	id S1162579Ab2GLX0l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:26:41 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44509 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161931Ab2GLWmO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:42:07 -0400
+	Thu, 12 Jul 2012 18:42:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Xose Vazquez Perez <xose.vazquez@gmail.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
+        Johannes Berg <johannes.berg@intel.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 114/187] rtlwifi: rtl8192cu: New USB IDs
-Date: Thu, 12 Jul 2012 15:34:30 -0700
-Message-Id: <20120712191532.942005293@linuxfoundation.org>
+Subject: [ 116/187] mac80211: correct behaviour on unrecognised action frames
+Date: Thu, 12 Jul 2012 15:34:32 -0700
+Message-Id: <20120712191533.123076729@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -32,43 +31,45 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit f63d7dabd5da9ef41f28f6d69b29bc084db0ca5a upstream.
+commit 4b5ebccc40843104d980f0714bc86bfcd5568941 upstream.
 
-The latest Realtek driver for the RTL8188CU and RTL8192CU chips adds three
-new USB IDs.
+When receiving an "individually addressed" action frame, the
+receiver is required to return it to the sender. mac80211
+gets this wrong as it also returns group addressed (mcast)
+frames to the sender. Fix this and update the reference to
+the new 802.11 standards version since things were shuffled
+around significantly.
 
-Reported-by: Xose Vazquez Perez <xose.vazquez@gmail.com>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/rtl8192cu/sw.c |    3 +++
- 1 file changed, 3 insertions(+)
+ net/mac80211/rx.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-@@ -301,9 +301,11 @@ static struct usb_device_id rtl8192c_usb
- 	{RTL_USB_DEVICE(0x07b8, 0x8188, rtl92cu_hal_cfg)}, /*Abocom - Abocom*/
- 	{RTL_USB_DEVICE(0x07b8, 0x8189, rtl92cu_hal_cfg)}, /*Funai - Abocom*/
- 	{RTL_USB_DEVICE(0x0846, 0x9041, rtl92cu_hal_cfg)}, /*NetGear WNA1000M*/
-+	{RTL_USB_DEVICE(0x0bda, 0x5088, rtl92cu_hal_cfg)}, /*Thinkware-CC&C*/
- 	{RTL_USB_DEVICE(0x0df6, 0x0052, rtl92cu_hal_cfg)}, /*Sitecom - Edimax*/
- 	{RTL_USB_DEVICE(0x0df6, 0x005c, rtl92cu_hal_cfg)}, /*Sitecom - Edimax*/
- 	{RTL_USB_DEVICE(0x0eb0, 0x9071, rtl92cu_hal_cfg)}, /*NO Brand - Etop*/
-+	{RTL_USB_DEVICE(0x4856, 0x0091, rtl92cu_hal_cfg)}, /*NetweeN - Feixun*/
- 	/* HP - Lite-On ,8188CUS Slim Combo */
- 	{RTL_USB_DEVICE(0x103c, 0x1629, rtl92cu_hal_cfg)},
- 	{RTL_USB_DEVICE(0x13d3, 0x3357, rtl92cu_hal_cfg)}, /* AzureWave */
-@@ -345,6 +347,7 @@ static struct usb_device_id rtl8192c_usb
- 	{RTL_USB_DEVICE(0x07b8, 0x8178, rtl92cu_hal_cfg)}, /*Funai -Abocom*/
- 	{RTL_USB_DEVICE(0x0846, 0x9021, rtl92cu_hal_cfg)}, /*Netgear-Sercomm*/
- 	{RTL_USB_DEVICE(0x0b05, 0x17ab, rtl92cu_hal_cfg)}, /*ASUS-Edimax*/
-+	{RTL_USB_DEVICE(0x0bda, 0x8186, rtl92cu_hal_cfg)}, /*Realtek 92CE-VAU*/
- 	{RTL_USB_DEVICE(0x0df6, 0x0061, rtl92cu_hal_cfg)}, /*Sitecom-Edimax*/
- 	{RTL_USB_DEVICE(0x0e66, 0x0019, rtl92cu_hal_cfg)}, /*Hawking-Edimax*/
- 	{RTL_USB_DEVICE(0x2001, 0x3307, rtl92cu_hal_cfg)}, /*D-Link-Cameo*/
+--- a/net/mac80211/rx.c
++++ b/net/mac80211/rx.c
+@@ -2459,7 +2459,7 @@ ieee80211_rx_h_action_return(struct ieee
+ 	 * frames that we didn't handle, including returning unknown
+ 	 * ones. For all other modes we will return them to the sender,
+ 	 * setting the 0x80 bit in the action category, as required by
+-	 * 802.11-2007 7.3.1.11.
++	 * 802.11-2012 9.24.4.
+ 	 * Newer versions of hostapd shall also use the management frame
+ 	 * registration mechanisms, but older ones still use cooked
+ 	 * monitor interfaces so push all frames there.
+@@ -2469,6 +2469,9 @@ ieee80211_rx_h_action_return(struct ieee
+ 	     sdata->vif.type == NL80211_IFTYPE_AP_VLAN))
+ 		return RX_DROP_MONITOR;
+ 
++	if (is_multicast_ether_addr(mgmt->da))
++		return RX_DROP_MONITOR;
++
+ 	/* do not return rejected action frames */
+ 	if (mgmt->u.action.category & 0x80)
+ 		return RX_DROP_UNUSABLE;
 
 
