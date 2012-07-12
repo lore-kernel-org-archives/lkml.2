@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162101Ab2GLWnv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:43:51 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54985 "EHLO
+	id S1162208Ab2GLW4u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:56:50 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58752 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162124Ab2GLWnd (ORCPT
+	with ESMTP id S1162151Ab2GLWnw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:43:33 -0400
+	Thu, 12 Jul 2012 18:43:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tyler Hicks <tyhicks@canonical.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: [ 138/187] eCryptfs: Properly check for O_RDONLY flag before doing privileged open
-Date: Thu, 12 Jul 2012 15:34:54 -0700
-Message-Id: <20120712191535.183178157@linuxfoundation.org>
+        Vivek Goyal <vgoyal@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: [ 135/187] dm persistent data: fix allocation failure in space map checker init
+Date: Thu, 12 Jul 2012 15:34:51 -0700
+Message-Id: <20120712191534.902940213@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -31,42 +31,92 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Tyler Hicks <tyhicks@canonical.com>
+From: Mike Snitzer <snitzer@redhat.com>
 
-commit 9fe79d7600497ed8a95c3981cbe5b73ab98222f0 upstream.
+commit b0239faaf87c38bb419c9264bf20817438ddc3a9 upstream.
 
-If the first attempt at opening the lower file read/write fails,
-eCryptfs will retry using a privileged kthread. However, the privileged
-retry should not happen if the lower file's inode is read-only because a
-read/write open will still be unsuccessful.
+If CONFIG_DM_DEBUG_SPACE_MAPS is enabled and memory is fragmented and a
+sufficiently-large metadata device is used in a thin pool then the space
+map checker will fail to allocate the memory it requires.
 
-The check for determining if the open should be retried was intended to
-be based on the access mode of the lower file's open flags being
-O_RDONLY, but the check was incorrectly performed. This would cause the
-open to be retried by the privileged kthread, resulting in a second
-failed open of the lower file. This patch corrects the check to
-determine if the open request should be handled by the privileged
-kthread.
+Switch from kmalloc to vmalloc to allow larger virtually contiguous
+allocations for the space map checker's internal count arrays.
 
-Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Dan Carpenter <dan.carpenter@oracle.com>
+Reported-by: Vivek Goyal <vgoyal@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ecryptfs/kthread.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/md/persistent-data/dm-space-map-checker.c |   30 +++++++++++++---------
+ 1 file changed, 19 insertions(+), 11 deletions(-)
 
---- a/fs/ecryptfs/kthread.c
-+++ b/fs/ecryptfs/kthread.c
-@@ -149,7 +149,7 @@ int ecryptfs_privileged_open(struct file
- 	(*lower_file) = dentry_open(lower_dentry, lower_mnt, flags, cred);
- 	if (!IS_ERR(*lower_file))
- 		goto out;
--	if (flags & O_RDONLY) {
-+	if ((flags & O_ACCMODE) == O_RDONLY) {
- 		rc = PTR_ERR((*lower_file));
- 		goto out;
- 	}
+--- a/drivers/md/persistent-data/dm-space-map-checker.c
++++ b/drivers/md/persistent-data/dm-space-map-checker.c
+@@ -8,6 +8,7 @@
+ 
+ #include <linux/device-mapper.h>
+ #include <linux/export.h>
++#include <linux/vmalloc.h>
+ 
+ #ifdef CONFIG_DM_DEBUG_SPACE_MAPS
+ 
+@@ -89,13 +90,23 @@ static int ca_create(struct count_array
+ 
+ 	ca->nr = nr_blocks;
+ 	ca->nr_free = nr_blocks;
+-	ca->counts = kzalloc(sizeof(*ca->counts) * nr_blocks, GFP_KERNEL);
+-	if (!ca->counts)
+-		return -ENOMEM;
++
++	if (!nr_blocks)
++		ca->counts = NULL;
++	else {
++		ca->counts = vzalloc(sizeof(*ca->counts) * nr_blocks);
++		if (!ca->counts)
++			return -ENOMEM;
++	}
+ 
+ 	return 0;
+ }
+ 
++static void ca_destroy(struct count_array *ca)
++{
++	vfree(ca->counts);
++}
++
+ static int ca_load(struct count_array *ca, struct dm_space_map *sm)
+ {
+ 	int r;
+@@ -126,12 +137,14 @@ static int ca_load(struct count_array *c
+ static int ca_extend(struct count_array *ca, dm_block_t extra_blocks)
+ {
+ 	dm_block_t nr_blocks = ca->nr + extra_blocks;
+-	uint32_t *counts = kzalloc(sizeof(*counts) * nr_blocks, GFP_KERNEL);
++	uint32_t *counts = vzalloc(sizeof(*counts) * nr_blocks);
+ 	if (!counts)
+ 		return -ENOMEM;
+ 
+-	memcpy(counts, ca->counts, sizeof(*counts) * ca->nr);
+-	kfree(ca->counts);
++	if (ca->counts) {
++		memcpy(counts, ca->counts, sizeof(*counts) * ca->nr);
++		ca_destroy(ca);
++	}
+ 	ca->nr = nr_blocks;
+ 	ca->nr_free += extra_blocks;
+ 	ca->counts = counts;
+@@ -151,11 +164,6 @@ static int ca_commit(struct count_array
+ 	return 0;
+ }
+ 
+-static void ca_destroy(struct count_array *ca)
+-{
+-	kfree(ca->counts);
+-}
+-
+ /*----------------------------------------------------------------*/
+ 
+ struct sm_checker {
 
 
