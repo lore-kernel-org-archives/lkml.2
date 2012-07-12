@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161565Ab2GLVGW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 17:06:22 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:53446 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932948Ab2GLVGS (ORCPT
+	id S934257Ab2GLVNp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 17:13:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44016 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932911Ab2GLVNo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 17:06:18 -0400
-From: Marek Belisko <marek.belisko@open-nandra.com>
-To: mporter@kernel.crashing.org
-Cc: linux-kernel@vger.kernel.org,
-        Marek Belisko <marek.belisko@open-nandra.com>
-Subject: [PATCH] rapidio: tsi721: Fix compilation warning.
-Date: Thu, 12 Jul 2012 23:06:08 +0200
-Message-Id: <1342127168-23020-1-git-send-email-marek.belisko@open-nandra.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Thu, 12 Jul 2012 17:13:44 -0400
+Date: Thu, 12 Jul 2012 14:13:43 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujtisu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        Rik van Riel <riel@redhat.com>, Ying Han <yinghan@google.com>,
+        Greg Thelen <gthelen@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [PATCH v2 -mm] memcg: prevent from OOM with too many dirty
+ pages
+Message-Id: <20120712141343.e1cb7776.akpm@linux-foundation.org>
+In-Reply-To: <20120712070501.GB21013@tiehlicka.suse.cz>
+References: <1340117404-30348-1-git-send-email-mhocko@suse.cz>
+	<20120619150014.1ebc108c.akpm@linux-foundation.org>
+	<20120620101119.GC5541@tiehlicka.suse.cz>
+	<alpine.LSU.2.00.1207111818380.1299@eggly.anvils>
+	<20120712070501.GB21013@tiehlicka.suse.cz>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix following:
-drivers/rapidio/devices/tsi721.c: In function ‘tsi721_probe’:
-drivers/rapidio/devices/tsi721.c:2215:6: warning: unused variable ‘i’ [-Wunused-variable]
+On Thu, 12 Jul 2012 09:05:01 +0200
+Michal Hocko <mhocko@suse.cz> wrote:
 
-Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
----
- drivers/rapidio/devices/tsi721.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> When we are back to the patch. Is it going into 3.5? I hope so and I
+> think it is really worth stable as well. Andrew?
 
-diff --git a/drivers/rapidio/devices/tsi721.c b/drivers/rapidio/devices/tsi721.c
-index 722246c..97e011c 100644
---- a/drivers/rapidio/devices/tsi721.c
-+++ b/drivers/rapidio/devices/tsi721.c
-@@ -2212,7 +2212,7 @@ static int __devinit tsi721_probe(struct pci_dev *pdev,
- 				  const struct pci_device_id *id)
- {
- 	struct tsi721_device *priv;
--	int i, cap;
-+	int cap;
- 	int err;
- 	u32 regval;
- 
--- 
-1.7.9.5
+What patch.   "memcg: prevent OOM with too many dirty pages"?
+
+I wasn't planning on 3.5, given the way it's been churning around.  How
+about we put it into 3.6 and tag it for a -stable backport, so it gets
+a bit of a run in mainline before we inflict it upon -stable users?
 
