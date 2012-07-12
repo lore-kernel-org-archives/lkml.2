@@ -1,69 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161425Ab2GLRNX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 13:13:23 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:46311 "EHLO e7.ny.us.ibm.com"
+	id S1161436Ab2GLRNl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 13:13:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13964 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161398Ab2GLRNU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 13:13:20 -0400
-Date: Thu, 12 Jul 2012 10:02:42 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Fengguang Wu <wfg@linux.intel.com>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: rcu_dyntick and suspicious RCU usage
-Message-ID: <20120712170242.GB31396@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120709135637.GA26040@localhost>
- <20120709145724.GA27095@localhost>
- <20120710044700.GA9462@localhost>
- <20120711074924.GD3819@linux.vnet.ibm.com>
- <20120712164308.GA31584@linux.vnet.ibm.com>
- <20120712165738.GA21630@localhost>
+	id S1161371Ab2GLRNj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 13:13:39 -0400
+Date: Thu, 12 Jul 2012 19:10:22 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, Hugh Dickins <hughd@google.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 3/4] uprobes: rename vma_address() and make it return
+	"unsigned long"
+Message-ID: <20120712171022.GA25507@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120712165738.GA21630@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12071217-5806-0000-0000-0000173C1BEE
+In-Reply-To: <20120712170934.GA25455@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 13, 2012 at 12:57:38AM +0800, Fengguang Wu wrote:
-> On Thu, Jul 12, 2012 at 09:43:08AM -0700, Paul E. McKenney wrote:
-> > On Wed, Jul 11, 2012 at 12:49:24AM -0700, Paul E. McKenney wrote:
-> > > On Tue, Jul 10, 2012 at 12:47:00PM +0800, Fengguang Wu wrote:
-> > > > Hi Paul,
-> > > > 
-> > > > Fortunately this bug is bisectable and the first bad commit is:
-> > > > 
-> > > >         commit 9b2e4f1880b789be1f24f9684f7a54b90310b5c0
-> > > >         Author: Paul E. McKenney <paul.mckenney@linaro.org>
-> > > >         Date:   Fri Sep 30 12:10:22 2011 -0700
-> > > > 
-> > > >             rcu: Track idleness independent of idle tasks
-> > > 
-> > > OK, there is a problem in TINY_RCU's handling of dyntick-idle: it
-> > > traces while in idle.  The confusion on my part was that in TREE_RCU,
-> > > the nesting and dyntick-idle indication are different, while in
-> > > TINY_RCU they are one and the same.
-> > > 
-> > > Does the following patch help?
-> > 
-> > This one failed in my testing.  Please see the end for the fixed
-> > version, with on small but important change.
-> 
-> It worked, thanks!
-> 
-> Tested-by: Fengguang Wu <wfg@linux.intel.com>
+1. vma_address() returns loff_t, this looks confusing and this is
+   unnecessary after the previous change. Make it return "ulong",
+   all callers truncate the result anyway.
 
-Very good!  (And please ignore my resend of the same patch.)
+2. Its name conflicts with mm/rmap.c:vma_address(), rename it to
+   offset_to_vaddr(), this matches vaddr_to_offset().
 
-I will queue this.
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ kernel/events/uprobes.c |   15 +++++----------
+ 1 files changed, 5 insertions(+), 10 deletions(-)
 
-							Thanx, Paul
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index 734e199..fc1df43 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -112,14 +112,9 @@ static bool valid_vma(struct vm_area_struct *vma, bool is_register)
+ 	return false;
+ }
+ 
+-static loff_t vma_address(struct vm_area_struct *vma, loff_t offset)
++static unsigned long offset_to_vaddr(struct vm_area_struct *vma, loff_t offset)
+ {
+-	loff_t vaddr;
+-
+-	vaddr = vma->vm_start + offset;
+-	vaddr -= (loff_t)vma->vm_pgoff << PAGE_SHIFT;
+-
+-	return vaddr;
++	return vma->vm_start + offset - ((loff_t)vma->vm_pgoff << PAGE_SHIFT);
+ }
+ 
+ static loff_t vaddr_to_offset(struct vm_area_struct *vma, unsigned long vaddr)
+@@ -775,7 +770,7 @@ build_map_info(struct address_space *mapping, loff_t offset, bool is_register)
+ 		curr = info;
+ 
+ 		info->mm = vma->vm_mm;
+-		info->vaddr = vma_address(vma, offset);
++		info->vaddr = offset_to_vaddr(vma, offset);
+ 	}
+ 	mutex_unlock(&mapping->i_mmap_mutex);
+ 
+@@ -1042,7 +1037,7 @@ int uprobe_mmap(struct vm_area_struct *vma)
+ 
+ 	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
+ 		if (!ret) {
+-			loff_t vaddr = vma_address(vma, uprobe->offset);
++			loff_t vaddr = offset_to_vaddr(vma, uprobe->offset);
+ 
+ 			ret = install_breakpoint(uprobe, vma->vm_mm, vma, vaddr);
+ 			/*
+@@ -1103,7 +1098,7 @@ void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned lon
+ 	build_probe_list(inode, vma, start, end, &tmp_list);
+ 
+ 	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
+-		loff_t vaddr = vma_address(vma, uprobe->offset);
++		loff_t vaddr = offset_to_vaddr(vma, uprobe->offset);
+ 		/*
+ 		 * An unregister could have removed the probe before
+ 		 * unmap. So check before we decrement the count.
+-- 
+1.5.5.1
 
