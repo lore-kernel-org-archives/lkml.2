@@ -1,60 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758101Ab2GLTZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 15:25:59 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:53626 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755834Ab2GLTZ5 (ORCPT
+	id S1030761Ab2GLTjv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 15:39:51 -0400
+Received: from mail.digidescorp.com ([50.73.98.161]:22889 "EHLO
+	mail.digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030747Ab2GLTju (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 15:25:57 -0400
-Message-ID: <4FFF2440.40807@linux.vnet.ibm.com>
-Date: Fri, 13 Jul 2012 00:53:44 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: S390 <linux-s390@vger.kernel.org>, Carsten Otte <cotte@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com
-CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Avi Kivity <avi@redhat.com>, Rik van Riel <riel@redhat.com>,
-        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
-        Gleb Natapov <gleb@redhat.com>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Subject: Re: [PATCH RFC V3 0/3] kvm: Improving directed yield in PLE handler
-References: <20120712191712.30440.68944.sendpatchset@codeblue>
-In-Reply-To: <20120712191712.30440.68944.sendpatchset@codeblue>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Thu, 12 Jul 2012 15:39:50 -0400
+DomainKey-Signature: a=rsa-sha1; s=MDaemon; d=digidescorp.com;
+	c=simple; q=dns; h=message-id:from;
+	b=sAPndErFKXR2iCEzombnEhs6KobJXuqaR8MC9YYgmky7aYunA3sFr/lfkbfe
+	JSn72aBEKU/JY3f5GG8fwoDYVwYRYZPiFSbUvuJujZOXYvYEar83vgK8y
+	Zas45Li5N5eUp1GXFi7nnQNv3ZkVv3tmhR9mV8QtuYqeR6w508ceHs=;
+X-Spam-Processed: mail.digidescorp.com, Thu, 12 Jul 2012 14:39:48 -0500
+	(not processed: message from trusted or authenticated source)
+X-Authenticated-Sender: steve@digidescorp.com
+X-Return-Path: prvs=15403394f6=steve@digidescorp.com
+X-Envelope-From: steve@digidescorp.com
+X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
+Message-ID: <1342121986.2156.20.camel@iscandar.digidescorp.com>
+Subject: Re: mount -o loop with truncated dosdisk.img uses 100% cpu and
+ can't be killed
+From: "Steven J. Magnani" <steve@digidescorp.com>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: Stevie Trujillo <stevie.trujillo@gmail.com>, linux-kernel@vger.kernel.org,
+        Jens Axboe <axboe@kernel.dk>
+Date: Thu, 12 Jul 2012 14:39:46 -0500
+In-Reply-To: <87k3y8yed3.fsf@devron.myhome.or.jp>
+References: <20120712162828.3f561315@localhost>
+	 <1342106206.2156.2.camel@iscandar.digidescorp.com>
+	 <87k3y8yed3.fsf@devron.myhome.or.jp>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3 (3.4.3-1.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-x-cbid: 12071209-6102-0000-0000-000001DEBE58
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/13/2012 12:47 AM, Raghavendra K T wrote:
-> Currently Pause Loop Exit (PLE) handler is doing directed yield to a
-> random vcpu on pl-exit. We already have filtering while choosing
-> the candidate to yield_to. This change adds more checks while choosing
-> a candidate to yield_to.
->
-> On a large vcpu guests, there is a high probability of
-> yielding to the same vcpu who had recently done a pause-loop exit.
-> Such a yield can lead to the vcpu spinning again.
->
-> The patchset keeps track of the pause loop exit and gives chance to a
-> vcpu which has:
->
->   (a) Not done pause loop exit at all (probably he is preempted lock-holder)
->
->   (b) vcpu skipped in last iteration because it did pause loop exit, and
->   probably has become eligible now (next eligible lock holder)
->
-> This concept also helps in cpu relax interception cases which use same handler.
+On Fri, 2012-07-13 at 04:21 +0900, OGAWA Hirofumi wrote: 
+> > On Thu, 2012-07-12 at 16:28 +0200, Stevie Trujillo wrote: 
+> >> Hello,
+> >> 
+> >> I was trying to create a bootdisk to update my BIOS, and accidentially
+> >> made a 512byte image with only the FreeDOS header in it.
+> >> 
+> >> ( Linux 3.4.4 )
+> >> # mount -o loop dosdisk.img /tmp
+> >> ^C^C^C
+> >> It uses 100% CPU and doesn't listen to me when I do ^C, kill -9 etc. I
+> >> think this means it's stuck in the kernel?
+> It looks like the bug of __getblk_slow(). If requested block was beyond
+> end of device, __find_get_block() will find buffer_mapped()'s buffer,
+> but block >= end_block is unmapped. So, it can be loop.
+> 
+> The following patch fixes it? If it fix, there are some options to check
+> it.
+> 
+> a) Check it like this patch and warn.
+> b) (a), but without warn.
+> c) Check it in init_page_buffers() and return -EIO or such
+> 
+> Well, anyway, Cc to Jens.
+> 
+> Signed-off-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+> ---
+> 
+>  fs/buffer.c |    7 +++++++
+>  1 file changed, 7 insertions(+)
+> 
+> diff -puN fs/buffer.c~debug fs/buffer.c
+> --- tux3fs/fs/buffer.c~debug	2012-07-13 04:10:40.000000000 +0900
+> +++ tux3fs-hirofumi/fs/buffer.c	2012-07-13 04:11:50.000000000 +0900
+> @@ -1055,6 +1055,13 @@ __getblk_slow(struct block_device *bdev,
+>  		dump_stack();
+>  		return NULL;
+>  	}
+> +	if (block >= blkdev_max_block(I_BDEV(bdev->bd_inode))) {
+> +		printk(KERN_ERR "getblk(): block %llu, end_block %llu\n",
+> +		       (unsigned long long)block,
+> +		       (unsigned long long)blkdev_max_block(I_BDEV(bdev->bd_inode)));
+> +		dump_stack();
+> +		return NULL;
+> +	}
+>  
+>  	for (;;) {
+>  		struct buffer_head * bh;
+> _
 
-The patches are tested on x86 only since I don't have access to s390
-machine. Please let me know if changes are ok on s390.
+This fixes the hang, but I'm not sure dump_stack() is a good idea. I get
+almost 100 lines of stack dumps and error messages in my kernel log.
+Also, I was a little surprised to see that mount completes successfully.
+------------------------------------------------------------------------
+Steven J. Magnani               "I claim this network for MARS!
+www.digidescorp.com              Earthling, return my space modulator!"
+
+#include <standard.disclaimer>
+
 
