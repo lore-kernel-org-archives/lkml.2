@@ -1,112 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161911Ab2GLXap (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:30:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54985 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161828Ab2GLWlK (ORCPT
+	id S1162044Ab2GLXbR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:31:17 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:49910 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161850Ab2GLWk7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:41:10 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Hans de Goede <hdegoede@redhat.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>
-Subject: [ 098/187] SCSI & usb-storage: add try_rc_10_first flag
-Date: Thu, 12 Jul 2012 15:34:14 -0700
-Message-Id: <20120712191531.491468837@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.10.1.362.g242cab3
-In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
-References: <20120712192421.GA28926@kroah.com>
- <20120712191522.742634173@linuxfoundation.org>
-User-Agent: quilt/0.60-20.3
+	Thu, 12 Jul 2012 18:40:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120712175039.171791418@linuxfoundation.org>
+References: <20120712175057.GA9917@kroah.com>
+	<20120712175039.171791418@linuxfoundation.org>
+Date: Fri, 13 Jul 2012 00:40:57 +0200
+Message-ID: <CA+OH3v1vQ1kFy2E+VZqan3GSKGBKQowr8CHk49KDMXM-21rGrw@mail.gmail.com>
+Subject: Re: [ 42/68] vfs: make O_PATH file descriptors usable for fchdir()
+From: =?KOI8-R?B?z8zYx8Egy9LZ1sHOz9fTy8HR?= <olga.kryzhanovska@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg KH <gregkh@linuxfoundation.org>
+Just to be sure, has any one tested the patch (I can't, I am not doing
+Linux kernel development and the closest here to me here only does
+Solaris/Illumos and SUPERUX kernel development)?
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+My test case, which works on Solaris and AIX is below. You will have
+to do a s/O_SEARCH/O_PATH/
+-------- snip --------
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 
-------------------
+#include <stdlib.h>
+#include <stdio.h>
 
-From: Alan Stern <stern@rowland.harvard.edu>
+int main(int ac, char *av[])
+{
+	int dirfd, dupdirfd;
 
-commit 6a0bdffa0073857870a4ed1b4489762146359eb4 upstream.
+	dirfd=open("/etc", O_SEARCH);
+	if(dirfd<0)
+	{
+		fprintf(stderr, "open() failed.\n");
+		return EXIT_FAILURE;
+	}
+	
+	dupdirfd = fcntl(dirfd, F_DUPFD, 50);
+	if(dirfd<0)
+	{
+		fprintf(stderr, "fcntl() failed.\n");
+		return EXIT_FAILURE;
+	}
+	
+	if(fchdir(dupdirfd)<0)
+	{
+		fprintf(stderr, "fchdir(dupdirfd) failed.\n");
+		return EXIT_FAILURE;
+	}
 
-Several bug reports have been received recently for USB mass-storage
-devices that don't handle READ CAPACITY(16) commands properly.  They
-report bogus sizes, in some cases becoming unusable as a result.
+	if(fchdir(dirfd)<0)
+	{
+		fprintf(stderr, "fchdir(dirfd) failed.\n");
+		return EXIT_FAILURE;
+	}
 
-The bugs were triggered by commit
-09b6b51b0b6c1b9bb61815baf205e4d74c89ff04 (SCSI & usb-storage: add
-flags for VPD pages and REPORT LUNS), which caused usb-storage to stop
-overriding the SCSI level reported by devices.  By default, the sd
-driver will try READ CAPACITY(16) first for any device whose level is
-above SCSI_SPC_2.
+	if(openat(dupdirfd, "profile", O_RDONLY)<0)
+	{
+		fprintf(stderr, "openat(dupdirfd, profile, O_RDONLY) failed.\n");
+		return EXIT_FAILURE;
+	}
 
-It seems likely that any device large enough to require the use of
-READ CAPACITY(16) (i.e., 2 TB or more) would be able to handle READ
-CAPACITY(10) commands properly.  Indeed, I don't know of any devices
-that don't handle READ CAPACITY(10) properly.
+	dirfd=openat(dupdirfd, "krb5", O_SEARCH);
+	if(dirfd<0)
+	{
+		fprintf(stderr, "openat(dupdirfd, krb5, O_SEARCH) failed.\n");
+		return EXIT_FAILURE;
+	}
 
-Therefore this patch (as1559) adds a new flag telling the sd driver
-to try READ CAPACITY(10) before READ CAPACITY(16), and sets this flag
-for every USB mass-storage device.  If a device really is larger than
-2 TB, sd will fall back to READ CAPACITY(16) just as it used to.
+	if(fchdir(dirfd)<0)
+	{
+		fprintf(stderr, "2nd fchdir(dirfd) failed.\n");
+		return EXIT_FAILURE;
+	}
+	
+	puts("SUCCESS.");
 
-This fixes Bugzilla #43391.
+	return EXIT_SUCCESS;
+}
+-------- snip --------
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Acked-by: Hans de Goede <hdegoede@redhat.com>
-CC: "James E.J. Bottomley" <JBottomley@parallels.com>
-CC: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Olga
 
----
- drivers/scsi/sd.c              |    2 ++
- drivers/usb/storage/scsiglue.c |    6 ++++++
- include/scsi/scsi_device.h     |    1 +
- 3 files changed, 9 insertions(+)
+On Thu, Jul 12, 2012 at 7:51 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> 3.0-stable review patch.  If anyone has any objections, please let me know.
+>
+> ------------------
+>
+> From: Linus Torvalds <torvalds@linux-foundation.org>
+>
+> commit 332a2e1244bd08b9e3ecd378028513396a004a24 upstream.
+>
+> We already use them for openat() and friends, but fchdir() also wants to
+> be able to use O_PATH file descriptors.  This should make it comparable
+> to the O_SEARCH of Solaris.  In particular, O_PATH allows you to access
+> (not-quite-open) a directory you don't have read persmission to, only
+> execute permission.
+>
+> Noticed during development of multithread support for ksh93.
+>
+> Reported-by: ольга крыжановская <olga.kryzhanovska@gmail.com>
+> Cc: Al Viro <viro@zeniv.linux.org.uk>
+> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>
+> ---
+>  fs/open.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+>
+> --- a/fs/open.c
+> +++ b/fs/open.c
+> @@ -396,10 +396,10 @@ SYSCALL_DEFINE1(fchdir, unsigned int, fd
+>  {
+>         struct file *file;
+>         struct inode *inode;
+> -       int error;
+> +       int error, fput_needed;
+>
+>         error = -EBADF;
+> -       file = fget(fd);
+> +       file = fget_raw_light(fd, &fput_needed);
+>         if (!file)
+>                 goto out;
+>
+> @@ -413,7 +413,7 @@ SYSCALL_DEFINE1(fchdir, unsigned int, fd
+>         if (!error)
+>                 set_fs_pwd(current->fs, &file->f_path);
+>  out_putf:
+> -       fput(file);
+> +       fput_light(file, fput_needed);
+>  out:
+>         return error;
+>  }
+>
+>
 
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -1898,6 +1898,8 @@ static int sd_try_rc16_first(struct scsi
- {
- 	if (sdp->host->max_cmd_len < 16)
- 		return 0;
-+	if (sdp->try_rc_10_first)
-+		return 0;
- 	if (sdp->scsi_level > SCSI_SPC_2)
- 		return 1;
- 	if (scsi_device_protection(sdp))
---- a/drivers/usb/storage/scsiglue.c
-+++ b/drivers/usb/storage/scsiglue.c
-@@ -202,6 +202,12 @@ static int slave_configure(struct scsi_d
- 		if (us->fflags & US_FL_NO_READ_CAPACITY_16)
- 			sdev->no_read_capacity_16 = 1;
- 
-+		/*
-+		 * Many devices do not respond properly to READ_CAPACITY_16.
-+		 * Tell the SCSI layer to try READ_CAPACITY_10 first.
-+		 */
-+		sdev->try_rc_10_first = 1;
-+
- 		/* assume SPC3 or latter devices support sense size > 18 */
- 		if (sdev->scsi_level > SCSI_SPC_2)
- 			us->fflags |= US_FL_SANE_SENSE;
---- a/include/scsi/scsi_device.h
-+++ b/include/scsi/scsi_device.h
-@@ -151,6 +151,7 @@ struct scsi_device {
- 					   SD_LAST_BUGGY_SECTORS */
- 	unsigned no_read_disc_info:1;	/* Avoid READ_DISC_INFO cmds */
- 	unsigned no_read_capacity_16:1; /* Avoid READ_CAPACITY_16 cmds */
-+	unsigned try_rc_10_first:1;	/* Try READ_CAPACACITY_10 first */
- 	unsigned is_visible:1;	/* is the device visible in sysfs */
- 
- 	DECLARE_BITMAP(supported_events, SDEV_EVT_MAXBITS); /* supported events */
 
 
+-- 
+      ,   _                                    _   ,
+     { \/`o;====-    Olga Kryzhanovska   -====;o`\/ }
+.----'-/`-/     olga.kryzhanovska@gmail.com   \-`\-'----.
+ `'-..-| /       http://twitter.com/fleyta     \ |-..-'`
+      /\/\     Solaris/BSD//C/C++ programmer   /\/\
+      `--`                                      `--`
