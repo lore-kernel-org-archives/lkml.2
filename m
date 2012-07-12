@@ -1,111 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933916Ab2GLOPj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 10:15:39 -0400
-Received: from www.linutronix.de ([62.245.132.108]:39236 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933801Ab2GLOPh (ORCPT
+	id S933921Ab2GLOWj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 10:22:39 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.160]:15372 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933801Ab2GLOWh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 10:15:37 -0400
-Date: Thu, 12 Jul 2012 16:15:29 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Jan Kara <jack@suse.cz>
-cc: Jeff Moyer <jmoyer@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Jens Axboe <jaxboe@fusionio.com>, mgalbraith@suse.com
-Subject: Re: Deadlocks due to per-process plugging
-In-Reply-To: <20120711201601.GB9779@quack.suse.cz>
-Message-ID: <alpine.LFD.2.02.1207121552111.32033@ionos>
-References: <20120711133735.GA8122@quack.suse.cz> <x49ehoii8ps.fsf@segfault.boston.devel.redhat.com> <20120711201601.GB9779@quack.suse.cz>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Thu, 12 Jul 2012 10:22:37 -0400
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFGjS0PFkFT
+X-RZG-CLASS-ID: mo00
+Date: Thu, 12 Jul 2012 16:22:34 +0200
+From: Olaf Hering <olaf@aepfle.de>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [PATCH] xen pv-on-hvm: add pfn_is_ram helper for
+ kdump
+Message-ID: <20120712142234.GA22009@aepfle.de>
+References: <1342083605-15371-1-git-send-email-olaf@aepfle.de>
+ <20120712134703.GD5204@phenom.dumpdata.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20120712134703.GD5204@phenom.dumpdata.com>
+User-Agent: Mutt/1.5.21.rev5543 (2011-12-20)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Jul 2012, Jan Kara wrote:
-> On Wed 11-07-12 12:05:51, Jeff Moyer wrote:
-> > Jan Kara <jack@suse.cz> writes:
-> > 
-> > >   Hello,
-> > >
-> > >   we've recently hit a deadlock in our QA runs which is caused by the
-> > > per-process plugging code. The problem is as follows:
-> > >   process A					process B (kjournald)
-> > >   generic_file_aio_write()
-> > >     blk_start_plug(&plug);
-> > >     ...
-> > >     somewhere in here we allocate memory and
-> > >     direct reclaim submits buffer X for IO
-> > >     ...
-> > >     ext3_write_begin()
-> > >       ext3_journal_start()
-> > >         we need more space in a journal
-> > >         so we want to checkpoint old transactions,
-> > >         we block waiting for kjournald to commit
-> > >         a currently running transaction.
-> > > 						journal_commit_transaction()
-> > > 						  wait for IO on buffer X
-> > > 						  to complete as it is part
-> > > 						  of the current transaction
-> > >
-> > >   => deadlock since A waits for B and B waits for A to do unplug.
-> > > BTW: I don't think this is really ext3/ext4 specific. I think other
-> > > filesystems can get into problems as well when direct reclaim submits some
-> > > IO and the process subsequently blocks without submitting the IO.
-> > 
-> > So, I thought schedule would do the flush.  Checking the code:
-> > 
-> > asmlinkage void __sched schedule(void)
-> > {
-> >         struct task_struct *tsk = current;
-> > 
-> >         sched_submit_work(tsk);
-> >         __schedule();
-> > }
-> > 
-> > And sched_submit_work looks like this:
-> > 
-> > static inline void sched_submit_work(struct task_struct *tsk)
-> > {
-> >         if (!tsk->state || tsk_is_pi_blocked(tsk))
-> >                 return;
-> >         /*
-> >          * If we are going to sleep and we have plugged IO queued,
-> >          * make sure to submit it to avoid deadlocks.
-> >          */
-> >         if (blk_needs_flush_plug(tsk))
-> >                 blk_schedule_flush_plug(tsk);
-> > }
-> > 
-> > This eventually ends in a call to blk_run_queue_async(q) after
-> > submitting the I/O from the plug list.  Right?  So is the question
-> > really why doesn't the kblockd workqueue get scheduled?
+On Thu, Jul 12, Konrad Rzeszutek Wilk wrote:
 
->   Ah, I didn't know this. Thanks for the hint. So in the kdump I have I can
-> see requests queued in tsk->plug despite the process is sleeping in
-> TASK_UNINTERRUPTIBLE state.  So the only way how unplug could have been
-> omitted is if tsk_is_pi_blocked() was true. Rummaging through the dump...
-> indeed task has pi_blocked_on = 0xffff8802717d79c8. The dump is from an -rt
-> kernel (I just didn't originally thought that makes any difference) so
-> actually any mutex is rtmutex and thus tsk_is_pi_blocked() is true whenever
-> we are sleeping on a mutex. So this seems like a bug in rtmutex code.
+> On Thu, Jul 12, 2012 at 11:00:05AM +0200, Olaf Hering wrote:
+> > Register pfn_is_ram helper speed up reading /proc/vmcore in the kdump
+> > kernel. See commit message of 997c136f518c ("fs/proc/vmcore.c: add hook
+> > to read_from_oldmem() to check for non-ram pages") for details.
+> 
+> What about the 'unregister_oldmem_pfn_is_ram' call? Should this
+> be implemented here as well?
 
-Well, the reason why this check is there is that the task which is
-blocked on a lock can hold another lock which might cause a deadlock
-in the flush path.
+There is no need to unregister because PVonHVM is not going away during
+the lifetime of the guest.
 
-> Thomas, you seemed to have added that condition... Any idea how to avoid
-> the deadlock?
+> > +#include <linux/crash_dump.h>
+> 
+> Should this also have an #idef CONFIG_PROC_VMCORE?
+> Or is it going to compile OK without CONFIG_PROC_VMCORE defined?
 
-Good question. We could do the flush when the blocked task does not
-hold a lock itself. Might be worth a try.
+All includes are supposed to work without ifdefs in the code, which is
+the case also for crash_dump.h
 
-Thanks,
+> > + *   previous kernel. If the pfn is ballooned, handle it properly.
+> 
+> . and by handle it properly you mean return -ENXIO?
 
-	tglx
+Return code 0 means its a ballooned page and needs special care,
+non-null means it has to be handled as a RAM page.
 
+If the hypervisor is too old (4.1 and earlier) it just means that in
+case of kdump it will just cause high load in dom0. 
+In case of kexec it will mean that the new kernel will crash because it
+can not know which pfn is actually there.
+
+> > + * Returns 0 if the pfn is not backed by a RAM page.
+> > + */
+> > +static int xen_oldmem_pfn_is_ram(unsigned long pfn)
+> > +{
+> > +	struct xen_hvm_get_mem_type a;
+> 
+> Can you make this have already initialized values, like:
+> 
+> 	struct xen_hvm_get_mem_type a = {
+> 		.domid = DOMID_SELF;
+> 		.pfn = pfn
+> 	};
+
+Yes.
+
+> Also is this hypercall new? Or has it been in existence for some time?
+
+Its new in 4.2, and was backported to 4.1.1 as well.
+
+
+Olaf
