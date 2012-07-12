@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162803Ab2GLXMR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:12:17 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63192 "EHLO
+	id S1162815Ab2GLXMh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:12:37 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46543 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162786Ab2GLXF1 (ORCPT
+	with ESMTP id S1162780Ab2GLXFY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 19:05:27 -0400
+	Thu, 12 Jul 2012 19:05:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tyler Hicks <tyhicks@canonical.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: [ 47/68] eCryptfs: Properly check for O_RDONLY flag before doing privileged open
-Date: Thu, 12 Jul 2012 16:02:21 -0700
-Message-Id: <20120712175039.602715483@linuxfoundation.org>
+        Tyler Hicks <tyhicks@canonical.com>
+Subject: [ 46/68] eCryptfs: Fix lockdep warning in miscdev operations
+Date: Thu, 12 Jul 2012 16:02:20 -0700
+Message-Id: <20120712175039.510031134@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712175035.530652872@linuxfoundation.org>
 References: <20120712175057.GA9917@kroah.com>
@@ -33,40 +32,101 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 From: Tyler Hicks <tyhicks@canonical.com>
 
-commit 9fe79d7600497ed8a95c3981cbe5b73ab98222f0 upstream.
+commit 60d65f1f07a7d81d3eb3b91fc13fca80f2fdbb12 upstream.
 
-If the first attempt at opening the lower file read/write fails,
-eCryptfs will retry using a privileged kthread. However, the privileged
-retry should not happen if the lower file's inode is read-only because a
-read/write open will still be unsuccessful.
+Don't grab the daemon mutex while holding the message context mutex.
+Addresses this lockdep warning:
 
-The check for determining if the open should be retried was intended to
-be based on the access mode of the lower file's open flags being
-O_RDONLY, but the check was incorrectly performed. This would cause the
-open to be retried by the privileged kthread, resulting in a second
-failed open of the lower file. This patch corrects the check to
-determine if the open request should be handled by the privileged
-kthread.
+ ecryptfsd/2141 is trying to acquire lock:
+  (&ecryptfs_msg_ctx_arr[i].mux){+.+.+.}, at: [<ffffffffa029c213>] ecryptfs_miscdev_read+0x143/0x470 [ecryptfs]
+
+ but task is already holding lock:
+  (&(*daemon)->mux){+.+...}, at: [<ffffffffa029c2ec>] ecryptfs_miscdev_read+0x21c/0x470 [ecryptfs]
+
+ which lock already depends on the new lock.
+
+ the existing dependency chain (in reverse order) is:
+
+ -> #1 (&(*daemon)->mux){+.+...}:
+        [<ffffffff810a3b8d>] lock_acquire+0x9d/0x220
+        [<ffffffff8151c6da>] __mutex_lock_common+0x5a/0x4b0
+        [<ffffffff8151cc64>] mutex_lock_nested+0x44/0x50
+        [<ffffffffa029c5d7>] ecryptfs_send_miscdev+0x97/0x120 [ecryptfs]
+        [<ffffffffa029b744>] ecryptfs_send_message+0x134/0x1e0 [ecryptfs]
+        [<ffffffffa029a24e>] ecryptfs_generate_key_packet_set+0x2fe/0xa80 [ecryptfs]
+        [<ffffffffa02960f8>] ecryptfs_write_metadata+0x108/0x250 [ecryptfs]
+        [<ffffffffa0290f80>] ecryptfs_create+0x130/0x250 [ecryptfs]
+        [<ffffffff811963a4>] vfs_create+0xb4/0x120
+        [<ffffffff81197865>] do_last+0x8c5/0xa10
+        [<ffffffff811998f9>] path_openat+0xd9/0x460
+        [<ffffffff81199da2>] do_filp_open+0x42/0xa0
+        [<ffffffff81187998>] do_sys_open+0xf8/0x1d0
+        [<ffffffff81187a91>] sys_open+0x21/0x30
+        [<ffffffff81527d69>] system_call_fastpath+0x16/0x1b
+
+ -> #0 (&ecryptfs_msg_ctx_arr[i].mux){+.+.+.}:
+        [<ffffffff810a3418>] __lock_acquire+0x1bf8/0x1c50
+        [<ffffffff810a3b8d>] lock_acquire+0x9d/0x220
+        [<ffffffff8151c6da>] __mutex_lock_common+0x5a/0x4b0
+        [<ffffffff8151cc64>] mutex_lock_nested+0x44/0x50
+        [<ffffffffa029c213>] ecryptfs_miscdev_read+0x143/0x470 [ecryptfs]
+        [<ffffffff811887d3>] vfs_read+0xb3/0x180
+        [<ffffffff811888ed>] sys_read+0x4d/0x90
+        [<ffffffff81527d69>] system_call_fastpath+0x16/0x1b
 
 Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ecryptfs/kthread.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ecryptfs/miscdev.c |   25 +++++++++++++------------
+ 1 file changed, 13 insertions(+), 12 deletions(-)
 
---- a/fs/ecryptfs/kthread.c
-+++ b/fs/ecryptfs/kthread.c
-@@ -149,7 +149,7 @@ int ecryptfs_privileged_open(struct file
- 	(*lower_file) = dentry_open(lower_dentry, lower_mnt, flags, cred);
- 	if (!IS_ERR(*lower_file))
- 		goto out;
--	if (flags & O_RDONLY) {
-+	if ((flags & O_ACCMODE) == O_RDONLY) {
- 		rc = PTR_ERR((*lower_file));
- 		goto out;
+--- a/fs/ecryptfs/miscdev.c
++++ b/fs/ecryptfs/miscdev.c
+@@ -195,31 +195,32 @@ int ecryptfs_send_miscdev(char *data, si
+ 			  struct ecryptfs_msg_ctx *msg_ctx, u8 msg_type,
+ 			  u16 msg_flags, struct ecryptfs_daemon *daemon)
+ {
+-	int rc = 0;
++	struct ecryptfs_message *msg;
+ 
+-	mutex_lock(&msg_ctx->mux);
+-	msg_ctx->msg = kmalloc((sizeof(*msg_ctx->msg) + data_size),
+-			       GFP_KERNEL);
+-	if (!msg_ctx->msg) {
+-		rc = -ENOMEM;
++	msg = kmalloc((sizeof(*msg) + data_size), GFP_KERNEL);
++	if (!msg) {
+ 		printk(KERN_ERR "%s: Out of memory whilst attempting "
+ 		       "to kmalloc(%zd, GFP_KERNEL)\n", __func__,
+-		       (sizeof(*msg_ctx->msg) + data_size));
+-		goto out_unlock;
++		       (sizeof(*msg) + data_size));
++		return -ENOMEM;
  	}
++
++	mutex_lock(&msg_ctx->mux);
++	msg_ctx->msg = msg;
+ 	msg_ctx->msg->index = msg_ctx->index;
+ 	msg_ctx->msg->data_len = data_size;
+ 	msg_ctx->type = msg_type;
+ 	memcpy(msg_ctx->msg->data, data, data_size);
+ 	msg_ctx->msg_size = (sizeof(*msg_ctx->msg) + data_size);
+-	mutex_lock(&daemon->mux);
+ 	list_add_tail(&msg_ctx->daemon_out_list, &daemon->msg_ctx_out_queue);
++	mutex_unlock(&msg_ctx->mux);
++
++	mutex_lock(&daemon->mux);
+ 	daemon->num_queued_msg_ctx++;
+ 	wake_up_interruptible(&daemon->wait);
+ 	mutex_unlock(&daemon->mux);
+-out_unlock:
+-	mutex_unlock(&msg_ctx->mux);
+-	return rc;
++
++	return 0;
+ }
+ 
+ /**
 
 
