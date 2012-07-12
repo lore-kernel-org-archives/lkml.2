@@ -1,123 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753137Ab2GLExM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 00:53:12 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:50041 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752324Ab2GLExJ (ORCPT
+	id S1752682Ab2GLFO2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 01:14:28 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:40364 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751460Ab2GLFOI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 00:53:09 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FFE5816.6070102@jp.fujitsu.com>
-Date: Thu, 12 Jul 2012 13:52:38 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Thu, 12 Jul 2012 01:14:08 -0400
+Message-ID: <4FFE5C9C.9070001@linux.vnet.ibm.com>
+Date: Thu, 12 Jul 2012 10:41:56 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>,
-        <rientjes@google.com>, <liuj97@gmail.com>, <len.brown@intel.com>,
-        <benh@kernel.crashing.org>, <paulus@samba.org>, <cl@linux.com>,
-        <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
-        <kosaki.motohiro@jp.fujitsu.com>, <wency@cn.fujitsu.com>
-Subject: Re: [RFC PATCH v3 3/13] memory-hotplug : unify argument of firmware_map_add_early/hotplug
-References: <4FFAB0A2.8070304@jp.fujitsu.com> <4FFAB17F.2090209@jp.fujitsu.com> <4FFD9C08.2070502@linux.vnet.ibm.com>
-In-Reply-To: <4FFD9C08.2070502@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
+To: Avi Kivity <avi@redhat.com>
+CC: Christian Borntraeger <borntraeger@de.ibm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Rik van Riel <riel@redhat.com>, S390 <linux-s390@vger.kernel.org>,
+        Carsten Otte <cotte@de.ibm.com>, KVM <kvm@vger.kernel.org>,
+        chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Joerg Roedel <joerg.roedel@amd.com>,
+        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
+        Alexander Graf <agraf@suse.de>, Paul Mackerras <paulus@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH RFC 0/2] kvm: Improving directed yield in PLE handler
+References: <20120709062012.24030.37154.sendpatchset@codeblue> <4FFA8E5E.3070108@de.ibm.com> <4FFD422B.9060008@redhat.com> <4FFD52CD.7040403@de.ibm.com> <4FFD5DA3.3010001@redhat.com> <4FFD6100.8050202@de.ibm.com> <4FFD65E0.500@redhat.com>
+In-Reply-To: <4FFD65E0.500@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+x-cbid: 12071118-9264-0000-0000-000001E62D5B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
-
-2012/07/12 0:30, Dave Hansen wrote:
-> On 07/09/2012 03:25 AM, Yasuaki Ishimatsu wrote:
->> @@ -642,7 +642,7 @@ int __ref add_memory(int nid, u64 start,
->>   	}
+On 07/11/2012 05:09 PM, Avi Kivity wrote:
+> On 07/11/2012 02:18 PM, Christian Borntraeger wrote:
+>> On 11/07/12 13:04, Avi Kivity wrote:
+>>> On 07/11/2012 01:17 PM, Christian Borntraeger wrote:
+>>>> On 11/07/12 11:06, Avi Kivity wrote:
+>>>> [...]
+>>>>>> Almost all s390 kernels use diag9c (directed yield to a given guest cpu) for spinlocks, though.
+>>>>>
+>>>>> Perhaps x86 should copy this.
+>>>>
+>>>> See arch/s390/lib/spinlock.c
+>>>> The basic idea is using several heuristics:
+>>>> - loop for a given amount of loops
+>>>> - check if the lock holder is currently scheduled by the hypervisor
+>>>>    (smp_vcpu_scheduled, which uses the sigp sense running instruction)
+>>>>    Dont know if such thing is available for x86. It must be a lot cheaper
+>>>>    than a guest exit to be useful
+>>>
+>>> We could make it available via shared memory, updated using preempt
+>>> notifiers.  Of course piling on more pv makes this less attractive.
+>>>
+>>>> - if lock holder is not running and we looped for a while do a directed
+>>>>    yield to that cpu.
+>>>>
+>>>>>
+>>>>>> So there is no win here, but there are other cases were diag44 is used, e.g. cpu_relax.
+>>>>>> I have to double check with others, if these cases are critical, but for now, it seems
+>>>>>> that your dummy implementation  for s390 is just fine. After all it is a no-op until
+>>>>>> we implement something.
+>>>>>
+>>>>> Does the data structure make sense for you?  If so we can move it to
+>>>>> common code (and manage it in kvm_vcpu_on_spin()).  We can guard it with
+>>>>> CONFIG_KVM_HAVE_CPU_RELAX_INTERCEPT or something, so other archs don't
+>>>>> have to pay anything.
+>>>>
+>>>> Ignoring the name,
+>>>
+>>> What name would you suggest?
 >>
->>   	/* create new memmap entry */
->> -	firmware_map_add_hotplug(start, start + size, "System RAM");
->> +	firmware_map_add_hotplug(start, start + size - 1, "System RAM");
-> 
-> I know the firmware_map_*() calls use inclusive end addresses
-> internally, but do we really need to expose them?  Both of the callers
-> you mentioned do:
-> 
-> 	firmware_map_add_hotplug(start, start + size - 1, "System RAM");
-> 
-> or
-> 
->                  firmware_map_add_early(entry->addr,
->                          entry->addr + entry->size - 1,
->                          e820_type_to_string(entry->type));
-> 
-> So it seems a _bit_ silly to keep all of the callers doing this size-1
-> thing.  I also noted that the new caller that you added does the same
-> thing.  Could we just change the external calling convention to be
-> exclusive?
+>> maybe vcpu_no_progress instead of pause_loop_exited
+>
+> Ah, I thouht you objected to the CONFIG var.  Maybe call it
+> cpu_relax_intercepted since that's the linuxy name for the instruction.
+>
 
-Thank you for your comment.
+Ok, just to be on same page. 'll have :
+1. cpu_relax_intercepted instead of  pause_loop_exited.
 
-Does the following patch include your comment? If O.K., I will separate
-the patch from the series and send it for bug fix.
+2. CONFIG_KVM_HAVE_CPU_RELAX_INTERCEPT which is unconditionally
+selected for x86 and s390
 
----
- arch/x86/kernel/e820.c    |    2 +-
- drivers/firmware/memmap.c |    8 ++++----
- 2 files changed, 5 insertions(+), 5 deletions(-)
+3. make request mechanism to clear cpu_relax_intercepted.
 
-Index: linux-next/arch/x86/kernel/e820.c
-===================================================================
---- linux-next.orig/arch/x86/kernel/e820.c	2012-07-02 09:50:23.000000000 +0900
-+++ linux-next/arch/x86/kernel/e820.c	2012-07-12 13:30:45.942318179 +0900
-@@ -944,7 +944,7 @@
- 	for (i = 0; i < e820_saved.nr_map; i++) {
- 		struct e820entry *entry = &e820_saved.map[i];
- 		firmware_map_add_early(entry->addr,
--			entry->addr + entry->size - 1,
-+			entry->addr + entry->size,
- 			e820_type_to_string(entry->type));
- 	}
- }
-Index: linux-next/drivers/firmware/memmap.c
-===================================================================
---- linux-next.orig/drivers/firmware/memmap.c	2012-07-02 09:50:26.000000000 +0900
-+++ linux-next/drivers/firmware/memmap.c	2012-07-12 13:40:53.823318481 +0900
-@@ -98,7 +98,7 @@
- /**
-  * firmware_map_add_entry() - Does the real work to add a firmware memmap entry.
-  * @start: Start of the memory range.
-- * @end:   End of the memory range (inclusive).
-+ * @end:   End of the memory range.
-  * @type:  Type of the memory range.
-  * @entry: Pre-allocated (either kmalloc() or bootmem allocator), uninitialised
-  *         entry.
-@@ -113,7 +113,7 @@
- 	BUG_ON(start > end);
-
- 	entry->start = start;
--	entry->end = end;
-+	entry->end = end - 1;
- 	entry->type = type;
- 	INIT_LIST_HEAD(&entry->list);
- 	kobject_init(&entry->kobj, &memmap_ktype);
-@@ -148,7 +148,7 @@
-  * firmware_map_add_hotplug() - Adds a firmware mapping entry when we do
-  * memory hotplug.
-  * @start: Start of the memory range.
-- * @end:   End of the memory range (inclusive).
-+ * @end:   End of the memory range.
-  * @type:  Type of the memory range.
-  *
-  * Adds a firmware mapping entry. This function is for memory hotplug, it is
-@@ -175,7 +175,7 @@
- /**
-  * firmware_map_add_early() - Adds a firmware mapping entry.
-  * @start: Start of the memory range.
-- * @end:   End of the memory range (inclusive).
-+ * @end:   End of the memory range.
-  * @type:  Type of the memory range.
-  *
-  * Adds a firmware mapping entry. This function uses the bootmem allocator
+('ll do same thing for s390 also but have not seen s390 code using 
+request mechanism, so not sure if it ok.. otherwise we have to clear 
+unconditionally for s390 before guest enter and for x86 we have to move 
+make_request back to vmx/svm).
+will post V3 with these changes.
 
