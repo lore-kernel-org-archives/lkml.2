@@ -1,124 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030662Ab2GLLk7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 07:40:59 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49062 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756756Ab2GLLk5 (ORCPT
+	id S1757512Ab2GLLnc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 07:43:32 -0400
+Received: from www.linutronix.de ([62.245.132.108]:38492 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030615Ab2GLLna (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 07:40:57 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FFEB7BA.6050505@jp.fujitsu.com>
-Date: Thu, 12 Jul 2012 20:40:42 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Thu, 12 Jul 2012 07:43:30 -0400
+Date: Thu, 12 Jul 2012 13:43:28 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Mike Galbraith <efault@gmx.de>
+cc: "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: 3.4.4-rt13: btrfs + xfstests 006 = BOOM.. and a bonus rt_mutex
+ deadlock report for absolutely free!
+In-Reply-To: <1342086792.7707.9.camel@marge.simpson.net>
+Message-ID: <alpine.LFD.2.02.1207121310420.32033@ionos>
+References: <1342072060.7338.102.camel@marge.simpson.net>  <1342082648.7338.171.camel@marge.simpson.net> <1342086792.7707.9.camel@marge.simpson.net>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: <linux-acpi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <lenb@kernel.org>, <srivatsa.bhat@linux.vnet.ibm.com>,
-        <toshi.kani@hp.com>
-Subject: [PATCH v3 2/3 RESEND] acpi : prevent cpu from becoming online
-References: <4FFEB35A.6030500@jp.fujitsu.com> <4FFEB4BA.8010800@jp.fujitsu.com>
-In-Reply-To: <4FFEB4BA.8010800@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Even if acpi_processor_handle_eject() offlines cpu, there is a chance
-to online the cpu after that. So the patch closes the window by using
-get/put_online_cpus().
+On Thu, 12 Jul 2012, Mike Galbraith wrote:
+> On Thu, 2012-07-12 at 10:44 +0200, Mike Galbraith wrote: 
+> > On Thu, 2012-07-12 at 07:47 +0200, Mike Galbraith wrote: 
+> > > Greetings,
+> > > 
+> > > I'm chasing btrfs critters in an enterprise 3.0-rt kernel, and just
+> > > checked to see if they're alive in virgin latest/greatest rt kernel.  
+> > > 
+> > > Both are indeed alive and well, ie I didn't break it, nor did the
+> > > zillion patches in enterprise base kernel, so others may have an
+> > > opportunity to meet these critters up close and personal as well.
+> > 
+> > 3.2-rt both explodes and deadlocks as well.  3.0-rt (virgin I mean) does
+> > neither, so with enough re-integrate investment, it might be bisectable.
+> 
+> Nope, virgin 3.0-rt just didn't feel like it at the time.  Booted it
+> again to run hefty test over lunch, it didn't survive 1 xfstests 006,
+> much less hundreds.
+> 
+> crash> bt
+> PID: 7604   TASK: ffff880174238b20  CPU: 0   COMMAND: "btrfs-worker-0"
+>  #0 [ffff88017455d9c8] machine_kexec at ffffffff81025794
+>  #1 [ffff88017455da28] crash_kexec at ffffffff8109781d
+>  #2 [ffff88017455daf8] panic at ffffffff814a0661
+>  #3 [ffff88017455db78] __try_to_take_rt_mutex at ffffffff81086d2f
+>  #4 [ffff88017455dbc8] rt_spin_lock_slowlock at ffffffff814a2670
+>  #5 [ffff88017455dca8] rt_spin_lock at ffffffff814a2db9
+>  #6 [ffff88017455dcb8] schedule_bio at ffffffff81243133
+>  #7 [ffff88017455dcf8] btrfs_map_bio at ffffffff812477be
+>  #8 [ffff88017455dd68] __btree_submit_bio_done at ffffffff812152f6
+>  #9 [ffff88017455dd78] run_one_async_done at ffffffff812148fa
+> #10 [ffff88017455dd98] run_ordered_completions at ffffffff812493e8
+> #11 [ffff88017455ddd8] worker_loop at ffffffff81249dc9
+> #12 [ffff88017455de88] kthread at ffffffff81070266
+> #13 [ffff88017455df48] kernel_thread_helper at ffffffff814a9be4
+> crash> struct rt_mutex 0xffff880174530108
+> struct rt_mutex {
+>   wait_lock = {
+>     raw_lock = {
+>       slock = 7966
+>     }
+>   }, 
+>   wait_list = {
+>     node_list = {
+>       next = 0xffff880175ecc970, 
+>       prev = 0xffff880175ecc970
+>     }, 
+>     rawlock = 0xffff880175ecc968, 
 
-Why does the patch change _cpu_up() logic?
+Pointer into lala land again.
 
-The patch cares the race of hot-remove cpu and _cpu_up(). If the patch
-does not change it, there is the following race.
+rawlock points to ...968 and the node_list to ...970.
 
-hot-remove cpu                         |  _cpu_up()
-------------------------------------- ------------------------------------
-call acpi_processor_handle_eject()     |
-     call cpu_down()                   |
-     call get_online_cpus()            |
-                                       | call cpu_hotplug_begin() and stop here
-     call arch_unregister_cpu()        |
-     call acpi_unmap_lsapic()          |
-     call put_online_cpus()            |
-                                       | start and continue _cpu_up()
-     return acpi_processor_remove()    |
-continue hot-remove the cpu            |
+struct rt_mutex {
+        raw_spinlock_t          wait_lock;
+        struct plist_head       wait_list;
 
-So _cpu_up() can continue to itself. And hot-remove cpu can also continue
-itself. If the patch changes _cpu_up() logic, the race disappears as below:
+The raw_lock pointer of the plist_head is initialized in
+__rt_mutex_init() so it points to wait_lock. 
 
-hot-remove cpu                         | _cpu_up()
------------------------------------------------------------------------
-call acpi_processor_handle_eject()     |
-     call cpu_down()                   |
-     call get_online_cpus()            |
-                                       | call cpu_hotplug_begin() and stop here
-     call arch_unregister_cpu()        |
-     call acpi_unmap_lsapic()          |
-          cpu's cpu_present is set     |
-          to false by set_cpu_present()|
-     call put_online_cpus()            |
-                                       | start _cpu_up()
-                                       | check cpu_present() and return -EINVAL
-     return acpi_processor_remove()    |
-continue hot-remove the cpu            |
+Can you check the offset of wait_list vs. the rt_mutex itself?
 
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+I wouldn't be surprised if it's exactly 8 bytes. And then this thing
+looks like a copied lock with stale pointers to hell. Eew.
 
----
- drivers/acpi/processor_driver.c |   14 ++++++++++++++
- kernel/cpu.c                    |    8 +++++---
- 2 files changed, 19 insertions(+), 3 deletions(-)
+Thanks,
 
-Index: linux-3.5-rc6/drivers/acpi/processor_driver.c
-===================================================================
---- linux-3.5-rc6.orig/drivers/acpi/processor_driver.c	2012-07-12 20:34:29.438289841 +0900
-+++ linux-3.5-rc6/drivers/acpi/processor_driver.c	2012-07-12 20:39:29.190542257 +0900
-@@ -850,8 +850,22 @@ static int acpi_processor_handle_eject(s
- 			return ret;
- 	}
+	tglx
 
-+	get_online_cpus();
-+	/*
-+	 * The cpu might become online again at this point. So we check whether
-+	 * the cpu has been onlined or not. If the cpu became online, it means
-+	 * that someone wants to use the cpu. So acpi_processor_handle_eject()
-+	 * returns -EAGAIN.
-+	 */
-+	if (unlikely(cpu_online(pr->id))) {
-+		put_online_cpus();
-+		printk(KERN_WARNING "Failed to remove CPU %d, "
-+		       "since someone onlines the cpu\n" , pr->id);
-+		return -EAGAIN;
-+	}
- 	arch_unregister_cpu(pr->id);
- 	acpi_unmap_lsapic(pr->id);
-+	put_online_cpus();
- 	return ret;
- }
- #else
-Index: linux-3.5-rc6/kernel/cpu.c
-===================================================================
---- linux-3.5-rc6.orig/kernel/cpu.c	2012-07-12 20:34:29.438289841 +0900
-+++ linux-3.5-rc6/kernel/cpu.c	2012-07-12 20:34:35.040219535 +0900
-@@ -343,11 +343,13 @@ static int __cpuinit _cpu_up(unsigned in
- 	unsigned long mod = tasks_frozen ? CPU_TASKS_FROZEN : 0;
- 	struct task_struct *idle;
-
--	if (cpu_online(cpu) || !cpu_present(cpu))
--		return -EINVAL;
--
- 	cpu_hotplug_begin();
-
-+	if (cpu_online(cpu) || !cpu_present(cpu)) {
-+		ret =  -EINVAL;
-+		goto out;
-+	}
-+
- 	idle = idle_thread_get(cpu);
- 	if (IS_ERR(idle)) {
- 		ret = PTR_ERR(idle);
 
