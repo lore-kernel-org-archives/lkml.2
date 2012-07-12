@@ -1,96 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756314Ab2GLGAl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 02:00:41 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:49755 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754107Ab2GLGAj (ORCPT
+	id S1756361Ab2GLGDc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 02:03:32 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:49612 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753893Ab2GLGDa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 02:00:39 -0400
-Date: Thu, 12 Jul 2012 11:29:06 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] uprobes: uprobe_mmap/munmap needs
- list_for_each_entry_safe()
-Message-ID: <20120712055906.GD3598@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120708202917.GA18188@redhat.com>
- <20120708203001.GA18223@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20120708203001.GA18223@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12071206-7606-0000-0000-000001F02916
+	Thu, 12 Jul 2012 02:03:30 -0400
+X-AuditID: cbfee61a-b7f616d000004b7e-77-4ffe68b0867f
+From: Chanwoo Choi <cw00.choi@samsung.com>
+To: anton.vorontsov@linaro.org
+Cc: cbouatmailru@gmail.com, jenny.tc@intel.com, ramakrishna.pallala@intel.com,
+        myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        linux-kernel@vger.kernel.org, Chanwoo Choi <cw00.choi@samsung.com>
+Subject: [PATCH 0/2] charger-manager: Use EXTCON Subsystem to control charger
+ cable
+Date: Thu, 12 Jul 2012 15:03:16 +0900
+Message-id: <1342072996-9391-1-git-send-email-cw00.choi@samsung.com>
+X-Mailer: git-send-email 1.7.0.4
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNJMWRmVeSWpSXmKPExsVy+t9jQd2NGf/8DfZOYrO4vGsOmwOjx+dN
+	cgGMUVw2Kak5mWWpRfp2CVwZ545cYyw4yV9x5t8UtgbGxzxdjJwcEgImEof3bGKEsMUkLtxb
+	z9bFyMUhJDCdUWLLk42sEM5SJom5vTdZQKrYBLQk9r+4wQZiiwjISbxe+5cJpIhZ4BSjxKOL
+	J5hBEsICoRIPu48xgdgsAqoSs8++AbN5BVwknmzdzwyxTkGiddkh9gmM3AsYGVYxiqYWJBcU
+	J6XnGuoVJ+YWl+al6yXn525iBHvxmdQOxpUNFocYBTgYlXh4L0b+8xdiTSwrrsw9xCjBwawk
+	wusIEuJNSaysSi3Kjy8qzUktPsQozcGiJM5r7P3VX0ggPbEkNTs1tSC1CCbLxMEp1cC4cvbJ
+	S8evXC2/rSnRFvnit3bUnreXN2Vl1wnOOfZGPfat/Lkf81TnTTHojJq6W7yDufrCF/GYiezr
+	5ubMlZVMcN5feHOOr/bNTf1cm1NXOXYI3d+yz0PHVyVZZNu3W3JBKr/2lBSxO6u6l3et/73p
+	s4RwbLTY10W7GuY6bTDN91N4xjfndvlNJZbijERDLeai4kQAl6gqUd4BAAA=
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2012-07-08 22:30:01]:
+This patchset add support EXTCON Subsystem in which charger-manager identify
+the type of external connector and enable/disable charger(regulator) according
+to the state of charger cable(external connector).
 
-> The bug was introduced by me in 449d0d7c "uprobes: Simplify the
-> usage of uprobe->pending_list".
-> 
-> Yes, we do not care about uprobe->pending_list after return and
-> nobody can remove the current list entry, but put_uprobe(uprobe)
-> can actually free it and thus we need list_for_each_safe().
-> 
-> Reported-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+First patch control charger(regulator) of charger-manager when external
+connector is attached or detached. If USB/TA cable is attached and thenE XTCON
+subsystem notify the state of external connector to notifee(charger-manager)
+which is registered in notifier chain of EXTCON, charger-manager enable charger
+(regulator) for charging according to 'struct charger_cable'.
 
+Second patch protect host device from over current. The charger-manager
+set proper current limit of charger(regulator) for charging according to
+type of charger cable when external connector is attached.
 
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+For example, if TA cable(external connector) is attached, charger-manager
+enable charger('vinchg1' regulator) and set limit current within 65000~675000uA.
 
-> ---
->  kernel/events/uprobes.c |    8 ++++----
->  1 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-> index 67697db..a93b6df 100644
-> --- a/kernel/events/uprobes.c
-> +++ b/kernel/events/uprobes.c
-> @@ -1010,7 +1010,7 @@ static void build_probe_list(struct inode *inode, struct list_head *head)
->  int uprobe_mmap(struct vm_area_struct *vma)
->  {
->  	struct list_head tmp_list;
-> -	struct uprobe *uprobe;
-> +	struct uprobe *uprobe, *u;
->  	struct inode *inode;
->  	int ret, count;
-> 
-> @@ -1028,7 +1028,7 @@ int uprobe_mmap(struct vm_area_struct *vma)
->  	ret = 0;
->  	count = 0;
-> 
-> -	list_for_each_entry(uprobe, &tmp_list, pending_list) {
-> +	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
->  		if (!ret) {
->  			loff_t vaddr = vma_address(vma, uprobe->offset);
-> 
-> @@ -1076,7 +1076,7 @@ int uprobe_mmap(struct vm_area_struct *vma)
->  void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned long end)
->  {
->  	struct list_head tmp_list;
-> -	struct uprobe *uprobe;
-> +	struct uprobe *uprobe, *u;
->  	struct inode *inode;
-> 
->  	if (!atomic_read(&uprobe_events) || !valid_vma(vma, false))
-> @@ -1093,7 +1093,7 @@ void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned lon
->  	mutex_lock(uprobes_mmap_hash(inode));
->  	build_probe_list(inode, &tmp_list);
-> 
-> -	list_for_each_entry(uprobe, &tmp_list, pending_list) {
-> +	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
->  		loff_t vaddr = vma_address(vma, uprobe->offset);
-> 
->  		if (vaddr >= start && vaddr < end) {
-> -- 
-> 1.5.5.1
-> 
+static struct charger_cable charger_cable_vinchg1[] = {
+	{
+		.extcon_name	= "max8997-muic",
+		.name		= "USB",
+		.min_uA		= 475000,
+		.max_uA		= 475000 + 25000,
+	}, {
+		.extcon_name	= "max8997-muic",
+		.name		= "TA",
+		.min_uA		= 650000,
+		.max_uA		= 650000 + 25000,
+	},
+};
+
+static strcut charger_regulator nuri_regulators[] = {
+	{
+		.regulator_name	= "vinchg1",
+		.cables		= charger_cable_vinchg1,
+		.num_cables	= ARRAY_SIZE(charger_cable_vinchg1),
+	},
+};
+
+static struct charger_desc nuri_charger_desc = {
+	// ......
+
+	.charger_regulators	= nuri_regulators,
+	.num_charger_regulators	= ARRAY_SIZE(nuri_regulators),
+};
+
+Chanwoo Choi (2):
+  charger-manager: Use EXTCON Subsystem to detect charger cables for
+    charging
+  charger-manager: Set current limit of regulator for over current
+    protection
+
+ drivers/power/charger-manager.c       |  152 +++++++++++++++++++++++++++++----
+ include/linux/power/charger-manager.h |   67 ++++++++++++++-
+ 2 files changed, 202 insertions(+), 17 deletions(-)
 
