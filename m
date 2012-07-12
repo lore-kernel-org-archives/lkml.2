@@ -1,28 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162507Ab2GLX2G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:28:06 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44509 "EHLO
+	id S1161947Ab2GLWlt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:41:49 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60450 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161962Ab2GLWlx (ORCPT
+	with ESMTP id S1161893Ab2GLWlm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:41:53 -0400
+	Thu, 12 Jul 2012 18:41:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Matt Fleming <matt@console-pimps.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>,
-        Robert Richter <robert.richter@amd.com>
-Subject: [ 110/187] oprofile: perf: use NR_CPUS instead or nr_cpumask_bits for static array
-Date: Thu, 12 Jul 2012 15:34:26 -0700
-Message-Id: <20120712191532.567470140@linuxfoundation.org>
+        Andrew Bird <ajb@spheresystems.co.uk>,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: =?y?q?=5B=20107/187=5D=20USB=3A=20qmi=5Fwwan=3A=20Add=20ZTE=20=28Vodafone=29=20K3520-Z?=
+Date: Thu, 12 Jul 2012 15:34:23 -0700
+Message-Id: <20120712191532.310606899@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
  <20120712191522.742634173@linuxfoundation.org>
 User-Agent: quilt/0.60-20.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset=y
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,41 +35,52 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: "Andrew Bird (Sphere Systems)" <ajb@spheresystems.co.uk>
 
-commit e734568b675c985db2026848fefaac01c22977a5 upstream.
+commit f7142e6c226076fd40c2ebaad9fb0c9a631b790e upstream.
 
-The OProfile perf backend uses a static array to keep track of the
-perf events on the system. When compiling with CONFIG_CPUMASK_OFFSTACK=y
-&& SMP, nr_cpumask_bits is not a compile-time constant and the build
-will fail with:
-
-oprofile_perf.c:28: error: variably modified 'perf_events' at file scope
-
-This patch uses NR_CPUs instead of nr_cpumask_bits for the array
-initialisation. If this causes space problems in the future, we can
-always move to dynamic allocation for the events array.
-
-Cc: Matt Fleming <matt@console-pimps.org>
-Reported-by: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Robert Richter <robert.richter@amd.com>
+Signed-off-by: Andrew Bird <ajb@spheresystems.co.uk>
+Acked-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/oprofile/oprofile_perf.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/usb/qmi_wwan.c |   18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
---- a/drivers/oprofile/oprofile_perf.c
-+++ b/drivers/oprofile/oprofile_perf.c
-@@ -25,7 +25,7 @@ static int oprofile_perf_enabled;
- static DEFINE_MUTEX(oprofile_perf_mutex);
+--- a/drivers/net/usb/qmi_wwan.c
++++ b/drivers/net/usb/qmi_wwan.c
+@@ -356,6 +356,15 @@ static const struct driver_info	qmi_wwan
+ };
  
- static struct op_counter_config *counter_config;
--static struct perf_event **perf_events[nr_cpumask_bits];
-+static struct perf_event **perf_events[NR_CPUS];
- static int num_counters;
- 
- /*
+ /* ZTE suck at making USB descriptors */
++static const struct driver_info	qmi_wwan_force_int1 = {
++	.description	= "Qualcomm WWAN/QMI device",
++	.flags		= FLAG_WWAN,
++	.bind		= qmi_wwan_bind_shared,
++	.unbind		= qmi_wwan_unbind_shared,
++	.manage_power	= qmi_wwan_manage_power,
++	.data		= BIT(1), /* interface whitelist bitmap */
++};
++
+ static const struct driver_info	qmi_wwan_force_int4 = {
+ 	.description	= "Qualcomm WWAN/QMI device",
+ 	.flags		= FLAG_WWAN,
+@@ -430,6 +439,15 @@ static const struct usb_device_id produc
+ 		.bInterfaceProtocol = 0xff,
+ 		.driver_info        = (unsigned long)&qmi_wwan_force_int4,
+ 	},
++	{	/* ZTE (Vodafone) K3520-Z */
++		.match_flags	    = USB_DEVICE_ID_MATCH_DEVICE | USB_DEVICE_ID_MATCH_INT_INFO,
++		.idVendor           = 0x19d2,
++		.idProduct          = 0x0055,
++		.bInterfaceClass    = 0xff,
++		.bInterfaceSubClass = 0xff,
++		.bInterfaceProtocol = 0xff,
++		.driver_info        = (unsigned long)&qmi_wwan_force_int1,
++	},
+ 	{	/* ZTE (Vodafone) K3565-Z */
+ 		.match_flags	    = USB_DEVICE_ID_MATCH_DEVICE | USB_DEVICE_ID_MATCH_INT_INFO,
+ 		.idVendor           = 0x19d2,
 
 
