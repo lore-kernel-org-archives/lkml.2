@@ -1,71 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757816Ab2GLS0G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 14:26:06 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34162 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751112Ab2GLS0C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 14:26:02 -0400
+	id S1161365Ab2GLS2K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 14:28:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26942 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932849Ab2GLS2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 14:28:07 -0400
+Date: Thu, 12 Jul 2012 20:27:28 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
+        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Don Morris <don.morris@hp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH 20/40] autonuma: alloc/free/init mm_autonuma
+Message-ID: <20120712182728.GM20382@redhat.com>
+References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
+ <1340888180-15355-21-git-send-email-aarcange@redhat.com>
+ <4FF06DBD.6020901@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFyue0ivxx541BSfL1kkL76KZjwPdGc7=6OXcnArKGyxMw@mail.gmail.com>
-References: <20120709180328.GA4105@redhat.com> <CAPXgP11oP4aKyg=HUNrb3z_ZbPjU+_u338sD6uhxKyJ43Z8sgQ@mail.gmail.com>
- <1341859731.801.0.camel@mop> <20120712005405.GA1613@redhat.com>
- <CAPXgP13J98an3GW1-aBOEk=5Vyr+is1DaPhz-UFWHBOJ2nHkKA@mail.gmail.com>
- <20120712140552.GA13745@redhat.com> <CA+55aFyue0ivxx541BSfL1kkL76KZjwPdGc7=6OXcnArKGyxMw@mail.gmail.com>
-From: Kay Sievers <kay@vrfy.org>
-Date: Thu, 12 Jul 2012 20:25:41 +0200
-Message-ID: <CAPXgP12USC2LETFz2gy8yubMQbrNA6ou_hByH+UqHdo6-hfkGQ@mail.gmail.com>
-Subject: Re: 3.5-rc6 printk formatting problem during oom-kill.
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartmann <greg@kroah.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FF06DBD.6020901@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 12, 2012 at 7:11 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Thu, Jul 12, 2012 at 7:05 AM, Dave Jones <davej@redhat.com> wrote:
->>
->> I've seen it a few times, always with the soft lockup trace.
->
-> I bet it's because you have tons of modules, and the line ends up
-> being *really* long. And overflows LOG_LINE_MAX. I suspect something
-> odd happens.
+Hi Rik,
 
-Straight to the point. That's the issue, combined with the later
-safety range checks, we produce somehow "ugly" output.
+On Sun, Jul 01, 2012 at 11:33:17AM -0400, Rik van Riel wrote:
+> On 06/28/2012 08:56 AM, Andrea Arcangeli wrote:
+> 
+> > diff --git a/kernel/fork.c b/kernel/fork.c
+> > index 0adbe09..3e5a0d9 100644
+> > --- a/kernel/fork.c
+> > +++ b/kernel/fork.c
+> > @@ -527,6 +527,8 @@ static void mm_init_aio(struct mm_struct *mm)
+> >
+> >   static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
+> >   {
+> > +	if (unlikely(alloc_mm_autonuma(mm)))
+> > +		goto out_free_mm;
+> >   	atomic_set(&mm->mm_users, 1);
+> >   	atomic_set(&mm->mm_count, 1);
+> >   	init_rwsem(&mm->mmap_sem);
+> 
+> I wonder if it would be possible to defer the allocation
+> of the mm_autonuma struct to knuma_scand, so short lived
+> processes never have to allocate and free the mm_autonuma
+> structure.
+> 
+> That way we only have a function call at exit time, and
+> the branch inside kfree that checks for a null pointer.
 
-We already flush the line out of the buffer when we can not add stuff
-anymore. The line length is then close to LOG_LINE_MAX, and we want to
-add a prefix with the timestamp during output and we reach the limit
-of LOG_LINE_MAX.
-
-> There are tons of odd special cases for LOG_LINE_MAX, and I bet Kay
-> doesn't see it for the simple reason that he's not totally insane, and
-> hasn't loaded hundreds of modules.
-
-Yeah, I just added a loop now that prints over-long continuation
-lines, and I can see parts of the effect Dave sees.
-
-> Kay, I suspect the "continuation line" logic could easily have a rule like
->
->   "If the old line is already > 80 characters, do a line break here
-> and add TAB to the beginning of the new line"
->
-> In fact, that could be really nice for things like stack dumps etc -
-> we wouldn't have to worry about line breaks and crap, if the printk
-> logic just makes "KERN_CONT" do a line break automatically if it
-> doesn't fit on the screen.
->
-> People who use KERN_CONT don't do it because they *need* things to be
-> on one line (it's not guaranteed anyway), they do it because they want
-> the output to be dense and readable. Doing auto-line-break would
-> actually *help*. And would mean that you never hit the odd
-> LOG_LINE_MAX cases just because somebody is printing lots of modules.
-
-That sounds good. I'll look into that.
-
-Kay
+It would be possible to convert them to prepare_mm/task_autonuma (the
+mm side especially would be a branch once in a while) but it would
+then become impossible to inherit the mm/task stats across
+fork/clone. Right now the default is to reset them, but two sysfs
+switches control that, and I wouldn't drop those until I've the time
+to experiment how large kernel builds are affected by enabling the
+stats inheritance. Right now kernel builds are unaffected because of
+the default stat-resetting behavior and gcc too quick to be measured.
