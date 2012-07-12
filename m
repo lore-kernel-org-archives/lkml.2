@@ -1,104 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161202Ab2GLO3T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 10:29:19 -0400
-Received: from mga03.intel.com ([143.182.124.21]:18972 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933895Ab2GLO1M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 10:27:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="167258296"
-From: Artem Bityutskiy <dedekind1@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
-Subject: [PATCHv2 1/6] hfs: push lock_super down
-Date: Thu, 12 Jul 2012 17:28:44 +0300
-Message-Id: <1342103329-17526-2-git-send-email-dedekind1@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1342103329-17526-1-git-send-email-dedekind1@gmail.com>
-References: <1342103329-17526-1-git-send-email-dedekind1@gmail.com>
+	id S1161181Ab2GLOaF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 10:30:05 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:22959 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161106Ab2GLOaB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 10:30:01 -0400
+Date: Thu, 12 Jul 2012 10:21:25 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Olaf Hering <olaf@aepfle.de>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [PATCH] xen pv-on-hvm: add pfn_is_ram helper for
+ kdump
+Message-ID: <20120712142125.GF5204@phenom.dumpdata.com>
+References: <1342083605-15371-1-git-send-email-olaf@aepfle.de>
+ <20120712134703.GD5204@phenom.dumpdata.com>
+ <20120712142234.GA22009@aepfle.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120712142234.GA22009@aepfle.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+On Thu, Jul 12, 2012 at 04:22:34PM +0200, Olaf Hering wrote:
+> On Thu, Jul 12, Konrad Rzeszutek Wilk wrote:
+> 
+> > On Thu, Jul 12, 2012 at 11:00:05AM +0200, Olaf Hering wrote:
+> > > Register pfn_is_ram helper speed up reading /proc/vmcore in the kdump
+> > > kernel. See commit message of 997c136f518c ("fs/proc/vmcore.c: add hook
+> > > to read_from_oldmem() to check for non-ram pages") for details.
+> > 
+> > What about the 'unregister_oldmem_pfn_is_ram' call? Should this
+> > be implemented here as well?
+> 
+> There is no need to unregister because PVonHVM is not going away during
+> the lifetime of the guest.
+> 
+> > > +#include <linux/crash_dump.h>
+> > 
+> > Should this also have an #idef CONFIG_PROC_VMCORE?
+> > Or is it going to compile OK without CONFIG_PROC_VMCORE defined?
+> 
+> All includes are supposed to work without ifdefs in the code, which is
+> the case also for crash_dump.h
 
-HFS uses 'lock_super()'/'unlock_super()' around 'hfs_mdb_commit()' in order
-to serialize MDB (Master Directory Block) changes. Push it down to
-'hfs_mdb_commit()' in order to simplify the code a bit.
+OK.
+> 
+> > > + *   previous kernel. If the pfn is ballooned, handle it properly.
+> > 
+> > . and by handle it properly you mean return -ENXIO?
+> 
+> Return code 0 means its a ballooned page and needs special care,
+> non-null means it has to be handled as a RAM page.
+> 
+> If the hypervisor is too old (4.1 and earlier) it just means that in
+> case of kdump it will just cause high load in dom0. 
+> In case of kexec it will mean that the new kernel will crash because it
+> can not know which pfn is actually there.
+> 
+> > > + * Returns 0 if the pfn is not backed by a RAM page.
+> > > + */
+> > > +static int xen_oldmem_pfn_is_ram(unsigned long pfn)
+> > > +{
+> > > +	struct xen_hvm_get_mem_type a;
+> > 
+> > Can you make this have already initialized values, like:
+> > 
+> > 	struct xen_hvm_get_mem_type a = {
+> > 		.domid = DOMID_SELF;
+> > 		.pfn = pfn
+> > 	};
+> 
+> Yes.
+> 
+> > Also is this hypercall new? Or has it been in existence for some time?
+> 
+> Its new in 4.2, and was backported to 4.1.1 as well.
 
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
----
- fs/hfs/inode.c |    2 --
- fs/hfs/mdb.c   |    2 ++
- fs/hfs/super.c |    4 ----
- 3 files changed, 2 insertions(+), 6 deletions(-)
-
-diff --git a/fs/hfs/inode.c b/fs/hfs/inode.c
-index 761ec06..daf3d63 100644
---- a/fs/hfs/inode.c
-+++ b/fs/hfs/inode.c
-@@ -645,11 +645,9 @@ static int hfs_file_fsync(struct file *filp, loff_t start, loff_t end,
- 	/* sync the superblock to buffers */
- 	sb = inode->i_sb;
- 	if (sb->s_dirt) {
--		lock_super(sb);
- 		sb->s_dirt = 0;
- 		if (!(sb->s_flags & MS_RDONLY))
- 			hfs_mdb_commit(sb);
--		unlock_super(sb);
- 	}
- 	/* .. finally sync the buffers to disk */
- 	err = sync_blockdev(sb->s_bdev);
-diff --git a/fs/hfs/mdb.c b/fs/hfs/mdb.c
-index 1563d5c..3f558d58 100644
---- a/fs/hfs/mdb.c
-+++ b/fs/hfs/mdb.c
-@@ -260,6 +260,7 @@ void hfs_mdb_commit(struct super_block *sb)
- {
- 	struct hfs_mdb *mdb = HFS_SB(sb)->mdb;
- 
-+	lock_super(sb);
- 	if (test_and_clear_bit(HFS_FLG_MDB_DIRTY, &HFS_SB(sb)->flags)) {
- 		/* These parameters may have been modified, so write them back */
- 		mdb->drLsMod = hfs_mtime();
-@@ -317,6 +318,7 @@ void hfs_mdb_commit(struct super_block *sb)
- 			size -= len;
- 		}
- 	}
-+	unlock_super(sb);
- }
- 
- void hfs_mdb_close(struct super_block *sb)
-diff --git a/fs/hfs/super.c b/fs/hfs/super.c
-index 7b4c537..f7c06bb 100644
---- a/fs/hfs/super.c
-+++ b/fs/hfs/super.c
-@@ -50,21 +50,17 @@ MODULE_LICENSE("GPL");
-  */
- static void hfs_write_super(struct super_block *sb)
- {
--	lock_super(sb);
- 	sb->s_dirt = 0;
- 
- 	/* sync everything to the buffers */
- 	if (!(sb->s_flags & MS_RDONLY))
- 		hfs_mdb_commit(sb);
--	unlock_super(sb);
- }
- 
- static int hfs_sync_fs(struct super_block *sb, int wait)
- {
--	lock_super(sb);
- 	hfs_mdb_commit(sb);
- 	sb->s_dirt = 0;
--	unlock_super(sb);
- 
- 	return 0;
- }
--- 
-1.7.7.6
-
+Can you include the c/s in git commit pls?
