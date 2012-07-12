@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161957Ab2GLX3j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:29:39 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44509 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161892Ab2GLWlb (ORCPT
+	id S1161973Ab2GLXaA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:30:00 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:60675 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161879Ab2GLWlS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:41:31 -0400
+	Thu, 12 Jul 2012 18:41:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 104/187] can: c_can: precedence error in c_can_chip_config()
-Date: Thu, 12 Jul 2012 15:34:20 -0700
-Message-Id: <20120712191532.033482938@linuxfoundation.org>
+        Eliad Peller <eliad@wizery.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 100/187] cfg80211: fix potential deadlock in regulatory
+Date: Thu, 12 Jul 2012 15:34:16 -0700
+Message-Id: <20120712191531.675747334@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -33,36 +31,142 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Eliad Peller <eliad@wizery.com>
 
-commit d9cb9bd63eb27ac19f26a8547128c053f43a5da8 upstream.
+commit fe20b39ec32e975f1054c0b7866c873a954adf05 upstream.
 
-(CAN_CTRLMODE_LISTENONLY & CAN_CTRLMODE_LOOPBACK) is (0x02 & 0x01) which
-is zero so the condition is never true.  The intent here was to test
-that both flags were set.
+reg_timeout_work() calls restore_regulatory_settings() which
+takes cfg80211_mutex.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Oliver Hartkopp <socketcan@hartkopp.net>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+reg_set_request_processed() already holds cfg80211_mutex
+before calling cancel_delayed_work_sync(reg_timeout),
+so it might deadlock.
+
+Call the async cancel_delayed_work instead, in order
+to avoid the potential deadlock.
+
+This is the relevant lockdep warning:
+
+cfg80211: Calling CRDA for country: XX
+
+======================================================
+[ INFO: possible circular locking dependency detected ]
+3.4.0-rc5-wl+ #26 Not tainted
+-------------------------------------------------------
+kworker/0:2/1391 is trying to acquire lock:
+ (cfg80211_mutex){+.+.+.}, at: [<bf28ae00>] restore_regulatory_settings+0x34/0x418 [cfg80211]
+
+but task is already holding lock:
+ ((reg_timeout).work){+.+...}, at: [<c0059e94>] process_one_work+0x1f0/0x480
+
+which lock already depends on the new lock.
+
+the existing dependency chain (in reverse order) is:
+
+-> #2 ((reg_timeout).work){+.+...}:
+       [<c008fd44>] validate_chain+0xb94/0x10f0
+       [<c0090b68>] __lock_acquire+0x8c8/0x9b0
+       [<c0090d40>] lock_acquire+0xf0/0x114
+       [<c005b600>] wait_on_work+0x4c/0x154
+       [<c005c000>] __cancel_work_timer+0xd4/0x11c
+       [<c005c064>] cancel_delayed_work_sync+0x1c/0x20
+       [<bf28b274>] reg_set_request_processed+0x50/0x78 [cfg80211]
+       [<bf28bd84>] set_regdom+0x550/0x600 [cfg80211]
+       [<bf294cd8>] nl80211_set_reg+0x218/0x258 [cfg80211]
+       [<c03c7738>] genl_rcv_msg+0x1a8/0x1e8
+       [<c03c6a00>] netlink_rcv_skb+0x5c/0xc0
+       [<c03c7584>] genl_rcv+0x28/0x34
+       [<c03c6720>] netlink_unicast+0x15c/0x228
+       [<c03c6c7c>] netlink_sendmsg+0x218/0x298
+       [<c03933c8>] sock_sendmsg+0xa4/0xc0
+       [<c039406c>] __sys_sendmsg+0x1e4/0x268
+       [<c0394228>] sys_sendmsg+0x4c/0x70
+       [<c0013840>] ret_fast_syscall+0x0/0x3c
+
+-> #1 (reg_mutex){+.+.+.}:
+       [<c008fd44>] validate_chain+0xb94/0x10f0
+       [<c0090b68>] __lock_acquire+0x8c8/0x9b0
+       [<c0090d40>] lock_acquire+0xf0/0x114
+       [<c04734dc>] mutex_lock_nested+0x48/0x320
+       [<bf28b2cc>] reg_todo+0x30/0x538 [cfg80211]
+       [<c0059f44>] process_one_work+0x2a0/0x480
+       [<c005a4b4>] worker_thread+0x1bc/0x2bc
+       [<c0061148>] kthread+0x98/0xa4
+       [<c0014af4>] kernel_thread_exit+0x0/0x8
+
+-> #0 (cfg80211_mutex){+.+.+.}:
+       [<c008ed58>] print_circular_bug+0x68/0x2cc
+       [<c008fb28>] validate_chain+0x978/0x10f0
+       [<c0090b68>] __lock_acquire+0x8c8/0x9b0
+       [<c0090d40>] lock_acquire+0xf0/0x114
+       [<c04734dc>] mutex_lock_nested+0x48/0x320
+       [<bf28ae00>] restore_regulatory_settings+0x34/0x418 [cfg80211]
+       [<bf28b200>] reg_timeout_work+0x1c/0x20 [cfg80211]
+       [<c0059f44>] process_one_work+0x2a0/0x480
+       [<c005a4b4>] worker_thread+0x1bc/0x2bc
+       [<c0061148>] kthread+0x98/0xa4
+       [<c0014af4>] kernel_thread_exit+0x0/0x8
+
+other info that might help us debug this:
+
+Chain exists of:
+  cfg80211_mutex --> reg_mutex --> (reg_timeout).work
+
+ Possible unsafe locking scenario:
+
+       CPU0                    CPU1
+       ----                    ----
+  lock((reg_timeout).work);
+                               lock(reg_mutex);
+                               lock((reg_timeout).work);
+  lock(cfg80211_mutex);
+
+ *** DEADLOCK ***
+
+2 locks held by kworker/0:2/1391:
+ #0:  (events){.+.+.+}, at: [<c0059e94>] process_one_work+0x1f0/0x480
+ #1:  ((reg_timeout).work){+.+...}, at: [<c0059e94>] process_one_work+0x1f0/0x480
+
+stack backtrace:
+[<c001b928>] (unwind_backtrace+0x0/0x12c) from [<c0471d3c>] (dump_stack+0x20/0x24)
+[<c0471d3c>] (dump_stack+0x20/0x24) from [<c008ef70>] (print_circular_bug+0x280/0x2cc)
+[<c008ef70>] (print_circular_bug+0x280/0x2cc) from [<c008fb28>] (validate_chain+0x978/0x10f0)
+[<c008fb28>] (validate_chain+0x978/0x10f0) from [<c0090b68>] (__lock_acquire+0x8c8/0x9b0)
+[<c0090b68>] (__lock_acquire+0x8c8/0x9b0) from [<c0090d40>] (lock_acquire+0xf0/0x114)
+[<c0090d40>] (lock_acquire+0xf0/0x114) from [<c04734dc>] (mutex_lock_nested+0x48/0x320)
+[<c04734dc>] (mutex_lock_nested+0x48/0x320) from [<bf28ae00>] (restore_regulatory_settings+0x34/0x418 [cfg80211])
+[<bf28ae00>] (restore_regulatory_settings+0x34/0x418 [cfg80211]) from [<bf28b200>] (reg_timeout_work+0x1c/0x20 [cfg80211])
+[<bf28b200>] (reg_timeout_work+0x1c/0x20 [cfg80211]) from [<c0059f44>] (process_one_work+0x2a0/0x480)
+[<c0059f44>] (process_one_work+0x2a0/0x480) from [<c005a4b4>] (worker_thread+0x1bc/0x2bc)
+[<c005a4b4>] (worker_thread+0x1bc/0x2bc) from [<c0061148>] (kthread+0x98/0xa4)
+[<c0061148>] (kthread+0x98/0xa4) from [<c0014af4>] (kernel_thread_exit+0x0/0x8)
+cfg80211: Calling CRDA to update world regulatory domain
+cfg80211: World regulatory domain updated:
+cfg80211:   (start_freq - end_freq @ bandwidth), (max_antenna_gain, max_eirp)
+cfg80211:   (2402000 KHz - 2472000 KHz @ 40000 KHz), (300 mBi, 2000 mBm)
+cfg80211:   (2457000 KHz - 2482000 KHz @ 20000 KHz), (300 mBi, 2000 mBm)
+cfg80211:   (2474000 KHz - 2494000 KHz @ 20000 KHz), (300 mBi, 2000 mBm)
+cfg80211:   (5170000 KHz - 5250000 KHz @ 40000 KHz), (300 mBi, 2000 mBm)
+cfg80211:   (5735000 KHz - 5835000 KHz @ 40000 KHz), (300 mBi, 2000 mBm)
+
+Signed-off-by: Eliad Peller <eliad@wizery.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/can/c_can/c_can.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/wireless/reg.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/can/c_can/c_can.c
-+++ b/drivers/net/can/c_can/c_can.c
-@@ -590,8 +590,8 @@ static void c_can_chip_config(struct net
- 	priv->write_reg(priv, &priv->regs->control,
- 			CONTROL_ENABLE_AR);
+--- a/net/wireless/reg.c
++++ b/net/wireless/reg.c
+@@ -1389,7 +1389,7 @@ static void reg_set_request_processed(vo
+ 	spin_unlock(&reg_requests_lock);
  
--	if (priv->can.ctrlmode & (CAN_CTRLMODE_LISTENONLY &
--					CAN_CTRLMODE_LOOPBACK)) {
-+	if ((priv->can.ctrlmode & CAN_CTRLMODE_LISTENONLY) &&
-+	    (priv->can.ctrlmode & CAN_CTRLMODE_LOOPBACK)) {
- 		/* loopback + silent mode : useful for hot self-test */
- 		priv->write_reg(priv, &priv->regs->control, CONTROL_EIE |
- 				CONTROL_SIE | CONTROL_IE | CONTROL_TEST);
+ 	if (last_request->initiator == NL80211_REGDOM_SET_BY_USER)
+-		cancel_delayed_work_sync(&reg_timeout);
++		cancel_delayed_work(&reg_timeout);
+ 
+ 	if (need_more_processing)
+ 		schedule_work(&reg_work);
 
 
