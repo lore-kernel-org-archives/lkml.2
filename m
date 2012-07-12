@@ -1,77 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751134Ab2GLEAp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 00:00:45 -0400
-Received: from linux-sh.org ([111.68.239.195]:57315 "EHLO linux-sh.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750737Ab2GLEAm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 00:00:42 -0400
-Date: Thu, 12 Jul 2012 13:00:19 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Vinod Koul <vinod.koul@intel.com>, linux-sh@vger.kernel.org,
-        linux-mmc@vger.kernel.org, Chris Ball <cjb@laptop.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] dma: sh: provide a migration path for slave drivers
- to stop using .private
-Message-ID: <20120712040018.GB11440@linux-sh.org>
-References: <1341418663-24432-1-git-send-email-g.liakhovetski@gmx.de>
- <1341418663-24432-4-git-send-email-g.liakhovetski@gmx.de>
- <CANqRtoRz2NF6BEEYcy_BwZ7Hm5EF9zP2Z0eoQcbxaSfUuc2i9Q@mail.gmail.com>
+	id S1751244Ab2GLEME (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 00:12:04 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57654 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750737Ab2GLEMB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 00:12:01 -0400
+Message-ID: <4FFE4E8D.90606@gmail.com>
+Date: Wed, 11 Jul 2012 22:11:57 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANqRtoRz2NF6BEEYcy_BwZ7Hm5EF9zP2Z0eoQcbxaSfUuc2i9Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Gleb Natapov <gleb@redhat.com>
+CC: Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: perf with precise attribute kills all KVM based VMs
+References: <20120709141904.GC7298@redhat.com> <1341843844.3462.75.camel@twins> <4FFAED16.7050204@redhat.com> <4FFAEF13.7010108@gmail.com> <1341845396.3462.81.camel@twins> <4FFAEFF1.9000706@redhat.com> <1341845999.3462.86.camel@twins> <4FFCBD00.1030109@gmail.com> <20120711071006.GF23898@redhat.com> <1342000187.3462.134.camel@twins> <20120711095337.GJ23898@redhat.com>
+In-Reply-To: <20120711095337.GJ23898@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 12, 2012 at 06:55:32AM +0900, Magnus Damm wrote:
-> Hi Guennadi,
-> 
-> [CC Paul]
-> 
-> On Thu, Jul 5, 2012 at 1:17 AM, Guennadi Liakhovetski
-> <g.liakhovetski@gmx.de> wrote:
-> > This patch extends the sh dmaengine driver to support the preferred channel
-> > selection and configuration method, instead of using the "private" field
-> > from struct dma_chan. We add a standard filter function to be used by
-> > slave drivers instead of implementing their own ones, and add support for
-> > the DMA_SLAVE_CONFIG control operation, which must accompany the new
-> > channel selection method. We still support the legacy .private channel
-> > allocation method to cater for a smooth driver migration.
-> >
-> > Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-> > ---
-> 
-> Thanks for your efforts on this. Something that caught my eye in this
-> patch is this portion:
-> 
-> +bool shdma_chan_filter(struct dma_chan *chan, void *arg);
-> 
-> If we would use this function in our DMA Engine slave drivers (MMCIF,
-> SDHI, SCIF, FSI, SIU and so on) then wouldn't we add a strict
-> dependency on this symbol provided by this particular DMA Engine
-> driver implementation for the DMAC hardware (that your patch
-> modifies)?
-> 
-> And what do we do if we want to use the same DMA Engine slave driver
-> with a different DMA Engine driver implementation?
-> 
-> From my point of view, there must be some better way to not have such
-> tight dependencies between the DMA Engine slave consumer and the DMA
-> Engine driver. Not sure what that looks like though. This symbol
-> dependency is pretty far from great IMO.
-> 
-I vaguely recall this coming up before, and it wasn't acceptable then
-either.
+On 7/11/12 3:53 AM, Gleb Natapov wrote:
+> On Wed, Jul 11, 2012 at 11:49:47AM +0200, Peter Zijlstra wrote:
+>> On Wed, 2012-07-11 at 10:10 +0300, Gleb Natapov wrote:
+>>
+>>> Looks like Avi is right about the overshoot. Can you test something like this?
+>>>
+>>> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+>>> index 166546e..5fb371a 100644
+>>> --- a/arch/x86/kernel/cpu/perf_event_intel.c
+>>> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+>>> @@ -1374,8 +1374,11 @@ static struct perf_guest_switch_msr *intel_guest_get_msrs(int *nr)
+>>>   	arr[0].msr = MSR_CORE_PERF_GLOBAL_CTRL;
+>>>   	arr[0].host = x86_pmu.intel_ctrl & ~cpuc->intel_ctrl_guest_mask;
+>>>   	arr[0].guest = x86_pmu.intel_ctrl & ~cpuc->intel_ctrl_host_mask;
+>>> +	arr[1].msr = MSR_IA32_PEBS_ENABLE;
+>>> +	arr[1].host = cpuc->pebs_enabled;
+>>> +	arr[1].guest = 0;
+>>> +	*nr = 2;
+>>>
+>>> -	*nr = 1;
+>>>   	return arr;
+>>>   }
+>>
 
-We will by no means be adding driver-specific hooks in to other drivers
-that really couldn't care less what the underlying DMA engine driving
-them is.
+So far the 64-bit Fedora 10 VM with both a Fedora 10 stock kernel and a 
+2.6.38 kernel have not faired well - and that's the only VM I have tried 
+at the moment. Using -e cycles:pp I have been able to lock up the VM 3 
+times out of 3 series of tests with perf-kvm that includes network 
+traffic (e.g., netperf), disk I/O (dd based to create a file with dsync 
+flag) and pure userspace cpu bound (openssl speed). May or may not be 
+related.
 
-We already have CPUs with different DMA engines that can be used by the
-same drivers. As I said the last time, this needs to be fixed in the
-dmaengine framework, period.
+Also, I noted that 'perf kvm --guest record -e cycles:pp' does not 
+generate a whole lot of samples -- like < 100 in a 20-second sample -- 
+despite the fact that the guest is rather busy.
+
+I won't have much time over the next few days to run much in the way of 
+tests; I'll come back to it Sunday night.
+
+David
+
+>>
+>> You also need to clear TR, BTS, BTINT from MSR_IA32_DEBUGCTLMSR and
+>> ideally you'd also clear MSR_IA32_DS_AREA so that any write will be a
+>> proper NULL deref or such.
+> Yes. With the patch above :pp modifier does not crash guest for me, but
+> in theory it should since BTS are still written to DS. May be BTS writes do
+> not overshoot guest entry. Will have to ask Intel for clarification.
