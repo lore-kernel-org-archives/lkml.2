@@ -1,46 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758699Ab2GLHpp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 03:45:45 -0400
-Received: from Mailrelay020.isp.belgacom.be ([195.238.6.95]:51520 "EHLO
-	mailrelay020.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757130Ab2GLHpn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 03:45:43 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhAFAGB//k9XQD44/2dsb2JhbABFtB2DWIEIgiABAQVWIgEQCxgJFg8JAwIBAgEnHgYNAQcBAYgNvXGLQIV8A5sQg1CGYIJh
-Message-ID: <4FFE804A.8070205@computer.org>
-Date: Thu, 12 Jul 2012 09:44:10 +0200
-From: Jan Ceuleers <jan.ceuleers@computer.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: John Stultz <johnstul@us.ibm.com>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, stable@vger.kernel.org
-Subject: Re: [PATCH 1/6] hrtimer: Provide clock_was_set_delayed()
-References: <1341960205-56738-1-git-send-email-johnstul@us.ibm.com> <1341960205-56738-2-git-send-email-johnstul@us.ibm.com> <4FFD6E5A.9060206@redhat.com> <alpine.LFD.2.02.1207111425260.32033@ionos> <1342011904.3462.152.camel@twins> <alpine.LFD.2.02.1207111539060.32033@ionos> <4FFDAE1D.3050008@us.ibm.com>
-In-Reply-To: <4FFDAE1D.3050008@us.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1758742Ab2GLHuT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 03:50:19 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:57034 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1757378Ab2GLHuR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 03:50:17 -0400
+X-IronPort-AV: E=Sophos;i="4.77,573,1336320000"; 
+   d="scan'208";a="5381282"
+From: Gao feng <gaofeng@cn.fujitsu.com>
+To: nhorman@tuxdriver.com
+Cc: eric.dumazet@gmail.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, davem@davemloft.net,
+        Gao feng <gaofeng@cn.fujitsu.com>, Eric Dumazet <edumazet@google.com>
+Subject: [PATCH v4] net: cgroup: fix access the unallocated memory in netprio cgroup
+Date: Thu, 12 Jul 2012 15:50:15 +0800
+Message-Id: <1342079415-9631-1-git-send-email-gaofeng@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.7.6
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/12 15:49:59,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/12 15:50:06,
+	Serialize complete at 2012/07/12 15:50:06
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11/2012 06:47 PM, John Stultz wrote:
-> I'll see if my worry is unfounded, but it might be a bit too clever for rare events.
+there are some out of bound accesses in netprio cgroup.
 
-Full ACK.
+now before accessing the dev->priomap.priomap array,we only check
+if the dev->priomap exist.and because we don't want to see
+additional bound checkings in fast path, so we should make sure
+that dev->priomap is null or array size of dev->priomap.priomap
+is equal to max_prioidx + 1;
 
-There is an unfortunate history of critical-to-moderately-serious bugs in
-the leap second handling, so I submit that what is needed is a simple,
-obviously-correct and robust mechanism. Robust statically, but also in the
-face of code churn because these code paths are exercised so rarely out in
-the wild.
+so in write_priomap logic,we should call extend_netdev_table when
+dev->priomap is null and dev->priomap.priomap_len < max_len.
+and in cgrp_create->update_netdev_tables logic,we should call
+extend_netdev_table only when dev->priomap exist and
+dev->priomap.priomap_len < max_len.
 
-Just my opinion, FWIW.
+and it's not needed to call update_netdev_tables in write_priomap,
+we can only allocate the net device's priomap which we change through
+net_prio.ifpriomap.
 
-Jan
+this patch also add a return value for update_netdev_tables &
+extend_netdev_table, so when new_priomap is allocated failed,
+write_priomap will stop to access the priomap,and return -ENOMEM
+back to the userspace to tell the user what happend.
+
+Change From v3:
+1. add rtnl protect when reading max_prioidx in write_priomap.
+
+2. only call extend_netdev_table when map->priomap_len < max_len,
+   this will make sure array size of dev->map->priomap always
+   bigger than any prioidx.
+
+3. add a function write_update_netdev_table to make codes clear.
+
+Change From v2:
+1. protect extend_netdev_table by RTNL.
+2. when extend_netdev_table failed,call dev_put to reduce device's refcount.
+
+Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+Cc: Neil Horman <nhorman@tuxdriver.com>
+Cc: Eric Dumazet <edumazet@google.com>
+---
+ net/core/netprio_cgroup.c |   71 ++++++++++++++++++++++++++++++++++-----------
+ 1 files changed, 54 insertions(+), 17 deletions(-)
+
+diff --git a/net/core/netprio_cgroup.c b/net/core/netprio_cgroup.c
+index aa907ed..9b17d54 100644
+--- a/net/core/netprio_cgroup.c
++++ b/net/core/netprio_cgroup.c
+@@ -65,7 +65,7 @@ static void put_prioidx(u32 idx)
+ 	spin_unlock_irqrestore(&prioidx_map_lock, flags);
+ }
+ 
+-static void extend_netdev_table(struct net_device *dev, u32 new_len)
++static int extend_netdev_table(struct net_device *dev, u32 new_len)
+ {
+ 	size_t new_size = sizeof(struct netprio_map) +
+ 			   ((sizeof(u32) * new_len));
+@@ -77,7 +77,7 @@ static void extend_netdev_table(struct net_device *dev, u32 new_len)
+ 
+ 	if (!new_priomap) {
+ 		pr_warn("Unable to alloc new priomap!\n");
+-		return;
++		return -ENOMEM;
+ 	}
+ 
+ 	for (i = 0;
+@@ -90,46 +90,79 @@ static void extend_netdev_table(struct net_device *dev, u32 new_len)
+ 	rcu_assign_pointer(dev->priomap, new_priomap);
+ 	if (old_priomap)
+ 		kfree_rcu(old_priomap, rcu);
++	return 0;
+ }
+ 
+-static void update_netdev_tables(void)
++static int write_update_netdev_table(struct net_device *dev)
+ {
++	int ret = 0;
++	u32 max_len;
++	struct netprio_map *map;
++
++	rtnl_lock();
++	max_len = atomic_read(&max_prioidx) + 1;
++	map = rtnl_dereference(dev->priomap);
++	if (!map || map->priomap_len < max_len)
++		ret = extend_netdev_table(dev, max_len);
++	rtnl_unlock();
++
++	return ret;
++}
++
++static int update_netdev_tables(void)
++{
++	int ret = 0;
+ 	struct net_device *dev;
+-	u32 max_len = atomic_read(&max_prioidx) + 1;
++	u32 max_len;
+ 	struct netprio_map *map;
+ 
+ 	rtnl_lock();
++	max_len = atomic_read(&max_prioidx) + 1;
+ 	for_each_netdev(&init_net, dev) {
+ 		map = rtnl_dereference(dev->priomap);
+-		if ((!map) ||
+-		    (map->priomap_len < max_len))
+-			extend_netdev_table(dev, max_len);
++		/*
++		 * don't allocate priomap if we didn't
++		 * change net_prio.ifpriomap (map == NULL),
++		 * this will speed up skb_update_prio.
++		 */
++		if (map && map->priomap_len < max_len) {
++			ret = extend_netdev_table(dev, max_len);
++			if (ret < 0)
++				break;
++		}
+ 	}
+ 	rtnl_unlock();
++	return ret;
+ }
+ 
+ static struct cgroup_subsys_state *cgrp_create(struct cgroup *cgrp)
+ {
+ 	struct cgroup_netprio_state *cs;
+-	int ret;
++	int ret = -EINVAL;
+ 
+ 	cs = kzalloc(sizeof(*cs), GFP_KERNEL);
+ 	if (!cs)
+ 		return ERR_PTR(-ENOMEM);
+ 
+-	if (cgrp->parent && cgrp_netprio_state(cgrp->parent)->prioidx) {
+-		kfree(cs);
+-		return ERR_PTR(-EINVAL);
+-	}
++	if (cgrp->parent && cgrp_netprio_state(cgrp->parent)->prioidx)
++		goto out;
+ 
+ 	ret = get_prioidx(&cs->prioidx);
+-	if (ret != 0) {
++	if (ret < 0) {
+ 		pr_warn("No space in priority index array\n");
+-		kfree(cs);
+-		return ERR_PTR(ret);
++		goto out;
++	}
++
++	ret = update_netdev_tables();
++	if (ret < 0) {
++		put_prioidx(cs->prioidx);
++		goto out;
+ 	}
+ 
+ 	return &cs->css;
++out:
++	kfree(cs);
++	return ERR_PTR(ret);
+ }
+ 
+ static void cgrp_destroy(struct cgroup *cgrp)
+@@ -221,13 +254,17 @@ static int write_priomap(struct cgroup *cgrp, struct cftype *cft,
+ 	if (!dev)
+ 		goto out_free_devname;
+ 
+-	update_netdev_tables();
+-	ret = 0;
++	ret = write_update_netdev_table(dev);
++	if (ret < 0)
++		goto out_put_dev;
++
+ 	rcu_read_lock();
+ 	map = rcu_dereference(dev->priomap);
+ 	if (map)
+ 		map->priomap[prioidx] = priority;
+ 	rcu_read_unlock();
++
++out_put_dev:
+ 	dev_put(dev);
+ 
+ out_free_devname:
+-- 
+1.7.7.6
+
