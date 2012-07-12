@@ -1,98 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758194Ab2GLT6x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 15:58:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56209 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756026Ab2GLT6u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 15:58:50 -0400
-Date: Thu, 12 Jul 2012 21:58:15 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
-        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Don Morris <don.morris@hp.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH 36/40] autonuma: page_autonuma
-Message-ID: <20120712195815.GQ20382@redhat.com>
-References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
- <1340888180-15355-37-git-send-email-aarcange@redhat.com>
- <4FF14196.6040106@redhat.com>
+	id S1758413Ab2GLUCs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 16:02:48 -0400
+Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:34112 "EHLO
+	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756026Ab2GLUCq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 16:02:46 -0400
+Message-ID: <4FFF2D5F.3050902@de.ibm.com>
+Date: Thu, 12 Jul 2012 22:02:39 +0200
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FF14196.6040106@redhat.com>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Avi Kivity <avi@redhat.com>, Rik van Riel <riel@redhat.com>,
+        S390 <linux-s390@vger.kernel.org>, Carsten Otte <cotte@de.ibm.com>,
+        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: Re: [PATCH RFC V3 2/3] kvm: Note down when cpu relax intercepted
+ or pause loop exited
+References: <20120712191712.30440.68944.sendpatchset@codeblue> <20120712191800.30440.16406.sendpatchset@codeblue>
+In-Reply-To: <20120712191800.30440.16406.sendpatchset@codeblue>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12071220-2966-0000-0000-000004B335E4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 02, 2012 at 02:37:10AM -0400, Rik van Riel wrote:
->  > +fail:
->  > +	printk(KERN_CRIT "allocation of page_autonuma failed.\n");
->  > +	printk(KERN_CRIT "please try the 'noautonuma' boot option\n");
->  > +	panic("Out of memory");
->  > +}
-> 
-> The system can run just fine without autonuma.
-> 
-> Would it make sense to simply disable autonuma at this point,
-> but to try continue running?
+On 12/07/12 21:18, Raghavendra K T wrote:
+> +#ifdef CONFIG_HAVE_KVM_CPU_RELAX_INTERCEPT
+[...]
+> +	struct {
+> +		bool cpu_relax_intercepted;
+> +		bool dy_eligible;
+> +	} ple;
+> +#endif
+[...]
+>  	}
+>  	vcpu->run = page_address(page);
+> +	vcpu->ple.cpu_relax_intercepted = false;
+> +	vcpu->ple.dy_eligible = false;
 
-BTW, the same would apply to mm/page_cgroup.c, but I think the idea
-here is that something serious went wrong. Workaround with noautonuma
-boot option is enough.
+This struct is only defined if CONFIG_HAVE_KVM_CPU_RELAX_INTERCEPT is set, but here it
+is always accessed. Will break on !x86 && !s390.
+> 
+>  	r = kvm_arch_vcpu_init(vcpu);
+>  	if (r < 0)
+> @@ -1577,6 +1579,7 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
+>  	int pass;
+>  	int i;
+> 
+> +	me->ple.cpu_relax_intercepted = true;
 
-> 
-> > @@ -700,8 +780,14 @@ static void free_section_usemap(struct page *memmap, unsigned long *usemap)
-> >   	 */
-> >   	if (PageSlab(usemap_page)) {
-> >   		kfree(usemap);
-> > -		if (memmap)
-> > +		if (memmap) {
-> >   			__kfree_section_memmap(memmap, PAGES_PER_SECTION);
-> > +			if (!autonuma_impossible())
-> > +				__kfree_section_page_autonuma(page_autonuma,
-> > +							      PAGES_PER_SECTION);
-> > +			else
-> > +				BUG_ON(page_autonuma);
-> 
-> VM_BUG_ON ?
-> 
-> > +		if (!autonuma_impossible()) {
-> > +			struct page *page_autonuma_page;
-> > +			page_autonuma_page = virt_to_page(page_autonuma);
-> > +			free_map_bootmem(page_autonuma_page, nr_pages);
-> > +		} else
-> > +			BUG_ON(page_autonuma);
-> 
-> ditto
-> 
-> >   	pgdat_resize_unlock(pgdat,&flags);
-> >   	if (ret<= 0) {
-> > +		if (!autonuma_impossible())
-> > +			__kfree_section_page_autonuma(page_autonuma, nr_pages);
-> > +		else
-> > +			BUG_ON(page_autonuma);
-> 
-> VM_BUG_ON ?
+dito
+>  	/*
+>  	 * We boost the priority of a VCPU that is runnable but not
+>  	 * currently running, because it got preempted by something
+> @@ -1602,6 +1605,7 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
+>  			}
+>  		}
+>  	}
+> +	me->ple.cpu_relax_intercepted = false;
 
-These only run at the very boot stage, so performance is irrelevant
-and it's safer to keep them on.
+again.
 
-The rest was corrected.
+maybe define static inline access functions in kvm_host.h that are no-ops
+if CONFIG_HAVE_KVM_CPU_RELAX_INTERCEPT is not set.
+
