@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162730Ab2GLXE4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:04:56 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60424 "EHLO
+	id S1162762Ab2GLXFH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:05:07 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63192 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162685Ab2GLXEu (ORCPT
+	with ESMTP id S1162734Ab2GLXFA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 19:04:50 -0400
+	Thu, 12 Jul 2012 19:05:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eliad Peller <eliad@wizery.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 37/68] cfg80211: fix potential deadlock in regulatory
-Date: Thu, 12 Jul 2012 16:02:11 -0700
-Message-Id: <20120712175038.738238212@linuxfoundation.org>
+        Gaosen Zhang <gaosen.zhang@mediatek.com>
+Subject: [ 50/68] USB: option: Add MEDIATEK product ids
+Date: Thu, 12 Jul 2012 16:02:24 -0700
+Message-Id: <20120712175039.858377953@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712175035.530652872@linuxfoundation.org>
 References: <20120712175057.GA9917@kroah.com>
@@ -31,142 +30,52 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Eliad Peller <eliad@wizery.com>
+From: Gaosen Zhang <gaosen.zhang@mediatek.com>
 
-commit fe20b39ec32e975f1054c0b7866c873a954adf05 upstream.
+commit aacef9c561a693341566a6850c451ce3df68cb9a upstream.
 
-reg_timeout_work() calls restore_regulatory_settings() which
-takes cfg80211_mutex.
-
-reg_set_request_processed() already holds cfg80211_mutex
-before calling cancel_delayed_work_sync(reg_timeout),
-so it might deadlock.
-
-Call the async cancel_delayed_work instead, in order
-to avoid the potential deadlock.
-
-This is the relevant lockdep warning:
-
-cfg80211: Calling CRDA for country: XX
-
-======================================================
-[ INFO: possible circular locking dependency detected ]
-3.4.0-rc5-wl+ #26 Not tainted
--------------------------------------------------------
-kworker/0:2/1391 is trying to acquire lock:
- (cfg80211_mutex){+.+.+.}, at: [<bf28ae00>] restore_regulatory_settings+0x34/0x418 [cfg80211]
-
-but task is already holding lock:
- ((reg_timeout).work){+.+...}, at: [<c0059e94>] process_one_work+0x1f0/0x480
-
-which lock already depends on the new lock.
-
-the existing dependency chain (in reverse order) is:
-
--> #2 ((reg_timeout).work){+.+...}:
-       [<c008fd44>] validate_chain+0xb94/0x10f0
-       [<c0090b68>] __lock_acquire+0x8c8/0x9b0
-       [<c0090d40>] lock_acquire+0xf0/0x114
-       [<c005b600>] wait_on_work+0x4c/0x154
-       [<c005c000>] __cancel_work_timer+0xd4/0x11c
-       [<c005c064>] cancel_delayed_work_sync+0x1c/0x20
-       [<bf28b274>] reg_set_request_processed+0x50/0x78 [cfg80211]
-       [<bf28bd84>] set_regdom+0x550/0x600 [cfg80211]
-       [<bf294cd8>] nl80211_set_reg+0x218/0x258 [cfg80211]
-       [<c03c7738>] genl_rcv_msg+0x1a8/0x1e8
-       [<c03c6a00>] netlink_rcv_skb+0x5c/0xc0
-       [<c03c7584>] genl_rcv+0x28/0x34
-       [<c03c6720>] netlink_unicast+0x15c/0x228
-       [<c03c6c7c>] netlink_sendmsg+0x218/0x298
-       [<c03933c8>] sock_sendmsg+0xa4/0xc0
-       [<c039406c>] __sys_sendmsg+0x1e4/0x268
-       [<c0394228>] sys_sendmsg+0x4c/0x70
-       [<c0013840>] ret_fast_syscall+0x0/0x3c
-
--> #1 (reg_mutex){+.+.+.}:
-       [<c008fd44>] validate_chain+0xb94/0x10f0
-       [<c0090b68>] __lock_acquire+0x8c8/0x9b0
-       [<c0090d40>] lock_acquire+0xf0/0x114
-       [<c04734dc>] mutex_lock_nested+0x48/0x320
-       [<bf28b2cc>] reg_todo+0x30/0x538 [cfg80211]
-       [<c0059f44>] process_one_work+0x2a0/0x480
-       [<c005a4b4>] worker_thread+0x1bc/0x2bc
-       [<c0061148>] kthread+0x98/0xa4
-       [<c0014af4>] kernel_thread_exit+0x0/0x8
-
--> #0 (cfg80211_mutex){+.+.+.}:
-       [<c008ed58>] print_circular_bug+0x68/0x2cc
-       [<c008fb28>] validate_chain+0x978/0x10f0
-       [<c0090b68>] __lock_acquire+0x8c8/0x9b0
-       [<c0090d40>] lock_acquire+0xf0/0x114
-       [<c04734dc>] mutex_lock_nested+0x48/0x320
-       [<bf28ae00>] restore_regulatory_settings+0x34/0x418 [cfg80211]
-       [<bf28b200>] reg_timeout_work+0x1c/0x20 [cfg80211]
-       [<c0059f44>] process_one_work+0x2a0/0x480
-       [<c005a4b4>] worker_thread+0x1bc/0x2bc
-       [<c0061148>] kthread+0x98/0xa4
-       [<c0014af4>] kernel_thread_exit+0x0/0x8
-
-other info that might help us debug this:
-
-Chain exists of:
-  cfg80211_mutex --> reg_mutex --> (reg_timeout).work
-
- Possible unsafe locking scenario:
-
-       CPU0                    CPU1
-       ----                    ----
-  lock((reg_timeout).work);
-                               lock(reg_mutex);
-                               lock((reg_timeout).work);
-  lock(cfg80211_mutex);
-
- *** DEADLOCK ***
-
-2 locks held by kworker/0:2/1391:
- #0:  (events){.+.+.+}, at: [<c0059e94>] process_one_work+0x1f0/0x480
- #1:  ((reg_timeout).work){+.+...}, at: [<c0059e94>] process_one_work+0x1f0/0x480
-
-stack backtrace:
-[<c001b928>] (unwind_backtrace+0x0/0x12c) from [<c0471d3c>] (dump_stack+0x20/0x24)
-[<c0471d3c>] (dump_stack+0x20/0x24) from [<c008ef70>] (print_circular_bug+0x280/0x2cc)
-[<c008ef70>] (print_circular_bug+0x280/0x2cc) from [<c008fb28>] (validate_chain+0x978/0x10f0)
-[<c008fb28>] (validate_chain+0x978/0x10f0) from [<c0090b68>] (__lock_acquire+0x8c8/0x9b0)
-[<c0090b68>] (__lock_acquire+0x8c8/0x9b0) from [<c0090d40>] (lock_acquire+0xf0/0x114)
-[<c0090d40>] (lock_acquire+0xf0/0x114) from [<c04734dc>] (mutex_lock_nested+0x48/0x320)
-[<c04734dc>] (mutex_lock_nested+0x48/0x320) from [<bf28ae00>] (restore_regulatory_settings+0x34/0x418 [cfg80211])
-[<bf28ae00>] (restore_regulatory_settings+0x34/0x418 [cfg80211]) from [<bf28b200>] (reg_timeout_work+0x1c/0x20 [cfg80211])
-[<bf28b200>] (reg_timeout_work+0x1c/0x20 [cfg80211]) from [<c0059f44>] (process_one_work+0x2a0/0x480)
-[<c0059f44>] (process_one_work+0x2a0/0x480) from [<c005a4b4>] (worker_thread+0x1bc/0x2bc)
-[<c005a4b4>] (worker_thread+0x1bc/0x2bc) from [<c0061148>] (kthread+0x98/0xa4)
-[<c0061148>] (kthread+0x98/0xa4) from [<c0014af4>] (kernel_thread_exit+0x0/0x8)
-cfg80211: Calling CRDA to update world regulatory domain
-cfg80211: World regulatory domain updated:
-cfg80211:   (start_freq - end_freq @ bandwidth), (max_antenna_gain, max_eirp)
-cfg80211:   (2402000 KHz - 2472000 KHz @ 40000 KHz), (300 mBi, 2000 mBm)
-cfg80211:   (2457000 KHz - 2482000 KHz @ 20000 KHz), (300 mBi, 2000 mBm)
-cfg80211:   (2474000 KHz - 2494000 KHz @ 20000 KHz), (300 mBi, 2000 mBm)
-cfg80211:   (5170000 KHz - 5250000 KHz @ 40000 KHz), (300 mBi, 2000 mBm)
-cfg80211:   (5735000 KHz - 5835000 KHz @ 40000 KHz), (300 mBi, 2000 mBm)
-
-Signed-off-by: Eliad Peller <eliad@wizery.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Gaosen Zhang <gaosen.zhang@mediatek.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/wireless/reg.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/serial/option.c |   20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
---- a/net/wireless/reg.c
-+++ b/net/wireless/reg.c
-@@ -1358,7 +1358,7 @@ static void reg_set_request_processed(vo
- 	spin_unlock(&reg_requests_lock);
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -497,6 +497,15 @@ static void option_instat_callback(struc
  
- 	if (last_request->initiator == NL80211_REGDOM_SET_BY_USER)
--		cancel_delayed_work_sync(&reg_timeout);
-+		cancel_delayed_work(&reg_timeout);
+ /* MediaTek products */
+ #define MEDIATEK_VENDOR_ID			0x0e8d
++#define MEDIATEK_PRODUCT_DC_1COM		0x00a0
++#define MEDIATEK_PRODUCT_DC_4COM		0x00a5
++#define MEDIATEK_PRODUCT_DC_5COM		0x00a4
++#define MEDIATEK_PRODUCT_7208_1COM		0x7101
++#define MEDIATEK_PRODUCT_7208_2COM		0x7102
++#define MEDIATEK_PRODUCT_FP_1COM		0x0003
++#define MEDIATEK_PRODUCT_FP_2COM		0x0023
++#define MEDIATEK_PRODUCT_FPDC_1COM		0x0043
++#define MEDIATEK_PRODUCT_FPDC_2COM		0x0033
  
- 	if (need_more_processing)
- 		schedule_work(&reg_work);
+ /* Cellient products */
+ #define CELLIENT_VENDOR_ID			0x2692
+@@ -1244,6 +1253,17 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a1, 0xff, 0x02, 0x01) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a2, 0xff, 0x00, 0x00) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a2, 0xff, 0x02, 0x01) },        /* MediaTek MT6276M modem & app port */
++	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MEDIATEK_PRODUCT_DC_1COM, 0x0a, 0x00, 0x00) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MEDIATEK_PRODUCT_DC_5COM, 0xff, 0x02, 0x01) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MEDIATEK_PRODUCT_DC_5COM, 0xff, 0x00, 0x00) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MEDIATEK_PRODUCT_DC_4COM, 0xff, 0x02, 0x01) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MEDIATEK_PRODUCT_DC_4COM, 0xff, 0x00, 0x00) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MEDIATEK_PRODUCT_7208_1COM, 0x02, 0x00, 0x00) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MEDIATEK_PRODUCT_7208_2COM, 0x02, 0x02, 0x01) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MEDIATEK_PRODUCT_FP_1COM, 0x0a, 0x00, 0x00) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MEDIATEK_PRODUCT_FP_2COM, 0x0a, 0x00, 0x00) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MEDIATEK_PRODUCT_FPDC_1COM, 0x0a, 0x00, 0x00) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MEDIATEK_PRODUCT_FPDC_2COM, 0x0a, 0x00, 0x00) },
+ 	{ USB_DEVICE(CELLIENT_VENDOR_ID, CELLIENT_PRODUCT_MEN200) },
+ 	{ } /* Terminating entry */
+ };
 
 
