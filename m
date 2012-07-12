@@ -1,185 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161343Ab2GLQyt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 12:54:49 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:32994 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934114Ab2GLQyr (ORCPT
+	id S934137Ab2GLQyz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 12:54:55 -0400
+Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:55630 "EHLO
+	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934114Ab2GLQyw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 12:54:47 -0400
-Message-ID: <1342111815.8472.19.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v3 3/3] acpi : acpi_bus_trim() stops removing devices
- when failing to remove the device
-From: Toshi Kani <toshi.kani@hp.com>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org, lenb@kernel.org,
-        srivatsa.bhat@linux.vnet.ibm.com
-Date: Thu, 12 Jul 2012 10:50:15 -0600
-In-Reply-To: <4FFEB4F9.7000906@jp.fujitsu.com>
-References: <4FFEB35A.6030500@jp.fujitsu.com>
-	 <4FFEB4F9.7000906@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 12 Jul 2012 12:54:52 -0400
+Date: Thu, 12 Jul 2012 09:54:18 -0700
+From: Mike Turquette <mturquette@ti.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Pawel Moll <pawel.moll@arm.com>, Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        stable@kernel.org, Ulf Hansson <ulf.hansson@stericsson.com>
+Subject: Re: [PATCH] clk: allow clocks without parents to change rate
+Message-ID: <20120712165418.GJ2772@gmail.com>
+References: <1341439772-649-1-git-send-email-linus.walleij@linaro.org>
+ <20120711234229.GF2772@gmail.com>
+ <CACRpkdZOgquPF1FXo7LBeFOYhheqx+_ENTn6w4qcKGBqeHnvFQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdZOgquPF1FXo7LBeFOYhheqx+_ENTn6w4qcKGBqeHnvFQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-07-12 at 20:28 +0900, Yasuaki Ishimatsu wrote:
-> acpi_bus_trim() stops removing devices, when acpi_bus_remove() return error
-> number. But acpi_bus_remove() cannot return error number correctly.
-> acpi_bus_remove() only return -EINVAL, when dev argument is NULL. Thus even if
-> device cannot be removed correctly, acpi_bus_trim() ignores and continues to
-> remove devices. acpi_bus_hot_remove_device() uses acpi_bus_trim() for removing
-> devices. Therefore acpi_bus_hot_remove_device() can send "_EJ0" to firmware,
-> even if the device is running on the system. In this case, the system cannot
-> work well. So acpi_bus_trim() should check whether device was removed or not
-> correctly. The patch adds error check into some functions to remove the device.
+On 20120712-12:50, Linus Walleij wrote:
+> On Thu, Jul 12, 2012 at 1:42 AM, Mike Turquette <mturquette@ti.com> wrote:
 > 
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> > This has been fixed in Pawell's patch, "clk: Check parent for NULL in
+> > clk_change_rate".
 > 
-> ---
->  drivers/acpi/scan.c    |   15 ++++++++++++---
->  drivers/base/dd.c      |   22 +++++++++++++++++-----
->  include/linux/device.h |    2 +-
->  3 files changed, 30 insertions(+), 9 deletions(-)
+> Yes, that'll probably work.
 > 
-> Index: linux-3.5-rc6/drivers/acpi/scan.c
-> ===================================================================
-> --- linux-3.5-rc6.orig/drivers/acpi/scan.c	2012-07-12 20:11:37.316443808 +0900
-> +++ linux-3.5-rc6/drivers/acpi/scan.c	2012-07-12 20:17:17.927185231 +0900
-> @@ -425,12 +425,17 @@ static int acpi_device_remove(struct dev
->  {
->  	struct acpi_device *acpi_dev = to_acpi_device(dev);
->  	struct acpi_driver *acpi_drv = acpi_dev->driver;
-> +	int ret;
+> A small nitpick though:
 > 
->  	if (acpi_drv) {
->  		if (acpi_drv->ops.notify)
->  			acpi_device_remove_notify_handler(acpi_dev);
-> -		if (acpi_drv->ops.remove)
-> -			acpi_drv->ops.remove(acpi_dev, acpi_dev->removal_type);
-> +		if (acpi_drv->ops.remove) {
-> +			ret = acpi_drv->ops.remove(acpi_dev,
-> +						   acpi_dev->removal_type);
-> +			if (ret)
-> +				return ret;
-> +		}
->  	}
->  	acpi_dev->driver = NULL;
->  	acpi_dev->driver_data = NULL;
-> @@ -1208,11 +1213,15 @@ static int acpi_device_set_context(struc
+> I have slightly different semantics, Pawel's patch assigns zero if
+> parent is NULL, then use that as fallback, whereas I check for the
+> parent being NULL all the way. I was worried that the old sematics
+> could change like this:
 > 
->  static int acpi_bus_remove(struct acpi_device *dev, int rmdevice)
->  {
-> +	int ret;
+> So here it takes that:
+> 
+> +       if (clk->parent)
+> +               best_parent_rate = clk->parent->rate;
 > +
->  	if (!dev)
->  		return -EINVAL;
 > 
->  	dev->removal_type = ACPI_BUS_REMOVAL_EJECT;
-> -	device_release_driver(&dev->dev);
-> +	ret = device_release_driver(&dev->dev);
-> +	if (ret)
-> +		return ret;
+> And I was cautious that if this changes the parent rate:
 > 
->  	if (!rmdevice)
->  		return 0;
-> Index: linux-3.5-rc6/drivers/base/dd.c
-> ===================================================================
-> --- linux-3.5-rc6.orig/drivers/base/dd.c	2012-07-12 20:11:37.316443808 +0900
-> +++ linux-3.5-rc6/drivers/base/dd.c	2012-07-12 20:17:17.928185218 +0900
-> @@ -464,9 +464,10 @@ EXPORT_SYMBOL_GPL(driver_attach);
->   * __device_release_driver() must be called with @dev lock held.
->   * When called for a USB interface, @dev->parent lock must be held as well.
->   */
-> -static void __device_release_driver(struct device *dev)
-> +static int __device_release_driver(struct device *dev)
->  {
->  	struct device_driver *drv;
-> +	int ret;
+> +               clk->ops->set_rate(clk->hw, clk->new_rate, best_parent_rate);
 > 
->  	drv = dev->driver;
->  	if (drv) {
-> @@ -482,9 +483,11 @@ static void __device_release_driver(stru
->  		pm_runtime_put_sync(dev);
+> Then this passes the old parent rate to the recalc function:
 > 
->  		if (dev->bus && dev->bus->remove)
-> -			dev->bus->remove(dev);
-> +			ret = dev->bus->remove(dev);
->  		else if (drv->remove)
-> -			drv->remove(dev);
-> +			ret = drv->remove(dev);
-> +		if (ret)
-> +			goto rollback;
->  		devres_release_all(dev);
->  		dev->driver = NULL;
->  		klist_remove(&dev->p->knode_driver);
-> @@ -494,6 +497,12 @@ static void __device_release_driver(stru
->  						     dev);
+> +               clk->rate = clk->ops->recalc_rate(clk->hw, best_parent_rate);
 > 
->  	}
-> +
-> +	return ret;
-
-ret is uninitialized when !drv.
-
-
-> +
-> +rollback:
-> +	driver_sysfs_add(dev);
-> +	return ret;
->  }
-> 
->  /**
-> @@ -503,16 +512,19 @@ static void __device_release_driver(stru
->   * Manually detach device from driver.
->   * When called for a USB interface, @dev->parent lock must be held.
->   */
-> -void device_release_driver(struct device *dev)
-> +int device_release_driver(struct device *dev)
-
-I agree with this change as driver's remove interface can fail.
-However, there are other callers to this function, which do not check
-the return value.  I suppose there is no impact to the other paths since
-you only changed the CPU hotplug path to fail properly, but please
-confirm this is the case.  I recommend documenting this change to the
-change log.
-
-Thanks,
--Toshi
-
-
->  {
-> +	int ret;
->  	/*
->  	 * If anyone calls device_release_driver() recursively from
->  	 * within their ->remove callback for the same device, they
->  	 * will deadlock right here.
->  	 */
->  	device_lock(dev);
-> -	__device_release_driver(dev);
-> +	ret = __device_release_driver(dev);
->  	device_unlock(dev);
-> +
-> +	return ret;
->  }
->  EXPORT_SYMBOL_GPL(device_release_driver);
-> 
-> Index: linux-3.5-rc6/include/linux/device.h
-> ===================================================================
-> --- linux-3.5-rc6.orig/include/linux/device.h	2012-07-12 20:11:37.317443779 +0900
-> +++ linux-3.5-rc6/include/linux/device.h	2012-07-12 20:17:17.936185118 +0900
-> @@ -827,7 +827,7 @@ static inline void *dev_get_platdata(con
->   * for information on use.
->   */
->  extern int __must_check device_bind_driver(struct device *dev);
-> -extern void device_release_driver(struct device *dev);
-> +extern int device_release_driver(struct device *dev);
->  extern int  __must_check device_attach(struct device *dev);
->  extern int __must_check driver_attach(struct device_driver *drv);
->  extern int __must_check device_reprobe(struct device *dev);
+> It has no side-effects on my system but I worried about
+> others, so I just left the behaviour to re-read the rate from the parent
+> every time if possible.
 > 
 
+Thanks for looking into it.  I think for now let's keep what we have and
+we'll patch it up if bugs are reported.
 
+Thanks again,
+Mike
+
+> Yours,
+> Linus Walleij
