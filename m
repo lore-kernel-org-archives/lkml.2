@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030585Ab2GLKrS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 06:47:18 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:62194 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030384Ab2GLKrQ (ORCPT
+	id S933718Ab2GLKtJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 06:49:09 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:52817 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933667Ab2GLKtH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 06:47:16 -0400
+	Thu, 12 Jul 2012 06:49:07 -0400
+From: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
+To: Avi Kivity <avi@redhat.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>
+Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Rik van Riel <riel@redhat.com>, S390 <linux-s390@vger.kernel.org>,
+        Carsten Otte <cotte@de.ibm.com>, KVM <kvm@vger.kernel.org>,
+        chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Joerg Roedel <joerg.roedel@amd.com>,
+        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
+        Alexander Graf <agraf@suse.de>, Paul Mackerras <paulus@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH RFC 0/2] kvm: Improving directed yield in PLE handler
+In-Reply-To: <4FFD5DA3.3010001@redhat.com>
+References: <20120709062012.24030.37154.sendpatchset@codeblue> <4FFA8E5E.3070108@de.ibm.com> <4FFD422B.9060008@redhat.com> <4FFD52CD.7040403@de.ibm.com> <4FFD5DA3.3010001@redhat.com>
+User-Agent: Notmuch/0.10.2+70~gf0e0053 (http://notmuchmail.org) Emacs/24.0.95.1 (x86_64-unknown-linux-gnu)
+Date: Thu, 12 Jul 2012 16:08:21 +0530
+Message-ID: <87bojl463m.fsf@abhimanyu.in.ibm.com>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CACRpkdYzi8oDCCM2cMYsqoqrM7U4X55xqfHXxboL9wf_avvjGA@mail.gmail.com>
-References: <CA+icZUX565WsuJNHKsohXi=vp34Acn+2D-nj8mQQtCfi=Pw_Nw@mail.gmail.com>
-	<CACRpkdbazoCztqbT00_oBsRyee=VBDH+NiGEpzNk8uV7mvsNwQ@mail.gmail.com>
-	<CA+icZUUDt6uAHKf=B3Lfh6FxNaCPsjZS2xY7_DoG312aV0MJhA@mail.gmail.com>
-	<CACRpkdYzi8oDCCM2cMYsqoqrM7U4X55xqfHXxboL9wf_avvjGA@mail.gmail.com>
-Date: Thu, 12 Jul 2012 12:47:14 +0200
-Message-ID: <CA+icZUW1rHLhAk0gtty1VLEHefBXfdng28Wv7ux4+Pqhn3Emxw@mail.gmail.com>
-Subject: Re: linux-next: Tree for July 10 (gpio/gpio-tps65910.c)
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-next <linux-next@vger.kernel.org>,
-        Randy Dunlap <rdunlap@xenotime.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+x-cbid: 12071210-5816-0000-0000-0000038D805F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 12, 2012 at 12:39 PM, Linus Walleij
-<linus.walleij@linaro.org> wrote:
-> On Wed, Jul 11, 2012 at 9:01 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->
->> BTW, didn't see your tree in linux-next [1].
->>
->> [1] http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=blob;f=Next/Trees#l184
->
-> Look at line 185?
->
+On Wed, 11 Jul 2012 14:04:03 +0300, Avi Kivity <avi@redhat.com> wrote:
+> 
+> > So this would probably improve guests that uses cpu_relax, for example
+> > stop_machine_run. I have no measurements, though.
+> 
+> smp_call_function() too (though that can be converted to directed yield
+> too).  It seems worthwhile.
+> 
+With 
 
-Yesterday or more precisely next-20120710, your tree was listed at line #184 ...
+https://lkml.org/lkml/2012/6/26/266 in tip:x86/mm
 
-184 gpio-lw         git
-git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-gpio.git#for-next
+which now uses smp_call_function_many in native_flush_tlb_others. It
+will help that too.
 
-linux.git got the patch now and I could build (even I do not need it)
-gpio/gpio-tps65910.c successfully.
+Nikunj
 
-- Sedat -
-
-[1] http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=blob;f=Next/Trees;hb=refs/tags/next-20120710#l184
-
-> Yours,
-> Linus Walleij
