@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162916Ab2GLXWr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:22:47 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60424 "EHLO
+	id S1162729Ab2GLXXJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:23:09 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63192 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162538Ab2GLXDk (ORCPT
+	with ESMTP id S1162536Ab2GLXDg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 19:03:40 -0400
+	Thu, 12 Jul 2012 19:03:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Subject: [ 17/68] nilfs2: ensure proper cache clearing for gc-inodes
-Date: Thu, 12 Jul 2012 16:01:51 -0700
-Message-Id: <20120712175036.954495724@linuxfoundation.org>
+        Henrik Rydberg <rydberg@euromail.se>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [ 16/68] hwmon: (applesmc) Limit key length in warning messages
+Date: Thu, 12 Jul 2012 16:01:50 -0700
+Message-Id: <20120712175036.868702085@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712175035.530652872@linuxfoundation.org>
 References: <20120712175057.GA9917@kroah.com>
@@ -30,67 +31,41 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+From: Henrik Rydberg <rydberg@euromail.se>
 
-commit fbb24a3a915f105016f1c828476be11aceac8504 upstream.
+commit ac852edb47b15900886ba2564eeeb13b3b526e3e upstream.
 
-A gc-inode is a pseudo inode used to buffer the blocks to be moved by
-garbage collection.
+Key lookups may call read_smc() with a fixed-length key string,
+and if the lookup fails, trailing stack content may appear in the
+kernel log. Fixed with this patch.
 
-Block caches of gc-inodes must be cleared every time a garbage collection
-function (nilfs_clean_segments) completes.  Otherwise, stale blocks
-buffered in the caches may be wrongly reused in successive calls of the GC
-function.
-
-For user files, this is not a problem because their gc-inodes are
-distinguished by a checkpoint number as well as an inode number.  They
-never buffer different blocks if either an inode number, a checkpoint
-number, or a block offset differs.
-
-However, gc-inodes of sufile, cpfile and DAT file can store different data
-for the same block offset.  Thus, the nilfs_clean_segments function can
-move incorrect block for these meta-data files if an old block is cached.
-I found this is really causing meta-data corruption in nilfs.
-
-This fixes the issue by ensuring cache clear of gc-inodes and resolves
-reported GC problems including checkpoint file corruption, b-tree
-corruption, and the following warning during GC.
-
-  nilfs_palloc_freev: entry number 307234 already freed.
-  ...
-
-Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Tested-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nilfs2/gcinode.c |    2 ++
- fs/nilfs2/segment.c |    2 ++
- 2 files changed, 4 insertions(+)
+ drivers/hwmon/applesmc.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/nilfs2/gcinode.c
-+++ b/fs/nilfs2/gcinode.c
-@@ -191,6 +191,8 @@ void nilfs_remove_all_gcinodes(struct th
- 	while (!list_empty(head)) {
- 		ii = list_first_entry(head, struct nilfs_inode_info, i_dirty);
- 		list_del_init(&ii->i_dirty);
-+		truncate_inode_pages(&ii->vfs_inode.i_data, 0);
-+		nilfs_btnode_cache_clear(&ii->i_btnode_cache);
- 		iput(&ii->vfs_inode);
+--- a/drivers/hwmon/applesmc.c
++++ b/drivers/hwmon/applesmc.c
+@@ -215,7 +215,7 @@ static int read_smc(u8 cmd, const char *
+ 	int i;
+ 
+ 	if (send_command(cmd) || send_argument(key)) {
+-		pr_warn("%s: read arg fail\n", key);
++		pr_warn("%.4s: read arg fail\n", key);
+ 		return -EIO;
  	}
- }
---- a/fs/nilfs2/segment.c
-+++ b/fs/nilfs2/segment.c
-@@ -2309,6 +2309,8 @@ nilfs_remove_written_gcinodes(struct the
- 		if (!test_bit(NILFS_I_UPDATED, &ii->i_state))
- 			continue;
- 		list_del_init(&ii->i_dirty);
-+		truncate_inode_pages(&ii->vfs_inode.i_data, 0);
-+		nilfs_btnode_cache_clear(&ii->i_btnode_cache);
- 		iput(&ii->vfs_inode);
- 	}
- }
+ 
+@@ -223,7 +223,7 @@ static int read_smc(u8 cmd, const char *
+ 
+ 	for (i = 0; i < len; i++) {
+ 		if (__wait_status(0x05)) {
+-			pr_warn("%s: read data fail\n", key);
++			pr_warn("%.4s: read data fail\n", key);
+ 			return -EIO;
+ 		}
+ 		buffer[i] = inb(APPLESMC_DATA_PORT);
 
 
