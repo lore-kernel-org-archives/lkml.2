@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161790Ab2GLXfV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:35:21 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:58753 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161740Ab2GLWj7 (ORCPT
+	id S1161777Ab2GLXfp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:35:45 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58752 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755625Ab2GLWjw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:39:59 -0400
+	Thu, 12 Jul 2012 18:39:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Pawel Sikora <pluto@agmk.net>, Huang Ying <ying.huang@intel.com>,
-        Jean Delvare <khali@linux-fr.org>, Len Brown <len.brown@intel.com>
-Subject: [ 077/187] ACPI, APEI, Avoid too much error reporting in runtime
-Date: Thu, 12 Jul 2012 15:33:53 -0700
-Message-Id: <20120712191529.540426952@linuxfoundation.org>
+        Igor Murzov <intergalactic.anonymous@gmail.com>,
+        Zhang Rui <rui.zhang@intel.com>, Len Brown <len.brown@intel.com>
+Subject: [ 075/187] ACPI video: Still use ACPI backlight control if _DOS doesnt exist
+Date: Thu, 12 Jul 2012 15:33:51 -0700
+Message-Id: <20120712191529.373756326@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -31,124 +31,39 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Huang Ying <ying.huang@intel.com>
+From: Zhang Rui <rui.zhang@intel.com>
 
-commit 34ddeb035d704eafdcdb3cbc781894300136c3c4 upstream.
+commit b03738430c7537d5f87948e0b35d8aaf2688c6b4 upstream.
 
-This patch fixed the following bug.
+This fixes a regression in 3.4-rc1 caused by commit
+ea9f8856bd6d4ed45885b06a338f7362cd6c60e5
+(ACPI video: Harden video bus adding.)
 
-https://bugzilla.kernel.org/show_bug.cgi?id=43282
+Some platforms don't have _DOS control method, but the ACPI
+backlight still works.
+We should not invoke _DOS for these platforms.
 
-This is caused by a firmware bug checking (checking generic address
-register provided by firmware) in runtime.  The checking should be
-done in address mapping time instead of runtime to avoid too much
-error reporting in runtime.
+https://bugzilla.kernel.org/show_bug.cgi?id=43168
 
-Reported-by: Pawel Sikora <pluto@agmk.net>
-Signed-off-by: Huang Ying <ying.huang@intel.com>
-Tested-by: Jean Delvare <khali@linux-fr.org>
+Cc: Igor Murzov <intergalactic.anonymous@gmail.com>
+Signed-off-by: Zhang Rui <rui.zhang@intel.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/apei/apei-base.c     |   17 +++++++++++++++--
- drivers/acpi/apei/apei-internal.h |    9 +++++++++
- drivers/acpi/apei/ghes.c          |    6 +++---
- 3 files changed, 27 insertions(+), 5 deletions(-)
+ drivers/acpi/video.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/acpi/apei/apei-base.c
-+++ b/drivers/acpi/apei/apei-base.c
-@@ -243,7 +243,7 @@ static int pre_map_gar_callback(struct a
- 	u8 ins = entry->instruction;
+--- a/drivers/acpi/video.c
++++ b/drivers/acpi/video.c
+@@ -558,6 +558,8 @@ acpi_video_bus_DOS(struct acpi_video_bus
+ 	union acpi_object arg0 = { ACPI_TYPE_INTEGER };
+ 	struct acpi_object_list args = { 1, &arg0 };
  
- 	if (ctx->ins_table[ins].flags & APEI_EXEC_INS_ACCESS_REGISTER)
--		return acpi_os_map_generic_address(&entry->register_region);
-+		return apei_map_generic_address(&entry->register_region);
++	if (!video->cap._DOS)
++		return 0;
  
- 	return 0;
- }
-@@ -276,7 +276,7 @@ static int post_unmap_gar_callback(struc
- 	u8 ins = entry->instruction;
- 
- 	if (ctx->ins_table[ins].flags & APEI_EXEC_INS_ACCESS_REGISTER)
--		acpi_os_unmap_generic_address(&entry->register_region);
-+		apei_unmap_generic_address(&entry->register_region);
- 
- 	return 0;
- }
-@@ -606,6 +606,19 @@ static int apei_check_gar(struct acpi_ge
- 	return 0;
- }
- 
-+int apei_map_generic_address(struct acpi_generic_address *reg)
-+{
-+	int rc;
-+	u32 access_bit_width;
-+	u64 address;
-+
-+	rc = apei_check_gar(reg, &address, &access_bit_width);
-+	if (rc)
-+		return rc;
-+	return acpi_os_map_generic_address(reg);
-+}
-+EXPORT_SYMBOL_GPL(apei_map_generic_address);
-+
- /* read GAR in interrupt (including NMI) or process context */
- int apei_read(u64 *val, struct acpi_generic_address *reg)
- {
---- a/drivers/acpi/apei/apei-internal.h
-+++ b/drivers/acpi/apei/apei-internal.h
-@@ -7,6 +7,8 @@
- #define APEI_INTERNAL_H
- 
- #include <linux/cper.h>
-+#include <linux/acpi.h>
-+#include <linux/acpi_io.h>
- 
- struct apei_exec_context;
- 
-@@ -68,6 +70,13 @@ static inline int apei_exec_run_optional
- /* IP has been set in instruction function */
- #define APEI_EXEC_SET_IP	1
- 
-+int apei_map_generic_address(struct acpi_generic_address *reg);
-+
-+static inline void apei_unmap_generic_address(struct acpi_generic_address *reg)
-+{
-+	acpi_os_unmap_generic_address(reg);
-+}
-+
- int apei_read(u64 *val, struct acpi_generic_address *reg);
- int apei_write(u64 val, struct acpi_generic_address *reg);
- 
---- a/drivers/acpi/apei/ghes.c
-+++ b/drivers/acpi/apei/ghes.c
-@@ -301,7 +301,7 @@ static struct ghes *ghes_new(struct acpi
- 	if (!ghes)
- 		return ERR_PTR(-ENOMEM);
- 	ghes->generic = generic;
--	rc = acpi_os_map_generic_address(&generic->error_status_address);
-+	rc = apei_map_generic_address(&generic->error_status_address);
- 	if (rc)
- 		goto err_free;
- 	error_block_length = generic->error_block_length;
-@@ -321,7 +321,7 @@ static struct ghes *ghes_new(struct acpi
- 	return ghes;
- 
- err_unmap:
--	acpi_os_unmap_generic_address(&generic->error_status_address);
-+	apei_unmap_generic_address(&generic->error_status_address);
- err_free:
- 	kfree(ghes);
- 	return ERR_PTR(rc);
-@@ -330,7 +330,7 @@ err_free:
- static void ghes_fini(struct ghes *ghes)
- {
- 	kfree(ghes->estatus);
--	acpi_os_unmap_generic_address(&ghes->generic->error_status_address);
-+	apei_unmap_generic_address(&ghes->generic->error_status_address);
- }
- 
- enum {
+ 	if (bios_flag < 0 || bios_flag > 3 || lcd_flag < 0 || lcd_flag > 1)
+ 		return -EINVAL;
 
 
