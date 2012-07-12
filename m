@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162231Ab2GLWyj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:54:39 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48386 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162199Ab2GLWoa (ORCPT
+	id S1162303Ab2GLWze (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:55:34 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:46727 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162142Ab2GLWoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:44:30 -0400
+	Thu, 12 Jul 2012 18:44:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Andiry Xu <andiry.xu@amd.com>
-Subject: [ 154/187] xhci: Fix hang on back-to-back Set TR Deq Ptr commands.
-Date: Thu, 12 Jul 2012 15:35:10 -0700
-Message-Id: <20120712191536.682479592@linuxfoundation.org>
+        Adrian Knoth <adi@drcomp.erfurt.thur.de>,
+        Jonathan Nieder <jrnieder@gmail.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: [ 148/187] ACPI / PM: Leave Bus Master Arbitration enabled for suspend/resume
+Date: Thu, 12 Jul 2012 15:35:04 -0700
+Message-Id: <20120712191536.117091045@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -31,107 +32,82 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Jonathan Nieder <jrnieder@gmail.com>
 
-commit 0d9f78a92ef5e97d9fe51d9215ebe22f6f0d289d upstream.
+commit dc332fdf9f373a87b1e2f423b5b004b2a3c37e1a upstream.
 
-The Microsoft LifeChat 3000 USB headset was causing a very reproducible
-hang whenever it was plugged in.  At first, I thought the host
-controller was producing bad transfer events, because the log was filled
-with errors like:
+This is an old suspend/resume lockup fix:
 
-xhci_hcd 0000:00:14.0: ERROR Transfer event TRB DMA ptr not part of current TD
+	commit 2780cc4660e1
+	Author: Len Brown <len.brown@intel.com>
+	Date:   Thu Dec 23 13:43:30 2004 -0500
 
-However, it turned out to be an xHCI driver bug in the ring expansion
-patches.  The bug is triggered When there are two ring segments, and a
-TD that ends just before a link TRB, like so:
+	    [ACPI] Fix suspend/resume lockup issue
+	    by leaving Bus Master Arbitration enabled.
+	    The ACPI spec mandates it be disabled only for C3.
 
- ______________                     _____________
-|              |              ---> | setup TRB B |
- ______________               |     _____________
-|              |              |    |  data TRB B |
- ______________               |     _____________
-| setup TRB A  | <-- deq      |    |  data TRB B |
- ______________               |     _____________
-| data TRB A   |              |    |             | <-- enq, deq''
- ______________               |     _____________
-| status TRB A |              |    |             |
- ______________               |     _____________
-|  link TRB    |---------------    |  link TRB   |
- _____________  <--- deq'           _____________
+	    http://bugzilla.kernel.org/show_bug.cgi?id=3599
 
-TD A (the first control transfer) stalls on the data phase.  That halts
-the ring.  The xHCI driver moves the hardware dequeue pointer to the
-first TRB after the stalled transfer, which happens to be the link TRB.
+	    Signed-off-by: David Shaohua Li <shaohua.li@intel.com>
+	    Signed-off-by: Len Brown <len.brown@intel.com>
 
-Once the Set TR dequeue pointer command completes, the function
-update_ring_for_set_deq_completion runs.  That function is supposed to
-update the xHCI driver's dequeue pointer to match the internal hardware
-dequeue pointer.  On the first call this would work fine, and the
-software dequeue pointer would move to deq'.
+The bug snuck back in in commit 2feec47d4c5f (ACPICA: ACPI 5: Support
+for new FADT SleepStatus, SleepControl registers, 2012-02-14),
+presumably by copy/pasting a copy of the code without that fix for the
+legacy case.
 
-However, if the transfer immediately after that stalled (TD B in this
-case), another Set TR Dequeue command would be issued.  That would move
-the hardware dequeue pointer to deq''.  Once that command completed,
-update_ring_for_set_deq_completion would run again.
+On affected machines, after that commit, the machine locks up hard on
+resume from suspend.  The same fix as seven years ago still works.
 
-The original code would unconditionally increment the software dequeue
-pointer, which moved the pointer off the ring segment into la-la-land.
-The while loop would happy increment the dequeue pointer (possibly
-wrapping it) until it matched the hardware pointer value.
+Addresses <https://bugzilla.kernel.org/show_bug.cgi?id=43641>.
 
-The while loop would also access all the memory in between the first
-ring segment and the second ring segment to determine if it was a link
-TRB.  This could cause general protection faults, although it was
-unlikely because the ring segments came from a DMA pool, and would often
-have consecutive memory addresses.
-
-If nothing in that space looked like a link TRB, the deq_seg pointer for
-the ring would remain on the first segment.  Thus, the deq_seg and the
-software dequeue pointer would get out of sync.
-
-When the next transfer event came in after the stalled transfer, the
-xHCI driver code would attempt to convert the software dequeue pointer
-into a DMA address in order to compare the DMA address for the completed
-transfer.  Since the deq_seg and the dequeue pointer were out of sync,
-xhci_trb_virt_to_dma would return NULL.
-
-The transfer event would get ignored, the transfer would eventually
-timeout, and we would mistakenly convert the finished transfer to no-op
-TRBs.  Some kernel driver (maybe xHCI?) would then get stuck in an
-infinite loop in interrupt context, and the whole machine would hang.
-
-This patch should be backported to kernels as old as 3.4, that contain
-the commit b008df60c6369ba0290fa7daa177375407a12e07 "xHCI: count free
-TRBs on transfer ring"
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Andiry Xu <andiry.xu@amd.com>
+Reported-bisected-and-tested-by: Octavio Alvarez <alvarezp@alvarezp.com>
+Reported-by: Adrian Knoth <adi@drcomp.erfurt.thur.de>
+Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-ring.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ drivers/acpi/acpica/hwsleep.c |   22 ----------------------
+ 1 file changed, 22 deletions(-)
 
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -885,6 +885,17 @@ static void update_ring_for_set_deq_comp
- 	num_trbs_free_temp = ep_ring->num_trbs_free;
- 	dequeue_temp = ep_ring->dequeue;
+--- a/drivers/acpi/acpica/hwsleep.c
++++ b/drivers/acpi/acpica/hwsleep.c
+@@ -95,18 +95,6 @@ acpi_status acpi_hw_legacy_sleep(u8 slee
+ 		return_ACPI_STATUS(status);
+ 	}
  
-+	/* If we get two back-to-back stalls, and the first stalled transfer
-+	 * ends just before a link TRB, the dequeue pointer will be left on
-+	 * the link TRB by the code in the while loop.  So we have to update
-+	 * the dequeue pointer one segment further, or we'll jump off
-+	 * the segment into la-la-land.
-+	 */
-+	if (last_trb(xhci, ep_ring, ep_ring->deq_seg, ep_ring->dequeue)) {
-+		ep_ring->deq_seg = ep_ring->deq_seg->next;
-+		ep_ring->dequeue = ep_ring->deq_seg->trbs;
-+	}
-+
- 	while (ep_ring->dequeue != dev->eps[ep_index].queued_deq_ptr) {
- 		/* We have more usable TRBs */
- 		ep_ring->num_trbs_free++;
+-	if (sleep_state != ACPI_STATE_S5) {
+-		/*
+-		 * Disable BM arbitration. This feature is contained within an
+-		 * optional register (PM2 Control), so ignore a BAD_ADDRESS
+-		 * exception.
+-		 */
+-		status = acpi_write_bit_register(ACPI_BITREG_ARB_DISABLE, 1);
+-		if (ACPI_FAILURE(status) && (status != AE_BAD_ADDRESS)) {
+-			return_ACPI_STATUS(status);
+-		}
+-	}
+-
+ 	/*
+ 	 * 1) Disable/Clear all GPEs
+ 	 * 2) Enable all wakeup GPEs
+@@ -364,16 +352,6 @@ acpi_status acpi_hw_legacy_wake(u8 sleep
+ 				    [ACPI_EVENT_POWER_BUTTON].
+ 				    status_register_id, ACPI_CLEAR_STATUS);
+ 
+-	/*
+-	 * Enable BM arbitration. This feature is contained within an
+-	 * optional register (PM2 Control), so ignore a BAD_ADDRESS
+-	 * exception.
+-	 */
+-	status = acpi_write_bit_register(ACPI_BITREG_ARB_DISABLE, 0);
+-	if (ACPI_FAILURE(status) && (status != AE_BAD_ADDRESS)) {
+-		return_ACPI_STATUS(status);
+-	}
+-
+ 	acpi_hw_execute_sleep_method(METHOD_PATHNAME__SST, ACPI_SST_WORKING);
+ 	return_ACPI_STATUS(status);
+ }
 
 
