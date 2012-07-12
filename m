@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758639Ab2GLM73 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 08:59:29 -0400
-Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:34413 "HELO
-	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754790Ab2GLM71 (ORCPT
+	id S1758838Ab2GLNAl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 09:00:41 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35490 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756924Ab2GLNAk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 08:59:27 -0400
-Message-ID: <4FFECA1F.2020005@mellanox.com>
-Date: Thu, 12 Jul 2012 15:59:11 +0300
-From: Hadar Hen Zion <hadarh@mellanox.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        "Jack Morgenstein" <jackm@dev.mellanox.co.il>,
-        Roland Dreier <roland@kernel.org>, <linux-rdma@vger.kernel.org>,
-        Hadar Hen Zion <hadarh@mellanox.co.il>,
-        "Or Gerlitz" <ogerlitz@mellanox.com>
-Subject: Re: linux-next: manual merge of the net-next tree with the infiniband
- tree
-References: <20120712120950.223be053857381046b7d5db6@canb.auug.org.au>
-In-Reply-To: <20120712120950.223be053857381046b7d5db6@canb.auug.org.au>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.0.13.1]
+	Thu, 12 Jul 2012 09:00:40 -0400
+From: Toshiaki Yamane <yamanetoshi@gmail.com>
+To: greg@kroah.com, willy@meta-x.org
+Cc: linux-kernel@vger.kernel.org, joe@perches.com, rmallon@gmail.com,
+        Toshiaki Yamane <yamanetoshi@gmail.com>
+Subject: [PATCH 1/3] panel: Remove printk(KERN_DEBUG ...) located in the #if 0 block
+Date: Thu, 12 Jul 2012 22:00:33 +0900
+Message-Id: <1342098033-7932-1-git-send-email-yamanetoshi@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/12/2012 5:09 AM, Stephen Rothwell wrote:
-> Hi all,
->
-> Today's linux-next merge of the net-next tree got a conflict in
-> drivers/net/ethernet/mellanox/mlx4/main.c between commit 6634961c14d3
-> ("mlx4: Put physical GID and P_Key table sizes in mlx4_phys_caps struct
-> and paravirtualize them") from the infiniband tree and commit
-> 0ff1fb654bec ("{NET, IB}/mlx4: Add device managed flow steering firmware
-> API") from the net-next tree.
->
-> Just context changes (I think).  I have fixed it up (see below) and can
-> carry the fix as necessary.
->
+Deleted #if 0 blocks
 
-Thanks Stephen.
+Signed-off-by: Toshiaki Yamane <yamanetoshi@gmail.com>
+---
+ drivers/staging/panel/panel.c |   10 ----------
+ 1 files changed, 0 insertions(+), 10 deletions(-)
 
-Please add:
-Acked-by: Hadar Hen Zion <hadarh@mellanox.co.il>
-
-Hadar
+diff --git a/drivers/staging/panel/panel.c b/drivers/staging/panel/panel.c
+index 7365089..c625567 100644
+--- a/drivers/staging/panel/panel.c
++++ b/drivers/staging/panel/panel.c
+@@ -1837,12 +1837,6 @@ static void panel_process_inputs(void)
+ 	struct list_head *item;
+ 	struct logical_input *input;
+ 
+-#if 0
+-	printk(KERN_DEBUG
+-	       "entering panel_process_inputs with pp=%016Lx & pc=%016Lx\n",
+-	       phys_prev, phys_curr);
+-#endif
+-
+ 	keypressed = 0;
+ 	inputs_stable = 1;
+ 	list_for_each(item, &logical_inputs) {
+@@ -2002,10 +1996,6 @@ static struct logical_input *panel_bind_key(char *name, char *press,
+ 	key->rise_time = 1;
+ 	key->fall_time = 1;
+ 
+-#if 0
+-	printk(KERN_DEBUG "bind: <%s> : m=%016Lx v=%016Lx\n", name, key->mask,
+-	       key->value);
+-#endif
+ 	strncpy(key->u.kbd.press_str, press, sizeof(key->u.kbd.press_str));
+ 	strncpy(key->u.kbd.repeat_str, repeat, sizeof(key->u.kbd.repeat_str));
+ 	strncpy(key->u.kbd.release_str, release,
+-- 
+1.7.5.4
 
