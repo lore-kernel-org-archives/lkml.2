@@ -1,44 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030534Ab2GLKhb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 06:37:31 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:36981 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932983Ab2GLKh3 (ORCPT
+	id S933706Ab2GLKjc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 06:39:32 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:49992 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933641Ab2GLKjb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 06:37:29 -0400
+	Thu, 12 Jul 2012 06:39:31 -0400
 MIME-Version: 1.0
-In-Reply-To: <1341479203-12058-1-git-send-email-mc@linux.vnet.ibm.com>
-References: <1341479203-12058-1-git-send-email-mc@linux.vnet.ibm.com>
-Date: Thu, 12 Jul 2012 11:37:27 +0100
-Message-ID: <CAJSP0QUUHC3ye0QWBGO3hBJ5RnsUVHumfVNUoMj+OZJDJEprPA@mail.gmail.com>
-Subject: Re: [PATCH v4] virtio-scsi: hotplug support for virtio-scsi
-From: Stefan Hajnoczi <stefanha@gmail.com>
-To: Cong Meng <mc@linux.vnet.ibm.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, stefanha@linux.vnet.ibm.com,
-        linux-scsi@vger.kernel.org, senwang@linux.vnet.ibm.com,
-        zwanp@cn.ibm.com, linuxram@us.ibm.com, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
+In-Reply-To: <CA+icZUUDt6uAHKf=B3Lfh6FxNaCPsjZS2xY7_DoG312aV0MJhA@mail.gmail.com>
+References: <CA+icZUX565WsuJNHKsohXi=vp34Acn+2D-nj8mQQtCfi=Pw_Nw@mail.gmail.com>
+	<CACRpkdbazoCztqbT00_oBsRyee=VBDH+NiGEpzNk8uV7mvsNwQ@mail.gmail.com>
+	<CA+icZUUDt6uAHKf=B3Lfh6FxNaCPsjZS2xY7_DoG312aV0MJhA@mail.gmail.com>
+Date: Thu, 12 Jul 2012 12:39:29 +0200
+Message-ID: <CACRpkdYzi8oDCCM2cMYsqoqrM7U4X55xqfHXxboL9wf_avvjGA@mail.gmail.com>
+Subject: Re: linux-next: Tree for July 10 (gpio/gpio-tps65910.c)
+From: Linus Walleij <linus.walleij@linaro.org>
+To: sedat.dilek@gmail.com
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-next <linux-next@vger.kernel.org>,
+        Randy Dunlap <rdunlap@xenotime.net>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 5, 2012 at 10:06 AM, Cong Meng <mc@linux.vnet.ibm.com> wrote:
-> This patch implements the hotplug support for virtio-scsi.
-> When there is a device attached/detached, the virtio-scsi driver will be
-> signaled via event virtual queue and it will add/remove the scsi device
-> in question automatically.
->
-> v2: handle no_event event
-> v3: add handle event dropped, and typo fix
-> v4: Cancel event works when exit. Coding type fix.
->
-> Signed-off-by: Sen Wang <senwang@linux.vnet.ibm.com>
-> Signed-off-by: Cong Meng <mc@linux.vnet.ibm.com>
-> ---
->  drivers/scsi/virtio_scsi.c  |  127 ++++++++++++++++++++++++++++++++++++++++++-
->  include/linux/virtio_scsi.h |    9 +++
->  2 files changed, 135 insertions(+), 1 deletions(-)
+On Wed, Jul 11, 2012 at 9:01 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
 
-Reviewed-by: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
+> BTW, didn't see your tree in linux-next [1].
+>
+> [1] http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=blob;f=Next/Trees#l184
+
+Look at line 185?
+
+Yours,
+Linus Walleij
