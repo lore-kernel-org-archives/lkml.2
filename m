@@ -1,76 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759527Ab2GLXpy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:45:54 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:43667 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759494Ab2GLWhU (ORCPT
+	id S1759593Ab2GLXqB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:46:01 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:55215 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759494Ab2GLXp4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:37:20 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Kirill Smelkov <kirr@mns.spb.ru>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 031/187] sky2: fix checksum bit management on some chips
-Date: Thu, 12 Jul 2012 15:33:07 -0700
-Message-Id: <20120712191525.175190712@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.10.1.362.g242cab3
-In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
-References: <20120712192421.GA28926@kroah.com>
- <20120712191522.742634173@linuxfoundation.org>
-User-Agent: quilt/0.60-20.3
+	Thu, 12 Jul 2012 19:45:56 -0400
+X-AuditID: cbfee61a-b7f616d000004b7e-a8-4fff61b38deb
+Message-id: <4FFF61B2.7010107@samsung.com>
+Date: Fri, 13 Jul 2012 08:45:54 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
+ Thunderbird/10.0.2
+MIME-version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: broonie@opensource.wolfsonmicro.com, sameo@linux.intel.com,
+        myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] extcon: Remove CONFIG_EXTCON_MODULE config to fix build
+ break
+References: <1342067547-6276-1-git-send-email-cw00.choi@samsung.com>
+ <20120712153626.GD17365@kroah.com>
+In-reply-to: <20120712153626.GD17365@kroah.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOLMWRmVeSWpSXmKPExsVy+t9jQd3Nif/9Deav4ba4vGsOmwOjx+dN
+	cgGMUVw2Kak5mWWpRfp2CVwZHy5NYio4wV7xv+khYwNjM1sXIyeHhICJxNHGjVC2mMSFe+uB
+	bC4OIYHpjBK/by9mAUkICXQxSXxYxQ9i8wpoSSy895QVxGYRUJU4fmQlmM0GFN//4gZQMweH
+	qECExK9+DohyQYkfk++BjRER0JB4efQWmM0sMJVR4tiPbBBbWCBE4vnnGcwgrUICmRILd4iD
+	hDkF9CWOHrsPVa4jsb91GhuELS+xec1b5gmMArOQbJiFpGwWkrIFjMyrGEVTC5ILipPScw31
+	ihNzi0vz0vWS83M3MYKD75nUDsaVDRaHGAU4GJV4eBdE//cXYk0sK67MPcQowcGsJMK7zh4o
+	xJuSWFmVWpQfX1Sak1p8iFGag0VJnNfY+6u/kEB6YklqdmpqQWoRTJaJg1OqgbE0P/Ccc8yK
+	q+8TbaynPPty7Ivu10eblhcqiWTXHJ8yf5O/x/SpD5QypjDo7D25m6ngYtXK8MVyv04lNx7i
+	ufnywVYX7c667N0nZHmrp2Re3uZ3/lPmrpVVfNtkjbnM3pu9ijTfFcF1dHfKfz9ZwzM8Xj0r
+	L024lCsefmhCkgH/l4cMYgfDlV4osRRnJBpqMRcVJwIAntymXToCAAA=
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg KH <gregkh@linuxfoundation.org>
+Hi Greg,
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On 07/13/2012 12:36 AM, Greg KH wrote:
 
-------------------
+> On Thu, Jul 12, 2012 at 01:32:27PM +0900, Chanwoo Choi wrote:
+>> This patch modify 'Kconfig' of EXTCON Subsystem to support either
+>> active or inactive of EXTCON Subsystem. The various subsystem refer
+>> to EXTCON subsystem for controlling external connector, so core class
+>> of EXTCON should be included in kernel image. If EXTCON subsystem is
+>> builded with MODULE, other subsystem have build break because of
+>> linking the core class of EXTCON.
+> 
+> Then something else is wrong, as the extcon_class code should be able to
+> be built as a module.  Don't load up systems with kernel code that they
+> don't need (think of distro kernels that have to build everything.)
+> 
+> So no, please fix the real problem here, I will not take this patch,
+> sorry.
 
+OK, I will add appropriate dependency to 'Kconfig' of subsystem/driver
+using EXTCON
+to resolve build break.
 
-From: stephen hemminger <shemminger@vyatta.com>
-
-[ Upstream commit 5ff0feac88ced864f44adb145142269196fa79d9 ]
-
-The newer flavors of Yukon II use a different method for receive
-checksum offload. This is indicated in the driver by the SKY2_HW_NEW_LE
-flag. On these newer chips, the BMU_ENA_RX_CHKSUM should not be set.
-
-The driver would get incorrectly toggle the bit, enabling the old
-checksum logic on these chips and cause a BUG_ON() assertion. If
-receive checksum was toggled via ethtool.
-
-Reported-by: Kirill Smelkov <kirr@mns.spb.ru>
-Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/marvell/sky2.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
-
---- a/drivers/net/ethernet/marvell/sky2.c
-+++ b/drivers/net/ethernet/marvell/sky2.c
-@@ -4381,10 +4381,12 @@ static int sky2_set_features(struct net_
- 	struct sky2_port *sky2 = netdev_priv(dev);
- 	netdev_features_t changed = dev->features ^ features;
- 
--	if (changed & NETIF_F_RXCSUM) {
--		bool on = features & NETIF_F_RXCSUM;
--		sky2_write32(sky2->hw, Q_ADDR(rxqaddr[sky2->port], Q_CSR),
--			     on ? BMU_ENA_RX_CHKSUM : BMU_DIS_RX_CHKSUM);
-+	if ((changed & NETIF_F_RXCSUM) &&
-+	    !(sky2->hw->flags & SKY2_HW_NEW_LE)) {
-+		sky2_write32(sky2->hw,
-+			     Q_ADDR(rxqaddr[sky2->port], Q_CSR),
-+			     (features & NETIF_F_RXCSUM)
-+			     ? BMU_ENA_RX_CHKSUM : BMU_DIS_RX_CHKSUM);
- 	}
- 
- 	if (changed & NETIF_F_RXHASH)
-
-
+Thank you,
+Chanwoo Choi
