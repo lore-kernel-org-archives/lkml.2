@@ -1,121 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758148Ab2GLT6g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 15:58:36 -0400
-Received: from mga09.intel.com ([134.134.136.24]:47666 "EHLO mga09.intel.com"
+	id S1758194Ab2GLT6x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 15:58:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56209 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755864Ab2GLT6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 15:58:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="asc'?scan'208";a="165068118"
-Message-ID: <1342123110.1783.83.camel@jtkirshe-mobl>
-Subject: Re: [trivial PATCH 2/7] ixgbe: remove unused #define
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Reply-To: jeffrey.t.kirsher@intel.com
-To: Jon Mason <jdmason@kudzu.us>
-Cc: trivial@kernel.org, linux-kernel@vger.kernel.org,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        John Ronciak <john.ronciak@intel.com>, netdev <netdev@vger.kernel.org>
-Date: Thu, 12 Jul 2012 12:58:30 -0700
-In-Reply-To: <CAPoiz9wcj7tbgVUf+D=HdonXnaMYFHb+TmSb77f2R2mpwGQM7g@mail.gmail.com>
-References: <1341959492-31389-1-git-send-email-jdmason@kudzu.us>
-	 <1341959492-31389-2-git-send-email-jdmason@kudzu.us>
-	 <1341960208.3336.43.camel@jtkirshe-mobl>
-	 <1342116938.1783.57.camel@jtkirshe-mobl>
-	 <CAPoiz9wcj7tbgVUf+D=HdonXnaMYFHb+TmSb77f2R2mpwGQM7g@mail.gmail.com>
-Organization: Intel Corporation
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-Ux2wp4co9mXK8xyPo1CN"
-X-Mailer: Evolution 3.4.3 (3.4.3-1.fc17) 
-Mime-Version: 1.0
+	id S1756026Ab2GLT6u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 15:58:50 -0400
+Date: Thu, 12 Jul 2012 21:58:15 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
+        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Don Morris <don.morris@hp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH 36/40] autonuma: page_autonuma
+Message-ID: <20120712195815.GQ20382@redhat.com>
+References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
+ <1340888180-15355-37-git-send-email-aarcange@redhat.com>
+ <4FF14196.6040106@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FF14196.6040106@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jul 02, 2012 at 02:37:10AM -0400, Rik van Riel wrote:
+>  > +fail:
+>  > +	printk(KERN_CRIT "allocation of page_autonuma failed.\n");
+>  > +	printk(KERN_CRIT "please try the 'noautonuma' boot option\n");
+>  > +	panic("Out of memory");
+>  > +}
+> 
+> The system can run just fine without autonuma.
+> 
+> Would it make sense to simply disable autonuma at this point,
+> but to try continue running?
 
---=-Ux2wp4co9mXK8xyPo1CN
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+BTW, the same would apply to mm/page_cgroup.c, but I think the idea
+here is that something serious went wrong. Workaround with noautonuma
+boot option is enough.
 
-On Thu, 2012-07-12 at 12:49 -0700, Jon Mason wrote:
-> On Thu, Jul 12, 2012 at 11:15 AM, Jeff Kirsher
-> <jeffrey.t.kirsher@intel.com> wrote:
-> > On Tue, 2012-07-10 at 15:43 -0700, Jeff Kirsher wrote:
-> >> On Tue, 2012-07-10 at 15:31 -0700, Jon Mason wrote:
-> >> > Remove unused IXGBE_INTEL_VENDOR_ID #define
-> >> >
-> >> > Signed-off-by: Jon Mason <jdmason@kudzu.us>
-> >> > Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-> >> > Cc: Jesse Brandeburg <jesse.brandeburg@intel.com>
-> >> > Cc: Bruce Allan <bruce.w.allan@intel.com>
-> >> > Cc: Carolyn Wyborny <carolyn.wyborny@intel.com>
-> >> > Cc: Don Skidmore <donald.c.skidmore@intel.com>
-> >> > Cc: Greg Rose <gregory.v.rose@intel.com>
-> >> > Cc: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-> >> > Cc: Alex Duyck <alexander.h.duyck@intel.com>
-> >> > Cc: John Ronciak <john.ronciak@intel.com>
-> >> > ---
-> >> >  drivers/net/ethernet/intel/ixgbe/ixgbe_type.h |    3 ---
-> >> >  1 file changed, 3 deletions(-)
-> >>
-> >> This should also go through David Miller's networking tree's.
-> Adding
-> >> netdev mailing list.
-> >>
-> >> Acked-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-> >
-> > After looking at this further, I rescind my ACK.
-> >
-> > NAK, this define is used in several places in ixgbe_main.c and the
-> > driver will not compile with this patch.
->=20
-> My apologies, I was a bit sloppy and simply rebased my old patches
-> without retesting them.  The code has changed since I originally
-> pushed the patch (http://www.spinics.net/lists/netdev/msg171523.html).
->  I will fix and resubmit.
->=20
-> Thanks,
-> Jon=20
+> 
+> > @@ -700,8 +780,14 @@ static void free_section_usemap(struct page *memmap, unsigned long *usemap)
+> >   	 */
+> >   	if (PageSlab(usemap_page)) {
+> >   		kfree(usemap);
+> > -		if (memmap)
+> > +		if (memmap) {
+> >   			__kfree_section_memmap(memmap, PAGES_PER_SECTION);
+> > +			if (!autonuma_impossible())
+> > +				__kfree_section_page_autonuma(page_autonuma,
+> > +							      PAGES_PER_SECTION);
+> > +			else
+> > +				BUG_ON(page_autonuma);
+> 
+> VM_BUG_ON ?
+> 
+> > +		if (!autonuma_impossible()) {
+> > +			struct page *page_autonuma_page;
+> > +			page_autonuma_page = virt_to_page(page_autonuma);
+> > +			free_map_bootmem(page_autonuma_page, nr_pages);
+> > +		} else
+> > +			BUG_ON(page_autonuma);
+> 
+> ditto
+> 
+> >   	pgdat_resize_unlock(pgdat,&flags);
+> >   	if (ret<= 0) {
+> > +		if (!autonuma_impossible())
+> > +			__kfree_section_page_autonuma(page_autonuma, nr_pages);
+> > +		else
+> > +			BUG_ON(page_autonuma);
+> 
+> VM_BUG_ON ?
 
-Also note, that when you fix up the patch and resend it, could you
-resend patch 1 (ixgb) as well to netdev@vger.kernel.org.  That way
-netdev patchwork will pickup the patches and I can get them into my
-queue.
+These only run at the very boot stage, so performance is irrelevant
+and it's safer to keep them on.
 
-Thanks!
-Jeff
-
-
-
---=-Ux2wp4co9mXK8xyPo1CN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABCgAGBQJP/yxmAAoJEOVv75VaS+3OaAwQAIEpZkq72fyAT0Nt0mtJiYhP
-KyhaX1oevPrEibEKI+Dz8TvKK1SFidhprNxRvSTn9zilq9gxAOmTGbMOUvIKdhBE
-H2fhGJoFf0IaVYso/adBR/BZJwOg+gN1ahaCAZ8VRHtwUMvYaHu+lAZ5BBvkWsy2
-UjSgfr9nbpoey7MPSRWs+1Yi5EkkgAJCb8hGGRXvyLgw5jsPrnfIcl83mB9Dk61H
-Q7I/zMsFbAl8TIaLxAv5SEbUmWFeQcJ5oXWQuQjw+oBZFXuTXQEeDnqPM7MO3mEM
-zjEnoFNRIZFkBbh7JRmzvT+enFWhgkuVQd1GX52GSdCZKhJmHP6KddNdZFlFag+g
-8IK7gCa72Rjw2zVTCU0lh3LUkr7pj2Vm7FpyFElh14nDq8ALmwzFUxbUlvdLWSKi
-lqCR2C03OFIiHrH0polBDDOEaqfWRnyppd5BbZVMu7PJZzSTwuoeOBCZD3lBtfF9
-PecQe7NthR/bY0/myFIeqLq9jysVsXMPHuuHYMctwbfPaC+Wo1vWx7eJ8mqpzFHM
-TKylbOu0Y7W595fD5GhG3zaDlvWNllZi414s2T9STx63lAvTW8N1EDX1fEY64fE9
-rVoO954nV9QPNixvHMqM+aewlNUOLYE1kl0JenibR0pUGl3EJnxbDBnl2kcNaDTG
-2jQColCgEpssSNM5sIyp
-=K9sK
------END PGP SIGNATURE-----
-
---=-Ux2wp4co9mXK8xyPo1CN--
-
+The rest was corrected.
