@@ -1,168 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757860Ab2GLTmK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 15:42:10 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:43446 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757956Ab2GLTmH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 15:42:07 -0400
-From: Denys Vlasenko <vda.linux@gmail.com>
-To: linux-kernel@vger.kernel.org, "Jonathan M. Foote" <jmfoote@cert.org>,
-        "H. J. Lu" <hjl.tools@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH v2] Extend core dump note section to contain file names of mapped files
-Date: Thu, 12 Jul 2012 21:42:02 +0200
-User-Agent: KMail/1.8.2
-Cc: Oleg Nesterov <oleg@redhat.com>, Denys Vlasenko <dvlasenk@redhat.com>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>
+	id S1758105Ab2GLToi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 15:44:38 -0400
+Received: from www.hansjkoch.de ([178.63.77.200]:49875 "EHLO www.hansjkoch.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755748Ab2GLTog (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 15:44:36 -0400
+Date: Thu, 12 Jul 2012 21:44:33 +0200
+From: "Hans J. Koch" <hjk@hansjkoch.de>
+To: Andreas Schallenberg <embedded@gmx.net>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dominic Eschweiler <eschweiler@fias.uni-frankfurt.de>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, kvm@vger.kernel.org
+Subject: Re: UIO: missing resource mapping
+Message-ID: <20120712194432.GA2592@local>
+References: <4FFE7C1F.7080702@gmx.net>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201207122142.02137.vda.linux@googlemail.com>
+In-Reply-To: <4FFE7C1F.7080702@gmx.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This note has the following format:
+On Thu, Jul 12, 2012 at 09:26:23AM +0200, Andreas Schallenberg wrote:
 
-long count     -- how many files are mapped
-long page_size -- units for file_ofs
-array of [COUNT] elements of
-   long start
-   long end
-   long file_ofs
-followed by COUNT filenames in ASCII: "FILE1" NUL "FILE2" NUL...
+[Added more people to Cc:]
 
-Compared to previous version, code is simplified
-as suggested by Oleg Nesterov.
+> Hello,
+> 
+> I'm doing experiments with the Userspace IO driver (UIO_PCI_GENERIC)
+> and a set of PCIe cards. The kernel version is 3.4.4, CPU is a
+> Marvell MV78200 (ARMv5te). Example with an Intel ethernet card:
+> 
+> This makes /dev/uio0 appear
+> echo -n "8086 10d3" >/sys/bus/pci/drivers/uio_pci_generic/new_id
+> 
+> # lspci -v -k -s 0000:00:01.0
+> 00:01.0 Ethernet controller: Intel Corporation 82574L Gigabit
+> Network Connection
+>         Subsystem: Intel Corporation Gigabit CT Desktop Adapter
+>         Flags: bus master, fast devsel, latency 0, IRQ 36
+>         Memory at c00c0000 (32-bit, non-prefetchable) [size=128K]
+>         Memory at c0000000 (32-bit, non-prefetchable) [size=512K]
+>         I/O ports at f0800000 [size=32]
+>         Memory at c00e0000 (32-bit, non-prefetchable) [size=16K]
+>         [virtual] Expansion ROM at c0080000 [disabled] [size=256K]
+>         Capabilities: [c8] Power Management version 2
+>         Capabilities: [d0] MSI: Enable- Count=1/1 Maskable- 64bit+
+>         Capabilities: [e0] Express Endpoint, MSI 00
+>         Capabilities: [a0] MSI-X: Enable- Count=5 Masked-
+>         Capabilities: [100] Advanced Error Reporting
+>         Capabilities: [140] Device Serial Number 00-1b-21-ff-ff-c4-f7-2f
+>         Kernel driver in use: uio_pci_generic
+> 
+> Suprisingly, there is no "maps" directory in /sys/class/uio/uio0
+> now. I made a small change to the UIO code:
+> 
+> diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
+> index a783d53..b639654 100644
+> --- a/drivers/uio/uio.c
+> +++ b/drivers/uio/uio.c
+> @@ -274,8 +274,10 @@ static int uio_dev_add_attributes(struct
+> uio_device *idev)
+> 
+>         for (mi = 0; mi < MAX_UIO_MAPS; mi++) {
+>                 mem = &idev->info->mem[mi];
+> -               if (mem->size == 0)
+> -                       break;
+> +               if (mem->size == 0) {
+> +                       dev_err(idev->dev, "map %d has zero size\n", mi);
+> +                       continue; // was: break
+> +               }
+>                 if (!map_found) {
+>                         map_found = 1;
+>                         idev->map_dir = kobject_create_and_add("maps",
+> 
+> If I have this in the kernel and give the "echo" command as shown
+> above I get:
+> [   43.761723] uio uio0: map 0 has zero size
+> [   43.765760] uio uio0: map 1 has zero size
+> [   43.769787] uio uio0: map 2 has zero size
+> [   43.774298] uio uio0: map 3 has zero size
+> [   43.778333] uio uio0: map 4 has zero size
+> 
+> On the other hand, I can see the resources:
+> # cat /sys/class/uio/uio0/device/resource
+> 0x00000000c00c0000 0x00000000c00dffff 0x0000000000040200
+> 0x00000000c0000000 0x00000000c007ffff 0x0000000000040200
+> 0x00000000f0800000 0x00000000f080001f 0x0000000000040101
+> 0x00000000c00e0000 0x00000000c00e3fff 0x0000000000040200
+> ...more...
+> 
+> Looking further at the code, I cannot see where the mem fields are
+> being filled at all.
+> Which code is supposed to write the struct uio_mem?
 
-Signed-off-by: Denys Vlasenko <vda.linux@googlemail.com>
+In my opinion, the driver should. However, Michael's idea is to use
+/sys/bus/pci/devices/XXXXXresourceX for mapping purposes.
 
-diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
-index 1b52956..8e60c38 100644
---- a/fs/binfmt_elf.c
-+++ b/fs/binfmt_elf.c
-@@ -1372,6 +1372,72 @@ static void fill_auxv_note(struct memelfnote *note, struct mm_struct *mm)
- 	fill_note(note, "CORE", NT_AUXV, i * sizeof(elf_addr_t), auxv);
- }
- 
-+#define MAX_FILE_NOTE_SIZE (4*1024*1024)
-+
-+static void fill_files_note(struct memelfnote *note)
-+{
-+	struct vm_area_struct *vma;
-+	struct file *file;
-+	unsigned count, word_count, size, remaining;
-+	long *data;
-+	long *start_end_ofs;
-+	char *name;
-+
-+	count = 0;
-+	for (vma = current->mm->mmap; vma != NULL; vma = vma->vm_next) {
-+		file = vma->vm_file;
-+		if (!file)
-+			continue;
-+		count++;
-+	}
-+
-+	size = count * 64;
-+	word_count = 2 + 3 * count;
-+ alloc:
-+	if (size >= MAX_FILE_NOTE_SIZE) /* paranoia check */
-+		goto err;
-+	size = round_up(size, PAGE_SIZE);
-+	data = vmalloc(size);
-+	if (!data)
-+		goto err;
-+
-+	start_end_ofs = data;
-+	name = (void*)&start_end_ofs[word_count];
-+	remaining = size - word_count * sizeof(long);
-+
-+	*start_end_ofs++ = count;
-+	*start_end_ofs++ = PAGE_SIZE;
-+	for (vma = current->mm->mmap; vma != NULL; vma = vma->vm_next) {
-+		const char *filename;
-+
-+		file = vma->vm_file;
-+		if (!file)
-+			continue;
-+		filename = d_path(&file->f_path, name, remaining);
-+		if (IS_ERR(filename)) {
-+			if (PTR_ERR(filename) == -ENAMETOOLONG) {
-+				vfree(data);
-+				size = size * 5 / 4;
-+				goto alloc;
-+			}
-+			/* continue; - WRONG, we must have COUNT elements */
-+			filename = "";
-+		}
-+		/* d_path() fills at the end, move it to front */
-+		do
-+			remaining--;
-+		while ((*name++ = *filename++) != '\0');
-+
-+		*start_end_ofs++ = vma->vm_start;
-+		*start_end_ofs++ = vma->vm_end;
-+		*start_end_ofs++ = vma->vm_pgoff;
-+	}
-+
-+	size = name - (char*)data;
-+	fill_note(note, "CORE", NT_FILE, size, data);
-+ err: ;
-+}
-+
- #ifdef CORE_DUMP_USE_REGSET
- #include <linux/regset.h>
- 
-@@ -1386,6 +1452,7 @@ struct elf_note_info {
- 	struct elf_thread_core_info *thread;
- 	struct memelfnote psinfo;
- 	struct memelfnote auxv;
-+	struct memelfnote files;
- 	size_t size;
- 	int thread_notes;
- };
-@@ -1562,6 +1629,9 @@ static int fill_note_info(struct elfhdr *elf, int phdrs,
- 	fill_auxv_note(&info->auxv, current->mm);
- 	info->size += notesize(&info->auxv);
- 
-+	fill_files_note(&info->files);
-+	info->size += notesize(&info->files);
-+
- 	return 1;
- }
- 
-@@ -1590,6 +1660,8 @@ static int write_note_info(struct elf_note_info *info,
- 			return 0;
- 		if (first && !writenote(&info->auxv, file, foffset))
- 			return 0;
-+		if (first && !writenote(&info->files, file, foffset))
-+			return 0;
- 
- 		for (i = 1; i < info->thread_notes; ++i)
- 			if (t->notes[i].data &&
-@@ -1616,6 +1688,7 @@ static void free_note_info(struct elf_note_info *info)
- 		kfree(t);
- 	}
- 	kfree(info->psinfo.data);
-+	vfree(info->files.data);
- }
- 
- #else
-diff --git a/include/linux/elf.h b/include/linux/elf.h
-index 999b4f5..5e6c08f 100644
---- a/include/linux/elf.h
-+++ b/include/linux/elf.h
-@@ -372,6 +372,7 @@ typedef struct elf64_shdr {
- #define NT_PRPSINFO	3
- #define NT_TASKSTRUCT	4
- #define NT_AUXV		6
-+#define NT_FILE		0x46494c45
- #define NT_PRXFPREG     0x46e62b7f      /* copied from gdb5.1/include/elf/common.h */
- #define NT_PPC_VMX	0x100		/* PowerPC Altivec/VMX registers */
- #define NT_PPC_SPE	0x101		/* PowerPC SPE/EVR registers */
+That is of course also possible, but obviously it leads to confusion.
+We already had a long thread about this:
+
+http://www.spinics.net/lists/kvm/msg73837.html
+
+Michael, can we change the driver to offer all available PCI BARs in the
+normal UIO way? I'm afraid otherwise we'll have the same discussion over
+and over again.
+
+Thanks,
+Hans
 
