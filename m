@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162327Ab2GLWvV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:51:21 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:42417 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162298Ab2GLWpY (ORCPT
+	id S1162352Ab2GLWvk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:51:40 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60450 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162253Ab2GLWpU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:45:24 -0400
+	Thu, 12 Jul 2012 18:45:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ulrich Obergfell <uobergfe@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>, Larry Woodman <lwoodman@redhat.com>,
-        Petr Matousek <pmatouse@redhat.com>, Rik van Riel <riel@redhat.com>
-Subject: [ 169/187] mm: pmd_read_atomic: fix 32bit PAE pmd walk vs pmd_populate SMP race condition
-Date: Thu, 12 Jul 2012 15:35:25 -0700
-Message-Id: <20120712191538.969292748@linuxfoundation.org>
+        Tom Hughes <tom@compton.nu>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Josh Boyer <jwboyer@redhat.com>
+Subject: [ 168/187] ath9k: fix panic caused by returning a descriptor we have queued for reuse
+Date: Thu, 12 Jul 2012 15:35:24 -0700
+Message-Id: <20120712191538.890885389@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -33,213 +32,67 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+From: Tom Hughes <tom@compton.nu>
 
-commit 26c191788f18129af0eb32a358cdaea0c7479626 upstream.
+commit 6bb51c70cabaadddc54a6454844eceba91a56083 upstream.
 
-When holding the mmap_sem for reading, pmd_offset_map_lock should only
-run on a pmd_t that has been read atomically from the pmdp pointer,
-otherwise we may read only half of it leading to this crash.
+Commit 3a2923e83c introduced a bug when a corrupt descriptor
+is encountered - although the following descriptor is discarded
+and returned to the queue for reuse the associated frame is
+also returned for processing. This leads to a panic:
 
-PID: 11679  TASK: f06e8000  CPU: 3   COMMAND: "do_race_2_panic"
- #0 [f06a9dd8] crash_kexec at c049b5ec
- #1 [f06a9e2c] oops_end at c083d1c2
- #2 [f06a9e40] no_context at c0433ded
- #3 [f06a9e64] bad_area_nosemaphore at c043401a
- #4 [f06a9e6c] __do_page_fault at c0434493
- #5 [f06a9eec] do_page_fault at c083eb45
- #6 [f06a9f04] error_code (via page_fault) at c083c5d5
-    EAX: 01fb470c EBX: fff35000 ECX: 00000003 EDX: 00000100 EBP:
-    00000000
-    DS:  007b     ESI: 9e201000 ES:  007b     EDI: 01fb4700 GS:  00e0
-    CS:  0060     EIP: c083bc14 ERR: ffffffff EFLAGS: 00010246
- #7 [f06a9f38] _spin_lock at c083bc14
- #8 [f06a9f44] sys_mincore at c0507b7d
- #9 [f06a9fb0] system_call at c083becd
-                         start           len
-    EAX: ffffffda  EBX: 9e200000  ECX: 00001000  EDX: 6228537f
-    DS:  007b      ESI: 00000000  ES:  007b      EDI: 003d0f00
-    SS:  007b      ESP: 62285354  EBP: 62285388  GS:  0033
-    CS:  0073      EIP: 00291416  ERR: 000000da  EFLAGS: 00000286
+BUG: unable to handle kernel NULL pointer dereference at 000000000000003a
+IP: [<ffffffffa02599a5>] ath_rx_tasklet+0x165/0x1b00 [ath9k]
+Call Trace:
+<IRQ>
+[<ffffffff812d7fa0>] ? map_single+0x60/0x60
+[<ffffffffa028f044>] ? ath9k_ioread32+0x34/0x90 [ath9k]
+[<ffffffffa0292eec>] athk9k_tasklet+0xdc/0x160 [ath9k]
+[<ffffffff8105e133>] tasklet_action+0x63/0xd0
+[<ffffffff8105dbc0>] __do_softirq+0xc0/0x1e0
+[<ffffffff8101a873>] ? native_sched_clock+0x13/0x80
+[<ffffffff815f9d5c>] call_softirq+0x1c/0x30
+[<ffffffff810151f5>] do_softirq+0x75/0xb0
+[<ffffffff8105df95>] irq_exit+0xb5/0xc0
+[<ffffffff815fa5b3>] do_IRQ+0x63/0xe0
+[<ffffffff815f0cea>] common_interrupt+0x6a/0x6a
+<EOI>
+[<ffffffff8131840a>] ? intel_idle+0xea/0x150
+[<ffffffff813183eb>] ? intel_idle+0xcb/0x150
+[<ffffffff814a1db9>] cpuidle_enter+0x19/0x20
+[<ffffffff814a23d9>] cpuidle_idle_call+0xa9/0x240
+[<ffffffff8101c4bf>] cpu_idle+0xaf/0x120
+[<ffffffff815cda8e>] rest_init+0x72/0x74
+[<ffffffff81cf4c1a>] start_kernel+0x3b7/0x3c4
+[<ffffffff81cf4662>] ? repair_env_string+0x5e/0x5e
+[<ffffffff81cf4346>] x86_64_start_reservations+0x131/0x135
+[<ffffffff81cf444a>] x86_64_start_kernel+0x100/0x10f
 
-This should be a longstanding bug affecting x86 32bit PAE without THP.
-Only archs with 64bit large pmd_t and 32bit unsigned long should be
-affected.
+Making sure bf is cleared to NULL in this case restores the
+old behaviour.
 
-With THP enabled the barrier() in pmd_none_or_trans_huge_or_clear_bad()
-would partly hide the bug when the pmd transition from none to stable,
-by forcing a re-read of the *pmd in pmd_offset_map_lock, but when THP is
-enabled a new set of problem arises by the fact could then transition
-freely in any of the none, pmd_trans_huge or pmd_trans_stable states.
-So making the barrier in pmd_none_or_trans_huge_or_clear_bad()
-unconditional isn't good idea and it would be a flakey solution.
-
-This should be fully fixed by introducing a pmd_read_atomic that reads
-the pmd in order with THP disabled, or by reading the pmd atomically
-with cmpxchg8b with THP enabled.
-
-Luckily this new race condition only triggers in the places that must
-already be covered by pmd_none_or_trans_huge_or_clear_bad() so the fix
-is localized there but this bug is not related to THP.
-
-NOTE: this can trigger on x86 32bit systems with PAE enabled with more
-than 4G of ram, otherwise the high part of the pmd will never risk to be
-truncated because it would be zero at all times, in turn so hiding the
-SMP race.
-
-This bug was discovered and fully debugged by Ulrich, quote:
-
-----
-[..]
-pmd_none_or_trans_huge_or_clear_bad() loads the content of edx and
-eax.
-
-    496 static inline int pmd_none_or_trans_huge_or_clear_bad(pmd_t
-    *pmd)
-    497 {
-    498         /* depend on compiler for an atomic pmd read */
-    499         pmd_t pmdval = *pmd;
-
-                                // edi = pmd pointer
-0xc0507a74 <sys_mincore+548>:   mov    0x8(%esp),%edi
-...
-                                // edx = PTE page table high address
-0xc0507a84 <sys_mincore+564>:   mov    0x4(%edi),%edx
-...
-                                // eax = PTE page table low address
-0xc0507a8e <sys_mincore+574>:   mov    (%edi),%eax
-
-[..]
-
-Please note that the PMD is not read atomically. These are two "mov"
-instructions where the high order bits of the PMD entry are fetched
-first. Hence, the above machine code is prone to the following race.
-
--  The PMD entry {high|low} is 0x0000000000000000.
-   The "mov" at 0xc0507a84 loads 0x00000000 into edx.
-
--  A page fault (on another CPU) sneaks in between the two "mov"
-   instructions and instantiates the PMD.
-
--  The PMD entry {high|low} is now 0x00000003fda38067.
-   The "mov" at 0xc0507a8e loads 0xfda38067 into eax.
-----
-
-Reported-by: Ulrich Obergfell <uobergfe@redhat.com>
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Larry Woodman <lwoodman@redhat.com>
-Cc: Petr Matousek <pmatouse@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Tom Hughes <tom@compton.nu>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Cc: Josh Boyer <jwboyer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/pgtable-3level.h |   50 ++++++++++++++++++++++++++++++++++
- include/asm-generic/pgtable.h         |   22 +++++++++++++-
- 2 files changed, 70 insertions(+), 2 deletions(-)
+ drivers/net/wireless/ath/ath9k/recv.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/x86/include/asm/pgtable-3level.h
-+++ b/arch/x86/include/asm/pgtable-3level.h
-@@ -31,6 +31,56 @@ static inline void native_set_pte(pte_t
- 	ptep->pte_low = pte.pte_low;
- }
+--- a/drivers/net/wireless/ath/ath9k/recv.c
++++ b/drivers/net/wireless/ath/ath9k/recv.c
+@@ -695,9 +695,9 @@ static bool ath_edma_get_buffers(struct
+ 			__skb_unlink(skb, &rx_edma->rx_fifo);
+ 			list_add_tail(&bf->list, &sc->rx.rxbuf);
+ 			ath_rx_edma_buf_link(sc, qtype);
+-		} else {
+-			bf = NULL;
+ 		}
++
++		bf = NULL;
+ 	}
  
-+#define pmd_read_atomic pmd_read_atomic
-+/*
-+ * pte_offset_map_lock on 32bit PAE kernels was reading the pmd_t with
-+ * a "*pmdp" dereference done by gcc. Problem is, in certain places
-+ * where pte_offset_map_lock is called, concurrent page faults are
-+ * allowed, if the mmap_sem is hold for reading. An example is mincore
-+ * vs page faults vs MADV_DONTNEED. On the page fault side
-+ * pmd_populate rightfully does a set_64bit, but if we're reading the
-+ * pmd_t with a "*pmdp" on the mincore side, a SMP race can happen
-+ * because gcc will not read the 64bit of the pmd atomically. To fix
-+ * this all places running pmd_offset_map_lock() while holding the
-+ * mmap_sem in read mode, shall read the pmdp pointer using this
-+ * function to know if the pmd is null nor not, and in turn to know if
-+ * they can run pmd_offset_map_lock or pmd_trans_huge or other pmd
-+ * operations.
-+ *
-+ * Without THP if the mmap_sem is hold for reading, the
-+ * pmd can only transition from null to not null while pmd_read_atomic runs.
-+ * So there's no need of literally reading it atomically.
-+ *
-+ * With THP if the mmap_sem is hold for reading, the pmd can become
-+ * THP or null or point to a pte (and in turn become "stable") at any
-+ * time under pmd_read_atomic, so it's mandatory to read it atomically
-+ * with cmpxchg8b.
-+ */
-+#ifndef CONFIG_TRANSPARENT_HUGEPAGE
-+static inline pmd_t pmd_read_atomic(pmd_t *pmdp)
-+{
-+	pmdval_t ret;
-+	u32 *tmp = (u32 *)pmdp;
-+
-+	ret = (pmdval_t) (*tmp);
-+	if (ret) {
-+		/*
-+		 * If the low part is null, we must not read the high part
-+		 * or we can end up with a partial pmd.
-+		 */
-+		smp_rmb();
-+		ret |= ((pmdval_t)*(tmp + 1)) << 32;
-+	}
-+
-+	return (pmd_t) { ret };
-+}
-+#else /* CONFIG_TRANSPARENT_HUGEPAGE */
-+static inline pmd_t pmd_read_atomic(pmd_t *pmdp)
-+{
-+	return (pmd_t) { atomic64_read((atomic64_t *)pmdp) };
-+}
-+#endif /* CONFIG_TRANSPARENT_HUGEPAGE */
-+
- static inline void native_set_pte_atomic(pte_t *ptep, pte_t pte)
- {
- 	set_64bit((unsigned long long *)(ptep), native_pte_val(pte));
---- a/include/asm-generic/pgtable.h
-+++ b/include/asm-generic/pgtable.h
-@@ -446,6 +446,18 @@ static inline int pmd_write(pmd_t pmd)
- #endif /* __HAVE_ARCH_PMD_WRITE */
- #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
- 
-+#ifndef pmd_read_atomic
-+static inline pmd_t pmd_read_atomic(pmd_t *pmdp)
-+{
-+	/*
-+	 * Depend on compiler for an atomic pmd read. NOTE: this is
-+	 * only going to work, if the pmdval_t isn't larger than
-+	 * an unsigned long.
-+	 */
-+	return *pmdp;
-+}
-+#endif
-+
- /*
-  * This function is meant to be used by sites walking pagetables with
-  * the mmap_sem hold in read mode to protect against MADV_DONTNEED and
-@@ -459,11 +471,17 @@ static inline int pmd_write(pmd_t pmd)
-  * undefined so behaving like if the pmd was none is safe (because it
-  * can return none anyway). The compiler level barrier() is critically
-  * important to compute the two checks atomically on the same pmdval.
-+ *
-+ * For 32bit kernels with a 64bit large pmd_t this automatically takes
-+ * care of reading the pmd atomically to avoid SMP race conditions
-+ * against pmd_populate() when the mmap_sem is hold for reading by the
-+ * caller (a special atomic read not done by "gcc" as in the generic
-+ * version above, is also needed when THP is disabled because the page
-+ * fault can populate the pmd from under us).
-  */
- static inline int pmd_none_or_trans_huge_or_clear_bad(pmd_t *pmd)
- {
--	/* depend on compiler for an atomic pmd read */
--	pmd_t pmdval = *pmd;
-+	pmd_t pmdval = pmd_read_atomic(pmd);
- 	/*
- 	 * The barrier will stabilize the pmdval in a register or on
- 	 * the stack so that it will stop changing under the code.
+ 	*dest = bf;
 
 
