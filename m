@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759503Ab2GLWhY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:37:24 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:57335 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759452Ab2GLWhO (ORCPT
+	id S1759519Ab2GLWhb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:37:31 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58752 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759484Ab2GLWhI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:37:14 -0400
+	Thu, 12 Jul 2012 18:37:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Devendra Naga <devendra.aaru@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Denys Fedoryshchenko <denys@visp.net.lb>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 021/187] r8169: call netif_napi_del at errpaths and at driver unload
-Date: Thu, 12 Jul 2012 15:32:57 -0700
-Message-Id: <20120712191524.229526261@linuxfoundation.org>
+Subject: [ 028/187] net: neighbour: fix neigh_dump_info()
+Date: Thu, 12 Jul 2012 15:33:04 -0700
+Message-Id: <20120712191524.883517684@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -32,39 +33,71 @@ From: Greg KH <gregkh@linuxfoundation.org>
 ------------------
 
 
-From: Devendra Naga <devendra.aaru@gmail.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit ad1be8d345416a794dea39761a374032aa471a76 ]
+[ Upstream commit 4bd6683bd400c8b1d2ad544bb155d86a5d10f91c ]
 
-when register_netdev fails, the init'ed NAPIs by netif_napi_add must be
-deleted with netif_napi_del, and also when driver unloads, it should
-delete the NAPI before unregistering netdevice using unregister_netdev.
+Denys found out "ip neigh" output was truncated to
+about 54 neighbours.
 
-Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Reported-by: Denys Fedoryshchenko <denys@visp.net.lb>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/realtek/r8169.c |    3 +++
- 1 file changed, 3 insertions(+)
+ net/core/neighbour.c |   14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
 
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -5966,6 +5966,8 @@ static void __devexit rtl_remove_one(str
+--- a/net/core/neighbour.c
++++ b/net/core/neighbour.c
+@@ -2214,9 +2214,7 @@ static int neigh_dump_table(struct neigh
+ 	rcu_read_lock_bh();
+ 	nht = rcu_dereference_bh(tbl->nht);
  
- 	cancel_work_sync(&tp->wk.work);
+-	for (h = 0; h < (1 << nht->hash_shift); h++) {
+-		if (h < s_h)
+-			continue;
++	for (h = s_h; h < (1 << nht->hash_shift); h++) {
+ 		if (h > s_h)
+ 			s_idx = 0;
+ 		for (n = rcu_dereference_bh(nht->hash_buckets[h]), idx = 0;
+@@ -2255,9 +2253,7 @@ static int pneigh_dump_table(struct neig
  
-+	netif_napi_del(&tp->napi);
-+
- 	unregister_netdev(dev);
+ 	read_lock_bh(&tbl->lock);
  
- 	rtl_release_firmware(tp);
-@@ -6288,6 +6290,7 @@ out:
- 	return rc;
+-	for (h = 0; h <= PNEIGH_HASHMASK; h++) {
+-		if (h < s_h)
+-			continue;
++	for (h = s_h; h <= PNEIGH_HASHMASK; h++) {
+ 		if (h > s_h)
+ 			s_idx = 0;
+ 		for (n = tbl->phash_buckets[h], idx = 0; n; n = n->next) {
+@@ -2292,7 +2288,7 @@ static int neigh_dump_info(struct sk_buf
+ 	struct neigh_table *tbl;
+ 	int t, family, s_t;
+ 	int proxy = 0;
+-	int err = 0;
++	int err;
  
- err_out_msi_4:
-+	netif_napi_del(&tp->napi);
- 	rtl_disable_msi(pdev, tp);
- 	iounmap(ioaddr);
- err_out_free_res_3:
+ 	read_lock(&neigh_tbl_lock);
+ 	family = ((struct rtgenmsg *) nlmsg_data(cb->nlh))->rtgen_family;
+@@ -2306,7 +2302,7 @@ static int neigh_dump_info(struct sk_buf
+ 
+ 	s_t = cb->args[0];
+ 
+-	for (tbl = neigh_tables, t = 0; tbl && (err >= 0);
++	for (tbl = neigh_tables, t = 0; tbl;
+ 	     tbl = tbl->next, t++) {
+ 		if (t < s_t || (family && tbl->family != family))
+ 			continue;
+@@ -2317,6 +2313,8 @@ static int neigh_dump_info(struct sk_buf
+ 			err = pneigh_dump_table(tbl, skb, cb);
+ 		else
+ 			err = neigh_dump_table(tbl, skb, cb);
++		if (err < 0)
++			break;
+ 	}
+ 	read_unlock(&neigh_tbl_lock);
+ 
 
 
