@@ -1,81 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758548Ab2GLCgF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 22:36:05 -0400
-Received: from mga09.intel.com ([134.134.136.24]:49174 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756504Ab2GLCgC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 22:36:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="170767853"
-Message-ID: <4FFE3826.7050706@intel.com>
-Date: Thu, 12 Jul 2012 10:36:22 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
-MIME-Version: 1.0
-To: Andrea Arcangeli <aarcange@redhat.com>
-CC: Alex Shi <lkml.alex@gmail.com>, Petr Holasek <pholasek@redhat.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>, "Chen, Tim C" <tim.c.chen@intel.com>
-Subject: Re: AutoNUMA15
-References: <1337965359-29725-1-git-send-email-aarcange@redhat.com> <20120529133627.GA7637@shutemov.name> <20120529154308.GA10790@dhcp-27-244.brq.redhat.com> <20120531180834.GP21339@redhat.com> <CAGjg+kHNe4RkhHKt5JYKDnE2oqs0ZBNUkL_XYOwfDK1S5cxjvw@mail.gmail.com> <20120621145552.GG4954@redhat.com> <4FE96A3A.2080307@intel.com> <20120626120325.GA25956@redhat.com>
-In-Reply-To: <20120626120325.GA25956@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1758572Ab2GLCgW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 22:36:22 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:51512 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756504Ab2GLCgS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 22:36:18 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+ZknRRf1aZTgMCfX18+meUEP5cKfEdKfKNxu662X
+	lUX8M4cLPTWu/I
+Message-ID: <1342060574.7338.20.camel@marge.simpson.net>
+Subject: Re: [patch RT 3/7] Disable RT_GROUP_SCHED in PREEMPT_RT_FULL
+From: Mike Galbraith <efault@gmx.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        RT-users <linux-rt-users@vger.kernel.org>,
+        Carsten Emde <C.Emde@osadl.org>
+Date: Thu, 12 Jul 2012 04:36:14 +0200
+In-Reply-To: <20120711215611.837510935@linutronix.de>
+References: <20120711214552.036760674@linutronix.de>
+	 <20120711215611.837510935@linutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->
-
-> Ok the problem is that you must not pin anything. If you hard pin
-> AutoNUMA won't do anything on those processes.
+On Wed, 2012-07-11 at 22:05 +0000, Thomas Gleixner wrote:
+> plain text document attachment
+> (disable-rt_group_sched-in-preempt_rt_full.patch)
+> Strange CPU stalls have been observed in RT when RT_GROUP_SCHED
+> was configured.
 > 
-> It is impossible to run faster than the raw hard pinning, impossible
-> because AutoNUMA has also to migrate memory, hard pinning avoids all
-> memory migrations.
+> Disable it for now.
+> 
+> Signed-off-by: Carsten Emde <C.Emde@osadl.org>
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> 
+> ---
+>  init/Kconfig |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> Index: linux-3.4.4-rt13-64+/init/Kconfig
+> ===================================================================
+> --- linux-3.4.4-rt13-64+.orig/init/Kconfig
+> +++ linux-3.4.4-rt13-64+/init/Kconfig
+> @@ -746,6 +746,7 @@ config RT_GROUP_SCHED
+>  	bool "Group scheduling for SCHED_RR/FIFO"
+>  	depends on EXPERIMENTAL
+>  	depends on CGROUP_SCHED
+> +	depends on !PREEMPT_RT_FULL
+>  	default n
+>  	help
+>  	  This feature lets you explicitly allocate real CPU bandwidth
+> 
+> 
+> 
+> 
 > 
 
+I turn the thing off because it doesn't make any sense to me for -rt,
+and because it's busted.  The below works around isolation bustage I
+encountered.  Peter didn't like it (what's to like?) but it saves the
+day, so shall live on in non-rt kernels until I hopefully someday see
+RT_GROUP_SCHED being fed into a Bitwolf-9000 ;-)
+
+sched,rt: fix isolated CPUs leaving root_task_group indefinitely throttled
+
+Root task group bandwidth replentishment must service all CPUs regardless of
+where it was last started.
+
+Signed-off-by: Mike Galbraith <efault@gmx.de>
+---
+ kernel/sched/rt.c |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -782,6 +782,19 @@ static int do_sched_rt_period_timer(stru
+ 	const struct cpumask *span;
+ 
+ 	span = sched_rt_period_mask();
++#ifdef CONFIG_RT_GROUP_SCHED
++	/*
++	 * FIXME: isolated CPUs should really leave the root task group,
++	 * whether they are isolcpus or were isolated via cpusets, lest
++	 * the timer run on a CPU which does not service all runqueues,
++	 * potentially leaving other CPUs indefinitely throttled.  If
++	 * isolation is really required, the user will turn the throttle
++	 * off to kill the perturbations it causes anyway.  Meanwhile,
++	 * this maintains functionallity for boot and/or troubleshooting.
++	 */
++	if (rt_b == &root_task_group.rt_bandwidth)
++		span = cpu_online_mask;
++#endif
+ 	for_each_cpu(i, span) {
+ 		int enqueue = 0;
+ 		struct rt_rq *rt_rq = sched_rt_period_rt_rq(rt_b, i);
 
 
-> 
-> Thanks a lot, and looking forward to see how things goes when you
-> remove the hard pins.
-> 
-
-
-
-Andrea:
-I continue testing specjbb2005 for your patch on 2c7535e100805d9,
-removed hard pin for openjdk JVM.
-On my NHM EP machine 12GB memory 16 LCPUs. Following data use each
-scenario's results on 3.5-rc2 as 100% base.
-
-			3.5-rc2 	3.5-rc2+autonuma
-2 JVM, each 1GBmem 	 100%		100%
-1 JVM with 2GBmem	 100%		100%
-
-2 JVM, each 4GBmem	 100%		98%~100%
-1 JVM with 4GB mem	 100%		98%~100%
-
-So, my testing didn't find the benefit from autonuma patch, and when use
-bigger memory size, the path introduce more variation and may cause 2%
-performance drop. my open jdk option is "-Xmx4g -Xms4g -Xincgc"
-
-I am wondering if the specjbb can show your patch's advantage.
