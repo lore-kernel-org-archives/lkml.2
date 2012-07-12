@@ -1,91 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758619Ab2GLC6v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 22:58:51 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:48415 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753267Ab2GLC6t (ORCPT
+	id S1758622Ab2GLDAh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 23:00:37 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:56367 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753267Ab2GLDAg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 22:58:49 -0400
-Message-ID: <4FFE3CEC.80804@huawei.com>
-Date: Thu, 12 Jul 2012 10:56:44 +0800
-From: Jiang Liu <jiang.liu@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	Wed, 11 Jul 2012 23:00:36 -0400
+X-AuditID: 9c930179-b7bdcae000003d91-b4-4ffe3dd2fda3
+Date: Thu, 12 Jul 2012 12:00:39 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH v2] mm: Warn about costly page allocation
+Message-ID: <20120712030039.GA29650@bbox>
+References: <20120710002510.GB5935@bbox>
+ <alpine.DEB.2.00.1207101756070.684@chino.kir.corp.google.com>
+ <20120711022304.GA17425@bbox>
+ <alpine.DEB.2.00.1207102223000.26591@chino.kir.corp.google.com>
+ <4FFD15B2.6020001@kernel.org>
+ <alpine.DEB.2.00.1207111337430.3635@chino.kir.corp.google.com>
+ <CAEwNFnB1Z92f22ms=EsBEOOY4Q_JRA8rMPUvQmoqik7rt-EgcQ@mail.gmail.com>
+ <alpine.DEB.2.00.1207111556190.24516@chino.kir.corp.google.com>
+ <20120711235504.GA5204@bbox>
+ <alpine.DEB.2.00.1207111930020.9370@chino.kir.corp.google.com>
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Jiang Liu <liuj97@gmail.com>, Don Dutile <ddutile@redhat.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        Keping Chen <chenkeping@huawei.com>, <linux-kernel@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>
-Subject: Re: [RFC PATCH 05/14] PCI: add access functions for PCIe capabilities
- to hide PCIe spec differences
-References: <CAErSpo70NtEJFaQmDtdTLkSB3fQRNy78juAQO-KbXeceZkunkw@mail.gmail.com> <1341935655-5381-1-git-send-email-jiang.liu@huawei.com> <1341935655-5381-6-git-send-email-jiang.liu@huawei.com> <CAErSpo7k3=nUSTR+n1iX0Rddv2FQm+HzcqnC5VHxh1JKUdoNAw@mail.gmail.com> <4FFCEDDE.2080907@huawei.com> <CAErSpo4JrgU2RHoNDWcm13otgdKVXuGxahE0pbuAD73nZvTZFQ@mail.gmail.com> <4FFD1FE7.6010504@huawei.com> <CAErSpo7ZtrYtz_8iB8=8nbQBtntPtyi8BLg6K+D7mQjnfj-KCg@mail.gmail.com>
-In-Reply-To: <CAErSpo7ZtrYtz_8iB8=8nbQBtntPtyi8BLg6K+D7mQjnfj-KCg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.108.108.229]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1207111930020.9370@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-7-12 1:52, Bjorn Helgaas wrote:
->> Hi Bjorn,
->>         Seems it would be better to return error code for unimplemented
->> registers, otherwise following code will becomes more complex. A special
->> error code for unimplemented registers, such as -EIO?
+On Wed, Jul 11, 2012 at 07:33:41PM -0700, David Rientjes wrote:
+> On Thu, 12 Jul 2012, Minchan Kim wrote:
 > 
-> I think you're asking about returning error for *reads* of
-> unimplemented registers?  I guess I still think it's OK to completely
-> hide the v1 nastiness inside these accessors, and return success with
-> a zero value when reading.  Having several different error returns
-> seems like overkill for this case.  Nobody wants to distinguish
-> between different reasons for failure.
+> > Agreed and that's why I suggested following patch.
+> > It's not elegant but at least, it could attract interest of configuration
+> > people and they could find a regression during test phase.
+> > This description could be improved later by writing new documenation which
+> > includes more detailed story and method for capturing high order allocation
+> > by ftrace once we see regression report.
+> > 
+> > At the moment, I would like to post this patch, simply.
+> > (Of course, I hope fluent native people will correct a sentence. :) )
+> > 
+> > Any objections, Andrew, David?
+> > 
 > 
-> I'm actually not sure that it's worth returning an error even when
-> *writing* an unimplemented register.  What if we return success and
-> just drop the write?
+> There are other config options like CONFIG_SLOB that are used for a very 
+> small memory footprint on systems like this.  We used to have 
+> CONFIG_EMBEDDED to suggest options like this but that has since been 
+> renamed as CONFIG_EXPERT and has become obscured.
 > 
-> Maybe these should even be void functions.  It feels like the only
-> real use of the return value is to detect programmer error, and I
-> don't think that's very effective.  If we remove the return values,
-> people will have to focus on the *data*, which seems more important
-> anyway.
-Hi Bjorn,
-	It's a little risk to change these PCIe capabilities access
-functions as void. On some platform with hardware error detecting/correcting
-capabilities, such as EEH on Power, it would be better to return
-error code if hardware error happens during accessing configuration registers.
-	As I know, coming Intel Xeon processor may provide PCIe hardware
-error detecting capability similar to EEH on power.
+> If size is really the only difference, I would think that people who want 
+> the smallest kernel possible would be doing allnoconfig and then 
+> selectively enabling what they need, so defconfig isn't really relevant 
+> here.  And it's very difficult for an admin to know whether or not they 
+> "care about high-order allocations."
+> 
+> I'd reconsider disabling compaction by default unless there are other 
+> considerations that haven't been mentioned.
 
->> static void rtl_disable_clock_request(struct pci_dev *pdev)
->> {
->>         u16 ctl;
->>
->>         if (!pci_pcie_capability_read_word(pdev, PCI_EXP_LNKCTL, &ctl)) {
->>                 ctl &= ~PCI_EXP_LNKCTL_CLKREQ_EN;
->>                 pci_pcie_capability_write_word(pdev, PCI_EXP_LNKCTL, ctl);
->>         }
->> }
-> 
-> I would write that as:
-> 
->     if (!pci_is_pcie(pdev)
->         return;
-> 
->     pci_pcie_capability_read_word(pdev, PCI_EXP_LNKCTL, &ctl);
->     if (ctl & PCI_EXP_LNKCTL_CLKREQ_EN)
->         pci_pcie_capability_write_word(pdev, PCI_EXP_LNKCTL, ctl &
-> ~PCI_EXP_LNKCTL_CLKREQ_EN);
-> 
-> which does the right thing regardless of what we do for return values,
-> and saves a config write in the case where LNKCTL is implemented and
-> CLKREQ_EN is already cleared.
-When clearing a flag, we could do that. But if we are trying to set a
-flag, it would be better to make sure the target register does exist.
+I agree but it doesn't matter with current problem.
+The point of current problem is to let admin know dangerous of regression
+about high order allocation before releasing the product.
 
+Although we enable it by defaut, he can change it with "N" unless he
+knows removing of lumpy reclaim.
+
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
