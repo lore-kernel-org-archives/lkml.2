@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162408Ab2GLWyp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:54:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44509 "EHLO
+	id S1162263Ab2GLWym (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:54:42 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:61447 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162175Ab2GLWoX (ORCPT
+	with ESMTP id S1162176Ab2GLWo1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:44:23 -0400
+	Thu, 12 Jul 2012 18:44:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Gaosen Zhang <gaosen.zhang@mediatek.com>
-Subject: [ 152/187] USB: option: Add MEDIATEK product ids
-Date: Thu, 12 Jul 2012 15:35:08 -0700
-Message-Id: <20120712191536.483135499@linuxfoundation.org>
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Jeff Pieper <jeffrey.e.pieper@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 143/187] e1000e: test for valid check_reset_block function pointer
+Date: Thu, 12 Jul 2012 15:34:59 -0700
+Message-Id: <20120712191535.671333252@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -30,52 +33,98 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Gaosen Zhang <gaosen.zhang@mediatek.com>
+From: Bruce Allan <bruce.w.allan@intel.com>
 
-commit aacef9c561a693341566a6850c451ce3df68cb9a upstream.
+commit 470a54207ccf7045a59df727573bd9d148988582 upstream.
 
-Signed-off-by: Gaosen Zhang <gaosen.zhang@mediatek.com>
+commit 44abd5c12767a8c567dc4e45fd9aec3b13ca85e0 introduced NULL pointer
+dereferences when attempting to access the check_reset_block function
+pointer on 8257x and 80003es2lan non-copper devices.
+
+This fix should be applied back through 3.4.
+
+Signed-off-by: Bruce Allan <bruce.w.allan@intel.com>
+Tested-by: Jeff Pieper <jeffrey.e.pieper@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Acked-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |   20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ drivers/net/ethernet/intel/e1000e/ethtool.c |    6 ++++--
+ drivers/net/ethernet/intel/e1000e/mac.c     |    2 +-
+ drivers/net/ethernet/intel/e1000e/netdev.c  |    4 ++--
+ drivers/net/ethernet/intel/e1000e/phy.c     |    8 +++++---
+ 4 files changed, 12 insertions(+), 8 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -497,6 +497,15 @@ static void option_instat_callback(struc
+--- a/drivers/net/ethernet/intel/e1000e/ethtool.c
++++ b/drivers/net/ethernet/intel/e1000e/ethtool.c
+@@ -258,7 +258,8 @@ static int e1000_set_settings(struct net
+ 	 * When SoL/IDER sessions are active, autoneg/speed/duplex
+ 	 * cannot be changed
+ 	 */
+-	if (hw->phy.ops.check_reset_block(hw)) {
++	if (hw->phy.ops.check_reset_block &&
++	    hw->phy.ops.check_reset_block(hw)) {
+ 		e_err("Cannot change link characteristics when SoL/IDER is "
+ 		      "active.\n");
+ 		return -EINVAL;
+@@ -1604,7 +1605,8 @@ static int e1000_loopback_test(struct e1
+ 	 * PHY loopback cannot be performed if SoL/IDER
+ 	 * sessions are active
+ 	 */
+-	if (hw->phy.ops.check_reset_block(hw)) {
++	if (hw->phy.ops.check_reset_block &&
++	    hw->phy.ops.check_reset_block(hw)) {
+ 		e_err("Cannot do PHY loopback test when SoL/IDER is active.\n");
+ 		*data = 0;
+ 		goto out;
+--- a/drivers/net/ethernet/intel/e1000e/mac.c
++++ b/drivers/net/ethernet/intel/e1000e/mac.c
+@@ -709,7 +709,7 @@ s32 e1000e_setup_link_generic(struct e10
+ 	 * In the case of the phy reset being blocked, we already have a link.
+ 	 * We do not need to set it up again.
+ 	 */
+-	if (hw->phy.ops.check_reset_block(hw))
++	if (hw->phy.ops.check_reset_block && hw->phy.ops.check_reset_block(hw))
+ 		return 0;
  
- /* MediaTek products */
- #define MEDIATEK_VENDOR_ID			0x0e8d
-+#define MEDIATEK_PRODUCT_DC_1COM		0x00a0
-+#define MEDIATEK_PRODUCT_DC_4COM		0x00a5
-+#define MEDIATEK_PRODUCT_DC_5COM		0x00a4
-+#define MEDIATEK_PRODUCT_7208_1COM		0x7101
-+#define MEDIATEK_PRODUCT_7208_2COM		0x7102
-+#define MEDIATEK_PRODUCT_FP_1COM		0x0003
-+#define MEDIATEK_PRODUCT_FP_2COM		0x0023
-+#define MEDIATEK_PRODUCT_FPDC_1COM		0x0043
-+#define MEDIATEK_PRODUCT_FPDC_2COM		0x0033
+ 	/*
+--- a/drivers/net/ethernet/intel/e1000e/netdev.c
++++ b/drivers/net/ethernet/intel/e1000e/netdev.c
+@@ -6209,7 +6209,7 @@ static int __devinit e1000_probe(struct
+ 		adapter->hw.phy.ms_type = e1000_ms_hw_default;
+ 	}
  
- /* Cellient products */
- #define CELLIENT_VENDOR_ID			0x2692
-@@ -1246,6 +1255,17 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a1, 0xff, 0x02, 0x01) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a2, 0xff, 0x00, 0x00) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a2, 0xff, 0x02, 0x01) },        /* MediaTek MT6276M modem & app port */
-+	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MEDIATEK_PRODUCT_DC_1COM, 0x0a, 0x00, 0x00) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MEDIATEK_PRODUCT_DC_5COM, 0xff, 0x02, 0x01) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MEDIATEK_PRODUCT_DC_5COM, 0xff, 0x00, 0x00) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MEDIATEK_PRODUCT_DC_4COM, 0xff, 0x02, 0x01) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MEDIATEK_PRODUCT_DC_4COM, 0xff, 0x00, 0x00) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MEDIATEK_PRODUCT_7208_1COM, 0x02, 0x00, 0x00) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MEDIATEK_PRODUCT_7208_2COM, 0x02, 0x02, 0x01) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MEDIATEK_PRODUCT_FP_1COM, 0x0a, 0x00, 0x00) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MEDIATEK_PRODUCT_FP_2COM, 0x0a, 0x00, 0x00) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MEDIATEK_PRODUCT_FPDC_1COM, 0x0a, 0x00, 0x00) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MEDIATEK_PRODUCT_FPDC_2COM, 0x0a, 0x00, 0x00) },
- 	{ USB_DEVICE(CELLIENT_VENDOR_ID, CELLIENT_PRODUCT_MEN200) },
- 	{ } /* Terminating entry */
- };
+-	if (hw->phy.ops.check_reset_block(hw))
++	if (hw->phy.ops.check_reset_block && hw->phy.ops.check_reset_block(hw))
+ 		e_info("PHY reset is blocked due to SOL/IDER session.\n");
+ 
+ 	/* Set initial default active device features */
+@@ -6376,7 +6376,7 @@ err_register:
+ 	if (!(adapter->flags & FLAG_HAS_AMT))
+ 		e1000e_release_hw_control(adapter);
+ err_eeprom:
+-	if (!hw->phy.ops.check_reset_block(hw))
++	if (hw->phy.ops.check_reset_block && !hw->phy.ops.check_reset_block(hw))
+ 		e1000_phy_hw_reset(&adapter->hw);
+ err_hw_init:
+ 	kfree(adapter->tx_ring);
+--- a/drivers/net/ethernet/intel/e1000e/phy.c
++++ b/drivers/net/ethernet/intel/e1000e/phy.c
+@@ -2121,9 +2121,11 @@ s32 e1000e_phy_hw_reset_generic(struct e
+ 	s32 ret_val;
+ 	u32 ctrl;
+ 
+-	ret_val = phy->ops.check_reset_block(hw);
+-	if (ret_val)
+-		return 0;
++	if (phy->ops.check_reset_block) {
++		ret_val = phy->ops.check_reset_block(hw);
++		if (ret_val)
++			return 0;
++	}
+ 
+ 	ret_val = phy->ops.acquire(hw);
+ 	if (ret_val)
 
 
