@@ -1,71 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933319Ab2GLJEq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 05:04:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25698 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933143Ab2GLJEo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 05:04:44 -0400
-Message-ID: <4FFE9321.9070901@redhat.com>
-Date: Thu, 12 Jul 2012 12:04:33 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S933351Ab2GLJFS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 05:05:18 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:48300 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933143Ab2GLJFQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 05:05:16 -0400
+X-AuditID: 9c930197-b7b66ae000006a2c-5d-4ffe93487d35
+Date: Thu, 12 Jul 2012 18:05:19 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Mel Gorman <mgorman@suse.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Aaditya Kumar <aaditya.kumar@ap.sony.com>
+Subject: Re: [PATCH 2/3 v3] mm: bug fix free page check in zone_watermark_ok
+Message-ID: <20120712090519.GA30892@bbox>
+References: <1342061449-29590-1-git-send-email-minchan@kernel.org>
+ <1342061449-29590-2-git-send-email-minchan@kernel.org>
+ <20120712081922.GA21018@tiehlicka.suse.cz>
 MIME-Version: 1.0
-To: Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
-CC: jan.kiszka@siemens.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        x86@kernel.org, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [RFC PATCH 00/18] KVM: x86: CPU isolation and direct interrupts
- handling by guests
-References: <20120628060719.19298.43879.stgit@localhost.localdomain> <4FEC8D31.3070406@redhat.com> <4FEC93BD.2070809@siemens.com> <4FEC95BC.200@redhat.com> <4FED7495.30707@hitachi.com> <4FEDC22F.9070406@redhat.com> <4FF6BEDC.8040207@hitachi.com>
-In-Reply-To: <4FF6BEDC.8040207@hitachi.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120712081922.GA21018@tiehlicka.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/06/2012 01:33 PM, Tomoki Sekiyama wrote:
-> Hi,
-> 
-> On 2012/06/29 23:56, Avi Kivity wrote:
->>> On 2012/06/29 2:34, Avi Kivity wrote:
->>>> On 06/28/2012 08:26 PM, Jan Kiszka wrote:
->>>>>> This is both impressive and scary.  What is the target scenario here?
->>>>>> Partitioning?  I don't see this working for generic consolidation.
->>>>>
->>>>> From my POV, partitioning - including hard realtime partitions - would
->>>>> provide some use cases.
->>>
->>> Exactly this is for partitioning that requires bare-metal performance
->>> with low latency and realtime.
->>
->> It's hard for me to evaluate how large that segment is.  Since the
->> patchset is so intrusive, it needs a large potential user set to
->> justify, or a large reduction in complexity, or both.
-> 
-> Low latency or realtime is often required on high-end systems
-> like trading, automated control, HPC and so on, or for multimedias.
-> Those who want to run MRG as a guest, or to fully utilize high-speed
-> NIC are also worth using this. And not all of such applications does
-> not use up every CPU, so partitioning is becoming reasonable as a
-> number of cores in a server is increasing.
-> Anyway, I will try to make the patch as simple as possible.
-> 
->>>  I think it is also useful for workload
->>> like HPC with MPI, that is CPU intensive and that needs low latency.
->> 
->> I keep hearing about people virtualizing these types of workloads, but I
->> haven't yet understood why.
-> 
-> One reason is ease of deployment of applications to nodes.
-> Especially in IaaS environment like Amazon EC2 Cluster Compute Instances,
-> virtualization is often introduced as a simple way to move applications
-> around flexibly among nodes shared by many users.
+Hi Michal,
 
-Device assignment is not used in clouds yet, and you can't live migrate
-if you use device assignment.
+On Thu, Jul 12, 2012 at 10:19:23AM +0200, Michal Hocko wrote:
+> On Thu 12-07-12 11:50:48, Minchan Kim wrote:
+> > In __zone_watermark_ok, free and min are signed long type
+> > while z->lowmem_reserve[classzone_idx] is unsigned long type.
+> > So comparision of them could be wrong due to type conversion
+> > to unsigned although free_pages is minus value.
+> 
+> Agreed on that
+> but
+> > 
+> > It could return true instead of false in case of order-0 check
+> > so that kswapd could sleep forever. 
+> 
+> I am kind of lost here. How can we have negative free_pages with
+> order-0? It would need to come with a negative value because 
+> free_pages -= (1 << order) - 1;
+> won't make it negative.
+
+Right you are. I missed that part.
+
+The reason Aaditya reported this problem is caused by my patch[1] in
+this series. zone_watermark_ok_safe didn't reset free_pages to zero
+although free_pages becomes minus value(Please, look at [1])
+
+[1] memory-hotplug: fix kswapd looping forever problem
+
+I think we have no problem in current code because if order isn't zero 
+and free_pages is minus value, it could exit in the middle of loop with
+false.
+
+So I think it was totally patch's problem. :(
+But I agree auto type casting problem is subtle error-prone so it's valuable
+to fix, too. As you mentiond, I should rewrite description and subject for it.
+
+Thanks for the review!
+
+> 
+> > It means livelock because direct reclaimer loops forever until kswapd
+> > set zone->all_unreclaimable.
+> > 
+> > Aaditya reported this problem when he test my hotplug patch.
+> > 
+> > Reported-off-by: Aaditya Kumar <aaditya.kumar@ap.sony.com>
+> > Tested-by: Aaditya Kumar <aaditya.kumar@ap.sony.com>
+> > Signed-off-by: Aaditya Kumar <aaditya.kumar@ap.sony.com>
+> > Signed-off-by: Minchan Kim <minchan@kernel.org>
+> 
+> So you can add my Reviewed-by: Michal Hocko <mhocko@suse.cz>
+> but the changelog could be more clear.
+> 
+> > ---
+> > This patch isn't dependent with this series.
+> > It seems to be candidate for -stable but I'm not sure because of this part.
+> > So, pass the decision to akpm.
+> > 
+> > " - It must fix a real bug that bothers people (not a, "This could be a
+> >    problem..." type thing)."
+> 
+> I am wondering what Testted-by means if "This could be a problem..."
+> type thing)."
+
+He reported it during testing this series so I don't think it will happen
+in current code because zone_page_state and zone_page_state_snapshot
+can't set free_pages to minus.
+
+> 
+> > 
+> >  mm/page_alloc.c |    3 ++-
+> >  1 file changed, 2 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > index f17e6e4..627653c 100644
+> > --- a/mm/page_alloc.c
+> > +++ b/mm/page_alloc.c
+> > @@ -1594,6 +1594,7 @@ static bool __zone_watermark_ok(struct zone *z, int order, unsigned long mark,
+> >  {
+> >  	/* free_pages my go negative - that's OK */
+> >  	long min = mark;
+> > +	long lowmem_reserve = z->lowmem_reserve[classzone_idx];
+> >  	int o;
+> >  
+> >  	free_pages -= (1 << order) - 1;
+> > @@ -1602,7 +1603,7 @@ static bool __zone_watermark_ok(struct zone *z, int order, unsigned long mark,
+> >  	if (alloc_flags & ALLOC_HARDER)
+> >  		min -= min / 4;
+> >  
+> > -	if (free_pages <= min + z->lowmem_reserve[classzone_idx])
+> > +	if (free_pages <= min + lowmem_reserve)
+> >  		return false;
+> >  	for (o = 0; o < order; o++) {
+> >  		/* At the next order, this order's pages become unavailable */
+> > -- 
+> > 1.7.9.5
+> > 
+> > --
+> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> > the body to majordomo@kvack.org.  For more info on Linux MM,
+> > see: http://www.linux-mm.org/ .
+> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+> -- 
+> Michal Hocko
+> SUSE Labs
+> SUSE LINUX s.r.o.
+> Lihovarska 1060/12
+> 190 00 Praha 9    
+> Czech Republic
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
 -- 
-error compiling committee.c: too many arguments to function
-
-
+Kind regards,
+Minchan Kim
