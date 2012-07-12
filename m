@@ -1,143 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933677Ab2GLKNk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 06:13:40 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:41489 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757383Ab2GLKJJ (ORCPT
+	id S1030327Ab2GLKNw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 06:13:52 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:44068 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933271Ab2GLKNs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 06:09:09 -0400
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Samuel Ortiz <samuel.ortiz@intel.com>
-Cc: kernel@pengutronix.de, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        "Ying-Chun Liu (PaulLiu)" <paulliu@debian.org>,
-        =?UTF-8?q?Philippe=20R=C3=A9tornaz?= <philippe.retornaz@epfl.ch>,
-        Marc Reilly <marc@cpdesign.com.au>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: [PATCH 2/7] MFD: mc13xxx workaround SPI hardware bug on i.Mx
-Date: Thu, 12 Jul 2012 11:57:48 +0200
-Message-Id: <1342087073-3892-3-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1342087073-3892-1-git-send-email-u.kleine-koenig@pengutronix.de>
-References: <1342087073-3892-1-git-send-email-u.kleine-koenig@pengutronix.de>
+	Thu, 12 Jul 2012 06:13:48 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Ravishankar N <cyberax82@gmail.com>,
+        Amit Sahrawat <amit.sahrawat83@gmail.com>
+Subject: Re: [PATCH] fat: Support fallocate on fat.
+References: <1341716859-6768-1-git-send-email-linkinjeon@gmail.com>
+	<87sjd2766n.fsf@devron.myhome.or.jp>
+	<CAKYAXd9mDfDpUj1T1NrY2LUKfwvk94CTXUh5xrEGq8b_rW41rA@mail.gmail.com>
+	<871uklp5j7.fsf@devron.myhome.or.jp>
+	<CAKYAXd-OD_3Z8=6mBQMvBApje9sN0EiPX8drMXc6pSeMgG8Nnw@mail.gmail.com>
+	<87wr2dnp9r.fsf@devron.myhome.or.jp>
+	<CAKYAXd_sWKMOQqyPyteoPbcy8_z6=e53DC8sYTcHgMX4EC10Cw@mail.gmail.com>
+Date: Thu, 12 Jul 2012 19:13:44 +0900
+In-Reply-To: <CAKYAXd_sWKMOQqyPyteoPbcy8_z6=e53DC8sYTcHgMX4EC10Cw@mail.gmail.com>
+	(Namjae Jeon's message of "Wed, 11 Jul 2012 13:22:31 +0900")
+Message-ID: <87r4shp9rb.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Philippe Rétornaz <philippe.retornaz@epfl.ch>
+Namjae Jeon <linkinjeon@gmail.com> writes:
 
-The MC13xxx PMIC is mainly used on i.Mx SoC. On thoses SoC the SPI
-hardware will deassert CS line as soon as the SPI FIFO is empty.
-The MC13xxx hardware is very sensitive to CS line change as it
-corrupts the transfert if CS is deasserted in the middle of a register
-read or write.
-It is not possible to use the CS line as a GPIO on some SoC, so we
-need to workaround this by implementing a single SPI transfer to
-access the PMIC.
+>> I guess, if Windows truncates the above clusters than file size, it may
+>> be prefer to truncate on linux too. We really need it over umount?
+>> We never know the file whether corrupted or preallocated.
+>>
+>> And at least for now, it would be better to put under CONFIG_FAT_FALLOC
+>> or such, and warn it as unofficial way to preallocation on the
+>> explanation of CONFIG_FAT_FALLOC.
+>>
+>> Sorry, I'm still not reviewing the detail of code yet, like locking. And
+>> I'm still not convinced whether we should add this hack (unofficial way)...
+> Hi OGAWA.
+> Sorry for late response.
+> Currently I am looking for best solution for fallocate support.
+> next patch will be upated like the following.
+> 1. There is no security bug.
+> 2. Fix issue takes long time while preallocating.
+> 3. No compatibility issue.
+> Let' discuss after seeing next version's patch again.
 
-Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Acked-by: Marc Reilly <marc@cpdesign.com.au>
-Signed-off-by: Philippe Rétornaz <philippe.retornaz@epfl.ch>
-Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
-Origin: next-20120712, commit:e4ecf6ea84d68aea5a9785e89f52672e1e126998
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
----
- drivers/mfd/mc13xxx-spi.c |   65 ++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 64 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/mfd/mc13xxx-spi.c b/drivers/mfd/mc13xxx-spi.c
-index 5d1969f..03df422 100644
---- a/drivers/mfd/mc13xxx-spi.c
-+++ b/drivers/mfd/mc13xxx-spi.c
-@@ -54,6 +54,67 @@ static struct regmap_config mc13xxx_regmap_spi_config = {
- 	.max_register = MC13XXX_NUMREGS,
- 
- 	.cache_type = REGCACHE_NONE,
-+	.use_single_rw = 1,
-+};
-+
-+static int mc13xxx_spi_read(void *context, const void *reg, size_t reg_size,
-+				void *val, size_t val_size)
-+{
-+	unsigned char w[4] = { *((unsigned char *) reg), 0, 0, 0};
-+	unsigned char r[4];
-+	unsigned char *p = val;
-+	struct device *dev = context;
-+	struct spi_device *spi = to_spi_device(dev);
-+	struct spi_transfer t = {
-+		.tx_buf = w,
-+		.rx_buf = r,
-+		.len = 4,
-+	};
-+
-+	struct spi_message m;
-+	int ret;
-+
-+	if (val_size != 3 || reg_size != 1)
-+		return -ENOTSUPP;
-+
-+	spi_message_init(&m);
-+	spi_message_add_tail(&t, &m);
-+	ret = spi_sync(spi, &m);
-+
-+	memcpy(p, &r[1], 3);
-+
-+	return ret;
-+}
-+
-+static int mc13xxx_spi_write(void *context, const void *data, size_t count)
-+{
-+	struct device *dev = context;
-+	struct spi_device *spi = to_spi_device(dev);
-+
-+	if (count != 4)
-+		return -ENOTSUPP;
-+
-+	return spi_write(spi, data, count);
-+}
-+
-+/*
-+ * We cannot use regmap-spi generic bus implementation here.
-+ * The MC13783 chip will get corrupted if CS signal is deasserted
-+ * and on i.Mx31 SoC (the target SoC for MC13783 PMIC) the SPI controller
-+ * has the following errata (DSPhl22960):
-+ * "The CSPI negates SS when the FIFO becomes empty with
-+ * SSCTL= 0. Software cannot guarantee that the FIFO will not
-+ * drain because of higher priority interrupts and the
-+ * non-realtime characteristics of the operating system. As a
-+ * result, the SS will negate before all of the data has been
-+ * transferred to/from the peripheral."
-+ * We workaround this by accessing the SPI controller with a
-+ * single transfert.
-+ */
-+
-+static struct regmap_bus regmap_mc13xxx_bus = {
-+	.write = mc13xxx_spi_write,
-+	.read = mc13xxx_spi_read,
- };
- 
- static int mc13xxx_spi_probe(struct spi_device *spi)
-@@ -78,7 +139,9 @@ static int mc13xxx_spi_probe(struct spi_device *spi)
- 	mc13xxx->dev = &spi->dev;
- 	mutex_init(&mc13xxx->lock);
- 
--	mc13xxx->regmap = regmap_init_spi(spi, &mc13xxx_regmap_spi_config);
-+	mc13xxx->regmap = regmap_init(&spi->dev, &regmap_mc13xxx_bus, &spi->dev,
-+					&mc13xxx_regmap_spi_config);
-+
- 	if (IS_ERR(mc13xxx->regmap)) {
- 		ret = PTR_ERR(mc13xxx->regmap);
- 		dev_err(mc13xxx->dev, "Failed to initialize register map: %d\n",
+Sure, thanks.
 -- 
-1.7.10.4
-
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
