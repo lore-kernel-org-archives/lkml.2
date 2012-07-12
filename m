@@ -1,28 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162692Ab2GLXRH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:17:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45262 "EHLO
+	id S1162774Ab2GLXRO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:17:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45402 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162577Ab2GLXEQ (ORCPT
+	with ESMTP id S1162577Ab2GLXRJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 19:04:16 -0400
-Date: Thu, 12 Jul 2012 16:04:15 -0700
+	Thu, 12 Jul 2012 19:17:09 -0400
+Date: Thu, 12 Jul 2012 16:17:07 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
-To: Amit Daniel Kachhap <amit.kachhap@linaro.org>
-Cc: linux-pm@lists.linux-foundation.org, lenb@kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, lm-sensors@lm-sensors.org,
-        Donggeun Kim <dg77.kim@samsung.com>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        SangWook Ju <sw.ju@samsung.com>, Durgadoss <durgadoss.r@intel.com>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: Re: [RESEND PATCH v4 1/5] thermal: add generic cpufreq cooling
- implementation
-Message-Id: <20120712160415.473748fd.akpm@linux-foundation.org>
-In-Reply-To: <1342100468-19426-2-git-send-email-amit.kachhap@linaro.org>
-References: <1342100468-19426-1-git-send-email-amit.kachhap@linaro.org>
-	<1342100468-19426-2-git-send-email-amit.kachhap@linaro.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Artem Bityutskiy <dedekind1@gmail.com>, Al Viro <viro@ZenIV.linux.org.uk>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv3 0/4] hfsplus: stop using write_supers and s_dirt
+Message-Id: <20120712161707.d5bb6df2.akpm@linux-foundation.org>
+In-Reply-To: <20120712160951.74cbb3c1.akpm@linux-foundation.org>
+References: <1342103191-17406-1-git-send-email-dedekind1@gmail.com>
+	<20120712160951.74cbb3c1.akpm@linux-foundation.org>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -31,28 +26,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Jul 2012 19:11:04 +0530
-Amit Daniel Kachhap <amit.kachhap@linaro.org> wrote:
+On Thu, 12 Jul 2012 16:09:51 -0700
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
-> [akpm@linux-foundation.org: fix comment layout]
-> Signed-off-by: Amit Daniel Kachhap <amit.kachhap@linaro.org>
-> Cc: Donggeun Kim <dg77.kim@samsung.com>
-> Cc: Guenter Roeck <guenter.roeck@ericsson.com>
-> Cc: SangWook Ju <sw.ju@samsung.com>
-> Cc: Durgadoss <durgadoss.r@intel.com>
-> Cc: Len Brown <lenb@kernel.org>
-> Cc: Jean Delvare <khali@linux-fr.org>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> > 2. removed 'cancel_delayed_work()' from 'hfsplus_sync_fs()' because it is not
+> >    enough to just cancel the job, we need to set the work_queued flag to zero
+> >    as well. I could do this, but it is simpler to just remove this tiny
+> >    optimization - we do not gain much with it. I caught this bug while doing
+> >    some more testing.
+> 
+> And lo, when I look at "what was changed", I see that this patchset
+> actually does *not* remove the cancel_delayed_work() call.  What's up
+> with that?
 
-Something strange appears to have happened here?  At a guess it seems
-that the patches were in my tree, I sent them to someone (Len?), then
-they were merged into linux-next by "someone" and then they fell
-out of linux-next again?
-
-If so, they will hopefully come back soon.  If not, something failed
-fairly seriously.
-
-
-I took a look at re-merging these patches into my tree, but there are
-significant conflicts with other work which has gone into linux-next.
-
+Ah, no.  I was looking at the cancel_delayed_work() in hfs_put_super().
