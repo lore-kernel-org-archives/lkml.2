@@ -1,131 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161459Ab2GLR1z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 13:27:55 -0400
-Received: from mga11.intel.com ([192.55.52.93]:20157 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161266Ab2GLR1x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 13:27:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="191847609"
-From: Octavian Purdila <octavian.purdila@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org,
-        Octavian Purdila <octavian.purdila@intel.com>,
-        Ram Pai <linuxram@us.ibm.com>
-Subject: [PATCH v2] resource: make sure requested range is included in the root range
-Date: Thu, 12 Jul 2012 20:27:08 +0300
-Message-Id: <1342114028-21407-1-git-send-email-octavian.purdila@intel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1161466Ab2GLR2k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 13:28:40 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52432 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1161266Ab2GLR2j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 13:28:39 -0400
+Date: Thu, 12 Jul 2012 18:28:37 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: AnilKumar Ch <anilkumar@ti.com>
+Cc: sameo@linux.intel.com, lrg@ti.com, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        grant.likely@secretlab.ca
+Subject: Re: [PATCH v2 1/3] regulator: tps65217: Add device tree support
+Message-ID: <20120712172836.GR7256@opensource.wolfsonmicro.com>
+References: <1341918584-28004-1-git-send-email-anilkumar@ti.com>
+ <1341918584-28004-2-git-send-email-anilkumar@ti.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="24/piotZLKF/SXqU"
+Content-Disposition: inline
+In-Reply-To: <1341918584-28004-2-git-send-email-anilkumar@ti.com>
+X-Cookie: Advancement in position.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the requested range is outside of the root range the logic in
-__reserve_region_with_split will cause an infinite recursion which
-will overflow the stack as seen in the warning bellow.
 
-This particular stack overflow was caused by requesting the
-(100000000-107ffffff) range while the root range was (0-ffffffff). In
-this case __request_resource would return the whole root range as
-conflict range (i.e. 0-ffffffff). Then, the logic in
-__reserve_region_with_split would continue the recursion requesting
-the new range as (conflict->end+1, end) which incidentally in this
-case equals the originally requested range.
+--24/piotZLKF/SXqU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-This patch aborts looking for an usable range when the request does
-not intersect with the root range. When the request partially overlaps
-with the root range, it ajust the request to fall in the root range
-and then continues with the new request.
+On Tue, Jul 10, 2012 at 04:39:42PM +0530, AnilKumar Ch wrote:
+> This commit adds device tree support for tps65217 pmic. And usage
+> details are added to device tree documentation. Driver is tested
+> by using kernel module with regulator set and get APIs.
 
-When the request is modified or aborted errors and a stack trace are
-logged to allow catching the errors in the upper layers.
+Applied, thanks.
 
-[    5.968374] WARNING: at kernel/sched.c:4129 sub_preempt_count+0x63/0x89()
-[    5.975150] Modules linked in:
-[    5.978184] Pid: 1, comm: swapper Not tainted 3.0.22-mid27-00004-gb72c817 #46
-[    5.985324] Call Trace:
-[    5.987759]  [<c1039dfc>] ? console_unlock+0x17b/0x18d
-[    5.992891]  [<c1039620>] warn_slowpath_common+0x48/0x5d
-[    5.998194]  [<c1031758>] ? sub_preempt_count+0x63/0x89
-[    6.003412]  [<c1039644>] warn_slowpath_null+0xf/0x13
-[    6.008453]  [<c1031758>] sub_preempt_count+0x63/0x89
-[    6.013499]  [<c14d60c4>] _raw_spin_unlock+0x27/0x3f
-[    6.018453]  [<c10c6349>] add_partial+0x36/0x3b
-[    6.022973]  [<c10c7c0a>] deactivate_slab+0x96/0xb4
-[    6.027842]  [<c14cf9d9>] __slab_alloc.isra.54.constprop.63+0x204/0x241
-[    6.034456]  [<c103f78f>] ? kzalloc.constprop.5+0x29/0x38
-[    6.039842]  [<c103f78f>] ? kzalloc.constprop.5+0x29/0x38
-[    6.045232]  [<c10c7dc9>] kmem_cache_alloc_trace+0x51/0xb0
-[    6.050710]  [<c103f78f>] ? kzalloc.constprop.5+0x29/0x38
-[    6.056100]  [<c103f78f>] kzalloc.constprop.5+0x29/0x38
-[    6.061320]  [<c17b45e9>] __reserve_region_with_split+0x1c/0xd1
-[    6.067230]  [<c17b4693>] __reserve_region_with_split+0xc6/0xd1
-...
-[    7.179057]  [<c17b4693>] __reserve_region_with_split+0xc6/0xd1
-[    7.184970]  [<c17b4779>] reserve_region_with_split+0x30/0x42
-[    7.190709]  [<c17a8ebf>] e820_reserve_resources_late+0xd1/0xe9
-[    7.196623]  [<c17c9526>] pcibios_resource_survey+0x23/0x2a
-[    7.202184]  [<c17cad8a>] pcibios_init+0x23/0x35
-[    7.206789]  [<c17ca574>] pci_subsys_init+0x3f/0x44
-[    7.211659]  [<c1002088>] do_one_initcall+0x72/0x122
-[    7.216615]  [<c17ca535>] ? pci_legacy_init+0x3d/0x3d
-[    7.221659]  [<c17a27ff>] kernel_init+0xa6/0x118
-[    7.226265]  [<c17a2759>] ? start_kernel+0x334/0x334
-[    7.231223]  [<c14d7482>] kernel_thread_helper+0x6/0x10
+--24/piotZLKF/SXqU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Cc: Ram Pai <linuxram@us.ibm.com>
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
----
- kernel/resource.c |   25 ++++++++++++++++++++++++-
- 1 file changed, 24 insertions(+), 1 deletion(-)
+iQIcBAEBAgAGBQJP/wksAAoJEBus8iNuMP3dgcIP/Az7K5iUFhWJ5Kak7CtG1icC
+9BVT6amEhOGcXNQjA6nhi1Y6ajok+z+Ln0/4U/dbPg4yiXkNyn9TnALsV7L5Vcl1
+c4H4zwfYQgLLGTXo2mZilTabNBVspYPKZmtodMHrajsTVUeZbV1x1aDFHWsqnNJd
+bl8CgfaRrBbbotz7qJ3ojnsZWyDuhbsydI7c8h8ysgizFSxnClrFn4ekdZsE2+RS
+i2jwO4VseJAH+/EaRGXoJx2wOh564uEGzvOrWd4RZb2drzCtqQHkMn8IUXwVtqTg
+/UOaL5n8QHxNSOCFBsaNnXdnBKE14Rt4Kx8k1jIEWxPftKQRrCdVVQ3XZ6ZL+lJt
+a8mbhNBD2aYDRLglXU2jkjC4qc2XHI7/MvOoQqc9krXfGuaUwwXkjRUSbuQGw6v7
+G7lYWE3zBLOn0ESQPb4yjEiOqDEo/hkntD2CjbFEx4R7F57xoKm4LjntkEjUBPh+
+2zceV9I/jlsY9vzRg6Yp8JSZfVKND4uGN5vK6zZi5eJziN2wkdHl7Yqnt2yuEcZu
+UOuKDJaqh5QI1ea60+I+8i/CqoOHQSHjTGmeLEFhwI7boSjNPFDauM7lDsjEgpAe
+XEaSuHW9eXhL742eKq3fKwR/C9qZeRqheNu6xYhp5A2VsoCCrKSe+QfiXdt5Ogfq
+IJQRHLMV5fgKN84sIaDN
+=sBGE
+-----END PGP SIGNATURE-----
 
-diff --git a/kernel/resource.c b/kernel/resource.c
-index e1d2b8e..84e3aa4 100644
---- a/kernel/resource.c
-+++ b/kernel/resource.c
-@@ -7,6 +7,8 @@
-  * Arbitrary resource management.
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/export.h>
- #include <linux/errno.h>
- #include <linux/ioport.h>
-@@ -788,8 +790,29 @@ void __init reserve_region_with_split(struct resource *root,
- 		resource_size_t start, resource_size_t end,
- 		const char *name)
- {
-+	int abort = 0;
-+
- 	write_lock(&resource_lock);
--	__reserve_region_with_split(root, start, end, name);
-+	if (root->start > start || root->end < end) {
-+		pr_err("requested range [0x%llx-0x%llx] not in root %pr\n",
-+		       (unsigned long long)start, (unsigned long long)end,
-+		       root);
-+		if (start > root->end || end < root->start) {
-+			abort = 1;
-+			pr_err("unable to fix request, aborting it\n");
-+		} else {
-+			if (end > root->end)
-+				end = root->end;
-+			if (start < root->start)
-+				start = root->start;
-+			pr_err("fixing request to [0x%llx-0x%llx]\n",
-+			       (unsigned long long)start,
-+			       (unsigned long long)end);
-+		}
-+		dump_stack();
-+	}
-+	if (!abort)
-+		__reserve_region_with_split(root, start, end, name);
- 	write_unlock(&resource_lock);
- }
- 
--- 
-1.7.9.5
-
+--24/piotZLKF/SXqU--
