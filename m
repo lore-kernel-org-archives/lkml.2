@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162362Ab2GLWwP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:52:15 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60450 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162235Ab2GLWpG (ORCPT
+	id S1162395Ab2GLWwz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:52:55 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:52765 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162257Ab2GLWo4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:45:06 -0400
+	Thu, 12 Jul 2012 18:44:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 164/187] mwifiex: fix wrong return values in add_virtual_intf() error cases
-Date: Thu, 12 Jul 2012 15:35:20 -0700
-Message-Id: <20120712191538.538370098@linuxfoundation.org>
+        Florian Manschwetus <manschwetus@googlemail.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 161/187] mac80211: fix queues stuck issue with HT bandwidth change
+Date: Thu, 12 Jul 2012 15:35:17 -0700
+Message-Id: <20120712191538.273855024@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -32,88 +31,82 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Bing Zhao <bzhao@marvell.com>
 
-commit 858faa57dd9e2b91f3f870fbb1185982e42f5a2b upstream
+From: Johannes Berg <johannes.berg@intel.com>
 
-add_virtual_intf() needs to return an ERR_PTR(), instead of NULL,
-on errors, otherwise cfg80211 will crash.
+No upstream commit, the buggy code was removed in 3.5 in commit
+7213cf2cb0dfbb4d6b55a1da000d34338f76c0e3 and others.
 
-Reported-by: Johannes Berg <johannes@sipsolutions.net>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Rajkumar changed code for handling channel switching in
+mac80211 to stop the queues in
+
+  commit 7cc44ed48d0ec0937c1f098642540b6c9ca38de5
+  Author: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
+  Date:   Fri Sep 16 15:32:34 2011 +0530
+
+      mac80211: Fix regression on queue stop during 2040 bss change
+
+which went into 3.2. In the 3.4 cycle, Paul's change
+
+  commit 3117bbdb7899d43927c8ce4fe885ab7c1231c121
+  Author: Paul Stewart <pstew@chromium.org>
+  Date:   Tue Mar 13 07:46:18 2012 -0700
+
+      mac80211: Don't let regulatory make us deaf
+
+went in and changed the TX/RX enable logic, but now
+the conditions for stopping and restarting the queues
+were different so that now, if the AP changes between
+20/40 MHz bandwidth, it can happen that we stop but
+never restart the queues. This breaks the connection
+and the module actually has to be reloaded to get it
+back to work.
+
+Fix this by making sure the queues are always started
+when they were stopped.
+
+Reported-by: Florian Manschwetus <manschwetus@googlemail.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/net/wireless/mwifiex/cfg80211.c |   21 +++++++++------------
- 1 file changed, 9 insertions(+), 12 deletions(-)
+ net/mac80211/mlme.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
---- a/drivers/net/wireless/mwifiex/cfg80211.c
-+++ b/drivers/net/wireless/mwifiex/cfg80211.c
-@@ -1214,11 +1214,11 @@ struct net_device *mwifiex_add_virtual_i
- 	void *mdev_priv;
+--- a/net/mac80211/mlme.c
++++ b/net/mac80211/mlme.c
+@@ -187,7 +187,7 @@ static u32 ieee80211_enable_ht(struct ie
+ 	u32 changed = 0;
+ 	int hti_cfreq;
+ 	u16 ht_opmode;
+-	bool enable_ht = true;
++	bool enable_ht = true, queues_stopped = false;
+ 	enum nl80211_channel_type prev_chantype;
+ 	enum nl80211_channel_type rx_channel_type = NL80211_CHAN_NO_HT;
+ 	enum nl80211_channel_type tx_channel_type;
+@@ -254,6 +254,7 @@ static u32 ieee80211_enable_ht(struct ie
+ 		 */
+ 		ieee80211_stop_queues_by_reason(&sdata->local->hw,
+ 				IEEE80211_QUEUE_STOP_REASON_CHTYPE_CHANGE);
++		queues_stopped = true;
  
- 	if (!priv)
--		return NULL;
-+		return ERR_PTR(-EFAULT);
- 
- 	adapter = priv->adapter;
- 	if (!adapter)
--		return NULL;
-+		return ERR_PTR(-EFAULT);
- 
- 	switch (type) {
- 	case NL80211_IFTYPE_UNSPECIFIED:
-@@ -1227,7 +1227,7 @@ struct net_device *mwifiex_add_virtual_i
- 		if (priv->bss_mode) {
- 			wiphy_err(wiphy, "cannot create multiple"
- 					" station/adhoc interfaces\n");
--			return NULL;
-+			return ERR_PTR(-EINVAL);
- 		}
- 
- 		if (type == NL80211_IFTYPE_UNSPECIFIED)
-@@ -1244,14 +1244,15 @@ struct net_device *mwifiex_add_virtual_i
- 		break;
- 	default:
- 		wiphy_err(wiphy, "type not supported\n");
--		return NULL;
-+		return ERR_PTR(-EINVAL);
- 	}
- 
- 	dev = alloc_netdev_mq(sizeof(struct mwifiex_private *), name,
- 			      ether_setup, 1);
- 	if (!dev) {
- 		wiphy_err(wiphy, "no memory available for netdevice\n");
--		goto error;
-+		priv->bss_mode = NL80211_IFTYPE_UNSPECIFIED;
-+		return ERR_PTR(-ENOMEM);
- 	}
- 
- 	dev_net_set(dev, wiphy_net(wiphy));
-@@ -1276,7 +1277,9 @@ struct net_device *mwifiex_add_virtual_i
- 	/* Register network device */
- 	if (register_netdevice(dev)) {
- 		wiphy_err(wiphy, "cannot register virtual network device\n");
--		goto error;
-+		free_netdev(dev);
-+		priv->bss_mode = NL80211_IFTYPE_UNSPECIFIED;
-+		return ERR_PTR(-EFAULT);
- 	}
- 
- 	sema_init(&priv->async_sem, 1);
-@@ -1288,12 +1291,6 @@ struct net_device *mwifiex_add_virtual_i
- 	mwifiex_dev_debugfs_init(priv);
- #endif
- 	return dev;
--error:
--	if (dev && (dev->reg_state == NETREG_UNREGISTERED))
--		free_netdev(dev);
--	priv->bss_mode = NL80211_IFTYPE_UNSPECIFIED;
+ 		/* flush out all packets */
+ 		synchronize_net();
+@@ -272,12 +273,12 @@ static u32 ieee80211_enable_ht(struct ie
+ 						 IEEE80211_RC_HT_CHANGED,
+ 						 tx_channel_type);
+ 		rcu_read_unlock();
 -
--	return NULL;
- }
- EXPORT_SYMBOL_GPL(mwifiex_add_virtual_intf);
+-		if (beacon_htcap_ie)
+-			ieee80211_wake_queues_by_reason(&sdata->local->hw,
+-				IEEE80211_QUEUE_STOP_REASON_CHTYPE_CHANGE);
+ 	}
  
++	if (queues_stopped)
++		ieee80211_wake_queues_by_reason(&sdata->local->hw,
++			IEEE80211_QUEUE_STOP_REASON_CHTYPE_CHANGE);
++
+ 	ht_opmode = le16_to_cpu(hti->operation_mode);
+ 
+ 	/* if bss configuration changed store the new one */
 
 
