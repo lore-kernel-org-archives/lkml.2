@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758261Ab2GLXdp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:33:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54985 "EHLO
+	id S1161781Ab2GLXex (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:34:53 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60450 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161792Ab2GLWkW (ORCPT
+	with ESMTP id S1161748Ab2GLWkC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:40:22 -0400
+	Thu, 12 Jul 2012 18:40:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Nicolas Pitre <nico@fluxnic.net>, Andrew Lunn <andrew@lunn.ch>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: [ 084/187] ARM: Orion: Fix WDT compile for Dove and MV78xx0
-Date: Thu, 12 Jul 2012 15:34:00 -0700
-Message-Id: <20120712191530.189518440@linuxfoundation.org>
+        Feng Tang <feng.tang@intel.com>, Len Brown <len.brown@intel.com>
+Subject: [ 078/187] ACPI: Make acpi_skip_timer_override cover all source_irq==0 cases
+Date: Thu, 12 Jul 2012 15:33:54 -0700
+Message-Id: <20120712191529.640054658@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -31,73 +30,75 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Andrew Lunn <andrew@lunn.ch>
+From: Feng Tang <feng.tang@intel.com>
 
-commit 1e0c1ce00d83834d03f4d8d039734ca4703298df upstream.
+commit ae10ccdc3093486f8c2369d227583f9d79f628e5 upstream.
 
-Commit 0fa1f0609a0c1fe8b2be3c0089a2cb48f7fda521 (ARM: Orion: Fix
-Virtual/Physical mixup with watchdog) broke the Dove & MV78xx0
-build. Although these two SoC don't use the watchdog, the shared
-platform code still needs to build. Add the necessary defines.
+Currently when acpi_skip_timer_override is set, it only cover the
+(source_irq == 0 && global_irq == 2) cases. While there is also
+platform which need use this option and its global_irq is not 2.
+This patch will extend acpi_skip_timer_override to cover all
+timer overriding cases as long as the source irq is 0.
 
-Reported-by: Nicolas Pitre <nico@fluxnic.net>
-Signed-off-by: Andrew Lunn <andrew@lunn.ch>
-Tested-by: Nicolas Pitre <nico@fluxnic.net>
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+This is the first part of a fix to kernel bug bugzilla 40002:
+	"IRQ 0 assigned to VGA"
+https://bugzilla.kernel.org/show_bug.cgi?id=40002
+
+Reported-and-tested-by: Szymon Kowalczyk <fazerxlo@o2.pl>
+Signed-off-by: Feng Tang <feng.tang@intel.com>
+Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-dove/include/mach/bridge-regs.h    |    1 +
- arch/arm/mach-dove/include/mach/dove.h           |    1 +
- arch/arm/mach-mv78xx0/include/mach/bridge-regs.h |    1 +
- arch/arm/mach-mv78xx0/include/mach/mv78xx0.h     |    2 ++
- 4 files changed, 5 insertions(+)
+ arch/x86/kernel/acpi/boot.c |   14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
 
---- a/arch/arm/mach-dove/include/mach/bridge-regs.h
-+++ b/arch/arm/mach-dove/include/mach/bridge-regs.h
-@@ -50,5 +50,6 @@
- #define POWER_MANAGEMENT	(BRIDGE_VIRT_BASE | 0x011c)
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -422,12 +422,14 @@ acpi_parse_int_src_ovr(struct acpi_subta
+ 		return 0;
+ 	}
  
- #define TIMER_VIRT_BASE		(BRIDGE_VIRT_BASE | 0x0300)
-+#define TIMER_PHYS_BASE         (BRIDGE_PHYS_BASE | 0x0300)
- 
- #endif
---- a/arch/arm/mach-dove/include/mach/dove.h
-+++ b/arch/arm/mach-dove/include/mach/dove.h
-@@ -78,6 +78,7 @@
- 
- /* North-South Bridge */
- #define BRIDGE_VIRT_BASE	(DOVE_SB_REGS_VIRT_BASE | 0x20000)
-+#define BRIDGE_PHYS_BASE	(DOVE_SB_REGS_PHYS_BASE | 0x20000)
- 
- /* Cryptographic Engine */
- #define DOVE_CRYPT_PHYS_BASE	(DOVE_SB_REGS_PHYS_BASE | 0x30000)
---- a/arch/arm/mach-mv78xx0/include/mach/bridge-regs.h
-+++ b/arch/arm/mach-mv78xx0/include/mach/bridge-regs.h
-@@ -31,5 +31,6 @@
- #define IRQ_MASK_HIGH_OFF	0x0014
- 
- #define TIMER_VIRT_BASE		(BRIDGE_VIRT_BASE | 0x0300)
-+#define TIMER_PHYS_BASE		(BRIDGE_PHYS_BASE | 0x0300)
- 
- #endif
---- a/arch/arm/mach-mv78xx0/include/mach/mv78xx0.h
-+++ b/arch/arm/mach-mv78xx0/include/mach/mv78xx0.h
-@@ -42,6 +42,7 @@
- #define MV78XX0_CORE0_REGS_PHYS_BASE	0xf1020000
- #define MV78XX0_CORE1_REGS_PHYS_BASE	0xf1024000
- #define MV78XX0_CORE_REGS_VIRT_BASE	0xfe400000
-+#define MV78XX0_CORE_REGS_PHYS_BASE	0xfe400000
- #define MV78XX0_CORE_REGS_SIZE		SZ_16K
- 
- #define MV78XX0_PCIE_IO_PHYS_BASE(i)	(0xf0800000 + ((i) << 20))
-@@ -59,6 +60,7 @@
-  * Core-specific peripheral registers.
-  */
- #define BRIDGE_VIRT_BASE	(MV78XX0_CORE_REGS_VIRT_BASE)
-+#define BRIDGE_PHYS_BASE	(MV78XX0_CORE_REGS_PHYS_BASE)
+-	if (intsrc->source_irq == 0 && intsrc->global_irq == 2) {
++	if (intsrc->source_irq == 0) {
+ 		if (acpi_skip_timer_override) {
+-			printk(PREFIX "BIOS IRQ0 pin2 override ignored.\n");
++			printk(PREFIX "BIOS IRQ0 override ignored.\n");
+ 			return 0;
+ 		}
+-		if (acpi_fix_pin2_polarity && (intsrc->inti_flags & ACPI_MADT_POLARITY_MASK)) {
++
++		if ((intsrc->global_irq == 2) && acpi_fix_pin2_polarity
++			&& (intsrc->inti_flags & ACPI_MADT_POLARITY_MASK)) {
+ 			intsrc->inti_flags &= ~ACPI_MADT_POLARITY_MASK;
+ 			printk(PREFIX "BIOS IRQ0 pin2 override: forcing polarity to high active.\n");
+ 		}
+@@ -1334,7 +1336,7 @@ static int __init dmi_disable_acpi(const
+ }
  
  /*
-  * Register Map
+- * Force ignoring BIOS IRQ0 pin2 override
++ * Force ignoring BIOS IRQ0 override
+  */
+ static int __init dmi_ignore_irq0_timer_override(const struct dmi_system_id *d)
+ {
+@@ -1344,7 +1346,7 @@ static int __init dmi_ignore_irq0_timer_
+ 	 */
+ 	if (!acpi_skip_timer_override) {
+ 		WARN(1, KERN_ERR "ati_ixp4x0 quirk not complete.\n");
+-		pr_notice("%s detected: Ignoring BIOS IRQ0 pin2 override\n",
++		pr_notice("%s detected: Ignoring BIOS IRQ0 override\n",
+ 			d->ident);
+ 		acpi_skip_timer_override = 1;
+ 	}
+@@ -1438,7 +1440,7 @@ static struct dmi_system_id __initdata a
+ 	 * is enabled.  This input is incorrectly designated the
+ 	 * ISA IRQ 0 via an interrupt source override even though
+ 	 * it is wired to the output of the master 8259A and INTIN0
+-	 * is not connected at all.  Force ignoring BIOS IRQ0 pin2
++	 * is not connected at all.  Force ignoring BIOS IRQ0
+ 	 * override in that cases.
+ 	 */
+ 	{
 
 
