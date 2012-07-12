@@ -1,92 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758853Ab2GLGvl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 02:51:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39695 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756338Ab2GLGki (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 02:40:38 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Eric B Munson <emunson@mgebm.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 02/16] mm: slub: Optimise the SLUB fast path to avoid pfmemalloc checks
-Date: Thu, 12 Jul 2012 07:40:18 +0100
-Message-Id: <1342075232-29267-3-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1342075232-29267-1-git-send-email-mgorman@suse.de>
-References: <1342075232-29267-1-git-send-email-mgorman@suse.de>
+	id S1758662Ab2GLHDt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 03:03:49 -0400
+Received: from mail.windriver.com ([147.11.1.11]:64768 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751764Ab2GLHDs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 03:03:48 -0400
+From: Ying Xue <ying.xue0@gmail.com>
+To: a.p.zijlstra@chello.nl
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] sched: Fix spacing issues in coding style
+Date: Thu, 12 Jul 2012 15:03:42 +0800
+Message-Id: <1342076622-6606-1-git-send-email-ying.xue0@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Christoph Lameter <cl@linux.com>
+Delete redudant spaces between type name and data name or
+operators.
 
-This patch removes the check for pfmemalloc from the alloc hotpath and
-puts the logic after the election of a new per cpu slab. For a pfmemalloc
-page we do not use the fast path but force the use of the slow path which
-is also used for the debug case.
-
-This has the side-effect of weakening pfmemalloc processing in the
-following way;
-
-1. A process that is allocating for network swap calls __slab_alloc.
-   pfmemalloc_match is true so the freelist is loaded and c->freelist is
-   now pointing to a pfmemalloc page.
-
-2. A process that is attempting normal allocations calls slab_alloc,
-   finds the pfmemalloc page on the freelist and uses it because it did
-   not check pfmemalloc_match()
-
-The patch allows non-pfmemalloc allocations to use pfmemalloc pages with
-the kmalloc slabs being the most vunerable caches on the grounds they
-are most likely to have a mix of pfmemalloc and !pfmemalloc requests. A
-later patch will still protect the system as processes will get throttled
-if the pfmemalloc reserves get depleted but performance will not degrade
-as smoothly.
-
-[mgorman@suse.de: Expanded changelog]
-Signed-off-by: Christoph Lameter <cl@linux.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Ying Xue <ying.xue0@gmail.com>
 ---
- mm/slub.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ kernel/sched/cpupri.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/mm/slub.c b/mm/slub.c
-index 98fecc2..8e2a2f3 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -2287,11 +2287,11 @@ new_slab:
- 	}
+diff --git a/kernel/sched/cpupri.c b/kernel/sched/cpupri.c
+index d72586f..23aa789 100644
+--- a/kernel/sched/cpupri.c
++++ b/kernel/sched/cpupri.c
+@@ -65,8 +65,8 @@ static int convert_prio(int prio)
+ int cpupri_find(struct cpupri *cp, struct task_struct *p,
+ 		struct cpumask *lowest_mask)
+ {
+-	int                  idx      = 0;
+-	int                  task_pri = convert_prio(p->prio);
++	int idx = 0;
++	int task_pri = convert_prio(p->prio);
  
- 	page = c->page;
--	if (likely(!kmem_cache_debug(s)))
-+	if (likely(!kmem_cache_debug(s) && pfmemalloc_match(page, gfpflags)))
- 		goto load_freelist;
+ 	if (task_pri >= MAX_RT_PRIO)
+ 		return 0;
+@@ -137,9 +137,9 @@ int cpupri_find(struct cpupri *cp, struct task_struct *p,
+  */
+ void cpupri_set(struct cpupri *cp, int cpu, int newpri)
+ {
+-	int                 *currpri = &cp->cpu_to_pri[cpu];
+-	int                  oldpri  = *currpri;
+-	int                  do_mb = 0;
++	int *currpri = &cp->cpu_to_pri[cpu];
++	int oldpri = *currpri;
++	int do_mb = 0;
  
- 	/* Only entered in the debug case */
--	if (!alloc_debug_processing(s, page, freelist, addr))
-+	if (kmem_cache_debug(s) && !alloc_debug_processing(s, page, freelist, addr))
- 		goto new_slab;	/* Slab failed checks. Next slab needed */
+ 	newpri = convert_prio(newpri);
  
- 	deactivate_slab(s, page, get_freepointer(s, freelist));
-@@ -2343,8 +2343,7 @@ redo:
- 
- 	object = c->freelist;
- 	page = c->page;
--	if (unlikely(!object || !node_match(page, node)
--					!pfmemalloc_match(page, gfpflags)))
-+	if (unlikely(!object || !node_match(page, node)))
- 		object = __slab_alloc(s, gfpflags, node, addr, c);
- 
- 	else {
 -- 
-1.7.9.2
+1.7.1
 
