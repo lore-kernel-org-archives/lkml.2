@@ -1,50 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758611Ab2GLCyI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 22:54:08 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:60088 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754817Ab2GLCyF (ORCPT
+	id S1758603Ab2GLC57 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 22:57:59 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:32172 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754817Ab2GLC55 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 22:54:05 -0400
-From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-To: Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Subject: [PATCH v2] usb/host/ehci-hub: Fix the issue EG20T USB host controller has long resuming time, when pen drive is attached.
-Date: Thu, 12 Jul 2012 11:53:37 +0900
-Message-Id: <1342061617-5630-1-git-send-email-tomoya.rohm@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1341966511-4373-1-git-send-email-tomoya.rohm@gmail.com>
-References: <1341966511-4373-1-git-send-email-tomoya.rohm@gmail.com>
+	Wed, 11 Jul 2012 22:57:57 -0400
+Message-ID: <4FFE3D27.7020500@oracle.com>
+Date: Thu, 12 Jul 2012 10:57:43 +0800
+From: Joe Jin <joe.jin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: "Dave, Tushar N" <tushar.n.dave@intel.com>
+CC: "e1000-devel@lists.sf.net" <e1000-devel@lists.sf.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: 82571EB: Detected Hardware Unit Hang
+References: <4FFA9B96.6040901@oracle.com> <4FFBDC50.5090800@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA891274EE41F@ORSMSX102.amr.corp.intel.com> <4FFCCA22.8060006@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA891274EEC8B@ORSMSX102.amr.corp.intel.com> <4FFCDA6C.8020708@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA891274EED74@ORSMSX102.amr.corp.intel.com> <4FFCF314.6020400@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA891274EEDD7@ORSMSX102.amr.corp.intel.com> <4FFD0908.6080506@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA891274EF8AD@ORSMSX102.amr.corp.intel.com> <4FFE3505.8060407@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA891274F018D@ORSMSX102.amr.corp.intel.com>
+In-Reply-To: <061C8A8601E8EE4CA8D8FD6990CEA891274F018D@ORSMSX102.amr.corp.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Intel EG20T USB host controller does not send SOF in resuming time after suspending, if the FLR bit was not cleared. When pen drive is attached, the controller has a long resuming time to try re-connect it. This patch clear the FLR bit in suspending time for fixing the issue.
+On 07/12/12 10:52, Dave, Tushar N wrote:
+> What is the exact error messages in BIOS log?
 
-Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
----
-v2: Update comments from Alan Stern
-	Add patch description
-	Always clear the STS_FLR flag.
----
- drivers/usb/host/ehci-hub.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Error message from BIOS event log:
+07/12/12 05:54:00
+    PCI Express Non-Fatal Error
 
-diff --git a/drivers/usb/host/ehci-hub.c b/drivers/usb/host/ehci-hub.c
-index fc9e7cc..818a2f1 100644
---- a/drivers/usb/host/ehci-hub.c
-+++ b/drivers/usb/host/ehci-hub.c
-@@ -318,6 +318,7 @@ static int ehci_bus_suspend (struct usb_hcd *hcd)
- 	ehci_readl(ehci, &ehci->regs->intr_enable);
- 
- 	ehci->next_statechange = jiffies + msecs_to_jiffies(10);
-+	ehci_writel(ehci, STS_FLR, &ehci->regs->status);
- 	spin_unlock_irq (&ehci->lock);
- 
- 	/* ehci_work() may have re-enabled the watchdog timer, which we do not
--- 
-1.7.4.4
-
+Thanks,
+Joe
