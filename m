@@ -1,56 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758121Ab2GLTpj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 15:45:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11236 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755864Ab2GLTpi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 15:45:38 -0400
-Date: Thu, 12 Jul 2012 21:43:10 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Konrad Rzeszutek Wilk <konrad@darnok.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
-        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Don Morris <don.morris@hp.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH 36/40] autonuma: page_autonuma
-Message-ID: <20120712194310.GP20382@redhat.com>
-References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
- <1340888180-15355-37-git-send-email-aarcange@redhat.com>
- <20120630052404.GH3975@localhost.localdomain>
+	id S1030780Ab2GLTtt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 15:49:49 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:47904 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030745Ab2GLTto (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 15:49:44 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120630052404.GH3975@localhost.localdomain>
+In-Reply-To: <1342116938.1783.57.camel@jtkirshe-mobl>
+References: <1341959492-31389-1-git-send-email-jdmason@kudzu.us>
+	<1341959492-31389-2-git-send-email-jdmason@kudzu.us>
+	<1341960208.3336.43.camel@jtkirshe-mobl>
+	<1342116938.1783.57.camel@jtkirshe-mobl>
+Date: Thu, 12 Jul 2012 12:49:43 -0700
+Message-ID: <CAPoiz9wcj7tbgVUf+D=HdonXnaMYFHb+TmSb77f2R2mpwGQM7g@mail.gmail.com>
+Subject: Re: [trivial PATCH 2/7] ixgbe: remove unused #define
+From: Jon Mason <jdmason@kudzu.us>
+To: jeffrey.t.kirsher@intel.com
+Cc: trivial@kernel.org, linux-kernel@vger.kernel.org,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        John Ronciak <john.ronciak@intel.com>, netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 30, 2012 at 01:24:05AM -0400, Konrad Rzeszutek Wilk wrote:
-> I think you are better using a different name.
-> 
-> Perhaps 'if (autonuma_on())'
+On Thu, Jul 12, 2012 at 11:15 AM, Jeff Kirsher
+<jeffrey.t.kirsher@intel.com> wrote:
+> On Tue, 2012-07-10 at 15:43 -0700, Jeff Kirsher wrote:
+>> On Tue, 2012-07-10 at 15:31 -0700, Jon Mason wrote:
+>> > Remove unused IXGBE_INTEL_VENDOR_ID #define
+>> >
+>> > Signed-off-by: Jon Mason <jdmason@kudzu.us>
+>> > Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+>> > Cc: Jesse Brandeburg <jesse.brandeburg@intel.com>
+>> > Cc: Bruce Allan <bruce.w.allan@intel.com>
+>> > Cc: Carolyn Wyborny <carolyn.wyborny@intel.com>
+>> > Cc: Don Skidmore <donald.c.skidmore@intel.com>
+>> > Cc: Greg Rose <gregory.v.rose@intel.com>
+>> > Cc: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+>> > Cc: Alex Duyck <alexander.h.duyck@intel.com>
+>> > Cc: John Ronciak <john.ronciak@intel.com>
+>> > ---
+>> >  drivers/net/ethernet/intel/ixgbe/ixgbe_type.h |    3 ---
+>> >  1 file changed, 3 deletions(-)
+>>
+>> This should also go through David Miller's networking tree's.  Adding
+>> netdev mailing list.
+>>
+>> Acked-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+>
+> After looking at this further, I rescind my ACK.
+>
+> NAK, this define is used in several places in ixgbe_main.c and the
+> driver will not compile with this patch.
 
-I changed it to AUTONUMA_POSSIBLE_FLAG/autonuma_possible() and
-optimized the implementation to a single test_bit on the read mostly
-flag variable.
+My apologies, I was a bit sloppy and simply rebased my old patches
+without retesting them.  The code has changed since I originally
+pushed the patch (http://www.spinics.net/lists/netdev/msg171523.html).
+ I will fix and resubmit.
 
-"possible" is the term all NUMA code in the kernel already uses with
-almost the same meaning (modulo noautonuma parameter) as
-num_possible_nodes() etc...
+Thanks,
+Jon
+
+
+>>
+>> >
+>> > diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h b/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h
+>> > index 204848d..c8d8040 100644
+>> > --- a/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h
+>> > +++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h
+>> > @@ -32,9 +32,6 @@
+>> >  #include <linux/mdio.h>
+>> >  #include <linux/netdevice.h>
+>> >
+>> > -/* Vendor ID */
+>> > -#define IXGBE_INTEL_VENDOR_ID   0x8086
+>> > -
+>> >  /* Device IDs */
+>> >  #define IXGBE_DEV_ID_82598               0x10B6
+>> >  #define IXGBE_DEV_ID_82598_BX            0x1508
+>>
+>>
+>
