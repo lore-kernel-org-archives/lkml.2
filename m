@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162973Ab2GLXmq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:42:46 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:40926 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759584Ab2GLWiJ (ORCPT
+	id S1759550Ab2GLXnF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:43:05 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60450 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759579Ab2GLWiG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:38:09 -0400
+	Thu, 12 Jul 2012 18:38:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: [ 045/187] NFC: Return from rawsock_release when sk is NULL
-Date: Thu, 12 Jul 2012 15:33:21 -0700
-Message-Id: <20120712191526.519395394@linuxfoundation.org>
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 044/187] powerpc: Fix build of some debug irq code
+Date: Thu, 12 Jul 2012 15:33:20 -0700
+Message-Id: <20120712191526.424092774@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -32,104 +30,48 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-commit 03e934f620101ca2cfc9383bd76172dd3e1f8567 upstream.
+commit 21b2de341270bd7bb7a811027ffe63276d9b3b75 upstream.
 
-Sasha Levin reported following panic :
+There was a typo, checking for CONFIG_TRACE_IRQFLAG instead of
+CONFIG_TRACE_IRQFLAGS causing some useful debug code to not be
+built
 
-[ 2136.383310] BUG: unable to handle kernel NULL pointer dereference at
-00000000000003b0
-[ 2136.384022] IP: [<ffffffff8114e400>] __lock_acquire+0xc0/0x4b0
-[ 2136.384022] PGD 131c4067 PUD 11c0c067 PMD 0
-[ 2136.388106] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[ 2136.388106] CPU 1
-[ 2136.388106] Pid: 24855, comm: trinity-child1 Tainted: G        W
-3.5.0-rc2-sasha-00015-g7b268f7 #374
-[ 2136.388106] RIP: 0010:[<ffffffff8114e400>]  [<ffffffff8114e400>]
-__lock_acquire+0xc0/0x4b0
-[ 2136.388106] RSP: 0018:ffff8800130b3ca8  EFLAGS: 00010046
-[ 2136.388106] RAX: 0000000000000086 RBX: ffff88001186b000 RCX:
-0000000000000000
-[ 2136.388106] RDX: 0000000000000000 RSI: 0000000000000000 RDI:
-0000000000000000
-[ 2136.388106] RBP: ffff8800130b3d08 R08: 0000000000000001 R09:
-0000000000000000
-[ 2136.388106] R10: 0000000000000000 R11: 0000000000000001 R12:
-0000000000000002
-[ 2136.388106] R13: 00000000000003b0 R14: 0000000000000000 R15:
-0000000000000000
-[ 2136.388106] FS:  00007fa5b1bd4700(0000) GS:ffff88001b800000(0000)
-knlGS:0000000000000000
-[ 2136.388106] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[ 2136.388106] CR2: 00000000000003b0 CR3: 0000000011d1f000 CR4:
-00000000000406e0
-[ 2136.388106] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
-0000000000000000
-[ 2136.388106] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
-0000000000000400
-[ 2136.388106] Process trinity-child1 (pid: 24855, threadinfo
-ffff8800130b2000, task ffff88001186b000)
-[ 2136.388106] Stack:
-[ 2136.388106]  ffff8800130b3cd8 ffffffff81121785 ffffffff81236774
-000080d000000001
-[ 2136.388106]  ffff88001b9d6c00 00000000001d6c00 ffffffff130b3d08
-ffff88001186b000
-[ 2136.388106]  0000000000000000 0000000000000002 0000000000000000
-0000000000000000
-[ 2136.388106] Call Trace:
-[ 2136.388106]  [<ffffffff81121785>] ? sched_clock_local+0x25/0x90
-[ 2136.388106]  [<ffffffff81236774>] ? get_empty_filp+0x74/0x220
-[ 2136.388106]  [<ffffffff8114e97a>] lock_acquire+0x18a/0x1e0
-[ 2136.388106]  [<ffffffff836b37df>] ? rawsock_release+0x4f/0xa0
-[ 2136.388106]  [<ffffffff837c0ef0>] _raw_write_lock_bh+0x40/0x80
-[ 2136.388106]  [<ffffffff836b37df>] ? rawsock_release+0x4f/0xa0
-[ 2136.388106]  [<ffffffff836b37df>] rawsock_release+0x4f/0xa0
-[ 2136.388106]  [<ffffffff8321cfe8>] sock_release+0x18/0x70
-[ 2136.388106]  [<ffffffff8321d069>] sock_close+0x29/0x30
-[ 2136.388106]  [<ffffffff81236bca>] __fput+0x11a/0x2c0
-[ 2136.388106]  [<ffffffff81236d85>] fput+0x15/0x20
-[ 2136.388106]  [<ffffffff8321de34>] sys_accept4+0x1b4/0x200
-[ 2136.388106]  [<ffffffff837c165c>] ? _raw_spin_unlock_irq+0x4c/0x80
-[ 2136.388106]  [<ffffffff837c1669>] ? _raw_spin_unlock_irq+0x59/0x80
-[ 2136.388106]  [<ffffffff837c2565>] ? sysret_check+0x22/0x5d
-[ 2136.388106]  [<ffffffff8321de8b>] sys_accept+0xb/0x10
-[ 2136.388106]  [<ffffffff837c2539>] system_call_fastpath+0x16/0x1b
-[ 2136.388106] Code: ec 04 00 0f 85 ea 03 00 00 be d5 0b 00 00 48 c7 c7
-8a c1 40 84 e8 b1 a5 f8 ff 31 c0 e9 d4 03 00 00 66 2e 0f 1f 84 00 00 00
-00 00 <49> 81 7d 00 60 73 5e 85 b8 01 00 00 00 44 0f 44 e0 83 fe 01 77
-[ 2136.388106] RIP  [<ffffffff8114e400>] __lock_acquire+0xc0/0x4b0
-[ 2136.388106]  RSP <ffff8800130b3ca8>
-[ 2136.388106] CR2: 00000000000003b0
-[ 2136.388106] ---[ end trace 6d450e935ee18982 ]---
-[ 2136.388106] Kernel panic - not syncing: Fatal exception in interrupt
+This in turns causes a build error on BookE 64-bit due to incorrect
+semicolons at the end of a couple of macros, so let's fix that too
 
-rawsock_release() should test if sock->sk is NULL before calling
-sock_orphan()/sock_put()
-
-Reported-by: Sasha Levin <levinsasha928@gmail.com>
-Tested-by: Sasha Levin <levinsasha928@gmail.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/nfc/rawsock.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ arch/powerpc/include/asm/hw_irq.h |    4 ++--
+ arch/powerpc/kernel/irq.c         |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
---- a/net/nfc/rawsock.c
-+++ b/net/nfc/rawsock.c
-@@ -54,7 +54,10 @@ static int rawsock_release(struct socket
- {
- 	struct sock *sk = sock->sk;
+--- a/arch/powerpc/include/asm/hw_irq.h
++++ b/arch/powerpc/include/asm/hw_irq.h
+@@ -85,8 +85,8 @@ static inline bool arch_irqs_disabled(vo
+ }
  
--	pr_debug("sock=%p\n", sock);
-+	pr_debug("sock=%p sk=%p\n", sock, sk);
-+
-+	if (!sk)
-+		return 0;
- 
- 	sock_orphan(sk);
- 	sock_put(sk);
+ #ifdef CONFIG_PPC_BOOK3E
+-#define __hard_irq_enable()	asm volatile("wrteei 1" : : : "memory");
+-#define __hard_irq_disable()	asm volatile("wrteei 0" : : : "memory");
++#define __hard_irq_enable()	asm volatile("wrteei 1" : : : "memory")
++#define __hard_irq_disable()	asm volatile("wrteei 0" : : : "memory")
+ #else
+ #define __hard_irq_enable()	__mtmsrd(local_paca->kernel_msr | MSR_EE, 1)
+ #define __hard_irq_disable()	__mtmsrd(local_paca->kernel_msr, 1)
+--- a/arch/powerpc/kernel/irq.c
++++ b/arch/powerpc/kernel/irq.c
+@@ -229,7 +229,7 @@ notrace void arch_local_irq_restore(unsi
+ 	 */
+ 	if (unlikely(irq_happened != PACA_IRQ_HARD_DIS))
+ 		__hard_irq_disable();
+-#ifdef CONFIG_TRACE_IRQFLAG
++#ifdef CONFIG_TRACE_IRQFLAGS
+ 	else {
+ 		/*
+ 		 * We should already be hard disabled here. We had bugs
 
 
