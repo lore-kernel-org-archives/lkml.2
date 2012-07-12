@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161466Ab2GLR2k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 13:28:40 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52432 "EHLO
+	id S1161468Ab2GLRan (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 13:30:43 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52447 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1161266Ab2GLR2j (ORCPT
+	by vger.kernel.org with ESMTP id S932736Ab2GLRam (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 13:28:39 -0400
-Date: Thu, 12 Jul 2012 18:28:37 +0100
+	Thu, 12 Jul 2012 13:30:42 -0400
+Date: Thu, 12 Jul 2012 18:30:40 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: AnilKumar Ch <anilkumar@ti.com>
-Cc: sameo@linux.intel.com, lrg@ti.com, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        grant.likely@secretlab.ca
-Subject: Re: [PATCH v2 1/3] regulator: tps65217: Add device tree support
-Message-ID: <20120712172836.GR7256@opensource.wolfsonmicro.com>
-References: <1341918584-28004-1-git-send-email-anilkumar@ti.com>
- <1341918584-28004-2-git-send-email-anilkumar@ti.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [patch] Extcon: Arizona: unlock on an error in arizona_micdet()
+Message-ID: <20120712173040.GT7256@opensource.wolfsonmicro.com>
+References: <20120711063602.GG11812@elgon.mountain>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="24/piotZLKF/SXqU"
+	protocol="application/pgp-signature"; boundary="PPxI8paQBs33t8dK"
 Content-Disposition: inline
-In-Reply-To: <1341918584-28004-2-git-send-email-anilkumar@ti.com>
+In-Reply-To: <20120711063602.GG11812@elgon.mountain>
 X-Cookie: Advancement in position.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -29,37 +28,39 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---24/piotZLKF/SXqU
+--PPxI8paQBs33t8dK
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Tue, Jul 10, 2012 at 04:39:42PM +0530, AnilKumar Ch wrote:
-> This commit adds device tree support for tps65217 pmic. And usage
-> details are added to device tree documentation. Driver is tested
-> by using kernel module with regulator set and get APIs.
+On Wed, Jul 11, 2012 at 09:36:02AM +0300, Dan Carpenter wrote:
+> Smatch complains about this.  I don't have a way to test this, but it
+> does look like we should unlock on error here.
+>=20
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-Applied, thanks.
+Acke-dby: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
---24/piotZLKF/SXqU
+--PPxI8paQBs33t8dK
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJP/wksAAoJEBus8iNuMP3dgcIP/Az7K5iUFhWJ5Kak7CtG1icC
-9BVT6amEhOGcXNQjA6nhi1Y6ajok+z+Ln0/4U/dbPg4yiXkNyn9TnALsV7L5Vcl1
-c4H4zwfYQgLLGTXo2mZilTabNBVspYPKZmtodMHrajsTVUeZbV1x1aDFHWsqnNJd
-bl8CgfaRrBbbotz7qJ3ojnsZWyDuhbsydI7c8h8ysgizFSxnClrFn4ekdZsE2+RS
-i2jwO4VseJAH+/EaRGXoJx2wOh564uEGzvOrWd4RZb2drzCtqQHkMn8IUXwVtqTg
-/UOaL5n8QHxNSOCFBsaNnXdnBKE14Rt4Kx8k1jIEWxPftKQRrCdVVQ3XZ6ZL+lJt
-a8mbhNBD2aYDRLglXU2jkjC4qc2XHI7/MvOoQqc9krXfGuaUwwXkjRUSbuQGw6v7
-G7lYWE3zBLOn0ESQPb4yjEiOqDEo/hkntD2CjbFEx4R7F57xoKm4LjntkEjUBPh+
-2zceV9I/jlsY9vzRg6Yp8JSZfVKND4uGN5vK6zZi5eJziN2wkdHl7Yqnt2yuEcZu
-UOuKDJaqh5QI1ea60+I+8i/CqoOHQSHjTGmeLEFhwI7boSjNPFDauM7lDsjEgpAe
-XEaSuHW9eXhL742eKq3fKwR/C9qZeRqheNu6xYhp5A2VsoCCrKSe+QfiXdt5Ogfq
-IJQRHLMV5fgKN84sIaDN
-=sBGE
+iQIcBAEBAgAGBQJP/wmfAAoJEBus8iNuMP3dLGEP/iXdWVHyQ7lhe6XvIdZPWqjc
+Hw53oO7ZZ2zQacLqQrg5wQypVnFEnSUbzXteUOjzDkJz5T6OmSM+fQX6wm2C7PFf
+QS+K8h9ntFBZ9dqATv6C+5usEhwB4kAqsAiK3+uOwhvVPX5trjaDj19CniDJXCpE
+7VBLn8pcD+XZHjQhR3aK9nhlN6rtHbvlg1CDjLrPNm+J4Z/w60og7cs2mrvK9aKy
+DF3ux0+dBxpIpTNYozHLmdkhdLhXIsYk+BocNbvIxDOgs6yCdUwh7BjLC5Zv2vRl
+WPMbFILpQl4NaLJf91UBvQfbwbYHOPVEdDHUBRbnsqr/l3dioAqgOuQosYD7kXez
+bvJ6TMTS4iqex2XjbP98BPaYWoMolkrOULlpSMSB1cFpNuCMr9wbHBVBcGx2at/N
+LtjtEFRJweuPFAP2qRVSBQ7qW3jqNKAisd7cm8QM6Qcxr0oiVkKgcQD/YJjx0U34
+Cc0+azMxv0329ZsGly/2YJV/Stt+FKgZCSjK1sCqhqNiBV3A+nj5AA/0bKokBix4
+fukwXL0G9DXus9J7p+7RBBTBlXfmODbdPx/OGo45sJhx7V/Vdh95l+pSsg2Ek8VM
+gNnWgCF8QLGaWXiESZnhzqlZjQey+GwJ2jq90U1VrSKVmRPaxiiBlcbXqZLZgjsH
+yngPgeWroNJd9nUhYCRs
+=9xCq
 -----END PGP SIGNATURE-----
 
---24/piotZLKF/SXqU--
+--PPxI8paQBs33t8dK--
