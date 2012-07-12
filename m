@@ -1,75 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756710Ab2GLM5Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 08:57:24 -0400
-Received: from mailrelay1.diasemi.com ([82.210.246.133]:25884 "EHLO
-	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752853Ab2GLM5X (ORCPT
+	id S1161010Ab2GLM6I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 08:58:08 -0400
+Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:46093 "HELO
+	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754434Ab2GLM6E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 08:57:23 -0400
-Message-Id: <201207121255.q6CCtdE6028265@sw-eng-lt-dc-vm2>
-From: Krystian Garbaciak <krystian.garbaciak@diasemi.com>
-Date: Thu, 12 Jul 2012 13:53:35 +0100
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Liam Girdwood <lrg@ti.com>, <linux-kernel@vger.kernel.org>
-References: <20120711142606.GK3938@opensource.wolfsonmicro.com>
-	<201207111221.q6BCLW8L014872@sw-eng-lt-dc-vm2>
-	<20120711132655.GG3938@opensource.wolfsonmicro.com>
-	<201207111421.q6BELFoF006060@sw-eng-lt-dc-vm2>
-	<201207111513.q6BFDR1x016181@sw-eng-lt-dc-vm2>
-	<20120711174257.GN3938@opensource.wolfsonmicro.com>
-	<201207121052.q6CAq3Ix004450@sw-eng-lt-dc-vm2>
-In-Reply-To: <201207121052.q6CAq3Ix004450@sw-eng-lt-dc-vm2>
-Subject: [PATCH] regulator: Add REGULATOR_STATUS_UNDEFINED.
+	Thu, 12 Jul 2012 08:58:04 -0400
+Message-ID: <4FFEC9CE.3000306@mellanox.com>
+Date: Thu, 12 Jul 2012 15:57:50 +0300
+From: Hadar Hen Zion <hadarh@mellanox.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Hadar Hen Zion <hadarh@mellanox.co.il>,
+        Or Gerlitz <ogerlitz@mellanox.com>,
+        Jack Morgenstein <jackm@dev.mellanox.co.il>,
+        Roland Dreier <roland@kernel.org>, <linux-rdma@vger.kernel.org>
+Subject: Re: linux-next: manual merge of the net-next tree with the infiniband
+ tree
+References: <20120712121307.a482863a98848e3813690ef2@canb.auug.org.au>
+In-Reply-To: <20120712121307.a482863a98848e3813690ef2@canb.auug.org.au>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.0.13.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-REGULATOR_STATUS_UNDEFINED is to be returned by regulator, if any other state
-doesn't really apply.
+On 7/12/2012 5:13 AM, Stephen Rothwell wrote:
+> Hi all,
+>
+> Today's linux-next merge of the net-next tree got a conflict in
+> include/linux/mlx4/device.h between commit 396f2feb05d7 ("mlx4_core:
+> Implement mechanism for reserved Q_Keys") from the infiniband tree and
+> commit 0ff1fb654bec ("{NET, IB}/mlx4: Add device managed flow steering
+> firmware API") from the net-next tree.
+>
+> Just context changes.  I fixed it up (see below) and can carry the fix
+> as necessary.
+>
 
-Signed-off-by: Krystian Garbaciak <krystian.garbaciak@diasemi.com>
----
- drivers/regulator/core.c         |    5 ++++-
- include/linux/regulator/driver.h |    2 ++
- 2 files changed, 6 insertions(+), 1 deletions(-)
+Thanks Stephen.
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index af44b94..f042a8a 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -427,6 +427,9 @@ static ssize_t regulator_status_show(struct device *dev,
- 	case REGULATOR_STATUS_STANDBY:
- 		label = "standby";
- 		break;
-+	case REGULATOR_STATUS_UNDEFINED:
-+		label = "undefined";
-+		break;
- 	default:
- 		return -ERANGE;
- 	}
-@@ -2912,7 +2915,7 @@ int regulator_mode_to_status(unsigned int mode)
- 	case REGULATOR_MODE_STANDBY:
- 		return REGULATOR_STATUS_STANDBY;
- 	default:
--		return 0;
-+		return REGULATOR_STATUS_UNDEFINED;
- 	}
- }
- EXPORT_SYMBOL_GPL(regulator_mode_to_status);
-diff --git a/include/linux/regulator/driver.h b/include/linux/regulator/driver.h
-index b0432cc..180ac49 100644
---- a/include/linux/regulator/driver.h
-+++ b/include/linux/regulator/driver.h
-@@ -32,6 +32,8 @@ enum regulator_status {
- 	REGULATOR_STATUS_NORMAL,
- 	REGULATOR_STATUS_IDLE,
- 	REGULATOR_STATUS_STANDBY,
-+	/* in case that any other status doesn't apply */
-+	REGULATOR_STATUS_UNDEFINED,
- };
- 
- /**
--- 
-1.7.0.4
+Please add:
+Acked-by: Hadar Hen Zion <hadarh@mellanox.co.il>
+
+Hadar
 
