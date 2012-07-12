@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161618Ab2GLWR7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:17:59 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:33615 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751955Ab2GLWRz (ORCPT
+	id S1759257Ab2GLWX4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:23:56 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55669 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752417Ab2GLWXy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:17:55 -0400
-Subject: Re: Fwd: UEFI Secure boot using qemu-kvm
-From: Khalid Aziz <khalid.aziz@hp.com>
-To: joeyli <jlee@suse.com>
-Cc: linux-kernel@vger.kernel.org, JBottomley@parallels.com,
-        linux-efi@vger.kernel.org
-In-Reply-To: <1341073290.16691.14.camel@linux-s257.site>
-References: <1340877668.6196.143.camel@linux-s257.site>
-	 <CAGLnvc-hLpUZaaOkeWMRtYefwL5goxuWP_99FyAzem7s_mncPg@mail.gmail.com>
-	 <1340879091.6196.147.camel@linux-s257.site>
-	 <1341073290.16691.14.camel@linux-s257.site>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 12 Jul 2012 16:17:54 -0600
-Message-ID: <1342131474.3577.47.camel@lyra>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 12 Jul 2012 18:23:54 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Olaf Hering <olaf@aepfle.de>, Marcus Meissner <meissner@suse.de>,
+        Sebastian Krahmer <krahmer@suse.de>,
+        "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [ 001/187] Tools: hv: verify origin of netlink connector message
+Date: Thu, 12 Jul 2012 15:23:29 -0700
+Message-Id: <20120712191522.378465973@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120712192421.GA28926@kroah.com>
+References: <20120712192421.GA28926@kroah.com>
+User-Agent: quilt/0.60-20.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I Tried to follow the steps Joey had written down (Thanks for doing
-that!) on Ubuntu 12.04 and ran into some problems. Here is what I had to
-do differently to get it to work:
+From: Greg KH <gregkh@linuxfoundation.org>
 
-- Install libssl-dev
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-- Use "sudo alien --to-deb sbsigntools-0.3-1.1.x86_64.rpm" to convert
-sbsigntools package and "dpkg -i" the resulting deb package
+------------------
 
-- Before building efitools, edit Make.rules and replace "/usr/lib64"
-with "/usr/lib"
+From: Olaf Hering <olaf@aepfle.de>
 
-- Run "make PK.h DB.h KEK.h" followed by "make". Make will fail to build
-Loader.so with error being __stack_chk_fail is undefined. Ubuntu's
-version of gcc enables stack check by default and adding
--fno-stack-protector to CFLAGS did not help. I haven't figured this one
-out yet but Helloworld.efi builds correctly.
+commit bcc2c9c3fff859e0eb019fe6fec26f9b8eba795c upstream.
 
-- Run "make HelloWorld-kek-signed.efi" to build signed version of hello
-world.
+The SuSE security team suggested to use recvfrom instead of recv to be
+certain that the connector message is originated from kernel.
 
-- At this point I could fire up qemu and run the signed and unsigned
-versions of hello world (HelloWorld-kek-signed.efi and HelloWorld.efi)
-with secure boot disabled and enabled after importing PK and KEK as Joey
-showed in his instructions.
+CVE-2012-2669
 
-Hope this helps someone who is trying this on Ubuntu. Now on to figuring
-out how to build Loader.efi.
+Signed-off-by: Olaf Hering <olaf@aepfle.de>
+Signed-off-by: Marcus Meissner <meissner@suse.de>
+Signed-off-by: Sebastian Krahmer <krahmer@suse.de>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
--- 
-Khalid Aziz <khalid.aziz@hp.com>
+---
+ tools/hv/hv_kvp_daemon.c |   10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
+
+--- a/tools/hv/hv_kvp_daemon.c
++++ b/tools/hv/hv_kvp_daemon.c
+@@ -701,14 +701,18 @@ int main(void)
+ 	pfd.fd = fd;
+ 
+ 	while (1) {
++		struct sockaddr *addr_p = (struct sockaddr *) &addr;
++		socklen_t addr_l = sizeof(addr);
+ 		pfd.events = POLLIN;
+ 		pfd.revents = 0;
+ 		poll(&pfd, 1, -1);
+ 
+-		len = recv(fd, kvp_recv_buffer, sizeof(kvp_recv_buffer), 0);
++		len = recvfrom(fd, kvp_recv_buffer, sizeof(kvp_recv_buffer), 0,
++				addr_p, &addr_l);
+ 
+-		if (len < 0) {
+-			syslog(LOG_ERR, "recv failed; error:%d", len);
++		if (len < 0 || addr.nl_pid) {
++			syslog(LOG_ERR, "recvfrom failed; pid:%u error:%d %s",
++					addr.nl_pid, errno, strerror(errno));
+ 			close(fd);
+ 			return -1;
+ 		}
+
 
