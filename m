@@ -1,69 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758315Ab2GLXkX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:40:23 -0400
-Received: from www.hansjkoch.de ([178.63.77.200]:49887 "EHLO www.hansjkoch.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932302Ab2GLXkQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 19:40:16 -0400
-Date: Fri, 13 Jul 2012 01:40:11 +0200
-From: "Hans J. Koch" <hjk@hansjkoch.de>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>, Andreas Schallenberg <embedded@gmx.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dominic Eschweiler <eschweiler@fias.uni-frankfurt.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, kvm@vger.kernel.org
-Subject: Re: UIO: missing resource mapping
-Message-ID: <20120712234011.GE2592@local>
-References: <4FFE7C1F.7080702@gmx.net>
- <20120712194432.GA2592@local>
- <20120712231632.GC9317@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120712231632.GC9317@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S934320Ab2GLXk6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:40:58 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58752 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759487Ab2GLWic (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 18:38:32 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Jan Kara <jack@suse.cz>
+Subject: [ 052/187] udf: Fortify loading of sparing table
+Date: Thu, 12 Jul 2012 15:33:28 -0700
+Message-Id: <20120712191527.173106084@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
+References: <20120712192421.GA28926@kroah.com>
+ <20120712191522.742634173@linuxfoundation.org>
+User-Agent: quilt/0.60-20.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 13, 2012 at 02:16:32AM +0300, Michael S. Tsirkin wrote:
-> On Thu, Jul 12, 2012 at 09:44:33PM +0200, Hans J. Koch wrote:
-> > > Looking further at the code, I cannot see where the mem fields are
-> > > being filled at all.
-> > > Which code is supposed to write the struct uio_mem?
-> > 
-> > In my opinion, the driver should. However, Michael's idea is to use
-> > /sys/bus/pci/devices/XXXXXresourceX for mapping purposes.
-> > 
-> > That is of course also possible, but obviously it leads to confusion.
-> > We already had a long thread about this:
-> > 
-> > http://www.spinics.net/lists/kvm/msg73837.html
-> > 
-> > Michael, can we change the driver to offer all available PCI BARs in the
-> > normal UIO way? I'm afraid otherwise we'll have the same discussion over
-> > and over again.
-> > 
-> > Thanks,
-> > Hans
-> 
-> My concern was people will ask for more and more stuff that pci
-> sysfs already has.
-> If we do add these is there a way to not duplicate code from pci?
-> Export pci_mmap_resource and use it? Or make the uio attributes
-> softlinks to pci sysfs somehow?
+From: Greg KH <gregkh@linuxfoundation.org>
 
-I understand your concern. Of course I'm also not in favor of duplicating
-code, but I don't think there's much overhead. PCI already exports all
-information needed by pci_resource_start(dev, bar) and
-pci_resource_len(dev, bar). Have a look at other UIO PCI drivers like
-uio_cif.c or uio_netx.c to see how it works. It's just a few more lines
-of code to loop through all BARs and add the to info->mem[i].
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-By the way, the current size of the info->mem[] array was exactly made
-with PCI in mind...
+------------------
 
-Thanks,
-Hans
+From: Jan Kara <jack@suse.cz>
+
+commit 1df2ae31c724e57be9d7ac00d78db8a5dabdd050 upstream.
+
+Add sanity checks when loading sparing table from disk to avoid accessing
+unallocated memory or writing to it.
+
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/udf/super.c |   86 +++++++++++++++++++++++++++++++++++----------------------
+ 1 file changed, 53 insertions(+), 33 deletions(-)
+
+--- a/fs/udf/super.c
++++ b/fs/udf/super.c
+@@ -56,6 +56,7 @@
+ #include <linux/seq_file.h>
+ #include <linux/bitmap.h>
+ #include <linux/crc-itu-t.h>
++#include <linux/log2.h>
+ #include <asm/byteorder.h>
+ 
+ #include "udf_sb.h"
+@@ -1215,11 +1216,59 @@ out_bh:
+ 	return ret;
+ }
+ 
++static int udf_load_sparable_map(struct super_block *sb,
++				 struct udf_part_map *map,
++				 struct sparablePartitionMap *spm)
++{
++	uint32_t loc;
++	uint16_t ident;
++	struct sparingTable *st;
++	struct udf_sparing_data *sdata = &map->s_type_specific.s_sparing;
++	int i;
++	struct buffer_head *bh;
++
++	map->s_partition_type = UDF_SPARABLE_MAP15;
++	sdata->s_packet_len = le16_to_cpu(spm->packetLength);
++	if (!is_power_of_2(sdata->s_packet_len)) {
++		udf_err(sb, "error loading logical volume descriptor: "
++			"Invalid packet length %u\n",
++			(unsigned)sdata->s_packet_len);
++		return -EIO;
++	}
++	if (spm->numSparingTables > 4) {
++		udf_err(sb, "error loading logical volume descriptor: "
++			"Too many sparing tables (%d)\n",
++			(int)spm->numSparingTables);
++		return -EIO;
++	}
++
++	for (i = 0; i < spm->numSparingTables; i++) {
++		loc = le32_to_cpu(spm->locSparingTable[i]);
++		bh = udf_read_tagged(sb, loc, loc, &ident);
++		if (!bh)
++			continue;
++
++		st = (struct sparingTable *)bh->b_data;
++		if (ident != 0 ||
++		    strncmp(st->sparingIdent.ident, UDF_ID_SPARING,
++			    strlen(UDF_ID_SPARING)) ||
++		    sizeof(*st) + le16_to_cpu(st->reallocationTableLen) >
++							sb->s_blocksize) {
++			brelse(bh);
++			continue;
++		}
++
++		sdata->s_spar_map[i] = bh;
++	}
++	map->s_partition_func = udf_get_pblock_spar15;
++	return 0;
++}
++
+ static int udf_load_logicalvol(struct super_block *sb, sector_t block,
+ 			       struct kernel_lb_addr *fileset)
+ {
+ 	struct logicalVolDesc *lvd;
+-	int i, j, offset;
++	int i, offset;
+ 	uint8_t type;
+ 	struct udf_sb_info *sbi = UDF_SB(sb);
+ 	struct genericPartitionMap *gpm;
+@@ -1281,38 +1330,9 @@ static int udf_load_logicalvol(struct su
+ 			} else if (!strncmp(upm2->partIdent.ident,
+ 						UDF_ID_SPARABLE,
+ 						strlen(UDF_ID_SPARABLE))) {
+-				uint32_t loc;
+-				struct sparingTable *st;
+-				struct sparablePartitionMap *spm =
+-					(struct sparablePartitionMap *)gpm;
+-
+-				map->s_partition_type = UDF_SPARABLE_MAP15;
+-				map->s_type_specific.s_sparing.s_packet_len =
+-						le16_to_cpu(spm->packetLength);
+-				for (j = 0; j < spm->numSparingTables; j++) {
+-					struct buffer_head *bh2;
+-
+-					loc = le32_to_cpu(
+-						spm->locSparingTable[j]);
+-					bh2 = udf_read_tagged(sb, loc, loc,
+-							     &ident);
+-					map->s_type_specific.s_sparing.
+-							s_spar_map[j] = bh2;
+-
+-					if (bh2 == NULL)
+-						continue;
+-
+-					st = (struct sparingTable *)bh2->b_data;
+-					if (ident != 0 || strncmp(
+-						st->sparingIdent.ident,
+-						UDF_ID_SPARING,
+-						strlen(UDF_ID_SPARING))) {
+-						brelse(bh2);
+-						map->s_type_specific.s_sparing.
+-							s_spar_map[j] = NULL;
+-					}
+-				}
+-				map->s_partition_func = udf_get_pblock_spar15;
++				if (udf_load_sparable_map(sb, map,
++				    (struct sparablePartitionMap *)gpm) < 0)
++					goto out_bh;
+ 			} else if (!strncmp(upm2->partIdent.ident,
+ 						UDF_ID_METADATA,
+ 						strlen(UDF_ID_METADATA))) {
+
 
