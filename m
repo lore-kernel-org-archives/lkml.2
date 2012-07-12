@@ -1,61 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758954Ab2GLJfy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 05:35:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64503 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753453Ab2GLJfx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 05:35:53 -0400
-Message-ID: <4FFE9A6F.3080607@redhat.com>
-Date: Thu, 12 Jul 2012 12:35:43 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1758965Ab2GLJhh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 05:37:37 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:45020 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758295Ab2GLJhe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 05:37:34 -0400
 MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: Jan Kiszka <jan.kiszka@siemens.com>, "mst@redhat.com" <mst@redhat.com>,
-        "gleb@redhat.com" <gleb@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 0/2] kvm: level irqfd and new eoifd
-References: <20120703191106.6735.78272.stgit@bling.home>  <4FFD4D0A.2000202@redhat.com> <4FFD52E7.3030806@siemens.com>  <4FFD5A2B.2040605@redhat.com> <4FFD6221.1060304@siemens.com>  <4FFD68C3.7000504@redhat.com> <1342036673.2229.17.camel@bling.home>
-In-Reply-To: <1342036673.2229.17.camel@bling.home>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1341814105-20690-4-git-send-email-acourbot@nvidia.com>
+References: <1341814105-20690-1-git-send-email-acourbot@nvidia.com>
+	<1341814105-20690-4-git-send-email-acourbot@nvidia.com>
+Date: Thu, 12 Jul 2012 11:37:33 +0200
+X-Google-Sender-Auth: 8fEVrOuFPJwez8xfIYg-zw-E7yg
+Message-ID: <CAPnjgZ1QbjE+-tr0c01K2feUdEE2wMBfR=bKpTxnyDOJbY8+1Q@mail.gmail.com>
+Subject: Re: [RFC][PATCH V2 3/3] tegra: add pwm backlight device tree nodes
+From: Simon Glass <sjg@chromium.org>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: Thierry Reding <thierry.reding@avionic-design.de>,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11/2012 10:57 PM, Alex Williamson wrote:
->> 
->> > We still have classic KVM device assignment to provide fast-path INTx.
->> > But if we want to replace it midterm, I think it's necessary for VFIO to
->> > be able to provide such a path as well.
->> 
->> I would like VFIO to have no regressions vs. kvm device assignment,
->> except perhaps in uncommon corner cases.  So I agree.
-> 
-> I ran a few TCP_RR netperf tests forcing a 1Gb tg3 nic to use INTx.
-> Without irqchip support vfio gets a bit more than 60% of KVM device
-> assignment.  That's a little bit of an unfair comparison since it's more
-> than just the I/O path.  With the proposed interfaces here, enabling
-> irqchip, vfio is within 10% of KVM device assignment for INTx.  For MSI,
-> I can actually make vfio come out more than 30% better than KVM device
-> assignment if I send the eventfd from the hard irq handler.  Using a
-> threaded handler as the code currently does, vfio is still behind KVM.
-> It's hard to beat a direct call chain.
+Hi Alex,
 
-We can have a direct call chain with vfio too, using a custom eventfd
-poll function, no?  Assuming we set up a fast path for unicast msi.
+On Mon, Jul 9, 2012 at 8:08 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> ---
+>  arch/arm/boot/dts/tegra20-ventana.dts | 31 +++++++++++++++++++++++++++++++
+>  arch/arm/boot/dts/tegra20.dtsi        |  2 +-
+>  2 files changed, 32 insertions(+), 1 deletion(-)
+>
+> diff --git a/arch/arm/boot/dts/tegra20-ventana.dts b/arch/arm/boot/dts/tegra20-ventana.dts
+> index be90544..c67d9e1 100644
+> --- a/arch/arm/boot/dts/tegra20-ventana.dts
+> +++ b/arch/arm/boot/dts/tegra20-ventana.dts
+> @@ -317,6 +317,37 @@
+>                 bus-width = <8>;
+>         };
+>
 
-> For more devices, one that seems common among the non-enterprise users
-> are TV capture cards, like the old PVR-250/350 devices.  These don't
-> support MSI.  Thanks,
+I would like to do something similar in U-Boot for Tegra, although
+perhaps not right away. For now I will go with something considerably
+simpler! But if this is merged into the kernel we will move to it in
+U-Boot. Anyway here are my comments:
 
-That doesn't mean they require an interrupt rate that warrants a fast
-path.  But I guess that some combination of old guests or old hardware
-will want it.
+> +       backlight {
+> +               compatible = "pwm-backlight";
+> +               brightness-levels = <0 16 32 48 64 80 96 112 128 144 160 176 192 208 224 240 255>;
 
--- 
-error compiling committee.c: too many arguments to function
+We seem to have a lot of these - should we move to a range and step size?
 
+> +               default-brightness-level = <12>;
+> +
+> +               pwms = <&pwm 2 5000000>;
+> +               pwm-names = "backlight";
+> +               power-supply = <&backlight_reg>;
+> +               enable-gpios = <&gpio 28 0>;
+> +
+> +               power-on-sequence = "REGULATOR", "power", <1>,
+> +                                   "DELAY", <10>,
+> +                                   "PWM", "backlight", <1>,
+> +                                   "GPIO", "enable", <1>;
 
+So the names REGULATOR, DELAY, etc. here are looked up through some
+existing mechanism? In general I am not a big fan of mixing strings
+and numbers in a property. Maybe something like:
+
+power_on_sequence {
+   step@0 {
+      phandle = <&backlight_reg>;
+      enable = <1>;
+      post-delay = <10>;
+   }
+   step@1 {
+      phandle = <&pwm 2 5000000>;
+   }
+   step@2 {
+      phandle = <&gpio 28 0>;
+      enable = <1>;
+   }
+
+> +               power-off-sequence = "GPIO", "enable", <0>,
+> +                                    "PWM", "backlight", <0>,
+> +                                    "DELAY", <10>,
+> +                                    "REGULATOR", "power", <0>;
+> +       };
+> +
+> +       backlight_reg: fixedregulator@176 {
+> +               compatible = "regulator-fixed";
+> +               regulator-name = "backlight_regulator";
+> +               regulator-min-microvolt = <1800000>;
+> +               regulator-max-microvolt = <1800000>;
+> +               gpio = <&gpio 176 0>;
+> +               startup-delay-us = <0>;
+> +               enable-active-high;
+> +               regulator-boot-off;
+> +       };
+> +
+>         sound {
+>                 compatible = "nvidia,tegra-audio-wm8903-ventana",
+>                              "nvidia,tegra-audio-wm8903";
+> diff --git a/arch/arm/boot/dts/tegra20.dtsi b/arch/arm/boot/dts/tegra20.dtsi
+> index 405d167..67a6cd9 100644
+> --- a/arch/arm/boot/dts/tegra20.dtsi
+> +++ b/arch/arm/boot/dts/tegra20.dtsi
+> @@ -123,7 +123,7 @@
+>                 status = "disabled";
+>         };
+>
+> -       pwm {
+> +       pwm: pwm {
+>                 compatible = "nvidia,tegra20-pwm";
+>                 reg = <0x7000a000 0x100>;
+>                 #pwm-cells = <2>;
+> --
+> 1.7.11.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+Regards,
+Simon
