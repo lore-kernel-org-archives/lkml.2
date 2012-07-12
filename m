@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162236Ab2GLW4a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:56:30 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60450 "EHLO
+	id S1162101Ab2GLWnv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:43:51 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54985 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162166Ab2GLWn7 (ORCPT
+	with ESMTP id S1162124Ab2GLWnd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:43:59 -0400
+	Thu, 12 Jul 2012 18:43:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [ 145/187] ACPI / PM: Make acpi_pm_device_sleep_state() follow the specification
-Date: Thu, 12 Jul 2012 15:35:01 -0700
-Message-Id: <20120712191535.849687283@linuxfoundation.org>
+        Tyler Hicks <tyhicks@canonical.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Subject: [ 138/187] eCryptfs: Properly check for O_RDONLY flag before doing privileged open
+Date: Thu, 12 Jul 2012 15:34:54 -0700
+Message-Id: <20120712191535.183178157@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -30,46 +31,42 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
+From: Tyler Hicks <tyhicks@canonical.com>
 
-commit dbe9a2edd17d843d80faf2b99f20a691c1853418 upstream.
+commit 9fe79d7600497ed8a95c3981cbe5b73ab98222f0 upstream.
 
-The comparison between the system sleep state being entered
-and the lowest system sleep state the given device may wake up
-from in acpi_pm_device_sleep_state() is reversed, because the
-specification (ACPI 5.0) says that for wakeup to work:
+If the first attempt at opening the lower file read/write fails,
+eCryptfs will retry using a privileged kthread. However, the privileged
+retry should not happen if the lower file's inode is read-only because a
+read/write open will still be unsuccessful.
 
-"The sleeping state being entered must be less than or equal to the
- power state declared in element 1 of the _PRW object."
+The check for determining if the open should be retried was intended to
+be based on the access mode of the lower file's open flags being
+O_RDONLY, but the check was incorrectly performed. This would cause the
+open to be retried by the privileged kthread, resulting in a second
+failed open of the lower file. This patch corrects the check to
+determine if the open request should be handled by the privileged
+kthread.
 
-In other words, the state returned by _PRW is the deepest
-(lowest-power) system sleep state the device is capable of waking up
-the system from.
-
-Moreover, acpi_pm_device_sleep_state() also should check if the
-wakeup capability is supported through ACPI, because in principle it
-may be done via native PCIe PME, for example, in which case _SxW
-should not be evaluated.
-
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/sleep.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/ecryptfs/kthread.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/acpi/sleep.c
-+++ b/drivers/acpi/sleep.c
-@@ -732,8 +732,8 @@ int acpi_pm_device_sleep_state(struct de
- 	 * can wake the system.  _S0W may be valid, too.
- 	 */
- 	if (acpi_target_sleep_state == ACPI_STATE_S0 ||
--	    (device_may_wakeup(dev) &&
--	     adev->wakeup.sleep_state <= acpi_target_sleep_state)) {
-+	    (device_may_wakeup(dev) && adev->wakeup.flags.valid &&
-+	     adev->wakeup.sleep_state >= acpi_target_sleep_state)) {
- 		acpi_status status;
- 
- 		acpi_method[3] = 'W';
+--- a/fs/ecryptfs/kthread.c
++++ b/fs/ecryptfs/kthread.c
+@@ -149,7 +149,7 @@ int ecryptfs_privileged_open(struct file
+ 	(*lower_file) = dentry_open(lower_dentry, lower_mnt, flags, cred);
+ 	if (!IS_ERR(*lower_file))
+ 		goto out;
+-	if (flags & O_RDONLY) {
++	if ((flags & O_ACCMODE) == O_RDONLY) {
+ 		rc = PTR_ERR((*lower_file));
+ 		goto out;
+ 	}
 
 
