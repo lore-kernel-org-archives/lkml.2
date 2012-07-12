@@ -1,27 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162456Ab2GLWsE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:48:04 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54985 "EHLO
+	id S1162445Ab2GLWr7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:47:59 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60450 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162373Ab2GLWqG (ORCPT
+	with ESMTP id S1162388Ab2GLWqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:46:06 -0400
+	Thu, 12 Jul 2012 18:46:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Devendra Naga <devendra.aaru@gmail.com>,
-        Viresh Kumar <viresh.linux@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>
-Subject: [ 181/187] drivers/rtc/rtc-spear.c: fix use-after-free in spear_rtc_remove()
-Date: Thu, 12 Jul 2012 15:35:37 -0700
-Message-Id: <20120712191540.072466555@linuxfoundation.org>
+        =?UTF-8?q?Beno=C3=AEt=20Th=C3=A9baudeau?= 
+	<benoit.thebaudeau@advansee.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: =?y?q?=5B=20183/187=5D=20drivers/rtc/rtc-mxc=2Ec=3A=20fix=20irq=20enabled=20interrupts=20warning?=
+Date: Thu, 12 Jul 2012 15:35:39 -0700
+Message-Id: <20120712191540.261509226@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
  <20120712191522.742634173@linuxfoundation.org>
 User-Agent: quilt/0.60-20.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset=y
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,39 +38,67 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Devendra Naga <devendra.aaru@gmail.com>
+From: =?UTF-8?q?Beno=C3=AEt=20Th=C3=A9baudeau?=
 
-commit 2a643893e50fde71d7ba84b5592ec61b467b9ab6 upstream.
+commit b59f6d1febd6cbe9fae4589bf72da0ed32bc69e0 upstream.
 
-`config' is freed and is then used in the rtc_device_unregister() call,
-causing a kernel panic.
+Fixes
 
-Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
-Reviewed-by: Viresh Kumar <viresh.linux@gmail.com>
+  WARNING: at irq/handle.c:146 handle_irq_event_percpu+0x19c/0x1b8()
+  irq 25 handler mxc_rtc_interrupt+0x0/0xac enabled interrupts
+  Modules linked in:
+   (unwind_backtrace+0x0/0xf0) from (warn_slowpath_common+0x4c/0x64)
+   (warn_slowpath_common+0x4c/0x64) from (warn_slowpath_fmt+0x30/0x40)
+   (warn_slowpath_fmt+0x30/0x40) from (handle_irq_event_percpu+0x19c/0x1b8)
+   (handle_irq_event_percpu+0x19c/0x1b8) from (handle_irq_event+0x28/0x38)
+   (handle_irq_event+0x28/0x38) from (handle_level_irq+0x80/0xc4)
+   (handle_level_irq+0x80/0xc4) from (generic_handle_irq+0x24/0x38)
+   (generic_handle_irq+0x24/0x38) from (handle_IRQ+0x30/0x84)
+   (handle_IRQ+0x30/0x84) from (avic_handle_irq+0x2c/0x4c)
+   (avic_handle_irq+0x2c/0x4c) from (__irq_svc+0x40/0x60)
+  Exception stack(0xc050bf60 to 0xc050bfa8)
+  bf60: 00000001 00000000 003c4208 c0018e20 c050a000 c050a000 c054a4c8 c050a000
+  bf80: c05157a8 4117b363 80503bb4 00000000 01000000 c050bfa8 c0018e2c c000e808
+  bfa0: 60000013 ffffffff
+   (__irq_svc+0x40/0x60) from (default_idle+0x1c/0x30)
+   (default_idle+0x1c/0x30) from (cpu_idle+0x68/0xa8)
+   (cpu_idle+0x68/0xa8) from (start_kernel+0x22c/0x26c)
+
+Signed-off-by: Benoît Thébaudeau <benoit.thebaudeau@advansee.com>
 Cc: Alessandro Zummo <a.zummo@towertech.it>
+Cc: Sascha Hauer <kernel@pengutronix.de>
+Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/rtc/rtc-spear.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/rtc/rtc-mxc.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/rtc/rtc-spear.c
-+++ b/drivers/rtc/rtc-spear.c
-@@ -457,12 +457,12 @@ static int __devexit spear_rtc_remove(st
- 	clk_disable(config->clk);
- 	clk_put(config->clk);
- 	iounmap(config->ioaddr);
--	kfree(config);
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (res)
- 		release_mem_region(res->start, resource_size(res));
- 	platform_set_drvdata(pdev, NULL);
- 	rtc_device_unregister(config->rtc);
-+	kfree(config);
+--- a/drivers/rtc/rtc-mxc.c
++++ b/drivers/rtc/rtc-mxc.c
+@@ -202,10 +202,11 @@ static irqreturn_t mxc_rtc_interrupt(int
+ 	struct platform_device *pdev = dev_id;
+ 	struct rtc_plat_data *pdata = platform_get_drvdata(pdev);
+ 	void __iomem *ioaddr = pdata->ioaddr;
++	unsigned long flags;
+ 	u32 status;
+ 	u32 events = 0;
  
- 	return 0;
+-	spin_lock_irq(&pdata->rtc->irq_lock);
++	spin_lock_irqsave(&pdata->rtc->irq_lock, flags);
+ 	status = readw(ioaddr + RTC_RTCISR) & readw(ioaddr + RTC_RTCIENR);
+ 	/* clear interrupt sources */
+ 	writew(status, ioaddr + RTC_RTCISR);
+@@ -224,7 +225,7 @@ static irqreturn_t mxc_rtc_interrupt(int
+ 		events |= (RTC_PF | RTC_IRQF);
+ 
+ 	rtc_update_irq(pdata->rtc, 1, events);
+-	spin_unlock_irq(&pdata->rtc->irq_lock);
++	spin_unlock_irqrestore(&pdata->rtc->irq_lock, flags);
+ 
+ 	return IRQ_HANDLED;
  }
 
 
