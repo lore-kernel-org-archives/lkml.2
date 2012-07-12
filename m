@@ -1,62 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756264Ab2GLBKT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 21:10:19 -0400
-Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:52166
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754023Ab2GLBKQ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 21:10:16 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dIc89bh1432Izz1202hzz8275dhz2dh87h2a8h668h839hd25he96hf0ah107ah)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Thu, 12 Jul 2012 09:10:40 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-CC: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <kernel@pengutronix.de>,
-        Philippe =?iso-8859-1?Q?R=E9tornaz?= <philippe.retornaz@epfl.ch>,
-        Marc Reilly <marc@cpdesign.com.au>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [RFC internal PATCH] mfd/mc13xxx: drop modifying driver's
- id_table in probe
-Message-ID: <20120712011038.GB6971@S2101-09.ap.freescale.net>
-References: <1342006608-30550-1-git-send-email-u.kleine-koenig@pengutronix.de>
+	id S1757724Ab2GLBMO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 21:12:14 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:61524 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754672Ab2GLBMM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 21:12:12 -0400
+Date: Wed, 11 Jul 2012 18:12:08 -0700
+From: Michel Lespinasse <walken@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: aarcange@redhat.com, dwmw2@infradead.org, riel@redhat.com,
+        daniel.santos@pobox.com, axboe@kernel.dk, ebiederm@xmission.com,
+        linux-mm@kvack.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
+Subject: Re: [PATCH 00/13] rbtree updates
+Message-ID: <20120712011208.GA1152@google.com>
+References: <1341876923-12469-1-git-send-email-walken@google.com>
+ <1342012996.3462.154.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1342006608-30550-1-git-send-email-u.kleine-koenig@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: sigmatel.com
+In-Reply-To: <1342012996.3462.154.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 11, 2012 at 01:36:48PM +0200, Uwe Kleine-König wrote:
-> This was introduced in commit
-> 
-> 	876989d (mfd: Add device tree probe support for mc13xxx)
-> 
-> for spi and later while introducing support for i2c copied to the i2c
-> driver.
-> 
-> Modifying driver details is very strange, for example probing an
-> mc13892 device (instantiated via dt) removes the driver's ability to
-> handle (traditionally probed) mc13783 devices in this case.
-> I'm not aware of any problems that make this hack necessary and if
-> there were some, they'd have to be fixed in the spi/i2c core, not in
-> a driver.
-> 
-> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+On Wed, Jul 11, 2012 at 6:23 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> Looks nice.. How about something like the below on top.. I couldn't
+> immediately find a sane reason for the grand-parent to always be red in
+> the insertion case.
 
-The code was added by me, and it turns out the change is completely
-unnecessary.  So,
+Do you mean the case you marked XXX ? it is actually parent that is
+red, which we know because we tested that a few lines earlier.
 
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
+> @@ -85,12 +104,27 @@ void rb_insert_color(struct rb_node *nod
+>                 } else if (rb_is_black(parent))
+>                         break;
+>
+> +               /*
+> +                * XXX
+> +                */
+>                 gparent = rb_red_parent(parent);
 
-Regards,
-Shawn
+See :)
 
+>                 if (parent == gparent->rb_left) {
+>                         tmp = gparent->rb_right;
+>                         if (tmp && rb_is_red(tmp)) {
+> -                               /* Case 1 - color flips */
+> +                               /*
+> +                                * Case 1 - color flips
+> +                                *
+> +                                *       G            g
+> +                                *      / \          / \
+> +                                *     p   u  -->   P   U
+> +                                *    /            /
+> +                                *   n            N
+> +                                *
+> +                                * However, since g's parent might be red, and
+> +                                * 4) does not allow this, we need to recurse
+> +                                * at g.
+> +                                */
+
+I like these diagrams - I initially didn't think they'd work well, given the need for colors etc, but I now see that it's workable.
+
+In __rb_erase_color(), some of the cases are more complicated than you drew however, because some node colors aren't known.
+This is what I ended up with:
+
+  *  5), then the longest possible path due to 4 is 2B.
+  *
+  *  We shall indicate color with case, where black nodes are uppercase and red
+- *  nodes will be lowercase.
++ *  nodes will be lowercase. Unknown color nodes shall be drawn as red with
++ *  some accompanying text comment.
+  */
+
++                                       /*
++                                        * Case 2 - sibling color flip
++                                        * (p could be either color here)
++                                        *
++                                        *     p             p
++                                        *    / \           / \
++                                        *   N   S    -->  N   s
++                                        *      / \           / \
++                                        *     Sl  Sr        Sl  Sr
++                                        *
++                                        * This leaves us violating 5), so
++                                        * recurse at p. If p is red, the
++                                        * recursion will just flip it to black
++                                        * and exit. If coming from Case 1,
++                                        * p is known to be red.
++                                        */
+
++                               /*
++                                * Case 3 - right rotate at sibling
++                                * (p could be either color here)
++                                *
++                                *    p             p
++                                *   / \           / \
++                                *  N   S    -->  N   Sl
++                                *     / \             \
++                                *    sl  Sr            s
++                                *                       \
++                                *                        Sr
++                                */
+
++                       /*
++                        * Case 4 - left rotate at parent + color flips
++                        * (p and sl could be either color here.
++                        *  After rotation, p becomes black, s acquires
++                        *  p's color, and sl keeps its color)
++                        *
++                        *       p               s
++                        *      / \             / \
++                        *     N   S     -->   P   Sr
++                        *        / \         / \
++                        *       sl  sr      N   sl
++                        */
+
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
