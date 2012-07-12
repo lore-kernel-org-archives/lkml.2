@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759426Ab2GLWgj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:36:39 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:45444 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759416Ab2GLWge (ORCPT
+	id S1759445Ab2GLWgr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:36:47 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:40725 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759429Ab2GLWgl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:36:34 -0400
+	Thu, 12 Jul 2012 18:36:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Hiroaki SHIMODA <shimoda.hiroaki@gmail.com>,
-        Tom Herbert <therbert@google.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Denys Fedoryshchenko <denys@visp.net.lb>,
-        Eric Dumazet <edumazet@google.com>,
+        Paul Moore <pmoore@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 018/187] bql: Avoid possible inconsistent calculation.
-Date: Thu, 12 Jul 2012 15:32:54 -0700
-Message-Id: <20120712191523.944857458@linuxfoundation.org>
+Subject: [ 020/187] cipso: handle CIPSO options correctly when NetLabel is disabled
+Date: Thu, 12 Jul 2012 15:32:56 -0700
+Message-Id: <20120712191524.135540029@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -36,57 +32,76 @@ From: Greg KH <gregkh@linuxfoundation.org>
 ------------------
 
 
-From: Hiroaki SHIMODA <shimoda.hiroaki@gmail.com>
+From: Paul Moore <pmoore@redhat.com>
 
-[ Upstream commit 914bec1011a25f65cdc94988a6f974bfb9a3c10d ]
+[ Upstream commit 20e2a86485967c385d7c7befc1646e4d1d39362e ]
 
-dql->num_queued could change while processing dql_completed().
-To provide consistent calculation, added an on stack variable.
+When NetLabel is not enabled, e.g. CONFIG_NETLABEL=n, and the system
+receives a CIPSO tagged packet it is dropped (cipso_v4_validate()
+returns non-zero).  In most cases this is the correct and desired
+behavior, however, in the case where we are simply forwarding the
+traffic, e.g. acting as a network bridge, this becomes a problem.
 
-Signed-off-by: Hiroaki SHIMODA <shimoda.hiroaki@gmail.com>
-Cc: Tom Herbert <therbert@google.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Denys Fedoryshchenko <denys@visp.net.lb>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
+This patch fixes the forwarding problem by providing the basic CIPSO
+validation code directly in ip_options_compile() without the need for
+the NetLabel or CIPSO code.  The new validation code can not perform
+any of the CIPSO option label/value verification that
+cipso_v4_validate() does, but it can verify the basic CIPSO option
+format.
+
+The behavior when NetLabel is enabled is unchanged.
+
+Signed-off-by: Paul Moore <pmoore@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- lib/dynamic_queue_limits.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ include/net/cipso_ipv4.h |   29 ++++++++++++++++++++++++++++-
+ 1 file changed, 28 insertions(+), 1 deletion(-)
 
---- a/lib/dynamic_queue_limits.c
-+++ b/lib/dynamic_queue_limits.c
-@@ -17,16 +17,18 @@
- void dql_completed(struct dql *dql, unsigned int count)
+--- a/include/net/cipso_ipv4.h
++++ b/include/net/cipso_ipv4.h
+@@ -42,6 +42,7 @@
+ #include <net/netlabel.h>
+ #include <net/request_sock.h>
+ #include <linux/atomic.h>
++#include <asm/unaligned.h>
+ 
+ /* known doi values */
+ #define CIPSO_V4_DOI_UNKNOWN          0x00000000
+@@ -285,7 +286,33 @@ static inline int cipso_v4_skbuff_getatt
+ static inline int cipso_v4_validate(const struct sk_buff *skb,
+ 				    unsigned char **option)
  {
- 	unsigned int inprogress, prev_inprogress, limit;
--	unsigned int ovlimit, completed;
-+	unsigned int ovlimit, completed, num_queued;
- 	bool all_prev_completed;
- 
-+	num_queued = ACCESS_ONCE(dql->num_queued);
+-	return -ENOSYS;
++	unsigned char *opt = *option;
++	unsigned char err_offset = 0;
++	u8 opt_len = opt[1];
++	u8 opt_iter;
 +
- 	/* Can't complete more than what's in queue */
--	BUG_ON(count > dql->num_queued - dql->num_completed);
-+	BUG_ON(count > num_queued - dql->num_completed);
- 
- 	completed = dql->num_completed + count;
- 	limit = dql->limit;
--	ovlimit = POSDIFF(dql->num_queued - dql->num_completed, limit);
--	inprogress = dql->num_queued - completed;
-+	ovlimit = POSDIFF(num_queued - dql->num_completed, limit);
-+	inprogress = num_queued - completed;
- 	prev_inprogress = dql->prev_num_queued - dql->num_completed;
- 	all_prev_completed = AFTER_EQ(completed, dql->prev_num_queued);
- 
-@@ -106,7 +108,7 @@ void dql_completed(struct dql *dql, unsi
- 	dql->prev_ovlimit = ovlimit;
- 	dql->prev_last_obj_cnt = dql->last_obj_cnt;
- 	dql->num_completed = completed;
--	dql->prev_num_queued = dql->num_queued;
-+	dql->prev_num_queued = num_queued;
++	if (opt_len < 8) {
++		err_offset = 1;
++		goto out;
++	}
++
++	if (get_unaligned_be32(&opt[2]) == 0) {
++		err_offset = 2;
++		goto out;
++	}
++
++	for (opt_iter = 6; opt_iter < opt_len;) {
++		if (opt[opt_iter + 1] > (opt_len - opt_iter)) {
++			err_offset = opt_iter + 1;
++			goto out;
++		}
++		opt_iter += opt[opt_iter + 1];
++	}
++
++out:
++	*option = opt + err_offset;
++	return err_offset;
++
  }
- EXPORT_SYMBOL(dql_completed);
+ #endif /* CONFIG_NETLABEL */
  
 
 
