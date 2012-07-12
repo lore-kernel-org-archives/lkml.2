@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162461Ab2GLWuQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:50:16 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48386 "EHLO
+	id S1162443Ab2GLWuN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:50:13 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:61447 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162217Ab2GLWpi (ORCPT
+	with ESMTP id S1162289Ab2GLWpl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:45:38 -0400
+	Thu, 12 Jul 2012 18:45:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stanislav Yakovlev <stas.yakovlev@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Josh Boyer <jwboyer@redhat.com>
-Subject: [ 173/187] net/wireless: ipw2x00: add supported cipher suites to wiphy initialization
-Date: Thu, 12 Jul 2012 15:35:29 -0700
-Message-Id: <20120712191539.338389764@linuxfoundation.org>
+        Dave Jones <davej@redhat.com>, Eric Dumazet <edumazet@google.com>,
+        Jens Axboe <axboe@kernel.dk>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Tom Herbert <therbert@google.com>, Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 174/187] splice: fix racy pipe->buffers uses
+Date: Thu, 12 Jul 2012 15:35:30 -0700
+Message-Id: <20120712191539.433405264@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -32,94 +32,286 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Stanislav Yakovlev <stas.yakovlev@gmail.com>
+From: Eric Dumazet <edumazet@google.com>
 
-commit a141e6a0097118bb35024485f1faffc0d9042f5c upstream.
+commit 047fe3605235888f3ebcda0c728cb31937eadfe6 upstream.
 
-Driver doesn't report its supported cipher suites through cfg80211
-interface. It still uses wext interface and probably will not work
-through nl80211, but will at least correctly advertise supported
-features.
+Dave Jones reported a kernel BUG at mm/slub.c:3474! triggered
+by splice_shrink_spd() called from vmsplice_to_pipe()
 
-Bug was reported by Omar Siam.
-https://bugzilla.kernel.org/show_bug.cgi?id=43049
+commit 35f3d14dbbc5 (pipe: add support for shrinking and growing pipes)
+added capability to adjust pipe->buffers.
 
-Signed-off-by: Stanislav Yakovlev <stas.yakovlev@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Cc: Josh Boyer <jwboyer@redhat.com>
+Problem is some paths don't hold pipe mutex and assume pipe->buffers
+doesn't change for their duration.
+
+Fix this by adding nr_pages_max field in struct splice_pipe_desc, and
+use it in place of pipe->buffers where appropriate.
+
+splice_shrink_spd() loses its struct pipe_inode_info argument.
+
+Reported-by: Dave Jones <davej@redhat.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Tom Herbert <therbert@google.com>
+Tested-by: Dave Jones <davej@redhat.com>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
+[bwh: Backported to 3.2:
+ - Adjust context in vmsplice_to_pipe()
+ - Update one more call to splice_shrink_spd(), from skb_splice_bits()]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/net/wireless/ipw2x00/ipw.h     |   23 +++++++++++++++++++++++
- drivers/net/wireless/ipw2x00/ipw2100.c |    4 ++++
- drivers/net/wireless/ipw2x00/ipw2200.c |    4 ++++
- 3 files changed, 31 insertions(+)
+ fs/splice.c            |   35 ++++++++++++++++++++---------------
+ include/linux/splice.h |    8 ++++----
+ kernel/relay.c         |    5 +++--
+ kernel/trace/trace.c   |    6 ++++--
+ mm/shmem.c             |    3 ++-
+ net/core/skbuff.c      |    3 ++-
+ 6 files changed, 35 insertions(+), 25 deletions(-)
 
---- /dev/null
-+++ b/drivers/net/wireless/ipw2x00/ipw.h
-@@ -0,0 +1,23 @@
-+/*
-+ * Intel Pro/Wireless 2100, 2200BG, 2915ABG network connection driver
-+ *
-+ * Copyright 2012 Stanislav Yakovlev <stas.yakovlev@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
+--- a/fs/splice.c
++++ b/fs/splice.c
+@@ -273,13 +273,16 @@ void spd_release_page(struct splice_pipe
+  * Check if we need to grow the arrays holding pages and partial page
+  * descriptions.
+  */
+-int splice_grow_spd(struct pipe_inode_info *pipe, struct splice_pipe_desc *spd)
++int splice_grow_spd(const struct pipe_inode_info *pipe, struct splice_pipe_desc *spd)
+ {
+-	if (pipe->buffers <= PIPE_DEF_BUFFERS)
++	unsigned int buffers = ACCESS_ONCE(pipe->buffers);
 +
-+#ifndef __IPW_H__
-+#define __IPW_H__
-+
-+#include <linux/ieee80211.h>
-+
-+static const u32 ipw_cipher_suites[] = {
-+	WLAN_CIPHER_SUITE_WEP40,
-+	WLAN_CIPHER_SUITE_WEP104,
-+	WLAN_CIPHER_SUITE_TKIP,
-+	WLAN_CIPHER_SUITE_CCMP,
-+};
-+
-+#endif
---- a/drivers/net/wireless/ipw2x00/ipw2100.c
-+++ b/drivers/net/wireless/ipw2x00/ipw2100.c
-@@ -166,6 +166,7 @@ that only one external action is invoked
- #include <net/lib80211.h>
++	spd->nr_pages_max = buffers;
++	if (buffers <= PIPE_DEF_BUFFERS)
+ 		return 0;
  
- #include "ipw2100.h"
-+#include "ipw.h"
+-	spd->pages = kmalloc(pipe->buffers * sizeof(struct page *), GFP_KERNEL);
+-	spd->partial = kmalloc(pipe->buffers * sizeof(struct partial_page), GFP_KERNEL);
++	spd->pages = kmalloc(buffers * sizeof(struct page *), GFP_KERNEL);
++	spd->partial = kmalloc(buffers * sizeof(struct partial_page), GFP_KERNEL);
  
- #define IPW2100_VERSION "git-1.2.2"
+ 	if (spd->pages && spd->partial)
+ 		return 0;
+@@ -289,10 +292,9 @@ int splice_grow_spd(struct pipe_inode_in
+ 	return -ENOMEM;
+ }
  
-@@ -1946,6 +1947,9 @@ static int ipw2100_wdev_init(struct net_
- 		wdev->wiphy->bands[IEEE80211_BAND_2GHZ] = bg_band;
+-void splice_shrink_spd(struct pipe_inode_info *pipe,
+-		       struct splice_pipe_desc *spd)
++void splice_shrink_spd(struct splice_pipe_desc *spd)
+ {
+-	if (pipe->buffers <= PIPE_DEF_BUFFERS)
++	if (spd->nr_pages_max <= PIPE_DEF_BUFFERS)
+ 		return;
+ 
+ 	kfree(spd->pages);
+@@ -315,6 +317,7 @@ __generic_file_splice_read(struct file *
+ 	struct splice_pipe_desc spd = {
+ 		.pages = pages,
+ 		.partial = partial,
++		.nr_pages_max = PIPE_DEF_BUFFERS,
+ 		.flags = flags,
+ 		.ops = &page_cache_pipe_buf_ops,
+ 		.spd_release = spd_release_page,
+@@ -326,7 +329,7 @@ __generic_file_splice_read(struct file *
+ 	index = *ppos >> PAGE_CACHE_SHIFT;
+ 	loff = *ppos & ~PAGE_CACHE_MASK;
+ 	req_pages = (len + loff + PAGE_CACHE_SIZE - 1) >> PAGE_CACHE_SHIFT;
+-	nr_pages = min(req_pages, pipe->buffers);
++	nr_pages = min(req_pages, spd.nr_pages_max);
+ 
+ 	/*
+ 	 * Lookup the (hopefully) full range of pages we need.
+@@ -497,7 +500,7 @@ fill_it:
+ 	if (spd.nr_pages)
+ 		error = splice_to_pipe(pipe, &spd);
+ 
+-	splice_shrink_spd(pipe, &spd);
++	splice_shrink_spd(&spd);
+ 	return error;
+ }
+ 
+@@ -598,6 +601,7 @@ ssize_t default_file_splice_read(struct
+ 	struct splice_pipe_desc spd = {
+ 		.pages = pages,
+ 		.partial = partial,
++		.nr_pages_max = PIPE_DEF_BUFFERS,
+ 		.flags = flags,
+ 		.ops = &default_pipe_buf_ops,
+ 		.spd_release = spd_release_page,
+@@ -608,8 +612,8 @@ ssize_t default_file_splice_read(struct
+ 
+ 	res = -ENOMEM;
+ 	vec = __vec;
+-	if (pipe->buffers > PIPE_DEF_BUFFERS) {
+-		vec = kmalloc(pipe->buffers * sizeof(struct iovec), GFP_KERNEL);
++	if (spd.nr_pages_max > PIPE_DEF_BUFFERS) {
++		vec = kmalloc(spd.nr_pages_max * sizeof(struct iovec), GFP_KERNEL);
+ 		if (!vec)
+ 			goto shrink_ret;
+ 	}
+@@ -617,7 +621,7 @@ ssize_t default_file_splice_read(struct
+ 	offset = *ppos & ~PAGE_CACHE_MASK;
+ 	nr_pages = (len + offset + PAGE_CACHE_SIZE - 1) >> PAGE_CACHE_SHIFT;
+ 
+-	for (i = 0; i < nr_pages && i < pipe->buffers && len; i++) {
++	for (i = 0; i < nr_pages && i < spd.nr_pages_max && len; i++) {
+ 		struct page *page;
+ 
+ 		page = alloc_page(GFP_USER);
+@@ -665,7 +669,7 @@ ssize_t default_file_splice_read(struct
+ shrink_ret:
+ 	if (vec != __vec)
+ 		kfree(vec);
+-	splice_shrink_spd(pipe, &spd);
++	splice_shrink_spd(&spd);
+ 	return res;
+ 
+ err:
+@@ -1612,6 +1616,7 @@ static long vmsplice_to_pipe(struct file
+ 	struct splice_pipe_desc spd = {
+ 		.pages = pages,
+ 		.partial = partial,
++		.nr_pages_max = PIPE_DEF_BUFFERS,
+ 		.flags = flags,
+ 		.ops = &user_page_pipe_buf_ops,
+ 		.spd_release = spd_release_page,
+@@ -1627,13 +1632,13 @@ static long vmsplice_to_pipe(struct file
+ 
+ 	spd.nr_pages = get_iovec_page_array(iov, nr_segs, spd.pages,
+ 					    spd.partial, flags & SPLICE_F_GIFT,
+-					    pipe->buffers);
++					    spd.nr_pages_max);
+ 	if (spd.nr_pages <= 0)
+ 		ret = spd.nr_pages;
+ 	else
+ 		ret = splice_to_pipe(pipe, &spd);
+ 
+-	splice_shrink_spd(pipe, &spd);
++	splice_shrink_spd(&spd);
+ 	return ret;
+ }
+ 
+--- a/include/linux/splice.h
++++ b/include/linux/splice.h
+@@ -51,7 +51,8 @@ struct partial_page {
+ struct splice_pipe_desc {
+ 	struct page **pages;		/* page map */
+ 	struct partial_page *partial;	/* pages[] may not be contig */
+-	int nr_pages;			/* number of pages in map */
++	int nr_pages;			/* number of populated pages in map */
++	unsigned int nr_pages_max;	/* pages[] & partial[] arrays size */
+ 	unsigned int flags;		/* splice flags */
+ 	const struct pipe_buf_operations *ops;/* ops associated with output pipe */
+ 	void (*spd_release)(struct splice_pipe_desc *, unsigned int);
+@@ -85,9 +86,8 @@ extern ssize_t splice_direct_to_actor(st
+ /*
+  * for dynamic pipe sizing
+  */
+-extern int splice_grow_spd(struct pipe_inode_info *, struct splice_pipe_desc *);
+-extern void splice_shrink_spd(struct pipe_inode_info *,
+-				struct splice_pipe_desc *);
++extern int splice_grow_spd(const struct pipe_inode_info *, struct splice_pipe_desc *);
++extern void splice_shrink_spd(struct splice_pipe_desc *);
+ extern void spd_release_page(struct splice_pipe_desc *, unsigned int);
+ 
+ extern const struct pipe_buf_operations page_cache_pipe_buf_ops;
+--- a/kernel/relay.c
++++ b/kernel/relay.c
+@@ -1235,6 +1235,7 @@ static ssize_t subbuf_splice_actor(struc
+ 	struct splice_pipe_desc spd = {
+ 		.pages = pages,
+ 		.nr_pages = 0,
++		.nr_pages_max = PIPE_DEF_BUFFERS,
+ 		.partial = partial,
+ 		.flags = flags,
+ 		.ops = &relay_pipe_buf_ops,
+@@ -1302,8 +1303,8 @@ static ssize_t subbuf_splice_actor(struc
+                 ret += padding;
+ 
+ out:
+-	splice_shrink_spd(pipe, &spd);
+-        return ret;
++	splice_shrink_spd(&spd);
++	return ret;
+ }
+ 
+ static ssize_t relay_file_splice_read(struct file *in,
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -3565,6 +3565,7 @@ static ssize_t tracing_splice_read_pipe(
+ 		.pages		= pages_def,
+ 		.partial	= partial_def,
+ 		.nr_pages	= 0, /* This gets updated below. */
++		.nr_pages_max	= PIPE_DEF_BUFFERS,
+ 		.flags		= flags,
+ 		.ops		= &tracing_pipe_buf_ops,
+ 		.spd_release	= tracing_spd_release_pipe,
+@@ -3636,7 +3637,7 @@ static ssize_t tracing_splice_read_pipe(
+ 
+ 	ret = splice_to_pipe(pipe, &spd);
+ out:
+-	splice_shrink_spd(pipe, &spd);
++	splice_shrink_spd(&spd);
+ 	return ret;
+ 
+ out_err:
+@@ -4126,6 +4127,7 @@ tracing_buffers_splice_read(struct file
+ 	struct splice_pipe_desc spd = {
+ 		.pages		= pages_def,
+ 		.partial	= partial_def,
++		.nr_pages_max	= PIPE_DEF_BUFFERS,
+ 		.flags		= flags,
+ 		.ops		= &buffer_pipe_buf_ops,
+ 		.spd_release	= buffer_spd_release,
+@@ -4213,7 +4215,7 @@ tracing_buffers_splice_read(struct file
  	}
  
-+	wdev->wiphy->cipher_suites = ipw_cipher_suites;
-+	wdev->wiphy->n_cipher_suites = ARRAY_SIZE(ipw_cipher_suites);
-+
- 	set_wiphy_dev(wdev->wiphy, &priv->pci_dev->dev);
- 	if (wiphy_register(wdev->wiphy)) {
- 		ipw2100_down(priv);
---- a/drivers/net/wireless/ipw2x00/ipw2200.c
-+++ b/drivers/net/wireless/ipw2x00/ipw2200.c
-@@ -34,6 +34,7 @@
- #include <linux/slab.h>
- #include <net/cfg80211-wext.h>
- #include "ipw2200.h"
-+#include "ipw.h"
+ 	ret = splice_to_pipe(pipe, &spd);
+-	splice_shrink_spd(pipe, &spd);
++	splice_shrink_spd(&spd);
+ out:
+ 	return ret;
+ }
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -1365,6 +1365,7 @@ static ssize_t shmem_file_splice_read(st
+ 	struct splice_pipe_desc spd = {
+ 		.pages = pages,
+ 		.partial = partial,
++		.nr_pages_max = PIPE_DEF_BUFFERS,
+ 		.flags = flags,
+ 		.ops = &page_cache_pipe_buf_ops,
+ 		.spd_release = spd_release_page,
+@@ -1453,7 +1454,7 @@ static ssize_t shmem_file_splice_read(st
+ 	if (spd.nr_pages)
+ 		error = splice_to_pipe(pipe, &spd);
  
+-	splice_shrink_spd(pipe, &spd);
++	splice_shrink_spd(&spd);
  
- #ifndef KBUILD_EXTMOD
-@@ -11544,6 +11545,9 @@ static int ipw_wdev_init(struct net_devi
- 		wdev->wiphy->bands[IEEE80211_BAND_5GHZ] = a_band;
+ 	if (error > 0) {
+ 		*ppos += error;
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -1712,6 +1712,7 @@ int skb_splice_bits(struct sk_buff *skb,
+ 	struct splice_pipe_desc spd = {
+ 		.pages = pages,
+ 		.partial = partial,
++		.nr_pages_max = MAX_SKB_FRAGS,
+ 		.flags = flags,
+ 		.ops = &sock_pipe_buf_ops,
+ 		.spd_release = sock_spd_release,
+@@ -1758,7 +1759,7 @@ done:
+ 		lock_sock(sk);
  	}
  
-+	wdev->wiphy->cipher_suites = ipw_cipher_suites;
-+	wdev->wiphy->n_cipher_suites = ARRAY_SIZE(ipw_cipher_suites);
-+
- 	set_wiphy_dev(wdev->wiphy, &priv->pci_dev->dev);
+-	splice_shrink_spd(pipe, &spd);
++	splice_shrink_spd(&spd);
+ 	return ret;
+ }
  
- 	/* With that information in place, we can now register the wiphy... */
 
 
