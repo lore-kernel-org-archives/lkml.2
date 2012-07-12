@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758941Ab2GLIoU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 04:44:20 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:40539 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758923Ab2GLIoM (ORCPT
+	id S932446Ab2GLIqQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 04:46:16 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:59309 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753475Ab2GLIqM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 04:44:12 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX196aOclgeV6qKbjtH+LcUG/dM5QZPy1alNy8r300X
-	fHuz2apdCmaGSJ
-Message-ID: <1342082648.7338.171.camel@marge.simpson.net>
-Subject: Re: 3.4.4-rt13: btrfs + xfstests 006 = BOOM..  and a bonus rt_mutex
- deadlock report for absolutely free!
-From: Mike Galbraith <efault@gmx.de>
-To: "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Date: Thu, 12 Jul 2012 10:44:08 +0200
-In-Reply-To: <1342072060.7338.102.camel@marge.simpson.net>
-References: <1342072060.7338.102.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 12 Jul 2012 04:46:12 -0400
+Date: Thu, 12 Jul 2012 09:49:43 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Devendra Naga <devendra.aaru@gmail.com>
+Cc: Mark Einon <mark.einon@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Francois Romieu <romieu@fr.zoreil.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] staging/et131x: remove memset for the TCB
+Message-ID: <20120712094943.2aba6d33@pyramind.ukuu.org.uk>
+In-Reply-To: <1342073368-11893-1-git-send-email-devendra.aaru@gmail.com>
+References: <1342073368-11893-1-git-send-email-devendra.aaru@gmail.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-07-12 at 07:47 +0200, Mike Galbraith wrote: 
-> Greetings,
+On Thu, 12 Jul 2012 11:54:28 +0545
+Devendra Naga <devendra.aaru@gmail.com> wrote:
+
+> TCB has kcalloc' ed so no need to call memset again on it.
 > 
-> I'm chasing btrfs critters in an enterprise 3.0-rt kernel, and just
-> checked to see if they're alive in virgin latest/greatest rt kernel.  
+> Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+> ---
+>  drivers/staging/et131x/et131x.c |    2 --
+>  1 file changed, 2 deletions(-)
 > 
-> Both are indeed alive and well, ie I didn't break it, nor did the
-> zillion patches in enterprise base kernel, so others may have an
-> opportunity to meet these critters up close and personal as well.
+> diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
+> index 227fca9..5010894 100644
+> --- a/drivers/staging/et131x/et131x.c
+> +++ b/drivers/staging/et131x/et131x.c
+> @@ -2131,8 +2131,6 @@ static void et131x_init_send(struct et131x_adapter *adapter)
+>  
+>  	tx_ring->tcb_qhead = tcb;
+>  
+> -	memset(tcb, 0, sizeof(struct tcb) * NUM_TCB);
 
-3.2-rt both explodes and deadlocks as well.  3.0-rt (virgin I mean) does
-neither, so with enough re-integrate investment, it might be bisectable.
+Its such a rarely used path with several entry points that it's probably
+safer kept as is.
 
-Rummaging in btrfs, that begins to look down right attractive ;-)
-
--Mike
-
+Alan
