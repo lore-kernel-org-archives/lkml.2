@@ -1,84 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756170Ab2GLF65 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 01:58:57 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:53637 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754165Ab2GLF6z (ORCPT
+	id S1756314Ab2GLGAl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 02:00:41 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:49755 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754107Ab2GLGAj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 01:58:55 -0400
-X-AuditID: b753bd60-a3089ba000000655-7f-4ffe679cc5c8
-X-AuditID: b753bd60-a3089ba000000655-7f-4ffe679cc5c8
-Message-ID: <4FFE6785.80201@hitachi.com>
-Date: Thu, 12 Jul 2012 14:58:29 +0900
-From: HAYASAKA Mitsuo <mitsuo.hayasaka.hu@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	Thu, 12 Jul 2012 02:00:39 -0400
+Date: Thu, 12 Jul 2012 11:29:06 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] uprobes: uprobe_mmap/munmap needs
+ list_for_each_entry_safe()
+Message-ID: <20120712055906.GD3598@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120708202917.GA18188@redhat.com>
+ <20120708203001.GA18223@redhat.com>
 MIME-Version: 1.0
-To: hanwen@xs4all.nl, Han-Wen Nienhuys <hanwenn@gmail.com>,
-        Liu Yuan <namei.unix@gmail.com>
-Cc: fuse-devel@lists.sourceforge.net, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Miklos Szeredi <miklos@szeredi.hu>,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: [fuse-devel] [RFC PATCH 0/5] fuse: make maximum read/write request
- size tunable
-References: <20120705105017.17812.95542.stgit@ltc137.sdl.hitachi.co.jp> <4FF67D6A.8060707@gmail.com> <CAOw_e7ZGdSVrNfPe8iE8BtmNWU+BrvbaMFVsUP+g+3MR0Pegqw@mail.gmail.com>
-In-Reply-To: <CAOw_e7ZGdSVrNfPe8iE8BtmNWU+BrvbaMFVsUP+g+3MR0Pegqw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20120708203001.GA18223@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12071206-7606-0000-0000-000001F02916
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Yuan and Han-Wen,
+* Oleg Nesterov <oleg@redhat.com> [2012-07-08 22:30:01]:
 
-Thank you for your comments.
+> The bug was introduced by me in 449d0d7c "uprobes: Simplify the
+> usage of uprobe->pending_list".
+> 
+> Yes, we do not care about uprobe->pending_list after return and
+> nobody can remove the current list entry, but put_uprobe(uprobe)
+> can actually free it and thus we need list_for_each_safe().
+> 
+> Reported-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-(2012/07/06 22:58), Han-Wen Nienhuys wrote:
-> On Fri, Jul 6, 2012 at 2:53 AM, Liu Yuan<namei.unix@gmail.com>  wrote:
->> On 07/05/2012 06:50 PM, Mitsuo Hayasaka wrote:
->>> One of the ways to solve this is to make them tunable.
->>> In this series, the new sysfs parameter max_pages_per_req is introduced.
->>> It limits the maximum read/write size in fuse request and it can be
->>> changed from 32 to 256 pages in current implementations. When the
->>> max_read/max_write mount option is specified, FUSE request size is set
->>> per mount. (The size is rounded-up to page size and limited up to
->>> max_pages_per_req.)
->>
->> Why maxim 256 pages? If we are here, we can go further: most of object
->> storage system has object size of multiple to dozens of megabytes. So I
->> think probably 1M is too small. Our distribution storage system has 4M
->> per object, so I think at least maxim size could be bigger than 4M.
->
-> The maximum pipe size on my system is 1M, so if you go beyond that,
-> splicing from the FD won't work.
->
-> Also, the userspace client must reserve a buffer this size so it can
-> receive a write, which is a waste since most requests are much
-> smaller.
->
 
-I checked the maximum pipe size can be changed using fcntl(2) or
-/proc/sys/fs/pipe-max-size. It is clear that it is not a fixed value.
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
-Also, it seems that there is a request for setting the maximum number
-of pages per fuse request to 4M (1024 pages). One of the reasons to
-introduce the sysfs max_pages_per_req parameter is to set a threshold
-of the maximum number of pages dynamically according to the
-administrator's demand, and root can only change it.
+> ---
+>  kernel/events/uprobes.c |    8 ++++----
+>  1 files changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+> index 67697db..a93b6df 100644
+> --- a/kernel/events/uprobes.c
+> +++ b/kernel/events/uprobes.c
+> @@ -1010,7 +1010,7 @@ static void build_probe_list(struct inode *inode, struct list_head *head)
+>  int uprobe_mmap(struct vm_area_struct *vma)
+>  {
+>  	struct list_head tmp_list;
+> -	struct uprobe *uprobe;
+> +	struct uprobe *uprobe, *u;
+>  	struct inode *inode;
+>  	int ret, count;
+> 
+> @@ -1028,7 +1028,7 @@ int uprobe_mmap(struct vm_area_struct *vma)
+>  	ret = 0;
+>  	count = 0;
+> 
+> -	list_for_each_entry(uprobe, &tmp_list, pending_list) {
+> +	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
+>  		if (!ret) {
+>  			loff_t vaddr = vma_address(vma, uprobe->offset);
+> 
+> @@ -1076,7 +1076,7 @@ int uprobe_mmap(struct vm_area_struct *vma)
+>  void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned long end)
+>  {
+>  	struct list_head tmp_list;
+> -	struct uprobe *uprobe;
+> +	struct uprobe *uprobe, *u;
+>  	struct inode *inode;
+> 
+>  	if (!atomic_read(&uprobe_events) || !valid_vma(vma, false))
+> @@ -1093,7 +1093,7 @@ void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned lon
+>  	mutex_lock(uprobes_mmap_hash(inode));
+>  	build_probe_list(inode, &tmp_list);
+> 
+> -	list_for_each_entry(uprobe, &tmp_list, pending_list) {
+> +	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
+>  		loff_t vaddr = vma_address(vma, uprobe->offset);
+> 
+>  		if (vaddr >= start && vaddr < end) {
+> -- 
+> 1.5.5.1
+> 
 
-So, when the maximum value is required to be set to not more than the
-pipe-max-size, the max_pages_per_req should be changed considering it.
-It seems that the upper limit of this parameter does not have to be
-not more than it.
-
-I'm planning to limit max_pages_per_req up to 1024 pages and add the
-document to /Documentation/filesystems/fuse.txt, as follows.
-
-"the sysfs max_pages_per_req parameter can be changed from 32 to 1024.
-The default is 32 pages. Generally, the pipe-max-size is 1M (256 pages)
-and it is better to set it to not more than the pipe-max-size."
-
-This is just a plan and any comments are appreciated.
-
-Thanks,
