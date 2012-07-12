@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759597Ab2GLXrf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:47:35 -0400
+	id S1162597Ab2GLXrw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:47:52 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:44509 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759418Ab2GLWhQ (ORCPT
+	with ESMTP id S1759415Ab2GLWhE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:37:16 -0400
+	Thu, 12 Jul 2012 18:37:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Thomas Graf <tgraf@suug.ch>, "David S. Miller" <davem@davemloft.net>
-Subject: [ 030/187] ipv6: Move ipv6 proc file registration to end of init order
-Date: Thu, 12 Jul 2012 15:33:06 -0700
-Message-Id: <20120712191525.076358583@linuxfoundation.org>
+        Eric Dumazet <edumazet@google.com>, Roland Stigge <stigge@antcom.de>,
+        Kevin Wells <kevin.wells@nxp.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 027/187] lpc_eth: fix tx completion
+Date: Thu, 12 Jul 2012 15:33:03 -0700
+Message-Id: <20120712191524.774366476@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -31,122 +33,49 @@ From: Greg KH <gregkh@linuxfoundation.org>
 ------------------
 
 
-From: Thomas Graf <tgraf@suug.ch>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit d189634ecab947c10f6f832258b103d0bbfe73cc ]
+[ Upstream commit 3f16da51b0e533871d22a29682f3c3969d4f7e22 ]
 
-/proc/net/ipv6_route reflects the contents of fib_table_hash. The proc
-handler is installed in ip6_route_net_init() whereas fib_table_hash is
-allocated in fib6_net_init() _after_ the proc handler has been installed.
+__lpc_handle_xmit() has two bugs :
 
-This opens up a short time frame to access fib_table_hash with its pants
-down.
+1) It can leak skbs in case TXSTATUS_ERROR is set
 
-Move the registration of the proc files to a later point in the init
-order to avoid the race.
+2) It can wake up txqueue while no slot was freed.
 
-Tested :-)
-
-Signed-off-by: Thomas Graf <tgraf@suug.ch>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Reported-by: Roland Stigge <stigge@antcom.de>
+Tested-by: Roland Stigge <stigge@antcom.de>
+Cc: Kevin Wells <kevin.wells@nxp.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/route.c |   41 +++++++++++++++++++++++++++++++----------
- 1 file changed, 31 insertions(+), 10 deletions(-)
+ drivers/net/ethernet/nxp/lpc_eth.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -2953,10 +2953,6 @@ static int __net_init ip6_route_net_init
- 	net->ipv6.sysctl.ip6_rt_mtu_expires = 10*60*HZ;
- 	net->ipv6.sysctl.ip6_rt_min_advmss = IPV6_MIN_MTU - 20 - 40;
+--- a/drivers/net/ethernet/nxp/lpc_eth.c
++++ b/drivers/net/ethernet/nxp/lpc_eth.c
+@@ -936,16 +936,16 @@ static void __lpc_handle_xmit(struct net
+ 			/* Update stats */
+ 			ndev->stats.tx_packets++;
+ 			ndev->stats.tx_bytes += skb->len;
+-
+-			/* Free buffer */
+-			dev_kfree_skb_irq(skb);
+ 		}
++		dev_kfree_skb_irq(skb);
  
--#ifdef CONFIG_PROC_FS
--	proc_net_fops_create(net, "ipv6_route", 0, &ipv6_route_proc_fops);
--	proc_net_fops_create(net, "rt6_stats", S_IRUGO, &rt6_stats_seq_fops);
--#endif
- 	net->ipv6.ip6_rt_gc_expire = 30*HZ;
+ 		txcidx = readl(LPC_ENET_TXCONSUMEINDEX(pldat->net_base));
+ 	}
  
- 	ret = 0;
-@@ -2977,10 +2973,6 @@ out_ip6_dst_ops:
- 
- static void __net_exit ip6_route_net_exit(struct net *net)
- {
--#ifdef CONFIG_PROC_FS
--	proc_net_remove(net, "ipv6_route");
--	proc_net_remove(net, "rt6_stats");
--#endif
- 	kfree(net->ipv6.ip6_null_entry);
- #ifdef CONFIG_IPV6_MULTIPLE_TABLES
- 	kfree(net->ipv6.ip6_prohibit_entry);
-@@ -2989,11 +2981,33 @@ static void __net_exit ip6_route_net_exi
- 	dst_entries_destroy(&net->ipv6.ip6_dst_ops);
+-	if (netif_queue_stopped(ndev))
+-		netif_wake_queue(ndev);
++	if (pldat->num_used_tx_buffs <= ENET_TX_DESC/2) {
++		if (netif_queue_stopped(ndev))
++			netif_wake_queue(ndev);
++	}
  }
  
-+static int __net_init ip6_route_net_init_late(struct net *net)
-+{
-+#ifdef CONFIG_PROC_FS
-+	proc_net_fops_create(net, "ipv6_route", 0, &ipv6_route_proc_fops);
-+	proc_net_fops_create(net, "rt6_stats", S_IRUGO, &rt6_stats_seq_fops);
-+#endif
-+	return 0;
-+}
-+
-+static void __net_exit ip6_route_net_exit_late(struct net *net)
-+{
-+#ifdef CONFIG_PROC_FS
-+	proc_net_remove(net, "ipv6_route");
-+	proc_net_remove(net, "rt6_stats");
-+#endif
-+}
-+
- static struct pernet_operations ip6_route_net_ops = {
- 	.init = ip6_route_net_init,
- 	.exit = ip6_route_net_exit,
- };
- 
-+static struct pernet_operations ip6_route_net_late_ops = {
-+	.init = ip6_route_net_init_late,
-+	.exit = ip6_route_net_exit_late,
-+};
-+
- static struct notifier_block ip6_route_dev_notifier = {
- 	.notifier_call = ip6_route_dev_notify,
- 	.priority = 0,
-@@ -3043,19 +3057,25 @@ int __init ip6_route_init(void)
- 	if (ret)
- 		goto xfrm6_init;
- 
-+	ret = register_pernet_subsys(&ip6_route_net_late_ops);
-+	if (ret)
-+		goto fib6_rules_init;
-+
- 	ret = -ENOBUFS;
- 	if (__rtnl_register(PF_INET6, RTM_NEWROUTE, inet6_rtm_newroute, NULL, NULL) ||
- 	    __rtnl_register(PF_INET6, RTM_DELROUTE, inet6_rtm_delroute, NULL, NULL) ||
- 	    __rtnl_register(PF_INET6, RTM_GETROUTE, inet6_rtm_getroute, NULL, NULL))
--		goto fib6_rules_init;
-+		goto out_register_late_subsys;
- 
- 	ret = register_netdevice_notifier(&ip6_route_dev_notifier);
- 	if (ret)
--		goto fib6_rules_init;
-+		goto out_register_late_subsys;
- 
- out:
- 	return ret;
- 
-+out_register_late_subsys:
-+	unregister_pernet_subsys(&ip6_route_net_late_ops);
- fib6_rules_init:
- 	fib6_rules_cleanup();
- xfrm6_init:
-@@ -3074,6 +3094,7 @@ out_kmem_cache:
- void ip6_route_cleanup(void)
- {
- 	unregister_netdevice_notifier(&ip6_route_dev_notifier);
-+	unregister_pernet_subsys(&ip6_route_net_late_ops);
- 	fib6_rules_cleanup();
- 	xfrm6_fini();
- 	fib6_gc_cleanup();
+ static int __lpc_handle_recv(struct net_device *ndev, int budget)
 
 
