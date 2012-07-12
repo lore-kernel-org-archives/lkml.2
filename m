@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161804Ab2GLWkZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:40:25 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60450 "EHLO
+	id S1161819Ab2GLWkf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:40:35 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58752 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161755Ab2GLWkP (ORCPT
+	with ESMTP id S1161803Ab2GLWkZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:40:15 -0400
+	Thu, 12 Jul 2012 18:40:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Len Brown <len.brown@intel.com>
-Subject: [ 082/187] ACPI sysfs.c strlen fix
-Date: Thu, 12 Jul 2012 15:33:58 -0700
-Message-Id: <20120712191530.011800520@linuxfoundation.org>
+        William Dauchy <wdauchy@gmail.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 085/187] xen/blkback: Copy id field when doing BLKIF_DISCARD.
+Date: Thu, 12 Jul 2012 15:34:01 -0700
+Message-Id: <20120712191530.279801293@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -30,41 +32,54 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Pavel Vasilyev <pavel@pavlinux.ru>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit 9f132652d94c96476b0b0a8caf0c10e96ab10fa8 upstream.
+commit 8c9ce606a60e4a0cb447bdc082ce383b96b227b4 upstream.
 
-Current code is ignoring the last character of "enable" and "disable"
-in comparisons.
+We weren't copying the id field so when we sent the response
+back to the frontend (especially with a 64-bit host and 32-bit
+guest), we ended up using a random value. This lead to the
+frontend crashing as it would try to pass to __blk_end_request_all
+a NULL 'struct request' (b/c it would use the 'id' to find the
+proper 'struct request' in its shadow array) and end up crashing:
 
-https://bugzilla.kernel.org/show_bug.cgi?id=33732
+BUG: unable to handle kernel NULL pointer dereference at 000000e4
+IP: [<c0646d4c>] __blk_end_request_all+0xc/0x40
+.. snip..
+EIP is at __blk_end_request_all+0xc/0x40
+.. snip..
+ [<ed95db72>] blkif_interrupt+0x172/0x330 [xen_blkfront]
 
-Signed-off-by: Len Brown <len.brown@intel.com>
+This fixes the bug by passing in the proper id for the response.
+
+Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=824641
+
+Tested-by: William Dauchy <wdauchy@gmail.com>
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/sysfs.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/block/xen-blkback/common.h |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/acpi/sysfs.c
-+++ b/drivers/acpi/sysfs.c
-@@ -173,7 +173,7 @@ static int param_set_trace_state(const c
- {
- 	int result = 0;
- 
--	if (!strncmp(val, "enable", strlen("enable") - 1)) {
-+	if (!strncmp(val, "enable", strlen("enable"))) {
- 		result = acpi_debug_trace(trace_method_name, trace_debug_level,
- 					  trace_debug_layer, 0);
- 		if (result)
-@@ -181,7 +181,7 @@ static int param_set_trace_state(const c
- 		goto exit;
- 	}
- 
--	if (!strncmp(val, "disable", strlen("disable") - 1)) {
-+	if (!strncmp(val, "disable", strlen("disable"))) {
- 		int name = 0;
- 		result = acpi_debug_trace((char *)&name, trace_debug_level,
- 					  trace_debug_layer, 0);
+--- a/drivers/block/xen-blkback/common.h
++++ b/drivers/block/xen-blkback/common.h
+@@ -257,6 +257,7 @@ static inline void blkif_get_x86_32_req(
+ 		break;
+ 	case BLKIF_OP_DISCARD:
+ 		dst->u.discard.flag = src->u.discard.flag;
++		dst->u.discard.id = src->u.discard.id;
+ 		dst->u.discard.sector_number = src->u.discard.sector_number;
+ 		dst->u.discard.nr_sectors = src->u.discard.nr_sectors;
+ 		break;
+@@ -287,6 +288,7 @@ static inline void blkif_get_x86_64_req(
+ 		break;
+ 	case BLKIF_OP_DISCARD:
+ 		dst->u.discard.flag = src->u.discard.flag;
++		dst->u.discard.id = src->u.discard.id;
+ 		dst->u.discard.sector_number = src->u.discard.sector_number;
+ 		dst->u.discard.nr_sectors = src->u.discard.nr_sectors;
+ 		break;
 
 
