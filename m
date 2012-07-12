@@ -1,181 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030639Ab2GLLFV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 07:05:21 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44111 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030357Ab2GLLFS (ORCPT
+	id S1030647Ab2GLLID (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 07:08:03 -0400
+Received: from www.linutronix.de ([62.245.132.108]:38319 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030357Ab2GLLIA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 07:05:18 -0400
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        David Howells <dhowells@redhat.com>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        linux-am33-list@redhat.com, Paul Mundt <lethal@linux-sh.org>,
-        linux-sh@vger.kernel.org, Chris Metcalf <cmetcalf@tilera.com>
-Subject: [PATCH] fork: fix error handling in dup_task()
-Date: Thu, 12 Jul 2012 20:04:53 +0900
-Message-Id: <1342091093-1909-1-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Thu, 12 Jul 2012 07:08:00 -0400
+Date: Thu, 12 Jul 2012 13:07:58 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Mike Galbraith <efault@gmx.de>
+cc: "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: 3.4.4-rt13: btrfs + xfstests 006 = BOOM.. and a bonus rt_mutex
+ deadlock report for absolutely free!
+In-Reply-To: <1342072060.7338.102.camel@marge.simpson.net>
+Message-ID: <alpine.LFD.2.02.1207121253170.32033@ionos>
+References: <1342072060.7338.102.camel@marge.simpson.net>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function dup_task() may fail at the following function calls in
-the following order.
+On Thu, 12 Jul 2012, Mike Galbraith wrote:
+> crash> struct rt_mutex 0xffff8801770601c8
+> struct rt_mutex {
+>   wait_lock = {
+>     raw_lock = {
+>       slock = 7966
+>     }
+>   }, 
+>   wait_list = {
+>     node_list = {
+>       next = 0xffff880175eedbe0, 
+>       prev = 0xffff880175eedbe0
+>     }, 
+>     rawlock = 0xffff880175eedbd8, 
 
-0) alloc_task_struct_node()
-1) alloc_thread_info_node()
-2) arch_dup_task_struct()
+Urgh. Here is something completely wrong. That should point to
+wait_lock, i.e. the rt_mutex itself, but that points into lala land.
 
-Error by 0) is not a matter, it can just return.  But error by 1)
-requires releasing task_struct allocated by 0) before it returns.
-Likewise, error by 2) requires releasing task_struct and thread_info
-allocated by 0) and 1).
+>     spinlock = 0x0
+>   }, 
+>   owner = 0x1, 
+>   save_state = 0, 
+>   file = 0x0, 
+>   name = 0xffffffff81781b9b "&(&device->io_lock)->lock", 
+>   line = 0, 
+>   magic = 0x0
+> }
+> crash> struct list_head 0xffff880175eedbe0
+> struct list_head {
+>   next = 0x6b6b6b6b6b6b6b6b, 
+>   prev = 0x6b6b6b6b6b6b6b6b
+> }
 
-The existing error handling calls free_task_struct() and
-free_thread_info() which do not only release task_struct and
-thread_info, but also call architecture specific
-arch_release_task_struct() and arch_release_thread_info().
+That's POISON_FREE. How the heck can this happen ?
 
-The problem is that task_struct and thread_info are not fully
-initialized yet at this point, but arch_release_task_struct() and
-arch_release_thread_info() are called with them.
+ 
+> Reproducer2: dbench -t 30 8
+> 
+> [  692.857164] 
+> [  692.857165] ============================================
+> [  692.863963] [ BUG: circular locking deadlock detected! ]
+> [  692.869264] Not tainted
+> [  692.871708] --------------------------------------------
+> [  692.877008] btrfs-delayed-m/1404 is deadlocking current task dbench/7937
+> [  692.877009] 
+> [  692.885183] 
+> [  692.885184] 1) dbench/7937 is trying to acquire this lock:
+> [  692.892149]  [ffff88014d6aea80] {&(&eb->lock)->lock}
+> [  692.897102] .. ->owner: ffff880175808501
+> [  692.901018] .. held by:   btrfs-delayed-m: 1404 [ffff880175808500, 120]
+> [  692.907657] 
+> [  692.907657] 2) btrfs-delayed-m/1404 is blocked on this lock:
+> [  692.914797]  [ffff88014bf58d60] {&(&eb->lock)->lock}
+> [  692.919751] .. ->owner: ffff880175186101
+> [  692.923672] .. held by:            dbench: 7937 [ffff880175186100, 120]
+> [  692.930309] 
+> [  692.930309] btrfs-delayed-m/1404's [blocked] stackdump:
 
-For example, x86 defines its own arch_release_task_struct() that
-releases a task_xstate.  If alloc_thread_info_node() fails in
-dup_task(), arch_release_task_struct() is called with task_struct
-which is just allocated and filled with garbage in this error handling.
+Hrmm. Both locks are rw_locks and we prevent multiple readers for the
+known reasons in RT. No idea how to deal with that one :(
 
-This actually happened with tools/testing/fault-injection/failcmd.sh
+Thanks,
 
-	# env FAILCMD_TYPE=fail_page_alloc \
-		./tools/testing/fault-injection/failcmd.sh --times=100 \
-		--min-order=0 --ignore-gfp-wait=0 \
-		-- make -C tools/testing/selftests/ run_tests
+	tglx
 
-In order to fix this issue, make free_{task_struct,thread_info}() not
-to call arch_release_{task_struct,thread_info}() and call
-arch_release_{task_struct,thread_info}() implicitly where needed.
-
-Default arch_release_task_struct() and arch_release_thread_info() are
-defined as empty by default.  So this change only affects the
-architectures which implement their own arch_release_task_struct() or
-arch_release_thread_info() as listed below.
-
-arch_release_task_struct(): x86, sh
-arch_release_thread_info(): mn10300, tile
-
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
-Cc: David Howells <dhowells@redhat.com>
-Cc: Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
-Cc: linux-am33-list@redhat.com
-Cc: Paul Mundt <lethal@linux-sh.org>
-Cc: linux-sh@vger.kernel.org
-Cc: Chris Metcalf <cmetcalf@tilera.com>
----
- kernel/fork.c |   23 +++++++++++------------
- 1 file changed, 11 insertions(+), 12 deletions(-)
-
-diff --git a/kernel/fork.c b/kernel/fork.c
-index ab5211b..fb4a3e2 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -114,6 +114,8 @@ int nr_processes(void)
- 	return total;
- }
- 
-+void __weak arch_release_task_struct(struct task_struct *tsk) { }
-+
- #ifndef CONFIG_ARCH_TASK_STRUCT_ALLOCATOR
- static struct kmem_cache *task_struct_cachep;
- 
-@@ -122,18 +124,16 @@ static inline struct task_struct *alloc_task_struct_node(int node)
- 	return kmem_cache_alloc_node(task_struct_cachep, GFP_KERNEL, node);
- }
- 
--void __weak arch_release_task_struct(struct task_struct *tsk) { }
--
- static inline void free_task_struct(struct task_struct *tsk)
- {
--	arch_release_task_struct(tsk);
- 	kmem_cache_free(task_struct_cachep, tsk);
- }
- #endif
- 
--#ifndef CONFIG_ARCH_THREAD_INFO_ALLOCATOR
- void __weak arch_release_thread_info(struct thread_info *ti) { }
- 
-+#ifndef CONFIG_ARCH_THREAD_INFO_ALLOCATOR
-+
- /*
-  * Allocate pages if THREAD_SIZE is >= PAGE_SIZE, otherwise use a
-  * kmemcache based allocator.
-@@ -150,7 +150,6 @@ static struct thread_info *alloc_thread_info_node(struct task_struct *tsk,
- 
- static inline void free_thread_info(struct thread_info *ti)
- {
--	arch_release_thread_info(ti);
- 	free_pages((unsigned long)ti, THREAD_SIZE_ORDER);
- }
- # else
-@@ -164,7 +163,6 @@ static struct thread_info *alloc_thread_info_node(struct task_struct *tsk,
- 
- static void free_thread_info(struct thread_info *ti)
- {
--	arch_release_thread_info(ti);
- 	kmem_cache_free(thread_info_cache, ti);
- }
- 
-@@ -205,10 +203,12 @@ static void account_kernel_stack(struct thread_info *ti, int account)
- void free_task(struct task_struct *tsk)
- {
- 	account_kernel_stack(tsk->stack, -1);
-+	arch_release_thread_info(tsk->stack);
- 	free_thread_info(tsk->stack);
- 	rt_mutex_debug_task_free(tsk);
- 	ftrace_graph_exit_task(tsk);
- 	put_seccomp_filter(tsk);
-+	arch_release_task_struct(tsk);
- 	free_task_struct(tsk);
- }
- EXPORT_SYMBOL(free_task);
-@@ -298,14 +298,12 @@ static struct task_struct *dup_task_struct(struct task_struct *orig)
- 		return NULL;
- 
- 	ti = alloc_thread_info_node(tsk, node);
--	if (!ti) {
--		free_task_struct(tsk);
--		return NULL;
--	}
-+	if (!ti)
-+		goto free_tsk;
- 
- 	err = arch_dup_task_struct(tsk, orig);
- 	if (err)
--		goto out;
-+		goto free_ti;
- 
- 	tsk->stack = ti;
- 
-@@ -333,8 +331,9 @@ static struct task_struct *dup_task_struct(struct task_struct *orig)
- 
- 	return tsk;
- 
--out:
-+free_ti:
- 	free_thread_info(ti);
-+free_tsk:
- 	free_task_struct(tsk);
- 	return NULL;
- }
--- 
-1.7.10.4
 
