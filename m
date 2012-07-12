@@ -1,290 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162932Ab2GLXU4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:20:56 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:17423 "EHLO
+	id S1162967Ab2GLXU7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:20:59 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30624 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162593Ab2GLXT7 (ORCPT
+	with ESMTP id S1162582Ab2GLXT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 19:19:59 -0400
-X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ciwy3NGCPMMA:10 a=6Hyf-YdMt7kA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=D_SbEOMbAAAA:8 a=Kw9SFbrlI0GhrLrISpwA:9 a=7KbvKZvEaC0A:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=gYz6OaB6XVOsT20V:21 a=QosPZyW6ySBdNt3B:21 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+	Thu, 12 Jul 2012 19:19:58 -0400
+X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ciwy3NGCPMMA:10 a=V7unh8iGhFIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=t7CeM3EgAAAA:8 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=rUGnjwGbVWCaevYykVgA:9 a=2e6ZYRoF4I4A:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=Zh68SRI7RUMA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20120712231955.764484415@goodmis.org>
+Message-Id: <20120712231957.201516533@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 12 Jul 2012 19:18:28 -0400
+Date: Thu, 12 Jul 2012 19:18:34 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Subject: [PATCH RT 1/8] Latency histogramms: Cope with backwards running local trace clock
+        John Kacur <jkacur@redhat.com>, Yong Zhang <yong.zhang0@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH RT 7/8] perf: Make swevent hrtimer run in irq instead of softirq
 References: <20120712231827.084920483@goodmis.org>
-Content-Disposition: inline; filename=0001-Latency-histogramms-Cope-with-backwards-running-loca.patch
+Content-Disposition: inline; filename=0007-perf-Make-swevent-hrtimer-run-in-irq-instead-of-soft.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Carsten Emde <C.Emde@osadl.org>
+From: Yong Zhang <yong.zhang@windriver.com>
 
-Thanks to the wonders of modern technology, the local trace clock can
-now run backwards. Since this never happened before, the time difference
-between now and somewhat earlier was expected to never become negative
-and, thus, stored in an unsigned integer variable. Nowadays, we need a
-signed integer to ensure that the value is stored as underflow in the
-related histogram. (In cases where this is not a misfunction, bipolar
-histograms can be used.)
+Otherwise we get a deadlock like below:
 
-This patch takes care that all latency variables are represented as
-signed integers and negative numbers are considered as histogram
-underflows.
+[ 1044.042749] BUG: scheduling while atomic: ksoftirqd/21/141/0x00010003
+[ 1044.042752] INFO: lockdep is turned off.
+[ 1044.042754] Modules linked in:
+[ 1044.042757] Pid: 141, comm: ksoftirqd/21 Tainted: G        W    3.4.0-rc2-rt3-23676-ga723175-dirty #29
+[ 1044.042759] Call Trace:
+[ 1044.042761]  <IRQ>  [<ffffffff8107d8e5>] __schedule_bug+0x65/0x80
+[ 1044.042770]  [<ffffffff8168978c>] __schedule+0x83c/0xa70
+[ 1044.042775]  [<ffffffff8106bdd2>] ? prepare_to_wait+0x32/0xb0
+[ 1044.042779]  [<ffffffff81689a5e>] schedule+0x2e/0xa0
+[ 1044.042782]  [<ffffffff81071ebd>] hrtimer_wait_for_timer+0x6d/0xb0
+[ 1044.042786]  [<ffffffff8106bb30>] ? wake_up_bit+0x40/0x40
+[ 1044.042790]  [<ffffffff81071f20>] hrtimer_cancel+0x20/0x40
+[ 1044.042794]  [<ffffffff8111da0c>] perf_swevent_cancel_hrtimer+0x3c/0x50
+[ 1044.042798]  [<ffffffff8111da31>] task_clock_event_stop+0x11/0x40
+[ 1044.042802]  [<ffffffff8111da6e>] task_clock_event_del+0xe/0x10
+[ 1044.042805]  [<ffffffff8111c568>] event_sched_out+0x118/0x1d0
+[ 1044.042809]  [<ffffffff8111c649>] group_sched_out+0x29/0x90
+[ 1044.042813]  [<ffffffff8111ed7e>] __perf_event_disable+0x18e/0x200
+[ 1044.042817]  [<ffffffff8111c343>] remote_function+0x63/0x70
+[ 1044.042821]  [<ffffffff810b0aae>] generic_smp_call_function_single_interrupt+0xce/0x120
+[ 1044.042826]  [<ffffffff81022bc7>] smp_call_function_single_interrupt+0x27/0x40
+[ 1044.042831]  [<ffffffff8168d50c>] call_function_single_interrupt+0x6c/0x80
+[ 1044.042833]  <EOI>  [<ffffffff811275b0>] ? perf_event_overflow+0x20/0x20
+[ 1044.042840]  [<ffffffff8168b970>] ? _raw_spin_unlock_irq+0x30/0x70
+[ 1044.042844]  [<ffffffff8168b976>] ? _raw_spin_unlock_irq+0x36/0x70
+[ 1044.042848]  [<ffffffff810702e2>] run_hrtimer_softirq+0xc2/0x200
+[ 1044.042853]  [<ffffffff811275b0>] ? perf_event_overflow+0x20/0x20
+[ 1044.042857]  [<ffffffff81045265>] __do_softirq_common+0xf5/0x3a0
+[ 1044.042862]  [<ffffffff81045c3d>] __thread_do_softirq+0x15d/0x200
+[ 1044.042865]  [<ffffffff81045dda>] run_ksoftirqd+0xfa/0x210
+[ 1044.042869]  [<ffffffff81045ce0>] ? __thread_do_softirq+0x200/0x200
+[ 1044.042873]  [<ffffffff81045ce0>] ? __thread_do_softirq+0x200/0x200
+[ 1044.042877]  [<ffffffff8106b596>] kthread+0xb6/0xc0
+[ 1044.042881]  [<ffffffff8168b97b>] ? _raw_spin_unlock_irq+0x3b/0x70
+[ 1044.042886]  [<ffffffff8168d994>] kernel_thread_helper+0x4/0x10
+[ 1044.042889]  [<ffffffff8107d98c>] ? finish_task_switch+0x8c/0x110
+[ 1044.042894]  [<ffffffff8168b97b>] ? _raw_spin_unlock_irq+0x3b/0x70
+[ 1044.042897]  [<ffffffff8168bd5d>] ? retint_restore_args+0xe/0xe
+[ 1044.042900]  [<ffffffff8106b4e0>] ? kthreadd+0x1e0/0x1e0
+[ 1044.042902]  [<ffffffff8168d990>] ? gs_change+0xb/0xb
 
-In one of the misbehaving processors switching to global clock solved
-the problem:
-  echo global >/sys/kernel/debug/tracing/trace_clock
-
-Signed-off-by: Carsten Emde <C.Emde@osadl.org>
+Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1341476476-5666-1-git-send-email-yong.zhang0@gmail.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/sched.h       |    2 +-
- kernel/trace/latency_hist.c |   71 ++++++++++++++++++++++---------------------
- 2 files changed, 38 insertions(+), 35 deletions(-)
+ kernel/events/core.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 1f6b11a..0174e3a 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1585,7 +1585,7 @@ struct task_struct {
- #ifdef CONFIG_WAKEUP_LATENCY_HIST
- 	u64 preempt_timestamp_hist;
- #ifdef CONFIG_MISSED_TIMER_OFFSETS_HIST
--	unsigned long timer_offset;
-+	long timer_offset;
- #endif
- #endif
- #endif /* CONFIG_TRACING */
-diff --git a/kernel/trace/latency_hist.c b/kernel/trace/latency_hist.c
-index 9d49fcb..d514eef 100644
---- a/kernel/trace/latency_hist.c
-+++ b/kernel/trace/latency_hist.c
-@@ -27,6 +27,8 @@
- #include "trace.h"
- #include <trace/events/sched.h>
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 58690af..4d9159a 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -5420,6 +5420,7 @@ static void perf_swevent_init_hrtimer(struct perf_event *event)
  
-+#define NSECS_PER_USECS 1000L
-+
- #define CREATE_TRACE_POINTS
- #include <trace/events/hist.h>
+ 	hrtimer_init(&hwc->hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+ 	hwc->hrtimer.function = perf_swevent_hrtimer;
++	hwc->hrtimer.irqsafe = 1;
  
-@@ -46,11 +48,11 @@ enum {
- struct hist_data {
- 	atomic_t hist_mode; /* 0 log, 1 don't log */
- 	long offset; /* set it to MAX_ENTRY_NUM/2 for a bipolar scale */
--	unsigned long min_lat;
--	unsigned long max_lat;
-+	long min_lat;
-+	long max_lat;
- 	unsigned long long below_hist_bound_samples;
- 	unsigned long long above_hist_bound_samples;
--	unsigned long long accumulate_lat;
-+	long long accumulate_lat;
- 	unsigned long long total_samples;
- 	unsigned long long hist_array[MAX_ENTRY_NUM];
- };
-@@ -152,8 +154,8 @@ static struct enable_data timerandwakeup_enabled_data = {
- static DEFINE_PER_CPU(struct maxlatproc_data, timerandwakeup_maxlatproc);
- #endif
- 
--void notrace latency_hist(int latency_type, int cpu, unsigned long latency,
--			  unsigned long timeroffset, cycle_t stop,
-+void notrace latency_hist(int latency_type, int cpu, long latency,
-+			  long timeroffset, cycle_t stop,
- 			  struct task_struct *p)
- {
- 	struct hist_data *my_hist;
-@@ -224,7 +226,7 @@ void notrace latency_hist(int latency_type, int cpu, unsigned long latency,
- 		my_hist->hist_array[latency]++;
- 
- 	if (unlikely(latency > my_hist->max_lat ||
--	    my_hist->min_lat == ULONG_MAX)) {
-+	    my_hist->min_lat == LONG_MAX)) {
- #if defined(CONFIG_WAKEUP_LATENCY_HIST) || \
-     defined(CONFIG_MISSED_TIMER_OFFSETS_HIST)
- 		if (latency_type == WAKEUP_LATENCY ||
-@@ -263,15 +265,14 @@ static void *l_start(struct seq_file *m, loff_t *pos)
- 		atomic_dec(&my_hist->hist_mode);
- 
- 		if (likely(my_hist->total_samples)) {
--			unsigned long avg = (unsigned long)
--			    div64_u64(my_hist->accumulate_lat,
-+			long avg = (long) div64_s64(my_hist->accumulate_lat,
- 			    my_hist->total_samples);
- 			snprintf(minstr, sizeof(minstr), "%ld",
--			    (long) my_hist->min_lat - my_hist->offset);
-+			    my_hist->min_lat - my_hist->offset);
- 			snprintf(avgstr, sizeof(avgstr), "%ld",
--			    (long) avg - my_hist->offset);
-+			    avg - my_hist->offset);
- 			snprintf(maxstr, sizeof(maxstr), "%ld",
--			    (long) my_hist->max_lat - my_hist->offset);
-+			    my_hist->max_lat - my_hist->offset);
- 		} else {
- 			strcpy(minstr, "<undef>");
- 			strcpy(avgstr, minstr);
-@@ -376,10 +377,10 @@ static void hist_reset(struct hist_data *hist)
- 	memset(hist->hist_array, 0, sizeof(hist->hist_array));
- 	hist->below_hist_bound_samples = 0ULL;
- 	hist->above_hist_bound_samples = 0ULL;
--	hist->min_lat = ULONG_MAX;
--	hist->max_lat = 0UL;
-+	hist->min_lat = LONG_MAX;
-+	hist->max_lat = LONG_MIN;
- 	hist->total_samples = 0ULL;
--	hist->accumulate_lat = 0ULL;
-+	hist->accumulate_lat = 0LL;
- 
- 	atomic_inc(&hist->hist_mode);
- }
-@@ -790,9 +791,9 @@ static notrace void probe_preemptirqsoff_hist(void *v, int reason,
- 
- 			stop = ftrace_now(cpu);
- 			time_set++;
--			if (start && stop >= start) {
--				unsigned long latency =
--				    nsecs_to_usecs(stop - start);
-+			if (start) {
-+				long latency = ((long) (stop - start)) /
-+				    NSECS_PER_USECS;
- 
- 				latency_hist(IRQSOFF_LATENCY, cpu, latency, 0,
- 				    stop, NULL);
-@@ -808,9 +809,9 @@ static notrace void probe_preemptirqsoff_hist(void *v, int reason,
- 
- 			if (!(time_set++))
- 				stop = ftrace_now(cpu);
--			if (start && stop >= start) {
--				unsigned long latency =
--				    nsecs_to_usecs(stop - start);
-+			if (start) {
-+				long latency = ((long) (stop - start)) /
-+				    NSECS_PER_USECS;
- 
- 				latency_hist(PREEMPTOFF_LATENCY, cpu, latency,
- 				    0, stop, NULL);
-@@ -827,9 +828,10 @@ static notrace void probe_preemptirqsoff_hist(void *v, int reason,
- 
- 			if (!time_set)
- 				stop = ftrace_now(cpu);
--			if (start && stop >= start) {
--				unsigned long latency =
--				    nsecs_to_usecs(stop - start);
-+			if (start) {
-+				long latency = ((long) (stop - start)) /
-+				    NSECS_PER_USECS;
-+
- 				latency_hist(PREEMPTIRQSOFF_LATENCY, cpu,
- 				    latency, 0, stop, NULL);
- 			}
-@@ -908,7 +910,7 @@ static notrace void probe_wakeup_latency_hist_stop(void *v,
- {
- 	unsigned long flags;
- 	int cpu = task_cpu(next);
--	unsigned long latency;
-+	long latency;
- 	cycle_t stop;
- 	struct task_struct *cpu_wakeup_task;
- 
-@@ -939,7 +941,8 @@ static notrace void probe_wakeup_latency_hist_stop(void *v,
- 	 */
- 	stop = ftrace_now(raw_smp_processor_id());
- 
--	latency = nsecs_to_usecs(stop - next->preempt_timestamp_hist);
-+	latency = ((long) (stop - next->preempt_timestamp_hist)) /
-+	    NSECS_PER_USECS;
- 
- 	if (per_cpu(wakeup_sharedprio, cpu)) {
- 		latency_hist(WAKEUP_LATENCY_SHAREDPRIO, cpu, latency, 0, stop,
-@@ -975,7 +978,7 @@ static notrace void probe_hrtimer_interrupt(void *v, int cpu,
- 	    (task->prio < curr->prio ||
- 	    (task->prio == curr->prio &&
- 	    !cpumask_test_cpu(cpu, &task->cpus_allowed)))) {
--		unsigned long latency;
-+		long latency;
- 		cycle_t now;
- 
- 		if (missed_timer_offsets_pid) {
-@@ -985,7 +988,7 @@ static notrace void probe_hrtimer_interrupt(void *v, int cpu,
- 		}
- 
- 		now = ftrace_now(cpu);
--		latency = (unsigned long) div_s64(-latency_ns, 1000);
-+		latency = (long) div_s64(-latency_ns, NSECS_PER_USECS);
- 		latency_hist(MISSED_TIMER_OFFSETS, cpu, latency, latency, now,
- 		    task);
- #ifdef CONFIG_WAKEUP_LATENCY_HIST
-@@ -1026,7 +1029,7 @@ static __init int latency_hist_init(void)
- 		    &per_cpu(irqsoff_hist, i), &latency_hist_fops);
- 		my_hist = &per_cpu(irqsoff_hist, i);
- 		atomic_set(&my_hist->hist_mode, 1);
--		my_hist->min_lat = 0xFFFFFFFFUL;
-+		my_hist->min_lat = LONG_MAX;
- 	}
- 	entry = debugfs_create_file("reset", 0644, dentry,
- 	    (void *)IRQSOFF_LATENCY, &latency_hist_reset_fops);
-@@ -1041,7 +1044,7 @@ static __init int latency_hist_init(void)
- 		    &per_cpu(preemptoff_hist, i), &latency_hist_fops);
- 		my_hist = &per_cpu(preemptoff_hist, i);
- 		atomic_set(&my_hist->hist_mode, 1);
--		my_hist->min_lat = 0xFFFFFFFFUL;
-+		my_hist->min_lat = LONG_MAX;
- 	}
- 	entry = debugfs_create_file("reset", 0644, dentry,
- 	    (void *)PREEMPTOFF_LATENCY, &latency_hist_reset_fops);
-@@ -1056,7 +1059,7 @@ static __init int latency_hist_init(void)
- 		    &per_cpu(preemptirqsoff_hist, i), &latency_hist_fops);
- 		my_hist = &per_cpu(preemptirqsoff_hist, i);
- 		atomic_set(&my_hist->hist_mode, 1);
--		my_hist->min_lat = 0xFFFFFFFFUL;
-+		my_hist->min_lat = LONG_MAX;
- 	}
- 	entry = debugfs_create_file("reset", 0644, dentry,
- 	    (void *)PREEMPTIRQSOFF_LATENCY, &latency_hist_reset_fops);
-@@ -1081,14 +1084,14 @@ static __init int latency_hist_init(void)
- 		    &latency_hist_fops);
- 		my_hist = &per_cpu(wakeup_latency_hist, i);
- 		atomic_set(&my_hist->hist_mode, 1);
--		my_hist->min_lat = 0xFFFFFFFFUL;
-+		my_hist->min_lat = LONG_MAX;
- 
- 		entry = debugfs_create_file(name, 0444, dentry_sharedprio,
- 		    &per_cpu(wakeup_latency_hist_sharedprio, i),
- 		    &latency_hist_fops);
- 		my_hist = &per_cpu(wakeup_latency_hist_sharedprio, i);
- 		atomic_set(&my_hist->hist_mode, 1);
--		my_hist->min_lat = 0xFFFFFFFFUL;
-+		my_hist->min_lat = LONG_MAX;
- 
- 		sprintf(name, cpufmt_maxlatproc, i);
- 
-@@ -1122,7 +1125,7 @@ static __init int latency_hist_init(void)
- 		    &per_cpu(missed_timer_offsets, i), &latency_hist_fops);
- 		my_hist = &per_cpu(missed_timer_offsets, i);
- 		atomic_set(&my_hist->hist_mode, 1);
--		my_hist->min_lat = 0xFFFFFFFFUL;
-+		my_hist->min_lat = LONG_MAX;
- 
- 		sprintf(name, cpufmt_maxlatproc, i);
- 		mp = &per_cpu(missed_timer_offsets_maxlatproc, i);
-@@ -1150,7 +1153,7 @@ static __init int latency_hist_init(void)
- 		    &latency_hist_fops);
- 		my_hist = &per_cpu(timerandwakeup_latency_hist, i);
- 		atomic_set(&my_hist->hist_mode, 1);
--		my_hist->min_lat = 0xFFFFFFFFUL;
-+		my_hist->min_lat = LONG_MAX;
- 
- 		sprintf(name, cpufmt_maxlatproc, i);
- 		mp = &per_cpu(timerandwakeup_maxlatproc, i);
+ 	/*
+ 	 * Since hrtimers have a fixed rate, we can do a static freq->period
 -- 
 1.7.10.4
 
