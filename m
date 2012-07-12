@@ -1,94 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030729Ab2GLTG5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 15:06:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46369 "EHLO mx1.redhat.com"
+	id S1030741Ab2GLTJm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 15:09:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57918 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932833Ab2GLTG4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 15:06:56 -0400
-Message-ID: <4FFF2040.1010008@redhat.com>
-Date: Thu, 12 Jul 2012 15:06:40 -0400
-From: Doug Ledford <dledford@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S932833Ab2GLTJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 15:09:38 -0400
+Message-ID: <4FFF20EA.6030706@suse.com>
+Date: Thu, 12 Jul 2012 15:09:30 -0400
+From: Jeff Mahoney <jeffm@suse.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Serge Hallyn <serge.hallyn@canonical.com>
-CC: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        "Dmitry V. Levin" <ldv@altlinux.org>,
-        Pavel Emelyanov <xemul@openvz.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: Re: [RFC, PATCH] CLONE_NEWIPC and exit_group()
-References: <20120626120425.GA10275@otc-wbsnb-06> <20120710085034.GA24645@otc-wbsnb-06> <20120711152422.a1f07bd5.akpm@linux-foundation.org> <20120712150702.GA1897@otc-wbsnb-06> <20120712185452.GA24342@sergelap>
-In-Reply-To: <20120712185452.GA24342@sergelap>
+To: Lee Duncan <lduncan@suse.com>
+Cc: Kai Makisara <Kai.Makisara@kolumbus.fi>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 3/5] st: get rid of scsi_tapes array
+References: <4FBACC66.80208@suse.com> <alpine.LNX.2.00.1207011147110.3650@kai.makisara.local> <4FF239F8.7030101@suse.com> <4FFDC938.4050606@suse.com>
+In-Reply-To: <4FFDC938.4050606@suse.com>
 X-Enigmail-Version: 1.4.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig6FE79A0C9E64D873E11802DE"
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig6FE79A0C9E64D873E11802DE
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-On 07/12/2012 02:54 PM, Serge Hallyn wrote:
-> Quoting Kirill A. Shutemov (kirill.shutemov@linux.intel.com):
->> On Wed, Jul 11, 2012 at 03:24:22PM -0700, Andrew Morton wrote:
->>> Am I reading that right?  1000 forks take 33 seconds, with basically
->>> all of it just sitting there asleep?  This look quite terrible - what=
+On 7/11/12 2:43 PM, Lee Duncan wrote:
+> Kai:
+> 
+> Your added patch looks great, and I see you fixed the documentation
+> as well. Thanks for your help.
+> 
 
->>> causes this?
->>
->> It seems free_nsproxy() + synchronize_rcu() are too heavy to be in
->> exit_group() path. Patch below helps: 8s -> ~0.5s for me.
->=20
-> And sys time goes down by that much too, or only user time?
->=20
-> Given that, with user namespaces, it'll soon be possible for users who
-> are unprivileged toward the host to be able to create and destroy
-> namespaces, if the patch ends up making it easy for a user to consume a=
+Actually, we've run into a hiccup here. Using cdev as the target of
+the link doesn't work, the tape symlink isn't created, and we end up
+with lsscsi not listing tape device nodes.
 
-> bunch of system time and not have it accounted at all to himself, then
-> I think we should keep it as is.
+I'll work up a fix.
 
-Indeed.
+- -Jeff
+
+> On 07/02/2012 05:16 PM, Lee Duncan wrote:
+>> 
+>> On 07/01/2012 01:57 AM, Kai Makisara wrote:
+>>> On Mon, 21 May 2012, Lee Duncan wrote:
+>>> 
+>>>> From: Jeff Mahoney <jeffm@suse.com>
+>>>> 
+>>>> st currently allocates an array to store pointers to all of
+>>>> the scsi_tape objects. It's used to discover available
+>>>> indexes to use as the base for the minor number selection and
+>>>> later to look up scsi_tape devices for character devices.
+>>>> 
+>>>> We switch to using an IDR for minor selection and a pointer
+>>>> from st_modedef back to scsi_tape for the lookups.
+>>>> 
+>>>> Signed-off-by: Jeff Mahoney <jeffm@suse.com> Signed-off-by:
+>>>> Lee Duncan <lduncan@suse.com> --- drivers/scsi/st.c |  172
+>>>> ++++++++++++++++++++--------------------------------- 
+>>>> drivers/scsi/st.h |    2 + 2 files changed, 65 insertions(+),
+>>>> 109 deletions(-)
+>>>> 
+>>> ... patch removed
+>>> 
+>>> I have finally had time to review and test this patch set. I am
+>>> sorry this has taken so long.
+>>> 
+>>> I have found one change of behaviour and a theoretical
+>>> problem: The new code does not re-use the tape numbers when
+>>> freed and re-scanned. The current code does re-use the freed
+>>> numbers. Are there any reasons for this changed behaviour? (The
+>>> theoretical problem is that the new code frees the tape
+>>> structure but leaves the pointer in the idr tree.)
+>>> 
+>>> The patch at the end of this message (applies after the whole
+>>> series) is an attempt to implement re-use of tape numbers. I am
+>>> not completely sure that the change is correctly placed but it
+>>> seems to work.
+>> 
+>> 
+>> Thanks for the review, and good catch. I'll look over your added
+>> patch and give feedback as soon as I can.
+>> 
+>>> 
+>>> Another minor thing is that the documentation should be updated
+>>> :-)
+>> 
+>> Of course.
+>> 
+>>> 
+>>> The patch at the end also updates the version code. I am not
+>>> sure if the version code is useful, but it should be either
+>>> updated or removed.
+>>> 
+>>> Otherwise no problems found. I am ready to ack the patch set
+>>> after the re-use thing has been resolved (one way or another).
+>>> 
+>>> Thanks, Kai
+>>> 
+> 
+> - Lee
+> 
 
 
---=20
-Doug Ledford <dledford@redhat.com>
-              GPG KeyID: 0E572FDD
-	      http://people.redhat.com/dledford
+- -- 
+Jeff Mahoney
+SUSE Labs
 
-
-
-
-
---------------enig6FE79A0C9E64D873E11802DE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Version: GnuPG/MacGPG2 v2.0.18 (Darwin)
+Comment: GPGTools - http://gpgtools.org
 Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
-iQIcBAEBAgAGBQJP/yBAAAoJELgmozMOVy/d+XoP/3s2osV01JRBMukKgez1kxMo
-TJLxUeODIdFwsr2CzBGSgsRz8ycREBUJmr/9jSvX5YYFz2begvUOGR+qVOiQ4aSP
-O3c1hpIz4fVUHFRpE0xu61TBU35ULnnJYBtqcPgYVZYw4p1qFNXpBRddQxPrIxh7
-pRiXOyODOkVZQuKKsL0/cIDHHdtwIQL47WsUPMe62mMf8srzLukcO4+AXi+vHLah
-Uoi0FC664xYdNy22w9y96s0T6Zw1ADFAYaGhU9YDPSOrg9/L4DeTTtWT/MS5yy/K
-erM9hkioy42NbnoZX58O6LZOVMLTeEp6SEbPW+yvdzxQpC7UZXRLNIEN4tzK+gIY
-WmPbAmtOnLqipyMqkr/54iGYhWdRQMyv3yOvHvaVOpiyWd7xlgV6KmlDIe3Jsr+E
-ql0nB6y7CK6LkRwMqw7prC9YUFo+INNcmsoODaqxMHgTkteTKHckBNj64Wg5dmPy
-/9Hb2uiQwpn7G1nvM4N2RTZdH5WgpVzzkjSUGfPQgAfXxLDRghDPnxLzBJa/qIL/
-YqZqanPquagjsEptyug1l9C5+hzUIS5ITzJy0oIjTeJ3gIo4Hre3CE2mUjB0hSB4
-yY8zRgIMcyUdsziIfHHiA9vFmuvV2FhnV7ExOOkpPuoq6E+KY4nHnjyGHxLXP64T
-+CbXyZzepkPEKVUP8sCi
-=gRR7
+iQIcBAEBAgAGBQJP/yDqAAoJEB57S2MheeWyVQIQAK51+gbTWNkak42ZrJp9oyv4
+6kBMkvD2/iJkcMFeg4dLxiIhuJKPVzqExBvRrk8Yvu4eWhvNBUt27KVtrMC3uzNn
+utZhzZebp6qpUTwHp6cD+XJXtcHqyn04OpOxWq/oiRmJaffI/sgluLJKV7xQZpns
+tV4vvhN00sGZ1CIJqJMj7g2dOk4k+kb6CXIQsKCIb/r25rLEH8f9YVAzo3jAJFrv
+YPbyzC5OHDvghpiJZlm/H9Tp2VTovSjrITrGAp+g8fzXA4LKnx2Q+N5yfMF5lWaI
+OXVyt97aGiYJRtxvdbTvtcf3CD7vsUVYqFdRVE8/5St1TsKQ9oqOJoKcb7jgTtmx
+02rbZC8fsh0OTgyDlV+Ktja6knyWTHgVPqobUumx10wTpQYo1q00u/rqBXi3VEsS
+swpbOcU20S+wetnBAkX50g+kCgfRskjj0nodDfCfGl/NgfDNe7sbAoc6NVDaaAGw
++h4pkyWsl8z0Uhj9Eju7Sbu6aAwjthxWTAKvz3TSuFffRmFf8Z55sc+UxouosXkX
+hR7H/grUlk80J+rOyh+31Lx1707XcMSmnQSG0ZWePNOIukMkps0d3IXnRf6cHZ1/
+0nnOxGfIQI/bo+WcDqhd2s5hlg9ZNCCe/JYoTj6jn040P63xxRK+soCNL0I+Ql4h
+wnpeyXbDdDc6cBpp+jpf
+=8KWj
 -----END PGP SIGNATURE-----
-
---------------enig6FE79A0C9E64D873E11802DE--
