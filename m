@@ -1,125 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757724Ab2GLBMO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 21:12:14 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:61524 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754672Ab2GLBMM (ORCPT
+	id S1757818Ab2GLBP2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 21:15:28 -0400
+Received: from systemlinux.org ([79.140.41.46]:55549 "EHLO
+	v3-1046.systemlinux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756087Ab2GLBP1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 21:12:12 -0400
-Date: Wed, 11 Jul 2012 18:12:08 -0700
-From: Michel Lespinasse <walken@google.com>
+	Wed, 11 Jul 2012 21:15:27 -0400
+X-Greylist: delayed 504 seconds by postgrey-1.27 at vger.kernel.org; Wed, 11 Jul 2012 21:15:26 EDT
+Date: Thu, 12 Jul 2012 03:08:04 +0200
+From: Andre Noll <maan@systemlinux.org>
 To: Peter Zijlstra <peterz@infradead.org>
-Cc: aarcange@redhat.com, dwmw2@infradead.org, riel@redhat.com,
-        daniel.santos@pobox.com, axboe@kernel.dk, ebiederm@xmission.com,
-        linux-mm@kvack.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
-Subject: Re: [PATCH 00/13] rbtree updates
-Message-ID: <20120712011208.GA1152@google.com>
-References: <1341876923-12469-1-git-send-email-walken@google.com>
- <1342012996.3462.154.camel@twins>
+Cc: Paul Turner <pjt@google.com>, linux-kernel@vger.kernel.org,
+        Venki Pallipadi <venki@google.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ben Segall <bsegall@google.com>, Ingo Molnar <mingo@elte.hu>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+Subject: Re: [PATCH 09/16] sched: normalize tg load contributions against
+ runnable time
+Message-ID: <20120712010804.GN32601@systemlinux.org>
+References: <20120628022413.30496.32798.stgit@kitami.mtv.corp.google.com>
+ <20120628022414.30496.11931.stgit@kitami.mtv.corp.google.com>
+ <1341431285.19870.15.camel@laptop>
+ <1341575532.7709.47.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="d1TbJDQJIIsIsPGO"
 Content-Disposition: inline
-In-Reply-To: <1342012996.3462.154.camel@twins>
+In-Reply-To: <1341575532.7709.47.camel@twins>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 11, 2012 at 6:23 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> Looks nice.. How about something like the below on top.. I couldn't
-> immediately find a sane reason for the grand-parent to always be red in
-> the insertion case.
 
-Do you mean the case you marked XXX ? it is actually parent that is
-red, which we know because we tested that a few lines earlier.
+--d1TbJDQJIIsIsPGO
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> @@ -85,12 +104,27 @@ void rb_insert_color(struct rb_node *nod
->                 } else if (rb_is_black(parent))
->                         break;
->
-> +               /*
-> +                * XXX
-> +                */
->                 gparent = rb_red_parent(parent);
+On Fri, Jul 06, 13:52, Peter Zijlstra wrote:
+> This then yields:
+>=20
+>   P(\Union_{i=3D1..n} u_i) ~=3D \Sum_{k=3D1..n} (-1)^(k-1) (n choose k) u=
+^k
+>=20
+> Which unfortunately isn't a series I found a sane solution for, but
+> numerically (see below) we can see it very quickly approaches 1 when n
+> >> 1.
 
-See :)
+Isn't this series just 1 - (1 - u)^n? So yes, it converges quickly to 1
+if u is a probability.
 
->                 if (parent == gparent->rb_left) {
->                         tmp = gparent->rb_right;
->                         if (tmp && rb_is_red(tmp)) {
-> -                               /* Case 1 - color flips */
-> +                               /*
-> +                                * Case 1 - color flips
-> +                                *
-> +                                *       G            g
-> +                                *      / \          / \
-> +                                *     p   u  -->   P   U
-> +                                *    /            /
-> +                                *   n            N
-> +                                *
-> +                                * However, since g's parent might be red, and
-> +                                * 4) does not allow this, we need to recurse
-> +                                * at g.
-> +                                */
+Andre
+--=20
+The only person who always got his work done by Friday was Robinson Crusoe
 
-I like these diagrams - I initially didn't think they'd work well, given the need for colors etc, but I now see that it's workable.
+--d1TbJDQJIIsIsPGO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
-In __rb_erase_color(), some of the cases are more complicated than you drew however, because some node colors aren't known.
-This is what I ended up with:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-  *  5), then the longest possible path due to 4 is 2B.
-  *
-  *  We shall indicate color with case, where black nodes are uppercase and red
-- *  nodes will be lowercase.
-+ *  nodes will be lowercase. Unknown color nodes shall be drawn as red with
-+ *  some accompanying text comment.
-  */
+iEYEARECAAYFAk/+I3QACgkQWto1QDEAkw9MRQCgjbBcFHGJRWBBic4ujM6N4JGW
+8XUAnj1cAp9ohrgVF0UnP1WKF5l7qyyy
+=4HL/
+-----END PGP SIGNATURE-----
 
-+                                       /*
-+                                        * Case 2 - sibling color flip
-+                                        * (p could be either color here)
-+                                        *
-+                                        *     p             p
-+                                        *    / \           / \
-+                                        *   N   S    -->  N   s
-+                                        *      / \           / \
-+                                        *     Sl  Sr        Sl  Sr
-+                                        *
-+                                        * This leaves us violating 5), so
-+                                        * recurse at p. If p is red, the
-+                                        * recursion will just flip it to black
-+                                        * and exit. If coming from Case 1,
-+                                        * p is known to be red.
-+                                        */
-
-+                               /*
-+                                * Case 3 - right rotate at sibling
-+                                * (p could be either color here)
-+                                *
-+                                *    p             p
-+                                *   / \           / \
-+                                *  N   S    -->  N   Sl
-+                                *     / \             \
-+                                *    sl  Sr            s
-+                                *                       \
-+                                *                        Sr
-+                                */
-
-+                       /*
-+                        * Case 4 - left rotate at parent + color flips
-+                        * (p and sl could be either color here.
-+                        *  After rotation, p becomes black, s acquires
-+                        *  p's color, and sl keeps its color)
-+                        *
-+                        *       p               s
-+                        *      / \             / \
-+                        *     N   S     -->   P   Sr
-+                        *        / \         / \
-+                        *       sl  sr      N   sl
-+                        */
-
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+--d1TbJDQJIIsIsPGO--
