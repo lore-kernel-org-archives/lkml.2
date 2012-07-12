@@ -1,205 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162130Ab2GLWnf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:43:35 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:61447 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162105Ab2GLWnU (ORCPT
+	id S1162134Ab2GLWn5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:43:57 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:59637 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162105Ab2GLWng (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:43:20 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Vivek Goyal <vgoyal@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
-        Alasdair G Kergon <agk@redhat.com>
-Subject: [ 134/187] dm persistent data: handle space map checker creation failure
-Date: Thu, 12 Jul 2012 15:34:50 -0700
-Message-Id: <20120712191534.812818353@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.10.1.362.g242cab3
-In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
-References: <20120712192421.GA28926@kroah.com>
- <20120712191522.742634173@linuxfoundation.org>
-User-Agent: quilt/0.60-20.3
+	Thu, 12 Jul 2012 18:43:36 -0400
+Date: Thu, 12 Jul 2012 15:42:53 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujtisu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        Rik van Riel <riel@redhat.com>, Ying Han <yinghan@google.com>,
+        Greg Thelen <gthelen@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [PATCH v2 -mm] memcg: prevent from OOM with too many dirty
+ pages
+In-Reply-To: <20120712141343.e1cb7776.akpm@linux-foundation.org>
+Message-ID: <alpine.LSU.2.00.1207121539150.27721@eggly.anvils>
+References: <1340117404-30348-1-git-send-email-mhocko@suse.cz> <20120619150014.1ebc108c.akpm@linux-foundation.org> <20120620101119.GC5541@tiehlicka.suse.cz> <alpine.LSU.2.00.1207111818380.1299@eggly.anvils> <20120712070501.GB21013@tiehlicka.suse.cz>
+ <20120712141343.e1cb7776.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg KH <gregkh@linuxfoundation.org>
+On Thu, 12 Jul 2012, Andrew Morton wrote:
+> On Thu, 12 Jul 2012 09:05:01 +0200
+> Michal Hocko <mhocko@suse.cz> wrote:
+> 
+> > When we are back to the patch. Is it going into 3.5? I hope so and I
+> > think it is really worth stable as well. Andrew?
+> 
+> What patch.   "memcg: prevent OOM with too many dirty pages"?
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+Yes.
 
-------------------
+> 
+> I wasn't planning on 3.5, given the way it's been churning around.
 
-From: Mike Snitzer <snitzer@redhat.com>
+I don't know if you had been intending to send it in for 3.5 earlier;
+but I'm sorry if my late intervention on may_enter_fs has delayed it.
 
-commit 62662303e7f590fdfbb0070ab820a0ad4267c119 upstream.
+> How
+> about we put it into 3.6 and tag it for a -stable backport, so it gets
+> a bit of a run in mainline before we inflict it upon -stable users?
 
-If CONFIG_DM_DEBUG_SPACE_MAPS is enabled and dm_sm_checker_create()
-fails, dm_tm_create_internal() would still return success even though it
-cleaned up all resources it was supposed to have created.  This will
-lead to a kernel crash:
+That sounds good enough to me, but does fall short of Michal's hope.
 
-general protection fault: 0000 [#1] SMP DEBUG_PAGEALLOC
-...
-RIP: 0010:[<ffffffff81593659>]  [<ffffffff81593659>] dm_bufio_get_block_size+0x9/0x20
-Call Trace:
-  [<ffffffff81599bae>] dm_bm_block_size+0xe/0x10
-  [<ffffffff8159b8b8>] sm_ll_init+0x78/0xd0
-  [<ffffffff8159c1a6>] sm_ll_new_disk+0x16/0xa0
-  [<ffffffff8159c98e>] dm_sm_disk_create+0xfe/0x160
-  [<ffffffff815abf6e>] dm_pool_metadata_open+0x16e/0x6a0
-  [<ffffffff815aa010>] pool_ctr+0x3f0/0x900
-  [<ffffffff8158d565>] dm_table_add_target+0x195/0x450
-  [<ffffffff815904c4>] table_load+0xe4/0x330
-  [<ffffffff815917ea>] ctl_ioctl+0x15a/0x2c0
-  [<ffffffff81591963>] dm_ctl_ioctl+0x13/0x20
-  [<ffffffff8116a4f8>] do_vfs_ioctl+0x98/0x560
-  [<ffffffff8116aa51>] sys_ioctl+0x91/0xa0
-  [<ffffffff81869f52>] system_call_fastpath+0x16/0x1b
-
-Fix the space map checker code to return an appropriate ERR_PTR and have
-dm_sm_disk_create() and dm_tm_create_internal() check for it with
-IS_ERR.
-
-Reported-by: Vivek Goyal <vgoyal@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/md/persistent-data/dm-space-map-checker.c   |   24 ++++++++++----------
- drivers/md/persistent-data/dm-space-map-disk.c      |   11 ++++++++-
- drivers/md/persistent-data/dm-transaction-manager.c |    8 +++++-
- 3 files changed, 28 insertions(+), 15 deletions(-)
-
---- a/drivers/md/persistent-data/dm-space-map-checker.c
-+++ b/drivers/md/persistent-data/dm-space-map-checker.c
-@@ -343,25 +343,25 @@ struct dm_space_map *dm_sm_checker_creat
- 	int r;
- 	struct sm_checker *smc;
- 
--	if (!sm)
--		return NULL;
-+	if (IS_ERR_OR_NULL(sm))
-+		return ERR_PTR(-EINVAL);
- 
- 	smc = kmalloc(sizeof(*smc), GFP_KERNEL);
- 	if (!smc)
--		return NULL;
-+		return ERR_PTR(-ENOMEM);
- 
- 	memcpy(&smc->sm, &ops_, sizeof(smc->sm));
- 	r = ca_create(&smc->old_counts, sm);
- 	if (r) {
- 		kfree(smc);
--		return NULL;
-+		return ERR_PTR(r);
- 	}
- 
- 	r = ca_create(&smc->counts, sm);
- 	if (r) {
- 		ca_destroy(&smc->old_counts);
- 		kfree(smc);
--		return NULL;
-+		return ERR_PTR(r);
- 	}
- 
- 	smc->real_sm = sm;
-@@ -371,7 +371,7 @@ struct dm_space_map *dm_sm_checker_creat
- 		ca_destroy(&smc->counts);
- 		ca_destroy(&smc->old_counts);
- 		kfree(smc);
--		return NULL;
-+		return ERR_PTR(r);
- 	}
- 
- 	r = ca_commit(&smc->old_counts, &smc->counts);
-@@ -379,7 +379,7 @@ struct dm_space_map *dm_sm_checker_creat
- 		ca_destroy(&smc->counts);
- 		ca_destroy(&smc->old_counts);
- 		kfree(smc);
--		return NULL;
-+		return ERR_PTR(r);
- 	}
- 
- 	return &smc->sm;
-@@ -391,25 +391,25 @@ struct dm_space_map *dm_sm_checker_creat
- 	int r;
- 	struct sm_checker *smc;
- 
--	if (!sm)
--		return NULL;
-+	if (IS_ERR_OR_NULL(sm))
-+		return ERR_PTR(-EINVAL);
- 
- 	smc = kmalloc(sizeof(*smc), GFP_KERNEL);
- 	if (!smc)
--		return NULL;
-+		return ERR_PTR(-ENOMEM);
- 
- 	memcpy(&smc->sm, &ops_, sizeof(smc->sm));
- 	r = ca_create(&smc->old_counts, sm);
- 	if (r) {
- 		kfree(smc);
--		return NULL;
-+		return ERR_PTR(r);
- 	}
- 
- 	r = ca_create(&smc->counts, sm);
- 	if (r) {
- 		ca_destroy(&smc->old_counts);
- 		kfree(smc);
--		return NULL;
-+		return ERR_PTR(r);
- 	}
- 
- 	smc->real_sm = sm;
---- a/drivers/md/persistent-data/dm-space-map-disk.c
-+++ b/drivers/md/persistent-data/dm-space-map-disk.c
-@@ -290,7 +290,16 @@ struct dm_space_map *dm_sm_disk_create(s
- 				       dm_block_t nr_blocks)
- {
- 	struct dm_space_map *sm = dm_sm_disk_create_real(tm, nr_blocks);
--	return dm_sm_checker_create_fresh(sm);
-+	struct dm_space_map *smc;
-+
-+	if (IS_ERR_OR_NULL(sm))
-+		return sm;
-+
-+	smc = dm_sm_checker_create_fresh(sm);
-+	if (IS_ERR(smc))
-+		dm_sm_destroy(sm);
-+
-+	return smc;
- }
- EXPORT_SYMBOL_GPL(dm_sm_disk_create);
- 
---- a/drivers/md/persistent-data/dm-transaction-manager.c
-+++ b/drivers/md/persistent-data/dm-transaction-manager.c
-@@ -345,8 +345,10 @@ static int dm_tm_create_internal(struct
- 		}
- 
- 		*sm = dm_sm_checker_create(inner);
--		if (!*sm)
-+		if (IS_ERR(*sm)) {
-+			r = PTR_ERR(*sm);
- 			goto bad2;
-+		}
- 
- 	} else {
- 		r = dm_bm_write_lock(dm_tm_get_bm(*tm), sb_location,
-@@ -365,8 +367,10 @@ static int dm_tm_create_internal(struct
- 		}
- 
- 		*sm = dm_sm_checker_create(inner);
--		if (!*sm)
-+		if (IS_ERR(*sm)) {
-+			r = PTR_ERR(*sm);
- 			goto bad2;
-+		}
- 	}
- 
- 	return 0;
-
-
+Hugh
