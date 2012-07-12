@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934302Ab2GLW6u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:58:50 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:61447 "EHLO
+	id S1162119Ab2GLW7L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:59:11 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58752 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162114Ab2GLWnb (ORCPT
+	with ESMTP id S1162110Ab2GLWnX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:43:31 -0400
+	Thu, 12 Jul 2012 18:43:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tyler Hicks <tyhicks@canonical.com>
-Subject: [ 137/187] eCryptfs: Fix lockdep warning in miscdev operations
-Date: Thu, 12 Jul 2012 15:34:53 -0700
-Message-Id: <20120712191535.093469985@linuxfoundation.org>
+        Mark Grosen <mgrosen@ti.com>, Ohad Ben-Cohen <ohad@wizery.com>
+Subject: [ 127/187] remoteproc: fix missing CONFIG_FW_LOADER configurations
+Date: Thu, 12 Jul 2012 15:34:43 -0700
+Message-Id: <20120712191534.153498452@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -30,103 +30,31 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Tyler Hicks <tyhicks@canonical.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
 
-commit 60d65f1f07a7d81d3eb3b91fc13fca80f2fdbb12 upstream.
+commit e121aefa7d9f10eee5cf26ed47129237a05d940b upstream.
 
-Don't grab the daemon mutex while holding the message context mutex.
-Addresses this lockdep warning:
+Remoteproc requires user space firmware loading support, so
+let's select FW_LOADER explicitly to avoid painful misconfigurations
+(which only show up in runtime).
 
- ecryptfsd/2141 is trying to acquire lock:
-  (&ecryptfs_msg_ctx_arr[i].mux){+.+.+.}, at: [<ffffffffa029c213>] ecryptfs_miscdev_read+0x143/0x470 [ecryptfs]
-
- but task is already holding lock:
-  (&(*daemon)->mux){+.+...}, at: [<ffffffffa029c2ec>] ecryptfs_miscdev_read+0x21c/0x470 [ecryptfs]
-
- which lock already depends on the new lock.
-
- the existing dependency chain (in reverse order) is:
-
- -> #1 (&(*daemon)->mux){+.+...}:
-        [<ffffffff810a3b8d>] lock_acquire+0x9d/0x220
-        [<ffffffff8151c6da>] __mutex_lock_common+0x5a/0x4b0
-        [<ffffffff8151cc64>] mutex_lock_nested+0x44/0x50
-        [<ffffffffa029c5d7>] ecryptfs_send_miscdev+0x97/0x120 [ecryptfs]
-        [<ffffffffa029b744>] ecryptfs_send_message+0x134/0x1e0 [ecryptfs]
-        [<ffffffffa029a24e>] ecryptfs_generate_key_packet_set+0x2fe/0xa80 [ecryptfs]
-        [<ffffffffa02960f8>] ecryptfs_write_metadata+0x108/0x250 [ecryptfs]
-        [<ffffffffa0290f80>] ecryptfs_create+0x130/0x250 [ecryptfs]
-        [<ffffffff811963a4>] vfs_create+0xb4/0x120
-        [<ffffffff81197865>] do_last+0x8c5/0xa10
-        [<ffffffff811998f9>] path_openat+0xd9/0x460
-        [<ffffffff81199da2>] do_filp_open+0x42/0xa0
-        [<ffffffff81187998>] do_sys_open+0xf8/0x1d0
-        [<ffffffff81187a91>] sys_open+0x21/0x30
-        [<ffffffff81527d69>] system_call_fastpath+0x16/0x1b
-
- -> #0 (&ecryptfs_msg_ctx_arr[i].mux){+.+.+.}:
-        [<ffffffff810a3418>] __lock_acquire+0x1bf8/0x1c50
-        [<ffffffff810a3b8d>] lock_acquire+0x9d/0x220
-        [<ffffffff8151c6da>] __mutex_lock_common+0x5a/0x4b0
-        [<ffffffff8151cc64>] mutex_lock_nested+0x44/0x50
-        [<ffffffffa029c213>] ecryptfs_miscdev_read+0x143/0x470 [ecryptfs]
-        [<ffffffff811887d3>] vfs_read+0xb3/0x180
-        [<ffffffff811888ed>] sys_read+0x4d/0x90
-        [<ffffffff81527d69>] system_call_fastpath+0x16/0x1b
-
-Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
+Reported-by: Mark Grosen <mgrosen@ti.com>
+Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ecryptfs/miscdev.c |   25 +++++++++++++------------
- 1 file changed, 13 insertions(+), 12 deletions(-)
+ drivers/remoteproc/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/ecryptfs/miscdev.c
-+++ b/fs/ecryptfs/miscdev.c
-@@ -195,31 +195,32 @@ int ecryptfs_send_miscdev(char *data, si
- 			  struct ecryptfs_msg_ctx *msg_ctx, u8 msg_type,
- 			  u16 msg_flags, struct ecryptfs_daemon *daemon)
- {
--	int rc = 0;
-+	struct ecryptfs_message *msg;
+--- a/drivers/remoteproc/Kconfig
++++ b/drivers/remoteproc/Kconfig
+@@ -4,6 +4,7 @@ menu "Remoteproc drivers (EXPERIMENTAL)"
+ config REMOTEPROC
+ 	tristate
+ 	depends on EXPERIMENTAL
++	select FW_CONFIG
  
--	mutex_lock(&msg_ctx->mux);
--	msg_ctx->msg = kmalloc((sizeof(*msg_ctx->msg) + data_size),
--			       GFP_KERNEL);
--	if (!msg_ctx->msg) {
--		rc = -ENOMEM;
-+	msg = kmalloc((sizeof(*msg) + data_size), GFP_KERNEL);
-+	if (!msg) {
- 		printk(KERN_ERR "%s: Out of memory whilst attempting "
- 		       "to kmalloc(%zd, GFP_KERNEL)\n", __func__,
--		       (sizeof(*msg_ctx->msg) + data_size));
--		goto out_unlock;
-+		       (sizeof(*msg) + data_size));
-+		return -ENOMEM;
- 	}
-+
-+	mutex_lock(&msg_ctx->mux);
-+	msg_ctx->msg = msg;
- 	msg_ctx->msg->index = msg_ctx->index;
- 	msg_ctx->msg->data_len = data_size;
- 	msg_ctx->type = msg_type;
- 	memcpy(msg_ctx->msg->data, data, data_size);
- 	msg_ctx->msg_size = (sizeof(*msg_ctx->msg) + data_size);
--	mutex_lock(&daemon->mux);
- 	list_add_tail(&msg_ctx->daemon_out_list, &daemon->msg_ctx_out_queue);
-+	mutex_unlock(&msg_ctx->mux);
-+
-+	mutex_lock(&daemon->mux);
- 	daemon->num_queued_msg_ctx++;
- 	wake_up_interruptible(&daemon->wait);
- 	mutex_unlock(&daemon->mux);
--out_unlock:
--	mutex_unlock(&msg_ctx->mux);
--	return rc;
-+
-+	return 0;
- }
- 
- /*
+ config OMAP_REMOTEPROC
+ 	tristate "OMAP remoteproc support"
 
 
