@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161894Ab2GLXbp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:31:45 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:63475 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161808Ab2GLWk5 (ORCPT
+	id S1162018Ab2GLXcB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:32:01 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44509 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161837Ab2GLWkt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:40:57 -0400
+	Thu, 12 Jul 2012 18:40:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [ 094/187] gpiolib: wm8994: Pay attention to the value set when enabling as output
-Date: Thu, 12 Jul 2012 15:34:10 -0700
-Message-Id: <20120712191531.121298219@linuxfoundation.org>
+        Rajendra Nayak <rnayak@ti.com>, Mike Turquette <mturquette@linaro.org>
+Subject: [ 092/187] clk: Allow late cache allocation for clk->parents
+Date: Thu, 12 Jul 2012 15:34:08 -0700
+Message-Id: <20120712191530.932186013@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -31,37 +30,71 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Rajendra Nayak <rnayak@ti.com>
 
-commit 8cd578b6e28693f357867a77598a88ef3deb6b39 upstream.
+commit 7975059db572eb47f0fb272a62afeae272a4b209 upstream.
 
-Not paying attention to the value being set is a bad thing because it
-means that we'll not set the hardware up to reflect what was requested.
-Not setting the hardware up to reflect what was requested means that the
-caller won't get the results they wanted.
+Parent clocks for muxes are cached in clk->parents to
+avoid frequent lookups, however the cache allocation happens
+only during clock registeration and later clk_set_parent()
+assumes a cache space available and allocated.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+This is not entirely true for platforms which do early clock
+registerations wherein the cache allocation using kzalloc
+could fail during clock registeration.
+
+Allow cache allocation to happen later as part of clk_set_parent()
+to help such cases and avoid crashes assuming a cache being
+available.
+
+While here also replace existing kmalloc() with kzalloc()
+in the file.
+
+Signed-off-by: Rajendra Nayak <rnayak@ti.com>
+Signed-off-by: Mike Turquette <mturquette@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpio/gpio-wm8994.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/clk/clk.c |   15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
---- a/drivers/gpio/gpio-wm8994.c
-+++ b/drivers/gpio/gpio-wm8994.c
-@@ -89,8 +89,11 @@ static int wm8994_gpio_direction_out(str
- 	struct wm8994_gpio *wm8994_gpio = to_wm8994_gpio(chip);
- 	struct wm8994 *wm8994 = wm8994_gpio->wm8994;
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -997,7 +997,7 @@ static struct clk *__clk_init_parent(str
  
-+	if (value)
-+		value = WM8994_GPN_LVL;
-+
- 	return wm8994_set_bits(wm8994, WM8994_GPIO_1 + offset,
--			       WM8994_GPN_DIR, 0);
-+			       WM8994_GPN_DIR | WM8994_GPN_LVL, value);
- }
+ 	if (!clk->parents)
+ 		clk->parents =
+-			kmalloc((sizeof(struct clk*) * clk->num_parents),
++			kzalloc((sizeof(struct clk*) * clk->num_parents),
+ 					GFP_KERNEL);
  
- static void wm8994_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
+ 	if (!clk->parents)
+@@ -1063,9 +1063,13 @@ static int __clk_set_parent(struct clk *
+ 	old_parent = clk->parent;
+ 
+ 	/* find index of new parent clock using cached parent ptrs */
+-	for (i = 0; i < clk->num_parents; i++)
+-		if (clk->parents[i] == parent)
+-			break;
++	if (clk->parents)
++		for (i = 0; i < clk->num_parents; i++)
++			if (clk->parents[i] == parent)
++				break;
++	else
++		clk->parents = kzalloc((sizeof(struct clk*) * clk->num_parents),
++								GFP_KERNEL);
+ 
+ 	/*
+ 	 * find index of new parent clock using string name comparison
+@@ -1074,7 +1078,8 @@ static int __clk_set_parent(struct clk *
+ 	if (i == clk->num_parents)
+ 		for (i = 0; i < clk->num_parents; i++)
+ 			if (!strcmp(clk->parent_names[i], parent->name)) {
+-				clk->parents[i] = __clk_lookup(parent->name);
++				if (clk->parents)
++					clk->parents[i] = __clk_lookup(parent->name);
+ 				break;
+ 			}
+ 
 
 
