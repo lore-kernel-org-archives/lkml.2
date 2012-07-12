@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162795Ab2GLXNw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:13:52 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46543 "EHLO
+	id S1162747Ab2GLXO3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:14:29 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47532 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162745Ab2GLXFD (ORCPT
+	with ESMTP id S1162717Ab2GLXEy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 19:05:03 -0400
+	Thu, 12 Jul 2012 19:04:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alan Stern <stern@rowland.harvard.edu>,
-        =?UTF-8?q?D=C3=A2niel=20Fraga?= <fragabr@gmail.com>,
-        Javier Marcet <jmarcet@gmail.com>, Andrey Rahmatullin <wrar@wrar.name>,
-        Oleksij Rempel <bug-track@fisher-privat.net>,
-        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
-        Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [ 51/68] PCI: EHCI: fix crash during suspend on ASUS computers
-Date: Thu, 12 Jul 2012 16:02:25 -0700
-Message-Id: <20120712175039.938377320@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 38/68] can: c_can: precedence error in c_can_chip_config()
+Date: Thu, 12 Jul 2012 16:02:12 -0700
+Message-Id: <20120712175038.821379833@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712175035.530652872@linuxfoundation.org>
 References: <20120712175057.GA9917@kroah.com>
@@ -35,50 +33,36 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit dbf0e4c7257f8d684ec1a3c919853464293de66e upstream.
+commit d9cb9bd63eb27ac19f26a8547128c053f43a5da8 upstream.
 
-Quite a few ASUS computers experience a nasty problem, related to the
-EHCI controllers, when going into system suspend.  It was observed
-that the problem didn't occur if the controllers were not put into the
-D3 power state before starting the suspend, and commit
-151b61284776be2d6f02d48c23c3625678960b97 (USB: EHCI: fix crash during
-suspend on ASUS computers) was created to do this.
+(CAN_CTRLMODE_LISTENONLY & CAN_CTRLMODE_LOOPBACK) is (0x02 & 0x01) which
+is zero so the condition is never true.  The intent here was to test
+that both flags were set.
 
-It turned out this approach messed up other computers that didn't have
-the problem -- it prevented USB wakeup from working.  Consequently
-commit c2fb8a3fa25513de8fedb38509b1f15a5bbee47b (USB: add
-NO_D3_DURING_SLEEP flag and revert 151b61284776be2) was merged; it
-reverted the earlier commit and added a whitelist of known good board
-names.
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Oliver Hartkopp <socketcan@hartkopp.net>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Now we know the actual cause of the problem.  Thanks to AceLan Kao for
-tracking it down.
+---
+ drivers/net/can/c_can/c_can.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-According to him, an engineer at ASUS explained that some of their
-BIOSes contain a bug that was added in an attempt to work around a
-problem in early versions of Windows.  When the computer goes into S3
-suspend, the BIOS tries to verify that the EHCI controllers were first
-quiesced by the OS.  Nothing's wrong with this, but the BIOS does it
-by checking that the PCI COMMAND registers contain 0 without checking
-the controllers' power state.  If the register isn't 0, the BIOS
-assumes the controller needs to be quiesced and tries to do so.  This
-involves making various MMIO accesses to the controller, which don't
-work very well if the controller is already in D3.  The end result is
-a system hang or memory corruption.
+--- a/drivers/net/can/c_can/c_can.c
++++ b/drivers/net/can/c_can/c_can.c
+@@ -592,8 +592,8 @@ static void c_can_chip_config(struct net
+ 	priv->write_reg(priv, &priv->regs->control,
+ 			CONTROL_ENABLE_AR);
+ 
+-	if (priv->can.ctrlmode & (CAN_CTRLMODE_LISTENONLY &
+-					CAN_CTRLMODE_LOOPBACK)) {
++	if ((priv->can.ctrlmode & CAN_CTRLMODE_LISTENONLY) &&
++	    (priv->can.ctrlmode & CAN_CTRLMODE_LOOPBACK)) {
+ 		/* loopback + silent mode : useful for hot self-test */
+ 		priv->write_reg(priv, &priv->regs->control, CONTROL_EIE |
+ 				CONTROL_SIE | CONTROL_IE | CONTROL_TEST);
 
-Since the value in the PCI COMMAND register doesn't matter once the
-controller has been suspended, and since the value will be restored
-anyway when the controller is resumed, we can work around the BIOS bug
-simply by setting the register to 0 during system suspend.  This patch
-(as1590) does so and also reverts the second commit mentioned above,
-which is now unnecessary.
-
-In theory we could do this for every PCI device.  However to avoid
-introducing new problems, the patch restricts itself to EHCI host
-controllers.
-
-Finally the affected systems can suspend with USB wakeup working
-properly.
 
