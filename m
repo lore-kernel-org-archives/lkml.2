@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934257Ab2GLVNp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 17:13:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44016 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932911Ab2GLVNo (ORCPT
+	id S1161530Ab2GLVRj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 17:17:39 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:26464 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932911Ab2GLVRh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 17:13:44 -0400
-Date: Thu, 12 Jul 2012 14:13:43 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujtisu.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
-        Rik van Riel <riel@redhat.com>, Ying Han <yinghan@google.com>,
-        Greg Thelen <gthelen@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH v2 -mm] memcg: prevent from OOM with too many dirty
- pages
-Message-Id: <20120712141343.e1cb7776.akpm@linux-foundation.org>
-In-Reply-To: <20120712070501.GB21013@tiehlicka.suse.cz>
-References: <1340117404-30348-1-git-send-email-mhocko@suse.cz>
-	<20120619150014.1ebc108c.akpm@linux-foundation.org>
-	<20120620101119.GC5541@tiehlicka.suse.cz>
-	<alpine.LSU.2.00.1207111818380.1299@eggly.anvils>
-	<20120712070501.GB21013@tiehlicka.suse.cz>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 12 Jul 2012 17:17:37 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6770"; a="207713083"
+Message-ID: <4FFF3EF0.3020000@codeaurora.org>
+Date: Thu, 12 Jul 2012 14:17:36 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Eldad Zack <eldad@fogrefinery.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Joe Perches <joe@perches.com>,
+        open list <linux-kernel@vger.kernel.org>,
+        "J. Bruce Fields" <bfields@fieldses.org>
+Subject: Re: [PATCH 1/2] kstrto*: add documentation
+References: <1342126395-18055-1-git-send-email-eldad@fogrefinery.com>
+In-Reply-To: <1342126395-18055-1-git-send-email-eldad@fogrefinery.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Jul 2012 09:05:01 +0200
-Michal Hocko <mhocko@suse.cz> wrote:
+On 07/12/12 13:53, Eldad Zack wrote:
+>
+> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+> index e07f5e0..582df0f 100644
+> --- a/include/linux/kernel.h
+> +++ b/include/linux/kernel.h
+> @@ -220,6 +220,16 @@ int __must_check _kstrtol(const char *s, unsigned int base, long *res);
+>  
+>  int __must_check kstrtoull(const char *s, unsigned int base, unsigned long long *res);
+>  int __must_check kstrtoll(const char *s, unsigned int base, long long *res);
+> +
+> +/**
+> + * kstrtoul - convert a string to an unsigned long
 
-> When we are back to the patch. Is it going into 3.5? I hope so and I
-> think it is really worth stable as well. Andrew?
+Aren't function names supposed to have () after them in kernel doc?
 
-What patch.   "memcg: prevent OOM with too many dirty pages"?
-
-I wasn't planning on 3.5, given the way it's been churning around.  How
-about we put it into 3.6 and tag it for a -stable backport, so it gets
-a bit of a run in mainline before we inflict it upon -stable users?
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
