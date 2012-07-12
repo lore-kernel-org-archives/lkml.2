@@ -1,71 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757721Ab2GLQQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 12:16:26 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46484 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755191Ab2GLQQY (ORCPT
+	id S934090Ab2GLQQx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 12:16:53 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:47541 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933647Ab2GLQQv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 12:16:24 -0400
-Date: Thu, 12 Jul 2012 17:16:22 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: gregkh@linuxfoundation.org, sameo@linux.intel.com,
-        myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] extcon: Remove CONFIG_EXTCON_MODULE config to fix build
- break
-Message-ID: <20120712161621.GB7256@opensource.wolfsonmicro.com>
-References: <1342067547-6276-1-git-send-email-cw00.choi@samsung.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7ZAtKRhVyVSsbBD2"
-Content-Disposition: inline
-In-Reply-To: <1342067547-6276-1-git-send-email-cw00.choi@samsung.com>
-X-Cookie: Advancement in position.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 12 Jul 2012 12:16:51 -0400
+Message-ID: <1342109807.4531.38.camel@jlt3.sipsolutions.net>
+Subject: Re: [Ilw]  Re: 3.4-rc2, ilwagn still most of the time completely
+ unusable
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Norbert Preining <preining@logic.at>
+Cc: "Venkataraman, Meenakshi" <meenakshi.venkataraman@intel.com>,
+        "Lin, Hsien KuoX" <hsien.kuox.lin@intel.com>,
+        "ilw@linux.intel.com" <ilw@linux.intel.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Emmanuel Grumbach <egrumbach@gmail.com>
+Date: Thu, 12 Jul 2012 18:16:47 +0200
+In-Reply-To: <20120712081457.GA32465@gamma.logic.tuwien.ac.at>
+References: <20120412000202.GA15286@gamma.logic.tuwien.ac.at>
+	 <4595B4D22AB93C4FABBA84AAD5AA37FD120BF8@ORSMSX103.amr.corp.intel.com>
+	 <20120413014047.GB25681@gamma.logic.tuwien.ac.at>
+	 <20120330011734.GH6277@gamma.logic.tuwien.ac.at>
+	 <20120411023747.GA10126@gamma.logic.tuwien.ac.at>
+	 <4595B4D22AB93C4FABBA84AAD5AA37FD11DE3C@ORSMSX103.amr.corp.intel.com>
+	 <20120412000202.GA15286@gamma.logic.tuwien.ac.at>
+	 <20120628072512.GF31944@gamma.logic.tuwien.ac.at>
+	 <1340869868.4491.4.camel@jlt3.sipsolutions.net>
+	 <20120628081607.GG31944@gamma.logic.tuwien.ac.at>
+	 <20120712081457.GA32465@gamma.logic.tuwien.ac.at>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2012-07-12 at 17:14 +0900, Norbert Preining wrote:
 
---7ZAtKRhVyVSsbBD2
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> > I can actually work now wirelessly, and in case of hangs an rfkill block
+> > rfkill unblock practically always, and mostly is not needed.
+> 
+> Ok, that was said *UNTIL* I reenabled 11n. Up to now I was loading the
+> iwlwifi module with
+> 	11n_disable=1
+> 
+> Now, latest git from today, I though, let us try to enable 11n again,
+> and there we go, boot from cold machine and after short time everything
+> is dead without reaction. Dmesg gives many many funny messages:
+> 
+> [   30.047943] iwlwifi 0000:06:00.0: L1 Enabled; Disabling L0S
+> [   30.051933] iwlwifi 0000:06:00.0: Radio type=0x1-0x2-0x0
+> [   30.164836] iwlwifi 0000:06:00.0: L1 Enabled; Disabling L0S
+> [   30.167876] iwlwifi 0000:06:00.0: Radio type=0x1-0x2-0x0
+> [   37.533619] wlan0: authenticate with 00:0a:79:eb:56:10
+> [   37.536433] wlan0: send auth to 00:0a:79:eb:56:10 (try 1/3)
+> [   37.538241] wlan0: authenticated
+> [   37.538391] wlan0: associating with AP with corrupt beacon
 
-On Thu, Jul 12, 2012 at 01:32:27PM +0900, Chanwoo Choi wrote:
-> This patch modify 'Kconfig' of EXTCON Subsystem to support either
-> active or inactive of EXTCON Subsystem. The various subsystem refer
-> to EXTCON subsystem for controlling external connector, so core class
-> of EXTCON should be included in kernel image. If EXTCON subsystem is
-> builded with MODULE, other subsystem have build break because of
-> linking the core class of EXTCON.
+That might be an indication of things already going wrong with your
+AP ... :-(
 
-By this logic very little in the kernel should be a module.  We usually
-only force things to be built in if there's a technical need for it like
-init ordering constraints.  Generally this is just a case of making sure
-the Kconfig stuff is set up with appropriate dependencies.
+[snip log]
 
---7ZAtKRhVyVSsbBD2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Mostly from the log it seems that there's a lot of spurious aggregation
+setup/teardown, some of it seems to originate from the AP.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> At that point I removed the iwlwifi module, and reloaded it with 
+> 11n_disable=1 again, otherwise nothing would work at all...
 
-iQIcBAEBAgAGBQJP/vg4AAoJEBus8iNuMP3d1F4QAJUWy44w+YoGIXU3UEiQcq1D
-eTYNTjuznrNLpz0UoK/X7HxTa443qDQ8MmQLV2u/W4iycxecqDNvz2aDaP9DZFKh
-TzvK8l4+Z2QCsYiemnPBY6wet9fnV6QE6+MVqhn/Orqm/M2aawbhbGZeUvCmsDh2
-6+VKNEIAvTE+F/t5sFqN/03G57iD5lo/VoWKl+w4c9UFpb1PDkJKLZtFWZ8IXu75
-eRd+hWav7SgRhqeXojMPcaHx42T7AqEcyY5Ryg2Ff7yYMbrPplMzelTaH2/cz91G
-AIvjLxBi5qW/gj131556aiIoVcPjuQOBru/WwGg3IoEUgei5tEShGyL2fBcUOa/V
-KkA52kwIoXJLQP9pVLv1OtwpCiDmiJxjJCajFWXx9d3HKYWTEmH1qkXn+vvJK6uP
-zlK/ROuVoR7d+AH7BdmUcQpAjBlbl14NO/R5n4l0KBzG6ljy3jmu8MiXPBV82uc9
-4Da0HRfQ5k8ufuAlJ7or/nZE/DiHIwfwE1xMgjKMe8KNCZpNP7zrbfLtMrkUHma7
-5i1H7EKwvuWyw02qutwq+SfO++FJZaPTx1wGsbHc6j3SiOIH/SmJIrEFV+/QNOEA
-6ID2XjNcFWvIFvwcq0ITMCUHtl2YaUmlp04yNfeSiAfed7Co811HkdCNl+aPHdIt
-vJhSRk1h+4GfUPCSp5zP
-=cZVn
------END PGP SIGNATURE-----
+With the latest, I've extended 11n_disable to have more bits.
 
---7ZAtKRhVyVSsbBD2--
+11n_disable=1 will disable HT completely
+11n_disable=2 will disable TX aggregation
+11n_disable=4 will disable RX aggregation
+
+It'd be interesting to see what happens for you with 11n_disable=2/4/6.
+
+johannes
+
