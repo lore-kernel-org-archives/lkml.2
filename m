@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162959Ab2GLXm3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:42:29 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44509 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759589Ab2GLWiM (ORCPT
+	id S1162973Ab2GLXmq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:42:46 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:40926 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759584Ab2GLWiJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:38:12 -0400
+	Thu, 12 Jul 2012 18:38:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tomas Hruby <thruby@google.com>, Eric Dumazet <edumazet@google.com>,
-        Eilon Greenstein <eilong@broadcom.com>,
-        Yaniv Rosner <yanivr@broadcom.com>, Merav Sicron <meravs@broadcom.com>,
-        Tom Herbert <therbert@google.com>, Robert Evans <evansr@google.com>,
-        Willem de Bruijn <willemb@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 038/187] bnx2x: fix panic when TX ring is full
-Date: Thu, 12 Jul 2012 15:33:14 -0700
-Message-Id: <20120712191525.861189826@linuxfoundation.org>
+        Sasha Levin <levinsasha928@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: [ 045/187] NFC: Return from rawsock_release when sk is NULL
+Date: Thu, 12 Jul 2012 15:33:21 -0700
+Message-Id: <20120712191526.519395394@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -35,73 +32,104 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-
 From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit bc14786a100cc6a81cd060e8031ec481241b418c ]
+commit 03e934f620101ca2cfc9383bd76172dd3e1f8567 upstream.
 
-There is a off by one error in the minimal number of BD in
-bnx2x_start_xmit() and bnx2x_tx_int() before stopping/resuming tx queue.
+Sasha Levin reported following panic :
 
-A full size GSO packet, with data included in skb->head really needs
-(MAX_SKB_FRAGS + 4) BDs, because of bnx2x_tx_split()
+[ 2136.383310] BUG: unable to handle kernel NULL pointer dereference at
+00000000000003b0
+[ 2136.384022] IP: [<ffffffff8114e400>] __lock_acquire+0xc0/0x4b0
+[ 2136.384022] PGD 131c4067 PUD 11c0c067 PMD 0
+[ 2136.388106] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[ 2136.388106] CPU 1
+[ 2136.388106] Pid: 24855, comm: trinity-child1 Tainted: G        W
+3.5.0-rc2-sasha-00015-g7b268f7 #374
+[ 2136.388106] RIP: 0010:[<ffffffff8114e400>]  [<ffffffff8114e400>]
+__lock_acquire+0xc0/0x4b0
+[ 2136.388106] RSP: 0018:ffff8800130b3ca8  EFLAGS: 00010046
+[ 2136.388106] RAX: 0000000000000086 RBX: ffff88001186b000 RCX:
+0000000000000000
+[ 2136.388106] RDX: 0000000000000000 RSI: 0000000000000000 RDI:
+0000000000000000
+[ 2136.388106] RBP: ffff8800130b3d08 R08: 0000000000000001 R09:
+0000000000000000
+[ 2136.388106] R10: 0000000000000000 R11: 0000000000000001 R12:
+0000000000000002
+[ 2136.388106] R13: 00000000000003b0 R14: 0000000000000000 R15:
+0000000000000000
+[ 2136.388106] FS:  00007fa5b1bd4700(0000) GS:ffff88001b800000(0000)
+knlGS:0000000000000000
+[ 2136.388106] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[ 2136.388106] CR2: 00000000000003b0 CR3: 0000000011d1f000 CR4:
+00000000000406e0
+[ 2136.388106] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+0000000000000000
+[ 2136.388106] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+0000000000000400
+[ 2136.388106] Process trinity-child1 (pid: 24855, threadinfo
+ffff8800130b2000, task ffff88001186b000)
+[ 2136.388106] Stack:
+[ 2136.388106]  ffff8800130b3cd8 ffffffff81121785 ffffffff81236774
+000080d000000001
+[ 2136.388106]  ffff88001b9d6c00 00000000001d6c00 ffffffff130b3d08
+ffff88001186b000
+[ 2136.388106]  0000000000000000 0000000000000002 0000000000000000
+0000000000000000
+[ 2136.388106] Call Trace:
+[ 2136.388106]  [<ffffffff81121785>] ? sched_clock_local+0x25/0x90
+[ 2136.388106]  [<ffffffff81236774>] ? get_empty_filp+0x74/0x220
+[ 2136.388106]  [<ffffffff8114e97a>] lock_acquire+0x18a/0x1e0
+[ 2136.388106]  [<ffffffff836b37df>] ? rawsock_release+0x4f/0xa0
+[ 2136.388106]  [<ffffffff837c0ef0>] _raw_write_lock_bh+0x40/0x80
+[ 2136.388106]  [<ffffffff836b37df>] ? rawsock_release+0x4f/0xa0
+[ 2136.388106]  [<ffffffff836b37df>] rawsock_release+0x4f/0xa0
+[ 2136.388106]  [<ffffffff8321cfe8>] sock_release+0x18/0x70
+[ 2136.388106]  [<ffffffff8321d069>] sock_close+0x29/0x30
+[ 2136.388106]  [<ffffffff81236bca>] __fput+0x11a/0x2c0
+[ 2136.388106]  [<ffffffff81236d85>] fput+0x15/0x20
+[ 2136.388106]  [<ffffffff8321de34>] sys_accept4+0x1b4/0x200
+[ 2136.388106]  [<ffffffff837c165c>] ? _raw_spin_unlock_irq+0x4c/0x80
+[ 2136.388106]  [<ffffffff837c1669>] ? _raw_spin_unlock_irq+0x59/0x80
+[ 2136.388106]  [<ffffffff837c2565>] ? sysret_check+0x22/0x5d
+[ 2136.388106]  [<ffffffff8321de8b>] sys_accept+0xb/0x10
+[ 2136.388106]  [<ffffffff837c2539>] system_call_fastpath+0x16/0x1b
+[ 2136.388106] Code: ec 04 00 0f 85 ea 03 00 00 be d5 0b 00 00 48 c7 c7
+8a c1 40 84 e8 b1 a5 f8 ff 31 c0 e9 d4 03 00 00 66 2e 0f 1f 84 00 00 00
+00 00 <49> 81 7d 00 60 73 5e 85 b8 01 00 00 00 44 0f 44 e0 83 fe 01 77
+[ 2136.388106] RIP  [<ffffffff8114e400>] __lock_acquire+0xc0/0x4b0
+[ 2136.388106]  RSP <ffff8800130b3ca8>
+[ 2136.388106] CR2: 00000000000003b0
+[ 2136.388106] ---[ end trace 6d450e935ee18982 ]---
+[ 2136.388106] Kernel panic - not syncing: Fatal exception in interrupt
 
-This error triggers if BQL is disabled and heavy TCP transmit traffic
-occurs.
+rawsock_release() should test if sock->sk is NULL before calling
+sock_orphan()/sock_put()
 
-bnx2x_tx_split() definitely can be called, remove a wrong comment.
-
-Reported-by: Tomas Hruby <thruby@google.com>
+Reported-by: Sasha Levin <levinsasha928@gmail.com>
+Tested-by: Sasha Levin <levinsasha928@gmail.com>
 Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Eilon Greenstein <eilong@broadcom.com>
-Cc: Yaniv Rosner <yanivr@broadcom.com>
-Cc: Merav Sicron <meravs@broadcom.com>
-Cc: Tom Herbert <therbert@google.com>
-Cc: Robert Evans <evansr@google.com>
-Cc: Willem de Bruijn <willemb@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c |    8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
 
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-@@ -191,7 +191,7 @@ int bnx2x_tx_int(struct bnx2x *bp, struc
+---
+ net/nfc/rawsock.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+--- a/net/nfc/rawsock.c
++++ b/net/nfc/rawsock.c
+@@ -54,7 +54,10 @@ static int rawsock_release(struct socket
+ {
+ 	struct sock *sk = sock->sk;
  
- 		if ((netif_tx_queue_stopped(txq)) &&
- 		    (bp->state == BNX2X_STATE_OPEN) &&
--		    (bnx2x_tx_avail(bp, txdata) >= MAX_SKB_FRAGS + 3))
-+		    (bnx2x_tx_avail(bp, txdata) >= MAX_SKB_FRAGS + 4))
- 			netif_tx_wake_queue(txq);
+-	pr_debug("sock=%p\n", sock);
++	pr_debug("sock=%p sk=%p\n", sock, sk);
++
++	if (!sk)
++		return 0;
  
- 		__netif_tx_unlock(txq);
-@@ -2349,8 +2349,6 @@ int bnx2x_poll(struct napi_struct *napi,
- /* we split the first BD into headers and data BDs
-  * to ease the pain of our fellow microcode engineers
-  * we use one mapping for both BDs
-- * So far this has only been observed to happen
-- * in Other Operating Systems(TM)
-  */
- static noinline u16 bnx2x_tx_split(struct bnx2x *bp,
- 				   struct bnx2x_fp_txdata *txdata,
-@@ -3002,7 +3000,7 @@ netdev_tx_t bnx2x_start_xmit(struct sk_b
- 
- 	txdata->tx_bd_prod += nbd;
- 
--	if (unlikely(bnx2x_tx_avail(bp, txdata) < MAX_SKB_FRAGS + 3)) {
-+	if (unlikely(bnx2x_tx_avail(bp, txdata) < MAX_SKB_FRAGS + 4)) {
- 		netif_tx_stop_queue(txq);
- 
- 		/* paired memory barrier is in bnx2x_tx_int(), we have to keep
-@@ -3011,7 +3009,7 @@ netdev_tx_t bnx2x_start_xmit(struct sk_b
- 		smp_mb();
- 
- 		fp->eth_q_stats.driver_xoff++;
--		if (bnx2x_tx_avail(bp, txdata) >= MAX_SKB_FRAGS + 3)
-+		if (bnx2x_tx_avail(bp, txdata) >= MAX_SKB_FRAGS + 4)
- 			netif_tx_wake_queue(txq);
- 	}
- 	txdata->tx_pkt++;
+ 	sock_orphan(sk);
+ 	sock_put(sk);
 
 
