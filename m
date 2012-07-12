@@ -1,69 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162923Ab2GLXJA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:09:00 -0400
-Received: from atomicpeace.com ([50.116.19.59]:51364 "EHLO atomicpeace.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1162802Ab2GLXI5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 19:08:57 -0400
-From: Tim Sally <tsally@atomicpeace.com>
-To: tyhicks@canonical.com, dustin.kirkland@gazzang.com
-Cc: ecryptfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tim Sally <tsally@atomicpeace.com>
-Subject: [PATCH 1/1] eCryptfs: check for eCryptfs cipher support at mount
-Date: Thu, 12 Jul 2012 19:10:24 -0400
-Message-Id: <1342134624-31564-1-git-send-email-tsally@atomicpeace.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <20120711171152.GA16475@boyd>
-References: <20120711171152.GA16475@boyd>
+	id S964886Ab2GLXJd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:09:33 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46543 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162839Ab2GLXGI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 19:06:08 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Laurent Chavey <chavey@google.com>,
+        Justin Teravest <teravest@google.com>,
+        David Sharp <dhsharp@google.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 54/68] tracing: change CPU ring buffer state from tracing_cpumask
+Date: Thu, 12 Jul 2012 16:02:28 -0700
+Message-Id: <20120712175040.215945708@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120712175035.530652872@linuxfoundation.org>
+References: <20120712175057.GA9917@kroah.com>
+ <20120712175035.530652872@linuxfoundation.org>
+User-Agent: quilt/0.60-20.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The issue occurs when eCryptfs is mounted with a cipher supported by
-the crypto subsystem but not by eCryptfs. The mount succeeds and an
-error does not occur until a write. This change checks for eCryptfs
-cipher support at mount time.
+From: Greg KH <gregkh@linuxfoundation.org>
 
-Resolves Launchpad issue #338914, reported by Tyler Hicks in 03/2009.
-https://bugs.launchpad.net/ecryptfs/+bug/338914
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Tim Sally <tsally@atomicpeace.com>
----
- fs/ecryptfs/main.c |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
+------------------
 
-diff --git a/fs/ecryptfs/main.c b/fs/ecryptfs/main.c
-index df217dc..aee998d 100644
---- a/fs/ecryptfs/main.c
-+++ b/fs/ecryptfs/main.c
-@@ -279,6 +279,7 @@ static int ecryptfs_parse_options(struct ecryptfs_sb_info *sbi, char *options,
- 	char *fnek_src;
- 	char *cipher_key_bytes_src;
- 	char *fn_cipher_key_bytes_src;
-+	u8 cipher_code;
- 
- 	*check_ruid = 0;
- 
-@@ -420,6 +421,18 @@ static int ecryptfs_parse_options(struct ecryptfs_sb_info *sbi, char *options,
- 	    && !fn_cipher_key_bytes_set)
- 		mount_crypt_stat->global_default_fn_cipher_key_bytes =
- 			mount_crypt_stat->global_default_cipher_key_size;
-+
-+	cipher_code = ecryptfs_code_for_cipher_string(
-+		mount_crypt_stat->global_default_cipher_name,
-+		mount_crypt_stat->global_default_cipher_key_size);
-+	if (!cipher_code) {
-+		ecryptfs_printk(KERN_ERR,
-+				"eCryptfs doesn't support cipher: %s.",
-+				mount_crypt_stat->global_default_cipher_name);
-+		rc = -EINVAL;
-+		goto out;
-+	}
-+
- 	mutex_lock(&key_tfm_list_mutex);
- 	if (!ecryptfs_tfm_exists(mount_crypt_stat->global_default_cipher_name,
- 				 NULL)) {
--- 
-1.7.10.4
+From: Vaibhav Nagarnaik <vnagarnaik@google.com>
+
+commit 71babb2705e2203a64c27ede13ae3508a0d2c16c upstream.
+
+According to Documentation/trace/ftrace.txt:
+
+tracing_cpumask:
+
+        This is a mask that lets the user only trace
+        on specified CPUS. The format is a hex string
+        representing the CPUS.
+
+The tracing_cpumask currently doesn't affect the tracing state of
+per-CPU ring buffers.
+
+This patch enables/disables CPU recording as its corresponding bit in
+tracing_cpumask is set/unset.
+
+Link: http://lkml.kernel.org/r/1336096792-25373-3-git-send-email-vnagarnaik@google.com
 
