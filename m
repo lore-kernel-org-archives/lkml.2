@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162597Ab2GLXrw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:47:52 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44509 "EHLO
+	id S1162969Ab2GLXsU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:48:20 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54985 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759415Ab2GLWhE (ORCPT
+	with ESMTP id S1759416Ab2GLWg5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:37:04 -0400
+	Thu, 12 Jul 2012 18:36:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <edumazet@google.com>, Roland Stigge <stigge@antcom.de>,
-        Kevin Wells <kevin.wells@nxp.com>,
+        Eric Dumazet <edumazet@google.com>,
+        James Chapman <jchapman@katalix.com>,
+        Denys Fedoryshchenko <denys@visp.net.lb>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 027/187] lpc_eth: fix tx completion
-Date: Thu, 12 Jul 2012 15:33:03 -0700
-Message-Id: <20120712191524.774366476@linuxfoundation.org>
+Subject: [ 025/187] l2tp: fix a race in l2tp_ip_sendmsg()
+Date: Thu, 12 Jul 2012 15:33:01 -0700
+Message-Id: <20120712191524.586318194@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -35,47 +36,48 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 3f16da51b0e533871d22a29682f3c3969d4f7e22 ]
+[ Upstream commit 4399a4df98a63e30fd16e9d0cecc46ea92269e8f ]
 
-__lpc_handle_xmit() has two bugs :
+Commit 081b1b1bb27f (l2tp: fix l2tp_ip_sendmsg() route handling) added
+a race, in case IP route cache is disabled.
 
-1) It can leak skbs in case TXSTATUS_ERROR is set
-
-2) It can wake up txqueue while no slot was freed.
+In this case, we should not do the dst_release(&rt->dst), since it'll
+free the dst immediately, instead of waiting a RCU grace period.
 
 Signed-off-by: Eric Dumazet <edumazet@google.com>
-Reported-by: Roland Stigge <stigge@antcom.de>
-Tested-by: Roland Stigge <stigge@antcom.de>
-Cc: Kevin Wells <kevin.wells@nxp.com>
+Cc: James Chapman <jchapman@katalix.com>
+Cc: Denys Fedoryshchenko <denys@visp.net.lb>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/nxp/lpc_eth.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ net/l2tp/l2tp_ip.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/drivers/net/ethernet/nxp/lpc_eth.c
-+++ b/drivers/net/ethernet/nxp/lpc_eth.c
-@@ -936,16 +936,16 @@ static void __lpc_handle_xmit(struct net
- 			/* Update stats */
- 			ndev->stats.tx_packets++;
- 			ndev->stats.tx_bytes += skb->len;
--
--			/* Free buffer */
--			dev_kfree_skb_irq(skb);
- 		}
-+		dev_kfree_skb_irq(skb);
- 
- 		txcidx = readl(LPC_ENET_TXCONSUMEINDEX(pldat->net_base));
+--- a/net/l2tp/l2tp_ip.c
++++ b/net/l2tp/l2tp_ip.c
+@@ -516,10 +516,12 @@ static int l2tp_ip_sendmsg(struct kiocb
+ 					   sk->sk_bound_dev_if);
+ 		if (IS_ERR(rt))
+ 			goto no_route;
+-		if (connected)
++		if (connected) {
+ 			sk_setup_caps(sk, &rt->dst);
+-		else
+-			dst_release(&rt->dst); /* safe since we hold rcu_read_lock */
++		} else {
++			skb_dst_set(skb, &rt->dst);
++			goto xmit;
++		}
  	}
  
--	if (netif_queue_stopped(ndev))
--		netif_wake_queue(ndev);
-+	if (pldat->num_used_tx_buffs <= ENET_TX_DESC/2) {
-+		if (netif_queue_stopped(ndev))
-+			netif_wake_queue(ndev);
-+	}
- }
+ 	/* We dont need to clone dst here, it is guaranteed to not disappear.
+@@ -527,6 +529,7 @@ static int l2tp_ip_sendmsg(struct kiocb
+ 	 */
+ 	skb_dst_set_noref(skb, &rt->dst);
  
- static int __lpc_handle_recv(struct net_device *ndev, int budget)
++xmit:
+ 	/* Queue the packet to IP for output */
+ 	rc = ip_queue_xmit(skb, &inet->cork.fl);
+ 	rcu_read_unlock();
 
 
