@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161824Ab2GLXjp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:39:45 -0400
+	id S1161868Ab2GLXkH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:40:07 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:54985 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759670Ab2GLWiq (ORCPT
+	with ESMTP id S933040Ab2GLWij (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:38:46 -0400
+	Thu, 12 Jul 2012 18:38:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Fernando Guzman Lugo <fernando.lugo@ti.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>
-Subject: [ 056/187] rpmsg: avoid premature deallocation of endpoints
-Date: Thu, 12 Jul 2012 15:33:32 -0700
-Message-Id: <20120712191527.546476233@linuxfoundation.org>
+        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
+        Lauro Ramos Venancio <lauro.venancio@openbossa.org>,
+        Aloisio Almeida Jr <aloisio.almeida@openbossa.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "David S. Miller" <davem@davemloft.net>, Ilan Elias <ilane@ti.com>,
+        security@kernel.org
+Subject: [ 046/187] NFC: Prevent multiple buffer overflows in NCI
+Date: Thu, 12 Jul 2012 15:33:22 -0700
+Message-Id: <20120712191526.629346123@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -31,144 +35,74 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Ohad Ben-Cohen <ohad@wizery.com>
+From: Dan Rosenberg <dan.j.rosenberg@gmail.com>
 
-commit 5a081caa0414b9bbb82c17ffab9d6fe66edbb72f upstream.
+commit 67de956ff5dc1d4f321e16cfbd63f5be3b691b43 upstream.
 
-When an inbound message arrives, the rpmsg core looks up its
-associated endpoint and invokes the registered callback.
+Fix multiple remotely-exploitable stack-based buffer overflows due to
+the NCI code pulling length fields directly from incoming frames and
+copying too much data into statically-sized arrays.
 
-If a message arrives while its endpoint is being removed (because
-the rpmsg driver was removed, or a recovery of a remote processor
-has kicked in) we must ensure atomicity, i.e.:
-
-- Either the ept is removed before it is found
-
-or
-
-- The ept is found but will not be freed until the callback returns
-
-This is achieved by maintaining a per-ept reference count, which,
-when drops to zero, will trigger deallocation of the ept.
-
-With this in hand, it is now forbidden to directly deallocate
-epts once they have been added to the endpoints idr.
-
-Reported-by: Fernando Guzman Lugo <fernando.lugo@ti.com>
-Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
+Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
+Cc: security@kernel.org
+Cc: Lauro Ramos Venancio <lauro.venancio@openbossa.org>
+Cc: Aloisio Almeida Jr <aloisio.almeida@openbossa.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: David S. Miller <davem@davemloft.net>
+Acked-by: Ilan Elias <ilane@ti.com>
+Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/rpmsg/virtio_rpmsg_bus.c |   36 ++++++++++++++++++++++++++++++++++--
- include/linux/rpmsg.h            |    3 +++
- 2 files changed, 37 insertions(+), 2 deletions(-)
+ net/nfc/nci/ntf.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/drivers/rpmsg/virtio_rpmsg_bus.c
-+++ b/drivers/rpmsg/virtio_rpmsg_bus.c
-@@ -188,6 +188,26 @@ static int rpmsg_uevent(struct device *d
- 					rpdev->id.name);
- }
+--- a/net/nfc/nci/ntf.c
++++ b/net/nfc/nci/ntf.c
+@@ -106,7 +106,7 @@ static __u8 *nci_extract_rf_params_nfca_
+ 	nfca_poll->sens_res = __le16_to_cpu(*((__u16 *)data));
+ 	data += 2;
  
-+/**
-+ * __ept_release() - deallocate an rpmsg endpoint
-+ * @kref: the ept's reference count
-+ *
-+ * This function deallocates an ept, and is invoked when its @kref refcount
-+ * drops to zero.
-+ *
-+ * Never invoke this function directly!
-+ */
-+static void __ept_release(struct kref *kref)
-+{
-+	struct rpmsg_endpoint *ept = container_of(kref, struct rpmsg_endpoint,
-+						  refcount);
-+	/*
-+	 * At this point no one holds a reference to ept anymore,
-+	 * so we can directly free it
-+	 */
-+	kfree(ept);
-+}
-+
- /* for more info, see below documentation of rpmsg_create_ept() */
- static struct rpmsg_endpoint *__rpmsg_create_ept(struct virtproc_info *vrp,
- 		struct rpmsg_channel *rpdev, rpmsg_rx_cb_t cb,
-@@ -206,6 +226,8 @@ static struct rpmsg_endpoint *__rpmsg_cr
- 		return NULL;
- 	}
+-	nfca_poll->nfcid1_len = *data++;
++	nfca_poll->nfcid1_len = min_t(__u8, *data++, NFC_NFCID1_MAXSIZE);
  
-+	kref_init(&ept->refcount);
-+
- 	ept->rpdev = rpdev;
- 	ept->cb = cb;
- 	ept->priv = priv;
-@@ -238,7 +260,7 @@ rem_idr:
- 	idr_remove(&vrp->endpoints, request);
- free_ept:
- 	mutex_unlock(&vrp->endpoints_lock);
--	kfree(ept);
-+	kref_put(&ept->refcount, __ept_release);
- 	return NULL;
- }
+ 	pr_debug("sens_res 0x%x, nfcid1_len %d\n",
+ 		 nfca_poll->sens_res, nfca_poll->nfcid1_len);
+@@ -130,7 +130,7 @@ static __u8 *nci_extract_rf_params_nfcb_
+ 			struct rf_tech_specific_params_nfcb_poll *nfcb_poll,
+ 						     __u8 *data)
+ {
+-	nfcb_poll->sensb_res_len = *data++;
++	nfcb_poll->sensb_res_len = min_t(__u8, *data++, NFC_SENSB_RES_MAXSIZE);
  
-@@ -306,7 +328,7 @@ __rpmsg_destroy_ept(struct virtproc_info
- 	idr_remove(&vrp->endpoints, ept->addr);
- 	mutex_unlock(&vrp->endpoints_lock);
+ 	pr_debug("sensb_res_len %d\n", nfcb_poll->sensb_res_len);
  
--	kfree(ept);
-+	kref_put(&ept->refcount, __ept_release);
- }
+@@ -145,7 +145,7 @@ static __u8 *nci_extract_rf_params_nfcf_
+ 						     __u8 *data)
+ {
+ 	nfcf_poll->bit_rate = *data++;
+-	nfcf_poll->sensf_res_len = *data++;
++	nfcf_poll->sensf_res_len = min_t(__u8, *data++, NFC_SENSF_RES_MAXSIZE);
  
- /**
-@@ -790,7 +812,13 @@ static void rpmsg_recv_done(struct virtq
+ 	pr_debug("bit_rate %d, sensf_res_len %d\n",
+ 		 nfcf_poll->bit_rate, nfcf_poll->sensf_res_len);
+@@ -331,7 +331,7 @@ static int nci_extract_activation_params
+ 	switch (ntf->activation_rf_tech_and_mode) {
+ 	case NCI_NFC_A_PASSIVE_POLL_MODE:
+ 		nfca_poll = &ntf->activation_params.nfca_poll_iso_dep;
+-		nfca_poll->rats_res_len = *data++;
++		nfca_poll->rats_res_len = min_t(__u8, *data++, 20);
+ 		pr_debug("rats_res_len %d\n", nfca_poll->rats_res_len);
+ 		if (nfca_poll->rats_res_len > 0) {
+ 			memcpy(nfca_poll->rats_res,
+@@ -341,7 +341,7 @@ static int nci_extract_activation_params
  
- 	/* use the dst addr to fetch the callback of the appropriate user */
- 	mutex_lock(&vrp->endpoints_lock);
-+
- 	ept = idr_find(&vrp->endpoints, msg->dst);
-+
-+	/* let's make sure no one deallocates ept while we use it */
-+	if (ept)
-+		kref_get(&ept->refcount);
-+
- 	mutex_unlock(&vrp->endpoints_lock);
- 
- 	if (ept && ept->cb)
-@@ -798,6 +826,10 @@ static void rpmsg_recv_done(struct virtq
- 	else
- 		dev_warn(dev, "msg received with no recepient\n");
- 
-+	/* farewell, ept, we don't need you anymore */
-+	if (ept)
-+		kref_put(&ept->refcount, __ept_release);
-+
- 	/* publish the real size of the buffer */
- 	sg_init_one(&sg, msg, RPMSG_BUF_SIZE);
- 
---- a/include/linux/rpmsg.h
-+++ b/include/linux/rpmsg.h
-@@ -38,6 +38,7 @@
- #include <linux/types.h>
- #include <linux/device.h>
- #include <linux/mod_devicetable.h>
-+#include <linux/kref.h>
- 
- /* The feature bitmap for virtio rpmsg */
- #define VIRTIO_RPMSG_F_NS	0 /* RP supports name service notifications */
-@@ -120,6 +121,7 @@ typedef void (*rpmsg_rx_cb_t)(struct rpm
- /**
-  * struct rpmsg_endpoint - binds a local rpmsg address to its user
-  * @rpdev: rpmsg channel device
-+ * @refcount: when this drops to zero, the ept is deallocated
-  * @cb: rx callback handler
-  * @addr: local rpmsg address
-  * @priv: private data for the driver's use
-@@ -140,6 +142,7 @@ typedef void (*rpmsg_rx_cb_t)(struct rpm
-  */
- struct rpmsg_endpoint {
- 	struct rpmsg_channel *rpdev;
-+	struct kref refcount;
- 	rpmsg_rx_cb_t cb;
- 	u32 addr;
- 	void *priv;
+ 	case NCI_NFC_B_PASSIVE_POLL_MODE:
+ 		nfcb_poll = &ntf->activation_params.nfcb_poll_iso_dep;
+-		nfcb_poll->attrib_res_len = *data++;
++		nfcb_poll->attrib_res_len = min_t(__u8, *data++, 50);
+ 		pr_debug("attrib_res_len %d\n", nfcb_poll->attrib_res_len);
+ 		if (nfcb_poll->attrib_res_len > 0) {
+ 			memcpy(nfcb_poll->attrib_res,
 
 
