@@ -1,78 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758389Ab2GLIsO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 04:48:14 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53718 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752664Ab2GLIsI (ORCPT
+	id S932779Ab2GLItX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 04:49:23 -0400
+Received: from www.linutronix.de ([62.245.132.108]:37598 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757189Ab2GLItT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 04:48:08 -0400
-Date: Thu, 12 Jul 2012 09:47:56 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "chris@zankel.net" <chris@zankel.net>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>
-Subject: Re: [PATCH 2/3] ipc: allow compat IPC version field parsing if
- !ARCH_WANT_OLD_COMPAT_IPC
-Message-ID: <20120712084756.GB2816@mudshark.cambridge.arm.com>
-References: <1342020741-12758-1-git-send-email-will.deacon@arm.com>
- <1342020741-12758-3-git-send-email-will.deacon@arm.com>
- <20120711144001.b1f7c21d.akpm@linux-foundation.org>
+	Thu, 12 Jul 2012 04:49:19 -0400
+Date: Thu, 12 Jul 2012 10:49:17 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        RT-users <linux-rt-users@vger.kernel.org>,
+        Carsten Emde <cbe@osadl.org>
+Subject: Re: [patch RT 0/7] Various fixes for the stable RT series - part I
+In-Reply-To: <1342049492.14828.69.camel@gandalf.stny.rr.com>
+Message-ID: <alpine.LFD.2.02.1207121047310.32033@ionos>
+References: <20120711214552.036760674@linutronix.de> <1342049492.14828.69.camel@gandalf.stny.rr.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120711144001.b1f7c21d.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+On Wed, 11 Jul 2012, Steven Rostedt wrote:
 
-Thanks for picking these up.
-
-On Wed, Jul 11, 2012 at 10:40:01PM +0100, Andrew Morton wrote:
-> On Wed, 11 Jul 2012 16:32:20 +0100
-> Will Deacon <will.deacon@arm.com> wrote:
-> > diff --git a/include/linux/compat.h b/include/linux/compat.h
-> > index 4e89039..9f68e90 100644
-> > --- a/include/linux/compat.h
-> > +++ b/include/linux/compat.h
-> > @@ -256,6 +256,7 @@ compat_sys_get_robust_list(int pid, compat_uptr_t __user *head_ptr,
-> >  			   compat_size_t __user *len_ptr);
-> >  
-> >  #ifdef CONFIG_ARCH_WANT_OLD_COMPAT_IPC
-> > +#define __ARCH_WANT_COMPAT_IPC_PARSE_VERSION
-> >  long compat_sys_semctl(int first, int second, int third, void __user *uptr);
-> >  long compat_sys_msgsnd(int first, int second, int third, void __user *uptr);
-> >  long compat_sys_msgrcv(int first, int second, int msgtyp, int third,
-> > diff --git a/ipc/compat.c b/ipc/compat.c
-> > index 53cebdf..a41600f 100644
-> > --- a/ipc/compat.c
-> > +++ b/ipc/compat.c
-> > @@ -118,7 +118,7 @@ extern int sem_ctls[];
-> >  
-> >  static inline int compat_ipc_parse_version(int *cmd)
-> >  {
-> > -#ifdef CONFIG_ARCH_WANT_OLD_COMPAT_IPC
-> > +#ifdef	__ARCH_WANT_COMPAT_IPC_PARSE_VERSION
-> >  	int version = *cmd & IPC_64;
-> >  
-> >  	/* this is tricky: architectures that have support for the old
+> On Wed, 2012-07-11 at 22:05 +0000, Thomas Gleixner wrote:
+> > The following patch series is a collection of bug fixes, which should
+> > go into the 3.x based stable RT trees.
+> > 
+> > I have them locally applied to my 3.5 devel queue, but I'm still
+> > distracted by other events (leap seconds and the like) to get a 3.5
+> > devel queue released.
+> > 
+> > Steven, please pick up the lot.
+> > 
+> > I have a part II series pending which is addressing the widely
+> > observed CPU hotplug issue. I'm going to send that out soon, despite
+> > the fact that I fundamentaly hate it. Though the hotplug rework which
+> > I have in the queue has turned out to be more work than expected and
+> > there is no real way to backport all of the necessary changes into any
+> > of the existing 3.x based RT trees. So I bite the bullet and go with
+> > the workarounds to get rid of the last obstacles in the 3.x based RT
+> > series.
 > 
-> Could we do this purely in Kconfig?  Add a new
-> CONFIG_ARCH_WANT_COMPAT_IPC_PARSE_VERSION and always set it true if
-> CONFIG_ARCH_WANT_OLD_COMPAT_IPC?
+> I'll pull these in and start running my tests. I noticed that some of
+> them are Signed-off-by Carsten first. Did he author them? If so, I'll
+> make it so his name gets the git author.
+> 
+> Same for Mike Galbraith on patch 6. Only patch 7 has a 'From:' tag.
 
-That would also work, although the current approach mirrors what is done for
-the native case (i.e. this is the compat equivalent of
-__ARCH_WANT_IPC_PARSE_VERSION).
+Gah. Forgot to add the From lines. 1-4 are from Carsten, 5 is mine, 6
+is Mike and 7 is Yong.
 
-I'm not too fussed either way, so I can change it if you prefer?
+Thanks,
 
-Will
+	tglx
