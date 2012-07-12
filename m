@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162859Ab2GLXFx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:05:53 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63192 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162824Ab2GLXFl (ORCPT
+	id S1162868Ab2GLXGE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:06:04 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:54129 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162849Ab2GLXF6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 19:05:41 -0400
+	Thu, 12 Jul 2012 19:05:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Xishi Qiu <qiuxishi@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: [ 62/68] memory hotplug: fix invalid memory access caused by stale kswapd pointer
-Date: Thu, 12 Jul 2012 16:02:36 -0700
-Message-Id: <20120712175040.900359634@linuxfoundation.org>
+        Hugh Dickins <hugh@veritas.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Badari Pulavarty <pbadari@us.ibm.com>, Nick Piggin <npiggin@suse.de>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [ 66/68] mm: Hold a file reference in madvise_remove
+Date: Thu, 12 Jul 2012 16:02:40 -0700
+Message-Id: <20120712175041.247517998@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712175035.530652872@linuxfoundation.org>
 References: <20120712175057.GA9917@kroah.com>
@@ -34,109 +33,19 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Jiang Liu <jiang.liu@huawei.com>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit d8adde17e5f858427504725218c56aef90e90fc7 upstream.
+commit 9ab4233dd08036fe34a89c7dc6f47a8bf2eb29eb upstream.
 
-kswapd_stop() is called to destroy the kswapd work thread when all memory
-of a NUMA node has been offlined.  But kswapd_stop() only terminates the
-work thread without resetting NODE_DATA(nid)->kswapd to NULL.  The stale
-pointer will prevent kswapd_run() from creating a new work thread when
-adding memory to the memory-less NUMA node again.  Eventually the stale
-pointer may cause invalid memory access.
+Otherwise the code races with munmap (causing a use-after-free
+of the vma) or with close (causing a use-after-free of the struct
+file).
 
-An example stack dump as below. It's reproduced with 2.6.32, but latest
-kernel has the same issue.
+The bug was introduced by commit 90ed52ebe481 ("[PATCH] holepunch: fix
+mmap_sem i_mutex deadlock")
 
-  BUG: unable to handle kernel NULL pointer dereference at (null)
-  IP: [<ffffffff81051a94>] exit_creds+0x12/0x78
-  PGD 0
-  Oops: 0000 [#1] SMP
-  last sysfs file: /sys/devices/system/memory/memory391/state
-  CPU 11
-  Modules linked in: cpufreq_conservative cpufreq_userspace cpufreq_powersave acpi_cpufreq microcode fuse loop dm_mod tpm_tis rtc_cmos i2c_i801 rtc_core tpm serio_raw pcspkr sg tpm_bios igb i2c_core iTCO_wdt rtc_lib mptctl iTCO_vendor_support button dca bnx2 usbhid hid uhci_hcd ehci_hcd usbcore sd_mod crc_t10dif edd ext3 mbcache jbd fan ide_pci_generic ide_core ata_generic ata_piix libata thermal processor thermal_sys hwmon mptsas mptscsih mptbase scsi_transport_sas scsi_mod
-  Pid: 7949, comm: sh Not tainted 2.6.32.12-qiuxishi-5-default #92 Tecal RH2285
-  RIP: 0010:exit_creds+0x12/0x78
-  RSP: 0018:ffff8806044f1d78  EFLAGS: 00010202
-  RAX: 0000000000000000 RBX: ffff880604f22140 RCX: 0000000000019502
-  RDX: 0000000000000000 RSI: 0000000000000202 RDI: 0000000000000000
-  RBP: ffff880604f22150 R08: 0000000000000000 R09: ffffffff81a4dc10
-  R10: 00000000000032a0 R11: ffff880006202500 R12: 0000000000000000
-  R13: 0000000000c40000 R14: 0000000000008000 R15: 0000000000000001
-  FS:  00007fbc03d066f0(0000) GS:ffff8800282e0000(0000) knlGS:0000000000000000
-  CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-  CR2: 0000000000000000 CR3: 000000060f029000 CR4: 00000000000006e0
-  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-  Process sh (pid: 7949, threadinfo ffff8806044f0000, task ffff880603d7c600)
-  Stack:
-   ffff880604f22140 ffffffff8103aac5 ffff880604f22140 ffffffff8104d21e
-   ffff880006202500 0000000000008000 0000000000c38000 ffffffff810bd5b1
-   0000000000000000 ffff880603d7c600 00000000ffffdd29 0000000000000003
-  Call Trace:
-    __put_task_struct+0x5d/0x97
-    kthread_stop+0x50/0x58
-    offline_pages+0x324/0x3da
-    memory_block_change_state+0x179/0x1db
-    store_mem_state+0x9e/0xbb
-    sysfs_write_file+0xd0/0x107
-    vfs_write+0xad/0x169
-    sys_write+0x45/0x6e
-    system_call_fastpath+0x16/0x1b
-  Code: ff 4d 00 0f 94 c0 84 c0 74 08 48 89 ef e8 1f fd ff ff 5b 5d 31 c0 41 5c c3 53 48 8b 87 20 06 00 00 48 89 fb 48 8b bf 18 06 00 00 <8b> 00 48 c7 83 18 06 00 00 00 00 00 00 f0 ff 0f 0f 94 c0 84 c0
-  RIP  exit_creds+0x12/0x78
-   RSP <ffff8806044f1d78>
-  CR2: 0000000000000000
-
-[akpm@linux-foundation.org: add pglist_data.kswapd locking comments]
-Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Acked-by: David Rientjes <rientjes@google.com>
-Reviewed-by: Minchan Kim <minchan@kernel.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- include/linux/mmzone.h |    2 +-
- mm/vmscan.c            |    7 +++++--
- 2 files changed, 6 insertions(+), 3 deletions(-)
-
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -633,7 +633,7 @@ typedef struct pglist_data {
- 					     range, including holes */
- 	int node_id;
- 	wait_queue_head_t kswapd_wait;
--	struct task_struct *kswapd;
-+	struct task_struct *kswapd;	/* Protected by lock_memory_hotplug() */
- 	int kswapd_max_order;
- 	enum zone_type classzone_idx;
- } pg_data_t;
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2952,14 +2952,17 @@ int kswapd_run(int nid)
- }
- 
- /*
-- * Called by memory hotplug when all memory in a node is offlined.
-+ * Called by memory hotplug when all memory in a node is offlined.  Caller must
-+ * hold lock_memory_hotplug().
-  */
- void kswapd_stop(int nid)
- {
- 	struct task_struct *kswapd = NODE_DATA(nid)->kswapd;
- 
--	if (kswapd)
-+	if (kswapd) {
- 		kthread_stop(kswapd);
-+		NODE_DATA(nid)->kswapd = NULL;
-+	}
- }
- 
- static int __init kswapd_init(void)
-
+[bwh: Backported to 3.2:
+ - Adjust context
+ - madvise_remove() calls vmtruncate_range(), not do_fallocate()]
+[luto: Backported to 3.0: Adjust context]
 
