@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758952Ab2GLJMp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 05:12:45 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:53955 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753247Ab2GLJMo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758406Ab2GLJMo (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 12 Jul 2012 05:12:44 -0400
-Date: Thu, 12 Jul 2012 11:12:27 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Wanpeng Li <liwp.linux@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 01/10] mm: memcg: fix compaction/migration failing due to
- memcg limits
-Message-ID: <20120712091227.GA1239@cmpxchg.org>
-References: <1342026142-7284-1-git-send-email-hannes@cmpxchg.org>
- <1342026142-7284-2-git-send-email-hannes@cmpxchg.org>
- <20120712085354.GA3181@kernel>
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:8249 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752141Ab2GLJMm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 05:12:42 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 12 Jul 2012 02:08:52 -0700
+Message-ID: <4FFE94E8.8000909@nvidia.com>
+Date: Thu, 12 Jul 2012 14:42:08 +0530
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120712085354.GA3181@kernel>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH] usb: host: tegra: pass correct pointer in ehci_setup()
+References: <1342082208-14184-1-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1342082208-14184-1-git-send-email-ldewangan@nvidia.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 12, 2012 at 04:54:07PM +0800, Wanpeng Li wrote:
-> On Wed, Jul 11, 2012 at 07:02:13PM +0200, Johannes Weiner wrote:
-> >Compaction (and page migration in general) can currently be hindered
-> >through pages being owned by memory cgroups that are at their limits
-> >and unreclaimable.
-> >
-> >The reason is that the replacement page is being charged against the
-> >limit while the page being replaced is also still charged.  But this
-> >seems unnecessary, given that only one of the two pages will still be
-> >in use after migration finishes.
-> >
-> >This patch changes the memcg migration sequence so that the
-> >replacement page is not charged.  Whatever page is still in use after
-> >successful or failed migration gets to keep the charge of the page
-> >that was going to be replaced.
-> >
-> >The replacement page will still show up temporarily in the rss/cache
-> >statistics, this can be fixed in a later patch as it's less urgent.
-> 
-> So I want to know after this patch be merged if mem_cgroup_wait_acct_move
-> still make sense, if the answer is no, I will send a patch to remove it.
+Acked-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+Tested-by: Venu Byravarasu <vbyravarasu@nvidia.com>
 
-This change is about migrating a charge from one physical page to
-another, account moving is about migrating charges between groups.
+On Thursday 12 July 2012 02:06 PM, Laxman Dewangan wrote:
+> The ehci_setup() require the pointer of usb_hcd.
+> Passing the correct pointer in place of ehci_hcd
+> pointer.
+>
+> This is side effetct of change:
+> commit 1a49e2ac9651df7349867a5cf44e2c83de1046af
+> Author: Alan Stern <stern@rowland.harvard.edu>
+>
+>      EHCI: centralize controller initialization
+>
+>
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+> ---
+>   drivers/usb/host/ehci-tegra.c |    2 +-
+>   1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
+> index 9e44b1f..d2a7c95 100644
+> --- a/drivers/usb/host/ehci-tegra.c
+> +++ b/drivers/usb/host/ehci-tegra.c
+> @@ -285,7 +285,7 @@ static int tegra_ehci_setup(struct usb_hcd *hcd)
+>   	/* switch to host mode */
+>   	hcd->has_tt = 1;
+>   
+> -	retval = ehci_setup(ehci);
+> +	retval = ehci_setup(hcd);
+>   	if (retval)
+>   		return retval;
+>   
+
+
