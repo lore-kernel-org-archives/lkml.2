@@ -1,105 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934109Ab2GLQts (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 12:49:48 -0400
-Received: from mga09.intel.com ([134.134.136.24]:62152 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932532Ab2GLQtr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 12:49:47 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120712163026.GG2430@ram-ThinkPad-T61>
-References: <1341057657-7823-1-git-send-email-octavian.purdila@intel.com>
-	<20120710143348.d977da44.akpm@linux-foundation.org>
-	<20120711020902.GC13885@ram-ThinkPad-T61>
-	<CAE1zotK=2nK_pRsg8C6MuGqOKZut96MgWy-ru2dkPOQQF--U3Q@mail.gmail.com>
-	<20120711145412.GA2430@ram-ThinkPad-T61>
-	<CAE1zotJuDn+oLcUVZ0HWeAck+UD0DiveOrOO=iYz6btdOQyD6Q@mail.gmail.com>
-	<20120712020206.GC2430@ram-ThinkPad-T61>
-	<20120712085631.GD2430@ram-ThinkPad-T61>
-	<CAE1zot+iKwg5uijy7mWbxrQ3KUFYoKXuSYc0OnADmrWu7EtgLw@mail.gmail.com>
-	<20120712163026.GG2430@ram-ThinkPad-T61>
-Date: Thu, 12 Jul 2012 19:49:43 +0300
-Message-ID: <CAE1zotJWEHMBVz2dGnZhMojOn2HLV3qoVWjL_J61a79Kt=Xpxw@mail.gmail.com>
-Subject: Re: [PATCH] resource: make sure requested range intersects root range
-From: "Purdila, Octavian" <octavian.purdila@intel.com>
-To: Ram Pai <linuxram@us.ibm.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S934119Ab2GLQwm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 12:52:42 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:21475 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934084Ab2GLQwl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 12:52:41 -0400
+Message-ID: <1342111687.8472.16.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v3 1/3] acpi : cpu hot-remove returns error when
+ cpu_down() fails
+From: Toshi Kani <toshi.kani@hp.com>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org, lenb@kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com
+Date: Thu, 12 Jul 2012 10:48:07 -0600
+In-Reply-To: <4FFEB35A.6030500@jp.fujitsu.com>
+References: <4FFEB35A.6030500@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding back people on CC, I accidentally reply-to instead of reply-to-all.
+On Thu, 2012-07-12 at 20:22 +0900, Yasuaki Ishimatsu wrote:
+> Even if cpu_down() fails, acpi_processor_remove() continues to remove the cpu.
+> But in this case, it should return error number since some process may run on
+> the cpu. If the cpu has a running process and the cpu is turned the power off,
+> the system may not work well.
+> 
+> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> 
+> ---
+>  drivers/acpi/processor_driver.c |   18 ++++++++++++------
+>  1 file changed, 12 insertions(+), 6 deletions(-)
+> 
+> Index: linux-3.5-rc4/drivers/acpi/processor_driver.c
+> ===================================================================
+> --- linux-3.5-rc4.orig/drivers/acpi/processor_driver.c	2012-06-25 04:53:04.000000000 +0900
+> +++ linux-3.5-rc4/drivers/acpi/processor_driver.c	2012-07-05 21:02:58.711285382 +0900
+> @@ -610,7 +610,7 @@ err_free_pr:
+>  static int acpi_processor_remove(struct acpi_device *device, int type)
+>  {
+>  	struct acpi_processor *pr = NULL;
+> -
+> +	int ret;
+> 
+>  	if (!device || !acpi_driver_data(device))
+>  		return -EINVAL;
+> @@ -621,8 +621,9 @@ static int acpi_processor_remove(struct
+>  		goto free;
+> 
+>  	if (type == ACPI_BUS_REMOVAL_EJECT) {
+> -		if (acpi_processor_handle_eject(pr))
+> -			return -EINVAL;
+> +		ret = acpi_processor_handle_eject(pr);
+> +		if (ret)
+> +			return ret;
+>  	}
+> 
+>  	acpi_processor_power_exit(pr, device);
+> @@ -841,12 +842,17 @@ static acpi_status acpi_processor_hotadd
+> 
+>  static int acpi_processor_handle_eject(struct acpi_processor *pr)
+>  {
+> -	if (cpu_online(pr->id))
+> -		cpu_down(pr->id);
+> +	int ret;
+> +
+> +	if (cpu_online(pr->id)) {
+> +		ret = cpu_down(pr->id);
+> +		if (ret)
+> +			return ret;
+> +	}
+> 
+>  	arch_unregister_cpu(pr->id);
+>  	acpi_unmap_lsapic(pr->id);
+> -	return (0);
+> +	return ret;
 
-On Thu, Jul 12, 2012 at 7:30 PM, Ram Pai <linuxram@us.ibm.com> wrote:
-> On Thu, Jul 12, 2012 at 12:56:08PM +0300, Purdila, Octavian wrote:
->> On Thu, Jul 12, 2012 at 11:56 AM, Ram Pai <linuxram@us.ibm.com> wrote:
->
-> ..snip..
->> > Offcourse; it does not warn when the request is partially out of root's range.
->> > But that should be ok, because its still a valid request.
->>
->> Since in 99% of cases requests should be completely inside the root
->> range (in fact no bug has been reported until now on this pretty old
->> piece of code) I think being verbose here is a good thing.
->>
->> This sorts of problems occur only in exotic setups (in my case it was
->> Xen on a machine with PAE enabled but 32bit address space) and
->> silently adjusting the request will make logical bugs in the upper
->> layers very hard to detect.
->>
->> That being said, I'll leave it to you and Andrew decide which version
->> (verbose or non-verbose) is better.
->>
->> This is the last verbose version which fixes a few issues from last
->> post as well as makes a few cosmetic changes:
->
-> this version is correct. I am ok with it. Probably with one minor
-> simplication as below.
->>
->> ---
->>  kernel/resource.c |   25 ++++++++++++++++++++++++-
->>  1 file changed, 24 insertions(+), 1 deletion(-)
->>
->> diff --git a/kernel/resource.c b/kernel/resource.c
->> index e1d2b8e..c0e0fa2 100644
->> --- a/kernel/resource.c
->> +++ b/kernel/resource.c
->> @@ -7,6 +7,8 @@
->>   * Arbitrary resource management.
->>   */
->>
->> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
->> +
->>  #include <linux/export.h>
->>  #include <linux/errno.h>
->>  #include <linux/ioport.h>
->
-> these above lines must have crept in by mistake? :)
->
+ret is uninitialized when !cpu_online().
 
-No, this is intentional. Since we now use pr_err I think it useful to
-have the messages formatted like:
+Thanks,
+-Toshi
 
-<3>resource: requested range [0x%llx-0x%llx] not in root %pr
+>  }
+>  #else
+>  static acpi_status acpi_processor_hotadd_init(struct acpi_processor *pr)
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
 
->> @@ -788,8 +790,29 @@ void __init reserve_region_with_split(struct
->> resource *root,
->>               resource_size_t start, resource_size_t end,
->>               const char *name)
->>  {
->> +     int abort = 0;
->> +
->>       write_lock(&resource_lock);
->> -     __reserve_region_with_split(root, start, end, name);
->> +     if (!(root->start <= start && root->end >= end)) {
->
-> This can be simplified to
->         if (root->start > start || root->end < end) {
->
-
-Sure, I will do that. Thanks for reviewing, I will follow up with a v2
-patch to Andrew.
