@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162263Ab2GLWym (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:54:42 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:61447 "EHLO
+	id S1162231Ab2GLWyj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:54:39 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48386 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162176Ab2GLWo1 (ORCPT
+	with ESMTP id S1162199Ab2GLWoa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:44:27 -0400
+	Thu, 12 Jul 2012 18:44:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Jeff Pieper <jeffrey.e.pieper@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 143/187] e1000e: test for valid check_reset_block function pointer
-Date: Thu, 12 Jul 2012 15:34:59 -0700
-Message-Id: <20120712191535.671333252@linuxfoundation.org>
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Andiry Xu <andiry.xu@amd.com>
+Subject: [ 154/187] xhci: Fix hang on back-to-back Set TR Deq Ptr commands.
+Date: Thu, 12 Jul 2012 15:35:10 -0700
+Message-Id: <20120712191536.682479592@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -33,98 +31,107 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Bruce Allan <bruce.w.allan@intel.com>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit 470a54207ccf7045a59df727573bd9d148988582 upstream.
+commit 0d9f78a92ef5e97d9fe51d9215ebe22f6f0d289d upstream.
 
-commit 44abd5c12767a8c567dc4e45fd9aec3b13ca85e0 introduced NULL pointer
-dereferences when attempting to access the check_reset_block function
-pointer on 8257x and 80003es2lan non-copper devices.
+The Microsoft LifeChat 3000 USB headset was causing a very reproducible
+hang whenever it was plugged in.  At first, I thought the host
+controller was producing bad transfer events, because the log was filled
+with errors like:
 
-This fix should be applied back through 3.4.
+xhci_hcd 0000:00:14.0: ERROR Transfer event TRB DMA ptr not part of current TD
 
-Signed-off-by: Bruce Allan <bruce.w.allan@intel.com>
-Tested-by: Jeff Pieper <jeffrey.e.pieper@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Acked-by: David S. Miller <davem@davemloft.net>
+However, it turned out to be an xHCI driver bug in the ring expansion
+patches.  The bug is triggered When there are two ring segments, and a
+TD that ends just before a link TRB, like so:
+
+ ______________                     _____________
+|              |              ---> | setup TRB B |
+ ______________               |     _____________
+|              |              |    |  data TRB B |
+ ______________               |     _____________
+| setup TRB A  | <-- deq      |    |  data TRB B |
+ ______________               |     _____________
+| data TRB A   |              |    |             | <-- enq, deq''
+ ______________               |     _____________
+| status TRB A |              |    |             |
+ ______________               |     _____________
+|  link TRB    |---------------    |  link TRB   |
+ _____________  <--- deq'           _____________
+
+TD A (the first control transfer) stalls on the data phase.  That halts
+the ring.  The xHCI driver moves the hardware dequeue pointer to the
+first TRB after the stalled transfer, which happens to be the link TRB.
+
+Once the Set TR dequeue pointer command completes, the function
+update_ring_for_set_deq_completion runs.  That function is supposed to
+update the xHCI driver's dequeue pointer to match the internal hardware
+dequeue pointer.  On the first call this would work fine, and the
+software dequeue pointer would move to deq'.
+
+However, if the transfer immediately after that stalled (TD B in this
+case), another Set TR Dequeue command would be issued.  That would move
+the hardware dequeue pointer to deq''.  Once that command completed,
+update_ring_for_set_deq_completion would run again.
+
+The original code would unconditionally increment the software dequeue
+pointer, which moved the pointer off the ring segment into la-la-land.
+The while loop would happy increment the dequeue pointer (possibly
+wrapping it) until it matched the hardware pointer value.
+
+The while loop would also access all the memory in between the first
+ring segment and the second ring segment to determine if it was a link
+TRB.  This could cause general protection faults, although it was
+unlikely because the ring segments came from a DMA pool, and would often
+have consecutive memory addresses.
+
+If nothing in that space looked like a link TRB, the deq_seg pointer for
+the ring would remain on the first segment.  Thus, the deq_seg and the
+software dequeue pointer would get out of sync.
+
+When the next transfer event came in after the stalled transfer, the
+xHCI driver code would attempt to convert the software dequeue pointer
+into a DMA address in order to compare the DMA address for the completed
+transfer.  Since the deq_seg and the dequeue pointer were out of sync,
+xhci_trb_virt_to_dma would return NULL.
+
+The transfer event would get ignored, the transfer would eventually
+timeout, and we would mistakenly convert the finished transfer to no-op
+TRBs.  Some kernel driver (maybe xHCI?) would then get stuck in an
+infinite loop in interrupt context, and the whole machine would hang.
+
+This patch should be backported to kernels as old as 3.4, that contain
+the commit b008df60c6369ba0290fa7daa177375407a12e07 "xHCI: count free
+TRBs on transfer ring"
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Andiry Xu <andiry.xu@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/intel/e1000e/ethtool.c |    6 ++++--
- drivers/net/ethernet/intel/e1000e/mac.c     |    2 +-
- drivers/net/ethernet/intel/e1000e/netdev.c  |    4 ++--
- drivers/net/ethernet/intel/e1000e/phy.c     |    8 +++++---
- 4 files changed, 12 insertions(+), 8 deletions(-)
+ drivers/usb/host/xhci-ring.c |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
---- a/drivers/net/ethernet/intel/e1000e/ethtool.c
-+++ b/drivers/net/ethernet/intel/e1000e/ethtool.c
-@@ -258,7 +258,8 @@ static int e1000_set_settings(struct net
- 	 * When SoL/IDER sessions are active, autoneg/speed/duplex
- 	 * cannot be changed
- 	 */
--	if (hw->phy.ops.check_reset_block(hw)) {
-+	if (hw->phy.ops.check_reset_block &&
-+	    hw->phy.ops.check_reset_block(hw)) {
- 		e_err("Cannot change link characteristics when SoL/IDER is "
- 		      "active.\n");
- 		return -EINVAL;
-@@ -1604,7 +1605,8 @@ static int e1000_loopback_test(struct e1
- 	 * PHY loopback cannot be performed if SoL/IDER
- 	 * sessions are active
- 	 */
--	if (hw->phy.ops.check_reset_block(hw)) {
-+	if (hw->phy.ops.check_reset_block &&
-+	    hw->phy.ops.check_reset_block(hw)) {
- 		e_err("Cannot do PHY loopback test when SoL/IDER is active.\n");
- 		*data = 0;
- 		goto out;
---- a/drivers/net/ethernet/intel/e1000e/mac.c
-+++ b/drivers/net/ethernet/intel/e1000e/mac.c
-@@ -709,7 +709,7 @@ s32 e1000e_setup_link_generic(struct e10
- 	 * In the case of the phy reset being blocked, we already have a link.
- 	 * We do not need to set it up again.
- 	 */
--	if (hw->phy.ops.check_reset_block(hw))
-+	if (hw->phy.ops.check_reset_block && hw->phy.ops.check_reset_block(hw))
- 		return 0;
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -885,6 +885,17 @@ static void update_ring_for_set_deq_comp
+ 	num_trbs_free_temp = ep_ring->num_trbs_free;
+ 	dequeue_temp = ep_ring->dequeue;
  
- 	/*
---- a/drivers/net/ethernet/intel/e1000e/netdev.c
-+++ b/drivers/net/ethernet/intel/e1000e/netdev.c
-@@ -6209,7 +6209,7 @@ static int __devinit e1000_probe(struct
- 		adapter->hw.phy.ms_type = e1000_ms_hw_default;
- 	}
- 
--	if (hw->phy.ops.check_reset_block(hw))
-+	if (hw->phy.ops.check_reset_block && hw->phy.ops.check_reset_block(hw))
- 		e_info("PHY reset is blocked due to SOL/IDER session.\n");
- 
- 	/* Set initial default active device features */
-@@ -6376,7 +6376,7 @@ err_register:
- 	if (!(adapter->flags & FLAG_HAS_AMT))
- 		e1000e_release_hw_control(adapter);
- err_eeprom:
--	if (!hw->phy.ops.check_reset_block(hw))
-+	if (hw->phy.ops.check_reset_block && !hw->phy.ops.check_reset_block(hw))
- 		e1000_phy_hw_reset(&adapter->hw);
- err_hw_init:
- 	kfree(adapter->tx_ring);
---- a/drivers/net/ethernet/intel/e1000e/phy.c
-+++ b/drivers/net/ethernet/intel/e1000e/phy.c
-@@ -2121,9 +2121,11 @@ s32 e1000e_phy_hw_reset_generic(struct e
- 	s32 ret_val;
- 	u32 ctrl;
- 
--	ret_val = phy->ops.check_reset_block(hw);
--	if (ret_val)
--		return 0;
-+	if (phy->ops.check_reset_block) {
-+		ret_val = phy->ops.check_reset_block(hw);
-+		if (ret_val)
-+			return 0;
++	/* If we get two back-to-back stalls, and the first stalled transfer
++	 * ends just before a link TRB, the dequeue pointer will be left on
++	 * the link TRB by the code in the while loop.  So we have to update
++	 * the dequeue pointer one segment further, or we'll jump off
++	 * the segment into la-la-land.
++	 */
++	if (last_trb(xhci, ep_ring, ep_ring->deq_seg, ep_ring->dequeue)) {
++		ep_ring->deq_seg = ep_ring->deq_seg->next;
++		ep_ring->dequeue = ep_ring->deq_seg->trbs;
 +	}
- 
- 	ret_val = phy->ops.acquire(hw);
- 	if (ret_val)
++
+ 	while (ep_ring->dequeue != dev->eps[ep_index].queued_deq_ptr) {
+ 		/* We have more usable TRBs */
+ 		ep_ring->num_trbs_free++;
 
 
