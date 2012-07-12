@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759547Ab2GLWhs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:37:48 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60450 "EHLO
+	id S1161914Ab2GLXnx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:43:53 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58752 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759532Ab2GLWhh (ORCPT
+	with ESMTP id S1759548Ab2GLWhs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:37:37 -0400
+	Thu, 12 Jul 2012 18:37:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Bogdan Hamciuc <bogdan.hamciuc@freescale.com>,
         Eric Dumazet <edumazet@google.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 036/187] netpoll: fix netpoll_send_udp() bugs
-Date: Thu, 12 Jul 2012 15:33:12 -0700
-Message-Id: <20120712191525.662764129@linuxfoundation.org>
+Subject: [ 039/187] net: remove skb_orphan_try()
+Date: Thu, 12 Jul 2012 15:33:15 -0700
+Message-Id: <20120712191525.953445138@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -38,72 +35,125 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 954fba0274058d27c7c07b5ea07c41b3b7477894 ]
+[ Upstream commit 62b1a8ab9b3660bb820d8dfe23148ed6cda38574 ]
 
-Bogdan Hamciuc diagnosed and fixed following bug in netpoll_send_udp() :
+Orphaning skb in dev_hard_start_xmit() makes bonding behavior
+unfriendly for applications sending big UDP bursts : Once packets
+pass the bonding device and come to real device, they might hit a full
+qdisc and be dropped. Without orphaning, the sender is automatically
+throttled because sk->sk_wmemalloc reaches sk->sk_sndbuf (assuming
+sk_sndbuf is not too big)
 
-"skb->len += len;" instead of "skb_put(skb, len);"
+We could try to defer the orphaning adding another test in
+dev_hard_start_xmit(), but all this seems of little gain,
+now that BQL tends to make packets more likely to be parked
+in Qdisc queues instead of NIC TX ring, in cases where performance
+matters.
 
-Meaning that _if_ a network driver needs to call skb_realloc_headroom(),
-only packet headers would be copied, leaving garbage in the payload.
+Reverts commits :
+fc6055a5ba31 net: Introduce skb_orphan_try()
+87fd308cfc6b net: skb_tx_hash() fix relative to skb_orphan_try()
+and removes SKBTX_DRV_NEEDS_SK_REF flag
 
-However the skb_realloc_headroom() must be avoided as much as possible
-since it requires memory and netpoll tries hard to work even if memory
-is exhausted (using a pool of preallocated skbs)
-
-It appears netpoll_send_udp() reserved 16 bytes for the ethernet header,
-which happens to work for typicall drivers but not all.
-
-Right thing is to use LL_RESERVED_SPACE(dev)
-(And also add dev->needed_tailroom of tailroom)
-
-This patch combines both fixes.
-
-Many thanks to Bogdan for raising this issue.
-
-Reported-by: Bogdan Hamciuc <bogdan.hamciuc@freescale.com>
+Reported-and-bisected-by: Jean-Michel Hautbois <jhautbois@gmail.com>
 Signed-off-by: Eric Dumazet <edumazet@google.com>
-Tested-by: Bogdan Hamciuc <bogdan.hamciuc@freescale.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Neil Horman <nhorman@tuxdriver.com>
-Reviewed-by: Neil Horman <nhorman@tuxdriver.com>
-Reviewed-by: Cong Wang <xiyou.wangcong@gmail.com>
+Tested-by: Oliver Hartkopp <socketcan@hartkopp.net>
+Acked-by: Oliver Hartkopp <socketcan@hartkopp.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/netpoll.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ include/linux/skbuff.h |    7 ++-----
+ net/can/raw.c          |    3 ---
+ net/core/dev.c         |   23 +----------------------
+ net/iucv/af_iucv.c     |    1 -
+ 4 files changed, 3 insertions(+), 31 deletions(-)
 
---- a/net/core/netpoll.c
-+++ b/net/core/netpoll.c
-@@ -362,22 +362,23 @@ EXPORT_SYMBOL(netpoll_send_skb_on_dev);
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -225,14 +225,11 @@ enum {
+ 	/* device driver is going to provide hardware time stamp */
+ 	SKBTX_IN_PROGRESS = 1 << 2,
  
- void netpoll_send_udp(struct netpoll *np, const char *msg, int len)
+-	/* ensure the originating sk reference is available on driver level */
+-	SKBTX_DRV_NEEDS_SK_REF = 1 << 3,
+-
+ 	/* device driver supports TX zero-copy buffers */
+-	SKBTX_DEV_ZEROCOPY = 1 << 4,
++	SKBTX_DEV_ZEROCOPY = 1 << 3,
+ 
+ 	/* generate wifi status information (where possible) */
+-	SKBTX_WIFI_STATUS = 1 << 5,
++	SKBTX_WIFI_STATUS = 1 << 4,
+ };
+ 
+ /*
+--- a/net/can/raw.c
++++ b/net/can/raw.c
+@@ -681,9 +681,6 @@ static int raw_sendmsg(struct kiocb *ioc
+ 	if (err < 0)
+ 		goto free_skb;
+ 
+-	/* to be able to check the received tx sock reference in raw_rcv() */
+-	skb_shinfo(skb)->tx_flags |= SKBTX_DRV_NEEDS_SK_REF;
+-
+ 	skb->dev = dev;
+ 	skb->sk  = sk;
+ 
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -2091,25 +2091,6 @@ static int dev_gso_segment(struct sk_buf
+ 	return 0;
+ }
+ 
+-/*
+- * Try to orphan skb early, right before transmission by the device.
+- * We cannot orphan skb if tx timestamp is requested or the sk-reference
+- * is needed on driver level for other reasons, e.g. see net/can/raw.c
+- */
+-static inline void skb_orphan_try(struct sk_buff *skb)
+-{
+-	struct sock *sk = skb->sk;
+-
+-	if (sk && !skb_shinfo(skb)->tx_flags) {
+-		/* skb_tx_hash() wont be able to get sk.
+-		 * We copy sk_hash into skb->rxhash
+-		 */
+-		if (!skb->rxhash)
+-			skb->rxhash = sk->sk_hash;
+-		skb_orphan(skb);
+-	}
+-}
+-
+ static bool can_checksum_protocol(netdev_features_t features, __be16 protocol)
  {
--	int total_len, eth_len, ip_len, udp_len;
-+	int total_len, ip_len, udp_len;
- 	struct sk_buff *skb;
- 	struct udphdr *udph;
- 	struct iphdr *iph;
- 	struct ethhdr *eth;
+ 	return ((features & NETIF_F_GEN_CSUM) ||
+@@ -2195,8 +2176,6 @@ int dev_hard_start_xmit(struct sk_buff *
+ 		if (!list_empty(&ptype_all))
+ 			dev_queue_xmit_nit(skb, dev);
  
- 	udp_len = len + sizeof(*udph);
--	ip_len = eth_len = udp_len + sizeof(*iph);
--	total_len = eth_len + ETH_HLEN + NET_IP_ALIGN;
-+	ip_len = udp_len + sizeof(*iph);
-+	total_len = ip_len + LL_RESERVED_SPACE(np->dev);
+-		skb_orphan_try(skb);
+-
+ 		features = netif_skb_features(skb);
  
--	skb = find_skb(np, total_len, total_len - len);
-+	skb = find_skb(np, total_len + np->dev->needed_tailroom,
-+		       total_len - len);
- 	if (!skb)
- 		return;
+ 		if (vlan_tx_tag_present(skb) &&
+@@ -2306,7 +2285,7 @@ u16 __skb_tx_hash(const struct net_devic
+ 	if (skb->sk && skb->sk->sk_hash)
+ 		hash = skb->sk->sk_hash;
+ 	else
+-		hash = (__force u16) skb->protocol ^ skb->rxhash;
++		hash = (__force u16) skb->protocol;
+ 	hash = jhash_1word(hash, hashrnd);
  
- 	skb_copy_to_linear_data(skb, msg, len);
--	skb->len += len;
-+	skb_put(skb, len);
- 
- 	skb_push(skb, sizeof(*udph));
- 	skb_reset_transport_header(skb);
+ 	return (u16) (((u64) hash * qcount) >> 32) + qoffset;
+--- a/net/iucv/af_iucv.c
++++ b/net/iucv/af_iucv.c
+@@ -372,7 +372,6 @@ static int afiucv_hs_send(struct iucv_me
+ 			skb_trim(skb, skb->dev->mtu);
+ 	}
+ 	skb->protocol = ETH_P_AF_IUCV;
+-	skb_shinfo(skb)->tx_flags |= SKBTX_DRV_NEEDS_SK_REF;
+ 	nskb = skb_clone(skb, GFP_ATOMIC);
+ 	if (!nskb)
+ 		return -ENOMEM;
 
 
