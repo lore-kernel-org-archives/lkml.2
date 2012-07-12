@@ -1,111 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758883Ab2GLITb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 04:19:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45523 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753015Ab2GLIT1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 04:19:27 -0400
-Date: Thu, 12 Jul 2012 10:19:23 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Mel Gorman <mgorman@suse.de>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Aaditya Kumar <aaditya.kumar@ap.sony.com>
-Subject: Re: [PATCH 2/3 v3] mm: bug fix free page check in zone_watermark_ok
-Message-ID: <20120712081922.GA21018@tiehlicka.suse.cz>
-References: <1342061449-29590-1-git-send-email-minchan@kernel.org>
- <1342061449-29590-2-git-send-email-minchan@kernel.org>
+	id S1758911Ab2GLI1b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 04:27:31 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:42958 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757058Ab2GLI11 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 04:27:27 -0400
+Message-ID: <4FFE89E7.2080409@linux.vnet.ibm.com>
+Date: Thu, 12 Jul 2012 13:55:11 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1342061449-29590-2-git-send-email-minchan@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Avi Kivity <avi@redhat.com>
+CC: habanero@linux.vnet.ibm.com, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Rik van Riel <riel@redhat.com>, S390 <linux-s390@vger.kernel.org>,
+        Carsten Otte <cotte@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
+        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: Re: [PATCH RFC 0/2] kvm: Improving directed yield in PLE handler
+References: <20120709062012.24030.37154.sendpatchset@codeblue> <1341870457.2909.27.camel@oc2024037011.ibm.com> <4FFD4091.8040804@redhat.com> <4FFD86CE.9040501@linux.vnet.ibm.com> <4FFD874B.4090606@linux.vnet.ibm.com> <4FFE8787.2020806@redhat.com>
+In-Reply-To: <4FFE8787.2020806@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12071122-1396-0000-0000-0000018C5A0C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 12-07-12 11:50:48, Minchan Kim wrote:
-> In __zone_watermark_ok, free and min are signed long type
-> while z->lowmem_reserve[classzone_idx] is unsigned long type.
-> So comparision of them could be wrong due to type conversion
-> to unsigned although free_pages is minus value.
+On 07/12/2012 01:45 PM, Avi Kivity wrote:
+> On 07/11/2012 05:01 PM, Raghavendra K T wrote:
+>> On 07/11/2012 07:29 PM, Raghavendra K T wrote:
+>>> On 07/11/2012 02:30 PM, Avi Kivity wrote:
+>>>> On 07/10/2012 12:47 AM, Andrew Theurer wrote:
+>>>>>
+>>>>> For the cpu threads in the host that are actually active (in this case
+>>>>> 1/2 of them), ~50% of their time is in kernel and ~43% in guest. This
+>>>>> is for a no-IO workload, so that's just incredible to see so much cpu
+>>>>> wasted. I feel that 2 important areas to tackle are a more scalable
+>>>>> yield_to() and reducing the number of pause exits itself (hopefully by
+>>>>> just tuning ple_window for the latter).
+>>>>
+>>>> One thing we can do is autotune ple_window. If a ple exit fails to wake
+>>>> anybody (because all vcpus are either running, sleeping, or in ple
+>>>> exits) then we deduce we are not overcommitted and we can increase the
+>>>> ple window. There's the question of how to decrease it again though.
+>>>>
+>>>
+>>> I see some problem here, If I interpret situation correctly. What
+>>> happens if we have two guests with one VM having no over-commit and
+>>> other with high over-commit. (except when we have gang scheduling).
+>>>
+>> Sorry, I meant less load and high load inside the guest.
+>>
+>>> Rather we should have something tied to VM rather than rigid PLE
+>>> window.
+>
+> The problem occurs even with no overcommit at all.  One vcpu is in a
+> legitimately long pause loop.  All those exits accomplish nothing, since
+> all vcpus are scheduled.  Better to let it spin in guest mode.
+>
 
-Agreed on that
-but
-> 
-> It could return true instead of false in case of order-0 check
-> so that kswapd could sleep forever. 
+I agree. One idea is we can have a scan_window to limit the scan of all
+n vcpus each time we enter vcpu_spin, to say 2*log n initially;
 
-I am kind of lost here. How can we have negative free_pages with
-order-0? It would need to come with a negative value because 
-free_pages -= (1 << order) - 1;
-won't make it negative.
+then algorithm would be like;
 
-> It means livelock because direct reclaimer loops forever until kswapd
-> set zone->all_unreclaimable.
-> 
-> Aaditya reported this problem when he test my hotplug patch.
-> 
-> Reported-off-by: Aaditya Kumar <aaditya.kumar@ap.sony.com>
-> Tested-by: Aaditya Kumar <aaditya.kumar@ap.sony.com>
-> Signed-off-by: Aaditya Kumar <aaditya.kumar@ap.sony.com>
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
+if (yield fails)
+    increase ple_window , increase scan_window
 
-So you can add my Reviewed-by: Michal Hocko <mhocko@suse.cz>
-but the changelog could be more clear.
+if (yield succeeds)
+    decrease ple_window , decrease scan_window
 
-> ---
-> This patch isn't dependent with this series.
-> It seems to be candidate for -stable but I'm not sure because of this part.
-> So, pass the decision to akpm.
-> 
-> " - It must fix a real bug that bothers people (not a, "This could be a
->    problem..." type thing)."
 
-I am wondering what Testted-by means if "This could be a problem..."
-type thing)."
+and we have to set limit on what is max and min scan window and max and
+min ple_window.
 
-> 
->  mm/page_alloc.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index f17e6e4..627653c 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -1594,6 +1594,7 @@ static bool __zone_watermark_ok(struct zone *z, int order, unsigned long mark,
->  {
->  	/* free_pages my go negative - that's OK */
->  	long min = mark;
-> +	long lowmem_reserve = z->lowmem_reserve[classzone_idx];
->  	int o;
->  
->  	free_pages -= (1 << order) - 1;
-> @@ -1602,7 +1603,7 @@ static bool __zone_watermark_ok(struct zone *z, int order, unsigned long mark,
->  	if (alloc_flags & ALLOC_HARDER)
->  		min -= min / 4;
->  
-> -	if (free_pages <= min + z->lowmem_reserve[classzone_idx])
-> +	if (free_pages <= min + lowmem_reserve)
->  		return false;
->  	for (o = 0; o < order; o++) {
->  		/* At the next order, this order's pages become unavailable */
-> -- 
-> 1.7.9.5
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
