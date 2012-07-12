@@ -1,238 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934100Ab2GLQnq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 12:43:46 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:38224 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932714Ab2GLQnp (ORCPT
+	id S934103Ab2GLQsU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 12:48:20 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35193 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932603Ab2GLQsS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 12:43:45 -0400
-Date: Thu, 12 Jul 2012 09:43:08 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Fengguang Wu <wfg@linux.intel.com>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: rcu_dyntick and suspicious RCU usage
-Message-ID: <20120712164308.GA31584@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120709135637.GA26040@localhost>
- <20120709145724.GA27095@localhost>
- <20120710044700.GA9462@localhost>
- <20120711074924.GD3819@linux.vnet.ibm.com>
+	Thu, 12 Jul 2012 12:48:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120711074924.GD3819@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12071216-5518-0000-0000-000005FC0968
+In-Reply-To: <20120712140552.GA13745@redhat.com>
+References: <20120709180328.GA4105@redhat.com> <CAPXgP11oP4aKyg=HUNrb3z_ZbPjU+_u338sD6uhxKyJ43Z8sgQ@mail.gmail.com>
+ <1341859731.801.0.camel@mop> <20120712005405.GA1613@redhat.com>
+ <CAPXgP13J98an3GW1-aBOEk=5Vyr+is1DaPhz-UFWHBOJ2nHkKA@mail.gmail.com> <20120712140552.GA13745@redhat.com>
+From: Kay Sievers <kay@vrfy.org>
+Date: Thu, 12 Jul 2012 18:47:57 +0200
+Message-ID: <CAPXgP134KL_hxnsH4OcwGX-mv6hfaRiH9r7Tn4a5XXYzh6EZqA@mail.gmail.com>
+Subject: Re: 3.5-rc6 printk formatting problem during oom-kill.
+To: Dave Jones <davej@redhat.com>, Kay Sievers <kay@vrfy.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartmann <greg@kroah.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 11, 2012 at 12:49:24AM -0700, Paul E. McKenney wrote:
-> On Tue, Jul 10, 2012 at 12:47:00PM +0800, Fengguang Wu wrote:
-> > Hi Paul,
-> > 
-> > Fortunately this bug is bisectable and the first bad commit is:
-> > 
-> >         commit 9b2e4f1880b789be1f24f9684f7a54b90310b5c0
-> >         Author: Paul E. McKenney <paul.mckenney@linaro.org>
-> >         Date:   Fri Sep 30 12:10:22 2011 -0700
-> > 
-> >             rcu: Track idleness independent of idle tasks
-> 
-> OK, there is a problem in TINY_RCU's handling of dyntick-idle: it
-> traces while in idle.  The confusion on my part was that in TREE_RCU,
-> the nesting and dyntick-idle indication are different, while in
-> TINY_RCU they are one and the same.
-> 
-> Does the following patch help?
+On Thu, Jul 12, 2012 at 4:05 PM, Dave Jones <davej@redhat.com> wrote:
+> On Thu, Jul 12, 2012 at 03:52:17PM +0200, Kay Sievers wrote:
+>  > On Thu, Jul 12, 2012 at 2:54 AM, Dave Jones <davej@redhat.com> wrote:
+>  > > On Mon, Jul 09, 2012 at 08:48:51PM +0200, Kay Sievers wrote:
+>  >
+>  > >  > It looks fine here with the above mentioned patch:
+>  > >
+>  > > Now that that patch is in Linus tree, I've hit what's probably a different case.
+>  > > Look at the modules list in this oops..
+>  > >
+>  > > [10016.460020] BUG: soft lockup - CPU#1 stuck for 22s! [trinity-child1:24295]
+>  > > [10016.470008]  rose<4>[10016.470008]  ip_set_bitmap_ipmac<4>[10016.470008]
+>  >
+>  > > Also, I have no idea how the hell the 'Modules linked in:' line (9th line) ended up being printed /after/ the
+>  > > module listing began (2nd line).
 
-This one failed in my testing.  Please see the end for the fixed
-version, with on small but important change.
+They do not belong together. The second line is just another call to
+the same print_modules() done from:
+    arch/x86/kernel/dumpstack_64.c :: show_regs()
 
-							Thanx, Paul
+While we already called print_modules() a few cycles earlier from:
+   kernel/watchdog :: watchdog_timer_fn()
 
-> ------------------------------------------------------------------------
-> 
-> rcu: Pull TINY_RCU dyntick-idle tracing into non-idle region
-> 
-> Because TINY_RCU's idle detection keys directly off of the nesting
-> level, rather than from a separate variable as in TREE_RCU, the
-> TINY_RCU dyntick-idle tracing on transition to idle must happen
-> before the change to the nesting level.  This commit therefore makes
-> this change by passing the desired new value (rather than the old value)
-> of the nesting level in to rcu_idle_enter_common().
-> 
-> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
-> diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
-> index 547b1fe..ca3741d 100644
-> --- a/kernel/rcutiny.c
-> +++ b/kernel/rcutiny.c
-> @@ -56,24 +56,26 @@ static void __call_rcu(struct rcu_head *head,
->  static long long rcu_dynticks_nesting = DYNTICK_TASK_EXIT_IDLE;
->  
->  /* Common code for rcu_idle_enter() and rcu_irq_exit(), see kernel/rcutree.c. */
-> -static void rcu_idle_enter_common(long long oldval)
-> +static void rcu_idle_enter_common(long long newval)
->  {
->  	if (rcu_dynticks_nesting) {
->  		RCU_TRACE(trace_rcu_dyntick("--=",
-> -					    oldval, rcu_dynticks_nesting));
-> +					    rcu_dynticks_nesting, newval));
->  		return;
->  	}
-> -	RCU_TRACE(trace_rcu_dyntick("Start", oldval, rcu_dynticks_nesting));
-> +	RCU_TRACE(trace_rcu_dyntick("Start", rcu_dynticks_nesting, newval));
->  	if (!is_idle_task(current)) {
->  		struct task_struct *idle = idle_task(smp_processor_id());
->  
->  		RCU_TRACE(trace_rcu_dyntick("Error on entry: not idle task",
-> -					    oldval, rcu_dynticks_nesting));
-> +					    rcu_dynticks_nesting, newval));
->  		ftrace_dump(DUMP_ALL);
->  		WARN_ONCE(1, "Current pid: %d comm: %s / Idle pid: %d comm: %s",
->  			  current->pid, current->comm,
->  			  idle->pid, idle->comm); /* must be idle task! */
->  	}
-> +	barrier();
-> +	rcu_dynticks_nesting = newval;
->  	rcu_sched_qs(0); /* implies rcu_bh_qsctr_inc(0) */
->  }
->  
-> @@ -84,17 +86,16 @@ static void rcu_idle_enter_common(long long oldval)
->  void rcu_idle_enter(void)
->  {
->  	unsigned long flags;
-> -	long long oldval;
-> +	long long newval;
->  
->  	local_irq_save(flags);
-> -	oldval = rcu_dynticks_nesting;
->  	WARN_ON_ONCE((rcu_dynticks_nesting & DYNTICK_TASK_NEST_MASK) == 0);
->  	if ((rcu_dynticks_nesting & DYNTICK_TASK_NEST_MASK) ==
->  	    DYNTICK_TASK_NEST_VALUE)
-> -		rcu_dynticks_nesting = 0;
-> +		newval = 0;
->  	else
-> -		rcu_dynticks_nesting  -= DYNTICK_TASK_NEST_VALUE;
-> -	rcu_idle_enter_common(oldval);
-> +		newval = rcu_dynticks_nesting - DYNTICK_TASK_NEST_VALUE;
-> +	rcu_idle_enter_common(newval);
->  	local_irq_restore(flags);
->  }
->  EXPORT_SYMBOL_GPL(rcu_idle_enter);
-> @@ -105,13 +106,12 @@ EXPORT_SYMBOL_GPL(rcu_idle_enter);
->  void rcu_irq_exit(void)
->  {
->  	unsigned long flags;
-> -	long long oldval;
-> +	long long newval;
->  
->  	local_irq_save(flags);
-> -	oldval = rcu_dynticks_nesting;
-> -	rcu_dynticks_nesting--;
-> -	WARN_ON_ONCE(rcu_dynticks_nesting < 0);
-> -	rcu_idle_enter_common(oldval);
-> +	newval = rcu_dynticks_nesting - 1;
-> +	WARN_ON_ONCE(newval < 0);
-> +	rcu_idle_enter_common(newval);
->  	local_irq_restore(flags);
->  }
+>  > I tried to force all sorts of racy print_modules() calls, and kept
+>  > your trinity tool from git for hours, it looks all fine here:
+>  >
+>  > Can you easily reproduce the issue you pasted?  If, could you give me
+>  > the /dev/kmsg output?
+>
+> I've seen it a few times, always with the soft lockup trace.
+>
+> You might be able to trigger it using scripts/load-all-modules.sh
+> from trinity.git. (Assuming you have a lot of modules built, I'm
+> still trying to track down which one seems to be responsible).
 
-------------------------------------------------------------------------
+Hmm, it does not trigger your pattern. I tried adding an rmmod in that
+loop, but that crashes after a few seconds. Some modules are just not
+meant to be removed. :)
 
-rcu: Pull TINY_RCU dyntick-idle tracing into non-idle region
+I forced the watchdog to trigger by setting the timeout to 1s, but all
+looks still fine:
 
-Because TINY_RCU's idle detection keys directly off of the nesting
-level, rather than from a separate variable as in TREE_RCU, the
-TINY_RCU dyntick-idle tracing on transition to idle must happen
-before the change to the nesting level.  This commit therefore makes
-this change by passing the desired new value (rather than the old value)
-of the nesting level in to rcu_idle_enter_common().
+[   20.854010] BUG: soft lockup - CPU#0 stuck for 1000s! [trinity:247]
+[   20.854010] Modules linked in: nfnetlink xfrm_user xfrm_algo pppoe
+pppox ppp_generic slhc atm bluetooth rfkill microcode cirrus ttm
+sr_mod cdrom pcspkr drm_kms_helper drm syscopyarea sysfillrect
+sysimgblt floppy evdev ipv6
+[   20.854010] irq event stamp: 980768
+[   20.854010] hardirqs last  enabled at (980767):
+[<ffffffff814a425d>] __slab_alloc.constprop.65+0x3c9/0x408
+[   20.854010] hardirqs last disabled at (980768):
+[<ffffffff814adfaa>] apic_timer_interrupt+0x6a/0x80
+[   20.854010] softirqs last  enabled at (978462):
+[<ffffffff8103db1f>] __do_softirq+0x11f/0x170
+[   20.854010] softirqs last disabled at (978457):
+[<ffffffff814ae82c>] call_softirq+0x1c/0x30
+[   20.854010] CPU 0
+[   20.854010] Modules linked in: nfnetlink xfrm_user xfrm_algo pppoe
+pppox ppp_generic slhc atm bluetooth rfkill microcode cirrus ttm
+sr_mod cdrom pcspkr drm_kms_helper drm syscopyarea sysfillrect
+sysimgblt floppy evdev ipv6
 
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Could it possibly be that we get some sort of corruption somewhere
+else while running trinity and load modules?
 
-diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
-index 547b1fe..31a10f9 100644
---- a/kernel/rcutiny.c
-+++ b/kernel/rcutiny.c
-@@ -56,24 +56,27 @@ static void __call_rcu(struct rcu_head *head,
- static long long rcu_dynticks_nesting = DYNTICK_TASK_EXIT_IDLE;
- 
- /* Common code for rcu_idle_enter() and rcu_irq_exit(), see kernel/rcutree.c. */
--static void rcu_idle_enter_common(long long oldval)
-+static void rcu_idle_enter_common(long long newval)
- {
- 	if (rcu_dynticks_nesting) {
- 		RCU_TRACE(trace_rcu_dyntick("--=",
--					    oldval, rcu_dynticks_nesting));
-+					    rcu_dynticks_nesting, newval));
-+		rcu_dynticks_nesting = newval;
- 		return;
- 	}
--	RCU_TRACE(trace_rcu_dyntick("Start", oldval, rcu_dynticks_nesting));
-+	RCU_TRACE(trace_rcu_dyntick("Start", rcu_dynticks_nesting, newval));
- 	if (!is_idle_task(current)) {
- 		struct task_struct *idle = idle_task(smp_processor_id());
- 
- 		RCU_TRACE(trace_rcu_dyntick("Error on entry: not idle task",
--					    oldval, rcu_dynticks_nesting));
-+					    rcu_dynticks_nesting, newval));
- 		ftrace_dump(DUMP_ALL);
- 		WARN_ONCE(1, "Current pid: %d comm: %s / Idle pid: %d comm: %s",
- 			  current->pid, current->comm,
- 			  idle->pid, idle->comm); /* must be idle task! */
- 	}
-+	barrier();
-+	rcu_dynticks_nesting = newval;
- 	rcu_sched_qs(0); /* implies rcu_bh_qsctr_inc(0) */
- }
- 
-@@ -84,17 +87,16 @@ static void rcu_idle_enter_common(long long oldval)
- void rcu_idle_enter(void)
- {
- 	unsigned long flags;
--	long long oldval;
-+	long long newval;
- 
- 	local_irq_save(flags);
--	oldval = rcu_dynticks_nesting;
- 	WARN_ON_ONCE((rcu_dynticks_nesting & DYNTICK_TASK_NEST_MASK) == 0);
- 	if ((rcu_dynticks_nesting & DYNTICK_TASK_NEST_MASK) ==
- 	    DYNTICK_TASK_NEST_VALUE)
--		rcu_dynticks_nesting = 0;
-+		newval = 0;
- 	else
--		rcu_dynticks_nesting  -= DYNTICK_TASK_NEST_VALUE;
--	rcu_idle_enter_common(oldval);
-+		newval = rcu_dynticks_nesting - DYNTICK_TASK_NEST_VALUE;
-+	rcu_idle_enter_common(newval);
- 	local_irq_restore(flags);
- }
- EXPORT_SYMBOL_GPL(rcu_idle_enter);
-@@ -105,13 +107,12 @@ EXPORT_SYMBOL_GPL(rcu_idle_enter);
- void rcu_irq_exit(void)
- {
- 	unsigned long flags;
--	long long oldval;
-+	long long newval;
- 
- 	local_irq_save(flags);
--	oldval = rcu_dynticks_nesting;
--	rcu_dynticks_nesting--;
--	WARN_ON_ONCE(rcu_dynticks_nesting < 0);
--	rcu_idle_enter_common(oldval);
-+	newval = rcu_dynticks_nesting - 1;
-+	WARN_ON_ONCE(newval < 0);
-+	rcu_idle_enter_common(newval);
- 	local_irq_restore(flags);
- }
- 
-
+Kay
