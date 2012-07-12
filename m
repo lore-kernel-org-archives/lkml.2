@@ -1,96 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030725Ab2GLQYJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 12:24:09 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22196 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933647Ab2GLQYH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 12:24:07 -0400
-X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=staRmkZhtn8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=VwQbUJbxAAAA:8 a=yPCof4ZbAAAA:8 a=pGLkceISAAAA:8 a=20KFwNOVAAAA:8 a=nG6809EUImIk0zy38VsA:9 a=PUjeQqilurYA:10 a=7DSvI1NPTFQA:10 a=MSl-tDqOz04A:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1342110245.14868.7.camel@gandalf.stny.rr.com>
-Subject: [GIT PULL][v3.6] tracing: Check for allocation failure in
- __tracing_open()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Date: Thu, 12 Jul 2012 12:24:05 -0400
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1+b1 
-Content-Transfer-Encoding: 7bit
+	id S1161310Ab2GLQbw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 12:31:52 -0400
+Received: from mout6.freenet.de ([195.4.92.96]:55405 "EHLO mout6.freenet.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933647Ab2GLQbv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 12:31:51 -0400
+Message-Id: <201207121629.q6CGTatR003685@mail.maya.org>
+Date: Thu, 12 Jul 2012 18:29:37 +0200
+From: Andreas Hartmann <andihartmann@01019freenet.de>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: Joerg.Roedel@amd.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] pci: ACS quirk for AMD southbridge
+In-Reply-To: <20120712050653.20439.11009.stgit@bling.home>
+References: <20120712050653.20439.11009.stgit@bling.home>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Alex,
 
-Ingo,
+I tested the patch below against linux 3.4.4 and with this
+PCI WLAN-device:
 
-Dan found a bug that is in the queue for 3.6. Please add this for the
-3.6 queue.
+06:07.0 Network controller: Ralink corp. RT2800 802.11n PCI
+06:07.0 0280: 1814:0601
 
-Thanks,
+The device resides behind a PCI to PCI bridge:
 
-Steve
+00:14.4 PCI bridge: Advanced Micro Devices [AMD] nee ATI SBx00 PCI to PCI Bridge (rev 40) (prog-if 01 [Subtractive decode])
+00:14.4 0604: 1002:4384 (rev 40) (prog-if 01 [Subtractive decode])
 
-Please pull the latest tip/perf/core tree, which can be found at:
+The device works fine in kvm / 64bit. Surprisingly, it isn't necessary
+at all to put the PCI to PCI bridge to the VM. It's enough to put the
+WLAN-device to the VM and bind it to vfio-pci. That's all. The bridge
+isn't bound to vfio-pci (it's bound to nothing).
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-tip/perf/core
-
-Head SHA1: 93574fcc5b50cc7b8834698acb2ce947e5b6a5dc
-
-
-Dan Carpenter (1):
-      tracing: Check for allocation failure in __tracing_open()
-
-----
- kernel/trace/trace.c |    4 ++++
- 1 file changed, 4 insertions(+)
----------------------------
-commit 93574fcc5b50cc7b8834698acb2ce947e5b6a5dc
-Author: Dan Carpenter <dan.carpenter@oracle.com>
-Date:   Wed Jul 11 09:35:08 2012 +0300
-
-    tracing: Check for allocation failure in __tracing_open()
-    
-    Clean up and return -ENOMEM on if the kzalloc() fails.
-    
-    This also prevents a potential crash, as the pointer that failed to
-    allocate would be later used.
-    
-    Link: http://lkml.kernel.org/r/20120711063507.GF11812@elgon.mountain
-    
-    Cc: Frederic Weisbecker <fweisbec@gmail.com>
-    Cc: Ingo Molnar <mingo@redhat.com>
-    Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 814ff30..a120f98 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -2390,6 +2390,9 @@ __tracing_open(struct inode *inode, struct file *file)
- 
- 	iter->buffer_iter = kzalloc(sizeof(*iter->buffer_iter) * num_possible_cpus(),
- 				    GFP_KERNEL);
-+	if (!iter->buffer_iter)
-+		goto release;
-+
- 	/*
- 	 * We make a copy of the current tracer to avoid concurrent
- 	 * changes on it while we are reading.
-@@ -2451,6 +2454,7 @@ __tracing_open(struct inode *inode, struct file *file)
- 	mutex_unlock(&trace_types_lock);
- 	kfree(iter->trace);
- 	kfree(iter->buffer_iter);
-+release:
- 	seq_release_private(inode, file);
- 	return ERR_PTR(-ENOMEM);
- }
+I stripped off linux-pci because I'm no member of this list.
 
 
+Thanks.
+kind regards,
+Andreas
+
+
+Alex Williamson wrote:
+> We've confirmed that peer-to-peer between these devices is
+> not possible.  We can therefore claim that they support a
+> subset of ACS.
+> 
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Tested-by: Andreas Hartmann <andihartmann@01019freenet.de>
+> Cc: Joerg Roedel <Joerg.Roedel@amd.com>
+> ---
+> 
+> Two things about this patch make me a little nervous.  The
+> first is that I'd really like to have a pci_is_pcie() test
+> in pci_mf_no_p2p_acs_enabled(), but these devices don't
+> have a PCIe capability.  That means that if there was a
+> topology where these devices sit on a legacy PCI bus,
+> we incorrectly return that we're ACS safe here.  That leads
+> to my second problem, pciids seems to suggest that some of
+> these functions have been around for a while.  Is it just
+> this package that's peer-to-peer safe, or is it safe to
+> assume that any previous assembly of these functions is
+> also p2p safe.  Maybe we need to factor in device revs if
+> that uniquely identifies this package?
+> 
+> Looks like another useful device to potentially quirk
+> would be:
+> 
+> 00:15.0 PCI bridge: Advanced Micro Devices [AMD] nee ATI SB700/SB800/SB900 PCI to PCI bridge (PCIE port 0)
+> 00:15.1 PCI bridge: Advanced Micro Devices [AMD] nee ATI SB700/SB800/SB900 PCI to PCI bridge (PCIE port 1)
+> 00:15.2 PCI bridge: Advanced Micro Devices [AMD] nee ATI SB900 PCI to PCI bridge (PCIE port 2)
+> 00:15.3 PCI bridge: Advanced Micro Devices [AMD] nee ATI SB900 PCI to PCI bridge (PCIE port 3)
+> 
+> 00:15.0 0604: 1002:43a0
+> 00:15.1 0604: 1002:43a1
+> 00:15.2 0604: 1002:43a2
+> 00:15.3 0604: 1002:43a3
+> 
+>  drivers/pci/quirks.c |   29 +++++++++++++++++++++++++++++
+>  1 file changed, 29 insertions(+)
+> 
+> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+> index 4ebc865..2c84961 100644
+> --- a/drivers/pci/quirks.c
+> +++ b/drivers/pci/quirks.c
+> @@ -3271,11 +3271,40 @@ struct pci_dev *pci_get_dma_source(struct pci_dev *dev)
+>  	return pci_dev_get(dev);
+>  }
+>  
+> +/*
+> + * Multifunction devices that do not support peer-to-peer between
+> + * functions can claim to support a subset of ACS.  Such devices
+> + * effectively enable request redirect (RR) and completion redirect (CR)
+> + * since all transactions are redirected to the upstream root complex.
+> + */
+> +static int pci_mf_no_p2p_acs_enabled(struct pci_dev *dev, u16 acs_flags)
+> +{
+> +	if (!dev->multifunction)
+> +		return -ENODEV;
+> +
+> +	/* Filter out flags not applicable to multifunction */
+> +	acs_flags &= (PCI_ACS_RR | PCI_ACS_CR | PCI_ACS_EC | PCI_ACS_DT);
+> +
+> +	return acs_flags & ~(PCI_ACS_RR | PCI_ACS_CR) ? 0 : 1;
+> +}
+> +
+>  static const struct pci_dev_acs_enabled {
+>  	u16 vendor;
+>  	u16 device;
+>  	int (*acs_enabled)(struct pci_dev *dev, u16 acs_flags);
+>  } pci_dev_acs_enabled[] = {
+> +	/*
+> +	 * AMD/ATI multifunction southbridge devices.  AMD has confirmed
+> +	 * that peer-to-peer between these devices is not possible, so
+> +	 * they do support a subset of ACS even though the capability is
+> +	 * not exposed in config space.
+> +	 */
+> +	{ PCI_VENDOR_ID_ATI, 0x4385, pci_mf_no_p2p_acs_enabled },
+> +	{ PCI_VENDOR_ID_ATI, 0x439c, pci_mf_no_p2p_acs_enabled },
+> +	{ PCI_VENDOR_ID_ATI, 0x4383, pci_mf_no_p2p_acs_enabled },
+> +	{ PCI_VENDOR_ID_ATI, 0x439d, pci_mf_no_p2p_acs_enabled },
+> +	{ PCI_VENDOR_ID_ATI, 0x4384, pci_mf_no_p2p_acs_enabled },
+> +	{ PCI_VENDOR_ID_ATI, 0x4399, pci_mf_no_p2p_acs_enabled },
+>  	{ 0 }
+>  };
+>  
+> 
