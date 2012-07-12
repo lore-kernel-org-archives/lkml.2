@@ -1,100 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758268Ab2GLH01 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 03:26:27 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:47800 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752760Ab2GLH00 (ORCPT
+	id S932414Ab2GLH0y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 03:26:54 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:58556 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752803Ab2GLH0w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 03:26:26 -0400
-X-Authenticated: #118086913
-X-Provags-ID: V01U2FsdGVkX187FG4Cyq07NMDkaFURX81CIQFcKXFt4npTsVZQSZ
-	LZ8mwQA6/F8l0Q
-Message-ID: <4FFE7C1F.7080702@gmx.net>
-Date: Thu, 12 Jul 2012 09:26:23 +0200
-From: Andreas Schallenberg <embedded@gmx.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Thu, 12 Jul 2012 03:26:52 -0400
+Message-ID: <4FFE7C38.9020800@googlemail.com>
+Date: Thu, 12 Jul 2012 09:26:48 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: UIO: missing resource mapping
+To: Rabeeh Khoury <rabeeh@solid-run.com>
+CC: Chris Ball <cjb@laptop.org>, Anton Vorontsov <cbouatmailru@gmail.com>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Manuel Lauss <manuel.lauss@googlemail.com>, linux-mmc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [RESEND PATCH v1 1/2] mmc: sdhci-dove: Add SDHCI_QUIRK_NO_HISPD_BIT
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Bump. There has been no discussion on this patch nor on patch 2/2. Is there
+anybody out there willing to test and confirm these patches?
+--
+The sdio controller on dove doesn't have a bit to indicate
+high-speed. With the quirk set it fixes accessing high-speed
+sdcards.
 
-I'm doing experiments with the Userspace IO driver (UIO_PCI_GENERIC) and 
-a set of PCIe cards. The kernel version is 3.4.4, CPU is a Marvell 
-MV78200 (ARMv5te). Example with an Intel ethernet card:
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>
+Cc: Chris Ball <cjb@laptop.org>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: Shawn Guo <shawn.guo@linaro.org>
+Cc: Manuel Lauss <manuel.lauss@googlemail.com>
+Cc: linux-mmc@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+---
+  drivers/mmc/host/sdhci-dove.c |    3 ++-
+  1 file changed, 2 insertions(+), 1 deletion(-)
 
-This makes /dev/uio0 appear
-echo -n "8086 10d3" >/sys/bus/pci/drivers/uio_pci_generic/new_id
-
-# lspci -v -k -s 0000:00:01.0
-00:01.0 Ethernet controller: Intel Corporation 82574L Gigabit Network 
-Connection
-         Subsystem: Intel Corporation Gigabit CT Desktop Adapter
-         Flags: bus master, fast devsel, latency 0, IRQ 36
-         Memory at c00c0000 (32-bit, non-prefetchable) [size=128K]
-         Memory at c0000000 (32-bit, non-prefetchable) [size=512K]
-         I/O ports at f0800000 [size=32]
-         Memory at c00e0000 (32-bit, non-prefetchable) [size=16K]
-         [virtual] Expansion ROM at c0080000 [disabled] [size=256K]
-         Capabilities: [c8] Power Management version 2
-         Capabilities: [d0] MSI: Enable- Count=1/1 Maskable- 64bit+
-         Capabilities: [e0] Express Endpoint, MSI 00
-         Capabilities: [a0] MSI-X: Enable- Count=5 Masked-
-         Capabilities: [100] Advanced Error Reporting
-         Capabilities: [140] Device Serial Number 00-1b-21-ff-ff-c4-f7-2f
-         Kernel driver in use: uio_pci_generic
-
-Suprisingly, there is no "maps" directory in /sys/class/uio/uio0 now. I 
-made a small change to the UIO code:
-
-diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
-index a783d53..b639654 100644
---- a/drivers/uio/uio.c
-+++ b/drivers/uio/uio.c
-@@ -274,8 +274,10 @@ static int uio_dev_add_attributes(struct uio_device 
-*idev)
-
-         for (mi = 0; mi < MAX_UIO_MAPS; mi++) {
-                 mem = &idev->info->mem[mi];
--               if (mem->size == 0)
--                       break;
-+               if (mem->size == 0) {
-+                       dev_err(idev->dev, "map %d has zero size\n", mi);
-+                       continue; // was: break
-+               }
-                 if (!map_found) {
-                         map_found = 1;
-                         idev->map_dir = kobject_create_and_add("maps",
-
-If I have this in the kernel and give the "echo" command as shown above 
-I get:
-[   43.761723] uio uio0: map 0 has zero size
-[   43.765760] uio uio0: map 1 has zero size
-[   43.769787] uio uio0: map 2 has zero size
-[   43.774298] uio uio0: map 3 has zero size
-[   43.778333] uio uio0: map 4 has zero size
-
-On the other hand, I can see the resources:
-# cat /sys/class/uio/uio0/device/resource
-0x00000000c00c0000 0x00000000c00dffff 0x0000000000040200
-0x00000000c0000000 0x00000000c007ffff 0x0000000000040200
-0x00000000f0800000 0x00000000f080001f 0x0000000000040101
-0x00000000c00e0000 0x00000000c00e3fff 0x0000000000040200
-...more...
-
-Looking further at the code, I cannot see where the mem fields are being 
-filled at all.
-Which code is supposed to write the struct uio_mem?
-
-Best,
-Andreas
-
-
+diff --git a/drivers/mmc/host/sdhci-dove.c b/drivers/mmc/host/sdhci-dove.c
+index 177f697..9c85368 100644
+--- a/drivers/mmc/host/sdhci-dove.c
++++ b/drivers/mmc/host/sdhci-dove.c
+@@ -66,7 +66,8 @@ static struct sdhci_pltfm_data sdhci_dove_pdata = {
+  	.quirks	= SDHCI_QUIRK_NO_SIMULT_VDD_AND_POWER |
+  		  SDHCI_QUIRK_NO_BUSY_IRQ |
+  		  SDHCI_QUIRK_BROKEN_TIMEOUT_VAL |
+-		  SDHCI_QUIRK_FORCE_DMA,
++		  SDHCI_QUIRK_FORCE_DMA |
++		  SDHCI_QUIRK_NO_HISPD_BIT,
+  };
+   static int __devinit sdhci_dove_probe(struct platform_device *pdev)
+-- 
+1.7.10
 
