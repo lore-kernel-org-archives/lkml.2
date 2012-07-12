@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759197Ab2GLMcA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 08:32:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29212 "EHLO mx1.redhat.com"
+	id S1759203Ab2GLMcL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 08:32:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8342 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758998Ab2GLMb6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 08:31:58 -0400
-Message-ID: <4FFEC3A8.6000000@redhat.com>
-Date: Thu, 12 Jul 2012 15:31:36 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1758979Ab2GLMcI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 08:32:08 -0400
+Message-ID: <4FFEC342.2060107@redhat.com>
+Date: Thu, 12 Jul 2012 08:29:54 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-CC: habanero@linux.vnet.ibm.com, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Rik van Riel <riel@redhat.com>, S390 <linux-s390@vger.kernel.org>,
-        Carsten Otte <cotte@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
-        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
-        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Subject: Re: [PATCH RFC 0/2] kvm: Improving directed yield in PLE handler
-References: <20120709062012.24030.37154.sendpatchset@codeblue> <1341870457.2909.27.camel@oc2024037011.ibm.com> <4FFD4091.8040804@redhat.com> <4FFD86CE.9040501@linux.vnet.ibm.com> <4FFD874B.4090606@linux.vnet.ibm.com> <4FFE8787.2020806@redhat.com> <4FFE89E7.2080409@linux.vnet.ibm.com>
-In-Reply-To: <4FFE89E7.2080409@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+To: Jan Ceuleers <jan.ceuleers@computer.org>
+CC: John Stultz <johnstul@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, stable@vger.kernel.org
+Subject: Re: [PATCH 1/6] hrtimer: Provide clock_was_set_delayed()
+References: <1341960205-56738-1-git-send-email-johnstul@us.ibm.com> <1341960205-56738-2-git-send-email-johnstul@us.ibm.com> <4FFD6E5A.9060206@redhat.com> <alpine.LFD.2.02.1207111425260.32033@ionos> <1342011904.3462.152.camel@twins> <alpine.LFD.2.02.1207111539060.32033@ionos> <4FFDAE1D.3050008@us.ibm.com> <4FFE804A.8070205@computer.org>
+In-Reply-To: <4FFE804A.8070205@computer.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/12/2012 11:25 AM, Raghavendra K T wrote:
->>
->> The problem occurs even with no overcommit at all.  One vcpu is in a
->> legitimately long pause loop.  All those exits accomplish nothing, since
->> all vcpus are scheduled.  Better to let it spin in guest mode.
->>
+
+
+On 07/12/2012 03:44 AM, Jan Ceuleers wrote:
+> On 07/11/2012 06:47 PM, John Stultz wrote:
+>> I'll see if my worry is unfounded, but it might be a bit too clever for rare events.
 > 
-> I agree. One idea is we can have a scan_window to limit the scan of all
-> n vcpus each time we enter vcpu_spin, to say 2*log n initially;
+> Full ACK.
+> 
+> There is an unfortunate history of critical-to-moderately-serious bugs in
+> the leap second handling, so I submit that what is needed is a simple,
+> obviously-correct and robust mechanism. Robust statically, but also in the
+> face of code churn because these code paths are exercised so rarely out in
+> the wild.
+> 
+> Just my opinion, FWIW.
+> 
 
-Not sure I agree.  The subset that we scan is in no way special, there's
-no reason to suppose it would be effective.
+Ditto - and it's not just FWIW.
 
-We can make the loop exit time scale with the number of vcpus to account
-for the greater effort needed to wake a vcpu.
+John (and everyone else), I think we're over-thinking this.  Would it be nice to
+get an extremely elegant solution to this?  Yeah ... it would.  But the reality
+is that we're not going to get there and IMO we're making things too complex for
+this little piece of code.
 
+Acked-by: Prarit Bhargava <prarit@redhat.com>
 
--- 
-error compiling committee.c: too many arguments to function
+IMO, this is the simplest way to move forward with this code.
 
+P.
 
