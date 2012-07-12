@@ -1,65 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030719Ab2GLQTr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 12:19:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19881 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934076Ab2GLQTp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 12:19:45 -0400
-Message-ID: <1342109982.10815.20.camel@ul30vt>
-Subject: Re: [PATCH v3 0/2] kvm: level irqfd and new eoifd
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Jan Kiszka <jan.kiszka@siemens.com>, "mst@redhat.com" <mst@redhat.com>,
-        "gleb@redhat.com" <gleb@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 12 Jul 2012 10:19:42 -0600
-In-Reply-To: <4FFE9A6F.3080607@redhat.com>
-References: <20120703191106.6735.78272.stgit@bling.home>
-	  <4FFD4D0A.2000202@redhat.com> <4FFD52E7.3030806@siemens.com>
-	  <4FFD5A2B.2040605@redhat.com> <4FFD6221.1060304@siemens.com>
-	  <4FFD68C3.7000504@redhat.com> <1342036673.2229.17.camel@bling.home>
-	 <4FFE9A6F.3080607@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
+	id S1030725Ab2GLQYJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 12:24:09 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22196 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933647Ab2GLQYH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 12:24:07 -0400
+X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=staRmkZhtn8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=VwQbUJbxAAAA:8 a=yPCof4ZbAAAA:8 a=pGLkceISAAAA:8 a=20KFwNOVAAAA:8 a=nG6809EUImIk0zy38VsA:9 a=PUjeQqilurYA:10 a=7DSvI1NPTFQA:10 a=MSl-tDqOz04A:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1342110245.14868.7.camel@gandalf.stny.rr.com>
+Subject: [GIT PULL][v3.6] tracing: Check for allocation failure in
+ __tracing_open()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Date: Thu, 12 Jul 2012 12:24:05 -0400
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1+b1 
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-07-12 at 12:35 +0300, Avi Kivity wrote:
-> On 07/11/2012 10:57 PM, Alex Williamson wrote:
-> >> 
-> >> > We still have classic KVM device assignment to provide fast-path INTx.
-> >> > But if we want to replace it midterm, I think it's necessary for VFIO to
-> >> > be able to provide such a path as well.
-> >> 
-> >> I would like VFIO to have no regressions vs. kvm device assignment,
-> >> except perhaps in uncommon corner cases.  So I agree.
-> > 
-> > I ran a few TCP_RR netperf tests forcing a 1Gb tg3 nic to use INTx.
-> > Without irqchip support vfio gets a bit more than 60% of KVM device
-> > assignment.  That's a little bit of an unfair comparison since it's more
-> > than just the I/O path.  With the proposed interfaces here, enabling
-> > irqchip, vfio is within 10% of KVM device assignment for INTx.  For MSI,
-> > I can actually make vfio come out more than 30% better than KVM device
-> > assignment if I send the eventfd from the hard irq handler.  Using a
-> > threaded handler as the code currently does, vfio is still behind KVM.
-> > It's hard to beat a direct call chain.
-> 
-> We can have a direct call chain with vfio too, using a custom eventfd
-> poll function, no?  Assuming we set up a fast path for unicast msi.
 
-You'll have to help me out a little, eventfd_signal walks the wait_queue
-and calls each function.  On the injection path that includes
-irqfd_wakeup.  For an MSI that seems to already provide direct
-injection.  For level we'll schedule_work, so that explains the overhead
-in that path, but it's not too dissimilar to a a threaded irq.  vfio
-does something very similar, so there's a schedule_work both on inject
-and on eoi.  I'll have to check whether anything prevents the unmask
-from the wait_queue function in vfio, that could be a significant chunk
-of the gap.  Where's the custom poll function come into play?  Thanks,
+Ingo,
 
-Alex
+Dan found a bug that is in the queue for 3.6. Please add this for the
+3.6 queue.
+
+Thanks,
+
+Steve
+
+Please pull the latest tip/perf/core tree, which can be found at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+tip/perf/core
+
+Head SHA1: 93574fcc5b50cc7b8834698acb2ce947e5b6a5dc
+
+
+Dan Carpenter (1):
+      tracing: Check for allocation failure in __tracing_open()
+
+----
+ kernel/trace/trace.c |    4 ++++
+ 1 file changed, 4 insertions(+)
+---------------------------
+commit 93574fcc5b50cc7b8834698acb2ce947e5b6a5dc
+Author: Dan Carpenter <dan.carpenter@oracle.com>
+Date:   Wed Jul 11 09:35:08 2012 +0300
+
+    tracing: Check for allocation failure in __tracing_open()
+    
+    Clean up and return -ENOMEM on if the kzalloc() fails.
+    
+    This also prevents a potential crash, as the pointer that failed to
+    allocate would be later used.
+    
+    Link: http://lkml.kernel.org/r/20120711063507.GF11812@elgon.mountain
+    
+    Cc: Frederic Weisbecker <fweisbec@gmail.com>
+    Cc: Ingo Molnar <mingo@redhat.com>
+    Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 814ff30..a120f98 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -2390,6 +2390,9 @@ __tracing_open(struct inode *inode, struct file *file)
+ 
+ 	iter->buffer_iter = kzalloc(sizeof(*iter->buffer_iter) * num_possible_cpus(),
+ 				    GFP_KERNEL);
++	if (!iter->buffer_iter)
++		goto release;
++
+ 	/*
+ 	 * We make a copy of the current tracer to avoid concurrent
+ 	 * changes on it while we are reading.
+@@ -2451,6 +2454,7 @@ __tracing_open(struct inode *inode, struct file *file)
+ 	mutex_unlock(&trace_types_lock);
+ 	kfree(iter->trace);
+ 	kfree(iter->buffer_iter);
++release:
+ 	seq_release_private(inode, file);
+ 	return ERR_PTR(-ENOMEM);
+ }
+
 
