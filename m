@@ -1,135 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161069Ab2GLUx3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 16:53:29 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:52204 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932901Ab2GLUx2 (ORCPT
+	id S1161138Ab2GLUxn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 16:53:43 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:36678 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161082Ab2GLUxj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 16:53:28 -0400
+	Thu, 12 Jul 2012 16:53:39 -0400
 From: Eldad Zack <eldad@fogrefinery.com>
 To: Andrew Morton <akpm@linux-foundation.org>, Joe Perches <joe@perches.com>,
         linux-kernel@vger.kernel.org (open list)
 Cc: Eldad Zack <eldad@fogrefinery.com>,
         "J. Bruce Fields" <bfields@fieldses.org>
-Subject: [PATCH 1/2] kstrto*: add documentation
-Date: Thu, 12 Jul 2012 22:53:13 +0200
-Message-Id: <1342126395-18055-1-git-send-email-eldad@fogrefinery.com>
+Subject: [PATCH 2/2] simple_strto*: annotate function as obsolete
+Date: Thu, 12 Jul 2012 22:53:14 +0200
+Message-Id: <1342126395-18055-2-git-send-email-eldad@fogrefinery.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1342126395-18055-1-git-send-email-eldad@fogrefinery.com>
+References: <1342126395-18055-1-git-send-email-eldad@fogrefinery.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As J. Bruce Fields <bfields@fieldses.org> pointed out, kstrto* is
-currently lacking kerneldoc comments.
-This patch adds kerneldoc comments to common variants of kstrto*:
-kstrto(u)l, kstrto(u)ll and kstrto(u)int.
+This patch update the documentation to simple_strto* to reflect
+that it has been obsoleted and advise the usage of kstrto*.
 
 Cc: J. Bruce Fields <bfields@fieldses.org>
 Signed-off-by: Eldad Zack <eldad@fogrefinery.com>
 ---
- include/linux/kernel.h |   36 ++++++++++++++++++++++++++++++++++++
- lib/kstrtox.c          |   18 ++++++++++++++++++
- 2 files changed, 54 insertions(+)
+ lib/vsprintf.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index e07f5e0..582df0f 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -220,6 +220,16 @@ int __must_check _kstrtol(const char *s, unsigned int base, long *res);
- 
- int __must_check kstrtoull(const char *s, unsigned int base, unsigned long long *res);
- int __must_check kstrtoll(const char *s, unsigned int base, long long *res);
-+
-+/**
-+ * kstrtoul - convert a string to an unsigned long
-+ * @s: The start of the string
-+ * @base: The number base to use
-+ * @res: Where to write the result of the conversion if successful
+diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+index c3f36d41..1980cf3 100644
+--- a/lib/vsprintf.c
++++ b/lib/vsprintf.c
+@@ -38,6 +38,8 @@
+  * @cp: The start of the string
+  * @endp: A pointer to the end of the parsed string will be placed here
+  * @base: The number base to use
 + *
-+ * Returns 0 on success, -ERANGE on overflow and -EINVAL on parsing error.
-+ * Used as a replacement for the obsolete simple_strtoul.
-+ */
- static inline int __must_check kstrtoul(const char *s, unsigned int base, unsigned long *res)
++ * This function is obsolete. Please use kstrtoull instead.
+  */
+ unsigned long long simple_strtoull(const char *cp, char **endp, unsigned int base)
  {
- 	/*
-@@ -233,6 +243,15 @@ static inline int __must_check kstrtoul(const char *s, unsigned int base, unsign
- 		return _kstrtoul(s, base, res);
- }
- 
-+/**
-+ * kstrtol - convert a string to a long
-+ * @s: The start of the string
-+ * @base: The number base to use
-+ * @res: Where to write the result of the conversion if successful
+@@ -61,6 +63,8 @@ EXPORT_SYMBOL(simple_strtoull);
+  * @cp: The start of the string
+  * @endp: A pointer to the end of the parsed string will be placed here
+  * @base: The number base to use
 + *
-+ * Returns 0 on success, -ERANGE on overflow and -EINVAL on parsing error.
-+ * Used as a replacement for the obsolete simple_strtol.
-+ */
- static inline int __must_check kstrtol(const char *s, unsigned int base, long *res)
++ * This function is obsolete. Please use kstrtoul instead.
+  */
+ unsigned long simple_strtoul(const char *cp, char **endp, unsigned int base)
  {
- 	/*
-@@ -246,7 +265,24 @@ static inline int __must_check kstrtol(const char *s, unsigned int base, long *r
- 		return _kstrtol(s, base, res);
- }
- 
-+/**
-+ * kstrtouint - convert a string to an unsigned int
-+ * @s: The start of the string
-+ * @base: The number base to use
-+ * @res: Where to write the result of the conversion if successful
+@@ -73,6 +77,8 @@ EXPORT_SYMBOL(simple_strtoul);
+  * @cp: The start of the string
+  * @endp: A pointer to the end of the parsed string will be placed here
+  * @base: The number base to use
 + *
-+ * Returns 0 on success, -ERANGE on overflow and -EINVAL on parsing error.
-+ */
- int __must_check kstrtouint(const char *s, unsigned int base, unsigned int *res);
-+
-+/**
-+ * kstrtoint - convert a string to an int
-+ * @s: The start of the string
-+ * @base: The number base to use
-+ * @res: Where to write the result of the conversion if successful
-+ *
-+ * Returns 0 on success, -ERANGE on overflow and -EINVAL on parsing error.
-+ */
- int __must_check kstrtoint(const char *s, unsigned int base, int *res);
- 
- static inline int __must_check kstrtou64(const char *s, unsigned int base, u64 *res)
-diff --git a/lib/kstrtox.c b/lib/kstrtox.c
-index c3615ea..7f5bca2 100644
---- a/lib/kstrtox.c
-+++ b/lib/kstrtox.c
-@@ -104,6 +104,15 @@ static int _kstrtoull(const char *s, unsigned int base, unsigned long long *res)
- 	return 0;
- }
- 
-+/**
-+ * kstrtoull - convert a string to an unsigned long long
-+ * @s: The start of the string
-+ * @base: The number base to use
-+ * @res: Where to write the result of the conversion if successful
-+ *
-+ * Returns 0 on success, -ERANGE on overflow and -EINVAL on parsing error.
-+ * Used as a replacement for the obsolete simple_strtoull.
-+ */
- int kstrtoull(const char *s, unsigned int base, unsigned long long *res)
++ * This function is obsolete. Please use kstrtol instead.
+  */
+ long simple_strtol(const char *cp, char **endp, unsigned int base)
  {
- 	if (s[0] == '+')
-@@ -112,6 +121,15 @@ int kstrtoull(const char *s, unsigned int base, unsigned long long *res)
- }
- EXPORT_SYMBOL(kstrtoull);
- 
-+/**
-+ * kstrtoll - convert a string to a long long
-+ * @s: The start of the string
-+ * @base: The number base to use
-+ * @res: Where to write the result of the conversion if successful
+@@ -88,6 +94,8 @@ EXPORT_SYMBOL(simple_strtol);
+  * @cp: The start of the string
+  * @endp: A pointer to the end of the parsed string will be placed here
+  * @base: The number base to use
 + *
-+ * Returns 0 on success, -ERANGE on overflow and -EINVAL on parsing error.
-+ * Used as a replacement for the obsolete simple_strtoll.
-+ */
- int kstrtoll(const char *s, unsigned int base, long long *res)
++ * This function is obsolete. Please use kstrtoll instead.
+  */
+ long long simple_strtoll(const char *cp, char **endp, unsigned int base)
  {
- 	unsigned long long tmp;
 -- 
 1.7.10.4
 
