@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161396Ab2GLRNG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 13:13:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37661 "EHLO mx1.redhat.com"
+	id S1161413Ab2GLRNO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 13:13:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34494 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932521Ab2GLRND (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 13:13:03 -0400
-Date: Thu, 12 Jul 2012 19:10:17 +0200
+	id S1161398Ab2GLRNL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 13:13:11 -0400
+Date: Thu, 12 Jul 2012 19:10:20 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Anton Arapov <anton@redhat.com>, Hugh Dickins <hughd@google.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/4] uprobes: introduce vaddr_to_offset(vma, vaddr)
-Message-ID: <20120712171017.GA25497@redhat.com>
+Subject: [PATCH 2/4] uprobes: fix register_for_each_vma()->vma_address()
+	check
+Message-ID: <20120712171020.GA25500@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -24,57 +25,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the new helper, vaddr_to_offset(vma, vaddr) which returns the
-offset in vma->vm_file this vaddr is mapped at.
+1. register_for_each_vma() checks that vma_address() == vaddr but
+   this is not enough. We should also ensure that vaddr >= vm_start,
+   find_vma() guarantees "vaddr < vm_end" only.
 
-Change build_probe_list() and find_active_uprobe() to use the new
-helper, the next patch adds another user.
+2. After the prevous changes, register_for_each_vma() is the only
+   reason why vma_address() has to return loff_t, all other users
+   know that we have the valid mapping at this offset and thus the
+   overflow is not possible.
+
+   Change the code to use vaddr_to_offset() instead, imho this looks
+   more clean/understandable and now we can change vma_address().
+
+3. While at it, remove the unnecessary type-cast.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- kernel/events/uprobes.c |   14 ++++++++------
- 1 files changed, 8 insertions(+), 6 deletions(-)
+ kernel/events/uprobes.c |    9 +++++----
+ 1 files changed, 5 insertions(+), 4 deletions(-)
 
 diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index c825404..5c87042 100644
+index 5c87042..734e199 100644
 --- a/kernel/events/uprobes.c
 +++ b/kernel/events/uprobes.c
-@@ -122,6 +122,11 @@ static loff_t vma_address(struct vm_area_struct *vma, loff_t offset)
- 	return vaddr;
- }
+@@ -823,12 +823,13 @@ static int register_for_each_vma(struct uprobe *uprobe, bool is_register)
+ 			goto free;
  
-+static loff_t vaddr_to_offset(struct vm_area_struct *vma, unsigned long vaddr)
-+{
-+	return ((loff_t)vma->vm_pgoff << PAGE_SHIFT) + (vaddr - vma->vm_start);
-+}
-+
- /**
-  * __replace_page - replace page in vma by new page.
-  * based on replace_page in mm/ksm.c
-@@ -978,7 +983,7 @@ static void build_probe_list(struct inode *inode,
- 	struct uprobe *u;
+ 		down_write(&mm->mmap_sem);
+-		vma = find_vma(mm, (unsigned long)info->vaddr);
+-		if (!vma || !valid_vma(vma, is_register))
++		vma = find_vma(mm, info->vaddr);
++		if (!vma || !valid_vma(vma, is_register) ||
++		    vma->vm_file->f_mapping->host != uprobe->inode)
+ 			goto unlock;
  
- 	INIT_LIST_HEAD(head);
--	min = ((loff_t)vma->vm_pgoff << PAGE_SHIFT) + start - vma->vm_start;
-+	min = vaddr_to_offset(vma, start);
- 	max = min + (end - start) - 1;
+-		if (vma->vm_file->f_mapping->host != uprobe->inode ||
+-		    vma_address(vma, uprobe->offset) != info->vaddr)
++		if (vma->vm_start > info->vaddr ||
++		    vaddr_to_offset(vma, info->vaddr) != uprobe->offset)
+ 			goto unlock;
  
- 	spin_lock_irqsave(&uprobes_treelock, flags);
-@@ -1442,12 +1447,9 @@ static struct uprobe *find_active_uprobe(unsigned long bp_vaddr, int *is_swbp)
- 	vma = find_vma(mm, bp_vaddr);
- 	if (vma && vma->vm_start <= bp_vaddr) {
- 		if (valid_vma(vma, false)) {
--			struct inode *inode;
--			loff_t offset;
-+			struct inode *inode = vma->vm_file->f_mapping->host;
-+			loff_t offset = vaddr_to_offset(vma, bp_vaddr);
- 
--			inode = vma->vm_file->f_mapping->host;
--			offset = bp_vaddr - vma->vm_start;
--			offset += (loff_t)vma->vm_pgoff << PAGE_SHIFT;
- 			uprobe = find_uprobe(inode, offset);
- 		}
- 
+ 		if (is_register) {
 -- 
 1.5.5.1
 
