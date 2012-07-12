@@ -1,139 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758897Ab2GLMnL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 08:43:11 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:34405 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752853Ab2GLMnI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 08:43:08 -0400
-Message-ID: <4FFEC60B.7040800@linux.vnet.ibm.com>
-Date: Thu, 12 Jul 2012 18:11:47 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1756630Ab2GLMxJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 08:53:09 -0400
+Received: from fieldses.org ([174.143.236.118]:52232 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752506Ab2GLMxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 08:53:07 -0400
+Date: Thu, 12 Jul 2012 08:53:03 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Michael Tokarev <mjt@tls.msk.ru>
+Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: 3.0+ NFS issues
+Message-ID: <20120712125303.GC16822@fieldses.org>
+References: <4FBF2C57.3070203@msgid.tls.msk.ru>
+ <20120529152416.GC3441@fieldses.org>
+ <4FC5C82E.4020806@msgid.tls.msk.ru>
+ <20120530132518.GA13794@fieldses.org>
+ <4FC713ED.5040807@msgid.tls.msk.ru>
+ <1338469169.2420.7.camel@lade.trondhjem.org>
+ <4FC77128.9090206@msgid.tls.msk.ru>
+ <1338471975.7732.5.camel@lade.trondhjem.org>
+ <4FC77755.5060606@msgid.tls.msk.ru>
+ <4FFC2573.8040804@msgid.tls.msk.ru>
 MIME-Version: 1.0
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org, lenb@kernel.org,
-        toshi.kani@hp.com
-Subject: Re: [PATCH v3 2/3 RESEND] acpi : prevent cpu from becoming online
-References: <4FFEB35A.6030500@jp.fujitsu.com> <4FFEB4BA.8010800@jp.fujitsu.com> <4FFEB7BA.6050505@jp.fujitsu.com>
-In-Reply-To: <4FFEB7BA.6050505@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
-x-cbid: 12071212-4790-0000-0000-000003A83F2E
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FFC2573.8040804@msgid.tls.msk.ru>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/12/2012 05:10 PM, Yasuaki Ishimatsu wrote:
-> Even if acpi_processor_handle_eject() offlines cpu, there is a chance
-> to online the cpu after that. So the patch closes the window by using
-> get/put_online_cpus().
+On Tue, Jul 10, 2012 at 04:52:03PM +0400, Michael Tokarev wrote:
+> I tried to debug this again, maybe to reproduce in a virtual machine,
+> and found out that it is only 32bit server code shows this issue:
+> after updating the kernel on the server to 64bit (the same version)
+> I can't reproduce this issue anymore.  Rebooting back to 32bit,
+> and voila, it is here again.
 > 
-> Why does the patch change _cpu_up() logic?
+> Something apparenlty isn't right on 32bits... ;)
 > 
-> The patch cares the race of hot-remove cpu and _cpu_up(). If the patch
-> does not change it, there is the following race.
-> 
-> hot-remove cpu                         |  _cpu_up()
-> ------------------------------------- ------------------------------------
-> call acpi_processor_handle_eject()     |
->      call cpu_down()                   |
->      call get_online_cpus()            |
->                                        | call cpu_hotplug_begin() and stop here
->      call arch_unregister_cpu()        |
->      call acpi_unmap_lsapic()          |
->      call put_online_cpus()            |
->                                        | start and continue _cpu_up()
->      return acpi_processor_remove()    |
-> continue hot-remove the cpu            |
-> 
-> So _cpu_up() can continue to itself. And hot-remove cpu can also continue
-> itself. If the patch changes _cpu_up() logic, the race disappears as below:
-> 
-> hot-remove cpu                         | _cpu_up()
-> -----------------------------------------------------------------------
-> call acpi_processor_handle_eject()     |
->      call cpu_down()                   |
->      call get_online_cpus()            |
->                                        | call cpu_hotplug_begin() and stop here
->      call arch_unregister_cpu()        |
->      call acpi_unmap_lsapic()          |
->           cpu's cpu_present is set     |
->           to false by set_cpu_present()|
->      call put_online_cpus()            |
->                                        | start _cpu_up()
->                                        | check cpu_present() and return -EINVAL
->      return acpi_processor_remove()    |
-> continue hot-remove the cpu            |
-> 
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->
+> (And yes, the prob is still present and is very annoying :)
 
-Please consider fixing the grammar issue below (since it is a user-visible
-print statement). Other than that, everything looks fine.
+OK, that's very useful, thanks.  So probably a bug got introduced in the
+32-bit case between 2.6.32 and 3.0.
 
-Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
- 
-> ---
->  drivers/acpi/processor_driver.c |   14 ++++++++++++++
->  kernel/cpu.c                    |    8 +++++---
->  2 files changed, 19 insertions(+), 3 deletions(-)
-> 
-> Index: linux-3.5-rc6/drivers/acpi/processor_driver.c
-> ===================================================================
-> --- linux-3.5-rc6.orig/drivers/acpi/processor_driver.c	2012-07-12 20:34:29.438289841 +0900
-> +++ linux-3.5-rc6/drivers/acpi/processor_driver.c	2012-07-12 20:39:29.190542257 +0900
-> @@ -850,8 +850,22 @@ static int acpi_processor_handle_eject(s
->  			return ret;
->  	}
-> 
-> +	get_online_cpus();
-> +	/*
-> +	 * The cpu might become online again at this point. So we check whether
-> +	 * the cpu has been onlined or not. If the cpu became online, it means
-> +	 * that someone wants to use the cpu. So acpi_processor_handle_eject()
-> +	 * returns -EAGAIN.
-> +	 */
-> +	if (unlikely(cpu_online(pr->id))) {
-> +		put_online_cpus();
-> +		printk(KERN_WARNING "Failed to remove CPU %d, "
-> +		       "since someone onlines the cpu\n" , pr->id);
+My personal upstream testing is normally all x86_64 only.  I'll kick off
+a 32-bit install and see if I can reproduce this quickly.
 
-How about:
-"Failed to remove CPU %d, because some other task brought the CPU back online\n"
+Let me know if you're able to narrow this down any more.
 
-Regards,
-Srivatsa S. Bhat
+--b.
 
-> +		return -EAGAIN;
-> +	}
->  	arch_unregister_cpu(pr->id);
->  	acpi_unmap_lsapic(pr->id);
-> +	put_online_cpus();
->  	return ret;
->  }
->  #else
-> Index: linux-3.5-rc6/kernel/cpu.c
-> ===================================================================
-> --- linux-3.5-rc6.orig/kernel/cpu.c	2012-07-12 20:34:29.438289841 +0900
-> +++ linux-3.5-rc6/kernel/cpu.c	2012-07-12 20:34:35.040219535 +0900
-> @@ -343,11 +343,13 @@ static int __cpuinit _cpu_up(unsigned in
->  	unsigned long mod = tasks_frozen ? CPU_TASKS_FROZEN : 0;
->  	struct task_struct *idle;
 > 
-> -	if (cpu_online(cpu) || !cpu_present(cpu))
-> -		return -EINVAL;
-> -
->  	cpu_hotplug_begin();
+> Thanks,
 > 
-> +	if (cpu_online(cpu) || !cpu_present(cpu)) {
-> +		ret =  -EINVAL;
-> +		goto out;
-> +	}
-> +
->  	idle = idle_thread_get(cpu);
->  	if (IS_ERR(idle)) {
->  		ret = PTR_ERR(idle);
+> /mjt
 > 
-
+> 
+> On 31.05.2012 17:51, Michael Tokarev wrote:
+> > On 31.05.2012 17:46, Myklebust, Trond wrote:
+> >> On Thu, 2012-05-31 at 17:24 +0400, Michael Tokarev wrote:
+> > []
+> >>> I started tcpdump:
+> >>>
+> >>>  tcpdump -npvi br0 -s 0 host 192.168.88.4 and \( proto ICMP or port 2049 \) -w nfsdump
+> >>>
+> >>> on the client (192.168.88.2).  Next I mounted a directory on the client,
+> >>> and started reading (tar'ing) a directory into /dev/null.  It captured a
+> >>> few stalls.  Tcpdump shows number of packets it got, the stalls are at
+> >>> packet counts 58090, 97069 and 97071.  I cancelled the capture after that.
+> >>>
+> >>> The resulting file is available at http://www.corpit.ru/mjt/tmp/nfsdump.xz ,
+> >>> it is 220Mb uncompressed and 1.3Mb compressed.  The source files are
+> >>> 10 files of 1Gb each, all made by using `truncate' utility, so does not
+> >>> take place on disk at all.  This also makes it obvious that the issue
+> >>> does not depend on the speed of disk on the server (since in this case,
+> >>> the server disk isn't even in use).
+> >>
+> >> OK. So from the above file it looks as if the traffic is mainly READ
+> >> requests.
+> > 
+> > The issue here happens only with reads.
+> > 
+> >> In 2 places the server stops responding. In both cases, the client seems
+> >> to be sending a single TCP frame containing several COMPOUNDS containing
+> >> READ requests (which should be legal) just prior to the hang. When the
+> >> server doesn't respond, the client pings it with a RENEW, before it ends
+> >> up severing the TCP connection and then retransmitting.
+> > 
+> > And sometimes -- speaking only from the behavour I've seen, not from the
+> > actual frames sent -- server does not respond to the RENEW too, in which
+> > case the client reports "nfs server no responding", and on the next
+> > renew it may actually respond.  This happens too, but much more rare.
+> > 
+> > During these stalls, ie, when there's no network activity at all,
+> > the server NFSD threads are busy eating all available CPU.
+> > 
+> > What does it all tell us? :)
+> > 
+> > Thank you!
+> > 
+> > /mjt
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> 
