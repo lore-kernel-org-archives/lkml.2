@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162616Ab2GLXTa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:19:30 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47532 "EHLO
+	id S1162532Ab2GLXDp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:03:45 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46543 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162564Ab2GLXDq (ORCPT
+	with ESMTP id S1162525Ab2GLXD3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 19:03:46 -0400
+	Thu, 12 Jul 2012 19:03:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jan Kara <jack@suse.cz>
-Subject: [ 19/68] udf: Avoid run away loop when partition table length is corrupted
-Date: Thu, 12 Jul 2012 16:01:53 -0700
-Message-Id: <20120712175037.120653526@linuxfoundation.org>
+        Eric Dumazet <edumazet@google.com>,
+        Sathya Perla <sathya.perla@emulex.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 14/68] be2net: fix a race in be_xmit()
+Date: Thu, 12 Jul 2012 16:01:48 -0700
+Message-Id: <20120712175036.689626529@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712175035.530652872@linuxfoundation.org>
 References: <20120712175057.GA9917@kroah.com>
@@ -30,51 +32,42 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
 
-commit adee11b2085bee90bd8f4f52123ffb07882d6256 upstream.
+From: Eric Dumazet <edumazet@google.com>
 
-Check provided length of partition table so that (possibly maliciously)
-corrupted partition table cannot cause accessing data beyond current buffer.
+[ Upstream commit cd8f76c0a0c6fce0b2cf23c9bd0123f91453f46d ]
 
-Signed-off-by: Jan Kara <jack@suse.cz>
+As soon as hardware is notified of a transmit, we no longer can assume
+skb can be dereferenced, as TX completion might have freed the packet.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Sathya Perla <sathya.perla@emulex.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/udf/super.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ drivers/net/benet/be_main.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/fs/udf/super.c
-+++ b/fs/udf/super.c
-@@ -1254,6 +1254,7 @@ static int udf_load_logicalvol(struct su
- 	struct genericPartitionMap *gpm;
- 	uint16_t ident;
- 	struct buffer_head *bh;
-+	unsigned int table_len;
- 	int ret = 0;
+--- a/drivers/net/benet/be_main.c
++++ b/drivers/net/benet/be_main.c
+@@ -763,6 +763,8 @@ static netdev_tx_t be_xmit(struct sk_buf
  
- 	bh = udf_read_tagged(sb, block, block, &ident);
-@@ -1261,13 +1262,20 @@ static int udf_load_logicalvol(struct su
- 		return 1;
- 	BUG_ON(ident != TAG_IDENT_LVD);
- 	lvd = (struct logicalVolDesc *)bh->b_data;
-+	table_len = le32_to_cpu(lvd->mapTableLength);
-+	if (sizeof(*lvd) + table_len > sb->s_blocksize) {
-+		udf_error(sb, __func__, "error loading logical volume descriptor: "
-+			"Partition table too long (%u > %lu)\n", table_len,
-+			sb->s_blocksize - sizeof(*lvd));
-+		goto out_bh;
-+	}
+ 	copied = make_tx_wrbs(adapter, skb, wrb_cnt, dummy_wrb);
+ 	if (copied) {
++		int gso_segs = skb_shinfo(skb)->gso_segs;
++
+ 		/* record the sent skb in the sent_skb table */
+ 		BUG_ON(tx_obj->sent_skb_list[start]);
+ 		tx_obj->sent_skb_list[start] = skb;
+@@ -780,8 +782,7 @@ static netdev_tx_t be_xmit(struct sk_buf
  
- 	ret = udf_sb_alloc_partition_maps(sb, le32_to_cpu(lvd->numPartitionMaps));
- 	if (ret)
- 		goto out_bh;
+ 		be_txq_notify(adapter, txq->id, wrb_cnt);
  
- 	for (i = 0, offset = 0;
--	     i < sbi->s_partitions && offset < le32_to_cpu(lvd->mapTableLength);
-+	     i < sbi->s_partitions && offset < table_len;
- 	     i++, offset += gpm->partitionMapLength) {
- 		struct udf_part_map *map = &sbi->s_partmaps[i];
- 		gpm = (struct genericPartitionMap *)
+-		be_tx_stats_update(adapter, wrb_cnt, copied,
+-				skb_shinfo(skb)->gso_segs, stopped);
++		be_tx_stats_update(adapter, wrb_cnt, copied, gso_segs, stopped);
+ 	} else {
+ 		txq->head = start;
+ 		dev_kfree_skb_any(skb);
 
 
