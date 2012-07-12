@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934028Ab2GLP1p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 11:27:45 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:38715 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932528Ab2GLP1n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 11:27:43 -0400
-Date: Thu, 12 Jul 2012 11:27:40 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Cc: Richard Fontana <fontana2012@gmail.com>, "Bradley M. Kuhn" <bkuhn@ebb.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] copyleft-next: embrace the Signed-off-by practice
-Message-ID: <20120712152740.GB14792@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	"Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-	Richard Fontana <fontana2012@gmail.com>,
-	"Bradley M. Kuhn" <bkuhn@ebb.org>, linux-kernel@vger.kernel.org
-References: <1342053889-32066-1-git-send-email-mcgrof@do-not-panic.com>
- <1342053889-32066-5-git-send-email-mcgrof@do-not-panic.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1342053889-32066-5-git-send-email-mcgrof@do-not-panic.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S934049Ab2GLPeN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 11:34:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34178 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933947Ab2GLPeJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 11:34:09 -0400
+From: Asias He <asias@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+        Benjamin LaHaise <bcrl@kvack.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Michael S. Tsirkin" <mst@redhat.com>, linux-aio@kvack.org,
+        linux-fsdevel@vger.kernel.org, Asias He <asias@redhat.com>
+Subject: [PATCH 0/5] Add vhost-blk support
+Date: Thu, 12 Jul 2012 23:35:01 +0800
+Message-Id: <1342107302-28116-1-git-send-email-asias@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 11, 2012 at 05:44:49PM -0700, Luis R. Rodriguez wrote:
-> From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-> 
-> The idea is taken from Linus Torvald's subsurface
-> project [0] README file. The Signed-off-by is widely
-> used in public projects and we stand to gain to make
-> its usage more prevalent. The meaning of the
-> Signed-off-by is borrowed from the Linux kernel's.
-> 
-> [0] git://github.com/torvalds/subsurface.git
-> 
-> Signed-off-by: Luis R. Rodriguez <mcgrof@do-not-panic.com>
+Hi folks,
 
-I wonder why you're cc'ing the linux-kernel mailing list?  I've
-checked the copyleft-next clause, and the anti-Tivoization clauses,
-which was one of the primary reasons articulated by many kernel
-developers --- including Linus Torvalds --- for not using GPLv3, is
-still in the Copyleft-next license.
+This patchset adds vhost-blk support. vhost-blk is a in kernel virito-blk
+device accelerator. Compared to userspace virtio-blk implementation, vhost-blk
+gives about 5% to 15% performance improvement.
 
-My understanding of Richard Fontana's past public positions was that
-he was supportive of that part of the GPLv3 license, and so I had
-assumed the Copyleft-next effort would be irrelevant as far as the
-Linux Kernel was concerned.
+Asias He (5):
+  aio: Export symbols and struct kiocb_batch for in kernel aio usage
+  eventfd: Export symbol eventfd_file_create()
+  vhost: Make vhost a separate module
+  vhost-net: Use VHOST_NET_FEATURES for vhost-net
+  vhost-blk: Add vhost-blk support
 
-Even if I am wrong about that (and I would be delighted if the answer
-was that one of the Copyright-next's goals was to resolve this barrier
-of the kernel moving off of GPLv2), it still would seem to me to be
-out of scope of the LKML.
+ drivers/vhost/Kconfig  |   20 +-
+ drivers/vhost/Makefile |    6 +-
+ drivers/vhost/blk.c    |  600 ++++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/vhost/net.c    |    4 +-
+ drivers/vhost/test.c   |    4 +-
+ drivers/vhost/vhost.c  |   48 ++++
+ drivers/vhost/vhost.h  |   18 +-
+ fs/aio.c               |   37 ++-
+ fs/eventfd.c           |    1 +
+ include/linux/aio.h    |   21 ++
+ include/linux/vhost.h  |    1 +
+ 11 files changed, 729 insertions(+), 31 deletions(-)
+ create mode 100644 drivers/vhost/blk.c
 
-Regards,
+-- 
+1.7.10.4
 
-							- Ted
