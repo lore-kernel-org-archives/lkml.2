@@ -1,103 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757687Ab2GLBBE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 21:01:04 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:63166 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752628Ab2GLBBC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 21:01:02 -0400
-X-AuditID: 9c93016f-b7b08ae00000790d-dc-4ffe21ccec8f
-Date: Thu, 12 Jul 2012 10:01:05 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] zsmalloc improvements
-Message-ID: <20120712010105.GA5503@bbox>
-References: <1341263752-10210-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <4FFD2524.2050300@kernel.org>
- <4FFD86FE.1090307@linux.vnet.ibm.com>
+	id S1756264Ab2GLBKT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 21:10:19 -0400
+Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:52166
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754023Ab2GLBKQ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 21:10:16 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dIc89bh1432Izz1202hzz8275dhz2dh87h2a8h668h839hd25he96hf0ah107ah)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Thu, 12 Jul 2012 09:10:40 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+CC: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <kernel@pengutronix.de>,
+        Philippe =?iso-8859-1?Q?R=E9tornaz?= <philippe.retornaz@epfl.ch>,
+        Marc Reilly <marc@cpdesign.com.au>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [RFC internal PATCH] mfd/mc13xxx: drop modifying driver's
+ id_table in probe
+Message-ID: <20120712011038.GB6971@S2101-09.ap.freescale.net>
+References: <1342006608-30550-1-git-send-email-u.kleine-koenig@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="iso-8859-1"
 Content-Disposition: inline
-In-Reply-To: <4FFD86FE.1090307@linux.vnet.ibm.com>
+In-Reply-To: <1342006608-30550-1-git-send-email-u.kleine-koenig@pengutronix.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 11, 2012 at 09:00:30AM -0500, Seth Jennings wrote:
-> On 07/11/2012 02:03 AM, Minchan Kim wrote:
-> > On 07/03/2012 06:15 AM, Seth Jennings wrote:
-> >> zsmapbench measures the copy-based mapping at ~560 cycles for a
-> >> map/unmap operation on spanned object for both KVM guest and bare-metal,
-> >> while the page table mapping was ~1500 cycles on a VM and ~760 cycles
-> >> bare-metal.  The cycles for the copy method will vary with
-> >> allocation size, however, it is still faster even for the largest
-> >> allocation that zsmalloc supports.
-> >>
-> >> The result is convenient though, as mempcy is very portable :)
-> > 
-> > Today, I tested zsmapbench in my embedded board(ARM).
-> > tlb-flush is 30% faster than copy-based so it's always not win.
-> > I think it depends on CPU speed/cache size.
-> > 
-> > zram is already very popular on embedded systems so I want to use
-> > it continuously without 30% big demage so I want to keep our old approach
-> > which supporting local tlb flush. 
-> > 
-> > Of course, in case of KVM guest, copy-based would be always bin win.
-> > So shouldn't we support both approach? It could make code very ugly
-> > but I think it has enough value.
-> > 
-> > Any thought?
+On Wed, Jul 11, 2012 at 01:36:48PM +0200, Uwe Kleine-König wrote:
+> This was introduced in commit
 > 
-> Thanks for testing on ARM.
+> 	876989d (mfd: Add device tree probe support for mc13xxx)
 > 
-> I can add the pgtable assisted method back in, no problem.
-> The question is by which criteria are we going to choose
-> which method to use? By arch (i.e. ARM -> pgtable assist,
-> x86 -> copy, other archs -> ?)?
-
-I prefer your previous version __HAVE_LOCAL_FLUSH_TLB_KERNEL_RANGE.
-If you didn't implement that function for x86, it simply uses memcpy
-version while ARM can use tlb flush version if we add the definary.
-
-Of course, it would be better to select best choice by testing
-benchmark for all of architecture but that architecture would be
-changed in future, too so we need further testing periodically.
-And we will have no time then, too.
-For reducing the burden, we can detect it automatically while module
-is loading or booting but it tackles with booting time. :(
-So, let's put it aside as further works.
-At the moment, let's think simply two arch(x86, ARM) until other arch
-user doesn't raise a hand for volunteering.
-
-Yes. it could be a problem in future if other arch which support
-local flush want to use memcpy but IMHO, it's very hard to kill
-two bird(portability and performance) with one stone. :(
-
+> for spi and later while introducing support for i2c copied to the i2c
+> driver.
 > 
-> Also, what changes did you make to zsmapbench to measure
-> elapsed time/cycles on ARM?  Afaik, rdtscll() is not
-> supported on ARM.
-
-I used local_clock instead of arch dependent code and makes longer test time
-from 1 sec to 10 sec.
-
+> Modifying driver details is very strange, for example probing an
+> mc13892 device (instantiated via dt) removes the driver's ability to
+> handle (traditionally probed) mc13783 devices in this case.
+> I'm not aware of any problems that make this hack necessary and if
+> there were some, they'd have to be fixed in the spi/i2c core, not in
+> a driver.
 > 
-> Thanks,
-> Seth
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+
+The code was added by me, and it turns out the change is completely
+unnecessary.  So,
+
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
+
+Regards,
+Shawn
+
