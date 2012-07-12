@@ -1,91 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758973Ab2GLJx3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 05:53:29 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:39314 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753847Ab2GLJx1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 05:53:27 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX19A6Zt/OLNAIckmlkV9GbV9J/JMkSPMjNUYvDJj24
-	1x6OGUpzKhbxms
-Message-ID: <1342086792.7707.9.camel@marge.simpson.net>
-Subject: Re: 3.4.4-rt13: btrfs + xfstests 006 = BOOM..  and a bonus rt_mutex
- deadlock report for absolutely free!
-From: Mike Galbraith <efault@gmx.de>
-To: "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Date: Thu, 12 Jul 2012 11:53:12 +0200
-In-Reply-To: <1342082648.7338.171.camel@marge.simpson.net>
-References: <1342072060.7338.102.camel@marge.simpson.net>
-	 <1342082648.7338.171.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	id S1759045Ab2GLJ4b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 05:56:31 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:20029 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754368Ab2GLJ42 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 05:56:28 -0400
+X-IronPort-AV: E=Sophos;i="4.77,574,1336320000"; 
+   d="scan'208";a="5382873"
+Message-ID: <4FFE9EDE.8080107@cn.fujitsu.com>
+Date: Thu, 12 Jul 2012 17:54:38 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>, mtosatti@redhat.com
+CC: ebiederm@xmission.com, luto@mit.edu, Joerg Roedel <joerg.roedel@amd.com>,
+        dzickus@redhat.com, paul.gortmaker@windriver.com,
+        ludwig.nussel@suse.de, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, kexec@lists.infradead.org,
+        Greg KH <gregkh@linuxfoundation.org>
+Subject: [PATCH v5 0/3] Export offsets of VMCS fields as note information
+ for kdump
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/12 17:54:47,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/12 17:56:18,
+	Serialize complete at 2012/07/12 17:56:18
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-07-12 at 10:44 +0200, Mike Galbraith wrote: 
-> On Thu, 2012-07-12 at 07:47 +0200, Mike Galbraith wrote: 
-> > Greetings,
-> > 
-> > I'm chasing btrfs critters in an enterprise 3.0-rt kernel, and just
-> > checked to see if they're alive in virgin latest/greatest rt kernel.  
-> > 
-> > Both are indeed alive and well, ie I didn't break it, nor did the
-> > zillion patches in enterprise base kernel, so others may have an
-> > opportunity to meet these critters up close and personal as well.
-> 
-> 3.2-rt both explodes and deadlocks as well.  3.0-rt (virgin I mean) does
-> neither, so with enough re-integrate investment, it might be bisectable.
+This patch set exports offsets of VMCS fields as note information for
+kdump. We call it VMCSINFO. The purpose of VMCSINFO is to retrieve
+runtime state of guest machine image, such as registers, in host
+machine's crash dump as VMCS format. The problem is that VMCS internal
+is hidden by Intel in its specification. So, we slove this problem
+by reverse engineering implemented in this patch set. The VMCSINFO
+is exported via sysfs (/sys/devices/system/cpu/vmcs/) to kexec-tools.
 
-Nope, virgin 3.0-rt just didn't feel like it at the time.  Booted it
-again to run hefty test over lunch, it didn't survive 1 xfstests 006,
-much less hundreds.
+Here are two usercases for two features that we want.
 
-crash> bt
-PID: 7604   TASK: ffff880174238b20  CPU: 0   COMMAND: "btrfs-worker-0"
- #0 [ffff88017455d9c8] machine_kexec at ffffffff81025794
- #1 [ffff88017455da28] crash_kexec at ffffffff8109781d
- #2 [ffff88017455daf8] panic at ffffffff814a0661
- #3 [ffff88017455db78] __try_to_take_rt_mutex at ffffffff81086d2f
- #4 [ffff88017455dbc8] rt_spin_lock_slowlock at ffffffff814a2670
- #5 [ffff88017455dca8] rt_spin_lock at ffffffff814a2db9
- #6 [ffff88017455dcb8] schedule_bio at ffffffff81243133
- #7 [ffff88017455dcf8] btrfs_map_bio at ffffffff812477be
- #8 [ffff88017455dd68] __btree_submit_bio_done at ffffffff812152f6
- #9 [ffff88017455dd78] run_one_async_done at ffffffff812148fa
-#10 [ffff88017455dd98] run_ordered_completions at ffffffff812493e8
-#11 [ffff88017455ddd8] worker_loop at ffffffff81249dc9
-#12 [ffff88017455de88] kthread at ffffffff81070266
-#13 [ffff88017455df48] kernel_thread_helper at ffffffff814a9be4
-crash> struct rt_mutex 0xffff880174530108
-struct rt_mutex {
-  wait_lock = {
-    raw_lock = {
-      slock = 7966
-    }
-  }, 
-  wait_list = {
-    node_list = {
-      next = 0xffff880175ecc970, 
-      prev = 0xffff880175ecc970
-    }, 
-    rawlock = 0xffff880175ecc968, 
-    spinlock = 0x0
-  }, 
-  owner = 0x1, 
-  save_state = 0, 
-  file = 0x0, 
-  name = 0xffffffff81763d02 "&(&device->io_lock)->lock", 
-  line = 0, 
-  magic = 0x0
-}
+1) Create guest machine's crash dumpfile from host machine's crash dumpfile
 
+In general, we want to use this feature on failure analysis for the system
+where the processing depends on the communication between host and guest
+machines to look into the system from both machines's viewpoints.
+
+As a concrete situation, consider where there's heartbeat monitoring
+feature on the guest machine's side, where we need to determine in
+which machine side the cause of heartbeat stop lies. In our actual
+experiments, we encountered such situation and we found the cause of
+the bug was in host's process schedular so guest machine's vcpu stopped
+for a long time and then led to heartbeat stop.
+
+The module that judges heartbeat stop is on guest machine, so we need
+to debug guest machine's data. But if the cause lies in host machine
+side, we need to look into host machine's crash dump.
+
+Without this feature, we first create guest machine's dump and then
+create host mahine's, but there's only a short time between two
+processings, during which it's unlikely that buggy situation remains.
+
+So, we think the feature is useful to debug both guest machine's and
+host machine's sides at the same time, and expect we can make failure
+analysis efficiently.
+
+Of course, we believe this feature is commonly useful on the situation
+where guest machine doesn't work well due to something of host machine's.
+
+2) Get offsets of VMCS information on the CPU running on the host machine
+
+If kdump doesn't work well, then it means we cannot use kvm API to get
+register values of guest machine and they are still left on its vmcs
+region. In the case, we use crash dump mechanism running outside of
+linux kernel, such as sadump, a firmware-based crash dump. Then VMCS
+information is then necessary.
+
+TODO:
+  1. In kexec-tools, get VMCSINFO via sysfs and dump it as note information
+     into vmcore.
+  2. Dump VMCS region of each guest vcpu and VMCSINFO into qemu-process
+     core file. To do this, we will modify kernel core dumper, gdb gcore
+     and crash gcore.
+  3. Dump guest image from the qemu-process core file into a vmcore.
+
+Changelog from v4 to v5:
+1. The VMCSINFO is stored in a two-dimensional array filled with each
+   field's encoding and corresponding offset. So the size of VMCSINFO
+   is much smaller.
+2. vmcs sysfs file /sys/devices/system/cpu/vmcs_id is moved to
+   /sys/devices/system/cpu/vmcs/id.
+3. Rewrite the ABI entry for vmcs interface and remove the KernelVersion
+   line.
+
+Changelog from v3 to v4:
+1. All the variables and functions are moved to vmcsinfo-intel module.
+2. Add a new sysfs interface /sys/devices/system/cpu/vmcs_id to export
+   vmcs revision identifier. And origial sysfs interface is changed
+   from /sys/devices/cpu/vmcs to /sys/devices/system/cpu/vmcs. Thanks
+   Greg KH for his helpful comments about sysfs.
+
+Changelog from v2 to v3:
+1. New VMCSINFO format.
+   Now the VMCSINFO is mainly made up of an array that contains all vmcs
+   fields' offsets. The offsets aren't encoded because we decode them in
+   the module itself. If some field doesn't exist or its offset cannot be
+   decoded correctly, the offset in the array is just set to zero.
+2. New sysfs interface and Documentation/ABI entry. 
+   We expose the actual fields in /sys/devices/cpu/vmcs instead of just
+   exporting the address of VMCSINFO in /sys/kernel/vmcsinfo.
+   For example, /sys/devices/cpu/vmcs/0800 contains the offset of
+   GUEST_DS_SELECTOR. 0800 is the encoding of GUEST_DS_SELECTOR.
+   Accordingly, ABI entry in Documentation is changed from sysfs-kernel-vmcsinfo
+   to sysfs-devices-cpu-vmcs.
+
+Changelog from v1 to v2:
+1. The VMCSINFO now has a simple binary <field><encoded offset> format,
+   as below:
+     +-------------+--------------------------+
+     | Byte offset | Contents                 |
+     +-------------+--------------------------+
+     | 0           | VMCS revision identifier |
+     +-------------+--------------------------+
+     | 4           | <field><encoded offset>  |
+     +-------------+--------------------------+
+     | 16          | <field><encoded offset>  |
+     +-------------+--------------------------+
+     ......
+  
+   The first 32 bits of VMCSINFO contains the VMCS revision identifier.
+   The remainder of VMCSINFO is used for <field><encoded offset> sets.
+   Each set takes 12 bytes: field occupys 4 bytes and its corresponding
+   encoded offset occupys 8 bytes.
+
+   Encoded offsets are raw values read by vmcs_read{16, 64, 32, l}, and
+   they are all unsigned extended to 8 bytes for each <field><encoded offset>
+   set will have the same size. 
+   We do not decode offsets here. The decoding work is delayed in userspace
+   tools for more flexible handling.
+   
+   And here are two examples of the new VMCSINFO:
+   Processor: Intel(R) Core(TM)2 Duo CPU     E7500  @ 2.93GHz
+   VMCSINFO contains:
+     <0000000d>                   --> VMCS revision id = 0xd
+     <00004000><0000000001840180> --> OFFSET(PIN_BASED_VM_EXEC_CONTROL) = 0x01840180
+     <00004002><0000000001940190> --> OFFSET(CPU_BASED_VM_EXEC_CONTROL) = 0x01940190
+     <0000401e><000000000fe40fe0> --> OFFSET(SECONDARY_VM_EXEC_CONTROL) = 0x0fe40fe0
+     <0000400c><0000000001e401e0> --> OFFSET(VM_EXIT_CONTROLS) = 0x01e401e0
+     ......
+
+   Processor: Intel(R) Xeon(R) CPU           E7540  @ 2.00GHz (24 cores)
+   VMCSINFO contains:
+     <0000000e>                   --> VMCS revision id = 0xe 
+     <00004000><0000000005540550> --> OFFSET(PIN_BASED_VM_EXEC_CONTROL) = 0x05540550
+     <00004002><0000000005440540> --> OFFSET(CPU_BASED_VM_EXEC_CONTROL) = 0x05440540
+     <0000401e><00000000054c0548> --> OFFSET(SECONDARY_VM_EXEC_CONTROL) = 0x054c0548
+     <0000400c><00000000057c0578> --> OFFSET(VM_EXIT_CONTROLS) = 0x057c0578
+     ......
+
+2. Add a new kernel module *vmcsinfo-intel* for filling VMCSINFO instead
+   of putting it in module kvm-intel. The new module is auto-loaded
+   when the vmx cpufeature is detected and it depends on module kvm-intel.
+   *Loading and unloading this module will have no side effect on the
+   running guests.*
+3. The sysfs file vmcsinfo is splitted into 2 files:
+   /sys/kernel/vmcsinfo: shows physical address of VMCSINFO note information.
+   /sys/kernel/vmcsinfo_maxsize: shows max size of VMCSINFO.
+4. A new Documentation/ABI entry is added for vmcsinfo and vmcsinfo_maxsize.
+5. Do not update VMCSINFO note when the kernel is panicked.
+
+zhangyanfei (3):
+  KVM: Export symbols for module vmcsinfo-intel
+  KVM-INTEL: Add new module vmcsinfo-intel to fill VMCSINFO
+  Documentation: Add ABI entry for vmcs sysfs interface.
+
+ Documentation/ABI/testing/sysfs-devices-system-cpu |   20 +
+ arch/x86/include/asm/vmx.h                         |   73 ++
+ arch/x86/kvm/Kconfig                               |   11 +
+ arch/x86/kvm/Makefile                              |    3 +
+ arch/x86/kvm/vmcsinfo.c                            |  714 ++++++++++++++++++++
+ arch/x86/kvm/vmx.c                                 |   81 +--
+ include/linux/kvm_host.h                           |    3 +
+ virt/kvm/kvm_main.c                                |    8 +-
+ 8 files changed, 841 insertions(+), 72 deletions(-)
+ create mode 100644 arch/x86/kvm/vmcsinfo.c
