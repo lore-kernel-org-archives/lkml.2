@@ -1,158 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161484Ab2GLRdB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 13:33:01 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:24837 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161442Ab2GLRdA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 13:33:00 -0400
-Date: Thu, 12 Jul 2012 13:24:24 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Olaf Hering <olaf@aepfle.de>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] [PATCH] xen pv-on-hvm: add pfn_is_ram helper for
- kdump
-Message-ID: <20120712172424.GA5895@phenom.dumpdata.com>
-References: <1342113639-19728-1-git-send-email-olaf@aepfle.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1342113639-19728-1-git-send-email-olaf@aepfle.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	id S1757788Ab2GLRii (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 13:38:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2509 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755397Ab2GLRig (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 13:38:36 -0400
+Message-ID: <1342114713.10815.25.camel@ul30vt>
+Subject: Re: [PATCH v3 0/2] kvm: level irqfd and new eoifd
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Jan Kiszka <jan.kiszka@siemens.com>, "mst@redhat.com" <mst@redhat.com>,
+        "gleb@redhat.com" <gleb@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 12 Jul 2012 11:38:33 -0600
+In-Reply-To: <1342109982.10815.20.camel@ul30vt>
+References: <20120703191106.6735.78272.stgit@bling.home>
+	 <4FFD4D0A.2000202@redhat.com> <4FFD52E7.3030806@siemens.com>
+	 <4FFD5A2B.2040605@redhat.com> <4FFD6221.1060304@siemens.com>
+	 <4FFD68C3.7000504@redhat.com> <1342036673.2229.17.camel@bling.home>
+	 <4FFE9A6F.3080607@redhat.com> <1342109982.10815.20.camel@ul30vt>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 12, 2012 at 07:20:39PM +0200, Olaf Hering wrote:
-> Register pfn_is_ram helper speed up reading /proc/vmcore in the kdump
-> kernel. See commit message of 997c136f518c ("fs/proc/vmcore.c: add hook
-> to read_from_oldmem() to check for non-ram pages") for details.
+On Thu, 2012-07-12 at 10:19 -0600, Alex Williamson wrote:
+> On Thu, 2012-07-12 at 12:35 +0300, Avi Kivity wrote:
+> > On 07/11/2012 10:57 PM, Alex Williamson wrote:
+> > >> 
+> > >> > We still have classic KVM device assignment to provide fast-path INTx.
+> > >> > But if we want to replace it midterm, I think it's necessary for VFIO to
+> > >> > be able to provide such a path as well.
+> > >> 
+> > >> I would like VFIO to have no regressions vs. kvm device assignment,
+> > >> except perhaps in uncommon corner cases.  So I agree.
+> > > 
+> > > I ran a few TCP_RR netperf tests forcing a 1Gb tg3 nic to use INTx.
+> > > Without irqchip support vfio gets a bit more than 60% of KVM device
+> > > assignment.  That's a little bit of an unfair comparison since it's more
+> > > than just the I/O path.  With the proposed interfaces here, enabling
+> > > irqchip, vfio is within 10% of KVM device assignment for INTx.  For MSI,
+> > > I can actually make vfio come out more than 30% better than KVM device
+> > > assignment if I send the eventfd from the hard irq handler.  Using a
+> > > threaded handler as the code currently does, vfio is still behind KVM.
+> > > It's hard to beat a direct call chain.
+> > 
+> > We can have a direct call chain with vfio too, using a custom eventfd
+> > poll function, no?  Assuming we set up a fast path for unicast msi.
 > 
-> It makes use of a new hvmop HVMOP_get_mem_type which was introduced in
-> xen 4.2 (23298:26413986e6e0) and backported to 4.1.1.
-> 
-> The new function is currently only enabled for reading /proc/vmcore.
-> Later it will be used also for the kexec kernel. Since that requires
-> more changes in the generic kernel make it static for the time being.
-> 
-> Signed-off-by: Olaf Hering <olaf@aepfle.de>
-> ---
->  arch/x86/xen/mmu.c                 |   41 ++++++++++++++++++++++++++++++++++++
->  include/xen/interface/hvm/hvm_op.h |   20 ++++++++++++++++++
->  2 Dateien geändert, 61 Zeilen hinzugefügt(+)
-> 
-> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-> index 3a73785..54de84d 100644
-> --- a/arch/x86/xen/mmu.c
-> +++ b/arch/x86/xen/mmu.c
-> @@ -47,6 +47,7 @@
->  #include <linux/gfp.h>
->  #include <linux/memblock.h>
->  #include <linux/seq_file.h>
-> +#include <linux/crash_dump.h>
->  
->  #include <trace/events/xen.h>
->  
-> @@ -2245,6 +2246,43 @@ void xen_destroy_contiguous_region(unsigned long vstart, unsigned int order)
->  EXPORT_SYMBOL_GPL(xen_destroy_contiguous_region);
->  
->  #ifdef CONFIG_XEN_PVHVM
-> +#ifdef CONFIG_PROC_VMCORE
-> +/*
-> + * This function is used in two contexts:
-> + * - the kdump kernel has to check whether a pfn of the crashed kernel
-> + *   was a ballooned page. vmcore is using this function to decide
-> + *   whether to access a pfn of the crashed kernel.
-> + * - the kexec kernel has to check whether a pfn was ballooned by the
-> + *   previous kernel. If the pfn is ballooned, handle it properly.
-> + * Returns 0 if the pfn is not backed by a RAM page, the caller may
-> + * handle the pfn special in this case.
-> + */
-> +static int xen_oldmem_pfn_is_ram(unsigned long pfn)
-> +{
-> +	struct xen_hvm_get_mem_type a = {
-> +		.domid = DOMID_SELF,
-> +		.pfn = pfn,
-> +	};
-> +	int ram;
-> +
-> +	if (HYPERVISOR_hvm_op(HVMOP_get_mem_type, &a))
-> +		return -ENXIO;
-> +
-> +	switch (a.mem_type) {
-> +		case HVMMEM_mmio_dm:
-> +			ram = 0;
-> +			break;
-> +		case HVMMEM_ram_rw:
-> +		case HVMMEM_ram_ro:
-> +		default:
-> +			ram = 1;
-> +			break;
-> +	}
-> +
-> +	return ram;
-> +}
-> +#endif
-> +
->  static void xen_hvm_exit_mmap(struct mm_struct *mm)
->  {
->  	struct xen_hvm_pagetable_dying a;
-> @@ -2275,6 +2313,9 @@ void __init xen_hvm_init_mmu_ops(void)
->  {
->  	if (is_pagetable_dying_supported())
->  		pv_mmu_ops.exit_mmap = xen_hvm_exit_mmap;
-> +#ifdef CONFIG_PROC_VMCORE
-> +	register_oldmem_pfn_is_ram(&xen_oldmem_pfn_is_ram);
-> +#endif
->  }
->  #endif
->  
-> diff --git a/include/xen/interface/hvm/hvm_op.h b/include/xen/interface/hvm/hvm_op.h
-> index a4827f4..0816ae4 100644
-> --- a/include/xen/interface/hvm/hvm_op.h
-> +++ b/include/xen/interface/hvm/hvm_op.h
-> @@ -43,4 +43,24 @@ struct xen_hvm_pagetable_dying {
->  typedef struct xen_hvm_pagetable_dying xen_hvm_pagetable_dying_t;
->  DEFINE_GUEST_HANDLE_STRUCT(xen_hvm_pagetable_dying_t);
->   
-> +typedef enum {
-> +    HVMMEM_ram_rw,             /* Normal read/write guest RAM */
-> +    HVMMEM_ram_ro,             /* Read-only; writes are discarded */
-> +    HVMMEM_mmio_dm,            /* Reads and write go to the device model */
-> +} hvmmem_type_t;
+> You'll have to help me out a little, eventfd_signal walks the wait_queue
+> and calls each function.  On the injection path that includes
+> irqfd_wakeup.  For an MSI that seems to already provide direct
+> injection.  For level we'll schedule_work, so that explains the overhead
+> in that path, but it's not too dissimilar to a a threaded irq.  vfio
+> does something very similar, so there's a schedule_work both on inject
+> and on eoi.  I'll have to check whether anything prevents the unmask
+> from the wait_queue function in vfio, that could be a significant chunk
+> of the gap.
 
-Does this have to be a typdef?
+Yep, the schedule_work in the eoi is the culprit.  A direct unmask from
+the wait queue function gives me better results than kvm for INTx.
+We'll have to see how the leapfrogging goes once KVM switches to
+injection from the hard handler.  I'm still curious what this custom
+poll function would give us though.  Thanks,
 
-> +
-> +#define HVMOP_get_mem_type    15
-> +/* Return hvmmem_type_t for the specified pfn. */
-> +struct xen_hvm_get_mem_type {
-> +    /* Domain to be queried. */
-> +    domid_t domid;
-> +    /* OUT variable. */
-> +    uint16_t mem_type;
-> +    uint16_t pad[2]; /* align next field on 8-byte boundary */
-> +    /* IN variable. */
-> +    uint64_t pfn;
-> +};
-> +typedef struct xen_hvm_get_mem_type xen_hvm_get_mem_type_t;
+Alex
 
-Please no typdefs. I can fix this up, but in the future pls don't add
-more of them.
-
-
-> +DEFINE_GUEST_HANDLE_STRUCT(xen_hvm_get_mem_type_t);
-> +
->  #endif /* __XEN_PUBLIC_HVM_HVM_OP_H__ */
-> -- 
-> 1.7.10.4
-> 
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org
-> http://lists.xen.org/xen-devel
