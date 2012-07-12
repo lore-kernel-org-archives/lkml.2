@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759587Ab2GLWiK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:38:10 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54985 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759574Ab2GLWh7 (ORCPT
+	id S1759601Ab2GLWiP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:38:15 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:60400 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759531Ab2GLWiC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:37:59 -0400
+	Thu, 12 Jul 2012 18:38:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Amey Bhide <abhide@nicira.com>, Pravin B Shelar <pshelar@nicira.com>,
-        Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: [ 042/187] mm: fix slab->page _count corruption when using slub
-Date: Thu, 12 Jul 2012 15:33:18 -0700
-Message-Id: <20120712191526.249336170@linuxfoundation.org>
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 043/187] powerpc: More fixes for lazy IRQ vs. idle
+Date: Thu, 12 Jul 2012 15:33:19 -0700
+Message-Id: <20120712191526.339599573@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -33,52 +30,161 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Pravin B Shelar <pshelar@nicira.com>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-commit abca7c4965845924f65d40e0aa1092bdd895e314 upstream.
+commit be2cf20a5ad31ebb13562c1c866ecc626fbd721e upstream.
 
-On arches that do not support this_cpu_cmpxchg_double() slab_lock is used
-to do atomic cmpxchg() on double word which contains page->_count.  The
-page count can be changed from get_page() or put_page() without taking
-slab_lock.  That corrupts page counter.
+Looks like we still have issues with pSeries and Cell idle code
+vs. the lazy irq state. In fact, the reset fixes that went upstream
+are exposing the problem more by causing BUG_ON() to trigger (which
+this patch turns into a WARN_ON instead).
 
-Fix it by moving page->_count out of cmpxchg_double data.  So that slub
-does no change it while updating slub meta-data in struct page.
+We need to be careful when using a variant of low power state that
+has the side effect of turning interrupts back on, to properly set
+all the SW & lazy state to look as if everything is enabled before
+we enter the low power state with MSR:EE off as we will return with
+MSR:EE on. If not, we have a discrepancy of state which can cause
+things to go very wrong later on.
 
-[akpm@linux-foundation.org: use standard comment layout, tweak comment text]
-Reported-by: Amey Bhide <abhide@nicira.com>
-Signed-off-by: Pravin B Shelar <pshelar@nicira.com>
-Acked-by: Christoph Lameter <cl@linux.com>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+This patch moves the logic into a helper and uses it from the
+pseries and cell idle code. The power4/970 idle code already got
+things right (in assembly even !) so I'm not touching it. The power7
+"bare metal" idle code is subtly different and correct. Remains PA6T
+and some hypervisor based Cell platforms which have questionable
+code in there, but they are mostly dead platforms so I'll fix them
+when I manage to get final answers from the respective maintainers
+about how the low power state actually works on them.
+
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/mm_types.h |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ arch/powerpc/include/asm/hw_irq.h               |    2 +
+ arch/powerpc/kernel/irq.c                       |   46 ++++++++++++++++++++++++
+ arch/powerpc/platforms/cell/pervasive.c         |   11 +++--
+ arch/powerpc/platforms/pseries/processor_idle.c |   17 +++++---
+ 4 files changed, 64 insertions(+), 12 deletions(-)
 
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -56,8 +56,18 @@ struct page {
- 		};
+--- a/arch/powerpc/include/asm/hw_irq.h
++++ b/arch/powerpc/include/asm/hw_irq.h
+@@ -124,6 +124,8 @@ static inline bool arch_irq_disabled_reg
+ 	return !regs->softe;
+ }
  
- 		union {
-+#if defined(CONFIG_HAVE_CMPXCHG_DOUBLE) && \
-+	defined(CONFIG_HAVE_ALIGNED_STRUCT_PAGE)
- 			/* Used for cmpxchg_double in slub */
- 			unsigned long counters;
-+#else
-+			/*
-+			 * Keep _count separate from slub cmpxchg_double data.
-+			 * As the rest of the double word is protected by
-+			 * slab_lock but _count is not.
-+			 */
-+			unsigned counters;
++extern bool prep_irq_for_idle(void);
++
+ #else /* CONFIG_PPC64 */
+ 
+ #define SET_MSR_EE(x)	mtmsr(x)
+--- a/arch/powerpc/kernel/irq.c
++++ b/arch/powerpc/kernel/irq.c
+@@ -286,6 +286,52 @@ void notrace restore_interrupts(void)
+ 		__hard_irq_enable();
+ }
+ 
++/*
++ * This is a helper to use when about to go into idle low-power
++ * when the latter has the side effect of re-enabling interrupts
++ * (such as calling H_CEDE under pHyp).
++ *
++ * You call this function with interrupts soft-disabled (this is
++ * already the case when ppc_md.power_save is called). The function
++ * will return whether to enter power save or just return.
++ *
++ * In the former case, it will have notified lockdep of interrupts
++ * being re-enabled and generally sanitized the lazy irq state,
++ * and in the latter case it will leave with interrupts hard
++ * disabled and marked as such, so the local_irq_enable() call
++ * in cpu_idle() will properly re-enable everything.
++ */
++bool prep_irq_for_idle(void)
++{
++	/*
++	 * First we need to hard disable to ensure no interrupt
++	 * occurs before we effectively enter the low power state
++	 */
++	hard_irq_disable();
++
++	/*
++	 * If anything happened while we were soft-disabled,
++	 * we return now and do not enter the low power state.
++	 */
++	if (lazy_irq_pending())
++		return false;
++
++	/* Tell lockdep we are about to re-enable */
++	trace_hardirqs_on();
++
++	/*
++	 * Mark interrupts as soft-enabled and clear the
++	 * PACA_IRQ_HARD_DIS from the pending mask since we
++	 * are about to hard enable as well as a side effect
++	 * of entering the low power state.
++	 */
++	local_paca->irq_happened &= ~PACA_IRQ_HARD_DIS;
++	local_paca->soft_enabled = 1;
++
++	/* Tell the caller to enter the low power state */
++	return true;
++}
++
+ #endif /* CONFIG_PPC64 */
+ 
+ int arch_show_interrupts(struct seq_file *p, int prec)
+--- a/arch/powerpc/platforms/cell/pervasive.c
++++ b/arch/powerpc/platforms/cell/pervasive.c
+@@ -42,11 +42,9 @@ static void cbe_power_save(void)
+ {
+ 	unsigned long ctrl, thread_switch_control;
+ 
+-	/*
+-	 * We need to hard disable interrupts, the local_irq_enable() done by
+-	 * our caller upon return will hard re-enable.
+-	 */
+-	hard_irq_disable();
++	/* Ensure our interrupt state is properly tracked */
++	if (!prep_irq_for_idle())
++		return;
+ 
+ 	ctrl = mfspr(SPRN_CTRLF);
+ 
+@@ -81,6 +79,9 @@ static void cbe_power_save(void)
+ 	 */
+ 	ctrl &= ~(CTRL_RUNLATCH | CTRL_TE);
+ 	mtspr(SPRN_CTRLT, ctrl);
++
++	/* Re-enable interrupts in MSR */
++	__hard_irq_enable();
+ }
+ 
+ static int cbe_system_reset_exception(struct pt_regs *regs)
+--- a/arch/powerpc/platforms/pseries/processor_idle.c
++++ b/arch/powerpc/platforms/pseries/processor_idle.c
+@@ -99,15 +99,18 @@ out:
+ static void check_and_cede_processor(void)
+ {
+ 	/*
+-	 * Interrupts are soft-disabled at this point,
+-	 * but not hard disabled. So an interrupt might have
+-	 * occurred before entering NAP, and would be potentially
+-	 * lost (edge events, decrementer events, etc...) unless
+-	 * we first hard disable then check.
++	 * Ensure our interrupt state is properly tracked,
++	 * also checks if no interrupt has occurred while we
++	 * were soft-disabled
+ 	 */
+-	hard_irq_disable();
+-	if (!lazy_irq_pending())
++	if (prep_irq_for_idle()) {
+ 		cede_processor();
++#ifdef CONFIG_TRACE_IRQFLAGS
++		/* Ensure that H_CEDE returns with IRQs on */
++		if (WARN_ON(!(mfmsr() & MSR_EE)))
++			__hard_irq_enable();
 +#endif
++	}
+ }
  
- 			struct {
- 
+ static int dedicated_cede_loop(struct cpuidle_device *dev,
 
 
