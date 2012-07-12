@@ -1,29 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162226Ab2GLWoh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:44:37 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48386 "EHLO
+	id S1162203Ab2GLWov (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:44:51 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52130 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162155Ab2GLWoQ (ORCPT
+	with ESMTP id S1162193Ab2GLWol (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:44:16 -0400
+	Thu, 12 Jul 2012 18:44:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        Oliver Neukum <oneukum@suse.de>
-Subject: =?y?q?=5B=20150/187=5D=20USB=3A=20cdc-wdm=3A=20fix=20lockup=20on=20error=20in=20wdm=5Fread?=
-Date: Thu, 12 Jul 2012 15:35:06 -0700
-Message-Id: <20120712191536.295590217@linuxfoundation.org>
+        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 157/187] Lockd: pass network namespace to creation and destruction routines
+Date: Thu, 12 Jul 2012 15:35:13 -0700
+Message-Id: <20120712191536.961387028@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
  <20120712191522.742634173@linuxfoundation.org>
 User-Agent: quilt/0.60-20.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset=y
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -34,72 +31,153 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
 
-commit b086b6b10d9f182cd8d2f0dcfd7fd11edba93fc9 upstream.
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
-Clear the WDM_READ flag on empty reads to avoid running
-forever in an infinite tight loop, causing lockups:
+upstream commit e3f70eadb7dddfb5a2bb9afff7abfc6ee17a29d0.
 
-Jul  1 21:58:11 nemi kernel: [ 3658.898647] qmi_wwan 2-1:1.2: Unexpected error -71
-Jul  1 21:58:36 nemi kernel: [ 3684.072021] BUG: soft lockup - CPU#0 stuck for 23s! [qmi.pl:12235]
-Jul  1 21:58:36 nemi kernel: [ 3684.072212] CPU 0
-Jul  1 21:58:36 nemi kernel: [ 3684.072355]
-Jul  1 21:58:36 nemi kernel: [ 3684.072367] Pid: 12235, comm: qmi.pl Tainted: P           O 3.5.0-rc2+ #13 LENOVO 2776LEG/2776LEG
-Jul  1 21:58:36 nemi kernel: [ 3684.072383] RIP: 0010:[<ffffffffa0635008>]  [<ffffffffa0635008>] spin_unlock_irq+0x8/0xc [cdc_wdm]
-Jul  1 21:58:36 nemi kernel: [ 3684.072388] RSP: 0018:ffff88022dca1e70  EFLAGS: 00000282
-Jul  1 21:58:36 nemi kernel: [ 3684.072393] RAX: ffff88022fc3f650 RBX: ffffffff811c56f7 RCX: 00000001000ce8c1
-Jul  1 21:58:36 nemi kernel: [ 3684.072398] RDX: 0000000000000010 RSI: 000000000267d810 RDI: ffff88022fc3f650
-Jul  1 21:58:36 nemi kernel: [ 3684.072403] RBP: ffff88022dca1eb0 R08: ffffffffa063578e R09: 0000000000000000
-Jul  1 21:58:36 nemi kernel: [ 3684.072407] R10: 0000000000000008 R11: 0000000000000246 R12: 0000000000000002
-Jul  1 21:58:36 nemi kernel: [ 3684.072412] R13: 0000000000000246 R14: ffffffff00000002 R15: ffff8802281d8c88
-Jul  1 21:58:36 nemi kernel: [ 3684.072418] FS:  00007f666a260700(0000) GS:ffff88023bc00000(0000) knlGS:0000000000000000
-Jul  1 21:58:36 nemi kernel: [ 3684.072423] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-Jul  1 21:58:36 nemi kernel: [ 3684.072428] CR2: 000000000270d9d8 CR3: 000000022e865000 CR4: 00000000000007f0
-Jul  1 21:58:36 nemi kernel: [ 3684.072433] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-Jul  1 21:58:36 nemi kernel: [ 3684.072438] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Jul  1 21:58:36 nemi kernel: [ 3684.072444] Process qmi.pl (pid: 12235, threadinfo ffff88022dca0000, task ffff88022ff76380)
-Jul  1 21:58:36 nemi kernel: [ 3684.072448] Stack:
-Jul  1 21:58:36 nemi kernel: [ 3684.072458]  ffffffffa063592e 0000000100020000 ffff88022fc3f650 ffff88022fc3f6a8
-Jul  1 21:58:36 nemi kernel: [ 3684.072466]  0000000000000200 0000000100000000 000000000267d810 0000000000000000
-Jul  1 21:58:36 nemi kernel: [ 3684.072475]  0000000000000000 ffff880212cfb6d0 0000000000000200 ffff880212cfb6c0
-Jul  1 21:58:36 nemi kernel: [ 3684.072479] Call Trace:
-Jul  1 21:58:36 nemi kernel: [ 3684.072489]  [<ffffffffa063592e>] ? wdm_read+0x1a0/0x263 [cdc_wdm]
-Jul  1 21:58:36 nemi kernel: [ 3684.072500]  [<ffffffff8110adb7>] ? vfs_read+0xa1/0xfb
-Jul  1 21:58:36 nemi kernel: [ 3684.072509]  [<ffffffff81040589>] ? alarm_setitimer+0x35/0x64
-Jul  1 21:58:36 nemi kernel: [ 3684.072517]  [<ffffffff8110aec7>] ? sys_read+0x45/0x6e
-Jul  1 21:58:36 nemi kernel: [ 3684.072525]  [<ffffffff813725f9>] ? system_call_fastpath+0x16/0x1b
-Jul  1 21:58:36 nemi kernel: [ 3684.072557] Code: <66> 66 90 c3 83 ff ed 89 f8 74 16 7f 06 83 ff a1 75 0a c3 83 ff f4
+v2: dereference of most probably already released nlm_host removed in
+nlmclnt_done() and reclaimer().
 
-The WDM_READ flag is normally cleared by wdm_int_callback
-before resubmitting the read urb, and set by wdm_in_callback
-when this urb returns with data or an error.  But a crashing
-device may cause both a read error and cancelling all urbs.
-Make sure that the flag is cleared by wdm_read if the buffer
-is empty.
+These routines are called from locks reclaimer() kernel thread. This thread
+works in "init_net" network context and currently relays on persence on lockd
+thread and it's per-net resources. Thus lockd_up() and lockd_down() can't relay
+on current network context. So let's pass corrent one into them.
 
-We don't clear the flag on errors, as there may be pending
-data in the buffer which should be processed.  The flag will
-instead be cleared on the next wdm_read call.
-
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Acked-by: Oliver Neukum <oneukum@suse.de>
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/usb/class/cdc-wdm.c |    2 ++
- 1 file changed, 2 insertions(+)
+ fs/lockd/clntlock.c        |   13 ++++++++-----
+ fs/lockd/svc.c             |    7 +++----
+ fs/nfsd/nfssvc.c           |    6 +++---
+ include/linux/lockd/bind.h |    4 ++--
+ 4 files changed, 16 insertions(+), 14 deletions(-)
 
---- a/drivers/usb/class/cdc-wdm.c
-+++ b/drivers/usb/class/cdc-wdm.c
-@@ -497,6 +497,8 @@ retry:
- 			goto retry;
+--- a/fs/lockd/clntlock.c
++++ b/fs/lockd/clntlock.c
+@@ -56,7 +56,7 @@ struct nlm_host *nlmclnt_init(const stru
+ 	u32 nlm_version = (nlm_init->nfs_version == 2) ? 1 : 4;
+ 	int status;
+ 
+-	status = lockd_up();
++	status = lockd_up(nlm_init->net);
+ 	if (status < 0)
+ 		return ERR_PTR(status);
+ 
+@@ -65,7 +65,7 @@ struct nlm_host *nlmclnt_init(const stru
+ 				   nlm_init->hostname, nlm_init->noresvport,
+ 				   nlm_init->net);
+ 	if (host == NULL) {
+-		lockd_down();
++		lockd_down(nlm_init->net);
+ 		return ERR_PTR(-ENOLCK);
+ 	}
+ 
+@@ -80,8 +80,10 @@ EXPORT_SYMBOL_GPL(nlmclnt_init);
+  */
+ void nlmclnt_done(struct nlm_host *host)
+ {
++	struct net *net = host->net;
++
+ 	nlmclnt_release_host(host);
+-	lockd_down();
++	lockd_down(net);
+ }
+ EXPORT_SYMBOL_GPL(nlmclnt_done);
+ 
+@@ -220,11 +222,12 @@ reclaimer(void *ptr)
+ 	struct nlm_wait	  *block;
+ 	struct file_lock *fl, *next;
+ 	u32 nsmstate;
++	struct net *net = host->net;
+ 
+ 	allow_signal(SIGKILL);
+ 
+ 	down_write(&host->h_rwsem);
+-	lockd_up();	/* note: this cannot fail as lockd is already running */
++	lockd_up(net);	/* note: this cannot fail as lockd is already running */
+ 
+ 	dprintk("lockd: reclaiming locks for host %s\n", host->h_name);
+ 
+@@ -275,6 +278,6 @@ restart:
+ 
+ 	/* Release host handle after use */
+ 	nlmclnt_release_host(host);
+-	lockd_down();
++	lockd_down(net);
+ 	return 0;
+ }
+--- a/fs/lockd/svc.c
++++ b/fs/lockd/svc.c
+@@ -295,11 +295,10 @@ static void lockd_down_net(struct net *n
+ /*
+  * Bring up the lockd process if it's not already up.
+  */
+-int lockd_up(void)
++int lockd_up(struct net *net)
+ {
+ 	struct svc_serv *serv;
+ 	int		error = 0;
+-	struct net *net = current->nsproxy->net_ns;
+ 
+ 	mutex_lock(&nlmsvc_mutex);
+ 	/*
+@@ -378,12 +377,12 @@ EXPORT_SYMBOL_GPL(lockd_up);
+  * Decrement the user count and bring down lockd if we're the last.
+  */
+ void
+-lockd_down(void)
++lockd_down(struct net *net)
+ {
+ 	mutex_lock(&nlmsvc_mutex);
+ 	if (nlmsvc_users) {
+ 		if (--nlmsvc_users) {
+-			lockd_down_net(current->nsproxy->net_ns);
++			lockd_down_net(net);
+ 			goto out;
  		}
- 		if (!desc->reslength) { /* zero length read */
-+			dev_dbg(&desc->intf->dev, "%s: zero length - clearing WDM_READ\n", __func__);
-+			clear_bit(WDM_READ, &desc->flags);
- 			spin_unlock_irq(&desc->iuspin);
- 			goto retry;
- 		}
+ 	} else {
+--- a/fs/nfsd/nfssvc.c
++++ b/fs/nfsd/nfssvc.c
+@@ -220,7 +220,7 @@ static int nfsd_startup(unsigned short p
+ 	ret = nfsd_init_socks(port);
+ 	if (ret)
+ 		goto out_racache;
+-	ret = lockd_up();
++	ret = lockd_up(&init_net);
+ 	if (ret)
+ 		goto out_racache;
+ 	ret = nfs4_state_start();
+@@ -229,7 +229,7 @@ static int nfsd_startup(unsigned short p
+ 	nfsd_up = true;
+ 	return 0;
+ out_lockd:
+-	lockd_down();
++	lockd_down(&init_net);
+ out_racache:
+ 	nfsd_racache_shutdown();
+ 	return ret;
+@@ -246,7 +246,7 @@ static void nfsd_shutdown(void)
+ 	if (!nfsd_up)
+ 		return;
+ 	nfs4_state_shutdown();
+-	lockd_down();
++	lockd_down(&init_net);
+ 	nfsd_racache_shutdown();
+ 	nfsd_up = false;
+ }
+--- a/include/linux/lockd/bind.h
++++ b/include/linux/lockd/bind.h
+@@ -54,7 +54,7 @@ extern void	nlmclnt_done(struct nlm_host
+ 
+ extern int	nlmclnt_proc(struct nlm_host *host, int cmd,
+ 					struct file_lock *fl);
+-extern int	lockd_up(void);
+-extern void	lockd_down(void);
++extern int	lockd_up(struct net *net);
++extern void	lockd_down(struct net *net);
+ 
+ #endif /* LINUX_LOCKD_BIND_H */
 
 
