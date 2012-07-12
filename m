@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161772Ab2GLWkO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:40:14 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44509 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161755Ab2GLWkF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1161757Ab2GLWkF (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 12 Jul 2012 18:40:05 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:64093 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161738Ab2GLWj4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 18:39:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ben Skeggs <bskeggs@redhat.com>, Dave Airlie <airlied@redhat.com>
-Subject: [ 072/187] drm/nouveau/fbcon: using nv_two_heads is not a good idea
-Date: Thu, 12 Jul 2012 15:33:48 -0700
-Message-Id: <20120712191529.079783605@linuxfoundation.org>
+        Stuart Hayes <Stuart_Hayes@Dell.com>, Len Brown <len.brown@intel.com>
+Subject: [ 076/187] acpi_pad: fix power_saving thread deadlock
+Date: Thu, 12 Jul 2012 15:33:52 -0700
+Message-Id: <20120712191529.458486531@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -30,40 +30,64 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Ben Skeggs <bskeggs@redhat.com>
+From: Stuart Hayes <Stuart_Hayes@Dell.com>
 
-commit 9bd0c15fcfb42f6245447c53347d65ad9e72080b upstream.
+commit 5f1601261050251a5ca293378b492a69d590dacb upstream.
 
-nv_two_heads() was never meant to be used outside of pre-nv50 code.  The
-code checks for >= NV_10 for 2 CRTCs, then downgrades a few specific
-chipsets to 1 CRTC based on (pci_device & 0x0ff0).
+The acpi_pad driver can get stuck in destroy_power_saving_task()
+waiting for kthread_stop() to stop a power_saving thread.  The problem
+is that the isolated_cpus_lock mutex is owned when
+destroy_power_saving_task() calls kthread_stop(), which waits for a
+power_saving thread to end, and the power_saving thread tries to
+acquire the isolated_cpus_lock when it calls round_robin_cpu().  This
+patch fixes the issue by making round_robin_cpu() use its own mutex.
 
-The breakage example seen is on GTX 560Ti, with a pciid of 0x1200, which
-gets detected as an NV20 (0x020x) with 1 CRTC by nv_two_heads(), causing
-memory corruption because there's actually 2 CRTCs..
+https://bugzilla.kernel.org/show_bug.cgi?id=42981
 
-This switches fbcon to use the CRTC count directly from the mode_config
-structure, which will also fix the same issue on Kepler boards which have
-4 CRTCs.
-
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Stuart Hayes <Stuart_Hayes@Dell.com>
+Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/nouveau_fbcon.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/acpi/acpi_pad.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/nouveau/nouveau_fbcon.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_fbcon.c
-@@ -497,7 +497,7 @@ int nouveau_fbcon_init(struct drm_device
- 	nfbdev->helper.funcs = &nouveau_fbcon_helper_funcs;
+--- a/drivers/acpi/acpi_pad.c
++++ b/drivers/acpi/acpi_pad.c
+@@ -36,6 +36,7 @@
+ #define ACPI_PROCESSOR_AGGREGATOR_DEVICE_NAME "Processor Aggregator"
+ #define ACPI_PROCESSOR_AGGREGATOR_NOTIFY 0x80
+ static DEFINE_MUTEX(isolated_cpus_lock);
++static DEFINE_MUTEX(round_robin_lock);
  
- 	ret = drm_fb_helper_init(dev, &nfbdev->helper,
--				 nv_two_heads(dev) ? 2 : 1, 4);
-+				 dev->mode_config.num_crtc, 4);
- 	if (ret) {
- 		kfree(nfbdev);
- 		return ret;
+ static unsigned long power_saving_mwait_eax;
+ 
+@@ -107,7 +108,7 @@ static void round_robin_cpu(unsigned int
+ 	if (!alloc_cpumask_var(&tmp, GFP_KERNEL))
+ 		return;
+ 
+-	mutex_lock(&isolated_cpus_lock);
++	mutex_lock(&round_robin_lock);
+ 	cpumask_clear(tmp);
+ 	for_each_cpu(cpu, pad_busy_cpus)
+ 		cpumask_or(tmp, tmp, topology_thread_cpumask(cpu));
+@@ -116,7 +117,7 @@ static void round_robin_cpu(unsigned int
+ 	if (cpumask_empty(tmp))
+ 		cpumask_andnot(tmp, cpu_online_mask, pad_busy_cpus);
+ 	if (cpumask_empty(tmp)) {
+-		mutex_unlock(&isolated_cpus_lock);
++		mutex_unlock(&round_robin_lock);
+ 		return;
+ 	}
+ 	for_each_cpu(cpu, tmp) {
+@@ -131,7 +132,7 @@ static void round_robin_cpu(unsigned int
+ 	tsk_in_cpu[tsk_index] = preferred_cpu;
+ 	cpumask_set_cpu(preferred_cpu, pad_busy_cpus);
+ 	cpu_weight[preferred_cpu]++;
+-	mutex_unlock(&isolated_cpus_lock);
++	mutex_unlock(&round_robin_lock);
+ 
+ 	set_cpus_allowed_ptr(current, cpumask_of(preferred_cpu));
+ }
 
 
