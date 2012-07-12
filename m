@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162897Ab2GLXGS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:06:18 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60424 "EHLO
+	id S1162912Ab2GLXGZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:06:25 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47532 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162849Ab2GLXGM (ORCPT
+	with ESMTP id S1162849Ab2GLXGT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 19:06:12 -0400
+	Thu, 12 Jul 2012 19:06:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Nadav HarEl <nyh@il.ibm.com>, "Michael S. Tsirkin" <mst@redhat.com>,
-        Jean Delvare <jdelvare@suse.de>
-Subject: [ 55/68] vhost: dont forget to schedule()
-Date: Thu, 12 Jul 2012 16:02:29 -0700
-Message-Id: <20120712175040.306342694@linuxfoundation.org>
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Hin-Tak Leung <htl10@users.sourceforge.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Josh Boyer <jwboyer@redhat.com>
+Subject: [ 57/68] rtl8187: ->brightness_set can not sleep
+Date: Thu, 12 Jul 2012 16:02:31 -0700
+Message-Id: <20120712175040.478838253@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712175035.530652872@linuxfoundation.org>
 References: <20120712175057.GA9917@kroah.com>
@@ -31,59 +34,55 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Nadav Har'El <nyh@math.technion.ac.il>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit d550dda192c1bd039afb774b99485e88b70d7cb8 upstream.
+commit 0fde0a8cfd0ede7f310d6a681c8e5a7cb3e32406 upstream.
 
-This is a tiny, but important, patch to vhost.
+Fix:
 
-Vhost's worker thread only called schedule() when it had no work to do, and
-it wanted to go to sleep. But if there's always work to do, e.g., the guest
-is running a network-intensive program like netperf with small message sizes,
-schedule() was *never* called. This had several negative implications (on
-non-preemptive kernels):
+BUG: sleeping function called from invalid context at kernel/workqueue.c:2547
+in_atomic(): 1, irqs_disabled(): 0, pid: 629, name: wpa_supplicant
+2 locks held by wpa_supplicant/629:
+ #0:  (rtnl_mutex){+.+.+.}, at: [<c08b2b84>] rtnl_lock+0x14/0x20
+ #1:  (&trigger->leddev_list_lock){.+.?..}, at: [<c0867f41>] led_trigger_event+0x21/0x80
+Pid: 629, comm: wpa_supplicant Not tainted 3.3.0-0.rc3.git5.1.fc17.i686
+Call Trace:
+ [<c046a9f6>] __might_sleep+0x126/0x1d0
+ [<c0457d6c>] wait_on_work+0x2c/0x1d0
+ [<c045a09a>] __cancel_work_timer+0x6a/0x120
+ [<c045a160>] cancel_delayed_work_sync+0x10/0x20
+ [<f7dd3c22>] rtl8187_led_brightness_set+0x82/0xf0 [rtl8187]
+ [<c0867f7c>] led_trigger_event+0x5c/0x80
+ [<f7ff5e6d>] ieee80211_led_radio+0x1d/0x40 [mac80211]
+ [<f7ff3583>] ieee80211_stop_device+0x13/0x230 [mac80211]
 
- 1. Passing time was not properly accounted to the "vhost" process (ps and
-    top would wrongly show it using zero CPU time).
+Removing _sync is ok, because if led_on work is currently running
+it will be finished before led_off work start to perform, since
+they are always queued on the same mac80211 local->workqueue.
 
- 2. Sometimes error messages about RCU timeouts would be printed, if the
-    core running the vhost thread didn't schedule() for a very long time.
+Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=795176
 
- 3. Worst of all, a vhost thread would "hog" the core. If several vhost
-    threads need to share the same core, typically one would get most of the
-    CPU time (and its associated guest most of the performance), while the
-    others hardly get any work done.
-
-The trivial solution is to add
-
-	if (need_resched())
-		schedule();
-
-After doing every piece of work. This will not do the heavy schedule() all
-the time, just when the timer interrupt decided a reschedule is warranted
-(so need_resched returns true).
-
-Thanks to Abel Gordon for this patch.
-
-Signed-off-by: Nadav Har'El <nyh@il.ibm.com>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Cc: Jean Delvare <jdelvare@suse.de>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
+Acked-by: Hin-Tak Leung <htl10@users.sourceforge.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Cc: Josh Boyer <jwboyer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/vhost/vhost.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/wireless/rtl818x/rtl8187/leds.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/vhost/vhost.c
-+++ b/drivers/vhost/vhost.c
-@@ -217,6 +217,8 @@ static int vhost_worker(void *data)
- 		if (work) {
- 			__set_current_state(TASK_RUNNING);
- 			work->fn(work);
-+			if (need_resched())
-+				schedule();
- 		} else
- 			schedule();
- 
+--- a/drivers/net/wireless/rtl818x/rtl8187/leds.c
++++ b/drivers/net/wireless/rtl818x/rtl8187/leds.c
+@@ -117,7 +117,7 @@ static void rtl8187_led_brightness_set(s
+ 			radio_on = true;
+ 		} else if (radio_on) {
+ 			radio_on = false;
+-			cancel_delayed_work_sync(&priv->led_on);
++			cancel_delayed_work(&priv->led_on);
+ 			ieee80211_queue_delayed_work(hw, &priv->led_off, 0);
+ 		}
+ 	} else if (radio_on) {
 
 
