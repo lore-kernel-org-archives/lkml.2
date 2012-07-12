@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161914Ab2GLXnx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:43:53 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58752 "EHLO
+	id S1759557Ab2GLXoY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:44:24 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44509 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759548Ab2GLWhs (ORCPT
+	with ESMTP id S1759537Ab2GLWho (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:37:48 -0400
+	Thu, 12 Jul 2012 18:37:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <edumazet@google.com>,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 039/187] net: remove skb_orphan_try()
-Date: Thu, 12 Jul 2012 15:33:15 -0700
-Message-Id: <20120712191525.953445138@linuxfoundation.org>
+        Thomas Graf <tgraf@suug.ch>, "David S. Miller" <davem@davemloft.net>
+Subject: [ 029/187] ipv6: fib: Restore NTF_ROUTER exception in fib6_age()
+Date: Thu, 12 Jul 2012 15:33:05 -0700
+Message-Id: <20120712191524.980089380@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -33,127 +31,31 @@ From: Greg KH <gregkh@linuxfoundation.org>
 ------------------
 
 
-From: Eric Dumazet <edumazet@google.com>
+From: Thomas Graf <tgraf@suug.ch>
 
-[ Upstream commit 62b1a8ab9b3660bb820d8dfe23148ed6cda38574 ]
+[ Upstream commit 8bd74516b1bd9308c17f67583134d93f777203ca ]
 
-Orphaning skb in dev_hard_start_xmit() makes bonding behavior
-unfriendly for applications sending big UDP bursts : Once packets
-pass the bonding device and come to real device, they might hit a full
-qdisc and be dropped. Without orphaning, the sender is automatically
-throttled because sk->sk_wmemalloc reaches sk->sk_sndbuf (assuming
-sk_sndbuf is not too big)
+Commit 5339ab8b1dd82 (ipv6: fib: Convert fib6_age() to
+dst_neigh_lookup().) seems to have mistakenly inverted the
+exception for cached NTF_ROUTER routes.
 
-We could try to defer the orphaning adding another test in
-dev_hard_start_xmit(), but all this seems of little gain,
-now that BQL tends to make packets more likely to be parked
-in Qdisc queues instead of NIC TX ring, in cases where performance
-matters.
-
-Reverts commits :
-fc6055a5ba31 net: Introduce skb_orphan_try()
-87fd308cfc6b net: skb_tx_hash() fix relative to skb_orphan_try()
-and removes SKBTX_DRV_NEEDS_SK_REF flag
-
-Reported-and-bisected-by: Jean-Michel Hautbois <jhautbois@gmail.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Tested-by: Oliver Hartkopp <socketcan@hartkopp.net>
-Acked-by: Oliver Hartkopp <socketcan@hartkopp.net>
+Signed-off-by: Thomas Graf <tgraf@suug.ch>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/linux/skbuff.h |    7 ++-----
- net/can/raw.c          |    3 ---
- net/core/dev.c         |   23 +----------------------
- net/iucv/af_iucv.c     |    1 -
- 4 files changed, 3 insertions(+), 31 deletions(-)
+ net/ipv6/ip6_fib.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -225,14 +225,11 @@ enum {
- 	/* device driver is going to provide hardware time stamp */
- 	SKBTX_IN_PROGRESS = 1 << 2,
- 
--	/* ensure the originating sk reference is available on driver level */
--	SKBTX_DRV_NEEDS_SK_REF = 1 << 3,
--
- 	/* device driver supports TX zero-copy buffers */
--	SKBTX_DEV_ZEROCOPY = 1 << 4,
-+	SKBTX_DEV_ZEROCOPY = 1 << 3,
- 
- 	/* generate wifi status information (where possible) */
--	SKBTX_WIFI_STATUS = 1 << 5,
-+	SKBTX_WIFI_STATUS = 1 << 4,
- };
- 
- /*
---- a/net/can/raw.c
-+++ b/net/can/raw.c
-@@ -681,9 +681,6 @@ static int raw_sendmsg(struct kiocb *ioc
- 	if (err < 0)
- 		goto free_skb;
- 
--	/* to be able to check the received tx sock reference in raw_rcv() */
--	skb_shinfo(skb)->tx_flags |= SKBTX_DRV_NEEDS_SK_REF;
--
- 	skb->dev = dev;
- 	skb->sk  = sk;
- 
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -2091,25 +2091,6 @@ static int dev_gso_segment(struct sk_buf
- 	return 0;
- }
- 
--/*
-- * Try to orphan skb early, right before transmission by the device.
-- * We cannot orphan skb if tx timestamp is requested or the sk-reference
-- * is needed on driver level for other reasons, e.g. see net/can/raw.c
-- */
--static inline void skb_orphan_try(struct sk_buff *skb)
--{
--	struct sock *sk = skb->sk;
--
--	if (sk && !skb_shinfo(skb)->tx_flags) {
--		/* skb_tx_hash() wont be able to get sk.
--		 * We copy sk_hash into skb->rxhash
--		 */
--		if (!skb->rxhash)
--			skb->rxhash = sk->sk_hash;
--		skb_orphan(skb);
--	}
--}
--
- static bool can_checksum_protocol(netdev_features_t features, __be16 protocol)
- {
- 	return ((features & NETIF_F_GEN_CSUM) ||
-@@ -2195,8 +2176,6 @@ int dev_hard_start_xmit(struct sk_buff *
- 		if (!list_empty(&ptype_all))
- 			dev_queue_xmit_nit(skb, dev);
- 
--		skb_orphan_try(skb);
--
- 		features = netif_skb_features(skb);
- 
- 		if (vlan_tx_tag_present(skb) &&
-@@ -2306,7 +2285,7 @@ u16 __skb_tx_hash(const struct net_devic
- 	if (skb->sk && skb->sk->sk_hash)
- 		hash = skb->sk->sk_hash;
- 	else
--		hash = (__force u16) skb->protocol ^ skb->rxhash;
-+		hash = (__force u16) skb->protocol;
- 	hash = jhash_1word(hash, hashrnd);
- 
- 	return (u16) (((u64) hash * qcount) >> 32) + qoffset;
---- a/net/iucv/af_iucv.c
-+++ b/net/iucv/af_iucv.c
-@@ -372,7 +372,6 @@ static int afiucv_hs_send(struct iucv_me
- 			skb_trim(skb, skb->dev->mtu);
- 	}
- 	skb->protocol = ETH_P_AF_IUCV;
--	skb_shinfo(skb)->tx_flags |= SKBTX_DRV_NEEDS_SK_REF;
- 	nskb = skb_clone(skb, GFP_ATOMIC);
- 	if (!nskb)
- 		return -ENOMEM;
+--- a/net/ipv6/ip6_fib.c
++++ b/net/ipv6/ip6_fib.c
+@@ -1560,7 +1560,7 @@ static int fib6_age(struct rt6_info *rt,
+ 				neigh_flags = neigh->flags;
+ 				neigh_release(neigh);
+ 			}
+-			if (neigh_flags & NTF_ROUTER) {
++			if (!(neigh_flags & NTF_ROUTER)) {
+ 				RT6_TRACE("purging route %p via non-router but gateway\n",
+ 					  rt);
+ 				return -1;
 
 
