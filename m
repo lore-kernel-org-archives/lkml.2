@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162621Ab2GLXEH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:04:07 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:34853 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162583Ab2GLXEA (ORCPT
+	id S1162651Ab2GLXEU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:04:20 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60424 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162637Ab2GLXEQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 19:04:00 -0400
+	Thu, 12 Jul 2012 19:04:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Panayiotis Karabassis <panayk@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 23/68] ath9k: enable serialize_regmode for non-PCIE AR9287
-Date: Thu, 12 Jul 2012 16:01:57 -0700
-Message-Id: <20120712175037.504006534@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>, Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 28/68] drm/i915: Fix eDP blank screen after S3 resume on HP desktops
+Date: Thu, 12 Jul 2012 16:02:02 -0700
+Message-Id: <20120712175037.942127608@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712175035.530652872@linuxfoundation.org>
 References: <20120712175057.GA9917@kroah.com>
@@ -31,32 +30,43 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Panayiotis Karabassis <panayk@gmail.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 7508b657967cf664b5aa0f6367d05016e7e3bc2a upstream.
+commit 6db65cbb941f9d433659bdad02b307f6d94465df upstream.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=42903
+This patch fixes the problem on some HP desktop machines with eDP
+which give blank screens after S3 resume.
 
-Based on the work of <fynivx@gmail.com>
+It turned out that BLC_PWM_CPU_CTL must be written after
+BLC_PWM_CPU_CTL2.  Otherwise it doesn't take effect on these
+SNB machines.
 
-Signed-off-by: Panayiotis Karabassis <panayk@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Tested with 3.5-rc3 kernel.
+
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=49233
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/hw.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/i915/i915_suspend.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/ath/ath9k/hw.c
-+++ b/drivers/net/wireless/ath/ath9k/hw.c
-@@ -530,7 +530,7 @@ static int __ath9k_hw_init(struct ath_hw
- 
- 	if (ah->config.serialize_regmode == SER_REG_MODE_AUTO) {
- 		if (ah->hw_version.macVersion == AR_SREV_VERSION_5416_PCI ||
--		    ((AR_SREV_9160(ah) || AR_SREV_9280(ah)) &&
-+		    ((AR_SREV_9160(ah) || AR_SREV_9280(ah) || AR_SREV_9287(ah)) &&
- 		     !ah->is_pciexpress)) {
- 			ah->config.serialize_regmode =
- 				SER_REG_MODE_ON;
+--- a/drivers/gpu/drm/i915/i915_suspend.c
++++ b/drivers/gpu/drm/i915/i915_suspend.c
+@@ -739,8 +739,11 @@ static void i915_restore_display(struct
+ 	if (HAS_PCH_SPLIT(dev)) {
+ 		I915_WRITE(BLC_PWM_PCH_CTL1, dev_priv->saveBLC_PWM_CTL);
+ 		I915_WRITE(BLC_PWM_PCH_CTL2, dev_priv->saveBLC_PWM_CTL2);
+-		I915_WRITE(BLC_PWM_CPU_CTL, dev_priv->saveBLC_CPU_PWM_CTL);
++		/* NOTE: BLC_PWM_CPU_CTL must be written after BLC_PWM_CPU_CTL2;
++		 * otherwise we get blank eDP screen after S3 on some machines
++		 */
+ 		I915_WRITE(BLC_PWM_CPU_CTL2, dev_priv->saveBLC_CPU_PWM_CTL2);
++		I915_WRITE(BLC_PWM_CPU_CTL, dev_priv->saveBLC_CPU_PWM_CTL);
+ 		I915_WRITE(PCH_PP_ON_DELAYS, dev_priv->savePP_ON_DELAYS);
+ 		I915_WRITE(PCH_PP_OFF_DELAYS, dev_priv->savePP_OFF_DELAYS);
+ 		I915_WRITE(PCH_PP_DIVISOR, dev_priv->savePP_DIVISOR);
 
 
