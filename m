@@ -1,46 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161586Ab2GLVbI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 17:31:08 -0400
-Received: from mail-1.atlantis.sk ([80.94.52.57]:48776 "EHLO mail.atlantis.sk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933147Ab2GLVbE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 17:31:04 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: Jaroslav Kysela <perex@perex.cz>
-Subject: [PATCH] wss_lib: fix suspend/resume
-Date: Thu, 12 Jul 2012 23:30:31 +0200
-User-Agent: KMail/1.9.10
-Cc: alsa-devel@alsa-project.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
+	id S1161597Ab2GLVbY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 17:31:24 -0400
+Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:3032 "EHLO
+	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S964795Ab2GLVbU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 17:31:20 -0400
+Message-ID: <1342128675.22584.38.camel@x61.thuisdomein>
+Subject: Re: SPI: bcm63xx_dev_spi.h
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jonas Gorski <jonas.gorski@gmail.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Florian Fainelli <florian@openwrt.org>
+Date: Thu, 12 Jul 2012 23:31:15 +0200
+In-Reply-To: <CAOiHx=nHf+rRGsw_pvSwxKn5VE9QYvCvy_p6j1ETf9HSHBgUNQ@mail.gmail.com>
+References: <1342126544.22584.36.camel@x61.thuisdomein>
+	 <CAOiHx=nHf+rRGsw_pvSwxKn5VE9QYvCvy_p6j1ETf9HSHBgUNQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201207122330.34585.linux@rainbow-software.org>
+Mime-Version: 1.0
+X-OriginalArrivalTime: 12 Jul 2012 21:31:15.0648 (UTC) FILETIME=[AACAF400:01CD6075]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By setting SNDRV_PCM_INFO_RESUME, wss_lib claims that it can restore the card
-state fully on resume. But in fact, it can't as DMA is not restored so any
-playback/capture running during suspend will fail to continue after resume.
+On Thu, 2012-07-12 at 23:26 +0200, Jonas Gorski wrote:
+> > 2) What's the current status of this header?
+> 
+> It currently sits in Ralf Baechle's queue and waits for the merge window:
+> 
+> http://git.linux-mips.org/?p=ralf/upstream-sfr.git;a=commit;h=435f920f35e90b4681e68002d2e2f6724b0c21b7
 
-Remove SNDRV_PCM_INFO_RESUME flag from pcm info field to fix the problem.
+Thanks!
 
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 
---- a/sound/isa/wss/wss_lib.c
-+++ b/sound/isa/wss/wss_lib.c
-@@ -1456,7 +1456,6 @@ static struct snd_pcm_hardware snd_wss_playback =
- {
- 	.info =			(SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_INTERLEAVED |
- 				 SNDRV_PCM_INFO_MMAP_VALID |
--				 SNDRV_PCM_INFO_RESUME |
- 				 SNDRV_PCM_INFO_SYNC_START),
- 	.formats =		(SNDRV_PCM_FMTBIT_MU_LAW | SNDRV_PCM_FMTBIT_A_LAW | SNDRV_PCM_FMTBIT_IMA_ADPCM |
- 				 SNDRV_PCM_FMTBIT_U8 | SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S16_BE),
+Paul Bolle
 
--- 
-Ondrej Zary
