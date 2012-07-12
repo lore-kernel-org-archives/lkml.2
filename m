@@ -1,114 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758526Ab2GLC0X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 22:26:23 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:42021 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756353Ab2GLC0W (ORCPT
+	id S1758545Ab2GLC0f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 22:26:35 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:35625 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756534Ab2GLC0X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 22:26:22 -0400
-X-AuditID: 9c930197-b7b66ae000006a2c-84-4ffe35c98d4a
-Date: Thu, 12 Jul 2012 11:26:22 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Sasha Levin <levinsasha928@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, jaschut@sandia.gov,
-        kamezawa.hiroyu@jp.fujitsu.com, Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH -mm v3] mm: have order > 0 compaction start off where it
- left
-Message-ID: <20120712022622.GA27120@bbox>
-References: <4FECCB89.2050400@redhat.com>
- <20120628143546.d02d13f9.akpm@linux-foundation.org>
- <1341250950.16969.6.camel@lappy>
- <4FF2435F.2070302@redhat.com>
- <20120703101024.GG13141@csn.ul.ie>
- <20120703144808.4daa4244.akpm@linux-foundation.org>
- <4FF3ABA1.3070808@kernel.org>
- <20120704004219.47d0508d.akpm@linux-foundation.org>
- <4FF3F864.3000204@kernel.org>
- <20120711161800.763dbef0@cuia.bos.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120711161800.763dbef0@cuia.bos.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 11 Jul 2012 22:26:23 -0400
+X-AuditID: cbfee61b-b7f566d000005c8a-07-4ffe35cd949c
+From: Sangbeom Kim <sbkim73@samsung.com>
+To: "'Axel Lin'" <axel.lin@gmail.com>,
+        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>
+Cc: "'Liam Girdwood'" <lrg@ti.com>, linux-kernel@vger.kernel.org
+References: <1342056950.19192.0.camel@phoenix>
+ <1342057150.19192.4.camel@phoenix>
+In-reply-to: <1342057150.19192.4.camel@phoenix>
+Subject: RE: [PATCH 3/3] regulator: s2mps11: Use sec_reg_write rather than
+ sec_reg_update when mask is 0xff
+Date: Thu, 12 Jul 2012 11:26:21 +0900
+Message-id: <016601cd5fd5$b9aba8c0$2d02fa40$@com>
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac1fzybzxJwEpvL4TxWzNWGAt8LZqAABm+0Q
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJLMWRmVeSWpSXmKPExsVy+t9jQd2zpv/8DRY0aVhc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6MDf8LC/YyVszbP425gXE6YxcjJ4eEgIlE4+SPLBC2mMSFe+vZ
+	uhi5OIQEpjNKLDizjhXCmcskMX/SfLAqNgENiZW737KB2CICkRKXX+5iBbGZBewk5h5oYQKx
+	hQSCJba/vg+2gVNAX6L55hYwW1ggV+Lws2vsIDaLgKpE+9v/YDavgKHEvBM/GCFsQYkfk+8B
+	7eIAmqkuMWVKLsR4eYnNa94yg4QlgMKP/uqCmCICRhJ3bkdCVIhI7HvxjnECo9AsJHNmIcyZ
+	hWTOLCQdCxhZVjGKphYkFxQnpeca6RUn5haX5qXrJefnbmIEB/Az6R2MqxosDjEKcDAq8fAG
+	mPzzF2JNLCuuzD3EKMHBrCTCe1QJKMSbklhZlVqUH19UmpNafIhRmoNFSZzXxPurv5BAemJJ
+	anZqakFqEUyWiYNTqoGx4L/gK+Nt/eonT9c+mrmX8azQX6Pu6qcBolasKhav6+XPPfsj+GeB
+	kOcjhWcHv5X2hM2TaN1/WmFp8T3GBXf4hd9pzqvJ9X+XGatzgFlH7+f8+gyNJ2UMM5b/Wzaz
+	5Iti96RsvW3z+Q/zbNS7XZjEqmGYx+/O/PL0Fue5u/VX1ioZc9pVvvRUYinOSDTUYi4qTgQA
+	+wbRHlwCAAA=
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rik,
-
-On Wed, Jul 11, 2012 at 04:18:00PM -0400, Rik van Riel wrote:
-> This patch makes the comment for cc->wrapped longer, explaining
-> what is really going on. It also incorporates the comment fix
-> pointed out by Minchan.
+Hi,
+On Thursday, July 12, 2012 10:39 AM +0900, Axel Lin wrote:
 > 
-> Additionally, Minchan found that, when no pages get isolated,
-> high_pte could be a value that is much lower than desired,
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-s/high_pte/high_pfn
+Acked-by: Sangbeom Kim <sbkim73@samsung.com>
 
-> which might potentially cause compaction to skip a range of
-> pages.
-> 
-> Only assign zone->compact_cache_free_pfn if we actually
-> isolated free pages for compaction.
-> 
-> Split out the calculation to get the start of the last page
-> block in a zone into its own, commented function.
-> 
-> Signed-off-by: Rik van Riel <riel@redhat.com>
-
-Acked-by: Minchan Kim <minchan@kernel.org>
-
-> ---
->  include/linux/mmzone.h |    2 +-
->  mm/compaction.c        |   30 ++++++++++++++++++++++--------
->  mm/internal.h          |    6 +++++-
->  3 files changed, 28 insertions(+), 10 deletions(-)
-> 
-> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> index e629594..e957fa1 100644
-> --- a/include/linux/mmzone.h
-> +++ b/include/linux/mmzone.h
-> @@ -370,7 +370,7 @@ struct zone {
->  	spinlock_t		lock;
->  	int                     all_unreclaimable; /* All pages pinned */
->  #if defined CONFIG_COMPACTION || defined CONFIG_CMA
-> -	/* pfn where the last order > 0 compaction isolated free pages */
-> +	/* pfn where the last incremental compaction isolated free pages */
->  	unsigned long		compact_cached_free_pfn;
->  #endif
->  #ifdef CONFIG_MEMORY_HOTPLUG
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> index 2668b77..3812c3e 100644
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -472,10 +472,11 @@ static void isolate_freepages(struct zone *zone,
->  		 * looking for free pages, the search will restart here as
->  		 * page migration may have returned some pages to the allocator
->  		 */
-> -		if (isolated)
-> +		if (isolated) {
->  			high_pfn = max(high_pfn, pfn);
-> -		if (cc->order > 0)
-> -			zone->compact_cached_free_pfn = high_pfn;
-> +			if (cc->order > 0)
-> +				zone->compact_cached_free_pfn = high_pfn;
-> +		}
->  	}
->  
->  	/* split_free_page does not map the pages */
-> @@ -569,6 +570,21 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
->  	return ISOLATE_SUCCESS;
->  }
->  
-> +/*
-> + * Returns the start pfn of the laste page block in a zone.
-
-s/laste/last/
-
-
+Thanks,
+Sangbeom.
 
