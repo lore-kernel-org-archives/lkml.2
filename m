@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758770Ab2GLGua (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 02:50:30 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39779 "EHLO mx2.suse.de"
+	id S1758830Ab2GLGvB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 02:51:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39723 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758642Ab2GLGkp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 02:40:45 -0400
+	id S1757779Ab2GLGkm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 02:40:42 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
@@ -17,9 +17,9 @@ Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
         Eric Dumazet <eric.dumazet@gmail.com>,
         Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 07/16] net: Introduce sk_gfp_atomic() to allow addition of GFP flags depending on the individual socket
-Date: Thu, 12 Jul 2012 07:40:23 +0100
-Message-Id: <1342075232-29267-8-git-send-email-mgorman@suse.de>
+Subject: [PATCH 04/16] mm: allow PF_MEMALLOC from softirq context
+Date: Thu, 12 Jul 2012 07:40:20 +0100
+Message-Id: <1342075232-29267-5-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1342075232-29267-1-git-send-email-mgorman@suse.de>
 References: <1342075232-29267-1-git-send-email-mgorman@suse.de>
@@ -27,120 +27,113 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce sk_gfp_atomic(), this function allows to inject sock specific
-flags to each sock related allocation. It is only used on allocation
-paths that may be required for writing pages back to network storage.
+This is needed to allow network softirq packet processing to make
+use of PF_MEMALLOC.
 
-[davem@davemloft.net: Use sk_gfp_atomic only when necessary]
+Currently softirq context cannot use PF_MEMALLOC due to it not being
+associated with a task, and therefore not having task flags to fiddle
+with - thus the gfp to alloc flag mapping ignores the task flags when
+in interrupts (hard or soft) context.
+
+Allowing softirqs to make use of PF_MEMALLOC therefore requires some
+trickery. This patch borrows the task flags from whatever process happens
+to be preempted by the softirq. It then modifies the gfp to alloc flags
+mapping to not exclude task flags in softirq context, and modify the
+softirq code to save, clear and restore the PF_MEMALLOC flag.
+
+The save and clear, ensures the preempted task's PF_MEMALLOC flag
+doesn't leak into the softirq. The restore ensures a softirq's
+PF_MEMALLOC flag cannot leak back into the preempted process. This
+should be safe due to the following reasons
+
+Softirqs can run on multiple CPUs sure but the same task should not be
+	executing the same softirq code. Neither should the softirq
+	handler be preempted by any other softirq handler so the flags
+	should not leak to an unrelated softirq.
+
+Softirqs re-enable hardware interrupts in __do_softirq() so can be
+	preempted by hardware interrupts so PF_MEMALLOC is inherited
+	by the hard IRQ. However, this is similar to a process in
+	reclaim being preempted by a hardirq. While PF_MEMALLOC is
+	set, gfp_to_alloc_flags() distinguishes between hard and
+	soft irqs and avoids giving a hardirq the ALLOC_NO_WATERMARKS
+	flag.
+
+If the softirq is deferred to ksoftirq then its flags may be used
+        instead of a normal tasks but as the softirq cannot be preempted,
+        the PF_MEMALLOC flag does not leak to other code by accident.
+
+[davem@davemloft.net: Document why PF_MEMALLOC is safe]
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: David S. Miller <davem@davemloft.net>
 ---
- include/net/sock.h    |    5 +++++
- net/ipv4/tcp_output.c |   12 +++++++-----
- net/ipv6/tcp_ipv6.c   |    8 +++++---
- 3 files changed, 17 insertions(+), 8 deletions(-)
+ include/linux/sched.h |    7 +++++++
+ kernel/softirq.c      |    9 +++++++++
+ mm/page_alloc.c       |    6 +++++-
+ 3 files changed, 21 insertions(+), 1 deletion(-)
 
-diff --git a/include/net/sock.h b/include/net/sock.h
-index ef68cbf..d6ee4c6 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -658,6 +658,11 @@ static inline bool sock_flag(const struct sock *sk, enum sock_flags flag)
- 	return test_bit(flag, &sk->sk_flags);
- }
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 901bc98..f6d4324 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1910,6 +1910,13 @@ static inline void rcu_copy_process(struct task_struct *p)
  
-+static inline gfp_t sk_gfp_atomic(struct sock *sk, gfp_t gfp_mask)
-+{
-+	return GFP_ATOMIC;
-+}
-+
- static inline void sk_acceptq_removed(struct sock *sk)
- {
- 	sk->sk_ack_backlog--;
-diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
-index c465d3e..05e61b7 100644
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -1849,7 +1849,8 @@ void __tcp_push_pending_frames(struct sock *sk, unsigned int cur_mss,
- 	if (unlikely(sk->sk_state == TCP_CLOSE))
- 		return;
- 
--	if (tcp_write_xmit(sk, cur_mss, nonagle, 0, GFP_ATOMIC))
-+	if (tcp_write_xmit(sk, cur_mss, nonagle, 0,
-+			   sk_gfp_atomic(sk, GFP_ATOMIC)))
- 		tcp_check_probe_timer(sk);
- }
- 
-@@ -2470,7 +2471,8 @@ struct sk_buff *tcp_make_synack(struct sock *sk, struct dst_entry *dst,
- 
- 	if (cvp != NULL && cvp->s_data_constant && cvp->s_data_desired)
- 		s_data_desired = cvp->s_data_desired;
--	skb = alloc_skb(MAX_TCP_HEADER + 15 + s_data_desired, GFP_ATOMIC);
-+	skb = alloc_skb(MAX_TCP_HEADER + 15 + s_data_desired,
-+			sk_gfp_atomic(sk, GFP_ATOMIC));
- 	if (unlikely(!skb)) {
- 		dst_release(dst);
- 		return NULL;
-@@ -2769,7 +2771,7 @@ void tcp_send_ack(struct sock *sk)
- 	 * tcp_transmit_skb() will set the ownership to this
- 	 * sock.
- 	 */
--	buff = alloc_skb(MAX_TCP_HEADER, GFP_ATOMIC);
-+	buff = alloc_skb(MAX_TCP_HEADER, sk_gfp_atomic(sk, GFP_ATOMIC));
- 	if (buff == NULL) {
- 		inet_csk_schedule_ack(sk);
- 		inet_csk(sk)->icsk_ack.ato = TCP_ATO_MIN;
-@@ -2784,7 +2786,7 @@ void tcp_send_ack(struct sock *sk)
- 
- 	/* Send it off, this clears delayed acks for us. */
- 	TCP_SKB_CB(buff)->when = tcp_time_stamp;
--	tcp_transmit_skb(sk, buff, 0, GFP_ATOMIC);
-+	tcp_transmit_skb(sk, buff, 0, sk_gfp_atomic(sk, GFP_ATOMIC));
- }
- 
- /* This routine sends a packet with an out of date sequence
-@@ -2804,7 +2806,7 @@ static int tcp_xmit_probe_skb(struct sock *sk, int urgent)
- 	struct sk_buff *skb;
- 
- 	/* We don't queue it, tcp_transmit_skb() sets ownership. */
--	skb = alloc_skb(MAX_TCP_HEADER, GFP_ATOMIC);
-+	skb = alloc_skb(MAX_TCP_HEADER, sk_gfp_atomic(sk, GFP_ATOMIC));
- 	if (skb == NULL)
- 		return -1;
- 
-diff --git a/net/ipv6/tcp_ipv6.c b/net/ipv6/tcp_ipv6.c
-index 64d3e5c..078445e 100644
---- a/net/ipv6/tcp_ipv6.c
-+++ b/net/ipv6/tcp_ipv6.c
-@@ -1337,7 +1337,8 @@ static struct sock * tcp_v6_syn_recv_sock(struct sock *sk, struct sk_buff *skb,
- 	/* Clone pktoptions received with SYN */
- 	newnp->pktoptions = NULL;
- 	if (treq->pktopts != NULL) {
--		newnp->pktoptions = skb_clone(treq->pktopts, GFP_ATOMIC);
-+		newnp->pktoptions = skb_clone(treq->pktopts,
-+					      sk_gfp_atomic(sk, GFP_ATOMIC));
- 		consume_skb(treq->pktopts);
- 		treq->pktopts = NULL;
- 		if (newnp->pktoptions)
-@@ -1387,7 +1388,8 @@ static struct sock * tcp_v6_syn_recv_sock(struct sock *sk, struct sk_buff *skb,
- 		 * across. Shucks.
- 		 */
- 		tcp_md5_do_add(newsk, (union tcp_md5_addr *)&newnp->daddr,
--			       AF_INET6, key->key, key->keylen, GFP_ATOMIC);
-+			       AF_INET6, key->key, key->keylen,
-+			       sk_gfp_atomic(sk, GFP_ATOMIC));
- 	}
  #endif
  
-@@ -1480,7 +1482,7 @@ static int tcp_v6_do_rcv(struct sock *sk, struct sk_buff *skb)
- 					       --ANK (980728)
- 	 */
- 	if (np->rxopt.all)
--		opt_skb = skb_clone(skb, GFP_ATOMIC);
-+		opt_skb = skb_clone(skb, sk_gfp_atomic(sk, GFP_ATOMIC));
++static inline void tsk_restore_flags(struct task_struct *task,
++				unsigned long orig_flags, unsigned long flags)
++{
++	task->flags &= ~flags;
++	task->flags |= orig_flags & flags;
++}
++
+ #ifdef CONFIG_SMP
+ extern void do_set_cpus_allowed(struct task_struct *p,
+ 			       const struct cpumask *new_mask);
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index 671f959..b73e681 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -210,6 +210,14 @@ asmlinkage void __do_softirq(void)
+ 	__u32 pending;
+ 	int max_restart = MAX_SOFTIRQ_RESTART;
+ 	int cpu;
++	unsigned long old_flags = current->flags;
++
++	/*
++	 * Mask out PF_MEMALLOC s current task context is borrowed for the
++	 * softirq. A softirq handled such as network RX might set PF_MEMALLOC
++	 * again if the socket is related to swap
++	 */
++	current->flags &= ~PF_MEMALLOC;
  
- 	if (sk->sk_state == TCP_ESTABLISHED) { /* Fast path */
- 		sock_rps_save_rxhash(sk, skb);
+ 	pending = local_softirq_pending();
+ 	account_system_vtime(current);
+@@ -265,6 +273,7 @@ restart:
+ 
+ 	account_system_vtime(current);
+ 	__local_bh_enable(SOFTIRQ_OFFSET);
++	tsk_restore_flags(current, old_flags, PF_MEMALLOC);
+ }
+ 
+ #ifndef __ARCH_HAS_DO_SOFTIRQ
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index ace51cc..f19c724 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2268,7 +2268,11 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
+ 	if (likely(!(gfp_mask & __GFP_NOMEMALLOC))) {
+ 		if (gfp_mask & __GFP_MEMALLOC)
+ 			alloc_flags |= ALLOC_NO_WATERMARKS;
+-		else if (likely(!(gfp_mask & __GFP_NOMEMALLOC)) && !in_interrupt())
++		else if (in_serving_softirq() && (current->flags & PF_MEMALLOC))
++			alloc_flags |= ALLOC_NO_WATERMARKS;
++		else if (!in_interrupt() &&
++				((current->flags & PF_MEMALLOC) ||
++				 unlikely(test_thread_flag(TIF_MEMDIE))))
+ 			alloc_flags |= ALLOC_NO_WATERMARKS;
+ 	}
+ 
 -- 
 1.7.9.2
 
