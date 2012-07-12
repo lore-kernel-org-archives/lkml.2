@@ -1,118 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161566Ab2GLSPn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 14:15:43 -0400
-Received: from mga14.intel.com ([143.182.124.37]:27850 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932690Ab2GLSPk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 14:15:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="121685418"
-Message-ID: <1342116938.1783.57.camel@jtkirshe-mobl>
-Subject: Re: [trivial PATCH 2/7] ixgbe: remove unused #define
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Reply-To: jeffrey.t.kirsher@intel.com
-To: Jon Mason <jdmason@kudzu.us>
-Cc: trivial@kernel.org, linux-kernel@vger.kernel.org,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        John Ronciak <john.ronciak@intel.com>, netdev <netdev@vger.kernel.org>
-Date: Thu, 12 Jul 2012 11:15:38 -0700
-In-Reply-To: <1341960208.3336.43.camel@jtkirshe-mobl>
-References: <1341959492-31389-1-git-send-email-jdmason@kudzu.us>
-	 <1341959492-31389-2-git-send-email-jdmason@kudzu.us>
-	 <1341960208.3336.43.camel@jtkirshe-mobl>
-Organization: Intel Corporation
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-WmKfEnkVjb2fYf4OVnMI"
-X-Mailer: Evolution 3.4.3 (3.4.3-1.fc17) 
-Mime-Version: 1.0
+	id S934221Ab2GLSQs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 14:16:48 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:52383 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932690Ab2GLSQr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 14:16:47 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120712175737.GA18349@thunk.org>
+References: <1342053889-32066-1-git-send-email-mcgrof@do-not-panic.com>
+ <1342053889-32066-5-git-send-email-mcgrof@do-not-panic.com>
+ <20120712152740.GB14792@thunk.org> <CAB=NE6Vw0AR-eOZ90T=45M=O=7YkujFOYz7S3fviKYuTDa=JCQ@mail.gmail.com>
+ <20120712175737.GA18349@thunk.org>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Thu, 12 Jul 2012 11:16:24 -0700
+X-Google-Sender-Auth: 6qqKaJNv64j3gS2Fvj1IDMSsQks
+Message-ID: <CAB=NE6WxYcuNjNTKEdd1qArHzK6-GHBRT_Y9OHat7Tcik5K09A@mail.gmail.com>
+Subject: Re: [PATCH 4/4] copyleft-next: embrace the Signed-off-by practice
+To: "Ted Ts'o" <tytso@mit.edu>, "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        Richard Fontana <fontana2012@gmail.com>,
+        "Bradley M. Kuhn" <bkuhn@ebb.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jul 12, 2012 at 10:57 AM, Ted Ts'o <tytso@mit.edu> wrote:
+> On Thu, Jul 12, 2012 at 10:30:59AM -0700, Luis R. Rodriguez wrote:
+>> Its unclear to me if this is the case for copyleft-next, so lets test
+>> it out and get this clarified once and for all. Even though one may be
+>> supportive of the philosophical evolutions of the ideas of copyleft I
+>> have been wondering and personally hoping Fontana would consider
+>> copyleft-next not as an effort to lead *philosophical evolutions* with
+>> regards to *freedoms on copyleft* but instead -- addressing practical
+>> issues that prevented the GPLv3 from being embraced in Linux. That is
+>> bug fixing the GPLv3 in so far as Linux is concerned. Its worth being
+>> explicitly clear so I'll send a patch to try to remove the Tivoization
+>> clauses. This can then formally be NACKed or ACKed, or issues be
+>> addressed. I should note that Fontana has indicated that he views
+>> copyleft-next not as his project but that of the community's. I'm
+>> hoping the Linux kernel community is part of this community.
+>
+> Well, at the risk of starting a long flame war on licensing issues on
+> LKML, which I'm sure would not get us thanks from anyone, we do need
+> to acknowledge that there are people "in the community" who believe
+> very strongly in the anti-Tivoization clause.
 
---=-WmKfEnkVjb2fYf4OVnMI
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+I'm glad you're acknowledging this, thanks.
 
-On Tue, 2012-07-10 at 15:43 -0700, Jeff Kirsher wrote:
-> On Tue, 2012-07-10 at 15:31 -0700, Jon Mason wrote:
-> > Remove unused IXGBE_INTEL_VENDOR_ID #define
-> >=20
-> > Signed-off-by: Jon Mason <jdmason@kudzu.us>
-> > Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-> > Cc: Jesse Brandeburg <jesse.brandeburg@intel.com>
-> > Cc: Bruce Allan <bruce.w.allan@intel.com>
-> > Cc: Carolyn Wyborny <carolyn.wyborny@intel.com>
-> > Cc: Don Skidmore <donald.c.skidmore@intel.com>
-> > Cc: Greg Rose <gregory.v.rose@intel.com>
-> > Cc: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-> > Cc: Alex Duyck <alexander.h.duyck@intel.com>
-> > Cc: John Ronciak <john.ronciak@intel.com>
-> > ---
-> >  drivers/net/ethernet/intel/ixgbe/ixgbe_type.h |    3 ---
-> >  1 file changed, 3 deletions(-)
->=20
-> This should also go through David Miller's networking tree's.  Adding
-> netdev mailing list.
->=20
-> Acked-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+> Indeed, there are others who are even more extreme, and would have preferred that the
+> restrictions embodied in the Affero General Public License would get
+> incorporated into the GPLv3.
 
-After looking at this further, I rescind my ACK.
+Holy Google, I didn't know these actual contributors existed :)
 
-NAK, this define is used in several places in ixgbe_main.c and the
-driver will not compile with this patch.
+> Very fortunately (IMHO) this idea did
+> not get traction, but the point remains that there's a very wide
+> diversity of opinion "in the community" about what sort of
+> restrictions and how viral a Copyleft license "should" be.
 
->=20
-> >=20
-> > diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h b/drivers/ne=
-t/ethernet/intel/ixgbe/ixgbe_type.h
-> > index 204848d..c8d8040 100644
-> > --- a/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h
-> > +++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h
-> > @@ -32,9 +32,6 @@
-> >  #include <linux/mdio.h>
-> >  #include <linux/netdevice.h>
-> > =20
-> > -/* Vendor ID */
-> > -#define IXGBE_INTEL_VENDOR_ID   0x8086
-> > -
-> >  /* Device IDs */
-> >  #define IXGBE_DEV_ID_82598               0x10B6
-> >  #define IXGBE_DEV_ID_82598_BX            0x1508
->=20
->=20
+Makes sense.
 
+>> It does make me wonder -- if the goal of copyleft-next is not to help
+>> address *our* concerns with evolutions on copyleft in the Linux kernel
+>> community if we ourselves can simply consider doing something similar
+>> where we *do* address such things.
+>
+> Yes, but is it worth it?  The patent language could get a bit
+> stronger, and legal language would get a bit more clear; but the GPLv2
+> has the advantage that it's time tested and well understood.  A new
+> license would take a huge amount of work, and it's not clear the
+> benefits outweigh the costs.
 
---=-WmKfEnkVjb2fYf4OVnMI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+Great points. There are a few boring non controversial updates like
+requirements for redistribution using more reasonable modern
+technologies that may be worth accepting as obvious. At the very least
+these sort of things are with considering IMHO. Another worthy point
+was the removal of the death penalty.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> And I'm not just talking about the work of revising the license,
 
-iQIcBAABCgAGBQJP/xRKAAoJEOVv75VaS+3OXD4P/2+CREWgOn/B6f8nhE5iPfpN
-+GVG0mt2p5Fa+vRA8h+MaoviBEp7LQKYExC35iyqiuaguevdvkJWv9oZS3vhozhi
-8GJ4SedxwTO+A4mcoWDoCPhUHYoIfcZXl+f3EmSnLD/u8T+l2oBfnI4fTAQA8+Sh
-VhixDsQsEYl0KYqOlA17qCy1V5WTOCZCDA6y4pcXbM0z97DepUTpxAPBZUax1b8C
-F3UKMulcUQz9foixt6puPejvJPvfuBJEX6UCW1kg/d3lEFT//9XTjLzUViPbT7pf
-9y17COLPyMg6I2s2gkCpvMScs+uy9BfRV+IuRWO5JSJch1EIPiiHeZ+nDHCecotj
-FmFx8OBUjS87C7dJxVLAsgr8HzO+2CgDY2xGRVXIBNMegRK8P1vctzxDsADJeWCV
-n3yXTAVuQOLOXBBrEJAC8rsfUo2qevC+85LO424hf1rtWj6wikIuYp7vPTrrm8xU
-zOOloSOKbklFeOhnjwxSXaQ3pKVU09YpnyAfvXntHeDJYCpqyq4EPKmNmjD7YTaL
-u9oEIs+EJpO9AtgY6U6OPRSojTxwaeP5KTsL/WGAo7bDdxU9+ugVZnsJIiepvsq/
-u7kZnaLfgJer4RNqIAMzY4eU+xj0ZFWRQ2aeTYyT+NnDuZTBCFNeC6JI836aguoB
-TeN0fKqpSQex+MxVKXh1
-=ZJ2X
------END PGP SIGNATURE-----
+Which is why this is a project -- so that those who are attorneys can
+go off and play while we developers go off and do what we do better.
 
---=-WmKfEnkVjb2fYf4OVnMI--
+> getting lawyers to sign off on it, etc., but also the work of getting
+> all of the copyright holders (including the corporate ones) to sign
+> off on the license change.
 
+Great point, if an explcit ACK is *not* required would it be worth it then?
+
+But do we require an explicit ACK if the license is compatible and all
+that is being done is updating the license to account for new
+technologies, and a maybe the death penalty ? My understanding is that
+we would require the explicit ACK *if* the clause on the file does not
+have "or later" clause for the GPLv2.
+
+We even have developers now who have died! If we are indeed required
+to get explicit ACKs I agree its a complex requirement and an
+unpractical thing to try to do then.
+
+But -- I do hope there there may be some alternative option here...
+
+> Then there's also the license
+> incompatibility issue problem....  Bottom line is, even if the
+> Copyright Next license, or some fork of the Copyright Next License,
+> had the anti-Tivoization issue addressed to the kernel community's
+> satisfaction, is it worth the effort to move the Linux Kernel to a
+> newer license?  There are benefits, definitely; but there are also a
+> large set of costs.
+
+Its a great point but we also have to consider the other end of this:
+if we do not ever update the license, does it have any other
+implications ? What's the cost of that ? The only things I can think
+of is perhaps the death penalty, technology used to redistribute, and
+perhaps addressing any implicit patent grant ideas but this last one
+may be controversial to address, not sure.
+
+  Luis
