@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162423Ab2GLWqa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:46:30 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60450 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162391Ab2GLWqX (ORCPT
+	id S1162440Ab2GLWqi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:46:38 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:55040 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162425Ab2GLWqb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:46:23 -0400
+	Thu, 12 Jul 2012 18:46:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sasha Levin <levinsasha928@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [ 186/187] memblock: free allocated memblock_reserved_regions later
-Date: Thu, 12 Jul 2012 15:35:42 -0700
-Message-Id: <20120712191540.539767164@linuxfoundation.org>
+        Xishi Qiu <qiuxishi@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
+        Minchan Kim <minchan@kernel.org>
+Subject: [ 180/187] memory hotplug: fix invalid memory access caused by stale kswapd pointer
+Date: Thu, 12 Jul 2012 15:35:36 -0700
+Message-Id: <20120712191539.989836479@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -32,217 +34,109 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Yinghai Lu <yinghai@kernel.org>
+From: Jiang Liu <jiang.liu@huawei.com>
 
-commit 29f6738609e40227dabcc63bfb3b84b3726a75bd upstream.
+commit d8adde17e5f858427504725218c56aef90e90fc7 upstream.
 
-memblock_free_reserved_regions() calls memblock_free(), but
-memblock_free() would double reserved.regions too, so we could free the
-old range for reserved.regions.
+kswapd_stop() is called to destroy the kswapd work thread when all memory
+of a NUMA node has been offlined.  But kswapd_stop() only terminates the
+work thread without resetting NODE_DATA(nid)->kswapd to NULL.  The stale
+pointer will prevent kswapd_run() from creating a new work thread when
+adding memory to the memory-less NUMA node again.  Eventually the stale
+pointer may cause invalid memory access.
 
-Also tj said there is another bug which could be related to this.
+An example stack dump as below. It's reproduced with 2.6.32, but latest
+kernel has the same issue.
 
-| I don't think we're saving any noticeable
-| amount by doing this "free - give it to page allocator - reserve
-| again" dancing.  We should just allocate regions aligned to page
-| boundaries and free them later when memblock is no longer in use.
+  BUG: unable to handle kernel NULL pointer dereference at (null)
+  IP: [<ffffffff81051a94>] exit_creds+0x12/0x78
+  PGD 0
+  Oops: 0000 [#1] SMP
+  last sysfs file: /sys/devices/system/memory/memory391/state
+  CPU 11
+  Modules linked in: cpufreq_conservative cpufreq_userspace cpufreq_powersave acpi_cpufreq microcode fuse loop dm_mod tpm_tis rtc_cmos i2c_i801 rtc_core tpm serio_raw pcspkr sg tpm_bios igb i2c_core iTCO_wdt rtc_lib mptctl iTCO_vendor_support button dca bnx2 usbhid hid uhci_hcd ehci_hcd usbcore sd_mod crc_t10dif edd ext3 mbcache jbd fan ide_pci_generic ide_core ata_generic ata_piix libata thermal processor thermal_sys hwmon mptsas mptscsih mptbase scsi_transport_sas scsi_mod
+  Pid: 7949, comm: sh Not tainted 2.6.32.12-qiuxishi-5-default #92 Tecal RH2285
+  RIP: 0010:exit_creds+0x12/0x78
+  RSP: 0018:ffff8806044f1d78  EFLAGS: 00010202
+  RAX: 0000000000000000 RBX: ffff880604f22140 RCX: 0000000000019502
+  RDX: 0000000000000000 RSI: 0000000000000202 RDI: 0000000000000000
+  RBP: ffff880604f22150 R08: 0000000000000000 R09: ffffffff81a4dc10
+  R10: 00000000000032a0 R11: ffff880006202500 R12: 0000000000000000
+  R13: 0000000000c40000 R14: 0000000000008000 R15: 0000000000000001
+  FS:  00007fbc03d066f0(0000) GS:ffff8800282e0000(0000) knlGS:0000000000000000
+  CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+  CR2: 0000000000000000 CR3: 000000060f029000 CR4: 00000000000006e0
+  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+  Process sh (pid: 7949, threadinfo ffff8806044f0000, task ffff880603d7c600)
+  Stack:
+   ffff880604f22140 ffffffff8103aac5 ffff880604f22140 ffffffff8104d21e
+   ffff880006202500 0000000000008000 0000000000c38000 ffffffff810bd5b1
+   0000000000000000 ffff880603d7c600 00000000ffffdd29 0000000000000003
+  Call Trace:
+    __put_task_struct+0x5d/0x97
+    kthread_stop+0x50/0x58
+    offline_pages+0x324/0x3da
+    memory_block_change_state+0x179/0x1db
+    store_mem_state+0x9e/0xbb
+    sysfs_write_file+0xd0/0x107
+    vfs_write+0xad/0x169
+    sys_write+0x45/0x6e
+    system_call_fastpath+0x16/0x1b
+  Code: ff 4d 00 0f 94 c0 84 c0 74 08 48 89 ef e8 1f fd ff ff 5b 5d 31 c0 41 5c c3 53 48 8b 87 20 06 00 00 48 89 fb 48 8b bf 18 06 00 00 <8b> 00 48 c7 83 18 06 00 00 00 00 00 00 f0 ff 0f 0f 94 c0 84 c0
+  RIP  exit_creds+0x12/0x78
+   RSP <ffff8806044f1d78>
+  CR2: 0000000000000000
 
-in that case, when DEBUG_PAGEALLOC, will get panic:
-
-     memblock_free: [0x0000102febc080-0x0000102febf080] memblock_free_reserved_regions+0x37/0x39
-  BUG: unable to handle kernel paging request at ffff88102febd948
-  IP: [<ffffffff836a5774>] __next_free_mem_range+0x9b/0x155
-  PGD 4826063 PUD cf67a067 PMD cf7fa067 PTE 800000102febd160
-  Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-  CPU 0
-  Pid: 0, comm: swapper Not tainted 3.5.0-rc2-next-20120614-sasha #447
-  RIP: 0010:[<ffffffff836a5774>]  [<ffffffff836a5774>] __next_free_mem_range+0x9b/0x155
-
-See the discussion at https://lkml.org/lkml/2012/6/13/469
-
-So try to allocate with PAGE_SIZE alignment and free it later.
-
-Reported-by: Sasha Levin <levinsasha928@gmail.com>
-Acked-by: Tejun Heo <tj@kernel.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+[akpm@linux-foundation.org: add pglist_data.kswapd locking comments]
+Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Acked-by: David Rientjes <rientjes@google.com>
+Reviewed-by: Minchan Kim <minchan@kernel.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/memblock.h |    4 ---
- mm/memblock.c            |   51 +++++++++++++++++++++--------------------------
- mm/nobootmem.c           |   36 ++++++++++++++++++++-------------
- 3 files changed, 46 insertions(+), 45 deletions(-)
+ include/linux/mmzone.h |    2 +-
+ mm/vmscan.c            |    7 +++++--
+ 2 files changed, 6 insertions(+), 3 deletions(-)
 
---- a/include/linux/memblock.h
-+++ b/include/linux/memblock.h
-@@ -50,9 +50,7 @@ phys_addr_t memblock_find_in_range_node(
- 				phys_addr_t size, phys_addr_t align, int nid);
- phys_addr_t memblock_find_in_range(phys_addr_t start, phys_addr_t end,
- 				   phys_addr_t size, phys_addr_t align);
--int memblock_free_reserved_regions(void);
--int memblock_reserve_reserved_regions(void);
--
-+phys_addr_t get_allocated_memblock_reserved_regions_info(phys_addr_t *addr);
- void memblock_allow_resize(void);
- int memblock_add_node(phys_addr_t base, phys_addr_t size, int nid);
- int memblock_add(phys_addr_t base, phys_addr_t size);
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -143,30 +143,6 @@ phys_addr_t __init_memblock memblock_fin
- 					   MAX_NUMNODES);
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -663,7 +663,7 @@ typedef struct pglist_data {
+ 					     range, including holes */
+ 	int node_id;
+ 	wait_queue_head_t kswapd_wait;
+-	struct task_struct *kswapd;
++	struct task_struct *kswapd;	/* Protected by lock_memory_hotplug() */
+ 	int kswapd_max_order;
+ 	enum zone_type classzone_idx;
+ } pg_data_t;
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -3279,14 +3279,17 @@ int kswapd_run(int nid)
  }
  
--/*
-- * Free memblock.reserved.regions
-- */
--int __init_memblock memblock_free_reserved_regions(void)
--{
--	if (memblock.reserved.regions == memblock_reserved_init_regions)
--		return 0;
--
--	return memblock_free(__pa(memblock.reserved.regions),
--		 sizeof(struct memblock_region) * memblock.reserved.max);
--}
--
--/*
-- * Reserve memblock.reserved.regions
-- */
--int __init_memblock memblock_reserve_reserved_regions(void)
--{
--	if (memblock.reserved.regions == memblock_reserved_init_regions)
--		return 0;
--
--	return memblock_reserve(__pa(memblock.reserved.regions),
--		 sizeof(struct memblock_region) * memblock.reserved.max);
--}
--
- static void __init_memblock memblock_remove_region(struct memblock_type *type, unsigned long r)
+ /*
+- * Called by memory hotplug when all memory in a node is offlined.
++ * Called by memory hotplug when all memory in a node is offlined.  Caller must
++ * hold lock_memory_hotplug().
+  */
+ void kswapd_stop(int nid)
  {
- 	type->total_size -= type->regions[r].size;
-@@ -184,6 +160,18 @@ static void __init_memblock memblock_rem
- 	}
+ 	struct task_struct *kswapd = NODE_DATA(nid)->kswapd;
+ 
+-	if (kswapd)
++	if (kswapd) {
+ 		kthread_stop(kswapd);
++		NODE_DATA(nid)->kswapd = NULL;
++	}
  }
  
-+phys_addr_t __init_memblock get_allocated_memblock_reserved_regions_info(
-+					phys_addr_t *addr)
-+{
-+	if (memblock.reserved.regions == memblock_reserved_init_regions)
-+		return 0;
-+
-+	*addr = __pa(memblock.reserved.regions);
-+
-+	return PAGE_ALIGN(sizeof(struct memblock_region) *
-+			  memblock.reserved.max);
-+}
-+
- /**
-  * memblock_double_array - double the size of the memblock regions array
-  * @type: memblock type of the regions array being doubled
-@@ -204,6 +192,7 @@ static int __init_memblock memblock_doub
- 						phys_addr_t new_area_size)
- {
- 	struct memblock_region *new_array, *old_array;
-+	phys_addr_t old_alloc_size, new_alloc_size;
- 	phys_addr_t old_size, new_size, addr;
- 	int use_slab = slab_is_available();
- 	int *in_slab;
-@@ -217,6 +206,12 @@ static int __init_memblock memblock_doub
- 	/* Calculate new doubled size */
- 	old_size = type->max * sizeof(struct memblock_region);
- 	new_size = old_size << 1;
-+	/*
-+	 * We need to allocated new one align to PAGE_SIZE,
-+	 *   so we can free them completely later.
-+	 */
-+	old_alloc_size = PAGE_ALIGN(old_size);
-+	new_alloc_size = PAGE_ALIGN(new_size);
- 
- 	/* Retrieve the slab flag */
- 	if (type == &memblock.memory)
-@@ -245,11 +240,11 @@ static int __init_memblock memblock_doub
- 
- 		addr = memblock_find_in_range(new_area_start + new_area_size,
- 						memblock.current_limit,
--						new_size, sizeof(phys_addr_t));
-+						new_alloc_size, PAGE_SIZE);
- 		if (!addr && new_area_size)
- 			addr = memblock_find_in_range(0,
- 					min(new_area_start, memblock.current_limit),
--					new_size, sizeof(phys_addr_t));
-+					new_alloc_size, PAGE_SIZE);
- 
- 		new_array = addr ? __va(addr) : 0;
- 	}
-@@ -279,13 +274,13 @@ static int __init_memblock memblock_doub
- 		kfree(old_array);
- 	else if (old_array != memblock_memory_init_regions &&
- 		 old_array != memblock_reserved_init_regions)
--		memblock_free(__pa(old_array), old_size);
-+		memblock_free(__pa(old_array), old_alloc_size);
- 
- 	/* Reserve the new array if that comes from the memblock.
- 	 * Otherwise, we needn't do it
- 	 */
- 	if (!use_slab)
--		BUG_ON(memblock_reserve(addr, new_size));
-+		BUG_ON(memblock_reserve(addr, new_alloc_size));
- 
- 	/* Update slab flag */
- 	*in_slab = use_slab;
---- a/mm/nobootmem.c
-+++ b/mm/nobootmem.c
-@@ -105,27 +105,35 @@ static void __init __free_pages_memory(u
- 		__free_pages_bootmem(pfn_to_page(i), 0);
- }
- 
-+static unsigned long __init __free_memory_core(phys_addr_t start,
-+				 phys_addr_t end)
-+{
-+	unsigned long start_pfn = PFN_UP(start);
-+	unsigned long end_pfn = min_t(unsigned long,
-+				      PFN_DOWN(end), max_low_pfn);
-+
-+	if (start_pfn > end_pfn)
-+		return 0;
-+
-+	__free_pages_memory(start_pfn, end_pfn);
-+
-+	return end_pfn - start_pfn;
-+}
-+
- unsigned long __init free_low_memory_core_early(int nodeid)
- {
- 	unsigned long count = 0;
--	phys_addr_t start, end;
-+	phys_addr_t start, end, size;
- 	u64 i;
- 
--	/* free reserved array temporarily so that it's treated as free area */
--	memblock_free_reserved_regions();
-+	for_each_free_mem_range(i, MAX_NUMNODES, &start, &end, NULL)
-+		count += __free_memory_core(start, end);
- 
--	for_each_free_mem_range(i, MAX_NUMNODES, &start, &end, NULL) {
--		unsigned long start_pfn = PFN_UP(start);
--		unsigned long end_pfn = min_t(unsigned long,
--					      PFN_DOWN(end), max_low_pfn);
--		if (start_pfn < end_pfn) {
--			__free_pages_memory(start_pfn, end_pfn);
--			count += end_pfn - start_pfn;
--		}
--	}
-+	/* free range that is used for reserved array if we allocate it */
-+	size = get_allocated_memblock_reserved_regions_info(&start);
-+	if (size)
-+		count += __free_memory_core(start, start + size);
- 
--	/* put region array back? */
--	memblock_reserve_reserved_regions();
- 	return count;
- }
- 
+ static int __init kswapd_init(void)
 
 
