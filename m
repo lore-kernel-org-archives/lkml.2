@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162504Ab2GLX0k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:26:40 -0400
+	id S1162490Ab2GLX13 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:27:29 -0400
 Received: from mail-yw0-f46.google.com ([209.85.213.46]:46447 "EHLO
 	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161992Ab2GLWmS (ORCPT
+	with ESMTP id S1161986Ab2GLWmD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:42:18 -0400
+	Thu, 12 Jul 2012 18:42:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stone Piao <piaoyun@marvell.com>, Avinash Patil <patila@marvell.com>,
-        Kiran Divekar <dkiran@marvell.com>, Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 117/187] mwifiex: fix 11n rx packet drop issue
-Date: Thu, 12 Jul 2012 15:34:33 -0700
-Message-Id: <20120712191533.204177221@linuxfoundation.org>
+        David Ahern <daahern@cisco.com>,
+        Mitch Williams <mitch.a.williams@intel.com>,
+        Aaron Brown <aaron.f.brown@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 113/187] igbvf: fix divide by zero
+Date: Thu, 12 Jul 2012 15:34:29 -0700
+Message-Id: <20120712191532.840404579@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -32,82 +34,67 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Stone Piao <piaoyun@marvell.com>
+From: Mitch A Williams <mitch.a.williams@intel.com>
 
-commit 925839243dc9aa4ef25305f5afd10ed18258a4ac upstream.
+commit 0e90b49ca4b891f085b57559a3071a4feefb496c upstream.
 
-Currently we check the sequence number of last packet received
-against start_win. If a sequence hole is detected, start_win is
-updated to next sequence number.
+Using ethtool -C ethX rx-usecs 0 crashes with a divide by zero.
+Refactor this function to fix this issue and make it more clear
+what the intent of each conditional is. Add comment regarding
+using a setting of zero.
 
-Since the rx sequence number is initialized to 0, a corner case
-exists when BA setup happens immediately after association. As
-0 is a valid sequence number, start_win gets increased to 1
-incorrectly. This causes the first packet with sequence number 0
-being dropped.
-
-Initialize rx sequence number as 0xffff and skip adjusting
-start_win if the sequence number remains 0xffff. The sequence
-number will be updated once the first packet is received.
-
-Signed-off-by: Stone Piao <piaoyun@marvell.com>
-Signed-off-by: Avinash Patil <patila@marvell.com>
-Signed-off-by: Kiran Divekar <dkiran@marvell.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+CC: David Ahern <daahern@cisco.com>
+Signed-off-by: Mitch Williams <mitch.a.williams@intel.com>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/mwifiex/11n_rxreorder.c |    5 +++--
- drivers/net/wireless/mwifiex/11n_rxreorder.h |    7 +++++++
- drivers/net/wireless/mwifiex/wmm.c           |    2 ++
- 3 files changed, 12 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/intel/igbvf/ethtool.c |   29 ++++++++++++++++++-----------
+ 1 file changed, 18 insertions(+), 11 deletions(-)
 
---- a/drivers/net/wireless/mwifiex/11n_rxreorder.c
-+++ b/drivers/net/wireless/mwifiex/11n_rxreorder.c
-@@ -256,7 +256,8 @@ mwifiex_11n_create_rx_reorder_tbl(struct
- 	else
- 		last_seq = priv->rx_seq[tid];
+--- a/drivers/net/ethernet/intel/igbvf/ethtool.c
++++ b/drivers/net/ethernet/intel/igbvf/ethtool.c
+@@ -357,21 +357,28 @@ static int igbvf_set_coalesce(struct net
+ 	struct igbvf_adapter *adapter = netdev_priv(netdev);
+ 	struct e1000_hw *hw = &adapter->hw;
  
--	if (last_seq >= new_node->start_win)
-+	if (last_seq != MWIFIEX_DEF_11N_RX_SEQ_NUM &&
-+	    last_seq >= new_node->start_win)
- 		new_node->start_win = last_seq + 1;
+-	if ((ec->rx_coalesce_usecs > IGBVF_MAX_ITR_USECS) ||
+-	    ((ec->rx_coalesce_usecs > 3) &&
+-	     (ec->rx_coalesce_usecs < IGBVF_MIN_ITR_USECS)) ||
+-	    (ec->rx_coalesce_usecs == 2))
+-		return -EINVAL;
+-
+-	/* convert to rate of irq's per second */
+-	if (ec->rx_coalesce_usecs && ec->rx_coalesce_usecs <= 3) {
++	if ((ec->rx_coalesce_usecs >= IGBVF_MIN_ITR_USECS) &&
++	     (ec->rx_coalesce_usecs <= IGBVF_MAX_ITR_USECS)) {
++		adapter->current_itr = ec->rx_coalesce_usecs << 2;
++		adapter->requested_itr = 1000000000 /
++					(adapter->current_itr * 256);
++	} else if ((ec->rx_coalesce_usecs == 3) ||
++		   (ec->rx_coalesce_usecs == 2)) {
+ 		adapter->current_itr = IGBVF_START_ITR;
+ 		adapter->requested_itr = ec->rx_coalesce_usecs;
+-	} else {
+-		adapter->current_itr = ec->rx_coalesce_usecs << 2;
++	} else if (ec->rx_coalesce_usecs == 0) {
++		/*
++		 * The user's desire is to turn off interrupt throttling
++		 * altogether, but due to HW limitations, we can't do that.
++		 * Instead we set a very small value in EITR, which would
++		 * allow ~967k interrupts per second, but allow the adapter's
++		 * internal clocking to still function properly.
++		 */
++		adapter->current_itr = 4;
+ 		adapter->requested_itr = 1000000000 /
+ 					(adapter->current_itr * 256);
+-	}
++	} else
++		return -EINVAL;
  
- 	new_node->win_size = win_size;
-@@ -596,5 +597,5 @@ void mwifiex_11n_cleanup_reorder_tbl(str
- 	spin_unlock_irqrestore(&priv->rx_reorder_tbl_lock, flags);
- 
- 	INIT_LIST_HEAD(&priv->rx_reorder_tbl_ptr);
--	memset(priv->rx_seq, 0, sizeof(priv->rx_seq));
-+	mwifiex_reset_11n_rx_seq_num(priv);
- }
---- a/drivers/net/wireless/mwifiex/11n_rxreorder.h
-+++ b/drivers/net/wireless/mwifiex/11n_rxreorder.h
-@@ -37,6 +37,13 @@
- 
- #define ADDBA_RSP_STATUS_ACCEPT 0
- 
-+#define MWIFIEX_DEF_11N_RX_SEQ_NUM	0xffff
-+
-+static inline void mwifiex_reset_11n_rx_seq_num(struct mwifiex_private *priv)
-+{
-+	memset(priv->rx_seq, 0xff, sizeof(priv->rx_seq));
-+}
-+
- int mwifiex_11n_rx_reorder_pkt(struct mwifiex_private *,
- 			       u16 seqNum,
- 			       u16 tid, u8 *ta,
---- a/drivers/net/wireless/mwifiex/wmm.c
-+++ b/drivers/net/wireless/mwifiex/wmm.c
-@@ -404,6 +404,8 @@ mwifiex_wmm_init(struct mwifiex_adapter
- 		priv->add_ba_param.tx_win_size = MWIFIEX_AMPDU_DEF_TXWINSIZE;
- 		priv->add_ba_param.rx_win_size = MWIFIEX_AMPDU_DEF_RXWINSIZE;
- 
-+		mwifiex_reset_11n_rx_seq_num(priv);
-+
- 		atomic_set(&priv->wmm.tx_pkts_queued, 0);
- 		atomic_set(&priv->wmm.highest_queued_prio, HIGH_PRIO_TID);
- 	}
+ 	writel(adapter->current_itr,
+ 	       hw->hw_addr + adapter->rx_ring->itr_register);
 
 
