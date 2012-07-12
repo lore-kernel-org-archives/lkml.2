@@ -1,96 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030416Ab2GLKOD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 06:14:03 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:33496 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030343Ab2GLKN5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 06:13:57 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: HAYASAKA Mitsuo <mitsuo.hayasaka.hu@hitachi.com>
-Cc: hanwen@xs4all.nl, Han-Wen Nienhuys <hanwenn@gmail.com>,
-        Liu Yuan <namei.unix@gmail.com>, fuse-devel@lists.sourceforge.net,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: [fuse-devel] [RFC PATCH 0/5] fuse: make maximum read/write request size tunable
-References: <20120705105017.17812.95542.stgit@ltc137.sdl.hitachi.co.jp>
-	<4FF67D6A.8060707@gmail.com>
-	<CAOw_e7ZGdSVrNfPe8iE8BtmNWU+BrvbaMFVsUP+g+3MR0Pegqw@mail.gmail.com>
-	<4FFE6785.80201@hitachi.com>
-Date: Thu, 12 Jul 2012 12:13:53 +0200
-In-Reply-To: <4FFE6785.80201@hitachi.com> (HAYASAKA Mitsuo's message of "Thu,
-	12 Jul 2012 14:58:29 +0900")
-Message-ID: <878vep478e.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S933646Ab2GLKOg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 06:14:36 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:34371 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933271Ab2GLKOf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 06:14:35 -0400
+From: Andrew Vagin <avagin@openvz.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Vagin <avagin@openvz.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>, Arun Sharma <asharma@fb.com>
+Subject: [PATCH] sched: deliver sched_switch events to a current task
+Date: Thu, 12 Jul 2012 14:14:29 +0400
+Message-Id: <1342088069-1005148-1-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-HAYASAKA Mitsuo <mitsuo.hayasaka.hu@hitachi.com> writes:
+Otherwise they can't be filtered for a defined task.
 
-> Hi Yuan and Han-Wen,
->
-> Thank you for your comments.
->
-> (2012/07/06 22:58), Han-Wen Nienhuys wrote:
->> On Fri, Jul 6, 2012 at 2:53 AM, Liu Yuan<namei.unix@gmail.com>  wrote:
->>> On 07/05/2012 06:50 PM, Mitsuo Hayasaka wrote:
->>>> One of the ways to solve this is to make them tunable.
->>>> In this series, the new sysfs parameter max_pages_per_req is introduced.
->>>> It limits the maximum read/write size in fuse request and it can be
->>>> changed from 32 to 256 pages in current implementations. When the
->>>> max_read/max_write mount option is specified, FUSE request size is set
->>>> per mount. (The size is rounded-up to page size and limited up to
->>>> max_pages_per_req.)
->>>
->>> Why maxim 256 pages? If we are here, we can go further: most of object
->>> storage system has object size of multiple to dozens of megabytes. So I
->>> think probably 1M is too small. Our distribution storage system has 4M
->>> per object, so I think at least maxim size could be bigger than 4M.
->>
->> The maximum pipe size on my system is 1M, so if you go beyond that,
->> splicing from the FD won't work.
->>
->> Also, the userspace client must reserve a buffer this size so it can
->> receive a write, which is a waste since most requests are much
->> smaller.
->>
->
-> I checked the maximum pipe size can be changed using fcntl(2) or
-> /proc/sys/fs/pipe-max-size. It is clear that it is not a fixed value.
->
-> Also, it seems that there is a request for setting the maximum number
-> of pages per fuse request to 4M (1024 pages). One of the reasons to
-> introduce the sysfs max_pages_per_req parameter is to set a threshold
-> of the maximum number of pages dynamically according to the
-> administrator's demand, and root can only change it.
->
-> So, when the maximum value is required to be set to not more than the
-> pipe-max-size, the max_pages_per_req should be changed considering it.
-> It seems that the upper limit of this parameter does not have to be
-> not more than it.
->
-> I'm planning to limit max_pages_per_req up to 1024 pages and add the
-> document to /Documentation/filesystems/fuse.txt, as follows.
->
-> "the sysfs max_pages_per_req parameter can be changed from 32 to 1024.
-> The default is 32 pages. Generally, the pipe-max-size is 1M (256 pages)
-> and it is better to set it to not more than the pipe-max-size."
+perf record -e sched:sched_switch ./foo
 
-Can't we just use pipe-max-size for the limit?
+This command doesn't report any event without this patch.
 
-Then we'll use the minimum of pipe-max-size and max_read/max_write for
-sizing the requests.
+I think it isn't a big problem for security, if someone will know
+who will be executed next. By default perf is disabled for non-root
+users.
 
-Another comment: do we really need to allocate each and every request
-with space for the pages?  I don't think that makes sense.  Let's leave
-some small number of pages inline in the request and allocate a separate
-array if the number of pages is too large.  There may even be some utilities
-in the kernel to handle dynamically sized page arrays (I haven't looked
-but I suspect there is).
+I need this events for profiling sleep times.  sched_switch is used for
+getting callchains and sched_stat_* is used for getting time periods.
+This events are combined in user space, then it can be analized by
+perf tools.
 
-Thanks,
-Miklos
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Arun Sharma <asharma@fb.com>
+Signed-off-by: Andrew Vagin <avagin@openvz.org>
+---
+ kernel/sched/core.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index d5594a4..c5d6a0f 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1910,12 +1910,12 @@ static inline void
+ prepare_task_switch(struct rq *rq, struct task_struct *prev,
+ 		    struct task_struct *next)
+ {
++	trace_sched_switch(prev, next);
+ 	sched_info_switch(prev, next);
+ 	perf_event_task_sched_out(prev, next);
+ 	fire_sched_out_preempt_notifiers(prev, next);
+ 	prepare_lock_switch(rq, next);
+ 	prepare_arch_switch(next);
+-	trace_sched_switch(prev, next);
+ }
+ 
+ /**
+-- 
+1.7.1
+
