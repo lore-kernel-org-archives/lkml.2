@@ -1,99 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759211Ab2GLMmb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 08:42:31 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:34034 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754589Ab2GLMkq (ORCPT
+	id S1758897Ab2GLMnL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 08:43:11 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:34405 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752853Ab2GLMnI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 08:40:46 -0400
-X-AuditID: cbfee61a-b7f616d000004b7e-11-4ffec5cc8c7b
-From: Thomas Abraham <thomas.abraham@linaro.org>
-To: linux-mmc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        cjb@laptop.org, grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
-        patches@linaro.org
-Subject: [PATCH v3 2/6] mmc: dw_mmc: allow probe to succeed even if one slot is
- initialized
-Date: Thu, 12 Jul 2012 18:24:24 +0530
-Message-id: <1342097668-25243-3-git-send-email-thomas.abraham@linaro.org>
-X-Mailer: git-send-email 1.6.6.rc2
-In-reply-to: <1342097668-25243-1-git-send-email-thomas.abraham@linaro.org>
-References: <1342097668-25243-1-git-send-email-thomas.abraham@linaro.org>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNJMWRmVeSWpSXmKPExsVy+t9jAd2zR//5G3y6xmZxedccNosj//sZ
-	LWac38fkwOzxeZNcAGMUl01Kak5mWWqRvl0CV8bRj3tZCybxVqw9/IOlgXETVxcjJ4eEgInE
-	3/2v2SBsMYkL99aD2UICixglfs9h6WLkArLbmCQmvvrLCpJgEzCQeLTwHTuILSLgJLFk7gRm
-	kCJmgTuMEo9mnWQESQgLxEpM/ncJrIFFQFXizczpYFN5BTwlvjadY4LYpiSxofcomM0p4CVx
-	fWULUD0H0DZPiVd/HCYw8i5gZFjFKJpakFxQnJSea6hXnJhbXJqXrpecn7uJERwEz6R2MK5s
-	sDjEKMDBqMTD++HAP38h1sSy4srcQ4wSHMxKIrz9uUAh3pTEyqrUovz4otKc1OJDjNIcLEri
-	vMbeX/2FBNITS1KzU1MLUotgskwcnFINjA4qvm+1HSWXzzq7co0G88ajrx+H3V39+dbbJ91F
-	EjfiophF7HVF/nx/sWeX6+9/Rs+eK+1S1vl0UiPu0unnLvKNP5j+J3Vp60ZVr1y+VOFMFhNr
-	ajWb0aYbca9vCD8490zvr9K+33kLbQPDNPfNu7vuN0+h1cH8vsW5G5bI/2m6Mylj7gHpSSJK
-	LMUZiYZazEXFiQCbn9/O/gEAAA==
-X-TM-AS-MML: No
+	Thu, 12 Jul 2012 08:43:08 -0400
+Message-ID: <4FFEC60B.7040800@linux.vnet.ibm.com>
+Date: Thu, 12 Jul 2012 18:11:47 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+MIME-Version: 1.0
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+CC: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org, lenb@kernel.org,
+        toshi.kani@hp.com
+Subject: Re: [PATCH v3 2/3 RESEND] acpi : prevent cpu from becoming online
+References: <4FFEB35A.6030500@jp.fujitsu.com> <4FFEB4BA.8010800@jp.fujitsu.com> <4FFEB7BA.6050505@jp.fujitsu.com>
+In-Reply-To: <4FFEB7BA.6050505@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+x-cbid: 12071212-4790-0000-0000-000003A83F2E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of aborting the probe in case a slot initialization fails, allow
-initialization of as many slots as possible. If there are atleast one
-instance of slot that is successfully initialized, allow the driver probe
-to succeed.
+On 07/12/2012 05:10 PM, Yasuaki Ishimatsu wrote:
+> Even if acpi_processor_handle_eject() offlines cpu, there is a chance
+> to online the cpu after that. So the patch closes the window by using
+> get/put_online_cpus().
+> 
+> Why does the patch change _cpu_up() logic?
+> 
+> The patch cares the race of hot-remove cpu and _cpu_up(). If the patch
+> does not change it, there is the following race.
+> 
+> hot-remove cpu                         |  _cpu_up()
+> ------------------------------------- ------------------------------------
+> call acpi_processor_handle_eject()     |
+>      call cpu_down()                   |
+>      call get_online_cpus()            |
+>                                        | call cpu_hotplug_begin() and stop here
+>      call arch_unregister_cpu()        |
+>      call acpi_unmap_lsapic()          |
+>      call put_online_cpus()            |
+>                                        | start and continue _cpu_up()
+>      return acpi_processor_remove()    |
+> continue hot-remove the cpu            |
+> 
+> So _cpu_up() can continue to itself. And hot-remove cpu can also continue
+> itself. If the patch changes _cpu_up() logic, the race disappears as below:
+> 
+> hot-remove cpu                         | _cpu_up()
+> -----------------------------------------------------------------------
+> call acpi_processor_handle_eject()     |
+>      call cpu_down()                   |
+>      call get_online_cpus()            |
+>                                        | call cpu_hotplug_begin() and stop here
+>      call arch_unregister_cpu()        |
+>      call acpi_unmap_lsapic()          |
+>           cpu's cpu_present is set     |
+>           to false by set_cpu_present()|
+>      call put_online_cpus()            |
+>                                        | start _cpu_up()
+>                                        | check cpu_present() and return -EINVAL
+>      return acpi_processor_remove()    |
+> continue hot-remove the cpu            |
+> 
+> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>
 
-Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
----
- drivers/mmc/host/dw_mmc.c |   23 +++++++++++++----------
- 1 files changed, 13 insertions(+), 10 deletions(-)
+Please consider fixing the grammar issue below (since it is a user-visible
+print statement). Other than that, everything looks fine.
 
-diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index 948a7ac..cd58063 100644
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -1939,6 +1939,7 @@ int dw_mci_probe(struct dw_mci *host)
- {
- 	int width, i, ret = 0;
- 	u32 fifo_size;
-+	int init_slots = 0;
+Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
  
- 	if (!host->pdata || !host->pdata->init) {
- 		dev_err(host->dev,
-@@ -2047,10 +2048,18 @@ int dw_mci_probe(struct dw_mci *host)
- 	/* We need at least one slot to succeed */
- 	for (i = 0; i < host->num_slots; i++) {
- 		ret = dw_mci_init_slot(host, i);
--		if (ret) {
--			ret = -ENODEV;
--			goto err_init_slot;
--		}
-+		if (ret)
-+			dev_dbg(host->dev, "slot %d init failed\n", i);
-+		else
-+			init_slots++;
-+	}
-+
-+	if (init_slots) {
-+		dev_info(host->dev, "%d slots initialized\n", init_slots);
-+	} else {
-+		dev_dbg(host->dev, "attempted to initialize %d slots, "
-+					"but failed on all\n", host->num_slots);
-+		goto err_init_slot;
- 	}
- 
- 	/*
-@@ -2085,12 +2094,6 @@ int dw_mci_probe(struct dw_mci *host)
- 	return 0;
- 
- err_init_slot:
--	/* De-init any initialized slots */
--	while (i > 0) {
--		if (host->slot[i])
--			dw_mci_cleanup_slot(host->slot[i], i);
--		i--;
--	}
- 	free_irq(host->irq, host);
- 
- err_workqueue:
--- 
-1.6.6.rc2
+> ---
+>  drivers/acpi/processor_driver.c |   14 ++++++++++++++
+>  kernel/cpu.c                    |    8 +++++---
+>  2 files changed, 19 insertions(+), 3 deletions(-)
+> 
+> Index: linux-3.5-rc6/drivers/acpi/processor_driver.c
+> ===================================================================
+> --- linux-3.5-rc6.orig/drivers/acpi/processor_driver.c	2012-07-12 20:34:29.438289841 +0900
+> +++ linux-3.5-rc6/drivers/acpi/processor_driver.c	2012-07-12 20:39:29.190542257 +0900
+> @@ -850,8 +850,22 @@ static int acpi_processor_handle_eject(s
+>  			return ret;
+>  	}
+> 
+> +	get_online_cpus();
+> +	/*
+> +	 * The cpu might become online again at this point. So we check whether
+> +	 * the cpu has been onlined or not. If the cpu became online, it means
+> +	 * that someone wants to use the cpu. So acpi_processor_handle_eject()
+> +	 * returns -EAGAIN.
+> +	 */
+> +	if (unlikely(cpu_online(pr->id))) {
+> +		put_online_cpus();
+> +		printk(KERN_WARNING "Failed to remove CPU %d, "
+> +		       "since someone onlines the cpu\n" , pr->id);
+
+How about:
+"Failed to remove CPU %d, because some other task brought the CPU back online\n"
+
+Regards,
+Srivatsa S. Bhat
+
+> +		return -EAGAIN;
+> +	}
+>  	arch_unregister_cpu(pr->id);
+>  	acpi_unmap_lsapic(pr->id);
+> +	put_online_cpus();
+>  	return ret;
+>  }
+>  #else
+> Index: linux-3.5-rc6/kernel/cpu.c
+> ===================================================================
+> --- linux-3.5-rc6.orig/kernel/cpu.c	2012-07-12 20:34:29.438289841 +0900
+> +++ linux-3.5-rc6/kernel/cpu.c	2012-07-12 20:34:35.040219535 +0900
+> @@ -343,11 +343,13 @@ static int __cpuinit _cpu_up(unsigned in
+>  	unsigned long mod = tasks_frozen ? CPU_TASKS_FROZEN : 0;
+>  	struct task_struct *idle;
+> 
+> -	if (cpu_online(cpu) || !cpu_present(cpu))
+> -		return -EINVAL;
+> -
+>  	cpu_hotplug_begin();
+> 
+> +	if (cpu_online(cpu) || !cpu_present(cpu)) {
+> +		ret =  -EINVAL;
+> +		goto out;
+> +	}
+> +
+>  	idle = idle_thread_get(cpu);
+>  	if (IS_ERR(idle)) {
+>  		ret = PTR_ERR(idle);
+> 
 
