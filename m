@@ -1,57 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162134Ab2GLWn5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:43:57 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:59637 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162105Ab2GLWng (ORCPT
+	id S1162179Ab2GLWoG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:44:06 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:47681 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162116Ab2GLWn4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:43:36 -0400
-Date: Thu, 12 Jul 2012 15:42:53 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujtisu.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
-        Rik van Riel <riel@redhat.com>, Ying Han <yinghan@google.com>,
-        Greg Thelen <gthelen@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH v2 -mm] memcg: prevent from OOM with too many dirty
- pages
-In-Reply-To: <20120712141343.e1cb7776.akpm@linux-foundation.org>
-Message-ID: <alpine.LSU.2.00.1207121539150.27721@eggly.anvils>
-References: <1340117404-30348-1-git-send-email-mhocko@suse.cz> <20120619150014.1ebc108c.akpm@linux-foundation.org> <20120620101119.GC5541@tiehlicka.suse.cz> <alpine.LSU.2.00.1207111818380.1299@eggly.anvils> <20120712070501.GB21013@tiehlicka.suse.cz>
- <20120712141343.e1cb7776.akpm@linux-foundation.org>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 12 Jul 2012 18:43:56 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Benjamin Tissoires <benjamin.tissoires@enac.fr>,
+        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>
+Subject: [ 144/187] HID: hid-multitouch: fix wrong protocol detection
+Date: Thu, 12 Jul 2012 15:35:00 -0700
+Message-Id: <20120712191535.760384887@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
+References: <20120712192421.GA28926@kroah.com>
+ <20120712191522.742634173@linuxfoundation.org>
+User-Agent: quilt/0.60-20.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Jul 2012, Andrew Morton wrote:
-> On Thu, 12 Jul 2012 09:05:01 +0200
-> Michal Hocko <mhocko@suse.cz> wrote:
-> 
-> > When we are back to the patch. Is it going into 3.5? I hope so and I
-> > think it is really worth stable as well. Andrew?
-> 
-> What patch.   "memcg: prevent OOM with too many dirty pages"?
+From: Greg KH <gregkh@linuxfoundation.org>
 
-Yes.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-> 
-> I wasn't planning on 3.5, given the way it's been churning around.
+------------------
 
-I don't know if you had been intending to send it in for 3.5 earlier;
-but I'm sorry if my late intervention on may_enter_fs has delayed it.
+From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
 
-> How
-> about we put it into 3.6 and tag it for a -stable backport, so it gets
-> a bit of a run in mainline before we inflict it upon -stable users?
+commit 3ac36d15557d1bedfb1151d9911b9587b2d40759 upstream.
 
-That sounds good enough to me, but does fall short of Michal's hope.
+The previous implementation introduced a randomness in the splitting
+of the different touches reported by the device. This version is more
+robust as we don't rely on hi->input->absbit, but on our own structure.
 
-Hugh
+This also prepares hid-multitouch to better support Win8 devices.
+
+[Jiri Kosina <jkosina@suse.cz>: fix build]
+
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+Acked-by: Henrik Rydberg <rydberg@euromail.se>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+
+---
+ drivers/hid/hid-multitouch.c |   58 ++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 46 insertions(+), 12 deletions(-)
+
+--- a/drivers/hid/hid-multitouch.c
++++ b/drivers/hid/hid-multitouch.c
+@@ -70,9 +70,16 @@ struct mt_class {
+ 	bool is_indirect;	/* true for touchpads */
+ };
+ 
++struct mt_fields {
++	unsigned usages[HID_MAX_FIELDS];
++	unsigned int length;
++};
++
+ struct mt_device {
+ 	struct mt_slot curdata;	/* placeholder of incoming data */
+ 	struct mt_class mtclass;	/* our mt device class */
++	struct mt_fields *fields;	/* temporary placeholder for storing the
++					   multitouch fields */
+ 	unsigned last_field_index;	/* last field index of the report */
+ 	unsigned last_slot_field;	/* the last field of a slot */
+ 	__s8 inputmode;		/* InputMode HID feature, -1 if non-existent */
+@@ -275,11 +282,15 @@ static void set_abs(struct input_dev *in
+ 	input_set_abs_params(input, code, fmin, fmax, fuzz, 0);
+ }
+ 
+-static void set_last_slot_field(struct hid_usage *usage, struct mt_device *td,
++static void mt_store_field(struct hid_usage *usage, struct mt_device *td,
+ 		struct hid_input *hi)
+ {
+-	if (!test_bit(usage->hid, hi->input->absbit))
+-		td->last_slot_field = usage->hid;
++	struct mt_fields *f = td->fields;
++
++	if (f->length >= HID_MAX_FIELDS)
++		return;
++
++	f->usages[f->length++] = usage->hid;
+ }
+ 
+ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+@@ -330,7 +341,7 @@ static int mt_input_mapping(struct hid_d
+ 				cls->sn_move);
+ 			/* touchscreen emulation */
+ 			set_abs(hi->input, ABS_X, field, cls->sn_move);
+-			set_last_slot_field(usage, td, hi);
++			mt_store_field(usage, td, hi);
+ 			td->last_field_index = field->index;
+ 			return 1;
+ 		case HID_GD_Y:
+@@ -340,7 +351,7 @@ static int mt_input_mapping(struct hid_d
+ 				cls->sn_move);
+ 			/* touchscreen emulation */
+ 			set_abs(hi->input, ABS_Y, field, cls->sn_move);
+-			set_last_slot_field(usage, td, hi);
++			mt_store_field(usage, td, hi);
+ 			td->last_field_index = field->index;
+ 			return 1;
+ 		}
+@@ -349,24 +360,24 @@ static int mt_input_mapping(struct hid_d
+ 	case HID_UP_DIGITIZER:
+ 		switch (usage->hid) {
+ 		case HID_DG_INRANGE:
+-			set_last_slot_field(usage, td, hi);
++			mt_store_field(usage, td, hi);
+ 			td->last_field_index = field->index;
+ 			return 1;
+ 		case HID_DG_CONFIDENCE:
+-			set_last_slot_field(usage, td, hi);
++			mt_store_field(usage, td, hi);
+ 			td->last_field_index = field->index;
+ 			return 1;
+ 		case HID_DG_TIPSWITCH:
+ 			hid_map_usage(hi, usage, bit, max, EV_KEY, BTN_TOUCH);
+ 			input_set_capability(hi->input, EV_KEY, BTN_TOUCH);
+-			set_last_slot_field(usage, td, hi);
++			mt_store_field(usage, td, hi);
+ 			td->last_field_index = field->index;
+ 			return 1;
+ 		case HID_DG_CONTACTID:
+ 			if (!td->maxcontacts)
+ 				td->maxcontacts = MT_DEFAULT_MAXCONTACT;
+ 			input_mt_init_slots(hi->input, td->maxcontacts);
+-			td->last_slot_field = usage->hid;
++			mt_store_field(usage, td, hi);
+ 			td->last_field_index = field->index;
+ 			td->touches_by_report++;
+ 			return 1;
+@@ -375,7 +386,7 @@ static int mt_input_mapping(struct hid_d
+ 					EV_ABS, ABS_MT_TOUCH_MAJOR);
+ 			set_abs(hi->input, ABS_MT_TOUCH_MAJOR, field,
+ 				cls->sn_width);
+-			set_last_slot_field(usage, td, hi);
++			mt_store_field(usage, td, hi);
+ 			td->last_field_index = field->index;
+ 			return 1;
+ 		case HID_DG_HEIGHT:
+@@ -385,7 +396,7 @@ static int mt_input_mapping(struct hid_d
+ 				cls->sn_height);
+ 			input_set_abs_params(hi->input,
+ 					ABS_MT_ORIENTATION, 0, 1, 0, 0);
+-			set_last_slot_field(usage, td, hi);
++			mt_store_field(usage, td, hi);
+ 			td->last_field_index = field->index;
+ 			return 1;
+ 		case HID_DG_TIPPRESSURE:
+@@ -396,7 +407,7 @@ static int mt_input_mapping(struct hid_d
+ 			/* touchscreen emulation */
+ 			set_abs(hi->input, ABS_PRESSURE, field,
+ 				cls->sn_pressure);
+-			set_last_slot_field(usage, td, hi);
++			mt_store_field(usage, td, hi);
+ 			td->last_field_index = field->index;
+ 			return 1;
+ 		case HID_DG_CONTACTCOUNT:
+@@ -635,6 +646,16 @@ static void mt_set_maxcontacts(struct hi
+ 	}
+ }
+ 
++static void mt_post_parse(struct mt_device *td)
++{
++	struct mt_fields *f = td->fields;
++
++	if (td->touches_by_report > 0) {
++		int field_count_per_touch = f->length / td->touches_by_report;
++		td->last_slot_field = f->usages[field_count_per_touch - 1];
++	}
++}
++
+ static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
+ {
+ 	int ret, i;
+@@ -666,6 +687,13 @@ static int mt_probe(struct hid_device *h
+ 	td->maxcontact_report_id = -1;
+ 	hid_set_drvdata(hdev, td);
+ 
++	td->fields = kzalloc(sizeof(struct mt_fields), GFP_KERNEL);
++	if (!td->fields) {
++		dev_err(&hdev->dev, "cannot allocate multitouch fields data\n");
++		ret = -ENOMEM;
++		goto fail;
++	}
++
+ 	ret = hid_parse(hdev);
+ 	if (ret != 0)
+ 		goto fail;
+@@ -674,6 +702,8 @@ static int mt_probe(struct hid_device *h
+ 	if (ret)
+ 		goto fail;
+ 
++	mt_post_parse(td);
++
+ 	if (!id && td->touches_by_report == 1) {
+ 		/* the device has been sent by hid-generic */
+ 		mtclass = &td->mtclass;
+@@ -697,9 +727,13 @@ static int mt_probe(struct hid_device *h
+ 	mt_set_maxcontacts(hdev);
+ 	mt_set_input_mode(hdev);
+ 
++	kfree(td->fields);
++	td->fields = NULL;
++
+ 	return 0;
+ 
+ fail:
++	kfree(td->fields);
+ 	kfree(td);
+ 	return ret;
+ }
+
+
