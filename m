@@ -1,46 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161185Ab2GLO2g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 10:28:36 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:55278 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161113Ab2GLO2c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 10:28:32 -0400
-Date: Thu, 12 Jul 2012 16:28:28 +0200
-From: Stevie Trujillo <stevie.trujillo@gmail.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>, linux-kernel@vger.kernel.org
-Subject: mount -o loop with truncated dosdisk.img uses 100% cpu and can't be
- killed
-Message-ID: <20120712162828.3f561315@localhost>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1161195Ab2GLO2v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 10:28:51 -0400
+Received: from mga03.intel.com ([143.182.124.21]:18972 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933939Ab2GLO1P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 10:27:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="167258310"
+From: Artem Bityutskiy <dedekind1@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Subject: [PATCHv2 3/6] hfs: remove extra mdb write on unmount
+Date: Thu, 12 Jul 2012 17:28:46 +0300
+Message-Id: <1342103329-17526-4-git-send-email-dedekind1@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1342103329-17526-1-git-send-email-dedekind1@gmail.com>
+References: <1342103329-17526-1-git-send-email-dedekind1@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-I was trying to create a bootdisk to update my BIOS, and accidentially
-made a 512byte image with only the FreeDOS header in it.
+HFS calls 'hfs_write_super()' from 'hfs_put_super()' in order to write the MDB
+to the media. However, it is not needed because VFS calls '->sync_fs()' before
+calling '->put_super()' - so by the time we are in 'hfs_write_super()', the MDB
+is already synchronized.
 
-( Linux 3.4.4 )
-# mount -o loop dosdisk.img /tmp
-^C^C^C
-It uses 100% CPU and doesn't listen to me when I do ^C, kill -9 etc. I
-think this means it's stuck in the kernel?
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+---
+ fs/hfs/super.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-Here is the base64 encoded image (use base64 -d command to unpack it).
-6zyQRnJlZURPUyAAAgEBAALgAEAL8AkAEgACAAAAAAAAAAAAAAApOATF6E5PIE5BTUUgICAgRkFU
-MTIgICD6/DHAjti9AHy44B+OwInuie+5AAHzpepefOAfAABgAI7YjtCNZqD7gH4k/3UDiFYkx0bA
-EADHRsIBAOjpAEZyZWVET1MAi3Yci34eA3YOg9cAiXbSiX7UikYQmPdmFgHGEdeJdtaJftiLXgux
-BdPri0YRMdL384lG0AHGg9cAiXbaiX7ci0bWi1bYi37QxF5a6JsAci/Eflq5CwC+8X1X86ZfJotF
-GnQLg8cgJoA9AHXncllQxF5ai34Wi0bSi1bU6GsAWHJGHgeOXly/ACCricYB9gHG0e6tcwSxBNPo
-gOQPPfgPcugxwKsOH8ReWr4AIK0JwHQkSEiLfg2B5/8A9+cDRtoTVtzoJABz5egXACBlcnIAMOTN
-Fs0Zil4k/25aMdu0Ds0QXqxWPAB188NWiUbIiVbKjEbGiV7EtEG7qlWKViSE0nQZzRNyFdHpgdtU
-qnUNjXbAiV7MiV7OtELrLItOyItWyopGGPZmGpH38ZL2dhiJ0YjGhunQydDJikYYKOD+xAjhxF7E
-uAECilYkzRNzBjDkzRProotGC/Z2wAFGxoNGyAGDVsoAT3XqjkbGXsNLRVJORUwgIFNZUwAAVao=
+diff --git a/fs/hfs/super.c b/fs/hfs/super.c
+index f7c06bb..47e4119 100644
+--- a/fs/hfs/super.c
++++ b/fs/hfs/super.c
+@@ -74,8 +74,6 @@ static int hfs_sync_fs(struct super_block *sb, int wait)
+  */
+ static void hfs_put_super(struct super_block *sb)
+ {
+-	if (sb->s_dirt)
+-		hfs_write_super(sb);
+ 	hfs_mdb_close(sb);
+ 	/* release the MDB's resources */
+ 	hfs_mdb_put(sb);
+-- 
+1.7.7.6
 
---
-Stevie Trujillo
