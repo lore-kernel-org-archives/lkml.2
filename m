@@ -1,74 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759323Ab2GLX6l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:58:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26319 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754740Ab2GLX6j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 19:58:39 -0400
-Date: Fri, 13 Jul 2012 02:58:50 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: "Hans J. Koch" <hjk@hansjkoch.de>
-Cc: Andreas Schallenberg <embedded@gmx.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dominic Eschweiler <eschweiler@fias.uni-frankfurt.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, kvm@vger.kernel.org
-Subject: Re: UIO: missing resource mapping
-Message-ID: <20120712235850.GA9614@redhat.com>
-References: <4FFE7C1F.7080702@gmx.net>
- <20120712194432.GA2592@local>
- <20120712231632.GC9317@redhat.com>
- <20120712234011.GE2592@local>
+	id S1162990Ab2GLX7g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:59:36 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:39190 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161882Ab2GLX7d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 19:59:33 -0400
+Message-ID: <4FFF64A8.8040504@us.ibm.com>
+Date: Thu, 12 Jul 2012 16:58:32 -0700
+From: John Stultz <johnstul@us.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120712234011.GE2592@local>
+To: Jiri Bohac <jbohac@suse.cz>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, stable@vger.kernel.org
+Subject: Re: [PATCH 0/6] Fix for leapsecond caused hrtimer/futex issue (updated)
+References: <1341960205-56738-1-git-send-email-johnstul@us.ibm.com> <4FFCB287.80701@us.ibm.com> <20120712224334.GA32620@midget.suse.cz>
+In-Reply-To: <20120712224334.GA32620@midget.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12071223-2398-0000-0000-00000874C265
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 13, 2012 at 01:40:11AM +0200, Hans J. Koch wrote:
-> On Fri, Jul 13, 2012 at 02:16:32AM +0300, Michael S. Tsirkin wrote:
-> > On Thu, Jul 12, 2012 at 09:44:33PM +0200, Hans J. Koch wrote:
-> > > > Looking further at the code, I cannot see where the mem fields are
-> > > > being filled at all.
-> > > > Which code is supposed to write the struct uio_mem?
-> > > 
-> > > In my opinion, the driver should. However, Michael's idea is to use
-> > > /sys/bus/pci/devices/XXXXXresourceX for mapping purposes.
-> > > 
-> > > That is of course also possible, but obviously it leads to confusion.
-> > > We already had a long thread about this:
-> > > 
-> > > http://www.spinics.net/lists/kvm/msg73837.html
-> > > 
-> > > Michael, can we change the driver to offer all available PCI BARs in the
-> > > normal UIO way? I'm afraid otherwise we'll have the same discussion over
-> > > and over again.
-> > > 
-> > > Thanks,
-> > > Hans
-> > 
-> > My concern was people will ask for more and more stuff that pci
-> > sysfs already has.
-> > If we do add these is there a way to not duplicate code from pci?
-> > Export pci_mmap_resource and use it? Or make the uio attributes
-> > softlinks to pci sysfs somehow?
-> 
-> I understand your concern. Of course I'm also not in favor of duplicating
-> code, but I don't think there's much overhead. PCI already exports all
-> information needed by pci_resource_start(dev, bar) and
-> pci_resource_len(dev, bar). Have a look at other UIO PCI drivers like
-> uio_cif.c or uio_netx.c to see how it works. It's just a few more lines
-> of code to loop through all BARs and add the to info->mem[i].
-> 
-> By the way, the current size of the info->mem[] array was exactly made
-> with PCI in mind...
-> 
-> Thanks,
-> Hans
+On 07/12/2012 03:43 PM, Jiri Bohac wrote:
+> On Tue, Jul 10, 2012 at 03:53:59PM -0700, John Stultz wrote:
+>> On 07/10/2012 03:43 PM, John Stultz wrote:
+>>> Over the weekend, Thomas got a chance to review the leap second fix
+>>> in more detail and had a few additional changes he wanted to make
+>>> to improve performance as well as style.
+>>>
+>>> So this iteration includes his modifications.
+>>>
+>>> Once merged, I'll be working to get the backports finished as quickly
+>>> as I can and sent to -stable.
+> looking at the proposed 2.6.32.y stable patch at:
+> http://git.linaro.org/gitweb?p=people/jstultz/linux.git;a=commitdiff;h=18d208632bf17aed56c581b882868b2be44be71e;hp=6d224606bb8eec78027522d6dd5abfea8108c41a
+> Is this the final version you are about to send to -stable?
+No, this isn't what I'm sending to -stable.  That was my backport that 
+was done was prior to merging Thomas' modifications from over the 
+weekend. Having, so far, done this backporting 3 times or so,  I figured 
+I'd just wait until something got committed upstream before trying to 
+backport it again. :)
 
-Well we also need to check resource type and probably iomem_is_exclusive.
 
--- 
-MST
+> In 2.6.32 timekeeping_leap_insert() is not called from the timer
+> interrupt, but from the leap_timer hrtimer.
+>
+> I think the new clock_was_set_timer will thus not be called by
+> irq_exit() because TIMER_SOFTIRQ has not been raised. Unless
+> TIMER_SOFTIRQ is raised, clock_was_set() will not be called until
+> the next periodic timer interrupt, correct?
+>
+> Wouldn't the original schedule_work() approach work better for
+> 2.6.32?
+>
+> Or do you plan backporting the most recent version to 2.6.32?
+
+I'll be backporting & testing the most recent version once it is 
+committed upstream.
+
+thanks
+-john
+
