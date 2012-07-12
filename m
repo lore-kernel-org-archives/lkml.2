@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934151Ab2GLRCv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 13:02:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41845 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934096Ab2GLRCu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 13:02:50 -0400
-Date: Thu, 12 Jul 2012 13:02:42 -0400
-From: Dave Jones <davej@redhat.com>
-To: Kay Sievers <kay@vrfy.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartmann <greg@kroah.com>
-Subject: Re: 3.5-rc6 printk formatting problem during oom-kill.
-Message-ID: <20120712170242.GA11890@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>, Kay Sievers <kay@vrfy.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Greg Kroah-Hartmann <greg@kroah.com>
-References: <20120709180328.GA4105@redhat.com>
- <CAPXgP11oP4aKyg=HUNrb3z_ZbPjU+_u338sD6uhxKyJ43Z8sgQ@mail.gmail.com>
- <1341859731.801.0.camel@mop>
- <20120712005405.GA1613@redhat.com>
- <CAPXgP13J98an3GW1-aBOEk=5Vyr+is1DaPhz-UFWHBOJ2nHkKA@mail.gmail.com>
- <20120712140552.GA13745@redhat.com>
- <CAPXgP134KL_hxnsH4OcwGX-mv6hfaRiH9r7Tn4a5XXYzh6EZqA@mail.gmail.com>
+	id S1161326Ab2GLRFb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 13:05:31 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:63377 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934143Ab2GLRF0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 13:05:26 -0400
+Date: Thu, 12 Jul 2012 10:05:19 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        joshhunt00@gmail.com, axboe@kernel.dk, rni@google.com,
+        vgoyal@redhat.com, vwadekar@nvidia.com, herbert@gondor.hengli.com.au,
+        davem@davemloft.net, linux-crypto@vger.kernel.org, swhiteho@redhat.com,
+        bpm@sgi.com, elder@kernel.org, xfs@oss.sgi.com, marcel@holtmann.org,
+        gustavo@padovan.org, johan.hedberg@gmail.com,
+        linux-bluetooth@vger.kernel.org, martin.petersen@oracle.com
+Subject: Re: [PATCH 6/6] workqueue: reimplement WQ_HIGHPRI using a separate
+ worker_pool
+Message-ID: <20120712170519.GA20167@google.com>
+References: <1341859315-17759-7-git-send-email-tj@kernel.org>
+ <20120712130648.GA19214@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAPXgP134KL_hxnsH4OcwGX-mv6hfaRiH9r7Tn4a5XXYzh6EZqA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120712130648.GA19214@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 12, 2012 at 06:47:57PM +0200, Kay Sievers wrote:
- 
- > >  > > Also, I have no idea how the hell the 'Modules linked in:' line (9th line) ended up being printed /after/ the
- > >  > > module listing began (2nd line).
- > 
- > They do not belong together. The second line is just another call to
- > the same print_modules() done from:
- >     arch/x86/kernel/dumpstack_64.c :: show_regs()
- > 
- > While we already called print_modules() a few cycles earlier from:
- >    kernel/watchdog :: watchdog_timer_fn()
+Hello, Fengguang.
 
-ah, derp. Good spotting.
- 
- > Hmm, it does not trigger your pattern. I tried adding an rmmod in that
- > loop, but that crashes after a few seconds. Some modules are just not
- > meant to be removed. :)
+On Thu, Jul 12, 2012 at 09:06:48PM +0800, Fengguang Wu wrote:
+> [    0.207977] WARNING: at /c/kernel-tests/mm/kernel/workqueue.c:1217 worker_enter_idle+0x2b8/0x32b()
+> [    0.207977] Modules linked in:
+> [    0.207977] Pid: 1, comm: swapper/0 Not tainted 3.5.0-rc6-08414-g9645fff #15
+> [    0.207977] Call Trace:
+> [    0.207977]  [<ffffffff81087189>] ? worker_enter_idle+0x2b8/0x32b
+> [    0.207977]  [<ffffffff810559d9>] warn_slowpath_common+0xae/0xdb
+> [    0.207977]  [<ffffffff81055a2e>] warn_slowpath_null+0x28/0x31
+> [    0.207977]  [<ffffffff81087189>] worker_enter_idle+0x2b8/0x32b
+> [    0.207977]  [<ffffffff81087222>] start_worker+0x26/0x42
+> [    0.207977]  [<ffffffff81c8b261>] init_workqueues+0x2d2/0x59a
+> [    0.207977]  [<ffffffff81c8af8f>] ? usermodehelper_init+0x8a/0x8a
+> [    0.207977]  [<ffffffff81000284>] do_one_initcall+0xce/0x272
+> [    0.207977]  [<ffffffff81c6f650>] kernel_init+0x12e/0x3c1
+> [    0.207977]  [<ffffffff814b9b74>] kernel_thread_helper+0x4/0x10
+> [    0.207977]  [<ffffffff814b80b0>] ? retint_restore_args+0x13/0x13
+> [    0.207977]  [<ffffffff81c6f522>] ? start_kernel+0x737/0x737
+> [    0.207977]  [<ffffffff814b9b70>] ? gs_change+0x13/0x13
 
-yeah, that's bothersome. TTBOMK, we've never survived a 'load all modules/unload all modules' ever.
- 
- > I forced the watchdog to trigger by setting the timeout to 1s, but all
- > looks still fine:
- > 
- > Could it possibly be that we get some sort of corruption somewhere
- > else while running trinity and load modules?
+Yeah, I forgot to flip the WARN_ON_ONCE() condition so that it checks
+nr_running before looking at pool->nr_running.  The warning is
+spurious.  Will post fix soon.
 
-I suppose anything is possible, but it's surprisingly consistent.
+Thanks.
 
-	Dave
+-- 
+tejun
