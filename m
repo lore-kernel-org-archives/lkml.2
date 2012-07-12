@@ -1,145 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161119Ab2GLVXk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 17:23:40 -0400
-Received: from fieldses.org ([174.143.236.118]:46640 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932971Ab2GLVXj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 17:23:39 -0400
-Date: Thu, 12 Jul 2012 17:23:37 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Eldad Zack <eldad@fogrefinery.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Joe Perches <joe@perches.com>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] kstrto*: add documentation
-Message-ID: <20120712212337.GA24162@fieldses.org>
-References: <1342126395-18055-1-git-send-email-eldad@fogrefinery.com>
+	id S934260Ab2GLVYW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 17:24:22 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:42055 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932987Ab2GLVYQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 17:24:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1342126395-18055-1-git-send-email-eldad@fogrefinery.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4FFEF71E.7080706@xenotime.net>
+References: <20120712160335.9cbff13c2f18eadc7d3cb0cf@canb.auug.org.au>
+	<4FFEF71E.7080706@xenotime.net>
+Date: Thu, 12 Jul 2012 15:24:15 -0600
+Message-ID: <CAL-B5D1a=OX9nuVpLFNhwfarq-WBgYbAh6w8+2deH7w0iY0NCg@mail.gmail.com>
+Subject: Re: linux-next: Tree for July 12 (pci)
+From: Myron Stowe <myron.stowe@gmail.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-pci <linux-pci@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 12, 2012 at 10:53:13PM +0200, Eldad Zack wrote:
-> As J. Bruce Fields <bfields@fieldses.org> pointed out, kstrto* is
-> currently lacking kerneldoc comments.
-> This patch adds kerneldoc comments to common variants of kstrto*:
-> kstrto(u)l, kstrto(u)ll and kstrto(u)int.
-> 
-> Cc: J. Bruce Fields <bfields@fieldses.org>
-> Signed-off-by: Eldad Zack <eldad@fogrefinery.com>
-> ---
->  include/linux/kernel.h |   36 ++++++++++++++++++++++++++++++++++++
->  lib/kstrtox.c          |   18 ++++++++++++++++++
->  2 files changed, 54 insertions(+)
-> 
-> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-> index e07f5e0..582df0f 100644
-> --- a/include/linux/kernel.h
-> +++ b/include/linux/kernel.h
-> @@ -220,6 +220,16 @@ int __must_check _kstrtol(const char *s, unsigned int base, long *res);
->  
->  int __must_check kstrtoull(const char *s, unsigned int base, unsigned long long *res);
->  int __must_check kstrtoll(const char *s, unsigned int base, long long *res);
-> +
-> +/**
-> + * kstrtoul - convert a string to an unsigned long
+On Thu, Jul 12, 2012 at 10:11 AM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> On 07/11/2012 11:03 PM, Stephen Rothwell wrote:
+>
+>> Hi all,
+>>
+>> Changes since 20120710:
+>>
+>>
+>> The pci tree lost its conflicts.
+>
+>
+> on x86_64:
+>
+> drivers/built-in.o: In function `pci_bus_add_device':
+> (.text+0x4f62): undefined reference to `pci_fixup_final_inited'
+>
+>
+> when CONFIG_PCI_QUIRKS is not enabled.
 
-Also, is it worth mentioning that the number is required to be followed
-by a string or newline?
+Nice catch and thanks for the heads up.  My "[PATCH -v2 8/8] PCI:
+Integrate 'pci_fixup_final' quirks into hot-plug paths" patch
+introduced this - http://marc.info/?l=linux-pci&m=134187007917537&w=2
 
---b.
+I'll handle it.
 
-> + * @s: The start of the string
-> + * @base: The number base to use
-> + * @res: Where to write the result of the conversion if successful
-> + *
-> + * Returns 0 on success, -ERANGE on overflow and -EINVAL on parsing error.
-> + * Used as a replacement for the obsolete simple_strtoul.
-> + */
->  static inline int __must_check kstrtoul(const char *s, unsigned int base, unsigned long *res)
->  {
->  	/*
-> @@ -233,6 +243,15 @@ static inline int __must_check kstrtoul(const char *s, unsigned int base, unsign
->  		return _kstrtoul(s, base, res);
->  }
->  
-> +/**
-> + * kstrtol - convert a string to a long
-> + * @s: The start of the string
-> + * @base: The number base to use
-> + * @res: Where to write the result of the conversion if successful
-> + *
-> + * Returns 0 on success, -ERANGE on overflow and -EINVAL on parsing error.
-> + * Used as a replacement for the obsolete simple_strtol.
-> + */
->  static inline int __must_check kstrtol(const char *s, unsigned int base, long *res)
->  {
->  	/*
-> @@ -246,7 +265,24 @@ static inline int __must_check kstrtol(const char *s, unsigned int base, long *r
->  		return _kstrtol(s, base, res);
->  }
->  
-> +/**
-> + * kstrtouint - convert a string to an unsigned int
-> + * @s: The start of the string
-> + * @base: The number base to use
-> + * @res: Where to write the result of the conversion if successful
-> + *
-> + * Returns 0 on success, -ERANGE on overflow and -EINVAL on parsing error.
-> + */
->  int __must_check kstrtouint(const char *s, unsigned int base, unsigned int *res);
-> +
-> +/**
-> + * kstrtoint - convert a string to an int
-> + * @s: The start of the string
-> + * @base: The number base to use
-> + * @res: Where to write the result of the conversion if successful
-> + *
-> + * Returns 0 on success, -ERANGE on overflow and -EINVAL on parsing error.
-> + */
->  int __must_check kstrtoint(const char *s, unsigned int base, int *res);
->  
->  static inline int __must_check kstrtou64(const char *s, unsigned int base, u64 *res)
-> diff --git a/lib/kstrtox.c b/lib/kstrtox.c
-> index c3615ea..7f5bca2 100644
-> --- a/lib/kstrtox.c
-> +++ b/lib/kstrtox.c
-> @@ -104,6 +104,15 @@ static int _kstrtoull(const char *s, unsigned int base, unsigned long long *res)
->  	return 0;
->  }
->  
-> +/**
-> + * kstrtoull - convert a string to an unsigned long long
-> + * @s: The start of the string
-> + * @base: The number base to use
-> + * @res: Where to write the result of the conversion if successful
-> + *
-> + * Returns 0 on success, -ERANGE on overflow and -EINVAL on parsing error.
-> + * Used as a replacement for the obsolete simple_strtoull.
-> + */
->  int kstrtoull(const char *s, unsigned int base, unsigned long long *res)
->  {
->  	if (s[0] == '+')
-> @@ -112,6 +121,15 @@ int kstrtoull(const char *s, unsigned int base, unsigned long long *res)
->  }
->  EXPORT_SYMBOL(kstrtoull);
->  
-> +/**
-> + * kstrtoll - convert a string to a long long
-> + * @s: The start of the string
-> + * @base: The number base to use
-> + * @res: Where to write the result of the conversion if successful
-> + *
-> + * Returns 0 on success, -ERANGE on overflow and -EINVAL on parsing error.
-> + * Used as a replacement for the obsolete simple_strtoll.
-> + */
->  int kstrtoll(const char *s, unsigned int base, long long *res)
->  {
->  	unsigned long long tmp;
-> -- 
-> 1.7.10.4
-> 
+Thanks again,
+ Myron
+
+>
+> --
+> ~Randy
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
