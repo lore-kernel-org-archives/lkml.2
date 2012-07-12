@@ -1,68 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756873Ab2GLF6F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 01:58:05 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:57511 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755450Ab2GLF6A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 01:58:00 -0400
-Date: Thu, 12 Jul 2012 11:27:51 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] uprobes: suppress uprobe_munmap() from mmput()
-Message-ID: <20120712055750.GC3598@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120708202917.GA18188@redhat.com>
- <20120708203003.GA18226@redhat.com>
+	id S1756170Ab2GLF65 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 01:58:57 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:53637 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754165Ab2GLF6z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 01:58:55 -0400
+X-AuditID: b753bd60-a3089ba000000655-7f-4ffe679cc5c8
+X-AuditID: b753bd60-a3089ba000000655-7f-4ffe679cc5c8
+Message-ID: <4FFE6785.80201@hitachi.com>
+Date: Thu, 12 Jul 2012 14:58:29 +0900
+From: HAYASAKA Mitsuo <mitsuo.hayasaka.hu@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20120708203003.GA18226@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12071205-6078-0000-0000-00000D219A1F
+To: hanwen@xs4all.nl, Han-Wen Nienhuys <hanwenn@gmail.com>,
+        Liu Yuan <namei.unix@gmail.com>
+Cc: fuse-devel@lists.sourceforge.net, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Miklos Szeredi <miklos@szeredi.hu>,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: [fuse-devel] [RFC PATCH 0/5] fuse: make maximum read/write request
+ size tunable
+References: <20120705105017.17812.95542.stgit@ltc137.sdl.hitachi.co.jp> <4FF67D6A.8060707@gmail.com> <CAOw_e7ZGdSVrNfPe8iE8BtmNWU+BrvbaMFVsUP+g+3MR0Pegqw@mail.gmail.com>
+In-Reply-To: <CAOw_e7ZGdSVrNfPe8iE8BtmNWU+BrvbaMFVsUP+g+3MR0Pegqw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2012-07-08 22:30:03]:
+Hi Yuan and Han-Wen,
 
-> uprobe_munmap() does get_user_pages() and it is also called from
-> the final mmput()->exit_mmap() path. This slows down exit/mmput()
-> for no reason, and I think  it is simply dangerous/wrong to try to
-> fault-in a page into the dying mm. If nothing else, this happens
-> after the last sync_mm_rss(), afaics handle_mm_fault() can change
-> the task->rss_stat and make the subsequent check_mm() unhappy.
-> 
-> Change uprobe_munmap() to check mm->mm_users != 0.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Thank you for your comments.
 
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+(2012/07/06 22:58), Han-Wen Nienhuys wrote:
+> On Fri, Jul 6, 2012 at 2:53 AM, Liu Yuan<namei.unix@gmail.com>  wrote:
+>> On 07/05/2012 06:50 PM, Mitsuo Hayasaka wrote:
+>>> One of the ways to solve this is to make them tunable.
+>>> In this series, the new sysfs parameter max_pages_per_req is introduced.
+>>> It limits the maximum read/write size in fuse request and it can be
+>>> changed from 32 to 256 pages in current implementations. When the
+>>> max_read/max_write mount option is specified, FUSE request size is set
+>>> per mount. (The size is rounded-up to page size and limited up to
+>>> max_pages_per_req.)
+>>
+>> Why maxim 256 pages? If we are here, we can go further: most of object
+>> storage system has object size of multiple to dozens of megabytes. So I
+>> think probably 1M is too small. Our distribution storage system has 4M
+>> per object, so I think at least maxim size could be bigger than 4M.
+>
+> The maximum pipe size on my system is 1M, so if you go beyond that,
+> splicing from the FD won't work.
+>
+> Also, the userspace client must reserve a buffer this size so it can
+> receive a write, which is a waste since most requests are much
+> smaller.
+>
 
-> ---
->  kernel/events/uprobes.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-> index a93b6df..47c4e24 100644
-> --- a/kernel/events/uprobes.c
-> +++ b/kernel/events/uprobes.c
-> @@ -1082,6 +1082,9 @@ void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned lon
->  	if (!atomic_read(&uprobe_events) || !valid_vma(vma, false))
->  		return;
-> 
-> +	if (!atomic_read(&vma->vm_mm->mm_users)) /* called by mmput() ? */
-> +		return;
-> +
->  	if (!atomic_read(&vma->vm_mm->uprobes_state.count))
->  		return;
-> 
-> -- 
-> 1.5.5.1
-> 
+I checked the maximum pipe size can be changed using fcntl(2) or
+/proc/sys/fs/pipe-max-size. It is clear that it is not a fixed value.
 
+Also, it seems that there is a request for setting the maximum number
+of pages per fuse request to 4M (1024 pages). One of the reasons to
+introduce the sysfs max_pages_per_req parameter is to set a threshold
+of the maximum number of pages dynamically according to the
+administrator's demand, and root can only change it.
+
+So, when the maximum value is required to be set to not more than the
+pipe-max-size, the max_pages_per_req should be changed considering it.
+It seems that the upper limit of this parameter does not have to be
+not more than it.
+
+I'm planning to limit max_pages_per_req up to 1024 pages and add the
+document to /Documentation/filesystems/fuse.txt, as follows.
+
+"the sysfs max_pages_per_req parameter can be changed from 32 to 1024.
+The default is 32 pages. Generally, the pipe-max-size is 1M (256 pages)
+and it is better to set it to not more than the pipe-max-size."
+
+This is just a plan and any comments are appreciated.
+
+Thanks,
