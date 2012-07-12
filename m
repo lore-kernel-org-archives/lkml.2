@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161693Ab2GLXip (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:38:45 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:34975 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932162Ab2GLWjI (ORCPT
+	id S1161722Ab2GLXj0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:39:26 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58752 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759679Ab2GLWit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:39:08 -0400
+	Thu, 12 Jul 2012 18:38:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stefan Assmann <sassmann@redhat.com>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Subject: [ 054/187] iommu/amd: Initialize dma_ops for hotplug and sriov devices
-Date: Thu, 12 Jul 2012 15:33:30 -0700
-Message-Id: <20120712191527.356049087@linuxfoundation.org>
+        Fernando Guzman Lugo <fernando.lugo@ti.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>
+Subject: [ 057/187] rpmsg: make sure inflight messages dont invoke just-removed callbacks
+Date: Thu, 12 Jul 2012 15:33:33 -0700
+Message-Id: <20120712191527.653678320@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -31,49 +31,109 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Joerg Roedel <joerg.roedel@amd.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
 
-commit ac1534a55d1e87d59a21c09c570605933b551480 upstream.
+commit 15fd943af50dbc5f7f4de33835795c72595f7bf4 upstream.
 
-When a device is added to the system at runtime the AMD
-IOMMU driver initializes the necessary data structures to
-handle translation for it. But it forgets to change the
-per-device dma_ops to point to the AMD IOMMU driver. So
-mapping actually never happens and all DMA accesses end in
-an IO_PAGE_FAULT. Fix this.
+When inbound messages arrive, rpmsg core looks up their associated
+endpoint (by destination address) and then invokes their callback.
 
-Reported-by: Stefan Assmann <sassmann@redhat.com>
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+We've made sure that endpoints will never be de-allocated after they
+were found by rpmsg core, but we also need to protect against the
+(rare) scenario where the rpmsg driver was just removed, and its
+callback function isn't available anymore.
+
+This is achieved by introducing a callback mutex, which must be taken
+before the callback is invoked, and, obviously, before it is removed.
+
+Reported-by: Fernando Guzman Lugo <fernando.lugo@ti.com>
+Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iommu/amd_iommu.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/rpmsg/virtio_rpmsg_bus.c |   25 +++++++++++++++++++------
+ include/linux/rpmsg.h            |    3 +++
+ 2 files changed, 22 insertions(+), 6 deletions(-)
 
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -83,6 +83,8 @@ static struct iommu_ops amd_iommu_ops;
- static ATOMIC_NOTIFIER_HEAD(ppr_notifier);
- int amd_iommu_max_glx_val = -1;
+--- a/drivers/rpmsg/virtio_rpmsg_bus.c
++++ b/drivers/rpmsg/virtio_rpmsg_bus.c
+@@ -227,6 +227,7 @@ static struct rpmsg_endpoint *__rpmsg_cr
+ 	}
  
-+static struct dma_map_ops amd_iommu_dma_ops;
-+
- /*
-  * general struct to manage commands send to an IOMMU
-  */
-@@ -2267,6 +2269,13 @@ static int device_change_notifier(struct
- 		list_add_tail(&dma_domain->list, &iommu_pd_list);
- 		spin_unlock_irqrestore(&iommu_pd_list_lock, flags);
+ 	kref_init(&ept->refcount);
++	mutex_init(&ept->cb_lock);
  
-+		dev_data = get_dev_data(dev);
-+
-+		if (!dev_data->passthrough)
-+			dev->archdata.dma_ops = &amd_iommu_dma_ops;
-+		else
-+			dev->archdata.dma_ops = &nommu_dma_ops;
-+
- 		break;
- 	case BUS_NOTIFY_DEL_DEVICE:
+ 	ept->rpdev = rpdev;
+ 	ept->cb = cb;
+@@ -324,10 +325,16 @@ EXPORT_SYMBOL(rpmsg_create_ept);
+ static void
+ __rpmsg_destroy_ept(struct virtproc_info *vrp, struct rpmsg_endpoint *ept)
+ {
++	/* make sure new inbound messages can't find this ept anymore */
+ 	mutex_lock(&vrp->endpoints_lock);
+ 	idr_remove(&vrp->endpoints, ept->addr);
+ 	mutex_unlock(&vrp->endpoints_lock);
  
++	/* make sure in-flight inbound messages won't invoke cb anymore */
++	mutex_lock(&ept->cb_lock);
++	ept->cb = NULL;
++	mutex_unlock(&ept->cb_lock);
++
+ 	kref_put(&ept->refcount, __ept_release);
+ }
+ 
+@@ -821,14 +828,20 @@ static void rpmsg_recv_done(struct virtq
+ 
+ 	mutex_unlock(&vrp->endpoints_lock);
+ 
+-	if (ept && ept->cb)
+-		ept->cb(ept->rpdev, msg->data, msg->len, ept->priv, msg->src);
+-	else
+-		dev_warn(dev, "msg received with no recepient\n");
++	if (ept) {
++		/* make sure ept->cb doesn't go away while we use it */
++		mutex_lock(&ept->cb_lock);
+ 
+-	/* farewell, ept, we don't need you anymore */
+-	if (ept)
++		if (ept->cb)
++			ept->cb(ept->rpdev, msg->data, msg->len, ept->priv,
++				msg->src);
++
++		mutex_unlock(&ept->cb_lock);
++
++		/* farewell, ept, we don't need you anymore */
+ 		kref_put(&ept->refcount, __ept_release);
++	} else
++		dev_warn(dev, "msg received with no recepient\n");
+ 
+ 	/* publish the real size of the buffer */
+ 	sg_init_one(&sg, msg, RPMSG_BUF_SIZE);
+--- a/include/linux/rpmsg.h
++++ b/include/linux/rpmsg.h
+@@ -39,6 +39,7 @@
+ #include <linux/device.h>
+ #include <linux/mod_devicetable.h>
+ #include <linux/kref.h>
++#include <linux/mutex.h>
+ 
+ /* The feature bitmap for virtio rpmsg */
+ #define VIRTIO_RPMSG_F_NS	0 /* RP supports name service notifications */
+@@ -123,6 +124,7 @@ typedef void (*rpmsg_rx_cb_t)(struct rpm
+  * @rpdev: rpmsg channel device
+  * @refcount: when this drops to zero, the ept is deallocated
+  * @cb: rx callback handler
++ * @cb_lock: must be taken before accessing/changing @cb
+  * @addr: local rpmsg address
+  * @priv: private data for the driver's use
+  *
+@@ -144,6 +146,7 @@ struct rpmsg_endpoint {
+ 	struct rpmsg_channel *rpdev;
+ 	struct kref refcount;
+ 	rpmsg_rx_cb_t cb;
++	struct mutex cb_lock;
+ 	u32 addr;
+ 	void *priv;
+ };
 
 
