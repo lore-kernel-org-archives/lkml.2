@@ -1,83 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759108Ab2GLKXv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 06:23:51 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:37321 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752578Ab2GLKXt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 06:23:49 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Daniel Drake <dsd@laptop.org>
-Subject: [PATCH] olpc-xo15-sci: Use struct dev_pm_ops for power management
-Date: Thu, 12 Jul 2012 12:29:24 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>, Len Brown <lenb@kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
+	id S933688Ab2GLKfZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 06:35:25 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:45931 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932983Ab2GLKfY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 06:35:24 -0400
+Date: Thu, 12 Jul 2012 12:35:09 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: khali@linux-fr.org, ben-linux@fluff.org, swarren@nvidia.com,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org
+Subject: Re: [PATCH 5/5] i2c: tegra: convert normal suspend/resume to *_noirq
+Message-ID: <20120712103509.GF27520@pengutronix.de>
+References: <1341919244-23327-1-git-send-email-ldewangan@nvidia.com>
+ <1341919244-23327-6-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207121229.24872.rjw@sisk.pl>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="w3uUfsyyY1Pqa/ej"
+Content-Disposition: inline
+In-Reply-To: <1341919244-23327-6-git-send-email-ldewangan@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Make the OLPC XO15 SCI driver define its resume callback through
-a struct dev_pm_ops object rather than by using a legacy PM hook
-in struct acpi_device_ops.
+--w3uUfsyyY1Pqa/ej
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
+On Tue, Jul 10, 2012 at 04:50:44PM +0530, Laxman Dewangan wrote:
+> To provide the late suspend and early resume for i2c
+> driver, convert the suspend/resume as
+> 	suspend-> suspend_noirq
+> 	resume -> resume_noirq
+>=20
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 
-This patch was missing from my patchset converting ACPI do the PM handling
-based on struct dev_pm_ops.
-
-If there are no objections, I'll add it to the pm-acpi branch of the
-linux-pm.git tree so that it goes in along with the other changes in that
-area.
+Applied to next on top of Rafael's patches. Please have a look if I did
+the fixup right.
 
 Thanks,
-Rafael
 
----
- arch/x86/platform/olpc/olpc-xo15-sci.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+   Wolfram
 
-Index: linux/arch/x86/platform/olpc/olpc-xo15-sci.c
-===================================================================
---- linux.orig/arch/x86/platform/olpc/olpc-xo15-sci.c
-+++ linux/arch/x86/platform/olpc/olpc-xo15-sci.c
-@@ -203,7 +203,7 @@ static int xo15_sci_remove(struct acpi_d
- 	return 0;
- }
- 
--static int xo15_sci_resume(struct acpi_device *device)
-+static int xo15_sci_resume(struct device *dev)
- {
- 	/* Enable all EC events */
- 	olpc_ec_mask_write(EC_SCI_SRC_ALL);
-@@ -215,6 +215,8 @@ static int xo15_sci_resume(struct acpi_d
- 	return 0;
- }
- 
-+static SIMPLE_DEV_PM_OPS(xo15_sci_pm, NULL, xo15_sci_resume);
-+
- static const struct acpi_device_id xo15_sci_device_ids[] = {
- 	{"XO15EC", 0},
- 	{"", 0},
-@@ -227,8 +229,8 @@ static struct acpi_driver xo15_sci_drv =
- 	.ops = {
- 		.add = xo15_sci_add,
- 		.remove = xo15_sci_remove,
--		.resume = xo15_sci_resume,
- 	},
-+	.drv.pm = &xo15_sci_pm,
- };
- 
- static int __init xo15_sci_init(void)
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--w3uUfsyyY1Pqa/ej
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAk/+qF0ACgkQD27XaX1/VRu2WgCgi9aUaeM1UBu9b86KWLwvDQnb
+4WQAoI5dCvRZRh8VbCn7wERKuYrXDCPc
+=nqtJ
+-----END PGP SIGNATURE-----
+
+--w3uUfsyyY1Pqa/ej--
