@@ -1,103 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161041Ab2GLUW6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 16:22:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17381 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932791Ab2GLUWz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 16:22:55 -0400
-Date: Thu, 12 Jul 2012 22:21:22 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
-        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Don Morris <don.morris@hp.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH 40/40] autonuma: shrink the per-page page_autonuma struct
- size
-Message-ID: <20120712202122.GS20382@redhat.com>
-References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
- <1340888180-15355-41-git-send-email-aarcange@redhat.com>
- <4FF14B56.9090906@redhat.com>
+	id S1759137Ab2GLU2r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 16:28:47 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:47416 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758129Ab2GLU2q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 16:28:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FF14B56.9090906@redhat.com>
+In-Reply-To: <jtn1c5$q0u$1@dough.gmane.org>
+References: <jtn1c5$q0u$1@dough.gmane.org>
+From: Drew <drew.kay@gmail.com>
+Date: Thu, 12 Jul 2012 13:28:24 -0700
+Message-ID: <CACJz6Qsx-xNxDRw5kUqUpf9ogVp23jokHOdGL9xO=kqFXmiNZg@mail.gmail.com>
+Subject: Re: Linux RAID subsystem future
+To: Zdenek Kaspar <zkaspar82@gmail.com>
+Cc: linux-raid@vger.kernel.org, dm-devel@redhat.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 02, 2012 at 03:18:46AM -0400, Rik van Riel wrote:
-> On 06/28/2012 08:56 AM, Andrea Arcangeli wrote:
-> >  From 32 to 12 bytes, so the AutoNUMA memory footprint is reduced to
-> > 0.29% of RAM.
-> 
-> Still not ideal, however once we get native THP migration working
-> it could be practical to switch to a "have a bucket with N
-> page_autonuma structures for every N*M pages" approach.
-> 
-> For example, we could have 4 struct page_autonuma pages, for 32
-> memory pages. That would necessitate reintroducing the page pointer
-> into struct page_autonuma, but it would reduce memory use by roughly
-> a factor 8.
-> 
-> To get from a struct page to a struct page_autonuma, we would have
-> to look at the bucket and check whether one of the page_autonuma
-> structs points at us. If none do, we have to claim an available one.
-> On migration, we would have to free our page_autonuma struct, which
-> would make it available for other pages to use.
-> 
-> This would complicate the code somewhat, and potentially slow down
-> the migration of 4kB pages, but with 2MB pages things could continue
-> exactly the way they work today.
-> 
-> Does this seem reasonably in any way?
+> Hello lists,
+>
+> I noticed recent patches added MD RAID compatibility into the DM
+> subsystem. Is there a valid reason to duplicate efforts ?
+>
+> Hopefully its not silent preparation step for DM takeover. Can someone
+> shed more light on this topic ?
+>
+> TIA, Z.
 
-Reducing the max lru size loses info too. The thing I dislike is that
-knuma_migrated may not migrate the page until a few knuma_scand passed
-on large systems (giving a chance to last_nid_set to notice if there's
-false sharing and cancel the migration). I conceptually like the
-unlimited sized LRU migration list.
+I'm not a developer by any stretch of the word so take what I say with
+a grain of salt.
 
-The other cons is that it'll increase the complexity even more by
-having to deal with dynamic objects instead of an extension of the
-struct page.
+I think it's more just a case of dm using md's RAID algorithms, which
+IMHO are better tested, to support fakeraid controllers like Intel's
+Matrix RAID. Besides, we're all one big happy linux family so why not
+borrow your brother's socks? :-)
 
-And the 2bytes for the last_nid information would need to be retained
-for every page, unless we drop the last_nid logic which I doubt would
-be good.
 
-And the alternative without an hash is not feasible: one could reduce
-it to 8bytes per-page (for the pointer to the page_autonuma structure)
-plus 2 bytes for last_nid, so 10 bytes per page plus the actual array,
-instead of the current 12 bytes per page.
-
-> I also wonder if it would make sense to have this available as a
-> generic list type, not autonuma specific but an "item number list"
-> include file with corresponding macros.
-> 
-> It might be useful to have lists with item numbers, instead of
-> prev & next pointers, in other places in the kernel.
-> 
-> Besides, introducing this list type separately could make things
-> easier to review.
-
-Macros bypassing type checking usually aren't recommended and
-certainly it's more readable as it is now. But this can always be done
-later if needed.
+-- 
+Drew
