@@ -1,31 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161979Ab2GLWl5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:41:57 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58752 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161949Ab2GLWlt (ORCPT
+	id S1161930Ab2GLWmK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:42:10 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:48960 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161974Ab2GLWl5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:41:49 -0400
+	Thu, 12 Jul 2012 18:41:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Marius=20Bj=C3=B8rnstad=20Kotsbak?= 
-	<marius.kotsbak@gmail.com>,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Phil Schmitt <phillip.j.schmitt@intel.com>,
+        Ross Brattain <ross.b.brattain@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: =?y?q?=5B=20109/187=5D=20net=3A=20qmi=5Fwwan=3A=20fix=20Oops=20while=20disconnecting?=
-Date: Thu, 12 Jul 2012 15:34:25 -0700
-Message-Id: <20120712191532.479865397@linuxfoundation.org>
+Subject: [ 103/187] ixgbe: Do not pad FCoE frames as this can cause issues with FCoE DDP
+Date: Thu, 12 Jul 2012 15:34:19 -0700
+Message-Id: <20120712191531.949307644@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
  <20120712191522.742634173@linuxfoundation.org>
 User-Agent: quilt/0.60-20.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset=y
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -36,101 +34,107 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+From: Alexander Duyck <alexander.h.duyck@intel.com>
 
-commit d9b8706843a501034d09bea63ca6723a2ed02b11 upstream.
+commit 57efd44c8cad440fb00ef8078cb018ab2f221373 upstream.
 
-usbnet_disconnect() will set intfdata to NULL before calling
-the minidriver unbind function.  The cdc_wdm subdriver cannot
-know that it is disconnecting until the qmi_wwan unbind
-function has called its disconnect function.  This means that
-we must be able to support the cdc_wdm subdriver operating
-normally while usbnet_disconnect() is running, and in
-particular that intfdata may be NULL.
+FCoE target mode was experiencing issues due to the fact that we were
+sending up data frames that were padded to 60 bytes after the DDP logic had
+already stripped the frame down to 52 or 56 depending on the use of VLANs.
+This was resulting in the FCoE DDP logic having issues since it thought the
+frame still had data in it due to the padding.
 
-The only place this matters is in qmi_wwan_cdc_wdm_manage_power
-which is called from cdc_wdm.  Simply testing for NULL
-intfdata there is sufficient to allow it to continue working
-at all times.
+To resolve this, adding code so that we do not pad FCoE frames prior to
+handling them to the stack.
 
-Fixes this Oops where a cdc-wdm device was closed while the
-USB device was disconnecting, causing wdm_release to call
-qmi_wwan_cdc_wdm_manage_power after intfdata was set to
-NULL by usbnet_disconnect:
-
-[41819.087460] BUG: unable to handle kernel NULL pointer dereference at 00000080
-[41819.087815] IP: [<f8640458>] qmi_wwan_manage_power+0x68/0x90 [qmi_wwan]
-[41819.088028] *pdpt = 000000000314f001 *pde = 0000000000000000
-[41819.088028] Oops: 0002 [#1] SMP
-[41819.088028] Modules linked in: qmi_wwan option usb_wwan usbserial usbnet
-cdc_wdm nls_iso8859_1 nls_cp437 vfat fat usb_storage bnep rfcomm bluetooth
-parport_pc ppdev binfmt_misc iptable_nat nf_nat nf_conntrack_ipv4
-nf_conntrack nf_defrag_ipv4 iptable_mangle iptable_filter ip_tables
-x_tables dm_crypt uvcvideo snd_hda_codec_realtek snd_hda_intel
-videobuf2_core snd_hda_codec joydev videodev videobuf2_vmalloc
-hid_multitouch snd_hwdep arc4 videobuf2_memops snd_pcm snd_seq_midi
-snd_rawmidi snd_seq_midi_event ath9k mac80211 snd_seq ath9k_common ath9k_hw
-ath snd_timer snd_seq_device sparse_keymap dm_multipath scsi_dh coretemp
-mac_hid snd soundcore cfg80211 snd_page_alloc psmouse serio_raw microcode
-lp parport dm_mirror dm_region_hash dm_log usbhid hid i915 drm_kms_helper
-drm r8169 i2c_algo_bit wmi video [last unloaded: qmi_wwan]
-[41819.088028]
-[41819.088028] Pid: 23292, comm: qmicli Not tainted 3.4.0-5-generic #11-Ubuntu GIGABYTE T1005/T1005
-[41819.088028] EIP: 0060:[<f8640458>] EFLAGS: 00010246 CPU: 1
-[41819.088028] EIP is at qmi_wwan_manage_power+0x68/0x90 [qmi_wwan]
-[41819.088028] EAX: 00000000 EBX: 00000000 ECX: 000000c3 EDX: 00000000
-[41819.088028] ESI: c3b27658 EDI: 00000000 EBP: c298bea4 ESP: c298be98
-[41819.088028]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-[41819.088028] CR0: 8005003b CR2: 00000080 CR3: 3605e000 CR4: 000007f0
-[41819.088028] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
-[41819.088028] DR6: ffff0ff0 DR7: 00000400
-[41819.088028] Process qmicli (pid: 23292, ti=c298a000 task=f343b280 task.ti=c298a000)
-[41819.088028] Stack:
-[41819.088028]  00000000 c3b27658 e2a80d00 c298beb0 f864051a c3b27600 c298bec0 f9027099
-[41819.088028]  c2fd6000 00000008 c298bef0 c1147f96 00000001 00000000 00000000 f4e54790
-[41819.088028]  ecf43a00 ecf43a00 c2fd6008 c2fd6000 ebbd7600 ffffffb9 c298bf08 c1144474
-[41819.088028] Call Trace:
-[41819.088028]  [<f864051a>] qmi_wwan_cdc_wdm_manage_power+0x1a/0x20 [qmi_wwan]
-[41819.088028]  [<f9027099>] wdm_release+0x69/0x70 [cdc_wdm]
-[41819.088028]  [<c1147f96>] fput+0xe6/0x210
-[41819.088028]  [<c1144474>] filp_close+0x54/0x80
-[41819.088028]  [<c1046a65>] put_files_struct+0x75/0xc0
-[41819.088028]  [<c1046b56>] exit_files+0x46/0x60
-[41819.088028]  [<c1046f81>] do_exit+0x141/0x780
-[41819.088028]  [<c107248f>] ? wake_up_state+0xf/0x20
-[41819.088028]  [<c1053f48>] ? signal_wake_up+0x28/0x40
-[41819.088028]  [<c1054f3b>] ? zap_other_threads+0x6b/0x80
-[41819.088028]  [<c1047864>] do_group_exit+0x34/0xa0
-[41819.088028]  [<c10478e8>] sys_exit_group+0x18/0x20
-[41819.088028]  [<c15bb7df>] sysenter_do_call+0x12/0x28
-[41819.088028] Code: 04 83 e7 01 c1 e7 03 0f b6 42 18 83 e0 f7 09 f8 88 42
-18 8b 43 04 e8 48 9a dd c8 89 f0 8b 5d f4 8b 75 f8 8b 7d fc 89 ec 5d c3 90
-<f0> ff 88 80 00 00 00 0f 94 c0 84 c0 75 b7 31 f6 8b 5d f4 89 f0
-[41819.088028] EIP: [<f8640458>] qmi_wwan_manage_power+0x68/0x90 [qmi_wwan] SS:ESP 0068:c298be98
-[41819.088028] CR2: 0000000000000080
-[41819.149492] ---[ end trace 0944479ff8257f55 ]---
-
-Reported-by: Marius Bjørnstad Kotsbak <marius.kotsbak@gmail.com>
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+Tested-by: Phil Schmitt <phillip.j.schmitt@intel.com>
+Tested-by: Ross Brattain <ross.b.brattain@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/usb/qmi_wwan.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/net/ethernet/intel/ixgbe/ixgbe.h      |    4 ++--
+ drivers/net/ethernet/intel/ixgbe/ixgbe_lib.c  |    2 +-
+ drivers/net/ethernet/intel/ixgbe/ixgbe_main.c |   14 ++++++++++----
+ 3 files changed, 13 insertions(+), 7 deletions(-)
 
---- a/drivers/net/usb/qmi_wwan.c
-+++ b/drivers/net/usb/qmi_wwan.c
-@@ -197,6 +197,10 @@ err:
- static int qmi_wwan_cdc_wdm_manage_power(struct usb_interface *intf, int on)
- {
- 	struct usbnet *dev = usb_get_intfdata(intf);
-+
-+	/* can be called while disconnecting */
-+	if (!dev)
-+		return 0;
- 	return qmi_wwan_manage_power(dev, on);
- }
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe.h
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe.h
+@@ -189,7 +189,7 @@ enum ixgbe_ring_state_t {
+ 	__IXGBE_HANG_CHECK_ARMED,
+ 	__IXGBE_RX_RSC_ENABLED,
+ 	__IXGBE_RX_CSUM_UDP_ZERO_ERR,
+-	__IXGBE_RX_FCOE_BUFSZ,
++	__IXGBE_RX_FCOE,
+ };
  
+ #define check_for_tx_hang(ring) \
+@@ -283,7 +283,7 @@ struct ixgbe_ring_feature {
+ #if defined(IXGBE_FCOE) && (PAGE_SIZE < 8192)
+ static inline unsigned int ixgbe_rx_pg_order(struct ixgbe_ring *ring)
+ {
+-	return test_bit(__IXGBE_RX_FCOE_BUFSZ, &ring->state) ? 1 : 0;
++	return test_bit(__IXGBE_RX_FCOE, &ring->state) ? 1 : 0;
+ }
+ #else
+ #define ixgbe_rx_pg_order(_ring) 0
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_lib.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_lib.c
+@@ -628,7 +628,7 @@ static int ixgbe_alloc_q_vector(struct i
+ 			f = &adapter->ring_feature[RING_F_FCOE];
+ 			if ((rxr_idx >= f->mask) &&
+ 			    (rxr_idx < f->mask + f->indices))
+-				set_bit(__IXGBE_RX_FCOE_BUFSZ, &ring->state);
++				set_bit(__IXGBE_RX_FCOE, &ring->state);
+ 		}
+ 
+ #endif /* IXGBE_FCOE */
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+@@ -1036,17 +1036,17 @@ static inline void ixgbe_rx_hash(struct
+ #ifdef IXGBE_FCOE
+ /**
+  * ixgbe_rx_is_fcoe - check the rx desc for incoming pkt type
+- * @adapter: address of board private structure
++ * @ring: structure containing ring specific data
+  * @rx_desc: advanced rx descriptor
+  *
+  * Returns : true if it is FCoE pkt
+  */
+-static inline bool ixgbe_rx_is_fcoe(struct ixgbe_adapter *adapter,
++static inline bool ixgbe_rx_is_fcoe(struct ixgbe_ring *ring,
+ 				    union ixgbe_adv_rx_desc *rx_desc)
+ {
+ 	__le16 pkt_info = rx_desc->wb.lower.lo_dword.hs_rss.pkt_info;
+ 
+-	return (adapter->flags & IXGBE_FLAG_FCOE_ENABLED) &&
++	return test_bit(__IXGBE_RX_FCOE, &ring->state) &&
+ 	       ((pkt_info & cpu_to_le16(IXGBE_RXDADV_PKTTYPE_ETQF_MASK)) ==
+ 		(cpu_to_le16(IXGBE_ETQF_FILTER_FCOE <<
+ 			     IXGBE_RXDADV_PKTTYPE_ETQF_SHIFT)));
+@@ -1519,6 +1519,12 @@ static bool ixgbe_cleanup_headers(struct
+ 		skb->truesize -= ixgbe_rx_bufsz(rx_ring);
+ 	}
+ 
++#ifdef IXGBE_FCOE
++	/* do not attempt to pad FCoE Frames as this will disrupt DDP */
++	if (ixgbe_rx_is_fcoe(rx_ring, rx_desc))
++		return false;
++
++#endif
+ 	/* if skb_pad returns an error the skb was freed */
+ 	if (unlikely(skb->len < 60)) {
+ 		int pad_len = 60 - skb->len;
+@@ -1745,7 +1751,7 @@ static bool ixgbe_clean_rx_irq(struct ix
+ 
+ #ifdef IXGBE_FCOE
+ 		/* if ddp, not passing to ULD unless for FCP_RSP or error */
+-		if (ixgbe_rx_is_fcoe(adapter, rx_desc)) {
++		if (ixgbe_rx_is_fcoe(rx_ring, rx_desc)) {
+ 			ddp_bytes = ixgbe_fcoe_ddp(adapter, rx_desc, skb);
+ 			if (!ddp_bytes) {
+ 				dev_kfree_skb_any(skb);
 
 
