@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758562Ab2GLAqP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 20:46:15 -0400
+	id S1758539Ab2GLAqI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 20:46:08 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:62902 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756049Ab2GLApD (ORCPT
+	with ESMTP id S1756033Ab2GLAo6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 20:45:03 -0400
+	Wed, 11 Jul 2012 20:44:58 -0400
 From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 To: Richard Fontana <fontana2012@gmail.com>
 Cc: "Bradley M. Kuhn" <bkuhn@ebb.org>, linux-kernel@vger.kernel.org,
         "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Subject: [PATCH 4/4] copyleft-next: embrace the Signed-off-by practice
-Date: Wed, 11 Jul 2012 17:44:49 -0700
-Message-Id: <1342053889-32066-5-git-send-email-mcgrof@do-not-panic.com>
+Subject: [PATCH 2/4] copyleft-next: more project name updates Copyleft.next->copyleft-next
+Date: Wed, 11 Jul 2012 17:44:47 -0700
+Message-Id: <1342053889-32066-3-git-send-email-mcgrof@do-not-panic.com>
 X-Mailer: git-send-email 1.7.10.rc1.22.gf5241
 In-Reply-To: <1342053889-32066-1-git-send-email-mcgrof@do-not-panic.com>
 References: <1342053889-32066-1-git-send-email-mcgrof@do-not-panic.com>
@@ -23,60 +23,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 
-The idea is taken from Linus Torvald's subsurface
-project [0] README file. The Signed-off-by is widely
-used in public projects and we stand to gain to make
-its usage more prevalent. The meaning of the
-Signed-off-by is borrowed from the Linux kernel's.
-
-[0] git://github.com/torvalds/subsurface.git
-
-Signed-off-by: Luis R. Rodriguez <mcgrof@do-not-panic.com>
+This reflects the present gitorious.org name and reflects
+better with other foo-next git trees out there.
 ---
- CONTRIBUTING |   30 ++++++++++++++++++++++++++++++
- 1 file changed, 30 insertions(+)
+ ABOUT         |   10 +++++-----
+ COPYLEFT.next |    6 +++---
+ 2 files changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/CONTRIBUTING b/CONTRIBUTING
-index 8f214b1..966366c 100644
---- a/CONTRIBUTING
-+++ b/CONTRIBUTING
-@@ -5,6 +5,36 @@ All original contributions to copyleft-next are dedicated to the
- public domain to the maximum extent permitted by applicable law,
- pursuant to CC0. See CC0 for further details.
+diff --git a/ABOUT b/ABOUT
+index 0e8ce0b..791000f 100644
+--- a/ABOUT
++++ b/ABOUT
+@@ -1,15 +1,15 @@
+-Copyleft.next
++copyleft-next
+ =============
  
-+Please either send me signed-off patches or a pull request with
-+signed-off commits.  If you don't sign off on them, I will not accept
-+them. This means adding a line that says "Signed-off-by: Name <email>"
-+at the end of each commit, indicating that you wrote the code and have
-+the right to pass it on as an open source patch.
-+
-+See: http://gerrit.googlecode.com/svn/documentation/2.0/user-signedoffby.html
-+
-+Also, please write good git commit messages.  A good commit message
-+looks like this:
-+
-+	Header line: explaining the commit in one line
-+
-+	Body of commit message is a few lines of text, explaining things
-+	in more detail, possibly giving some background about the issue
-+	being fixed, etc etc.
-+
-+	The body of the commit message can be several paragraphs, and
-+	please do proper word-wrap and keep columns shorter than about
-+	74 characters or so. That way "git log" will show things
-+	nicely even when it's indented.
-+
-+	Reported-by: whoever-reported-it
-+	Signed-off-by: Your Name <youremail@yourhost.com>
-+
-+where that header line really should be meaningful, and really should be
-+just one line.  That header line is what is shown by tools like gitk and
-+shortlog, and should summarize the change in one readable line of text,
-+independently of the longer explanation.
-+
- Contributions from individual free/libre/open source software project
- participants, regardless of their views on copyleft, and regardless of
- their opinions on existing licenses such as the GNU GPLv2 and its
+ "Exploring ideas for a modified copyleft license can't hurt."
+     - Richard M. Stallman, July 2012
+ 
+-Copyleft.next is an experimental "-ng"-type modification of the GNU
++copyleft-next is an experimental "-ng"-type modification of the GNU
+ General Public License, version 3. (It is *not* a fork.)
+ Contributions of patches, ideas, and criticism are welcome. The goal
+ of this effort is to develop an improved strong copyleft free software
+ license. Needless to say, no one should actually *use* a development
+-version of Copyleft.next as an actual license. Anyone interested in
++version of copyleft-next as an actual license. Anyone interested in
+ actually *using* a strong copyleft license for code will wish to use
+ one or more of the following licenses: GNU GPLv2, GNU GPLv3, GNU
+ AGPLv3, and/or later versions of those licenses. For more information,
+@@ -21,7 +21,7 @@ with (e.g.) Red Hat, or any other corporate entity.** Contributors are
+ expected to participate in their individual capacity.
+ 
+ All communications with journalists shall be handled by the
+-Copyleft.next Marketing Committee, which does not exist yet and
++copyleft-next Marketing Committee, which does not exist yet and
+ probably won't exist for at least another year or three. For the
+ avoidance of doubt, Simon Phipps is not considered a
+ journalist.
+@@ -36,7 +36,7 @@ existing (and future) versions of the GNU GPL, which addresses one of
+ the FSF's concerns about modified versions of the GNU GPL.
+ 
+ The meta-license from the FSF stated in its FAQ shall be the license
+-of all versions of the Copyleft.next license text (to the extent that
++of all versions of the copyleft-next license text (to the extent that
+ such versions retain any copyrightable material from versions of the
+ GNU GPL in which the FSF has asserted copyright). Based on the FSF
+ FAQ, that meta-license may be stated as follows:
+diff --git a/COPYLEFT.next b/COPYLEFT.next
+index a741985..1afa01e 100644
+--- a/COPYLEFT.next
++++ b/COPYLEFT.next
+@@ -1,4 +1,4 @@
+-                             Copyleft.next
++                             copyleft-next
+ 
+   0. Definitions.
+ 
+@@ -392,9 +392,9 @@ survive such relicensing.
+   14. New Versions of this License.
+ 
+   The initial License Steward is [?]. The License Steward may publish
+-new versions of Copyleft.next.  Each version will be given a
++new versions of copyleft-next.  Each version will be given a
+ distinguishing version number. You may distribute a Covered Work under
+-the terms of the version of Copyleft.next under which the Program is
++the terms of the version of copyleft-next under which the Program is
+ licensed, or under the terms of any subsequent version published by
+ the License Steward.
+ 
 -- 
 1.7.10.rc1.22.gf5241
 
