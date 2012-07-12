@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161765Ab2GLXgJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:36:09 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58752 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161700Ab2GLWjp (ORCPT
+	id S1161796Ab2GLXge (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:36:34 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:58753 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161689Ab2GLWjj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:39:45 -0400
+	Thu, 12 Jul 2012 18:39:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Takashi Iwai <tiwai@suse.de>, Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 073/187] drm/i915: Fix eDP blank screen after S3 resume on HP desktops
-Date: Thu, 12 Jul 2012 15:33:49 -0700
-Message-Id: <20120712191529.184423506@linuxfoundation.org>
+        Daniel Vetter <daniel.vetter@ffwll.ch>, Adam Jackson <ajax@redhat.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 071/187] drm/edid: dont return stack garbage from supports_rb
+Date: Thu, 12 Jul 2012 15:33:47 -0700
+Message-Id: <20120712191528.986784083@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -30,43 +31,34 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 6db65cbb941f9d433659bdad02b307f6d94465df upstream.
+commit b196a4980ff7bb54db478e2a408dc8b12be15304 upstream.
 
-This patch fixes the problem on some HP desktop machines with eDP
-which give blank screens after S3 resume.
+We need to initialize this to false, because the is_rb callback only
+ever sets it to true.
 
-It turned out that BLC_PWM_CPU_CTL must be written after
-BLC_PWM_CPU_CTL2.  Otherwise it doesn't take effect on these
-SNB machines.
+Noticed while reading through the code.
 
-Tested with 3.5-rc3 kernel.
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=49233
-
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Reviewed-by: Adam Jackson <ajax@redhat.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_suspend.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/drm_edid.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/i915_suspend.c
-+++ b/drivers/gpu/drm/i915/i915_suspend.c
-@@ -740,8 +740,11 @@ static void i915_restore_display(struct
- 	if (HAS_PCH_SPLIT(dev)) {
- 		I915_WRITE(BLC_PWM_PCH_CTL1, dev_priv->saveBLC_PWM_CTL);
- 		I915_WRITE(BLC_PWM_PCH_CTL2, dev_priv->saveBLC_PWM_CTL2);
--		I915_WRITE(BLC_PWM_CPU_CTL, dev_priv->saveBLC_CPU_PWM_CTL);
-+		/* NOTE: BLC_PWM_CPU_CTL must be written after BLC_PWM_CPU_CTL2;
-+		 * otherwise we get blank eDP screen after S3 on some machines
-+		 */
- 		I915_WRITE(BLC_PWM_CPU_CTL2, dev_priv->saveBLC_CPU_PWM_CTL2);
-+		I915_WRITE(BLC_PWM_CPU_CTL, dev_priv->saveBLC_CPU_PWM_CTL);
- 		I915_WRITE(PCH_PP_ON_DELAYS, dev_priv->savePP_ON_DELAYS);
- 		I915_WRITE(PCH_PP_OFF_DELAYS, dev_priv->savePP_OFF_DELAYS);
- 		I915_WRITE(PCH_PP_DIVISOR, dev_priv->savePP_DIVISOR);
+--- a/drivers/gpu/drm/drm_edid.c
++++ b/drivers/gpu/drm/drm_edid.c
+@@ -574,7 +574,7 @@ static bool
+ drm_monitor_supports_rb(struct edid *edid)
+ {
+ 	if (edid->revision >= 4) {
+-		bool ret;
++		bool ret = false;
+ 		drm_for_each_detailed_block((u8 *)edid, is_rb, &ret);
+ 		return ret;
+ 	}
 
 
