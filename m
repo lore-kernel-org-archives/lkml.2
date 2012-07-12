@@ -1,53 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932446Ab2GLIqQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 04:46:16 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:59309 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753475Ab2GLIqM (ORCPT
+	id S1758389Ab2GLIsO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 04:48:14 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53718 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752664Ab2GLIsI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 04:46:12 -0400
-Date: Thu, 12 Jul 2012 09:49:43 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Devendra Naga <devendra.aaru@gmail.com>
-Cc: Mark Einon <mark.einon@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Francois Romieu <romieu@fr.zoreil.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] staging/et131x: remove memset for the TCB
-Message-ID: <20120712094943.2aba6d33@pyramind.ukuu.org.uk>
-In-Reply-To: <1342073368-11893-1-git-send-email-devendra.aaru@gmail.com>
-References: <1342073368-11893-1-git-send-email-devendra.aaru@gmail.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 12 Jul 2012 04:48:08 -0400
+Date: Thu, 12 Jul 2012 09:47:56 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "chris@zankel.net" <chris@zankel.net>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>
+Subject: Re: [PATCH 2/3] ipc: allow compat IPC version field parsing if
+ !ARCH_WANT_OLD_COMPAT_IPC
+Message-ID: <20120712084756.GB2816@mudshark.cambridge.arm.com>
+References: <1342020741-12758-1-git-send-email-will.deacon@arm.com>
+ <1342020741-12758-3-git-send-email-will.deacon@arm.com>
+ <20120711144001.b1f7c21d.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120711144001.b1f7c21d.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Jul 2012 11:54:28 +0545
-Devendra Naga <devendra.aaru@gmail.com> wrote:
+Hi Andrew,
 
-> TCB has kcalloc' ed so no need to call memset again on it.
+Thanks for picking these up.
+
+On Wed, Jul 11, 2012 at 10:40:01PM +0100, Andrew Morton wrote:
+> On Wed, 11 Jul 2012 16:32:20 +0100
+> Will Deacon <will.deacon@arm.com> wrote:
+> > diff --git a/include/linux/compat.h b/include/linux/compat.h
+> > index 4e89039..9f68e90 100644
+> > --- a/include/linux/compat.h
+> > +++ b/include/linux/compat.h
+> > @@ -256,6 +256,7 @@ compat_sys_get_robust_list(int pid, compat_uptr_t __user *head_ptr,
+> >  			   compat_size_t __user *len_ptr);
+> >  
+> >  #ifdef CONFIG_ARCH_WANT_OLD_COMPAT_IPC
+> > +#define __ARCH_WANT_COMPAT_IPC_PARSE_VERSION
+> >  long compat_sys_semctl(int first, int second, int third, void __user *uptr);
+> >  long compat_sys_msgsnd(int first, int second, int third, void __user *uptr);
+> >  long compat_sys_msgrcv(int first, int second, int msgtyp, int third,
+> > diff --git a/ipc/compat.c b/ipc/compat.c
+> > index 53cebdf..a41600f 100644
+> > --- a/ipc/compat.c
+> > +++ b/ipc/compat.c
+> > @@ -118,7 +118,7 @@ extern int sem_ctls[];
+> >  
+> >  static inline int compat_ipc_parse_version(int *cmd)
+> >  {
+> > -#ifdef CONFIG_ARCH_WANT_OLD_COMPAT_IPC
+> > +#ifdef	__ARCH_WANT_COMPAT_IPC_PARSE_VERSION
+> >  	int version = *cmd & IPC_64;
+> >  
+> >  	/* this is tricky: architectures that have support for the old
 > 
-> Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
-> ---
->  drivers/staging/et131x/et131x.c |    2 --
->  1 file changed, 2 deletions(-)
-> 
-> diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
-> index 227fca9..5010894 100644
-> --- a/drivers/staging/et131x/et131x.c
-> +++ b/drivers/staging/et131x/et131x.c
-> @@ -2131,8 +2131,6 @@ static void et131x_init_send(struct et131x_adapter *adapter)
->  
->  	tx_ring->tcb_qhead = tcb;
->  
-> -	memset(tcb, 0, sizeof(struct tcb) * NUM_TCB);
+> Could we do this purely in Kconfig?  Add a new
+> CONFIG_ARCH_WANT_COMPAT_IPC_PARSE_VERSION and always set it true if
+> CONFIG_ARCH_WANT_OLD_COMPAT_IPC?
 
-Its such a rarely used path with several entry points that it's probably
-safer kept as is.
+That would also work, although the current approach mirrors what is done for
+the native case (i.e. this is the compat equivalent of
+__ARCH_WANT_IPC_PARSE_VERSION).
 
-Alan
+I'm not too fussed either way, so I can change it if you prefer?
+
+Will
