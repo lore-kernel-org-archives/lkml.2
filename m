@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759601Ab2GLWiP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 18:38:15 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:60400 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759531Ab2GLWiC (ORCPT
+	id S1759620Ab2GLWiY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 18:38:24 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:48634 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759531Ab2GLWiQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:38:02 -0400
+	Thu, 12 Jul 2012 18:38:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 043/187] powerpc: More fixes for lazy IRQ vs. idle
-Date: Thu, 12 Jul 2012 15:33:19 -0700
-Message-Id: <20120712191526.339599573@linuxfoundation.org>
+        Henrik Rydberg <rydberg@euromail.se>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [ 047/187] hwmon: (applesmc) Limit key length in warning messages
+Date: Thu, 12 Jul 2012 15:33:23 -0700
+Message-Id: <20120712191526.716215496@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -30,161 +31,41 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+From: Henrik Rydberg <rydberg@euromail.se>
 
-commit be2cf20a5ad31ebb13562c1c866ecc626fbd721e upstream.
+commit ac852edb47b15900886ba2564eeeb13b3b526e3e upstream.
 
-Looks like we still have issues with pSeries and Cell idle code
-vs. the lazy irq state. In fact, the reset fixes that went upstream
-are exposing the problem more by causing BUG_ON() to trigger (which
-this patch turns into a WARN_ON instead).
+Key lookups may call read_smc() with a fixed-length key string,
+and if the lookup fails, trailing stack content may appear in the
+kernel log. Fixed with this patch.
 
-We need to be careful when using a variant of low power state that
-has the side effect of turning interrupts back on, to properly set
-all the SW & lazy state to look as if everything is enabled before
-we enter the low power state with MSR:EE off as we will return with
-MSR:EE on. If not, we have a discrepancy of state which can cause
-things to go very wrong later on.
-
-This patch moves the logic into a helper and uses it from the
-pseries and cell idle code. The power4/970 idle code already got
-things right (in assembly even !) so I'm not touching it. The power7
-"bare metal" idle code is subtly different and correct. Remains PA6T
-and some hypervisor based Cell platforms which have questionable
-code in there, but they are mostly dead platforms so I'll fix them
-when I manage to get final answers from the respective maintainers
-about how the low power state actually works on them.
-
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/include/asm/hw_irq.h               |    2 +
- arch/powerpc/kernel/irq.c                       |   46 ++++++++++++++++++++++++
- arch/powerpc/platforms/cell/pervasive.c         |   11 +++--
- arch/powerpc/platforms/pseries/processor_idle.c |   17 +++++---
- 4 files changed, 64 insertions(+), 12 deletions(-)
+ drivers/hwmon/applesmc.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/powerpc/include/asm/hw_irq.h
-+++ b/arch/powerpc/include/asm/hw_irq.h
-@@ -124,6 +124,8 @@ static inline bool arch_irq_disabled_reg
- 	return !regs->softe;
- }
+--- a/drivers/hwmon/applesmc.c
++++ b/drivers/hwmon/applesmc.c
+@@ -215,7 +215,7 @@ static int read_smc(u8 cmd, const char *
+ 	int i;
  
-+extern bool prep_irq_for_idle(void);
-+
- #else /* CONFIG_PPC64 */
+ 	if (send_command(cmd) || send_argument(key)) {
+-		pr_warn("%s: read arg fail\n", key);
++		pr_warn("%.4s: read arg fail\n", key);
+ 		return -EIO;
+ 	}
  
- #define SET_MSR_EE(x)	mtmsr(x)
---- a/arch/powerpc/kernel/irq.c
-+++ b/arch/powerpc/kernel/irq.c
-@@ -286,6 +286,52 @@ void notrace restore_interrupts(void)
- 		__hard_irq_enable();
- }
+@@ -223,7 +223,7 @@ static int read_smc(u8 cmd, const char *
  
-+/*
-+ * This is a helper to use when about to go into idle low-power
-+ * when the latter has the side effect of re-enabling interrupts
-+ * (such as calling H_CEDE under pHyp).
-+ *
-+ * You call this function with interrupts soft-disabled (this is
-+ * already the case when ppc_md.power_save is called). The function
-+ * will return whether to enter power save or just return.
-+ *
-+ * In the former case, it will have notified lockdep of interrupts
-+ * being re-enabled and generally sanitized the lazy irq state,
-+ * and in the latter case it will leave with interrupts hard
-+ * disabled and marked as such, so the local_irq_enable() call
-+ * in cpu_idle() will properly re-enable everything.
-+ */
-+bool prep_irq_for_idle(void)
-+{
-+	/*
-+	 * First we need to hard disable to ensure no interrupt
-+	 * occurs before we effectively enter the low power state
-+	 */
-+	hard_irq_disable();
-+
-+	/*
-+	 * If anything happened while we were soft-disabled,
-+	 * we return now and do not enter the low power state.
-+	 */
-+	if (lazy_irq_pending())
-+		return false;
-+
-+	/* Tell lockdep we are about to re-enable */
-+	trace_hardirqs_on();
-+
-+	/*
-+	 * Mark interrupts as soft-enabled and clear the
-+	 * PACA_IRQ_HARD_DIS from the pending mask since we
-+	 * are about to hard enable as well as a side effect
-+	 * of entering the low power state.
-+	 */
-+	local_paca->irq_happened &= ~PACA_IRQ_HARD_DIS;
-+	local_paca->soft_enabled = 1;
-+
-+	/* Tell the caller to enter the low power state */
-+	return true;
-+}
-+
- #endif /* CONFIG_PPC64 */
- 
- int arch_show_interrupts(struct seq_file *p, int prec)
---- a/arch/powerpc/platforms/cell/pervasive.c
-+++ b/arch/powerpc/platforms/cell/pervasive.c
-@@ -42,11 +42,9 @@ static void cbe_power_save(void)
- {
- 	unsigned long ctrl, thread_switch_control;
- 
--	/*
--	 * We need to hard disable interrupts, the local_irq_enable() done by
--	 * our caller upon return will hard re-enable.
--	 */
--	hard_irq_disable();
-+	/* Ensure our interrupt state is properly tracked */
-+	if (!prep_irq_for_idle())
-+		return;
- 
- 	ctrl = mfspr(SPRN_CTRLF);
- 
-@@ -81,6 +79,9 @@ static void cbe_power_save(void)
- 	 */
- 	ctrl &= ~(CTRL_RUNLATCH | CTRL_TE);
- 	mtspr(SPRN_CTRLT, ctrl);
-+
-+	/* Re-enable interrupts in MSR */
-+	__hard_irq_enable();
- }
- 
- static int cbe_system_reset_exception(struct pt_regs *regs)
---- a/arch/powerpc/platforms/pseries/processor_idle.c
-+++ b/arch/powerpc/platforms/pseries/processor_idle.c
-@@ -99,15 +99,18 @@ out:
- static void check_and_cede_processor(void)
- {
- 	/*
--	 * Interrupts are soft-disabled at this point,
--	 * but not hard disabled. So an interrupt might have
--	 * occurred before entering NAP, and would be potentially
--	 * lost (edge events, decrementer events, etc...) unless
--	 * we first hard disable then check.
-+	 * Ensure our interrupt state is properly tracked,
-+	 * also checks if no interrupt has occurred while we
-+	 * were soft-disabled
- 	 */
--	hard_irq_disable();
--	if (!lazy_irq_pending())
-+	if (prep_irq_for_idle()) {
- 		cede_processor();
-+#ifdef CONFIG_TRACE_IRQFLAGS
-+		/* Ensure that H_CEDE returns with IRQs on */
-+		if (WARN_ON(!(mfmsr() & MSR_EE)))
-+			__hard_irq_enable();
-+#endif
-+	}
- }
- 
- static int dedicated_cede_loop(struct cpuidle_device *dev,
+ 	for (i = 0; i < len; i++) {
+ 		if (__wait_status(0x05)) {
+-			pr_warn("%s: read data fail\n", key);
++			pr_warn("%.4s: read data fail\n", key);
+ 			return -EIO;
+ 		}
+ 		buffer[i] = inb(APPLESMC_DATA_PORT);
 
 
