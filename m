@@ -1,106 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932919Ab2GLUtb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 16:49:31 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:61736 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756276Ab2GLUtY (ORCPT
+	id S933798Ab2GLUvx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 16:51:53 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:58607 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932094Ab2GLUvw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 16:49:24 -0400
+	Thu, 12 Jul 2012 16:51:52 -0400
 MIME-Version: 1.0
-In-Reply-To: <4FFE3CEC.80804@huawei.com>
-References: <CAErSpo70NtEJFaQmDtdTLkSB3fQRNy78juAQO-KbXeceZkunkw@mail.gmail.com>
- <1341935655-5381-1-git-send-email-jiang.liu@huawei.com> <1341935655-5381-6-git-send-email-jiang.liu@huawei.com>
- <CAErSpo7k3=nUSTR+n1iX0Rddv2FQm+HzcqnC5VHxh1JKUdoNAw@mail.gmail.com>
- <4FFCEDDE.2080907@huawei.com> <CAErSpo4JrgU2RHoNDWcm13otgdKVXuGxahE0pbuAD73nZvTZFQ@mail.gmail.com>
- <4FFD1FE7.6010504@huawei.com> <CAErSpo7ZtrYtz_8iB8=8nbQBtntPtyi8BLg6K+D7mQjnfj-KCg@mail.gmail.com>
- <4FFE3CEC.80804@huawei.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 12 Jul 2012 14:49:02 -0600
-Message-ID: <CAErSpo4Adjo8e3YmSJCvNjosouUzuAQqpTm1rm=CAYvFmuDpyg@mail.gmail.com>
-Subject: Re: [RFC PATCH 05/14] PCI: add access functions for PCIe capabilities
- to hide PCIe spec differences
-To: Jiang Liu <jiang.liu@huawei.com>
-Cc: Jiang Liu <liuj97@gmail.com>, Don Dutile <ddutile@redhat.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        Keping Chen <chenkeping@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
+In-Reply-To: <4FFC2F95.7080003@msgid.tls.msk.ru>
+References: <20120702202534.GC844@google.com>
+	<4FFC2F95.7080003@msgid.tls.msk.ru>
+Date: Thu, 12 Jul 2012 13:51:50 -0700
+Message-ID: <CADroS=5Cy=a0_AzkpwpsWZSf1FL+gLNbsMWLW1WNcQn++hpgUw@mail.gmail.com>
+Subject: Re: [PATCH 1/1] core-kernel: use multiply instead of shifts in hash_64
+From: Andrew Hunter <ahh@google.com>
+To: Michael Tokarev <mjt@tls.msk.ru>
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 11, 2012 at 8:56 PM, Jiang Liu <jiang.liu@huawei.com> wrote:
-> On 2012-7-12 1:52, Bjorn Helgaas wrote:
->>> Hi Bjorn,
->>>         Seems it would be better to return error code for unimplemented
->>> registers, otherwise following code will becomes more complex. A special
->>> error code for unimplemented registers, such as -EIO?
->>
->> I think you're asking about returning error for *reads* of
->> unimplemented registers?  I guess I still think it's OK to completely
->> hide the v1 nastiness inside these accessors, and return success with
->> a zero value when reading.  Having several different error returns
->> seems like overkill for this case.  Nobody wants to distinguish
->> between different reasons for failure.
->>
->> I'm actually not sure that it's worth returning an error even when
->> *writing* an unimplemented register.  What if we return success and
->> just drop the write?
->>
->> Maybe these should even be void functions.  It feels like the only
->> real use of the return value is to detect programmer error, and I
->> don't think that's very effective.  If we remove the return values,
->> people will have to focus on the *data*, which seems more important
->> anyway.
-> Hi Bjorn,
->         It's a little risk to change these PCIe capabilities access
-> functions as void. On some platform with hardware error detecting/correcting
-> capabilities, such as EEH on Power, it would be better to return
-> error code if hardware error happens during accessing configuration registers.
->         As I know, coming Intel Xeon processor may provide PCIe hardware
-> error detecting capability similar to EEH on power.
-
-I guess I'm playing devil's advocate here.  As a general rule, people
-don't check the return value of pci_read_config_*() or
-pci_write_config_*().  Unless you change them all, most callers of
-pci_pcie_capability_read_*() and _write_*() won't check the returns
-either.  So I'm not sure return values are an effective way to detect
-those hardware errors.
-
-How do these EEH errors get detected or reported today?  Do the
-drivers check every config access for success?  Adding those checks
-and figuring out how to handle errors at every possible point doesn't
-seem like a recipe for success.
-
->>> static void rtl_disable_clock_request(struct pci_dev *pdev)
->>> {
->>>         u16 ctl;
->>>
->>>         if (!pci_pcie_capability_read_word(pdev, PCI_EXP_LNKCTL, &ctl)) {
->>>                 ctl &= ~PCI_EXP_LNKCTL_CLKREQ_EN;
->>>                 pci_pcie_capability_write_word(pdev, PCI_EXP_LNKCTL, ctl);
->>>         }
->>> }
->>
->> I would write that as:
->>
->>     if (!pci_is_pcie(pdev)
->>         return;
->>
->>     pci_pcie_capability_read_word(pdev, PCI_EXP_LNKCTL, &ctl);
->>     if (ctl & PCI_EXP_LNKCTL_CLKREQ_EN)
->>         pci_pcie_capability_write_word(pdev, PCI_EXP_LNKCTL, ctl &
->> ~PCI_EXP_LNKCTL_CLKREQ_EN);
->>
->> which does the right thing regardless of what we do for return values,
->> and saves a config write in the case where LNKCTL is implemented and
->> CLKREQ_EN is already cleared.
-> When clearing a flag, we could do that. But if we are trying to set a
-> flag, it would be better to make sure the target register does exist.
+On Tue, Jul 10, 2012 at 6:35 AM, Michael Tokarev <mjt@tls.msk.ru> wrote:
+> On 03.07.2012 00:25, Andrew Hunter wrote:
+>> diff --git a/include/linux/hash.h b/include/linux/hash.h
+>> index b80506b..daabc3d 100644
+>> --- a/include/linux/hash.h
+>> +++ b/include/linux/hash.h
+>> @@ -34,7 +34,9 @@
+>>  static inline u64 hash_64(u64 val, unsigned int bits)
+>>  {
+>>       u64 hash = val;
+>> -
+>> +#if BITS_PER_LONG == 64
+>> +     hash *= GOLDEN_RATIO_PRIME_64;
+>> +#else
+>>       /*  Sigh, gcc can't optimise this alone like it does for 32 bits. */
 >
+> Hmm.  Does this comment make sense here now?
+>
+
+I haven't checked what output gcc provides for 32-bit kernels with
+this or a literal multiply.  It's not even clear what optimization is
+_asked_ for here (possibly the reduction of strength that we probably
+don't even want.)
