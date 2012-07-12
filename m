@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162976Ab2GLXsn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 19:48:43 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44509 "EHLO
+	id S1759449Ab2GLXs7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 19:48:59 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58752 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759448Ab2GLWgu (ORCPT
+	with ESMTP id S1759443Ab2GLWgr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 18:36:50 -0400
+	Thu, 12 Jul 2012 18:36:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Eric Dumazet <edumazet@google.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 023/187] inetpeer: fix a race in inetpeer_gc_worker()
-Date: Thu, 12 Jul 2012 15:32:59 -0700
-Message-Id: <20120712191524.408333757@linuxfoundation.org>
+Subject: [ 022/187] drop_monitor: dont sleep in atomic context
+Date: Thu, 12 Jul 2012 15:32:58 -0700
+Message-Id: <20120712191524.308567801@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120712191522.742634173@linuxfoundation.org>
 References: <20120712192421.GA28926@kroah.com>
@@ -35,73 +35,242 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 55432d2b543a4b6dfae54f5c432a566877a85d90 ]
+[ Upstream commit bec4596b4e6770c7037f21f6bd27567b152dc0d6 ]
 
-commit 5faa5df1fa2024 (inetpeer: Invalidate the inetpeer tree along with
-the routing cache) added a race :
+drop_monitor calls several sleeping functions while in atomic context.
 
-Before freeing an inetpeer, we must respect a RCU grace period, and make
-sure no user will attempt to increase refcnt.
+ BUG: sleeping function called from invalid context at mm/slub.c:943
+ in_atomic(): 1, irqs_disabled(): 0, pid: 2103, name: kworker/0:2
+ Pid: 2103, comm: kworker/0:2 Not tainted 3.5.0-rc1+ #55
+ Call Trace:
+  [<ffffffff810697ca>] __might_sleep+0xca/0xf0
+  [<ffffffff811345a3>] kmem_cache_alloc_node+0x1b3/0x1c0
+  [<ffffffff8105578c>] ? queue_delayed_work_on+0x11c/0x130
+  [<ffffffff815343fb>] __alloc_skb+0x4b/0x230
+  [<ffffffffa00b0360>] ? reset_per_cpu_data+0x160/0x160 [drop_monitor]
+  [<ffffffffa00b022f>] reset_per_cpu_data+0x2f/0x160 [drop_monitor]
+  [<ffffffffa00b03ab>] send_dm_alert+0x4b/0xb0 [drop_monitor]
+  [<ffffffff810568e0>] process_one_work+0x130/0x4c0
+  [<ffffffff81058249>] worker_thread+0x159/0x360
+  [<ffffffff810580f0>] ? manage_workers.isra.27+0x240/0x240
+  [<ffffffff8105d403>] kthread+0x93/0xa0
+  [<ffffffff816be6d4>] kernel_thread_helper+0x4/0x10
+  [<ffffffff8105d370>] ? kthread_freezable_should_stop+0x80/0x80
+  [<ffffffff816be6d0>] ? gs_change+0xb/0xb
 
-inetpeer_invalidate_tree() waits for a RCU grace period before inserting
-inetpeer tree into gc_list and waking the worker. At that time, no
-concurrent lookup can find a inetpeer in this tree.
+Rework the logic to call the sleeping functions in right context.
+
+Use standard timer/workqueue api to let system chose any cpu to perform
+the allocation and netlink send.
+
+Also avoid a loop if reset_per_cpu_data() cannot allocate memory :
+use mod_timer() to wait 1/10 second before next try.
 
 Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Steffen Klassert <steffen.klassert@secunet.com>
-Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
+Cc: Neil Horman <nhorman@tuxdriver.com>
+Reviewed-by: Neil Horman <nhorman@tuxdriver.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/net/inetpeer.h |    5 ++++-
- net/ipv4/inetpeer.c    |   16 ++++++++++++----
- 2 files changed, 16 insertions(+), 5 deletions(-)
+ net/core/drop_monitor.c |  102 +++++++++++++++---------------------------------
+ 1 file changed, 33 insertions(+), 69 deletions(-)
 
---- a/include/net/inetpeer.h
-+++ b/include/net/inetpeer.h
-@@ -40,7 +40,10 @@ struct inet_peer {
- 	u32			pmtu_orig;
- 	u32			pmtu_learned;
- 	struct inetpeer_addr_base redirect_learned;
--	struct list_head	gc_list;
-+	union {
-+		struct list_head	gc_list;
-+		struct rcu_head     gc_rcu;
-+	};
- 	/*
- 	 * Once inet_peer is queued for deletion (refcnt == -1), following fields
- 	 * are not available: rid, ip_id_count, tcp_ts, tcp_ts_stamp
---- a/net/ipv4/inetpeer.c
-+++ b/net/ipv4/inetpeer.c
-@@ -560,6 +560,17 @@ bool inet_peer_xrlim_allow(struct inet_p
- }
- EXPORT_SYMBOL(inet_peer_xrlim_allow);
+--- a/net/core/drop_monitor.c
++++ b/net/core/drop_monitor.c
+@@ -33,9 +33,6 @@
+ #define TRACE_ON 1
+ #define TRACE_OFF 0
  
-+static void inetpeer_inval_rcu(struct rcu_head *head)
-+{
-+	struct inet_peer *p = container_of(head, struct inet_peer, gc_rcu);
-+
-+	spin_lock_bh(&gc_lock);
-+	list_add_tail(&p->gc_list, &gc_list);
-+	spin_unlock_bh(&gc_lock);
-+
-+	schedule_delayed_work(&gc_work, gc_delay);
-+}
-+
- void inetpeer_invalidate_tree(int family)
+-static void send_dm_alert(struct work_struct *unused);
+-
+-
+ /*
+  * Globals, our netlink socket pointer
+  * and the work handle that will send up
+@@ -45,11 +42,10 @@ static int trace_state = TRACE_OFF;
+ static DEFINE_MUTEX(trace_state_mutex);
+ 
+ struct per_cpu_dm_data {
+-	struct work_struct dm_alert_work;
+-	struct sk_buff __rcu *skb;
+-	atomic_t dm_hit_count;
+-	struct timer_list send_timer;
+-	int cpu;
++	spinlock_t		lock;
++	struct sk_buff		*skb;
++	struct work_struct	dm_alert_work;
++	struct timer_list	send_timer;
+ };
+ 
+ struct dm_hw_stat_delta {
+@@ -75,13 +71,13 @@ static int dm_delay = 1;
+ static unsigned long dm_hw_check_delta = 2*HZ;
+ static LIST_HEAD(hw_stats_list);
+ 
+-static void reset_per_cpu_data(struct per_cpu_dm_data *data)
++static struct sk_buff *reset_per_cpu_data(struct per_cpu_dm_data *data)
  {
- 	struct inet_peer *old, *new, *prev;
-@@ -576,10 +587,7 @@ void inetpeer_invalidate_tree(int family
- 	prev = cmpxchg(&base->root, old, new);
- 	if (prev == old) {
- 		base->total = 0;
--		spin_lock(&gc_lock);
--		list_add_tail(&prev->gc_list, &gc_list);
--		spin_unlock(&gc_lock);
--		schedule_delayed_work(&gc_work, gc_delay);
-+		call_rcu(&prev->gc_rcu, inetpeer_inval_rcu);
+ 	size_t al;
+ 	struct net_dm_alert_msg *msg;
+ 	struct nlattr *nla;
+ 	struct sk_buff *skb;
+-	struct sk_buff *oskb = rcu_dereference_protected(data->skb, 1);
++	unsigned long flags;
+ 
+ 	al = sizeof(struct net_dm_alert_msg);
+ 	al += dm_hit_limit * sizeof(struct net_dm_drop_point);
+@@ -96,65 +92,40 @@ static void reset_per_cpu_data(struct pe
+ 				  sizeof(struct net_dm_alert_msg));
+ 		msg = nla_data(nla);
+ 		memset(msg, 0, al);
+-	} else
+-		schedule_work_on(data->cpu, &data->dm_alert_work);
+-
+-	/*
+-	 * Don't need to lock this, since we are guaranteed to only
+-	 * run this on a single cpu at a time.
+-	 * Note also that we only update data->skb if the old and new skb
+-	 * pointers don't match.  This ensures that we don't continually call
+-	 * synchornize_rcu if we repeatedly fail to alloc a new netlink message.
+-	 */
+-	if (skb != oskb) {
+-		rcu_assign_pointer(data->skb, skb);
+-
+-		synchronize_rcu();
+-
+-		atomic_set(&data->dm_hit_count, dm_hit_limit);
++	} else {
++		mod_timer(&data->send_timer, jiffies + HZ / 10);
+ 	}
+ 
++	spin_lock_irqsave(&data->lock, flags);
++	swap(data->skb, skb);
++	spin_unlock_irqrestore(&data->lock, flags);
++
++	return skb;
+ }
+ 
+-static void send_dm_alert(struct work_struct *unused)
++static void send_dm_alert(struct work_struct *work)
+ {
+ 	struct sk_buff *skb;
+-	struct per_cpu_dm_data *data = &get_cpu_var(dm_cpu_data);
++	struct per_cpu_dm_data *data;
+ 
+-	WARN_ON_ONCE(data->cpu != smp_processor_id());
++	data = container_of(work, struct per_cpu_dm_data, dm_alert_work);
+ 
+-	/*
+-	 * Grab the skb we're about to send
+-	 */
+-	skb = rcu_dereference_protected(data->skb, 1);
++	skb = reset_per_cpu_data(data);
+ 
+-	/*
+-	 * Replace it with a new one
+-	 */
+-	reset_per_cpu_data(data);
+-
+-	/*
+-	 * Ship it!
+-	 */
+ 	if (skb)
+ 		genlmsg_multicast(skb, 0, NET_DM_GRP_ALERT, GFP_KERNEL);
+-
+-	put_cpu_var(dm_cpu_data);
+ }
+ 
+ /*
+  * This is the timer function to delay the sending of an alert
+  * in the event that more drops will arrive during the
+- * hysteresis period.  Note that it operates under the timer interrupt
+- * so we don't need to disable preemption here
++ * hysteresis period.
+  */
+-static void sched_send_work(unsigned long unused)
++static void sched_send_work(unsigned long _data)
+ {
+-	struct per_cpu_dm_data *data =  &get_cpu_var(dm_cpu_data);
++	struct per_cpu_dm_data *data = (struct per_cpu_dm_data *)_data;
+ 
+-	schedule_work_on(smp_processor_id(), &data->dm_alert_work);
+-
+-	put_cpu_var(dm_cpu_data);
++	schedule_work(&data->dm_alert_work);
+ }
+ 
+ static void trace_drop_common(struct sk_buff *skb, void *location)
+@@ -164,33 +135,28 @@ static void trace_drop_common(struct sk_
+ 	struct nlattr *nla;
+ 	int i;
+ 	struct sk_buff *dskb;
+-	struct per_cpu_dm_data *data = &get_cpu_var(dm_cpu_data);
+-
++	struct per_cpu_dm_data *data;
++	unsigned long flags;
+ 
+-	rcu_read_lock();
+-	dskb = rcu_dereference(data->skb);
++	local_irq_save(flags);
++	data = &__get_cpu_var(dm_cpu_data);
++	spin_lock(&data->lock);
++	dskb = data->skb;
+ 
+ 	if (!dskb)
+ 		goto out;
+ 
+-	if (!atomic_add_unless(&data->dm_hit_count, -1, 0)) {
+-		/*
+-		 * we're already at zero, discard this hit
+-		 */
+-		goto out;
+-	}
+-
+ 	nlh = (struct nlmsghdr *)dskb->data;
+ 	nla = genlmsg_data(nlmsg_data(nlh));
+ 	msg = nla_data(nla);
+ 	for (i = 0; i < msg->entries; i++) {
+ 		if (!memcmp(&location, msg->points[i].pc, sizeof(void *))) {
+ 			msg->points[i].count++;
+-			atomic_inc(&data->dm_hit_count);
+ 			goto out;
+ 		}
+ 	}
+-
++	if (msg->entries == dm_hit_limit)
++		goto out;
+ 	/*
+ 	 * We need to create a new entry
+ 	 */
+@@ -202,13 +168,11 @@ static void trace_drop_common(struct sk_
+ 
+ 	if (!timer_pending(&data->send_timer)) {
+ 		data->send_timer.expires = jiffies + dm_delay * HZ;
+-		add_timer_on(&data->send_timer, smp_processor_id());
++		add_timer(&data->send_timer);
  	}
  
  out:
+-	rcu_read_unlock();
+-	put_cpu_var(dm_cpu_data);
+-	return;
++	spin_unlock_irqrestore(&data->lock, flags);
+ }
+ 
+ static void trace_kfree_skb_hit(void *ignore, struct sk_buff *skb, void *location)
+@@ -406,11 +370,11 @@ static int __init init_net_drop_monitor(
+ 
+ 	for_each_present_cpu(cpu) {
+ 		data = &per_cpu(dm_cpu_data, cpu);
+-		data->cpu = cpu;
+ 		INIT_WORK(&data->dm_alert_work, send_dm_alert);
+ 		init_timer(&data->send_timer);
+-		data->send_timer.data = cpu;
++		data->send_timer.data = (unsigned long)data;
+ 		data->send_timer.function = sched_send_work;
++		spin_lock_init(&data->lock);
+ 		reset_per_cpu_data(data);
+ 	}
+ 
 
 
