@@ -1,54 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030400Ab2GMKqy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 06:46:54 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:3175 "EHLO
+	id S1030471Ab2GMKrE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 06:47:04 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:3191 "EHLO
 	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030272Ab2GMKqx (ORCPT
+	with ESMTP id S1030417Ab2GMKqz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 06:46:53 -0400
+	Fri, 13 Jul 2012 06:46:55 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 13 Jul 2012 03:46:45 -0700
+	by hqnvupgp06.nvidia.com on Fri, 13 Jul 2012 03:46:54 -0700
 From: Laxman Dewangan <ldewangan@nvidia.com>
 To: <grant.likely@secretlab.ca>, <linus.walleij@stericsson.com>,
         <sameo@linux.intel.com>
 CC: <linux-kernel@vger.kernel.org>, <swarren@nvidia.com>,
         <broonie@opensource.wolfsonmicro.com>,
         Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH 0/5] mfd: tp6586x: enhancements in the driver
-Date: Fri, 13 Jul 2012 16:09:22 +0530
-Message-ID: <1342175967-10087-1-git-send-email-ldewangan@nvidia.com>
+Subject: [PATCH 3/5] mfd: tps6586x: cache register through regmap
+Date: Fri, 13 Jul 2012 16:09:25 +0530
+Message-ID: <1342175967-10087-4-git-send-email-ldewangan@nvidia.com>
 X-Mailer: git-send-email 1.7.1.1
+In-Reply-To: <1342175967-10087-1-git-send-email-ldewangan@nvidia.com>
+References: <1342175967-10087-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Doing some enhancements in the tps6586x core driver which is
-based on some recent driver framework enhancements.
-Following are highlights of changes:
-- Use devm for allocation to remove the code for freeing it.
-- Use regmap i2c for register access in place of direct i2c apis.
-  This will give the debug fs and cache functionality through regmap
-  framework.
-- Use the regmap caching for some fo register in place of local
-  implementation.
-- Move the gpio support driver to the drivers/gpio and implement it as
-  platform driver. The registration will be done as mfd sub devices.
+To cache the interrupt mask register, use the regmap RB_TREE
+cache-ing mechanism in place of implementing it locally.
 
-Laxman Dewangan (5):
-  mfd: tps6586x:use devm managed resources
-  mfd: Use regmap for tps6586x register access.
-  mfd: tps6586x: cache register through regmap
-  gpio: tps6586x: add gpio support through platform driver
-  mfd: tps6586x: remove gpio support from core driver
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+ drivers/mfd/tps6586x.c |   24 ++++++++++++++++--------
+ 1 files changed, 16 insertions(+), 8 deletions(-)
 
- drivers/gpio/Kconfig         |    7 +
- drivers/gpio/Makefile        |    1 +
- drivers/gpio/gpio-tps6586x.c |  158 ++++++++++++++++++++++
- drivers/mfd/Kconfig          |    3 +-
- drivers/mfd/tps6586x.c       |  301 ++++++++++++------------------------------
- 5 files changed, 255 insertions(+), 215 deletions(-)
- create mode 100644 drivers/gpio/gpio-tps6586x.c
+diff --git a/drivers/mfd/tps6586x.c b/drivers/mfd/tps6586x.c
+index fb0c109..7210fa7 100644
+--- a/drivers/mfd/tps6586x.c
++++ b/drivers/mfd/tps6586x.c
+@@ -104,7 +104,6 @@ struct tps6586x {
+ 	struct mutex		irq_lock;
+ 	int			irq_base;
+ 	u32			irq_en;
+-	u8			mask_cache[5];
+ 	u8			mask_reg[5];
+ };
+ 
+@@ -276,12 +275,11 @@ static void tps6586x_irq_sync_unlock(struct irq_data *data)
+ 	int i;
+ 
+ 	for (i = 0; i < ARRAY_SIZE(tps6586x->mask_reg); i++) {
+-		if (tps6586x->mask_reg[i] != tps6586x->mask_cache[i]) {
+-			if (!WARN_ON(tps6586x_write(tps6586x->dev,
+-						    TPS6586X_INT_MASK1 + i,
+-						    tps6586x->mask_reg[i])))
+-				tps6586x->mask_cache[i] = tps6586x->mask_reg[i];
+-		}
++		int ret;
++		ret = tps6586x_write(tps6586x->dev,
++					    TPS6586X_INT_MASK1 + i,
++					    tps6586x->mask_reg[i]);
++		WARN_ON(ret);
+ 	}
+ 
+ 	mutex_unlock(&tps6586x->irq_lock);
+@@ -328,7 +326,6 @@ static int __devinit tps6586x_irq_init(struct tps6586x *tps6586x, int irq,
+ 
+ 	mutex_init(&tps6586x->irq_lock);
+ 	for (i = 0; i < 5; i++) {
+-		tps6586x->mask_cache[i] = 0xff;
+ 		tps6586x->mask_reg[i] = 0xff;
+ 		tps6586x_write(tps6586x->dev, TPS6586X_INT_MASK1 + i, 0xff);
+ 	}
+@@ -478,10 +475,21 @@ static struct tps6586x_platform_data *tps6586x_parse_dt(struct i2c_client *clien
+ }
+ #endif
+ 
++static bool is_volatile_reg(struct device *dev, unsigned int reg)
++{
++	/* Cache all interrupt mask register */
++	if ((reg >= TPS6586X_INT_MASK1) && (reg <= TPS6586X_INT_MASK5))
++		return false;
++
++	return true;
++}
++
+ static const struct regmap_config tps6586x_regmap_config = {
+ 	.reg_bits = 8,
+ 	.val_bits = 8,
+ 	.max_register = TPS6586X_MAX_REGISTER - 1,
++	.volatile_reg = is_volatile_reg,
++	.cache_type = REGCACHE_RBTREE,
+ };
+ 
+ static int __devinit tps6586x_i2c_probe(struct i2c_client *client,
+-- 
+1.7.1.1
 
