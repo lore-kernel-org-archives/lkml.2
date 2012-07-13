@@ -1,241 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759384Ab2GMDWX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 23:22:23 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:39829 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752538Ab2GMDWU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 23:22:20 -0400
-X-IronPort-AV: E=Sophos;i="4.77,577,1336320000"; 
-   d="scan'208";a="5387602"
-Message-ID: <4FFF957F.2080504@cn.fujitsu.com>
-Date: Fri, 13 Jul 2012 11:26:55 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
-        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
-        minchan.kim@gmail.com, akpm@linux-foundation.org,
-        kosaki.motohiro@jp.fujitsu.com
-Subject: Re: [RFC PATCH v3 2/13] memory-hotplug : add physical memory hotplug
- code to acpi_memory_device_remove
-References: <4FFAB0A2.8070304@jp.fujitsu.com> <4FFAB148.9000803@jp.fujitsu.com>
-In-Reply-To: <4FFAB148.9000803@jp.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/13 11:22:05,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/13 11:22:09,
-	Serialize complete at 2012/07/13 11:22:09
+	id S933035Ab2GMDXO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 23:23:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60387 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754698Ab2GMDXL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 23:23:11 -0400
+Message-ID: <1342149765.31095.9.camel@cr0>
+Subject: Re: [PATCH 2/2] Made core dump functionality optional
+From: Cong Wang <amwang@redhat.com>
+To: Alex Kelly <eshink@gmail.com>
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Paris <eparis@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Nikhil Rao <ncrao@google.com>,
+        Dan Ballard <dan@mindstab.net>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 13 Jul 2012 11:22:45 +0800
+In-Reply-To: <CAH08tp_5CNnK68G4BpZ+d_V9OMwEt8hC_pbtNovgSCTnGYd0hg@mail.gmail.com>
+References: <1341275894-9737-1-git-send-email-alex.page.kelly@gmail.com>
+	 <1341275894-9737-2-git-send-email-alex.page.kelly@gmail.com>
+	 <CAM_iQpVu6DV+LnTNbDUxUmjA+NXM2WCwWB0StCh+bwD5Gn_zbg@mail.gmail.com>
+	 <20120703050908.GA14527@leaf>
+	 <CAH08tp_5CNnK68G4BpZ+d_V9OMwEt8hC_pbtNovgSCTnGYd0hg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-2022-JP
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 07/09/2012 06:24 PM, Yasuaki Ishimatsu Wrote:
-> acpi_memory_device_remove() has been prepared to remove physical memory.
-> But, the function only frees acpi_memory_device currentlry.
+On Thu, 2012-07-12 at 13:22 -0700, Alex Kelly wrote:
+> Sorry it took me so long to reply to this:
 > 
-> The patch adds following functions into acpi_memory_device_remove():
->   - offline memory
->   - remove physical memory (only return -EBUSY)
->   - free acpi_memory_device
-> 
-> CC: David Rientjes <rientjes@google.com>
-> CC: Jiang Liu <liuj97@gmail.com>
-> CC: Len Brown <len.brown@intel.com>
-> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> CC: Paul Mackerras <paulus@samba.org>
-> CC: Christoph Lameter <cl@linux.com>
-> Cc: Minchan Kim <minchan.kim@gmail.com>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> CC: Wen Congyang <wency@cn.fujitsu.com>
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> 
-> ---
->  drivers/acpi/acpi_memhotplug.c |   26 +++++++++++++++++++++++++-
->  drivers/base/memory.c          |   39 +++++++++++++++++++++++++++++++++++++++
->  include/linux/memory.h         |    5 +++++
->  include/linux/memory_hotplug.h |    1 +
->  mm/memory_hotplug.c            |    8 ++++++++
->  5 files changed, 78 insertions(+), 1 deletion(-)
-> 
-> Index: linux-3.5-rc6/drivers/acpi/acpi_memhotplug.c
-> ===================================================================
-> --- linux-3.5-rc6.orig/drivers/acpi/acpi_memhotplug.c	2012-07-09 18:08:29.946888653 +0900
-> +++ linux-3.5-rc6/drivers/acpi/acpi_memhotplug.c	2012-07-09 18:08:43.470719531 +0900
-> @@ -29,6 +29,7 @@
->  #include <linux/module.h>
->  #include <linux/init.h>
->  #include <linux/types.h>
-> +#include <linux/memory.h>
->  #include <linux/memory_hotplug.h>
->  #include <linux/slab.h>
->  #include <acpi/acpi_drivers.h>
-> @@ -452,12 +453,35 @@ static int acpi_memory_device_add(struct
->  static int acpi_memory_device_remove(struct acpi_device *device, int type)
->  {
->  	struct acpi_memory_device *mem_device = NULL;
-> -
-> +	struct acpi_memory_info *info, *tmp;
-> +	int result;
-> +	int node;
-> 
->  	if (!device || !acpi_driver_data(device))
->  		return -EINVAL;
-> 
->  	mem_device = acpi_driver_data(device);
-> +
-> +	node = acpi_get_node(mem_device->device->handle);
-> +
-> +	list_for_each_entry_safe(info, tmp, &mem_device->res_list, list) {
-> +		if (!info->enabled)
-> +			continue;
-> +
-> +		if (!is_memblk_offline(info->start_addr, info->length)) {
-> +			result = offline_memory(info->start_addr, info->length);
-> +			if (result)
-> +				return result;
-> +		}
-> +
-> +		result = remove_memory(node, info->start_addr, info->length);
-> +		if (result)
-> +			return result;
-> +
-> +		list_del(&info->list);
-> +		kfree(info);
-> +	}
-> +
->  	kfree(mem_device);
-> 
->  	return 0;
-> Index: linux-3.5-rc6/include/linux/memory_hotplug.h
-> ===================================================================
-> --- linux-3.5-rc6.orig/include/linux/memory_hotplug.h	2012-07-09 18:08:29.955888542 +0900
-> +++ linux-3.5-rc6/include/linux/memory_hotplug.h	2012-07-09 18:08:43.471719518 +0900
-> @@ -233,6 +233,7 @@ static inline int is_mem_section_removab
->  extern int mem_online_node(int nid);
->  extern int add_memory(int nid, u64 start, u64 size);
->  extern int arch_add_memory(int nid, u64 start, u64 size);
-> +extern int remove_memory(int nid, u64 start, u64 size);
+> 1. *Should* I change the option to CONFIG_CORE_DUMP ? I agree with Josh
+> that in terms of the existing codebase, either way makes sense, but I'll
+> defer to your judgment if you think I should change it.
 
+Yeah, I agree.
 
-Here should be:
-#ifdef CONFIG_MEMORY_HOTREMOVE
-extern int remove_memory(int nid, u64 start, u64 size);
-#else
-static int inline remove_memory(int nid, u64 start, u64 size)
-{
-	return -EBUSY;
-}
-#endif
-
->  extern int offline_memory(u64 start, u64 size);
->  extern int sparse_add_one_section(struct zone *zone, unsigned long start_pfn,
->  								int nr_pages);
-> Index: linux-3.5-rc6/mm/memory_hotplug.c
-> ===================================================================
-> --- linux-3.5-rc6.orig/mm/memory_hotplug.c	2012-07-09 18:08:29.953888567 +0900
-> +++ linux-3.5-rc6/mm/memory_hotplug.c	2012-07-09 18:08:43.476719455 +0900
-> @@ -659,6 +659,14 @@ out:
->  }
->  EXPORT_SYMBOL_GPL(add_memory);
 > 
-> +int remove_memory(int nid, u64 start, u64 size)
-> +{
-> +	return -EBUSY;
-> +
-> +}
-> +EXPORT_SYMBOL_GPL(remove_memory);
-
-We only need to implement this function when CONFIG_MEMORY_HOTREMOVE
-is defined here.
-
-Thanks
-Wen Congyang
-
-> +
-> +
->  #ifdef CONFIG_MEMORY_HOTREMOVE
->  /*
->   * A free page on the buddy free lists (not the per-cpu lists) has PageBuddy
-> Index: linux-3.5-rc6/drivers/base/memory.c
-> ===================================================================
-> --- linux-3.5-rc6.orig/drivers/base/memory.c	2012-07-09 18:08:29.947888640 +0900
-> +++ linux-3.5-rc6/drivers/base/memory.c	2012-07-09 18:10:54.880076739 +0900
-> @@ -70,6 +70,45 @@ void unregister_memory_isolate_notifier(
->  }
->  EXPORT_SYMBOL(unregister_memory_isolate_notifier);
+> 2. Is there a particular maintainer I should send this to if I hope to get
+> it pushed upstream?
 > 
-> +bool is_memblk_offline(unsigned long start, unsigned long size)
-> +{
-> +	struct memory_block *mem = NULL;
-> +	struct mem_section *section;
-> +	unsigned long start_pfn, end_pfn;
-> +	unsigned long pfn, section_nr;
-> +
-> +	start_pfn = PFN_DOWN(start);
-> +	end_pfn = start_pfn + PFN_DOWN(start);
-> +
-> +	for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
-> +		section_nr = pfn_to_section_nr(pfn);
-> +		if (!present_section_nr(section_nr));
-> +			continue;
-> +
-> +		section = __nr_to_section(section_nr);
-> +		/* same memblock? */
-> +		if (mem)
-> +			if((section_nr >= mem->start_section_nr) &&
-> +			   (section_nr <= mem->end_section_nr))
-> +				continue;
-> +
-> +		mem = find_memory_block_hinted(section, mem);
-> +		if (!mem)
-> +			continue;
-> +		if (mem->state == MEM_OFFLINE)
-> +			continue;
-> +
-> +		kobject_put(&mem->dev.kobj);
-> +		return false;
-> +	}
-> +
-> +	if (mem)
-> +		kobject_put(&mem->dev.kobj);
-> +
-> +	return true;
-> +}
-> +EXPORT_SYMBOL(is_memblk_offline);
-> +
->  /*
->   * register_memory - Setup a sysfs device for a memory block
->   */
-> Index: linux-3.5-rc6/include/linux/memory.h
-> ===================================================================
-> --- linux-3.5-rc6.orig/include/linux/memory.h	2012-07-08 09:23:56.000000000 +0900
-> +++ linux-3.5-rc6/include/linux/memory.h	2012-07-09 18:08:43.484719355 +0900
-> @@ -106,6 +106,10 @@ static inline int memory_isolate_notify(
->  {
->  	return 0;
->  }
-> +static inline bool is_memblk_offline(unsigned long start, unsigned long size)
-> +{
-> +	return false;
-> +}
->  #else
->  extern int register_memory_notifier(struct notifier_block *nb);
->  extern void unregister_memory_notifier(struct notifier_block *nb);
-> @@ -120,6 +124,7 @@ extern int memory_isolate_notify(unsigne
->  extern struct memory_block *find_memory_block_hinted(struct mem_section *,
->  							struct memory_block *);
->  extern struct memory_block *find_memory_block(struct mem_section *);
-> +extern bool is_memblk_offline(unsigned long start, unsigned long size);
->  #define CONFIG_MEM_BLOCK_SIZE	(PAGES_PER_SECTION<<PAGE_SHIFT)
->  enum mem_add_context { BOOT, HOTPLUG };
->  #endif /* CONFIG_MEMORY_HOTPLUG_SPARSE */
-> 
-> 
+
+I think Andrew Morton will take the patch.
+
+Thanks.
 
