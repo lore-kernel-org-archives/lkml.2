@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759319Ab2GMAdA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 20:33:00 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:33794 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757429Ab2GMAct (ORCPT
+	id S933637Ab2GMAdF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 20:33:05 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:56863 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756595Ab2GMAce (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 20:32:49 -0400
+	Thu, 12 Jul 2012 20:32:34 -0400
 From: Michel Lespinasse <walken@google.com>
 To: aarcange@redhat.com, dwmw2@infradead.org, riel@redhat.com,
         peterz@infradead.org, daniel.santos@pobox.com, axboe@kernel.dk,
         ebiederm@xmission.com, akpm@linux-foundation.org
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         torvalds@linux-foundation.org
-Subject: [PATCH v2 05/12] rbtree: performance and correctness test
-Date: Thu, 12 Jul 2012 17:31:50 -0700
-Message-Id: <1342139517-3451-6-git-send-email-walken@google.com>
+Subject: [PATCH v2 02/12] rbtree: empty nodes have no color
+Date: Thu, 12 Jul 2012 17:31:47 -0700
+Message-Id: <1342139517-3451-3-git-send-email-walken@google.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1342139517-3451-1-git-send-email-walken@google.com>
 References: <1342139517-3451-1-git-send-email-walken@google.com>
@@ -23,224 +23,110 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This small module helps measure the performance of rbtree insert and erase.
+Empty nodes have no color.  We can make use of this property to
+simplify the code emitted by the RB_EMPTY_NODE and RB_CLEAR_NODE
+macros.  Also, we can get rid of the rb_init_node function which had
+been introduced by commit 88d19cf37952a7e1e38b2bf87a00f0e857e63180
+to avoid some issue with the empty node's color not being initialized.
 
-Additionally, we run a few correctness tests to check that the rbtrees have
-all desired properties:
-- contains the right number of nodes in the order desired,
-- never two consecutive red nodes on any path,
-- all paths to leaf nodes have the same number of black nodes,
-- root node is black
+I'm not sure what the RB_EMPTY_NODE checks in rb_prev() / rb_next()
+are doing there, though. axboe introduced them in commit 10fd48f2376d.
+The way I see it, the 'empty node' abstraction is only used by rbtree
+users to flag nodes that they haven't inserted in any rbtree, so asking
+the predecessor or successor of such nodes doesn't make any sense.
+
+One final rb_init_node() caller was recently added in sysctl code
+to implement faster sysctl name lookups. This code doesn't make use
+of RB_EMPTY_NODE at all, and from what I could see it only called
+rb_init_node() under the mistaken assumption that such initialization
+was required before node insertion.
 
 Signed-off-by: Michel Lespinasse <walken@google.com>
 ---
- Makefile            |    2 +-
- lib/Kconfig.debug   |    1 +
- tests/Kconfig       |   18 +++++++
- tests/Makefile      |    1 +
- tests/rbtree_test.c |  135 +++++++++++++++++++++++++++++++++++++++++++++++++++
- 5 files changed, 156 insertions(+), 1 deletions(-)
- create mode 100644 tests/Kconfig
- create mode 100644 tests/Makefile
- create mode 100644 tests/rbtree_test.c
+ fs/proc/proc_sysctl.c      |    4 +---
+ include/linux/rbtree.h     |   15 +++++----------
+ include/linux/timerqueue.h |    2 +-
+ lib/rbtree.c               |    4 ++--
+ 4 files changed, 9 insertions(+), 16 deletions(-)
 
-diff --git a/Makefile b/Makefile
-index a687963..7bef085 100644
---- a/Makefile
-+++ b/Makefile
-@@ -708,7 +708,7 @@ export mod_strip_cmd
+diff --git a/fs/proc/proc_sysctl.c b/fs/proc/proc_sysctl.c
+index 21d836f..33aea86 100644
+--- a/fs/proc/proc_sysctl.c
++++ b/fs/proc/proc_sysctl.c
+@@ -168,10 +168,8 @@ static void init_header(struct ctl_table_header *head,
+ 	head->node = node;
+ 	if (node) {
+ 		struct ctl_table *entry;
+-		for (entry = table; entry->procname; entry++, node++) {
+-			rb_init_node(&node->node);
++		for (entry = table; entry->procname; entry++, node++)
+ 			node->header = head;
+-		}
+ 	}
+ }
  
+diff --git a/include/linux/rbtree.h b/include/linux/rbtree.h
+index e6a8077..2049087 100644
+--- a/include/linux/rbtree.h
++++ b/include/linux/rbtree.h
+@@ -67,17 +67,12 @@ static inline void rb_set_color(struct rb_node *rb, int color)
+ #define RB_ROOT	(struct rb_root) { NULL, }
+ #define	rb_entry(ptr, type, member) container_of(ptr, type, member)
  
- ifeq ($(KBUILD_EXTMOD),)
--core-y		+= kernel/ mm/ fs/ ipc/ security/ crypto/ block/
-+core-y		+= kernel/ mm/ fs/ ipc/ security/ crypto/ block/ tests/
+-#define RB_EMPTY_ROOT(root)	((root)->rb_node == NULL)
+-#define RB_EMPTY_NODE(node)	(rb_parent(node) == node)
+-#define RB_CLEAR_NODE(node)	(rb_set_parent(node, node))
++#define RB_EMPTY_ROOT(root)  ((root)->rb_node == NULL)
++
++/* 'empty' nodes are nodes that are known not to be inserted in an rbree */
++#define RB_EMPTY_NODE(node)  ((node)->rb_parent_color == (unsigned long)(node))
++#define RB_CLEAR_NODE(node)  ((node)->rb_parent_color = (unsigned long)(node))
  
- vmlinux-dirs	:= $(patsubst %/,%,$(filter %/, $(init-y) $(init-m) \
- 		     $(core-y) $(core-m) $(drivers-y) $(drivers-m) \
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index 6777153..b148fa1 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -1144,6 +1144,7 @@ config LATENCYTOP
+-static inline void rb_init_node(struct rb_node *rb)
+-{
+-	rb->rb_parent_color = 0;
+-	rb->rb_right = NULL;
+-	rb->rb_left = NULL;
+-	RB_CLEAR_NODE(rb);
+-}
  
- source mm/Kconfig.debug
- source kernel/trace/Kconfig
-+source tests/Kconfig
+ extern void rb_insert_color(struct rb_node *, struct rb_root *);
+ extern void rb_erase(struct rb_node *, struct rb_root *);
+diff --git a/include/linux/timerqueue.h b/include/linux/timerqueue.h
+index 5088727..a520fd7 100644
+--- a/include/linux/timerqueue.h
++++ b/include/linux/timerqueue.h
+@@ -39,7 +39,7 @@ struct timerqueue_node *timerqueue_getnext(struct timerqueue_head *head)
  
- config PROVIDE_OHCI1394_DMA_INIT
- 	bool "Remote debugging over FireWire early on boot"
-diff --git a/tests/Kconfig b/tests/Kconfig
-new file mode 100644
-index 0000000..ceca7ba
---- /dev/null
-+++ b/tests/Kconfig
-@@ -0,0 +1,18 @@
-+menuconfig BENCHMARKS
-+	bool "In kernel benchmarks"
-+	def_bool n
-+	help
-+	  Includes in kernel benchmark modules in the build. These modules can
-+	  be loaded later to trigger benchmarking kernel subsystems.
-+	  Output will be generated in the system log.
-+
-+if BENCHMARKS
-+
-+config BENCHMARK_RBTREE
-+	tristate "Red Black Tree Benchmark"
-+	depends on m
-+	default m
-+	help
-+	  A benchmark measuring the performance of the rbtree library.
-+
-+endif # BENCHMARKS
-diff --git a/tests/Makefile b/tests/Makefile
-new file mode 100644
-index 0000000..440b77c
---- /dev/null
-+++ b/tests/Makefile
-@@ -0,0 +1 @@
-+obj-$(CONFIG_BENCHMARK_RBTREE) += rbtree_test.o
-diff --git a/tests/rbtree_test.c b/tests/rbtree_test.c
-new file mode 100644
-index 0000000..4c6d250
---- /dev/null
-+++ b/tests/rbtree_test.c
-@@ -0,0 +1,135 @@
-+#include <linux/module.h>
-+#include <linux/rbtree.h>
-+#include <linux/random.h>
-+#include <asm/timex.h>
-+
-+#define NODES       100
-+#define PERF_LOOPS  100000
-+#define CHECK_LOOPS 100
-+
-+struct test_node {
-+	struct rb_node rb;
-+	u32 key;
-+};
-+
-+static struct rb_root root = RB_ROOT;
-+static struct test_node nodes[NODES];
-+
-+static struct rnd_state rnd;
-+
-+static void insert(struct test_node *node, struct rb_root *root)
-+{
-+	struct rb_node **new = &root->rb_node, *parent = NULL;
-+
-+	while (*new) {
-+		parent = *new;
-+		if (node->key < rb_entry(parent, struct test_node, rb)->key)
-+			new = &parent->rb_left;
-+		else
-+			new = &parent->rb_right;
-+	}
-+
-+	rb_link_node(&node->rb, parent, new);
-+	rb_insert_color(&node->rb, root);
-+}
-+
-+static inline void erase(struct test_node *node, struct rb_root *root)
-+{
-+	rb_erase(&node->rb, root);
-+}
-+
-+static void init(void)
-+{
-+	int i;
-+	for (i = 0; i < NODES; i++)
-+		nodes[i].key = prandom32(&rnd);
-+}
-+
-+static bool is_red(struct rb_node *rb)
-+{
-+	return !(rb->__rb_parent_color & 1);
-+}
-+
-+static int black_path_count(struct rb_node *rb)
-+{
-+	int count;
-+	for (count = 0; rb; rb = rb_parent(rb))
-+		count += !is_red(rb);
-+	return count;
-+}
-+
-+static void check(int nr_nodes)
-+{
-+	struct rb_node *rb;
-+	int count = 0;
-+	int blacks;
-+	u32 prev_key = 0;
-+
-+	for (rb = rb_first(&root); rb; rb = rb_next(rb)) {
-+		struct test_node *node = rb_entry(rb, struct test_node, rb);
-+		WARN_ON_ONCE(node->key < prev_key);
-+		WARN_ON_ONCE(is_red(rb) &&
-+			     (!rb_parent(rb) || is_red(rb_parent(rb))));
-+		if (!count)
-+			blacks = black_path_count(rb);
-+		else
-+			WARN_ON_ONCE((!rb->rb_left || !rb->rb_right) &&
-+				     blacks != black_path_count(rb));
-+		prev_key = node->key;
-+		count++;
-+	}
-+	WARN_ON_ONCE(count != nr_nodes);
-+}
-+
-+static int rbtree_test_init(void)
-+{
-+	int i, j;
-+	cycles_t time1, time2, time;
-+
-+	printk(KERN_ALERT "rbtree testing");
-+
-+	prandom32_seed(&rnd, 3141592653589793238);
-+	init();
-+
-+	time1 = get_cycles();
-+
-+	for (i = 0; i < PERF_LOOPS; i++) {
-+		for (j = 0; j < NODES; j++)
-+			insert(nodes + j, &root);
-+		for (j = 0; j < NODES; j++)
-+			erase(nodes + j, &root);
-+	}
-+
-+	time2 = get_cycles();
-+	time = time2 - time1;
-+
-+	time = div_u64(time, PERF_LOOPS);
-+	printk(" -> %llu cycles\n", time);
-+
-+	for (i = 0; i < CHECK_LOOPS; i++) {
-+		init();
-+		for (j = 0; j < NODES; j++) {
-+			check(j);
-+			insert(nodes + j, &root);
-+		}
-+		for (j = 0; j < NODES; j++) {
-+			check(NODES - j);
-+			erase(nodes + j, &root);
-+		}
-+		check(0);
-+	}
-+
-+	return -EAGAIN; /* Fail will directly unload the module */
-+}
-+
-+static void rbtree_test_exit(void)
-+{
-+	printk(KERN_ALERT "test exit\n");
-+}
-+
-+module_init(rbtree_test_init)
-+module_exit(rbtree_test_exit)
-+
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Michel Lespinasse");
-+MODULE_DESCRIPTION("Red Black Tree test");
+ static inline void timerqueue_init(struct timerqueue_node *node)
+ {
+-	rb_init_node(&node->node);
++	RB_CLEAR_NODE(&node->node);
+ }
+ 
+ static inline void timerqueue_init_head(struct timerqueue_head *head)
+diff --git a/lib/rbtree.c b/lib/rbtree.c
+index d417556..fe43c8c 100644
+--- a/lib/rbtree.c
++++ b/lib/rbtree.c
+@@ -387,7 +387,7 @@ struct rb_node *rb_next(const struct rb_node *node)
+ {
+ 	struct rb_node *parent;
+ 
+-	if (rb_parent(node) == node)
++	if (RB_EMPTY_NODE(node))
+ 		return NULL;
+ 
+ 	/* If we have a right-hand child, go down and then left as far
+@@ -416,7 +416,7 @@ struct rb_node *rb_prev(const struct rb_node *node)
+ {
+ 	struct rb_node *parent;
+ 
+-	if (rb_parent(node) == node)
++	if (RB_EMPTY_NODE(node))
+ 		return NULL;
+ 
+ 	/* If we have a left-hand child, go down and then right as far
 -- 
 1.7.7.3
 
