@@ -1,49 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757661Ab2GMOIV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 10:08:21 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63788 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757541Ab2GMOIT (ORCPT
+	id S933312Ab2GMOJK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 10:09:10 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:38666 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932722Ab2GMOJG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 10:08:19 -0400
-Date: Fri, 13 Jul 2012 07:08:14 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        dan.carpenter@oracle.com, khc@pm.waw.pl
-Subject: Re: [PATCH v2] staging: sbe-2t3e3: Remove code that will never
- execute
-Message-ID: <20120713140814.GB10240@kroah.com>
-References: <1342146469-26206-1-git-send-email-marcos.souza.org@gmail.com>
+	Fri, 13 Jul 2012 10:09:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1342146469-26206-1-git-send-email-marcos.souza.org@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CALbm-EbggDYBwEDmo6bjEO_=p0YEmLHASNkfAN5J-P4-mT-vgg@mail.gmail.com>
+References: <CALbm-EbggDYBwEDmo6bjEO_=p0YEmLHASNkfAN5J-P4-mT-vgg@mail.gmail.com>
+Date: Fri, 13 Jul 2012 10:09:04 -0400
+X-Google-Sender-Auth: BcUPFIDIrnTue8za8wOVUqSqJSI
+Message-ID: <CAFtxgO5=oANwXJ34rkKjWFiOxgB1hvEDToZXt=9w5gKoVOsOBw@mail.gmail.com>
+Subject: Re: [PATCH] Rewrite Documentation/SubmittingPatches.
+From: Jeff Garzik <jgarzik@pobox.com>
+To: Stefan Beller <stefanbeller@googlemail.com>
+Cc: Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 12, 2012 at 11:27:49PM -0300, Marcos Paulo de Souza wrote:
-> This patch removes all references of "if 0" blocks in the sbe-2t3e3 driver.
-> 
-> Signed-off-by: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
-> ---
->  drivers/staging/sbe-2t3e3/2t3e3.h    |    3 --
->  drivers/staging/sbe-2t3e3/cpld.c     |   15 ---------
->  drivers/staging/sbe-2t3e3/ctrl.c     |   19 +++--------
->  drivers/staging/sbe-2t3e3/dc.c       |   17 ----------
->  drivers/staging/sbe-2t3e3/exar7250.c |   40 +++--------------------
->  drivers/staging/sbe-2t3e3/exar7300.c |   17 ----------
->  drivers/staging/sbe-2t3e3/intr.c     |   60 ++--------------------------------
->  drivers/staging/sbe-2t3e3/io.c       |   21 ------------
->  8 files changed, 10 insertions(+), 182 deletions(-)
+On Fri, Jul 13, 2012 at 7:51 AM, Stefan Beller
+<stefanbeller@googlemail.com> wrote:
+> This updates the documentation on how to create patches and send
+> these to the kernel mailing list.
+>
+> The documentation before was written in times before git was there,
+> so the crafting of the patch needed to be done manually by diff -up
+> in the right directory.
+>
+> This patch aims at simplifying the patch sending process, without
+> breaking the output results.
+>
+> A discussion with gregkh can be found at
+> https://plus.google.com/111049168280159033135/posts/ekAxK9achsA
+>
+> Signed-off-by: Stefan Beller <stefanbeller@googlemail.com>
 
-When sending out a v2 version of a patch (or any version after the
-first), please detail what changed between them.  The diffstat didn't
-look different here, but the patch did.  What happened?
-
-thanks,
-
-greg k-h
+Speaking as the original author... seems reasonable.  ACK with
+Borislav's suggested change, moving the old instructions to the bottom
+of the file.
