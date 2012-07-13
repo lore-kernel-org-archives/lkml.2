@@ -1,65 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932156Ab2GMJw5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 05:52:57 -0400
-Received: from www.linutronix.de ([62.245.132.108]:43762 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757036Ab2GMJwz (ORCPT
+	id S1757168Ab2GMJys (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 05:54:48 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:16782 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754477Ab2GMJyq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 05:52:55 -0400
-Date: Fri, 13 Jul 2012 11:52:53 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Mike Galbraith <efault@gmx.de>
-cc: "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: 3.4.4-rt13: btrfs + xfstests 006 = BOOM.. and a bonus rt_mutex
- deadlock report for absolutely free!
-In-Reply-To: <1342161072.7380.65.camel@marge.simpson.net>
-Message-ID: <alpine.LFD.2.02.1207131142440.32033@ionos>
-References: <1342072060.7338.102.camel@marge.simpson.net>  <1342082648.7338.171.camel@marge.simpson.net>  <1342086792.7707.9.camel@marge.simpson.net>  <alpine.LFD.2.02.1207121310420.32033@ionos>  <1342094233.7707.12.camel@marge.simpson.net> 
- <alpine.LFD.2.02.1207121514240.32033@ionos> <1342161072.7380.65.camel@marge.simpson.net>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Fri, 13 Jul 2012 05:54:46 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Fri, 13 Jul 2012 02:54:30 -0700
+Subject: RE: How to use the generic thermal sysfs.
+From: Wei Ni <wni@nvidia.com>
+To: Zhang Rui <rui.zhang@intel.com>
+CC: "R, Durgadoss" <durgadoss.r@intel.com>, "Brown, Len" <len.brown@intel.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "khali@linux-fr.org" <khali@linux-fr.org>,
+        "joe@perches.com" <joe@perches.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@ger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Alex Courbot <acourbot@nvidia.com>
+In-Reply-To: <1342167087.27605.158.camel@tegra-chromium-2>
+References: <1342088573.27605.101.camel@tegra-chromium-2>
+	 <4D68720C2E767A4AA6A8796D42C8EB5915287C@BGSMSX101.gar.corp.intel.com>
+	 <1342144273.1682.237.camel@rui.sh.intel.com>
+	 <1342164616.27605.129.camel@tegra-chromium-2>
+	 <1342165278.1682.259.camel@rui.sh.intel.com>
+	 <1342167087.27605.158.camel@tegra-chromium-2>
+Date: Fri, 13 Jul 2012 17:53:33 +0800
+Message-ID: <1342173213.27605.174.camel@tegra-chromium-2>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Jul 2012, Mike Galbraith wrote:
-> On Thu, 2012-07-12 at 15:31 +0200, Thomas Gleixner wrote: 
-> > Bingo, that makes it more likely that this is caused by copying w/o
-> > initializing the lock and then freeing the original structure.
+On Fri, 2012-07-13 at 16:11 +0800, Wei Ni wrote:
+> On Fri, 2012-07-13 at 15:41 +0800, Zhang Rui wrote:
+> > On 五, 2012-07-13 at 15:30 +0800, Wei Ni wrote:
+> > > Our tegra thermal framework also will use the generic thermal layer. It
+> > > will register the cooling device, and run the throttling in this generic
+> > > framework.
+> > > But we have a special mechanism, when the temp is below the trip temp,
+> > > we will set different cpu capability for different temp range. For
+> > > example, set the low/high temp as 20C/30C to the sensor, and set the cpu
+> > > to the max capability, it mean the cpu can run up to the max freq and
+> > > voltage in this temp range. if the temp is out that range, the sensor
+> > > will have irq/alert to notify the tegra framework, then we will set to
+> > > another temperature range and cpu capability.
+> > > I think we can try to add this mechanism to the generic framework as a
+> > > new policy, right?
+> > > 
+> > I think you can make use of the upper&lower limit in my patch set.
+> > Say, here is your thermal policy
+> > 20C - 30C, P0
+> > 30C - 40C, P1 - P2
+> > 40C - 60C, P3 - P5
+> > 60C+, P6 ~ Pn
 > > 
-> > A quick check for memcpy finds that __btrfs_close_devices() does a
-> > memcpy of btrfs_device structs w/o initializing the lock in the new
-> > copy, but I have no idea whether that's the place we are looking for.
+> > you can register to the thermal layer 4 passive trip points,
+> > 20C, 30C, 40C, 60C, and then
+> > 1) for trip 0 (20C), upper limit 0, lower limit 0
+> > 2) for trip 1 (30C), upper limit 2, lower limit 1
+> > 3) for trip 2 (40C), upper limit 5, lower limit 3
+> > 4) for trip 3 (60C), upper limit n, lower limit 6
+> > 
+> > you can program your own sensor to get interrupt when the temperature
+> > hits 20C/30C/40C/60C, and the generic thermal layer will put the
+> > processors to proper frequency for each trip point.
+> > 
+> > what do you think?
 > 
-> Thanks a bunch Thomas.  I doubt I would have ever figured out that lala
-> land resulted from _copying_ a lock.  That's one I won't be forgetting
-> any time soon.  Box not only survived a few thousand xfstests 006 runs,
-> dbench seemed disinterested in deadlocking virgin 3.0-rt.
+> It's great, this is exactly what we need.
+> I think for these trip points, we can use a new trip type, such as
+> TRIP_LIMIT, and use new policy. Because in these state, we only need to
+> set the processors to proper frequency capability, it's not like the
+> passive type, the currently passive type will try to set cooling device
+> state continually.
 
-Cute. It think that the lock copying caused the deadlock problem as
-the list pointed to the wrong place, so we might have ended up with
-following down the wrong chain when walking the list as long as the
-original struct was not freed. That beast is freed under RCU so there
-could be a rcu read side critical section fiddling with the old lock
-and cause utter confusion.
+I read the patches of "Thermal Framework Enhancements", it seems the
+fair_share governor can be used for this throttling.
 
-/me goes and writes a nastigram^W proper changelog
+Look forward to your public git tree, so that I can sync the entire
+codes :)
 
-> btrfs still locks up in my enterprise kernel, so I suppose I had better
-> plug your fix into 3.4-rt and see what happens, and go beat hell out of
-> virgin 3.0-rt again to be sure box really really survives dbench.
+> And for these trip temp, it's better to add hysteresis value, so that it
+> can avoid unnecessary interrupt.
+> 
+> > 
+> > BTW, the upper and lower limit is introduced in the patch set I'm
+> > testing, so maybe you were not aware of it.
+> 
+> How can I get these codes?
+> 
+> > 
+> > thanks,
+> > rui
+> 
 
-A test against 3.4-rt sans enterprise mess might be nice as well.
 
-Thanks,
-
-	tglx
