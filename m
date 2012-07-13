@@ -1,45 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933312Ab2GMOJK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 10:09:10 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:38666 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932722Ab2GMOJG (ORCPT
+	id S1162998Ab2GMOJT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 10:09:19 -0400
+Received: from alpha.arachsys.com ([91.203.57.7]:54378 "EHLO
+	alpha.arachsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932722Ab2GMOJO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 10:09:06 -0400
+	Fri, 13 Jul 2012 10:09:14 -0400
+Date: Fri, 13 Jul 2012 15:09:08 +0100
+From: Chris Webb <chris@arachsys.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Michael Chan <mchan@broadcom.com>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH] bnx2: update bnx2-mips-09 firmware to bnx2-mips-09-6.2.1b
+Message-ID: <20120713140907.GT13885@arachsys.com>
+References: <20120713130405.GS13885@arachsys.com>
+ <1342186932.3265.8364.camel@edumazet-glaptop>
 MIME-Version: 1.0
-In-Reply-To: <CALbm-EbggDYBwEDmo6bjEO_=p0YEmLHASNkfAN5J-P4-mT-vgg@mail.gmail.com>
-References: <CALbm-EbggDYBwEDmo6bjEO_=p0YEmLHASNkfAN5J-P4-mT-vgg@mail.gmail.com>
-Date: Fri, 13 Jul 2012 10:09:04 -0400
-X-Google-Sender-Auth: BcUPFIDIrnTue8za8wOVUqSqJSI
-Message-ID: <CAFtxgO5=oANwXJ34rkKjWFiOxgB1hvEDToZXt=9w5gKoVOsOBw@mail.gmail.com>
-Subject: Re: [PATCH] Rewrite Documentation/SubmittingPatches.
-From: Jeff Garzik <jgarzik@pobox.com>
-To: Stefan Beller <stefanbeller@googlemail.com>
-Cc: Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1342186932.3265.8364.camel@edumazet-glaptop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 13, 2012 at 7:51 AM, Stefan Beller
-<stefanbeller@googlemail.com> wrote:
-> This updates the documentation on how to create patches and send
-> these to the kernel mailing list.
->
-> The documentation before was written in times before git was there,
-> so the crafting of the patch needed to be done manually by diff -up
-> in the right directory.
->
-> This patch aims at simplifying the patch sending process, without
-> breaking the output results.
->
-> A discussion with gregkh can be found at
-> https://plus.google.com/111049168280159033135/posts/ekAxK9achsA
->
-> Signed-off-by: Stefan Beller <stefanbeller@googlemail.com>
+Eric Dumazet <eric.dumazet@gmail.com> writes:
 
-Speaking as the original author... seems reasonable.  ACK with
-Borislav's suggested change, moving the old instructions to the bottom
-of the file.
+> Have you read firmware/README.AddingFirmware ?
+
+I hadn't, but now I have, and if firmware upgrades are considered 'adding
+new firmware', I agree this patch is wrong, and should have just removed the
+obsolete bnx2-mips-09-6.2.1a file that is no longer used by the bnx2 driver.
+
+However, not having dealt with cards that need these kinds of horrible
+binary blobs before, I'm a little uncertain how I should be building
+upstream kernels with CONFIG_FIRMWARE_IN_KERNEL and pulling in the correct
+blobs from a linux-firmware checkout.
+
+Is there a more automatic method than going through the source for each
+configured driver and setting CONFIG_EXTRA_FIRMWARE manually to list the
+relevant firmwares? Is there any way to give the kernel the location of
+linux-firmware and have it compile in everything needed for the selected
+drivers, as used to happen with the firmware/ subdirectory?
+CONFIG_EXTRA_FIRMWARE_DIR doesn't seem to do anything with
+CONFIG_EXTRA_FIRMWARE empty, so I don't think it does what I'm hoping?
+
+Cheers,
+
+Chris.
