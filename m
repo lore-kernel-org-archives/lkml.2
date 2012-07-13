@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933637Ab2GMAdF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 20:33:05 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:56863 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756595Ab2GMAce (ORCPT
+	id S933730Ab2GMAdU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 20:33:20 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40985 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759342Ab2GMAdM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 20:32:34 -0400
+	Thu, 12 Jul 2012 20:33:12 -0400
 From: Michel Lespinasse <walken@google.com>
 To: aarcange@redhat.com, dwmw2@infradead.org, riel@redhat.com,
         peterz@infradead.org, daniel.santos@pobox.com, axboe@kernel.dk,
         ebiederm@xmission.com, akpm@linux-foundation.org
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         torvalds@linux-foundation.org
-Subject: [PATCH v2 02/12] rbtree: empty nodes have no color
-Date: Thu, 12 Jul 2012 17:31:47 -0700
-Message-Id: <1342139517-3451-3-git-send-email-walken@google.com>
+Subject: [PATCH v2 12/12] rbtree: coding style adjustments
+Date: Thu, 12 Jul 2012 17:31:57 -0700
+Message-Id: <1342139517-3451-13-git-send-email-walken@google.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1342139517-3451-1-git-send-email-walken@google.com>
 References: <1342139517-3451-1-git-send-email-walken@google.com>
@@ -23,110 +23,108 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Empty nodes have no color.  We can make use of this property to
-simplify the code emitted by the RB_EMPTY_NODE and RB_CLEAR_NODE
-macros.  Also, we can get rid of the rb_init_node function which had
-been introduced by commit 88d19cf37952a7e1e38b2bf87a00f0e857e63180
-to avoid some issue with the empty node's color not being initialized.
-
-I'm not sure what the RB_EMPTY_NODE checks in rb_prev() / rb_next()
-are doing there, though. axboe introduced them in commit 10fd48f2376d.
-The way I see it, the 'empty node' abstraction is only used by rbtree
-users to flag nodes that they haven't inserted in any rbtree, so asking
-the predecessor or successor of such nodes doesn't make any sense.
-
-One final rb_init_node() caller was recently added in sysctl code
-to implement faster sysctl name lookups. This code doesn't make use
-of RB_EMPTY_NODE at all, and from what I could see it only called
-rb_init_node() under the mistaken assumption that such initialization
-was required before node insertion.
+Set comment and indentation style to be consistent with linux coding style
+and the rest of the file, as suggested by Peter Zijlstra
 
 Signed-off-by: Michel Lespinasse <walken@google.com>
 ---
- fs/proc/proc_sysctl.c      |    4 +---
- include/linux/rbtree.h     |   15 +++++----------
- include/linux/timerqueue.h |    2 +-
- lib/rbtree.c               |    4 ++--
- 4 files changed, 9 insertions(+), 16 deletions(-)
+ lib/rbtree.c |   42 +++++++++++++++++++++++-------------------
+ 1 files changed, 23 insertions(+), 19 deletions(-)
 
-diff --git a/fs/proc/proc_sysctl.c b/fs/proc/proc_sysctl.c
-index 21d836f..33aea86 100644
---- a/fs/proc/proc_sysctl.c
-+++ b/fs/proc/proc_sysctl.c
-@@ -168,10 +168,8 @@ static void init_header(struct ctl_table_header *head,
- 	head->node = node;
- 	if (node) {
- 		struct ctl_table *entry;
--		for (entry = table; entry->procname; entry++, node++) {
--			rb_init_node(&node->node);
-+		for (entry = table; entry->procname; entry++, node++)
- 			node->header = head;
--		}
- 	}
- }
- 
-diff --git a/include/linux/rbtree.h b/include/linux/rbtree.h
-index e6a8077..2049087 100644
---- a/include/linux/rbtree.h
-+++ b/include/linux/rbtree.h
-@@ -67,17 +67,12 @@ static inline void rb_set_color(struct rb_node *rb, int color)
- #define RB_ROOT	(struct rb_root) { NULL, }
- #define	rb_entry(ptr, type, member) container_of(ptr, type, member)
- 
--#define RB_EMPTY_ROOT(root)	((root)->rb_node == NULL)
--#define RB_EMPTY_NODE(node)	(rb_parent(node) == node)
--#define RB_CLEAR_NODE(node)	(rb_set_parent(node, node))
-+#define RB_EMPTY_ROOT(root)  ((root)->rb_node == NULL)
-+
-+/* 'empty' nodes are nodes that are known not to be inserted in an rbree */
-+#define RB_EMPTY_NODE(node)  ((node)->rb_parent_color == (unsigned long)(node))
-+#define RB_CLEAR_NODE(node)  ((node)->rb_parent_color = (unsigned long)(node))
- 
--static inline void rb_init_node(struct rb_node *rb)
--{
--	rb->rb_parent_color = 0;
--	rb->rb_right = NULL;
--	rb->rb_left = NULL;
--	RB_CLEAR_NODE(rb);
--}
- 
- extern void rb_insert_color(struct rb_node *, struct rb_root *);
- extern void rb_erase(struct rb_node *, struct rb_root *);
-diff --git a/include/linux/timerqueue.h b/include/linux/timerqueue.h
-index 5088727..a520fd7 100644
---- a/include/linux/timerqueue.h
-+++ b/include/linux/timerqueue.h
-@@ -39,7 +39,7 @@ struct timerqueue_node *timerqueue_getnext(struct timerqueue_head *head)
- 
- static inline void timerqueue_init(struct timerqueue_node *node)
- {
--	rb_init_node(&node->node);
-+	RB_CLEAR_NODE(&node->node);
- }
- 
- static inline void timerqueue_init_head(struct timerqueue_head *head)
 diff --git a/lib/rbtree.c b/lib/rbtree.c
-index d417556..fe43c8c 100644
+index a38e473..0892670 100644
 --- a/lib/rbtree.c
 +++ b/lib/rbtree.c
-@@ -387,7 +387,7 @@ struct rb_node *rb_next(const struct rb_node *node)
- {
- 	struct rb_node *parent;
+@@ -363,8 +363,7 @@ void rb_erase(struct rb_node *node, struct rb_root *root)
+ 		child = node->rb_right;
+ 	else if (!node->rb_right)
+ 		child = node->rb_left;
+-	else
+-	{
++	else {
+ 		struct rb_node *old = node, *left;
  
--	if (rb_parent(node) == node)
-+	if (RB_EMPTY_NODE(node))
+ 		node = node->rb_right;
+@@ -406,17 +405,15 @@ void rb_erase(struct rb_node *node, struct rb_root *root)
+ 
+ 	if (child)
+ 		rb_set_parent(child, parent);
+-	if (parent)
+-	{
++	if (parent) {
+ 		if (parent->rb_left == node)
+ 			parent->rb_left = child;
+ 		else
+ 			parent->rb_right = child;
+-	}
+-	else
++	} else
+ 		root->rb_node = child;
+ 
+- color:
++color:
+ 	if (color == RB_BLACK)
+ 		__rb_erase_color(child, parent, root);
+ }
+@@ -529,8 +526,10 @@ struct rb_node *rb_next(const struct rb_node *node)
+ 	if (RB_EMPTY_NODE(node))
  		return NULL;
  
- 	/* If we have a right-hand child, go down and then left as far
-@@ -416,7 +416,7 @@ struct rb_node *rb_prev(const struct rb_node *node)
- {
- 	struct rb_node *parent;
+-	/* If we have a right-hand child, go down and then left as far
+-	   as we can. */
++	/*
++	 * If we have a right-hand child, go down and then left as far
++	 * as we can.
++	 */
+ 	if (node->rb_right) {
+ 		node = node->rb_right; 
+ 		while (node->rb_left)
+@@ -538,12 +537,13 @@ struct rb_node *rb_next(const struct rb_node *node)
+ 		return (struct rb_node *)node;
+ 	}
  
--	if (rb_parent(node) == node)
-+	if (RB_EMPTY_NODE(node))
+-	/* No right-hand children.  Everything down and left is
+-	   smaller than us, so any 'next' node must be in the general
+-	   direction of our parent. Go up the tree; any time the
+-	   ancestor is a right-hand child of its parent, keep going
+-	   up. First time it's a left-hand child of its parent, said
+-	   parent is our 'next' node. */
++	/*
++	 * No right-hand children. Everything down and left is smaller than us,
++	 * so any 'next' node must be in the general direction of our parent.
++	 * Go up the tree; any time the ancestor is a right-hand child of its
++	 * parent, keep going up. First time it's a left-hand child of its
++	 * parent, said parent is our 'next' node.
++	 */
+ 	while ((parent = rb_parent(node)) && node == parent->rb_right)
+ 		node = parent;
+ 
+@@ -558,8 +558,10 @@ struct rb_node *rb_prev(const struct rb_node *node)
+ 	if (RB_EMPTY_NODE(node))
  		return NULL;
  
- 	/* If we have a left-hand child, go down and then right as far
+-	/* If we have a left-hand child, go down and then right as far
+-	   as we can. */
++	/*
++	 * If we have a left-hand child, go down and then right as far
++	 * as we can.
++	 */
+ 	if (node->rb_left) {
+ 		node = node->rb_left; 
+ 		while (node->rb_right)
+@@ -567,8 +569,10 @@ struct rb_node *rb_prev(const struct rb_node *node)
+ 		return (struct rb_node *)node;
+ 	}
+ 
+-	/* No left-hand children. Go up till we find an ancestor which
+-	   is a right-hand child of its parent */
++	/*
++	 * No left-hand children. Go up till we find an ancestor which
++	 * is a right-hand child of its parent.
++	 */
+ 	while ((parent = rb_parent(node)) && node == parent->rb_left)
+ 		node = parent;
+ 
 -- 
 1.7.7.3
 
