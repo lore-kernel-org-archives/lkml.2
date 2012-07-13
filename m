@@ -1,149 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752370Ab2GMG1v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 02:27:51 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:57115 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751742Ab2GMG1u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 02:27:50 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FFFBFDA.5070207@jp.fujitsu.com>
-Date: Fri, 13 Jul 2012 15:27:38 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: <linux-acpi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <lenb@kernel.org>, <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [PATCH v3 2/3 RESEND] acpi : prevent cpu from becoming online
-References: <4FFEB35A.6030500@jp.fujitsu.com>  <4FFEB4BA.8010800@jp.fujitsu.com> <4FFEB7BA.6050505@jp.fujitsu.com> <1342111772.8472.18.camel@misato.fc.hp.com>
-In-Reply-To: <1342111772.8472.18.camel@misato.fc.hp.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+	id S1752660Ab2GMG3L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 02:29:11 -0400
+Received: from mga02.intel.com ([134.134.136.20]:36692 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751929Ab2GMG3I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 02:29:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="171314420"
+Subject: Re: [PATCH 2/2] dma: tegra: fix residual calculation for cyclic
+ case
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+In-Reply-To: <4FFFB476.9050006@nvidia.com>
+References: <1341217328-6676-1-git-send-email-ldewangan@nvidia.com>
+	 <4FF1C62B.5070005@wwwdotorg.org> <1342149336.1726.5.camel@vkoul-udesk3>
+	 <4FFFB476.9050006@nvidia.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 13 Jul 2012 11:58:43 +0530
+Message-ID: <1342160923.1726.11.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Toshi,
+On Fri, 2012-07-13 at 11:09 +0530, Laxman Dewangan wrote:
+> On Friday 13 July 2012 08:45 AM, Vinod Koul wrote:
+> > On Mon, 2012-07-02 at 10:02 -0600, Stephen Warren wrote:
+> >> On 07/02/2012 02:22 AM, Laxman Dewangan wrote:
+> >>> In cyclic mode of DMA, the byte transferred can be more
+> >>> than the requested size and in this case, calculating
+> >>> residuals based on the current position of DMA transfer to
+> >>> bytes requested i.e. bytes required to transfer to reach
+> >>> bytes requested from current DMA position.
+> >>>
+> >>> Signed-off-by: Laxman Dewangan<ldewangan@nvidia.com>
+> >> This makes sense to me, although I wonder if details like this aren't
+> >> something that the dmaengine core should be handling.
+> > No core doesn't know anything about the how much you are transferring
+> > and where you are. That is the driver to calculate and provide.
+> 
+> Just for confirmation, are you going to apply this patch or do I need to 
+> do anything here.
+???
 
-2012/07/13 1:49, Toshi Kani wrote:
-> On Thu, 2012-07-12 at 20:40 +0900, Yasuaki Ishimatsu wrote:
->> Even if acpi_processor_handle_eject() offlines cpu, there is a chance
->> to online the cpu after that. So the patch closes the window by using
->> get/put_online_cpus().
->>
->> Why does the patch change _cpu_up() logic?
->>
->> The patch cares the race of hot-remove cpu and _cpu_up(). If the patch
->> does not change it, there is the following race.
->>
->> hot-remove cpu                         |  _cpu_up()
->> ------------------------------------- ------------------------------------
->> call acpi_processor_handle_eject()     |
->>       call cpu_down()                   |
->>       call get_online_cpus()            |
->>                                         | call cpu_hotplug_begin() and stop here
->>       call arch_unregister_cpu()        |
->>       call acpi_unmap_lsapic()          |
->>       call put_online_cpus()            |
->>                                         | start and continue _cpu_up()
->>       return acpi_processor_remove()    |
->> continue hot-remove the cpu            |
->>
->> So _cpu_up() can continue to itself. And hot-remove cpu can also continue
->> itself. If the patch changes _cpu_up() logic, the race disappears as below:
->>
->> hot-remove cpu                         | _cpu_up()
->> -----------------------------------------------------------------------
->> call acpi_processor_handle_eject()     |
->>       call cpu_down()                   |
->>       call get_online_cpus()            |
->>                                         | call cpu_hotplug_begin() and stop here
->>       call arch_unregister_cpu()        |
->>       call acpi_unmap_lsapic()          |
->>            cpu's cpu_present is set     |
->>            to false by set_cpu_present()|
->>       call put_online_cpus()            |
->>                                         | start _cpu_up()
->>                                         | check cpu_present() and return -EINVAL
->>       return acpi_processor_remove()    |
->> continue hot-remove the cpu            |
->>
->> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->>
->> ---
->>   drivers/acpi/processor_driver.c |   14 ++++++++++++++
->>   kernel/cpu.c                    |    8 +++++---
->>   2 files changed, 19 insertions(+), 3 deletions(-)
->>
->> Index: linux-3.5-rc6/drivers/acpi/processor_driver.c
->> ===================================================================
->> --- linux-3.5-rc6.orig/drivers/acpi/processor_driver.c	2012-07-12 20:34:29.438289841 +0900
->> +++ linux-3.5-rc6/drivers/acpi/processor_driver.c	2012-07-12 20:39:29.190542257 +0900
->> @@ -850,8 +850,22 @@ static int acpi_processor_handle_eject(s
->>   			return ret;
->>   	}
->>
->> +	get_online_cpus();
->> +	/*
->> +	 * The cpu might become online again at this point. So we check whether
->> +	 * the cpu has been onlined or not. If the cpu became online, it means
->> +	 * that someone wants to use the cpu. So acpi_processor_handle_eject()
->> +	 * returns -EAGAIN.
->> +	 */
->> +	if (unlikely(cpu_online(pr->id))) {
->> +		put_online_cpus();
->> +		printk(KERN_WARNING "Failed to remove CPU %d, "
->> +		       "since someone onlines the cpu\n" , pr->id);
->
-> pr_warn() should be used per the recent checkpatch change.
+You didnt get my other mail about applying?
 
-O.K. I'll update it.
-
-Thanks,
-Yasuaki Ishimatsu
-
-> Thanks,
-> -Toshi
->
->> +		return -EAGAIN;
->> +	}
->>   	arch_unregister_cpu(pr->id);
->>   	acpi_unmap_lsapic(pr->id);
->> +	put_online_cpus();
->>   	return ret;
->>   }
->>   #else
->> Index: linux-3.5-rc6/kernel/cpu.c
->> ===================================================================
->> --- linux-3.5-rc6.orig/kernel/cpu.c	2012-07-12 20:34:29.438289841 +0900
->> +++ linux-3.5-rc6/kernel/cpu.c	2012-07-12 20:34:35.040219535 +0900
->> @@ -343,11 +343,13 @@ static int __cpuinit _cpu_up(unsigned in
->>   	unsigned long mod = tasks_frozen ? CPU_TASKS_FROZEN : 0;
->>   	struct task_struct *idle;
->>
->> -	if (cpu_online(cpu) || !cpu_present(cpu))
->> -		return -EINVAL;
->> -
->>   	cpu_hotplug_begin();
->>
->> +	if (cpu_online(cpu) || !cpu_present(cpu)) {
->> +		ret =  -EINVAL;
->> +		goto out;
->> +	}
->> +
->>   	idle = idle_thread_get(cpu);
->>   	if (IS_ERR(idle)) {
->>   		ret = PTR_ERR(idle);
->>
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
-
-
+-- 
+~Vinod
 
