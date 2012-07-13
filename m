@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754474Ab2GMWW4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 18:22:56 -0400
-Received: from shutemov.name ([176.9.204.213]:44126 "EHLO shutemov.name"
+	id S1754580Ab2GMW0f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 18:26:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34995 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752918Ab2GMWWz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 18:22:55 -0400
-Date: Sat, 14 Jul 2012 01:23:24 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@openvz.org>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "Dmitry V. Levin" <ldv@altlinux.org>,
-        Doug Ledford <dledford@redhat.com>, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org
-Subject: Re: [PATCH] ns: move free_nsproxy() out of do_exit() path
-Message-ID: <20120713222319.GA13343@shutemov.name>
-References: <1342180088-22647-1-git-send-email-kirill.shutemov@linux.intel.com>
- <20120713140806.b3d0fda8.akpm@linux-foundation.org>
+	id S1752922Ab2GMW0d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 18:26:33 -0400
+Date: Fri, 13 Jul 2012 18:26:17 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Jones <davej@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
+        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
+        Debian Kernel Team <debian-kernel@lists.debian.org>,
+        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Fedora Kernel Team <kernel-team@fedoraproject.org>
+Subject: Re: [RFC] Simplifying kernel configuration for distro issues
+Message-ID: <20120713222616.GA2822@zod.bos.redhat.com>
+References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com>
+ <20120713210240.GG1707@redhat.com>
+ <CA+55aFz_Vv899eXz6F0jtFH=hT4QpB0_2XuS8HySPjHC6s+L7Q@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120713140806.b3d0fda8.akpm@linux-foundation.org>
+In-Reply-To: <CA+55aFz_Vv899eXz6F0jtFH=hT4QpB0_2XuS8HySPjHC6s+L7Q@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 13, 2012 at 02:08:06PM -0700, Andrew Morton wrote:
-> On Fri, 13 Jul 2012 14:48:08 +0300
-> "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
+On Fri, Jul 13, 2012 at 02:17:30PM -0700, Linus Torvalds wrote:
+> On Fri, Jul 13, 2012 at 2:02 PM, Dave Jones <davej@redhat.com> wrote:
+> >
+> > As long as you don't mind these being added after the fact, I suppose
+> > it would be workable.  The reason I say that is sometimes, it even catches *us*
+> > by surprise.  We recently found out our virtualisation guys started
+> > using sch_htb for example, and we inadvertantly broke it when we moved
+> > its module to a 'not always installed' kernel subpackage. (and before that, 9PFS..)
+> >
+> > People don't tell us anything, but somehow expect things to keep working.
 > 
-> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> > 
-> > free_nsproxy() is too heavy to be on exit path. Let's free namespaces
-> > asynchronously to not block exit_group() syscall.
+> I think even a "educated guess" config file is better than what we have now.
 > 
-> Please be specific, and complete.
+> The *two* requirements (and they're really the same theme) I
+> personally think we should have for this are
 > 
-> Why is it "too heavy"?  Where is the time being spent?  Is it spent in
-> D state or is it spent burning CPU cycles?  Does the patch simply
-> offload the work into kernel threads, providing no net gain?
-
-Unpatched switch_task_namespaces() takes 0.010 - 0.011 seconds on my
-machine. About 0.008 of the time is synchronize_rcu().
-
-So it's mostly waiting with wait_for_completion() in wait_rcu_gp().
-It means D state.
-
-> > The patch also fixes bug with free namespace without synchronize_rcu() through
-> > put_nsproxy().
+>  -  I think every single "select" for these things should come with a
+> comment about what it is about and why the distro needs it (to show
+> there was some thought involved and not just a blind "took it from the
+> distro config")
 > 
-> I just don't understand this description.
+>  - It should be about *minimal* settings. I'd rather have too few
+> things and the occasional complaint about "oh, it didn't work because
+> it missed XYZ" than have it grow to contain all the options just
+> because somebody decided to just add random things until things
+> worked.
 
-IIUC current locking model requires synchronize_rcu() before
-free_nsproxy(). put_nsproxy() calls free_nsproxy() without
-synchronize_rcu(). So it's racy.
+I'd agree that should be the goal.  It seems like something worth at
+least trying to get to.  Even if we don't wind up merging them into the
+kernel, it will at least lead to a better documented distro config for
+every one that tries it.
 
-I guess it was missed during switch to RCU (see cf7b708).
-Pavel, am I right?
-
-> Please send a new one which
-> includes all details about the bug, including a description of
-> the user-visible effects of the bug.
-
-Okay, I will.
-
--- 
- Kirill A. Shutemov
+josh
