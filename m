@@ -1,139 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757132Ab2GMUCu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 16:02:50 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:59703 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752808Ab2GMUCs (ORCPT
+	id S1756395Ab2GMUPR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 16:15:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55463 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753350Ab2GMUPQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 16:02:48 -0400
-MIME-Version: 1.0
-In-Reply-To: <1340740795-19603-1-git-send-email-geert@linux-m68k.org>
-References: <1340740795-19603-1-git-send-email-geert@linux-m68k.org>
-Date: Fri, 13 Jul 2012 22:02:47 +0200
-X-Google-Sender-Auth: zvacnZr7Z7L_SGCQRiEo0vieTRE
-Message-ID: <CAMuHMdXgCR1HUwmwT21p=O2p+LuAqLfeM=Tn=ghvKQ+qgsNTTQ@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.5-rc4
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Sonic Zhang <sonic.zhang@analog.com>, Bob Liu <lliubbo@gmail.com>,
-        Mike Frysinger <vapier@gentoo.org>
-Cc: uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Fri, 13 Jul 2012 16:15:16 -0400
+Date: Fri, 13 Jul 2012 13:15:14 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Michel Lespinasse <walken@google.com>
+Cc: aarcange@redhat.com, dwmw2@infradead.org, riel@redhat.com,
+        peterz@infradead.org, daniel.santos@pobox.com, axboe@kernel.dk,
+        ebiederm@xmission.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
+Subject: Re: [PATCH v2 05/12] rbtree: performance and correctness test
+Message-Id: <20120713131514.86ab4df4.akpm@linux-foundation.org>
+In-Reply-To: <1342139517-3451-6-git-send-email-walken@google.com>
+References: <1342139517-3451-1-git-send-email-walken@google.com>
+	<1342139517-3451-6-git-send-email-walken@google.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 26, 2012 at 9:59 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> + drivers/i2c/busses/i2c-bfin-twi.c: error: 'ANAK' undeclared (first use in this function):  => 154:19
->   + drivers/i2c/busses/i2c-bfin-twi.c: error: 'BUFRDERR' undeclared (first use in this function):  => 158:19
->   + drivers/i2c/busses/i2c-bfin-twi.c: error: 'BUFWRERR' undeclared (first use in this function):  => 160:19
->   + drivers/i2c/busses/i2c-bfin-twi.c: error: 'BUSBUSY' undeclared (first use in this function):  => 401:35, 301:35
->   + drivers/i2c/busses/i2c-bfin-twi.c: error: 'DNAK' undeclared (first use in this function):  => 156:19
->   + drivers/i2c/busses/i2c-bfin-twi.c: error: 'FAST' undeclared (first use in this function):  => 511:17, 360:18
->   + drivers/i2c/busses/i2c-bfin-twi.c: error: 'LOSTARB' undeclared (first use in this function):  => 152:19
->   + drivers/i2c/busses/i2c-bfin-twi.c: error: 'MCOMP' undeclared (first use in this function):  => 189:22, 489:31, 344:31
->   + drivers/i2c/busses/i2c-bfin-twi.c: error: 'MDIR' undeclared (first use in this function):  => 359:31, 567:32, 102:30
->   + drivers/i2c/busses/i2c-bfin-twi.c: error: 'MEN' undeclared (first use in this function):  => 358:51, 510:52, 196:33
->   + drivers/i2c/busses/i2c-bfin-twi.c: error: 'MERR' undeclared (first use in this function):  => 146:23, 489:24, 344:24
->   + drivers/i2c/busses/i2c-bfin-twi.c: error: 'RCVSERV' undeclared (first use in this function):  => 489:49, 116:23, 344:49
->   + drivers/i2c/busses/i2c-bfin-twi.c: error: 'RSTART' undeclared (first use in this function):  => 102:37
->   + drivers/i2c/busses/i2c-bfin-twi.c: error: 'SCLOVR' undeclared (first use in this function):  => 171:29
->   + drivers/i2c/busses/i2c-bfin-twi.c: error: 'SDAOVR' undeclared (first use in this function):  => 177:28
->   + drivers/i2c/busses/i2c-bfin-twi.c: error: 'SDASEN' undeclared (first use in this function):  => 168:33
->   + drivers/i2c/busses/i2c-bfin-twi.c: error: 'STOP' undeclared (first use in this function):  => 105:30
->   + drivers/i2c/busses/i2c-bfin-twi.c: error: 'TWI_ENA' undeclared (first use in this function):  => 398:30, 624:47, 298:30, 725:45
->   + drivers/i2c/busses/i2c-bfin-twi.c: error: 'XMTSERV' undeclared (first use in this function):  => 344:39, 489:39, 90:23
+On Thu, 12 Jul 2012 17:31:50 -0700
+Michel Lespinasse <walken@google.com> wrote:
 
-This seems to be caused by commit c55c89e939f2a0a83d5c61462be554d5d2408178
-("blackfin: twi: move twi bit mask macro to twi head file").
-However, just including <asm/bfin_twi.h> doesn't fix it, as commit
-1e92bf6d80b5a0a137455c96bf6cdd9c1a5b531e ("blackfin: twi: Move TWI MMR access
-macro to twi head file") created lots of duplicate definitions:
+> This small module helps measure the performance of rbtree insert and erase.
+> 
+> Additionally, we run a few correctness tests to check that the rbtrees have
+> all desired properties:
+> - contains the right number of nodes in the order desired,
+> - never two consecutive red nodes on any path,
+> - all paths to leaf nodes have the same number of black nodes,
+> - root node is black
+> 
+> Signed-off-by: Michel Lespinasse <walken@google.com>
+> ---
+>  Makefile            |    2 +-
+>  lib/Kconfig.debug   |    1 +
+>  tests/Kconfig       |   18 +++++++
+>  tests/Makefile      |    1 +
+>  tests/rbtree_test.c |  135 +++++++++++++++++++++++++++++++++++++++++++++++++++
 
-arch/blackfin/include/asm/bfin_twi.h:87:6: warning: "ANOMALY_05001001"
-is not defined [-Wundef]
-arch/blackfin/include/asm/bfin_twi.h:67:0: note: this is the location
-of the previous definition
-drivers/i2c/busses/i2c-bfin-twi.c:36:8: error: redefinition of 'struct
-bfin_twi_iface'
-arch/blackfin/include/asm/bfin_twi.h:46:8: note: originally defined here
-arch/blackfin/include/asm/bfin_twi.h:73:90: note: previous definition
-of 'read_CLKDIV' was here
-arch/blackfin/include/asm/bfin_twi.h:73:259: note: previous definition
-of 'write_CLKDIV' was here
-arch/blackfin/include/asm/bfin_twi.h:74:90: note: previous definition
-of 'read_CONTROL' was here
-arch/blackfin/include/asm/bfin_twi.h:74:261: note: previous definition
-of 'write_CONTROL' was here
-arch/blackfin/include/asm/bfin_twi.h:75:90: note: previous definition
-of 'read_SLAVE_CTL' was here
-arch/blackfin/include/asm/bfin_twi.h:75:265: note: previous definition
-of 'write_SLAVE_CTL' was here
-arch/blackfin/include/asm/bfin_twi.h:76:90: note: previous definition
-of 'read_SLAVE_STAT' was here
-arch/blackfin/include/asm/bfin_twi.h:76:267: note: previous definition
-of 'write_SLAVE_STAT' was here
-arch/blackfin/include/asm/bfin_twi.h:77:90: note: previous definition
-of 'read_SLAVE_ADDR' was here
-arch/blackfin/include/asm/bfin_twi.h:77:267: note: previous definition
-of 'write_SLAVE_ADDR' was here
-arch/blackfin/include/asm/bfin_twi.h:78:90: note: previous definition
-of 'read_MASTER_CTL' was here
-arch/blackfin/include/asm/bfin_twi.h:78:267: note: previous definition
-of 'write_MASTER_CTL' was here
-arch/blackfin/include/asm/bfin_twi.h:79:90: note: previous definition
-of 'read_MASTER_STAT' was here
-arch/blackfin/include/asm/bfin_twi.h:79:269: note: previous definition
-of 'write_MASTER_STAT' was here
-arch/blackfin/include/asm/bfin_twi.h:80:90: note: previous definition
-of 'read_MASTER_ADDR' was here
-arch/blackfin/include/asm/bfin_twi.h:80:269: note: previous definition
-of 'write_MASTER_ADDR' was here
-arch/blackfin/include/asm/bfin_twi.h:81:90: note: previous definition
-of 'read_INT_STAT' was here
-arch/blackfin/include/asm/bfin_twi.h:81:263: note: previous definition
-of 'write_INT_STAT' was here
-arch/blackfin/include/asm/bfin_twi.h:82:90: note: previous definition
-of 'read_INT_MASK' was here
-arch/blackfin/include/asm/bfin_twi.h:82:263: note: previous definition
-of 'write_INT_MASK' was here
-arch/blackfin/include/asm/bfin_twi.h:83:90: note: previous definition
-of 'read_FIFO_CTL' was here
-arch/blackfin/include/asm/bfin_twi.h:83:263: note: previous definition
-of 'write_FIFO_CTL' was here
-arch/blackfin/include/asm/bfin_twi.h:84:90: note: previous definition
-of 'read_FIFO_STAT' was here
-arch/blackfin/include/asm/bfin_twi.h:84:265: note: previous definition
-of 'write_FIFO_STAT' was here
-arch/blackfin/include/asm/bfin_twi.h:85:90: note: previous definition
-of 'read_XMT_DATA8' was here
-arch/blackfin/include/asm/bfin_twi.h:85:265: note: previous definition
-of 'write_XMT_DATA8' was here
-arch/blackfin/include/asm/bfin_twi.h:86:90: note: previous definition
-of 'read_XMT_DATA16' was here
-arch/blackfin/include/asm/bfin_twi.h:86:267: note: previous definition
-of 'write_XMT_DATA16' was here
-arch/blackfin/include/asm/bfin_twi.h:88:90: note: previous definition
-of 'read_RCV_DATA8' was here
-arch/blackfin/include/asm/bfin_twi.h:88:265: note: previous definition
-of 'write_RCV_DATA8' was here
-arch/blackfin/include/asm/bfin_twi.h:89:90: note: previous definition
-of 'read_RCV_DATA16' was here
-arch/blackfin/include/asm/bfin_twi.h:89:267: note: previous definition
-of 'write_RCV_DATA16' was here
+This patch does a new thing: adds a kernel self-test module into
+lib/tests/ and sets up the infrastructure to add new kernel self-test
+modules in that directory.
 
-So I gave up. A pity, considering BF537-STAMP_defconfig is the only
-blackfin config
-in http://kisskb.ellerman.id.au/kisskb/branch/3/.
+I don't see a problem with this per-se, but it is a new thing which we
+should think about.
 
-Gr{oetje,eeting}s,
+In previous such cases (eg, kernel/rcutorture.c) we put those modules
+into the same directory as the code which is being tested.  So to
+follow that pattern, this new code would have gone into lib/.
 
-                        Geert
+If we adopt your new proposal then we should perhaps also move tests
+such as rcutorture over into tests/.  And that makes one wonder whether
+we should have a standalone directory for kernel selftest modules.  eg
+tests/self-test-nmodules/.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
