@@ -1,63 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934364Ab2GMBtq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 21:49:46 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:65417 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933082Ab2GMBto (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 21:49:44 -0400
-Date: Thu, 12 Jul 2012 18:49:39 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Rolf Offermanns <rolf.offermanns@gmx.net>,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        Senthil Balasubramanian <senthilb@qca.qualcomm.com>,
-        Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: Re: [ 22/68] ath9k_hw: avoid possible infinite loop in
- ar9003_get_pll_sqsum_dvc
-Message-ID: <20120713014939.GA6732@kroah.com>
-References: <20120712175057.GA9917@kroah.com>
- <20120712175035.530652872@linuxfoundation.org>
- <20120712175037.411246837@linuxfoundation.org>
- <20120713013835.GA3121@herton-Z68MA-D2H-B3>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120713013835.GA3121@herton-Z68MA-D2H-B3>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S934375Ab2GMBtw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 21:49:52 -0400
+Received: from mga01.intel.com ([192.55.52.88]:24587 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933082Ab2GMBtt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 21:49:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="176742728"
+Message-ID: <1342144273.1682.237.camel@rui.sh.intel.com>
+Subject: RE: How to use the generic thermal sysfs.
+From: Zhang Rui <rui.zhang@intel.com>
+To: "R, Durgadoss" <durgadoss.r@intel.com>
+Cc: Wei Ni <wni@nvidia.com>, "Brown, Len" <len.brown@intel.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "khali@linux-fr.org" <khali@linux-fr.org>,
+        "joe@perches.com" <joe@perches.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@ger.kernel.org" <linux-tegra@ger.kernel.org>,
+        "acourbot@nvidia.com" <acourbot@nvidia.com>
+Date: Fri, 13 Jul 2012 09:51:13 +0800
+In-Reply-To: <4D68720C2E767A4AA6A8796D42C8EB5915287C@BGSMSX101.gar.corp.intel.com>
+References: <1342088573.27605.101.camel@tegra-chromium-2>
+	 <4D68720C2E767A4AA6A8796D42C8EB5915287C@BGSMSX101.gar.corp.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 12, 2012 at 10:38:35PM -0300, Herton Ronaldo Krzesinski wrote:
-> On Thu, Jul 12, 2012 at 04:01:56PM -0700, Greg Kroah-Hartman wrote:
-> > From: Greg KH <gregkh@linuxfoundation.org>
-> > 
-> > 3.0-stable review patch.  If anyone has any objections, please let me know.
-> > 
-> > ------------------
-> > 
-> > From: Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>
-> > 
-> > commit f18e3c6b67f448ec47b3a5b242789bd3d5644879 upstream.
-> > 
-> > "ath9k: Fix softlockup in AR9485" with commit id
-> > 64bc1239c790e051ff677e023435d770d2ffa174 fixed the reported
-> > issue, yet its better to avoid the possible infinite loop
-> > in ar9003_get_pll_sqsum_dvc by having a timeout as suggested
-> > by ath9k maintainers.
-> > http://www.spinics.net/lists/linux-wireless/msg92126.html.
-> > Based on my testing PLL's locking measurement is done in
-> > ~200us (2 iterations).
+On 四, 2012-07-12 at 04:54 -0600, R, Durgadoss wrote:
+> Hi,
 > 
-> Missing the rest of the patch here.
+> > -----Original Message-----
+> > From: Wei Ni [mailto:wni@nvidia.com]
+> > Sent: Thursday, July 12, 2012 3:53 PM
+> > To: Zhang, Rui; Brown, Len; akpm@linux-foundation.org; khali@linux-fr.org;
+> > joe@perches.com; R, Durgadoss
+> > Cc: linux-kernel@vger.kernel.org; linux-tegra@ger.kernel.org;
+> > acourbot@nvidia.com
+> > Subject: How to use the generic thermal sysfs.
+> > 
+> > Hi, all
+> > I'm working on the tegra thermal throttling upstream issue.
+> > The tegra30 board use the nct1008 as the thermal sensor, and the lm90 is
+> > the sensor driver. We want to use the generic thermal sysfs.
+> > 
+> > My question is where should we register the thermal zone device? We may
+> > have two place to do it:
+> > 1. register it in the sensor driver, such as lm90.c
+> > In this way, the sensor driver doesn't need to export any APIs, such as
+> > get_temp.
+> 
+> This approach is preferred.
+> 
+> > 2. register in my tegra thermal framework.
+> > In this way, the sensor driver need to export some APIs, which are used
+> > to register the ops and do any other things.
+> 
+> What do you mean by "my tegra thermal framework" ? Where does the source
+> file for this sit in the mainline kernel ?
+> 
+I have the same question.
+It sounds like that you want to use the tegra thermal framework to do
+thermal management instead of the generic thermal layer, right?
 
-Yeah, quilt went crazy and messed things up, the originals are fine,
-but something went really wrong when the mbox was created, sorry.  A
-number of different patches didn't go through properly.
+IMO, the purpose of the generic thermal layer is
+1) do kernel thermal management
+2) export unique sysfs I/F to userspace so that users/userspace
+applications can take over the thermal management.
 
-greg k-h
+what is the benefit to have another driver to do thermal management in
+kernel?
+If the current thermal management in the generic thermal layer can not
+work well on your platform, it is a good chance to enhance the kernel
+thermal manager. :)
+
+thanks,
+rui
+
+> > 
+> > How should I do it?
+> > 
+> > And in current codes, there have the event notification, in the form of
+> > a netlink event. But it's difficult to be used in the kernel, it's
+> > normally for the communication with user-space. How about to add a
+> > notify call chain for it? So when the sensor has irq alert, it can send
+> > a notify to my thermal framework in kernel.
+> 
+> We are working on a notification API from any generic sensor driver to
+> the thermal framework.
+> Please have a look at the 'notify_thermal_framework' API in the patch here:
+> http://www.spinics.net/lists/linux-acpi/msg36049.html
+> 
+> Thanks,
+> Durga
+> 
+
+
