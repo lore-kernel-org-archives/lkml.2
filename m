@@ -1,138 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932239Ab2GMIiK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 04:38:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11471 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755614Ab2GMIho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 04:37:44 -0400
-From: Asias He <asias@redhat.com>
-To: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Cc: Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
-        Shaohua Li <shli@kernel.org>
-Subject: [PATCH V3 1/3] block: Introduce __blk_segment_map_sg() helper
-Date: Fri, 13 Jul 2012 16:38:49 +0800
-Message-Id: <1342168731-11797-2-git-send-email-asias@redhat.com>
-In-Reply-To: <1342168731-11797-1-git-send-email-asias@redhat.com>
-References: <1342168731-11797-1-git-send-email-asias@redhat.com>
+	id S1756268Ab2GMIps (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 04:45:48 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:36053 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751439Ab2GMIpo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 04:45:44 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAOh2x=k6MDt5arZfPgrn8_tPu_zgPsD2e5y0-JyUkrx71Z6BNQ@mail.gmail.com>
+References: <1342166974-4490-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1342166974-4490-3-git-send-email-andriy.shevchenko@linux.intel.com>
+	<CAOh2x=k6MDt5arZfPgrn8_tPu_zgPsD2e5y0-JyUkrx71Z6BNQ@mail.gmail.com>
+Date: Fri, 13 Jul 2012 11:45:42 +0300
+Message-ID: <CAHp75VfiyLJKdSogHRDqU1TC-3icKAhCXa0hWbfnWEcNmJosTQ@mail.gmail.com>
+Subject: Re: [PATCH 3/3] dw_dmac: set default alignment
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: viresh kumar <viresh.kumar@linaro.org>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        linux-kernel@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        spear-devel <spear-devel@list.st.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split the mapping code in blk_rq_map_sg() to a helper
-__blk_segment_map_sg(), so that other mapping function, e.g.
-blk_bio_map_sg(), can share the code.
+On Fri, Jul 13, 2012 at 11:26 AM, viresh kumar <viresh.kumar@linaro.org> wrote:
+> It would be nice to keep spear-devel in cc, as this is the second
+> platform that uses this driver.
+I used to get the list of recipients via get_maintainer script. Will
+try to not forget about that address in the future.
 
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Shaohua Li <shli@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Suggested-by: Tejun Heo <tj@kernel.org>
-Suggested-by: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Asias He <asias@redhat.com>
----
- block/blk-merge.c |   80 ++++++++++++++++++++++++++++++-----------------------
- 1 file changed, 45 insertions(+), 35 deletions(-)
+>> The default values are filled to support at least mem-to-mem tests provided by
+>> dmatest module. It makes sense to choose the 4 bytes (2 least significant bits)
+>> alignment by the default.
 
-diff --git a/block/blk-merge.c b/block/blk-merge.c
-index 160035f..576b68e 100644
---- a/block/blk-merge.c
-+++ b/block/blk-merge.c
-@@ -110,6 +110,49 @@ static int blk_phys_contig_segment(struct request_queue *q, struct bio *bio,
- 	return 0;
- }
- 
-+static void
-+__blk_segment_map_sg(struct request_queue *q, struct bio_vec *bvec,
-+		     struct scatterlist *sglist, struct bio_vec **bvprv,
-+		     struct scatterlist **sg, int *nsegs, int *cluster)
-+{
-+
-+	int nbytes = bvec->bv_len;
-+
-+	if (*bvprv && *cluster) {
-+		if ((*sg)->length + nbytes > queue_max_segment_size(q))
-+			goto new_segment;
-+
-+		if (!BIOVEC_PHYS_MERGEABLE(*bvprv, bvec))
-+			goto new_segment;
-+		if (!BIOVEC_SEG_BOUNDARY(q, *bvprv, bvec))
-+			goto new_segment;
-+
-+		(*sg)->length += nbytes;
-+	} else {
-+new_segment:
-+		if (!*sg)
-+			*sg = sglist;
-+		else {
-+			/*
-+			 * If the driver previously mapped a shorter
-+			 * list, we could see a termination bit
-+			 * prematurely unless it fully inits the sg
-+			 * table on each mapping. We KNOW that there
-+			 * must be more entries here or the driver
-+			 * would be buggy, so force clear the
-+			 * termination bit to avoid doing a full
-+			 * sg_init_table() in drivers for each command.
-+			 */
-+			(*sg)->page_link &= ~0x02;
-+			*sg = sg_next(*sg);
-+		}
-+
-+		sg_set_page(*sg, bvec->bv_page, nbytes, bvec->bv_offset);
-+		(*nsegs)++;
-+	}
-+	*bvprv = bvec;
-+}
-+
- /*
-  * map a request to scatterlist, return number of sg entries setup. Caller
-  * must make sure sg can hold rq->nr_phys_segments entries
-@@ -131,41 +174,8 @@ int blk_rq_map_sg(struct request_queue *q, struct request *rq,
- 	bvprv = NULL;
- 	sg = NULL;
- 	rq_for_each_segment(bvec, rq, iter) {
--		int nbytes = bvec->bv_len;
--
--		if (bvprv && cluster) {
--			if (sg->length + nbytes > queue_max_segment_size(q))
--				goto new_segment;
--
--			if (!BIOVEC_PHYS_MERGEABLE(bvprv, bvec))
--				goto new_segment;
--			if (!BIOVEC_SEG_BOUNDARY(q, bvprv, bvec))
--				goto new_segment;
--
--			sg->length += nbytes;
--		} else {
--new_segment:
--			if (!sg)
--				sg = sglist;
--			else {
--				/*
--				 * If the driver previously mapped a shorter
--				 * list, we could see a termination bit
--				 * prematurely unless it fully inits the sg
--				 * table on each mapping. We KNOW that there
--				 * must be more entries here or the driver
--				 * would be buggy, so force clear the
--				 * termination bit to avoid doing a full
--				 * sg_init_table() in drivers for each command.
--				 */
--				sg->page_link &= ~0x02;
--				sg = sg_next(sg);
--			}
--
--			sg_set_page(sg, bvec->bv_page, nbytes, bvec->bv_offset);
--			nsegs++;
--		}
--		bvprv = bvec;
-+		__blk_segment_map_sg(q, bvec, sglist, &bvprv, &sg,
-+				     &nsegs, &cluster);
- 	} /* segments in rq */
- 
- 
+>> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+>> index 3d061c6..2a19ab6 100644
+>> --- a/drivers/dma/dw_dmac.c
+>> +++ b/drivers/dma/dw_dmac.c
+>> @@ -1485,6 +1485,12 @@ static int __devinit dw_probe(struct platform_device *pdev)
+>>         dw->dma.device_tx_status = dwc_tx_status;
+>>         dw->dma.device_issue_pending = dwc_issue_pending;
+>>
+>> +       /* Set default alignment */
+>> +       dw->dma.copy_align = 2;
+>> +       dw->dma.xor_align = 2;
+>> +       dw->dma.pq_align = 2;
+>> +       dw->dma.fill_align = 2;
+>
+> To understand it more, what does this mean? We will not support
+> transfers with unaligned
+> addresses/length to word size?
+The dmatest module uses those constants to get source, destination
+addresses and length of the test data aligned. On the other hand we
+can't use unaligned address in LLI because of the hardware restriction
+(2 bits are used for choosing AHB master).
+
+
 -- 
-1.7.10.4
-
+With Best Regards,
+Andy Shevchenko
