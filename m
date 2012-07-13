@@ -1,60 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757182Ab2GMKEW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 06:04:22 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:33923 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754557Ab2GMKEV (ORCPT
+	id S932335Ab2GMKEk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 06:04:40 -0400
+Received: from www.linutronix.de ([62.245.132.108]:43823 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932098Ab2GMKEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 06:04:21 -0400
+	Fri, 13 Jul 2012 06:04:38 -0400
+Date: Fri, 13 Jul 2012 12:04:35 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Chris Mason <chris.mason@fusionio.com>
+cc: Mike Galbraith <efault@gmx.de>,
+        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: 3.4.4-rt13: btrfs + xfstests 006 = BOOM.. and a bonus rt_mutex
+ deadlock report for absolutely free!
+In-Reply-To: <20120712170945.GJ32174@shiny>
+Message-ID: <alpine.LFD.2.02.1207131153020.32033@ionos>
+References: <1342072060.7338.102.camel@marge.simpson.net> <alpine.LFD.2.02.1207121253170.32033@ionos> <20120712170945.GJ32174@shiny>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20120713094232.GD18079@mudshark.cambridge.arm.com>
-References: <CAK2TD5ygowdy9t1TpfxAPbpvNQfMnMB-3Zp8TKMsTYtBZdGW=Q@mail.gmail.com>
-	<CAFNq8R6dNb0BrDVZScJ8s=P3B-OMgtr8tUdy8XqQcCAeUWuH+A@mail.gmail.com>
-	<CAK2TD5z2DticZAQ-Pxzo7YT9tx=YWZkwcn-YZJ3aQa4AFoE_Cw@mail.gmail.com>
-	<20120713094232.GD18079@mudshark.cambridge.arm.com>
-Date: Fri, 13 Jul 2012 18:04:20 +0800
-Message-ID: <CAK2TD5yE90+fU==Yw6vyZT8Nc5fXqUBAWiTJ4yu3_YCzfqgdOg@mail.gmail.com>
-Subject: Re: ARM: why smp_mb() is not needed in the "__mutex_fastpath_lock"
- and "__mutex_fastpath_unlock" functions
-From: shan kang <kangshan0910@gmail.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Li Haifeng <omycle@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        dittohuang@gmail.com, jumperz@live.cn
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yes, a customer reported an issue to me.
-After my investigation, I found the problem may be the lack of "dmb"
-in mutex_lock and mutex_unlock functions.
-Moreover, the issue could be resolved after the "dmb" was added.
+On Thu, 12 Jul 2012, Chris Mason wrote:
+> On Thu, Jul 12, 2012 at 05:07:58AM -0600, Thomas Gleixner wrote:
+> > On Thu, 12 Jul 2012, Mike Galbraith wrote:
+> > > crash> struct rt_mutex 0xffff8801770601c8
+> > > struct rt_mutex {
+> > >   wait_lock = {
+> > >     raw_lock = {
+> > >       slock = 7966
+> > >     }
+> > >   }, 
+> > >   wait_list = {
+> > >     node_list = {
+> > >       next = 0xffff880175eedbe0, 
+> > >       prev = 0xffff880175eedbe0
+> > >     }, 
+> > >     rawlock = 0xffff880175eedbd8, 
+> > 
+> > Urgh. Here is something completely wrong. That should point to
+> > wait_lock, i.e. the rt_mutex itself, but that points into lala land.
+> 
+> This is probably the memcpy you found later this morning, right?
 
-2012/7/13 Will Deacon <will.deacon@arm.com>:
-> On Fri, Jul 13, 2012 at 10:10:52AM +0100, shan kang wrote:
->> For example, in the following scenario, Process2  may get the wrong value;
->> Process1:
->> mutex_lock(&lock);
->> write data; (store operation)
->> mutex_unlock(&lock);
->>
->> Process2:
->> mutex_lock(&lock);
->> read data; (load operation)
->> mutex_unlock(&lock);
->
-> Yes, it looks like we can screw things up in the uncontended case (where
-> nobody blocks on the mutex). We could add an smp_mb after the lock operation
-> and another one before the unlock, but I'm tempted just to use
-> asm-generic/mutex-dec.h instead. The latter approach will subtly change the
-> current behaviour, so I'll post a patch when I'm happy with it.
->
-> Curious: did you find this by inspection or did you observe it going wrong?
->
-> Cheers,
->
-> Will
+As Mike found out, it looks like the culprit.
+ 
+> The reader/writer part in btrfs is just an optimization.  If we need
+> them to be all writer locks for RT purposes, that's not a problem.
+> 
+> But, before we go down that road, we do annotations trying
+> to make sure lockdep doesn't get confused about lock classes.  Basically
+> the tree is locked level by level.  So its safe to take eb->lock while
+> holding eb->lock as long as you follow the rules.
+> 
+> Are additional annotations required for RT?
+
+I don't think so. I'm sure it has been caused by the lock copying as
+well. Walking the wrong list can cause complete confusion all over the
+place. So lets wait for Mike beating the hell out of it.
+
+Find the patch with a proper changelog below.
+
+Thanks,
+
+	tglx
+------------------>
+From: Thomas Gleixner <tglx@linutronix.de>
+Date: Thu, 12 Jul 2012 15:30:02 +0200
+Subject: btrfs: Init io_lock after cloning btrfs device struct
+
+__btrfs_close_devices() clones btrfs device structs with
+memcpy(). Some of the fields in the clone are reinitialized, but it's
+missing to init io_lock. In mainline this goes unnoticed, but on RT it
+leaves the plist pointing to the original about to be freed lock
+struct.
+
+Initialize io_lock after cloning, so no references to the original
+struct are left.
+
+Reported-and-tested-by: Mike Galbraith <efault@gmx.de>
+Cc: stable@vger.kernel.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
+index 43baaf0..06c8ced 100644
+--- a/fs/btrfs/volumes.c
++++ b/fs/btrfs/volumes.c
+@@ -512,6 +512,7 @@ static int __btrfs_close_devices(struct btrfs_fs_devices *fs_devices)
+ 		new_device->writeable = 0;
+ 		new_device->in_fs_metadata = 0;
+ 		new_device->can_discard = 0;
++		spin_lock_init(&new_device->io_lock);
+ 		list_replace_rcu(&device->dev_list, &new_device->dev_list);
+ 
+ 		call_rcu(&device->rcu, free_device);
