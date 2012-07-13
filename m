@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932928Ab2GMKT1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 06:19:27 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:35178 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932482Ab2GMKTY (ORCPT
+	id S932967Ab2GMKTd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 06:19:33 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50565 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932885Ab2GMKT0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 06:19:24 -0400
+	Fri, 13 Jul 2012 06:19:26 -0400
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: Russell King <linux@arm.linux.org.uk>,
         Jason Wessel <jason.wessel@windriver.com>
@@ -15,9 +15,9 @@ Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linaro-kernel@lists.linaro.org, patches@linaro.org,
         kernel-team@android.com, kgdb-bugreport@lists.sourceforge.net
-Subject: [PATCH 7/8] ARM: versatile: Make able to use UART ports for KGDB FIQ debugger
-Date: Fri, 13 Jul 2012 03:16:47 -0700
-Message-Id: <1342174608-22407-7-git-send-email-anton.vorontsov@linaro.org>
+Subject: [PATCH 8/8] ARM: Get rid of .LCcralign local label usage in alignment_trap macro
+Date: Fri, 13 Jul 2012 03:16:48 -0700
+Message-Id: <1342174608-22407-8-git-send-email-anton.vorontsov@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <20120713101605.GA16139@lizard>
 References: <20120713101605.GA16139@lizard>
@@ -25,95 +25,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If enabled, kernel will able to enter KGDB upon serial line activity on
-UART ports.
+This makes the code more izolated.
 
-Note that even with this patch and CONFIG_KGDB_FIQ is enabled, you still
-need to pass kgdb_fiq.enable=1 kernel command line option, otherwise UART
-will behave in a normal way.
-
-By default UART0 is used, but this can be changed via kgdb_fiq.uart_num
-kernel command line option.
+The downside of this is that we now have an additional branch and the
+code itself is 8 bytes longer. But on the bright side, this new layout
+can be more cache friendly since cr_alignment address might be already
+in the cache line (not that I measured anything, it's just fun to think
+about it).
 
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 ---
- arch/arm/Kconfig                            |    1 +
- arch/arm/mach-versatile/Makefile            |    1 +
- arch/arm/mach-versatile/include/mach/irqs.h |    1 +
- arch/arm/mach-versatile/kgdb_fiq.c          |   31 +++++++++++++++++++++++++++
- 4 files changed, 34 insertions(+)
- create mode 100644 arch/arm/mach-versatile/kgdb_fiq.c
+ arch/arm/kernel/entry-armv.S     |    2 --
+ arch/arm/kernel/entry-header.S   |    6 +++++-
+ arch/arm/kernel/kgdb_fiq_entry.S |    3 ---
+ 3 files changed, 5 insertions(+), 6 deletions(-)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index ae6ddf1..c0df1ba 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -311,6 +311,7 @@ config ARCH_VERSATILE
- 	select ICST
- 	select GENERIC_CLOCKEVENTS
- 	select ARCH_WANT_OPTIONAL_GPIOLIB
-+	select ARCH_MIGHT_HAVE_FIQ
- 	select NEED_MACH_IO_H if PCI
- 	select PLAT_VERSATILE
- 	select PLAT_VERSATILE_CLCD
-diff --git a/arch/arm/mach-versatile/Makefile b/arch/arm/mach-versatile/Makefile
-index 81fa3fe..bfd761f 100644
---- a/arch/arm/mach-versatile/Makefile
-+++ b/arch/arm/mach-versatile/Makefile
-@@ -7,3 +7,4 @@ obj-$(CONFIG_ARCH_VERSATILE_PB)		+= versatile_pb.o
- obj-$(CONFIG_MACH_VERSATILE_AB)		+= versatile_ab.o
- obj-$(CONFIG_MACH_VERSATILE_DT)		+= versatile_dt.o
- obj-$(CONFIG_PCI)			+= pci.o
-+obj-$(CONFIG_KGDB_FIQ)			+= kgdb_fiq.o
-diff --git a/arch/arm/mach-versatile/include/mach/irqs.h b/arch/arm/mach-versatile/include/mach/irqs.h
-index bf44c61..fcd2a95 100644
---- a/arch/arm/mach-versatile/include/mach/irqs.h
-+++ b/arch/arm/mach-versatile/include/mach/irqs.h
-@@ -26,6 +26,7 @@
-  *  held within platform.h
-  */
- #define IRQ_VIC_START		0
-+#define FIQ_START		IRQ_VIC_START
- #define IRQ_WDOGINT		(IRQ_VIC_START + INT_WDOGINT)
- #define IRQ_SOFTINT		(IRQ_VIC_START + INT_SOFTINT)
- #define IRQ_COMMRx		(IRQ_VIC_START + INT_COMMRx)
-diff --git a/arch/arm/mach-versatile/kgdb_fiq.c b/arch/arm/mach-versatile/kgdb_fiq.c
-new file mode 100644
-index 0000000..3cdf71d
---- /dev/null
-+++ b/arch/arm/mach-versatile/kgdb_fiq.c
-@@ -0,0 +1,31 @@
-+/*
-+ * KGDB FIQ board support
-+ *
-+ * Copyright 2012 Linaro Ltd.
-+ *		  Anton Vorontsov <anton.vorontsov@linaro.org>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License version 2 as published
-+ * by the Free Software Foundation.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/kgdb.h>
-+#include <mach/hardware.h>
-+#include <mach/platform.h>
-+#include <asm/hardware/vic.h>
-+
-+static int kgdb_fiq;
-+module_param_named(uart_num, kgdb_fiq, int, 0600);
-+MODULE_PARM_DESC(uart_num, "UART<number> port to use for KGDB FIQ");
-+
-+static int __init kgdb_fiq_init(void)
-+{
-+	WARN_ON(kgdb_fiq > INT_UARTINT2 - INT_UARTINT0);
-+
-+	return kgdb_register_fiq(INT_UARTINT0 + kgdb_fiq,
-+				 vic_fiq_select,
-+				 vic_is_fiq_rised);
-+}
-+console_initcall(kgdb_fiq_init);
+diff --git a/arch/arm/kernel/entry-armv.S b/arch/arm/kernel/entry-armv.S
+index 6aeb9b8..6b04ab5 100644
+--- a/arch/arm/kernel/entry-armv.S
++++ b/arch/arm/kernel/entry-armv.S
+@@ -266,8 +266,6 @@ __pabt_svc:
+ ENDPROC(__pabt_svc)
+ 
+ 	.align	5
+-.LCcralign:
+-	.word	cr_alignment
+ #ifdef MULTI_DABORT
+ .LCprocfns:
+ 	.word	processor
+diff --git a/arch/arm/kernel/entry-header.S b/arch/arm/kernel/entry-header.S
+index c3c09ac..5a05e7f 100644
+--- a/arch/arm/kernel/entry-header.S
++++ b/arch/arm/kernel/entry-header.S
+@@ -38,9 +38,13 @@
+ 
+ 	.macro	alignment_trap, rtemp
+ #ifdef CONFIG_ALIGNMENT_TRAP
+-	ldr	\rtemp, .LCcralign
++	ldr	\rtemp, 1f
+ 	ldr	\rtemp, [\rtemp]
+ 	mcr	p15, 0, \rtemp, c1, c0
++	b	2f
++1:
++	.word	cr_alignment
++2:
+ #endif
+ 	.endm
+ 
+diff --git a/arch/arm/kernel/kgdb_fiq_entry.S b/arch/arm/kernel/kgdb_fiq_entry.S
+index 7be3726..e7c05fc 100644
+--- a/arch/arm/kernel/kgdb_fiq_entry.S
++++ b/arch/arm/kernel/kgdb_fiq_entry.S
+@@ -18,9 +18,6 @@
+ 
+ 	.text
+ 
+-@ This is needed for usr_entry/alignment_trap
+-.LCcralign:
+-	.long	cr_alignment
+ .LCdohandle:
+ 	.long	kgdb_fiq_do_handle
+ 
 -- 
 1.7.10.4
 
