@@ -1,49 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933511Ab2GMSNA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 14:13:00 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:57451 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932677Ab2GMSM7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 14:12:59 -0400
+	id S1030833Ab2GMSTt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 14:19:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15027 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754828Ab2GMSTr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 14:19:47 -0400
+Date: Fri, 13 Jul 2012 21:19:53 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Dominic Eschweiler <eschweiler@fias.uni-frankfurt.de>
+Cc: "Hans J. Koch" <hjk@hansjkoch.de>, Andreas Schallenberg <embedded@gmx.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, kvm@vger.kernel.org
+Subject: Re: UIO: missing resource mapping
+Message-ID: <20120713181953.GA11527@redhat.com>
+References: <4FFE7C1F.7080702@gmx.net>
+ <20120712194432.GA2592@local>
+ <20120712231632.GC9317@redhat.com>
+ <1342166955.6607.5.camel@blech>
+ <20120713132223.GA10959@redhat.com>
+ <1342190571.6607.36.camel@blech>
 MIME-Version: 1.0
-In-Reply-To: <5000259D.9020303@canonical.com>
-References: <5000259D.9020303@canonical.com>
-Date: Fri, 13 Jul 2012 11:12:58 -0700
-X-Google-Sender-Auth: LImyXLkzQrwKp_vxPPhmjND01Ak
-Message-ID: <CAE9FiQUxRyVLu-sgrQ-GtRye=CqGHcf9=WA-omz1s5GrxofrJg@mail.gmail.com>
-Subject: Re: x86/mm: Limit 2/4M size calculation to x86_32
-From: Yinghai Lu <yinghai@kernel.org>
-To: Stefan Bader <stefan.bader@canonical.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, WANG Cong <xiyou.wangcong@gmail.com>,
-        Tejun Heo <tj@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1342190571.6607.36.camel@blech>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 13, 2012 at 6:41 AM, Stefan Bader
-<stefan.bader@canonical.com> wrote:
-> I was bisecting a problem on 64bit where any attempt to cause a crash kernel to
-> boot would hang. The bisect ended up on commit 722bc6b (x86/mm: Fix the size
-> calculation of mapping tables) and somehow, looking at the calling function and
-> the ranges printed on boot, I think the calculations should only be done in the
-> 32bit case.
->
-> On 64bit:
-> [    0.000000] init_memory_mapping: [mem 0x00000000-0x77e87fff]
-> [    0.000000]  [mem 0x00000000-0x77dfffff] page 2M
-> [    0.000000]  [mem 0x77e00000-0x77e87fff] page 4k
->
-> Attached patch would fix this if you agree with it. Thanks.
+On Fri, Jul 13, 2012 at 04:42:51PM +0200, Dominic Eschweiler wrote:
+> Am Freitag, den 13.07.2012, 16:22 +0300 schrieb Michael S. Tsirkin:
+> > Could you give an example of the problem? How do you bind
+> > both UIO and another driver to the same device? 
+> 
+> Sorry, I'm looking on it from the user-space perspective. Maybe I'm
+> wrong, but I can give you an example :
+> 
+> lspci -v
+> ...
+> 03:00.0 Network controller: Broadcom Corporation BCM4331 802.11a/b/g/n
+> (rev 02)
+> 	Subsystem: Apple Inc. AirPort Extreme
+> 	Flags: bus master, fast devsel, latency 0, IRQ 17
+> 	Memory at b0600000 (64-bit, non-prefetchable) [size=16K]
+> 	Capabilities: [40] Power Management version 3
+> 	Capabilities: [58] Vendor Specific Information: Len=78 <?>
+> 	Capabilities: [48] MSI: Enable- Count=1/1 Maskable- 64bit+
+> 	Capabilities: [d0] Express Endpoint, MSI 00
+> 	Capabilities: [100] Advanced Error Reporting
+> 	Capabilities: [13c] Virtual Channel
+> 	Capabilities: [160] Device Serial Number 85-f2-6d-ff-ff-42-68-a8
+> 	Capabilities: [16c] Power Budgeting <?>
+> 	Kernel driver in use: bcma-pci-bridge
+> ...
+> 
+> This Device has one 64 Bit Bar. When I look at the related sysfs
+> entry ...
+> 
+> 
+> ls /sys/bus/pci/devices/0000:03:00.0
+> ...
+> --w------- 1 root root 4.0K Jul 13 16:35 reset
+> -r--r--r-- 1 root root 4.0K Jul 12 21:43 resource
+> -rw------- 1 root root  16K Jul 13 16:35 resource0
+> lrwxrwxrwx 1 root root    0 Jul 12 23:41 subsystem
+> -> ../../../../bus/pci
+> ...
+> 
+> ... I can see that it should be possible to map resource0 and directly
+> write into a BAR which is already managed by a kernel drivers. 
+> 
+> Moving this functionality to UIO would only generate those resource
+> files, if the device is handled by UIO and therefore intended to be
+> managed from the user-space. 
 
-it does not look like for the hang for your system. maybe just because
-it change a bit memblock allocation layout.
+UIO has the same property, doesn't it? Multiple users can
+access device memory through sysfs.
 
-can you please post whole boot log that is working and not?
 
-Thanks
-
-Yinghai
+> -- 
+> Gruß
+>   Dominic
