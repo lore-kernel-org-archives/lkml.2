@@ -1,55 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755497Ab2GMILG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 04:11:06 -0400
-Received: from mga14.intel.com ([143.182.124.37]:13242 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754940Ab2GMIJ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 04:09:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="167610904"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Viresh Kumar <viresh.linux@gmail.com>, linux-kernel@vger.kernel.org,
-        Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH 3/3] dw_dmac: set default alignment
-Date: Fri, 13 Jul 2012 11:09:34 +0300
-Message-Id: <1342166974-4490-3-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1342166974-4490-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1342166974-4490-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	id S1755282Ab2GMIMv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 04:12:51 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:7791 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751441Ab2GMIMl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 04:12:41 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Fri, 13 Jul 2012 01:12:23 -0700
+Subject: RE: How to use the generic thermal sysfs.
+From: Wei Ni <wni@nvidia.com>
+To: Zhang Rui <rui.zhang@intel.com>
+CC: "R, Durgadoss" <durgadoss.r@intel.com>, "Brown, Len" <len.brown@intel.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "khali@linux-fr.org" <khali@linux-fr.org>,
+        "joe@perches.com" <joe@perches.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@ger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Alex Courbot <acourbot@nvidia.com>
+In-Reply-To: <1342165278.1682.259.camel@rui.sh.intel.com>
+References: <1342088573.27605.101.camel@tegra-chromium-2>
+	 <4D68720C2E767A4AA6A8796D42C8EB5915287C@BGSMSX101.gar.corp.intel.com>
+	 <1342144273.1682.237.camel@rui.sh.intel.com>
+	 <1342164616.27605.129.camel@tegra-chromium-2>
+	 <1342165278.1682.259.camel@rui.sh.intel.com>
+Date: Fri, 13 Jul 2012 16:11:27 +0800
+Message-ID: <1342167087.27605.158.camel@tegra-chromium-2>
+MIME-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The default values are filled to support at least mem-to-mem tests provided by
-dmatest module. It makes sense to choose the 4 bytes (2 least significant bits)
-alignment by the default.
+On Fri, 2012-07-13 at 15:41 +0800, Zhang Rui wrote:
+> On 五, 2012-07-13 at 15:30 +0800, Wei Ni wrote:
+> > Our tegra thermal framework also will use the generic thermal layer. It
+> > will register the cooling device, and run the throttling in this generic
+> > framework.
+> > But we have a special mechanism, when the temp is below the trip temp,
+> > we will set different cpu capability for different temp range. For
+> > example, set the low/high temp as 20C/30C to the sensor, and set the cpu
+> > to the max capability, it mean the cpu can run up to the max freq and
+> > voltage in this temp range. if the temp is out that range, the sensor
+> > will have irq/alert to notify the tegra framework, then we will set to
+> > another temperature range and cpu capability.
+> > I think we can try to add this mechanism to the generic framework as a
+> > new policy, right?
+> > 
+> I think you can make use of the upper&lower limit in my patch set.
+> Say, here is your thermal policy
+> 20C - 30C, P0
+> 30C - 40C, P1 - P2
+> 40C - 60C, P3 - P5
+> 60C+, P6 ~ Pn
+> 
+> you can register to the thermal layer 4 passive trip points,
+> 20C, 30C, 40C, 60C, and then
+> 1) for trip 0 (20C), upper limit 0, lower limit 0
+> 2) for trip 1 (30C), upper limit 2, lower limit 1
+> 3) for trip 2 (40C), upper limit 5, lower limit 3
+> 4) for trip 3 (60C), upper limit n, lower limit 6
+> 
+> you can program your own sensor to get interrupt when the temperature
+> hits 20C/30C/40C/60C, and the generic thermal layer will put the
+> processors to proper frequency for each trip point.
+> 
+> what do you think?
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
----
- drivers/dma/dw_dmac.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+It's great, this is exactly what we need.
+I think for these trip points, we can use a new trip type, such as
+TRIP_LIMIT, and use new policy. Because in these state, we only need to
+set the processors to proper frequency capability, it's not like the
+passive type, the currently passive type will try to set cooling device
+state continually.
+And for these trip temp, it's better to add hysteresis value, so that it
+can avoid unnecessary interrupt.
 
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index 3d061c6..2a19ab6 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@ -1485,6 +1485,12 @@ static int __devinit dw_probe(struct platform_device *pdev)
- 	dw->dma.device_tx_status = dwc_tx_status;
- 	dw->dma.device_issue_pending = dwc_issue_pending;
- 
-+	/* Set default alignment */
-+	dw->dma.copy_align = 2;
-+	dw->dma.xor_align = 2;
-+	dw->dma.pq_align = 2;
-+	dw->dma.fill_align = 2;
-+
- 	dma_writel(dw, CFG, DW_CFG_DMA_EN);
- 
- 	printk(KERN_INFO "%s: DesignWare DMA Controller, %d channels\n",
--- 
-1.7.10.4
+> 
+> BTW, the upper and lower limit is introduced in the patch set I'm
+> testing, so maybe you were not aware of it.
+
+How can I get these codes?
+
+> 
+> thanks,
+> rui
+
 
