@@ -1,601 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030352Ab2GMKkG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 06:40:06 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:42162 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932653Ab2GMKkD (ORCPT
+	id S1030368Ab2GMKmd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 06:42:33 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:61914 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030272Ab2GMKmc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 06:40:03 -0400
-Date: Fri, 13 Jul 2012 11:39:51 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "chris@zankel.net" <chris@zankel.net>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>
-Subject: Re: [PATCH 2/3] ipc: allow compat IPC version field parsing if
- !ARCH_WANT_OLD_COMPAT_IPC
-Message-ID: <20120713103951.GF18079@mudshark.cambridge.arm.com>
-References: <1342020741-12758-1-git-send-email-will.deacon@arm.com>
- <1342020741-12758-3-git-send-email-will.deacon@arm.com>
- <20120711144001.b1f7c21d.akpm@linux-foundation.org>
- <20120712084756.GB2816@mudshark.cambridge.arm.com>
- <20120712015949.88692ecf.akpm@linux-foundation.org>
+	Fri, 13 Jul 2012 06:42:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120712015949.88692ecf.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CA+icZUUHQsUqSnKBwUxG2yoiTAfatgPSZBT974_u95DkVZ5S6w@mail.gmail.com>
+References: <CA+icZUVorJNMQ3wyz8WuZop_fwwOuBo38wZg9s9RJizhM0yc-w@mail.gmail.com>
+	<5B8DA87D05A7694D9FA63FD143655C1B13B4A9@HASMSX103.ger.corp.intel.com>
+	<CA+icZUUHQsUqSnKBwUxG2yoiTAfatgPSZBT974_u95DkVZ5S6w@mail.gmail.com>
+Date: Fri, 13 Jul 2012 12:42:30 +0200
+Message-ID: <CA+icZUUg-5aLcC0cfRaDYSiwRbX_Y8K2O6s+gOEzHZRGpCakZg@mail.gmail.com>
+Subject: Re: [3.5-rc6+] mei: irq: request_threaded_irq is missing the
+ IRQF_ONESHOT flag
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: "Winkler, Tomas" <tomas.winkler@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Roland Dreier <roland@purestorage.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM List <linux-pm@lists.linux-foundation.org>
+Content-Type: multipart/mixed; boundary=e89a8f22c72bab375804c4b3bc60
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 12, 2012 at 09:59:49AM +0100, Andrew Morton wrote:
-> > > 
-> > > Could we do this purely in Kconfig?  Add a new
-> > > CONFIG_ARCH_WANT_COMPAT_IPC_PARSE_VERSION and always set it true if
-> > > CONFIG_ARCH_WANT_OLD_COMPAT_IPC?
+--e89a8f22c72bab375804c4b3bc60
+Content-Type: text/plain; charset=UTF-8
 
-[...]
+On Fri, Jul 13, 2012 at 12:29 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> On Fri, Jul 13, 2012 at 12:15 PM, Winkler, Tomas
+> <tomas.winkler@intel.com> wrote:
+>>
+>>
+>>> -----Original Message-----
+>>> From: Sedat Dilek [mailto:sedat.dilek@gmail.com]
+>>> Sent: Friday, July 13, 2012 12:48 PM
+>>> To: Winkler, Tomas
+>>> Cc: Thomas Gleixner; LKML; Greg Kroah-Hartman; Roland Dreier
+>>> Subject: [3.5-rc6+] mei: irq: request_threaded_irq is missing the
+>>> IRQF_ONESHOT flag
+>>>
+>>> Hi,
+>>>
+>>> while dealing with [1], I saw this mei-related infos in dmesg when doing a
+>>> suspend + resume (see [1] for more logs):
+>>
+>> The fix is included in this post pull request http://marc.info/?l=linux-kernel&m=134201523903406&w=2
+>>
+>
+> [ CC Rafael @ linux-pm ML ]
+>
+> Hmm, I have this commit in my local GIT buil-tree already:
+>
+> $ git log --oneline | grep "mei: pci_resume: set IRQF_ONESHOT for msi
+> request_threaded_irq"
+> 16a50b1 mei: pci_resume: set IRQF_ONESHOT for msi request_threaded_irq
+>
+> Dunno, if it's a PM related problem? As I see this:
+>
+> [17047.460520] PM: Device 0000:00:16.0 failed to resume async: error -22
+>
+> BTW, what is "wd:" and what means if it "failed"?
+>
+> [   23.646041] mei 0000:00:16.0: irq 47 for MSI/MSI-X
+> [   23.650677] mei 0000:00:16.0: wd: failed to find the client
+>
+> - Sedat -
+>
+> [1] http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=16a50b1270455a6d41f9f6d8f99a72cf9d76824a
+>
+>> Thanks
+>> Tomas
+>>
+>>
 
-> It would be best to change both as a separate patch.
+Grr, looking into the wrong logs, I did a S/R with the *new* kernel
+including Thomas mei-fix!
+It's really fixed.
+Sorry for the noise - more coffee for me & all who like it.
 
-Ok, here's the patch. It's messier than I originally anticipated since more
-architectures were defining __ARCH_WANT_IPC_PARSE_VERSION than I thought.
-The only conditional define that I spotted was for x86 (#if CONFIG_X86_32)
-but I've not been able to test on architectures other than ARM.
+- Sedat -
 
-Cheers,
+--e89a8f22c72bab375804c4b3bc60
+Content-Type: text/plain; charset=US-ASCII; 
+	name="dmesg_3.5.0-rc6-2-iniza-generic_mei-suspend-resume-OK.txt"
+Content-Disposition: attachment; 
+	filename="dmesg_3.5.0-rc6-2-iniza-generic_mei-suspend-resume-OK.txt"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h4l4zpk20
 
-Will
-
----8<---
-
->From a34cd86747ed2992974984bcfe1fe939ba31e1b2 Mon Sep 17 00:00:00 2001
-From: Will Deacon <will.deacon@arm.com>
-Date: Thu, 12 Jul 2012 17:56:40 +0100
-Subject: [PATCH] ipc: use Kconfig options for __ARCH_WANT_[COMPAT_]IPC_PARSE_VERSION
-
-Rather than #define the options manually in the architecture code,
-add Kconfig options for them and select them there instead. This also
-allows us to select the compat IPC version parsing automatically for
-platforms using the old compat IPC interface.
-
-Reported-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
----
- arch/Kconfig                         |    7 +++++++
- arch/alpha/Kconfig                   |    1 +
- arch/alpha/include/asm/unistd.h      |    1 -
- arch/arm/Kconfig                     |    1 +
- arch/arm/include/asm/unistd.h        |    1 -
- arch/avr32/Kconfig                   |    1 +
- arch/avr32/include/asm/unistd.h      |    1 -
- arch/blackfin/Kconfig                |    1 +
- arch/blackfin/include/asm/unistd.h   |    1 -
- arch/cris/Kconfig                    |    1 +
- arch/cris/include/asm/unistd.h       |    1 -
- arch/frv/Kconfig                     |    1 +
- arch/frv/include/asm/unistd.h        |    1 -
- arch/h8300/Kconfig                   |    1 +
- arch/h8300/include/asm/unistd.h      |    1 -
- arch/m32r/Kconfig                    |    1 +
- arch/m32r/include/asm/unistd.h       |    1 -
- arch/m68k/Kconfig                    |    1 +
- arch/m68k/include/asm/unistd.h       |    1 -
- arch/microblaze/Kconfig              |    1 +
- arch/microblaze/include/asm/unistd.h |    1 -
- arch/mips/Kconfig                    |    1 +
- arch/mips/include/asm/unistd.h       |    1 -
- arch/mn10300/Kconfig                 |    1 +
- arch/mn10300/include/asm/unistd.h    |    1 -
- arch/powerpc/Kconfig                 |    1 +
- arch/powerpc/include/asm/unistd.h    |    1 -
- arch/s390/Kconfig                    |    1 +
- arch/s390/include/asm/unistd.h       |    1 -
- arch/sh/Kconfig                      |    1 +
- arch/sh/include/asm/unistd.h         |    1 -
- arch/sparc/Kconfig                   |    1 +
- arch/sparc/include/asm/unistd.h      |    1 -
- arch/x86/Kconfig                     |    1 +
- arch/x86/include/asm/unistd.h        |    1 -
- include/linux/compat.h               |    1 -
- ipc/compat.c                         |    2 +-
- ipc/util.c                           |    4 ++--
- ipc/util.h                           |    2 +-
- 39 files changed, 28 insertions(+), 22 deletions(-)
-
-diff --git a/arch/Kconfig b/arch/Kconfig
-index 8c3d957..72f2fa1 100644
---- a/arch/Kconfig
-+++ b/arch/Kconfig
-@@ -248,7 +248,14 @@ config HAVE_CMPXCHG_LOCAL
- config HAVE_CMPXCHG_DOUBLE
- 	bool
- 
-+config ARCH_WANT_IPC_PARSE_VERSION
-+	bool
-+
-+config ARCH_WANT_COMPAT_IPC_PARSE_VERSION
-+	bool
-+
- config ARCH_WANT_OLD_COMPAT_IPC
-+	select ARCH_WANT_COMPAT_IPC_PARSE_VERSION
- 	bool
- 
- config HAVE_ARCH_SECCOMP_FILTER
-diff --git a/arch/alpha/Kconfig b/arch/alpha/Kconfig
-index 3de74c9..1c2172b 100644
---- a/arch/alpha/Kconfig
-+++ b/arch/alpha/Kconfig
-@@ -17,6 +17,7 @@ config ALPHA
- 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
- 	select GENERIC_SMP_IDLE_THREAD
- 	select GENERIC_CMOS_UPDATE
-+	select ARCH_WANT_IPC_PARSE_VERSION
- 	help
- 	  The Alpha is a 64-bit general-purpose processor designed and
- 	  marketed by the Digital Equipment Corporation of blessed memory,
-diff --git a/arch/alpha/include/asm/unistd.h b/arch/alpha/include/asm/unistd.h
-index d1f23b7..633b23b 100644
---- a/arch/alpha/include/asm/unistd.h
-+++ b/arch/alpha/include/asm/unistd.h
-@@ -470,7 +470,6 @@
- 
- #define NR_SYSCALLS			504
- 
--#define __ARCH_WANT_IPC_PARSE_VERSION
- #define __ARCH_WANT_OLD_READDIR
- #define __ARCH_WANT_STAT64
- #define __ARCH_WANT_SYS_GETHOSTNAME
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index a91009c..66812bb 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -45,6 +45,7 @@ config ARM
- 	select GENERIC_SMP_IDLE_THREAD
- 	select KTIME_SCALAR
- 	select GENERIC_CLOCKEVENTS_BROADCAST if SMP
-+	select ARCH_WANT_IPC_PARSE_VERSION
- 	help
- 	  The ARM series is a line of low-power-consumption RISC chip designs
- 	  licensed by ARM Ltd and targeted at embedded applications and
-diff --git a/arch/arm/include/asm/unistd.h b/arch/arm/include/asm/unistd.h
-index 512cd14..0cab47d 100644
---- a/arch/arm/include/asm/unistd.h
-+++ b/arch/arm/include/asm/unistd.h
-@@ -446,7 +446,6 @@
- 
- #ifdef __KERNEL__
- 
--#define __ARCH_WANT_IPC_PARSE_VERSION
- #define __ARCH_WANT_STAT64
- #define __ARCH_WANT_SYS_GETHOSTNAME
- #define __ARCH_WANT_SYS_PAUSE
-diff --git a/arch/avr32/Kconfig b/arch/avr32/Kconfig
-index 71d38c7..5602831 100644
---- a/arch/avr32/Kconfig
-+++ b/arch/avr32/Kconfig
-@@ -14,6 +14,7 @@ config AVR32
- 	select ARCH_HAVE_CUSTOM_GPIO_H
- 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
- 	select GENERIC_CLOCKEVENTS
-+	select ARCH_WANT_IPC_PARSE_VERSION
- 	help
- 	  AVR32 is a high-performance 32-bit RISC microprocessor core,
- 	  designed for cost-sensitive embedded applications, with particular
-diff --git a/arch/avr32/include/asm/unistd.h b/arch/avr32/include/asm/unistd.h
-index f714544..1358e36 100644
---- a/arch/avr32/include/asm/unistd.h
-+++ b/arch/avr32/include/asm/unistd.h
-@@ -318,7 +318,6 @@
- /* SMP stuff */
- #define __IGNORE_getcpu
- 
--#define __ARCH_WANT_IPC_PARSE_VERSION
- #define __ARCH_WANT_STAT64
- #define __ARCH_WANT_SYS_ALARM
- #define __ARCH_WANT_SYS_GETHOSTNAME
-diff --git a/arch/blackfin/Kconfig b/arch/blackfin/Kconfig
-index fef96f4..abe8f3f 100644
---- a/arch/blackfin/Kconfig
-+++ b/arch/blackfin/Kconfig
-@@ -40,6 +40,7 @@ config BLACKFIN
- 	select HAVE_NMI_WATCHDOG if NMI_WATCHDOG
- 	select GENERIC_SMP_IDLE_THREAD
- 	select ARCH_USES_GETTIMEOFFSET if !GENERIC_CLOCKEVENTS
-+	select ARCH_WANT_IPC_PARSE_VERSION
- 
- config GENERIC_CSUM
- 	def_bool y
-diff --git a/arch/blackfin/include/asm/unistd.h b/arch/blackfin/include/asm/unistd.h
-index 3287222..5b2a074 100644
---- a/arch/blackfin/include/asm/unistd.h
-+++ b/arch/blackfin/include/asm/unistd.h
-@@ -434,7 +434,6 @@
- #define __IGNORE_getcpu
- 
- #ifdef __KERNEL__
--#define __ARCH_WANT_IPC_PARSE_VERSION
- #define __ARCH_WANT_STAT64
- #define __ARCH_WANT_SYS_ALARM
- #define __ARCH_WANT_SYS_GETHOSTNAME
-diff --git a/arch/cris/Kconfig b/arch/cris/Kconfig
-index bb34465..ea877a0 100644
---- a/arch/cris/Kconfig
-+++ b/arch/cris/Kconfig
-@@ -46,6 +46,7 @@ config CRIS
- 	select GENERIC_IOMAP
- 	select GENERIC_SMP_IDLE_THREAD if ETRAX_ARCH_V32
- 	select GENERIC_CMOS_UPDATE
-+	select ARCH_WANT_IPC_PARSE_VERSION
- 
- config HZ
- 	int
-diff --git a/arch/cris/include/asm/unistd.h b/arch/cris/include/asm/unistd.h
-index f921b8b..51873a4 100644
---- a/arch/cris/include/asm/unistd.h
-+++ b/arch/cris/include/asm/unistd.h
-@@ -347,7 +347,6 @@
- 
- #include <arch/unistd.h>
- 
--#define __ARCH_WANT_IPC_PARSE_VERSION
- #define __ARCH_WANT_OLD_READDIR
- #define __ARCH_WANT_OLD_STAT
- #define __ARCH_WANT_STAT64
-diff --git a/arch/frv/Kconfig b/arch/frv/Kconfig
-index a685910..971c0a1 100644
---- a/arch/frv/Kconfig
-+++ b/arch/frv/Kconfig
-@@ -9,6 +9,7 @@ config FRV
- 	select GENERIC_IRQ_SHOW
- 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
- 	select GENERIC_CPU_DEVICES
-+	select ARCH_WANT_IPC_PARSE_VERSION
- 
- config ZONE_DMA
- 	bool
-diff --git a/arch/frv/include/asm/unistd.h b/arch/frv/include/asm/unistd.h
-index a569dff..67f23a3 100644
---- a/arch/frv/include/asm/unistd.h
-+++ b/arch/frv/include/asm/unistd.h
-@@ -349,7 +349,6 @@
- 
- #define NR_syscalls 338
- 
--#define __ARCH_WANT_IPC_PARSE_VERSION
- /* #define __ARCH_WANT_OLD_READDIR */
- #define __ARCH_WANT_OLD_STAT
- #define __ARCH_WANT_STAT64
-diff --git a/arch/h8300/Kconfig b/arch/h8300/Kconfig
-index 56e890d..82379089 100644
---- a/arch/h8300/Kconfig
-+++ b/arch/h8300/Kconfig
-@@ -5,6 +5,7 @@ config H8300
- 	select HAVE_GENERIC_HARDIRQS
- 	select GENERIC_IRQ_SHOW
- 	select GENERIC_CPU_DEVICES
-+	select ARCH_WANT_IPC_PARSE_VERSION
- 
- config SYMBOL_PREFIX
- 	string
-diff --git a/arch/h8300/include/asm/unistd.h b/arch/h8300/include/asm/unistd.h
-index 7185113..5cd8828 100644
---- a/arch/h8300/include/asm/unistd.h
-+++ b/arch/h8300/include/asm/unistd.h
-@@ -331,7 +331,6 @@
- 
- #define NR_syscalls 321
- 
--#define __ARCH_WANT_IPC_PARSE_VERSION
- #define __ARCH_WANT_OLD_READDIR
- #define __ARCH_WANT_OLD_STAT
- #define __ARCH_WANT_STAT64
-diff --git a/arch/m32r/Kconfig b/arch/m32r/Kconfig
-index b638d5b..828e5af 100644
---- a/arch/m32r/Kconfig
-+++ b/arch/m32r/Kconfig
-@@ -12,6 +12,7 @@ config M32R
- 	select GENERIC_IRQ_SHOW
- 	select GENERIC_ATOMIC64
- 	select ARCH_USES_GETTIMEOFFSET
-+	select ARCH_WANT_IPC_PARSE_VERSION
- 
- config SBUS
- 	bool
-diff --git a/arch/m32r/include/asm/unistd.h b/arch/m32r/include/asm/unistd.h
-index 3e1db56..d5e66a4 100644
---- a/arch/m32r/include/asm/unistd.h
-+++ b/arch/m32r/include/asm/unistd.h
-@@ -336,7 +336,6 @@
- 
- #define NR_syscalls 326
- 
--#define __ARCH_WANT_IPC_PARSE_VERSION
- #define __ARCH_WANT_STAT64
- #define __ARCH_WANT_SYS_ALARM
- #define __ARCH_WANT_SYS_GETHOSTNAME
-diff --git a/arch/m68k/Kconfig b/arch/m68k/Kconfig
-index 1471201..baecf8b 100644
---- a/arch/m68k/Kconfig
-+++ b/arch/m68k/Kconfig
-@@ -11,6 +11,7 @@ config M68K
- 	select GENERIC_STRNLEN_USER if MMU
- 	select FPU if MMU
- 	select ARCH_USES_GETTIMEOFFSET if MMU && !COLDFIRE
-+	select ARCH_WANT_IPC_PARSE_VERSION
- 
- config RWSEM_GENERIC_SPINLOCK
- 	bool
-diff --git a/arch/m68k/include/asm/unistd.h b/arch/m68k/include/asm/unistd.h
-index ea0b502..045cfd6 100644
---- a/arch/m68k/include/asm/unistd.h
-+++ b/arch/m68k/include/asm/unistd.h
-@@ -357,7 +357,6 @@
- 
- #define NR_syscalls		347
- 
--#define __ARCH_WANT_IPC_PARSE_VERSION
- #define __ARCH_WANT_OLD_READDIR
- #define __ARCH_WANT_OLD_STAT
- #define __ARCH_WANT_STAT64
-diff --git a/arch/microblaze/Kconfig b/arch/microblaze/Kconfig
-index 0bf4423..b5ebd9f 100644
---- a/arch/microblaze/Kconfig
-+++ b/arch/microblaze/Kconfig
-@@ -23,6 +23,7 @@ config MICROBLAZE
- 	select GENERIC_CPU_DEVICES
- 	select GENERIC_ATOMIC64
- 	select GENERIC_CLOCKEVENTS
-+	select ARCH_WANT_IPC_PARSE_VERSION
- 
- config SWAP
- 	def_bool n
-diff --git a/arch/microblaze/include/asm/unistd.h b/arch/microblaze/include/asm/unistd.h
-index d20ffbc..6985e6e 100644
---- a/arch/microblaze/include/asm/unistd.h
-+++ b/arch/microblaze/include/asm/unistd.h
-@@ -400,7 +400,6 @@
- #ifdef __KERNEL__
- #ifndef __ASSEMBLY__
- 
--#define __ARCH_WANT_IPC_PARSE_VERSION
- /* #define __ARCH_WANT_OLD_READDIR */
- /* #define __ARCH_WANT_OLD_STAT */
- #define __ARCH_WANT_STAT64
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index 09ab87e..e6da9cb 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -34,6 +34,7 @@ config MIPS
- 	select BUILDTIME_EXTABLE_SORT
- 	select GENERIC_CLOCKEVENTS
- 	select GENERIC_CMOS_UPDATE
-+	select ARCH_WANT_IPC_PARSE_VERSION
- 
- menu "Machine selection"
- 
-diff --git a/arch/mips/include/asm/unistd.h b/arch/mips/include/asm/unistd.h
-index d8dad53..bebbde0 100644
---- a/arch/mips/include/asm/unistd.h
-+++ b/arch/mips/include/asm/unistd.h
-@@ -1034,7 +1034,6 @@
- #ifndef __ASSEMBLY__
- 
- #define __ARCH_OMIT_COMPAT_SYS_GETDENTS64
--#define __ARCH_WANT_IPC_PARSE_VERSION
- #define __ARCH_WANT_OLD_READDIR
- #define __ARCH_WANT_SYS_ALARM
- #define __ARCH_WANT_SYS_GETHOSTNAME
-diff --git a/arch/mn10300/Kconfig b/arch/mn10300/Kconfig
-index 687f9b4..17f0ada 100644
---- a/arch/mn10300/Kconfig
-+++ b/arch/mn10300/Kconfig
-@@ -7,6 +7,7 @@ config MN10300
- 	select HAVE_ARCH_KGDB
- 	select HAVE_NMI_WATCHDOG if MN10300_WD_TIMER
- 	select GENERIC_CLOCKEVENTS
-+	select ARCH_WANT_IPC_PARSE_VERSION
- 
- config AM33_2
- 	def_bool n
-diff --git a/arch/mn10300/include/asm/unistd.h b/arch/mn10300/include/asm/unistd.h
-index 9051f92..866eb14 100644
---- a/arch/mn10300/include/asm/unistd.h
-+++ b/arch/mn10300/include/asm/unistd.h
-@@ -358,7 +358,6 @@
- /*
-  * specify the deprecated syscalls we want to support on this arch
-  */
--#define __ARCH_WANT_IPC_PARSE_VERSION
- #define __ARCH_WANT_OLD_READDIR
- #define __ARCH_WANT_OLD_STAT
- #define __ARCH_WANT_STAT64
-diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-index 050cb37..e5491e3 100644
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -137,6 +137,7 @@ config PPC
- 	select GENERIC_CLOCKEVENTS
- 	select GENERIC_STRNCPY_FROM_USER
- 	select GENERIC_STRNLEN_USER
-+	select ARCH_WANT_IPC_PARSE_VERSION
- 
- config EARLY_PRINTK
- 	bool
-diff --git a/arch/powerpc/include/asm/unistd.h b/arch/powerpc/include/asm/unistd.h
-index d3d1b5e..bd377a3 100644
---- a/arch/powerpc/include/asm/unistd.h
-+++ b/arch/powerpc/include/asm/unistd.h
-@@ -389,7 +389,6 @@
- #include <linux/compiler.h>
- #include <linux/linkage.h>
- 
--#define __ARCH_WANT_IPC_PARSE_VERSION
- #define __ARCH_WANT_OLD_READDIR
- #define __ARCH_WANT_STAT64
- #define __ARCH_WANT_SYS_ALARM
-diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
-index a39b469..3c6e6b2 100644
---- a/arch/s390/Kconfig
-+++ b/arch/s390/Kconfig
-@@ -121,6 +121,7 @@ config S390
- 	select GENERIC_TIME_VSYSCALL
- 	select GENERIC_CLOCKEVENTS
- 	select KTIME_SCALAR if 32BIT
-+	select ARCH_WANT_IPC_PARSE_VERSION
- 
- config SCHED_OMIT_FRAME_POINTER
- 	def_bool y
-diff --git a/arch/s390/include/asm/unistd.h b/arch/s390/include/asm/unistd.h
-index 8a8008f..7c89143 100644
---- a/arch/s390/include/asm/unistd.h
-+++ b/arch/s390/include/asm/unistd.h
-@@ -390,7 +390,6 @@
- #define __IGNORE_recvmmsg
- #define __IGNORE_sendmmsg
- 
--#define __ARCH_WANT_IPC_PARSE_VERSION
- #define __ARCH_WANT_OLD_READDIR
- #define __ARCH_WANT_SYS_ALARM
- #define __ARCH_WANT_SYS_GETHOSTNAME
-diff --git a/arch/sh/Kconfig b/arch/sh/Kconfig
-index 31d9db7..fbe39e1 100644
---- a/arch/sh/Kconfig
-+++ b/arch/sh/Kconfig
-@@ -34,6 +34,7 @@ config SUPERH
- 	select GENERIC_CMOS_UPDATE if SH_SH03 || SH_DREAMCAST
- 	select GENERIC_STRNCPY_FROM_USER
- 	select GENERIC_STRNLEN_USER
-+	select ARCH_WANT_IPC_PARSE_VERSION
- 	help
- 	  The SuperH is a RISC processor targeted for use in embedded systems
- 	  and consumer electronics; it was also used in the Sega Dreamcast
-diff --git a/arch/sh/include/asm/unistd.h b/arch/sh/include/asm/unistd.h
-index e800a38..7bc6707 100644
---- a/arch/sh/include/asm/unistd.h
-+++ b/arch/sh/include/asm/unistd.h
-@@ -6,7 +6,6 @@
- # endif
- 
- # define __ARCH_WANT_SYS_RT_SIGSUSPEND
--# define __ARCH_WANT_IPC_PARSE_VERSION
- # define __ARCH_WANT_OLD_READDIR
- # define __ARCH_WANT_OLD_STAT
- # define __ARCH_WANT_STAT64
-diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
-index e74ff13..9245798 100644
---- a/arch/sparc/Kconfig
-+++ b/arch/sparc/Kconfig
-@@ -36,6 +36,7 @@ config SPARC
- 	select GENERIC_CLOCKEVENTS
- 	select GENERIC_STRNCPY_FROM_USER
- 	select GENERIC_STRNLEN_USER
-+	select ARCH_WANT_IPC_PARSE_VERSION
- 
- config SPARC32
- 	def_bool !64BIT
-diff --git a/arch/sparc/include/asm/unistd.h b/arch/sparc/include/asm/unistd.h
-index c7cb0af..fb26934 100644
---- a/arch/sparc/include/asm/unistd.h
-+++ b/arch/sparc/include/asm/unistd.h
-@@ -423,7 +423,6 @@
- #endif
- 
- #ifdef __KERNEL__
--#define __ARCH_WANT_IPC_PARSE_VERSION
- #define __ARCH_WANT_OLD_READDIR
- #define __ARCH_WANT_STAT64
- #define __ARCH_WANT_SYS_ALARM
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index c70684f..e906467 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -95,6 +95,7 @@ config X86
- 	select KTIME_SCALAR if X86_32
- 	select GENERIC_STRNCPY_FROM_USER
- 	select GENERIC_STRNLEN_USER
-+	select ARCH_WANT_IPC_PARSE_VERSION if X86_32
- 
- config INSTRUCTION_DECODER
- 	def_bool (KPROBES || PERF_EVENTS || UPROBES)
-diff --git a/arch/x86/include/asm/unistd.h b/arch/x86/include/asm/unistd.h
-index 4437001..0d9776e 100644
---- a/arch/x86/include/asm/unistd.h
-+++ b/arch/x86/include/asm/unistd.h
-@@ -15,7 +15,6 @@
- # ifdef CONFIG_X86_32
- 
- #  include <asm/unistd_32.h>
--#  define __ARCH_WANT_IPC_PARSE_VERSION
- #  define __ARCH_WANT_STAT64
- #  define __ARCH_WANT_SYS_IPC
- #  define __ARCH_WANT_SYS_OLD_MMAP
-diff --git a/include/linux/compat.h b/include/linux/compat.h
-index f2b8fe2..09b28b7 100644
---- a/include/linux/compat.h
-+++ b/include/linux/compat.h
-@@ -256,7 +256,6 @@ compat_sys_get_robust_list(int pid, compat_uptr_t __user *head_ptr,
- 			   compat_size_t __user *len_ptr);
- 
- #ifdef CONFIG_ARCH_WANT_OLD_COMPAT_IPC
--#define __ARCH_WANT_COMPAT_IPC_PARSE_VERSION
- long compat_sys_semctl(int first, int second, int third, void __user *uptr);
- long compat_sys_msgsnd(int first, int second, int third, void __user *uptr);
- long compat_sys_msgrcv(int first, int second, int msgtyp, int third,
-diff --git a/ipc/compat.c b/ipc/compat.c
-index 20f92b2..ad9518e 100644
---- a/ipc/compat.c
-+++ b/ipc/compat.c
-@@ -118,7 +118,7 @@ extern int sem_ctls[];
- 
- static inline int compat_ipc_parse_version(int *cmd)
- {
--#ifdef	__ARCH_WANT_COMPAT_IPC_PARSE_VERSION
-+#ifdef	CONFIG_ARCH_WANT_COMPAT_IPC_PARSE_VERSION
- 	int version = *cmd & IPC_64;
- 
- 	/* this is tricky: architectures that have support for the old
-diff --git a/ipc/util.c b/ipc/util.c
-index 75261a3..eb07fd3 100644
---- a/ipc/util.c
-+++ b/ipc/util.c
-@@ -804,7 +804,7 @@ out_up:
- 	return ERR_PTR(err);
- }
- 
--#ifdef __ARCH_WANT_IPC_PARSE_VERSION
-+#ifdef CONFIG_ARCH_WANT_IPC_PARSE_VERSION
- 
- 
- /**
-@@ -826,7 +826,7 @@ int ipc_parse_version (int *cmd)
- 	}
- }
- 
--#endif /* __ARCH_WANT_IPC_PARSE_VERSION */
-+#endif /* CONFIG_ARCH_WANT_IPC_PARSE_VERSION */
- 
- #ifdef CONFIG_PROC_FS
- struct ipc_proc_iter {
-diff --git a/ipc/util.h b/ipc/util.h
-index 6f5c20b..850ef3e 100644
---- a/ipc/util.h
-+++ b/ipc/util.h
-@@ -130,7 +130,7 @@ struct kern_ipc_perm *ipcctl_pre_down(struct ipc_namespace *ns,
- 				      struct ipc_ids *ids, int id, int cmd,
- 				      struct ipc64_perm *perm, int extra_perm);
- 
--#ifndef __ARCH_WANT_IPC_PARSE_VERSION
-+#ifndef CONFIG_ARCH_WANT_IPC_PARSE_VERSION
-   /* On IA-64, we always use the "64-bit version" of the IPC structures.  */ 
- # define ipc_parse_version(cmd)	IPC_64
- #else
--- 
-1.7.4.1
-
+WyA5OTA1LjM5MzMyOF0gd2xhbjA6IGRlYXV0aGVudGljYXRpbmcgZnJvbSAwMDowNDowZTplNDow
+MDozZCBieSBsb2NhbCBjaG9pY2UgKHJlYXNvbj0zKQpbIDk5MDUuNDA3NzQ0XSBjZmc4MDIxMTog
+QWxsIGRldmljZXMgYXJlIGRpc2Nvbm5lY3RlZCwgZ29pbmcgdG8gcmVzdG9yZSByZWd1bGF0b3J5
+IHNldHRpbmdzClsgOTkwNS40MDc3NDldIGNmZzgwMjExOiBSZXN0b3JpbmcgcmVndWxhdG9yeSBz
+ZXR0aW5ncwpbIDk5MDUuNDA3NzU0XSBjZmc4MDIxMTogQ2FsbGluZyBDUkRBIHRvIHVwZGF0ZSB3
+b3JsZCByZWd1bGF0b3J5IGRvbWFpbgpbIDk5MDUuNTE5ODk3XSBjZmc4MDIxMTogSWdub3Jpbmcg
+cmVndWxhdG9yeSByZXF1ZXN0IFNldCBieSBjb3JlIHNpbmNlIHRoZSBkcml2ZXIgdXNlcyBpdHMg
+b3duIGN1c3RvbSByZWd1bGF0b3J5IGRvbWFpbgpbIDk5MDUuNTE5OTAwXSBjZmc4MDIxMTogV29y
+bGQgcmVndWxhdG9yeSBkb21haW4gdXBkYXRlZDoKWyA5OTA1LjUxOTkwMV0gY2ZnODAyMTE6ICAg
+KHN0YXJ0X2ZyZXEgLSBlbmRfZnJlcSBAIGJhbmR3aWR0aCksIChtYXhfYW50ZW5uYV9nYWluLCBt
+YXhfZWlycCkKWyA5OTA1LjUxOTkwM10gY2ZnODAyMTE6ICAgKDI0MDIwMDAgS0h6IC0gMjQ3MjAw
+MCBLSHogQCA0MDAwMCBLSHopLCAoMzAwIG1CaSwgMjAwMCBtQm0pClsgOTkwNS41MTk5MDRdIGNm
+ZzgwMjExOiAgICgyNDU3MDAwIEtIeiAtIDI0ODIwMDAgS0h6IEAgMjAwMDAgS0h6KSwgKDMwMCBt
+QmksIDIwMDAgbUJtKQpbIDk5MDUuNTE5OTA1XSBjZmc4MDIxMTogICAoMjQ3NDAwMCBLSHogLSAy
+NDk0MDAwIEtIeiBAIDIwMDAwIEtIeiksICgzMDAgbUJpLCAyMDAwIG1CbSkKWyA5OTA1LjUxOTkw
+Nl0gY2ZnODAyMTE6ICAgKDUxNzAwMDAgS0h6IC0gNTI1MDAwMCBLSHogQCA0MDAwMCBLSHopLCAo
+MzAwIG1CaSwgMjAwMCBtQm0pClsgOTkwNS41MTk5MDddIGNmZzgwMjExOiAgICg1NzM1MDAwIEtI
+eiAtIDU4MzUwMDAgS0h6IEAgNDAwMDAgS0h6KSwgKDMwMCBtQmksIDIwMDAgbUJtKQpbIDk5MDcu
+NDM3NzE1XSBQTTogU3luY2luZyBmaWxlc3lzdGVtcyAuLi4gZG9uZS4KWyA5OTA3LjQ1MTM4MF0g
+UE06IFByZXBhcmluZyBzeXN0ZW0gZm9yIG1lbSBzbGVlcApbIDk5MDcuOTY5MzU5XSBGcmVlemlu
+ZyB1c2VyIHNwYWNlIHByb2Nlc3NlcyAuLi4gKGVsYXBzZWQgMC4wMSBzZWNvbmRzKSBkb25lLgpb
+IDk5MDcuOTg1MzQ0XSBGcmVlemluZyByZW1haW5pbmcgZnJlZXphYmxlIHRhc2tzIC4uLiAoZWxh
+cHNlZCAwLjAxIHNlY29uZHMpIGRvbmUuClsgOTkwOC4wMDE0MjddIFBNOiBFbnRlcmluZyBtZW0g
+c2xlZXAKWyA5OTA4LjAwMTUxNV0gU3VzcGVuZGluZyBjb25zb2xlKHMpICh1c2Ugbm9fY29uc29s
+ZV9zdXNwZW5kIHRvIGRlYnVnKQpbIDk5MDguMDAxNzYxXSBzZCAxOjA6MDowOiBbc2RiXSBTeW5j
+aHJvbml6aW5nIFNDU0kgY2FjaGUKWyA5OTA4LjAwMTk0MV0gc2QgMDowOjA6MDogW3NkYV0gU3lu
+Y2hyb25pemluZyBTQ1NJIGNhY2hlClsgOTkwOC4wMDQ1NjNdIHNkIDE6MDowOjA6IFtzZGJdIFN0
+b3BwaW5nIGRpc2sKWyA5OTA4LjAxNDA3OF0gc2QgMDowOjA6MDogW3NkYV0gU3RvcHBpbmcgZGlz
+awpbIDk5MDguNjA4OTQ1XSBQTTogc3VzcGVuZCBvZiBkZXZpY2VzIGNvbXBsZXRlIGFmdGVyIDYw
+Ny43NjYgbXNlY3MKWyA5OTA4LjYwODk0Nl0gUE06IHN1c3BlbmQgZGV2aWNlcyB0b29rIDAuNjA4
+IHNlY29uZHMKWyA5OTA4LjYwOTA3Ml0gUE06IGxhdGUgc3VzcGVuZCBvZiBkZXZpY2VzIGNvbXBs
+ZXRlIGFmdGVyIDAuMTI0IG1zZWNzClsgOTkwOC42MjQ5ODJdIHI4MTY5IDAwMDA6MDI6MDAuMDog
+d2FrZS11cCBjYXBhYmlsaXR5IGVuYWJsZWQgYnkgQUNQSQpbIDk5MDguNzA0ODc1XSBQTTogbm9p
+cnEgc3VzcGVuZCBvZiBkZXZpY2VzIGNvbXBsZXRlIGFmdGVyIDk1Ljg2NSBtc2VjcwpbIDk5MDgu
+NzA1MTA3XSBBQ1BJOiBQcmVwYXJpbmcgdG8gZW50ZXIgc3lzdGVtIHNsZWVwIHN0YXRlIFMzClsg
+OTkwOC43Mjg5NDVdIFBNOiBTYXZpbmcgcGxhdGZvcm0gTlZTIG1lbW9yeQpbIDk5MDguNzMzNjg0
+XSBEaXNhYmxpbmcgbm9uLWJvb3QgQ1BVcyAuLi4KWyA5OTA4LjgzNjY5NF0gQ1BVIDEgaXMgbm93
+IG9mZmxpbmUKWyA5OTA4Ljk0MDYyNV0gQ1BVIDIgaXMgbm93IG9mZmxpbmUKWyA5OTA5LjA0NDU0
+NF0gQ1BVIDMgaXMgbm93IG9mZmxpbmUKWyA5OTA5LjA0NDkxOV0gRXh0ZW5kZWQgQ01PUyB5ZWFy
+OiAyMDAwClsgOTkwOS4wNDYxNjNdIEFDUEk6IExvdy1sZXZlbCByZXN1bWUgY29tcGxldGUKWyA5
+OTA5LjA0NjIxMF0gUE06IFJlc3RvcmluZyBwbGF0Zm9ybSBOVlMgbWVtb3J5ClsgOTkwOS4wNDc0
+NTNdIEV4dGVuZGVkIENNT1MgeWVhcjogMjAwMApbIDk5MDkuMDQ3NDk4XSBFbmFibGluZyBub24t
+Ym9vdCBDUFVzIC4uLgpbIDk5MDkuMDQ3NTkwXSBCb290aW5nIE5vZGUgMCBQcm9jZXNzb3IgMSBB
+UElDIDB4MQpbIDk5MDkuMDU4Njk3XSBEaXNhYmxlZCBmYXN0IHN0cmluZyBvcGVyYXRpb25zClsg
+OTkwOS4wNjEzMjBdIENQVTEgaXMgdXAKWyA5OTA5LjA2MTQ0MV0gQm9vdGluZyBOb2RlIDAgUHJv
+Y2Vzc29yIDIgQVBJQyAweDIKWyA5OTA5LjA3MjQ3Nl0gRGlzYWJsZWQgZmFzdCBzdHJpbmcgb3Bl
+cmF0aW9ucwpbIDk5MDkuMDc1MTE1XSBDUFUyIGlzIHVwClsgOTkwOS4wNzUyMTZdIEJvb3Rpbmcg
+Tm9kZSAwIFByb2Nlc3NvciAzIEFQSUMgMHgzClsgOTkwOS4wODYyNTBdIERpc2FibGVkIGZhc3Qg
+c3RyaW5nIG9wZXJhdGlvbnMKWyA5OTA5LjA4ODkxN10gQ1BVMyBpcyB1cApbIDk5MDkuMDkzNzcy
+XSBBQ1BJOiBXYWtpbmcgdXAgZnJvbSBzeXN0ZW0gc2xlZXAgc3RhdGUgUzMKWyA5OTA5LjE0MTM0
+MV0gUE06IG5vaXJxIHJlc3VtZSBvZiBkZXZpY2VzIGNvbXBsZXRlIGFmdGVyIDIuMTk5IG1zZWNz
+ClsgOTkwOS4xNDE0NTBdIFBNOiBlYXJseSByZXN1bWUgb2YgZGV2aWNlcyBjb21wbGV0ZSBhZnRl
+ciAwLjA2NCBtc2VjcwpbIDk5MDkuMTQxNDgyXSBpOTE1IDAwMDA6MDA6MDIuMDogc2V0dGluZyBs
+YXRlbmN5IHRpbWVyIHRvIDY0ClsgOTkwOS4xNDE1NjldIG1laSAwMDAwOjAwOjE2LjA6IGlycSA0
+NyBmb3IgTVNJL01TSS1YClsgOTkwOS4xNDE2MzNdIGVoY2lfaGNkIDAwMDA6MDA6MWEuMDogc2V0
+dGluZyBsYXRlbmN5IHRpbWVyIHRvIDY0ClsgOTkwOS4xNDE2NzddIGVoY2lfaGNkIDAwMDA6MDA6
+MWQuMDogc2V0dGluZyBsYXRlbmN5IHRpbWVyIHRvIDY0ClsgOTkwOS4xNDE2NzldIGFoY2kgMDAw
+MDowMDoxZi4yOiBzZXR0aW5nIGxhdGVuY3kgdGltZXIgdG8gNjQKWyA5OTA5LjE0MTY5OV0gc25k
+X2hkYV9pbnRlbCAwMDAwOjAwOjFiLjA6IGlycSA1MCBmb3IgTVNJL01TSS1YClsgOTkwOS4xNDE3
+NTVdIHI4MTY5IDAwMDA6MDI6MDAuMDogd2FrZS11cCBjYXBhYmlsaXR5IGRpc2FibGVkIGJ5IEFD
+UEkKWyA5OTA5LjE0MTg0Nl0gaXdsd2lmaSAwMDAwOjAxOjAwLjA6IFJGX0tJTEwgYml0IHRvZ2ds
+ZWQgdG8gZW5hYmxlIHJhZGlvLgpbIDk5MDkuMTQxODYyXSB1c2IgdXNiMzogcm9vdCBodWIgbG9z
+dCBwb3dlciBvciB3YXMgcmVzZXQKWyA5OTA5LjE0MTg2NV0gdXNiIHVzYjQ6IHJvb3QgaHViIGxv
+c3QgcG93ZXIgb3Igd2FzIHJlc2V0ClsgOTkwOS4xNDY1OTJdIHhoY2lfaGNkIDAwMDA6MDM6MDAu
+MDogaXJxIDQxIGZvciBNU0kvTVNJLVgKWyA5OTA5LjE0NjU5OF0geGhjaV9oY2QgMDAwMDowMzow
+MC4wOiBpcnEgNDIgZm9yIE1TSS9NU0ktWApbIDk5MDkuMTQ2NjA0XSB4aGNpX2hjZCAwMDAwOjAz
+OjAwLjA6IGlycSA0MyBmb3IgTVNJL01TSS1YClsgOTkwOS4xNDY2MTBdIHhoY2lfaGNkIDAwMDA6
+MDM6MDAuMDogaXJxIDQ0IGZvciBNU0kvTVNJLVgKWyA5OTA5LjE0NjYxNl0geGhjaV9oY2QgMDAw
+MDowMzowMC4wOiBpcnEgNDUgZm9yIE1TSS9NU0ktWApbIDk5MDkuMTQ3MDA2XSBtZWkgMDAwMDow
+MDoxNi4wOiB3ZDogZmFpbGVkIHRvIGZpbmQgdGhlIGNsaWVudApbIDk5MDkuMjA1MjQ5XSBbZHJt
+XSBFbmFibGluZyBSQzYgc3RhdGVzOiBSQzYgb24sIFJDNnAgb2ZmLCBSQzZwcCBvZmYKWyA5OTA5
+LjQ3NDgxNV0gYXRhNDogU0FUQSBsaW5rIGRvd24gKFNTdGF0dXMgMCBTQ29udHJvbCAzMDApClsg
+OTkwOS40ODI3OTFdIGF0YTU6IFNBVEEgbGluayBkb3duIChTU3RhdHVzIDAgU0NvbnRyb2wgMzAw
+KQpbIDk5MDkuNDkwNzk5XSBhdGEyOiBTQVRBIGxpbmsgdXAgMy4wIEdicHMgKFNTdGF0dXMgMTIz
+IFNDb250cm9sIDMwMCkKWyA5OTA5LjQ5NTE0Nl0gYXRhMi4wMDogY29uZmlndXJlZCBmb3IgVURN
+QS8xMzMKWyA5OTA5LjUxMDg2Ml0gc2QgMTowOjA6MDogW3NkYl0gU3RhcnRpbmcgZGlzawpbIDk5
+MDkuNTc4ODc3XSB1c2IgMi0xLjQ6IHJlc2V0IGxvdy1zcGVlZCBVU0IgZGV2aWNlIG51bWJlciAz
+IHVzaW5nIGVoY2lfaGNkClsgOTkwOS45MzA2NzddIHVzYiAxLTEuNDogcmVzZXQgaGlnaC1zcGVl
+ZCBVU0IgZGV2aWNlIG51bWJlciAzIHVzaW5nIGVoY2lfaGNkClsgOTkxMS42ODEyMjhdIGF0YTE6
+IFNBVEEgbGluayB1cCAzLjAgR2JwcyAoU1N0YXR1cyAxMjMgU0NvbnRyb2wgMzAwKQpbIDk5MTEu
+NjgzNjcwXSBhdGExLjAwOiBjb25maWd1cmVkIGZvciBVRE1BLzEzMwpbIDk5MTEuNjk3MzE0XSBz
+ZCAwOjA6MDowOiBbc2RhXSBTdGFydGluZyBkaXNrClsgOTkxMS43MjE3NjZdIFBNOiByZXN1bWUg
+b2YgZGV2aWNlcyBjb21wbGV0ZSBhZnRlciAyNTgyLjE0MSBtc2VjcwpbIDk5MTEuNzIxODM5XSBQ
+TTogcmVzdW1lIGRldmljZXMgdG9vayAyLjU4NCBzZWNvbmRzClsgOTkxMS43MjE4NzFdIFBNOiBG
+aW5pc2hpbmcgd2FrZXVwLgpbIDk5MTEuNzIxODcyXSBSZXN0YXJ0aW5nIHRhc2tzIC4uLiBkb25l
+LgpbIDk5MTEuNzM0Mzc2XSB2aWRlbyBMTlhWSURFTzowMDogUmVzdG9yaW5nIGJhY2tsaWdodCBz
+dGF0ZQpbIDk5MTIuMjY2MDY5XSBpd2x3aWZpIDAwMDA6MDE6MDAuMDogTDEgRW5hYmxlZDsgRGlz
+YWJsaW5nIEwwUwpbIDk5MTIuMjczMjA0XSBpd2x3aWZpIDAwMDA6MDE6MDAuMDogUmFkaW8gdHlw
+ZT0weDEtMHgyLTB4MApbIDk5MTIuMzg2OTAxXSBJUHY2OiBBRERSQ09ORihORVRERVZfVVApOiB3
+bGFuMDogbGluayBpcyBub3QgcmVhZHkKWyA5OTE4LjcxMTk5Ml0gd2xhbjA6IGF1dGhlbnRpY2F0
+ZSB3aXRoIDAwOjA0OjBlOmU0OjAwOjNkClsgOTkxOC43MjE1MTJdIHdsYW4wOiBzZW5kIGF1dGgg
+dG8gMDA6MDQ6MGU6ZTQ6MDA6M2QgKHRyeSAxLzMpClsgOTkxOC43MjMyODZdIHdsYW4wOiBhdXRo
+ZW50aWNhdGVkClsgOTkxOC43MjQyMDhdIHdsYW4wOiBhc3NvY2lhdGUgd2l0aCAwMDowNDowZTpl
+NDowMDozZCAodHJ5IDEvMykKWyA5OTE4LjcyODA3NF0gd2xhbjA6IFJYIEFzc29jUmVzcCBmcm9t
+IDAwOjA0OjBlOmU0OjAwOjNkIChjYXBhYj0weDQxMSBzdGF0dXM9MCBhaWQ9MSkKWyA5OTE4Ljcz
+MTQ2OV0gd2xhbjA6IGFzc29jaWF0ZWQKWyA5OTE4LjczMjI5OV0gSVB2NjogQUREUkNPTkYoTkVU
+REVWX0NIQU5HRSk6IHdsYW4wOiBsaW5rIGJlY29tZXMgcmVhZHkK
+--e89a8f22c72bab375804c4b3bc60--
