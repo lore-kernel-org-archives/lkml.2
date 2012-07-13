@@ -1,46 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756203Ab2GMPyJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 11:54:09 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:44361 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754290Ab2GMPyH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 11:54:07 -0400
-Message-ID: <5000449C.3000505@hp.com>
-Date: Fri, 13 Jul 2012 09:54:04 -0600
-From: Khalid Aziz <khalid.aziz@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: linux-kernel@vger.kernel.org, tony.luck@intel.com, mikew@google.com,
-        keescook@chromium.org, gong.chen@linux.intel.com
-Subject: Re: [PATCH] Add missing attributes to EFI variable attribute print
- out from sysfs
-References: <20120713153827.GA8007@hp.com> <20120713154645.GA16059@srcf.ucam.org>
-In-Reply-To: <20120713154645.GA16059@srcf.ucam.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S932640Ab2GMPzx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 11:55:53 -0400
+Received: from mga11.intel.com ([192.55.52.93]:43637 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932103Ab2GMPzv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 11:55:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="176980441"
+From: Octavian Purdila <octavian.purdila@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org,
+        Octavian Purdila <octavian.purdila@intel.com>,
+        Ram Pai <linuxram@us.ibm.com>
+Subject: [PATCH v3] resource: make sure requested range is included in the root range
+Date: Fri, 13 Jul 2012 18:55:40 +0300
+Message-Id: <1342194940-6163-1-git-send-email-octavian.purdila@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/13/2012 09:46 AM, Matthew Garrett wrote:
-> On Fri, Jul 13, 2012 at 09:38:27AM -0600, Khalid Aziz wrote:
->>   	if (var->Attributes & 0x4)
->>   		str += sprintf(str, "EFI_VARIABLE_RUNTIME_ACCESS\n");
-> I know you're just following the pattern of the existing code, but could
-> you change these to be more like
->
-> if (var->Attributes & EFI_VARIABLE_RUNTIME_ACCESS)
->
-> while you're at it? I think that'd be a worthwhile cleanup.
->
+When the requested range is outside of the root range the logic in
+__reserve_region_with_split will cause an infinite recursion which
+will overflow the stack as seen in the warning bellow.
 
-That is a good suggestion. I will make the changes and send out updated 
-version.
+This particular stack overflow was caused by requesting the
+(100000000-107ffffff) range while the root range was (0-ffffffff). In
+this case __request_resource would return the whole root range as
+conflict range (i.e. 0-ffffffff). Then, the logic in
+__reserve_region_with_split would continue the recursion requesting
+the new range as (conflict->end+1, end) which incidentally in this
+case equals the originally requested range.
 
+This patch aborts looking for an usable range when the request does
+not intersect with the root range. When the request partially overlaps
+with the root range, it ajust the request to fall in the root range
+and then continues with the new request.
+
+When the request is modified or aborted errors and a stack trace are
+logged to allow catching the errors in the upper layers.
+
+[    5.968374] WARNING: at kernel/sched.c:4129 sub_preempt_count+0x63/0x89()
+[    5.975150] Modules linked in:
+[    5.978184] Pid: 1, comm: swapper Not tainted 3.0.22-mid27-00004-gb72c817 #46
+[    5.985324] Call Trace:
+[    5.987759]  [<c1039dfc>] ? console_unlock+0x17b/0x18d
+[    5.992891]  [<c1039620>] warn_slowpath_common+0x48/0x5d
+[    5.998194]  [<c1031758>] ? sub_preempt_count+0x63/0x89
+[    6.003412]  [<c1039644>] warn_slowpath_null+0xf/0x13
+[    6.008453]  [<c1031758>] sub_preempt_count+0x63/0x89
+[    6.013499]  [<c14d60c4>] _raw_spin_unlock+0x27/0x3f
+[    6.018453]  [<c10c6349>] add_partial+0x36/0x3b
+[    6.022973]  [<c10c7c0a>] deactivate_slab+0x96/0xb4
+[    6.027842]  [<c14cf9d9>] __slab_alloc.isra.54.constprop.63+0x204/0x241
+[    6.034456]  [<c103f78f>] ? kzalloc.constprop.5+0x29/0x38
+[    6.039842]  [<c103f78f>] ? kzalloc.constprop.5+0x29/0x38
+[    6.045232]  [<c10c7dc9>] kmem_cache_alloc_trace+0x51/0xb0
+[    6.050710]  [<c103f78f>] ? kzalloc.constprop.5+0x29/0x38
+[    6.056100]  [<c103f78f>] kzalloc.constprop.5+0x29/0x38
+[    6.061320]  [<c17b45e9>] __reserve_region_with_split+0x1c/0xd1
+[    6.067230]  [<c17b4693>] __reserve_region_with_split+0xc6/0xd1
+...
+[    7.179057]  [<c17b4693>] __reserve_region_with_split+0xc6/0xd1
+[    7.184970]  [<c17b4779>] reserve_region_with_split+0x30/0x42
+[    7.190709]  [<c17a8ebf>] e820_reserve_resources_late+0xd1/0xe9
+[    7.196623]  [<c17c9526>] pcibios_resource_survey+0x23/0x2a
+[    7.202184]  [<c17cad8a>] pcibios_init+0x23/0x35
+[    7.206789]  [<c17ca574>] pci_subsys_init+0x3f/0x44
+[    7.211659]  [<c1002088>] do_one_initcall+0x72/0x122
+[    7.216615]  [<c17ca535>] ? pci_legacy_init+0x3d/0x3d
+[    7.221659]  [<c17a27ff>] kernel_init+0xa6/0x118
+[    7.226265]  [<c17a2759>] ? start_kernel+0x334/0x334
+[    7.231223]  [<c14d7482>] kernel_thread_helper+0x6/0x10
+
+Cc: Ram Pai <linuxram@us.ibm.com>
+
+Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
+---
+
+Changes from V2:
+ * remove printk in the abort case, nothing notable to report
+
+Changes from V1:
+ * fix partial overlaps cases
+ * use %pr, dump_stack()
+
+ kernel/resource.c |   24 +++++++++++++++++++++++-
+ 1 file changed, 23 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/resource.c b/kernel/resource.c
+index e1d2b8e..93d7251 100644
+--- a/kernel/resource.c
++++ b/kernel/resource.c
+@@ -7,6 +7,8 @@
+  * Arbitrary resource management.
+  */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/export.h>
+ #include <linux/errno.h>
+ #include <linux/ioport.h>
+@@ -788,8 +790,28 @@ void __init reserve_region_with_split(struct resource *root,
+ 		resource_size_t start, resource_size_t end,
+ 		const char *name)
+ {
++	int abort = 0;
++
+ 	write_lock(&resource_lock);
+-	__reserve_region_with_split(root, start, end, name);
++	if (root->start > start || root->end < end) {
++		pr_err("requested range [0x%llx-0x%llx] not in root %pr\n",
++		       (unsigned long long)start, (unsigned long long)end,
++		       root);
++		if (start > root->end || end < root->start)
++			abort = 1;
++		else {
++			if (end > root->end)
++				end = root->end;
++			if (start < root->start)
++				start = root->start;
++			pr_err("fixing request to [0x%llx-0x%llx]\n",
++			       (unsigned long long)start,
++			       (unsigned long long)end);
++		}
++		dump_stack();
++	}
++	if (!abort)
++		__reserve_region_with_split(root, start, end, name);
+ 	write_unlock(&resource_lock);
+ }
+ 
 -- 
-Khalid Aziz
-khalid.aziz@hp.com
+1.7.9.5
 
