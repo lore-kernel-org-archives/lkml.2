@@ -1,48 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030733Ab2GMRyb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 13:54:31 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:41780 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751450Ab2GMRya (ORCPT
+	id S1030796Ab2GMSAj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 14:00:39 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:63366 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932504Ab2GMSAh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 13:54:30 -0400
-Date: Fri, 13 Jul 2012 18:54:28 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Khalid Aziz <khalid.aziz@hp.com>
-Cc: linux-kernel@vger.kernel.org, tony.luck@intel.com, mikew@google.com,
-        keescook@chromium.org, gong.chen@linux.intel.com
-Subject: Re: [PATCH] Add missing attributes to EFI variable attribute print
- out from sysfs
-Message-ID: <20120713175428.GA19239@srcf.ucam.org>
-References: <20120713153827.GA8007@hp.com>
- <20120713154645.GA16059@srcf.ucam.org>
- <5000604F.80804@hp.com>
+	Fri, 13 Jul 2012 14:00:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5000604F.80804@hp.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+X-Originating-IP: [46.116.44.123]
+In-Reply-To: <47AF0F55-39D1-4B7E-BE0E-D2395989322D@studiofuga.com>
+References: <1341936444-3094-1-git-send-email-fuga@studiofuga.com>
+ <CAK=Wgbaf0On3teqOw1myqkS4Dei3Vw2Zn=0xfOv-YiNUjFr0fg@mail.gmail.com>
+ <485F7F7C-2D0C-4B14-8A46-D42C9F8ED4E4@studiofuga.com> <CAK=WgbZFHzHLxQfoWW4Cz_PpBCzER75KCd=C3WS-7w_LryKuQA@mail.gmail.com>
+ <47AF0F55-39D1-4B7E-BE0E-D2395989322D@studiofuga.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Fri, 13 Jul 2012 21:00:16 +0300
+Message-ID: <CAK=WgbaTrjSPqEKKt+bt0uD1x+yNXxRZfJUGZjjMnWGV0aAV3Q@mail.gmail.com>
+Subject: Re: [PATCH] rpmsg bus subsys_initcall initialization ordering
+To: Federico Fuga <fuga@studiofuga.com>
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 13, 2012 at 11:52:15AM -0600, Khalid Aziz wrote:
-> EFI_VARIABLE_NON_VOLATILE			-> EFI_VAR_NV
-> EFI_VARIABLE_BOOTSERVICE_ACCESS			-> EFI_VAR_BOOT
-> EFI_VARIABLE_RUNTIME_ACCESS			-> EFI_VAR_RUNTIME
-> EFI_VARIABLE_HARDWARE_ERROR_RECORD		-> EFI_VAR_HW_ERROR
-> EFI_VARIABLE_AUTHENTICATED_WRITE_ACCESS		-> EFI_VAR_AUTH_WRITE
-> EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS	-> EFI_VAR_TIMED_AUTH_WRITE
-> EFI_VARIABLE_APPEND_WRITE			-> EFI_VAR_APPEND
-> 
-> Sounds reasonable?
+Hi Federico,
 
-Sounds great, but sadly they're exposed to userspace so changing them 
-would be a problem. Adding aliases would be ugly but workable?
+On Wed, Jul 11, 2012 at 10:14 AM, Federico Fuga <fuga@studiofuga.com> wrote:
+> it triggers a BUG() in drivers/base/driver.c line 169
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Thanks for sharing this; it definitely makes sense now.
+
+> The subsys_initcall indeed solve this issue
+
+I agree. I'll take it, but will change the commit log to make it
+omaprpc-agnostic.
+
+Thanks,
+Ohad.
