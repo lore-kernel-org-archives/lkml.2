@@ -1,134 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757064Ab2GMT4h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 15:56:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40981 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752121Ab2GMT4e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 15:56:34 -0400
-Date: Fri, 13 Jul 2012 15:56:15 -0400
-From: Dave Jones <davej@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Darren Hart <darren@dvhart.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: 3.5-rc6 futex_wait_requeue_pi oops.
-Message-ID: <20120713195615.GC1707@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-	Rusty Russell <rusty@rustcorp.com.au>,
-	Darren Hart <darren@dvhart.com>,
-	Peter Zijlstra <peterz@infradead.org>
-References: <20120713180823.GA24972@redhat.com>
- <alpine.LFD.2.02.1207132032330.32033@ionos>
- <20120713185402.GA1707@redhat.com>
- <alpine.LFD.2.02.1207132108340.32033@ionos>
+	id S1757132Ab2GMUCu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 16:02:50 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:59703 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752808Ab2GMUCs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 16:02:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1207132108340.32033@ionos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1340740795-19603-1-git-send-email-geert@linux-m68k.org>
+References: <1340740795-19603-1-git-send-email-geert@linux-m68k.org>
+Date: Fri, 13 Jul 2012 22:02:47 +0200
+X-Google-Sender-Auth: zvacnZr7Z7L_SGCQRiEo0vieTRE
+Message-ID: <CAMuHMdXgCR1HUwmwT21p=O2p+LuAqLfeM=Tn=ghvKQ+qgsNTTQ@mail.gmail.com>
+Subject: Re: Build regressions/improvements in v3.5-rc4
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Sonic Zhang <sonic.zhang@analog.com>, Bob Liu <lliubbo@gmail.com>,
+        Mike Frysinger <vapier@gentoo.org>
+Cc: uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 13, 2012 at 09:11:57PM +0200, Thomas Gleixner wrote:
- > On Fri, 13 Jul 2012, Dave Jones wrote:
- > 
- > > On Fri, Jul 13, 2012 at 08:47:38PM +0200, Thomas Gleixner wrote:
- > >  > On Fri, 13 Jul 2012, Dave Jones wrote:
- > >  > 
- > >  > > Looks like calling futex() with garbage makes things unhappy.
- > >  > 
- > >  >                 WARN_ON(!&q.pi_state);
- > >  >                 pi_mutex = &q.pi_state->pi_mutex;
- > >  >                 ret = rt_mutex_finish_proxy_lock(pi_mutex, to, &rt_waiter, 1);
- > >  >                 debug_rt_mutex_free_waiter(&rt_waiter);
- > >  > 
- > >  > So there is some weird way which causes q.pi_state = NULL. Dave, did
- > >  > you see the warning before the oops happened ?
- > > 
- > > No, that didn't seem to trigger.
- > 
- > Yuck. The rt_mutex is embedded in pi_state and not a pointer and the
- > thing explodes in __lock_acquire if the raw lock protecting the
- > rtmutex internals. 
- > 
- > Can you decode the exact code line ?
- 
-Hmm. I think I rebuilt the kernel, so things may be slightly different, though
-what I see surprises me..
+On Tue, Jun 26, 2012 at 9:59 PM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> + drivers/i2c/busses/i2c-bfin-twi.c: error: 'ANAK' undeclared (first use in this function):  => 154:19
+>   + drivers/i2c/busses/i2c-bfin-twi.c: error: 'BUFRDERR' undeclared (first use in this function):  => 158:19
+>   + drivers/i2c/busses/i2c-bfin-twi.c: error: 'BUFWRERR' undeclared (first use in this function):  => 160:19
+>   + drivers/i2c/busses/i2c-bfin-twi.c: error: 'BUSBUSY' undeclared (first use in this function):  => 401:35, 301:35
+>   + drivers/i2c/busses/i2c-bfin-twi.c: error: 'DNAK' undeclared (first use in this function):  => 156:19
+>   + drivers/i2c/busses/i2c-bfin-twi.c: error: 'FAST' undeclared (first use in this function):  => 511:17, 360:18
+>   + drivers/i2c/busses/i2c-bfin-twi.c: error: 'LOSTARB' undeclared (first use in this function):  => 152:19
+>   + drivers/i2c/busses/i2c-bfin-twi.c: error: 'MCOMP' undeclared (first use in this function):  => 189:22, 489:31, 344:31
+>   + drivers/i2c/busses/i2c-bfin-twi.c: error: 'MDIR' undeclared (first use in this function):  => 359:31, 567:32, 102:30
+>   + drivers/i2c/busses/i2c-bfin-twi.c: error: 'MEN' undeclared (first use in this function):  => 358:51, 510:52, 196:33
+>   + drivers/i2c/busses/i2c-bfin-twi.c: error: 'MERR' undeclared (first use in this function):  => 146:23, 489:24, 344:24
+>   + drivers/i2c/busses/i2c-bfin-twi.c: error: 'RCVSERV' undeclared (first use in this function):  => 489:49, 116:23, 344:49
+>   + drivers/i2c/busses/i2c-bfin-twi.c: error: 'RSTART' undeclared (first use in this function):  => 102:37
+>   + drivers/i2c/busses/i2c-bfin-twi.c: error: 'SCLOVR' undeclared (first use in this function):  => 171:29
+>   + drivers/i2c/busses/i2c-bfin-twi.c: error: 'SDAOVR' undeclared (first use in this function):  => 177:28
+>   + drivers/i2c/busses/i2c-bfin-twi.c: error: 'SDASEN' undeclared (first use in this function):  => 168:33
+>   + drivers/i2c/busses/i2c-bfin-twi.c: error: 'STOP' undeclared (first use in this function):  => 105:30
+>   + drivers/i2c/busses/i2c-bfin-twi.c: error: 'TWI_ENA' undeclared (first use in this function):  => 398:30, 624:47, 298:30, 725:45
+>   + drivers/i2c/busses/i2c-bfin-twi.c: error: 'XMTSERV' undeclared (first use in this function):  => 344:39, 489:39, 90:23
 
-decoding the Code: line shows..
+This seems to be caused by commit c55c89e939f2a0a83d5c61462be554d5d2408178
+("blackfin: twi: move twi bit mask macro to twi head file").
+However, just including <asm/bfin_twi.h> doesn't fix it, as commit
+1e92bf6d80b5a0a137455c96bf6cdd9c1a5b531e ("blackfin: twi: Move TWI MMR access
+macro to twi head file") created lots of duplicate definitions:
 
-Code: d8 45 0f 45 e0 4c 89 75 f0 4c 89 7d f8 85 c0 0f 84 f8 00 00 00 8b 05 e2 af fa 00 49 89 ff 89 f3 41 89 d2 85 c0 0f 84 02 01 00 00 <49> 8b 07 ba 01 00 00 00 48 3d 20 c4 0c 82 44 0f 44 e2 83 fb 01
+arch/blackfin/include/asm/bfin_twi.h:87:6: warning: "ANOMALY_05001001"
+is not defined [-Wundef]
+arch/blackfin/include/asm/bfin_twi.h:67:0: note: this is the location
+of the previous definition
+drivers/i2c/busses/i2c-bfin-twi.c:36:8: error: redefinition of 'struct
+bfin_twi_iface'
+arch/blackfin/include/asm/bfin_twi.h:46:8: note: originally defined here
+arch/blackfin/include/asm/bfin_twi.h:73:90: note: previous definition
+of 'read_CLKDIV' was here
+arch/blackfin/include/asm/bfin_twi.h:73:259: note: previous definition
+of 'write_CLKDIV' was here
+arch/blackfin/include/asm/bfin_twi.h:74:90: note: previous definition
+of 'read_CONTROL' was here
+arch/blackfin/include/asm/bfin_twi.h:74:261: note: previous definition
+of 'write_CONTROL' was here
+arch/blackfin/include/asm/bfin_twi.h:75:90: note: previous definition
+of 'read_SLAVE_CTL' was here
+arch/blackfin/include/asm/bfin_twi.h:75:265: note: previous definition
+of 'write_SLAVE_CTL' was here
+arch/blackfin/include/asm/bfin_twi.h:76:90: note: previous definition
+of 'read_SLAVE_STAT' was here
+arch/blackfin/include/asm/bfin_twi.h:76:267: note: previous definition
+of 'write_SLAVE_STAT' was here
+arch/blackfin/include/asm/bfin_twi.h:77:90: note: previous definition
+of 'read_SLAVE_ADDR' was here
+arch/blackfin/include/asm/bfin_twi.h:77:267: note: previous definition
+of 'write_SLAVE_ADDR' was here
+arch/blackfin/include/asm/bfin_twi.h:78:90: note: previous definition
+of 'read_MASTER_CTL' was here
+arch/blackfin/include/asm/bfin_twi.h:78:267: note: previous definition
+of 'write_MASTER_CTL' was here
+arch/blackfin/include/asm/bfin_twi.h:79:90: note: previous definition
+of 'read_MASTER_STAT' was here
+arch/blackfin/include/asm/bfin_twi.h:79:269: note: previous definition
+of 'write_MASTER_STAT' was here
+arch/blackfin/include/asm/bfin_twi.h:80:90: note: previous definition
+of 'read_MASTER_ADDR' was here
+arch/blackfin/include/asm/bfin_twi.h:80:269: note: previous definition
+of 'write_MASTER_ADDR' was here
+arch/blackfin/include/asm/bfin_twi.h:81:90: note: previous definition
+of 'read_INT_STAT' was here
+arch/blackfin/include/asm/bfin_twi.h:81:263: note: previous definition
+of 'write_INT_STAT' was here
+arch/blackfin/include/asm/bfin_twi.h:82:90: note: previous definition
+of 'read_INT_MASK' was here
+arch/blackfin/include/asm/bfin_twi.h:82:263: note: previous definition
+of 'write_INT_MASK' was here
+arch/blackfin/include/asm/bfin_twi.h:83:90: note: previous definition
+of 'read_FIFO_CTL' was here
+arch/blackfin/include/asm/bfin_twi.h:83:263: note: previous definition
+of 'write_FIFO_CTL' was here
+arch/blackfin/include/asm/bfin_twi.h:84:90: note: previous definition
+of 'read_FIFO_STAT' was here
+arch/blackfin/include/asm/bfin_twi.h:84:265: note: previous definition
+of 'write_FIFO_STAT' was here
+arch/blackfin/include/asm/bfin_twi.h:85:90: note: previous definition
+of 'read_XMT_DATA8' was here
+arch/blackfin/include/asm/bfin_twi.h:85:265: note: previous definition
+of 'write_XMT_DATA8' was here
+arch/blackfin/include/asm/bfin_twi.h:86:90: note: previous definition
+of 'read_XMT_DATA16' was here
+arch/blackfin/include/asm/bfin_twi.h:86:267: note: previous definition
+of 'write_XMT_DATA16' was here
+arch/blackfin/include/asm/bfin_twi.h:88:90: note: previous definition
+of 'read_RCV_DATA8' was here
+arch/blackfin/include/asm/bfin_twi.h:88:265: note: previous definition
+of 'write_RCV_DATA8' was here
+arch/blackfin/include/asm/bfin_twi.h:89:90: note: previous definition
+of 'read_RCV_DATA16' was here
+arch/blackfin/include/asm/bfin_twi.h:89:267: note: previous definition
+of 'write_RCV_DATA16' was here
 
+So I gave up. A pity, considering BF537-STAMP_defconfig is the only
+blackfin config
+in http://kisskb.ellerman.id.au/kisskb/branch/3/.
 
+Gr{oetje,eeting}s,
 
-0000000000000000 <.text>:
-   0:	d8 45 0f             	fadds  0xf(%rbp)
-   3:	45 e0 4c             	rex.RB loopne 0x52
-   6:	89 75 f0             	mov    %esi,-0x10(%rbp)
-   9:	4c 89 7d f8          	mov    %r15,-0x8(%rbp)
-   d:	85 c0                	test   %eax,%eax
-   f:	0f 84 f8 00 00 00    	je     0x10d
-  15:	8b 05 e2 af fa 00    	mov    0xfaafe2(%rip),%eax        # 0xfaaffd
-  1b:	49 89 ff             	mov    %rdi,%r15
-  1e:	89 f3                	mov    %esi,%ebx
-  20:	41 89 d2             	mov    %edx,%r10d
-  23:	85 c0                	test   %eax,%eax
-  25:	0f 84 02 01 00 00    	je     0x12d
+                        Geert
 
-/home/davej/tmp/tmp.SI8vbYzuK6.o:     file format elf64-x86-64
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-
-Disassembly of section .text:
-
-0000000000000000 <.text>:
-   0:	49 8b 07             	mov    (%r15),%rax
-   3:	ba 01 00 00 00       	mov    $0x1,%edx
-   8:	48 3d 20 c4 0c 82    	cmp    $0xffffffff820cc420,%rax
-   e:	44 0f 44 e2          	cmove  %edx,%r12d
-  12:	83 fb 01             	cmp    $0x1,%ebx
-
-
-
-
-The only instance of 49 8b 07 followed by ba 01 in kernel/lockdep.o is this ..
-
-        /*
-         * Lockdep should run with IRQs disabled, otherwise we could
-         * get an interrupt which would want to take locks, which would
-         * end up in lockdep and have you got a head-ache already?
-         */
-        if (DEBUG_LOCKS_WARN_ON(!irqs_disabled()))
-    3f88:       8b 05 00 00 00 00       mov    0x0(%rip),%eax        # 3f8e <__lock_acquire+0x4e>
-    3f8e:       49 89 ff                mov    %rdi,%r15
-    3f91:       89 f3                   mov    %esi,%ebx
-    3f93:       41 89 d2                mov    %edx,%r10d
-    3f96:       85 c0                   test   %eax,%eax
-    3f98:       0f 84 02 01 00 00       je     40a0 <__lock_acquire+0x160>
-                return 0;
-
-        if (lock->key == &__lockdep_no_validate__)
-    3f9e:       49 8b 07                mov    (%r15),%rax		<<<<<<<<<<<<<<<<<<
-                check = 1;
-    3fa1:       ba 01 00 00 00          mov    $0x1,%edx
-
-
-Seems to add up.  Though the bytes in the code: line following don't match what's in the object..
-
-    3fa6:       48 3d 00 00 00 00       cmp    $0x0,%rax
-    3fac:       44 0f 44 e2             cmove  %edx,%r12d
-
-
-That line at 3fa6 got changed from an actual address to a NULL.
-I guess that's the &__lockdep_no_validate__ comparison.
-Though it seems odd that the kernel text would change.
-Does lockdep do that when it gets disabled or something ?
-
-	Dave
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
