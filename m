@@ -1,128 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759439Ab2GMDiH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 23:38:07 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:24763 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753513Ab2GMDiD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 23:38:03 -0400
-X-IronPort-AV: E=Sophos;i="4.77,577,1336320000"; 
-   d="scan'208";a="5387715"
-Message-ID: <4FFF9929.4000100@cn.fujitsu.com>
-Date: Fri, 13 Jul 2012 11:42:33 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1759538Ab2GMDiW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 23:38:22 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:46970 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759455Ab2GMDiR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 23:38:17 -0400
+Message-ID: <4FFF979F.8070100@linux.vnet.ibm.com>
+Date: Fri, 13 Jul 2012 09:05:59 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
-        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
-        minchan.kim@gmail.com, akpm@linux-foundation.org,
-        kosaki.motohiro@jp.fujitsu.com
-Subject: Re: [RFC PATCH v3 5/13] memory-hotplug : does not release memory
- region in PAGES_PER_SECTION chunks
-References: <4FFAB0A2.8070304@jp.fujitsu.com> <4FFAB1F3.1020304@jp.fujitsu.com>
-In-Reply-To: <4FFAB1F3.1020304@jp.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/13 11:37:43,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/13 11:37:52,
-	Serialize complete at 2012/07/13 11:37:52
+To: Christian Borntraeger <borntraeger@de.ibm.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Avi Kivity <avi@redhat.com>, Rik van Riel <riel@redhat.com>,
+        S390 <linux-s390@vger.kernel.org>, Carsten Otte <cotte@de.ibm.com>,
+        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: Re: [PATCH RFC V3 2/3] kvm: Note down when cpu relax intercepted
+ or pause loop exited
+References: <20120712191712.30440.68944.sendpatchset@codeblue> <20120712191800.30440.16406.sendpatchset@codeblue> <4FFF2D5F.3050902@de.ibm.com>
+In-Reply-To: <4FFF2D5F.3050902@de.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-2022-JP
+x-cbid: 12071218-3568-0000-0000-000002212239
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 07/09/2012 06:26 PM, Yasuaki Ishimatsu Wrote:
-> Since applying a patch(de7f0cba96786c), release_mem_region() has been changed
-> as called in PAGES_PER_SECTION chunks because register_memory_resource() is
-> called in PAGES_PER_SECTION chunks by add_memory(). But it seems firmware
-> dependency. If CRS are written in the PAGES_PER_SECTION chunks in ACPI DSDT
-> Table, register_memory_resource() is called in PAGES_PER_SECTION chunks.
-> But if CRS are written in the DIMM unit in ACPI DSDT Table,
-> register_memory_resource() is called in DIMM unit. So release_mem_region()
-> should not be called in PAGES_PER_SECTION chunks. The patch fixes it.
-> 
-> CC: David Rientjes <rientjes@google.com>
-> CC: Jiang Liu <liuj97@gmail.com>
-> CC: Len Brown <len.brown@intel.com>
-> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> CC: Paul Mackerras <paulus@samba.org>
-> CC: Christoph Lameter <cl@linux.com>
-> Cc: Minchan Kim <minchan.kim@gmail.com>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> CC: Wen Congyang <wency@cn.fujitsu.com>
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> 
-> ---
->  arch/powerpc/platforms/pseries/hotplug-memory.c |   13 +++++++++----
->  mm/memory_hotplug.c                             |    4 ++--
->  2 files changed, 11 insertions(+), 6 deletions(-)
-> 
-> Index: linux-3.5-rc4/mm/memory_hotplug.c
-> ===================================================================
-> --- linux-3.5-rc4.orig/mm/memory_hotplug.c	2012-07-03 14:22:03.549198802 +0900
-> +++ linux-3.5-rc4/mm/memory_hotplug.c	2012-07-03 14:22:05.919169458 +0900
-> @@ -358,11 +358,11 @@ int __remove_pages(struct zone *zone, un
->  	BUG_ON(phys_start_pfn & ~PAGE_SECTION_MASK);
->  	BUG_ON(nr_pages % PAGES_PER_SECTION);
-> 
-> +	release_mem_region(phys_start_pfn << PAGE_SHIFT,  nr_pages * PAGE_SIZE);
-> +
->  	sections_to_remove = nr_pages / PAGES_PER_SECTION;
->  	for (i = 0; i < sections_to_remove; i++) {
->  		unsigned long pfn = phys_start_pfn + i*PAGES_PER_SECTION;
-> -		release_mem_region(pfn << PAGE_SHIFT,
-> -				   PAGES_PER_SECTION << PAGE_SHIFT);
->  		ret = __remove_section(zone, __pfn_to_section(pfn));
->  		if (ret)
->  			break;
-> Index: linux-3.5-rc4/arch/powerpc/platforms/pseries/hotplug-memory.c
-> ===================================================================
-> --- linux-3.5-rc4.orig/arch/powerpc/platforms/pseries/hotplug-memory.c	2012-07-03 14:21:45.641422678
-> +0900
+On 07/13/2012 01:32 AM, Christian Borntraeger wrote:
+> On 12/07/12 21:18, Raghavendra K T wrote:
+>> +#ifdef CONFIG_HAVE_KVM_CPU_RELAX_INTERCEPT
+> [...]
+>> +	struct {
+>> +		bool cpu_relax_intercepted;
+>> +		bool dy_eligible;
+>> +	} ple;
+>> +#endif
+> [...]
+>>   	}
+>>   	vcpu->run = page_address(page);
+>> +	vcpu->ple.cpu_relax_intercepted = false;
+>> +	vcpu->ple.dy_eligible = false;
+>
+> This struct is only defined if CONFIG_HAVE_KVM_CPU_RELAX_INTERCEPT is set, but here it
+> is always accessed. Will break on !x86&&  !s390.
 
-Hmm, I think you should change your mail client's config.
+Yes! I forgot about archs in init function.
+How about having
+#ifdef CONFIG_HAVE_KVM_CPU_RELAX_INTERCEPT
+vcpu->ple.cpu_relax_intercepted = false;
+vcpu->ple.dy_eligible = false;
+#endif
 
-Thanks
-Wen Congyang
+This would solve all the problem.
 
-> +++ linux-3.5-rc4/arch/powerpc/platforms/pseries/hotplug-memory.c	2012-07-03 14:22:05.920169437 +0900
-> @@ -77,7 +77,8 @@ static int pseries_remove_memblock(unsig
->  {
->  	unsigned long start, start_pfn;
->  	struct zone *zone;
-> -	int ret;
-> +	int i, ret;
-> +	int sections_to_remove;
-> 
->  	start_pfn = base >> PAGE_SHIFT;
-> 
-> @@ -97,9 +98,13 @@ static int pseries_remove_memblock(unsig
->  	 * to sysfs "state" file and we can't remove sysfs entries
->  	 * while writing to it. So we have to defer it to here.
->  	 */
-> -	ret = __remove_pages(zone, start_pfn, memblock_size >> PAGE_SHIFT);
-> -	if (ret)
-> -		return ret;
-> +	sections_to_remove = (memblock_size >> PAGE_SHIFT) / PAGES_PER_SECTION;
-> +	for (i = 0; i < sections_to_remove; i++) {
-> +		unsigned long pfn = start_pfn + i * PAGES_PER_SECTION;
-> +		ret = __remove_pages(zone, start_pfn,  PAGES_PER_SECTION);
-> +		if (ret)
-> +			return ret;
-> +	}
-> 
->  	/*
->  	 * Update memory regions for memory remove
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+>>
+>>   	r = kvm_arch_vcpu_init(vcpu);
+>>   	if (r<  0)
+>> @@ -1577,6 +1579,7 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
+>>   	int pass;
+>>   	int i;
+>>
+>> +	me->ple.cpu_relax_intercepted = true;
+>
+> dito
+
+currently vcpu_on_spin is used only by x86 and s390. so if some other
+arch in future uses vcpu_on_spin, I believe they also have to enable
+CONFIG_HAVE_KVM_CPU_RELAX_INTERCEPT
+what do you think?
+
+otherwise we have to add hook everywhere
+>>   	/*
+>>   	 * We boost the priority of a VCPU that is runnable but not
+>>   	 * currently running, because it got preempted by something
+>> @@ -1602,6 +1605,7 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
+>>   			}
+>>   		}
+>>   	}
+>> +	me->ple.cpu_relax_intercepted = false;
+>
+> again.
+>
+> maybe define static inline access functions in kvm_host.h that are no-ops
+> if CONFIG_HAVE_KVM_CPU_RELAX_INTERCEPT is not set.
+>
 
