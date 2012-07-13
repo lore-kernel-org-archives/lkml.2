@@ -1,102 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757168Ab2GMJys (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 05:54:48 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:16782 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754477Ab2GMJyq convert rfc822-to-8bit (ORCPT
+	id S1757224Ab2GMJy7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 05:54:59 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60575 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757183Ab2GMJy4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 05:54:46 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Fri, 13 Jul 2012 02:54:30 -0700
-Subject: RE: How to use the generic thermal sysfs.
-From: Wei Ni <wni@nvidia.com>
-To: Zhang Rui <rui.zhang@intel.com>
-CC: "R, Durgadoss" <durgadoss.r@intel.com>, "Brown, Len" <len.brown@intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "khali@linux-fr.org" <khali@linux-fr.org>,
-        "joe@perches.com" <joe@perches.com>,
+	Fri, 13 Jul 2012 05:54:56 -0400
+Date: Fri, 13 Jul 2012 10:54:54 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: "AnilKumar, Chimata" <anilkumar@ti.com>
+Cc: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "Girdwood, Liam" <lrg@ti.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@ger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Alex Courbot <acourbot@nvidia.com>
-In-Reply-To: <1342167087.27605.158.camel@tegra-chromium-2>
-References: <1342088573.27605.101.camel@tegra-chromium-2>
-	 <4D68720C2E767A4AA6A8796D42C8EB5915287C@BGSMSX101.gar.corp.intel.com>
-	 <1342144273.1682.237.camel@rui.sh.intel.com>
-	 <1342164616.27605.129.camel@tegra-chromium-2>
-	 <1342165278.1682.259.camel@rui.sh.intel.com>
-	 <1342167087.27605.158.camel@tegra-chromium-2>
-Date: Fri, 13 Jul 2012 17:53:33 +0800
-Message-ID: <1342173213.27605.174.camel@tegra-chromium-2>
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v2 1/3] regulator: tps65217: Add device tree support
+Message-ID: <20120713095454.GB4215@opensource.wolfsonmicro.com>
+References: <1341918584-28004-1-git-send-email-anilkumar@ti.com>
+ <1341918584-28004-2-git-send-email-anilkumar@ti.com>
+ <20120712172836.GR7256@opensource.wolfsonmicro.com>
+ <331ABD5ECB02734CA317220B2BBEABC13E9F61CC@DBDE01.ent.ti.com>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="EuxKj2iCbKjpUGkD"
+Content-Disposition: inline
+In-Reply-To: <331ABD5ECB02734CA317220B2BBEABC13E9F61CC@DBDE01.ent.ti.com>
+X-Cookie: Advancement in position.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-07-13 at 16:11 +0800, Wei Ni wrote:
-> On Fri, 2012-07-13 at 15:41 +0800, Zhang Rui wrote:
-> > On 五, 2012-07-13 at 15:30 +0800, Wei Ni wrote:
-> > > Our tegra thermal framework also will use the generic thermal layer. It
-> > > will register the cooling device, and run the throttling in this generic
-> > > framework.
-> > > But we have a special mechanism, when the temp is below the trip temp,
-> > > we will set different cpu capability for different temp range. For
-> > > example, set the low/high temp as 20C/30C to the sensor, and set the cpu
-> > > to the max capability, it mean the cpu can run up to the max freq and
-> > > voltage in this temp range. if the temp is out that range, the sensor
-> > > will have irq/alert to notify the tegra framework, then we will set to
-> > > another temperature range and cpu capability.
-> > > I think we can try to add this mechanism to the generic framework as a
-> > > new policy, right?
-> > > 
-> > I think you can make use of the upper&lower limit in my patch set.
-> > Say, here is your thermal policy
-> > 20C - 30C, P0
-> > 30C - 40C, P1 - P2
-> > 40C - 60C, P3 - P5
-> > 60C+, P6 ~ Pn
-> > 
-> > you can register to the thermal layer 4 passive trip points,
-> > 20C, 30C, 40C, 60C, and then
-> > 1) for trip 0 (20C), upper limit 0, lower limit 0
-> > 2) for trip 1 (30C), upper limit 2, lower limit 1
-> > 3) for trip 2 (40C), upper limit 5, lower limit 3
-> > 4) for trip 3 (60C), upper limit n, lower limit 6
-> > 
-> > you can program your own sensor to get interrupt when the temperature
-> > hits 20C/30C/40C/60C, and the generic thermal layer will put the
-> > processors to proper frequency for each trip point.
-> > 
-> > what do you think?
-> 
-> It's great, this is exactly what we need.
-> I think for these trip points, we can use a new trip type, such as
-> TRIP_LIMIT, and use new policy. Because in these state, we only need to
-> set the processors to proper frequency capability, it's not like the
-> passive type, the currently passive type will try to set cooling device
-> state continually.
 
-I read the patches of "Thermal Framework Enhancements", it seems the
-fair_share governor can be used for this throttling.
+--EuxKj2iCbKjpUGkD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Look forward to your public git tree, so that I can sync the entire
-codes :)
+On Fri, Jul 13, 2012 at 05:43:30AM +0000, AnilKumar, Chimata wrote:
 
-> And for these trip temp, it's better to add hysteresis value, so that it
-> can avoid unnecessary interrupt.
-> 
-> > 
-> > BTW, the upper and lower limit is introduced in the patch set I'm
-> > testing, so maybe you were not aware of it.
-> 
-> How can I get these codes?
-> 
-> > 
-> > thanks,
-> > rui
-> 
+> Thanks much, are you going to push reset of the patches in this series?
 
+No, there's no dependency so I'd expect them to be applied by the
+architecture maintainers.
 
+--EuxKj2iCbKjpUGkD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP//AuAAoJEBus8iNuMP3d3dcP/1YA08soeMqDBAvVREqJdIAx
+VpsvDCE3A2MYEK7muDbS8W+v4AuV27NwkFPavlMUlTLRZVATeLQWJQR9mXt0/LwV
+Nhu59GYoYd3HsvQRwUJCLBQMyokG045fSrXY/YvA6pJKRVJ5bcS76QBIESrPUpsA
+y06LaI9/qUGm6PzmYd9z5jtO5Z1IXPBfOl/AAs0lwdhJI3FDucSFtXhzocTieVXY
+/tPmZvwbI1MTCe0U5pq47rSL8MH6box1QBctgQ6Q18KIst/cWkyS0FiJ/hywMZDB
++EFFWC1cOZq+tWB+2nZ8LbomlhNtnagzxDrhfU3V9LBD8KtDeAhv694D9j4jl4wg
+N4e4Rc7cllt2/iW3j7ctNIGVDiyOwDsSaZAKzXr3m9/aZErAaQNtLs0eFgUQ81Zk
+AnvXBuLmM3XqkV3J+2dAc8RCr9XftSAkl/XgZsW/YfK4eqNfo50UNQQwDqbwqsDs
+f8oRjzdKUSVuzRUh5YaI80wZRourZtUg4CJqLGb3hoy1rY8c/TwLZ/BeLn4ckC/g
+h90/nGZi2dU5OtYvdoQRIspfT1S99oBRHnTW0ncPvabSOWZgHVgNNxVtoydzJCqB
+eF10xqG0yQausM/bcajmmSTbMkVllRu7KK+Rra/Fbe+18452e3CYa5pNQ/EhJuvB
+5QfQD0Era/MAEIFQghOV
+=vKfD
+-----END PGP SIGNATURE-----
+
+--EuxKj2iCbKjpUGkD--
