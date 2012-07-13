@@ -1,82 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932545Ab2GMKOv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 06:14:51 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:54343 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932349Ab2GMKOt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 06:14:49 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX180Vy83IlU0W72cF8PvLuoiQEtAjlWpq1KD2lrq5I
-	8riuvcnznxaMvC
-Message-ID: <1342174485.7380.103.camel@marge.simpson.net>
-Subject: Re: 3.4.4-rt13: btrfs + xfstests 006 = BOOM.. and a bonus rt_mutex
- deadlock report for absolutely free!
-From: Mike Galbraith <efault@gmx.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Date: Fri, 13 Jul 2012 12:14:45 +0200
-In-Reply-To: <alpine.LFD.2.02.1207131142440.32033@ionos>
-References: <1342072060.7338.102.camel@marge.simpson.net>
-	 <1342082648.7338.171.camel@marge.simpson.net>
-	 <1342086792.7707.9.camel@marge.simpson.net>
-	 <alpine.LFD.2.02.1207121310420.32033@ionos>
-	 <1342094233.7707.12.camel@marge.simpson.net>
-	 <alpine.LFD.2.02.1207121514240.32033@ionos>
-	 <1342161072.7380.65.camel@marge.simpson.net>
-	 <alpine.LFD.2.02.1207131142440.32033@ionos>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	id S932582Ab2GMKPc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 06:15:32 -0400
+Received: from mga02.intel.com ([134.134.136.20]:50742 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932314Ab2GMKPb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 06:15:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="171386430"
+From: "Winkler, Tomas" <tomas.winkler@intel.com>
+To: "sedat.dilek@gmail.com" <sedat.dilek@gmail.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Roland Dreier <roland@purestorage.com>
+Subject: RE: [3.5-rc6+] mei: irq: request_threaded_irq is missing the
+ IRQF_ONESHOT flag
+Thread-Topic: [3.5-rc6+] mei: irq: request_threaded_irq is missing the
+ IRQF_ONESHOT flag
+Thread-Index: AQHNYNyjh614hcAtKkC2UnpyqshXDpcm/DeQ
+Date: Fri, 13 Jul 2012 10:15:24 +0000
+Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B13B4A9@HASMSX103.ger.corp.intel.com>
+References: <CA+icZUVorJNMQ3wyz8WuZop_fwwOuBo38wZg9s9RJizhM0yc-w@mail.gmail.com>
+In-Reply-To: <CA+icZUVorJNMQ3wyz8WuZop_fwwOuBo38wZg9s9RJizhM0yc-w@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.184.70.11]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q6DAFcLM014016
 
-On Fri, 2012-07-13 at 11:52 +0200, Thomas Gleixner wrote: 
-> On Fri, 13 Jul 2012, Mike Galbraith wrote:
-> > On Thu, 2012-07-12 at 15:31 +0200, Thomas Gleixner wrote: 
-> > > Bingo, that makes it more likely that this is caused by copying w/o
-> > > initializing the lock and then freeing the original structure.
-> > > 
-> > > A quick check for memcpy finds that __btrfs_close_devices() does a
-> > > memcpy of btrfs_device structs w/o initializing the lock in the new
-> > > copy, but I have no idea whether that's the place we are looking for.
-> > 
-> > Thanks a bunch Thomas.  I doubt I would have ever figured out that lala
-> > land resulted from _copying_ a lock.  That's one I won't be forgetting
-> > any time soon.  Box not only survived a few thousand xfstests 006 runs,
-> > dbench seemed disinterested in deadlocking virgin 3.0-rt.
+
+
+> -----Original Message-----
+> From: Sedat Dilek [mailto:sedat.dilek@gmail.com]
+> Sent: Friday, July 13, 2012 12:48 PM
+> To: Winkler, Tomas
+> Cc: Thomas Gleixner; LKML; Greg Kroah-Hartman; Roland Dreier
+> Subject: [3.5-rc6+] mei: irq: request_threaded_irq is missing the
+> IRQF_ONESHOT flag
 > 
-> Cute. It think that the lock copying caused the deadlock problem as
-> the list pointed to the wrong place, so we might have ended up with
-> following down the wrong chain when walking the list as long as the
-> original struct was not freed. That beast is freed under RCU so there
-> could be a rcu read side critical section fiddling with the old lock
-> and cause utter confusion.
-
-Virgin 3.0-rt appears to really be solid.  But then it doesn't have
-pesky rwlocks.
-
-> /me goes and writes a nastigram^W proper changelog
+> Hi,
 > 
-> > btrfs still locks up in my enterprise kernel, so I suppose I had better
-> > plug your fix into 3.4-rt and see what happens, and go beat hell out of
-> > virgin 3.0-rt again to be sure box really really survives dbench.
-> 
-> A test against 3.4-rt sans enterprise mess might be nice as well.
+> while dealing with [1], I saw this mei-related infos in dmesg when doing a
+> suspend + resume (see [1] for more logs):
 
-Enterprise is 3.0-stable with um 555 btrfs patches (oh dear).
+The fix is included in this post pull request http://marc.info/?l=linux-kernel&m=134201523903406&w=2
 
-Virgin 3.4-rt and 3.2-rt deadlock gripe.  Enterprise doesn't gripe, but
-deadlocks, so I have another adventure in my future even if I figure out
-wth to do about rwlocks.
+Thanks
+Tomas
 
--Mike
 
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
