@@ -1,77 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757636Ab2GMUuP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 16:50:15 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:38682 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755310Ab2GMUuN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 16:50:13 -0400
+	id S1757710Ab2GMUwM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 16:52:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38802 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755751Ab2GMUwJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 16:52:09 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Jan Kara <jack@suse.cz>
+Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+        "Steven J. Magnani" <steve@digidescorp.com>,
+        Stevie Trujillo <stevie.trujillo@gmail.com>,
+        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Subject: Re: mount -o loop with truncated dosdisk.img uses 100% cpu and can't be killed
+References: <20120712162828.3f561315@localhost>
+	<1342106206.2156.2.camel@iscandar.digidescorp.com>
+	<87k3y8yed3.fsf@devron.myhome.or.jp>
+	<20120713154354.GD28715@quack.suse.cz>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Fri, 13 Jul 2012 16:51:55 -0400
+In-Reply-To: <20120713154354.GD28715@quack.suse.cz> (Jan Kara's message of
+	"Fri, 13 Jul 2012 17:43:54 +0200")
+Message-ID: <x49y5mn1j10.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <1340219980-12369-1-git-send-email-geert@linux-m68k.org>
-References: <1340219980-12369-1-git-send-email-geert@linux-m68k.org>
-Date: Fri, 13 Jul 2012 22:50:11 +0200
-X-Google-Sender-Auth: y2DFE90Nr8Z0Dp9B3SeKuUo_NHU
-Message-ID: <CAMuHMdUuP6eGSrJ+W75bRe13d+okA=RESsyje5JKX7xfjxHtnw@mail.gmail.com>
-Subject: Re: [PATCH] mn10300: Fix pull clearing RESTORE_SIGMASK into
- block_sigmask() fallout
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Al Viro <viro@zeniv.linux.org.uk>, David Howells <dhowells@redhat.com>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
-Cc: linux-am33-list@redhat.com, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping?
+Jan Kara <jack@suse.cz> writes:
 
-On Wed, Jun 20, 2012 at 9:19 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> commit a610d6e672d6d3723e8da257ad4a8a288a8f2f89 ("pull clearing
-> RESTORE_SIGMASK into block_sigmask()") caused:
->
-> arch/mn10300/kernel/signal.c: In function 'handle_signal':
-> arch/mn10300/kernel/signal.c:462:3: warning: 'return' with no value, in function returning non-void [-Wreturn-type]
->
-> Add the missing return values, and restore the indentation while we're at
-> it.
->
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> ---
->  arch/mn10300/kernel/signal.c |    5 +++--
->  1 files changed, 3 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/mn10300/kernel/signal.c b/arch/mn10300/kernel/signal.c
-> index 6ab0bee..4d584ae 100644
-> --- a/arch/mn10300/kernel/signal.c
-> +++ b/arch/mn10300/kernel/signal.c
-> @@ -459,10 +459,11 @@ static int handle_signal(int sig,
->         else
->                 ret = setup_frame(sig, ka, oldset, regs);
->         if (ret)
-> -               return;
-> +               return ret;
->
->         signal_delivered(sig, info, ka, regs,
-> -                                test_thread_flag(TIF_SINGLESTEP));
-> +                        test_thread_flag(TIF_SINGLESTEP));
-> +       return 0;
->  }
->
->  /*
-> --
-> 1.7.0.4
+>> It looks like the bug of __getblk_slow(). If requested block was beyond
+>> end of device, __find_get_block() will find buffer_mapped()'s buffer,
+>> but block >= end_block is unmapped. So, it can be loop.
+>> 
+>> The following patch fixes it? If it fix, there are some options to check
+>> it.
+>> 
+>> a) Check it like this patch and warn.
+>> b) (a), but without warn.
+>> c) Check it in init_page_buffers() and return -EIO or such
+>> 
+>> Well, anyway, Cc to Jens.
+>> 
+>> Signed-off-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+>   I think Jeff Moyer has sent a similar fix recently. It may even be
+> already queued in Jens' tree. Jeff?
 
-Gr{oetje,eeting}s,
+A fix for this has now been committed in Linus' tree:
+  http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=91f68c89d8f35fe98ea04159b9a3b42d0149478f
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Cheers,
+Jeff
