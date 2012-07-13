@@ -1,139 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755489Ab2GMWyL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 18:54:11 -0400
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:42796 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752471Ab2GMWyJ (ORCPT
+	id S1755553Ab2GMXA1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 19:00:27 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:46811 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754847Ab2GMXAZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 18:54:09 -0400
-Message-ID: <5000A6E1.5070306@xenotime.net>
-Date: Fri, 13 Jul 2012 15:53:21 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Fri, 13 Jul 2012 19:00:25 -0400
 MIME-Version: 1.0
-To: Myron Stowe <myron.stowe@redhat.com>
-CC: bhelgaas@google.com, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] PCI: Fix undefined reference to 'pci_fixup_final_inited'
-References: <20120713202900.15160.23438.stgit@amt.stowe>
-In-Reply-To: <20120713202900.15160.23438.stgit@amt.stowe>
+In-Reply-To: <1342199195-2078-1-git-send-email-wad@chromium.org>
+References: <1342156672-7369-1-git-send-email-wad@chromium.org> <1342199195-2078-1-git-send-email-wad@chromium.org>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Fri, 13 Jul 2012 16:00:04 -0700
+X-Google-Sender-Auth: wm87z_q5w_FVnx6j6RmhGIUfAJI
+Message-ID: <CAObL_7GaPDNops_cL2u4yU9Afj14f6ju_ZW7qRjhSy25qsbfkw@mail.gmail.com>
+Subject: Re: [PATCH v2] x86/vsyscall: allow seccomp filter in vsyscall=emulate
+To: Will Drewry <wad@chromium.org>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        qmewlo@gmail.com, eparis@redhat.com, keescook@chromium.org,
+        james.l.morris@oracle.com, hpa@zytor.com, cevans@chromium.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/13/2012 01:29 PM, Myron Stowe wrote:
+On Fri, Jul 13, 2012 at 10:06 AM, Will Drewry <wad@chromium.org> wrote:
+> If a seccomp filter program is installed, older static binaries and
+> distributions with older libc implementations (glibc 2.13 and earlier)
+> that rely on vsyscall use will be terminated regardless of the filter
+> program policy when executing time, gettimeofday, or getcpu.  This is
+> only the case when vsyscall emulation is in use (vsyscall=emulate is the
+> default).
+>
+> This patch emulates system call entry inside a vsyscall=emulate by
+> populating regs->ax and regs->orig_ax with the system call number prior
+> to calling into seccomp such that all seccomp-dependencies function
+> normally.  Additionally, system call return behavior is emulated in line
+> with other vsyscall entrypoints for the trace/trap cases.
+>
+> Reported-by: Owen Kibel <qmewlo@gmail.com>
+> Signed-off-by: Will Drewry <wad@chromium.org>
+>
+> v2: - fixed ip and sp on SECCOMP_RET_TRAP/TRACE (thanks to luto@mit.edu)
 
-> My "PCI: Integrate 'pci_fixup_final' quirks into hot-plug paths" patch
-> introduced an undefined reference to 'pci_fixup_final_inited' when
-> CONFIG_PCI_QUIRKS is not enabled (on x86_64):
->   drivers/built-in.o: In function `pci_bus_add_device':
->   (.text+0x4f62): undefined reference to `pci_fixup_final_inited'
-> 
-> This patch removes the external reference ending up with a result closer
-> to what we ultimately want when the boot path issues described in the
-> original patch are resolved.
-> 
-> References:
->   https://lkml.org/lkml/2012/7/9/542    Original, offending, patch
->   https://lkml.org/lkml/2012/7/12/338	Randy's catch
-> 
-> Reported-by: rdunlap@xenotime.net
-> Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
-
-
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
-
-Thanks.
-
-
-> ---
-> 
->  drivers/pci/bus.c    |    4 +---
->  drivers/pci/quirks.c |   20 ++++----------------
->  2 files changed, 5 insertions(+), 19 deletions(-)
-> 
-> diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
-> index b511bd4..4b0970b 100644
-> --- a/drivers/pci/bus.c
-> +++ b/drivers/pci/bus.c
-> @@ -164,10 +164,8 @@ pci_bus_alloc_resource(struct pci_bus *bus, struct resource *res,
->  int pci_bus_add_device(struct pci_dev *dev)
->  {
->  	int retval;
-> -	extern bool pci_fixup_final_inited;
->  
-> -	if (pci_fixup_final_inited)
-> -		pci_fixup_device(pci_fixup_final, dev);
-> +	pci_fixup_device(pci_fixup_final, dev);
->  	retval = device_add(&dev->dev);
->  	if (retval)
->  		return retval;
-> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-> index 52f44b5..003f356 100644
-> --- a/drivers/pci/quirks.c
-> +++ b/drivers/pci/quirks.c
-> @@ -2956,6 +2956,7 @@ extern struct pci_fixup __end_pci_fixups_resume_early[];
->  extern struct pci_fixup __start_pci_fixups_suspend[];
->  extern struct pci_fixup __end_pci_fixups_suspend[];
->  
-> +static bool pci_apply_fixup_final_quirks;
->  
->  void pci_fixup_device(enum pci_fixup_pass pass, struct pci_dev *dev)
->  {
-> @@ -2973,6 +2974,8 @@ void pci_fixup_device(enum pci_fixup_pass pass, struct pci_dev *dev)
->  		break;
->  
->  	case pci_fixup_final:
-> +		if (!pci_apply_fixup_final_quirks)
-> +			return;
->  		start = __start_pci_fixups_final;
->  		end = __end_pci_fixups_final;
->  		break;
-> @@ -3006,21 +3009,6 @@ void pci_fixup_device(enum pci_fixup_pass pass, struct pci_dev *dev)
->  EXPORT_SYMBOL(pci_fixup_device);
->  
->  
-> -/*
-> - * The global variable 'pci_fixup_final_inited' is being used as a interim
-> - * solution for calling the final quirks only during hot-plug events (not
-> - * during boot processing).
-> - *
-> - * When the boot path's PCI device setup sequencing is addressed, we can
-> - * remove the instance, and usages of, 'pci_fixup_final_inited' along with
-> - * removing 'fs_initcall_sync(pci_apply_final_quirks);' and end up with a
-> - * single, uniform, solution that satisfies both the boot path and the
-> - * various hot-plug event paths.
-> - *
-> - * ToDo: Remove 'pci_fixup_final_inited'
-> - */
-> -bool pci_fixup_final_inited;
+> @@ -253,6 +273,12 @@ bool emulate_vsyscall(struct pt_regs *regs, unsigned long address)
+>
+>         current_thread_info()->sig_on_uaccess_error = prev_sig_on_uaccess_error;
+>
+> +       if (skip) {
+> +               if ((long)regs->ax <= 0L) /* seccomp errno emulation */
+> +                       goto do_ret;
+> +               goto done; /* seccomp trace/trap */
+> +       }
+> +
+>         if (ret == -EFAULT) {
+>                 /* Bad news -- userspace fed a bad pointer to a vsyscall. */
+>                 warn_bad_vsyscall(KERN_INFO, regs,
+> @@ -271,10 +297,11 @@ bool emulate_vsyscall(struct pt_regs *regs, unsigned long address)
+>
+>         regs->ax = ret;
+>
+> +do_ret:
+>         /* Emulate a ret instruction. */
+>         regs->ip = caller;
+>         regs->sp += 8;
 > -
->  static int __init pci_apply_final_quirks(void)
->  {
->  	struct pci_dev *dev = NULL;
-> @@ -3031,6 +3019,7 @@ static int __init pci_apply_final_quirks(void)
->  		printk(KERN_DEBUG "PCI: CLS %u bytes\n",
->  		       pci_cache_line_size << 2);
->  
-> +	pci_apply_fixup_final_quirks = true;
->  	for_each_pci_dev(dev) {
->  		pci_fixup_device(pci_fixup_final, dev);
->  		/*
-> @@ -3051,7 +3040,6 @@ static int __init pci_apply_final_quirks(void)
->  			pci_cache_line_size = pci_dfl_cache_line_size;
->  		}
->  	}
-> -	pci_fixup_final_inited = 1;
->  
->  	if (!pci_cache_line_size) {
->  		printk(KERN_DEBUG "PCI: CLS %u bytes, default %u\n",
-> 
+> +done:
+>         return true;
+>
+>  sigsegv:
+> --
+> 1.7.9.5
+>
 
+This has the same odd property as the sigsegv path that the faulting
+instruction will appear to be the mov, not the syscall.  That seems to
+be okay, though -- various pieces of code that try to restart the segv
+are okay with that.
 
+Is there any code that assumes that changing rax (i.e. the syscall
+number) and restarting a syscall after SIGSYS will invoke the new
+syscall?  (The RET_TRACE path might be similar -- does the
+ptrace_event(PTRACE_EVENT_SECCOMP, data) in seccomp.c give a debugger
+a chance to synchronously cancel or change the syscall?
 
--- 
-~Randy
+If those issues aren't problems, then:
+
+Reviewed-by: Andy Lutomirski <luto@amacapital.net>
+
+(If the syscall number needs to change after the fact in the
+SECCOMP_RET_TRAP case, it'll be a mess.)
+
+--Andy
