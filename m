@@ -1,111 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933234Ab2GMMdV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 08:33:21 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:40312 "EHLO mail.skyhub.de"
+	id S933260Ab2GMMd2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 08:33:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47624 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933061Ab2GMMdS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 08:33:18 -0400
-Date: Fri, 13 Jul 2012 14:33:15 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Stefan Beller <stefanbeller@googlemail.com>
-Cc: Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Rewrite Documentation/SubmittingPatches.
-Message-ID: <20120713123314.GB10298@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Stefan Beller <stefanbeller@googlemail.com>,
-	Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <CALbm-EbggDYBwEDmo6bjEO_=p0YEmLHASNkfAN5J-P4-mT-vgg@mail.gmail.com>
+	id S933198Ab2GMMdU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 08:33:20 -0400
+Date: Fri, 13 Jul 2012 14:33:18 +0200
+From: Jan Kara <jack@suse.cz>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Jan Kara <jack@suse.cz>, Jeff Moyer <jmoyer@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Jens Axboe <jaxboe@fusionio.com>,
+        mgalbraith@suse.com
+Subject: Re: Deadlocks due to per-process plugging
+Message-ID: <20120713123318.GB20361@quack.suse.cz>
+References: <20120711133735.GA8122@quack.suse.cz>
+ <x49ehoii8ps.fsf@segfault.boston.devel.redhat.com>
+ <20120711201601.GB9779@quack.suse.cz>
+ <alpine.LFD.2.02.1207121552111.32033@ionos>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALbm-EbggDYBwEDmo6bjEO_=p0YEmLHASNkfAN5J-P4-mT-vgg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LFD.2.02.1207121552111.32033@ionos>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 13, 2012 at 01:51:50PM +0200, Stefan Beller wrote:
-> This updates the documentation on how to create patches and send
-> these to the kernel mailing list.
+On Thu 12-07-12 16:15:29, Thomas Gleixner wrote:
+> On Wed, 11 Jul 2012, Jan Kara wrote:
+> > On Wed 11-07-12 12:05:51, Jeff Moyer wrote:
+> > > Jan Kara <jack@suse.cz> writes:
+> > > 
+> > > >   Hello,
+> > > >
+> > > >   we've recently hit a deadlock in our QA runs which is caused by the
+> > > > per-process plugging code. The problem is as follows:
+> > > >   process A					process B (kjournald)
+> > > >   generic_file_aio_write()
+> > > >     blk_start_plug(&plug);
+> > > >     ...
+> > > >     somewhere in here we allocate memory and
+> > > >     direct reclaim submits buffer X for IO
+> > > >     ...
+> > > >     ext3_write_begin()
+> > > >       ext3_journal_start()
+> > > >         we need more space in a journal
+> > > >         so we want to checkpoint old transactions,
+> > > >         we block waiting for kjournald to commit
+> > > >         a currently running transaction.
+> > > > 						journal_commit_transaction()
+> > > > 						  wait for IO on buffer X
+> > > > 						  to complete as it is part
+> > > > 						  of the current transaction
+> > > >
+> > > >   => deadlock since A waits for B and B waits for A to do unplug.
+> > > > BTW: I don't think this is really ext3/ext4 specific. I think other
+> > > > filesystems can get into problems as well when direct reclaim submits some
+> > > > IO and the process subsequently blocks without submitting the IO.
+> > > 
+> > > So, I thought schedule would do the flush.  Checking the code:
+> > > 
+> > > asmlinkage void __sched schedule(void)
+> > > {
+> > >         struct task_struct *tsk = current;
+> > > 
+> > >         sched_submit_work(tsk);
+> > >         __schedule();
+> > > }
+> > > 
+> > > And sched_submit_work looks like this:
+> > > 
+> > > static inline void sched_submit_work(struct task_struct *tsk)
+> > > {
+> > >         if (!tsk->state || tsk_is_pi_blocked(tsk))
+> > >                 return;
+> > >         /*
+> > >          * If we are going to sleep and we have plugged IO queued,
+> > >          * make sure to submit it to avoid deadlocks.
+> > >          */
+> > >         if (blk_needs_flush_plug(tsk))
+> > >                 blk_schedule_flush_plug(tsk);
+> > > }
+> > > 
+> > > This eventually ends in a call to blk_run_queue_async(q) after
+> > > submitting the I/O from the plug list.  Right?  So is the question
+> > > really why doesn't the kblockd workqueue get scheduled?
 > 
-> The documentation before was written in times before git was there,
-> so the crafting of the patch needed to be done manually by diff -up
-> in the right directory.
+> >   Ah, I didn't know this. Thanks for the hint. So in the kdump I have I can
+> > see requests queued in tsk->plug despite the process is sleeping in
+> > TASK_UNINTERRUPTIBLE state.  So the only way how unplug could have been
+> > omitted is if tsk_is_pi_blocked() was true. Rummaging through the dump...
+> > indeed task has pi_blocked_on = 0xffff8802717d79c8. The dump is from an -rt
+> > kernel (I just didn't originally thought that makes any difference) so
+> > actually any mutex is rtmutex and thus tsk_is_pi_blocked() is true whenever
+> > we are sleeping on a mutex. So this seems like a bug in rtmutex code.
 > 
-> This patch aims at simplifying the patch sending process, without
-> breaking the output results.
-> 
-> A discussion with gregkh can be found at
-> https://plus.google.com/111049168280159033135/posts/ekAxK9achsA
-> 
-> Signed-off-by: Stefan Beller <stefanbeller@googlemail.com>
-> ---
->  Documentation/SubmittingPatches |  135 ++++++++++++++++++---------------------
->  1 files changed, 63 insertions(+), 72 deletions(-)
-> 
-> diff --git a/Documentation/SubmittingPatches b/Documentation/SubmittingPatches
-> index c379a2a..966db54 100644
-> --- a/Documentation/SubmittingPatches
-> +++ b/Documentation/SubmittingPatches
-> @@ -22,55 +22,21 @@ SECTION 1 - CREATING AND SENDING YOUR CHANGE
-> 
-> 
-> 
-> -1) "diff -up"
-> +1) Using git
->  ------------
-> 
-> -Use "diff -up" or "diff -uprN" to create patches.
-> +Use the distributed version control git to commit your changes
-> +into your local git repository.
-> 
-> -All changes to the Linux kernel occur in the form of patches, as
-> -generated by diff(1).  When creating your patch, make sure to create it
-> -in "unified diff" format, as supplied by the '-u' argument to diff(1).
-> -Also, please use the '-p' argument which shows which C function each
-> -change is in - that makes the resultant diff a lot easier to read.
-> -Patches should be based in the root kernel source directory,
-> -not in any lower subdirectory.
-> -
-> -To create a patch for a single file, it is often sufficient to do:
-> -
-> -	SRCTREE= linux-2.6
-> -	MYFILE=  drivers/net/mydriver.c
-> -
-> -	cd $SRCTREE
-> -	cp $MYFILE $MYFILE.orig
-> -	vi $MYFILE	# make your change
-> -	cd ..
-> -	diff -up $SRCTREE/$MYFILE{.orig,} > /tmp/patch
-> -
-> -To create a patch for multiple files, you should unpack a "vanilla",
-> -or unmodified kernel source tree, and generate a diff against your
-> -own source tree.  For example:
-> -
-> -	MYSRC= /devel/linux-2.6
-> -
-> -	tar xvfz linux-2.6.12.tar.gz
-> -	mv linux-2.6.12 linux-2.6.12-vanilla
-> -	diff -uprN -X linux-2.6.12-vanilla/Documentation/dontdiff \
-> -		linux-2.6.12-vanilla $MYSRC > /tmp/patch
-> -
-> -"dontdiff" is a list of files which are generated by the kernel during
-> -the build process, and should be ignored in any diff(1)-generated
-> -patch.  The "dontdiff" file is included in the kernel tree in
-> -2.6.12 and later.  For earlier kernel versions, you can get it
-> -from <http://www.xenotime.net/linux/doc/dontdiff>.
-> -
-> -Make sure your patch does not include any extra files which do not
-> -belong in a patch submission.  Make sure to review your patch -after-
-> -generated it with diff(1), to ensure accuracy.
+> Well, the reason why this check is there is that the task which is
+> blocked on a lock can hold another lock which might cause a deadlock
+> in the flush path.
+  OK. Let me understand the details. Block layer needs just queue_lock for
+unplug to succeed. That is a spinlock but in RT kernel, even a process
+holding a spinlock can be preempted if I remember correctly. So that
+condition is there effectively to not unplug when a task is being scheduled
+away while holding queue_lock? Did I get it right?
 
-Can we keep this at the end of the document and call it "Creating
-patches - the obsolete way" or similar, as a backup for people who can't
-use git for whatever reasons?
+> > Thomas, you seemed to have added that condition... Any idea how to avoid
+> > the deadlock?
+> 
+> Good question. We could do the flush when the blocked task does not
+> hold a lock itself. Might be worth a try.
+  Yeah, that should work for avoiding the deadlock as well.
 
+								Honza
 -- 
-Regards/Gruss,
-Boris.
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
