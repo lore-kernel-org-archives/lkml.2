@@ -1,47 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755683Ab2GMRuh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 13:50:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4024 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751623Ab2GMRug (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 13:50:36 -0400
-Date: Fri, 13 Jul 2012 13:50:31 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: Re: Remove easily user-triggerable BUG from generic_setlease
-Message-ID: <20120713175030.GA8911@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	"J. Bruce Fields" <bfields@redhat.com>
-References: <20120713173536.GB25432@redhat.com>
- <CA+55aFyg7Cs5KF4HGQKAUi29+RpXJdUyEm6uy57rwVBB_jyN3Q@mail.gmail.com>
+	id S1161091Ab2GMRup (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 13:50:45 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:41667 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751623Ab2GMRuj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 13:50:39 -0400
+Date: Fri, 13 Jul 2012 18:50:36 +0100
+From: Matthew Garrett <mjg@redhat.com>
+To: Khalid Aziz <khalid.aziz@hp.com>
+Cc: linux-kernel@vger.kernel.org, tony.luck@intel.com, mikew@google.com,
+        keescook@chromium.org, gong.chen@linux.intel.com
+Subject: Re: [PATCH v2] Add missing attributes to EFI variable attribute
+ print out from sysfs
+Message-ID: <20120713175036.GB18496@srcf.ucam.org>
+References: <20120713174216.GA10445@hp.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFyg7Cs5KF4HGQKAUi29+RpXJdUyEm6uy57rwVBB_jyN3Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120713174216.GA10445@hp.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 13, 2012 at 10:47:43AM -0700, Linus Torvalds wrote:
- > On Fri, Jul 13, 2012 at 10:35 AM, Dave Jones <davej@redhat.com> wrote:
- > > This can be trivially triggered from userspace by passing in something unexpected.
- > 
- > Argh. It looks like it would be harmless (apart from the noise),
- > except we hold file_lock_lock. Which turns the BUG_ON() into not just
- > "noise and kill the process", but "noise and kill the process and
- > leave a nasty lock held".
-
-Yeah, box wedged shortly afterwards. Not cool.
-
- > This seems to go back to 3.2, so stable should be cc'd, no?
-
-yeah, definitly. my bad.
-
-	Dave
-
+On Fri, Jul 13, 2012 at 11:42:16AM -0600, Khalid Aziz wrote:
+> Some of the EFI variable attributes are missing from print out from
+> /sys/firmware/efi/vars/*/attributes. This patch adds those in. It also
+> updates code to use pre-defined constants for masking current value
+> of attributes.
+> 
+> Signed-off-by: Khalid Aziz <khalid.aziz@hp.com>
+> Cc: stable@vger.kernel.org
+Acked-by: Matthew Garrett <mjg@redhat.com>
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
