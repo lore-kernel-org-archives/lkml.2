@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932855Ab2GMKTW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 06:19:22 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50565 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932482Ab2GMKTT (ORCPT
+	id S932928Ab2GMKT1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 06:19:27 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:35178 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932482Ab2GMKTY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 06:19:19 -0400
+	Fri, 13 Jul 2012 06:19:24 -0400
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: Russell King <linux@arm.linux.org.uk>,
         Jason Wessel <jason.wessel@windriver.com>
@@ -15,9 +15,9 @@ Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linaro-kernel@lists.linaro.org, patches@linaro.org,
         kernel-team@android.com, kgdb-bugreport@lists.sourceforge.net
-Subject: [PATCH 5/8] ARM: kgdb_fiq: Implement knocking into KDB via escape command
-Date: Fri, 13 Jul 2012 03:16:45 -0700
-Message-Id: <1342174608-22407-5-git-send-email-anton.vorontsov@linaro.org>
+Subject: [PATCH 7/8] ARM: versatile: Make able to use UART ports for KGDB FIQ debugger
+Date: Fri, 13 Jul 2012 03:16:47 -0700
+Message-Id: <1342174608-22407-7-git-send-email-anton.vorontsov@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <20120713101605.GA16139@lizard>
 References: <20120713101605.GA16139@lizard>
@@ -25,105 +25,95 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As Colin Cross noticed, serial ports could be noisy, so occasional
-characters once in a while are possible. So, considering the noise
-possibility, entering the debugger on any received byte is unacceptable
-for production devices.
+If enabled, kernel will able to enter KGDB upon serial line activity on
+UART ports.
 
-This changes KGDB FIQ behaviour in a such way so that we have to type the
-GDB-protocol "$3#33" command to actually enter the debugger, the kernel
-will print the following prompt:
+Note that even with this patch and CONFIG_KGDB_FIQ is enabled, you still
+need to pass kgdb_fiq.enable=1 kernel command line option, otherwise UART
+will behave in a normal way.
 
-	Type $3#33 to enter the debugger.
+By default UART0 is used, but this can be changed via kgdb_fiq.uart_num
+kernel command line option.
 
-This is the exactly the same command we use to escape from KGDB to KDB,
-so it should be all pretty familiar.
-
-For convenience, there is a kgdb_fiq.knock kernel command line option,
-when set to 0, this turns the special command to just a return key
-press, so the kernel will be printing this:
-
-	Hit <return> to enter the debugger.
-
-Suggested-by: Colin Cross <ccross@android.com>
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 ---
- arch/arm/kernel/kgdb_fiq.c |   48 ++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 48 insertions(+)
+ arch/arm/Kconfig                            |    1 +
+ arch/arm/mach-versatile/Makefile            |    1 +
+ arch/arm/mach-versatile/include/mach/irqs.h |    1 +
+ arch/arm/mach-versatile/kgdb_fiq.c          |   31 +++++++++++++++++++++++++++
+ 4 files changed, 34 insertions(+)
+ create mode 100644 arch/arm/mach-versatile/kgdb_fiq.c
 
-diff --git a/arch/arm/kernel/kgdb_fiq.c b/arch/arm/kernel/kgdb_fiq.c
-index 7ec9979..5308697 100644
---- a/arch/arm/kernel/kgdb_fiq.c
-+++ b/arch/arm/kernel/kgdb_fiq.c
-@@ -17,6 +17,7 @@
- #include <linux/init.h>
- #include <linux/slab.h>
- #include <linux/hardirq.h>
-+#include <linux/kdb.h>
- #include <linux/kgdb.h>
- #include <asm/fiq.h>
- #include <asm/exception.h>
-@@ -25,6 +26,51 @@ static int kgdb_fiq_enabled;
- module_param_named(enable, kgdb_fiq_enabled, int, 0600);
- MODULE_PARM_DESC(enable, "set to 1 to enable FIQ KGDB");
- 
-+static bool kgdb_fiq_knock = 1;
-+module_param_named(knock, kgdb_fiq_knock, bool, 0600);
-+MODULE_PARM_DESC(knock, "'$3#33' command must be used to enter the debugger");
-+
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index ae6ddf1..c0df1ba 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -311,6 +311,7 @@ config ARCH_VERSATILE
+ 	select ICST
+ 	select GENERIC_CLOCKEVENTS
+ 	select ARCH_WANT_OPTIONAL_GPIOLIB
++	select ARCH_MIGHT_HAVE_FIQ
+ 	select NEED_MACH_IO_H if PCI
+ 	select PLAT_VERSATILE
+ 	select PLAT_VERSATILE_CLCD
+diff --git a/arch/arm/mach-versatile/Makefile b/arch/arm/mach-versatile/Makefile
+index 81fa3fe..bfd761f 100644
+--- a/arch/arm/mach-versatile/Makefile
++++ b/arch/arm/mach-versatile/Makefile
+@@ -7,3 +7,4 @@ obj-$(CONFIG_ARCH_VERSATILE_PB)		+= versatile_pb.o
+ obj-$(CONFIG_MACH_VERSATILE_AB)		+= versatile_ab.o
+ obj-$(CONFIG_MACH_VERSATILE_DT)		+= versatile_dt.o
+ obj-$(CONFIG_PCI)			+= pci.o
++obj-$(CONFIG_KGDB_FIQ)			+= kgdb_fiq.o
+diff --git a/arch/arm/mach-versatile/include/mach/irqs.h b/arch/arm/mach-versatile/include/mach/irqs.h
+index bf44c61..fcd2a95 100644
+--- a/arch/arm/mach-versatile/include/mach/irqs.h
++++ b/arch/arm/mach-versatile/include/mach/irqs.h
+@@ -26,6 +26,7 @@
+  *  held within platform.h
+  */
+ #define IRQ_VIC_START		0
++#define FIQ_START		IRQ_VIC_START
+ #define IRQ_WDOGINT		(IRQ_VIC_START + INT_WDOGINT)
+ #define IRQ_SOFTINT		(IRQ_VIC_START + INT_SOFTINT)
+ #define IRQ_COMMRx		(IRQ_VIC_START + INT_COMMRx)
+diff --git a/arch/arm/mach-versatile/kgdb_fiq.c b/arch/arm/mach-versatile/kgdb_fiq.c
+new file mode 100644
+index 0000000..3cdf71d
+--- /dev/null
++++ b/arch/arm/mach-versatile/kgdb_fiq.c
+@@ -0,0 +1,31 @@
 +/*
-+ * "Serial ports are often noisy, especially when muxed over another port (we
-+ * often use serial over the headset connector). Noise on the async command
-+ * line just causes characters that are ignored, on a command line that blocked
-+ * execution noise would be catastrophic." -- Colin Cross
++ * KGDB FIQ board support
 + *
-+ * So, this small function implements KGDB/KDB knocking on the serial line: we
-+ * won't enter the debugger until we receive a known magic phrase (which is
-+ * actually "$3#33", known as "escape to KDB" command. If knocking is disabled,
-+ * just pressing the return key is enough to enter the debugger.
++ * Copyright 2012 Linaro Ltd.
++ *		  Anton Vorontsov <anton.vorontsov@linaro.org>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 as published
++ * by the Free Software Foundation.
 + */
-+static bool kgdb_fiq_poll_knock(void)
++
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/kgdb.h>
++#include <mach/hardware.h>
++#include <mach/platform.h>
++#include <asm/hardware/vic.h>
++
++static int kgdb_fiq;
++module_param_named(uart_num, kgdb_fiq, int, 0600);
++MODULE_PARM_DESC(uart_num, "UART<number> port to use for KGDB FIQ");
++
++static int __init kgdb_fiq_init(void)
 +{
-+	static int n;
-+	int c = -1;
-+	get_char_func *getc;
-+	const char *magic = "$3#33";
-+	size_t m = strlen(magic);
++	WARN_ON(kgdb_fiq > INT_UARTINT2 - INT_UARTINT0);
 +
-+	for (getc = &kdb_poll_funcs[0]; *getc; ++getc) {
-+		c = (*getc)();
-+		if (c >= 0)
-+			break;
-+	}
-+
-+	if (!kgdb_fiq_knock && (c == '\r' || c == '\n')) {
-+		return 1;
-+	} else if (c == magic[n]) {
-+		kdb_printf("%c", c);
-+		n = (n + 1) % m;
-+		if (!n)
-+			return 1;
-+	} else {
-+		n = 0;
-+		kdb_printf("\n%s %s to enter the debugger.\n",
-+			   kgdb_fiq_knock ? "Type" : "Hit",
-+			   kgdb_fiq_knock ? magic  : "<return>");
-+	}
-+	return 0;
++	return kgdb_register_fiq(INT_UARTINT0 + kgdb_fiq,
++				 vic_fiq_select,
++				 vic_is_fiq_rised);
 +}
-+
- static unsigned int kgdb_fiq;
- static void (*kgdb_enable_fiq)(unsigned int irq, bool on);
- static bool (*is_kgdb_fiq)(unsigned int irq);
-@@ -33,6 +79,8 @@ asmlinkage void __exception_irq_entry kgdb_fiq_do_handle(struct pt_regs *regs)
- {
- 	if (!is_kgdb_fiq(kgdb_fiq))
- 		return;
-+	if (!kgdb_fiq_poll_knock())
-+		return;
- 
- 	nmi_enter();
- 	kgdb_handle_exception(1, 0, 0, regs);
++console_initcall(kgdb_fiq_init);
 -- 
 1.7.10.4
 
