@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756254Ab2GMVGO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 17:06:14 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:43047 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754160Ab2GMVGN (ORCPT
+	id S932351Ab2GMVIJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 17:08:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55589 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755412Ab2GMVIH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 17:06:13 -0400
-Message-ID: <50008DBD.2030800@hp.com>
-Date: Fri, 13 Jul 2012 15:06:05 -0600
-From: Khalid Aziz <khalid.aziz@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Dave Jones <davej@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
-        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
-        Debian Kernel Team <debian-kernel@lists.debian.org>,
-        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] Simplifying kernel configuration for distro issues
-References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com>
-In-Reply-To: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Fri, 13 Jul 2012 17:08:07 -0400
+Date: Fri, 13 Jul 2012 14:08:06 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Serge Hallyn <serge.hallyn@canonical.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "Dmitry V. Levin" <ldv@altlinux.org>,
+        Pavel Emelyanov <xemul@openvz.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Doug Ledford <dledford@redhat.com>, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org
+Subject: Re: [PATCH] ns: move free_nsproxy() out of do_exit() path
+Message-Id: <20120713140806.b3d0fda8.akpm@linux-foundation.org>
+In-Reply-To: <1342180088-22647-1-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1342180088-22647-1-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/13/2012 02:37 PM, Linus Torvalds wrote:
+On Fri, 13 Jul 2012 14:48:08 +0300
+"Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
 
->
-> Would something like this make sense to people? I really think that
-> "How do I generate a kernel config file" is one of those things that
-> keeps normal people from compiling their own kernel. And we *want*
-> people to compile their own kernel so that they can help with things
-> like bisecting etc. The more, the merrier.
->
-This is a great idea. 7-8 years ago I used to be able to create a
-minimally configured kernel from upstream and run my Debian/Ubuntu/...
-install with it. It got much harder in a hurry and now it takes too much
-work to figure out how to configure upstream kernel to make it work with
-distro. It is a 3-5 hour compile to start with distro config file and that
-is just too painful. I will help with testing configs or helping sort
-through the config options.
+> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> 
+> free_nsproxy() is too heavy to be on exit path. Let's free namespaces
+> asynchronously to not block exit_group() syscall.
 
--- 
-Khalid Aziz
-khalid.aziz@hp.com
+Please be specific, and complete.
+
+Why is it "too heavy"?  Where is the time being spent?  Is it spent in
+D state or is it spent burning CPU cycles?  Does the patch simply
+offload the work into kernel threads, providing no net gain?
+
+> The patch also fixes bug with free namespace without synchronize_rcu() through
+> put_nsproxy().
+
+I just don't understand this description.  Please send a new one which
+includes all details about the bug, including a description of
+the user-visible effects of the bug.
 
