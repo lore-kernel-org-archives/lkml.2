@@ -1,52 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757967Ab2GMUzg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 16:55:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26743 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755911Ab2GMUy5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 16:54:57 -0400
-Date: Fri, 13 Jul 2012 16:54:36 -0400
-From: Dave Jones <davej@redhat.com>
-To: Darren Hart <darren@dvhart.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: 3.5-rc6 futex_wait_requeue_pi oops.
-Message-ID: <20120713205436.GF1707@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Darren Hart <darren@dvhart.com>,
-	Peter Zijlstra <peterz@infradead.org>,
-	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Rusty Russell <rusty@rustcorp.com.au>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-References: <20120713180823.GA24972@redhat.com>
- <alpine.LFD.2.02.1207132032330.32033@ionos>
- <20120713185402.GA1707@redhat.com>
- <alpine.LFD.2.02.1207132108340.32033@ionos>
- <20120713195615.GC1707@redhat.com>
- <CAGChsmNnE_iEKWagULzewSPWsAbaA2A-mXg4CS+vyG3a8Pbj1A@mail.gmail.com>
+	id S1757515Ab2GMU6y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 16:58:54 -0400
+Received: from smtprelay0041.b.hostedemail.com ([64.98.42.41]:46812 "EHLO
+	smtprelay.b.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750970Ab2GMU6w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 16:58:52 -0400
+X-Greylist: delayed 487 seconds by postgrey-1.27 at vger.kernel.org; Fri, 13 Jul 2012 16:58:52 EDT
+X-Panda: scanned!
+X-Session-Marker: 742E617274656D406C79636F732E636F6D
+X-Filterd-Recvd-Size: 1465
+Date: Fri, 13 Jul 2012 20:50:43 +0000 (GMT)
+From: "Artem S. Tashkinov" <t.artem@lycos.com>
+To: linux-kernel@vger.kernel.org
+Message-ID: <2129604960.58317.1342212643807.JavaMail.mail@webmail10>
+Subject: Kernel 3.5-rc5 cannot boot my PC - partitions parsing issues
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGChsmNnE_iEKWagULzewSPWsAbaA2A-mXg4CS+vyG3a8Pbj1A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Mailer: Webmail
+X-Originating-IP: [37.112.121.152]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 13, 2012 at 01:27:41PM -0700, Darren Hart wrote:
- > I'm returning from a family vacation just now, I'll have a closer look on
- > Monday. It seems to me we recently had some futex lockdep annotations go
- > in, any chance those are somehow involved?
- > 
- > So we have a real user of the futex requeue pi code? Is this via pthread
- > condvars? Is this test available for me to run?
+Hello,
 
-I wouldn't call it a "real user" per se.
-details (including git checkout) at http://codemonkey.org.uk/projects/trinity/
+I took my Linux 3.3 configuration, made oldconfig on top of it, removed a few unneeded options
+and now Linux kernel 3.5-rc6 doesn't boot:
 
-	Dave
+VFS: Cannot open root device "sda2" or unknown-block(0,0): error -6
+Please append a correct "root=" boot option; here are the available partitions:
+<EMPTY LIST>
+Kernel panic - not syncing: VFS: Unable to mount root fs on unknown-block(0,0)
+
+I haven't changed anything in regard to the storage subsystem or block device support, I even
+explicitly enabled:
+
+CONFIG_PARTITION_ADVANCED=y
+CONFIG_MSDOS_PARTITION=y
+
+to no avail.
+
+I've posted the relevant information here: https://bugzilla.kernel.org/show_bug.cgi?id=44771
+
+Please advise.
