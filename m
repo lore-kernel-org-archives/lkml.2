@@ -1,44 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758056Ab2GMRXV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 13:23:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5541 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755936Ab2GMRXS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 13:23:18 -0400
-Date: Fri, 13 Jul 2012 19:20:36 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Denys Vlasenko <vda.linux@gmail.com>, linux-kernel@vger.kernel.org,
-        "Jonathan M. Foote" <jmfoote@cert.org>,
-        "H. J. Lu" <hjl.tools@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Denys Vlasenko <dvlasenk@redhat.com>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>
-Subject: Re: [PATCH v2] Extend core dump note section to contain file names
-	of mapped files
-Message-ID: <20120713172036.GA25244@redhat.com>
-References: <201207122142.02137.vda.linux@googlemail.com> <20120713145806.GA17217@redhat.com> <20120713155632.GA30239@tassilo.jf.intel.com>
+	id S933479Ab2GMRXD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 13:23:03 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:2611 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932277Ab2GMRWZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 13:22:25 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 13 Jul 2012 10:18:31 -0700
+Message-ID: <500057A0.1050108@nvidia.com>
+Date: Fri, 13 Jul 2012 22:45:12 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120713155632.GA30239@tassilo.jf.intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "ccross@android.com" <ccross@android.com>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "lrg@ti.com" <lrg@ti.com>,
+        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 2/2] regulator: tps6586x: add support for input supply
+References: <1342187432-18668-1-git-send-email-ldewangan@nvidia.com> <1342187432-18668-3-git-send-email-ldewangan@nvidia.com> <20120713142229.GM4215@opensource.wolfsonmicro.com>
+In-Reply-To: <20120713142229.GM4215@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/13, Andi Kleen wrote:
+On Friday 13 July 2012 07:52 PM, Mark Brown wrote:
+> * PGP Signed by an unknown key
 >
-> More information during debugging is always good.
+> On Fri, Jul 13, 2012 at 07:20:32PM +0530, Laxman Dewangan wrote:
+>> There is multiple voltage input pins on device which
+>> takes the voltage input for different voltage regulator.
+>> Support to configure the voltage input supplied by
+>> different regulator for each regulators.
+> Applied, thanks.
+Thanks for care.
 
-Agreed.
-
-BTW. Can't we turn (rename and export) alloc_fdmem/free_fdmem
-into the generic helpers? This patch looks like the "obvious"
-user. And pidlist_allocate... probably something else.
-
-(Denys, to avoid the confusion, I do not suggest to change your
- patch now, we can do this later).
-
-Oleg.
-
+I was thinking that 1/2 should also go through your tree to avoid any 
+functionality break on existing platform who are using this regulator.
