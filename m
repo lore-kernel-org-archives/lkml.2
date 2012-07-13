@@ -1,86 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964772Ab2GMKHk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 06:07:40 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:42872 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753604Ab2GMKHj (ORCPT
+	id S1757201Ab2GMKJv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 06:09:51 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:38367 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755704Ab2GMKJu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 06:07:39 -0400
+	Fri, 13 Jul 2012 06:09:50 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120712150623.06b2f71e.akpm@linux-foundation.org>
-References: <1342091093-1909-1-git-send-email-akinobu.mita@gmail.com>
-	<20120712150623.06b2f71e.akpm@linux-foundation.org>
-Date: Fri, 13 Jul 2012 19:07:38 +0900
-Message-ID: <CAC5umyhPUZ_EVuMSFEzw5nYz6+DjkNLCe12Vvkx-9wig7nA+pA@mail.gmail.com>
-Subject: Re: [PATCH] fork: fix error handling in dup_task()
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, David Howells <dhowells@redhat.com>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        linux-am33-list@redhat.com, Paul Mundt <lethal@linux-sh.org>,
-        linux-sh@vger.kernel.org, Chris Metcalf <cmetcalf@tilera.com>,
-        Salman Qazi <sqazi@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CA+icZUVorJNMQ3wyz8WuZop_fwwOuBo38wZg9s9RJizhM0yc-w@mail.gmail.com>
+References: <CA+icZUVorJNMQ3wyz8WuZop_fwwOuBo38wZg9s9RJizhM0yc-w@mail.gmail.com>
+Date: Fri, 13 Jul 2012 12:09:48 +0200
+Message-ID: <CA+icZUU+_PCVqWP028X7k1=Gc-EwtrXWtHyXB+EvRoofXCdmfg@mail.gmail.com>
+Subject: Re: [3.5-rc6+] mei: irq: request_threaded_irq is missing the
+ IRQF_ONESHOT flag
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Tomas Winkler <tomas.winkler@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Roland Dreier <roland@purestorage.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/7/13 Andrew Morton <akpm@linux-foundation.org>:
-> On Thu, 12 Jul 2012 20:04:53 +0900
-> Akinobu Mita <akinobu.mita@gmail.com> wrote:
+On Fri, Jul 13, 2012 at 11:47 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> Hi,
 >
->> The function dup_task() may fail at the following function calls in
->> the following order.
->>
->> 0) alloc_task_struct_node()
->> 1) alloc_thread_info_node()
->> 2) arch_dup_task_struct()
->>
->> Error by 0) is not a matter, it can just return.  But error by 1)
->> requires releasing task_struct allocated by 0) before it returns.
->> Likewise, error by 2) requires releasing task_struct and thread_info
->> allocated by 0) and 1).
->>
->> The existing error handling calls free_task_struct() and
->> free_thread_info() which do not only release task_struct and
->> thread_info, but also call architecture specific
->> arch_release_task_struct() and arch_release_thread_info().
->>
->> The problem is that task_struct and thread_info are not fully
->> initialized yet at this point, but arch_release_task_struct() and
->> arch_release_thread_info() are called with them.
->>
->> For example, x86 defines its own arch_release_task_struct() that
->> releases a task_xstate.  If alloc_thread_info_node() fails in
->> dup_task(), arch_release_task_struct() is called with task_struct
->> which is just allocated and filled with garbage in this error handling.
->>
->> This actually happened with tools/testing/fault-injection/failcmd.sh
->>
->>       # env FAILCMD_TYPE=fail_page_alloc \
->>               ./tools/testing/fault-injection/failcmd.sh --times=100 \
->>               --min-order=0 --ignore-gfp-wait=0 \
->>               -- make -C tools/testing/selftests/ run_tests
->>
->> In order to fix this issue, make free_{task_struct,thread_info}() not
->> to call arch_release_{task_struct,thread_info}() and call
->> arch_release_{task_struct,thread_info}() implicitly where needed.
->>
->> Default arch_release_task_struct() and arch_release_thread_info() are
->> defined as empty by default.  So this change only affects the
->> architectures which implement their own arch_release_task_struct() or
->> arch_release_thread_info() as listed below.
+> while dealing with [1], I saw this mei-related infos in dmesg when
+> doing a suspend + resume (see [1] for more logs):
 >
-> This conflicts with Salman's fix (below) which is in linux-next via
-> Ingo's tree.
+> [17046.348467]  [<ffffffffa00554d8>] mei_pci_suspend+0x78/0xd0 [mei]
+> [17047.460315] mei 0000:00:16.0: irq 47 for MSI/MSI-X
+> [17047.460512] mei 0000:00:16.0: request_threaded_irq failed: irq = 47.
 >
-> It appears that we should drop Salman's patch altogether and use yours?
+> I am not sure whom to address with the issue - so I just asked on
+> #linux-rt and Thomas responded:
+>
+> [ 13-Jul-2012: German local-time (UTC+2) ]
+> ...
+> [11:03:40] <tglx> request_threaded_irq is missing the IRQF_ONESHOT flag
+> ...
+> [11:24:18] <tglx> anyone can fix it by sending a patch which adds the flag :)
+>
+> Futhermore, I found those commits, so I added folks from there to this BR:
+>
+> 16a50b1 mei: pci_resume: set IRQF_ONESHOT for msi request_threaded_irq
+> aa189ec misc: mei: set IRQF_ONESHOT for msi request_threaded_irq
+>
+> If you need more infos and/or logs, please let me know.
+>
+> Feel free to add:
+>
+>      Reported-by: Sedat Dilek <sedat.dilek@gmail.com>
+>
+> Kind Regards,
+> - Sedat (dileks on IRC) -
+>
+> [1] http://marc.info/?l=linux-kernel&m=134216822724119&w=2
 
-Yes.  Salman's patch fixes error handling for x86, sh, and mn10300.
-But it doesn't fix for tile.  If tile's arch_release_thread_info() is
-called after setup_thread_stack(tsk, orig), it may release original
-task's step_state. (tsk->step_state will be cleared by tile's
-copy_thread() after dup_task_struct()).
+Here some more infos:
+
+$ lspci -nnvv | egrep 'mei|00:16'
+00:16.0 Communication controller [0780]: Intel Corporation 6
+Series/C200 Series Chipset Family MEI Controller #1 [8086:1c3a] (rev
+04)
+        Kernel driver in use: mei
+
+$ dmesg | egrep 'mei|00:16'
+[    0.242776] pci 0000:00:16.0: [8086:1c3a] type 00 class 0x078000
+[    0.242802] pci 0000:00:16.0: reg 10: [mem 0xf0705000-0xf070500f 64bit]
+[    0.242884] pci 0000:00:16.0: PME# supported from D0 D3hot D3cold
+[   23.645968] mei 0000:00:16.0: setting latency timer to 64
+[   23.646041] mei 0000:00:16.0: irq 47 for MSI/MSI-X
+[   23.650677] mei 0000:00:16.0: wd: failed to find the client
+[ 1386.959871] mei 0000:00:16.0: irq 47 for MSI/MSI-X
+[ 1386.960810] mei 0000:00:16.0: wd: failed to find the client
+[ 1435.138062] mei 0000:00:16.0: irq 47 for MSI/MSI-X
+[ 1435.139033] mei 0000:00:16.0: wd: failed to find the client
+
+>From the above mentionned dmesg log:
+
+$ dmesg | egrep 'mei|00:16|IRQF_ONESHOT'
+CALL-TRACE_3.5.0-rc6-1-iniza-generic_PM-related_HW-hidden.txt
+
+[17046.348410] Modules linked in: snd_hda_codec_hdmi
+snd_hda_codec_realtek rfcomm bnep parport_pc ppdev joydev
+snd_hda_intel snd_hda_codec snd_hwdep snd_pcm coretemp kvm_intel
+snd_page_alloc kvm arc4 snd_seq_midi snd_seq_midi_event iwlwifi i915
+snd_rawmidi uvcvideo snd_seq ghash_clmulni_intel snd_seq_device
+videobuf2_vmalloc aesni_intel snd_timer videobuf2_memops aes_x86_64
+drm_kms_helper videobuf2_core cryptd mac80211 drm snd videodev psmouse
+samsung_laptop i2c_algo_bit btusb hid_generic soundcore microcode
+serio_raw cfg80211 lp mei bluetooth video mac_hid lpc_ich parport
+usbhid hid r8169
+[17046.348467]  [<ffffffffa00554d8>] mei_pci_suspend+0x78/0xd0 [mei]
+[17047.460315] mei 0000:00:16.0: irq 47 for MSI/MSI-X
+[17047.460512] mei 0000:00:16.0: request_threaded_irq failed: irq = 47.
+[17047.460520] PM: Device 0000:00:16.0 failed to resume async: error -22
+
+I am sorry if this is a different issue as already reported.
+
+Greetings,
+- Sedat -
