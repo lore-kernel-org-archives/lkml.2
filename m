@@ -1,311 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758343Ab2GMAn0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 20:43:26 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:45024 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755297Ab2GMAnX (ORCPT
+	id S1162008Ab2GMApm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 20:45:42 -0400
+Received: from mail209.messagelabs.com ([216.82.255.3]:54375 "EHLO
+	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756649Ab2GMApk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 20:43:23 -0400
-Message-ID: <4FFF6F23.3090108@us.ibm.com>
-Date: Thu, 12 Jul 2012 17:43:15 -0700
-From: John Stultz <johnstul@us.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
+	Thu, 12 Jul 2012 20:45:40 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-5.tower-209.messagelabs.com!1342140337!8537925!2
+X-Originating-IP: [216.166.12.98]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
-CC: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, stable@vger.kernel.org
-Subject: Re: [PATCH 0/6] Fix for leapsecond caused hrtimer/futex issue (updated)
-References: <1341960205-56738-1-git-send-email-johnstul@us.ibm.com> <4FFCB404.1000705@us.ibm.com>
-In-Reply-To: <4FFCB404.1000705@us.ibm.com>
-Content-Type: multipart/mixed;
- boundary="------------070107020508050409060802"
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12071300-4242-0000-0000-0000024EA56F
+Subject: [PATCH 0/2] staging: comedi: remove the devpriv and thisboard macros
+Date: Thu, 12 Jul 2012 17:45:31 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <gregkh@linuxfoundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201207121745.31613.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------070107020508050409060802
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+The macros 'devpriv' and 'thisboard' rely on a local variable having
+a specific name and yeild pointers derived from that variable. Replace
+the macros with local variables where used and use to comedi_board()
+helper to get the 'thisboard' pointer.
 
-On 07/10/2012 04:00 PM, John Stultz wrote:
-> On 07/10/2012 03:43 PM, John Stultz wrote:
->> Over the weekend, Thomas got a chance to review the leap second fix
->> in more detail and had a few additional changes he wanted to make
->> to improve performance as well as style.
->>
->> So this iteration includes his modifications.
->>
->> Once merged, I'll be working to get the backports finished as quickly
->> as I can and sent to -stable.
->>
->
-> Once again, here's the test case I've been using to stress test 
-> leapsecond insertion/deletion (the deletion testing is new since last 
-> round).
+The dt282x driver needs some initial cleanup to remove some macros that
+use the 'devpriv' macro.
 
-Prarit noticed a small bug with the test case. We're not initializing 
-the timespec tv_nsec value before sleeping, so in some cases 
-clock_nanosleep will return -EINVAL.
+There are still a couple comedi drivers that have the macros but they are
+pretty tangled up and require a bit more work.
 
-This version fixes this and cleans up some of the timespec/timeval usage.
+Unfortunately this patch adds quite a few lines-of-code to the drivers.
+But, it cleans up the CodingStyle issue pointed out in Chapter 12:
 
-thanks
--john
+2) macros that depend on having a local variable with a magic name:
 
+#define FOO(val) bar(index, val)
 
---------------070107020508050409060802
-Content-Type: text/x-csrc;
- name="leap-a-day.c"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="leap-a-day.c"
+might look like a good thing, but it's confusing as hell when one reads the
+code and it's prone to breakage from seemingly innocent changes.
 
-/* Leap second stress test
- *              by: john stultz (johnstul@us.ibm.com)
- *              (C) Copyright IBM 2012
- *              Licensed under the GPLv2
- *
- *  This test signals the kernel to insert a leap second
- *  every day at midnight GMT. This allows for stessing the
- *  kernel's leap-second behavior, as well as how well applications
- *  handle the leap-second discontinuity.
- *
- *  Usage: leap-a-day [-s]
- *
- *  Options:
- *	-s:	Each iteration, set the date to 10 seconds before midnight GMT.
- *		This speeds up the number of leapsecond transitions tested,
- *		but because it calls settimeofday frequently, advancing the
- *		time by 24 hours every ~16 seconds, it may cause application
- *		disruption.
- *
- *  Other notes: Disabling NTP prior to running this is advised, as the two
- *		 may conflict in thier commands to the kernel.
- *
- *  To build:
- *	$ gcc leap-a-day.c -o leap-a-day -lrt
- */
+H Hartley Sweeten (2):
+  staging: comedi: dt282x: remove the outw wrapper macros
+  staging: comedi: remove the devpriv and thisboard macros
 
+ .../staging/comedi/drivers/addi-data/addi_common.c |  19 +++-
+ .../staging/comedi/drivers/addi-data/addi_eeprom.c |   2 +
+ .../comedi/drivers/addi-data/hwdrv_apci035.c       |  14 +++
+ .../comedi/drivers/addi-data/hwdrv_apci1032.c      |  11 +-
+ .../comedi/drivers/addi-data/hwdrv_apci1500.c      |  21 +++-
+ .../comedi/drivers/addi-data/hwdrv_apci1516.c      |  17 ++-
+ .../comedi/drivers/addi-data/hwdrv_apci1564.c      |  16 +++
+ .../comedi/drivers/addi-data/hwdrv_apci16xx.c      |   8 ++
+ .../comedi/drivers/addi-data/hwdrv_apci2016.c      |  12 ++
+ .../comedi/drivers/addi-data/hwdrv_apci2032.c      |  14 +++
+ .../comedi/drivers/addi-data/hwdrv_apci2200.c      |  19 +++-
+ .../comedi/drivers/addi-data/hwdrv_apci3120.c      |  42 +++++--
+ .../comedi/drivers/addi-data/hwdrv_apci3200.c      |  27 ++++-
+ .../comedi/drivers/addi-data/hwdrv_apci3501.c      |  18 +++
+ .../comedi/drivers/addi-data/hwdrv_apci3xxx.c      |  18 +++
+ drivers/staging/comedi/drivers/adl_pci9111.c       |  36 ++++--
+ drivers/staging/comedi/drivers/adl_pci9118.c       |  55 +++++++++-
+ drivers/staging/comedi/drivers/adq12b.c            |  10 +-
+ drivers/staging/comedi/drivers/adv_pci1710.c       |  45 +++++++-
+ drivers/staging/comedi/drivers/adv_pci1723.c       |  20 ++--
+ drivers/staging/comedi/drivers/adv_pci_dio.c       |  22 +++-
+ drivers/staging/comedi/drivers/aio_aio12_8.c       |   8 +-
+ drivers/staging/comedi/drivers/aio_iiro_16.c       |  11 --
+ drivers/staging/comedi/drivers/amplc_dio200.c      |  10 +-
+ drivers/staging/comedi/drivers/amplc_pc236.c       |  12 +-
+ drivers/staging/comedi/drivers/amplc_pc263.c       |  11 +-
+ drivers/staging/comedi/drivers/amplc_pci224.c      |   9 +-
+ drivers/staging/comedi/drivers/amplc_pci230.c      |   3 +-
+ drivers/staging/comedi/drivers/cb_das16_cs.c       |   4 +-
+ drivers/staging/comedi/drivers/cb_pcidas.c         |   2 +-
+ drivers/staging/comedi/drivers/cb_pcidda.c         |  27 ++---
+ drivers/staging/comedi/drivers/cb_pcidio.c         |  11 +-
+ drivers/staging/comedi/drivers/cb_pcimdas.c        |  23 ++--
+ drivers/staging/comedi/drivers/cb_pcimdda.c        |  29 +++--
+ drivers/staging/comedi/drivers/comedi_bond.c       |  26 ++---
+ drivers/staging/comedi/drivers/comedi_parport.c    |  16 ++-
+ drivers/staging/comedi/drivers/comedi_test.c       |  17 ++-
+ drivers/staging/comedi/drivers/contec_pci_dio.c    |   6 +-
+ drivers/staging/comedi/drivers/daqboard2000.c      |  27 ++++-
+ drivers/staging/comedi/drivers/das08.c             |   8 +-
+ drivers/staging/comedi/drivers/das08_cs.c          |   4 +-
+ drivers/staging/comedi/drivers/das16.c             |  19 +++-
+ drivers/staging/comedi/drivers/das16m1.c           |  14 ++-
+ drivers/staging/comedi/drivers/das1800.c           |  41 +++++--
+ drivers/staging/comedi/drivers/das6402.c           |  11 +-
+ drivers/staging/comedi/drivers/das800.c            |  29 +++--
+ drivers/staging/comedi/drivers/dt2801.c            |  28 +++--
+ drivers/staging/comedi/drivers/dt2811.c            |   9 +-
+ drivers/staging/comedi/drivers/dt2814.c            |   8 +-
+ drivers/staging/comedi/drivers/dt2815.c            |   8 +-
+ drivers/staging/comedi/drivers/dt282x.c            | 122 +++++++++++++--------
+ drivers/staging/comedi/drivers/dt3000.c            |  28 ++++-
+ drivers/staging/comedi/drivers/dt9812.c            |  13 ++-
+ drivers/staging/comedi/drivers/dyna_pci10xx.c      |  18 ++-
+ drivers/staging/comedi/drivers/fl512.c             |   9 +-
+ drivers/staging/comedi/drivers/icp_multi.c         |  36 ++++--
+ drivers/staging/comedi/drivers/ii_pci20kc.c        |  10 +-
+ drivers/staging/comedi/drivers/jr3_pci.c           |   5 +-
+ drivers/staging/comedi/drivers/me4000.c            |  55 ++++++++--
+ drivers/staging/comedi/drivers/me4000.h            |   4 -
+ drivers/staging/comedi/drivers/me_daq.c            |  27 +++--
+ drivers/staging/comedi/drivers/mpc624.c            |   6 +-
+ drivers/staging/comedi/drivers/mpc8260cpm.c        |  11 --
+ drivers/staging/comedi/drivers/multiq3.c           |   7 +-
+ drivers/staging/comedi/drivers/ni_6527.c           |  23 +++-
+ drivers/staging/comedi/drivers/ni_at_a2150.c       |  27 +++--
+ drivers/staging/comedi/drivers/ni_at_ao.c          |  12 +-
+ drivers/staging/comedi/drivers/ni_atmio16d.c       |  11 +-
+ drivers/staging/comedi/drivers/ni_daq_dio24.c      |  19 +---
+ drivers/staging/comedi/drivers/ni_labpc.c          |  53 +++++++--
+ drivers/staging/comedi/drivers/ni_labpc_cs.c       |  10 +-
+ drivers/staging/comedi/drivers/ni_pcidio.c         |  34 +++++-
+ drivers/staging/comedi/drivers/ni_pcimio.c         |   4 +-
+ drivers/staging/comedi/drivers/pcl711.c            |  11 +-
+ drivers/staging/comedi/drivers/pcl726.c            |   8 +-
+ drivers/staging/comedi/drivers/pcl812.c            |  23 +++-
+ drivers/staging/comedi/drivers/pcl816.c            |  19 +++-
+ drivers/staging/comedi/drivers/pcl818.c            |  28 ++++-
+ drivers/staging/comedi/drivers/pcm3724.c           |  11 +-
+ drivers/staging/comedi/drivers/pcmad.c             |   6 +-
+ drivers/staging/comedi/drivers/pcmda12.c           |   8 +-
+ drivers/staging/comedi/drivers/pcmmio.c            |  50 ++++++---
+ drivers/staging/comedi/drivers/pcmuio.c            |  30 +++--
+ drivers/staging/comedi/drivers/rtd520.c            |   2 +-
+ drivers/staging/comedi/drivers/rti800.c            |   9 +-
+ drivers/staging/comedi/drivers/rti802.c            |   8 +-
+ drivers/staging/comedi/drivers/s526.c              |  16 +--
+ drivers/staging/comedi/drivers/s626.c              |   5 +-
+ drivers/staging/comedi/drivers/serial2002.c        |  21 ++--
+ 89 files changed, 1233 insertions(+), 443 deletions(-)
 
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <sys/time.h>
-#include <sys/timex.h>
-#include <string.h>
-#include <signal.h>
-
-#define NSEC_PER_SEC 1000000000ULL
-
-/* returns 1 if a <= b, 0 otherwise */
-static inline int in_order(struct timespec a, struct timespec b)
-{
-        if(a.tv_sec < b.tv_sec)
-                return 1;
-        if(a.tv_sec > b.tv_sec)
-                return 0;
-        if(a.tv_nsec > b.tv_nsec)
-                return 0;
-        return 1;
-}
-
-struct timespec timespec_add(struct timespec ts, unsigned long long ns)
-{
-	ts.tv_nsec += ns;
-	while(ts.tv_nsec >= NSEC_PER_SEC) {
-		ts.tv_nsec -= NSEC_PER_SEC;
-		ts.tv_sec++;
-	}
-	return ts;
-}
-
-
-char* time_state_str(int state)
-{
-	switch (state) {
-		case TIME_OK:	return "TIME_OK";
-		case TIME_INS:	return "TIME_INS";
-		case TIME_DEL:	return "TIME_DEL";
-		case TIME_OOP:	return "TIME_OOP";
-		case TIME_WAIT:	return "TIME_WAIT";
-		case TIME_BAD:	return "TIME_BAD";
-	}
-	return "ERROR"; 
-}
-
-/* clear NTP time_status & time_state */
-void clear_time_state(void)
-{
-	struct timex tx;
-	int ret;
-
-	/*
-	 * XXX - The fact we have to call this twice seems
-	 * to point to a slight issue in the kernel's ntp state
-	 * managment. Needs to be investigated further.
-	 */
-
-	tx.modes = ADJ_STATUS;
-	tx.status = STA_PLL;
-	ret = adjtimex(&tx);
-
-	tx.modes = ADJ_STATUS;
-	tx.status = 0;
-	ret = adjtimex(&tx);
-}
-
-/* Make sure we cleanup on ctrl-c */
-void handler(int unused)
-{
-	clear_time_state();
-	exit(0);
-}
-
-
-/* Test for known hrtimer failure */
-void test_hrtimer_failure(void)
-{
-	struct timespec now, target;
-
-	clock_gettime(CLOCK_REALTIME, &now);
-	target = timespec_add(now, NSEC_PER_SEC/2);
-	clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, &target, NULL);
-	clock_gettime(CLOCK_REALTIME, &now);
-
-	if (!in_order(target, now)) {
-		printf("Note: hrtimer early expiration failure observed.\n");
-	}
-
-}
-
-
-
-int main(int argc, char** argv) 
-{
-	int settime = 0;
-	int insert = 1;
-
-	signal(SIGINT, handler);
-	signal(SIGKILL, handler);
-	printf("This runs continuously. Press ctrl-c to stop\n");
-
-
-	/* Process arguments */
-	if (argc > 1) {
-		if (!strncmp(argv[1], "-s", 2)) {
-			printf("Setting time to speed up testing\n");
-			settime = 1;
-		} else {
-			printf("Usage: %s [-s]\n", argv[0]);
-			printf("	-s: Set time to right before leap second each iteration\n");
-		}
-	}
-
-	printf("\n");
-	while (1) {
-		int ret;
-		struct timespec ts;
-		struct timex tx;
-		time_t now, next_leap;
-
-		/* Get the current time */
-		clock_gettime(CLOCK_REALTIME, &ts);
-
-		/* Calculate the next possible leap second 23:59:60 GMT */
-		next_leap = ts.tv_sec;
-		next_leap += 86400 - (next_leap % 86400);
-
-
-		if (settime) {
-			struct timeval tv;
-			tv.tv_sec = next_leap - 10;
-			tv.tv_usec = 0;
-			settimeofday(&tv, NULL);
-			printf("Setting time to %s", ctime(&tv.tv_sec));
-		}
-
-		/* Reset NTP time state */
-		clear_time_state();
-
-		/* Set the leap second insert flag */
-		tx.modes = ADJ_STATUS;
-		if (insert) 
-			tx.status = STA_INS;
-		else
-			tx.status = STA_DEL;
-		ret = adjtimex(&tx);
-		if (ret < 0 ) {
-			printf("Error: Problem setting STA_INS/STA_DEL!: %s\n",
-							time_state_str(ret));
-			return -1;
-		}
-
-		/* Validate STA_INS was set */
-		ret = adjtimex(&tx);
-		if (tx.status != STA_INS && tx.status != STA_DEL) {
-			printf("Error: STA_INS/STA_DEL not set!: %s\n",
-							time_state_str(ret));
-			return -1;
-		}
-
-		printf("Scheduling leap second for %s", ctime(&next_leap));
-	
-		/* Wake up 3 seconds before leap */
-		ts.tv_sec = next_leap - 3;
-		ts.tv_nsec = 0;
-
-		while(clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, &ts, NULL))
-			printf("Something woke us up, returning to sleep\n");
-
-		/* Validate STA_INS is still set */
-		ret = adjtimex(&tx);
-		if (tx.status != STA_INS && tx.status != STA_DEL) {
-			printf("Something cleared STA_INS/STA_DEL, setting it again.\n");
-			tx.modes = ADJ_STATUS;
-			if (insert) 
-				tx.status = STA_INS;
-			else
-				tx.status = STA_DEL;
-			ret = adjtimex(&tx);
-		}
-
-		/* Check adjtimex output every half second */
-		now = tx.time.tv_sec;
-		while (now < next_leap+2) {
-			char buf[26];
-			ret = adjtimex(&tx);
-
-			ctime_r(&tx.time.tv_sec, buf);
-			buf[strlen(buf)-1] = 0; /*remove trailing\n */
-
-			printf("%s + %6ld us\t%s\n",
-					buf,
-					tx.time.tv_usec, 
-					time_state_str(ret));
-			now = tx.time.tv_sec;
-			/* Sleep for another half second */
-			ts.tv_sec = 0;
-			ts.tv_nsec = NSEC_PER_SEC/2;
-			clock_nanosleep(CLOCK_MONOTONIC, 0, &ts, NULL);			
-		}
-		/* Switch to using other mode */
-		insert = !insert;
-
-		/* Note if kernel has known hrtimer failure */
-		test_hrtimer_failure();
-
-		printf("Leap complete\n\n");
-	}
-
-	clear_time_state();
-	return 0;
-}
-
---------------070107020508050409060802--
+-- 
+1.7.11
 
