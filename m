@@ -1,103 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933457Ab2GMRPT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 13:15:19 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:22826 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932301Ab2GMRPR (ORCPT
+	id S1758033Ab2GMRWJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 13:22:09 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49737 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755936Ab2GMRWH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 13:15:17 -0400
-X-IronPort-AV: E=Sophos;i="4.77,579,1336348800"; 
-   d="scan'208";a="13526342"
-Date: Fri, 13 Jul 2012 18:14:33 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>, "Tim (Xen.org)" <tim@xen.org>
-Subject: Re: [PATCH WIP 6/6] xen/arm: enable evtchn irqs
-In-Reply-To: <20120709144005.GA12102@phenom.dumpdata.com>
-Message-ID: <alpine.DEB.2.02.1207131749470.23783@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1206221644370.27860@kaball.uk.xensource.com> <1340381685-22529-1-git-send-email-stefano.stabellini@eu.citrix.com> <1340381685-22529-6-git-send-email-stefano.stabellini@eu.citrix.com> <20120709144005.GA12102@phenom.dumpdata.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Fri, 13 Jul 2012 13:22:07 -0400
+From: Masanari Iida <standby24x7@gmail.com>
+To: netdev@vger.kernel.org, samuel@sortiz.org
+Cc: linux-kernel@vger.kernel.org, trivial@kernel.org,
+        Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] irda: Fix typo in irda
+Date: Sat, 14 Jul 2012 02:22:47 +0900
+Message-Id: <1342200167-14934-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.7.11.2.138.g2b53359
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 9 Jul 2012, Konrad Rzeszutek Wilk wrote:
-> On Fri, Jun 22, 2012 at 05:14:45PM +0100, Stefano Stabellini wrote:
-> > On ARM irqs are not enabled by default:
-> 
-> Which IRQs? Xen IRQs? Linux IRQs?
+Correct spelling typo in irda.
 
-Linux IRQs
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ net/irda/af_irda.c              | 2 +-
+ net/irda/irlan/irlan_provider.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/net/irda/af_irda.c b/net/irda/af_irda.c
+index bb14c34..bb738c9f 100644
+--- a/net/irda/af_irda.c
++++ b/net/irda/af_irda.c
+@@ -955,7 +955,7 @@ out:
+  * The main difference with a "standard" connect is that with IrDA we need
+  * to resolve the service name into a TSAP selector (in TCP, port number
+  * doesn't have to be resolved).
+- * Because of this service name resoltion, we can offer "auto-connect",
++ * Because of this service name resolution, we can offer "auto-connect",
+  * where we connect to a service without specifying a destination address.
+  *
+  * Note : by consulting "errno", the user space caller may learn the cause
+diff --git a/net/irda/irlan/irlan_provider.c b/net/irda/irlan/irlan_provider.c
+index 32dcaac..4664855 100644
+--- a/net/irda/irlan/irlan_provider.c
++++ b/net/irda/irlan/irlan_provider.c
+@@ -296,7 +296,7 @@ void irlan_provider_send_reply(struct irlan_cb *self, int command,
+ 	skb = alloc_skb(IRLAN_MAX_HEADER + IRLAN_CMD_HEADER +
+ 			/* Bigger param length comes from CMD_GET_MEDIA_CHAR */
+ 			IRLAN_STRING_PARAMETER_LEN("FILTER_TYPE", "DIRECTED") +
+-			IRLAN_STRING_PARAMETER_LEN("FILTER_TYPE", "BORADCAST") +
++			IRLAN_STRING_PARAMETER_LEN("FILTER_TYPE", "BROADCAST") +
+ 			IRLAN_STRING_PARAMETER_LEN("FILTER_TYPE", "MULTICAST") +
+ 			IRLAN_STRING_PARAMETER_LEN("ACCESS_TYPE", "HOSTED"),
+ 			GFP_ATOMIC);
+-- 
+1.7.11.2.138.g2b53359
 
-> > - call enable_percpu_irq for IRQ_EVTCHN_CALLBACK;
-> 
-> Why do we want to do that?
- 
-drivers are supposed to call enable_irq after request_irq, however on
-x86 we could get away without it because Linux irqs are enabled by
-default (see below)
-
-
-> > - set the IRQF_VALID flag for the other irqs bound to evtchns. It causes
-> > IRQ_NOAUTOEN to be set and as a consequence irq_unmask is going to be
-> > called when a xenbus driver calls request_irq.
-> 
-> Can you explain in more details why we need that?
-
-If _IRQ_NOAUTOEN is set, irq_settings_can_autoenable returns false and
-__setup_irq doesn't call irq_startup.
-
-IRQ_NOAUTOEN is set by default by set_irq_flags on ARM, but not on x86.
-
-
-
-> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > ---
-> >  drivers/xen/events.c |    3 +++
-> >  1 files changed, 3 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-> > index 0132505..ca92755 100644
-> > --- a/drivers/xen/events.c
-> > +++ b/drivers/xen/events.c
-> > @@ -53,6 +53,7 @@
-> >  #include <xen/interface/hvm/params.h>
-> >  #include <xen/interface/physdev.h>
-> >  #include <xen/interface/sched.h>
-> > +#include <asm/hw_irq.h>
-> >  
-> >  /*
-> >   * This lock protects updates to the following mapping and reference-count
-> > @@ -827,6 +828,7 @@ int bind_evtchn_to_irq(unsigned int evtchn)
-> >  
-> >  		xen_irq_info_evtchn_init(irq, evtchn);
-> >  	}
-> > +	set_irq_flags(irq, IRQF_VALID);
-> >  
-> >  out:
-> >  	mutex_unlock(&irq_mapping_update_lock);
-> > @@ -1751,6 +1753,7 @@ int __init xen_init_IRQ_arm(void)
-> >  	if (rc) {
-> >  		printk(KERN_ERR "Error requesting IRQ %d\n", IRQ_EVTCHN_CALLBACK);
-> >  	}
-> > +	enable_percpu_irq(IRQ_EVTCHN_CALLBACK, 0);
-> >  	return rc;
-> >  }
-> >  core_initcall(xen_init_IRQ_arm);
-> > -- 
-> > 1.7.2.5
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> 
