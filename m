@@ -1,75 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932773Ab2GMK3h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 06:29:37 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:44675 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757152Ab2GMK3g (ORCPT
+	id S932917Ab2GMKbG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 06:31:06 -0400
+Received: from service88.mimecast.com ([195.130.217.12]:45178 "EHLO
+	service88.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932463Ab2GMKbF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 06:29:36 -0400
+	Fri, 13 Jul 2012 06:31:05 -0400
+Message-ID: <4FFFF8E1.20408@arm.com>
+Date: Fri, 13 Jul 2012 11:30:57 +0100
+From: viresh kumar <viresh.kumar2@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <5B8DA87D05A7694D9FA63FD143655C1B13B4A9@HASMSX103.ger.corp.intel.com>
-References: <CA+icZUVorJNMQ3wyz8WuZop_fwwOuBo38wZg9s9RJizhM0yc-w@mail.gmail.com>
-	<5B8DA87D05A7694D9FA63FD143655C1B13B4A9@HASMSX103.ger.corp.intel.com>
-Date: Fri, 13 Jul 2012 12:29:34 +0200
-Message-ID: <CA+icZUUHQsUqSnKBwUxG2yoiTAfatgPSZBT974_u95DkVZ5S6w@mail.gmail.com>
-Subject: Re: [3.5-rc6+] mei: irq: request_threaded_irq is missing the
- IRQF_ONESHOT flag
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: "Winkler, Tomas" <tomas.winkler@intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Roland Dreier <roland@purestorage.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM List <linux-pm@lists.linux-foundation.org>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+CC: viresh kumar <viresh.kumar@linaro.org>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        spear-devel <spear-devel@list.st.com>
+Subject: Re: [PATCH 3/3] dw_dmac: set default alignment
+References: <1342166974-4490-1-git-send-email-andriy.shevchenko@linux.intel.com> <1342166974-4490-3-git-send-email-andriy.shevchenko@linux.intel.com> <CAOh2x=k6MDt5arZfPgrn8_tPu_zgPsD2e5y0-JyUkrx71Z6BNQ@mail.gmail.com> <CAHp75VfiyLJKdSogHRDqU1TC-3icKAhCXa0hWbfnWEcNmJosTQ@mail.gmail.com> <4FFFE2B3.3040306@arm.com> <CAHp75Vde==tJU9DrKwvWv1OezdO+YiEUAZAbiuvs0wAgUwwmYQ@mail.gmail.com>
+In-Reply-To: <CAHp75Vde==tJU9DrKwvWv1OezdO+YiEUAZAbiuvs0wAgUwwmYQ@mail.gmail.com>
+X-MC-Unique: 112071311310101002
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 13, 2012 at 12:15 PM, Winkler, Tomas
-<tomas.winkler@intel.com> wrote:
->
->
->> -----Original Message-----
->> From: Sedat Dilek [mailto:sedat.dilek@gmail.com]
->> Sent: Friday, July 13, 2012 12:48 PM
->> To: Winkler, Tomas
->> Cc: Thomas Gleixner; LKML; Greg Kroah-Hartman; Roland Dreier
->> Subject: [3.5-rc6+] mei: irq: request_threaded_irq is missing the
->> IRQF_ONESHOT flag
->>
->> Hi,
->>
->> while dealing with [1], I saw this mei-related infos in dmesg when doing a
->> suspend + resume (see [1] for more logs):
->
-> The fix is included in this post pull request http://marc.info/?l=linux-kernel&m=134201523903406&w=2
->
+On 13/07/12 11:04, Andy Shevchenko wrote:
+> On Fri, Jul 13, 2012 at 11:56 AM, viresh kumar <viresh.kumar2@arm.com> wrote:
+>> I wanted to ask, will normal memcpy for anybody will work with unaligned addresses
+>> with this patch? I believe they will.
+> Hmm... I just rechecked and it seems it works without this patch. I
+> didn't remember why this patch still in my pool.
 
-[ CC Rafael @ linux-pm ML ]
+Sorry, got confused now. What works without this patch? And what doesn't work without it?
 
-Hmm, I have this commit in my local GIT buil-tree already:
+--
+Viresh
 
-$ git log --oneline | grep "mei: pci_resume: set IRQF_ONESHOT for msi
-request_threaded_irq"
-16a50b1 mei: pci_resume: set IRQF_ONESHOT for msi request_threaded_irq
+-- IMPORTANT NOTICE: The contents of this email and any attachments are confidential and may also be privileged. If you are not the intended recipient, please notify the sender immediately and do not disclose the contents to any other person, use it for any purpose, or store or copy the information in any medium.  Thank you.
 
-Dunno, if it's a PM related problem? As I see this:
-
-[17047.460520] PM: Device 0000:00:16.0 failed to resume async: error -22
-
-BTW, what is "wd:" and what means if it "failed"?
-
-[   23.646041] mei 0000:00:16.0: irq 47 for MSI/MSI-X
-[   23.650677] mei 0000:00:16.0: wd: failed to find the client
-
-- Sedat -
-
-[1] http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=16a50b1270455a6d41f9f6d8f99a72cf9d76824a
-
-> Thanks
-> Tomas
->
->
