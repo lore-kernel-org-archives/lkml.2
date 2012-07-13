@@ -1,46 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932669Ab2GMK0L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 06:26:11 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:45079 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757152Ab2GMK0J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 06:26:09 -0400
-Message-ID: <1342175168.24005.27.camel@joe2Laptop>
-Subject: Re: MAINTAINERS: <steve.glendinning@smsc.com> bounces, remove or
- update?
-From: Joe Perches <joe@perches.com>
-To: Steve Glendinning <steve@shawell.net>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <trivial@kernel.org>
-Date: Fri, 13 Jul 2012 03:26:08 -0700
-In-Reply-To: <CAKh2mn4EAe92xWJuzpf4TzFEBizbLiXvpkeEwZ4J9RcVTPOW3Q@mail.gmail.com>
-References: <1342159987.24005.19.camel@joe2Laptop>
-	 <CAKh2mn7qDHW_4GiUgDW687cBYaR7GOKdeoHQroiMBz5EA_XsyA@mail.gmail.com>
-	 <CAKh2mn4EAe92xWJuzpf4TzFEBizbLiXvpkeEwZ4J9RcVTPOW3Q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S932882Ab2GMK0a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 06:26:30 -0400
+Received: from www.linutronix.de ([62.245.132.108]:43968 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932284Ab2GMK02 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 06:26:28 -0400
+Date: Fri, 13 Jul 2012 12:26:26 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Mike Galbraith <efault@gmx.de>
+cc: "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: 3.4.4-rt13: btrfs + xfstests 006 = BOOM.. and a bonus rt_mutex
+ deadlock report for absolutely free!
+In-Reply-To: <1342174485.7380.103.camel@marge.simpson.net>
+Message-ID: <alpine.LFD.2.02.1207131223240.32033@ionos>
+References: <1342072060.7338.102.camel@marge.simpson.net>  <1342082648.7338.171.camel@marge.simpson.net>  <1342086792.7707.9.camel@marge.simpson.net>  <alpine.LFD.2.02.1207121310420.32033@ionos>  <1342094233.7707.12.camel@marge.simpson.net> 
+ <alpine.LFD.2.02.1207121514240.32033@ionos>  <1342161072.7380.65.camel@marge.simpson.net>  <alpine.LFD.2.02.1207131142440.32033@ionos> <1342174485.7380.103.camel@marge.simpson.net>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-07-13 at 09:30 +0100, Steve Glendinning wrote:
-> > On 13 July 2012 07:13, Joe Perches <joe@perches.com> wrote:
-> > The @smsc.com email address is bouncing.
-> > Should it be removed from MAINTAINERS or switched to this
-> > @shawell.net address?
+On Fri, 13 Jul 2012, Mike Galbraith wrote:
+> On Fri, 2012-07-13 at 11:52 +0200, Thomas Gleixner wrote: 
+> > On Fri, 13 Jul 2012, Mike Galbraith wrote:
+> > > On Thu, 2012-07-12 at 15:31 +0200, Thomas Gleixner wrote: 
+> > > > Bingo, that makes it more likely that this is caused by copying w/o
+> > > > initializing the lock and then freeing the original structure.
+> > > > 
+> > > > A quick check for memcpy finds that __btrfs_close_devices() does a
+> > > > memcpy of btrfs_device structs w/o initializing the lock in the new
+> > > > copy, but I have no idea whether that's the place we are looking for.
+> > > 
+> > > Thanks a bunch Thomas.  I doubt I would have ever figured out that lala
+> > > land resulted from _copying_ a lock.  That's one I won't be forgetting
+> > > any time soon.  Box not only survived a few thousand xfstests 006 runs,
+> > > dbench seemed disinterested in deadlocking virgin 3.0-rt.
+> > 
+> > Cute. It think that the lock copying caused the deadlock problem as
+> > the list pointed to the wrong place, so we might have ended up with
+> > following down the wrong chain when walking the list as long as the
+> > original struct was not freed. That beast is freed under RCU so there
+> > could be a rcu read side critical section fiddling with the old lock
+> > and cause utter confusion.
 > 
-> It should be changed, I posted a patch to do this back in April - I guess
-> it didn't get picked up.  Did I need to CC someone else?
+> Virgin 3.0-rt appears to really be solid.  But then it doesn't have
+> pesky rwlocks.
+
+Ah. So 3.0 is not having those rwlock thingies. Bummer.
+ 
+> > /me goes and writes a nastigram^W proper changelog
+> > 
+> > > btrfs still locks up in my enterprise kernel, so I suppose I had better
+> > > plug your fix into 3.4-rt and see what happens, and go beat hell out of
+> > > virgin 3.0-rt again to be sure box really really survives dbench.
+> > 
+> > A test against 3.4-rt sans enterprise mess might be nice as well.
 > 
-> https://lkml.org/lkml/2012/4/16/155
+> Enterprise is 3.0-stable with um 555 btrfs patches (oh dear).
+> 
+> Virgin 3.4-rt and 3.2-rt deadlock gripe.  Enterprise doesn't gripe, but
+> deadlocks, so I have another adventure in my future even if I figure out
+> wth to do about rwlocks.
 
-Hi Steve.
-
-Andrew Morton (cc'd) generally sweeps these up.
-Maybe he and Jiri Kosina (also cc'd) can fight over it.
-
-cheers, Joe
-
+Hrmpf. /me goes to stare into fs/btrfs/ some more.
