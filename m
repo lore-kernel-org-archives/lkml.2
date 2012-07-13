@@ -1,118 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030445Ab2GMKq7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 06:46:59 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:2563 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030421Ab2GMKqz (ORCPT
+	id S1030433Ab2GMKy5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 06:54:57 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:34167 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030283Ab2GMKyz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 06:46:55 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Fri, 13 Jul 2012 03:46:48 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <grant.likely@secretlab.ca>, <linus.walleij@stericsson.com>,
-        <sameo@linux.intel.com>
-CC: <linux-kernel@vger.kernel.org>, <swarren@nvidia.com>,
-        <broonie@opensource.wolfsonmicro.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH 1/5] mfd: tps6586x:use devm managed resources
-Date: Fri, 13 Jul 2012 16:09:23 +0530
-Message-ID: <1342175967-10087-2-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1342175967-10087-1-git-send-email-ldewangan@nvidia.com>
-References: <1342175967-10087-1-git-send-email-ldewangan@nvidia.com>
+	Fri, 13 Jul 2012 06:54:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20120712160415.473748fd.akpm@linux-foundation.org>
+References: <1342100468-19426-1-git-send-email-amit.kachhap@linaro.org>
+	<1342100468-19426-2-git-send-email-amit.kachhap@linaro.org>
+	<20120712160415.473748fd.akpm@linux-foundation.org>
+Date: Fri, 13 Jul 2012 16:24:54 +0530
+Message-ID: <CADGdYn7MQmv7zHvdRH2eyj2HEx9K87R4H3eJQMX3356A-vZ1kg@mail.gmail.com>
+Subject: Re: [linux-pm] [RESEND PATCH v4 1/5] thermal: add generic cpufreq
+ cooling implementation
+From: amit kachhap <amit.kachhap@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Len Brown <lenb@kernel.org>
+Cc: Guenter Roeck <guenter.roeck@ericsson.com>,
+        linux-samsung-soc@vger.kernel.org, SangWook Ju <sw.ju@samsung.com>,
+        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
+        linux-acpi@vger.kernel.org, Jean Delvare <khali@linux-fr.org>,
+        linux-pm@lists.linux-foundation.org,
+        Donggeun Kim <dg77.kim@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allocate memory for device state using devm_kzalloc(), get the
-IRQ using devm_request_irq().
-All to simplify accounting and letting the kernel do the
-garbage-collection.
+On Fri, Jul 13, 2012 at 4:34 AM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Thu, 12 Jul 2012 19:11:04 +0530
+> Amit Daniel Kachhap <amit.kachhap@linaro.org> wrote:
+>
+>> [akpm@linux-foundation.org: fix comment layout]
+>> Signed-off-by: Amit Daniel Kachhap <amit.kachhap@linaro.org>
+>> Cc: Donggeun Kim <dg77.kim@samsung.com>
+>> Cc: Guenter Roeck <guenter.roeck@ericsson.com>
+>> Cc: SangWook Ju <sw.ju@samsung.com>
+>> Cc: Durgadoss <durgadoss.r@intel.com>
+>> Cc: Len Brown <lenb@kernel.org>
+>> Cc: Jean Delvare <khali@linux-fr.org>
+>> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+>
+> Something strange appears to have happened here?  At a guess it seems
+> that the patches were in my tree, I sent them to someone (Len?), then
+> they were merged into linux-next by "someone" and then they fell
+> out of linux-next again?
+>
+> If so, they will hopefully come back soon.  If not, something failed
+> fairly seriously.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
- drivers/mfd/tps6586x.c |   23 ++++++++---------------
- 1 files changed, 8 insertions(+), 15 deletions(-)
+Hi Andrew,
 
-diff --git a/drivers/mfd/tps6586x.c b/drivers/mfd/tps6586x.c
-index c84b550..1256b7f 100644
---- a/drivers/mfd/tps6586x.c
-+++ b/drivers/mfd/tps6586x.c
-@@ -432,8 +432,8 @@ static int __devinit tps6586x_irq_init(struct tps6586x *tps6586x, int irq,
- #endif
- 	}
- 
--	ret = request_threaded_irq(irq, NULL, tps6586x_irq, IRQF_ONESHOT,
--				   "tps6586x", tps6586x);
-+	ret = devm_request_threaded_irq(tps6586x->dev, irq, NULL, tps6586x_irq,
-+			IRQF_ONESHOT, "tps6586x", tps6586x);
- 
- 	if (!ret) {
- 		device_init_wakeup(tps6586x->dev, 1);
-@@ -579,9 +579,11 @@ static int __devinit tps6586x_i2c_probe(struct i2c_client *client,
- 
- 	dev_info(&client->dev, "VERSIONCRC is %02x\n", ret);
- 
--	tps6586x = kzalloc(sizeof(struct tps6586x), GFP_KERNEL);
--	if (tps6586x == NULL)
-+	tps6586x = devm_kzalloc(&client->dev, sizeof(*tps6586x), GFP_KERNEL);
-+	if (tps6586x == NULL) {
-+		dev_err(&client->dev, "memory for tps6586x alloc failed\n");
- 		return -ENOMEM;
-+	}
- 
- 	tps6586x->client = client;
- 	tps6586x->dev = &client->dev;
-@@ -594,14 +596,14 @@ static int __devinit tps6586x_i2c_probe(struct i2c_client *client,
- 					pdata->irq_base);
- 		if (ret) {
- 			dev_err(&client->dev, "IRQ init failed: %d\n", ret);
--			goto err_irq_init;
-+			return ret;
- 		}
- 	}
- 
- 	ret = tps6586x_gpio_init(tps6586x, pdata->gpio_base);
- 	if (ret) {
- 		dev_err(&client->dev, "GPIO registration failed: %d\n", ret);
--		goto err_gpio_init;
-+		return ret;
- 	}
- 
- 	ret = tps6586x_add_subdevs(tps6586x, pdata);
-@@ -619,11 +621,6 @@ err_add_devs:
- 			dev_err(&client->dev, "Can't remove gpio chip: %d\n",
- 				ret);
- 	}
--err_gpio_init:
--	if (client->irq)
--		free_irq(client->irq, tps6586x);
--err_irq_init:
--	kfree(tps6586x);
- 	return ret;
- }
- 
-@@ -633,9 +630,6 @@ static int __devexit tps6586x_i2c_remove(struct i2c_client *client)
- 	struct tps6586x_platform_data *pdata = client->dev.platform_data;
- 	int ret;
- 
--	if (client->irq)
--		free_irq(client->irq, tps6586x);
--
- 	if (pdata->gpio_base) {
- 		ret = gpiochip_remove(&tps6586x->gpio);
- 		if (ret)
-@@ -644,7 +638,6 @@ static int __devexit tps6586x_i2c_remove(struct i2c_client *client)
- 	}
- 
- 	tps6586x_remove_subdevs(tps6586x);
--	kfree(tps6586x);
- 	return 0;
- }
- 
--- 
-1.7.1.1
+Yes you are right that this patches first came into your tree and then
+Len applied into his next tree for 3.5 merge. so they got into
+linux-next tree. After some last minute pull issues they could not be
+merged in 3.5 and Len dropped this series from his -next branch. I
+hope to get it accepted in 3.6 merge.
+I am aware that some work is going on for thermal framework
+improvement but that will have minimal changes on cpufreq cooling APIs
+and I hope to fix them as bug fix patches.
 
+>
+>
+> I took a look at re-merging these patches into my tree, but there are
+> significant conflicts with other work which has gone into linux-next.
+>
+Its my fault that I didn't check the hwmon-next branch. I will repost
+them after merging with hwmon-next branch.
+
+Thanks,
+Amit Daniel
