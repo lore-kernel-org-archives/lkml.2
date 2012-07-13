@@ -1,40 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933559Ab2GMTKW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 15:10:22 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:42204 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752115Ab2GMTKV (ORCPT
+	id S933566Ab2GMTMC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 15:12:02 -0400
+Received: from www.linutronix.de ([62.245.132.108]:46241 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756587Ab2GMTMB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 15:10:21 -0400
-Message-ID: <5000729A.2050401@hp.com>
-Date: Fri, 13 Jul 2012 13:10:18 -0600
-From: Khalid Aziz <khalid.aziz@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Fri, 13 Jul 2012 15:12:01 -0400
+Date: Fri, 13 Jul 2012 21:11:57 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Dave Jones <davej@redhat.com>
+cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Darren Hart <darren@dvhart.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: 3.5-rc6 futex_wait_requeue_pi oops.
+In-Reply-To: <20120713185402.GA1707@redhat.com>
+Message-ID: <alpine.LFD.2.02.1207132108340.32033@ionos>
+References: <20120713180823.GA24972@redhat.com> <alpine.LFD.2.02.1207132032330.32033@ionos> <20120713185402.GA1707@redhat.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: Mike Waychison <mikew@google.com>
-CC: Matthew Garrett <mjg59@srcf.ucam.org>, linux-kernel@vger.kernel.org,
-        tony.luck@intel.com, keescook@chromium.org, gong.chen@linux.intel.com
-Subject: Re: [PATCH] Add missing attributes to EFI variable attribute print
- out from sysfs
-References: <20120713153827.GA8007@hp.com> <20120713154645.GA16059@srcf.ucam.org> <5000604F.80804@hp.com> <CAGTjWtA0LmQ-90zjYf0nho_LEra8nx32M1R7E6o=3S68UjfEHw@mail.gmail.com>
-In-Reply-To: <CAGTjWtA0LmQ-90zjYf0nho_LEra8nx32M1R7E6o=3S68UjfEHw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/13/2012 12:04 PM, Mike Waychison wrote:
+On Fri, 13 Jul 2012, Dave Jones wrote:
 
-> You can probably save the wrap by copying out var->Attributes into a local.
+> On Fri, Jul 13, 2012 at 08:47:38PM +0200, Thomas Gleixner wrote:
+>  > On Fri, 13 Jul 2012, Dave Jones wrote:
+>  > 
+>  > > Looks like calling futex() with garbage makes things unhappy.
+>  > 
+>  >                 WARN_ON(!&q.pi_state);
+>  >                 pi_mutex = &q.pi_state->pi_mutex;
+>  >                 ret = rt_mutex_finish_proxy_lock(pi_mutex, to, &rt_waiter, 1);
+>  >                 debug_rt_mutex_free_waiter(&rt_waiter);
+>  > 
+>  > So there is some weird way which causes q.pi_state = NULL. Dave, did
+>  > you see the warning before the oops happened ?
+> 
+> No, that didn't seem to trigger.
 
-Yes, you are right. It will work in this case. I am considering the general
-case of very long name for a constant causing issues with line wrap in
-more complex code, or just plain being a pain to type such a long name (one
-of these constants is ~50 characters).
+Yuck. The rt_mutex is embedded in pi_state and not a pointer and the
+thing explodes in __lock_acquire if the raw lock protecting the
+rtmutex internals. 
 
---
-Khalid Aziz
-khalid.aziz@hp.com
+Can you decode the exact code line ?
+
+Thanks,
+
+	tglx
+
 
