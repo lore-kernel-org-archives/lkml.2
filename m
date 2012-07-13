@@ -1,55 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755721Ab2GMXIE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 19:08:04 -0400
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:31992
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752087Ab2GMXIC (ORCPT
+	id S1755973Ab2GMXJO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 19:09:14 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:39300 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755217Ab2GMXJM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 19:08:02 -0400
-X-Forefront-Antispam-Report: CIP:160.33.194.229;KIP:(null);UIP:(null);IPV:NLI;H:usculsndmail02v.am.sony.com;RD:mail.sonyusa.com;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VPS-3(zzbb2dI98dI1432Izz1202hzzz2fh2a8h668h839hd25hf0ah107ah)
-Message-ID: <5000AA38.5010508@am.sony.com>
-Date: Fri, 13 Jul 2012 16:07:36 -0700
-From: Frank Rowand <frank.rowand@am.sony.com>
-Reply-To: <frank.rowand@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+	Fri, 13 Jul 2012 19:09:12 -0400
 MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>, Paul Bolle <pebolle@tiscali.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <greg@kroah.com>,
-        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
-        Debian Kernel Team <debian-kernel@lists.debian.org>,
-        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Fedora Kernel Team <kernel-team@fedoraproject.org>
-Subject: Re: [RFC] Simplifying kernel configuration for distro issues
-References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com> <20120713210240.GG1707@redhat.com> <1342216225.15453.15.camel@x61.thuisdomein> <20120713215546.GH1707@redhat.com>
-In-Reply-To: <20120713215546.GH1707@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+In-Reply-To: <20120713154519.60a686e8.akpm@linux-foundation.org>
+References: <1342139517-3451-1-git-send-email-walken@google.com>
+	<1342139517-3451-6-git-send-email-walken@google.com>
+	<20120713131514.86ab4df4.akpm@linux-foundation.org>
+	<CANN689FUm83vGFVF30Lg52_28vxdY+mZ88jVCGpmVfiHiHwNtg@mail.gmail.com>
+	<20120713154519.60a686e8.akpm@linux-foundation.org>
+Date: Fri, 13 Jul 2012 16:09:11 -0700
+Message-ID: <CANN689HSZqpsiOAMpKe_4=TWNhv7YPkiE5pqpnq1QQKkCiHm6Q@mail.gmail.com>
+Subject: Re: [PATCH v2 05/12] rbtree: performance and correctness test
+From: Michel Lespinasse <walken@google.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: aarcange@redhat.com, dwmw2@infradead.org, riel@redhat.com,
+        peterz@infradead.org, daniel.santos@pobox.com, axboe@kernel.dk,
+        ebiederm@xmission.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/13/12 14:55, Dave Jones wrote:
-> On Fri, Jul 13, 2012 at 11:50:25PM +0200, Paul Bolle wrote:
-> 
->  > But just removing all the certainly unused macros probably wouldn't have
->  > made a noticeable difference to anyone using those defconfig files
->  > anyway.
-> 
-> My point is that I don't think there's many people actually using them.
-> (maybe more on the niche platforms, but x86[64] ? I'm sceptical they're used at all)
+On Fri, Jul 13, 2012 at 3:45 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Fri, 13 Jul 2012 15:33:35 -0700 Michel Lespinasse <walken@google.com> wrote:
+>> Ah, I did not realize we had a precedent for in-tree kernel test modules.
+>
+> hm, well, just because that's what we do now doesn't mean that it was a
+> good idea ;) These things arrive as a result of individual developers
+> doing stuff in their little directories and no particular thought was
+> put into overall structure.
+>
+> It could be that it would be better to put all these tests into a
+> central place, rather than sprinkling them around the tree.  If so,
+> then your patch can lead the way, and we (ie: I) prod past and future
+> developers into getting with the program.
+>
+> otoh, perhaps in-kernel test modules will rely on headers and constants
+> which are private to the implementation directory.  So perhaps
+> sprinkled-everywhere is the best approach.
 
-I'm one of those people who use default configs.  I build a given kernel version for
-many different embedded boards and expect the default config to work for them.  It
-makes life much easier.
+I think it is at least reasonable. Where we could improve, however,
+would be on the Kconfig side of things.
 
-I also share Linus' pain when building for my host x86 system and try to
-remove the cruft from my distro config.
+>> I don't think my proposal was significantly better than this
+>> precedent, so I'll just adjust my patch to conform to it:
+>> - move rbtree_test.c to lib/
+>> - modify just lib/Makefile and lib/Kconfig.debug to get the module built.
+>>
+>> Will send a replacement patch for this (so you can drop that one patch
+>> from the stack and replace it with)
+>
+> OK, you could do that too.  That way you avoid the problem and we can
+> worry about it later (if ever), as a separate activity.
 
--Frank
+Going to attach as a reply to this email.
 
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
