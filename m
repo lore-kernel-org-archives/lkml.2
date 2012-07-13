@@ -1,76 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757454Ab2GMMwW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 08:52:22 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:65404 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756252Ab2GMMwU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 08:52:20 -0400
+	id S1757325Ab2GMMzJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 08:55:09 -0400
+Received: from mx1.fusionio.com ([66.114.96.30]:53563 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756252Ab2GMMzH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 08:55:07 -0400
+X-ASG-Debug-ID: 1342183845-03d6a50cb618ccd0001-xx1T2L
+X-Barracuda-Envelope-From: clmason@fusionio.com
+Date: Fri, 13 Jul 2012 08:50:43 -0400
+From: Chris Mason <chris.mason@fusionio.com>
+To: Mike Galbraith <efault@gmx.de>
+CC: "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: 3.4.4-rt13: btrfs + xfstests 006 = BOOM..  and a bonus rt_mutex
+ deadlock report for absolutely free!
+Message-ID: <20120713125043.GH30128@shiny>
+X-ASG-Orig-Subj: Re: 3.4.4-rt13: btrfs + xfstests 006 = BOOM..  and a bonus rt_mutex
+ deadlock report for absolutely free!
+Mail-Followup-To: Chris Mason <chris.mason@fusionio.com>,
+	Mike Galbraith <efault@gmx.de>,
+	"linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Steven Rostedt <rostedt@goodmis.org>
+References: <1342072060.7338.102.camel@marge.simpson.net>
 MIME-Version: 1.0
-In-Reply-To: <1342095778-13403-2-git-send-email-stigge@antcom.de>
-References: <1342095778-13403-1-git-send-email-stigge@antcom.de>
-	<1342095778-13403-2-git-send-email-stigge@antcom.de>
-Date: Fri, 13 Jul 2012 09:52:19 -0300
-Message-ID: <CAAAP30HHjSp2Pgrgee0Nbx5xy-v2tsHhuYD1tytvaJYmGRKO3Q@mail.gmail.com>
-Subject: Re: [PATCH 1/2] mtd: lpc32xx_slc: Adjust to pl08x DMA interface changes
-From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-To: Roland Stigge <stigge@antcom.de>
-Cc: linux-arm-kernel@lists.infradead.org, arnd@arndb.de,
-        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
-        kevin.wells@nxp.com, srinivas.bakki@nxp.com, dwmw2@infradead.org,
-        artem.bityutskiy@linux.intel.com, linux-mtd@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1342072060.7338.102.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1342183845
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0273 1.0000 -1.8440
+X-Barracuda-Spam-Score: -1.24
+X-Barracuda-Spam-Status: No, SCORE=-1.24 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=MARKETING_SUBJECT
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.102578
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
+	0.60 MARKETING_SUBJECT      Subject contains popular marketing words
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 12, 2012 at 9:22 AM, Roland Stigge <stigge@antcom.de> wrote:
-> This patch adjusts the LPC32xx SLC NAND driver to the new pl08x DMA interface,
-> fixing the compile error resulting from changed pl08x structures.
->
-> Signed-off-by: Roland Stigge <stigge@antcom.de>
+On Wed, Jul 11, 2012 at 11:47:40PM -0600, Mike Galbraith wrote:
+> Greetings,
 
-Acked-By: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+[ deadlocks with btrfs and the recent RT kernels ]
 
-> ---
->
-> Applies to today's linux-next (integrated lpc32xx-next and dma branches which collide)
->
->  drivers/mtd/nand/lpc32xx_slc.c |   13 +------------
->  1 file changed, 1 insertion(+), 12 deletions(-)
->
-> diff --git a/drivers/mtd/nand/lpc32xx_slc.c b/drivers/mtd/nand/lpc32xx_slc.c
-> index 1719387..c8c1d06 100644
-> --- a/drivers/mtd/nand/lpc32xx_slc.c
-> +++ b/drivers/mtd/nand/lpc32xx_slc.c
-> @@ -714,17 +714,6 @@ static int lpc32xx_nand_write_page_raw_syndrome(struct mtd_info *mtd,
->         return 0;
->  }
->
-> -static bool lpc32xx_dma_filter(struct dma_chan *chan, void *param)
-> -{
-> -       struct pl08x_dma_chan *ch =
-> -               container_of(chan, struct pl08x_dma_chan, chan);
-> -
-> -       /* In LPC32xx's PL080 DMA wiring, the SLC NAND DMA signal is #1 */
-> -       if (ch->cd->min_signal == 1)
-> -               return true;
-> -       return false;
-> -}
-> -
->  static int lpc32xx_nand_dma_setup(struct lpc32xx_nand_host *host)
->  {
->         struct mtd_info *mtd = &host->mtd;
-> @@ -732,7 +721,7 @@ static int lpc32xx_nand_dma_setup(struct lpc32xx_nand_host *host)
->
->         dma_cap_zero(mask);
->         dma_cap_set(DMA_SLAVE, mask);
-> -       host->dma_chan = dma_request_channel(mask, lpc32xx_dma_filter, NULL);
-> +       host->dma_chan = dma_request_channel(mask, pl08x_filter_id, "nand-slc");
->         if (!host->dma_chan) {
->                 dev_err(mtd->dev.parent, "Failed to request DMA channel\n");
->                 return -EBUSY;
-> --
-> 1.7.10.4
->
+I talked with Thomas about this and I think the problem is the
+single-reader nature of the RW rwlocks.  The lockdep report below
+mentions that btrfs is calling:
+
+> [  692.963099]  [<ffffffff811fabd2>] btrfs_clear_path_blocking+0x32/0x70
+
+In this case, the task has a number of blocking read locks on the btrfs buffers,
+and we're trying to turn them back into spinning read locks.  Even
+though btrfs is taking the read rwlock, it doesn't think of this as a new
+lock operation because we were blocking out new writers.
+
+If the second task has taken the spinning read lock, it is going to
+prevent that clear_path_blocking operation from progressing, even though
+it would have worked on a non-RT kernel.
+
+The solution should be to make the blocking read locks in btrfs honor the
+single-reader semantics.  This means not allowing more than one blocking
+reader and not allowing a spinning reader when there is a blocking
+reader.  Strictly speaking btrfs shouldn't need recursive readers on a
+single lock, so I wouldn't worry about that part.
+
+There is also a chunk of code in btrfs_clear_path_blocking that makes
+sure to strictly honor top down locking order during the conversion.  It
+only does this when lockdep is enabled because in non-RT kernels we
+don't need to worry about it.  For RT we'll want to enable that as well.
+
+I'll give this a shot later today.
+
+-chris
+
