@@ -1,239 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756730Ab2GMJGb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 05:06:31 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:26622 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752097Ab2GMJG1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 05:06:27 -0400
-X-IronPort-AV: E=Sophos;i="4.77,579,1336320000"; 
-   d="scan'208";a="5391997"
-Message-ID: <4FFFE621.8030302@cn.fujitsu.com>
-Date: Fri, 13 Jul 2012 17:10:57 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1756588Ab2GMJK4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 05:10:56 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:39527 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752563Ab2GMJKx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 05:10:53 -0400
 MIME-Version: 1.0
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
-        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
-        minchan.kim@gmail.com, akpm@linux-foundation.org,
-        kosaki.motohiro@jp.fujitsu.com
-Subject: Re: [RFC PATCH v3 4/13] memory-hotplug : remove /sys/firmware/memmap/X
- sysfs
-References: <4FFAB0A2.8070304@jp.fujitsu.com> <4FFAB1BA.9040801@jp.fujitsu.com>
-In-Reply-To: <4FFAB1BA.9040801@jp.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/13 17:06:06,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/13 17:06:15,
-	Serialize complete at 2012/07/13 17:06:15
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-2022-JP
+In-Reply-To: <CAFNq8R6dNb0BrDVZScJ8s=P3B-OMgtr8tUdy8XqQcCAeUWuH+A@mail.gmail.com>
+References: <CAK2TD5ygowdy9t1TpfxAPbpvNQfMnMB-3Zp8TKMsTYtBZdGW=Q@mail.gmail.com>
+	<CAFNq8R6dNb0BrDVZScJ8s=P3B-OMgtr8tUdy8XqQcCAeUWuH+A@mail.gmail.com>
+Date: Fri, 13 Jul 2012 17:10:52 +0800
+Message-ID: <CAK2TD5z2DticZAQ-Pxzo7YT9tx=YWZkwcn-YZJ3aQa4AFoE_Cw@mail.gmail.com>
+Subject: Re: ARM: why smp_mb() is not needed in the "__mutex_fastpath_lock"
+ and "__mutex_fastpath_unlock" functions
+From: shan kang <kangshan0910@gmail.com>
+To: Li Haifeng <omycle@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 07/09/2012 06:26 PM, Yasuaki Ishimatsu Wrote:
-> When (hot)adding memory into system, /sys/firmware/memmap/X/{end, start, type}
-> sysfs files are created. But there is no code to remove these files. The patch
-> implements the function to remove them.
-> 
-> Note : The code does not free firmware_map_entry since there is no way to free
->        memory which is allocated by bootmem.
-> 
-> CC: David Rientjes <rientjes@google.com>
-> CC: Jiang Liu <liuj97@gmail.com>
-> CC: Len Brown <len.brown@intel.com>
-> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> CC: Paul Mackerras <paulus@samba.org>
-> CC: Christoph Lameter <cl@linux.com>
-> Cc: Minchan Kim <minchan.kim@gmail.com>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> CC: Wen Congyang <wency@cn.fujitsu.com>
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> 
-> ---
->  drivers/firmware/memmap.c    |   78 ++++++++++++++++++++++++++++++++++++++++++-
->  include/linux/firmware-map.h |    6 +++
->  mm/memory_hotplug.c          |    6 ++-
->  3 files changed, 88 insertions(+), 2 deletions(-)
-> 
-> Index: linux-3.5-rc6/mm/memory_hotplug.c
-> ===================================================================
-> --- linux-3.5-rc6.orig/mm/memory_hotplug.c	2012-07-09 18:23:13.323844923 +0900
-> +++ linux-3.5-rc6/mm/memory_hotplug.c	2012-07-09 18:23:19.522767424 +0900
-> @@ -661,7 +661,11 @@ EXPORT_SYMBOL_GPL(add_memory);
-> 
->  int remove_memory(int nid, u64 start, u64 size)
->  {
-> -	return -EBUSY;
-> +	lock_memory_hotplug();
-> +	/* remove memmap entry */
-> +	firmware_map_remove(start, start + size - 1, "System RAM");
+For example, in the following scenario, Process2  may get the wrong value;
+Process1:
+mutex_lock(&lock);
+write data; (store operation)
+mutex_unlock(&lock);
 
-firmware_map_remove() is in meminit section, so remove_memory() should be in
-ref section.
+Process2:
+mutex_lock(&lock);
+read data; (load operation)
+mutex_unlock(&lock);
 
-Thanks
-Wen Congyang
+Suppose Process1 gets the lock first, write data and unlock. If the
+store operation completes very slowly, the load operation of the
+Process2 will fail to get the new value.
+Since there are no dmb instructions in the mutex_lock and
+mutex_unlock, which doesn't make sure that after Process2 gets the
+lock, the result of the Process1's store operation will be seen by the
+Process2.
 
-> +	unlock_memory_hotplug();
-> +	return 0;
-> 
->  }
->  EXPORT_SYMBOL_GPL(remove_memory);
-> Index: linux-3.5-rc6/include/linux/firmware-map.h
-> ===================================================================
-> --- linux-3.5-rc6.orig/include/linux/firmware-map.h	2012-07-09 18:23:09.532892314 +0900
-> +++ linux-3.5-rc6/include/linux/firmware-map.h	2012-07-09 18:23:19.523767412 +0900
-> @@ -25,6 +25,7 @@
-> 
->  int firmware_map_add_early(u64 start, u64 end, const char *type);
->  int firmware_map_add_hotplug(u64 start, u64 end, const char *type);
-> +int firmware_map_remove(u64 start, u64 end, const char *type);
-> 
->  #else /* CONFIG_FIRMWARE_MEMMAP */
-> 
-> @@ -38,6 +39,11 @@ static inline int firmware_map_add_hotpl
->  	return 0;
->  }
-> 
-> +static inline int firmware_map_remove(u64 start, u64 end, const char *type)
-> +{
-> +	return 0;
-> +}
-> +
->  #endif /* CONFIG_FIRMWARE_MEMMAP */
-> 
->  #endif /* _LINUX_FIRMWARE_MAP_H */
-> Index: linux-3.5-rc6/drivers/firmware/memmap.c
-> ===================================================================
-> --- linux-3.5-rc6.orig/drivers/firmware/memmap.c	2012-07-09 18:23:09.532892314 +0900
-> +++ linux-3.5-rc6/drivers/firmware/memmap.c	2012-07-09 18:25:46.371931554 +0900
-> @@ -21,6 +21,7 @@
->  #include <linux/types.h>
->  #include <linux/bootmem.h>
->  #include <linux/slab.h>
-> +#include <linux/mm.h>
-> 
->  /*
->   * Data types ------------------------------------------------------------------
-> @@ -79,7 +80,22 @@ static const struct sysfs_ops memmap_att
->  	.show = memmap_attr_show,
->  };
-> 
-> +#define to_memmap_entry(obj) container_of(obj, struct firmware_map_entry, kobj)
-> +
-> +static void release_firmware_map_entry(struct kobject *kobj)
-> +{
-> +	struct firmware_map_entry *entry = to_memmap_entry(kobj);
-> +	struct page *head_page;
-> +
-> +	head_page = virt_to_head_page(entry);
-> +	if (PageSlab(head_page))
-> +		kfree(entry);
-> +
-> +	/* There is no way to free memory allocated from bootmem*/
-> +}
-> +
->  static struct kobj_type memmap_ktype = {
-> +	.release	= release_firmware_map_entry,
->  	.sysfs_ops	= &memmap_attr_ops,
->  	.default_attrs	= def_attrs,
->  };
-> @@ -123,6 +139,16 @@ static int firmware_map_add_entry(u64 st
->  	return 0;
->  }
-> 
-> +/**
-> + * firmware_map_remove_entry() - Does the real work to remove a firmware
-> + * memmap entry.
-> + * @entry: removed entry.
-> + **/
-> +static inline void firmware_map_remove_entry(struct firmware_map_entry *entry)
-> +{
-> +	list_del(&entry->list);
-> +}
-> +
->  /*
->   * Add memmap entry on sysfs
->   */
-> @@ -144,6 +170,31 @@ static int add_sysfs_fw_map_entry(struct
->  	return 0;
->  }
-> 
-> +/*
-> + * Remove memmap entry on sysfs
-> + */
-> +static inline void remove_sysfs_fw_map_entry(struct firmware_map_entry *entry)
-> +{
-> +	kobject_put(&entry->kobj);
-> +}
-> +
-> +/*
-> + * Search memmap entry
-> + */
-> +
-> +struct firmware_map_entry * __meminit
-> +find_firmware_map_entry(u64 start, u64 end, const char *type)
-> +{
-> +	struct firmware_map_entry *entry;
-> +
-> +	list_for_each_entry(entry, &map_entries, list)
-> +		if ((entry->start == start) && (entry->end == end) &&
-> +		    (!strcmp(entry->type, type)))
-> +			return entry;
-> +
-> +	return NULL;
-> +}
-> +
->  /**
->   * firmware_map_add_hotplug() - Adds a firmware mapping entry when we do
->   * memory hotplug.
-> @@ -196,6 +247,32 @@ int __init firmware_map_add_early(u64 st
->  	return firmware_map_add_entry(start, end, type, entry);
->  }
-> 
-> +/**
-> + * firmware_map_remove() - remove a firmware mapping entry
-> + * @start: Start of the memory range.
-> + * @end:   End of the memory range (inclusive).
-> + * @type:  Type of the memory range.
-> + *
-> + * removes a firmware mapping entry.
-> + *
-> + * Returns 0 on success, or -EINVAL if no entry.
-> + **/
-> +int __meminit firmware_map_remove(u64 start, u64 end, const char *type)
-> +{
-> +	struct firmware_map_entry *entry;
-> +
-> +	entry = find_firmware_map_entry(start, end, type);
-> +	if (!entry)
-> +		return -EINVAL;
-> +
-> +	/* remove the memmap entry */
-> +	remove_sysfs_fw_map_entry(entry);
-> +
-> +	firmware_map_remove_entry(entry);
-> +
-> +	return 0;
-> +}
-> +
->  /*
->   * Sysfs functions -------------------------------------------------------------
->   */
-> @@ -218,7 +295,6 @@ static ssize_t type_show(struct firmware
->  }
-> 
->  #define to_memmap_attr(_attr) container_of(_attr, struct memmap_attribute, attr)
-> -#define to_memmap_entry(obj) container_of(obj, struct firmware_map_entry, kobj)
-> 
->  static ssize_t memmap_attr_show(struct kobject *kobj,
->  				struct attribute *attr, char *buf)
-> 
-> 
 
+
+2012/7/13 Li Haifeng <omycle@gmail.com>:
+> Hi Shan,
+>
+> 2012/7/12 shan kang <kangshan0910@gmail.com>:
+>> Hello,
+>>    I wonder why smp_mb() is not needed in the "__mutex_fastpath_lock"
+>> and "__mutex_fastpath_unlock" functions which are located in the
+>> "arch/arm/include/asm/mutex.h"?
+>>    I think "dmb" instruction is necessary there.
+>
+> Why necessary? Could you explain more detailed?
+>
+>>
+>> _______________________________________________
+>> linux-arm-kernel mailing list
+>> linux-arm-kernel@lists.infradead.org
+>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
