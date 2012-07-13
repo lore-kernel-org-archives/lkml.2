@@ -1,63 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757266Ab2GMNYq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 09:24:46 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:57640 "EHLO mail.skyhub.de"
+	id S1163019Ab2GMNcI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 09:32:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43245 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751281Ab2GMNYo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 09:24:44 -0400
-Date: Fri, 13 Jul 2012 15:24:43 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: KY Srinivasan <kys@microsoft.com>, Greg KH <gregkh@suse.de>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: Re: 0xB16B00B5? Really? (was Re: Move hyperv out of the
- drivers/staging/ directory)
-Message-ID: <20120713132441.GD10298@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Paolo Bonzini <pbonzini@redhat.com>,
-	KY Srinivasan <kys@microsoft.com>, Greg KH <gregkh@suse.de>,
-	"devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-References: <20110922170450.GA4490@suse.de>
- <6E21E5352C11B742B20C142EB499E048081E935D@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <20110922173618.GA5624@suse.de>
- <6E21E5352C11B742B20C142EB499E048081EB789@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <20111004170415.GA1320@suse.de>
- <6E21E5352C11B742B20C142EB499E048081EB86F@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <20111004193414.GA15672@suse.de>
- <4FFFF711.8040003@redhat.com>
- <426367E2313C2449837CD2DE46E7EAF9223B57EC@SN2PRD0310MB382.namprd03.prod.outlook.com>
- <50001F71.9070806@redhat.com>
+	id S1756356Ab2GMNcF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 09:32:05 -0400
+Date: Fri, 13 Jul 2012 15:29:16 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] uprobes: kill insert_vm_struct()->uprobe_mmap()
+Message-ID: <20120713132916.GA12507@redhat.com>
+References: <20120708202917.GA18188@redhat.com> <20120708203011.GA18243@redhat.com> <20120713081103.GA4781@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50001F71.9070806@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120713081103.GA4781@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 13, 2012 at 03:15:29PM +0200, Paolo Bonzini wrote:
-> Il 13/07/2012 15:13, KY Srinivasan ha scritto:
-> >> > 
-> >> > Somone was trying to be funny, I guess.
-> >> > 
-> >> > KY, I suppose you have access to Hyper-V code or can ask someone who does.
-> >> > Is this signature actually used in the Hyper-V host code?
-> > It is still early in the morning here and pardon me if I am not seeing the issue.
-> 
-> [offlist]
-> 
-> 0xB16B00B5 = big boobs
+On 07/13, Srikar Dronamraju wrote:
+>
+> * Oleg Nesterov <oleg@redhat.com> [2012-07-08 22:30:11]:
+>
+> > Kill insert_vm_struct()->uprobe_mmap(). It is not needed, nobody
+> > except arch/ia64/kernel/perfmon.c uses insert_vm_struct(vma) with
+> > vma->vm_file != NULL.
+> >
+>
+> Right, but somebody else might start using this later.
 
-LOL! You can't make this stuff up!
+Unlikely, I think...
 
-:-)
+> I cant think of a use case though.
 
--- 
-Regards/Gruss,
-Boris.
+Yes.
+
+> > And it is wrong. Again, get_user_pages() can not succeed before
+> > vma_link(vma) makes is visible to find_vma(). And even if this
+> > worked, we must not insert the new bp before this mapping is
+> > visible to vma_prio_tree_foreach() for uprobe_unregister().
+> >
+>
+> Agree, we are wrong to do it before vma_link.
+>
+>
+> > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> > ---
+> >  mm/mmap.c |    3 ---
+> >  1 files changed, 0 insertions(+), 3 deletions(-)
+> >
+> > diff --git a/mm/mmap.c b/mm/mmap.c
+> > index e5a4614..4fe2697 100644
+> > --- a/mm/mmap.c
+> > +++ b/mm/mmap.c
+> > @@ -2345,9 +2345,6 @@ int insert_vm_struct(struct mm_struct * mm, struct vm_area_struct * vma)
+> >  	     security_vm_enough_memory_mm(mm, vma_pages(vma)))
+> >  		return -ENOMEM;
+> >
+> > -	if (vma->vm_file && uprobe_mmap(vma))
+> > -		return -EINVAL;
+> > -
+> >  	vma_link(mm, vma, prev, rb_link, rb_parent);
+> >  	return 0;
+> >  }
+>
+> Can we do something like:
+>
+> 	vma_link(mm, vma, prev, rb_link, rb_parent);
+>
+> 	if (vma->vm_file && uprobe_mmap(vma)) {
+> 		/* FIXME: dont know if calling unmap_region is fine here */
+> 		unmap_region(mm, vma, prev, vma->vm_start, vma->vm_end);
+> 		return -EINVAL;
+> 	}
+
+Yes, I was thinking about the possible fix, but afaics this is not
+enough. At least this needs vm_unacct_memory(). And I am not sure
+about unmap_region...
+
+The main problem is that I have no idea how could I test the fix.
+Once again, currently this file can't be probed.
+
+So. Can't we kill this obviously wrong and unneeded (at least currently)
+code? Currently uprobe_mmap/munmap logic is not correct (I'll try to send
+more fixes after I return from vacation), it would be nice to remove the
+callsite.
+
+If somebody else will use insert_vm_struct() to mmap the can-be-uprobed
+file then yes, we will need to add uprobe_mmap() somewhere. But until
+then, the right fix is not clear and not testable.
+
+Oleg.
+
