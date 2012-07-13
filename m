@@ -1,214 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030494Ab2GMKrN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 06:47:13 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:3239 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161460Ab2GMKrH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 06:47:07 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Fri, 13 Jul 2012 03:47:00 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <grant.likely@secretlab.ca>, <linus.walleij@stericsson.com>,
-        <sameo@linux.intel.com>
-CC: <linux-kernel@vger.kernel.org>, <swarren@nvidia.com>,
-        <broonie@opensource.wolfsonmicro.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH 5/5] mfd: tps6586x: remove gpio support from core driver
-Date: Fri, 13 Jul 2012 16:09:27 +0530
-Message-ID: <1342175967-10087-6-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1342175967-10087-1-git-send-email-ldewangan@nvidia.com>
-References: <1342175967-10087-1-git-send-email-ldewangan@nvidia.com>
+	id S1030513Ab2GMKrt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 06:47:49 -0400
+Received: from mx1.fusionio.com ([66.114.96.30]:37051 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030482Ab2GMKrp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 06:47:45 -0400
+X-ASG-Debug-ID: 1342176464-03d6a50cb618bee0001-xx1T2L
+X-Barracuda-Envelope-From: clmason@fusionio.com
+Date: Fri, 13 Jul 2012 06:47:41 -0400
+From: Chris Mason <chris.mason@fusionio.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Mike Galbraith <efault@gmx.de>,
+        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: 3.4.4-rt13: btrfs + xfstests 006 = BOOM.. and a bonus rt_mutex
+ deadlock report for absolutely free!
+Message-ID: <20120713104741.GF30128@shiny>
+X-ASG-Orig-Subj: Re: 3.4.4-rt13: btrfs + xfstests 006 = BOOM.. and a bonus rt_mutex
+ deadlock report for absolutely free!
+Mail-Followup-To: Chris Mason <chris.mason@fusionio.com>,
+	Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
+	"linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Peter Zijlstra <peterz@infradead.org>
+References: <1342072060.7338.102.camel@marge.simpson.net>
+ <1342082648.7338.171.camel@marge.simpson.net>
+ <1342086792.7707.9.camel@marge.simpson.net>
+ <alpine.LFD.2.02.1207121310420.32033@ionos>
+ <1342094233.7707.12.camel@marge.simpson.net>
+ <alpine.LFD.2.02.1207121514240.32033@ionos>
+ <1342161072.7380.65.camel@marge.simpson.net>
+ <alpine.LFD.2.02.1207131142440.32033@ionos>
+ <1342174485.7380.103.camel@marge.simpson.net>
+ <alpine.LFD.2.02.1207131223240.32033@ionos>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1207131223240.32033@ionos>
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1342176464
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0777 1.0000 -1.5278
+X-Barracuda-Spam-Score: -0.93
+X-Barracuda-Spam-Status: No, SCORE=-0.93 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=MARKETING_SUBJECT
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.102568
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
+	0.60 MARKETING_SUBJECT      Subject contains popular marketing words
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The GPIO functionality of device tps6586x is added through
-platform gpio driver and it can be register as the mfd sub
-device and hence removing the duplicates code which register
-the gpio functionality from core driver.
+On Fri, Jul 13, 2012 at 04:26:26AM -0600, Thomas Gleixner wrote:
+> On Fri, 13 Jul 2012, Mike Galbraith wrote:
+> > On Fri, 2012-07-13 at 11:52 +0200, Thomas Gleixner wrote: 
+> > > On Fri, 13 Jul 2012, Mike Galbraith wrote:
+> > > > On Thu, 2012-07-12 at 15:31 +0200, Thomas Gleixner wrote: 
+> > > > > Bingo, that makes it more likely that this is caused by copying w/o
+> > > > > initializing the lock and then freeing the original structure.
+> > > > > 
+> > > > > A quick check for memcpy finds that __btrfs_close_devices() does a
+> > > > > memcpy of btrfs_device structs w/o initializing the lock in the new
+> > > > > copy, but I have no idea whether that's the place we are looking for.
+> > > > 
+> > > > Thanks a bunch Thomas.  I doubt I would have ever figured out that lala
+> > > > land resulted from _copying_ a lock.  That's one I won't be forgetting
+> > > > any time soon.  Box not only survived a few thousand xfstests 006 runs,
+> > > > dbench seemed disinterested in deadlocking virgin 3.0-rt.
+> > > 
+> > > Cute. It think that the lock copying caused the deadlock problem as
+> > > the list pointed to the wrong place, so we might have ended up with
+> > > following down the wrong chain when walking the list as long as the
+> > > original struct was not freed. That beast is freed under RCU so there
+> > > could be a rcu read side critical section fiddling with the old lock
+> > > and cause utter confusion.
+> > 
+> > Virgin 3.0-rt appears to really be solid.  But then it doesn't have
+> > pesky rwlocks.
+> 
+> Ah. So 3.0 is not having those rwlock thingies. Bummer.
+>  
+> > > /me goes and writes a nastigram^W proper changelog
+> > > 
+> > > > btrfs still locks up in my enterprise kernel, so I suppose I had better
+> > > > plug your fix into 3.4-rt and see what happens, and go beat hell out of
+> > > > virgin 3.0-rt again to be sure box really really survives dbench.
+> > > 
+> > > A test against 3.4-rt sans enterprise mess might be nice as well.
+> > 
+> > Enterprise is 3.0-stable with um 555 btrfs patches (oh dear).
+> > 
+> > Virgin 3.4-rt and 3.2-rt deadlock gripe.  Enterprise doesn't gripe, but
+> > deadlocks, so I have another adventure in my future even if I figure out
+> > wth to do about rwlocks.
+> 
+> Hrmpf. /me goes to stare into fs/btrfs/ some more.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
- drivers/mfd/Kconfig    |    2 +-
- drivers/mfd/tps6586x.c |   99 +++++++++---------------------------------------
- 2 files changed, 19 insertions(+), 82 deletions(-)
+Please post the deadlocks here, I'll help ;)
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index ec885a9..872dfe4 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -198,7 +198,7 @@ config MFD_TPS65217
- 
- config MFD_TPS6586X
- 	bool "TPS6586x Power Management chips"
--	depends on I2C=y && GPIOLIB && GENERIC_HARDIRQS
-+	depends on I2C=y && GENERIC_HARDIRQS
- 	select MFD_CORE
- 	select REGMAP_I2C
- 	depends on REGULATOR
-diff --git a/drivers/mfd/tps6586x.c b/drivers/mfd/tps6586x.c
-index 7210fa7..0b76fd5 100644
---- a/drivers/mfd/tps6586x.c
-+++ b/drivers/mfd/tps6586x.c
-@@ -22,7 +22,6 @@
- #include <linux/mutex.h>
- #include <linux/slab.h>
- #include <linux/err.h>
--#include <linux/gpio.h>
- #include <linux/i2c.h>
- #include <linux/regmap.h>
- #include <linux/regulator/of_regulator.h>
-@@ -30,10 +29,6 @@
- #include <linux/mfd/core.h>
- #include <linux/mfd/tps6586x.h>
- 
--/* GPIO control registers */
--#define TPS6586X_GPIOSET1	0x5d
--#define TPS6586X_GPIOSET2	0x5e
--
- /* interrupt control registers */
- #define TPS6586X_INT_ACK1	0xb5
- #define TPS6586X_INT_ACK2	0xb6
-@@ -94,12 +89,23 @@ static const struct tps6586x_irq_data tps6586x_irqs[] = {
- 	[TPS6586X_INT_RTC_ALM2] = TPS6586X_IRQ(TPS6586X_INT_MASK4, 1 << 1),
- };
- 
-+static struct mfd_cell tps6586x_cell[] = {
-+	{
-+		.name = "tps6586x-gpio",
-+	},
-+	{
-+		.name = "tps6586x-rtc",
-+	},
-+	{
-+		.name = "tps6586x-onkey",
-+	},
-+};
-+
- struct tps6586x {
- 	struct device		*dev;
- 	struct i2c_client	*client;
- 	struct regmap		*regmap;
- 
--	struct gpio_chip	gpio;
- 	struct irq_chip		irq_chip;
- 	struct mutex		irq_lock;
- 	int			irq_base;
-@@ -173,63 +179,6 @@ int tps6586x_update(struct device *dev, int reg, uint8_t val, uint8_t mask)
- }
- EXPORT_SYMBOL_GPL(tps6586x_update);
- 
--static int tps6586x_gpio_get(struct gpio_chip *gc, unsigned offset)
--{
--	struct tps6586x *tps6586x = container_of(gc, struct tps6586x, gpio);
--	uint8_t val;
--	int ret;
--
--	ret = tps6586x_read(tps6586x->dev, TPS6586X_GPIOSET2, &val);
--	if (ret)
--		return ret;
--
--	return !!(val & (1 << offset));
--}
--
--
--static void tps6586x_gpio_set(struct gpio_chip *chip, unsigned offset,
--			      int value)
--{
--	struct tps6586x *tps6586x = container_of(chip, struct tps6586x, gpio);
--
--	tps6586x_update(tps6586x->dev, TPS6586X_GPIOSET2,
--			value << offset, 1 << offset);
--}
--
--static int tps6586x_gpio_output(struct gpio_chip *gc, unsigned offset,
--				int value)
--{
--	struct tps6586x *tps6586x = container_of(gc, struct tps6586x, gpio);
--	uint8_t val, mask;
--
--	tps6586x_gpio_set(gc, offset, value);
--
--	val = 0x1 << (offset * 2);
--	mask = 0x3 << (offset * 2);
--
--	return tps6586x_update(tps6586x->dev, TPS6586X_GPIOSET1, val, mask);
--}
--
--static int tps6586x_gpio_init(struct tps6586x *tps6586x, int gpio_base)
--{
--	if (!gpio_base)
--		return 0;
--
--	tps6586x->gpio.owner		= THIS_MODULE;
--	tps6586x->gpio.label		= tps6586x->client->name;
--	tps6586x->gpio.dev		= tps6586x->dev;
--	tps6586x->gpio.base		= gpio_base;
--	tps6586x->gpio.ngpio		= 4;
--	tps6586x->gpio.can_sleep	= 1;
--
--	/* FIXME: add handling of GPIOs as dedicated inputs */
--	tps6586x->gpio.direction_output	= tps6586x_gpio_output;
--	tps6586x->gpio.set		= tps6586x_gpio_set;
--	tps6586x->gpio.get		= tps6586x_gpio_get;
--
--	return gpiochip_add(&tps6586x->gpio);
--}
--
- static int __remove_subdev(struct device *dev, void *unused)
- {
- 	platform_device_unregister(to_platform_device(dev));
-@@ -543,9 +492,10 @@ static int __devinit tps6586x_i2c_probe(struct i2c_client *client,
- 		}
- 	}
- 
--	ret = tps6586x_gpio_init(tps6586x, pdata->gpio_base);
--	if (ret) {
--		dev_err(&client->dev, "GPIO registration failed: %d\n", ret);
-+	ret = mfd_add_devices(tps6586x->dev, -1,
-+			tps6586x_cell, ARRAY_SIZE(tps6586x_cell), NULL, 0);
-+	if (ret < 0) {
-+		dev_err(&client->dev, "mfd_add_devices failed: %d\n", ret);
- 		return ret;
- 	}
- 
-@@ -558,29 +508,16 @@ static int __devinit tps6586x_i2c_probe(struct i2c_client *client,
- 	return 0;
- 
- err_add_devs:
--	if (pdata->gpio_base) {
--		ret = gpiochip_remove(&tps6586x->gpio);
--		if (ret)
--			dev_err(&client->dev, "Can't remove gpio chip: %d\n",
--				ret);
--	}
-+	mfd_remove_devices(tps6586x->dev);
- 	return ret;
- }
- 
- static int __devexit tps6586x_i2c_remove(struct i2c_client *client)
- {
- 	struct tps6586x *tps6586x = i2c_get_clientdata(client);
--	struct tps6586x_platform_data *pdata = client->dev.platform_data;
--	int ret;
--
--	if (pdata->gpio_base) {
--		ret = gpiochip_remove(&tps6586x->gpio);
--		if (ret)
--			dev_err(&client->dev, "Can't remove gpio chip: %d\n",
--				ret);
--	}
- 
- 	tps6586x_remove_subdevs(tps6586x);
-+	mfd_remove_devices(tps6586x->dev);
- 	return 0;
- }
- 
--- 
-1.7.1.1
+-chris
 
