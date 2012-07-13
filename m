@@ -1,92 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755282Ab2GMIMv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 04:12:51 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:7791 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751441Ab2GMIMl convert rfc822-to-8bit (ORCPT
+	id S1755534Ab2GMINP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 04:13:15 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:42996 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755287Ab2GMIM4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 04:12:41 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Fri, 13 Jul 2012 01:12:23 -0700
-Subject: RE: How to use the generic thermal sysfs.
-From: Wei Ni <wni@nvidia.com>
-To: Zhang Rui <rui.zhang@intel.com>
-CC: "R, Durgadoss" <durgadoss.r@intel.com>, "Brown, Len" <len.brown@intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "khali@linux-fr.org" <khali@linux-fr.org>,
-        "joe@perches.com" <joe@perches.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@ger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Alex Courbot <acourbot@nvidia.com>
-In-Reply-To: <1342165278.1682.259.camel@rui.sh.intel.com>
-References: <1342088573.27605.101.camel@tegra-chromium-2>
-	 <4D68720C2E767A4AA6A8796D42C8EB5915287C@BGSMSX101.gar.corp.intel.com>
-	 <1342144273.1682.237.camel@rui.sh.intel.com>
-	 <1342164616.27605.129.camel@tegra-chromium-2>
-	 <1342165278.1682.259.camel@rui.sh.intel.com>
-Date: Fri, 13 Jul 2012 16:11:27 +0800
-Message-ID: <1342167087.27605.158.camel@tegra-chromium-2>
+	Fri, 13 Jul 2012 04:12:56 -0400
+Date: Fri, 13 Jul 2012 13:41:03 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] uprobes: kill insert_vm_struct()->uprobe_mmap()
+Message-ID: <20120713081103.GA4781@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120708202917.GA18188@redhat.com>
+ <20120708203011.GA18243@redhat.com>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20120708203011.GA18243@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12071308-7408-0000-0000-000006BBB18A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-07-13 at 15:41 +0800, Zhang Rui wrote:
-> On 五, 2012-07-13 at 15:30 +0800, Wei Ni wrote:
-> > Our tegra thermal framework also will use the generic thermal layer. It
-> > will register the cooling device, and run the throttling in this generic
-> > framework.
-> > But we have a special mechanism, when the temp is below the trip temp,
-> > we will set different cpu capability for different temp range. For
-> > example, set the low/high temp as 20C/30C to the sensor, and set the cpu
-> > to the max capability, it mean the cpu can run up to the max freq and
-> > voltage in this temp range. if the temp is out that range, the sensor
-> > will have irq/alert to notify the tegra framework, then we will set to
-> > another temperature range and cpu capability.
-> > I think we can try to add this mechanism to the generic framework as a
-> > new policy, right?
-> > 
-> I think you can make use of the upper&lower limit in my patch set.
-> Say, here is your thermal policy
-> 20C - 30C, P0
-> 30C - 40C, P1 - P2
-> 40C - 60C, P3 - P5
-> 60C+, P6 ~ Pn
-> 
-> you can register to the thermal layer 4 passive trip points,
-> 20C, 30C, 40C, 60C, and then
-> 1) for trip 0 (20C), upper limit 0, lower limit 0
-> 2) for trip 1 (30C), upper limit 2, lower limit 1
-> 3) for trip 2 (40C), upper limit 5, lower limit 3
-> 4) for trip 3 (60C), upper limit n, lower limit 6
-> 
-> you can program your own sensor to get interrupt when the temperature
-> hits 20C/30C/40C/60C, and the generic thermal layer will put the
-> processors to proper frequency for each trip point.
-> 
-> what do you think?
+* Oleg Nesterov <oleg@redhat.com> [2012-07-08 22:30:11]:
 
-It's great, this is exactly what we need.
-I think for these trip points, we can use a new trip type, such as
-TRIP_LIMIT, and use new policy. Because in these state, we only need to
-set the processors to proper frequency capability, it's not like the
-passive type, the currently passive type will try to set cooling device
-state continually.
-And for these trip temp, it's better to add hysteresis value, so that it
-can avoid unnecessary interrupt.
-
+> Kill insert_vm_struct()->uprobe_mmap(). It is not needed, nobody
+> except arch/ia64/kernel/perfmon.c uses insert_vm_struct(vma) with
+> vma->vm_file != NULL.
 > 
-> BTW, the upper and lower limit is introduced in the patch set I'm
-> testing, so maybe you were not aware of it.
 
-How can I get these codes?
+Right, but somebody else might start using this later.
+I cant think of a use case though.
 
+> And it is wrong. Again, get_user_pages() can not succeed before
+> vma_link(vma) makes is visible to find_vma(). And even if this
+> worked, we must not insert the new bp before this mapping is
+> visible to vma_prio_tree_foreach() for uprobe_unregister().
 > 
-> thanks,
-> rui
 
+Agree, we are wrong to do it before vma_link.
+
+
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> ---
+>  mm/mmap.c |    3 ---
+>  1 files changed, 0 insertions(+), 3 deletions(-)
+> 
+> diff --git a/mm/mmap.c b/mm/mmap.c
+> index e5a4614..4fe2697 100644
+> --- a/mm/mmap.c
+> +++ b/mm/mmap.c
+> @@ -2345,9 +2345,6 @@ int insert_vm_struct(struct mm_struct * mm, struct vm_area_struct * vma)
+>  	     security_vm_enough_memory_mm(mm, vma_pages(vma)))
+>  		return -ENOMEM;
+> 
+> -	if (vma->vm_file && uprobe_mmap(vma))
+> -		return -EINVAL;
+> -
+>  	vma_link(mm, vma, prev, rb_link, rb_parent);
+>  	return 0;
+>  }
+
+Can we do something like:
+
+	vma_link(mm, vma, prev, rb_link, rb_parent);
+
+	if (vma->vm_file && uprobe_mmap(vma)) {
+		/* FIXME: dont know if calling unmap_region is fine here */
+		unmap_region(mm, vma, prev, vma->vm_start, vma->vm_end); 
+		return -EINVAL;
+	}
+
+	return 0;
+
+}
 
