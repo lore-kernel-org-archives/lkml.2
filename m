@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934329Ab2GMAfF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 20:35:05 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40985 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758962Ab2GMAcz (ORCPT
+	id S934341Ab2GMAfn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 20:35:43 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:47900 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756523Ab2GMAcw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 20:32:55 -0400
+	Thu, 12 Jul 2012 20:32:52 -0400
 From: Michel Lespinasse <walken@google.com>
 To: aarcange@redhat.com, dwmw2@infradead.org, riel@redhat.com,
         peterz@infradead.org, daniel.santos@pobox.com, axboe@kernel.dk,
         ebiederm@xmission.com, akpm@linux-foundation.org
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         torvalds@linux-foundation.org
-Subject: [PATCH v2 07/12] rbtree: adjust root color in rb_insert_color() only when necessary
-Date: Thu, 12 Jul 2012 17:31:52 -0700
-Message-Id: <1342139517-3451-8-git-send-email-walken@google.com>
+Subject: [PATCH v2 06/12] rbtree: break out of rb_insert_color loop after tree rotation
+Date: Thu, 12 Jul 2012 17:31:51 -0700
+Message-Id: <1342139517-3451-7-git-send-email-walken@google.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1342139517-3451-1-git-send-email-walken@google.com>
 References: <1342139517-3451-1-git-send-email-walken@google.com>
@@ -23,54 +23,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The root node of an rbtree must always be black. However, rb_insert_color()
-only needs to maintain this invariant when it has been broken - that is,
-when it exits the loop due to the current (red) node being the root.
-In all other cases (exiting after tree rotations, or exiting due to
-an existing black parent) the invariant is already satisfied, so there
-is no need to adjust the root node color.
+It is a well known property of rbtrees that insertion never requires
+more than two tree rotations.  In our implementation, after one loop
+iteration identified one or two necessary tree rotations, we would iterate
+and look for more.  However at that point the node's parent would always
+be black, which would cause us to exit the loop.
+
+We can make the code flow more obvious by just adding a break statement
+after the tree rotations, where we know we are done.  Additionally, in the
+cases where two tree rotations are necessary, we don't have to update the
+'node' pointer as it wouldn't be used until the next loop iteration, which
+we now avoid due to this break statement.
 
 Signed-off-by: Michel Lespinasse <walken@google.com>
 ---
- lib/rbtree.c |   19 +++++++++++++++----
- 1 files changed, 15 insertions(+), 4 deletions(-)
+ lib/rbtree.c |   14 ++++----------
+ 1 files changed, 4 insertions(+), 10 deletions(-)
 
 diff --git a/lib/rbtree.c b/lib/rbtree.c
-index 12abb8a..d0be5fc 100644
+index ccada9a..12abb8a 100644
 --- a/lib/rbtree.c
 +++ b/lib/rbtree.c
-@@ -91,8 +91,21 @@ void rb_insert_color(struct rb_node *node, struct rb_root *root)
- {
- 	struct rb_node *parent, *gparent;
+@@ -109,18 +109,15 @@ void rb_insert_color(struct rb_node *node, struct rb_root *root)
+ 				}
+ 			}
  
--	while ((parent = rb_parent(node)) && rb_is_red(parent))
--	{
-+	while (true) {
-+		/*
-+		 * Loop invariant: node is red
-+		 *
-+		 * If there is a black parent, we are done.
-+		 * Otherwise, take some corrective action as we don't
-+		 * want a red root or two consecutive red nodes.
-+		 */
-+		parent = rb_parent(node);
-+		if (!parent) {
-+			rb_set_black(node);
-+			break;
-+		} else if (rb_is_black(parent))
-+			break;
-+
- 		gparent = rb_parent(parent);
+-			if (parent->rb_right == node)
+-			{
+-				register struct rb_node *tmp;
++			if (parent->rb_right == node) {
+ 				__rb_rotate_left(parent, root);
+-				tmp = parent;
+ 				parent = node;
+-				node = tmp;
+ 			}
  
- 		if (parent == gparent->rb_left)
-@@ -142,8 +155,6 @@ void rb_insert_color(struct rb_node *node, struct rb_root *root)
- 			break;
+ 			rb_set_black(parent);
+ 			rb_set_red(gparent);
+ 			__rb_rotate_right(gparent, root);
++			break;
+ 		} else {
+ 			{
+ 				register struct rb_node *uncle = gparent->rb_left;
+@@ -134,18 +131,15 @@ void rb_insert_color(struct rb_node *node, struct rb_root *root)
+ 				}
+ 			}
+ 
+-			if (parent->rb_left == node)
+-			{
+-				register struct rb_node *tmp;
++			if (parent->rb_left == node) {
+ 				__rb_rotate_right(parent, root);
+-				tmp = parent;
+ 				parent = node;
+-				node = tmp;
+ 			}
+ 
+ 			rb_set_black(parent);
+ 			rb_set_red(gparent);
+ 			__rb_rotate_left(gparent, root);
++			break;
  		}
  	}
--
--	rb_set_black(root->rb_node);
- }
- EXPORT_SYMBOL(rb_insert_color);
  
 -- 
 1.7.7.3
