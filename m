@@ -1,106 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757201Ab2GMKJv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 06:09:51 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:38367 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755704Ab2GMKJu (ORCPT
+	id S932451Ab2GMKNj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 06:13:39 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:45169 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757152Ab2GMKNh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 06:09:50 -0400
+	Fri, 13 Jul 2012 06:13:37 -0400
+Message-ID: <4FFFF434.20906@linux.vnet.ibm.com>
+Date: Fri, 13 Jul 2012 15:41:00 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUVorJNMQ3wyz8WuZop_fwwOuBo38wZg9s9RJizhM0yc-w@mail.gmail.com>
-References: <CA+icZUVorJNMQ3wyz8WuZop_fwwOuBo38wZg9s9RJizhM0yc-w@mail.gmail.com>
-Date: Fri, 13 Jul 2012 12:09:48 +0200
-Message-ID: <CA+icZUU+_PCVqWP028X7k1=Gc-EwtrXWtHyXB+EvRoofXCdmfg@mail.gmail.com>
-Subject: Re: [3.5-rc6+] mei: irq: request_threaded_irq is missing the
- IRQF_ONESHOT flag
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Tomas Winkler <tomas.winkler@intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Roland Dreier <roland@purestorage.com>
-Content-Type: text/plain; charset=UTF-8
+To: Christian Borntraeger <borntraeger@de.ibm.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Avi Kivity <avi@redhat.com>, Rik van Riel <riel@redhat.com>,
+        S390 <linux-s390@vger.kernel.org>, Carsten Otte <cotte@de.ibm.com>,
+        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: Re: [PATCH RFC V3 2/3] kvm: Note down when cpu relax intercepted
+ or pause loop exited
+References: <20120712191712.30440.68944.sendpatchset@codeblue> <20120712191800.30440.16406.sendpatchset@codeblue> <4FFF2D5F.3050902@de.ibm.com> <4FFF979F.8070100@linux.vnet.ibm.com> <4FFFBC9A.6080107@de.ibm.com>
+In-Reply-To: <4FFFBC9A.6080107@de.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12071300-0260-0000-0000-0000018167E0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 13, 2012 at 11:47 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> Hi,
+On 07/13/2012 11:43 AM, Christian Borntraeger wrote:
+> On 13/07/12 05:35, Raghavendra K T wrote:
+>>> maybe define static inline access functions in kvm_host.h that are no-ops
+>>> if CONFIG_HAVE_KVM_CPU_RELAX_INTERCEPT is not set.
 >
-> while dealing with [1], I saw this mei-related infos in dmesg when
-> doing a suspend + resume (see [1] for more logs):
->
-> [17046.348467]  [<ffffffffa00554d8>] mei_pci_suspend+0x78/0xd0 [mei]
-> [17047.460315] mei 0000:00:16.0: irq 47 for MSI/MSI-X
-> [17047.460512] mei 0000:00:16.0: request_threaded_irq failed: irq = 47.
->
-> I am not sure whom to address with the issue - so I just asked on
-> #linux-rt and Thomas responded:
->
-> [ 13-Jul-2012: German local-time (UTC+2) ]
-> ...
-> [11:03:40] <tglx> request_threaded_irq is missing the IRQF_ONESHOT flag
-> ...
-> [11:24:18] <tglx> anyone can fix it by sending a patch which adds the flag :)
->
-> Futhermore, I found those commits, so I added folks from there to this BR:
->
-> 16a50b1 mei: pci_resume: set IRQF_ONESHOT for msi request_threaded_irq
-> aa189ec misc: mei: set IRQF_ONESHOT for msi request_threaded_irq
->
-> If you need more infos and/or logs, please let me know.
->
-> Feel free to add:
->
->      Reported-by: Sedat Dilek <sedat.dilek@gmail.com>
->
-> Kind Regards,
-> - Sedat (dileks on IRC) -
->
-> [1] http://marc.info/?l=linux-kernel&m=134216822724119&w=2
+> As I already said, can you have a look at using access functions?
 
-Here some more infos:
+Yes. will do.
 
-$ lspci -nnvv | egrep 'mei|00:16'
-00:16.0 Communication controller [0780]: Intel Corporation 6
-Series/C200 Series Chipset Family MEI Controller #1 [8086:1c3a] (rev
-04)
-        Kernel driver in use: mei
-
-$ dmesg | egrep 'mei|00:16'
-[    0.242776] pci 0000:00:16.0: [8086:1c3a] type 00 class 0x078000
-[    0.242802] pci 0000:00:16.0: reg 10: [mem 0xf0705000-0xf070500f 64bit]
-[    0.242884] pci 0000:00:16.0: PME# supported from D0 D3hot D3cold
-[   23.645968] mei 0000:00:16.0: setting latency timer to 64
-[   23.646041] mei 0000:00:16.0: irq 47 for MSI/MSI-X
-[   23.650677] mei 0000:00:16.0: wd: failed to find the client
-[ 1386.959871] mei 0000:00:16.0: irq 47 for MSI/MSI-X
-[ 1386.960810] mei 0000:00:16.0: wd: failed to find the client
-[ 1435.138062] mei 0000:00:16.0: irq 47 for MSI/MSI-X
-[ 1435.139033] mei 0000:00:16.0: wd: failed to find the client
-
->From the above mentionned dmesg log:
-
-$ dmesg | egrep 'mei|00:16|IRQF_ONESHOT'
-CALL-TRACE_3.5.0-rc6-1-iniza-generic_PM-related_HW-hidden.txt
-
-[17046.348410] Modules linked in: snd_hda_codec_hdmi
-snd_hda_codec_realtek rfcomm bnep parport_pc ppdev joydev
-snd_hda_intel snd_hda_codec snd_hwdep snd_pcm coretemp kvm_intel
-snd_page_alloc kvm arc4 snd_seq_midi snd_seq_midi_event iwlwifi i915
-snd_rawmidi uvcvideo snd_seq ghash_clmulni_intel snd_seq_device
-videobuf2_vmalloc aesni_intel snd_timer videobuf2_memops aes_x86_64
-drm_kms_helper videobuf2_core cryptd mac80211 drm snd videodev psmouse
-samsung_laptop i2c_algo_bit btusb hid_generic soundcore microcode
-serio_raw cfg80211 lp mei bluetooth video mac_hid lpc_ich parport
-usbhid hid r8169
-[17046.348467]  [<ffffffffa00554d8>] mei_pci_suspend+0x78/0xd0 [mei]
-[17047.460315] mei 0000:00:16.0: irq 47 for MSI/MSI-X
-[17047.460512] mei 0000:00:16.0: request_threaded_irq failed: irq = 47.
-[17047.460520] PM: Device 0000:00:16.0 failed to resume async: error -22
-
-I am sorry if this is a different issue as already reported.
-
-Greetings,
-- Sedat -
