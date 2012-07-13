@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933616Ab2GMBiS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 21:38:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45946 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932250Ab2GMBiQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 21:38:16 -0400
-Message-ID: <4FFF7C73.2060707@redhat.com>
-Date: Fri, 13 Jul 2012 09:40:03 +0800
-From: Asias He <asias@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S934337Ab2GMBir (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 21:38:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36489 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932250Ab2GMBip (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 21:38:45 -0400
+Date: Thu, 12 Jul 2012 22:38:35 -0300
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Rolf Offermanns <rolf.offermanns@gmx.net>,
+        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+        Senthil Balasubramanian <senthilb@qca.qualcomm.com>,
+        Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: Re: [ 22/68] ath9k_hw: avoid possible infinite loop in
+ ar9003_get_pll_sqsum_dvc
+Message-ID: <20120713013835.GA3121@herton-Z68MA-D2H-B3>
+References: <20120712175057.GA9917@kroah.com>
+ <20120712175035.530652872@linuxfoundation.org>
+ <20120712175037.411246837@linuxfoundation.org>
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        kvm@vger.kernel.org, Benjamin LaHaise <bcrl@kvack.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Michael S. Tsirkin" <mst@redhat.com>, linux-aio@kvack.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 1/5] aio: Export symbols and struct kiocb_batch for in
- kernel aio usage
-References: <1342107302-28116-1-git-send-email-asias@redhat.com>  <1342107302-28116-2-git-send-email-asias@redhat.com> <1342115416.3021.60.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1342115416.3021.60.camel@dabdike.int.hansenpartnership.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120712175037.411246837@linuxfoundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi James,
+On Thu, Jul 12, 2012 at 04:01:56PM -0700, Greg Kroah-Hartman wrote:
+> From: Greg KH <gregkh@linuxfoundation.org>
+> 
+> 3.0-stable review patch.  If anyone has any objections, please let me know.
+> 
+> ------------------
+> 
+> From: Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>
+> 
+> commit f18e3c6b67f448ec47b3a5b242789bd3d5644879 upstream.
+> 
+> "ath9k: Fix softlockup in AR9485" with commit id
+> 64bc1239c790e051ff677e023435d770d2ffa174 fixed the reported
+> issue, yet its better to avoid the possible infinite loop
+> in ar9003_get_pll_sqsum_dvc by having a timeout as suggested
+> by ath9k maintainers.
+> http://www.spinics.net/lists/linux-wireless/msg92126.html.
+> Based on my testing PLL's locking measurement is done in
+> ~200us (2 iterations).
 
-On 07/13/2012 01:50 AM, James Bottomley wrote:
-> On Thu, 2012-07-12 at 23:35 +0800, Asias He wrote:
->> This is useful for people who want to use aio in kernel, e.g. vhost-blk.
->>
->> Signed-off-by: Asias He <asias@redhat.com>
->> ---
->>   fs/aio.c            |   37 ++++++++++++++++++-------------------
->>   include/linux/aio.h |   21 +++++++++++++++++++++
->>   2 files changed, 39 insertions(+), 19 deletions(-)
->
-> Um, I think you don't quite understand how aio in the kernel would work;
-> it's not as simple as just exporting the interfaces.  There's already a
-> (very long) patch set from oracle to do this so loop can use aio:
->
-> http://marc.info/?l=linux-fsdevel&m=133312234313122
+Missing the rest of the patch here.
 
-Oh, I did not see this patch set. Thanks for pointing it out! This bit 
-hasn't merged, right? I'd love to use the aio_kernel_() interface if it 
-is merged. It will simply vhost-blk. Due to lack of better kernel aio 
-interface, we are currently doing io_setup, io_submit, etc. in vhost-blk 
-on our own.
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe stable" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
 -- 
-Asias
-
-
+[]'s
+Herton
