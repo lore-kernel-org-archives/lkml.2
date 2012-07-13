@@ -1,46 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932451Ab2GMKNj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 06:13:39 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:45169 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757152Ab2GMKNh (ORCPT
+	id S932545Ab2GMKOv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 06:14:51 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:54343 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932349Ab2GMKOt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 06:13:37 -0400
-Message-ID: <4FFFF434.20906@linux.vnet.ibm.com>
-Date: Fri, 13 Jul 2012 15:41:00 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Christian Borntraeger <borntraeger@de.ibm.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Avi Kivity <avi@redhat.com>, Rik van Riel <riel@redhat.com>,
-        S390 <linux-s390@vger.kernel.org>, Carsten Otte <cotte@de.ibm.com>,
-        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
-        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Subject: Re: [PATCH RFC V3 2/3] kvm: Note down when cpu relax intercepted
- or pause loop exited
-References: <20120712191712.30440.68944.sendpatchset@codeblue> <20120712191800.30440.16406.sendpatchset@codeblue> <4FFF2D5F.3050902@de.ibm.com> <4FFF979F.8070100@linux.vnet.ibm.com> <4FFFBC9A.6080107@de.ibm.com>
-In-Reply-To: <4FFFBC9A.6080107@de.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Fri, 13 Jul 2012 06:14:49 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX180Vy83IlU0W72cF8PvLuoiQEtAjlWpq1KD2lrq5I
+	8riuvcnznxaMvC
+Message-ID: <1342174485.7380.103.camel@marge.simpson.net>
+Subject: Re: 3.4.4-rt13: btrfs + xfstests 006 = BOOM.. and a bonus rt_mutex
+ deadlock report for absolutely free!
+From: Mike Galbraith <efault@gmx.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Date: Fri, 13 Jul 2012 12:14:45 +0200
+In-Reply-To: <alpine.LFD.2.02.1207131142440.32033@ionos>
+References: <1342072060.7338.102.camel@marge.simpson.net>
+	 <1342082648.7338.171.camel@marge.simpson.net>
+	 <1342086792.7707.9.camel@marge.simpson.net>
+	 <alpine.LFD.2.02.1207121310420.32033@ionos>
+	 <1342094233.7707.12.camel@marge.simpson.net>
+	 <alpine.LFD.2.02.1207121514240.32033@ionos>
+	 <1342161072.7380.65.camel@marge.simpson.net>
+	 <alpine.LFD.2.02.1207131142440.32033@ionos>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
-x-cbid: 12071300-0260-0000-0000-0000018167E0
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/13/2012 11:43 AM, Christian Borntraeger wrote:
-> On 13/07/12 05:35, Raghavendra K T wrote:
->>> maybe define static inline access functions in kvm_host.h that are no-ops
->>> if CONFIG_HAVE_KVM_CPU_RELAX_INTERCEPT is not set.
->
-> As I already said, can you have a look at using access functions?
+On Fri, 2012-07-13 at 11:52 +0200, Thomas Gleixner wrote: 
+> On Fri, 13 Jul 2012, Mike Galbraith wrote:
+> > On Thu, 2012-07-12 at 15:31 +0200, Thomas Gleixner wrote: 
+> > > Bingo, that makes it more likely that this is caused by copying w/o
+> > > initializing the lock and then freeing the original structure.
+> > > 
+> > > A quick check for memcpy finds that __btrfs_close_devices() does a
+> > > memcpy of btrfs_device structs w/o initializing the lock in the new
+> > > copy, but I have no idea whether that's the place we are looking for.
+> > 
+> > Thanks a bunch Thomas.  I doubt I would have ever figured out that lala
+> > land resulted from _copying_ a lock.  That's one I won't be forgetting
+> > any time soon.  Box not only survived a few thousand xfstests 006 runs,
+> > dbench seemed disinterested in deadlocking virgin 3.0-rt.
+> 
+> Cute. It think that the lock copying caused the deadlock problem as
+> the list pointed to the wrong place, so we might have ended up with
+> following down the wrong chain when walking the list as long as the
+> original struct was not freed. That beast is freed under RCU so there
+> could be a rcu read side critical section fiddling with the old lock
+> and cause utter confusion.
 
-Yes. will do.
+Virgin 3.0-rt appears to really be solid.  But then it doesn't have
+pesky rwlocks.
+
+> /me goes and writes a nastigram^W proper changelog
+> 
+> > btrfs still locks up in my enterprise kernel, so I suppose I had better
+> > plug your fix into 3.4-rt and see what happens, and go beat hell out of
+> > virgin 3.0-rt again to be sure box really really survives dbench.
+> 
+> A test against 3.4-rt sans enterprise mess might be nice as well.
+
+Enterprise is 3.0-stable with um 555 btrfs patches (oh dear).
+
+Virgin 3.4-rt and 3.2-rt deadlock gripe.  Enterprise doesn't gripe, but
+deadlocks, so I have another adventure in my future even if I figure out
+wth to do about rwlocks.
+
+-Mike
 
