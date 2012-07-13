@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753262Ab2GMV4H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 17:56:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27700 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751455Ab2GMV4E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 17:56:04 -0400
-Date: Fri, 13 Jul 2012 17:55:46 -0400
-From: Dave Jones <davej@redhat.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <greg@kroah.com>,
-        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
-        Debian Kernel Team <debian-kernel@lists.debian.org>,
-        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Fedora Kernel Team <kernel-team@fedoraproject.org>
-Subject: Re: [RFC] Simplifying kernel configuration for distro issues
-Message-ID: <20120713215546.GH1707@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Paul Bolle <pebolle@tiscali.nl>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Greg Kroah-Hartman <greg@kroah.com>,
-	Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
-	Debian Kernel Team <debian-kernel@lists.debian.org>,
-	OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Fedora Kernel Team <kernel-team@fedoraproject.org>
-References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com>
- <20120713210240.GG1707@redhat.com>
- <1342216225.15453.15.camel@x61.thuisdomein>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1342216225.15453.15.camel@x61.thuisdomein>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753697Ab2GMWCt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 18:02:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55902 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751552Ab2GMWCs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 18:02:48 -0400
+Date: Fri, 13 Jul 2012 15:02:46 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Cong Wang <xiyou.wangcong@gmail.com>
+Cc: Alex Kelly <alex.page.kelly@gmail.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alex <eshink@gmail.com>
+Subject: Re: [PATCH 1/2] Moved core dump functionality into its own file
+Message-Id: <20120713150246.c058e7d3.akpm@linux-foundation.org>
+In-Reply-To: <CAM_iQpWk7nekZoi5i6yg6Q3hA6Sa1HG2SPjPJ=HFD3cPdbVW9w@mail.gmail.com>
+References: <1341275894-9737-1-git-send-email-alex.page.kelly@gmail.com>
+	<CAM_iQpWk7nekZoi5i6yg6Q3hA6Sa1HG2SPjPJ=HFD3cPdbVW9w@mail.gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 13, 2012 at 11:50:25PM +0200, Paul Bolle wrote:
+On Tue, 3 Jul 2012 12:53:34 +0800
+Cong Wang <xiyou.wangcong@gmail.com> wrote:
 
- > But just removing all the certainly unused macros probably wouldn't have
- > made a noticeable difference to anyone using those defconfig files
- > anyway.
+> On Tue, Jul 3, 2012 at 8:38 AM, Alex Kelly <alex.page.kelly@gmail.com> wrote:
+> > From: Alex <eshink@gmail.com>
+> >
+> > This was done in preparation for making core dump functionality optional.
+> >
+> > The variable "suid_dumpable" and associated functions are left in fs/exec.c
+> > because they're used elsewhere, such as in ptrace.
+> >
+> > Signed-off-by: Alex Kelly <alex.page.kelly@gmail.com>
+> > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> 
+> Looks good to me:
 
-My point is that I don't think there's many people actually using them.
-(maybe more on the niche platforms, but x86[64] ? I'm sceptical they're used at all)
+Me too, but the first patch conflicts somewhat with a few pending
+changes in linux-next.  I could fix them up, but would prefer that the
+result be tested.  Alex, could you please redo the patches against
+linux-next or mmotm?
 
-	Dave
- 
+Also, the patch titles could be improved.  I suggest
+
+	coredump: move core dump functionality into its own file
+	coredump: make core dump functionality optional
+
+Documentation/SubmittingPatches section 15 describes the thinking here.
+
+Thanks.
