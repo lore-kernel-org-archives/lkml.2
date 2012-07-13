@@ -1,143 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757794Ab2GMOcx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 10:32:53 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:46942 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757743Ab2GMOcv (ORCPT
+	id S1163051Ab2GMOfP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 10:35:15 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41033 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753807Ab2GMOfN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 10:32:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <1342156672-7369-1-git-send-email-wad@chromium.org>
-References: <1342156672-7369-1-git-send-email-wad@chromium.org>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Fri, 13 Jul 2012 07:32:26 -0700
-X-Google-Sender-Auth: 5dfqUiW0R3Bpcdx552hotbKVFpI
-Message-ID: <CAObL_7ERh3inaYCoa56uFS3g74iBOWhdzwYqNESVok-gkraT+w@mail.gmail.com>
-Subject: Re: [PATCH] x86/vsyscall: allow seccomp filter in vsyscall=emulate
-To: Will Drewry <wad@chromium.org>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        qmewlo@gmail.com, eparis@redhat.com, keescook@chromium.org,
-        james.l.morris@oracle.com, hpa@zytor.com, cevans@chromium.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 13 Jul 2012 10:35:13 -0400
+From: Vinayak Holikatti <vinholikatti@gmail.com>
+To: James.Bottomley@hansenpartnership.com
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        patches@linaro.org, linux-samsung-soc@vger.kernel.org,
+        santoshsy@gmail.com, arnd@linaro.org, girish.shivananjappa@linaro.org,
+        saugata.das@linaro.org, vishak.g@samsung.com, venkat@linaro.org,
+        k.rajesh@samsung.com, dsaxena@linaro.org, ilho215.lee@samsung.com,
+        nala.la@samsung.com, sreekumar.c@samsung.com,
+        Vinayak Holikatti <vinholikatti@gmail.com>
+Subject: [PATCH V2 4/4] [SCSI] ufs: Correct the expected data transfer size
+Date: Fri, 13 Jul 2012 20:04:45 +0530
+Message-Id: <1342190085-20480-1-git-send-email-vinholikatti@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 12, 2012 at 10:17 PM, Will Drewry <wad@chromium.org> wrote:
-> If a seccomp filter program is installed, older static binaries and
-> distributions with older libc implementations (glibc 2.13 and earlier)
-> that rely on vsyscall use will be terminated regardless of the filter
-> program policy when executing time, gettimeofday, or getcpu.  This is
-> only the case when vsyscall emulation is in use (vsyscall=emulate is the
-> default).
->
-> This patch emulates system call entry inside a vsyscall=emulate trap
-> such that seccomp can properly evaluate the system call.
->
-> Reported-by: Owen Kibel <qmewlo@gmail.com>
-> Signed-off-by: Will Drewry <wad@chromium.org>
-> ---
->  arch/x86/kernel/vsyscall_64.c |   29 ++++++++++++++++++++++++++---
->  1 file changed, 26 insertions(+), 3 deletions(-)
->
-> diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
-> index 7515cf0..433545f 100644
-> --- a/arch/x86/kernel/vsyscall_64.c
-> +++ b/arch/x86/kernel/vsyscall_64.c
-> @@ -139,6 +139,14 @@ static int addr_to_vsyscall_nr(unsigned long addr)
->         return nr;
->  }
->
-> +static int vsyscall_seccomp(struct task_struct *tsk, int syscall_nr)
-> +{
-> +       if (!seccomp_mode(&tsk->seccomp))
-> +               return 0;
-> +       task_pt_regs(tsk)->orig_ax = syscall_nr;
-> +       return __secure_computing(syscall_nr);
-> +}
-> +
->  static bool write_ok_or_segv(unsigned long ptr, size_t size)
->  {
->         /*
-> @@ -174,6 +182,7 @@ bool emulate_vsyscall(struct pt_regs *regs, unsigned long address)
->         int vsyscall_nr;
->         int prev_sig_on_uaccess_error;
->         long ret;
-> +       int skip;
->
->         /*
->          * No point in checking CS -- the only way to get here is a user mode
-> @@ -205,9 +214,6 @@ bool emulate_vsyscall(struct pt_regs *regs, unsigned long address)
->         }
->
->         tsk = current;
-> -       if (seccomp_mode(&tsk->seccomp))
-> -               do_exit(SIGKILL);
-> -
->         /*
->          * With a real vsyscall, page faults cause SIGSEGV.  We want to
->          * preserve that behavior to make writing exploits harder.
-> @@ -222,8 +228,13 @@ bool emulate_vsyscall(struct pt_regs *regs, unsigned long address)
->          * address 0".
->          */
->         ret = -EFAULT;
-> +       skip = 0;
->         switch (vsyscall_nr) {
->         case 0:
-> +               skip = vsyscall_seccomp(tsk, __NR_gettimeofday);
-> +               if (skip)
-> +                       break;
-> +
->                 if (!write_ok_or_segv(regs->di, sizeof(struct timeval)) ||
->                     !write_ok_or_segv(regs->si, sizeof(struct timezone)))
->                         break;
-> @@ -234,6 +245,10 @@ bool emulate_vsyscall(struct pt_regs *regs, unsigned long address)
->                 break;
->
->         case 1:
-> +               skip = vsyscall_seccomp(tsk, __NR_time);
-> +               if (skip)
-> +                       break;
-> +
->                 if (!write_ok_or_segv(regs->di, sizeof(time_t)))
->                         break;
->
-> @@ -241,6 +256,10 @@ bool emulate_vsyscall(struct pt_regs *regs, unsigned long address)
->                 break;
->
->         case 2:
-> +               skip = vsyscall_seccomp(tsk, __NR_getcpu);
-> +               if (skip)
-> +                       break;
-> +
->                 if (!write_ok_or_segv(regs->di, sizeof(unsigned)) ||
->                     !write_ok_or_segv(regs->si, sizeof(unsigned)))
->                         break;
-> @@ -253,6 +272,9 @@ bool emulate_vsyscall(struct pt_regs *regs, unsigned long address)
->
->         current_thread_info()->sig_on_uaccess_error = prev_sig_on_uaccess_error;
->
-> +       if (skip)
-> +               goto do_ret;
-> +
->         if (ret == -EFAULT) {
->                 /* Bad news -- userspace fed a bad pointer to a vsyscall. */
->                 warn_bad_vsyscall(KERN_INFO, regs,
-> @@ -271,6 +293,7 @@ bool emulate_vsyscall(struct pt_regs *regs, unsigned long address)
->
->         regs->ax = ret;
->
-> +do_ret:
->         /* Emulate a ret instruction. */
->         regs->ip = caller;
->         regs->sp += 8;
+This patch corrects the expected data transfer size of the
+command UPIU. The current implementation of cmd->transfersize
+is wrong as it probably equal to sector size. With this
+implementation the transfer size is updated correctly
 
-Does this work correctly in SECCOMP_RET_TRAP, TRACE, or ERRNO mode?
-errno looks okay, but trap and trace still emulate the ret
-instruction, which looks like it could confuse debuggers.  (If, on the
-other hand, no change is made to the registers, then the debugger will
-see a syscall instruction at rip, albeit one that can't actually be
-executed due to the nx bit.)
+Signed-off-by: Vinayak Holikatti <vinholikatti@gmail.com>
+Signed-off-by: Santosh Yaraganavi <santoshsy@gmail.com>
+---
+ drivers/scsi/ufs/ufshcd.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---Andy
+diff --git a/drivers/scsi/ufs/ufshcd.c b/drivers/scsi/ufs/ufshcd.c
+index dfc3e85..5e732c3 100644
+--- a/drivers/scsi/ufs/ufshcd.c
++++ b/drivers/scsi/ufs/ufshcd.c
+@@ -488,7 +488,7 @@ static void ufshcd_compose_upiu(struct ufshcd_lrb *lrbp)
+ 		ucd_cmd_ptr->header.dword_2 = 0;
+ 
+ 		ucd_cmd_ptr->exp_data_transfer_len =
+-			cpu_to_be32(lrbp->cmd->transfersize);
++			cpu_to_be32(lrbp->cmd->sdb.length);
+ 
+ 		memcpy(ucd_cmd_ptr->cdb,
+ 		       lrbp->cmd->cmnd,
+-- 
+1.7.9.5
+
