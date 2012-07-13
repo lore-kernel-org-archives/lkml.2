@@ -1,194 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030368Ab2GMKmd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 06:42:33 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:61914 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030272Ab2GMKmc (ORCPT
+	id S1030412Ab2GMKmm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 06:42:42 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:53036 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030272Ab2GMKmj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 06:42:32 -0400
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUUHQsUqSnKBwUxG2yoiTAfatgPSZBT974_u95DkVZ5S6w@mail.gmail.com>
-References: <CA+icZUVorJNMQ3wyz8WuZop_fwwOuBo38wZg9s9RJizhM0yc-w@mail.gmail.com>
-	<5B8DA87D05A7694D9FA63FD143655C1B13B4A9@HASMSX103.ger.corp.intel.com>
-	<CA+icZUUHQsUqSnKBwUxG2yoiTAfatgPSZBT974_u95DkVZ5S6w@mail.gmail.com>
-Date: Fri, 13 Jul 2012 12:42:30 +0200
-Message-ID: <CA+icZUUg-5aLcC0cfRaDYSiwRbX_Y8K2O6s+gOEzHZRGpCakZg@mail.gmail.com>
-Subject: Re: [3.5-rc6+] mei: irq: request_threaded_irq is missing the
- IRQF_ONESHOT flag
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: "Winkler, Tomas" <tomas.winkler@intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Roland Dreier <roland@purestorage.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM List <linux-pm@lists.linux-foundation.org>
-Content-Type: multipart/mixed; boundary=e89a8f22c72bab375804c4b3bc60
+	Fri, 13 Jul 2012 06:42:39 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, sameo@linux.intel.com, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH] Documentation: Describe the AB8500 Device Tree bindings
+Date: Fri, 13 Jul 2012 12:42:26 +0200
+Message-Id: <1342176146-22765-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---e89a8f22c72bab375804c4b3bc60
-Content-Type: text/plain; charset=UTF-8
+Although for the most part, the AB8500 uses common bindings, some
+of the ways in which they are used differ slightly to the common
+uses of those bindings. To clear up some of these varying concepts
+we provide some documentation describing each of the properties and
+how they are used.
 
-On Fri, Jul 13, 2012 at 12:29 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Fri, Jul 13, 2012 at 12:15 PM, Winkler, Tomas
-> <tomas.winkler@intel.com> wrote:
->>
->>
->>> -----Original Message-----
->>> From: Sedat Dilek [mailto:sedat.dilek@gmail.com]
->>> Sent: Friday, July 13, 2012 12:48 PM
->>> To: Winkler, Tomas
->>> Cc: Thomas Gleixner; LKML; Greg Kroah-Hartman; Roland Dreier
->>> Subject: [3.5-rc6+] mei: irq: request_threaded_irq is missing the
->>> IRQF_ONESHOT flag
->>>
->>> Hi,
->>>
->>> while dealing with [1], I saw this mei-related infos in dmesg when doing a
->>> suspend + resume (see [1] for more logs):
->>
->> The fix is included in this post pull request http://marc.info/?l=linux-kernel&m=134201523903406&w=2
->>
->
-> [ CC Rafael @ linux-pm ML ]
->
-> Hmm, I have this commit in my local GIT buil-tree already:
->
-> $ git log --oneline | grep "mei: pci_resume: set IRQF_ONESHOT for msi
-> request_threaded_irq"
-> 16a50b1 mei: pci_resume: set IRQF_ONESHOT for msi request_threaded_irq
->
-> Dunno, if it's a PM related problem? As I see this:
->
-> [17047.460520] PM: Device 0000:00:16.0 failed to resume async: error -22
->
-> BTW, what is "wd:" and what means if it "failed"?
->
-> [   23.646041] mei 0000:00:16.0: irq 47 for MSI/MSI-X
-> [   23.650677] mei 0000:00:16.0: wd: failed to find the client
->
-> - Sedat -
->
-> [1] http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=16a50b1270455a6d41f9f6d8f99a72cf9d76824a
->
->> Thanks
->> Tomas
->>
->>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ Documentation/devicetree/bindings/mfd/ab8500.txt |  123 ++++++++++++++++++++++
+ 1 file changed, 123 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mfd/ab8500.txt
 
-Grr, looking into the wrong logs, I did a S/R with the *new* kernel
-including Thomas mei-fix!
-It's really fixed.
-Sorry for the noise - more coffee for me & all who like it.
+diff --git a/Documentation/devicetree/bindings/mfd/ab8500.txt b/Documentation/devicetree/bindings/mfd/ab8500.txt
+new file mode 100644
+index 0000000..69e757a
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mfd/ab8500.txt
+@@ -0,0 +1,123 @@
++* AB8500 Multi-Functional Device (MFD)
++
++Required parent device properties:
++- compatible             : contains "stericsson,ab8500";
++- interrupts             : contains the IRQ line for the AB8500
++- interrupt-controller   : describes the AB8500 as an Interrupt Controller (has its own domain)
++- #interrupt-cells       : should be 2, for 2-cell format
++                            - The first cell is the AB8500 local IRQ number
++                            - The second cell is used to specify optional parameters
++                              - bits[3:0] trigger type and level flags:
++                                  1 = low-to-high edge triggered
++                                  2 = high-to-low edge triggered
++                                  4 = active high level-sensitive
++                                  8 = active low level-sensitive
++
++Optional parent device properties:
++- reg                    : contains the PRCMU mailbox address for the AB8500 i2c port
++
++The AB8500 consists of a large and varied group of sub-devices:
++
++Device                     IRQ Names              Supply Names   Description
++------                     ---------              ------------   -----------
++ab8500-bm                :                      :              : Battery Manager
++ab8500-btemp             :                      :              : Battery Temperature
++ab8500-charger           :                      :              : Battery Charger
++ab8500-fg                :                      :              : Fuel Gauge
++ab8500-gpadc             : HW_CONV_END          : vddadc       : Analogue to Digital Converter
++                           SW_CONV_END          :              :
++ab8500-gpio              :                      :              : GPIO Controller
++ab8500-ponkey            : ONKEY_DBF            :              : Power-on Key
++                           ONKEY_DBR            :              :
++ab8500-pwm               :                      :              : Pulse Width Modulator
++ab8500-regulator         :                      :              : Regulators
++ab8500-rtc               : 60S                  :              : Real Time Clock
++                         : ALARM                :              :
++ab8500-sysctrl           :                      :              : System Control
++ab8500-usb               : ID_WAKEUP_R          : vddulpivio18 : Universal Serial Bus
++                         : ID_WAKEUP_F          : v-ape        :
++                         : VBUS_DET_F           : musb_1v8     :
++                         : VBUS_DET_R           :              :
++                         : USB_LINK_STATUS      :              :
++                         : USB_ADP_PROBE_PLUG   :              :
++                         : USB_ADP_PROBE_UNPLUG :              :
++
++Required child device properties:
++- compatible             : "stericsson,ab8500-[bm|btemp|charger|fg|gpadc|gpio|ponkey|
++                                               pwm|regulator|rtc|sysctrl|usb]";
++
++Optional child device properties:
++- interrupts             : contains the device IRQ(s) using the 2-cell format (see above)
++- interrupt-names        : contains names of IRQ resource in the order in which they were
++                           supplied in the interrupts property
++- <supply_name>-supply   : contains a phandle to the regulator supply node in Device Tree
++
++ab8500@5 {
++         compatible = "stericsson,ab8500";
++         reg = <5>; /* mailbox 5 is i2c */
++         interrupts = <0 40 0x4>;
++         interrupt-controller;
++         #interrupt-cells = <2>;
++
++         ab8500-rtc {
++                 compatible = "stericsson,ab8500-rtc";
++                 interrupts = <17 0x4
++                               18 0x4>;
++                 interrupt-names = "60S", "ALARM";
++         };
++
++        ab8500-gpadc {
++                compatible = "stericsson,ab8500-gpadc";
++                interrupts = <32 0x4
++                              39 0x4>;
++                interrupt-names = "HW_CONV_END", "SW_CONV_END";
++                vddadc-supply = <&ab8500_ldo_tvout_reg>;
++        };
++
++        ab8500-usb {
++                compatible = "stericsson,ab8500-usb";
++                interrupts = < 90 0x4
++                               96 0x4
++                               14 0x4
++                               15 0x4
++                               79 0x4
++                               74 0x4
++                               75 0x4>;
++                interrupt-names = "ID_WAKEUP_R",
++                                  "ID_WAKEUP_F",
++                                  "VBUS_DET_F",
++                                  "VBUS_DET_R",
++                                  "USB_LINK_STATUS",
++                                  "USB_ADP_PROBE_PLUG",
++                                  "USB_ADP_PROBE_UNPLUG";
++                vddulpivio18-supply = <&ab8500_ldo_initcore_reg>;
++                v-ape-supply = <&db8500_vape_reg>;
++                musb_1v8-supply = <&db8500_vsmps2_reg>;
++        };
++
++        ab8500-ponkey {
++                compatible = "stericsson,ab8500-ponkey";
++                interrupts = <6 0x4
++                              7 0x4>;
++                interrupt-names = "ONKEY_DBF", "ONKEY_DBR";
++        };
++
++        ab8500-sysctrl {
++                compatible = "stericsson,ab8500-sysctrl";
++        };
++
++        ab8500-pwm {
++                compatible = "stericsson,ab8500-pwm";
++        };
++
++        ab8500-regulators {
++                compatible = "stericsson,ab8500-regulator";
++
++                ab8500_ldo_aux1_reg: ab8500_ldo_aux1 {
++                        /*
++                         * See: Documentation/devicetree/bindings/regulator/regulator.txt
++                         * for more information on regulators
++                         */
++                };
++        };
++};
+-- 
+1.7.9.5
 
-- Sedat -
-
---e89a8f22c72bab375804c4b3bc60
-Content-Type: text/plain; charset=US-ASCII; 
-	name="dmesg_3.5.0-rc6-2-iniza-generic_mei-suspend-resume-OK.txt"
-Content-Disposition: attachment; 
-	filename="dmesg_3.5.0-rc6-2-iniza-generic_mei-suspend-resume-OK.txt"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h4l4zpk20
-
-WyA5OTA1LjM5MzMyOF0gd2xhbjA6IGRlYXV0aGVudGljYXRpbmcgZnJvbSAwMDowNDowZTplNDow
-MDozZCBieSBsb2NhbCBjaG9pY2UgKHJlYXNvbj0zKQpbIDk5MDUuNDA3NzQ0XSBjZmc4MDIxMTog
-QWxsIGRldmljZXMgYXJlIGRpc2Nvbm5lY3RlZCwgZ29pbmcgdG8gcmVzdG9yZSByZWd1bGF0b3J5
-IHNldHRpbmdzClsgOTkwNS40MDc3NDldIGNmZzgwMjExOiBSZXN0b3JpbmcgcmVndWxhdG9yeSBz
-ZXR0aW5ncwpbIDk5MDUuNDA3NzU0XSBjZmc4MDIxMTogQ2FsbGluZyBDUkRBIHRvIHVwZGF0ZSB3
-b3JsZCByZWd1bGF0b3J5IGRvbWFpbgpbIDk5MDUuNTE5ODk3XSBjZmc4MDIxMTogSWdub3Jpbmcg
-cmVndWxhdG9yeSByZXF1ZXN0IFNldCBieSBjb3JlIHNpbmNlIHRoZSBkcml2ZXIgdXNlcyBpdHMg
-b3duIGN1c3RvbSByZWd1bGF0b3J5IGRvbWFpbgpbIDk5MDUuNTE5OTAwXSBjZmc4MDIxMTogV29y
-bGQgcmVndWxhdG9yeSBkb21haW4gdXBkYXRlZDoKWyA5OTA1LjUxOTkwMV0gY2ZnODAyMTE6ICAg
-KHN0YXJ0X2ZyZXEgLSBlbmRfZnJlcSBAIGJhbmR3aWR0aCksIChtYXhfYW50ZW5uYV9nYWluLCBt
-YXhfZWlycCkKWyA5OTA1LjUxOTkwM10gY2ZnODAyMTE6ICAgKDI0MDIwMDAgS0h6IC0gMjQ3MjAw
-MCBLSHogQCA0MDAwMCBLSHopLCAoMzAwIG1CaSwgMjAwMCBtQm0pClsgOTkwNS41MTk5MDRdIGNm
-ZzgwMjExOiAgICgyNDU3MDAwIEtIeiAtIDI0ODIwMDAgS0h6IEAgMjAwMDAgS0h6KSwgKDMwMCBt
-QmksIDIwMDAgbUJtKQpbIDk5MDUuNTE5OTA1XSBjZmc4MDIxMTogICAoMjQ3NDAwMCBLSHogLSAy
-NDk0MDAwIEtIeiBAIDIwMDAwIEtIeiksICgzMDAgbUJpLCAyMDAwIG1CbSkKWyA5OTA1LjUxOTkw
-Nl0gY2ZnODAyMTE6ICAgKDUxNzAwMDAgS0h6IC0gNTI1MDAwMCBLSHogQCA0MDAwMCBLSHopLCAo
-MzAwIG1CaSwgMjAwMCBtQm0pClsgOTkwNS41MTk5MDddIGNmZzgwMjExOiAgICg1NzM1MDAwIEtI
-eiAtIDU4MzUwMDAgS0h6IEAgNDAwMDAgS0h6KSwgKDMwMCBtQmksIDIwMDAgbUJtKQpbIDk5MDcu
-NDM3NzE1XSBQTTogU3luY2luZyBmaWxlc3lzdGVtcyAuLi4gZG9uZS4KWyA5OTA3LjQ1MTM4MF0g
-UE06IFByZXBhcmluZyBzeXN0ZW0gZm9yIG1lbSBzbGVlcApbIDk5MDcuOTY5MzU5XSBGcmVlemlu
-ZyB1c2VyIHNwYWNlIHByb2Nlc3NlcyAuLi4gKGVsYXBzZWQgMC4wMSBzZWNvbmRzKSBkb25lLgpb
-IDk5MDcuOTg1MzQ0XSBGcmVlemluZyByZW1haW5pbmcgZnJlZXphYmxlIHRhc2tzIC4uLiAoZWxh
-cHNlZCAwLjAxIHNlY29uZHMpIGRvbmUuClsgOTkwOC4wMDE0MjddIFBNOiBFbnRlcmluZyBtZW0g
-c2xlZXAKWyA5OTA4LjAwMTUxNV0gU3VzcGVuZGluZyBjb25zb2xlKHMpICh1c2Ugbm9fY29uc29s
-ZV9zdXNwZW5kIHRvIGRlYnVnKQpbIDk5MDguMDAxNzYxXSBzZCAxOjA6MDowOiBbc2RiXSBTeW5j
-aHJvbml6aW5nIFNDU0kgY2FjaGUKWyA5OTA4LjAwMTk0MV0gc2QgMDowOjA6MDogW3NkYV0gU3lu
-Y2hyb25pemluZyBTQ1NJIGNhY2hlClsgOTkwOC4wMDQ1NjNdIHNkIDE6MDowOjA6IFtzZGJdIFN0
-b3BwaW5nIGRpc2sKWyA5OTA4LjAxNDA3OF0gc2QgMDowOjA6MDogW3NkYV0gU3RvcHBpbmcgZGlz
-awpbIDk5MDguNjA4OTQ1XSBQTTogc3VzcGVuZCBvZiBkZXZpY2VzIGNvbXBsZXRlIGFmdGVyIDYw
-Ny43NjYgbXNlY3MKWyA5OTA4LjYwODk0Nl0gUE06IHN1c3BlbmQgZGV2aWNlcyB0b29rIDAuNjA4
-IHNlY29uZHMKWyA5OTA4LjYwOTA3Ml0gUE06IGxhdGUgc3VzcGVuZCBvZiBkZXZpY2VzIGNvbXBs
-ZXRlIGFmdGVyIDAuMTI0IG1zZWNzClsgOTkwOC42MjQ5ODJdIHI4MTY5IDAwMDA6MDI6MDAuMDog
-d2FrZS11cCBjYXBhYmlsaXR5IGVuYWJsZWQgYnkgQUNQSQpbIDk5MDguNzA0ODc1XSBQTTogbm9p
-cnEgc3VzcGVuZCBvZiBkZXZpY2VzIGNvbXBsZXRlIGFmdGVyIDk1Ljg2NSBtc2VjcwpbIDk5MDgu
-NzA1MTA3XSBBQ1BJOiBQcmVwYXJpbmcgdG8gZW50ZXIgc3lzdGVtIHNsZWVwIHN0YXRlIFMzClsg
-OTkwOC43Mjg5NDVdIFBNOiBTYXZpbmcgcGxhdGZvcm0gTlZTIG1lbW9yeQpbIDk5MDguNzMzNjg0
-XSBEaXNhYmxpbmcgbm9uLWJvb3QgQ1BVcyAuLi4KWyA5OTA4LjgzNjY5NF0gQ1BVIDEgaXMgbm93
-IG9mZmxpbmUKWyA5OTA4Ljk0MDYyNV0gQ1BVIDIgaXMgbm93IG9mZmxpbmUKWyA5OTA5LjA0NDU0
-NF0gQ1BVIDMgaXMgbm93IG9mZmxpbmUKWyA5OTA5LjA0NDkxOV0gRXh0ZW5kZWQgQ01PUyB5ZWFy
-OiAyMDAwClsgOTkwOS4wNDYxNjNdIEFDUEk6IExvdy1sZXZlbCByZXN1bWUgY29tcGxldGUKWyA5
-OTA5LjA0NjIxMF0gUE06IFJlc3RvcmluZyBwbGF0Zm9ybSBOVlMgbWVtb3J5ClsgOTkwOS4wNDc0
-NTNdIEV4dGVuZGVkIENNT1MgeWVhcjogMjAwMApbIDk5MDkuMDQ3NDk4XSBFbmFibGluZyBub24t
-Ym9vdCBDUFVzIC4uLgpbIDk5MDkuMDQ3NTkwXSBCb290aW5nIE5vZGUgMCBQcm9jZXNzb3IgMSBB
-UElDIDB4MQpbIDk5MDkuMDU4Njk3XSBEaXNhYmxlZCBmYXN0IHN0cmluZyBvcGVyYXRpb25zClsg
-OTkwOS4wNjEzMjBdIENQVTEgaXMgdXAKWyA5OTA5LjA2MTQ0MV0gQm9vdGluZyBOb2RlIDAgUHJv
-Y2Vzc29yIDIgQVBJQyAweDIKWyA5OTA5LjA3MjQ3Nl0gRGlzYWJsZWQgZmFzdCBzdHJpbmcgb3Bl
-cmF0aW9ucwpbIDk5MDkuMDc1MTE1XSBDUFUyIGlzIHVwClsgOTkwOS4wNzUyMTZdIEJvb3Rpbmcg
-Tm9kZSAwIFByb2Nlc3NvciAzIEFQSUMgMHgzClsgOTkwOS4wODYyNTBdIERpc2FibGVkIGZhc3Qg
-c3RyaW5nIG9wZXJhdGlvbnMKWyA5OTA5LjA4ODkxN10gQ1BVMyBpcyB1cApbIDk5MDkuMDkzNzcy
-XSBBQ1BJOiBXYWtpbmcgdXAgZnJvbSBzeXN0ZW0gc2xlZXAgc3RhdGUgUzMKWyA5OTA5LjE0MTM0
-MV0gUE06IG5vaXJxIHJlc3VtZSBvZiBkZXZpY2VzIGNvbXBsZXRlIGFmdGVyIDIuMTk5IG1zZWNz
-ClsgOTkwOS4xNDE0NTBdIFBNOiBlYXJseSByZXN1bWUgb2YgZGV2aWNlcyBjb21wbGV0ZSBhZnRl
-ciAwLjA2NCBtc2VjcwpbIDk5MDkuMTQxNDgyXSBpOTE1IDAwMDA6MDA6MDIuMDogc2V0dGluZyBs
-YXRlbmN5IHRpbWVyIHRvIDY0ClsgOTkwOS4xNDE1NjldIG1laSAwMDAwOjAwOjE2LjA6IGlycSA0
-NyBmb3IgTVNJL01TSS1YClsgOTkwOS4xNDE2MzNdIGVoY2lfaGNkIDAwMDA6MDA6MWEuMDogc2V0
-dGluZyBsYXRlbmN5IHRpbWVyIHRvIDY0ClsgOTkwOS4xNDE2NzddIGVoY2lfaGNkIDAwMDA6MDA6
-MWQuMDogc2V0dGluZyBsYXRlbmN5IHRpbWVyIHRvIDY0ClsgOTkwOS4xNDE2NzldIGFoY2kgMDAw
-MDowMDoxZi4yOiBzZXR0aW5nIGxhdGVuY3kgdGltZXIgdG8gNjQKWyA5OTA5LjE0MTY5OV0gc25k
-X2hkYV9pbnRlbCAwMDAwOjAwOjFiLjA6IGlycSA1MCBmb3IgTVNJL01TSS1YClsgOTkwOS4xNDE3
-NTVdIHI4MTY5IDAwMDA6MDI6MDAuMDogd2FrZS11cCBjYXBhYmlsaXR5IGRpc2FibGVkIGJ5IEFD
-UEkKWyA5OTA5LjE0MTg0Nl0gaXdsd2lmaSAwMDAwOjAxOjAwLjA6IFJGX0tJTEwgYml0IHRvZ2ds
-ZWQgdG8gZW5hYmxlIHJhZGlvLgpbIDk5MDkuMTQxODYyXSB1c2IgdXNiMzogcm9vdCBodWIgbG9z
-dCBwb3dlciBvciB3YXMgcmVzZXQKWyA5OTA5LjE0MTg2NV0gdXNiIHVzYjQ6IHJvb3QgaHViIGxv
-c3QgcG93ZXIgb3Igd2FzIHJlc2V0ClsgOTkwOS4xNDY1OTJdIHhoY2lfaGNkIDAwMDA6MDM6MDAu
-MDogaXJxIDQxIGZvciBNU0kvTVNJLVgKWyA5OTA5LjE0NjU5OF0geGhjaV9oY2QgMDAwMDowMzow
-MC4wOiBpcnEgNDIgZm9yIE1TSS9NU0ktWApbIDk5MDkuMTQ2NjA0XSB4aGNpX2hjZCAwMDAwOjAz
-OjAwLjA6IGlycSA0MyBmb3IgTVNJL01TSS1YClsgOTkwOS4xNDY2MTBdIHhoY2lfaGNkIDAwMDA6
-MDM6MDAuMDogaXJxIDQ0IGZvciBNU0kvTVNJLVgKWyA5OTA5LjE0NjYxNl0geGhjaV9oY2QgMDAw
-MDowMzowMC4wOiBpcnEgNDUgZm9yIE1TSS9NU0ktWApbIDk5MDkuMTQ3MDA2XSBtZWkgMDAwMDow
-MDoxNi4wOiB3ZDogZmFpbGVkIHRvIGZpbmQgdGhlIGNsaWVudApbIDk5MDkuMjA1MjQ5XSBbZHJt
-XSBFbmFibGluZyBSQzYgc3RhdGVzOiBSQzYgb24sIFJDNnAgb2ZmLCBSQzZwcCBvZmYKWyA5OTA5
-LjQ3NDgxNV0gYXRhNDogU0FUQSBsaW5rIGRvd24gKFNTdGF0dXMgMCBTQ29udHJvbCAzMDApClsg
-OTkwOS40ODI3OTFdIGF0YTU6IFNBVEEgbGluayBkb3duIChTU3RhdHVzIDAgU0NvbnRyb2wgMzAw
-KQpbIDk5MDkuNDkwNzk5XSBhdGEyOiBTQVRBIGxpbmsgdXAgMy4wIEdicHMgKFNTdGF0dXMgMTIz
-IFNDb250cm9sIDMwMCkKWyA5OTA5LjQ5NTE0Nl0gYXRhMi4wMDogY29uZmlndXJlZCBmb3IgVURN
-QS8xMzMKWyA5OTA5LjUxMDg2Ml0gc2QgMTowOjA6MDogW3NkYl0gU3RhcnRpbmcgZGlzawpbIDk5
-MDkuNTc4ODc3XSB1c2IgMi0xLjQ6IHJlc2V0IGxvdy1zcGVlZCBVU0IgZGV2aWNlIG51bWJlciAz
-IHVzaW5nIGVoY2lfaGNkClsgOTkwOS45MzA2NzddIHVzYiAxLTEuNDogcmVzZXQgaGlnaC1zcGVl
-ZCBVU0IgZGV2aWNlIG51bWJlciAzIHVzaW5nIGVoY2lfaGNkClsgOTkxMS42ODEyMjhdIGF0YTE6
-IFNBVEEgbGluayB1cCAzLjAgR2JwcyAoU1N0YXR1cyAxMjMgU0NvbnRyb2wgMzAwKQpbIDk5MTEu
-NjgzNjcwXSBhdGExLjAwOiBjb25maWd1cmVkIGZvciBVRE1BLzEzMwpbIDk5MTEuNjk3MzE0XSBz
-ZCAwOjA6MDowOiBbc2RhXSBTdGFydGluZyBkaXNrClsgOTkxMS43MjE3NjZdIFBNOiByZXN1bWUg
-b2YgZGV2aWNlcyBjb21wbGV0ZSBhZnRlciAyNTgyLjE0MSBtc2VjcwpbIDk5MTEuNzIxODM5XSBQ
-TTogcmVzdW1lIGRldmljZXMgdG9vayAyLjU4NCBzZWNvbmRzClsgOTkxMS43MjE4NzFdIFBNOiBG
-aW5pc2hpbmcgd2FrZXVwLgpbIDk5MTEuNzIxODcyXSBSZXN0YXJ0aW5nIHRhc2tzIC4uLiBkb25l
-LgpbIDk5MTEuNzM0Mzc2XSB2aWRlbyBMTlhWSURFTzowMDogUmVzdG9yaW5nIGJhY2tsaWdodCBz
-dGF0ZQpbIDk5MTIuMjY2MDY5XSBpd2x3aWZpIDAwMDA6MDE6MDAuMDogTDEgRW5hYmxlZDsgRGlz
-YWJsaW5nIEwwUwpbIDk5MTIuMjczMjA0XSBpd2x3aWZpIDAwMDA6MDE6MDAuMDogUmFkaW8gdHlw
-ZT0weDEtMHgyLTB4MApbIDk5MTIuMzg2OTAxXSBJUHY2OiBBRERSQ09ORihORVRERVZfVVApOiB3
-bGFuMDogbGluayBpcyBub3QgcmVhZHkKWyA5OTE4LjcxMTk5Ml0gd2xhbjA6IGF1dGhlbnRpY2F0
-ZSB3aXRoIDAwOjA0OjBlOmU0OjAwOjNkClsgOTkxOC43MjE1MTJdIHdsYW4wOiBzZW5kIGF1dGgg
-dG8gMDA6MDQ6MGU6ZTQ6MDA6M2QgKHRyeSAxLzMpClsgOTkxOC43MjMyODZdIHdsYW4wOiBhdXRo
-ZW50aWNhdGVkClsgOTkxOC43MjQyMDhdIHdsYW4wOiBhc3NvY2lhdGUgd2l0aCAwMDowNDowZTpl
-NDowMDozZCAodHJ5IDEvMykKWyA5OTE4LjcyODA3NF0gd2xhbjA6IFJYIEFzc29jUmVzcCBmcm9t
-IDAwOjA0OjBlOmU0OjAwOjNkIChjYXBhYj0weDQxMSBzdGF0dXM9MCBhaWQ9MSkKWyA5OTE4Ljcz
-MTQ2OV0gd2xhbjA6IGFzc29jaWF0ZWQKWyA5OTE4LjczMjI5OV0gSVB2NjogQUREUkNPTkYoTkVU
-REVWX0NIQU5HRSk6IHdsYW4wOiBsaW5rIGJlY29tZXMgcmVhZHkK
---e89a8f22c72bab375804c4b3bc60--
