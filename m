@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757618Ab2GMOGy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 10:06:54 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46666 "EHLO
+	id S1161618Ab2GMOIX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 10:08:23 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50079 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751312Ab2GMOGw (ORCPT
+	with ESMTP id S1757548Ab2GMOIT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 10:06:52 -0400
-Date: Fri, 13 Jul 2012 07:06:47 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Sven Joachim <svenjoac@gmx.de>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: [ 000/187] 3.4.5-stable review
-Message-ID: <20120713140647.GA10240@kroah.com>
-References: <20120712192421.GA28926@kroah.com>
- <87sjcwz2yb.fsf@turtle.gmx.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87sjcwz2yb.fsf@turtle.gmx.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 13 Jul 2012 10:08:19 -0400
+From: Vinayak Holikatti <vinholikatti@gmail.com>
+To: James.Bottomley@hansenpartnership.com
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        patches@linaro.org, linux-samsung-soc@vger.kernel.org,
+        santoshsy@gmail.com, arnd@linaro.org, girish.shivananjappa@linaro.org,
+        saugata.das@linaro.org, vishak.g@samsung.com, venkat@linaro.org,
+        k.rajesh@samsung.com, dsaxena@linaro.org, ilho215.lee@samsung.com,
+        nala.la@samsung.com, sreekumar.c@samsung.com,
+        Vinayak Holikatti <vinholikatti@gmail.com>
+Subject: [PATCH V2 0/4] [SCSI] ufs: Adds glue drivers to ufshcd
+Date: Fri, 13 Jul 2012 19:37:41 +0530
+Message-Id: <1342188465-20239-1-git-send-email-vinholikatti@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 13, 2012 at 06:42:52AM +0200, Sven Joachim wrote:
-> On 2012-07-12 21:24 +0200, Greg KH wrote:
-> 
-> > This is the start of the stable review cycle for the 3.4.5 release.
-> > There are 187 patches in this series, all will be posted as a response
-> > to this one.  If anyone has any issues with these being applied, please
-> > let me know.
-> 
-> As has been noted already, some of the patches are actually missing.
-> 
-> > The whole patch series can be found in one patch at:
-> > 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.5-rc1.gz
-> 
-> Seems it's not there?
+This patch set adds following features
+ - Seprates PCI specific code from ufshcd.c to make it as core
+ - Adds PCI glue driver ufshcd-pci.c
+ - Adds Platform glue driver ufshcd-pltfrm.c
+ - Update correct transfer size in Command UPIU
 
-Ugh, I messed everything up on this one, sorry about that.  It should
-now be there after the mirrors kick in, give it a few minutes.
+Vinayak Holikatti (4):
+  [SCSI] drivers/scsi/ufs: Remove PCI specific code
+  [SCSI] drivers/scsi/ufs: Add PCI glue driver
+  [SCSI] ufs: Add Platform glue driver for ufshcd
+  [SCSI] ufs: Correct the expected data transfer size
 
-greg k-h
+ drivers/scsi/ufs/Kconfig         |   37 +++-
+ drivers/scsi/ufs/Makefile        |    2 +
+ drivers/scsi/ufs/ufshcd-pci.c    |  227 ++++++++++++++++++++
+ drivers/scsi/ufs/ufshcd-pltfrm.c |  215 +++++++++++++++++++
+ drivers/scsi/ufs/ufshcd.c        |  422 ++++++--------------------------------
+ drivers/scsi/ufs/ufshcd.h        |  206 +++++++++++++++++++
+ drivers/scsi/ufs/ufshcd_common.h |   53 +++++
+ 7 files changed, 805 insertions(+), 357 deletions(-)
+ create mode 100644 drivers/scsi/ufs/ufshcd-pci.c
+ create mode 100644 drivers/scsi/ufs/ufshcd-pltfrm.c
+ create mode 100644 drivers/scsi/ufs/ufshcd.h
+ create mode 100644 drivers/scsi/ufs/ufshcd_common.h
+
+-- 
+1.7.9.5
+
