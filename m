@@ -1,111 +1,304 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030513Ab2GMKrt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 06:47:49 -0400
-Received: from mx1.fusionio.com ([66.114.96.30]:37051 "EHLO mx1.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030482Ab2GMKrp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 06:47:45 -0400
-X-ASG-Debug-ID: 1342176464-03d6a50cb618bee0001-xx1T2L
-X-Barracuda-Envelope-From: clmason@fusionio.com
-Date: Fri, 13 Jul 2012 06:47:41 -0400
-From: Chris Mason <chris.mason@fusionio.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Mike Galbraith <efault@gmx.de>,
-        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: 3.4.4-rt13: btrfs + xfstests 006 = BOOM.. and a bonus rt_mutex
- deadlock report for absolutely free!
-Message-ID: <20120713104741.GF30128@shiny>
-X-ASG-Orig-Subj: Re: 3.4.4-rt13: btrfs + xfstests 006 = BOOM.. and a bonus rt_mutex
- deadlock report for absolutely free!
-Mail-Followup-To: Chris Mason <chris.mason@fusionio.com>,
-	Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
-	"linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-	Steven Rostedt <rostedt@goodmis.org>,
-	Peter Zijlstra <peterz@infradead.org>
-References: <1342072060.7338.102.camel@marge.simpson.net>
- <1342082648.7338.171.camel@marge.simpson.net>
- <1342086792.7707.9.camel@marge.simpson.net>
- <alpine.LFD.2.02.1207121310420.32033@ionos>
- <1342094233.7707.12.camel@marge.simpson.net>
- <alpine.LFD.2.02.1207121514240.32033@ionos>
- <1342161072.7380.65.camel@marge.simpson.net>
- <alpine.LFD.2.02.1207131142440.32033@ionos>
- <1342174485.7380.103.camel@marge.simpson.net>
- <alpine.LFD.2.02.1207131223240.32033@ionos>
+	id S1161266Ab2GMKrB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 06:47:01 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:3188 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030272Ab2GMKqz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 06:46:55 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 13 Jul 2012 03:42:59 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <grant.likely@secretlab.ca>, <linus.walleij@stericsson.com>,
+        <sameo@linux.intel.com>
+CC: <linux-kernel@vger.kernel.org>, <swarren@nvidia.com>,
+        <broonie@opensource.wolfsonmicro.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH 2/5] mfd: Use regmap for tps6586x register access.
+Date: Fri, 13 Jul 2012 16:09:24 +0530
+Message-ID: <1342175967-10087-3-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+In-Reply-To: <1342175967-10087-1-git-send-email-ldewangan@nvidia.com>
+References: <1342175967-10087-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1207131223240.32033@ionos>
-User-Agent: Mutt/1.5.21 (2011-07-01)
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1342176464
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Bayes: INNOCENT GLOBAL 0.0777 1.0000 -1.5278
-X-Barracuda-Spam-Score: -0.93
-X-Barracuda-Spam-Status: No, SCORE=-0.93 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=MARKETING_SUBJECT
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.102568
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
-	0.60 MARKETING_SUBJECT      Subject contains popular marketing words
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 13, 2012 at 04:26:26AM -0600, Thomas Gleixner wrote:
-> On Fri, 13 Jul 2012, Mike Galbraith wrote:
-> > On Fri, 2012-07-13 at 11:52 +0200, Thomas Gleixner wrote: 
-> > > On Fri, 13 Jul 2012, Mike Galbraith wrote:
-> > > > On Thu, 2012-07-12 at 15:31 +0200, Thomas Gleixner wrote: 
-> > > > > Bingo, that makes it more likely that this is caused by copying w/o
-> > > > > initializing the lock and then freeing the original structure.
-> > > > > 
-> > > > > A quick check for memcpy finds that __btrfs_close_devices() does a
-> > > > > memcpy of btrfs_device structs w/o initializing the lock in the new
-> > > > > copy, but I have no idea whether that's the place we are looking for.
-> > > > 
-> > > > Thanks a bunch Thomas.  I doubt I would have ever figured out that lala
-> > > > land resulted from _copying_ a lock.  That's one I won't be forgetting
-> > > > any time soon.  Box not only survived a few thousand xfstests 006 runs,
-> > > > dbench seemed disinterested in deadlocking virgin 3.0-rt.
-> > > 
-> > > Cute. It think that the lock copying caused the deadlock problem as
-> > > the list pointed to the wrong place, so we might have ended up with
-> > > following down the wrong chain when walking the list as long as the
-> > > original struct was not freed. That beast is freed under RCU so there
-> > > could be a rcu read side critical section fiddling with the old lock
-> > > and cause utter confusion.
-> > 
-> > Virgin 3.0-rt appears to really be solid.  But then it doesn't have
-> > pesky rwlocks.
-> 
-> Ah. So 3.0 is not having those rwlock thingies. Bummer.
->  
-> > > /me goes and writes a nastigram^W proper changelog
-> > > 
-> > > > btrfs still locks up in my enterprise kernel, so I suppose I had better
-> > > > plug your fix into 3.4-rt and see what happens, and go beat hell out of
-> > > > virgin 3.0-rt again to be sure box really really survives dbench.
-> > > 
-> > > A test against 3.4-rt sans enterprise mess might be nice as well.
-> > 
-> > Enterprise is 3.0-stable with um 555 btrfs patches (oh dear).
-> > 
-> > Virgin 3.4-rt and 3.2-rt deadlock gripe.  Enterprise doesn't gripe, but
-> > deadlocks, so I have another adventure in my future even if I figure out
-> > wth to do about rwlocks.
-> 
-> Hrmpf. /me goes to stare into fs/btrfs/ some more.
+Using regmap apis for accessing the device registers.
 
-Please post the deadlocks here, I'll help ;)
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+ drivers/mfd/Kconfig    |    1 +
+ drivers/mfd/tps6586x.c |  157 ++++++++++++++----------------------------------
+ 2 files changed, 47 insertions(+), 111 deletions(-)
 
--chris
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index fa267d4..ec885a9 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -200,6 +200,7 @@ config MFD_TPS6586X
+ 	bool "TPS6586x Power Management chips"
+ 	depends on I2C=y && GPIOLIB && GENERIC_HARDIRQS
+ 	select MFD_CORE
++	select REGMAP_I2C
+ 	depends on REGULATOR
+ 	help
+ 	  If you say yes here you get support for the TPS6586X series of
+diff --git a/drivers/mfd/tps6586x.c b/drivers/mfd/tps6586x.c
+index 1256b7f..fb0c109 100644
+--- a/drivers/mfd/tps6586x.c
++++ b/drivers/mfd/tps6586x.c
+@@ -21,8 +21,10 @@
+ #include <linux/module.h>
+ #include <linux/mutex.h>
+ #include <linux/slab.h>
++#include <linux/err.h>
+ #include <linux/gpio.h>
+ #include <linux/i2c.h>
++#include <linux/regmap.h>
+ #include <linux/regulator/of_regulator.h>
+ 
+ #include <linux/mfd/core.h>
+@@ -48,6 +50,9 @@
+ /* device id */
+ #define TPS6586X_VERSIONCRC	0xcd
+ 
++/* Maximum register */
++#define TPS6586X_MAX_REGISTER	(TPS6586X_VERSIONCRC + 1)
++
+ struct tps6586x_irq_data {
+ 	u8	mask_reg;
+ 	u8	mask_mask;
+@@ -90,9 +95,9 @@ static const struct tps6586x_irq_data tps6586x_irqs[] = {
+ };
+ 
+ struct tps6586x {
+-	struct mutex		lock;
+ 	struct device		*dev;
+ 	struct i2c_client	*client;
++	struct regmap		*regmap;
+ 
+ 	struct gpio_chip	gpio;
+ 	struct irq_chip		irq_chip;
+@@ -103,152 +108,69 @@ struct tps6586x {
+ 	u8			mask_reg[5];
+ };
+ 
+-static inline int __tps6586x_read(struct i2c_client *client,
+-				  int reg, uint8_t *val)
++static inline struct tps6586x *dev_to_tps6586x(struct device *dev)
+ {
+-	int ret;
+-
+-	ret = i2c_smbus_read_byte_data(client, reg);
+-	if (ret < 0) {
+-		dev_err(&client->dev, "failed reading at 0x%02x\n", reg);
+-		return ret;
+-	}
+-
+-	*val = (uint8_t)ret;
+-
+-	return 0;
+-}
+-
+-static inline int __tps6586x_reads(struct i2c_client *client, int reg,
+-				   int len, uint8_t *val)
+-{
+-	int ret;
+-
+-	ret = i2c_smbus_read_i2c_block_data(client, reg, len, val);
+-	if (ret < 0) {
+-		dev_err(&client->dev, "failed reading from 0x%02x\n", reg);
+-		return ret;
+-	}
+-
+-	return 0;
+-}
+-
+-static inline int __tps6586x_write(struct i2c_client *client,
+-				 int reg, uint8_t val)
+-{
+-	int ret;
+-
+-	ret = i2c_smbus_write_byte_data(client, reg, val);
+-	if (ret < 0) {
+-		dev_err(&client->dev, "failed writing 0x%02x to 0x%02x\n",
+-				val, reg);
+-		return ret;
+-	}
+-
+-	return 0;
+-}
+-
+-static inline int __tps6586x_writes(struct i2c_client *client, int reg,
+-				  int len, uint8_t *val)
+-{
+-	int ret, i;
+-
+-	for (i = 0; i < len; i++) {
+-		ret = __tps6586x_write(client, reg + i, *(val + i));
+-		if (ret < 0)
+-			return ret;
+-	}
+-
+-	return 0;
++	return i2c_get_clientdata(to_i2c_client(dev));
+ }
+ 
+ int tps6586x_write(struct device *dev, int reg, uint8_t val)
+ {
+-	return __tps6586x_write(to_i2c_client(dev), reg, val);
++	struct tps6586x *tps6586x = dev_to_tps6586x(dev);
++
++	return regmap_write(tps6586x->regmap, reg, val);
+ }
+ EXPORT_SYMBOL_GPL(tps6586x_write);
+ 
+ int tps6586x_writes(struct device *dev, int reg, int len, uint8_t *val)
+ {
+-	return __tps6586x_writes(to_i2c_client(dev), reg, len, val);
++	struct tps6586x *tps6586x = dev_to_tps6586x(dev);
++
++	return regmap_bulk_write(tps6586x->regmap, reg, val, len);
+ }
+ EXPORT_SYMBOL_GPL(tps6586x_writes);
+ 
+ int tps6586x_read(struct device *dev, int reg, uint8_t *val)
+ {
+-	return __tps6586x_read(to_i2c_client(dev), reg, val);
++	struct tps6586x *tps6586x = dev_to_tps6586x(dev);
++	unsigned int rval;
++	int ret;
++
++	ret = regmap_read(tps6586x->regmap, reg, &rval);
++	if (!ret)
++		*val = rval;
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(tps6586x_read);
+ 
+ int tps6586x_reads(struct device *dev, int reg, int len, uint8_t *val)
+ {
+-	return __tps6586x_reads(to_i2c_client(dev), reg, len, val);
++	struct tps6586x *tps6586x = dev_to_tps6586x(dev);
++
++	return regmap_bulk_read(tps6586x->regmap, reg, val, len);
+ }
+ EXPORT_SYMBOL_GPL(tps6586x_reads);
+ 
+ int tps6586x_set_bits(struct device *dev, int reg, uint8_t bit_mask)
+ {
+-	struct tps6586x *tps6586x = dev_get_drvdata(dev);
+-	uint8_t reg_val;
+-	int ret = 0;
+-
+-	mutex_lock(&tps6586x->lock);
+-
+-	ret = __tps6586x_read(to_i2c_client(dev), reg, &reg_val);
+-	if (ret)
+-		goto out;
++	struct tps6586x *tps6586x = dev_to_tps6586x(dev);
+ 
+-	if ((reg_val & bit_mask) != bit_mask) {
+-		reg_val |= bit_mask;
+-		ret = __tps6586x_write(to_i2c_client(dev), reg, reg_val);
+-	}
+-out:
+-	mutex_unlock(&tps6586x->lock);
+-	return ret;
++	return regmap_update_bits(tps6586x->regmap, reg, bit_mask, bit_mask);
+ }
+ EXPORT_SYMBOL_GPL(tps6586x_set_bits);
+ 
+ int tps6586x_clr_bits(struct device *dev, int reg, uint8_t bit_mask)
+ {
+-	struct tps6586x *tps6586x = dev_get_drvdata(dev);
+-	uint8_t reg_val;
+-	int ret = 0;
++	struct tps6586x *tps6586x = dev_to_tps6586x(dev);
+ 
+-	mutex_lock(&tps6586x->lock);
+-
+-	ret = __tps6586x_read(to_i2c_client(dev), reg, &reg_val);
+-	if (ret)
+-		goto out;
+-
+-	if (reg_val & bit_mask) {
+-		reg_val &= ~bit_mask;
+-		ret = __tps6586x_write(to_i2c_client(dev), reg, reg_val);
+-	}
+-out:
+-	mutex_unlock(&tps6586x->lock);
+-	return ret;
++	return regmap_update_bits(tps6586x->regmap, reg, bit_mask, 0);
+ }
+ EXPORT_SYMBOL_GPL(tps6586x_clr_bits);
+ 
+ int tps6586x_update(struct device *dev, int reg, uint8_t val, uint8_t mask)
+ {
+-	struct tps6586x *tps6586x = dev_get_drvdata(dev);
+-	uint8_t reg_val;
+-	int ret = 0;
+-
+-	mutex_lock(&tps6586x->lock);
+-
+-	ret = __tps6586x_read(tps6586x->client, reg, &reg_val);
+-	if (ret)
+-		goto out;
++	struct tps6586x *tps6586x = dev_to_tps6586x(dev);
+ 
+-	if ((reg_val & mask) != val) {
+-		reg_val = (reg_val & ~mask) | val;
+-		ret = __tps6586x_write(tps6586x->client, reg, reg_val);
+-	}
+-out:
+-	mutex_unlock(&tps6586x->lock);
+-	return ret;
++	return regmap_update_bits(tps6586x->regmap, reg, mask, val);
+ }
+ EXPORT_SYMBOL_GPL(tps6586x_update);
+ 
+@@ -258,7 +180,7 @@ static int tps6586x_gpio_get(struct gpio_chip *gc, unsigned offset)
+ 	uint8_t val;
+ 	int ret;
+ 
+-	ret = __tps6586x_read(tps6586x->client, TPS6586X_GPIOSET2, &val);
++	ret = tps6586x_read(tps6586x->dev, TPS6586X_GPIOSET2, &val);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -556,6 +478,12 @@ static struct tps6586x_platform_data *tps6586x_parse_dt(struct i2c_client *clien
+ }
+ #endif
+ 
++static const struct regmap_config tps6586x_regmap_config = {
++	.reg_bits = 8,
++	.val_bits = 8,
++	.max_register = TPS6586X_MAX_REGISTER - 1,
++};
++
+ static int __devinit tps6586x_i2c_probe(struct i2c_client *client,
+ 					const struct i2c_device_id *id)
+ {
+@@ -589,7 +517,14 @@ static int __devinit tps6586x_i2c_probe(struct i2c_client *client,
+ 	tps6586x->dev = &client->dev;
+ 	i2c_set_clientdata(client, tps6586x);
+ 
+-	mutex_init(&tps6586x->lock);
++	tps6586x->regmap = devm_regmap_init_i2c(client,
++					&tps6586x_regmap_config);
++	if (IS_ERR(tps6586x->regmap)) {
++		ret = PTR_ERR(tps6586x->regmap);
++		dev_err(&client->dev, "regmap init failed: %d\n", ret);
++		return ret;
++	}
++
+ 
+ 	if (client->irq) {
+ 		ret = tps6586x_irq_init(tps6586x, client->irq,
+-- 
+1.7.1.1
 
