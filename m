@@ -1,41 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755735Ab2GMPon (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 11:44:43 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:38940 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750820Ab2GMPom (ORCPT
+	id S1753895Ab2GMPpj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 11:45:39 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:34162 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751253Ab2GMPph (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 11:44:42 -0400
+	Fri, 13 Jul 2012 11:45:37 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120713153827.GA8007@hp.com>
-References: <20120713153827.GA8007@hp.com>
-Date: Fri, 13 Jul 2012 10:44:41 -0500
-X-Google-Sender-Auth: y0_ncmTVQ_H7nROl9B7ehnnCAXA
-Message-ID: <CAGXu5jL61DEfbShnQSKQsaM9RzLpPp+yt2KKzii-xh0Xc0aFCw@mail.gmail.com>
-Subject: Re: [PATCH] Add missing attributes to EFI variable attribute print
- out from sysfs
-From: Kees Cook <keescook@chromium.org>
-To: Khalid Aziz <khalid.aziz@hp.com>
-Cc: linux-kernel@vger.kernel.org, tony.luck@intel.com, mikew@google.com,
-        mjg@redhat.com, gong.chen@linux.intel.com
+In-Reply-To: <4FFEBB39.8090308@redhat.com>
+References: <4FFEBB39.8090308@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 13 Jul 2012 08:45:15 -0700
+X-Google-Sender-Auth: QnzXreu2ZMzQ4yKL2jKLOTuoiQc
+Message-ID: <CA+55aFwAXbrQRKg_cJT04H_XnoEPjJ0O711C5uA6fRY35DVhKQ@mail.gmail.com>
+Subject: Re: [GIT PULL] KVM fixes for 3.5-rc6
+To: Avi Kivity <avi@redhat.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 13, 2012 at 10:38 AM, Khalid Aziz <khalid.aziz@hp.com> wrote:
-> Some of the EFI variable attributes are missing from print out from
-> /sys/firmware/efi/vars/*/attributes. This patch adds those in.
+Missing diffstat. Please please *please* always make sure you have
+diffstats, because I really want to know that what I'm pulling matches
+what you *think* that I'm pulling. And the diffstat isn't just for me
+- it hopefully really makes you look at the whole "this is what I'm
+asking Linus to pull" thing too.
+
+              Linus
+
+On Thu, Jul 12, 2012 at 4:55 AM, Avi Kivity <avi@redhat.com> wrote:
+> Linus, please pull a couple of KVM fixes from:
 >
-> Signed-off-by: Khalid Aziz <khalid.aziz@hp.com>
-> Cc: stable@vger.kernel.org
-
-Seems good to me.
-
-Reviewed-by: Kees Cook <keescook@chromium.org>
-
--- 
-Kees Cook
-Chrome OS Security
+>   git://git.kernel.org/pub/scm/virt/kvm/kvm.git master
+>
+> One is an adjustment for an irq layer change that affected device
+> assignment, the other a one-liner ppc fix.
+>
+> ----------------------------------------------------------------
+>
+> Alex Williamson (1):
+>       KVM: Fix device assignment threaded irq handler
+>
+> Avi Kivity (1):
+>       Merge branch 'for-upstream-master' of git://github.com/agraf/linux-2.6
+>
+> Benjamin Herrenschmidt (1):
+>       powerpc/kvm: Fix "PR" KVM implementation of H_CEDE
+>
+> --
+> error compiling committee.c: too many arguments to function
+>
