@@ -1,70 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752618Ab2GMEKy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 00:10:54 -0400
-Received: from mga11.intel.com ([192.55.52.93]:53041 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750745Ab2GMEKw convert rfc822-to-8bit (ORCPT
+	id S1752901Ab2GMEN7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 00:13:59 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:55669 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751530Ab2GMEN5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 00:10:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="176776658"
-From: "Dave, Tushar N" <tushar.n.dave@intel.com>
-To: Joe Jin <joe.jin@oracle.com>
-CC: "e1000-devel@lists.sf.net" <e1000-devel@lists.sf.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: 82571EB: Detected Hardware Unit Hang
-Thread-Topic: 82571EB: Detected Hardware Unit Hang
-Thread-Index: AQHNXbA0O4dj/qIKzEaqpnXp2Y+l0pcimGMAgABDhtCAANf7AP//lehggAB9gwD//6IHIIAAe14A//+RAgAAESU+AAANp23AAB8MOIAADbt9YP//m9aAgAB1KHD//48GgIAASC6A///rKICAAG8OoP//oCeA//++GYD//qgHgP/9fRVQ
-Date: Fri, 13 Jul 2012 04:10:51 +0000
-Message-ID: <061C8A8601E8EE4CA8D8FD6990CEA891274F11FF@ORSMSX102.amr.corp.intel.com>
-References: <4FFA9B96.6040901@oracle.com> <4FFCCA22.8060006@oracle.com>
- <061C8A8601E8EE4CA8D8FD6990CEA891274EEC8B@ORSMSX102.amr.corp.intel.com>
- <4FFCDA6C.8020708@oracle.com>
- <061C8A8601E8EE4CA8D8FD6990CEA891274EED74@ORSMSX102.amr.corp.intel.com>
- <4FFCF314.6020400@oracle.com>
- <061C8A8601E8EE4CA8D8FD6990CEA891274EEDD7@ORSMSX102.amr.corp.intel.com>
- <4FFD0908.6080506@oracle.com>
- <061C8A8601E8EE4CA8D8FD6990CEA891274EF8AD@ORSMSX102.amr.corp.intel.com>
- <4FFE3505.8060407@oracle.com>
- <061C8A8601E8EE4CA8D8FD6990CEA891274F018D@ORSMSX102.amr.corp.intel.com>
- <4FFE3D27.7020500@oracle.com>
- <061C8A8601E8EE4CA8D8FD6990CEA891274F01BE@ORSMSX102.amr.corp.intel.com>
- <4FFE40A9.4060807@oracle.com>
- <061C8A8601E8EE4CA8D8FD6990CEA891274F02D7@ORSMSX102.amr.corp.intel.com>
- <4FFE6BB9.4060106@oracle.com>
- <061C8A8601E8EE4CA8D8FD6990CEA891274F033B@ORSMSX102.amr.corp.intel.com>
- <4FFE787B.9050201@oracle.com>
- <061C8A8601E8EE4CA8D8FD6990CEA891274F0ACC@ORSMSX102.amr.corp.intel.com>
- <4FFF61BD.1060604@oracle.com>
-In-Reply-To: <4FFF61BD.1060604@oracle.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Fri, 13 Jul 2012 00:13:57 -0400
+Date: Fri, 13 Jul 2012 14:13:45 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@linux.intel.com>
+Subject: linux-next: build failure after merge of the tty tree
+Message-Id: <20120713141345.f71b7c01f720d616d74721dd@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__13_Jul_2012_14_13_45_+1000_cmlLDBJMkD9quo9v"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->-----Original Message-----
->From: Joe Jin [mailto:joe.jin@oracle.com]
->Sent: Thursday, July 12, 2012 4:46 PM
->To: Dave, Tushar N
->Cc: e1000-devel@lists.sf.net; netdev@vger.kernel.org; linux-
->kernel@vger.kernel.org
->Subject: Re: 82571EB: Detected Hardware Unit Hang
->
-Thanks for sending full dmesg log. I am still investigating. I think this issue can occur if two PCIe link partner *i.e pcie bridge and pcie device do not have same max payload size.
-I need 2 more info. 
-1) PBA number of the card.
-2) full lspci -vvv output of entire system 'after you have changed max payload size to 128'.
+--Signature=_Fri__13_Jul_2012_14_13_45_+1000_cmlLDBJMkD9quo9v
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks.
+Hi Greg,
 
--Tushar
+After merging the tty tree, today's linux-next build (x86_64 allmodconfig)
+failed like this:
+
+drivers/char/mwave/mwavedd.c: In function 'register_serial_portandirq':
+drivers/char/mwave/mwavedd.c:472:2: error: implicit declaration of function=
+ 'serial8250_register_port' [-Werror=3Dimplicit-function-declaration]
+cc1: some warnings being treated as errors
+drivers/misc/ibmasm/uart.c: In function 'ibmasm_register_uart':
+drivers/misc/ibmasm/uart.c:57:2: error: implicit declaration of function 's=
+erial8250_register_port' [-Werror=3Dimplicit-function-declaration]
+cc1: some warnings being treated as errors
+
+Caused by commit 2655a2c76f80 ("8250: use the 8250 register interface not
+the legacy one").  Grep is your friend.
+
+I have used the tty tree from next-20120712 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Fri__13_Jul_2012_14_13_45_+1000_cmlLDBJMkD9quo9v
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJP/6B5AAoJEECxmPOUX5FEzK8P/ArTXTHKLLC2jYLymA7DpAuK
+C2bvrvJowRoi2o8js48OD8/9HxZY8BWIjqc4oE1fSDAnFJwWksdGauMLGBhxLL1S
+K6+NwiuRnHyzxdJuMv9rGja2wWGNWrJm+E7yZ7RU22+eO3o9s0rlNsLJ7dNYIdqz
+NgZ+zP4jL6dj+9YcSdA4H8kaG7btjJ/U/2QTbYYwUndWiQDfkZA88I4M2Shc3+KG
+CByJzxYdTa7BBvOXLPBpPtz9oG8g7NYF53OqsELAAebzjwUD/lMXqf2yALxOpycW
+QpNwAMKkGvPwD33CqqDMN4QqEeYE/FcNJuoPmTEC6cmHBbUA0LnH/Epwf8VrnGXs
+R2+T2sfL4iS7W+2StgJPbLA3JdwuNufZH9vlKBixhdtCIvJBJ78SfVkDrRGA8ra2
+bG5FjdXupq8kUvHYxS8D2+/ZoOEYrfPXxEreF80sDTXAdMPp9FxUt85fzM23Gc4X
+xdlv61+z3Jz2X3jFmhk9UUpTBvmQbgRR2aM4oVEaPfmTRmRwM1nHO5BaaUWCdec3
+XjIc46A35TIwY07TA+KVNJcBZfDNiu1SP15Fp5aieJ+W++pu7sOQpYSx4jeKNxaS
+tFlQSfWrziJFU6du6c6qqMLEUsfhSJufyO3JNrmbPCnd1NV1VERaWsxvElWijwqA
+HQjJR2vhiDmdIqyaA0VW
+=qL9L
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__13_Jul_2012_14_13_45_+1000_cmlLDBJMkD9quo9v--
