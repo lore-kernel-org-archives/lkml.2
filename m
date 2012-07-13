@@ -1,43 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030241Ab2GMFm0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 01:42:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47984 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755915Ab2GMFmZ (ORCPT
+	id S933205Ab2GMFnq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 01:43:46 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:39296 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755915Ab2GMFnp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 01:42:25 -0400
-Date: Thu, 12 Jul 2012 22:45:38 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: dedekind1@gmail.com
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, Evgeniy Dushistov <dushistov@mail.ru>,
-        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] fs/ufs: stop using write_supers and s_dirt
-Message-Id: <20120712224538.31cb1e18.akpm@linux-foundation.org>
-In-Reply-To: <1342157684.23418.6.camel@brekeke>
-References: <1342099688-14894-1-git-send-email-dedekind1@gmail.com>
-	<20120712155808.807ec3f5.akpm@linux-foundation.org>
-	<1342157684.23418.6.camel@brekeke>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 13 Jul 2012 01:43:45 -0400
+From: "AnilKumar, Chimata" <anilkumar@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "Girdwood, Liam" <lrg@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>
+Subject: RE: [PATCH v2 1/3] regulator: tps65217: Add device tree support
+Thread-Topic: [PATCH v2 1/3] regulator: tps65217: Add device tree support
+Thread-Index: AQHNXoyJ1e7o53AxukKdiqQa3gtClJcljj2AgAEo2TA=
+Date: Fri, 13 Jul 2012 05:43:30 +0000
+Message-ID: <331ABD5ECB02734CA317220B2BBEABC13E9F61CC@DBDE01.ent.ti.com>
+References: <1341918584-28004-1-git-send-email-anilkumar@ti.com>
+ <1341918584-28004-2-git-send-email-anilkumar@ti.com>
+ <20120712172836.GR7256@opensource.wolfsonmicro.com>
+In-Reply-To: <20120712172836.GR7256@opensource.wolfsonmicro.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.133.24]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Jul 2012 08:34:44 +0300 Artem Bityutskiy <dedekind1@gmail.com> wrote:
+Hi Mark,
 
-> On Thu, 2012-07-12 at 15:58 -0700, Andrew Morton wrote:
-> > Just fix them up as you go - the code is already a mixture of "right"
-> > and "wrong" (a consequence of a lot of it being "wrong") - we might as
-> > well tip it further in the "right" direction. 
+On Thu, Jul 12, 2012 at 22:58:37, Mark Brown wrote:
+> On Tue, Jul 10, 2012 at 04:39:42PM +0530, AnilKumar Ch wrote:
+> > This commit adds device tree support for tps65217 pmic. And usage
+> > details are added to device tree documentation. Driver is tested
+> > by using kernel module with regulator set and get APIs.
 > 
-> Yeah, but I'd say 80% of it has its own "wrong" coding style, so fixing
-> it is a separate patch-set. Simply because when I partially fix it,
-> there are almost always context lines which upset checkpatch.pl, so I
-> would need to fix it all. I can easily clean it up a bit separately,
-> just let me know if you want me to do this.
+> Applied, thanks.
 
-checkpatch does not report on context lines - only on added lines.
+Thanks much, are you going to push reset of the patches in this series?
+
+Thanks
+AnilKumar
