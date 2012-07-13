@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161570Ab2GMOCy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 10:02:54 -0400
-Received: from smtp3.mundo-r.com ([212.51.32.191]:10787 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750967Ab2GMOCw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 10:02:52 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjUMAB0qAFBbdWOb/2dsb2JhbABFr1oiiCSBB4IgAQEEATIBBR0jAQULCxgJFg8JAwIBAgFFBg0BBwEBiAMKu1uLPIV2A5U6iSaGYIJh
-X-IronPort-AV: E=Sophos;i="4.77,580,1336341600"; 
-   d="scan'208";a="1018986805"
-Message-ID: <50002A76.6000609@igalia.com>
-Date: Fri, 13 Jul 2012 16:02:30 +0200
-From: =?ISO-8859-1?Q?Miguel_G=F3mez?= <magomez@igalia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1757639Ab2GMOFG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 10:05:06 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:38746 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751545Ab2GMOFB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 10:05:01 -0400
+Date: Fri, 13 Jul 2012 19:32:59 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] uprobes: kill insert_vm_struct()->uprobe_mmap()
+Message-ID: <20120713140259.GB4741@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120708202917.GA18188@redhat.com>
+ <20120708203011.GA18243@redhat.com>
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: arnaud.patard@rtp-net.org, aaro.koskinen@iki.fi, dan.carpenter@oracle.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/19 v2] Staging: xgifb: Remove LCDA detection in xgifb_probe().
-References: <cover.1341569486.git.magomez@igalia.com> <0b5331426e8c4fc37b62c58e052526c8c4a28495.1341569486.git.magomez@igalia.com> <20120709183947.GA21153@kroah.com>
-In-Reply-To: <20120709183947.GA21153@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20120708203011.GA18243@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12071314-5930-0000-0000-000009D7E077
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-El 09/07/12 20:39, Greg KH escribió:
-> On Fri, Jul 06, 2012 at 12:40:38PM +0200, Miguel Gómez wrote:
->> The piece of code that checks for LCDA in xgifb_probe() just checks for some
->> register values but doesn't really do anything in response to them (the actions
->> that should be executed are commented).
->> As nothing is really being done, the code can be safely removed.
->
-> Are you sure?  Some devices (foolish ones that is) need registers read
-> to work properly as that is part of their start-up logic.  Yeah, it
-> doesn't seem to make sense, but hardware designers usually have good
-> reasons for doing this type of thing.  Or at least they think they do :)
+* Oleg Nesterov <oleg@redhat.com> [2012-07-08 22:30:11]:
 
-Weird... I didn't expect that some devices might need those reads to 
-work properly... I'm writing down that comment for the future ;)
+> Kill insert_vm_struct()->uprobe_mmap(). It is not needed, nobody
+> except arch/ia64/kernel/perfmon.c uses insert_vm_struct(vma) with
+> vma->vm_file != NULL.
+> 
+> And it is wrong. Again, get_user_pages() can not succeed before
+> vma_link(vma) makes is visible to find_vma(). And even if this
+> worked, we must not insert the new bp before this mapping is
+> visible to vma_prio_tree_foreach() for uprobe_unregister().
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-> So have you tested the device after this change and it all works
-> properly?  You do have this device, right?
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
-I have an XGI Z7 card that I use for testing, and it doesn't require 
-those reads to work properly, despite I don't have a Z9 or Z11 to test. 
-But according to Aaro's comment, it seems that the patch is safe as 
-these register reads don't have any effect.
-
-Regards!
-
--- 
-Miguel Gómez
-Igalia - http://www.igalia.com
-
+> ---
+>  mm/mmap.c |    3 ---
+>  1 files changed, 0 insertions(+), 3 deletions(-)
+> 
+> diff --git a/mm/mmap.c b/mm/mmap.c
+> index e5a4614..4fe2697 100644
+> --- a/mm/mmap.c
+> +++ b/mm/mmap.c
+> @@ -2345,9 +2345,6 @@ int insert_vm_struct(struct mm_struct * mm, struct vm_area_struct * vma)
+>  	     security_vm_enough_memory_mm(mm, vma_pages(vma)))
+>  		return -ENOMEM;
+> 
+> -	if (vma->vm_file && uprobe_mmap(vma))
+> -		return -EINVAL;
+> -
+>  	vma_link(mm, vma, prev, rb_link, rb_parent);
+>  	return 0;
+>  }
+> -- 
+> 1.5.5.1
+> 
 
