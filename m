@@ -1,47 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754137Ab2GMEm5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 00:42:57 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:42348 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753209Ab2GMEm4 (ORCPT
+	id S1754542Ab2GMFHM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 01:07:12 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:33170 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753100Ab2GMFHK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 00:42:56 -0400
-X-Authenticated: #28250155
-X-Provags-ID: V01U2FsdGVkX1+44oYSBbq4prNq/Iwl46aVQUL++fYyFcyEm+AK6T
-	ABK3ava+FKvyt4
-From: Sven Joachim <svenjoac@gmx.de>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: [ 000/187] 3.4.5-stable review
-References: <20120712192421.GA28926@kroah.com>
-Date: Fri, 13 Jul 2012 06:42:52 +0200
-In-Reply-To: <20120712192421.GA28926@kroah.com> (Greg KH's message of "Thu, 12
-	Jul 2012 12:24:21 -0700")
-Message-ID: <87sjcwz2yb.fsf@turtle.gmx.de>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Fri, 13 Jul 2012 01:07:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Y-GMX-Trusted: 0
+In-Reply-To: <CAK5ve-+0RHVfjAQjFJmJ=0e3K0JG3zq6uM3oMr-_0JJY0EM-pg@mail.gmail.com>
+References: <1342000232-10105-1-git-send-email-devendra.aaru@gmail.com>
+	<CAK5ve-+0RHVfjAQjFJmJ=0e3K0JG3zq6uM3oMr-_0JJY0EM-pg@mail.gmail.com>
+Date: Fri, 13 Jul 2012 10:52:09 +0545
+Message-ID: <CAHdPZaPPVABiT03=krcqohEXuHbWHgkZkMA5uYjwf=fhaOYN4w@mail.gmail.com>
+Subject: Re: [PATCH] leds/leds-s3c24xx: use devm_gpio_request
+From: "devendra.aaru" <devendra.aaru@gmail.com>
+To: Bryan Wu <bryan.wu@canonical.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>, linux-leds@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-07-12 21:24 +0200, Greg KH wrote:
-
-> This is the start of the stable review cycle for the 3.4.5 release.
-> There are 187 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
-
-As has been noted already, some of the patches are actually missing.
-
-> The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.5-rc1.gz
-
-Seems it's not there?
-
-Cheers,
-       Sven
+On Fri, Jul 13, 2012 at 9:12 AM, Bryan Wu <bryan.wu@canonical.com> wrote:
+> On Wed, Jul 11, 2012 at 5:50 PM, Devendra Naga <devendra.aaru@gmail.com> wrote:
+>> Bryan,
+>>
+>>         This patch is not even compile tested, since my machine crashed, and
+>> didn't have the ARM toolchain, sorry ..
+>>
+>
+> Thanks, I built it successfully. It looks fine to me. I will apply
+> this to my for-next branch.
+>
+> -Bryan
+>
+Thank Bryan, I  will set up my cross-toolchain soon.. sorry for not
+compiling it.
