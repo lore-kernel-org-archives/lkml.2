@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759016Ab2GMAc4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 20:32:56 -0400
+	id S934329Ab2GMAfF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 20:35:05 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:40985 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757241Ab2GMAci (ORCPT
+	with ESMTP id S1758962Ab2GMAcz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 20:32:38 -0400
+	Thu, 12 Jul 2012 20:32:55 -0400
 From: Michel Lespinasse <walken@google.com>
 To: aarcange@redhat.com, dwmw2@infradead.org, riel@redhat.com,
         peterz@infradead.org, daniel.santos@pobox.com, axboe@kernel.dk,
         ebiederm@xmission.com, akpm@linux-foundation.org
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         torvalds@linux-foundation.org
-Subject: [PATCH v2 03/12] rbtree: fix incorrect rbtree node insertion in fs/proc/proc_sysctl.c
-Date: Thu, 12 Jul 2012 17:31:48 -0700
-Message-Id: <1342139517-3451-4-git-send-email-walken@google.com>
+Subject: [PATCH v2 07/12] rbtree: adjust root color in rb_insert_color() only when necessary
+Date: Thu, 12 Jul 2012 17:31:52 -0700
+Message-Id: <1342139517-3451-8-git-send-email-walken@google.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1342139517-3451-1-git-send-email-walken@google.com>
 References: <1342139517-3451-1-git-send-email-walken@google.com>
@@ -23,35 +23,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The recently added code to use rbtrees in sysctl did not follow the proper
-rbtree interface on insertion - it was calling rb_link_node() which
-inserts a new node into the binary tree, but missed the call to
-rb_insert_color() which properly balances the rbtree and establishes all
-expected rbtree invariants.
-
-I found out about this only because faulty commit also used rb_init_node(),
-which I am removing within this patchset. But I think it's an easy mistake
-to make, and it makes me wonder if we should change the rbtree API so that
-insertions would be done with a single rb_insert() call (even if its
-implementation could still inline the rb_link_node() part and call
-a private __rb_insert_color function to do the rebalancing).
+The root node of an rbtree must always be black. However, rb_insert_color()
+only needs to maintain this invariant when it has been broken - that is,
+when it exits the loop due to the current (red) node being the root.
+In all other cases (exiting after tree rotations, or exiting due to
+an existing black parent) the invariant is already satisfied, so there
+is no need to adjust the root node color.
 
 Signed-off-by: Michel Lespinasse <walken@google.com>
 ---
- fs/proc/proc_sysctl.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ lib/rbtree.c |   19 +++++++++++++++----
+ 1 files changed, 15 insertions(+), 4 deletions(-)
 
-diff --git a/fs/proc/proc_sysctl.c b/fs/proc/proc_sysctl.c
-index 33aea86..77602c1a 100644
---- a/fs/proc/proc_sysctl.c
-+++ b/fs/proc/proc_sysctl.c
-@@ -142,6 +142,7 @@ static int insert_entry(struct ctl_table_header *head, struct ctl_table *entry)
- 	}
+diff --git a/lib/rbtree.c b/lib/rbtree.c
+index 12abb8a..d0be5fc 100644
+--- a/lib/rbtree.c
++++ b/lib/rbtree.c
+@@ -91,8 +91,21 @@ void rb_insert_color(struct rb_node *node, struct rb_root *root)
+ {
+ 	struct rb_node *parent, *gparent;
  
- 	rb_link_node(node, parent, p);
-+	rb_insert_color(node, &head->parent->root);
- 	return 0;
+-	while ((parent = rb_parent(node)) && rb_is_red(parent))
+-	{
++	while (true) {
++		/*
++		 * Loop invariant: node is red
++		 *
++		 * If there is a black parent, we are done.
++		 * Otherwise, take some corrective action as we don't
++		 * want a red root or two consecutive red nodes.
++		 */
++		parent = rb_parent(node);
++		if (!parent) {
++			rb_set_black(node);
++			break;
++		} else if (rb_is_black(parent))
++			break;
++
+ 		gparent = rb_parent(parent);
+ 
+ 		if (parent == gparent->rb_left)
+@@ -142,8 +155,6 @@ void rb_insert_color(struct rb_node *node, struct rb_root *root)
+ 			break;
+ 		}
+ 	}
+-
+-	rb_set_black(root->rb_node);
  }
+ EXPORT_SYMBOL(rb_insert_color);
  
 -- 
 1.7.7.3
