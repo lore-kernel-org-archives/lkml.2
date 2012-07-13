@@ -1,153 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754809Ab2GMHjz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 03:39:55 -0400
-Received: from mga11.intel.com ([192.55.52.93]:37231 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752677Ab2GMHjy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 03:39:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="176829732"
-Message-ID: <1342165278.1682.259.camel@rui.sh.intel.com>
-Subject: RE: How to use the generic thermal sysfs.
-From: Zhang Rui <rui.zhang@intel.com>
-To: Wei Ni <wni@nvidia.com>
-Cc: "R, Durgadoss" <durgadoss.r@intel.com>, "Brown, Len" <len.brown@intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "khali@linux-fr.org" <khali@linux-fr.org>,
-        "joe@perches.com" <joe@perches.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@ger.kernel.org" <linux-tegra@ger.kernel.org>,
-        Alex Courbot <acourbot@nvidia.com>
-Date: Fri, 13 Jul 2012 15:41:18 +0800
-In-Reply-To: <1342164616.27605.129.camel@tegra-chromium-2>
-References: <1342088573.27605.101.camel@tegra-chromium-2>
-	 <4D68720C2E767A4AA6A8796D42C8EB5915287C@BGSMSX101.gar.corp.intel.com>
-	 <1342144273.1682.237.camel@rui.sh.intel.com>
-	 <1342164616.27605.129.camel@tegra-chromium-2>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	id S1754850Ab2GMHqj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 03:46:39 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59385 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754547Ab2GMHqh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 03:46:37 -0400
+Date: Fri, 13 Jul 2012 00:46:33 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: [git pull] Input updates for 3.5-rc6
+Message-ID: <20120713074633.GA23271@core.coreip.homeip.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="TB36FDmn/VVEgNH/"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 五, 2012-07-13 at 15:30 +0800, Wei Ni wrote:
-> On Fri, 2012-07-13 at 09:51 +0800, Zhang Rui wrote:
-> > On 四, 2012-07-12 at 04:54 -0600, R, Durgadoss wrote:
-> > > Hi,
-> > > 
-> > > > -----Original Message-----
-> > > > From: Wei Ni [mailto:wni@nvidia.com]
-> > > > Sent: Thursday, July 12, 2012 3:53 PM
-> > > > To: Zhang, Rui; Brown, Len; akpm@linux-foundation.org; khali@linux-fr.org;
-> > > > joe@perches.com; R, Durgadoss
-> > > > Cc: linux-kernel@vger.kernel.org; linux-tegra@ger.kernel.org;
-> > > > acourbot@nvidia.com
-> > > > Subject: How to use the generic thermal sysfs.
-> > > > 
-> > > > Hi, all
-> > > > I'm working on the tegra thermal throttling upstream issue.
-> > > > The tegra30 board use the nct1008 as the thermal sensor, and the lm90 is
-> > > > the sensor driver. We want to use the generic thermal sysfs.
-> > > > 
-> > > > My question is where should we register the thermal zone device? We may
-> > > > have two place to do it:
-> > > > 1. register it in the sensor driver, such as lm90.c
-> > > > In this way, the sensor driver doesn't need to export any APIs, such as
-> > > > get_temp.
-> > > 
-> > > This approach is preferred.
-> > > 
-> > > > 2. register in my tegra thermal framework.
-> > > > In this way, the sensor driver need to export some APIs, which are used
-> > > > to register the ops and do any other things.
-> > > 
-> > > What do you mean by "my tegra thermal framework" ? Where does the source
-> > > file for this sit in the mainline kernel ?
-> > > 
-> > I have the same question.
-> > It sounds like that you want to use the tegra thermal framework to do
-> > thermal management instead of the generic thermal layer, right?
-> > 
-> > IMO, the purpose of the generic thermal layer is
-> > 1) do kernel thermal management
-> > 2) export unique sysfs I/F to userspace so that users/userspace
-> > applications can take over the thermal management.
-> > 
-> > what is the benefit to have another driver to do thermal management in
-> > kernel?
-> > If the current thermal management in the generic thermal layer can not
-> > work well on your platform, it is a good chance to enhance the kernel
-> > thermal manager. :)
-> 
-> Our tegra thermal framework also will use the generic thermal layer. It
-> will register the cooling device, and run the throttling in this generic
-> framework.
-> But we have a special mechanism, when the temp is below the trip temp,
-> we will set different cpu capability for different temp range. For
-> example, set the low/high temp as 20C/30C to the sensor, and set the cpu
-> to the max capability, it mean the cpu can run up to the max freq and
-> voltage in this temp range. if the temp is out that range, the sensor
-> will have irq/alert to notify the tegra framework, then we will set to
-> another temperature range and cpu capability.
-> I think we can try to add this mechanism to the generic framework as a
-> new policy, right?
-> 
-I think you can make use of the upper&lower limit in my patch set.
-Say, here is your thermal policy
-20C - 30C, P0
-30C - 40C, P1 - P2
-40C - 60C, P3 - P5
-60C+, P6 ~ Pn
 
-you can register to the thermal layer 4 passive trip points,
-20C, 30C, 40C, 60C, and then
-1) for trip 0 (20C), upper limit 0, lower limit 0
-2) for trip 1 (30C), upper limit 2, lower limit 1
-3) for trip 2 (40C), upper limit 5, lower limit 3
-4) for trip 3 (60C), upper limit n, lower limit 6
+--TB36FDmn/VVEgNH/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-you can program your own sensor to get interrupt when the temperature
-hits 20C/30C/40C/60C, and the generic thermal layer will put the
-processors to proper frequency for each trip point.
+Hi Linus,
 
-what do you think?
+Please pull from:
 
-BTW, the upper and lower limit is introduced in the patch set I'm
-testing, so maybe you were not aware of it.
+	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
 
-thanks,
-rui
-> > 
-> > thanks,
-> > rui
-> > 
-> > > > 
-> > > > How should I do it?
-> > > > 
-> > > > And in current codes, there have the event notification, in the form of
-> > > > a netlink event. But it's difficult to be used in the kernel, it's
-> > > > normally for the communication with user-space. How about to add a
-> > > > notify call chain for it? So when the sensor has irq alert, it can send
-> > > > a notify to my thermal framework in kernel.
-> > > 
-> > > We are working on a notification API from any generic sensor driver to
-> > > the thermal framework.
-> > > Please have a look at the 'notify_thermal_framework' API in the patch here:
-> > > http://www.spinics.net/lists/linux-acpi/msg36049.html
-> 
-> It's cool. I will cherry pick them to run it.
-> 
-> > > 
-> > > Thanks,
-> > > Durga
-> > > 
-> > 
-> > 
-> 
-> 
+to receive updates for the input subsystem. The changes are limited to
+adding new VID/PID combinations to drivers to enable support for new
+versions of hardware, most notably hardware found in new MacBook Pro
+Retina boxes.
+
+Changelog:
+---------
+
+Henrik Rydberg (1):
+      Input: bcm5974 - Add support for 2012 MacBook Pro Retina
+
+Ilia Katsnelson (1):
+      Input: xpad - add signature for Razer Onza Tournament Edition
+
+Ryan Bourgeois (1):
+      HID: add support for 2012 MacBook Pro Retina
+
+Yuri Khan (2):
+      Input: xpad - handle all variations of Mad Catz Beat Pad
+      Input: xpad - add Andamiro Pump It Up pad
 
 
+Diffstat:
+--------
+
+ drivers/hid/hid-apple.c       |    6 ++++++
+ drivers/hid/hid-core.c        |    7 +++++++
+ drivers/hid/hid-ids.h         |    6 ++++++
+ drivers/input/joystick/xpad.c |    6 +++++-
+ drivers/input/mouse/bcm5974.c |   20 ++++++++++++++++++++
+ 5 files changed, 44 insertions(+), 1 deletion(-)
+
+--=20
+Dmitry
+
+--TB36FDmn/VVEgNH/
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP/9JYAAoJEH70+W8r6ZYq7VgP/jtuXcZTznjW3ZgVVRb6Spnt
+Dd48Kast/RhKBPgShF4m+/5m0ZPAXNj0g1E0MXw3p2SJz7DRzkhKZs7MzgwfRyjm
+SJ7NRU1EgxJ7WteaL4JQYOkgJZshrfUBH29+wdm8suR5NES3/OyoTMHqD4A3F7Ed
+vgT+RZitE3wJj9eAs55Xdu4W4mgpcGj720pMz9ZyjAPcilQJBSiZEJP4FXev28oV
+dgk4y9x6R4NChbcZwwl73q19wY6XxmPo83oK0upIaI6mCyf7cRB5bTI42NnJ8AI9
+l6zDhZlWT3oL0f63cU59YZUHtiKcWCgbbIkkh3w1ezjR/mt2VniHVwId+BpEleMh
+glxGLyKjlIK5FBfu4kEgglZum+XjdfkvA+BBAXIZKAxvIRcjV6Y08REDOl9Ld3BD
+mPucxH4naAX5f6YXlrq5fF6M01UTFQwnV4Vgwt4N65aohQyWX78GO5+nzc12TqEY
+ANoYqksSFYDH7WFj4JuGF7Vhtr7Cw+3sKCCx/4m6W4V56jxlmrwHoi0p+Mkkgf7h
+lUaKgLOgir91Vx5TsmvfCE5zcngWKY9l9+QeEJIo7ieubHGn824pLgMi5YRQRfcy
+jicMVQYmfXrKiB8Y1D27GieZ9/IEY+FD3F6MY7B4TVrx4qAKB+fiqDd6+vC2Acew
+4m96a89tU6MKQCjAUvJ2
+=kA8s
+-----END PGP SIGNATURE-----
+
+--TB36FDmn/VVEgNH/--
