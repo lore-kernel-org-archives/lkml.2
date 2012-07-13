@@ -1,80 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755743Ab2GMIay (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 04:30:54 -0400
-Received: from service88.mimecast.com ([195.130.217.12]:41583 "EHLO
-	service88.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751558Ab2GMIau convert rfc822-to-8bit (ORCPT
+	id S1756110Ab2GMIbW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 04:31:22 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:22360 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755923Ab2GMIbP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 04:30:50 -0400
-Message-ID: <4FFFDCB2.3030700@arm.com>
-Date: Fri, 13 Jul 2012 09:30:42 +0100
-From: viresh kumar <viresh.kumar2@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Fri, 13 Jul 2012 04:31:15 -0400
+Message-ID: <4FFFDCD9.7030305@oracle.com>
+Date: Fri, 13 Jul 2012 16:31:21 +0800
+From: "zhenzhong.duan" <zhenzhong.duan@oracle.com>
+Reply-To: zhenzhong.duan@oracle.com
+Organization: oracle
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Jonas Gorski <jonas.gorski@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Viresh Kumar <viresh.kumar@st.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Florian Fainelli <florian@openwrt.org>,
-        Maxime Bizon <mbizon@freebox.fr>
-Subject: Re: [PATCH] MIPS: BCM63XX: select HAVE_CLK
-References: <1342166315-17765-1-git-send-email-jonas.gorski@gmail.com>
-In-Reply-To: <1342166315-17765-1-git-send-email-jonas.gorski@gmail.com>
-X-MC-Unique: 112071309304701002
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+To: David Vrabel <david.vrabel@citrix.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, jeremy@goop.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        xen-devel@lists.xensource.com, x86@kernel.org,
+        Feng Jin <joe.jin@oracle.com>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: [Xen-devel] [PATCH-v2] xen: populate correct number of pages when
+ across mem boundary
+References: <4FF3E781.5040603@oracle.com> <4FFEE552.4070201@citrix.com>
+In-Reply-To: <4FFEE552.4070201@citrix.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/07/12 08:58, Jonas Gorski wrote:
-> BCM63XX implements the clk interface, but does not advertise it.
->
-> Signed-off-by: Jonas Gorski <jonas.gorski@gmail.com>
-> ---
->
-> This fixes a build failure in linux-next caused by
-> 5afae362dc79cb8b6b3965422d13d118c63d4ee4 ("clk: Add non CONFIG_HAVE_CLK
-> routines"):
->
->   CC      arch/mips/bcm63xx/clk.o
-> arch/mips/bcm63xx/clk.c:285:5: error: redefinition of 'clk_enable'
-> include/linux/clk.h:294:19: note: previous definition of 'clk_enable' was here
->
-> and so on (I think you have already seen one of these).
->
-> @Andrew: This patch should apply cleanly to any tree, so maybe you
-> could add it to your patch series in front of the mentioned
-> patch, to keep bisectability for bcm63xx.
->
-> @Ralf: I hope it is okay for you that this goes through a different
-> tree.
->
->  arch/mips/Kconfig |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-> index 09ab87e..80d9199 100644
-> --- a/arch/mips/Kconfig
-> +++ b/arch/mips/Kconfig
-> @@ -122,6 +122,7 @@ config BCM63XX
->       select SYS_HAS_EARLY_PRINTK
->       select SWAP_IO_SPACE
->       select ARCH_REQUIRE_GPIOLIB
-> +     select HAVE_CLK
->       help
->        Support for BCM63XX based boards
+When populate pages across a mem boundary at bootup, the page count
+populated isn't correct. This is due to mem populated to non-mem
+region and ignored.
 
-Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
+Pfn range is also wrongly aligned when mem boundary isn't page aligned.
 
---
-Viresh
+-v2: If xen_do_chunk fail(populate), abort this chunk and any others.
+Suggested by David, thanks.
 
+For a dom0 booted with dom_mem=3368952K(0xcd9ff000-4k) dmesg diff is:
+  [    0.000000] Freeing 9e-100 pfn range: 98 pages freed
+  [    0.000000] 1-1 mapping on 9e->100
+  [    0.000000] 1-1 mapping on cd9ff->100000
+  [    0.000000] Released 98 pages of unused memory
+  [    0.000000] Set 206435 page(s) to 1-1 mapping
+-[    0.000000] Populating cd9fe-cda00 pfn range: 1 pages added
++[    0.000000] Populating cd9fe-cd9ff pfn range: 1 pages added
++[    0.000000] Populating 100000-100061 pfn range: 97 pages added
+  [    0.000000] BIOS-provided physical RAM map:
+  [    0.000000] Xen: 0000000000000000 - 000000000009e000 (usable)
+  [    0.000000] Xen: 00000000000a0000 - 0000000000100000 (reserved)
+  [    0.000000] Xen: 0000000000100000 - 00000000cd9ff000 (usable)
+  [    0.000000] Xen: 00000000cd9ffc00 - 00000000cda53c00 (ACPI NVS)
+...
+  [    0.000000] Xen: 0000000100000000 - 0000000100061000 (usable)
+  [    0.000000] Xen: 0000000100061000 - 000000012c000000 (unusable)
+...
+  [    0.000000] MEMBLOCK configuration:
+...
+-[    0.000000]  reserved[0x4]       [0x000000cd9ff000-0x000000cd9ffbff], 0xc00 bytes
+-[    0.000000]  reserved[0x5]       [0x00000100000000-0x00000100060fff], 0x61000 bytes
 
+Related xen memory layout:
+(XEN) Xen-e820 RAM map:
+(XEN)  0000000000000000 - 000000000009ec00 (usable)
+(XEN)  00000000000f0000 - 0000000000100000 (reserved)
+(XEN)  0000000000100000 - 00000000cd9ffc00 (usable)
 
--- IMPORTANT NOTICE: The contents of this email and any attachments are confidential and may also be privileged. If you are not the intended recipient, please notify the sender immediately and do not disclose the contents to any other person, use it for any purpose, or store or copy the information in any medium.  Thank you.
+Signed-off-by: Zhenzhong Duan<zhenzhong.duan@oracle.com>
+---
+diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+index a4790bf..ead8557 100644
+--- a/arch/x86/xen/setup.c
++++ b/arch/x86/xen/setup.c
+@@ -157,25 +157,24 @@ static unsigned long __init xen_populate_chunk(
+  	unsigned long dest_pfn;
+
+  	for (i = 0, entry = list; i<  map_size; i++, entry++) {
+-		unsigned long credits = credits_left;
+  		unsigned long s_pfn;
+  		unsigned long e_pfn;
+  		unsigned long pfns;
+  		long capacity;
+
+-		if (credits<= 0)
++		if (credits_left<= 0)
+  			break;
+
+  		if (entry->type != E820_RAM)
+  			continue;
+
+-		e_pfn = PFN_UP(entry->addr + entry->size);
++		e_pfn = PFN_DOWN(entry->addr + entry->size);
+
+  		/* We only care about E820 after the xen_start_info->nr_pages */
+  		if (e_pfn<= max_pfn)
+  			continue;
+
+-		s_pfn = PFN_DOWN(entry->addr);
++		s_pfn = PFN_UP(entry->addr);
+  		/* If the E820 falls within the nr_pages, we want to start
+  		 * at the nr_pages PFN.
+  		 * If that would mean going past the E820 entry, skip it
+@@ -184,23 +183,19 @@ static unsigned long __init xen_populate_chunk(
+  			capacity = e_pfn - max_pfn;
+  			dest_pfn = max_pfn;
+  		} else {
+-			/* last_pfn MUST be within E820_RAM regions */
+-			if (*last_pfn&&  e_pfn>= *last_pfn)
+-				s_pfn = *last_pfn;
+  			capacity = e_pfn - s_pfn;
+  			dest_pfn = s_pfn;
+  		}
+-		/* If we had filled this E820_RAM entry, go to the next one. */
+-		if (capacity<= 0)
+-			continue;
+
+-		if (credits>  capacity)
+-			credits = capacity;
++		if (credits_left<  capacity)
++			capacity = credits_left;
+
+-		pfns = xen_do_chunk(dest_pfn, dest_pfn + credits, false);
++		pfns = xen_do_chunk(dest_pfn, dest_pfn + capacity, false);
+  		done += pfns;
+-		credits_left -= pfns;
+  		*last_pfn = (dest_pfn + pfns);
++		if (pfns<  capacity)
++			break;
++		credits_left -= pfns;
+  	}
+  	return done;
+  }
+-- 
+1.7.3
 
