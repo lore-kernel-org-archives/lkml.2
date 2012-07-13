@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030872Ab2GMSwD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 14:52:03 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:55144 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932362Ab2GMSwA (ORCPT
+	id S933532Ab2GMSyK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 14:54:10 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:44164 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932263Ab2GMSyH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 14:52:00 -0400
+	Fri, 13 Jul 2012 14:54:07 -0400
 MIME-Version: 1.0
-In-Reply-To: <50005dfd.25f2440a.6e6b.ffffbcd9SMTPIN_ADDED@mx.google.com>
-References: <1342193911-16157-1-git-send-email-rob.clark@linaro.org>
-	<50005dfd.25f2440a.6e6b.ffffbcd9SMTPIN_ADDED@mx.google.com>
-Date: Fri, 13 Jul 2012 13:52:00 -0500
-X-Google-Sender-Auth: __iTEdu_yfkjT3YV_LgCxozIPiE
-Message-ID: <CAF6AEGvP1+7BKo7+oCj4XBBw32NPjrH5EAZuodu2zb8oiyVP_Q@mail.gmail.com>
-Subject: Re: [RFC] dma-fence: dma-buf synchronization (v2)
-From: Rob Clark <rob.clark@linaro.org>
-To: Tom Cooksey <tom.cooksey@arm.com>
-Cc: dri-devel@lists.freedesktop.org, linux-media@vger.kernel.org,
-        linaro-mm-sig@lists.linaro.org, patches@linaro.org,
-        daniel.vetter@ffwll.ch, linux-kernel@vger.kernel.org,
-        maarten.lankhorst@canonical.com, sumit.semwal@linaro.org
+In-Reply-To: <alpine.LFD.2.02.1207131928000.32033@ionos>
+References: <4FFEBB39.8090308@redhat.com> <CA+55aFwAXbrQRKg_cJT04H_XnoEPjJ0O711C5uA6fRY35DVhKQ@mail.gmail.com>
+ <CA+55aFy=ogfJu3WuoCCDseysxOOn_UEAnv_7Ldsa45VV7fMVPg@mail.gmail.com> <alpine.LFD.2.02.1207131928000.32033@ionos>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 13 Jul 2012 11:53:45 -0700
+X-Google-Sender-Auth: 0eGJaMaRE2gwhoNFAWh7MGyvr0M
+Message-ID: <CA+55aFwxXPEw-fupEdbCo5eTSC5NPKwvDNkLC9V4NWQ+i3gLxg@mail.gmail.com>
+Subject: Re: [GIT PULL] KVM fixes for 3.5-rc6
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Avi Kivity <avi@redhat.com>, linux-kernel <linux-kernel@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 13, 2012 at 12:35 PM, Tom Cooksey <tom.cooksey@arm.com> wrote:
-> My other thought is around atomicity. Could this be extended to
-> (safely) allow for hardware devices which might want to access
-> multiple buffers simultaneously? I think it probably can with
-> some tweaks to the interface? An atomic function which does
-> something like "give me all the fences for all these buffers
-> and add this fence to each instead/as-well-as"?
+On Fri, Jul 13, 2012 at 11:28 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>
+> We already discussed to let the irq chip (in this case MSI) tell the
+> core that it does not need the extra oneshot handling. That way the
+> code which requests an threaded irq with the NULL primary handler
+> works on both MSI and normal interrupts.
 
-fwiw, what I'm leaning towards right now is combining dma-fence w/
-Maarten's idea of dma-buf-mgr (not sure if you saw his patches?).  And
-let dmabufmgr handle the multi-buffer reservation stuff.  And possibly
-the read vs write access, although this I'm not 100% sure on... the
-other option being the concept of read vs write (or
-exclusive/non-exclusive) fences.
+So I  don't think your patch is quite right.
 
-In the current state, the fence is quite simple, and doesn't care
-*what* it is fencing, which seems advantageous when you get into
-trying to deal with combinations of devices sharing buffers, some of
-whom can do hw sync, and some who can't.  So having a bit of
-partitioning from the code dealing w/ sequencing who can access the
-buffers when and for what purpose seems like it might not be a bad
-idea.  Although I'm still working through the different alternatives.
+If you want to clear the IRQF_ONESHOT for MSI irq's (and other ones
+where the interrupt controller is fundamentally ONESHOT), I think you
+should do it a few lines higher up - *before* you check the "does the
+IRQF_ONESHOT mask match other shared interrupts"?
 
-BR,
--R
+Now, irq sharing presumably doesn't happen with MSI, but there's
+nothing fundamentally wrong with message-based irq schemes that have
+shared interrupt handlers.
+
+I think. Hmm?
+
+                  Linus
