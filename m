@@ -1,49 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757258Ab2GMLHq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 07:07:46 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:33163 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755993Ab2GMLHp (ORCPT
+	id S1030498Ab2GMLKn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 07:10:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39235 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752332Ab2GMLKl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 07:07:45 -0400
-Date: Fri, 13 Jul 2012 12:10:53 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the tty tree
-Message-ID: <20120713121053.0637219f@pyramind.ukuu.org.uk>
-In-Reply-To: <20120713141345.f71b7c01f720d616d74721dd@canb.auug.org.au>
-References: <20120713141345.f71b7c01f720d616d74721dd@canb.auug.org.au>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 13 Jul 2012 07:10:41 -0400
+From: Amit Daniel Kachhap <amit.kachhap@linaro.org>
+To: linux-pm@lists.linux-foundation.org, akpm@linux-foundation.org,
+        lenb@kernel.org
+Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, lm-sensors@lm-sensors.org,
+        amit.kachhap@linaro.org
+Subject: [PATCH v5 0/5] thermal: Add kernel thermal support for exynos platform
+Date: Fri, 13 Jul 2012 16:40:20 +0530
+Message-Id: <1342177825-19006-1-git-send-email-amit.kachhap@linaro.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Jul 2012 14:13:45 +1000
-Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+Hi Len/Andrew,
 
-> Hi Greg,
-> 
-> After merging the tty tree, today's linux-next build (x86_64 allmodconfig)
-> failed like this:
-> 
-> drivers/char/mwave/mwavedd.c: In function 'register_serial_portandirq':
-> drivers/char/mwave/mwavedd.c:472:2: error: implicit declaration of function 'serial8250_register_port' [-Werror=implicit-function-declaration]
-> cc1: some warnings being treated as errors
-> drivers/misc/ibmasm/uart.c: In function 'ibmasm_register_uart':
-> drivers/misc/ibmasm/uart.c:57:2: error: implicit declaration of function 'serial8250_register_port' [-Werror=implicit-function-declaration]
-> cc1: some warnings being treated as errors
-> 
-> Caused by commit 2655a2c76f80 ("8250: use the 8250 register interface not
-> the legacy one").  Grep is your friend.
+This series is a repost of the thermal support for exynos platform.
 
-My fault on that one not GregKH's. I'll wrap that into the updated patch
-series. I thought I had them all but I forgot to grep off in drivers/misc.
+This current patchset is based on 3.5-rc6 with hwmon-next branch merged.
+(git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-next)
 
-Alan
+Version v4 was accepted for 3.5 merge by Len.
+(https://lkml.org/lkml/2012/6/2/7) but somehow could not go through.
+
+I am aware that some work is going on for thermal framework improvement but
+that will have minimal changes on cpufreq cooling APIs and I hope to fix them as
+bug fix patches later.
+
+Please consider them for 3.6 merge.
+
+Thanks,
+Amit Daniel
+
+
+Amit Daniel Kachhap (5):
+  thermal: add generic cpufreq cooling implementation
+  hwmon: exynos4: move thermal sensor driver to driver/thermal
+    directory
+  thermal: exynos5: add exynos5 thermal sensor driver support
+  thermal: exynos: register the tmu sensor with the kernel thermal
+    layer
+  ARM: exynos: add thermal sensor driver platform data support
+
+ Documentation/hwmon/exynos4_tmu              |   81 ---
+ Documentation/thermal/cpu-cooling-api.txt    |   60 ++
+ Documentation/thermal/exynos_thermal         |   52 ++
+ drivers/hwmon/Kconfig                        |   10 -
+ drivers/hwmon/Makefile                       |    1 -
+ drivers/hwmon/exynos4_tmu.c                  |  518 --------------
+ drivers/thermal/Kconfig                      |   20 +
+ drivers/thermal/Makefile                     |    4 +-
+ drivers/thermal/cpu_cooling.c                |  483 +++++++++++++
+ drivers/thermal/exynos_thermal.c             |  960 ++++++++++++++++++++++++++
+ include/linux/cpu_cooling.h                  |   99 +++
+ include/linux/platform_data/exynos4_tmu.h    |   83 ---
+ include/linux/platform_data/exynos_thermal.h |  100 +++
+ 13 files changed, 1777 insertions(+), 694 deletions(-)
+ delete mode 100644 Documentation/hwmon/exynos4_tmu
+ create mode 100644 Documentation/thermal/cpu-cooling-api.txt
+ create mode 100644 Documentation/thermal/exynos_thermal
+ delete mode 100644 drivers/hwmon/exynos4_tmu.c
+ create mode 100644 drivers/thermal/cpu_cooling.c
+ create mode 100644 drivers/thermal/exynos_thermal.c
+ create mode 100644 include/linux/cpu_cooling.h
+ delete mode 100644 include/linux/platform_data/exynos4_tmu.h
+ create mode 100644 include/linux/platform_data/exynos_thermal.h
+
