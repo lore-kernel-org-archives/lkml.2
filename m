@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756997Ab2GMJnI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 05:43:08 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:39980 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756920Ab2GMJnF (ORCPT
+	id S1757059Ab2GMJsD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 05:48:03 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:43814 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756965Ab2GMJsB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 05:43:05 -0400
-Date: Fri, 13 Jul 2012 10:42:32 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: shan kang <kangshan0910@gmail.com>
-Cc: Li Haifeng <omycle@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: ARM: why smp_mb() is not needed in the "__mutex_fastpath_lock"
- and "__mutex_fastpath_unlock" functions
-Message-ID: <20120713094232.GD18079@mudshark.cambridge.arm.com>
-References: <CAK2TD5ygowdy9t1TpfxAPbpvNQfMnMB-3Zp8TKMsTYtBZdGW=Q@mail.gmail.com>
- <CAFNq8R6dNb0BrDVZScJ8s=P3B-OMgtr8tUdy8XqQcCAeUWuH+A@mail.gmail.com>
- <CAK2TD5z2DticZAQ-Pxzo7YT9tx=YWZkwcn-YZJ3aQa4AFoE_Cw@mail.gmail.com>
+	Fri, 13 Jul 2012 05:48:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAK2TD5z2DticZAQ-Pxzo7YT9tx=YWZkwcn-YZJ3aQa4AFoE_Cw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: sedat.dilek@gmail.com
+Date: Fri, 13 Jul 2012 11:47:59 +0200
+Message-ID: <CA+icZUVorJNMQ3wyz8WuZop_fwwOuBo38wZg9s9RJizhM0yc-w@mail.gmail.com>
+Subject: [3.5-rc6+] mei: irq: request_threaded_irq is missing the IRQF_ONESHOT flag
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Tomas Winkler <tomas.winkler@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Roland Dreier <roland@purestorage.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 13, 2012 at 10:10:52AM +0100, shan kang wrote:
-> For example, in the following scenario, Process2  may get the wrong value;
-> Process1:
-> mutex_lock(&lock);
-> write data; (store operation)
-> mutex_unlock(&lock);
-> 
-> Process2:
-> mutex_lock(&lock);
-> read data; (load operation)
-> mutex_unlock(&lock);
+Hi,
 
-Yes, it looks like we can screw things up in the uncontended case (where
-nobody blocks on the mutex). We could add an smp_mb after the lock operation
-and another one before the unlock, but I'm tempted just to use
-asm-generic/mutex-dec.h instead. The latter approach will subtly change the
-current behaviour, so I'll post a patch when I'm happy with it.
+while dealing with [1], I saw this mei-related infos in dmesg when
+doing a suspend + resume (see [1] for more logs):
 
-Curious: did you find this by inspection or did you observe it going wrong?
+[17046.348467]  [<ffffffffa00554d8>] mei_pci_suspend+0x78/0xd0 [mei]
+[17047.460315] mei 0000:00:16.0: irq 47 for MSI/MSI-X
+[17047.460512] mei 0000:00:16.0: request_threaded_irq failed: irq = 47.
 
-Cheers,
+I am not sure whom to address with the issue - so I just asked on
+#linux-rt and Thomas responded:
 
-Will
+[ 13-Jul-2012: German local-time (UTC+2) ]
+...
+[11:03:40] <tglx> request_threaded_irq is missing the IRQF_ONESHOT flag
+...
+[11:24:18] <tglx> anyone can fix it by sending a patch which adds the flag :)
+
+Futhermore, I found those commits, so I added folks from there to this BR:
+
+16a50b1 mei: pci_resume: set IRQF_ONESHOT for msi request_threaded_irq
+aa189ec misc: mei: set IRQF_ONESHOT for msi request_threaded_irq
+
+If you need more infos and/or logs, please let me know.
+
+Feel free to add:
+
+     Reported-by: Sedat Dilek <sedat.dilek@gmail.com>
+
+Kind Regards,
+- Sedat (dileks on IRC) -
+
+[1] http://marc.info/?l=linux-kernel&m=134216822724119&w=2
