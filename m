@@ -1,117 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933555Ab2GMTCY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 15:02:24 -0400
-Received: from www.linutronix.de ([62.245.132.108]:46223 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932263Ab2GMTCX (ORCPT
+	id S933559Ab2GMTKW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 15:10:22 -0400
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:42204 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752115Ab2GMTKV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 15:02:23 -0400
-Date: Fri, 13 Jul 2012 21:02:20 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Avi Kivity <avi@redhat.com>, linux-kernel <linux-kernel@vger.kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>
-Subject: Re: [GIT PULL] KVM fixes for 3.5-rc6
-In-Reply-To: <CA+55aFwxXPEw-fupEdbCo5eTSC5NPKwvDNkLC9V4NWQ+i3gLxg@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1207132056540.32033@ionos>
-References: <4FFEBB39.8090308@redhat.com> <CA+55aFwAXbrQRKg_cJT04H_XnoEPjJ0O711C5uA6fRY35DVhKQ@mail.gmail.com> <CA+55aFy=ogfJu3WuoCCDseysxOOn_UEAnv_7Ldsa45VV7fMVPg@mail.gmail.com> <alpine.LFD.2.02.1207131928000.32033@ionos>
- <CA+55aFwxXPEw-fupEdbCo5eTSC5NPKwvDNkLC9V4NWQ+i3gLxg@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Fri, 13 Jul 2012 15:10:21 -0400
+Message-ID: <5000729A.2050401@hp.com>
+Date: Fri, 13 Jul 2012 13:10:18 -0600
+From: Khalid Aziz <khalid.aziz@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Mike Waychison <mikew@google.com>
+CC: Matthew Garrett <mjg59@srcf.ucam.org>, linux-kernel@vger.kernel.org,
+        tony.luck@intel.com, keescook@chromium.org, gong.chen@linux.intel.com
+Subject: Re: [PATCH] Add missing attributes to EFI variable attribute print
+ out from sysfs
+References: <20120713153827.GA8007@hp.com> <20120713154645.GA16059@srcf.ucam.org> <5000604F.80804@hp.com> <CAGTjWtA0LmQ-90zjYf0nho_LEra8nx32M1R7E6o=3S68UjfEHw@mail.gmail.com>
+In-Reply-To: <CAGTjWtA0LmQ-90zjYf0nho_LEra8nx32M1R7E6o=3S68UjfEHw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Jul 2012, Linus Torvalds wrote:
+On 07/13/2012 12:04 PM, Mike Waychison wrote:
 
-> On Fri, Jul 13, 2012 at 11:28 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> >
-> > We already discussed to let the irq chip (in this case MSI) tell the
-> > core that it does not need the extra oneshot handling. That way the
-> > code which requests an threaded irq with the NULL primary handler
-> > works on both MSI and normal interrupts.
-> 
-> So I  don't think your patch is quite right.
-> 
-> If you want to clear the IRQF_ONESHOT for MSI irq's (and other ones
-> where the interrupt controller is fundamentally ONESHOT), I think you
-> should do it a few lines higher up - *before* you check the "does the
-> IRQF_ONESHOT mask match other shared interrupts"?
-> 
-> Now, irq sharing presumably doesn't happen with MSI, but there's
-> nothing fundamentally wrong with message-based irq schemes that have
-> shared interrupt handlers.
-> 
-> I think. Hmm?
+> You can probably save the wrap by copying out var->Attributes into a local.
 
-Shared irqs are not supported by MSI, but yes, the check should be
-done way up. Makes it less ugly as well :)
+Yes, you are right. It will work in this case. I am considering the general
+case of very long name for a constant causing issues with line wrap in
+more complex code, or just plain being a pain to type such a long name (one
+of these constants is ~50 characters).
 
-Thanks,
-
-	tglx
-
-Index: linux-2.6/arch/x86/kernel/apic/io_apic.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/apic/io_apic.c
-+++ linux-2.6/arch/x86/kernel/apic/io_apic.c
-@@ -3109,6 +3109,7 @@ static struct irq_chip msi_chip = {
- 	.irq_set_affinity	= msi_set_affinity,
- #endif
- 	.irq_retrigger		= ioapic_retrigger_irq,
-+	.flags			= IRQCHIP_ONESHOT_SAFE,
- };
- 
- static int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc, int irq)
-Index: linux-2.6/include/linux/irq.h
-===================================================================
---- linux-2.6.orig/include/linux/irq.h
-+++ linux-2.6/include/linux/irq.h
-@@ -351,6 +351,7 @@ enum {
- 	IRQCHIP_MASK_ON_SUSPEND		= (1 <<  2),
- 	IRQCHIP_ONOFFLINE_ENABLED	= (1 <<  3),
- 	IRQCHIP_SKIP_SET_WAKE		= (1 <<  4),
-+	IRQCHIP_ONESHOT_SAFE		= (1 <<  5),
- };
- 
- /* This include will go away once we isolated irq_desc usage to core code */
-Index: linux-2.6/kernel/irq/manage.c
-===================================================================
---- linux-2.6.orig/kernel/irq/manage.c
-+++ linux-2.6/kernel/irq/manage.c
-@@ -960,6 +960,18 @@ __setup_irq(unsigned int irq, struct irq
- 	}
- 
- 	/*
-+	 * Drivers are often written to work w/o knowledge about the
-+	 * underlying irq chip implementation, so a request for a
-+	 * threaded irq without a primary hard irq context handler
-+	 * requires the ONESHOT flag to be set. Some irq chips like
-+	 * MSI based interrupts are per se one shot safe. Check the
-+	 * chip flags, so we can avoid the unmask dance at the end of
-+	 * the threaded handler for those.
-+	 */
-+	if (desc->irq_data.chip->flags & IRQCHIP_ONESHOT_SAFE)
-+		new->flags &= ~IRQF_ONESHOT;
-+
-+	/*
- 	 * The following block of code has to be executed atomically
- 	 */
- 	raw_spin_lock_irqsave(&desc->lock, flags);
-@@ -1033,7 +1045,8 @@ __setup_irq(unsigned int irq, struct irq
- 		 */
- 		new->thread_mask = 1 << ffz(thread_mask);
- 
--	} else if (new->handler == irq_default_primary_handler) {
-+	} else if (new->handler == irq_default_primary_handler &&
-+		   !(desc->irq_data.chip->flags & IRQCHIP_ONESHOT_SAFE)) {
- 		/*
- 		 * The interrupt was requested with handler = NULL, so
- 		 * we use the default primary handler for it. But it
-
+--
+Khalid Aziz
+khalid.aziz@hp.com
 
