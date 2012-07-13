@@ -1,57 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756473Ab2GMIi0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 04:38:26 -0400
-Received: from mga10.intel.com ([192.55.52.92]:14527 "EHLO
-	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756349Ab2GMIiT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 04:38:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAErSpo6X6PzXCy3a2DfctvAtiWDoO81-5AfRy7rN=qBBOytFYg@mail.gmail.com>
-References: <1342114028-21407-1-git-send-email-octavian.purdila@intel.com>
-	<CAErSpo6X6PzXCy3a2DfctvAtiWDoO81-5AfRy7rN=qBBOytFYg@mail.gmail.com>
-Date: Fri, 13 Jul 2012 11:38:16 +0300
-Message-ID: <CAE1zotK_R4QY9OoNCmfOx6+dm4R-DseB_nEsSmwaTGZNZM0nJg@mail.gmail.com>
-Subject: Re: [PATCH v2] resource: make sure requested range is included in the
- root range
-From: Octavian Purdila <octavian.purdila@intel.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Ram Pai <linuxram@us.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756320Ab2GMIiO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 04:38:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6538 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756183Ab2GMIhw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 04:37:52 -0400
+From: Asias He <asias@redhat.com>
+To: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Cc: Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
+        Shaohua Li <shli@kernel.org>, Christoph Hellwig <hch@lst.de>,
+        Minchan Kim <minchan.kim@gmail.com>
+Subject: [PATCH V3 2/3] block: Add blk_bio_map_sg() helper
+Date: Fri, 13 Jul 2012 16:38:50 +0800
+Message-Id: <1342168731-11797-3-git-send-email-asias@redhat.com>
+In-Reply-To: <1342168731-11797-1-git-send-email-asias@redhat.com>
+References: <1342168731-11797-1-git-send-email-asias@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 12, 2012 at 10:02 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+Add a helper to map a bio to a scatterlist, modelled after
+blk_rq_map_sg.
 
-> Why don't you fix this right where the problem occurs, in
-> __reserve_region_with_split(), with something like this:
->
->         if (end > conflict->start && conflict->start > start)
->                 __reserve_region_with_split(root, start,
-> conflict->start-1, name);
->         if (start < conflict->end && conflict->end < end && )
->                 __reserve_region_with_split(root, conflict->end+1, end, name);
->
+This helper is useful for any driver that wants to create
+a scatterlist from its ->make_request_fn method.
 
-I am not sure this will behave properly in the overlapping cases.
-Consider start=10, end=150, root->start=100, root->end=200.
+Changes in v2:
+ - Use __blk_segment_map_sg to avoid duplicated code
+ - Add cocbook style function comment
 
-In this case only the first condition above will be true (150 > 100 &&
-100 > 10) and we will try to reserve  [10, 99] - which will return
-nicely. But we will not reserve [100, 150].
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Shaohua Li <shli@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+Signed-off-by: Asias He <asias@redhat.com>
+---
+ block/blk-merge.c      |   37 +++++++++++++++++++++++++++++++++++++
+ include/linux/blkdev.h |    2 ++
+ 2 files changed, 39 insertions(+)
 
-But more important is the fact that by fixing the issue here we won't
-be able to log the error and give a chance to upper layer fixing the
-problem.
+diff --git a/block/blk-merge.c b/block/blk-merge.c
+index 576b68e..e76279e 100644
+--- a/block/blk-merge.c
++++ b/block/blk-merge.c
+@@ -209,6 +209,43 @@ int blk_rq_map_sg(struct request_queue *q, struct request *rq,
+ }
+ EXPORT_SYMBOL(blk_rq_map_sg);
+ 
++/**
++ * blk_bio_map_sg - map a bio to a scatterlist
++ * @q: request_queue in question
++ * @bio: bio being mapped
++ * @sglist: scatterlist being mapped
++ *
++ * Note:
++ *    Caller must make sure sg can hold bio->bi_phys_segments entries
++ *
++ * Will return the number of sg entries setup
++ */
++int blk_bio_map_sg(struct request_queue *q, struct bio *bio,
++		   struct scatterlist *sglist)
++{
++	struct bio_vec *bvec, *bvprv;
++	struct scatterlist *sg;
++	int nsegs, cluster;
++	unsigned long i;
++
++	nsegs = 0;
++	cluster = blk_queue_cluster(q);
++
++	bvprv = NULL;
++	sg = NULL;
++	bio_for_each_segment(bvec, bio, i) {
++		__blk_segment_map_sg(q, bvec, sglist, &bvprv, &sg,
++				     &nsegs, &cluster);
++	} /* segments in bio */
++
++	if (sg)
++		sg_mark_end(sg);
++
++	BUG_ON(bio->bi_phys_segments && nsegs > bio->bi_phys_segments);
++	return nsegs;
++}
++EXPORT_SYMBOL(blk_bio_map_sg);
++
+ static inline int ll_new_hw_segment(struct request_queue *q,
+ 				    struct request *req,
+ 				    struct bio *bio)
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 07954b0..87fb56c 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -883,6 +883,8 @@ extern void blk_queue_flush_queueable(struct request_queue *q, bool queueable);
+ extern struct backing_dev_info *blk_get_backing_dev_info(struct block_device *bdev);
+ 
+ extern int blk_rq_map_sg(struct request_queue *, struct request *, struct scatterlist *);
++extern int blk_bio_map_sg(struct request_queue *q, struct bio *bio,
++			  struct scatterlist *sglist);
+ extern void blk_dump_rq_flags(struct request *, char *);
+ extern long nr_blockdev_pages(void);
+ 
+-- 
+1.7.10.4
 
->> +               if (start > root->end || end < root->start) {
->> +                       abort = 1;
->> +                       pr_err("unable to fix request, aborting it\n");
->
-> This message doesn't contain any useful information (range/root/etc).
->
-
-Good point, I will remove it.
