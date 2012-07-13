@@ -1,95 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422698Ab2GMPZi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 11:25:38 -0400
-Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:33964 "EHLO
-	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756469Ab2GMPZc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 11:25:32 -0400
-Message-ID: <1342192858.19100.15.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v4 1/3] acpi : cpu hot-remove returns error when
- cpu_down() fails
-From: Toshi Kani <toshi.kani@hp.com>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: srivatsa.bhat@linux.vnet.ibm.com, lenb@kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 13 Jul 2012 09:20:58 -0600
-In-Reply-To: <4FFFE0DA.3050806@jp.fujitsu.com>
-References: <4FFFE0DA.3050806@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1758021Ab2GMP10 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 11:27:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24393 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755841Ab2GMP1Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 11:27:25 -0400
+From: Matthew Garrett <mjg@redhat.com>
+To: kys@microsoft.com
+Cc: linux-kernel@vger.kernel.org, pbonzini@redhat.com,
+        Matthew Garrett <mjg@redhat.com>
+Subject: [PATCH] hv: Change the guest ID value
+Date: Fri, 13 Jul 2012 11:27:03 -0400
+Message-Id: <1342193223-18193-1-git-send-email-mjg@redhat.com>
+In-Reply-To: <4FFFF711.8040003@redhat.com>
+References: <4FFFF711.8040003@redhat.com>
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 209.6.41.104
+X-SA-Exim-Mail-From: mjg@redhat.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-07-13 at 17:48 +0900, Yasuaki Ishimatsu wrote:
-> Even if cpu_down() fails, acpi_processor_remove() continues to remove the cpu.
-> But in this case, it should return error number since some process may run on
-> the cpu. If the cpu has a running process and the cpu is turned the power off,
-> the system may not work well.
-> 
-> Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+If I have to explain this I'm going to be very sad.
 
-Thanks for the update.  It looks good.
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+---
+ drivers/hv/hyperv_vmbus.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Reviewed-by: Toshi Kani <toshi.kani@hp.com>
-
-
-> 
-> ---
->  drivers/acpi/processor_driver.c |   18 ++++++++++++------
->  1 file changed, 12 insertions(+), 6 deletions(-)
-> 
-> Index: linux-3.5-rc6/drivers/acpi/processor_driver.c
-> ===================================================================
-> --- linux-3.5-rc6.orig/drivers/acpi/processor_driver.c	2012-07-08 09:23:56.000000000 +0900
-> +++ linux-3.5-rc6/drivers/acpi/processor_driver.c	2012-07-13 15:11:06.135541317 +0900
-> @@ -610,7 +610,7 @@ err_free_pr:
->  static int acpi_processor_remove(struct acpi_device *device, int type)
->  {
->  	struct acpi_processor *pr = NULL;
-> -
-> +	int ret;
-> 
->  	if (!device || !acpi_driver_data(device))
->  		return -EINVAL;
-> @@ -621,8 +621,9 @@ static int acpi_processor_remove(struct
->  		goto free;
-> 
->  	if (type == ACPI_BUS_REMOVAL_EJECT) {
-> -		if (acpi_processor_handle_eject(pr))
-> -			return -EINVAL;
-> +		ret = acpi_processor_handle_eject(pr);
-> +		if (ret)
-> +			return ret;
->  	}
-> 
->  	acpi_processor_power_exit(pr, device);
-> @@ -841,12 +842,17 @@ static acpi_status acpi_processor_hotadd
-> 
->  static int acpi_processor_handle_eject(struct acpi_processor *pr)
->  {
-> -	if (cpu_online(pr->id))
-> -		cpu_down(pr->id);
-> +	int ret = 0;
-> +
-> +	if (cpu_online(pr->id)) {
-> +		ret = cpu_down(pr->id);
-> +		if (ret)
-> +			return ret;
-> +	}
-> 
->  	arch_unregister_cpu(pr->id);
->  	acpi_unmap_lsapic(pr->id);
-> -	return (0);
-> +	return ret;
->  }
->  #else
->  static acpi_status acpi_processor_hotadd_init(struct acpi_processor *pr)
-> 
-
+diff --git a/drivers/hv/hyperv_vmbus.h b/drivers/hv/hyperv_vmbus.h
+index b9426a6..77e48b0 100644
+--- a/drivers/hv/hyperv_vmbus.h
++++ b/drivers/hv/hyperv_vmbus.h
+@@ -411,7 +411,7 @@ enum {
+ #define HV_PRESENT_BIT			0x80000000
+ 
+ #define HV_LINUX_GUEST_ID_LO		0x00000000
+-#define HV_LINUX_GUEST_ID_HI		0xB16B00B5
++#define HV_LINUX_GUEST_ID_HI		0x0DEFACED
+ #define HV_LINUX_GUEST_ID		(((u64)HV_LINUX_GUEST_ID_HI << 32) | \
+ 					   HV_LINUX_GUEST_ID_LO)
+ 
+-- 
+1.7.10.4
 
