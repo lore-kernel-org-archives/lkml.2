@@ -1,72 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422679Ab2GMPON (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 11:14:13 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:21127 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754473Ab2GMPOM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 11:14:12 -0400
-X-IronPort-AV: E=Sophos;i="4.77,579,1336374000"; 
-   d="scan'208";a="662883077"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Linux NFS mailing list <linux-nfs@vger.kernel.org>,
-        "Linux Kernel mailing list" <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Please pull NFS client bugfixes
-Thread-Topic: [GIT PULL] Please pull NFS client bugfixes
-Thread-Index: AQHNYQomcUtVZlBaeUuU0ipZfIFVOw==
-Date: Fri, 13 Jul 2012 15:14:09 +0000
-Message-ID: <1342192448.11965.3.camel@lade.trondhjem.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.115]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <E88614DBF5423446942D7E6A5DD34959@tahoe.netapp.com>
+	id S1422682Ab2GMPRp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 11:17:45 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:52347 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755450Ab2GMPRn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 11:17:43 -0400
 MIME-Version: 1.0
+In-Reply-To: <20120713140814.GB10240@kroah.com>
+References: <1342146469-26206-1-git-send-email-marcos.souza.org@gmail.com>
+	<20120713140814.GB10240@kroah.com>
+Date: Fri, 13 Jul 2012 12:17:43 -0300
+Message-ID: <CAH0vN5K+y-2mRocmYpxof1vPGZAztBqJyh-psMwsK1c=7i_6eQ@mail.gmail.com>
+Subject: Re: [PATCH v2] staging: sbe-2t3e3: Remove code that will never execute
+From: Marcos Souza <marcos.souza.org@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        dan.carpenter@oracle.com, khc@pm.waw.pl
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q6DFEM9c015241
 
-The following changes since commit 6b16351acbd415e66ba16bf7d473ece1574cf0bc:
+2012/7/13 Greg KH <gregkh@linuxfoundation.org>:
+> On Thu, Jul 12, 2012 at 11:27:49PM -0300, Marcos Paulo de Souza wrote:
+>> This patch removes all references of "if 0" blocks in the sbe-2t3e3 driver.
+>>
+>> Signed-off-by: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
+>> ---
+>>  drivers/staging/sbe-2t3e3/2t3e3.h    |    3 --
+>>  drivers/staging/sbe-2t3e3/cpld.c     |   15 ---------
+>>  drivers/staging/sbe-2t3e3/ctrl.c     |   19 +++--------
+>>  drivers/staging/sbe-2t3e3/dc.c       |   17 ----------
+>>  drivers/staging/sbe-2t3e3/exar7250.c |   40 +++--------------------
+>>  drivers/staging/sbe-2t3e3/exar7300.c |   17 ----------
+>>  drivers/staging/sbe-2t3e3/intr.c     |   60 ++--------------------------------
+>>  drivers/staging/sbe-2t3e3/io.c       |   21 ------------
+>>  8 files changed, 10 insertions(+), 182 deletions(-)
+>
+> When sending out a v2 version of a patch (or any version after the
+> first), please detail what changed between them.  The diffstat didn't
+> look different here, but the patch did.  What happened?
+>
+> thanks,
+>
+> greg k-h
 
-  Linux 3.5-rc4 (2012-06-24 12:53:04 -0700)
+Hi greg,
 
-are available in the git repository at:
+I put some info between the commit message and the lines changed:
 
-  git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tags/nfs-for-3.5-4
+"Just fix the commit message fo sbr-2t3e3 to sbe-2t3e3"
 
-for you to fetch changes up to f1daf666dd7d097653bd38320248c68084b1febf:
+So, looking at this now, I forgot to put a "Changes from v1" to
+identify what was changed.
 
-  NFSv4: Fix an NFSv4 mount regression (2012-07-10 13:25:39 -0400)
-
-----------------------------------------------------------------
-NFS client bugfixes for Linux 3.5
-
-- Fix an NFSv4 mount regression
-- Fix O_DIRECT list manipulation snafus
-
-----------------------------------------------------------------
-Trond Myklebust (2):
-      NFS: Fix list manipulation snafus in fs/nfs/direct.c
-      NFSv4: Fix an NFSv4 mount regression
-
- fs/nfs/direct.c |    6 +++++-
- fs/nfs/super.c  |    2 ++
- 2 files changed, 7 insertions(+), 1 deletion(-)
-
-Cheers
-  Trond
+Thanks and sorry for that.
 
 -- 
-Trond Myklebust
-Linux NFS client maintainer
+Att,
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Marcos Paulo de Souza
+Acadêmico de Ciencia da Computação - FURB - SC
+"Uma vida sem desafios é uma vida sem razão"
+"A life without challenges, is a non reason life"
