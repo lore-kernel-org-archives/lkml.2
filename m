@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933159Ab2GMC10 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 22:27:26 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:61480 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932328Ab2GMC1Y (ORCPT
+	id S934347Ab2GMCcX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 22:32:23 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:55981 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932328Ab2GMCcV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 22:27:24 -0400
+	Thu, 12 Jul 2012 22:32:21 -0400
 From: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: devel@driverdev.osuosl.org, dan.carpenter@oracle.com,
         linux-kernel@vger.kernel.org, khc@pm.waw.pl,
         Marcos Paulo de Souza <marcos.souza.org@gmail.com>
-Subject: [PATCH] staging: sbe-2t3e3: Remove code that will never execute
-Date: Thu, 12 Jul 2012 23:23:55 -0300
-Message-Id: <1342146235-26117-1-git-send-email-marcos.souza.org@gmail.com>
+Subject: [PATCH v2] staging: sbe-2t3e3: Remove code that will never execute
+Date: Thu, 12 Jul 2012 23:27:49 -0300
+Message-Id: <1342146469-26206-1-git-send-email-marcos.souza.org@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes all references of "if 0" blocks in the sbr-2t3e3.
+This patch removes all references of "if 0" blocks in the sbe-2t3e3 driver.
 
 Signed-off-by: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
 ---
@@ -38,6 +38,9 @@ diff --git a/drivers/staging/sbe-2t3e3/2t3e3.h b/drivers/staging/sbe-2t3e3/2t3e3
 index fe9f086..383f2cf 100644
 --- a/drivers/staging/sbe-2t3e3/2t3e3.h
 +++ b/drivers/staging/sbe-2t3e3/2t3e3.h
+
+Just fix the commit message fo sbr-2t3e3 to sbe-2t3e3.
+
 @@ -801,9 +801,6 @@ u32 cpld_read(struct channel *sc, u32 reg);
  void cpld_set_crc(struct channel *, u32);
  void cpld_start_intr(struct channel *);
