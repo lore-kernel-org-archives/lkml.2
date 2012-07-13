@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754993Ab2GMFWZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 01:22:25 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:51468 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754453Ab2GMFWY (ORCPT
+	id S1755786Ab2GMFWc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 01:22:32 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:37846 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754652Ab2GMFWZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 01:22:24 -0400
+	Fri, 13 Jul 2012 01:22:25 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@kernel.org>,
@@ -14,70 +14,115 @@ Cc: John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@kernel.org>,
         Richard Cochran <richardcochran@gmail.com>,
         Prarit Bhargava <prarit@redhat.com>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 0/8] Time fixes and cleanups for 3.6
-Date: Fri, 13 Jul 2012 01:21:49 -0400
-Message-Id: <1342156917-25092-1-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 2/8] time: Whitespace cleanups per Ingo's requests
+Date: Fri, 13 Jul 2012 01:21:51 -0400
+Message-Id: <1342156917-25092-3-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1342156917-25092-1-git-send-email-john.stultz@linaro.org>
+References: <1342156917-25092-1-git-send-email-john.stultz@linaro.org>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12071305-7282-0000-0000-00000AE1D551
+x-cbid: 12071305-2398-0000-0000-0000087669B0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Thomas,
-	Since you're offline next week, I wanted to send you my updated
-queue for the 3.6 merge window.
-
-These are mostly the same changes I sent you with my earlier 3.6 pull
-request mid-last month, but reordered and trimmed down to focus on
-cleanups (no new features).
-
-There is one NTP bug fix, from a change in 3.4, but given its non critical
-and we're late in the 3.5-rc cycle, I wanted to hold it off for 3.6 and
-backport it once merged.
-
-Since these expect the leapsecond hrtimer/time changes currently in
-tip/timers/urgent, it is based off of that branch, rather then
-tip/timers/core. Although  tip/timers/core merges fairly cleanly (there's
-only a minor collision with already upstream 3.5 changes).
-
-Let me know if these look ok. With the exception of the NTP fix, the rest
-can wait till 3.7 if you'd prefer, so they're nothing urgent.
-
-thanks
--john
+Ingo noted a number of places where there is inconsistent
+use of whitespace. This patch tries to address the main
+culprits.
 
 CC: Ingo Molnar <mingo@kernel.org>
 CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
 CC: Richard Cochran <richardcochran@gmail.com>
 CC: Prarit Bhargava <prarit@redhat.com>
 CC: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+ kernel/time/timekeeping.c |   39 ++++++++++++++++++---------------------
+ 1 file changed, 18 insertions(+), 21 deletions(-)
 
-If you want to git pull:
-The following changes since commit 5baefd6d84163443215f4a99f6a20f054ef11236:
-
-  hrtimer: Update hrtimer base offsets each hrtimer_interrupt (2012-07-11 23:34:39 +0200)
-
-are available in the git repository at:
-
-  git://git.linaro.org/people/jstultz/linux.git fortglx/3.6/time
-
-for you to fetch changes up to 96dbf98929ac690a7d0d0ad54cf24631763da16c:
-
-  time: Rework timekeeping functions to take timekeeper ptr as argument (2012-07-13 01:15:46 -0400)
-
-----------------------------------------------------------------
-John Stultz (8):
-      ntp: Fix STA_INS/DEL clearing bug
-      time: Whitespace cleanups per Ingo's requests
-      time: Explicitly use u32 instead of int for shift values
-      time: Condense timekeeper.xtime into xtime_sec
-      time: Refactor accumulation of nsecs to secs
-      time: Move arch_gettimeoffset() usage into timekeeping_get_ns()
-      time: Move xtime_nsec adjustment underflow handling timekeeping_adjust
-      time: Rework timekeeping functions to take timekeeper ptr as argument
-
- kernel/time/ntp.c         |    8 +-
- kernel/time/timekeeping.c |  492 ++++++++++++++++++++++++---------------------
- 2 files changed, 273 insertions(+), 227 deletions(-)
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 269b1fe..c2f12aa 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -24,32 +24,31 @@
+ /* Structure holding internal timekeeping values. */
+ struct timekeeper {
+ 	/* Current clocksource used for timekeeping. */
+-	struct clocksource *clock;
++	struct clocksource	*clock;
+ 	/* NTP adjusted clock multiplier */
+-	u32	mult;
++	u32			mult;
+ 	/* The shift value of the current clocksource. */
+-	int	shift;
+-
++	int			shift;
+ 	/* Number of clock cycles in one NTP interval. */
+-	cycle_t cycle_interval;
++	cycle_t			cycle_interval;
+ 	/* Number of clock shifted nano seconds in one NTP interval. */
+-	u64	xtime_interval;
++	u64			xtime_interval;
+ 	/* shifted nano seconds left over when rounding cycle_interval */
+-	s64	xtime_remainder;
++	s64			xtime_remainder;
+ 	/* Raw nano seconds accumulated per NTP interval. */
+-	u32	raw_interval;
++	u32			raw_interval;
+ 
+ 	/* Clock shifted nano seconds remainder not stored in xtime.tv_nsec. */
+-	u64	xtime_nsec;
++	u64			xtime_nsec;
+ 	/* Difference between accumulated time and NTP time in ntp
+ 	 * shifted nano seconds. */
+-	s64	ntp_error;
++	s64			ntp_error;
+ 	/* Shift conversion between clock shifted nano seconds and
+ 	 * ntp shifted nano seconds. */
+-	int	ntp_error_shift;
++	int			ntp_error_shift;
+ 
+ 	/* The current time */
+-	struct timespec xtime;
++	struct timespec 	xtime;
+ 	/*
+ 	 * wall_to_monotonic is what we need to add to xtime (or xtime corrected
+ 	 * for sub jiffie times) to get to monotonic time.  Monotonic is pegged
+@@ -64,20 +63,17 @@ struct timekeeper {
+ 	 * - wall_to_monotonic is no longer the boot time, getboottime must be
+ 	 * used instead.
+ 	 */
+-	struct timespec wall_to_monotonic;
++	struct timespec		wall_to_monotonic;
+ 	/* time spent in suspend */
+-	struct timespec total_sleep_time;
++	struct timespec		total_sleep_time;
+ 	/* The raw monotonic time for the CLOCK_MONOTONIC_RAW posix clock. */
+-	struct timespec raw_time;
+-
++	struct timespec		raw_time;
+ 	/* Offset clock monotonic -> clock realtime */
+-	ktime_t offs_real;
+-
++	ktime_t			offs_real;
+ 	/* Offset clock monotonic -> clock boottime */
+-	ktime_t offs_boot;
+-
++	ktime_t			offs_boot;
+ 	/* Seqlock for all timekeeper values */
+-	seqlock_t lock;
++	seqlock_t		lock;
+ };
+ 
+ static struct timekeeper timekeeper;
+@@ -547,6 +543,7 @@ u64 timekeeping_max_deferment(void)
+ {
+ 	unsigned long seq;
+ 	u64 ret;
++
+ 	do {
+ 		seq = read_seqbegin(&timekeeper.lock);
+ 
+-- 
+1.7.9.5
 
