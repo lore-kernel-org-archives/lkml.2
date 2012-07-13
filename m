@@ -1,124 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933010Ab2GMMDq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 08:03:46 -0400
-Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:2479 "EHLO
-	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932140Ab2GMMDo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 08:03:44 -0400
-Message-ID: <1342181022.22584.46.camel@x61.thuisdomein>
-Subject: [PATCH] staging: wlags49_h2: remove vi modelines
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Henk de Groot <pe1dnn@amsat.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Fri, 13 Jul 2012 14:03:42 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-OriginalArrivalTime: 13 Jul 2012 12:03:42.0680 (UTC) FILETIME=[8C0E2580:01CD60EF]
-X-RcptDomain: vger.kernel.org
+	id S933088Ab2GMMKN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 08:10:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45694 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932611Ab2GMMKM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 08:10:12 -0400
+Date: Fri, 13 Jul 2012 14:10:09 +0200
+From: Jan Kara <jack@suse.cz>
+To: Mathias Krause <minipli@googlemail.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Jan Kara <jack@suse.cz>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] Fix info leaks on export for udf and isofs
+Message-ID: <20120713121009.GA20361@quack.suse.cz>
+References: <1342075615-24683-1-git-send-email-minipli@googlemail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1342075615-24683-1-git-send-email-minipli@googlemail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-0) Opening drivers/staging/wlags49_h2/dhf.2 with vim triggered this
-warning:
-"drivers/staging/wlags49_h2/dhf.h" 226L, 8428C
-Error detected while processing modelines:
-line    2:
-E518: Unknown option: */
-Press ENTER or type command to continue
+On Thu 12-07-12 08:46:53, Mathias Krause wrote:
+> Al, Jan,
+> 
+> this patch set fixes info leaks in isofs and udf. Both file systems fail to
+> initialize all bytes of the f_handle byte array when creating a handle for a
+> path pointing to a directory. This memory gets copied to userland and that for
+> is a leak of uninitialized heap data to userland that should be fixed.
+> 
+> This info leak can be triggered locally by using the name_to_handle_at()
+> syscall.
+  Thanks! I've merged both patches into my tree.
 
-1) Since the Linux kernel coding style disallows modelines this invalid
-modeline can simply be removed. And since we're touching this file we
-might as well remove all vim modelines from this driver.
-
-2) vim tested only.
-
- drivers/staging/wlags49_h2/dhf.c    |    1 -
- drivers/staging/wlags49_h2/dhf.h    |    1 -
- drivers/staging/wlags49_h2/hcf.h    |    1 -
- drivers/staging/wlags49_h2/hcfcfg.h |    1 -
- drivers/staging/wlags49_h2/mdd.h    |    1 -
- drivers/staging/wlags49_h2/mmd.c    |    1 -
- drivers/staging/wlags49_h2/mmd.h    |    1 -
- 7 files changed, 0 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/staging/wlags49_h2/dhf.c b/drivers/staging/wlags49_h2/dhf.c
-index bb80b54..13d360f 100644
---- a/drivers/staging/wlags49_h2/dhf.c
-+++ b/drivers/staging/wlags49_h2/dhf.c
-@@ -1,5 +1,4 @@
- 
--/*   vim:tw=110:ts=4: */
- /**************************************************************************************************************
- *
- * FILE   :	DHF.C
-diff --git a/drivers/staging/wlags49_h2/dhf.h b/drivers/staging/wlags49_h2/dhf.h
-index dbe0611..1299b825 100644
---- a/drivers/staging/wlags49_h2/dhf.h
-+++ b/drivers/staging/wlags49_h2/dhf.h
-@@ -1,5 +1,4 @@
- 
--/*   vim:tw=110:ts=4: */
- #ifndef DHF_H
- #define DHF_H
- 
-diff --git a/drivers/staging/wlags49_h2/hcf.h b/drivers/staging/wlags49_h2/hcf.h
-index 68e2330..2abeaa1 100644
---- a/drivers/staging/wlags49_h2/hcf.h
-+++ b/drivers/staging/wlags49_h2/hcf.h
-@@ -1,5 +1,4 @@
- 
--//   vim:tw=110:ts=4:
- #ifndef HCF_H
- #define HCF_H 1
- 
-diff --git a/drivers/staging/wlags49_h2/hcfcfg.h b/drivers/staging/wlags49_h2/hcfcfg.h
-index ef60da8..39fb4d3 100644
---- a/drivers/staging/wlags49_h2/hcfcfg.h
-+++ b/drivers/staging/wlags49_h2/hcfcfg.h
-@@ -1,5 +1,4 @@
- 
--//   vim:tw=110:ts=4:
- #ifndef HCFCFG_H
- #define HCFCFG_H 1
- 
-diff --git a/drivers/staging/wlags49_h2/mdd.h b/drivers/staging/wlags49_h2/mdd.h
-index 5f951ef..5c3515f 100644
---- a/drivers/staging/wlags49_h2/mdd.h
-+++ b/drivers/staging/wlags49_h2/mdd.h
-@@ -1,5 +1,4 @@
- 
--//   vim:tw=110:ts=4:
- #ifndef MDD_H
- #define MDD_H 1
- 
-diff --git a/drivers/staging/wlags49_h2/mmd.c b/drivers/staging/wlags49_h2/mmd.c
-index 7204a37..3312348 100644
---- a/drivers/staging/wlags49_h2/mmd.c
-+++ b/drivers/staging/wlags49_h2/mmd.c
-@@ -1,5 +1,4 @@
- 
--//   vim:tw=110:ts=4:
- /************************************************************************************************************
- *
- * FILE	  : mmd.c
-diff --git a/drivers/staging/wlags49_h2/mmd.h b/drivers/staging/wlags49_h2/mmd.h
-index 9149525..1445803 100644
---- a/drivers/staging/wlags49_h2/mmd.h
-+++ b/drivers/staging/wlags49_h2/mmd.h
-@@ -1,5 +1,4 @@
- 
--//   vim:tw=110:ts=4:
- #ifndef MMD_H
- #define MMD_H 1
- 
+							Honza
 -- 
-1.7.7.6
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
