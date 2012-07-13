@@ -1,79 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753561Ab2GMWWz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 18:22:55 -0400
-Received: from mail.lang.hm ([64.81.33.126]:57604 "EHLO bifrost.lang.hm"
+	id S1754474Ab2GMWW4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 18:22:56 -0400
+Received: from shutemov.name ([176.9.204.213]:44126 "EHLO shutemov.name"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751450Ab2GMWWx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 18:22:53 -0400
-X-Greylist: delayed 472 seconds by postgrey-1.27 at vger.kernel.org; Fri, 13 Jul 2012 18:22:53 EDT
-Date: Fri, 13 Jul 2012 15:13:46 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Casey Schaufler <casey@schaufler-ca.com>, Dave Jones <davej@redhat.com>,
-        Greg Kroah-Hartman <greg@kroah.com>,
-        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
-        Debian Kernel Team <debian-kernel@lists.debian.org>,
-        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] Simplifying kernel configuration for distro issues
-In-Reply-To: <CA+55aFyD_=aMoYKBocWFXXZ7RypWhZemOLyqC4p7oqfDRinqDQ@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1207131507530.32545@asgard.lang.hm>
-References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com> <50009051.3060806@schaufler-ca.com> <CA+55aFyD_=aMoYKBocWFXXZ7RypWhZemOLyqC4p7oqfDRinqDQ@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1752918Ab2GMWWz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 18:22:55 -0400
+Date: Sat, 14 Jul 2012 01:23:24 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@openvz.org>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "Dmitry V. Levin" <ldv@altlinux.org>,
+        Doug Ledford <dledford@redhat.com>, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org
+Subject: Re: [PATCH] ns: move free_nsproxy() out of do_exit() path
+Message-ID: <20120713222319.GA13343@shutemov.name>
+References: <1342180088-22647-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <20120713140806.b3d0fda8.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120713140806.b3d0fda8.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Jul 2012, Linus Torvalds wrote:
+On Fri, Jul 13, 2012 at 02:08:06PM -0700, Andrew Morton wrote:
+> On Fri, 13 Jul 2012 14:48:08 +0300
+> "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
+> 
+> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> > 
+> > free_nsproxy() is too heavy to be on exit path. Let's free namespaces
+> > asynchronously to not block exit_group() syscall.
+> 
+> Please be specific, and complete.
+> 
+> Why is it "too heavy"?  Where is the time being spent?  Is it spent in
+> D state or is it spent burning CPU cycles?  Does the patch simply
+> offload the work into kernel threads, providing no net gain?
 
-> On Fri, Jul 13, 2012 at 2:17 PM, Casey Schaufler <casey@schaufler-ca.com> wrote:
->>
->> Oh dear. I would expect Fedora to say that they require SELinux,
->> thereby making it unusable by anyone doing LSM development.
->
-> Oh, *absolutely*.
->
-> These options would *not* be meant for people doing odd things and
-> experienting with configs.
->
-> If you do that, then you might *start* by saying "I want this distro"
-> to get the initial guesstimate of the config file you want, but then
-> edit the .config by hand later (and remove the "I want all the Fedora
-> requirements" option, of course).
->
-> This is explicitly and exclusively for normal users. The whole point
-> of "expert configurator for special cases" should not be given any
-> thought at all - those kinds of people should simply answer "No" to
-> the "Do you want the distro basic kconfig requirements" question.
+Unpatched switch_task_namespaces() takes 0.010 - 0.011 seconds on my
+machine. About 0.008 of the time is synchronize_rcu().
 
-hopefully this can be made a little easier.
+So it's mostly waiting with wait_for_completion() in wait_rcu_gp().
+It means D state.
 
-more of a 'enable anything set in this file, then give me control again so 
-I can turn things off' rather than having to manually edit the .config 
-file.
+> > The patch also fixes bug with free namespace without synchronize_rcu() through
+> > put_nsproxy().
+> 
+> I just don't understand this description.
 
-If this is done as a hard set of dependancy settings, it will be very 
-annoying for people who for any reason want to disable something that the 
-distro considers 'essential'.
+IIUC current locking model requires synchronize_rcu() before
+free_nsproxy(). put_nsproxy() calls free_nsproxy() without
+synchronize_rcu(). So it's racy.
 
-I also _really_ like the idea of being able to have a vmware option that 
-enables the minimum devices that are needed to run.
+I guess it was missed during switch to RCU (see cf7b708).
+Pavel, am I right?
 
-Having these be hard dependancies also seems like it would make 
-interactions between these sorts of things much more likely to cause 
-problems.
+> Please send a new one which
+> includes all details about the bug, including a description of
+> the user-visible effects of the bug.
 
-If however they are one-shot "go through this file and enable anything 
-that it says to turn on" things that then let you turn anything off, it 
-seems much less likely to cause problems.
+Okay, I will.
 
-and if we can then get some of the big hardware vendors to create such 
-files to enable all the drivers needed for their hardware.... (the big 
-things are easy, it's when you get into the internal monitoring busses and 
-so on that things get messy)
-
-David Lang
+-- 
+ Kirill A. Shutemov
