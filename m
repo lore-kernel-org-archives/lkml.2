@@ -1,50 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753048Ab2GMWUj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 18:20:39 -0400
-Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:3892 "EHLO
-	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752565Ab2GMWUg (ORCPT
+	id S1753337Ab2GMWVx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 18:21:53 -0400
+Received: from www.linutronix.de ([62.245.132.108]:46739 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751737Ab2GMWVw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 18:20:36 -0400
-Message-ID: <1342218034.15453.28.camel@x61.thuisdomein>
-Subject: Re: [RFC] Simplifying kernel configuration for distro issues
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Dave Jones <davej@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <greg@kroah.com>,
-        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
-        Debian Kernel Team <debian-kernel@lists.debian.org>,
-        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Fedora Kernel Team <kernel-team@fedoraproject.org>
-Date: Sat, 14 Jul 2012 00:20:34 +0200
-In-Reply-To: <20120713215546.GH1707@redhat.com>
-References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com>
-	 <20120713210240.GG1707@redhat.com>
-	 <1342216225.15453.15.camel@x61.thuisdomein>
-	 <20120713215546.GH1707@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-OriginalArrivalTime: 13 Jul 2012 22:20:34.0894 (UTC) FILETIME=[B90DCEE0:01CD6145]
-X-RcptDomain: vger.kernel.org
+	Fri, 13 Jul 2012 18:21:52 -0400
+Date: Sat, 14 Jul 2012 00:21:43 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        John Stultz <johnstul@us.ibm.com>, Prarit Bhargava <prarit@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [GIT pull] leap second fixes for 3.5
+In-Reply-To: <alpine.LFD.2.02.1207132132120.32033@ionos>
+Message-ID: <alpine.LFD.2.02.1207140017080.32033@ionos>
+References: <alpine.LFD.2.02.1207132132120.32033@ionos>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-07-13 at 17:55 -0400, Dave Jones wrote:
-> My point is that I don't think there's many people actually using them.
-> (maybe more on the niche platforms, but x86[64] ? I'm sceptical they're used at all)
+On Fri, 13 Jul 2012, Thomas Gleixner wrote:
 
-I guess you're right. Personally, I tend to start my journeys in self
-compiled kernel land by using something I know that works as a starting
-point. Ie, I use some distribution's kernel, notice that things seem to
-mostly work, and use the .config of that kernel to start exploring
-whatever it is I'm interested in. I can't remember ever feeling the urge
-to use some defconfig to start these journeys. 
+> Linus,
+> 
+> please pull the latest timers-urgent-for-linus git tree from:
+> 
+>    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git timers-urgent-for-linus
+> 
+> It's a rather large series, but well discussed, refined and
+> reviewed. It got a massive testing by John, Prarit and tip.
+> 
+> In theory we could split it into two parts. The first two patches
+> 
+>   5baefd6: hrtimer: Update hrtimer base offsets each hrtimer_interrupt
+>   f6c06ab: timekeeping: Provide hrtimer update function
+> 
+> are merily preventing the stuff loops forever issues, which people
+> have observed.
 
+I'm a moron. Copied from teh wrong direction. That should be:
 
-Paul Bolle
+  f55a6fa: hrtimer: Provide clock_was_set_delayed()
+  4873fa0: timekeeping: Fix leapsecond triggered load spike issue
 
+That are the two commits which do the basic damage containment.
+
+Gah, I explicitely asked some involved person to look over that mail
+before I sent it. :(
+ 
+Grumbling out of a brown paperbag
+
+	  tglx
