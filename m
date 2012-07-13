@@ -1,123 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754256Ab2GMHE6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 03:04:58 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:34090 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753743Ab2GMHE4 (ORCPT
+	id S1754321Ab2GMHPL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 03:15:11 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:40023 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751134Ab2GMHPJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 03:04:56 -0400
-X-AuditID: cbfee61a-b7f616d000004b7e-ee-4fffc897c713
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Vivek Gautam'" <gautam.vivek@samsung.com>, stern@rowland.harvard.edu,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Cc: l.majewski@samsung.com, a.kesavan@samsung.com, prashanth.g@samsung.com,
-        kmpark@infradead.org, joshi@samsung.com, jy0922.shim@samsung.com,
-        sshtylyov@mvista.com, olofj@google.com,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <1342072512-29945-1-git-send-email-gautam.vivek@samsung.com>
- <1342072512-29945-2-git-send-email-gautam.vivek@samsung.com>
-In-reply-to: <1342072512-29945-2-git-send-email-gautam.vivek@samsung.com>
-Subject: Re: [PATCH 1/3 v2] USB: ohci-exynos: Add support for device tree
-Date: Fri, 13 Jul 2012 16:04:55 +0900
-Message-id: <001a01cd60c5$ceb848e0$6c28daa0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac1f8PMpgXg3ISqcRgiQUKtSpqlzswA1LInw
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCLMWRmVeSWpSXmKPExsVy+t9jAd3pJ/77G7zYYWlxedccNotFy1qZ
-	HZg8Pm+SC2CM4rJJSc3JLEst0rdL4Mo4t30NS8FJ4Yrbn06wNjC+5u9i5OSQEDCReHCjkxXC
-	FpO4cG89WxcjF4eQwCJGiUmHjzFCOL8YJf5dWscGUsUmoCbx5cthdpCEiMAqRoklPx+zgjjM
-	AncYJdZvuscCUiUk0M4ocfd3BIjNKeApcX3RG7BuYSD74rV/7CA2i4CqxPf9J8HqeQVsJXbu
-	XsgIYQtK/JgMMYdZQEti/c7jTBC2vMTmNW+Zuxg5gG5Vl3j0VxckLCJgJLFn/gyoEhGJfS/e
-	MU5gFJqFZNIsJJNmIZk0C0nLAkaWVYyiqQXJBcVJ6bmGesWJucWleel6yfm5mxjBYf1Magfj
-	ygaLQ4wCHIxKPLw7dv/3F2JNLCuuzD3EKMHBrCTCqzANKMSbklhZlVqUH19UmpNafIhRmoNF
-	SZzX2Purv5BAemJJanZqakFqEUyWiYNTqoExayWviMg764+/lylf0Pw+t+dVyGOtxbs6LRIP
-	X7VePev8K6GKwkC195O5Z7S6NPmeiPe+wa1lcONH+tZJpzXu2Rr39h+amKB3aH7pjsZyK4G4
-	BL9/kVKsma6LRGQdp7791jcrIDea+X535N9gN7uJrwRPRq44V8Szc3rJgW7jmBW6Zy8ofe5V
-	YinOSDTUYi4qTgQAY0uMomcCAAA=
-X-TM-AS-MML: No
+	Fri, 13 Jul 2012 03:15:09 -0400
+MIME-Version: 1.0
+In-Reply-To: <93ab9a323e85d1b0d8c7eac4db7ab7835e61efe6.1342157022.git.joe@perches.com>
+References: <cover.1342157022.git.joe@perches.com>
+	<1341968967.13724.23.camel@joe2Laptop>
+	<93ab9a323e85d1b0d8c7eac4db7ab7835e61efe6.1342157022.git.joe@perches.com>
+Date: Fri, 13 Jul 2012 09:15:06 +0200
+Message-ID: <CAL1gcdP+USKVTpQ1+UeLj5VBRtpchCHjP=B=HATpW483f5bCYA@mail.gmail.com>
+Subject: Re: [PATCH net-next 4/8] wireless: Use eth_random_addr
+From: Gertjan van Wingerde <gwingerde@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: David Miller <davem@davemloft.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Christian Lamparter <chunkeey@googlemail.com>,
+        Ivo van Doorn <IvDoorn@gmail.com>,
+        Helmut Schaa <helmut.schaa@googlemail.com>,
+        Herton Ronaldo Krzesinski <herton@canonical.com>,
+        Hin-Tak Leung <htl10@users.sourceforge.net>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, users@rt2x00.serialmonkey.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, July 12, 2012 2:55 PM, Vivek Gautam wrote:
-> 
-> This patch adds support to parse probe data for
-> ohci driver for exynos using device tree.
-> 
-> Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
-> Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
-> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-> 
-> diff --git a/drivers/usb/host/ohci-exynos.c b/drivers/usb/host/ohci-exynos.c
-> index 2909621..c4ad60f 100644
-> --- a/drivers/usb/host/ohci-exynos.c
-> +++ b/drivers/usb/host/ohci-exynos.c
-> @@ -12,6 +12,7 @@
->   */
-> 
->  #include <linux/clk.h>
-> +#include <linux/of.h>
->  #include <linux/platform_device.h>
->  #include <mach/ohci.h>
->  #include <plat/usb-phy.h>
-> @@ -71,6 +72,8 @@ static const struct hc_driver exynos_ohci_hc_driver = {
->  	.start_port_reset	= ohci_start_port_reset,
->  };
-> 
-> +static u64 ohci_exynos_dma_mask = DMA_BIT_MASK(32);
-> +
->  static int __devinit exynos_ohci_probe(struct platform_device *pdev)
->  {
->  	struct exynos4_ohci_platdata *pdata;
-> @@ -87,6 +90,16 @@ static int __devinit exynos_ohci_probe(struct platform_device *pdev)
->  		return -EINVAL;
->  	}
-> 
-> +	/*
-> +	 * Right now device-tree probed devices don't get dma_mask set.
-> +	 * Since shared usb code relies on it, set it here for now.
-> +	 * Once we move to full device tree support this will vanish off.
-> +	 */
-> +	if (!pdev->dev.dma_mask)
-> +		pdev->dev.dma_mask = &ohci_exynos_dma_mask;
-> +	if (!pdev->dev.coherent_dma_mask)
-> +		pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
-> +
->  	exynos_ohci = kzalloc(sizeof(struct exynos_ohci_hcd), GFP_KERNEL);
+On Fri, Jul 13, 2012 at 7:33 AM, Joe Perches <joe@perches.com> wrote:
+> Convert the existing uses of random_ether_addr to
+> the new eth_random_addr.
+>
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-This makes conflict on 'usb-next' branch.
-Please re-base the patch on 'usb-next' branch.
+For the rt2x00 parts:
 
->  	if (!exynos_ohci)
->  		return -ENOMEM;
-> @@ -258,6 +271,14 @@ static const struct dev_pm_ops exynos_ohci_pm_ops = {
->  	.resume		= exynos_ohci_resume,
->  };
-> 
-> +#ifdef CONFIG_OF
-> +static const struct of_device_id exynos_ohci_match[] = {
-> +	{ .compatible = "samsung,exynos-ohci" },
-> +	{},
-> +};
-> +MODULE_DEVICE_TABLE(of, exynos_ohci_match);
-> +#endif
-> +
->  static struct platform_driver exynos_ohci_driver = {
->  	.probe		= exynos_ohci_probe,
->  	.remove		= __devexit_p(exynos_ohci_remove),
-> @@ -266,6 +287,7 @@ static struct platform_driver exynos_ohci_driver = {
->  		.name	= "exynos-ohci",
->  		.owner	= THIS_MODULE,
->  		.pm	= &exynos_ohci_pm_ops,
-> +		.of_match_table	= of_match_ptr(exynos_ohci_match),
->  	}
->  };
-> 
-> --
-> 1.7.0.4
+Acked-by: Gertjan van Wingerde <gwingerde@gmail.com>
 
+> ---
+>  drivers/net/wireless/adm8211.c             |    2 +-
+>  drivers/net/wireless/p54/eeprom.c          |    2 +-
+>  drivers/net/wireless/rt2x00/rt2400pci.c    |    2 +-
+>  drivers/net/wireless/rt2x00/rt2500pci.c    |    2 +-
+>  drivers/net/wireless/rt2x00/rt2500usb.c    |    2 +-
+>  drivers/net/wireless/rt2x00/rt2800lib.c    |    2 +-
+>  drivers/net/wireless/rt2x00/rt61pci.c      |    2 +-
+>  drivers/net/wireless/rt2x00/rt73usb.c      |    2 +-
+>  drivers/net/wireless/rtl818x/rtl8180/dev.c |    2 +-
+>  drivers/net/wireless/rtl818x/rtl8187/dev.c |    2 +-
+>  10 files changed, 10 insertions(+), 10 deletions(-)
+>
+
+---
+Gertjan
