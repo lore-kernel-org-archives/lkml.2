@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756008Ab2GMVDA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 17:03:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45396 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753737Ab2GMVC7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 17:02:59 -0400
-Date: Fri, 13 Jul 2012 17:02:40 -0400
-From: Dave Jones <davej@redhat.com>
+	id S1756254Ab2GMVGO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 17:06:14 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:43047 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754160Ab2GMVGN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 17:06:13 -0400
+Message-ID: <50008DBD.2030800@hp.com>
+Date: Fri, 13 Jul 2012 15:06:05 -0600
+From: Khalid Aziz <khalid.aziz@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Greg Kroah-Hartman <greg@kroah.com>,
+CC: Dave Jones <davej@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
         Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
         Debian Kernel Team <debian-kernel@lists.debian.org>,
         OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Fedora Kernel Team <kernel-team@fedoraproject.org>
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Subject: Re: [RFC] Simplifying kernel configuration for distro issues
-Message-ID: <20120713210240.GG1707@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Greg Kroah-Hartman <greg@kroah.com>,
-	Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
-	Debian Kernel Team <debian-kernel@lists.debian.org>,
-	OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Fedora Kernel Team <kernel-team@fedoraproject.org>
 References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 In-Reply-To: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 13, 2012 at 01:37:41PM -0700, Linus Torvalds wrote:
+On 07/13/2012 02:37 PM, Linus Torvalds wrote:
 
- > The point I'm slowly getting to is that I would actually love to have
- > *distro* Kconfig-files, where the distribution would be able to say
- > "These are the minimums I *require* to work".
+>
+> Would something like this make sense to people? I really think that
+> "How do I generate a kernel config file" is one of those things that
+> keeps normal people from compiling their own kernel. And we *want*
+> people to compile their own kernel so that they can help with things
+> like bisecting etc. The more, the merrier.
+>
+This is a great idea. 7-8 years ago I used to be able to create a
+minimally configured kernel from upstream and run my Debian/Ubuntu/...
+install with it. It got much harder in a hurry and now it takes too much
+work to figure out how to configure upstream kernel to make it work with
+distro. It is a 3-5 hour compile to start with distro config file and that
+is just too painful. I will help with testing configs or helping sort
+through the config options.
 
-As long as you don't mind these being added after the fact, I suppose
-it would be workable.  The reason I say that is sometimes, it even catches *us*
-by surprise.  We recently found out our virtualisation guys started
-using sch_htb for example, and we inadvertantly broke it when we moved
-its module to a 'not always installed' kernel subpackage. (and before that, 9PFS..)
-
-People don't tell us anything, but somehow expect things to keep working.
-
- > In addition to the "minimal distro settings", we might also have a few
- > "common platform" settings, so that you could basically do a "hey, I
- > have a modern PC laptop, make it pick the obvious stuff that a normal
- > person needs, like USB storage, FAT/VFAT support, the core power
- > management etc".
-
-I wish defconfig was actually something useful like this, instead of..
-what the hell is it exactly ? No-one even seems to agree, other than
-"random selection of options, many of which were removed n years ago"
-
-	Dave
+-- 
+Khalid Aziz
+khalid.aziz@hp.com
 
