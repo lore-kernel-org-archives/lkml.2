@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756612Ab2GMX5K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 19:57:10 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:45198 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755898Ab2GMX5I (ORCPT
+	id S1756805Ab2GNAAb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 20:00:31 -0400
+Received: from filtteri6.pp.htv.fi ([213.243.153.189]:47782 "EHLO
+	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755898Ab2GNAAa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 19:57:08 -0400
-Message-ID: <5000B5D1.3090307@kernel.org>
-Date: Fri, 13 Jul 2012 17:57:05 -0600
-From: "John 'Warthog9' Hawley" <warthog9@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	Fri, 13 Jul 2012 20:00:30 -0400
+X-Greylist: delayed 454 seconds by postgrey-1.27 at vger.kernel.org; Fri, 13 Jul 2012 20:00:30 EDT
+Message-ID: <20120714025245.mxs5t7chwksk4wow@webmail.welho.com>
+Date: Sat, 14 Jul 2012 02:52:45 +0300
+From: Nokia Fortune Award <nproclaims@msn.cn>
+Reply-to: nokiacarepc@hotmail.com
+To: undisclosed-recipients:;
+Subject: Prize Alert 13/07/2012.
 MIME-Version: 1.0
-To: users@kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [KORG] lkml.kernel.org up and running
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	DelSp="Yes";
+	format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.3)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
 
-Afternoon everyone,
+You are receiving this message because you are a Winner of 1,000,000 Pounds
+from Nokia Online Lottery game 2012.
 
-Just a quick update, lkml.kernel.org (the re-director), is back up and
-running.  It should also be slightly better about dealing with the
-messed up escaping that some clients seem to incur.
+Claim requirements are as follows:
+(1) Your full names
+(2) Contact Address
+(3) Age
+(4) Occupation
+(5) Telephone
+(6) Sex
+(7) Nationality
 
-If you have any issues, as always, give us a shout and let us know.
+Contact Mr. Thomas Hillary on (claims@nuklotpro.com)
+Tel: +448712374019
 
-- - John 'Warthog9' Hawley
-Chief Kernel.org Administrator
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+Copyright ©2012 Nokia. All rights reserved.
 
-iQIcBAEBAgAGBQJQALXKAAoJEC6na5wrRm2d1TMP/1JnDUny2fOFwYgLhB3FzCtZ
-fVgz8sLX0EZOcFEBP1JCttlmNQRj74bEy32opY2rrM4IOWsn+hjyNOGKCUE/pFBC
-Vx9R7chAkyKBalpqq9gPXRSycHz2P4iWfOoptJtoivph6SiyBB3+jete7b8e6Dr4
-Lk2N5CRgpK+dhM1HObbk3N06Bg15rCn5GuBWSK5HYHy6Di72199S0vcU7MzzPUPW
-PEQ7esllK4JOLFSbDbRV4FZBxCROoCTbVIBSR6R1CNjpUJb8FvpGNiGQT6T2DRQX
-j32dENXxFV7Z2Fy74ueMx0KN47IsjNZtMZBBrLNKYbmLkPQXS78FXBO4wlsPo+wk
-eR/SFfDYIJJA1MjwjZoLo8XaMSZgxwOc2WHtgssMeTc0EyVsI+cy1LIZc6S7dPta
-oE6dq4Ne0y4noZI2BmE1smHBume4Ur5Xcgd7oANFGWZEipHjOO8CCmGWRWWPOvCk
-u/FO058zDOKmzP2ecs8rqJ8knMXyhMyyQgHhbhQAGdx/AIw5bqMe+TGF3Q4pgSBy
-PlUE7XBdl0UavbxeGZ1dZ/nwTrQ76eAJB1eyxCQvuq+fuRWaRn74rfRXdZz8JSMe
-SKZhUMKG82OO4mKJtUTY+FJa7U8iMA7VW6N2AVuO67hNcp/9F9BoJurYeP+QLmGP
-sEJoeMbMxi3KJs0R9y3k
-=a6Bh
------END PGP SIGNATURE-----
+
+
+
+
