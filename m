@@ -1,50 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162998Ab2GMOJT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 10:09:19 -0400
-Received: from alpha.arachsys.com ([91.203.57.7]:54378 "EHLO
-	alpha.arachsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932722Ab2GMOJO (ORCPT
+	id S1757705Ab2GMOJa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 10:09:30 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:39094 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933320Ab2GMOJS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 10:09:14 -0400
-Date: Fri, 13 Jul 2012 15:09:08 +0100
-From: Chris Webb <chris@arachsys.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Michael Chan <mchan@broadcom.com>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH] bnx2: update bnx2-mips-09 firmware to bnx2-mips-09-6.2.1b
-Message-ID: <20120713140907.GT13885@arachsys.com>
-References: <20120713130405.GS13885@arachsys.com>
- <1342186932.3265.8364.camel@edumazet-glaptop>
+	Fri, 13 Jul 2012 10:09:18 -0400
+Date: Fri, 13 Jul 2012 11:09:10 -0300
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [ 08/68] dummy: fix rcu_sched self-detected stalls
+Message-ID: <20120713140909.GA3185@herton-Z68MA-D2H-B3>
+References: <20120712175057.GA9917@kroah.com>
+ <20120712175035.530652872@linuxfoundation.org>
+ <20120712175036.147190749@linuxfoundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1342186932.3265.8364.camel@edumazet-glaptop>
+In-Reply-To: <20120712175036.147190749@linuxfoundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric Dumazet <eric.dumazet@gmail.com> writes:
+On Thu, Jul 12, 2012 at 04:01:42PM -0700, Greg Kroah-Hartman wrote:
+> From: Greg KH <gregkh@linuxfoundation.org>
+> 
+> 3.0-stable review patch.  If anyone has any objections, please let me know.
+> 
+> ------------------
+> 
+> 
+> From: Eric Dumazet <edumazet@google.com>
+> 
+> [ Upstream commit 16b0dc29c1af9df341428f4c49ada4f626258082 ]
+> 
+> Trying to "modprobe dummy numdummies=30000" triggers :
+> 
+> INFO: rcu_sched self-detected stall on CPU { 8} (t=60000 jiffies)
+> 
+> After this splat, RTNL is locked and reboot is needed.
+> 
+> We must call cond_resched() to avoid this, even holding RTNL.
+> 
+> Signed-off-by: Eric Dumazet <edumazet@google.com>
+> Signed-off-by: David S. Miller <davem@davemloft.net>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> ---
+>  drivers/net/dummy.c |    4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> --- a/drivers/net/dummy.c
+> +++ b/drivers/net/dummy.c
+> @@ -186,8 +186,10 @@ static int __init dummy_init_module(void
+>  	rtnl_lock();
+>  	err = __rtnl_link_register(&dummy_link_ops);
+>  
+> -	for (i = 0; i < numdummies && !err; i++)
+> +	for (i = 0; i < numdummies && !err; i++) {
+>  		err = dummy_init_one();
+> +		cond_resched();
 
-> Have you read firmware/README.AddingFirmware ?
+This cherry-pick for 3.0 has the same problem as the one that was
+proposed to 3.2, build fails on i386/arm:
 
-I hadn't, but now I have, and if firmware upgrades are considered 'adding
-new firmware', I agree this patch is wrong, and should have just removed the
-obsolete bnx2-mips-09-6.2.1a file that is no longer used by the bnx2 driver.
+linux-stable/drivers/net/dummy.c: In function 'dummy_init_module':
+linux-stable/drivers/net/dummy.c:191:3: error: implicit declaration of function 'cond_resched' [-Werror=implicit-function-declaration]
 
-However, not having dealt with cards that need these kinds of horrible
-binary blobs before, I'm a little uncertain how I should be building
-upstream kernels with CONFIG_FIRMWARE_IN_KERNEL and pulling in the correct
-blobs from a linux-firmware checkout.
+This will need an include for linux/sched.h as in 3.2 (the same proposed
+patch for 3.4 shouldn't be affected).
 
-Is there a more automatic method than going through the source for each
-configured driver and setting CONFIG_EXTRA_FIRMWARE manually to list the
-relevant firmwares? Is there any way to give the kernel the location of
-linux-firmware and have it compile in everything needed for the selected
-drivers, as used to happen with the firmware/ subdirectory?
-CONFIG_EXTRA_FIRMWARE_DIR doesn't seem to do anything with
-CONFIG_EXTRA_FIRMWARE empty, so I don't think it does what I'm hoping?
+> +	}
+>  	if (err < 0)
+>  		__rtnl_link_unregister(&dummy_link_ops);
+>  	rtnl_unlock();
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe stable" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-Cheers,
-
-Chris.
+-- 
+[]'s
+Herton
