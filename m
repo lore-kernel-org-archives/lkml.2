@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753571Ab2GMVlY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 17:41:24 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:46960 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751230Ab2GMVlX (ORCPT
+	id S1753079Ab2GMVmr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 17:42:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55802 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750743Ab2GMVmq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 17:41:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <1342212885.25704.4.camel@lade.trondhjem.org>
-References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com>
-	<1342212885.25704.4.camel@lade.trondhjem.org>
-Date: Fri, 13 Jul 2012 23:41:21 +0200
-Message-ID: <CAFLxGvxxWodD97=78218wc+tuigAFsNK_PdroDfb4BWTZoxxUw@mail.gmail.com>
-Subject: Re: [opensuse-kernel] Re: [RFC] Simplifying kernel configuration for
- distro issues
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
-        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
-        Debian Kernel Team <debian-kernel@lists.debian.org>,
-        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 13 Jul 2012 17:42:46 -0400
+Date: Fri, 13 Jul 2012 14:42:44 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: dedekind1@gmail.com
+Cc: Al Viro <viro@ZenIV.linux.org.uk>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 0/3] fs/sysv: stop using write_supers and s_dirt
+Message-Id: <20120713144244.f3c9fb27.akpm@linux-foundation.org>
+In-Reply-To: <1342103878.18274.98.camel@sauron.fi.intel.com>
+References: <1341323008-29414-1-git-send-email-dedekind1@gmail.com>
+	<1342103878.18274.98.camel@sauron.fi.intel.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 13, 2012 at 10:54 PM, Myklebust, Trond
-<Trond.Myklebust@netapp.com> wrote:
-> We could at least make selection of a minimal set of drivers for the
-> more common virtualised platforms a lot easier.
-> Right now, you need to hunt through 30+ different menus in order to find
-> what you need to run in a basic KVM virtual machine...
+On Thu, 12 Jul 2012 17:37:58 +0300
+Artem Bityutskiy <dedekind1@gmail.com> wrote:
 
-Yes, every time I build a kernel to be used on KVM I forget something. :-\
+> On Tue, 2012-07-03 at 16:43 +0300, Artem Bityutskiy wrote:
+> > This patch-set makes sysv file-system stop using the VFS '->write_supers()'
+> > call-back and the '->s_dirt' superblock field because I plan to remove them
+> > once all users are gone.
+> 
+> Hi Andrew,
+> 
+> would you please pick this patch-set as well? I also sent you an update
+> for hfs and hfsplus file-systems today - found a bug while doing some
+> more testing. Also, I sent UFS changes today, very similar. Most
+> probably no one will reply and I hope you would pick them as well.
+> 
 
-We could introduce a section in Kconfig which contains selections for
-common use cases.
-E.g. as Linus requested for minimal distro requirements but also
-selections for various common
-guest configurations.
+The issue Alan raised around the superblock timestamp is still up in
+the air.  I guess he's a slow typist ;)
 
--- 
-Thanks,
-//richard
+My take is "no, we don't need to do that any more" - surely all Linux
+systems have a functional hardware clock.  But the changelog should be
+updated to describe and justify the decision.
+
