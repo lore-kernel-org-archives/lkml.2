@@ -1,41 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161091Ab2GMRup (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 13:50:45 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:41667 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751623Ab2GMRuj (ORCPT
+	id S1030583Ab2GMRvg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 13:51:36 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:53653 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751623Ab2GMRvd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 13:50:39 -0400
-Date: Fri, 13 Jul 2012 18:50:36 +0100
-From: Matthew Garrett <mjg@redhat.com>
-To: Khalid Aziz <khalid.aziz@hp.com>
-Cc: linux-kernel@vger.kernel.org, tony.luck@intel.com, mikew@google.com,
-        keescook@chromium.org, gong.chen@linux.intel.com
-Subject: Re: [PATCH v2] Add missing attributes to EFI variable attribute
- print out from sysfs
-Message-ID: <20120713175036.GB18496@srcf.ucam.org>
-References: <20120713174216.GA10445@hp.com>
+	Fri, 13 Jul 2012 13:51:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120713174216.GA10445@hp.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <CA+8MBbJbjKmH29Yapih9anxXTsNy7C2TWgtnFX3-Gm6cNyCY3g@mail.gmail.com>
+References: <1341859315-17759-7-git-send-email-tj@kernel.org>
+	<20120712130648.GA19214@localhost>
+	<20120712170519.GA20167@google.com>
+	<20120712214514.GD20167@google.com>
+	<CA+8MBb+ghRpmtrk=t5-6MqrPMZt+a69UoAWaubyKBeptGdBrWA@mail.gmail.com>
+	<20120712223221.GF20167@google.com>
+	<CA+8MBbJQVF3-CUU8MPWgm7OifD-C8=U2=uPF3JH9XNvAWVAX6A@mail.gmail.com>
+	<20120712233645.GG20167@google.com>
+	<CA+8MBbJbjKmH29Yapih9anxXTsNy7C2TWgtnFX3-Gm6cNyCY3g@mail.gmail.com>
+Date: Fri, 13 Jul 2012 10:51:32 -0700
+Message-ID: <CA+8MBbLWxf4=95BHoVC4h-TM5S393Hhttx2BgdD-vUtHxpiYnA@mail.gmail.com>
+Subject: Re: [PATCH 6/6] workqueue: reimplement WQ_HIGHPRI using a separate worker_pool
+From: Tony Luck <tony.luck@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, joshhunt00@gmail.com, axboe@kernel.dk,
+        rni@google.com, vgoyal@redhat.com, vwadekar@nvidia.com,
+        herbert@gondor.hengli.com.au, davem@davemloft.net,
+        linux-crypto@vger.kernel.org, swhiteho@redhat.com, bpm@sgi.com,
+        elder@kernel.org, xfs@oss.sgi.com, marcel@holtmann.org,
+        gustavo@padovan.org, johan.hedberg@gmail.com,
+        linux-bluetooth@vger.kernel.org, martin.petersen@oracle.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 13, 2012 at 11:42:16AM -0600, Khalid Aziz wrote:
-> Some of the EFI variable attributes are missing from print out from
-> /sys/firmware/efi/vars/*/attributes. This patch adds those in. It also
-> updates code to use pre-defined constants for masking current value
-> of attributes.
-> 
-> Signed-off-by: Khalid Aziz <khalid.aziz@hp.com>
-> Cc: stable@vger.kernel.org
-Acked-by: Matthew Garrett <mjg@redhat.com>
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+On Thu, Jul 12, 2012 at 4:46 PM, Tony Luck <tony.luck@gmail.com> wrote:
+> Still hasn't come back in three reboots.  I have to leave now, can continue
+> tomorrow.
+
+Tired of rebooting ... seems that it is very hard to hit this with
+this patch :-(
+
+-Tony
