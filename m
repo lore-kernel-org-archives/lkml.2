@@ -1,62 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758154Ab2GMVRx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 17:17:53 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:60417 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757827Ab2GMVRw (ORCPT
+	id S1758157Ab2GMVUj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 17:20:39 -0400
+Received: from juliette.telenet-ops.be ([195.130.137.74]:40954 "EHLO
+	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751097Ab2GMVUh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 17:17:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120713210240.GG1707@redhat.com>
-References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com>
- <20120713210240.GG1707@redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 13 Jul 2012 14:17:30 -0700
-X-Google-Sender-Auth: qWqpVWsIaw3y5LTiNBBZmcN6HZQ
-Message-ID: <CA+55aFz_Vv899eXz6F0jtFH=hT4QpB0_2XuS8HySPjHC6s+L7Q@mail.gmail.com>
-Subject: Re: [RFC] Simplifying kernel configuration for distro issues
-To: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <greg@kroah.com>,
-        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
-        Debian Kernel Team <debian-kernel@lists.debian.org>,
-        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Fedora Kernel Team <kernel-team@fedoraproject.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 13 Jul 2012 17:20:37 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Hirokazu Takata <takata@linux-m32r.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-m32r@ml.linux-m32r.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH 1/6] m32r: Remove duplicate definition of PTRACE_O_TRACESYSGOOD
+Date: Fri, 13 Jul 2012 23:20:22 +0200
+Message-Id: <1342214427-17607-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 13, 2012 at 2:02 PM, Dave Jones <davej@redhat.com> wrote:
->
-> As long as you don't mind these being added after the fact, I suppose
-> it would be workable.  The reason I say that is sometimes, it even catches *us*
-> by surprise.  We recently found out our virtualisation guys started
-> using sch_htb for example, and we inadvertantly broke it when we moved
-> its module to a 'not always installed' kernel subpackage. (and before that, 9PFS..)
->
-> People don't tell us anything, but somehow expect things to keep working.
+include/linux/ptrace.h:66:0: warning: "PTRACE_O_TRACESYSGOOD" redefined [enabled by default]
+arch/m32r/include/asm/ptrace.h:117:0: note: this is the location of the previous definition
 
-I think even a "educated guess" config file is better than what we have now.
+We already have it in <linux/ptrace.h>, so remove it from <asm/ptrace.h>
 
-The *two* requirements (and they're really the same theme) I
-personally think we should have for this are
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ arch/m32r/include/asm/ptrace.h |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
- -  I think every single "select" for these things should come with a
-comment about what it is about and why the distro needs it (to show
-there was some thought involved and not just a blind "took it from the
-distro config")
+diff --git a/arch/m32r/include/asm/ptrace.h b/arch/m32r/include/asm/ptrace.h
+index 5275275..4313aa6 100644
+--- a/arch/m32r/include/asm/ptrace.h
++++ b/arch/m32r/include/asm/ptrace.h
+@@ -113,9 +113,6 @@ struct pt_regs {
+ 
+ #define PTRACE_OLDSETOPTIONS	21
+ 
+-/* options set using PTRACE_SETOPTIONS */
+-#define PTRACE_O_TRACESYSGOOD	0x00000001
+-
+ #ifdef __KERNEL__
+ 
+ #include <asm/m32r.h>		/* M32R_PSW_BSM, M32R_PSW_BPM */
+-- 
+1.7.0.4
 
- - It should be about *minimal* settings. I'd rather have too few
-things and the occasional complaint about "oh, it didn't work because
-it missed XYZ" than have it grow to contain all the options just
-because somebody decided to just add random things until things
-worked.
-
-Other than that, even if it only gets you *closer* to a kernel that
-works with that distro, I think it doesn't have to be all that
-perfect. Because the alternative is what we have now.
-
-           Linus
