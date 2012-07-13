@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933292Ab2GMNWV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 09:22:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25492 "EHLO mx1.redhat.com"
+	id S1757266Ab2GMNYq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 09:24:46 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:57640 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932646Ab2GMNWT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 09:22:19 -0400
-Date: Fri, 13 Jul 2012 16:22:23 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Dominic Eschweiler <eschweiler@fias.uni-frankfurt.de>
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>, Andreas Schallenberg <embedded@gmx.net>,
+	id S1751281Ab2GMNYo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 09:24:44 -0400
+Date: Fri, 13 Jul 2012 15:24:43 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: KY Srinivasan <kys@microsoft.com>, Greg KH <gregkh@suse.de>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, kvm@vger.kernel.org
-Subject: Re: UIO: missing resource mapping
-Message-ID: <20120713132223.GA10959@redhat.com>
-References: <4FFE7C1F.7080702@gmx.net>
- <20120712194432.GA2592@local>
- <20120712231632.GC9317@redhat.com>
- <1342166955.6607.5.camel@blech>
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: Re: 0xB16B00B5? Really? (was Re: Move hyperv out of the
+ drivers/staging/ directory)
+Message-ID: <20120713132441.GD10298@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Paolo Bonzini <pbonzini@redhat.com>,
+	KY Srinivasan <kys@microsoft.com>, Greg KH <gregkh@suse.de>,
+	"devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+References: <20110922170450.GA4490@suse.de>
+ <6E21E5352C11B742B20C142EB499E048081E935D@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <20110922173618.GA5624@suse.de>
+ <6E21E5352C11B742B20C142EB499E048081EB789@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <20111004170415.GA1320@suse.de>
+ <6E21E5352C11B742B20C142EB499E048081EB86F@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <20111004193414.GA15672@suse.de>
+ <4FFFF711.8040003@redhat.com>
+ <426367E2313C2449837CD2DE46E7EAF9223B57EC@SN2PRD0310MB382.namprd03.prod.outlook.com>
+ <50001F71.9070806@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1342166955.6607.5.camel@blech>
+In-Reply-To: <50001F71.9070806@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 13, 2012 at 10:09:15AM +0200, Dominic Eschweiler wrote:
-> Am Freitag, den 13.07.2012, 02:16 +0300 schrieb Michael S. Tsirkin:
-> > My concern was people will ask for more and more stuff that pci
-> > sysfs already has.
-> > If we do add these is there a way to not duplicate code from pci? 
+On Fri, Jul 13, 2012 at 03:15:29PM +0200, Paolo Bonzini wrote:
+> Il 13/07/2012 15:13, KY Srinivasan ha scritto:
+> >> > 
+> >> > Somone was trying to be funny, I guess.
+> >> > 
+> >> > KY, I suppose you have access to Hyper-V code or can ask someone who does.
+> >> > Is this signature actually used in the Hyper-V host code?
+> > It is still early in the morning here and pardon me if I am not seeing the issue.
 > 
-> I have some concerns about the placing for the BAR mapping code inside
-> the kernel. The point is, that sysfs currently makes it possible to map
-> BARs of all card which are handled by any driver. This is fine in case
-> of UIO, because it is intended that a user-space program maps BARs, but
-> it is also possible to map BARs that are already handle by a kernel
-> driver. It i therefore possible to jam the system by confusing sysfs
-> entries.
+> [offlist]
 > 
-> I don't know which implications this has, but I would move the BAR
-> mapping capabilities completely to UIO. This should ensure that only
-> BARs can be mapped, which are handled by UIO and no other kernel-space
-> driver.
+> 0xB16B00B5 = big boobs
 
-Could you give an example of the problem? How do you bind
-both UIO and another driver to the same device?
+LOL! You can't make this stuff up!
+
+:-)
 
 -- 
-MST
+Regards/Gruss,
+Boris.
