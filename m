@@ -1,72 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753195Ab2GMRfn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 13:35:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16184 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750901Ab2GMRfl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 13:35:41 -0400
-Date: Fri, 13 Jul 2012 13:35:36 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: "J. Bruce Fields" <bfields@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Remove easily user-triggerable BUG from generic_setlease
-Message-ID: <20120713173536.GB25432@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	"J. Bruce Fields" <bfields@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>
+	id S932280Ab2GMRhR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 13:37:17 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:38959 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751692Ab2GMRhQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 13:37:16 -0400
+Date: Fri, 13 Jul 2012 13:37:08 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: ksummit-2012-discuss@lists.linux-foundation.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [Ksummit-2012-discuss] Organising Mini Summits within the Kernel
+ Summit
+Message-ID: <20120713173708.GB17109@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	James Bottomley <James.Bottomley@HansenPartnership.com>,
+	ksummit-2012-discuss@lists.linux-foundation.org,
+	linux-kernel <linux-kernel@vger.kernel.org>
+References: <1341994155.3522.16.camel@dabdike.int.hansenpartnership.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1341994155.3522.16.camel@dabdike.int.hansenpartnership.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This can be trivially triggered from userspace by passing in something unexpected.
+On Wed, Jul 11, 2012 at 09:09:15AM +0100, James Bottomley wrote:
+> Hi All,
+> 
+> We have set aside the second day of the kernel summit (Tuesday 28
+> August) as mini-summit day.  So far we have only the PCI mini summit on
+> this day, so if you can think of other topics, please send them to the
+> kernel summit discuss list:
+> 
+> ksummit-2012-discuss@lists.linux-foundation.org
+> 
+> Looking at the available rooms, we think we can run about four or five
+> mini summits.
+> 
+> As an added incentive, mini summit organisers get to pick who they
+> invite and all the people they pick will get an automatic invitation to
+> the third day of the kernel summit (but not the core first day) and the
+> evening events.
 
-[126749.760961] kernel BUG at fs/locks.c:1468!
-[126749.761849] invalid opcode: 0000 [#1] SMP 
-[126749.762490] CPU 2 
-[126749.811520] Pid: 15891, comm: trinity-child2 Not tainted 3.5.0-rc6+ #105
-[126749.813723] RIP: 0010:[<ffffffff81222802>]  [<ffffffff81222802>] generic_setlease+0xc2/0x100
-[126749.814823] RSP: 0018:ffff88011a979e88  EFLAGS: 00010286
-[126749.815899] RAX: ffffffff81822b40 RBX: ffff8800912e0040 RCX: 0000000000000001
-[126749.816970] RDX: 0000000000000001 RSI: 0000000000000000 RDI: ffff8800912e0040
-[126749.818037] RBP: ffff88011a979eb8 R08: 0000000000000001 R09: fffffffff7380232
-[126749.819098] R10: ffffffff82210560 R11: 0000000000000232 R12: ffff88011c879b80
-[126749.820149] R13: ffffffff00000000 R14: ffff88011a979ee0 R15: 00000000000003e8
-[126749.821189] FS:  00007fb7d1340740(0000) GS:ffff880148000000(0000) knlGS:0000000000000000
-[126749.822222] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[126749.823251] CR2: 00000000029a8000 CR3: 0000000119fd0000 CR4: 00000000001407e0
-[126749.824278] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[126749.825287] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[126749.826274] Process trinity-child2 (pid: 15891, threadinfo ffff88011a978000, task ffff88000abf2690)
-[126749.827260] Stack:
-[126749.828225]  ffff88011a979eb8 ffffffff00000000 ffff88011c879b80 ffff8800085326c8
-[126749.829202]  ffff880107f85810 00000000000000b1 ffff88011a979ec8 ffffffff81222875
-[126749.830168]  ffff88011a979f18 ffffffff81222a06 ffff88011a979f18 ffff8800085326c8
-[126749.831123] Call Trace:
-[126749.832054]  [<ffffffff81222875>] __vfs_setlease+0x35/0x40
-[126749.832979]  [<ffffffff81222a06>] fcntl_setlease+0x76/0x150
-[126749.833905]  [<ffffffff811e1876>] sys_fcntl+0x1c6/0x810
-[126749.834800]  [<ffffffff8134b4ae>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-[126749.835687]  [<ffffffff81691d2d>] system_call_fastpath+0x1a/0x1f
+OK, so far I believe I've heard concrete suggestions from identified
+(or fairly well identified :-) stuckees willing to organize
+mini-summits for:
 
-Signed-off-by: Dave Jones <davej@redhat.com>
+* ARM
+* Media
+* PCI
+* memcg
 
-diff --git a/fs/locks.c b/fs/locks.c
-index 814c51d..fce6238 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -1465,7 +1465,7 @@ int generic_setlease(struct file *filp, long arg, struct file_lock **flp)
- 	case F_WRLCK:
- 		return generic_add_lease(filp, arg, flp);
- 	default:
--		BUG();
-+		return -EINVAL;
- 	}
- }
- EXPORT_SYMBOL(generic_setlease);
+I may have missed some, so if people could send a message to the
+discuss list with [MINI-SUMMIT] in the subbject line and the name of
+the proposed mini-summit, that would be really helpful.  Please
+indicate whether you are volunteering to help organize the proposed
+mini-summit, or identify someone you think can be volunteered.  :-)
+
+Things that we will be asking the mini-summit chars to determine, in
+addition to who should be given invites for Tuesday and Wednesday is
+an estimate of how much time you need, and a list of sub-topics (and
+who might lead the sub-topic discussion).  We will be asking you to
+create a fairly well-defined schedule, with 30 and 60 minute slots, so
+that we can publish a schedule and so that people who might need to
+hop between mini-summits, have a chance to do so.  So please start
+thinking about how long each of your sub-topics will need to be, and
+who might be needed for a particular sub-topic's discussion to be
+successful.  There may be a number of developers, with fingers in
+multiple subsystem, where scheduling may become a bit of a challenge.
+
+Thanks!!
+
+						- Ted
