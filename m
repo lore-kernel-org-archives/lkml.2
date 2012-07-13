@@ -1,86 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754774Ab2GMFPE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 01:15:04 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:53924 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753651Ab2GMFPB (ORCPT
+	id S932415Ab2GMFTr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 01:19:47 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:53256 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752654Ab2GMFTp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 01:15:01 -0400
-Date: Fri, 13 Jul 2012 15:14:51 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mike Turquette <mturquette@ti.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: linux-next: manual merge of the clk tree with the arm-soc tree
-Message-Id: <20120713151451.b2ef97045ef2273ea15973c9@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__13_Jul_2012_15_14_51_+1000_c5=O_eZmZyWVOaSD"
+	Fri, 13 Jul 2012 01:19:45 -0400
+From: Will Drewry <wad@chromium.org>
+To: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
+Cc: qmewlo@gmail.com, eparis@redhat.com, keescook@chromium.org,
+        james.l.morris@oracle.com, hpa@zytor.com, cevans@chromium.org,
+        luto@mit.edu, Will Drewry <wad@chromium.org>
+Subject: [PATCH] x86/vsyscall: allow seccomp filter in vsyscall=emulate
+Date: Fri, 13 Jul 2012 00:17:52 -0500
+Message-Id: <1342156672-7369-1-git-send-email-wad@chromium.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__13_Jul_2012_15_14_51_+1000_c5=O_eZmZyWVOaSD
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+If a seccomp filter program is installed, older static binaries and
+distributions with older libc implementations (glibc 2.13 and earlier)
+that rely on vsyscall use will be terminated regardless of the filter
+program policy when executing time, gettimeofday, or getcpu.  This is
+only the case when vsyscall emulation is in use (vsyscall=emulate is the
+default).
 
-Hi Mike,
+This patch emulates system call entry inside a vsyscall=emulate trap
+such that seccomp can properly evaluate the system call.
 
-Today's linux-next merge of the clk tree got a conflict in
-drivers/clk/Makefile between commit 4a31bd28e86a ("ARM: nomadik: convert
-to generic clock") from the arm-soc tree and commit 8d4d9f52081c ("clk:
-add highbank clock support") from the clk tree.
+Reported-by: Owen Kibel <qmewlo@gmail.com>
+Signed-off-by: Will Drewry <wad@chromium.org>
+---
+ arch/x86/kernel/vsyscall_64.c |   29 ++++++++++++++++++++++++++---
+ 1 file changed, 26 insertions(+), 3 deletions(-)
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
+index 7515cf0..433545f 100644
+--- a/arch/x86/kernel/vsyscall_64.c
++++ b/arch/x86/kernel/vsyscall_64.c
+@@ -139,6 +139,14 @@ static int addr_to_vsyscall_nr(unsigned long addr)
+ 	return nr;
+ }
+ 
++static int vsyscall_seccomp(struct task_struct *tsk, int syscall_nr)
++{
++	if (!seccomp_mode(&tsk->seccomp))
++		return 0;
++	task_pt_regs(tsk)->orig_ax = syscall_nr;
++	return __secure_computing(syscall_nr);
++}
++
+ static bool write_ok_or_segv(unsigned long ptr, size_t size)
+ {
+ 	/*
+@@ -174,6 +182,7 @@ bool emulate_vsyscall(struct pt_regs *regs, unsigned long address)
+ 	int vsyscall_nr;
+ 	int prev_sig_on_uaccess_error;
+ 	long ret;
++	int skip;
+ 
+ 	/*
+ 	 * No point in checking CS -- the only way to get here is a user mode
+@@ -205,9 +214,6 @@ bool emulate_vsyscall(struct pt_regs *regs, unsigned long address)
+ 	}
+ 
+ 	tsk = current;
+-	if (seccomp_mode(&tsk->seccomp))
+-		do_exit(SIGKILL);
+-
+ 	/*
+ 	 * With a real vsyscall, page faults cause SIGSEGV.  We want to
+ 	 * preserve that behavior to make writing exploits harder.
+@@ -222,8 +228,13 @@ bool emulate_vsyscall(struct pt_regs *regs, unsigned long address)
+ 	 * address 0".
+ 	 */
+ 	ret = -EFAULT;
++	skip = 0;
+ 	switch (vsyscall_nr) {
+ 	case 0:
++		skip = vsyscall_seccomp(tsk, __NR_gettimeofday);
++		if (skip)
++			break;
++
+ 		if (!write_ok_or_segv(regs->di, sizeof(struct timeval)) ||
+ 		    !write_ok_or_segv(regs->si, sizeof(struct timezone)))
+ 			break;
+@@ -234,6 +245,10 @@ bool emulate_vsyscall(struct pt_regs *regs, unsigned long address)
+ 		break;
+ 
+ 	case 1:
++		skip = vsyscall_seccomp(tsk, __NR_time);
++		if (skip)
++			break;
++
+ 		if (!write_ok_or_segv(regs->di, sizeof(time_t)))
+ 			break;
+ 
+@@ -241,6 +256,10 @@ bool emulate_vsyscall(struct pt_regs *regs, unsigned long address)
+ 		break;
+ 
+ 	case 2:
++		skip = vsyscall_seccomp(tsk, __NR_getcpu);
++		if (skip)
++			break;
++
+ 		if (!write_ok_or_segv(regs->di, sizeof(unsigned)) ||
+ 		    !write_ok_or_segv(regs->si, sizeof(unsigned)))
+ 			break;
+@@ -253,6 +272,9 @@ bool emulate_vsyscall(struct pt_regs *regs, unsigned long address)
+ 
+ 	current_thread_info()->sig_on_uaccess_error = prev_sig_on_uaccess_error;
+ 
++	if (skip)
++		goto do_ret;
++
+ 	if (ret == -EFAULT) {
+ 		/* Bad news -- userspace fed a bad pointer to a vsyscall. */
+ 		warn_bad_vsyscall(KERN_INFO, regs,
+@@ -271,6 +293,7 @@ bool emulate_vsyscall(struct pt_regs *regs, unsigned long address)
+ 
+ 	regs->ax = ret;
+ 
++do_ret:
+ 	/* Emulate a ret instruction. */
+ 	regs->ip = caller;
+ 	regs->sp += 8;
+-- 
+1.7.9.5
 
-diff --cc drivers/clk/Makefile
-index 26b6b92,02ffdf6..0000000
---- a/drivers/clk/Makefile
-+++ b/drivers/clk/Makefile
-@@@ -3,6 -3,11 +3,12 @@@ obj-$(CONFIG_CLKDEV_LOOKUP)	+=3D clkdev.
-  obj-$(CONFIG_COMMON_CLK)	+=3D clk.o clk-fixed-rate.o clk-gate.o \
-  				   clk-mux.o clk-divider.o clk-fixed-factor.o
-  # SoCs specific
- +obj-$(CONFIG_ARCH_NOMADIK)	+=3D clk-nomadik.o
-+ obj-$(CONFIG_ARCH_HIGHBANK)	+=3D clk-highbank.o
-  obj-$(CONFIG_ARCH_MXS)		+=3D mxs/
-  obj-$(CONFIG_PLAT_SPEAR)	+=3D spear/
-+ obj-$(CONFIG_ARCH_U300)		+=3D clk-u300.o
-+ obj-$(CONFIG_ARCH_INTEGRATOR)	+=3D versatile/
-+=20
-+ # Chip specific
-+ obj-$(CONFIG_COMMON_CLK_WM831X) +=3D clk-wm831x.o
-
---Signature=_Fri__13_Jul_2012_15_14_51_+1000_c5=O_eZmZyWVOaSD
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJP/67LAAoJEECxmPOUX5FER+8QAIFSSxzaagrRVuw19n7TS8mJ
-C86ToupvnaDqtqTKV8PucdiaLlwsVaI6KqhGxMkO5e80Ee3uWb/ZpHdvM9CnD0I3
-HvrhQW7wv2qMrzczpWgNaLZdtEyh6duAd2ofaoVelSpPe3R2iEcytP7U7HPqo9ga
-g3c+FFklYB1A0BVMtRabCF44t3MZFYKvZSsrsO0F/9cGu1RZCa1WxL1jmXX6QWOd
-RqzlOFzDY3Ox66y3lM0tfHkYvriknpGfEO6e1xz5aJTuPQZstRToJoD6NR0WIy7c
-22n2hui4PfxMkeBjjmCph1MFeILLJeUYt+uRBaR4YxJZoz9MIFgyEXn0ZCb6Vyay
-0QvG3rpCbiIAS0eTihABu1Er63QD/i9+znVenTEjQ1o6K1A2tnk0BSa2z8VsoMgK
-xVzSkF79kATuvyrP5ac2AwUD6mu29GVJ/OxPxUnCUOnS13oqCEbc/AzKtE5YGjEf
-w6M9OfT5e09Qx4y03XpSvhUPDMD6hcObVGdlwOXQUfqV6iXnZROaIstgNtxUyGGc
-REWZUs7wptIZPT+UCAherBl6FSMyPhRoZ5s/lMMSDB2GZgxEM3hcLQmU0AEUalfO
-RTNANbivw0DC1EzMbFL8hg4QqdOIOPQZtxJ+gO4+ktzhaBqIINv9W6QYn5hO2KAs
-XtgakdtR+jgVf4BtLjf0
-=iiRO
------END PGP SIGNATURE-----
-
---Signature=_Fri__13_Jul_2012_15_14_51_+1000_c5=O_eZmZyWVOaSD--
