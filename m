@@ -1,81 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932280Ab2GMRhR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 13:37:17 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:38959 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751692Ab2GMRhQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 13:37:16 -0400
-Date: Fri, 13 Jul 2012 13:37:08 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: ksummit-2012-discuss@lists.linux-foundation.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [Ksummit-2012-discuss] Organising Mini Summits within the Kernel
- Summit
-Message-ID: <20120713173708.GB17109@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	James Bottomley <James.Bottomley@HansenPartnership.com>,
-	ksummit-2012-discuss@lists.linux-foundation.org,
-	linux-kernel <linux-kernel@vger.kernel.org>
-References: <1341994155.3522.16.camel@dabdike.int.hansenpartnership.com>
+	id S933407Ab2GMRmU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 13:42:20 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:41915 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754828Ab2GMRmS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 13:42:18 -0400
+Date: Fri, 13 Jul 2012 11:42:16 -0600
+From: Khalid Aziz <khalid.aziz@hp.com>
+To: linux-kernel@vger.kernel.org
+Cc: tony.luck@intel.com, mikew@google.com, mjg@redhat.com,
+        keescook@chromium.org, gong.chen@linux.intel.com
+Subject: [PATCH v2] Add missing attributes to EFI variable attribute print
+ out from sysfs
+Message-ID: <20120713174216.GA10445@hp.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1341994155.3522.16.camel@dabdike.int.hansenpartnership.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 11, 2012 at 09:09:15AM +0100, James Bottomley wrote:
-> Hi All,
-> 
-> We have set aside the second day of the kernel summit (Tuesday 28
-> August) as mini-summit day.  So far we have only the PCI mini summit on
-> this day, so if you can think of other topics, please send them to the
-> kernel summit discuss list:
-> 
-> ksummit-2012-discuss@lists.linux-foundation.org
-> 
-> Looking at the available rooms, we think we can run about four or five
-> mini summits.
-> 
-> As an added incentive, mini summit organisers get to pick who they
-> invite and all the people they pick will get an automatic invitation to
-> the third day of the kernel summit (but not the core first day) and the
-> evening events.
+Some of the EFI variable attributes are missing from print out from
+/sys/firmware/efi/vars/*/attributes. This patch adds those in. It also
+updates code to use pre-defined constants for masking current value
+of attributes.
 
-OK, so far I believe I've heard concrete suggestions from identified
-(or fairly well identified :-) stuckees willing to organize
-mini-summits for:
+Signed-off-by: Khalid Aziz <khalid.aziz@hp.com>
+Cc: stable@vger.kernel.org
+---
+ drivers/firmware/efivars.c |   17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
 
-* ARM
-* Media
-* PCI
-* memcg
+diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
+index 47408e8..d10c987 100644
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -435,12 +435,23 @@ efivar_attr_read(struct efivar_entry *entry, char *buf)
+ 	if (status != EFI_SUCCESS)
+ 		return -EIO;
+ 
+-	if (var->Attributes & 0x1)
++	if (var->Attributes & EFI_VARIABLE_NON_VOLATILE)
+ 		str += sprintf(str, "EFI_VARIABLE_NON_VOLATILE\n");
+-	if (var->Attributes & 0x2)
++	if (var->Attributes & EFI_VARIABLE_BOOTSERVICE_ACCESS)
+ 		str += sprintf(str, "EFI_VARIABLE_BOOTSERVICE_ACCESS\n");
+-	if (var->Attributes & 0x4)
++	if (var->Attributes & EFI_VARIABLE_RUNTIME_ACCESS)
+ 		str += sprintf(str, "EFI_VARIABLE_RUNTIME_ACCESS\n");
++	if (var->Attributes & EFI_VARIABLE_HARDWARE_ERROR_RECORD)
++		str += sprintf(str, "EFI_VARIABLE_HARDWARE_ERROR_RECORD\n");
++	if (var->Attributes & EFI_VARIABLE_AUTHENTICATED_WRITE_ACCESS)
++		str += sprintf(str,
++			"EFI_VARIABLE_AUTHENTICATED_WRITE_ACCESS\n");
++	if (var->Attributes &
++			EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS)
++		str += sprintf(str,
++			"EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS\n");
++	if (var->Attributes & EFI_VARIABLE_APPEND_WRITE)
++		str += sprintf(str, "EFI_VARIABLE_APPEND_WRITE\n");
+ 	return str - buf;
+ }
+ 
+-- 
+1.7.9.5
 
-I may have missed some, so if people could send a message to the
-discuss list with [MINI-SUMMIT] in the subbject line and the name of
-the proposed mini-summit, that would be really helpful.  Please
-indicate whether you are volunteering to help organize the proposed
-mini-summit, or identify someone you think can be volunteered.  :-)
-
-Things that we will be asking the mini-summit chars to determine, in
-addition to who should be given invites for Tuesday and Wednesday is
-an estimate of how much time you need, and a list of sub-topics (and
-who might lead the sub-topic discussion).  We will be asking you to
-create a fairly well-defined schedule, with 30 and 60 minute slots, so
-that we can publish a schedule and so that people who might need to
-hop between mini-summits, have a chance to do so.  So please start
-thinking about how long each of your sub-topics will need to be, and
-who might be needed for a particular sub-topic's discussion to be
-successful.  There may be a number of developers, with fingers in
-multiple subsystem, where scheduling may become a bit of a challenge.
-
-Thanks!!
-
-						- Ted
+-- 
+Khalid Aziz
+khalid.aziz@hp.com
