@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964901Ab2GMCoY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 22:44:24 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45071 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932407Ab2GMCoW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 22:44:22 -0400
-From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-To: Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Subject: [PATCH v3] usb/host/ehci-hub: Fix the issue EG20T USB host controller has long resuming time, when pen drive is attached.
-Date: Fri, 13 Jul 2012 11:43:42 +0900
-Message-Id: <1342147422-5533-1-git-send-email-tomoya.rohm@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1342061617-5630-1-git-send-email-tomoya.rohm@gmail.com>
-References: <1342061617-5630-1-git-send-email-tomoya.rohm@gmail.com>
+	id S932456Ab2GMDDd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 23:03:33 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:38837 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752538Ab2GMDDb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 23:03:31 -0400
+Date: Thu, 12 Jul 2012 23:03:25 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Rob Landley <rob@landley.net>
+Cc: LKML <linux-kernel@vger.kernel.org>, rgetz@blackfin.uclinux.org,
+        mpm@selenic.com
+Subject: Re: feature-removal-schedule entry from 2009
+Message-ID: <20120713030325.GB12245@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Rob Landley <rob@landley.net>, LKML <linux-kernel@vger.kernel.org>,
+	rgetz@blackfin.uclinux.org, mpm@selenic.com
+References: <4FFDA698.2000707@landley.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FFDA698.2000707@landley.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Intel EG20T USB host controller does not send SOF in resuming time after
-suspending, if the FLR bit was not cleared. When pen drive is attached,
-the controller has a long resuming time to try re-connect it.
-This patch clear the FLR bit in suspending time for fixing the issue.
+On Wed, Jul 11, 2012 at 11:15:20AM -0500, Rob Landley wrote:
+> IRQF_SAMPLE_RANDOM is 3 years past its sell-by date in
+> feature-removal-schedule:
+> 
+> What:   IRQF_SAMPLE_RANDOM
+> Check:  IRQF_SAMPLE_RANDOM
+> When:   July 2009
+> 
+> Why:    Many of IRQF_SAMPLE_RANDOM users are technically bogus as
+>         entropy sources in the kernel's current entropy model. To
+>         resolve this, every input point to the kernel's entropy pool
+>         needs to better document the type of entropy source it actually
+>         is. This will be replaced with additional add_*_randomness
+>         functions in drivers/char/random.c
+> 
+> Who:    Robin Getz <rgetz@blackfin.uclinux.org>
+>         & Matt Mackall <mpm@selenic.com>
+> 
+> There are 12 remaining uses under drivers/ and 14 more under arch/, the
+> rest of the hits look like infrastructure implementing it.
+> 
+> Should I run those files through bother-maintainer.pl and try to get
+> people to stop it, or is there a plan underway I don't know about?
 
-Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
----
-v3: Update comments from Alan Stern
-	Add comment in the source code.
+I was going to deal with that in the new /dev/random tree; once those
+changes go in, IRQF_SAMPLE_RANDOM effectively becomes a no-op.  But
+I'd prefer that the ordering be that we get the new
+sample_interrupt_randomness() changes in first, and then remove the
+IRQF_SAMPLE_RANDOM.
 
-v2: Update comments from Alan Stern
-        Add patch description
-        Always clear the STS_FLR flag.
----
- drivers/usb/host/ehci-hub.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+I've just been slammed with work, processing patches for the ext4
+merge window, and kernel summit planning, and quite frankly, I
+considered this to be relatively low priority --- especially since we
+no shortage of IRQF_* flag bits, and once the new
+sample_interrupt_randomness() goes in, the flag is a complete no-op.
 
-diff --git a/drivers/usb/host/ehci-hub.c b/drivers/usb/host/ehci-hub.c
-index fc9e7cc..278b589 100644
---- a/drivers/usb/host/ehci-hub.c
-+++ b/drivers/usb/host/ehci-hub.c
-@@ -318,6 +318,13 @@ static int ehci_bus_suspend (struct usb_hcd *hcd)
- 	ehci_readl(ehci, &ehci->regs->intr_enable);
- 
- 	ehci->next_statechange = jiffies + msecs_to_jiffies(10);
-+
-+	/* Intel EG20T USB host controller does not send SOF
-+	 * in resuming time after suspending, if the FLR bit was not cleared.
-+	 * Therefore clear the FLR bit in here.
-+	 */
-+	ehci_writel(ehci, STS_FLR, &ehci->regs->status);
-+
- 	spin_unlock_irq (&ehci->lock);
- 
- 	/* ehci_work() may have re-enabled the watchdog timer, which we do not
--- 
-1.7.4.4
-
+			      	       	   	- Ted
