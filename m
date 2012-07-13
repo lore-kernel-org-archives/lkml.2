@@ -1,76 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030549Ab2GMQck (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 12:32:40 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:59862 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933270Ab2GMQcj (ORCPT
+	id S1030579Ab2GMQcz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 12:32:55 -0400
+Received: from usindpps06.hds.com ([207.126.252.19]:58187 "EHLO
+	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030551Ab2GMQcw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 12:32:39 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH 33/36] AArch64: Generic timers support
-Date: Fri, 13 Jul 2012 16:32:31 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: John Stultz <john.stultz@linaro.org>, Marc Zyngier <Marc.Zyngier@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Walleij <linus.ml.walleij@gmail.com>,
+	Fri, 13 Jul 2012 12:32:52 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Steven Rostedt <rostedt@goodmis.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Mike Turquette <mike.turquette@linaro.org>,
-        Marc Zyngier <maz@misterjones.org>
-References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com> <201207131240.03903.arnd@arndb.de> <20120713160233.GB5544@arm.com>
-In-Reply-To: <20120713160233.GB5544@arm.com>
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "'mingo@elte.hu' (mingo@elte.hu)" <mingo@elte.hu>,
+        "vnagarnaik@google.com" <vnagarnaik@google.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: RE: [PATCH]trace,x86: add x86 irq vector tracepoints
+Thread-Topic: [PATCH]trace,x86: add x86 irq vector tracepoints
+Thread-Index: Ac1ZaobLbFE8rfeBT8yS2HRcq0u5JgBpe++AAX2QufAACnE8gAAHGorg
+Date: Fri, 13 Jul 2012 16:32:04 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D40F08E421@USINDEM101.corp.hds.com>
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D401AA07@USINDEM103.corp.hds.com>
+ <1341521053.21574.22.camel@gandalf.stny.rr.com>
+ <A5ED84D3BB3A384992CBB9C77DEDA4D40F08E359@USINDEM101.corp.hds.com>
+ <alpine.LFD.2.02.1207131727430.32033@ionos>
+In-Reply-To: <alpine.LFD.2.02.1207131727430.32033@ionos>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.43.113]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207131632.31548.arnd@arndb.de>
-X-Provags-ID: V02:K0:rW1j7OKJxXS9ve9PiRZyVOq6igWWdCTXMMGpGvL0yX0
- VJ79D0HNPsu05ut88Cdh/c511n/wXNutN2T1JnxI0wH8bXVZYR
- zfg4I/TgJCneXKwsOQ4MMtReGBjWD+SaMQkfD+7pXFDnVVTRfr
- DjOb9iXVyLzYuDagiOzgi88mkvX8izif2z/gE5Xk9vc2dyQlhk
- LWaEwkcBDlpWhxLGiZGAhUQzpSoCbY5wxsWuS67acL8uL46fRN
- 8CgpUUL71aK3XEuV8YB2PJD63JLxcmvTx9id7a7J4DB/4bObGv
- vJSrLoP8yD4YYvLpxQj+kdZ+esSa+YGQvazIwl1sBksPVp2PxZ
- t6ba1kuDtpMdU9Z6pfNM=
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.260,0.0.0000
+ definitions=2012-07-13_05:2012-07-13,2012-07-13,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
+ definitions=main-1207130152
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 13 July 2012, Catalin Marinas wrote:
-> > Architectures that always have a working clock source would then just
-> > not include the timex.h header and #define ACT_HZ HZ in common code.
+
+
+> > > > +DECLARE_EVENT_CLASS(irq_vector,
+> > > > +
+> > > > +	TP_PROTO(int irq),
+> > > > +
+> > > > +	TP_ARGS(irq),
+> > > > +
+> > > > +	TP_STRUCT__entry(
+> > > > +		__field(	int,	irq	)
 > 
-> Would something like below be enough?
-> 
-> Also, are there any implications if we boot with clocksource=jiffies?
-> 
-> --- a/include/linux/jiffies.h
-> +++ b/include/linux/jiffies.h
-> @@ -55,7 +55,11 @@
->                               + ((((NOM) % (DEN)) << (LSH)) + (DEN) / 2) / (DEN))
->  
->  /* HZ is the requested value. ACTHZ is actual HZ ("<< 8" is for accuracy) */
-> +#ifdef CLOCK_TICK_RATE
->  #define ACTHZ (SH_DIV (CLOCK_TICK_RATE, LATCH, 8))
-> +#else
-> +#define ACTHZ (HZ << 8)
-> +#endif
->  
->  /* TICK_NSEC is the time between ticks in nsec assuming real ACTHZ */
->  #define TICK_NSEC (SH_DIV (1000000UL * 1000, ACTHZ, 8))
+> Shouldn't this be vector?
 > 
 
-I think that's a very good step in the right direction, yes.
+Ok. I will change it to vector.
 
-It does not let us get rid of the asm/timex.h file, but that's actually
-a separate problem. It also wouldn't hurt to put the LATCH definition
-in the same #ifdef.
+> > > > +DEFINE_EVENT(irq_vector, nmi_entry, DEFINE_EVENT(irq_vector,
+> > > > +nmi_exit, DEFINE_EVENT(irq_vector, local_timer_entry,
+> > > > +DEFINE_EVENT(irq_vector, local_timer_exit,
+> > > > +DEFINE_EVENT(irq_vector, reschedule_entry,
+> > > > +DEFINE_EVENT(irq_vector, reschedule_exit,
+> > > > +DEFINE_EVENT(irq_vector, call_function_entry,
+> > > > +DEFINE_EVENT(irq_vector, call_function_exit,
+> > > > +DEFINE_EVENT(irq_vector, call_function_single_entry,
+> > > > +DEFINE_EVENT(irq_vector, call_function_single_exit,
+> > > > +DEFINE_EVENT(irq_vector, irq_work_entry, DEFINE_EVENT(irq_vector,
+> > > > +irq_work_exit, DEFINE_EVENT(irq_vector, invalidate_tlb_entry,
+> > > > +DEFINE_EVENT(irq_vector, invalidate_tlb_exit,
+> 
+> So this set is pretty generic and applicable across architectures. Good.
+>
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Thanks.
+ 
+> > > > +DEFINE_EVENT(irq_vector, error_apic_entry,
+> > > > +DEFINE_EVENT(irq_vector, error_apic_exit,
+> > > > +DEFINE_EVENT(irq_vector, thermal_apic_entry,
+> > > > +DEFINE_EVENT(irq_vector, thermal_apic_exit,
+> > > > +DEFINE_EVENT(irq_vector, threshold_apic_entry,
+> > > > +DEFINE_EVENT(irq_vector, threshold_apic_exit,
+> > > > +DEFINE_EVENT(irq_vector, spurious_apic_entry,
+> > > > +DEFINE_EVENT(irq_vector, spurious_apic_exit,
+> > > > +DEFINE_EVENT(irq_vector, x86_platform_ipi_entry,
+> > > > +DEFINE_EVENT(irq_vector, x86_platform_ipi_exit,
+> 
+> That part is x86 specific. If we go that route, we'll end up with gazillions of arch specific vectors sooner than later.
+> 
+> Either we find better and more widely applicable names for them, if there are similar functionalities on other architectures available,
+> or 
 
-	Arnd
+I'm not familiar with other architectures...
 
+>we should have a single generic tracepoint for those which cannot be be mapped to anything useful shared across architectures.
+> 
+> Those x86 specific ones are not really frequently raised vectors, so enabling them all won't affect performance and readability of the
+> traces too much.
+
+OK. I will unify these to a single tracepoint.
+"x86_irq_vector" or so?
+
+Seiji
