@@ -1,79 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755634Ab2GMIN7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 04:13:59 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:47340 "EHLO e3.ny.us.ibm.com"
+	id S1755022Ab2GMINx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 04:13:53 -0400
+Received: from mga02.intel.com ([134.134.136.20]:57671 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754940Ab2GMINl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 04:13:41 -0400
-Date: Fri, 13 Jul 2012 13:43:33 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/5] uprobes: kill copy_vma()->uprobe_mmap()
-Message-ID: <20120713081333.GB4781@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120708202917.GA18188@redhat.com>
- <20120708203008.GA18236@redhat.com>
+	id S1751441Ab2GMINj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 04:13:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="165344814"
+Date: Fri, 13 Jul 2012 11:15:37 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: lenb@kernel.org
+Cc: linux-kernel@vger.kernel.org, rui.zhang@intel.com, khali@linux-fr.org,
+        ben-linux@fluff.org, w.sang@pengutronix.de, dmitry.torokhov@gmail.com,
+        eric.piel@tremplin-utc.net, mjg@redhat.com, ike.pan@canonical.com,
+        herton@canonical.com, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 00/12] ACPI: add module_acpi_driver() and convert drivers
+ to it
+Message-ID: <20120713081537.GN25330@intel.com>
+References: <1340881171-14811-1-git-send-email-mika.westerberg@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120708203008.GA18236@redhat.com>
+In-Reply-To: <1340881171-14811-1-git-send-email-mika.westerberg@linux.intel.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12071308-8974-0000-0000-00000B20187A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2012-07-08 22:30:08]:
+On Thu, Jun 28, 2012 at 01:59:19PM +0300, Mika Westerberg wrote:
+> This is similar than what is done for other busses before (PCI, I2C, SPI,
+> platform). It reduces a lot of unnecessary boilerplate code from modules.
+> 
+> We also remove following redundant check on few drivers:
+> 
+> 	if (acpi_disabled)
+> 		return -ENODEV;
+> 
+> as this same check is already done at the beginning of
+> acpi_bus_register_driver().
+> 
+> I think these should all go via ACPI tree because they all depend on the
+> first patch which adds the macro to the ACPI subsystem.
 
-> Kill copy_vma()->uprobe_mmap(new_vma), it is absolutely wrong.
-> 
-> This new_vma was just initialized to represent the new unmapped area,
-> [vm_start, vm_end) was returned by get_unmapped_area() in the caller.
-> 
-> This means that uprobe_mmap()->get_user_pages() will fail for sure,
-> simply because find_vma() can never succeed. And I verified that
-> sys_mremap()->mremap_to() indeed always fails with the wrong ENOMEM
-> code if [addr, addr+old_len] is probed.
-> 
-> And why this uprobe_mmap() was added? I believe the intent was wrong.
-> Note that the caller is going to do move_page_tables(), all registered
-> uprobes are already faulted in, we only change the virtual addresses.
-> 
-> NOTE: However, somehow we need to close the race with uprobe_register()
-> which relies on map_info->vaddr. This needs another fix I'll try to do
-> later. Probably we need uprobe_mmap() in move_vma() but we can not do
-> this right now, this can confuse uprobes_state.counter (which I still
-> hope we are going to kill).
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Len, do you have any comments? Could you consider merging these patches?
 
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-
-> ---
->  mm/mmap.c |    3 ---
->  1 files changed, 0 insertions(+), 3 deletions(-)
-> 
-> diff --git a/mm/mmap.c b/mm/mmap.c
-> index 3edfcdf..e5a4614 100644
-> --- a/mm/mmap.c
-> +++ b/mm/mmap.c
-> @@ -2418,9 +2418,6 @@ struct vm_area_struct *copy_vma(struct vm_area_struct **vmap,
->  			if (new_vma->vm_file) {
->  				get_file(new_vma->vm_file);
-> 
-> -				if (uprobe_mmap(new_vma))
-> -					goto out_free_mempol;
-> -
->  				if (vma->vm_flags & VM_EXECUTABLE)
->  					added_exe_file_vma(mm);
->  			}
-> -- 
-> 1.5.5.1
-> 
-
+Thanks.
