@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1163066Ab2GMQvX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 12:51:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27471 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932288Ab2GMQtG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 12:49:06 -0400
-Date: Fri, 13 Jul 2012 18:46:27 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Anton Arapov <anton@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/9] uprobes: kill write_opcode()->lock_page(new_page)
-Message-ID: <20120713164627.GA23545@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120713164552.GA23509@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S933415Ab2GMQ5e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 12:57:34 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:48477 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757109Ab2GMQ5c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 12:57:32 -0400
+From: Claudiu Ghioc <claudiughioc@gmail.com>
+To: netdev@vger.kernel.org
+Cc: davem@davemloft.net, netfilter-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, wensong@linux-vs.org, horms@verge.net.au,
+        ja@ssi.bg, pablo@netfilter.org, kaber@trash.net,
+        Claudiu Ghioc <claudiu.ghioc@gmail.com>
+Subject: [PATCH] ipvs: fixed sparse warning
+Date: Fri, 13 Jul 2012 19:57:22 +0300
+Message-Id: <1342198642-22741-1-git-send-email-claudiu.ghioc@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-write_opcode() does lock_page(new_page) for no reason. Nobody can
-see this page until __replace_page() exposes it under ptl lock, and
-we do nothing with this page after pte_unmap_unlock().
+Removed the following sparse warnings:
+*	warning: symbol 'ip_vs_control_net_init_sysctl' was not declared. Should
+	it be static?
+*	warning: symbol 'ip_vs_control_net_cleanup_sysctl' was not
+	declared. Should it be static?
 
-If nothing else, the similar code in do_wp_page() doesn't lock the
-new page for page_add_new_anon_rmap/set_pte_at_notify.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Srikar Dronamraju <srikar.vnet.ibm.com>
+Signed-off-by: Claudiu Ghioc <claudiu.ghioc@gmail.com>
 ---
- kernel/events/uprobes.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ net/netfilter/ipvs/ip_vs_ctl.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index fbb4188..dff8da2 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -239,9 +239,7 @@ retry:
- 	if (ret)
- 		goto unlock_out;
+diff --git a/net/netfilter/ipvs/ip_vs_ctl.c b/net/netfilter/ipvs/ip_vs_ctl.c
+index d43e3c1..3542c6b1 100644
+--- a/net/netfilter/ipvs/ip_vs_ctl.c
++++ b/net/netfilter/ipvs/ip_vs_ctl.c
+@@ -3674,7 +3674,7 @@ static void ip_vs_genl_unregister(void)
+  * per netns intit/exit func.
+  */
+ #ifdef CONFIG_SYSCTL
+-int __net_init ip_vs_control_net_init_sysctl(struct net *net)
++static int __net_init ip_vs_control_net_init_sysctl(struct net *net)
+ {
+ 	int idx;
+ 	struct netns_ipvs *ipvs = net_ipvs(net);
+@@ -3742,7 +3742,7 @@ int __net_init ip_vs_control_net_init_sysctl(struct net *net)
+ 	return 0;
+ }
  
--	lock_page(new_page);
- 	ret = __replace_page(vma, vaddr, old_page, new_page);
--	unlock_page(new_page);
+-void __net_exit ip_vs_control_net_cleanup_sysctl(struct net *net)
++static void __net_exit ip_vs_control_net_cleanup_sysctl(struct net *net)
+ {
+ 	struct netns_ipvs *ipvs = net_ipvs(net);
  
- unlock_out:
- 	unlock_page(old_page);
 -- 
-1.5.5.1
+1.7.10.4
 
