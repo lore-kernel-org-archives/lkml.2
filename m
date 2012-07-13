@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932710Ab2GMKXX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 06:23:23 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:36850 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932463Ab2GMKXV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 06:23:21 -0400
-Message-ID: <4FFFF711.8040003@redhat.com>
-Date: Fri, 13 Jul 2012 12:23:13 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: KY Srinivasan <kys@microsoft.com>
-CC: Greg KH <gregkh@suse.de>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: 0xB16B00B5? Really? (was Re: Move hyperv out of the drivers/staging/
- directory)
-References: <1316708240-25048-1-git-send-email-kys@microsoft.com> <20110922170450.GA4490@suse.de> <6E21E5352C11B742B20C142EB499E048081E935D@TK5EX14MBXC124.redmond.corp.microsoft.com> <20110922173618.GA5624@suse.de> <6E21E5352C11B742B20C142EB499E048081EB789@TK5EX14MBXC124.redmond.corp.microsoft.com> <20111004170415.GA1320@suse.de> <6E21E5352C11B742B20C142EB499E048081EB86F@TK5EX14MBXC124.redmond.corp.microsoft.com> <20111004193414.GA15672@suse.de>
-In-Reply-To: <20111004193414.GA15672@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932669Ab2GMK0L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 06:26:11 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:45079 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757152Ab2GMK0J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 06:26:09 -0400
+Message-ID: <1342175168.24005.27.camel@joe2Laptop>
+Subject: Re: MAINTAINERS: <steve.glendinning@smsc.com> bounces, remove or
+ update?
+From: Joe Perches <joe@perches.com>
+To: Steve Glendinning <steve@shawell.net>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <trivial@kernel.org>
+Date: Fri, 13 Jul 2012 03:26:08 -0700
+In-Reply-To: <CAKh2mn4EAe92xWJuzpf4TzFEBizbLiXvpkeEwZ4J9RcVTPOW3Q@mail.gmail.com>
+References: <1342159987.24005.19.camel@joe2Laptop>
+	 <CAKh2mn7qDHW_4GiUgDW687cBYaR7GOKdeoHQroiMBz5EA_XsyA@mail.gmail.com>
+	 <CAKh2mn4EAe92xWJuzpf4TzFEBizbLiXvpkeEwZ4J9RcVTPOW3Q@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 04/10/2011 21:34, Greg KH ha scritto:
-> diff --git a/drivers/staging/hv/hyperv_vmbus.h b/drivers/hv/hyperv_vmbus.h
-> similarity index 99%
-> rename from drivers/staging/hv/hyperv_vmbus.h
-> rename to drivers/hv/hyperv_vmbus.h
-> index 3d2d836..8261cb6 100644
-> --- a/drivers/staging/hv/hyperv_vmbus.h
-> +++ b/drivers/hv/hyperv_vmbus.h
-> @@ -28,8 +28,7 @@
->  #include <linux/list.h>
->  #include <asm/sync_bitops.h>
->  #include <linux/atomic.h>
-> -
-> -#include "hyperv.h"
-> +#include <linux/hyperv.h>
->  
->  /*
->   * The below CPUID leaves are present if VersionAndFeatures.HypervisorPresent
+On Fri, 2012-07-13 at 09:30 +0100, Steve Glendinning wrote:
+> > On 13 July 2012 07:13, Joe Perches <joe@perches.com> wrote:
+> > The @smsc.com email address is bouncing.
+> > Should it be removed from MAINTAINERS or switched to this
+> > @shawell.net address?
+> 
+> It should be changed, I posted a patch to do this back in April - I guess
+> it didn't get picked up.  Did I need to CC someone else?
+> 
+> https://lkml.org/lkml/2012/4/16/155
 
-git's rename detection snips away this gem:
+Hi Steve.
 
-+#define HV_LINUX_GUEST_ID_LO		0x00000000
-+#define HV_LINUX_GUEST_ID_HI		0xB16B00B5
-+#define HV_LINUX_GUEST_ID		(((u64)HV_LINUX_GUEST_ID_HI << 32) | \
-+					   HV_LINUX_GUEST_ID_LO)
+Andrew Morton (cc'd) generally sweeps these up.
+Maybe he and Jiri Kosina (also cc'd) can fight over it.
 
-Somone was trying to be funny, I guess.
+cheers, Joe
 
-KY, I suppose you have access to Hyper-V code or can ask someone who does.
-Is this signature actually used in the Hyper-V host code?
-
-Paolo
