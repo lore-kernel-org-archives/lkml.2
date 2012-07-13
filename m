@@ -1,70 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422657Ab2GMOSj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 10:18:39 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:39153 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757674Ab2GMOSf (ORCPT
+	id S933334Ab2GMOTR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 10:19:17 -0400
+Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:27348 "HELO
+	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757647Ab2GMOTP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 10:18:35 -0400
-Date: Fri, 13 Jul 2012 11:18:29 -0300
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: Sven Joachim <svenjoac@gmx.de>
-Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: Re: [ 000/187] 3.4.5-stable review
-Message-ID: <20120713141828.GB3185@herton-Z68MA-D2H-B3>
-References: <20120712192421.GA28926@kroah.com>
- <87sjcwz2yb.fsf@turtle.gmx.de>
+	Fri, 13 Jul 2012 10:19:15 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: TfVH12AVM1mlLUgo.V0DU9jItufwDNJXfZ3noDYl2lU4ajE
+ ILGkPkYHgxY0moTlQ.50KrAbRFcSM7ZDsr1Rjagm.nL0i4vYFiASWtmQ5Fif
+ 4F8pXa0NSHYTHFv4AojAqqHgg4WKzvZLLdiCqCzNLW4Ymj9FenE7EA1MyV2U
+ p0lKfd52ftKt9XhTRd.l791hjW4z__qu1y3Fxlze5Ad.BZ1EweF_lv19Msgo
+ S6TduC0NsTE6Lea3eOLRxRLKHkoDVJZ5a.5jxDyeqUrEXrSPngO86AtxPS8b
+ mtOli3cl8n.XUxHbLX4KcorO37UHmAk99b_JOpjiw_T4C9_PjKiej5ZUanC.
+ ylqcBkmm0exzG8FSy0mWac9rOHSuX40RPpwArR1J.aeoePNKKVMAjoqMVf_Q
+ L
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Fri, 13 Jul 2012 09:19:06 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Johannes Weiner <hannes@cmpxchg.org>
+cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Alex Shi <alex.shi@intel.com>,
+        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Don Morris <don.morris@hp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH 20/40] autonuma: alloc/free/init mm_autonuma
+In-Reply-To: <20120712181738.GA1349@cmpxchg.org>
+Message-ID: <alpine.DEB.2.00.1207130918320.24910@router.home>
+References: <1340888180-15355-1-git-send-email-aarcange@redhat.com> <1340888180-15355-21-git-send-email-aarcange@redhat.com> <20120630051217.GG3975@localhost.localdomain> <20120712180828.GL20382@redhat.com> <20120712181738.GA1349@cmpxchg.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87sjcwz2yb.fsf@turtle.gmx.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 13, 2012 at 06:42:52AM +0200, Sven Joachim wrote:
-> On 2012-07-12 21:24 +0200, Greg KH wrote:
-> 
-> > This is the start of the stable review cycle for the 3.4.5 release.
-> > There are 187 patches in this series, all will be posted as a response
-> > to this one.  If anyone has any issues with these being applied, please
-> > let me know.
-> 
-> As has been noted already, some of the patches are actually missing.
+On Thu, 12 Jul 2012, Johannes Weiner wrote:
 
-Yes, the same ones as on 3.0.37 submission:
-[ 064/187] ath9k_hw: avoid possible infinite loop in ar9003_get_pll_sqsum_dvc
-[ 155/187] PCI: EHCI: fix crash during suspend on ASUS computers
-[ 163/187] tracing: change CPU ring buffer state from tracing_cpumask
-[ 177/187] mm: Hold a file reference in madvise_remove
+> On Thu, Jul 12, 2012 at 08:08:28PM +0200, Andrea Arcangeli wrote:
+> > On Sat, Jun 30, 2012 at 01:12:18AM -0400, Konrad Rzeszutek Wilk wrote:
+> > > On Thu, Jun 28, 2012 at 02:56:00PM +0200, Andrea Arcangeli wrote:
+> > > > This is where the mm_autonuma structure is being handled. Just like
+> > > > sched_autonuma, this is only allocated at runtime if the hardware the
+> > > > kernel is running on has been detected as NUMA. On not NUMA hardware
+> > >
+> > > I think the correct wording is "non-NUMA", not "not NUMA".
+> >
+> > That sounds far too easy to me, but I've no idea what's the right is here.
+>
+> UMA?
+>
+> Single-node hardware?
 
-Also I couldn't find anywhere in the submission the email for the patch:
-"cifs: when server doesn't set CAP_LARGE_READ_X, cap default rsize at MaxBufferSize"
-I noted the patch count was off by one, and comparing to the queue git
-repo, this one I can't find.
+Lets be simple and stay with non-NUMA.
 
-Other thing I had a problem with, is when saving the patches to apply
-for testing, some of them were with "charset=y", so I had to fix up
-manually, otherwise git am complained.
 
-> 
-> > The whole patch series can be found in one patch at:
-> > 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.5-rc1.gz
-> 
-> Seems it's not there?
-> 
-> Cheers,
->        Sven
-> --
-> To unsubscribe from this list: send the line "unsubscribe stable" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
--- 
-[]'s
-Herton
