@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932679Ab2GMVVQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 17:21:16 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:48084 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751097Ab2GMVVL (ORCPT
+	id S1758221Ab2GMVUr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 17:20:47 -0400
+Received: from juliette.telenet-ops.be ([195.130.137.74]:40954 "EHLO
+	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755925Ab2GMVUl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 17:21:11 -0400
-MIME-Version: 1.0
-In-Reply-To: <50009051.3060806@schaufler-ca.com>
-References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com>
- <50009051.3060806@schaufler-ca.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 13 Jul 2012 14:20:50 -0700
-X-Google-Sender-Auth: QtGmh-sjclcoePpE5ULJ63pG4uQ
-Message-ID: <CA+55aFyD_=aMoYKBocWFXXZ7RypWhZemOLyqC4p7oqfDRinqDQ@mail.gmail.com>
-Subject: Re: [RFC] Simplifying kernel configuration for distro issues
-To: Casey Schaufler <casey@schaufler-ca.com>
-Cc: Dave Jones <davej@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
-        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
-        Debian Kernel Team <debian-kernel@lists.debian.org>,
-        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 13 Jul 2012 17:20:41 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Hirokazu Takata <takata@linux-m32r.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-m32r@ml.linux-m32r.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH 6/6] m32r: Make memset() global for CONFIG_KERNEL_BZIP2=y
+Date: Fri, 13 Jul 2012 23:20:27 +0200
+Message-Id: <1342214427-17607-6-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1342214427-17607-1-git-send-email-geert@linux-m68k.org>
+References: <1342214427-17607-1-git-send-email-geert@linux-m68k.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 13, 2012 at 2:17 PM, Casey Schaufler <casey@schaufler-ca.com> wrote:
->
-> Oh dear. I would expect Fedora to say that they require SELinux,
-> thereby making it unusable by anyone doing LSM development.
+arch/m32r/boot/compressed/misc.c:31:14: error: static declaration of 'memset' follows non-static declaration
+make[5]: *** [arch/m32r/boot/compressed/misc.o] Error 1
+make[4]: *** [arch/m32r/boot/compressed/vmlinux] Error 2
 
-Oh, *absolutely*.
+Remove the static keyword to fix this.
 
-These options would *not* be meant for people doing odd things and
-experienting with configs.
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ arch/m32r/boot/compressed/misc.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-If you do that, then you might *start* by saying "I want this distro"
-to get the initial guesstimate of the config file you want, but then
-edit the .config by hand later (and remove the "I want all the Fedora
-requirements" option, of course).
+diff --git a/arch/m32r/boot/compressed/misc.c b/arch/m32r/boot/compressed/misc.c
+index 3147aa2..28a0952 100644
+--- a/arch/m32r/boot/compressed/misc.c
++++ b/arch/m32r/boot/compressed/misc.c
+@@ -28,7 +28,7 @@ static unsigned long free_mem_ptr;
+ static unsigned long free_mem_end_ptr;
+ 
+ #ifdef CONFIG_KERNEL_BZIP2
+-static void *memset(void *s, int c, size_t n)
++void *memset(void *s, int c, size_t n)
+ {
+ 	char *ss = s;
+ 
+-- 
+1.7.0.4
 
-This is explicitly and exclusively for normal users. The whole point
-of "expert configurator for special cases" should not be given any
-thought at all - those kinds of people should simply answer "No" to
-the "Do you want the distro basic kconfig requirements" question.
-
-                Linus
