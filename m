@@ -1,94 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755553Ab2GMXA1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 19:00:27 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:46811 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754847Ab2GMXAZ (ORCPT
+	id S1755721Ab2GMXIE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 19:08:04 -0400
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:31992
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752087Ab2GMXIC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 19:00:25 -0400
+	Fri, 13 Jul 2012 19:08:02 -0400
+X-Forefront-Antispam-Report: CIP:160.33.194.229;KIP:(null);UIP:(null);IPV:NLI;H:usculsndmail02v.am.sony.com;RD:mail.sonyusa.com;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(zzbb2dI98dI1432Izz1202hzzz2fh2a8h668h839hd25hf0ah107ah)
+Message-ID: <5000AA38.5010508@am.sony.com>
+Date: Fri, 13 Jul 2012 16:07:36 -0700
+From: Frank Rowand <frank.rowand@am.sony.com>
+Reply-To: <frank.rowand@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <1342199195-2078-1-git-send-email-wad@chromium.org>
-References: <1342156672-7369-1-git-send-email-wad@chromium.org> <1342199195-2078-1-git-send-email-wad@chromium.org>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Fri, 13 Jul 2012 16:00:04 -0700
-X-Google-Sender-Auth: wm87z_q5w_FVnx6j6RmhGIUfAJI
-Message-ID: <CAObL_7GaPDNops_cL2u4yU9Afj14f6ju_ZW7qRjhSy25qsbfkw@mail.gmail.com>
-Subject: Re: [PATCH v2] x86/vsyscall: allow seccomp filter in vsyscall=emulate
-To: Will Drewry <wad@chromium.org>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        qmewlo@gmail.com, eparis@redhat.com, keescook@chromium.org,
-        james.l.morris@oracle.com, hpa@zytor.com, cevans@chromium.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Dave Jones <davej@redhat.com>, Paul Bolle <pebolle@tiscali.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <greg@kroah.com>,
+        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
+        Debian Kernel Team <debian-kernel@lists.debian.org>,
+        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Fedora Kernel Team <kernel-team@fedoraproject.org>
+Subject: Re: [RFC] Simplifying kernel configuration for distro issues
+References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com> <20120713210240.GG1707@redhat.com> <1342216225.15453.15.camel@x61.thuisdomein> <20120713215546.GH1707@redhat.com>
+In-Reply-To: <20120713215546.GH1707@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 13, 2012 at 10:06 AM, Will Drewry <wad@chromium.org> wrote:
-> If a seccomp filter program is installed, older static binaries and
-> distributions with older libc implementations (glibc 2.13 and earlier)
-> that rely on vsyscall use will be terminated regardless of the filter
-> program policy when executing time, gettimeofday, or getcpu.  This is
-> only the case when vsyscall emulation is in use (vsyscall=emulate is the
-> default).
->
-> This patch emulates system call entry inside a vsyscall=emulate by
-> populating regs->ax and regs->orig_ax with the system call number prior
-> to calling into seccomp such that all seccomp-dependencies function
-> normally.  Additionally, system call return behavior is emulated in line
-> with other vsyscall entrypoints for the trace/trap cases.
->
-> Reported-by: Owen Kibel <qmewlo@gmail.com>
-> Signed-off-by: Will Drewry <wad@chromium.org>
->
-> v2: - fixed ip and sp on SECCOMP_RET_TRAP/TRACE (thanks to luto@mit.edu)
+On 07/13/12 14:55, Dave Jones wrote:
+> On Fri, Jul 13, 2012 at 11:50:25PM +0200, Paul Bolle wrote:
+> 
+>  > But just removing all the certainly unused macros probably wouldn't have
+>  > made a noticeable difference to anyone using those defconfig files
+>  > anyway.
+> 
+> My point is that I don't think there's many people actually using them.
+> (maybe more on the niche platforms, but x86[64] ? I'm sceptical they're used at all)
 
-> @@ -253,6 +273,12 @@ bool emulate_vsyscall(struct pt_regs *regs, unsigned long address)
->
->         current_thread_info()->sig_on_uaccess_error = prev_sig_on_uaccess_error;
->
-> +       if (skip) {
-> +               if ((long)regs->ax <= 0L) /* seccomp errno emulation */
-> +                       goto do_ret;
-> +               goto done; /* seccomp trace/trap */
-> +       }
-> +
->         if (ret == -EFAULT) {
->                 /* Bad news -- userspace fed a bad pointer to a vsyscall. */
->                 warn_bad_vsyscall(KERN_INFO, regs,
-> @@ -271,10 +297,11 @@ bool emulate_vsyscall(struct pt_regs *regs, unsigned long address)
->
->         regs->ax = ret;
->
-> +do_ret:
->         /* Emulate a ret instruction. */
->         regs->ip = caller;
->         regs->sp += 8;
-> -
-> +done:
->         return true;
->
->  sigsegv:
-> --
-> 1.7.9.5
->
+I'm one of those people who use default configs.  I build a given kernel version for
+many different embedded boards and expect the default config to work for them.  It
+makes life much easier.
 
-This has the same odd property as the sigsegv path that the faulting
-instruction will appear to be the mov, not the syscall.  That seems to
-be okay, though -- various pieces of code that try to restart the segv
-are okay with that.
+I also share Linus' pain when building for my host x86 system and try to
+remove the cruft from my distro config.
 
-Is there any code that assumes that changing rax (i.e. the syscall
-number) and restarting a syscall after SIGSYS will invoke the new
-syscall?  (The RET_TRACE path might be similar -- does the
-ptrace_event(PTRACE_EVENT_SECCOMP, data) in seccomp.c give a debugger
-a chance to synchronously cancel or change the syscall?
+-Frank
 
-If those issues aren't problems, then:
-
-Reviewed-by: Andy Lutomirski <luto@amacapital.net>
-
-(If the syscall number needs to change after the fact in the
-SECCOMP_RET_TRAP case, it'll be a mess.)
-
---Andy
