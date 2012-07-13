@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755716Ab2GMIyO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 04:54:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8622 "EHLO mx1.redhat.com"
+	id S1756706Ab2GMIyb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 04:54:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57704 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751619Ab2GMIyI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 04:54:08 -0400
+	id S1752097Ab2GMIyQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 04:54:16 -0400
 From: Asias He <asias@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Benjamin LaHaise <bcrl@kvack.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Jeff Moyer <jmoyer@redhat.com>, kvm@vger.kernel.org,
-        linux-aio@kvack.org, linux-fsdevel@vger.kernel.org,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        virtualization@lists.linux-foundation.org
-Subject: [PATCH RESEND 0/5] Add vhost-blk support
-Date: Fri, 13 Jul 2012 16:55:06 +0800
-Message-Id: <1342169711-12386-1-git-send-email-asias@redhat.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Jeff Moyer <jmoyer@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>, linux-fsdevel@vger.kernel.org,
+        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org
+Subject: [PATCH RESEND 2/5] eventfd: Export symbol eventfd_file_create()
+Date: Fri, 13 Jul 2012 16:55:08 +0800
+Message-Id: <1342169711-12386-3-git-send-email-asias@redhat.com>
+In-Reply-To: <1342169711-12386-1-git-send-email-asias@redhat.com>
+References: <1342169711-12386-1-git-send-email-asias@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is useful for people who want to create an eventfd in kernel,
+e.g. vhost-blk.
 
-Hi folks,
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Jeff Moyer <jmoyer@redhat.com>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Cc: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: kvm@vger.kernel.org
+Cc: virtualization@lists.linux-foundation.org
+Signed-off-by: Asias He <asias@redhat.com>
+---
+ fs/eventfd.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-[I am resending to fix the broken thread in the previous one.]
-
-This patchset adds vhost-blk support. vhost-blk is a in kernel virito-blk
-device accelerator. Compared to userspace virtio-blk implementation, vhost-blk
-gives about 5% to 15% performance improvement.
-
-Asias He (5):
-  aio: Export symbols and struct kiocb_batch for in kernel aio usage
-  eventfd: Export symbol eventfd_file_create()
-  vhost: Make vhost a separate module
-  vhost-net: Use VHOST_NET_FEATURES for vhost-net
-  vhost-blk: Add vhost-blk support
-
- drivers/vhost/Kconfig  |   20 +-
- drivers/vhost/Makefile |    6 +-
- drivers/vhost/blk.c    |  600 ++++++++++++++++++++++++++++++++++++++++++++++++
- drivers/vhost/net.c    |    4 +-
- drivers/vhost/test.c   |    4 +-
- drivers/vhost/vhost.c  |   48 ++++
- drivers/vhost/vhost.h  |   18 +-
- fs/aio.c               |   37 ++-
- fs/eventfd.c           |    1 +
- include/linux/aio.h    |   21 ++
- include/linux/vhost.h  |    3 +
- 11 files changed, 731 insertions(+), 31 deletions(-)
- create mode 100644 drivers/vhost/blk.c
-
+diff --git a/fs/eventfd.c b/fs/eventfd.c
+index d81b9f6..b288963 100644
+--- a/fs/eventfd.c
++++ b/fs/eventfd.c
+@@ -402,6 +402,7 @@ struct file *eventfd_file_create(unsigned int count, int flags)
+ 
+ 	return file;
+ }
++EXPORT_SYMBOL_GPL(eventfd_file_create);
+ 
+ SYSCALL_DEFINE2(eventfd2, unsigned int, count, int, flags)
+ {
 -- 
 1.7.10.4
 
