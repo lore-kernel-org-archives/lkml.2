@@ -1,65 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756544Ab2GMX3Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 19:29:16 -0400
-Received: from mx1.vsecurity.com ([209.67.252.12]:56898 "EHLO
-	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756101Ab2GMX3O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 19:29:14 -0400
-X-Greylist: delayed 397 seconds by postgrey-1.27 at vger.kernel.org; Fri, 13 Jul 2012 19:29:14 EDT
-Message-ID: <5000ADB7.7060307@vsecurity.com>
-Date: Fri, 13 Jul 2012 19:22:31 -0400
-From: Dan Rosenberg <drosenberg@vsecurity.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Stevie Trujillo <stevie.trujillo@gmail.com>
-CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: kptr_restrict: pK-error in SysRq show-all-timers(Q)
-References: <CAJiZuY2c1TVVGDxqSDSVC04t5KHK7k=ysJ99Bw6QKvEYdeWO3A@mail.gmail.com>
-In-Reply-To: <CAJiZuY2c1TVVGDxqSDSVC04t5KHK7k=ysJ99Bw6QKvEYdeWO3A@mail.gmail.com>
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756639Ab2GMXlR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 19:41:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47337 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756182Ab2GMXlQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 19:41:16 -0400
+Date: Sat, 14 Jul 2012 09:41:09 +1000
+From: NeilBrown <neilb@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        linux RAID <linux-raid@vger.kernel.org>,
+        Arnold Schulz <arnysch@gmx.net>
+Subject: [PULL REQUEST] one new bugfix for md/RAID1
+Message-ID: <20120714094109.554bce65@notabene.brown>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/NYRywZrtPpBMOtS23/Kl0lc"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2012 05:20 PM, Stevie Trujillo wrote:
-> Hello,
->
-> if I press ALT+SysRq+Q all the pointers are replaced with "pK-error" like this:
-> [23153.208033]   .base:               pK-error
->
-> with echo h > /proc/sysrq-trigger it works:
-> [23107.776363]   .base:       ffff88023e60d540
->
-> --
-> Stevie Trujillo
+--Sig_/NYRywZrtPpBMOtS23/Kl0lc
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-The intent behind this behavior was to return "pK-error" in cases where the %pK
-format specifier was used in interrupt context, because the CAP_SYSLOG check
-wouldn't be meaningful.  Clearly this should only apply when kptr_restrict is
-actually enabled though.
 
-Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
-Cc: stable@vger.kernel.org
----
- lib/vsprintf.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+The following changes since commit 10684112c9d154172ac34e48a2ab68649e8f63ac:
 
-diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-index c3f36d41..598a73e 100644
---- a/lib/vsprintf.c
-+++ b/lib/vsprintf.c
-@@ -1030,7 +1030,8 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
- 		 * %pK cannot be used in IRQ context because its test
- 		 * for CAP_SYSLOG would be meaningless.
- 		 */
--		if (in_irq() || in_serving_softirq() || in_nmi()) {
-+		if (kptr_restrict && (in_irq() || in_serving_softirq() ||
-+				      in_nmi())) {
- 			if (spec.field_width == -1)
- 				spec.field_width = default_width;
- 			return string(buf, end, "pK-error", spec);
+  md/raid10: fix careless build error (2012-07-04 09:35:35 +1000)
 
+are available in the git repository at:
+
+  git://neil.brown.name/md/ tags/md-3.5-fixes
+
+for you to fetch changes up to 2d4f4f3384d4ef4f7c571448e803a1ce721113d5:
+
+  md/raid1: fix use-after-free bug in RAID1 data-check code. (2012-07-09 11=
+:34:13 +1000)
+
+----------------------------------------------------------------
+md: One use-after-free bugfix for RAID1
+
+----------------------------------------------------------------
+NeilBrown (1):
+      md/raid1: fix use-after-free bug in RAID1 data-check code.
+
+ drivers/md/raid1.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+
+Thanks,
+NeilBrown
+
+--Sig_/NYRywZrtPpBMOtS23/Kl0lc
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIVAwUBUACyFTnsnt1WYoG5AQJ+Og/9FiGutwHqh9OmwPStjlpLWntFk/WcsYoV
+WRmjmkf1rde0e+sVOIa7cchcL7fvKOrYJjNmYUFM5/n68PsldWh47Mn1g7ZQzYMc
+WLqjfE7i3ObrGGqwpWwbK1xU2D0YFf95lB47gY9Tk8Jf36O0pxyVEnZH1fNESqXs
+dEUwOe/Jq8oZ7TrOvz3+UB5bBC1o5L9UGFwqmChi0tL959Zou3SqH6Dhh0AvzBQb
+u3dGlL028OvGVpR8ZaceAiCbYVIurS8un2mN7NcQ2AreIwIlJ3BNLqmOvDRfEefH
+/T/RcSPe1NJ/SG1dUgk71t/RmTYdqRm7HwiIRlVJOm7RGE3pAXxNbC/t2iiW7Lzv
+g2NXHQOooeiCf6cKD2oVCfvxg/KOTFFnLu9U14rNJJPs/J8YEEDF0x+9r2SdXUpi
+E0ujD+CfNe/TxFgE6nw1vXDHo8C5HhoT8mxJCEUwk5M+dY262W7vWO9ku0aRfCMA
+9zHDC1D3o0myEdA7CSj9csd0ZEFRRnJy1MoSdfrVwu/P7sEC2mzTN6E5vp2QfR7O
+waNdcbhHwV0jA3Qc02AcqMwcyKcshGLfU4J9qi9T4qrduVAfoWwzqHcpWwWMxf/I
+d1xOvHu5pVXYeTff0Jxx1fmPtInme38QXx5JgB093vjnh1h2776MoKiRp/YinLCs
+RHDYbdTnmes=
+=v/19
+-----END PGP SIGNATURE-----
+
+--Sig_/NYRywZrtPpBMOtS23/Kl0lc--
