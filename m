@@ -1,121 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754662Ab2GMHiy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 03:38:54 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:18403
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752677Ab2GMHiw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 03:38:52 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 6
-X-BigFish: VS6(zz98dI1432Ia1fflb922lzz1202hzz8275bh8275dhz2dh87h2a8h668h839h944hd25he96hf0ah107ah)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Fri, 13 Jul 2012 15:59:39 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-CC: <linux-kernel@vger.kernel.org>, <linux@arm.linux.org.uk>,
-        <Russ.Dill@ti.com>, <mporter@ti.com>,
-        <linux-arm-kernel@lists.infradead.org>, <stable@vger.kernel.org>
-Subject: Re: [PATCH] [ARM] Unconditional call to smp_cross_call on UP crashes
- (take #2)
-Message-ID: <20120713075937.GC10602@S2100-06.ap.freescale.net>
-References: <1337975916-31167-1-git-send-email-panto@antoniou-consulting.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1337975916-31167-1-git-send-email-panto@antoniou-consulting.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
+	id S1754809Ab2GMHjz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 03:39:55 -0400
+Received: from mga11.intel.com ([192.55.52.93]:37231 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752677Ab2GMHjy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 03:39:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="176829732"
+Message-ID: <1342165278.1682.259.camel@rui.sh.intel.com>
+Subject: RE: How to use the generic thermal sysfs.
+From: Zhang Rui <rui.zhang@intel.com>
+To: Wei Ni <wni@nvidia.com>
+Cc: "R, Durgadoss" <durgadoss.r@intel.com>, "Brown, Len" <len.brown@intel.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "khali@linux-fr.org" <khali@linux-fr.org>,
+        "joe@perches.com" <joe@perches.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@ger.kernel.org" <linux-tegra@ger.kernel.org>,
+        Alex Courbot <acourbot@nvidia.com>
+Date: Fri, 13 Jul 2012 15:41:18 +0800
+In-Reply-To: <1342164616.27605.129.camel@tegra-chromium-2>
+References: <1342088573.27605.101.camel@tegra-chromium-2>
+	 <4D68720C2E767A4AA6A8796D42C8EB5915287C@BGSMSX101.gar.corp.intel.com>
+	 <1342144273.1682.237.camel@rui.sh.intel.com>
+	 <1342164616.27605.129.camel@tegra-chromium-2>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pantelis,
+On 五, 2012-07-13 at 15:30 +0800, Wei Ni wrote:
+> On Fri, 2012-07-13 at 09:51 +0800, Zhang Rui wrote:
+> > On 四, 2012-07-12 at 04:54 -0600, R, Durgadoss wrote:
+> > > Hi,
+> > > 
+> > > > -----Original Message-----
+> > > > From: Wei Ni [mailto:wni@nvidia.com]
+> > > > Sent: Thursday, July 12, 2012 3:53 PM
+> > > > To: Zhang, Rui; Brown, Len; akpm@linux-foundation.org; khali@linux-fr.org;
+> > > > joe@perches.com; R, Durgadoss
+> > > > Cc: linux-kernel@vger.kernel.org; linux-tegra@ger.kernel.org;
+> > > > acourbot@nvidia.com
+> > > > Subject: How to use the generic thermal sysfs.
+> > > > 
+> > > > Hi, all
+> > > > I'm working on the tegra thermal throttling upstream issue.
+> > > > The tegra30 board use the nct1008 as the thermal sensor, and the lm90 is
+> > > > the sensor driver. We want to use the generic thermal sysfs.
+> > > > 
+> > > > My question is where should we register the thermal zone device? We may
+> > > > have two place to do it:
+> > > > 1. register it in the sensor driver, such as lm90.c
+> > > > In this way, the sensor driver doesn't need to export any APIs, such as
+> > > > get_temp.
+> > > 
+> > > This approach is preferred.
+> > > 
+> > > > 2. register in my tegra thermal framework.
+> > > > In this way, the sensor driver need to export some APIs, which are used
+> > > > to register the ops and do any other things.
+> > > 
+> > > What do you mean by "my tegra thermal framework" ? Where does the source
+> > > file for this sit in the mainline kernel ?
+> > > 
+> > I have the same question.
+> > It sounds like that you want to use the tegra thermal framework to do
+> > thermal management instead of the generic thermal layer, right?
+> > 
+> > IMO, the purpose of the generic thermal layer is
+> > 1) do kernel thermal management
+> > 2) export unique sysfs I/F to userspace so that users/userspace
+> > applications can take over the thermal management.
+> > 
+> > what is the benefit to have another driver to do thermal management in
+> > kernel?
+> > If the current thermal management in the generic thermal layer can not
+> > work well on your platform, it is a good chance to enhance the kernel
+> > thermal manager. :)
+> 
+> Our tegra thermal framework also will use the generic thermal layer. It
+> will register the cooling device, and run the throttling in this generic
+> framework.
+> But we have a special mechanism, when the temp is below the trip temp,
+> we will set different cpu capability for different temp range. For
+> example, set the low/high temp as 20C/30C to the sensor, and set the cpu
+> to the max capability, it mean the cpu can run up to the max freq and
+> voltage in this temp range. if the temp is out that range, the sensor
+> will have irq/alert to notify the tegra framework, then we will set to
+> another temperature range and cpu capability.
+> I think we can try to add this mechanism to the generic framework as a
+> new policy, right?
+> 
+I think you can make use of the upper&lower limit in my patch set.
+Say, here is your thermal policy
+20C - 30C, P0
+30C - 40C, P1 - P2
+40C - 60C, P3 - P5
+60C+, P6 ~ Pn
 
-In case you do not know the process of ARM core patches.  You need to
-put the patch into Russell's patch system [1] after review gets done.
-Then the patch will show up on Russell's git tree.
+you can register to the thermal layer 4 passive trip points,
+20C, 30C, 40C, 60C, and then
+1) for trip 0 (20C), upper limit 0, lower limit 0
+2) for trip 1 (30C), upper limit 2, lower limit 1
+3) for trip 2 (40C), upper limit 5, lower limit 3
+4) for trip 3 (60C), upper limit n, lower limit 6
 
-Regards,
-Shawn
+you can program your own sensor to get interrupt when the temperature
+hits 20C/30C/40C/60C, and the generic thermal layer will put the
+processors to proper frequency for each trip point.
 
-[1] http://www.arm.linux.org.uk/developer/patches/
+what do you think?
 
-On Fri, May 25, 2012 at 07:58:36PM +0000, Pantelis Antoniou wrote:
-> omap2plus_defconfig builds with SMP & SMP_ON_UP set.
-> On beagle (which is UP) is_smp() returns false and we don't call
-> smp_init_cpus which in turn does not initialize smp_cross_call which
-> remains NULL.
+BTW, the upper and lower limit is introduced in the patch set I'm
+testing, so maybe you were not aware of it.
+
+thanks,
+rui
+> > 
+> > thanks,
+> > rui
+> > 
+> > > > 
+> > > > How should I do it?
+> > > > 
+> > > > And in current codes, there have the event notification, in the form of
+> > > > a netlink event. But it's difficult to be used in the kernel, it's
+> > > > normally for the communication with user-space. How about to add a
+> > > > notify call chain for it? So when the sensor has irq alert, it can send
+> > > > a notify to my thermal framework in kernel.
+> > > 
+> > > We are working on a notification API from any generic sensor driver to
+> > > the thermal framework.
+> > > Please have a look at the 'notify_thermal_framework' API in the patch here:
+> > > http://www.spinics.net/lists/linux-acpi/msg36049.html
 > 
-> When issuing a reboot we OOPS with a NULL dereference on stop smp_call.
+> It's cool. I will cherry pick them to run it.
 > 
-> Fixed by a check with if (!cpumask_empty(&mask)) before issuing the smp
-> stop cross call.
+> > > 
+> > > Thanks,
+> > > Durga
+> > > 
+> > 
+> > 
 > 
-> Restarting system.
-> Unable to handle kernel NULL pointer dereference at virtual address 00000000
-> pgd = dda50000
-> [00000000] *pgd=9e723831, *pte=00000000, *ppte=00000000
-> Internal error: Oops: 80000007 [#1] SMP ARM
-> Modules linked in:
-> CPU: 0    Not tainted  (3.4.0-00001-gb15b046 #30)
-> PC is at 0x0
-> LR is at smp_send_stop+0x4c/0xe8
-> pc : [<00000000>]    lr : [<c00188cc>]    psr: 60000013
-> sp : de7b5e70  ip : 00000000  fp : 00000001
-> r10: 00000000  r9 : de7b4000  r8 : c07263d0
-> r7 : 00000000  r6 : c06e1294  r5 : 000f4240  r4 : de7b5e74
-> r3 : 00000000  r2 : 00000000  r1 : 00000006  r0 : de7b5e74
-> Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-> Control: 10c5387d  Table: 9da50019  DAC: 00000015
-> Process reboot (pid: 2229, stack limit = 0xde7b42f8)
-> Stack: (0xde7b5e70 to 0xde7b6000)
-> 5e60:                                     00000000 00000000 00000000 01234567
-> 5e80: de7b4000 c001475c 4321fedc c0052570 0000003e 00000000 c081db78 0000003e
-> 5ea0: 00000001 00000002 00000002 c00891f0 00000002 dd5ba0ac 00000002 00000000
-> 5ec0: dd5ba0ac de7b4000 c009eef4 de7b4000 c00f44dc de7b4000 c00f44dc 00000000
-> 5ee0: c0c94d24 de7b4000 00000000 00000000 00000002 00000002 00000000 c00891f0
-> 5f00: 00000002 00000000 00000000 c011286c 00000000 dd5ba060 60000013 00000000
-> 5f20: dd688d8c 00000000 de7b4000 c06e20f8 dec14760 dec14750 de7b4000 c06e20f8
-> 5f40: 00011f10 c01128a0 00000002 00000000 c011286c c00fa014 dd8c3180 de7b4000
-> 5f60: c0013380 de508bc0 00000001 60000010 00000001 ef000000 00000001 c0089bfc
-> 5f80: 00000000 00000001 00000004 00000058 00000000 00000001 00000004 00000058
-> 5fa0: c0013428 c0013260 00000000 00000001 fee1dead 28121969 01234567 00000000
-> 5fc0: 00000000 00000001 00000004 00000058 00000001 00000001 00000000 00000001
-> 5fe0: b6e76200 beba4c90 00009210 b6e76218 60000010 fee1dead 00000000 00000000
-> [<c00188cc>] (smp_send_stop+0x4c/0xe8) from [<c001475c>] (machine_restart+0xc/0x54)
-> [<c001475c>] (machine_restart+0xc/0x54) from [<c0052570>] (sys_reboot+0x140/0x204)
-> [<c0052570>] (sys_reboot+0x140/0x204) from [<c0013260>] (ret_fast_syscall+0x0/0x3c)
-> Code: bad PC value
-> ---[ end trace f5035e8726d1f51b ]---
 > 
-> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
-> Cc: stable@vger.kernel.org
-> ---
->  arch/arm/kernel/smp.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-> index 8f46446..7babc3f 100644
-> --- a/arch/arm/kernel/smp.c
-> +++ b/arch/arm/kernel/smp.c
-> @@ -590,7 +590,8 @@ void smp_send_stop(void)
->  
->  	cpumask_copy(&mask, cpu_online_mask);
->  	cpumask_clear_cpu(smp_processor_id(), &mask);
-> -	smp_cross_call(&mask, IPI_CPU_STOP);
-> +	if (!cpumask_empty(&mask))
-> +		smp_cross_call(&mask, IPI_CPU_STOP);
->  
->  	/* Wait up to one second for other CPUs to stop */
->  	timeout = USEC_PER_SEC;
-> -- 
-> 1.7.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+
 
