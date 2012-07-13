@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933730Ab2GMAdU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 20:33:20 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40985 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759342Ab2GMAdM (ORCPT
+	id S1759350Ab2GMAdN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 20:33:13 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:42733 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933656Ab2GMAdG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 20:33:12 -0400
+	Thu, 12 Jul 2012 20:33:06 -0400
 From: Michel Lespinasse <walken@google.com>
 To: aarcange@redhat.com, dwmw2@infradead.org, riel@redhat.com,
         peterz@infradead.org, daniel.santos@pobox.com, axboe@kernel.dk,
         ebiederm@xmission.com, akpm@linux-foundation.org
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         torvalds@linux-foundation.org
-Subject: [PATCH v2 12/12] rbtree: coding style adjustments
-Date: Thu, 12 Jul 2012 17:31:57 -0700
-Message-Id: <1342139517-3451-13-git-send-email-walken@google.com>
+Subject: [PATCH v2 10/12] rbtree: optimize case selection logic in __rb_erase_color()
+Date: Thu, 12 Jul 2012 17:31:55 -0700
+Message-Id: <1342139517-3451-11-git-send-email-walken@google.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1342139517-3451-1-git-send-email-walken@google.com>
 References: <1342139517-3451-1-git-send-email-walken@google.com>
@@ -23,108 +23,114 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Set comment and indentation style to be consistent with linux coding style
-and the rest of the file, as suggested by Peter Zijlstra
+In __rb_erase_color(), we have to select one of 3 cases depending on the
+color on the 'other' node children. If both children are black, we flip
+a few node colors and iterate. Otherwise, we do either one or two
+tree rotations, depending on the color of the 'other' child opposite
+to 'node', and then we are done.
+
+The corresponding logic had duplicate checks for the color of the 'other'
+child opposite to 'node'. It was checking it first to determine if both
+children are black, and then to determine how many tree rotations are
+required. Rearrange the logic to avoid that extra check.
 
 Signed-off-by: Michel Lespinasse <walken@google.com>
 ---
- lib/rbtree.c |   42 +++++++++++++++++++++++-------------------
- 1 files changed, 23 insertions(+), 19 deletions(-)
+ lib/rbtree.c |   68 +++++++++++++++++++++++++--------------------------------
+ 1 files changed, 30 insertions(+), 38 deletions(-)
 
 diff --git a/lib/rbtree.c b/lib/rbtree.c
-index a38e473..0892670 100644
+index baf7c83..eb823a3 100644
 --- a/lib/rbtree.c
 +++ b/lib/rbtree.c
-@@ -363,8 +363,7 @@ void rb_erase(struct rb_node *node, struct rb_root *root)
- 		child = node->rb_right;
- 	else if (!node->rb_right)
- 		child = node->rb_left;
--	else
--	{
-+	else {
- 		struct rb_node *old = node, *left;
- 
- 		node = node->rb_right;
-@@ -406,17 +405,15 @@ void rb_erase(struct rb_node *node, struct rb_root *root)
- 
- 	if (child)
- 		rb_set_parent(child, parent);
--	if (parent)
--	{
-+	if (parent) {
- 		if (parent->rb_left == node)
- 			parent->rb_left = child;
- 		else
- 			parent->rb_right = child;
--	}
--	else
-+	} else
- 		root->rb_node = child;
- 
-- color:
-+color:
- 	if (color == RB_BLACK)
- 		__rb_erase_color(child, parent, root);
+@@ -283,28 +283,24 @@ static void __rb_erase_color(struct rb_node *node, struct rb_node *parent,
+ 				__rb_rotate_left(parent, root);
+ 				other = parent->rb_right;
+ 			}
+-			if ((!other->rb_left || rb_is_black(other->rb_left)) &&
+-			    (!other->rb_right || rb_is_black(other->rb_right)))
+-			{
+-				rb_set_red(other);
+-				node = parent;
+-				parent = rb_parent(node);
+-			}
+-			else
+-			{
+-				if (!other->rb_right || rb_is_black(other->rb_right))
+-				{
+-					rb_set_black(other->rb_left);
++			if (!other->rb_right || rb_is_black(other->rb_right)) {
++				if (!other->rb_left ||
++				    rb_is_black(other->rb_left)) {
+ 					rb_set_red(other);
+-					__rb_rotate_right(other, root);
+-					other = parent->rb_right;
++					node = parent;
++					parent = rb_parent(node);
++					continue;
+ 				}
+-				rb_set_color(other, rb_color(parent));
+-				rb_set_black(parent);
+-				rb_set_black(other->rb_right);
+-				__rb_rotate_left(parent, root);
+-				break;
++				rb_set_black(other->rb_left);
++				rb_set_red(other);
++				__rb_rotate_right(other, root);
++				other = parent->rb_right;
+ 			}
++			rb_set_color(other, rb_color(parent));
++			rb_set_black(parent);
++			rb_set_black(other->rb_right);
++			__rb_rotate_left(parent, root);
++			break;
+ 		} else {
+ 			other = parent->rb_left;
+ 			if (rb_is_red(other))
+@@ -314,28 +310,24 @@ static void __rb_erase_color(struct rb_node *node, struct rb_node *parent,
+ 				__rb_rotate_right(parent, root);
+ 				other = parent->rb_left;
+ 			}
+-			if ((!other->rb_left || rb_is_black(other->rb_left)) &&
+-			    (!other->rb_right || rb_is_black(other->rb_right)))
+-			{
+-				rb_set_red(other);
+-				node = parent;
+-				parent = rb_parent(node);
+-			}
+-			else
+-			{
+-				if (!other->rb_left || rb_is_black(other->rb_left))
+-				{
+-					rb_set_black(other->rb_right);
++			if (!other->rb_left || rb_is_black(other->rb_left)) {
++				if (!other->rb_right ||
++				    rb_is_black(other->rb_right)) {
+ 					rb_set_red(other);
+-					__rb_rotate_left(other, root);
+-					other = parent->rb_left;
++					node = parent;
++					parent = rb_parent(node);
++					continue;
+ 				}
+-				rb_set_color(other, rb_color(parent));
+-				rb_set_black(parent);
+-				rb_set_black(other->rb_left);
+-				__rb_rotate_right(parent, root);
+-				break;
++				rb_set_black(other->rb_right);
++				rb_set_red(other);
++				__rb_rotate_left(other, root);
++				other = parent->rb_left;
+ 			}
++			rb_set_color(other, rb_color(parent));
++			rb_set_black(parent);
++			rb_set_black(other->rb_left);
++			__rb_rotate_right(parent, root);
++			break;
+ 		}
+ 	}
  }
-@@ -529,8 +526,10 @@ struct rb_node *rb_next(const struct rb_node *node)
- 	if (RB_EMPTY_NODE(node))
- 		return NULL;
- 
--	/* If we have a right-hand child, go down and then left as far
--	   as we can. */
-+	/*
-+	 * If we have a right-hand child, go down and then left as far
-+	 * as we can.
-+	 */
- 	if (node->rb_right) {
- 		node = node->rb_right; 
- 		while (node->rb_left)
-@@ -538,12 +537,13 @@ struct rb_node *rb_next(const struct rb_node *node)
- 		return (struct rb_node *)node;
- 	}
- 
--	/* No right-hand children.  Everything down and left is
--	   smaller than us, so any 'next' node must be in the general
--	   direction of our parent. Go up the tree; any time the
--	   ancestor is a right-hand child of its parent, keep going
--	   up. First time it's a left-hand child of its parent, said
--	   parent is our 'next' node. */
-+	/*
-+	 * No right-hand children. Everything down and left is smaller than us,
-+	 * so any 'next' node must be in the general direction of our parent.
-+	 * Go up the tree; any time the ancestor is a right-hand child of its
-+	 * parent, keep going up. First time it's a left-hand child of its
-+	 * parent, said parent is our 'next' node.
-+	 */
- 	while ((parent = rb_parent(node)) && node == parent->rb_right)
- 		node = parent;
- 
-@@ -558,8 +558,10 @@ struct rb_node *rb_prev(const struct rb_node *node)
- 	if (RB_EMPTY_NODE(node))
- 		return NULL;
- 
--	/* If we have a left-hand child, go down and then right as far
--	   as we can. */
-+	/*
-+	 * If we have a left-hand child, go down and then right as far
-+	 * as we can.
-+	 */
- 	if (node->rb_left) {
- 		node = node->rb_left; 
- 		while (node->rb_right)
-@@ -567,8 +569,10 @@ struct rb_node *rb_prev(const struct rb_node *node)
- 		return (struct rb_node *)node;
- 	}
- 
--	/* No left-hand children. Go up till we find an ancestor which
--	   is a right-hand child of its parent */
-+	/*
-+	 * No left-hand children. Go up till we find an ancestor which
-+	 * is a right-hand child of its parent.
-+	 */
- 	while ((parent = rb_parent(node)) && node == parent->rb_left)
- 		node = parent;
- 
 -- 
 1.7.7.3
 
