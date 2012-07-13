@@ -1,653 +1,477 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030523Ab2GMLLx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 07:11:53 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39235 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755973Ab2GMLK4 (ORCPT
+	id S1161006Ab2GML3N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 07:29:13 -0400
+Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:52776 "EHLO
+	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752136Ab2GML3K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 07:10:56 -0400
-From: Amit Daniel Kachhap <amit.kachhap@linaro.org>
-To: linux-pm@lists.linux-foundation.org, akpm@linux-foundation.org,
-        lenb@kernel.org
-Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, lm-sensors@lm-sensors.org,
-        amit.kachhap@linaro.org, Donggeun Kim <dg77.kim@samsung.com>,
-        Durgadoss <durgadoss.r@intel.com>, Jean Delvare <khali@linux-fr.org>
-Subject: [PATCH v5 3/5] thermal: exynos5: add exynos5 thermal sensor driver support
-Date: Fri, 13 Jul 2012 16:40:23 +0530
-Message-Id: <1342177825-19006-4-git-send-email-amit.kachhap@linaro.org>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1342177825-19006-1-git-send-email-amit.kachhap@linaro.org>
-References: <1342177825-19006-1-git-send-email-amit.kachhap@linaro.org>
+	Fri, 13 Jul 2012 07:29:10 -0400
+Message-ID: <50000635.70102@stericsson.com>
+Date: Fri, 13 Jul 2012 16:57:49 +0530
+From: Rajanikanth HV <rajanikanth.hv@stericsson.com>
+Organization: st.com
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linaro-dev-request@lists.linaro.org" 
+	<linaro-dev-request@lists.linaro.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        <STEricsson_nomadik_linux@list.st.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <patches@linaro.org>
+Subject: Re: [PATCH] mfd: Implement devicetree support for AB8500 Btemp
+References: <mailman.377.1341937217.1590.linaro-dev@lists.linaro.org>
+In-Reply-To: <mailman.377.1341937217.1590.linaro-dev@lists.linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Insert exynos5 TMU sensor changes into the thermal driver.  Some exynos4
-changes are made generic for exynos series.
-
-[akpm@linux-foundation.org: fix comment layout]
-Signed-off-by: SangWook Ju <sw.ju@samsung.com>
-Signed-off-by: Amit Daniel Kachhap <amit.kachhap@linaro.org>
-Cc: Donggeun Kim <dg77.kim@samsung.com>
-Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: Durgadoss <durgadoss.r@intel.com>
-Cc: Len Brown <lenb@kernel.org>
-Cc: Jean Delvare <khali@linux-fr.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
- drivers/thermal/Kconfig                      |    6 +-
- drivers/thermal/exynos_thermal.c             |  320 +++++++++++++++++---------
- include/linux/platform_data/exynos_thermal.h |   19 ++-
- 3 files changed, 227 insertions(+), 118 deletions(-)
-
-diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
-index b0806cf..04c6796 100644
---- a/drivers/thermal/Kconfig
-+++ b/drivers/thermal/Kconfig
-@@ -39,10 +39,10 @@ config SPEAR_THERMAL
- 	  thermal framework
- 
- config EXYNOS_THERMAL
--	tristate "Temperature sensor on Samsung EXYNOS4"
--	depends on ARCH_EXYNOS4 && THERMAL
-+	tristate "Temperature sensor on Samsung EXYNOS"
-+	depends on (ARCH_EXYNOS4 || ARCH_EXYNOS5) && THERMAL
- 	help
- 	  If you say yes here you get support for TMU (Thermal Managment
--	  Unit) on SAMSUNG EXYNOS4 series of SoC.
-+	  Unit) on SAMSUNG EXYNOS series of SoC.
- 	  This driver can also be built as a module. If so, the module
- 	  will be called exynos4-tmu
-diff --git a/drivers/thermal/exynos_thermal.c b/drivers/thermal/exynos_thermal.c
-index 556d15b..fe4c81e 100644
---- a/drivers/thermal/exynos_thermal.c
-+++ b/drivers/thermal/exynos_thermal.c
-@@ -33,13 +33,29 @@
- #include <linux/kobject.h>
- #include <linux/io.h>
- #include <linux/mutex.h>
--
-+#include <linux/err.h>
- #include <linux/platform_data/exynos_thermal.h>
--
--#define EXYNOS4_TMU_REG_TRIMINFO	0x0
--#define EXYNOS4_TMU_REG_CONTROL		0x20
--#define EXYNOS4_TMU_REG_STATUS		0x28
--#define EXYNOS4_TMU_REG_CURRENT_TEMP	0x40
-+#include <linux/of.h>
-+
-+#include <plat/cpu.h>
-+
-+/* Exynos generic registers */
-+#define EXYNOS_TMU_REG_TRIMINFO		0x0
-+#define EXYNOS_TMU_REG_CONTROL		0x20
-+#define EXYNOS_TMU_REG_STATUS		0x28
-+#define EXYNOS_TMU_REG_CURRENT_TEMP	0x40
-+#define EXYNOS_TMU_REG_INTEN		0x70
-+#define EXYNOS_TMU_REG_INTSTAT		0x74
-+#define EXYNOS_TMU_REG_INTCLEAR		0x78
-+
-+#define EXYNOS_TMU_TRIM_TEMP_MASK	0xff
-+#define EXYNOS_TMU_GAIN_SHIFT		8
-+#define EXYNOS_TMU_REF_VOLTAGE_SHIFT	24
-+#define EXYNOS_TMU_CORE_ON		3
-+#define EXYNOS_TMU_CORE_OFF		2
-+#define EXYNOS_TMU_DEF_CODE_TO_TEMP_OFFSET	50
-+
-+/* Exynos4 specific registers */
- #define EXYNOS4_TMU_REG_THRESHOLD_TEMP	0x44
- #define EXYNOS4_TMU_REG_TRIG_LEVEL0	0x50
- #define EXYNOS4_TMU_REG_TRIG_LEVEL1	0x54
-@@ -49,28 +65,52 @@
- #define EXYNOS4_TMU_REG_PAST_TEMP1	0x64
- #define EXYNOS4_TMU_REG_PAST_TEMP2	0x68
- #define EXYNOS4_TMU_REG_PAST_TEMP3	0x6C
--#define EXYNOS4_TMU_REG_INTEN		0x70
--#define EXYNOS4_TMU_REG_INTSTAT		0x74
--#define EXYNOS4_TMU_REG_INTCLEAR	0x78
- 
--#define EXYNOS4_TMU_GAIN_SHIFT		8
--#define EXYNOS4_TMU_REF_VOLTAGE_SHIFT	24
--
--#define EXYNOS4_TMU_TRIM_TEMP_MASK	0xff
--#define EXYNOS4_TMU_CORE_ON	3
--#define EXYNOS4_TMU_CORE_OFF	2
--#define EXYNOS4_TMU_DEF_CODE_TO_TEMP_OFFSET	50
- #define EXYNOS4_TMU_TRIG_LEVEL0_MASK	0x1
- #define EXYNOS4_TMU_TRIG_LEVEL1_MASK	0x10
- #define EXYNOS4_TMU_TRIG_LEVEL2_MASK	0x100
- #define EXYNOS4_TMU_TRIG_LEVEL3_MASK	0x1000
- #define EXYNOS4_TMU_INTCLEAR_VAL	0x1111
- 
--struct exynos4_tmu_data {
--	struct exynos4_tmu_platform_data *pdata;
-+/* Exynos5 specific registers */
-+#define EXYNOS5_TMU_TRIMINFO_CON	0x14
-+#define EXYNOS5_THD_TEMP_RISE		0x50
-+#define EXYNOS5_THD_TEMP_FALL		0x54
-+#define EXYNOS5_EMUL_CON		0x80
-+
-+#define EXYNOS5_TRIMINFO_RELOAD		0x1
-+#define EXYNOS5_TMU_CLEAR_RISE_INT	0x111
-+#define EXYNOS5_TMU_CLEAR_FALL_INT	(0x111 << 16)
-+#define EXYNOS5_MUX_ADDR_VALUE		6
-+#define EXYNOS5_MUX_ADDR_SHIFT		20
-+#define EXYNOS5_TMU_TRIP_MODE_SHIFT	13
-+
-+#define EFUSE_MIN_VALUE 40
-+#define EFUSE_MAX_VALUE 100
-+
-+/* In-kernel thermal framework related macros & definations */
-+#define SENSOR_NAME_LEN	16
-+#define MAX_TRIP_COUNT	8
-+#define MAX_COOLING_DEVICE 4
-+
-+#define ACTIVE_INTERVAL 500
-+#define IDLE_INTERVAL 10000
-+
-+/* CPU Zone information */
-+#define PANIC_ZONE      4
-+#define WARN_ZONE       3
-+#define MONITOR_ZONE    2
-+#define SAFE_ZONE       1
-+
-+#define GET_ZONE(trip) (trip + 2)
-+#define GET_TRIP(zone) (zone - 2)
-+
-+struct exynos_tmu_data {
-+	struct exynos_tmu_platform_data *pdata;
- 	struct resource *mem;
- 	void __iomem *base;
- 	int irq;
-+	enum soc_type soc;
- 	struct work_struct irq_work;
- 	struct mutex lock;
- 	struct clk *clk;
-@@ -81,16 +121,17 @@ struct exynos4_tmu_data {
-  * TMU treats temperature as a mapped temperature code.
-  * The temperature is converted differently depending on the calibration type.
-  */
--static int temp_to_code(struct exynos4_tmu_data *data, u8 temp)
-+static int temp_to_code(struct exynos_tmu_data *data, u8 temp)
- {
--	struct exynos4_tmu_platform_data *pdata = data->pdata;
-+	struct exynos_tmu_platform_data *pdata = data->pdata;
- 	int temp_code;
- 
--	/* temp should range between 25 and 125 */
--	if (temp < 25 || temp > 125) {
--		temp_code = -EINVAL;
--		goto out;
--	}
-+	if (data->soc == SOC_ARCH_EXYNOS4)
-+		/* temp should range between 25 and 125 */
-+		if (temp < 25 || temp > 125) {
-+			temp_code = -EINVAL;
-+			goto out;
-+		}
- 
- 	switch (pdata->cal_type) {
- 	case TYPE_TWO_POINT_TRIMMING:
-@@ -102,7 +143,7 @@ static int temp_to_code(struct exynos4_tmu_data *data, u8 temp)
- 		temp_code = temp + data->temp_error1 - 25;
- 		break;
- 	default:
--		temp_code = temp + EXYNOS4_TMU_DEF_CODE_TO_TEMP_OFFSET;
-+		temp_code = temp + EXYNOS_TMU_DEF_CODE_TO_TEMP_OFFSET;
- 		break;
- 	}
- out:
-@@ -113,16 +154,17 @@ out:
-  * Calculate a temperature value from a temperature code.
-  * The unit of the temperature is degree Celsius.
-  */
--static int code_to_temp(struct exynos4_tmu_data *data, u8 temp_code)
-+static int code_to_temp(struct exynos_tmu_data *data, u8 temp_code)
- {
--	struct exynos4_tmu_platform_data *pdata = data->pdata;
-+	struct exynos_tmu_platform_data *pdata = data->pdata;
- 	int temp;
- 
--	/* temp_code should range between 75 and 175 */
--	if (temp_code < 75 || temp_code > 175) {
--		temp = -ENODATA;
--		goto out;
--	}
-+	if (data->soc == SOC_ARCH_EXYNOS4)
-+		/* temp_code should range between 75 and 175 */
-+		if (temp_code < 75 || temp_code > 175) {
-+			temp = -ENODATA;
-+			goto out;
-+		}
- 
- 	switch (pdata->cal_type) {
- 	case TYPE_TWO_POINT_TRIMMING:
-@@ -133,54 +175,92 @@ static int code_to_temp(struct exynos4_tmu_data *data, u8 temp_code)
- 		temp = temp_code - data->temp_error1 + 25;
- 		break;
- 	default:
--		temp = temp_code - EXYNOS4_TMU_DEF_CODE_TO_TEMP_OFFSET;
-+		temp = temp_code - EXYNOS_TMU_DEF_CODE_TO_TEMP_OFFSET;
- 		break;
- 	}
- out:
- 	return temp;
- }
- 
--static int exynos4_tmu_initialize(struct platform_device *pdev)
-+static int exynos_tmu_initialize(struct platform_device *pdev)
- {
--	struct exynos4_tmu_data *data = platform_get_drvdata(pdev);
--	struct exynos4_tmu_platform_data *pdata = data->pdata;
--	unsigned int status, trim_info;
-+	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
-+	struct exynos_tmu_platform_data *pdata = data->pdata;
-+	unsigned int status, trim_info, rising_threshold;
- 	int ret = 0, threshold_code;
- 
- 	mutex_lock(&data->lock);
- 	clk_enable(data->clk);
- 
--	status = readb(data->base + EXYNOS4_TMU_REG_STATUS);
-+	status = readb(data->base + EXYNOS_TMU_REG_STATUS);
- 	if (!status) {
- 		ret = -EBUSY;
- 		goto out;
- 	}
- 
-+	if (data->soc == SOC_ARCH_EXYNOS5) {
-+		__raw_writel(EXYNOS5_TRIMINFO_RELOAD,
-+				data->base + EXYNOS5_TMU_TRIMINFO_CON);
-+	}
- 	/* Save trimming info in order to perform calibration */
--	trim_info = readl(data->base + EXYNOS4_TMU_REG_TRIMINFO);
--	data->temp_error1 = trim_info & EXYNOS4_TMU_TRIM_TEMP_MASK;
--	data->temp_error2 = ((trim_info >> 8) & EXYNOS4_TMU_TRIM_TEMP_MASK);
--
--	/* Write temperature code for threshold */
--	threshold_code = temp_to_code(data, pdata->threshold);
--	if (threshold_code < 0) {
--		ret = threshold_code;
--		goto out;
-+	trim_info = readl(data->base + EXYNOS_TMU_REG_TRIMINFO);
-+	data->temp_error1 = trim_info & EXYNOS_TMU_TRIM_TEMP_MASK;
-+	data->temp_error2 = ((trim_info >> 8) & EXYNOS_TMU_TRIM_TEMP_MASK);
-+
-+	if ((EFUSE_MIN_VALUE > data->temp_error1) ||
-+			(data->temp_error1 > EFUSE_MAX_VALUE) ||
-+			(data->temp_error2 != 0))
-+		data->temp_error1 = pdata->efuse_value;
-+
-+	if (data->soc == SOC_ARCH_EXYNOS4) {
-+		/* Write temperature code for threshold */
-+		threshold_code = temp_to_code(data, pdata->threshold);
-+		if (threshold_code < 0) {
-+			ret = threshold_code;
-+			goto out;
-+		}
-+		writeb(threshold_code,
-+			data->base + EXYNOS4_TMU_REG_THRESHOLD_TEMP);
-+
-+		writeb(pdata->trigger_levels[0],
-+			data->base + EXYNOS4_TMU_REG_TRIG_LEVEL0);
-+		writeb(pdata->trigger_levels[1],
-+			data->base + EXYNOS4_TMU_REG_TRIG_LEVEL1);
-+		writeb(pdata->trigger_levels[2],
-+			data->base + EXYNOS4_TMU_REG_TRIG_LEVEL2);
-+		writeb(pdata->trigger_levels[3],
-+			data->base + EXYNOS4_TMU_REG_TRIG_LEVEL3);
-+
-+		writel(EXYNOS4_TMU_INTCLEAR_VAL,
-+			data->base + EXYNOS_TMU_REG_INTCLEAR);
-+	} else if (data->soc == SOC_ARCH_EXYNOS5) {
-+		/* Write temperature code for threshold */
-+		threshold_code = temp_to_code(data, pdata->trigger_levels[0]);
-+		if (threshold_code < 0) {
-+			ret = threshold_code;
-+			goto out;
-+		}
-+		rising_threshold = threshold_code;
-+		threshold_code = temp_to_code(data, pdata->trigger_levels[1]);
-+		if (threshold_code < 0) {
-+			ret = threshold_code;
-+			goto out;
-+		}
-+		rising_threshold |= (threshold_code << 8);
-+		threshold_code = temp_to_code(data, pdata->trigger_levels[2]);
-+		if (threshold_code < 0) {
-+			ret = threshold_code;
-+			goto out;
-+		}
-+		rising_threshold |= (threshold_code << 16);
-+
-+		writel(rising_threshold,
-+				data->base + EXYNOS5_THD_TEMP_RISE);
-+		writel(0, data->base + EXYNOS5_THD_TEMP_FALL);
-+
-+		writel(EXYNOS5_TMU_CLEAR_RISE_INT|EXYNOS5_TMU_CLEAR_FALL_INT,
-+				data->base + EXYNOS_TMU_REG_INTCLEAR);
- 	}
--	writeb(threshold_code,
--		data->base + EXYNOS4_TMU_REG_THRESHOLD_TEMP);
--
--	writeb(pdata->trigger_levels[0],
--		data->base + EXYNOS4_TMU_REG_TRIG_LEVEL0);
--	writeb(pdata->trigger_levels[1],
--		data->base + EXYNOS4_TMU_REG_TRIG_LEVEL1);
--	writeb(pdata->trigger_levels[2],
--		data->base + EXYNOS4_TMU_REG_TRIG_LEVEL2);
--	writeb(pdata->trigger_levels[3],
--		data->base + EXYNOS4_TMU_REG_TRIG_LEVEL3);
--
--	writel(EXYNOS4_TMU_INTCLEAR_VAL,
--		data->base + EXYNOS4_TMU_REG_INTCLEAR);
- out:
- 	clk_disable(data->clk);
- 	mutex_unlock(&data->lock);
-@@ -188,35 +268,41 @@ out:
- 	return ret;
- }
- 
--static void exynos4_tmu_control(struct platform_device *pdev, bool on)
-+static void exynos_tmu_control(struct platform_device *pdev, bool on)
- {
--	struct exynos4_tmu_data *data = platform_get_drvdata(pdev);
--	struct exynos4_tmu_platform_data *pdata = data->pdata;
-+	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
-+	struct exynos_tmu_platform_data *pdata = data->pdata;
- 	unsigned int con, interrupt_en;
- 
- 	mutex_lock(&data->lock);
- 	clk_enable(data->clk);
- 
--	con = pdata->reference_voltage << EXYNOS4_TMU_REF_VOLTAGE_SHIFT |
--		pdata->gain << EXYNOS4_TMU_GAIN_SHIFT;
-+	con = pdata->reference_voltage << EXYNOS_TMU_REF_VOLTAGE_SHIFT |
-+		pdata->gain << EXYNOS_TMU_GAIN_SHIFT;
-+
-+	if (data->soc == SOC_ARCH_EXYNOS5) {
-+		con |= pdata->noise_cancel_mode << EXYNOS5_TMU_TRIP_MODE_SHIFT;
-+		con |= (EXYNOS5_MUX_ADDR_VALUE << EXYNOS5_MUX_ADDR_SHIFT);
-+	}
-+
- 	if (on) {
--		con |= EXYNOS4_TMU_CORE_ON;
-+		con |= EXYNOS_TMU_CORE_ON;
- 		interrupt_en = pdata->trigger_level3_en << 12 |
- 			pdata->trigger_level2_en << 8 |
- 			pdata->trigger_level1_en << 4 |
- 			pdata->trigger_level0_en;
- 	} else {
--		con |= EXYNOS4_TMU_CORE_OFF;
-+		con |= EXYNOS_TMU_CORE_OFF;
- 		interrupt_en = 0; /* Disable all interrupts */
- 	}
--	writel(interrupt_en, data->base + EXYNOS4_TMU_REG_INTEN);
--	writel(con, data->base + EXYNOS4_TMU_REG_CONTROL);
-+	writel(interrupt_en, data->base + EXYNOS_TMU_REG_INTEN);
-+	writel(con, data->base + EXYNOS_TMU_REG_CONTROL);
- 
- 	clk_disable(data->clk);
- 	mutex_unlock(&data->lock);
- }
- 
--static int exynos4_tmu_read(struct exynos4_tmu_data *data)
-+static int exynos_tmu_read(struct exynos_tmu_data *data)
- {
- 	u8 temp_code;
- 	int temp;
-@@ -224,7 +310,7 @@ static int exynos4_tmu_read(struct exynos4_tmu_data *data)
- 	mutex_lock(&data->lock);
- 	clk_enable(data->clk);
- 
--	temp_code = readb(data->base + EXYNOS4_TMU_REG_CURRENT_TEMP);
-+	temp_code = readb(data->base + EXYNOS_TMU_REG_CURRENT_TEMP);
- 	temp = code_to_temp(data, temp_code);
- 
- 	clk_disable(data->clk);
-@@ -233,25 +319,30 @@ static int exynos4_tmu_read(struct exynos4_tmu_data *data)
- 	return temp;
- }
- 
--static void exynos4_tmu_work(struct work_struct *work)
-+static void exynos_tmu_work(struct work_struct *work)
- {
--	struct exynos4_tmu_data *data = container_of(work,
--			struct exynos4_tmu_data, irq_work);
-+	struct exynos_tmu_data *data = container_of(work,
-+			struct exynos_tmu_data, irq_work);
- 
- 	mutex_lock(&data->lock);
- 	clk_enable(data->clk);
- 
--	writel(EXYNOS4_TMU_INTCLEAR_VAL, data->base + EXYNOS4_TMU_REG_INTCLEAR);
- 
--	enable_irq(data->irq);
-+	if (data->soc == SOC_ARCH_EXYNOS5)
-+		writel(EXYNOS5_TMU_CLEAR_RISE_INT,
-+				data->base + EXYNOS_TMU_REG_INTCLEAR);
-+	else
-+		writel(EXYNOS4_TMU_INTCLEAR_VAL,
-+				data->base + EXYNOS_TMU_REG_INTCLEAR);
- 
- 	clk_disable(data->clk);
- 	mutex_unlock(&data->lock);
-+	enable_irq(data->irq);
- }
- 
--static irqreturn_t exynos4_tmu_irq(int irq, void *id)
-+static irqreturn_t exynos_tmu_irq(int irq, void *id)
- {
--	struct exynos4_tmu_data *data = id;
-+	struct exynos_tmu_data *data = id;
- 
- 	disable_irq_nosync(irq);
- 	schedule_work(&data->irq_work);
-@@ -259,18 +350,17 @@ static irqreturn_t exynos4_tmu_irq(int irq, void *id)
- 	return IRQ_HANDLED;
- }
- 
--static int __devinit exynos4_tmu_probe(struct platform_device *pdev)
-+static int __devinit exynos_tmu_probe(struct platform_device *pdev)
- {
--	struct exynos4_tmu_data *data;
--	struct exynos4_tmu_platform_data *pdata = pdev->dev.platform_data;
-+	struct exynos_tmu_data *data;
-+	struct exynos_tmu_platform_data *pdata = pdev->dev.platform_data;
- 	int ret;
- 
- 	if (!pdata) {
- 		dev_err(&pdev->dev, "No platform init data supplied.\n");
- 		return -ENODEV;
- 	}
--
--	data = kzalloc(sizeof(struct exynos4_tmu_data), GFP_KERNEL);
-+	data = kzalloc(sizeof(struct exynos_tmu_data), GFP_KERNEL);
- 	if (!data) {
- 		dev_err(&pdev->dev, "Failed to allocate driver structure\n");
- 		return -ENOMEM;
-@@ -283,7 +373,7 @@ static int __devinit exynos4_tmu_probe(struct platform_device *pdev)
- 		goto err_free;
- 	}
- 
--	INIT_WORK(&data->irq_work, exynos4_tmu_work);
-+	INIT_WORK(&data->irq_work, exynos_tmu_work);
- 
- 	data->mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!data->mem) {
-@@ -307,9 +397,8 @@ static int __devinit exynos4_tmu_probe(struct platform_device *pdev)
- 		goto err_mem_region;
- 	}
- 
--	ret = request_irq(data->irq, exynos4_tmu_irq,
--		IRQF_TRIGGER_RISING,
--		"exynos4-tmu", data);
-+	ret = request_irq(data->irq, exynos_tmu_irq,
-+		IRQF_TRIGGER_RISING, "exynos-tmu", data);
- 	if (ret) {
- 		dev_err(&pdev->dev, "Failed to request irq: %d\n", data->irq);
- 		goto err_io_remap;
-@@ -322,17 +411,26 @@ static int __devinit exynos4_tmu_probe(struct platform_device *pdev)
- 		goto err_irq;
- 	}
- 
-+	if (pdata->type == SOC_ARCH_EXYNOS5 ||
-+				pdata->type == SOC_ARCH_EXYNOS4)
-+		data->soc = pdata->type;
-+	else {
-+		ret = -EINVAL;
-+		dev_err(&pdev->dev, "Platform not supported\n");
-+		goto err_clk;
-+	}
-+
- 	data->pdata = pdata;
- 	platform_set_drvdata(pdev, data);
- 	mutex_init(&data->lock);
- 
--	ret = exynos4_tmu_initialize(pdev);
-+	ret = exynos_tmu_initialize(pdev);
- 	if (ret) {
- 		dev_err(&pdev->dev, "Failed to initialize TMU\n");
- 		goto err_clk;
- 	}
- 
--	exynos4_tmu_control(pdev, true);
-+	exynos_tmu_control(pdev, true);
- 
- 	return 0;
- err_clk:
-@@ -350,11 +448,11 @@ err_free:
- 	return ret;
- }
- 
--static int __devexit exynos4_tmu_remove(struct platform_device *pdev)
-+static int __devexit exynos_tmu_remove(struct platform_device *pdev)
- {
--	struct exynos4_tmu_data *data = platform_get_drvdata(pdev);
-+	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
- 
--	exynos4_tmu_control(pdev, false);
-+	exynos_tmu_control(pdev, false);
- 
- 	clk_put(data->clk);
- 
-@@ -371,43 +469,43 @@ static int __devexit exynos4_tmu_remove(struct platform_device *pdev)
- }
- 
- #ifdef CONFIG_PM_SLEEP
--static int exynos4_tmu_suspend(struct device *dev)
-+static int exynos_tmu_suspend(struct device *dev)
- {
--	exynos4_tmu_control(to_platform_device(dev), false);
-+	exynos_tmu_control(to_platform_device(dev), false);
- 
- 	return 0;
- }
- 
--static int exynos4_tmu_resume(struct device *dev)
-+static int exynos_tmu_resume(struct device *dev)
- {
- 	struct platform_device *pdev = to_platform_device(dev);
- 
--	exynos4_tmu_initialize(pdev);
--	exynos4_tmu_control(pdev, true);
-+	exynos_tmu_initialize(pdev);
-+	exynos_tmu_control(pdev, true);
- 
- 	return 0;
- }
- 
--static SIMPLE_DEV_PM_OPS(exynos4_tmu_pm,
--			 exynos4_tmu_suspend, exynos4_tmu_resume);
--#define EXYNOS4_TMU_PM	(&exynos4_tmu_pm)
-+static SIMPLE_DEV_PM_OPS(exynos_tmu_pm,
-+			 exynos_tmu_suspend, exynos_tmu_resume);
-+#define EXYNOS_TMU_PM	(&exynos_tmu_pm)
- #else
--#define EXYNOS4_TMU_PM	NULL
-+#define EXYNOS_TMU_PM	NULL
- #endif
- 
--static struct platform_driver exynos4_tmu_driver = {
-+static struct platform_driver exynos_tmu_driver = {
- 	.driver = {
--		.name   = "exynos4-tmu",
-+		.name   = "exynos-tmu",
- 		.owner  = THIS_MODULE,
--		.pm     = EXYNOS4_TMU_PM,
-+		.pm     = EXYNOS_TMU_PM,
- 	},
--	.probe = exynos4_tmu_probe,
--	.remove	= __devexit_p(exynos4_tmu_remove),
-+	.probe = exynos_tmu_probe,
-+	.remove	= __devexit_p(exynos_tmu_remove),
- };
- 
--module_platform_driver(exynos4_tmu_driver);
-+module_platform_driver(exynos_tmu_driver);
- 
--MODULE_DESCRIPTION("EXYNOS4 TMU Driver");
-+MODULE_DESCRIPTION("EXYNOS TMU Driver");
- MODULE_AUTHOR("Donggeun Kim <dg77.kim@samsung.com>");
- MODULE_LICENSE("GPL");
--MODULE_ALIAS("platform:exynos4-tmu");
-+MODULE_ALIAS("platform:exynos-tmu");
-diff --git a/include/linux/platform_data/exynos_thermal.h b/include/linux/platform_data/exynos_thermal.h
-index d6c3f93..c980af6 100644
---- a/include/linux/platform_data/exynos_thermal.h
-+++ b/include/linux/platform_data/exynos_thermal.h
-@@ -1,5 +1,5 @@
- /*
-- * exynos_thermal.h - Samsung EXYNOS4 TMU (Thermal Management Unit)
-+ * exynos_thermal.h - Samsung EXYNOS TMU (Thermal Management Unit)
-  *
-  *  Copyright (C) 2011 Samsung Electronics
-  *  Donggeun Kim <dg77.kim@samsung.com>
-@@ -28,8 +28,12 @@ enum calibration_type {
- 	TYPE_NONE,
- };
- 
-+enum soc_type {
-+	SOC_ARCH_EXYNOS4 = 1,
-+	SOC_ARCH_EXYNOS5,
-+};
- /**
-- * struct exynos4_tmu_platform_data
-+ * struct exynos_tmu_platform_data
-  * @threshold: basic temperature for generating interrupt
-  *	       25 <= threshold <= 125 [unit: degree Celsius]
-  * @trigger_levels: array for each interrupt levels
-@@ -63,11 +67,15 @@ enum calibration_type {
-  * @reference_voltage: reference voltage of amplifier
-  *	in the positive-TC generator block
-  *	0 <= reference_voltage <= 31
-+ * @noise_cancel_mode: noise cancellation mode
-+ *	000, 100, 101, 110 and 111 can be different modes
-+ * @type: determines the type of SOC
-+ * @efuse_value: platform defined fuse value
-  * @cal_type: calibration type for temperature
-  *
-- * This structure is required for configuration of exynos4_tmu driver.
-+ * This structure is required for configuration of exynos_tmu driver.
-  */
--struct exynos4_tmu_platform_data {
-+struct exynos_tmu_platform_data {
- 	u8 threshold;
- 	u8 trigger_levels[4];
- 	bool trigger_level0_en;
-@@ -77,7 +85,10 @@ struct exynos4_tmu_platform_data {
- 
- 	u8 gain;
- 	u8 reference_voltage;
-+	u8 noise_cancel_mode;
-+	u32 efuse_value;
- 
- 	enum calibration_type cal_type;
-+	enum soc_type type;
- };
- #endif /* _LINUX_EXYNOS_THERMAL_H */
--- 
-1.7.1
+> Date: Tue, 10 Jul 2012 18:20:13 +0200
+> From: Lee Jones <lee.jones@linaro.org>
+> To: "Rajanikanth H.V" <rajanikanth.hv@stericsson.com>
+> Cc: STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
+>         linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
+>         linux-arm-kernel@lists.infradead.org, patches@linaro.org
+> Subject: Re: [PATCH] mfd: Implement devicetree support for AB8500
+>         Btemp
+> Message-ID: <4FFC563D.2080807@linaro.org>
+> Content-Type: text/plain; charset=UTF-8; format=flowed
+> 
+> Some of my comments are picky, but if it's going into Mainline, it
+> should at least look professional.
+> 
+> You didn't CC the ST-Ericsson internal mailing list.
+> 
+> Address is STEricsson_nomadik_linux@list.st.com
+> 
+> I'll do it for now, but please do so on your next submission.
+> 
+> On 10/07/12 15:23, Rajanikanth H.V wrote:
+>> From: "Rajanikanth H.V" <rajanikanth.hv@stericsson.com>
+>>
+>>      This patch adds device tree support for
+>>      battery temperature monitor driver
+>>
+>> Signed-off-by: Rajanikanth H.V <rajanikanth.hv@stericsson.com>
+>> ---
+>>   .../bindings/power_supply/ab8500/btemp.txt         |   54 ++
+>>   arch/arm/boot/dts/db8500.dtsi                      |   17 +
+>>   arch/arm/mach-ux500/Makefile                       |    4 +-
+>>   arch/arm/mach-ux500/board-mop500-bm.c              |  532 ++++++++++++++++++++
+>>   arch/arm/mach-ux500/include/mach/board-mop500-bm.h |   24 +
+>>   drivers/mfd/ab8500-core.c                          |    1 +
+>>   drivers/power/Kconfig                              |    8 +-
+>>   drivers/power/ab8500_btemp.c                       |   79 ++-
+>>   include/linux/mfd/ab8500/pwmleds.h                 |   20 +
+>>   9 files changed, 722 insertions(+), 17 deletions(-)
+>>   create mode 100644 Documentation/devicetree/bindings/power_supply/ab8500/btemp.txt
+>>   create mode 100644 arch/arm/mach-ux500/board-mop500-bm.c
+>>   create mode 100644 arch/arm/mach-ux500/include/mach/board-mop500-bm.h
+>>   create mode 100644 include/linux/mfd/ab8500/pwmleds.h
+>>
+>> diff --git a/Documentation/devicetree/bindings/power_supply/ab8500/btemp.txt b/Documentation/devicetree/bindings/power_supply/ab8500/btemp.txt
+>> new file mode 100644
+>> index 0000000..8543ed1
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/power_supply/ab8500/btemp.txt
+>> @@ -0,0 +1,54 @@
+>> +AB8500 Battery Termperature Monitor Driver
+> 
+> Spelling.
+> 
+>> +
+>> +AB8500 is a mixed signal multimedia and power management
+>> +device comprising: power and energy management module,
+>> +WalliCharger and USB charger interface, audio, general
+>> +purpose ADC TVOut, clock management and SIM card Interface.
+> 
+> Mixture of capitalised and otherwise device names.
+> 
+>> +
+>> +Battery temperature monitoring support is part of 'energy
+>> +management module', the other components of this module
+>> +are: 'main and USB Combo charger' and fuel guage.
+> 
+> Spelling. Mixed use of ''.
+> 
+>> +The properties below describes the node for battery
+>> +temperature monitor driver.
+>> +
+>> +Required Properties:
+>> +- compatible = "stericsson,ab8500-btemp"
+>> +
+>> +interrupts:
+>> +     Four battery temperature ranges are be defined
+>> +     which results in interrupt events as:
+>> +     - Btemp
+>> +     - BtempLow
+>> +     - BtempMedium
+>> +     - BtempHigh
+>> +
+>> +
+>> +Supplied-to:
+>> +     This shall be power supply class dependency where in the runtime battery
+>> +     properties will be shared across fuel guage and charging algorithm driver.
+> 
+> Spelling.
+> 
+>> +
+>> +Thermister-interface:
+>> +     'btemp' and 'batctrl' are the pins interfaced for battery temperature
+>> +     measurement, btemp is used when NTC(Negative Termperature coefficient)
+> 
+> Spelling.
+> 
+>> +     resister is interfaced external to battery and batctrl is used when
+>> +     NTC resister is internal to battery.
+>> +
+>> +example:
+>> +ab8500-btemp {
+>> +     compatible = "stericsson,ab8500-btemp";
+>> +
+>> +     interrupt-names =
+>> +             "BAT_CTRL_INDB",        /* battery removal indicator */
+>> +             "BTEMP_LOW",            /* Btemp < BtempLow, if battery temperature is lower than -10?C */
+>> +             "BTEMP_HIGH",           /* BtempLow < Btemp < BtempMedium,
+>> +                                                             if battery temperature is between -10 and 0?C */
+>> +             "BTEMP_LOW_MEDIUM", /* BtempMedium < Btemp < BtempHigh,
+>> +                                                             if battery temperature is between 0?C and ?MaxTemp?.*/
+>> +             "BTEMP_MEDIUM_HIGH";/* Btemp > BtempHigh,
+>> +                                                             if battery temperature is higher than ?MaxTemp?. */
+>> +
+>> +     supplied-to = "ab8500_chargalg", "ab8500_fg";
+>> +
+>> +     thermister-internal-to-battery = <1>;
+>> +};
+>> diff --git a/arch/arm/boot/dts/db8500.dtsi b/arch/arm/boot/dts/db8500.dtsi
+>> index 7279165..527fdc3 100644
+>> --- a/arch/arm/boot/dts/db8500.dtsi
+>> +++ b/arch/arm/boot/dts/db8500.dtsi
+>> @@ -330,6 +330,23 @@
+>>                                       vddadc-supply = <&ab8500_ldo_tvout_reg>;
+>>                               };
+>>
+>> +                             ab8500-btemp {
+>> +                                     compatible = "stericsson,ab8500-btemp";
+>> +                                     interrupts = <20 0x04
+>> +                                                             80 0x04
+>> +                                                             81 0x04
+>> +                                                             82 0x04
+>> +                                                             83 0x04>;
+> 
+> Odd tabbing.
+> 
+>> +                                     interrupt-names = "BAT_CTRL_INDB",
+>> +                                                                     "BTEMP_LOW",
+>> +                                                                     "BTEMP_HIGH",
+>> +                                                                     "BTEMP_LOW_MEDIUM",
+>> +                                                                     "BTEMP_MEDIUM_HIGH";
+> 
+> As above.
+> 
+>> +                                     supplied_to = "ab8500_chargalg", "ab8500_fg";
+>> +                                     num_supplicants = <2>;
+>> +                                     battery_term_on_batctrl = <1>;
+>> +                             };
+>> +
+>>                               ab8500-usb {
+>>                                       compatible = "stericsson,ab8500-usb";
+>>                                       interrupts = < 90 0x4
+>> diff --git a/arch/arm/mach-ux500/Makefile b/arch/arm/mach-ux500/Makefile
+>> index 026086f..b474917 100644
+>> --- a/arch/arm/mach-ux500/Makefile
+>> +++ b/arch/arm/mach-ux500/Makefile
+>> @@ -12,6 +12,8 @@ obj-$(CONFIG_MACH_MOP500)   += board-mop500.o board-mop500-sdi.o \
+>>                               board-mop500-uib.o board-mop500-stuib.o \
+>>                               board-mop500-u8500uib.o \
+>>                               board-mop500-pins.o \
+>> -                             board-mop500-msp.o
+>> +                             board-mop500-msp.o \
+>> +                             board-mop500-bm.o
+>> +
+> 
+> Unrelated line change.
+> 
+>>   obj-$(CONFIG_SMP)           += platsmp.o headsmp.o
+>>   obj-$(CONFIG_HOTPLUG_CPU)   += hotplug.o
+> 
+>> diff --git a/arch/arm/mach-ux500/board-mop500-bm.c b/arch/arm/mach-ux500/board-mop500-bm.c
+>> diff --git a/arch/arm/mach-ux500/include/mach/board-mop500-bm.h b/arch/arm/mach-ux500/include/mach/board-mop500-bm.h
+> 
+> It would be better if you can find a way to not upstream these.
+> 
+> I think this data would be better suited for an include header file.
+> 
+>> diff --git a/drivers/mfd/ab8500-core.c b/drivers/mfd/ab8500-core.c
+>> index 738b9c5..402f630 100644
+>> --- a/drivers/mfd/ab8500-core.c
+>> +++ b/drivers/mfd/ab8500-core.c
+>> @@ -1046,6 +1046,7 @@ static struct mfd_cell __devinitdata ab8500_bm_devs[] = {
+>>       },
+>>       {
+>>               .name = "ab8500-btemp",
+>> +             .of_compatible = "stericsson,ab8500-btemp",
+>>               .num_resources = ARRAY_SIZE(ab8500_btemp_resources),
+>>               .resources = ab8500_btemp_resources,
+>>       },
+>> diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
+>> index e3a3b49..00dec0f 100644
+>> --- a/drivers/power/Kconfig
+>> +++ b/drivers/power/Kconfig
+>> @@ -303,10 +303,10 @@ config AB8500_BM
+>>       help
+>>         Say Y to include support for AB5500 battery management.
+>>
+>> -config AB8500_BATTERY_THERM_ON_BATCTRL
+>> -     bool "Thermistor connected on BATCTRL ADC"
+>> +config AB8500_9100_LI_ION_BATTERY
+>> +     bool "Enable support of the 9100 Li-ion battery charging"
+>>       depends on AB8500_BM
+>>       help
+>> -       Say Y to enable battery temperature measurements using
+>> -       thermistor connected on BATCTRL ADC.
+>> +             Say Y to enable support of the 9100 Li-ion battery charging.
+>> +
+> 
+> Random formatting.
+> 
+>>   endif # POWER_SUPPLY
+>> diff --git a/drivers/power/ab8500_btemp.c b/drivers/power/ab8500_btemp.c
+>> index bba3cca..1272bba 100644
+>> --- a/drivers/power/ab8500_btemp.c
+>> +++ b/drivers/power/ab8500_btemp.c
+>> @@ -16,6 +16,7 @@
+>>   #include <linux/interrupt.h>
+>>   #include <linux/delay.h>
+>>   #include <linux/slab.h>
+>> +#include <linux/of.h>
+>>   #include <linux/platform_device.h>
+>>   #include <linux/power_supply.h>
+>>   #include <linux/completion.h>
+>> @@ -25,6 +26,7 @@
+>>   #include <linux/mfd/abx500/ab8500-bm.h>
+>>   #include <linux/mfd/abx500/ab8500-gpadc.h>
+>>   #include <linux/jiffies.h>
+>> +#include <mach/board-mop500-bm.h>
+>>
+>>   #define VTVOUT_V                    1800
+>>
+>> @@ -964,11 +966,13 @@ static int __devinit ab8500_btemp_probe(struct platform_device *pdev)
+>>   {
+>>       int irq, i, ret = 0;
+>>       u8 val;
+>> -     struct abx500_bm_plat_data *plat_data = pdev->dev.platform_data;
+> 
+> I already told you about this.
+your previous comment was: "No, it's meant to work with _both_ platform
+and Device Tree registation."
+Why is this required when platform specific information/file is removed?
+> 
+>> +     struct device_node *np = pdev->dev.of_node;
+>>       struct ab8500_btemp *di;
+>> +     u32 pval;
+>> +     const char *sup_val;
+>>
+>> -     if (!plat_data) {
+>> -             dev_err(&pdev->dev, "No platform data\n");
+> 
+> And this. Check the last review I provided.
+> 
+>> +     if (!np) {
+>> +             dev_err(&pdev->dev, "No DT node for btemp found\n");
+>>               return -EINVAL;
+>>       }
+>>
+>> @@ -981,21 +985,64 @@ static int __devinit ab8500_btemp_probe(struct platform_device *pdev)
+>>       di->parent = dev_get_drvdata(pdev->dev.parent);
+>>       di->gpadc = ab8500_gpadc_get("ab8500-gpadc.0");
+>>
+>> -     /* get btemp specific platform data */
+>> -     di->pdata = plat_data->btemp;
+>> -     if (!di->pdata) {
+>> -             dev_err(di->dev, "no btemp platform data supplied\n");
+> 
+> We still need to support registering from platform code.
+> 
+>> +     di->pdata =
+>> +             kzalloc(sizeof(struct abx500_btemp_platform_data), GFP_KERNEL);
+> 
+> Use devm_kzalloc instead.
+> 
+>> +     if (di->pdata == NULL) {
+>> +             ret = -ENOMEM;
+>> +             goto free_device_info;
+>> +     }
+>> +     /* get battery specific platform data */
+>> +     ret = of_property_read_u32(np, "num_supplicants", &pval);
+>> +     if (ret) {
+>> +             dev_err(di->dev, "missing property num_supplicants\n");
+>> +             kfree(di->pdata);
+> 
+> Then remove this line.
+> 
+>> +             ret = -EINVAL;
+>> +             goto free_device_info;
+>> +     }
+>> +     di->pdata->num_supplicants = pval;
+>> +     di->pdata->supplied_to =
+>> +             kzalloc(di->pdata->num_supplicants *
+>> +                     sizeof(const char *), GFP_KERNEL);
+>> +     if (di->pdata->supplied_to == NULL) {
+>> +             kfree(di->pdata);
+>>               ret = -EINVAL;
+>>               goto free_device_info;
+>>       }
+>>
+>> -     /* get battery specific platform data */
+>> -     di->bat = plat_data->battery;
+> 
+> Don't remove this, check for it.
+> 
+>> +     for (val = 0; val < di->pdata->num_supplicants; ++val)
+>> +             if (of_property_read_string_index
+>> +                     (np, "supplied_to", val, &sup_val) == 0)
+>> +                     *(di->pdata->supplied_to + val) = (char *)sup_val;
+>> +             else {
+>> +                     dev_err(di->dev, "insufficient number of supplied_to data found\n");
+>> +                     kfree(di->pdata);
+>> +                     kfree(di->pdata->supplied_to);
+>> +                     ret = -EINVAL;
+>> +                     goto free_device_info;
+>> +             }
+>> +
+>> +     di->bat = kzalloc(sizeof(struct abx500_bm_data), GFP_KERNEL);
+>>       if (!di->bat) {
+>> -             dev_err(di->dev, "no battery platform data supplied\n");
+>> -             ret = -EINVAL;
+>> +             kfree(di->pdata->supplied_to);
+>> +             kfree(di->pdata);
+>> +             ret = -ENOMEM;
+>>               goto free_device_info;
+>>       }
+>> +     dev_dbg(di->dev, "getting battery information\n");
+> 
+> Is this really necessary?
+> 
+>> +     di->bat = &ab8500_bm_data;
+>> +     ret = of_property_read_u32(np, "battery_term_on_batctrl", &pval);
+>> +     if (ret) {
+>> +             dev_err(di->dev, "missing property battery_term_on_batctrl\n");
+>> +             kfree(di->pdata->supplied_to);
+>> +             kfree(di->pdata);
+>> +             kfree(di->bat);
+>> +             ret = -ENOMEM;
+>> +             goto free_device_info;
+>> +     }
+>> +     if (pval == 0) {
+>> +             di->bat->bat_type = bat_type_ext_thermister;
+>> +             di->bat->adc_therm = ABx500_ADC_THERM_BATTEMP;
+>> +     }
+>>
+>>       /* BTEMP supply */
+>>       di->btemp_psy.name = "ab8500_btemp";
+>> @@ -1008,7 +1055,6 @@ static int __devinit ab8500_btemp_probe(struct platform_device *pdev)
+>>       di->btemp_psy.external_power_changed =
+>>               ab8500_btemp_external_power_changed;
+>>
+>> -
+> 
+> Unrelated change.
+> 
+>>       /* Create a work queue for the btemp */
+>>       di->btemp_wq =
+>>               create_singlethread_workqueue("ab8500_btemp_wq");
+>> @@ -1090,14 +1136,22 @@ free_irq:
+>>               irq = platform_get_irq_byname(pdev, ab8500_btemp_irq[i].name);
+>>               free_irq(irq, di);
+>>       }
+>> +
+> 
+> As above.
+> 
+>>   free_btemp_wq:
+>>       destroy_workqueue(di->btemp_wq);
+>> +
+> 
+> As above.
+> 
+>>   free_device_info:
+>>       kfree(di);
+>>
+>>       return ret;
+>>   }
+>>
+>> +static const struct of_device_id ab8500_btemp_match[] = {
+>> +     {.compatible = "stericsson,ab8500-btemp",},
+> 
+> Spacing is not consistent with previous submissions.
+> 
+>> +     {},
+>> +};
+>> +
+>> +
+>>   static struct platform_driver ab8500_btemp_driver = {
+>>       .probe = ab8500_btemp_probe,
+>>       .remove = __devexit_p(ab8500_btemp_remove),
+>> @@ -1106,6 +1160,7 @@ static struct platform_driver ab8500_btemp_driver = {
+>>       .driver = {
+>>               .name = "ab8500-btemp",
+>>               .owner = THIS_MODULE,
+>> +             .of_match_table = ab8500_btemp_match,
+>>       },
+>>   };
+>>
+>> diff --git a/include/linux/mfd/ab8500/pwmleds.h b/include/linux/mfd/ab8500/pwmleds.h
+>> new file mode 100644
+>> index 0000000..e316582
+>> --- /dev/null
+>> +++ b/include/linux/mfd/ab8500/pwmleds.h
+>> @@ -0,0 +1,20 @@
+>> +/*
+>> + * Copyright ST-Ericsson 2012.
+>> + *
+>> + * Author: Naga Radhesh <naga.radheshy@stericsson.com>
+>> + * Licensed under GPLv2.
+>> + */
+>> +#ifndef _AB8500_PWMLED_H
+>> +#define _AB8500_PWMLED_H
+>> +
+>> +struct ab8500_led_pwm {
+>> +     int     pwm_id;
+>> +     int     blink_en;
+>> +};
+>> +
+>> +struct ab8500_pwmled_platform_data {
+>> +     int     num_pwm;
+>> +     struct  ab8500_led_pwm *leds;
+>> +};
+>> +
+>> +#endif
+>>
+> 
+> 
+> --
+> Lee Jones
+> Linaro ST-Ericsson Landing Team Lead
+> M: +44 77 88 633 515
+> Linaro.org ? Open source software for ARM SoCs
+> Follow Linaro: Facebook | Twitter | Blog
+> 
+> 
+> 
+> 
+> 
+> ------------------------------
+> 
+> _______________________________________________
+> linaro-dev mailing list
+> linaro-dev@lists.linaro.org
+> http://lists.linaro.org/mailman/listinfo/linaro-dev
+> 
+> 
+> End of linaro-dev Digest, Vol 26, Issue 38
+> ******************************************
+> 
 
