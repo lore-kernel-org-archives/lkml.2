@@ -1,71 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753985Ab2GMUUJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 16:20:09 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.160]:17612 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751093Ab2GMUUG (ORCPT
+	id S1754680Ab2GMUVS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 16:21:18 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37429 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751093Ab2GMUVQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 16:20:06 -0400
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFGiC0MElja
-X-RZG-CLASS-ID: mo00
-Date: Fri, 13 Jul 2012 22:20:03 +0200
-From: Olaf Hering <olaf@aepfle.de>
-To: Keir Fraser <keir.xen@gmail.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jan Beulich <JBeulich@suse.com>, xen-devel@lists.xensource.com,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Daniel Kiper <dkiper@net-space.pl>
-Subject: Re: [Xen-devel] incorrect layout of globals from head_64.S during
- kexec boot
-Message-ID: <20120713202003.GA20972@aepfle.de>
-References: <20120710180953.GB20075@aepfle.de>
- <CC223C2F.3817C%keir.xen@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CC223C2F.3817C%keir.xen@gmail.com>
-User-Agent: Mutt/1.5.21.rev5543 (2011-12-20)
+	Fri, 13 Jul 2012 16:21:16 -0400
+From: Devendra Naga <devendra.aaru@gmail.com>
+To: Forest Bond <forest@alittletooquiet.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Cc: Devendra Naga <devendra.aaru@gmail.com>
+Subject: [PATCH 1/3] staging/vt6656: coding style fix in BSSvSecondTxData
+Date: Sat, 14 Jul 2012 02:06:07 +0545
+Message-Id: <1342210867-9074-1-git-send-email-devendra.aaru@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 10, Keir Fraser wrote:
+this function seemed bit more coding style fix...
 
-> On 10/07/2012 19:09, "Olaf Hering" <olaf@aepfle.de> wrote:
-> > I'm not sure, most likely the gfn will just disappear from the guest,
-> > like a ballooned page disappears. Accessing it will likely cause a
-> > crash.
-> 
-> Best thing to do, is possible, is map the shared-info page in the
-> xen-platform pci device's BAR memory range. Then it will not conflict with
-> any RAM.
-> 
-> If you do map it over the top of an existing RAM page, you will have to
-> repopulate that RAM page before kexec, using populate_physmap hypercall. The
-> good news is that the populate_physmap hypercall will have the side effect
-> of unmapping the shared-info page, reayd to be mapped wherever the new
-> kernel would like it to reside :)
+The following fixes:
 
-Keir,
+remove spaces at start of line and use tabs
+use space between if and (
+give a space in a multiplication operation
+use space after = and another variable/constant
 
-is this a safe thing to do in a SMP guest?
-If arch/x86/xen/enlighten.c:xen_hvm_init_shared_info() allocates a page
-(backed by mfn M and pfn A) and assigns *HYPERVISOR_shared_info and
-*xen_vcpu then everything will reference these pointers.
+Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+---
+ drivers/staging/vt6656/wcmd.c |   56 ++++++++++++++++++++---------------------
+ 1 file changed, 28 insertions(+), 28 deletions(-)
 
-If drivers/xen/platform-pci.c:platform_pci_init would also do a
-XENMAPSPACE_shared_info call with pfn B, isnt there a small window where
-pfn A is not backed by a mfn because mfn M is now connected to pfn C? As
-a result other code paths which access *HYPERVISOR_shared_info and
-*xen_vcpu between the hypercall and the update of the pointers will read
-0xff.
+diff --git a/drivers/staging/vt6656/wcmd.c b/drivers/staging/vt6656/wcmd.c
+index 78ea121..cecfdb6 100644
+--- a/drivers/staging/vt6656/wcmd.c
++++ b/drivers/staging/vt6656/wcmd.c
+@@ -1273,32 +1273,32 @@ void vResetCommandTimer(void *hDeviceContext)
+ 
+ void BSSvSecondTxData(void *hDeviceContext)
+ {
+-  PSDevice        pDevice = (PSDevice)hDeviceContext;
+-  PSMgmtObject  pMgmt = &(pDevice->sMgmtObj);
+-
+-  pDevice->nTxDataTimeCout++;
+-
+-  if(pDevice->nTxDataTimeCout<4)     //don't tx data if timer less than 40s
+-    {
+-     // printk("mike:%s-->no data Tx not exceed the desired Time as %d\n",__FUNCTION__,
+-	//  	(int)pDevice->nTxDataTimeCout);
+-     pDevice->sTimerTxData.expires = RUN_AT(10*HZ);      //10s callback
+-     add_timer(&pDevice->sTimerTxData);
+-      return;
+-    }
+-
+-  spin_lock_irq(&pDevice->lock);
+-  //is wap_supplicant running successful OR only open && sharekey mode!
+-  if(((pDevice->bLinkPass ==TRUE)&&(pMgmt->eAuthenMode < WMAC_AUTH_WPA)) ||  //open && sharekey linking
+-      (pDevice->fWPA_Authened == TRUE)) {   //wpa linking
+-        //   printk("mike:%s-->InSleep Tx Data Procedure\n",__FUNCTION__);
+-	  pDevice->fTxDataInSleep = TRUE;
+-	  PSbSendNullPacket(pDevice);      //send null packet
+-	  pDevice->fTxDataInSleep = FALSE;
+-  	}
+-  spin_unlock_irq(&pDevice->lock);
+-
+-  pDevice->sTimerTxData.expires = RUN_AT(10*HZ);      //10s callback
+-  add_timer(&pDevice->sTimerTxData);
+-  return;
++	PSDevice pDevice = (PSDevice)hDeviceContext;
++	PSMgmtObject pMgmt = &(pDevice->sMgmtObj);
++
++	pDevice->nTxDataTimeCout++;
++
++	if (pDevice->nTxDataTimeCout < 4) {   //don't tx data if timer less than 40s
++		// printk("mike:%s-->no data Tx not exceed the desired Time as %d\n",__FUNCTION__,
++		//  	(int)pDevice->nTxDataTimeCout);
++		pDevice->sTimerTxData.expires = RUN_AT(10 * HZ);      //10s callback
++		add_timer(&pDevice->sTimerTxData);
++		return;
++	}
++
++	spin_lock_irq(&pDevice->lock);
++	//is wap_supplicant running successful OR only open && sharekey mode!
++	if (((pDevice->bLinkPass == TRUE) &&
++		(pMgmt->eAuthenMode < WMAC_AUTH_WPA)) ||  //open && sharekey linking
++		(pDevice->fWPA_Authened == TRUE)) {   //wpa linking
++		//   printk("mike:%s-->InSleep Tx Data Procedure\n",__FUNCTION__);
++		pDevice->fTxDataInSleep = TRUE;
++		PSbSendNullPacket(pDevice);      //send null packet
++		pDevice->fTxDataInSleep = FALSE;
++	}
++	spin_unlock_irq(&pDevice->lock);
++
++	pDevice->sTimerTxData.expires = RUN_AT(10 * HZ);      //10s callback
++	add_timer(&pDevice->sTimerTxData);
++	return;
+ }
+-- 
+1.7.9.5
 
-
-If I read the hypercall code of XENMEM_add_to_physmap correctly the mfn
-backing *HYPERVISOR_shared_info will remain the same, so there is no need
-to copy data from the old to the new *HYPERVISOR_shared_info.
-
-What do you think, is that race real?
-
-Olaf
