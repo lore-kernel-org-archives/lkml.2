@@ -1,115 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754414Ab2GMHaj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 03:30:39 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:56640 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752980Ab2GMHah (ORCPT
+	id S1754521Ab2GMHbp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 03:31:45 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:3180 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752980Ab2GMHbn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 03:30:37 -0400
-X-AuditID: b753bd60-914c2ba0000047ca-a6-4fffce9a7112
-X-AuditID: b753bd60-914c2ba0000047ca-a6-4fffce9a7112
-Message-ID: <4FFFCE7F.9060606@hitachi.com>
-Date: Fri, 13 Jul 2012 16:30:07 +0900
-From: HAYASAKA Mitsuo <mitsuo.hayasaka.hu@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	Fri, 13 Jul 2012 03:31:43 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 13 Jul 2012 00:27:33 -0700
+Subject: RE: How to use the generic thermal sysfs.
+From: Wei Ni <wni@nvidia.com>
+To: Zhang Rui <rui.zhang@intel.com>
+CC: "R, Durgadoss" <durgadoss.r@intel.com>, "Brown, Len" <len.brown@intel.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "khali@linux-fr.org" <khali@linux-fr.org>,
+        "joe@perches.com" <joe@perches.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@ger.kernel.org" <linux-tegra@ger.kernel.org>,
+        Alex Courbot <acourbot@nvidia.com>
+In-Reply-To: <1342144273.1682.237.camel@rui.sh.intel.com>
+References: <1342088573.27605.101.camel@tegra-chromium-2>
+	 <4D68720C2E767A4AA6A8796D42C8EB5915287C@BGSMSX101.gar.corp.intel.com>
+	 <1342144273.1682.237.camel@rui.sh.intel.com>
+Date: Fri, 13 Jul 2012 15:30:16 +0800
+Message-ID: <1342164616.27605.129.camel@tegra-chromium-2>
 MIME-Version: 1.0
-To: Miklos Szeredi <miklos@szeredi.hu>, hanwen@xs4all.nl,
-        Han-Wen Nienhuys <hanwenn@gmail.com>, Liu Yuan <namei.unix@gmail.com>
-Cc: fuse-devel@lists.sourceforge.net, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [fuse-devel] [RFC PATCH 0/5] fuse: make maximum read/write request
- size tunable
-References: <20120705105017.17812.95542.stgit@ltc137.sdl.hitachi.co.jp> <4FF67D6A.8060707@gmail.com> <CAOw_e7ZGdSVrNfPe8iE8BtmNWU+BrvbaMFVsUP+g+3MR0Pegqw@mail.gmail.com> <4FFE6785.80201@hitachi.com> <878vep478e.fsf@tucsk.pomaz.szeredi.hu>
-In-Reply-To: <878vep478e.fsf@tucsk.pomaz.szeredi.hu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Miklos,
+On Fri, 2012-07-13 at 09:51 +0800, Zhang Rui wrote:
+> On 四, 2012-07-12 at 04:54 -0600, R, Durgadoss wrote:
+> > Hi,
+> > 
+> > > -----Original Message-----
+> > > From: Wei Ni [mailto:wni@nvidia.com]
+> > > Sent: Thursday, July 12, 2012 3:53 PM
+> > > To: Zhang, Rui; Brown, Len; akpm@linux-foundation.org; khali@linux-fr.org;
+> > > joe@perches.com; R, Durgadoss
+> > > Cc: linux-kernel@vger.kernel.org; linux-tegra@ger.kernel.org;
+> > > acourbot@nvidia.com
+> > > Subject: How to use the generic thermal sysfs.
+> > > 
+> > > Hi, all
+> > > I'm working on the tegra thermal throttling upstream issue.
+> > > The tegra30 board use the nct1008 as the thermal sensor, and the lm90 is
+> > > the sensor driver. We want to use the generic thermal sysfs.
+> > > 
+> > > My question is where should we register the thermal zone device? We may
+> > > have two place to do it:
+> > > 1. register it in the sensor driver, such as lm90.c
+> > > In this way, the sensor driver doesn't need to export any APIs, such as
+> > > get_temp.
+> > 
+> > This approach is preferred.
+> > 
+> > > 2. register in my tegra thermal framework.
+> > > In this way, the sensor driver need to export some APIs, which are used
+> > > to register the ops and do any other things.
+> > 
+> > What do you mean by "my tegra thermal framework" ? Where does the source
+> > file for this sit in the mainline kernel ?
+> > 
+> I have the same question.
+> It sounds like that you want to use the tegra thermal framework to do
+> thermal management instead of the generic thermal layer, right?
+> 
+> IMO, the purpose of the generic thermal layer is
+> 1) do kernel thermal management
+> 2) export unique sysfs I/F to userspace so that users/userspace
+> applications can take over the thermal management.
+> 
+> what is the benefit to have another driver to do thermal management in
+> kernel?
+> If the current thermal management in the generic thermal layer can not
+> work well on your platform, it is a good chance to enhance the kernel
+> thermal manager. :)
 
-Thank you for your comments.
+Our tegra thermal framework also will use the generic thermal layer. It
+will register the cooling device, and run the throttling in this generic
+framework.
+But we have a special mechanism, when the temp is below the trip temp,
+we will set different cpu capability for different temp range. For
+example, set the low/high temp as 20C/30C to the sensor, and set the cpu
+to the max capability, it mean the cpu can run up to the max freq and
+voltage in this temp range. if the temp is out that range, the sensor
+will have irq/alert to notify the tegra framework, then we will set to
+another temperature range and cpu capability.
+I think we can try to add this mechanism to the generic framework as a
+new policy, right?
 
-(2012/07/12 19:13), Miklos Szeredi wrote:
-> HAYASAKA Mitsuo<mitsuo.hayasaka.hu@hitachi.com>  writes:
->
->> Hi Yuan and Han-Wen,
->>
->> Thank you for your comments.
->>
->> (2012/07/06 22:58), Han-Wen Nienhuys wrote:
->>> On Fri, Jul 6, 2012 at 2:53 AM, Liu Yuan<namei.unix@gmail.com>   wrote:
->>>> On 07/05/2012 06:50 PM, Mitsuo Hayasaka wrote:
->>>>> One of the ways to solve this is to make them tunable.
->>>>> In this series, the new sysfs parameter max_pages_per_req is introduced.
->>>>> It limits the maximum read/write size in fuse request and it can be
->>>>> changed from 32 to 256 pages in current implementations. When the
->>>>> max_read/max_write mount option is specified, FUSE request size is set
->>>>> per mount. (The size is rounded-up to page size and limited up to
->>>>> max_pages_per_req.)
->>>>
->>>> Why maxim 256 pages? If we are here, we can go further: most of object
->>>> storage system has object size of multiple to dozens of megabytes. So I
->>>> think probably 1M is too small. Our distribution storage system has 4M
->>>> per object, so I think at least maxim size could be bigger than 4M.
->>>
->>> The maximum pipe size on my system is 1M, so if you go beyond that,
->>> splicing from the FD won't work.
->>>
->>> Also, the userspace client must reserve a buffer this size so it can
->>> receive a write, which is a waste since most requests are much
->>> smaller.
->>>
->>
->> I checked the maximum pipe size can be changed using fcntl(2) or
->> /proc/sys/fs/pipe-max-size. It is clear that it is not a fixed value.
->>
->> Also, it seems that there is a request for setting the maximum number
->> of pages per fuse request to 4M (1024 pages). One of the reasons to
->> introduce the sysfs max_pages_per_req parameter is to set a threshold
->> of the maximum number of pages dynamically according to the
->> administrator's demand, and root can only change it.
->>
->> So, when the maximum value is required to be set to not more than the
->> pipe-max-size, the max_pages_per_req should be changed considering it.
->> It seems that the upper limit of this parameter does not have to be
->> not more than it.
->>
->> I'm planning to limit max_pages_per_req up to 1024 pages and add the
->> document to /Documentation/filesystems/fuse.txt, as follows.
->>
->> "the sysfs max_pages_per_req parameter can be changed from 32 to 1024.
->> The default is 32 pages. Generally, the pipe-max-size is 1M (256 pages)
->> and it is better to set it to not more than the pipe-max-size."
->
-> Can't we just use pipe-max-size for the limit?
+> 
+> thanks,
+> rui
+> 
+> > > 
+> > > How should I do it?
+> > > 
+> > > And in current codes, there have the event notification, in the form of
+> > > a netlink event. But it's difficult to be used in the kernel, it's
+> > > normally for the communication with user-space. How about to add a
+> > > notify call chain for it? So when the sensor has irq alert, it can send
+> > > a notify to my thermal framework in kernel.
+> > 
+> > We are working on a notification API from any generic sensor driver to
+> > the thermal framework.
+> > Please have a look at the 'notify_thermal_framework' API in the patch here:
+> > http://www.spinics.net/lists/linux-acpi/msg36049.html
 
-This is great!
-I'd like to change this patch to using the pipe-max-size for the upper
-limit of the max_pages_per_req sysfs paramter, and resubmit it.
+It's cool. I will cherry pick them to run it.
 
->
-> Then we'll use the minimum of pipe-max-size and max_read/max_write for
-> sizing the requests.
->
-> Another comment: do we really need to allocate each and every request
-> with space for the pages?  I don't think that makes sense.  Let's leave
-> some small number of pages inline in the request and allocate a separate
-> array if the number of pages is too large.  There may even be some utilities
-> in the kernel to handle dynamically sized page arrays (I haven't looked
-> but I suspect there is).
+> > 
+> > Thanks,
+> > Durga
+> > 
+> 
+> 
 
-This is interesting and enables to dramatically reduce the number of page
-allocation and free. However, it seems that it is necessary to investigate
-if this is feasible.
-
-Thanks,
-
->
-> Thanks,
-> Miklos
->
 
