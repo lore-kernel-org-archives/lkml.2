@@ -1,44 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753065Ab2GMGqc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 02:46:32 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:18842 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752414Ab2GMGqa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 02:46:30 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Thu, 12 Jul 2012 23:46:29 -0700
-Message-ID: <4FFFC29D.3060209@nvidia.com>
-Date: Fri, 13 Jul 2012 12:09:25 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	id S1753863Ab2GMG5z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 02:57:55 -0400
+Received: from nm2-vm0.bullet.mail.ird.yahoo.com ([77.238.189.199]:39308 "HELO
+	nm2-vm0.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753463Ab2GMG5y convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 02:57:54 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 852425.90434.bm@omp1002.mail.ird.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=zDpr2uTVCo6wvx5VGuyh5jKdLz12N8LwphLZhSMr82qB+6BC+9/ziMjg1u19xCxHfvU6m86JaFTw3mV/RmnO7uxuEkyU7PtI2nxI/PcfqgkB6Yo8yKygMXn6T3901/YX+GG+PtY5mBK0XLAfEmb++FV0e/bD+slcLy1zGSF5kcU=;
+X-YMail-OSG: li83W0sVM1neZe2rKqB3.1P52EyP8RODIEZKggo4Rpdj.T5
+ VEldT0CuiKxEeJcRixI.WghKecLoMQsQDblZBFKRbzufkw_JejD7jSfJEBXQ
+ NZgH.zoduVbKhh1pmRwzjaDnKP8qhIuM3xvbmZGC0lo4N1qAePju0Uk7wqHg
+ JNtDMwTPi2vdNJSPg54UBFBbZv1APl2DFTuw5OrzYugh8WhesmaPdlE0VRcU
+ aZnolqpk6z.0Z47kOdxHwm5qOF..h26QTxSljAX6_A7vPR9MxMISbUf3iF_q
+ y8pLI52UPazDcx1HaudbeBLvGnqm53D3J61xfEfzKh_vXuXIHnLHqctMVUAn
+ kxmxA6e1Pbna59csLrFCDvi6P04CfDpIufMkAQVQ-
+X-Mailer: YahooMailWebService/0.8.120.356233
+Message-ID: <1342162672.76131.YahooMailNeo@web29904.mail.ird.yahoo.com>
+Date: Fri, 13 Jul 2012 07:57:52 +0100 (BST)
+From: Marquerite Sands <careyhei999a@yahoo.com>
+Reply-To: Marquerite Sands <marquerite.sands@yahoo.com>
+Subject: I'm just in time
+To: "zwsm68a@prodigy.com" <zwsm68a@prodigy.com>
 MIME-Version: 1.0
-To: Vinod Koul <vinod.koul@linux.intel.com>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH 2/2] dma: tegra: fix residual calculation for cyclic case
-References: <1341217328-6676-1-git-send-email-ldewangan@nvidia.com>	 <4FF1C62B.5070005@wwwdotorg.org> <1342149336.1726.5.camel@vkoul-udesk3>	 <4FFFB476.9050006@nvidia.com> <1342160923.1726.11.camel@vkoul-udesk3>
-In-Reply-To: <1342160923.1726.11.camel@vkoul-udesk3>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 13 July 2012 11:58 AM, Vinod Koul wrote:
-> On Fri, 2012-07-13 at 11:09 +0530, Laxman Dewangan wrote:
-> You didnt get my other mail about applying?
->
-
-Read carefully now and saw both are applied.
-Thanks for care.
-
-Thanks,
-Laxman
-
-
-
+How is it going, my name is Marquerite.
+I am looking for some fun in here, I mean  I need someone to spend time together.
+Shortly about myself. I like such things as listening to some good AC/DC tunes, dancing, watching thriller films, I also really enjoy skydiving!
+Oh yeah, I also enjoy sex. It'd be better to say that I freaking love it! You do love sex, don't you?) Maybe we'll like each other, right?)
+Can I get your answer tomorrow?)
