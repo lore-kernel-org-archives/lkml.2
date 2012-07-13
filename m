@@ -1,131 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758124Ab2GMTlY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 15:41:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64568 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756781Ab2GMTlV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 15:41:21 -0400
-From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH v4 3/3] kvm: Add a GSI specification for KVM_EOIFD
-To: avi@redhat.com, mst@redhat.com
-Cc: gleb@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jan.kiszka@siemens.com
-Date: Fri, 13 Jul 2012 13:41:13 -0600
-Message-ID: <20120713194111.5474.48341.stgit@bling.home>
-In-Reply-To: <20120713192625.5474.60777.stgit@bling.home>
-References: <20120713192625.5474.60777.stgit@bling.home>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1758063Ab2GMToS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 15:44:18 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2048 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753190Ab2GMToQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 15:44:16 -0400
+X-Authority-Analysis: v=2.0 cv=AtpsLZBP c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=m_VzdanGAVkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=PSFjnz9KlFBXcQplrC8A:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-ID: <1342208654.30075.22.camel@gandalf.stny.rr.com>
+Subject: [RFC][PATCH] x86_32: Return actual stack when requesting sp from
+ regs
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, stable <stable@vger.kernel.org>
+Date: Fri, 13 Jul 2012 15:44:14 -0400
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NOT FOR COMMIT - Here's what it would look like to add a GSI
-flavor for KVM_EOIFD later.  I expect we're going to need this
-to support generic EOI notifiers in qemu when irqchip is enabled.
-No API doc included here yet.
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
----
+As x86_32 traps do not save sp when taken in kernel mode, we need to
+accommodate the sp when requesting to get the register.
 
- include/linux/kvm.h |    8 +++++++-
- virt/kvm/eventfd.c  |   17 +++++++++++++++--
- 2 files changed, 22 insertions(+), 3 deletions(-)
+This affects kprobes.
 
-diff --git a/include/linux/kvm.h b/include/linux/kvm.h
-index 5ca887d..18d87fc 100644
---- a/include/linux/kvm.h
-+++ b/include/linux/kvm.h
-@@ -621,6 +621,7 @@ struct kvm_ppc_smmu_info {
- #define KVM_CAP_IRQFD_LEVEL 81
- #define KVM_CAP_EOIFD 82
- #define KVM_CAP_EOIFD_LEVEL_IRQFD 83
-+#define KVM_CAP_EOIFD_GSI 84
- 
- #ifdef KVM_CAP_IRQ_ROUTING
- 
-@@ -699,11 +700,16 @@ struct kvm_irqfd {
- #define KVM_EOIFD_FLAG_DEASSIGN (1 << 0)
- /* Available with KVM_CAP_EOIFD_LEVEL_IRQFD */
- #define KVM_EOIFD_FLAG_LEVEL_IRQFD (1 << 1)
-+/* Available with KVM_CAP_EOIFD_GSI */
-+#define KVM_EOIFD_FLAG_GSI (1 << 2)
- 
- struct kvm_eoifd {
- 	__u32 fd;
- 	__u32 flags;
--	__u32 irqfd;
-+	union {
-+		__u32 irqfd;
-+		__u32 gsi;
-+	};
- 	__u8 pad[20];
- };
- 
-diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
-index 2fae198..b6d9c1c 100644
---- a/virt/kvm/eventfd.c
-+++ b/virt/kvm/eventfd.c
-@@ -826,6 +826,11 @@ static void eoifd_event(struct kvm_irq_ack_notifier *notifier)
- 
- 	eoifd = container_of(notifier, struct _eoifd, notifier);
- 
-+	if (!eoifd->level_irqfd) {
-+		eventfd_signal(eoifd->eventfd, 1);
-+		return;
-+	}
-+
- 	/*
- 	 * Ack notifier is per GSI, which may be shared with others.
- 	 * Only de-assert and send EOI if our source ID is asserted.
-@@ -876,6 +881,8 @@ static int kvm_assign_eoifd(struct kvm *kvm, struct kvm_eoifd *args)
- 			ret = -EINVAL;
- 			goto fail;
- 		}
-+	} else if (args->flags & KVM_EOIFD_FLAG_GSI) {
-+		gsi = args->gsi;
- 	} else {
- 		ret = -EINVAL;
- 		goto fail;
-@@ -934,6 +941,7 @@ static int kvm_deassign_eoifd(struct kvm *kvm, struct kvm_eoifd *args)
+Before:
+
+ # echo 'p:ftrace sys_read+4 s=%sp' > /debug/tracing/kprobe_events
+ # echo 1 > /debug/tracing/events/kprobes/enable
+ # cat trace
+            sshd-1345  [000] d...   489.117168: ftrace: (sys_read+0x4/0x70) s=b7e96768
+            sshd-1345  [000] d...   489.117191: ftrace: (sys_read+0x4/0x70) s=b7e96768
+             cat-1447  [000] d...   489.117392: ftrace: (sys_read+0x4/0x70) s=5a7
+             cat-1447  [001] d...   489.118023: ftrace: (sys_read+0x4/0x70) s=b77ad05f
+            less-1448  [000] d...   489.118079: ftrace: (sys_read+0x4/0x70) s=b7762e06
+            less-1448  [000] d...   489.118117: ftrace: (sys_read+0x4/0x70) s=b7764970
+
+After:
+            sshd-1352  [000] d...   362.348016: ftrace: (sys_read+0x4/0x70) s=f3febfa8
+            sshd-1352  [000] d...   362.348048: ftrace: (sys_read+0x4/0x70) s=f3febfa8
+            bash-1355  [001] d...   362.348081: ftrace: (sys_read+0x4/0x70) s=f5075fa8
+            sshd-1352  [000] d...   362.348082: ftrace: (sys_read+0x4/0x70) s=f3febfa8
+            sshd-1352  [000] d...   362.690950: ftrace: (sys_read+0x4/0x70) s=f3febfa8
+            bash-1355  [001] d...   362.691033: ftrace: (sys_read+0x4/0x70) s=f5075fa8
+
+[ I wonder if this should also go to stable? ]
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+Index: linux-trace.git/arch/x86/include/asm/ptrace.h
+===================================================================
+--- linux-trace.git.orig/arch/x86/include/asm/ptrace.h
++++ linux-trace.git/arch/x86/include/asm/ptrace.h
+@@ -246,6 +246,15 @@ static inline unsigned long regs_get_reg
  {
- 	struct eventfd_ctx *eventfd = NULL, *level_irqfd = NULL;
- 	struct _eoifd *eoifd;
-+	unsigned gsi = ~0;
- 	int ret = -ENOENT;
+ 	if (unlikely(offset > MAX_REG_OFFSET))
+ 		return 0;
++#ifdef CONFIG_X86_32
++	/*
++	 * Traps from the kernel do not save sp and ss.
++	 * Use the helper function to retrieve sp.
++	 */
++	if (offset == offsetof(struct pt_regs, sp) &&
++	    regs->cs == __KERNEL_CS)
++		return kernel_stack_pointer(regs);
++#endif
+ 	return *(unsigned long *)((unsigned long)regs + offset);
+ }
  
- 	eventfd = eventfd_ctx_fdget(args->fd);
-@@ -948,6 +956,8 @@ static int kvm_deassign_eoifd(struct kvm *kvm, struct kvm_eoifd *args)
- 			ret = PTR_ERR(level_irqfd);
- 			goto fail;
- 		}
-+	} else if (args->flags & KVM_EOIFD_FLAG_GSI) {
-+		gsi = args->gsi;
- 	} else {
- 		ret = -EINVAL;
- 		goto fail;
-@@ -957,7 +967,9 @@ static int kvm_deassign_eoifd(struct kvm *kvm, struct kvm_eoifd *args)
- 
- 	list_for_each_entry(eoifd, &kvm->eoifds.items, list) {
- 		if (eoifd->eventfd == eventfd &&
--		    eoifd->level_irqfd == level_irqfd) {
-+		    ((level_irqfd && eoifd->level_irqfd == level_irqfd) ||
-+		     (!level_irqfd && !eoifd->level_irqfd &&
-+		      eoifd->notifier.gsi == gsi))) {
- 			eoifd_destroy(kvm, eoifd);
- 			ret = 0;
- 			break;
-@@ -978,7 +990,8 @@ fail:
- int kvm_eoifd(struct kvm *kvm, struct kvm_eoifd *args)
- {
- 	if (args->flags & ~(KVM_EOIFD_FLAG_DEASSIGN |
--			    KVM_EOIFD_FLAG_LEVEL_IRQFD))
-+			    KVM_EOIFD_FLAG_LEVEL_IRQFD |
-+			    KVM_EOIFD_FLAG_GSI))
- 		return -EINVAL;
- 
- 	if (args->flags & KVM_EOIFD_FLAG_DEASSIGN)
+
 
