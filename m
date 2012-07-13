@@ -1,124 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754521Ab2GMHbp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 03:31:45 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:3180 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752980Ab2GMHbn convert rfc822-to-8bit (ORCPT
+	id S1754590Ab2GMHdu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 03:33:50 -0400
+Received: from grace.univie.ac.at ([131.130.3.115]:42365 "EHLO
+	grace.univie.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754006Ab2GMHdt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 03:31:43 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 13 Jul 2012 00:27:33 -0700
-Subject: RE: How to use the generic thermal sysfs.
-From: Wei Ni <wni@nvidia.com>
-To: Zhang Rui <rui.zhang@intel.com>
-CC: "R, Durgadoss" <durgadoss.r@intel.com>, "Brown, Len" <len.brown@intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "khali@linux-fr.org" <khali@linux-fr.org>,
-        "joe@perches.com" <joe@perches.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@ger.kernel.org" <linux-tegra@ger.kernel.org>,
-        Alex Courbot <acourbot@nvidia.com>
-In-Reply-To: <1342144273.1682.237.camel@rui.sh.intel.com>
-References: <1342088573.27605.101.camel@tegra-chromium-2>
-	 <4D68720C2E767A4AA6A8796D42C8EB5915287C@BGSMSX101.gar.corp.intel.com>
-	 <1342144273.1682.237.camel@rui.sh.intel.com>
-Date: Fri, 13 Jul 2012 15:30:16 +0800
-Message-ID: <1342164616.27605.129.camel@tegra-chromium-2>
+	Fri, 13 Jul 2012 03:33:49 -0400
+Message-ID: <e9caf38359467bfa8a1e2ac86f6ef2cc.squirrel@webmail.univie.ac.at>
+Date: Fri, 13 Jul 2012 09:33:46 +0200
+Subject: Re: resurrecting tcphealth
+From: "Piotr Sawuk" <a9702387@unet.univie.ac.at>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.19
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Univie-Virus-Scan: scanned by ClamAV on justin.univie.ac.at
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-07-13 at 09:51 +0800, Zhang Rui wrote:
-> On 四, 2012-07-12 at 04:54 -0600, R, Durgadoss wrote:
-> > Hi,
-> > 
-> > > -----Original Message-----
-> > > From: Wei Ni [mailto:wni@nvidia.com]
-> > > Sent: Thursday, July 12, 2012 3:53 PM
-> > > To: Zhang, Rui; Brown, Len; akpm@linux-foundation.org; khali@linux-fr.org;
-> > > joe@perches.com; R, Durgadoss
-> > > Cc: linux-kernel@vger.kernel.org; linux-tegra@ger.kernel.org;
-> > > acourbot@nvidia.com
-> > > Subject: How to use the generic thermal sysfs.
-> > > 
-> > > Hi, all
-> > > I'm working on the tegra thermal throttling upstream issue.
-> > > The tegra30 board use the nct1008 as the thermal sensor, and the lm90 is
-> > > the sensor driver. We want to use the generic thermal sysfs.
-> > > 
-> > > My question is where should we register the thermal zone device? We may
-> > > have two place to do it:
-> > > 1. register it in the sensor driver, such as lm90.c
-> > > In this way, the sensor driver doesn't need to export any APIs, such as
-> > > get_temp.
-> > 
-> > This approach is preferred.
-> > 
-> > > 2. register in my tegra thermal framework.
-> > > In this way, the sensor driver need to export some APIs, which are used
-> > > to register the ops and do any other things.
-> > 
-> > What do you mean by "my tegra thermal framework" ? Where does the source
-> > file for this sit in the mainline kernel ?
-> > 
-> I have the same question.
-> It sounds like that you want to use the tegra thermal framework to do
-> thermal management instead of the generic thermal layer, right?
-> 
-> IMO, the purpose of the generic thermal layer is
-> 1) do kernel thermal management
-> 2) export unique sysfs I/F to userspace so that users/userspace
-> applications can take over the thermal management.
-> 
-> what is the benefit to have another driver to do thermal management in
-> kernel?
-> If the current thermal management in the generic thermal layer can not
-> work well on your platform, it is a good chance to enhance the kernel
-> thermal manager. :)
+On Do, 12.07.2012, 23:35, Stephen Hemminger wrote:
+> On Thu, 12 Jul 2012 22:55:57 +0200
+> "Piotr Sawuk" <a9702387@unet.univie.ac.at> wrote:
+>
+>> + *		Federico D. Sacerdoti:	Added TCP health monitoring.
+>
+> Please don't do this.
+> The kernel community no longer maintains a list of contributors
+> in the comments. The history is maintained in the git commit log.
+>
 
-Our tegra thermal framework also will use the generic thermal layer. It
-will register the cooling device, and run the throttling in this generic
-framework.
-But we have a special mechanism, when the temp is below the trip temp,
-we will set different cpu capability for different temp range. For
-example, set the low/high temp as 20C/30C to the sensor, and set the cpu
-to the max capability, it mean the cpu can run up to the max freq and
-voltage in this temp range. if the temp is out that range, the sensor
-will have irq/alert to notify the tegra framework, then we will set to
-another temperature range and cpu capability.
-I think we can try to add this mechanism to the generic framework as a
-new policy, right?
+thanks for the proof-reading, to Randy Dunlap too. now I have tested the
+patch against mainline.
 
-> 
-> thanks,
-> rui
-> 
-> > > 
-> > > How should I do it?
-> > > 
-> > > And in current codes, there have the event notification, in the form of
-> > > a netlink event. But it's difficult to be used in the kernel, it's
-> > > normally for the communication with user-space. How about to add a
-> > > notify call chain for it? So when the sensor has irq alert, it can send
-> > > a notify to my thermal framework in kernel.
-> > 
-> > We are working on a notification API from any generic sensor driver to
-> > the thermal framework.
-> > Please have a look at the 'notify_thermal_framework' API in the patch here:
-> > http://www.spinics.net/lists/linux-acpi/msg36049.html
+so, anyone has a comment on my actual question about the need for a read-lock?
 
-It's cool. I will cherry pick them to run it.
+currently my patch looks like this (again comments are welcome):
 
-> > 
-> > Thanks,
-> > Durga
-> > 
-> 
-> 
+diff -rub A/include/linux/tcp.h B/include/linux/tcp.h
+--- A/include/linux/tcp.h	2012-06-22 20:37:50.000000000 +0200
++++ B/include/linux/tcp.h	2012-07-06 10:23:13.000000000 +0200
+@@ -472,6 +474,15 @@
+ 	 * contains related tcp_cookie_transactions fields.
+ 	 */
+ 	struct tcp_cookie_values  *cookie_values;
++
++	/*
++	 * TCP health monitoring counters.
++	 */
++	__u32	dup_acks_sent;
++	__u32	dup_pkts_recv;
++	__u32	acks_sent;
++	__u32	pkts_recv;
++	__u32	last_ack_sent;	/* Sequence number of the last ack we sent. */
+ };
+
+ static inline struct tcp_sock *tcp_sk(const struct sock *sk)
+diff -rub A/net/ipv4/tcp_input.c B/net/ipv4/tcp_input.c
+--- A/net/ipv4/tcp_input.c	2012-06-22 20:37:50.000000000 +0200
++++ B/net/ipv4/tcp_input.c	2012-07-06 10:12:12.000000000 +0200
+@@ -4414,6 +4415,8 @@
+ 		}
+
+ 		if (!after(TCP_SKB_CB(skb)->end_seq, tp->rcv_nxt)) {
++			/* Course retransmit inefficiency- this packet has been received twice. */
++			tp->dup_pkts_recv++;
+ 			SOCK_DEBUG(sk, "ofo packet was already received\n");
+ 			__skb_unlink(skb, &tp->out_of_order_queue);
+ 			__kfree_skb(skb);
+@@ -4664,6 +4667,10 @@
+ 		return;
+ 	}
+
++	/* A packet is a "duplicate" if it contains bytes we have already
+received. */
++	if (before(TCP_SKB_CB(skb)->seq, tp->rcv_nxt))
++		tp->dup_pkts_recv++;
++
+ 	if (!after(TCP_SKB_CB(skb)->end_seq, tp->rcv_nxt)) {
+ 		/* A retransmit, 2nd most common case.  Force an immediate ack. */
+NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_DELAYEDACKLOST);
+@@ -5375,6 +5382,13 @@
+
+ 	tp->rx_opt.saw_tstamp = 0;
+
++	/*
++	 *	Tcp health monitoring is interested in
++	 *	total per-connection packet arrivals.
++	 *	This is in the fast path, but is quick.
++	 */
++	tp->pkts_recv++;
++
+ 	/*	pred_flags is 0xS?10 << 16 + snd_wnd
+ 	 *	if header_prediction is to be made
+ 	 *	'S' will always be tp->tcp_header_len >> 2
+diff -rub A/net/ipv4/tcp_ipv4.c B/net/ipv4/tcp_ipv4.c
+--- A/net/ipv4/tcp_ipv4.c	2012-06-22 20:37:50.000000000 +0200
++++ B/net/ipv4/tcp_ipv4.c	2012-07-11 09:34:22.000000000 +0200
+@@ -2533,6 +2533,82 @@
+ 	return 0;
+ }
+
++
++/*
++ *	Output /proc/net/tcphealth
++ */
++#define LINESZ 128
++
++int tcp_health_seq_show(struct seq_file *seq, void *v)
++{
++	int len, num;
++	char srcIP[32], destIP[32];
++
++	unsigned long  SmoothedRttEstimate,
++		AcksSent, DupAcksSent, PktsRecv, DupPktsRecv;
++	struct tcp_iter_state *st;
++
++	if (v == SEQ_START_TOKEN) {
++		seq_printf(seq,
++		"TCP Health Monitoring (established connections only)\n"
++		" -Duplicate ACKs indicate lost or reordered packets on the
+connection.\n"
++		" -Duplicate Packets Received signal a slow and badly inefficient
+connection.\n"
++		" -RttEst estimates how long future packets will take on a round trip
+over the connection.\n"
++		"id   Local Address        Remote Address       RttEst(ms) AcksSent "
++		"DupAcksSent PktsRecv DupPktsRecv\n");
++		goto out;
++	}
++
++	/* Loop through established TCP connections */
++	st = seq->private;
++
++
++	if (st->state == TCP_SEQ_STATE_ESTABLISHED)
++	{
++/*	; //insert read-lock here */
++		const struct tcp_sock *tp = tcp_sk(v);
++		const struct inet_sock *inet = inet_sk(v);
++		__be32 dest = inet->inet_daddr;
++		__be32 src = inet->inet_rcv_saddr;
++		__u16 destp = ntohs(inet->inet_dport);
++		__u16 srcp = ntohs(inet->inet_sport);
++
++		num = st->num;
++		SmoothedRttEstimate = (tp->srtt >> 3);
++		AcksSent = tp->acks_sent;
++		DupAcksSent = tp->dup_acks_sent;
++		PktsRecv = tp->pkts_recv;
++		DupPktsRecv = tp->dup_pkts_recv;
++
++		sprintf(srcIP, "%lu.%lu.%lu.%lu:%u",
++			((src >> 24) & 0xFF), ((src >> 16) & 0xFF), ((src >> 8) & 0xFF), (src &
+0xFF),
++			srcp);
++		sprintf(destIP, "%3d.%3d.%3d.%3d:%u",
++			((dest >> 24) & 0xFF), ((dest >> 16) & 0xFF), ((dest >> 8) & 0xFF),
+(dest & 0xFF),
++			destp);
++
++		seq_printf(seq, "%d: %-21s %-21s "
++				"%8lu %8lu %8lu %8lu %8lu%n",
++				num,
++				srcIP,
++				destIP,
++				SmoothedRttEstimate,
++				AcksSent,
++				DupAcksSent,
++				PktsRecv,
++				DupPktsRecv,
++
++				&len
++			);
++
++		seq_printf(seq, "%*s\n", LINESZ - 1 - len, "");
++/*	; //insert read-unlock here */
++	}
++
++out:
++	return 0;
++}
++
+ static const struct file_operations tcp_afinfo_seq_fops = {
+ 	.owner   = THIS_MODULE,
+ 	.open    = tcp_seq_open,
+@@ -2541,6 +2617,15 @@
+ 	.release = seq_release_net
+ };
+
++static struct tcp_seq_afinfo tcphealth_seq_afinfo = {
++	.name		= "tcphealth",
++	.family		= AF_INET,
++	.seq_fops	= &tcp_afinfo_seq_fops,
++	.seq_ops	= {
++		.show		= tcp_health_seq_show,
++	},
++};
++
+ static struct tcp_seq_afinfo tcp4_seq_afinfo = {
+ 	.name		= "tcp",
+ 	.family		= AF_INET,
+@@ -2552,12 +2637,16 @@
+
+ static int __net_init tcp4_proc_init_net(struct net *net)
+ {
+-	return tcp_proc_register(net, &tcp4_seq_afinfo);
++	int ret = tcp_proc_register(net, &tcp4_seq_afinfo);
++	if(ret == 0)
++		ret = tcp_proc_register(net, &tcphealth_seq_afinfo);
++	return ret;
+ }
+
+ static void __net_exit tcp4_proc_exit_net(struct net *net)
+ {
+ 	tcp_proc_unregister(net, &tcp4_seq_afinfo);
++	tcp_proc_unregister(net, &tcphealth_seq_afinfo);
+ }
+
+ static struct pernet_operations tcp4_net_ops = {
+diff -rub A/net/ipv4/tcp_output.c B/net/ipv4/tcp_output.c
+--- A/net/ipv4/tcp_output.c	2012-06-22 20:37:50.000000000 +0200
++++ B/net/ipv4/tcp_output.c	2012-07-06 17:15:14.000000000 +0200
+@@ -2754,8 +2755,15 @@
+ 	skb_reserve(buff, MAX_TCP_HEADER);
+ 	tcp_init_nondata_skb(buff, tcp_acceptable_seq(sk), TCPHDR_ACK);
+
++		/* If the rcv_nxt has not advanced since sending our last ACK, this is a
+duplicate. */
++		if (tcp_sk(sk)->rcv_nxt == tcp_sk(sk)->last_ack_sent)
++			tcp_sk(sk)->dup_acks_sent++;
++		/* Record the total number of acks sent on this connection. */
++		tcp_sk(sk)->acks_sent++;
++
+ 	/* Send it off, this clears delayed acks for us. */
+ 	TCP_SKB_CB(buff)->when = tcp_time_stamp;
++	tcp_sk(sk)->last_ack_sent = tcp_sk(sk)->rcv_nxt;
+ 	tcp_transmit_skb(sk, buff, 0, GFP_ATOMIC);
+ }
+
+
+
+
+
 
 
