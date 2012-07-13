@@ -1,119 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757129Ab2GMJv5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 05:51:57 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39921 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757030Ab2GMJvy (ORCPT
+	id S932156Ab2GMJw5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 05:52:57 -0400
+Received: from www.linutronix.de ([62.245.132.108]:43762 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757036Ab2GMJwz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 05:51:54 -0400
-Date: Fri, 13 Jul 2012 02:49:54 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Colin Cross <ccross@android.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
-        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com,
-        kgdb-bugreport@lists.sourceforge.net
-Subject: Re: [PATCH 0/6] KGDB/KDB FIQ (NMI) debugger
-Message-ID: <20120713094954.GA12917@lizard>
-References: <20120705231034.GA16931@lizard>
- <CAMbhsRTeWgWyf2gcjr_TSr99Z6wL8bLmMGPYsTsVXoL-+A2Cyg@mail.gmail.com>
+	Fri, 13 Jul 2012 05:52:55 -0400
+Date: Fri, 13 Jul 2012 11:52:53 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Mike Galbraith <efault@gmx.de>
+cc: "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: 3.4.4-rt13: btrfs + xfstests 006 = BOOM.. and a bonus rt_mutex
+ deadlock report for absolutely free!
+In-Reply-To: <1342161072.7380.65.camel@marge.simpson.net>
+Message-ID: <alpine.LFD.2.02.1207131142440.32033@ionos>
+References: <1342072060.7338.102.camel@marge.simpson.net>  <1342082648.7338.171.camel@marge.simpson.net>  <1342086792.7707.9.camel@marge.simpson.net>  <alpine.LFD.2.02.1207121310420.32033@ionos>  <1342094233.7707.12.camel@marge.simpson.net> 
+ <alpine.LFD.2.02.1207121514240.32033@ionos> <1342161072.7380.65.camel@marge.simpson.net>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAMbhsRTeWgWyf2gcjr_TSr99Z6wL8bLmMGPYsTsVXoL-+A2Cyg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 05, 2012 at 05:02:12PM -0700, Colin Cross wrote:
-[...]
-> KGDB can obviously only be enabled on development
-> devices, although perhaps a more limited KDB could be left enabled.
-
-Um, I would argue about 'obviously'. :-) It doesn't require
-CONFIG_DEBUG_INFO (-g) or something like this, so if the concern is
-the size (which is about 30..40 KB), then it is all manageable. If we
-want it to be smaller, we should just work on making KGDB/KDB more
-modular, so that we can exclude non-production features.
-
-> > The FIQ debugger is a facility that can be used to debug situations
-> > when the kernel stuck in uninterruptable sections, e.g. the kernel
-> > infinitely loops or deadlocked in an interrupt or with interrupts
-> > disabled. On some development boards there is even a special NMI
-> > button, which is very useful for debugging weird kernel hangs.
-> >
-> > And FIQ is basically an NMI, it has a higher priority than IRQs, and
-> > upon IRQ exception FIQs are not disabled. It is still possible to
-> > disable FIQs (as well as some "NMIs" on other architectures), but via
-> > special means.
-> >
-> > So, here FIQs and NMIs are synonyms, but in the code I use NMI term
-> > for arch-independent code, and FIQs for ARM code.
+On Fri, 13 Jul 2012, Mike Galbraith wrote:
+> On Thu, 2012-07-12 at 15:31 +0200, Thomas Gleixner wrote: 
+> > Bingo, that makes it more likely that this is caused by copying w/o
+> > initializing the lock and then freeing the original structure.
+> > 
+> > A quick check for memcpy finds that __btrfs_close_devices() does a
+> > memcpy of btrfs_device structs w/o initializing the lock in the new
+> > copy, but I have no idea whether that's the place we are looking for.
 > 
-> Unfortunately, FIQs have been repurposed as secure interrupts on every
-> ARM SoC that supports TrustZone, which is basically all of the latest
-> generation, as well as a few of the previous generation.  When an FIQ
-> arrives, the cpu traps into the secure mode, generally running a
-> separate secure OS written by a 3rd party vendor.  We've tried to get
-> some SoC secure implementations to drop out of secure mode and into
-> the FIQ exception vector for specific irqs, with the registers set up
-> to allow the FIQ handler to return back to the original execution
-> point, but it's been successful.
+> Thanks a bunch Thomas.  I doubt I would have ever figured out that lala
+> land resulted from _copying_ a lock.  That's one I won't be forgetting
+> any time soon.  Box not only survived a few thousand xfstests 006 runs,
+> dbench seemed disinterested in deadlocking virgin 3.0-rt.
 
-It's pity, and this just shows that recent SOCs have a somewhat limited
-debugging facilities. There are countless times when I was able to debug
-a hang simply by hitting an NMI button on a reference board (not ARM,
-tho) and just reading the trace.
+Cute. It think that the lock copying caused the deadlock problem as
+the list pointed to the wrong place, so we might have ended up with
+following down the wrong chain when walking the list as long as the
+original struct was not freed. That beast is freed under RCU so there
+could be a rcu read side critical section fiddling with the old lock
+and cause utter confusion.
 
-Having any (even a watchdog) NMI connected to a kernel would be enough
-to make things better. Btw, these patches' approach works even if we
-can't reroute arbitrary interrupts to FIQs (like we do for serial lines).
+/me goes and writes a nastigram^W proper changelog
 
-[...]
-> >   This might look as a drastic change, but it is not. There is actually
-> >   no difference whether you have sync or async shell, or at least I
-> >   couldn't find any use-case where this would matter at all. Anyways,
-> >   it is still possible to do async shell in KDB, just don't see any
-> >   need for this.
-> 
-> I think it could be an issue if KDB stopped execution whenever it
-> received any character.  Serial ports are often noisy, especially when
-> muxed over another port (we often use serial over the headset
-> connector).  Noise on the async command line just causes characters
-> that are ignored, on a command line that blocked execution noise would
-> be catastrophic.
+> btrfs still locks up in my enterprise kernel, so I suppose I had better
+> plug your fix into 3.4-rt and see what happens, and go beat hell out of
+> virgin 3.0-rt again to be sure box really really survives dbench.
 
-Aha, that's the real use-case, thanks! I started hacking the KDB
-to add the async shell support, but then I realized that we still
-don't need all the complexity. If the only purpose is to be safe from
-the noise, then we can just do "knocking" before entering the debugger.
+A test against 3.4-rt sans enterprise mess might be nice as well.
 
-The thing is, we even have a standard sequence for entering KDB,
-it is GDB-protocol command $3#33, so it actually makes sense to
-implement this. This would be the only async command, and it doesn't
-affect anything but the new code. I prepared a separate patch for this.
+Thanks,
 
-[...]
-> One of the nice features in FIQ debugger is the "console" command,
-> which causes all incoming serial characters to get passed to a console
-> device provided by the FIQ debugger, and characters from the console
-> to go out the serial port (when it is enabled).  That way you can
-> still have the console when you want it, but only one driver talking
-> to the hardware.
-
-This is surely a nice feature, and we have a chance to make it work
-with this scheme too. For example, we can reroute FIQ to IRQ, and
-reinitialize the tty device, so that it would grab the IRQ, then we
-can give uart back. Surely there are some implementation details
-that makes it not that easy, but it is definitely doable.
-
-Thanks!
-
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+	tglx
