@@ -1,146 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756826Ab2GMJLk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 05:11:40 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:55220 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756172Ab2GMJLg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 05:11:36 -0400
+	id S1756850Ab2GMJMh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 05:12:37 -0400
+Received: from mga14.intel.com ([143.182.124.37]:24339 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754455Ab2GMJMd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 05:12:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="167628842"
+Date: Fri, 13 Jul 2012 17:12:30 +0800
+From: Fengguang Wu <wfg@linux.intel.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: rcu_dyntick and suspicious RCU usage
+Message-ID: <20120713091230.GA20208@localhost>
+References: <20120709135637.GA26040@localhost>
+ <20120709145724.GA27095@localhost>
+ <20120710044700.GA9462@localhost>
+ <20120711074924.GD3819@linux.vnet.ibm.com>
+ <20120712164308.GA31584@linux.vnet.ibm.com>
+ <20120712165738.GA21630@localhost>
+ <20120712170242.GB31396@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <1342097668-25243-4-git-send-email-thomas.abraham@linaro.org>
-References: <1342097668-25243-1-git-send-email-thomas.abraham@linaro.org>
-	<1342097668-25243-4-git-send-email-thomas.abraham@linaro.org>
-Date: Fri, 13 Jul 2012 14:41:35 +0530
-Message-ID: <CAGxe1ZGMvrec-nEYdZJ84Hub0fByYvnkCY_dRq2k489gCRSxQg@mail.gmail.com>
-Subject: Re: [PATCH v3 3/6] mmc: dw_mmc: lookup for optional biu and ciu clocks
-From: Girish K S <girish.shivananjappa@linaro.org>
-To: Thomas Abraham <thomas.abraham@linaro.org>
-Cc: linux-mmc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        cjb@laptop.org, grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
-        patches@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120712170242.GB31396@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 July 2012 18:24, Thomas Abraham <thomas.abraham@linaro.org> wrote:
-> Some platforms allow for clock gating and control of bus interface unit clock
-> and card interface unit clock. Add support for clock lookup of optional biu
-> and ciu clocks for clock gating and clock speed determination.
->
-> Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
-> Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
-> ---
->  drivers/mmc/host/dw_mmc.c  |   42 +++++++++++++++++++++++++++++++++++++++---
->  include/linux/mmc/dw_mmc.h |    4 ++++
->  2 files changed, 43 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-> index cd58063..679473c 100644
-> --- a/drivers/mmc/host/dw_mmc.c
-> +++ b/drivers/mmc/host/dw_mmc.c
-> @@ -1953,18 +1953,38 @@ int dw_mci_probe(struct dw_mci *host)
->                 return -ENODEV;
->         }
->
-> -       if (!host->pdata->bus_hz) {
-> +       host->biu_clk = clk_get(host->dev, "biu");
-> +       if (IS_ERR(host->biu_clk))
-> +               dev_dbg(host->dev, "biu clock not available\n");
-> +       else
-> +               clk_prepare_enable(host->biu_clk);
-> +
-> +       host->ciu_clk = clk_get(host->dev, "ciu");
-> +       if (IS_ERR(host->ciu_clk))
-> +               dev_dbg(host->dev, "ciu clock not available\n");
-> +       else
-> +               clk_prepare_enable(host->ciu_clk);
-> +
-> +       if (IS_ERR(host->ciu_clk))
-> +               host->bus_hz = host->pdata->bus_hz;
-> +       else
-> +               host->bus_hz = clk_get_rate(host->ciu_clk);
-> +
-> +       if (!host->bus_hz) {
->                 dev_err(host->dev,
->                         "Platform data must supply bus speed\n");
-> -               return -ENODEV;
-> +               ret = -ENODEV;
-> +               goto err_clk;
->         }
->
-> -       host->bus_hz = host->pdata->bus_hz;
->         host->quirks = host->pdata->quirks;
->
->         spin_lock_init(&host->lock);
->         INIT_LIST_HEAD(&host->queue);
->
-> +       host->dma_ops = host->pdata->dma_ops;
-> +       dw_mci_init_dma(host);
-This initialization is already done.
-> +
->         /*
->          * Get the host data width - this assumes that HCON has been set with
->          * the correct values.
-> @@ -2109,6 +2129,16 @@ err_dmaunmap:
->                 regulator_disable(host->vmmc);
->                 regulator_put(host->vmmc);
->         }
-> +
-> +err_clk:
-> +       if (!IS_ERR(host->ciu_clk)) {
-> +               clk_disable_unprepare(host->ciu_clk);
-> +               clk_put(host->ciu_clk);
-> +       }
-> +       if (!IS_ERR(host->biu_clk)) {
-> +               clk_disable_unprepare(host->biu_clk);
-> +               clk_put(host->biu_clk);
-> +       }
->         return ret;
->  }
->  EXPORT_SYMBOL(dw_mci_probe);
-> @@ -2142,6 +2172,12 @@ void dw_mci_remove(struct dw_mci *host)
->                 regulator_put(host->vmmc);
->         }
->
-> +       if (!IS_ERR(host->ciu_clk))
-> +               clk_disable_unprepare(host->ciu_clk);
-> +       if (!IS_ERR(host->biu_clk))
-> +               clk_disable_unprepare(host->biu_clk);
-> +       clk_put(host->ciu_clk);
-> +       clk_put(host->biu_clk);
->  }
->  EXPORT_SYMBOL(dw_mci_remove);
->
-> diff --git a/include/linux/mmc/dw_mmc.h b/include/linux/mmc/dw_mmc.h
-> index a37a573..787ad56 100644
-> --- a/include/linux/mmc/dw_mmc.h
-> +++ b/include/linux/mmc/dw_mmc.h
-> @@ -78,6 +78,8 @@ struct mmc_data;
->   * @data_offset: Set the offset of DATA register according to VERID.
->   * @dev: Device associated with the MMC controller.
->   * @pdata: Platform data associated with the MMC controller.
-> + * @biu_clk: Pointer to bus interface unit clock instance.
-> + * @ciu_clk: Pointer to card interface unit clock instance.
->   * @slot: Slots sharing this MMC controller.
->   * @fifo_depth: depth of FIFO.
->   * @data_shift: log2 of FIFO item size.
-> @@ -158,6 +160,8 @@ struct dw_mci {
->         u16                     data_offset;
->         struct device           *dev;
->         struct dw_mci_board     *pdata;
-> +       struct clk              *biu_clk;
-> +       struct clk              *ciu_clk;
->         struct dw_mci_slot      *slot[MAX_MCI_SLOTS];
->
->         /* FIFO push and pull */
-> --
-> 1.6.6.rc2
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+On Thu, Jul 12, 2012 at 10:02:42AM -0700, Paul E. McKenney wrote:
+> On Fri, Jul 13, 2012 at 12:57:38AM +0800, Fengguang Wu wrote:
+> > On Thu, Jul 12, 2012 at 09:43:08AM -0700, Paul E. McKenney wrote:
+> > > On Wed, Jul 11, 2012 at 12:49:24AM -0700, Paul E. McKenney wrote:
+> > > > On Tue, Jul 10, 2012 at 12:47:00PM +0800, Fengguang Wu wrote:
+> > > > > Hi Paul,
+> > > > > 
+> > > > > Fortunately this bug is bisectable and the first bad commit is:
+> > > > > 
+> > > > >         commit 9b2e4f1880b789be1f24f9684f7a54b90310b5c0
+> > > > >         Author: Paul E. McKenney <paul.mckenney@linaro.org>
+> > > > >         Date:   Fri Sep 30 12:10:22 2011 -0700
+> > > > > 
+> > > > >             rcu: Track idleness independent of idle tasks
+> > > > 
+> > > > OK, there is a problem in TINY_RCU's handling of dyntick-idle: it
+> > > > traces while in idle.  The confusion on my part was that in TREE_RCU,
+> > > > the nesting and dyntick-idle indication are different, while in
+> > > > TINY_RCU they are one and the same.
+> > > > 
+> > > > Does the following patch help?
+> > > 
+> > > This one failed in my testing.  Please see the end for the fixed
+> > > version, with on small but important change.
+> > 
+> > It worked, thanks!
+> > 
+> > Tested-by: Fengguang Wu <wfg@linux.intel.com>
+> 
+> Very good!  (And please ignore my resend of the same patch.)
+> 
+> I will queue this.
+
+Will you recommend it for -stable? It impacts 3.3/3.4. I tested it on
+3.4 and it works fine. However for 3.3, the patch cannot apply cleanly.
+
+Thanks,
+Fengguang
