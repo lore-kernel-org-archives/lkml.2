@@ -1,54 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933035Ab2GMDXO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jul 2012 23:23:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60387 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754698Ab2GMDXL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jul 2012 23:23:11 -0400
-Message-ID: <1342149765.31095.9.camel@cr0>
-Subject: Re: [PATCH 2/2] Made core dump functionality optional
-From: Cong Wang <amwang@redhat.com>
-To: Alex Kelly <eshink@gmail.com>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric Paris <eparis@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Nikhil Rao <ncrao@google.com>,
-        Dan Ballard <dan@mindstab.net>, linux-fsdevel@vger.kernel.org,
+	id S933133Ab2GMD1x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jul 2012 23:27:53 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:37158 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754698Ab2GMD1v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jul 2012 23:27:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <1342000232-10105-1-git-send-email-devendra.aaru@gmail.com>
+References: <1342000232-10105-1-git-send-email-devendra.aaru@gmail.com>
+From: Bryan Wu <bryan.wu@canonical.com>
+Date: Fri, 13 Jul 2012 11:27:30 +0800
+X-Google-Sender-Auth: j4k3OxwtMu9hZyeijjClvFdkGlo
+Message-ID: <CAK5ve-+0RHVfjAQjFJmJ=0e3K0JG3zq6uM3oMr-_0JJY0EM-pg@mail.gmail.com>
+Subject: Re: [PATCH] leds/leds-s3c24xx: use devm_gpio_request
+To: Devendra Naga <devendra.aaru@gmail.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>, linux-leds@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Date: Fri, 13 Jul 2012 11:22:45 +0800
-In-Reply-To: <CAH08tp_5CNnK68G4BpZ+d_V9OMwEt8hC_pbtNovgSCTnGYd0hg@mail.gmail.com>
-References: <1341275894-9737-1-git-send-email-alex.page.kelly@gmail.com>
-	 <1341275894-9737-2-git-send-email-alex.page.kelly@gmail.com>
-	 <CAM_iQpVu6DV+LnTNbDUxUmjA+NXM2WCwWB0StCh+bwD5Gn_zbg@mail.gmail.com>
-	 <20120703050908.GA14527@leaf>
-	 <CAH08tp_5CNnK68G4BpZ+d_V9OMwEt8hC_pbtNovgSCTnGYd0hg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-07-12 at 13:22 -0700, Alex Kelly wrote:
-> Sorry it took me so long to reply to this:
-> 
-> 1. *Should* I change the option to CONFIG_CORE_DUMP ? I agree with Josh
-> that in terms of the existing codebase, either way makes sense, but I'll
-> defer to your judgment if you think I should change it.
+On Wed, Jul 11, 2012 at 5:50 PM, Devendra Naga <devendra.aaru@gmail.com> wrote:
+> why?
+> because if the led_classdev_register fails we wont do gpio free
+> because using devm_ functions, there is no need for error paths
+>
+> Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+> ---
+> Bryan,
+>
+>         This patch is not even compile tested, since my machine crashed, and
+> didn't have the ARM toolchain, sorry ..
+>
 
-Yeah, I agree.
+Thanks, I built it successfully. It looks fine to me. I will apply
+this to my for-next branch.
 
-> 
-> 2. Is there a particular maintainer I should send this to if I hope to get
-> it pushed upstream?
-> 
+-Bryan
 
-I think Andrew Morton will take the patch.
+>         And i think this patch is legit not as that pci_set_drvdata one :(
+>  drivers/leds/leds-s3c24xx.c |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+>
+> diff --git a/drivers/leds/leds-s3c24xx.c b/drivers/leds/leds-s3c24xx.c
+> index e120640..942f0ea 100644
+> --- a/drivers/leds/leds-s3c24xx.c
+> +++ b/drivers/leds/leds-s3c24xx.c
+> @@ -65,7 +65,6 @@ static int s3c24xx_led_remove(struct platform_device *dev)
+>         struct s3c24xx_gpio_led *led = pdev_to_gpio(dev);
+>
+>         led_classdev_unregister(&led->cdev);
+> -       gpio_free(led->pdata->gpio);
+>
+>         return 0;
+>  }
+> @@ -92,7 +91,7 @@ static int s3c24xx_led_probe(struct platform_device *dev)
+>
+>         led->pdata = pdata;
+>
+> -       ret = gpio_request(pdata->gpio, "S3C24XX_LED");
+> +       ret = devm_gpio_request(&dev->dev, pdata->gpio, "S3C24XX_LED");
+>         if (ret < 0)
+>                 return ret;
+>
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-leds" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Thanks.
 
+
+-- 
+Bryan Wu <bryan.wu@canonical.com>
+Kernel Developer    +86.186-168-78255 Mobile
+Canonical Ltd.      www.canonical.com
+Ubuntu - Linux for human beings | www.ubuntu.com
