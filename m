@@ -1,57 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757059Ab2GMJsD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 05:48:03 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:43814 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756965Ab2GMJsB (ORCPT
+	id S1757129Ab2GMJv5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 05:51:57 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39921 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757030Ab2GMJvy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 05:48:01 -0400
+	Fri, 13 Jul 2012 05:51:54 -0400
+Date: Fri, 13 Jul 2012 02:49:54 -0700
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Colin Cross <ccross@android.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
+        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com,
+        kgdb-bugreport@lists.sourceforge.net
+Subject: Re: [PATCH 0/6] KGDB/KDB FIQ (NMI) debugger
+Message-ID: <20120713094954.GA12917@lizard>
+References: <20120705231034.GA16931@lizard>
+ <CAMbhsRTeWgWyf2gcjr_TSr99Z6wL8bLmMGPYsTsVXoL-+A2Cyg@mail.gmail.com>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Fri, 13 Jul 2012 11:47:59 +0200
-Message-ID: <CA+icZUVorJNMQ3wyz8WuZop_fwwOuBo38wZg9s9RJizhM0yc-w@mail.gmail.com>
-Subject: [3.5-rc6+] mei: irq: request_threaded_irq is missing the IRQF_ONESHOT flag
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Tomas Winkler <tomas.winkler@intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Roland Dreier <roland@purestorage.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAMbhsRTeWgWyf2gcjr_TSr99Z6wL8bLmMGPYsTsVXoL-+A2Cyg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Jul 05, 2012 at 05:02:12PM -0700, Colin Cross wrote:
+[...]
+> KGDB can obviously only be enabled on development
+> devices, although perhaps a more limited KDB could be left enabled.
 
-while dealing with [1], I saw this mei-related infos in dmesg when
-doing a suspend + resume (see [1] for more logs):
+Um, I would argue about 'obviously'. :-) It doesn't require
+CONFIG_DEBUG_INFO (-g) or something like this, so if the concern is
+the size (which is about 30..40 KB), then it is all manageable. If we
+want it to be smaller, we should just work on making KGDB/KDB more
+modular, so that we can exclude non-production features.
 
-[17046.348467]  [<ffffffffa00554d8>] mei_pci_suspend+0x78/0xd0 [mei]
-[17047.460315] mei 0000:00:16.0: irq 47 for MSI/MSI-X
-[17047.460512] mei 0000:00:16.0: request_threaded_irq failed: irq = 47.
+> > The FIQ debugger is a facility that can be used to debug situations
+> > when the kernel stuck in uninterruptable sections, e.g. the kernel
+> > infinitely loops or deadlocked in an interrupt or with interrupts
+> > disabled. On some development boards there is even a special NMI
+> > button, which is very useful for debugging weird kernel hangs.
+> >
+> > And FIQ is basically an NMI, it has a higher priority than IRQs, and
+> > upon IRQ exception FIQs are not disabled. It is still possible to
+> > disable FIQs (as well as some "NMIs" on other architectures), but via
+> > special means.
+> >
+> > So, here FIQs and NMIs are synonyms, but in the code I use NMI term
+> > for arch-independent code, and FIQs for ARM code.
+> 
+> Unfortunately, FIQs have been repurposed as secure interrupts on every
+> ARM SoC that supports TrustZone, which is basically all of the latest
+> generation, as well as a few of the previous generation.  When an FIQ
+> arrives, the cpu traps into the secure mode, generally running a
+> separate secure OS written by a 3rd party vendor.  We've tried to get
+> some SoC secure implementations to drop out of secure mode and into
+> the FIQ exception vector for specific irqs, with the registers set up
+> to allow the FIQ handler to return back to the original execution
+> point, but it's been successful.
 
-I am not sure whom to address with the issue - so I just asked on
-#linux-rt and Thomas responded:
+It's pity, and this just shows that recent SOCs have a somewhat limited
+debugging facilities. There are countless times when I was able to debug
+a hang simply by hitting an NMI button on a reference board (not ARM,
+tho) and just reading the trace.
 
-[ 13-Jul-2012: German local-time (UTC+2) ]
-...
-[11:03:40] <tglx> request_threaded_irq is missing the IRQF_ONESHOT flag
-...
-[11:24:18] <tglx> anyone can fix it by sending a patch which adds the flag :)
+Having any (even a watchdog) NMI connected to a kernel would be enough
+to make things better. Btw, these patches' approach works even if we
+can't reroute arbitrary interrupts to FIQs (like we do for serial lines).
 
-Futhermore, I found those commits, so I added folks from there to this BR:
+[...]
+> >   This might look as a drastic change, but it is not. There is actually
+> >   no difference whether you have sync or async shell, or at least I
+> >   couldn't find any use-case where this would matter at all. Anyways,
+> >   it is still possible to do async shell in KDB, just don't see any
+> >   need for this.
+> 
+> I think it could be an issue if KDB stopped execution whenever it
+> received any character.  Serial ports are often noisy, especially when
+> muxed over another port (we often use serial over the headset
+> connector).  Noise on the async command line just causes characters
+> that are ignored, on a command line that blocked execution noise would
+> be catastrophic.
 
-16a50b1 mei: pci_resume: set IRQF_ONESHOT for msi request_threaded_irq
-aa189ec misc: mei: set IRQF_ONESHOT for msi request_threaded_irq
+Aha, that's the real use-case, thanks! I started hacking the KDB
+to add the async shell support, but then I realized that we still
+don't need all the complexity. If the only purpose is to be safe from
+the noise, then we can just do "knocking" before entering the debugger.
 
-If you need more infos and/or logs, please let me know.
+The thing is, we even have a standard sequence for entering KDB,
+it is GDB-protocol command $3#33, so it actually makes sense to
+implement this. This would be the only async command, and it doesn't
+affect anything but the new code. I prepared a separate patch for this.
 
-Feel free to add:
+[...]
+> One of the nice features in FIQ debugger is the "console" command,
+> which causes all incoming serial characters to get passed to a console
+> device provided by the FIQ debugger, and characters from the console
+> to go out the serial port (when it is enabled).  That way you can
+> still have the console when you want it, but only one driver talking
+> to the hardware.
 
-     Reported-by: Sedat Dilek <sedat.dilek@gmail.com>
+This is surely a nice feature, and we have a chance to make it work
+with this scheme too. For example, we can reroute FIQ to IRQ, and
+reinitialize the tty device, so that it would grab the IRQ, then we
+can give uart back. Surely there are some implementation details
+that makes it not that easy, but it is definitely doable.
 
-Kind Regards,
-- Sedat (dileks on IRC) -
+Thanks!
 
-[1] http://marc.info/?l=linux-kernel&m=134216822724119&w=2
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
