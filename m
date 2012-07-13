@@ -1,171 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030829Ab2GMQjU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 12:39:20 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:5867 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030762Ab2GMQjQ (ORCPT
+	id S1757278Ab2GMQns (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 12:43:48 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:39368 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753728Ab2GMQnq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 12:39:16 -0400
-X-IronPort-AV: E=Sophos;i="4.77,579,1336348800"; 
-   d="scan'208";a="13525959"
-Date: Fri, 13 Jul 2012 17:38:34 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "Tim (Xen.org)" <tim@xen.org>, Ian Campbell <Ian.Campbell@citrix.com>
-Subject: Re: [Xen-devel] [PATCH WIP 2/6] xen/arm: Introduce xen_guest_init
-In-Reply-To: <20120709144505.GD12102@phenom.dumpdata.com>
-Message-ID: <alpine.DEB.2.02.1207131730550.23783@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1206221644370.27860@kaball.uk.xensource.com> <1340381685-22529-1-git-send-email-stefano.stabellini@eu.citrix.com> <1340381685-22529-2-git-send-email-stefano.stabellini@eu.citrix.com> <20120709144505.GD12102@phenom.dumpdata.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 13 Jul 2012 12:43:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+In-Reply-To: <20120713094954.GA12917@lizard>
+References: <20120705231034.GA16931@lizard>
+	<CAMbhsRTeWgWyf2gcjr_TSr99Z6wL8bLmMGPYsTsVXoL-+A2Cyg@mail.gmail.com>
+	<20120713094954.GA12917@lizard>
+Date: Fri, 13 Jul 2012 09:43:45 -0700
+X-Google-Sender-Auth: sJt8uvRuTJr1oR-7t6y2oGGVu4I
+Message-ID: <CAMbhsRR6AU2MhX9MO1tV7-Py=sM7jOQdbFP-_WeBhsCL3wGS0A@mail.gmail.com>
+Subject: Re: [PATCH 0/6] KGDB/KDB FIQ (NMI) debugger
+From: Colin Cross <ccross@android.com>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
+        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com,
+        kgdb-bugreport@lists.sourceforge.net
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 9 Jul 2012, Konrad Rzeszutek Wilk wrote:
-> On Fri, Jun 22, 2012 at 05:14:41PM +0100, Stefano Stabellini wrote:
-> > We used to rely on a core_initcall to initialize Xen on ARM, however
-> > core_initcalls are actually called after early consoles are initialized.
-> > That means that hvc_xen.c is going to be initialized before Xen.
-> > 
-> > Given the lack of a better alternative, just call a new Xen
-> > initialization function (xen_guest_init) from xen_cons_init.
-> > 
-> > xen_guest_init has to be arch independant, so write both an ARM and an
-> > x86 implementation. The x86 implementation is currently empty because we
-> > can be sure that xen_hvm_guest_init is called early enough.
-> > 
-> > Probably we can get rid of this as soon as we have better DT support.
-> 
-> What is DT?
-> 
-> > 
-> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > ---
-> >  arch/arm/xen/enlighten.c  |   12 ++++++++----
-> >  arch/x86/xen/enlighten.c  |    8 ++++++++
-> >  drivers/tty/hvc/hvc_xen.c |    3 +++
-> >  include/xen/xen.h         |    2 ++
-> >  4 files changed, 21 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
-> > index 7d76962..e1c2e4d 100644
-> > --- a/arch/arm/xen/enlighten.c
-> > +++ b/arch/arm/xen/enlighten.c
-> > @@ -127,12 +127,16 @@ out:
-> >  }
-> >  EXPORT_SYMBOL_GPL(xen_remap_domain_mfn_range);
-> >  
-> > -void __ref xen_hvm_init_shared_info(void)
-> > +static void __init xen_hvm_init_shared_info(void)
-> >  {
-> >  	int cpu;
-> >  	struct xen_add_to_physmap xatp;
-> >  	static struct shared_info *shared_info_page = 0;
-> >  
-> > +	/* already setup */
-> > +	if (shared_info_page != 0 && HYPERVISOR_shared_info == shared_info_page)
-> > +		return;
-> > +
-> >  	if (!shared_info_page)
-> >  		shared_info_page = (struct shared_info *)
-> >  			get_zeroed_page(GFP_KERNEL);
-> > @@ -161,11 +165,11 @@ void __ref xen_hvm_init_shared_info(void)
-> >  		per_cpu(xen_vcpu, cpu) = &HYPERVISOR_shared_info->vcpu_info[cpu];
-> >  	}
-> >  }
-> > +core_initcall(xen_hvm_init_shared_info);
-> >  
-> > -static int __init xen_hvm_guest_init(void)
-> > +int __init xen_guest_init(void)
-> >  {
-> >  	xen_hvm_init_shared_info();
-> >  	return 0;
-> 
-> Don't you want to do:
-> 	return xen_hvm_init_shared_info();
-> 
-> why do we need to return int?
+On Fri, Jul 13, 2012 at 2:49 AM, Anton Vorontsov
+<anton.vorontsov@linaro.org> wrote:
+> On Thu, Jul 05, 2012 at 05:02:12PM -0700, Colin Cross wrote:
+> [...]
+>> KGDB can obviously only be enabled on development
+>> devices, although perhaps a more limited KDB could be left enabled.
+>
+> Um, I would argue about 'obviously'. :-) It doesn't require
+> CONFIG_DEBUG_INFO (-g) or something like this, so if the concern is
+> the size (which is about 30..40 KB), then it is all manageable. If we
+> want it to be smaller, we should just work on making KGDB/KDB more
+> modular, so that we can exclude non-production features.
 
-We don't need to, but it might be a good idea to propagate setup errors.
+I was referring to the security implications, not size.  Leaving KDB
+on is effectively instant root access over the serial console.
 
+<snip
 
-> >  }
-> > -
-> > -core_initcall(xen_hvm_guest_init);
-> > +EXPORT_SYMBOL(xen_guest_init);
-> > diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-> > index 1f92865..0bad7b5 100644
-> > --- a/arch/x86/xen/enlighten.c
-> > +++ b/arch/x86/xen/enlighten.c
-> > @@ -1420,4 +1420,12 @@ const struct hypervisor_x86 x86_hyper_xen_hvm __refconst = {
-> >  	.init_platform		= xen_hvm_guest_init,
-> >  };
-> >  EXPORT_SYMBOL(x86_hyper_xen_hvm);
-> > +
-> > +int __init xen_guest_init(void)
-> > +{
-> > +	/* do nothing: rely on x86_hyper_xen_hvm for the initialization */
-> > +	return 0;
-> > +	
-> > +}
-> > +EXPORT_SYMBOL(xen_guest_init);
-> 
-> _GPL please.
+>> >   This might look as a drastic change, but it is not. There is actually
+>> >   no difference whether you have sync or async shell, or at least I
+>> >   couldn't find any use-case where this would matter at all. Anyways,
+>> >   it is still possible to do async shell in KDB, just don't see any
+>> >   need for this.
+>>
+>> I think it could be an issue if KDB stopped execution whenever it
+>> received any character.  Serial ports are often noisy, especially when
+>> muxed over another port (we often use serial over the headset
+>> connector).  Noise on the async command line just causes characters
+>> that are ignored, on a command line that blocked execution noise would
+>> be catastrophic.
+>
+> Aha, that's the real use-case, thanks! I started hacking the KDB
+> to add the async shell support, but then I realized that we still
+> don't need all the complexity. If the only purpose is to be safe from
+> the noise, then we can just do "knocking" before entering the debugger.
+>
+> The thing is, we even have a standard sequence for entering KDB,
+> it is GDB-protocol command $3#33, so it actually makes sense to
+> implement this. This would be the only async command, and it doesn't
+> affect anything but the new code. I prepared a separate patch for this.
 
-OK
-
-> 
-> >  #endif
-> > diff --git a/drivers/tty/hvc/hvc_xen.c b/drivers/tty/hvc/hvc_xen.c
-> > index 3ae96a9..52a98ff 100644
-> > --- a/drivers/tty/hvc/hvc_xen.c
-> > +++ b/drivers/tty/hvc/hvc_xen.c
-> > @@ -578,6 +578,9 @@ static int xen_cons_init(void)
-> >  	if (!xen_domain())
-> >  		return 0;
-> >  
-> > +	/* retrieve xen infos  */
-> > +	xen_guest_init();
-> 
-> So shouldn't this be:
-> 	if (xen_guest_init())
-> 		return .. something?
-
-yes, I'll do that
-
-
-> > +
-> >  	if (xen_initial_domain())
-> >  		ops = &dom0_hvc_ops;
-> >  	else {
-> > diff --git a/include/xen/xen.h b/include/xen/xen.h
-> > index 2c0d3a5..792a4d2 100644
-> > --- a/include/xen/xen.h
-> > +++ b/include/xen/xen.h
-> > @@ -9,8 +9,10 @@ enum xen_domain_type {
-> >  
-> >  #ifdef CONFIG_XEN
-> >  extern enum xen_domain_type xen_domain_type;
-> > +int xen_guest_init(void);
-> >  #else
-> >  #define xen_domain_type		XEN_NATIVE
-> > +static inline int xen_guest_init(void) { return 0; }
-> >  #endif
-> >  
-> >  #define xen_domain()		(xen_domain_type != XEN_NATIVE)
-> > -- 
-> > 1.7.2.5
-> > 
-> > 
-> > _______________________________________________
-> > Xen-devel mailing list
-> > Xen-devel@lists.xen.org
-> > http://lists.xen.org/xen-devel
-> 
+I would suggest making the sequence longer than just return.  A single
+character is not that unlikely to be generated by random noise - I've
+seen multiple devices reboot when the serial console was connected
+because it received a SysRq-Crash (a break is all zeroes, which is
+very common while shorting the lines as the console is plugged in, and
+then random noise sent a 'c').
