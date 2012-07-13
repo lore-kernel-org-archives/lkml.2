@@ -1,76 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932882Ab2GMK0a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 06:26:30 -0400
-Received: from www.linutronix.de ([62.245.132.108]:43968 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932284Ab2GMK02 (ORCPT
+	id S932773Ab2GMK3h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 06:29:37 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:44675 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757152Ab2GMK3g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 06:26:28 -0400
-Date: Fri, 13 Jul 2012 12:26:26 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Mike Galbraith <efault@gmx.de>
-cc: "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: 3.4.4-rt13: btrfs + xfstests 006 = BOOM.. and a bonus rt_mutex
- deadlock report for absolutely free!
-In-Reply-To: <1342174485.7380.103.camel@marge.simpson.net>
-Message-ID: <alpine.LFD.2.02.1207131223240.32033@ionos>
-References: <1342072060.7338.102.camel@marge.simpson.net>  <1342082648.7338.171.camel@marge.simpson.net>  <1342086792.7707.9.camel@marge.simpson.net>  <alpine.LFD.2.02.1207121310420.32033@ionos>  <1342094233.7707.12.camel@marge.simpson.net> 
- <alpine.LFD.2.02.1207121514240.32033@ionos>  <1342161072.7380.65.camel@marge.simpson.net>  <alpine.LFD.2.02.1207131142440.32033@ionos> <1342174485.7380.103.camel@marge.simpson.net>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Fri, 13 Jul 2012 06:29:36 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <5B8DA87D05A7694D9FA63FD143655C1B13B4A9@HASMSX103.ger.corp.intel.com>
+References: <CA+icZUVorJNMQ3wyz8WuZop_fwwOuBo38wZg9s9RJizhM0yc-w@mail.gmail.com>
+	<5B8DA87D05A7694D9FA63FD143655C1B13B4A9@HASMSX103.ger.corp.intel.com>
+Date: Fri, 13 Jul 2012 12:29:34 +0200
+Message-ID: <CA+icZUUHQsUqSnKBwUxG2yoiTAfatgPSZBT974_u95DkVZ5S6w@mail.gmail.com>
+Subject: Re: [3.5-rc6+] mei: irq: request_threaded_irq is missing the
+ IRQF_ONESHOT flag
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: "Winkler, Tomas" <tomas.winkler@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Roland Dreier <roland@purestorage.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM List <linux-pm@lists.linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Jul 2012, Mike Galbraith wrote:
-> On Fri, 2012-07-13 at 11:52 +0200, Thomas Gleixner wrote: 
-> > On Fri, 13 Jul 2012, Mike Galbraith wrote:
-> > > On Thu, 2012-07-12 at 15:31 +0200, Thomas Gleixner wrote: 
-> > > > Bingo, that makes it more likely that this is caused by copying w/o
-> > > > initializing the lock and then freeing the original structure.
-> > > > 
-> > > > A quick check for memcpy finds that __btrfs_close_devices() does a
-> > > > memcpy of btrfs_device structs w/o initializing the lock in the new
-> > > > copy, but I have no idea whether that's the place we are looking for.
-> > > 
-> > > Thanks a bunch Thomas.  I doubt I would have ever figured out that lala
-> > > land resulted from _copying_ a lock.  That's one I won't be forgetting
-> > > any time soon.  Box not only survived a few thousand xfstests 006 runs,
-> > > dbench seemed disinterested in deadlocking virgin 3.0-rt.
-> > 
-> > Cute. It think that the lock copying caused the deadlock problem as
-> > the list pointed to the wrong place, so we might have ended up with
-> > following down the wrong chain when walking the list as long as the
-> > original struct was not freed. That beast is freed under RCU so there
-> > could be a rcu read side critical section fiddling with the old lock
-> > and cause utter confusion.
-> 
-> Virgin 3.0-rt appears to really be solid.  But then it doesn't have
-> pesky rwlocks.
+On Fri, Jul 13, 2012 at 12:15 PM, Winkler, Tomas
+<tomas.winkler@intel.com> wrote:
+>
+>
+>> -----Original Message-----
+>> From: Sedat Dilek [mailto:sedat.dilek@gmail.com]
+>> Sent: Friday, July 13, 2012 12:48 PM
+>> To: Winkler, Tomas
+>> Cc: Thomas Gleixner; LKML; Greg Kroah-Hartman; Roland Dreier
+>> Subject: [3.5-rc6+] mei: irq: request_threaded_irq is missing the
+>> IRQF_ONESHOT flag
+>>
+>> Hi,
+>>
+>> while dealing with [1], I saw this mei-related infos in dmesg when doing a
+>> suspend + resume (see [1] for more logs):
+>
+> The fix is included in this post pull request http://marc.info/?l=linux-kernel&m=134201523903406&w=2
+>
 
-Ah. So 3.0 is not having those rwlock thingies. Bummer.
- 
-> > /me goes and writes a nastigram^W proper changelog
-> > 
-> > > btrfs still locks up in my enterprise kernel, so I suppose I had better
-> > > plug your fix into 3.4-rt and see what happens, and go beat hell out of
-> > > virgin 3.0-rt again to be sure box really really survives dbench.
-> > 
-> > A test against 3.4-rt sans enterprise mess might be nice as well.
-> 
-> Enterprise is 3.0-stable with um 555 btrfs patches (oh dear).
-> 
-> Virgin 3.4-rt and 3.2-rt deadlock gripe.  Enterprise doesn't gripe, but
-> deadlocks, so I have another adventure in my future even if I figure out
-> wth to do about rwlocks.
+[ CC Rafael @ linux-pm ML ]
 
-Hrmpf. /me goes to stare into fs/btrfs/ some more.
+Hmm, I have this commit in my local GIT buil-tree already:
+
+$ git log --oneline | grep "mei: pci_resume: set IRQF_ONESHOT for msi
+request_threaded_irq"
+16a50b1 mei: pci_resume: set IRQF_ONESHOT for msi request_threaded_irq
+
+Dunno, if it's a PM related problem? As I see this:
+
+[17047.460520] PM: Device 0000:00:16.0 failed to resume async: error -22
+
+BTW, what is "wd:" and what means if it "failed"?
+
+[   23.646041] mei 0000:00:16.0: irq 47 for MSI/MSI-X
+[   23.650677] mei 0000:00:16.0: wd: failed to find the client
+
+- Sedat -
+
+[1] http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=16a50b1270455a6d41f9f6d8f99a72cf9d76824a
+
+> Thanks
+> Tomas
+>
+>
