@@ -1,65 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756395Ab2GMUPR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 16:15:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55463 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753350Ab2GMUPQ (ORCPT
+	id S1753985Ab2GMUUJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 16:20:09 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.160]:17612 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751093Ab2GMUUG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 16:15:16 -0400
-Date: Fri, 13 Jul 2012 13:15:14 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Michel Lespinasse <walken@google.com>
-Cc: aarcange@redhat.com, dwmw2@infradead.org, riel@redhat.com,
-        peterz@infradead.org, daniel.santos@pobox.com, axboe@kernel.dk,
-        ebiederm@xmission.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
-Subject: Re: [PATCH v2 05/12] rbtree: performance and correctness test
-Message-Id: <20120713131514.86ab4df4.akpm@linux-foundation.org>
-In-Reply-To: <1342139517-3451-6-git-send-email-walken@google.com>
-References: <1342139517-3451-1-git-send-email-walken@google.com>
-	<1342139517-3451-6-git-send-email-walken@google.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 13 Jul 2012 16:20:06 -0400
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFGiC0MElja
+X-RZG-CLASS-ID: mo00
+Date: Fri, 13 Jul 2012 22:20:03 +0200
+From: Olaf Hering <olaf@aepfle.de>
+To: Keir Fraser <keir.xen@gmail.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jan Beulich <JBeulich@suse.com>, xen-devel@lists.xensource.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Daniel Kiper <dkiper@net-space.pl>
+Subject: Re: [Xen-devel] incorrect layout of globals from head_64.S during
+ kexec boot
+Message-ID: <20120713202003.GA20972@aepfle.de>
+References: <20120710180953.GB20075@aepfle.de>
+ <CC223C2F.3817C%keir.xen@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CC223C2F.3817C%keir.xen@gmail.com>
+User-Agent: Mutt/1.5.21.rev5543 (2011-12-20)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Jul 2012 17:31:50 -0700
-Michel Lespinasse <walken@google.com> wrote:
+On Tue, Jul 10, Keir Fraser wrote:
 
-> This small module helps measure the performance of rbtree insert and erase.
+> On 10/07/2012 19:09, "Olaf Hering" <olaf@aepfle.de> wrote:
+> > I'm not sure, most likely the gfn will just disappear from the guest,
+> > like a ballooned page disappears. Accessing it will likely cause a
+> > crash.
 > 
-> Additionally, we run a few correctness tests to check that the rbtrees have
-> all desired properties:
-> - contains the right number of nodes in the order desired,
-> - never two consecutive red nodes on any path,
-> - all paths to leaf nodes have the same number of black nodes,
-> - root node is black
+> Best thing to do, is possible, is map the shared-info page in the
+> xen-platform pci device's BAR memory range. Then it will not conflict with
+> any RAM.
 > 
-> Signed-off-by: Michel Lespinasse <walken@google.com>
-> ---
->  Makefile            |    2 +-
->  lib/Kconfig.debug   |    1 +
->  tests/Kconfig       |   18 +++++++
->  tests/Makefile      |    1 +
->  tests/rbtree_test.c |  135 +++++++++++++++++++++++++++++++++++++++++++++++++++
+> If you do map it over the top of an existing RAM page, you will have to
+> repopulate that RAM page before kexec, using populate_physmap hypercall. The
+> good news is that the populate_physmap hypercall will have the side effect
+> of unmapping the shared-info page, reayd to be mapped wherever the new
+> kernel would like it to reside :)
 
-This patch does a new thing: adds a kernel self-test module into
-lib/tests/ and sets up the infrastructure to add new kernel self-test
-modules in that directory.
+Keir,
 
-I don't see a problem with this per-se, but it is a new thing which we
-should think about.
+is this a safe thing to do in a SMP guest?
+If arch/x86/xen/enlighten.c:xen_hvm_init_shared_info() allocates a page
+(backed by mfn M and pfn A) and assigns *HYPERVISOR_shared_info and
+*xen_vcpu then everything will reference these pointers.
 
-In previous such cases (eg, kernel/rcutorture.c) we put those modules
-into the same directory as the code which is being tested.  So to
-follow that pattern, this new code would have gone into lib/.
+If drivers/xen/platform-pci.c:platform_pci_init would also do a
+XENMAPSPACE_shared_info call with pfn B, isnt there a small window where
+pfn A is not backed by a mfn because mfn M is now connected to pfn C? As
+a result other code paths which access *HYPERVISOR_shared_info and
+*xen_vcpu between the hypercall and the update of the pointers will read
+0xff.
 
-If we adopt your new proposal then we should perhaps also move tests
-such as rcutorture over into tests/.  And that makes one wonder whether
-we should have a standalone directory for kernel selftest modules.  eg
-tests/self-test-nmodules/.
 
+If I read the hypercall code of XENMEM_add_to_physmap correctly the mfn
+backing *HYPERVISOR_shared_info will remain the same, so there is no need
+to copy data from the old to the new *HYPERVISOR_shared_info.
+
+What do you think, is that race real?
+
+Olaf
