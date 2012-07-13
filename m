@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161547Ab2GMQtO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 12:49:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52535 "EHLO mx1.redhat.com"
+	id S1163090Ab2GMQtW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 12:49:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24004 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161401Ab2GMQtL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 12:49:11 -0400
-Date: Fri, 13 Jul 2012 18:46:22 +0200
+	id S1161991Ab2GMQtP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 12:49:15 -0400
+Date: Fri, 13 Jul 2012 18:46:37 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: Anton Arapov <anton@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/9] uprobes: don't recheck vma/f_mapping in write_opcode()
-Message-ID: <20120713164622.GA23535@redhat.com>
+Subject: [PATCH 7/9] uprobes: fix overflow in vma_address/find_active_uprobe
+Message-ID: <20120713164637.GA23565@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,58 +23,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-write_opcode() rechecks valid_vma() and ->f_mapping, this is pointless.
-The caller, register_for_each_vma() or uprobe_mmap(), has already done
-these checks under mmap_sem.
-
-To clarify, uprobe_mmap() checks valid_vma() only, but we can rely on
-build_probe_list(vm_file->f_mapping->host).
+vma->vm_pgoff is "unsigned long", it should be promoted to loff_t
+before the multiplication to avoid the overflow.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Acked-by: Srikar Dronamraju <srikar.vnet.ibm.com>
 ---
- kernel/events/uprobes.c |   19 +------------------
- 1 files changed, 1 insertions(+), 18 deletions(-)
+ kernel/events/uprobes.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index d4d9f02..8b3603a 100644
+index 47c4e24..6194edb 100644
 --- a/kernel/events/uprobes.c
 +++ b/kernel/events/uprobes.c
-@@ -206,33 +206,16 @@ static int write_opcode(struct arch_uprobe *auprobe, struct mm_struct *mm,
- 			unsigned long vaddr, uprobe_opcode_t opcode)
- {
- 	struct page *old_page, *new_page;
--	struct address_space *mapping;
- 	void *vaddr_old, *vaddr_new;
- 	struct vm_area_struct *vma;
--	struct uprobe *uprobe;
- 	int ret;
-+
- retry:
- 	/* Read the page with vaddr into memory */
- 	ret = get_user_pages(NULL, mm, vaddr, 1, 0, 0, &old_page, &vma);
- 	if (ret <= 0)
- 		return ret;
+@@ -117,7 +117,7 @@ static loff_t vma_address(struct vm_area_struct *vma, loff_t offset)
+ 	loff_t vaddr;
  
--	ret = -EINVAL;
--
--	/*
--	 * We are interested in text pages only. Our pages of interest
--	 * should be mapped for read and execute only. We desist from
--	 * adding probes in write mapped pages since the breakpoints
--	 * might end up in the file copy.
--	 */
--	if (!valid_vma(vma, is_swbp_insn(&opcode)))
--		goto put_out;
--
--	uprobe = container_of(auprobe, struct uprobe, arch);
--	mapping = uprobe->inode->i_mapping;
--	if (mapping != vma->vm_file->f_mapping)
--		goto put_out;
--
- 	ret = -ENOMEM;
- 	new_page = alloc_page_vma(GFP_HIGHUSER_MOVABLE, vma, vaddr);
- 	if (!new_page)
+ 	vaddr = vma->vm_start + offset;
+-	vaddr -= vma->vm_pgoff << PAGE_SHIFT;
++	vaddr -= (loff_t)vma->vm_pgoff << PAGE_SHIFT;
+ 
+ 	return vaddr;
+ }
+@@ -1450,7 +1450,7 @@ static struct uprobe *find_active_uprobe(unsigned long bp_vaddr, int *is_swbp)
+ 
+ 			inode = vma->vm_file->f_mapping->host;
+ 			offset = bp_vaddr - vma->vm_start;
+-			offset += (vma->vm_pgoff << PAGE_SHIFT);
++			offset += (loff_t)vma->vm_pgoff << PAGE_SHIFT;
+ 			uprobe = find_uprobe(inode, offset);
+ 		}
+ 
 -- 
 1.5.5.1
 
