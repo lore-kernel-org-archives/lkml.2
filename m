@@ -1,80 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752925Ab2GNKRw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jul 2012 06:17:52 -0400
-Received: from truschnigg.info ([84.200.12.177]:34012 "EHLO truschnigg.info"
+	id S1753415Ab2GNKT4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jul 2012 06:19:56 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:53463 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751931Ab2GNKRu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jul 2012 06:17:50 -0400
-Date: Sat, 14 Jul 2012 12:13:21 +0200
-From: Johannes Truschnigg <johannes@truschnigg.info>
-To: Willy Tarreau <w@1wt.eu>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Hillf Danton <dhillf@gmail.com>,
-        linux-kernel@vger.kernel.org, Linux-Netdev <netdev@vger.kernel.org>
-Subject: Re: PROBLEM: Silent data corruption when using sendfile()
-Message-ID: <20120714101321.GA26329@vault.local>
-References: <20120713171835.GA26052@vault.local>
- <CAJd=RBAntSubDBbJ292SzeoN4hTwBQ_Q23jt+Y6i-+vfrQ5EHQ@mail.gmail.com>
- <1342254042.3265.9017.camel@edumazet-glaptop>
- <20120714083136.GO16256@1wt.eu>
+	id S1751026Ab2GNKTy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jul 2012 06:19:54 -0400
+Date: Sat, 14 Jul 2012 12:19:51 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Davidlohr Bueso <dave@gnu.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        lkml <linux-kernel@vger.kernel.org>, kvm list <kvm@vger.kernel.org>,
+        x86@kernel.org
+Subject: Re: [PATCH] x86, amd: rename vmmu support capability
+Message-ID: <20120714101951.GB26559@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Davidlohr Bueso <dave@gnu.org>, "H. Peter Anvin" <hpa@zytor.com>,
+	Ingo Molnar <mingo@redhat.com>, lkml <linux-kernel@vger.kernel.org>,
+	kvm list <kvm@vger.kernel.org>, x86@kernel.org
+References: <1342202575.2706.4.camel@offbook>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="G4iJoqBmSsgzjUCe"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20120714083136.GO16256@1wt.eu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1342202575.2706.4.camel@offbook>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jul 13, 2012 at 08:02:55PM +0200, Davidlohr Bueso wrote:
+> From: Davidlohr Bueso <dave@gnu.org>
+> 
+> AMD has renamed nested page table technology to rapid virtualization indexing,
+> reflect this change in the kernel.
+> 
+> Signed-off-by: Davidlohr Bueso <dave@gnu.org>
 
---G4iJoqBmSsgzjUCe
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+You know that /proc/cpuinfo is a userspace ABI, right?
 
-On Sat, Jul 14, 2012 at 10:31:36AM +0200, Willy Tarreau wrote:
-> > Please Johannes could you try latest kernel tree ?
->=20
-> It would be useful, especially given the amount of changes you performed
-> in this area in latest version, it could be very possible that this new
-> bug got fixed as a side effect !
+And are you sure nothing is using that string -
+"npt" - since it got added almost three years ago by
+414bb144efa2d2fe16d104d836d0d6b6e9265788?
 
-I upgraded to 3.4.4 (identical config as the 3.4.0 build I've been running)
-and what can I say - the problem really seems to have disappeared. I perfor=
-med
-about 3700 iterations of my previos tests over the night, and the data alwa=
-ys
-turned out to be OK, not a single byte turned out kaput!
-
-I wish I would have tested that earlier, and spared you the noise... well,
-maybe someone who runs into a similar problem in the future will have this
-discovery save her/him some time and headaches and make her/him just upgrade
-kernels :)
-
-Thanks a lot for your polite and quick responses!
-
---=20
-with best regards:
-- Johannes Truschnigg ( johannes@truschnigg.info )
-
-www:   http://johannes.truschnigg.info/
-phone: +43 650 2 133337
-xmpp:  johannes@truschnigg.info
-
-Please do not bother me with HTML-email or attachments. Thank you.
-
---G4iJoqBmSsgzjUCe
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAlABRkEACgkQnnUApj8OcoLtmQCfcdn0Om7SnCUO6R2WhXV/E0EC
-Z+EAoJe3gQApITV72Md9SBrvQgghjHQ+
-=IaNX
------END PGP SIGNATURE-----
-
---G4iJoqBmSsgzjUCe--
+-- 
+Regards/Gruss,
+    Boris.
