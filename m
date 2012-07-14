@@ -1,45 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754003Ab2GNO4u (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jul 2012 10:56:50 -0400
-Received: from 1wt.eu ([62.212.114.60]:4740 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750790Ab2GNO4o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jul 2012 10:56:44 -0400
-Date: Sat, 14 Jul 2012 16:56:36 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Hillf Danton <dhillf@gmail.com>,
-        Johannes Truschnigg <johannes@truschnigg.info>,
-        linux-kernel@vger.kernel.org, Linux-Netdev <netdev@vger.kernel.org>
-Subject: Re: PROBLEM: Silent data corruption when using sendfile()
-Message-ID: <20120714145636.GS16256@1wt.eu>
-References: <20120713171835.GA26052@vault.local> <CAJd=RBAntSubDBbJ292SzeoN4hTwBQ_Q23jt+Y6i-+vfrQ5EHQ@mail.gmail.com> <1342254042.3265.9017.camel@edumazet-glaptop> <CAJd=RBAJOqJDSBpaaB+2-WU_pa5vChXSf6TbLH8fi3HNt6hZ9w@mail.gmail.com> <1342275540.3265.9760.camel@edumazet-glaptop>
-Mime-Version: 1.0
+	id S1754041Ab2GNPTL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jul 2012 11:19:11 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:38353 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753448Ab2GNPTG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jul 2012 11:19:06 -0400
+Date: Sat, 14 Jul 2012 16:19:03 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Fengguang Wu <wfg@linux.intel.com>
+Cc: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Kernel boot hangs on commit "switch fput to task_work_add"
+Message-ID: <20120714151903.GE31729@ZenIV.linux.org.uk>
+References: <20120710141830.GA5385@localhost>
+ <20120714130510.GC31729@ZenIV.linux.org.uk>
+ <20120714134849.GA1175@localhost>
+ <20120714135849.GA1257@localhost>
+ <20120714141415.GD31729@ZenIV.linux.org.uk>
+ <20120714143459.GA1544@localhost>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1342275540.3265.9760.camel@edumazet-glaptop>
-User-Agent: Mutt/1.4.2.3i
+In-Reply-To: <20120714143459.GA1544@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 14, 2012 at 04:19:00PM +0200, Eric Dumazet wrote:
-> On Sat, 2012-07-14 at 22:08 +0800, Hillf Danton wrote:
-> > On Sat, Jul 14, 2012 at 4:20 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> > >
-> > > Might be, or not (could be a NIC bug)
-> > >
-> > Dunno why sendfile sits in the layer of NIC and
-> > how they interact.
+On Sat, Jul 14, 2012 at 10:34:59PM +0800, Fengguang Wu wrote:
+> On Sat, Jul 14, 2012 at 03:14:15PM +0100, Al Viro wrote:
+> > On Sat, Jul 14, 2012 at 09:58:49PM +0800, Fengguang Wu wrote:
+> > > > Hi Al, here I got the output for
+> > > > 
+> > > > (qemu) sendkey alt-sysrq-l
+> > > > (qemu) sendkey alt-sysrq-t
+> > > 
+> > > I repeated that several times and here are the results.
+> > > 
+> > > (qemu) sendkey alt-sysrq-l
+> > > (qemu) sendkey alt-sysrq-l
+> > > (qemu) sendkey alt-sysrq-l
+> > > (qemu) sendkey alt-sysrq-t
+> > > (qemu) sendkey alt-sysrq-t
+> > > (qemu) quit
+> > > 
+> > > The user space shutdown is polling on something, which prevents the
+> > > system from reboot..
+> > 
+> > Which userland it is?
 > 
-> sendfile() relies heavily on TSO capabilities, a buggy NIC could
-> corrupt frame content on some obscure occasions.
-> 
-> We had some known cases on IPv6 for example.
+> It's a customized ubuntu core. The original tgz image is downloaded
+> here, however it's not directly usable as initrd.. Should I send my
+> hacked one?
 
-Similarly I remind having experienced bugs on early Yukon chips years
-ago that would regularly emit total crap on the wire.
+Sigh...  FWIW, with your config neither the mainline nor the tree you'd
+been testing manage to boot with .deb produced by squeeze make-kpkg.
+Both in the same way - they get to busybox, mount(8) in there keeps
+failing wiht -ENODEV all the time and the damn thing ends up in
+busybox shell.  Fsck knows what's going on - apparently the damn thing
+also redirects all printks someplace invisible as soon as it gets to
+userland, so the obvious ways to see what's going on do not work.
+RTFS(busybox) time, I guess...
 
-Willy
-
+With reasonably sane config both trees work fine.  I'll grab your image
+and see what happens with it.
