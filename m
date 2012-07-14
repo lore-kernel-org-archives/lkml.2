@@ -1,91 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755608Ab2GNLGO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jul 2012 07:06:14 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:41052 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752801Ab2GNLGM (ORCPT
+	id S1756221Ab2GNLGr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jul 2012 07:06:47 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:54956 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754133Ab2GNLGo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jul 2012 07:06:12 -0400
-Subject: Re: PROBLEM: Silent data corruption when using sendfile()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Willy Tarreau <w@1wt.eu>
-Cc: Johannes Truschnigg <johannes@truschnigg.info>,
-        Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org,
-        Linux-Netdev <netdev@vger.kernel.org>
-In-Reply-To: <20120714104441.GP16256@1wt.eu>
-References: <20120713171835.GA26052@vault.local>
-	 <CAJd=RBAntSubDBbJ292SzeoN4hTwBQ_Q23jt+Y6i-+vfrQ5EHQ@mail.gmail.com>
-	 <1342254042.3265.9017.camel@edumazet-glaptop>
-	 <20120714083136.GO16256@1wt.eu> <20120714101321.GA26329@vault.local>
-	 <1342262004.3265.9279.camel@edumazet-glaptop>
-	 <20120714104441.GP16256@1wt.eu>
+	Sat, 14 Jul 2012 07:06:44 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX190zTs9CSN0mTmPo5cIboHW+V/G8rrXJIJwkCKOjW
+	wNbnUpbvRjbjrX
+Message-ID: <1342264000.7368.37.camel@marge.simpson.net>
+Subject: Re: Deadlocks due to per-process plugging
+From: Mike Galbraith <efault@gmx.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Jan Kara <jack@suse.cz>, Jeff Moyer <jmoyer@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Jens Axboe <jaxboe@fusionio.com>,
+        mgalbraith@suse.com
+Date: Sat, 14 Jul 2012 13:06:40 +0200
+In-Reply-To: <1342263621.7368.36.camel@marge.simpson.net>
+References: <20120711133735.GA8122@quack.suse.cz>
+	 <x49ehoii8ps.fsf@segfault.boston.devel.redhat.com>
+	 <20120711201601.GB9779@quack.suse.cz>
+	 <alpine.LFD.2.02.1207121552111.32033@ionos>
+	 <20120713123318.GB20361@quack.suse.cz>
+	 <alpine.LFD.2.02.1207131444490.32033@ionos>
+	 <1342263621.7368.36.camel@marge.simpson.net>
 Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 14 Jul 2012 13:06:07 +0200
-Message-ID: <1342263967.3265.9347.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-07-14 at 12:44 +0200, Willy Tarreau wrote:
-> On Sat, Jul 14, 2012 at 12:33:24PM +0200, Eric Dumazet wrote:
-> > On Sat, 2012-07-14 at 12:13 +0200, Johannes Truschnigg wrote:
-> > > On Sat, Jul 14, 2012 at 10:31:36AM +0200, Willy Tarreau wrote:
-> > > > > Please Johannes could you try latest kernel tree ?
-> > > > 
-> > > > It would be useful, especially given the amount of changes you performed
-> > > > in this area in latest version, it could be very possible that this new
-> > > > bug got fixed as a side effect !
-> > > 
-> > > I upgraded to 3.4.4 (identical config as the 3.4.0 build I've been running)
-> > > and what can I say - the problem really seems to have disappeared. I performed
-> > > about 3700 iterations of my previos tests over the night, and the data always
-> > > turned out to be OK, not a single byte turned out kaput!
-> > > 
-> > > I wish I would have tested that earlier, and spared you the noise... well,
-> > > maybe someone who runs into a similar problem in the future will have this
-> > > discovery save her/him some time and headaches and make her/him just upgrade
-> > > kernels :)
-> > > 
-> > > Thanks a lot for your polite and quick responses!
-> > > 
-> > 
-> > Nice to hear. Now we should make sure we have all needed fixes for prior
-> > stable kernels as well !
-> > 
-> > Still trying to understand the issue, since I thought I only did
-> > optimizations, not bug fixes. So maybe real bug is still there but its
-> > probability of occurrence lowered enough to not hit your workload.
+On Sat, 2012-07-14 at 13:00 +0200, Mike Galbraith wrote: 
+> I have your patch burning on my 64 core rt box.  If it survives the
+> weekend, you should be able to replace my jbd hack with your fix..
 > 
-> Please note that Johannes tested 3.4.4 while your changes are in 3.5-rc.
+> Tested-by: Mike Galbraith <mgalbraith@suse.de>
 > 
-> I'm wondering whether this patch merged into 3.4.2 one has an impact on
-> sendfile :
-> 
->   commit b642cb6a143da812f188307c2661c0357776a9d0
->   Author: Konstantin Khlebnikov <khlebnikov@openvz.org>
->   Date:   Tue Jun 5 21:36:33 2012 +0400
-> 
->     radix-tree: fix contiguous iterator
->     
->     commit fffaee365fded09f9ebf2db19066065fa54323c3 upstream.
->     
->     This patch fixes bug in macro radix_tree_for_each_contig().
->     
->     If radix_tree_next_slot() sees NULL in next slot it returns NULL, but following
->     radix_tree_next_chunk() switches iterating into next chunk. As result iterating
->     becomes non-contiguous and breaks vfs "splice" and all its users.
-> 
-> Willy
-> 
-
-
-Hmmm, this is supposed to fix a bug introduced in 3.4, no ?
-
-So 3.3 kernel should work well ?
-
-
+> ..so here, one each chop in advance.  It wouldn't dare work ;-)
+                                                        ^not
 
