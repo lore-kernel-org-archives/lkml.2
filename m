@@ -1,79 +1,534 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757512Ab2GNH4b (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jul 2012 03:56:31 -0400
-Received: from grace.univie.ac.at ([131.130.3.115]:44593 "EHLO
-	grace.univie.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751684Ab2GNH43 (ORCPT
+	id S1757647Ab2GNH5O (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jul 2012 03:57:14 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:55316 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755883Ab2GNH5M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jul 2012 03:56:29 -0400
-Message-ID: <cc6495b92f1df180c1ad43057ceb0b98.squirrel@webmail.univie.ac.at>
-Date: Sat, 14 Jul 2012 09:56:27 +0200
-Subject: Re: resurrecting tcphealth
-From: "Piotr Sawuk" <a9702387@unet.univie.ac.at>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.19
+	Sat, 14 Jul 2012 03:57:12 -0400
+Date: Sat, 14 Jul 2012 09:57:06 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] scheduler fixes
+Message-ID: <20120714075706.GA10395@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Univie-Virus-Scan: scanned by ClamAV on jarvis.univie.ac.at
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sa, 14.07.2012, 03:31, valdis.kletnieks@vt.edu wrote:
-> On Fri, 13 Jul 2012 16:55:44 -0700, Stephen Hemminger said:
->
->> >+			/* Course retransmit inefficiency- this packet has been received
->> twice. */
->> >+			tp->dup_pkts_recv++;
->> I don't understand that comment, could you use a better sentence please?
->
-> I think what was intended was:
->
-> /* Curse you, retransmit inefficiency! This packet has been received at
-least twice */
->
+Linus,
 
-LOL, no. I think "course retransmit" is short for "course-grained timeout
-caused retransmit" but I can't be sure since I'm not the author of these
-lines. I'll replace that comment with the non-shorthand version though.
-however, I think the real comment here should be:
+Please pull the latest sched-urgent-for-linus git tree from:
 
-/*A perceived shortcoming of the standard TCP implementation: A
-TCP receiver can get duplicate packets from the sender because it cannot
-acknowledge packets that arrive out of order. These duplicates would happen
-when the sender mistakenly thinks some packets have been lost by the network
-because it does not receive acks for them but in reality they were
-successfully received out of order. Since the receiver has no way of letting
-the sender know about the receipt of these packets, they could potentially
-be re-sent and re-received at the receiver. Not only do duplicate packets
-waste precious Internet bandwidth but they hurt performance because the
-sender mistakenly detects congestion from packet losses. The SACK TCP
-extension specically addresses this issue. A large number of duplicate
-packets received would indicate a signicant benet to the wide adoption of
-SACK. The duplicatepacketsreceived metric is computed at the
-receiver and counts these packets on a per-connection basis.*/
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git sched-urgent-for-linus
 
-as copied from his thesis at [1]. also in the thesis he writes:
+   HEAD: 95c0d71dcb853c2eca5f2231ebbd4c1d3af775b7 MAINTAINERS/sched: Update scheduler file pattern
 
-In our limited experiment, the results indicated no duplicate packets were
-received on any connection in the 18 hour run. This leads us to several
-conclusions. Since duplicate ACKs were seen on many connections we know that
-some packets were lost or reordered, but unACKed reordered packets never
-caused a /coursegrainedtimeouts/ on our connections. Only these timeouts
-will cause duplicate packets to be received since less severe out-of-order
-conditions will be resolved with fast retransmits. The lack of course
-timeouts
-may be due to the quality of UCSD's ActiveWeb network or the paucity of
-large gaps between received packet groups. It should be noted that Linux 2.2
-implements fast retransmits for up to two packet gaps, thus reducing the
-need for course grained timeouts due to the lack of SACK.
+Note that this commit:
 
-[1] https://sacerdoti.org/tcphealth/tcphealth-paper.pdf
+  164c33c6adee sched: Fix fork() error path to not crash
+
+Is correct but not complete (some architectures like Tile are 
+not covered yet) - the resulting additional fixes are still WIP 
+and I did not want to delay these pending fixes. See this thread 
+on lkml:
+
+  [PATCH] fork: fix error handling in dup_task()
+
+ Thanks,
+
+	Ingo
+
+------------------>
+Namhyung Kim (1):
+      MAINTAINERS/sched: Update scheduler file pattern
+
+Peter Zijlstra (1):
+      sched/nohz: Rewrite and fix load-avg computation -- again
+
+Salman Qazi (1):
+      sched: Fix fork() error path to not crash
 
 
+ MAINTAINERS              |    2 +-
+ include/linux/sched.h    |    8 ++
+ kernel/fork.c            |   11 +-
+ kernel/sched/core.c      |  275 ++++++++++++++++++++++++++++++++++------------
+ kernel/sched/idle_task.c |    1 -
+ kernel/sched/sched.h     |    2 -
+ kernel/time/tick-sched.c |    2 +
+ 7 files changed, 222 insertions(+), 79 deletions(-)
 
-
-
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 03df1d1..214d754 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -5909,7 +5909,7 @@ M:	Ingo Molnar <mingo@redhat.com>
+ M:	Peter Zijlstra <peterz@infradead.org>
+ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git sched/core
+ S:	Maintained
+-F:	kernel/sched*
++F:	kernel/sched/
+ F:	include/linux/sched.h
+ 
+ SCORE ARCHITECTURE
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 4059c0f..20cb749 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1909,6 +1909,14 @@ static inline int set_cpus_allowed_ptr(struct task_struct *p,
+ }
+ #endif
+ 
++#ifdef CONFIG_NO_HZ
++void calc_load_enter_idle(void);
++void calc_load_exit_idle(void);
++#else
++static inline void calc_load_enter_idle(void) { }
++static inline void calc_load_exit_idle(void) { }
++#endif /* CONFIG_NO_HZ */
++
+ #ifndef CONFIG_CPUMASK_OFFSTACK
+ static inline int set_cpus_allowed(struct task_struct *p, cpumask_t new_mask)
+ {
+diff --git a/kernel/fork.c b/kernel/fork.c
+index ab5211b..f00e319 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -304,12 +304,17 @@ static struct task_struct *dup_task_struct(struct task_struct *orig)
+ 	}
+ 
+ 	err = arch_dup_task_struct(tsk, orig);
+-	if (err)
+-		goto out;
+ 
++	/*
++	 * We defer looking at err, because we will need this setup
++	 * for the clean up path to work correctly.
++	 */
+ 	tsk->stack = ti;
+-
+ 	setup_thread_stack(tsk, orig);
++
++	if (err)
++		goto out;
++
+ 	clear_user_return_notifier(tsk);
+ 	clear_tsk_need_resched(tsk);
+ 	stackend = end_of_stack(tsk);
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index d5594a4..bb84040 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2161,11 +2161,73 @@ unsigned long this_cpu_load(void)
+ }
+ 
+ 
++/*
++ * Global load-average calculations
++ *
++ * We take a distributed and async approach to calculating the global load-avg
++ * in order to minimize overhead.
++ *
++ * The global load average is an exponentially decaying average of nr_running +
++ * nr_uninterruptible.
++ *
++ * Once every LOAD_FREQ:
++ *
++ *   nr_active = 0;
++ *   for_each_possible_cpu(cpu)
++ *   	nr_active += cpu_of(cpu)->nr_running + cpu_of(cpu)->nr_uninterruptible;
++ *
++ *   avenrun[n] = avenrun[0] * exp_n + nr_active * (1 - exp_n)
++ *
++ * Due to a number of reasons the above turns in the mess below:
++ *
++ *  - for_each_possible_cpu() is prohibitively expensive on machines with
++ *    serious number of cpus, therefore we need to take a distributed approach
++ *    to calculating nr_active.
++ *
++ *        \Sum_i x_i(t) = \Sum_i x_i(t) - x_i(t_0) | x_i(t_0) := 0
++ *                      = \Sum_i { \Sum_j=1 x_i(t_j) - x_i(t_j-1) }
++ *
++ *    So assuming nr_active := 0 when we start out -- true per definition, we
++ *    can simply take per-cpu deltas and fold those into a global accumulate
++ *    to obtain the same result. See calc_load_fold_active().
++ *
++ *    Furthermore, in order to avoid synchronizing all per-cpu delta folding
++ *    across the machine, we assume 10 ticks is sufficient time for every
++ *    cpu to have completed this task.
++ *
++ *    This places an upper-bound on the IRQ-off latency of the machine. Then
++ *    again, being late doesn't loose the delta, just wrecks the sample.
++ *
++ *  - cpu_rq()->nr_uninterruptible isn't accurately tracked per-cpu because
++ *    this would add another cross-cpu cacheline miss and atomic operation
++ *    to the wakeup path. Instead we increment on whatever cpu the task ran
++ *    when it went into uninterruptible state and decrement on whatever cpu
++ *    did the wakeup. This means that only the sum of nr_uninterruptible over
++ *    all cpus yields the correct result.
++ *
++ *  This covers the NO_HZ=n code, for extra head-aches, see the comment below.
++ */
++
+ /* Variables and functions for calc_load */
+ static atomic_long_t calc_load_tasks;
+ static unsigned long calc_load_update;
+ unsigned long avenrun[3];
+-EXPORT_SYMBOL(avenrun);
++EXPORT_SYMBOL(avenrun); /* should be removed */
++
++/**
++ * get_avenrun - get the load average array
++ * @loads:	pointer to dest load array
++ * @offset:	offset to add
++ * @shift:	shift count to shift the result left
++ *
++ * These values are estimates at best, so no need for locking.
++ */
++void get_avenrun(unsigned long *loads, unsigned long offset, int shift)
++{
++	loads[0] = (avenrun[0] + offset) << shift;
++	loads[1] = (avenrun[1] + offset) << shift;
++	loads[2] = (avenrun[2] + offset) << shift;
++}
+ 
+ static long calc_load_fold_active(struct rq *this_rq)
+ {
+@@ -2182,6 +2244,9 @@ static long calc_load_fold_active(struct rq *this_rq)
+ 	return delta;
+ }
+ 
++/*
++ * a1 = a0 * e + a * (1 - e)
++ */
+ static unsigned long
+ calc_load(unsigned long load, unsigned long exp, unsigned long active)
+ {
+@@ -2193,30 +2258,118 @@ calc_load(unsigned long load, unsigned long exp, unsigned long active)
+ 
+ #ifdef CONFIG_NO_HZ
+ /*
+- * For NO_HZ we delay the active fold to the next LOAD_FREQ update.
++ * Handle NO_HZ for the global load-average.
++ *
++ * Since the above described distributed algorithm to compute the global
++ * load-average relies on per-cpu sampling from the tick, it is affected by
++ * NO_HZ.
++ *
++ * The basic idea is to fold the nr_active delta into a global idle-delta upon
++ * entering NO_HZ state such that we can include this as an 'extra' cpu delta
++ * when we read the global state.
++ *
++ * Obviously reality has to ruin such a delightfully simple scheme:
++ *
++ *  - When we go NO_HZ idle during the window, we can negate our sample
++ *    contribution, causing under-accounting.
++ *
++ *    We avoid this by keeping two idle-delta counters and flipping them
++ *    when the window starts, thus separating old and new NO_HZ load.
++ *
++ *    The only trick is the slight shift in index flip for read vs write.
++ *
++ *        0s            5s            10s           15s
++ *          +10           +10           +10           +10
++ *        |-|-----------|-|-----------|-|-----------|-|
++ *    r:0 0 1           1 0           0 1           1 0
++ *    w:0 1 1           0 0           1 1           0 0
++ *
++ *    This ensures we'll fold the old idle contribution in this window while
++ *    accumlating the new one.
++ *
++ *  - When we wake up from NO_HZ idle during the window, we push up our
++ *    contribution, since we effectively move our sample point to a known
++ *    busy state.
++ *
++ *    This is solved by pushing the window forward, and thus skipping the
++ *    sample, for this cpu (effectively using the idle-delta for this cpu which
++ *    was in effect at the time the window opened). This also solves the issue
++ *    of having to deal with a cpu having been in NOHZ idle for multiple
++ *    LOAD_FREQ intervals.
+  *
+  * When making the ILB scale, we should try to pull this in as well.
+  */
+-static atomic_long_t calc_load_tasks_idle;
++static atomic_long_t calc_load_idle[2];
++static int calc_load_idx;
+ 
+-void calc_load_account_idle(struct rq *this_rq)
++static inline int calc_load_write_idx(void)
+ {
++	int idx = calc_load_idx;
++
++	/*
++	 * See calc_global_nohz(), if we observe the new index, we also
++	 * need to observe the new update time.
++	 */
++	smp_rmb();
++
++	/*
++	 * If the folding window started, make sure we start writing in the
++	 * next idle-delta.
++	 */
++	if (!time_before(jiffies, calc_load_update))
++		idx++;
++
++	return idx & 1;
++}
++
++static inline int calc_load_read_idx(void)
++{
++	return calc_load_idx & 1;
++}
++
++void calc_load_enter_idle(void)
++{
++	struct rq *this_rq = this_rq();
+ 	long delta;
+ 
++	/*
++	 * We're going into NOHZ mode, if there's any pending delta, fold it
++	 * into the pending idle delta.
++	 */
+ 	delta = calc_load_fold_active(this_rq);
+-	if (delta)
+-		atomic_long_add(delta, &calc_load_tasks_idle);
++	if (delta) {
++		int idx = calc_load_write_idx();
++		atomic_long_add(delta, &calc_load_idle[idx]);
++	}
+ }
+ 
+-static long calc_load_fold_idle(void)
++void calc_load_exit_idle(void)
+ {
+-	long delta = 0;
++	struct rq *this_rq = this_rq();
++
++	/*
++	 * If we're still before the sample window, we're done.
++	 */
++	if (time_before(jiffies, this_rq->calc_load_update))
++		return;
+ 
+ 	/*
+-	 * Its got a race, we don't care...
++	 * We woke inside or after the sample window, this means we're already
++	 * accounted through the nohz accounting, so skip the entire deal and
++	 * sync up for the next window.
+ 	 */
+-	if (atomic_long_read(&calc_load_tasks_idle))
+-		delta = atomic_long_xchg(&calc_load_tasks_idle, 0);
++	this_rq->calc_load_update = calc_load_update;
++	if (time_before(jiffies, this_rq->calc_load_update + 10))
++		this_rq->calc_load_update += LOAD_FREQ;
++}
++
++static long calc_load_fold_idle(void)
++{
++	int idx = calc_load_read_idx();
++	long delta = 0;
++
++	if (atomic_long_read(&calc_load_idle[idx]))
++		delta = atomic_long_xchg(&calc_load_idle[idx], 0);
+ 
+ 	return delta;
+ }
+@@ -2302,66 +2455,39 @@ static void calc_global_nohz(void)
+ {
+ 	long delta, active, n;
+ 
+-	/*
+-	 * If we crossed a calc_load_update boundary, make sure to fold
+-	 * any pending idle changes, the respective CPUs might have
+-	 * missed the tick driven calc_load_account_active() update
+-	 * due to NO_HZ.
+-	 */
+-	delta = calc_load_fold_idle();
+-	if (delta)
+-		atomic_long_add(delta, &calc_load_tasks);
+-
+-	/*
+-	 * It could be the one fold was all it took, we done!
+-	 */
+-	if (time_before(jiffies, calc_load_update + 10))
+-		return;
+-
+-	/*
+-	 * Catch-up, fold however many we are behind still
+-	 */
+-	delta = jiffies - calc_load_update - 10;
+-	n = 1 + (delta / LOAD_FREQ);
++	if (!time_before(jiffies, calc_load_update + 10)) {
++		/*
++		 * Catch-up, fold however many we are behind still
++		 */
++		delta = jiffies - calc_load_update - 10;
++		n = 1 + (delta / LOAD_FREQ);
+ 
+-	active = atomic_long_read(&calc_load_tasks);
+-	active = active > 0 ? active * FIXED_1 : 0;
++		active = atomic_long_read(&calc_load_tasks);
++		active = active > 0 ? active * FIXED_1 : 0;
+ 
+-	avenrun[0] = calc_load_n(avenrun[0], EXP_1, active, n);
+-	avenrun[1] = calc_load_n(avenrun[1], EXP_5, active, n);
+-	avenrun[2] = calc_load_n(avenrun[2], EXP_15, active, n);
++		avenrun[0] = calc_load_n(avenrun[0], EXP_1, active, n);
++		avenrun[1] = calc_load_n(avenrun[1], EXP_5, active, n);
++		avenrun[2] = calc_load_n(avenrun[2], EXP_15, active, n);
+ 
+-	calc_load_update += n * LOAD_FREQ;
+-}
+-#else
+-void calc_load_account_idle(struct rq *this_rq)
+-{
+-}
++		calc_load_update += n * LOAD_FREQ;
++	}
+ 
+-static inline long calc_load_fold_idle(void)
+-{
+-	return 0;
++	/*
++	 * Flip the idle index...
++	 *
++	 * Make sure we first write the new time then flip the index, so that
++	 * calc_load_write_idx() will see the new time when it reads the new
++	 * index, this avoids a double flip messing things up.
++	 */
++	smp_wmb();
++	calc_load_idx++;
+ }
++#else /* !CONFIG_NO_HZ */
+ 
+-static void calc_global_nohz(void)
+-{
+-}
+-#endif
++static inline long calc_load_fold_idle(void) { return 0; }
++static inline void calc_global_nohz(void) { }
+ 
+-/**
+- * get_avenrun - get the load average array
+- * @loads:	pointer to dest load array
+- * @offset:	offset to add
+- * @shift:	shift count to shift the result left
+- *
+- * These values are estimates at best, so no need for locking.
+- */
+-void get_avenrun(unsigned long *loads, unsigned long offset, int shift)
+-{
+-	loads[0] = (avenrun[0] + offset) << shift;
+-	loads[1] = (avenrun[1] + offset) << shift;
+-	loads[2] = (avenrun[2] + offset) << shift;
+-}
++#endif /* CONFIG_NO_HZ */
+ 
+ /*
+  * calc_load - update the avenrun load estimates 10 ticks after the
+@@ -2369,11 +2495,18 @@ void get_avenrun(unsigned long *loads, unsigned long offset, int shift)
+  */
+ void calc_global_load(unsigned long ticks)
+ {
+-	long active;
++	long active, delta;
+ 
+ 	if (time_before(jiffies, calc_load_update + 10))
+ 		return;
+ 
++	/*
++	 * Fold the 'old' idle-delta to include all NO_HZ cpus.
++	 */
++	delta = calc_load_fold_idle();
++	if (delta)
++		atomic_long_add(delta, &calc_load_tasks);
++
+ 	active = atomic_long_read(&calc_load_tasks);
+ 	active = active > 0 ? active * FIXED_1 : 0;
+ 
+@@ -2384,12 +2517,7 @@ void calc_global_load(unsigned long ticks)
+ 	calc_load_update += LOAD_FREQ;
+ 
+ 	/*
+-	 * Account one period with whatever state we found before
+-	 * folding in the nohz state and ageing the entire idle period.
+-	 *
+-	 * This avoids loosing a sample when we go idle between 
+-	 * calc_load_account_active() (10 ticks ago) and now and thus
+-	 * under-accounting.
++	 * In case we idled for multiple LOAD_FREQ intervals, catch up in bulk.
+ 	 */
+ 	calc_global_nohz();
+ }
+@@ -2406,7 +2534,6 @@ static void calc_load_account_active(struct rq *this_rq)
+ 		return;
+ 
+ 	delta  = calc_load_fold_active(this_rq);
+-	delta += calc_load_fold_idle();
+ 	if (delta)
+ 		atomic_long_add(delta, &calc_load_tasks);
+ 
+@@ -2414,6 +2541,10 @@ static void calc_load_account_active(struct rq *this_rq)
+ }
+ 
+ /*
++ * End of global load-average stuff
++ */
++
++/*
+  * The exact cpuload at various idx values, calculated at every tick would be
+  * load = (2^idx - 1) / 2^idx * load + 1 / 2^idx * cur_load
+  *
+diff --git a/kernel/sched/idle_task.c b/kernel/sched/idle_task.c
+index b44d604..b6baf37 100644
+--- a/kernel/sched/idle_task.c
++++ b/kernel/sched/idle_task.c
+@@ -25,7 +25,6 @@ static void check_preempt_curr_idle(struct rq *rq, struct task_struct *p, int fl
+ static struct task_struct *pick_next_task_idle(struct rq *rq)
+ {
+ 	schedstat_inc(rq, sched_goidle);
+-	calc_load_account_idle(rq);
+ 	return rq->idle;
+ }
+ 
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 6d52cea..55844f2 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -942,8 +942,6 @@ static inline u64 sched_avg_period(void)
+ 	return (u64)sysctl_sched_time_avg * NSEC_PER_MSEC / 2;
+ }
+ 
+-void calc_load_account_idle(struct rq *this_rq);
+-
+ #ifdef CONFIG_SCHED_HRTICK
+ 
+ /*
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 8699978..4a08472 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -406,6 +406,7 @@ static void tick_nohz_stop_sched_tick(struct tick_sched *ts)
+ 		 */
+ 		if (!ts->tick_stopped) {
+ 			select_nohz_load_balancer(1);
++			calc_load_enter_idle();
+ 
+ 			ts->idle_tick = hrtimer_get_expires(&ts->sched_timer);
+ 			ts->tick_stopped = 1;
+@@ -597,6 +598,7 @@ void tick_nohz_idle_exit(void)
+ 		account_idle_ticks(ticks);
+ #endif
+ 
++	calc_load_exit_idle();
+ 	touch_softlockup_watchdog();
+ 	/*
+ 	 * Cancel the scheduled timer and restore the tick
