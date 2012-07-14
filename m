@@ -1,35 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752225Ab2GNS4x (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jul 2012 14:56:53 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:49467 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750771Ab2GNS4o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jul 2012 14:56:44 -0400
+	id S1752461Ab2GNTAB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jul 2012 15:00:01 -0400
+Received: from void.printf.net ([89.145.121.20]:49376 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750771Ab2GNS7y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jul 2012 14:59:54 -0400
+From: Chris Ball <cjb@laptop.org>
+To: Maya Erez <merez@codeaurora.org>
+Cc: linux-mmc@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org (open list)
+Subject: Re: [PATCH RESEND v4 1/2] mmc: card: Move MMC specific attributes to mmc sub-directory
+References: <1342291613-3189-2-git-send-email-merez@codeaurora.org>
+Date: Sat, 14 Jul 2012 14:59:48 -0400
+In-Reply-To: <1342291613-3189-2-git-send-email-merez@codeaurora.org> (Maya
+	Erez's message of "Sat, 14 Jul 2012 21:46:52 +0300")
+Message-ID: <87a9z2kw2j.fsf@octavius.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <5001B05D.7070408@kernel.org>
-References: <5001B05D.7070408@kernel.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 14 Jul 2012 11:56:22 -0700
-X-Google-Sender-Auth: XXXbMl3riiVy-aWe1lYoR3by270
-Message-ID: <CA+55aFxmhDxZgsPy+23h0joBx4==-0jBQBoAqBbrmVOaBbSFjQ@mail.gmail.com>
-Subject: Re: [GIT PULL] ACPI patch for Linux-3.5-rc6
-To: Len Brown <lenb@kernel.org>
-Cc: linux-acpi <linux-acpi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 14, 2012 at 10:46 AM, Len Brown <lenb@kernel.org> wrote:
->
-> Please pull this ACPI patch.
->
->   git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux.git
+Hi,
 
-There's nothing there. Did you mean some particular tag or branch?
-There seems to be branches named "release" and "next" there.
+On Sat, Jul 14 2012, Maya Erez wrote:
+> Separate MMC specific attributes from general block device
+> attributes and move them from the /sys/block/<BLOCK_DEV> directory
+> to /sys/block/<BLOCK_DEV>/mmc directory
 
-              Linus
+I don't think we can do this, even though the change is a good one.
+What happens if someone has userspace scripts that manipulate force_ro,
+or ro_lock_until_next_power_on?
+
+sysfs isn't a firmly stable kernel ABI, but I think it's much closer
+to one than this patch implies.
+
+Thanks,
+
+- Chris.
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
