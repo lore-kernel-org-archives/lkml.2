@@ -1,72 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754329Ab2GNRD2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jul 2012 13:03:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15899 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752313Ab2GNRDV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jul 2012 13:03:21 -0400
-Date: Sat, 14 Jul 2012 19:01:42 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Alex Shi <alex.shi@intel.com>,
-        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Don Morris <don.morris@hp.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH 20/40] autonuma: alloc/free/init mm_autonuma
-Message-ID: <20120714170142.GW10186@redhat.com>
-References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
- <1340888180-15355-21-git-send-email-aarcange@redhat.com>
- <20120630051217.GG3975@localhost.localdomain>
- <20120712180828.GL20382@redhat.com>
- <20120712181738.GA1349@cmpxchg.org>
- <alpine.DEB.2.00.1207130918320.24910@router.home>
+	id S1754484Ab2GNRES (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jul 2012 13:04:18 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:50913 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752313Ab2GNREP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jul 2012 13:04:15 -0400
+X-Sasl-enc: RsVV7s4DxM7XAr9guF03gwcdokuqVGinl1PHuaneP1jo 1342285454
+Date: Sat, 14 Jul 2012 10:04:11 -0700
+From: Greg KH <greg@kroah.com>
+To: Jon Mason <jon.mason@intel.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-pci@vger.kernel.org, Dave Jiang <dave.jiang@intel.com>
+Subject: Re: [RFC 1/2] PCI-Express Non-Transparent Bridge Support
+Message-ID: <20120714170411.GA25775@kroah.com>
+References: <1342215900-3358-1-git-send-email-jon.mason@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1207130918320.24910@router.home>
+In-Reply-To: <1342215900-3358-1-git-send-email-jon.mason@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 13, 2012 at 09:19:06AM -0500, Christoph Lameter wrote:
-> On Thu, 12 Jul 2012, Johannes Weiner wrote:
-> 
-> > On Thu, Jul 12, 2012 at 08:08:28PM +0200, Andrea Arcangeli wrote:
-> > > On Sat, Jun 30, 2012 at 01:12:18AM -0400, Konrad Rzeszutek Wilk wrote:
-> > > > On Thu, Jun 28, 2012 at 02:56:00PM +0200, Andrea Arcangeli wrote:
-> > > > > This is where the mm_autonuma structure is being handled. Just like
-> > > > > sched_autonuma, this is only allocated at runtime if the hardware the
-> > > > > kernel is running on has been detected as NUMA. On not NUMA hardware
-> > > >
-> > > > I think the correct wording is "non-NUMA", not "not NUMA".
-> > >
-> > > That sounds far too easy to me, but I've no idea what's the right is here.
-> >
-> > UMA?
-> >
-> > Single-node hardware?
-> 
-> Lets be simple and stay with non-NUMA.
+On Fri, Jul 13, 2012 at 02:44:59PM -0700, Jon Mason wrote:
+> The NTB device driver is needed to configure these memory windows, doorbell, and
+> scratch-pad registers as well as use them in such a way as they can be turned
+> into a viable communication channel to the remote system.  ntb_hw.[ch]
+> determines the usage model (NTB to NTB or NTB to Root Port) and abstracts away
+> the underlying hardware to provide access and a common interface to the doorbell
+> registers, scratch pads, and memory windows.  These hardware interfaces are
+> exported so that other, non-mainlined kernel drivers can access these.
 
-Ok, I already corrected all occurrences.
+Why would you have non-mainlined drivers?
 
-Thanks.
+Can you submit the drivers at the same time so we see how you are using
+these new interfaces?
+
+> +++ b/drivers/ntb/ntb_hw.c
+> @@ -0,0 +1,1283 @@
+> +/*
+> + * This file is provided under a dual BSD/GPLv2 license.  When using or
+> + *   redistributing this file, you may do so under either license.
+> + *
+> + *   GPL LICENSE SUMMARY
+> + *
+> + *   Copyright(c) 2012 Intel Corporation. All rights reserved.
+> + *
+> + *   This program is free software; you can redistribute it and/or modify
+> + *   it under the terms of version 2 of the GNU General Public License as
+> + *   published by the Free Software Foundation.
+> + *
+> + *   This program is distributed in the hope that it will be useful, but
+> + *   WITHOUT ANY WARRANTY; without even the implied warranty of
+> + *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+> + *   General Public License for more details.
+> + *
+> + *   You should have received a copy of the GNU General Public License
+> + *   along with this program; if not, write to the Free Software
+> + *   Foundation, Inc., 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
+> + *   The full GNU General Public License is included in this distribution
+> + *   in the file called LICENSE.GPL.
+
+You really want to track the office movements of the FSF for the next 40
+years?  You should ask your lawyers if you can remove this paragraph.
+
+> +/**
+> + * ntb_hw_link_status() - return the hardware link status
+> + * @ndev: pointer to ntb_device instance
+> + *
+> + * Returns true if the hardware is connected to the remote system
+> + *
+> + * RETURNS: true or false based on the hardware link state
+> + */
+> +bool ntb_hw_link_status(struct ntb_device *ndev)
+> +{
+> +	return ndev->link_status == NTB_LINK_UP;
+> +}
+> +EXPORT_SYMBOL(ntb_hw_link_status);
+
+EXPORT_SYMBOL_GPL() perhaps, for these, and the other symbols you are
+creating?
+
+thanks,
+
+greg k-h
