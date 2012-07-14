@@ -1,76 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754086Ab2GNQPz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jul 2012 12:15:55 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:59216 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217Ab2GNQPs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jul 2012 12:15:48 -0400
+	id S1754139Ab2GNQWC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jul 2012 12:22:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9767 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751217Ab2GNQV5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jul 2012 12:21:57 -0400
+Message-ID: <50019C5E.8020508@redhat.com>
+Date: Sat, 14 Jul 2012 12:20:46 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <CABqD9hYz3410CE7cwfzw7zAXD3k2kT2PNfSmFLiaf+sbRTnfmQ@mail.gmail.com>
-References: <1342279974-26917-1-git-send-email-wad@chromium.org>
- <1342279974-26917-2-git-send-email-wad@chromium.org> <CAObL_7GX0q_qywY4g1S2iRZWPS95ar01wtvv9wDW=zswwaZ6fQ@mail.gmail.com>
- <CABqD9hbmsi-VcXATWsGw37vo2RxoMvFvUs-RkVx9nTGbPtqidg@mail.gmail.com> <CABqD9hYz3410CE7cwfzw7zAXD3k2kT2PNfSmFLiaf+sbRTnfmQ@mail.gmail.com>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Sat, 14 Jul 2012 09:15:27 -0700
-X-Google-Sender-Auth: EWcR6yf6GHRRrUk-PrDeauu959M
-Message-ID: <CAObL_7EQH6KQCU-iWOt9SKn49p2K3n3GV1QS4ZDvnjhhLyXCeA@mail.gmail.com>
-Subject: Re: [PATCH 2/3] vsyscall_64: allow SECCOMP_RET_TRACErs to skip
-To: Will Drewry <wad@chromium.org>
-Cc: Kees Cook <keescook@chromium.org>, james.l.morris@oracle.com,
-        rob@landley.net, linux-doc@vger.kernel.org, cevans@chromium.org,
-        hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, eparis@redhat.com, fengxj325@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: Don Morris <don.morris@hp.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [RFC][PATCH 14/26] sched, numa: Numa balancer
+References: <20120316144028.036474157@chello.nl> <20120316144241.012558280@chello.nl> <4FFF4987.4050205@redhat.com> <5000347E.1050301@hp.com>
+In-Reply-To: <5000347E.1050301@hp.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 14, 2012 at 8:57 AM, Will Drewry <wad@chromium.org> wrote:
-> On Sat, Jul 14, 2012 at 10:50 AM, Will Drewry <wad@chromium.org> wrote:
->> On Sat, Jul 14, 2012 at 10:44 AM, Andrew Lutomirski <luto@mit.edu> wrote:
->>> I think I'd prefer if changing to something other than whatever value is
->>> used to cancel the syscall resulted in a crash rather than just being
->>> ignored.
->>
->> I was trying to keep as much seccomp-ptrace behavior intact rather
->> than making it terminal in this special case.  Is there a reason why
->> it'd make more sense to crash?
+On 07/13/2012 10:45 AM, Don Morris wrote:
+
+>> IIRC the test consisted of a 16GB NUMA system with two 8GB nodes.
+>> It was running 3 KVM guests, two guests of 3GB memory each, and
+>> one guest of 6GB each.
 >
-> Unless you meant something the tracer could catch?  That may make
-> sense, but they could also use singlestep or whatever else to get
-> similar behavior.  But maybe I'm missing the bigger picture!
+> How many cpus per guest (host threads) and how many physical/logical
+> cpus per node on the host? Any comparisons with a situation where
+> the memory would fit within nodes but the scheduling load would
+> be too high?
 
-I think it would be nice to not introduce any special behavior that
-things might rely on if we do this better in the future.  Similarly,
-for almost all purposes, a tracer could change gettimeofday to write,
-but there would be a silent behavior change if gettimeofday were
-entered via vsyscall.
+IIRC this particular test was constructed to have guests
+A and B fit in one NUMA node, with guest C in the other
+NUMA node.
 
-What's the standard way of skipping a syscall?  sigreturn?  (I don't
-know off the top of my head what sigreturn does.)  sys_ni_syscall?
-I'd be all for making those continue to work but making anything that
-can't be emulated correctly do something sufficiently unpleasant that
-people won't do it.  Is there a syscall that does nothing at all?
+With schednuma, guest A ended up on one NUMA node, guest
+B on the other, and guest C was spread between both nodes.
 
-I wish we could just increment rip by 7 and set a flag to allow the
-vsyscall page instructions to be fully emulated until one of the ret
-instructions happens, but I don't know how to do that without
-monkeying with the entry assembly -- the do_page_fault path doesn't
-look enough like system_call to pull it off easily.
+Only migrating when there is plenty of free space available
+means you can end up not doing the right thing when running
+a few large workloads on the system.
 
-In any case, can you change the docs to indicate that the special
-behavior only happens iff rip & ~0x0c00 == 0xffffffffff600000?  That
-way a hypothetical future emulator could add better emulation
-(incrementing rip by 7, for example) and everything would still work.
-(There's no need to check the syscall number.)
-
-FWIW, this crap is why I'm sort of tempted to say that seccomp should
-just ignore vsyscalls entirely (except in mode 1).  None of them
-actually do anything other than querying things that can be read out
-of the vsyscall page (for the most part) without any kernel entry.
-(Making *that* part of the ABI would be bad, though.)  Better ideas
-are welcome.
-
---Andy
+-- 
+All rights reversed
