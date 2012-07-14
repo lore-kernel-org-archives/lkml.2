@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751740Ab2GNESd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jul 2012 00:18:33 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54898 "EHLO
+	id S1753040Ab2GNE1V (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jul 2012 00:27:21 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54958 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750746Ab2GNESa (ORCPT
+	by vger.kernel.org with ESMTP id S1750893Ab2GNE1T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jul 2012 00:18:30 -0400
-Message-ID: <1342239493.25597.461.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [RFC] Simplifying kernel configuration for distro issues
+	Sat, 14 Jul 2012 00:27:19 -0400
+Message-ID: <1342240026.25597.466.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH] bnx2: update bnx2-mips-09 firmware to
+ bnx2-mips-09-6.2.1b
 From: Ben Hutchings <ben@decadent.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Jones <davej@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
-        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
-        Debian Kernel Team <debian-kernel@lists.debian.org>,
-        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Sat, 14 Jul 2012 05:18:13 +0100
-In-Reply-To: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com>
-References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com>
+To: Chris Webb <chris@arachsys.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Michael Chan <mchan@broadcom.com>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>
+Date: Sat, 14 Jul 2012 05:27:06 +0100
+In-Reply-To: <20120713140907.GT13885@arachsys.com>
+References: <20120713130405.GS13885@arachsys.com>
+	 <1342186932.3265.8364.camel@edumazet-glaptop>
+	 <20120713140907.GT13885@arachsys.com>
 Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-1m06UcTE7rcZIWY+cmuH"
+	protocol="application/pgp-signature"; boundary="=-R7TFhZeTM5qHrsCm7kMJ"
 X-Mailer: Evolution 3.4.3-1 
 Mime-Version: 1.0
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
@@ -31,68 +32,39 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-1m06UcTE7rcZIWY+cmuH
+--=-R7TFhZeTM5qHrsCm7kMJ
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-On Fri, 2012-07-13 at 13:37 -0700, Linus Torvalds wrote:
-> So this has long been one of my pet configuration peeves: as a user I
-> am perfectly happy answering the questions about what kinds of
-> hardware I want the kernel to support (I kind of know that), but many
-> of the "support infrastructure" questions are very opaque, and I have
-> no idea which of the them any particular distribution actually depends
-> on.
-[...]
-> The point I'm slowly getting to is that I would actually love to have
-> *distro* Kconfig-files, where the distribution would be able to say
-> "These are the minimums I *require* to work". So we'd have a "Distro"
-> submenu, where you could pick the distro(s) you use, and then pick
-> which release, and we'd have something like
-
-I like this idea in principle.
-
-[...]
->  - distro/Kconfig:
+On Fri, 2012-07-13 at 15:09 +0100, Chris Webb wrote:
+> Eric Dumazet <eric.dumazet@gmail.com> writes:
 >=20
->     config DISTRO_REQUIREMENTS
->         bool "Pick minimal distribution requirements"
+> > Have you read firmware/README.AddingFirmware ?
 >=20
->     choice DISTRO
->         prompt "Distribution"
->         depends on DISTRO_REQUIREMENTS
+> I hadn't, but now I have, and if firmware upgrades are considered 'adding
+> new firmware', I agree this patch is wrong, and should have just removed =
+the
+> obsolete bnx2-mips-09-6.2.1a file that is no longer used by the bnx2 driv=
+er.
 >=20
->     config FEDORA
->     config OPENSUSE
->     config UBUNTU
->     ...
+> However, not having dealt with cards that need these kinds of horrible
+> binary blobs before, I'm a little uncertain how I should be building
+> upstream kernels with CONFIG_FIRMWARE_IN_KERNEL and pulling in the correc=
+t
+> blobs from a linux-firmware checkout.
 >=20
->     endchoice
->=20
-> and then depending on the DISTRO config, we'd include one of the
-> distro-specific ones with lists of supported distro versions and then
-> the random config settings for that version:
+> Is there a more automatic method than going through the source for each
+> configured driver and setting CONFIG_EXTRA_FIRMWARE manually to list the
+> relevant firmwares? Is there any way to give the kernel the location of
+> linux-firmware and have it compile in everything needed for the selected
+> drivers, as used to happen with the firmware/ subdirectory?
+> CONFIG_EXTRA_FIRMWARE_DIR doesn't seem to do anything with
+> CONFIG_EXTRA_FIRMWARE empty, so I don't think it does what I'm hoping?
 
-You might also want to *un*select some options like
-CONFIG_SYSFS_DEPRECATED and CONFIG_SYSFS_DEPRECATED_V2 that need to be
-set one way or the other depending on the version of udev.  (I think
-it's possible to kluge this with the addition of a hidden negative
-config option.)
-
-How about stuff like NET and INET, that every distro will need and yet
-is configurable even without EXPERT?
-
-[...]
-> Sure, you can copy the config file that came with the distro, but it
-> has tons of stuff that really isn't required. Not just in hardware,
-> but all the debug choices etc that are really a user choice. And it's
-> really hard to figure out - even for somebody like me - what a minimal
-> usable kernel is.
-[...]
-
-And it's still hard for me as kernel packager: just because an option
-was requested and enabled to support some bit of userland, doesn't mean
-I know what's using or depending on it now.  (I think Dave Jones made
-this point already.)  I'm not usually concerned with *minimal* config.
+I had a go at making CONFIG_FIRMWARE_IN_KERNEL pick the right blobs
+automatically <http://thread.gmane.org/gmane.linux.kernel/1230462>, but
+I couldn't get the Kbuild rules quite right.  No-one responded and I
+haven't had another try since.
 
 Ben.
 
@@ -102,26 +74,26 @@ The generation of random numbers is too important to be left to chance.
                                                             - Robert Coveyo=
 u
 
---=-1m06UcTE7rcZIWY+cmuH
+--=-R7TFhZeTM5qHrsCm7kMJ
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: This is a digitally signed message part
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIVAwUAUADzBee/yOyVhhEJAQoTPhAAs6VogZTgrfn3HOJpD88ngO3iVFp6ebch
-CD2sw8ytTx6CnEEJfpAWz2miO6ugmPMyGRYQ1tXe78xUkv1U2Vmyx+vWdlcc3E2i
-7UPg8C0J9P5gzgNmB5J1fy9mNZIYfgm3AE69rgmuqNmrc+A05BK3ordMrM0TU7//
-BtRqSbr4wo51VGcryqEJnpbwYRY9YZ1rM8ncDd0KKDUVSiD+f/NvaqA6DHtaxvPj
-2NVIQBomWY9iUwdzXhNLNvDVL+40AL7gi6pMpzcXh6PmUW3bgXDDSP88orXbgKa8
-cCB1vpIQp3WBYRIyWjXsTKdxBq5MS6F9MHJl40YzMf4cnvcKfD7Nc7eFoFWGYhFu
-8YiQyn2DV7WdsCPnprQWZ9fVFAlRB23Bhpl2i7CbHIvQeiZBs51iBgFLdSXmVHDu
-wOh7QRBjHVY4FEeWa+1g5RwrD+pMKzmXQpUPFYs1vaJqChKJW3dF6796BWmpGfTP
-ISD0Ks+dOESLdCZVBm67MItjkgEHJr7ZhOVdaYvoZd4t1/FHwwslSD61aSaSj0ob
-Lot5mHA0A+AVPOB1ZC5SZBc0+UrNxetZpnAf9X8jLKR0Fs12mnBot7wP9Fs17IH1
-wTZIhZCGX/tBA58lfrPdESOhZ5LSQn/iOEifq8a97UaIhEmS0qNggbb1Jy4DR1cY
-pTb9bqu7Wyc=
-=jH6F
+iQIVAwUAUAD1Gue/yOyVhhEJAQrj9BAAx/HaaO8uKPohxD5SNIa2jzhhWfcLcvsj
+Lj2hQ0fKCTLN4v79klz+Nre6uSNwYREe7BXrEQdrtxT4JLR6SWX6xfb63JbF50P6
+SlCHYFA6zYaqPYfN+gbqdSfTqdRHYOrI/nkLd3kKmsY17/4YF35pM7JmHsraEFKZ
+8L38aEkyJ5mCPJQRYJXSLvXVHIhy8OcRFQ3H2I0nQIa1xQs64azNKoMGa8XOjobo
+a/QEVK+Po7Ia4V1RIq19ciP6SAjYh97Nsgqlc0lIFWgkBoGrI0YnCgx4y1g821cs
+s3g9qSmZm+7zKj/PZZE5OO7rWN+xZrU6akaEOoIx+SDr4WkvlEu62IuAc5s9CniL
+a1AbRqA7nDA0dcIK9Nl0uQQuq6L+UaB9+w4kx9vRppMvC4p3284Y5GBv8CpzSneo
+3isA6aztLVrH2RRH/wCmEwgaRI22DFm0kDIWZqLKQHyxf/eb3zb+V+4FnffT7+qN
+FIZ7hIXv3mGITSUCsaTqjlOHjgaPib151ADCEhAAQyCNiFAqHqShHoSS++v9oxY6
+ELQ4K7n0BsnFBfQtQWqLEVVCKI48xc4W6/MBXfg64jju/fe9Qfi2Jol46lcjOCxs
+N5f1TDogZbN3QNvXNGKKvwbywIPsyRx+SNzCVVSYIFf78cOkHou5Jaoc/yG2RCQs
+53RKSZMbOK0=
+=/6Bs
 -----END PGP SIGNATURE-----
 
---=-1m06UcTE7rcZIWY+cmuH--
+--=-R7TFhZeTM5qHrsCm7kMJ--
