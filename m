@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754951Ab2GNNiW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jul 2012 09:38:22 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:53423 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753275Ab2GNNiU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jul 2012 09:38:20 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18NyWEeMSINDdpGEm6flFhhx+ngI3J9jtQJ7QRjYn
-	ItgjeMD0vX+PVq
-Message-ID: <1342273096.7368.57.camel@marge.simpson.net>
-Subject: Re: 3.4.4-rt13: btrfs + xfstests 006 = BOOM..  and a bonus rt_mutex
- deadlock report for absolutely free!
-From: Mike Galbraith <efault@gmx.de>
-To: Chris Mason <chris.mason@fusionio.com>
-Cc: "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Date: Sat, 14 Jul 2012 15:38:16 +0200
-In-Reply-To: <20120713125043.GH30128@shiny>
-References: <1342072060.7338.102.camel@marge.simpson.net>
-	 <20120713125043.GH30128@shiny>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	id S1753860Ab2GNNjQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jul 2012 09:39:16 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46726 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752386Ab2GNNjO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jul 2012 09:39:14 -0400
+References: <1342202575.2706.4.camel@offbook> <20120714101951.GB26559@liondog.tnic>
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20120714101951.GB26559@liondog.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH] x86, amd: rename vmmu support capability
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Sat, 14 Jul 2012 15:38:26 +0200
+To: Borislav Petkov <bp@alien8.de>, Davidlohr Bueso <dave@gnu.org>
+CC: Ingo Molnar <mingo@redhat.com>, lkml <linux-kernel@vger.kernel.org>,
+        kvm list <kvm@vger.kernel.org>, x86@kernel.org
+Message-ID: <0ffa7987-66fd-4c8d-85da-9911eee3eeaf@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-07-13 at 08:50 -0400, Chris Mason wrote:
+Yep, NAK on this one.
 
-> There is also a chunk of code in btrfs_clear_path_blocking that makes
-> sure to strictly honor top down locking order during the conversion.  It
-> only does this when lockdep is enabled because in non-RT kernels we
-> don't need to worry about it.  For RT we'll want to enable that as well.
+Borislav Petkov <bp@alien8.de> wrote:
 
-Hm, _seems_ that alone is enough prevent deadlock.  Throughput really
-sucks though.  The other bits of my stab bump throughput for dbench 128
-from ~200 mb/s to ~360 mb/s (appears it's the paranoid trylock loops).
-ext3 does 775 mb/s with the same kernel.  Or, dbench 8 on ext3 gives
-~1800 mb/s and ~480 mb/s btrfs.  Not exactly wonderful.
+>On Fri, Jul 13, 2012 at 08:02:55PM +0200, Davidlohr Bueso wrote:
+>> From: Davidlohr Bueso <dave@gnu.org>
+>> 
+>> AMD has renamed nested page table technology to rapid virtualization
+>indexing,
+>> reflect this change in the kernel.
+>> 
+>> Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+>
+>You know that /proc/cpuinfo is a userspace ABI, right?
+>
+>And are you sure nothing is using that string -
+>"npt" - since it got added almost three years ago by
+>414bb144efa2d2fe16d104d836d0d6b6e9265788?
+>
+>-- 
+>Regards/Gruss,
+>    Boris.
 
-Hohum, guess I'll wait and see what your patch looks like.  I bet it'll
-work a lot better than mine does :)
-
--Mike
-
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
