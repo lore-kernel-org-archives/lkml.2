@@ -1,40 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758109Ab2GNDm1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 23:42:27 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:40109 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932111Ab2GNDm0 convert rfc822-to-8bit (ORCPT
+	id S1758039Ab2GNDqy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 23:46:54 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60888 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757524Ab2GNDqw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 23:42:26 -0400
-References: <1342211770-4219-1-git-send-email-silviupopescu1990@gmail.com>
-In-Reply-To: <1342211770-4219-1-git-send-email-silviupopescu1990@gmail.com>
-Mime-Version: 1.0 (iPhone Mail 8C148)
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain;
-	charset=us-ascii
-Message-Id: <EE2B0AEB-F22F-499E-ACD8-0338A487F257@gmail.com>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
-X-Mailer: iPhone Mail (8C148)
-From: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>
-Subject: Re: [PATCH] mac802154: fix sparse warning for mac802154_slave_get_priv
-Date: Sat, 14 Jul 2012 07:42:43 +0400
-To: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+	Fri, 13 Jul 2012 23:46:52 -0400
+Date: Fri, 13 Jul 2012 20:44:48 -0700
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] power_supply: Add min/max alert properties for CAPACITY,
+ TEMP, TEMP_AMBIENT
+Message-ID: <20120714034448.GC20018@lizard>
+References: <1341487752-2724-1-git-send-email-ramakrishna.pallala@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1341487752-2724-1-git-send-email-ramakrishna.pallala@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> Make sparse happy by fixing the following error:
->    * symbol 'mac802154_slave_get_priv' was not declared. Should it be static?
+On Thu, Jul 05, 2012 at 04:59:12PM +0530, Ramakrishna Pallala wrote:
+> Minimum and maximum alerts on power supply properties will help or allow the
+> user space to "proactively" create policies like connect/disconnect charger
+> or stop/start the user apps based on capacity or temperature parameters.
 > 
-> Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
-> ---
-> net/mac802154/mib.c | 2 +-
-> 1 file changed, 1 insertion(+), 1 deletion(-)
+> These parameters can be used to avoid unnecessary polling from user space and
+> even from kernel space if the underlying HW can support INT triggers(ex: max17042/47).
 > 
+> This patch adds the following power supply alert type properties:
+> CAPACITY_ALERT_MIN
+> CAPACITY_ALERT_MAX
+> TEMP_ALERT_MIN
+> TEMP_ALERT_MAX
+> TEMP_AMBIENT_ALERT_MIN
+> TEMP_AMBIENT_ALERT_MAX
+> 
+> Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
 
-Should be already fixed, please try the latest net-next tree.
+Looks nice, applied. Thank you!
+
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
