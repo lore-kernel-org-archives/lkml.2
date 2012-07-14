@@ -1,80 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751537Ab2GNEKJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jul 2012 00:10:09 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:49719 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750713Ab2GNEKH (ORCPT
+	id S1752017Ab2GNEMu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jul 2012 00:12:50 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:59802 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750865Ab2GNEMs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jul 2012 00:10:07 -0400
-Message-ID: <1342238669.3209.4.camel@brekeke>
-Subject: Re: [PATCH 0/3] fs/sysv: stop using write_supers and s_dirt
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
-        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Date: Sat, 14 Jul 2012 07:04:29 +0300
-In-Reply-To: <20120713144244.f3c9fb27.akpm@linux-foundation.org>
-References: <1341323008-29414-1-git-send-email-dedekind1@gmail.com>
-	 <1342103878.18274.98.camel@sauron.fi.intel.com>
-	 <20120713144244.f3c9fb27.akpm@linux-foundation.org>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-YnAYaTqW8MuEUCgZbb6V"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	Sat, 14 Jul 2012 00:12:48 -0400
+From: Will Drewry <wad@chromium.org>
+To: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
+Cc: qmewlo@gmail.com, eparis@redhat.com, keescook@chromium.org,
+        james.l.morris@oracle.com, hpa@zytor.com, cevans@chromium.org,
+        luto@mit.edu, rob@landley.net, linux-doc@vger.kernel.org,
+        Will Drewry <wad@chromium.org>
+Subject: [PATCH v3 1/2] vsyscall: allow seccomp in vsyscall=emulate
+Date: Fri, 13 Jul 2012 23:11:10 -0500
+Message-Id: <1342239071-16678-1-git-send-email-wad@chromium.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+If a seccomp filter program is installed, older static binaries and
+distributions with older libc implementations (glibc 2.13 and earlier)
+that rely on vsyscall use will be terminated regardless of the filter
+program policy when executing time, gettimeofday, or getcpu.  This is
+only the case when vsyscall emulation is in use (vsyscall=emulate is the
+default).
 
---=-YnAYaTqW8MuEUCgZbb6V
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+This patch emulates system call entry inside a vsyscall=emulate by
+populating regs->ax and regs->orig_ax with the system call number prior
+to calling into seccomp such that all seccomp-dependencies function
+normally.  Additionally, system call return behavior is emulated in line
+with other vsyscall entrypoints for the trace/trap cases.
 
-On Fri, 2012-07-13 at 14:42 -0700, Andrew Morton wrote:
->=20
-> The issue Alan raised around the superblock timestamp is still up in
-> the air.  I guess he's a slow typist ;)
->=20
-> My take is "no, we don't need to do that any more" - surely all Linux
-> systems have a functional hardware clock.  But the changelog should be
-> updated to describe and justify the decision.
->=20
-While I do trust such system existed and may be even still exist, I
-doubt that Linux sysv FS implementation is of any help for them because
-it updates the superblock time-stamp _only_ if there was write activity,
-otherwise it does not. So you cannot rely on our time-stamps at all
-anyway. My patches just make it update the time-stamp more rarely.
+Note, v3 adds support for a ptracer to skip and emulate vsyscalls. This
+is not required behavior but the documentation should reflect the behavior
+for whichever is preferred (v2 or v3).
 
---=20
-Best Regards,
-Artem Bityutskiy
+Reported-by: Owen Kibel <qmewlo@gmail.com>
+Signed-off-by: Will Drewry <wad@chromium.org>
 
---=-YnAYaTqW8MuEUCgZbb6V
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+v3: - allow ptrace orig_ax changes to skip the syscall since changing it is not
+      an option. (result of discussions with luto)
+    - ensure ptrace register modification doesn't change return behavior taking
+      the "normal" return path
+    - add some comments
+v2: - fixed ip and sp on SECCOMP_RET_TRAP/ERRNO (thanks to luto@mit.edu)
+---
+ arch/x86/kernel/vsyscall_64.c |   42 +++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 38 insertions(+), 4 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJQAO/NAAoJECmIfjd9wqK0i04QALvxeEhmK7eXV6PuKhHmSPdC
-yAFhuQiEzyN5P7TWHBJsZSMLqZzI+oqvhqBYB7I6a6CvSLnA3v+/WiKrYue5ULDN
-kZGXTLfQoB+5/U1p2jWlSOPBfMafk6cPqW3KLmQqQPtGiQ8mQvsPKLn67c88IiD6
-+3aWV02jgP9u3VA4hGC5COJU5VIroZPZvHOzT9XdPQqpoNYJCD1nZg3RON6OvCfk
-EmN3Z4n716Un/5Zu3hVsWo+an2rL89qLZ3fm7tzpVeBBID11V+KRjc4gdONm5L7h
-gij0GreqMlR/k4q/lBMTVA0kYoMXO1W4riKG8Q5BCQ0r2pZCIIEaAMXcVBXXilyD
-O8ZtVzt/geCPoKdAItOw4BE5RImAgSCY6Q+RsS6EDmlH0h/s2mgFnnlsAMxjjLsx
-xJUZ5ESxOm5LH10HeNpmpcXoG+PomxoIozLvSFw9rMzygK/2vFzkrFzABEX+o1SB
-fvBkdXUNs5Qd8Z4irCs8rZJz+Teu3HtpKLRpO2aaCzV4ouL6LmW2Gez8Hp/KlrF/
-9ZOkCHyHLH8abYULaOJziaU8sY8Mqb4rfupKeG2KneQjAuJNBdXWei64dBxrl1gF
-y1VCSzzzeqDRdPk4P+CgSWXnQZ2J4TOWbmWI5EyXnUHWHWyruG6XIoBQwFcaMjPr
-J3HL2lw5PxJOWkb+tkVY
-=yxcZ
------END PGP SIGNATURE-----
-
---=-YnAYaTqW8MuEUCgZbb6V--
+diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
+index 7515cf0..c56a8dc 100644
+--- a/arch/x86/kernel/vsyscall_64.c
++++ b/arch/x86/kernel/vsyscall_64.c
+@@ -139,6 +139,22 @@ static int addr_to_vsyscall_nr(unsigned long addr)
+ 	return nr;
+ }
+ 
++static int vsyscall_seccomp(struct task_struct *tsk, int syscall_nr)
++{
++	int ret;
++	struct pt_regs *regs;
++	if (!seccomp_mode(&tsk->seccomp))
++		return 0;
++	regs = task_pt_regs(tsk);
++	regs->orig_ax = syscall_nr;
++	regs->ax = syscall_nr;  /* ensure consistency */
++	/* 0 if allowed, -1 on SECCOMP_RET_ERRNO and SECCOMP_RET_TRAP */
++	ret = __secure_computing(syscall_nr);
++	if (regs->orig_ax != syscall_nr)
++		return 1; /* ptrace requested skip */
++	return ret;
++}
++
+ static bool write_ok_or_segv(unsigned long ptr, size_t size)
+ {
+ 	/*
+@@ -174,6 +190,7 @@ bool emulate_vsyscall(struct pt_regs *regs, unsigned long address)
+ 	int vsyscall_nr;
+ 	int prev_sig_on_uaccess_error;
+ 	long ret;
++	int skip;
+ 
+ 	/*
+ 	 * No point in checking CS -- the only way to get here is a user mode
+@@ -205,9 +222,6 @@ bool emulate_vsyscall(struct pt_regs *regs, unsigned long address)
+ 	}
+ 
+ 	tsk = current;
+-	if (seccomp_mode(&tsk->seccomp))
+-		do_exit(SIGKILL);
+-
+ 	/*
+ 	 * With a real vsyscall, page faults cause SIGSEGV.  We want to
+ 	 * preserve that behavior to make writing exploits harder.
+@@ -222,8 +236,13 @@ bool emulate_vsyscall(struct pt_regs *regs, unsigned long address)
+ 	 * address 0".
+ 	 */
+ 	ret = -EFAULT;
++	skip = 0;
+ 	switch (vsyscall_nr) {
+ 	case 0:
++		skip = vsyscall_seccomp(tsk, __NR_gettimeofday);
++		if (skip)
++			break;
++
+ 		if (!write_ok_or_segv(regs->di, sizeof(struct timeval)) ||
+ 		    !write_ok_or_segv(regs->si, sizeof(struct timezone)))
+ 			break;
+@@ -234,6 +253,10 @@ bool emulate_vsyscall(struct pt_regs *regs, unsigned long address)
+ 		break;
+ 
+ 	case 1:
++		skip = vsyscall_seccomp(tsk, __NR_time);
++		if (skip)
++			break;
++
+ 		if (!write_ok_or_segv(regs->di, sizeof(time_t)))
+ 			break;
+ 
+@@ -241,6 +264,10 @@ bool emulate_vsyscall(struct pt_regs *regs, unsigned long address)
+ 		break;
+ 
+ 	case 2:
++		skip = vsyscall_seccomp(tsk, __NR_getcpu);
++		if (skip)
++			break;
++
+ 		if (!write_ok_or_segv(regs->di, sizeof(unsigned)) ||
+ 		    !write_ok_or_segv(regs->si, sizeof(unsigned)))
+ 			break;
+@@ -253,6 +280,12 @@ bool emulate_vsyscall(struct pt_regs *regs, unsigned long address)
+ 
+ 	current_thread_info()->sig_on_uaccess_error = prev_sig_on_uaccess_error;
+ 
++	if (skip) {
++		if ((long)regs->ax <= 0L || skip == 1) /* seccomp errno/trace */
++			goto do_ret;
++		goto done; /* seccomp trap */
++	}
++
+ 	if (ret == -EFAULT) {
+ 		/* Bad news -- userspace fed a bad pointer to a vsyscall. */
+ 		warn_bad_vsyscall(KERN_INFO, regs,
+@@ -271,10 +304,11 @@ bool emulate_vsyscall(struct pt_regs *regs, unsigned long address)
+ 
+ 	regs->ax = ret;
+ 
++do_ret:
+ 	/* Emulate a ret instruction. */
+ 	regs->ip = caller;
+ 	regs->sp += 8;
+-
++done:
+ 	return true;
+ 
+ sigsegv:
+-- 
+1.7.9.5
 
