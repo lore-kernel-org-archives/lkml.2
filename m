@@ -1,44 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757947Ab2GNDia (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 23:38:30 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56609 "EHLO
+	id S932344Ab2GNDld (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 23:41:33 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52949 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757524Ab2GNDi3 (ORCPT
+	with ESMTP id S1757524Ab2GNDl3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 23:38:29 -0400
-From: Chen Baozi <baozich@gmail.com>
-To: bpm@sgi.com
-Cc: xfs@oss.sgi.com, linux-kernel@vger.kernel.org,
-        Chen Baozi <baozich@gmail.com>
-Subject: [PATCH] xfs: fix comment typo of struct xfs_da_blkinfo.
-Date: Sat, 14 Jul 2012 03:38:13 +0800
-Message-Id: <1342208293-3405-1-git-send-email-baozich@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	Fri, 13 Jul 2012 23:41:29 -0400
+Date: Fri, 13 Jul 2012 20:41:22 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        joshhunt00@gmail.com, axboe@kernel.dk, rni@google.com,
+        vgoyal@redhat.com, vwadekar@nvidia.com, herbert@gondor.hengli.com.au,
+        davem@davemloft.net, linux-crypto@vger.kernel.org, swhiteho@redhat.com,
+        bpm@sgi.com, elder@kernel.org, xfs@oss.sgi.com, marcel@holtmann.org,
+        gustavo@padovan.org, johan.hedberg@gmail.com,
+        linux-bluetooth@vger.kernel.org, martin.petersen@oracle.com,
+        Tony Luck <tony.luck@intel.com>
+Subject: Re: [PATCH 6/6] workqueue: reimplement WQ_HIGHPRI using a separate
+ worker_pool
+Message-ID: <20120714034122.GA5638@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <1341859315-17759-7-git-send-email-tj@kernel.org>
+ <20120712130648.GA19214@localhost>
+ <20120712170519.GA20167@google.com>
+ <20120712214514.GD20167@google.com>
+ <20120713020800.GA14026@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120713020800.GA14026@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix trivial typo error that has written "It" to "Is".
+Hello,
 
-Signed-off-by: Chen Baozi <baozich@gmail.com>
----
- fs/xfs/xfs_da_btree.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+On Fri, Jul 13, 2012 at 10:08:00AM +0800, Fengguang Wu wrote:
+> [    0.165669] Performance Events: unsupported Netburst CPU model 6 no PMU driver, software events only.
+> [    0.167001] XXX cpu=0 gcwq=ffff88000dc0cfc0 base=ffff88000dc11e80
+> [    0.167989] XXX cpu=0 nr_running=0 @ ffff88000dc11e80
+> [    0.168988] XXX cpu=0 nr_running=0 @ ffff88000dc11e88
+> [    0.169988] XXX cpu=1 gcwq=ffff88000dd0cfc0 base=ffff88000dd11e80
+> [    0.170988] XXX cpu=1 nr_running=0 @ ffff88000dd11e80
+> [    0.171987] XXX cpu=1 nr_running=0 @ ffff88000dd11e88
+> [    0.172988] XXX cpu=8 nr_running=0 @ ffffffff81d7c430
+> [    0.173987] XXX cpu=8 nr_running=12 @ ffffffff81d7c438
 
-diff --git a/fs/xfs/xfs_da_btree.h b/fs/xfs/xfs_da_btree.h
-index dbf7c07..be30bd4 100644
---- a/fs/xfs/xfs_da_btree.h
-+++ b/fs/xfs/xfs_da_btree.h
-@@ -32,7 +32,7 @@ struct zone;
- /*
-  * This structure is common to both leaf nodes and non-leaf nodes in the Btree.
-  *
-- * Is is used to manage a doubly linked list of all blocks at the same
-+ * It is used to manage a doubly linked list of all blocks at the same
-  * level in the Btree, and to identify which type of block this is.
-  */
- #define XFS_DA_NODE_MAGIC	0xfebe	/* magic number: non-leaf blocks */
+Heh, I found it.  get_pool_nr_running() stores the nr_running array to
+use in a local pointer to array and then returns pointer to the
+specific element from there depending on the priority.
+
+	atomic_t (*nr_running)[NR_WORKER_POOLS];
+
+	/* set @nr_running to the array to use */
+	return nr_running[worker_pool_pri(pool)];
+
+The [] operator in the return statement is indexing to the arrays
+instead of the array elements, so if the index is 1, the above
+statement offsets nr_running by sizeof(atomic_t [NR_WORKER_POOLS])
+instead of sizeof(atomic_t).  This should have been
+&(*nr_running)[worker_pool_pri(pool)] instead.
+
+So, highpri ends up dereferencing out-of-bounds and depending on
+variable layout, it may see garbage value from the beginning (what you
+were seeing) or get interfered afterwards (what Tony was seeing).
+This also explains why I didn't see it and Tony can no longer
+reproduce it after debug patch.
+
+Will post updated patches.
+
+Thank you.
+
 -- 
-1.7.1
-
+tejun
