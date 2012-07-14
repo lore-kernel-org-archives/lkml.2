@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755853Ab2GNLXw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jul 2012 07:23:52 -0400
-Received: from mout.web.de ([212.227.15.3]:53390 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752849Ab2GNLXu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jul 2012 07:23:50 -0400
-Message-ID: <500156B3.6040205@web.de>
-Date: Sat, 14 Jul 2012 13:23:31 +0200
-From: Jan Kiszka <jan.kiszka@web.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1753160Ab2GNLkM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jul 2012 07:40:12 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:57651 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752238Ab2GNLkK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jul 2012 07:40:10 -0400
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Avi Kivity <avi@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>
-Subject: Re: [GIT PULL] KVM fixes for 3.5-rc6
-References: <4FFEBB39.8090308@redhat.com> <CA+55aFwAXbrQRKg_cJT04H_XnoEPjJ0O711C5uA6fRY35DVhKQ@mail.gmail.com> <CA+55aFy=ogfJu3WuoCCDseysxOOn_UEAnv_7Ldsa45VV7fMVPg@mail.gmail.com> <alpine.LFD.2.02.1207131928000.32033@ionos> <alpine.LFD.2.02.1207140208270.32033@ionos> <500118F1.8060300@web.de> <alpine.LFD.2.02.1207141253490.32033@ionos>
-In-Reply-To: <alpine.LFD.2.02.1207141253490.32033@ionos>
-X-Enigmail-Version: 1.4.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig24E792CD3F43AD76B41FE366"
-X-Provags-ID: V02:K0:WWQzrM1MXrGaJDAKxT4K+WVT46UCgeRqiI8rYZzn4Mh
- 4hvXXCoOOpZal1uxE4UWtO/Mt6xWh9kAgPCrnWy6oalr9bzAYw
- hmtwJGcMW5eUekPWdJc81ojShB7yYIqkDJjUXFMGcqaLhepTrU
- u0DpInVIK+0F8vZ2I7B+ROl3sp3CXmttlROM2gSXsCWoLznjji
- hOSLj83Y6waOKp0b6fo8A==
+Date: Sat, 14 Jul 2012 19:40:09 +0800
+Message-ID: <CACV3sbLF8taiCq_VYW-sgRJyupeMzg58C7ZXfMe3xZUiH_Mx6w@mail.gmail.com>
+Subject: [PATCH] perf: make the breakpoint events sample period default to 1
+From: Jovi Zhang <bookjovi@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig24E792CD3F43AD76B41FE366
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+>From cb06e8f21d3875f4ffef46a7627dca88b2c74836 Mon Sep 17 00:00:00 2001
+From: Jovi Zhang <bookjovi@gmail.com>
+Date: Sun, 15 Jul 2012 03:03:10 +0800
+Subject: [PATCH] perf: make the breakpoint events sample period default to 1
 
-On 2012-07-14 13:16, Thomas Gleixner wrote:
-> On Sat, 14 Jul 2012, Jan Kiszka wrote:
->> On 2012-07-14 04:25, Thomas Gleixner wrote:
->> This patch here is a workaround to unbreak devices assignment in 3.5
->> after the IRQ layer changes without regressing noticeable /wrt overhea=
-d.
->=20
-> Yeah, workaround and regression are the proper marketing buzzwords to
-> excuse mindless hackery.
->=20
-> It took me a minute to figure out that there is no reason at all to
-> use a threaded interrupt handler for MSI and MSIX.
+There have one problem about hw_breakpoint perf event, as watched,
+the events reported to userspace is not correctly, sometime one
+trigger bp_event report several events, sometime bp_event cannot
+go through to user.
 
-Thomas, we also explained to you in the cited thread that your simple
-approach for this doesn't work as is. We will have a proper solution
-soon, but it takes a bit more than a minute - at least us.
+The root cause is attr->freq is 1 passed to kernel defaultly in
+bp events, this make kernel calculate event period not as expect,
+make sample period to 1 will change attr->freq to 0, to fix this problem.
 
-Jan
+This patch is similar with commit f92128 about tracepoint events:
+    perf: Make the trace events sample period default to 1
 
+Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
+---
+ tools/perf/util/parse-events.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---------------enig24E792CD3F43AD76B41FE366
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 05dbc8b..631aec6 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -592,6 +592,7 @@ int parse_events_add_breakpoint(struct list_head
+**list, int *idx,
+ 		attr.bp_len = HW_BREAKPOINT_LEN_4;
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.16 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+ 	attr.type = PERF_TYPE_BREAKPOINT;
++	attr.sample_period = 1;
 
-iEYEARECAAYFAlABVrYACgkQitSsb3rl5xSgSgCdGMVV5uZrCZaMFTwhwlq3Z+h8
-pXkAn2mBU4EHqWH9igxqdjDjGJQbMAPS
-=uVRM
------END PGP SIGNATURE-----
-
---------------enig24E792CD3F43AD76B41FE366--
+ 	snprintf(name, MAX_NAME_LEN, "mem:%p:%s", ptr, type ? type : "rw");
+ 	return add_event(list, idx, &attr, name);
+-- 
+1.7.9.7
