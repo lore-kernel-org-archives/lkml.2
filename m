@@ -1,85 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756115Ab2GNCTD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 22:19:03 -0400
-Received: from zfrontend2.aha.ru ([195.2.83.148]:45711 "EHLO aha.ru"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750745Ab2GNCTA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 22:19:00 -0400
-From: "werner" <w.landgraf@ru.ru>
-Subject: 3.5-rc6 fb hw inteldrmfb
-To: linux-kernel@vger.kernel.org
-X-Mailer: CommuniGate Pro WebUser Interface v.4.3.12
-Date: Fri, 13 Jul 2012 22:18:55 -0400
-Message-ID: <web-769686321@zbackend1.aha.ru>
+	id S1757279Ab2GNCZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 22:25:57 -0400
+Received: from www.linutronix.de ([62.245.132.108]:47201 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752411Ab2GNCZw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 22:25:52 -0400
+Date: Sat, 14 Jul 2012 04:25:49 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Avi Kivity <avi@redhat.com>, linux-kernel <linux-kernel@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>
+Subject: Re: [GIT PULL] KVM fixes for 3.5-rc6
+In-Reply-To: <alpine.LFD.2.02.1207131928000.32033@ionos>
+Message-ID: <alpine.LFD.2.02.1207140208270.32033@ionos>
+References: <4FFEBB39.8090308@redhat.com> <CA+55aFwAXbrQRKg_cJT04H_XnoEPjJ0O711C5uA6fRY35DVhKQ@mail.gmail.com> <CA+55aFy=ogfJu3WuoCCDseysxOOn_UEAnv_7Ldsa45VV7fMVPg@mail.gmail.com> <alpine.LFD.2.02.1207131928000.32033@ionos>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"; format="flowed"
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On a computer of someone else, on which today I tried to 
-install 3.5-rc6 (what on my computer and on an HP pavillon 
-laptop runs without problem - on the laptop however needs 
-ircpoll otherwhise don't find the harddisk), few seconds 
-after start booting it sticks and don't continue longer 
-(reboot not possible with Ctr-Alt-C but only pressing the 
-reboot button), the last message is:   "conflicting fb hw 
-usage inteldrmfb vs VESA VGA - removing generic driver" 
-        then the cursor stops blinking, and the computer 
-sticks.
-With 3.4 the same computer runs since weeks without 
-problems.  So, that's a regression.
+On Fri, 13 Jul 2012, Thomas Gleixner wrote:
+> On Fri, 13 Jul 2012, Linus Torvalds wrote:
+> > On Fri, Jul 13, 2012 at 8:45 AM, Linus Torvalds
+> > <torvalds@linux-foundation.org> wrote:
+> > At the same time, I do wonder if maybe MSI + IRQF_ONESHOT couldn't be
+> > improved. The fact that the KVM people think that the extra overhead
+> > of IRQF_ONESHOT is a bad thing for MSI interrupts makes me wonder if
+> > maybe this wouldn't be an area the irq layer couldn't be improved on.
+> > Maybe the MSI+IRQF_ONESHOT case could be improved. Because MSI is kind
+> > of fundamentally one-shot, since it's a message-based irq scheme.  So
+> > maybe the extra overhead is unnecessary in general, not just in this
+> > particular KVM case. Hmm?
+> > 
+> > Thomas, see the commentary of a76beb14123a ("KVM: Fix device
+> > assignment threaded irq handler").
+> 
+> Groan.
+> 
+> We already discussed to let the irq chip (in this case MSI) tell the
+> core that it does not need the extra oneshot handling. That way the
+> code which requests an threaded irq with the NULL primary handler
+> works on both MSI and normal interrupts.
 
-Inspection of syslog, messages, debug don't show anything 
-from this boot, it seems before the crash it hasn't nor 
-time to log something.
+That's the kind of stuff which makes me go berserk, and just for the
+record: the most complaints I get for going berserk are coming from
+the virt folks.
 
-Below is the lspci of that computer.
+I really can't understand why the virt folks think they are
+special and do not have to talk to core maintainers.
 
+Back then when I was doing the big irq cleanup, virt crap stood out by
+far with the most idiotic^Wcreative "workarounds". Of course nobody
+complained about me being moronic enough to come up with generic
+solutions for their problems.
 
-wl
+Though especially that commit including its changelog proves once
+again the ignorance and desinterest of the virt crowd in solving
+problems which are not only relevant to themself.
 
+I whish you'd just refused to pull that nonsense and instead made them
+talk to those folks who had a proper solution in mind already.
 
+In fact we could have solved that proper weeks ago, if only people
+would have raised the issue.
 
+I'm tired of that kind of crap, really.
 
-00:00.0 Host bridge: Intel Corporation 82945G/GZ/P/PL 
-Memory Controller Hub (rev 02)
-00:02.0 VGA compatible controller: Intel Corporation 
-82945G/GZ Integrated Graphics Controller (rev 02)
-00:1b.0 Audio device: Intel Corporation 82801G (ICH7 
-Family) High Definition Audio Controller (rev 01)
-00:1c.0 PCI bridge: Intel Corporation 82801G (ICH7 Family) 
-PCI Express Port 1 (rev 01)
-00:1c.1 PCI bridge: Intel Corporation 82801G (ICH7 Family) 
-PCI Express Port 2 (rev 01)
-00:1c.2 PCI bridge: Intel Corporation 82801G (ICH7 Family) 
-PCI Express Port 3 (rev 01)
-00:1c.3 PCI bridge: Intel Corporation 82801G (ICH7 Family) 
-PCI Express Port 4 (rev 01)
-00:1d.0 USB Controller: Intel Corporation 82801G (ICH7 
-Family) USB UHCI Controller #1 (rev 01)
-00:1d.1 USB Controller: Intel Corporation 82801G (ICH7 
-Family) USB UHCI Controller #2 (rev 01)
-00:1d.2 USB Controller: Intel Corporation 82801G (ICH7 
-Family) USB UHCI Controller #3 (rev 01)
-00:1d.3 USB Controller: Intel Corporation 82801G (ICH7 
-Family) USB UHCI Controller #4 (rev 01)
-00:1d.7 USB Controller: Intel Corporation 82801G (ICH7 
-Family) USB2 EHCI Controller (rev 01)
-00:1e.0 PCI bridge: Intel Corporation 82801 PCI Bridge 
-(rev e1)
-00:1f.0 ISA bridge: Intel Corporation 82801GB/GR (ICH7 
-Family) LPC Interface Bridge (rev 01)
-00:1f.1 IDE interface: Intel Corporation 82801G (ICH7 
-Family) IDE Controller (rev 01)
-00:1f.2 IDE interface: Intel Corporation 82801GB/GR/GH 
-(ICH7 Family) SATA IDE Controller (rev 01)
-00:1f.3 SMBus: Intel Corporation 82801G (ICH7 Family) 
-SMBus Controller (rev 01)
-05:00.0 Ethernet controller: Broadcom Corporation 
-NetXtreme BCM5751 Gigabit Ethernet PCI Express (rev 01)
-
----
-Professional hosting for everyone - http://www.host.ru
+    Thomas
