@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755219Ab2GNNAm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jul 2012 09:00:42 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:40693 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751545Ab2GNNAl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jul 2012 09:00:41 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] cpufreq fix for 3.5-rc7
-Date: Sat, 14 Jul 2012 15:06:18 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Thomas Renninger <trenn@suse.de>, Len Brown <lenb@kernel.org>
+	id S1753517Ab2GNNFN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jul 2012 09:05:13 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:53054 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751185Ab2GNNFL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jul 2012 09:05:11 -0400
+Date: Sat, 14 Jul 2012 14:05:10 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: wfg@linux.intel.com
+Cc: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Kernel boot hangs on commit "switch fput to task_work_add"
+Message-ID: <20120714130510.GC31729@ZenIV.linux.org.uk>
+References: <20120710141830.GA5385@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207141506.18345.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120710141830.GA5385@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Tue, Jul 10, 2012 at 10:18:30PM +0800, wfg@linux.intel.com wrote:
+> Hi Al,
+> 
+> The linux-next kernel reliably hung after this line:
+> 
+> [    4.846260] debug: unmapping init [mem 0xffff88000182a000-0xffff8800019fffff]
+> 
+> And it's bisected to commit:
+> 
+>         commit 4a9ffe81385c2af04f296bea05482f34e02ea10d
+>         Author: Al Viro <viro@zeniv.linux.org.uk>
+>         Date:   Sun Jun 24 09:56:45 2012 +0400
+> 
+>             switch fput to task_work_add
+> 
+>             ... and schedule_work() for interrupt/kernel_thread callers
+>             (and yes, now it *is* OK to call from interrupt).
+> 
+> I tried add this debug aid:
+> 
+> init_post(void):
+> +       printk(KERN_WARNING "flush_delayed_fput\n");
+>         flush_delayed_fput();
+> +       printk(KERN_WARNING "flush_delayed_fput done\n");
+> 
+> And then it hangs after "flush_delayed_fput done". So it's not directly
+> freezing inside flush_delayed_fput()..
 
-Please pull one cpufreq fix for 3.5-rc7 on top of commit
-bd0a521e88aa7a06ae7aabaed7ae196ed4ad867a:
-
-  Linux 3.5-rc6
-
-with commit hash c4686c71a9183f76e3ef59098da5c098748672f6
-
-  cpufreq / ACPI: Fix not loading acpi-cpufreq driver regression
-
-from the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git cpufreq-for-3.5-rc7
-
-It fixes a regression that prevents the ACPI cpufreq driver from loading
-on some systems where it previously worked without any problems.
-
-Thanks!
-
-
- drivers/acpi/processor_core.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
----------------
-
-Thomas Renninger (1):
-      cpufreq / ACPI: Fix not loading acpi-cpufreq driver regression
-
+Could you post a stack trace, etc.?  I'll try to reproduce that one, obviously,
+but...
