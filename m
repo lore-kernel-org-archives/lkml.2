@@ -1,40 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932224Ab2GNDXi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 23:23:38 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:57756 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757438Ab2GNDXh (ORCPT
+	id S1757727Ab2GNDdG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 23:33:06 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46664 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757123Ab2GNDdD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 23:23:37 -0400
+	Fri, 13 Jul 2012 23:33:03 -0400
+Date: Fri, 13 Jul 2012 20:30:55 -0700
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Saranya Gopal <saranya.gopal@intel.com>
+Cc: lars@metafoo.de, dwmw2@infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv4] bq27x00_battery: Add support for BQ27425 chip
+Message-ID: <20120714033055.GA20018@lizard>
+References: <1341549392-22170-1-git-send-email-saranya.gopal@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <web-769686321@zbackend1.aha.ru>
-References: <web-769686321@zbackend1.aha.ru>
-Date: Sat, 14 Jul 2012 13:23:36 +1000
-Message-ID: <CAPM=9twk-qPGgFYCSRrOfqFU2mMoNtjyuT5UR2gqdEAhnMcBHw@mail.gmail.com>
-Subject: Re: 3.5-rc6 fb hw inteldrmfb
-From: Dave Airlie <airlied@gmail.com>
-To: werner <w.landgraf@ru.ru>
-Cc: linux-kernel@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1341549392-22170-1-git-send-email-saranya.gopal@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cc'ing Daniel,
+On Fri, Jul 06, 2012 at 10:06:32AM +0530, Saranya Gopal wrote:
+> This patch adds support for BQ27425 (TI) chip. This chip is same as
+> BQ27500 with few registers removed and register address map changed.
+> The data sheet for this chip is publicly available at
+>  http://www.ti.com/product/bq27425-g1
+> 
+> Changes since v3:
+> 	Add bq27xxx as prefix for the newly added function.
+> 	Define SOC register address plus offset for bq27425 instead
+> 	   of register address alone to align with other register reads.
+> 
+> Signed-off-by: Saranya Gopal <saranya.gopal@intel.com>
+> ---
 
-On Sat, Jul 14, 2012 at 12:18 PM, werner <w.landgraf@ru.ru> wrote:
-> On a computer of someone else, on which today I tried to install 3.5-rc6
-> (what on my computer and on an HP pavillon laptop runs without problem - on
-> the laptop however needs ircpoll otherwhise don't find the harddisk), few
-> seconds after start booting it sticks and don't continue longer (reboot not
-> possible with Ctr-Alt-C but only pressing the reboot button), the last
-> message is:   "conflicting fb hw usage inteldrmfb vs VESA VGA - removing
-> generic driver"        then the cursor stops blinking, and the computer
-> sticks.
+Applied w/ Reviewed-by: Lars-Peter Clausen <lars@metafoo.de> tag.
 
-wierd, are you passing a vga= to the kernel? or is grub2 going graphical?
+Saranya, thanks for the patch! And much thanks to Lars-Peter for the
+review work!
 
-also the dmesg from 3.4 might be good.
+p.s.
+Saranya, one thing though: I had to fixup a small conflict in the
+patch since you seem to prepared the patch against Linus' tree, but
+there are some changes in the battery tree for this driver. Please
+check if I fixed the conflict in a proper way. :-)
 
-Dave.
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
