@@ -1,76 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757279Ab2GNCZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 22:25:57 -0400
-Received: from www.linutronix.de ([62.245.132.108]:47201 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752411Ab2GNCZw (ORCPT
+	id S1757589Ab2GNC04 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 22:26:56 -0400
+Received: from nm19-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.216]:29155 "HELO
+	nm19-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752832Ab2GNC0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 22:25:52 -0400
-Date: Sat, 14 Jul 2012 04:25:49 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Avi Kivity <avi@redhat.com>, linux-kernel <linux-kernel@vger.kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>
-Subject: Re: [GIT PULL] KVM fixes for 3.5-rc6
-In-Reply-To: <alpine.LFD.2.02.1207131928000.32033@ionos>
-Message-ID: <alpine.LFD.2.02.1207140208270.32033@ionos>
-References: <4FFEBB39.8090308@redhat.com> <CA+55aFwAXbrQRKg_cJT04H_XnoEPjJ0O711C5uA6fRY35DVhKQ@mail.gmail.com> <CA+55aFy=ogfJu3WuoCCDseysxOOn_UEAnv_7Ldsa45VV7fMVPg@mail.gmail.com> <alpine.LFD.2.02.1207131928000.32033@ionos>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Fri, 13 Jul 2012 22:26:54 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 377757.96094.bm@omp1063.mail.sp2.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:Cc:MIME-Version:Content-Type;
+  b=0t/yiEL87VDroVtMGmLxvuHabQij/7IQe4EO/T6ezZul6tld6mtMAkXljuklmjaWM2wu4pFlSUcp11Yb4bndjgBO+EsjUR1GoaHMQX45PmWw8YtzH1XjxSv2eAV5kSTmjSjKcyDz+eRNB55nJ8F7fPXUOQK5oRJ9chIL6NqdSx4=;
+X-YMail-OSG: p0WEZjEVM1mahEg7CWWpcm76nrPkkCV7_616yGD25YU7HrT
+ vE_QU0ywZH.Ji5J10PgPCoroa2hq9Km2I3o3GogYLoFDmBvJmfCIyd80KgG6
+ JqcrLHMqzv6FlAfBkQpCgbDUTH2xR5p5FZvcFtmljXOGr4XY4Unj3Aw7EeIW
+ nM3mri5V2lUhnK5UiAAzJzbBa480sQ4WH_H2pUjVcKE4A4LEdmertC1EDnr4
+ UfgcOaS2ZiXyIX9iqkBgDxnFrquKijiRMX725cXtFEn7M8ATXw1bkzmhX0kY
+ R9oqr0u9l.kA0MW90XLhezAA53HMpl.WigjWm9SRZS_Wujfrh6Eo684A_03p
+ eXqX4NA3NYg68P4AcU3Yl0JUQ1CY1IjHebWm5Tt0CAU.ftIFU2VD33WwHPof
+ tzVFD6rlpNriNrHFpdqwD3DsC0eD0aXr.x_L.9gOCBY5d9_4-
+X-Mailer: YahooMailWebService/0.8.120.356233
+Message-ID: <1342232813.26165.YahooMailNeo@web112006.mail.gq1.yahoo.com>
+Date: Fri, 13 Jul 2012 19:26:53 -0700 (PDT)
+From: Silva Paulo <psdasilva@yahoo.com>
+Reply-To: Silva Paulo <psdasilva@yahoo.com>
+Subject: Small bug: Wrong return check from idr_pre_get in loop.c
+To: "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: multipart/mixed; boundary="557386405-1590733054-1342232813=:26165"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Jul 2012, Thomas Gleixner wrote:
-> On Fri, 13 Jul 2012, Linus Torvalds wrote:
-> > On Fri, Jul 13, 2012 at 8:45 AM, Linus Torvalds
-> > <torvalds@linux-foundation.org> wrote:
-> > At the same time, I do wonder if maybe MSI + IRQF_ONESHOT couldn't be
-> > improved. The fact that the KVM people think that the extra overhead
-> > of IRQF_ONESHOT is a bad thing for MSI interrupts makes me wonder if
-> > maybe this wouldn't be an area the irq layer couldn't be improved on.
-> > Maybe the MSI+IRQF_ONESHOT case could be improved. Because MSI is kind
-> > of fundamentally one-shot, since it's a message-based irq scheme.  So
-> > maybe the extra overhead is unnecessary in general, not just in this
-> > particular KVM case. Hmm?
-> > 
-> > Thomas, see the commentary of a76beb14123a ("KVM: Fix device
-> > assignment threaded irq handler").
-> 
-> Groan.
-> 
-> We already discussed to let the irq chip (in this case MSI) tell the
-> core that it does not need the extra oneshot handling. That way the
-> code which requests an threaded irq with the NULL primary handler
-> works on both MSI and normal interrupts.
+--557386405-1590733054-1342232813=:26165
+Content-Type: text/plain; charset=us-ascii
 
-That's the kind of stuff which makes me go berserk, and just for the
-record: the most complaints I get for going berserk are coming from
-the virt folks.
+idr_pre_get never returns a value < 0. It returns 0 (no memory) or 1 (OK).
 
-I really can't understand why the virt folks think they are
-special and do not have to talk to core maintainers.
+Regards
 
-Back then when I was doing the big irq cleanup, virt crap stood out by
-far with the most idiotic^Wcreative "workarounds". Of course nobody
-complained about me being moronic enough to come up with generic
-solutions for their problems.
+--557386405-1590733054-1342232813=:26165
+Content-Type: application/octet-stream; name="My_linux-3.5-rc6_patches"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="My_linux-3.5-rc6_patches"
 
-Though especially that commit including its changelog proves once
-again the ignorance and desinterest of the virt crowd in solving
-problems which are not only relevant to themself.
+LS0tIGxpbnV4LTMuNS1yYzYvZHJpdmVycy9ibG9jay9sb29wLmMub3JpZwky
+MDEyLTA3LTA4IDAxOjIzOjU2LjAwMDAwMDAwMCArMDEwMAorKysgbGludXgt
+My41LXJjNi9kcml2ZXJzL2Jsb2NrL2xvb3AuYwkyMDEyLTA3LTEzIDE5OjQ1
+OjEwLjAwMDAwMDAwMCArMDEwMApAQCAtMTYwMyw5ICsxNjAzLDEwIEBAIHN0
+YXRpYyBpbnQgbG9vcF9hZGQoc3RydWN0IGxvb3BfZGV2aWNlICoKIAkJZ290
+byBvdXQ7CiAJfQogCi0JZXJyID0gaWRyX3ByZV9nZXQoJmxvb3BfaW5kZXhf
+aWRyLCBHRlBfS0VSTkVMKTsKLQlpZiAoZXJyIDwgMCkKKwlpZiAoaWRyX3By
+ZV9nZXQoJmxvb3BfaW5kZXhfaWRyLCBHRlBfS0VSTkVMKSA9PSAwKSB7CisJ
+CWVyciA9IC1FTk9NRU07CiAJCWdvdG8gb3V0X2ZyZWVfZGV2OworCX0KIAog
+CWlmIChpID49IDApIHsKIAkJaW50IG07Cg==
 
-I whish you'd just refused to pull that nonsense and instead made them
-talk to those folks who had a proper solution in mind already.
-
-In fact we could have solved that proper weeks ago, if only people
-would have raised the issue.
-
-I'm tired of that kind of crap, really.
-
-    Thomas
+--557386405-1590733054-1342232813=:26165--
