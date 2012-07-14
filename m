@@ -1,93 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753424Ab2GNNPq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jul 2012 09:15:46 -0400
-Received: from 1wt.eu ([62.212.114.60]:4730 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751621Ab2GNNPp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jul 2012 09:15:45 -0400
-Date: Sat, 14 Jul 2012 15:15:40 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Johannes Truschnigg <johannes@truschnigg.info>,
-        Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org,
-        Linux-Netdev <netdev@vger.kernel.org>
-Subject: Re: PROBLEM: Silent data corruption when using sendfile()
-Message-ID: <20120714131540.GQ16256@1wt.eu>
-References: <20120713171835.GA26052@vault.local> <CAJd=RBAntSubDBbJ292SzeoN4hTwBQ_Q23jt+Y6i-+vfrQ5EHQ@mail.gmail.com> <1342254042.3265.9017.camel@edumazet-glaptop> <20120714083136.GO16256@1wt.eu> <20120714101321.GA26329@vault.local> <1342262004.3265.9279.camel@edumazet-glaptop> <20120714104441.GP16256@1wt.eu> <1342263967.3265.9347.camel@edumazet-glaptop>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1342263967.3265.9347.camel@edumazet-glaptop>
-User-Agent: Mutt/1.4.2.3i
+	id S1753480Ab2GNNdd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jul 2012 09:33:33 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:64005 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752997Ab2GNNdc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jul 2012 09:33:32 -0400
+From: "G.Shark Jeong" <gshark.jeong@gmail.com>
+To: Bryan Wu <bryan.wu@canonical.com>, Richard Purdie <rpurdie@rpsys.net>
+Cc: Daniel Jeong <daniel.jeong@ti.com>, <linux-kernel@vger.kernel.org>,
+        "G.Shark Jeong" <gshark.jeong@gmail.com>
+Subject: [PATCH 0/1 v1] leds: Add LED driver for lm3554 chip
+Date: Sat, 14 Jul 2012 22:30:49 +0900
+Message-Id: <1342272650-5304-1-git-send-email-gshark.jeong@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 14, 2012 at 01:06:07PM +0200, Eric Dumazet wrote:
-> On Sat, 2012-07-14 at 12:44 +0200, Willy Tarreau wrote:
-> > On Sat, Jul 14, 2012 at 12:33:24PM +0200, Eric Dumazet wrote:
-> > > On Sat, 2012-07-14 at 12:13 +0200, Johannes Truschnigg wrote:
-> > > > On Sat, Jul 14, 2012 at 10:31:36AM +0200, Willy Tarreau wrote:
-> > > > > > Please Johannes could you try latest kernel tree ?
-> > > > > 
-> > > > > It would be useful, especially given the amount of changes you performed
-> > > > > in this area in latest version, it could be very possible that this new
-> > > > > bug got fixed as a side effect !
-> > > > 
-> > > > I upgraded to 3.4.4 (identical config as the 3.4.0 build I've been running)
-> > > > and what can I say - the problem really seems to have disappeared. I performed
-> > > > about 3700 iterations of my previos tests over the night, and the data always
-> > > > turned out to be OK, not a single byte turned out kaput!
-> > > > 
-> > > > I wish I would have tested that earlier, and spared you the noise... well,
-> > > > maybe someone who runs into a similar problem in the future will have this
-> > > > discovery save her/him some time and headaches and make her/him just upgrade
-> > > > kernels :)
-> > > > 
-> > > > Thanks a lot for your polite and quick responses!
-> > > > 
-> > > 
-> > > Nice to hear. Now we should make sure we have all needed fixes for prior
-> > > stable kernels as well !
-> > > 
-> > > Still trying to understand the issue, since I thought I only did
-> > > optimizations, not bug fixes. So maybe real bug is still there but its
-> > > probability of occurrence lowered enough to not hit your workload.
-> > 
-> > Please note that Johannes tested 3.4.4 while your changes are in 3.5-rc.
-> > 
-> > I'm wondering whether this patch merged into 3.4.2 one has an impact on
-> > sendfile :
-> > 
-> >   commit b642cb6a143da812f188307c2661c0357776a9d0
-> >   Author: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> >   Date:   Tue Jun 5 21:36:33 2012 +0400
-> > 
-> >     radix-tree: fix contiguous iterator
-> >     
-> >     commit fffaee365fded09f9ebf2db19066065fa54323c3 upstream.
-> >     
-> >     This patch fixes bug in macro radix_tree_for_each_contig().
-> >     
-> >     If radix_tree_next_slot() sees NULL in next slot it returns NULL, but following
-> >     radix_tree_next_chunk() switches iterating into next chunk. As result iterating
-> >     becomes non-contiguous and breaks vfs "splice" and all its users.
-> > 
-> > Willy
-> > 
-> 
-> 
-> Hmmm, this is supposed to fix a bug introduced in 3.4, no ?
-> 
-> So 3.3 kernel should work well ?
+From: "G.Shark Jeong" <gshark.jeong@gmail.com>
 
-You're right indeed. So maybe it's not the same bug. Or maybe Johannes
-was affected by two different bugs in both versions, since Thorsten's
-report seems to point the finger at the same bug.
+LM3554 :
+The LM3554 is a 2 MHz fixed-frequency synchronous boost
+converter with 1.2A dual high side led drivers.
+Datasheet: www.ti.com
 
-Johannes, are you certain that you were having the exact same issue
-with 3.3 ?
+G.Shark Jeong (1):
+  leds: Add LED driver for lm3554 chip
 
-Willy
+ drivers/leds/Kconfig                      |    8 +
+ drivers/leds/Makefile                     |    1 +
+ drivers/leds/leds-lm3554.c                |  324 +++++++++++++++++++++++++++++
+ include/linux/platform_data/leds-lm3554.h |   66 ++++++
+ 4 files changed, 399 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/leds/leds-lm3554.c
+ create mode 100644 include/linux/platform_data/leds-lm3554.h
+
+-- 
+1.7.5.4
 
