@@ -1,95 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754242Ab2GNFDw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jul 2012 01:03:52 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:43565 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751225Ab2GNFDu (ORCPT
+	id S1755816Ab2GNFHw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jul 2012 01:07:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49402 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753512Ab2GNFHu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jul 2012 01:03:50 -0400
-X-Greylist: delayed 386 seconds by postgrey-1.27 at vger.kernel.org; Sat, 14 Jul 2012 01:03:50 EDT
-User-Agent: Microsoft-Entourage/12.32.0.111121
-Date: Sat, 14 Jul 2012 05:54:50 +0100
-Subject: Re: [Xen-devel] incorrect layout of globals from head_64.S during
- kexec boot
-From: Keir Fraser <keir.xen@gmail.com>
-To: Olaf Hering <olaf@aepfle.de>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jan Beulich <JBeulich@suse.com>, <xen-devel@lists.xensource.com>,
-        <kexec@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Daniel Kiper <dkiper@net-space.pl>
-Message-ID: <CC26BA2A.38974%keir.xen@gmail.com>
-Thread-Topic: [Xen-devel] incorrect layout of globals from head_64.S during
- kexec boot
-Thread-Index: Ac1hfMyYDbeibvtAt0KKiCxOB69fbQ==
-In-Reply-To: <20120713202003.GA20972@aepfle.de>
-Mime-version: 1.0
-Content-type: text/plain;
-	charset="US-ASCII"
-Content-transfer-encoding: 7bit
+	Sat, 14 Jul 2012 01:07:50 -0400
+Date: Fri, 13 Jul 2012 22:07:41 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, joshhunt00@gmail.com, axboe@kernel.dk,
+        rni@google.com, vgoyal@redhat.com, vwadekar@nvidia.com,
+        herbert@gondor.hengli.com.au, davem@davemloft.net,
+        linux-crypto@vger.kernel.org, swhiteho@redhat.com, bpm@sgi.com,
+        elder@kernel.org, xfs@oss.sgi.com, marcel@holtmann.org,
+        gustavo@padovan.org, johan.hedberg@gmail.com,
+        linux-bluetooth@vger.kernel.org, martin.petersen@oracle.com
+Subject: Re: [PATCH 5/6] workqueue: introduce NR_WORKER_POOLS and
+ for_each_worker_pool()
+Message-ID: <20120714050741.GB7718@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <1341859315-17759-1-git-send-email-tj@kernel.org>
+ <1341859315-17759-6-git-send-email-tj@kernel.org>
+ <20120714035538.GB5638@dhcp-172-17-108-109.mtv.corp.google.com>
+ <CA+55aFyeauqCqrWsx4U2TB2ENrugZXYj+4vw3Fd0kGaeWBP3RA@mail.gmail.com>
+ <20120714044438.GA7718@dhcp-172-17-108-109.mtv.corp.google.com>
+ <CA+55aFyozbYJh4vRLCCkk5j86XEasngvWkKmL4WpBjiCB5050g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFyozbYJh4vRLCCkk5j86XEasngvWkKmL4WpBjiCB5050g@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/07/2012 21:20, "Olaf Hering" <olaf@aepfle.de> wrote:
+Hey, Linus.
 
-> On Tue, Jul 10, Keir Fraser wrote:
+On Fri, Jul 13, 2012 at 10:00:10PM -0700, Linus Torvalds wrote:
+> On Fri, Jul 13, 2012 at 9:44 PM, Tejun Heo <tj@kernel.org> wrote:
+> >
+> > nr_running is atomic_t (*nr_running)[2].  Ignoring the pointer to
+> > array part, it's just returning the address of N'th element of the
+> > array.  ARRAY + N == &ARRAY[N].
 > 
->> On 10/07/2012 19:09, "Olaf Hering" <olaf@aepfle.de> wrote:
->>> I'm not sure, most likely the gfn will just disappear from the guest,
->>> like a ballooned page disappears. Accessing it will likely cause a
->>> crash.
->> 
->> Best thing to do, is possible, is map the shared-info page in the
->> xen-platform pci device's BAR memory range. Then it will not conflict with
->> any RAM.
->> 
->> If you do map it over the top of an existing RAM page, you will have to
->> repopulate that RAM page before kexec, using populate_physmap hypercall. The
->> good news is that the populate_physmap hypercall will have the side effect
->> of unmapping the shared-info page, reayd to be mapped wherever the new
->> kernel would like it to reside :)
+> None of this matters one whit.
 > 
-> Keir,
+> You did "&(x)[0]".
 > 
-> is this a safe thing to do in a SMP guest?
-> If arch/x86/xen/enlighten.c:xen_hvm_init_shared_info() allocates a page
-> (backed by mfn M and pfn A) and assigns *HYPERVISOR_shared_info and
-> *xen_vcpu then everything will reference these pointers.
+> That's insane. It's crazy. It doesn't even matter what "x" is in
+> between, it's crazy regardless.
 
-So pfn A now points at shared_info, and mfn M is lost (freed back to Xen).
-Xen_vcpu doesn't come into it, you'd have that mapped at yet another pfn.
+Eh, from my previous reply.
 
-> If drivers/xen/platform-pci.c:platform_pci_init would also do a
-> XENMAPSPACE_shared_info call with pfn B, isnt there a small window where
-> pfn A is not backed by a mfn because mfn M is now connected to pfn C? As
-> a result other code paths which access *HYPERVISOR_shared_info and
-> *xen_vcpu between the hypercall and the update of the pointers will read
-> 0xff.
+| Ah okay, you're looking at the fifth patch in isolation.  Upto this
+| point, the index is always 0.  I'm puttin it in as a placeholder for
+| the next patch which makes use of non-zero index.  This patch is
+| supposed to prepare everything for multiple pools and thus non-zero
+| index.
 
-Don't really understand this. After the XENMAPSPACE_shared_info_call:
- * PFN B points at shared_info, mfn M_B it previously mapped is lost (freed
-back to Xen).
- * PFN A maps nothing, reads return all-1s.
+The patch is about converting stuff to handle size-1 array without
+introducing any actual behavior change so that the next patch can bump
+the array size and just change the index.
 
-Yes, obviously you can't atomically update the mapping of shinfo from A->B,
-ad update your pointer in the kernel at exactly the same time. Presumably
-you do this early during boot, or late during kexec, or otherwise at a time
-when other processors are not expected to touch shinfo.
+Thanks.
 
-> 
-> If I read the hypercall code of XENMEM_add_to_physmap correctly the mfn
-> backing *HYPERVISOR_shared_info will remain the same, so there is no need
-> to copy data from the old to the new *HYPERVISOR_shared_info.
-
-That is correct.
-
-> What do you think, is that race real?
-
-I suppose it is. I didn't imagine it would be a troublesome one though.
-
- -- Keir
-
-> Olaf
-
-
+-- 
+tejun
