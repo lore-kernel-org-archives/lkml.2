@@ -1,91 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754221Ab2GNFAI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jul 2012 01:00:08 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:36648 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751453Ab2GNFAF (ORCPT
+	id S1756019Ab2GNFBK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jul 2012 01:01:10 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:64949 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754872Ab2GNFAc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jul 2012 01:00:05 -0400
-Message-ID: <5000FCD1.70408@gmail.com>
-Date: Sat, 14 Jul 2012 00:00:01 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Sat, 14 Jul 2012 01:00:32 -0400
 MIME-Version: 1.0
-To: Sebastian Hesselbarh <sebastian.hesselbarth@googlemail.com>
-CC: Grant Likely <grant.likely@secretlab.ca>, Rob Landley <rob@landley.net>,
-        Mike Turquette <mturquette@ti.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RESEND PATCH 1/1] clk: add DT support for clock gating control
-References: <4FFE7979.4060000@googlemail.com> <4FFEBF8A.1020700@gmail.com> <4FFECC4E.4070001@googlemail.com> <4FFF93DC.30103@gmail.com> <4FFFED7C.9050406@googlemail.com>
-In-Reply-To: <4FFFED7C.9050406@googlemail.com>
+In-Reply-To: <20120714044438.GA7718@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <1341859315-17759-1-git-send-email-tj@kernel.org>
+ <1341859315-17759-6-git-send-email-tj@kernel.org> <20120714035538.GB5638@dhcp-172-17-108-109.mtv.corp.google.com>
+ <CA+55aFyeauqCqrWsx4U2TB2ENrugZXYj+4vw3Fd0kGaeWBP3RA@mail.gmail.com> <20120714044438.GA7718@dhcp-172-17-108-109.mtv.corp.google.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 13 Jul 2012 22:00:10 -0700
+X-Google-Sender-Auth: 7Ql3sfWOnEiltgGxNc0v2ixFBcc
+Message-ID: <CA+55aFyozbYJh4vRLCCkk5j86XEasngvWkKmL4WpBjiCB5050g@mail.gmail.com>
+Subject: Re: [PATCH 5/6] workqueue: introduce NR_WORKER_POOLS and for_each_worker_pool()
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, joshhunt00@gmail.com, axboe@kernel.dk,
+        rni@google.com, vgoyal@redhat.com, vwadekar@nvidia.com,
+        herbert@gondor.hengli.com.au, davem@davemloft.net,
+        linux-crypto@vger.kernel.org, swhiteho@redhat.com, bpm@sgi.com,
+        elder@kernel.org, xfs@oss.sgi.com, marcel@holtmann.org,
+        gustavo@padovan.org, johan.hedberg@gmail.com,
+        linux-bluetooth@vger.kernel.org, martin.petersen@oracle.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/13/2012 04:42 AM, Sebastian Hesselbarh wrote:
-> On 07/13/2012 05:19 AM, Rob Herring wrote:
->> What's implemented in Linux should not define the binding. The binding
->> should describe the hardware.
->> [...]
->> True, but not your problem to implement. A binding doesn't necessarily
->> mean there is a full Linux implementation. We just don't want to create
->> something only to find others need something completely different.
-> 
-> Ok, what about a DT describing the following for a simple register-based
-> clock gating controller and the corresponding gated-clock independent of
-> the controller. I am sure there are a bunch of SoCs out there that
-> control their clock gates by writing some bits to a register. If that
-> DT description matches your expectations, I ll prepare patches with
-> documentation and implementation for common clock framework.
-> 
+On Fri, Jul 13, 2012 at 9:44 PM, Tejun Heo <tj@kernel.org> wrote:
+>
+> nr_running is atomic_t (*nr_running)[2].  Ignoring the pointer to
+> array part, it's just returning the address of N'th element of the
+> array.  ARRAY + N == &ARRAY[N].
 
-Clock gates are just 1 part. There's muxes, dividers, plls, etc. I'm not
-convinced that it makes sense to define clocks at this level. For
-complex chips, I think just defining the chips clock controller module
-as a single node with lots of clock outputs. The primary need is to
-describe board specific changes not SOC level clock tree. Much of it is
-static and generally only a few clocks may change config board to board.
+None of this matters one whit.
 
-> Sebastian
-> 
-> -- 
->  /* Simple clock gating controller based on bitmasks and register */
-> cgc: clock-gating-control@f1000000 {
->   compatible = "clock-gating-control-register";
->   reg = <0xf1000000 0x4>;
-> 
->   /* Clock gating control with one bit at bit position 0
->      enable with (1<<0), disable with (0<<0) */
->   cgctrl_usb0: cgc_usb0 {
->     clock-gating-control,shift = <0>;
->     clock-gating-control,mask = <1>;
->     clock-gating-control,enable = <1>;
->     clock-gating-control,disable = <0>;
->   };
-> 
->   /* Clock gating control with two bits at bit position 1-2
->      enable with (2<<1), disable with (0<<1) */
->   cgctrl_sata: cgc_sata {
->     clock-gating-control,shift = <1>;
->     clock-gating-control,mask = <3>;
->     clock-gating-control,enable = <2>;
->     clock-gating-control,disable = <0>;
->   };
-> };
-> 
-> /* Generic clock gate description that can be used with
->    any clock gating controller */
-> cg_usb0: clockgate@0 {
->   compatible = "gated-clock";
->   #clock-cells = <0>;
->   clocks = <&osc>;
->   clock-gate-control = <&cgctrl_usb0>;
-> };
+You did "&(x)[0]".
 
-I don't see this scaling to ~50 clocks.
+That's insane. It's crazy. It doesn't even matter what "x" is in
+between, it's crazy regardless.
 
-Rob
+It's just a really confused way of saying "x" (*). Except it makes the
+code look like an insane monkey on crack got a-hold of your keyboard
+when you weren't looking.
+
+And to make it worse, "x" itself was the result of doing "*&y". Which
+was probably written by the insane monkey's older brother, Max, who
+has been chewing Quaaludes for a few years, and as a result _his_
+brain really isn't doing too well either. Even for a monkey. And now
+you're letting *him* at your keyboard too?
+
+So you had two separately (but similarly) insane ways of complicating
+the code so that it was really obfuscated. When it really just
+computed "y" to begin with, it just added all those "x=*&y" and
+"&(x)[0]" games around it to make it look complicated.
+
+            Linus
+
+(*) Technically, "&(x)[0]" is actually a really confused way of saying
+"(x+0)" while making sure that "x" was a valid pointer. It basically
+guarantees that if "x" started out as an array, it has now been
+demoted to a pointer - but since arrays will be demoted to pointers by
+pretty much any subsequent operation except for "sizeof()" and a
+couple of other special cases anyway, you can pretty much just say
+that "&(x)[0]" is "(x+0)" is "x".
+
+And "*&y" really is exactly the same as "y", except for again some
+syntactic checking (ie it is basically an odd way to verify that "y"
+is an lvalue, since you cannot do an address-of of a non-lvalue).
