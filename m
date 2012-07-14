@@ -1,62 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753818Ab2GNOfN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jul 2012 10:35:13 -0400
-Received: from mga01.intel.com ([192.55.52.88]:30939 "EHLO mga01.intel.com"
+	id S1754003Ab2GNO4u (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jul 2012 10:56:50 -0400
+Received: from 1wt.eu ([62.212.114.60]:4740 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752389Ab2GNOfH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jul 2012 10:35:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="177324168"
-Date: Sat, 14 Jul 2012 22:34:59 +0800
-From: Fengguang Wu <wfg@linux.intel.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Kernel boot hangs on commit "switch fput to task_work_add"
-Message-ID: <20120714143459.GA1544@localhost>
-References: <20120710141830.GA5385@localhost>
- <20120714130510.GC31729@ZenIV.linux.org.uk>
- <20120714134849.GA1175@localhost>
- <20120714135849.GA1257@localhost>
- <20120714141415.GD31729@ZenIV.linux.org.uk>
-MIME-Version: 1.0
+	id S1750790Ab2GNO4o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jul 2012 10:56:44 -0400
+Date: Sat, 14 Jul 2012 16:56:36 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Hillf Danton <dhillf@gmail.com>,
+        Johannes Truschnigg <johannes@truschnigg.info>,
+        linux-kernel@vger.kernel.org, Linux-Netdev <netdev@vger.kernel.org>
+Subject: Re: PROBLEM: Silent data corruption when using sendfile()
+Message-ID: <20120714145636.GS16256@1wt.eu>
+References: <20120713171835.GA26052@vault.local> <CAJd=RBAntSubDBbJ292SzeoN4hTwBQ_Q23jt+Y6i-+vfrQ5EHQ@mail.gmail.com> <1342254042.3265.9017.camel@edumazet-glaptop> <CAJd=RBAJOqJDSBpaaB+2-WU_pa5vChXSf6TbLH8fi3HNt6hZ9w@mail.gmail.com> <1342275540.3265.9760.camel@edumazet-glaptop>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120714141415.GD31729@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1342275540.3265.9760.camel@edumazet-glaptop>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 14, 2012 at 03:14:15PM +0100, Al Viro wrote:
-> On Sat, Jul 14, 2012 at 09:58:49PM +0800, Fengguang Wu wrote:
-> > > Hi Al, here I got the output for
-> > > 
-> > > (qemu) sendkey alt-sysrq-l
-> > > (qemu) sendkey alt-sysrq-t
-> > 
-> > I repeated that several times and here are the results.
-> > 
-> > (qemu) sendkey alt-sysrq-l
-> > (qemu) sendkey alt-sysrq-l
-> > (qemu) sendkey alt-sysrq-l
-> > (qemu) sendkey alt-sysrq-t
-> > (qemu) sendkey alt-sysrq-t
-> > (qemu) quit
-> > 
-> > The user space shutdown is polling on something, which prevents the
-> > system from reboot..
+On Sat, Jul 14, 2012 at 04:19:00PM +0200, Eric Dumazet wrote:
+> On Sat, 2012-07-14 at 22:08 +0800, Hillf Danton wrote:
+> > On Sat, Jul 14, 2012 at 4:20 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> > >
+> > > Might be, or not (could be a NIC bug)
+> > >
+> > Dunno why sendfile sits in the layer of NIC and
+> > how they interact.
 > 
-> Which userland it is?
+> sendfile() relies heavily on TSO capabilities, a buggy NIC could
+> corrupt frame content on some obscure occasions.
+> 
+> We had some known cases on IPv6 for example.
 
-It's a customized ubuntu core. The original tgz image is downloaded
-here, however it's not directly usable as initrd.. Should I send my
-hacked one?
+Similarly I remind having experienced bugs on early Yukon chips years
+ago that would regularly emit total crap on the wire.
 
-24M     quantal-core-x86_64.cgz
+Willy
 
-http://cdimage.ubuntu.com/ubuntu-core/releases/quantal/alpha-2/
-
-Thanks,
-Fengguang
