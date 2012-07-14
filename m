@@ -1,127 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755108Ab2GNLA2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jul 2012 07:00:28 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:42849 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752935Ab2GNLA1 (ORCPT
+	id S1756430Ab2GNLB0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jul 2012 07:01:26 -0400
+Received: from science.horizon.com ([71.41.210.146]:16957 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755307Ab2GNLBQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jul 2012 07:00:27 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX19J+KVsfDxJYBlLXC7D99B/YpLGH4IJtXizjeoLT/
-	q93KVsapnQytIl
-Message-ID: <1342263621.7368.36.camel@marge.simpson.net>
-Subject: Re: Deadlocks due to per-process plugging
-From: Mike Galbraith <efault@gmx.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Jan Kara <jack@suse.cz>, Jeff Moyer <jmoyer@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Jens Axboe <jaxboe@fusionio.com>,
-        mgalbraith@suse.com
-Date: Sat, 14 Jul 2012 13:00:21 +0200
-In-Reply-To: <alpine.LFD.2.02.1207131444490.32033@ionos>
-References: <20120711133735.GA8122@quack.suse.cz>
-	 <x49ehoii8ps.fsf@segfault.boston.devel.redhat.com>
-	 <20120711201601.GB9779@quack.suse.cz>
-	 <alpine.LFD.2.02.1207121552111.32033@ionos>
-	 <20120713123318.GB20361@quack.suse.cz>
-	 <alpine.LFD.2.02.1207131444490.32033@ionos>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	Sat, 14 Jul 2012 07:01:16 -0400
+Date: 14 Jul 2012 07:01:14 -0400
+Message-ID: <20120714110114.31895.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: dmitry.torokhov@gmail.com, dtor@mail.ru, linux-input@vger.kernel.org
+Subject: [REPOST #2 PATCH v2] Input: atkbd - make repeat period more accurate.
+Cc: linux-kernel@vger.kernel.org, linux@horizon.com
+In-Reply-To: <20120701083608.9889.qmail@science.horizon.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have your patch burning on my 64 core rt box.  If it survives the
-weekend, you should be able to replace my jbd hack with your fix..
+This replaces some inaccurate lookup tables with an exact
+computation.  Although the diff adds source comments,
+it shrinks binary size.  (By only 50 bytes, but hey.)
 
-Tested-by: Mike Galbraith <mgalbraith@suse.de>
+AT keyboard repeat rates are multiples of 1/240 second
+expressed in a 0.2.3 bit floating point format.  That
+is, possible values are ({8..15} << {0..3}) / 240 s.
 
-..so here, one each chop in advance.  It wouldn't dare work ;-)
+In addition to a slightly inaccurate lookup table, the
+old code would round up to the next repeat period.
+E.g. to get a period of 9/60 = 0.15 seconds, you had to
+ask for no more than 149 ms; if you asked for 150, it
+would round up to 167.  The new code rounds to nearest.
 
-On Fri, 2012-07-13 at 16:25 +0200, Thomas Gleixner wrote: 
-> On Fri, 13 Jul 2012, Jan Kara wrote:
-> > On Thu 12-07-12 16:15:29, Thomas Gleixner wrote:
-> > > >   Ah, I didn't know this. Thanks for the hint. So in the kdump I have I can
-> > > > see requests queued in tsk->plug despite the process is sleeping in
-> > > > TASK_UNINTERRUPTIBLE state.  So the only way how unplug could have been
-> > > > omitted is if tsk_is_pi_blocked() was true. Rummaging through the dump...
-> > > > indeed task has pi_blocked_on = 0xffff8802717d79c8. The dump is from an -rt
-> > > > kernel (I just didn't originally thought that makes any difference) so
-> > > > actually any mutex is rtmutex and thus tsk_is_pi_blocked() is true whenever
-> > > > we are sleeping on a mutex. So this seems like a bug in rtmutex code.
-> > > 
-> > > Well, the reason why this check is there is that the task which is
-> > > blocked on a lock can hold another lock which might cause a deadlock
-> > > in the flush path.
-> >   OK. Let me understand the details. Block layer needs just queue_lock for
-> > unplug to succeed. That is a spinlock but in RT kernel, even a process
-> > holding a spinlock can be preempted if I remember correctly. So that
-> > condition is there effectively to not unplug when a task is being scheduled
-> > away while holding queue_lock? Did I get it right?
-> 
-> blk_flush_plug_list() is not only queue_lock. There can be other locks
-> taken in the callbacks, elevator ...
-> 
-> > > > Thomas, you seemed to have added that condition... Any idea how to avoid
-> > > > the deadlock?
-> > > 
-> > > Good question. We could do the flush when the blocked task does not
-> > > hold a lock itself. Might be worth a try.
-> >   Yeah, that should work for avoiding the deadlock as well.
-> 
-> Though we don't have a lock held count except when lockdep is enabled,
-> which you probably don't want to do when running a production system.
-> 
-> But we only care about stuff being scheduled out while blocked on a
-> "sleeping spinlock" - i.e. spinlock, rwlock.
-> 
-> So the patch below should allow the unplug to take place when blocked
-> on mutexes etc.
-> 
-> Thanks,
-> 
-> 	tglx
-> ----
-> Index: linux-stable-rt/include/linux/sched.h
-> ===================================================================
-> --- linux-stable-rt.orig/include/linux/sched.h
-> +++ linux-stable-rt/include/linux/sched.h
-> @@ -2145,9 +2145,10 @@ extern unsigned int sysctl_sched_cfs_ban
->  extern int rt_mutex_getprio(struct task_struct *p);
->  extern void rt_mutex_setprio(struct task_struct *p, int prio);
->  extern void rt_mutex_adjust_pi(struct task_struct *p);
-> +extern bool pi_blocked_on_rt_lock(struct task_struct *tsk);
->  static inline bool tsk_is_pi_blocked(struct task_struct *tsk)
->  {
-> -	return tsk->pi_blocked_on != NULL;
-> +	return tsk->pi_blocked_on != NULL && pi_blocked_on_rt_lock(tsk);
->  }
->  #else
->  static inline int rt_mutex_getprio(struct task_struct *p)
-> Index: linux-stable-rt/kernel/rtmutex.c
-> ===================================================================
-> --- linux-stable-rt.orig/kernel/rtmutex.c
-> +++ linux-stable-rt/kernel/rtmutex.c
-> @@ -699,6 +699,11 @@ static int adaptive_wait(struct rt_mutex
->  # define pi_lock(lock)			raw_spin_lock_irq(lock)
->  # define pi_unlock(lock)		raw_spin_unlock_irq(lock)
->  
-> +bool pi_blocked_on_rt_lock(struct task_struct *tsk)
-> +{
-> +	return tsk->pi_blocked_on && tsk->pi_blocked_on->savestate;
-> +}
-> +
->  /*
->   * Slow path lock function spin_lock style: this variant is very
->   * careful not to miss any non-lock wakeups.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+User-visible changes to the repeat periods reported by EVIOCGREP:
+
+Old	 37	109	116	149	182	232
+Exact	 37.50	108.33	116.66	150.00	183.33	233.33
+New	 38	108	117	150	183	233
+
+Old	270	303	370	435	470
+Exact	266.66	300.00	366.66	433.33	466.66
+New	267	300	367	433	467
+
+This does not bother utilities like kbdrate(8).
+
+Signed-off-by: George Spelvin <linux@horizon.com>
+---
+ drivers/input/keyboard/atkbd.c |   47 +++++++++++++++++++++++++++++++----------------
+ 1 file changed, 31 insertions(+), 16 deletions(-)
+
+Posted once 7 weeks ago and again 2 weeks ago.
+So far, feedback has been crickets.
+Since 3.5 is coming to a close and the 3.6 merge window is about
+to open, I'd like to solicit *some* feedback of any sort with
+increased urgency.
+
+
+Now that I've tweaked it (v1 had an error in rounding near exponent
+range boundaries), I think it's ready for merging upstream.
+
+
+One possible bug I observed in the code that calls this:
+
+Users of the KDKBDREP ioctl seem to assume that it returns the actual
+values set, but I'm not sure it really works that way; I don't think
+the command to change the parameters makes its way through the event
+queue and atkbd's schedule_delayed_work() to actually set dev->rep[]
+to the rounded values before kbd_rate_helper returns them to userspace.
+
+If desired, the fix that's most obvious to me would be to split this
+function in two: perform the conversion to a command byte synchronously,
+and only defer the actual ps2_command().
+
+diff --git a/drivers/input/keyboard/atkbd.c b/drivers/input/keyboard/atkbd.c
+index e05a2e7..3181b86 100644
+--- a/drivers/input/keyboard/atkbd.c
++++ b/drivers/input/keyboard/atkbd.c
+@@ -524,27 +524,42 @@ out:
+ 	return IRQ_HANDLED;
+ }
+ 
++/*
++ * AT keyboard repeat rates are set using a 2-bit initial repeat delay
++ * (250, 500, 750 or 1000 ms), and a 5-bit repeat period.  The latter
++ * is a 0.2.3-bit floating-point number (no sign, 2-bit exponent, and
++ * 3-bit mantissa), encoding a value from 8/240 to 120/240 of second.
++ *
++ * Given the requested delay and period in milliseconds, round to the
++ * nearest representable value, and convert the rounded values back to
++ * milliseconds to report the chosen values.
++ */
+ static int atkbd_set_repeat_rate(struct atkbd *atkbd)
+ {
+-	const short period[32] =
+-		{ 33,  37,  42,  46,  50,  54,  58,  63,  67,  75,  83,  92, 100, 109, 116, 125,
+-		 133, 149, 167, 182, 200, 217, 232, 250, 270, 303, 333, 370, 400, 435, 470, 500 };
+-	const short delay[4] =
+-		{ 250, 500, 750, 1000 };
+-
+ 	struct input_dev *dev = atkbd->dev;
+ 	unsigned char param;
+-	int i = 0, j = 0;
+-
+-	while (i < ARRAY_SIZE(period) - 1 && period[i] < dev->rep[REP_PERIOD])
+-		i++;
+-	dev->rep[REP_PERIOD] = period[i];
+-
+-	while (j < ARRAY_SIZE(delay) - 1 && delay[j] < dev->rep[REP_DELAY])
+-		j++;
+-	dev->rep[REP_DELAY] = delay[j];
++	unsigned exp = 3;	/* Period exponent */
++	int period;		/* Period mantissa */
++	int delay = clamp(dev->rep[REP_DELAY], 125, 1000);
++
++	/* AT kbd delay is {1..4} * 250 ms.  Round to 2 bits. */
++	delay = (delay + 125) / 250u;
++	/* Store actual value back */
++	dev->rep[REP_DELAY] = delay * 250;
++
++	/* AT kbd period is ({8..15} << {0..3}) / 240 s. */
++	period = clamp(dev->rep[REP_PERIOD], 33, 500);
++	/* Get correct exponent.  Split is at 258.333 ms */
++	while (period < 259) {
++		period <<= 1;
++		exp--;
++	}
++	/* Convert from 259..516 ms to 8..15 30ths of a second */
++	period = (period * 3 + 50) / 100u;
++	/* Store actual value back.  x * 1000 / 240 = x * 25 / 6 */
++	dev->rep[REP_PERIOD] = ((period << exp) * 25 + 3) / 6u;
+ 
+-	param = i | (j << 5);
++	param = (delay - 1) << 5 | exp << 3 | (period - 8);
+ 	return ps2_command(&atkbd->ps2dev, &param, ATKBD_CMD_SETREP);
+ }
+ 
 
 
