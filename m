@@ -1,116 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754169Ab2GNWiS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jul 2012 18:38:18 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:58646 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752229Ab2GNWiK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jul 2012 18:38:10 -0400
-Message-ID: <1342305489.8377.47.camel@joe2Laptop>
-Subject: Re: [PATCH 2/3] x86/mm: Simplify for-loop in free_init_pages()
-From: Joe Perches <joe@perches.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Yinghai Lu <yinghai@kernel.org>, mingo@kernel.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        Tejun Heo <tj@kernel.org>
-Date: Sat, 14 Jul 2012 15:38:09 -0700
-In-Reply-To: <CAOJsxLEU=Ls1XtS0nndmJrvAObHuaasHBu8=7iFbjYVBX8g=Ng@mail.gmail.com>
-References: <1342273267-2108-1-git-send-email-penberg@kernel.org>
-	 <1342273267-2108-2-git-send-email-penberg@kernel.org>
-	 <CAE9FiQUJNaRzBBF02RdSTQgAcMgJOLJDo7ukFaM_3RCa8NS-mA@mail.gmail.com>
-	 <1342298616.8377.37.camel@joe2Laptop>
-	 <CAOJsxLEU=Ls1XtS0nndmJrvAObHuaasHBu8=7iFbjYVBX8g=Ng@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752588Ab2GNXEa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jul 2012 19:04:30 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:49506 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750839Ab2GNXE0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jul 2012 19:04:26 -0400
+MIME-Version: 1.0
+In-Reply-To: <426367E2313C2449837CD2DE46E7EAF9223B7004@SN2PRD0310MB382.namprd03.prod.outlook.com>
+References: <1342297930-12607-1-git-send-email-kys@microsoft.com>
+	<1342298060-12662-1-git-send-email-kys@microsoft.com>
+	<1342298060-12662-12-git-send-email-kys@microsoft.com>
+	<CAFLxGvxkidfN+o8yFsmGm8-YhT4Q5dgzQOAJJXnM=nXoXVpqTA@mail.gmail.com>
+	<426367E2313C2449837CD2DE46E7EAF9223B7004@SN2PRD0310MB382.namprd03.prod.outlook.com>
+Date: Sun, 15 Jul 2012 01:04:24 +0200
+Message-ID: <CAFLxGvxHPMP+1p5XBJgh_Y=2E7DGtrTKf6Vu8uJuqwv=eSSVjA@mail.gmail.com>
+Subject: Re: [PATCH 12/15] Tools: hv: Gather DHCP information
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-07-14 at 23:48 +0300, Pekka Enberg wrote:
-> On Sat, Jul 14, 2012 at 11:43 PM, Joe Perches <joe@perches.com> wrote:
-> > On Sat, 2012-07-14 at 13:36 -0700, Yinghai Lu wrote:
-> >> On Sat, Jul 14, 2012 at 6:41 AM, Pekka Enberg <penberg@kernel.org> wrote:
-> >> > As a cleanup, move initial "addr" assignment to the for-loop construct
-> >> > in free_init_pages().
-> >
-> > Not really a good idea.
-> 
-> Of course it's a good idea. The current code flow makes no sense.
-> 
-> >> > diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-> > []
-> >> > @@ -349,8 +349,6 @@ void free_init_pages(char *what, unsigned long begin, unsigned long end)
-> >> >         if (begin >= end)
-> >> >                 return;
-> >> >
-> >> > -       addr = begin;
-> >> > -
-> >> >         /*
-> >> >          * If debugging page accesses then do not free this memory but
-> >> >          * mark them not present - any buggy init-section access will
-> >> > @@ -371,7 +369,7 @@ void free_init_pages(char *what, unsigned long begin, unsigned long end)
-> >> >
-> >> >         printk(KERN_INFO "Freeing %s: %luk freed\n", what, (end - begin) >> 10);
-> >> >
-> >> > -       for (; addr < end; addr += PAGE_SIZE) {
-> >> > +       for (addr = begin; addr < end; addr += PAGE_SIZE) {
-> >> >                 ClearPageReserved(virt_to_page(addr));
-> >> >                 init_page_count(virt_to_page(addr));
-> >> >                 memset((void *)addr, POISON_FREE_INITMEM, PAGE_SIZE);
-> >> > --
-> >
-> > Now there's an unused variable warning when CONFIG_DEBUG_PAGEALLOC
-> 
-> Sure, that needs fixing. It'd probably be simplest to introduce a
-> __free_init_pages() helper.
-> 
+On Sun, Jul 15, 2012 at 1:02 AM, KY Srinivasan <kys@microsoft.com> wrote:
+> I have a bunch of other cleanups lined up for this user level daemon. If it is
+> ok with you, I could address this as part of that patch set. However, if
+> there are more substantive changes needed in this patch-set, I will
+> also address this.
 
-Perhaps:
+No problem.
 
- arch/x86/mm/init.c |   14 ++++++--------
- 1 files changed, 6 insertions(+), 8 deletions(-)
-
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index bc4e9d8..1023484 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -330,7 +330,6 @@ int devmem_is_allowed(unsigned long pagenr)
- 
- void free_init_pages(char *what, unsigned long begin, unsigned long end)
- {
--	unsigned long addr;
- 	unsigned long begin_aligned, end_aligned;
- 
- 	/* Make sure boundaries are page aligned */
-@@ -345,8 +344,6 @@ void free_init_pages(char *what, unsigned long begin, unsigned long end)
- 	if (begin >= end)
- 		return;
- 
--	addr = begin;
--
- 	/*
- 	 * If debugging page accesses then do not free this memory but
- 	 * mark them not present - any buggy init-section access will
-@@ -367,12 +364,13 @@ void free_init_pages(char *what, unsigned long begin, unsigned long end)
- 
- 	printk(KERN_INFO "Freeing %s: %luk freed\n", what, (end - begin) >> 10);
- 
--	for (; addr < end; addr += PAGE_SIZE) {
--		ClearPageReserved(virt_to_page(addr));
--		init_page_count(virt_to_page(addr));
--		memset((void *)addr, POISON_FREE_INITMEM, PAGE_SIZE);
--		free_page(addr);
-+	while (begin < end) {
-+		ClearPageReserved(virt_to_page(begin));
-+		init_page_count(virt_to_page(begin));
-+		memset((void *)begin, POISON_FREE_INITMEM, PAGE_SIZE);
-+		free_page(begin);
- 		totalram_pages++;
-+		begin += PAGE_SIZE;
- 	}
- #endif
- }
-
-
+-- 
+Thanks,
+//richard
