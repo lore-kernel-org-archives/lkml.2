@@ -1,83 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754463Ab2GNROc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jul 2012 13:14:32 -0400
-Received: from truschnigg.info ([84.200.12.177]:55764 "EHLO truschnigg.info"
+	id S1754265Ab2GNRcr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jul 2012 13:32:47 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:46411 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752313Ab2GNROY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jul 2012 13:14:24 -0400
-Date: Sat, 14 Jul 2012 19:09:53 +0200
-From: Johannes Truschnigg <johannes@truschnigg.info>
-To: Willy Tarreau <w@1wt.eu>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Hillf Danton <dhillf@gmail.com>,
-        linux-kernel@vger.kernel.org, Linux-Netdev <netdev@vger.kernel.org>
-Subject: Re: PROBLEM: Silent data corruption when using sendfile()
-Message-ID: <20120714170953.GA26406@vault.local>
-References: <20120713171835.GA26052@vault.local>
- <CAJd=RBAntSubDBbJ292SzeoN4hTwBQ_Q23jt+Y6i-+vfrQ5EHQ@mail.gmail.com>
- <1342254042.3265.9017.camel@edumazet-glaptop>
- <20120714083136.GO16256@1wt.eu>
- <20120714101321.GA26329@vault.local>
- <1342262004.3265.9279.camel@edumazet-glaptop>
- <20120714104441.GP16256@1wt.eu>
- <1342263967.3265.9347.camel@edumazet-glaptop>
- <20120714131540.GQ16256@1wt.eu>
+	id S1750915Ab2GNRcj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jul 2012 13:32:39 -0400
+Date: Sat, 14 Jul 2012 19:32:36 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Davidlohr Bueso <dave@gnu.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        lkml <linux-kernel@vger.kernel.org>, kvm list <kvm@vger.kernel.org>,
+        x86@kernel.org
+Subject: Re: [PATCH] x86, amd: rename vmmu support capability
+Message-ID: <20120714173236.GA32400@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Davidlohr Bueso <dave@gnu.org>, "H. Peter Anvin" <hpa@zytor.com>,
+	Ingo Molnar <mingo@redhat.com>, lkml <linux-kernel@vger.kernel.org>,
+	kvm list <kvm@vger.kernel.org>, x86@kernel.org
+References: <1342202575.2706.4.camel@offbook>
+ <20120714101951.GB26559@liondog.tnic>
+ <0ffa7987-66fd-4c8d-85da-9911eee3eeaf@email.android.com>
+ <1342276131.2956.6.camel@offbook>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="huq684BweRXVnRxX"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20120714131540.GQ16256@1wt.eu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1342276131.2956.6.camel@offbook>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Jul 14, 2012 at 04:28:51PM +0200, Davidlohr Bueso wrote:
+> On Sat, 2012-07-14 at 15:38 +0200, H. Peter Anvin wrote:
+> > Yep, NAK on this one.
+> 
+> Ok, we could at least add a comment when defining X86_FEATURE_NPT.
 
---huq684BweRXVnRxX
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+And the valid, sane, technical reason for having a comment where any
+internet search could do, is... ?
 
-On Sat, Jul 14, 2012 at 03:15:40PM +0200, Willy Tarreau wrote:
-> On Sat, Jul 14, 2012 at 01:06:07PM +0200, Eric Dumazet wrote:
-> [...]
-> > Hmmm, this is supposed to fix a bug introduced in 3.4, no ?
-> >=20
-> > So 3.3 kernel should work well ?
->=20
-> You're right indeed. So maybe it's not the same bug. Or maybe Johannes
-> was affected by two different bugs in both versions, since Thorsten's
-> report seems to point the finger at the same bug.
->=20
-> Johannes, are you certain that you were having the exact same issue
-> with 3.3 ?
-
-I still have the Linux 3.3-series kernel image around that I _think_ I first
-saw the problem occur with. I'll try to reproduce the problem with that
-kernel, but I cannot promise that results will be ready before Tuesday. I'll
-keep you posted!
-
---=20
-with best regards:
-- Johannes Truschnigg ( johannes@truschnigg.info )
-
-www:   http://johannes.truschnigg.info/
-phone: +43 650 2 133337
-xmpp:  johannes@truschnigg.info
-
-Please do not bother me with HTML-email or attachments. Thank you.
-
---huq684BweRXVnRxX
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAlABp+EACgkQnnUApj8OcoKbXQCeO1k6mw/IFfWBkBMhHpbh+AYV
-HlMAn1CeGVFDNf44HCbYmppKyMIMVR7a
-=lKDD
------END PGP SIGNATURE-----
-
---huq684BweRXVnRxX--
+-- 
+Regards/Gruss,
+    Boris.
