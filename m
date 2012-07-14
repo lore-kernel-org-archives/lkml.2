@@ -1,36 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758011Ab2GNITj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jul 2012 04:19:39 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38411 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752486Ab2GNITg (ORCPT
+	id S1758073Ab2GNIUx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jul 2012 04:20:53 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:61787 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757204Ab2GNIUr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jul 2012 04:19:36 -0400
-Date: Sat, 14 Jul 2012 01:17:34 -0700
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: "Kim, Milo" <Milo.Kim@ti.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] power: move lp8727 header into platform_data directory
-Message-ID: <20120714081734.GA1633@lizard>
-References: <A874F61F95741C4A9BA573A70FE3998FCCD7@DQHE02.ent.ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <A874F61F95741C4A9BA573A70FE3998FCCD7@DQHE02.ent.ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 14 Jul 2012 04:20:47 -0400
+Subject: Re: PROBLEM: Silent data corruption when using sendfile()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Johannes Truschnigg <johannes@truschnigg.info>,
+        linux-kernel@vger.kernel.org, Willy Tarreau <w@1wt.eu>,
+        Linux-Netdev <netdev@vger.kernel.org>
+In-Reply-To: <CAJd=RBAntSubDBbJ292SzeoN4hTwBQ_Q23jt+Y6i-+vfrQ5EHQ@mail.gmail.com>
+References: <20120713171835.GA26052@vault.local>
+	 <CAJd=RBAntSubDBbJ292SzeoN4hTwBQ_Q23jt+Y6i-+vfrQ5EHQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 14 Jul 2012 10:20:41 +0200
+Message-ID: <1342254042.3265.9017.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 03, 2012 at 01:19:03AM +0000, Kim, Milo wrote:
-> The lp8727 header can be used only in the platform side,
-> so it can be moved to the platform_data directory.
+On Sat, 2012-07-14 at 16:04 +0800, Hillf Danton wrote:
+> On Sat, Jul 14, 2012 at 1:18 AM, Johannes Truschnigg
+> <johannes@truschnigg.info> wrote:
+> > Hello good people of linux-kernel.
+> >
+> > I've been bothered by silent data corruption from my personal fileserver - no
+> > matter the Layer 7 protocol used, huge transfers sporadically ended up damaged
+> > in-flight. I used Samba/CIFS, NFS(v4, via TCP), Apache httpd 2.2, thttpd,
+> > python and netcat to verify this.
+> >
+> > I think I managed to track down the culprit: as soon as I disable sendfile()
+> > for all programs that support such a configuration (netcat, afaik, won't ever
+> > use sendfile() to transmit data over a socket, so the problem was never
+> > reproducible there in the first place), everything reverts to perfect and
+> > proper working condition.
+> >
+> > I've been experiencing this problem with vanilla kernel releases from the 3.3
+> > up until 3.4.0 series. I do not know if it also occurs with earlier releases,
+> > but I can verify if that is useful. I set up the environment for a minimal
+> > kind of testcase (a large ISO image file available from the server's local
+> > filesystem, as well as from a mounted NFS export - once via lo, and once via
+> > br0/eth0), and proceeded to do the following:
+> >
+> > i=0; for i in {1..100}
+> > do
+> >   echo "pass $i:"; sync; echo 3 > /proc/sys/vm/drop_caches
+> >   cmp -b /mnt/nfs-test/lo/tmp/X15-65741.iso /srv/files/pub/tmp/X15-65741.iso
+> > done
+> >
+> > I then rotated the source of the data, and tested the network-mount against
+> > the loopback-mount, as well as the network-mount against the local filesystem.
+> >
+> > Computing the file's md5sum in a loop whilst dropping caches after each
+> > iteration by reading it directly from its location in the filesystem produces
+> > the very same hash every time - I therefore think it's safe to assume the
+> > corruption is introduced when traversing the networking stack. The hash also
+> > does not change if I repeadetly compute the md5sum of the file as transferred
+> > by, e. g., Apache httpd or smbd with sendfile explicitly disabled.
+> >
+> > Please take a look at the attachment to see the actual output of the above
+> > script. It does not matter if I do an actual transfer over the network from my
+> > server to one of its clients (I verified the problem with two different client
+> > machines, one even running Windows), or if the server is both source and
+> > destination of the transfer - as long as sendfile is involed, some of the data
+> > will always become garbled sooner or later. That also leads me to believe that
+> > my internetworking devices (my switch in particular) is working just fine;
+> > testing bulky transfers from one host to another confirms this insofar as thus
+> > all data makes it through unscathed.
+> >
+> > As soon as I switch off sendfile-support (in, e. g. Samba or Apache httpd), I
+> > can run a series of thousands and more transfers, and not experience any
+> > corruption at all. Whenever the data gets fubared, there is no hint at
+> > anything fishy going on in the debug ringbuffer - curruption takes place in
+> > total silence.
+> >
+> > The system in question has an Intel Pro/1000 PCI-e NIC for doing the networked
+> > file transfers, and is backed by a md RAID5-Array with LVM2 on top. The 4GB of
+> > system memory (ECC-enabled UDIMM) are operating in S4ECD4ED mode as reported
+> > by EDAC, and there are no reported errors. The CPU I have installed is an AMD
+> > Athlon II X2 245e on an ASUS M4A88TD-M/USB3 Motherboard. It's running Gentoo
+> > for amd64. The box can run prime96 in torture mode and linpack just fine for
+> > days - I'm therefore assuming the hardware to be working correctly.
+> >
+> > I have attached my kernel's config (from 3.4.0, as that's the image that I
+> > have running right now) attached for sake of completeness, as well as some
+> > information for you to see how I tested, and what these tests actually
+> > produced. If you need any other information to help track this down, please
+> > let me know.
+> >
+> > If you decide to answer please keep me CC'd, as I'm not subscribed to this
+> > list.
+> >
+> > Just in case the numerous attachments get scrubbed/removed, I've also uploaded
+> > them to http://johannes.truschnigg.info/tmp/sendfile_data_corruption/
+> >
+> > Thanks for reading, and have a nice weekend everyone :)
+> >
 > 
-> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+> Is the above corruption related to the one below?
+> 
+> 
+> On Tue, Jul 3, 2012 at 8:02 AM, Willy Tarreau <w@1wt.eu> wrote:
+> >
+> > In fact it has been true zero copy in 2.6.25 until we faced a large
+> > amount of data corruption and the zero copy was disabled in 2.6.25.X.
+> > Since then it remained that way until you brought your patches to
+> > re-instantiate it.
 
-Applied, thanks!
+Might be, or not (could be a NIC bug)
 
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+Please Johannes could you try latest kernel tree ?
+
+
+
