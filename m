@@ -1,28 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753767Ab2GNVsY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jul 2012 17:48:24 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:38537 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751615Ab2GNVsT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jul 2012 17:48:19 -0400
-Date: Sat, 14 Jul 2012 14:48:00 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: "Piotr Sawuk" <a9702387@unet.univie.ac.at>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: resurrecting tcphealth
-Message-ID: <20120714144800.7f8c97f6@nehalam.linuxnetplumber.net>
-In-Reply-To: <dee325378a2d3b7792da9640fc14905f.squirrel@webmail.univie.ac.at>
-References: <dee325378a2d3b7792da9640fc14905f.squirrel@webmail.univie.ac.at>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753143Ab2GNWM6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jul 2012 18:12:58 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:39439 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751566Ab2GNWMu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jul 2012 18:12:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <1342175967-10087-6-git-send-email-ldewangan@nvidia.com>
+References: <1342175967-10087-1-git-send-email-ldewangan@nvidia.com>
+	<1342175967-10087-6-git-send-email-ldewangan@nvidia.com>
+Date: Sun, 15 Jul 2012 00:12:49 +0200
+Message-ID: <CACRpkdZ-zsBKSwyzecOpsWyM0o6-EYQwrqWopzeQm1D0D6TaEg@mail.gmail.com>
+Subject: Re: [PATCH 5/5] mfd: tps6586x: remove gpio support from core driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: grant.likely@secretlab.ca, linus.walleij@stericsson.com,
+        sameo@linux.intel.com, linux-kernel@vger.kernel.org,
+        swarren@nvidia.com, broonie@opensource.wolfsonmicro.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Maybe it would be better to use netlink info (for ss command)
-rather than a /proc/net interface.
-See how existing TCP values and MEMINFO are handled.
+On Fri, Jul 13, 2012 at 12:39 PM, Laxman Dewangan <ldewangan@nvidia.com> wrote:
+
+> The GPIO functionality of device tps6586x is added through
+> platform gpio driver and it can be register as the mfd sub
+> device and hence removing the duplicates code which register
+> the gpio functionality from core driver.
+>
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+
+The only thing I worry about is if old defconfig files are now
+missing this config option and then this patch becomes an
+unbisectable showstopper for them because they don't get
+this driver by default anymore.
+
+So please make sure you've grepped around and checked
+that of some platforms defconfig was previously selecting
+the core driver, make sure it selects this driver too for
+the moment, it's better if they later deactivate it
+if they don't need it.
+
+Yours,
+Linus Walleij
