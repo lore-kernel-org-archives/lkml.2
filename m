@@ -1,187 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754699Ab2GNQob (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jul 2012 12:44:31 -0400
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:55720
-	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754236Ab2GNQnZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jul 2012 12:43:25 -0400
-X-IronPort-AV: E=Sophos;i="4.77,584,1336341600"; 
-   d="scan'208";a="150655458"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: kernel-janitors@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 5/6] drivers/pci/hotplug: ensure a consistent return value in error case
-Date: Sat, 14 Jul 2012 18:43:07 +0200
-Message-Id: <1342284188-19176-6-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1342284188-19176-1-git-send-email-Julia.Lawall@lip6.fr>
-References: <1342284188-19176-1-git-send-email-Julia.Lawall@lip6.fr>
+	id S1754570Ab2GNQpD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jul 2012 12:45:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62962 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754470Ab2GNQn6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jul 2012 12:43:58 -0400
+Date: Sat, 14 Jul 2012 18:43:13 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
+        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Don Morris <don.morris@hp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH 25/40] autonuma: follow_page check for pte_numa/pmd_numa
+Message-ID: <20120714164313.GU10186@redhat.com>
+References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
+ <1340888180-15355-26-git-send-email-aarcange@redhat.com>
+ <4FF12013.1040208@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FF12013.1040208@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+On Mon, Jul 02, 2012 at 12:14:11AM -0400, Rik van Riel wrote:
+> On 06/28/2012 08:56 AM, Andrea Arcangeli wrote:
+> > Without this, follow_page wouldn't trigger the NUMA hinting faults.
+> >
+> > Signed-off-by: Andrea Arcangeli<aarcange@redhat.com>
+> 
+> follow_page is called from many different places, not just
+> the process itself. One example would be ksm.
+> 
+> Do you really want to trigger NUMA hinting faults when the
+> mm != current->mm, or is that magically prevented somewhere?
 
-Typically, the return value desired for the failure of a function with an
-integer return value is a negative integer.  In these cases, the return
-value is sometimes a negative integer and sometimes 0, due to a subsequent
-initialization of the return variable within the loop.
+The NUMA hinting page fault will update "current->task_autonuma"
+according to the page_nid of the page triggering the numa hinting page
+fault in follow_page. It doesn't matter if the page belongs to the
+different mm, all we care is the page_nid that was accessed by the
+"current" task through a numa hinting fault.
 
-A simplified version of the semantic match that finds this problem is:
-(http://coccinelle.lip6.fr/)
+When I started thinking the benefit it could provide, I thought it
+wouldn't be worth it because task_autonuma statistics are only used to
+balance threads belonging to the same process, and mm_autonuma is used
+to balance tasks belonging to different processes. And mm_autonuma
+will never be able to take into account things like this.
 
-//<smpl>
-@r exists@
-identifier ret;
-position p;
-constant C;
-expression e1,e3,e4;
-statement S;
-@@
+So I converted the !current->mm check to a current->mm != mm check
+here to save a bit of cpu and skip it in the autonuma branch.
 
-ret = -C
-... when != ret = e3
-    when any
-if@p (...) S
-... when any
-if (\(ret != 0\|ret < 0\|ret > 0\) || ...) { ... return ...; }
-... when != ret = e3
-    when any
-*if@p (...)
+void numa_hinting_fault(struct mm_struct *mm, struct page *page, int numpages)
 {
-  ... when != ret = e4
-  return ret;
-}
-//</smpl>
+	/*
+	 * "current->mm" could be different from "mm" if
+	 * get_user_pages() triggered the fault on some other process
+	 * "mm". It wouldn't be a problem to account this NUMA hinting
+	 * page fault on the current->task_autonuma statistics even if
+	 * it was triggered on a page mapped on a different
+	 * "mm". However task_autonuma isn't used to balance threads
+	 * belonging to different processes so it wouldn't help and in
+	 * turn it's not worth it.
+	 */
+	if (likely(current->mm == mm && !current->mempolicy && autonuma_enabled())) {
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+But I was thinking at the usual case of one ptracer task with a single
+thread, however now I changed my mind and I think it can help when
+there's just one process and a ton of threads spanning multiple nodes,
+and one of the threads is ptracing an otherwise idle task and
+accessing lot of ram through ptrace. So I think I'll roll it back to
+autonuma21 status and allow the accounting of all page_nid even for
+different mm again. But this is mostly a theoretical issue.
 
----
- drivers/pci/hotplug/cpqphp_core.c    |   14 ++++++++++----
- drivers/pci/hotplug/pcihp_skeleton.c |   14 ++++++++++----
- drivers/pci/hotplug/shpchp_core.c    |   14 ++++++++++----
- 3 files changed, 30 insertions(+), 12 deletions(-)
+It can lead to a funny weighting where mm_autonuma shows 100% of the
+weight in one node, and task_autonuma shows 95% of the weight to
+another different node. But it should still work fine as we won't
+allow the thread to go to that different node if a different process
+run there. If a thread of the same process runs in the node where
+task_autonuma shows 95% of the weight, then it's better to put the
+thread there if it has higher weight than the other thread of the same
+process so it'll be fine despite mm_autonuma and task_autonuma disagree.
 
-diff --git a/drivers/pci/hotplug/cpqphp_core.c b/drivers/pci/hotplug/cpqphp_core.c
-index 187a199..c8eaeb4 100644
---- a/drivers/pci/hotplug/cpqphp_core.c
-+++ b/drivers/pci/hotplug/cpqphp_core.c
-@@ -611,7 +611,7 @@ static int ctrl_slot_setup(struct controller *ctrl,
- 	u32 tempdword;
- 	char name[SLOT_NAME_SIZE];
- 	void __iomem *slot_entry= NULL;
--	int result = -ENOMEM;
-+	int result;
- 
- 	dbg("%s\n", __func__);
- 
-@@ -623,19 +623,25 @@ static int ctrl_slot_setup(struct controller *ctrl,
- 
- 	while (number_of_slots) {
- 		slot = kzalloc(sizeof(*slot), GFP_KERNEL);
--		if (!slot)
-+		if (!slot) {
-+			result = -ENOMEM;
- 			goto error;
-+		}
- 
- 		slot->hotplug_slot = kzalloc(sizeof(*(slot->hotplug_slot)),
- 						GFP_KERNEL);
--		if (!slot->hotplug_slot)
-+		if (!slot->hotplug_slot) {
-+			result = -ENOMEM;
- 			goto error_slot;
-+		}
- 		hotplug_slot = slot->hotplug_slot;
- 
- 		hotplug_slot->info = kzalloc(sizeof(*(hotplug_slot->info)),
- 							GFP_KERNEL);
--		if (!hotplug_slot->info)
-+		if (!hotplug_slot->info) {
-+			result = -ENOMEM;
- 			goto error_hpslot;
-+		}
- 		hotplug_slot_info = hotplug_slot->info;
- 
- 		slot->ctrl = ctrl;
-diff --git a/drivers/pci/hotplug/pcihp_skeleton.c b/drivers/pci/hotplug/pcihp_skeleton.c
-index b20ceaa..1f00b93 100644
---- a/drivers/pci/hotplug/pcihp_skeleton.c
-+++ b/drivers/pci/hotplug/pcihp_skeleton.c
-@@ -252,7 +252,7 @@ static int __init init_slots(void)
- 	struct slot *slot;
- 	struct hotplug_slot *hotplug_slot;
- 	struct hotplug_slot_info *info;
--	int retval = -ENOMEM;
-+	int retval;
- 	int i;
- 
- 	/*
-@@ -261,17 +261,23 @@ static int __init init_slots(void)
- 	 */
- 	for (i = 0; i < num_slots; ++i) {
- 		slot = kzalloc(sizeof(*slot), GFP_KERNEL);
--		if (!slot)
-+		if (!slot) {
-+			retval = -ENOMEM;
- 			goto error;
-+		}
- 
- 		hotplug_slot = kzalloc(sizeof(*hotplug_slot), GFP_KERNEL);
--		if (!hotplug_slot)
-+		if (!hotplug_slot) {
-+			retval = -ENOMEM;
- 			goto error_slot;
-+		}
- 		slot->hotplug_slot = hotplug_slot;
- 
- 		info = kzalloc(sizeof(*info), GFP_KERNEL);
--		if (!info)
-+		if (!info) {
-+			retval = -ENOMEM;
- 			goto error_hpslot;
-+		}
- 		hotplug_slot->info = info;
- 
- 		slot->number = i;
-diff --git a/drivers/pci/hotplug/shpchp_core.c b/drivers/pci/hotplug/shpchp_core.c
-index 7414fd9..b6de307 100644
---- a/drivers/pci/hotplug/shpchp_core.c
-+++ b/drivers/pci/hotplug/shpchp_core.c
-@@ -99,22 +99,28 @@ static int init_slots(struct controller *ctrl)
- 	struct hotplug_slot *hotplug_slot;
- 	struct hotplug_slot_info *info;
- 	char name[SLOT_NAME_SIZE];
--	int retval = -ENOMEM;
-+	int retval;
- 	int i;
- 
- 	for (i = 0; i < ctrl->num_slots; i++) {
- 		slot = kzalloc(sizeof(*slot), GFP_KERNEL);
--		if (!slot)
-+		if (!slot) {
-+			retval = -ENOMEM;
- 			goto error;
-+		}
- 
- 		hotplug_slot = kzalloc(sizeof(*hotplug_slot), GFP_KERNEL);
--		if (!hotplug_slot)
-+		if (!hotplug_slot) {
-+			retval = -ENOMEM;
- 			goto error_slot;
-+		}
- 		slot->hotplug_slot = hotplug_slot;
- 
- 		info = kzalloc(sizeof(*info), GFP_KERNEL);
--		if (!info)
-+		if (!info) {
-+			retval = -ENOMEM;
- 			goto error_hpslot;
-+		}
- 		hotplug_slot->info = info;
- 
- 		slot->hp_slot = i;
-
+Disagreement of task_autonuma and mm_autonuma happens all the time and
+it's perfectly normal, just this will exacerbate a little more.
