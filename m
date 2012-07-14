@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754448Ab2GNUUr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jul 2012 16:20:47 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:51147
+	id S1754536Ab2GNUU7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jul 2012 16:20:59 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:51140
 	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752013Ab2GNUTy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751821Ab2GNUTy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 14 Jul 2012 16:19:54 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
         devel@linuxdriverproject.org, virtualization@lists.osdl.org,
         olaf@aepfle.de, apw@canonical.com
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 10/15] Tools: hv: Gather ipv[4,6] gateway information
-Date: Sat, 14 Jul 2012 13:34:15 -0700
-Message-Id: <1342298060-12662-10-git-send-email-kys@microsoft.com>
+Subject: [PATCH 06/15] Tools: hv: Further refactor kvp_get_ip_address()
+Date: Sat, 14 Jul 2012 13:34:11 -0700
+Message-Id: <1342298060-12662-6-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1342298060-12662-1-git-send-email-kys@microsoft.com>
 References: <1342297930-12607-1-git-send-email-kys@microsoft.com>
@@ -23,104 +23,135 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gather information on the default gateways - ipv4/ipv6.
+In preparation for making kvp_get_ip_address() more generic, factor out
+the code for handling IP addresses.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- tools/hv/hv_kvp_daemon.c |   72 ++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 72 insertions(+), 0 deletions(-)
+ tools/hv/hv_kvp_daemon.c |   94 ++++++++++++++++++++-------------------------
+ 1 files changed, 42 insertions(+), 52 deletions(-)
 
 diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
-index b9da130..b7a2df0 100644
+index 3128e77..218f28d 100644
 --- a/tools/hv/hv_kvp_daemon.c
 +++ b/tools/hv/hv_kvp_daemon.c
-@@ -490,6 +490,72 @@ done:
+@@ -490,17 +490,50 @@ done:
  	return;
  }
  
-+static void kvp_process_ipconfig_file(char *cmd,
-+					char *config_buf, int len,
-+					int element_size, int offset)
++static int kvp_process_ip_address(void *addrp,
++				int family, char *buffer,
++				int length,  int *offset)
 +{
-+	char buf[256];
-+	char *p;
-+	char *x;
-+	FILE *file;
++	struct sockaddr_in *addr;
++	struct sockaddr_in6 *addr6;
++	int addr_length;
++	char tmp[50];
++	const char *str;
 +
-+	/*
-+	 * First execute the command.
-+	 */
-+	file = popen(cmd, "r");
-+	if (file == NULL)
-+		return;
-+
-+	if (offset == 0)
-+		memset(config_buf, 0, len);
-+	while ((p = fgets(buf, sizeof(buf), file)) != NULL) {
-+		if ((len - strlen(config_buf)) < (element_size + 1))
-+			break;
-+
-+		x = strchr(p, '\n');
-+		*x = '\0';
-+		strcat(config_buf, p);
-+		strcat(config_buf, ";");
++	if (family == AF_INET) {
++		addr = (struct sockaddr_in *)addrp;
++		str = inet_ntop(family, &addr->sin_addr, tmp, 50);
++		addr_length = INET_ADDRSTRLEN;
++	} else {
++		addr6 = (struct sockaddr_in6 *)addrp;
++		str = inet_ntop(family, &addr6->sin6_addr.s6_addr, tmp, 50);
++		addr_length = INET6_ADDRSTRLEN;
 +	}
-+	pclose(file);
++
++	if ((length - *offset) < addr_length + 1)
++		return 1;
++	if (str == NULL) {
++		strcpy(buffer, "inet_ntop failed\n");
++		return 1;
++	}
++	if (*offset == 0)
++		strcpy(buffer, tmp);
++	else
++		strcat(buffer, tmp);
++	strcat(buffer, ";");
++
++	*offset += strlen(str) + 1;
++	return 0;
 +}
 +
-+static void kvp_get_ipconfig_info(char *if_name,
-+				 struct hv_kvp_ipaddr_value *buffer)
-+{
-+	char cmd[512];
-+
-+	/*
-+	 * Get the address of default gateway (ipv4).
-+	 */
-+	memset(cmd, 0, 512);
-+	strcat(cmd, "/sbin/ip -f inet  route | grep -w ");
-+	strcat(cmd, if_name);
-+	strcat(cmd, " | awk '/default/ {print $3 }'");
-+
-+	/*
-+	 * Execute the command to gather gateway info.
-+	 */
-+	kvp_process_ipconfig_file(cmd, (char *)buffer->gate_way,
-+				(MAX_GATEWAY_SIZE * 2), INET_ADDRSTRLEN, 0);
-+
-+	/*
-+	 * Get the address of default gateway (ipv6).
-+	 */
-+	memset(cmd, 0, 512);
-+	strcat(cmd, "/sbin/ip -f inet6  route | grep -w ");
-+	strcat(cmd, if_name);
-+	strcat(cmd, " | awk '/default/ {print $3 }'");
-+
-+	/*
-+	 * Execute the command to gather gateway info (ipv6).
-+	 */
-+	kvp_process_ipconfig_file(cmd, (char *)buffer->gate_way,
-+				(MAX_GATEWAY_SIZE * 2), INET6_ADDRSTRLEN, 1);
-+
-+}
-+
-+
- static unsigned int hweight32(unsigned int *w)
+ static int
+ kvp_get_ip_address(int family, char *if_name, int op,
+ 		 void  *out_buffer, int length)
  {
- 	unsigned int res = *w - ((*w >> 1) & 0x55555555);
-@@ -648,6 +714,12 @@ kvp_get_ip_address(int family, char *if_name, int op,
- 				strcat((char *)ip_buffer->sub_net, ";");
- 				sn_offset += strlen(sn_str) + 1;
- 			}
-+
-+			/*
-+			 * Collect other ip related configuration info.
-+			 */
-+
-+			kvp_get_ipconfig_info(if_name, ip_buffer);
+ 	struct ifaddrs *ifap;
+ 	struct ifaddrs *curp;
+-	int ipv4_len = strlen("255.255.255.255") + 1;
+-	int ipv6_len = strlen("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff")+1;
+ 	int offset = 0;
+ 	const char *str;
+-	char tmp[50];
+ 	int error = 0;
+ 	char *buffer;
+ 	struct hv_kvp_ipaddr_value *ip_buffer;
+@@ -555,55 +588,12 @@ kvp_get_ip_address(int family, char *if_name, int op,
+ 			continue;
  		}
  
- gather_ipaddr:
+-		if ((curp->ifa_addr->sa_family == AF_INET) &&
+-			((family == AF_INET) || (family == 0))) {
+-			struct sockaddr_in *addr =
+-			(struct sockaddr_in *) curp->ifa_addr;
+-
+-			str = inet_ntop(AF_INET, &addr->sin_addr, tmp, 50);
+-			if (str == NULL) {
+-				strcpy(buffer, "inet_ntop failed\n");
+-				error = 1;
+-				goto getaddr_done;
+-			}
+-			if (offset == 0)
+-				strcpy(buffer, tmp);
+-			else
+-				strcat(buffer, tmp);
+-			strcat(buffer, ";");
+-
+-			offset += strlen(str) + 1;
+-			if ((length - offset) < (ipv4_len + 1))
+-				goto getaddr_done;
+-
+-		} else if ((family == AF_INET6) || (family == 0)) {
+-
+-			/*
+-			 * We only support AF_INET and AF_INET6
+-			 * and the list of addresses is separated by a ";".
+-			 */
+-			struct sockaddr_in6 *addr =
+-				(struct sockaddr_in6 *) curp->ifa_addr;
+-
+-			str = inet_ntop(AF_INET6,
+-					&addr->sin6_addr.s6_addr,
+-					tmp, 50);
+-			if (str == NULL) {
+-				strcpy(buffer, "inet_ntop failed\n");
+-				error = 1;
+-				goto getaddr_done;
+-			}
+-			if (offset == 0)
+-				strcpy(buffer, tmp);
+-			else
+-				strcat(buffer, tmp);
+-			strcat(buffer, ";");
+-			offset += strlen(str) + 1;
+-			if ((length - offset) < (ipv6_len + 1))
+-				goto getaddr_done;
+-
+-		}
+-
++		error = kvp_process_ip_address(curp->ifa_addr,
++						curp->ifa_addr->sa_family,
++						buffer,
++						length, &offset);
++		if (error)
++			goto getaddr_done;
+ 
+ 		curp = curp->ifa_next;
+ 	}
 -- 
 1.7.4.1
 
