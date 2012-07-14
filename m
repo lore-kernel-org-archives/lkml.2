@@ -1,99 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753040Ab2GNE1V (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jul 2012 00:27:21 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54958 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750893Ab2GNE1T (ORCPT
+	id S1754357Ab2GNE2N (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jul 2012 00:28:13 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:34782 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753395Ab2GNE1Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jul 2012 00:27:19 -0400
-Message-ID: <1342240026.25597.466.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH] bnx2: update bnx2-mips-09 firmware to
- bnx2-mips-09-6.2.1b
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Chris Webb <chris@arachsys.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Michael Chan <mchan@broadcom.com>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>
-Date: Sat, 14 Jul 2012 05:27:06 +0100
-In-Reply-To: <20120713140907.GT13885@arachsys.com>
-References: <20120713130405.GS13885@arachsys.com>
-	 <1342186932.3265.8364.camel@edumazet-glaptop>
-	 <20120713140907.GT13885@arachsys.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-R7TFhZeTM5qHrsCm7kMJ"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sat, 14 Jul 2012 00:27:25 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120714035538.GB5638@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <1341859315-17759-1-git-send-email-tj@kernel.org>
+ <1341859315-17759-6-git-send-email-tj@kernel.org> <20120714035538.GB5638@dhcp-172-17-108-109.mtv.corp.google.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 13 Jul 2012 21:27:03 -0700
+X-Google-Sender-Auth: QH3Pd0ut_rifHu90h0bf3fwlwJI
+Message-ID: <CA+55aFyeauqCqrWsx4U2TB2ENrugZXYj+4vw3Fd0kGaeWBP3RA@mail.gmail.com>
+Subject: Re: [PATCH 5/6] workqueue: introduce NR_WORKER_POOLS and for_each_worker_pool()
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, joshhunt00@gmail.com, axboe@kernel.dk,
+        rni@google.com, vgoyal@redhat.com, vwadekar@nvidia.com,
+        herbert@gondor.hengli.com.au, davem@davemloft.net,
+        linux-crypto@vger.kernel.org, swhiteho@redhat.com, bpm@sgi.com,
+        elder@kernel.org, xfs@oss.sgi.com, marcel@holtmann.org,
+        gustavo@padovan.org, johan.hedberg@gmail.com,
+        linux-bluetooth@vger.kernel.org, martin.petersen@oracle.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Seeing code like this
 
---=-R7TFhZeTM5qHrsCm7kMJ
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
++       return &(*nr_running)[0];
 
-On Fri, 2012-07-13 at 15:09 +0100, Chris Webb wrote:
-> Eric Dumazet <eric.dumazet@gmail.com> writes:
->=20
-> > Have you read firmware/README.AddingFirmware ?
->=20
-> I hadn't, but now I have, and if firmware upgrades are considered 'adding
-> new firmware', I agree this patch is wrong, and should have just removed =
-the
-> obsolete bnx2-mips-09-6.2.1a file that is no longer used by the bnx2 driv=
-er.
->=20
-> However, not having dealt with cards that need these kinds of horrible
-> binary blobs before, I'm a little uncertain how I should be building
-> upstream kernels with CONFIG_FIRMWARE_IN_KERNEL and pulling in the correc=
-t
-> blobs from a linux-firmware checkout.
->=20
-> Is there a more automatic method than going through the source for each
-> configured driver and setting CONFIG_EXTRA_FIRMWARE manually to list the
-> relevant firmwares? Is there any way to give the kernel the location of
-> linux-firmware and have it compile in everything needed for the selected
-> drivers, as used to happen with the firmware/ subdirectory?
-> CONFIG_EXTRA_FIRMWARE_DIR doesn't seem to do anything with
-> CONFIG_EXTRA_FIRMWARE empty, so I don't think it does what I'm hoping?
+just makes me go "WTF?"
 
-I had a go at making CONFIG_FIRMWARE_IN_KERNEL pick the right blobs
-automatically <http://thread.gmane.org/gmane.linux.kernel/1230462>, but
-I couldn't get the Kbuild rules quite right.  No-one responded and I
-haven't had another try since.
+Why are you taking the address of something you just dereferenced (the
+"& [0]" part).
 
-Ben.
+And you actually do that *twice*, except the inner one is more
+complicated. When you assign nr_runing, you take the address of it, so
+the "*nr_running" is actually just the same kind of odd thing (except
+in reverse - you take dereference something you just took the
+address-of).
 
---=20
-Ben Hutchings
-The generation of random numbers is too important to be left to chance.
-                                                            - Robert Coveyo=
-u
+Seriously, this to me is a sign of *deeply* confused code. And the
+fact that your first version of that code was buggy *EXACTLY* due to
+this confusion should have made you take a step back.
 
---=-R7TFhZeTM5qHrsCm7kMJ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+As far as I can tell, what you actually want that function to do is:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+  static atomic_t *get_pool_nr_running(struct worker_pool *pool)
+  {
+    int cpu = pool->gcwq->cpu;
 
-iQIVAwUAUAD1Gue/yOyVhhEJAQrj9BAAx/HaaO8uKPohxD5SNIa2jzhhWfcLcvsj
-Lj2hQ0fKCTLN4v79klz+Nre6uSNwYREe7BXrEQdrtxT4JLR6SWX6xfb63JbF50P6
-SlCHYFA6zYaqPYfN+gbqdSfTqdRHYOrI/nkLd3kKmsY17/4YF35pM7JmHsraEFKZ
-8L38aEkyJ5mCPJQRYJXSLvXVHIhy8OcRFQ3H2I0nQIa1xQs64azNKoMGa8XOjobo
-a/QEVK+Po7Ia4V1RIq19ciP6SAjYh97Nsgqlc0lIFWgkBoGrI0YnCgx4y1g821cs
-s3g9qSmZm+7zKj/PZZE5OO7rWN+xZrU6akaEOoIx+SDr4WkvlEu62IuAc5s9CniL
-a1AbRqA7nDA0dcIK9Nl0uQQuq6L+UaB9+w4kx9vRppMvC4p3284Y5GBv8CpzSneo
-3isA6aztLVrH2RRH/wCmEwgaRI22DFm0kDIWZqLKQHyxf/eb3zb+V+4FnffT7+qN
-FIZ7hIXv3mGITSUCsaTqjlOHjgaPib151ADCEhAAQyCNiFAqHqShHoSS++v9oxY6
-ELQ4K7n0BsnFBfQtQWqLEVVCKI48xc4W6/MBXfg64jju/fe9Qfi2Jol46lcjOCxs
-N5f1TDogZbN3QNvXNGKKvwbywIPsyRx+SNzCVVSYIFf78cOkHou5Jaoc/yG2RCQs
-53RKSZMbOK0=
-=/6Bs
------END PGP SIGNATURE-----
+    if (cpu != WORK_CPU_UNBOUND)
+        return per_cpu(pool_nr_running, cpu);
 
---=-R7TFhZeTM5qHrsCm7kMJ--
+    return unbound_pool_nr_running;
+  }
+
+Notice how there isn't an 'address-of' operator anywhere in sight
+there. Those things are arrays, they get turned into "atomic_t *"
+automatically. And there isn't a single dereference (not a '*', and
+not a "[0]" - they are the exact same thing, btw) in sight either.
+
+What am I missing? Are there some new drugs that all the cool kids
+chew that I should be trying? Because I really don't think the kinds
+of insane "take the address of a dereference" games are a good idea.
+They really look to me like somebody is having a really bad drug
+experience.
+
+I didn't test the code, btw. I just looked at the patch and went WTF.
+
+                Linus
