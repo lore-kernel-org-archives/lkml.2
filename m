@@ -1,59 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753131Ab2GNUnm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jul 2012 16:43:42 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:60341 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751127Ab2GNUnh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jul 2012 16:43:37 -0400
-Message-ID: <1342298616.8377.37.camel@joe2Laptop>
-Subject: Re: [PATCH 2/3] x86/mm: Simplify for-loop in free_init_pages()
-From: Joe Perches <joe@perches.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Pekka Enberg <penberg@kernel.org>, mingo@kernel.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        Tejun Heo <tj@kernel.org>
-Date: Sat, 14 Jul 2012 13:43:36 -0700
-In-Reply-To: <CAE9FiQUJNaRzBBF02RdSTQgAcMgJOLJDo7ukFaM_3RCa8NS-mA@mail.gmail.com>
-References: <1342273267-2108-1-git-send-email-penberg@kernel.org>
-	 <1342273267-2108-2-git-send-email-penberg@kernel.org>
-	 <CAE9FiQUJNaRzBBF02RdSTQgAcMgJOLJDo7ukFaM_3RCa8NS-mA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753081Ab2GNUoq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jul 2012 16:44:46 -0400
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:43440
+	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752808Ab2GNUoi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jul 2012 16:44:38 -0400
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, virtualization@lists.osdl.org,
+        olaf@aepfle.de, apw@canonical.com
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH 12/15] Tools: hv: Gather DHCP information
+Date: Sat, 14 Jul 2012 13:34:17 -0700
+Message-Id: <1342298060-12662-12-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1342298060-12662-1-git-send-email-kys@microsoft.com>
+References: <1342297930-12607-1-git-send-email-kys@microsoft.com>
+ <1342298060-12662-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-07-14 at 13:36 -0700, Yinghai Lu wrote:
-> On Sat, Jul 14, 2012 at 6:41 AM, Pekka Enberg <penberg@kernel.org> wrote:
-> > As a cleanup, move initial "addr" assignment to the for-loop construct
-> > in free_init_pages().
+Collect information on dhcp setting for the specified interface.
+We invoke an exyernal script to get this information.
 
-Not really a good idea.
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+---
+ tools/hv/hv_kvp_daemon.c |   33 +++++++++++++++++++++++++++++++++
+ 1 files changed, 33 insertions(+), 0 deletions(-)
 
-> > diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-[]
-> > @@ -349,8 +349,6 @@ void free_init_pages(char *what, unsigned long begin, unsigned long end)
-> >         if (begin >= end)
-> >                 return;
-> >
-> > -       addr = begin;
-> > -
-> >         /*
-> >          * If debugging page accesses then do not free this memory but
-> >          * mark them not present - any buggy init-section access will
-> > @@ -371,7 +369,7 @@ void free_init_pages(char *what, unsigned long begin, unsigned long end)
-> >
-> >         printk(KERN_INFO "Freeing %s: %luk freed\n", what, (end - begin) >> 10);
-> >
-> > -       for (; addr < end; addr += PAGE_SIZE) {
-> > +       for (addr = begin; addr < end; addr += PAGE_SIZE) {
-> >                 ClearPageReserved(virt_to_page(addr));
-> >                 init_page_count(virt_to_page(addr));
-> >                 memset((void *)addr, POISON_FREE_INITMEM, PAGE_SIZE);
-> > --
-
-Now there's an unused variable warning when CONFIG_DEBUG_PAGEALLOC
+diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
+index a81ce67..c510283 100644
+--- a/tools/hv/hv_kvp_daemon.c
++++ b/tools/hv/hv_kvp_daemon.c
+@@ -524,6 +524,9 @@ static void kvp_get_ipconfig_info(char *if_name,
+ 				 struct hv_kvp_ipaddr_value *buffer)
+ {
+ 	char cmd[512];
++	char dhcp_info[128];
++	char *p;
++	FILE *file;
+ 
+ 	/*
+ 	 * Get the address of default gateway (ipv4).
+@@ -580,6 +583,36 @@ static void kvp_get_ipconfig_info(char *if_name,
+ 	 */
+ 	kvp_process_ipconfig_file(cmd, (char *)buffer->dns_addr,
+ 				(MAX_IP_ADDR_SIZE * 2), INET_ADDRSTRLEN, 0);
++
++	/*
++	 * Gather the DHCP state.
++	 * We will gather this state by invoking an external script.
++	 * The parameter to the script is the interface name.
++	 * Here is the expected output:
++	 *
++	 * Enabled: DHCP enabled.
++	 */
++
++	memset(cmd, 0, 512);
++	strcat(cmd, "/sbin/hv_get_dhcp_info ");
++	strcat(cmd, if_name);
++
++	file = popen(cmd, "r");
++	if (file == NULL)
++		return;
++
++	p = fgets(dhcp_info, sizeof(dhcp_info), file);
++	if (p == NULL) {
++		pclose(file);
++		return;
++	}
++
++	if (!strncmp(p, "Enabled", 7))
++		buffer->dhcp_enabled = 1;
++	else
++		buffer->dhcp_enabled = 0;
++
++	pclose(file);
+ }
+ 
+ 
+-- 
+1.7.4.1
 
