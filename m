@@ -1,134 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753198Ab2GNUsG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jul 2012 16:48:06 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:37642 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753010Ab2GNUsA (ORCPT
+	id S1753437Ab2GNUsa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jul 2012 16:48:30 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:45493 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753010Ab2GNUsS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jul 2012 16:48:00 -0400
+	Sat, 14 Jul 2012 16:48:18 -0400
 MIME-Version: 1.0
-In-Reply-To: <1342273287-2154-1-git-send-email-penberg@kernel.org>
-References: <1342273287-2154-1-git-send-email-penberg@kernel.org>
-Date: Sat, 14 Jul 2012 13:47:58 -0700
-X-Google-Sender-Auth: WyPapuA8E0tkbnEf2cPLilQXEEo
-Message-ID: <CAE9FiQU9hEvaYMhyE4iCGiOtPDKjjC+Jj-jyCADfpH7btV0dNw@mail.gmail.com>
-Subject: Re: [PATCH 3/3] x86/mm: Separate paging setup from memory mapping
-From: Yinghai Lu <yinghai@kernel.org>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+In-Reply-To: <1342298616.8377.37.camel@joe2Laptop>
+References: <1342273267-2108-1-git-send-email-penberg@kernel.org>
+	<1342273267-2108-2-git-send-email-penberg@kernel.org>
+	<CAE9FiQUJNaRzBBF02RdSTQgAcMgJOLJDo7ukFaM_3RCa8NS-mA@mail.gmail.com>
+	<1342298616.8377.37.camel@joe2Laptop>
+Date: Sat, 14 Jul 2012 23:48:16 +0300
+X-Google-Sender-Auth: KeME_ICZ4XbbYpHRUrlS1hNrItY
+Message-ID: <CAOJsxLEU=Ls1XtS0nndmJrvAObHuaasHBu8=7iFbjYVBX8g=Ng@mail.gmail.com>
+Subject: Re: [PATCH 2/3] x86/mm: Simplify for-loop in free_init_pages()
+From: Pekka Enberg <penberg@kernel.org>
+To: Joe Perches <joe@perches.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, mingo@kernel.org,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
         Tejun Heo <tj@kernel.org>
-Content-Type: multipart/mixed; boundary=bcaec54fb060de6b1904c4d04fc8
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---bcaec54fb060de6b1904c4d04fc8
-Content-Type: text/plain; charset=ISO-8859-1
+On Sat, Jul 14, 2012 at 11:43 PM, Joe Perches <joe@perches.com> wrote:
+> On Sat, 2012-07-14 at 13:36 -0700, Yinghai Lu wrote:
+>> On Sat, Jul 14, 2012 at 6:41 AM, Pekka Enberg <penberg@kernel.org> wrote:
+>> > As a cleanup, move initial "addr" assignment to the for-loop construct
+>> > in free_init_pages().
+>
+> Not really a good idea.
 
-On Sat, Jul 14, 2012 at 6:41 AM, Pekka Enberg <penberg@kernel.org> wrote:
-> Move PSE and PGE bit twiddling from init_memory_mapping() to a new
-> setup_paging() function to simplify the former function. The
-> init_memory_mapping() function is called later in the boot process by
-> gart_iommu_init(), efi_ioremap(), and arch_add_memory() which have no
-> business whatsover updating the CR4 register.
+Of course it's a good idea. The current code flow makes no sense.
 
-I have one local patch that will only set that one time too. also do
-other page size probe one time.
+>> > diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+> []
+>> > @@ -349,8 +349,6 @@ void free_init_pages(char *what, unsigned long begin, unsigned long end)
+>> >         if (begin >= end)
+>> >                 return;
+>> >
+>> > -       addr = begin;
+>> > -
+>> >         /*
+>> >          * If debugging page accesses then do not free this memory but
+>> >          * mark them not present - any buggy init-section access will
+>> > @@ -371,7 +369,7 @@ void free_init_pages(char *what, unsigned long begin, unsigned long end)
+>> >
+>> >         printk(KERN_INFO "Freeing %s: %luk freed\n", what, (end - begin) >> 10);
+>> >
+>> > -       for (; addr < end; addr += PAGE_SIZE) {
+>> > +       for (addr = begin; addr < end; addr += PAGE_SIZE) {
+>> >                 ClearPageReserved(virt_to_page(addr));
+>> >                 init_page_count(virt_to_page(addr));
+>> >                 memset((void *)addr, POISON_FREE_INITMEM, PAGE_SIZE);
+>> > --
+>
+> Now there's an unused variable warning when CONFIG_DEBUG_PAGEALLOC
 
-please check attached one.
-
-Thanks
-
-Yinghai
-
---bcaec54fb060de6b1904c4d04fc8
-Content-Type: application/octet-stream; name="get_page_size_mask.patch"
-Content-Disposition: attachment; filename="get_page_size_mask.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h4n624wd0
-
-U3ViamVjdDogW1BBVENIIDEvM10geDg2LCBtbTogIEludHJvZHVjZSBnbG9iYWwgcGFnZV9zaXpl
-X21hc2sKCkFkZCBwcm9iZV9wYWdlX3NpemVfbWFzaygpIHRvIGRldGVjdCBpZiBuZWVkIHRvIHVz
-ZSAxRyBvciAyTS4KYW5kIHN0b3JlIHRoZW0gaW4gcGFnZV9zaXplX21hc2suCgpPbmx5IHByb2Jl
-IHRoZW0gYXQgZmlyc3QgaW5pdF9tZW1vcnlfbWFwcGluZyBjYWxsaW5nLgpzZWNvbmQgYW5kIGxh
-dGVyIGluaXRfbWVtb3J5X21hcHBpbmcoKSBjYWxsaW5nIGRvZXMgbm90IG5lZWQgcHJvYmUgYWdh
-aW4uCmFsc28gd2UgZG9uJ3QgbmVlZCB0byBwYXNzIHVzZV9nYnBhZ2VzIGFyb3VuZC4KClN1Z2dl
-c3RlZC1ieTogSW5nbyBNb2xuYXIgPG1pbmdvQGVsdGUuaHU+ClNpZ25lLW9mZi1ieTogWWluZ2hh
-aSBMdSA8eWluZ2hhaUBrZXJuZWwub3JnPgoKLS0tCiBhcmNoL3g4Ni9pbmNsdWRlL2FzbS9wZ3Rh
-YmxlLmggfCAgICAxIAogYXJjaC94ODYvbW0vaW5pdC5jICAgICAgICAgICAgIHwgICA3MCArKysr
-KysrKysrKysrKysrKysrKystLS0tLS0tLS0tLS0tLS0tLS0tLQogMiBmaWxlcyBjaGFuZ2VkLCAz
-NyBpbnNlcnRpb25zKCspLCAzNCBkZWxldGlvbnMoLSkKCkluZGV4OiBsaW51eC0yLjYvYXJjaC94
-ODYvaW5jbHVkZS9hc20vcGd0YWJsZS5oCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2Fy
-Y2gveDg2L2luY2x1ZGUvYXNtL3BndGFibGUuaAorKysgbGludXgtMi42L2FyY2gveDg2L2luY2x1
-ZGUvYXNtL3BndGFibGUuaApAQCAtNTk3LDYgKzU5Nyw3IEBAIHN0YXRpYyBpbmxpbmUgaW50IHBn
-ZF9ub25lKHBnZF90IHBnZCkKICNpZm5kZWYgX19BU1NFTUJMWV9fCiAKIGV4dGVybiBpbnQgZGly
-ZWN0X2dicGFnZXM7CitleHRlcm4gaW50IHBhZ2Vfc2l6ZV9tYXNrOwogCiAvKiBsb2NhbCBwdGUg
-dXBkYXRlcyBuZWVkIG5vdCB1c2UgeGNoZyBmb3IgbG9ja2luZyAqLwogc3RhdGljIGlubGluZSBw
-dGVfdCBuYXRpdmVfbG9jYWxfcHRlcF9nZXRfYW5kX2NsZWFyKHB0ZV90ICpwdGVwKQpJbmRleDog
-bGludXgtMi42L2FyY2gveDg2L21tL2luaXQuYwo9PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3Jp
-Zy9hcmNoL3g4Ni9tbS9pbml0LmMKKysrIGxpbnV4LTIuNi9hcmNoL3g4Ni9tbS9pbml0LmMKQEAg
-LTM1LDggKzM1LDEwIEBAIHN0cnVjdCBtYXBfcmFuZ2UgewogCXVuc2lnbmVkIHBhZ2Vfc2l6ZV9t
-YXNrOwogfTsKIAotc3RhdGljIHZvaWQgX19pbml0IGZpbmRfZWFybHlfdGFibGVfc3BhY2Uoc3Ry
-dWN0IG1hcF9yYW5nZSAqbXIsIHVuc2lnbmVkIGxvbmcgZW5kLAotCQkJCQkgIGludCB1c2VfcHNl
-LCBpbnQgdXNlX2dicGFnZXMpCitpbnQgcGFnZV9zaXplX21hc2sgPSAtMTsKKworc3RhdGljIHZv
-aWQgX19pbml0IGZpbmRfZWFybHlfdGFibGVfc3BhY2Uoc3RydWN0IG1hcF9yYW5nZSAqbXIsCisJ
-CQkJCSAgdW5zaWduZWQgbG9uZyBlbmQpCiB7CiAJdW5zaWduZWQgbG9uZyBwdWRzLCBwbWRzLCBw
-dGVzLCB0YWJsZXMsIHN0YXJ0ID0gMCwgZ29vZF9lbmQgPSBlbmQ7CiAJcGh5c19hZGRyX3QgYmFz
-ZTsKQEAgLTQ0LDcgKzQ2LDcgQEAgc3RhdGljIHZvaWQgX19pbml0IGZpbmRfZWFybHlfdGFibGVf
-c3BhYwogCXB1ZHMgPSAoZW5kICsgUFVEX1NJWkUgLSAxKSA+PiBQVURfU0hJRlQ7CiAJdGFibGVz
-ID0gcm91bmR1cChwdWRzICogc2l6ZW9mKHB1ZF90KSwgUEFHRV9TSVpFKTsKIAotCWlmICh1c2Vf
-Z2JwYWdlcykgeworCWlmIChwYWdlX3NpemVfbWFzayAmICgxIDw8IFBHX0xFVkVMXzFHKSkgewog
-CQl1bnNpZ25lZCBsb25nIGV4dHJhOwogCiAJCWV4dHJhID0gZW5kIC0gKChlbmQ+PlBVRF9TSElG
-VCkgPDwgUFVEX1NISUZUKTsKQEAgLTU0LDcgKzU2LDcgQEAgc3RhdGljIHZvaWQgX19pbml0IGZp
-bmRfZWFybHlfdGFibGVfc3BhYwogCiAJdGFibGVzICs9IHJvdW5kdXAocG1kcyAqIHNpemVvZihw
-bWRfdCksIFBBR0VfU0laRSk7CiAKLQlpZiAodXNlX3BzZSkgeworCWlmIChwYWdlX3NpemVfbWFz
-ayAmICgxIDw8IFBHX0xFVkVMXzJNKSkgewogCQl1bnNpZ25lZCBsb25nIGV4dHJhOwogCiAJCWV4
-dHJhID0gZW5kIC0gKChlbmQ+PlBNRF9TSElGVCkgPDwgUE1EX1NISUZUKTsKQEAgLTkwLDYgKzky
-LDM0IEBAIHN0YXRpYyB2b2lkIF9faW5pdCBmaW5kX2Vhcmx5X3RhYmxlX3NwYWMKIAkJKHBndF9i
-dWZfdG9wIDw8IFBBR0VfU0hJRlQpIC0gMSk7CiB9CiAKK3N0YXRpYyB2b2lkIHByb2JlX3BhZ2Vf
-c2l6ZV9tYXNrKHZvaWQpCit7CisJaWYgKHBhZ2Vfc2l6ZV9tYXNrICE9IC0xKQorCQlyZXR1cm47
-CisKKwlwYWdlX3NpemVfbWFzayA9IDA7CisjaWYgIWRlZmluZWQoQ09ORklHX0RFQlVHX1BBR0VB
-TExPQykgJiYgIWRlZmluZWQoQ09ORklHX0tNRU1DSEVDSykKKwkvKgorCSAqIEZvciBDT05GSUdf
-REVCVUdfUEFHRUFMTE9DLCBpZGVudGl0eSBtYXBwaW5nIHdpbGwgdXNlIHNtYWxsIHBhZ2VzLgor
-CSAqIFRoaXMgd2lsbCBzaW1wbGlmeSBjcGEoKSwgd2hpY2ggb3RoZXJ3aXNlIG5lZWRzIHRvIHN1
-cHBvcnQgc3BsaXR0aW5nCisJICogbGFyZ2UgcGFnZXMgaW50byBzbWFsbCBpbiBpbnRlcnJ1cHQg
-Y29udGV4dCwgZXRjLgorCSAqLworCWlmIChkaXJlY3RfZ2JwYWdlcykKKwkJcGFnZV9zaXplX21h
-c2sgfD0gMSA8PCBQR19MRVZFTF8xRzsKKwlpZiAoY3B1X2hhc19wc2UpCisJCXBhZ2Vfc2l6ZV9t
-YXNrIHw9IDEgPDwgUEdfTEVWRUxfMk07CisjZW5kaWYKKworCS8qIEVuYWJsZSBQU0UgaWYgYXZh
-aWxhYmxlICovCisJaWYgKGNwdV9oYXNfcHNlKQorCQlzZXRfaW5fY3I0KFg4Nl9DUjRfUFNFKTsK
-KworCS8qIEVuYWJsZSBQR0UgaWYgYXZhaWxhYmxlICovCisJaWYgKGNwdV9oYXNfcGdlKSB7CisJ
-CXNldF9pbl9jcjQoWDg2X0NSNF9QR0UpOworCQlfX3N1cHBvcnRlZF9wdGVfbWFzayB8PSBfUEFH
-RV9HTE9CQUw7CisJfQorfQogdm9pZCBfX2luaXQgbmF0aXZlX3BhZ2V0YWJsZV9yZXNlcnZlKHU2
-NCBzdGFydCwgdTY0IGVuZCkKIHsKIAltZW1ibG9ja19yZXNlcnZlKHN0YXJ0LCBlbmQgLSBzdGFy
-dCk7CkBAIC0xMjUsNDQgKzE1NSwxNiBAQCBzdGF0aWMgaW50IF9fbWVtaW5pdCBzYXZlX21yKHN0
-cnVjdCBtYXBfCiB1bnNpZ25lZCBsb25nIF9faW5pdF9yZWZvayBpbml0X21lbW9yeV9tYXBwaW5n
-KHVuc2lnbmVkIGxvbmcgc3RhcnQsCiAJCQkJCSAgICAgICB1bnNpZ25lZCBsb25nIGVuZCkKIHsK
-LQl1bnNpZ25lZCBsb25nIHBhZ2Vfc2l6ZV9tYXNrID0gMDsKIAl1bnNpZ25lZCBsb25nIHN0YXJ0
-X3BmbiwgZW5kX3BmbjsKIAl1bnNpZ25lZCBsb25nIHJldCA9IDA7CiAJdW5zaWduZWQgbG9uZyBw
-b3M7Ci0KIAlzdHJ1Y3QgbWFwX3JhbmdlIG1yW05SX1JBTkdFX01SXTsKIAlpbnQgbnJfcmFuZ2Us
-IGk7Ci0JaW50IHVzZV9wc2UsIHVzZV9nYnBhZ2VzOwogCiAJcHJpbnRrKEtFUk5fSU5GTyAiaW5p
-dF9tZW1vcnlfbWFwcGluZzogW21lbSAlIzAxMGx4LSUjMDEwbHhdXG4iLAogCSAgICAgICBzdGFy
-dCwgZW5kIC0gMSk7CiAKLSNpZiBkZWZpbmVkKENPTkZJR19ERUJVR19QQUdFQUxMT0MpIHx8IGRl
-ZmluZWQoQ09ORklHX0tNRU1DSEVDSykKLQkvKgotCSAqIEZvciBDT05GSUdfREVCVUdfUEFHRUFM
-TE9DLCBpZGVudGl0eSBtYXBwaW5nIHdpbGwgdXNlIHNtYWxsIHBhZ2VzLgotCSAqIFRoaXMgd2ls
-bCBzaW1wbGlmeSBjcGEoKSwgd2hpY2ggb3RoZXJ3aXNlIG5lZWRzIHRvIHN1cHBvcnQgc3BsaXR0
-aW5nCi0JICogbGFyZ2UgcGFnZXMgaW50byBzbWFsbCBpbiBpbnRlcnJ1cHQgY29udGV4dCwgZXRj
-LgotCSAqLwotCXVzZV9wc2UgPSB1c2VfZ2JwYWdlcyA9IDA7Ci0jZWxzZQotCXVzZV9wc2UgPSBj
-cHVfaGFzX3BzZTsKLQl1c2VfZ2JwYWdlcyA9IGRpcmVjdF9nYnBhZ2VzOwotI2VuZGlmCi0KLQkv
-KiBFbmFibGUgUFNFIGlmIGF2YWlsYWJsZSAqLwotCWlmIChjcHVfaGFzX3BzZSkKLQkJc2V0X2lu
-X2NyNChYODZfQ1I0X1BTRSk7Ci0KLQkvKiBFbmFibGUgUEdFIGlmIGF2YWlsYWJsZSAqLwotCWlm
-IChjcHVfaGFzX3BnZSkgewotCQlzZXRfaW5fY3I0KFg4Nl9DUjRfUEdFKTsKLQkJX19zdXBwb3J0
-ZWRfcHRlX21hc2sgfD0gX1BBR0VfR0xPQkFMOwotCX0KLQotCWlmICh1c2VfZ2JwYWdlcykKLQkJ
-cGFnZV9zaXplX21hc2sgfD0gMSA8PCBQR19MRVZFTF8xRzsKLQlpZiAodXNlX3BzZSkKLQkJcGFn
-ZV9zaXplX21hc2sgfD0gMSA8PCBQR19MRVZFTF8yTTsKKwlwcm9iZV9wYWdlX3NpemVfbWFzaygp
-OwogCiAJbWVtc2V0KG1yLCAwLCBzaXplb2YobXIpKTsKIAlucl9yYW5nZSA9IDA7CkBAIC0yNjcs
-NyArMjY5LDcgQEAgdW5zaWduZWQgbG9uZyBfX2luaXRfcmVmb2sgaW5pdF9tZW1vcnlfbQogCSAq
-IG5vZGVzIGFyZSBkaXNjb3ZlcmVkLgogCSAqLwogCWlmICghYWZ0ZXJfYm9vdG1lbSkKLQkJZmlu
-ZF9lYXJseV90YWJsZV9zcGFjZSgmbXJbMF0sIGVuZCwgdXNlX3BzZSwgdXNlX2dicGFnZXMpOwor
-CQlmaW5kX2Vhcmx5X3RhYmxlX3NwYWNlKCZtclswXSwgZW5kKTsKIAogCWZvciAoaSA9IDA7IGkg
-PCBucl9yYW5nZTsgaSsrKQogCQlyZXQgPSBrZXJuZWxfcGh5c2ljYWxfbWFwcGluZ19pbml0KG1y
-W2ldLnN0YXJ0LCBtcltpXS5lbmQsCg==
---bcaec54fb060de6b1904c4d04fc8--
+Sure, that needs fixing. It'd probably be simplest to introduce a
+__free_init_pages() helper.
