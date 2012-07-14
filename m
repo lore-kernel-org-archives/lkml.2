@@ -1,301 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756854Ab2GNAFQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 20:05:16 -0400
-Received: from mail160.messagelabs.com ([216.82.253.99]:11425 "EHLO
-	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756017Ab2GNAFO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 20:05:14 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-6.tower-160.messagelabs.com!1342224311!9627607!2
-X-Originating-IP: [216.166.12.97]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging: comedi: addi_data: remove pr_TTLRangelist
-Date: Fri, 13 Jul 2012 17:05:02 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <gregkh@linuxfoundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1757106Ab2GNAIu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 20:08:50 -0400
+Received: from mail.vyatta.com ([76.74.103.46]:51082 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756017Ab2GNAIs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jul 2012 20:08:48 -0400
+Date: Fri, 13 Jul 2012 17:08:26 -0700
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Jon Mason <jon.mason@intel.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-pci@vger.kernel.org, Dave Jiang <dave.jiang@intel.com>
+Subject: Re: [RFC 2/2] net: Add support for NTB virtual ethernet device
+Message-ID: <20120713170826.09210b80@nehalam.linuxnetplumber.net>
+In-Reply-To: <1342215900-3358-2-git-send-email-jon.mason@intel.com>
+References: <1342215900-3358-1-git-send-email-jon.mason@intel.com>
+	<1342215900-3358-2-git-send-email-jon.mason@intel.com>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201207131705.02813.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All the addi driver ttl subdevices use the range table
-'range_digital' provided by the comedi core. The boardinfo
-value  'pr_TTLRangeList' is not used by the drivers. Remove
-the unused range tables and the boardinfo pointer.
+On Fri, 13 Jul 2012 14:45:00 -0700
+Jon Mason <jon.mason@intel.com> wrote:
 
-The unused range tables don't make sense anyway...
+> A virtual ethernet device that uses the NTB transport API to send/receive data.
+> 
+> Signed-off-by: Jon Mason <jon.mason@intel.com>
+> ---
+>  drivers/net/Kconfig      |    4 +
+>  drivers/net/Makefile     |    1 +
+>  drivers/net/ntb_netdev.c |  411 ++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 416 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/net/ntb_netdev.c
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- .../staging/comedi/drivers/addi-data/addi_common.c | 23 ----------------------
- .../staging/comedi/drivers/addi-data/addi_common.h |  1 -
- .../comedi/drivers/addi-data/hwdrv_apci16xx.h      | 15 --------------
- .../comedi/drivers/addi-data/hwdrv_apci3xxx.h      | 14 -------------
- 4 files changed, 53 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/addi-data/addi_common.c b/drivers/staging/comedi/drivers/addi-data/addi_common.c
-index 1e62f33..d7c1e1d 100644
---- a/drivers/staging/comedi/drivers/addi-data/addi_common.c
-+++ b/drivers/staging/comedi/drivers/addi-data/addi_common.c
-@@ -610,7 +610,6 @@ static const struct addi_board boardtypes[] = {
- 		.i_IorangeBase0		= 128,
- 		.i_PCIEeprom		= ADDIDATA_NO_EEPROM,
- 		.i_NbrTTLChannel	= 48,
--		.pr_TTLRangelist	= &range_apci16xx_ttl,
- 		.reset			= i_APCI16XX_Reset,
- 		.ttl_config		= i_APCI16XX_InsnConfigInitTTLIO,
- 		.ttl_bits		= i_APCI16XX_InsnBitsReadTTLIO,
-@@ -623,7 +622,6 @@ static const struct addi_board boardtypes[] = {
- 		.i_IorangeBase0		= 128,
- 		.i_PCIEeprom		= ADDIDATA_NO_EEPROM,
- 		.i_NbrTTLChannel	= 96,
--		.pr_TTLRangelist	= &range_apci16xx_ttl,
- 		.reset			= i_APCI16XX_Reset,
- 		.ttl_config		= i_APCI16XX_InsnConfigInitTTLIO,
- 		.ttl_bits		= i_APCI16XX_InsnBitsReadTTLIO,
-@@ -648,7 +646,6 @@ static const struct addi_board boardtypes[] = {
- 		.i_AiMaxdata		= 4095,
- 		.pr_AiRangelist		= &range_apci3XXX_ai,
- 		.i_NbrTTLChannel	= 24,
--		.pr_TTLRangelist	= &range_apci3XXX_ttl,
- 		.b_AvailableConvertUnit	= 6,
- 		.ui_MinAcquisitiontimeNs = 10000,
- 		.interrupt		= v_APCI3XXX_Interrupt,
-@@ -675,7 +672,6 @@ static const struct addi_board boardtypes[] = {
- 		.i_AiMaxdata		= 4095,
- 		.pr_AiRangelist		= &range_apci3XXX_ai,
- 		.i_NbrTTLChannel	= 24,
--		.pr_TTLRangelist	= &range_apci3XXX_ttl,
- 		.b_AvailableConvertUnit	= 6,
- 		.ui_MinAcquisitiontimeNs = 10000,
- 		.interrupt		= v_APCI3XXX_Interrupt,
-@@ -702,7 +698,6 @@ static const struct addi_board boardtypes[] = {
- 		.i_AiMaxdata		= 4095,
- 		.pr_AiRangelist		= &range_apci3XXX_ai,
- 		.i_NbrTTLChannel	= 24,
--		.pr_TTLRangelist	= &range_apci3XXX_ttl,
- 		.b_AvailableConvertUnit	= 6,
- 		.ui_MinAcquisitiontimeNs = 10000,
- 		.interrupt		= v_APCI3XXX_Interrupt,
-@@ -729,7 +724,6 @@ static const struct addi_board boardtypes[] = {
- 		.i_AiMaxdata		= 65535,
- 		.pr_AiRangelist		= &range_apci3XXX_ai,
- 		.i_NbrTTLChannel	= 24,
--		.pr_TTLRangelist	= &range_apci3XXX_ttl,
- 		.b_AvailableConvertUnit	= 6,
- 		.ui_MinAcquisitiontimeNs = 10000,
- 		.interrupt		= v_APCI3XXX_Interrupt,
-@@ -756,7 +750,6 @@ static const struct addi_board boardtypes[] = {
- 		.i_AiMaxdata		= 65535,
- 		.pr_AiRangelist		= &range_apci3XXX_ai,
- 		.i_NbrTTLChannel	= 24,
--		.pr_TTLRangelist	= &range_apci3XXX_ttl,
- 		.b_AvailableConvertUnit	= 6,
- 		.ui_MinAcquisitiontimeNs = 10000,
- 		.interrupt		= v_APCI3XXX_Interrupt,
-@@ -783,7 +776,6 @@ static const struct addi_board boardtypes[] = {
- 		.i_AiMaxdata		= 65535,
- 		.pr_AiRangelist		= &range_apci3XXX_ai,
- 		.i_NbrTTLChannel	= 24,
--		.pr_TTLRangelist	= &range_apci3XXX_ttl,
- 		.b_AvailableConvertUnit	= 6,
- 		.ui_MinAcquisitiontimeNs = 10000,
- 		.interrupt		= v_APCI3XXX_Interrupt,
-@@ -813,7 +805,6 @@ static const struct addi_board boardtypes[] = {
- 		.i_NbrDoChannel		= 4,
- 		.i_DoMaxdata		= 1,
- 		.i_NbrTTLChannel	= 24,
--		.pr_TTLRangelist	= &range_apci3XXX_ttl,
- 		.b_AvailableConvertUnit	= 6,
- 		.ui_MinAcquisitiontimeNs = 5000,
- 		.interrupt		= v_APCI3XXX_Interrupt,
-@@ -848,7 +839,6 @@ static const struct addi_board boardtypes[] = {
- 		.i_NbrDoChannel		= 4,
- 		.i_DoMaxdata		= 1,
- 		.i_NbrTTLChannel	= 24,
--		.pr_TTLRangelist	= &range_apci3XXX_ttl,
- 		.b_AvailableConvertUnit	= 6,
- 		.ui_MinAcquisitiontimeNs = 5000,
- 		.interrupt		= v_APCI3XXX_Interrupt,
-@@ -883,7 +873,6 @@ static const struct addi_board boardtypes[] = {
- 		.i_NbrDoChannel		= 4,
- 		.i_DoMaxdata		= 1,
- 		.i_NbrTTLChannel	= 24,
--		.pr_TTLRangelist	= &range_apci3XXX_ttl,
- 		.b_AvailableConvertUnit	= 6,
- 		.ui_MinAcquisitiontimeNs = 5000,
- 		.interrupt		= v_APCI3XXX_Interrupt,
-@@ -918,7 +907,6 @@ static const struct addi_board boardtypes[] = {
- 		.i_NbrDoChannel		= 4,
- 		.i_DoMaxdata		= 1,
- 		.i_NbrTTLChannel	= 24,
--		.pr_TTLRangelist	= &range_apci3XXX_ttl,
- 		.b_AvailableConvertUnit	= 6,
- 		.ui_MinAcquisitiontimeNs = 5000,
- 		.interrupt		= v_APCI3XXX_Interrupt,
-@@ -953,7 +941,6 @@ static const struct addi_board boardtypes[] = {
- 		.i_NbrDoChannel		= 4,
- 		.i_DoMaxdata		= 1,
- 		.i_NbrTTLChannel	= 24,
--		.pr_TTLRangelist	= &range_apci3XXX_ttl,
- 		.b_AvailableConvertUnit	= 6,
- 		.ui_MinAcquisitiontimeNs = 5000,
- 		.interrupt		= v_APCI3XXX_Interrupt,
-@@ -988,7 +975,6 @@ static const struct addi_board boardtypes[] = {
- 		.i_NbrDoChannel		= 4,
- 		.i_DoMaxdata		= 1,
- 		.i_NbrTTLChannel	= 24,
--		.pr_TTLRangelist	= &range_apci3XXX_ttl,
- 		.b_AvailableConvertUnit	= 6,
- 		.ui_MinAcquisitiontimeNs = 5000,
- 		.interrupt		= v_APCI3XXX_Interrupt,
-@@ -1023,7 +1009,6 @@ static const struct addi_board boardtypes[] = {
- 		.pr_AiRangelist		= &range_apci3XXX_ai,
- 		.pr_AoRangelist		= &range_apci3XXX_ao,
- 		.i_NbrTTLChannel	= 24,
--		.pr_TTLRangelist	= &range_apci3XXX_ttl,
- 		.b_AvailableConvertUnit	= 6,
- 		.ui_MinAcquisitiontimeNs = 10000,
- 		.interrupt		= v_APCI3XXX_Interrupt,
-@@ -1054,7 +1039,6 @@ static const struct addi_board boardtypes[] = {
- 		.pr_AiRangelist		= &range_apci3XXX_ai,
- 		.pr_AoRangelist		= &range_apci3XXX_ao,
- 		.i_NbrTTLChannel	= 24,
--		.pr_TTLRangelist	= &range_apci3XXX_ttl,
- 		.b_AvailableConvertUnit	= 6,
- 		.ui_MinAcquisitiontimeNs = 10000,
- 		.interrupt		= v_APCI3XXX_Interrupt,
-@@ -1085,7 +1069,6 @@ static const struct addi_board boardtypes[] = {
- 		.pr_AiRangelist		= &range_apci3XXX_ai,
- 		.pr_AoRangelist		= &range_apci3XXX_ao,
- 		.i_NbrTTLChannel	= 24,
--		.pr_TTLRangelist	= &range_apci3XXX_ttl,
- 		.b_AvailableConvertUnit	= 6,
- 		.ui_MinAcquisitiontimeNs = 10000,
- 		.interrupt		= v_APCI3XXX_Interrupt,
-@@ -1116,7 +1099,6 @@ static const struct addi_board boardtypes[] = {
- 		.pr_AiRangelist		= &range_apci3XXX_ai,
- 		.pr_AoRangelist		= &range_apci3XXX_ao,
- 		.i_NbrTTLChannel	= 24,
--		.pr_TTLRangelist	= &range_apci3XXX_ttl,
- 		.b_AvailableConvertUnit	= 6,
- 		.ui_MinAcquisitiontimeNs = 10000,
- 		.interrupt		= v_APCI3XXX_Interrupt,
-@@ -1150,7 +1132,6 @@ static const struct addi_board boardtypes[] = {
- 		.i_NbrDoChannel		= 4,
- 		.i_DoMaxdata		= 1,
- 		.i_NbrTTLChannel	= 24,
--		.pr_TTLRangelist	= &range_apci3XXX_ttl,
- 		.b_AvailableConvertUnit	= 6,
- 		.ui_MinAcquisitiontimeNs = 5000,
- 		.interrupt		= v_APCI3XXX_Interrupt,
-@@ -1189,7 +1170,6 @@ static const struct addi_board boardtypes[] = {
- 		.i_NbrDoChannel		= 4,
- 		.i_DoMaxdata		= 1,
- 		.i_NbrTTLChannel	= 24,
--		.pr_TTLRangelist	= &range_apci3XXX_ttl,
- 		.b_AvailableConvertUnit	= 6,
- 		.ui_MinAcquisitiontimeNs = 5000,
- 		.interrupt		= v_APCI3XXX_Interrupt,
-@@ -1228,7 +1208,6 @@ static const struct addi_board boardtypes[] = {
- 		.i_NbrDoChannel		= 4,
- 		.i_DoMaxdata		= 1,
- 		.i_NbrTTLChannel	= 24,
--		.pr_TTLRangelist	= &range_apci3XXX_ttl,
- 		.b_AvailableConvertUnit	= 6,
- 		.ui_MinAcquisitiontimeNs = 5000,
- 		.interrupt		= v_APCI3XXX_Interrupt,
-@@ -1267,7 +1246,6 @@ static const struct addi_board boardtypes[] = {
- 		.i_NbrDoChannel		= 4,
- 		.i_DoMaxdata		= 1,
- 		.i_NbrTTLChannel	= 24,
--		.pr_TTLRangelist	= &range_apci3XXX_ttl,
- 		.b_AvailableConvertUnit	= 6,
- 		.ui_MinAcquisitiontimeNs = 5000,
- 		.interrupt		= v_APCI3XXX_Interrupt,
-@@ -1410,7 +1388,6 @@ static const struct addi_board boardtypes[] = {
- 		.i_AoMaxdata		= 4095,
- 		.pr_AoRangelist		= &range_apci3XXX_ao,
- 		.i_NbrTTLChannel	= 24,
--		.pr_TTLRangelist	= &range_apci3XXX_ttl,
- 		.interrupt		= v_APCI3XXX_Interrupt,
- 		.reset			= i_APCI3XXX_Reset,
- 		.ao_write		= i_APCI3XXX_InsnWriteAnalogOutput,
-diff --git a/drivers/staging/comedi/drivers/addi-data/addi_common.h b/drivers/staging/comedi/drivers/addi-data/addi_common.h
-index 2c3f347..b7bbb71 100644
---- a/drivers/staging/comedi/drivers/addi-data/addi_common.h
-+++ b/drivers/staging/comedi/drivers/addi-data/addi_common.h
-@@ -85,7 +85,6 @@ struct addi_board {
- 	int i_DoMaxdata;	/*  data to set all channels high */
- 
- 	int i_NbrTTLChannel;	/*  Number of TTL channels */
--	const struct comedi_lrange *pr_TTLRangelist;	/* rangelist for TTL */
- 
- 	int i_Dma;		/*  dma present or not */
- 	int i_Timer;		/*    timer subdevice present or not */
-diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci16xx.h b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci16xx.h
-index 5bf91e1..a12df4b 100644
---- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci16xx.h
-+++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci16xx.h
-@@ -41,21 +41,6 @@
- 
- #ifdef __KERNEL__
- 
--static const struct comedi_lrange range_apci16xx_ttl = { 12,
--	{BIP_RANGE(1),
--	 BIP_RANGE(1),
--	 BIP_RANGE(1),
--	 BIP_RANGE(1),
--	 BIP_RANGE(1),
--	 BIP_RANGE(1),
--	 BIP_RANGE(1),
--	 BIP_RANGE(1),
--	 BIP_RANGE(1),
--	 BIP_RANGE(1),
--	 BIP_RANGE(1),
--	 BIP_RANGE(1)}
--};
--
- /*
- +----------------------------------------------------------------------------+
- |                       TTL INISIALISATION FUNCTION                          |
-diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3xxx.h b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3xxx.h
-index cce9e12..e10b7e5 100644
---- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3xxx.h
-+++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3xxx.h
-@@ -42,20 +42,6 @@ static const struct comedi_lrange range_apci3XXX_ai = { 8, {BIP_RANGE(10),
- 						     UNI_RANGE(1)}
- };
- 
--static const struct comedi_lrange range_apci3XXX_ttl = { 12, {BIP_RANGE(1),
--						       BIP_RANGE(1),
--						       BIP_RANGE(1),
--						       BIP_RANGE(1),
--						       BIP_RANGE(1),
--						       BIP_RANGE(1),
--						       BIP_RANGE(1),
--						       BIP_RANGE(1),
--						       BIP_RANGE(1),
--						       BIP_RANGE(1),
--						       BIP_RANGE(1),
--						       BIP_RANGE(1)}
--};
--
- static const struct comedi_lrange range_apci3XXX_ao = { 2, {BIP_RANGE(10),
- 						     UNI_RANGE(10)}
- };
--- 
-1.7.11
+> +static void ntb_get_drvinfo(__attribute__((unused)) struct net_device *dev,
+> +			    struct ethtool_drvinfo *info)
+> +{
+> +	strlcpy(info->driver, KBUILD_MODNAME, sizeof(info->driver));
+> +	strlcpy(info->version, NTB_NETDEV_VER, sizeof(info->version));
+> +}
+> +
+> +static const char ntb_nic_stats[][ETH_GSTRING_LEN] = {
+> +	"rx_packets", "rx_bytes", "rx_errors", "rx_dropped", "rx_length_errors",
+> +	"rx_frame_errors", "rx_fifo_errors",
+> +	"tx_packets", "tx_bytes", "tx_errors", "tx_dropped",
+> +};
+> +
+> +static int ntb_get_stats_count(__attribute__((unused)) struct net_device *dev)
+> +{
+> +	return ARRAY_SIZE(ntb_nic_stats);
+> +}
+> +
+> +static int ntb_get_sset_count(struct net_device *dev, int sset)
+> +{
+> +	switch (sset) {
+> +	case ETH_SS_STATS:
+> +		return ntb_get_stats_count(dev);
+> +	default:
+> +		return -EOPNOTSUPP;
+> +	}
+> +}
+> +
+> +static void ntb_get_strings(__attribute__((unused)) struct net_device *dev,
+> +			    u32 sset, u8 *data)
+> +{
+> +	switch (sset) {
+> +	case ETH_SS_STATS:
+> +		memcpy(data, *ntb_nic_stats, sizeof(ntb_nic_stats));
+> +	}
+> +}
+> +
+> +static void
+> +ntb_get_ethtool_stats(struct net_device *dev,
+> +		      __attribute__((unused)) struct ethtool_stats *stats,
+> +		      u64 *data)
+> +{
+> +	int i = 0;
+> +
+> +	data[i++] = dev->stats.rx_packets;
+> +	data[i++] = dev->stats.rx_bytes;
+> +	data[i++] = dev->stats.rx_errors;
+> +	data[i++] = dev->stats.rx_dropped;
+> +	data[i++] = dev->stats.rx_length_errors;
+> +	data[i++] = dev->stats.rx_frame_errors;
+> +	data[i++] = dev->stats.rx_fifo_errors;
+> +	data[i++] = dev->stats.tx_packets;
+> +	data[i++] = dev->stats.tx_bytes;
+> +	data[i++] = dev->stats.tx_errors;
+> +	data[i++] = dev->stats.tx_dropped;
+> +}
+
+These statistics add no value over existing network stats.
+Don't implement ethtool stats unless device has something more
+interesting to say.
+
+> +static const struct ethtool_ops ntb_ethtool_ops = {
+> +	.get_drvinfo = ntb_get_drvinfo,
+> +	.get_sset_count = ntb_get_sset_count,
+> +	.get_strings = ntb_get_strings,
+> +	.get_ethtool_stats = ntb_get_ethtool_stats,
+> +	.get_link = ethtool_op_get_link,
+> +};
+
+If you want to implement bonding or bridging then implementing
+get_settings would help.
+
+> +static int __init ntb_netdev_init_module(void)
+> +{
+> +	struct ntb_netdev *dev;
+> +	int rc;
+> +
+> +	pr_info("%s: Probe\n", KBUILD_MODNAME);
+
+Useless message
+
+> +	netdev = alloc_etherdev(sizeof(struct ntb_netdev));
+> +	if (!netdev)
+> +		return -ENOMEM;
+> +
+> +	dev = netdev_priv(netdev);
+> +	dev->ndev = netdev;
+> +	netdev->features = NETIF_F_HIGHDMA;
+> +
+> +	netdev->hw_features = netdev->features;
+> +	netdev->watchdog_timeo = msecs_to_jiffies(NTB_TX_TIMEOUT_MS);
+> +
+> +	random_ether_addr(netdev->perm_addr);
+> +	memcpy(netdev->dev_addr, netdev->perm_addr, netdev->addr_len);
+> +
+> +	netdev->netdev_ops = &ntb_netdev_ops;
+> +	SET_ETHTOOL_OPS(netdev, &ntb_ethtool_ops);
+> +
+> +	dev->qp = ntb_transport_create_queue(ntb_netdev_rx_handler,
+> +					     ntb_netdev_tx_handler,
+> +					     ntb_netdev_event_handler);
+> +	if (!dev->qp) {
+> +		rc = -EIO;
+> +		goto err;
+> +	}
+> +
+> +	netdev->mtu = ntb_transport_max_size(dev->qp) - ETH_HLEN;
+> +
+> +	rc = register_netdev(netdev);
+> +	if (rc)
+> +		goto err1;
+> +
+> +	pr_info("%s: %s created\n", KBUILD_MODNAME, netdev->name);
+> +	return 0;
+> +
+> +err1:
+> +	ntb_transport_free_queue(dev->qp);
+> +err:
+> +	free_netdev(netdev);
+> +	return rc;
+> +}
+> +module_init(ntb_netdev_init_module);
+> +
+> +static void __exit ntb_netdev_exit_module(void)
+> +{
+> +	struct ntb_netdev *dev = netdev_priv(netdev);
+> +
+> +	unregister_netdev(netdev);
+> +	ntb_transport_free_queue(dev->qp);
+> +	free_netdev(netdev);
+> +
+> +	pr_info("%s: Driver removed\n", KBUILD_MODNAME);
+> +}
+> +module_exit(ntb_netdev_exit_module);
 
