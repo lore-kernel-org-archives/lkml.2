@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754299Ab2GNQoK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jul 2012 12:44:10 -0400
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:55720
+	id S1754640Ab2GNQoU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jul 2012 12:44:20 -0400
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:31940
 	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752063Ab2GNQnT (ORCPT
+	by vger.kernel.org with ESMTP id S1754127Ab2GNQnY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jul 2012 12:43:19 -0400
+	Sat, 14 Jul 2012 12:43:24 -0400
 X-IronPort-AV: E=Sophos;i="4.77,584,1336341600"; 
-   d="scan'208";a="150655455"
+   d="scan'208";a="150655457"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Wolfgang Grandegger <wg@grandegger.com>
-Cc: kernel-janitors@vger.kernel.org, Marc Kleine-Budde <mkl@pengutronix.de>,
-        linux-can@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/6] drivers/net/can/softing/softing_main.c: ensure a consistent return value in error case
-Date: Sat, 14 Jul 2012 18:43:04 +0200
-Message-Id: <1342284188-19176-3-git-send-email-Julia.Lawall@lip6.fr>
+To: linux-kernel@vger.kernel.org
+Cc: kernel-janitors@vger.kernel.org
+Subject: [PATCH 4/6] drivers/cpuidle/sysfs.c: ensure a consistent return value in error case
+Date: Sat, 14 Jul 2012 18:43:06 +0200
+Message-Id: <1342284188-19176-5-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1342284188-19176-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1342284188-19176-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -61,25 +59,31 @@ if (\(ret != 0\|ret < 0\|ret > 0\) || ...) { ... return ...; }
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/net/can/softing/softing_main.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/cpuidle/sysfs.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/can/softing/softing_main.c b/drivers/net/can/softing/softing_main.c
-index a7c77c7..f2a221e 100644
---- a/drivers/net/can/softing/softing_main.c
-+++ b/drivers/net/can/softing/softing_main.c
-@@ -826,12 +826,12 @@ static __devinit int softing_pdev_probe(struct platform_device *pdev)
- 		goto sysfs_failed;
- 	}
+diff --git a/drivers/cpuidle/sysfs.c b/drivers/cpuidle/sysfs.c
+index 5f809e3..06df57c 100644
+--- a/drivers/cpuidle/sysfs.c
++++ b/drivers/cpuidle/sysfs.c
+@@ -361,15 +361,17 @@ static inline void cpuidle_free_state_kobj(struct cpuidle_device *device, int i)
+  */
+ int cpuidle_add_state_sysfs(struct cpuidle_device *device)
+ {
+-	int i, ret = -ENOMEM;
++	int i, ret;
+ 	struct cpuidle_state_kobj *kobj;
+ 	struct cpuidle_driver *drv = cpuidle_get_driver();
  
--	ret = -ENOMEM;
- 	for (j = 0; j < ARRAY_SIZE(card->net); ++j) {
- 		card->net[j] = netdev =
- 			softing_netdev_create(card, card->id.chip[j]);
- 		if (!netdev) {
- 			dev_alert(&pdev->dev, "failed to make can[%i]", j);
+ 	/* state statistics */
+ 	for (i = 0; i < device->state_count; i++) {
+ 		kobj = kzalloc(sizeof(struct cpuidle_state_kobj), GFP_KERNEL);
+-		if (!kobj)
++		if (!kobj) {
 +			ret = -ENOMEM;
- 			goto netdev_failed;
- 		}
- 		priv = netdev_priv(card->net[j]);
+ 			goto error_state;
++		}
+ 		kobj->state = &drv->states[i];
+ 		kobj->state_usage = &device->states_usage[i];
+ 		init_completion(&kobj->kobj_unregister);
 
