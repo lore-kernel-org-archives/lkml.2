@@ -1,120 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757120Ab2GNAY4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 20:24:56 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41196 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752494Ab2GNAYy (ORCPT
+	id S1757415Ab2GNAsM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 20:48:12 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:37817 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757210Ab2GNAsL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 20:24:54 -0400
-Date: Fri, 13 Jul 2012 17:24:49 -0700
-From: Tyler Hicks <tyhicks@canonical.com>
-To: Tim Sally <tsally@atomicpeace.com>
-Cc: dustin.kirkland@gazzang.com, ecryptfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] eCryptfs: check for eCryptfs cipher support at mount
-Message-ID: <20120714002448.GB24393@boyd>
-References: <20120711171152.GA16475@boyd>
- <1342134624-31564-1-git-send-email-tsally@atomicpeace.com>
+	Fri, 13 Jul 2012 20:48:11 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="OwLcNYc0lM97+oe1"
-Content-Disposition: inline
-In-Reply-To: <1342134624-31564-1-git-send-email-tsally@atomicpeace.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAObL_7GaPDNops_cL2u4yU9Afj14f6ju_ZW7qRjhSy25qsbfkw@mail.gmail.com>
+References: <1342156672-7369-1-git-send-email-wad@chromium.org>
+	<1342199195-2078-1-git-send-email-wad@chromium.org>
+	<CAObL_7GaPDNops_cL2u4yU9Afj14f6ju_ZW7qRjhSy25qsbfkw@mail.gmail.com>
+Date: Fri, 13 Jul 2012 19:48:09 -0500
+Message-ID: <CABqD9hZRyjjb_xxF=_5u=RF+FKNheW=yJOWU=srEan_XqgBjhw@mail.gmail.com>
+Subject: Re: [PATCH v2] x86/vsyscall: allow seccomp filter in vsyscall=emulate
+From: Will Drewry <wad@chromium.org>
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        qmewlo@gmail.com, eparis@redhat.com, keescook@chromium.org,
+        james.l.morris@oracle.com, hpa@zytor.com, cevans@chromium.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jul 13, 2012 at 6:00 PM, Andrew Lutomirski <luto@mit.edu> wrote:
+> On Fri, Jul 13, 2012 at 10:06 AM, Will Drewry <wad@chromium.org> wrote:
+>> If a seccomp filter program is installed, older static binaries and
+>> distributions with older libc implementations (glibc 2.13 and earlier)
+>> that rely on vsyscall use will be terminated regardless of the filter
+>> program policy when executing time, gettimeofday, or getcpu.  This is
+>> only the case when vsyscall emulation is in use (vsyscall=emulate is the
+>> default).
+>>
+>> This patch emulates system call entry inside a vsyscall=emulate by
+>> populating regs->ax and regs->orig_ax with the system call number prior
+>> to calling into seccomp such that all seccomp-dependencies function
+>> normally.  Additionally, system call return behavior is emulated in line
+>> with other vsyscall entrypoints for the trace/trap cases.
+>>
+>> Reported-by: Owen Kibel <qmewlo@gmail.com>
+>> Signed-off-by: Will Drewry <wad@chromium.org>
+>>
+>> v2: - fixed ip and sp on SECCOMP_RET_TRAP/TRACE (thanks to luto@mit.edu)
+>
+>> @@ -253,6 +273,12 @@ bool emulate_vsyscall(struct pt_regs *regs, unsigned long address)
+>>
+>>         current_thread_info()->sig_on_uaccess_error = prev_sig_on_uaccess_error;
+>>
+>> +       if (skip) {
+>> +               if ((long)regs->ax <= 0L) /* seccomp errno emulation */
+>> +                       goto do_ret;
+>> +               goto done; /* seccomp trace/trap */
+>> +       }
+>> +
+>>         if (ret == -EFAULT) {
+>>                 /* Bad news -- userspace fed a bad pointer to a vsyscall. */
+>>                 warn_bad_vsyscall(KERN_INFO, regs,
+>> @@ -271,10 +297,11 @@ bool emulate_vsyscall(struct pt_regs *regs, unsigned long address)
+>>
+>>         regs->ax = ret;
+>>
+>> +do_ret:
+>>         /* Emulate a ret instruction. */
+>>         regs->ip = caller;
+>>         regs->sp += 8;
+>> -
+>> +done:
+>>         return true;
+>>
+>>  sigsegv:
+>> --
+>> 1.7.9.5
+>>
+>
+> This has the same odd property as the sigsegv path that the faulting
+> instruction will appear to be the mov, not the syscall.  That seems to
+> be okay, though -- various pieces of code that try to restart the segv
+> are okay with that.
 
---OwLcNYc0lM97+oe1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yeah - I would otherwise do
+  regs->ip += 9;
+but I wanted to match the code that was therefor SIGSEGV.  If regs->ip
++= 9 _just_ for the SIGSYS case is fine, then I'll make that change
+shortly.  Since any code that sees the vsyscall address should be wise
+enough to avoid it, perhaps that's why the SIGSEGV hasn't had a
+problem so far.
 
-On 2012-07-12 19:10:24, Tim Sally wrote:
-> The issue occurs when eCryptfs is mounted with a cipher supported by
-> the crypto subsystem but not by eCryptfs. The mount succeeds and an
-> error does not occur until a write. This change checks for eCryptfs
-> cipher support at mount time.
->=20
-> Resolves Launchpad issue #338914, reported by Tyler Hicks in 03/2009.
-> https://bugs.launchpad.net/ecryptfs/+bug/338914
->=20
-> Signed-off-by: Tim Sally <tsally@atomicpeace.com>
+> Is there any code that assumes that changing rax (i.e. the syscall
+> number) and restarting a syscall after SIGSYS will invoke the new
+> syscall?  (The RET_TRACE path might be similar -- does the
+> ptrace_event(PTRACE_EVENT_SECCOMP, data) in seccomp.c give a debugger
+> a chance to synchronously cancel or change the syscall?
 
-Looks good! I've pushed it to the eCryptfs -next branch and it will go
-in during the 3.6 merge window.
+Unfortunately, it does in normal interception. I don't see any way out
+of that quirk with vsyscall=emulate.  As is without seccomp,
+vsyscall=emulate doesn't allow ptrace interception (or syscall
+auditing for that matter) while vsyscall=native does.   So the option
+here is to document the quirky interaction in
+Documentation/prctl/seccomp_filter.txt.  In particular, if the tracer
+sees either (time|gettimeofday|getcpu) and rip in the vsyscall page,
+it will know it can't rewrite or bypass the call.    Is there a better
+option?
 
-I'm looking forward to more eCryptfs patches from you. Thanks!
+Given that, I will include a tweak to the documentation to indicate
+that behavior so that userspace authors of BPF programs that use
+SECCOMP_RET_TRACE will be aware of the behavior.
 
-Tyler
+> If those issues aren't problems, then:
+>
+> Reviewed-by: Andy Lutomirski <luto@amacapital.net>
+>
+> (If the syscall number needs to change after the fact in the
+> SECCOMP_RET_TRAP case, it'll be a mess.)
 
-> ---
->  fs/ecryptfs/main.c |   13 +++++++++++++
->  1 file changed, 13 insertions(+)
->=20
-> diff --git a/fs/ecryptfs/main.c b/fs/ecryptfs/main.c
-> index df217dc..aee998d 100644
-> --- a/fs/ecryptfs/main.c
-> +++ b/fs/ecryptfs/main.c
-> @@ -279,6 +279,7 @@ static int ecryptfs_parse_options(struct ecryptfs_sb_=
-info *sbi, char *options,
->  	char *fnek_src;
->  	char *cipher_key_bytes_src;
->  	char *fn_cipher_key_bytes_src;
-> +	u8 cipher_code;
-> =20
->  	*check_ruid =3D 0;
-> =20
-> @@ -420,6 +421,18 @@ static int ecryptfs_parse_options(struct ecryptfs_sb=
-_info *sbi, char *options,
->  	    && !fn_cipher_key_bytes_set)
->  		mount_crypt_stat->global_default_fn_cipher_key_bytes =3D
->  			mount_crypt_stat->global_default_cipher_key_size;
-> +
-> +	cipher_code =3D ecryptfs_code_for_cipher_string(
-> +		mount_crypt_stat->global_default_cipher_name,
-> +		mount_crypt_stat->global_default_cipher_key_size);
-> +	if (!cipher_code) {
-> +		ecryptfs_printk(KERN_ERR,
-> +				"eCryptfs doesn't support cipher: %s.",
-> +				mount_crypt_stat->global_default_cipher_name);
-> +		rc =3D -EINVAL;
-> +		goto out;
-> +	}
-> +
->  	mutex_lock(&key_tfm_list_mutex);
->  	if (!ecryptfs_tfm_exists(mount_crypt_stat->global_default_cipher_name,
->  				 NULL)) {
-> --=20
-> 1.7.10.4
->=20
-> --
-> To unsubscribe from this list: send the line "unsubscribe ecryptfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Nah - traps are delivered like the forced sigsegv path.
 
---OwLcNYc0lM97+oe1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+I'll spin a v3 soon including the documentation tweak and the ip
+offset to match vsyscall=native behavior (regs->ip += 9 _just_ for the
+skip case).  Of course, any better ideas for the trace-case will be
+more than welcome, but it seems to me to be an acceptable tradeoff - I
+hope others agree.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+I'll make the changes and then put it through its paces to see if any
+other little idiosyncrasies emerge.
 
-iQIcBAEBCgAGBQJQALxQAAoJENaSAD2qAscKJJAP/2f98CITfgwIzaL6Hc9ZzY8R
-ZZwo+JJCOv7UqsOtPNb9WYSQ2F5aoMrY4BkYLLj4RLxAwuEk3M/e/gYpP7VSrCPd
-L2+/q+bJ/D8DOJGHDCaqcpTkD2jVz16AsuK7gH5+Z68ALBr8aqtl9QPfYs9Wwxwj
-5QCdpa9iWZp+cegDUBH6QreFtkoZWK6S9kTNGZ+jAWdFdYSD51QupybwFTk69OzG
-2znUnjFqwUzp86CZDau3nohrJo9yz74a0vpku96wOIvSzgRTkqaSCBGbim20O5Ir
-iQ1RSwie8NLT8D2wnROr3erOrbcEdzWP5GJ2130TlM1xvDbNbOhIFmM17+Os6W9h
-VNeRNbXlIh0gkXI/kBOWiMJ2hc3cduSWhRQa3PFFGES5IcwCXFln8H7v2nC+9GRy
-Q+Ap03zKKfnUETvGpu22jt5EDqSbBC/wvQk08qy9n1zNm4fX277ppzCIMblPrf/R
-9A/dGZlIm3dMpx8I8EkqcFp9IJEbSX2fxB1FBxqtzwu9sp3uEN1C9PvaqNnAzwU9
-gHnfpMZ5qf3sFCD4xmEECCepk5uC2J4Ay3va5DmEGgKO5ZTeDvW6HgB4p/At2N4u
-zLCDPWDk95DpRjXosyqN1qUPjyB5tkZBRcX2VsW83PXoeZa81e1wK/KFYROh912R
-ORmC81Y3VDDN6Ta2W/DX
-=KrfE
------END PGP SIGNATURE-----
-
---OwLcNYc0lM97+oe1--
+Thanks for the close review!
+will
