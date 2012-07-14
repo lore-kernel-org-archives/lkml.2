@@ -1,60 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754280Ab2GNX2j (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jul 2012 19:28:39 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:53007 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751421Ab2GNX2c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jul 2012 19:28:32 -0400
-Message-ID: <1342308511.8377.51.camel@joe2Laptop>
-Subject: RE: [PATCH 01/15] Drivers: hv: Format GUIDS as per MSFT standards
-From: Joe Perches <joe@perches.com>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>
-Date: Sat, 14 Jul 2012 16:28:31 -0700
-In-Reply-To: <426367E2313C2449837CD2DE46E7EAF9223B702C@SN2PRD0310MB382.namprd03.prod.outlook.com>
-References: <1342297930-12607-1-git-send-email-kys@microsoft.com>
-	 <1342298060-12662-1-git-send-email-kys@microsoft.com>
-	 <1342297484.8377.28.camel@joe2Laptop>
-	 <426367E2313C2449837CD2DE46E7EAF9223B702C@SN2PRD0310MB382.namprd03.prod.outlook.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754482Ab2GNXn1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jul 2012 19:43:27 -0400
+Received: from grace.univie.ac.at ([131.130.3.115]:58192 "EHLO
+	grace.univie.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752031Ab2GNXnV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Jul 2012 19:43:21 -0400
+Message-ID: <b93cddfd0a19158ec59823140d1e2075.squirrel@webmail.univie.ac.at>
+In-Reply-To: <20120714144800.7f8c97f6@nehalam.linuxnetplumber.net>
+References: <dee325378a2d3b7792da9640fc14905f.squirrel@webmail.univie.ac.at>
+    <20120714144800.7f8c97f6@nehalam.linuxnetplumber.net>
+Date: Sun, 15 Jul 2012 01:43:18 +0200
+Subject: Re: resurrecting tcphealth
+From: "Piotr Sawuk" <a9702387@unet.univie.ac.at>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.19
+MIME-Version: 1.0
+Content-Type: text/plain;charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Univie-Virus-Scan: scanned by ClamAV on jarvis.univie.ac.at
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-07-14 at 23:23 +0000, KY Srinivasan wrote:
-> > -----Original Message-----
-> > From: Joe Perches [mailto:joe@perches.com]
-> > Sent: Saturday, July 14, 2012 4:25 PM
-[]
-> > On Sat, 2012-07-14 at 13:34 -0700, K. Y. Srinivasan wrote:
-> > > Format GUIDS as per MSFT standard. This makes interacting with MSFT
-> > > tool stack easier.
-[]
-> > > @@ -166,7 +166,7 @@ static ssize_t vmbus_show_device_attr(struct device
-> > *dev,
-> > >  			       device_info->chn_type.b[15]);
-> > >  	} else if (!strcmp(dev_attr->attr.name, "device_id")) {
-> > >  		ret = sprintf(buf, "{%02x%02x%02x%02x-%02x%02x-%02x%02x-"
-> > > -			       "%02x%02x%02x%02x%02x%02x%02x%02x}\n",
-> > > +			       "%02x%02x-%02x%02x%02x%02x%02x%02x}\n",
-> > >  			       device_info->chn_instance.b[3],
-> > >  			       device_info->chn_instance.b[2],
-> > >  			       device_info->chn_instance.b[1],
-> > 
-> > 	ret = sprintf(buf, "{%pUl}\n", device_info->chn_instance.b);
-> 
-> Thank you Joe. I recall seeing some patches from you a longtime ago on this.
-> I was just modifying existing code in this patch; if it is ok with you I will send a
-> separate patch using the preferred format string for printing GUIDS.
+On Sa, 14.07.2012, 23:48, Stephen Hemminger wrote:
+> Maybe it would be better to use netlink info (for ss command)
+> rather than a /proc/net interface.
+> See how existing TCP values and MEMINFO are handled.
+>
 
-Hi KY.  It's your code.  Do what you think best.  cheers, Joe
+I'm confused, what exactly do you mean?
+of course a library-interface might be more interesting than proc/net.
+the proc/net/tcphealth functionality probably could be done in userspace,
+although I'm wondering how userspace could traverse all tcp_sock structures
+for all clients -- but the gain would be a bit more security. and the rest
+of the patch still would need to stay in the kernel since that info it
+collects would otherwise be lost completely. so I somehow doubt this would
+be worth the effort. better would be optional tcphealth disabled by default
+for security-reasons. (i.e. if you're a server you don't want to enable it.)
+
+@"David Miller":
+sorry, I forgot an important info about this patch, an info that can be
+found in the paper I quoted:
+
+'We concentrate on client side metrics to make our results more applicable
+to web clients. We chose this strategy to help answer the often asked
+question: "Why is my Internet connection so slow?"
+...
+Since we only have access to the client node and not the server, we must
+find performance data using only the information coming downstream to us.
+Savage showed that the TCP protocol maintains data that we can leverage to
+our advantage and we use that idea to monitor per-connection TCP health at
+the client. This task is made difficult because of the TCP philosophy of
+"smart sender, dumb receiver". There is simply more information about the
+connection on the server side than on the client.' [1]
+
+tcp_info is such a server-side diagnosis, clients usually don't send enough
+data to make the info therein meaningful for checking the "health" of tcp.
+it's all about the senders, and the desktop-pc simply isn't that big of a
+tcp-sender to slashdot and co.
+
+@"Eric Dumazet":
+the same goes for you too. netstat -s and whatever kind of pooling together
+statistics on all internet-connections is useful for a server-admin only,
+slowness of particular sites can only be investigated with ping and this
+tcphealth patch when you're on client-side.
+
+as for userspace-tools, apart from tcp-health display in each
+downloading-progress-bar I can think of cron-jobs which wait for better
+tcp-health before spidering some site, or an altered wget in mirror-mode.
+the gkrellm-plugin that comes with this patch might count together all the
+data of tcphealth, but when a tcp_sock isn't stored anymore that data is
+forgotten and you get a concurrent info most likely for only one site, since
+the client wont have much connections open and will be closing old
+connections frequently.
+
+oh, and again I recommend the really short although outdated thesis
+
+[1] https://sacerdoti.org/tcphealth/tcphealth-paper.pdf
 
