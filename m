@@ -1,60 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754442Ab2GNMBm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jul 2012 08:01:42 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:43395 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752971Ab2GNMBl (ORCPT
+	id S1756873Ab2GNMIl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jul 2012 08:08:41 -0400
+Received: from relay2.mail.vrmd.de ([81.28.224.28]:53008 "EHLO
+	relay2.mail.vrmd.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753125Ab2GNMIj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jul 2012 08:01:41 -0400
+	Sat, 14 Jul 2012 08:08:39 -0400
+X-Greylist: delayed 1205 seconds by postgrey-1.27 at vger.kernel.org; Sat, 14 Jul 2012 08:08:39 EDT
+Date: Sat, 14 Jul 2012 11:44:31 +0000
+From: Thorsten Kranzkowski <dl8bcu@dl8bcu.de>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Johannes Truschnigg <johannes@truschnigg.info>, Willy Tarreau <w@1wt.eu>,
+        Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org,
+        Linux-Netdev <netdev@vger.kernel.org>
+Subject: Re: PROBLEM: Silent data corruption when using sendfile()
+Message-ID: <20120714114431.GA1190@ds20.borg.net>
+Reply-To: dl8bcu@dl8bcu.de
+Mail-Followup-To: dl8bcu@dl8bcu.de, Eric Dumazet <eric.dumazet@gmail.com>,
+	Johannes Truschnigg <johannes@truschnigg.info>,
+	Willy Tarreau <w@1wt.eu>, Hillf Danton <dhillf@gmail.com>,
+	linux-kernel@vger.kernel.org, Linux-Netdev <netdev@vger.kernel.org>
+References: <20120713171835.GA26052@vault.local>
+ <CAJd=RBAntSubDBbJ292SzeoN4hTwBQ_Q23jt+Y6i-+vfrQ5EHQ@mail.gmail.com>
+ <1342254042.3265.9017.camel@edumazet-glaptop>
+ <20120714083136.GO16256@1wt.eu>
+ <20120714101321.GA26329@vault.local>
+ <1342262004.3265.9279.camel@edumazet-glaptop>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1207140216040.20297@chino.kir.corp.google.com>
-References: <1342221125.17464.8.camel@lorien2>
-	<alpine.DEB.2.00.1207140216040.20297@chino.kir.corp.google.com>
-Date: Sat, 14 Jul 2012 15:01:40 +0300
-X-Google-Sender-Auth: fuYKD_rCR4IRBUeef6DmSvq9QEU
-Message-ID: <CAOJsxLE3dDd01WaAp5UAHRb0AiXn_s43M=Gg4TgXzRji_HffEQ@mail.gmail.com>
-Subject: Re: [PATCH TRIVIAL] mm: Fix build warning in kmem_cache_create()
-From: Pekka Enberg <penberg@kernel.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Shuah Khan <shuah.khan@hp.com>, cl@linux.com, glommer@parallels.com,
-        js1304@gmail.com, shuahkhan@gmail.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1342262004.3265.9279.camel@edumazet-glaptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Relay-User: dl8bcu@dl8bcu.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 14, 2012 at 12:18 PM, David Rientjes <rientjes@google.com> wrote:
-> On Fri, 13 Jul 2012, Shuah Khan wrote:
->
->> diff --git a/mm/slab_common.c b/mm/slab_common.c
->> index 12637ce..aa3ca5b 100644
->> --- a/mm/slab_common.c
->> +++ b/mm/slab_common.c
->> @@ -98,7 +98,9 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size, size_t align
->>
->>       s = __kmem_cache_create(name, size, align, flags, ctor);
->>
->> +#ifdef CONFIG_DEBUG_VM
->>  oops:
->> +#endif
->>       mutex_unlock(&slab_mutex);
->>       put_online_cpus();
->>
->
-> Tip: gcc allows label attributes so you could actually do
->
-> oops: __maybe_unused
->
-> to silence the warning and do the same for the "out" label later in the
-> function.
+On Sat, Jul 14, 2012 at 12:33:24PM +0200, Eric Dumazet wrote:
+> On Sat, 2012-07-14 at 12:13 +0200, Johannes Truschnigg wrote:
+> > On Sat, Jul 14, 2012 at 10:31:36AM +0200, Willy Tarreau wrote:
+> > > > Please Johannes could you try latest kernel tree ?
+> > > 
+> > > It would be useful, especially given the amount of changes you performed
+> > > in this area in latest version, it could be very possible that this new
+> > > bug got fixed as a side effect !
+> > 
+> > I upgraded to 3.4.4 (identical config as the 3.4.0 build I've been running)
+> > and what can I say - the problem really seems to have disappeared. I performed
+> > about 3700 iterations of my previos tests over the night, and the data always
+> > turned out to be OK, not a single byte turned out kaput!
+> > 
+> > I wish I would have tested that earlier, and spared you the noise... well,
+> > maybe someone who runs into a similar problem in the future will have this
+> > discovery save her/him some time and headaches and make her/him just upgrade
+> > kernels :)
+> > 
+> > Thanks a lot for your polite and quick responses!
+> > 
+> 
+> Nice to hear. Now we should make sure we have all needed fixes for prior
+> stable kernels as well !
+> 
+> Still trying to understand the issue, since I thought I only did
+> optimizations, not bug fixes. So maybe real bug is still there but its
+> probability of occurrence lowered enough to not hit your workload.
+>  
+> Hmmm...
+> 
 
-I'm not exactly loving that either.
+Not sure if this is related, but I had a similar data corruption problem:
+Reading data from filesystem 'normally' (including through nfs) showed
+corruption at random places, mostly 0xff tuning into 0xfe.
+Reading with ODIRECT (I used 'dd iflag=direct') was OK.
 
-It'd probably be better to reshuffle the code so that the debug checks
-end up in separate functions that are no-op for !CONFIG_DEBUG_VM. That
-way the _labels_ are used unconditionally although there's no actual
-code generated.
+I found my problem to be fixed by
+fffaee365fded09f9ebf2db19066065fa54323c3 (upstrem)
+which was backported as
+b642cb6a143da812f188307c2661c0357776a9d0 (stable, v3.4.1-66-gb642cb6)
 
-                        Pekka
+
+Bye,
+Thorsten
+
+-- 
+| Thorsten Kranzkowski        Internet: dl8bcu@dl8bcu.de                      |
+| Mobile: ++49 170 1876134       Snail: Kiebitzstr. 14, 49324 Melle, Germany  |
+| Ampr: dl8bcu@db0lj.#rpl.deu.eu, dl8bcu@marvin.dl8bcu.ampr.org [44.130.8.19] |
