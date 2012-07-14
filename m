@@ -1,57 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753633Ab2GNPf2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jul 2012 11:35:28 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:55263 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753266Ab2GNPfU (ORCPT
+	id S1754189Ab2GNPfe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jul 2012 11:35:34 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:44123 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753898Ab2GNPfZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jul 2012 11:35:20 -0400
+	Sat, 14 Jul 2012 11:35:25 -0400
 From: Will Drewry <wad@chromium.org>
 To: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
 Cc: fengxj325@gmail.com, eparis@redhat.com, keescook@chromium.org,
         james.l.morris@oracle.com, hpa@zytor.com, cevans@chromium.org,
         luto@mit.edu, rob@landley.net, linux-doc@vger.kernel.org,
         Will Drewry <wad@chromium.org>
-Subject: [PATCH 1/3] vsyscall_64: add missing ifdef CONFIG_SECCOMP
-Date: Sat, 14 Jul 2012 10:32:52 -0500
-Message-Id: <1342279974-26917-1-git-send-email-wad@chromium.org>
+Subject: [PATCH 3/3] Documentation: add a caveat for seccomp filter and vsyscall emulation
+Date: Sat, 14 Jul 2012 10:32:54 -0500
+Message-Id: <1342279974-26917-3-git-send-email-wad@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1342279974-26917-1-git-send-email-wad@chromium.org>
+References: <1342279974-26917-1-git-send-email-wad@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-vsyscall_seccomp introduced a dependency on __secure_computing.  On
-configurations with CONFIG_SECCOMP disabled, compilation will fail.
+With the addition of seccomp support to vsyscall emulation:
+  http://permalink.gmane.org/gmane.linux.kernel/1327732
+and the prior patch in this series.
 
-Reported-by: feng xiangjun <fengxj325@gmail.com>
+Update the documentation to indicate quirky behaviors when the 'ip' is
+in the vsyscall page and vsyscall emulation is in effect.
+
 Signed-off-by: Will Drewry <wad@chromium.org>
 ---
- arch/x86/kernel/vsyscall_64.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ Documentation/prctl/seccomp_filter.txt |   22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
 
-diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
-index 08a18d0..5db36ca 100644
---- a/arch/x86/kernel/vsyscall_64.c
-+++ b/arch/x86/kernel/vsyscall_64.c
-@@ -139,6 +139,7 @@ static int addr_to_vsyscall_nr(unsigned long addr)
- 	return nr;
- }
- 
-+#ifdef CONFIG_SECCOMP
- static int vsyscall_seccomp(struct task_struct *tsk, int syscall_nr)
- {
- 	if (!seccomp_mode(&tsk->seccomp))
-@@ -147,6 +148,9 @@ static int vsyscall_seccomp(struct task_struct *tsk, int syscall_nr)
- 	task_pt_regs(tsk)->ax = syscall_nr;
- 	return __secure_computing(syscall_nr);
- }
-+#else
-+#define vsyscall_seccomp(_tsk, _nr) 0
-+#endif
- 
- static bool write_ok_or_segv(unsigned long ptr, size_t size)
- {
+diff --git a/Documentation/prctl/seccomp_filter.txt b/Documentation/prctl/seccomp_filter.txt
+index 597c3c5..67ed88b 100644
+--- a/Documentation/prctl/seccomp_filter.txt
++++ b/Documentation/prctl/seccomp_filter.txt
+@@ -161,3 +161,25 @@ architecture supports both ptrace_event and seccomp, it will be able to
+ support seccomp filter with minor fixup: SIGSYS support and seccomp return
+ value checking.  Then it must just add CONFIG_HAVE_ARCH_SECCOMP_FILTER
+ to its arch-specific Kconfig.
++
++
++Caveats
++-------
++
++On x86-64 with vsyscall emulation enabled and while servicing a
++vsyscall-emulated system call:
++- A return value of SECCOMP_RET_TRAP will set a si_call_addr pointing to
++  the vsyscall entry for the given call and not the address after the
++  'syscall' instruction.  Any code which wants to restart the call
++  should return to that address and code wishing to return simulating
++  completion may either sigreturn normally or simulate a ret instruction
++  and use the return address from the stack.
++- A return value of SECCOMP_RET_TRACE will signal the tracer as usual,
++  but the syscall may not be changed to another system call using the
++  orig_rax register. It may only be changed to a different value in
++  order to skip the currently emulated call and any change will result
++  in that behavior.  The remainder of the registers may be altered as
++  usual.
++- Detection of this quirky behavior may be done by checking for getcpu,
++  time, or gettimeofday and if the si_call_addr or rip is in the
++  vsyscall page, specifically at the start of the specific entry call.
 -- 
 1.7.9.5
 
