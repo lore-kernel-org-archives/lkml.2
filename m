@@ -1,160 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755689Ab2GNLBY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jul 2012 07:01:24 -0400
-Received: from astoria.ccjclearline.com ([64.235.106.9]:59675 "EHLO
-	astoria.ccjclearline.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755233Ab2GNLBA (ORCPT
+	id S1755608Ab2GNLGO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jul 2012 07:06:14 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:41052 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752801Ab2GNLGM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jul 2012 07:01:00 -0400
-Date: Sat, 14 Jul 2012 07:00:56 -0400 (EDT)
-From: "Robert P. J. Day" <rpjday@crashcourse.ca>
-X-X-Sender: rpjday@oneiric
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] Documentation/CodingStyle: Numerous pedantic cleanups,
- nothing major.
-Message-ID: <alpine.DEB.2.02.1207140656040.7072@oneiric>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - astoria.ccjclearline.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - crashcourse.ca
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Sat, 14 Jul 2012 07:06:12 -0400
+Subject: Re: PROBLEM: Silent data corruption when using sendfile()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Willy Tarreau <w@1wt.eu>
+Cc: Johannes Truschnigg <johannes@truschnigg.info>,
+        Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org,
+        Linux-Netdev <netdev@vger.kernel.org>
+In-Reply-To: <20120714104441.GP16256@1wt.eu>
+References: <20120713171835.GA26052@vault.local>
+	 <CAJd=RBAntSubDBbJ292SzeoN4hTwBQ_Q23jt+Y6i-+vfrQ5EHQ@mail.gmail.com>
+	 <1342254042.3265.9017.camel@edumazet-glaptop>
+	 <20120714083136.GO16256@1wt.eu> <20120714101321.GA26329@vault.local>
+	 <1342262004.3265.9279.camel@edumazet-glaptop>
+	 <20120714104441.GP16256@1wt.eu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 14 Jul 2012 13:06:07 +0200
+Message-ID: <1342263967.3265.9347.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Signed-off-by: Robert P. J. Day <rpjday@crashcourse.ca>
-
----
-
-  while i was perusing CodingStyle, i did some tidying up along the
-way.  i won't take it personally if someone decides not to bother with
-this, it's all pretty minor.
-
-  this is all independent of the earlier macro explanation.
-
-
-diff --git a/Documentation/CodingStyle b/Documentation/CodingStyle
-index cb9258b..7544702 100644
---- a/Documentation/CodingStyle
-+++ b/Documentation/CodingStyle
-@@ -2,7 +2,7 @@
- 		Linux kernel coding style
-
- This is a short document describing the preferred coding style for the
--linux kernel.  Coding style is very personal, and I won't _force_ my
-+Linux kernel.  Coding style is very personal, and I won't _force_ my
- views on anybody, but this is what goes for anything that I have to be
- able to maintain, and I'd prefer it for most other things too.  Please
- at least consider the points made here.
-@@ -16,7 +16,7 @@ Anyway, here goes:
- 	 	Chapter 1: Indentation
-
- Tabs are 8 characters, and thus indentations are also 8 characters.
--There are heretic movements that try to make indentations 4 (or even 2!)
-+There are heretical movements that try to make indentations 4 (or even 2!)
- characters deep, and that is akin to trying to define the value of PI to
- be 3.
-
-@@ -32,7 +32,7 @@ more than 3 levels of indentation, you're screwed anyway, and should fix
- your program.
-
- In short, 8-char indents make things easier to read, and have the added
--benefit of warning you when you're nesting your functions too deep.
-+benefit of warning you when you're nesting your functions too deeply.
- Heed that warning.
-
- The preferred way to ease multiple indentation levels in a switch statement is
-@@ -122,14 +122,14 @@ opening brace at the beginning of the next line, thus:
- 		body of function
- 	}
-
--Heretic people all over the world have claimed that this inconsistency
-+Heretical people all over the world have claimed that this inconsistency
- is ...  well ...  inconsistent, but all right-thinking people know that
- (a) K&R are _right_ and (b) K&R are right.  Besides, functions are
- special anyway (you can't nest them in C).
-
- Note that the closing brace is empty on a line of its own, _except_ in
--the cases where it is followed by a continuation of the same statement,
--ie a "while" in a do-statement or an "else" in an if-statement, like
-+the cases where it is followed by a continuation of the same statement;
-+ie, a "while" in a do-statement or an "else" in an if-statement, like
- this:
-
- 	do {
-@@ -150,7 +150,7 @@ Rationale: K&R.
-
- Also, note that this brace-placement also minimizes the number of empty
- (or almost empty) lines, without any loss of readability.  Thus, as the
--supply of new-lines on your screen is not a renewable resource (think
-+supply of newlines on your screen is not a renewable resource (think
- 25-line terminal screens here), you have more empty lines to put
- comments on.
-
-@@ -338,7 +338,7 @@ Maybe there are other cases too, but the rule should basically be to NEVER
- EVER use a typedef unless you can clearly match one of those rules.
-
- In general, a pointer, or a struct that has elements that can reasonably
--be directly accessed should _never_ be a typedef.
-+be directly accessed, should _never_ be a typedef.
+On Sat, 2012-07-14 at 12:44 +0200, Willy Tarreau wrote:
+> On Sat, Jul 14, 2012 at 12:33:24PM +0200, Eric Dumazet wrote:
+> > On Sat, 2012-07-14 at 12:13 +0200, Johannes Truschnigg wrote:
+> > > On Sat, Jul 14, 2012 at 10:31:36AM +0200, Willy Tarreau wrote:
+> > > > > Please Johannes could you try latest kernel tree ?
+> > > > 
+> > > > It would be useful, especially given the amount of changes you performed
+> > > > in this area in latest version, it could be very possible that this new
+> > > > bug got fixed as a side effect !
+> > > 
+> > > I upgraded to 3.4.4 (identical config as the 3.4.0 build I've been running)
+> > > and what can I say - the problem really seems to have disappeared. I performed
+> > > about 3700 iterations of my previos tests over the night, and the data always
+> > > turned out to be OK, not a single byte turned out kaput!
+> > > 
+> > > I wish I would have tested that earlier, and spared you the noise... well,
+> > > maybe someone who runs into a similar problem in the future will have this
+> > > discovery save her/him some time and headaches and make her/him just upgrade
+> > > kernels :)
+> > > 
+> > > Thanks a lot for your polite and quick responses!
+> > > 
+> > 
+> > Nice to hear. Now we should make sure we have all needed fixes for prior
+> > stable kernels as well !
+> > 
+> > Still trying to understand the issue, since I thought I only did
+> > optimizations, not bug fixes. So maybe real bug is still there but its
+> > probability of occurrence lowered enough to not hit your workload.
+> 
+> Please note that Johannes tested 3.4.4 while your changes are in 3.5-rc.
+> 
+> I'm wondering whether this patch merged into 3.4.2 one has an impact on
+> sendfile :
+> 
+>   commit b642cb6a143da812f188307c2661c0357776a9d0
+>   Author: Konstantin Khlebnikov <khlebnikov@openvz.org>
+>   Date:   Tue Jun 5 21:36:33 2012 +0400
+> 
+>     radix-tree: fix contiguous iterator
+>     
+>     commit fffaee365fded09f9ebf2db19066065fa54323c3 upstream.
+>     
+>     This patch fixes bug in macro radix_tree_for_each_contig().
+>     
+>     If radix_tree_next_slot() sees NULL in next slot it returns NULL, but following
+>     radix_tree_next_chunk() switches iterating into next chunk. As result iterating
+>     becomes non-contiguous and breaks vfs "splice" and all its users.
+> 
+> Willy
+> 
 
 
- 		Chapter 6: Functions
-@@ -386,7 +386,8 @@ because it is a simple way to add valuable information for the reader.
- 		Chapter 7: Centralized exiting of functions
+Hmmm, this is supposed to fix a bug introduced in 3.4, no ?
 
- Albeit deprecated by some people, the equivalent of the goto statement is
--used frequently by compilers in form of the unconditional jump instruction.
-+used frequently by compilers in the form of the unconditional jump
-+instruction.
-
- The goto statement comes in handy when a function exits from multiple
- locations and some common work such as cleanup has to be done.
-@@ -420,6 +421,7 @@ out:
- 	return result;
- }
-
-+
- 		Chapter 8: Commenting
-
- Comments are good, but there is also a danger of over-commenting.  NEVER
-@@ -501,7 +503,7 @@ values.  To do the latter, you can stick the following in your .emacs file:
-                 (setq indent-tabs-mode t)
-                 (c-set-style "linux-tabs-only")))))
-
--This will make emacs go better with the kernel coding style for C
-+This will make emacs work better with the kernel coding style for C
- files below ~/src/linux-trees.
-
- But even if you fail in getting emacs to do sane formatting, not
-@@ -713,7 +715,7 @@ that can go into these 5 milliseconds.
-
- A reasonable rule of thumb is to not put inline at functions that have more
- than 3 lines of code in them. An exception to this rule are the cases where
--a parameter is known to be a compiletime constant, and as a result of this
-+a parameter is known to be a compile-time constant, and as a result of this
- constantness you *know* the compiler will be able to optimize most of your
- function away at compile time. For a good example of this later case, see
- the kmalloc() inline function.
+So 3.3 kernel should work well ?
 
 
 
-rday
-
--- 
-
-========================================================================
-Robert P. J. Day                                 Ottawa, Ontario, CANADA
-                        http://crashcourse.ca
-
-Twitter:                                       http://twitter.com/rpjday
-LinkedIn:                               http://ca.linkedin.com/in/rpjday
-========================================================================
