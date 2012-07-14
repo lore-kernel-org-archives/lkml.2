@@ -1,76 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757342Ab2GNBb5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jul 2012 21:31:57 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:57947 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751596Ab2GNBb4 (ORCPT
+	id S1757707Ab2GNBdO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jul 2012 21:33:14 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:64960 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751596Ab2GNBdM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jul 2012 21:31:56 -0400
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.4-dev
-To: Stephen Hemminger <shemminger@vyatta.com>
-Cc: "Piotr Sawuk" <a9702387@unet.univie.ac.at>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: resurrecting tcphealth
-In-Reply-To: Your message of "Fri, 13 Jul 2012 16:55:44 -0700."
-             <20120713165544.6767ea8f@nehalam.linuxnetplumber.net>
-From: valdis.kletnieks@vt.edu
-References: <e9caf38359467bfa8a1e2ac86f6ef2cc.squirrel@webmail.univie.ac.at>
-            <20120713165544.6767ea8f@nehalam.linuxnetplumber.net>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1342229512_2294P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Fri, 13 Jul 2012 21:31:52 -0400
-Message-ID: <3436.1342229512@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 209.85.216.180 mail-qc0-f180.google.com valdis@vt.edu 4 softfail
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020203.5000CC0B.0020,ss=1,re=0.000,fgs=0,
-	ip=71.62.120.57,
-	so=2011-07-25 19:15:43,
-	dmn=2011-05-27 18:58:46,
-	mode=single engine
-X-Junkmail-IWF: false
+	Fri, 13 Jul 2012 21:33:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <1342177825-19006-6-git-send-email-amit.kachhap@linaro.org>
+References: <1342177825-19006-1-git-send-email-amit.kachhap@linaro.org>
+	<1342177825-19006-6-git-send-email-amit.kachhap@linaro.org>
+Date: Sat, 14 Jul 2012 10:33:10 +0900
+X-Google-Sender-Auth: skzc2p77t4dcnUOvqqC-0w8K6fI
+Message-ID: <CAH9JG2XGWgX-FiBacnrGXS-oG_7rbN1aum3mpW5HUAukiwaB7A@mail.gmail.com>
+Subject: Re: [PATCH v5 5/5] ARM: exynos: add thermal sensor driver platform
+ data support
+From: Kyungmin Park <kmpark@infradead.org>
+To: Amit Daniel Kachhap <amit.kachhap@linaro.org>
+Cc: linux-pm@lists.linux-foundation.org, akpm@linux-foundation.org,
+        lenb@kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        lm-sensors@lm-sensors.org, Donggeun Kim <dg77.kim@samsung.com>,
+        SangWook Ju <sw.ju@samsung.com>, Durgadoss <durgadoss.r@intel.com>,
+        Jean Delvare <khali@linux-fr.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1342229512_2294P
-Content-Type: text/plain; charset=us-ascii
+On Fri, Jul 13, 2012 at 8:10 PM, Amit Daniel Kachhap
+<amit.kachhap@linaro.org> wrote:
+> Add necessary default platform data support needed for TMU driver.  This
+> dt/non-dt values are tested for origen exynos4210 and smdk exynos5250
+> platforms.
+Looks good to me.
+just nitpicks below.
 
-On Fri, 13 Jul 2012 16:55:44 -0700, Stephen Hemminger said:
-
-> >+			/* Course retransmit inefficiency- this packet has been received twice. */
-> >+			tp->dup_pkts_recv++;
+Thank you,
+Kyungmin Park
 >
-> I don't understand that comment, could you use a better sentence please?
-
-I think what was intended was:
-
-/* Curse you, retransmit inefficiency! This packet has been received at least twice */
-
---==_Exmh_1342229512_2294P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iQIVAwUBUADMBwdmEQWDXROgAQJUqw/9HmNIPSdsQleef27JibtBPdrjpDEqYugB
-TTgRHjWd2VTR4x6AP2OIqqSA/Fb4VWmo6t7jCuXK7fGkCVQ4ut9iA40NeTpcwUu/
-Qt8lQxmzIXJjj9fotdW6djrg3MOo/w7DMa+86XoQJ+XmmSKR9HMSw0XHNco8D2+l
-Q/SlDw53T0VTuK5V9sEddczAf83ZsOo/hbXXG/vlLcw+VNaM18l366ZGV7BDsHqk
-EC6tQmjOuSY6I3zuOX9fVv7uOiQPgvGS0aGLmUuWSxLUDgSyisuIZbF0ha9+0FRe
-/KQMOS4aW/ZEmnY7AtyqiViOtmrsSYL9pu4Ub4Nc8XFQZ8ONDBGQDHWUiUInxrzv
-sYwNHBvSzzpD5fK3jMQBPAto/oFWoH2ImNl8zeLEkAHaUe0LHv2L+ylXlzsOwBg+
-4kQi50eFZg1TjdnWUgI+Oo0CE9chSPh9eOEVzN3V0KKmCD4Ztv9XaiVxb/TqtyiX
-8IWS0+dv9RSiiCyao/eK8eHBVTfHknLKoZAn+gp6aV6HYPr0W23UXyR0jBlpeXTm
-IeJuShY6+cm4A15xhKzDnc9UodD9XU3D0rhbjilbSFBVaNjrcI8nroOZI1gWVRNx
-RSSPeY9VbVtjLgVOAq0c9+HCNaiA+l6YGtbiCpn6IyDnBlEMUbt4OcnzK+/MYNy4
-yV8ABGbq95k=
-=e6fp
------END PGP SIGNATURE-----
-
---==_Exmh_1342229512_2294P--
-
+> Signed-off-by: Amit Daniel Kachhap <amit.kachhap@linaro.org>
+> Cc: Donggeun Kim <dg77.kim@samsung.com>
+> Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
+> Cc: SangWook Ju <sw.ju@samsung.com>
+> Cc: Durgadoss <durgadoss.r@intel.com>
+> Cc: Len Brown <lenb@kernel.org>
+> Cc: Jean Delvare <khali@linux-fr.org>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> ---
+>  drivers/thermal/exynos_thermal.c |  111 +++++++++++++++++++++++++++++++++++++-
+>  1 files changed, 110 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/thermal/exynos_thermal.c b/drivers/thermal/exynos_thermal.c
+> index 9ef8c37..07736ea 100644
+> --- a/drivers/thermal/exynos_thermal.c
+> +++ b/drivers/thermal/exynos_thermal.c
+> @@ -662,14 +662,121 @@ static irqreturn_t exynos_tmu_irq(int irq, void *id)
+>  static struct thermal_sensor_conf exynos_sensor_conf = {
+>         .name                   = "exynos-therm",
+>         .read_temperature       = (int (*)(void *))exynos_tmu_read,
+> +};
+> +
+> +#if defined(CONFIG_CPU_EXYNOS4210)
+BTW, doesn't it same as exynos4412? does it different from exynos4412?
+If it's same, it's better to use CONFIG_SOC_EXYNOS4?
+> +static struct exynos_tmu_platform_data const exynos4_default_tmu_data = {
+> +       .threshold = 80,
+> +       .trigger_levels[0] = 5,
+> +       .trigger_levels[1] = 20,
+> +       .trigger_levels[2] = 30,
+> +       .trigger_level0_en = 1,
+> +       .trigger_level1_en = 1,
+> +       .trigger_level2_en = 1,
+> +       .trigger_level3_en = 0,
+> +       .gain = 15,
+> +       .reference_voltage = 7,
+> +       .cal_type = TYPE_ONE_POINT_TRIMMING,
+> +       .freq_tab[0] = {
+> +               .freq_clip_max = 800 * 1000,
+> +               .temp_level = 85,
+> +       },
+> +       .freq_tab[1] = {
+> +               .freq_clip_max = 200 * 1000,
+> +               .temp_level = 100,
+> +       },
+> +       .freq_tab_count = 2,
+> +       .type = SOC_ARCH_EXYNOS4,
+> +};
+> +#define EXYNOS4_TMU_DRV_DATA (&exynos4_default_tmu_data)
+> +#else
+> +#define EXYNOS4_TMU_DRV_DATA (NULL)
+> +#endif
+> +
+> +#if defined(CONFIG_SOC_EXYNOS5250)
+similar.
+> +static struct exynos_tmu_platform_data const exynos5_default_tmu_data = {
+> +       .trigger_levels[0] = 85,
+> +       .trigger_levels[1] = 103,
+> +       .trigger_levels[2] = 110,
+> +       .trigger_level0_en = 1,
+> +       .trigger_level1_en = 1,
+> +       .trigger_level2_en = 1,
+> +       .trigger_level3_en = 0,
+> +       .gain = 8,
+> +       .reference_voltage = 16,
+> +       .noise_cancel_mode = 4,
+> +       .cal_type = TYPE_ONE_POINT_TRIMMING,
+> +       .efuse_value = 55,
+> +       .freq_tab[0] = {
+> +               .freq_clip_max = 800 * 1000,
+> +               .temp_level = 85,
+> +       },
+> +       .freq_tab[1] = {
+> +               .freq_clip_max = 200 * 1000,
+> +               .temp_level = 103,
+> +       },
+> +       .freq_tab_count = 2,
+> +       .type = SOC_ARCH_EXYNOS5,
+> +};
+> +#define EXYNOS5_TMU_DRV_DATA (&exynos5_default_tmu_data)
+> +#else
+> +#define EXYNOS5_TMU_DRV_DATA (NULL)
+> +#endif
+> +
+> +#ifdef CONFIG_OF
+> +static const struct of_device_id exynos_tmu_match[] = {
+> +       {
+> +               .compatible = "samsung,exynos4-tmu",
+> +               .data = (void *)EXYNOS4_TMU_DRV_DATA,
+> +       },
+> +       {
+> +               .compatible = "samsung,exynos5-tmu",
+> +               .data = (void *)EXYNOS5_TMU_DRV_DATA,
+> +       },
+> +       {},
+> +};
+> +MODULE_DEVICE_TABLE(of, exynos_tmu_match);
+> +#else
+> +#define  exynos_tmu_match NULL
+> +#endif
+> +
+> +static struct platform_device_id exynos_tmu_driver_ids[] = {
+> +       {
+> +               .name           = "exynos4-tmu",
+> +               .driver_data    = (kernel_ulong_t)EXYNOS4_TMU_DRV_DATA,
+> +       },
+> +       {
+> +               .name           = "exynos5-tmu",
+> +               .driver_data    = (kernel_ulong_t)EXYNOS5_TMU_DRV_DATA,
+> +       },
+> +       { },
+> +};
+> +MODULE_DEVICE_TABLE(platform, exynos4_tmu_driver_ids);
+> +
+> +static inline struct  exynos_tmu_platform_data *exynos_get_driver_data(
+> +                       struct platform_device *pdev)
+> +{
+> +#ifdef CONFIG_OF
+> +       if (pdev->dev.of_node) {
+> +               const struct of_device_id *match;
+> +               match = of_match_node(exynos_tmu_match, pdev->dev.of_node);
+> +               if (!match)
+> +                       return NULL;
+> +               return (struct exynos_tmu_platform_data *) match->data;
+> +       }
+> +#endif
+> +       return (struct exynos_tmu_platform_data *)
+> +                       platform_get_device_id(pdev)->driver_data;
+>  }
+> -;
+>  static int __devinit exynos_tmu_probe(struct platform_device *pdev)
+>  {
+>         struct exynos_tmu_data *data;
+>         struct exynos_tmu_platform_data *pdata = pdev->dev.platform_data;
+>         int ret, i;
+>
+> +       if (!pdata)
+> +               pdata = exynos_get_driver_data(pdev);
+> +
+>         if (!pdata) {
+>                 dev_err(&pdev->dev, "No platform init data supplied.\n");
+>                 return -ENODEV;
+> @@ -838,9 +945,11 @@ static struct platform_driver exynos_tmu_driver = {
+>                 .name   = "exynos-tmu",
+>                 .owner  = THIS_MODULE,
+>                 .pm     = EXYNOS_TMU_PM,
+> +               .of_match_table = exynos_tmu_match,
+>         },
+>         .probe = exynos_tmu_probe,
+>         .remove = __devexit_p(exynos_tmu_remove),
+> +       .id_table = exynos_tmu_driver_ids,
+>  };
+>
+>  module_platform_driver(exynos_tmu_driver);
+> --
+> 1.7.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
