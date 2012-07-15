@@ -1,62 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752240Ab2GOJMI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jul 2012 05:12:08 -0400
-Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:1397 "EHLO
-	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751060Ab2GOJMC (ORCPT
+	id S1752215Ab2GOJNH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jul 2012 05:13:07 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:52547 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751189Ab2GOJM4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jul 2012 05:12:02 -0400
-Message-ID: <1342343515.1780.2.camel@x61.thuisdomein>
-Subject: [PATCH] gigaset: silence GCC warning for unused 'format_ie'
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Tilman Schmidt <tilman@imap.cc>, Hansjoerg Lipp <hjlipp@web.de>,
-        Karsten Keil <isdn@linux-pingi.de>
-Cc: gigaset307x-common@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Sun, 15 Jul 2012 11:11:55 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-OriginalArrivalTime: 15 Jul 2012 09:11:56.0422 (UTC) FILETIME=[E1DF7A60:01CD6269]
-X-RcptDomain: vger.kernel.org
+	Sun, 15 Jul 2012 05:12:56 -0400
+MIME-Version: 1.0
+X-Originating-IP: [46.116.44.123]
+In-Reply-To: <4FF5FA9B.4070003@codeaurora.org>
+References: <1338017791-9442-1-git-send-email-ohad@wizery.com>
+ <4FC5DBFA.2030300@codeaurora.org> <CAK=WgbZJJJPuNWVv8WgL=KKm6Hrx2krDD9gBOTP7sA8p7mh_rA@mail.gmail.com>
+ <CAK=WgbbREXV8nkF4vh9iLUp1WQj2ZLYW6VG8Urmw9=roy63meQ@mail.gmail.com>
+ <4FF1F145.2050408@codeaurora.org> <CAK=WgbZ+=MGU5juuOP+_vtUe4d_46j=Rd0cqYi7q2i-9T35R5w@mail.gmail.com>
+ <4FF5FA9B.4070003@codeaurora.org>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Sun, 15 Jul 2012 12:12:35 +0300
+Message-ID: <CAK=WgbbTh8C4_qZRnFe0gqoTETRb+KfMVe78L6LC3bZsFh80Sw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] remoteproc: maintain a generic child device for each rproc
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Fernando Guzman Lugo <fernando.lugo@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Building Gigaset's CAPI support without Gigaset's debugging enabled
-triggers this GCC warning:
-    'format_ie' defined but not used [-Wunused-function]
+On Thu, Jul 5, 2012 at 11:35 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> Ok then. Please add
+>
+> Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
 
-Silence this warning by wrapping format_ie() in an "#ifdef
-CONFIG_GIGASET_DEBUG" and "#endif" pair.
+Added, and applied patch. thanks!
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
- drivers/isdn/gigaset/capi.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+> It would be nice if you got an ack from Greg or Kay on the device_type
+> usage too.
 
-diff --git a/drivers/isdn/gigaset/capi.c b/drivers/isdn/gigaset/capi.c
-index 27e4a3e..68452b7 100644
---- a/drivers/isdn/gigaset/capi.c
-+++ b/drivers/isdn/gigaset/capi.c
-@@ -288,6 +288,7 @@ static inline void dump_rawmsg(enum debuglevel level, const char *tag,
-  * format CAPI IE as string
-  */
- 
-+#ifdef CONFIG_GIGASET_DEBUG
- static const char *format_ie(const char *ie)
- {
- 	static char result[3 * MAX_FMT_IE_LEN];
-@@ -313,6 +314,7 @@ static const char *format_ie(const char *ie)
- 	*--pout = 0;
- 	return result;
- }
-+#endif
- 
- /*
-  * emit DATA_B3_CONF message
--- 
-1.7.7.6
-
+I agree, I'd just hate bothering them on this now. Probably a topic
+for a conference chat :)
