@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752884Ab2GOM55 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jul 2012 08:57:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46943 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752758Ab2GOM4v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jul 2012 08:56:51 -0400
-Date: Sun, 15 Jul 2012 15:56:58 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Jacob Pan <jacob.jun.pan@intel.com>,
-        Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Joerg Roedel <joerg.roedel@amd.com>, Yinghai Lu <yinghai@kernel.org>,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org, avi@redhat.com,
-        gleb@redhat.com
-Subject: [PATCH 3/3] Revert "apic: fix kvm build on UP without IOAPIC"
-Message-ID: <879c167f131de93e1312c321a56444652d9934fc.1342356186.git.mst@redhat.com>
-References: <cover.1342356186.git.mst@redhat.com>
+	id S1752843Ab2GONAR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jul 2012 09:00:17 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:46952 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752708Ab2GONAK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jul 2012 09:00:10 -0400
+Message-ID: <5002BEE3.5060506@gmail.com>
+Date: Sun, 15 Jul 2012 07:00:19 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1342356186.git.mst@redhat.com>
-X-Mutt-Fcc: =sent
+To: Avi Kivity <avi@redhat.com>, Gleb Natapov <gleb@redhat.com>
+CC: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: perf with precise attribute kills all KVM based VMs
+References: <1341845396.3462.81.camel@twins> <4FFAEFF1.9000706@redhat.com> <1341845999.3462.86.camel@twins> <4FFCBD00.1030109@gmail.com> <20120711071006.GF23898@redhat.com> <1342000187.3462.134.camel@twins> <20120711095337.GJ23898@redhat.com> <4FFE4E8D.90606@gmail.com> <20120712042923.GG7298@redhat.com> <4FFEEB55.5070009@gmail.com> <20120712160634.GI7298@redhat.com> <50027A36.9070509@redhat.com>
+In-Reply-To: <50027A36.9070509@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit f9808b7fd422b965cea52e05ba470e0a473c53d3.
-After commit 'kvm: switch to apic_set_eoi_write, apic_write'
-the stubs are no longer needed as kvm does not look at apicdrivers anymore.
+On 7/15/12 2:07 AM, Avi Kivity wrote:
+> On 07/12/2012 07:06 PM, Gleb Natapov wrote:
+>>>
+>>> Note the :pH this time.
+>> I am not sure what perf kvm does with :pH modifier, but H modifier does
+>> not make sense with perf kvm and should be reported as an error by perf tool.
+>
+> Maybe it should refer to the guest vs. the nested guest...
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- arch/x86/include/asm/apic.h | 5 -----
- 1 file changed, 5 deletions(-)
+:H = host mode; you are thinking of :h for hypervisor mode. From 
+perf-list documentation:
 
-diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
-index ff8dff6..839b8f5 100644
---- a/arch/x86/include/asm/apic.h
-+++ b/arch/x86/include/asm/apic.h
-@@ -417,12 +417,7 @@ extern struct apic *apic;
- 	__aligned(sizeof(struct apic *))				\
- 	__section(.apicdrivers) = { &sym1, &sym2 }
- 
--#ifdef CONFIG_X86_LOCAL_APIC
- extern struct apic *__apicdrivers[], *__apicdrivers_end[];
--#else
--#define __apicdrivers ((struct apic **)NULL)
--#define __apicdrivers_end ((struct apic **)NULL)
--#endif
- 
- /*
-  * APIC functionality to boot other CPUs - only used on SMP:
--- 
-MST
+"Modifiers allow the user to restrict when events are
+counted with 'u' for user-space, 'k' for kernel, 'h' for hypervisor.
+Additional modifiers are 'G' for guest counting (in KVM guests) and 'H'
+for host counting (not in KVM guests)."
+
+>
+> Well that's a horrible UI but we do need some way to distinguish among
+> the two.  Samples from the nested guest's kernel will make no sense when
+> looking at the guest kernel.  I guess we should default to exclude
+> nested guest mode.
+>
+
+I catch a return flight in a couple of hours. I will send a summary 
+email tonight to make sure we are on the same page with the problem, 
+uses cases and patches.
+
+David
