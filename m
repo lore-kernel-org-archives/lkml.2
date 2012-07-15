@@ -1,79 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751992Ab2GOIeY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jul 2012 04:34:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10756 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751526Ab2GOIeK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jul 2012 04:34:10 -0400
-Message-ID: <50028073.8000804@redhat.com>
-Date: Sun, 15 Jul 2012 11:33:55 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1751931Ab2GOI41 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jul 2012 04:56:27 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:53381 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751588Ab2GOI4Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jul 2012 04:56:24 -0400
+Date: Sun, 15 Jul 2012 01:56:04 -0700
+From: tip-bot for John Stultz <john.stultz@linaro.org>
+Message-ID: <tip-42e71e81f5bb5125ca7c194b5ccf1c93511ff8fb@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, richardcochran@gmail.com,
+        john.stultz@linaro.org, tglx@linutronix.de, prarit@redhat.com
+Reply-To: john.stultz@linaro.org, mingo@kernel.org, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        richardcochran@gmail.com, tglx@linutronix.de, prarit@redhat.com
+In-Reply-To: <1342156917-25092-3-git-send-email-john.stultz@linaro.org>
+References: <1342156917-25092-3-git-send-email-john.stultz@linaro.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/core] time: Whitespace cleanups per Ingo%27s requests
+Git-Commit-ID: 42e71e81f5bb5125ca7c194b5ccf1c93511ff8fb
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: Jan Kiszka <jan.kiszka@siemens.com>, "mst@redhat.com" <mst@redhat.com>,
-        "gleb@redhat.com" <gleb@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 0/2] kvm: level irqfd and new eoifd
-References: <20120703191106.6735.78272.stgit@bling.home>   <4FFD4D0A.2000202@redhat.com> <4FFD52E7.3030806@siemens.com>   <4FFD5A2B.2040605@redhat.com> <4FFD6221.1060304@siemens.com>   <4FFD68C3.7000504@redhat.com> <1342036673.2229.17.camel@bling.home>  <4FFE9A6F.3080607@redhat.com> <1342109982.10815.20.camel@ul30vt>
-In-Reply-To: <1342109982.10815.20.camel@ul30vt>
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 15 Jul 2012 01:56:11 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/12/2012 07:19 PM, Alex Williamson wrote:
-> On Thu, 2012-07-12 at 12:35 +0300, Avi Kivity wrote:
->> On 07/11/2012 10:57 PM, Alex Williamson wrote:
->> >> 
->> >> > We still have classic KVM device assignment to provide fast-path INTx.
->> >> > But if we want to replace it midterm, I think it's necessary for VFIO to
->> >> > be able to provide such a path as well.
->> >> 
->> >> I would like VFIO to have no regressions vs. kvm device assignment,
->> >> except perhaps in uncommon corner cases.  So I agree.
->> > 
->> > I ran a few TCP_RR netperf tests forcing a 1Gb tg3 nic to use INTx.
->> > Without irqchip support vfio gets a bit more than 60% of KVM device
->> > assignment.  That's a little bit of an unfair comparison since it's more
->> > than just the I/O path.  With the proposed interfaces here, enabling
->> > irqchip, vfio is within 10% of KVM device assignment for INTx.  For MSI,
->> > I can actually make vfio come out more than 30% better than KVM device
->> > assignment if I send the eventfd from the hard irq handler.  Using a
->> > threaded handler as the code currently does, vfio is still behind KVM.
->> > It's hard to beat a direct call chain.
->> 
->> We can have a direct call chain with vfio too, using a custom eventfd
->> poll function, no?  Assuming we set up a fast path for unicast msi.
-> 
-> You'll have to help me out a little, eventfd_signal walks the wait_queue
-> and calls each function.  On the injection path that includes
-> irqfd_wakeup.  
+Commit-ID:  42e71e81f5bb5125ca7c194b5ccf1c93511ff8fb
+Gitweb:     http://git.kernel.org/tip/42e71e81f5bb5125ca7c194b5ccf1c93511ff8fb
+Author:     John Stultz <john.stultz@linaro.org>
+AuthorDate: Fri, 13 Jul 2012 01:21:51 -0400
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Sun, 15 Jul 2012 10:39:05 +0200
 
-This is what I meant, except I forgot that we already do direct path for
-MSI.
+time: Whitespace cleanups per Ingo%27s requests
 
-> For an MSI that seems to already provide direct
-> injection.  
+Ingo noted a number of places where there is inconsistent
+use of whitespace. This patch tries to address the main
+culprits.
 
-Ugh, even for a broadcast MSI into 254 vcpu guests.  That's going to be
-one slow interrupt.
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Reviewed-by: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Richard Cochran <richardcochran@gmail.com>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Link: http://lkml.kernel.org/r/1342156917-25092-3-git-send-email-john.stultz@linaro.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/time/timekeeping.c |   39 ++++++++++++++++++---------------------
+ 1 files changed, 18 insertions(+), 21 deletions(-)
 
-> For level we'll schedule_work, so that explains the overhead
-> in that path, but it's not too dissimilar to a a threaded irq.  vfio
-> does something very similar, so there's a schedule_work both on inject
-> and on eoi.  I'll have to check whether anything prevents the unmask
-> from the wait_queue function in vfio, that could be a significant chunk
-> of the gap.  Where's the custom poll function come into play?  Thanks,
-
-So I don't understand where the gap comes from.  The number of context
-switches for kvm and vfio is the same, as long as both use MSI (and
-either both use threaded irq or both don't).
-
--- 
-error compiling committee.c: too many arguments to function
-
-
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 269b1fe..c2f12aa 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -24,32 +24,31 @@
+ /* Structure holding internal timekeeping values. */
+ struct timekeeper {
+ 	/* Current clocksource used for timekeeping. */
+-	struct clocksource *clock;
++	struct clocksource	*clock;
+ 	/* NTP adjusted clock multiplier */
+-	u32	mult;
++	u32			mult;
+ 	/* The shift value of the current clocksource. */
+-	int	shift;
+-
++	int			shift;
+ 	/* Number of clock cycles in one NTP interval. */
+-	cycle_t cycle_interval;
++	cycle_t			cycle_interval;
+ 	/* Number of clock shifted nano seconds in one NTP interval. */
+-	u64	xtime_interval;
++	u64			xtime_interval;
+ 	/* shifted nano seconds left over when rounding cycle_interval */
+-	s64	xtime_remainder;
++	s64			xtime_remainder;
+ 	/* Raw nano seconds accumulated per NTP interval. */
+-	u32	raw_interval;
++	u32			raw_interval;
+ 
+ 	/* Clock shifted nano seconds remainder not stored in xtime.tv_nsec. */
+-	u64	xtime_nsec;
++	u64			xtime_nsec;
+ 	/* Difference between accumulated time and NTP time in ntp
+ 	 * shifted nano seconds. */
+-	s64	ntp_error;
++	s64			ntp_error;
+ 	/* Shift conversion between clock shifted nano seconds and
+ 	 * ntp shifted nano seconds. */
+-	int	ntp_error_shift;
++	int			ntp_error_shift;
+ 
+ 	/* The current time */
+-	struct timespec xtime;
++	struct timespec 	xtime;
+ 	/*
+ 	 * wall_to_monotonic is what we need to add to xtime (or xtime corrected
+ 	 * for sub jiffie times) to get to monotonic time.  Monotonic is pegged
+@@ -64,20 +63,17 @@ struct timekeeper {
+ 	 * - wall_to_monotonic is no longer the boot time, getboottime must be
+ 	 * used instead.
+ 	 */
+-	struct timespec wall_to_monotonic;
++	struct timespec		wall_to_monotonic;
+ 	/* time spent in suspend */
+-	struct timespec total_sleep_time;
++	struct timespec		total_sleep_time;
+ 	/* The raw monotonic time for the CLOCK_MONOTONIC_RAW posix clock. */
+-	struct timespec raw_time;
+-
++	struct timespec		raw_time;
+ 	/* Offset clock monotonic -> clock realtime */
+-	ktime_t offs_real;
+-
++	ktime_t			offs_real;
+ 	/* Offset clock monotonic -> clock boottime */
+-	ktime_t offs_boot;
+-
++	ktime_t			offs_boot;
+ 	/* Seqlock for all timekeeper values */
+-	seqlock_t lock;
++	seqlock_t		lock;
+ };
+ 
+ static struct timekeeper timekeeper;
+@@ -547,6 +543,7 @@ u64 timekeeping_max_deferment(void)
+ {
+ 	unsigned long seq;
+ 	u64 ret;
++
+ 	do {
+ 		seq = read_seqbegin(&timekeeper.lock);
+ 
