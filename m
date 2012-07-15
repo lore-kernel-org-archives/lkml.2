@@ -1,94 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752766Ab2GOXYk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jul 2012 19:24:40 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:53778 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751191Ab2GOXYi (ORCPT
+	id S1752783Ab2GOX1j (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jul 2012 19:27:39 -0400
+Received: from unicorn.mansr.com ([78.86.181.103]:34348 "EHLO
+	unicorn.mansr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751191Ab2GOX1g convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jul 2012 19:24:38 -0400
-Date: Sun, 15 Jul 2012 18:24:30 -0500
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: Lars Boegild Thomsen <lth@cow.dk>
-Cc: Feng Tang <feng.tang@intel.com>, "Tian, Kevin" <kevin.tian@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Fengzhe Zhang <fengzhe.zhang@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "JBeulich@novell.com" <JBeulich@novell.com>,
-        Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        Andreas Wallberg <andreas.wallberg@gmail.com>,
-        Robert Scott <bugs@humanleg.org.uk>,
-        Damjan Georgievski <gdamjan@gmail.com>
-Subject: Re: [regression] Ideapad S10-3 does not wake up from suspend
-Message-ID: <20120715232430.GB3657@burratino>
-References: <625BA99ED14B2D499DC4E29D8138F1505C8ED7F7E3@shsmsx502.ccr.corp.intel.com>
- <625BA99ED14B2D499DC4E29D8138F15063048B864D@shsmsx502.ccr.corp.intel.com>
- <20120512231349.GA17443@burratino>
- <201205130922.10945.lth@cow.dk>
+	Sun, 15 Jul 2012 19:27:36 -0400
+X-Greylist: delayed 352 seconds by postgrey-1.27 at vger.kernel.org; Sun, 15 Jul 2012 19:27:36 EDT
+From: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
+References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
+	<CAOesGMiCexiqA3L5GdNgyHhSD-5Bpqbb02YJrZPr8yMYa0afjA@mail.gmail.com>
+	<201207071927.13135.arnd@arndb.de> <20120710071023.GA10456@gmail.com>
+	<20120710101018.GE15120@arm.com>
+Date: Mon, 16 Jul 2012 00:21:42 +0100
+In-Reply-To: <20120710101018.GE15120@arm.com> (Catalin Marinas's message of
+	"Tue, 10 Jul 2012 11:10:18 +0100")
+Message-ID: <yw1x8vekd309.fsf@unicorn.mansr.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201205130922.10945.lth@cow.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi again,
+Catalin Marinas <catalin.marinas@arm.com> writes:
 
-In May, Lars Boegild Thomsen wrote:
-> On Sunday 13 May 2012 07:13:49 Jonathan Nieder wrote:
->>>> Lars Boegild Thomsen writes:
-
->>>>> After update from 2.6 kernel to 3.0 my Idepad S10-3 will not wake up
->>>>> after sleep.  Back to latest 2.6 kernel works fine.
->>
->>  - passing parameters "hpet=disable highres=off nohz=off" helps some
->>    people if I understand correctly,
-[...]
-> I didn't notice this one before but that actually works for me.  Adding those 
-> kernel params and sleep works again.  I tried combinations thereof but no-go - 
-> all 3 required.
+> On Tue, Jul 10, 2012 at 08:10:23AM +0100, Ingo Molnar wrote:
+>> * Arnd Bergmann <arnd@arndb.de> wrote:
+>> > On Saturday 07 July 2012, Olof Johansson wrote:
+>> > > > ARM introduced AArch64 as part of the ARMv8 architecture
+>> > > 
+>> > > With the risk of bikeshedding here, but I find the name awkward. How
+>> > > about just naming the arch port arm64 instead? It's considerably more
+>> > > descriptive in the context of the kernel.  For reference, we didn't
+>> > > name ppc64, nor powerpc, after what the IBM/power.org marketing people
+>> > > were currently calling the architecture at the time either.
+>> > 
+>> > I agree the name sucks, [...]
+>> 
+>> So why not change it now, when it only bothers a few dozen 
+>> people and it is only present in 36 patches? Why go full steam 
+>> ahead to annoy thousands of people with it and why spread the 
+>> naming madness to thousands of commits?
 >
->> I'd be interested to hear whether the same problem occurs when trying
->> to suspend from the minimal initramfs environment.
-[...]
-> And I just tried this loading no modules manually and it's the same - never 
-> wakes up after sleep.
+> Changing the arch/ dir name is easy at this point. My preference is for
+> consistency with the official name (that cannot be changed) and the gcc
+> triplet. I also don't think it annoys thousands of people, most don't
+> really care. The few reactions I've seen is pretty much because people
+> were expecting arm64 and it came as something else.
 
-Thanks.  Please test with the debugging patch below from Feng Tang[1].
-I don't know if it will get any useful information because e.g. serial
-console and netconsole are not very convenient on this machine[2], but
-it seems worth a try.
+FWIW, I'd prefer naming the directory either arm64 or armv8 for a few
+reasons:
 
-If one of the people cc-ed needs help building a patched kernel to
-test, feel free to write privately and I can give more detailed
-instructions.
+- Those are the names people actually use to refer to the architecture
+- They are more descriptive.
+- I think the official name is rather silly.
 
-Hope that helps,
-Jonathan
+Note, these are my personal opinions.
 
-[1] https://bugzilla.kernel.org/show_bug.cgi?id=41932#c18
-[2] http://thread.gmane.org/gmane.linux.kernel/1136253/focus=1285790
-
-diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
-index f113755..d2e0c90 100644
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -439,6 +439,14 @@ again:
- 	 * in the event mask
- 	 */
- 	if (next_event.tv64 != KTIME_MAX) {
-+		s64 delta;
-+
-+		delta = next_event.tv64 - now.tv64;
-+		if (delta >= 10000000000) {
-+			printk("%s(): The delta is big: %lld\n", __func__, delta);
-+			next_event.tv64 = now.tv64 + 3000000000;
-+		}
-+
- 		/*
- 		 * Rearm the broadcast device. If event expired,
- 		 * repeat the above
+-- 
+Måns Rullgård
+mans@mansr.com
