@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752386Ab2GOKOz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jul 2012 06:14:55 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:33282 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751422Ab2GOKOu (ORCPT
+	id S1752564Ab2GOKPJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jul 2012 06:15:09 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:36891 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751689Ab2GOKPE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jul 2012 06:14:50 -0400
-Date: Sun, 15 Jul 2012 12:14:34 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
-        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
-        Debian Kernel Team <debian-kernel@lists.debian.org>,
-        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Sasha Levin <levinsasha928@gmail.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>, Asias He <asias.hejun@gmail.com>
-Subject: Re: [opensuse-kernel] Re: [RFC] Simplifying kernel configuration for
- distro issues
-Message-ID: <20120715101434.GA18144@aftab.osrc.amd.com>
-References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com>
- <1342212885.25704.4.camel@lade.trondhjem.org>
- <CAFLxGvxxWodD97=78218wc+tuigAFsNK_PdroDfb4BWTZoxxUw@mail.gmail.com>
- <20120714103716.GD26559@liondog.tnic>
- <CAOJsxLGHQuuXqDD-1SNhL7Ly1-heCYFLzqj3SLh4xzmP9NR5GQ@mail.gmail.com>
+	Sun, 15 Jul 2012 06:15:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOJsxLGHQuuXqDD-1SNhL7Ly1-heCYFLzqj3SLh4xzmP9NR5GQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [46.116.44.123]
+In-Reply-To: <4FF50107.8030406@codeaurora.org>
+References: <1341409019-32166-1-git-send-email-ohad@wizery.com> <4FF50107.8030406@codeaurora.org>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Sun, 15 Jul 2012 13:14:44 +0300
+Message-ID: <CAK=WgbbO72S9=T-dnJBHE5d5k9H8dtYFtxe_AMSe+ut+0ZPOHg@mail.gmail.com>
+Subject: Re: [PATCH] remoteproc: adopt the driver core's alloc/add/del/put naming
+To: Stephen Boyd <sboyd@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Fernando Guzman Lugo <fernando.lugo@ti.com>,
+        =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjur.brandeland@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 14, 2012 at 03:12:05PM +0300, Pekka Enberg wrote:
-> We have "make kvmconfig" in the KVM tool tree that pretty much does
-> that automatically. There's nothing tools/kvm specific about it so I
-> guess you could merge that separately.
+On Thu, Jul 5, 2012 at 5:50 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> On 7/4/2012 6:36 AM, Ohad Ben-Cohen wrote:
+>> To make remoteproc's API more intuitive for developers, we adopt
+>> the driver core's naming, i.e. alloc -> add -> del -> put. We'll also
+>> add register/unregister when their first user shows up.
+>>
+>> Otherwise - there's no functional change here.
+>>
+>> Suggested by Russell King <linux@arm.linux.org.uk>.
+>>
+>> Cc: Russell King <linux@arm.linux.org.uk>
+>
+> Acked-by: Stephen Boyd <sboyd@codeaurora.org>
 
-Yes, something like KVMTOOL_TEST_ENABLE except not a make target but a
-Kconfig option.
+On Thu, Jul 5, 2012 at 2:50 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> I understand this patch and it's a good thing, so:
+> Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+>
+> Yours,
+> Linus Walleij
 
-I can imagine a user selecting this and other coarse-grained options
-in Kconfig and then "adjusting" single options like, for example, I
-wouldn't need the *9P* options on x86, etc, etc.
+Thanks Linus and Stephen.
 
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Applied.
