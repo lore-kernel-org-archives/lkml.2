@@ -1,94 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751844Ab2GOH6F (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jul 2012 03:58:05 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53056 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751573Ab2GOH54 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jul 2012 03:57:56 -0400
-Date: Sun, 15 Jul 2012 00:57:29 -0700
-From: tip-bot for John Stultz <johnstul@us.ibm.com>
-Message-ID: <tip-6b1859dba01c7d512b72d77e3fd7da8354235189@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, johnstul@us.ibm.com, richardcochran@gmail.com,
-        tglx@linutronix.de, prarit@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        johnstul@us.ibm.com, a.p.zijlstra@chello.nl, richardcochran@gmail.com,
-        tglx@linutronix.de, prarit@redhat.com
-In-Reply-To: <1342156917-25092-2-git-send-email-john.stultz@linaro.org>
-References: <1342156917-25092-2-git-send-email-john.stultz@linaro.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/urgent] ntp: Fix STA_INS/DEL clearing bug
-Git-Commit-ID: 6b1859dba01c7d512b72d77e3fd7da8354235189
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1751878Ab2GOIDW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jul 2012 04:03:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44269 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751588Ab2GOIDK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jul 2012 04:03:10 -0400
+Message-ID: <50027937.60803@redhat.com>
+Date: Sun, 15 Jul 2012 11:03:03 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 15 Jul 2012 00:57:37 -0700 (PDT)
+To: sheng qiu <herbert1984106@gmail.com>
+CC: kvm <kvm@vger.kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: lots of APIC_TMICT exit on VM with assigned NIC
+References: <CAB7xdinLSMBFtNa2sLBvNKE0H7cmfOr05+jVStd63MS5maP9VQ@mail.gmail.com> <4FFE8FEB.2020606@redhat.com> <CAB7xdinaGFxyn3OHmsq0Lqtkfs9XST0j0Tj4kBvQGNf5UxWLvw@mail.gmail.com>
+In-Reply-To: <CAB7xdinaGFxyn3OHmsq0Lqtkfs9XST0j0Tj4kBvQGNf5UxWLvw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6b1859dba01c7d512b72d77e3fd7da8354235189
-Gitweb:     http://git.kernel.org/tip/6b1859dba01c7d512b72d77e3fd7da8354235189
-Author:     John Stultz <johnstul@us.ibm.com>
-AuthorDate: Fri, 13 Jul 2012 01:21:50 -0400
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Sun, 15 Jul 2012 09:48:49 +0200
+On 07/12/2012 08:32 PM, sheng qiu wrote:
+> thanks for your reply.
+> the value is very large. 
 
-ntp: Fix STA_INS/DEL clearing bug
+Can you provide samples?
 
-In commit 6b43ae8a619d17c4935c3320d2ef9e92bdeed05d, I
-introduced a bug that kept the STA_INS or STA_DEL bit
-from being cleared from time_status via adjtimex()
-without forcing STA_PLL first.
+If it's large and fairly constant it means a timer keeps being pushed
+back by the interrupts/
 
-Usually once the STA_INS is set, it isn't cleared
-until the leap second is applied, so its unlikely this
-affected anyone. However during testing I noticed it
-took some effort to cancel a leap second once STA_INS
-was set.
 
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Richard Cochran <richardcochran@gmail.com>
-Cc: Prarit Bhargava <prarit@redhat.com>
-CC: stable@vger.kernel.org # 3.4
-Link: http://lkml.kernel.org/r/1342156917-25092-2-git-send-email-john.stultz@linaro.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/time/ntp.c |    8 ++++++--
- 1 files changed, 6 insertions(+), 2 deletions(-)
+> is there anyway that i  can avoid such
+> frequent exits due to APIC_TMICT? do i need to modify some codes in
+> kvm kernel module or adapt some parameters?
+> 
 
-diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
-index 70b33ab..b7fbadc 100644
---- a/kernel/time/ntp.c
-+++ b/kernel/time/ntp.c
-@@ -409,7 +409,9 @@ int second_overflow(unsigned long secs)
- 			time_state = TIME_DEL;
- 		break;
- 	case TIME_INS:
--		if (secs % 86400 == 0) {
-+		if (!(time_status & STA_INS))
-+			time_state = TIME_OK;
-+		else if (secs % 86400 == 0) {
- 			leap = -1;
- 			time_state = TIME_OOP;
- 			time_tai++;
-@@ -418,7 +420,9 @@ int second_overflow(unsigned long secs)
- 		}
- 		break;
- 	case TIME_DEL:
--		if ((secs + 1) % 86400 == 0) {
-+		if (!(time_status & STA_DEL))
-+			time_state = TIME_OK;
-+		else if ((secs + 1) % 86400 == 0) {
- 			leap = 1;
- 			time_tai--;
- 			time_state = TIME_WAIT;
+No, a guest change is needed.  You need to find out what timer is
+involved at modify it to set some slack, with
+hrtimer_set_expires_range() or similar.
+-- 
+error compiling committee.c: too many arguments to function
+
+
