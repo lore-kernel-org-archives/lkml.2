@@ -1,116 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752312Ab2GOLFC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jul 2012 07:05:02 -0400
+	id S1751879Ab2GOLFI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jul 2012 07:05:08 -0400
 Received: from mail-lb0-f174.google.com ([209.85.217.174]:41338 "EHLO
 	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751178Ab2GOLEy (ORCPT
+	with ESMTP id S1751534Ab2GOLEz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jul 2012 07:04:54 -0400
+	Sun, 15 Jul 2012 07:04:55 -0400
 From: Pekka Enberg <penberg@kernel.org>
 To: mingo@kernel.org
 Cc: yinghai@kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        Pekka Enberg <penberg@kernel.org>, Joe Perces <joe@perches.com>,
+        Pekka Enberg <penberg@kernel.org>, Joe Perches <joe@perches.com>,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH v2 1/3] x86/mm: Simplify memory mapping PFN calculation
-Date: Sun, 15 Jul 2012 14:04:44 +0300
-Message-Id: <1342350286-6670-1-git-send-email-penberg@kernel.org>
+Subject: [PATCH v2 2/3] x86/mm: Simplify free_init_pages()
+Date: Sun, 15 Jul 2012 14:04:45 +0300
+Message-Id: <1342350286-6670-2-git-send-email-penberg@kernel.org>
 X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1342350286-6670-1-git-send-email-penberg@kernel.org>
+References: <1342350286-6670-1-git-send-email-penberg@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce two new helper functions, addr_to_pmd_pfn() and
-addr_to_pud_pfn(), to simplify init_memory_mapping() code flow.
+As a cleanup, separate the #ifdef'd code in a new helper function and move
+initial "addr" assignment to the for-loop construct.
 
-Cc: Joe Perces <joe@perches.com>
+Cc: Joe Perches <joe@perches.com>
 Cc: Tejun Heo <tj@kernel.org>
-Acked-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
 Signed-off-by: Pekka Enberg <penberg@kernel.org>
 ---
- arch/x86/mm/init.c |   38 +++++++++++++++++++++-----------------
- 1 files changed, 21 insertions(+), 17 deletions(-)
+ arch/x86/mm/init.c |   44 ++++++++++++++++++++++++--------------------
+ 1 files changed, 24 insertions(+), 20 deletions(-)
 
 diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index bc4e9d8..9eb53c2 100644
+index 9eb53c2..4f863cc 100644
 --- a/arch/x86/mm/init.c
 +++ b/arch/x86/mm/init.c
-@@ -117,6 +117,16 @@ static int __meminit save_mr(struct map_range *mr, int nr_range,
- 	return nr_range;
+@@ -332,35 +332,20 @@ int devmem_is_allowed(unsigned long pagenr)
+ 	return 0;
  }
  
-+static unsigned long addr_to_pmd_pfn(unsigned long addr)
+-void free_init_pages(char *what, unsigned long begin, unsigned long end)
++static void __free_init_pages(char *what, unsigned long begin, unsigned long end)
+ {
+-	unsigned long addr;
+-	unsigned long begin_aligned, end_aligned;
+-
+-	/* Make sure boundaries are page aligned */
+-	begin_aligned = PAGE_ALIGN(begin);
+-	end_aligned   = end & PAGE_MASK;
+-
+-	if (WARN_ON(begin_aligned != begin || end_aligned != end)) {
+-		begin = begin_aligned;
+-		end   = end_aligned;
+-	}
+-
+-	if (begin >= end)
+-		return;
+-
+-	addr = begin;
+-
++#ifdef CONFIG_DEBUG_PAGEALLOC
+ 	/*
+ 	 * If debugging page accesses then do not free this memory but
+ 	 * mark them not present - any buggy init-section access will
+ 	 * create a kernel page fault:
+ 	 */
+-#ifdef CONFIG_DEBUG_PAGEALLOC
+ 	printk(KERN_INFO "debug: unmapping init [mem %#010lx-%#010lx]\n",
+ 		begin, end - 1);
+ 	set_memory_np(begin, (end - begin) >> PAGE_SHIFT);
+ #else
++	unsigned long addr;
++
+ 	/*
+ 	 * We just marked the kernel text read only above, now that
+ 	 * we are going to free part of that, we need to make that
+@@ -371,7 +356,7 @@ void free_init_pages(char *what, unsigned long begin, unsigned long end)
+ 
+ 	printk(KERN_INFO "Freeing %s: %luk freed\n", what, (end - begin) >> 10);
+ 
+-	for (; addr < end; addr += PAGE_SIZE) {
++	for (addr = begin; addr < end; addr += PAGE_SIZE) {
+ 		ClearPageReserved(virt_to_page(addr));
+ 		init_page_count(virt_to_page(addr));
+ 		memset((void *)addr, POISON_FREE_INITMEM, PAGE_SIZE);
+@@ -381,6 +366,25 @@ void free_init_pages(char *what, unsigned long begin, unsigned long end)
+ #endif
+ }
+ 
++void free_init_pages(char *what, unsigned long begin, unsigned long end)
 +{
-+	return (addr >> PMD_SHIFT) << (PMD_SHIFT - PAGE_SHIFT);
++	unsigned long begin_aligned, end_aligned;
++
++	/* Make sure boundaries are page aligned */
++	begin_aligned = PAGE_ALIGN(begin);
++	end_aligned   = end & PAGE_MASK;
++
++	if (WARN_ON(begin_aligned != begin || end_aligned != end)) {
++		begin = begin_aligned;
++		end   = end_aligned;
++	}
++
++	if (begin >= end)
++		return;
++
++	__free_init_pages(what, begin, end);
 +}
 +
-+static unsigned long addr_to_pud_pfn(unsigned long addr)
-+{
-+	return (addr >> PUD_SHIFT) << (PUD_SHIFT - PAGE_SHIFT);
-+}
-+
- /*
-  * Setup the direct mapping of the physical memory at PAGE_OFFSET.
-  * This runs before bootmem is initialized and gets pages directly from
-@@ -180,11 +190,9 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
- 	if (pos == 0)
- 		end_pfn = 1<<(PMD_SHIFT - PAGE_SHIFT);
- 	else
--		end_pfn = ((pos + (PMD_SIZE - 1))>>PMD_SHIFT)
--				 << (PMD_SHIFT - PAGE_SHIFT);
-+		end_pfn = addr_to_pmd_pfn(pos + (PMD_SIZE - 1));
- #else /* CONFIG_X86_64 */
--	end_pfn = ((pos + (PMD_SIZE - 1)) >> PMD_SHIFT)
--			<< (PMD_SHIFT - PAGE_SHIFT);
-+	end_pfn = addr_to_pmd_pfn(pos + (PMD_SIZE - 1));
- #endif
- 	if (end_pfn > (end >> PAGE_SHIFT))
- 		end_pfn = end >> PAGE_SHIFT;
-@@ -194,15 +202,13 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
- 	}
- 
- 	/* big page (2M) range */
--	start_pfn = ((pos + (PMD_SIZE - 1))>>PMD_SHIFT)
--			 << (PMD_SHIFT - PAGE_SHIFT);
-+	start_pfn = addr_to_pmd_pfn(pos + (PMD_SIZE - 1));
- #ifdef CONFIG_X86_32
--	end_pfn = (end>>PMD_SHIFT) << (PMD_SHIFT - PAGE_SHIFT);
-+	end_pfn = addr_to_pmd_pfn(end);
- #else /* CONFIG_X86_64 */
--	end_pfn = ((pos + (PUD_SIZE - 1))>>PUD_SHIFT)
--			 << (PUD_SHIFT - PAGE_SHIFT);
--	if (end_pfn > ((end>>PMD_SHIFT)<<(PMD_SHIFT - PAGE_SHIFT)))
--		end_pfn = ((end>>PMD_SHIFT)<<(PMD_SHIFT - PAGE_SHIFT));
-+	end_pfn = addr_to_pud_pfn(pos + (PUD_SIZE - 1));
-+	if (end_pfn > addr_to_pmd_pfn(end))
-+		end_pfn = addr_to_pmd_pfn(end);
- #endif
- 
- 	if (start_pfn < end_pfn) {
-@@ -213,9 +219,8 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
- 
- #ifdef CONFIG_X86_64
- 	/* big page (1G) range */
--	start_pfn = ((pos + (PUD_SIZE - 1))>>PUD_SHIFT)
--			 << (PUD_SHIFT - PAGE_SHIFT);
--	end_pfn = (end >> PUD_SHIFT) << (PUD_SHIFT - PAGE_SHIFT);
-+	start_pfn = addr_to_pud_pfn(pos + (PUD_SIZE - 1));
-+	end_pfn = addr_to_pud_pfn(end);
- 	if (start_pfn < end_pfn) {
- 		nr_range = save_mr(mr, nr_range, start_pfn, end_pfn,
- 				page_size_mask &
-@@ -224,9 +229,8 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
- 	}
- 
- 	/* tail is not big page (1G) alignment */
--	start_pfn = ((pos + (PMD_SIZE - 1))>>PMD_SHIFT)
--			 << (PMD_SHIFT - PAGE_SHIFT);
--	end_pfn = (end >> PMD_SHIFT) << (PMD_SHIFT - PAGE_SHIFT);
-+	start_pfn = addr_to_pmd_pfn(pos + (PMD_SIZE - 1));
-+	end_pfn = addr_to_pmd_pfn(end);
- 	if (start_pfn < end_pfn) {
- 		nr_range = save_mr(mr, nr_range, start_pfn, end_pfn,
- 				page_size_mask & (1<<PG_LEVEL_2M));
+ void free_initmem(void)
+ {
+ 	free_init_pages("unused kernel memory",
 -- 
 1.7.7.6
 
