@@ -1,75 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752566Ab2GOSW7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jul 2012 14:22:59 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:64168 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751757Ab2GOSWu (ORCPT
+	id S1752498Ab2GOS2Q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jul 2012 14:28:16 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:51096 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750871Ab2GOS2H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jul 2012 14:22:50 -0400
-Message-ID: <50030A35.9010500@gmail.com>
-Date: Sun, 15 Jul 2012 20:21:41 +0200
-From: Daniel Mack <zonque@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Sun, 15 Jul 2012 14:28:07 -0400
+Date: Sun, 15 Jul 2012 14:28:05 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Udo van den Heuvel <udovdh@xs4all.nl>
+cc: linux-usb@vger.kernel.org, Jan Ceuleers <jan.ceuleers@computer.org>,
+        Clemens Ladisch <clemens@ladisch.de>,
+        Simon Jones <sijones2010@gmail.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: 3.4.4: disabling irq
+In-Reply-To: <5002E7FC.5070307@xs4all.nl>
+Message-ID: <Pine.LNX.4.44L0.1207151423440.29236-100000@netrider.rowland.org>
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Sven Neumann <s.neumann@raumfeld.com>, Olof Johansson <olof@lixom.net>,
-        Daniel Mack <daniel@caiaq.de>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Input: eeti_ts: Mark as CONFIG_BROKEN
-References: <1333777207-4151-1-git-send-email-olof@lixom.net> <20120407070206.GA17623@core.coreip.homeip.net> <4F8089A9.6080704@raumfeld.com> <20120503043651.GA11830@core.coreip.homeip.net> <20120713070102.GA2223@core.coreip.homeip.net>
-In-Reply-To: <20120713070102.GA2223@core.coreip.homeip.net>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13.07.2012 09:01, Dmitry Torokhov wrote:
-> On Wed, May 02, 2012 at 09:36:51PM -0700, Dmitry Torokhov wrote:
->> Hi Sven,
->>
->> On Sat, Apr 07, 2012 at 08:38:33PM +0200, Sven Neumann wrote:
->>> Hi,
->>>
->>> On 07.04.12 09:02, Dmitry Torokhov wrote:
->>>> On Fri, Apr 06, 2012 at 10:40:07PM -0700, Olof Johansson wrote:
->>>>> This seems to have been broken since 2010, so obviously noone actually
->>>>> cares about the driver:
->>>>>
->>>>> make[4]: *** [drivers/input/touchscreen/eeti_ts.o] Error 1
->>>>> drivers/input/touchscreen/eeti_ts.c: In function 'eeti_ts_irq_active':
->>>>> drivers/input/touchscreen/eeti_ts.c:65:2: error: implicit declaration of function 'irq_to_gpio' [-Werror=implicit-function-declaration]
->>>>>
->>>>> irq_to_gpio isn't available on most platforms today, so the driver
->>>>> will need some rework by someone who has hardware access and can test
->>>>> (to make sure that, for example, switching to level interrupts and just
->>>>> keep taking them while there's more to process works).
->>>>>
->>>>> I guess it could just be scheduled for removal, but let's start with
->>>>> marking it CONFIG_BROKEN.
->>>>
->>>> Well, it probably works quite well on arches that do have irq_to_gpio(),
->>>> let's ask Daniel and Sven if they still have this hardware and if they
->>>> can try the patch below that implements what you suggested.
->>>
->>> This hardware is still in use and we also still follow kernel
->>> development and try to update our customer devices to recent kernel
->>> versions regularly. Currently we are at 3.1.10 and the touchscreen
->>> works well with that. I'll try to update to a more recent kernel
->>> next week and will try your patch.
->>>
->>
->> Did you have a chance to test the patch?
+On Sun, 15 Jul 2012, Udo van den Heuvel wrote:
+
+> On 2012-07-15 17:35, Alan Stern wrote:
+> > echo 0000:00:13.1 >/sys/bus/pci/drivers/ohci_hcd/unbind
 > 
-> *ping*
+> Afterwards I did:
 > 
-> It would be nice to get driver in mainline compile [and work] again...
+> > echo 0000:00:13.1 >/sys/bus/pci/drivers/ohci_hcd/bind
 
-Sorry, I got too much stuff to do right now. Please give me a week or so
-and I'll be able to test this.
+Um, I think you missed the point.  The whole idea of the test is to see 
+what happens while the controller is unbound from the driver.  Binding 
+it again defeats the purpose.
 
+> And I saw:
+> 
+> Jul 15 17:50:30 surfplank2 kernel: ohci_hcd 0000:00:13.1: remove, state 1
+> Jul 15 17:50:30 surfplank2 kernel: usb usb4: USB disconnect, device number 1
+> Jul 15 17:50:30 surfplank2 kernel: usb 4-3: USB disconnect, device number 2
+> Jul 15 17:50:30 surfplank2 kernel: ohci_hcd 0000:00:13.1: USB bus 4
+> deregistered
+> Jul 15 17:50:37 surfplank2 kernel: ohci_hcd 0000:00:13.1: OHCI Host
+> Controller
+> Jul 15 17:50:37 surfplank2 kernel: ohci_hcd 0000:00:13.1: new USB bus
+> registered, assigned bus number 4
+> Jul 15 17:50:37 surfplank2 kernel: ohci_hcd 0000:00:13.1: irq 18, io mem
+> 0xfe02a000
+> Jul 15 17:50:37 surfplank2 kernel: usb usb4: New USB device found,
+> idVendor=1d6b, idProduct=0001
+> Jul 15 17:50:37 surfplank2 kernel: usb usb4: New USB device strings:
+> Mfr=3, Product=2, SerialNumber=1
+> Jul 15 17:50:37 surfplank2 kernel: usb usb4: Product: OHCI Host Controller
+> Jul 15 17:50:37 surfplank2 kernel: usb usb4: Manufacturer: Linux 3.4.4
+> ohci_hcd
+> Jul 15 17:50:37 surfplank2 kernel: usb usb4: SerialNumber: 0000:00:13.1
+> Jul 15 17:50:37 surfplank2 kernel: hub 4-0:1.0: USB hub found
+> Jul 15 17:50:37 surfplank2 kernel: hub 4-0:1.0: 3 ports detected
+> Jul 15 17:50:37 surfplank2 kernel: usb 4-3: new full-speed USB device
+> number 2 using ohci_hcd
+> Jul 15 17:50:38 surfplank2 kernel: usb 4-3: New USB device found,
+> idVendor=0471, idProduct=0311
+> Jul 15 17:50:38 surfplank2 kernel: usb 4-3: New USB device strings:
+> Mfr=0, Product=0, SerialNumber=1
+> Jul 15 17:50:38 surfplank2 kernel: usb 4-3: SerialNumber: 01690000A5000000
+> Jul 15 17:50:38 surfplank2 mtp-probe: checking bus 4, device 2:
+> "/sys/devices/pci0000:00/0000:00:13.1/usb4/4-3"
+> Jul 15 17:50:38 surfplank2 mtp-probe: bus: 4, device: 2 was not an MTP
+> device
+> Jul 15 17:50:38 surfplank2 kernel: pwc: Philips PCVC740K (ToUCam
+> Pro)/PCVC840 (ToUCam II) USB webcam detected.
+> Jul 15 17:50:39 surfplank2 kernel: pwc: Registered as video0.
+> Jul 15 17:50:39 surfplank2 kernel: input: PWC snapshot button as
+> /devices/pci0000:00/0000:00:13.0/usb3/3-2/input/input8
+> Jul 15 17:50:39 surfplank2 kernel: pwc: Philips PCVC740K (ToUCam
+> Pro)/PCVC840 (ToUCam II) USB webcam detected.
+> Jul 15 17:50:39 surfplank2 kernel: pwc: Registered as video1.
+> Jul 15 17:50:39 surfplank2 kernel: input: PWC snapshot button as
+> /devices/pci0000:00/0000:00:13.1/usb4/4-3/input/input9
+> Jul 15 17:50:39 surfplank2 kernel: usbcore: registered new interface
+> driver Philips webcam
+> Jul 15 17:50:39 surfplank2 colord[3375]: (colord:3375): Cd-WARNING **:
+> CdMain: failed to emit DeviceAdded: failed to register object: An object
+> is already exported for the interface
+> org.freedesktop.ColorManager.Device at
+> /org/freedesktop/ColorManager/devices/sysfs_0471_0311
+> 
+> So I have two webcams on this controller, each on a different port.
 
-Thanks,
-Daniel
+How do you reach that conclusion?  The log above shows only one webcam
+on bus 4: device 2, attached to port 3.  There is another webcam, yes, 
+but it's on bus 3, not bus 4.
+
+> The final line is an issue that cam with Fedora 17, nobody could foresee
+> that one could need a colord *and* have two identical webcams too. (I do
+> not need colord but have two webcams to be clear)
+> 
+> After doing this I could modprobe pwc and start mrtg without problem.
+> 
+> So now I can wait for the next occurrence.
+
+You should unbind the controller and leave it unbound.  _Then_ wait for 
+the next occurrence.
+
+Alan Stern
+
