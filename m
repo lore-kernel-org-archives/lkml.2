@@ -1,78 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752408Ab2GOVTP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jul 2012 17:19:15 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:33732 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750919Ab2GOVTF (ORCPT
+	id S1752516Ab2GOVV0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jul 2012 17:21:26 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49349 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750919Ab2GOVVS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jul 2012 17:19:05 -0400
-Date: Sun, 15 Jul 2012 23:18:48 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
-        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
-        Debian Kernel Team <debian-kernel@lists.debian.org>,
-        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Sasha Levin <levinsasha928@gmail.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>, Asias He <asias.hejun@gmail.com>
-Subject: Re: [opensuse-kernel] Re: [RFC] Simplifying kernel configuration for
- distro issues
-Message-ID: <20120715211848.GA21167@aftab.osrc.amd.com>
-References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com>
- <1342212885.25704.4.camel@lade.trondhjem.org>
- <CAFLxGvxxWodD97=78218wc+tuigAFsNK_PdroDfb4BWTZoxxUw@mail.gmail.com>
- <20120714103716.GD26559@liondog.tnic>
- <CAOJsxLGHQuuXqDD-1SNhL7Ly1-heCYFLzqj3SLh4xzmP9NR5GQ@mail.gmail.com>
- <20120715101434.GA18144@aftab.osrc.amd.com>
- <CAOJsxLGBCQ6C-3M0ZdTfVPqnmOKqUE9+78Mhf+67TksmVojuuQ@mail.gmail.com>
+	Sun, 15 Jul 2012 17:21:18 -0400
+Date: Sun, 15 Jul 2012 22:21:15 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: "ccross@android.com" <ccross@android.com>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "lrg@ti.com" <lrg@ti.com>,
+        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 2/2] regulator: tps6586x: add support for input supply
+Message-ID: <20120715212114.GI4041@opensource.wolfsonmicro.com>
+References: <1342187432-18668-1-git-send-email-ldewangan@nvidia.com>
+ <1342187432-18668-3-git-send-email-ldewangan@nvidia.com>
+ <20120713142229.GM4215@opensource.wolfsonmicro.com>
+ <500057A0.1050108@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="4LFBTxd4L5NLO6ly"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAOJsxLGBCQ6C-3M0ZdTfVPqnmOKqUE9+78Mhf+67TksmVojuuQ@mail.gmail.com>
+In-Reply-To: <500057A0.1050108@nvidia.com>
+X-Cookie: You should go home.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 15, 2012 at 01:17:16PM +0300, Pekka Enberg wrote:
-> > Yes, something like KVMTOOL_TEST_ENABLE except not a make target but a
-> > Kconfig option.
-> 
-> It is a config option too - "make kvmconfig" simply enables it.
 
-Right, so how about something more concrete in this whole discussion:
+--4LFBTxd4L5NLO6ly
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Maybe add the KVMTOOL_TEST_ENABLE (maybe rename it to a more fitting
-name like KVM_OPTS or similar) thing to a new toplevel Kconfig menu
-called "Distro and other profiles" or so:
+On Fri, Jul 13, 2012 at 10:45:12PM +0530, Laxman Dewangan wrote:
 
-  │ │                                       General setup  --->
-  │ │                                       Distros and other profiles  --->			<---
-  │ │                                   [*] Enable loadable module support  --->
-  │ │                                   [*] Enable the block layer  --->
-  │ │                                       Processor type and features  --->
- ...
+> I was thinking that 1/2 should also go through your tree to avoid
+> any functionality break on existing platform who are using this
+> regulator.
 
-Btw, which Kconfig option is needed for "-usbdevice tablet" support so
-that the host mouse can be able to send scroll events to the guest qemu
-screen without the need for the qemu screen to capture it so that I need
-to "escape" it everytime I need to return to the host? And can we add it
-to the list of options KVMTOOL_TEST_ENABLE selects?
+I'd be happy to do that if the ARM people are happy with it; just let me
+know and resend the patch if you want me to apply it.
 
-Thanks.
+--4LFBTxd4L5NLO6ly
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
--- 
-Regards/Gruss,
-Boris.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+iQIcBAEBAgAGBQJQAzQ+AAoJEBus8iNuMP3d0WAP/A5PwYChGg8POUqZiQEyxdGC
+5uyLG81AvkS2vz5WNVktM/fM55mudtHScY09kpa1pz1fn3won7qZFYnm5C9VHQEF
+GlLktGRGc5jG7rFivlEbdrUDaB7qDhBIHTD45b1hkUTPxm26/cZEDXXNqx4TKSe1
+32ELootKEnQdvrmRSJt9/Wha5wLHMk00jgRWXAWivYvuY33bk7wxyrQGoNkxvHT3
+rkdDYAmu77370+s2u6lzPs7+gMRwaFBZCc9o1T3FYqZSxp/RBDc3vRVXKp5MtePh
+KiIJk1Xt1XEnEHY6nE8xo68B7rMeRSzo3xu3AT0vAGGP7xcn5Van2RJaQXEuWkI+
+xSaCrQYZBo9jIvFVhS+5TV8bomykQKrVEceeKqOn9MHJZAkjm9B5GAsJ7rZnj4vX
+Uw+/U4HxO6DP3o/d2V2j8jjCg8GpTe7iUr0ZMPLNSGQxDfJrpfmDMHz6lFjdSY6+
+ZRfPbqAa6n6eTj8HCqifkhVXET+yW9LBmRT2i2kD7nUa7okZBA9wFw2Xax8MZLqP
+aUaReVNmrauotO6aysNGDVKjGaCl/pGTtIo5PUtzZ6IzSmIZKGiBh89n7ZwiI0v2
+dLpC6b6YVqtFgurmBssaPkSjkO6Vr9SL1kpF1cCLaIXFyWcoG7iTMD/ql+gP9l0/
+0zFMJHAGRdycz77C1jO3
+=7Z0V
+-----END PGP SIGNATURE-----
+
+--4LFBTxd4L5NLO6ly--
