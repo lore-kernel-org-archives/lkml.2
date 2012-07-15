@@ -1,51 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752543Ab2GOKRY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jul 2012 06:17:24 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:54817 "EHLO
+	id S1751873Ab2GOLDA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jul 2012 07:03:00 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:49270 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751689Ab2GOKRR (ORCPT
+	with ESMTP id S1751178Ab2GOLC4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jul 2012 06:17:17 -0400
+	Sun, 15 Jul 2012 07:02:56 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120715101434.GA18144@aftab.osrc.amd.com>
-References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com>
-	<1342212885.25704.4.camel@lade.trondhjem.org>
-	<CAFLxGvxxWodD97=78218wc+tuigAFsNK_PdroDfb4BWTZoxxUw@mail.gmail.com>
-	<20120714103716.GD26559@liondog.tnic>
-	<CAOJsxLGHQuuXqDD-1SNhL7Ly1-heCYFLzqj3SLh4xzmP9NR5GQ@mail.gmail.com>
-	<20120715101434.GA18144@aftab.osrc.amd.com>
-Date: Sun, 15 Jul 2012 13:17:16 +0300
-X-Google-Sender-Auth: CO04TpeKc8MphLjSnnMgkfccTlM
-Message-ID: <CAOJsxLGBCQ6C-3M0ZdTfVPqnmOKqUE9+78Mhf+67TksmVojuuQ@mail.gmail.com>
-Subject: Re: [opensuse-kernel] Re: [RFC] Simplifying kernel configuration for
- distro issues
+In-Reply-To: <CAE9FiQU9hEvaYMhyE4iCGiOtPDKjjC+Jj-jyCADfpH7btV0dNw@mail.gmail.com>
+References: <1342273287-2154-1-git-send-email-penberg@kernel.org>
+	<CAE9FiQU9hEvaYMhyE4iCGiOtPDKjjC+Jj-jyCADfpH7btV0dNw@mail.gmail.com>
+Date: Sun, 15 Jul 2012 14:02:55 +0300
+X-Google-Sender-Auth: N0RiPCP3XjMIVhoP73W-rYxtnlw
+Message-ID: <CAOJsxLG7KSJzr-Tb=27jAsBNF1c3Vnedcebpp0kn+XSagXhHZw@mail.gmail.com>
+Subject: Re: [PATCH 3/3] x86/mm: Separate paging setup from memory mapping
 From: Pekka Enberg <penberg@kernel.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
-        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
-        Debian Kernel Team <debian-kernel@lists.debian.org>,
-        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Sasha Levin <levinsasha928@gmail.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>, Asias He <asias.hejun@gmail.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        Tejun Heo <tj@kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 15, 2012 at 1:14 PM, Borislav Petkov <bp@amd64.org> wrote:
-> On Sat, Jul 14, 2012 at 03:12:05PM +0300, Pekka Enberg wrote:
->> We have "make kvmconfig" in the KVM tool tree that pretty much does
->> that automatically. There's nothing tools/kvm specific about it so I
->> guess you could merge that separately.
->
-> Yes, something like KVMTOOL_TEST_ENABLE except not a make target but a
-> Kconfig option.
+On Sat, Jul 14, 2012 at 6:41 AM, Pekka Enberg <penberg@kernel.org> wrote:
+>> Move PSE and PGE bit twiddling from init_memory_mapping() to a new
+>> setup_paging() function to simplify the former function. The
+>> init_memory_mapping() function is called later in the boot process by
+>> gart_iommu_init(), efi_ioremap(), and arch_add_memory() which have no
+>> business whatsover updating the CR4 register.
 
-It is a config option too - "make kvmconfig" simply enables it.
+On Sat, Jul 14, 2012 at 11:47 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> I have one local patch that will only set that one time too. also do
+> other page size probe one time.
+>
+> please check attached one.
+
+Your patch still keeps the same sort of code flow. That is,
+init_memory_mapping() does all sorts of things upon first call. I
+personally prefer the more explicit approach in this patch. In fact,
+you could do the page_size_mask setup in the setup_paging() function.
 
                         Pekka
