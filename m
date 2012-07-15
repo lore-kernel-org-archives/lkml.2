@@ -1,43 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752783Ab2GOPXE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jul 2012 11:23:04 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:49179 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751638Ab2GOPWi (ORCPT
+	id S1752810Ab2GOPfp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jul 2012 11:35:45 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:39739 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752083Ab2GOPfg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jul 2012 11:22:38 -0400
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: John Stultz <johnstul@us.ibm.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, stable@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH 6/6] hrtimer: Update hrtimer base offsets each hrtimer_interrupt
-References: <1341960205-56738-1-git-send-email-johnstul@us.ibm.com>
-	<1341960205-56738-8-git-send-email-johnstul@us.ibm.com>
-X-Yow: Awright, which one of you hid my PENIS ENVY?
-Date: Sun, 15 Jul 2012 17:22:32 +0200
-In-Reply-To: <1341960205-56738-8-git-send-email-johnstul@us.ibm.com> (John
-	Stultz's message of "Tue, 10 Jul 2012 18:43:25 -0400")
-Message-ID: <m2y5mlnj5z.fsf@igel.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Sun, 15 Jul 2012 11:35:36 -0400
+Date: Sun, 15 Jul 2012 11:35:35 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Udo van den Heuvel <udovdh@xs4all.nl>
+cc: linux-usb@vger.kernel.org, Jan Ceuleers <jan.ceuleers@computer.org>,
+        Clemens Ladisch <clemens@ladisch.de>,
+        Simon Jones <sijones2010@gmail.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: 3.4.4: disabling irq
+In-Reply-To: <5002D378.8030800@xs4all.nl>
+Message-ID: <Pine.LNX.4.44L0.1207151122050.25880-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This breaks resume on the iBook G4 (PowerBook6,7).  Apparently during or
-before noirq resume the system is hanging by the same amount of time as
-the system was sleeping.
+On Sun, 15 Jul 2012, Udo van den Heuvel wrote:
 
-Andreas.
+> > The conclusion is that ohci-hcd is the only driver using IRQ 18.  If 
+> > you build a kernel with CONFIG_USB_DEBUG enabled, it will be possible 
+> > to see if the OHCI hardware is responsible for the IRQ problem.
+> > 
+> > When the IRQ line gets disabled again, make a copy of the
+> > 
+> > 	/sys/kernel/debug/usb/ohci/*/registers
+> > 
+> > files and post them, along with a copy of 
+> > /sys/kernel/debug/usb/devices.
 
--- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
+> After disabling:
+
+This indicates the controller at 0000:00:13.1 has an outstanding 
+interrupt request:
+
+> bus pci, device 0000:00:13.1
+> OHCI Host Controller
+> ohci_hcd
+> OHCI 1.0, NO legacy support registers, rh state running
+> control 0x08f HCFS=operational IE PLE CBSR=3
+> cmdstatus 0x00000 SOC=0
+> intrstatus 0x00000026 FNO SF WDH
+> intrenable 0x8000005a MIE RHSC UE RD WDH
+
+The WDH bit is set in both intrstatus and intrenable.  None of the 
+other controllers show anything similar.  Therefore, in the absence of 
+hardware bugs, this controller must be the one causing your problem.
+
+You can test this by unbinding that controller from the ohci-hcd 
+driver:
+
+	echo 0000:00:13.1 >/sys/bus/pci/drivers/ohci_hcd/unbind
+
+Do this before the IRQ error occurs, and see if you get another error.
+If you do, get another copy of those "register" files as quickly
+afterwards as you can.
+
+That's the controller for bus 4, which has one of the webcams.  If you 
+prefer, you could simply unplug the webcam from bus 4 instead; the end 
+result should be the same.  (Or even unplug both webcams...)
+
+Alan Stern
+
