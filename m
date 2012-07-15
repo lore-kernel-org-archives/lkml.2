@@ -1,78 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752516Ab2GOVV0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jul 2012 17:21:26 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49349 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750919Ab2GOVVS (ORCPT
+	id S1752461Ab2GOVeO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jul 2012 17:34:14 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:52974 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750919Ab2GOVeM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jul 2012 17:21:18 -0400
-Date: Sun, 15 Jul 2012 22:21:15 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: "ccross@android.com" <ccross@android.com>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "lrg@ti.com" <lrg@ti.com>,
-        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
+	Sun, 15 Jul 2012 17:34:12 -0400
+Date: Sun, 15 Jul 2012 22:33:37 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Pavel Machek <pavel@ucw.cz>, Ingo Molnar <mingo@kernel.org>,
+        Olof Johansson <olof@lixom.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 2/2] regulator: tps6586x: add support for input supply
-Message-ID: <20120715212114.GI4041@opensource.wolfsonmicro.com>
-References: <1342187432-18668-1-git-send-email-ldewangan@nvidia.com>
- <1342187432-18668-3-git-send-email-ldewangan@nvidia.com>
- <20120713142229.GM4215@opensource.wolfsonmicro.com>
- <500057A0.1050108@nvidia.com>
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
+Message-ID: <20120715213336.GA25830@arm.com>
+References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
+ <20120714093032.GA23316@elf.ucw.cz>
+ <20120715121644.GB10597@arm.com>
+ <201207151943.08183.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="4LFBTxd4L5NLO6ly"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <500057A0.1050108@nvidia.com>
-X-Cookie: You should go home.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201207151943.08183.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Jul 15, 2012 at 08:43:07PM +0100, Arnd Bergmann wrote:
+> On Sunday 15 July 2012, Catalin Marinas wrote:
+> > The AArch32 execution mode is optional, so it depends on the actual CPU
+> > implementation (while AArch64 is mandatory). If the implementation
+> > supports it, the most likely scenario for AArch32 at kernel level is in
+> > virtual machines or the secure OS. I'll explain below why.
+> > 
+> > The exception (or privilege) levels on an ARMv8 architecture look like
+> > this:
+> > 
+> > Secure World    Normal World
+> > +-----+
+> > | EL3 |                         - Secure monitor
+> > +-----+
+> >                 +-----+
+> >                 | EL2 |         - Hypervisor (normal world only)
+> >                 +-----+
+> > +-----+         +-----+
+> > | EL1 |         | EL1 |         - OS kernel (secure or normal)
+> > +-----+         +-----+
+> > +-----+         +-----+
+> > | EL0 |         | EL0 |         - User apps (secure or normal)
+> > +-----+         +-----+
+> > 
+> > In theory, each of these levels (implementation specific) can run both
+> > AArch32 and AArch64 modes. There is however a restriction on how the
+> > mode switching is done - this can only happen on a change of exception
+> > level. When going up the EL the register width (RW) can never go down. A
+> > lower EL can never have a higher RW than a higher EL.
+> > 
+> > Additionally, the RW (the AArch32/AArch64 mode) for an EL is controlled
+> > by the next higher level (with EL3 hard-wired). An EL cannot cause
+> > itself to switch between AArch32 and AArch64.
+> 
+> So is the highest level always hardwired to 64-bit on ARMv8?
 
---4LFBTxd4L5NLO6ly
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+If an implementation supports AArch32 at EL3 there could be some
+physical (or some FPGA config) switch to choose between the two. But
+since AArch64 is mandated, I don't see why one would force AArch32 at
+EL3 and therefore all lower exception levels (and make a big part of the
+processor unused).
 
-On Fri, Jul 13, 2012 at 10:45:12PM +0530, Laxman Dewangan wrote:
+It's also impossible for some software to detect whether it runs in
+AArch32 or AArch64. The instruction encodings are different, so any
+instructions would have to be targeted at one mode or the other,
+otherwise they are undefined.
 
-> I was thinking that 1/2 should also go through your tree to avoid
-> any functionality break on existing platform who are using this
-> regulator.
+> On a related note: how does the endianess change between
+> exception levels on ARMv8? Can you switch endianess every time you
+> move from one level to another? Can any of the levels pick the
+> endianess for itself?
 
-I'd be happy to do that if the ARM people are happy with it; just let me
-know and resend the patch if you want me to apply it.
+Yes, a level higher than 0 can pick the endianness for itself using the
+SCTLR_ELx.EE bit. For user apps, the endianness is set by the kernel.
+The SETEND instruction to switch the endianness on the fly (usually in
+user space) is not available in AArch64 and has also been deprecated in
+AArch32 on ARMv8. It wasn't too popular.
 
---4LFBTxd4L5NLO6ly
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQAzQ+AAoJEBus8iNuMP3d0WAP/A5PwYChGg8POUqZiQEyxdGC
-5uyLG81AvkS2vz5WNVktM/fM55mudtHScY09kpa1pz1fn3won7qZFYnm5C9VHQEF
-GlLktGRGc5jG7rFivlEbdrUDaB7qDhBIHTD45b1hkUTPxm26/cZEDXXNqx4TKSe1
-32ELootKEnQdvrmRSJt9/Wha5wLHMk00jgRWXAWivYvuY33bk7wxyrQGoNkxvHT3
-rkdDYAmu77370+s2u6lzPs7+gMRwaFBZCc9o1T3FYqZSxp/RBDc3vRVXKp5MtePh
-KiIJk1Xt1XEnEHY6nE8xo68B7rMeRSzo3xu3AT0vAGGP7xcn5Van2RJaQXEuWkI+
-xSaCrQYZBo9jIvFVhS+5TV8bomykQKrVEceeKqOn9MHJZAkjm9B5GAsJ7rZnj4vX
-Uw+/U4HxO6DP3o/d2V2j8jjCg8GpTe7iUr0ZMPLNSGQxDfJrpfmDMHz6lFjdSY6+
-ZRfPbqAa6n6eTj8HCqifkhVXET+yW9LBmRT2i2kD7nUa7okZBA9wFw2Xax8MZLqP
-aUaReVNmrauotO6aysNGDVKjGaCl/pGTtIo5PUtzZ6IzSmIZKGiBh89n7ZwiI0v2
-dLpC6b6YVqtFgurmBssaPkSjkO6Vr9SL1kpF1cCLaIXFyWcoG7iTMD/ql+gP9l0/
-0zFMJHAGRdycz77C1jO3
-=7Z0V
------END PGP SIGNATURE-----
-
---4LFBTxd4L5NLO6ly--
+-- 
+Catalin
