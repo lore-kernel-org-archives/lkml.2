@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752584Ab2GOL1u (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jul 2012 07:27:50 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:34552 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751624Ab2GOL1n (ORCPT
+	id S1752619Ab2GOLgA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jul 2012 07:36:00 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:26429 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751624Ab2GOLfy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jul 2012 07:27:43 -0400
-Date: Sun, 15 Jul 2012 12:27:35 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Russell King <rmk@arm.linux.org.uk>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>
-Subject: Re: linux-next: manual merge of the signal tree with the arm-current
- tree
-Message-ID: <20120715112735.GI31729@ZenIV.linux.org.uk>
-References: <20120705173526.bf8772adb18edfc91adddea8@canb.auug.org.au>
- <20120705075204.GA12344@flint.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120705075204.GA12344@flint.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 15 Jul 2012 07:35:54 -0400
+Date: Sun, 15 Jul 2012 13:35:30 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Amaury =?UTF-8?B?RGVjcsOqbWU=?= <amaury.decreme@gmail.com>,
+        linux-i2c@vger.kernel.org, amalysh@web.de, nelson@sis.com,
+        ben-linux@fluff.org, w.sang@pengutronix.de, rob@landley.net,
+        jeffrey.t.kirsher@intel.com, akpm@linux-foundation.org,
+        davem@davemloft.net, joe@perches.com, ralf@linux-mips.org,
+        dirk.brandewie@gmail.com, jayachandranc@netlogicmicro.com,
+        Xiangzhen.Ye@csr.com, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        suzanne.decreme@gmail.com
+Subject: Re: [PATCH] i2c: sis964: bus driver
+Message-ID: <20120715133530.1ffc3f36@endymion.delvare>
+In-Reply-To: <CAErSpo5-ou3vjmHgjiOOd57PvWg_hez80U0k3AX_ydjb0pikvQ@mail.gmail.com>
+References: <1342172455-8530-1-git-send-email-amaury.decreme@gmail.com>
+	<CAErSpo5-ou3vjmHgjiOOd57PvWg_hez80U0k3AX_ydjb0pikvQ@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 05, 2012 at 08:52:04AM +0100, Russell King wrote:
-> On Thu, Jul 05, 2012 at 05:35:26PM +1000, Stephen Rothwell wrote:
-> > Hi Al,
-> > 
-> > Today's linux-next merge of the signal tree got a conflict in
-> > arch/arm/kernel/signal.c between commit f73e2ca64281 ("ARM: 7443/1:
-> > Revert "new way of handling ERESTART_RESTARTBLOCK"") from the arm-current
-> > tree and commits 9c802c169f96 ("arm: deal with handlerless restarts
-> > without leaving the kernel") and 76c3f4da3ee4 ("arm: get rid of
-> > TIF_SYSCALL_RESTARTSYS") from the signal tree.
-> > 
-> > I have no idea how to cope with this.  So I have effectively reverted
-> > commit f73e2ca64281 ("ARM: 7443/1: Revert "new way of handling
-> > ERESTART_RESTARTBLOCK"") for today (though parts of that commit are also
-> > implemented by the above signal tree commits).
-> 
-> Currently, bugs have been found with the signal handling updates which
-> happened during the last merge window.
-> 
-> Will has concerns with Al's proposed fixes for the signal handling.
+Hi Bjorn,
 
-Could you please resend whatever concerns those had been my way?
-The last I've seen from Will had been about the stuff in mainline,
-not in -next; I might have missed something quite easily, though -
-net.access had been really lousy lately and piles in l-k mbox... ouch.
+On Fri, 13 Jul 2012 09:36:07 -0600, Bjorn Helgaas wrote:
+> On Fri, Jul 13, 2012 at 3:40 AM, Amaury Decrême
+> <amaury.decreme@gmail.com> wrote:
+> > diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
+> > index ab741b0..0ffc982 100644
+> > --- a/include/linux/pci_ids.h
+> > +++ b/include/linux/pci_ids.h
+> > @@ -699,6 +699,7 @@
+> >  #define PCI_DEVICE_ID_SI_961           0x0961
+> >  #define PCI_DEVICE_ID_SI_962           0x0962
+> >  #define PCI_DEVICE_ID_SI_963           0x0963
+> > +#define PCI_DEVICE_ID_SI_964           0x0964
+> 
+> Please read the comment at the top of this file; I don't think this
+> addition qualifies as something that should be added.
+> 
+> >  #define PCI_DEVICE_ID_SI_965           0x0965
+> >  #define PCI_DEVICE_ID_SI_966           0x0966
+> >  #define PCI_DEVICE_ID_SI_968           0x0968
+
+When you reply to a large patch, please limit the quoting to the
+relevant portion.
+
+Thanks,
+-- 
+Jean Delvare
