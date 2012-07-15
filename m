@@ -1,46 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751959Ab2GODl1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jul 2012 23:41:27 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37561 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751461Ab2GODlT (ORCPT
+	id S1752355Ab2GODme (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Jul 2012 23:42:34 -0400
+Received: from mga01.intel.com ([192.55.52.88]:41925 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751461Ab2GODm1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jul 2012 23:41:19 -0400
-Message-ID: <50023BD4.2050809@gmail.com>
-Date: Sun, 15 Jul 2012 11:41:08 +0800
-From: Wang Sheng-Hui <shhuiw@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	Sat, 14 Jul 2012 23:42:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="177473345"
+From: "Dave, Tushar N" <tushar.n.dave@intel.com>
+To: Joe Jin <joe.jin@oracle.com>
+CC: "e1000-devel@lists.sf.net" <e1000-devel@lists.sf.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: 82571EB: Detected Hardware Unit Hang
+Thread-Topic: 82571EB: Detected Hardware Unit Hang
+Thread-Index: AQHNXbA0O4dj/qIKzEaqpnXp2Y+l0pcimGMAgABDhtCAANf7AP//lehggAB9gwD//6IHIIAAe14A//+RAgAAESU+AAANp23AAB8MOIAADbt9YP//m9aAgAB1KHD//48GgIAASC6A///rKICAAG8OoP//oCeA//++GYD//qgHgP/9fRVQ//p8uQD/8mEtoA==
+Date: Sun, 15 Jul 2012 03:42:25 +0000
+Message-ID: <061C8A8601E8EE4CA8D8FD6990CEA891274F2354@ORSMSX102.amr.corp.intel.com>
+References: <4FFA9B96.6040901@oracle.com> <4FFCDA6C.8020708@oracle.com>
+ <061C8A8601E8EE4CA8D8FD6990CEA891274EED74@ORSMSX102.amr.corp.intel.com>
+ <4FFCF314.6020400@oracle.com>
+ <061C8A8601E8EE4CA8D8FD6990CEA891274EEDD7@ORSMSX102.amr.corp.intel.com>
+ <4FFD0908.6080506@oracle.com>
+ <061C8A8601E8EE4CA8D8FD6990CEA891274EF8AD@ORSMSX102.amr.corp.intel.com>
+ <4FFE3505.8060407@oracle.com>
+ <061C8A8601E8EE4CA8D8FD6990CEA891274F018D@ORSMSX102.amr.corp.intel.com>
+ <4FFE3D27.7020500@oracle.com>
+ <061C8A8601E8EE4CA8D8FD6990CEA891274F01BE@ORSMSX102.amr.corp.intel.com>
+ <4FFE40A9.4060807@oracle.com>
+ <061C8A8601E8EE4CA8D8FD6990CEA891274F02D7@ORSMSX102.amr.corp.intel.com>
+ <4FFE6BB9.4060106@oracle.com>
+ <061C8A8601E8EE4CA8D8FD6990CEA891274F033B@ORSMSX102.amr.corp.intel.com>
+ <4FFE787B.9050201@oracle.com>
+ <061C8A8601E8EE4CA8D8FD6990CEA891274F0ACC@ORSMSX102.amr.corp.intel.com>
+ <4FFF61BD.1060604@oracle.com>
+ <061C8A8601E8EE4CA8D8FD6990CEA891274F11FF@ORSMSX102.amr.corp.intel.com>
+ <4FFFA532.1030208@oracle.com>
+In-Reply-To: <4FFFA532.1030208@oracle.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ext4: fix trivial typo in the comment for extents.c/ext4_split_unwritten_extents
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Put the sign '/' to the right position.
+>-----Original Message-----
+>From: Joe Jin [mailto:joe.jin@oracle.com]
+>Sent: Thursday, July 12, 2012 9:34 PM
+>To: Dave, Tushar N
+>Cc: e1000-devel@lists.sf.net; netdev@vger.kernel.org; linux-
+>kernel@vger.kernel.org
+>Subject: Re: 82571EB: Detected Hardware Unit Hang
+>
+>On 07/13/12 12:10, Dave, Tushar N wrote:
+>>> -----Original Message-----
+>>> From: Joe Jin [mailto:joe.jin@oracle.com]
+>>> Sent: Thursday, July 12, 2012 4:46 PM
+>>> To: Dave, Tushar N
+>>> Cc: e1000-devel@lists.sf.net; netdev@vger.kernel.org; linux-
+>>> kernel@vger.kernel.org
+>>> Subject: Re: 82571EB: Detected Hardware Unit Hang
+>>>
+>> Thanks for sending full dmesg log. I am still investigating. I think
+>this issue can occur if two PCIe link partner *i.e pcie bridge and pcie
+>device do not have same max payload size.
+>> I need 2 more info.
+>> 1) PBA number of the card.
+>
+>This is a remote server and I could not get this.
+>
+>> 2) full lspci -vvv output of entire system 'after you have changed max
+>payload size to 128'.
 
-Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
----
- fs/ext4/extents.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Somehow setting max payload to 256 from BIOS does not set this value for all devices. I believe this is a BIOS bug.
+All devices in path from root complex to 82571, should have same max payload size otherwise it can cause hang. When you set max payload to 128 from BIOS, all device in path from root complex to 82571 got assigned same max payload size. This resolves the issue.
 
-diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-index 7f6fb48..f394e0f 100644
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -3241,7 +3241,7 @@ out:
-  * to an uninitialized extent.
-  *
-  * Writing to an uninitialized extent may result in splitting the uninitialized
-- * extent into multiple /initialized uninitialized extents (up to three)
-+ * extent into multiple initialized/uninitialized extents (up to three)
-  * There are three possibilities:
-  *   a> There is no split required: Entire extent should be uninitialized
-  *   b> Splits in two extents: Write is happening at either end of the extent
--- 
-1.7.1
+I hope this helps.
 
+-Tushar
