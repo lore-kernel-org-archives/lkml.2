@@ -1,37 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752439Ab2GOPNj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jul 2012 11:13:39 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43366 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751535Ab2GOPNc (ORCPT
+	id S1752783Ab2GOPXE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jul 2012 11:23:04 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:49179 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751638Ab2GOPWi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jul 2012 11:13:32 -0400
+	Sun, 15 Jul 2012 11:22:38 -0400
+From: Andreas Schwab <schwab@linux-m68k.org>
+To: John Stultz <johnstul@us.ibm.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, stable@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH 6/6] hrtimer: Update hrtimer base offsets each hrtimer_interrupt
+References: <1341960205-56738-1-git-send-email-johnstul@us.ibm.com>
+	<1341960205-56738-8-git-send-email-johnstul@us.ibm.com>
+X-Yow: Awright, which one of you hid my PENIS ENVY?
+Date: Sun, 15 Jul 2012 17:22:32 +0200
+In-Reply-To: <1341960205-56738-8-git-send-email-johnstul@us.ibm.com> (John
+	Stultz's message of "Tue, 10 Jul 2012 18:43:25 -0400")
+Message-ID: <m2y5mlnj5z.fsf@igel.home>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <CAGfj0KvyV+YgXeLYqDggA06=ZxNKtF3rBOGvOPnbsrchRMH0bg@mail.gmail.com>
-References: <CAGfj0KvyV+YgXeLYqDggA06=ZxNKtF3rBOGvOPnbsrchRMH0bg@mail.gmail.com>
-Date: Sun, 15 Jul 2012 23:13:31 +0800
-Message-ID: <CAM_iQpUAif2V0uATnB729shnTJ_x_V0BE=HOCTZcyQK7cec6qQ@mail.gmail.com>
-Subject: Re: Unable to resolve the error
-From: Cong Wang <xiyou.wangcong@gmail.com>
-To: rakesh singh <rks.linux.88@gmail.com>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, grant.likely@secretlab.ca,
-        linus.walleij@stericsson.com, sameo@linux.intel.com,
-        linux-kernel@vger.kernel.org, swarren@nvidia.com,
-        broonie@opensource.wolfsonmicro.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 15, 2012 at 5:22 PM, rakesh singh <rks.linux.88@gmail.com> wrote:
-> make -C /usr/src/linux-headers-2.6.38-8-generic/
-> SUBDIRS=/home/rakesh/Desktop/m modules
-> make[1]: Entering directory `/usr/src/linux-headers-2.6.38-8-generic'
->   CC [M]  /home/rakesh/Desktop/m/hello.o
-> /home/rakesh/Desktop/m/hello.c:1:70: fatal error:
-> usr/src/linux-headers-2.6.38-8-generic/include/linux/init.h: No such
-> file or directory
+This breaks resume on the iBook G4 (PowerBook6,7).  Apparently during or
+before noirq resume the system is hanging by the same amount of time as
+the system was sleeping.
 
-You need to install some kernel package provided by your distro,
-on Fedora it is kernel-devel.
+Andreas.
+
+-- 
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
