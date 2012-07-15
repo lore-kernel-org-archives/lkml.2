@@ -1,147 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752389Ab2GOVOi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jul 2012 17:14:38 -0400
-Received: from DMZ-MAILSEC-SCANNER-4.MIT.EDU ([18.9.25.15]:54489 "EHLO
-	dmz-mailsec-scanner-4.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750865Ab2GOVO3 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jul 2012 17:14:29 -0400
-X-AuditID: 1209190f-b7f306d0000008b4-05-500332b42b31
-Date: Sun, 15 Jul 2012 17:14:25 -0400 (EDT)
-From: Anders Kaseorg <andersk@MIT.EDU>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Jonathan Nieder <jrnieder@gmail.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dash@vger.kernel.org
-Subject: [PATCH v2] fifo: Do not restart open() if it already found a
- partner
-In-Reply-To: <alpine.DEB.2.00.1206261656000.3236@dr-wily.mit.edu>
-Message-ID: <alpine.DEB.2.00.1207151710190.3236@dr-wily.mit.edu>
-References: <1340712298-4583-1-git-send-email-andersk@mit.edu> <20120626202009.GA382@burratino> <alpine.DEB.2.00.1206261656000.3236@dr-wily.mit.edu>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752408Ab2GOVTP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jul 2012 17:19:15 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:33732 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750919Ab2GOVTF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jul 2012 17:19:05 -0400
+Date: Sun, 15 Jul 2012 23:18:48 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
+        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
+        Debian Kernel Team <debian-kernel@lists.debian.org>,
+        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Sasha Levin <levinsasha928@gmail.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>, Asias He <asias.hejun@gmail.com>
+Subject: Re: [opensuse-kernel] Re: [RFC] Simplifying kernel configuration for
+ distro issues
+Message-ID: <20120715211848.GA21167@aftab.osrc.amd.com>
+References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com>
+ <1342212885.25704.4.camel@lade.trondhjem.org>
+ <CAFLxGvxxWodD97=78218wc+tuigAFsNK_PdroDfb4BWTZoxxUw@mail.gmail.com>
+ <20120714103716.GD26559@liondog.tnic>
+ <CAOJsxLGHQuuXqDD-1SNhL7Ly1-heCYFLzqj3SLh4xzmP9NR5GQ@mail.gmail.com>
+ <20120715101434.GA18144@aftab.osrc.amd.com>
+ <CAOJsxLGBCQ6C-3M0ZdTfVPqnmOKqUE9+78Mhf+67TksmVojuuQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOKsWRmVeSWpSXmKPExsUixCmqrbvFiDnA4PxSTYu+/h2MFm9vLmG0
-	2LP3JIvF5V1z2Cwe9b1ltzj/9zirA5vHzll32T1OzPjN4vF5k5zHpidvmQJYorhsUlJzMstS
-	i/TtErgy2la9ZSt4K1Ux/chl1gbG+aJdjJwcEgImEosOHmaEsMUkLtxbz9bFyMUhJLCPUeLs
-	pAUsEM4GRon5DbOhnD1MEiu3/WEDaWER0Ja4+vYDE4jNJqAmMXfDZHYQW0TASOLziyusIA3M
-	AgcYJU7PX8YKkhAW8JdoXNLD3MXIwcEp4Chx5kkeSJhXwEHi6dJtjBALpjBKHNgxEewmUQFd
-	ib2HzrBDFAlKnJz5hAXEZhZQlzjw6SIjhK0tcf9mG9sERsFZSMpmISmbhaRsASPzKkbZlNwq
-	3dzEzJzi1GTd4uTEvLzUIl0TvdzMEr3UlNJNjODwl+TfwfjtoNIhRgEORiUeXiExpgAh1sSy
-	4srcQ4ySHExKoryPVZgDhPiS8lMqMxKLM+KLSnNSiw8xSnAwK4nwuhsA5XhTEiurUovyYVLS
-	HCxK4rxXU276CwmkJ5akZqemFqQWwWRlODiUJHh5gHEuJFiUmp5akZaZU4KQZuLgBBnOAzS8
-	xRBkeHFBYm5xZjpE/hSjopQ472+QhABIIqM0D64Xlp5eMYoDvSLM+wOkigeY2uC6XwENZgIa
-	bFnCBDK4JBEhJdXAmLPgwxxt8edVlYpGec9cdhXwBiTrn5dMqHa0YfnlXfcm7FOeyT6zC+lx
-	uy2mzttVH31RW9ln4Ws/LXX3MwzbT71asmjpY45Q8W+q/h9zayfGPN/K5auo8G1B3Oue+q9J
-	pn+fRZ9ODQ59kqlz2rQo+e7C8gnlTftMrx1Y57S04MDqU+HyTfwTlViKMxINtZiLihMBCM5x
-	dCoDAAA=
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAOJsxLGBCQ6C-3M0ZdTfVPqnmOKqUE9+78Mhf+67TksmVojuuQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a parent and child process open the two ends of a fifo, and the
-child immediately exits, the parent may receive a SIGCHLD before its
-open() returns.  In that case, we need to make sure that open() will
-return successfully after the SIGCHLD handler returns, instead of
-throwing EINTR or being restarted.  Otherwise, the restarted open()
-would incorrectly wait for a second partner on the other end.
+On Sun, Jul 15, 2012 at 01:17:16PM +0300, Pekka Enberg wrote:
+> > Yes, something like KVMTOOL_TEST_ENABLE except not a make target but a
+> > Kconfig option.
+> 
+> It is a config option too - "make kvmconfig" simply enables it.
 
-The following test demonstrates the EINTR that was wrongly thrown from
-the parent’s open().  Change .sa_flags = 0 to .sa_flags = SA_RESTART
-to see a deadlock instead, in which the restarted open() waits for a
-second reader that will never come.  (On my systems, this happens
-pretty reliably within about 5 to 500 iterations.  Others report that
-it manages to loop ~forever sometimes; YMMV.)
+Right, so how about something more concrete in this whole discussion:
 
-  #include <sys/stat.h>
-  #include <sys/types.h>
-  #include <sys/wait.h>
-  #include <fcntl.h>
-  #include <signal.h>
-  #include <stdio.h>
-  #include <stdlib.h>
-  #include <unistd.h>
+Maybe add the KVMTOOL_TEST_ENABLE (maybe rename it to a more fitting
+name like KVM_OPTS or similar) thing to a new toplevel Kconfig menu
+called "Distro and other profiles" or so:
 
-  #define CHECK(x) do if ((x) == -1) {perror(#x); abort();} while(0)
+  │ │                                       General setup  --->
+  │ │                                       Distros and other profiles  --->			<---
+  │ │                                   [*] Enable loadable module support  --->
+  │ │                                   [*] Enable the block layer  --->
+  │ │                                       Processor type and features  --->
+ ...
 
-  void handler(int signum) {}
+Btw, which Kconfig option is needed for "-usbdevice tablet" support so
+that the host mouse can be able to send scroll events to the guest qemu
+screen without the need for the qemu screen to capture it so that I need
+to "escape" it everytime I need to return to the host? And can we add it
+to the list of options KVMTOOL_TEST_ENABLE selects?
 
-  int main()
-  {
-      struct sigaction act = {.sa_handler = handler, .sa_flags = 0};
-      CHECK(sigaction(SIGCHLD, &act, NULL));
-      CHECK(mknod("fifo", S_IFIFO | S_IRWXU, 0));
-      for (;;) {
-          int fd;
-          pid_t pid;
-          putc('.', stderr);
-          CHECK(pid = fork());
-          if (pid == 0) {
-              CHECK(fd = open("fifo", O_RDONLY));
-              _exit(0);
-          }
-          CHECK(fd = open("fifo", O_WRONLY));
-          CHECK(close(fd));
-          CHECK(waitpid(pid, NULL, 0));
-      }
-  }
+Thanks.
 
-This is what I suspect was causing the Git test suite to fail in
-t9010-svn-fe.sh:
-http://bugs.debian.org/678852
-
-Signed-off-by: Anders Kaseorg <andersk@mit.edu>
-Reviewed-by: Jonathan Nieder <jrnieder@gmail.com>
----
-(Re-sending v2 to Linus with no changes.)
-
- fs/fifo.c | 9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
-
-diff --git a/fs/fifo.c b/fs/fifo.c
-index b1a524d..cf6f434 100644
---- a/fs/fifo.c
-+++ b/fs/fifo.c
-@@ -14,7 +14,7 @@
- #include <linux/sched.h>
- #include <linux/pipe_fs_i.h>
- 
--static void wait_for_partner(struct inode* inode, unsigned int *cnt)
-+static int wait_for_partner(struct inode* inode, unsigned int *cnt)
- {
- 	int cur = *cnt;	
- 
-@@ -23,6 +23,7 @@ static void wait_for_partner(struct inode* inode, unsigned int *cnt)
- 		if (signal_pending(current))
- 			break;
- 	}
-+	return cur == *cnt ? -ERESTARTSYS : 0;
- }
- 
- static void wake_up_partner(struct inode* inode)
-@@ -67,8 +68,7 @@ static int fifo_open(struct inode *inode, struct file *filp)
- 				 * seen a writer */
- 				filp->f_version = pipe->w_counter;
- 			} else {
--				wait_for_partner(inode, &pipe->w_counter);
--				if(signal_pending(current))
-+				if (wait_for_partner(inode, &pipe->w_counter))
- 					goto err_rd;
- 			}
- 		}
-@@ -90,8 +90,7 @@ static int fifo_open(struct inode *inode, struct file *filp)
- 			wake_up_partner(inode);
- 
- 		if (!pipe->readers) {
--			wait_for_partner(inode, &pipe->r_counter);
--			if (signal_pending(current))
-+			if (wait_for_partner(inode, &pipe->r_counter))
- 				goto err_wr;
- 		}
- 		break;
 -- 
-1.7.11.1
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
