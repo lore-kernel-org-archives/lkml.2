@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752870Ab2GONDi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jul 2012 09:03:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12838 "EHLO mx1.redhat.com"
+	id S1752799Ab2GONGe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jul 2012 09:06:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17338 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752708Ab2GONDb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jul 2012 09:03:31 -0400
-Message-ID: <5002BF9B.8090306@redhat.com>
-Date: Sun, 15 Jul 2012 16:03:23 +0300
+	id S1751624Ab2GONG1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jul 2012 09:06:27 -0400
+Message-ID: <5002C03C.2030304@redhat.com>
+Date: Sun, 15 Jul 2012 16:06:04 +0300
 From: Avi Kivity <avi@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-To: David Ahern <dsahern@gmail.com>
-CC: Gleb Natapov <gleb@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: perf with precise attribute kills all KVM based VMs
-References: <1341845396.3462.81.camel@twins> <4FFAEFF1.9000706@redhat.com> <1341845999.3462.86.camel@twins> <4FFCBD00.1030109@gmail.com> <20120711071006.GF23898@redhat.com> <1342000187.3462.134.camel@twins> <20120711095337.GJ23898@redhat.com> <4FFE4E8D.90606@gmail.com> <20120712042923.GG7298@redhat.com> <4FFEEB55.5070009@gmail.com> <20120712160634.GI7298@redhat.com> <50027A36.9070509@redhat.com> <5002BEE3.5060506@gmail.com>
-In-Reply-To: <5002BEE3.5060506@gmail.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Jacob Pan <jacob.jun.pan@intel.com>,
+        Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Joerg Roedel <joerg.roedel@amd.com>, Yinghai Lu <yinghai@kernel.org>,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org, gleb@redhat.com
+Subject: Re: [PATCH 0/3] make KVM PV use apic through APIs
+References: <cover.1342356186.git.mst@redhat.com>
+In-Reply-To: <cover.1342356186.git.mst@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2012 04:00 PM, David Ahern wrote:
-> On 7/15/12 2:07 AM, Avi Kivity wrote:
->> On 07/12/2012 07:06 PM, Gleb Natapov wrote:
->>>>
->>>> Note the :pH this time.
->>> I am not sure what perf kvm does with :pH modifier, but H modifier does
->>> not make sense with perf kvm and should be reported as an error by
->>> perf tool.
->>
->> Maybe it should refer to the guest vs. the nested guest...
+On 07/15/2012 03:56 PM, Michael S. Tsirkin wrote:
+> KVM PV EOI optimization overrides eoi_write apic op with its own
+> version. at Ingo's suggestion, add an API for this and switch kvm to use
+> it, to avoid meddling with core x86 apic driver data structures
+> directly.
 > 
-> :H = host mode; you are thinking of :h for hypervisor mode. From
-> perf-list documentation:
+> Ingo, could you please review and let us know whether this
+> matches what you had in mind?
 > 
-> "Modifiers allow the user to restrict when events are
-> counted with 'u' for user-space, 'k' for kernel, 'h' for hypervisor.
-> Additional modifiers are 'G' for guest counting (in KVM guests) and 'H'
-> for host counting (not in KVM guests)."
+> This patchset is on top of kvm/next since it touches some
+> of the code modified in that tree (and patch 3 reverts a commit
+> in that tree). Could x86 some maintainers pls ACK merging this patchset
+> through the kvm tree?
+> 
 
-No, it's an additional distinction.  A kvm guest can be in kernel mode,
-user mode, or in a nested guest mode (which has its own user mode and
-kernel mode).  Currently we have no way of distinguishing between guest
-kernel mode and nested guest kernel mode.
+Looks okay to me.
 
-I assume 'h' means profiling the hypervisor from a guest (i.e. xen dom0)?
 
 -- 
 error compiling committee.c: too many arguments to function
