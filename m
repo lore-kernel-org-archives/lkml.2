@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752159Ab2GOJRa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jul 2012 05:17:30 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:48879 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751214Ab2GOJRW (ORCPT
+	id S1752367Ab2GOJSG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jul 2012 05:18:06 -0400
+Received: from grace.univie.ac.at ([131.130.3.115]:45120 "EHLO
+	grace.univie.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751730Ab2GOJR4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jul 2012 05:17:22 -0400
+	Sun, 15 Jul 2012 05:17:56 -0400
+Message-ID: <3e426bd471b8a54bfa5320f05e88e635.squirrel@webmail.univie.ac.at>
+In-Reply-To: <1342336597.3265.10617.camel@edumazet-glaptop>
+References: <dee325378a2d3b7792da9640fc14905f.squirrel@webmail.univie.ac.at>
+    <20120714144800.7f8c97f6@nehalam.linuxnetplumber.net>
+    <b93cddfd0a19158ec59823140d1e2075.squirrel@webmail.univie.ac.at>
+    <1342336597.3265.10617.camel@edumazet-glaptop>
+Date: Sun, 15 Jul 2012 11:17:53 +0200
+Subject: Re: resurrecting tcphealth
+From: "Piotr Sawuk" <a9702387@unet.univie.ac.at>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.19
 MIME-Version: 1.0
-X-Originating-IP: [46.116.44.123]
-In-Reply-To: <1338017791-9442-2-git-send-email-ohad@wizery.com>
-References: <1338017791-9442-1-git-send-email-ohad@wizery.com> <1338017791-9442-2-git-send-email-ohad@wizery.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Sun, 15 Jul 2012 12:17:01 +0300
-Message-ID: <CAK=WgbZdaBCC8xc1iDRtoFLy=5nY4vsGWtZwYusvH4x8qjpcQA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] remoteproc: remove the now-redundant kref
-To: linux-kernel@vger.kernel.org
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Ohad Ben-Cohen <ohad@wizery.com>, Stephen Boyd <sboyd@codeaurora.org>,
-        Fernando Guzman Lugo <fernando.lugo@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Univie-Virus-Scan: scanned by ClamAV on jarvis.univie.ac.at
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 26, 2012 at 10:36 AM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
-> Now that every rproc instance contains a device, we don't need a
-> kref anymore to maintain the refcount of the rproc instances:
-> that's what device are good with!
+On So, 15.07.2012, 09:16, Eric Dumazet wrote:
+> On Sun, 2012-07-15 at 01:43 +0200, Piotr Sawuk wrote:
 >
-> This patch removes the now-redundant kref, and switches to
-> {get, put}_device instead of kref_{get, put}.
+>> oh, and again I recommend the really short although outdated thesis
+>>
+>> [1] https://sacerdoti.org/tcphealth/tcphealth-paper.pdf
 >
-> We also don't need the kref's release function anymore, and instead,
-> we just utilize the class's release handler (which is now responsible
-> for all memory de-allocations).
+> A thesis saying SACK are not useful is highly suspect.
 >
-> Cc: Stephen Boyd <sboyd@codeaurora.org>
-> Cc: Fernando Guzman Lugo <fernando.lugo@ti.com>
-> Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
-> ---
->  drivers/remoteproc/remoteproc_core.c   |   59 +++++++++++---------------------
->  drivers/remoteproc/remoteproc_virtio.c |    8 ++--
->  include/linux/remoteproc.h             |    3 --
->  3 files changed, 24 insertions(+), 46 deletions(-)
+> Instead of finding why they behave not so good and fix the bugs, just
+> say "SACK addition to TCP is not critical"
+the actual quotation is "We also found that the number of unnecessary
+duplicate packets were quite small potentially indicating that the SACK
+addition to TCP is not critical."
+>
+> Really ?
 
-Applied (after moving the kerneldoc for rproc_class_release() to the
-patch where that function was introduced).
+no, not really. he he actually said that SACK has been made mostly obsolete
+by "Linux 2.2 implements fast retransmits for up to two packet gaps, thus
+reducing the need for course grained timeouts due to the lack of SACK." and
+he was a bit more careful and admitted that further tests with tcphealth are
+needed to check if SACK really makes that big a difference. he admitted "It
+could be that SACK's advantage lies in other areas such as very large
+downloads or when using slow and unreliable network links." all these things
+could be checked again nowadays, with larger files available and wlan-users
+and higher traffic -- just find something without SACK...
+
