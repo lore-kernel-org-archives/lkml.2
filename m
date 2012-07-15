@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753182Ab2GOTHo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jul 2012 15:07:44 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:37337 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751736Ab2GOTFf (ORCPT
+	id S1753160Ab2GOTHf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jul 2012 15:07:35 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:62804 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751651Ab2GOTFc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jul 2012 15:05:35 -0400
+	Sun, 15 Jul 2012 15:05:32 -0400
 From: David Herrmann <dh.herrmann@googlemail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
@@ -15,9 +15,9 @@ Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
         linux-fbdev@vger.kernel.org, linux-serial@vger.kernel.org,
         Alan Cox <alan@lxorguk.ukuu.org.uk>,
         David Herrmann <dh.herrmann@googlemail.com>
-Subject: [PATCH v3 10/11] fblog: draw console to framebuffers
-Date: Sun, 15 Jul 2012 21:04:45 +0200
-Message-Id: <1342379086-7583-11-git-send-email-dh.herrmann@googlemail.com>
+Subject: [PATCH v3 09/11] fblog: register console driver
+Date: Sun, 15 Jul 2012 21:04:44 +0200
+Message-Id: <1342379086-7583-10-git-send-email-dh.herrmann@googlemail.com>
 X-Mailer: git-send-email 1.7.11.2
 In-Reply-To: <1342379086-7583-1-git-send-email-dh.herrmann@googlemail.com>
 References: <1342379086-7583-1-git-send-email-dh.herrmann@googlemail.com>
@@ -25,190 +25,242 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If not disabled or suspended, we now blit the console data to each
-framebuffer. We only redraw on changes to avoid consuming too much CPU
-power.
+We want to print the kernel log to all FBs so we need a console driver.
+This registers the driver on startup and writes all messages to all
+registered fblog instances.
 
-This isn't optimized for speed, currently. However, fblog is mainly used
-for debugging purposes so this can be optimized later.
+We cannot share a console buffer between FBs because they might have
+different resolutions. Therefore, we create one buffer per object. We
+destroy the buffer during close() so we do not waste memory if it is not
+used.
 
 Signed-off-by: David Herrmann <dh.herrmann@googlemail.com>
 ---
- drivers/video/console/fblog.c | 107 +++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 106 insertions(+), 1 deletion(-)
+ drivers/video/console/fblog.c | 150 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 150 insertions(+)
 
 diff --git a/drivers/video/console/fblog.c b/drivers/video/console/fblog.c
-index ae01742..81b0b42 100644
+index 9b975bc..ae01742 100644
 --- a/drivers/video/console/fblog.c
 +++ b/drivers/video/console/fblog.c
-@@ -28,8 +28,11 @@
- #include <linux/console.h>
+@@ -25,11 +25,34 @@
+ 
+ #define pr_fmt(_fmt) KBUILD_MODNAME ": " _fmt
+ 
++#include <linux/console.h>
  #include <linux/device.h>
  #include <linux/fb.h>
-+#include <linux/font.h>
-+#include <linux/kd.h>
  #include <linux/module.h>
  #include <linux/mutex.h>
-+#include "fbdraw.h"
  
- /**
-  * struct fblog_buf: Console text buffer
-@@ -66,6 +69,7 @@ struct fblog_fb {
++/**
++ * struct fblog_buf: Console text buffer
++ *
++ * Each framebuffer has its own text buffer which contains all characters that
++ * are currently printed on screen. The buffers might have different sizes and
++ * can be resized during runtime. When the buffer content changes, we redraw the
++ * screen.
++ *
++ * width: Width of buffer in characters
++ * height: Height of buffer in characters
++ * lines: Array of lines
++ * pos_x: Cursor x-position
++ * pos_y: Cursor y-position
++ */
++struct fblog_buf {
++	size_t width;
++	size_t height;
++	u16 **lines;
++	size_t pos_x;
++	size_t pos_y;
++};
++
+ enum fblog_flags {
+ 	FBLOG_KILLED,
+ 	FBLOG_OPEN,
+@@ -42,6 +65,7 @@ struct fblog_fb {
+ 	struct fb_info *info;
  	struct device dev;
  	struct mutex lock;
- 	struct fblog_buf buf;
-+	struct console_font font;
++	struct fblog_buf buf;
  };
  
  static DEFINE_MUTEX(fblog_registration_lock);
-@@ -174,6 +178,58 @@ static void fblog_buf_write(struct fblog_buf *buf, const char *str, size_t len)
- 	}
- }
+@@ -50,6 +74,106 @@ static bool active = 1;
  
-+static void fblog_redraw_clear(struct fblog_fb *fb)
+ #define to_fblog_dev(_d) container_of(_d, struct fblog_fb, dev)
+ 
++static void fblog_buf_resize(struct fblog_buf *buf, size_t width,
++			     size_t height)
 +{
-+	struct fb_fillrect region;
-+	struct fb_info *info = fb->info;
++	u16 **lines = NULL;
++	size_t i, j, minw, minh;
 +
-+	region.color = 0;
-+	region.dx = 0;
-+	region.dy = 0;
-+	region.width = info->var.xres;
-+	region.height = info->var.yres;
-+	region.rop = ROP_COPY;
-+
-+	info->fbops->fb_fillrect(info, &region);
-+}
-+
-+static void fblog_redraw(struct fblog_fb *fb)
-+{
-+	size_t i;
-+
-+	mutex_lock(&fb->lock);
-+	if (!test_bit(FBLOG_OPEN, &fb->flags) ||
-+	    test_bit(FBLOG_SUSPENDED, &fb->flags) ||
-+	    test_bit(FBLOG_BLANKED, &fb->flags)) {
-+		mutex_unlock(&fb->lock);
++	if (buf->height == height && buf->width == width)
 +		return;
++
++	if (width && height) {
++		lines = kzalloc(height * sizeof(char *), GFP_KERNEL);
++		if (!lines)
++			return;
++
++		for (i = 0; i < height; ++i) {
++			lines[i] = kzalloc(width * sizeof(u16), GFP_KERNEL);
++			if (!lines[i]) {
++				while (i--)
++					kfree(lines[i]);
++				return;
++			}
++		}
++
++		/* copy old lines */
++		minw = min(width, buf->width);
++		minh = min(height, buf->height);
++		if (height >= buf->height)
++			i = 0;
++		else
++			i = buf->height - height;
++
++		for (j = 0; j < minh; ++i, ++j)
++			memcpy(lines[j], buf->lines[i], minw * sizeof(u16));
++	} else {
++		width = 0;
++		height = 0;
 +	}
 +
-+	fblog_redraw_clear(fb);
++	for (i = 0; i < buf->height; ++i)
++		kfree(buf->lines[i]);
++	kfree(buf->lines);
 +
-+	for (i = 0; i < fb->buf.height; ++i) {
-+		fbdraw_font(fb->info, &fb->font, false, 0, i, 7, 0, 0,
-+			    fb->buf.lines[i], fb->buf.width);
-+	}
-+
-+	mutex_unlock(&fb->lock);
++	buf->lines = lines;
++	buf->width = width;
++	buf->height = height;
 +}
 +
-+static void fblog_refresh(struct fblog_fb *fb)
++static void fblog_buf_deinit(struct fblog_buf *buf)
 +{
-+	unsigned int width, height;
++	fblog_buf_resize(buf, 0, 0);
++}
 +
-+	mutex_lock(&fb->lock);
-+	if (test_bit(FBLOG_OPEN, &fb->flags)) {
-+		width = fb->info->var.xres / fb->font.width;
-+		height = fb->info->var.yres / fb->font.height;
-+		fblog_buf_resize(&fb->buf, width, height);
++static void fblog_buf_rotate(struct fblog_buf *buf)
++{
++	u16 *line;
++
++	if (!buf->height)
++		return;
++
++	line = buf->lines[0];
++	memset(line, 0, sizeof(u16) * buf->width);
++
++	memmove(buf->lines, &buf->lines[1], sizeof(char*) * (buf->height - 1));
++	buf->lines[buf->height - 1] = line;
++}
++
++static void fblog_buf_write(struct fblog_buf *buf, const char *str, size_t len)
++{
++	char c;
++
++	if (!buf->height)
++		return;
++
++	while (len--) {
++		c = *str++;
++
++		if (c == 0)
++			c = '?';
++
++		if (c == '\n') {
++			buf->pos_x = 0;
++			if (++buf->pos_y >= buf->height) {
++				buf->pos_y = buf->height - 1;
++				fblog_buf_rotate(buf);
++			}
++		} else {
++			if (buf->pos_x >= buf->width) {
++				buf->pos_x = 0;
++				++buf->pos_y;
++			}
++			if (buf->pos_y >= buf->height) {
++				buf->pos_y = buf->height - 1;
++				fblog_buf_rotate(buf);
++			}
++
++			buf->lines[buf->pos_y][buf->pos_x++] = c;
++		}
 +	}
-+	mutex_unlock(&fb->lock);
-+
-+	fblog_redraw(fb);
 +}
 +
  /*
   * fblog_open/close()
   * These functions manage access to the underlying framebuffer. While opened, we
-@@ -190,6 +246,10 @@ static int fblog_open(struct fblog_fb *fb)
+@@ -64,6 +188,7 @@ static bool active = 1;
+ 
+ static int fblog_open(struct fblog_fb *fb)
  {
- 	static const char init_str[] = "Framebuffer log initialized\n";
++	static const char init_str[] = "Framebuffer log initialized\n";
  	int ret;
-+	struct fb_var_screeninfo var;
-+	const struct fb_videomode *mode;
-+	unsigned int width, height;
-+	const struct font_desc *font;
  
  	mutex_lock(&fb->lock);
- 
-@@ -203,6 +263,13 @@ static int fblog_open(struct fblog_fb *fb)
- 		goto unlock;
- 	}
- 
-+	font = get_default_font(var.xres, var.yres, fb->info->pixmap.blit_x,
-+				fb->info->pixmap.blit_y);
-+	if (!font) {
-+		ret = -ENODEV;
-+		goto unlock;
-+	}
-+
- 	if (!try_module_get(fb->info->fbops->owner)) {
- 		ret = -ENODEV;
- 		goto out_killed;
-@@ -213,10 +280,22 @@ static int fblog_open(struct fblog_fb *fb)
+@@ -88,6 +213,8 @@ static int fblog_open(struct fblog_fb *fb)
  		goto out_unref;
  	}
  
--	fblog_buf_resize(&fb->buf, 80, 24);
-+	var = fb->info->var;
-+	mode = fb_find_best_mode(&var, &fb->info->modelist);
-+	var.activate = FB_ACTIVATE_NOW | FB_ACTIVATE_FORCE;
-+	fb_set_var(fb->info, &var);
-+
-+	fb->font.width = font->width;
-+	fb->font.height = font->height;
-+	fb->font.data = (void*)font->data;
-+
-+	width = var.xres / fb->font.width;
-+	height = var.yres / fb->font.height;
-+	fblog_buf_resize(&fb->buf, width, height);
- 	fblog_buf_write(&fb->buf, init_str, sizeof(init_str) - 1);
++	fblog_buf_resize(&fb->buf, 80, 24);
++	fblog_buf_write(&fb->buf, init_str, sizeof(init_str) - 1);
  	set_bit(FBLOG_OPEN, &fb->flags);
  	mutex_unlock(&fb->lock);
-+	fblog_redraw(fb);
  	return 0;
+@@ -110,6 +237,7 @@ static void fblog_close(struct fblog_fb *fb, bool kill_dev)
+ 			fb->info->fbops->fb_release(fb->info, 0);
+ 		module_put(fb->info->fbops->owner);
+ 		clear_bit(FBLOG_OPEN, &fb->flags);
++		fblog_buf_deinit(&fb->buf);
+ 	}
  
- out_unref:
-@@ -453,6 +532,31 @@ static int fblog_event(struct notifier_block *self, unsigned long action,
- 		else
- 			set_bit(FBLOG_BLANKED, &fb->flags);
- 		break;
-+	case FB_EVENT_MODE_DELETE:
-+		/* This is sent when a video mode is removed. The current video
-+		 * mode is never removed! The console lock is held while this is
-+		 * called. */
-+		/* fallthrough */
-+	case FB_EVENT_NEW_MODELIST:
-+		/* This is sent when the modelist got changed. The console-lock
-+		 * is held and we should reset the mode. */
-+		/* fallthrough */
-+	case FB_EVENT_MODE_CHANGE_ALL:
-+		/* This is the same as below but notifies us that the user used
-+		 * the FB_ACTIVATE_ALL flag when setting the video mode. */
-+		/* fallthrough */
-+	case FB_EVENT_MODE_CHANGE:
-+		/* This is called when the _user_ changes the video mode via
-+		 * ioctls. It is not sent, when the kernel changes the mode
-+		 * internally. This callback is called inside fb_set_var() so
-+		 * the console lock is held. */
-+		mutex_lock(&fblog_registration_lock);
-+		fb = fblog_fbs[info->node];
-+		mutex_unlock(&fblog_registration_lock);
+ 	if (kill_dev)
+@@ -372,6 +500,26 @@ static struct notifier_block fblog_notifier = {
+ 	.notifier_call = fblog_event,
+ };
+ 
++static void fblog_con_write(struct console *con, const char *buf,
++			    unsigned int len)
++{
++	int i;
 +
-+		if (fb)
-+			fblog_refresh(fb);
-+		break;
++	mutex_lock(&fblog_registration_lock);
++	for (i = 0; i < FB_MAX; ++i) {
++		if (fblog_fbs[i]) {
++			fblog_buf_write(&fblog_fbs[i]->buf, buf, len);
++		}
++	}
++	mutex_unlock(&fblog_registration_lock);
++}
++
++static struct console fblog_con_driver = {
++	.name = "fblog",
++	.write = fblog_con_write,
++	.flags = CON_PRINTBUFFER | CON_ENABLED,
++};
++
+ static int __init fblog_init(void)
+ {
+ 	int ret;
+@@ -383,6 +531,7 @@ static int __init fblog_init(void)
  	}
  
+ 	fblog_scan();
++	register_console(&fblog_con_driver);
+ 
  	return 0;
-@@ -509,6 +613,7 @@ static void fblog_con_write(struct console *con, const char *buf,
- 	for (i = 0; i < FB_MAX; ++i) {
- 		if (fblog_fbs[i]) {
- 			fblog_buf_write(&fblog_fbs[i]->buf, buf, len);
-+			fblog_redraw(fblog_fbs[i]);
- 		}
- 	}
- 	mutex_unlock(&fblog_registration_lock);
+ }
+@@ -392,6 +541,7 @@ static void __exit fblog_exit(void)
+ 	unsigned int i;
+ 	struct fb_info *info;
+ 
++	unregister_console(&fblog_con_driver);
+ 	fb_unregister_client(&fblog_notifier);
+ 
+ 	/* We scan through the whole registered_fb array here instead of
 -- 
 1.7.11.2
 
