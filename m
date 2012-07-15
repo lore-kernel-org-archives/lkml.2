@@ -1,91 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751705Ab2GOXxs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jul 2012 19:53:48 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:41880 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750716Ab2GOXxn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jul 2012 19:53:43 -0400
+	id S1751590Ab2GOXzv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jul 2012 19:55:51 -0400
+Received: from mga02.intel.com ([134.134.136.20]:60290 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750917Ab2GOXzt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jul 2012 19:55:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="172399468"
+Date: Sun, 15 Jul 2012 16:55:48 -0700
+From: Jon Mason <jon.mason@intel.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-pci@vger.kernel.org, Dave Jiang <dave.jiang@intel.com>
+Subject: Re: [RFC 1/2] PCI-Express Non-Transparent Bridge Support
+Message-ID: <20120715235548.GC7551@jonmason-lab>
+References: <1342215900-3358-1-git-send-email-jon.mason@intel.com>
+ <20120714171015.GB25775@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <yw1x8vekd309.fsf@unicorn.mansr.com>
-References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
- <CAOesGMiCexiqA3L5GdNgyHhSD-5Bpqbb02YJrZPr8yMYa0afjA@mail.gmail.com>
- <201207071927.13135.arnd@arndb.de> <20120710071023.GA10456@gmail.com>
- <20120710101018.GE15120@arm.com> <yw1x8vekd309.fsf@unicorn.mansr.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 15 Jul 2012 16:53:21 -0700
-X-Google-Sender-Auth: SRWHeV43ZuSBnHbJN0WYo2J3W1M
-Message-ID: <CA+55aFxL6uEre-c=JrhPfts=7BGmhb2Js1c2ZGkTH8F=+rEWDg@mail.gmail.com>
-Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
-To: =?ISO-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>, Ingo Molnar <mingo@kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120714171015.GB25775@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 15, 2012 at 4:21 PM, Måns Rullgård <mans@mansr.com> wrote:
->
-> FWIW, I'd prefer naming the directory either arm64 or armv8 for a few
-> reasons:
->
-> - Those are the names people actually use to refer to the architecture
-> - They are more descriptive.
-> - I think the official name is rather silly.
+On Sat, Jul 14, 2012 at 10:10:15AM -0700, Greg KH wrote:
+> On Fri, Jul 13, 2012 at 02:44:59PM -0700, Jon Mason wrote:
+> > +static int max_num_cbs = 2;
+> > +module_param(max_num_cbs, uint, 0644);
+> > +MODULE_PARM_DESC(max_num_cbs, "Maximum number of NTB transport connections");
+> > +
+> > +static bool no_msix;
+> > +module_param(no_msix, bool, 0644);
+> > +MODULE_PARM_DESC(no_msix, "Do not allow MSI-X interrupts to be selected");
+> 
+> How would a user, or a distro, know to set these options?  Why are they
+> even options at all?
 
-Agreed on those three for arm64.
+Good question.  There is actually a potential benefit to disabling MSI-X.  The NTB device on one of our platforms only has 3 MSI-X vectors.  In the current driver design, that would limit them to 3 client/virtual devices.  However, there are 15bits in the ISR that can be used for the same purpose.  So, if you disable MSI-X, you can have 15 instead of 3.  
 
-However, please don't use the *INSANE* ARM "v8" naming. There must be
-something in the water in Cambridge, but the ARM "version" naming is
-just totally broken. They have separate versions for their
-"architecture" (ex: arm v8) and for their "implementation" (ex:
-ARM11), and maybe it all makes sense if you have drunk the ARM
-cool-aid and have joined the ARM cult, but to sane people and
-outsiders, it is just a f*cking mess.
+> 
+> 
+> > +struct ntb_device {
+> > +	struct pci_dev *pdev;
+> > +	struct msix_entry *msix_entries;
+> > +	void __iomem *reg_base;
+> > +	struct ntb_mw mw[NTB_NUM_MW];
+> > +	struct {
+> > +		unsigned int max_spads;
+> > +		unsigned int max_db_bits;
+> > +		unsigned int msix_cnt;
+> > +	} limits;
+> > +	struct {
+> > +		void __iomem *pdb;
+> > +		void __iomem *pdb_mask;
+> > +		void __iomem *sdb;
+> > +		void __iomem *sbar2_xlat;
+> > +		void __iomem *sbar4_xlat;
+> > +		void __iomem *spad_write;
+> > +		void __iomem *spad_read;
+> > +		void __iomem *lnk_cntl;
+> > +		void __iomem *lnk_stat;
+> > +		void __iomem *spci_cmd;
+> > +	} reg_ofs;
+> > +	void *ntb_transport;
+> > +	void (*event_cb)(void *handle, unsigned int event);
+> 
+> Shouldn't the event be an enum?
 
-So
+No, that would be too smart.
 
- - aarch64 is just another druggie name that the ARM people came up
-with after drinking too much of the spiked water in cambridge.
+> 
+> > +	struct ntb_db_cb *db_cb;
+> > +	unsigned char hw_type;
+> > +	unsigned char conn_type;
+> > +	unsigned char dev_type;
+> > +	unsigned char num_msix;
+> > +	unsigned char bits_per_vector;
+> > +	unsigned char max_cbs;
+> > +	unsigned char link_status;
+> > +	struct delayed_work hb_timer;
+> > +	unsigned long last_ts;
+> > +};
+> 
+> Why isn't this either a 'struct device' itself, or why isn't the 'struct
+> pci_device' embedded within it?  What controls the lifetime of this
+> device?  Why doesn't it show up in sysfs?  Don't you want it to show up
+> in the global device tree?
+> 
+> > +static DEFINE_PCI_DEVICE_TABLE(ntb_pci_tbl) = {
+> > +	{PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_NTB_B2B_BWD)},
+> > +	{PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_NTB_B2B_JSF)},
+> > +	{PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_NTB_CLASSIC_JSF)},
+> > +	{PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_NTB_RP_JSF)},
+> > +	{PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_NTB_RP_SNB)},
+> > +	{PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_NTB_B2B_SNB)},
+> > +	{PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_NTB_CLASSIC_SNB)},
+> > +	{0}
+> > +};
+> > +MODULE_DEVICE_TABLE(pci, ntb_pci_tbl);
+> > +
+> > +static struct ntb_device *ntbdev;
+> 
+> You can really only have just one of these in the whole system?  Is that
+> wise?  Why isn't it dynamic and tied to the pci device itself as a
+> child?
 
-   It is apparently ARM deciding to emulate every single bad idea that
-Intel ever cam up with, and is the ARM version of the "ia64" name
-(which is Intel's equally confusing name for "Intel architecture 64",
-which a few years ago meant Itanium, but now in more modern times when
-Intel tries to forget Itanium ever existed it means x86-64).
+Good point, I will fix that up.
 
-   "ia64" was a horrible name, aarch64 is the exact same mistake. It sucks.
+Thanks for the review!
 
- - armv8 is totally idiotic and incomprehensible to anybody else,
-since quite frankly, the difference between "ARMv8" (the architecture
-spec) and "ARM7" (the processor family) is complete and utter
-nonsense. It's only confusing.
-
-Christ. Seriously. The insanity is so strong in the ARM version names
-that it burns. If it really makes sense to anybody that "ARM A9"
-(technically "Cortex-A9", but nobody seems to use the "Cortex" part at
-least in cellphones) is an "ARM-v7" architecture microprocessor which
-is *completely* different from the ARM9 family, which in turn is
-different from ARMv9 that hasn't happened yet, you need to have your
-head examined.
-
-So please don't use "aarch64", because it's just f*cking crazy. And
-please don't use "armv8", because it's just completely retarded and
-confused.
-
-I don't think *anybody* would be confused by "arm-64" (or "arm64").
-
-Of course, some day ARM Ltd will (unless they install new water
-filtration plants) have "v64" of their architecture spec or introduce
-the "ARM64 processor family". But that day is a long time from now,
-and hopefully we could head that off at the pass by just calling the
-64-bit arm "arm64" and some sane people inside ARM.
-
-          Linus
+> 
+> thanks,
+> 
+> greg k-h
