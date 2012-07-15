@@ -1,45 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751873Ab2GOLDA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jul 2012 07:03:00 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:49270 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751178Ab2GOLC4 (ORCPT
+	id S1752312Ab2GOLFC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jul 2012 07:05:02 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:41338 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751178Ab2GOLEy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jul 2012 07:02:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAE9FiQU9hEvaYMhyE4iCGiOtPDKjjC+Jj-jyCADfpH7btV0dNw@mail.gmail.com>
-References: <1342273287-2154-1-git-send-email-penberg@kernel.org>
-	<CAE9FiQU9hEvaYMhyE4iCGiOtPDKjjC+Jj-jyCADfpH7btV0dNw@mail.gmail.com>
-Date: Sun, 15 Jul 2012 14:02:55 +0300
-X-Google-Sender-Auth: N0RiPCP3XjMIVhoP73W-rYxtnlw
-Message-ID: <CAOJsxLG7KSJzr-Tb=27jAsBNF1c3Vnedcebpp0kn+XSagXhHZw@mail.gmail.com>
-Subject: Re: [PATCH 3/3] x86/mm: Separate paging setup from memory mapping
+	Sun, 15 Jul 2012 07:04:54 -0400
 From: Pekka Enberg <penberg@kernel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+To: mingo@kernel.org
+Cc: yinghai@kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        Pekka Enberg <penberg@kernel.org>, Joe Perces <joe@perches.com>,
         Tejun Heo <tj@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: [PATCH v2 1/3] x86/mm: Simplify memory mapping PFN calculation
+Date: Sun, 15 Jul 2012 14:04:44 +0300
+Message-Id: <1342350286-6670-1-git-send-email-penberg@kernel.org>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 14, 2012 at 6:41 AM, Pekka Enberg <penberg@kernel.org> wrote:
->> Move PSE and PGE bit twiddling from init_memory_mapping() to a new
->> setup_paging() function to simplify the former function. The
->> init_memory_mapping() function is called later in the boot process by
->> gart_iommu_init(), efi_ioremap(), and arch_add_memory() which have no
->> business whatsover updating the CR4 register.
+Introduce two new helper functions, addr_to_pmd_pfn() and
+addr_to_pud_pfn(), to simplify init_memory_mapping() code flow.
 
-On Sat, Jul 14, 2012 at 11:47 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> I have one local patch that will only set that one time too. also do
-> other page size probe one time.
->
-> please check attached one.
+Cc: Joe Perces <joe@perches.com>
+Cc: Tejun Heo <tj@kernel.org>
+Acked-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
+---
+ arch/x86/mm/init.c |   38 +++++++++++++++++++++-----------------
+ 1 files changed, 21 insertions(+), 17 deletions(-)
 
-Your patch still keeps the same sort of code flow. That is,
-init_memory_mapping() does all sorts of things upon first call. I
-personally prefer the more explicit approach in this patch. In fact,
-you could do the page_size_mask setup in the setup_paging() function.
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index bc4e9d8..9eb53c2 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -117,6 +117,16 @@ static int __meminit save_mr(struct map_range *mr, int nr_range,
+ 	return nr_range;
+ }
+ 
++static unsigned long addr_to_pmd_pfn(unsigned long addr)
++{
++	return (addr >> PMD_SHIFT) << (PMD_SHIFT - PAGE_SHIFT);
++}
++
++static unsigned long addr_to_pud_pfn(unsigned long addr)
++{
++	return (addr >> PUD_SHIFT) << (PUD_SHIFT - PAGE_SHIFT);
++}
++
+ /*
+  * Setup the direct mapping of the physical memory at PAGE_OFFSET.
+  * This runs before bootmem is initialized and gets pages directly from
+@@ -180,11 +190,9 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
+ 	if (pos == 0)
+ 		end_pfn = 1<<(PMD_SHIFT - PAGE_SHIFT);
+ 	else
+-		end_pfn = ((pos + (PMD_SIZE - 1))>>PMD_SHIFT)
+-				 << (PMD_SHIFT - PAGE_SHIFT);
++		end_pfn = addr_to_pmd_pfn(pos + (PMD_SIZE - 1));
+ #else /* CONFIG_X86_64 */
+-	end_pfn = ((pos + (PMD_SIZE - 1)) >> PMD_SHIFT)
+-			<< (PMD_SHIFT - PAGE_SHIFT);
++	end_pfn = addr_to_pmd_pfn(pos + (PMD_SIZE - 1));
+ #endif
+ 	if (end_pfn > (end >> PAGE_SHIFT))
+ 		end_pfn = end >> PAGE_SHIFT;
+@@ -194,15 +202,13 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
+ 	}
+ 
+ 	/* big page (2M) range */
+-	start_pfn = ((pos + (PMD_SIZE - 1))>>PMD_SHIFT)
+-			 << (PMD_SHIFT - PAGE_SHIFT);
++	start_pfn = addr_to_pmd_pfn(pos + (PMD_SIZE - 1));
+ #ifdef CONFIG_X86_32
+-	end_pfn = (end>>PMD_SHIFT) << (PMD_SHIFT - PAGE_SHIFT);
++	end_pfn = addr_to_pmd_pfn(end);
+ #else /* CONFIG_X86_64 */
+-	end_pfn = ((pos + (PUD_SIZE - 1))>>PUD_SHIFT)
+-			 << (PUD_SHIFT - PAGE_SHIFT);
+-	if (end_pfn > ((end>>PMD_SHIFT)<<(PMD_SHIFT - PAGE_SHIFT)))
+-		end_pfn = ((end>>PMD_SHIFT)<<(PMD_SHIFT - PAGE_SHIFT));
++	end_pfn = addr_to_pud_pfn(pos + (PUD_SIZE - 1));
++	if (end_pfn > addr_to_pmd_pfn(end))
++		end_pfn = addr_to_pmd_pfn(end);
+ #endif
+ 
+ 	if (start_pfn < end_pfn) {
+@@ -213,9 +219,8 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
+ 
+ #ifdef CONFIG_X86_64
+ 	/* big page (1G) range */
+-	start_pfn = ((pos + (PUD_SIZE - 1))>>PUD_SHIFT)
+-			 << (PUD_SHIFT - PAGE_SHIFT);
+-	end_pfn = (end >> PUD_SHIFT) << (PUD_SHIFT - PAGE_SHIFT);
++	start_pfn = addr_to_pud_pfn(pos + (PUD_SIZE - 1));
++	end_pfn = addr_to_pud_pfn(end);
+ 	if (start_pfn < end_pfn) {
+ 		nr_range = save_mr(mr, nr_range, start_pfn, end_pfn,
+ 				page_size_mask &
+@@ -224,9 +229,8 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
+ 	}
+ 
+ 	/* tail is not big page (1G) alignment */
+-	start_pfn = ((pos + (PMD_SIZE - 1))>>PMD_SHIFT)
+-			 << (PMD_SHIFT - PAGE_SHIFT);
+-	end_pfn = (end >> PMD_SHIFT) << (PMD_SHIFT - PAGE_SHIFT);
++	start_pfn = addr_to_pmd_pfn(pos + (PMD_SIZE - 1));
++	end_pfn = addr_to_pmd_pfn(end);
+ 	if (start_pfn < end_pfn) {
+ 		nr_range = save_mr(mr, nr_range, start_pfn, end_pfn,
+ 				page_size_mask & (1<<PG_LEVEL_2M));
+-- 
+1.7.7.6
 
-                        Pekka
