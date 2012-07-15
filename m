@@ -1,73 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752670Ab2GOV6y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jul 2012 17:58:54 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:40694 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752222Ab2GOV6v (ORCPT
+	id S1751865Ab2GOWEw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jul 2012 18:04:52 -0400
+Received: from queueout04-winn.ispmail.ntl.com ([81.103.221.58]:21114 "EHLO
+	queueout04-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751003Ab2GOWEu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jul 2012 17:58:51 -0400
-Date: Sun, 15 Jul 2012 23:58:53 +0200
-From: Domenico Andreoli <cavokz@gmail.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Paulo Marques <pmarques@grupopie.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Sam Ravnborg <sam@ravnborg.org>, Michal Marek <mmarek@suse.cz>,
-        Arnaud Lacombe <lacombar@gmail.com>,
-        Nick Bowler <nbowler@elliptictech.com>,
-        Jan Beulich <jbeulich@novell.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: "Inconsistent kallsyms data" error
-Message-ID: <20120715215853.GA11632@glitch>
-Mail-Followup-To: Paul Gortmaker <paul.gortmaker@windriver.com>,
-	Paulo Marques <pmarques@grupopie.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Sam Ravnborg <sam@ravnborg.org>, Michal Marek <mmarek@suse.cz>,
-	Arnaud Lacombe <lacombar@gmail.com>,
-	Nick Bowler <nbowler@elliptictech.com>,
-	Jan Beulich <jbeulich@novell.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <CA+55aFyr+gexQW9Gmg=_V145SUeKOcfSNUx5h4p7bgjMp=07Og@mail.gmail.com>
- <4FF6C958.9090809@grupopie.com>
- <CAP=VYLqCNDo+3tz2RibPwwCNUNNYf1WA+wmeeUor8AmJqnfz1A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAP=VYLqCNDo+3tz2RibPwwCNUNNYf1WA+wmeeUor8AmJqnfz1A@mail.gmail.com>
+	Sun, 15 Jul 2012 18:04:50 -0400
+From: Daniel Drake <dsd@laptop.org>
+To: cbou@mail.ru, dwmw2@infradead.org
+Cc: linux-kernel@vger.kernel.org, pgf@laptop.org, richard@laptop.org
+Subject: [PATCH 2/2] olpc-battery: update CHARGE_FULL_DESIGN property for BYD LiFe batteries
+Message-Id: <20120715214352.27F8C9D401E@zog.reactivated.net>
+Date: Sun, 15 Jul 2012 22:43:51 +0100 (BST)
+X-Cloudmark-Analysis: v=1.1 cv=AUhbpHVS+xhHrj9wLCYAQoYnFLYUZdbP8UM0GmH2jwk= c=1 sm=0 a=ZnH0VqctNHUA:10 a=vJ1w_8FsMGIA:10 a=Op-mwl0xAAAA:8 a=i4SUSGMWO3v0mh3mqmkA:9 a=d4CUUju0HPYA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 07, 2012 at 12:48:23AM -0400, Paul Gortmaker wrote:
-> On Fri, Jul 6, 2012 at 7:17 AM, Paulo Marques <pmarques@grupopie.com> wrote:
-> 
-> [...]
-> 
-> >
-> > There was a recent thread from David Brown on the arm linux mailing list
-> > ("ARM: two possible fixes for the KALLSYMS build problem"). He tracked
-> > down the problem to having empty per_cpu sections on a non-smp build.
-> 
-> Actually rmk diagnosed it as the empty per_cpu sections.  See it here:
-> 
-> http://marc.info/?l=linux-next&m=133267456809502&w=2
+From: Richard A. Smith <richard@laptop.org>
 
-I also saw this problem in the past (a couple of months ago), mostly on a
-specific machine. But I _am_ playing with the linker scripts so I expected
-to be the cause in an unknown way.
+Reduce the mAh value for the BYD LiFe battery from 3100mAh to 2800mAh
+to better reflect the average usable capacity as measured by olpc-pwr-log.
 
-Unfortunately I've never understood the cause (I also switched from reiserfs
-to ext4 in the panic, moving the source tree around seemed to help). The
-behaviour seemed inconsistent and could not reliably reproduce it even if
-there were very few "moving targets". Very clueless.
+Signed-off-by: Richard A. Smith <richard@laptop.org>
+Signed-off-by: Daniel Drake <dsd@laptop.org>
+---
+ drivers/power/olpc_battery.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-Don't know why I'm not encountering it any more but a more useful diagnostic
-would be surely useful.  The second pass thing didn't help me either. I
-also tried to implement an addition pass but the thing was not making any
-sense to me anyway.
+diff --git a/drivers/power/olpc_battery.c b/drivers/power/olpc_battery.c
+index b98f531..debf797 100644
+--- a/drivers/power/olpc_battery.c
++++ b/drivers/power/olpc_battery.c
+@@ -231,11 +231,9 @@ static int olpc_bat_get_charge_full_design(union power_supply_propval *val)
+ 
+ 	case POWER_SUPPLY_TECHNOLOGY_LiFe:
+ 		switch (mfr) {
+-		case 1: /* Gold Peak */
+-			val->intval = 2800000;
+-			break;
++		case 1: /* Gold Peak, fall through */
+ 		case 2: /* BYD */
+-			val->intval = 3100000;
++			val->intval = 2800000;
+ 			break;
+ 		default:
+ 			return -EIO;
+-- 
+1.7.10.4
 
-So yes, in case of error please leave some trace somewhere so that to poor
-user has some chance to work his/her good luck out of the troubles.
-
-cheers,
-Domenico
