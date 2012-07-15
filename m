@@ -1,74 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752783Ab2GOX1j (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jul 2012 19:27:39 -0400
-Received: from unicorn.mansr.com ([78.86.181.103]:34348 "EHLO
-	unicorn.mansr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751191Ab2GOX1g convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jul 2012 19:27:36 -0400
-X-Greylist: delayed 352 seconds by postgrey-1.27 at vger.kernel.org; Sun, 15 Jul 2012 19:27:36 EDT
-From: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
-References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
-	<CAOesGMiCexiqA3L5GdNgyHhSD-5Bpqbb02YJrZPr8yMYa0afjA@mail.gmail.com>
-	<201207071927.13135.arnd@arndb.de> <20120710071023.GA10456@gmail.com>
-	<20120710101018.GE15120@arm.com>
-Date: Mon, 16 Jul 2012 00:21:42 +0100
-In-Reply-To: <20120710101018.GE15120@arm.com> (Catalin Marinas's message of
-	"Tue, 10 Jul 2012 11:10:18 +0100")
-Message-ID: <yw1x8vekd309.fsf@unicorn.mansr.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+	id S1752729Ab2GOXun (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jul 2012 19:50:43 -0400
+Received: from mga14.intel.com ([143.182.124.37]:23038 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750748Ab2GOXul (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jul 2012 19:50:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="122802449"
+Date: Sun, 15 Jul 2012 16:50:41 -0700
+From: Jon Mason <jon.mason@intel.com>
+To: Greg KH <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-pci@vger.kernel.org, Dave Jiang <dave.jiang@intel.com>
+Subject: Re: [RFC 1/2] PCI-Express Non-Transparent Bridge Support
+Message-ID: <20120715235041.GB7551@jonmason-lab>
+References: <1342215900-3358-1-git-send-email-jon.mason@intel.com>
+ <20120714170411.GA25775@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120714170411.GA25775@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Catalin Marinas <catalin.marinas@arm.com> writes:
+On Sat, Jul 14, 2012 at 10:04:11AM -0700, Greg KH wrote:
+> On Fri, Jul 13, 2012 at 02:44:59PM -0700, Jon Mason wrote:
+> > The NTB device driver is needed to configure these memory windows, doorbell, and
+> > scratch-pad registers as well as use them in such a way as they can be turned
+> > into a viable communication channel to the remote system.  ntb_hw.[ch]
+> > determines the usage model (NTB to NTB or NTB to Root Port) and abstracts away
+> > the underlying hardware to provide access and a common interface to the doorbell
+> > registers, scratch pads, and memory windows.  These hardware interfaces are
+> > exported so that other, non-mainlined kernel drivers can access these.
+> 
+> Why would you have non-mainlined drivers?
+> 
+> Can you submit the drivers at the same time so we see how you are using
+> these new interfaces?
 
-> On Tue, Jul 10, 2012 at 08:10:23AM +0100, Ingo Molnar wrote:
->> * Arnd Bergmann <arnd@arndb.de> wrote:
->> > On Saturday 07 July 2012, Olof Johansson wrote:
->> > > > ARM introduced AArch64 as part of the ARMv8 architecture
->> > > 
->> > > With the risk of bikeshedding here, but I find the name awkward. How
->> > > about just naming the arch port arm64 instead? It's considerably more
->> > > descriptive in the context of the kernel.  For reference, we didn't
->> > > name ppc64, nor powerpc, after what the IBM/power.org marketing people
->> > > were currently calling the architecture at the time either.
->> > 
->> > I agree the name sucks, [...]
->> 
->> So why not change it now, when it only bothers a few dozen 
->> people and it is only present in 36 patches? Why go full steam 
->> ahead to annoy thousands of people with it and why spread the 
->> naming madness to thousands of commits?
->
-> Changing the arch/ dir name is easy at this point. My preference is for
-> consistency with the official name (that cannot be changed) and the gcc
-> triplet. I also don't think it annoys thousands of people, most don't
-> really care. The few reactions I've seen is pretty much because people
-> were expecting arm64 and it came as something else.
+There are none at this time.  In the near future, the transport will be modified to use IOAT instead of the CPU copy to improve throughput performance, and it may be beneficial to have that separate.  If you wish for me to remove the hooks until it is necessary for that, then I can.
 
-FWIW, I'd prefer naming the directory either arm64 or armv8 for a few
-reasons:
+> 
+> > +++ b/drivers/ntb/ntb_hw.c
+> > @@ -0,0 +1,1283 @@
+> > +/*
+> > + * This file is provided under a dual BSD/GPLv2 license.  When using or
+> > + *   redistributing this file, you may do so under either license.
+> > + *
+> > + *   GPL LICENSE SUMMARY
+> > + *
+> > + *   Copyright(c) 2012 Intel Corporation. All rights reserved.
+> > + *
+> > + *   This program is free software; you can redistribute it and/or modify
+> > + *   it under the terms of version 2 of the GNU General Public License as
+> > + *   published by the Free Software Foundation.
+> > + *
+> > + *   This program is distributed in the hope that it will be useful, but
+> > + *   WITHOUT ANY WARRANTY; without even the implied warranty of
+> > + *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+> > + *   General Public License for more details.
+> > + *
+> > + *   You should have received a copy of the GNU General Public License
+> > + *   along with this program; if not, write to the Free Software
+> > + *   Foundation, Inc., 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
+> > + *   The full GNU General Public License is included in this distribution
+> > + *   in the file called LICENSE.GPL.
+> 
+> You really want to track the office movements of the FSF for the next 40
+> years?  You should ask your lawyers if you can remove this paragraph.
 
-- Those are the names people actually use to refer to the architecture
-- They are more descriptive.
-- I think the official name is rather silly.
+Standard boilerplate junk, but it never hurts to ask.
+ 
+> > +/**
+> > + * ntb_hw_link_status() - return the hardware link status
+> > + * @ndev: pointer to ntb_device instance
+> > + *
+> > + * Returns true if the hardware is connected to the remote system
+> > + *
+> > + * RETURNS: true or false based on the hardware link state
+> > + */
+> > +bool ntb_hw_link_status(struct ntb_device *ndev)
+> > +{
+> > +	return ndev->link_status == NTB_LINK_UP;
+> > +}
+> > +EXPORT_SYMBOL(ntb_hw_link_status);
+> 
+> EXPORT_SYMBOL_GPL() perhaps, for these, and the other symbols you are
+> creating?
 
-Note, these are my personal opinions.
+Will do.
 
--- 
-Måns Rullgård
-mans@mansr.com
+> 
+> thanks,
+> 
+> greg k-h
