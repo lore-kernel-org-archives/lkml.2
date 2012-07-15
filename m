@@ -1,40 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752909Ab2GOPgE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jul 2012 11:36:04 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:60031 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752083Ab2GOPfu (ORCPT
+	id S1752891Ab2GOPz7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jul 2012 11:55:59 -0400
+Received: from pindarots.xs4all.nl ([80.101.128.228]:45982 "EHLO
+	pindarots.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751930Ab2GOPzw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jul 2012 11:35:50 -0400
+	Sun, 15 Jul 2012 11:55:52 -0400
+Message-ID: <5002E7FC.5070307@xs4all.nl>
+Date: Sun, 15 Jul 2012 17:55:40 +0200
+From: Udo van den Heuvel <udovdh@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <1342356246-17233-1-git-send-email-cruz@massive-dynamics.biz>
-References: <1342356246-17233-1-git-send-email-cruz@massive-dynamics.biz>
-Date: Sun, 15 Jul 2012 17:35:49 +0200
-Message-ID: <CAFLxGvyKjJkRbjBbReowwM5Ljf+Vs9XcaNEMhA00rJQgwrFQYw@mail.gmail.com>
-Subject: Re: [PATCH] Checkpatch fixes for drivers/staging/panel/panel.c
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Cruz Julian Bishop <cruz@massive-dynamics.biz>
-Cc: greg@kroah.com, willy@meta-x.org, linux-kernel@vger.kernel.org,
-        Cruz Julian Bishop <cruzjbishop@gmail.com>
+To: linux-usb@vger.kernel.org
+CC: Alan Stern <stern@rowland.harvard.edu>,
+        Jan Ceuleers <jan.ceuleers@computer.org>,
+        Clemens Ladisch <clemens@ladisch.de>,
+        Simon Jones <sijones2010@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: 3.4.4: disabling irq
+References: <Pine.LNX.4.44L0.1207151122050.25880-100000@netrider.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1207151122050.25880-100000@netrider.rowland.org>
+X-Enigmail-Version: 1.4.2
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 15, 2012 at 2:44 PM, Cruz Julian Bishop
-<cruz@massive-dynamics.biz> wrote:
->  #if 0
-> -       printk(KERN_DEBUG
-> -              "entering panel_process_inputs with pp=%016Lx & pc=%016Lx\n",
-> +       pr_debug("entering panel_process_inputs with pp=%016Lx & pc=%016Lx\n",
->                phys_prev, phys_curr);
->  #endif
+On 2012-07-15 17:35, Alan Stern wrote:
+> echo 0000:00:13.1 >/sys/bus/pci/drivers/ohci_hcd/unbind
 
-Instead of following checkpatch.pl's suggestions in a completely
-brain-dead manner you should better read the code.
-The printk() is under a "#if 0", so the whole block is useless anyway...
+Afterwards I did:
 
--- 
-Thanks,
-//richard
+> echo 0000:00:13.1 >/sys/bus/pci/drivers/ohci_hcd/bind
+
+And I saw:
+
+Jul 15 17:50:30 surfplank2 kernel: ohci_hcd 0000:00:13.1: remove, state 1
+Jul 15 17:50:30 surfplank2 kernel: usb usb4: USB disconnect, device number 1
+Jul 15 17:50:30 surfplank2 kernel: usb 4-3: USB disconnect, device number 2
+Jul 15 17:50:30 surfplank2 kernel: ohci_hcd 0000:00:13.1: USB bus 4
+deregistered
+Jul 15 17:50:37 surfplank2 kernel: ohci_hcd 0000:00:13.1: OHCI Host
+Controller
+Jul 15 17:50:37 surfplank2 kernel: ohci_hcd 0000:00:13.1: new USB bus
+registered, assigned bus number 4
+Jul 15 17:50:37 surfplank2 kernel: ohci_hcd 0000:00:13.1: irq 18, io mem
+0xfe02a000
+Jul 15 17:50:37 surfplank2 kernel: usb usb4: New USB device found,
+idVendor=1d6b, idProduct=0001
+Jul 15 17:50:37 surfplank2 kernel: usb usb4: New USB device strings:
+Mfr=3, Product=2, SerialNumber=1
+Jul 15 17:50:37 surfplank2 kernel: usb usb4: Product: OHCI Host Controller
+Jul 15 17:50:37 surfplank2 kernel: usb usb4: Manufacturer: Linux 3.4.4
+ohci_hcd
+Jul 15 17:50:37 surfplank2 kernel: usb usb4: SerialNumber: 0000:00:13.1
+Jul 15 17:50:37 surfplank2 kernel: hub 4-0:1.0: USB hub found
+Jul 15 17:50:37 surfplank2 kernel: hub 4-0:1.0: 3 ports detected
+Jul 15 17:50:37 surfplank2 kernel: usb 4-3: new full-speed USB device
+number 2 using ohci_hcd
+Jul 15 17:50:38 surfplank2 kernel: usb 4-3: New USB device found,
+idVendor=0471, idProduct=0311
+Jul 15 17:50:38 surfplank2 kernel: usb 4-3: New USB device strings:
+Mfr=0, Product=0, SerialNumber=1
+Jul 15 17:50:38 surfplank2 kernel: usb 4-3: SerialNumber: 01690000A5000000
+Jul 15 17:50:38 surfplank2 mtp-probe: checking bus 4, device 2:
+"/sys/devices/pci0000:00/0000:00:13.1/usb4/4-3"
+Jul 15 17:50:38 surfplank2 mtp-probe: bus: 4, device: 2 was not an MTP
+device
+Jul 15 17:50:38 surfplank2 kernel: pwc: Philips PCVC740K (ToUCam
+Pro)/PCVC840 (ToUCam II) USB webcam detected.
+Jul 15 17:50:39 surfplank2 kernel: pwc: Registered as video0.
+Jul 15 17:50:39 surfplank2 kernel: input: PWC snapshot button as
+/devices/pci0000:00/0000:00:13.0/usb3/3-2/input/input8
+Jul 15 17:50:39 surfplank2 kernel: pwc: Philips PCVC740K (ToUCam
+Pro)/PCVC840 (ToUCam II) USB webcam detected.
+Jul 15 17:50:39 surfplank2 kernel: pwc: Registered as video1.
+Jul 15 17:50:39 surfplank2 kernel: input: PWC snapshot button as
+/devices/pci0000:00/0000:00:13.1/usb4/4-3/input/input9
+Jul 15 17:50:39 surfplank2 kernel: usbcore: registered new interface
+driver Philips webcam
+Jul 15 17:50:39 surfplank2 colord[3375]: (colord:3375): Cd-WARNING **:
+CdMain: failed to emit DeviceAdded: failed to register object: An object
+is already exported for the interface
+org.freedesktop.ColorManager.Device at
+/org/freedesktop/ColorManager/devices/sysfs_0471_0311
+
+So I have two webcams on this controller, each on a different port.
+The final line is an issue that cam with Fedora 17, nobody could foresee
+that one could need a colord *and* have two identical webcams too. (I do
+not need colord but have two webcams to be clear)
+
+After doing this I could modprobe pwc and start mrtg without problem.
+
+So now I can wait for the next occurrence.
+
+Kind regards,
+Udo
+
+
+
