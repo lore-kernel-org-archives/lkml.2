@@ -1,56 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752066Ab2GPAT3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jul 2012 20:19:29 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51395 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751003Ab2GPATZ (ORCPT
+	id S1752143Ab2GPAZn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jul 2012 20:25:43 -0400
+Received: from v-smtp.minatec.grenoble-inp.fr ([147.173.216.28]:45243 "EHLO
+	v-smtp.minatec.grenoble-inp.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751085Ab2GPAZl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jul 2012 20:19:25 -0400
-Date: Sun, 15 Jul 2012 17:19:21 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Jon Mason <jon.mason@intel.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-pci@vger.kernel.org, Dave Jiang <dave.jiang@intel.com>
-Subject: Re: [RFC 1/2] PCI-Express Non-Transparent Bridge Support
-Message-ID: <20120716001921.GA19775@kroah.com>
-References: <1342215900-3358-1-git-send-email-jon.mason@intel.com>
- <20120714171015.GB25775@kroah.com>
- <20120715235548.GC7551@jonmason-lab>
+	Sun, 15 Jul 2012 20:25:41 -0400
+Reply-To: <josephtang1@cpll.cn>
+From: "Joseph Tang" <Joseph@grenoble-inp.fr>
+Subject: Greetings....
+Date: Mon, 16 Jul 2012 00:05:50 +0100
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120715235548.GC7551@jonmason-lab>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+Message-Id: <20120715230544.76A381A2716@v-smtp.minatec.grenoble-inp.fr>
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 15, 2012 at 04:55:48PM -0700, Jon Mason wrote:
-> On Sat, Jul 14, 2012 at 10:10:15AM -0700, Greg KH wrote:
-> > On Fri, Jul 13, 2012 at 02:44:59PM -0700, Jon Mason wrote:
-> > > +static int max_num_cbs = 2;
-> > > +module_param(max_num_cbs, uint, 0644);
-> > > +MODULE_PARM_DESC(max_num_cbs, "Maximum number of NTB transport connections");
-> > > +
-> > > +static bool no_msix;
-> > > +module_param(no_msix, bool, 0644);
-> > > +MODULE_PARM_DESC(no_msix, "Do not allow MSI-X interrupts to be selected");
-> > 
-> > How would a user, or a distro, know to set these options?  Why are they
-> > even options at all?
-> 
-> Good question.  There is actually a potential benefit to disabling
-> MSI-X.  The NTB device on one of our platforms only has 3 MSI-X
-> vectors.  In the current driver design, that would limit them to 3
-> client/virtual devices.  However, there are 15bits in the ISR that can
-> be used for the same purpose.  So, if you disable MSI-X, you can have
-> 15 instead of 3.  
-
-But again, how would a user, or a distro, know to set these?  Where is
-the documentation describing it?  Why really have these options at all
-and not just fix the platform issues (only 3 MSI-X vectors?  Really?)
-
-thanks,
-
-greg k-h
+I am Mr Joseph TANG, I Need You For An Urgent Business
+transaction.
