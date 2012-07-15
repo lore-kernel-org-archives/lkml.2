@@ -1,109 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752498Ab2GOS2Q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jul 2012 14:28:16 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:51096 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750871Ab2GOS2H (ORCPT
+	id S1751440Ab2GOTFY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jul 2012 15:05:24 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:64757 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750910Ab2GOTFT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jul 2012 14:28:07 -0400
-Date: Sun, 15 Jul 2012 14:28:05 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Udo van den Heuvel <udovdh@xs4all.nl>
-cc: linux-usb@vger.kernel.org, Jan Ceuleers <jan.ceuleers@computer.org>,
-        Clemens Ladisch <clemens@ladisch.de>,
-        Simon Jones <sijones2010@gmail.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: 3.4.4: disabling irq
-In-Reply-To: <5002E7FC.5070307@xs4all.nl>
-Message-ID: <Pine.LNX.4.44L0.1207151423440.29236-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sun, 15 Jul 2012 15:05:19 -0400
+From: David Herrmann <dh.herrmann@googlemail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-fbdev@vger.kernel.org, linux-serial@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        David Herrmann <dh.herrmann@googlemail.com>
+Subject: [PATCH v3 00/11] fblog: Framebuffer kernel log driver v3
+Date: Sun, 15 Jul 2012 21:04:35 +0200
+Message-Id: <1342379086-7583-1-git-send-email-dh.herrmann@googlemail.com>
+X-Mailer: git-send-email 1.7.11.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 15 Jul 2012, Udo van den Heuvel wrote:
+Hi
 
-> On 2012-07-15 17:35, Alan Stern wrote:
-> > echo 0000:00:13.1 >/sys/bus/pci/drivers/ohci_hcd/unbind
-> 
-> Afterwards I did:
-> 
-> > echo 0000:00:13.1 >/sys/bus/pci/drivers/ohci_hcd/bind
+This is revision 3 of the fblog driver. This driver is a replacement for fbcon
+for systems that do not want/need CONFIG_VT. It simply prints the kernel log to
+all connected framebuffers. Previous versions are available here:
+  v2: http://thread.gmane.org/gmane.linux.serial/8133
+  v1: http://marc.info/?l=linux-kernel&m=133988465602225&w=2
 
-Um, I think you missed the point.  The whole idea of the test is to see 
-what happens while the controller is unbound from the driver.  Binding 
-it again defeats the purpose.
+This patchset is against linux-next from last week (Wednesday or Thursday).
 
-> And I saw:
-> 
-> Jul 15 17:50:30 surfplank2 kernel: ohci_hcd 0000:00:13.1: remove, state 1
-> Jul 15 17:50:30 surfplank2 kernel: usb usb4: USB disconnect, device number 1
-> Jul 15 17:50:30 surfplank2 kernel: usb 4-3: USB disconnect, device number 2
-> Jul 15 17:50:30 surfplank2 kernel: ohci_hcd 0000:00:13.1: USB bus 4
-> deregistered
-> Jul 15 17:50:37 surfplank2 kernel: ohci_hcd 0000:00:13.1: OHCI Host
-> Controller
-> Jul 15 17:50:37 surfplank2 kernel: ohci_hcd 0000:00:13.1: new USB bus
-> registered, assigned bus number 4
-> Jul 15 17:50:37 surfplank2 kernel: ohci_hcd 0000:00:13.1: irq 18, io mem
-> 0xfe02a000
-> Jul 15 17:50:37 surfplank2 kernel: usb usb4: New USB device found,
-> idVendor=1d6b, idProduct=0001
-> Jul 15 17:50:37 surfplank2 kernel: usb usb4: New USB device strings:
-> Mfr=3, Product=2, SerialNumber=1
-> Jul 15 17:50:37 surfplank2 kernel: usb usb4: Product: OHCI Host Controller
-> Jul 15 17:50:37 surfplank2 kernel: usb usb4: Manufacturer: Linux 3.4.4
-> ohci_hcd
-> Jul 15 17:50:37 surfplank2 kernel: usb usb4: SerialNumber: 0000:00:13.1
-> Jul 15 17:50:37 surfplank2 kernel: hub 4-0:1.0: USB hub found
-> Jul 15 17:50:37 surfplank2 kernel: hub 4-0:1.0: 3 ports detected
-> Jul 15 17:50:37 surfplank2 kernel: usb 4-3: new full-speed USB device
-> number 2 using ohci_hcd
-> Jul 15 17:50:38 surfplank2 kernel: usb 4-3: New USB device found,
-> idVendor=0471, idProduct=0311
-> Jul 15 17:50:38 surfplank2 kernel: usb 4-3: New USB device strings:
-> Mfr=0, Product=0, SerialNumber=1
-> Jul 15 17:50:38 surfplank2 kernel: usb 4-3: SerialNumber: 01690000A5000000
-> Jul 15 17:50:38 surfplank2 mtp-probe: checking bus 4, device 2:
-> "/sys/devices/pci0000:00/0000:00:13.1/usb4/4-3"
-> Jul 15 17:50:38 surfplank2 mtp-probe: bus: 4, device: 2 was not an MTP
-> device
-> Jul 15 17:50:38 surfplank2 kernel: pwc: Philips PCVC740K (ToUCam
-> Pro)/PCVC840 (ToUCam II) USB webcam detected.
-> Jul 15 17:50:39 surfplank2 kernel: pwc: Registered as video0.
-> Jul 15 17:50:39 surfplank2 kernel: input: PWC snapshot button as
-> /devices/pci0000:00/0000:00:13.0/usb3/3-2/input/input8
-> Jul 15 17:50:39 surfplank2 kernel: pwc: Philips PCVC740K (ToUCam
-> Pro)/PCVC840 (ToUCam II) USB webcam detected.
-> Jul 15 17:50:39 surfplank2 kernel: pwc: Registered as video1.
-> Jul 15 17:50:39 surfplank2 kernel: input: PWC snapshot button as
-> /devices/pci0000:00/0000:00:13.1/usb4/4-3/input/input9
-> Jul 15 17:50:39 surfplank2 kernel: usbcore: registered new interface
-> driver Philips webcam
-> Jul 15 17:50:39 surfplank2 colord[3375]: (colord:3375): Cd-WARNING **:
-> CdMain: failed to emit DeviceAdded: failed to register object: An object
-> is already exported for the interface
-> org.freedesktop.ColorManager.Device at
-> /org/freedesktop/ColorManager/devices/sysfs_0471_0311
-> 
-> So I have two webcams on this controller, each on a different port.
+I've fixed all issues that were reported last week. They were all minor
+nitpicks:
+  - Changed EXPORT_SYMBOL to EXPORT_SYMBOL_GPL for exported fbdev functions
+  - Removed FBLOG_STR
+  - Added pr_fmt()
+  - Fixed two minor coding-style issues
+  - Fixed one possible subtle deadlock in device registration (switched locking
+    order)
 
-How do you reach that conclusion?  The log above shows only one webcam
-on bus 4: device 2, attached to port 3.  There is another webcam, yes, 
-but it's on bus 3, not bus 4.
+If you want to test it but don't want to disable CONFIG_VT, simply remove the
+dependency to !VT of fblog. This will cause both fblog and fbcon to draw to the
+framebuffers but both draw only on changes so it will still be possible to debug
+and test fblog.
 
-> The final line is an issue that cam with Fedora 17, nobody could foresee
-> that one could need a colord *and* have two identical webcams too. (I do
-> not need colord but have two webcams to be clear)
-> 
-> After doing this I could modprobe pwc and start mrtg without problem.
-> 
-> So now I can wait for the next occurrence.
+It would be nice if someone could tell me what tree this will go through or how
+I can get it into linux-next as I have no idea who is maintaining fbcon. If
+there are other major or minor issues, please tell me so I can work on them.
 
-You should unbind the controller and leave it unbound.  _Then_ wait for 
-the next occurrence.
+I am also working on improving the render-path by using dma-buf and partial
+redraws like fbcon. Furthermore, I will add a panic-handler so fblog draws
+oopses/panics to the framebuffers even though it is disabled. However, I want to
+get this basic driver in before making it more complex and making review too
+hard.
 
-Alan Stern
+Thanks! Regards
+David
+
+David Herrmann (11):
+  fbcon: move update_attr() into separate source file
+  fbcon: move bit_putcs() into separate source file
+  fblog: new framebuffer kernel log dummy driver
+  fbdev: export get_fb_info()/put_fb_info()
+  fblog: register one fblog object per framebuffer
+  fblog: open fb on registration
+  fblog: allow selecting fbs via sysfs
+  fblog: cache framebuffer BLANK and SUSPEND states
+  fblog: register console driver
+  fblog: draw console to framebuffers
+  MAINTAINERS: add fblog entry
+
+ MAINTAINERS                     |   6 +
+ drivers/video/Kconfig           |   5 +-
+ drivers/video/Makefile          |   2 +-
+ drivers/video/console/Kconfig   |  37 ++-
+ drivers/video/console/Makefile  |   4 +-
+ drivers/video/console/bitblit.c | 149 +--------
+ drivers/video/console/fbcon.h   |   5 +-
+ drivers/video/console/fbdraw.c  | 171 ++++++++++
+ drivers/video/console/fbdraw.h  |  30 ++
+ drivers/video/console/fblog.c   | 675 ++++++++++++++++++++++++++++++++++++++++
+ drivers/video/fbmem.c           |   6 +-
+ include/linux/fb.h              |   3 +
+ 12 files changed, 935 insertions(+), 158 deletions(-)
+ create mode 100644 drivers/video/console/fbdraw.c
+ create mode 100644 drivers/video/console/fbdraw.h
+ create mode 100644 drivers/video/console/fblog.c
+
+-- 
+1.7.11.2
 
