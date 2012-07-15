@@ -1,80 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752575Ab2GOVsw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jul 2012 17:48:52 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:63010 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752329Ab2GOVsY (ORCPT
+	id S1752589Ab2GOVtn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jul 2012 17:49:43 -0400
+Received: from queueout02-winn.ispmail.ntl.com ([81.103.221.56]:35598 "EHLO
+	queueout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752299Ab2GOVtj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jul 2012 17:48:24 -0400
-Date: Mon, 16 Jul 2012 01:48:19 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Borislav Petkov <bp@amd64.org>, Pekka Enberg <penberg@kernel.org>
-Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
-        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
-        Debian Kernel Team <debian-kernel@lists.debian.org>,
-        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Sasha Levin <levinsasha928@gmail.com>,
-        Asias He <asias.hejun@gmail.com>, david@lang.hm,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: [opensuse-kernel] Re: [RFC] Simplifying kernel configuration for
- distro issues
-Message-ID: <20120715214819.GA1990@moon>
-References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com>
- <1342212885.25704.4.camel@lade.trondhjem.org>
- <CAFLxGvxxWodD97=78218wc+tuigAFsNK_PdroDfb4BWTZoxxUw@mail.gmail.com>
- <20120714103716.GD26559@liondog.tnic>
- <CAOJsxLGHQuuXqDD-1SNhL7Ly1-heCYFLzqj3SLh4xzmP9NR5GQ@mail.gmail.com>
- <20120715101434.GA18144@aftab.osrc.amd.com>
- <CAOJsxLGBCQ6C-3M0ZdTfVPqnmOKqUE9+78Mhf+67TksmVojuuQ@mail.gmail.com>
- <20120715211848.GA21167@aftab.osrc.amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120715211848.GA21167@aftab.osrc.amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 15 Jul 2012 17:49:39 -0400
+X-Greylist: delayed 371 seconds by postgrey-1.27 at vger.kernel.org; Sun, 15 Jul 2012 17:49:39 EDT
+From: Daniel Drake <dsd@laptop.org>
+To: cbou@mail.ru, dwmw2@infradead.org
+Cc: linux-kernel@vger.kernel.org, pgf@laptop.org, richard@laptop.org
+Subject: [PATCH 1/2] olpc-battery: Add VOLTAGE_MAX_DESIGN property
+Message-Id: <20120715214325.3DEC09D401E@zog.reactivated.net>
+Date: Sun, 15 Jul 2012 22:43:25 +0100 (BST)
+X-Cloudmark-Analysis: v=1.1 cv=GaEGOwq9FwezmTggA+b6yC6zDZF2HYaK6RN/tSqdnVA= c=1 sm=0 a=4l2lPXjyb3oA:10 a=vJ1w_8FsMGIA:10 a=Op-mwl0xAAAA:8 a=CNzbD-HaJSfO482hSYMA:9 a=d4CUUju0HPYA:10 a=SG2FxpaC7LzQys-V:21 a=Jf-KtALunSfsqeib:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 15, 2012 at 11:18:48PM +0200, Borislav Petkov wrote:
-> On Sun, Jul 15, 2012 at 01:17:16PM +0300, Pekka Enberg wrote:
-> > > Yes, something like KVMTOOL_TEST_ENABLE except not a make target but a
-> > > Kconfig option.
-> > 
-> > It is a config option too - "make kvmconfig" simply enables it.
-> 
-> Right, so how about something more concrete in this whole discussion:
-> 
-> Maybe add the KVMTOOL_TEST_ENABLE (maybe rename it to a more fitting
-> name like KVM_OPTS or similar) thing to a new toplevel Kconfig menu
-> called "Distro and other profiles" or so:
-> 
->   │ │     General setup  --->
->   │ │     Distros and other profiles  --->			<---
->   │ │ [*] Enable loadable module support  --->
->   │ │ [*] Enable the block layer  --->
->   │ │     Processor type and features  --->
->  ...
-> 
-> Btw, which Kconfig option is needed for "-usbdevice tablet" support so
-> that the host mouse can be able to send scroll events to the guest qemu
-> screen without the need for the qemu screen to capture it so that I need
-> to "escape" it everytime I need to return to the host? And can we add it
-> to the list of options KVMTOOL_TEST_ENABLE selects?
+From: Richard A. Smith <richard@laptop.org>
 
-All this is pretty promising idea for usability I think (plain "Profiles"
-is enough if not only distros will be there methink).
+upowerd wants to compute the energy in the battery by looking at this
+property.  If it's not present then it falls back on using the reported
+voltage of the battery at time upowerd loads.  That's close but also
+means that every time you boot you get a slightly different energy
+capacity.
 
-Replying to David's message (sorry for delay) I fear having a bunch of
-miniconfig files will end up in a mess. Maybe (maybe (!) I don't know since
-I've no time at moment to read kconfig code and I'm not sure if this
-is right direction at all) it would worth to add some new keyword to
-kconfig language, say "profile", which would tag symbol to a category
-if needed, and these categories included into profiles automatically.
-On the other hands this might end up in a mess as well.
+Adding the VOLTAGE_MAX_DESIGN property allows upowerd to compute the
+same energy every time.
+
+Signed-off-by: Richard A. Smith <richard@laptop.org>
+Signed-off-by: Daniel Drake <dsd@laptop.org>
+---
+ drivers/power/olpc_battery.c |   54 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 54 insertions(+)
+
+diff --git a/drivers/power/olpc_battery.c b/drivers/power/olpc_battery.c
+index 7385092..b98f531 100644
+--- a/drivers/power/olpc_battery.c
++++ b/drivers/power/olpc_battery.c
+@@ -267,6 +267,53 @@ static int olpc_bat_get_charge_now(union power_supply_propval *val)
+ 	return 0;
+ }
+ 
++static int olpc_bat_get_voltage_max_design(union power_supply_propval *val)
++{
++	uint8_t ec_byte;
++	union power_supply_propval tech;
++	int ret, mfr;
++
++	ret = olpc_bat_get_tech(&tech);
++	if (ret)
++		return ret;
++
++	ec_byte = BAT_ADDR_MFR_TYPE;
++	ret = olpc_ec_cmd(EC_BAT_EEPROM, &ec_byte, 1, &ec_byte, 1);
++	if (ret)
++		return ret;
++
++	mfr = ec_byte >> 4;
++
++	switch (tech.intval) {
++	case POWER_SUPPLY_TECHNOLOGY_NiMH:
++		switch (mfr) {
++		case 1: /* Gold Peak */
++			val->intval = 6000000;
++			break;
++		default:
++			return -EIO;
++		}
++		break;
++
++	case POWER_SUPPLY_TECHNOLOGY_LiFe:
++		switch (mfr) {
++		case 1: /* Gold Peak */
++			val->intval = 6400000;
++			break;
++		case 2: /* BYD */
++			val->intval = 6500000;
++			break;
++		default:
++			return -EIO;
++		}
++		break;
++
++	default:
++		return -EIO;
++	}
++
++	return ret;
++}
+ /*********************************************************************
+  *		Battery properties
+  *********************************************************************/
+@@ -401,6 +448,11 @@ static int olpc_bat_get_property(struct power_supply *psy,
+ 		sprintf(bat_serial, "%016llx", (long long)be64_to_cpu(ser_buf));
+ 		val->strval = bat_serial;
+ 		break;
++	case POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN:
++		ret = olpc_bat_get_voltage_max_design(val);
++		if (ret)
++			return ret;
++		break;
+ 	default:
+ 		ret = -EINVAL;
+ 		break;
+@@ -428,6 +480,7 @@ static enum power_supply_property olpc_xo1_bat_props[] = {
+ 	POWER_SUPPLY_PROP_MANUFACTURER,
+ 	POWER_SUPPLY_PROP_SERIAL_NUMBER,
+ 	POWER_SUPPLY_PROP_CHARGE_COUNTER,
++	POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN,
+ };
+ 
+ /* XO-1.5 does not have ambient temperature property */
+@@ -449,6 +502,7 @@ static enum power_supply_property olpc_xo15_bat_props[] = {
+ 	POWER_SUPPLY_PROP_MANUFACTURER,
+ 	POWER_SUPPLY_PROP_SERIAL_NUMBER,
+ 	POWER_SUPPLY_PROP_CHARGE_COUNTER,
++	POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN,
+ };
+ 
+ /* EEPROM reading goes completely around the power_supply API, sadly */
+-- 
+1.7.10.4
+
