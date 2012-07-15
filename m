@@ -1,94 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752461Ab2GOVeO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jul 2012 17:34:14 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:52974 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750919Ab2GOVeM (ORCPT
+	id S1752575Ab2GOVsw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jul 2012 17:48:52 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:63010 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752329Ab2GOVsY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jul 2012 17:34:12 -0400
-Date: Sun, 15 Jul 2012 22:33:37 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Pavel Machek <pavel@ucw.cz>, Ingo Molnar <mingo@kernel.org>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Sun, 15 Jul 2012 17:48:24 -0400
+Date: Mon, 16 Jul 2012 01:48:19 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Borislav Petkov <bp@amd64.org>, Pekka Enberg <penberg@kernel.org>
+Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
-Message-ID: <20120715213336.GA25830@arm.com>
-References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
- <20120714093032.GA23316@elf.ucw.cz>
- <20120715121644.GB10597@arm.com>
- <201207151943.08183.arnd@arndb.de>
+        Dave Jones <davej@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
+        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
+        Debian Kernel Team <debian-kernel@lists.debian.org>,
+        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Sasha Levin <levinsasha928@gmail.com>,
+        Asias He <asias.hejun@gmail.com>, david@lang.hm,
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: Re: [opensuse-kernel] Re: [RFC] Simplifying kernel configuration for
+ distro issues
+Message-ID: <20120715214819.GA1990@moon>
+References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com>
+ <1342212885.25704.4.camel@lade.trondhjem.org>
+ <CAFLxGvxxWodD97=78218wc+tuigAFsNK_PdroDfb4BWTZoxxUw@mail.gmail.com>
+ <20120714103716.GD26559@liondog.tnic>
+ <CAOJsxLGHQuuXqDD-1SNhL7Ly1-heCYFLzqj3SLh4xzmP9NR5GQ@mail.gmail.com>
+ <20120715101434.GA18144@aftab.osrc.amd.com>
+ <CAOJsxLGBCQ6C-3M0ZdTfVPqnmOKqUE9+78Mhf+67TksmVojuuQ@mail.gmail.com>
+ <20120715211848.GA21167@aftab.osrc.amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <201207151943.08183.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120715211848.GA21167@aftab.osrc.amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 15, 2012 at 08:43:07PM +0100, Arnd Bergmann wrote:
-> On Sunday 15 July 2012, Catalin Marinas wrote:
-> > The AArch32 execution mode is optional, so it depends on the actual CPU
-> > implementation (while AArch64 is mandatory). If the implementation
-> > supports it, the most likely scenario for AArch32 at kernel level is in
-> > virtual machines or the secure OS. I'll explain below why.
+On Sun, Jul 15, 2012 at 11:18:48PM +0200, Borislav Petkov wrote:
+> On Sun, Jul 15, 2012 at 01:17:16PM +0300, Pekka Enberg wrote:
+> > > Yes, something like KVMTOOL_TEST_ENABLE except not a make target but a
+> > > Kconfig option.
 > > 
-> > The exception (or privilege) levels on an ARMv8 architecture look like
-> > this:
-> > 
-> > Secure World    Normal World
-> > +-----+
-> > | EL3 |                         - Secure monitor
-> > +-----+
-> >                 +-----+
-> >                 | EL2 |         - Hypervisor (normal world only)
-> >                 +-----+
-> > +-----+         +-----+
-> > | EL1 |         | EL1 |         - OS kernel (secure or normal)
-> > +-----+         +-----+
-> > +-----+         +-----+
-> > | EL0 |         | EL0 |         - User apps (secure or normal)
-> > +-----+         +-----+
-> > 
-> > In theory, each of these levels (implementation specific) can run both
-> > AArch32 and AArch64 modes. There is however a restriction on how the
-> > mode switching is done - this can only happen on a change of exception
-> > level. When going up the EL the register width (RW) can never go down. A
-> > lower EL can never have a higher RW than a higher EL.
-> > 
-> > Additionally, the RW (the AArch32/AArch64 mode) for an EL is controlled
-> > by the next higher level (with EL3 hard-wired). An EL cannot cause
-> > itself to switch between AArch32 and AArch64.
+> > It is a config option too - "make kvmconfig" simply enables it.
 > 
-> So is the highest level always hardwired to 64-bit on ARMv8?
+> Right, so how about something more concrete in this whole discussion:
+> 
+> Maybe add the KVMTOOL_TEST_ENABLE (maybe rename it to a more fitting
+> name like KVM_OPTS or similar) thing to a new toplevel Kconfig menu
+> called "Distro and other profiles" or so:
+> 
+>   │ │     General setup  --->
+>   │ │     Distros and other profiles  --->			<---
+>   │ │ [*] Enable loadable module support  --->
+>   │ │ [*] Enable the block layer  --->
+>   │ │     Processor type and features  --->
+>  ...
+> 
+> Btw, which Kconfig option is needed for "-usbdevice tablet" support so
+> that the host mouse can be able to send scroll events to the guest qemu
+> screen without the need for the qemu screen to capture it so that I need
+> to "escape" it everytime I need to return to the host? And can we add it
+> to the list of options KVMTOOL_TEST_ENABLE selects?
 
-If an implementation supports AArch32 at EL3 there could be some
-physical (or some FPGA config) switch to choose between the two. But
-since AArch64 is mandated, I don't see why one would force AArch32 at
-EL3 and therefore all lower exception levels (and make a big part of the
-processor unused).
+All this is pretty promising idea for usability I think (plain "Profiles"
+is enough if not only distros will be there methink).
 
-It's also impossible for some software to detect whether it runs in
-AArch32 or AArch64. The instruction encodings are different, so any
-instructions would have to be targeted at one mode or the other,
-otherwise they are undefined.
-
-> On a related note: how does the endianess change between
-> exception levels on ARMv8? Can you switch endianess every time you
-> move from one level to another? Can any of the levels pick the
-> endianess for itself?
-
-Yes, a level higher than 0 can pick the endianness for itself using the
-SCTLR_ELx.EE bit. For user apps, the endianness is set by the kernel.
-The SETEND instruction to switch the endianness on the fly (usually in
-user space) is not available in AArch64 and has also been deprecated in
-AArch32 on ARMv8. It wasn't too popular.
-
--- 
-Catalin
+Replying to David's message (sorry for delay) I fear having a bunch of
+miniconfig files will end up in a mess. Maybe (maybe (!) I don't know since
+I've no time at moment to read kconfig code and I'm not sure if this
+is right direction at all) it would worth to add some new keyword to
+kconfig language, say "profile", which would tag symbol to a category
+if needed, and these categories included into profiles automatically.
+On the other hands this might end up in a mess as well.
