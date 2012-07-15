@@ -1,40 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752477Ab2GOKLm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jul 2012 06:11:42 -0400
+	id S1752482Ab2GOKML (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jul 2012 06:12:11 -0400
 Received: from mail-vc0-f174.google.com ([209.85.220.174]:34214 "EHLO
 	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751607Ab2GOKLg (ORCPT
+	with ESMTP id S1751624Ab2GOKMG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jul 2012 06:11:36 -0400
+	Sun, 15 Jul 2012 06:12:06 -0400
 MIME-Version: 1.0
 X-Originating-IP: [46.116.44.123]
-In-Reply-To: <CAK=Wgbb37rORbu0v-=U0NrNqcvk3FQ5DudW=J1ky32Hgv8+MPQ@mail.gmail.com>
-References: <1340375470-13097-1-git-send-email-sjur.brandeland@stericsson.com>
- <1340375470-13097-2-git-send-email-sjur.brandeland@stericsson.com>
- <CAK=WgbYcySfWMLBRCJ9B38Bew0ELBgORtnJbGgfqfMda_+3q9w@mail.gmail.com>
- <81C3A93C17462B4BBD7E272753C10579232F86BE47@EXDCVYMBSTM005.EQ1STM.local> <CAK=Wgbb37rORbu0v-=U0NrNqcvk3FQ5DudW=J1ky32Hgv8+MPQ@mail.gmail.com>
+In-Reply-To: <4FF335E3.5040509@codeaurora.org>
+References: <1341259857-17382-1-git-send-email-ohad@wizery.com> <4FF335E3.5040509@codeaurora.org>
 From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Sun, 15 Jul 2012 13:11:15 +0300
-Message-ID: <CAK=WgbbsYVLk+Ks69GsOb3BkPsi56Dp+cSsbDReg2M=Nsdj6xw@mail.gmail.com>
-Subject: Re: [RFC 1/4] remoteproc: Bugfix assign device address to carveout (noiommu)
-To: Sjur BRENDELAND <sjur.brandeland@stericsson.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjurbren@gmail.com>
+Date: Sun, 15 Jul 2012 13:11:46 +0300
+Message-ID: <CAK=WgbZ7ZoVqniJzfXXvq1krUWanteB73J=28GstnFmpWGHfvw@mail.gmail.com>
+Subject: Re: [PATCH] remoteproc: remove the get_by_name/put API
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjur.brandeland@stericsson.com>,
+        Loic Pallardy <loic.pallardy@stericsson.com>,
+        Ludovic BARRE <ludovic.barre@stericsson.com>,
+        Michal Simek <monstr@monstr.eu>,
+        Fernando Guzman Lugo <fernando.lugo@ti.com>,
+        Suman Anna <s-anna@ti.com>, Mark Grosen <mgrosen@ti.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 2, 2012 at 6:14 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
-> On Mon, Jul 2, 2012 at 6:11 PM, Sjur BRENDELAND
-> <sjur.brandeland@stericsson.com> wrote:
->>> To simplify things, will the below work for you?
+On Tue, Jul 3, 2012 at 9:11 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> On 07/02/12 13:10, Ohad Ben-Cohen wrote:
+>> Remove rproc_get_by_name() and rproc_put(), and the associated
+>> remoteproc infrastructure that supports it (i.e. klist and friends),
+>> because:
 >>
->> Looks good, feel free to add my Acked-by
+>> 1. No one uses them
+>> 2. Using them is highly discouraged, and any potential user
+>>    will be deeply scrutinized and encouraged to move.
+>>
+>> If a user, that absolutely can't live with the direct boot/shutdown
+>> model, does show up one day, then bringing this functionality back
+>> is going to be trivial.
+>>
+>> At this point though, keeping this functionality around is way too
+>> much of a maintenance burden.
+>>
 >
-> Thanks! I'll queue it up for 3.6.
+> Acked-by: Stephen Boyd <sboyd@codeaurora.org>
 
-Applied.
+Thanks, applied.
