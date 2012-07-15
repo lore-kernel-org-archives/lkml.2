@@ -1,76 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752036Ab2GOUWZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jul 2012 16:22:25 -0400
-Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:43543 "EHLO
-	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751122Ab2GOUWQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jul 2012 16:22:16 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av8EAPwkA1BtgjGI/2dsb2JhbABFhWmySIEIgiABAQUjBC8jEAsVAwICHwcCAhQlJBMbh3aoO5FagSCKIAmEZzJgA5U6gROIFIZggmGBVA
-Date: Sun, 15 Jul 2012 22:21:58 +0200
-From: Kurt Van Dijck <kurt.van.dijck@eia.be>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: Wolfgang Grandegger <wg@grandegger.com>, kernel-janitors@vger.kernel.org,
-        Marc Kleine-Budde <mkl@pengutronix.de>, linux-can@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/6] drivers/net/can/softing/softing_main.c: ensure a
- consistent return value in error case
-Message-ID: <20120715202158.GA602@vandijck-laurijssen.be>
-Mail-Followup-To: Julia Lawall <Julia.Lawall@lip6.fr>,
-	Wolfgang Grandegger <wg@grandegger.com>,
-	kernel-janitors@vger.kernel.org,
-	Marc Kleine-Budde <mkl@pengutronix.de>, linux-can@vger.kernel.org,
-	netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1342284188-19176-1-git-send-email-Julia.Lawall@lip6.fr>
- <1342284188-19176-3-git-send-email-Julia.Lawall@lip6.fr>
+	id S1752061Ab2GOUXN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jul 2012 16:23:13 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:41510 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751234Ab2GOUXB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jul 2012 16:23:01 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Andreas Schwab <schwab@linux-m68k.org>, John Stultz <johnstul@us.ibm.com>
+Subject: Re: [PATCH 6/6] hrtimer: Update hrtimer base offsets each hrtimer_interrupt
+Date: Sun, 15 Jul 2012 22:28:36 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, stable@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org,
+        Linux PM list <linux-pm@vger.kernel.org>
+References: <1341960205-56738-1-git-send-email-johnstul@us.ibm.com> <1341960205-56738-8-git-send-email-johnstul@us.ibm.com> <m2y5mlnj5z.fsf@igel.home>
+In-Reply-To: <m2y5mlnj5z.fsf@igel.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1342284188-19176-3-git-send-email-Julia.Lawall@lip6.fr>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201207152228.36740.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I see the problem, and the solution. You may add
-Acked-by: Kurt Van Dijck <kurt.van.dijck@eia.be>
+On Sunday, July 15, 2012, Andreas Schwab wrote:
+> This breaks resume on the iBook G4 (PowerBook6,7).  Apparently during or
+> before noirq resume the system is hanging by the same amount of time as
+> the system was sleeping.
 
-On Sat, Jul 14, 2012 at 06:43:04PM +0200, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> Typically, the return value desired for the failure of a function with an
-> integer return value is a negative integer.  In these cases, the return
-> value is sometimes a negative integer and sometimes 0, due to a subsequent
-> initialization of the return variable within the loop.
-> 
-> A simplified version of the semantic match that finds this problem is:
-> (http://coccinelle.lip6.fr/)
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> ---
->  drivers/net/can/softing/softing_main.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/net/can/softing/softing_main.c b/drivers/net/can/softing/softing_main.c
-> index a7c77c7..f2a221e 100644
-> --- a/drivers/net/can/softing/softing_main.c
-> +++ b/drivers/net/can/softing/softing_main.c
-> @@ -826,12 +826,12 @@ static __devinit int softing_pdev_probe(struct platform_device *pdev)
->  		goto sysfs_failed;
->  	}
->  
-> -	ret = -ENOMEM;
->  	for (j = 0; j < ARRAY_SIZE(card->net); ++j) {
->  		card->net[j] = netdev =
->  			softing_netdev_create(card, card->id.chip[j]);
->  		if (!netdev) {
->  			dev_alert(&pdev->dev, "failed to make can[%i]", j);
-> +			ret = -ENOMEM;
->  			goto netdev_failed;
->  		}
->  		priv = netdev_priv(card->net[j]);
-> 
+I'm able to reproduce this problem on Toshiba Portege R500 with similar
+symptoms, although that box sometimes hangs hard during resume from system
+suspend with the "caps lock" LED blinking.
+
+Reverting the patch fixes the problem 100% of the time.
+
+Thanks,
+Rafael
