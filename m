@@ -1,62 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752169Ab2GOUwo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jul 2012 16:52:44 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43683 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750978Ab2GOUwj (ORCPT
+	id S1751987Ab2GOU65 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jul 2012 16:58:57 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:33987 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750865Ab2GOU6v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jul 2012 16:52:39 -0400
-Date: Sun, 15 Jul 2012 21:52:35 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, Liam Girdwood <lrg@ti.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: tps62360: Convert to devm_gpio_request_one
-Message-ID: <20120715205235.GD4041@opensource.wolfsonmicro.com>
-References: <1341620913.3153.1.camel@phoenix>
+	Sun, 15 Jul 2012 16:58:51 -0400
+Date: Sun, 15 Jul 2012 13:58:46 -0700
+From: Joel Becker <jlbec@evilplan.org>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: 3.5-rc6 configfs BUG_ON
+Message-ID: <20120715205845.GE18682@dhcp-172-17-9-228.mtv.corp.google.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20120711192558.GA3393@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="E/DnYTRukya0zdZ1"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1341620913.3153.1.camel@phoenix>
-X-Cookie: You should go home.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120711192558.GA3393@redhat.com>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jul 11, 2012 at 03:25:58PM -0400, Dave Jones wrote:
+> kernel BUG at fs/configfs/dir.c:59!
+> invalid opcode: 0000 [#1] PREEMPT SMP 
+> CPU 4 
+> Modules linked in:
+>  ebtable_nat
+>  nf_tproxy_core
+>  hfsplus
+>  ppp_synctty
+>  async_tx
+>  raid6_pq raid10 shpchp fakephp aer_inject ptp pps_core target_core_file target_core_iblock target_core_pscsi tcm_loop target_core_mod vga16fb sysimgblt fb_sys_fops syscopyarea vgastate output platform_lcd lcd sysfillrect n_r3964 n_gsm nozomi jsm serio_raw altera_ps2 input_polldev sparse_keymap uinput ipt_ULOG fuse tun binfmt_misc nfnetlink caif_socket caif phonet bluetooth rfkill can llc2 pppoe pppox ppp_generic slhc irda crc_ccitt rds af_key decnet rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables kvm_intel kvm crc32c_intel ghash_clmulni_intel microcode usb_debug pcspkr i2c_i801 e1000e nfsd nfs_acl auth_rpcgss lockd sunrpc i915 video i2c_algo_bit drm_kms_helper drm i2c_core [last unloaded: scsi_wait_scan]
+> 
+> Pid: 24175, comm: trinity-main Not tainted 3.5.0-rc6+ #102 
+> RIP: 0010:[<ffffffff812562fb>]  [<ffffffff812562fb>] configfs_d_iput+0x8b/0xa0
+> RSP: 0018:ffff88014325be08  EFLAGS: 00010282
+> RAX: ffffffff81256270 RBX: ffff88014159cb98 RCX: 000000000000c7d0
+> RDX: ffff880006bacd60 RSI: ffff880045f31540 RDI: ffff88000adf14d0
+> RBP: ffff88014325be18 R08: 0000000000000000 R09: 0000000000000000
+> R10: 0000000000000001 R11: 0000000000000000 R12: ffff880045f31540
+> R13: ffff8801238f79d0 R14: 0000000000000001 R15: 00000000053f411b
+> FS:  00007ff8895fa740(0000) GS:ffff880148400000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> CR2: 00000038e4e10310 CR3: 0000000140c57000 CR4: 00000000001407e0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process trinity-main (pid: 24175, threadinfo ffff88014325a000, task ffff880006bacd60)
+> Stack:
+>  ffff88000adf14d0 ffff880045f31540 ffff88014325be48 ffffffff811ec74f
+>  ffff88000adf14d0 ffff8801238f79d0 ffff880045f31540 ffff88000adf1530
+>  ffff88014325be78 ffffffff811ec8a2 ffff88014325beb8 00000000053f40b0
+> Call Trace:
+>  [<ffffffff811ec74f>] d_kill+0xaf/0x120
+>  [<ffffffff811ec8a2>] dput+0xe2/0x1d0
+>  [<ffffffff811dfaea>] path_put+0x1a/0x30
+>  [<ffffffff811d9705>] vfs_fstatat+0x55/0x70
+>  [<ffffffff811d973e>] vfs_lstat+0x1e/0x20
+>  [<ffffffff811d99ca>] sys_newlstat+0x1a/0x40
+>  [<ffffffff81696aed>] system_call_fastpath+0x1a/0x1f
+> Code: f6 43 40 01 75 eb 48 8b 7b 50 e8 41 4d f6 ff 48 8b 3d c2 bf 7f 01 48 89 de e8 a2 52 f6 ff 4c 89 e7 e8 1a b5 f9 ff 5b 41 5c 5d c3 <0f> 0b be 9c 00 00 00 48 c7 c7 30 a2 9e 81 e8 42 2e e1 ff eb a7 
+> RIP  [<ffffffff812562fb>] configfs_d_iput+0x8b/0xa0
+>  RSP <ffff88014325be08>
+> ---[ end trace 65e130035db36f7d ]---
+> 
+>   58         if (sd) {
+>   59                 BUG_ON(sd->s_dentry != dentry);
+> 
 
---E/DnYTRukya0zdZ1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Dave,
+	What were you doing at the time?  Is this ocfs2, dlm, target, or
+what?
 
-On Sat, Jul 07, 2012 at 08:28:33AM +0800, Axel Lin wrote:
-> Use devm_gpio_request_one to save a few error handling code.
-> Also remove trivial comment for tps62360_remove.
+Joel
 
-I applied Laxman's earlier version of this.
 
---E/DnYTRukya0zdZ1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+-- 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+"Drake!  We're LEAVING!"
 
-iQIcBAEBAgAGBQJQAy2BAAoJEBus8iNuMP3dGrYP/RbkIWLoEbWHM6i/+4Xc/etl
-wcW6BQQFW5QrcU9DzKI4Gw+pujE1+aLGe+H+eNVSfMDq/qpTgVFlqPtxsEcdfvoD
-zOOCXa/WdVSJckujLZNxDFZl3zwkuDP6nyQ0h6awF8mAZLcr4QHcY5KfMvjl5nr2
-vOq/P1grSbDb3O33rf7ZpDu2yBQjD7z2QIBwgNDvc7JgYMRCF5Pe7yDMlTNEJxIG
-0VeGYs5mEEIY4BQhTyQ1TJRxthLrcxDTm9+cHp5KHi7xZ6oPTTbuj0X0EsNxa2X3
-GtzElqvKeh/JyadaxwdpUiGaTk+9toO8ETN033BcWLzzk/doKHOcDn4wnu+Un2E2
-zhHqm5HI/eeCF2BjJORofyC/5mJWPvnrDVoEALdX4kz+Fsu4TeUphTjghZ76JJ0Z
-Io6rl8YjJ0PBOVa2CPdwsu6irdiuFfz+IH0eql/FfZO7rzEiajhr1LL3pgcvfwUc
-WQ2/qtQOIDgm7oUtvbg+fIu33EeVBipED0wWRCo9DhjvXox61FrRd6w1YQ0jhv/J
-uV3LCASAkIneinHPdCazkQ279stZDygbMuLUvlEROgsfbr5AgfCcY36tFZG46VOw
-IFRA5wzVq23e92v3nEJPuf0Ng8pjYRukvye3VoKL39eSf5MnCokgoJosjy7LMxFE
-3ujRq/1UtYJPNzh64kEB
-=9rMU
------END PGP SIGNATURE-----
-
---E/DnYTRukya0zdZ1--
+			http://www.jlbec.org/
+			jlbec@evilplan.org
