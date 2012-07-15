@@ -1,69 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752310Ab2GODxF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Jul 2012 23:53:05 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:24946 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751727Ab2GODw7 (ORCPT
+	id S1751379Ab2GOHKK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jul 2012 03:10:10 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:38804 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750952Ab2GOHKG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Jul 2012 23:52:59 -0400
-Message-ID: <50023E88.4030004@oracle.com>
-Date: Sun, 15 Jul 2012 11:52:40 +0800
-From: Joe Jin <joe.jin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Sun, 15 Jul 2012 03:10:06 -0400
+Content-Type: text/plain; charset=gbk; format=flowed; delsp=yes
+To: "Corrado Zoccolo" <czoccolo@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
+Subject: Re: question about IO-sched
+References: <op.whbsn0qvn27o5l@gaoqiang-d1.corp.qihoo.net>
+ <CADX3swpSAt9gdSgYihOJKs1=geQkmB04rCVTSgh=DEXQx7QPmQ@mail.gmail.com>
+Date: Sun, 15 Jul 2012 15:08:12 +0800
 MIME-Version: 1.0
-To: "Dave, Tushar N" <tushar.n.dave@intel.com>
-CC: "e1000-devel@lists.sf.net" <e1000-devel@lists.sf.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: 82571EB: Detected Hardware Unit Hang
-References: <4FFA9B96.6040901@oracle.com> <4FFCF314.6020400@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA891274EEDD7@ORSMSX102.amr.corp.intel.com> <4FFD0908.6080506@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA891274EF8AD@ORSMSX102.amr.corp.intel.com> <4FFE3505.8060407@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA891274F018D@ORSMSX102.amr.corp.intel.com> <4FFE3D27.7020500@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA891274F01BE@ORSMSX102.amr.corp.intel.com> <4FFE40A9.4060807@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA891274F02D7@ORSMSX102.amr.corp.intel.com> <4FFE6BB9.4060106@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA891274F033B@ORSMSX102.amr.corp.intel.com> <4FFE787B.9050201@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA891274F0ACC@ORSMSX102.amr.corp.intel.com> <4FFF61BD.1060604@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA891274F11FF@ORSMSX102.amr.corp.intel.com> <4FFFA532.1030208@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA891274F2354@ORSMSX102.amr.corp.intel.com>
-In-Reply-To: <061C8A8601E8EE4CA8D8FD6990CEA891274F2354@ORSMSX102.amr.corp.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Transfer-Encoding: 8BIT
+From: gaoqiang <gaoqiangscut@gmail.com>
+Organization: qihoo
+Message-ID: <op.whg7fy00n27o5l@gaoqiang-d1.corp.qihoo.net>
+In-Reply-To: <CADX3swpSAt9gdSgYihOJKs1=geQkmB04rCVTSgh=DEXQx7QPmQ@mail.gmail.com>
+User-Agent: Opera Mail/12.00 (Win32)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/12 11:42, Dave, Tushar N wrote:
->> -----Original Message-----
->> From: Joe Jin [mailto:joe.jin@oracle.com]
->> Sent: Thursday, July 12, 2012 9:34 PM
->> To: Dave, Tushar N
->> Cc: e1000-devel@lists.sf.net; netdev@vger.kernel.org; linux-
->> kernel@vger.kernel.org
->> Subject: Re: 82571EB: Detected Hardware Unit Hang
+many thanks. but why the sys_read operation hangs on sync_page ? there are  
+still
+many free memory.I mean ,the actually free memory,excluding the various  
+kinds of
+caches or buffers.
+
+
+在 Fri, 13 Jul 2012 22:15:31 +0800，Corrado Zoccolo <czoccolo@gmail.com>  
+写道:
+
+> Hi,
+> the catch is that writes are "fire and forget", so they keep accumulating
+> in the I/O sched, and there is always plenty of them to schedule (unless
+> you explicitly make sync writes).
+>
+> The reader, instead, waits for the result of each read operation before
+> scheduling a new read, so there is at most one outstanding read, and some
+> time nothing.
+>
+> The deadline scheduler is work conserving, meaning that it never leaves  
+> the
+> disk idle when there is work queued, and most of the time after an
+> operation completes, there is only write work queued, so you see much  
+> more
+> writes being sent to the device.
+>
+> Only schedulers that delay writes waiting for reads (as Anticipatory in  
+> old
+> kernels, and now CFQ) can achieve higher read to write ratios.
+>
+> Cheers
+> Corrado
+>
+> On Thu, Jul 12, 2012 at 11:01 AM, gaoqiang <gaoqiangscut@gmail.com>  
+> wrote:
+>
+>> Hi,all
 >>
->> On 07/13/12 12:10, Dave, Tushar N wrote:
->>>> -----Original Message-----
->>>> From: Joe Jin [mailto:joe.jin@oracle.com]
->>>> Sent: Thursday, July 12, 2012 4:46 PM
->>>> To: Dave, Tushar N
->>>> Cc: e1000-devel@lists.sf.net; netdev@vger.kernel.org; linux-
->>>> kernel@vger.kernel.org
->>>> Subject: Re: 82571EB: Detected Hardware Unit Hang
->>>>
->>> Thanks for sending full dmesg log. I am still investigating. I think
->> this issue can occur if two PCIe link partner *i.e pcie bridge and pcie
->> device do not have same max payload size.
->>> I need 2 more info.
->>> 1) PBA number of the card.
+>>         I have long known that deadline is read-prefered. but a simple
+>> test gives the opposite result.
 >>
->> This is a remote server and I could not get this.
+>>         with two processes running at the same time,one for read and one
+>> for write.actually,they did nothing bug IO operation.
+>>         while(true)
+>>         {
+>>                 read();
+>>         }
+>>         the other:
+>>         while(true)
+>>         {
+>>                 write();
+>>         }
 >>
->>> 2) full lspci -vvv output of entire system 'after you have changed max
->> payload size to 128'.
-> 
-> Somehow setting max payload to 256 from BIOS does not set this value for all devices. I believe this is a BIOS bug.
-> All devices in path from root complex to 82571, should have same max payload size otherwise it can cause hang. When you set max payload to 128 from BIOS, all device in path from root complex to 82571 got assigned same max payload size. This resolves the issue.
-> 
-> I hope this helps.
+>>         with deadline IO-sched  and ext4 filesystem.as a result, read
+>> ratio was about below 3M/s.and write about 100M/s. I have tested both
+>> kernel-2.6.18 and kernel-2.6.32,getting the same result.
+>>
+>>         I add some debug information in the kernel and recompile,found
+>> that,it has little to do with IO-sched layer because read request  
+>> dropped
+>> into deadline was 5% of write request .from /proc/<pid>/stack,the read
+>> process hands on sync_page most of the time.
+>>         what is the matter ? anyone help me ?
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel"  
+>> in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at   
+>> http://vger.kernel.org/**majordomo-info.html<http://vger.kernel.org/majordomo-info.html>
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>
+>
+>
 
-Tushar,
 
-Thanks a lot for your help, will send this to hardware engineer.
-
-Regards,
-Joe
-
+-- 
+使用 Opera 革命性的电子邮件客户程序: http://www.opera.com/mail/
