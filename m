@@ -1,104 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754049Ab2GPWRM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 18:17:12 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:41596 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753118Ab2GPWQ6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 18:16:58 -0400
-Date: Mon, 16 Jul 2012 15:15:56 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, Josh Triplett <josh@joshtriplett.org>,
-        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC PATCH 00/11] rcu: Userspace RCU extended quiescent state v2
-Message-ID: <20120716221556.GH2403@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1342031200-22731-1-git-send-email-fweisbec@gmail.com>
+	id S1754031Ab2GPWWH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 18:22:07 -0400
+Received: from mail.lang.hm ([64.81.33.126]:54144 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753212Ab2GPWWF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 18:22:05 -0400
+Date: Mon, 16 Jul 2012 15:21:20 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Borislav Petkov <bp@amd64.org>, Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Dave Jones <davej@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
+        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
+        Debian Kernel Team <debian-kernel@lists.debian.org>,
+        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Sasha Levin <levinsasha928@gmail.com>,
+        Asias He <asias.hejun@gmail.com>,
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: Re: [opensuse-kernel] Re: [RFC] Simplifying kernel configuration
+ for distro issues
+In-Reply-To: <CA+55aFw7zdyPpDEdpDbYWc-Z++v_kDQHD3Z+-QwPszh+9bU+tQ@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1207161451020.32545@asgard.lang.hm>
+References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com> <1342212885.25704.4.camel@lade.trondhjem.org> <CAFLxGvxxWodD97=78218wc+tuigAFsNK_PdroDfb4BWTZoxxUw@mail.gmail.com> <20120714103716.GD26559@liondog.tnic>
+ <CAOJsxLGHQuuXqDD-1SNhL7Ly1-heCYFLzqj3SLh4xzmP9NR5GQ@mail.gmail.com> <20120715101434.GA18144@aftab.osrc.amd.com> <CAOJsxLGBCQ6C-3M0ZdTfVPqnmOKqUE9+78Mhf+67TksmVojuuQ@mail.gmail.com> <20120715211848.GA21167@aftab.osrc.amd.com> <20120715214819.GA1990@moon>
+ <alpine.DEB.2.02.1207151459480.20176@asgard.lang.hm> <20120716082418.GC24327@aftab.osrc.amd.com> <alpine.DEB.2.02.1207160937330.20176@asgard.lang.hm> <CA+55aFwwmMbFr4HXTFxF_MeM_n8bfiXfPPgCALTOc1HvidVt1Q@mail.gmail.com> <alpine.DEB.2.02.1207161222380.32545@asgard.lang.hm>
+ <CA+55aFw7zdyPpDEdpDbYWc-Z++v_kDQHD3Z+-QwPszh+9bU+tQ@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1342031200-22731-1-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12071622-7282-0000-0000-00000AFA4568
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 11, 2012 at 08:26:29PM +0200, Frederic Weisbecker wrote:
-> Hi,
-> 
-> There are significant changes this time. I reverted back to using
-> a TIF flag to hook on syscalls slow path and put the hooks on
-> high level exception handlers instead of low level ones.
-> 
-> It makes the code more portable between x86-32 and x86-64, it
-> makes the hooks clearer and easier to review and the overhead
-> is lowered in the off-case. This can be even better if we use
-> jump labels later.
+On Mon, 16 Jul 2012, Linus Torvalds wrote:
 
-Thank you, Frederic, I have queued these:
+> On Mon, Jul 16, 2012 at 12:26 PM,  <david@lang.hm> wrote:
+>>
+>> Some of the proposed ways to implement the minimum distro kernel would not
+>> allow you to override the distro defaults because they would be implemented
+>> by setting dependancies, not by selecting options that you as the user could
+>> then unselect.
+>
+> The sanest thing to do is just a list of "select" statements. And in
+> any case it would have to depend on the "distro config" entry, so EVEN
+> THEN you could just create the Kconfig file, then edit out the distro
+> config thing, and then do whatever you want.
+>
+> So I don't see why you're arguing. Even if it is very much a "if you
+> select the FEDORA_X kconfig option, that will automatically force all
+> those other options on", I don't see why you are so upset. Just set
+> it, generate your kconfig, and then edit to file to NOT set the distro
+> config. Then you can do whatever the hell you want.
+>
+> What I'm upset about is simply the fact that EVEN IF your arguments
+> were valid (and I don't think they are: see above for trivial fix) I
+> think your arguments are bogus, for the simple reason that what you
+> ask for isn't even what the whole "distro minconfig" is at all about.
+> It's about normal users who absolutely DO NOT want to edit the config.
+> People who want to say "I know I have intel/amd/nvidia graphics,
+> standard USB, and no CD-ROM drive". They couldn't care *less* about
+> SELINUX, and in fact that very issue is why we should have this.
+>
+> Anybody who says "I want to run Fedora without SELINUX because I do my
+> own security development" is by *definition* not relevant to the whole
+> feature.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/idle
+Don't mistake the example for the feature. the SELINUX thing is just an 
+example. As Alan Cox commented, taking a distro config and disabling one 
+thing is a common troubleshooting request from kernel developers.
 
-I had to rework patch 4 a bit to take into account that I dropped the
-rcu_switch_from() patch, please check it to make sure that I didn't
-rework it out of existence.
+I am not that familiar with the internals of kconfig, but my understanding 
+was that if you select feature X that then turns on A, B, and C, if you 
+then edit the .config file to remove feature X features A, B, and C will 
+be turned off the next time you do a make *config. If this is not the 
+case, then it's not as horrible as I was thinking.
 
-							Thanx, Paul
+However, there's still the question of how many different variations of 
+how many different distros are you going to accept into the upstream 
+kernel. How many different versions of Fedora are you going to be willing 
+to have in the menu? This seems to me to be the defconfig problem 
+multiplied by many distros and many versions of each distro. If we can 
+eliminate this combinational explosion by referencing something outside of 
+the kernel tree, it seems to me that it's a big win.
 
-> Thanks.
-> 
-> git://github.com/fweisbec/linux-dynticks.git
-> 	rcu/user-2
-> 
-> Frederic Weisbecker (11):
->   rcu: Settle config for userspace extended quiescent state
->   rcu: Allow rcu_user_enter()/exit() to nest
->   rcu: Ignore userspace extended quiescent state by default
->   rcu: Switch task's syscall hooks on context switch
->   x86: Syscall hooks for userspace RCU extended QS
->   x86: Exception hooks for userspace RCU extended QS
->   rcu: Exit RCU extended QS on kernel preemption after irq/exception
->   rcu: Exit RCU extended QS on user preemption
->   x86: Use the new schedule_user API on userspace preemption
->   x86: Exit RCU extended QS on notify resume
->   rcu: Userspace RCU extended QS selftest
-> 
->  arch/Kconfig                       |   10 ++++++
->  arch/um/drivers/mconsole_kern.c    |    2 +-
->  arch/x86/Kconfig                   |    1 +
->  arch/x86/include/asm/rcu.h         |   20 +++++++++++
->  arch/x86/include/asm/thread_info.h |   10 ++++--
->  arch/x86/kernel/entry_64.S         |    8 ++--
->  arch/x86/kernel/ptrace.c           |    5 +++
->  arch/x86/kernel/signal.c           |    4 ++
->  arch/x86/kernel/traps.c            |   30 ++++++++++++----
->  arch/x86/mm/fault.c                |   13 ++++++-
->  include/linux/rcupdate.h           |   10 ++++++
->  include/linux/sched.h              |   20 ++++++-----
->  init/Kconfig                       |   18 ++++++++++
->  kernel/rcutree.c                   |   64 +++++++++++++++++++++++++++++++-----
->  kernel/rcutree.h                   |    4 ++
->  kernel/sched/core.c                |   10 +++++-
->  16 files changed, 192 insertions(+), 37 deletions(-)
->  create mode 100644 arch/x86/include/asm/rcu.h
-> 
-> -- 
-> 1.7.5.4
-> 
+As Alan Cox put it in code
 
+> make distroconfig
+>       [cp /etc/system-kconfig(.$ARCH?) .config
+>        make oldconfig]
+> 
+> make menuconfig (if you want to customise)
+
+with the distros providing /etc/system-kconfig files seems far more 
+scalable as well as far more flexible than either setting up a lot of 
+dependancies for new tags or adding a field to every option to make it 
+part of some profile.
+
+This approach works both for the users who just want to say "I know I have 
+intel/amd/nvidia graphics, standard USB, and no CD-ROM drive", for the 
+users who know a bit more, but want to start with a known point, and for 
+the production sysadmins who want to use the same mechanism for other 
+purposes (standardizing builds for systems as kernel versions move 
+forward)
+
+David Lang
