@@ -1,75 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753308Ab2GPU4j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 16:56:39 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:57671 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751919Ab2GPU4g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 16:56:36 -0400
+	id S1753161Ab2GPVDg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 17:03:36 -0400
+Received: from mga01.intel.com ([192.55.52.88]:25792 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752476Ab2GPVDd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 17:03:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="193579467"
+Date: Tue, 17 Jul 2012 00:05:15 +0300
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@openvz.org>
+Cc: Serge Hallyn <serge.hallyn@canonical.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "Dmitry V. Levin" <ldv@altlinux.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Doug Ledford <dledford@redhat.com>, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org
+Subject: Re: [PATCH v2] ns: do not block exit_task_namespaces() for a long
+ time
+Message-ID: <20120716210515.GA17813@otc-wbsnb-06>
+References: <20120713140806.b3d0fda8.akpm@linux-foundation.org>
+ <1342451364-14787-1-git-send-email-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1207161222380.32545@asgard.lang.hm>
-References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com>
- <1342212885.25704.4.camel@lade.trondhjem.org> <CAFLxGvxxWodD97=78218wc+tuigAFsNK_PdroDfb4BWTZoxxUw@mail.gmail.com>
- <20120714103716.GD26559@liondog.tnic> <CAOJsxLGHQuuXqDD-1SNhL7Ly1-heCYFLzqj3SLh4xzmP9NR5GQ@mail.gmail.com>
- <20120715101434.GA18144@aftab.osrc.amd.com> <CAOJsxLGBCQ6C-3M0ZdTfVPqnmOKqUE9+78Mhf+67TksmVojuuQ@mail.gmail.com>
- <20120715211848.GA21167@aftab.osrc.amd.com> <20120715214819.GA1990@moon>
- <alpine.DEB.2.02.1207151459480.20176@asgard.lang.hm> <20120716082418.GC24327@aftab.osrc.amd.com>
- <alpine.DEB.2.02.1207160937330.20176@asgard.lang.hm> <CA+55aFwwmMbFr4HXTFxF_MeM_n8bfiXfPPgCALTOc1HvidVt1Q@mail.gmail.com>
- <alpine.DEB.2.02.1207161222380.32545@asgard.lang.hm>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 16 Jul 2012 13:56:14 -0700
-X-Google-Sender-Auth: 9tA39WR6Bs0eJtHvu22KQrRSV2Y
-Message-ID: <CA+55aFw7zdyPpDEdpDbYWc-Z++v_kDQHD3Z+-QwPszh+9bU+tQ@mail.gmail.com>
-Subject: Re: [opensuse-kernel] Re: [RFC] Simplifying kernel configuration for
- distro issues
-To: david@lang.hm
-Cc: Borislav Petkov <bp@amd64.org>, Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Dave Jones <davej@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
-        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
-        Debian Kernel Team <debian-kernel@lists.debian.org>,
-        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Sasha Levin <levinsasha928@gmail.com>,
-        Asias He <asias.hejun@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7AUc2qLy4jB3hD7Z"
+Content-Disposition: inline
+In-Reply-To: <1342451364-14787-1-git-send-email-kirill.shutemov@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 16, 2012 at 12:26 PM,  <david@lang.hm> wrote:
->
-> Some of the proposed ways to implement the minimum distro kernel would not
-> allow you to override the distro defaults because they would be implemented
-> by setting dependancies, not by selecting options that you as the user could
-> then unselect.
 
-The sanest thing to do is just a list of "select" statements. And in
-any case it would have to depend on the "distro config" entry, so EVEN
-THEN you could just create the Kconfig file, then edit out the distro
-config thing, and then do whatever you want.
+--7AUc2qLy4jB3hD7Z
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-So I don't see why you're arguing. Even if it is very much a "if you
-select the FEDORA_X kconfig option, that will automatically force all
-those other options on", I don't see why you are so upset. Just set
-it, generate your kconfig, and then edit to file to NOT set the distro
-config. Then you can do whatever the hell you want.
+On Mon, Jul 16, 2012 at 06:09:24PM +0300, Kirill A. Shutemov wrote:
+> I also move synchronize_rcu() inside free_nsproxy(). It fixes racy
+> put_nsproxy() which calls free_nsproxy() without synchronize_rcu().
+> I guess it was missed during switch to RCU (see cf7b708).
 
-What I'm upset about is simply the fact that EVEN IF your arguments
-were valid (and I don't think they are: see above for trivial fix) I
-think your arguments are bogus, for the simple reason that what you
-ask for isn't even what the whole "distro minconfig" is at all about.
-It's about normal users who absolutely DO NOT want to edit the config.
-People who want to say "I know I have intel/amd/nvidia graphics,
-standard USB, and no CD-ROM drive". They couldn't care *less* about
-SELINUX, and in fact that very issue is why we should have this.
+I was wrong here. No races. RCU protects task->ns_proxy, not ns_proxy
+itself.
+Sorry for misleading.
 
-Anybody who says "I want to run Fedora without SELINUX because I do my
-own security development" is by *definition* not relevant to the whole
-feature.
+--=20
+ Kirill A. Shutemov
 
-            Linus
+--7AUc2qLy4jB3hD7Z
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQBIILAAoJEAd+omnVudOM0JAQAM5ZT5sbZGDBWZlH0re17ha6
+YrmbapIDQQVnucZfgibtWnQFPxE03AxoMX2JKYha+8CFSOVD52LEFlHW790nPEhb
+v1b0LbVINI/FH/Wl0F/ot4STQWZBueNGyHLRe1YHzktNf45ghRBxQfjzyMLa63rw
+PTdjWM2r/IGhk4Bpb20bHJqJUzUv1pcdhWAbleXPbOCyy8g8orprfbXTGqLUBZun
+XkwloEStjtpanv5Nkq7eR0pSKwmJsVXXKYGn9t850Wz3bMairwSI5GQdhjWM3Fhy
+0aLRZUgwA03PN2oi7Ycclg4y2gJo08KWUUDDZFW54EltFAbyUrVB9kV0N0rT1ohf
+4OMKbMEvRflAfmA8s6NYGjX49wFbX/fGOxi5lLvVsouwrVeV2iikfjs+Sq73CeYe
+9vBDyI+UBCgsREtokpIqzCZNtMwlrHxw2jq4sWCQ8aUWt7DmKXymJMxXoS/8eOoa
+I73+CwqLpY1Vc3iIqOnq5HQdrVqulFcqsE++hQ3f7vSoHi6g2DbiKOsXRvKlM/DI
+nEW94j5cRNeKwUrqDkfWAt0BrSczaXGk6emy+4R73f/qwvgpbz6omazXIwdgTe24
+ax0cAxd8qPcywRaQOKODP8bhlbIf9CspJcjHRvbVVhWQMr45vxyH+7rWF93kY2fU
++7kvzCIfzOIAoMWZN3re
+=jMa7
+-----END PGP SIGNATURE-----
+
+--7AUc2qLy4jB3hD7Z--
