@@ -1,87 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752857Ab2GPPj1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 11:39:27 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:56161 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751192Ab2GPPjZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 11:39:25 -0400
-Message-ID: <1342452837.7270.15.camel@brekeke>
-Subject: Re: [PATCH 0/5] ubi: Fix bad PEBs reserve caclulation
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Shmulik Ladkani <shmulik.ladkani@gmail.com>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>,
-        Richard Genoud <richard.genoud@gmail.com>
-Date: Mon, 16 Jul 2012 18:33:57 +0300
-In-Reply-To: <1341389164-24409-1-git-send-email-shmulik.ladkani@gmail.com>
-References: <1341389164-24409-1-git-send-email-shmulik.ladkani@gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-Dhl9Pvi76eINPu6LcG+i"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1753005Ab2GPPj7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 11:39:59 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:32028 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751192Ab2GPPjz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 11:39:55 -0400
+X-IronPort-AV: E=Sophos;i="4.77,594,1336374000"; 
+   d="scan'208";a="666130366"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@openvz.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "Dmitry V. Levin" <ldv@altlinux.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Doug Ledford <dledford@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "containers@lists.linux-foundation.org" 
+	<containers@lists.linux-foundation.org>
+Subject: Re: [PATCH v2] ns: do not block exit_task_namespaces() for a long
+ time
+Thread-Topic: [PATCH v2] ns: do not block exit_task_namespaces() for a long
+ time
+Thread-Index: AQHNY2k0KBMAdfA5Wke5aMR9d6abZQ==
+Date: Mon, 16 Jul 2012 15:39:36 +0000
+Message-ID: <1342453174.4648.6.camel@lade.trondhjem.org>
+References: <20120713140806.b3d0fda8.akpm@linux-foundation.org>
+	 <1342451364-14787-1-git-send-email-kirill.shutemov@linux.intel.com>
+In-Reply-To: <1342451364-14787-1-git-send-email-kirill.shutemov@linux.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.115]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <456F3DED7AFE6247ACCD1429DC1519D2@tahoe.netapp.com>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q6GFe5A7027537
 
+On Mon, 2012-07-16 at 18:09 +0300, Kirill A. Shutemov wrote:
+> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> 
+> On exiting of the last task in a namespace we need to trigger freeing of
+> the namespace. Currently, we call synchronize_rcu() and free_nsproxy()
+> directly on do_exit() path.
+> 
+> On my machine synchronize_rcu() blocks for about 0.01 seconds. For
+> comparing: normal exit_group() syscall takes less than 0.0003 seconds.
+> 
+> Let's offload synchronize_rcu() and free_nsproxy() to a workqueue.
+> 
+> I also move synchronize_rcu() inside free_nsproxy(). It fixes racy
+> put_nsproxy() which calls free_nsproxy() without synchronize_rcu().
+> I guess it was missed during switch to RCU (see cf7b708).
+> 
+> Microbenchmark:
+> 
+> : #define _GNU_SOURCE
+> : #include <unistd.h>
+> : #include <sched.h>
+> : #include <stdlib.h>
+> : #include <sys/wait.h>
+> :
+> : int
+> : main(void)
+> : {
+> :       int i;
+> :       for (i = 0; i < 1024; i++) {
+> :               if (fork()) {
+> :                       wait(NULL);
+> :                       continue;
+> :               }
+> :               unshare(CLONE_NEWIPC);
+> :               exit(0);
+> :       }
+> :       return 0;
+> : }
+> 
+> Before the patch:
+> 
+> real    0m8.335s
+> user    0m0.000s
+> sys     0m0.265s
+> 
+> After:
+> 
+> real    0m0.569s
+> user    0m0.001s
+> sys     0m0.154s
+> 
+> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+> ---
+> 
+> v2:
+>  - Updated description.
+> 
+> ---
+>  include/linux/nsproxy.h |    1 +
+>  kernel/nsproxy.c        |   34 +++++++++++++++++++++++-----------
+>  2 files changed, 24 insertions(+), 11 deletions(-)
+> 
+> diff --git a/include/linux/nsproxy.h b/include/linux/nsproxy.h
+> index cc37a55..1d26be7 100644
+> --- a/include/linux/nsproxy.h
+> +++ b/include/linux/nsproxy.h
+> @@ -24,6 +24,7 @@ struct fs_struct;
+>   */
+>  struct nsproxy {
+>  	atomic_t count;
+> +	struct work_struct free_nsproxy_work;
+>  	struct uts_namespace *uts_ns;
+>  	struct ipc_namespace *ipc_ns;
+>  	struct mnt_namespace *mnt_ns;
+> diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
+> index b576f7f..ebc7d40 100644
+> --- a/kernel/nsproxy.c
+> +++ b/kernel/nsproxy.c
+> @@ -41,13 +41,17 @@ struct nsproxy init_nsproxy = {
+>  #endif
+>  };
+>  
+> +static void free_nsproxy_work(struct work_struct *work);
+> +
+>  static inline struct nsproxy *create_nsproxy(void)
+>  {
+>  	struct nsproxy *nsproxy;
+>  
+>  	nsproxy = kmem_cache_alloc(nsproxy_cachep, GFP_KERNEL);
+> -	if (nsproxy)
+> +	if (nsproxy) {
+>  		atomic_set(&nsproxy->count, 1);
+> +		INIT_WORK(&nsproxy->free_nsproxy_work, free_nsproxy_work);
+> +	}
+>  	return nsproxy;
+>  }
+>  
+> @@ -166,6 +170,14 @@ out:
+>  
+>  void free_nsproxy(struct nsproxy *ns)
+>  {
+> +	/*
+> +	 * wait for others to get what they want from this nsproxy.
+> +	 *
+> +	 * cannot release this nsproxy via the call_rcu() since
+> +	 * put_mnt_ns() will want to sleep
+> +	 */
+> +	synchronize_rcu();
+> +
+>  	if (ns->mnt_ns)
+>  		put_mnt_ns(ns->mnt_ns);
+>  	if (ns->uts_ns)
+> @@ -178,6 +190,14 @@ void free_nsproxy(struct nsproxy *ns)
+>  	kmem_cache_free(nsproxy_cachep, ns);
+>  }
+>  
+> +static void free_nsproxy_work(struct work_struct *work)
+> +{
+> +	struct nsproxy *ns = container_of(work, struct nsproxy,
+> +			free_nsproxy_work);
+> +
+> +	free_nsproxy(ns);
+> +}
+> +
+>  /*
+>   * Called from unshare. Unshare all the namespaces part of nsproxy.
+>   * On success, returns the new nsproxy.
+> @@ -215,16 +235,8 @@ void switch_task_namespaces(struct task_struct *p, struct nsproxy *new)
+>  
+>  	rcu_assign_pointer(p->nsproxy, new);
+>  
+> -	if (ns && atomic_dec_and_test(&ns->count)) {
+> -		/*
+> -		 * wait for others to get what they want from this nsproxy.
+> -		 *
+> -		 * cannot release this nsproxy via the call_rcu() since
+> -		 * put_mnt_ns() will want to sleep
+> -		 */
+> -		synchronize_rcu();
+> -		free_nsproxy(ns);
+> -	}
+> +	if (ns && atomic_dec_and_test(&ns->count))
+> +		schedule_work(&ns->free_nsproxy_work);
 
---=-Dhl9Pvi76eINPu6LcG+i
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+What's wrong with using call_rcu()? The above will cause a workqueue
+thread to block for no good reason.
 
-On Wed, 2012-07-04 at 11:05 +0300, Shmulik Ladkani wrote:
-> The existing mechanism of reserving PEBs for bad PEB handling has two
-> flaws:
-> - It is calculated as a percentage of good PEBs instead of total PEBs.
-> - There's no limit on the amount of PEBs UBI reserves for future bad
->   eraseblock handling.
+>  }
+>  
+>  void exit_task_namespaces(struct task_struct *p)
 
-Thanks Shmulik - I did not have time to look at the patches, but the
-overall description looks good. I will review the patches as soon as I
-can. Thanks for making sense of this mess.
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-But one more think is the mtd web-site. I've grepped for '1%' and there
-are plenty of them. I've changed them all to 2% more or less
-mechanically - only cleaned up one section by removing out-of-date
-information. Would you please grep for '2%' and review if the
-information there is reasonable? Also, would you please add some more
-info to this FAQ entry:
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
-http://linux-mtd.infradead.org/faq/ubi.html#L_bad_blocks_exceeded
-
-Or even better if you could write a separate section for this stuff in
-the documentation, then you could remove that FAQ entry completely.
-
-Thanks a lot!
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-Dhl9Pvi76eINPu6LcG+i
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJQBDRlAAoJECmIfjd9wqK0JSMP/R+BDZ/b8wnvd0LbSZEG7UZv
-iMjCowxtL9l2dhKaKjl+beqa9rfrHcPY/osZPvOdx528o1RN3MnE/Zl2dwzvtxOB
-jaZs4fkpDSRYJipfz6vweYUR7TjwuTHk2hjtONtS6iLb0WuO0+3VaaVho+6oowSz
-QUKR+icU9tP5h69jxqW+BJf3fWdFZcqx/MgEoeQhFN7TGNBTV5aiYsAmQHWZGxYG
-sb6l9cdweDPDSbWBihUhphSDVej+kEm8G+mtLpxWgkld0HhnOerYdAZb/Lmobrn9
-urqCg+cJ0vy5oLA6/g0TeK6AZjogoDhSMRPMeicmKOi/R4qnp4pr+Imqp+JiyA4a
-X5Km9PZau3lzFrYDCnBbIPlZwFT2a3G1PvalxDcU9EecxRIM4Gw2cUs+RRII54Rd
-DDOOKVSELMls+oOxXs/y7btEd+lZGBsae4PgfaIh2HfFgjrH4itCf+PZWPIe8lH/
-P5UccLZltIqTkd/jEPKXTvgn73IYj9IzFhEWTjUvgsp/ACIm3+4fF0+haQ7uQgW/
-inVzMGcfOr+w/UY5ltH1bhQMAAOR6iiG4EAcMAIoWehx5xooDpz2K2Yc+KZ9X6oS
-wMgDqz+r4PQYwRw1O7IZvbbAbKryNoKASrezh6QHTJK0F92DkSf4JlntdA70amZa
-x9CG2iRpekIwA0MZpe6Q
-=O+3d
------END PGP SIGNATURE-----
-
---=-Dhl9Pvi76eINPu6LcG+i--
-
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
