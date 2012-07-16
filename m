@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753322Ab2GPMeB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 08:34:01 -0400
-Received: from mga09.intel.com ([134.134.136.24]:43089 "EHLO mga09.intel.com"
+	id S1753331Ab2GPMgB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 08:36:01 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:43683 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751014Ab2GPMd7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 08:33:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="172632209"
-Date: Mon, 16 Jul 2012 14:34:02 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Sangbeom Kim <sbkim73@samsung.com>
-Cc: "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>,
-        "'Liam Girdwood'" <lrg@ti.com>, linux-kernel@vger.kernel.org,
-        sbkim01@gmail.com
-Subject: Re: [PATCH V3 0/7] Initial release of Samsung S2MPS11 pmic driver
-Message-ID: <20120716123402.GB20652@sortiz-mobl>
-References: <012801cd5f5d$977580f0$c66082d0$@com>
+	id S1751014Ab2GPMf7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 08:35:59 -0400
+From: "AnilKumar, Chimata" <anilkumar@ti.com>
+To: Tony Lindgren <tony@atomide.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "Girdwood, Liam" <lrg@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>
+Subject: RE: [PATCH v2 1/3] regulator: tps65217: Add device tree support
+Thread-Topic: [PATCH v2 1/3] regulator: tps65217: Add device tree support
+Thread-Index: AQHNXoyJ1e7o53AxukKdiqQa3gtClJcljj2AgAEo2TD//+q4AIAFMjBA
+Date: Mon, 16 Jul 2012 12:35:46 +0000
+Message-ID: <331ABD5ECB02734CA317220B2BBEABC13E9F70AE@DBDE01.ent.ti.com>
+References: <1341918584-28004-1-git-send-email-anilkumar@ti.com>
+ <1341918584-28004-2-git-send-email-anilkumar@ti.com>
+ <20120712172836.GR7256@opensource.wolfsonmicro.com>
+ <331ABD5ECB02734CA317220B2BBEABC13E9F61CC@DBDE01.ent.ti.com>
+ <20120713095454.GB4215@opensource.wolfsonmicro.com>
+In-Reply-To: <20120713095454.GB4215@opensource.wolfsonmicro.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.133.24]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <012801cd5f5d$977580f0$c66082d0$@com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-HiSangbeom,
++Tony
 
-On Wed, Jul 11, 2012 at 09:06:24PM +0900, Sangbeom Kim wrote:
-> The S2MPS11 is comprised of high efficient Buck converters,
-> various LDOs, and an RTC and tightly coupled with Multi Core Samsung 
-> Application Processors, which is used in a wide variety of mobile applications
-> such as smart phones and tablet PCs.
-> S2MPS11 provide 10 high efficiency buck converters and 38 LDO regulators.
-> Especially, Buck2 can support 7.0A current capacity for high performance
-> samsung application processor.
-> Most of S2MPS11 feature are similar to S5M series.
-> and Instead of using s5m prefix, Samsung decide to use s2m prefix.
-> So, I try to make common mfd driver for S2M and S5M series.
-> Most of s5m prefix is changed into sec prefix.
+Tony,
+
+On Fri, Jul 13, 2012 at 15:24:54, Mark Brown wrote:
+> On Fri, Jul 13, 2012 at 05:43:30AM +0000, AnilKumar, Chimata wrote:
 > 
-> This patch is based on the samuel's mfd/for-next branch.
-Thanks. All MFD patches applied to my for-next branch now.
+> > Thanks much, are you going to push reset of the patches in this series?
+> 
+> No, there's no dependency so I'd expect them to be applied by the
+> architecture maintainers.
+> 
 
-Cheers,
-Samuel.
+Could you please push these [2/3 and 3/3] patches to linux-omap "devel-dt
+tree"?
+http://marc.info/?l=linux-omap&m=134191889501150&w=2
+http://marc.info/?l=linux-omap&m=134191891701159&w=2
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+After these patches, "PMIC I2C slave address addition for AM335x EVM/Bone
+will be submitted, which actually passes DT data to tps65910/217 drivers"
+
+Regards
+AnilKumar
