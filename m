@@ -1,77 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753373Ab2GPTpl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 15:45:41 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:57953 "EHLO
+	id S1753418Ab2GPTrY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 15:47:24 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:51143 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753109Ab2GPTpf (ORCPT
+	with ESMTP id S1752826Ab2GPTrV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 15:45:35 -0400
+	Mon, 16 Jul 2012 15:47:21 -0400
 From: Arnd Bergmann <arnd@arndb.de>
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Subject: Re: [PATCH V2 0/4] [SCSI] ufs: Adds glue drivers to ufshcd
-Date: Mon, 16 Jul 2012 16:22:23 +0000
+To: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
+Subject: Re: [RFC PATCH v2 1/2] drivers: misc: omap: add a new driver for ocp2scp
+Date: Mon, 16 Jul 2012 19:47:01 +0000
 User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: Vinayak Holikatti <vinholikatti@gmail.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, patches@linaro.org,
-        linux-samsung-soc@vger.kernel.org, santoshsy@gmail.com,
-        arnd@linaro.org, girish.shivananjappa@linaro.org,
-        saugata.das@linaro.org, vishak.g@samsung.com, venkat@linaro.org,
-        k.rajesh@samsung.com, dsaxena@linaro.org, ilho215.lee@samsung.com,
-        nala.la@samsung.com, sreekumar.c@samsung.com
-References: <1342188465-20239-1-git-send-email-vinholikatti@gmail.com> <201207131545.28877.arnd@arndb.de> <1342447217.3176.22.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1342447217.3176.22.camel@dabdike.int.hansenpartnership.com>
+Cc: balbi@ti.com, Greg KH <gregkh@linuxfoundation.org>,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
+        linux@arm.linux.org.uk, b-cousson@ti.com, rnayak@ti.com,
+        tony@atomide.com, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+References: <1340370942-23201-1-git-send-email-kishon@ti.com> <20120716081204.GI7955@arwen.pp.htv.fi> <CAAe_U6JMGP3jEkkd=vqpR5KTeOnY51AOcb65zqKRRa8MtnWjzQ@mail.gmail.com>
+In-Reply-To: <CAAe_U6JMGP3jEkkd=vqpR5KTeOnY51AOcb65zqKRRa8MtnWjzQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="utf-8"
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201207161622.24063.arnd@arndb.de>
-X-Provags-ID: V02:K0:sh0s6J+ZfktiCW/G/pPo7d3KutBwbTQgL1An55lfgH7
- KrdQ2fiMihIcCMqFUfflRX6dIpqezauv5qbARn5Xr2IeG87KKK
- R8X48WLBAZlB4+0DUpPuxL/q7Sprcx3G5SnN640sVQt4IrrFMB
- EOwdPEPjMiKrfviEEroAmHFGpduWsKD0sTT/URzAoBmdJXnNOs
- d7uTaMuWLiMt/AFqNOuTX22vncJtj24zhW3iLz7xSvRwjXpJPH
- xhKrxkGVEyRifwFJBZRZnJc15E04GmmUbc7JYPADMDCUuvdEiu
- RMyCZWqduA6aaGgwxfUkjaOZaIIZ5j8Axvq9ecRnLiTVKz/0OY
- GwvpyaMUr+7UFC+C5L7E=
+Message-Id: <201207161947.01751.arnd@arndb.de>
+X-Provags-ID: V02:K0:6gsJvrbui/IfI90GdbCJbyB839hPRh7uT1m3G8ThqqK
+ FzNUcepTYXEmycu/v/ZDFC8f3dwcgRN+w5z3SEqLz+Lzuf+Rxa
+ WQ7T0vOwrHImpr8O9plWvGNRYHr4PFGt8SVuh9gpc7r29HXG3o
+ 4sIsf4iDPRm3zF1Bv8/5cSjas0MzanafecJdLT5rC76pSz9iBn
+ P3ztV69J1yw5koMKRH6aT+9P11pApSm7BHNOL5G70Y6hz3GPA/
+ 5JZLguMlsxxnLI2hDw+DT3+9MWJIL8tVHeXOmAuQJKDulOukM5
+ sExoZJrEMlfL3kFK7d8K2Fuuiq4Gmui4C5win1qjX2Eqt0ZgEh
+ wk/vHnKj5j5dumi5xwtY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 16 July 2012, James Bottomley wrote:
-> On Fri, 2012-07-13 at 15:45 +0000, Arnd Bergmann wrote:
-> > On Friday 13 July 2012, Vinayak Holikatti wrote:
-> > > This patch set adds following features
-> > >  - Seprates PCI specific code from ufshcd.c to make it as core
-> > >  - Adds PCI glue driver ufshcd-pci.c
-> > >  - Adds Platform glue driver ufshcd-pltfrm.c
-> > >  - Update correct transfer size in Command UPIU
-> > 
-> > Acked-by: Arnd Bergmann <arnd@arndb.de>
+On Monday 16 July 2012, ABRAHAM, KISHON VIJAY wrote:
+> >>
+> >> I think we should reconsider the idea of drivers/bus/ with a file per
+> >> bus in there at least for new buses, but doing a new drivers/scp/
+> >> would be ok for me if there is enough opposition against the idea
+> >> of drivers/bus aggregating different buses.
+> >
+> > I don't mind either way. The fact is that this ocp-to-scp bridge is
+> > really a TI/OMAP thing. Not sure it deserves a directory of its own.
 > 
-> I need a maintainer ack for this to go upstream.
-> 
-> Also, looking at this, I think this patch series isn't bisectable:
-> Patch 1 removes PCI support and patch 2 adds it back in a different
-> form.  However, any PCI based UFS system would stop working if the
-> bisect landed at patch 1.  I think you can fix this just by combining
-> patches 1 and 2.
+> Ok. Then I'll have a file in drivers/bus/ for ocp2scp driver.
 
-I suggested to split the patch in two in a private review that we
-did on the linaro mailing list. I gave my Ack because the split
-was done, but I failed to notice that it was done differently
-from what I suggested in 
-
-On Monday 02 July 2012, Arnd Bergmann wrote:
-> I would recommend that you split this patch into two separate
-> changesets, where you do all the changes to existing code in the
-> first patch, and only move but don't change code in the second one
-> that creates the new file.
-
-I agree that breaking bisectibility by ripping out the PCI code
-first is not good. The version 2 is not actually easier to review
-at all than the first version, it just splits the changes by
-file, which is pointless.
+Sounds good to me. I don't care if it's the only file in that directory.
+We can point the next person to a bus with a single file to that directory
+and let them add theirs.
 
 	Arnd
-
