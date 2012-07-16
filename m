@@ -1,569 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752575Ab2GPIIP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 04:08:15 -0400
-Received: from www.linutronix.de ([62.245.132.108]:51911 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751122Ab2GPIHp (ORCPT
+	id S1751880Ab2GPIL3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 04:11:29 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48701 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750843Ab2GPILZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 04:07:45 -0400
-Message-Id: <20120715091932.036115656@linutronix.de>
-User-Agent: quilt/0.48-1
-Date: Mon, 16 Jul 2012 08:07:43 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: RT-users <linux-rt-users@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [patch RT 1/3] cpu/rt: Rework cpu down for PREEMPT_RT
-References: <20120715090141.942753287@linutronix.de>
-Content-Disposition: inline;
- filename=0001-cpu-rt-Rework-cpu-down-for-PREEMPT_RT.patch
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Mon, 16 Jul 2012 04:11:25 -0400
+Date: Mon, 16 Jul 2012 01:10:47 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Michal Hocko <mhocko@suse.cz>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        Rik van Riel <riel@redhat.com>, Ying Han <yinghan@google.com>,
+        Greg Thelen <gthelen@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [PATCH v2 -mm] memcg: prevent from OOM with too many dirty
+ pages
+In-Reply-To: <20120712070501.GB21013@tiehlicka.suse.cz>
+Message-ID: <alpine.LSU.2.00.1207160044070.3936@eggly.anvils>
+References: <1340117404-30348-1-git-send-email-mhocko@suse.cz> <20120619150014.1ebc108c.akpm@linux-foundation.org> <20120620101119.GC5541@tiehlicka.suse.cz> <alpine.LSU.2.00.1207111818380.1299@eggly.anvils> <20120712070501.GB21013@tiehlicka.suse.cz>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bringing a CPU down is a pain with the PREEMPT_RT kernel because
-tasks can be preempted in many more places than in non-RT. In
-order to handle per_cpu variables, tasks may be pinned to a CPU
-for a while, and even sleep. But these tasks need to be off the CPU
-if that CPU is going down.
+On Thu, 12 Jul 2012, Michal Hocko wrote:
+> On Wed 11-07-12 18:57:43, Hugh Dickins wrote:
+> > 
+> > I mentioned in Johannes's [03/11] thread a couple of days ago, that
+> > I was having a problem with your wait_on_page_writeback() in mmotm.
+> > 
+> > It turns out that your original patch was fine, but you let dark angels
+> > whisper into your ear, to persuade you to remove the "&& may_enter_fs".
+> > 
+> > Part of my load builds kernels on extN over loop over tmpfs: loop does
+> > mapping_set_gfp_mask(mapping, lo->old_gfp_mask & ~(__GFP_IO|__GFP_FS))
+> > because it knows it will deadlock, if the loop thread enters reclaim,
+> > and reclaim tries to write back a dirty page, one which needs the loop
+> > thread to perform the write.
+> 
+> Good catch! I have totally missed the loop driver.
+> 
+> > With the may_enter_fs check restored, all is well.
 
-Several synchronization methods have been tried, but when stressed
-they failed. This is a new approach.
+Not as well as I thought when I wrote that: but those issues I'll deal
+with in separate mail (and my alternative patch was no better).
 
-A sync_tsk thread is still created and tasks may still block on a
-lock when the CPU is going down, but how that works is a bit different.
-When cpu_down() starts, it will create the sync_tsk and wait on it
-to inform that current tasks that are pinned on the CPU are no longer
-pinned. But new tasks that are about to be pinned will still be allowed
-to do so at this time.
+> > I don't entirely
+> > like your patch: I think it would be much better to wait in the same
+> > place as the wait_iff_congested(), when the pages gathered have been
+> > sent for writing and unlocked and putback and freed; 
+> 
+> I guess you mean
+> 	if (nr_writeback && nr_writeback >=
+>                         (nr_taken >> (DEF_PRIORITY - sc->priority)))
+>                 wait_iff_congested(zone, BLK_RW_ASYNC, HZ/10);
 
-Then the notifiers are called. Several notifiers will bring down tasks
-that will enter these locations. Some of these tasks will take locks
-of other tasks that are on the CPU. If we don't let those other tasks
-continue, but make them block until CPU down is done, the tasks that
-the notifiers are waiting on will never complete as they are waiting
-for the locks held by the tasks that are blocked.
+Yes, I've appended the patch I was meaning below; but although it's
+the way I had approached the issue, I don't in practice see any better
+behaviour from mine than from yours.  So unless a good reason appears
+later, to do it my way instead of yours, let's just forget about mine.
 
-Thus we still let the task pin the CPU until the notifiers are done.
-After the notifiers run, we then make new tasks entering the pinned
-CPU sections grab a mutex and wait. This mutex is now a per CPU mutex
-in the hotplug_pcp descriptor.
+> 
+> I have tried to hook here but it has some issues. First of all we do not
+> know how long we should wait. Waiting for specific pages sounded more
+> event based and more precise.
+> 
+> We can surely do better but I wanted to stop the OOM first without any
+> other possible side effects on the global reclaim. I have tried to make
+> the band aid as simple as possible. Memcg dirty pages accounting is
+> forming already so we are one (tiny) step closer to the throttling.
+>  
+> > and I also wonder if it should go beyond the !global_reclaim case for
+> > swap pages, because they don't participate in dirty limiting.
+> 
+> Worth a separate patch?
 
-To help things along, a new function in the scheduler code is created
-called migrate_me(). This function will try to migrate the current task
-off the CPU this is going down if possible. When the sync_tsk is created,
-all tasks will then try to migrate off the CPU going down. There are
-several cases that this wont work, but it helps in most cases.
+If I could ever generate a suitable testcase, yes.  But in practice,
+the only way I've managed to generate such a preponderance of swapping
+over file reclaim, is by using memcgs, which your patch already catches.
+And if there actually is the swapping issue I suggest, then it's been
+around for a very long time, apparently without complaint.
 
-After the notifiers are called and if a task can't migrate off but enters
-the pin CPU sections, it will be forced to wait on the hotplug_pcp mutex
-until the CPU down is complete. Then the scheduler will force the migration
-anyway.
+Here is the patch I had in mind: I'm posting it as illustration, so we
+can look back to it in the archives if necessary; but it's definitely
+not signed-off, I've seen no practical advantage over yours, probably
+we just forget about this one below now.
 
-Also, I found that THREAD_BOUND need to also be accounted for in the
-pinned CPU, and the migrate_disable no longer treats them special.
-This helps fix issues with ksoftirqd and workqueue that unbind on CPU down.
+But more mail to follow, returning to yours...
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- include/linux/sched.h |    7 ++
- kernel/cpu.c          |  236 +++++++++++++++++++++++++++++++++++++++++--------
- kernel/sched/core.c   |   82 +++++++++++++++++-
- 3 files changed, 285 insertions(+), 40 deletions(-)
+Hugh
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 7fc8321..777f7bb 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1973,6 +1973,10 @@ extern void do_set_cpus_allowed(struct task_struct *p,
- 
- extern int set_cpus_allowed_ptr(struct task_struct *p,
- 				const struct cpumask *new_mask);
-+int migrate_me(void);
-+void tell_sched_cpu_down_begin(int cpu);
-+void tell_sched_cpu_down_done(int cpu);
-+
- #else
- static inline void do_set_cpus_allowed(struct task_struct *p,
- 				      const struct cpumask *new_mask)
-@@ -1985,6 +1989,9 @@ static inline int set_cpus_allowed_ptr(struct task_struct *p,
- 		return -EINVAL;
- 	return 0;
- }
-+static inline int migrate_me(void) { return 0; }
-+static inline void tell_sched_cpu_down_begin(int cpu) { }
-+static inline void tell_sched_cpu_down_done(int cpu) { }
- #endif
- 
- #ifndef CONFIG_CPUMASK_OFFSTACK
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index d79d33a..c5b3273 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -46,12 +46,7 @@ static int cpu_hotplug_disabled;
- 
- static struct {
- 	struct task_struct *active_writer;
--#ifdef CONFIG_PREEMPT_RT_FULL
--	/* Makes the lock keep the task's state */
--	spinlock_t lock;
--#else
- 	struct mutex lock; /* Synchronizes accesses to refcount, */
--#endif
- 	/*
- 	 * Also blocks the new readers during
- 	 * an ongoing cpu hotplug operation.
-@@ -67,20 +62,42 @@ static struct {
- 	.refcount = 0,
- };
- 
--#ifdef CONFIG_PREEMPT_RT_FULL
--# define hotplug_lock() rt_spin_lock(&cpu_hotplug.lock)
--# define hotplug_unlock() rt_spin_unlock(&cpu_hotplug.lock)
--#else
--# define hotplug_lock() mutex_lock(&cpu_hotplug.lock)
--# define hotplug_unlock() mutex_unlock(&cpu_hotplug.lock)
--#endif
--
-+/**
-+ * hotplug_pcp - per cpu hotplug descriptor
-+ * @unplug:	set when pin_current_cpu() needs to sync tasks
-+ * @sync_tsk:	the task that waits for tasks to finish pinned sections
-+ * @refcount:	counter of tasks in pinned sections
-+ * @grab_lock:	set when the tasks entering pinned sections should wait
-+ * @synced:	notifier for @sync_tsk to tell cpu_down it's finished
-+ * @mutex:	the mutex to make tasks wait (used when @grab_lock is true)
-+ * @mutex_init:	zero if the mutex hasn't been initialized yet.
-+ *
-+ * Although @unplug and @sync_tsk may point to the same task, the @unplug
-+ * is used as a flag and still exists after @sync_tsk has exited and
-+ * @sync_tsk set to NULL.
-+ */
- struct hotplug_pcp {
- 	struct task_struct *unplug;
-+	struct task_struct *sync_tsk;
- 	int refcount;
-+	int grab_lock;
- 	struct completion synced;
-+#ifdef CONFIG_PREEMPT_RT_FULL
-+	spinlock_t lock;
-+#else
-+	struct mutex mutex;
-+#endif
-+	int mutex_init;
- };
- 
-+#ifdef CONFIG_PREEMPT_RT_FULL
-+# define hotplug_lock(hp) rt_spin_lock(&(hp)->lock)
-+# define hotplug_unlock(hp) rt_spin_unlock(&(hp)->lock)
-+#else
-+# define hotplug_lock(hp) mutex_lock(&(hp)->mutex)
-+# define hotplug_unlock(hp) mutex_unlock(&(hp)->mutex)
-+#endif
-+
- static DEFINE_PER_CPU(struct hotplug_pcp, hotplug_pcp);
- 
- /**
-@@ -94,18 +111,40 @@ static DEFINE_PER_CPU(struct hotplug_pcp, hotplug_pcp);
- void pin_current_cpu(void)
+p.s. KAMEZAWA-san, if you wonder why you're suddenly brought into this
+conversation, it's because there was a typo in your email address before.
+
+--- 3.5-rc6/vmscan.c	2012-06-03 06:42:11.000000000 -0700
++++ linux/vmscan.c	2012-07-13 11:53:20.372087273 -0700
+@@ -675,7 +675,8 @@ static unsigned long shrink_page_list(st
+ 				      struct zone *zone,
+ 				      struct scan_control *sc,
+ 				      unsigned long *ret_nr_dirty,
+-				      unsigned long *ret_nr_writeback)
++				      unsigned long *ret_nr_writeback,
++				      struct page **slow_page)
  {
- 	struct hotplug_pcp *hp;
-+	int force = 0;
+ 	LIST_HEAD(ret_pages);
+ 	LIST_HEAD(free_pages);
+@@ -720,6 +721,27 @@ static unsigned long shrink_page_list(st
+ 			(PageSwapCache(page) && (sc->gfp_mask & __GFP_IO));
  
- retry:
- 	hp = &__get_cpu_var(hotplug_pcp);
- 
--	if (!hp->unplug || hp->refcount || preempt_count() > 1 ||
-+	if (!hp->unplug || hp->refcount || force || preempt_count() > 1 ||
- 	    hp->unplug == current || (current->flags & PF_STOMPER)) {
- 		hp->refcount++;
- 		return;
- 	}
--	preempt_enable();
--	hotplug_lock();
--	hotplug_unlock();
-+
-+	if (hp->grab_lock) {
-+		preempt_enable();
-+		hotplug_lock(hp);
-+		hotplug_unlock(hp);
-+	} else {
-+		preempt_enable();
-+		/*
-+		 * Try to push this task off of this CPU.
-+		 */
-+		if (!migrate_me()) {
-+			preempt_disable();
-+			hp = &__get_cpu_var(hotplug_pcp);
-+			if (!hp->grab_lock) {
-+				/*
-+				 * Just let it continue it's already pinned
-+				 * or about to sleep.
-+				 */
-+				force = 1;
-+				goto retry;
+ 		if (PageWriteback(page)) {
++			/*
++			 * memcg doesn't have any dirty pages throttling so we
++			 * could easily OOM just because too many pages are in
++			 * writeback from reclaim and there is nothing else to
++			 * reclaim.  Nor is swap subject to dirty throttling.
++			 *
++			 * Check may_enter_fs, certainly because a loop driver
++			 * thread might enter reclaim, and deadlock if it waits
++			 * on a page for which it is needed to do the write
++			 * (loop masks off __GFP_IO|__GFP_FS for this reason);
++			 * but more thought would probably show more reasons.
++			 *
++			 * Just use one page per shrink for this: wait on its
++			 * writeback once we have done the rest.  If device is
++			 * slow, in due course we shall choose one of its pages.
++			 */
++			if (!*slow_page && may_enter_fs && PageReclaim(page) &&
++			    (PageSwapCache(page) || !global_reclaim(sc))) {
++				*slow_page = page;
++				get_page(page);
 +			}
-+			preempt_enable();
-+		}
+ 			nr_writeback++;
+ 			unlock_page(page);
+ 			goto keep;
+@@ -1208,6 +1230,7 @@ shrink_inactive_list(unsigned long nr_to
+ 	int file = is_file_lru(lru);
+ 	struct zone *zone = lruvec_zone(lruvec);
+ 	struct zone_reclaim_stat *reclaim_stat = &lruvec->reclaim_stat;
++	struct page *slow_page = NULL;
+ 
+ 	while (unlikely(too_many_isolated(zone, file, sc))) {
+ 		congestion_wait(BLK_RW_ASYNC, HZ/10);
+@@ -1245,7 +1268,7 @@ shrink_inactive_list(unsigned long nr_to
+ 		return 0;
+ 
+ 	nr_reclaimed = shrink_page_list(&page_list, zone, sc,
+-						&nr_dirty, &nr_writeback);
++					&nr_dirty, &nr_writeback, &slow_page);
+ 
+ 	spin_lock_irq(&zone->lru_lock);
+ 
+@@ -1292,8 +1315,13 @@ shrink_inactive_list(unsigned long nr_to
+ 	 *                     isolated page is PageWriteback
+ 	 */
+ 	if (nr_writeback && nr_writeback >=
+-			(nr_taken >> (DEF_PRIORITY - sc->priority)))
++			(nr_taken >> (DEF_PRIORITY - sc->priority))) {
+ 		wait_iff_congested(zone, BLK_RW_ASYNC, HZ/10);
++		if (slow_page && PageReclaim(slow_page))
++			wait_on_page_writeback(slow_page);
 +	}
- 	preempt_disable();
- 	goto retry;
- }
-@@ -127,26 +166,84 @@ void unpin_current_cpu(void)
- 		wake_up_process(hp->unplug);
- }
++	if (slow_page)
++		put_page(slow_page);
  
--/*
-- * FIXME: Is this really correct under all circumstances ?
-- */
-+static void wait_for_pinned_cpus(struct hotplug_pcp *hp)
-+{
-+	set_current_state(TASK_UNINTERRUPTIBLE);
-+	while (hp->refcount) {
-+		schedule_preempt_disabled();
-+		set_current_state(TASK_UNINTERRUPTIBLE);
-+	}
-+}
-+
- static int sync_unplug_thread(void *data)
- {
- 	struct hotplug_pcp *hp = data;
- 
- 	preempt_disable();
- 	hp->unplug = current;
-+	wait_for_pinned_cpus(hp);
-+
-+	/*
-+	 * This thread will synchronize the cpu_down() with threads
-+	 * that have pinned the CPU. When the pinned CPU count reaches
-+	 * zero, we inform the cpu_down code to continue to the next step.
-+	 */
- 	set_current_state(TASK_UNINTERRUPTIBLE);
--	while (hp->refcount) {
--		schedule_preempt_disabled();
-+	preempt_enable();
-+	complete(&hp->synced);
-+
-+	/*
-+	 * If all succeeds, the next step will need tasks to wait till
-+	 * the CPU is offline before continuing. To do this, the grab_lock
-+	 * is set and tasks going into pin_current_cpu() will block on the
-+	 * mutex. But we still need to wait for those that are already in
-+	 * pinned CPU sections. If the cpu_down() failed, the kthread_should_stop()
-+	 * will kick this thread out.
-+	 */
-+	while (!hp->grab_lock && !kthread_should_stop()) {
-+		schedule();
-+		set_current_state(TASK_UNINTERRUPTIBLE);
-+	}
-+
-+	/* Make sure grab_lock is seen before we see a stale completion */
-+	smp_mb();
-+
-+	/*
-+	 * Now just before cpu_down() enters stop machine, we need to make
-+	 * sure all tasks that are in pinned CPU sections are out, and new
-+	 * tasks will now grab the lock, keeping them from entering pinned
-+	 * CPU sections.
-+	 */
-+	if (!kthread_should_stop()) {
-+		preempt_disable();
-+		wait_for_pinned_cpus(hp);
-+		preempt_enable();
-+		complete(&hp->synced);
-+	}
-+
-+	set_current_state(TASK_UNINTERRUPTIBLE);
-+	while (!kthread_should_stop()) {
-+		schedule();
- 		set_current_state(TASK_UNINTERRUPTIBLE);
- 	}
- 	set_current_state(TASK_RUNNING);
--	preempt_enable();
--	complete(&hp->synced);
-+
-+	/*
-+	 * Force this thread off this CPU as it's going down and
-+	 * we don't want any more work on this CPU.
-+	 */
-+	current->flags &= ~PF_THREAD_BOUND;
-+	do_set_cpus_allowed(current, cpu_present_mask);
-+	migrate_me();
- 	return 0;
- }
- 
-+static void __cpu_unplug_sync(struct hotplug_pcp *hp)
-+{
-+	wake_up_process(hp->sync_tsk);
-+	wait_for_completion(&hp->synced);
-+}
-+
- /*
-  * Start the sync_unplug_thread on the target cpu and wait for it to
-  * complete.
-@@ -154,23 +251,83 @@ static int sync_unplug_thread(void *data)
- static int cpu_unplug_begin(unsigned int cpu)
- {
- 	struct hotplug_pcp *hp = &per_cpu(hotplug_pcp, cpu);
--	struct task_struct *tsk;
-+	int err;
-+
-+	/* Protected by cpu_hotplug.lock */
-+	if (!hp->mutex_init) {
-+#ifdef CONFIG_PREEMPT_RT_FULL
-+		spin_lock_init(&hp->lock);
-+#else
-+		mutex_init(&hp->mutex);
-+#endif
-+		hp->mutex_init = 1;
-+	}
-+
-+	/* Inform the scheduler to migrate tasks off this CPU */
-+	tell_sched_cpu_down_begin(cpu);
- 
- 	init_completion(&hp->synced);
--	tsk = kthread_create(sync_unplug_thread, hp, "sync_unplug/%d", cpu);
--	if (IS_ERR(tsk))
--		return (PTR_ERR(tsk));
--	kthread_bind(tsk, cpu);
--	wake_up_process(tsk);
--	wait_for_completion(&hp->synced);
-+
-+	hp->sync_tsk = kthread_create(sync_unplug_thread, hp, "sync_unplug/%d", cpu);
-+	if (IS_ERR(hp->sync_tsk)) {
-+		err = PTR_ERR(hp->sync_tsk);
-+		hp->sync_tsk = NULL;
-+		return err;
-+	}
-+	kthread_bind(hp->sync_tsk, cpu);
-+
-+	/*
-+	 * Wait for tasks to get out of the pinned sections,
-+	 * it's still OK if new tasks enter. Some CPU notifiers will
-+	 * wait for tasks that are going to enter these sections and
-+	 * we must not have them block.
-+	 */
-+	__cpu_unplug_sync(hp);
-+
- 	return 0;
- }
- 
-+static void cpu_unplug_sync(unsigned int cpu)
-+{
-+	struct hotplug_pcp *hp = &per_cpu(hotplug_pcp, cpu);
-+
-+	init_completion(&hp->synced);
-+	/* The completion needs to be initialzied before setting grab_lock */
-+	smp_wmb();
-+
-+	/* Grab the mutex before setting grab_lock */
-+	hotplug_lock(hp);
-+	hp->grab_lock = 1;
-+
-+	/*
-+	 * The CPU notifiers have been completed.
-+	 * Wait for tasks to get out of pinned CPU sections and have new
-+	 * tasks block until the CPU is completely down.
-+	 */
-+	__cpu_unplug_sync(hp);
-+
-+	/* All done with the sync thread */
-+	kthread_stop(hp->sync_tsk);
-+	hp->sync_tsk = NULL;
-+}
-+
- static void cpu_unplug_done(unsigned int cpu)
- {
- 	struct hotplug_pcp *hp = &per_cpu(hotplug_pcp, cpu);
- 
- 	hp->unplug = NULL;
-+	/* Let all tasks know cpu unplug is finished before cleaning up */
-+	smp_wmb();
-+
-+	if (hp->sync_tsk)
-+		kthread_stop(hp->sync_tsk);
-+
-+	if (hp->grab_lock) {
-+		hotplug_unlock(hp);
-+		/* protected by cpu_hotplug.lock */
-+		hp->grab_lock = 0;
-+	}
-+	tell_sched_cpu_down_done(cpu);
- }
- 
- void get_online_cpus(void)
-@@ -178,9 +335,9 @@ void get_online_cpus(void)
- 	might_sleep();
- 	if (cpu_hotplug.active_writer == current)
- 		return;
--	hotplug_lock();
-+	mutex_lock(&cpu_hotplug.lock);
- 	cpu_hotplug.refcount++;
--	hotplug_unlock();
-+	mutex_unlock(&cpu_hotplug.lock);
- 
- }
- EXPORT_SYMBOL_GPL(get_online_cpus);
-@@ -189,10 +346,10 @@ void put_online_cpus(void)
- {
- 	if (cpu_hotplug.active_writer == current)
- 		return;
--	hotplug_lock();
-+	mutex_lock(&cpu_hotplug.lock);
- 	if (!--cpu_hotplug.refcount && unlikely(cpu_hotplug.active_writer))
- 		wake_up_process(cpu_hotplug.active_writer);
--	hotplug_unlock();
-+	mutex_unlock(&cpu_hotplug.lock);
- 
- }
- EXPORT_SYMBOL_GPL(put_online_cpus);
-@@ -224,11 +381,11 @@ static void cpu_hotplug_begin(void)
- 	cpu_hotplug.active_writer = current;
- 
- 	for (;;) {
--		hotplug_lock();
-+		mutex_lock(&cpu_hotplug.lock);
- 		if (likely(!cpu_hotplug.refcount))
- 			break;
- 		__set_current_state(TASK_UNINTERRUPTIBLE);
--		hotplug_unlock();
-+		mutex_unlock(&cpu_hotplug.lock);
- 		schedule();
- 	}
- }
-@@ -236,7 +393,7 @@ static void cpu_hotplug_begin(void)
- static void cpu_hotplug_done(void)
- {
- 	cpu_hotplug.active_writer = NULL;
--	hotplug_unlock();
-+	mutex_unlock(&cpu_hotplug.lock);
- }
- 
- #else /* #if CONFIG_HOTPLUG_CPU */
-@@ -370,6 +527,9 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
- 		goto out_release;
- 	}
- 
-+	/* Notifiers are done. Don't let any more tasks pin this CPU. */
-+	cpu_unplug_sync(cpu);
-+
- 	err = __stop_machine(take_cpu_down, &tcd_param, cpumask_of(cpu));
- 	if (err) {
- 		/* CPU didn't die: tell everyone.  Can't complain. */
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index e8d5a10..f5ee392 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -3184,7 +3184,7 @@ void migrate_disable(void)
- {
- 	struct task_struct *p = current;
- 
--	if (in_atomic() || p->flags & PF_THREAD_BOUND) {
-+	if (in_atomic()) {
- #ifdef CONFIG_SCHED_DEBUG
- 		p->migrate_disable_atomic++;
- #endif
-@@ -3215,7 +3215,7 @@ void migrate_enable(void)
- 	unsigned long flags;
- 	struct rq *rq;
- 
--	if (in_atomic() || p->flags & PF_THREAD_BOUND) {
-+	if (in_atomic()) {
- #ifdef CONFIG_SCHED_DEBUG
- 		p->migrate_disable_atomic--;
- #endif
-@@ -5114,6 +5114,84 @@ void do_set_cpus_allowed(struct task_struct *p, const struct cpumask *new_mask)
- 	cpumask_copy(&p->cpus_allowed, new_mask);
- }
- 
-+static DEFINE_PER_CPU(struct cpumask, sched_cpumasks);
-+static DEFINE_MUTEX(sched_down_mutex);
-+static cpumask_t sched_down_cpumask;
-+
-+void tell_sched_cpu_down_begin(int cpu)
-+{
-+	mutex_lock(&sched_down_mutex);
-+	cpumask_set_cpu(cpu, &sched_down_cpumask);
-+	mutex_unlock(&sched_down_mutex);
-+}
-+
-+void tell_sched_cpu_down_done(int cpu)
-+{
-+	mutex_lock(&sched_down_mutex);
-+	cpumask_clear_cpu(cpu, &sched_down_cpumask);
-+	mutex_unlock(&sched_down_mutex);
-+}
-+
-+/**
-+ * migrate_me - try to move the current task off this cpu
-+ *
-+ * Used by the pin_current_cpu() code to try to get tasks
-+ * to move off the current CPU as it is going down.
-+ * It will only move the task if the task isn't pinned to
-+ * the CPU (with migrate_disable, affinity or THREAD_BOUND)
-+ * and the task has to be in a RUNNING state. Otherwise the
-+ * movement of the task will wake it up (change its state
-+ * to running) when the task did not expect it.
-+ *
-+ * Returns 1 if it succeeded in moving the current task
-+ *         0 otherwise.
-+ */
-+int migrate_me(void)
-+{
-+	struct task_struct *p = current;
-+	struct migration_arg arg;
-+	struct cpumask *cpumask;
-+	struct cpumask *mask;
-+	unsigned long flags;
-+	unsigned int dest_cpu;
-+	struct rq *rq;
-+
-+	/*
-+	 * We can not migrate tasks bounded to a CPU or tasks not
-+	 * running. The movement of the task will wake it up.
-+	 */
-+	if (p->flags & PF_THREAD_BOUND || p->state)
-+		return 0;
-+
-+	mutex_lock(&sched_down_mutex);
-+	rq = task_rq_lock(p, &flags);
-+
-+	cpumask = &__get_cpu_var(sched_cpumasks);
-+	mask = &p->cpus_allowed;
-+
-+	cpumask_andnot(cpumask, mask, &sched_down_cpumask);
-+
-+	if (!cpumask_weight(cpumask)) {
-+		/* It's only on this CPU? */
-+		task_rq_unlock(rq, p, &flags);
-+		mutex_unlock(&sched_down_mutex);
-+		return 0;
-+	}
-+
-+	dest_cpu = cpumask_any_and(cpu_active_mask, cpumask);
-+
-+	arg.task = p;
-+	arg.dest_cpu = dest_cpu;
-+
-+	task_rq_unlock(rq, p, &flags);
-+
-+	stop_one_cpu(cpu_of(rq), migration_cpu_stop, &arg);
-+	tlb_migrate_finish(p->mm);
-+	mutex_unlock(&sched_down_mutex);
-+
-+	return 1;
-+}
-+
- /*
-  * This is how migration works:
-  *
--- 
-1.7.3.4
-
-
-
+ 	trace_mm_vmscan_lru_shrink_inactive(zone->zone_pgdat->node_id,
+ 		zone_idx(zone),
