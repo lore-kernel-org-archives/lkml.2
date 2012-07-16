@@ -1,97 +1,310 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753142Ab2GPLbS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 07:31:18 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:57351 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752333Ab2GPLbN (ORCPT
+	id S1753238Ab2GPLdX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 07:33:23 -0400
+Received: from grace.univie.ac.at ([131.130.3.115]:55888 "EHLO
+	grace.univie.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752652Ab2GPLdU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 07:31:13 -0400
-Message-ID: <5003FB7C.4030509@linaro.org>
-Date: Mon, 16 Jul 2012 12:31:08 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Mon, 16 Jul 2012 07:33:20 -0400
+Message-ID: <87741204cd72d363d54dadf9a94bb6fe.squirrel@webmail.univie.ac.at>
+In-Reply-To: <20120713165544.6767ea8f@nehalam.linuxnetplumber.net>
+References: <e9caf38359467bfa8a1e2ac86f6ef2cc.squirrel@webmail.univie.ac.at>
+    <20120713165544.6767ea8f@nehalam.linuxnetplumber.net>
+Date: Mon, 16 Jul 2012 13:33:17 +0200
+Subject: Re: resurrecting tcphealth
+From: "Piotr Sawuk" <a9702387@unet.univie.ac.at>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.19
 MIME-Version: 1.0
-To: Wolfram Sang <w.sang@pengutronix.de>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Alessandro Rubini <rubini@gnudd.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: linux-next: manual merge of the arm-soc tree with the i2c-embedded
- tree
-References: <20120710164130.f38e4d1673f925ddb13914c9@canb.auug.org.au> <20120712131231.GH2194@pengutronix.de> <CACRpkdboeF_G=sTPeSyuZ6KGLCmGSKx_NS=6Rim6HkR2f9=AAQ@mail.gmail.com> <20120716101706.GB17435@pengutronix.de>
-In-Reply-To: <20120716101706.GB17435@pengutronix.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain;charset=utf-8
 Content-Transfer-Encoding: 8bit
+X-Univie-Virus-Scan: scanned by ClamAV on justin.univie.ac.at
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/07/12 11:17, Wolfram Sang wrote:
->
->> Well I think I ACKed that from the point of view that it will work as
->> expected with ux500 with these bindings. What is best from the I2C
->> subsystem point of view is another question ...
->
-> Okay, thanks for clarifying.
->
->> Overall I think we have this general problem with a lot of DT
->> conversion happening right now: the tempo is set very high and
->> all chip vendors want DT support RealQuickNowPreferrablyYesterday
->> and that makes it hard for subsystem maintainers to hold back,
->> and I also fear vendor-specific properties are overused for this
->> reason.
->
-> Word.
->
->> And about the perpetual nature of device tree bindings it
->> appears to me that the modus operandi right now is to not
->> regard any of these as written in stone until they are removed
->> from the kernel tree. We have plenty of drivers patching
->> trees and drivers in one for the moment.
->
-> I don't get this one. Yes, they are of perpetual nature, so how could we
-> remove them from the kernel tree?
->
-> What I am afraid of is: tentative solutions tend to stay, because the
-> need for a proper solution is reduced. Yet, finding proper generic
-> bindings might take some time which doesn't meet the high pressure
-> around DT at the moment.
+On Sa, 14.07.2012, 01:55, Stephen Hemminger wrote:
+> I am not sure if the is really necessary since the most
+> of the stats are available elsewhere.
 
-I agree with what you say to some extent, but I believe that it is more 
-important to have a working solution now than to ensure that each 
-bindings are as unique as possible. After any suggestion of 
-consolidation, a move from vendor specific to generically defined Device 
-Tree bindings is trivial. Especially in the current stage where 
-adaptions and definitions are still fluid.
+if by "most" you mean address and port then you're right.
+but even the rtt reported by "ss -i" seems to differ from tcphealth.
 
-Obviously some care is taken to ensure the bindings are as generic as 
-possible, but not to the extent that will put the project back some 
-months. Over past few months I have enabled many sub-systems; however, I 
-think it would have been a fraction of that if we'd gone through the 
-laborious process of immediate forced consolidation. I think it's fine 
-to have platform/vendor specific bindings that work, then come back to 
-unify them once the dust settles.
+however, if instead by "elsewhere" you mean "on the server"...
+>
 
-If you know of any bindings which you know are generic, I'm happy to 
-define and swap them out for the ones I've proposed, but due to a change 
-of project focus I can't afford to spend hours studying all of the 
-drivers to match-up possible unifications.
+>>+		seq_printf(seq,
+>>+		"TCP Health Monitoring (established connections only)\n"
+>>+		" -Duplicate ACKs indicate lost or reordered packets on the
+>>connection.\n"
+>>+		" -Duplicate Packets Received signal a slow and badly inefficient
+>>connection.\n"
+>>+		" -RttEst estimates how long future packets will take on a round trip
+>>over the connection.\n"
+>>+		"id   Local Address        Remote Address       RttEst(ms) AcksSent "
+>
+> Header seems excessive, just put one line of header please.
 
-Kind regards,
-Lee
+I guess the header was sort of documentation for this patch.
+I've put it into Kconfig instead.
+>
+>
+>>+		"DupAcksSent PktsRecv DupPktsRecv\n");
+>>+		goto out;
+>>+	}
+>>+
+>>+	/* Loop through established TCP connections */
+>>+	st = seq->private;
+>>+
+>>+
+>>+	if (st->state == TCP_SEQ_STATE_ESTABLISHED)
+>>+	{
+>>+/*	; //insert read-lock here */
+>
+> Don't think you need read-lock
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-M: +44 77 88 633 515
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+you mean I wont get segfault reading a tcp_sock that's gone?
+>
+
+> Kernel has %pI4 to print IP addresses.
+
+thanks, I didn't know.
+>
+
+>>+		seq_printf(seq, "%*s\n", LINESZ - 1 - len, "");
+>
+> This padding of line is bogus, just print variable length line.
+> Are you trying to make it fixed length record file?
+
+I guess so, /proc/net/tcp is doing the same.
+wont question the authors of that user-interface.
+
+OK, new version, this time with Kconfig changed:
+
+diff -rub A/include/linux/tcp.h B/include/linux/tcp.h
+--- A/include/linux/tcp.h	2012-07-08 02:23:56.000000000 +0200
++++ B/include/linux/tcp.h	2012-07-16 09:04:54.000000000 +0200
+@@ -492,6 +492,17 @@
+ 	 * contains related tcp_cookie_transactions fields.
+ 	 */
+ 	struct tcp_cookie_values  *cookie_values;
++
++#ifdef CONFIG_TCPHEALTH
++	/*
++	 * TCP health monitoring counters.
++	 */
++	__u32	dup_acks_sent;
++	__u32	dup_pkts_recv;
++	__u32	acks_sent;
++	__u32	pkts_recv;
++	__u32	last_ack_sent;	/* Sequence number of the last ack we sent. */
++#endif
+ };
+
+ static inline struct tcp_sock *tcp_sk(const struct sock *sk)
+Only in B/include/linux: tcp.h.orig
+diff -rub A/net/ipv4/Kconfig B/net/ipv4/Kconfig
+--- A/net/ipv4/Kconfig	2012-07-08 02:23:56.000000000 +0200
++++ B/net/ipv4/Kconfig	2012-07-16 11:56:15.000000000 +0200
+@@ -619,6 +619,28 @@
+ 	default "reno" if DEFAULT_RENO
+ 	default "cubic"
+
++config TCPHEALTH
++	bool "TCP: client-side health-statistics (/proc/net/tcphealth)"
++	default n
++	---help---
++	IPv4 TCP Health Monitoring (established connections only):
++	 -Duplicate ACKs indicate there could be lost or reordered packets
++	  on the connection.
++	 -Duplicate Packets Received signal a slow and badly inefficient
++	  connection.
++	 -RttEst estimates how long future packets will take on a round trip
++	  over the connection.
++
++	Additionally you get total amount of sent ACKs and received Packets.
++	All these values are displayed seperately for each connection.
++	If you are running a dedicated server you wont need this.
++	Duplicate ACKs refers only to those sent upon receiving a Packet.
++	A server most likely doesn't receive much Packets to count.
++	Hence for a server these statistics wont be meaningful.
++	especially since they are split into individual connections.
++
++	If you plan to investigate why some download is slow, say Y.
++
+ config TCP_MD5SIG
+ 	bool "TCP: MD5 Signature Option support (RFC2385) (EXPERIMENTAL)"
+ 	depends on EXPERIMENTAL
+Only in B/net/ipv4: Kconfig~
+diff -rub A/net/ipv4/tcp_input.c B/net/ipv4/tcp_input.c
+--- A/net/ipv4/tcp_input.c	2012-07-08 02:23:56.000000000 +0200
++++ B/net/ipv4/tcp_input.c	2012-07-16 09:28:23.000000000 +0200
+@@ -4492,6 +4492,11 @@
+ 		}
+
+ 		if (!after(TCP_SKB_CB(skb)->end_seq, tp->rcv_nxt)) {
++#ifdef CONFIG_TCPHEALTH
++			/* Course Timeout caused retransmit inefficiency-
++			 * this packet has been received twice. */
++			tp->dup_pkts_recv++;
++#endif
+ 			SOCK_DEBUG(sk, "ofo packet was already received\n");
+ 			__skb_unlink(skb, &tp->out_of_order_queue);
+ 			__kfree_skb(skb);
+@@ -4824,6 +4829,12 @@
+ 		return;
+ 	}
+
++#ifdef CONFIG_TCPHEALTH
++	/* A packet is a "duplicate" if it contains bytes we have already
+received. */
++	if (before(TCP_SKB_CB(skb)->seq, tp->rcv_nxt))
++		tp->dup_pkts_recv++;
++#endif
++
+ 	if (!after(TCP_SKB_CB(skb)->end_seq, tp->rcv_nxt)) {
+ 		/* A retransmit, 2nd most common case.  Force an immediate ack. */
+ 		NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_DELAYEDACKLOST);
+@@ -5535,6 +5546,12 @@
+
+ 	tp->rx_opt.saw_tstamp = 0;
+
++#ifdef CONFIG_TCPHEALTH
++	/*
++	 *	total per-connection packet arrivals.
++	 */
++	tp->pkts_recv++;
++#endif
+ 	/*	pred_flags is 0xS?10 << 16 + snd_wnd
+ 	 *	if header_prediction is to be made
+ 	 *	'S' will always be tp->tcp_header_len >> 2
+diff -rub A/net/ipv4/tcp_ipv4.c B/net/ipv4/tcp_ipv4.c
+--- A/net/ipv4/tcp_ipv4.c	2012-07-08 02:23:56.000000000 +0200
++++ B/net/ipv4/tcp_ipv4.c	2012-07-16 10:12:48.000000000 +0200
+@@ -2500,6 +2500,57 @@
+ 	return 0;
+ }
+
++#ifdef CONFIG_TCPHEALTH
++/*
++ *	Output /proc/net/tcphealth
++ */
++#define LINESZ 128
++
++int tcp_health_seq_show(struct seq_file *seq, void *v)
++{
++	int len, num;
++	struct tcp_iter_state *st;
++
++	if (v == SEQ_START_TOKEN) {
++		seq_printf(seq,
++		"id   Local Address        Remote Address       RttEst(ms) AcksSent "
++		"DupAcksSent PktsRecv DupPktsRecv\n");
++		goto out;
++	}
++
++	/* Loop through established TCP connections */
++	st = seq->private;
++
++
++	if (st->state == TCP_SEQ_STATE_ESTABLISHED)
++	{
++		const struct tcp_sock *tp = tcp_sk(v);
++		const struct inet_sock *inet = inet_sk(v);
++
++		seq_printf(seq, "%d: %-21pI4:%u %-21pI4:%u "
++				"%8lu %8lu %8lu %8lu %8lu%n",
++				st->num,
++				inet->inet_rcv_saddr,
++				ntohs(inet->inet_sport),
++				inet->inet_daddr,
++				ntohs(inet->inet_dport),
++				tp->srtt >> 3,
++				tp->acks_sent,
++				tp->dup_acks_sent,
++				tp->pkts_recv,
++				tp->dup_pkts_recv,
++
++				&len
++			);
++
++		seq_printf(seq, "%*s\n", LINESZ - 1 - len, "");
++	}
++
++out:
++	return 0;
++}
++#endif /* CONFIG_TCPHEALTH */
++
+ static const struct file_operations tcp_afinfo_seq_fops = {
+ 	.owner   = THIS_MODULE,
+ 	.open    = tcp_seq_open,
+@@ -2508,6 +2559,17 @@
+ 	.release = seq_release_net
+ };
+
++#ifdef CONFIG_TCPHEALTH
++static struct tcp_seq_afinfo tcphealth_seq_afinfo = {
++	.name		= "tcphealth",
++	.family		= AF_INET,
++	.seq_fops	= &tcp_afinfo_seq_fops,
++	.seq_ops	= {
++		.show		= tcp_health_seq_show,
++	},
++};
++#endif
++
+ static struct tcp_seq_afinfo tcp4_seq_afinfo = {
+ 	.name		= "tcp",
+ 	.family		= AF_INET,
+@@ -2519,12 +2581,20 @@
+
+ static int __net_init tcp4_proc_init_net(struct net *net)
+ {
+-	return tcp_proc_register(net, &tcp4_seq_afinfo);
++	int ret = tcp_proc_register(net, &tcp4_seq_afinfo);
++#ifdef CONFIG_TCPHEALTH
++	if(ret == 0)
++		ret = tcp_proc_register(net, &tcphealth_seq_afinfo);
++#endif
++	return ret;
+ }
+
+ static void __net_exit tcp4_proc_exit_net(struct net *net)
+ {
+ 	tcp_proc_unregister(net, &tcp4_seq_afinfo);
++#ifdef CONFIG_TCPHEALTH
++	tcp_proc_unregister(net, &tcphealth_seq_afinfo);
++#endif
+ }
+
+ static struct pernet_operations tcp4_net_ops = {
+Only in B/net/ipv4: tcp_ipv4.c~
+Only in B/net/ipv4: tcp_ipv4.c.orig
+diff -rub A/net/ipv4/tcp_output.c B/net/ipv4/tcp_output.c
+--- A/net/ipv4/tcp_output.c	2012-07-08 02:23:56.000000000 +0200
++++ B/net/ipv4/tcp_output.c	2012-07-16 09:44:02.000000000 +0200
+@@ -2772,8 +2772,19 @@
+ 	skb_reserve(buff, MAX_TCP_HEADER);
+ 	tcp_init_nondata_skb(buff, tcp_acceptable_seq(sk), TCPHDR_ACK);
+
++#ifdef CONFIG_TCPHEALTH
++	/* If the rcv_nxt has not advanced since sending our last ACK, this is a
+duplicate. */
++	if (tcp_sk(sk)->rcv_nxt == tcp_sk(sk)->last_ack_sent)
++		tcp_sk(sk)->dup_acks_sent++;
++	/* Record the total number of acks sent on this connection. */
++	tcp_sk(sk)->acks_sent++;
++#endif
++
+ 	/* Send it off, this clears delayed acks for us. */
+ 	TCP_SKB_CB(buff)->when = tcp_time_stamp;
++#ifdef CONFIG_TCPHEALTH
++	tcp_sk(sk)->last_ack_sent = tcp_sk(sk)->rcv_nxt;
++#endif
+ 	tcp_transmit_skb(sk, buff, 0, GFP_ATOMIC);
+ }
 
 
