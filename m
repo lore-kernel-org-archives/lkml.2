@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753267Ab2GPKnb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 06:43:31 -0400
-Received: from www.linutronix.de ([62.245.132.108]:52612 "EHLO
+	id S1752247Ab2GPKnh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 06:43:37 -0400
+Received: from www.linutronix.de ([62.245.132.108]:52605 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752496Ab2GPKmp (ORCPT
+	with ESMTP id S1752226Ab2GPKmp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 16 Jul 2012 06:42:45 -0400
-Message-Id: <20120716103948.775527032@linutronix.de>
+Message-Id: <20120716103948.673354828@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Mon, 16 Jul 2012 10:42:39 -0000
+Date: Mon, 16 Jul 2012 10:42:38 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
@@ -17,9 +17,11 @@ Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         Rusty Russell <rusty@rustcorp.com.au>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Namhyung Kim <namhyung@kernel.org>
-Subject: [Patch 7/7] infiniband: ehca: Use hotplug thread infrastructure
+Subject: [Patch 6/7] rcu: Use smp_hotplug_thread facility for RCUs per-CPU
+ kthread
 References: <20120716103749.122800930@linutronix.de>
-Content-Disposition: inline; filename=infiniband-ehca-use-smp-threads.patch
+Content-Disposition: inline;
+ filename=re-smpboot-provide-infrastructure-for-percpu-hotplug-threads.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -27,418 +29,390 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get rid of the hotplug notifiers and use the generic hotplug thread
-infrastructure.
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
+Bring RCU into the new-age CPU-hotplug fold by modifying RCU's per-CPU
+kthread code to use the new smp_hotplug_thread facility.
+
+[ tglx: Adapted it to use callbacks and to the simplified rcu yield ]
+    
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- drivers/infiniband/hw/ehca/ehca_irq.c |  255 ++++++++++++----------------------
- drivers/infiniband/hw/ehca/ehca_irq.h |    6 
- 2 files changed, 96 insertions(+), 165 deletions(-)
+ kernel/rcutree.c        |    4 
+ kernel/rcutree.h        |    8 -
+ kernel/rcutree_plugin.h |  203 +++++++++---------------------------------------
+ kernel/rcutree_trace.c  |    3 
+ 4 files changed, 41 insertions(+), 177 deletions(-)
 
-Index: tip/drivers/infiniband/hw/ehca/ehca_irq.c
+Index: tip/kernel/rcutree.c
 ===================================================================
---- tip.orig/drivers/infiniband/hw/ehca/ehca_irq.c
-+++ tip/drivers/infiniband/hw/ehca/ehca_irq.c
-@@ -42,6 +42,7 @@
+--- tip.orig/kernel/rcutree.c
++++ tip/kernel/rcutree.c
+@@ -125,7 +125,6 @@ static int rcu_scheduler_fully_active __
+  */
+ static DEFINE_PER_CPU(struct task_struct *, rcu_cpu_kthread_task);
+ DEFINE_PER_CPU(unsigned int, rcu_cpu_kthread_status);
+-DEFINE_PER_CPU(int, rcu_cpu_kthread_cpu);
+ DEFINE_PER_CPU(unsigned int, rcu_cpu_kthread_loops);
+ DEFINE_PER_CPU(char, rcu_cpu_has_work);
+ 
+@@ -1458,7 +1457,6 @@ static void rcu_cleanup_dead_cpu(int cpu
+ 	struct rcu_node *rnp = rdp->mynode;  /* Outgoing CPU's rdp & rnp. */
+ 
+ 	/* Adjust any no-longer-needed kthreads. */
+-	rcu_stop_cpu_kthread(cpu);
+ 	rcu_boost_kthread_setaffinity(rnp, -1);
+ 
+ 	/* Remove the dead CPU from the bitmasks in the rcu_node hierarchy. */
+@@ -2514,11 +2512,9 @@ static int __cpuinit rcu_cpu_notify(stru
+ 	case CPU_ONLINE:
+ 	case CPU_DOWN_FAILED:
+ 		rcu_boost_kthread_setaffinity(rnp, -1);
+-		rcu_cpu_kthread_setrt(cpu, 1);
+ 		break;
+ 	case CPU_DOWN_PREPARE:
+ 		rcu_boost_kthread_setaffinity(rnp, cpu);
+-		rcu_cpu_kthread_setrt(cpu, 0);
+ 		break;
+ 	case CPU_DYING:
+ 	case CPU_DYING_FROZEN:
+Index: tip/kernel/rcutree.h
+===================================================================
+--- tip.orig/kernel/rcutree.h
++++ tip/kernel/rcutree.h
+@@ -178,12 +178,6 @@ struct rcu_node {
+ 				/* Refused to boost: not sure why, though. */
+ 				/*  This can happen due to race conditions. */
+ #endif /* #ifdef CONFIG_RCU_BOOST */
+-	struct task_struct *node_kthread_task;
+-				/* kthread that takes care of this rcu_node */
+-				/*  structure, for example, awakening the */
+-				/*  per-CPU kthreads as needed. */
+-	unsigned int node_kthread_status;
+-				/* State of node_kthread_task for tracing. */
+ } ____cacheline_internodealigned_in_smp;
+ 
+ /*
+@@ -434,7 +428,6 @@ static int rcu_preempt_blocked_readers_c
+ #ifdef CONFIG_HOTPLUG_CPU
+ static void rcu_report_unblock_qs_rnp(struct rcu_node *rnp,
+ 				      unsigned long flags);
+-static void rcu_stop_cpu_kthread(int cpu);
+ #endif /* #ifdef CONFIG_HOTPLUG_CPU */
+ static void rcu_print_detail_task_stall(struct rcu_state *rsp);
+ static int rcu_print_task_stall(struct rcu_node *rnp);
+@@ -467,7 +460,6 @@ static void rcu_preempt_do_callbacks(voi
+ static int __cpuinit rcu_spawn_one_boost_kthread(struct rcu_state *rsp,
+ 						 struct rcu_node *rnp);
+ #endif /* #ifdef CONFIG_RCU_BOOST */
+-static void rcu_cpu_kthread_setrt(int cpu, int to_rt);
+ static void __cpuinit rcu_prepare_kthreads(int cpu);
+ static void rcu_prepare_for_idle_init(int cpu);
+ static void rcu_cleanup_after_idle(int cpu);
+Index: tip/kernel/rcutree_plugin.h
+===================================================================
+--- tip.orig/kernel/rcutree_plugin.h
++++ tip/kernel/rcutree_plugin.h
+@@ -25,6 +25,7 @@
   */
  
- #include <linux/slab.h>
+ #include <linux/delay.h>
 +#include <linux/smpboot.h>
  
- #include "ehca_classes.h"
- #include "ehca_irq.h"
-@@ -652,7 +653,7 @@ void ehca_tasklet_eq(unsigned long data)
- 	ehca_process_eq((struct ehca_shca*)data, 1);
+ #define RCU_KTHREAD_PRIO 1
+ 
+@@ -1440,25 +1441,6 @@ static int __cpuinit rcu_spawn_one_boost
+ 	return 0;
  }
  
--static inline int find_next_online_cpu(struct ehca_comp_pool *pool)
-+static int find_next_online_cpu(struct ehca_comp_pool *pool)
- {
- 	int cpu;
- 	unsigned long flags;
-@@ -662,17 +663,23 @@ static inline int find_next_online_cpu(s
- 		ehca_dmp(cpu_online_mask, cpumask_size(), "");
- 
- 	spin_lock_irqsave(&pool->last_cpu_lock, flags);
--	cpu = cpumask_next(pool->last_cpu, cpu_online_mask);
--	if (cpu >= nr_cpu_ids)
--		cpu = cpumask_first(cpu_online_mask);
--	pool->last_cpu = cpu;
-+	while (1) {
-+		cpu = cpumask_next(pool->last_cpu, cpu_online_mask);
-+		if (cpu >= nr_cpu_ids)
-+			cpu = cpumask_first(cpu_online_mask);
-+		pool->last_cpu = cpu;
-+		/* Might be on the way out */
-+		if (per_cpu_ptr(pool->cpu_comp_tasks, cpu)->active)
-+			break;
-+	}
- 	spin_unlock_irqrestore(&pool->last_cpu_lock, flags);
- 
- 	return cpu;
- }
- 
- static void __queue_comp_task(struct ehca_cq *__cq,
--			      struct ehca_cpu_comp_task *cct)
-+			      struct ehca_cpu_comp_task *cct,
-+			      struct task_struct *thread)
- {
- 	unsigned long flags;
- 
-@@ -683,7 +690,7 @@ static void __queue_comp_task(struct ehc
- 		__cq->nr_callbacks++;
- 		list_add_tail(&__cq->entry, &cct->cq_list);
- 		cct->cq_jobs++;
--		wake_up(&cct->wait_queue);
-+		wake_up_process(thread);
- 	} else
- 		__cq->nr_callbacks++;
- 
-@@ -695,6 +702,7 @@ static void queue_comp_task(struct ehca_
- {
- 	int cpu_id;
- 	struct ehca_cpu_comp_task *cct;
-+	struct task_struct *thread;
- 	int cq_jobs;
- 	unsigned long flags;
- 
-@@ -702,7 +710,8 @@ static void queue_comp_task(struct ehca_
- 	BUG_ON(!cpu_online(cpu_id));
- 
- 	cct = per_cpu_ptr(pool->cpu_comp_tasks, cpu_id);
--	BUG_ON(!cct);
-+	thread = per_cpu_ptr(pool->cpu_comp_threads, cpu_id);
-+	BUG_ON(!cct || !thread);
- 
- 	spin_lock_irqsave(&cct->task_lock, flags);
- 	cq_jobs = cct->cq_jobs;
-@@ -710,28 +719,25 @@ static void queue_comp_task(struct ehca_
- 	if (cq_jobs > 0) {
- 		cpu_id = find_next_online_cpu(pool);
- 		cct = per_cpu_ptr(pool->cpu_comp_tasks, cpu_id);
--		BUG_ON(!cct);
-+		thread = per_cpu_ptr(pool->cpu_comp_threads, cpu_id);
-+		BUG_ON(!cct || !thread);
- 	}
+-#ifdef CONFIG_HOTPLUG_CPU
 -
--	__queue_comp_task(__cq, cct);
-+	__queue_comp_task(__cq, cct, thread);
+-/*
+- * Stop the RCU's per-CPU kthread when its CPU goes offline,.
+- */
+-static void rcu_stop_cpu_kthread(int cpu)
+-{
+-	struct task_struct *t;
+-
+-	/* Stop the CPU's kthread. */
+-	t = per_cpu(rcu_cpu_kthread_task, cpu);
+-	if (t != NULL) {
+-		per_cpu(rcu_cpu_kthread_task, cpu) = NULL;
+-		kthread_stop(t);
+-	}
+-}
+-
+-#endif /* #ifdef CONFIG_HOTPLUG_CPU */
+-
+ static void rcu_kthread_do_work(void)
+ {
+ 	rcu_do_batch(&rcu_sched_state, &__get_cpu_var(rcu_sched_data));
+@@ -1466,59 +1448,22 @@ static void rcu_kthread_do_work(void)
+ 	rcu_preempt_do_callbacks();
  }
  
- static void run_comp_task(struct ehca_cpu_comp_task *cct)
+-/*
+- * Set the specified CPU's kthread to run RT or not, as specified by
+- * the to_rt argument.  The CPU-hotplug locks are held, so the task
+- * is not going away.
+- */
+-static void rcu_cpu_kthread_setrt(int cpu, int to_rt)
++static void rcu_cpu_kthread_setup(unsigned int cpu)
  {
- 	struct ehca_cq *cq;
+-	int policy;
+ 	struct sched_param sp;
+-	struct task_struct *t;
+ 
+-	t = per_cpu(rcu_cpu_kthread_task, cpu);
+-	if (t == NULL)
+-		return;
+-	if (to_rt) {
+-		policy = SCHED_FIFO;
+-		sp.sched_priority = RCU_KTHREAD_PRIO;
+-	} else {
+-		policy = SCHED_NORMAL;
+-		sp.sched_priority = 0;
+-	}
+-	sched_setscheduler_nocheck(t, policy, &sp);
++	sp.sched_priority = RCU_KTHREAD_PRIO;
++	sched_setscheduler_nocheck(current, SCHED_FIFO, &sp);
+ }
+ 
+-/*
+- * Handle cases where the rcu_cpu_kthread() ends up on the wrong CPU.
+- * This can happen while the corresponding CPU is either coming online
+- * or going offline.  We cannot wait until the CPU is fully online
+- * before starting the kthread, because the various notifier functions
+- * can wait for RCU grace periods.  So we park rcu_cpu_kthread() until
+- * the corresponding CPU is online.
+- *
+- * Return 1 if the kthread needs to stop, 0 otherwise.
+- *
+- * Caller must disable bh.  This function can momentarily enable it.
+- */
+-static int rcu_cpu_kthread_should_stop(int cpu)
++static void rcu_cpu_kthread_park(unsigned int cpu)
+ {
+-	while (cpu_is_offline(cpu) ||
+-	       !cpumask_equal(&current->cpus_allowed, cpumask_of(cpu)) ||
+-	       smp_processor_id() != cpu) {
+-		if (kthread_should_stop())
+-			return 1;
+-		per_cpu(rcu_cpu_kthread_status, cpu) = RCU_KTHREAD_OFFCPU;
+-		per_cpu(rcu_cpu_kthread_cpu, cpu) = raw_smp_processor_id();
+-		local_bh_enable();
+-		schedule_timeout_uninterruptible(1);
+-		if (!cpumask_equal(&current->cpus_allowed, cpumask_of(cpu)))
+-			set_cpus_allowed_ptr(current, cpumask_of(cpu));
+-		local_bh_disable();
+-	}
+-	per_cpu(rcu_cpu_kthread_cpu, cpu) = cpu;
+-	return 0;
++	per_cpu(rcu_cpu_kthread_status, cpu) = RCU_KTHREAD_OFFCPU;
++}
++
++static int rcu_cpu_kthread_should_run(unsigned int cpu)
++{
++	return __get_cpu_var(rcu_cpu_has_work);
+ }
+ 
+ /*
+@@ -1526,96 +1471,35 @@ static int rcu_cpu_kthread_should_stop(i
+  * RCU softirq used in flavors and configurations of RCU that do not
+  * support RCU priority boosting.
+  */
+-static int rcu_cpu_kthread(void *arg)
++static void rcu_cpu_kthread(unsigned int cpu)
+ {
+-	int cpu = (int)(long)arg;
 -	unsigned long flags;
--
--	spin_lock_irqsave(&cct->task_lock, flags);
+-	int spincnt = 0;
+-	unsigned int *statusp = &per_cpu(rcu_cpu_kthread_status, cpu);
+-	char work;
+-	char *workp = &per_cpu(rcu_cpu_has_work, cpu);
++	unsigned int *statusp = &__get_cpu_var(rcu_cpu_kthread_status);
++	char work, *workp = &__get_cpu_var(rcu_cpu_has_work);
++	int spincnt;
  
- 	while (!list_empty(&cct->cq_list)) {
- 		cq = list_entry(cct->cq_list.next, struct ehca_cq, entry);
--		spin_unlock_irqrestore(&cct->task_lock, flags);
-+		spin_unlock_irq(&cct->task_lock);
- 
- 		comp_event_callback(cq);
- 		if (atomic_dec_and_test(&cq->nr_events))
- 			wake_up(&cq->wait_completion);
- 
--		spin_lock_irqsave(&cct->task_lock, flags);
-+		spin_lock_irq(&cct->task_lock);
- 		spin_lock(&cq->task_lock);
- 		cq->nr_callbacks--;
- 		if (!cq->nr_callbacks) {
-@@ -740,159 +746,76 @@ static void run_comp_task(struct ehca_cp
- 		}
- 		spin_unlock(&cq->task_lock);
- 	}
--
--	spin_unlock_irqrestore(&cct->task_lock, flags);
- }
- 
--static int comp_task(void *__cct)
-+static void comp_task_park(unsigned int cpu)
- {
--	struct ehca_cpu_comp_task *cct = __cct;
--	int cql_empty;
--	DECLARE_WAITQUEUE(wait, current);
--
--	set_current_state(TASK_INTERRUPTIBLE);
--	while (!kthread_should_stop()) {
--		add_wait_queue(&cct->wait_queue, &wait);
--
--		spin_lock_irq(&cct->task_lock);
--		cql_empty = list_empty(&cct->cq_list);
--		spin_unlock_irq(&cct->task_lock);
--		if (cql_empty)
--			schedule();
+-	trace_rcu_utilization("Start CPU kthread@init");
+-	for (;;) {
+-		*statusp = RCU_KTHREAD_WAITING;
+-		trace_rcu_utilization("End CPU kthread@rcu_wait");
+-		rcu_wait(*workp != 0 || kthread_should_stop());
++	for (spincnt = 0; spincnt < 10; spincnt++) {
+ 		trace_rcu_utilization("Start CPU kthread@rcu_wait");
+ 		local_bh_disable();
+-		if (rcu_cpu_kthread_should_stop(cpu)) {
+-			local_bh_enable();
+-			break;
+-		}
+ 		*statusp = RCU_KTHREAD_RUNNING;
+-		per_cpu(rcu_cpu_kthread_loops, cpu)++;
+-		local_irq_save(flags);
++		this_cpu_inc(rcu_cpu_kthread_loops);
++		local_irq_disable();
+ 		work = *workp;
+ 		*workp = 0;
+-		local_irq_restore(flags);
++		local_irq_enable();
+ 		if (work)
+ 			rcu_kthread_do_work();
+ 		local_bh_enable();
+-		if (*workp != 0)
+-			spincnt++;
 -		else
--			__set_current_state(TASK_RUNNING);
--
--		remove_wait_queue(&cct->wait_queue, &wait);
-+	struct ehca_cpu_comp_task *cct = per_cpu_ptr(pool->cpu_comp_tasks, cpu);
-+	struct ehca_cpu_comp_task *target;
-+	struct task_struct *thread;
-+	struct ehca_cq *cq, *tmp;
-+	LIST_HEAD(list);
- 
--		spin_lock_irq(&cct->task_lock);
--		cql_empty = list_empty(&cct->cq_list);
--		spin_unlock_irq(&cct->task_lock);
--		if (!cql_empty)
--			run_comp_task(__cct);
-+	spin_lock_irq(&cct->task_lock);
-+	cct->cq_jobs = 0;
-+	cct->active = 0;
-+	list_splice_init(&cct->cq_list, &list);
-+	spin_unlock_irq(&cct->task_lock);
- 
--		set_current_state(TASK_INTERRUPTIBLE);
-+	cpu = find_next_online_cpu(pool);
-+	target = per_cpu_ptr(pool->cpu_comp_tasks, cpu);
-+	thread = per_cpu_ptr(pool->cpu_comp_threads, cpu);
-+	spin_lock_irq(&target->task_lock);
-+	list_for_each_entry_safe(cq, tmp, &list, entry) {
-+		list_del(&cq->entry);
-+		__queue_comp_task(cq, target, thread);
+-			spincnt = 0;
+-		if (spincnt > 10) {
+-			*statusp = RCU_KTHREAD_YIELDING;
+-			trace_rcu_utilization("End CPU kthread@rcu_yield");
+-			schedule_timeout_interruptible(2);
+-			trace_rcu_utilization("Start CPU kthread@rcu_yield");
+-			spincnt = 0;
++		if (*workp == 0) {
++			trace_rcu_utilization("End CPU kthread@rcu_wait");
++			*statusp = RCU_KTHREAD_WAITING;
++			return;
+ 		}
  	}
--	__set_current_state(TASK_RUNNING);
--
+-	*statusp = RCU_KTHREAD_STOPPED;
+-	trace_rcu_utilization("End CPU kthread@term");
 -	return 0;
 -}
 -
--static struct task_struct *create_comp_task(struct ehca_comp_pool *pool,
--					    int cpu)
+-/*
+- * Spawn a per-CPU kthread, setting up affinity and priority.
+- * Because the CPU hotplug lock is held, no other CPU will be attempting
+- * to manipulate rcu_cpu_kthread_task.  There might be another CPU
+- * attempting to access it during boot, but the locking in kthread_bind()
+- * will enforce sufficient ordering.
+- *
+- * Please note that we cannot simply refuse to wake up the per-CPU
+- * kthread because kthreads are created in TASK_UNINTERRUPTIBLE state,
+- * which can result in softlockup complaints if the task ends up being
+- * idle for more than a couple of minutes.
+- *
+- * However, please note also that we cannot bind the per-CPU kthread to its
+- * CPU until that CPU is fully online.  We also cannot wait until the
+- * CPU is fully online before we create its per-CPU kthread, as this would
+- * deadlock the system when CPU notifiers tried waiting for grace
+- * periods.  So we bind the per-CPU kthread to its CPU only if the CPU
+- * is online.  If its CPU is not yet fully online, then the code in
+- * rcu_cpu_kthread() will wait until it is fully online, and then do
+- * the binding.
+- */
+-static int __cpuinit rcu_spawn_one_cpu_kthread(int cpu)
 -{
--	struct ehca_cpu_comp_task *cct;
+-	struct sched_param sp;
+-	struct task_struct *t;
 -
--	cct = per_cpu_ptr(pool->cpu_comp_tasks, cpu);
--	spin_lock_init(&cct->task_lock);
--	INIT_LIST_HEAD(&cct->cq_list);
--	init_waitqueue_head(&cct->wait_queue);
--	cct->task = kthread_create_on_node(comp_task, cct, cpu_to_node(cpu),
--					   "ehca_comp/%d", cpu);
--
--	return cct->task;
-+	spin_unlock_irq(&target->task_lock);
- }
- 
--static void destroy_comp_task(struct ehca_comp_pool *pool,
--			      int cpu)
-+static void comp_task_stop(unsigned int cpu, bool online)
- {
--	struct ehca_cpu_comp_task *cct;
--	struct task_struct *task;
--	unsigned long flags_cct;
--
--	cct = per_cpu_ptr(pool->cpu_comp_tasks, cpu);
--
--	spin_lock_irqsave(&cct->task_lock, flags_cct);
-+	struct ehca_cpu_comp_task *cct = per_cpu_ptr(pool->cpu_comp_tasks, cpu);
- 
--	task = cct->task;
--	cct->task = NULL;
-+	spin_lock_irq(&cct->task_lock);
- 	cct->cq_jobs = 0;
--
--	spin_unlock_irqrestore(&cct->task_lock, flags_cct);
--
--	if (task)
--		kthread_stop(task);
-+	cct->active = 0;
-+	WARN_ON(!list_empty(&cct->cq_list));
-+	spin_unlock_irq(&cct->task_lock);
- }
- 
--static void __cpuinit take_over_work(struct ehca_comp_pool *pool, int cpu)
-+static int comp_task_should_run(unsigned int cpu)
- {
- 	struct ehca_cpu_comp_task *cct = per_cpu_ptr(pool->cpu_comp_tasks, cpu);
--	LIST_HEAD(list);
--	struct ehca_cq *cq;
--	unsigned long flags_cct;
--
--	spin_lock_irqsave(&cct->task_lock, flags_cct);
--
--	list_splice_init(&cct->cq_list, &list);
--
--	while (!list_empty(&list)) {
--		cq = list_entry(cct->cq_list.next, struct ehca_cq, entry);
--
--		list_del(&cq->entry);
--		__queue_comp_task(cq, this_cpu_ptr(pool->cpu_comp_tasks));
--	}
--
--	spin_unlock_irqrestore(&cct->task_lock, flags_cct);
- 
-+	return cct->cq_jobs;
- }
- 
--static int __cpuinit comp_pool_callback(struct notifier_block *nfb,
--					unsigned long action,
--					void *hcpu)
-+static int comp_task(unsigned int cpu)
- {
--	unsigned int cpu = (unsigned long)hcpu;
--	struct ehca_cpu_comp_task *cct;
--
--	switch (action) {
--	case CPU_UP_PREPARE:
--	case CPU_UP_PREPARE_FROZEN:
--		ehca_gen_dbg("CPU: %x (CPU_PREPARE)", cpu);
--		if (!create_comp_task(pool, cpu)) {
--			ehca_gen_err("Can't create comp_task for cpu: %x", cpu);
--			return notifier_from_errno(-ENOMEM);
--		}
--		break;
--	case CPU_UP_CANCELED:
--	case CPU_UP_CANCELED_FROZEN:
--		ehca_gen_dbg("CPU: %x (CPU_CANCELED)", cpu);
--		cct = per_cpu_ptr(pool->cpu_comp_tasks, cpu);
--		kthread_bind(cct->task, cpumask_any(cpu_online_mask));
--		destroy_comp_task(pool, cpu);
--		break;
--	case CPU_ONLINE:
--	case CPU_ONLINE_FROZEN:
--		ehca_gen_dbg("CPU: %x (CPU_ONLINE)", cpu);
--		cct = per_cpu_ptr(pool->cpu_comp_tasks, cpu);
--		kthread_bind(cct->task, cpu);
--		wake_up_process(cct->task);
--		break;
--	case CPU_DOWN_PREPARE:
--	case CPU_DOWN_PREPARE_FROZEN:
--		ehca_gen_dbg("CPU: %x (CPU_DOWN_PREPARE)", cpu);
--		break;
--	case CPU_DOWN_FAILED:
--	case CPU_DOWN_FAILED_FROZEN:
--		ehca_gen_dbg("CPU: %x (CPU_DOWN_FAILED)", cpu);
--		break;
--	case CPU_DEAD:
--	case CPU_DEAD_FROZEN:
--		ehca_gen_dbg("CPU: %x (CPU_DEAD)", cpu);
--		destroy_comp_task(pool, cpu);
--		take_over_work(pool, cpu);
--		break;
--	}
-+	struct ehca_cpu_comp_task *cct = this_cpu_ptr(pool->cpu_comp_tasks);
-+	int cql_empty;
- 
--	return NOTIFY_OK;
-+	spin_lock_irq(&cct->task_lock);
-+	cql_empty = list_empty(&cct->cq_list);
-+	if (!cql_empty) {
-+		__set_current_state(TASK_RUNNING);
-+		run_comp_task(cct);
-+	}
-+	spin_unlock_irq(&cct->task_lock);
- }
- 
--static struct notifier_block comp_pool_callback_nb __cpuinitdata = {
--	.notifier_call	= comp_pool_callback,
--	.priority	= 0,
-+static struct smp_hotplug_thread comp_pool_threads = {
-+	.thread_should_run	= comp_task_should_run,
-+	.thread_fn		= comp_task,
-+	.thread_comm		= "ehca_comp/%u",
-+	.cleanup		= comp_task_stop,
-+	.park			= comp_task_park,
- };
- 
- int ehca_create_comp_pool(void)
- {
--	int cpu;
--	struct task_struct *task;
-+	int cpu, ret = -ENOMEM;
- 
- 	if (!ehca_scaling_code)
- 		return 0;
-@@ -905,38 +828,46 @@ int ehca_create_comp_pool(void)
- 	pool->last_cpu = cpumask_any(cpu_online_mask);
- 
- 	pool->cpu_comp_tasks = alloc_percpu(struct ehca_cpu_comp_task);
--	if (pool->cpu_comp_tasks == NULL) {
--		kfree(pool);
--		return -EINVAL;
--	}
-+	if (!pool->cpu_comp_tasks)
-+		goto out_pool;
- 
--	for_each_online_cpu(cpu) {
--		task = create_comp_task(pool, cpu);
--		if (task) {
--			kthread_bind(task, cpu);
--			wake_up_process(task);
--		}
-+	pool->cpu_comp_threads = alloc_percpu(struct task_struct *);
-+	if (!pool->cpu_comp_threads)
-+		goto out_tasks;
-+
-+	for_each_present_cpu(cpu) {
-+		struct ehca_cpu_comp_task *cct;
-+
-+		cct = per_cpu_ptr(pool->cpu_comp_tasks, cpu);
-+		spin_lock_init(&cct->task_lock);
-+		INIT_LIST_HEAD(&cct->cq_list);
- 	}
- 
--	register_hotcpu_notifier(&comp_pool_callback_nb);
-+	comp_pool_threads.store = pool->cpu_comp_threads;
-+	ret = smpboot_register_percpu_thread(&comp_pool_threads);
-+	if (ret)
-+		goto out_threads;
- 
--	printk(KERN_INFO "eHCA scaling code enabled\n");
-+	pr_info("eHCA scaling code enabled\n");
-+	return ret;
- 
+-	if (!rcu_scheduler_fully_active ||
+-	    per_cpu(rcu_cpu_kthread_task, cpu) != NULL)
+-		return 0;
+-	t = kthread_create_on_node(rcu_cpu_kthread,
+-				   (void *)(long)cpu,
+-				   cpu_to_node(cpu),
+-				   "rcuc/%d", cpu);
+-	if (IS_ERR(t))
+-		return PTR_ERR(t);
+-	if (cpu_online(cpu))
+-		kthread_bind(t, cpu);
+-	per_cpu(rcu_cpu_kthread_cpu, cpu) = cpu;
+-	WARN_ON_ONCE(per_cpu(rcu_cpu_kthread_task, cpu) != NULL);
+-	sp.sched_priority = RCU_KTHREAD_PRIO;
+-	sched_setscheduler_nocheck(t, SCHED_FIFO, &sp);
+-	per_cpu(rcu_cpu_kthread_task, cpu) = t;
+-	wake_up_process(t); /* Get to TASK_INTERRUPTIBLE quickly. */
 -	return 0;
-+out_threads:
-+	free_percpu(pool->cpu_comp_threads);
-+out_tasks:
-+	free_percpu(pool->cpu_comp_tasks);
-+out_pool:
-+	kfree(pool);
-+	return ret;
++	*statusp = RCU_KTHREAD_YIELDING;
++	trace_rcu_utilization("Start CPU kthread@rcu_yield");
++	schedule_timeout_interruptible(2);
++	trace_rcu_utilization("End CPU kthread@rcu_yield");
++	*statusp = RCU_KTHREAD_WAITING;
  }
  
- void ehca_destroy_comp_pool(void)
+ /*
+@@ -1651,6 +1535,15 @@ static void rcu_boost_kthread_setaffinit
+ 	free_cpumask_var(cm);
+ }
+ 
++static struct smp_hotplug_thread rcu_cpu_thread_spec = {
++	.store			= &rcu_cpu_kthread_task,
++	.thread_should_run	= rcu_cpu_kthread_should_run,
++	.thread_fn		= rcu_cpu_kthread,
++	.thread_comm		= "rcuc/%u",
++	.setup			= rcu_cpu_kthread_setup,
++	.park			= rcu_cpu_kthread_park,
++};
++
+ /*
+  * Spawn all kthreads -- called as soon as the scheduler is running.
+  */
+@@ -1660,11 +1553,9 @@ static int __init rcu_spawn_kthreads(voi
+ 	int cpu;
+ 
+ 	rcu_scheduler_fully_active = 1;
+-	for_each_possible_cpu(cpu) {
++	for_each_possible_cpu(cpu)
+ 		per_cpu(rcu_cpu_has_work, cpu) = 0;
+-		if (cpu_online(cpu))
+-			(void)rcu_spawn_one_cpu_kthread(cpu);
+-	}
++	BUG_ON(smpboot_register_percpu_thread(&rcu_cpu_thread_spec));
+ 	rnp = rcu_get_root(rcu_state);
+ 	(void)rcu_spawn_one_boost_kthread(rcu_state, rnp);
+ 	if (NUM_RCU_NODES > 1) {
+@@ -1681,10 +1572,8 @@ static void __cpuinit rcu_prepare_kthrea
+ 	struct rcu_node *rnp = rdp->mynode;
+ 
+ 	/* Fire up the incoming CPU's kthread and leaf rcu_node kthread. */
+-	if (rcu_scheduler_fully_active) {
+-		(void)rcu_spawn_one_cpu_kthread(cpu);
++	if (rcu_scheduler_fully_active)
+ 		(void)rcu_spawn_one_boost_kthread(rcu_state, rnp);
+-	}
+ }
+ 
+ #else /* #ifdef CONFIG_RCU_BOOST */
+@@ -1708,22 +1597,10 @@ static void rcu_preempt_boost_start_gp(s
  {
--	int i;
--
- 	if (!ehca_scaling_code)
- 		return;
- 
--	unregister_hotcpu_notifier(&comp_pool_callback_nb);
--
--	for_each_online_cpu(i)
--		destroy_comp_task(pool, i);
-+	smpboot_unregister_percpu_thread(&comp_pool_threads);
- 
-+	free_percpu(pool->cpu_comp_threads);
- 	free_percpu(pool->cpu_comp_tasks);
- 	kfree(pool);
  }
-Index: tip/drivers/infiniband/hw/ehca/ehca_irq.h
+ 
+-#ifdef CONFIG_HOTPLUG_CPU
+-
+-static void rcu_stop_cpu_kthread(int cpu)
+-{
+-}
+-
+-#endif /* #ifdef CONFIG_HOTPLUG_CPU */
+-
+ static void rcu_boost_kthread_setaffinity(struct rcu_node *rnp, int outgoingcpu)
+ {
+ }
+ 
+-static void rcu_cpu_kthread_setrt(int cpu, int to_rt)
+-{
+-}
+-
+ static int __init rcu_scheduler_really_started(void)
+ {
+ 	rcu_scheduler_fully_active = 1;
+Index: tip/kernel/rcutree_trace.c
 ===================================================================
---- tip.orig/drivers/infiniband/hw/ehca/ehca_irq.h
-+++ tip/drivers/infiniband/hw/ehca/ehca_irq.h
-@@ -58,15 +58,15 @@ void ehca_tasklet_eq(unsigned long data)
- void ehca_process_eq(struct ehca_shca *shca, int is_irq);
- 
- struct ehca_cpu_comp_task {
--	wait_queue_head_t wait_queue;
- 	struct list_head cq_list;
--	struct task_struct *task;
- 	spinlock_t task_lock;
- 	int cq_jobs;
-+	int active;
- };
- 
- struct ehca_comp_pool {
--	struct ehca_cpu_comp_task *cpu_comp_tasks;
-+	struct ehca_cpu_comp_task __percpu *cpu_comp_tasks;
-+	struct task_struct * __percpu *cpu_comp_threads;
- 	int last_cpu;
- 	spinlock_t last_cpu_lock;
- };
+--- tip.orig/kernel/rcutree_trace.c
++++ tip/kernel/rcutree_trace.c
+@@ -83,11 +83,10 @@ static void print_one_rcu_data(struct se
+ 			rdp->nxttail[RCU_WAIT_TAIL]],
+ 		   ".D"[&rdp->nxtlist != rdp->nxttail[RCU_DONE_TAIL]]);
+ #ifdef CONFIG_RCU_BOOST
+-	seq_printf(m, " kt=%d/%c/%d ktl=%x",
++	seq_printf(m, " kt=%d/%c ktl=%x",
+ 		   per_cpu(rcu_cpu_has_work, rdp->cpu),
+ 		   convert_kthread_status(per_cpu(rcu_cpu_kthread_status,
+ 					  rdp->cpu)),
+-		   per_cpu(rcu_cpu_kthread_cpu, rdp->cpu),
+ 		   per_cpu(rcu_cpu_kthread_loops, rdp->cpu) & 0xffff);
+ #endif /* #ifdef CONFIG_RCU_BOOST */
+ 	seq_printf(m, " b=%ld", rdp->blimit);
 
 
