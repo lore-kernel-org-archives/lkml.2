@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753319Ab2GPRmS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 13:42:18 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:42729 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752078Ab2GPRmR convert rfc822-to-8bit (ORCPT
+	id S1753624Ab2GPRpw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 13:45:52 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:60830 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753112Ab2GPRpv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 13:42:17 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Toralf =?iso-8859-1?q?F=F6rster?= <toralf.foerster@gmx.de>
-Subject: Re: 3.5-rcX: wakeup after s2ram doesn't work after a longer sleep time
-Date: Mon, 16 Jul 2012 19:47:55 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-References: <500319E9.8010001@gmx.de> <201207152221.48232.rjw@sisk.pl> <50041C1E.8070203@gmx.de>
-In-Reply-To: <50041C1E.8070203@gmx.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201207161947.55896.rjw@sisk.pl>
+	Mon, 16 Jul 2012 13:45:51 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+FTuJo43+F1k9IDo56PExhAdwBMUjMMnIEy4L0sZ
+	irGgjj66o8iWHB
+Message-ID: <1342455407.7659.86.camel@marge.simpson.net>
+Subject: Re: 3.4.4-rt13: btrfs + xfstests 006 = BOOM..  and a bonus rt_mutex
+ deadlock report for absolutely free!
+From: Mike Galbraith <efault@gmx.de>
+To: Chris Mason <chris.mason@fusionio.com>
+Cc: "Chris L. Mason" <clmason@fusionio.com>,
+        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Date: Mon, 16 Jul 2012 18:16:47 +0200
+In-Reply-To: <20120716154304.GG25961@shiny.int.fusionio.com>
+References: <1342072060.7338.102.camel@marge.simpson.net>
+	 <20120713125043.GH30128@shiny> <1342260883.7368.30.camel@marge.simpson.net>
+	 <1342436144.7659.58.camel@marge.simpson.net>
+	 <20120716154304.GG25961@shiny.int.fusionio.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, July 16, 2012, Toralf Förster wrote:
-> On 07/15/2012 10:21 PM, Rafael J. Wysocki wrote:
-> > On Sunday, July 15, 2012, Toralf Förster wrote:
-> >> My ThinkPad T400 (Gentoo Linux booted from an external USB drive) does
-> >> not wake up after s2ram, if the  sleep time was longer than about 1 hour.
-> >> I'm unsure whether this started after 3.5-rc5, at least with -rc7 I
-> >> observed this now several times. Unfortunately it is not 100% reproduceable.
-> >>
-> >> 3.4.x works flawlessly.
-> >>
-> >> Any idea whether a particular commit could be the culprit ? (Bisecting
-> >> such an issue is a night mare)
-> > 
-> > Please check
-> > 
-> > commit 5baefd6d84163443215f4a99f6a20f054ef11236
-> > Author: John Stultz <johnstul@us.ibm.com>
-> > Date:   Tue Jul 10 18:43:25 2012 -0400
-> > 
-> >     hrtimer: Update hrtimer base offsets each hrtimer_interrupt
-> > 
-> > Thanks,
-> > Rafael
-> > 
-> 
-> No,
-> reverting doesn#t help.
-> 
-> I can r2ram several times in a row w/o problems, if the sleep time as
-> within seconds.
-> After 20 min however the system doesn't came back (the internal hard
-> disk spins up, but the sleep-state-led is still on).
+On Mon, 2012-07-16 at 11:43 -0400, Chris Mason wrote: 
+> On Mon, Jul 16, 2012 at 04:55:44AM -0600, Mike Galbraith wrote:
 
-Well, so this is a different issue definitely.
+> > Seems btrfs isn't entirely convinced either.
+> > 
+> > [ 2292.336229] use_block_rsv: 1810 callbacks suppressed
+> > [ 2292.336231] ------------[ cut here ]------------
+> > [ 2292.336255] WARNING: at fs/btrfs/extent-tree.c:6344 use_block_rsv+0x17d/0x190 [btrfs]()
+> > [ 2292.336257] Hardware name: System x3550 M3 -[7944K3G]-
+> > [ 2292.336259] btrfs: block rsv returned -28
+> 
+> This is unrelated.  You got far enough into the benchmark to hit an
+> ENOSPC warning.  This can be ignored (I just deleted it when we used 3.0
+> for oracle).
 
-Thanks,
-Rafael
+Ah great, thanks.  I'll whack it in my tree as well then.
+
+> re: dbench performance.  dbench tends to penalize fairness.  I can
+> imagine RT making it slower in general.
+
+It seems to work just fine for my normal workloads, and cyclictest is
+happy, so I'm happy.  Zillion threads is 'keep the pieces' to me ;-)
+
+If you think the patch is ok as is, I'll go ahead and submit it after I
+let dbench hammer on it overnight at least.
+
+-Mike
+
