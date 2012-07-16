@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753895Ab2GPRQP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 13:16:15 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45638 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753319Ab2GPRQH (ORCPT
+	id S1753487Ab2GPRUc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 13:20:32 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:47717 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751808Ab2GPRU1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 13:16:07 -0400
-From: Joonsoo Kim <js1304@gmail.com>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Joonsoo Kim <js1304@gmail.com>, Brice Goglin <brice@myri.com>,
-        Christoph Lameter <cl@linux.com>, Minchan Kim <minchan@kernel.org>
-Subject: [PATCH 4] mm: fix possible incorrect return value of move_pages() syscall
-Date: Tue, 17 Jul 2012 02:14:49 +0900
-Message-Id: <1342458889-19090-1-git-send-email-js1304@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1342455272-32703-1-git-send-email-js1304@gmail.com>
-References: <1342455272-32703-1-git-send-email-js1304@gmail.com>
+	Mon, 16 Jul 2012 13:20:27 -0400
+Message-ID: <50044D56.6000400@redhat.com>
+Date: Mon, 16 Jul 2012 19:20:22 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH] sd: do not set changed flag on all unit attention conditions
+References: <1342454772-9018-1-git-send-email-pbonzini@redhat.com> <1342455503.3176.42.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <1342455503.3176.42.camel@dabdike.int.hansenpartnership.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-move_pages() syscall may return success in case that
-do_move_page_to_node_array return positive value which means migration failed.
-This patch changes return value of do_move_page_to_node_array
-for not returning positive value. It can fix the problem.
+Il 16/07/2012 18:18, James Bottomley ha scritto:
+>> > diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+>> > index b583277..6d8ca08 100644
+>> > --- a/drivers/scsi/scsi_lib.c
+>> > +++ b/drivers/scsi/scsi_lib.c
+>> > @@ -843,8 +843,11 @@ void scsi_io_completion(struct scsi_cmnd *cmd, unsigned int good_bytes)
+>> >  	} else if (sense_valid && !sense_deferred) {
+>> >  		switch (sshdr.sense_key) {
+>> >  		case UNIT_ATTENTION:
+>> > -			if (cmd->device->removable) {
+>> > -				/* Detected disc change.  Set a bit
+>> > +			if (cmd->device->removable &&
+>> > +			    (sshdr.asc == 0x3a ||
+>> > +			     (sshdr.asc == 0x28 && sshdr.ascq == 0x00))) {
+>> > +				/* "No medium" or "Medium may have changed."
+>> > +				 * This means a disc change.  Set a bit
+> This type of change would likely cause a huge cascade of errors in real
+> removable media devices.  Under the MMC standards, which a lot of the
+> older removable discs seem to follow, UNIT ATTENTION indicates either
+> medium change or device reset (which we check for and eat lower down);
+> we can't rely on them giving proper SBC-2 sense codes.  If you want to
+> pretend to be removable media, you have to conform to its standards.
 
-Signed-off-by: Joonsoo Kim <js1304@gmail.com>
-Cc: Brice Goglin <brice@myri.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Minchan Kim <minchan@kernel.org>
+Would you accept a patch doing the opposite, i.e. passing some sense
+codes such as PARAMETERS CHANGED and TARGET OPERATING CONDITIONS HAVE
+CHANGED?
 
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 294d52a..adabaf4 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -1171,7 +1171,7 @@ set_status:
- 	}
- 
- 	up_read(&mm->mmap_sem);
--	return err;
-+	return err > 0 ? -EIO : err;
- }
- 
- /*
--- 
-1.7.9.5
-
+Paolo
