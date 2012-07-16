@@ -1,124 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752215Ab2GPIYj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 04:24:39 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:34154 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750897Ab2GPIYf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 04:24:35 -0400
-Date: Mon, 16 Jul 2012 10:24:18 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: david@lang.hm
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>, Pekka Enberg <penberg@kernel.org>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
-        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
-        Debian Kernel Team <debian-kernel@lists.debian.org>,
-        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Sasha Levin <levinsasha928@gmail.com>,
-        Asias He <asias.hejun@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: [opensuse-kernel] Re: [RFC] Simplifying kernel configuration for
- distro issues
-Message-ID: <20120716082418.GC24327@aftab.osrc.amd.com>
-References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com>
- <1342212885.25704.4.camel@lade.trondhjem.org>
- <CAFLxGvxxWodD97=78218wc+tuigAFsNK_PdroDfb4BWTZoxxUw@mail.gmail.com>
- <20120714103716.GD26559@liondog.tnic>
- <CAOJsxLGHQuuXqDD-1SNhL7Ly1-heCYFLzqj3SLh4xzmP9NR5GQ@mail.gmail.com>
- <20120715101434.GA18144@aftab.osrc.amd.com>
- <CAOJsxLGBCQ6C-3M0ZdTfVPqnmOKqUE9+78Mhf+67TksmVojuuQ@mail.gmail.com>
- <20120715211848.GA21167@aftab.osrc.amd.com>
- <20120715214819.GA1990@moon>
- <alpine.DEB.2.02.1207151459480.20176@asgard.lang.hm>
+	id S1751916Ab2GPIZH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 04:25:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51751 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751334Ab2GPIZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 04:25:04 -0400
+Message-ID: <5003CFBA.3060108@redhat.com>
+Date: Mon, 16 Jul 2012 11:24:26 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1207151459480.20176@asgard.lang.hm>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: Pavel Machek <pavel@ucw.cz>, Ingo Molnar <mingo@kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
+References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com> <CAOesGMiCexiqA3L5GdNgyHhSD-5Bpqbb02YJrZPr8yMYa0afjA@mail.gmail.com> <201207071927.13135.arnd@arndb.de> <20120710071023.GA10456@gmail.com> <20120710101018.GE15120@arm.com> <20120714093032.GA23316@elf.ucw.cz> <20120715121644.GB10597@arm.com>
+In-Reply-To: <20120715121644.GB10597@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 15, 2012 at 03:09:12PM -0700, david@lang.hm wrote:
-> On Mon, 16 Jul 2012, Cyrill Gorcunov wrote:
+On 07/15/2012 03:16 PM, Catalin Marinas wrote:
 > 
-> >Replying to David's message (sorry for delay) I fear having a bunch of
-> >miniconfig files will end up in a mess. Maybe (maybe (!) I don't know since
-> >I've no time at moment to read kconfig code and I'm not sure if this
-> >is right direction at all) it would worth to add some new keyword to
-> >kconfig language, say "profile", which would tag symbol to a category
-> >if needed, and these categories included into profiles automatically.
-> >On the other hands this might end up in a mess as well.
+> The AArch32 execution mode is optional, so it depends on the actual CPU
+> implementation (while AArch64 is mandatory). If the implementation
+> supports it, the most likely scenario for AArch32 at kernel level is in
+> virtual machines or the secure OS. I'll explain below why.
 > 
-> I have a couple problems with the approach of modifying the existing
-> kconfig files
+> The exception (or privilege) levels on an ARMv8 architecture look like
+> this:
 > 
-> 1. how does it handle the case when a profile wants something one
-> way and the admin wants it another way
+> Secure World	Normal World
+> +-----+
+> | EL3 |				- Secure monitor
+> +-----+
+> 		+-----+
+> 		| EL2 |		- Hypervisor (normal world only)
+> 		+-----+
+> +-----+		+-----+
+> | EL1 |		| EL1 |		- OS kernel (secure or normal)
+> +-----+		+-----+
+> +-----+		+-----+
+> | EL0 |		| EL0 |		- User apps (secure or normal)
+> +-----+		+-----+
 
-Select the profile and then fixup the config the normal way.
+Can the same kernel image run in both EL1 and EL2?  I noticed some .if
+ELs in the assembler files.  I guess they could be compiled multiple
+times and the correct version chosen at runtime, or patched up like x86
+does with alternative().
 
-If what the admin wants is incompatible with the profile, admin doesn't
-select the profile.
-
->   the example is the fedora default wanting SELINUX and I want some
-> other LSM
-
-Currently, if you run fedora and want something that's not enabled, you
-recompile your kernel too, right?
-
-> 2. since it requires making changes in the upstream kernel source, the
-> number of people who can make these changes is small.
-
-I think that's moot since you either select the profile or you don't.
-
-> 3. since all these changes go into the upstream kernel source, changes
-> to these profiles are going to be visible churn (think of the issues
-> with the defconfigs for ARM a couple of years ago)
-
-AFAICT, those changes will be needed only for a new distro release and
-that happens twice a year, tops.
-
-> 4. the complexity of tagging all possible profiles is very high.
-
-That's why we start simple.
-
-> Even if you limit the profiles to "Linux Distros", how many different
-> distros are there? Do you really want to have to start arguing over
-> which distros are large enough to get their profile added to the
-> upstream kernel source?
-
-That's a valid question; its answer could be defined arbitrarily.
-
-<joshing>
-Let's say all distros which make money - more than a certain large
-amount - are allowed. :-)
-</joshing>
-
-> If instead we go with something along the lines of the miniconf
-> approach, the picture looks very different
-> 
-> 1. this approach only sets things one time, after that the person
-> doing the compile is free to change anything.
-
-...
-
-Sorry, I don't see the simplification: you need to rebuild your kernel
-anyway and before you rebuild it, you can do all the changes you want.
-So either you select a profile or you load a miniconfig, it doesn't
-really matter how you do it?
+One of the advantages kvm has to Linux distributors is that the same
+kernel image can be used the hypervisor, guest, and bare metal.  I'd
+like to preserve that for arm64.
 
 -- 
-Regards/Gruss,
-Boris.
+error compiling committee.c: too many arguments to function
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+
