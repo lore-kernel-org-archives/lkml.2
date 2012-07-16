@@ -1,67 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752892Ab2GPI2k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 04:28:40 -0400
-Received: from mga14.intel.com ([143.182.124.37]:45301 "EHLO mga14.intel.com"
+	id S1752936Ab2GPI3G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 04:29:06 -0400
+Received: from mga14.intel.com ([143.182.124.37]:45342 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752401Ab2GPI2g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 04:28:36 -0400
+	id S1752282Ab2GPI3C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 04:29:02 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="168807161"
-Subject: Re: [PATCH 5/7 v2] dma: sh: use an integer slave ID to improve API
- compatibility
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <Pine.LNX.4.64.1207160907180.12302@axis700.grange>
-References: <1341484183-10757-1-git-send-email-g.liakhovetski@gmx.de>
-	 <1341484183-10757-6-git-send-email-g.liakhovetski@gmx.de>
-	 <1342418828.1726.37.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1207160832540.12302@axis700.grange>
-	 <1342421587.1726.49.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1207160907180.12302@axis700.grange>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 16 Jul 2012 13:58:25 +0530
-Message-ID: <1342427305.1726.50.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+   d="scan'208";a="122919689"
+Message-ID: <5003D0E4.2060300@intel.com>
+Date: Mon, 16 Jul 2012 16:29:24 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+MIME-Version: 1.0
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: kosaki.motohiro@jp.fujitsu.com, akpm@linux-foundation.org,
+        paul.gortmaker@windriver.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] cpumask: cpumask_scnprintf() comments correction
+References: <1342406154-24001-1-git-send-email-alex.shi@intel.com> <87ehocxig6.fsf@rustcorp.com.au>
+In-Reply-To: <87ehocxig6.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-07-16 at 09:13 +0200, Guennadi Liakhovetski wrote:
-> > > They tell the driver how the channel has to be configured to
-> support this 
-> > > specific client. They are values of two specific registers. In
-> fact, CHCR 
-> > > means exactly that - CHannel Control Register.
-> > what exactly does the channel control register do in shdma? Should
-> shdma
-> > driver deduce this value rather than client giving it?
-> > Same question for mid_rid?
+On 07/16/2012 03:40 PM, Rusty Russell wrote:
+
+> On Mon, 16 Jul 2012 10:35:54 +0800, Alex Shi <alex.shi@intel.com> wrote:
+>> The function has no parameter @len now, so need to remove it from
+>> comments to avoid kernel-doc warning:
 > 
-> See, e.g.,
-> arch/arm/mach-shmobile/setup-sh7372.c::sh7372_dmae_slaves[]. 
-> Platforms are supplying these values with shdma driver platform data, 
-> together with slave IDs. Them when slaves request channels and supply 
-> their slave IDs, the driver searches the above array, looking for the 
-> matching slave ID, then it uses the rest of the information in those 
-> structs to configure the channel for this client. Again, this is
-> nothing 
-> new, this is how the driver has been functioning since a long time,
-> this 
-> driver is not modifying anything there. Any changes to this
-> procedure, 
-> like providing all thig information from clients themselves instead
-> of 
-> keeping it with DMACs, requires these patches to be committed first.
-That wasn't my question.
+> But it still does in my tree.
+> 
+> Please push this patch via whoever changed it?
+> 
+> Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+> 
 
-I want to know what does ccr and mid_rid mean to dmac here?
+Sorry, my fault, the commit log used a wrong function name, it is cpulist_parse()
+not cpumask_scnprntf. and find a new error in the comments: used a incorrect 
+function name: cpulist_parse_user(), the correct one is cpulist_parse().
+Fix it in updated patch.
 
+Both errors appear in Rusty's commit 29c0177e6a4.
+
+===
+
+>From db20433a0b321f7b4edfc57f66e816d7bec81b14 Mon Sep 17 00:00:00 2001
+From: Alex Shi <alex.shi@intel.com>
+Date: Mon, 16 Jul 2012 10:25:06 +0800
+Subject: [PATCH] cpumask: cpulist_parse() comments correction
+
+The function has no parameter @len, so need to remove it from
+comments to avoid kernel-doc warning:
+
+alexs@debian:~/linux-next$ scripts/kernel-doc -man
+include/linux/cpumask.h | split-man.pl /tmp/man
+....
+Warning(include/linux/cpumask.h:602): Excess function parameter 'len'
+description in 'cpulist_parse'
+
+and correct the function name in comments to cpulist_parse.
+
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+---
+ include/linux/cpumask.h |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/cpumask.h b/include/linux/cpumask.h
+index 8bf1c27..0325602 100644
+--- a/include/linux/cpumask.h
++++ b/include/linux/cpumask.h
+@@ -591,9 +591,8 @@ static inline int cpulist_scnprintf(char *buf, int len,
+ }
+ 
+ /**
+- * cpulist_parse_user - extract a cpumask from a user string of ranges
++ * cpulist_parse - extract a cpumask from a user string of ranges
+  * @buf: the buffer to extract from
+- * @len: the length of the buffer
+  * @dstp: the cpumask to set.
+  *
+  * Returns -errno, or 0 for success.
 -- 
-~Vinod
+1.7.5.4
 
