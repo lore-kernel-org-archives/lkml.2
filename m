@@ -1,250 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752267Ab2GPHCn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 03:02:43 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:6372 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751292Ab2GPHBU (ORCPT
+	id S1752455Ab2GPHCx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 03:02:53 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:58438 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752152Ab2GPHCm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 03:01:20 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Sun, 15 Jul 2012 23:57:13 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <grant.likely@secretlab.ca>, <linus.walleij@stericsson.com>,
-        <sameo@linux.intel.com>
-CC: <linux-kernel@vger.kernel.org>, <swarren@nvidia.com>,
-        <broonie@opensource.wolfsonmicro.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V2 4/6] gpio: tps6586x: add gpio support through platform driver
-Date: Mon, 16 Jul 2012 12:21:48 +0530
-Message-ID: <1342421510-10638-5-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1342421510-10638-1-git-send-email-ldewangan@nvidia.com>
-References: <1342421510-10638-1-git-send-email-ldewangan@nvidia.com>
+	Mon, 16 Jul 2012 03:02:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <CAA_GA1fsRiUD_XpHXJXV+R3zVuz-fvRGiD3ttQU4md0sL9t_vg@mail.gmail.com>
+References: <1340740795-19603-1-git-send-email-geert@linux-m68k.org>
+	<CAMuHMdXgCR1HUwmwT21p=O2p+LuAqLfeM=Tn=ghvKQ+qgsNTTQ@mail.gmail.com>
+	<CAA_GA1fsRiUD_XpHXJXV+R3zVuz-fvRGiD3ttQU4md0sL9t_vg@mail.gmail.com>
+Date: Mon, 16 Jul 2012 09:02:40 +0200
+X-Google-Sender-Auth: EegoOEbHr036f8mNxG5gyR7C1Lc
+Message-ID: <CAMuHMdUChVosb4p5wEzjduFVcTbNqRWVo1NkmmP+1CgB2v1jFg@mail.gmail.com>
+Subject: Re: Build regressions/improvements in v3.5-rc4
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Bob Liu <lliubbo@gmail.com>
+Cc: Sonic Zhang <sonic.zhang@analog.com>, Mike Frysinger <vapier@gentoo.org>,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Converting the gpio driver of tps6586x to a platform
-driver in place of registering the gpio through core
-driver.
-The motivation of the change is:
-- This is inline with the mfd drivers implementation.
-- This will move the related gpio support to gpio driver
-  folder where all gpio related drivers are available.
-  This will be easy the maintenance and enhancement is
-  anything done for gpio.
-- The gpio functionality can be selected through config
-  variable.
+Hi Bob,
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
----
-Changes V1 -> V2:
-Remove non-require header inclusion.
+On Mon, Jul 16, 2012 at 4:44 AM, Bob Liu <lliubbo@gmail.com> wrote:
+> On Sat, Jul 14, 2012 at 4:02 AM, Geert Uytterhoeven
+> <geert@linux-m68k.org> wrote:
+>> On Tue, Jun 26, 2012 at 9:59 PM, Geert Uytterhoeven
+>> <geert@linux-m68k.org> wrote:
+>>> + drivers/i2c/busses/i2c-bfin-twi.c: error: 'ANAK' undeclared (first use in this function):  => 154:19
+>>>   + drivers/i2c/busses/i2c-bfin-twi.c: error: 'XMTSERV' undeclared (first use in this function):  => 344:39, 489:39, 90:23
+>
+> The fix patches have already in Wolfram Sang's i2c tree, i think it'll
+> be merged soon.
 
- drivers/gpio/Kconfig         |    7 ++
- drivers/gpio/Makefile        |    1 +
- drivers/gpio/gpio-tps6586x.c |  158 ++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 166 insertions(+), 0 deletions(-)
- create mode 100644 drivers/gpio/gpio-tps6586x.c
+Thanks, good to hear that!
 
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index 502b5ea..b16c8a7 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -597,6 +597,13 @@ config GPIO_AB8500
- 	help
- 	  Select this to enable the AB8500 IC GPIO driver
- 
-+config GPIO_TPS6586X
-+	bool "TPS6586X GPIO"
-+	depends on MFD_TPS6586X
-+	help
-+	  Select this option to enable GPIO driver for the TPS6586X
-+	  chip family.
-+
- config GPIO_TPS65910
- 	bool "TPS65910 GPIO"
- 	depends on MFD_TPS65910
-diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index d370481..153cace 100644
---- a/drivers/gpio/Makefile
-+++ b/drivers/gpio/Makefile
-@@ -63,6 +63,7 @@ obj-$(CONFIG_GPIO_TC3589X)	+= gpio-tc3589x.o
- obj-$(CONFIG_ARCH_TEGRA)	+= gpio-tegra.o
- obj-$(CONFIG_GPIO_TIMBERDALE)	+= gpio-timberdale.o
- obj-$(CONFIG_ARCH_DAVINCI_TNETV107X) += gpio-tnetv107x.o
-+obj-$(CONFIG_GPIO_TPS6586X)	+= gpio-tps6586x.o
- obj-$(CONFIG_GPIO_TPS65910)	+= gpio-tps65910.o
- obj-$(CONFIG_GPIO_TPS65912)	+= gpio-tps65912.o
- obj-$(CONFIG_GPIO_TWL4030)	+= gpio-twl4030.o
-diff --git a/drivers/gpio/gpio-tps6586x.c b/drivers/gpio/gpio-tps6586x.c
-new file mode 100644
-index 0000000..2526b3b
---- /dev/null
-+++ b/drivers/gpio/gpio-tps6586x.c
-@@ -0,0 +1,158 @@
-+/*
-+ * TI TPS6586x GPIO driver
-+ *
-+ * Copyright (c) 2012, NVIDIA CORPORATION.  All rights reserved.
-+ * Author: Laxman dewangan <ldewangan@nvidia.com>
-+ *
-+ * Based on tps6586x.c
-+ * Copyright (c) 2010 CompuLab Ltd.
-+ * Mike Rapoport <mike@compulab.co.il>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+#include <linux/errno.h>
-+#include <linux/gpio.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/mfd/tps6586x.h>
-+#include <linux/of_device.h>
-+#include <linux/platform_device.h>
-+
-+/* GPIO control registers */
-+#define TPS6586X_GPIOSET1	0x5d
-+#define TPS6586X_GPIOSET2	0x5e
-+
-+struct tps6586x_gpio {
-+	struct gpio_chip gpio_chip;
-+	struct device *parent;
-+};
-+
-+static inline struct tps6586x_gpio *to_tps6586x_gpio(struct gpio_chip *chip)
-+{
-+	return container_of(chip, struct tps6586x_gpio, gpio_chip);
-+}
-+
-+static int tps6586x_gpio_get(struct gpio_chip *gc, unsigned offset)
-+{
-+	struct tps6586x_gpio *tps6586x_gpio = to_tps6586x_gpio(gc);
-+	uint8_t val;
-+	int ret;
-+
-+	ret = tps6586x_read(tps6586x_gpio->parent, TPS6586X_GPIOSET2, &val);
-+	if (ret)
-+		return ret;
-+
-+	return !!(val & (1 << offset));
-+}
-+
-+static void tps6586x_gpio_set(struct gpio_chip *gc, unsigned offset,
-+			      int value)
-+{
-+	struct tps6586x_gpio *tps6586x_gpio = to_tps6586x_gpio(gc);
-+
-+	tps6586x_update(tps6586x_gpio->parent, TPS6586X_GPIOSET2,
-+			value << offset, 1 << offset);
-+}
-+
-+static int tps6586x_gpio_output(struct gpio_chip *gc, unsigned offset,
-+				int value)
-+{
-+	struct tps6586x_gpio *tps6586x_gpio = to_tps6586x_gpio(gc);
-+	uint8_t val, mask;
-+
-+	tps6586x_gpio_set(gc, offset, value);
-+
-+	val = 0x1 << (offset * 2);
-+	mask = 0x3 << (offset * 2);
-+
-+	return tps6586x_update(tps6586x_gpio->parent, TPS6586X_GPIOSET1,
-+				val, mask);
-+}
-+
-+static int __devinit tps6586x_gpio_probe(struct platform_device *pdev)
-+{
-+	struct tps6586x_platform_data *pdata;
-+	struct tps6586x_gpio *tps6586x_gpio;
-+	int ret;
-+
-+	pdata = dev_get_platdata(pdev->dev.parent);
-+	tps6586x_gpio = devm_kzalloc(&pdev->dev,
-+				sizeof(*tps6586x_gpio), GFP_KERNEL);
-+	if (!tps6586x_gpio) {
-+		dev_err(&pdev->dev, "Could not allocate tps6586x_gpio\n");
-+		return -ENOMEM;
-+	}
-+
-+	tps6586x_gpio->parent = pdev->dev.parent;
-+
-+	tps6586x_gpio->gpio_chip.owner = THIS_MODULE;
-+	tps6586x_gpio->gpio_chip.label = pdev->name;
-+	tps6586x_gpio->gpio_chip.dev = &pdev->dev;
-+	tps6586x_gpio->gpio_chip.ngpio = 4;
-+	tps6586x_gpio->gpio_chip.can_sleep = 1;
-+
-+	/* FIXME: add handling of GPIOs as dedicated inputs */
-+	tps6586x_gpio->gpio_chip.direction_output = tps6586x_gpio_output;
-+	tps6586x_gpio->gpio_chip.set	= tps6586x_gpio_set;
-+	tps6586x_gpio->gpio_chip.get	= tps6586x_gpio_get;
-+
-+#ifdef CONFIG_OF_GPIO
-+	tps6586x_gpio->gpio_chip.of_node = pdev->dev.parent->of_node;
-+#endif
-+	if (pdata && pdata->gpio_base)
-+		tps6586x_gpio->gpio_chip.base = pdata->gpio_base;
-+	else
-+		tps6586x_gpio->gpio_chip.base = -1;
-+
-+	ret = gpiochip_add(&tps6586x_gpio->gpio_chip);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "Could not register gpiochip, %d\n", ret);
-+		return ret;
-+	}
-+
-+	platform_set_drvdata(pdev, tps6586x_gpio);
-+
-+	return ret;
-+}
-+
-+static int __devexit tps6586x_gpio_remove(struct platform_device *pdev)
-+{
-+	struct tps6586x_gpio *tps6586x_gpio = platform_get_drvdata(pdev);
-+
-+	return gpiochip_remove(&tps6586x_gpio->gpio_chip);
-+}
-+
-+static struct platform_driver tps6586x_gpio_driver = {
-+	.driver.name	= "tps6586x-gpio",
-+	.driver.owner	= THIS_MODULE,
-+	.probe		= tps6586x_gpio_probe,
-+	.remove		= __devexit_p(tps6586x_gpio_remove),
-+};
-+
-+static int __init tps6586x_gpio_init(void)
-+{
-+	return platform_driver_register(&tps6586x_gpio_driver);
-+}
-+subsys_initcall(tps6586x_gpio_init);
-+
-+static void __exit tps6586x_gpio_exit(void)
-+{
-+	platform_driver_unregister(&tps6586x_gpio_driver);
-+}
-+module_exit(tps6586x_gpio_exit);
-+
-+MODULE_ALIAS("platform:tps6586x-gpio");
-+MODULE_DESCRIPTION("GPIO interface for TPS6586X PMIC");
-+MODULE_AUTHOR("Laxman Dewangan <ldewangan@nvidia.com>");
-+MODULE_LICENSE("GPL");
--- 
-1.7.1.1
+Gr{oetje,eeting}s,
 
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
