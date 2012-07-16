@@ -1,73 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754016Ab2GPT1e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 15:27:34 -0400
-Received: from mail.lang.hm ([64.81.33.126]:47629 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753230Ab2GPT1b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 15:27:31 -0400
-Date: Mon, 16 Jul 2012 12:26:09 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Borislav Petkov <bp@amd64.org>, Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Dave Jones <davej@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
-        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
-        Debian Kernel Team <debian-kernel@lists.debian.org>,
-        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Sasha Levin <levinsasha928@gmail.com>,
-        Asias He <asias.hejun@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: [opensuse-kernel] Re: [RFC] Simplifying kernel configuration
- for distro issues
-In-Reply-To: <CA+55aFwwmMbFr4HXTFxF_MeM_n8bfiXfPPgCALTOc1HvidVt1Q@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1207161222380.32545@asgard.lang.hm>
-References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com> <1342212885.25704.4.camel@lade.trondhjem.org> <CAFLxGvxxWodD97=78218wc+tuigAFsNK_PdroDfb4BWTZoxxUw@mail.gmail.com> <20120714103716.GD26559@liondog.tnic>
- <CAOJsxLGHQuuXqDD-1SNhL7Ly1-heCYFLzqj3SLh4xzmP9NR5GQ@mail.gmail.com> <20120715101434.GA18144@aftab.osrc.amd.com> <CAOJsxLGBCQ6C-3M0ZdTfVPqnmOKqUE9+78Mhf+67TksmVojuuQ@mail.gmail.com> <20120715211848.GA21167@aftab.osrc.amd.com> <20120715214819.GA1990@moon>
- <alpine.DEB.2.02.1207151459480.20176@asgard.lang.hm> <20120716082418.GC24327@aftab.osrc.amd.com> <alpine.DEB.2.02.1207160937330.20176@asgard.lang.hm> <CA+55aFwwmMbFr4HXTFxF_MeM_n8bfiXfPPgCALTOc1HvidVt1Q@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753941Ab2GPT1w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 15:27:52 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:54770 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753230Ab2GPT1u convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 15:27:50 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+In-Reply-To: <20120716183816.GH9598@jonmason-lab>
+References: <1342215900-3358-1-git-send-email-jon.mason@intel.com>
+	<CAAsGZS5uMArBVa+Rog1H60FVfKq84eqt5G2dvafDWXTP-RdiwQ@mail.gmail.com>
+	<20120716183816.GH9598@jonmason-lab>
+Date: Mon, 16 Jul 2012 15:27:48 -0400
+Message-ID: <CAAsGZS43FkfTFkYnvFdaA+KSLD1ZVBfuFe7_2e7s29_X+rTmug@mail.gmail.com>
+Subject: Re: [RFC 1/2] PCI-Express Non-Transparent Bridge Support
+From: chetan loke <loke.chetan@gmail.com>
+To: Jon Mason <jon.mason@intel.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-pci@vger.kernel.org, Dave Jiang <dave.jiang@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Jul 2012, Linus Torvalds wrote:
+On Mon, Jul 16, 2012 at 2:38 PM, Jon Mason <jon.mason@intel.com> wrote:
+> On Mon, Jul 16, 2012 at 12:49:39PM -0400, chetan loke wrote:
 
-> On Mon, Jul 16, 2012 at 9:43 AM,  <david@lang.hm> wrote:
+....
+
+>> Is it ok to rename the following vars for convenience sake?
 >>
->> The problem is that you can't select the Fedora profile and then unselect
->> SELINUX, so the profile will do you no good.
+>> > +       struct list_head txq;
+>> tx_pend_q - (pending_queue) or tx_out_q - (outstanding_queue) - or
+>> pick any new string you like - other than a mono-syllable definition
+>>
+>> > +       struct list_head txc;
+>> tx_compl_q - completion queue
+>>
+>> > +       struct list_head txe;
+>> tx_avail_e - available entry queue
+>>
+>>
+>> > +       spinlock_t txq_lock;
+>> > +       spinlock_t txc_lock;
+>> > +       spinlock_t txe_lock;
+>>
+>> then match the variants accordingly.
+>>
+>> > +       struct list_head rxq;
+>> > +       struct list_head rxc;
+>> > +       struct list_head rxe;
+>> > +       spinlock_t rxq_lock;
+>> > +       spinlock_t rxc_lock;
+>> > +       spinlock_t rxe_lock;
+>>
+>> similarly the rx-counterpart
 >
-> Guys, stop it now.
+> Are they difficult to understand?  I can change them, but it seems rather moot since you seemed to immediately understand the logic behind the names.
 >
-> Your "problem" isn't what any sane person cares about, and isn't what
-> I started the RFC for.
->
-> Seriously. NOBODY CARES.
->
-> You can do what you want to do *today*. Just edit the config file, or
-> use any of the millions of config tools. Stop whining.
->
-> The thing I'm asking for is for normal people. Make it easy for people
-> who DO NOT CARE about the config file to just build a kernel for their
-> machine.
->
-> Don't complicate the issue by bringing up some totally unrelated
-> question. Don't derail a useful feature for the 99% because you're not
-> in it.
 
-Some of the proposed ways to implement the minimum distro kernel would not 
-allow you to override the distro defaults because they would be 
-implemented by setting dependancies, not by selecting options that you as 
-the user could then unselect.
+Immediately understand? Not at first glance. I had to re-read the
+functions. Its really is a minor change and variables will then become
+self-explanatory. I can almost feel that a developer who works on this
+code for the first time might end up choosing the wrong 'syllable' and
+locking an entirely different lock.
 
-If you have to edit the .config file, and then have your next make *config 
-override your edits (due to dependancy resolution) and so have to edit the 
-.config file again this is a really ugly way of working.
+Infact add a prefix 'ntb' to all the rx/tx locks. That way grep'ing
+output of lockstat also becomes easier.
 
-David Lang
+It now reads: ntb_tx_pend_lock
+
+>>
+>>
+>> ..................
+>>
+>> > +static void ntb_tx_copy_task(struct ntb_transport_qp *qp,
+>> > +                            struct ntb_queue_entry *entry,
+>> > +                            void *offset)
+>> > +{
+>> > +       struct ntb_payload_header *hdr = offset;
+>> > +       int rc;
+>> > +
+>> > +       offset += sizeof(struct ntb_payload_header);
+>> > +       memcpy_toio(offset, entry->buf, entry->len);
+>> > +
+>> > +       hdr->len = entry->len;
+>> > +       hdr->ver = qp->tx_pkts;
+>> > +
+>> > +       /* Ensure that the data is fully copied out before setting the flag */
+>> > +       wmb();
+>> > +       hdr->flags = entry->flags | DESC_DONE_FLAG;
+>> > +
+>> > +       rc = ntb_ring_sdb(qp->ndev, qp->qp_num);
+>> > +       if (rc)
+>> > +               pr_err("%s: error ringing db %d\n", __func__, qp->qp_num);
+>> > +
+>> > +       if (entry->len > 0) {
+>>
+>> how do you interpret this len variable and decide if it's a good/bad completion?
+>
+> The length of 0 is for messages from the remote system, which currently only consists of a "link down" message notifying the local system to no longer send any messages to the remote side.
+>
+
+May be I didn't read the code properly. Is there a length-comment that
+explains the above? If not then just by pure code inspection it would
+seem that a skb was leaked. So add the above comment that way we can
+save time for other netdev folks too.
+
+
+>>
+>> > +               qp->tx_bytes += entry->len;
+>> > +
+>> > +               /* Add fully transmitted data to completion queue */
+>> > +               ntb_list_add_tail(&qp->txc_lock, &entry->entry, &qp->txc);
+>> > +
+>> > +               if (qp->tx_handler)
+>> > +                       qp->tx_handler(qp);
+>> > +       } else
+>> > +               ntb_list_add_tail(&qp->txe_lock, &entry->entry, &qp->txe);
+>>
+>> I could be wrong but how is the original skb handled if the code path
+>> goes in the else clause?
+>
+> There is no skb is the length is zero.  Since the only client is virtual ethernet, it will always be > 60.  However, I should add a sanity check for 0 length in tx_enqueue.
+>
+>> Also, in the else clause, how about a ntb_list_add_head rather than a _tail.
+>
+> Why add to the head, it was just used?
+
+Yes, just re-use what's hot(best guess).
+
+>
+>> > +
+>> > +static int ntb_process_tx(struct ntb_transport_qp *qp,
+>> > +                         struct ntb_queue_entry *entry)
+>> > +{
+>> > +       struct ntb_payload_header *hdr;
+>> > +       void *offset;
+>> > +
+>> > +       offset = qp->tx_offset;
+>> > +       hdr = offset;
+>> > +
+>> > +       pr_debug("%lld - offset %p, tx %p, entry len %d flags %x buff %p\n",
+>> > +                qp->tx_pkts, offset, qp->tx_offset, entry->len, entry->flags,
+>> > +                entry->buf);
+>> > +       if (hdr->flags) {
+>> > +               ntb_list_add_head(&qp->txq_lock, &entry->entry, &qp->txq);
+>> > +               qp->tx_ring_full++;
+>> > +               return -EAGAIN;
+>> > +       }
+>> > +
+>> > +       if (entry->len > transport_mtu) {
+>> > +               pr_err("Trying to send pkt size of %d\n", entry->len);
+>> > +               entry->flags = HW_ERROR_FLAG;
+>> > +
+>> > +               ntb_list_add_tail(&qp->txc_lock, &entry->entry, &qp->txc);
+>> > +
+>> > +               if (qp->tx_handler)
+>> > +                       qp->tx_handler(qp);
+>> > +
+>> > +               return 0;
+>> > +       }
+>> > +
+>> > +       ntb_tx_copy_task(qp, entry, offset);
+>>
+>> what happens when ntb_sdb_ring returns an error? would you still want
+>> to increment tx_pkts below?
+>
+> It's not fatal if the remote side isn't notified.  It will hurt latency, since the next packet would be the one that triggers the next interrupt.  Also, the only way it could ever fail would be if it was an invalid interrupt bit being set, which should never happen.
+>
+
+What happens when the 'db >= ndev->max_cbs' check fails? Under what
+circumstances will that happen? When it does happen how does the
+remote side then gets notified or should it even get notified?
+
+'which should never happen'? FYI - I have seen and debugged(not this
+one but doorbells and what not) weirdness while working on CLARiiON +
+PCie-interconnects. Board bring-up is a PITA. So you get the idea ...
+
+>>
+>> > +void *ntb_transport_tx_dequeue(struct ntb_transport_qp *qp, unsigned int *len)
+>> > +{
+>> > +       struct ntb_queue_entry *entry;
+>> > +       void *buf;
+>> > +
+>> > +       if (!qp)
+>> > +               return NULL;
+>> > +
+>> > +       entry = ntb_list_rm_head(&qp->txc_lock, &qp->txc);
+>> > +       if (!entry)
+>> > +               return NULL;
+>> > +
+>> > +       buf = entry->callback_data;
+>> > +       if (entry->flags != HW_ERROR_FLAG)
+>> > +               *len = entry->len;
+>> > +       else
+>> > +               *len = -EIO;
+>> > +
+>> > +       ntb_list_add_tail(&qp->txe_lock, &entry->entry, &qp->txe);
+>>
+>> how about a ntb_list_add_head?
+>
+> Is there a benefit to adding to the head versus tail?  It makes more sense to me to pull from the head and add to the tail.
+>
+
+Yes, explained above. Today there are 100(..DEF_NUM...) entries.
+Tomorrow there could be more. So why not re-use what's hot? You could
+also think of this as yet another way of forcing detection of
+double-use corruption/bug. I'm not saying that there's a bug here but
+you get the idea.
+
+Chetan Loke
