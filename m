@@ -1,98 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753018Ab2GPJ3Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 05:29:25 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42878 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752713Ab2GPJ3X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 05:29:23 -0400
-Date: Mon, 16 Jul 2012 02:28:39 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Jeff Liu <jeff.liu@oracle.com>
-cc: Dave Chinner <david@fromorbit.com>, Cong Wang <xiyou.wangcong@gmail.com>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+	id S1752588Ab2GPJhr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 05:37:47 -0400
+Received: from mga02.intel.com ([134.134.136.20]:31440 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751271Ab2GPJhn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 05:37:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="166817283"
+Subject: Re: [PATCH 5/7 v2] dma: sh: use an integer slave ID to improve API
+ compatibility
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] tmpfs: revert SEEK_DATA and SEEK_HOLE
-In-Reply-To: <4FFE42B6.5080705@oracle.com>
-Message-ID: <alpine.LSU.2.00.1207160206460.4082@eggly.anvils>
-References: <alpine.LSU.2.00.1207091533001.2051@eggly.anvils> <alpine.LSU.2.00.1207091535480.2051@eggly.anvils> <jtj574$tb7$2@dough.gmane.org> <alpine.LSU.2.00.1207111149580.1797@eggly.anvils> <20120711230122.GZ19223@dastard> <4FFE42B6.5080705@oracle.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <Pine.LNX.4.64.1207161040070.12302@axis700.grange>
+References: <1341484183-10757-1-git-send-email-g.liakhovetski@gmx.de>
+	 <1341484183-10757-6-git-send-email-g.liakhovetski@gmx.de>
+	 <1342418828.1726.37.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1207160832540.12302@axis700.grange>
+	 <1342421587.1726.49.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1207160907180.12302@axis700.grange>
+	 <1342427305.1726.50.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1207161040070.12302@axis700.grange>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 16 Jul 2012 15:07:32 +0530
+Message-ID: <1342431452.1726.54.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Jul 2012, Jeff Liu wrote:
-> On 07/12/2012 07:01 AM, Dave Chinner wrote:
-> > On Wed, Jul 11, 2012 at 11:55:34AM -0700, Hugh Dickins wrote:
-> >>
-> >> But your vote would count for a lot more if you know of some app which
-> >> would really benefit from this functionality in tmpfs: I've heard of none.
-> > 
-> > So what? I've heard of no apps that use this functionality on XFS,
-> > either, but I have heard of a lot of people asking for it to be
-> > implemented over the past couple of years so they can use it.
-> > There's been patches written to make coreutils (cp) make use of it
-> > instead of parsing FIEMAP output to find holes, though I don't know
-> > if that's gone beyond more than "here's some patches"...
+On Mon, 2012-07-16 at 10:47 +0200, Guennadi Liakhovetski wrote:
+> > I want to know what does ccr and mid_rid mean to dmac here?
 > 
-> Yes, for apps, cp(1) will make use of it to replace the old FIEMAP for efficient sparse file copy.
-> I have implemented an extent-scan module to coreutils a few years ago,
-> http://fossies.org/dox/coreutils-8.17/extent-scan_8c_source.html
+> CHCR contains a few fields, some enable various interrupt sources, some 
+> specify repeat- and renew-modes, others yet specify transfer size, source 
+> and destination address-modes (incrementing, constant, decrementing), 
+> others yet select a DMA client category (slave / memcpy / ...), and a 
+> transfer flag. Some of these fields could be calculated, others are 
+> pre-defined for various slaves, the exact layout of those fields can also 
+> vary between SoCs.
+I do not understand how clients would provide these values. 
+For pre-defined values, they should be dmac property why should client
+like spi or mmc have clue about it?
 
-Thanks for confirming Dave's pointer to cp.
+For others like you mentioned, i guess they could be easily calculated,
+right?
 
-Of course, tmpfs has never supported FIBMAP or FIEMAP;
-but SEEK_DATA and SEEK_HOLE do fit it much more naturally.
+> MID_RID is actually a slave-selector, it contains a magic value, that 
+> cannot be calculated. 
+and again, how does client know this?
 
-> 
-> It does extent scan through FIEMAP, however, SEEK_DATA/SEEK_HOLE is more convenient and easy to use
-> considering the call interface.  So FIEMAP will be replaced by SEEK_XXX once it got supported by EXT4.
-> 
-> Moreover, I have discussed with Jim who is the coreutils maintainer previously, He would like to post
-> extent-scan module to Gnulib so that other GNU utilities which are relied on Gnulib might be a potential
-> user of it, at least, GNU tar will definitely need it for sparse file backup.
+-- 
+~Vinod
 
-Thanks for the info.  I confess I'm not hugely swayed by cp and sparse
-file archive arguments - I doubt many people care, and I doubt those who
-do care are using tmpfs for them.
-
-But my doubts are just ignorance.  I was hoping to hear, not that we have
-tools to copy sparse files efficiently (umm, over the network?), but
-what apps are actually working live with those sparse files on tmpfs,
-and now need to seek around them.  Some math or physics applications?
-
-> > 
-> > Besides, given that you can punch holes in tmpfs files, it seems
-> > strange to then say "we don't need a method of skipping holes to
-> > find data quickly"....
-> 
-> So its deserve to keep this feature working on tmpfs considering hole punch. :)
-
-Well, thank you, as I said earlier I am on both sides of the argument.
-(And feel uncomfortably like a prima donna waiting in the wings until
-the audience has shouted long enough for the encore.)
-
-It's now taken out of 3.5, but we can bring it back when there's more
-demand.  Your extent-scan is itself waiting for ext4 to support it:
-maybe get noisy at me when that's imminent.
-
-Hugh
-
-> 
-> Thanks,
-> -Jeff
-> 
-> > 
-> > Besides, seek-hole/data is still shiny new and lots of developers
-> > aren't even aware of it's presence in recent kernels. Removing new
-> > functionality saying "no-one is using it" is like smashing the egg
-> > before the chicken hatches (or is it cutting of the chickes's head
-> > before it lays the egg?).
-> > 
-> > Cheers,
-> > 
-> > Dave.
