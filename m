@@ -1,104 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753118Ab2GPLNN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 07:13:13 -0400
-Received: from mga03.intel.com ([143.182.124.21]:11865 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751476Ab2GPLNK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 07:13:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="122965819"
-Subject: Re: [PATCH 5/7 v2] dma: sh: use an integer slave ID to improve API
- compatibility
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <Pine.LNX.4.64.1207161249260.18978@axis700.grange>
-References: <1341484183-10757-1-git-send-email-g.liakhovetski@gmx.de>
-	 <1341484183-10757-6-git-send-email-g.liakhovetski@gmx.de>
-	 <1342418828.1726.37.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1207160832540.12302@axis700.grange>
-	 <1342421587.1726.49.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1207160907180.12302@axis700.grange>
-	 <1342427305.1726.50.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1207161040070.12302@axis700.grange>
-	 <1342431452.1726.54.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1207161155280.12302@axis700.grange>
-	 <1342434256.1726.57.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1207161249260.18978@axis700.grange>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 16 Jul 2012 16:42:59 +0530
-Message-ID: <1342437179.1726.61.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1753195Ab2GPLPU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 07:15:20 -0400
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:54839 "EHLO
+	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752652Ab2GPLPQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 07:15:16 -0400
+Date: Mon, 16 Jul 2012 14:12:19 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: David Miller <davem@davemloft.net>
+Cc: balbi@ti.com, joe@perches.com, netdev@vger.kernel.org,
+        linux-usb@vger.kernel.org, wimax@linuxwimax.org,
+        linux-wireless@vger.kernel.org, users@rt2x00.serialmonkey.com,
+        linux-s390@vger.kernel.org, johannes@sipsolutions.net,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org,
+        linux-c6x-dev@linux-c6x.org, linux-mips@linux-mips.org,
+        user-mode-linux-devel@lists.sourceforge.net,
+        user-mode-linux-user@lists.sourceforge.net,
+        e1000-devel@lists.sourceforge.net
+Subject: Re: [PATCH net-next 0/8] etherdevice: Rename random_ether_addr to
+ eth_random_addr
+Message-ID: <20120716111218.GA4913@arwen.pp.htv.fi>
+Reply-To: balbi@ti.com
+References: <1341968967.13724.23.camel@joe2Laptop>
+ <cover.1342157022.git.joe@perches.com>
+ <20120716101437.GC22638@arwen.pp.htv.fi>
+ <20120716.032901.1657058688119342783.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="dDRMvlgZJXvWKvBx"
+Content-Disposition: inline
+In-Reply-To: <20120716.032901.1657058688119342783.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-07-16 at 12:55 +0200, Guennadi Liakhovetski wrote:
-> On Mon, 16 Jul 2012, Vinod Koul wrote:
-> 
-> > On Mon, 2012-07-16 at 12:01 +0200, Guennadi Liakhovetski wrote:
-> > > On Mon, 16 Jul 2012, Vinod Koul wrote:
-> > > 
-> > > > On Mon, 2012-07-16 at 10:47 +0200, Guennadi Liakhovetski wrote:
-> > > > > > I want to know what does ccr and mid_rid mean to dmac here?
-> > > > > 
-> > > > > CHCR contains a few fields, some enable various interrupt sources, some 
-> > > > > specify repeat- and renew-modes, others yet specify transfer size, source 
-> > > > > and destination address-modes (incrementing, constant, decrementing), 
-> > > > > others yet select a DMA client category (slave / memcpy / ...), and a 
-> > > > > transfer flag. Some of these fields could be calculated, others are 
-> > > > > pre-defined for various slaves, the exact layout of those fields can also 
-> > > > > vary between SoCs.
-> > > > I do not understand how clients would provide these values. 
-> > > > For pre-defined values, they should be dmac property why should client
-> > > > like spi or mmc have clue about it?
-> > > > 
-> > > > For others like you mentioned, i guess they could be easily calculated,
-> > > > right?
-> > > > 
-> > > > > MID_RID is actually a slave-selector, it contains a magic value, that 
-> > > > > cannot be calculated. 
-> > > > and again, how does client know this?
-> > > 
-> > > I might be misunderstanding you, but from earlier discussions I got an 
-> > > impression, that the DMAC should know nothing about clients, i.e., should 
-> > > receive no client-specific information from its platform data. Instead 
-> > > clients should provide it when configuring the channel. If this is 
-> > > correct, then the preferred way would be to specify these values in client 
-> > > platform data and then pass it to the DMAC with slave-config calls? Or 
-> > > have I misunderstood you and this per-client information should be kept in 
-> > > DMAC platform data?
-> > You haven't misunderstood me. dmacs should not know of client data and
-> > should be client agnostic. 
-> > 
-> > BUT, are these parameters ccr and mid_rid client data, i do not think
-> > so, they seem to be dmac controller parameters which you need to
-> > configure channel or is that not the case. If not why bother passing
-> > them to dmac?
-> 
-> Yes, that's right - these values have to be written to DMAC channel 
-> configuration registers, so, we do not have to change anything, those 
-> values can remain DMAC parameters and be passed to it directly from 
-> platform data.
-Can you get that in future fixes.
-> 
-> > Either way something looks fishy to me.
-> 
-> You can always tell me what you don't like about the driver, but I don't 
-> see why this specific patch should cause any problem - it only changes the 
-> type of the slave-id variable from unsigned to signed to be able to pass 
-> negative error values in it too.
-This question was not specific to this patchset
 
-Btw I am quite happy with this patchset. Good direction for this and
-thanks for taking it up.
+--dDRMvlgZJXvWKvBx
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi,
 
--- 
-~Vinod
+On Mon, Jul 16, 2012 at 03:29:01AM -0700, David Miller wrote:
+> From: Felipe Balbi <balbi@ti.com>
+> Date: Mon, 16 Jul 2012 13:14:38 +0300
+>=20
+> > if you're really renaming the function, then this patch alone will break
+> > all of the below users. That should all be a single patch, I'm afraid.
+>=20
+> It would help if you actually read his patches before saying what they
+> might or might not do.
+>=20
+> He provides a macro in the first patch that provides the old name,
+> and this will get removed at the end.
 
+that's why I put an "if" there. The subject was misleading and I really
+couldn't bother going search for the patch on the mail archives.
+
+Anyway, if nothing will be broken then for drivers/usb/gadget/:
+
+Acked-by: Felipe Balbi <balbi@ti.com>
+
+--=20
+balbi
+
+--dDRMvlgZJXvWKvBx
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQA/cSAAoJEIaOsuA1yqRECgMP/11LX6hhvLwodK9V12dXWUI8
+n4rD9q+ipGtPf/S551hE9jkkp4yCPUromRhx5hgbmaDJ23ZbqHpRR3fNNHSGpH1W
+xSdS7vdtqWxpt7LUqczpgbjstrFqDYEt5idkuUsQ3QRZEZ5NgeTigWYEiIpf6uPQ
+qy1YgtmJZlPJKskiH+8YdDGHgL3vI8iypfk7GBVwBYp7ozl7LyqM62mpbSMPxQGr
+uAx/FEFC2o31p/B81WkGzFiq2vc7oy+c+IvfWre+mI7X6+AyiAGR719CI0V7umQD
+iMK/yrncbbuBCEsCdLN446kkRocFYX/IDiykTYHc2/V4WDxJO8wYH0gTSdMJOxDG
+fsxrUS9RUAb0vyGRaUvTMHKhQdo5ijBhkWHvoL7jjyqaCEvYqarRDhqZq6uW6t9E
+AVNxmUriH7Iflw1BiRJk03IO3/dFOY2b5yCTmSwklNdXuuL52biuRe3PIK1mDli9
+F2sr5xj/VuT66HNTbOI4tFH53yhakkYjSffVK8xs2GuBvsTr1RiLBQT2YK3yU77Z
+Pk798mAkIhUhlZh998YRlJHtqs9JkyeHIHTuSt7Zj/FJmWaDLfjMAa18knsuFAFg
+tYnpnP3mtGE12FeXQ0rGcnqrsqWjIy8NKnNjf9DqNc/DwmjnyL/UMsN0J+m9/uaF
+kyn8nJ4loji/LHjMvX2g
+=BzOs
+-----END PGP SIGNATURE-----
+
+--dDRMvlgZJXvWKvBx--
