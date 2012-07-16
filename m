@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753950Ab2GPWK6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 18:10:58 -0400
-Received: from na3sys009aog122.obsmtp.com ([74.125.149.147]:47170 "EHLO
-	na3sys009aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753005Ab2GPWKy (ORCPT
+	id S1753908Ab2GPWQv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 18:16:51 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:65076 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752540Ab2GPWQt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 18:10:54 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>, Len Brown <lenb@kernel.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: PM: Summary of changes for v3.6
-Organization: Texas Instruments, Inc.
-References: <201207162246.03660.rjw@sisk.pl>
-Date: Mon, 16 Jul 2012 15:11:17 -0700
-In-Reply-To: <201207162246.03660.rjw@sisk.pl> (Rafael J. Wysocki's message of
-	"Mon, 16 Jul 2012 22:46:03 +0200")
-Message-ID: <87mx2zcq62.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Mon, 16 Jul 2012 18:16:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20120715211120.GH4041@opensource.wolfsonmicro.com>
+References: <1340836334-20427-1-git-send-email-stigge@antcom.de>
+	<CACRpkdYrZizqvZqsocLEGrkY5yPMuYFfmR3UUSFZgPDvEPa0eA@mail.gmail.com>
+	<20120715211120.GH4041@opensource.wolfsonmicro.com>
+Date: Tue, 17 Jul 2012 00:16:48 +0200
+Message-ID: <CACRpkdb0k4fNigA6FGyEobxUt-JnmUy-ni7XzH-gup-ic_j+VQ@mail.gmail.com>
+Subject: Re: [PATCH RESEND] gpio: of_get_named_gpio_flags() return
+ -EPROBE_DEFER if GPIO not yet available
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Roland Stigge <stigge@antcom.de>, Grant Likely <grant.likely@secretlab.ca>,
+        cjb@laptop.org, rob.herring@calxeda.com, rmk+kernel@arm.linux.org.uk,
+        ulf.hansson@stericsson.com, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, aletes.xgr@gmail.com,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rafael, Daniel,
-
-"Rafael J. Wysocki" <rjw@sisk.pl> writes:
-
-> Hi all,
+On Sun, Jul 15, 2012 at 11:11 PM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Sat, Jul 14, 2012 at 09:57:08PM +0200, Linus Walleij wrote:
 >
-> All of the changes I'd like to include into the first PM pull request during
-> the v3.6 merge window, except maybe for one or two patches I know are in the
-> works, is on the 'linux-next' branch of the linux-pm.git tree now.  The summary
-> of those changes is appended.  If anyone finds any of them objectionable,
-> please let me know ASAP.  Also please let me know if you have any power
-> management patches you'd like me to take for v3.6.
+>> If I understand correctly this relates closely to another patch from Mark Brown
+>> we discussed the other day (sorry for missing this patch, which arrived
+>> earlier, for a while).
 >
+>> Mark/Grant can you look at this patch?
+>
+> Not unless I have a copy of it, no...
 
-Could someone please clarify the status of the coupled CPUidle series?  
+Sorry, forwarded a copy to you.
 
-There's a version of these in Daniels cpuidle-next branch and there's a
-version of these in Len's next branch (included in linux-next), but I'm
-still not entirely sure which branch is going upstream and which branch
-has the latest version (but I think Daniel's is the latest)
+> I had thought a version of this
+> had been submitted already and was in a similar place to the one for
+> gpio_request().
 
-Thanks for clarifying,
+Me to...
 
-Kevin
-
+Linus Walleij
