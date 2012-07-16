@@ -1,99 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751947Ab2GPFlz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 01:41:55 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:24970 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751601Ab2GPFlW (ORCPT
+	id S1751916Ab2GPFnS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 01:43:18 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:34910 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751437Ab2GPFnO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 01:41:22 -0400
-X-AuditID: cbfee61b-b7f566d000005c8a-20-5003a981fa4e
+	Mon, 16 Jul 2012 01:43:14 -0400
+X-AuditID: cbfee61a-b7f616d000004b7e-07-5003a9f13b7e
 From: Vivek Gautam <gautam.vivek@samsung.com>
 To: stern@rowland.harvard.edu, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
 Cc: l.majewski@samsung.com, a.kesavan@samsung.com, prashanth.g@samsung.com,
         kmpark@infradead.org, joshi@samsung.com, olofj@google.com,
-        jg1.han@samsung.com, jy0922.shim@samsung.com,
-        thomas.abraham@linaro.org, sshtylyov@mvista.com
-Subject: [PATCH 3/3 v3] USB: ehci-s5p: Add vbus setup function to the s5p ehci
- glue layer
-Date: Mon, 16 Jul 2012 11:25:38 +0530
-Message-id: <1342418138-6192-4-git-send-email-gautam.vivek@samsung.com>
+        thomas.abraham@linaro.org, sshtylyov@mvista.com,
+        av.tikhomirov@samsung.com
+Subject: [PATCH 0/2 v3] USB: host: Add Device tree support for dwc3-exynos
+Date: Mon, 16 Jul 2012 11:27:37 +0530
+Message-id: <1342418259-23802-1-git-send-email-gautam.vivek@samsung.com>
 X-Mailer: git-send-email 1.7.0.4
-In-reply-to: <1342418138-6192-1-git-send-email-gautam.vivek@samsung.com>
-References: <1342418138-6192-1-git-send-email-gautam.vivek@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGJMWRmVeSWpSXmKPExsVy+t9jAd3GlcwBBseP6ltc3jWHzWLRslZm
-	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDIWX5/GXDCTt+Lxi4VsDYzN3F2MnBwSAiYSr6dPYYOw
-	xSQu3FsPZHNxCAksYpRoW3mRGcJpZ5I4eGg3E0gVm4CuRNPbXYwgtohArcSUq1PZQWxmgVeM
-	Ep2XVUFsYYFoiaVTjjCD2CwCqhJTL/8HmsrBwSvgLvFjcjXEMgWJ1mWHwFo5BTwklk+cCVYu
-	BFSydF472wRG3gWMDKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxgn3/THoH46oGi0OMAhyM
-	Sjy8N5YxBwixJpYVV+YeYpTgYFYS4e3sBArxpiRWVqUW5ccXleakFh9ilOZgURLnNfH+6i8k
-	kJ5YkpqdmlqQWgSTZeLglGpgnLDIapLHQ75zjTy7grKubOT/a7/P6dnWE+qa5vtMjeRD1n5P
-	NxXo7eO4LbdbUm5br2HxJHtfz9pp/xhtersTNOYU3/D6kNzpd11kbtXi6Yu3lt4obYhkv7c6
-	5MQd2WXO8w+dUvB65HjusfM6xbbCG88uJ+2yE707W+ygQOd90f8N1yL+L6uqVGIpzkg01GIu
-	Kk4EAByzu4z5AQAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDJMWRmVeSWpSXmKPExsVy+t9jAd2PK5kDDHonKFtc3jWHzWLRslZm
+	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDJWfa4ruMxUceHeOrYGxglMXYycHBICJhJPTrexQdhi
+	EhfurQeyuTiEBBYxSpxfu4cRJCEk0M4kcWaOE4jNJqAr0fR2F1hcRKBWYsrVqewgNrPAVUaJ
+	b69KQWxhAS+JJVfusYLYLAKqEgu6QOZwcPAKeEgcnJ8GsUtBonXZIfYJjNwLGBlWMYqmFiQX
+	FCel5xrqFSfmFpfmpesl5+duYgT78ZnUDsaVDRaHGAU4GJV4eA2A/hViTSwrrsw9xCjBwawk
+	wtvZCRTiTUmsrEotyo8vKs1JLT7EKM3BoiTOa+z91V9IID2xJDU7NbUgtQgmy8TBKdXAyHP9
+	fuun9VfvRU4VcPCv/lb3VLVET73qfW/Psd7Ec+/Nvoubd6VKXZ/01vbPy715HGKXWJS2THiQ
+	M8UoWq1wQ2V/gerFidpeu21vftzrWLozyjlV599CC6llK/+Vz4peF3vuTIy6O6N3VVPO4mst
+	Hza4Gq9aJN0w/0dNwORX611tXRjPh+tpKrEUZyQaajEXFScCAEw4DprfAQAA
 X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch retrieves and configures the vbus control gpio via
-the device tree. The suspend/resume callbacks will be later
-modified for vbus control.
+Changes from v1:
+1) Rebased on 'usb-next' branch.
 
-Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
-Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+Vivek Gautam (2):
+  USB: dwc3-exynos: Add support for device tree
+  USB: dwc3-exynos: Add vbus setup function to the exynos dwc3 glue
+    layer
 
-diff --git a/drivers/usb/host/ehci-s5p.c b/drivers/usb/host/ehci-s5p.c
-index 37d84cf..4037878 100644
---- a/drivers/usb/host/ehci-s5p.c
-+++ b/drivers/usb/host/ehci-s5p.c
-@@ -15,6 +15,7 @@
- #include <linux/clk.h>
- #include <linux/of.h>
- #include <linux/platform_device.h>
-+#include <linux/of_gpio.h>
- #include <plat/ehci.h>
- #include <plat/usb-phy.h>
- 
-@@ -64,6 +65,28 @@ static const struct hc_driver s5p_ehci_hc_driver = {
- 	.clear_tt_buffer_complete	= ehci_clear_tt_buffer_complete,
- };
- 
-+static int s5p_ehci_setup_gpio(struct platform_device *pdev)
-+{
-+	int err;
-+	int gpio;
-+
-+	if (!pdev->dev.of_node)
-+		return 0;
-+
-+	gpio = of_get_named_gpio(pdev->dev.of_node,
-+			"samsung,vbus-gpio", 0);
-+	if (!gpio_is_valid(gpio))
-+		return 0;
-+
-+	err = gpio_request_one(gpio, GPIOF_OUT_INIT_HIGH, "ehci_vbus_gpio");
-+	if (err) {
-+		dev_err(&pdev->dev, "can't request ehci vbus gpio %d", gpio);
-+		return err;
-+	}
-+
-+	return err;
-+}
-+
- static u64 ehci_s5p_dma_mask = DMA_BIT_MASK(32);
- 
- static int __devinit s5p_ehci_probe(struct platform_device *pdev)
-@@ -92,6 +115,8 @@ static int __devinit s5p_ehci_probe(struct platform_device *pdev)
- 	if (!pdev->dev.coherent_dma_mask)
- 		pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
- 
-+	s5p_ehci_setup_gpio(pdev);
-+
- 	s5p_ehci = devm_kzalloc(&pdev->dev, sizeof(struct s5p_ehci_hcd),
- 				GFP_KERNEL);
- 	if (!s5p_ehci)
--- 
-1.7.0.4
+ drivers/usb/dwc3/dwc3-exynos.c |   47 ++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 47 insertions(+), 0 deletions(-)
 
