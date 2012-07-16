@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753594Ab2GPTsB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 15:48:01 -0400
-Received: from unicorn.mansr.com ([78.86.181.103]:60646 "EHLO
-	unicorn.mansr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753441Ab2GPTr6 convert rfc822-to-8bit (ORCPT
+	id S1753517Ab2GPT6F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 15:58:05 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47384 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752626Ab2GPT6A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 15:47:58 -0400
-From: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Mikael Pettersson <mikpe@it.uu.se>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
-References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
-	<20472.466.594018.973876@pilspetsen.it.uu.se>
-	<20120710101223.GF15120@arm.com> <20120714093505.GB23316@elf.ucw.cz>
-	<20120715113631.GA10597@arm.com> <20120716161913.GB20549@elf.ucw.cz>
-Date: Mon, 16 Jul 2012 20:47:57 +0100
-In-Reply-To: <20120716161913.GB20549@elf.ucw.cz> (Pavel Machek's message of
-	"Mon, 16 Jul 2012 18:19:13 +0200")
-Message-ID: <yw1xr4sbbi8i.fsf@unicorn.mansr.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+	Mon, 16 Jul 2012 15:58:00 -0400
+Date: Mon, 16 Jul 2012 20:57:57 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: lrg@ti.com, rob.herring@calxeda.com, swarren@wwwdotorg.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH] regulator: tps65910: set input_supply on desc
+ unconditionally
+Message-ID: <20120716195756.GA10774@opensource.wolfsonmicro.com>
+References: <1342446294-2644-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7JfCtLOvnd9MIVvH"
+Content-Disposition: inline
+In-Reply-To: <1342446294-2644-1-git-send-email-ldewangan@nvidia.com>
+X-Cookie: You will get what you deserve.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pavel Machek <pavel@ucw.cz> writes:
 
-> Hi!
->
->> The assembly syntax is very reasonable already and not far from what we
->> are used to (see the .S files in my kernel patches). The 64-bit
->> instructions are different and that's specified here (apart from the
->> actual bit encoding):
->> 
->> http://infocenter.arm.com/help/topic/com.arm.doc.genc010197a/index.html
->
-> "This document is only available in a PDF version to registered ARM
-> customers."
->
-> It would be nice to make this public :-(.
+--7JfCtLOvnd9MIVvH
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Anyone can register, so it's not all that bad.
+On Mon, Jul 16, 2012 at 07:14:54PM +0530, Laxman Dewangan wrote:
+> Set the supply_name in the regulator descriptor unconditionally
+> and make this parameter as required parameter in the device
+> node for successfully registration of the regulator.
 
--- 
-Måns Rullgård
-mans@mansr.com
+This doesn't apply against topic/drivers, please check what's going on
+here.
+
+--7JfCtLOvnd9MIVvH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQBHIrAAoJEBus8iNuMP3dTcoP/1xS0IJP0JYlk7oAeYhtV581
+zGsQkC9WCQqDYdbsEz7c5ZCI0v92mHPbvONs0n1lBNclynyuIggj7GuNM7w1SFIE
+jwpwCZmbHSev9Z7JIAEHK4c5/nVV0SSnX0Eo2/toMmS5SYtPeU55FMfBd4YlBJH6
+GaZTAkCjNcOLM+GApMkMXroMpe38Iw9rF7PlF3J5nobSKJ6iSXFeiiRO5JItZ7Zo
+PcLHwKQVWkW4zL5G2VUWoRT5reYq3vHke+A7v8YDmjGv4NSYU5JOmo97zvsyiu77
+B+bsXl5uwm/zgInfeSpPMinCoxXVI4TKvgoeWgf4wj+c9pJzs9EpmqUKykFPMEno
+/vuqfJeYLfcIzGYcJWipdYp3bHU48RN1Bz8Ell2cixtnpBwpNZ9TosERX6+m1mOb
+9aVUVpba28w59lnK7BTnm095H8YMIgr+aw3rFCA8yCJKOPJ3jVL2ordPxGJRGw1m
+DaSVSi+uZVtV5iWJ3200WSAsaMIg+eiN61nPu+Yx/tp9zxl6eyA07n7sFP5Jup21
+bCs8rnFeqN7GSm/qoim+ZhpKnwfuAfgR06IOqo13KDaHcCqAZHCdpEJFccmI9yCt
+WLT1+HO+Imok88t6E7AiZJcEz65sxZ5nmWiXWWYtAvozNGfZO3GJ4/k6a+1j0cIa
+inMJAIfz6gHoX6qhM1TM
+=eV7c
+-----END PGP SIGNATURE-----
+
+--7JfCtLOvnd9MIVvH--
