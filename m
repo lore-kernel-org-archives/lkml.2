@@ -1,133 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752797Ab2GPIgP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 04:36:15 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50118 "EHLO
+	id S1752740Ab2GPIgy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 04:36:54 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54301 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751944Ab2GPIgM (ORCPT
+	with ESMTP id S1751495Ab2GPIgv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 04:36:12 -0400
-Date: Mon, 16 Jul 2012 01:35:34 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
-        Rik van Riel <riel@redhat.com>, Ying Han <yinghan@google.com>,
-        Greg Thelen <gthelen@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: [PATCH mmotm] memcg: further prevent OOM with too many dirty pages
-In-Reply-To: <alpine.LSU.2.00.1207160111280.3936@eggly.anvils>
-Message-ID: <alpine.LSU.2.00.1207160131120.3936@eggly.anvils>
-References: <1340117404-30348-1-git-send-email-mhocko@suse.cz> <20120619150014.1ebc108c.akpm@linux-foundation.org> <20120620101119.GC5541@tiehlicka.suse.cz> <alpine.LSU.2.00.1207111818380.1299@eggly.anvils> <20120712070501.GB21013@tiehlicka.suse.cz>
- <20120712141343.e1cb7776.akpm@linux-foundation.org> <alpine.LSU.2.00.1207121539150.27721@eggly.anvils> <20120713082150.GA1448@tiehlicka.suse.cz> <alpine.LSU.2.00.1207160111280.3936@eggly.anvils>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 16 Jul 2012 04:36:51 -0400
+From: Toshiaki Yamane <yamanetoshi@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        marek.belisko@gmail.com
+Cc: Toshiaki Yamane <yamanetoshi@gmail.com>
+Subject: [PATCH] staging/cptm1217: fix checkpatch warnings
+Date: Mon, 16 Jul 2012 17:36:41 +0900
+Message-Id: <1342427801-8972-1-git-send-email-yamanetoshi@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1342426322-7809-1-git-send-email-yamanetoshi@gmail.com>
+References: <1342426322-7809-1-git-send-email-yamanetoshi@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The may_enter_fs test turns out to be too restrictive: though I saw
-no problem with it when testing on 3.5-rc6, it very soon OOMed when
-I tested on 3.5-rc6-mm1.  I don't know what the difference there is,
-perhaps I just slightly changed the way I started off the testing:
-dd if=/dev/zero of=/mnt/temp bs=1M count=1024; rm -f /mnt/temp; sync
-repeatedly, in 20M memory.limit_in_bytes cgroup to ext4 on USB stick.
+The below checkpatch warn, error, and typo was fixed,
 
-ext4 (and gfs2 and xfs) turn out to allocate new pages for writing
-with AOP_FLAG_NOFS: that seems a little worrying, and it's unclear
-to me why the transaction needs to be started even before allocating
-pagecache memory.  But it may not be worth worrying about these days:
-if direct reclaim avoids FS writeback, does __GFP_FS now mean anything?
+drivers/staging/cptm1217/clearpad_tm1217.c:400: WARNING: quoted string split across lines
+drivers/staging/cptm1217/cp_tm1217.h:5: ERROR: open brace '{' following struct go on the same line
 
-Anyway, we insisted on the may_enter_fs test to avoid hangs with the
-loop device; but since that also masks off __GFP_IO, we can test for
-__GFP_IO directly, ignoring may_enter_fs and __GFP_FS.
-
-But even so, the test still OOMs sometimes: when originally testing
-on 3.5-rc6, it OOMed about one time in five or ten; when testing
-just now on 3.5-rc6-mm1, it OOMed on the first iteration.
-
-This residual problem comes from an accumulation of pages under
-ordinary writeback, not marked PageReclaim, so rightly not causing
-the memcg check to wait on their writeback: these too can prevent
-shrink_page_list() from freeing any pages, so many times that memcg
-reclaim fails and OOMs.
-
-Deal with these in the same way as direct reclaim now deals with
-dirty FS pages: mark them PageReclaim.  It is appropriate to rotate
-these to tail of list when writepage completes, but more importantly,
-the PageReclaim flag makes memcg reclaim wait on them if encountered
-again.  Increment NR_VMSCAN_IMMEDIATE?  That's arguable: I chose not.
-
-Setting PageReclaim here may occasionally race with end_page_writeback()
-clearing it: lru_deactivate_fn() already faced the same race, and
-correctly concluded that the window is small and the issue non-critical.
-
-With these changes, the test runs indefinitely without OOMing on ext4,
-ext3 and ext2: I'll move on to test with other filesystems later.
-
-Trivia: invert conditions for a clearer block without an else,
-and goto keep_locked to do the unlock_page.
-
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Cc: stable@vger.kernel.org (along with the patch it fixes)
+Signed-off-by: Toshiaki Yamane <yamanetoshi@gmail.com>
 ---
-Incremental on top of what I believe you presently have in mmotm:
-better folded in on top of Michal's original and the may_enter_fs "fix".
+ drivers/staging/cptm1217/clearpad_tm1217.c |    4 ++--
+ drivers/staging/cptm1217/cp_tm1217.h       |    3 +--
+ 2 files changed, 3 insertions(+), 4 deletions(-)
 
- mm/vmscan.c |   33 ++++++++++++++++++++++++---------
- 1 file changed, 24 insertions(+), 9 deletions(-)
-
---- mmotm/mm/vmscan.c	2012-07-14 18:43:46.618738947 -0700
-+++ linux/mm/vmscan.c	2012-07-15 19:28:50.038830668 -0700
-@@ -723,23 +723,38 @@ static unsigned long shrink_page_list(st
- 			/*
- 			 * memcg doesn't have any dirty pages throttling so we
- 			 * could easily OOM just because too many pages are in
--			 * writeback from reclaim and there is nothing else to
--			 * reclaim.
-+			 * writeback and there is nothing else to reclaim.
- 			 *
--			 * Check may_enter_fs, certainly because a loop driver
-+			 * Check __GFP_IO, certainly because a loop driver
- 			 * thread might enter reclaim, and deadlock if it waits
- 			 * on a page for which it is needed to do the write
- 			 * (loop masks off __GFP_IO|__GFP_FS for this reason);
- 			 * but more thought would probably show more reasons.
-+			 *
-+			 * Don't require __GFP_FS, since we're not going into
-+			 * the FS, just waiting on its writeback completion.
-+			 * Worryingly, ext4 gfs2 and xfs allocate pages with
-+			 * grab_cache_page_write_begin(,,AOP_FLAG_NOFS), so
-+			 * testing may_enter_fs here is liable to OOM on them.
- 			 */
--			if (!global_reclaim(sc) && PageReclaim(page) &&
--					may_enter_fs)
--				wait_on_page_writeback(page);
--			else {
-+			if (global_reclaim(sc) ||
-+			    !PageReclaim(page) || !(sc->gfp_mask & __GFP_IO)) {
-+				/*
-+				 * This is slightly racy - end_page_writeback()
-+				 * might have just cleared PageReclaim, then
-+				 * setting PageReclaim here end up interpreted
-+				 * as PageReadahead - but that does not matter
-+				 * enough to care.  What we do want is for this
-+				 * page to have PageReclaim set next time memcg
-+				 * reclaim reaches the tests above, so it will
-+				 * then wait_on_page_writeback() to avoid OOM;
-+				 * and it's also appropriate in global reclaim.
-+				 */
-+				SetPageReclaim(page);
- 				nr_writeback++;
--				unlock_page(page);
--				goto keep;
-+				goto keep_locked;
- 			}
-+			wait_on_page_writeback(page);
- 		}
+diff --git a/drivers/staging/cptm1217/clearpad_tm1217.c b/drivers/staging/cptm1217/clearpad_tm1217.c
+index 5456f82..b154042 100644
+--- a/drivers/staging/cptm1217/clearpad_tm1217.c
++++ b/drivers/staging/cptm1217/clearpad_tm1217.c
+@@ -396,8 +396,8 @@ static int cp_tm1217_setup_gpio_irq(struct cp_tm1217_device *ts)
  
- 		references = page_check_references(page, sc);
+ 	retval = gpio_to_irq(ts->gpio);
+ 	if (retval < 0) {
+-		dev_err(ts->dev, "cp_tm1217: GPIO to IRQ failedi,"
+-		" error %d\n", retval);
++		dev_err(ts->dev, "cp_tm1217: GPIO to IRQ failed, error %d\n",
++			retval);
+ 		gpio_free(ts->gpio);
+ 	}
+ 	dev_dbg(ts->dev,
+diff --git a/drivers/staging/cptm1217/cp_tm1217.h b/drivers/staging/cptm1217/cp_tm1217.h
+index a0ce31d..30bad35 100644
+--- a/drivers/staging/cptm1217/cp_tm1217.h
++++ b/drivers/staging/cptm1217/cp_tm1217.h
+@@ -1,8 +1,7 @@
+ #ifndef __LINUX_I2C_CP_TM1217_H
+ #define __LINUX_I2C_CP_TM1217_H
+ 
+-struct cp_tm1217_platform_data
+-{
++struct cp_tm1217_platform_data {
+ 	int gpio;		/* If not set uses the IRQ resource 0 */
+ };
+ 
+-- 
+1.7.5.4
+
