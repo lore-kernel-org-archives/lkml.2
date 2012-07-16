@@ -1,63 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752713Ab2GPBFf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jul 2012 21:05:35 -0400
-Received: from nm8-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.194]:29926 "HELO
-	nm8-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751996Ab2GPBFd convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jul 2012 21:05:33 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 745919.44259.bm@omp1050.mail.sp2.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:Cc:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=3iO3B48Og0qFM5+aE996PpIdKWe3Cbqa0UHbT+Jqq8sBODL4ez95gFMFe3IxeAhT9RGg6z1+9fmTWpVzv9e4aMVRjRSahedOtM+gPoHxGc2e11rznkQyGW2T9NoPuvDE2DBizobgG0zh0aUQW1Leh1UIsi77s+Sh5Soyp1Y5cWM=;
-X-YMail-OSG: EWciWrcVM1ku3prhbKTVQgjSG9X9G5sw4ELCbZ9Y61QJY5E
- CDZJhQpziIntArEaCwdZWM9GPl0vqqIds2osfQSsP_swOAbyJ7e0GeuBNuZf
- QIlnE4ucRWVEJjRhtorE9DdgzzM8_gu_2ZdOsPty1KX9dw7BisNiRZn9vbGe
- X3YHHZ.N_GvHIEWMLafHSZiU1vZZFjiRhCLXpVUSkXLrhpvGrZX7PvCtEZya
- XGkZB3OeIsjLq9bRb2C_SrYrWzoBG210ZRil8pS91HH3MMv6oh6jdGxfpvUL
- Rz5GiZrADHUFD.EmQQgF5iRDKpfbueP1FK7ISdCt8cdcGI3pABYRhyBhaFQn
- ZLbmhLuhmLSZmH4YS5iVfEE6w9HSKGsqgcVa.KG2_rDjLgWQjnmwrMMXgJfl
- MeFbdAjjN_Y.HwcyE6KjXHfN43sT26M5YfRMmD1fGIpAWL_6gPA9TUihDNvP
- JXQ--
-X-Mailer: YahooMailWebService/0.8.120.356233
-Message-ID: <1342400731.4834.YahooMailNeo@web112017.mail.gq1.yahoo.com>
-Date: Sun, 15 Jul 2012 18:05:31 -0700 (PDT)
-From: Paulo da Silva <psdasilva@yahoo.com>
-Reply-To: Paulo da Silva <psdasilva@yahoo.com>
-Subject: [PATCH] loop device: Fix wrong return check from idr_pre_get in loop.c
-To: "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1752867Ab2GPBJg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jul 2012 21:09:36 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:39234 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752355Ab2GPBJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jul 2012 21:09:34 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Linux Kernel Developers List <linux-kernel@vger.kernel.org>
+Cc: "Theodore Ts'o" <tytso@mit.edu>
+Subject: [PATCH] random: remove rand_initialize_irq()
+Date: Sun, 15 Jul 2012 21:09:31 -0400
+Message-Id: <1342400971-15245-1-git-send-email-tytso@mit.edu>
+X-Mailer: git-send-email 1.7.11.1.108.gb129051
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-idr_pre_get always returns 0 (no memory) or 1 (OK). Never a negative value.
-So, it must be checked accordingly.
+With the new interrupt sampling system, we are no longer using the
+timer_rand_state structure in the irq descriptor, so we can stop
+initializing it now.
 
-Signed-off-by: Paulo da Silva <psdasilva@yahoo.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 ---
- drivers/block/loop.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/char/random.c   | 55 -------------------------------------------------
+ include/linux/irqdesc.h |  1 -
+ kernel/irq/manage.c     | 17 ---------------
+ 3 files changed, 73 deletions(-)
 
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index e318085..9793b40 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -634,43 +634,6 @@ struct timer_rand_state {
+ 	unsigned dont_count_entropy:1;
+ };
+ 
+-#ifndef CONFIG_GENERIC_HARDIRQS
+-
+-static struct timer_rand_state *irq_timer_state[NR_IRQS];
+-
+-static struct timer_rand_state *get_timer_rand_state(unsigned int irq)
+-{
+-	return irq_timer_state[irq];
+-}
+-
+-static void set_timer_rand_state(unsigned int irq,
+-				 struct timer_rand_state *state)
+-{
+-	irq_timer_state[irq] = state;
+-}
+-
+-#else
+-
+-static struct timer_rand_state *get_timer_rand_state(unsigned int irq)
+-{
+-	struct irq_desc *desc;
+-
+-	desc = irq_to_desc(irq);
+-
+-	return desc->timer_rand_state;
+-}
+-
+-static void set_timer_rand_state(unsigned int irq,
+-				 struct timer_rand_state *state)
+-{
+-	struct irq_desc *desc;
+-
+-	desc = irq_to_desc(irq);
+-
+-	desc->timer_rand_state = state;
+-}
+-#endif
+-
+ /*
+  * Add device- or boot-specific data to the input and nonblocking
+  * pools to help initialize them to unique values.
+@@ -1133,24 +1096,6 @@ static int rand_initialize(void)
+ }
+ module_init(rand_initialize);
+ 
+-void rand_initialize_irq(int irq)
+-{
+-	struct timer_rand_state *state;
+-
+-	state = get_timer_rand_state(irq);
+-
+-	if (state)
+-		return;
+-
+-	/*
+-	 * If kzalloc returns null, we just won't use that entropy
+-	 * source.
+-	 */
+-	state = kzalloc(sizeof(struct timer_rand_state), GFP_KERNEL);
+-	if (state)
+-		set_timer_rand_state(irq, state);
+-}
+-
+ #ifdef CONFIG_BLOCK
+ void rand_initialize_disk(struct gendisk *disk)
+ {
+diff --git a/include/linux/irqdesc.h b/include/linux/irqdesc.h
+index f1e2527..9a323d1 100644
+--- a/include/linux/irqdesc.h
++++ b/include/linux/irqdesc.h
+@@ -39,7 +39,6 @@ struct module;
+  */
+ struct irq_desc {
+ 	struct irq_data		irq_data;
+-	struct timer_rand_state *timer_rand_state;
+ 	unsigned int __percpu	*kstat_irqs;
+ 	irq_flow_handler_t	handle_irq;
+ #ifdef CONFIG_IRQ_PREFLOW_FASTEOI
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index 8c54823..5e42eb1 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -893,22 +893,6 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
+ 		return -ENOSYS;
+ 	if (!try_module_get(desc->owner))
+ 		return -ENODEV;
+-	/*
+-	 * Some drivers like serial.c use request_irq() heavily,
+-	 * so we have to be careful not to interfere with a
+-	 * running system.
+-	 */
+-	if (new->flags & IRQF_SAMPLE_RANDOM) {
+-		/*
+-		 * This function might sleep, we want to call it first,
+-		 * outside of the atomic block.
+-		 * Yes, this might clear the entropy pool if the wrong
+-		 * driver is attempted to be loaded, without actually
+-		 * installing a new handler, but is this really a problem,
+-		 * only the sysadmin is able to do this.
+-		 */
+-		rand_initialize_irq(irq);
+-	}
+ 
+ 	/*
+ 	 * Check whether the interrupt nests into another interrupt
+@@ -1354,7 +1338,6 @@ EXPORT_SYMBOL(free_irq);
+  *	Flags:
+  *
+  *	IRQF_SHARED		Interrupt is shared
+- *	IRQF_SAMPLE_RANDOM	The interrupt can be used for entropy
+  *	IRQF_TRIGGER_*		Specify active edge(s) or level
+  *
+  */
+-- 
+1.7.11.1.108.gb129051
 
---- linux-3.5-rc6/drivers/block/loop.c.orig    2012-07-08 01:23:56.000000000 +0100
-+++ linux-3.5-rc6/drivers/block/loop.c    2012-07-13 19:45:10.000000000 +0100
-@@ -1603,9 +1603,10 @@ static int loop_add(struct loop_device *
-         goto out;
-     }
- 
--    err = idr_pre_get(&loop_index_idr, GFP_KERNEL);
--    if (err < 0)
-+    if (idr_pre_get(&loop_index_idr, GFP_KERNEL) == 0) {
-+        err = -ENOMEM;
-         goto out_free_dev;
-+    }
- 
-     if (i >= 0) {
-         int m;
