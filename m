@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753833Ab2GPSQT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 14:16:19 -0400
-Received: from fias.uni-frankfurt.de ([141.2.248.1]:35252 "EHLO
-	fias.uni-frankfurt.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750890Ab2GPSQP convert rfc822-to-8bit (ORCPT
+	id S1753994Ab2GPSRd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 14:17:33 -0400
+Received: from mail-wi0-f202.google.com ([209.85.212.202]:49824 "EHLO
+	mail-wi0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751919Ab2GPSRb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 14:16:15 -0400
-Message-ID: <1342462572.17531.18.camel@blech>
-Subject: Re: UIO: missing resource mapping
-From: Dominic Eschweiler <eschweiler@fias.uni-frankfurt.de>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>, Andreas Schallenberg <embedded@gmx.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, kvm@vger.kernel.org
-Date: Mon, 16 Jul 2012 20:16:12 +0200
-In-Reply-To: <20120713181953.GA11527@redhat.com>
-References: <4FFE7C1F.7080702@gmx.net> <20120712194432.GA2592@local>
-	 <20120712231632.GC9317@redhat.com> <1342166955.6607.5.camel@blech>
-	 <20120713132223.GA10959@redhat.com> <1342190571.6607.36.camel@blech>
-	 <20120713181953.GA11527@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 8BIT
-Mime-Version: 1.0
+	Mon, 16 Jul 2012 14:17:31 -0400
+From: Colin Cross <ccross@android.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Colin Cross <ccross@android.com>,
+        Russell King <linux@arm.linux.org.uk>, Barry Song <bs14@csr.com>,
+        Catalin Marinas <catalin.marinas@arm.com>, Ido Yariv <ido@wizery.com>,
+        Daniel Drake <dsd@laptop.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH v6] ARM: vfp: Always save VFP state in vfp_pm_suspend on UP
+Date: Mon, 16 Jul 2012 11:17:20 -0700
+Message-Id: <1342462640-18410-1-git-send-email-ccross@android.com>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, den 13.07.2012, 21:19 +0300 schrieb Michael S. Tsirkin:
-> 
-> UIO has the same property, doesn't it? Multiple users can
-> access device memory through sysfs. 
+vfp_pm_suspend should save the VFP state in suspend after
+any lazy context switch.  If it only saves when the VFP is enabled,
+the state can get lost when, on a UP system:
+  Thread 1 uses the VFP
+  Context switch occurs to thread 2, VFP is disabled but the
+     VFP context is not saved
+  Thread 2 initiates suspend
+  vfp_pm_suspend is called with the VFP disabled, and the unsaved
+     VFP context of Thread 1 in the registers
 
+Modify vfp_pm_suspend to save the VFP context whenever
+vfp_current_hw_state is not NULL.
 
-Indeed, that's a similar problem. I haven't tried it (yet), but this
-particular problem can maybe circumvented by using mmap with the
-MAP_PRIVATE flag. Doing so is the responsibility of the driver
-programmer (like Hans already said). Even if that mmap trick does not
-work, it is pretty much sure that a BAR is already used by another
-program, if a related kernel driver is loaded. In that case the kernel
-has a chance to avoid such BAR race conditions by not giving the
-possibility to map them to the userspace.
+Includes a fix from Ido Yariv <ido@wizery.com>, who pointed out that on
+SMP systems, the state pointer can be pointing to a freed task struct if
+a task exited on another cpu, fixed by using #ifdef CONFIG_SMP in the
+new if clause.
 
-Nevertheless, I'm pretty sure that the possibility via sysfs to access
-BARs, which are already managed by a kernel driver, opens the door for
-denial of service attacks.
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Barry Song <bs14@csr.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Ido Yariv <ido@wizery.com>
+Cc: Daniel Drake <dsd@laptop.org>
+Cc: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Colin Cross <ccross@android.com>
+---
+ arch/arm/vfp/vfpmodule.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-On the other hand, I'm quite a newbie on this topic and maybe I don't
-see the big picture here. Therefore it is up to you guys to make the
-right decision (if needed). 
-
+diff --git a/arch/arm/vfp/vfpmodule.c b/arch/arm/vfp/vfpmodule.c
+index 58696192..ce55f05 100644
+--- a/arch/arm/vfp/vfpmodule.c
++++ b/arch/arm/vfp/vfpmodule.c
+@@ -457,6 +457,12 @@ static int vfp_pm_suspend(void)
+ 
+ 		/* disable, just in case */
+ 		fmxr(FPEXC, fmrx(FPEXC) & ~FPEXC_EN);
++	} else if (vfp_current_hw_state[ti->cpu]) {
++#ifndef CONFIG_SMP
++		fmxr(FPEXC, fpexc | FPEXC_EN);
++		vfp_save_state(vfp_current_hw_state[ti->cpu], fpexc);
++		fmxr(FPEXC, fpexc);
++#endif
+ 	}
+ 
+ 	/* clear any information we had about last context state */
 -- 
-Gruß
-  Dominic
+1.7.7.3
 
