@@ -1,86 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753070Ab2GPKBa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 06:01:30 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:53236 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751288Ab2GPKB1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 06:01:27 -0400
-Date: Mon, 16 Jul 2012 12:01:25 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Vinod Koul <vinod.koul@linux.intel.com>
-cc: Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/7 v2] dma: sh: use an integer slave ID to improve API
- compatibility
-In-Reply-To: <1342431452.1726.54.camel@vkoul-udesk3>
-Message-ID: <Pine.LNX.4.64.1207161155280.12302@axis700.grange>
-References: <1341484183-10757-1-git-send-email-g.liakhovetski@gmx.de> 
- <1341484183-10757-6-git-send-email-g.liakhovetski@gmx.de> 
- <1342418828.1726.37.camel@vkoul-udesk3>  <Pine.LNX.4.64.1207160832540.12302@axis700.grange>
-  <1342421587.1726.49.camel@vkoul-udesk3>  <Pine.LNX.4.64.1207160907180.12302@axis700.grange>
-  <1342427305.1726.50.camel@vkoul-udesk3>  <Pine.LNX.4.64.1207161040070.12302@axis700.grange>
- <1342431452.1726.54.camel@vkoul-udesk3>
+	id S1753109Ab2GPKCJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 06:02:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48604 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751262Ab2GPKCG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 06:02:06 -0400
+Message-ID: <5003E682.20909@redhat.com>
+Date: Mon, 16 Jul 2012 13:01:38 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:szJQ8nUY6/yaOZnMVvQC8h/r3CIq8h++LYSeObhjjn7
- 0HwoG+BvZDVsXf6rTQ6+LKMhnkGfLaoBzMd0Q9i7vkrppqUKs4
- PBzUG0jEUBppS2cEF7+TgffG55bZQ/4SSdvRHnQLs+FhR/pD9J
- A/yZBo42kBqp/EhrJs1oM9yu43sitwuz1o3QjCZmk5oxPJPCFh
- 1+pcA8SEJS4C+kMMi0okKCgh4gxzTYR/cp+8MoZdaDNeEibcH/
- k/RUQ6wnwLx7I9SwNRmPFJC343Y4Fl71H/n/tt07gwrenQuBPF
- NttkW9u2oiJIEwtSnoOy58v3X7mD0G5BMUAb7B1SkXWAgKLEtq
- Hmkp223VZ7KJ8Aatlvrh10aS3dxWwWcbEcoYsd8UZHXWsLCK/L
- 4jSkhiLJre53A==
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
+        S390 <linux-s390@vger.kernel.org>, Carsten Otte <cotte@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: Re: [PATCH RFC V4 2/3] kvm: Note down when cpu relax intercepted
+ or pause loop exited
+References: <20120716082445.23477.15128.sendpatchset@codeblue.in.ibm.com> <20120716082514.23477.23849.sendpatchset@codeblue.in.ibm.com>
+In-Reply-To: <20120716082514.23477.23849.sendpatchset@codeblue.in.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Jul 2012, Vinod Koul wrote:
-
-> On Mon, 2012-07-16 at 10:47 +0200, Guennadi Liakhovetski wrote:
-> > > I want to know what does ccr and mid_rid mean to dmac here?
-> > 
-> > CHCR contains a few fields, some enable various interrupt sources, some 
-> > specify repeat- and renew-modes, others yet specify transfer size, source 
-> > and destination address-modes (incrementing, constant, decrementing), 
-> > others yet select a DMA client category (slave / memcpy / ...), and a 
-> > transfer flag. Some of these fields could be calculated, others are 
-> > pre-defined for various slaves, the exact layout of those fields can also 
-> > vary between SoCs.
-> I do not understand how clients would provide these values. 
-> For pre-defined values, they should be dmac property why should client
-> like spi or mmc have clue about it?
+On 07/16/2012 11:25 AM, Raghavendra K T wrote:
+> From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 > 
-> For others like you mentioned, i guess they could be easily calculated,
-> right?
+> Noting pause loop exited vcpu or cpu relax intercepted helps in
+> filtering right candidate to yield. Wrong selection of vcpu;
+> i.e., a vcpu that just did a pl-exit or cpu relax intercepted may
+> contribute to performance degradation.
 > 
-> > MID_RID is actually a slave-selector, it contains a magic value, that 
-> > cannot be calculated. 
-> and again, how does client know this?
+> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+> ---
+> V2 was:
+> Reviewed-by: Rik van Riel <riel@redhat.com>
+> 
+>  include/linux/kvm_host.h |   37 +++++++++++++++++++++++++++++++++++++
+>  virt/kvm/kvm_main.c      |    5 +++++
+>  2 files changed, 42 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+> index c446435..fa353bd 100644
+> --- a/include/linux/kvm_host.h
+> +++ b/include/linux/kvm_host.h
+> @@ -183,6 +183,18 @@ struct kvm_vcpu {
+>  	} async_pf;
+>  #endif
+>  
+> +#ifdef CONFIG_HAVE_KVM_CPU_RELAX_INTERCEPT
+> +	/*
+> +	 * Cpu relax intercept or pause loop exit optimization
+> +	 * cpu_relax_intercepted: set when a vcpu does a pause loop exit
+> +	 *  or cpu relax intercepted.
+> +	 * dy_eligible: indicates whether vcpu is eligible for directed yield.
+> +	 */
+> +	struct {
+> +		bool cpu_relax_intercepted;
+> +		bool dy_eligible;
+> +	} ple;
 
-I might be misunderstanding you, but from earlier discussions I got an 
-impression, that the DMAC should know nothing about clients, i.e., should 
-receive no client-specific information from its platform data. Instead 
-clients should provide it when configuring the channel. If this is 
-correct, then the preferred way would be to specify these values in client 
-platform data and then pass it to the DMAC with slave-config calls? Or 
-have I misunderstood you and this per-client information should be kept in 
-DMAC platform data?
+Naming:
 
-I.e., in both cases magic values are provided by platforms, the only 
-difference is - either keep them in DMAC platform data or move them in 
-each individual DMA client platform data.
+- ple is the x86 name, but this is common code.  I'd call it spin_loop.
+- cpu_relax_intercepted: can call it in_spin_loop, the original name can
+me "are we intercepting cpu_relax or not" which may be useful at one
+point (when we know we aren't overcommitted)
+- dy_eligible: I'd like to understand the algorithm more and would want
+the name to reflect it, will come to this later if I have a better idea.
 
-Yes, some CHCR fields can be calculated, but location and width of those 
-fields might vary between DMAC versions, so, they will have to be passed 
-with DMAC platform data. But this definitely can be done in the future.
+> +#endif
 
-Thanks
-Guennadi
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+blank line.
+
+>  	struct kvm_vcpu_arch arch;
+>  };
+>  
+
+
+-- 
+error compiling committee.c: too many arguments to function
+
+
