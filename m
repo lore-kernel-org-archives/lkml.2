@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751942Ab2GPARp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jul 2012 20:17:45 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:38659 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750748Ab2GPARn (ORCPT
+	id S1752066Ab2GPAT3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jul 2012 20:19:29 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51395 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751003Ab2GPATZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jul 2012 20:17:43 -0400
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Axel Lin <axel.lin@gmail.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "Girdwood, Liam" <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] regulator: lp872x: Simplify implementation of
- lp872x_find_regulator_init_data()
-Thread-Topic: [PATCH] regulator: lp872x: Simplify implementation of
- lp872x_find_regulator_init_data()
-Thread-Index: AQHNYmfaDStABXfz2k6IRl9sLlNvqJcrBfZQgAAFNlA=
-Date: Mon, 16 Jul 2012 00:17:37 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998FD599@DQHE02.ent.ti.com>
-References: <1342342632.2939.2.camel@phoenix> 
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.87.177.86]
-Content-Type: text/plain; charset="utf-8"
+	Sun, 15 Jul 2012 20:19:25 -0400
+Date: Sun, 15 Jul 2012 17:19:21 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Jon Mason <jon.mason@intel.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-pci@vger.kernel.org, Dave Jiang <dave.jiang@intel.com>
+Subject: Re: [RFC 1/2] PCI-Express Non-Transparent Bridge Support
+Message-ID: <20120716001921.GA19775@kroah.com>
+References: <1342215900-3358-1-git-send-email-jon.mason@intel.com>
+ <20120714171015.GB25775@kroah.com>
+ <20120715235548.GC7551@jonmason-lab>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120715235548.GC7551@jonmason-lab>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q6G0Ihie023789
 
-> Pass regulator id rahter than the index to
-> lp872x_find_regulator_init_data(),
-> then the code can be simpler.
-> We can also get max_regulators by lp->num_regulators.
+On Sun, Jul 15, 2012 at 04:55:48PM -0700, Jon Mason wrote:
+> On Sat, Jul 14, 2012 at 10:10:15AM -0700, Greg KH wrote:
+> > On Fri, Jul 13, 2012 at 02:44:59PM -0700, Jon Mason wrote:
+> > > +static int max_num_cbs = 2;
+> > > +module_param(max_num_cbs, uint, 0644);
+> > > +MODULE_PARM_DESC(max_num_cbs, "Maximum number of NTB transport connections");
+> > > +
+> > > +static bool no_msix;
+> > > +module_param(no_msix, bool, 0644);
+> > > +MODULE_PARM_DESC(no_msix, "Do not allow MSI-X interrupts to be selected");
+> > 
+> > How would a user, or a distro, know to set these options?  Why are they
+> > even options at all?
+> 
+> Good question.  There is actually a potential benefit to disabling
+> MSI-X.  The NTB device on one of our platforms only has 3 MSI-X
+> vectors.  In the current driver design, that would limit them to 3
+> client/virtual devices.  However, there are 15bits in the ISR that can
+> be used for the same purpose.  So, if you disable MSI-X, you can have
+> 15 instead of 3.  
 
-It looks good to me and tested successfully in the target board.
-Thanks !
+But again, how would a user, or a distro, know to set these?  Where is
+the documentation describing it?  Why really have these options at all
+and not just fix the platform issues (only 3 MSI-X vectors?  Really?)
 
-Acked-by: Milo(Woogyom) Kim <milo.kim@ti.com>
-Tested-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+thanks,
 
-Best Regards,
-Milo
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+greg k-h
