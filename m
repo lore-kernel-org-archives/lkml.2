@@ -1,79 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752697Ab2GPA7X (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jul 2012 20:59:23 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:43998 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751472Ab2GPA7V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jul 2012 20:59:21 -0400
-Date: Mon, 16 Jul 2012 10:59:06 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@lst.de>,
-        Steven Whitehouse <swhiteho@redhat.com>,
-        Dave Kleikamp <shaggy@kernel.org>
-Subject: linux-next: build failure after merge of the vfs tree
-Message-Id: <20120716105906.1abc525c01164b4f9031bcb2@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__16_Jul_2012_10_59_06_+1000_bQnnk_fEJKWaP2x0"
+	id S1752713Ab2GPBFf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jul 2012 21:05:35 -0400
+Received: from nm8-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.194]:29926 "HELO
+	nm8-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751996Ab2GPBFd convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jul 2012 21:05:33 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 745919.44259.bm@omp1050.mail.sp2.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:Cc:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=3iO3B48Og0qFM5+aE996PpIdKWe3Cbqa0UHbT+Jqq8sBODL4ez95gFMFe3IxeAhT9RGg6z1+9fmTWpVzv9e4aMVRjRSahedOtM+gPoHxGc2e11rznkQyGW2T9NoPuvDE2DBizobgG0zh0aUQW1Leh1UIsi77s+Sh5Soyp1Y5cWM=;
+X-YMail-OSG: EWciWrcVM1ku3prhbKTVQgjSG9X9G5sw4ELCbZ9Y61QJY5E
+ CDZJhQpziIntArEaCwdZWM9GPl0vqqIds2osfQSsP_swOAbyJ7e0GeuBNuZf
+ QIlnE4ucRWVEJjRhtorE9DdgzzM8_gu_2ZdOsPty1KX9dw7BisNiRZn9vbGe
+ X3YHHZ.N_GvHIEWMLafHSZiU1vZZFjiRhCLXpVUSkXLrhpvGrZX7PvCtEZya
+ XGkZB3OeIsjLq9bRb2C_SrYrWzoBG210ZRil8pS91HH3MMv6oh6jdGxfpvUL
+ Rz5GiZrADHUFD.EmQQgF5iRDKpfbueP1FK7ISdCt8cdcGI3pABYRhyBhaFQn
+ ZLbmhLuhmLSZmH4YS5iVfEE6w9HSKGsqgcVa.KG2_rDjLgWQjnmwrMMXgJfl
+ MeFbdAjjN_Y.HwcyE6KjXHfN43sT26M5YfRMmD1fGIpAWL_6gPA9TUihDNvP
+ JXQ--
+X-Mailer: YahooMailWebService/0.8.120.356233
+Message-ID: <1342400731.4834.YahooMailNeo@web112017.mail.gq1.yahoo.com>
+Date: Sun, 15 Jul 2012 18:05:31 -0700 (PDT)
+From: Paulo da Silva <psdasilva@yahoo.com>
+Reply-To: Paulo da Silva <psdasilva@yahoo.com>
+Subject: [PATCH] loop device: Fix wrong return check from idr_pre_get in loop.c
+To: "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__16_Jul_2012_10_59_06_+1000_bQnnk_fEJKWaP2x0
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+idr_pre_get always returns 0 (no memory) or 1 (OK). Never a negative value.
+So, it must be checked accordingly.
 
-Hi Al,
+Signed-off-by: Paulo da Silva <psdasilva@yahoo.com>
+---
+ drivers/block/loop.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-After merging the vfs tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
 
-fs/ext2/super.c: In function 'ext2_sync_fs':
-fs/ext2/super.c:1191:2: error: implicit declaration of function 'dquot_writ=
-eback_dquots' [-Werror=3Dimplicit-function-declaration]
-fs/ext3/super.c: In function 'ext3_sync_fs':
-fs/ext3/super.c:2534:2: error: implicit declaration of function 'dquot_writ=
-eback_dquots' [-Werror=3Dimplicit-function-declaration]
-fs/ext4/super.c: In function 'ext4_sync_fs':
-fs/ext4/super.c:4493:2: error: implicit declaration of function 'dquot_writ=
-eback_dquots' [-Werror=3Dimplicit-function-declaration]
-
-Caused by commits 05566b558a47 ("quota: Move quota syncing to ->sync_fs
-method") and ad04033e79d2 ("quota: Split dquot_quota_sync() to writeback
-and cache flushing part").  Please do build testing with and without
-CONFIG QUOTA for quota changes ...
-
-I have used the vfs tree from next-20120713 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Mon__16_Jul_2012_10_59_06_+1000_bQnnk_fEJKWaP2x0
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQA2daAAoJEECxmPOUX5FEy74P/0UA3Ed0he+5i/4OAe8AlMdQ
-RTWesHEj5p2Conp5ZSlCFax9pfOkq+1z/G5ItcJhkGC9giC8Hpcv00OroZsft+Qu
-EtFxWycLkLE97XgGlNMR4qFi+Y6V3UCxRSYSSNfgX0dBFX3U/TWFDJvd7utAxBRx
-EzQxJdI7+ICQs7DS6r1t9guWVL4j8EljJTfrOCsqO0tzhntHq1ujmCePvyklutpp
-/GAtzDSjECInpMQNsK9knkx3w5+I7y+u1tZHzpdXgw9amGw/gCN4YMs8MwAG1AyO
-he/RVZQXrICC9UW2AIXvJZ2yoKQNcGqYt2wv5YK/z9IL3s8FtEP8Y6T8N395jqP0
-/zrjQA1X9QGZ3UO0OZ3ml3h64sP0Qe+wonvCU0bPWOiB/zgJBIk6USa9VRUlhLZW
-X74IKAhYbNz2aVus98/zzdaJuZnwlo1KohIvWmpolvFwcfTj1UmTo6PiGcjd2vV/
-ISl3WNOeRmQ7UiW9mddpggGwY3WtZyYBADs/aPBOJR+AKnAfIL9XXDoBGpCCny5B
-vv1aqeNxbARGWEyamYOas6pyiMcqRvqi4clvtJMwu93hUuBk2ZUTJ1ncwywxdwLk
-s01HvjcAd9tZ5Gnp+d2vHMsDYF/W6Uvzc4uGyb8LK16r6+xc96y1jqsVklw9JeqV
-ZNCcHzxcUgPWt2oCduos
-=+Aa2
------END PGP SIGNATURE-----
-
---Signature=_Mon__16_Jul_2012_10_59_06_+1000_bQnnk_fEJKWaP2x0--
+--- linux-3.5-rc6/drivers/block/loop.c.orig    2012-07-08 01:23:56.000000000 +0100
++++ linux-3.5-rc6/drivers/block/loop.c    2012-07-13 19:45:10.000000000 +0100
+@@ -1603,9 +1603,10 @@ static int loop_add(struct loop_device *
+         goto out;
+     }
+ 
+-    err = idr_pre_get(&loop_index_idr, GFP_KERNEL);
+-    if (err < 0)
++    if (idr_pre_get(&loop_index_idr, GFP_KERNEL) == 0) {
++        err = -ENOMEM;
+         goto out_free_dev;
++    }
+ 
+     if (i >= 0) {
+         int m;
