@@ -1,96 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752440Ab2GPHNn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 03:13:43 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:65101 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751567Ab2GPHNk (ORCPT
+	id S1752408Ab2GPHOM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 03:14:12 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:7481 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751567Ab2GPHOJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 03:13:40 -0400
-Date: Mon, 16 Jul 2012 09:13:38 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Vinod Koul <vinod.koul@linux.intel.com>
-cc: Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/7 v2] dma: sh: use an integer slave ID to improve API
- compatibility
-In-Reply-To: <1342421587.1726.49.camel@vkoul-udesk3>
-Message-ID: <Pine.LNX.4.64.1207160907180.12302@axis700.grange>
-References: <1341484183-10757-1-git-send-email-g.liakhovetski@gmx.de> 
- <1341484183-10757-6-git-send-email-g.liakhovetski@gmx.de> 
- <1342418828.1726.37.camel@vkoul-udesk3>  <Pine.LNX.4.64.1207160832540.12302@axis700.grange>
- <1342421587.1726.49.camel@vkoul-udesk3>
+	Mon, 16 Jul 2012 03:14:09 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Mon, 16 Jul 2012 00:14:01 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <broonie@opensource.wolfsonmicro.com>, <ccross@android.com>,
+        <olof@lixom.net>, <swarren@wwwdotorg.org>
+CC: <thierry.reding@avionic-design.de>, <linux-kernel@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH RESEND] ARM: tegra: harmony: add regulator supply name and its input supply
+Date: Mon, 16 Jul 2012 12:35:53 +0530
+Message-ID: <1342422353-10973-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:MQKaeAwjd6jGjmagtQNErTuXCmipufg65EzIOSD93L0
- LvNlQ7qarjIl7+L7Mw7bPaxa1EWQeGRisMerC3HnVzluZ3gIWe
- TwX5/yRjCh+WKX5s6iCjO0W3NylkeSQTW53ejjrwA6muG6zAGK
- 9L3YQxuzdpebv/RTZvNUYyyHSp/y512drFnRgK4ThBwMWjhzYg
- bIlOySLAf06l6g8ALFO3LGahHe+z8VnhGIWrdcVUh57DFWMWm8
- +KYxSc6M/Qma4POO4wPYS36km25uph8y3ydJU8K0idJnUduMZo
- Ejz+EjkwWlWGJFlByJHGOC7hy5dywn2/6P0pHvWQxyloNpaoEP
- KCwdwey+5fjbd48+YUel/zSwhVB4dvasidKdwIxP5fYADxeuTL
- CmtJe3DwsjjeQ==
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Jul 2012, Vinod Koul wrote:
+Name the regulator as per board schematics and adds its
+supply name info in regulator data.
+Add the always on fixed regulator to refer the battery supply.
 
-> On Mon, 2012-07-16 at 08:37 +0200, Guennadi Liakhovetski wrote:
-> > On Mon, 16 Jul 2012, Vinod Koul wrote:
-> > 
-> > > On Thu, 2012-07-05 at 12:29 +0200, Guennadi Liakhovetski wrote:
-> > > > diff --git a/include/linux/sh_dma.h b/include/linux/sh_dma.h
-> > > > index a79f10a..4e83f3e 100644
-> > > > --- a/include/linux/sh_dma.h
-> > > > +++ b/include/linux/sh_dma.h
-> > > > @@ -27,10 +27,10 @@ struct sh_dmae_slave {
-> > > >   * a certain peripheral
-> > > >   */
-> > > >  struct sh_dmae_slave_config {
-> > > > -       unsigned int                    slave_id;
-> > > > -       dma_addr_t                      addr;
-> > > > -       u32                             chcr;
-> > > > -       char                            mid_rid;
-> > > > +       int             slave_id;
-> > > > +       dma_addr_t      addr;
-> > > > +       u32             chcr;
-> > > > +       char            mid_rid;
-> > > >  }; 
-> > > why would you want to keep your own slave_id and addr fields when they
-> > > are already provided in struct dma_slave_config.
-> > 
-> > Modifying the driver's API would break all its clients.
-> rightly so, they need to be moved too.
+Use this fixed regulator for input supply of some of PMIC
+regulator
 
-Sure, that's why patch 6/7 is "providing a migration path" for them.
-
-> > > Also while at it, what
-> > > would be the use of last tow fields, what do they describe?
-> > 
-> > They tell the driver how the channel has to be configured to support this 
-> > specific client. They are values of two specific registers. In fact, CHCR 
-> > means exactly that - CHannel Control Register.
-> what exactly does the channel control register do in shdma? Should shdma
-> driver deduce this value rather than client giving it?
-> Same question for mid_rid?
-
-See, e.g., arch/arm/mach-shmobile/setup-sh7372.c::sh7372_dmae_slaves[]. 
-Platforms are supplying these values with shdma driver platform data, 
-together with slave IDs. Them when slaves request channels and supply 
-their slave IDs, the driver searches the above array, looking for the 
-matching slave ID, then it uses the rest of the information in those 
-structs to configure the channel for this client. Again, this is nothing 
-new, this is how the driver has been functioning since a long time, this 
-driver is not modifying anything there. Any changes to this procedure, 
-like providing all thig information from clients themselves instead of 
-keeping it with DMACs, requires these patches to be committed first.
-
-Thanks
-Guennadi
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 ---
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+This was 1/2 of the series
+[PATCH 0/2] regulator: tps6586x: support for input supply
+
+There is change in the regulator driver of tps6586x to support input
+supply, this change is also require to avoid any functionality break.
+The regulator change is in the Mark's regulator/for-next, this change
+should also go from this tree.
+Resending this as Mark suggested.
+
+ arch/arm/mach-tegra/board-harmony-power.c |   33 +++++++++++++++++-----------
+ 1 files changed, 20 insertions(+), 13 deletions(-)
+
+diff --git a/arch/arm/mach-tegra/board-harmony-power.c b/arch/arm/mach-tegra/board-harmony-power.c
+index 44dcb2e..8fd387b 100644
+--- a/arch/arm/mach-tegra/board-harmony-power.c
++++ b/arch/arm/mach-tegra/board-harmony-power.c
+@@ -19,6 +19,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/gpio.h>
+ #include <linux/regulator/machine.h>
++#include <linux/regulator/fixed.h>
+ #include <linux/mfd/tps6586x.h>
+ #include <linux/of.h>
+ #include <linux/of_i2c.h>
+@@ -34,7 +35,9 @@ static struct regulator_consumer_supply tps658621_ldo0_supply[] = {
+ };
+ 
+ static struct regulator_init_data ldo0_data = {
++	.supply_regulator = "vdd_sm2",
+ 	.constraints = {
++		.name = "vdd_ldo0",
+ 		.min_uV = 3300 * 1000,
+ 		.max_uV = 3300 * 1000,
+ 		.valid_modes_mask = (REGULATOR_MODE_NORMAL |
+@@ -48,9 +51,11 @@ static struct regulator_init_data ldo0_data = {
+ 	.consumer_supplies = tps658621_ldo0_supply,
+ };
+ 
+-#define HARMONY_REGULATOR_INIT(_id, _minmv, _maxmv)			\
++#define HARMONY_REGULATOR_INIT(_id, _name, _supply, _minmv, _maxmv)	\
+ 	static struct regulator_init_data _id##_data = {		\
++		.supply_regulator = _supply,				\
+ 		.constraints = {					\
++			.name = _name,					\
+ 			.min_uV = (_minmv)*1000,			\
+ 			.max_uV = (_maxmv)*1000,			\
+ 			.valid_modes_mask = (REGULATOR_MODE_NORMAL |	\
+@@ -61,18 +66,18 @@ static struct regulator_init_data ldo0_data = {
+ 		},							\
+ 	}
+ 
+-HARMONY_REGULATOR_INIT(sm0, 725, 1500);
+-HARMONY_REGULATOR_INIT(sm1, 725, 1500);
+-HARMONY_REGULATOR_INIT(sm2, 3000, 4550);
+-HARMONY_REGULATOR_INIT(ldo1, 725, 1500);
+-HARMONY_REGULATOR_INIT(ldo2, 725, 1500);
+-HARMONY_REGULATOR_INIT(ldo3, 1250, 3300);
+-HARMONY_REGULATOR_INIT(ldo4, 1700, 2475);
+-HARMONY_REGULATOR_INIT(ldo5, 1250, 3300);
+-HARMONY_REGULATOR_INIT(ldo6, 1250, 3300);
+-HARMONY_REGULATOR_INIT(ldo7, 1250, 3300);
+-HARMONY_REGULATOR_INIT(ldo8, 1250, 3300);
+-HARMONY_REGULATOR_INIT(ldo9, 1250, 3300);
++HARMONY_REGULATOR_INIT(sm0,  "vdd_sm0",  "vdd_sys", 725, 1500);
++HARMONY_REGULATOR_INIT(sm1,  "vdd_sm1",  "vdd_sys", 725, 1500);
++HARMONY_REGULATOR_INIT(sm2,  "vdd_sm2",  "vdd_sys", 3000, 4550);
++HARMONY_REGULATOR_INIT(ldo1, "vdd_ldo1", "vdd_sm2", 725, 1500);
++HARMONY_REGULATOR_INIT(ldo2, "vdd_ldo2", "vdd_sm2", 725, 1500);
++HARMONY_REGULATOR_INIT(ldo3, "vdd_ldo3", "vdd_sm2", 1250, 3300);
++HARMONY_REGULATOR_INIT(ldo4, "vdd_ldo4", "vdd_sm2", 1700, 2475);
++HARMONY_REGULATOR_INIT(ldo5, "vdd_ldo5", NULL,	    1250, 3300);
++HARMONY_REGULATOR_INIT(ldo6, "vdd_ldo6", "vdd_sm2", 1250, 3300);
++HARMONY_REGULATOR_INIT(ldo7, "vdd_ldo7", "vdd_sm2", 1250, 3300);
++HARMONY_REGULATOR_INIT(ldo8, "vdd_ldo8", "vdd_sm2", 1250, 3300);
++HARMONY_REGULATOR_INIT(ldo9, "vdd_ldo9", "vdd_sm2", 1250, 3300);
+ 
+ #define TPS_REG(_id, _data)			\
+ 	{					\
+@@ -115,6 +120,8 @@ static struct i2c_board_info __initdata harmony_regulators[] = {
+ int __init harmony_regulator_init(void)
+ {
+ 	if (machine_is_harmony()) {
++		regulator_register_always_on(0, "vdd_sys",
++			NULL, 0, 5000000);
+ 		i2c_register_board_info(3, harmony_regulators, 1);
+ 	} else { /* Harmony, booted using device tree */
+ 		struct device_node *np;
+-- 
+1.7.1.1
+
