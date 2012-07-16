@@ -1,109 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751827Ab2GPHpB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 03:45:01 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:60801 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751182Ab2GPHo6 (ORCPT
+	id S1751947Ab2GPHr2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 03:47:28 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:34211 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751182Ab2GPHrZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 03:44:58 -0400
+	Mon, 16 Jul 2012 03:47:25 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAN6cQGOtUn7y6hEBzjPuBpJPLCKi_kq=AhAbXay74Tc8fDROvA@mail.gmail.com>
-References: <CAN6cQGPbn9Ns4zmB1RGQ=cAQbS8PDnQY668CwXe+wHSC8iVxMw@mail.gmail.com>
-	<CAN6cQGOtUn7y6hEBzjPuBpJPLCKi_kq=AhAbXay74Tc8fDROvA@mail.gmail.com>
-Date: Mon, 16 Jul 2012 09:44:57 +0200
-X-Google-Sender-Auth: KxIb6yjAlry3iH9dZDR9pEGXQz4
-Message-ID: <CAMuHMdV0eeNOSr5TM1U1pU9em19o_qt4TWc8bEpYEjJTi94VrQ@mail.gmail.com>
-Subject: Fwd: video/fbmem.c: Fix __u32 >= 0 condition in fb_do_show_logo.
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Levin Du <zslevin@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Linux Fbdev development list <linux-fbdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+X-Originating-IP: [46.116.44.123]
+In-Reply-To: <CAK=WgbaTrjSPqEKKt+bt0uD1x+yNXxRZfJUGZjjMnWGV0aAV3Q@mail.gmail.com>
+References: <1341936444-3094-1-git-send-email-fuga@studiofuga.com>
+ <CAK=Wgbaf0On3teqOw1myqkS4Dei3Vw2Zn=0xfOv-YiNUjFr0fg@mail.gmail.com>
+ <485F7F7C-2D0C-4B14-8A46-D42C9F8ED4E4@studiofuga.com> <CAK=WgbZFHzHLxQfoWW4Cz_PpBCzER75KCd=C3WS-7w_LryKuQA@mail.gmail.com>
+ <47AF0F55-39D1-4B7E-BE0E-D2395989322D@studiofuga.com> <CAK=WgbaTrjSPqEKKt+bt0uD1x+yNXxRZfJUGZjjMnWGV0aAV3Q@mail.gmail.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Mon, 16 Jul 2012 10:47:03 +0300
+Message-ID: <CAK=Wgbbah8JvyJz0rJJTPFtu-UY-OfOxsEwh9B-74F7YdXTs3A@mail.gmail.com>
+Subject: Re: [PATCH] rpmsg bus subsys_initcall initialization ordering
+To: Federico Fuga <fuga@studiofuga.com>
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Never reached lkml due to the HTML.
-Resending, with a CC to linux-fbdev added.
+Hi Federico,
 
----------- Forwarded message ----------
-From: Levin Du <zslevin@gmail.com>
-Date: 2012/7/12
-Subject: video/fbmem.c: Fix __u32 >= 0 condition in fb_do_show_logo.
-To: linux-kernel@vger.kernel.org
-Cc: brad@neruo.com
+On Fri, Jul 13, 2012 at 9:00 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
+> I agree. I'll take it, but will change the commit log to make it
+> omaprpc-agnostic.
 
+Here's what I'm going to apply:
 
-Dear all,
+commit 913552b8c7a0f06cc1bff27f8e9953bffe6a1817
+Author: Federico Fuga <fuga@studiofuga.com>
+Date:   Mon Jul 16 10:36:51 2012 +0300
 
-Since dx or dy in struct fb_image is unsigned 32 bit integer:
+    rpmsg: fix dependency on initialization order
 
-struct fb_image {
-__u32 dx; /* Where to place image */
-__u32 dy;
-   ...
-}
+    When rpmsg drivers are built into the kernel, they must not initialize
+    before the rpmsg bus does, otherwise they'd trigger a BUG() in
+    drivers/base/driver.c line 169 (driver_register()).
 
-In fb_do_show_logo(), image->dx or image->dy will always meet the >= 0
-condition.
-if the logo is large enough (same as to the whole screen, for example) and
-rotate is UD or CCW, and image->dx or image->dy will results in a
-large value which
-makes info->fbops->fb_imageblit fail miserably.
+    To fix that, and to stop depending on arbitrary linkage ordering of
+    those built-in rpmsg driver, we let the rpmsg bus initialize at
+    subsys_initcall.
 
-Here is the raw patch:
+    Signed-off-by: Federico Fuga <fuga@studiofuga.com>
+    [ohad: rewrite the commit log]
+    Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
 
-diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
-index ad93629..34a0ba3 100644
---- a/drivers/video/fbmem.c
-+++ b/drivers/video/fbmem.c
-@@ -419,6 +419,7 @@ static void fb_do_show_logo(struct fb_info *info,
-struct fb_image *image,
-     int rotate, unsigned int num)
- {
-  unsigned int x;
-+ long d;
+diff --git a/drivers/rpmsg/virtio_rpmsg_bus.c b/drivers/rpmsg/virtio_rpmsg_bus.c
+index 0af7fd3..e564a01 100644
+--- a/drivers/rpmsg/virtio_rpmsg_bus.c
++++ b/drivers/rpmsg/virtio_rpmsg_bus.c
+@@ -1104,7 +1104,7 @@ static int __init rpmsg_init(void)
 
-  if (rotate == FB_ROTATE_UR) {
-  for (x = 0;
-@@ -428,9 +429,10 @@ static void fb_do_show_logo(struct fb_info *info,
-struct fb_image *image,
-  image->dx += image->width + 8;
-  }
-  } else if (rotate == FB_ROTATE_UD) {
-- for (x = 0; x < num && image->dx >= 0; x++) {
-+ d = image->dx;
-+ for (x = 0; x < num && d >= 0; x++) {
-  info->fbops->fb_imageblit(info, image);
-- image->dx -= image->width + 8;
-+ d -= image->width + 8;
-  }
-  } else if (rotate == FB_ROTATE_CW) {
-  for (x = 0;
-@@ -440,9 +442,10 @@ static void fb_do_show_logo(struct fb_info *info,
-struct fb_image *image,
-  image->dy += image->height + 8;
-  }
-  } else if (rotate == FB_ROTATE_CCW) {
-- for (x = 0; x < num && image->dy >= 0; x++) {
-+ d = image->dy;
-+ for (x = 0; x < num && d >= 0; x++) {
-  info->fbops->fb_imageblit(info, image);
-- image->dy -= image->height + 8;
-+ d -= image->height + 8;
-  }
-  }
+        return ret;
  }
+-module_init(rpmsg_init);
++subsys_initcall(rpmsg_init);
 
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+ static void __exit rpmsg_fini(void)
+ {
