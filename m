@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752740Ab2GPIgy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 04:36:54 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54301 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751495Ab2GPIgv (ORCPT
+	id S1752658Ab2GPImT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 04:42:19 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:43858 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750937Ab2GPImP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 04:36:51 -0400
-From: Toshiaki Yamane <yamanetoshi@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        marek.belisko@gmail.com
-Cc: Toshiaki Yamane <yamanetoshi@gmail.com>
-Subject: [PATCH] staging/cptm1217: fix checkpatch warnings
-Date: Mon, 16 Jul 2012 17:36:41 +0900
-Message-Id: <1342427801-8972-1-git-send-email-yamanetoshi@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1342426322-7809-1-git-send-email-yamanetoshi@gmail.com>
-References: <1342426322-7809-1-git-send-email-yamanetoshi@gmail.com>
+	Mon, 16 Jul 2012 04:42:15 -0400
+Date: Mon, 16 Jul 2012 01:40:11 -0700
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Daniel Drake <dsd@laptop.org>
+Cc: dwmw2@infradead.org, linux-kernel@vger.kernel.org, pgf@laptop.org,
+        richard@laptop.org
+Subject: Re: [PATCH 1/2] olpc-battery: Add VOLTAGE_MAX_DESIGN property
+Message-ID: <20120716084011.GB26238@lizard>
+References: <20120715214325.3DEC09D401E@zog.reactivated.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20120715214325.3DEC09D401E@zog.reactivated.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The below checkpatch warn, error, and typo was fixed,
+On Sun, Jul 15, 2012 at 10:43:25PM +0100, Daniel Drake wrote:
+> From: Richard A. Smith <richard@laptop.org>
+> 
+> upowerd wants to compute the energy in the battery by looking at this
+> property.  If it's not present then it falls back on using the reported
+> voltage of the battery at time upowerd loads.  That's close but also
+> means that every time you boot you get a slightly different energy
+> capacity.
+> 
+> Adding the VOLTAGE_MAX_DESIGN property allows upowerd to compute the
+> same energy every time.
+> 
+> Signed-off-by: Richard A. Smith <richard@laptop.org>
+> Signed-off-by: Daniel Drake <dsd@laptop.org>
+> ---
 
-drivers/staging/cptm1217/clearpad_tm1217.c:400: WARNING: quoted string split across lines
-drivers/staging/cptm1217/cp_tm1217.h:5: ERROR: open brace '{' following struct go on the same line
+Both patches applied, thank you!
 
-Signed-off-by: Toshiaki Yamane <yamanetoshi@gmail.com>
----
- drivers/staging/cptm1217/clearpad_tm1217.c |    4 ++--
- drivers/staging/cptm1217/cp_tm1217.h       |    3 +--
- 2 files changed, 3 insertions(+), 4 deletions(-)
+[...]
+> +static int olpc_bat_get_voltage_max_design(union power_supply_propval *val)
+> +{
+> +	uint8_t ec_byte;
+> +	union power_supply_propval tech;
+> +	int ret, mfr;
 
-diff --git a/drivers/staging/cptm1217/clearpad_tm1217.c b/drivers/staging/cptm1217/clearpad_tm1217.c
-index 5456f82..b154042 100644
---- a/drivers/staging/cptm1217/clearpad_tm1217.c
-+++ b/drivers/staging/cptm1217/clearpad_tm1217.c
-@@ -396,8 +396,8 @@ static int cp_tm1217_setup_gpio_irq(struct cp_tm1217_device *ts)
- 
- 	retval = gpio_to_irq(ts->gpio);
- 	if (retval < 0) {
--		dev_err(ts->dev, "cp_tm1217: GPIO to IRQ failedi,"
--		" error %d\n", retval);
-+		dev_err(ts->dev, "cp_tm1217: GPIO to IRQ failed, error %d\n",
-+			retval);
- 		gpio_free(ts->gpio);
- 	}
- 	dev_dbg(ts->dev,
-diff --git a/drivers/staging/cptm1217/cp_tm1217.h b/drivers/staging/cptm1217/cp_tm1217.h
-index a0ce31d..30bad35 100644
---- a/drivers/staging/cptm1217/cp_tm1217.h
-+++ b/drivers/staging/cptm1217/cp_tm1217.h
-@@ -1,8 +1,7 @@
- #ifndef __LINUX_I2C_CP_TM1217_H
- #define __LINUX_I2C_CP_TM1217_H
- 
--struct cp_tm1217_platform_data
--{
-+struct cp_tm1217_platform_data {
- 	int gpio;		/* If not set uses the IRQ resource 0 */
- };
- 
+ret and mfr should have been on separate lines (yes, I understand that
+this comes from olpc_bat_get_charge_full_design(), but the function
+is the only abuser in the file, so it would be better to fix it, not
+spread it further :-)
+
 -- 
-1.7.5.4
-
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
