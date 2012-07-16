@@ -1,40 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753674Ab2GPOcU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 10:32:20 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:35739 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751261Ab2GPOcS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 10:32:18 -0400
-Date: Mon, 16 Jul 2012 15:36:01 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.5-rc7
-Message-ID: <20120716153601.45a9d4db@pyramind.ukuu.org.uk>
-In-Reply-To: <CA+55aFxLmxGaMUbEVSaG-Og=G1rf1TBrswuVwfwWUqbCPuAVrA@mail.gmail.com>
-References: <CA+55aFxLmxGaMUbEVSaG-Og=G1rf1TBrswuVwfwWUqbCPuAVrA@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753744Ab2GPOfn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 10:35:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4812 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751833Ab2GPOfk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 10:35:40 -0400
+Message-ID: <500426B6.2010200@redhat.com>
+Date: Mon, 16 Jul 2012 17:35:34 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+MIME-Version: 1.0
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: Jan Kiszka <jan.kiszka@siemens.com>, "mst@redhat.com" <mst@redhat.com>,
+        "gleb@redhat.com" <gleb@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 0/2] kvm: level irqfd and new eoifd
+References: <20120703191106.6735.78272.stgit@bling.home>    <4FFD4D0A.2000202@redhat.com> <4FFD52E7.3030806@siemens.com>    <4FFD5A2B.2040605@redhat.com> <4FFD6221.1060304@siemens.com>    <4FFD68C3.7000504@redhat.com> <1342036673.2229.17.camel@bling.home>   <4FFE9A6F.3080607@redhat.com> <1342109982.10815.20.camel@ul30vt>  <50028073.8000804@redhat.com> <1342447433.3880.9.camel@ul30vt>
+In-Reply-To: <1342447433.3880.9.camel@ul30vt>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> But go forth and test. Make sure it's all good. Because I really wish
-> I won't have to do an -rc8.
+On 07/16/2012 05:03 PM, Alex Williamson wrote:
+>> 
+>> This is what I meant, except I forgot that we already do direct path for
+>> MSI.
+> 
+> Ok, vfio now does it for the unmask irqfd-line interface too.  Except
+> when we re-inject from eoifd we have to do the eventfd_signal from a
+> work queue as we can't have nested eventfd_signals.  We probably need to
+> do some benchmarks to see if that re-injection path saves us anything vs
+> letting hardware fire again.
 
-Crahses and burns on Intel Poulsbo systems with a blank screen.
-Fortunately I know why - your tree is short the patch for it that went to
-Dave some time before -rc7. I'm just testing that v -rc7 now on the psb
-boxes.
+If you do that you might as well proxy it in userspace.  Yes the big
+qemu lock will get in the way but we shouldn't code the kernel with the
+expectation that userspace will be forever broken.
 
-More strangely I also now get no backlight on one of the other
-boxes despite it passing testing in previous -rc releases. I'm digging
-into that but I do have an apparent workaround which just disables
-backlight support as before on the relevant chip.
+> 
+>> > For an MSI that seems to already provide direct
+>> > injection.  
+>> 
+>> Ugh, even for a broadcast MSI into 254 vcpu guests.  That's going to be
+>> one slow interrupt.
+>> 
+>> > For level we'll schedule_work, so that explains the overhead
+>> > in that path, but it's not too dissimilar to a a threaded irq.  vfio
+>> > does something very similar, so there's a schedule_work both on inject
+>> > and on eoi.  I'll have to check whether anything prevents the unmask
+>> > from the wait_queue function in vfio, that could be a significant chunk
+>> > of the gap.  Where's the custom poll function come into play?  Thanks,
+>> 
+>> So I don't understand where the gap comes from.  The number of context
+>> switches for kvm and vfio is the same, as long as both use MSI (and
+>> either both use threaded irq or both don't).
+> 
+> Right, we're not exactly apples to apples yet.  Using threaded
+> interrupts and work queue injection, vfio is a little slower.  There's
+> an extra work queue in that path vs kvm though.  Using non-threaded
+> interrupts and direct injection, vfio is faster.  Once kvm moves to
+> non-threaded interrupt handling, I expect we'll be pretty similar.  My
+> benchmarks are just rough estimates at this point as I'm both trying to
+> work out lockdep and get some ballpark performance comparison.  Thanks,
 
-Alan
+Okay.  I'm not really interested in how the code compares today, but
+whether there is something in vfio that prevents it achieving kvm
+performance once it's completely optimized.  Given the above, I don't
+think there is.
+
+
+-- 
+error compiling committee.c: too many arguments to function
+
+
