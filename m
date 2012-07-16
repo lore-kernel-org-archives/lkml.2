@@ -1,156 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751199Ab2GPEzy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 00:55:54 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:39464 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750784Ab2GPEzv (ORCPT
+	id S1751379Ab2GPE5k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 00:57:40 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:59684 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750932Ab2GPE5h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 00:55:51 -0400
-From: "Pandarathil, Vijaymohan R" <vijaymohan.pandarathil@hp.com>
-To: "Kani, Toshimitsu" <toshi.kani@hp.com>,
-        "lenb@kernel.org" <lenb@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] ACPI: Add ACPI CPU hot-remove support
-Thread-Topic: [PATCH] ACPI: Add ACPI CPU hot-remove support
-Thread-Index: AQHNYQks1Kax+V9Qd0y1oXYnYRMZnpcrWrJQ
-Date: Mon, 16 Jul 2012 04:53:59 +0000
-Message-ID: <EC847C0FC42FF046B94E60B168774B1731633B47@G9W0337.americas.hpqcorp.net>
-References: <1340981479-6521-1-git-send-email-toshi.kani@hp.com>
-In-Reply-To: <1340981479-6521-1-git-send-email-toshi.kani@hp.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.210.48.12]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	Mon, 16 Jul 2012 00:57:37 -0400
+X-AuditID: cbfee61b-b7f566d000005c8a-f5-50039f2923d3
+Message-id: <50039F24.60102@samsung.com>
+Date: Mon, 16 Jul 2012 13:57:08 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
+ Thunderbird/10.0.2
+MIME-version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Anton Vorontsov <avorontsov@ru.mvista.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: linux-next: build failure after merge of the battery tree
+References: <20120716140917.f780e8c3c7c74f1db1fed0ae@canb.auug.org.au>
+In-reply-to: <20120716140917.f780e8c3c7c74f1db1fed0ae@canb.auug.org.au>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLLMWRmVeSWpSXmKPExsVy+t9jAV3N+cwBBl/2KFhc3jWHzeLgwjZG
+	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDKmXtnPXLCeveL8ue3MDYxz2boYOTkkBEwkjvavg7LF
+	JC7cWw9kc3EICSxilNg8F8Z5ySjRPO0DexcjBwevgIbEl7veIA0sAqoSO07uA2tmE9CS2P/i
+	BhtIiahAhMSvfg6QMK+AoMSPyfdYQMIiAtoSB34LgExkFjjAKPHk3nNWkBphATeJ/g1/2EFs
+	ISD7xMS1TCA2p4C7xNsl+5hBbGYBHYn9rdPYIGx5ic1r3jJPYBSYhWTFLCRls5CULWBkXsUo
+	mlqQXFCclJ5rpFecmFtcmpeul5yfu4kRHIjPpHcwrmqwOMQowMGoxMO7oJQ5QIg1say4MvcQ
+	owQHs5IIb2cnUIg3JbGyKrUoP76oNCe1+BCjNAeLkjivifdXfyGB9MSS1OzU1ILUIpgsEwen
+	VAOjB+8ydp+qck+J17ueqt24UR9gOWtG3OWj/X73tt1nDDoTbLh0yaHbBsozmHTnz/1wuCSl
+	a76c9lH53S695z6cuj1jnYmk4wO240ut661Kwx7bF92e4FP9WvJe3ZOv/RlL1CZzvGD9kr5L
+	Krfva91Mr+duOzL7JwTGHIj5eO/n0oO3Zy9OOhC2QomlOCPRUIu5qDgRAIKPzNJAAgAA
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q6G4urdJ024544
 
-Hi Toshi,
+Hi Stephen,
 
-Did some basic KVM guest cpu hotplug testing of this patch over your OST patchset along with fixes in qemu-kvm for guest cpu hotplug. 
+On 07/16/2012 01:09 PM, Stephen Rothwell wrote:
 
-Vijay
-
-virsh # vcpucount vmb91g1
-maximum      config         4
-maximum      live           4
-current      config         4
-current      live           4
-
-virsh # setvcpus vmb91g1 3
-
-virsh # vcpucount vmb91g1
-maximum      config         4
-maximum      live           4
-current      config         4
-current      live           3
-
-virsh # setvcpus vmb91g1 4
-
-virsh # vcpucount vmb91g1
-maximum      config         4
-maximum      live           4
-current      config         4
-current      live           4
-
-virsh #  setvcpus vmb91g1 2
-
-virsh # vcpucount vmb91g1
-maximum      config         4
-maximum      live           4
-current      config         4
-current      live           2
-
-The guest cpu counts (as shown by lscpu in the guest) also changes.
+> Hi Anton,
+> 
+> After merging the battery tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+> 
+> drivers/built-in.o: In function `charger_manager_probe':
+> charger-manager.c:(.text+0x11d61a): undefined reference to `extcon_register_interest'
+> charger-manager.c:(.text+0x11d7b6): undefined reference to `extcon_unregister_interest'
+> drivers/built-in.o: In function `charger_manager_remove':
+> charger-manager.c:(.devexit.text+0x8f3): undefined reference to `extcon_unregister_interest'
+> 
+> Caused by commit bee737bccb03 ("charger-manager: Use EXTCON Subsystem to
+> detect charger cables for charging").
+> 
+> I have used the battery tree from next-20120713 for today.
 
 
-Tested-by: Vijay Mohan Pandarathil<vijaymohan.pandarathil@hp.com>
+I'm so sorry, It is my mistake.
+So, I resend below patch to fix build break of charger-manager.
+- http://lkml.org/lkml/2012/7/16/5
 
-
------Original Message-----
-From: Kani, Toshimitsu 
-Sent: Friday, June 29, 2012 7:51 AM
-To: lenb@kernel.org; linux-acpi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org; Kani, Toshimitsu
-Subject: [PATCH] ACPI: Add ACPI CPU hot-remove support
-
-Added CPU hot-remove support through an ACPI eject notification.
-It calls acpi_bus_hot_remove_device(), which shares the same code
-path with the sysfs eject operation.  acpi_os_hotplug_execute()
-serializes hot-remove operations between ACPI hot-remove and sysfs
-eject requests.
-
-Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-
----
-This patch applies on top of the patchset below.
-
-[PATCH v6 0/6] ACPI: Add _OST support for ACPI hotplug
-http://marc.info/?l=linux-acpi&m=134074381322973&w=2
-
----
- drivers/acpi/processor_driver.c |   27 +++++++++++++++++----------
- 1 files changed, 17 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
-index f9fa1b2..a6f6bde 100644
---- a/drivers/acpi/processor_driver.c
-+++ b/drivers/acpi/processor_driver.c
-@@ -699,8 +699,8 @@ int acpi_processor_device_add(acpi_handle handle, struct acpi_device **device)
- static void acpi_processor_hotplug_notify(acpi_handle handle,
- 					  u32 event, void *data)
- {
--	struct acpi_processor *pr;
- 	struct acpi_device *device = NULL;
-+	struct acpi_eject_event *ej_event = NULL;
- 	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE; /* default */
- 	int result;
- 
-@@ -732,20 +732,27 @@ static void acpi_processor_hotplug_notify(acpi_handle handle,
- 				  "received ACPI_NOTIFY_EJECT_REQUEST\n"));
- 
- 		if (acpi_bus_get_device(handle, &device)) {
--			printk(KERN_ERR PREFIX
--				    "Device don't exist, dropping EJECT\n");
-+			pr_err(PREFIX "Device don't exist, dropping EJECT\n");
- 			break;
- 		}
--		pr = acpi_driver_data(device);
--		if (!pr) {
--			printk(KERN_ERR PREFIX
--				    "Driver data is NULL, dropping EJECT\n");
-+		if (!acpi_driver_data(device)) {
-+			pr_err(PREFIX "Driver data is NULL, dropping EJECT\n");
- 			break;
- 		}
- 
--		/* REVISIT: update when eject is supported */
--		ost_code = ACPI_OST_SC_EJECT_NOT_SUPPORTED;
--		break;
-+		ej_event = kmalloc(sizeof(*ej_event), GFP_KERNEL);
-+		if (!ej_event) {
-+			pr_err(PREFIX "No memory, dropping EJECT\n");
-+			break;
-+		}
-+
-+		ej_event->handle = handle;
-+		ej_event->event = ACPI_NOTIFY_EJECT_REQUEST;
-+		acpi_os_hotplug_execute(acpi_bus_hot_remove_device,
-+					(void *)ej_event);
-+
-+		/* eject is performed asynchronously */
-+		return;
- 
- 	default:
- 		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
--- 
-1.7.7.6
-
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+Best Regards,
+Chanwoo Choi
