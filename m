@@ -1,93 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753279Ab2GPQKI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 12:10:08 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:18034 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751888Ab2GPQKE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 12:10:04 -0400
-Date: Mon, 16 Jul 2012 12:01:19 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Shuah Khan <shuah.khan@hp.com>
-Cc: fujita.tomonori@lab.ntt.co.jp, LKML <linux-kernel@vger.kernel.org>,
-        akpm@linux-foundation.org, paul.gortmaker@windriver.com,
-        bhelgaas@google.com, amwang@redhat.com, shuahkhan@gmail.com
-Subject: Re: [PATCH RFC] swiotlb: Disable swiotlb overflow support when
- CONFIG_ISA is enabled
-Message-ID: <20120716160119.GE13540@phenom.dumpdata.com>
-References: <1341615972.3101.27.camel@lorien2>
- <20120709202505.GA9541@phenom.dumpdata.com>
- <1341939307.2502.34.camel@lorien2>
- <20120710173211.GB6868@phenom.dumpdata.com>
- <1342109870.2576.23.camel@lorien2>
- <20120716144536.GA552@phenom.dumpdata.com>
- <1342453700.2949.6.camel@lorien2>
+	id S1753322Ab2GPQKz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 12:10:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9196 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751888Ab2GPQKv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 12:10:51 -0400
+Message-ID: <50043CF3.8020903@redhat.com>
+Date: Mon, 16 Jul 2012 12:10:27 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1342453700.2949.6.camel@lorien2>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: Avi Kivity <avi@redhat.com>
+CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>, S390 <linux-s390@vger.kernel.org>,
+        Carsten Otte <cotte@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: Re: [PATCH RFC V4 3/3] kvm: Choose better candidate for directed
+ yield
+References: <20120716082445.23477.15128.sendpatchset@codeblue.in.ibm.com> <20120716082529.23477.91096.sendpatchset@codeblue.in.ibm.com> <5003E7ED.2030701@redhat.com>
+In-Reply-To: <5003E7ED.2030701@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 16, 2012 at 09:48:20AM -0600, Shuah Khan wrote:
-> On Mon, 2012-07-16 at 10:45 -0400, Konrad Rzeszutek Wilk wrote:
-> > On Thu, Jul 12, 2012 at 10:17:50AM -0600, Shuah Khan wrote:
-> > > Disable iotlb overflow support when CONFIG_ISA is enabled. This is the
-> > > first step towards removing overflow support, to be consistent with other
-> > > iommu implementations and return DMA_ERROR_CODE. This disabling step is
-> > > for finding drivers that don't call dma_mapping_error to check for errors
-> > > returned by the mapping interface. Once drivers are fixed overflow support
-> > > can be removed.
-> > 
-> > I think I explained myself poorly. We don't want to break old drivers.
-> > 
-> > If the old drivers expect this behavior (while they should be updated
-> > to check the DMA), we need to retain this behavior.
-> > 
-> > So I think the patch should be done the other way:
-> > 
-> > Disable IOTLB overflow when CONFIG_ISA is disabled.
-> 
-> That makes lot of sense :) I will redo the patch. It might be good to a
-> tunable to control enable/disable behavior. Even though support for this
-> new tunable "swiotlb_overflow" projected to be short lived, it will be
-> lot less painful to disable/enable as needed. Thought and comments?
+On 07/16/2012 06:07 AM, Avi Kivity wrote:
 
-Tunnable have a habit of becoming permanant and we really don't want that.
-The right solution is to drop the overflow - as you have rightly
-pointed out in the first patch. But the road is blocked by these old
-drivers that are making it hard.
+>> +{
+>> +	bool eligible;
+>> +
+>> +	eligible = !vcpu->ple.cpu_relax_intercepted ||
+>> +			(vcpu->ple.cpu_relax_intercepted&&
+>> +			 vcpu->ple.dy_eligible);
+>> +
+>> +	if (vcpu->ple.cpu_relax_intercepted)
+>> +		vcpu->ple.dy_eligible = !vcpu->ple.dy_eligible;
+>
+> Probably should assign 'true', since the previous value is essentially
+> random.
 
-I would say if you really really want a patch in for 3.6 before the
-final mega-patch of drivers-that-suck-and-need-to-be-updated-here-is
--the-big-patch-that-does-it, then just add a WARN mentioning your
-name and mine (and LKML) saying to report what you see. That way
-we can at least get feedback from the field.
+I suspect the intended purpose of this conditional is to
+flip the eligibility of a vcpu for being selected as a
+direct yield target.
 
-And for good measure include in the Documentation/*deprecate-schedule
-that the overflow functionality is going away when all the drivers that
-depend on it have been fixed up.
+In other words, that bit of the code is correct.
 
-> 
-> > 
-> > But we also need to check whether there are other drivers
-> > that don't properly check the DMA address. And if so, add them
-> > to this list of must have enabled b/c you might be using this
-> > driver.
-> 
-> Sound good. Again having a tunable would help in this case as well.
-> > 
-> > The first goal is to figure out which of the drivers aren't doing this
-> > properly. This should be possible by just grepping for 'dma_map' and 
-> > seeing which ones don't do the 'dma_check' right after.
-> 
-> I started some research into this and will continue and provide an
-> update.
-
-Thank you! It is pretty griddy work so I really appreciate you taking
-the time to do this. If are at the LinuxCon this year the beers (or coffee
-if that is your preference) are on me for tackling on this cleanup.
+-- 
+All rights reversed
