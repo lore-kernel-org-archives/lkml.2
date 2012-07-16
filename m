@@ -1,71 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752593Ab2GPKUp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 06:20:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56812 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751045Ab2GPKUk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 06:20:40 -0400
-Message-ID: <1342434030.4717.2.camel@phoenix>
-Subject: Re: [PATCH RFT 1/2] regulator: twl: Fix the formula to calculate
- vsel and voltage for twl6030ldo
-From: Axel Lin <axel.lin@gmail.com>
-To: Rajendra Nayak <rnayak@ti.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>, Liam Girdwood <lrg@ti.com>,
-        linux-kernel@vger.kernel.org, loml <linux-omap@vger.kernel.org>
-Date: Mon, 16 Jul 2012 18:20:30 +0800
-In-Reply-To: <5003DAAA.2070301@ti.com>
-References: <1341804151.14367.1.camel@phoenix>
-	 <1341831686.4343.7.camel@phoenix> <5003DAAA.2070301@ti.com>
+	id S1752623Ab2GPKY3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 06:24:29 -0400
+Received: from mga02.intel.com ([134.134.136.20]:36455 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751045Ab2GPKY1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 06:24:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="172588886"
+Subject: Re: [PATCH 5/7 v2] dma: sh: use an integer slave ID to improve API
+ compatibility
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <Pine.LNX.4.64.1207161155280.12302@axis700.grange>
+References: <1341484183-10757-1-git-send-email-g.liakhovetski@gmx.de>
+	 <1341484183-10757-6-git-send-email-g.liakhovetski@gmx.de>
+	 <1342418828.1726.37.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1207160832540.12302@axis700.grange>
+	 <1342421587.1726.49.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1207160907180.12302@axis700.grange>
+	 <1342427305.1726.50.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1207161040070.12302@axis700.grange>
+	 <1342431452.1726.54.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1207161155280.12302@axis700.grange>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 8bit
+Date: Mon, 16 Jul 2012 15:54:16 +0530
+Message-ID: <1342434256.1726.57.camel@vkoul-udesk3>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> On Monday 09 July 2012 04:31 PM, Axel Lin wrote:
-> > 於 一，2012-07-09 於 11:22 +0800，Axel Lin 提到：
-> >> In twl6030ldo_set_voltage, current code use below formula to calculate vsel:
-> >>          vsel = (min_uV/1000 - 1000)/100 + 1;
-> >> This is worng because when min_uV is 1000000 uV, vsel is 1.
-> >> It should be 0 in this case.
+On Mon, 2012-07-16 at 12:01 +0200, Guennadi Liakhovetski wrote:
+> On Mon, 16 Jul 2012, Vinod Koul wrote:
 > 
-> Why? Do you know of any documentation which states this?
-
-I double check with the datasheet again now.
-You are right in this. So we cannot use linear mapping for
-twl6030ldo_ops here.
-I'm going to send a patch to fix it, I'd appreciate if someone can
-review and test it.
-
-
-> > I found a problem that before commit 3e3d3be79c, the voltage tables were
-> > not linear mapping. So why we can convert these voltage mapping table to
-> > Voltage(in mV) = 1000mv + 100mv * (vsel - 1)?
-> >
-> > Did I miss something?
+> > On Mon, 2012-07-16 at 10:47 +0200, Guennadi Liakhovetski wrote:
+> > > > I want to know what does ccr and mid_rid mean to dmac here?
+> > > 
+> > > CHCR contains a few fields, some enable various interrupt sources, some 
+> > > specify repeat- and renew-modes, others yet specify transfer size, source 
+> > > and destination address-modes (incrementing, constant, decrementing), 
+> > > others yet select a DMA client category (slave / memcpy / ...), and a 
+> > > transfer flag. Some of these fields could be calculated, others are 
+> > > pre-defined for various slaves, the exact layout of those fields can also 
+> > > vary between SoCs.
+> > I do not understand how clients would provide these values. 
+> > For pre-defined values, they should be dmac property why should client
+> > like spi or mmc have clue about it?
+> > 
+> > For others like you mentioned, i guess they could be easily calculated,
+> > right?
+> > 
+> > > MID_RID is actually a slave-selector, it contains a magic value, that 
+> > > cannot be calculated. 
+> > and again, how does client know this?
 > 
-> All voltage tables before commit '3e3d3be79c' for twl6030 regulators
-> were clearly wrong. They assumed similarity with twl4030 regulators
-> which was not right.
+> I might be misunderstanding you, but from earlier discussions I got an 
+> impression, that the DMAC should know nothing about clients, i.e., should 
+> receive no client-specific information from its platform data. Instead 
+> clients should provide it when configuring the channel. If this is 
+> correct, then the preferred way would be to specify these values in client 
+> platform data and then pass it to the DMAC with slave-config calls? Or 
+> have I misunderstood you and this per-client information should be kept in 
+> DMAC platform data?
+You haven't misunderstood me. dmacs should not know of client data and
+should be client agnostic. 
 
-Good to know that. 
-Thanks,
-Axel
-> 
-> regards,
-> Rajendra
-> 
-> >
-> > Regards,
-> > Axel
-> >
-> >
-> 
+BUT, are these parameters ccr and mid_rid client data, i do not think
+so, they seem to be dmac controller parameters which you need to
+configure channel or is that not the case. If not why bother passing
+them to dmac?
 
+Either way something looks fishy to me.
+> 
+> I.e., in both cases magic values are provided by platforms, the only 
+> difference is - either keep them in DMAC platform data or move them in 
+> each individual DMA client platform data.
+> 
+> Yes, some CHCR fields can be calculated, but location and width of those 
+> fields might vary between DMAC versions, so, they will have to be passed 
+> with DMAC platform data. But this definitely can be done in the future.
+
+
+-- 
+~Vinod
 
