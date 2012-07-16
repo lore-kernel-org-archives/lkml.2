@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754088Ab2GPV2I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 17:28:08 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:43037 "EHLO ogre.sisk.pl"
+	id S1754026Ab2GPV2E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 17:28:04 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:43028 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753005Ab2GPV14 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 17:27:56 -0400
+	id S1751721Ab2GPV1z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 17:27:55 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Linux PM list <linux-pm@vger.kernel.org>
-Subject: [RFC][PATCH 2/14] ARM: shmobile: Use names of power domains for adding devices to them
-Date: Mon, 16 Jul 2012 23:18:16 +0200
+Subject: [RFC][PATCH 1/14] PM / Domains: Make it possible to use domain names when adding devices
+Date: Mon, 16 Jul 2012 23:17:11 +0200
 User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
 Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
         LKML <linux-kernel@vger.kernel.org>,
@@ -23,238 +23,133 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201207162318.16661.rjw@sisk.pl>
+Message-Id: <201207162317.11591.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Make the power management code under arch/arm/mach-shmobile/ use
-names of power domains instead of pointers to domain objects for
-adding devices to the domains.  This will allow us to put the
-domain objects into tables and register them all in one shot
-going forward.
+Add a new helper function __pm_genpd_name_add_device() allowing
+a device to be added to a (registered) generic PM domain identified
+by name.  Add a wrapper around it, pm_genpd_name_add_device(),
+passing NULL as the last argument and reorganize pm_domains.h for the
+new functions to be defined consistently with the existing ones.
+
+These functions are useful for adding devices to PM domains whose
+representations are stored in tables, when the caller doesn't know
+the index of the domain to add the device to, but it knows the
+domain's name.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- arch/arm/mach-shmobile/board-ap4evb.c            |   14 +++---
- arch/arm/mach-shmobile/board-armadillo800eva.c   |    6 +-
- arch/arm/mach-shmobile/board-mackerel.c          |   24 +++++------
- arch/arm/mach-shmobile/include/mach/pm-rmobile.h |    4 -
- arch/arm/mach-shmobile/pm-rmobile.c              |    4 -
- arch/arm/mach-shmobile/setup-r8a7740.c           |   20 ++++-----
- arch/arm/mach-shmobile/setup-sh7372.c            |   48 +++++++++++------------
- 7 files changed, 60 insertions(+), 60 deletions(-)
+ drivers/base/power/domain.c |   27 +++++++++++++++++++++++++++
+ include/linux/pm_domain.h   |   42 +++++++++++++++++++++++++++++-------------
+ 2 files changed, 56 insertions(+), 13 deletions(-)
 
-Index: linux/arch/arm/mach-shmobile/pm-rmobile.c
+Index: linux/drivers/base/power/domain.c
 ===================================================================
---- linux.orig/arch/arm/mach-shmobile/pm-rmobile.c
-+++ linux/arch/arm/mach-shmobile/pm-rmobile.c
-@@ -149,12 +149,12 @@ void rmobile_init_pm_domain(struct rmobi
- 	__rmobile_pd_power_up(rmobile_pd, false);
+--- linux.orig/drivers/base/power/domain.c
++++ linux/drivers/base/power/domain.c
+@@ -1399,6 +1399,33 @@ int __pm_genpd_of_add_device(struct devi
+ 	return __pm_genpd_add_device(genpd, dev, td);
  }
  
--void rmobile_add_device_to_domain(struct rmobile_pm_domain *rmobile_pd,
-+void rmobile_add_device_to_domain(const char *domain_name,
- 				 struct platform_device *pdev)
++
++/**
++ * __pm_genpd_name_add_device - Find I/O PM domain and add a device to it.
++ * @domain_name: Name of the PM domain to add the device to.
++ * @dev: Device to be added.
++ * @td: Set of PM QoS timing parameters to attach to the device.
++ */
++int __pm_genpd_name_add_device(const char *domain_name, struct device *dev,
++			       struct gpd_timing_data *td)
++{
++	struct generic_pm_domain *genpd = NULL, *gpd;
++
++	if (IS_ERR_OR_NULL(domain_name) || IS_ERR_OR_NULL(dev))
++		return -EINVAL;
++
++	mutex_lock(&gpd_list_lock);
++	list_for_each_entry(gpd, &gpd_list, gpd_list_node) {
++		if (!strcmp(gpd->name, domain_name)) {
++			genpd = gpd;
++			break;
++		}
++	}
++	mutex_unlock(&gpd_list_lock);
++
++	return __pm_genpd_add_device(genpd, dev, td);
++}
++
+ /**
+  * pm_genpd_remove_device - Remove a device from an I/O PM domain.
+  * @genpd: PM domain to remove the device from.
+Index: linux/include/linux/pm_domain.h
+===================================================================
+--- linux.orig/include/linux/pm_domain.h
++++ linux/include/linux/pm_domain.h
+@@ -139,17 +139,9 @@ extern int __pm_genpd_of_add_device(stru
+ 				    struct device *dev,
+ 				    struct gpd_timing_data *td);
+ 
+-static inline int pm_genpd_add_device(struct generic_pm_domain *genpd,
+-				      struct device *dev)
+-{
+-	return __pm_genpd_add_device(genpd, dev, NULL);
+-}
+-
+-static inline int pm_genpd_of_add_device(struct device_node *genpd_node,
+-					 struct device *dev)
+-{
+-	return __pm_genpd_of_add_device(genpd_node, dev, NULL);
+-}
++extern int __pm_genpd_name_add_device(const char *domain_name,
++				      struct device *dev,
++				      struct gpd_timing_data *td);
+ 
+ extern int pm_genpd_remove_device(struct generic_pm_domain *genpd,
+ 				  struct device *dev);
+@@ -189,8 +181,14 @@ static inline int __pm_genpd_add_device(
  {
- 	struct device *dev = &pdev->dev;
- 
--	pm_genpd_add_device(&rmobile_pd->genpd, dev);
-+	pm_genpd_name_add_device(domain_name, dev);
- 	if (pm_clk_no_clocks(dev))
- 		pm_clk_add(dev, NULL);
+ 	return -ENOSYS;
  }
-Index: linux/arch/arm/mach-shmobile/include/mach/pm-rmobile.h
-===================================================================
---- linux.orig/arch/arm/mach-shmobile/include/mach/pm-rmobile.h
-+++ linux/arch/arm/mach-shmobile/include/mach/pm-rmobile.h
-@@ -31,13 +31,13 @@ struct rmobile_pm_domain *to_rmobile_pd(
- 
- #ifdef CONFIG_PM
- extern void rmobile_init_pm_domain(struct rmobile_pm_domain *rmobile_pd);
--extern void rmobile_add_device_to_domain(struct rmobile_pm_domain *rmobile_pd,
-+extern void rmobile_add_device_to_domain(const char *domain_name,
- 					struct platform_device *pdev);
- extern void rmobile_pm_add_subdomain(struct rmobile_pm_domain *rmobile_pd,
- 				    struct rmobile_pm_domain *rmobile_sd);
- #else
- #define rmobile_init_pm_domain(pd) do { } while (0)
--#define rmobile_add_device_to_domain(pd, pdev) do { } while (0)
-+#define rmobile_add_device_to_domain(name, pdev) do { } while (0)
- #define rmobile_pm_add_subdomain(pd, sd) do { } while (0)
- #endif /* CONFIG_PM */
- 
-Index: linux/arch/arm/mach-shmobile/board-mackerel.c
-===================================================================
---- linux.orig/arch/arm/mach-shmobile/board-mackerel.c
-+++ linux/arch/arm/mach-shmobile/board-mackerel.c
-@@ -1623,20 +1623,20 @@ static void __init mackerel_init(void)
- 
- 	platform_add_devices(mackerel_devices, ARRAY_SIZE(mackerel_devices));
- 
--	rmobile_add_device_to_domain(&sh7372_pd_a4lc, &lcdc_device);
--	rmobile_add_device_to_domain(&sh7372_pd_a4lc, &hdmi_lcdc_device);
--	rmobile_add_device_to_domain(&sh7372_pd_a4lc, &meram_device);
--	rmobile_add_device_to_domain(&sh7372_pd_a4mp, &fsi_device);
--	rmobile_add_device_to_domain(&sh7372_pd_a3sp, &usbhs0_device);
--	rmobile_add_device_to_domain(&sh7372_pd_a3sp, &usbhs1_device);
--	rmobile_add_device_to_domain(&sh7372_pd_a3sp, &nand_flash_device);
--	rmobile_add_device_to_domain(&sh7372_pd_a3sp, &sh_mmcif_device);
--	rmobile_add_device_to_domain(&sh7372_pd_a3sp, &sdhi0_device);
-+	rmobile_add_device_to_domain("A4LC", &lcdc_device);
-+	rmobile_add_device_to_domain("A4LC", &hdmi_lcdc_device);
-+	rmobile_add_device_to_domain("A4LC", &meram_device);
-+	rmobile_add_device_to_domain("A4MP", &fsi_device);
-+	rmobile_add_device_to_domain("A3SP", &usbhs0_device);
-+	rmobile_add_device_to_domain("A3SP", &usbhs1_device);
-+	rmobile_add_device_to_domain("A3SP", &nand_flash_device);
-+	rmobile_add_device_to_domain("A3SP", &sh_mmcif_device);
-+	rmobile_add_device_to_domain("A3SP", &sdhi0_device);
- #if !defined(CONFIG_MMC_SH_MMCIF) && !defined(CONFIG_MMC_SH_MMCIF_MODULE)
--	rmobile_add_device_to_domain(&sh7372_pd_a3sp, &sdhi1_device);
-+	rmobile_add_device_to_domain("A3SP", &sdhi1_device);
+-static inline int pm_genpd_add_device(struct generic_pm_domain *genpd,
+-				      struct device *dev)
++static inline int __pm_genpd_of_add_device(struct device_node *genpd_node,
++					   struct device *dev)
++{
++	return -ENOSYS;
++}
++static inline int __pm_genpd_name_add_device(char *domain_name,
++					     struct device *dev,
++					     struct gpd_timing_data *td)
+ {
+ 	return -ENOSYS;
+ }
+@@ -245,6 +243,24 @@ static inline bool default_stop_ok(struc
+ #define pm_domain_always_on_gov NULL
  #endif
--	rmobile_add_device_to_domain(&sh7372_pd_a3sp, &sdhi2_device);
--	rmobile_add_device_to_domain(&sh7372_pd_a4r, &ceu_device);
-+	rmobile_add_device_to_domain("A3SP", &sdhi2_device);
-+	rmobile_add_device_to_domain("A4R", &ceu_device);
  
- 	hdmi_init_pm_clock();
- 	sh7372_pm_init();
-Index: linux/arch/arm/mach-shmobile/setup-sh7372.c
-===================================================================
---- linux.orig/arch/arm/mach-shmobile/setup-sh7372.c
-+++ linux/arch/arm/mach-shmobile/setup-sh7372.c
-@@ -1023,30 +1023,30 @@ void __init sh7372_add_standard_devices(
- 	platform_add_devices(sh7372_late_devices,
- 			    ARRAY_SIZE(sh7372_late_devices));
- 
--	rmobile_add_device_to_domain(&sh7372_pd_a3rv, &vpu_device);
--	rmobile_add_device_to_domain(&sh7372_pd_a4mp, &spu0_device);
--	rmobile_add_device_to_domain(&sh7372_pd_a4mp, &spu1_device);
--	rmobile_add_device_to_domain(&sh7372_pd_a3sp, &scif0_device);
--	rmobile_add_device_to_domain(&sh7372_pd_a3sp, &scif1_device);
--	rmobile_add_device_to_domain(&sh7372_pd_a3sp, &scif2_device);
--	rmobile_add_device_to_domain(&sh7372_pd_a3sp, &scif3_device);
--	rmobile_add_device_to_domain(&sh7372_pd_a3sp, &scif4_device);
--	rmobile_add_device_to_domain(&sh7372_pd_a3sp, &scif5_device);
--	rmobile_add_device_to_domain(&sh7372_pd_a3sp, &scif6_device);
--	rmobile_add_device_to_domain(&sh7372_pd_a3sp, &iic1_device);
--	rmobile_add_device_to_domain(&sh7372_pd_a3sp, &dma0_device);
--	rmobile_add_device_to_domain(&sh7372_pd_a3sp, &dma1_device);
--	rmobile_add_device_to_domain(&sh7372_pd_a3sp, &dma2_device);
--	rmobile_add_device_to_domain(&sh7372_pd_a3sp, &usb_dma0_device);
--	rmobile_add_device_to_domain(&sh7372_pd_a3sp, &usb_dma1_device);
--	rmobile_add_device_to_domain(&sh7372_pd_a4r, &iic0_device);
--	rmobile_add_device_to_domain(&sh7372_pd_a4r, &veu0_device);
--	rmobile_add_device_to_domain(&sh7372_pd_a4r, &veu1_device);
--	rmobile_add_device_to_domain(&sh7372_pd_a4r, &veu2_device);
--	rmobile_add_device_to_domain(&sh7372_pd_a4r, &veu3_device);
--	rmobile_add_device_to_domain(&sh7372_pd_a4r, &jpu_device);
--	rmobile_add_device_to_domain(&sh7372_pd_a4r, &tmu00_device);
--	rmobile_add_device_to_domain(&sh7372_pd_a4r, &tmu01_device);
-+	rmobile_add_device_to_domain("A3RV", &vpu_device);
-+	rmobile_add_device_to_domain("A4MP", &spu0_device);
-+	rmobile_add_device_to_domain("A4MP", &spu1_device);
-+	rmobile_add_device_to_domain("A3SP", &scif0_device);
-+	rmobile_add_device_to_domain("A3SP", &scif1_device);
-+	rmobile_add_device_to_domain("A3SP", &scif2_device);
-+	rmobile_add_device_to_domain("A3SP", &scif3_device);
-+	rmobile_add_device_to_domain("A3SP", &scif4_device);
-+	rmobile_add_device_to_domain("A3SP", &scif5_device);
-+	rmobile_add_device_to_domain("A3SP", &scif6_device);
-+	rmobile_add_device_to_domain("A3SP", &iic1_device);
-+	rmobile_add_device_to_domain("A3SP", &dma0_device);
-+	rmobile_add_device_to_domain("A3SP", &dma1_device);
-+	rmobile_add_device_to_domain("A3SP", &dma2_device);
-+	rmobile_add_device_to_domain("A3SP", &usb_dma0_device);
-+	rmobile_add_device_to_domain("A3SP", &usb_dma1_device);
-+	rmobile_add_device_to_domain("A4R", &iic0_device);
-+	rmobile_add_device_to_domain("A4R", &veu0_device);
-+	rmobile_add_device_to_domain("A4R", &veu1_device);
-+	rmobile_add_device_to_domain("A4R", &veu2_device);
-+	rmobile_add_device_to_domain("A4R", &veu3_device);
-+	rmobile_add_device_to_domain("A4R", &jpu_device);
-+	rmobile_add_device_to_domain("A4R", &tmu00_device);
-+	rmobile_add_device_to_domain("A4R", &tmu01_device);
- }
- 
- static void __init sh7372_earlytimer_init(void)
-Index: linux/arch/arm/mach-shmobile/board-ap4evb.c
-===================================================================
---- linux.orig/arch/arm/mach-shmobile/board-ap4evb.c
-+++ linux/arch/arm/mach-shmobile/board-ap4evb.c
-@@ -1461,14 +1461,14 @@ static void __init ap4evb_init(void)
- 
- 	platform_add_devices(ap4evb_devices, ARRAY_SIZE(ap4evb_devices));
- 
--	rmobile_add_device_to_domain(&sh7372_pd_a4lc, &lcdc1_device);
--	rmobile_add_device_to_domain(&sh7372_pd_a4lc, &lcdc_device);
--	rmobile_add_device_to_domain(&sh7372_pd_a4mp, &fsi_device);
-+	rmobile_add_device_to_domain("A4LC", &lcdc1_device);
-+	rmobile_add_device_to_domain("A4LC", &lcdc_device);
-+	rmobile_add_device_to_domain("A4MP", &fsi_device);
- 
--	rmobile_add_device_to_domain(&sh7372_pd_a3sp, &sh_mmcif_device);
--	rmobile_add_device_to_domain(&sh7372_pd_a3sp, &sdhi0_device);
--	rmobile_add_device_to_domain(&sh7372_pd_a3sp, &sdhi1_device);
--	rmobile_add_device_to_domain(&sh7372_pd_a4r, &ceu_device);
-+	rmobile_add_device_to_domain("A3SP", &sh_mmcif_device);
-+	rmobile_add_device_to_domain("A3SP", &sdhi0_device);
-+	rmobile_add_device_to_domain("A3SP", &sdhi1_device);
-+	rmobile_add_device_to_domain("A4R", &ceu_device);
- 
- 	hdmi_init_pm_clock();
- 	fsi_init_pm_clock();
-Index: linux/arch/arm/mach-shmobile/setup-r8a7740.c
-===================================================================
---- linux.orig/arch/arm/mach-shmobile/setup-r8a7740.c
-+++ linux/arch/arm/mach-shmobile/setup-r8a7740.c
-@@ -688,16 +688,16 @@ void __init r8a7740_add_standard_devices
- 
- 	/* add devices to PM domain  */
- 
--	rmobile_add_device_to_domain(&r8a7740_pd_a3sp,	&scif0_device);
--	rmobile_add_device_to_domain(&r8a7740_pd_a3sp,	&scif1_device);
--	rmobile_add_device_to_domain(&r8a7740_pd_a3sp,	&scif2_device);
--	rmobile_add_device_to_domain(&r8a7740_pd_a3sp,	&scif3_device);
--	rmobile_add_device_to_domain(&r8a7740_pd_a3sp,	&scif4_device);
--	rmobile_add_device_to_domain(&r8a7740_pd_a3sp,	&scif5_device);
--	rmobile_add_device_to_domain(&r8a7740_pd_a3sp,	&scif6_device);
--	rmobile_add_device_to_domain(&r8a7740_pd_a3sp,	&scif7_device);
--	rmobile_add_device_to_domain(&r8a7740_pd_a3sp,	&scifb_device);
--	rmobile_add_device_to_domain(&r8a7740_pd_a3sp,	&i2c1_device);
-+	rmobile_add_device_to_domain("A3SP",	&scif0_device);
-+	rmobile_add_device_to_domain("A3SP",	&scif1_device);
-+	rmobile_add_device_to_domain("A3SP",	&scif2_device);
-+	rmobile_add_device_to_domain("A3SP",	&scif3_device);
-+	rmobile_add_device_to_domain("A3SP",	&scif4_device);
-+	rmobile_add_device_to_domain("A3SP",	&scif5_device);
-+	rmobile_add_device_to_domain("A3SP",	&scif6_device);
-+	rmobile_add_device_to_domain("A3SP",	&scif7_device);
-+	rmobile_add_device_to_domain("A3SP",	&scifb_device);
-+	rmobile_add_device_to_domain("A3SP",	&i2c1_device);
- }
- 
- static void __init r8a7740_earlytimer_init(void)
-Index: linux/arch/arm/mach-shmobile/board-armadillo800eva.c
-===================================================================
---- linux.orig/arch/arm/mach-shmobile/board-armadillo800eva.c
-+++ linux/arch/arm/mach-shmobile/board-armadillo800eva.c
-@@ -1181,10 +1181,10 @@ static void __init eva_init(void)
- 
- 	eva_clock_init();
- 
--	rmobile_add_device_to_domain(&r8a7740_pd_a4lc, &lcdc0_device);
--	rmobile_add_device_to_domain(&r8a7740_pd_a4lc, &hdmi_lcdc_device);
-+	rmobile_add_device_to_domain("A4LC", &lcdc0_device);
-+	rmobile_add_device_to_domain("A4LC", &hdmi_lcdc_device);
- 	if (usb)
--		rmobile_add_device_to_domain(&r8a7740_pd_a3sp, usb);
-+		rmobile_add_device_to_domain("A3SP", usb);
- }
- 
- static void __init eva_earlytimer_init(void)
++static inline int pm_genpd_add_device(struct generic_pm_domain *genpd,
++				      struct device *dev)
++{
++	return __pm_genpd_add_device(genpd, dev, NULL);
++}
++
++static inline int pm_genpd_of_add_device(struct device_node *genpd_node,
++					 struct device *dev)
++{
++	return __pm_genpd_of_add_device(genpd_node, dev, NULL);
++}
++
++static inline int pm_genpd_name_add_device(const char *domain_name,
++					   struct device *dev)
++{
++	return __pm_genpd_name_add_device(domain_name, dev, NULL);
++}
++
+ static inline int pm_genpd_remove_callbacks(struct device *dev)
+ {
+ 	return __pm_genpd_remove_callbacks(dev, true);
 
