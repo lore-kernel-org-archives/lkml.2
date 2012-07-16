@@ -1,69 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752231Ab2GPPrc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 11:47:32 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:9875 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751262Ab2GPPr2 (ORCPT
+	id S1752126Ab2GPPsY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 11:48:24 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:13267 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751580Ab2GPPsW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 11:47:28 -0400
-Message-ID: <1342453645.2523.17.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: Re: 82571EB: Detected Hardware Unit Hang
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-CC: "Dave, Tushar N" <tushar.n.dave@intel.com>, Joe Jin <joe.jin@oracle.com>,
-        "e1000-devel@lists.sf.net" <e1000-devel@lists.sf.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 16 Jul 2012 16:47:25 +0100
-In-Reply-To: <20120715133510.GA5484@khazad-dum.debian.net>
-References: <4FFE40A9.4060807@oracle.com>
-	 <061C8A8601E8EE4CA8D8FD6990CEA891274F02D7@ORSMSX102.amr.corp.intel.com>
-	 <4FFE6BB9.4060106@oracle.com>
-	 <061C8A8601E8EE4CA8D8FD6990CEA891274F033B@ORSMSX102.amr.corp.intel.com>
-	 <4FFE787B.9050201@oracle.com>
-	 <061C8A8601E8EE4CA8D8FD6990CEA891274F0ACC@ORSMSX102.amr.corp.intel.com>
-	 <4FFF61BD.1060604@oracle.com>
-	 <061C8A8601E8EE4CA8D8FD6990CEA891274F11FF@ORSMSX102.amr.corp.intel.com>
-	 <4FFFA532.1030208@oracle.com>
-	 <061C8A8601E8EE4CA8D8FD6990CEA891274F2354@ORSMSX102.amr.corp.intel.com>
-	 <20120715133510.GA5484@khazad-dum.debian.net>
-Organization: Solarflare Communications
+	Mon, 16 Jul 2012 11:48:22 -0400
+Message-ID: <1342453700.2949.6.camel@lorien2>
+Subject: Re: [PATCH RFC] swiotlb: Disable swiotlb overflow support when
+ CONFIG_ISA is enabled
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: fujita.tomonori@lab.ntt.co.jp, LKML <linux-kernel@vger.kernel.org>,
+        akpm@linux-foundation.org, paul.gortmaker@windriver.com,
+        bhelgaas@google.com, amwang@redhat.com, shuahkhan@gmail.com
+Date: Mon, 16 Jul 2012 09:48:20 -0600
+In-Reply-To: <20120716144536.GA552@phenom.dumpdata.com>
+References: <1341615972.3101.27.camel@lorien2>
+	 <20120709202505.GA9541@phenom.dumpdata.com>
+	 <1341939307.2502.34.camel@lorien2>
+	 <20120710173211.GB6868@phenom.dumpdata.com>
+	 <1342109870.2576.23.camel@lorien2>
+	 <20120716144536.GA552@phenom.dumpdata.com>
+Organization: ISS-Linux
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-07-15 at 10:35 -0300, Henrique de Moraes Holschuh wrote:
-> On Sun, 15 Jul 2012, Dave, Tushar N wrote:
-> > Somehow setting max payload to 256 from BIOS does not set this value for all devices. I believe this is a BIOS bug.
+On Mon, 2012-07-16 at 10:45 -0400, Konrad Rzeszutek Wilk wrote:
+> On Thu, Jul 12, 2012 at 10:17:50AM -0600, Shuah Khan wrote:
+> > Disable iotlb overflow support when CONFIG_ISA is enabled. This is the
+> > first step towards removing overflow support, to be consistent with other
+> > iommu implementations and return DMA_ERROR_CODE. This disabling step is
+> > for finding drivers that don't call dma_mapping_error to check for errors
+> > returned by the mapping interface. Once drivers are fixed overflow support
+> > can be removed.
 > 
-> And preferably, Linux should complain about it.  Since we know it is going
-> to cause problems, and since we know it does happen, we should be raising a
-> ruckus about it in the kernel log (and probably fixing it to min(path) while
-> at it)...
+> I think I explained myself poorly. We don't want to break old drivers.
 > 
-> Is this something that should be raised as a feature request with the
-> PCI/PCIe subsystem?
+> If the old drivers expect this behavior (while they should be updated
+> to check the DMA), we need to retain this behavior.
+> 
+> So I think the patch should be done the other way:
+> 
+> Disable IOTLB overflow when CONFIG_ISA is disabled.
 
-The feature is there, but we ended up with:
+That makes lot of sense :) I will redo the patch. It might be good to a
+tunable to control enable/disable behavior. Even though support for this
+new tunable "swiotlb_overflow" projected to be short lived, it will be
+lot less painful to disable/enable as needed. Thought and comments?
 
-commit 5f39e6705faade2e89d119958a8c51b9b6e2c53c
-Author: Jon Mason <mason@myri.com>
-Date:   Mon Oct 3 09:50:20 2011 -0500
+> 
+> But we also need to check whether there are other drivers
+> that don't properly check the DMA address. And if so, add them
+> to this list of must have enabled b/c you might be using this
+> driver.
 
-    PCI: Disable MPS configuration by default
+Sound good. Again having a tunable would help in this case as well.
+> 
+> The first goal is to figure out which of the drivers aren't doing this
+> properly. This should be possible by just grepping for 'dma_map' and 
+> seeing which ones don't do the 'dma_check' right after.
 
-But you are welcome to share use of the fixup_mpss_256() quirk.
+I started some research into this and will continue and provide an
+update.
 
-Ben.
-
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+-- Shuah
 
