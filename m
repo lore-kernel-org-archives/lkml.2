@@ -1,69 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754169Ab2GPSqb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 14:46:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23929 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753129Ab2GPSq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 14:46:26 -0400
-Date: Mon, 16 Jul 2012 14:46:11 -0400
-From: Dave Jones <davej@redhat.com>
-To: "devendra.aaru" <devendra.aaru@gmail.com>
-Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Jiri Kosina <jkosina@suse.cz>, Darren Hart <dvhart@linux.intel.com>,
-        Kees Cook <keescook@chromium.org>, a.p.zijlstra@chello.nl
-Subject: Re: BUG: unable to handle kernel NULL pointer dereference at
- 0000000000000010 on 3.5-rc6
-Message-ID: <20120716184611.GA16422@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	"devendra.aaru" <devendra.aaru@gmail.com>,
-	richard -rw- weinberger <richard.weinberger@gmail.com>,
-	linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-	Jiri Kosina <jkosina@suse.cz>, Darren Hart <dvhart@linux.intel.com>,
-	Kees Cook <keescook@chromium.org>, a.p.zijlstra@chello.nl
-References: <CAHdPZaM8Vnfkkon_vCF-jPQLq6WH482ozhH3U08hF30bOMr7Ow@mail.gmail.com>
- <CAFLxGvzkx6e19Gj=vKj3yjW3Yjj3eBx1SbGkmdbTMK6WMtX5Bg@mail.gmail.com>
- <CAHdPZaM3Xq9=HLJztQe2hW7mxwatYeeUV7AKnCEr0xzpTJwQRg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHdPZaM3Xq9=HLJztQe2hW7mxwatYeeUV7AKnCEr0xzpTJwQRg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753358Ab2GPSn6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 14:43:58 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14112 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751611Ab2GPSnz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 14:43:55 -0400
+X-Authority-Analysis: v=2.0 cv=StQSGYy0 c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=uXKgUyRmsUUA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=D_SbEOMbAAAA:8 a=-9lkxPPxzbn_rGzBKkcA:9 a=7KbvKZvEaC0A:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-Id: <20120716184353.853883147@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Mon, 16 Jul 2012 14:43:12 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Subject: [PATCH RT 02/11] Latency histograms: Adjust timer, if already elapsed when programmed
+References: <20120716184310.223095720@goodmis.org>
+Content-Disposition: inline; filename=0002-Latency-histograms-Adjust-timer-if-already-elapsed-w.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 14, 2012 at 09:18:04PM +0545, devendra.aaru wrote:
- > On Sat, Jul 14, 2012 at 8:07 PM, richard -rw- weinberger
- > <richard.weinberger@gmail.com> wrote:
- > > On Sat, Jul 14, 2012 at 2:11 PM, devendra.aaru <devendra.aaru@gmail.com> wrote:
- > >> 3.5-rc6 with git head at fdb1335a82e. (from Torvald's branch)
- > >
- > > CC'in futex guys...
- > >
- > >> dmesg:
- > >>
- > >> [43610.535421] BUG: unable to handle kernel NULL pointer dereference
- > >> at 0000000000000010
- > >
- > > Is this the first error message in dmesg?
- > No its not. and i was doing a dmesg -c and run... thats bad i should
- > not be doing that..
- > > IOW no WARNING before the BUG?
- > yeah there were some warnings about the trinity.
- > >
- > > Looks like futex_wait_requeue_pi() was called before  pi_state->pi_mutex got
- > > initialized.
- > >
- > 
- > Let me reproduce it again... and i will report it with full dmesg again.
+From: Carsten Emde <C.Emde@osadl.org>
 
-Check the bugs-found.txt file in trinity.git before reporting bugs found with it.
-This one already got reported.. https://lkml.org/lkml/2012/7/13/328
-I try to keep that file up to date to reduce multiple reports of the same bug.
-(also, for that reason, please cc me on bugs you find with it!)
+Nothing prevents a programmer from calling clock_nanosleep() with an
+already elapsed wakeup time in absolute time mode or with a too small
+delay in relative time mode. Such timers cannot wake up in time and,
+thus, should be corrected when entered into the missed timers latency
+histogram (CONFIG_MISSED_TIMERS_HIST).
 
-thanks,
+This patch marks such timers and uses a corrected expiration time.
 
-	Dave
+Signed-off-by: Carsten Emde <C.Emde@osadl.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ include/linux/hrtimer.h |    3 +++
+ kernel/hrtimer.c        |   16 ++++++++++++++--
+ 2 files changed, 17 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
+index 0e37086..7408760 100644
+--- a/include/linux/hrtimer.h
++++ b/include/linux/hrtimer.h
+@@ -113,6 +113,9 @@ struct hrtimer {
+ 	unsigned long			state;
+ 	struct list_head		cb_entry;
+ 	int				irqsafe;
++#ifdef CONFIG_MISSED_TIMER_OFFSETS_HIST
++	ktime_t 			praecox;
++#endif
+ #ifdef CONFIG_TIMER_STATS
+ 	int				start_pid;
+ 	void				*start_site;
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index 3991464..a080e62 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -1021,6 +1021,17 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
+ #endif
+ 	}
+ 
++#ifdef CONFIG_MISSED_TIMER_OFFSETS_HIST
++	{
++		ktime_t now = new_base->get_time();
++
++		if (ktime_to_ns(tim) < ktime_to_ns(now))
++			timer->praecox = now;
++		else
++			timer->praecox = ktime_set(0, 0);
++	}
++#endif
++
+ 	hrtimer_set_expires_range_ns(timer, tim, delta_ns);
+ 
+ 	timer_stats_hrtimer_set_start_info(timer);
+@@ -1458,8 +1469,9 @@ retry:
+ 			timer = container_of(node, struct hrtimer, node);
+ 
+ 			trace_hrtimer_interrupt(raw_smp_processor_id(),
+-			    ktime_to_ns(ktime_sub(
+-				hrtimer_get_expires(timer), basenow)),
++			    ktime_to_ns(ktime_sub(ktime_to_ns(timer->praecox) ?
++				timer->praecox : hrtimer_get_expires(timer),
++				basenow)),
+ 			    current,
+ 			    timer->function == hrtimer_wakeup ?
+ 			    container_of(timer, struct hrtimer_sleeper,
+-- 
+1.7.10.4
+
+
