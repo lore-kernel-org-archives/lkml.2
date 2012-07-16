@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753418Ab2GPTrY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 15:47:24 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:51143 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752826Ab2GPTrV (ORCPT
+	id S1753594Ab2GPTsB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 15:48:01 -0400
+Received: from unicorn.mansr.com ([78.86.181.103]:60646 "EHLO
+	unicorn.mansr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753441Ab2GPTr6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 15:47:21 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
-Subject: Re: [RFC PATCH v2 1/2] drivers: misc: omap: add a new driver for ocp2scp
-Date: Mon, 16 Jul 2012 19:47:01 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: balbi@ti.com, Greg KH <gregkh@linuxfoundation.org>,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
-        linux@arm.linux.org.uk, b-cousson@ti.com, rnayak@ti.com,
-        tony@atomide.com, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-References: <1340370942-23201-1-git-send-email-kishon@ti.com> <20120716081204.GI7955@arwen.pp.htv.fi> <CAAe_U6JMGP3jEkkd=vqpR5KTeOnY51AOcb65zqKRRa8MtnWjzQ@mail.gmail.com>
-In-Reply-To: <CAAe_U6JMGP3jEkkd=vqpR5KTeOnY51AOcb65zqKRRa8MtnWjzQ@mail.gmail.com>
+	Mon, 16 Jul 2012 15:47:58 -0400
+From: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Mikael Pettersson <mikpe@it.uu.se>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
+References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
+	<20472.466.594018.973876@pilspetsen.it.uu.se>
+	<20120710101223.GF15120@arm.com> <20120714093505.GB23316@elf.ucw.cz>
+	<20120715113631.GA10597@arm.com> <20120716161913.GB20549@elf.ucw.cz>
+Date: Mon, 16 Jul 2012 20:47:57 +0100
+In-Reply-To: <20120716161913.GB20549@elf.ucw.cz> (Pavel Machek's message of
+	"Mon, 16 Jul 2012 18:19:13 +0200")
+Message-ID: <yw1xr4sbbi8i.fsf@unicorn.mansr.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207161947.01751.arnd@arndb.de>
-X-Provags-ID: V02:K0:6gsJvrbui/IfI90GdbCJbyB839hPRh7uT1m3G8ThqqK
- FzNUcepTYXEmycu/v/ZDFC8f3dwcgRN+w5z3SEqLz+Lzuf+Rxa
- WQ7T0vOwrHImpr8O9plWvGNRYHr4PFGt8SVuh9gpc7r29HXG3o
- 4sIsf4iDPRm3zF1Bv8/5cSjas0MzanafecJdLT5rC76pSz9iBn
- P3ztV69J1yw5koMKRH6aT+9P11pApSm7BHNOL5G70Y6hz3GPA/
- 5JZLguMlsxxnLI2hDw+DT3+9MWJIL8tVHeXOmAuQJKDulOukM5
- sExoZJrEMlfL3kFK7d8K2Fuuiq4Gmui4C5win1qjX2Eqt0ZgEh
- wk/vHnKj5j5dumi5xwtY=
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 16 July 2012, ABRAHAM, KISHON VIJAY wrote:
-> >>
-> >> I think we should reconsider the idea of drivers/bus/ with a file per
-> >> bus in there at least for new buses, but doing a new drivers/scp/
-> >> would be ok for me if there is enough opposition against the idea
-> >> of drivers/bus aggregating different buses.
-> >
-> > I don't mind either way. The fact is that this ocp-to-scp bridge is
-> > really a TI/OMAP thing. Not sure it deserves a directory of its own.
-> 
-> Ok. Then I'll have a file in drivers/bus/ for ocp2scp driver.
+Pavel Machek <pavel@ucw.cz> writes:
 
-Sounds good to me. I don't care if it's the only file in that directory.
-We can point the next person to a bus with a single file to that directory
-and let them add theirs.
+> Hi!
+>
+>> The assembly syntax is very reasonable already and not far from what we
+>> are used to (see the .S files in my kernel patches). The 64-bit
+>> instructions are different and that's specified here (apart from the
+>> actual bit encoding):
+>> 
+>> http://infocenter.arm.com/help/topic/com.arm.doc.genc010197a/index.html
+>
+> "This document is only available in a PDF version to registered ARM
+> customers."
+>
+> It would be nice to make this public :-(.
 
-	Arnd
+Anyone can register, so it's not all that bad.
+
+-- 
+Måns Rullgård
+mans@mansr.com
