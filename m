@@ -1,49 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753436Ab2GPQTb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 12:19:31 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:42837 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752575Ab2GPQT3 (ORCPT
+	id S1753494Ab2GPQ0O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 12:26:14 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:40975 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751888Ab2GPQ0M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 12:19:29 -0400
-Date: Mon, 16 Jul 2012 18:19:13 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Mikael Pettersson <mikpe@it.uu.se>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
-Message-ID: <20120716161913.GB20549@elf.ucw.cz>
-References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
- <20472.466.594018.973876@pilspetsen.it.uu.se>
- <20120710101223.GF15120@arm.com>
- <20120714093505.GB23316@elf.ucw.cz>
- <20120715113631.GA10597@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120715113631.GA10597@arm.com>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 16 Jul 2012 12:26:12 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+WANxMadKW6Fdg8m9b+2GrkDVm176NRgSyZJN2ep
+	speRdM3m7im+7M
+Message-ID: <1342455968.7659.93.camel@marge.simpson.net>
+Subject: Re: 3.4.4-rt13: btrfs + xfstests 006 = BOOM..  and a bonus rt_mutex
+ deadlock report for absolutely free!
+From: Mike Galbraith <efault@gmx.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Chris Mason <chris.mason@fusionio.com>,
+        "Chris L. Mason" <clmason@fusionio.com>,
+        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Mon, 16 Jul 2012 18:26:08 +0200
+In-Reply-To: <1342454547.5410.3.camel@gandalf.stny.rr.com>
+References: <1342072060.7338.102.camel@marge.simpson.net>
+	 <20120713125043.GH30128@shiny> <1342260883.7368.30.camel@marge.simpson.net>
+	 <20120715175612.GF25961@shiny.int.fusionio.com>
+	 <1342404140.7659.27.camel@marge.simpson.net>
+	 <1342454547.5410.3.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-> The assembly syntax is very reasonable already and not far from what we
-> are used to (see the .S files in my kernel patches). The 64-bit
-> instructions are different and that's specified here (apart from the
-> actual bit encoding):
+On Mon, 2012-07-16 at 12:02 -0400, Steven Rostedt wrote: 
+> On Mon, 2012-07-16 at 04:02 +0200, Mike Galbraith wrote:
 > 
-> http://infocenter.arm.com/help/topic/com.arm.doc.genc010197a/index.html
+> > > Great, thanks!  I got stuck in bug land on Friday.  You mentioned
+> > > performance problems earlier on Saturday, did this improve performance?
+> > 
+> > Yeah, the read_trylock() seems to improve throughput.  That's not
+> > heavily tested, but it certainly looks like it does.  No idea why.
+> 
+> Ouch, you just turned the rt_read_lock() into a spin lock. If a higher
+> priority process preempted a lower priority process that holds the same
+> lock, it will deadlock.
 
-"This document is only available in a PDF version to registered ARM
-customers."
+Hm, how, it's doing cpu_chill()?
 
-It would be nice to make this public :-(.
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+> I'm not sure why you would get a performance benefit from this, as the
+> mutex used is an adaptive one (failure to acquire the lock will only
+> sleep if preempted or if the owner is not running).
+
+I'm not attached to it, can whack it in a heartbeat.. especially so it
+the thing can deadlock.  I've seen enough of those of late.
+
+> We should look at why this performs better (if it really does).
+
+Not sure it really does, there's variance, but it looked like it did.
+
+-Mike
+
+
