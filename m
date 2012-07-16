@@ -1,193 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752593Ab2GPPyv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 11:54:51 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:46533 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751611Ab2GPPys (ORCPT
+	id S1752822Ab2GPPzw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 11:55:52 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:47193 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751375Ab2GPPzr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 11:54:48 -0400
+	Mon, 16 Jul 2012 11:55:47 -0400
+Date: Mon, 16 Jul 2012 11:46:47 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Olaf Hering <olaf@aepfle.de>
+Cc: Keir Fraser <keir.xen@gmail.com>, xen-devel@lists.xensource.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Jan Beulich <JBeulich@suse.com>, Daniel Kiper <dkiper@net-space.pl>
+Subject: Re: [Xen-devel] incorrect layout of globals from head_64.S during
+ kexec boot
+Message-ID: <20120716154647.GC13540@phenom.dumpdata.com>
+References: <20120710180953.GB20075@aepfle.de>
+ <CC223C2F.3817C%keir.xen@gmail.com>
+ <20120715160653.GA22779@aepfle.de>
 MIME-Version: 1.0
-In-Reply-To: <1342284188-19176-6-git-send-email-Julia.Lawall@lip6.fr>
-References: <1342284188-19176-1-git-send-email-Julia.Lawall@lip6.fr> <1342284188-19176-6-git-send-email-Julia.Lawall@lip6.fr>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 16 Jul 2012 09:54:26 -0600
-Message-ID: <CAErSpo5FKNXEWOps3YmEP0WVZURb0cVghaTaxEJqEioNxoywQw@mail.gmail.com>
-Subject: Re: [PATCH 5/6] drivers/pci/hotplug: ensure a consistent return value
- in error case
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: kernel-janitors@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120715160653.GA22779@aepfle.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 14, 2012 at 10:43 AM, Julia Lawall <Julia.Lawall@lip6.fr> wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
->
-> Typically, the return value desired for the failure of a function with an
-> integer return value is a negative integer.  In these cases, the return
-> value is sometimes a negative integer and sometimes 0, due to a subsequent
-> initialization of the return variable within the loop.
->
-> A simplified version of the semantic match that finds this problem is:
-> (http://coccinelle.lip6.fr/)
->
-> //<smpl>
-> @r exists@
-> identifier ret;
-> position p;
-> constant C;
-> expression e1,e3,e4;
-> statement S;
-> @@
->
-> ret = -C
-> ... when != ret = e3
->     when any
-> if@p (...) S
-> ... when any
-> if (\(ret != 0\|ret < 0\|ret > 0\) || ...) { ... return ...; }
-> ... when != ret = e3
->     when any
-> *if@p (...)
-> {
->   ... when != ret = e4
->   return ret;
-> }
-> //</smpl>
->
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
->
-> ---
->  drivers/pci/hotplug/cpqphp_core.c    |   14 ++++++++++----
->  drivers/pci/hotplug/pcihp_skeleton.c |   14 ++++++++++----
->  drivers/pci/hotplug/shpchp_core.c    |   14 ++++++++++----
->  3 files changed, 30 insertions(+), 12 deletions(-)
+On Sun, Jul 15, 2012 at 06:06:53PM +0200, Olaf Hering wrote:
+> On Tue, Jul 10, Keir Fraser wrote:
+> 
+> > Best thing to do, is possible, is map the shared-info page in the
+> > xen-platform pci device's BAR memory range. Then it will not conflict with
+> > any RAM.
+> 
+> This patch does that. I did a kexec boot and a save/restore.
+> It does not deal with the possible race were the old pfn is not backed
+> by a mfn.
+> 
+> Olaf
+> 
+> 
+> commit a9d5567c67a2317c9db174a4deef6c5690220749
+> Author: Olaf Hering <olaf@aepfle.de>
+> Date:   Thu Jul 12 19:38:39 2012 +0200
+> 
+>     xen PVonHVM: move shared info page from RAM to MMIO
+>     
+>     Signed-off-by: Olaf Hering <ohering@suse.de>
+> 
+> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+> index ff962d4..8a743af 100644
+> --- a/arch/x86/xen/enlighten.c
+> +++ b/arch/x86/xen/enlighten.c
+> @@ -1465,23 +1465,22 @@ static int init_hvm_pv_info(int *major, int *minor)
+>  	return 0;
+>  }
+>  
+> -void __ref xen_hvm_init_shared_info(void)
+> +static struct shared_info *hvm_shared_info;
+> +static unsigned long hvm_shared_info_pfn;
+> +
 
-I squashed this patch and patch [1/6] (for the same problem in
-drivers/pci/hotplug/cpci_hotplug_core.c) and applied it to my "next"
-branch.  Thanks!
+Please include a big comment explainig what this machination is OK
+to do multiple times. If you can include the juicy snippets of the
+email converstation in this comment so that in 6 months if somebody
+looks at this they have a good understanding of it.
 
-> diff --git a/drivers/pci/hotplug/cpqphp_core.c b/drivers/pci/hotplug/cpqphp_core.c
-> index 187a199..c8eaeb4 100644
-> --- a/drivers/pci/hotplug/cpqphp_core.c
-> +++ b/drivers/pci/hotplug/cpqphp_core.c
-> @@ -611,7 +611,7 @@ static int ctrl_slot_setup(struct controller *ctrl,
->         u32 tempdword;
->         char name[SLOT_NAME_SIZE];
->         void __iomem *slot_entry= NULL;
-> -       int result = -ENOMEM;
-> +       int result;
->
->         dbg("%s\n", __func__);
->
-> @@ -623,19 +623,25 @@ static int ctrl_slot_setup(struct controller *ctrl,
->
->         while (number_of_slots) {
->                 slot = kzalloc(sizeof(*slot), GFP_KERNEL);
-> -               if (!slot)
-> +               if (!slot) {
-> +                       result = -ENOMEM;
->                         goto error;
-> +               }
->
->                 slot->hotplug_slot = kzalloc(sizeof(*(slot->hotplug_slot)),
->                                                 GFP_KERNEL);
-> -               if (!slot->hotplug_slot)
-> +               if (!slot->hotplug_slot) {
-> +                       result = -ENOMEM;
->                         goto error_slot;
-> +               }
->                 hotplug_slot = slot->hotplug_slot;
->
->                 hotplug_slot->info = kzalloc(sizeof(*(hotplug_slot->info)),
->                                                         GFP_KERNEL);
-> -               if (!hotplug_slot->info)
-> +               if (!hotplug_slot->info) {
-> +                       result = -ENOMEM;
->                         goto error_hpslot;
-> +               }
->                 hotplug_slot_info = hotplug_slot->info;
->
->                 slot->ctrl = ctrl;
-> diff --git a/drivers/pci/hotplug/pcihp_skeleton.c b/drivers/pci/hotplug/pcihp_skeleton.c
-> index b20ceaa..1f00b93 100644
-> --- a/drivers/pci/hotplug/pcihp_skeleton.c
-> +++ b/drivers/pci/hotplug/pcihp_skeleton.c
-> @@ -252,7 +252,7 @@ static int __init init_slots(void)
->         struct slot *slot;
->         struct hotplug_slot *hotplug_slot;
->         struct hotplug_slot_info *info;
-> -       int retval = -ENOMEM;
-> +       int retval;
->         int i;
->
->         /*
-> @@ -261,17 +261,23 @@ static int __init init_slots(void)
->          */
->         for (i = 0; i < num_slots; ++i) {
->                 slot = kzalloc(sizeof(*slot), GFP_KERNEL);
-> -               if (!slot)
-> +               if (!slot) {
-> +                       retval = -ENOMEM;
->                         goto error;
-> +               }
->
->                 hotplug_slot = kzalloc(sizeof(*hotplug_slot), GFP_KERNEL);
-> -               if (!hotplug_slot)
-> +               if (!hotplug_slot) {
-> +                       retval = -ENOMEM;
->                         goto error_slot;
-> +               }
->                 slot->hotplug_slot = hotplug_slot;
->
->                 info = kzalloc(sizeof(*info), GFP_KERNEL);
-> -               if (!info)
-> +               if (!info) {
-> +                       retval = -ENOMEM;
->                         goto error_hpslot;
-> +               }
->                 hotplug_slot->info = info;
->
->                 slot->number = i;
-> diff --git a/drivers/pci/hotplug/shpchp_core.c b/drivers/pci/hotplug/shpchp_core.c
-> index 7414fd9..b6de307 100644
-> --- a/drivers/pci/hotplug/shpchp_core.c
-> +++ b/drivers/pci/hotplug/shpchp_core.c
-> @@ -99,22 +99,28 @@ static int init_slots(struct controller *ctrl)
->         struct hotplug_slot *hotplug_slot;
->         struct hotplug_slot_info *info;
->         char name[SLOT_NAME_SIZE];
-> -       int retval = -ENOMEM;
-> +       int retval;
->         int i;
->
->         for (i = 0; i < ctrl->num_slots; i++) {
->                 slot = kzalloc(sizeof(*slot), GFP_KERNEL);
-> -               if (!slot)
-> +               if (!slot) {
-> +                       retval = -ENOMEM;
->                         goto error;
-> +               }
->
->                 hotplug_slot = kzalloc(sizeof(*hotplug_slot), GFP_KERNEL);
-> -               if (!hotplug_slot)
-> +               if (!hotplug_slot) {
-> +                       retval = -ENOMEM;
->                         goto error_slot;
-> +               }
->                 slot->hotplug_slot = hotplug_slot;
->
->                 info = kzalloc(sizeof(*info), GFP_KERNEL);
-> -               if (!info)
-> +               if (!info) {
-> +                       retval = -ENOMEM;
->                         goto error_hpslot;
-> +               }
->                 hotplug_slot->info = info;
->
->                 slot->hp_slot = i;
->
+> +static void __ref set_shared_info(struct shared_info *sip, unsigned long pfn)
+>  {
+>  	int cpu;
+>  	struct xen_add_to_physmap xatp;
+> -	static struct shared_info *shared_info_page = 0;
+>  
+> -	if (!shared_info_page)
+> -		shared_info_page = (struct shared_info *)
+> -			extend_brk(PAGE_SIZE, PAGE_SIZE);
+>  	xatp.domid = DOMID_SELF;
+>  	xatp.idx = 0;
+>  	xatp.space = XENMAPSPACE_shared_info;
+> -	xatp.gpfn = __pa(shared_info_page) >> PAGE_SHIFT;
+> +	xatp.gpfn = pfn;
+>  	if (HYPERVISOR_memory_op(XENMEM_add_to_physmap, &xatp))
+>  		BUG();
+>  
+> -	HYPERVISOR_shared_info = (struct shared_info *)shared_info_page;
+> +	HYPERVISOR_shared_info = sip;
+>  
+>  	/* xen_vcpu is a pointer to the vcpu_info struct in the shared_info
+>  	 * page, we use it in the event channel upcall and in some pvclock
+> @@ -1494,8 +1493,48 @@ void __ref xen_hvm_init_shared_info(void)
+>  	for_each_online_cpu(cpu) {
+>  		per_cpu(xen_vcpu, cpu) = &HYPERVISOR_shared_info->vcpu_info[cpu];
+>  	}
+> +	mb();
+>  }
+>  
+> +/* Reconnect the pfn to a mfn */
+> +void __ref xen_hvm_resume_shared_info(void)
+> +{
+> +	set_shared_info(hvm_shared_info, hvm_shared_info_pfn);
+> +}
+> +
+> +/* Move the pfn in RAM to a pfn in MMIO space */
+> +void __ref xen_hvm_finalize_shared_info(struct shared_info *sip, unsigned long pfn)
+> +{
+> +	struct xen_memory_reservation reservation = {
+> +		.domid = DOMID_SELF,
+> +		.nr_extents = 1,
+> +	};
+> +	int rc;
+> +
+> +	set_xen_guest_handle(reservation.extent_start, &hvm_shared_info_pfn);
+> +
+> +	/* Move pfn, disconnects previous pfn from mfn */
+> +	set_shared_info(sip, pfn);
+> +
+> +	/* Allocate new mfn for previous pfn */
+> +	rc = HYPERVISOR_memory_op(XENMEM_populate_physmap, &reservation);
+> +	WARN_ON(rc != 1);
+
+Shouldn't you do some recovery if it fails? Like reassign the old RAM pfn
+back to the shared page?
+
+> +
+> +	/* Remember final pfn and pointer for resume */
+> +	hvm_shared_info_pfn = pfn;
+> +	hvm_shared_info = sip;
+> +}
+> +
+> +/* Use a pfn in RAM until PCI init is done. */
+> +static void __ref xen_hvm_initial_shared_info(void)
+> +{
+> +	/* FIXME simply allocate a page and release it after pfn move (How at this stage?) */
+
+You could just have an page on the .bss that has __init_data. During
+bootup it would be recycled - and since the platform PCI driver is always
+built in, it would not be a problem I think?
+
+Thought if somebody does not compile with CONFIG_XEN_PVHVM then
+it would make sense to keep the existing allocation from the .brk.
+
+> +	hvm_shared_info = extend_brk(PAGE_SIZE, PAGE_SIZE);
+> +	hvm_shared_info_pfn = __pa(hvm_shared_info) >> PAGE_SHIFT;
+> +	set_shared_info(hvm_shared_info, hvm_shared_info_pfn);
+> +}
+> +
+> +
+>  #ifdef CONFIG_XEN_PVHVM
+>  static int __cpuinit xen_hvm_cpu_notify(struct notifier_block *self,
+>  				    unsigned long action, void *hcpu)
+> @@ -1526,7 +1565,7 @@ static void __init xen_hvm_guest_init(void)
+>  	if (r < 0)
+>  		return;
+>  
+> -	xen_hvm_init_shared_info();
+
+Put here a comment saying:
+	/* Initaliazing a RAM PFN that is later going to be replaced with
+	 * a MMIO PFN. */
+> +	xen_hvm_initial_shared_info();
+>  
+>  	if (xen_feature(XENFEAT_hvm_callback_vector))
+>  		xen_have_vector_callback = 1;
+> diff --git a/arch/x86/xen/suspend.c b/arch/x86/xen/suspend.c
+> index 45329c8..ae8a00c 100644
+> --- a/arch/x86/xen/suspend.c
+> +++ b/arch/x86/xen/suspend.c
+> @@ -30,7 +30,7 @@ void xen_arch_hvm_post_suspend(int suspend_cancelled)
+>  {
+>  #ifdef CONFIG_XEN_PVHVM
+>  	int cpu;
+> -	xen_hvm_init_shared_info();
+> +	xen_hvm_resume_shared_info();
+>  	xen_callback_vector();
+>  	xen_unplug_emulated_devices();
+>  	if (xen_feature(XENFEAT_hvm_safe_pvclock)) {
+> diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
+> index 202d4c1..1e4329e 100644
+> --- a/arch/x86/xen/xen-ops.h
+> +++ b/arch/x86/xen/xen-ops.h
+> @@ -41,7 +41,7 @@ void xen_enable_syscall(void);
+>  void xen_vcpu_restore(void);
+>  
+>  void xen_callback_vector(void);
+> -void xen_hvm_init_shared_info(void);
+> +void xen_hvm_resume_shared_info(void);
+>  void xen_unplug_emulated_devices(void);
+>  
+>  void __init xen_build_dynamic_phys_to_machine(void);
+> diff --git a/drivers/xen/platform-pci.c b/drivers/xen/platform-pci.c
+> index 97ca359..cbe866b 100644
+> --- a/drivers/xen/platform-pci.c
+> +++ b/drivers/xen/platform-pci.c
+> @@ -108,6 +108,8 @@ static int __devinit platform_pci_init(struct pci_dev *pdev,
+>  	long ioaddr;
+>  	long mmio_addr, mmio_len;
+>  	unsigned int max_nr_gframes;
+> +	unsigned long addr;
+> +	struct shared_info *hvm_shared_info;
+>  
+>  	if (!xen_domain())
+>  		return -ENODEV;
+> @@ -138,6 +140,11 @@ static int __devinit platform_pci_init(struct pci_dev *pdev,
+>  	platform_mmio = mmio_addr;
+>  	platform_mmiolen = mmio_len;
+>  
+> +	addr = alloc_xen_mmio(PAGE_SIZE);
+> +	hvm_shared_info = ioremap(addr, PAGE_SIZE);
+> +	memset(hvm_shared_info, 0, PAGE_SIZE);
+> +	xen_hvm_finalize_shared_info(hvm_shared_info, addr >> PAGE_SHIFT);
+> +
+>  	if (!xen_have_vector_callback) {
+>  		ret = xen_allocate_irq(pdev);
+>  		if (ret) {
+> diff --git a/include/xen/events.h b/include/xen/events.h
+> index 04399b2..3337698 100644
+> --- a/include/xen/events.h
+> +++ b/include/xen/events.h
+> @@ -58,6 +58,8 @@ void notify_remote_via_irq(int irq);
+>  
+>  void xen_irq_resume(void);
+>  
+> +void xen_hvm_finalize_shared_info(struct shared_info *sip, unsigned long pfn);
+> +
+>  /* Clear an irq's pending state, in preparation for polling on it */
+>  void xen_clear_irq_pending(int irq);
+>  void xen_set_irq_pending(int irq);
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
