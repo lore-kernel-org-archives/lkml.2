@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753729Ab2GPQpf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 12:45:35 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42143 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753498Ab2GPQpc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 12:45:32 -0400
-Date: Mon, 16 Jul 2012 09:45:27 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: shyju pv <shyju.pv@huawei.com>, Sanil kumar <sanil.kumar@huawei.com>,
-        Masanari Iida <standby24x7@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        viro@zeniv.linux.org.uk, levinsasha928@gmail.com
-Subject: Re: [PATCH] cgroup: fix dentry still in use bug when dropping css
- refs after umount
-Message-ID: <20120716164527.GB30872@google.com>
-References: <4FEEA5CB.8070809@huawei.com>
- <20120703170317.GB555@google.com>
- <20120703225218.GF555@google.com>
- <4FF3E063.5010604@huawei.com>
- <20120708063536.GB19021@dhcp-172-17-108-109.mtv.corp.google.com>
- <4FFB8F39.9030209@huawei.com>
+	id S1753778Ab2GPQqS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 12:46:18 -0400
+Received: from softlayer.compulab.co.il ([50.23.254.55]:58509 "EHLO
+	compulab.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753441Ab2GPQqO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 12:46:14 -0400
+Message-ID: <5004454E.9030903@compulab.co.il>
+Date: Mon, 16 Jul 2012 19:46:06 +0300
+From: Denis Turischev <denis@compulab.co.il>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FFB8F39.9030209@huawei.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+CC: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH] xhci: EHCI/xHCI ports switching on Intense-PC.
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - compulab.co.il
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Intense-PC is Compulab's mini-desktop with Intel Panther Point
+chipset.
 
-On Tue, Jul 10, 2012 at 10:11:05AM +0800, Li Zefan wrote:
-> Right, but that should be safe. The css objects of the root cgroup are
-> allocated at boot, and won't be destroyed at umount.
-> 
-> Furthermore when a cgroup hierarchy is going to be unmounted, those css's
-> will be made to point to a cgroup named dummytop in rebind_subsystems(),
-> and there's a syncronize_rcu() in the end of the function, so accessing
-> css->cgroup is always safe.
-> 
-> In this case, dummytop->dentry is NULL, and that's safe too, because
-> cgroup_path() is aware of this case.
+Unconditional ports switching provided by function
+usb_enable_xhci_ports() leads to surprising results, after shutdown
+system powered-on again after a few seconds. On Windows power
+related problems were not observed.
 
-I see.  Thanks for the explanation.
+The patch avoids ports switching for Intense-PC.
 
+Signed-off-by: Denis Turischev <denis@compulab.co.il>
+---
+ drivers/usb/host/pci-quirks.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
+index df0828c..6f72593 100644
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -759,6 +759,13 @@ void usb_enable_xhci_ports(struct pci_dev *xhci_pdev)
+ {
+ 	u32		ports_available;
+
++	const char *brd_name;
++	brd_name = dmi_get_system_info(DMI_BOARD_NAME);
++
++	/* quirk for Compulab's Intense-PC board */
++	if (brd_name && strstr(brd_name, "Intense-PC"))
++		return;
++
+ 	/* Don't switchover the ports if the user hasn't compiled the xHCI
+ 	 * driver.  Otherwise they will see "dead" USB ports that don't power
+ 	 * the devices.
 -- 
-tejun
+1.7.9.5
