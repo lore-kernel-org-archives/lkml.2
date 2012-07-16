@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753976Ab2GPSoT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 14:44:19 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:60522 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753884Ab2GPSoQ (ORCPT
+	id S1753999Ab2GPSoe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 14:44:34 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:48499 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751916Ab2GPSo3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 14:44:16 -0400
-X-Authenticated: #5108953
-X-Provags-ID: V01U2FsdGVkX1+BShN0DtyBunwsnRhRmwlUQQATFMGVueUxLLF2RC
-	OdrZki2XdTeozH
-Message-ID: <50045FCF.1060207@gmx.de>
-Date: Mon, 16 Jul 2012 20:39:11 +0200
-From: =?ISO-8859-1?Q?Toralf_F=F6rster?= <toralf.foerster@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120625 Thunderbird/13.0
+	Mon, 16 Jul 2012 14:44:29 -0400
+From: <manjunatha_halli@ti.com>
+To: <linux-media@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <dan.carpenter@oracle.com>,
+        Manjunatha Halli <x0130808@ti.com>
+Subject: [PATCH] wl12xx: Fix for overflow while getting irq status
+Date: Mon, 16 Jul 2012 13:44:24 -0500
+Message-ID: <1342464264-15069-1-git-send-email-manjunatha_halli@ti.com>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: 3.5-rcX: wakeup after s2ram doesn't work after a longer sleep
- time
-References: <500319E9.8010001@gmx.de> <201207152221.48232.rjw@sisk.pl> <50041C1E.8070203@gmx.de> <201207161947.55896.rjw@sisk.pl>
-In-Reply-To: <201207161947.55896.rjw@sisk.pl>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Manjunatha Halli <x0130808@ti.com>
 
-On 07/16/2012 07:47 PM, Rafael J. Wysocki wrote:
-> 
-> Well, so this is a different issue definitely.
-> 
-Well, this helped : https://lkml.org/lkml/2012/7/16/113
+->dlen is 8 bit long and so while memcpy there is a chance
+that fmdev->irq_info.flag will overflow.
 
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 269b1fe..3447cfa 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -717,6 +717,7 @@ static void timekeeping_resume(void)
-        timekeeper.clock->cycle_last = timekeeper.clock->read(timekeeper.clock);
-        timekeeper.ntp_error = 0;
-        timekeeping_suspended = 0;
-+       timekeeping_update(false);
-        write_sequnlock_irqrestore(&timekeeper.lock, flags);
+So this patch removes memcpy and instead copies the 16bit flag
+register value from skb->data to fmdev->irq_info.flag directly.
+
+Change-Id: I37604b91b2777ed9e56a7e1c1ecefe32e9024170
+Signed-off-by: Manjunatha Halli <x0130808@ti.com>
+---
+ drivers/media/radio/wl128x/fmdrv_common.c |    8 +++-----
+ 1 files changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/media/radio/wl128x/fmdrv_common.c b/drivers/media/radio/wl128x/fmdrv_common.c
+index bf867a6..54c549b 100644
+--- a/drivers/media/radio/wl128x/fmdrv_common.c
++++ b/drivers/media/radio/wl128x/fmdrv_common.c
+@@ -584,18 +584,16 @@ static void fm_irq_send_flag_getcmd(struct fmdev *fmdev)
+ static void fm_irq_handle_flag_getcmd_resp(struct fmdev *fmdev)
+ {
+ 	struct sk_buff *skb;
+-	struct fm_event_msg_hdr *fm_evt_hdr;
  
-        touch_softlockup_watchdog();
-
+ 	if (check_cmdresp_status(fmdev, &skb))
+ 		return;
+ 
+-	fm_evt_hdr = (void *)skb->data;
+-
+ 	/* Skip header info and copy only response data */
+ 	skb_pull(skb, sizeof(struct fm_event_msg_hdr));
+-	memcpy(&fmdev->irq_info.flag, skb->data, fm_evt_hdr->dlen);
+ 
+-	fmdev->irq_info.flag = be16_to_cpu(fmdev->irq_info.flag);
++	/* Copy 16 bit flag register value from skb->data */
++	fmdev->irq_info.flag = (u16) ((skb->data[0] << 8) | skb->data[1]);
++
+ 	fmdbg("irq: flag register(0x%x)\n", fmdev->irq_info.flag);
+ 
+ 	/* Continue next function in interrupt handler table */
 -- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
-
+1.7.4.1
 
