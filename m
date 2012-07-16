@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753777Ab2GPT1P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 15:27:15 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:44605 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753161Ab2GPT1N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 15:27:13 -0400
+	id S1754016Ab2GPT1e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 15:27:34 -0400
+Received: from mail.lang.hm ([64.81.33.126]:47629 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753230Ab2GPT1b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 15:27:31 -0400
+Date: Mon, 16 Jul 2012 12:26:09 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Borislav Petkov <bp@amd64.org>, Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Dave Jones <davej@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
+        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
+        Debian Kernel Team <debian-kernel@lists.debian.org>,
+        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Sasha Levin <levinsasha928@gmail.com>,
+        Asias He <asias.hejun@gmail.com>,
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: Re: [opensuse-kernel] Re: [RFC] Simplifying kernel configuration
+ for distro issues
+In-Reply-To: <CA+55aFwwmMbFr4HXTFxF_MeM_n8bfiXfPPgCALTOc1HvidVt1Q@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1207161222380.32545@asgard.lang.hm>
+References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com> <1342212885.25704.4.camel@lade.trondhjem.org> <CAFLxGvxxWodD97=78218wc+tuigAFsNK_PdroDfb4BWTZoxxUw@mail.gmail.com> <20120714103716.GD26559@liondog.tnic>
+ <CAOJsxLGHQuuXqDD-1SNhL7Ly1-heCYFLzqj3SLh4xzmP9NR5GQ@mail.gmail.com> <20120715101434.GA18144@aftab.osrc.amd.com> <CAOJsxLGBCQ6C-3M0ZdTfVPqnmOKqUE9+78Mhf+67TksmVojuuQ@mail.gmail.com> <20120715211848.GA21167@aftab.osrc.amd.com> <20120715214819.GA1990@moon>
+ <alpine.DEB.2.02.1207151459480.20176@asgard.lang.hm> <20120716082418.GC24327@aftab.osrc.amd.com> <alpine.DEB.2.02.1207160937330.20176@asgard.lang.hm> <CA+55aFwwmMbFr4HXTFxF_MeM_n8bfiXfPPgCALTOc1HvidVt1Q@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <4FE4B13E.10709@caviumnetworks.com>
-References: <1339962373-3224-1-git-send-email-geert@linux-m68k.org>
-	<CAMuHMdVfLjgrtWoPpvbLf12+=ApE6W9dNcweqD-_2Benr-D7NQ@mail.gmail.com>
-	<20120620152759.2caceb8c.yuasa@linux-mips.org>
-	<20120620161249.GB29196@linux-mips.org>
-	<4FE4B13E.10709@caviumnetworks.com>
-Date: Mon, 16 Jul 2012 21:27:12 +0200
-X-Google-Sender-Auth: 3zRs9Ed7_W2rWDcGqS4JdQG_7r4
-Message-ID: <CAMuHMdXSGgH+M_2+xuzY2t_sGZto24=atv3Kaj+R-dWAUPzW7w@mail.gmail.com>
-Subject: Re: [PATCH] MIPS: fix bug.h MIPS build regression
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: David Daney <ddaney@caviumnetworks.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>, Yoichi Yuasa <yuasa@linux-mips.org>,
-        Paul Mundt <lethal@linux-sh.org>, linux-kernel@vger.kernel.org,
-        Linuxppc-dev <linuxppc-dev@ozlabs.org>,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        Chris Zankel <chris@zankel.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 22, 2012 at 7:54 PM, David Daney <ddaney@caviumnetworks.com> wrote:
-> On 06/20/2012 09:12 AM, Ralf Baechle wrote:
+On Mon, 16 Jul 2012, Linus Torvalds wrote:
+
+> On Mon, Jul 16, 2012 at 9:43 AM,  <david@lang.hm> wrote:
 >>
->> On Wed, Jun 20, 2012 at 03:27:59PM +0900, Yoichi Yuasa wrote:
->>
->>> Commit: 3777808873b0c49c5cf27e44c948dfb02675d578 breaks all MIPS builds.
->>
->>
->> Thanks, fix applied.
->>
+>> The problem is that you can't select the Fedora profile and then unselect
+>> SELINUX, so the profile will do you no good.
 >
-> Where was it applied?
+> Guys, stop it now.
 >
-> It doesn't show up in linux-next for 20120622, which is where it is needed.
+> Your "problem" isn't what any sane person cares about, and isn't what
+> I started the RFC for.
+>
+> Seriously. NOBODY CARES.
+>
+> You can do what you want to do *today*. Just edit the config file, or
+> use any of the millions of config tools. Stop whining.
+>
+> The thing I'm asking for is for normal people. Make it easy for people
+> who DO NOT CARE about the config file to just build a kernel for their
+> machine.
+>
+> Don't complicate the issue by bringing up some totally unrelated
+> question. Don't derail a useful feature for the 99% because you're not
+> in it.
 
-It's also desperately needed in mainline for 3.5.
+Some of the proposed ways to implement the minimum distro kernel would not 
+allow you to override the distro defaults because they would be 
+implemented by setting dependancies, not by selecting options that you as 
+the user could then unselect.
 
-Ralf?
+If you have to edit the .config file, and then have your next make *config 
+override your edits (due to dependancy resolution) and so have to edit the 
+.config file again this is a really ugly way of working.
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+David Lang
