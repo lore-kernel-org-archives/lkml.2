@@ -1,66 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753857Ab2GPUDF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 16:03:05 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53239 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752845Ab2GPUDE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 16:03:04 -0400
-Date: Mon, 16 Jul 2012 21:03:02 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: grant.likely@secretlab.ca, linus.walleij@stericsson.com,
-        sameo@linux.intel.com, linux-kernel@vger.kernel.org,
-        swarren@nvidia.com
-Subject: Re: [PATCH V2 3/6] mfd: tps6586x: cache register through regmap
-Message-ID: <20120716200302.GF10774@opensource.wolfsonmicro.com>
-References: <1342421510-10638-1-git-send-email-ldewangan@nvidia.com>
- <1342421510-10638-4-git-send-email-ldewangan@nvidia.com>
+	id S1753913Ab2GPUEq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 16:04:46 -0400
+Received: from void.printf.net ([89.145.121.20]:44902 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751699Ab2GPUEn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 16:04:43 -0400
+From: Chris Ball <cjb@laptop.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Wolfram Sang <w.sang@pengutronix.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Arnd Bergmann <arnd@arndb.de>, Stephen Warren <swarren@wwwdotorg.org>,
+        Alessandro Rubini <rubini@gnudd.com>, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Deepak Saxena <dsaxena@linaro.org>, linux-next@vger.kernel.org,
+        Olof Johansson <olof@lixom.net>, Lee Jones <lee.jones@linaro.org>,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: linux-next: manual merge of the arm-soc tree with the i2c-embedded tree
+References: <20120710164130.f38e4d1673f925ddb13914c9@canb.auug.org.au>
+	<20120712131231.GH2194@pengutronix.de>
+	<CACRpkdboeF_G=sTPeSyuZ6KGLCmGSKx_NS=6Rim6HkR2f9=AAQ@mail.gmail.com>
+	<20120716101706.GB17435@pengutronix.de>
+	<CACRpkdY626iYATorphAvg7cQxD2ufysBvXdt3Z644zEuW0wS=w@mail.gmail.com>
+	<20120716123550.GE17435@pengutronix.de>
+	<CACRpkdaMB-n7XYcxE8QtAm-WrGc2DR0krfTjQZCbvOL1HYep1Q@mail.gmail.com>
+Date: Mon, 16 Jul 2012 16:04:25 -0400
+In-Reply-To: <CACRpkdaMB-n7XYcxE8QtAm-WrGc2DR0krfTjQZCbvOL1HYep1Q@mail.gmail.com>
+	(Linus Walleij's message of "Mon, 16 Jul 2012 21:45:29 +0200")
+Message-ID: <874np7jwvq.fsf@octavius.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="X3gaHHMYHkYqP6yf"
-Content-Disposition: inline
-In-Reply-To: <1342421510-10638-4-git-send-email-ldewangan@nvidia.com>
-X-Cookie: You will get what you deserve.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---X3gaHHMYHkYqP6yf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Mon, Jul 16 2012, Linus Walleij wrote:
+>> Uhm, I seem to have missed that bindings are deemed more "flexible" as
+>> long as they are coupled to in-kernel dts files? Is that discussed
+>> somewhere? I do wonder about it...
+>
+> Well patches like this are sent out but not commented on from
+> the perspective of binding stability. So of course, they get merged.
+>
+> Have a look at this commit:
+>
+> commit 7f217794ffa72f208a250b79ab0b7ea3de19677f
+> Author: Arnd Bergmann <arnd@arndb.de>
+> Date:   Sun May 13 00:14:24 2012 -0400
+>
+>     mmc: dt: Consolidate DT bindings
+>
+> This is deleting custom properties from DTS files without
+> adding any code to fallback-support them on old device trees.
 
-On Mon, Jul 16, 2012 at 12:21:47PM +0530, Laxman Dewangan wrote:
-> To cache the interrupt mask register, use the regmap RB_TREE
-> cache-ing mechanism in place of implementing it locally.
+I agree with your point, but just as an FYI: this patch did involve
+a conversation about binding stability, and left some attributes
+(e.g. ti,non-removable) purposefully alone (and different to the
+new generic MMC bindings) to preserve backwards compatibility:
 
-Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+http://article.gmane.org/gmane.linux.kernel.samsung-soc/10409
 
-Can you use regmap-irq?
+Thanks,
 
---X3gaHHMYHkYqP6yf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQBHNvAAoJEBus8iNuMP3dfiQP/RrBNdCAoCGFCMKTTE4COTDN
-oNHCpXC1WxMznvLwP+FfYtgzZlk/xwS9fD23JnGDd1m4hsNFIHhUdzWHuIJkJm1X
-1e41tFzaPuDkOmnbXsuoBFqgNG2OXEplSQ0iuhYLPkNMFkvbbC+RtOvrRvIBFXhO
-RkDgSHsyCXwXeeFdiPY/6zggkBy/OAkaxNcE8YoT+gL/q2yPgayfNo02wLuoypRe
-icapp/fyMFVikdIt/6/DVlB1yw2tOL1YYp7RuS7bYFdCxKcqrf9/+wZD2Rlw5ag4
-StcdalmB/56OJ5uRDEiven1BH37cxGYnkp7AyStmHLy4wY+oNs3iY4pISAMajOIP
-l5tcs2sMQ0vM/cF+hTC9ZzEgEK+5kaFLZ3Aw0/dowJtLarKo5hrK5s2gfFbW/9Pl
-ywFlu3apD7I2MsRNCiYg/x9yjwTlwdSSoITi1z4yReJ8M+BHdWIz+5Ep9S9zuWLH
-MubzVeaLw2jogzbAJc4+1Gqe9bIfbaoYbmogj8UgKgQ3kPytHB4BT+HdmV4bSFlx
-pi1mrQIwH9vXDAN58p7jrB1SjESwR0fZ8IlwcET6pCTairLwsxdF2UTQ4Q4VPDda
-/AYf3fFkeIlVtThOsVJPAftEtf48BJZ4GrXtpvb78qQ62c/zlGnEMf59MY6gMqKd
-fBnY7HBp1sggosN7W0qK
-=iw/v
------END PGP SIGNATURE-----
-
---X3gaHHMYHkYqP6yf--
+- Chris.
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
