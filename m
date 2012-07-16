@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753677Ab2GPNoE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 09:44:04 -0400
-Received: from mga03.intel.com ([143.182.124.21]:41798 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753371Ab2GPNoB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 09:44:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="123007893"
-Date: Mon, 16 Jul 2012 15:43:55 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Johan Hovold <jhovold@gmail.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: add tps65910 32-kHz-crystal-input init
-Message-ID: <20120716134355.GI20652@sortiz-mobl>
-References: <20120705152334.GH18200@sortiz-mobl>
- <1342014273-31665-1-git-send-email-jhovold@gmail.com>
+	id S1753715Ab2GPNoU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 09:44:20 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:44165 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753635Ab2GPNoO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 09:44:14 -0400
+Message-ID: <50041A4A.2000206@linux.vnet.ibm.com>
+Date: Mon, 16 Jul 2012 19:12:34 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1342014273-31665-1-git-send-email-jhovold@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Norbert Preining <preining@logic.at>
+CC: linux-kernel@vger.kernel.org,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <johnstul@us.ibm.com>
+Subject: Re: regression 918227bb -> -rc7: does not wake up from sleep
+References: <20120716132705.GC21748@gamma.logic.tuwien.ac.at>
+In-Reply-To: <20120716132705.GC21748@gamma.logic.tuwien.ac.at>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12071613-2674-0000-0000-000005446FBA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Johan,
-
-On Wed, Jul 11, 2012 at 03:44:33PM +0200, Johan Hovold wrote:
-> Replace tps65910_misc_init with a dedicated init function for the
-> 32-kHz-crystal input.
+On 07/16/2012 06:57 PM, Norbert Preining wrote:
+> Hi everyone,
 > 
-> Signed-off-by: Johan Hovold <jhovold@gmail.com>
-> ---
+> (please cc)
 > 
-> Hi Samuel,
+> I recently upgraded from git918227bb to rc7 and suddenly my laptop
+> does not wake up from sleep again, all dead.
 > 
-> How about something like this? My thought with misc_init was that it could be
-> extended should more simple initialisation like for the ck32k_xtal need to be
-> done, but perhaps it's cleaner to stick with dedicated init functions
-> through-out. At least for now.
-Yes, it's clearer, at least to me.
-I applied this patch, thanks for following up.
+> I will try to bisect as soon as possible, but I am on a conference
+> and give two talks, so not so much time.
+> 
+> Is the above problem known? intel graphics card.
+> 
 
-Cheers,
-Samuel.
+Not sure if this is the same problem, but here is a discussion around
+a recent commit that broke resume. May be you can try out that patch?
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+https://lkml.org/lkml/2012/7/16/113
+ 
+Regards,
+Srivatsa S. Bhat
+
