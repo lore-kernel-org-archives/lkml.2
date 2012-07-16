@@ -1,71 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753231Ab2GPDEG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jul 2012 23:04:06 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:4621 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751723Ab2GPDEE (ORCPT
+	id S1753242Ab2GPDJu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jul 2012 23:09:50 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63124 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752535Ab2GPDJq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jul 2012 23:04:04 -0400
-Message-ID: <1342407840.3190.5.camel@lorien2>
-Subject: Re: [PATCH TRIVIAL] mm: Fix build warning in kmem_cache_create()
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: Pekka Enberg <penberg@kernel.org>
-Cc: David Rientjes <rientjes@google.com>, cl@linux.com, glommer@parallels.com,
-        js1304@gmail.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        shuahkhan@gmail.com
-Date: Sun, 15 Jul 2012 21:04:00 -0600
-In-Reply-To: <CAOJsxLE3dDd01WaAp5UAHRb0AiXn_s43M=Gg4TgXzRji_HffEQ@mail.gmail.com>
-References: <1342221125.17464.8.camel@lorien2>
-	 <alpine.DEB.2.00.1207140216040.20297@chino.kir.corp.google.com>
-	 <CAOJsxLE3dDd01WaAp5UAHRb0AiXn_s43M=Gg4TgXzRji_HffEQ@mail.gmail.com>
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sun, 15 Jul 2012 23:09:46 -0400
+MIME-Version: 1.0
+From: Yang Bai <hamo.by@gmail.com>
+Date: Mon, 16 Jul 2012 11:09:26 +0800
+Message-ID: <CAO_0yfM_qmWd_dR7UH1Y6Rk6F5b9CTVduDKLmsLb8azrmL5NZA@mail.gmail.com>
+Subject: How to map ata_link to physical link and ata_port to physical port
+To: jgarzik@pobox.com
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-07-14 at 15:01 +0300, Pekka Enberg wrote:
+Hi hackers,
 
-> I'm not exactly loving that either.
-> 
-> It'd probably be better to reshuffle the code so that the debug checks
-> end up in separate functions that are no-op for !CONFIG_DEBUG_VM. That
-> way the _labels_ are used unconditionally although there's no actual
-> code generated.
+In our internal usage, we want to map the disk in system like
+sd{a,b,c} to physical disk slot. When the disk is attached to LSI HBA
+card, we find that we can rely on the phy attribute of the disk to
+find the slot since this attribute does not change no matter which
+kind of disks we attach or what order we attach the disks. But when
+doing this for AHCI, we do not find an attribute that we can rely on
+it to map the disk to slot. No matter ata_port number or ata_host
+number, when we changed the order we attached the disks to slots, they
+changed.
 
-I can work on reshuffling the code. Do have a question though. This
-following sanity check is currently done only when CONFIG_DEBUG_VM is
-defined. However, it does appear to be something that is that should be
-checked even in regular path.
-
-struct kmem_cache *kmem_cache_create(const char *name, size_t size,
-size_t align,
-                unsigned long flags, void (*ctor)(void *))
-{
-        struct kmem_cache *s = NULL;
-
-#ifdef CONFIG_DEBUG_VM
-        if (!name || in_interrupt() || size < sizeof(void *) ||
-                size > KMALLOC_MAX_SIZE) {
-                printk(KERN_ERR "kmem_cache_create(%s) integrity check"
-                        " failed\n", name);
-                goto out;
-        }
-#endif
-
-
-
----
-
-}
-
-Am I reading this right?
+So I want to know is there some attribute we can get from AHCI that
+map the logical disk to physical slot?
 
 Thanks,
--- Shuah
-
+Yang
