@@ -1,72 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753118Ab2GPQIO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 12:08:14 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:40135 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752867Ab2GPQIL (ORCPT
+	id S1753279Ab2GPQKI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 12:10:08 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:18034 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751888Ab2GPQKE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 12:08:11 -0400
-X-Sasl-enc: tLm4Nf7mN60g8tqgeu1vOnVOblAuoM5zFNSjxKOhe759 1342454890
-Date: Mon, 16 Jul 2012 13:08:07 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Ben Hutchings <bhutchings@solarflare.com>
-Cc: "Dave, Tushar N" <tushar.n.dave@intel.com>, Joe Jin <joe.jin@oracle.com>,
-        "e1000-devel@lists.sf.net" <e1000-devel@lists.sf.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: 82571EB: Detected Hardware Unit Hang
-Message-ID: <20120716160807.GB1765@khazad-dum.debian.net>
-References: <4FFE6BB9.4060106@oracle.com>
- <061C8A8601E8EE4CA8D8FD6990CEA891274F033B@ORSMSX102.amr.corp.intel.com>
- <4FFE787B.9050201@oracle.com>
- <061C8A8601E8EE4CA8D8FD6990CEA891274F0ACC@ORSMSX102.amr.corp.intel.com>
- <4FFF61BD.1060604@oracle.com>
- <061C8A8601E8EE4CA8D8FD6990CEA891274F11FF@ORSMSX102.amr.corp.intel.com>
- <4FFFA532.1030208@oracle.com>
- <061C8A8601E8EE4CA8D8FD6990CEA891274F2354@ORSMSX102.amr.corp.intel.com>
- <20120715133510.GA5484@khazad-dum.debian.net>
- <1342453645.2523.17.camel@bwh-desktop.uk.solarflarecom.com>
+	Mon, 16 Jul 2012 12:10:04 -0400
+Date: Mon, 16 Jul 2012 12:01:19 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Shuah Khan <shuah.khan@hp.com>
+Cc: fujita.tomonori@lab.ntt.co.jp, LKML <linux-kernel@vger.kernel.org>,
+        akpm@linux-foundation.org, paul.gortmaker@windriver.com,
+        bhelgaas@google.com, amwang@redhat.com, shuahkhan@gmail.com
+Subject: Re: [PATCH RFC] swiotlb: Disable swiotlb overflow support when
+ CONFIG_ISA is enabled
+Message-ID: <20120716160119.GE13540@phenom.dumpdata.com>
+References: <1341615972.3101.27.camel@lorien2>
+ <20120709202505.GA9541@phenom.dumpdata.com>
+ <1341939307.2502.34.camel@lorien2>
+ <20120710173211.GB6868@phenom.dumpdata.com>
+ <1342109870.2576.23.camel@lorien2>
+ <20120716144536.GA552@phenom.dumpdata.com>
+ <1342453700.2949.6.camel@lorien2>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1342453645.2523.17.camel@bwh-desktop.uk.solarflarecom.com>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1342453700.2949.6.camel@lorien2>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Jul 2012, Ben Hutchings wrote:
-> On Sun, 2012-07-15 at 10:35 -0300, Henrique de Moraes Holschuh wrote:
-> > On Sun, 15 Jul 2012, Dave, Tushar N wrote:
-> > > Somehow setting max payload to 256 from BIOS does not set this value for all devices. I believe this is a BIOS bug.
+On Mon, Jul 16, 2012 at 09:48:20AM -0600, Shuah Khan wrote:
+> On Mon, 2012-07-16 at 10:45 -0400, Konrad Rzeszutek Wilk wrote:
+> > On Thu, Jul 12, 2012 at 10:17:50AM -0600, Shuah Khan wrote:
+> > > Disable iotlb overflow support when CONFIG_ISA is enabled. This is the
+> > > first step towards removing overflow support, to be consistent with other
+> > > iommu implementations and return DMA_ERROR_CODE. This disabling step is
+> > > for finding drivers that don't call dma_mapping_error to check for errors
+> > > returned by the mapping interface. Once drivers are fixed overflow support
+> > > can be removed.
 > > 
-> > And preferably, Linux should complain about it.  Since we know it is going
-> > to cause problems, and since we know it does happen, we should be raising a
-> > ruckus about it in the kernel log (and probably fixing it to min(path) while
-> > at it)...
+> > I think I explained myself poorly. We don't want to break old drivers.
 > > 
-> > Is this something that should be raised as a feature request with the
-> > PCI/PCIe subsystem?
+> > If the old drivers expect this behavior (while they should be updated
+> > to check the DMA), we need to retain this behavior.
+> > 
+> > So I think the patch should be done the other way:
+> > 
+> > Disable IOTLB overflow when CONFIG_ISA is disabled.
 > 
-> The feature is there, but we ended up with:
-> 
-> commit 5f39e6705faade2e89d119958a8c51b9b6e2c53c
-> Author: Jon Mason <mason@myri.com>
-> Date:   Mon Oct 3 09:50:20 2011 -0500
-> 
->     PCI: Disable MPS configuration by default
-> 
-> But you are welcome to share use of the fixup_mpss_256() quirk.
+> That makes lot of sense :) I will redo the patch. It might be good to a
+> tunable to control enable/disable behavior. Even though support for this
+> new tunable "swiotlb_overflow" projected to be short lived, it will be
+> lot less painful to disable/enable as needed. Thought and comments?
 
-Meh.  I'd be happy with a warning if MPSS decreases when walking up to
-the tree root... i.e. a warning if any child has a MPSS larger than the
-parent.
+Tunnable have a habit of becoming permanant and we really don't want that.
+The right solution is to drop the overflow - as you have rightly
+pointed out in the first patch. But the road is blocked by these old
+drivers that are making it hard.
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+I would say if you really really want a patch in for 3.6 before the
+final mega-patch of drivers-that-suck-and-need-to-be-updated-here-is
+-the-big-patch-that-does-it, then just add a WARN mentioning your
+name and mine (and LKML) saying to report what you see. That way
+we can at least get feedback from the field.
+
+And for good measure include in the Documentation/*deprecate-schedule
+that the overflow functionality is going away when all the drivers that
+depend on it have been fixed up.
+
+> 
+> > 
+> > But we also need to check whether there are other drivers
+> > that don't properly check the DMA address. And if so, add them
+> > to this list of must have enabled b/c you might be using this
+> > driver.
+> 
+> Sound good. Again having a tunable would help in this case as well.
+> > 
+> > The first goal is to figure out which of the drivers aren't doing this
+> > properly. This should be possible by just grepping for 'dma_map' and 
+> > seeing which ones don't do the 'dma_check' right after.
+> 
+> I started some research into this and will continue and provide an
+> update.
+
+Thank you! It is pretty griddy work so I really appreciate you taking
+the time to do this. If are at the LinuxCon this year the beers (or coffee
+if that is your preference) are on me for tackling on this cleanup.
