@@ -1,78 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751833Ab2GPGgp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 02:36:45 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:64917 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750798Ab2GPGgn (ORCPT
+	id S1751888Ab2GPGhe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 02:37:34 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:56048 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750798Ab2GPGhb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 02:36:43 -0400
-Message-ID: <1342420278.3213.2.camel@brekeke>
-Subject: Re: [PATCH] UBI: Change the default percentage of reserved PEB
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Richard Genoud <richard.genoud@gmail.com>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Mon, 16 Jul 2012 09:31:18 +0300
-In-Reply-To: <1340977901.3070.210.camel@sauron.fi.intel.com>
-References: <1340953061-15728-1-git-send-email-richard.genoud@gmail.com>
-	 <1340977901.3070.210.camel@sauron.fi.intel.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-Q4UVS4v96Tippv7fQVN/"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	Mon, 16 Jul 2012 02:37:31 -0400
+Date: Mon, 16 Jul 2012 08:37:28 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Vinod Koul <vinod.koul@linux.intel.com>
+cc: Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/7 v2] dma: sh: use an integer slave ID to improve API
+ compatibility
+In-Reply-To: <1342418828.1726.37.camel@vkoul-udesk3>
+Message-ID: <Pine.LNX.4.64.1207160832540.12302@axis700.grange>
+References: <1341484183-10757-1-git-send-email-g.liakhovetski@gmx.de> 
+ <1341484183-10757-6-git-send-email-g.liakhovetski@gmx.de>
+ <1342418828.1726.37.camel@vkoul-udesk3>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:CntZ8i0GR/BYS64fxamCGzOQPF1Zt56MMO33TDCZW6p
+ o2cS6B0sz4CzJKpslJ7pR2D0WmoJkhjk2cRrPlD2+hoPHJLI2z
+ e7qsvqLByXEoSqUMzHe/bU0kmjFhqXcqSUCtVsw9ubtT8Eyvy3
+ W9wSIUXF5CFFjToIJOoNIJR0W8Vp75Y0p53iSZIdKN1hNbDCTl
+ Kyy+Z0b0fa03eClnAp2d3XcD3tO9KxqhixYG5yAsHF/MgwAU0/
+ ATnyKx0OaZdYnv99LpOhSJbBZQaAOLwb1kn/JH3rCrDJgUzINt
+ LiZ1C1+B22F+uezr5qiivuMw6PWNF1k6Bnma1sPwMhG4eB46xN
+ GtVqiuGfKVdprzyEQGPbihNLxzx4+JBuJ5naJSIxx8XZPjDgMH
+ CQQfIDDzYxLcA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 16 Jul 2012, Vinod Koul wrote:
 
---=-Q4UVS4v96Tippv7fQVN/
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> On Thu, 2012-07-05 at 12:29 +0200, Guennadi Liakhovetski wrote:
+> > diff --git a/include/linux/sh_dma.h b/include/linux/sh_dma.h
+> > index a79f10a..4e83f3e 100644
+> > --- a/include/linux/sh_dma.h
+> > +++ b/include/linux/sh_dma.h
+> > @@ -27,10 +27,10 @@ struct sh_dmae_slave {
+> >   * a certain peripheral
+> >   */
+> >  struct sh_dmae_slave_config {
+> > -       unsigned int                    slave_id;
+> > -       dma_addr_t                      addr;
+> > -       u32                             chcr;
+> > -       char                            mid_rid;
+> > +       int             slave_id;
+> > +       dma_addr_t      addr;
+> > +       u32             chcr;
+> > +       char            mid_rid;
+> >  }; 
+> why would you want to keep your own slave_id and addr fields when they
+> are already provided in struct dma_slave_config.
 
-On Fri, 2012-06-29 at 16:51 +0300, Artem Bityutskiy wrote:
-> On Fri, 2012-06-29 at 08:57 +0200, Richard Genoud wrote:
-> > The actual value (1%) is too low for actual NAND devices, a huge
-> > majority of device has 2% maximum bad blocks (SLC or MLC).
-> > (Actually it's 20 blocks on a 1024 blocks device, 40/2048...)
-> >=20
-> > Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
->=20
-> Thanks. But I'd like to wait a bit - Shmulik's point is fair and the
-> current way UBI reserves PEBs is probably not the right thing to do. If
-> we are going to change it, I'd like to have this patch to go together
-> with that change. Just because it is better to change the default
-> behavior once, than 2 times, to possibly upset/surprise users less
-> times :-)
+Modifying the driver's API would break all its clients.
 
-Pushed to linux-ubi.git, thanks!
+> Also while at it, what
+> would be the use of last tow fields, what do they describe?
 
---=20
-Best Regards,
-Artem Bityutskiy
+They tell the driver how the channel has to be configured to support this 
+specific client. They are values of two specific registers. In fact, CHCR 
+means exactly that - CHannel Control Register.
 
---=-Q4UVS4v96Tippv7fQVN/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+> Would it be possible to get rid of this structure completely? At least
+> first two fields should go away.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Migration has to be performed gradually. If this approach and patches are 
+accepted, then all client drivers can be migrated, then thr legacy API can 
+be dropped.
 
-iQIcBAABAgAGBQJQA7U2AAoJECmIfjd9wqK0qaYQAJrRGteavUhVw3wnXrbIBgRA
-hMndsGnuyGTVKH568o2VLa/2wjf5k6xMMb7Uke70DPdJvKwBlXoiLMoeS9uZMReW
-UNMwCz3v9O478t0+wEFNUf+LgIGu8o9deNqfdNwRlaalnKvcKkBcGr01HlbVVO3P
-cRKuQCyjhurOi7u/XGn9BPwKCgTpw5PAs73BkhxmKw/PnJbfmSQjTT1tPxy0QdzQ
-z2qMfpJh3Efm3nFqaL8mGWPmFZ2+BT/qtK9Xswo1DXfnpTvjzzX36ETqfznU/XRH
-ANFNIS63l6wUrd02VLjZno1/SvPM+1ZcsWpdotYKAb17Gi3XsB7Yxw4rv/YBQreM
-n9B/AUkWAfELbFPlvQO2X0oXLlH+8Wv5MpycP0A177qGGG+UpRHkKqJek/3NpB/b
-0oXk3VQlms4Qv/ax9J8MmiuQ/C+1A9xo+BQGVaBlgcaPYRpGIyk2+iLIJVdLHddT
-2wyfXwvVeMMyeM03J9vuhsePYes6D/Mkn6Eb0aUEQn6O6XeuZ5NNJSRevJkdMGvS
-4WT5OWODLeLfxOHcrLXQMRzDc41ALvuLPj+6GagcK1Hvn5kYOE2ngUhIiYeCQ43J
-/Wx1bbP2rEfthVrAxCg1nflVdKDnbgtqLQ8UwrWArWvjMyfSEZvnBnc6KeTCeXRU
-C1M8G2IF7sCGVowmGpeL
-=dczD
------END PGP SIGNATURE-----
-
---=-Q4UVS4v96Tippv7fQVN/--
-
+Thanks
+Guennadi
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
