@@ -1,57 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751568Ab2GPGHW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 02:07:22 -0400
-Received: from mga11.intel.com ([192.55.52.93]:14574 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750789Ab2GPGHU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 02:07:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="193242933"
-Subject: Re: [PATCH 5/7 v2] dma: sh: use an integer slave ID to improve API
- compatibility
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1341484183-10757-6-git-send-email-g.liakhovetski@gmx.de>
-References: <1341484183-10757-1-git-send-email-g.liakhovetski@gmx.de>
-	 <1341484183-10757-6-git-send-email-g.liakhovetski@gmx.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 16 Jul 2012 11:37:08 +0530
-Message-ID: <1342418828.1726.37.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1751611Ab2GPGKa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 02:10:30 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:35790 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751124Ab2GPGK2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 02:10:28 -0400
+MIME-Version: 1.0
+In-Reply-To: <1339709033-3583-1-git-send-email-seth.heasley@intel.com>
+References: <1339709033-3583-1-git-send-email-seth.heasley@intel.com>
+From: Wang Xingchao <wangxingchao2011@gmail.com>
+Date: Mon, 16 Jul 2012 14:10:07 +0800
+Message-ID: <CA+v+29hZjJ4MLaJzmjW-Xi2eHxyhhymhjRZpXghvjxrHdcgzRg@mail.gmail.com>
+Subject: Re: [PATCH 1/1] hda_intel: activate COMBO mode for Intel client chipsets
+To: Seth Heasley <seth.heasley@intel.com>
+Cc: Takashi Iwai <tiwai@suse.de>, Jaroslav Kysela <perex@perex.cz>,
+        David Henningsson <david.henningsson@canonical.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        James Ralston <james.d.ralston@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-07-05 at 12:29 +0200, Guennadi Liakhovetski wrote:
-> diff --git a/include/linux/sh_dma.h b/include/linux/sh_dma.h
-> index a79f10a..4e83f3e 100644
-> --- a/include/linux/sh_dma.h
-> +++ b/include/linux/sh_dma.h
-> @@ -27,10 +27,10 @@ struct sh_dmae_slave {
->   * a certain peripheral
->   */
->  struct sh_dmae_slave_config {
-> -       unsigned int                    slave_id;
-> -       dma_addr_t                      addr;
-> -       u32                             chcr;
-> -       char                            mid_rid;
-> +       int             slave_id;
-> +       dma_addr_t      addr;
-> +       u32             chcr;
-> +       char            mid_rid;
->  }; 
-why would you want to keep your own slave_id and addr fields when they
-are already provided in struct dma_slave_config. Also while at it, what
-would be the use of last tow fields, what do they describe?
-Would it be possible to get rid of this structure completely? At least
-first two fields should go away.
+Hi Seth,
 
--- 
-~Vinod
+2012/6/15 Seth Heasley <seth.heasley@intel.com>:
+> This patch activates the COMBO position_fix for recent Intel client chipsets.  COMBO mode is the recommended setting for Intel chipsets and eliminates HD audio warnings in dmesg.  This patch has been tested on Lynx Point, Panther Point, and Cougar Pont.
 
+Haswell HDMI audio works now on Sharkbay mobile platform, so i would
+like to test whether this patch is useful for Haswell. Would you tell
+me how to finish the test to prove it works better?
+
+thanks
+--xingchao
+
+>
+> Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+> ---
+>  sound/pci/hda/hda_intel.c |   11 ++++++++---
+>  1 files changed, 8 insertions(+), 3 deletions(-)
+>
+> diff --git a/sound/pci/hda/hda_intel.c b/sound/pci/hda/hda_intel.c
+> index 2b6392b..466a88c 100644
+> --- a/sound/pci/hda/hda_intel.c
+> +++ b/sound/pci/hda/hda_intel.c
+> @@ -535,6 +535,7 @@ enum {
+>  #define AZX_DCAPS_BUFSIZE      (1 << 21)       /* no buffer size alignment */
+>  #define AZX_DCAPS_ALIGN_BUFSIZE        (1 << 22)       /* buffer size alignment */
+>  #define AZX_DCAPS_4K_BDLE_BOUNDARY (1 << 23)   /* BDLE in 4k boundary */
+> +#define AZX_DCAPS_POSFIX_COMBO  (1 << 24)      /* Use COMBO as default */
+>
+>  /* quirks for ATI SB / AMD Hudson */
+>  #define AZX_DCAPS_PRESET_ATI_SB \
+> @@ -2728,6 +2729,10 @@ static int __devinit check_position_fix(struct azx *chip, int fix)
+>                 snd_printd(SFX "Using LPIB position fix\n");
+>                 return POS_FIX_LPIB;
+>         }
+> +       if (chip->driver_caps & AZX_DCAPS_POSFIX_COMBO) {
+> +               snd_printd(SFX "Using COMBO position fix\n");
+> +               return POS_FIX_COMBO;
+> +       }
+>         return POS_FIX_AUTO;
+>  }
+>
+> @@ -3240,7 +3245,7 @@ static DEFINE_PCI_DEVICE_TABLE(azx_ids) = {
+>         /* CPT */
+>         { PCI_DEVICE(0x8086, 0x1c20),
+>           .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_SCH_SNOOP |
+> -         AZX_DCAPS_BUFSIZE },
+> +         AZX_DCAPS_BUFSIZE | AZX_DCAPS_POSFIX_COMBO },
+>         /* PBG */
+>         { PCI_DEVICE(0x8086, 0x1d20),
+>           .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_SCH_SNOOP |
+> @@ -3248,11 +3253,11 @@ static DEFINE_PCI_DEVICE_TABLE(azx_ids) = {
+>         /* Panther Point */
+>         { PCI_DEVICE(0x8086, 0x1e20),
+>           .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_SCH_SNOOP |
+> -         AZX_DCAPS_BUFSIZE},
+> +         AZX_DCAPS_BUFSIZE | AZX_DCAPS_POSFIX_COMBO },
+>         /* Lynx Point */
+>         { PCI_DEVICE(0x8086, 0x8c20),
+>           .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_SCH_SNOOP |
+> -         AZX_DCAPS_BUFSIZE},
+> +         AZX_DCAPS_BUFSIZE | AZX_DCAPS_POSFIX_COMBO },
+>         /* SCH */
+>         { PCI_DEVICE(0x8086, 0x811b),
+>           .driver_data = AZX_DRIVER_SCH | AZX_DCAPS_SCH_SNOOP |
+> --
+> 1.7.4.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
