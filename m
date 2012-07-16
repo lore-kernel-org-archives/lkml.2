@@ -1,102 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753878Ab2GPSoQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 14:44:16 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10364 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752826Ab2GPSoE (ORCPT
+	id S1753976Ab2GPSoT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 14:44:19 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:60522 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753884Ab2GPSoQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 14:44:04 -0400
-X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=HPRdv3mqylIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=UZRvmTwgAAAA:8 a=ayC55rCoAAAA:8 a=kdHq5BnXbmOu4XzVRw0A:9 a=E6k37eg1NvgA:10 a=Zh68SRI7RUMA:10 a=F6qNFXbwvZAA:10 a=jeBq3FmKZ4MA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 72.230.195.127
-Message-Id: <20120716184354.467426653@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Mon, 16 Jul 2012 14:43:15 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Subject: [PATCH RT 05/11] slab: Prevent local lock deadlock
-References: <20120716184310.223095720@goodmis.org>
-Content-Disposition: inline; filename=0005-slab-Prevent-local-lock-deadlock.patch
+	Mon, 16 Jul 2012 14:44:16 -0400
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX1+BShN0DtyBunwsnRhRmwlUQQATFMGVueUxLLF2RC
+	OdrZki2XdTeozH
+Message-ID: <50045FCF.1060207@gmx.de>
+Date: Mon, 16 Jul 2012 20:39:11 +0200
+From: =?ISO-8859-1?Q?Toralf_F=F6rster?= <toralf.foerster@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120625 Thunderbird/13.0
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: 3.5-rcX: wakeup after s2ram doesn't work after a longer sleep
+ time
+References: <500319E9.8010001@gmx.de> <201207152221.48232.rjw@sisk.pl> <50041C1E.8070203@gmx.de> <201207161947.55896.rjw@sisk.pl>
+In-Reply-To: <201207161947.55896.rjw@sisk.pl>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
 
-On RT we avoid the cross cpu function calls and take the per cpu local
-locks instead. Now the code missed that taking the local lock on the
-cpu which runs the code must use the proper local lock functions and
-not a simple spin_lock(). Otherwise it deadlocks later when trying to
-acquire the local lock with the proper function.
+On 07/16/2012 07:47 PM, Rafael J. Wysocki wrote:
+> 
+> Well, so this is a different issue definitely.
+> 
+Well, this helped : https://lkml.org/lkml/2012/7/16/113
 
-Reported-and-tested-by: Chris Pringle <chris.pringle@miranda.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- mm/slab.c |   26 ++++++++++++++++++++++----
- 1 file changed, 22 insertions(+), 4 deletions(-)
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 269b1fe..3447cfa 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -717,6 +717,7 @@ static void timekeeping_resume(void)
+        timekeeper.clock->cycle_last = timekeeper.clock->read(timekeeper.clock);
+        timekeeper.ntp_error = 0;
+        timekeeping_suspended = 0;
++       timekeeping_update(false);
+        write_sequnlock_irqrestore(&timekeeper.lock, flags);
+ 
+        touch_softlockup_watchdog();
 
-diff --git a/mm/slab.c b/mm/slab.c
-index 15bce6b..64eb636 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -743,8 +743,26 @@ slab_on_each_cpu(void (*func)(void *arg, int this_cpu), void *arg)
- {
- 	unsigned int i;
- 
-+	get_cpu_light();
- 	for_each_online_cpu(i)
- 		func(arg, i);
-+	put_cpu_light();
-+}
-+
-+static void lock_slab_on(unsigned int cpu)
-+{
-+	if (cpu == smp_processor_id())
-+		local_lock_irq(slab_lock);
-+	else
-+		local_spin_lock_irq(slab_lock, &per_cpu(slab_lock, cpu).lock);
-+}
-+
-+static void unlock_slab_on(unsigned int cpu)
-+{
-+	if (cpu == smp_processor_id())
-+		local_unlock_irq(slab_lock);
-+	else
-+		local_spin_unlock_irq(slab_lock, &per_cpu(slab_lock, cpu).lock);
- }
- #endif
- 
-@@ -2692,10 +2710,10 @@ static void do_drain(void *arg, int cpu)
- {
- 	LIST_HEAD(tmp);
- 
--	spin_lock_irq(&per_cpu(slab_lock, cpu).lock);
-+	lock_slab_on(cpu);
- 	__do_drain(arg, cpu);
- 	list_splice_init(&per_cpu(slab_free_list, cpu), &tmp);
--	spin_unlock_irq(&per_cpu(slab_lock, cpu).lock);
-+	unlock_slab_on(cpu);
- 	free_delayed(&tmp);
- }
- #endif
-@@ -4163,9 +4181,9 @@ static void do_ccupdate_local(void *info)
- #else
- static void do_ccupdate_local(void *info, int cpu)
- {
--	spin_lock_irq(&per_cpu(slab_lock, cpu).lock);
-+	lock_slab_on(cpu);
- 	__do_ccupdate_local(info, cpu);
--	spin_unlock_irq(&per_cpu(slab_lock, cpu).lock);
-+	unlock_slab_on(cpu);
- }
- #endif
- 
 -- 
-1.7.10.4
+MfG/Sincerely
+Toralf Förster
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
 
 
