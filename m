@@ -1,57 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753333Ab2GPQPV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 12:15:21 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:44632 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752660Ab2GPQPS convert rfc822-to-8bit (ORCPT
+	id S1753347Ab2GPQQP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 12:16:15 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52695 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752660Ab2GPQQN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 12:15:18 -0400
-MIME-Version: 1.0
-In-Reply-To: <201207152225.49154.rjw@sisk.pl>
-References: <5002BC55.3050107@gmx.de> <201207152225.49154.rjw@sisk.pl>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 16 Jul 2012 10:14:56 -0600
-Message-ID: <CAErSpo6Ka6XBakVZH7ge-==XY86FrOHP_dqGoa+zAFNgnnnFTA@mail.gmail.com>
-Subject: Re: PCI ACPI/IRQ-routing broken on H77 chipset + Ivy Bridge (kernel
- 3.5-rc7 and earlier)
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: =?ISO-8859-1?Q?Malte_Schr=F6der?= <maltesch@gmx.de>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Mon, 16 Jul 2012 12:16:13 -0400
+From: Joonsoo Kim <js1304@gmail.com>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Joonsoo Kim <js1304@gmail.com>, Christoph Lameter <cl@linux.com>
+Subject: [PATCH 1/3] mm: correct return value of migrate_pages()
+Date: Tue, 17 Jul 2012 01:14:30 +0900
+Message-Id: <1342455272-32703-1-git-send-email-js1304@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <Yes>
+References: <Yes>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[CC +tglx]
+migrate_pages() should return number of pages not migrated or error code.
+When unmap_and_move return -EAGAIN, outer loop is re-execution without
+initialising nr_failed. This makes nr_failed over-counted.
 
-On Sun, Jul 15, 2012 at 2:25 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> CC-ing linux-pci and Bjorn.
->
-> On Sunday, July 15, 2012, Malte Schröder wrote:
->> Hello,
->> this is yet another try to get someone to look at this ;)
->>
->> I can't get PCI-devices to work on my DH77KC mainboard. I tested this
->> using an AVM B1 ISDN card, a Fritz!PCI card and an old 3Com 905c NIC.
->> I attached some dumps in case it helps. The CPU is a Core i7 3770.
->>
->> PCI hardware is detected by the kernel, but it gives IRQ errors. Using
->> irqpoll allows the PCI card to somewhat work, but it is unreliable.
->>
->> There are some reports in Intel's support forums that also report
->> PCI-problems with this mainboard, but Intel doesn't seem to be
->> interested. So I hope this is something that is fixable on the kernel side.
->>
->> If there is more information needed, please let me know.
->>
->>
->>
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+So this patch correct it by initialising nr_failed in outer loop.
+
+Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+Cc: Christoph Lameter <cl@linux.com>
+
+diff --git a/mm/migrate.c b/mm/migrate.c
+index be26d5c..294d52a 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -982,6 +982,7 @@ int migrate_pages(struct list_head *from,
+ 
+ 	for(pass = 0; pass < 10 && retry; pass++) {
+ 		retry = 0;
++		nr_failed = 0;
+ 
+ 		list_for_each_entry_safe(page, page2, from, lru) {
+ 			cond_resched();
+-- 
+1.7.9.5
+
