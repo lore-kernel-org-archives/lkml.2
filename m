@@ -1,234 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753404Ab2GPOOx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 10:14:53 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:33640 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753787Ab2GPOOa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 10:14:30 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
-        <linux@arm.linux.org.uk>, <kishon@ti.com>, <b-cousson@ti.com>,
-        <rnayak@ti.com>, <tony@atomide.com>, <gregkh@linuxfoundation.org>,
-        <ohad@wizery.com>, <linus.walleij@linaro.org>,
-        <myungjoo.ham@samsung.com>, <rusty@rustcorp.com.au>,
-        <swarren@nvidia.com>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <balbi@ti.com>,
-        <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>
-Subject: [PATCH 1/2] drivers: bus: add a new driver for omap-ocp2scp
-Date: Mon, 16 Jul 2012 19:43:42 +0530
-Message-ID: <1342448023-14438-2-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1342448023-14438-1-git-send-email-kishon@ti.com>
-References: <1342448023-14438-1-git-send-email-kishon@ti.com>
+	id S1753346Ab2GPOR1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 10:17:27 -0400
+Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:40659 "HELO
+	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751199Ab2GPORY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 10:17:24 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: MoJ_3WoVM1mc2uCQnS_8UJ1jF_Fqm3CYwtPW3UMGwLSeLiR
+ 7inDebH3_M4bM3JylUvll1l88DOeWgwSHccwhh018FILxh2NDfMqGtXOUE9t
+ ksps9Pc4v08evfsGi8j7heGFp7OEVSq9dWMZ7t30xlIvmGOeA11NQZampJ83
+ TJBJ7qQFfDcbTPRoyPoALEgRrxcIYJgvvzXxXBtvL_vXKqQOaO1xv_8YsS8g
+ mKcXCQ7cAlUI2LMtwxsB6i6vke_s1IwyIwNAdJVhW61c.W_Pi9dBbrkmw0Pq
+ _XPKRHBzxNxCMFnEtk2CjMR0by8yc5U5n79nW5GuHhHAXbJYhivQHs0tbRZF
+ jqTA9LL99CPhNfTxNwn9_YiQsYZPG2kPA4Wit_Xe0x6gVp5IOU0mRrZb5Avs
+ 2
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Mon, 16 Jul 2012 09:17:20 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: David Rientjes <rientjes@google.com>
+cc: Shuah Khan <shuah.khan@hp.com>, Pekka Enberg <penberg@kernel.org>,
+        glommer@parallels.com, js1304@gmail.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
+Subject: Re: [PATCH TRIVIAL] mm: Fix build warning in kmem_cache_create()
+In-Reply-To: <alpine.DEB.2.00.1207160257420.11472@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1207160915470.28952@router.home>
+References: <1342221125.17464.8.camel@lorien2> <alpine.DEB.2.00.1207140216040.20297@chino.kir.corp.google.com> <CAOJsxLE3dDd01WaAp5UAHRb0AiXn_s43M=Gg4TgXzRji_HffEQ@mail.gmail.com> <1342407840.3190.5.camel@lorien2>
+ <alpine.DEB.2.00.1207160257420.11472@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds a new driver *omap-ocp2scp*. This driver takes the responsibility of
-creating all the devices that is connected to OCP2SCP. In the case of OMAP4,
-USB2PHY is connected to ocp2scp.
+On Mon, 16 Jul 2012, David Rientjes wrote:
 
-This also includes device tree support for ocp2scp driver and
-the documentation with device tree binding information is updated.
+> On Sun, 15 Jul 2012, Shuah Khan wrote:
+>
+> > I can work on reshuffling the code. Do have a question though. This
+> > following sanity check is currently done only when CONFIG_DEBUG_VM is
+> > defined. However, it does appear to be something that is that should be
+> > checked even in regular path.
+> >
+> > struct kmem_cache *kmem_cache_create(const char *name, size_t size,
+> > size_t align,
+> >                 unsigned long flags, void (*ctor)(void *))
+> > {
+> >         struct kmem_cache *s = NULL;
+> >
+> > #ifdef CONFIG_DEBUG_VM
+> >         if (!name || in_interrupt() || size < sizeof(void *) ||
+> >                 size > KMALLOC_MAX_SIZE) {
+> >                 printk(KERN_ERR "kmem_cache_create(%s) integrity check"
+> >                         " failed\n", name);
+> >                 goto out;
+> >         }
+> > #endif
+> >
+>
+> Agreed, this shouldn't depend on CONFIG_DEBUG_VM.
 
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- .../devicetree/bindings/bus/omap-ocp2scp.txt       |   10 ++
- drivers/Kconfig                                    |    2 +
- drivers/Makefile                                   |    2 +
- drivers/bus/Kconfig                                |   15 +++
- drivers/bus/Makefile                               |    5 +
- drivers/bus/omap-ocp2scp.c                         |   98 ++++++++++++++++++++
- 6 files changed, 132 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/bus/omap-ocp2scp.txt
- create mode 100644 drivers/bus/Kconfig
- create mode 100644 drivers/bus/Makefile
- create mode 100644 drivers/bus/omap-ocp2scp.c
+These checks are useless for regular kernel operations. They are
+only useful when developing code and should only be enabled during
+development. There is no point in testing the size and the name which are
+typically constant when a slab is created with a stable kernel.
 
-diff --git a/Documentation/devicetree/bindings/bus/omap-ocp2scp.txt b/Documentation/devicetree/bindings/bus/omap-ocp2scp.txt
-new file mode 100644
-index 0000000..d2fe064
---- /dev/null
-+++ b/Documentation/devicetree/bindings/bus/omap-ocp2scp.txt
-@@ -0,0 +1,10 @@
-+* OMAP OCP2SCP - ocp interface to scp interface
-+
-+properties:
-+- compatible : Should be "ti,omap-ocp2scp"
-+- #address-cells, #size-cells : Must be present if the device has sub-nodes
-+- ranges : the child address space are mapped 1:1 onto the parent address space
-+- ti,hwmods : must be "ocp2scp_usb_phy"
-+
-+Sub-nodes:
-+All the devices connected to ocp2scp are described using sub-node to ocp2scp
-diff --git a/drivers/Kconfig b/drivers/Kconfig
-index bfc9186..4fe1e4c 100644
---- a/drivers/Kconfig
-+++ b/drivers/Kconfig
-@@ -2,6 +2,8 @@ menu "Device Drivers"
- 
- source "drivers/base/Kconfig"
- 
-+source "drivers/bus/Kconfig"
-+
- source "drivers/connector/Kconfig"
- 
- source "drivers/mtd/Kconfig"
-diff --git a/drivers/Makefile b/drivers/Makefile
-index 2ba29ff..cac3819 100644
---- a/drivers/Makefile
-+++ b/drivers/Makefile
-@@ -5,6 +5,8 @@
- # Rewritten to use lists instead of if-statements.
- #
- 
-+obj-y				+= bus/
-+
- # GPIO must come after pinctrl as gpios may need to mux pins etc
- obj-y				+= pinctrl/
- obj-y				+= gpio/
-diff --git a/drivers/bus/Kconfig b/drivers/bus/Kconfig
-new file mode 100644
-index 0000000..6270415
---- /dev/null
-+++ b/drivers/bus/Kconfig
-@@ -0,0 +1,15 @@
-+#
-+# Bus Devices
-+#
-+
-+menu "Bus devices"
-+
-+config OMAP_OCP2SCP
-+	tristate "OMAP OCP2SCP DRIVER"
-+	help
-+	  Driver to enable ocp2scp module which transforms ocp interface
-+	  protocol to scp protocol. In OMAP4, USB PHY is connected via
-+	  OCP2SCP and in OMAP5, both USB PHY and SATA PHY is connected via
-+	  OCP2SCP.
-+
-+endmenu
-diff --git a/drivers/bus/Makefile b/drivers/bus/Makefile
-new file mode 100644
-index 0000000..0ec50bc
---- /dev/null
-+++ b/drivers/bus/Makefile
-@@ -0,0 +1,5 @@
-+#
-+# Makefile for the bus drivers.
-+#
-+
-+obj-$(CONFIG_OMAP_OCP2SCP)	+= omap-ocp2scp.o
-diff --git a/drivers/bus/omap-ocp2scp.c b/drivers/bus/omap-ocp2scp.c
-new file mode 100644
-index 0000000..8c3db3a
---- /dev/null
-+++ b/drivers/bus/omap-ocp2scp.c
-@@ -0,0 +1,98 @@
-+/*
-+ * omap-ocp2scp.c - transform ocp interface protocol to scp protocol
-+ *
-+ * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * Author: Kishon Vijay Abraham I <kishon@ti.com>
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/err.h>
-+#include <linux/pm_runtime.h>
-+#include <linux/of.h>
-+#include <linux/of_platform.h>
-+
-+static int ocp2scp_remove_devices(struct device *dev, void *c)
-+{
-+	struct platform_device *pdev = to_platform_device(dev);
-+
-+	platform_device_unregister(pdev);
-+
-+	return 0;
-+}
-+
-+static int __devinit omap_ocp2scp_probe(struct platform_device *pdev)
-+{
-+	int			ret;
-+	struct device_node	*np = pdev->dev.of_node;
-+
-+	if (np) {
-+		ret = of_platform_populate(np, NULL, NULL, &pdev->dev);
-+		if (ret) {
-+			dev_err(&pdev->dev, "failed to add resources for ocp2scp child\n");
-+			goto err0;
-+		}
-+	}
-+	pm_runtime_enable(&pdev->dev);
-+
-+	return 0;
-+
-+err0:
-+	device_for_each_child(&pdev->dev, NULL, ocp2scp_remove_devices);
-+
-+	return ret;
-+}
-+
-+static int __devexit omap_ocp2scp_remove(struct platform_device *pdev)
-+{
-+	pm_runtime_disable(&pdev->dev);
-+	device_for_each_child(&pdev->dev, NULL, ocp2scp_remove_devices);
-+
-+	return 0;
-+}
-+
-+#ifdef CONFIG_OF
-+static const struct of_device_id omap_ocp2scp_id_table[] = {
-+	{ .compatible = "ti,omap-ocp2scp" },
-+	{}
-+};
-+MODULE_DEVICE_TABLE(of, omap_usb2_id_table);
-+#endif
-+
-+static struct platform_driver omap_ocp2scp_driver = {
-+	.probe		= omap_ocp2scp_probe,
-+	.remove		= __devexit_p(omap_ocp2scp_remove),
-+	.driver		= {
-+		.name	= "omap-ocp2scp",
-+		.owner	= THIS_MODULE,
-+		.of_match_table = of_match_ptr(omap_ocp2scp_id_table),
-+	},
-+};
-+
-+static int __init omap_ocp2scp_init(void)
-+{
-+	return platform_driver_register(&omap_ocp2scp_driver);
-+}
-+arch_initcall(omap_ocp2scp_init);
-+
-+static void __exit omap_ocp2scp_exit(void)
-+{
-+	platform_driver_unregister(&omap_ocp2scp_driver);
-+}
-+module_exit(omap_ocp2scp_exit);
-+
-+MODULE_ALIAS("platform: omap-ocp2scp");
-+MODULE_AUTHOR("Texas Instruments Inc.");
-+MODULE_DESCRIPTION("OMAP OCP2SCP DRIVER");
-+MODULE_LICENSE("GPLv2");
--- 
-1.7.5.4
+
 
