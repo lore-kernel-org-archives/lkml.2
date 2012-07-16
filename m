@@ -1,68 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753404Ab2GPQSa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 12:18:30 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:36797 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753212Ab2GPQS1 (ORCPT
+	id S1753436Ab2GPQTb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 12:19:31 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:42837 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752575Ab2GPQT3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 12:18:27 -0400
-Message-ID: <1342455503.3176.42.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH] sd: do not set changed flag on all unit attention
- conditions
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Date: Mon, 16 Jul 2012 17:18:23 +0100
-In-Reply-To: <1342454772-9018-1-git-send-email-pbonzini@redhat.com>
-References: <1342454772-9018-1-git-send-email-pbonzini@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 16 Jul 2012 12:19:29 -0400
+Date: Mon, 16 Jul 2012 18:19:13 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Mikael Pettersson <mikpe@it.uu.se>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
+Message-ID: <20120716161913.GB20549@elf.ucw.cz>
+References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
+ <20472.466.594018.973876@pilspetsen.it.uu.se>
+ <20120710101223.GF15120@arm.com>
+ <20120714093505.GB23316@elf.ucw.cz>
+ <20120715113631.GA10597@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120715113631.GA10597@arm.com>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-07-16 at 18:06 +0200, Paolo Bonzini wrote:
-> Right now, I/O will fail as soon as a unit attention condition is
-> detected on a unit with removable media.  However, this is not
-> always necessary.  There are some cases (such as "Capacity data
-> has changed") where no particular action is needed.  On the
-> other hand, all problematic cases have to report at least one
-> of "No medium" and/or a "Medium may have changed", so restrict
-> our attention to those.
+Hi!
+
+> The assembly syntax is very reasonable already and not far from what we
+> are used to (see the .S files in my kernel patches). The 64-bit
+> instructions are different and that's specified here (apart from the
+> actual bit encoding):
 > 
-> This patch fixes resizing a removable medium with virtio-scsi.
-> 
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> ---
->  drivers/scsi/scsi_lib.c |    7 +++++--
->  1 files changed, 5 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-> index b583277..6d8ca08 100644
-> --- a/drivers/scsi/scsi_lib.c
-> +++ b/drivers/scsi/scsi_lib.c
-> @@ -843,8 +843,11 @@ void scsi_io_completion(struct scsi_cmnd *cmd, unsigned int good_bytes)
->  	} else if (sense_valid && !sense_deferred) {
->  		switch (sshdr.sense_key) {
->  		case UNIT_ATTENTION:
-> -			if (cmd->device->removable) {
-> -				/* Detected disc change.  Set a bit
-> +			if (cmd->device->removable &&
-> +			    (sshdr.asc == 0x3a ||
-> +			     (sshdr.asc == 0x28 && sshdr.ascq == 0x00))) {
-> +				/* "No medium" or "Medium may have changed."
-> +				 * This means a disc change.  Set a bit
+> http://infocenter.arm.com/help/topic/com.arm.doc.genc010197a/index.html
 
-This type of change would likely cause a huge cascade of errors in real
-removable media devices.  Under the MMC standards, which a lot of the
-older removable discs seem to follow, UNIT ATTENTION indicates either
-medium change or device reset (which we check for and eat lower down);
-we can't rely on them giving proper SBC-2 sense codes.  If you want to
-pretend to be removable media, you have to conform to its standards.
+"This document is only available in a PDF version to registered ARM
+customers."
 
-James
-
-
+It would be nice to make this public :-(.
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
