@@ -1,58 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751723Ab2GPIBc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 04:01:32 -0400
-Received: from mga09.intel.com ([134.134.136.24]:26374 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750897Ab2GPIBa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 04:01:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="172543508"
-Message-ID: <5003CA6F.3050806@intel.com>
-Date: Mon, 16 Jul 2012 16:01:51 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
-MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        paul.gortmaker@windriver.com, kosaki.motohiro@jp.fujitsu.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cpumask: add a few comments of cpumask functions
-References: <1338195748-18934-1-git-send-email-alex.shi@intel.com> <4FC373D9.7040109@linux.vnet.ibm.com> <4FC38277.2030500@intel.com> <4FC38A77.8090700@intel.com> <20120713153756.78234398.akpm@linux-foundation.org> <50037DC6.6030209@intel.com> <87hat8xin5.fsf@rustcorp.com.au>
-In-Reply-To: <87hat8xin5.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752155Ab2GPIHs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 04:07:48 -0400
+Received: from www.linutronix.de ([62.245.132.108]:51907 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750932Ab2GPIHo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 04:07:44 -0400
+Message-Id: <20120715090141.942753287@linutronix.de>
+User-Agent: quilt/0.48-1
+Date: Mon, 16 Jul 2012 08:07:43 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: RT-users <linux-rt-users@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [patch RT 0/3] Stable rt updates - part II
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2012 03:35 PM, Rusty Russell wrote:
+Steven,
 
-> On Mon, 16 Jul 2012 10:34:46 +0800, Alex Shi <alex.shi@intel.com> wrote:
->>>
->>
->>> And the same applies to the other comments.  So can you please grab the
->>> latest linux-next, prepare a fixup patch and also check that the patch
->>> is complete - not all of your changes have been applied.
->>>
->>
->>
->>
->> Thanks for reminder! I just know this rule now. :)
-> 
-> Thanks, folded.
-> 
-> As long as it's readable, I don't care.
-> 
-> If it's not all there, did I miss an update?
+please pick the following three patches which address the CPU hotplug
+nightmare on RT.
 
+I still hate them, but we want to have that addressed in the stable
+series.
 
-No. all contents in my original patch were checked in.
+Aside of that there are the outstanding issues with btrfs and io unplug.
 
-> 
-> Cheers,
-> Rusty.
+The missing spin_lock_init() fix should reach you via mainline stable
+updates. Mike and Chris are looking into that interesting locking
+features.
 
+The io unplug thing stays mysterious, but as I just wrote in that
+thread, my patch to address it is fundamentally wrong. :(
+
+I'm off for a week of vacation, so do not expect any further updates
+from my side. If Mike and Chris come up with an agreed solution for
+the locking issue, please pick it up yourself.
+
+Thanks,
+
+	tglx
 
