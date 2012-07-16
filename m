@@ -1,102 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752070Ab2GPFn4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 01:43:56 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:35183 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751695Ab2GPFnx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 01:43:53 -0400
-X-AuditID: cbfee61a-b7f616d000004b7e-32-5003a9f7d7a3
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: stern@rowland.harvard.edu, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Cc: l.majewski@samsung.com, a.kesavan@samsung.com, prashanth.g@samsung.com,
-        kmpark@infradead.org, joshi@samsung.com, olofj@google.com,
-        thomas.abraham@linaro.org, sshtylyov@mvista.com,
-        av.tikhomirov@samsung.com
-Subject: [PATCH 2/2 v3] USB: dwc3-exynos: Add vbus setup function to the exynos
- dwc3 glue layer
-Date: Mon, 16 Jul 2012 11:27:39 +0530
-Message-id: <1342418259-23802-3-git-send-email-gautam.vivek@samsung.com>
-X-Mailer: git-send-email 1.7.0.4
-In-reply-to: <1342418259-23802-1-git-send-email-gautam.vivek@samsung.com>
-References: <1342418259-23802-1-git-send-email-gautam.vivek@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCJMWRmVeSWpSXmKPExsVy+t9jAd3vK5kDDM5+ErK4vGsOm8WiZa3M
-	DkwenzfJBTBGcdmkpOZklqUW6dslcGVMORlcsIi3YuG1O6wNjE3cXYycHBICJhKPNvxjgbDF
-	JC7cW8/WxcjFISSwiFHi/6xprBBOO5PEjhltbCBVbAK6Ek1vdzGC2CICtRJTrk5lB7GZBa4y
-	Snx7VQpiCwskSrw//RyshkVAVWLWt8VgG3gFPCQuHNvABrFNQaJ12SGwXk4BT4mjB+8wdTGy
-	Ay3zkHgaNoGRdwEjwypG0dSC5ILipPRcQ73ixNzi0rx0veT83E2MYL8/k9rBuLLB4hCjAAej
-	Eg+vATAchFgTy4orcw8xSnAwK4nwdnYChXhTEiurUovy44tKc1KLDzFKc7AoifMae3/1FxJI
-	TyxJzU5NLUgtgskycXBKNTCeuB7U7KFc2ZzVc/qluWbs5m+vROr3K8k0HV4hUHTqYBiDyOL7
-	UTrLp4vFatrO618euqFAeDH7jkXHLeP/vrWMUN+86Kodl8zDX+WBu8rlgzYdri7j5zJh66sO
-	qXIsVuPTuPAt5ZONFWPVKe5VDvHN9ip7o894NF3UbWlk6I2VWSBjKM1mqMRSnJFoqMVcVJwI
-	AAKoLmT3AQAA
-X-TM-AS-MML: No
+	id S1751382Ab2GPF6s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 01:58:48 -0400
+Received: from mga01.intel.com ([192.55.52.88]:46947 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750769Ab2GPF6q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 01:58:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="193239835"
+Subject: Re: [PATCH 1/9 v3] dmaengine: add an shdma-base library
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: linux-kernel@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
+        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
+        Paul Mundt <lethal@linux-sh.org>, linux-sh@vger.kernel.org,
+        Sascha Hauer <s.hauer@pengutronix.de>
+In-Reply-To: <Pine.LNX.4.64.1207021936490.15365@axis700.grange>
+References: <1336576161-27082-1-git-send-email-g.liakhovetski@gmx.de>
+	 <1336576161-27082-2-git-send-email-g.liakhovetski@gmx.de>
+	 <1337055734.16185.5360.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1205171912140.10086@axis700.grange>
+	 <1337933737.1580.8.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1205251028530.13353@axis700.grange>
+	 <Pine.LNX.4.64.1206281046320.31813@axis700.grange>
+	 <Pine.LNX.4.64.1207021936490.15365@axis700.grange>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 16 Jul 2012 11:28:34 +0530
+Message-ID: <1342418314.1726.35.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch retrieves and configures the vbus control gpio via
-the device tree. The suspend/resume callbacks will be later
-modified for vbus control.
+On Mon, 2012-07-02 at 22:28 +0200, Guennadi Liakhovetski wrote:
+> > 
+> > > > Let me know if you plan to fixing them or I will queue these up for 3.6
+> > > 
+> > > Please, queue these patches for the next merge window, we will work on 
+> > > improving the driver after this split.
+> > 
+> > It's been a month since this mail - do I see it right, that these patches 
+> > are still not in your slave-dma tree? Having them there would (1) get them 
+> > some exposure and testing and (2) eventually speed up building on top of 
+> > them and fixing existing driver's shortcomings. Any approximate idea when 
+> > you'd be able to pull them in?
+> 
+> An update to this patch series: unfortunately, I forgot to include the 
+> very first patch in this series. I'll send it as a reply to this mail.
+Applied the series along with 0.5! patch ...
 
-Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
-Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
----
- drivers/usb/dwc3/dwc3-exynos.c |   25 +++++++++++++++++++++++++
- 1 files changed, 25 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/usb/dwc3/dwc3-exynos.c b/drivers/usb/dwc3/dwc3-exynos.c
-index a293c69..9b0238f 100644
---- a/drivers/usb/dwc3/dwc3-exynos.c
-+++ b/drivers/usb/dwc3/dwc3-exynos.c
-@@ -20,6 +20,7 @@
- #include <linux/dma-mapping.h>
- #include <linux/clk.h>
- #include <linux/of.h>
-+#include <linux/of_gpio.h>
- 
- #include "core.h"
- 
-@@ -30,6 +31,28 @@ struct dwc3_exynos {
- 	struct clk		*clk;
- };
- 
-+static int dwc3_setup_vbus_gpio(struct platform_device *pdev)
-+{
-+	int err;
-+	int gpio;
-+
-+	if (!pdev->dev.of_node)
-+		return 0;
-+
-+	gpio = of_get_named_gpio(pdev->dev.of_node,
-+				"samsung,vbus-gpio", 0);
-+	if (!gpio_is_valid(gpio))
-+		return 0;
-+
-+	err = gpio_request_one(gpio, GPIOF_OUT_INIT_HIGH, "dwc3_vbus_gpio");
-+	if (err) {
-+		dev_err(&pdev->dev, "can't request dwc3 vbus gpio %d", gpio);
-+		return err;
-+	}
-+
-+	return err;
-+}
-+
- static u64 dwc3_exynos_dma_mask = DMA_BIT_MASK(32);
- 
- static int __devinit dwc3_exynos_probe(struct platform_device *pdev)
-@@ -58,6 +81,8 @@ static int __devinit dwc3_exynos_probe(struct platform_device *pdev)
- 	if (!pdev->dev.coherent_dma_mask)
- 		pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
- 
-+	dwc3_setup_vbus_gpio(pdev);
-+
- 	platform_set_drvdata(pdev, exynos);
- 
- 	devid = dwc3_get_device_id();
 -- 
-1.7.0.4
+~Vinod
 
