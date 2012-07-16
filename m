@@ -1,67 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751916Ab2GPIZH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 04:25:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51751 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751334Ab2GPIZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 04:25:04 -0400
-Message-ID: <5003CFBA.3060108@redhat.com>
-Date: Mon, 16 Jul 2012 11:24:26 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: Pavel Machek <pavel@ucw.cz>, Ingo Molnar <mingo@kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
-References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com> <CAOesGMiCexiqA3L5GdNgyHhSD-5Bpqbb02YJrZPr8yMYa0afjA@mail.gmail.com> <201207071927.13135.arnd@arndb.de> <20120710071023.GA10456@gmail.com> <20120710101018.GE15120@arm.com> <20120714093032.GA23316@elf.ucw.cz> <20120715121644.GB10597@arm.com>
-In-Reply-To: <20120715121644.GB10597@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752358Ab2GPI1B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 04:27:01 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:45877 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751497Ab2GPI05 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 04:26:57 -0400
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Avi Kivity <avi@redhat.com>, Rik van Riel <riel@redhat.com>
+Cc: Srikar <srikar@linux.vnet.ibm.com>, S390 <linux-s390@vger.kernel.org>,
+        Carsten Otte <cotte@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        KVM <kvm@vger.kernel.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Date: Mon, 16 Jul 2012 13:54:45 +0530
+Message-Id: <20120716082445.23477.15128.sendpatchset@codeblue.in.ibm.com>
+Subject: [PATCH RFC V4 0/3] kvm: Improving directed yield in PLE handler
+x-cbid: 12071522-0260-0000-0000-00000183C2E5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2012 03:16 PM, Catalin Marinas wrote:
-> 
-> The AArch32 execution mode is optional, so it depends on the actual CPU
-> implementation (while AArch64 is mandatory). If the implementation
-> supports it, the most likely scenario for AArch32 at kernel level is in
-> virtual machines or the secure OS. I'll explain below why.
-> 
-> The exception (or privilege) levels on an ARMv8 architecture look like
-> this:
-> 
-> Secure World	Normal World
-> +-----+
-> | EL3 |				- Secure monitor
-> +-----+
-> 		+-----+
-> 		| EL2 |		- Hypervisor (normal world only)
-> 		+-----+
-> +-----+		+-----+
-> | EL1 |		| EL1 |		- OS kernel (secure or normal)
-> +-----+		+-----+
-> +-----+		+-----+
-> | EL0 |		| EL0 |		- User apps (secure or normal)
-> +-----+		+-----+
 
-Can the same kernel image run in both EL1 and EL2?  I noticed some .if
-ELs in the assembler files.  I guess they could be compiled multiple
-times and the correct version chosen at runtime, or patched up like x86
-does with alternative().
+Currently Pause Loop Exit (PLE) handler is doing directed yield to a
+random vcpu on pl-exit. We already have filtering while choosing
+the candidate to yield_to. This change adds more checks while choosing
+a candidate to yield_to.
 
-One of the advantages kvm has to Linux distributors is that the same
-kernel image can be used the hypervisor, guest, and bare metal.  I'd
-like to preserve that for arm64.
+On a large vcpu guests, there is a high probability of
+yielding to the same vcpu who had recently done a pause-loop exit. 
+Such a yield can lead to the vcpu spinning again.
 
--- 
-error compiling committee.c: too many arguments to function
+The patchset keeps track of the pause loop exit and gives chance to a
+vcpu which has:
 
+ (a) Not done pause loop exit at all (probably he is preempted lock-holder)
+
+ (b) vcpu skipped in last iteration because it did pause loop exit, and
+ probably has become eligible now (next eligible lock holder)
+
+This concept also helps in cpu relax interception cases which use same handler.
+
+Changes since V3:
+ - arch specific fix/changes (Christian)
+
+Changes since v2:
+ - Move ple structure to common code (Avi)
+ - rename pause_loop_exited to cpu_relax_intercepted (Avi)
+ - add config HAVE_KVM_CPU_RELAX_INTERCEPT (Avi)
+ - Drop superfluous curly braces (Ingo)
+
+Changes since v1:
+ - Add more documentation for structure and algorithm and Rename
+   plo ==> ple (Rik).
+ - change dy_eligible initial value to false. (otherwise very first directed
+    yield will not be skipped. (Nikunj)
+ - fixup signoff/from issue
+
+Future enhancements:
+  (1) Currently we have a boolean to decide on eligibility of vcpu. It
+    would be nice if I get feedback on guest (>32 vcpu) whether we can
+    improve better with integer counter. (with counter = say f(log n )).
+  
+  (2) We have not considered system load during iteration of vcpu. With
+   that information we can limit the scan and also decide whether schedule()
+   is better. [ I am able to use #kicked vcpus to decide on this But may
+   be there are better ideas like information from global loadavg.]
+
+  (3) We can exploit this further with PV patches since it also knows about
+   next eligible lock-holder.
+
+Summary: There is a very good improvement for moderate / no over-commit scenario
+ for kvm based guest on PLE machine.
+
+Results: kernbench improves by around 30%, 6%  for 1x,2x respectively
+         ebizzy    improves by around 87%, 23% for 1x,2x respectively
+
+Note: The patches are tested on x86.
+
+ Links 
+  V1: https://lkml.org/lkml/2012/7/9/32
+  V2: https://lkml.org/lkml/2012/7/10/392
+  V3: https://lkml.org/lkml/2012/7/12/437
+
+ Raghavendra K T (3):
+   config: Add config to support ple or cpu relax optimzation 
+   kvm : Note down when cpu relax intercepted or pause loop exited 
+   kvm : Choose a better candidate for directed yield 
+---
+ arch/s390/kvm/Kconfig    |    1 +
+ arch/x86/kvm/Kconfig     |    1 +
+ include/linux/kvm_host.h |   42 ++++++++++++++++++++++++++++++++++++++++++
+ virt/kvm/Kconfig         |    3 +++
+ virt/kvm/kvm_main.c      |   40 ++++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 87 insertions(+), 0 deletions(-)
 
