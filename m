@@ -1,208 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753005Ab2GPPj7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 11:39:59 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:32028 "EHLO mx2.netapp.com"
+	id S1753063Ab2GPPnK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 11:43:10 -0400
+Received: from mx1.fusionio.com ([66.114.96.30]:36617 "EHLO mx1.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751192Ab2GPPjz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 11:39:55 -0400
-X-IronPort-AV: E=Sophos;i="4.77,594,1336374000"; 
-   d="scan'208";a="666130366"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@openvz.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "Dmitry V. Levin" <ldv@altlinux.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Doug Ledford <dledford@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "containers@lists.linux-foundation.org" 
-	<containers@lists.linux-foundation.org>
-Subject: Re: [PATCH v2] ns: do not block exit_task_namespaces() for a long
- time
-Thread-Topic: [PATCH v2] ns: do not block exit_task_namespaces() for a long
- time
-Thread-Index: AQHNY2k0KBMAdfA5Wke5aMR9d6abZQ==
-Date: Mon, 16 Jul 2012 15:39:36 +0000
-Message-ID: <1342453174.4648.6.camel@lade.trondhjem.org>
-References: <20120713140806.b3d0fda8.akpm@linux-foundation.org>
-	 <1342451364-14787-1-git-send-email-kirill.shutemov@linux.intel.com>
-In-Reply-To: <1342451364-14787-1-git-send-email-kirill.shutemov@linux.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.115]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <456F3DED7AFE6247ACCD1429DC1519D2@tahoe.netapp.com>
+	id S1751721Ab2GPPnH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 11:43:07 -0400
+X-ASG-Debug-ID: 1342453386-03d6a50cb61b08a0001-xx1T2L
+X-Barracuda-Envelope-From: clmason@fusionio.com
+Date: Mon, 16 Jul 2012 11:43:04 -0400
+From: Chris Mason <chris.mason@fusionio.com>
+To: Mike Galbraith <efault@gmx.de>
+CC: "Chris L. Mason" <clmason@fusionio.com>,
+        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: 3.4.4-rt13: btrfs + xfstests 006 = BOOM..  and a bonus rt_mutex
+ deadlock report for absolutely free!
+Message-ID: <20120716154304.GG25961@shiny.int.fusionio.com>
+X-ASG-Orig-Subj: Re: 3.4.4-rt13: btrfs + xfstests 006 = BOOM..  and a bonus rt_mutex
+ deadlock report for absolutely free!
+Mail-Followup-To: Chris Mason <chris.mason@fusionio.com>,
+	Mike Galbraith <efault@gmx.de>,
+	"Chris L. Mason" <clmason@fusionio.com>,
+	"linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Steven Rostedt <rostedt@goodmis.org>
+References: <1342072060.7338.102.camel@marge.simpson.net>
+ <20120713125043.GH30128@shiny>
+ <1342260883.7368.30.camel@marge.simpson.net>
+ <1342436144.7659.58.camel@marge.simpson.net>
 MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1342436144.7659.58.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1342453386
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0026 1.0000 -2.0042
+X-Barracuda-Spam-Score: -1.40
+X-Barracuda-Spam-Status: No, SCORE=-1.40 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=BSF_SC5_SA210e, MARKETING_SUBJECT
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.102875
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
+	0.60 MARKETING_SUBJECT      Subject contains popular marketing words
+	0.00 BSF_SC5_SA210e         Custom Rule SA210e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q6GFe5A7027537
 
-On Mon, 2012-07-16 at 18:09 +0300, Kirill A. Shutemov wrote:
-> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+On Mon, Jul 16, 2012 at 04:55:44AM -0600, Mike Galbraith wrote:
+> On Sat, 2012-07-14 at 12:14 +0200, Mike Galbraith wrote: 
+> > On Fri, 2012-07-13 at 08:50 -0400, Chris Mason wrote: 
+> > > On Wed, Jul 11, 2012 at 11:47:40PM -0600, Mike Galbraith wrote:
+> > > > Greetings,
+> > > 
+> > > [ deadlocks with btrfs and the recent RT kernels ]
+> > > 
+> > > I talked with Thomas about this and I think the problem is the
+> > > single-reader nature of the RW rwlocks.  The lockdep report below
+> > > mentions that btrfs is calling:
+> > > 
+> > > > [  692.963099]  [<ffffffff811fabd2>] btrfs_clear_path_blocking+0x32/0x70
+> > > 
+> > > In this case, the task has a number of blocking read locks on the btrfs buffers,
+> > > and we're trying to turn them back into spinning read locks.  Even
+> > > though btrfs is taking the read rwlock, it doesn't think of this as a new
+> > > lock operation because we were blocking out new writers.
+> > > 
+> > > If the second task has taken the spinning read lock, it is going to
+> > > prevent that clear_path_blocking operation from progressing, even though
+> > > it would have worked on a non-RT kernel.
+> > > 
+> > > The solution should be to make the blocking read locks in btrfs honor the
+> > > single-reader semantics.  This means not allowing more than one blocking
+> > > reader and not allowing a spinning reader when there is a blocking
+> > > reader.  Strictly speaking btrfs shouldn't need recursive readers on a
+> > > single lock, so I wouldn't worry about that part.
+> > > 
+> > > There is also a chunk of code in btrfs_clear_path_blocking that makes
+> > > sure to strictly honor top down locking order during the conversion.  It
+> > > only does this when lockdep is enabled because in non-RT kernels we
+> > > don't need to worry about it.  For RT we'll want to enable that as well.
+> > > 
+> > > I'll give this a shot later today.
+> > 
+> > I took a poke at it.  Did I do something similar to what you had in
+> > mind, or just hide behind performance stealing paranoid trylock loops?
+> > Box survived 1000 x xfstests 006 and dbench [-s] massive right off the
+> > bat, so it gets posted despite skepticism.
 > 
-> On exiting of the last task in a namespace we need to trigger freeing of
-> the namespace. Currently, we call synchronize_rcu() and free_nsproxy()
-> directly on do_exit() path.
+> Seems btrfs isn't entirely convinced either.
 > 
-> On my machine synchronize_rcu() blocks for about 0.01 seconds. For
-> comparing: normal exit_group() syscall takes less than 0.0003 seconds.
-> 
-> Let's offload synchronize_rcu() and free_nsproxy() to a workqueue.
-> 
-> I also move synchronize_rcu() inside free_nsproxy(). It fixes racy
-> put_nsproxy() which calls free_nsproxy() without synchronize_rcu().
-> I guess it was missed during switch to RCU (see cf7b708).
-> 
-> Microbenchmark:
-> 
-> : #define _GNU_SOURCE
-> : #include <unistd.h>
-> : #include <sched.h>
-> : #include <stdlib.h>
-> : #include <sys/wait.h>
-> :
-> : int
-> : main(void)
-> : {
-> :       int i;
-> :       for (i = 0; i < 1024; i++) {
-> :               if (fork()) {
-> :                       wait(NULL);
-> :                       continue;
-> :               }
-> :               unshare(CLONE_NEWIPC);
-> :               exit(0);
-> :       }
-> :       return 0;
-> : }
-> 
-> Before the patch:
-> 
-> real    0m8.335s
-> user    0m0.000s
-> sys     0m0.265s
-> 
-> After:
-> 
-> real    0m0.569s
-> user    0m0.001s
-> sys     0m0.154s
-> 
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
-> ---
-> 
-> v2:
->  - Updated description.
-> 
-> ---
->  include/linux/nsproxy.h |    1 +
->  kernel/nsproxy.c        |   34 +++++++++++++++++++++++-----------
->  2 files changed, 24 insertions(+), 11 deletions(-)
-> 
-> diff --git a/include/linux/nsproxy.h b/include/linux/nsproxy.h
-> index cc37a55..1d26be7 100644
-> --- a/include/linux/nsproxy.h
-> +++ b/include/linux/nsproxy.h
-> @@ -24,6 +24,7 @@ struct fs_struct;
->   */
->  struct nsproxy {
->  	atomic_t count;
-> +	struct work_struct free_nsproxy_work;
->  	struct uts_namespace *uts_ns;
->  	struct ipc_namespace *ipc_ns;
->  	struct mnt_namespace *mnt_ns;
-> diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
-> index b576f7f..ebc7d40 100644
-> --- a/kernel/nsproxy.c
-> +++ b/kernel/nsproxy.c
-> @@ -41,13 +41,17 @@ struct nsproxy init_nsproxy = {
->  #endif
->  };
->  
-> +static void free_nsproxy_work(struct work_struct *work);
-> +
->  static inline struct nsproxy *create_nsproxy(void)
->  {
->  	struct nsproxy *nsproxy;
->  
->  	nsproxy = kmem_cache_alloc(nsproxy_cachep, GFP_KERNEL);
-> -	if (nsproxy)
-> +	if (nsproxy) {
->  		atomic_set(&nsproxy->count, 1);
-> +		INIT_WORK(&nsproxy->free_nsproxy_work, free_nsproxy_work);
-> +	}
->  	return nsproxy;
->  }
->  
-> @@ -166,6 +170,14 @@ out:
->  
->  void free_nsproxy(struct nsproxy *ns)
->  {
-> +	/*
-> +	 * wait for others to get what they want from this nsproxy.
-> +	 *
-> +	 * cannot release this nsproxy via the call_rcu() since
-> +	 * put_mnt_ns() will want to sleep
-> +	 */
-> +	synchronize_rcu();
-> +
->  	if (ns->mnt_ns)
->  		put_mnt_ns(ns->mnt_ns);
->  	if (ns->uts_ns)
-> @@ -178,6 +190,14 @@ void free_nsproxy(struct nsproxy *ns)
->  	kmem_cache_free(nsproxy_cachep, ns);
->  }
->  
-> +static void free_nsproxy_work(struct work_struct *work)
-> +{
-> +	struct nsproxy *ns = container_of(work, struct nsproxy,
-> +			free_nsproxy_work);
-> +
-> +	free_nsproxy(ns);
-> +}
-> +
->  /*
->   * Called from unshare. Unshare all the namespaces part of nsproxy.
->   * On success, returns the new nsproxy.
-> @@ -215,16 +235,8 @@ void switch_task_namespaces(struct task_struct *p, struct nsproxy *new)
->  
->  	rcu_assign_pointer(p->nsproxy, new);
->  
-> -	if (ns && atomic_dec_and_test(&ns->count)) {
-> -		/*
-> -		 * wait for others to get what they want from this nsproxy.
-> -		 *
-> -		 * cannot release this nsproxy via the call_rcu() since
-> -		 * put_mnt_ns() will want to sleep
-> -		 */
-> -		synchronize_rcu();
-> -		free_nsproxy(ns);
-> -	}
-> +	if (ns && atomic_dec_and_test(&ns->count))
-> +		schedule_work(&ns->free_nsproxy_work);
+> [ 2292.336229] use_block_rsv: 1810 callbacks suppressed
+> [ 2292.336231] ------------[ cut here ]------------
+> [ 2292.336255] WARNING: at fs/btrfs/extent-tree.c:6344 use_block_rsv+0x17d/0x190 [btrfs]()
+> [ 2292.336257] Hardware name: System x3550 M3 -[7944K3G]-
+> [ 2292.336259] btrfs: block rsv returned -28
 
-What's wrong with using call_rcu()? The above will cause a workqueue
-thread to block for no good reason.
+This is unrelated.  You got far enough into the benchmark to hit an
+ENOSPC warning.  This can be ignored (I just deleted it when we used 3.0
+for oracle).
 
->  }
->  
->  void exit_task_namespaces(struct task_struct *p)
+re: dbench performance.  dbench tends to penalize fairness.  I can
+imagine RT making it slower in general.
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
+It also triggers lots of lock contention in btrfs because the dataset is
+fairly small and the trees don't fan out a lot.
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+-chris
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
