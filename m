@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752660Ab2GPI1c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 04:27:32 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:34190 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751942Ab2GPI1a (ORCPT
+	id S1752732Ab2GPI1s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 04:27:48 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:38333 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752461Ab2GPI1o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 04:27:30 -0400
+	Mon, 16 Jul 2012 04:27:44 -0400
 From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Avi Kivity <avi@redhat.com>, Rik van Riel <riel@redhat.com>
+        Avi Kivity <avi@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Rik van Riel <riel@redhat.com>
 Cc: Srikar <srikar@linux.vnet.ibm.com>, S390 <linux-s390@vger.kernel.org>,
         Carsten Otte <cotte@de.ibm.com>,
         Christian Borntraeger <borntraeger@de.ibm.com>,
@@ -22,114 +22,59 @@ Cc: Srikar <srikar@linux.vnet.ibm.com>, S390 <linux-s390@vger.kernel.org>,
         Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
         Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
         Joerg Roedel <joerg.roedel@amd.com>
-Date: Mon, 16 Jul 2012 13:55:14 +0530
-Message-Id: <20120716082514.23477.23849.sendpatchset@codeblue.in.ibm.com>
+Date: Mon, 16 Jul 2012 13:55:00 +0530
+Message-Id: <20120716082500.23477.26086.sendpatchset@codeblue.in.ibm.com>
 In-Reply-To: <20120716082445.23477.15128.sendpatchset@codeblue.in.ibm.com>
 References: <20120716082445.23477.15128.sendpatchset@codeblue.in.ibm.com>
-Subject: [PATCH RFC V4 2/3] kvm: Note down when cpu relax intercepted or pause loop exited
-x-cbid: 12071522-1396-0000-0000-00000190437E
+Subject: [PATCH RFC V4 1/3] kvm/config: Add config to support ple or cpu relax optimzation
+x-cbid: 12071523-3568-0000-0000-00000224065B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 
-Noting pause loop exited vcpu or cpu relax intercepted helps in
-filtering right candidate to yield. Wrong selection of vcpu;
-i.e., a vcpu that just did a pl-exit or cpu relax intercepted may
-contribute to performance degradation.
-
+Suggested-by: Avi Kivity <avi@redhat.com>
 Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 ---
-V2 was:
-Reviewed-by: Rik van Riel <riel@redhat.com>
+ arch/s390/kvm/Kconfig |    1 +
+ arch/x86/kvm/Kconfig  |    1 +
+ virt/kvm/Kconfig      |    3 +++
+ 3 files changed, 5 insertions(+), 0 deletions(-)
 
- include/linux/kvm_host.h |   37 +++++++++++++++++++++++++++++++++++++
- virt/kvm/kvm_main.c      |    5 +++++
- 2 files changed, 42 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index c446435..fa353bd 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -183,6 +183,18 @@ struct kvm_vcpu {
- 	} async_pf;
- #endif
+diff --git a/arch/s390/kvm/Kconfig b/arch/s390/kvm/Kconfig
+index 78eb984..a6e2677 100644
+--- a/arch/s390/kvm/Kconfig
++++ b/arch/s390/kvm/Kconfig
+@@ -21,6 +21,7 @@ config KVM
+ 	depends on HAVE_KVM && EXPERIMENTAL
+ 	select PREEMPT_NOTIFIERS
+ 	select ANON_INODES
++	select HAVE_KVM_CPU_RELAX_INTERCEPT
+ 	---help---
+ 	  Support hosting paravirtualized guest machines using the SIE
+ 	  virtualization capability on the mainframe. This should work
+diff --git a/arch/x86/kvm/Kconfig b/arch/x86/kvm/Kconfig
+index a28f338..45c044f 100644
+--- a/arch/x86/kvm/Kconfig
++++ b/arch/x86/kvm/Kconfig
+@@ -37,6 +37,7 @@ config KVM
+ 	select TASK_DELAY_ACCT
+ 	select PERF_EVENTS
+ 	select HAVE_KVM_MSI
++	select HAVE_KVM_CPU_RELAX_INTERCEPT
+ 	---help---
+ 	  Support hosting fully virtualized guest machines using hardware
+ 	  virtualization extensions.  You will need a fairly recent
+diff --git a/virt/kvm/Kconfig b/virt/kvm/Kconfig
+index 28694f4..d01b24b 100644
+--- a/virt/kvm/Kconfig
++++ b/virt/kvm/Kconfig
+@@ -21,3 +21,6 @@ config KVM_ASYNC_PF
  
-+#ifdef CONFIG_HAVE_KVM_CPU_RELAX_INTERCEPT
-+	/*
-+	 * Cpu relax intercept or pause loop exit optimization
-+	 * cpu_relax_intercepted: set when a vcpu does a pause loop exit
-+	 *  or cpu relax intercepted.
-+	 * dy_eligible: indicates whether vcpu is eligible for directed yield.
-+	 */
-+	struct {
-+		bool cpu_relax_intercepted;
-+		bool dy_eligible;
-+	} ple;
-+#endif
- 	struct kvm_vcpu_arch arch;
- };
- 
-@@ -890,5 +902,30 @@ static inline bool kvm_check_request(int req, struct kvm_vcpu *vcpu)
- 	}
- }
- 
-+#ifdef CONFIG_HAVE_KVM_CPU_RELAX_INTERCEPT
+ config HAVE_KVM_MSI
+        bool
 +
-+static inline void kvm_vcpu_set_cpu_relax_intercepted(struct kvm_vcpu *vcpu,
-+							bool val)
-+{
-+	vcpu->ple.cpu_relax_intercepted = val;
-+}
-+static inline void kvm_vcpu_set_dy_eligible(struct kvm_vcpu *vcpu, bool val)
-+{
-+	vcpu->ple.dy_eligible = val;
-+}
-+
-+#else /* !CONFIG_HAVE_KVM_CPU_RELAX_INTERCEPT */
-+
-+static inline void kvm_vcpu_set_cpu_relax_intercepted(struct kvm_vcpu *vcpu,
-+							bool val)
-+{
-+}
-+
-+static inline void kvm_vcpu_set_dy_eligible(struct kvm_vcpu *vcpu, bool val)
-+{
-+}
-+
-+#endif /* CONFIG_HAVE_KVM_CPU_RELAX_INTERCEPT */
-+
- #endif
- 
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 7e14068..c50213f 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -236,6 +236,9 @@ int kvm_vcpu_init(struct kvm_vcpu *vcpu, struct kvm *kvm, unsigned id)
- 	}
- 	vcpu->run = page_address(page);
- 
-+	kvm_vcpu_set_cpu_relax_intercepted(vcpu, false);
-+	kvm_vcpu_set_dy_eligible(vcpu, false);
-+
- 	r = kvm_arch_vcpu_init(vcpu);
- 	if (r < 0)
- 		goto fail_free_run;
-@@ -1577,6 +1580,7 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
- 	int pass;
- 	int i;
- 
-+	kvm_vcpu_set_cpu_relax_intercepted(me, true);
- 	/*
- 	 * We boost the priority of a VCPU that is runnable but not
- 	 * currently running, because it got preempted by something
-@@ -1602,6 +1606,7 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
- 			}
- 		}
- 	}
-+	kvm_vcpu_set_cpu_relax_intercepted(me, false);
- }
- EXPORT_SYMBOL_GPL(kvm_vcpu_on_spin);
- 
++config HAVE_KVM_CPU_RELAX_INTERCEPT
++       bool
 
