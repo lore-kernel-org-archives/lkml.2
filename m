@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753382Ab2GPWAx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 18:00:53 -0400
-Received: from na3sys009aog120.obsmtp.com ([74.125.149.140]:50453 "EHLO
-	na3sys009aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752593Ab2GPWAu (ORCPT
+	id S1753952Ab2GPWBI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 18:01:08 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:48791 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753458Ab2GPWBC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 18:00:50 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Tarun Kanti DebBarma <tarun.kanti@ti.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Rajendra Nayak <rnayak@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        "Cousson\, Benoit" <b-cousson@ti.com>, Paul Walmsley <paul@pwsan.com>
-Subject: Re: [PATCH 2/2] gpio/omap: add *remove* callback in platform_driver
-Organization: Texas Instruments, Inc.
-References: <1341997995-14020-1-git-send-email-tarun.kanti@ti.com>
-	<1341997995-14020-3-git-send-email-tarun.kanti@ti.com>
-	<87394xhocn.fsf@ti.com>
-	<CACRpkdZMG_ZHW_eGGrdrJh1SuO_=hOObijzmxG1ob6RoNf_dwg@mail.gmail.com>
-	<87a9z4g9bi.fsf@ti.com>
-	<CACRpkdZxUpQ=a-yQ8b4bnX3S9penPWkxJ+PG2Zi4i9YZibYRiw@mail.gmail.com>
-	<87ipdnein1.fsf@ti.com>
-	<CACRpkdYMzdjFXBMs6do-yqiBFV5ru28SftA5u+ZkP5KO+PhjCA@mail.gmail.com>
-Date: Mon, 16 Jul 2012 15:01:13 -0700
-In-Reply-To: <CACRpkdYMzdjFXBMs6do-yqiBFV5ru28SftA5u+ZkP5KO+PhjCA@mail.gmail.com>
-	(Linus Walleij's message of "Mon, 16 Jul 2012 22:49:17 +0200")
-Message-ID: <87y5mjcqmu.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Mon, 16 Jul 2012 18:01:02 -0400
+From: Sasha Levin <levinsasha928@gmail.com>
+To: Trond.Myklebust@netapp.com, bfields@fieldses.org, davem@davemloft.net
+Cc: davej@redhat.com, linux-nfs@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Sasha Levin <levinsasha928@gmail.com>
+Subject: [PATCH] SUNRPC: Prevent kernel stack corruption on long values of flush
+Date: Tue, 17 Jul 2012 00:01:26 +0200
+Message-Id: <1342476086-21638-1-git-send-email-levinsasha928@gmail.com>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Walleij <linus.walleij@linaro.org> writes:
+The buffer size in read_flush() is too small for the longest possible values
+for it. This can lead to a kernel stack corruption:
 
-> On Mon, Jul 16, 2012 at 7:10 PM, Kevin Hilman <khilman@ti.com> wrote:
->
->> Subject: [PATCH] MAINTAINERS: add entry OMAP GPIO driver
->>
->> Since I've been maintaining this, making it official at the request of the
->> GPIO maintainers.
->>
->> Cc: Grant Likely <grant.likely@secretlab.ca>
->> Cc: Linus Walleij <linus.walleij@linaro.org>
->> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
->> Cc: Andrew Morton <akpm@linux-foundation.org>
->> Signed-off-by: Kevin Hilman <khilman@ti.com>
->
-> Thank! Applied, but:
->
->> +F:     drivers/gpio/gpio.omap.c
->
-> I replaced the period with a dash:
-> drivers/gpio/gpio-omap.c
+[   43.047329] Kernel panic - not syncing: stack-protector: Kernel stack is corrupted in: ffffffff833e64b4
+[   43.047329]
+[   43.049030] Pid: 6015, comm: trinity-child18 Tainted: G        W    3.5.0-rc7-next-20120716-sasha #221
+[   43.050038] Call Trace:
+[   43.050435]  [<ffffffff836c60c2>] panic+0xcd/0x1f4
+[   43.050931]  [<ffffffff833e64b4>] ? read_flush.isra.7+0xe4/0x100
+[   43.051602]  [<ffffffff810e94e6>] __stack_chk_fail+0x16/0x20
+[   43.052206]  [<ffffffff833e64b4>] read_flush.isra.7+0xe4/0x100
+[   43.052951]  [<ffffffff833e6500>] ? read_flush_pipefs+0x30/0x30
+[   43.053594]  [<ffffffff833e652c>] read_flush_procfs+0x2c/0x30
+[   43.053596]  [<ffffffff812b9a8c>] proc_reg_read+0x9c/0xd0
+[   43.053596]  [<ffffffff812b99f0>] ? proc_reg_write+0xd0/0xd0
+[   43.053596]  [<ffffffff81250d5b>] do_loop_readv_writev+0x4b/0x90
+[   43.053596]  [<ffffffff81250fd6>] do_readv_writev+0xf6/0x1d0
+[   43.053596]  [<ffffffff812510ee>] vfs_readv+0x3e/0x60
+[   43.053596]  [<ffffffff812511b8>] sys_readv+0x48/0xb0
+[   43.053596]  [<ffffffff8378167d>] system_call_fastpath+0x1a/0x1f
 
-Ah, you caught me again trying to avoid getting mail for that driver. ;)
+Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+---
+ net/sunrpc/cache.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Kevin
+diff --git a/net/sunrpc/cache.c b/net/sunrpc/cache.c
+index 2afd2a8..f86d95e 100644
+--- a/net/sunrpc/cache.c
++++ b/net/sunrpc/cache.c
+@@ -1409,11 +1409,11 @@ static ssize_t read_flush(struct file *file, char __user *buf,
+ 			  size_t count, loff_t *ppos,
+ 			  struct cache_detail *cd)
+ {
+-	char tbuf[20];
++	char tbuf[22];
+ 	unsigned long p = *ppos;
+ 	size_t len;
+ 
+-	sprintf(tbuf, "%lu\n", convert_to_wallclock(cd->flush_time));
++	snprintf(tbuf, sizeof(tbuf), "%lu\n", convert_to_wallclock(cd->flush_time));
+ 	len = strlen(tbuf);
+ 	if (p >= len)
+ 		return 0;
+-- 
+1.7.8.6
+
