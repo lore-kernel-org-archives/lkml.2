@@ -1,73 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752994Ab2GPJ7p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 05:59:45 -0400
-Received: from www.linutronix.de ([62.245.132.108]:52278 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751123Ab2GPJ7k (ORCPT
+	id S1753070Ab2GPKBa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 06:01:30 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:53236 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751288Ab2GPKB1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 05:59:40 -0400
-Date: Mon, 16 Jul 2012 11:59:32 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Mike Galbraith <mgalbraith@novell.com>
-cc: Jan Kara <jack@suse.cz>, Jeff Moyer <jmoyer@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Jens Axboe <jaxboe@fusionio.com>,
-        mgalbraith@suse.com
-Subject: Re: Deadlocks due to per-process plugging
-In-Reply-To: <1342432094.7659.39.camel@marge.simpson.net>
-Message-ID: <alpine.LFD.2.02.1207161157510.32033@ionos>
-References: <20120711133735.GA8122@quack.suse.cz>   <x49ehoii8ps.fsf@segfault.boston.devel.redhat.com>   <20120711201601.GB9779@quack.suse.cz>   <alpine.LFD.2.02.1207121552111.32033@ionos>   <20120713123318.GB20361@quack.suse.cz>   <alpine.LFD.2.02.1207131444490.32033@ionos>
-  <20120713144622.GB28715@quack.suse.cz>   <alpine.LFD.2.02.1207151057010.32033@ionos>   <1342343673.28142.2.camel@marge.simpson.net>  <1342405366.7659.35.camel@marge.simpson.net>  <alpine.LFD.2.02.1207161058550.32033@ionos>
- <1342432094.7659.39.camel@marge.simpson.net>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Mon, 16 Jul 2012 06:01:27 -0400
+Date: Mon, 16 Jul 2012 12:01:25 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Vinod Koul <vinod.koul@linux.intel.com>
+cc: Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/7 v2] dma: sh: use an integer slave ID to improve API
+ compatibility
+In-Reply-To: <1342431452.1726.54.camel@vkoul-udesk3>
+Message-ID: <Pine.LNX.4.64.1207161155280.12302@axis700.grange>
+References: <1341484183-10757-1-git-send-email-g.liakhovetski@gmx.de> 
+ <1341484183-10757-6-git-send-email-g.liakhovetski@gmx.de> 
+ <1342418828.1726.37.camel@vkoul-udesk3>  <Pine.LNX.4.64.1207160832540.12302@axis700.grange>
+  <1342421587.1726.49.camel@vkoul-udesk3>  <Pine.LNX.4.64.1207160907180.12302@axis700.grange>
+  <1342427305.1726.50.camel@vkoul-udesk3>  <Pine.LNX.4.64.1207161040070.12302@axis700.grange>
+ <1342431452.1726.54.camel@vkoul-udesk3>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+X-Provags-ID: V02:K0:szJQ8nUY6/yaOZnMVvQC8h/r3CIq8h++LYSeObhjjn7
+ 0HwoG+BvZDVsXf6rTQ6+LKMhnkGfLaoBzMd0Q9i7vkrppqUKs4
+ PBzUG0jEUBppS2cEF7+TgffG55bZQ/4SSdvRHnQLs+FhR/pD9J
+ A/yZBo42kBqp/EhrJs1oM9yu43sitwuz1o3QjCZmk5oxPJPCFh
+ 1+pcA8SEJS4C+kMMi0okKCgh4gxzTYR/cp+8MoZdaDNeEibcH/
+ k/RUQ6wnwLx7I9SwNRmPFJC343Y4Fl71H/n/tt07gwrenQuBPF
+ NttkW9u2oiJIEwtSnoOy58v3X7mD0G5BMUAb7B1SkXWAgKLEtq
+ Hmkp223VZ7KJ8Aatlvrh10aS3dxWwWcbEcoYsd8UZHXWsLCK/L
+ 4jSkhiLJre53A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Jul 2012, Mike Galbraith wrote:
-> On Mon, 2012-07-16 at 10:59 +0200, Thomas Gleixner wrote: 
-> > On Mon, 16 Jul 2012, Mike Galbraith wrote:
-> > > On Sun, 2012-07-15 at 11:14 +0200, Mike Galbraith wrote: 
-> > > > On Sun, 2012-07-15 at 10:59 +0200, Thomas Gleixner wrote: 
-> > > 
-> > > > > Can you figure out on which lock the stuck thread which did not unplug
-> > > > > due to tsk_is_pi_blocked was blocked?
-> > > > 
-> > > > I'll take a peek.
-> > > 
-> > > Sorry for late reply, took a half day away from box.  Jan had already
-> > > done the full ext3 IO deadlock analysis:
-> > > 
-> > > Again kjournald is waiting for buffer IO on block 4367635 (sector
-> > > 78364838) to finish.  Now it is dbench thread 0xffff88026f330e70 which
-> > > has submitted this buffer for IO and is still holding this buffer behind
-> > > its plug (request for sector 78364822..78364846). The dbench thread is
-> > > waiting on j_checkpoint mutex (apparently it has successfully got the
-> > > mutex in the past, checkpointed some buffers, released the mutex and
-> > > hung when trying to acquire it again in the next loop of
-> > > __log_wait_for_space()). 
+On Mon, 16 Jul 2012, Vinod Koul wrote:
+
+> On Mon, 2012-07-16 at 10:47 +0200, Guennadi Liakhovetski wrote:
+> > > I want to know what does ccr and mid_rid mean to dmac here?
 > > 
-> > And what's holding j_checkpoint mutex and not making progress?
+> > CHCR contains a few fields, some enable various interrupt sources, some 
+> > specify repeat- and renew-modes, others yet specify transfer size, source 
+> > and destination address-modes (incrementing, constant, decrementing), 
+> > others yet select a DMA client category (slave / memcpy / ...), and a 
+> > transfer flag. Some of these fields could be calculated, others are 
+> > pre-defined for various slaves, the exact layout of those fields can also 
+> > vary between SoCs.
+> I do not understand how clients would provide these values. 
+> For pre-defined values, they should be dmac property why should client
+> like spi or mmc have clue about it?
 > 
-> Waiting for wakeup from kjournald.
+> For others like you mentioned, i guess they could be easily calculated,
+> right?
+> 
+> > MID_RID is actually a slave-selector, it contains a magic value, that 
+> > cannot be calculated. 
+> and again, how does client know this?
 
-So kicking the io in __log_wait_for_space()
+I might be misunderstanding you, but from earlier discussions I got an 
+impression, that the DMAC should know nothing about clients, i.e., should 
+receive no client-specific information from its platform data. Instead 
+clients should provide it when configuring the channel. If this is 
+correct, then the preferred way would be to specify these values in client 
+platform data and then pass it to the DMAC with slave-config calls? Or 
+have I misunderstood you and this per-client information should be kept in 
+DMAC platform data?
 
-                spin_unlock(&journal->j_state_lock);
+I.e., in both cases magic values are provided by platforms, the only 
+difference is - either keep them in DMAC platform data or move them in 
+each individual DMA client platform data.
 
-		--> HERE
+Yes, some CHCR fields can be calculated, but location and width of those 
+fields might vary between DMAC versions, so, they will have to be passed 
+with DMAC platform data. But this definitely can be done in the future.
 
-                mutex_lock(&journal->j_checkpoint_mutex);
-
-should fix the issue, right ?
-
-Thanks,
-
-	tglx
- 
+Thanks
+Guennadi
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
