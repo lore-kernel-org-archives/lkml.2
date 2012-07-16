@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753458Ab2GPW5A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 18:57:00 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:51649 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751188Ab2GPW46 (ORCPT
+	id S1753885Ab2GPW5q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 18:57:46 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:47096 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752693Ab2GPW5n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 18:56:58 -0400
+	Mon, 16 Jul 2012 18:57:43 -0400
+Date: Tue, 17 Jul 2012 00:57:36 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, Josh Triplett <josh@joshtriplett.org>,
+        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC PATCH 00/11] rcu: Userspace RCU extended quiescent state v2
+Message-ID: <20120716225733.GB28744@somewhere>
+References: <1342031200-22731-1-git-send-email-fweisbec@gmail.com>
+ <20120716221556.GH2403@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <1342477026-8376-1-git-send-email-marex@denx.de>
-References: <1342477026-8376-1-git-send-email-marex@denx.de>
-Date: Mon, 16 Jul 2012 15:56:57 -0700
-Message-ID: <CAA9_cmcWaj_KWLz1m0sxCJNihVuGMQsbP53=1cPiEBBWiei7bg@mail.gmail.com>
-Subject: Re: [PATCH V2] [SCSI] async: Fixup arguments of async_synchronize_full_domain
- in alsa-soc
-From: Dan Williams <dan.j.williams@gmail.com>
-To: Marek Vasut <marex@denx.de>
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        James Bottomley <JBottomley@parallels.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120716221556.GH2403@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 16, 2012 at 3:17 PM, Marek Vasut <marex@denx.de> wrote:
-[..]
->  sound/soc/soc-dapm.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> V2: CC proper people, hopefully proper mailing list
->     Adjust the patch subject with proper tags
->
-> diff --git a/sound/soc/soc-dapm.c b/sound/soc/soc-dapm.c
-> index eded657..e491eb0 100644
-> --- a/sound/soc/soc-dapm.c
-> +++ b/sound/soc/soc-dapm.c
-> @@ -1572,7 +1572,7 @@ static int dapm_power_widgets(struct snd_soc_dapm_context *dapm, int event)
->         struct snd_soc_dapm_context *d;
->         LIST_HEAD(up_list);
->         LIST_HEAD(down_list);
-> -       LIST_HEAD(async_domain);
-> +       ASYNC_DOMAIN_EXCLUSIVE(async_domain);
->         enum snd_soc_bias_level bias;
->
+On Mon, Jul 16, 2012 at 03:15:56PM -0700, Paul E. McKenney wrote:
+> On Wed, Jul 11, 2012 at 08:26:29PM +0200, Frederic Weisbecker wrote:
+> > Hi,
+> > 
+> > There are significant changes this time. I reverted back to using
+> > a TIF flag to hook on syscalls slow path and put the hooks on
+> > high level exception handlers instead of low level ones.
+> > 
+> > It makes the code more portable between x86-32 and x86-64, it
+> > makes the hooks clearer and easier to review and the overhead
+> > is lowered in the off-case. This can be even better if we use
+> > jump labels later.
+> 
+> Thank you, Frederic, I have queued these:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/idle
+> 
+> I had to rework patch 4 a bit to take into account that I dropped the
+> rcu_switch_from() patch, please check it to make sure that I didn't
+> rework it out of existence.
+> 
+> 							Thanx, Paul
 
-Thanks.  This was folded into the resend that was submitted week [1]
+Ok so it crashed once and I got 3 successful reboots afterward.
+Not sure what was the issue, not sure that's even due to my patches.
 
-Regards,
-Dan
-
-[1]: http://marc.info/?l=linux-scsi&m=134188683322951&w=2
+Anyway, I'll tell you if I see the crash again.
