@@ -1,77 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753849Ab2GPRJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 13:09:58 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:34283 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753624Ab2GPRJx (ORCPT
+	id S1753860Ab2GPRKt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 13:10:49 -0400
+Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:34862 "EHLO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753511Ab2GPRKo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 13:09:53 -0400
-Message-ID: <50044A54.2090005@linux.vnet.ibm.com>
-Date: Mon, 16 Jul 2012 22:37:32 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	Mon, 16 Jul 2012 13:10:44 -0400
+From: Kevin Hilman <khilman@ti.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Tarun Kanti DebBarma <tarun.kanti@ti.com>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Rajendra Nayak <rnayak@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        "Cousson\, Benoit" <b-cousson@ti.com>, Paul Walmsley <paul@pwsan.com>
+Subject: Re: [PATCH 2/2] gpio/omap: add *remove* callback in platform_driver
+Organization: Texas Instruments, Inc.
+References: <1341997995-14020-1-git-send-email-tarun.kanti@ti.com>
+	<1341997995-14020-3-git-send-email-tarun.kanti@ti.com>
+	<87394xhocn.fsf@ti.com>
+	<CACRpkdZMG_ZHW_eGGrdrJh1SuO_=hOObijzmxG1ob6RoNf_dwg@mail.gmail.com>
+	<87a9z4g9bi.fsf@ti.com>
+	<CACRpkdZxUpQ=a-yQ8b4bnX3S9penPWkxJ+PG2Zi4i9YZibYRiw@mail.gmail.com>
+Date: Mon, 16 Jul 2012 10:10:58 -0700
+In-Reply-To: <CACRpkdZxUpQ=a-yQ8b4bnX3S9penPWkxJ+PG2Zi4i9YZibYRiw@mail.gmail.com>
+	(Linus Walleij's message of "Sat, 14 Jul 2012 22:51:44 +0200")
+Message-ID: <87ipdnein1.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-To: Rik van Riel <riel@redhat.com>, Avi Kivity <avi@redhat.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Srikar <srikar@linux.vnet.ibm.com>, S390 <linux-s390@vger.kernel.org>,
-        Carsten Otte <cotte@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
-        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Subject: Re: [PATCH RFC V4 3/3] kvm: Choose better candidate for directed
- yield
-References: <20120716082445.23477.15128.sendpatchset@codeblue.in.ibm.com> <20120716082529.23477.91096.sendpatchset@codeblue.in.ibm.com> <5003E7ED.2030701@redhat.com> <50043CF3.8020903@redhat.com>
-In-Reply-To: <50043CF3.8020903@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 12071606-9264-0000-0000-000001ECCCE2
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2012 09:40 PM, Rik van Riel wrote:
-> On 07/16/2012 06:07 AM, Avi Kivity wrote:
+Linus Walleij <linus.walleij@linaro.org> writes:
+
+> On Thu, Jul 12, 2012 at 7:48 PM, Kevin Hilman <khilman@ti.com> wrote:
 >
->>> +{
->>> + bool eligible;
->>> +
->>> + eligible = !vcpu->ple.cpu_relax_intercepted ||
->>> + (vcpu->ple.cpu_relax_intercepted&&
->>> + vcpu->ple.dy_eligible);
->>> +
->>> + if (vcpu->ple.cpu_relax_intercepted)
->>> + vcpu->ple.dy_eligible = !vcpu->ple.dy_eligible;
+>> In the case of OMAP GPIO, unless it's an obvious fix, I would recommend
+>> you wait at least until you see some acks/tested tags from any of
 >>
->> Probably should assign 'true', since the previous value is essentially
->> random.
+>> - Santosh Shilimkar <santosh.shilimkar@ti.com>
+>> - Rajendra Nayak <rnayak@ti.com>
+>> - Benoit Cousson <b-cousson@ti.com>
+>>
+>> or Tony, Paul or myself.
 >
-> I suspect the intended purpose of this conditional is to
-> flip the eligibility of a vcpu for being selected as a
-> direct yield target.
+> Instead of trying to store this information in my and Grants brains and
+> us forgetting it, what about patching MAINTAINERS to reflect the fact
+> instead? That's better I think, plus I use that file a lot.
 >
-> In other words, that bit of the code is correct.
+>> For major series, I have been collecting/queueing them for Grant after
+>> ensuring they have been well reviewed and well tested (although I am
+>> eagerly hoping to hand off this role to someone else.)
+>
+> Listing it under your GIT tree in MAINTAINERS for this driver will make
+> this work better I think.
+>
+> One path for OMAP GPIO patches, simple. It's obviously the
+> ambiguity that cause the trouble. Then you can also decide
+> on each cycle whether to send these to GPIO or ARM SoC
+> etc.
 
-Yes, That is the intention.
+Yeah, I understand the process, but I've been avoiding doing that
+because, well, I don't want the job.  I have been trying to get someone
+else at TI to maintain this driver, but have not been successful.
 
-The first intention was to make sure, not to select previously selected
-pause loop exited guy.
-But second intention was not to make a vcpu permanently eligible after
-skipping once.
+So, until that happens, feel free to queue up the patch below.
 
-The problem is when several PL exits happen simultaneously, (most
-possible in large vcpu guest), it is very much probable that same vcpu
-is tried as target of directed yield slowing down yielding to a
-eligible guy.
+Santosh, note that I've put you as co-maintainer of this driver.
 
-But I 'll test one more time to make sure that.
+Kevin
 
-(if we can make dy_eligible true as suggested, that means probably we 
-can live with only one bool variable.)
+
+>From c429e2e98ea7add98b85a47483ca7126284b22e6 Mon Sep 17 00:00:00 2001
+From: Kevin Hilman <khilman@ti.com>
+Date: Mon, 16 Jul 2012 10:05:07 -0700
+Subject: [PATCH] MAINTAINERS: add entry OMAP GPIO driver
+
+Since I've been maintaining this, making it official at the request of the
+GPIO maintainers.
+
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Kevin Hilman <khilman@ti.com>
+---
+ MAINTAINERS |    7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 03df1d1..61d117a 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -4943,6 +4943,13 @@ S:	Maintained
+ F:	drivers/usb/*/*omap*
+ F:	arch/arm/*omap*/usb*
+ 
++OMAP GPIO DRIVER
++M:	Santosh Shilimkar <santosh.shilimkar@ti.com>
++M:	Kevin Hilman <khilman@ti.com>
++L:	linux-omap@vger.kernel.org
++S:	Maintained
++F:	drivers/gpio/gpio.omap.c
++
+ OMFS FILESYSTEM
+ M:	Bob Copeland <me@bobcopeland.com>
+ L:	linux-karma-devel@lists.sourceforge.net
+-- 
+1.7.9.2
 
