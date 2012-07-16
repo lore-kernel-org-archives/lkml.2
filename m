@@ -1,71 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752671Ab2GPP3e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 11:29:34 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:42307 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751261Ab2GPP3c (ORCPT
+	id S1752845Ab2GPPdA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 11:33:00 -0400
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:58409 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751916Ab2GPPcy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 11:29:32 -0400
-Date: Mon, 16 Jul 2012 08:22:24 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [Patch 0/7] Per cpu thread hotplug infrastructure - V3
-Message-ID: <20120716152224.GF2403@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120716103749.122800930@linutronix.de>
+	Mon, 16 Jul 2012 11:32:54 -0400
+Message-ID: <500433F3.8030104@xenotime.net>
+Date: Mon, 16 Jul 2012 08:32:03 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120716103749.122800930@linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12071615-7282-0000-0000-00000AF70325
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Teddy Wang <teddy.wang@siliconmotion.com.cn>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>
+Subject: [PATCH -next] staging: fix sm7xxfb build, depends on PCI
+References: <20120716171709.a2da2c69fd0052b1a519de65@canb.auug.org.au>
+In-Reply-To: <20120716171709.a2da2c69fd0052b1a519de65@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 16, 2012 at 10:42:34AM -0000, Thomas Gleixner wrote:
-> The following series implements the infrastructure for parking and
-> unparking kernel threads to avoid the full teardown and fork on cpu
-> hotplug operations along with management infrastructure for hotplug
-> and users.
-> 
-> Changes vs. V2:
-> 
->  Use callbacks for all functionality. Thanks to Rusty for pointing
->  that out. It makes the use sites nice and simple and keeps all the
->  code which would be duplicated otherwise on the core.
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-Hello, Thomas,
+sm7xxfb.c is a PCI driver, so make it depend on PCI.
+Fixes these build warnings:
 
-What version should I apply this patchset to?  I tried v3.5-rc7, but
-got lots of warnings (one shown below) and the watchdog patch did not
-apply.
+drivers/staging/sm7xxfb/sm7xxfb.c:1063:1: warning: data definition has no type or storage class
+drivers/staging/sm7xxfb/sm7xxfb.c:1063:1: warning: type defaults to 'int' in declaration of 'module_pci_driver'
+drivers/staging/sm7xxfb/sm7xxfb.c:1063:1: warning: parameter names (without types) in function declaration
 
-							Thanx, Paul
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Teddy Wang <teddy.wang@siliconmotion.com.cn>
+---
+ drivers/staging/sm7xxfb/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-------------------------------------------------------------------------
-
-[    0.280196] BUG: scheduling while atomic: ksoftirqd/1/7/0x00000004
-[    0.280968] Modules linked in:
-[    0.282064] Pid: 7, comm: ksoftirqd/1 Not tainted 3.5.0-rc7+ #1559
-[    0.283990] Call Trace:
-[    0.284987]  [<c16314f1>] __schedule_bug+0x49/0x55
-[    0.285975]  [<c1638e1a>] __schedule+0x6ca/0x780
-[    0.286977]  [<c109b556>] ? rcu_process_callbacks+0x66/0x130
-[    0.288983]  [<c10362c4>] ? __local_bh_enable+0x24/0x70
-[    0.289975]  [<c105f02b>] ? default_wake_function+0xb/0x10
-[    0.291972]  [<c1638fbe>] schedule+0x1e/0x50
-[    0.292969]  [<c1639202>] schedule_preempt_disabled+0x12/0x20
-[    0.294975]  [<c1075ff8>] smpboot_thread_fn+0xe8/0x240
-[    0.295968]  [<c1075f10>] ? smpboot_register_percpu_thread+0xc0/0xc0
-[    0.295969]  [<c104fe5f>] kthread+0x8f/0xa0
-[    0.295969]  [<c104fdd0>] ? flush_kthread_worker+0x80/0x80
-[    0.295969]  [<c163ffb6>] kernel_thread_helper+0x6/0xd
-
+--- linux-next-20120716.orig/drivers/staging/sm7xxfb/Kconfig
++++ linux-next-20120716/drivers/staging/sm7xxfb/Kconfig
+@@ -1,6 +1,6 @@
+ config FB_SM7XX
+ 	tristate "Silicon Motion SM7XX framebuffer support"
+-	depends on FB
++	depends on FB && PCI
+ 	select FB_CFB_FILLRECT
+ 	select FB_CFB_COPYAREA
+ 	select FB_CFB_IMAGEBLIT
