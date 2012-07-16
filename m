@@ -1,66 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751756Ab2GPGUQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 02:20:16 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:34298 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750798Ab2GPGUO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 02:20:14 -0400
+	id S1751719Ab2GPGao (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 02:30:44 -0400
+Received: from mail-1.atlantis.sk ([80.94.52.57]:40170 "EHLO mail.atlantis.sk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750966Ab2GPGam (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 02:30:42 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: Jaroslav Kysela <perex@perex.cz>
+Subject: [PATCH] wss_lib: Fix resume on Yamaha OPL3-SAx
+Date: Mon, 16 Jul 2012 08:30:18 +0200
+User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
+Cc: alsa-devel@alsa-project.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <50032F24.8050903@landley.net>
-References: <CALbm-EbggDYBwEDmo6bjEO_=p0YEmLHASNkfAN5J-P4-mT-vgg@mail.gmail.com>
-	<CAFtxgO5=oANwXJ34rkKjWFiOxgB1hvEDToZXt=9w5gKoVOsOBw@mail.gmail.com>
-	<CALbm-EY-4iQy3HYi4bYdLVsLyr+iDecTUsVt43+_Nf9v_rkTyw@mail.gmail.com>
-	<50032F24.8050903@landley.net>
-Date: Mon, 16 Jul 2012 08:20:13 +0200
-Message-ID: <CALbm-EbZg+BtW+BTokA2Xz+P1DSt3-WR+xV5DB_GrieLqR27NA@mail.gmail.com>
-Subject: Re: [PATCH] Rewrite Documentation/SubmittingPatches.
-From: Stefan Beller <stefanbeller@googlemail.com>
-To: Rob Landley <rob@landley.net>
-Cc: Jeff Garzik <jgarzik@pobox.com>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201207160830.18826.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Heh,
-It seems as if googlemail is not a suited interface to contribute to linux.
+Yamaha OPL3-SAx chips don't resume properly when playback is running -
+garbage is played after resume. Restoring the CS4231_PLAYBK_FORMAT register
+last fixes the problem.
 
-The raw patch (without clipped lines) can be found at
-http://pastebin.com/raw.php?i=3QKRZz2M
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 
-Stefan
+--- a/sound/isa/wss/wss_lib.c
++++ b/sound/isa/wss/wss_lib.c
+@@ -1656,6 +1656,10 @@ static void snd_wss_resume(struct snd_wss *chip)
+ 			break;
+ 		}
+ 	}
++	/* Yamaha needs this to resume properly */
++	if (chip->hardware == WSS_HW_OPL3SA2)
++		snd_wss_out(chip, CS4231_PLAYBK_FORMAT,
++			    chip->image[CS4231_PLAYBK_FORMAT]);
+ 	spin_unlock_irqrestore(&chip->reg_lock, flags);
+ #if 1
+ 	snd_wss_mce_down(chip);
 
-2012/7/15 Rob Landley <rob@landley.net>:
-> On 07/13/2012 09:45 AM, Stefan Beller wrote:
->> This updates the documentation on how to create patches and send
->> these to the kernel mailing list.
->>
->> The documentation before was written in times before git was there,
->> so the crafting of the patch needed to be done manually by diff -up
->> in the right directory.
->>
->> This patch aims at simplifying the patch sending process, without
->> breaking the output results.
->
-> This patch is whitespace damaged (wordwrapped at the @@ lines), which is
-> either ironic or unfortunate. (After Alanis Morisette, I can't tell
-> anymore.)
->
->> A discussion can be found at
->> https://plus.google.com/111049168280159033135/posts/ekAxK9achsA
->>
->> Signed-off-by: Stefan Beller <stefanbeller@googlemail.com>
->> Acked-by: Jeff Garzik jgarzik@pobox.com
->
-> But other than that Jeff's objection was my big one, and that's
-> addressed in v2, so:
->
-> Acked-by: Rob Landley <rob@landley.net>
->
-> Rob
-> --
-> GNU/Linux isn't: Linux=GPLv2, GNU=GPLv3+, they can't share code.
-> Either it's "mere aggregation", or a license violation.  Pick one.
+-- 
+Ondrej Zary
