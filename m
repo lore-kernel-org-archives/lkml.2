@@ -1,76 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754100Ab2GPScX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 14:32:23 -0400
-Received: from trent.utfs.org ([94.185.90.103]:35719 "EHLO trent.utfs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751916Ab2GPScV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 14:32:21 -0400
-Date: Mon, 16 Jul 2012 11:32:07 -0700 (PDT)
-From: Christian Kujau <lists@nerdbynature.de>
-To: Li Zhong <zhong@linux.vnet.ibm.com>
-cc: Dan Williams <dan.j.williams@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, arjan@linux.intel.com,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>
-Subject: Re: [PATCH RESEND] Fix a dead loop in async_synchronize_full()
-In-Reply-To: <1342086988.4091.44.camel@ThinkPad-T420>
-Message-ID: <alpine.DEB.2.01.1207161130080.26923@trent.utfs.org>
-References: <1341817465.4579.5.camel@ThinkPad-T420>  <20120711154232.165cbca9.akpm@linux-foundation.org>  <CABE8wwsqyo=BPCy4xy1PAVKFWe=GqYRdYowXkQ6UZoXdtEdCZA@mail.gmail.com> <1342086988.4091.44.camel@ThinkPad-T420>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+	id S1754104Ab2GPSeX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 14:34:23 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:41535 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751736Ab2GPSeU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 14:34:20 -0400
+Date: Mon, 16 Jul 2012 14:34:17 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Colin Cross <ccross@android.com>
+cc: linux-arm-kernel@lists.infradead.org,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>, Barry Song <bs14@csr.com>,
+        Catalin Marinas <catalin.marinas@arm.com>, Ido Yariv <ido@wizery.com>,
+        Daniel Drake <dsd@laptop.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6] ARM: vfp: Always save VFP state in vfp_pm_suspend on
+ UP
+In-Reply-To: <1342462640-18410-1-git-send-email-ccross@android.com>
+Message-ID: <alpine.LFD.2.02.1207161433420.14068@xanadu.home>
+References: <1342462640-18410-1-git-send-email-ccross@android.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Jul 2012 at 17:56, Li Zhong wrote:
-> On Wed, 2012-07-11 at 15:50 -0700, Dan Williams wrote:
-> > On Wed, Jul 11, 2012 at 3:42 PM, Andrew Morton
-> > <akpm@linux-foundation.org> wrote:
-> > > The patch is fairly wordwrapped - please fix up your email client.
-> > >
-> > > More seriously, it does not apply to linux-next due to some fairly
-> > > significant changes which have been sitting in Dan's tree since May.
-> > > What's going on?
-> > >
-> > 
-> > Those changes missed the 3.5 merge window, but now that they have
-> > Arjan's ack they should head upstream via James for 3.6.  Right now
-> > they are on his pending [1] branch.
-> > 
-> > As far as the comment:
-> > 
-> > > It seems async_synchronize_full() wants to synchronize all entries in
-> > > all running lists(domains), so maybe we could just check the entry_count
-> > > to know whether all works are finished.
-> > 
-> > ...at first glance this is what the new async patches achieve.
-> > async_synchronize_full should now sync work across all domains, but if
-> > you can reproduce this bug it would be nice to confirm that the
-> > pending changes fix it.
-> > 
+On Mon, 16 Jul 2012, Colin Cross wrote:
+
+> vfp_pm_suspend should save the VFP state in suspend after
+> any lazy context switch.  If it only saves when the VFP is enabled,
+> the state can get lost when, on a UP system:
+>   Thread 1 uses the VFP
+>   Context switch occurs to thread 2, VFP is disabled but the
+>      VFP context is not saved
+>   Thread 2 initiates suspend
+>   vfp_pm_suspend is called with the VFP disabled, and the unsaved
+>      VFP context of Thread 1 in the registers
 > 
-> I have tested your pending patches, they fix the problem here.
+> Modify vfp_pm_suspend to save the VFP context whenever
+> vfp_current_hw_state is not NULL.
 > 
-> But with ASYNC_DOMAIN_EXCLUSIVE added for the domains defined on the
-> stack, I think we lack a function that could wait for all the works in
-> all domains (however, maybe actually we don't need such an interface).
+> Includes a fix from Ido Yariv <ido@wizery.com>, who pointed out that on
+> SMP systems, the state pointer can be pointing to a freed task struct if
+> a task exited on another cpu, fixed by using #ifdef CONFIG_SMP in the
+> new if clause.
 > 
-> Also, I think it's not good to exclude them from
-> async_synchronize_full() just because they are defined on the stack. 
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Barry Song <bs14@csr.com>
+> Cc: Catalin Marinas <catalin.marinas@arm.com>
+> Cc: Ido Yariv <ido@wizery.com>
+> Cc: Daniel Drake <dsd@laptop.org>
+> Cc: Will Deacon <will.deacon@arm.com>
+> Signed-off-by: Colin Cross <ccross@android.com>
+> ---
+>  arch/arm/vfp/vfpmodule.c |    6 ++++++
+>  1 files changed, 6 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/vfp/vfpmodule.c b/arch/arm/vfp/vfpmodule.c
+> index 58696192..ce55f05 100644
+> --- a/arch/arm/vfp/vfpmodule.c
+> +++ b/arch/arm/vfp/vfpmodule.c
+> @@ -457,6 +457,12 @@ static int vfp_pm_suspend(void)
+>  
+>  		/* disable, just in case */
+>  		fmxr(FPEXC, fmrx(FPEXC) & ~FPEXC_EN);
+> +	} else if (vfp_current_hw_state[ti->cpu]) {
+> +#ifndef CONFIG_SMP
+> +		fmxr(FPEXC, fpexc | FPEXC_EN);
+> +		vfp_save_state(vfp_current_hw_state[ti->cpu], fpexc);
+> +		fmxr(FPEXC, fpexc);
+> +#endif
+>  	}
 
-Is this still scheduled to go into 3.5? I'm asking because -rc7 has been 
-released and does not contain this fix. W/o this fix, my powerpc system 
-won't boot[0] :-\
+Couldn't vfp_sync_hwstate() be used here instead?
 
-Thanks,
-Christian.
 
-[0] http://nerdbynature.de/bits/3.5.0-rc5/soft_lockup/
--- 
-BOFH excuse #28:
-
-CPU radiator broken
+Nicolas
