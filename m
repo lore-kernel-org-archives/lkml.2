@@ -1,107 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753313Ab2GPMRL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 08:17:11 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:57964 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752671Ab2GPMRH (ORCPT
+	id S1753292Ab2GPMYz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 08:24:55 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:46146 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751272Ab2GPMYw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 08:17:07 -0400
-Date: Mon, 16 Jul 2012 14:16:51 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Ingo Molnar <mingo@kernel.org>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
-Message-ID: <20120716121651.GA18859@elf.ucw.cz>
-References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
- <20120714093032.GA23316@elf.ucw.cz>
- <20120715121644.GB10597@arm.com>
- <201207151943.08183.arnd@arndb.de>
- <20120715213336.GA25830@arm.com>
+	Mon, 16 Jul 2012 08:24:52 -0400
+From: "Philip, Avinash" <avinashphilip@ti.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: Adding support for configuring polarity in PWM framework.
+Thread-Topic: Adding support for configuring polarity in PWM framework.
+Thread-Index: Ac1jRByq1kMEXKqvQsO/bu3hkKjW/v//qtuA//+jJ2A=
+Date: Mon, 16 Jul 2012 12:23:46 +0000
+Deferred-Delivery: Mon, 16 Jul 2012 12:23:00 +0000
+Message-ID: <518397C60809E147AF5323E0420B992E3E960C32@DBDE01.ent.ti.com>
+References: <518397C60809E147AF5323E0420B992E3E960B0E@DBDE01.ent.ti.com>
+ <20120716113921.GA3015@avionic-0098.adnet.avionic-design.de>
+In-Reply-To: <20120716113921.GA3015@avionic-0098.adnet.avionic-design.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.162.25]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120715213336.GA25830@arm.com>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-> > > The AArch32 execution mode is optional, so it depends on the actual CPU
-> > > implementation (while AArch64 is mandatory). If the implementation
-> > > supports it, the most likely scenario for AArch32 at kernel level is in
-> > > virtual machines or the secure OS. I'll explain below why.
-> > > 
-> > > The exception (or privilege) levels on an ARMv8 architecture look like
-> > > this:
-> > > 
-> > > Secure World    Normal World
-> > > +-----+
-> > > | EL3 |                         - Secure monitor
-> > > +-----+
-> > >                 +-----+
-> > >                 | EL2 |         - Hypervisor (normal world only)
-> > >                 +-----+
-> > > +-----+         +-----+
-> > > | EL1 |         | EL1 |         - OS kernel (secure or normal)
-> > > +-----+         +-----+
-> > > +-----+         +-----+
-> > > | EL0 |         | EL0 |         - User apps (secure or normal)
-> > > +-----+         +-----+
-> > > 
-> > > In theory, each of these levels (implementation specific) can run both
-> > > AArch32 and AArch64 modes. There is however a restriction on how the
-> > > mode switching is done - this can only happen on a change of exception
-> > > level. When going up the EL the register width (RW) can never go down. A
-> > > lower EL can never have a higher RW than a higher EL.
-> > > 
-> > > Additionally, the RW (the AArch32/AArch64 mode) for an EL is controlled
-> > > by the next higher level (with EL3 hard-wired). An EL cannot cause
-> > > itself to switch between AArch32 and AArch64.
+On Mon, Jul 16, 2012 at 17:09:21, Thierry Reding wrote:
+> On Mon, Jul 16, 2012 at 11:15:50AM +0000, Philip, Avinash wrote:
+> > Hi Thierry,
 > > 
-> > So is the highest level always hardwired to 64-bit on ARMv8?
+> > On one of the custom boards we are using, uses PWM to drive the backlight. However, for
+> > this device, PWM signal needs to be inversed.
+> > So, we need to a platform data to indicate this parameter.
+> > Current PWM framework doesn't provide .support for setting polarity (or inverse polarity).
+> > 
+> > Have you come across any such requirements? If so, do you have any plans to implement it?
 > 
-> If an implementation supports AArch32 at EL3 there could be some
-> physical (or some FPGA config) switch to choose between the two. But
-> since AArch64 is mandated, I don't see why one would force AArch32 at
-> EL3 and therefore all lower exception levels (and make a big part of the
-> processor unused).
+> I don't have any plans to implement such a feature.
 
-Actually I see one ... and I can bet it will happen.
+Ok. Thanks for the quick response.
+> 
+> > I am planning to add support for the same but want to avoid duplication of work.
+> > 
+> > If you have no plans, then I will send a patch to support the same.
+> 
+> I wonder how you want to implement this. You'll need special hardware
+> support for it 
 
-So you create that shiny new ARMv8 compliant CPU, 8 cores, 2GHz. HTC
-will want to use it with 1GB of RAM... and put around exiting OMAP
-perihepals.
+Yes. Our custom hardware (backlight booster) requires the pwm signal to be 
+inverted.
 
-At that point they will have choice of either:
+> you may be able to implement it in the driver itself 
+> instead of putting it into the framework. 
 
-1) going arm64, with no advantages and disadvantage of having to
-debug/stabilize arm64 kernel+toolchain (+hardware; yes, early 64bit
-hardware usually has security bugs), and to port the omap code from
-arch/arm to arch/arm64
+This is a client specific data (backlight needs pwm signal inversed) 
+and not the main device feature (not PWM IP). So we cannot send this in 
+pwm platform data. This would come as call from client driver (which in 
+our case is from pwm_bl.c)
 
-2) just putting that 8 cores into arm32 mode. Yes, a bit of silicion
-is unused. But if the ARMv8 has most cores/biggest performance, it
-still makes sense, and 32bits is inherently faster due to pointers
-being smaller.
+> Anyway I'm interested in seeing your patch.
 
-I know I did boot early amd64 machines in 32bit mode; avoiding all the
-64bit complexity. I'm pretty sure someone will want to do that on arm.
+I am planning to modify PWM framework as below.
+1. Configure PWM polarity from client driver (using platform data provided 
+to pwm backlight driver).
+2. PWM device needs to be disabled before calling the set-polarity API.
 
-Now, you may say "we'll just refuse to merge 32-bit support for 64-bit
-capable machines"... I believe that's unneccessarily cruel... and may
-rule out multi-user servers due to security problems.
+This involves
 
-      		      	     	  	       	       	       	  Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1. PWM framework API addition.
+	PWM frame work API support.
+	/**
+	 * pwm_setpolarity() - change a PWM device Polarity	
+	 * @pwm: PWM device
+	 * @polarity: Configure polarity of PWM
+ 	*
+	 * polarity     - false -> "on" time defined by duty ns
+	*              - true  -> "off' time defined by duty ns.
+ 	*/
+	int pwm_setpolarity(struct pwm_device *pwm, bool inversepol);
+
+2. Add "set_polarity" operation support in pwm_ops.
+
+3. Modification in backlight driver (pwm_bl.c) to support polarity configuration.
+
+Thanks
+Avinash
+
+> 
+> Thierry
+> 
+
