@@ -1,55 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753109Ab2GPQxR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 12:53:17 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:59106 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751337Ab2GPQxP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 12:53:15 -0400
-Date: Mon, 16 Jul 2012 17:53:01 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
+	id S1753441Ab2GPQx3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 12:53:29 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:16139 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751916Ab2GPQxQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 12:53:16 -0400
+X-IronPort-AV: E=Sophos;i="4.77,594,1336374000"; 
+   d="scan'208";a="666150581"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
 To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
+CC: Andrew Morton <akpm@linux-foundation.org>,
         Pavel Emelyanov <xemul@openvz.org>,
         Serge Hallyn <serge.hallyn@canonical.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
         "Dmitry V. Levin" <ldv@altlinux.org>,
         "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Doug Ledford <dledford@redhat.com>, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org
+        Doug Ledford <dledford@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "containers@lists.linux-foundation.org" 
+	<containers@lists.linux-foundation.org>
 Subject: Re: [PATCH v2] ns: do not block exit_task_namespaces() for a long
  time
-Message-ID: <20120716165301.GN31729@ZenIV.linux.org.uk>
+Thread-Topic: [PATCH v2] ns: do not block exit_task_namespaces() for a long
+ time
+Thread-Index: AQHNY2k1j02wfx58ck6ocQv7UBLk4pcskbqAgAADtAA=
+Date: Mon, 16 Jul 2012 16:53:00 +0000
+Message-ID: <1342457578.4648.19.camel@lade.trondhjem.org>
 References: <20120713140806.b3d0fda8.akpm@linux-foundation.org>
- <1342451364-14787-1-git-send-email-kirill.shutemov@linux.intel.com>
+	 <1342451364-14787-1-git-send-email-kirill.shutemov@linux.intel.com>
+	 <1342453174.4648.6.camel@lade.trondhjem.org>
+	 <20120716163943.GA15156@otc-wbsnb-06>
+In-Reply-To: <20120716163943.GA15156@otc-wbsnb-06>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.115]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <14F4E11193005B418196E91EE761C8FA@tahoe.netapp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1342451364-14787-1-git-send-email-kirill.shutemov@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q6GGra7f028358
 
-On Mon, Jul 16, 2012 at 06:09:24PM +0300, Kirill A. Shutemov wrote:
-> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+On Mon, 2012-07-16 at 19:39 +0300, Kirill A. Shutemov wrote:
+> On Mon, Jul 16, 2012 at 03:39:36PM +0000, Myklebust, Trond wrote:
+> > On Mon, 2012-07-16 at 18:09 +0300, Kirill A. Shutemov wrote:
+> > > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> > > 
+> > > On exiting of the last task in a namespace we need to trigger freeing of
+> > > the namespace. Currently, we call synchronize_rcu() and free_nsproxy()
+> > > directly on do_exit() path.
+> > > 
+> > > On my machine synchronize_rcu() blocks for about 0.01 seconds. For
+> > > comparing: normal exit_group() syscall takes less than 0.0003 seconds.
+> > > 
+> > > Let's offload synchronize_rcu() and free_nsproxy() to a workqueue.
+> > > 
+> > > I also move synchronize_rcu() inside free_nsproxy(). It fixes racy
+> > > put_nsproxy() which calls free_nsproxy() without synchronize_rcu().
+> > > I guess it was missed during switch to RCU (see cf7b708).
+> > > 
+> > > Microbenchmark:
+> > > 
+> > > : #define _GNU_SOURCE
+> > > : #include <unistd.h>
+> > > : #include <sched.h>
+> > > : #include <stdlib.h>
+> > > : #include <sys/wait.h>
+> > > :
+> > > : int
+> > > : main(void)
+> > > : {
+> > > :       int i;
+> > > :       for (i = 0; i < 1024; i++) {
+> > > :               if (fork()) {
+> > > :                       wait(NULL);
+> > > :                       continue;
+> > > :               }
+> > > :               unshare(CLONE_NEWIPC);
+> > > :               exit(0);
+> > > :       }
+> > > :       return 0;
+> > > : }
+> > > 
+> > > Before the patch:
+> > > 
+> > > real    0m8.335s
+> > > user    0m0.000s
+> > > sys     0m0.265s
+> > > 
+> > > After:
+> > > 
+> > > real    0m0.569s
+> > > user    0m0.001s
+> > > sys     0m0.154s
+> > > 
+> > > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> > > Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+> > > ---
+> > > 
+> > > v2:
+> > >  - Updated description.
+> > > 
+> > > ---
+> > >  include/linux/nsproxy.h |    1 +
+> > >  kernel/nsproxy.c        |   34 +++++++++++++++++++++++-----------
+> > >  2 files changed, 24 insertions(+), 11 deletions(-)
+> > > 
+> > > diff --git a/include/linux/nsproxy.h b/include/linux/nsproxy.h
+> > > index cc37a55..1d26be7 100644
+> > > --- a/include/linux/nsproxy.h
+> > > +++ b/include/linux/nsproxy.h
+> > > @@ -24,6 +24,7 @@ struct fs_struct;
+> > >   */
+> > >  struct nsproxy {
+> > >  	atomic_t count;
+> > > +	struct work_struct free_nsproxy_work;
+> > >  	struct uts_namespace *uts_ns;
+> > >  	struct ipc_namespace *ipc_ns;
+> > >  	struct mnt_namespace *mnt_ns;
+> > > diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
+> > > index b576f7f..ebc7d40 100644
+> > > --- a/kernel/nsproxy.c
+> > > +++ b/kernel/nsproxy.c
+> > > @@ -41,13 +41,17 @@ struct nsproxy init_nsproxy = {
+> > >  #endif
+> > >  };
+> > >  
+> > > +static void free_nsproxy_work(struct work_struct *work);
+> > > +
+> > >  static inline struct nsproxy *create_nsproxy(void)
+> > >  {
+> > >  	struct nsproxy *nsproxy;
+> > >  
+> > >  	nsproxy = kmem_cache_alloc(nsproxy_cachep, GFP_KERNEL);
+> > > -	if (nsproxy)
+> > > +	if (nsproxy) {
+> > >  		atomic_set(&nsproxy->count, 1);
+> > > +		INIT_WORK(&nsproxy->free_nsproxy_work, free_nsproxy_work);
+> > > +	}
+> > >  	return nsproxy;
+> > >  }
+> > >  
+> > > @@ -166,6 +170,14 @@ out:
+> > >  
+> > >  void free_nsproxy(struct nsproxy *ns)
+> > >  {
+> > > +	/*
+> > > +	 * wait for others to get what they want from this nsproxy.
+> > > +	 *
+> > > +	 * cannot release this nsproxy via the call_rcu() since
+> > > +	 * put_mnt_ns() will want to sleep
+> > > +	 */
+> > > +	synchronize_rcu();
+> > > +
+> > >  	if (ns->mnt_ns)
+> > >  		put_mnt_ns(ns->mnt_ns);
+> > >  	if (ns->uts_ns)
+> > > @@ -178,6 +190,14 @@ void free_nsproxy(struct nsproxy *ns)
+> > >  	kmem_cache_free(nsproxy_cachep, ns);
+> > >  }
+> > >  
+> > > +static void free_nsproxy_work(struct work_struct *work)
+> > > +{
+> > > +	struct nsproxy *ns = container_of(work, struct nsproxy,
+> > > +			free_nsproxy_work);
+> > > +
+> > > +	free_nsproxy(ns);
+> > > +}
+> > > +
+> > >  /*
+> > >   * Called from unshare. Unshare all the namespaces part of nsproxy.
+> > >   * On success, returns the new nsproxy.
+> > > @@ -215,16 +235,8 @@ void switch_task_namespaces(struct task_struct *p, struct nsproxy *new)
+> > >  
+> > >  	rcu_assign_pointer(p->nsproxy, new);
+> > >  
+> > > -	if (ns && atomic_dec_and_test(&ns->count)) {
+> > > -		/*
+> > > -		 * wait for others to get what they want from this nsproxy.
+> > > -		 *
+> > > -		 * cannot release this nsproxy via the call_rcu() since
+> > > -		 * put_mnt_ns() will want to sleep
+> > > -		 */
+> > > -		synchronize_rcu();
+> > > -		free_nsproxy(ns);
+> > > -	}
+> > > +	if (ns && atomic_dec_and_test(&ns->count))
+> > > +		schedule_work(&ns->free_nsproxy_work);
+> > 
+> > What's wrong with using call_rcu()? The above will cause a workqueue
+> > thread to block for no good reason.
 > 
-> On exiting of the last task in a namespace we need to trigger freeing of
-> the namespace. Currently, we call synchronize_rcu() and free_nsproxy()
-> directly on do_exit() path.
-> 
-> On my machine synchronize_rcu() blocks for about 0.01 seconds. For
-> comparing: normal exit_group() syscall takes less than 0.0003 seconds.
-> 
-> Let's offload synchronize_rcu() and free_nsproxy() to a workqueue.
-> 
-> I also move synchronize_rcu() inside free_nsproxy(). It fixes racy
-> put_nsproxy() which calls free_nsproxy() without synchronize_rcu().
-> I guess it was missed during switch to RCU (see cf7b708).
+> See comment to synchronize_rcu(). free_nsproxy() might sleep.
+> call_rcu() callback invocation might happen from either softirq or process
+> context, so we can't use it.
 
-NAK.  Making final umounts of anything in that namespace asynchronous,
-even though nothing is holding the stuff on them busy is simply
-wrong.  Note that they can take a _long_ time, so we are talking about
-minutes worth of delay in the worst case.  It's user-visible and
-it's a serious potential for trouble.
+But call_rcu() should be allowed to call schedule_work(). At least you'd
+be able to get rid of the 0.01s synchronize_rcu() sleep inside keventd.
+
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
