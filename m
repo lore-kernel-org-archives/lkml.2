@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751721Ab2GPJY3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 05:24:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44843 "EHLO mx2.suse.de"
+	id S1752439Ab2GPJYn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 05:24:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44861 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750754Ab2GPJY0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 05:24:26 -0400
-Date: Mon, 16 Jul 2012 11:24:25 +0200
-Message-ID: <s5hr4scgit2.wl%tiwai@suse.de>
+	id S1751919Ab2GPJYh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 05:24:37 -0400
+Date: Mon, 16 Jul 2012 11:24:36 +0200
+Message-ID: <s5hpq7wgisr.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: Ondrej Zary <linux@rainbow-software.org>
 Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
         Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [alsa-devel] [PATCH] wss_lib: fix suspend/resume
-In-Reply-To: <201207122330.34585.linux@rainbow-software.org>
-References: <201207122330.34585.linux@rainbow-software.org>
+Subject: Re: [alsa-devel] [PATCH] wss_lib: Fix resume on Yamaha OPL3-SAx
+In-Reply-To: <201207160830.18826.linux@rainbow-software.org>
+References: <201207160830.18826.linux@rainbow-software.org>
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.3
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -24,33 +24,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Thu, 12 Jul 2012 23:30:31 +0200,
+At Mon, 16 Jul 2012 08:30:18 +0200,
 Ondrej Zary wrote:
 > 
-> By setting SNDRV_PCM_INFO_RESUME, wss_lib claims that it can restore the card
-> state fully on resume. But in fact, it can't as DMA is not restored so any
-> playback/capture running during suspend will fail to continue after resume.
-> 
-> Remove SNDRV_PCM_INFO_RESUME flag from pcm info field to fix the problem.
+> Yamaha OPL3-SAx chips don't resume properly when playback is running -
+> garbage is played after resume. Restoring the CS4231_PLAYBK_FORMAT register
+> last fixes the problem.
 > 
 > Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 
-Applied now.  Thanks.
+Applied.  Thanks.
 
 
 Takashi
 
-> 
+
 > --- a/sound/isa/wss/wss_lib.c
 > +++ b/sound/isa/wss/wss_lib.c
-> @@ -1456,7 +1456,6 @@ static struct snd_pcm_hardware snd_wss_playback =
->  {
->  	.info =			(SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_INTERLEAVED |
->  				 SNDRV_PCM_INFO_MMAP_VALID |
-> -				 SNDRV_PCM_INFO_RESUME |
->  				 SNDRV_PCM_INFO_SYNC_START),
->  	.formats =		(SNDRV_PCM_FMTBIT_MU_LAW | SNDRV_PCM_FMTBIT_A_LAW | SNDRV_PCM_FMTBIT_IMA_ADPCM |
->  				 SNDRV_PCM_FMTBIT_U8 | SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S16_BE),
+> @@ -1656,6 +1656,10 @@ static void snd_wss_resume(struct snd_wss *chip)
+>  			break;
+>  		}
+>  	}
+> +	/* Yamaha needs this to resume properly */
+> +	if (chip->hardware == WSS_HW_OPL3SA2)
+> +		snd_wss_out(chip, CS4231_PLAYBK_FORMAT,
+> +			    chip->image[CS4231_PLAYBK_FORMAT]);
+>  	spin_unlock_irqrestore(&chip->reg_lock, flags);
+>  #if 1
+>  	snd_wss_mce_down(chip);
 > 
 > -- 
 > Ondrej Zary
