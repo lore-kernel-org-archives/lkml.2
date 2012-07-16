@@ -1,59 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753962Ab2GPVxZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 17:53:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37035 "EHLO mx1.redhat.com"
+	id S1753522Ab2GPV6g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 17:58:36 -0400
+Received: from www.hansjkoch.de ([178.63.77.200]:49919 "EHLO www.hansjkoch.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752476Ab2GPVxX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 17:53:23 -0400
-Date: Mon, 16 Jul 2012 17:53:18 -0400
-From: Dave Jones <davej@redhat.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: 3.5-rc6 dentry related GPF
-Message-ID: <20120716215318.GA14629@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Al Viro <viro@ZenIV.linux.org.uk>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-References: <20120711183239.GA7122@redhat.com>
- <CA+55aFz5E4NMDF+OXDoGkHz2Mr2sBXf6nYcOXomDZHmnUSdWHA@mail.gmail.com>
- <20120716213218.GQ31729@ZenIV.linux.org.uk>
+	id S1751934Ab2GPV6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 17:58:32 -0400
+Date: Mon, 16 Jul 2012 23:58:23 +0200
+From: "Hans J. Koch" <hjk@hansjkoch.de>
+To: Dominic Eschweiler <eschweiler@fias.uni-frankfurt.de>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, "Hans J. Koch" <hjk@hansjkoch.de>,
+        Andreas Schallenberg <embedded@gmx.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, kvm@vger.kernel.org
+Subject: Re: UIO: missing resource mapping
+Message-ID: <20120716215823.GA7879@local>
+References: <4FFE7C1F.7080702@gmx.net>
+ <20120712194432.GA2592@local>
+ <20120712231632.GC9317@redhat.com>
+ <1342166955.6607.5.camel@blech>
+ <20120713132223.GA10959@redhat.com>
+ <1342190571.6607.36.camel@blech>
+ <20120713181953.GA11527@redhat.com>
+ <1342462572.17531.18.camel@blech>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120716213218.GQ31729@ZenIV.linux.org.uk>
+In-Reply-To: <1342462572.17531.18.camel@blech>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 16, 2012 at 10:32:18PM +0100, Al Viro wrote:
- > On Wed, Jul 11, 2012 at 12:10:12PM -0700, Linus Torvalds wrote:
- > >   rdi = 54415541e5894855
- > > 
- > > which looks like some odd corrupted ASCII to me ("UH\211\345AUAT") but
- > > that makes no sense either.
- > 
- > 	It makes a lot of sense as amd64 code, though:
- > 
- >    55                      push   %rbp
- >    48 89 e5                mov    %rsp,%rbp
- >    41 55                   push   %r13
- >    41 54                   push   %r12
- > 
- > IOW, it's the first 8 bytes from a fairly sane beginning of some function.
- > So &(inode->i_fop->owner) (and thus inode->i_fop - owner is the first field)
- > is some spot in .text.  Would be interesting to find out what function
- > was that from (i.e. what's the value of inode->i_fop); with any luck it
- > might've still been in some register.  Could you post objdump of
- > do_dentry_open() from your kernel?
+On Mon, Jul 16, 2012 at 08:16:12PM +0200, Dominic Eschweiler wrote:
+> Am Freitag, den 13.07.2012, 21:19 +0300 schrieb Michael S. Tsirkin:
+> > 
+> > UIO has the same property, doesn't it? Multiple users can
+> > access device memory through sysfs. 
+> 
+> 
+> Indeed, that's a similar problem. I haven't tried it (yet), but this
+> particular problem can maybe circumvented by using mmap with the
+> MAP_PRIVATE flag. Doing so is the responsibility of the driver
+> programmer (like Hans already said). Even if that mmap trick does not
+> work, it is pretty much sure that a BAR is already used by another
+> program, if a related kernel driver is loaded. In that case the kernel
+> has a chance to avoid such BAR race conditions by not giving the
+> possibility to map them to the userspace.
 
-I've done a few rebuilds since posting that, but hopefully things haven't
-moved around too much in that area recently..
+Don't make it more complicated than it is. I see no general problem in
+mapping BARs in uio_pci_generic like in any other UIO PCI driver.
 
-http://fpaste.org/Pw5d/ is the whole open.o disassembly.
+> 
+> Nevertheless, I'm pretty sure that the possibility via sysfs to access
+> BARs, which are already managed by a kernel driver, opens the door for
+> denial of service attacks.
 
-	Dave
+There are also a few other possible attack scenarios, depending on the
+hardware.
+That's a general problem of all userspace drivers (e.g. X graphics drivers).
+You have to make sure access rights are correct. Making a UIO device node
+available to all normal users is foolishly dangerous.
 
+> 
+> On the other hand, I'm quite a newbie on this topic and maybe I don't
+> see the big picture here. Therefore it is up to you guys to make the
+> right decision (if needed).
+
+Try to hack up a patch to add generic BAR mapping to uio_pci_generic.c
+and post it for review.
+
+Thanks,
+Hans
