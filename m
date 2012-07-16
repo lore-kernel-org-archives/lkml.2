@@ -1,30 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753096Ab2GPBwR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jul 2012 21:52:17 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59495 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751487Ab2GPBwP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jul 2012 21:52:15 -0400
-Message-ID: <500373CC.7050301@gmail.com>
-Date: Sun, 15 Jul 2012 19:52:12 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1753087Ab2GPB7z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jul 2012 21:59:55 -0400
+Received: from tundra.namei.org ([65.99.196.166]:58386 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752795Ab2GPB7w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jul 2012 21:59:52 -0400
+Date: Mon, 16 Jul 2012 11:59:49 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Smalley <sds@tycho.nsa.gov>
+Subject: [GIT] Fix SELinux regression
+Message-ID: <alpine.LRH.2.02.1207161158290.22772@tundra.namei.org>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Gleb Natapov <gleb@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: perf with precise attribute kills all KVM based VMs
-References: <1341845396.3462.81.camel@twins> <4FFAEFF1.9000706@redhat.com> <1341845999.3462.86.camel@twins> <4FFCBD00.1030109@gmail.com> <20120711071006.GF23898@redhat.com> <1342000187.3462.134.camel@twins> <20120711095337.GJ23898@redhat.com> <4FFE4E8D.90606@gmail.com> <20120712042923.GG7298@redhat.com> <4FFEEB55.5070009@gmail.com> <20120712160634.GI7298@redhat.com> <50027A36.9070509@redhat.com> <5002BEE3.5060506@gmail.com> <5002BF9B.8090306@redhat.com>
-In-Reply-To: <5002BF9B.8090306@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/15/12 7:03 AM, Avi Kivity wrote:
-> I assume 'h' means profiling the hypervisor from a guest (i.e. xen dom0)?
+Now with the correct patches and signoffs.
 
-I do not think so. It does not appear to do anything on x86.
+Please pull.
+
+The following changes since commit 918227bb1b59444a2c467711fd50cc22bb4a897b:
+  Linus Torvalds (1):
+        Merge tag 'fbdev-fixes-for-3.5-2' of git://github.com/schandinat/linux-2.6
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git for-linus
+
+Eric Paris (2):
+      SELinux: include definition of new capabilities
+      SELinux: do not check open perms if they are not known to policy
+
+ security/selinux/hooks.c            |    2 +-
+ security/selinux/include/classmap.h |    4 +++-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
+
+
