@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751474Ab2GPFVe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 01:21:34 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:51551 "EHLO
+	id S1751484Ab2GPFf2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 01:35:28 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:52911 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750817Ab2GPFV3 (ORCPT
+	with ESMTP id S1751072Ab2GPFfZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 01:21:29 -0400
-X-AuditID: 9c93016f-b7b08ae00000790d-3c-5003a4d61057
+	Mon, 16 Jul 2012 01:35:25 -0400
+X-AuditID: 9c93016f-b7b08ae00000790d-6e-5003a81b30e0
 From: Namhyung Kim <namhyung@kernel.org>
-To: jeff.liu@oracle.com
-Cc: "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: Re: Perf:  user land tools compiled failed on 3.5.0-rc7
-References: <5002D46E.4080103@oracle.com>
-Date: Mon, 16 Jul 2012 14:16:25 +0900
-In-Reply-To: <5002D46E.4080103@oracle.com> (Jeff Liu's message of "Sun, 15 Jul
-	2012 22:32:14 +0800")
-Message-ID: <87mx302sly.fsf@sejong.aot.lge.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] sched/debug: Fix printing format of next_balance
+References: <1341325149-3791-1-git-send-email-namhyung@kernel.org>
+Date: Mon, 16 Jul 2012 14:30:22 +0900
+In-Reply-To: <1341325149-3791-1-git-send-email-namhyung@kernel.org> (Namhyung
+	Kim's message of "Tue, 3 Jul 2012 23:19:09 +0900")
+Message-ID: <87ipdo2ryp.fsf@sejong.aot.lge.com>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -26,176 +25,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Ping. :)
 
-(CC-ing Jiri)
-
-On Sun, 15 Jul 2012 22:32:14 +0800, Jeff Liu wrote:
-> Hello,
+On Tue,  3 Jul 2012 23:19:09 +0900, Namhyung Kim wrote:
+> Use P() for the next_balance since it's in jiffies not nsec.
 >
-> I failed to compile perf tools on 3.5.0-rc7 with bison && flex
-> pre-installed.
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  kernel/sched/debug.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 >
-> The error seems something like this,
->
-> libperf.a(pmu.o): In function `pmu_format_parse':
-> /usr/src/linux/tools/perf/util/pmu.c:47: undefined reference to
-> `perf_pmu_in'
-> libperf.a(pmu-bison.o): In function `perf_pmu_parse':
-> /usr/src/linux/tools/perf/util/pmu-bison.c:1287: undefined reference to
-> `perf_pmu_lex'
->
-
-Hmm.. I can't reproduce it. Those symbols should be in pmu-flex.c:
-
- $ grep 'perf_pmu_in$' -Inr .
- ./util/pmu-flex.c:15:#define yyin perf_pmu_in
-
- $ grep 'perf_pmu_lex ' -Inr .
- ./util/pmu-flex.h:292:extern int perf_pmu_lex (void);
- ./util/pmu-flex.h:294:#define YY_DECL int perf_pmu_lex (void)
- ./util/pmu-flex.c:650:extern int perf_pmu_lex (void);
- ./util/pmu-flex.c:652:#define YY_DECL int perf_pmu_lex (void)
- ./util/pmu-flex.c:946:} /* end of perf_pmu_lex */
- ./util/pmu-bison.c:86:extern int perf_pmu_lex (void);
- ./util/pmu.y:14:extern int perf_pmu_lex (void);
-
-Thanks,
-Namhyung
-
-
-> For detail, please check the following,
->
-> /usr/src/linux/tools/perf$ make -j12
-> Makefile:450: No libdw.h found or old libdw.h found or elfutils is older
-> than 0.138, disables dwarf support. Please install new
-> elfutils-devel/libdw-dev
-> PERF_VERSION = 3.5.rc7
-> Makefile:450: No libdw.h found or old libdw.h found or elfutils is older
-> than 0.138, disables dwarf support. Please install new
-> elfutils-devel/libdw-dev
->     GEN common-cmds.h
->     * new build flags or prefix
->     CC bench/mem-memcpy-x86-64-asm.o
->     CC bench/mem-memset-x86-64-asm.o
->     CC bench/mem-memcpy.o
->     CC bench/mem-memset.o
->     CC builtin-diff.o
->     CC builtin-evlist.o
->     CC builtin-sched.o
->     CC builtin-buildid-list.o
->     CC builtin-buildid-cache.o
->     CC builtin-list.o
->     CC builtin-record.o
->     CC builtin-report.o
->     CC builtin-stat.o
->     CC builtin-timechart.o
->     CC builtin-top.o
->     CC builtin-script.o
->     CC builtin-probe.o
->     CC builtin-kmem.o
->     CC builtin-lock.o
->     CC builtin-kvm.o
->     CC builtin-test.o
->     CC builtin-inject.o
->     CC util/abspath.o
->     CC util/alias.o
->     CC util/annotate.o
->     CC util/build-id.o
->     CC util/config.o
->     CC util/ctype.o
->     CC util/debugfs.o
->     CC util/sysfs.o
->     CC util/pmu.o
->     CC util/environment.o
->     CC util/event.o
->     CC util/evlist.o
->     CC util/evsel.o
->     CC util/exec_cmd.o
->     CC util/help.o
->     CC util/levenshtein.o
->     CC util/parse-options.o
->     CC util/parse-events.o
->     CC util/parse-events-test.o
->     CC util/path.o
->     CC util/rbtree.o
->     CC util/bitmap.o
->     CC util/hweight.o
->     CC util/run-command.o
->     CC util/quote.o
->     CC util/strbuf.o
->     CC util/string.o
->     CC util/strlist.o
->     CC util/strfilter.o
->     CC util/top.o
->     CC util/usage.o
->     CC util/wrapper.o
->     CC util/sigchain.o
->     CC util/symbol.o
->     CC util/color.o
->     CC util/pager.o
->     CC util/header.o
->     CC util/callchain.o
->     CC util/values.o
->     CC util/debug.o
->     CC util/map.o
->     CC util/pstack.o
->     CC util/session.o
->     CC util/thread.o
->     CC util/thread_map.o
->     CC util/trace-event-parse.o
->     CC util/parse-events-flex.o
->     CC util/parse-events-bison.o
->     CC util/pmu-flex.o
->     CC util/pmu-bison.o
->     CC util/trace-event-read.o
->     CC util/trace-event-info.o
->     CC util/trace-event-scripting.o
->     CC util/svghelper.o
->     CC util/sort.o
->     CC util/hist.o
->     CC util/probe-event.o
->     CC util/util.o
->     CC util/xyarray.o
->     CC util/cpumap.o
->     CC util/cgroup.o
->     CC util/target.o
->     CC arch/x86/util/header.o
->     CC ui/setup.o
->     CC ui/browser.o
->     CC ui/browsers/annotate.o
->     CC ui/browsers/hists.o
->     CC ui/browsers/map.o
->     CC ui/helpline.o
->     CC ui/progress.o
->     CC ui/util.o
->     CC ui/tui/setup.o
->     CC ui/gtk/browser.o
->     CC ui/gtk/setup.o
->     CC util/scripting-engines/trace-event-python.o
->     CC scripts/python/Perf-Trace-Util/Context.o
->     SUBDIR ../lib/traceevent/
->     GEN perf-archive
-> make[1]: `libtraceevent.a' is up to date.
->     GEN python/perf.so
->     CC perf.o
->     CC builtin-annotate.o
->     CC builtin-bench.o
->     CC bench/sched-messaging.o
->     CC bench/sched-pipe.o
->     CC builtin-help.o
->     AR libperf.a
->     LINK perf
-> libperf.a(pmu.o): In function `pmu_format_parse':
-> /usr/src/linux/tools/perf/util/pmu.c:47: undefined reference to
-> `perf_pmu_in'
-> libperf.a(pmu-bison.o): In function `perf_pmu_parse':
-> /usr/src/linux/tools/perf/util/pmu-bison.c:1287: undefined reference to
-> `perf_pmu_lex'
-> collect2: ld returned 1 exit status
-> make: *** [perf] Error 1
-> make: *** Waiting for unfinished jobs....
->
->
-> Thanks,
-> -Jeff
+> diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+> index c09a4e79f5d0..a408a17a1d33 100644
+> --- a/kernel/sched/debug.c
+> +++ b/kernel/sched/debug.c
+> @@ -280,7 +280,7 @@ do {									\
+>  	P(nr_switches);
+>  	P(nr_load_updates);
+>  	P(nr_uninterruptible);
+> -	PN(next_balance);
+> +	P(next_balance);
+>  	P(curr->pid);
+>  	PN(clock);
+>  	P(cpu_load[0]);
