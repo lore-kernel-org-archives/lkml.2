@@ -1,128 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752697Ab2GPI2O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 04:28:14 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:33174 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751410Ab2GPI2M (ORCPT
+	id S1752835Ab2GPI2U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 04:28:20 -0400
+Received: from na3sys009aog132.obsmtp.com ([74.125.149.250]:60708 "EHLO
+	na3sys009aog132.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752663Ab2GPI2Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 04:28:12 -0400
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Avi Kivity <avi@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Rik van Riel <riel@redhat.com>
-Cc: Srikar <srikar@linux.vnet.ibm.com>, S390 <linux-s390@vger.kernel.org>,
-        Carsten Otte <cotte@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        KVM <kvm@vger.kernel.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        chegu vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
-        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Date: Mon, 16 Jul 2012 13:55:29 +0530
-Message-Id: <20120716082529.23477.91096.sendpatchset@codeblue.in.ibm.com>
-In-Reply-To: <20120716082445.23477.15128.sendpatchset@codeblue.in.ibm.com>
-References: <20120716082445.23477.15128.sendpatchset@codeblue.in.ibm.com>
-Subject: [PATCH RFC V4 3/3] kvm: Choose better candidate for directed yield
-x-cbid: 12071522-7014-0000-0000-000001905C7F
+	Mon, 16 Jul 2012 04:28:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120716081204.GI7955@arwen.pp.htv.fi>
+References: <1340370942-23201-1-git-send-email-kishon@ti.com>
+	<CAAe_U6+dkiQw-i93pFapt6qKrArzaQoE8X3GjDzUDraziG8B2Q@mail.gmail.com>
+	<20120625122449.GA30463@arwen.pp.htv.fi>
+	<201206251626.09666.arnd@arndb.de>
+	<20120716081204.GI7955@arwen.pp.htv.fi>
+Date: Mon, 16 Jul 2012 13:58:14 +0530
+Message-ID: <CAAe_U6JMGP3jEkkd=vqpR5KTeOnY51AOcb65zqKRRa8MtnWjzQ@mail.gmail.com>
+Subject: Re: [RFC PATCH v2 1/2] drivers: misc: omap: add a new driver for ocp2scp
+From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
+To: balbi@ti.com
+Cc: Arnd Bergmann <arnd@arndb.de>, Greg KH <gregkh@linuxfoundation.org>,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
+        linux@arm.linux.org.uk, b-cousson@ti.com, rnayak@ti.com,
+        tony@atomide.com, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Hi,
 
-Currently, on a large vcpu guests, there is a high probability of
-yielding to the same vcpu who had recently done a pause-loop exit or
-cpu relax intercepted. Such a yield can lead to the vcpu spinning
-again and hence degrade the performance.
+On Mon, Jul 16, 2012 at 1:42 PM, Felipe Balbi <balbi@ti.com> wrote:
+> Hi,
+>
+> On Mon, Jun 25, 2012 at 04:26:08PM +0000, Arnd Bergmann wrote:
+>> On Monday 25 June 2012, Felipe Balbi wrote:
+>> > > > Can't this live where the scp drivers live?  Actually, where is that at?
+>> > > > Do we have scp drivers?
+>> > > AFAIK, there isn't any driver for scp. But we have a driver for ocp
+>> > > and it is present at arch/arm/mach-omap2/omap_l3_noc.c
+>> >
+>> > I don't think this deserves a directory of its own. Maybe
+>> > drivers/platform/arm/omap/ ?? the l3_noc is an OMAP-specific
+>> > interconnect and the SCP bus is also an OMAP-specific bus. I don't know
+>> > of any other arch/soc who uses the same interconnect IP as OMAP and the
+>> > same ocp2scp bridge. That bridge was created by TI for all I know.
+>> >
+>> > Greg, would drivers/platform/arm/omap/ work for you ? We could also move
+>> > the interconnect drivers there.
+>>
+>> I really don't like the idea of introducing drivers/platform/arm/ because
+>> very little of the stuff that one would put in there are actually ARM
+>> specific.
+>>
+>> I have suggested a drivers/bus/ before and people did not see the need
+>> back then, and we agreed to continue having a directory for each bus,
+>> as we have for the big ones (pci, usb, i2c, spi, ...) and a lot of
+>> simple (amba, rapidio, bcma, ...) or obscure (tc,  vlynq, nubus, ...)
+>> ones.
+>>
+>> I think we should reconsider the idea of drivers/bus/ with a file per
+>> bus in there at least for new buses, but doing a new drivers/scp/
+>> would be ok for me if there is enough opposition against the idea
+>> of drivers/bus aggregating different buses.
+>
+> I don't mind either way. The fact is that this ocp-to-scp bridge is
+> really a TI/OMAP thing. Not sure it deserves a directory of its own.
 
-The patchset keeps track of the pause loop exit/cpu relax interception
-and gives chance to a vcpu which:
- (a) Has not done pause loop exit or cpu relax intercepted at all
-     (probably he is preempted lock-holder)
- (b) Was skipped in last iteration because it did pause loop exit or
-     cpu relax intercepted, and probably has become eligible now
-     (next eligible lock holder)
+Ok. Then I'll have a file in drivers/bus/ for ocp2scp driver.
 
-Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
----
-V2 was:
-Reviewed-by: Rik van Riel <riel@redhat.com>
-
- include/linux/kvm_host.h |    5 +++++
- virt/kvm/kvm_main.c      |   35 +++++++++++++++++++++++++++++++++++
- 2 files changed, 40 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index fa353bd..cfb38a2 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -925,6 +925,11 @@ static inline void kvm_vcpu_set_dy_eligible(struct kvm_vcpu *vcpu, bool val)
- {
- }
- 
-+static inline bool kvm_vcpu_check_and_update_eligible(struct kvm_vcpu *vcpu)
-+{
-+	return true;
-+}
-+
- #endif /* CONFIG_HAVE_KVM_CPU_RELAX_INTERCEPT */
- 
- #endif
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index c50213f..6a82580 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -1571,6 +1571,39 @@ bool kvm_vcpu_yield_to(struct kvm_vcpu *target)
- }
- EXPORT_SYMBOL_GPL(kvm_vcpu_yield_to);
- 
-+#ifdef CONFIG_HAVE_KVM_CPU_RELAX_INTERCEPT
-+/*
-+ * Helper that checks whether a VCPU is eligible for directed yield.
-+ * Most eligible candidate to yield is decided by following heuristics:
-+ *
-+ *  (a) VCPU which has not done pl-exit or cpu relax intercepted recently
-+ *  (preempted lock holder), indicated by @cpu_relax_intercepted.
-+ *  Set at the beiginning and cleared at the end of interception/PLE handler.
-+ *
-+ *  (b) VCPU which has done pl-exit/ cpu relax intercepted but did not get
-+ *  chance last time (mostly it has become eligible now since we have probably
-+ *  yielded to lockholder in last iteration. This is done by toggling
-+ *  @dy_eligible each time a VCPU checked for eligibility.)
-+ *
-+ *  Yielding to a recently pl-exited/cpu relax intercepted VCPU before yielding
-+ *  to preempted lock-holder could result in wrong VCPU selection and CPU
-+ *  burning. Giving priority for a potential lock-holder increases lock
-+ *  progress.
-+ */
-+bool kvm_vcpu_check_and_update_eligible(struct kvm_vcpu *vcpu)
-+{
-+	bool eligible;
-+
-+	eligible = !vcpu->ple.cpu_relax_intercepted ||
-+			(vcpu->ple.cpu_relax_intercepted &&
-+			 vcpu->ple.dy_eligible);
-+
-+	if (vcpu->ple.cpu_relax_intercepted)
-+		vcpu->ple.dy_eligible = !vcpu->ple.dy_eligible;
-+
-+	return eligible;
-+}
-+#endif
- void kvm_vcpu_on_spin(struct kvm_vcpu *me)
- {
- 	struct kvm *kvm = me->kvm;
-@@ -1599,6 +1632,8 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
- 				continue;
- 			if (waitqueue_active(&vcpu->wq))
- 				continue;
-+			if (!kvm_vcpu_check_and_update_eligible(vcpu))
-+				continue;
- 			if (kvm_vcpu_yield_to(vcpu)) {
- 				kvm->last_boosted_vcpu = i;
- 				yielded = 1;
-
+Thanks
+Kishon
