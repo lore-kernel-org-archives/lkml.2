@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754026Ab2GPV2E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 17:28:04 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:43028 "EHLO ogre.sisk.pl"
+	id S1754235Ab2GPV24 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 17:28:56 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:43099 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751721Ab2GPV1z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 17:27:55 -0400
+	id S1754172Ab2GPV2r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 17:28:47 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Linux PM list <linux-pm@vger.kernel.org>
-Subject: [RFC][PATCH 1/14] PM / Domains: Make it possible to use domain names when adding devices
-Date: Mon, 16 Jul 2012 23:17:11 +0200
+Subject: [RFC][PATCH 11/14] ARM: shmobile: Move r8a7779's PM domain objects to a table
+Date: Mon, 16 Jul 2012 23:28:48 +0200
 User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
 Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
         LKML <linux-kernel@vger.kernel.org>,
@@ -23,133 +23,144 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201207162317.11591.rjw@sisk.pl>
+Message-Id: <201207162328.48655.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Add a new helper function __pm_genpd_name_add_device() allowing
-a device to be added to a (registered) generic PM domain identified
-by name.  Add a wrapper around it, pm_genpd_name_add_device(),
-passing NULL as the last argument and reorganize pm_domains.h for the
-new functions to be defined consistently with the existing ones.
-
-These functions are useful for adding devices to PM domains whose
-representations are stored in tables, when the caller doesn't know
-the index of the domain to add the device to, but it knows the
-domain's name.
+Instead of giving a name to every r8a7779's PM domain object, put
+them all into a table and initialize them all together in a loop.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/base/power/domain.c |   27 +++++++++++++++++++++++++++
- include/linux/pm_domain.h   |   42 +++++++++++++++++++++++++++++-------------
- 2 files changed, 56 insertions(+), 13 deletions(-)
+ arch/arm/mach-shmobile/include/mach/r8a7779.h |    9 ---
+ arch/arm/mach-shmobile/pm-r8a7779.c           |   65 ++++++++++++++------------
+ arch/arm/mach-shmobile/setup-r8a7779.c        |    5 --
+ 3 files changed, 39 insertions(+), 40 deletions(-)
 
-Index: linux/drivers/base/power/domain.c
+Index: linux/arch/arm/mach-shmobile/include/mach/r8a7779.h
 ===================================================================
---- linux.orig/drivers/base/power/domain.c
-+++ linux/drivers/base/power/domain.c
-@@ -1399,6 +1399,33 @@ int __pm_genpd_of_add_device(struct devi
- 	return __pm_genpd_add_device(genpd, dev, td);
- }
+--- linux.orig/arch/arm/mach-shmobile/include/mach/r8a7779.h
++++ linux/arch/arm/mach-shmobile/include/mach/r8a7779.h
+@@ -347,14 +347,9 @@ extern int r8a7779_sysc_power_down(struc
+ extern int r8a7779_sysc_power_up(struct r8a7779_pm_ch *r8a7779_ch);
  
-+
-+/**
-+ * __pm_genpd_name_add_device - Find I/O PM domain and add a device to it.
-+ * @domain_name: Name of the PM domain to add the device to.
-+ * @dev: Device to be added.
-+ * @td: Set of PM QoS timing parameters to attach to the device.
-+ */
-+int __pm_genpd_name_add_device(const char *domain_name, struct device *dev,
-+			       struct gpd_timing_data *td)
-+{
-+	struct generic_pm_domain *genpd = NULL, *gpd;
-+
-+	if (IS_ERR_OR_NULL(domain_name) || IS_ERR_OR_NULL(dev))
-+		return -EINVAL;
-+
-+	mutex_lock(&gpd_list_lock);
-+	list_for_each_entry(gpd, &gpd_list, gpd_list_node) {
-+		if (!strcmp(gpd->name, domain_name)) {
-+			genpd = gpd;
-+			break;
-+		}
-+	}
-+	mutex_unlock(&gpd_list_lock);
-+
-+	return __pm_genpd_add_device(genpd, dev, td);
-+}
-+
- /**
-  * pm_genpd_remove_device - Remove a device from an I/O PM domain.
-  * @genpd: PM domain to remove the device from.
-Index: linux/include/linux/pm_domain.h
-===================================================================
---- linux.orig/include/linux/pm_domain.h
-+++ linux/include/linux/pm_domain.h
-@@ -139,17 +139,9 @@ extern int __pm_genpd_of_add_device(stru
- 				    struct device *dev,
- 				    struct gpd_timing_data *td);
- 
--static inline int pm_genpd_add_device(struct generic_pm_domain *genpd,
--				      struct device *dev)
--{
--	return __pm_genpd_add_device(genpd, dev, NULL);
--}
+ #ifdef CONFIG_PM
+-extern struct r8a7779_pm_domain r8a7779_sh4a;
+-extern struct r8a7779_pm_domain r8a7779_sgx;
+-extern struct r8a7779_pm_domain r8a7779_vdp1;
+-extern struct r8a7779_pm_domain r8a7779_impx3;
 -
--static inline int pm_genpd_of_add_device(struct device_node *genpd_node,
--					 struct device *dev)
--{
--	return __pm_genpd_of_add_device(genpd_node, dev, NULL);
--}
-+extern int __pm_genpd_name_add_device(const char *domain_name,
-+				      struct device *dev,
-+				      struct gpd_timing_data *td);
+-extern void r8a7779_init_pm_domain(struct r8a7779_pm_domain *r8a7779_pd);
++extern void __init r8a7779_init_pm_domains(void);
+ #else
+-#define r8a7779_init_pm_domain(pd) do { } while (0)
++static inline void r8a7779_init_pm_domains(void) {}
+ #endif /* CONFIG_PM */
  
- extern int pm_genpd_remove_device(struct generic_pm_domain *genpd,
- 				  struct device *dev);
-@@ -189,8 +181,14 @@ static inline int __pm_genpd_add_device(
- {
- 	return -ENOSYS;
+ #endif /* __ASM_R8A7779_H__ */
+Index: linux/arch/arm/mach-shmobile/pm-r8a7779.c
+===================================================================
+--- linux.orig/arch/arm/mach-shmobile/pm-r8a7779.c
++++ linux/arch/arm/mach-shmobile/pm-r8a7779.c
+@@ -183,7 +183,7 @@ static bool pd_active_wakeup(struct devi
+ 	return true;
  }
--static inline int pm_genpd_add_device(struct generic_pm_domain *genpd,
--				      struct device *dev)
-+static inline int __pm_genpd_of_add_device(struct device_node *genpd_node,
-+					   struct device *dev)
+ 
+-void r8a7779_init_pm_domain(struct r8a7779_pm_domain *r8a7779_pd)
++static void r8a7779_init_pm_domain(struct r8a7779_pm_domain *r8a7779_pd)
+ {
+ 	struct generic_pm_domain *genpd = &r8a7779_pd->genpd;
+ 
+@@ -199,37 +199,44 @@ void r8a7779_init_pm_domain(struct r8a77
+ 		pd_power_up(&r8a7779_pd->genpd);
+ }
+ 
+-struct r8a7779_pm_domain r8a7779_sh4a = {
+-	.genpd_name = "SH4A",
+-	.ch = {
+-		.chan_offs = 0x80, /* PWRSR1 .. PWRER1 */
+-		.isr_bit = 16, /* SH4A */
+-	}
++static struct r8a7779_pm_domain r8a7779_pm_domains[] = {
++	{
++		.genpd_name = "SH4A",
++		.ch = {
++			.chan_offs = 0x80, /* PWRSR1 .. PWRER1 */
++			.isr_bit = 16, /* SH4A */
++		},
++	},
++	{
++		.genpd_name = "SGX",
++		.ch = {
++			.chan_offs = 0xc0, /* PWRSR2 .. PWRER2 */
++			.isr_bit = 20, /* SGX */
++		},
++	},
++	{
++		.genpd_name = "VDP1",
++		.ch = {
++			.chan_offs = 0x100, /* PWRSR3 .. PWRER3 */
++			.isr_bit = 21, /* VDP */
++		},
++	},
++	{
++		.genpd_name = "IMPX3",
++		.ch = {
++			.chan_offs = 0x140, /* PWRSR4 .. PWRER4 */
++			.isr_bit = 24, /* IMP */
++		},
++	},
+ };
+ 
+-struct r8a7779_pm_domain r8a7779_sgx = {
+-	.genpd_name = "SGX",
+-	.ch = {
+-		.chan_offs = 0xc0, /* PWRSR2 .. PWRER2 */
+-		.isr_bit = 20, /* SGX */
+-	}
+-};
+-
+-struct r8a7779_pm_domain r8a7779_vdp1 = {
+-	.genpd_name = "VDP1",
+-	.ch = {
+-		.chan_offs = 0x100, /* PWRSR3 .. PWRER3 */
+-		.isr_bit = 21, /* VDP */
+-	}
+-};
++void __init r8a7779_init_pm_domains(void)
 +{
-+	return -ENOSYS;
++	int j;
+ 
+-struct r8a7779_pm_domain r8a7779_impx3 = {
+-	.genpd_name = "IMPX3",
+-	.ch = {
+-		.chan_offs = 0x140, /* PWRSR4 .. PWRER4 */
+-		.isr_bit = 24, /* IMP */
+-	}
+-};
++	for (j = 0; j < ARRAY_SIZE(r8a7779_pm_domains); j++)
++		r8a7779_init_pm_domain(&r8a7779_pm_domains[j]);
 +}
-+static inline int __pm_genpd_name_add_device(char *domain_name,
-+					     struct device *dev,
-+					     struct gpd_timing_data *td)
- {
- 	return -ENOSYS;
- }
-@@ -245,6 +243,24 @@ static inline bool default_stop_ok(struc
- #define pm_domain_always_on_gov NULL
+ 
+ #endif /* CONFIG_PM */
+ 
+Index: linux/arch/arm/mach-shmobile/setup-r8a7779.c
+===================================================================
+--- linux.orig/arch/arm/mach-shmobile/setup-r8a7779.c
++++ linux/arch/arm/mach-shmobile/setup-r8a7779.c
+@@ -251,10 +251,7 @@ void __init r8a7779_add_standard_devices
  #endif
+ 	r8a7779_pm_init();
  
-+static inline int pm_genpd_add_device(struct generic_pm_domain *genpd,
-+				      struct device *dev)
-+{
-+	return __pm_genpd_add_device(genpd, dev, NULL);
-+}
-+
-+static inline int pm_genpd_of_add_device(struct device_node *genpd_node,
-+					 struct device *dev)
-+{
-+	return __pm_genpd_of_add_device(genpd_node, dev, NULL);
-+}
-+
-+static inline int pm_genpd_name_add_device(const char *domain_name,
-+					   struct device *dev)
-+{
-+	return __pm_genpd_name_add_device(domain_name, dev, NULL);
-+}
-+
- static inline int pm_genpd_remove_callbacks(struct device *dev)
- {
- 	return __pm_genpd_remove_callbacks(dev, true);
+-	r8a7779_init_pm_domain(&r8a7779_sh4a);
+-	r8a7779_init_pm_domain(&r8a7779_sgx);
+-	r8a7779_init_pm_domain(&r8a7779_vdp1);
+-	r8a7779_init_pm_domain(&r8a7779_impx3);
++	r8a7779_init_pm_domains();
+ 
+ 	platform_add_devices(r8a7779_early_devices,
+ 			    ARRAY_SIZE(r8a7779_early_devices));
 
