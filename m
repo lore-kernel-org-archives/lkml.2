@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753458Ab2GPQQd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 12:16:33 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:33982 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753374Ab2GPQQU (ORCPT
+	id S1753404Ab2GPQSa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 12:18:30 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:36797 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753212Ab2GPQS1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 12:16:20 -0400
-From: Joonsoo Kim <js1304@gmail.com>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Joonsoo Kim <js1304@gmail.com>, Michal Nazarewicz <mina86@mina86.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Minchan Kim <minchan@kernel.org>, Christoph Lameter <cl@linux.com>
-Subject: [PATCH 3/3] mm: fix return value in __alloc_contig_migrate_range()
-Date: Tue, 17 Jul 2012 01:14:32 +0900
-Message-Id: <1342455272-32703-3-git-send-email-js1304@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1342455272-32703-1-git-send-email-js1304@gmail.com>
-References: <Yes>
- <1342455272-32703-1-git-send-email-js1304@gmail.com>
+	Mon, 16 Jul 2012 12:18:27 -0400
+Message-ID: <1342455503.3176.42.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [PATCH] sd: do not set changed flag on all unit attention
+ conditions
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Date: Mon, 16 Jul 2012 17:18:23 +0100
+In-Reply-To: <1342454772-9018-1-git-send-email-pbonzini@redhat.com>
+References: <1342454772-9018-1-git-send-email-pbonzini@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-migrate_pages() would return positive value in some failure case,
-so 'ret > 0 ? 0 : ret' may be wrong.
-This fix it and remove one dead statement.
+On Mon, 2012-07-16 at 18:06 +0200, Paolo Bonzini wrote:
+> Right now, I/O will fail as soon as a unit attention condition is
+> detected on a unit with removable media.  However, this is not
+> always necessary.  There are some cases (such as "Capacity data
+> has changed") where no particular action is needed.  On the
+> other hand, all problematic cases have to report at least one
+> of "No medium" and/or a "Medium may have changed", so restrict
+> our attention to those.
+> 
+> This patch fixes resizing a removable medium with virtio-scsi.
+> 
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> ---
+>  drivers/scsi/scsi_lib.c |    7 +++++--
+>  1 files changed, 5 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+> index b583277..6d8ca08 100644
+> --- a/drivers/scsi/scsi_lib.c
+> +++ b/drivers/scsi/scsi_lib.c
+> @@ -843,8 +843,11 @@ void scsi_io_completion(struct scsi_cmnd *cmd, unsigned int good_bytes)
+>  	} else if (sense_valid && !sense_deferred) {
+>  		switch (sshdr.sense_key) {
+>  		case UNIT_ATTENTION:
+> -			if (cmd->device->removable) {
+> -				/* Detected disc change.  Set a bit
+> +			if (cmd->device->removable &&
+> +			    (sshdr.asc == 0x3a ||
+> +			     (sshdr.asc == 0x28 && sshdr.ascq == 0x00))) {
+> +				/* "No medium" or "Medium may have changed."
+> +				 * This means a disc change.  Set a bit
 
-Signed-off-by: Joonsoo Kim <js1304@gmail.com>
-Cc: Michal Nazarewicz <mina86@mina86.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: Christoph Lameter <cl@linux.com>
+This type of change would likely cause a huge cascade of errors in real
+removable media devices.  Under the MMC standards, which a lot of the
+older removable discs seem to follow, UNIT ATTENTION indicates either
+medium change or device reset (which we check for and eat lower down);
+we can't rely on them giving proper SBC-2 sense codes.  If you want to
+pretend to be removable media, you have to conform to its standards.
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 4403009..02d4519 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -5673,7 +5673,6 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
- 			}
- 			tries = 0;
- 		} else if (++tries == 5) {
--			ret = ret < 0 ? ret : -EBUSY;
- 			break;
- 		}
- 
-@@ -5683,7 +5682,7 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
- 	}
- 
- 	putback_lru_pages(&cc.migratepages);
--	return ret > 0 ? 0 : ret;
-+	return ret <= 0 ? ret : -EBUSY;
- }
- 
- /*
--- 
-1.7.9.5
+James
+
 
