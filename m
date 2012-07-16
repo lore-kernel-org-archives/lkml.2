@@ -1,60 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754110Ab2GPSlA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 14:41:00 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:49395 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751584Ab2GPSk5 (ORCPT
+	id S1753810Ab2GPSoF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 14:44:05 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:12359 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753129Ab2GPSn5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 14:40:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <871ukbr4d3.fsf@erwin.mina86.com>
-References: <1342455272-32703-1-git-send-email-js1304@gmail.com>
-	<1342455272-32703-3-git-send-email-js1304@gmail.com>
-	<871ukbr4d3.fsf@erwin.mina86.com>
-Date: Tue, 17 Jul 2012 03:40:56 +0900
-Message-ID: <CAAmzW4MpWsxd2nG-xsdw_D89-Prx7PPuWSEbuS7Nw0rTmcChig@mail.gmail.com>
-Subject: Re: [PATCH 3/3] mm: fix return value in __alloc_contig_migrate_range()
-From: JoonSoo Kim <js1304@gmail.com>
-To: Michal Nazarewicz <mina86@mina86.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Marek Szyprowski <m.szyprowski@samsung.com>,
-        Minchan Kim <minchan@kernel.org>, Christoph Lameter <cl@linux.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 16 Jul 2012 14:43:57 -0400
+X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=zo4uxSKicaUA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=ayC55rCoAAAA:8 a=oaIC6Tjh_shP-Nb8facA:9 a=E6k37eg1NvgA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=Zh68SRI7RUMA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-Id: <20120716184355.467207736@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Mon, 16 Jul 2012 14:43:19 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Subject: [PATCH RT 09/11] workqueue: Revert workqueue: Fix PF_THREAD_BOUND abuse
+References: <20120716184310.223095720@goodmis.org>
+Content-Disposition: inline; filename=0009-workqueue-Revert-workqueue-Fix-PF_THREAD_BOUND-abuse.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/7/17 Michal Nazarewicz <mina86@mina86.com>:
-> Joonsoo Kim <js1304@gmail.com> writes:
->
->> migrate_pages() would return positive value in some failure case,
->> so 'ret > 0 ? 0 : ret' may be wrong.
->> This fix it and remove one dead statement.
->>
->> Signed-off-by: Joonsoo Kim <js1304@gmail.com>
->> Cc: Michal Nazarewicz <mina86@mina86.com>
->> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
->> Cc: Minchan Kim <minchan@kernel.org>
->> Cc: Christoph Lameter <cl@linux.com>
->
-> Have you actually encountered this problem?  If migrate_pages() fails
-> with a positive value, the code that you are removing kicks in and
-> -EBUSY is assigned to ret (now that I look at it, I think that in the
-> current code the "return ret > 0 ? 0 : ret;" statement could be reduced
-> to "return ret;").  Your code seems to be cleaner, but the commit
-> message does not look accurate to me.
->
+From: Steven Rostedt <srostedt@redhat.com>
 
-I don't encounter this problem yet.
+Revert commit
 
-If migrate_pages() with offlining false meets KSM page, then migration failed.
-In this case, failed page is removed from cc.migratepage list and
-return failed count.
-So it can be possible exiting loop without testing ++tries == 5 and
-ret is over the zero.
-Is there any point which I missing?
-Is there any possible scenario "migrate_pages return  > 0 and
-cc.migratepages is empty"?
+    Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
+    Date:   Mon Oct 3 12:43:25 2011 +0200
+    workqueue: Fix PF_THREAD_BOUND abuse
 
-I'm not expert for MM, so please comment my humble opinion.
+As TREAD_BOUND no longer affects cpu down, and this code introduced
+a lot of races with taking down a CPU.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/workqueue.c |   29 +++++++++--------------------
+ 1 file changed, 9 insertions(+), 20 deletions(-)
+
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index bc867e8..1e7f9c7 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1283,14 +1283,8 @@ __acquires(&gcwq->lock)
+ 			return false;
+ 		if (task_cpu(task) == gcwq->cpu &&
+ 		    cpumask_equal(&current->cpus_allowed,
+-				  get_cpu_mask(gcwq->cpu))) {
+-			/*
+-			 * Since we're binding to a particular cpu and need to
+-			 * stay there for correctness, mark us PF_THREAD_BOUND.
+-			 */
+-			task->flags |= PF_THREAD_BOUND;
++				  get_cpu_mask(gcwq->cpu)))
+ 			return true;
+-		}
+ 		spin_unlock_irq(&gcwq->lock);
+ 
+ 		/*
+@@ -1304,18 +1298,6 @@ __acquires(&gcwq->lock)
+ 	}
+ }
+ 
+-static void worker_unbind_and_unlock(struct worker *worker)
+-{
+-	struct global_cwq *gcwq = worker->gcwq;
+-	struct task_struct *task = worker->task;
+-
+-	/*
+-	 * Its no longer required we're PF_THREAD_BOUND, the work is done.
+-	 */
+-	task->flags &= ~PF_THREAD_BOUND;
+-	spin_unlock_irq(&gcwq->lock);
+-}
+-
+ static struct worker *alloc_worker(void)
+ {
+ 	struct worker *worker;
+@@ -1378,9 +1360,15 @@ static struct worker *create_worker(struct global_cwq *gcwq, bool bind)
+ 	if (IS_ERR(worker->task))
+ 		goto fail;
+ 
++	/*
++	 * A rogue worker will become a regular one if CPU comes
++	 * online later on.  Make sure every worker has
++	 * PF_THREAD_BOUND set.
++	 */
+ 	if (bind && !on_unbound_cpu)
+ 		kthread_bind(worker->task, gcwq->cpu);
+ 	else {
++		worker->task->flags |= PF_THREAD_BOUND;
+ 		if (on_unbound_cpu)
+ 			worker->flags |= WORKER_UNBOUND;
+ 	}
+@@ -2057,7 +2045,7 @@ repeat:
+ 		if (keep_working(gcwq))
+ 			wake_up_worker(gcwq);
+ 
+-		worker_unbind_and_unlock(rescuer);
++		spin_unlock_irq(&gcwq->lock);
+ 	}
+ 
+ 	schedule();
+@@ -3007,6 +2995,7 @@ struct workqueue_struct *__alloc_workqueue_key(const char *fmt,
+ 		if (IS_ERR(rescuer->task))
+ 			goto err;
+ 
++		rescuer->task->flags |= PF_THREAD_BOUND;
+ 		wake_up_process(rescuer->task);
+ 	}
+ 
+-- 
+1.7.10.4
+
+
