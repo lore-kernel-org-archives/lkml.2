@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752729Ab2GPI4K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 04:56:10 -0400
-Received: from co1ehsobe004.messaging.microsoft.com ([216.32.180.187]:34950
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750754Ab2GPI4I (ORCPT
+	id S1752857Ab2GPJAB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 05:00:01 -0400
+Received: from www.linutronix.de ([62.245.132.108]:52125 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751635Ab2GPI76 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 04:56:08 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h668h839hd24he5bhf0ah107ah)
-From: Richard Zhao <richard.zhao@freescale.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-CC: <sameo@linux.intel.com>, <paulliu@debian.org>, <shawn.guo@linaro.org>,
-        Richard Zhao <richard.zhao@freescale.com>
-Subject: [PATCH] mfd: anatop: matches should be NULL when populate child devices
-Date: Mon, 16 Jul 2012 16:55:57 +0800
-Message-ID: <1342428957-14321-1-git-send-email-richard.zhao@freescale.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 16 Jul 2012 04:59:58 -0400
+Date: Mon, 16 Jul 2012 10:59:46 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Mike Galbraith <mgalbraith@novell.com>
+cc: Jan Kara <jack@suse.cz>, Jeff Moyer <jmoyer@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Jens Axboe <jaxboe@fusionio.com>,
+        mgalbraith@suse.com
+Subject: Re: Deadlocks due to per-process plugging
+In-Reply-To: <1342405366.7659.35.camel@marge.simpson.net>
+Message-ID: <alpine.LFD.2.02.1207161058550.32033@ionos>
+References: <20120711133735.GA8122@quack.suse.cz>  <x49ehoii8ps.fsf@segfault.boston.devel.redhat.com>  <20120711201601.GB9779@quack.suse.cz>  <alpine.LFD.2.02.1207121552111.32033@ionos>  <20120713123318.GB20361@quack.suse.cz>  <alpine.LFD.2.02.1207131444490.32033@ionos>
+  <20120713144622.GB28715@quack.suse.cz>  <alpine.LFD.2.02.1207151057010.32033@ionos>  <1342343673.28142.2.camel@marge.simpson.net> <1342405366.7659.35.camel@marge.simpson.net>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Richard Zhao <richard.zhao@freescale.com>
----
- drivers/mfd/anatop-mfd.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On Mon, 16 Jul 2012, Mike Galbraith wrote:
+> On Sun, 2012-07-15 at 11:14 +0200, Mike Galbraith wrote: 
+> > On Sun, 2012-07-15 at 10:59 +0200, Thomas Gleixner wrote: 
+> 
+> > > Can you figure out on which lock the stuck thread which did not unplug
+> > > due to tsk_is_pi_blocked was blocked?
+> > 
+> > I'll take a peek.
+> 
+> Sorry for late reply, took a half day away from box.  Jan had already
+> done the full ext3 IO deadlock analysis:
+> 
+> Again kjournald is waiting for buffer IO on block 4367635 (sector
+> 78364838) to finish.  Now it is dbench thread 0xffff88026f330e70 which
+> has submitted this buffer for IO and is still holding this buffer behind
+> its plug (request for sector 78364822..78364846). The dbench thread is
+> waiting on j_checkpoint mutex (apparently it has successfully got the
+> mutex in the past, checkpointed some buffers, released the mutex and
+> hung when trying to acquire it again in the next loop of
+> __log_wait_for_space()). 
 
-diff --git a/drivers/mfd/anatop-mfd.c b/drivers/mfd/anatop-mfd.c
-index 6da0634..5576e07 100644
---- a/drivers/mfd/anatop-mfd.c
-+++ b/drivers/mfd/anatop-mfd.c
-@@ -83,7 +83,7 @@ static int __devinit of_anatop_probe(struct platform_device *pdev)
- 	drvdata->ioreg = ioreg;
- 	spin_lock_init(&drvdata->reglock);
- 	platform_set_drvdata(pdev, drvdata);
--	of_platform_populate(np, of_anatop_match, NULL, dev);
-+	of_platform_populate(np, NULL, NULL, dev);
- 
- 	return 0;
- }
--- 
-1.7.9.5
+And what's holding j_checkpoint mutex and not making progress?
 
+Thanks,
 
+	tglx
