@@ -1,89 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752936Ab2GPI3G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 04:29:06 -0400
-Received: from mga14.intel.com ([143.182.124.37]:45342 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752282Ab2GPI3C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 04:29:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="122919689"
-Message-ID: <5003D0E4.2060300@intel.com>
-Date: Mon, 16 Jul 2012 16:29:24 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+	id S1752883Ab2GPIaE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 04:30:04 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:50680 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752256Ab2GPI37 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 04:29:59 -0400
+From: Jack Morgenstein <jackm@dev.mellanox.co.il>
+Organization: Mellanox
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: linux-next: manual merge of the net-next tree with the infiniband tree
+Date: Mon, 16 Jul 2012 11:33:16 +0300
+User-Agent: KMail/1.9.1
+Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Roland Dreier <roland@kernel.org>, linux-rdma@vger.kernel.org,
+        Hadar Hen Zion <hadarh@mellanox.co.il>,
+        Or Gerlitz <ogerlitz@mellanox.com>
+References: <20120712120950.223be053857381046b7d5db6@canb.auug.org.au>
+In-Reply-To: <20120712120950.223be053857381046b7d5db6@canb.auug.org.au>
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: kosaki.motohiro@jp.fujitsu.com, akpm@linux-foundation.org,
-        paul.gortmaker@windriver.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] cpumask: cpumask_scnprintf() comments correction
-References: <1342406154-24001-1-git-send-email-alex.shi@intel.com> <87ehocxig6.fsf@rustcorp.com.au>
-In-Reply-To: <87ehocxig6.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201207161133.16886.jackm@dev.mellanox.co.il>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2012 03:40 PM, Rusty Russell wrote:
-
-> On Mon, 16 Jul 2012 10:35:54 +0800, Alex Shi <alex.shi@intel.com> wrote:
->> The function has no parameter @len now, so need to remove it from
->> comments to avoid kernel-doc warning:
+On Thursday 12 July 2012 05:09, Stephen Rothwell wrote:
+> Hi all,
 > 
-> But it still does in my tree.
+> Today's linux-next merge of the net-next tree got a conflict in
+> drivers/net/ethernet/mellanox/mlx4/main.c between commit 6634961c14d3
+> ("mlx4: Put physical GID and P_Key table sizes in mlx4_phys_caps struct
+> and paravirtualize them") from the infiniband tree and commit
+> 0ff1fb654bec ("{NET, IB}/mlx4: Add device managed flow steering firmware
+> API") from the net-next tree.
 > 
-> Please push this patch via whoever changed it?
-> 
-> Acked-by: Rusty Russell <rusty@rustcorp.com.au>
-> 
+> Just context changes (I think).  I have fixed it up (see below) and can
+> carry the fix as necessary.
 
-Sorry, my fault, the commit log used a wrong function name, it is cpulist_parse()
-not cpumask_scnprntf. and find a new error in the comments: used a incorrect 
-function name: cpulist_parse_user(), the correct one is cpulist_parse().
-Fix it in updated patch.
+Thanks, Stephen!
 
-Both errors appear in Rusty's commit 29c0177e6a4.
+Ack for IB side.
 
-===
-
->From db20433a0b321f7b4edfc57f66e816d7bec81b14 Mon Sep 17 00:00:00 2001
-From: Alex Shi <alex.shi@intel.com>
-Date: Mon, 16 Jul 2012 10:25:06 +0800
-Subject: [PATCH] cpumask: cpulist_parse() comments correction
-
-The function has no parameter @len, so need to remove it from
-comments to avoid kernel-doc warning:
-
-alexs@debian:~/linux-next$ scripts/kernel-doc -man
-include/linux/cpumask.h | split-man.pl /tmp/man
-....
-Warning(include/linux/cpumask.h:602): Excess function parameter 'len'
-description in 'cpulist_parse'
-
-and correct the function name in comments to cpulist_parse.
-
-Signed-off-by: Alex Shi <alex.shi@intel.com>
----
- include/linux/cpumask.h |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/cpumask.h b/include/linux/cpumask.h
-index 8bf1c27..0325602 100644
---- a/include/linux/cpumask.h
-+++ b/include/linux/cpumask.h
-@@ -591,9 +591,8 @@ static inline int cpulist_scnprintf(char *buf, int len,
- }
- 
- /**
-- * cpulist_parse_user - extract a cpumask from a user string of ranges
-+ * cpulist_parse - extract a cpumask from a user string of ranges
-  * @buf: the buffer to extract from
-- * @len: the length of the buffer
-  * @dstp: the cpumask to set.
-  *
-  * Returns -errno, or 0 for success.
--- 
-1.7.5.4
-
+-Jack
