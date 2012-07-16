@@ -1,112 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754143Ab2GPTVx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 15:21:53 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:62138 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753615Ab2GPTVn (ORCPT
+	id S1753777Ab2GPT1P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 15:27:15 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:44605 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753161Ab2GPT1N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 15:21:43 -0400
-From: Omar Ramirez Luna <omar.luna@linaro.org>
-To: Paul Walmsley <paul@pwsan.com>
-Cc: Benoit Cousson <b-cousson@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>, Kevin Hilman <khilman@ti.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Omar Ramirez Luna <omar.luna@linaro.org>
-Subject: [PATCH 3/3] ARM: OMAP: omap_device: expose hwmod assert/deassert to omap devices
-Date: Mon, 16 Jul 2012 14:21:25 -0500
-Message-Id: <1342466485-1050-4-git-send-email-omar.luna@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1342466485-1050-1-git-send-email-omar.luna@linaro.org>
-References: <1342466485-1050-1-git-send-email-omar.luna@linaro.org>
+	Mon, 16 Jul 2012 15:27:13 -0400
+MIME-Version: 1.0
+In-Reply-To: <4FE4B13E.10709@caviumnetworks.com>
+References: <1339962373-3224-1-git-send-email-geert@linux-m68k.org>
+	<CAMuHMdVfLjgrtWoPpvbLf12+=ApE6W9dNcweqD-_2Benr-D7NQ@mail.gmail.com>
+	<20120620152759.2caceb8c.yuasa@linux-mips.org>
+	<20120620161249.GB29196@linux-mips.org>
+	<4FE4B13E.10709@caviumnetworks.com>
+Date: Mon, 16 Jul 2012 21:27:12 +0200
+X-Google-Sender-Auth: 3zRs9Ed7_W2rWDcGqS4JdQG_7r4
+Message-ID: <CAMuHMdXSGgH+M_2+xuzY2t_sGZto24=atv3Kaj+R-dWAUPzW7w@mail.gmail.com>
+Subject: Re: [PATCH] MIPS: fix bug.h MIPS build regression
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>, Yoichi Yuasa <yuasa@linux-mips.org>,
+        Paul Mundt <lethal@linux-sh.org>, linux-kernel@vger.kernel.org,
+        Linuxppc-dev <linuxppc-dev@ozlabs.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        Chris Zankel <chris@zankel.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This APIs are meant to be an interface to hwmod assert/deassert
-function, omap devices can call them through their platform data
-to control their reset lines, they are expected to know the name
-of the reset line they are trying to control.
+On Fri, Jun 22, 2012 at 7:54 PM, David Daney <ddaney@caviumnetworks.com> wrote:
+> On 06/20/2012 09:12 AM, Ralf Baechle wrote:
+>>
+>> On Wed, Jun 20, 2012 at 03:27:59PM +0900, Yoichi Yuasa wrote:
+>>
+>>> Commit: 3777808873b0c49c5cf27e44c948dfb02675d578 breaks all MIPS builds.
+>>
+>>
+>> Thanks, fix applied.
+>>
+>
+> Where was it applied?
+>
+> It doesn't show up in linux-next for 20120622, which is where it is needed.
 
-Signed-off-by: Omar Ramirez Luna <omar.luna@linaro.org>
----
- arch/arm/plat-omap/include/plat/omap_device.h |    4 ++
- arch/arm/plat-omap/omap_device.c              |   45 +++++++++++++++++++++++++
- 2 files changed, 49 insertions(+), 0 deletions(-)
+It's also desperately needed in mainline for 3.5.
 
-diff --git a/arch/arm/plat-omap/include/plat/omap_device.h b/arch/arm/plat-omap/include/plat/omap_device.h
-index 4327b2c..27bcc24 100644
---- a/arch/arm/plat-omap/include/plat/omap_device.h
-+++ b/arch/arm/plat-omap/include/plat/omap_device.h
-@@ -118,6 +118,10 @@ int omap_device_get_context_loss_count(struct platform_device *pdev);
- 
- /* Other */
- 
-+int omap_device_assert_hardreset(struct platform_device *pdev,
-+				 const char *name);
-+int omap_device_deassert_hardreset(struct platform_device *pdev,
-+				 const char *name);
- int omap_device_idle_hwmods(struct omap_device *od);
- int omap_device_enable_hwmods(struct omap_device *od);
- 
-diff --git a/arch/arm/plat-omap/omap_device.c b/arch/arm/plat-omap/omap_device.c
-index c490240..8883074 100644
---- a/arch/arm/plat-omap/omap_device.c
-+++ b/arch/arm/plat-omap/omap_device.c
-@@ -925,6 +925,51 @@ int omap_device_shutdown(struct platform_device *pdev)
- }
- 
- /**
-+ * omap_device_assert_hardreset - set a device's reset line
-+ * @pdev: struct platform_device * to reset
-+ * @name: const char * with the name of the reset line
-+ *
-+ * According to @name, set the reset line of the hwmods associated
-+ * with this @pdev deivce.
-+ */
-+int omap_device_assert_hardreset(struct platform_device *pdev, const char *name)
-+{
-+	int i, ret = 0;
-+	struct omap_device *od = to_omap_device(pdev);
-+
-+	for (i = 0; i < od->hwmods_cnt; i++) {
-+		ret = omap_hwmod_assert_hardreset(od->hwmods[i], name);
-+		if (ret)
-+			break;
-+	}
-+
-+	return ret;
-+}
-+
-+/**
-+ * omap_device_deassert_hardreset - lift a device's reset line
-+ * @pdev: struct platform_device * to reset
-+ * @name: const char * with the name of the reset line
-+ *
-+ * According to @name, lift the reset line of the hwmods associated
-+ * with this @pdev deivce.
-+ */
-+int omap_device_deassert_hardreset(struct platform_device *pdev,
-+				const char *name)
-+{
-+	int i, ret = 0;
-+	struct omap_device *od = to_omap_device(pdev);
-+
-+	for (i = 0; i < od->hwmods_cnt; i++) {
-+		ret = omap_hwmod_deassert_hardreset(od->hwmods[i], name);
-+		if (ret)
-+			break;
-+	}
-+
-+	return ret;
-+}
-+
-+/**
-  * omap_device_align_pm_lat - activate/deactivate device to match wakeup lat lim
-  * @od: struct omap_device *
-  *
--- 
-1.7.4.1
+Ralf?
 
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
