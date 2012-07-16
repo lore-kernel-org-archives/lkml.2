@@ -1,279 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753722Ab2GPUeA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 16:34:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15146 "EHLO mx1.redhat.com"
+	id S1753943Ab2GPUkb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 16:40:31 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:42963 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753284Ab2GPUdy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 16:33:54 -0400
-From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH v5 1/4] kvm: Extend irqfd to support level interrupts
-To: avi@redhat.com, mst@redhat.com
-Cc: gleb@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jan.kiszka@siemens.com
-Date: Mon, 16 Jul 2012 14:33:47 -0600
-Message-ID: <20120716203344.1752.14606.stgit@bling.home>
-In-Reply-To: <20120716202711.1752.71007.stgit@bling.home>
-References: <20120716202711.1752.71007.stgit@bling.home>
-User-Agent: StGIT/0.14.3
+	id S1752845Ab2GPUk1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 16:40:27 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: PM: Summary of changes for v3.6
+Date: Mon, 16 Jul 2012 22:46:03 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM list <linux-pm@vger.kernel.org>, Len Brown <lenb@kernel.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201207162246.03660.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to inject a level interrupt from an external source using an
-irqfd, we need to allocate a new irq_source_id.  This allows us to
-assert and (later) de-assert an interrupt line independently from
-users of KVM_IRQ_LINE and avoid lost interrupts.
+Hi all,
 
-We also add what may appear like a bit of excessive infrastructure
-around an object for storing this irq_source_id.  However, notice
-that we only provide a way to assert the interrupt here.  A follow-on
-interface will make use of the same irq_source_id to allow de-assert.
+All of the changes I'd like to include into the first PM pull request during
+the v3.6 merge window, except maybe for one or two patches I know are in the
+works, is on the 'linux-next' branch of the linux-pm.git tree now.  The summary
+of those changes is appended.  If anyone finds any of them objectionable,
+please let me know ASAP.  Also please let me know if you have any power
+management patches you'd like me to take for v3.6.
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Thanks,
+Rafael
+
 ---
 
- Documentation/virtual/kvm/api.txt |    6 ++
- arch/x86/kvm/x86.c                |    1 
- include/linux/kvm.h               |    3 +
- virt/kvm/eventfd.c                |  114 ++++++++++++++++++++++++++++++++++++-
- 4 files changed, 120 insertions(+), 4 deletions(-)
+ Documentation/ABI/testing/sysfs-power    |  13 ++
+ Documentation/power/devices.txt          |   9 +-
+ Documentation/power/swsusp.txt           |   5 +
+ arch/x86/platform/olpc/olpc-xo15-sci.c   |   6 +-
+ drivers/acpi/ac.c                        |  17 +-
+ drivers/acpi/battery.c                   |  15 +-
+ drivers/acpi/button.c                    |   9 +-
+ drivers/acpi/fan.c                       |  21 +-
+ drivers/acpi/power.c                     |  12 +-
+ drivers/acpi/processor_driver.c          |  13 +-
+ drivers/acpi/processor_idle.c            |  43 +---
+ drivers/acpi/sbs.c                       |  10 +-
+ drivers/acpi/scan.c                      |  22 --
+ drivers/acpi/thermal.c                   |  17 +-
+ drivers/base/dd.c                        |   6 +-
+ drivers/base/power/domain.c              | 342 ++++++++++++++++++++++++-------
+ drivers/base/power/main.c                |   8 +-
+ drivers/base/power/sysfs.c               |   4 +
+ drivers/block/mg_disk.c                  |  13 +-
+ drivers/char/hw_random/omap-rng.c        |  13 +-
+ drivers/char/ipmi/ipmi_si_intf.c         |  16 --
+ drivers/char/sonypi.c                    |  13 +-
+ drivers/char/tpm/tpm.c                   |   2 +-
+ drivers/char/tpm/tpm.h                   |   2 +-
+ drivers/char/tpm/tpm_atmel.c             |  12 +-
+ drivers/char/tpm/tpm_nsc.c               |  13 +-
+ drivers/char/tpm/tpm_tis.c               |  18 +-
+ drivers/cpuidle/cpuidle.c                |  18 +-
+ drivers/cpuidle/driver.c                 |  29 ++-
+ drivers/cpuidle/governors/menu.c         |   6 +-
+ drivers/cpuidle/sysfs.c                  |  21 +-
+ drivers/crypto/ux500/cryp/cryp_core.c    |  39 ++--
+ drivers/crypto/ux500/hash/hash_core.c    |  33 ++-
+ drivers/hwmon/acpi_power_meter.c         |  13 +-
+ drivers/idle/intel_idle.c                |  41 ++--
+ drivers/platform/x86/acer-wmi.c          |  10 +-
+ drivers/platform/x86/classmate-laptop.c  |  13 +-
+ drivers/platform/x86/fujitsu-tablet.c    |   8 +-
+ drivers/platform/x86/hdaps.c             |   6 +-
+ drivers/platform/x86/hp_accel.c          |  15 +-
+ drivers/platform/x86/intel_ips.c         |  17 --
+ drivers/platform/x86/intel_mid_thermal.c |  16 +-
+ drivers/platform/x86/msi-laptop.c        |   7 +-
+ drivers/platform/x86/panasonic-laptop.c  |  16 +-
+ drivers/platform/x86/sony-laptop.c       |  20 +-
+ drivers/platform/x86/thinkpad_acpi.c     |  23 ++-
+ drivers/platform/x86/toshiba_acpi.c      |  15 +-
+ drivers/platform/x86/toshiba_bluetooth.c |  10 +-
+ drivers/platform/x86/xo15-ebook.c        |   8 +-
+ drivers/rtc/rtc-cmos.c                   |   1 +
+ include/acpi/acpi_bus.h                  |   5 -
+ include/acpi/processor.h                 |   7 +-
+ include/linux/cpuidle.h                  |  20 +-
+ include/linux/pm_domain.h                |  18 ++
+ include/linux/suspend.h                  |   6 +
+ kernel/power/Kconfig                     |   4 +-
+ kernel/power/hibernate.c                 |  42 ++++
+ kernel/power/main.c                      |  45 ++++
+ kernel/power/power.h                     |   3 +
+ kernel/power/suspend.c                   |   3 +
+ kernel/power/swap.c                      |  82 +++++---
+ 61 files changed, 828 insertions(+), 466 deletions(-)
 
-diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
-index 100acde..c7267d5 100644
---- a/Documentation/virtual/kvm/api.txt
-+++ b/Documentation/virtual/kvm/api.txt
-@@ -1981,6 +1981,12 @@ the guest using the specified gsi pin.  The irqfd is removed using
- the KVM_IRQFD_FLAG_DEASSIGN flag, specifying both kvm_irqfd.fd
- and kvm_irqfd.gsi.
- 
-+The KVM_IRQFD_FLAG_LEVEL flag indicates the gsi input is for a level
-+triggered interrupt.  In this case a new irqchip input is allocated
-+which is logically OR'd with other inputs allowing multiple sources
-+to independently assert level interrupts.  The KVM_IRQFD_FLAG_LEVEL
-+is only necessary on setup, teardown is identical to that above.
-+KVM_IRQFD_FLAG_LEVEL support is indicated by KVM_CAP_IRQFD_LEVEL.
- 
- 5. The kvm_run structure
- ------------------------
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index a01a424..80bed07 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -2148,6 +2148,7 @@ int kvm_dev_ioctl_check_extension(long ext)
- 	case KVM_CAP_GET_TSC_KHZ:
- 	case KVM_CAP_PCI_2_3:
- 	case KVM_CAP_KVMCLOCK_CTRL:
-+	case KVM_CAP_IRQFD_LEVEL:
- 		r = 1;
- 		break;
- 	case KVM_CAP_COALESCED_MMIO:
-diff --git a/include/linux/kvm.h b/include/linux/kvm.h
-index 2ce09aa..b2e6e4f 100644
---- a/include/linux/kvm.h
-+++ b/include/linux/kvm.h
-@@ -618,6 +618,7 @@ struct kvm_ppc_smmu_info {
- #define KVM_CAP_PPC_GET_SMMU_INFO 78
- #define KVM_CAP_S390_COW 79
- #define KVM_CAP_PPC_ALLOC_HTAB 80
-+#define KVM_CAP_IRQFD_LEVEL 81
- 
- #ifdef KVM_CAP_IRQ_ROUTING
- 
-@@ -683,6 +684,8 @@ struct kvm_xen_hvm_config {
- #endif
- 
- #define KVM_IRQFD_FLAG_DEASSIGN (1 << 0)
-+/* Available with KVM_CAP_IRQFD_LEVEL */
-+#define KVM_IRQFD_FLAG_LEVEL (1 << 1)
- 
- struct kvm_irqfd {
- 	__u32 fd;
-diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
-index 7d7e2aa..ecdbfea 100644
---- a/virt/kvm/eventfd.c
-+++ b/virt/kvm/eventfd.c
-@@ -36,6 +36,68 @@
- #include "iodev.h"
- 
- /*
-+ * An irq_source_id can be created from KVM_IRQFD for level interrupt
-+ * injections and shared with other interfaces for EOI or de-assert.
-+ * Create an object with reference counting to make it easy to use.
-+ */
-+struct _irq_source {
-+	int id; /* the IRQ source ID */
-+	bool level_asserted; /* Track assertion state and protect with lock */
-+	spinlock_t lock;     /* to avoid unnecessary re-assert/spurious eoi. */
-+	struct kvm *kvm;
-+	struct kref kref;
-+};
-+
-+static void _irq_source_release(struct kref *kref)
-+{
-+	struct _irq_source *source;
-+
-+	source = container_of(kref, struct _irq_source, kref);
-+
-+	/* This also de-asserts */
-+	kvm_free_irq_source_id(source->kvm, source->id);
-+	kfree(source);
-+}
-+
-+static void _irq_source_put(struct _irq_source *source)
-+{
-+	if (source)
-+		kref_put(&source->kref, _irq_source_release);
-+}
-+
-+static struct _irq_source *__attribute__ ((used)) /* white lie for now */
-+_irq_source_get(struct _irq_source *source)
-+{
-+	if (source)
-+		kref_get(&source->kref);
-+
-+	return source;
-+}
-+
-+static struct _irq_source *_irq_source_alloc(struct kvm *kvm)
-+{
-+	struct _irq_source *source;
-+	int id;
-+
-+	source = kzalloc(sizeof(*source), GFP_KERNEL);
-+	if (!source)
-+		return ERR_PTR(-ENOMEM);
-+
-+	id = kvm_request_irq_source_id(kvm);
-+	if (id < 0) {
-+		kfree(source);
-+		return ERR_PTR(id);
-+	}
-+
-+	kref_init(&source->kref);
-+	spin_lock_init(&source->lock);
-+	source->kvm = kvm;
-+	source->id = id;
-+
-+	return source;
-+}
-+
-+/*
-  * --------------------------------------------------------------------
-  * irqfd: Allows an fd to be used to inject an interrupt to the guest
-  *
-@@ -52,6 +114,8 @@ struct _irqfd {
- 	/* Used for level IRQ fast-path */
- 	int gsi;
- 	struct work_struct inject;
-+	/* IRQ source ID for level triggered irqfds */
-+	struct _irq_source *source;
- 	/* Used for setup/shutdown */
- 	struct eventfd_ctx *eventfd;
- 	struct list_head list;
-@@ -62,7 +126,7 @@ struct _irqfd {
- static struct workqueue_struct *irqfd_cleanup_wq;
- 
- static void
--irqfd_inject(struct work_struct *work)
-+irqfd_inject_edge(struct work_struct *work)
- {
- 	struct _irqfd *irqfd = container_of(work, struct _irqfd, inject);
- 	struct kvm *kvm = irqfd->kvm;
-@@ -71,6 +135,29 @@ irqfd_inject(struct work_struct *work)
- 	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
- }
- 
-+static void
-+irqfd_inject_level(struct work_struct *work)
-+{
-+	struct _irqfd *irqfd = container_of(work, struct _irqfd, inject);
-+
-+	/*
-+	 * Inject an interrupt only if not already asserted.
-+	 *
-+	 * We can safely ignore the kvm_set_irq return value here.  If
-+	 * masked, the irr bit is still set and will eventually be serviced.
-+	 * This interface does not guarantee immediate injection.  If
-+	 * coalesced, an eoi will be coming where we can de-assert and
-+	 * re-inject if necessary.  NB, if you need to know if an interrupt
-+	 * was coalesced, this interface is not for you.
-+	 */
-+	spin_lock(&irqfd->source->lock);
-+	if (!irqfd->source->level_asserted) {
-+		kvm_set_irq(irqfd->kvm, irqfd->source->id, irqfd->gsi, 1);
-+		irqfd->source->level_asserted = true;
-+	}
-+	spin_unlock(&irqfd->source->lock);
-+}
-+
- /*
-  * Race-free decouple logic (ordering is critical)
-  */
-@@ -96,6 +183,9 @@ irqfd_shutdown(struct work_struct *work)
- 	 * It is now safe to release the object's resources
- 	 */
- 	eventfd_ctx_put(irqfd->eventfd);
-+
-+	_irq_source_put(irqfd->source);
-+
- 	kfree(irqfd);
- }
- 
-@@ -202,6 +292,7 @@ kvm_irqfd_assign(struct kvm *kvm, struct kvm_irqfd *args)
- {
- 	struct kvm_irq_routing_table *irq_rt;
- 	struct _irqfd *irqfd, *tmp;
-+	struct _irq_source *source = NULL;
- 	struct file *file = NULL;
- 	struct eventfd_ctx *eventfd = NULL;
- 	int ret;
-@@ -214,7 +305,19 @@ kvm_irqfd_assign(struct kvm *kvm, struct kvm_irqfd *args)
- 	irqfd->kvm = kvm;
- 	irqfd->gsi = args->gsi;
- 	INIT_LIST_HEAD(&irqfd->list);
--	INIT_WORK(&irqfd->inject, irqfd_inject);
-+
-+	if (args->flags & KVM_IRQFD_FLAG_LEVEL) {
-+		source = _irq_source_alloc(kvm);
-+		if (IS_ERR(source)) {
-+			ret = PTR_ERR(source);
-+			goto fail;
-+		}
-+
-+		irqfd->source = source;
-+		INIT_WORK(&irqfd->inject, irqfd_inject_level);
-+	} else
-+		INIT_WORK(&irqfd->inject, irqfd_inject_edge);
-+
- 	INIT_WORK(&irqfd->shutdown, irqfd_shutdown);
- 
- 	file = eventfd_fget(args->fd);
-@@ -276,10 +379,13 @@ kvm_irqfd_assign(struct kvm *kvm, struct kvm_irqfd *args)
- 	return 0;
- 
- fail:
-+	if (source && !IS_ERR(source))
-+		_irq_source_put(source);
-+
- 	if (eventfd && !IS_ERR(eventfd))
- 		eventfd_ctx_put(eventfd);
- 
--	if (!IS_ERR(file))
-+	if (file && !IS_ERR(file))
- 		fput(file);
- 
- 	kfree(irqfd);
-@@ -340,7 +446,7 @@ kvm_irqfd_deassign(struct kvm *kvm, struct kvm_irqfd *args)
- int
- kvm_irqfd(struct kvm *kvm, struct kvm_irqfd *args)
- {
--	if (args->flags & ~KVM_IRQFD_FLAG_DEASSIGN)
-+	if (args->flags & ~(KVM_IRQFD_FLAG_DEASSIGN | KVM_IRQFD_FLAG_LEVEL))
- 		return -EINVAL;
- 
- 	if (args->flags & KVM_IRQFD_FLAG_DEASSIGN)
+---------------
+
+Bojan Smojver (2):
+      PM / Hibernate: Enable suspend to both for in-kernel hibernation.
+      PM / Hibernate: Print hibernation/thaw progress indicator one line at a time.
+
+Daniel Lezcano (4):
+      ACPI: intel_idle : break dependency between modules
+      cpuidle / ACPI : remove latency_ticks from acpi_processor_cx structure
+      cpuidle / ACPI: remove usage from acpi_processor_cx structure
+      cpuilde / ACPI: remove time from acpi_processor_cx structure
+
+Oskar Schirmer (1):
+      PM / Documentation: fix typos in power management description
+
+Paul Fox (1):
+      rtc-cmos: report wakeups from interrupt handler
+
+Preeti U Murthy (1):
+      PM / cpuidle: System resume hang fix with cpuidle
+
+Rafael J. Wysocki (50):
+      ACPI / PM: Drop pm_message_t argument from device suspend callback
+      ACPI / PM: Make acpi_bus_type use struct dev_pm_ops for PM handling
+      ACPI / PM: Make acpi_bus_type use driver struct dev_pm_ops callbacks
+      ACPI: Use struct dev_pm_ops for power management in the fan driver
+      ACPI: Use struct dev_pm_ops for power management in the thermal driver
+      ACPI: Use struct dev_pm_ops for power management in processor driver
+      ACPI: Use struct dev_pm_ops for power management in the AC driver
+      ACPI: Use struct dev_pm_ops for power management in the battery driver
+      ACPI: Use struct dev_pm_ops for power management in the button driver
+      ACPI: Use struct dev_pm_ops for power management in the power driver
+      ACPI: Use struct dev_pm_ops for power management in the SBS driver
+      toshiba_acpi: Use struct dev_pm_ops for power management
+      hp_accel: Use struct dev_pm_ops for power management
+      sony-laptop: Use struct dev_pm_ops for power management
+      panasonic-laptop: Use struct dev_pm_ops for power management
+      toshiba_bluetooth: Use struct dev_pm_ops for power management
+      xo15-ebook: Use struct dev_pm_ops for power management
+      classmate-laptop: Use struct dev_pm_ops for power management
+      fujitsu-tablet: Use struct dev_pm_ops for power management
+      acpi_power_meter: Use struct dev_pm_ops for power management
+      ACPI / PM: Do not execute legacy driver PM callbacks
+      ACPI / PM: Drop legacy driver PM callbacks that are not used any more
+      ACPI / PM: Drop PM callbacks from the ACPI bus type
+      thinkpad_acpi: Drop pm_message_t arguments from suspend routines
+      thinkpad_acpi: Use struct dev_pm_ops instead of legacy PM routines
+      intel_ips: Remove empty legacy PM callbacks
+      acer-wmi: Use struct dev_pm_ops for power management
+      intel_mid_thermal: Use struct dev_pm_ops for power management
+      sonypi: Use struct dev_pm_ops for power management
+      PM / Sleep: Separate printing suspend times from initcall_debug
+      PM / Domains: Use subsystem runtime suspend/resume callbacks by default
+      PM / Domains: Do not stop devices after restoring their states
+      hdaps: Use struct dev_pm_ops for power management
+      PM / cpuidle: Add driver reference counter
+      PM / Domains: Add preliminary support for cpuidle, v2
+      PM / Domains: Add device domain data reference counter
+      PM / Domains: Allow device callbacks to be added at any time
+      msi-laptop: Use struct dev_pm_ops for power management
+      mg_disk: Use struct dev_pm_ops for power management
+      omap-rng: Use struct dev_pm_ops for power management
+      PM / TPM: Drop unused pm_message_t argument from tpm_pm_suspend()
+      tpm_atmel: Use struct dev_pm_ops for power management
+      tpm_tis: Use struct dev_pm_ops for power management
+      tpm_nsc: Use struct dev_pm_ops for power management
+      PM / IPMI: Remove empty legacy PCI PM callbacks
+      PM / crypto / ux500: Use struct dev_pm_ops for power management
+      olpc-xo15-sci: Use struct dev_pm_ops for power management
+      PM / Domains: Fix build warning for CONFIG_PM_RUNTIME unset
+      PM / Sleep: Fix build warning in sysfs.c for CONFIG_PM_SLEEP unset
+      PM / Runtime: Do not increment device usage counts before probing
+
+Sachin Kamat (2):
+      PM / Domains: Add missing static storage class specifier in domain.c file
+      PM / Domains: Replace plain integer with NULL pointer in domain.c file
+
+Sameer Nanda (1):
+      PM / Sleep: add knob for printing device resume times
+
+ShuoX Liu (1):
+      cpuidle: move field disable from per-driver to per-cpu
+
+Srivatsa S. Bhat (1):
+      ftrace: Disable function tracing during suspend/resume and hibernation, again
 
