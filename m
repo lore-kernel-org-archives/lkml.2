@@ -1,66 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753840Ab2GPTbj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 15:31:39 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:60905 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751919Ab2GPTbh (ORCPT
+	id S1752713Ab2GPThV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 15:37:21 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:42882 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752348Ab2GPThU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 15:31:37 -0400
-Date: Mon, 16 Jul 2012 14:31:14 -0500
-From: Peter Seebach <peter.seebach@windriver.com>
-To: <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/6] workqueue: introduce NR_WORKER_POOLS and
- for_each_worker_pool()
-Message-ID: <20120716143114.5ad07878@wrlaptop>
-In-Reply-To: <CA+55aFyozbYJh4vRLCCkk5j86XEasngvWkKmL4WpBjiCB5050g@mail.gmail.com>
-References: <1341859315-17759-1-git-send-email-tj@kernel.org>
-	<1341859315-17759-6-git-send-email-tj@kernel.org>
-	<20120714035538.GB5638@dhcp-172-17-108-109.mtv.corp.google.com>
-	<CA+55aFyeauqCqrWsx4U2TB2ENrugZXYj+4vw3Fd0kGaeWBP3RA@mail.gmail.com>
-	<20120714044438.GA7718@dhcp-172-17-108-109.mtv.corp.google.com>
-	<CA+55aFyozbYJh4vRLCCkk5j86XEasngvWkKmL4WpBjiCB5050g@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+	Mon, 16 Jul 2012 15:37:20 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Toralf =?iso-8859-1?q?F=F6rster?= <toralf.foerster@gmx.de>
+Subject: Re: 3.5-rcX: wakeup after s2ram doesn't work after a longer sleep time
+Date: Mon, 16 Jul 2012 21:42:57 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+References: <500319E9.8010001@gmx.de> <201207161947.55896.rjw@sisk.pl> <50045FCF.1060207@gmx.de>
+In-Reply-To: <50045FCF.1060207@gmx.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201207162142.57994.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Jul 2012 22:00:10 -0700
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> (*) Technically, "&(x)[0]" is actually a really confused way of saying
-> "(x+0)" while making sure that "x" was a valid pointer.
+On Monday, July 16, 2012, Toralf Förster wrote:
+> 
+> On 07/16/2012 07:47 PM, Rafael J. Wysocki wrote:
+> > 
+> > Well, so this is a different issue definitely.
+> > 
+> Well, this helped : https://lkml.org/lkml/2012/7/16/113
 
-But wait, there's more!
+So, it was the same issue after all.
 
-Should someone some day try to use an implementation with a fairly
-ferocious bounds-checker, the bounds of &x[0] are the bounds of the
-first member of x, while the bounds of x are... well, whatever they
-were. (If x is an array, they're definitely the bounds of the whole
-array. If x is a pointer to something, then it depends on how the
-pointer was obtained.)
+The patch has been merged, so it should be all good now.
 
-I'm not sure anyone actually has an implementation that bothers with
-this level of granularity in pointers, but I am about 90% sure that an
-implementation which did would be conforming.  e.g.:
+Thanks,
+Rafael
 
-  int a[2];
-  a[1] = 3; /* ok */
-  int *b = a;
-  b[1] = 3; /* ok */
-  int *c = &a[0];
-  c[1] = 3; /* bounds violation */
 
-Note that "conforming" does not imply "could compile and run most
-existing code without surprising new errors". The world is full of code
-which assumes absolute identity between (a+i) and &(*(a+i)).
+> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+> index 269b1fe..3447cfa 100644
+> --- a/kernel/time/timekeeping.c
+> +++ b/kernel/time/timekeeping.c
+> @@ -717,6 +717,7 @@ static void timekeeping_resume(void)
+>         timekeeper.clock->cycle_last = timekeeper.clock->read(timekeeper.clock);
+>         timekeeper.ntp_error = 0;
+>         timekeeping_suspended = 0;
+> +       timekeeping_update(false);
+>         write_sequnlock_irqrestore(&timekeeper.lock, flags);
+>  
+>         touch_softlockup_watchdog();
+> 
+> 
 
-If the code which inspired your rant was actually doing it on purpose
-to obtain this result, I shall have to buy a hat so I can eat it.
-(Disclaimer: Hat must be made of something delicious.)
-
--s
--- 
-Listen, get this.  Nobody with a good compiler needs to be justified.
