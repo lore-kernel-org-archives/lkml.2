@@ -1,93 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753170Ab2GPBbN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jul 2012 21:31:13 -0400
-Received: from sh.osrg.net ([192.16.179.4]:45175 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752917Ab2GPBaZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jul 2012 21:30:25 -0400
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-nilfs@vger.kernel.org,
-        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Subject: [PATCH 3/4] nilfs2: fix timing issue between rmcp and chcp ioctls
-Date: Mon, 16 Jul 2012 10:05:25 +0900
-Message-Id: <1342400726-30670-4-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
-X-Mailer: git-send-email 1.7.9.3
-In-Reply-To: <1342400726-30670-1-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
-References: <1342400726-30670-1-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
-X-Dispatcher: imput version 20070423(IM149)
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.3.7 (sh.osrg.net [192.16.179.4]); Mon, 16 Jul 2012 10:30:14 +0900 (JST)
+	id S1752942Ab2GPBj7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jul 2012 21:39:59 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:37952 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750748Ab2GPBj4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Jul 2012 21:39:56 -0400
+Date: Mon, 16 Jul 2012 10:39:46 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Claudiu Ghioc <claudiughioc@gmail.com>
+Cc: netdev@vger.kernel.org, davem@davemloft.net,
+        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        wensong@linux-vs.org, ja@ssi.bg, pablo@netfilter.org, kaber@trash.net,
+        Claudiu Ghioc <claudiu.ghioc@gmail.com>
+Subject: Re: [PATCH] ipvs: fixed sparse warning
+Message-ID: <20120716013946.GG16151@verge.net.au>
+References: <1342198642-22741-1-git-send-email-claudiu.ghioc@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1342198642-22741-1-git-send-email-claudiu.ghioc@gmail.com>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The checkpoint deletion ioctl (rmcp ioctl) has potential for breaking
-snapshot because it is not fully exclusive with checkpoint mode change
-ioctl (chcp ioctl).
+On Fri, Jul 13, 2012 at 07:57:22PM +0300, Claudiu Ghioc wrote:
+> Removed the following sparse warnings:
+> *	warning: symbol 'ip_vs_control_net_init_sysctl' was not declared. Should
+> 	it be static?
+> *	warning: symbol 'ip_vs_control_net_cleanup_sysctl' was not
+> 	declared. Should it be static?
 
-The rmcp ioctl first tests if the specified checkpoint is a snapshot
-or not within nilfs_cpfile_delete_checkpoint function, and then calls
-nilfs_cpfile_delete_checkpoints function to actually invalidate the
-checkpoint only if it's not a snapshot.  However, the checkpoint can
-be changed into a snapshot by the chcp ioctl between these two
-operations.  In that case, calling nilfs_cpfile_delete_checkpoints()
-wrongly invalidates the snapshot, which leads to snapshot list
-corruption and snapshot count mismatch.
+Thanks.
 
-This fixes the issue by changing nilfs_cpfile_delete_checkpoints() so
-that it reconfirms the target checkpoints are snapshot or not.
+I wonder if you could post a version of this patch which also fixes the
+alternate implementation of ip_vs_control_net_init_sysctl around line 3757 and
+the alternate implementation of ip_vs_control_net_cleanup_sysctl that
+appears around line 3758.
 
-This second check is exclusive with the chcp operation since
-it is protected by an existing semaphore.
+I believe that you will see sparse warnings for these if
+you disable CONFIG_SYSCTL by disabling CONFIG_PROC_SYSCTL.
 
-Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
----
- fs/nilfs2/cpfile.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
-
-diff --git a/fs/nilfs2/cpfile.c b/fs/nilfs2/cpfile.c
-index dab5c4c..deaa3d3 100644
---- a/fs/nilfs2/cpfile.c
-+++ b/fs/nilfs2/cpfile.c
-@@ -286,7 +286,7 @@ int nilfs_cpfile_delete_checkpoints(struct inode *cpfile,
- 	__u64 cno;
- 	void *kaddr;
- 	unsigned long tnicps;
--	int ret, ncps, nicps, count, i;
-+	int ret, ncps, nicps, nss, count, i;
- 
- 	if (unlikely(start == 0 || start > end)) {
- 		printk(KERN_ERR "%s: invalid range of checkpoint numbers: "
-@@ -301,6 +301,7 @@ int nilfs_cpfile_delete_checkpoints(struct inode *cpfile,
- 	if (ret < 0)
- 		goto out_sem;
- 	tnicps = 0;
-+	nss = 0;
- 
- 	for (cno = start; cno < end; cno += ncps) {
- 		ncps = nilfs_cpfile_checkpoints_in_block(cpfile, cno, end);
-@@ -318,8 +319,9 @@ int nilfs_cpfile_delete_checkpoints(struct inode *cpfile,
- 			cpfile, cno, cp_bh, kaddr);
- 		nicps = 0;
- 		for (i = 0; i < ncps; i++, cp = (void *)cp + cpsz) {
--			WARN_ON(nilfs_checkpoint_snapshot(cp));
--			if (!nilfs_checkpoint_invalid(cp)) {
-+			if (nilfs_checkpoint_snapshot(cp)) {
-+				nss++;
-+			} else if (!nilfs_checkpoint_invalid(cp)) {
- 				nilfs_checkpoint_set_invalid(cp);
- 				nicps++;
- 			}
-@@ -364,6 +366,8 @@ int nilfs_cpfile_delete_checkpoints(struct inode *cpfile,
- 	}
- 
- 	brelse(header_bh);
-+	if (nss > 0)
-+		ret = -EBUSY;
- 
-  out_sem:
- 	up_write(&NILFS_MDT(cpfile)->mi_sem);
--- 
-1.7.9.3
-
+> 
+> Signed-off-by: Claudiu Ghioc <claudiu.ghioc@gmail.com>
+> ---
+>  net/netfilter/ipvs/ip_vs_ctl.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/net/netfilter/ipvs/ip_vs_ctl.c b/net/netfilter/ipvs/ip_vs_ctl.c
+> index d43e3c1..3542c6b1 100644
+> --- a/net/netfilter/ipvs/ip_vs_ctl.c
+> +++ b/net/netfilter/ipvs/ip_vs_ctl.c
+> @@ -3674,7 +3674,7 @@ static void ip_vs_genl_unregister(void)
+>   * per netns intit/exit func.
+>   */
+>  #ifdef CONFIG_SYSCTL
+> -int __net_init ip_vs_control_net_init_sysctl(struct net *net)
+> +static int __net_init ip_vs_control_net_init_sysctl(struct net *net)
+>  {
+>  	int idx;
+>  	struct netns_ipvs *ipvs = net_ipvs(net);
+> @@ -3742,7 +3742,7 @@ int __net_init ip_vs_control_net_init_sysctl(struct net *net)
+>  	return 0;
+>  }
+>  
+> -void __net_exit ip_vs_control_net_cleanup_sysctl(struct net *net)
+> +static void __net_exit ip_vs_control_net_cleanup_sysctl(struct net *net)
+>  {
+>  	struct netns_ipvs *ipvs = net_ipvs(net);
+>  
+> -- 
+> 1.7.10.4
+> 
