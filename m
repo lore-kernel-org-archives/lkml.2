@@ -1,91 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752516Ab2GPHKb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 03:10:31 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:48908 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752330Ab2GPHK2 (ORCPT
+	id S1752440Ab2GPHNn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 03:13:43 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:65101 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751567Ab2GPHNk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 03:10:28 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19wMnbxttKYtvQHGNeH5UTD
-Date: Mon, 16 Jul 2012 00:10:18 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Olof Johansson <olof@lixom.net>, linux-omap@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] pinctrl: Add one-register-per-pin type device tree
- based pinctrl driver
-Message-ID: <20120716071017.GC6522@atomide.com>
-References: <20120618055036.GU12766@atomide.com>
- <20120619135600.GX12766@atomide.com>
- <4FE39C86.5070901@wwwdotorg.org>
- <20120622083955.GZ12766@atomide.com>
- <4FE4AC40.8080400@wwwdotorg.org>
- <20120626134319.GA3483@atomide.com>
- <4FE9EBEC.9040208@wwwdotorg.org>
- <20120627102851.GC3483@atomide.com>
- <20120710091131.GQ1122@atomide.com>
- <CACRpkdYUJ3v-DoVbK6Pc6Y833Hn_0KS9PtEpjUCnMr57zfH5Bw@mail.gmail.com>
+	Mon, 16 Jul 2012 03:13:40 -0400
+Date: Mon, 16 Jul 2012 09:13:38 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Vinod Koul <vinod.koul@linux.intel.com>
+cc: Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/7 v2] dma: sh: use an integer slave ID to improve API
+ compatibility
+In-Reply-To: <1342421587.1726.49.camel@vkoul-udesk3>
+Message-ID: <Pine.LNX.4.64.1207160907180.12302@axis700.grange>
+References: <1341484183-10757-1-git-send-email-g.liakhovetski@gmx.de> 
+ <1341484183-10757-6-git-send-email-g.liakhovetski@gmx.de> 
+ <1342418828.1726.37.camel@vkoul-udesk3>  <Pine.LNX.4.64.1207160832540.12302@axis700.grange>
+ <1342421587.1726.49.camel@vkoul-udesk3>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdYUJ3v-DoVbK6Pc6Y833Hn_0KS9PtEpjUCnMr57zfH5Bw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:MQKaeAwjd6jGjmagtQNErTuXCmipufg65EzIOSD93L0
+ LvNlQ7qarjIl7+L7Mw7bPaxa1EWQeGRisMerC3HnVzluZ3gIWe
+ TwX5/yRjCh+WKX5s6iCjO0W3NylkeSQTW53ejjrwA6muG6zAGK
+ 9L3YQxuzdpebv/RTZvNUYyyHSp/y512drFnRgK4ThBwMWjhzYg
+ bIlOySLAf06l6g8ALFO3LGahHe+z8VnhGIWrdcVUh57DFWMWm8
+ +KYxSc6M/Qma4POO4wPYS36km25uph8y3ydJU8K0idJnUduMZo
+ Ejz+EjkwWlWGJFlByJHGOC7hy5dywn2/6P0pHvWQxyloNpaoEP
+ KCwdwey+5fjbd48+YUel/zSwhVB4dvasidKdwIxP5fYADxeuTL
+ CmtJe3DwsjjeQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Linus Walleij <linus.walleij@linaro.org> [120714 13:21]:
-> On Tue, Jul 10, 2012 at 11:11 AM, Tony Lindgren <tony@atomide.com> wrote:
-> 
-> > OK so no comments for a while. Here's the patch updated to leave out
-> > the comments in the binding example.
-> 
-> I reason like this:
-> 
-> - My fears is that the code gets hopeless to understand the mux, the
->  only way to understand that aspect of the system will be to read the DTS
->  and have the data sheet ready at hand.
+On Mon, 16 Jul 2012, Vinod Koul wrote:
 
-Yes that is a valid concern. Once we have the preprocessing available
-for DTS files reading should be easier. Also user space tools can be
-developed for showing the package specific data in detailed form.
- 
-> But:
-> 
-> - Tony knows what he's doing and what is best for OMAP. And this gets
->  (hopefully) all that OMAP mux code out of arch/arm.
+> On Mon, 2012-07-16 at 08:37 +0200, Guennadi Liakhovetski wrote:
+> > On Mon, 16 Jul 2012, Vinod Koul wrote:
+> > 
+> > > On Thu, 2012-07-05 at 12:29 +0200, Guennadi Liakhovetski wrote:
+> > > > diff --git a/include/linux/sh_dma.h b/include/linux/sh_dma.h
+> > > > index a79f10a..4e83f3e 100644
+> > > > --- a/include/linux/sh_dma.h
+> > > > +++ b/include/linux/sh_dma.h
+> > > > @@ -27,10 +27,10 @@ struct sh_dmae_slave {
+> > > >   * a certain peripheral
+> > > >   */
+> > > >  struct sh_dmae_slave_config {
+> > > > -       unsigned int                    slave_id;
+> > > > -       dma_addr_t                      addr;
+> > > > -       u32                             chcr;
+> > > > -       char                            mid_rid;
+> > > > +       int             slave_id;
+> > > > +       dma_addr_t      addr;
+> > > > +       u32             chcr;
+> > > > +       char            mid_rid;
+> > > >  }; 
+> > > why would you want to keep your own slave_id and addr fields when they
+> > > are already provided in struct dma_slave_config.
+> > 
+> > Modifying the driver's API would break all its clients.
+> rightly so, they need to be moved too.
 
-Heh thanks for the positive feedback ;) Yes this should allow us to
-drop close to 8k lines of data and code from arch/arm/mach-omap2 
-once the conversion is done. I'm planning to drop the unused entries
-first to cut down the data quite a bit. And already omap5 and am33xx
-are DT only and using pinctrl-single to start with. The remaining
-legacy mux code can be dropped once we are done with the DT conversion.
+Sure, that's why patch 6/7 is "providing a migration path" for them.
 
-> - Surely it will be better to go through this subsystem if we're refactoring
->   it all again later, and all drivers can be transferred to the abstract
->   pinctrl API which is a big win in itself, bringing coherency to the
->   drivers/* at large.
-> 
-> So applied it, so it can be evaluated in real operating environments.
-> 
-> But if I don't see OMAP transferred to use this I'll simply delete it
-> again. :-)
+> > > Also while at it, what
+> > > would be the use of last tow fields, what do they describe?
+> > 
+> > They tell the driver how the channel has to be configured to support this 
+> > specific client. They are values of two specific registers. In fact, CHCR 
+> > means exactly that - CHannel Control Register.
+> what exactly does the channel control register do in shdma? Should shdma
+> driver deduce this value rather than client giving it?
+> Same question for mid_rid?
 
-OK thanks, for reference some am33xx patches for beagle bone already
-got posted using an earlier revision of this binding:
+See, e.g., arch/arm/mach-shmobile/setup-sh7372.c::sh7372_dmae_slaves[]. 
+Platforms are supplying these values with shdma driver platform data, 
+together with slave IDs. Them when slaves request channels and supply 
+their slave IDs, the driver searches the above array, looking for the 
+matching slave ID, then it uses the rest of the information in those 
+structs to configure the channel for this client. Again, this is nothing 
+new, this is how the driver has been functioning since a long time, this 
+driver is not modifying anything there. Any changes to this procedure, 
+like providing all thig information from clients themselves instead of 
+keeping it with DMACs, requires these patches to be committed first.
 
-http://www.mail-archive.com/linux-omap@vger.kernel.org/msg71695.html
-
-Regards,
-
-Tony
+Thanks
+Guennadi
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
