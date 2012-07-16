@@ -1,37 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753483Ab2GPNgn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 09:36:43 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:36780 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751611Ab2GPNgl (ORCPT
+	id S1753603Ab2GPNhb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 09:37:31 -0400
+Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:40316 "EHLO
+	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751611Ab2GPNhZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 09:36:41 -0400
-Date: Mon, 16 Jul 2012 14:36:37 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: sameo@linux.intel.com, myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: MAX77693: Fix bug of interrupt handlding for
- MAX77693 devices
-Message-ID: <20120716133636.GA22600@sirena.org.uk>
-References: <1342431665-2812-1-git-send-email-cw00.choi@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1342431665-2812-1-git-send-email-cw00.choi@samsung.com>
-X-Cookie: Orders subject to approval.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+	Mon, 16 Jul 2012 09:37:25 -0400
+From: Dong Hao <haodong@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: gregkh@linuxfoundation.org, shangw@linux.vnet.ibm.com,
+        Dong Hao <haodong@linux.vnet.ibm.com>
+Subject: [PATCH] lib/kobject: restore old name on rename failure
+Date: Mon, 16 Jul 2012 21:37:10 +0800
+Message-Id: <1342445830-21909-1-git-send-email-haodong@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.2.5
+x-cbid: 12071613-3548-0000-0000-0000028FE80E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 16, 2012 at 06:41:05PM +0900, Chanwoo Choi wrote:
-> This patch fix bug related to interrupt handling for MAX77693 devices.
-> - Unmask interrupt masking bit for charger/flash/muic to revolve
-> that interrupt isn't happened when external connector is attached.
+From: Dong Hao <haodong@linux.vnet.ibm.com>
 
-Shouldn't this be happening when the IRQ is requested?
+The patch restores the old name while we fail to set the new
+name for the kobject.
+
+Signed-off-by: Dong Hao <haodong@linux.vnet.ibm.com>
+---
+ lib/kobject.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git a/lib/kobject.c b/lib/kobject.c
+index ef3d807..9d396c5 100644
+--- a/lib/kobject.c
++++ b/lib/kobject.c
+@@ -222,8 +222,10 @@ int kobject_set_name_vargs(struct kobject *kobj, const char *fmt,
+ 		return 0;
+ 
+ 	kobj->name = kvasprintf(GFP_KERNEL, fmt, vargs);
+-	if (!kobj->name)
++	if (!kobj->name){
++		kobj->name = old_name;
+ 		return -ENOMEM;
++	}
+ 
+ 	/* ewww... some of these buggers have '/' in the name ... */
+ 	while ((s = strchr(kobj->name, '/')))
+-- 
+1.7.2.5
+
