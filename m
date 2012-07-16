@@ -1,52 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753161Ab2GPLWt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 07:22:49 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46599 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751476Ab2GPLWr (ORCPT
+	id S1753214Ab2GPL0t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 07:26:49 -0400
+Received: from www.linutronix.de ([62.245.132.108]:52831 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751476Ab2GPL0q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 07:22:47 -0400
-Date: Mon, 16 Jul 2012 12:22:22 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: Pantelis Antoniou <panto@antoniou-consulting.com>,
-        "mporter@ti.com" <mporter@ti.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "Russ.Dill@ti.com" <Russ.Dill@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] [ARM] Unconditional call to smp_cross_call on UP crashes
- (take #2)
-Message-ID: <20120716112222.GF26723@mudshark.cambridge.arm.com>
-References: <1337975916-31167-1-git-send-email-panto@antoniou-consulting.com>
- <20120713075937.GC10602@S2100-06.ap.freescale.net>
+	Mon, 16 Jul 2012 07:26:46 -0400
+Date: Mon, 16 Jul 2012 13:26:38 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, John Stultz <johnstul@us.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Prarit Bhargava <prarit@redhat.com>, stable@vger.kernel.org,
+        Andreas Schwab <schwab@linux-m68k.org>
+Subject: Re: [Regression][Revert request] Excessive delay or hang during
+ resume from system suspend due to a hrtimer commit
+In-Reply-To: <alpine.LFD.2.02.1207161315050.32033@ionos>
+Message-ID: <alpine.LFD.2.02.1207161318010.32033@ionos>
+References: <201207152240.50129.rjw@sisk.pl> <alpine.LFD.2.02.1207161035500.32033@ionos> <201207161316.28875.rjw@sisk.pl> <alpine.LFD.2.02.1207161315050.32033@ionos>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120713075937.GC10602@S2100-06.ap.freescale.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 13, 2012 at 08:59:39AM +0100, Shawn Guo wrote:
-> > diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-> > index 8f46446..7babc3f 100644
-> > --- a/arch/arm/kernel/smp.c
-> > +++ b/arch/arm/kernel/smp.c
-> > @@ -590,7 +590,8 @@ void smp_send_stop(void)
-> >  
-> >  	cpumask_copy(&mask, cpu_online_mask);
-> >  	cpumask_clear_cpu(smp_processor_id(), &mask);
-> > -	smp_cross_call(&mask, IPI_CPU_STOP);
-> > +	if (!cpumask_empty(&mask))
-> > +		smp_cross_call(&mask, IPI_CPU_STOP);
+On Mon, 16 Jul 2012, Thomas Gleixner wrote:
 
-I wonder whether we shouldn't have a default smp_cross_call implementation
-with BUG_ON(!cpumask_empty(&mask)). It's marginally nicer than an explicit NULL
-deference and it would also fix your problem.
+> On Mon, 16 Jul 2012, Rafael J. Wysocki wrote:
+> 
+> > On Monday, July 16, 2012, Thomas Gleixner wrote:
+> > > On Sun, 15 Jul 2012, Rafael J. Wysocki wrote:
+> > > > To everyone involved: the fact that this change, which was likely to introduce
+> > > > regressions from the look of it alone, has been pushed to Linus (an to -stable
+> > > > at the same time!) so late in the cycle, is seriuosly disappointing.
+> > > 
+> > > Well, we spent an massive amount of time in testing, reviewing and
+> > > discussion and it definitely did not break suspend/resume here.
+> > 
+> > I'm not saying that you didn't consider it thoroughly, but unfortunately you
+> > did overlook this particular issue, didn't you?
+> > 
+> > > This was not pushed without a lot of thoughts and in fact what you are
+> > > seing is another long standing bug in the timekeeping resume code,
+> > > which was just papered over by the incorrect handling of the clock was
+> > > set cases in the other parts of the system.
+> > > 
+> > > Does the following patch fix the problem for you ?
+> > 
+> > Yes, it does, thanks!
+> > 
+> > > @John: Should that clear ntp as well or is it enough to set ntp_error
+> > >        to 0 ?
+> > > 
+> > > /me really goes on vacation now.
+> > 
+> > So who's going to take care of the patch? :-)
+> 
+> I'm still packing gear. So i'll push it into timers/urgent.
 
-Will
+Actually that's a bad idea. John want's to double check vs. the
+ntp_clear question. So John can send it to linus directly.
+
+@John: Should it be: timekeeping_update(true)
+
+Now I'm gone for real.
+
+Thanks,
+
+	tglx
+-----
+Subject: timekeeping: Add missing update call in timekeeping_resume()
+From: Thomas Gleixner <tglx@linutronix.de>
+Date: Mon, 16 Jul 2012 11:47:31 +0200 (CEST)
+
+The leap second rework unearthed another issue of inconsistent data.
+
+On timekeeping_resume() the timekeeper data is updated, but nothing
+calls timekeeping_update(), so now the update code in the timer
+interrupt sees stale values.
+
+This has been the case before those changes, but then the timer
+interrupt was using stale data as well so this went unnoticed for
+quite some time.
+
+Add the missing update call, so all the data is consistent everywhere.
+
+Reported-by: Andreas Schwab <schwab@linux-m68k.org>
+Reported-by-and-tested-by: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux PM list <linux-pm@vger.kernel.org>
+Cc: John Stultz <johnstul@us.ibm.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, 
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+
+Index: tip/kernel/time/timekeeping.c
+===================================================================
+--- tip.orig/kernel/time/timekeeping.c
++++ tip/kernel/time/timekeeping.c
+@@ -717,6 +717,7 @@ static void timekeeping_resume(void)
+ 	timekeeper.clock->cycle_last = timekeeper.clock->read(timekeeper.clock);
+ 	timekeeper.ntp_error = 0;
+ 	timekeeping_suspended = 0;
++	timekeeping_update(false);
+ 	write_sequnlock_irqrestore(&timekeeper.lock, flags);
+ 
+ 	touch_softlockup_watchdog();
+
