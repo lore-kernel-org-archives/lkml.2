@@ -1,57 +1,275 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752799Ab2GPML4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 08:11:56 -0400
-Received: from na3sys009aog129.obsmtp.com ([74.125.149.142]:45324 "EHLO
-	na3sys009aog129.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751182Ab2GPMLy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 08:11:54 -0400
-Message-ID: <50040502.30603@ti.com>
-Date: Mon, 16 Jul 2012 17:41:46 +0530
-From: Rajendra Nayak <rnayak@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.20) Gecko/20110805 Thunderbird/3.1.12
-MIME-Version: 1.0
-To: Axel Lin <axel.lin@gmail.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>, Liam Girdwood <lrg@ti.com>,
-        linux-kernel@vger.kernel.org, loml <linux-omap@vger.kernel.org>,
-        Graeme Gregory <gg@slimlogic.co.uk>
-Subject: Re: [PATCH RFT] regulator: twl: Fix list_voltate for twl6030ldo_ops
-References: <1342434670.4717.6.camel@phoenix> <50040440.80703@ti.com>
-In-Reply-To: <50040440.80703@ti.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753239Ab2GPMPs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 08:15:48 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:48770 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751182Ab2GPMPo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 08:15:44 -0400
+From: Andrew Vagin <avagin@openvz.org>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Andrew Vagin <avagin@openvz.org>, "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Pavel Emelyanov <xemul@parallels.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: [PATCH] net-next: make sock diag per-namespace
+Date: Mon, 16 Jul 2012 16:14:09 +0400
+Message-Id: <1342440849-1757320-1-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, I seemed to have messed up with the underlining.
+Before this patch sock_diag works for init_net only and dumps
+information about sockets from all namespaces.
 
-On Monday 16 July 2012 05:38 PM, Rajendra Nayak wrote:
-> [    0.337341] V1V8: 1800 mV normal standby
-> [    0.338531] V2V1: 2100 mV normal standby
-> [    0.339813] VMMC: 1200 <--> 3000 mV at 3100 mV normal standby
->                      ^^^^^^^^
+This patch expands sock_diag for all name-spaces.
+It creates a netlink kernel socket for each netns and filters
+data during dumping.
 
-I meant 3100 mV normal standby was wrong.
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+Cc: James Morris <jmorris@namei.org>
+Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+Cc: Patrick McHardy <kaber@trash.net>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: linux-kernel@vger.kernel.org
+Cc: netdev@vger.kernel.org
+Signed-off-by: Andrew Vagin <avagin@openvz.org>
+---
+ include/linux/sock_diag.h   |    1 -
+ include/net/net_namespace.h |    1 +
+ net/core/sock_diag.c        |   28 ++++++++++++++++++++++------
+ net/ipv4/inet_diag.c        |   13 ++++++++++---
+ net/ipv4/udp_diag.c         |    3 ++-
+ net/unix/diag.c             |    9 +++++++--
+ 6 files changed, 42 insertions(+), 13 deletions(-)
 
-> [    0.341278] VPP: 1800 <--> 2500 mV at 2000 mV normal standby
->                      ^^^^^^^^^
-
-2000 mV being wrong here.
-
-> [    0.343505] VCXIO: 1800 mV normal standby
-> [    0.343597] VCXIO: supplied by V2V1
-> [    0.345855] VDAC: 1800 mV normal standby
-> [    0.345947] VDAC: supplied by V2V1
-> [    0.347717] VAUX2_6030: 1200 <--> 2800 mV at 1900 mV normal standby
->                          ^^^^^^^^
-
-1900 mV here..
-
-> [    0.349212] VAUX3_6030: 1000 <--> 3000 mV at 1300 mV normal standby
->                          ^^^^^^^^
-
-and 1300 mV here.
+diff --git a/include/linux/sock_diag.h b/include/linux/sock_diag.h
+index 6793fac..e3e395a 100644
+--- a/include/linux/sock_diag.h
++++ b/include/linux/sock_diag.h
+@@ -44,6 +44,5 @@ void sock_diag_save_cookie(void *sk, __u32 *cookie);
+ 
+ int sock_diag_put_meminfo(struct sock *sk, struct sk_buff *skb, int attr);
+ 
+-extern struct sock *sock_diag_nlsk;
+ #endif /* KERNEL */
+ #endif
+diff --git a/include/net/net_namespace.h b/include/net/net_namespace.h
+index ac9195e..ae1cd6c 100644
+--- a/include/net/net_namespace.h
++++ b/include/net/net_namespace.h
+@@ -101,6 +101,7 @@ struct net {
+ 	struct netns_xfrm	xfrm;
+ #endif
+ 	struct netns_ipvs	*ipvs;
++	struct sock		*diag_nlsk;
+ };
+ 
+ 
+diff --git a/net/core/sock_diag.c b/net/core/sock_diag.c
+index 07a29eb..d060251 100644
+--- a/net/core/sock_diag.c
++++ b/net/core/sock_diag.c
+@@ -166,23 +166,39 @@ static void sock_diag_rcv(struct sk_buff *skb)
+ 	mutex_unlock(&sock_diag_mutex);
+ }
+ 
+-struct sock *sock_diag_nlsk;
+-EXPORT_SYMBOL_GPL(sock_diag_nlsk);
++struct sock *diag_nlsk;
++EXPORT_SYMBOL_GPL(diag_nlsk);
+ 
+-static int __init sock_diag_init(void)
++static int __net_init diag_net_init(struct net *net)
+ {
+ 	struct netlink_kernel_cfg cfg = {
+ 		.input	= sock_diag_rcv,
+ 	};
+ 
+-	sock_diag_nlsk = netlink_kernel_create(&init_net, NETLINK_SOCK_DIAG,
++	net->diag_nlsk = netlink_kernel_create(net, NETLINK_SOCK_DIAG,
+ 					       THIS_MODULE, &cfg);
+-	return sock_diag_nlsk == NULL ? -ENOMEM : 0;
++	return net->diag_nlsk == NULL ? -ENOMEM : 0;
++}
++
++static void __net_exit diag_net_exit(struct net *net)
++{
++	netlink_kernel_release(net->diag_nlsk);
++	net->diag_nlsk = NULL;
++}
++
++static struct pernet_operations diag_net_ops = {
++	.init = diag_net_init,
++	.exit = diag_net_exit,
++};
++
++static int __init sock_diag_init(void)
++{
++	return register_pernet_subsys(&diag_net_ops);
+ }
+ 
+ static void __exit sock_diag_exit(void)
+ {
+-	netlink_kernel_release(sock_diag_nlsk);
++	unregister_pernet_subsys(&diag_net_ops);
+ }
+ 
+ module_init(sock_diag_init);
+diff --git a/net/ipv4/inet_diag.c b/net/ipv4/inet_diag.c
+index 38064a2..4703c58 100644
+--- a/net/ipv4/inet_diag.c
++++ b/net/ipv4/inet_diag.c
+@@ -272,6 +272,7 @@ int inet_diag_dump_one_icsk(struct inet_hashinfo *hashinfo, struct sk_buff *in_s
+ 	int err;
+ 	struct sock *sk;
+ 	struct sk_buff *rep;
++	struct net *net = sock_net(in_skb->sk);
+ 
+ 	err = -EINVAL;
+ 	if (req->sdiag_family == AF_INET) {
+@@ -317,7 +318,7 @@ int inet_diag_dump_one_icsk(struct inet_hashinfo *hashinfo, struct sk_buff *in_s
+ 		nlmsg_free(rep);
+ 		goto out;
+ 	}
+-	err = netlink_unicast(sock_diag_nlsk, rep, NETLINK_CB(in_skb).pid,
++	err = netlink_unicast(net->diag_nlsk, rep, NETLINK_CB(in_skb).pid,
+ 			      MSG_DONTWAIT);
+ 	if (err > 0)
+ 		err = 0;
+@@ -724,6 +725,7 @@ void inet_diag_dump_icsk(struct inet_hashinfo *hashinfo, struct sk_buff *skb,
+ {
+ 	int i, num;
+ 	int s_i, s_num;
++	struct net *net = sock_net(skb->sk);
+ 
+ 	s_i = cb->args[1];
+ 	s_num = num = cb->args[2];
+@@ -743,6 +745,9 @@ void inet_diag_dump_icsk(struct inet_hashinfo *hashinfo, struct sk_buff *skb,
+ 			sk_nulls_for_each(sk, node, &ilb->head) {
+ 				struct inet_sock *inet = inet_sk(sk);
+ 
++				if (!net_eq(sock_net(sk), net))
++					continue;
++
+ 				if (num < s_num) {
+ 					num++;
+ 					continue;
+@@ -943,6 +948,7 @@ static int inet_diag_get_exact_compat(struct sk_buff *in_skb,
+ static int inet_diag_rcv_msg_compat(struct sk_buff *skb, struct nlmsghdr *nlh)
+ {
+ 	int hdrlen = sizeof(struct inet_diag_req);
++	struct net *net = sock_net(skb->sk);
+ 
+ 	if (nlh->nlmsg_type >= INET_DIAG_GETSOCK_MAX ||
+ 	    nlmsg_len(nlh) < hdrlen)
+@@ -963,7 +969,7 @@ static int inet_diag_rcv_msg_compat(struct sk_buff *skb, struct nlmsghdr *nlh)
+ 			struct netlink_dump_control c = {
+ 				.dump = inet_diag_dump_compat,
+ 			};
+-			return netlink_dump_start(sock_diag_nlsk, skb, nlh, &c);
++			return netlink_dump_start(net->diag_nlsk, skb, nlh, &c);
+ 		}
+ 	}
+ 
+@@ -973,6 +979,7 @@ static int inet_diag_rcv_msg_compat(struct sk_buff *skb, struct nlmsghdr *nlh)
+ static int inet_diag_handler_dump(struct sk_buff *skb, struct nlmsghdr *h)
+ {
+ 	int hdrlen = sizeof(struct inet_diag_req_v2);
++	struct net *net = sock_net(skb->sk);
+ 
+ 	if (nlmsg_len(h) < hdrlen)
+ 		return -EINVAL;
+@@ -991,7 +998,7 @@ static int inet_diag_handler_dump(struct sk_buff *skb, struct nlmsghdr *h)
+ 			struct netlink_dump_control c = {
+ 				.dump = inet_diag_dump,
+ 			};
+-			return netlink_dump_start(sock_diag_nlsk, skb, h, &c);
++			return netlink_dump_start(net->diag_nlsk, skb, h, &c);
+ 		}
+ 	}
+ 
+diff --git a/net/ipv4/udp_diag.c b/net/ipv4/udp_diag.c
+index a7f86a3..52f42f9 100644
+--- a/net/ipv4/udp_diag.c
++++ b/net/ipv4/udp_diag.c
+@@ -34,6 +34,7 @@ static int udp_dump_one(struct udp_table *tbl, struct sk_buff *in_skb,
+ 	int err = -EINVAL;
+ 	struct sock *sk;
+ 	struct sk_buff *rep;
++	struct net *net = sock_net(in_skb->sk);
+ 
+ 	if (req->sdiag_family == AF_INET)
+ 		sk = __udp4_lib_lookup(&init_net,
+@@ -75,7 +76,7 @@ static int udp_dump_one(struct udp_table *tbl, struct sk_buff *in_skb,
+ 		kfree_skb(rep);
+ 		goto out;
+ 	}
+-	err = netlink_unicast(sock_diag_nlsk, rep, NETLINK_CB(in_skb).pid,
++	err = netlink_unicast(net->diag_nlsk, rep, NETLINK_CB(in_skb).pid,
+ 			      MSG_DONTWAIT);
+ 	if (err > 0)
+ 		err = 0;
+diff --git a/net/unix/diag.c b/net/unix/diag.c
+index a74864e..750b134 100644
+--- a/net/unix/diag.c
++++ b/net/unix/diag.c
+@@ -177,6 +177,7 @@ static int unix_diag_dump(struct sk_buff *skb, struct netlink_callback *cb)
+ {
+ 	struct unix_diag_req *req;
+ 	int num, s_num, slot, s_slot;
++	struct net *net = sock_net(skb->sk);
+ 
+ 	req = nlmsg_data(cb->nlh);
+ 
+@@ -192,6 +193,8 @@ static int unix_diag_dump(struct sk_buff *skb, struct netlink_callback *cb)
+ 
+ 		num = 0;
+ 		sk_for_each(sk, node, &unix_socket_table[slot]) {
++			if (!net_eq(sock_net(sk), net))
++				continue;
+ 			if (num < s_num)
+ 				goto next;
+ 			if (!(req->udiag_states & (1 << sk->sk_state)))
+@@ -243,6 +246,7 @@ static int unix_diag_get_exact(struct sk_buff *in_skb,
+ 	struct sock *sk;
+ 	struct sk_buff *rep;
+ 	unsigned int extra_len;
++	struct net *net = sock_net(in_skb->sk);
+ 
+ 	if (req->udiag_ino == 0)
+ 		goto out_nosk;
+@@ -273,7 +277,7 @@ again:
+ 
+ 		goto again;
+ 	}
+-	err = netlink_unicast(sock_diag_nlsk, rep, NETLINK_CB(in_skb).pid,
++	err = netlink_unicast(net->diag_nlsk, rep, NETLINK_CB(in_skb).pid,
+ 			      MSG_DONTWAIT);
+ 	if (err > 0)
+ 		err = 0;
+@@ -287,6 +291,7 @@ out_nosk:
+ static int unix_diag_handler_dump(struct sk_buff *skb, struct nlmsghdr *h)
+ {
+ 	int hdrlen = sizeof(struct unix_diag_req);
++	struct net *net = sock_net(skb->sk);
+ 
+ 	if (nlmsg_len(h) < hdrlen)
+ 		return -EINVAL;
+@@ -295,7 +300,7 @@ static int unix_diag_handler_dump(struct sk_buff *skb, struct nlmsghdr *h)
+ 		struct netlink_dump_control c = {
+ 			.dump = unix_diag_dump,
+ 		};
+-		return netlink_dump_start(sock_diag_nlsk, skb, h, &c);
++		return netlink_dump_start(net->diag_nlsk, skb, h, &c);
+ 	} else
+ 		return unix_diag_get_exact(skb, h, nlmsg_data(h));
+ }
+-- 
+1.7.1
 
