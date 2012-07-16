@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753441Ab2GPNB4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 09:01:56 -0400
-Received: from mga11.intel.com ([192.55.52.93]:11684 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753117Ab2GPNBz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 09:01:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="177994482"
-Date: Mon, 16 Jul 2012 15:01:59 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH 1/2] mfd: wm5110: Add data tables for the WM5110
-Message-ID: <20120716130159.GD20652@sortiz-mobl>
-References: <1341920279-7760-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	id S1753461Ab2GPNDb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 09:03:31 -0400
+Received: from grace.univie.ac.at ([131.130.3.115]:46222 "EHLO
+	grace.univie.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751808Ab2GPND2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 09:03:28 -0400
+Message-ID: <cc2022d86834a8798518f9cccc605d45.squirrel@webmail.univie.ac.at>
+In-Reply-To: <1342439185.23494.19.camel@edumazet-glaptop>
+References: <e9caf38359467bfa8a1e2ac86f6ef2cc.squirrel@webmail.univie.ac.at>
+    <20120713165544.6767ea8f@nehalam.linuxnetplumber.net>
+    <87741204cd72d363d54dadf9a94bb6fe.squirrel@webmail.univie.ac.at>
+    <1342439185.23494.19.camel@edumazet-glaptop>
+Date: Mon, 16 Jul 2012 15:03:26 +0200
+Subject: Re: resurrecting tcphealth
+From: "Piotr Sawuk" <a9702387@unet.univie.ac.at>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.19
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1341920279-7760-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Univie-Virus-Scan: scanned by ClamAV on justin.univie.ac.at
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On Mo, 16.07.2012, 13:46, Eric Dumazet wrote:
+> On Mon, 2012-07-16 at 13:33 +0200, Piotr Sawuk wrote:
+>> On Sa, 14.07.2012, 01:55, Stephen Hemminger wrote:
+>> > I am not sure if the is really necessary since the most
+>> > of the stats are available elsewhere.
+>>
+>> if by "most" you mean address and port then you're right.
+>> but even the rtt reported by "ss -i" seems to differ from tcphealth.
+>
+> Thats because tcphealth is wrong, it assumes HZ=1000 ?
+>
+> tp->srtt unit is jiffies, not ms.
 
-On Tue, Jul 10, 2012 at 12:37:57PM +0100, Mark Brown wrote:
-> The WM5110 is a highly integrated low power audio subsystem for
-> smartphones, tablets and other portable audio devices. It combines
-> an advanced DSP feature set with a flexible, high performance audio
-> hub CODEC.
-> 
-> This patch adds data tables for the WM5110.
-> 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
->  drivers/mfd/wm5110-tables.c | 2281 +++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 2281 insertions(+)
->  create mode 100644 drivers/mfd/wm5110-tables.c
-The 2 wm5110 patches are applied now, thanks.
+thanks. any conversion-functions in the kernel for that?
+>
+> tcphealth is a gross hack.
 
-Cheers,
-Samuel.
+what would you do if you tried making it less gross?
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+I've not found any similar functionality, in the kernel.
+I want to know an estimate for the percentage of data lost in tcp.
+and I want to know that without actually sending much packets.
+afterall I'm on the receiving end most of the time.
+percentage of duplicate packets received is nice too.
+you have any suggestions?
+
