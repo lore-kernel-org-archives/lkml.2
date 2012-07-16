@@ -1,77 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752942Ab2GPBj7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Jul 2012 21:39:59 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:37952 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750748Ab2GPBj4 (ORCPT
+	id S1752977Ab2GPBtN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Jul 2012 21:49:13 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:62686 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750748Ab2GPBtK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Jul 2012 21:39:56 -0400
-Date: Mon, 16 Jul 2012 10:39:46 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Claudiu Ghioc <claudiughioc@gmail.com>
-Cc: netdev@vger.kernel.org, davem@davemloft.net,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        wensong@linux-vs.org, ja@ssi.bg, pablo@netfilter.org, kaber@trash.net,
-        Claudiu Ghioc <claudiu.ghioc@gmail.com>
-Subject: Re: [PATCH] ipvs: fixed sparse warning
-Message-ID: <20120716013946.GG16151@verge.net.au>
-References: <1342198642-22741-1-git-send-email-claudiu.ghioc@gmail.com>
+	Sun, 15 Jul 2012 21:49:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1342198642-22741-1-git-send-email-claudiu.ghioc@gmail.com>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <87629qkvgp.fsf@octavius.laptop.org>
+References: <1338576911-17089-1-git-send-email-merez@codeaurora.org>
+	<1338576911-17089-2-git-send-email-merez@codeaurora.org>
+	<CAFR8uefCD_WXDM6m+-XwG10+W0UXqOtK7_sxWD3uVckh3pnR-Q@mail.gmail.com>
+	<CAFR8uee7hWLC-h_abZOCEuqeUeuhDuJp74x3R-3n+c61xyfaPQ@mail.gmail.com>
+	<fb2303ea3a3a5470e76d1faa2abd471b.squirrel@www.codeaurora.org>
+	<CAFR8ueecGqw=JzAGVHV61-SqOnn_C-ryT54KCQCbKkJpXUGY9w@mail.gmail.com>
+	<87629qkvgp.fsf@octavius.laptop.org>
+Date: Sun, 15 Jul 2012 18:49:09 -0700
+Message-ID: <CAFR8uedwb1_gB-j6=riUuiJcEPY13rNJCLv1bxXc6aebnhonYw@mail.gmail.com>
+Subject: Re: [PATCH v2 1/1] mmc: block: Add write packing control
+From: Muthu Kumar <muthu.lkml@gmail.com>
+To: Chris Ball <cjb@laptop.org>
+Cc: merez@codeaurora.org, linux-mmc@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org,
+        DOCUMENTATION <linux-doc@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 13, 2012 at 07:57:22PM +0300, Claudiu Ghioc wrote:
-> Removed the following sparse warnings:
-> *	warning: symbol 'ip_vs_control_net_init_sysctl' was not declared. Should
-> 	it be static?
-> *	warning: symbol 'ip_vs_control_net_cleanup_sysctl' was not
-> 	declared. Should it be static?
+Chris,
 
-Thanks.
+On Sat, Jul 14, 2012 at 12:12 PM, Chris Ball <cjb@laptop.org> wrote:
+> Hi,
+>
+> On Wed, Jun 13 2012, Muthu Kumar wrote:
+>> On Wed, Jun 13, 2012 at 12:52 PM,  <merez@codeaurora.org> wrote:
+>>>
+>>> On Mon, June 11, 2012 5:28 pm, Muthu Kumar wrote:
+>>>> On Mon, Jun 11, 2012 at 2:19 PM, Muthu Kumar <muthu.lkml@gmail.com> wrote:
+>>>>> On Fri, Jun 1, 2012 at 11:55 AM, Maya Erez <merez@codeaurora.org> wrote:
+>>>>>> trigger
+>>>>>> the packing can be configured via sysfs by writing the required value
+>>>>>> to:
+>>>>>> /sys/block/<block_dev_name>/num_wr_reqs_to_start_packing.
+>>>>>> The trigger for disabling the write packing is fetching a read request.
+>>>>>>
+>>>>>
+>>>>> If it is applicable only to MMC why do we have this sysfs attr for all
+>>>>> block devices?
+>>>>
+>>>> Just to be clear, please create a directory, say mmc, under
+>>>> /sys/block/<dev>/ and create the attr inside that.
+>>>>
+>>>> You can refer to dm (dm-sysfs.c) for sample implementation.
+>>> I understand why you think it would be best to distinguish the MMC
+>>> specific attribute from the general block devices attributes.
+>>> However, since this attribute is created only for the MMC block device,
+>>> other block devices won't be aware of it.
+>>
+>> I understand its created by the MMC code so will not be there for
+>> other block devices. But having the device specific attributes inside
+>> one <device> directory is better/cleaner. And since we are already
+>> following that model for other devices, why not follow that for MMC
+>> also?
+>
+> I've already replied to a later version of the patch, but just to get
+> this comment in at the appropriate point of the discussion as well:
+>
+> Even though it would result in a cleaner sysfs, I don't want to do
+> this now because it will break userspace scripts that are depending
+> on the current locations of these attributes.
+>
 
-I wonder if you could post a version of this patch which also fixes the
-alternate implementation of ip_vs_control_net_init_sysctl around line 3757 and
-the alternate implementation of ip_vs_control_net_cleanup_sysctl that
-appears around line 3758.
+Maya is adding a new sysfs attribute with that patch. So, there should
+not be any user space stuff that depends on it.
 
-I believe that you will see sparse warnings for these if
-you disable CONFIG_SYSCTL by disabling CONFIG_PROC_SYSCTL.
+Regards,
+Muthu
 
-> 
-> Signed-off-by: Claudiu Ghioc <claudiu.ghioc@gmail.com>
-> ---
->  net/netfilter/ipvs/ip_vs_ctl.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/net/netfilter/ipvs/ip_vs_ctl.c b/net/netfilter/ipvs/ip_vs_ctl.c
-> index d43e3c1..3542c6b1 100644
-> --- a/net/netfilter/ipvs/ip_vs_ctl.c
-> +++ b/net/netfilter/ipvs/ip_vs_ctl.c
-> @@ -3674,7 +3674,7 @@ static void ip_vs_genl_unregister(void)
->   * per netns intit/exit func.
->   */
->  #ifdef CONFIG_SYSCTL
-> -int __net_init ip_vs_control_net_init_sysctl(struct net *net)
-> +static int __net_init ip_vs_control_net_init_sysctl(struct net *net)
->  {
->  	int idx;
->  	struct netns_ipvs *ipvs = net_ipvs(net);
-> @@ -3742,7 +3742,7 @@ int __net_init ip_vs_control_net_init_sysctl(struct net *net)
->  	return 0;
->  }
->  
-> -void __net_exit ip_vs_control_net_cleanup_sysctl(struct net *net)
-> +static void __net_exit ip_vs_control_net_cleanup_sysctl(struct net *net)
->  {
->  	struct netns_ipvs *ipvs = net_ipvs(net);
->  
-> -- 
-> 1.7.10.4
-> 
+
+> Thanks,
+>
+> - Chris.
+> --
+> Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+> One Laptop Per Child
