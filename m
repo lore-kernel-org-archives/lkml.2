@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753869Ab2GPWH0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 18:07:26 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37836 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752593Ab2GPWHX (ORCPT
+	id S1753950Ab2GPWK6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 18:10:58 -0400
+Received: from na3sys009aog122.obsmtp.com ([74.125.149.147]:47170 "EHLO
+	na3sys009aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753005Ab2GPWKy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 18:07:23 -0400
-Date: Mon, 16 Jul 2012 15:07:19 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Andreas Mohr <andi@lisas.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: psmouse synaptics: "hardware appears to be different" bail out
-Message-ID: <20120716220718.GA28635@core.coreip.homeip.net>
-References: <20120716214453.GA14785@rhlx01.hs-esslingen.de>
+	Mon, 16 Jul 2012 18:10:54 -0400
+From: Kevin Hilman <khilman@ti.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>, Len Brown <lenb@kernel.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: PM: Summary of changes for v3.6
+Organization: Texas Instruments, Inc.
+References: <201207162246.03660.rjw@sisk.pl>
+Date: Mon, 16 Jul 2012 15:11:17 -0700
+In-Reply-To: <201207162246.03660.rjw@sisk.pl> (Rafael J. Wysocki's message of
+	"Mon, 16 Jul 2012 22:46:03 +0200")
+Message-ID: <87mx2zcq62.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120716214453.GA14785@rhlx01.hs-esslingen.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 16, 2012 at 11:44:53PM +0200, Andreas Mohr wrote:
-> Hi,
-> 
-> just found the following in dmesg after resume
-> (currently running -rc7):
-> 
-> [ 9312.672073] psmouse serio2: synaptics: hardware appears to be
-> different: id(149271-149271), model(114865-114865), caps(d04771-d04773),
-> ext(a40000-a40000).
-> 
-> Acer Aspire One A110L here.
-> 
-> Any clever thoughts about this?
-> Just thought that it might be useful to report it,
-> especially since the function (in drivers/input/mouse/synaptics.c)
-> bails out right after this check/message.
+Rafael, Daniel,
 
-Hmm, we do not really expect the touchpad change it's caracteristics at
-all during its lifetime, so no clever ideas here... It looks like a
-single bit error, but KBC should have signalled parity error in this
-case...
+"Rafael J. Wysocki" <rjw@sisk.pl> writes:
 
--- 
-Dmitry
+> Hi all,
+>
+> All of the changes I'd like to include into the first PM pull request during
+> the v3.6 merge window, except maybe for one or two patches I know are in the
+> works, is on the 'linux-next' branch of the linux-pm.git tree now.  The summary
+> of those changes is appended.  If anyone finds any of them objectionable,
+> please let me know ASAP.  Also please let me know if you have any power
+> management patches you'd like me to take for v3.6.
+>
+
+Could someone please clarify the status of the coupled CPUidle series?  
+
+There's a version of these in Daniels cpuidle-next branch and there's a
+version of these in Len's next branch (included in linux-next), but I'm
+still not entirely sure which branch is going upstream and which branch
+has the latest version (but I think Daniel's is the latest)
+
+Thanks for clarifying,
+
+Kevin
+
