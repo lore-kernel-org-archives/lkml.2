@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753815Ab2GPT6T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 15:58:19 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45383 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753598Ab2GPT6L (ORCPT
+	id S1753317Ab2GPT64 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 15:58:56 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47391 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751292Ab2GPT6z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 15:58:11 -0400
-Date: Mon, 16 Jul 2012 12:58:08 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Christoph Lameter <cl@linux.com>
-cc: Shuah Khan <shuah.khan@hp.com>, Pekka Enberg <penberg@kernel.org>,
-        glommer@parallels.com, js1304@gmail.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
-Subject: Re: [PATCH TRIVIAL] mm: Fix build warning in kmem_cache_create()
-In-Reply-To: <alpine.DEB.2.00.1207160915470.28952@router.home>
-Message-ID: <alpine.DEB.2.00.1207161253240.29012@chino.kir.corp.google.com>
-References: <1342221125.17464.8.camel@lorien2> <alpine.DEB.2.00.1207140216040.20297@chino.kir.corp.google.com> <CAOJsxLE3dDd01WaAp5UAHRb0AiXn_s43M=Gg4TgXzRji_HffEQ@mail.gmail.com> <1342407840.3190.5.camel@lorien2> <alpine.DEB.2.00.1207160257420.11472@chino.kir.corp.google.com>
- <alpine.DEB.2.00.1207160915470.28952@router.home>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 16 Jul 2012 15:58:55 -0400
+Date: Mon, 16 Jul 2012 20:58:53 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: Rajendra Nayak <rnayak@ti.com>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org,
+        loml <linux-omap@vger.kernel.org>, Graeme Gregory <gg@slimlogic.co.uk>
+Subject: Re: [PATCH RFT] regulator: twl: Fix list_voltate for twl6030ldo_ops
+Message-ID: <20120716195853.GB10774@opensource.wolfsonmicro.com>
+References: <1342434670.4717.6.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="QKdGvSO+nmPlgiQ/"
+Content-Disposition: inline
+In-Reply-To: <1342434670.4717.6.camel@phoenix>
+X-Cookie: You will get what you deserve.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Jul 2012, Christoph Lameter wrote:
 
-> > > struct kmem_cache *kmem_cache_create(const char *name, size_t size,
-> > > size_t align,
-> > >                 unsigned long flags, void (*ctor)(void *))
-> > > {
-> > >         struct kmem_cache *s = NULL;
-> > >
-> > > #ifdef CONFIG_DEBUG_VM
-> > >         if (!name || in_interrupt() || size < sizeof(void *) ||
-> > >                 size > KMALLOC_MAX_SIZE) {
-> > >                 printk(KERN_ERR "kmem_cache_create(%s) integrity check"
-> > >                         " failed\n", name);
-> > >                 goto out;
-> > >         }
-> > > #endif
-> > >
-> >
-> > Agreed, this shouldn't depend on CONFIG_DEBUG_VM.
-> 
-> These checks are useless for regular kernel operations. They are
-> only useful when developing code and should only be enabled during
-> development. There is no point in testing the size and the name which are
-> typically constant when a slab is created with a stable kernel.
-> 
+--QKdGvSO+nmPlgiQ/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Sounds like a response from someone who is very familiar with slab 
-allocators.  The reality, though, is that very few people are going to be 
-doing development with CONFIG_DEBUG_VM enabled unless they notice problems 
-beforehand.
+On Mon, Jul 16, 2012 at 06:31:10PM +0800, Axel Lin wrote:
+> According to the datasheet, the voltage for twl6030ldo_ops is not linear for
+> all cases. Linear mapping is only for the selection code from
+> 00000001 to 00011000.
 
-Are you seriously trying to optimize kmem_cache_create()?  These checks 
-certainly aren't going to hurt your perfromance and it seems appropriate 
-to do some sanity checking before blowing up in unexpected ways.  It's 
-also the way it's been done for years before extracting common allocator 
-functions to their own file.
+Applied, thanks.
+
+--QKdGvSO+nmPlgiQ/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQBHJ0AAoJEBus8iNuMP3dXPMP/3TCVV75+l8b5h4pd/ll6h/K
+ibuTd1VZdDFLW/KPumsovHMDzaJzn46HEprGfRGAujFynWz+KurC084WW2Mu+Z3+
+udntO9Op5jsVfPt1ZdZouTs8+6/93HZGiPt7ZPvMyL/q1CxupQJp9Und4RjtUrrA
+V+N9NlsEKxwS8af27KY2g4Rl2ox9wgpj2vFONdswUHPoY5q+oDsv8ru1P/QH20NU
+p5Wa9TsRRxbgbTv0mlF25vib/cnE1CNojSSOAi4WQAwEpq2u78izZPalhroCdB14
+fVOTk5IBIyKz1qlW2qpKW263hs6w6ClJy7Y2ApnRFiJ9PhI8GtJSexLrUlO9RiEQ
+9yPozRU0WHd75TJZVxT3B3gmUeTo6oT648Yic59Ms6vWBx8aLYSVXQgcrFCfrF4b
+DkiK/kR6w8gC/vPtGYaAg5BvlEH/bxxmyftccvApkSp8rMtE7v+M9/YjK+VV1vQ7
+hXAbZOqVkvYMB1ROVF1oFsn4u09e14FEyOiWj45yZs27Mrnbuh7WlWjxL3fMB2cL
+HRWp3my0YxT9Wa9gE7ORHt6tz1SjlO3cDX0w8dENtvgEnKbca90XmUeTT3xl5yEN
+PFL5J4lhl7qEZ7Pa/t0FCIndqf7z6K/rboxXUXwu98hXBKYMW8FAiHD16p0EUZHL
+YLuE3OFVAsk+3Y8Fu/Xe
+=ECUP
+-----END PGP SIGNATURE-----
+
+--QKdGvSO+nmPlgiQ/--
