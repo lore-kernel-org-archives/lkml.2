@@ -1,101 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753883Ab2GPRvb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 13:51:31 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:44211 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753829Ab2GPRv1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 13:51:27 -0400
-Message-ID: <50045418.9070805@linux.vnet.ibm.com>
-Date: Mon, 16 Jul 2012 23:19:12 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S1753956Ab2GPRzL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 13:55:11 -0400
+Received: from mga01.intel.com ([192.55.52.88]:44745 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753637Ab2GPRzH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 13:55:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="178114887"
+Date: Mon, 16 Jul 2012 10:55:06 -0700
+From: Jon Mason <jon.mason@intel.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-pci@vger.kernel.org, Dave Jiang <dave.jiang@intel.com>
+Subject: Re: [RFC 1/2] PCI-Express Non-Transparent Bridge Support
+Message-ID: <20120716175505.GF9598@jonmason-lab>
+References: <1342215900-3358-1-git-send-email-jon.mason@intel.com>
+ <20120714171015.GB25775@kroah.com>
+ <20120715235548.GC7551@jonmason-lab>
+ <20120716001921.GA19775@kroah.com>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
-        S390 <linux-s390@vger.kernel.org>, Carsten Otte <cotte@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
-        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Subject: Re: [PATCH RFC V4 3/3] kvm: Choose better candidate for directed
- yield
-References: <20120716082445.23477.15128.sendpatchset@codeblue.in.ibm.com> <20120716082529.23477.91096.sendpatchset@codeblue.in.ibm.com> <5003E7ED.2030701@redhat.com>
-In-Reply-To: <5003E7ED.2030701@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 12071607-5490-0000-0000-000001C9D51F
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120716001921.GA19775@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2012 03:37 PM, Avi Kivity wrote:
-> On 07/16/2012 11:25 AM, Raghavendra K T wrote:
->> From: Raghavendra K T<raghavendra.kt@linux.vnet.ibm.com>
->>
->> Currently, on a large vcpu guests, there is a high probability of
->> yielding to the same vcpu who had recently done a pause-loop exit or
->> cpu relax intercepted. Such a yield can lead to the vcpu spinning
->> again and hence degrade the performance.
->>
->> The patchset keeps track of the pause loop exit/cpu relax interception
->> and gives chance to a vcpu which:
->>   (a) Has not done pause loop exit or cpu relax intercepted at all
->>       (probably he is preempted lock-holder)
->>   (b) Was skipped in last iteration because it did pause loop exit or
->>       cpu relax intercepted, and probably has become eligible now
->>       (next eligible lock holder)
->>
->
->>
->> +#ifdef CONFIG_HAVE_KVM_CPU_RELAX_INTERCEPT
->> +/*
->> + * Helper that checks whether a VCPU is eligible for directed yield.
->> + * Most eligible candidate to yield is decided by following heuristics:
->> + *
->> + *  (a) VCPU which has not done pl-exit or cpu relax intercepted recently
->> + *  (preempted lock holder), indicated by @cpu_relax_intercepted.
->> + *  Set at the beiginning and cleared at the end of interception/PLE handler.
->> + *
->> + *  (b) VCPU which has done pl-exit/ cpu relax intercepted but did not get
->> + *  chance last time (mostly it has become eligible now since we have probably
->> + *  yielded to lockholder in last iteration. This is done by toggling
->> + *  @dy_eligible each time a VCPU checked for eligibility.)
->> + *
->> + *  Yielding to a recently pl-exited/cpu relax intercepted VCPU before yielding
->> + *  to preempted lock-holder could result in wrong VCPU selection and CPU
->> + *  burning. Giving priority for a potential lock-holder increases lock
->> + *  progress.
->> + */
->> +bool kvm_vcpu_check_and_update_eligible(struct kvm_vcpu *vcpu)
->
-> Predicates' names should give a hint as to what true and false returns
-> mean.  For example vcpu_eligible_for_directed_yield().
->
+On Sun, Jul 15, 2012 at 05:19:21PM -0700, Greg KH wrote:
+> On Sun, Jul 15, 2012 at 04:55:48PM -0700, Jon Mason wrote:
+> > On Sat, Jul 14, 2012 at 10:10:15AM -0700, Greg KH wrote:
+> > > On Fri, Jul 13, 2012 at 02:44:59PM -0700, Jon Mason wrote:
+> > > > +static int max_num_cbs = 2;
+> > > > +module_param(max_num_cbs, uint, 0644);
+> > > > +MODULE_PARM_DESC(max_num_cbs, "Maximum number of NTB transport connections");
+> > > > +
+> > > > +static bool no_msix;
+> > > > +module_param(no_msix, bool, 0644);
+> > > > +MODULE_PARM_DESC(no_msix, "Do not allow MSI-X interrupts to be selected");
+> > > 
+> > > How would a user, or a distro, know to set these options?  Why are they
+> > > even options at all?
+> > 
+> > Good question.  There is actually a potential benefit to disabling
+> > MSI-X.  The NTB device on one of our platforms only has 3 MSI-X
+> > vectors.  In the current driver design, that would limit them to 3
+> > client/virtual devices.  However, there are 15bits in the ISR that can
+> > be used for the same purpose.  So, if you disable MSI-X, you can have
+> > 15 instead of 3.  
+> 
+> But again, how would a user, or a distro, know to set these?  Where is
+> the documentation describing it?  Why really have these options at all
+> and not just fix the platform issues (only 3 MSI-X vectors?  Really?)
 
-I agree regarding the Predicate name. My confusion was it was
-doing more than that (flipping eligible flag).
-So, I  ll go with kvm_vcpu_eligible_for_directed_yield()
+I believe we'll want multiple clients (or have multiqueue Ethernet).  I'm happy to add something to /Documentation to describe it and why it would be useful, or I can remove it and re-introduce it when I add multiqueue Ethernet.
 
->> +{
-[...]
->> +	return eligible;
->> +}
->
-> You're accessing another vcpu's data structures without any locking.
-> This is probably okay since we're not basing any life or death decisions
-> on this, but a comment would be good to explain to readers that this has
-> been considered and is okay (and why).
->
->
+3 MSI-X vectors (plus one for PCI-E link up/down) on Xeon NTB, and 33 for Atom NTB.  Yeah, really.
 
-True and agree. What we doing here is not worth of locking overhead.
-will try to explain more on that.
-
+> 
+> thanks,
+> 
+> greg k-h
