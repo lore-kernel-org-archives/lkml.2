@@ -1,113 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753860Ab2GPRKt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 13:10:49 -0400
-Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:34862 "EHLO
-	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753511Ab2GPRKo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 13:10:44 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Tarun Kanti DebBarma <tarun.kanti@ti.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Rajendra Nayak <rnayak@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        "Cousson\, Benoit" <b-cousson@ti.com>, Paul Walmsley <paul@pwsan.com>
-Subject: Re: [PATCH 2/2] gpio/omap: add *remove* callback in platform_driver
-Organization: Texas Instruments, Inc.
-References: <1341997995-14020-1-git-send-email-tarun.kanti@ti.com>
-	<1341997995-14020-3-git-send-email-tarun.kanti@ti.com>
-	<87394xhocn.fsf@ti.com>
-	<CACRpkdZMG_ZHW_eGGrdrJh1SuO_=hOObijzmxG1ob6RoNf_dwg@mail.gmail.com>
-	<87a9z4g9bi.fsf@ti.com>
-	<CACRpkdZxUpQ=a-yQ8b4bnX3S9penPWkxJ+PG2Zi4i9YZibYRiw@mail.gmail.com>
-Date: Mon, 16 Jul 2012 10:10:58 -0700
-In-Reply-To: <CACRpkdZxUpQ=a-yQ8b4bnX3S9penPWkxJ+PG2Zi4i9YZibYRiw@mail.gmail.com>
-	(Linus Walleij's message of "Sat, 14 Jul 2012 22:51:44 +0200")
-Message-ID: <87ipdnein1.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1753870Ab2GPRQB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 13:16:01 -0400
+Received: from shutemov.name ([176.9.204.213]:44137 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753319Ab2GPRP7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 13:15:59 -0400
+Date: Mon, 16 Jul 2012 20:16:34 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@openvz.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "Dmitry V. Levin" <ldv@altlinux.org>,
+        Doug Ledford <dledford@redhat.com>, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org
+Subject: Re: [PATCH v2] ns: do not block exit_task_namespaces() for a long
+ time
+Message-ID: <20120716171634.GA21620@shutemov.name>
+References: <20120713140806.b3d0fda8.akpm@linux-foundation.org>
+ <1342451364-14787-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <20120716165301.GN31729@ZenIV.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120716165301.GN31729@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Walleij <linus.walleij@linaro.org> writes:
+On Mon, Jul 16, 2012 at 05:53:01PM +0100, Al Viro wrote:
+> On Mon, Jul 16, 2012 at 06:09:24PM +0300, Kirill A. Shutemov wrote:
+> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> > 
+> > On exiting of the last task in a namespace we need to trigger freeing of
+> > the namespace. Currently, we call synchronize_rcu() and free_nsproxy()
+> > directly on do_exit() path.
+> > 
+> > On my machine synchronize_rcu() blocks for about 0.01 seconds. For
+> > comparing: normal exit_group() syscall takes less than 0.0003 seconds.
+> > 
+> > Let's offload synchronize_rcu() and free_nsproxy() to a workqueue.
+> > 
+> > I also move synchronize_rcu() inside free_nsproxy(). It fixes racy
+> > put_nsproxy() which calls free_nsproxy() without synchronize_rcu().
+> > I guess it was missed during switch to RCU (see cf7b708).
+> 
+> NAK.  Making final umounts of anything in that namespace asynchronous,
+> even though nothing is holding the stuff on them busy is simply
+> wrong.  Note that they can take a _long_ time, so we are talking about
+> minutes worth of delay in the worst case.  It's user-visible and
+> it's a serious potential for trouble.
 
-> On Thu, Jul 12, 2012 at 7:48 PM, Kevin Hilman <khilman@ti.com> wrote:
->
->> In the case of OMAP GPIO, unless it's an obvious fix, I would recommend
->> you wait at least until you see some acks/tested tags from any of
->>
->> - Santosh Shilimkar <santosh.shilimkar@ti.com>
->> - Rajendra Nayak <rnayak@ti.com>
->> - Benoit Cousson <b-cousson@ti.com>
->>
->> or Tony, Paul or myself.
->
-> Instead of trying to store this information in my and Grants brains and
-> us forgetting it, what about patching MAINTAINERS to reflect the fact
-> instead? That's better I think, plus I use that file a lot.
->
->> For major series, I have been collecting/queueing them for Grant after
->> ensuring they have been well reviewed and well tested (although I am
->> eagerly hoping to hand off this role to someone else.)
->
-> Listing it under your GIT tree in MAINTAINERS for this driver will make
-> this work better I think.
->
-> One path for OMAP GPIO patches, simple. It's obviously the
-> ambiguity that cause the trouble. Then you can also decide
-> on each cycle whether to send these to GPIO or ARM SoC
-> etc.
+Good point.
 
-Yeah, I understand the process, but I've been avoiding doing that
-because, well, I don't want the job.  I have been trying to get someone
-else at TI to maintain this driver, but have not been successful.
+Now in worst case we have a process which hang for a few minutes in
+exit_group() syscall in D state, right? Why is that any better?
+Does it provide better user experience or better accounting or what?
 
-So, until that happens, feel free to queue up the patch below.
-
-Santosh, note that I've put you as co-maintainer of this driver.
-
-Kevin
-
-
->From c429e2e98ea7add98b85a47483ca7126284b22e6 Mon Sep 17 00:00:00 2001
-From: Kevin Hilman <khilman@ti.com>
-Date: Mon, 16 Jul 2012 10:05:07 -0700
-Subject: [PATCH] MAINTAINERS: add entry OMAP GPIO driver
-
-Since I've been maintaining this, making it official at the request of the
-GPIO maintainers.
-
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Kevin Hilman <khilman@ti.com>
----
- MAINTAINERS |    7 +++++++
- 1 file changed, 7 insertions(+)
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 03df1d1..61d117a 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -4943,6 +4943,13 @@ S:	Maintained
- F:	drivers/usb/*/*omap*
- F:	arch/arm/*omap*/usb*
- 
-+OMAP GPIO DRIVER
-+M:	Santosh Shilimkar <santosh.shilimkar@ti.com>
-+M:	Kevin Hilman <khilman@ti.com>
-+L:	linux-omap@vger.kernel.org
-+S:	Maintained
-+F:	drivers/gpio/gpio.omap.c
-+
- OMFS FILESYSTEM
- M:	Bob Copeland <me@bobcopeland.com>
- L:	linux-karma-devel@lists.sourceforge.net
 -- 
-1.7.9.2
-
+ Kirill A. Shutemov
