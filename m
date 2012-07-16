@@ -1,95 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754387Ab2GPVbk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 17:31:40 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:43068 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751721Ab2GPV2k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 17:28:40 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linux PM list <linux-pm@vger.kernel.org>
-Subject: [RFC][PATCH 13/14] PM / Domains: Introduce pm_genpd_present()
-Date: Mon, 16 Jul 2012 23:30:59 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Magnus Damm <magnus.damm@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "Linux-sh list" <linux-sh@vger.kernel.org>
-References: <201207032302.17805.rjw@sisk.pl> <201207052217.48086.rjw@sisk.pl> <201207162315.49073.rjw@sisk.pl>
-In-Reply-To: <201207162315.49073.rjw@sisk.pl>
+	id S1754321Ab2GPVcX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 17:32:23 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:49594 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753466Ab2GPVcW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 17:32:22 -0400
+Date: Mon, 16 Jul 2012 22:32:18 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: 3.5-rc6 dentry related GPF
+Message-ID: <20120716213218.GQ31729@ZenIV.linux.org.uk>
+References: <20120711183239.GA7122@redhat.com>
+ <CA+55aFz5E4NMDF+OXDoGkHz2Mr2sBXf6nYcOXomDZHmnUSdWHA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207162331.00295.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFz5E4NMDF+OXDoGkHz2Mr2sBXf6nYcOXomDZHmnUSdWHA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+On Wed, Jul 11, 2012 at 12:10:12PM -0700, Linus Torvalds wrote:
+>   rdi = 54415541e5894855
+> 
+> which looks like some odd corrupted ASCII to me ("UH\211\345AUAT") but
+> that makes no sense either.
 
-Introduce function pm_genpd_present() allowing the caller to check if
-the given generic PM domain has been initialized.
+	It makes a lot of sense as amd64 code, though:
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- drivers/base/power/domain.c |   22 ++++++++++++++++++++++
- include/linux/pm_domain.h   |    5 +++++
- 2 files changed, 27 insertions(+)
+   55                      push   %rbp
+   48 89 e5                mov    %rsp,%rbp
+   41 55                   push   %r13
+   41 54                   push   %r12
 
-Index: linux/drivers/base/power/domain.c
-===================================================================
---- linux.orig/drivers/base/power/domain.c
-+++ linux/drivers/base/power/domain.c
-@@ -2089,3 +2089,25 @@ void pm_genpd_init(struct generic_pm_dom
- 	list_add(&genpd->gpd_list_node, &gpd_list);
- 	mutex_unlock(&gpd_list_lock);
- }
-+
-+/**
-+ * pm_genpd_present - Check if the given PM domain has been initialized
-+ * @genpd: PM domain to check.
-+ */
-+bool pm_genpd_present(struct generic_pm_domain *genpd)
-+{
-+	struct generic_pm_domain *gpd = NULL;
-+
-+	if (IS_ERR_OR_NULL(genpd))
-+		return false;
-+
-+	mutex_lock(&gpd_list_lock);
-+
-+	list_for_each_entry(gpd, &gpd_list, gpd_list_node)
-+		if (gpd == genpd)
-+			break;
-+
-+	mutex_unlock(&gpd_list_lock);
-+
-+	return gpd == genpd;
-+}
-Index: linux/include/linux/pm_domain.h
-===================================================================
---- linux.orig/include/linux/pm_domain.h
-+++ linux/include/linux/pm_domain.h
-@@ -161,6 +161,7 @@ extern int genpd_attach_cpuidle(struct g
- extern int genpd_detach_cpuidle(struct generic_pm_domain *genpd);
- extern void pm_genpd_init(struct generic_pm_domain *genpd,
- 			  struct dev_power_governor *gov, bool is_off);
-+extern bool pm_genpd_present(struct generic_pm_domain *genpd);
- 
- extern int pm_genpd_poweron(struct generic_pm_domain *genpd);
- extern int pm_genpd_name_poweron(const char *domain_name);
-@@ -239,6 +240,10 @@ static inline void pm_genpd_init(struct
- 				 struct dev_power_governor *gov, bool is_off)
- {
- }
-+static inline bool pm_genpd_present(struct generic_pm_domain *genpd)
-+{
-+	return false;
-+}
- static inline int pm_genpd_poweron(struct generic_pm_domain *genpd)
- {
- 	return -ENOSYS;
-
+IOW, it's the first 8 bytes from a fairly sane beginning of some function.
+So &(inode->i_fop->owner) (and thus inode->i_fop - owner is the first field)
+is some spot in .text.  Would be interesting to find out what function
+was that from (i.e. what's the value of inode->i_fop); with any luck it
+might've still been in some register.  Could you post objdump of
+do_dentry_open() from your kernel?
