@@ -1,82 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751699Ab2GPPrH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 11:47:07 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38293 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750843Ab2GPPrE (ORCPT
+	id S1752231Ab2GPPrc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 11:47:32 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:9875 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751262Ab2GPPr2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 11:47:04 -0400
-Date: Mon, 16 Jul 2012 08:46:58 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [ 08/68] dummy: fix rcu_sched self-detected stalls
-Message-ID: <20120716154658.GA13055@kroah.com>
-References: <20120712175057.GA9917@kroah.com>
- <20120712175035.530652872@linuxfoundation.org>
- <20120712175036.147190749@linuxfoundation.org>
- <20120713140909.GA3185@herton-Z68MA-D2H-B3>
+	Mon, 16 Jul 2012 11:47:28 -0400
+Message-ID: <1342453645.2523.17.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: 82571EB: Detected Hardware Unit Hang
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+CC: "Dave, Tushar N" <tushar.n.dave@intel.com>, Joe Jin <joe.jin@oracle.com>,
+        "e1000-devel@lists.sf.net" <e1000-devel@lists.sf.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 16 Jul 2012 16:47:25 +0100
+In-Reply-To: <20120715133510.GA5484@khazad-dum.debian.net>
+References: <4FFE40A9.4060807@oracle.com>
+	 <061C8A8601E8EE4CA8D8FD6990CEA891274F02D7@ORSMSX102.amr.corp.intel.com>
+	 <4FFE6BB9.4060106@oracle.com>
+	 <061C8A8601E8EE4CA8D8FD6990CEA891274F033B@ORSMSX102.amr.corp.intel.com>
+	 <4FFE787B.9050201@oracle.com>
+	 <061C8A8601E8EE4CA8D8FD6990CEA891274F0ACC@ORSMSX102.amr.corp.intel.com>
+	 <4FFF61BD.1060604@oracle.com>
+	 <061C8A8601E8EE4CA8D8FD6990CEA891274F11FF@ORSMSX102.amr.corp.intel.com>
+	 <4FFFA532.1030208@oracle.com>
+	 <061C8A8601E8EE4CA8D8FD6990CEA891274F2354@ORSMSX102.amr.corp.intel.com>
+	 <20120715133510.GA5484@khazad-dum.debian.net>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120713140909.GA3185@herton-Z68MA-D2H-B3>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [10.17.20.137]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 13, 2012 at 11:09:10AM -0300, Herton Ronaldo Krzesinski wrote:
-> On Thu, Jul 12, 2012 at 04:01:42PM -0700, Greg Kroah-Hartman wrote:
-> > From: Greg KH <gregkh@linuxfoundation.org>
-> > 
-> > 3.0-stable review patch.  If anyone has any objections, please let me know.
-> > 
-> > ------------------
-> > 
-> > 
-> > From: Eric Dumazet <edumazet@google.com>
-> > 
-> > [ Upstream commit 16b0dc29c1af9df341428f4c49ada4f626258082 ]
-> > 
-> > Trying to "modprobe dummy numdummies=30000" triggers :
-> > 
-> > INFO: rcu_sched self-detected stall on CPU { 8} (t=60000 jiffies)
-> > 
-> > After this splat, RTNL is locked and reboot is needed.
-> > 
-> > We must call cond_resched() to avoid this, even holding RTNL.
-> > 
-> > Signed-off-by: Eric Dumazet <edumazet@google.com>
-> > Signed-off-by: David S. Miller <davem@davemloft.net>
-> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > ---
-> >  drivers/net/dummy.c |    4 +++-
-> >  1 file changed, 3 insertions(+), 1 deletion(-)
-> > 
-> > --- a/drivers/net/dummy.c
-> > +++ b/drivers/net/dummy.c
-> > @@ -186,8 +186,10 @@ static int __init dummy_init_module(void
-> >  	rtnl_lock();
-> >  	err = __rtnl_link_register(&dummy_link_ops);
-> >  
-> > -	for (i = 0; i < numdummies && !err; i++)
-> > +	for (i = 0; i < numdummies && !err; i++) {
-> >  		err = dummy_init_one();
-> > +		cond_resched();
+On Sun, 2012-07-15 at 10:35 -0300, Henrique de Moraes Holschuh wrote:
+> On Sun, 15 Jul 2012, Dave, Tushar N wrote:
+> > Somehow setting max payload to 256 from BIOS does not set this value for all devices. I believe this is a BIOS bug.
 > 
-> This cherry-pick for 3.0 has the same problem as the one that was
-> proposed to 3.2, build fails on i386/arm:
+> And preferably, Linux should complain about it.  Since we know it is going
+> to cause problems, and since we know it does happen, we should be raising a
+> ruckus about it in the kernel log (and probably fixing it to min(path) while
+> at it)...
 > 
-> linux-stable/drivers/net/dummy.c: In function 'dummy_init_module':
-> linux-stable/drivers/net/dummy.c:191:3: error: implicit declaration of function 'cond_resched' [-Werror=implicit-function-declaration]
-> 
-> This will need an include for linux/sched.h as in 3.2 (the same proposed
-> patch for 3.4 shouldn't be affected).
+> Is this something that should be raised as a feature request with the
+> PCI/PCIe subsystem?
 
-Thanks, I've made that change now.
+The feature is there, but we ended up with:
 
-greg k-h
+commit 5f39e6705faade2e89d119958a8c51b9b6e2c53c
+Author: Jon Mason <mason@myri.com>
+Date:   Mon Oct 3 09:50:20 2011 -0500
+
+    PCI: Disable MPS configuration by default
+
+But you are welcome to share use of the fixup_mpss_256() quirk.
+
+Ben.
+
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
