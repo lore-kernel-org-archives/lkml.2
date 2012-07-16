@@ -1,61 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752766Ab2GPJlk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 05:41:40 -0400
-Received: from e06smtp18.uk.ibm.com ([195.75.94.114]:53263 "EHLO
-	e06smtp18.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751069Ab2GPJli (ORCPT
+	id S1752856Ab2GPJrl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 05:47:41 -0400
+Received: from www.linutronix.de ([62.245.132.108]:52241 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751522Ab2GPJrj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 05:41:38 -0400
-From: Dong Hao <haodong@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, shangw@linux.vnet.ibm.com,
-        haodong@linux.vnet.ibm.com
-Subject: [PATCH] Simplify function kobject_init().
-Date: Mon, 16 Jul 2012 17:41:28 +0800
-Message-Id: <1342431688-4836-1-git-send-email-haodong@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.2.5
-x-cbid: 12071609-6892-0000-0000-00000271E9CC
+	Mon, 16 Jul 2012 05:47:39 -0400
+Date: Mon, 16 Jul 2012 11:47:31 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, John Stultz <johnstul@us.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Prarit Bhargava <prarit@redhat.com>, stable@vger.kernel.org,
+        Andreas Schwab <schwab@linux-m68k.org>
+Subject: Re: [Regression][Revert request] Excessive delay or hang during
+ resume from system suspend due to a hrtimer commit
+In-Reply-To: <201207152240.50129.rjw@sisk.pl>
+Message-ID: <alpine.LFD.2.02.1207161035500.32033@ionos>
+References: <201207152240.50129.rjw@sisk.pl>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dong Hao <haodong@linux.vnet.ibm.com>
+On Sun, 15 Jul 2012, Rafael J. Wysocki wrote:
+> To everyone involved: the fact that this change, which was likely to introduce
+> regressions from the look of it alone, has been pushed to Linus (an to -stable
+> at the same time!) so late in the cycle, is seriuosly disappointing.
 
-The function printk() at end of function kobject_init() already had '\n',
-so remove it.
+Well, we spent an massive amount of time in testing, reviewing and
+discussion and it definitely did not break suspend/resume here.
 
-While the kobject has been initialized, assign error string and
-jump to error case directly.
+This was not pushed without a lot of thoughts and in fact what you are
+seing is another long standing bug in the timekeeping resume code,
+which was just papered over by the incorrect handling of the clock was
+set cases in the other parts of the system.
 
-Signed-off-by: Dong Hao<haodong@linux.vnet.ibm.com>
----
- lib/kobject.c |    9 ++++-----
- 1 files changed, 4 insertions(+), 5 deletions(-)
+Does the following patch fix the problem for you ?
 
-diff --git a/lib/kobject.c b/lib/kobject.c
-index c33d7a1..ef3d807 100644
---- a/lib/kobject.c
-+++ b/lib/kobject.c
-@@ -276,14 +276,13 @@ void kobject_init(struct kobject *kobj, struct kobj_type *ktype)
- 		goto error;
- 	}
- 	if (!ktype) {
--		err_str = "must have a ktype to be initialized properly!\n";
-+		err_str = "must have a ktype to be initialized properly!";
- 		goto error;
- 	}
- 	if (kobj->state_initialized) {
--		/* do not error out as sometimes we can recover */
--		printk(KERN_ERR "kobject (%p): tried to init an initialized "
--		       "object, something is seriously wrong.\n", kobj);
--		dump_stack();
-+		err_str = "tried to init an initialized "
-+			"object, something is seriously wrong.";
-+		goto error;
- 	}
+@John: Should that clear ntp as well or is it enough to set ntp_error
+       to 0 ?
+
+/me really goes on vacation now.
+
+Thanks,
+
+	tglx
+
+---------
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 269b1fe..3447cfa 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -717,6 +717,7 @@ static void timekeeping_resume(void)
+ 	timekeeper.clock->cycle_last = timekeeper.clock->read(timekeeper.clock);
+ 	timekeeper.ntp_error = 0;
+ 	timekeeping_suspended = 0;
++	timekeeping_update(false);
+ 	write_sequnlock_irqrestore(&timekeeper.lock, flags);
  
- 	kobject_init_internal(kobj);
--- 
-1.7.2.5
+ 	touch_softlockup_watchdog();
 
