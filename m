@@ -1,32 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753634Ab2GPRXV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 13:23:21 -0400
-Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:29467 "HELO
-	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753272Ab2GPRXT (ORCPT
+	id S1753448Ab2GPR0s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 13:26:48 -0400
+Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:43957 "HELO
+	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752051Ab2GPR0q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 13:23:19 -0400
+	Mon, 16 Jul 2012 13:26:46 -0400
 X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: vkNleDEVM1klt.6NdOoAebc5aOExggmKBeO5LVEShAyxWnL
- 9MA4HiIh6rEhr6U2pXgzY2ofNPtDWp671gUc4BDKV4kXB9AbBco2Gy0wArH1
- QKdL6pLxzyTX09RrAvp08ucZ0ie9AFRgh3xpKmPm7BQlyVwKesSH6mDS9D3C
- p8oAtmpkxTTjKMRbOXTXudv8g9p0uYdZv50cM3GwjyzXx7qwdqMZOVhSGRnZ
- .3ljqg5hvetDG2z1sQ3.8_dVjewVgKE2PEQKHD1zr4iYupT2evH76YXFlzdI
- 6T0nMZoDJOE8x8JkJu3QDFbokJtc21B3LytjIYHzdvDoc4LajUQxNQmnsAgx
- 0rgvZ5vvfcMT2VSBbZNEme4OeAijwPc9_CfqJZ.JY17l.WA6raXG7TQqzVj0
- __XI0xUL.60_xi.rOT_LPdGRlAGnlglxDw3WZ
+X-YMail-OSG: dxObRB4VM1maYnfb94PFypxKkfu1Ug6CLkIpzjC8dm5662o
+ NalBtW4OP7k1Z3brsccSpRRirs7iCW6cAX2PjXyhWlGPl2Vcd1Jgg2qJIZ2e
+ NRczX_l2sPnZvzT4xLh.ZK_OxXIGF.lVk0QXA9PuAkPxZrgzUbeinbuR5mqR
+ YMCpSn6uaDxjLcEMEhVuLLFHioSQL3yndQhMWYEbmgDD81T1f0A7BpjrLWdn
+ o1g.qt7iC8eqXcvJHnezaxco6VwBsfccYX_NkISOYTvpBpujuMeK0nR3.Ezy
+ eWaGXb1DjNpPN0UWO.g97o7w_rvcK5h3LCQLnmheJ2Da6tMy8mJBaGgIOUca
+ 9mcvM.lIRsOtzZsw_miYExevHtLSKE_akb0iqRqwjeuhf_Rn8._cFM3hdJrr
+ l
 X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Mon, 16 Jul 2012 12:23:16 -0500 (CDT)
+Date: Mon, 16 Jul 2012 12:26:41 -0500 (CDT)
 From: Christoph Lameter <cl@linux.com>
 X-X-Sender: cl@router.home
 To: Joonsoo Kim <js1304@gmail.com>
 cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 1/3] mm: correct return value of migrate_pages()
-In-Reply-To: <1342455272-32703-1-git-send-email-js1304@gmail.com>
-Message-ID: <alpine.DEB.2.00.1207161220440.32319@router.home>
-References: <Yes> <1342455272-32703-1-git-send-email-js1304@gmail.com>
+        linux-mm@kvack.org, Sasha Levin <levinsasha928@gmail.com>
+Subject: Re: [PATCH 2/3] mm: fix possible incorrect return value of
+ migrate_pages() syscall
+In-Reply-To: <1342455272-32703-2-git-send-email-js1304@gmail.com>
+Message-ID: <alpine.DEB.2.00.1207161226000.32319@router.home>
+References: <Yes> <1342455272-32703-1-git-send-email-js1304@gmail.com> <1342455272-32703-2-git-send-email-js1304@gmail.com>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -34,18 +35,13 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Jul 2012, Joonsoo Kim wrote:
+On Tue, 17 Jul 2012, Joonsoo Kim wrote
 
-> migrate_pages() should return number of pages not migrated or error code.
-> When unmap_and_move return -EAGAIN, outer loop is re-execution without
-> initialising nr_failed. This makes nr_failed over-counted.
+> do_migrate_pages() can return the number of pages not migrated.
+> Because migrate_pages() syscall return this value directly,
+> migrate_pages() syscall may return the number of pages not migrated.
+> In fail case in migrate_pages() syscall, we should return error value.
+> So change err to -EIO
 
-The itention of the nr_failed was only to give an indication as to how
-many attempts where made. The failed pages where on a separate queue that
-seems to have vanished.
-
-> So this patch correct it by initialising nr_failed in outer loop.
-
-Well yea it makes sense since retry is initialized there as well.
-
-Acked-by: Christoph Lameter <cl@linux.com>
+Pages are not migrated because they are busy not because there is an
+error. So lets return EBUSY.
