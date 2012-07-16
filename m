@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752358Ab2GPI1B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 04:27:01 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:45877 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751497Ab2GPI05 (ORCPT
+	id S1752660Ab2GPI1c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 04:27:32 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:34190 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751942Ab2GPI1a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 04:26:57 -0400
+	Mon, 16 Jul 2012 04:27:30 -0400
 From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
         Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
@@ -22,85 +22,114 @@ Cc: Srikar <srikar@linux.vnet.ibm.com>, S390 <linux-s390@vger.kernel.org>,
         Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
         Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
         Joerg Roedel <joerg.roedel@amd.com>
-Date: Mon, 16 Jul 2012 13:54:45 +0530
-Message-Id: <20120716082445.23477.15128.sendpatchset@codeblue.in.ibm.com>
-Subject: [PATCH RFC V4 0/3] kvm: Improving directed yield in PLE handler
-x-cbid: 12071522-0260-0000-0000-00000183C2E5
+Date: Mon, 16 Jul 2012 13:55:14 +0530
+Message-Id: <20120716082514.23477.23849.sendpatchset@codeblue.in.ibm.com>
+In-Reply-To: <20120716082445.23477.15128.sendpatchset@codeblue.in.ibm.com>
+References: <20120716082445.23477.15128.sendpatchset@codeblue.in.ibm.com>
+Subject: [PATCH RFC V4 2/3] kvm: Note down when cpu relax intercepted or pause loop exited
+x-cbid: 12071522-1396-0000-0000-00000190437E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 
-Currently Pause Loop Exit (PLE) handler is doing directed yield to a
-random vcpu on pl-exit. We already have filtering while choosing
-the candidate to yield_to. This change adds more checks while choosing
-a candidate to yield_to.
+Noting pause loop exited vcpu or cpu relax intercepted helps in
+filtering right candidate to yield. Wrong selection of vcpu;
+i.e., a vcpu that just did a pl-exit or cpu relax intercepted may
+contribute to performance degradation.
 
-On a large vcpu guests, there is a high probability of
-yielding to the same vcpu who had recently done a pause-loop exit. 
-Such a yield can lead to the vcpu spinning again.
-
-The patchset keeps track of the pause loop exit and gives chance to a
-vcpu which has:
-
- (a) Not done pause loop exit at all (probably he is preempted lock-holder)
-
- (b) vcpu skipped in last iteration because it did pause loop exit, and
- probably has become eligible now (next eligible lock holder)
-
-This concept also helps in cpu relax interception cases which use same handler.
-
-Changes since V3:
- - arch specific fix/changes (Christian)
-
-Changes since v2:
- - Move ple structure to common code (Avi)
- - rename pause_loop_exited to cpu_relax_intercepted (Avi)
- - add config HAVE_KVM_CPU_RELAX_INTERCEPT (Avi)
- - Drop superfluous curly braces (Ingo)
-
-Changes since v1:
- - Add more documentation for structure and algorithm and Rename
-   plo ==> ple (Rik).
- - change dy_eligible initial value to false. (otherwise very first directed
-    yield will not be skipped. (Nikunj)
- - fixup signoff/from issue
-
-Future enhancements:
-  (1) Currently we have a boolean to decide on eligibility of vcpu. It
-    would be nice if I get feedback on guest (>32 vcpu) whether we can
-    improve better with integer counter. (with counter = say f(log n )).
-  
-  (2) We have not considered system load during iteration of vcpu. With
-   that information we can limit the scan and also decide whether schedule()
-   is better. [ I am able to use #kicked vcpus to decide on this But may
-   be there are better ideas like information from global loadavg.]
-
-  (3) We can exploit this further with PV patches since it also knows about
-   next eligible lock-holder.
-
-Summary: There is a very good improvement for moderate / no over-commit scenario
- for kvm based guest on PLE machine.
-
-Results: kernbench improves by around 30%, 6%  for 1x,2x respectively
-         ebizzy    improves by around 87%, 23% for 1x,2x respectively
-
-Note: The patches are tested on x86.
-
- Links 
-  V1: https://lkml.org/lkml/2012/7/9/32
-  V2: https://lkml.org/lkml/2012/7/10/392
-  V3: https://lkml.org/lkml/2012/7/12/437
-
- Raghavendra K T (3):
-   config: Add config to support ple or cpu relax optimzation 
-   kvm : Note down when cpu relax intercepted or pause loop exited 
-   kvm : Choose a better candidate for directed yield 
+Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 ---
- arch/s390/kvm/Kconfig    |    1 +
- arch/x86/kvm/Kconfig     |    1 +
- include/linux/kvm_host.h |   42 ++++++++++++++++++++++++++++++++++++++++++
- virt/kvm/Kconfig         |    3 +++
- virt/kvm/kvm_main.c      |   40 ++++++++++++++++++++++++++++++++++++++++
- 5 files changed, 87 insertions(+), 0 deletions(-)
+V2 was:
+Reviewed-by: Rik van Riel <riel@redhat.com>
+
+ include/linux/kvm_host.h |   37 +++++++++++++++++++++++++++++++++++++
+ virt/kvm/kvm_main.c      |    5 +++++
+ 2 files changed, 42 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index c446435..fa353bd 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -183,6 +183,18 @@ struct kvm_vcpu {
+ 	} async_pf;
+ #endif
+ 
++#ifdef CONFIG_HAVE_KVM_CPU_RELAX_INTERCEPT
++	/*
++	 * Cpu relax intercept or pause loop exit optimization
++	 * cpu_relax_intercepted: set when a vcpu does a pause loop exit
++	 *  or cpu relax intercepted.
++	 * dy_eligible: indicates whether vcpu is eligible for directed yield.
++	 */
++	struct {
++		bool cpu_relax_intercepted;
++		bool dy_eligible;
++	} ple;
++#endif
+ 	struct kvm_vcpu_arch arch;
+ };
+ 
+@@ -890,5 +902,30 @@ static inline bool kvm_check_request(int req, struct kvm_vcpu *vcpu)
+ 	}
+ }
+ 
++#ifdef CONFIG_HAVE_KVM_CPU_RELAX_INTERCEPT
++
++static inline void kvm_vcpu_set_cpu_relax_intercepted(struct kvm_vcpu *vcpu,
++							bool val)
++{
++	vcpu->ple.cpu_relax_intercepted = val;
++}
++static inline void kvm_vcpu_set_dy_eligible(struct kvm_vcpu *vcpu, bool val)
++{
++	vcpu->ple.dy_eligible = val;
++}
++
++#else /* !CONFIG_HAVE_KVM_CPU_RELAX_INTERCEPT */
++
++static inline void kvm_vcpu_set_cpu_relax_intercepted(struct kvm_vcpu *vcpu,
++							bool val)
++{
++}
++
++static inline void kvm_vcpu_set_dy_eligible(struct kvm_vcpu *vcpu, bool val)
++{
++}
++
++#endif /* CONFIG_HAVE_KVM_CPU_RELAX_INTERCEPT */
++
+ #endif
+ 
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index 7e14068..c50213f 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -236,6 +236,9 @@ int kvm_vcpu_init(struct kvm_vcpu *vcpu, struct kvm *kvm, unsigned id)
+ 	}
+ 	vcpu->run = page_address(page);
+ 
++	kvm_vcpu_set_cpu_relax_intercepted(vcpu, false);
++	kvm_vcpu_set_dy_eligible(vcpu, false);
++
+ 	r = kvm_arch_vcpu_init(vcpu);
+ 	if (r < 0)
+ 		goto fail_free_run;
+@@ -1577,6 +1580,7 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
+ 	int pass;
+ 	int i;
+ 
++	kvm_vcpu_set_cpu_relax_intercepted(me, true);
+ 	/*
+ 	 * We boost the priority of a VCPU that is runnable but not
+ 	 * currently running, because it got preempted by something
+@@ -1602,6 +1606,7 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
+ 			}
+ 		}
+ 	}
++	kvm_vcpu_set_cpu_relax_intercepted(me, false);
+ }
+ EXPORT_SYMBOL_GPL(kvm_vcpu_on_spin);
+ 
 
