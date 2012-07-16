@@ -1,96 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753358Ab2GPSn6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 14:43:58 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14112 "EHLO
+	id S1754036Ab2GPSq4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 14:46:56 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30365 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751611Ab2GPSnz (ORCPT
+	with ESMTP id S1753200Ab2GPSn5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 14:43:55 -0400
-X-Authority-Analysis: v=2.0 cv=StQSGYy0 c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=uXKgUyRmsUUA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=D_SbEOMbAAAA:8 a=-9lkxPPxzbn_rGzBKkcA:9 a=7KbvKZvEaC0A:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+	Mon, 16 Jul 2012 14:43:57 -0400
+X-Authority-Analysis: v=2.0 cv=AtpsLZBP c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=rKUjfwhVsFQA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=D_SbEOMbAAAA:8 a=vnREMb7VAAAA:8 a=Ri-2UK2ZMocrydySKJQA:9 a=7KbvKZvEaC0A:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 72.230.195.127
-Message-Id: <20120716184353.853883147@goodmis.org>
+Message-Id: <20120716184354.054691178@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 16 Jul 2012 14:43:12 -0400
+Date: Mon, 16 Jul 2012 14:43:13 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         John Kacur <jkacur@redhat.com>
-Subject: [PATCH RT 02/11] Latency histograms: Adjust timer, if already elapsed when programmed
+Subject: [PATCH RT 03/11] Disable RT_GROUP_SCHED in PREEMPT_RT_FULL
 References: <20120716184310.223095720@goodmis.org>
-Content-Disposition: inline; filename=0002-Latency-histograms-Adjust-timer-if-already-elapsed-w.patch
+Content-Disposition: inline; filename=0003-Disable-RT_GROUP_SCHED-in-PREEMPT_RT_FULL.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Carsten Emde <C.Emde@osadl.org>
 
-Nothing prevents a programmer from calling clock_nanosleep() with an
-already elapsed wakeup time in absolute time mode or with a too small
-delay in relative time mode. Such timers cannot wake up in time and,
-thus, should be corrected when entered into the missed timers latency
-histogram (CONFIG_MISSED_TIMERS_HIST).
+Strange CPU stalls have been observed in RT when RT_GROUP_SCHED
+was configured.
 
-This patch marks such timers and uses a corrected expiration time.
+Disable it for now.
 
 Signed-off-by: Carsten Emde <C.Emde@osadl.org>
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/hrtimer.h |    3 +++
- kernel/hrtimer.c        |   16 ++++++++++++++--
- 2 files changed, 17 insertions(+), 2 deletions(-)
+ init/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
-index 0e37086..7408760 100644
---- a/include/linux/hrtimer.h
-+++ b/include/linux/hrtimer.h
-@@ -113,6 +113,9 @@ struct hrtimer {
- 	unsigned long			state;
- 	struct list_head		cb_entry;
- 	int				irqsafe;
-+#ifdef CONFIG_MISSED_TIMER_OFFSETS_HIST
-+	ktime_t 			praecox;
-+#endif
- #ifdef CONFIG_TIMER_STATS
- 	int				start_pid;
- 	void				*start_site;
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 3991464..a080e62 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -1021,6 +1021,17 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
- #endif
- 	}
- 
-+#ifdef CONFIG_MISSED_TIMER_OFFSETS_HIST
-+	{
-+		ktime_t now = new_base->get_time();
-+
-+		if (ktime_to_ns(tim) < ktime_to_ns(now))
-+			timer->praecox = now;
-+		else
-+			timer->praecox = ktime_set(0, 0);
-+	}
-+#endif
-+
- 	hrtimer_set_expires_range_ns(timer, tim, delta_ns);
- 
- 	timer_stats_hrtimer_set_start_info(timer);
-@@ -1458,8 +1469,9 @@ retry:
- 			timer = container_of(node, struct hrtimer, node);
- 
- 			trace_hrtimer_interrupt(raw_smp_processor_id(),
--			    ktime_to_ns(ktime_sub(
--				hrtimer_get_expires(timer), basenow)),
-+			    ktime_to_ns(ktime_sub(ktime_to_ns(timer->praecox) ?
-+				timer->praecox : hrtimer_get_expires(timer),
-+				basenow)),
- 			    current,
- 			    timer->function == hrtimer_wakeup ?
- 			    container_of(timer, struct hrtimer_sleeper,
+diff --git a/init/Kconfig b/init/Kconfig
+index 7c0b369..c06208b 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -746,6 +746,7 @@ config RT_GROUP_SCHED
+ 	bool "Group scheduling for SCHED_RR/FIFO"
+ 	depends on EXPERIMENTAL
+ 	depends on CGROUP_SCHED
++	depends on !PREEMPT_RT_FULL
+ 	default n
+ 	help
+ 	  This feature lets you explicitly allocate real CPU bandwidth
 -- 
 1.7.10.4
 
