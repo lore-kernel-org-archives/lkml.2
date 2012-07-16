@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753212Ab2GPLP4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 07:15:56 -0400
-Received: from www.linutronix.de ([62.245.132.108]:52776 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752505Ab2GPLPw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 07:15:52 -0400
-Date: Mon, 16 Jul 2012 13:15:47 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, John Stultz <johnstul@us.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Prarit Bhargava <prarit@redhat.com>, stable@vger.kernel.org,
-        Andreas Schwab <schwab@linux-m68k.org>
-Subject: Re: [Regression][Revert request] Excessive delay or hang during
- resume from system suspend due to a hrtimer commit
-In-Reply-To: <201207161316.28875.rjw@sisk.pl>
-Message-ID: <alpine.LFD.2.02.1207161315050.32033@ionos>
-References: <201207152240.50129.rjw@sisk.pl> <alpine.LFD.2.02.1207161035500.32033@ionos> <201207161316.28875.rjw@sisk.pl>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1753230Ab2GPLRS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 07:17:18 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:49300 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752505Ab2GPLRR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 07:17:17 -0400
+Date: Mon, 16 Jul 2012 16:46:50 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Jovi Zhang <bookjovi@gmail.com>
+Cc: rob@landley.net, Ingo Molnar <mingo@redhat.com>, linux-doc@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: uprobes: fix uprobe tracer wrong documentation
+Message-ID: <20120716111650.GA5272@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <CACV3sb+mHoxLWtEGbxzGQ8Lfn2JDc5F=PNMMfmU2Ayw4-JHb+w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <CACV3sb+mHoxLWtEGbxzGQ8Lfn2JDc5F=PNMMfmU2Ayw4-JHb+w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12071611-5806-0000-0000-0000175535D6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Jul 2012, Rafael J. Wysocki wrote:
+* Jovi Zhang <bookjovi@gmail.com> [2012-07-16 16:49:03]:
 
-> On Monday, July 16, 2012, Thomas Gleixner wrote:
-> > On Sun, 15 Jul 2012, Rafael J. Wysocki wrote:
-> > > To everyone involved: the fact that this change, which was likely to introduce
-> > > regressions from the look of it alone, has been pushed to Linus (an to -stable
-> > > at the same time!) so late in the cycle, is seriuosly disappointing.
-> > 
-> > Well, we spent an massive amount of time in testing, reviewing and
-> > discussion and it definitely did not break suspend/resume here.
+> From e382d2d14b8177bcd2e6bac2fee004fd1f052cb5 Mon Sep 17 00:00:00 2001
+> From: Jovi Zhang <bookjovi@gmail.com>
+> Date: Tue, 17 Jul 2012 00:35:30 +0800
+> Subject: [PATCH] uprobes: fix uprobe tracer wrong documentation
 > 
-> I'm not saying that you didn't consider it thoroughly, but unfortunately you
-> did overlook this particular issue, didn't you?
+> The uprobe example is wrong in current kernel:
+> $ echo 'p: /bin/bash:0x4245c0' > /sys/kernel/debug/tracing/uprobe_events
+> -bash: echo: write error: Invalid argument
 > 
-> > This was not pushed without a lot of thoughts and in fact what you are
-> > seing is another long standing bug in the timekeeping resume code,
-> > which was just papered over by the incorrect handling of the clock was
-> > set cases in the other parts of the system.
-> > 
-> > Does the following patch fix the problem for you ?
-> 
-> Yes, it does, thanks!
-> 
-> > @John: Should that clear ntp as well or is it enough to set ntp_error
-> >        to 0 ?
-> > 
-> > /me really goes on vacation now.
-> 
-> So who's going to take care of the patch? :-)
+> It should be as following:
+> $ echo 'p /bin/bash:0x4245c0' > /sys/kernel/debug/tracing/uprobe_events
 
-I'm still packing gear. So i'll push it into timers/urgent.
+Right, the colon is only needed if we want to provide the optional event
+name.
+
+> 
+> Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
+
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+
+> ---
+>  Documentation/trace/uprobetracer.txt |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/Documentation/trace/uprobetracer.txt
+> b/Documentation/trace/uprobetracer.txt
+> index 24ce682..8932726 100644
+> --- a/Documentation/trace/uprobetracer.txt
+> +++ b/Documentation/trace/uprobetracer.txt
+> @@ -40,7 +40,7 @@ Usage examples
+>  To add a probe as a new event, write a new definition to uprobe_events
+>  as below.
+> 
+> -  echo 'p: /bin/bash:0x4245c0' > /sys/kernel/debug/tracing/uprobe_events
+> +  echo 'p /bin/bash:0x4245c0' > /sys/kernel/debug/tracing/uprobe_events
+> 
+>   This sets a uprobe at an offset of 0x4245c0 in the executable /bin/bash
+> 
+> -- 
+> 1.7.9.7
 
