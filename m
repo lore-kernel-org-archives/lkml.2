@@ -1,55 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753059Ab2GPJto (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 05:49:44 -0400
-Received: from mo-p05-ob.rzone.de ([81.169.146.181]:38525 "EHLO
-	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751271Ab2GPJtl (ORCPT
+	id S1753173Ab2GPJuI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 05:50:08 -0400
+Received: from na3sys009aog125.obsmtp.com ([74.125.149.153]:53843 "EHLO
+	na3sys009aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753102Ab2GPJuE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 05:49:41 -0400
-X-Greylist: delayed 594 seconds by postgrey-1.27 at vger.kernel.org; Mon, 16 Jul 2012 05:49:41 EDT
-X-RZG-AUTH: :IW0NeWC7b/q2i6W/qstXb1SBUuFnrGohdvpEkce+Ub40Q/uAFj+9EbzQUD+D2YGO
-X-RZG-CLASS-ID: mo05
-From: Stefan Roese <sr@denx.de>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Subject: Re: [PATCH] drivers/mtd/devices/spear_smi.c: failure test for null rather than negative integer
-Date: Mon, 16 Jul 2012 11:38:19 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.38-15-generic; KDE/4.7.2; x86_64; ; )
-Cc: David Woodhouse <dwmw2@infradead.org>, kernel-janitors@vger.kernel.org,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-References: <1341997118-25042-1-git-send-email-Julia.Lawall@lip6.fr>
-In-Reply-To: <1341997118-25042-1-git-send-email-Julia.Lawall@lip6.fr>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207161138.19985.sr@denx.de>
+	Mon, 16 Jul 2012 05:50:04 -0400
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
+Subject: [PATCH 1/2] MFD: twl6040: Fix revision information
+Date: Mon, 16 Jul 2012 11:49:43 +0200
+Message-Id: <1342432184-12046-2-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.7.8.6
+In-Reply-To: <1342432184-12046-1-git-send-email-peter.ujfalusi@ti.com>
+References: <1342432184-12046-1-git-send-email-peter.ujfalusi@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 11 July 2012 10:58:38 Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> dev_get_platdata returns a pointer, so the failure value would be NULL
-> rather than a negative integer.
-> 
-> The semantic match that finds this problem is: (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @@
-> expression x,e;
-> statement S1,S2;
-> @@
-> 
-> *x = dev_get_platdata(...)
-> ... when != x = e
-> *if (x < 0) S1 else S2
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+twl6040 ES1.1 and ES1.2 have the same revid (0x01).
+ES1.3 of twl6040 REVID is 0x02.
 
-Acked-by: Stefan Roese <sr@denx.de>
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+---
+ include/linux/mfd/twl6040.h |    4 ++--
+ sound/soc/codecs/twl6040.c  |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/include/linux/mfd/twl6040.h b/include/linux/mfd/twl6040.h
+index 6659487..e002097 100644
+--- a/include/linux/mfd/twl6040.h
++++ b/include/linux/mfd/twl6040.h
+@@ -161,8 +161,8 @@
+ #define TWL6040_CELLS			2
  
-Thanks,
-Stefan
+ #define TWL6040_REV_ES1_0		0x00
+-#define TWL6040_REV_ES1_1		0x01
+-#define TWL6040_REV_ES1_2		0x02
++#define TWL6040_REV_ES1_1		0x01 /* Rev ES1.1 and ES1.2 */
++#define TWL6040_REV_ES1_3		0x02
+ 
+ #define TWL6040_IRQ_TH			0
+ #define TWL6040_IRQ_PLUG		1
+diff --git a/sound/soc/codecs/twl6040.c b/sound/soc/codecs/twl6040.c
+index a36e9fc..2786de2 100644
+--- a/sound/soc/codecs/twl6040.c
++++ b/sound/soc/codecs/twl6040.c
+@@ -653,7 +653,7 @@ int twl6040_get_hs_step_size(struct snd_soc_codec *codec)
+ {
+ 	struct twl6040 *twl6040 = codec->control_data;
+ 
+-	if (twl6040_get_revid(twl6040) < TWL6040_REV_ES1_2)
++	if (twl6040_get_revid(twl6040) < TWL6040_REV_ES1_3)
+ 		/* For ES under ES_1.3 HS step is 2 mV */
+ 		return 2;
+ 	else
+-- 
+1.7.8.6
+
