@@ -1,110 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752626Ab2GPPF7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 11:05:59 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:49664 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751432Ab2GPPF5 (ORCPT
+	id S1752740Ab2GPPGU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 11:06:20 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:45440 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751432Ab2GPPGQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 11:05:57 -0400
-Date: Mon, 16 Jul 2012 10:57:09 -0400
+	Mon, 16 Jul 2012 11:06:16 -0400
+Date: Mon, 16 Jul 2012 10:57:29 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+To: Ian Campbell <ian.campbell@citrix.com>
+Cc: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>, "Tim (Xen.org)" <tim@xen.org>
-Subject: Re: [PATCH WIP 6/6] xen/arm: enable evtchn irqs
-Message-ID: <20120716145709.GB552@phenom.dumpdata.com>
+        "Tim (Xen.org)" <tim@xen.org>
+Subject: Re: [PATCH WIP 1/6] xen/arm: fix the shared_info and vcpu_info
+ structs
+Message-ID: <20120716145729.GC552@phenom.dumpdata.com>
 References: <alpine.DEB.2.02.1206221644370.27860@kaball.uk.xensource.com>
  <1340381685-22529-1-git-send-email-stefano.stabellini@eu.citrix.com>
- <1340381685-22529-6-git-send-email-stefano.stabellini@eu.citrix.com>
- <20120709144005.GA12102@phenom.dumpdata.com>
- <alpine.DEB.2.02.1207131749470.23783@kaball.uk.xensource.com>
+ <20120709144156.GC12102@phenom.dumpdata.com>
+ <alpine.DEB.2.02.1207131746380.23783@kaball.uk.xensource.com>
+ <1342199338.8586.221.camel@hastur.hellion.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1207131749470.23783@kaball.uk.xensource.com>
+In-Reply-To: <1342199338.8586.221.camel@hastur.hellion.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 13, 2012 at 06:14:33PM +0100, Stefano Stabellini wrote:
-> On Mon, 9 Jul 2012, Konrad Rzeszutek Wilk wrote:
-> > On Fri, Jun 22, 2012 at 05:14:45PM +0100, Stefano Stabellini wrote:
-> > > On ARM irqs are not enabled by default:
+On Fri, Jul 13, 2012 at 11:08:58AM -0600, Ian Campbell wrote:
+> On Fri, 2012-07-13 at 12:48 -0400, Stefano Stabellini wrote:
+> > On Mon, 9 Jul 2012, Konrad Rzeszutek Wilk wrote:
+> > > On Fri, Jun 22, 2012 at 05:14:40PM +0100, Stefano Stabellini wrote:
+> > > > Fix the shared_info and vcpu_info struct definitions to match the ones
+> > > > in Xen.
+> > > 
+> > > Is there a corresponding c/s in the Xen tree for this?
 > > 
-> > Which IRQs? Xen IRQs? Linux IRQs?
+> > That's the problem: arch_vcpu_info and arch_shared_info haven't been
+> > defined in Xen yet on ARM.
 > 
-> Linux IRQs
+> Strictly speaking they are defined (in xen/include/public/arch-arm.h),
+> they are just empty ;-)
 > 
+> > I think the ones below have been copied from xen/x86 by mistake.
 > 
-> > > - call enable_percpu_irq for IRQ_EVTCHN_CALLBACK;
-> > 
-> > Why do we want to do that?
->  
-> drivers are supposed to call enable_irq after request_irq, however on
-> x86 we could get away without it because Linux irqs are enabled by
-> default (see below)
-> 
-> 
-> > > - set the IRQF_VALID flag for the other irqs bound to evtchns. It causes
-> > > IRQ_NOAUTOEN to be set and as a consequence irq_unmask is going to be
-> > > called when a xenbus driver calls request_irq.
-> > 
-> > Can you explain in more details why we need that?
-> 
-> If _IRQ_NOAUTOEN is set, irq_settings_can_autoenable returns false and
-> __setup_irq doesn't call irq_startup.
-> 
-> IRQ_NOAUTOEN is set by default by set_irq_flags on ARM, but not on x86.
+> Yes, it does look that way.
 
-OK, please include those questions/answers in the git commit and
-repost.
+Ah, pls mention that in the git commit description.
 
 > 
-> 
-> 
-> > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > > ---
-> > >  drivers/xen/events.c |    3 +++
-> > >  1 files changed, 3 insertions(+), 0 deletions(-)
-> > > 
-> > > diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-> > > index 0132505..ca92755 100644
-> > > --- a/drivers/xen/events.c
-> > > +++ b/drivers/xen/events.c
-> > > @@ -53,6 +53,7 @@
-> > >  #include <xen/interface/hvm/params.h>
-> > >  #include <xen/interface/physdev.h>
-> > >  #include <xen/interface/sched.h>
-> > > +#include <asm/hw_irq.h>
-> > >  
-> > >  /*
-> > >   * This lock protects updates to the following mapping and reference-count
-> > > @@ -827,6 +828,7 @@ int bind_evtchn_to_irq(unsigned int evtchn)
-> > >  
-> > >  		xen_irq_info_evtchn_init(irq, evtchn);
-> > >  	}
-> > > +	set_irq_flags(irq, IRQF_VALID);
-> > >  
-> > >  out:
-> > >  	mutex_unlock(&irq_mapping_update_lock);
-> > > @@ -1751,6 +1753,7 @@ int __init xen_init_IRQ_arm(void)
-> > >  	if (rc) {
-> > >  		printk(KERN_ERR "Error requesting IRQ %d\n", IRQ_EVTCHN_CALLBACK);
-> > >  	}
-> > > +	enable_percpu_irq(IRQ_EVTCHN_CALLBACK, 0);
-> > >  	return rc;
-> > >  }
-> > >  core_initcall(xen_init_IRQ_arm);
-> > > -- 
-> > > 1.7.2.5
-> > > 
-> > > --
-> > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > > the body of a message to majordomo@vger.kernel.org
-> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > > Please read the FAQ at  http://www.tux.org/lkml/
 > > 
+> > 
+> > > > 
+> > > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > > > ---
+> > > >  arch/arm/include/asm/xen/interface.h |   15 +++------------
+> > > >  1 files changed, 3 insertions(+), 12 deletions(-)
+> > > > 
+> > > > diff --git a/arch/arm/include/asm/xen/interface.h b/arch/arm/include/asm/xen/interface.h
+> > > > index 3ad2d4b..8ab7cebb 100644
+> > > > --- a/arch/arm/include/asm/xen/interface.h
+> > > > +++ b/arch/arm/include/asm/xen/interface.h
+> > > > @@ -40,19 +40,10 @@ DEFINE_GUEST_HANDLE(xen_pfn_t);
+> > > >  #endif
+> > > >  
+> > > >  /* Maximum number of virtual CPUs in multi-processor guests. */
+> > > > -#define MAX_VIRT_CPUS 32
+> > > > +#define MAX_VIRT_CPUS 1
+> > > >  
+> > > > -struct arch_vcpu_info {
+> > > > -    unsigned long cr2;
+> > > > -    unsigned long pad; /* sizeof(vcpu_info_t) == 64 */
+> > > > -};
+> > > > -
+> > > > -struct arch_shared_info {
+> > > > -    unsigned long max_pfn;                  /* max pfn that appears in table */
+> > > > -    /* Frame containing list of mfns containing list of mfns containing p2m. */
+> > > > -    unsigned long pfn_to_mfn_frame_list_list;
+> > > > -    unsigned long nmi_reason;
+> > > > -};
+> > > > +struct arch_vcpu_info { };
+> > > > +struct arch_shared_info { };
+> > > >  
+> > > >  /* XXX: Move pvclock definitions some place arch independent */
+> > > >  struct pvclock_vcpu_time_info {
+> > > > -- 
+> > > > 1.7.2.5
+> > > > 
+> > > > --
+> > > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > > > the body of a message to majordomo@vger.kernel.org
+> > > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > > > Please read the FAQ at  http://www.tux.org/lkml/
+> > > 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
