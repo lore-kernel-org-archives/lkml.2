@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753597Ab2GPOAZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 10:00:25 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:36473 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751375Ab2GPOAX (ORCPT
+	id S1753694Ab2GPOBF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 10:01:05 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:54362 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753587Ab2GPOBE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 10:00:23 -0400
-Message-ID: <1342447217.3176.22.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH V2 0/4] [SCSI] ufs: Adds glue drivers to ufshcd
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Vinayak Holikatti <vinholikatti@gmail.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, patches@linaro.org,
-        linux-samsung-soc@vger.kernel.org, santoshsy@gmail.com,
-        arnd@linaro.org, girish.shivananjappa@linaro.org,
-        saugata.das@linaro.org, vishak.g@samsung.com, venkat@linaro.org,
-        k.rajesh@samsung.com, dsaxena@linaro.org, ilho215.lee@samsung.com,
-        nala.la@samsung.com, sreekumar.c@samsung.com
-Date: Mon, 16 Jul 2012 15:00:17 +0100
-In-Reply-To: <201207131545.28877.arnd@arndb.de>
-References: <1342188465-20239-1-git-send-email-vinholikatti@gmail.com>
-	 <201207131545.28877.arnd@arndb.de>
+	Mon, 16 Jul 2012 10:01:04 -0400
+Message-ID: <1342447259.2523.9.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [PATCH] net-next: make sock diag per-namespace
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Andrew Vagin <avagin@openvz.org>
+CC: "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Pavel Emelyanov <xemul@parallels.com>, <linux-kernel@vger.kernel.org>,
+        <netdev@vger.kernel.org>
+Date: Mon, 16 Jul 2012 15:00:59 +0100
+In-Reply-To: <1342440849-1757320-1-git-send-email-avagin@openvz.org>
+References: <1342440849-1757320-1-git-send-email-avagin@openvz.org>
+Organization: Solarflare Communications
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+MIME-Version: 1.0
+X-Originating-IP: [10.17.20.137]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-07-13 at 15:45 +0000, Arnd Bergmann wrote:
-> On Friday 13 July 2012, Vinayak Holikatti wrote:
-> > This patch set adds following features
-> >  - Seprates PCI specific code from ufshcd.c to make it as core
-> >  - Adds PCI glue driver ufshcd-pci.c
-> >  - Adds Platform glue driver ufshcd-pltfrm.c
-> >  - Update correct transfer size in Command UPIU
+On Mon, 2012-07-16 at 16:14 +0400, Andrew Vagin wrote:
+> Before this patch sock_diag works for init_net only and dumps
+> information about sockets from all namespaces.
 > 
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> This patch expands sock_diag for all name-spaces.
+> It creates a netlink kernel socket for each netns and filters
+> data during dumping.
+[...]
+> --- a/net/core/sock_diag.c
+> +++ b/net/core/sock_diag.c
+> @@ -166,23 +166,39 @@ static void sock_diag_rcv(struct sk_buff *skb)
+>  	mutex_unlock(&sock_diag_mutex);
+>  }
+>  
+> -struct sock *sock_diag_nlsk;
+> -EXPORT_SYMBOL_GPL(sock_diag_nlsk);
+> +struct sock *diag_nlsk;
+> +EXPORT_SYMBOL_GPL(diag_nlsk);
+[...]
 
-I need a maintainer ack for this to go upstream.
+This new variable seems to be unused.
 
-Also, looking at this, I think this patch series isn't bisectable:
-Patch 1 removes PCI support and patch 2 adds it back in a different
-form.  However, any PCI based UFS system would stop working if the
-bisect landed at patch 1.  I think you can fix this just by combining
-patches 1 and 2.
+Ben.
 
-James
-
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
