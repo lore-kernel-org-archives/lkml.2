@@ -1,145 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752948Ab2GPKdz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 06:33:55 -0400
-Received: from ims-m12.mx.aol.com ([64.12.207.145]:60324 "EHLO
-	ims-m12.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752637Ab2GPKdw (ORCPT
+	id S1753172Ab2GPKmt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 06:42:49 -0400
+Received: from www.linutronix.de ([62.245.132.108]:52611 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752505Ab2GPKmo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 06:33:52 -0400
-Message-Id: <201207161030.q6GAU8CB031199@ims-m12.mx.aol.com>
-Content-Type: multipart/mixed; boundary="===============1001818796=="
-MIME-Version: 1.0
-Subject: MY ASSISTANCE TO PAY YOUR ACCRUED INTEREST AMOUNT. PLEASE OPEN THE FILE FOR
- MORE DETAILS
-To: Recipients <res154cue@aol.com>
-From: "MR. CHRIS" <res154cue@aol.com>
-Date: Mon, 16 Jul 2012 12:21:01 +0200
-Reply-To: chrissinnocent213@superposta.com
-x-aol-global-disposition: S
-X-SPAM-FLAG: YES
-X-AOL-VSS-INFO: 5400.1158/82261
-X-AOL-VSS-CODE: clean
-X-AOL-SCOLL-SCORE: 0:2:125574264:93952408  
-X-AOL-SCOLL-URL_COUNT: 0  
-X-AOL-REROUTE: YES 
-x-aol-sid: 3039ac1d33c45003ece3500e
-X-AOL-IP: 93.163.71.122
+	Mon, 16 Jul 2012 06:42:44 -0400
+Message-Id: <20120716103948.456416747@linutronix.de>
+User-Agent: quilt/0.48-1
+Date: Mon, 16 Jul 2012 10:42:37 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: [Patch 4/7] softirq: Use hotplug thread infrastructure
+References: <20120716103749.122800930@linutronix.de>
+Content-Disposition: inline; filename=softirq-use-smboot-threads.patch
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You will not see this in a MIME-aware mail reader.
---===============1001818796==
-Content-Type: text/plain; charset="iso-8859-1"
-MIME-Version: 1.0
-Content-Transfer-Encoding: quoted-printable
-Content-Description: Mail message body
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/softirq.c |  107 +++++++++++++------------------------------------------
+ 1 file changed, 26 insertions(+), 81 deletions(-)
+
+Index: tip/kernel/softirq.c
+===================================================================
+--- tip.orig/kernel/softirq.c
++++ tip/kernel/softirq.c
+@@ -23,6 +23,7 @@
+ #include <linux/rcupdate.h>
+ #include <linux/ftrace.h>
+ #include <linux/smp.h>
++#include <linux/smpboot.h>
+ #include <linux/tick.h>
+ 
+ #define CREATE_TRACE_POINTS
+@@ -733,49 +734,21 @@ void __init softirq_init(void)
+ 	open_softirq(HI_SOFTIRQ, tasklet_hi_action);
+ }
+ 
+-static int run_ksoftirqd(void * __bind_cpu)
++static int ksoftirqd_should_run(unsigned int cpu)
+ {
+-	set_current_state(TASK_INTERRUPTIBLE);
+-
+-	while (!kthread_should_stop()) {
+-		preempt_disable();
+-		if (!local_softirq_pending()) {
+-			schedule_preempt_disabled();
+-		}
+-
+-		__set_current_state(TASK_RUNNING);
+-
+-		while (local_softirq_pending()) {
+-			/* Preempt disable stops cpu going offline.
+-			   If already offline, we'll be on wrong CPU:
+-			   don't process */
+-			if (cpu_is_offline((long)__bind_cpu))
+-				goto wait_to_die;
+-			local_irq_disable();
+-			if (local_softirq_pending())
+-				__do_softirq();
+-			local_irq_enable();
+-			sched_preempt_enable_no_resched();
+-			cond_resched();
+-			preempt_disable();
+-			rcu_note_context_switch((long)__bind_cpu);
+-		}
+-		preempt_enable();
+-		set_current_state(TASK_INTERRUPTIBLE);
+-	}
+-	__set_current_state(TASK_RUNNING);
+-	return 0;
++	return local_softirq_pending();
++}
+ 
+-wait_to_die:
+-	preempt_enable();
+-	/* Wait for kthread_stop */
+-	set_current_state(TASK_INTERRUPTIBLE);
+-	while (!kthread_should_stop()) {
+-		schedule();
+-		set_current_state(TASK_INTERRUPTIBLE);
++static void run_ksoftirqd(unsigned int cpu)
++{
++	local_irq_disable();
++	if (local_softirq_pending()) {
++		__do_softirq();
++		local_irq_enable();
++		cond_resched();
++		rcu_note_context_switch(cpu);
+ 	}
+-	__set_current_state(TASK_RUNNING);
+-	return 0;
++	local_irq_enable();
+ }
+ 
+ #ifdef CONFIG_HOTPLUG_CPU
+@@ -841,50 +814,17 @@ static int __cpuinit cpu_callback(struct
+ 				  unsigned long action,
+ 				  void *hcpu)
+ {
+-	int hotcpu = (unsigned long)hcpu;
+-	struct task_struct *p;
+-
+ 	switch (action) {
+-	case CPU_UP_PREPARE:
+-	case CPU_UP_PREPARE_FROZEN:
+-		p = kthread_create_on_node(run_ksoftirqd,
+-					   hcpu,
+-					   cpu_to_node(hotcpu),
+-					   "ksoftirqd/%d", hotcpu);
+-		if (IS_ERR(p)) {
+-			printk("ksoftirqd for %i failed\n", hotcpu);
+-			return notifier_from_errno(PTR_ERR(p));
+-		}
+-		kthread_bind(p, hotcpu);
+-  		per_cpu(ksoftirqd, hotcpu) = p;
+- 		break;
+-	case CPU_ONLINE:
+-	case CPU_ONLINE_FROZEN:
+-		wake_up_process(per_cpu(ksoftirqd, hotcpu));
+-		break;
+ #ifdef CONFIG_HOTPLUG_CPU
+-	case CPU_UP_CANCELED:
+-	case CPU_UP_CANCELED_FROZEN:
+-		if (!per_cpu(ksoftirqd, hotcpu))
+-			break;
+-		/* Unbind so it can run.  Fall thru. */
+-		kthread_bind(per_cpu(ksoftirqd, hotcpu),
+-			     cpumask_any(cpu_online_mask));
+ 	case CPU_DEAD:
+ 	case CPU_DEAD_FROZEN: {
+-		static const struct sched_param param = {
+-			.sched_priority = MAX_RT_PRIO-1
+-		};
+-
+-		p = per_cpu(ksoftirqd, hotcpu);
+-		per_cpu(ksoftirqd, hotcpu) = NULL;
+-		sched_setscheduler_nocheck(p, SCHED_FIFO, &param);
+-		kthread_stop(p);
++		int hotcpu = (unsigned long)hcpu;
++
+ 		takeover_tasklets(hotcpu);
+ 		break;
+ 	}
+ #endif /* CONFIG_HOTPLUG_CPU */
+- 	}
++	}
+ 	return NOTIFY_OK;
+ }
+ 
+@@ -892,14 +832,19 @@ static struct notifier_block __cpuinitda
+ 	.notifier_call = cpu_callback
+ };
+ 
++static struct smp_hotplug_thread softirq_threads = {
++	.store			= &ksoftirqd,
++	.thread_should_run	= ksoftirqd_should_run,
++	.thread_fn		= run_ksoftirqd,
++	.thread_comm		= "ksoftirqd/%u",
++};
++
+ static __init int spawn_ksoftirqd(void)
+ {
+-	void *cpu = (void *)(long)smp_processor_id();
+-	int err = cpu_callback(&cpu_nfb, CPU_UP_PREPARE, cpu);
+-
+-	BUG_ON(err != NOTIFY_OK);
+-	cpu_callback(&cpu_nfb, CPU_ONLINE, cpu);
+ 	register_cpu_notifier(&cpu_nfb);
++
++	BUG_ON(smpboot_register_percpu_thread(&softirq_threads));
++
+ 	return 0;
+ }
+ early_initcall(spawn_ksoftirqd);
 
 
---===============1001818796==
-Content-Type: application/octet-stream
-MIME-Version: 1.0
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="FROM MR. CHRIS.rtf"
-
-e1xydGYxXGFuc2lcYW5zaWNwZzEyNTJcZGVmZjBcZGVmbGFuZzEwMzB7XGZvbnR0Ymx7XGYwXGZz
-d2lzc1xmcHJxMlxmY2hhcnNldDAgVGFob21hO317XGYxXGZzd2lzc1xmY2hhcnNldDAgQXJpYWw7
-fX0NCntcKlxnZW5lcmF0b3IgTXNmdGVkaXQgNS40MS4yMS4yNTAwO31cdmlld2tpbmQ0XHVjMVxw
-YXJkXGxhbmcxMDMzXGJcZjBcZnMyMCBDRU5UUkFMIEJBTksgT0YgTklHRVJJQVxwYXINCk9GRklD
-RSBPRiBUSEUgRElSRUNUT1JccGFyDQpFTEVDVFJPTklDUy9JTlRFUk5FVCBCQU5LSU5HIERFUEFS
-VE1FTlRccGFyDQpUSU5VQlUgU1FVQVJFXHBhcg0KTEFHT1MgLSBOSUdFUklBXHBhcg0KIFxwYXIN
-CiBccGFyDQpERUFSRVNULFxwYXINCiBccGFyDQpNWSBOQU1FIElTIE1SLiBDSFJJUyBJTk5PQ0VO
-VCBJIGFtIHRoZSBEaXJlY3RvciBvZiBPcGVyYXRpb24gYXQgdGhlIEVsZWN0cm9uaWNzL0ludGVy
-bmV0IEJhbmtpbmcgRGVwYXJ0bWVudCBvZiBDRU5UUkFMIEJBTksgT0YgTklHRVJJQS4gSSBBTSBT
-RU5ESU5HIFRISVMgUFJJVkFURSBFTUFJTCBUTyBZT1UgQkFTRUQgT04gVEhFIENPTkZJREVOVElB
-TElUWSBPRiBUSEUgVFJBTlNBQ1RJT04uIFBMRUFTRSwgSSBXSUxMIExJS0UgVE8gQURWSUNFIElG
-IEFGVEVSIFJFQURJTkcgVEhST1VHSCBNWSBQUk9QT1NBTCBBTkQgWU9VIERPIE5PVCBBQ0NFUFQg
-SVQsIEtJTkRMWSBLRUVQIElUIFRPIFlPVVJTRUxGLiBBUyBBVCBUSElTIE1PTUVOVCwgSSBBTSBT
-VElMTCBJTiBTRVJWSUNFIFdJVEggQ0VOVFJBTCBCQU5LIE9GIE5JR0VSSUEgKENCTikgQU5EIEkg
-V0lMTCBOT1QgQlkgQU5ZIE1FQU5TIExJS0UgVE8gTE9TRSBNWSBKT0IuXHBhcg0KIFxwYXINCkkg
-SEFWRSBQVVQgSU4gT1ZFUiAyMyBZRUFSUyBPRiBTRVJWSUNFIElOIFRISVMgQkFOSyBCVVQgSSBE
-T04nVCBIQVZFIEFOWVRISU5HIFRPIFNIT1cgRk9SIElULiBUSElTIElTIEpVU1QgTVkgT1BQT1JU
-VU5JVFkgVE8gU0VDVVJFIEEgQlJJR0hUIEZVVFVSRSBGT1IgTVkgQ0hJTERSRU4gU0lOQ0UgTVkg
-R09WRVJOTUVOVCBXSElDSCBJUyBDT1JSVVBUIEhBUyBSRUZVU0VEIFRPIFRBS0UgQ0FSRSBPRiBJ
-VFMgUkVTUE9OU0lCSUxJVElFUy4gSU5GQUNUIEkgQU0gU0lDSyBBTkQgVElSRUQgT0YgRVZFUllU
-SElORyBIRVJFIEFORCBJIE5FRUQgVE8gR0VUIE9VVC4gSSBIQVZFIERJU0NPVkVSRUQgRlJPTSBN
-WSBJTlZFU1RJR0FUSU9OIFRIQVQgWU9VIEFSRSBBIEZVTkQgQkVORUZJQ0lBUlkgV0lUSCBUSEUg
-R09WRVJOTUVOVCBPRiBOSUdFUklBIEFORCBUSFVTIFlPVSBIQVZFIE1FVCBBTEwgVEhFIFNUQVRV
-VE9SWSBSRVFVSVJFTUVOVFMgSU4gUkVTUEVDVCBPRiBZT1VSIEZVTkQgUEFZTUVOVCBCVVQgVElM
-TCBUSElTIE1PTUVOVCBZT1UgSEFWRSBSRUNFSVZFRCBOT1RISU5HLiBQTEVBU0UgQkUgRVFVQUxM
-WSBBRFZJU0VEIFRIQVQgQ0VOVFJBTCBCQU5LIE9GIE5JR0VSSUEgSVMgVEhFIE9OTFkgRklOQU5D
-SUFMIElOU1RJVFVUSU9OIFRIQVQgQ0FOIFBBWSBZT1VSIEZVTkQgVE8gWU9VIEFTIE5PIFNFQ1VS
-SVRZIENPTVBBTlkgSU4gQUZSSUNBL1dPUkxEIENBTiBIQU5ETEUgWU9VUiBGVU5EIFBBWU1FTlQv
-SU5IRVJJVEFOQ0UgRlVORCBXSVRIT1VUIElOU1RSVUNUSU9OUyBGUk9NIFRIRSBDRU5UUkFMIEJB
-TksgT0YgTklHRVJJQS5ccGFyDQogXHBhcg0KSU5WRVNUSUdBVElPTiBIQVMgUFJPVkVEIElUIFRI
-QVQgWU9VUiBQUk9CTEVNIElTIFRIQVQgT0YgSU5URVJFU1QgR1JPVVAgQVQgVEhFIENFTlRSQUwg
-QkFOSyBPRiBOSUdFUklBIEFORCBGRURFUkFMIEdPVkVSTk1FTlQgV0hJQ0ggSEFTIEFGRkVDVEVE
-IFZJUlRVQUxMWSBFVkVSWSBGSU5BTkNJQUwgQU5EIFNFQ1VSSVRZIERFUEFSVE1FTlQgU1VDSCBB
-UyBUSEUgVU5JVEVEIE5BVElPTlMsIFdPUkxEIEJBTkssIElNRiwgRUZDQywgRkJJLCBDSUEsIEhP
-TUVMQU5EIEVUQy4gTE9UUyBPRiBQRU9QTEUgQVJFIElOVEVSRVNURUQgSU4gWU9VUiBQQVlNRU5U
-IEFORCBUSEFUIEVYUExBSU5TIFdIWSBZT1UgUkVDRUlWRSBTRVZFUkFMIEVNQUlMUyBBTkQgUEhP
-TkUgQ0FMTFMgRlJPTSBESUZGRVJFTlQgUEVPUExFIEVWRVJZREFZLiBOT1RFIFRIQVQgVEhFSVIg
-R0FNRSBQTEFOIElTIFRPIEZSVVNUUkFURSBZT1UgVU5USUxMIFlPVSBBQkFORE9OIFlPVVIgRlVO
-RCBUSEVOIFRIRVkgV0lMTCBCRSBDT01GT1JUQUJMRSBBTkQgRlJFRSBFTk9VR0ggVE8gVFJBTlNG
-RVIgWU9VUiBGVU5EUyBJTlRPIFRIRUlSIE9WRVJTRUFTIEFDQ09VTlQuIFRIRUlSIEFJTVMgQU5E
-IFRBUkdFVCBJUyBOT1QgVEhFIE1PTkVZIFlPVSBBUkUgU0VORElORyBUTyBUSEVNIEJZIFdFU1RF
-Uk4gVU5JT04gQU5EIE1PTkVZIEdSQU0gQlVUIFRPIEZSVVNUUkFURSBZT1UgT1VUIE9GIFJFQ0VJ
-VklORyBZT1VSIEZVTkQgSEVOQ0UgWU9VIEhBVkUgTE9TVCBUUlVTVCBBTkQgQ09ORklERU5DRSBP
-TiBFVkVSWUJPRFkgQU5EIERPTidUIEtOT1cgV0hPIFRPIEJFTElFVkUgT1IgVFJVU1QgQVMgQkVF
-TiBHRU5VSU5FIE9GRklDRVIuXHBhcg0KIFxwYXINCklUXHJxdW90ZSBTIFRJTUUgRk9SIFlPVSBU
-TyBRVUlUIEZST00gVEhFTSBJRiBOT1QgSSBBU1NVUkUgWU9VIFRIQVQgVEhJUyBDQU4gR08gT04g
-QU5EIE9OIEZPUiBTRVZFUkFMIFlFQVJTIFlFVCBZT1UgV0lMTCBFTkQgVVAgTk9UIFJFQ0VJVklO
-RyBZT1VSIEZVTkQuIEJVVCBJIEhBVkUgR09PRCBORVdTIEZPUiBZT1UgQlkgTVkgUE9TSVRJT04g
-QVMgVEhFIERJUkVDVE9SIE9GIE9QRVJBVElPTiBBVCBUSEUgRUxFQ1RST05JQ1MvSU5URVJORVQg
-QkFOS0lORyBERVBBUlRNRU5UIEkgQU0gSU5DSEFSR0UgT0YgSVNTVUlORyBBIFZJU0EgQVRNIENB
-UkQgQU5EIENFUlRJRklFRCBCQU5LIERSQUZULiBBRlRFUiBHT0lORyBUSFJPVUdIIFlPVVIgRklM
-RSwgSSBIQVZFIERJU0NPVkVSRUQgQU4gQUNDUlVFRCBJTlRFUkVTVCBBTU9VTlQgT0YgVVMkMywz
-MzAsMDAwIE9OIFlPVVIgRlVORC4gVEhJUyBBQ0NSVUVEIElOVEVSRVNUIEFNT1VOVCBPRiBVUyQz
-LjMzMC4wMCBJUyBXSEFUIEkgSU5URU5EIFRPIFBBWSBUTyBZT1UgU0VDUkVUTFkgQlkgV0FZIE9G
-IElTU1VJTkcgWU9VIFdJVEggQSBWSVNBIEFUTSBDQVJELiBCRSBRVUFMTFkgSU5GT1JNRUQgVEhB
-VCBJIEhBVkUgV0lUSERSQVdOIFRIRSBBQ0NSVUVEIElOVEVSRVNUIEFNT1VOVCBPRiBVUyQzLDMz
-MCwwMDAgRlJPTSBUSEUgRE9NSUNJTElBUlkgQUNDT1VOVCBTRVQgVVAgRk9SIFlPVVIgUEFZTUVO
-VCBJIEhBVkUgUFJPQ0VTU0VEIElUIEFORCBVUExPQURFRCBUSEUgRlVORCBJTlRPIEFOIEFUTSBD
-QVJEIEZPUiBPTldBUkQgRElTUEFUQ0ggVE8gWU9VLiBJIFNQRU5UIEEgVE9UQUwgU1VNIE9GIFVT
-JDMsMjUwIFRPIFBST0NFU1MgQU5EIFVQTE9BRCBUSEUgQUNDUlVFRCBJTlRFUkVTVCBTVU0gSU5U
-TyBUSEUgVklTQSBBVE0gQ0FSRFxwYXINClxwYXINCkkgV0lTSCBUTyBBU1NVUkUgWU9VIFRIQVQg
-V0lUSCBNWSBQT1NJVElPTiBIRVJFIEFTIFRIRSBESVJFQ1RPUiBPRiBPUEVSQVRJT04gQVQgVEhF
-IEVMRUNUUk9OSUNTL0lOVEVSTkVUIEJBTktJTkcgREVQQVJUTUVOVCBJIENBTiBBQ0NPTVBMSVNI
-IFRISVMgVEFTSyBXSVRIT1VUIERFTEFZIEFORCBXRVRISU4gMyBEQVlTIEkgV0lMTCBESVNQQVRD
-SCBUSEUgVklTQSBBVE0gQ0FSRCBUTyBZT1VSIEFERFJFU1MuIEJVVCBZT1UgSEFWRSBUTyBBU1NV
-UkUgTUUgVEhBVCBZT1UgV0lMTCBSRVdBUkQgTUUgV0lUSCBUSEUgU1VNIE9GIFVTJDE1MCwwMDAg
-QVMgU09PTiBBUyBZT1UgUkVDRUlWRSBUSEUgVklTQSBBVE0gQ0FSRCBBTkQgU1RBUlQgTUFLSU5H
-IFdJVEhEUkFXUyBGUk9NIFRIRSBWSVNBIEFUTSBDQVJELiBQTEVBU0UgSSBXSUxMIEFEVklDRSBZ
-T1UgVE8gU1RPUCBTRU5ESU5HIFlPVVIgSEFSRCBFQVJOIE1PTkVZIFRPIFRIT1NFIFBFT1BMRSBC
-RUNBVVNFIFRIRSBUUlVUSCBSRU1BSU5TIFRIQVQgTk8gTUFUVEVSIEhPVyBNVUNIIFlPVSBTRU5E
-IFRPIFRIRU0gVEhFWSBBUkUgTk9UIFJFQURZIFRPIFBBWSBZT1VSIEZVTkQgVE8gWU9VLlxwYXIN
-CiBccGFyDQpUSEVJUiBHQU1FIFBMQU4gSVMgVE8gRlJBVVNUUkFURSBZT1UgQU5EIE1BS0UgU1VS
-RSBZT1UgRU1QVFkgWU9VUiBXQUxMRVQgQU5EIFRIRU4gQUJBTkRPTiBZT1VSIEZVTkQuIEkgQU0g
-Tk9UIElOVEVSRVNURUQgSU4gTE9ORyBTVE9SSUVTIE9SIFBST1RPQ09MUywgQlVUIFRPIFBBWSBZ
-T1UgVEhJUyBBQ0NSVUVEIElOVEVSRVNUIEFNT1VOVCBPRiBVUyQzLDMzMCwwMDAuIFNPIElGIFlP
-VSBBUkUgSU5URVJFU1QgSU4gR0VUVElORyBUSElTIEFDQ1JVRUQgSU5URVJFU1QgQU1PVU5UIE9G
-IFVTJDMsMzMwLDAwMCBXSElDSCBJIEhBVkUgTE9BREVEIElOIEEgVklTQSBBVE0gQ0FSRCBGT1JX
-QVJERUQgVE8gWU9VUiBBRERSRVNTLCBLSU5ETFkgR0VUIEJBQ0sgVE8gTUUgSU1NRURJQVRFTFkg
-V0lUSCBUSEUgUEFZTUVOVCBPRiBVUyQxNTAgQkVJTkcgVEhFIEVNUyBTUEVFRCBQT1NUIENPVVJJ
-RVIgUE9TVEFHRSBDT1NUIFRPIFlPVVIgQUREUkVTUy4gU0VORCBESVJFQ1RMWSBUTyBNWSBOQU1F
-LiBJIFdPVUxEIEhBVkUgTE9WRUQgVE8gUEFZIFRISVMgREVMSVZFUlkgRkVFIE9GIFVTJDE1MCBC
-VVQgSSBIQVZFIFNQRU5UIEFMTCBNWSBTQVZJTkdTIE9OIFRIRSBST0NFU1NJTkcgQU5EIFVQTE9B
-RElORyBPRiBUSEUgQUNDUlVFRCBJTlRFUkVTVCBTVU0gSU5UTyBUSEUgVklTQSBBVE0gQ0FSRCBO
-T1cgSSBBTSBMRUZUIFdJVEggTk8gT1RIRVIgTU9ORVkgSEVOQ0UgSSBVUkdFIFlPVSBUTyBQQVkg
-VEhFIERFTElWRVJZIEZFRSwgUExFQVNFIFNFTkQgVEhFIE1PTkVZIFRPIFRIRSBGT0xMT1dJTkcg
-TkFNRTpccGFyDQogXHBhcg0KU0VORCBUTzogTVIuIENIUklTIElOTk9DRU5UXHBhcg0KQUREUkVT
-UzogTEFHT1MtTklHRVJJQVxwYXINClF1ZXN0aW9uOiBJTlRFUkVTVFxwYXINCkFOU1dFUjogUEFZ
-XHBhcg0KQU1PVU5UOiBVUyQxNTBccGFyDQogXHBhcg0KT05DRSBJIFJFQ0VJVkUgVEhFIFBBWU1F
-TlQgSU5TVFJVQ1RJT04gRk9SIFRIRSBFTVMgU1BFRUQgUE9TVCBQQVNUQUdFIENPU1QgT0YgVVMk
-MTUwLCBJIFdJTEwgRElTUEFUQ0ggVEhFIFZJU0EgQVRNIENBUkQgVE8gWU9VIEFORCBUSEVSRUFG
-VEVSIEkgV0lMTCBGT1JXQVJEIE1ZIEJBTksgQUNDT1VOVCBERVRBSUxTIFdIRVJFIFlPVSBXSUxM
-IFRSQU5TRkVSIE1ZIFVTJDE1MCwwMDAgUkVXQVJEIElOVE8uICBQTEVBU0UgSUYgWU9VIEFSRSBO
-T1QgSU5URVJFU1RFRCBJTiBUSElTIFRSQU5TQUNUSU9OLCBLSU5ETFkgS0VFUCBJVCBUTyBZT1VS
-U0VMRiBBTkQgRE8gTk9UIENPTlRBQ1QgTUUuIFBMRUFTRSBDT05UQUNUIE1FIERJUkVDVExZIEFO
-RCBXSVRIIFRIRSBUUkFOU0ZFUiBERVRBSUxTIE9GIFRIRSBVUyQxNTAgUE9TVEFHRSBDT1NUIEZP
-UiBUSEUgRU1TIFNQRUVEIFBPU1QgREVMSVZFUlkgVE8gWU9VUiBBRERSRVNTLlxwYXINCiBccGFy
-DQpSRUdBUkRTLFxwYXINCiBccGFyDQpNUi5DSFJJUyBJTk5PQ0VOVFxwYXINCkRpcmVjdG9yIG9m
-IE9wZXJhdGlvbiBccGFyDQpJbnRlcm5ldC9Db21wdXRlciBCYW5raW5nIERlcGFydG1lbnRccGFy
-DQpDZW50cmFsIEJhbmsgb2YgTmlnZXJpYVxwYXINClxsYW5nMTAzMFxiMFxmMVxwYXINCn0NCgA=
---===============1001818796==--
