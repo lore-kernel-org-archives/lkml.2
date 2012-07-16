@@ -1,138 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751527Ab2GPHeZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 03:34:25 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:47391 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751045Ab2GPHeY (ORCPT
+	id S1751679Ab2GPHfp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 03:35:45 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:34990 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751070Ab2GPHfl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 03:34:24 -0400
-Message-ID: <5003C3F1.4050900@pengutronix.de>
-Date: Mon, 16 Jul 2012 09:34:09 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Organization: Pengutronix e.K.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	Mon, 16 Jul 2012 03:35:41 -0400
+Message-ID: <5003C449.6000806@linaro.org>
+Date: Mon, 16 Jul 2012 08:35:37 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-CC: Wolfgang Grandegger <wg@grandegger.com>, kernel-janitors@vger.kernel.org,
-        linux-can@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/6] drivers/net/can/softing/softing_main.c: ensure a
- consistent return value in error case
-References: <1342284188-19176-1-git-send-email-Julia.Lawall@lip6.fr> <1342284188-19176-3-git-send-email-Julia.Lawall@lip6.fr>
-In-Reply-To: <1342284188-19176-3-git-send-email-Julia.Lawall@lip6.fr>
-X-Enigmail-Version: 1.4.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigAF96439C739D419C3A81270C"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de
+Subject: Re: [PATCH 7/9] Input: ab8500-ponkey: Create AB8500 domain IRQ mapping
+References: <1341493572-29735-1-git-send-email-lee.jones@linaro.org> <4FF6994B.9040801@linaro.org> <20120706173957.GA10202@core.coreip.homeip.net> <4FFB288D.4080606@linaro.org> <20120709201422.GA12242@core.coreip.homeip.net> <4FFB40A4.5060505@linaro.org> <20120709204620.GA12692@core.coreip.homeip.net> <4FFB463F.9040201@linaro.org> <20120710061757.GB29257@core.coreip.homeip.net>
+In-Reply-To: <20120710061757.GB29257@core.coreip.homeip.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigAF96439C739D419C3A81270C
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+> I think it would be best if this got merged through whatever tree that
+> was used to introduce ab8500_irq_get_virq(); otherwise it will have to
+> wait till I resync with mainline sometime in the middle of the next
+> release cycle.
 
-On 07/14/2012 06:43 PM, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
->=20
-> Typically, the return value desired for the failure of a function with =
-an
-> integer return value is a negative integer.  In these cases, the return=
+I agree. Sam that's you, patch below. :)
 
-> value is sometimes a negative integer and sometimes 0, due to a subsequ=
-ent
-> initialization of the return variable within the loop.
->=20
-> A simplified version of the semantic match that finds this problem is:
-> (http://coccinelle.lip6.fr/)
->=20
-> //<smpl>
-> @r exists@
-> identifier ret;
-> position p;
-> constant C;
-> expression e1,e3,e4;
-> statement S;
-> @@
->=20
-> ret =3D -C
-> ... when !=3D ret =3D e3
->     when any
-> if@p (...) S
-> ... when any
-> if (\(ret !=3D 0\|ret < 0\|ret > 0\) || ...) { ... return ...; }
-> ... when !=3D ret =3D e3
->     when any
-> *if@p (...)
-> {
->   ... when !=3D ret =3D e4
->   return ret;
-> }
-> //</smpl>
->=20
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+From: Lee Jones <lee.jones@linaro.org>
+Date: Tue, 26 Jun 2012 10:46:50 +0100
+Subject: [PATCH 1/1] Input: ab8500-ponkey: Create AB8500 domain IRQ mapping
 
-Thanks, applied to can-next
+Before we can use any domain allocated IRQ, we need to first create a
+map between the Hardware IRQ (hwirq) and the Linux Virtual IRQ (virq).
+We do this with a helper function provided by the AB8500 IRQ domain
+controller called ab8500_irq_get_virq(). We need to do this for both
+IRQs which the Power-On-Key driver uses; one for button press, the other
+for button depress.
 
-Marc
->=20
-> ---
->  drivers/net/can/softing/softing_main.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->=20
-> diff --git a/drivers/net/can/softing/softing_main.c b/drivers/net/can/s=
-ofting/softing_main.c
-> index a7c77c7..f2a221e 100644
-> --- a/drivers/net/can/softing/softing_main.c
-> +++ b/drivers/net/can/softing/softing_main.c
-> @@ -826,12 +826,12 @@ static __devinit int softing_pdev_probe(struct pl=
-atform_device *pdev)
->  		goto sysfs_failed;
->  	}
-> =20
-> -	ret =3D -ENOMEM;
->  	for (j =3D 0; j < ARRAY_SIZE(card->net); ++j) {
->  		card->net[j] =3D netdev =3D
->  			softing_netdev_create(card, card->id.chip[j]);
->  		if (!netdev) {
->  			dev_alert(&pdev->dev, "failed to make can[%i]", j);
-> +			ret =3D -ENOMEM;
->  			goto netdev_failed;
->  		}
->  		priv =3D netdev_priv(card->net[j]);
->=20
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-can" in=
+Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/input/misc/ab8500-ponkey.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---------------enigAF96439C739D419C3A81270C
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAlADw/gACgkQjTAFq1RaXHOKygCgjV0oes2BDhZgZqhuzuxfd1+h
-IoQAnRJSCuaiAIuG6wVp9ZfOzXtutsIT
-=maqG
------END PGP SIGNATURE-----
-
---------------enigAF96439C739D419C3A81270C--
+diff --git a/drivers/input/misc/ab8500-ponkey.c b/drivers/input/misc/ab8500-ponkey.c
+index 350fd0c..1a1d974 100644
+--- a/drivers/input/misc/ab8500-ponkey.c
++++ b/drivers/input/misc/ab8500-ponkey.c
+@@ -73,8 +73,8 @@ static int __devinit ab8500_ponkey_probe(struct platform_device *pdev)
+ 
+ 	ponkey->idev = input;
+ 	ponkey->ab8500 = ab8500;
+-	ponkey->irq_dbf = irq_dbf;
+-	ponkey->irq_dbr = irq_dbr;
++	ponkey->irq_dbf = ab8500_irq_get_virq(ab8500, irq_dbf);
++	ponkey->irq_dbr = ab8500_irq_get_virq(ab8500, irq_dbr);
+ 
+ 	input->name = "AB8500 POn(PowerOn) Key";
+ 	input->dev.parent = &pdev->dev;
+-- 
+1.7.9.5
