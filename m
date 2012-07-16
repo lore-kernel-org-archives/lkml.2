@@ -1,65 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752588Ab2GPPEY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 11:04:24 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:33379 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752126Ab2GPPEW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 11:04:22 -0400
-Date: Mon, 16 Jul 2012 10:10:38 -0500
-From: Ben Myers <bpm@sgi.com>
-To: Chen Baozi <baozich@gmail.com>
-Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: [PATCH] xfs: fix comment typo of struct xfs_da_blkinfo.
-Message-ID: <20120716151038.GI29979@sgi.com>
-References: <1342208293-3405-1-git-send-email-baozich@gmail.com>
+	id S1752626Ab2GPPF7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 11:05:59 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:49664 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751432Ab2GPPF5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 11:05:57 -0400
+Date: Mon, 16 Jul 2012 10:57:09 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>, "Tim (Xen.org)" <tim@xen.org>
+Subject: Re: [PATCH WIP 6/6] xen/arm: enable evtchn irqs
+Message-ID: <20120716145709.GB552@phenom.dumpdata.com>
+References: <alpine.DEB.2.02.1206221644370.27860@kaball.uk.xensource.com>
+ <1340381685-22529-1-git-send-email-stefano.stabellini@eu.citrix.com>
+ <1340381685-22529-6-git-send-email-stefano.stabellini@eu.citrix.com>
+ <20120709144005.GA12102@phenom.dumpdata.com>
+ <alpine.DEB.2.02.1207131749470.23783@kaball.uk.xensource.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1342208293-3405-1-git-send-email-baozich@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.DEB.2.02.1207131749470.23783@kaball.uk.xensource.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Chen,
-
-On Sat, Jul 14, 2012 at 03:38:13AM +0800, Chen Baozi wrote:
-> Fix trivial typo error that has written "It" to "Is".
+On Fri, Jul 13, 2012 at 06:14:33PM +0100, Stefano Stabellini wrote:
+> On Mon, 9 Jul 2012, Konrad Rzeszutek Wilk wrote:
+> > On Fri, Jun 22, 2012 at 05:14:45PM +0100, Stefano Stabellini wrote:
+> > > On ARM irqs are not enabled by default:
+> > 
+> > Which IRQs? Xen IRQs? Linux IRQs?
 > 
-> Signed-off-by: Chen Baozi <baozich@gmail.com>
-
-Reviewed-by: Ben Myers <bpm@sgi.com>
-
-Thanks for the patch!  I'm happy you're working on XFS.  Do you have any
-time/interest in taking on a work item or two?  I have a few would-be-nices
-which I've made notes of, and I'm sure that Dave or Christoph could also think
-of a few if you're interested.
-
-Thanks again,
--Ben
-
-> ---
->  fs/xfs/xfs_da_btree.h |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> Linux IRQs
 > 
-> diff --git a/fs/xfs/xfs_da_btree.h b/fs/xfs/xfs_da_btree.h
-> index dbf7c07..be30bd4 100644
-> --- a/fs/xfs/xfs_da_btree.h
-> +++ b/fs/xfs/xfs_da_btree.h
-> @@ -32,7 +32,7 @@ struct zone;
->  /*
->   * This structure is common to both leaf nodes and non-leaf nodes in the Btree.
->   *
-> - * Is is used to manage a doubly linked list of all blocks at the same
-> + * It is used to manage a doubly linked list of all blocks at the same
->   * level in the Btree, and to identify which type of block this is.
->   */
->  #define XFS_DA_NODE_MAGIC	0xfebe	/* magic number: non-leaf blocks */
-> -- 
-> 1.7.1
 > 
-> _______________________________________________
-> xfs mailing list
-> xfs@oss.sgi.com
-> http://oss.sgi.com/mailman/listinfo/xfs
+> > > - call enable_percpu_irq for IRQ_EVTCHN_CALLBACK;
+> > 
+> > Why do we want to do that?
+>  
+> drivers are supposed to call enable_irq after request_irq, however on
+> x86 we could get away without it because Linux irqs are enabled by
+> default (see below)
+> 
+> 
+> > > - set the IRQF_VALID flag for the other irqs bound to evtchns. It causes
+> > > IRQ_NOAUTOEN to be set and as a consequence irq_unmask is going to be
+> > > called when a xenbus driver calls request_irq.
+> > 
+> > Can you explain in more details why we need that?
+> 
+> If _IRQ_NOAUTOEN is set, irq_settings_can_autoenable returns false and
+> __setup_irq doesn't call irq_startup.
+> 
+> IRQ_NOAUTOEN is set by default by set_irq_flags on ARM, but not on x86.
+
+OK, please include those questions/answers in the git commit and
+repost.
+
+> 
+> 
+> 
+> > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > > ---
+> > >  drivers/xen/events.c |    3 +++
+> > >  1 files changed, 3 insertions(+), 0 deletions(-)
+> > > 
+> > > diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+> > > index 0132505..ca92755 100644
+> > > --- a/drivers/xen/events.c
+> > > +++ b/drivers/xen/events.c
+> > > @@ -53,6 +53,7 @@
+> > >  #include <xen/interface/hvm/params.h>
+> > >  #include <xen/interface/physdev.h>
+> > >  #include <xen/interface/sched.h>
+> > > +#include <asm/hw_irq.h>
+> > >  
+> > >  /*
+> > >   * This lock protects updates to the following mapping and reference-count
+> > > @@ -827,6 +828,7 @@ int bind_evtchn_to_irq(unsigned int evtchn)
+> > >  
+> > >  		xen_irq_info_evtchn_init(irq, evtchn);
+> > >  	}
+> > > +	set_irq_flags(irq, IRQF_VALID);
+> > >  
+> > >  out:
+> > >  	mutex_unlock(&irq_mapping_update_lock);
+> > > @@ -1751,6 +1753,7 @@ int __init xen_init_IRQ_arm(void)
+> > >  	if (rc) {
+> > >  		printk(KERN_ERR "Error requesting IRQ %d\n", IRQ_EVTCHN_CALLBACK);
+> > >  	}
+> > > +	enable_percpu_irq(IRQ_EVTCHN_CALLBACK, 0);
+> > >  	return rc;
+> > >  }
+> > >  core_initcall(xen_init_IRQ_arm);
+> > > -- 
+> > > 1.7.2.5
+> > > 
+> > > --
+> > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > > the body of a message to majordomo@vger.kernel.org
+> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > > Please read the FAQ at  http://www.tux.org/lkml/
+> > 
