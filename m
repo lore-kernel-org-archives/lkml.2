@@ -1,70 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753486Ab2GPQ2n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 12:28:43 -0400
-Received: from mondschein.lichtvoll.de ([194.150.191.11]:55745 "EHLO
-	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752575Ab2GPQ2m convert rfc822-to-8bit (ORCPT
+	id S1753522Ab2GPQbQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 12:31:16 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21655 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752725Ab2GPQbM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 12:28:42 -0400
-From: Martin Steigerwald <Martin@lichtvoll.de>
-To: linux-kernel@vger.kernel.org
-Subject: Re: Linux 3.5-rc7
-Date: Mon, 16 Jul 2012 18:28:40 +0200
-User-Agent: KMail/1.13.7 (Linux/3.5.0-rc6-tp520+; KDE/4.8.4; x86_64; ; )
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-References: <CA+55aFxLmxGaMUbEVSaG-Og=G1rf1TBrswuVwfwWUqbCPuAVrA@mail.gmail.com> (sfid-20120715_130824_258581_628B0AA0)
-In-Reply-To: <CA+55aFxLmxGaMUbEVSaG-Og=G1rf1TBrswuVwfwWUqbCPuAVrA@mail.gmail.com>
+	Mon, 16 Jul 2012 12:31:12 -0400
+X-Authority-Analysis: v=2.0 cv=AtpsLZBP c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=wom5GMh1gUkA:10 a=-wGngUE2Vx8A:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=TIp0S-31sd-5K89FhOkA:9 a=CjuIK1q_8ugA:10 a=vmaUgIjkfsHwvPg9:21 a=_JFxb-S8fIMDP1yL:21 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Date: Mon, 16 Jul 2012 12:31:09 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        RT-users <linux-rt-users@vger.kernel.org>
+Subject: Re: [patch RT 0/3] Stable rt updates - part II
+Message-ID: <20120716163109.GB16873@home.goodmis.org>
+References: <20120715090141.942753287@linutronix.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201207161828.40586.Martin@lichtvoll.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120715090141.942753287@linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Sonntag, 15. Juli 2012 schrieb Linus Torvalds:
-> Hey guys,
-
-Hi Linus,
-
-> remember how things have been stabilizing and slowing down,
-> and all the kernel developers were off on summer vacation?
+On Mon, Jul 16, 2012 at 08:07:43AM -0000, Thomas Gleixner wrote:
+> Steven,
 > 
-> Yeah, we need to talk about that. Because I last week I thought that
-> making an -rc7 was not necessarily realy required, except perhaps
-> mainly to check the late printk changes. But then today and yesterday,
-> I got a ton of small pull requests, and now I find myself releasing an
-> -rc7 that is actually bigger than rc6 was.
+> please pick the following three patches which address the CPU hotplug
+> nightmare on RT.
 > 
-> Not cool, guys. Not cool.
+> I still hate them, but we want to have that addressed in the stable
+> series.
 > 
-> Now, admittedly, most of this is pretty small. The loadavg calculation
-> fix patch is pretty big, but quite a lot of that is added comments
-> (*big* added comments). . But there's Andrew's patch-bomb, there's
-> media fixes, there's random SOC fixes, powerpc fixes, USB, sound, you
-> name it.
-> 
-> Ok, so it's still not *huge*, but it's bigger than -rc6 was. I had
-> hoped for less.
 
-Regresses badly on resume from in-kernel hibernation. I.e. hangs with some 
-red graphics artifacts on the tty. The same artifacts appear for a short 
-time with rc6 + some commits as well, but there then X.org is available 
-again.
+BTW, they are missing the From line. Unless you want to take credit for
+these ugly hacks, I should probably add them in.
 
-2437fccfbfc83bcb868ccc7fdfe2b5310bf07835 – thats rc6 + some commits – 
-works, while exactly rc7 does not.
+-- Steve
 
-No bisection tried so far. Maybe tomorrow. It shouldn´t be that many 
-attempts and kernel compiles are fast on the ThinkPad T520 with Intel i5 
-Sandybridge + integrated graphics – no NVidia – + Intel SSD 320 where this 
-happens. No other machines tested so far.
-
-Kernel configuration available if desired.
-
-Thanks,
--- 
-Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
-GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
