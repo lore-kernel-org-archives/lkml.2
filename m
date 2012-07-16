@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753542Ab2GPRWe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 13:22:34 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:47435 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751808Ab2GPRWb (ORCPT
+	id S1753634Ab2GPRXV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 13:23:21 -0400
+Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:29467 "HELO
+	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753272Ab2GPRXT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 13:22:31 -0400
-Date: Mon, 16 Jul 2012 18:22:25 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@openvz.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "Dmitry V. Levin" <ldv@altlinux.org>,
-        Doug Ledford <dledford@redhat.com>, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org
-Subject: Re: [PATCH v2] ns: do not block exit_task_namespaces() for a long
- time
-Message-ID: <20120716172225.GO31729@ZenIV.linux.org.uk>
-References: <20120713140806.b3d0fda8.akpm@linux-foundation.org>
- <1342451364-14787-1-git-send-email-kirill.shutemov@linux.intel.com>
- <20120716165301.GN31729@ZenIV.linux.org.uk>
- <20120716171634.GA21620@shutemov.name>
+	Mon, 16 Jul 2012 13:23:19 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: vkNleDEVM1klt.6NdOoAebc5aOExggmKBeO5LVEShAyxWnL
+ 9MA4HiIh6rEhr6U2pXgzY2ofNPtDWp671gUc4BDKV4kXB9AbBco2Gy0wArH1
+ QKdL6pLxzyTX09RrAvp08ucZ0ie9AFRgh3xpKmPm7BQlyVwKesSH6mDS9D3C
+ p8oAtmpkxTTjKMRbOXTXudv8g9p0uYdZv50cM3GwjyzXx7qwdqMZOVhSGRnZ
+ .3ljqg5hvetDG2z1sQ3.8_dVjewVgKE2PEQKHD1zr4iYupT2evH76YXFlzdI
+ 6T0nMZoDJOE8x8JkJu3QDFbokJtc21B3LytjIYHzdvDoc4LajUQxNQmnsAgx
+ 0rgvZ5vvfcMT2VSBbZNEme4OeAijwPc9_CfqJZ.JY17l.WA6raXG7TQqzVj0
+ __XI0xUL.60_xi.rOT_LPdGRlAGnlglxDw3WZ
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Mon, 16 Jul 2012 12:23:16 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Joonsoo Kim <js1304@gmail.com>
+cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 1/3] mm: correct return value of migrate_pages()
+In-Reply-To: <1342455272-32703-1-git-send-email-js1304@gmail.com>
+Message-ID: <alpine.DEB.2.00.1207161220440.32319@router.home>
+References: <Yes> <1342455272-32703-1-git-send-email-js1304@gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120716171634.GA21620@shutemov.name>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 16, 2012 at 08:16:34PM +0300, Kirill A. Shutemov wrote:
-> On Mon, Jul 16, 2012 at 05:53:01PM +0100, Al Viro wrote:
-> > On Mon, Jul 16, 2012 at 06:09:24PM +0300, Kirill A. Shutemov wrote:
-> > > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> > > 
-> > > On exiting of the last task in a namespace we need to trigger freeing of
-> > > the namespace. Currently, we call synchronize_rcu() and free_nsproxy()
-> > > directly on do_exit() path.
-> > > 
-> > > On my machine synchronize_rcu() blocks for about 0.01 seconds. For
-> > > comparing: normal exit_group() syscall takes less than 0.0003 seconds.
-> > > 
-> > > Let's offload synchronize_rcu() and free_nsproxy() to a workqueue.
-> > > 
-> > > I also move synchronize_rcu() inside free_nsproxy(). It fixes racy
-> > > put_nsproxy() which calls free_nsproxy() without synchronize_rcu().
-> > > I guess it was missed during switch to RCU (see cf7b708).
-> > 
-> > NAK.  Making final umounts of anything in that namespace asynchronous,
-> > even though nothing is holding the stuff on them busy is simply
-> > wrong.  Note that they can take a _long_ time, so we are talking about
-> > minutes worth of delay in the worst case.  It's user-visible and
-> > it's a serious potential for trouble.
-> 
-> Good point.
-> 
-> Now in worst case we have a process which hang for a few minutes in
-> exit_group() syscall in D state, right? Why is that any better?
-> Does it provide better user experience or better accounting or what?
+On Tue, 17 Jul 2012, Joonsoo Kim wrote:
 
-"Session that was using that USB stick has still not finished exiting;
-might be still busy writing stuff there, so better not pull it out yet".
+> migrate_pages() should return number of pages not migrated or error code.
+> When unmap_and_move return -EAGAIN, outer loop is re-execution without
+> initialising nr_failed. This makes nr_failed over-counted.
+
+The itention of the nr_failed was only to give an indication as to how
+many attempts where made. The failed pages where on a separate queue that
+seems to have vanished.
+
+> So this patch correct it by initialising nr_failed in outer loop.
+
+Well yea it makes sense since retry is initialized there as well.
+
+Acked-by: Christoph Lameter <cl@linux.com>
