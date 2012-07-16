@@ -1,72 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753346Ab2GPOR1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 10:17:27 -0400
-Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:40659 "HELO
-	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751199Ab2GPORY (ORCPT
+	id S1753354Ab2GPOUe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 10:20:34 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:45698 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751833Ab2GPOUc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 10:17:24 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: MoJ_3WoVM1mc2uCQnS_8UJ1jF_Fqm3CYwtPW3UMGwLSeLiR
- 7inDebH3_M4bM3JylUvll1l88DOeWgwSHccwhh018FILxh2NDfMqGtXOUE9t
- ksps9Pc4v08evfsGi8j7heGFp7OEVSq9dWMZ7t30xlIvmGOeA11NQZampJ83
- TJBJ7qQFfDcbTPRoyPoALEgRrxcIYJgvvzXxXBtvL_vXKqQOaO1xv_8YsS8g
- mKcXCQ7cAlUI2LMtwxsB6i6vke_s1IwyIwNAdJVhW61c.W_Pi9dBbrkmw0Pq
- _XPKRHBzxNxCMFnEtk2CjMR0by8yc5U5n79nW5GuHhHAXbJYhivQHs0tbRZF
- jqTA9LL99CPhNfTxNwn9_YiQsYZPG2kPA4Wit_Xe0x6gVp5IOU0mRrZb5Avs
- 2
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Mon, 16 Jul 2012 09:17:20 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: David Rientjes <rientjes@google.com>
-cc: Shuah Khan <shuah.khan@hp.com>, Pekka Enberg <penberg@kernel.org>,
-        glommer@parallels.com, js1304@gmail.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
-Subject: Re: [PATCH TRIVIAL] mm: Fix build warning in kmem_cache_create()
-In-Reply-To: <alpine.DEB.2.00.1207160257420.11472@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.00.1207160915470.28952@router.home>
-References: <1342221125.17464.8.camel@lorien2> <alpine.DEB.2.00.1207140216040.20297@chino.kir.corp.google.com> <CAOJsxLE3dDd01WaAp5UAHRb0AiXn_s43M=Gg4TgXzRji_HffEQ@mail.gmail.com> <1342407840.3190.5.camel@lorien2>
- <alpine.DEB.2.00.1207160257420.11472@chino.kir.corp.google.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 16 Jul 2012 10:20:32 -0400
+Date: Mon, 16 Jul 2012 16:20:00 +0200
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Joe Perches <joe@perches.com>
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Mike Frysinger <vapier@gentoo.org>, Mark Salter <msalter@redhat.com>,
+        Aurelien Jacquiot <a-jacquiot@ti.com>, Jeff Dike <jdike@addtoit.com>,
+        Richard Weinberger <richard@nod.at>,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-c6x-dev@linux-c6x.org,
+        linux-mips@linux-mips.org, user-mode-linux-devel@lists.sourceforge.net,
+        user-mode-linux-user@lists.sourceforge.net
+Subject: Re: [PATCH net-next 8/8] arch: Use eth_random_addr
+Message-ID: <20120716141959.GA12338@linux-mips.org>
+References: <cover.1342157022.git.joe@perches.com>
+ <14a91278564bb5a263c561a7f1bd10ea6386d90a.1342157022.git.joe@perches.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <14a91278564bb5a263c561a7f1bd10ea6386d90a.1342157022.git.joe@perches.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Jul 2012, David Rientjes wrote:
+On Thu, Jul 12, 2012 at 10:33:12PM -0700, Joe Perches wrote:
 
-> On Sun, 15 Jul 2012, Shuah Khan wrote:
->
-> > I can work on reshuffling the code. Do have a question though. This
-> > following sanity check is currently done only when CONFIG_DEBUG_VM is
-> > defined. However, it does appear to be something that is that should be
-> > checked even in regular path.
-> >
-> > struct kmem_cache *kmem_cache_create(const char *name, size_t size,
-> > size_t align,
-> >                 unsigned long flags, void (*ctor)(void *))
-> > {
-> >         struct kmem_cache *s = NULL;
-> >
-> > #ifdef CONFIG_DEBUG_VM
-> >         if (!name || in_interrupt() || size < sizeof(void *) ||
-> >                 size > KMALLOC_MAX_SIZE) {
-> >                 printk(KERN_ERR "kmem_cache_create(%s) integrity check"
-> >                         " failed\n", name);
-> >                 goto out;
-> >         }
-> > #endif
-> >
->
-> Agreed, this shouldn't depend on CONFIG_DEBUG_VM.
+> Convert the existing uses of random_ether_addr to
+> the new eth_random_addr.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  arch/blackfin/mach-bf537/boards/stamp.c |    2 +-
+>  arch/c6x/kernel/soc.c                   |    2 +-
+>  arch/mips/ar7/platform.c                |    4 ++--
+>  arch/mips/powertv/powertv_setup.c       |    6 +++---
+>  arch/um/drivers/net_kern.c              |    2 +-
+>  5 files changed, 8 insertions(+), 8 deletions(-)
 
-These checks are useless for regular kernel operations. They are
-only useful when developing code and should only be enabled during
-development. There is no point in testing the size and the name which are
-typically constant when a slab is created with a stable kernel.
+Acked-by: Ralf Baechle <ralf@linux-mips.org>
 
+Thanks,
 
-
+  Ralf
