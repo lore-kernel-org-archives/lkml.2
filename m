@@ -1,58 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753591Ab2GPQhn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 12:37:43 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:62301 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753483Ab2GPQhk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 12:37:40 -0400
+	id S1753558Ab2GPQk2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 12:40:28 -0400
+Received: from mga03.intel.com ([143.182.124.21]:34837 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752078Ab2GPQkZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 12:40:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="123071708"
+Date: Mon, 16 Jul 2012 19:39:43 +0300
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@openvz.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "Dmitry V. Levin" <ldv@altlinux.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Doug Ledford <dledford@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "containers@lists.linux-foundation.org" 
+	<containers@lists.linux-foundation.org>
+Subject: Re: [PATCH v2] ns: do not block exit_task_namespaces() for a long
+ time
+Message-ID: <20120716163943.GA15156@otc-wbsnb-06>
+References: <20120713140806.b3d0fda8.akpm@linux-foundation.org>
+ <1342451364-14787-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1342453174.4648.6.camel@lade.trondhjem.org>
 MIME-Version: 1.0
-In-Reply-To: <201207161828.40586.Martin@lichtvoll.de>
-References: <CA+55aFxLmxGaMUbEVSaG-Og=G1rf1TBrswuVwfwWUqbCPuAVrA@mail.gmail.com>
- <201207161828.40586.Martin@lichtvoll.de>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 16 Jul 2012 09:37:19 -0700
-X-Google-Sender-Auth: HNK0So8QUOvr-hWzZaXU1c5pcGw
-Message-ID: <CA+55aFzWEJGTRi_a1JM433_Kp5NU4nkSYEGj7+ecH7d2Mt_2kA@mail.gmail.com>
-Subject: Re: Linux 3.5-rc7
-To: Martin Steigerwald <Martin@lichtvoll.de>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="J2SCkAp4GZ/dPZZf"
+Content-Disposition: inline
+In-Reply-To: <1342453174.4648.6.camel@lade.trondhjem.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 16, 2012 at 9:28 AM, Martin Steigerwald <Martin@lichtvoll.de> wrote:
->
-> Regresses badly on resume from in-kernel hibernation. I.e. hangs with some
-> red graphics artifacts on the tty. The same artifacts appear for a short
-> time with rc6 + some commits as well, but there then X.org is available
-> again.
 
-There's a one-liner fix for this bouncing around.
+--J2SCkAp4GZ/dPZZf
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Appended is a white-space damaged cut-and-paste version of the fix, so
-you'll need to either find the original patch (search the kernel
-mailing list for "Excessive delay or hang during resume from system
-suspend due to a hrtimer commit"), or just edit in the one-liner by
-hand.
+On Mon, Jul 16, 2012 at 03:39:36PM +0000, Myklebust, Trond wrote:
+> On Mon, 2012-07-16 at 18:09 +0300, Kirill A. Shutemov wrote:
+> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> >=20
+> > On exiting of the last task in a namespace we need to trigger freeing of
+> > the namespace. Currently, we call synchronize_rcu() and free_nsproxy()
+> > directly on do_exit() path.
+> >=20
+> > On my machine synchronize_rcu() blocks for about 0.01 seconds. For
+> > comparing: normal exit_group() syscall takes less than 0.0003 seconds.
+> >=20
+> > Let's offload synchronize_rcu() and free_nsproxy() to a workqueue.
+> >=20
+> > I also move synchronize_rcu() inside free_nsproxy(). It fixes racy
+> > put_nsproxy() which calls free_nsproxy() without synchronize_rcu().
+> > I guess it was missed during switch to RCU (see cf7b708).
+> >=20
+> > Microbenchmark:
+> >=20
+> > : #define _GNU_SOURCE
+> > : #include <unistd.h>
+> > : #include <sched.h>
+> > : #include <stdlib.h>
+> > : #include <sys/wait.h>
+> > :
+> > : int
+> > : main(void)
+> > : {
+> > :       int i;
+> > :       for (i =3D 0; i < 1024; i++) {
+> > :               if (fork()) {
+> > :                       wait(NULL);
+> > :                       continue;
+> > :               }
+> > :               unshare(CLONE_NEWIPC);
+> > :               exit(0);
+> > :       }
+> > :       return 0;
+> > : }
+> >=20
+> > Before the patch:
+> >=20
+> > real    0m8.335s
+> > user    0m0.000s
+> > sys     0m0.265s
+> >=20
+> > After:
+> >=20
+> > real    0m0.569s
+> > user    0m0.001s
+> > sys     0m0.154s
+> >=20
+> > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> > Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+> > ---
+> >=20
+> > v2:
+> >  - Updated description.
+> >=20
+> > ---
+> >  include/linux/nsproxy.h |    1 +
+> >  kernel/nsproxy.c        |   34 +++++++++++++++++++++++-----------
+> >  2 files changed, 24 insertions(+), 11 deletions(-)
+> >=20
+> > diff --git a/include/linux/nsproxy.h b/include/linux/nsproxy.h
+> > index cc37a55..1d26be7 100644
+> > --- a/include/linux/nsproxy.h
+> > +++ b/include/linux/nsproxy.h
+> > @@ -24,6 +24,7 @@ struct fs_struct;
+> >   */
+> >  struct nsproxy {
+> >  	atomic_t count;
+> > +	struct work_struct free_nsproxy_work;
+> >  	struct uts_namespace *uts_ns;
+> >  	struct ipc_namespace *ipc_ns;
+> >  	struct mnt_namespace *mnt_ns;
+> > diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
+> > index b576f7f..ebc7d40 100644
+> > --- a/kernel/nsproxy.c
+> > +++ b/kernel/nsproxy.c
+> > @@ -41,13 +41,17 @@ struct nsproxy init_nsproxy =3D {
+> >  #endif
+> >  };
+> > =20
+> > +static void free_nsproxy_work(struct work_struct *work);
+> > +
+> >  static inline struct nsproxy *create_nsproxy(void)
+> >  {
+> >  	struct nsproxy *nsproxy;
+> > =20
+> >  	nsproxy =3D kmem_cache_alloc(nsproxy_cachep, GFP_KERNEL);
+> > -	if (nsproxy)
+> > +	if (nsproxy) {
+> >  		atomic_set(&nsproxy->count, 1);
+> > +		INIT_WORK(&nsproxy->free_nsproxy_work, free_nsproxy_work);
+> > +	}
+> >  	return nsproxy;
+> >  }
+> > =20
+> > @@ -166,6 +170,14 @@ out:
+> > =20
+> >  void free_nsproxy(struct nsproxy *ns)
+> >  {
+> > +	/*
+> > +	 * wait for others to get what they want from this nsproxy.
+> > +	 *
+> > +	 * cannot release this nsproxy via the call_rcu() since
+> > +	 * put_mnt_ns() will want to sleep
+> > +	 */
+> > +	synchronize_rcu();
+> > +
+> >  	if (ns->mnt_ns)
+> >  		put_mnt_ns(ns->mnt_ns);
+> >  	if (ns->uts_ns)
+> > @@ -178,6 +190,14 @@ void free_nsproxy(struct nsproxy *ns)
+> >  	kmem_cache_free(nsproxy_cachep, ns);
+> >  }
+> > =20
+> > +static void free_nsproxy_work(struct work_struct *work)
+> > +{
+> > +	struct nsproxy *ns =3D container_of(work, struct nsproxy,
+> > +			free_nsproxy_work);
+> > +
+> > +	free_nsproxy(ns);
+> > +}
+> > +
+> >  /*
+> >   * Called from unshare. Unshare all the namespaces part of nsproxy.
+> >   * On success, returns the new nsproxy.
+> > @@ -215,16 +235,8 @@ void switch_task_namespaces(struct task_struct *p,=
+ struct nsproxy *new)
+> > =20
+> >  	rcu_assign_pointer(p->nsproxy, new);
+> > =20
+> > -	if (ns && atomic_dec_and_test(&ns->count)) {
+> > -		/*
+> > -		 * wait for others to get what they want from this nsproxy.
+> > -		 *
+> > -		 * cannot release this nsproxy via the call_rcu() since
+> > -		 * put_mnt_ns() will want to sleep
+> > -		 */
+> > -		synchronize_rcu();
+> > -		free_nsproxy(ns);
+> > -	}
+> > +	if (ns && atomic_dec_and_test(&ns->count))
+> > +		schedule_work(&ns->free_nsproxy_work);
+>=20
+> What's wrong with using call_rcu()? The above will cause a workqueue
+> thread to block for no good reason.
 
-This should fix it (there's apparently a question on whether the
-"false" should be "true", but that's an independent detail, it's worth
-verifying in this form regardless).
+See comment to synchronize_rcu(). free_nsproxy() might sleep.
+call_rcu() callback invocation might happen from either softirq or process
+context, so we can't use it.
 
-               Linus
----
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 269b1fe..3447cfa 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -717,6 +717,7 @@ static void timekeeping_resume(void)
-        timekeeper.clock->cycle_last = timekeeper.clock->read(timekeeper.clock);
-        timekeeper.ntp_error = 0;
-        timekeeping_suspended = 0;
-+       timekeeping_update(false);
-        write_sequnlock_irqrestore(&timekeeper.lock, flags);
 
-        touch_softlockup_watchdog();
+--=20
+ Kirill A. Shutemov
+
+--J2SCkAp4GZ/dPZZf
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQBEPPAAoJEAd+omnVudOMZdAQALI4x2Muf9GD9zbr2SNDN32Z
+HuRiCe6G+sHcym7sPGZ3cnFz4e34nIUK5+3oqGClC0fBlcdrgNaUJwgvnozERLen
+qHKabvvYbOhEYqD322f6iv3ev3A4nEto5qA22T/OAXS9Ev58j1Y0cjnHYBtRiriA
+WMBeTx5UTzZGoSwvMJikDPBlrH/YIyodPQRznXWNWPueMlR/CLyJTUDDTPBib0IJ
+/8xU13bqkZZH+H1+irloYK9+ptzti/1u1NwgmxmRnb2pSQ/mSgzsrqz54NKjq5ui
+2choRRVyPTTTJlXyMxjuOMgh3+7TGfx2h06Pc6JmbrCPp9rF7dcTHnuEAUoMMDgm
+7xaIJPv2bWob5NLlVw+DIu518jjyhbvltyaQ7FCPHrC6xazwqWxWINZlUvy1r2la
+FlGdBHHnyTr3mGS39UcNikh66Fqc596/gd9Rs0OPoNfIVfw7RVNEJnaG24v26rcr
+KCtuMXoiCGh13Ui/w2awRgdfli7ySuF8bJ6U5vy2EPoymkRuwURNEMyLgiS3/APf
+FZrkL1MDvTT6bViaI2BNoIkSVmTjAPmMYUjdIiY8PjD8usxOWWr9SkrVwpUqiheD
+CjLT9qkKWfgJjvICHXzWCaSHdryLxocqtQ9PAZSYxDoYHJX+d/d89+yy/fBJgR/j
+zen6V05UslR80CcpAKkY
+=+6je
+-----END PGP SIGNATURE-----
+
+--J2SCkAp4GZ/dPZZf--
