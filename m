@@ -1,53 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753494Ab2GPTpn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 15:45:43 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:60585 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753292Ab2GPTpl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753373Ab2GPTpl (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 16 Jul 2012 15:45:41 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:57953 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753109Ab2GPTpf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 15:45:35 -0400
 From: Arnd Bergmann <arnd@arndb.de>
-To: Pavel Machek <pavel@ucw.cz>
-Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
-Date: Mon, 16 Jul 2012 19:45:20 +0000
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Subject: Re: [PATCH V2 0/4] [SCSI] ufs: Adds glue drivers to ufshcd
+Date: Mon, 16 Jul 2012 16:22:23 +0000
 User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Mikael Pettersson <mikpe@it.uu.se>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com> <20120715113631.GA10597@arm.com> <20120716161913.GB20549@elf.ucw.cz>
-In-Reply-To: <20120716161913.GB20549@elf.ucw.cz>
+Cc: Vinayak Holikatti <vinholikatti@gmail.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, patches@linaro.org,
+        linux-samsung-soc@vger.kernel.org, santoshsy@gmail.com,
+        arnd@linaro.org, girish.shivananjappa@linaro.org,
+        saugata.das@linaro.org, vishak.g@samsung.com, venkat@linaro.org,
+        k.rajesh@samsung.com, dsaxena@linaro.org, ilho215.lee@samsung.com,
+        nala.la@samsung.com, sreekumar.c@samsung.com
+References: <1342188465-20239-1-git-send-email-vinholikatti@gmail.com> <201207131545.28877.arnd@arndb.de> <1342447217.3176.22.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <1342447217.3176.22.camel@dabdike.int.hansenpartnership.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-1"
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201207161945.21239.arnd@arndb.de>
-X-Provags-ID: V02:K0:3PNKDSdCkxQpBGm5UgJ3Ifen91+aRZ+ecHn/v1zG3jV
- 8T3p+dVyyY/YDoyRJgQP+outZ5IM4E0/+Rrrj4K7NDiW7Sb4uE
- bUYBowRDPumXs8o/IUQhx03TbRI1dDP6a2g6Q0r8T97XqkemaN
- RyJu4eQeNPvuJHqpGfO6k6X1ff2EmsT+94mQqsUvldnzn0i4uc
- F4Yciw/1OENOyI+Ylh33axeDen8I3HUWpA0wM5W+qXSGZ545vY
- MRqxtWjo6QwDXH2Cc2OOSdIb3MM1kaMAXeZaVnfEa1gnJqh23U
- kjEtn6BKghNmJ+u2gHqoq4AoKfsCj+bonebaXuPOeSFFA3hTKt
- eN1uQCuTHHldETG8lgCQ=
+Message-Id: <201207161622.24063.arnd@arndb.de>
+X-Provags-ID: V02:K0:sh0s6J+ZfktiCW/G/pPo7d3KutBwbTQgL1An55lfgH7
+ KrdQ2fiMihIcCMqFUfflRX6dIpqezauv5qbARn5Xr2IeG87KKK
+ R8X48WLBAZlB4+0DUpPuxL/q7Sprcx3G5SnN640sVQt4IrrFMB
+ EOwdPEPjMiKrfviEEroAmHFGpduWsKD0sTT/URzAoBmdJXnNOs
+ d7uTaMuWLiMt/AFqNOuTX22vncJtj24zhW3iLz7xSvRwjXpJPH
+ xhKrxkGVEyRifwFJBZRZnJc15E04GmmUbc7JYPADMDCUuvdEiu
+ RMyCZWqduA6aaGgwxfUkjaOZaIIZ5j8Axvq9ecRnLiTVKz/0OY
+ GwvpyaMUr+7UFC+C5L7E=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 16 July 2012, Pavel Machek wrote:
-> > The assembly syntax is very reasonable already and not far from what we
-> > are used to (see the .S files in my kernel patches). The 64-bit
-> > instructions are different and that's specified here (apart from the
-> > actual bit encoding):
+On Monday 16 July 2012, James Bottomley wrote:
+> On Fri, 2012-07-13 at 15:45 +0000, Arnd Bergmann wrote:
+> > On Friday 13 July 2012, Vinayak Holikatti wrote:
+> > > This patch set adds following features
+> > >  - Seprates PCI specific code from ufshcd.c to make it as core
+> > >  - Adds PCI glue driver ufshcd-pci.c
+> > >  - Adds Platform glue driver ufshcd-pltfrm.c
+> > >  - Update correct transfer size in Command UPIU
 > > 
-> > http://infocenter.arm.com/help/topic/com.arm.doc.genc010197a/index.html
+> > Acked-by: Arnd Bergmann <arnd@arndb.de>
 > 
-> "This document is only available in a PDF version to registered ARM
-> customers."
+> I need a maintainer ack for this to go upstream.
 > 
-> It would be nice to make this public :-(.
+> Also, looking at this, I think this patch series isn't bisectable:
+> Patch 1 removes PCI support and patch 2 adds it back in a different
+> form.  However, any PCI based UFS system would stop working if the
+> bisect landed at patch 1.  I think you can fix this just by combining
+> patches 1 and 2.
 
-Well, at least you can register for free and don't have to prove that you
-are an ARM customer (who isn't, after all).
+I suggested to split the patch in two in a private review that we
+did on the linaro mailing list. I gave my Ack because the split
+was done, but I failed to notice that it was done differently
+from what I suggested in 
+
+On Monday 02 July 2012, Arnd Bergmann wrote:
+> I would recommend that you split this patch into two separate
+> changesets, where you do all the changes to existing code in the
+> first patch, and only move but don't change code in the second one
+> that creates the new file.
+
+I agree that breaking bisectibility by ripping out the PCI code
+first is not good. The version 2 is not actually easier to review
+at all than the first version, it just splits the changes by
+file, which is pointless.
 
 	Arnd
+
