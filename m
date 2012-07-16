@@ -1,162 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753033Ab2GPJ0t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 05:26:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45094 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751497Ab2GPJ0e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 05:26:34 -0400
-Date: Mon, 16 Jul 2012 11:26:31 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
-        Rik van Riel <riel@redhat.com>, Ying Han <yinghan@google.com>,
-        Greg Thelen <gthelen@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH mmotm] memcg: further prevent OOM with too many dirty
- pages
-Message-ID: <20120716092631.GC14664@tiehlicka.suse.cz>
-References: <1340117404-30348-1-git-send-email-mhocko@suse.cz>
- <20120619150014.1ebc108c.akpm@linux-foundation.org>
- <20120620101119.GC5541@tiehlicka.suse.cz>
- <alpine.LSU.2.00.1207111818380.1299@eggly.anvils>
- <20120712070501.GB21013@tiehlicka.suse.cz>
- <20120712141343.e1cb7776.akpm@linux-foundation.org>
- <alpine.LSU.2.00.1207121539150.27721@eggly.anvils>
- <20120713082150.GA1448@tiehlicka.suse.cz>
- <alpine.LSU.2.00.1207160111280.3936@eggly.anvils>
- <alpine.LSU.2.00.1207160131120.3936@eggly.anvils>
+	id S1752501Ab2GPJ3M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 05:29:12 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:36656 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751290Ab2GPJ3K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 05:29:10 -0400
+Message-ID: <5003DEB8.7000108@oracle.com>
+Date: Mon, 16 Jul 2012 17:28:24 +0800
+From: Jeff Liu <jeff.liu@oracle.com>
+Reply-To: jeff.liu@oracle.com
+Organization: Oracle
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1207160131120.3936@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Namhyung Kim <namhyung@kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: Re: Perf:  user land tools compiled failed on 3.5.0-rc7
+References: <5002D46E.4080103@oracle.com> <87mx302sly.fsf@sejong.aot.lge.com>
+In-Reply-To: <87mx302sly.fsf@sejong.aot.lge.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 16-07-12 01:35:34, Hugh Dickins wrote:
-> The may_enter_fs test turns out to be too restrictive: though I saw
-> no problem with it when testing on 3.5-rc6, it very soon OOMed when
-> I tested on 3.5-rc6-mm1.  I don't know what the difference there is,
-> perhaps I just slightly changed the way I started off the testing:
-> dd if=/dev/zero of=/mnt/temp bs=1M count=1024; rm -f /mnt/temp; sync
-> repeatedly, in 20M memory.limit_in_bytes cgroup to ext4 on USB stick.
-> 
-> ext4 (and gfs2 and xfs) turn out to allocate new pages for writing
-> with AOP_FLAG_NOFS: that seems a little worrying, and it's unclear
-> to me why the transaction needs to be started even before allocating
-> pagecache memory.  But it may not be worth worrying about these days:
-> if direct reclaim avoids FS writeback, does __GFP_FS now mean anything?
-> 
-> Anyway, we insisted on the may_enter_fs test to avoid hangs with the
-> loop device; but since that also masks off __GFP_IO, we can test for
-> __GFP_IO directly, ignoring may_enter_fs and __GFP_FS.
-> 
-> But even so, the test still OOMs sometimes: when originally testing
-> on 3.5-rc6, it OOMed about one time in five or ten; when testing
-> just now on 3.5-rc6-mm1, it OOMed on the first iteration.
-> 
-> This residual problem comes from an accumulation of pages under
-> ordinary writeback, not marked PageReclaim, so rightly not causing
-> the memcg check to wait on their writeback: these too can prevent
-> shrink_page_list() from freeing any pages, so many times that memcg
-> reclaim fails and OOMs.
+Hey Namhyung,
 
-I guess you managed to trigger this with 20M limit, right? I have tested
-with different group sizes but the writeback didn't trigger for most of
-them and all the dirty data were flushed from the reclaim. Have you used
-any special setting the dirty ratio? Or was it with xfs (IIUC that one
-does ignore writeback from the direct reclaim completely).
+Thanks for your response!
+On 07/16/2012 01:16 PM, Namhyung Kim wrote:
 
-> Deal with these in the same way as direct reclaim now deals with
-> dirty FS pages: mark them PageReclaim.  It is appropriate to rotate
-> these to tail of list when writepage completes, but more importantly,
-> the PageReclaim flag makes memcg reclaim wait on them if encountered
-> again.  Increment NR_VMSCAN_IMMEDIATE?  That's arguable: I chose not.
+> Hi,
 > 
-> Setting PageReclaim here may occasionally race with end_page_writeback()
-> clearing it: lru_deactivate_fn() already faced the same race, and
-> correctly concluded that the window is small and the issue non-critical.
+> (CC-ing Jiri)
 > 
-> With these changes, the test runs indefinitely without OOMing on ext4,
-> ext3 and ext2: I'll move on to test with other filesystems later.
+> On Sun, 15 Jul 2012 22:32:14 +0800, Jeff Liu wrote:
+>> Hello,
+>>
+>> I failed to compile perf tools on 3.5.0-rc7 with bison && flex
+>> pre-installed.
+>>
+>> The error seems something like this,
+>>
+>> libperf.a(pmu.o): In function `pmu_format_parse':
+>> /usr/src/linux/tools/perf/util/pmu.c:47: undefined reference to
+>> `perf_pmu_in'
+>> libperf.a(pmu-bison.o): In function `perf_pmu_parse':
+>> /usr/src/linux/tools/perf/util/pmu-bison.c:1287: undefined reference to
+>> `perf_pmu_lex'
+>>
 > 
-> Trivia: invert conditions for a clearer block without an else,
-> and goto keep_locked to do the unlock_page.
+> Hmm.. I can't reproduce it. Those symbols should be in pmu-flex.c:
 > 
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> Cc: stable@vger.kernel.org (along with the patch it fixes)
+>  $ grep 'perf_pmu_in$' -Inr .
+>  ./util/pmu-flex.c:15:#define yyin perf_pmu_in
+> 
+>  $ grep 'perf_pmu_lex ' -Inr .
+>  ./util/pmu-flex.h:292:extern int perf_pmu_lex (void);
+>  ./util/pmu-flex.h:294:#define YY_DECL int perf_pmu_lex (void)
+>  ./util/pmu-flex.c:650:extern int perf_pmu_lex (void);
+>  ./util/pmu-flex.c:652:#define YY_DECL int perf_pmu_lex (void)
+>  ./util/pmu-flex.c:946:} /* end of perf_pmu_lex */
+>  ./util/pmu-bison.c:86:extern int perf_pmu_lex (void);
+>  ./util/pmu.y:14:extern int perf_pmu_lex (void);
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
+Oops! I just realized that there is no util/pmu-flex.h and utils/pmu-flex.c is even an empty file on my source tree. :(
+I'll try it again with a refreshed clone.
 
-Thanks Hugh
+Thanks,
+-Jeff
 
-> ---
-> Incremental on top of what I believe you presently have in mmotm:
-> better folded in on top of Michal's original and the may_enter_fs "fix".
 > 
->  mm/vmscan.c |   33 ++++++++++++++++++++++++---------
->  1 file changed, 24 insertions(+), 9 deletions(-)
+> Thanks,
+> Namhyung
 > 
-> --- mmotm/mm/vmscan.c	2012-07-14 18:43:46.618738947 -0700
-> +++ linux/mm/vmscan.c	2012-07-15 19:28:50.038830668 -0700
-> @@ -723,23 +723,38 @@ static unsigned long shrink_page_list(st
->  			/*
->  			 * memcg doesn't have any dirty pages throttling so we
->  			 * could easily OOM just because too many pages are in
-> -			 * writeback from reclaim and there is nothing else to
-> -			 * reclaim.
-> +			 * writeback and there is nothing else to reclaim.
->  			 *
-> -			 * Check may_enter_fs, certainly because a loop driver
-> +			 * Check __GFP_IO, certainly because a loop driver
->  			 * thread might enter reclaim, and deadlock if it waits
->  			 * on a page for which it is needed to do the write
->  			 * (loop masks off __GFP_IO|__GFP_FS for this reason);
->  			 * but more thought would probably show more reasons.
-> +			 *
-> +			 * Don't require __GFP_FS, since we're not going into
-> +			 * the FS, just waiting on its writeback completion.
-> +			 * Worryingly, ext4 gfs2 and xfs allocate pages with
-> +			 * grab_cache_page_write_begin(,,AOP_FLAG_NOFS), so
-> +			 * testing may_enter_fs here is liable to OOM on them.
->  			 */
-> -			if (!global_reclaim(sc) && PageReclaim(page) &&
-> -					may_enter_fs)
-> -				wait_on_page_writeback(page);
-> -			else {
-> +			if (global_reclaim(sc) ||
-> +			    !PageReclaim(page) || !(sc->gfp_mask & __GFP_IO)) {
-> +				/*
-> +				 * This is slightly racy - end_page_writeback()
-> +				 * might have just cleared PageReclaim, then
-> +				 * setting PageReclaim here end up interpreted
-> +				 * as PageReadahead - but that does not matter
-> +				 * enough to care.  What we do want is for this
-> +				 * page to have PageReclaim set next time memcg
-> +				 * reclaim reaches the tests above, so it will
-> +				 * then wait_on_page_writeback() to avoid OOM;
-> +				 * and it's also appropriate in global reclaim.
-> +				 */
-> +				SetPageReclaim(page);
->  				nr_writeback++;
-> -				unlock_page(page);
-> -				goto keep;
-> +				goto keep_locked;
->  			}
-> +			wait_on_page_writeback(page);
->  		}
->  
->  		references = page_check_references(page, sc);
+> 
+>> For detail, please check the following,
+>>
+>> /usr/src/linux/tools/perf$ make -j12
+>> Makefile:450: No libdw.h found or old libdw.h found or elfutils is older
+>> than 0.138, disables dwarf support. Please install new
+>> elfutils-devel/libdw-dev
+>> PERF_VERSION = 3.5.rc7
+>> Makefile:450: No libdw.h found or old libdw.h found or elfutils is older
+>> than 0.138, disables dwarf support. Please install new
+>> elfutils-devel/libdw-dev
+>>     GEN common-cmds.h
+>>     * new build flags or prefix
+>>     CC bench/mem-memcpy-x86-64-asm.o
+>>     CC bench/mem-memset-x86-64-asm.o
+>>     CC bench/mem-memcpy.o
+>>     CC bench/mem-memset.o
+>>     CC builtin-diff.o
+>>     CC builtin-evlist.o
+>>     CC builtin-sched.o
+>>     CC builtin-buildid-list.o
+>>     CC builtin-buildid-cache.o
+>>     CC builtin-list.o
+>>     CC builtin-record.o
+>>     CC builtin-report.o
+>>     CC builtin-stat.o
+>>     CC builtin-timechart.o
+>>     CC builtin-top.o
+>>     CC builtin-script.o
+>>     CC builtin-probe.o
+>>     CC builtin-kmem.o
+>>     CC builtin-lock.o
+>>     CC builtin-kvm.o
+>>     CC builtin-test.o
+>>     CC builtin-inject.o
+>>     CC util/abspath.o
+>>     CC util/alias.o
+>>     CC util/annotate.o
+>>     CC util/build-id.o
+>>     CC util/config.o
+>>     CC util/ctype.o
+>>     CC util/debugfs.o
+>>     CC util/sysfs.o
+>>     CC util/pmu.o
+>>     CC util/environment.o
+>>     CC util/event.o
+>>     CC util/evlist.o
+>>     CC util/evsel.o
+>>     CC util/exec_cmd.o
+>>     CC util/help.o
+>>     CC util/levenshtein.o
+>>     CC util/parse-options.o
+>>     CC util/parse-events.o
+>>     CC util/parse-events-test.o
+>>     CC util/path.o
+>>     CC util/rbtree.o
+>>     CC util/bitmap.o
+>>     CC util/hweight.o
+>>     CC util/run-command.o
+>>     CC util/quote.o
+>>     CC util/strbuf.o
+>>     CC util/string.o
+>>     CC util/strlist.o
+>>     CC util/strfilter.o
+>>     CC util/top.o
+>>     CC util/usage.o
+>>     CC util/wrapper.o
+>>     CC util/sigchain.o
+>>     CC util/symbol.o
+>>     CC util/color.o
+>>     CC util/pager.o
+>>     CC util/header.o
+>>     CC util/callchain.o
+>>     CC util/values.o
+>>     CC util/debug.o
+>>     CC util/map.o
+>>     CC util/pstack.o
+>>     CC util/session.o
+>>     CC util/thread.o
+>>     CC util/thread_map.o
+>>     CC util/trace-event-parse.o
+>>     CC util/parse-events-flex.o
+>>     CC util/parse-events-bison.o
+>>     CC util/pmu-flex.o
+>>     CC util/pmu-bison.o
+>>     CC util/trace-event-read.o
+>>     CC util/trace-event-info.o
+>>     CC util/trace-event-scripting.o
+>>     CC util/svghelper.o
+>>     CC util/sort.o
+>>     CC util/hist.o
+>>     CC util/probe-event.o
+>>     CC util/util.o
+>>     CC util/xyarray.o
+>>     CC util/cpumap.o
+>>     CC util/cgroup.o
+>>     CC util/target.o
+>>     CC arch/x86/util/header.o
+>>     CC ui/setup.o
+>>     CC ui/browser.o
+>>     CC ui/browsers/annotate.o
+>>     CC ui/browsers/hists.o
+>>     CC ui/browsers/map.o
+>>     CC ui/helpline.o
+>>     CC ui/progress.o
+>>     CC ui/util.o
+>>     CC ui/tui/setup.o
+>>     CC ui/gtk/browser.o
+>>     CC ui/gtk/setup.o
+>>     CC util/scripting-engines/trace-event-python.o
+>>     CC scripts/python/Perf-Trace-Util/Context.o
+>>     SUBDIR ../lib/traceevent/
+>>     GEN perf-archive
+>> make[1]: `libtraceevent.a' is up to date.
+>>     GEN python/perf.so
+>>     CC perf.o
+>>     CC builtin-annotate.o
+>>     CC builtin-bench.o
+>>     CC bench/sched-messaging.o
+>>     CC bench/sched-pipe.o
+>>     CC builtin-help.o
+>>     AR libperf.a
+>>     LINK perf
+>> libperf.a(pmu.o): In function `pmu_format_parse':
+>> /usr/src/linux/tools/perf/util/pmu.c:47: undefined reference to
+>> `perf_pmu_in'
+>> libperf.a(pmu-bison.o): In function `perf_pmu_parse':
+>> /usr/src/linux/tools/perf/util/pmu-bison.c:1287: undefined reference to
+>> `perf_pmu_lex'
+>> collect2: ld returned 1 exit status
+>> make: *** [perf] Error 1
+>> make: *** Waiting for unfinished jobs....
+>>
+>>
+>> Thanks,
+>> -Jeff
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+
