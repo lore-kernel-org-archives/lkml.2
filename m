@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755238Ab2GQKUB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 06:20:01 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:40523 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754924Ab2GQKUA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 06:20:00 -0400
+	id S1755257Ab2GQKVO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 06:21:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29916 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751898Ab2GQKVK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 06:21:10 -0400
+Date: Tue, 17 Jul 2012 13:21:39 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
+Subject: Re: [PATCH v5 2/4] kvm: KVM_EOIFD, an eventfd for EOIs
+Message-ID: <20120717102139.GG7949@redhat.com>
+References: <20120716202711.1752.71007.stgit@bling.home>
+ <20120716203353.1752.19127.stgit@bling.home>
 MIME-Version: 1.0
-In-Reply-To: <CAGxe1ZHZr2=127p8X-A12K2-zOyKMOJ0fkx5pWNovVteFfSPwg@mail.gmail.com>
-References: <1342097668-25243-1-git-send-email-thomas.abraham@linaro.org>
-	<1342097668-25243-6-git-send-email-thomas.abraham@linaro.org>
-	<CAGxe1ZHZr2=127p8X-A12K2-zOyKMOJ0fkx5pWNovVteFfSPwg@mail.gmail.com>
-Date: Tue, 17 Jul 2012 15:49:58 +0530
-Message-ID: <CAJuYYwTLxEgm3CnPof4ub=XQazJ+PaUG-zk14nGnpBwWsnHMvw@mail.gmail.com>
-Subject: Re: [PATCH v3 5/6] mmc: dw_mmc: add device tree support
-From: Thomas Abraham <thomas.abraham@linaro.org>
-To: Girish K S <girish.shivananjappa@linaro.org>
-Cc: linux-mmc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        cjb@laptop.org, grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
-        patches@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120716203353.1752.19127.stgit@bling.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16 July 2012 09:45, Girish K S <girish.shivananjappa@linaro.org> wrote:
-> On 12 July 2012 18:24, Thomas Abraham <thomas.abraham@linaro.org> wrote:
+On Mon, Jul 16, 2012 at 02:33:55PM -0600, Alex Williamson wrote:
+> +	if (args->flags & KVM_EOIFD_FLAG_LEVEL_IRQFD) {
+> +		struct _irqfd *irqfd = _irqfd_fdget_lock(kvm, args->irqfd);
+> +		if (IS_ERR(irqfd)) {
+> +			ret = PTR_ERR(irqfd);
+> +			goto fail;
+> +		}
+> +
+> +		gsi = irqfd->gsi;
+> +		level_irqfd = eventfd_ctx_get(irqfd->eventfd);
+> +		source = _irq_source_get(irqfd->source);
+> +		_irqfd_put_unlock(irqfd);
+> +		if (!source) {
+> +			ret = -EINVAL;
+> +			goto fail;
+> +		}
+> +	} else {
+> +		ret = -EINVAL;
+> +		goto fail;
+> +	}
+> +
+> +	INIT_LIST_HEAD(&eoifd->list);
+> +	eoifd->kvm = kvm;
+> +	eoifd->eventfd = eventfd;
+> +	eoifd->source = source;
+> +	eoifd->level_irqfd = level_irqfd;
+> +	eoifd->notifier.gsi = gsi;
+> +	eoifd->notifier.irq_acked = eoifd_event;
 
-[...]
+OK so this means eoifd keeps a reference to the irqfd.
+And since this is the case, can't we drop the reference counting
+around source ids now? Everything is referenced through irqfd.
 
->>
->> +#ifdef CONFIG_OF
->> +static struct dw_mci_drv_data synopsis_drv_data = {
->> +       .ctrl_type      = DW_MCI_TYPE_SYNOPSIS,
->> +};
->> +
->> +static const struct of_device_id dw_mci_pltfm_match[] = {
->> +       { .compatible = "snps,dw-mshc",
->> +                       .data = (void *)&synopsis_drv_data, },
->> +       {},
->> +};
->> +MODULE_DEVICE_TABLE(of, dw_mci_pltfm_match);
->> +#else
->> +static const struct of_device_id dw_mci_pltfm_match[];
-> the #else and a statement can be completely removed if of_match_ptr is
-> used while accessing the dw_mci_pltfm_match in of_match_node function.
->> +#endif
->> +
->>  static int dw_mci_pltfm_probe(struct platform_device *pdev)
->>  {
->>         struct dw_mci *host;
->> @@ -51,6 +67,13 @@ static int dw_mci_pltfm_probe(struct platform_device *pdev)
->>         if (!host->regs)
->>                 goto err_free;
->>         platform_set_drvdata(pdev, host);
->> +
->> +       if (pdev->dev.of_node) {
->> +               const struct of_device_id *match;
->> +               match = of_match_node(dw_mci_pltfm_match, pdev->dev.of_node);
-> can be modified to of_match_node(of_match_pt(dw_mci_pltfm_match),
-> pdev->dev.of_node);
-> This will remove the dummy allocation of variable as mentioned above.
-> Also it will be generic in non dt case.
-
-Ok. Thanks for the suggestion. I will modify it as per your suggestion.
-
-Thanks,
-Thomas.
-
-[...]
+-- 
+MST
