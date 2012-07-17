@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755980Ab2GQROL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 13:14:11 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:53181 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754217Ab2GQRMo (ORCPT
+	id S1755999Ab2GQROe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 13:14:34 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55586 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755564Ab2GQRMm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 13:12:44 -0400
+	Tue, 17 Jul 2012 13:12:42 -0400
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: torvalds@linux-foundation.org, peterz@infradead.org, tglx@linutronix.de,
         linux-pm@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 5/9] workqueue: drop @bind from create_worker()
-Date: Tue, 17 Jul 2012 10:12:25 -0700
-Message-Id: <1342545149-3515-6-git-send-email-tj@kernel.org>
+Subject: [PATCH 4/9] workqueue: use mutex for global_cwq manager exclusion
+Date: Tue, 17 Jul 2012 10:12:24 -0700
+Message-Id: <1342545149-3515-5-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1342545149-3515-1-git-send-email-tj@kernel.org>
 References: <1342545149-3515-1-git-send-email-tj@kernel.org>
@@ -21,203 +21,181 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, create_worker()'s callers are responsible for deciding
-whether the newly created worker should be bound to the associated CPU
-and create_worker() sets WORKER_UNBOUND only for the workers for the
-unbound global_cwq.  Creation during normal operation is always via
-maybe_create_worker() and @bind is true.  For workers created during
-hotplug, @bind is false.
+POOL_MANAGING_WORKERS is used to ensure that at most one worker takes
+the manager role at any given time on a given global_cwq.  Trustee
+later hitched on it to assume manager adding blocking wait for the
+bit.  As trustee already needed a custom wait mechanism, waiting for
+MANAGING_WORKERS was rolled into the same mechanism.
 
-Normal operation path is planned to be used even while the CPU is
-going through hotplug operations or offline and this static decision
-won't work.
+Trustee is scheduled to be removed.  This patch separates out
+MANAGING_WORKERS wait into per-pool mutex.  Workers use
+mutex_trylock() to test for manager role and trustee uses mutex_lock()
+to claim manager roles.
 
-Drop @bind from create_worker() and decide whether to bind by looking
-at GCWQ_DISASSOCIATED.  create_worker() will also set WORKER_UNBOUND
-autmatically if disassociated.  To avoid flipping GCWQ_DISASSOCIATED
-while create_worker() is in progress, the flag is now allowed to be
-changed only while holding all manager_mutexes on the global_cwq.
-
-This requires that GCWQ_DISASSOCIATED is not cleared behind trustee's
-back.  CPU_ONLINE no longer clears DISASSOCIATED before flushing
-trustee, which clears DISASSOCIATED before rebinding remaining workers
-if asked to release.  For cases where trustee isn't around, CPU_ONLINE
-clears DISASSOCIATED after flushing trustee.  Also, now, first_idle
-has UNBOUND set on creation which is explicitly cleared by CPU_ONLINE
-while binding it.  These convolutions will soon be removed by further
-simplification of CPU hotplug path.
+gcwq_claim/release_management() helpers are added to grab and release
+manager roles of all pools on a global_cwq.  gcwq_claim_management()
+always grabs pool manager mutexes in ascending pool index order and
+uses pool index as lockdep subclass.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- kernel/workqueue.c |   64 ++++++++++++++++++++++++++++++++++++---------------
- 1 files changed, 45 insertions(+), 19 deletions(-)
+ kernel/workqueue.c |   65 ++++++++++++++++++++-------------------------------
+ 1 files changed, 26 insertions(+), 39 deletions(-)
 
 diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index f7a0069..e1d05e5 100644
+index af51292..f7a0069 100644
 --- a/kernel/workqueue.c
 +++ b/kernel/workqueue.c
-@@ -45,7 +45,22 @@
- #include "workqueue_sched.h"
+@@ -51,7 +51,6 @@ enum {
  
- enum {
--	/* global_cwq flags */
-+	/*
-+	 * global_cwq flags
-+	 *
-+	 * A bound gcwq is either associated or disassociated with its CPU.
-+	 * While associated (!DISASSOCIATED), all workers are bound to the
-+	 * CPU and none has %WORKER_UNBOUND set and concurrency management
-+	 * is in effect.
-+	 *
-+	 * While DISASSOCIATED, the cpu may be offline and all workers have
-+	 * %WORKER_UNBOUND set and concurrency management disabled, and may
-+	 * be executing on any CPU.  The gcwq behaves as an unbound one.
-+	 *
-+	 * Note that DISASSOCIATED can be flipped only while holding
-+	 * managership of all pools on the gcwq to avoid changing binding
-+	 * state while create_worker() is in progress.
-+	 */
- 	GCWQ_DISASSOCIATED	= 1 << 0,	/* cpu can't serve workers */
- 	GCWQ_FREEZING		= 1 << 1,	/* freeze in progress */
+ 	/* pool flags */
+ 	POOL_MANAGE_WORKERS	= 1 << 0,	/* need to manage workers */
+-	POOL_MANAGING_WORKERS	= 1 << 1,	/* managing workers */
  
-@@ -1334,7 +1349,6 @@ static struct worker *alloc_worker(void)
- /**
-  * create_worker - create a new workqueue worker
-  * @pool: pool the new worker will belong to
-- * @bind: whether to set affinity to @cpu or not
-  *
-  * Create a new worker which is bound to @pool.  The returned worker
-  * can be started by calling start_worker() or destroyed using
-@@ -1346,10 +1360,9 @@ static struct worker *alloc_worker(void)
-  * RETURNS:
-  * Pointer to the newly created worker.
-  */
--static struct worker *create_worker(struct worker_pool *pool, bool bind)
-+static struct worker *create_worker(struct worker_pool *pool)
+ 	/* worker flags */
+ 	WORKER_STARTED		= 1 << 0,	/* started */
+@@ -155,6 +154,7 @@ struct worker_pool {
+ 	struct timer_list	idle_timer;	/* L: worker idle timeout */
+ 	struct timer_list	mayday_timer;	/* L: SOS timer for workers */
+ 
++	struct mutex		manager_mutex;	/* mutex manager should hold */
+ 	struct ida		worker_ida;	/* L: for worker IDs */
+ 	struct worker		*first_idle;	/* L: first idle worker */
+ };
+@@ -644,7 +644,7 @@ static bool need_to_manage_workers(struct worker_pool *pool)
+ /* Do we have too many workers and should some go away? */
+ static bool too_many_workers(struct worker_pool *pool)
  {
- 	struct global_cwq *gcwq = pool->gcwq;
--	bool on_unbound_cpu = gcwq->cpu == WORK_CPU_UNBOUND;
- 	const char *pri = worker_pool_pri(pool) ? "H" : "";
- 	struct worker *worker = NULL;
- 	int id = -1;
-@@ -1370,7 +1383,7 @@ static struct worker *create_worker(struct worker_pool *pool, bool bind)
- 	worker->pool = pool;
- 	worker->id = id;
+-	bool managing = pool->flags & POOL_MANAGING_WORKERS;
++	bool managing = mutex_is_locked(&pool->manager_mutex);
+ 	int nr_idle = pool->nr_idle + managing; /* manager is considered idle */
+ 	int nr_busy = pool->nr_workers - nr_idle;
  
--	if (!on_unbound_cpu)
-+	if (gcwq->cpu != WORK_CPU_UNBOUND)
- 		worker->task = kthread_create_on_node(worker_thread,
- 					worker, cpu_to_node(gcwq->cpu),
- 					"kworker/%u:%d%s", gcwq->cpu, id, pri);
-@@ -1384,15 +1397,19 @@ static struct worker *create_worker(struct worker_pool *pool, bool bind)
- 		set_user_nice(worker->task, HIGHPRI_NICE_LEVEL);
+@@ -1655,14 +1655,12 @@ static bool maybe_destroy_workers(struct worker_pool *pool)
+ static bool manage_workers(struct worker *worker)
+ {
+ 	struct worker_pool *pool = worker->pool;
+-	struct global_cwq *gcwq = pool->gcwq;
+ 	bool ret = false;
+ 
+-	if (pool->flags & POOL_MANAGING_WORKERS)
++	if (!mutex_trylock(&pool->manager_mutex))
+ 		return ret;
+ 
+ 	pool->flags &= ~POOL_MANAGE_WORKERS;
+-	pool->flags |= POOL_MANAGING_WORKERS;
  
  	/*
--	 * An unbound worker will become a regular one if CPU comes online
--	 * later on.  Make sure every worker has PF_THREAD_BOUND set.
-+	 * Determine CPU binding of the new worker depending on
-+	 * %GCWQ_DISASSOCIATED.  The caller is responsible for ensuring the
-+	 * flag remains stable across this function.  See the comments
-+	 * above the flag definition for details.
-+	 *
-+	 * As an unbound worker may later become a regular one if CPU comes
-+	 * online, make sure every worker has %PF_THREAD_BOUND set.
+ 	 * Destroy and then create so that may_start_working() is true
+@@ -1671,15 +1669,7 @@ static bool manage_workers(struct worker *worker)
+ 	ret |= maybe_destroy_workers(pool);
+ 	ret |= maybe_create_worker(pool);
+ 
+-	pool->flags &= ~POOL_MANAGING_WORKERS;
+-
+-	/*
+-	 * The trustee might be waiting to take over the manager
+-	 * position, tell it we're done.
+-	 */
+-	if (unlikely(gcwq->trustee))
+-		wake_up_all(&gcwq->trustee_wait);
+-
++	mutex_unlock(&pool->manager_mutex);
+ 	return ret;
+ }
+ 
+@@ -3255,6 +3245,24 @@ EXPORT_SYMBOL_GPL(work_busy);
+  *                         ----------------> RELEASE --------------
+  */
+ 
++/* claim manager positions of all pools */
++static void gcwq_claim_management(struct global_cwq *gcwq)
++{
++	struct worker_pool *pool;
++
++	for_each_worker_pool(pool, gcwq)
++		mutex_lock_nested(&pool->manager_mutex, pool - gcwq->pools);
++}
++
++/* release manager positions */
++static void gcwq_release_management(struct global_cwq *gcwq)
++{
++	struct worker_pool *pool;
++
++	for_each_worker_pool(pool, gcwq)
++		mutex_unlock(&pool->manager_mutex);
++}
++
+ /**
+  * trustee_wait_event_timeout - timed event wait for trustee
+  * @cond: condition to wait for
+@@ -3304,16 +3312,6 @@ EXPORT_SYMBOL_GPL(work_busy);
+ 	__ret1 < 0 ? -1 : 0;						\
+ })
+ 
+-static bool gcwq_is_managing_workers(struct global_cwq *gcwq)
+-{
+-	struct worker_pool *pool;
+-
+-	for_each_worker_pool(pool, gcwq)
+-		if (pool->flags & POOL_MANAGING_WORKERS)
+-			return true;
+-	return false;
+-}
+-
+ static bool gcwq_has_idle_workers(struct global_cwq *gcwq)
+ {
+ 	struct worker_pool *pool;
+@@ -3336,15 +3334,8 @@ static int __cpuinit trustee_thread(void *__gcwq)
+ 
+ 	BUG_ON(gcwq->cpu != smp_processor_id());
+ 
++	gcwq_claim_management(gcwq);
+ 	spin_lock_irq(&gcwq->lock);
+-	/*
+-	 * Claim the manager position and make all workers rogue.
+-	 * Trustee must be bound to the target cpu and can't be
+-	 * cancelled.
+-	 */
+-	BUG_ON(gcwq->cpu != smp_processor_id());
+-	rc = trustee_wait_event(!gcwq_is_managing_workers(gcwq));
+-	BUG_ON(rc < 0);
+ 
+ 	/*
+ 	 * We've claimed all manager positions.  Make all workers unbound
+@@ -3352,12 +3343,9 @@ static int __cpuinit trustee_thread(void *__gcwq)
+ 	 * ones which are still executing works from before the last CPU
+ 	 * down must be on the cpu.  After this, they may become diasporas.
  	 */
--	if (bind && !on_unbound_cpu)
-+	if (!(gcwq->flags & GCWQ_DISASSOCIATED)) {
- 		kthread_bind(worker->task, gcwq->cpu);
--	else {
-+	} else {
- 		worker->task->flags |= PF_THREAD_BOUND;
--		if (on_unbound_cpu)
--			worker->flags |= WORKER_UNBOUND;
-+		worker->flags |= WORKER_UNBOUND;
+-	for_each_worker_pool(pool, gcwq) {
+-		pool->flags |= POOL_MANAGING_WORKERS;
+-
++	for_each_worker_pool(pool, gcwq)
+ 		list_for_each_entry(worker, &pool->idle_list, entry)
+ 			worker->flags |= WORKER_UNBOUND;
+-	}
+ 
+ 	for_each_busy_worker(worker, i, pos, gcwq)
+ 		worker->flags |= WORKER_UNBOUND;
+@@ -3497,9 +3485,7 @@ static int __cpuinit trustee_thread(void *__gcwq)
+ 			    work_color_to_flags(WORK_NO_COLOR));
  	}
  
- 	return worker;
-@@ -1568,7 +1585,7 @@ restart:
- 	while (true) {
- 		struct worker *worker;
+-	/* relinquish manager role */
+-	for_each_worker_pool(pool, gcwq)
+-		pool->flags &= ~POOL_MANAGING_WORKERS;
++	gcwq_release_management(gcwq);
  
--		worker = create_worker(pool, true);
-+		worker = create_worker(pool);
- 		if (worker) {
- 			del_timer_sync(&pool->mayday_timer);
- 			spin_lock_irq(&gcwq->lock);
-@@ -3420,12 +3437,10 @@ static int __cpuinit trustee_thread(void *__gcwq)
+ 	/* notify completion */
+ 	gcwq->trustee = NULL;
+@@ -3894,6 +3880,7 @@ static int __init init_workqueues(void)
+ 			setup_timer(&pool->mayday_timer, gcwq_mayday_timeout,
+ 				    (unsigned long)pool);
  
- 			if (need_to_create_worker(pool)) {
- 				spin_unlock_irq(&gcwq->lock);
--				worker = create_worker(pool, false);
-+				worker = create_worker(pool);
- 				spin_lock_irq(&gcwq->lock);
--				if (worker) {
--					worker->flags |= WORKER_UNBOUND;
-+				if (worker)
- 					start_worker(worker);
--				}
- 			}
++			mutex_init(&pool->manager_mutex);
+ 			ida_init(&pool->worker_ida);
  		}
  
-@@ -3463,6 +3478,10 @@ static int __cpuinit trustee_thread(void *__gcwq)
- 	for_each_worker_pool(pool, gcwq)
- 		WARN_ON(!list_empty(&pool->idle_list));
- 
-+	/* if we're reassociating, clear DISASSOCIATED */
-+	if (gcwq->trustee_state == TRUSTEE_RELEASE)
-+		gcwq->flags &= ~GCWQ_DISASSOCIATED;
-+
- 	for_each_busy_worker(worker, i, pos, gcwq) {
- 		struct work_struct *rebind_work = &worker->rebind_work;
- 
-@@ -3546,7 +3565,7 @@ static int __devinit workqueue_cpu_callback(struct notifier_block *nfb,
- 		i = 0;
- 		for_each_worker_pool(pool, gcwq) {
- 			BUG_ON(pool->first_idle);
--			new_workers[i] = create_worker(pool, false);
-+			new_workers[i] = create_worker(pool);
- 			if (!new_workers[i++])
- 				goto err_destroy;
- 		}
-@@ -3584,7 +3603,6 @@ static int __devinit workqueue_cpu_callback(struct notifier_block *nfb,
- 
- 	case CPU_DOWN_FAILED:
- 	case CPU_ONLINE:
--		gcwq->flags &= ~GCWQ_DISASSOCIATED;
- 		if (gcwq->trustee_state != TRUSTEE_DONE) {
- 			gcwq->trustee_state = TRUSTEE_RELEASE;
- 			wake_up_process(gcwq->trustee);
-@@ -3592,6 +3610,13 @@ static int __devinit workqueue_cpu_callback(struct notifier_block *nfb,
- 		}
- 
- 		/*
-+		 * Either DISASSOCIATED is already cleared or no worker is
-+		 * left on the gcwq.  Safe to clear DISASSOCIATED without
-+		 * claiming managers.
-+		 */
-+		gcwq->flags &= ~GCWQ_DISASSOCIATED;
-+
-+		/*
- 		 * Trustee is done and there might be no worker left.
- 		 * Put the first_idle in and request a real manager to
- 		 * take a look.
-@@ -3601,6 +3626,7 @@ static int __devinit workqueue_cpu_callback(struct notifier_block *nfb,
- 			kthread_bind(pool->first_idle->task, cpu);
- 			spin_lock_irq(&gcwq->lock);
- 			pool->flags |= POOL_MANAGE_WORKERS;
-+			pool->first_idle->flags &= ~WORKER_UNBOUND;
- 			start_worker(pool->first_idle);
- 			pool->first_idle = NULL;
- 		}
-@@ -3899,7 +3925,7 @@ static int __init init_workqueues(void)
- 		for_each_worker_pool(pool, gcwq) {
- 			struct worker *worker;
- 
--			worker = create_worker(pool, true);
-+			worker = create_worker(pool);
- 			BUG_ON(!worker);
- 			spin_lock_irq(&gcwq->lock);
- 			start_worker(worker);
 -- 
 1.7.7.3
 
