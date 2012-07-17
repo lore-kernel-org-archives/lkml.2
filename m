@@ -1,103 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756869Ab2GQVgp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 17:36:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56754 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756828Ab2GQVgk (ORCPT
+	id S1756873Ab2GQVi3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 17:38:29 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15208 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755382Ab2GQVi0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 17:36:40 -0400
-Date: Tue, 17 Jul 2012 14:36:43 -0700
-From: Olof Johansson <olof@lixom.net>
-To: tj@kernel.org
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, vgoyal@redhat.com,
-        torvalds@linux-foundation.org
-Subject: [REGRESSION] [PATCH] block: uninitialized ioc->nr_tasks triggers
- WARN_ON
-Message-ID: <20120717213643.GA24726@quad.lixom.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 17 Jul 2012 17:38:26 -0400
+X-Authority-Analysis: v=2.0 cv=StQSGYy0 c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=JxQDdpYhMz0A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=D19gQVrFAAAA:8 a=kxFl2u3rs5Lt9Cahi0AA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-ID: <1342561102.10332.18.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 3/8] pstore: Add persistent function tracing
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        John Stultz <john.stultz@linaro.org>, Shuah Khan <shuahkhan@gmail.com>,
+        arve@android.com, Rebecca Schultz Zavin <rebecca@android.com>,
+        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Date: Tue, 17 Jul 2012 17:38:22 -0400
+In-Reply-To: <20120717200130.GA31678@lizard>
+References: <20120710001004.GA22744@lizard>
+	 <1341879046-5197-3-git-send-email-anton.vorontsov@linaro.org>
+	 <1342553898.10332.9.camel@gandalf.stny.rr.com>
+	 <20120717200130.GA31678@lizard>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 2012-07-17 at 13:01 -0700, Anton Vorontsov wrote:
+> On Tue, Jul 17, 2012 at 03:38:18PM -0400, Steven Rostedt wrote:
+> [...]
+> > > +void notrace pstore_ftrace_call(unsigned long ip, unsigned long parent_ip)
+> > 
+> > BTW, you can make the entire file 'notrace' without adding annotations
+> > by including in the Makefile:
+> > 
+> > CFLAGS_REMOVE_ftrace.o = -pg
+> 
+> Actually it was in the first version in the patch, but then I changed
+> it 'notrace' for just this func. This is for the case if the file would
+> contain some more code which we actually may trace. Doing things fine-
+> grained seemed to be better than making the whole file as notrace. Plus
+> it is one line less. :-)
+> 
+> But I have no preference, so I can change it.
 
-I'm using the old-fashioned 'dump' backup tool, and I noticed that it spews the
-below warning as of 3.5-rc1 and later (3.4 is fine):
-
-[   10.886893] ------------[ cut here ]------------
-[   10.886904] WARNING: at include/linux/iocontext.h:140 copy_process+0x1488/0x1560()
-[   10.886905] Hardware name: Bochs
-[   10.886906] Modules linked in:
-[   10.886908] Pid: 2430, comm: dump Not tainted 3.5.0-rc7+ #27
-[   10.886908] Call Trace:
-[   10.886911]  [<ffffffff8107ce8a>] warn_slowpath_common+0x7a/0xb0
-[   10.886912]  [<ffffffff8107ced5>] warn_slowpath_null+0x15/0x20
-[   10.886913]  [<ffffffff8107c088>] copy_process+0x1488/0x1560
-[   10.886914]  [<ffffffff8107c244>] do_fork+0xb4/0x340
-[   10.886918]  [<ffffffff8108effa>] ? recalc_sigpending+0x1a/0x50
-[   10.886919]  [<ffffffff8108f6b2>] ? __set_task_blocked+0x32/0x80
-[   10.886920]  [<ffffffff81091afa>] ? __set_current_blocked+0x3a/0x60
-[   10.886923]  [<ffffffff81051db3>] sys_clone+0x23/0x30
-[   10.886925]  [<ffffffff8179bd73>] stub_clone+0x13/0x20
-[   10.886927]  [<ffffffff8179baa2>] ? system_call_fastpath+0x16/0x1b
-[   10.886928] ---[ end trace 32a14af7ee6a590b ]---
-
-Reproducing is easy, I can hit it on a KVM system with a very basic
-config (x86_64 make defconfig + enable the drivers needed). To hit it,
-just install dump (on debian/ubuntu, not sure what the package might be
-called on Fedora), and:
-
-dump -o -f /tmp/foo /
-
-You'll see the warning in dmesg once it forks off the I/O process and
-starts dumping filesystem contents.
-
-I bisected it down to the following commit:
-
-commit f6e8d01bee036460e03bd4f6a79d014f98ba712e
-Author: Tejun Heo <tj@kernel.org>
-Date:   Mon Mar 5 13:15:26 2012 -0800
-
-    block: add io_context->active_ref
-    
-    Currently ioc->nr_tasks is used to decide two things - whether an ioc
-    is done issuing IOs and whether it's shared by multiple tasks.  This
-    patch separate out the first into ioc->active_ref, which is acquired
-    and released using {get|put}_io_context_active() respectively.
-    
-    This will be used to associate bio's with a given task.  This patch
-    doesn't introduce any visible behavior change.
-    
-    Signed-off-by: Tejun Heo <tj@kernel.org>
-    Cc: Vivek Goyal <vgoyal@redhat.com>
-    Signed-off-by: Jens Axboe <axboe@kernel.dk>
+I have no preference, it was just an FYI. For just a single function in
+a file, it really makes no difference which you use. The Makefile trick
+is better for needing to make sure an entire file is not traced.
 
 
-It seems like the init of ioc->nr_tasks was removed in that patch,
-so it starts out at 0 instead of 1.
+> 
+> > > +{
+> > > +	struct pstore_ftrace_record rec = {};
+> > > +
+> > > +	if (unlikely(oops_in_progress))
+> > > +		return;
+> > > +
+> > > +	rec.ip = ip;
+> > > +	rec.parent_ip = parent_ip;
+> > > +	pstore_ftrace_encode_cpu(&rec, raw_smp_processor_id());
+> > > +	psinfo->write_buf(PSTORE_TYPE_FTRACE, 0, NULL, 0, (void *)&rec,
+> > > +			  sizeof(rec), psinfo);
+> > > +}
+> > 
+> > BTW, can any of the called functions go into module code that can be
+> > removed? If so, then this is not safe at all. Normal function tracing
+> > can not be synced in a preemptible kernel.
+> 
+> Um. Yes, psinfo->write_buf() might be in the module. Nice catch.
+> 
+> > Also, I'm starting to wonder if this should be in its own utility
+> > (separate debugfs?) than hooking directly into ftrace. Then you don't
+> > need to modify ftrace at all and you can do the following:
+> > 
+> > static struct ftrace_ops trace_ops {
+> > 	.func = pstore_ftrace_call;
+> > };
+> > 
+> > then in your write to debugfs file:
+> > 
+> > 	register_ftrace_function(&trace_ops);
+> > 
+> > To turn off tracing:
+> > 
+> > 	unregister_ftrace_function(&trace_ops);
+> > 
+> > Note, it's safe to use if the trace_ops (or anything the callback calls)
+> > is a module. That's because it detects the trace_ops is not kernel core
+> > code and will place a wrapper around it that allows the function tracing
+> > to by synced with module unload. You still need to unregister the
+> > trace_ops before unloading the module, or you can have a crash that way.
+> 
+> Hehe. Like this? http://lkml.org/lkml/2012/5/26/80 :-D
+> 
+> So, do you want something like this, but combinded: we don't register
+> another tracer, but register our own ftrace_ops? This sounds doable.
 
-Tejun, is the right thing here to add back the init, or should something else
-be done?
+Yeah, the combined. That is, don't make a tracer out of it. Use another
+mechanism to enable the tracing and not as a tracer
+in /debug/tracing/available_tracers. We can probably set up events for
+you too, but at a later time.
 
-The below patch removes the warning, but I haven't done any more extensive
-testing on it.
+-- Steve
 
-
-Signed-off-by: Olof Johansson <olof@lixom.net>
-
-diff --git a/block/blk-ioc.c b/block/blk-ioc.c
-index 893b800..fab4cdd 100644
---- a/block/blk-ioc.c
-+++ b/block/blk-ioc.c
-@@ -244,6 +244,7 @@ int create_task_io_context(struct task_struct *task, gfp_t gfp_flags, int node)
- 
- 	/* initialize */
- 	atomic_long_set(&ioc->refcount, 1);
-+	atomic_set(&ioc->nr_tasks, 1);
- 	atomic_set(&ioc->active_ref, 1);
- 	spin_lock_init(&ioc->lock);
- 	INIT_RADIX_TREE(&ioc->icq_tree, GFP_ATOMIC | __GFP_HIGH);
