@@ -1,108 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752762Ab2GQEhg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 00:37:36 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:61338 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751210Ab2GQEha (ORCPT
+	id S1751864Ab2GQEot (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 00:44:49 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:58758 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751257Ab2GQEor (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 00:37:30 -0400
-Message-ID: <5004EBF9.3040406@gmail.com>
-Date: Tue, 17 Jul 2012 06:37:13 +0200
-From: Michael Kerrisk <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Linux PM list <linux-pm@vger.kernel.org>,
+	Tue, 17 Jul 2012 00:44:47 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/icQdfy03i7c+0vk7pOzGXb10+eVw+2yDZYxG97R
+	/BXIFBmzphYyKu
+Message-ID: <1342500283.7353.46.camel@marge.simpson.net>
+Subject: Re: 3.4.4-rt13: btrfs + xfstests 006 = BOOM..  and a bonus rt_mutex
+ deadlock report for absolutely free!
+From: Mike Galbraith <efault@gmx.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Chris Mason <chris.mason@fusionio.com>,
+        "Chris L. Mason" <clmason@fusionio.com>,
+        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
-        Matthew Garrett <mjg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
-        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5?= =?ISO-8859-1?Q?g?= 
-	<arve@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Michael Kerrisk (gmail)" <mtk.manpages@gmail.com>, mtk@lwn.net
-Subject: [patch] Rename CAP_EPOLLWAKEUP to CAL_BLOCK_SUSPEND
-Content-Type: text/plain; charset=ISO-8859-1
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Tue, 17 Jul 2012 06:44:43 +0200
+In-Reply-To: <1342499278.24525.13.camel@gandalf.stny.rr.com>
+References: <1342072060.7338.102.camel@marge.simpson.net>
+	 <20120713125043.GH30128@shiny> <1342260883.7368.30.camel@marge.simpson.net>
+	 <20120715175612.GF25961@shiny.int.fusionio.com>
+	 <1342404140.7659.27.camel@marge.simpson.net>
+	 <1342454547.5410.3.camel@gandalf.stny.rr.com>
+	 <1342455968.7659.93.camel@marge.simpson.net>
+	 <1342456567.7659.97.camel@marge.simpson.net>
+	 <1342458195.2783.5.camel@acer.local.home>
+	 <1342498722.7353.37.camel@marge.simpson.net>
+	 <1342499278.24525.13.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rafael,
+On Tue, 2012-07-17 at 00:27 -0400, Steven Rostedt wrote: 
+> On Tue, 2012-07-17 at 06:18 +0200, Mike Galbraith wrote:
+> >  
+> > > There's that too. But the issue I was talking about is with all trylock
+> > > loops. As holding an rt-mutex now disables migration, if a high priority
+> > > process preempts a task that holds the lock, and then the high prio task
+> > > starts spinning waiting for that lock to release, the lower priority
+> > > process will never get to run to release it. The cpu_chill() doesn't
+> > > help.
+> > 
+> > Hrm.  I better go make a testcase, this one definitely wants pounding
+> > through thick skull.
+> 
+> Actually, I was mistaken. I forgot that we defined 'cpu_chill()' as
+> msleep(1) on RT, which would keep a deadlock from happening.
 
-As discussed in
-http://thread.gmane.org/gmane.linux.kernel/1249726/focus=1288990,
-the capability introduced in 4d7e30d98939a0340022ccd49325a3d70f7e0238
-to govern EPOLLWAKEUP seems misnamed: this capability is about governing
-the ability to suspend the system, not using a particular API flag
-(EPOLLWAKEUP). We should make the name of the capability more general
-to encourage reuse in related cases. (Whether or not this capability
-should also be used to govern the use of /sys/power/wake_lock is a
-question that needs to be separately resolved.)
+Whew!  There are no stars and moons on my pointy hat, just plain white
+cone, so you had me worried I was missing something critical there.
 
-This patch renames the capability to CAP_BLOCK_SUSPEND. In order to ensure
-that the old capability name doesn't make it out into the wild, could you
-please apply and push up the tree to ensure that it is incorporated
-for the 3.5 release.
+> It doesn't explain the performance enhancement you get :-/
 
-Thanks,
+No, it doesn't.  The only thing I can think of is that while folks are
+timed sleeping, they aren't preempting and interleaving IO as much, but
+I'm pulling that out of thin air.  Timed sleep should be a lot longer
+than regular wakeup, so to my mind, there should be less interleave due
+to more thumb twiddling.
 
-Michael
+-Mike
 
-Signed-off-by: Michael Kerrisk <mtk.manpages@gmail.com>
-
----
- fs/eventpoll.c             |    2 +-
- include/linux/capability.h |    6 +++---
- include/linux/eventpoll.h  |    2 +-
- 3 files changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-index 74598f6..1c8b556 100644
---- a/fs/eventpoll.c
-+++ b/fs/eventpoll.c
-@@ -1710,7 +1710,7 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, int, op, int, fd,
- 		goto error_tgt_fput;
- 
- 	/* Check if EPOLLWAKEUP is allowed */
--	if ((epds.events & EPOLLWAKEUP) && !capable(CAP_EPOLLWAKEUP))
-+	if ((epds.events & EPOLLWAKEUP) && !capable(CAP_BLOCK_SUSPEND))
- 		epds.events &= ~EPOLLWAKEUP;
- 
- 	/*
-diff --git a/include/linux/capability.h b/include/linux/capability.h
-index 68d56ef..d10b7ed 100644
---- a/include/linux/capability.h
-+++ b/include/linux/capability.h
-@@ -360,11 +360,11 @@ struct cpu_vfs_cap_data {
- 
- #define CAP_WAKE_ALARM            35
- 
--/* Allow preventing system suspends while epoll events are pending */
-+/* Allow preventing system suspends */
- 
--#define CAP_EPOLLWAKEUP      36
-+#define CAP_BLOCK_SUSPEND    36
- 
--#define CAP_LAST_CAP         CAP_EPOLLWAKEUP
-+#define CAP_LAST_CAP         CAP_BLOCK_SUSPEND
- 
- #define cap_valid(x) ((x) >= 0 && (x) <= CAP_LAST_CAP)
- 
-diff --git a/include/linux/eventpoll.h b/include/linux/eventpoll.h
-index 6f8be32..f4bb378 100644
---- a/include/linux/eventpoll.h
-+++ b/include/linux/eventpoll.h
-@@ -34,7 +34,7 @@
-  * re-allowed until epoll_wait is called again after consuming the wakeup
-  * event(s).
-  *
-- * Requires CAP_EPOLLWAKEUP
-+ * Requires CAP_BLOCK_SUSPEND
-  */
- #define EPOLLWAKEUP (1 << 29)
- 
