@@ -1,72 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754700Ab2GQGlf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 02:41:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53430 "EHLO mx1.redhat.com"
+	id S1754366Ab2GQGl2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 02:41:28 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:33538 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753135Ab2GQGlB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 02:41:01 -0400
-Message-ID: <1342507240.21627.8.camel@bandura>
-Subject: Re: Kerneloops.org defunct?
-From: Anton Arapov <anton@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Arjan van de Ven <arjan@linux.intel.com>,
-        Bastien ROUCARIES <roucaries.bastien@gmail.com>,
-        Josh Hunt <joshhunt00@gmail.com>, Jiri Slaby <jirislaby@gmail.com>,
-        Arnaud Lacombe <lacombar@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Guenter Roeck <linux@roeck-us.net>
-Date: Tue, 17 Jul 2012 08:40:40 +0200
-In-Reply-To: <20120626071430.GA16299@bandura.brq.redhat.com>
-References: <4DE6264A.2040901@gmail.com>
-	 <20110601212432.2677b03a.rdunlap@xenotime.net>
-	 <201106211534.10366.roucaries.bastien@gmail.com>
-	 <CAE2SPAa=AD=YGyLJn2bX4E8Mu70BaXGi2CvL_fikPKP1gab7+g@mail.gmail.com>
-	 <20110826173517.7321c086@lxorguk.ukuu.org.uk>
-	 <CAE2SPAYuYTYj9ukDzitKs+d2uKZacJ5eFo7N+-p9pWgf1MWW2w@mail.gmail.com>
-	 <20120625180536.GA29261@roeck-us.net> <4FE8A9C0.3050802@linux.intel.com>
-	 <20120625191233.GA29324@roeck-us.net>
-	 <20120626071430.GA16299@bandura.brq.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752822Ab2GQGkl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 02:40:41 -0400
+From: John Stultz <johnstul@us.ibm.com>
+To: stable@vger.kernel.org
+Cc: John Stultz <johnstul@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/7] 3.4.x: hrtimer: Provide clock_was_set_delayed()
+Date: Tue, 17 Jul 2012 02:39:50 -0400
+Message-Id: <1342507196-54327-2-git-send-email-johnstul@us.ibm.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1342507196-54327-1-git-send-email-johnstul@us.ibm.com>
+References: <1342507196-54327-1-git-send-email-johnstul@us.ibm.com>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12071706-3534-0000-0000-00000A819743
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-06-26 at 09:14 +0200, Anton Arapov wrote:
-> On Mon, Jun 25, 2012 at 12:12:33PM -0700, Guenter Roeck wrote:
-> > On Mon, Jun 25, 2012 at 11:11:12AM -0700, Arjan van de Ven wrote:
-> > > On 6/25/2012 11:05 AM, Guenter Roeck wrote:
-> > > > Did anyone ever get access to the kerneloops code and/or is working on a
-> > > > replacement ?
-> > > > I see that http://kerneloops-descope.rhcloud.com/submitoops.php appears to
-> > > > accept kerneloops reports, http://kerneloops-descope.rhcloud.com/ reports
-> > > > "www.kerneloops.org, coming soon", and a comment in
-> > > > https://bugzilla.redhat.com/show_bug.cgi?id=800302 suggests that Redhat may be
-> > > > in the process of taking over kerneloops.org.
-> > > I hope RH is willing to invest the time in this; I do not have access to
-> > > the latest code anymore (it lived on the kernel.org servers prior to the
-> > > incident)
-> > Maybe we can get some feedback from RH. Anton, can you shed some light about
-> > what is happening, if anything ?
-> 
->   I can't promise, but there will be a person in Red Hat, who will be
-> working on 'kerneloops.org' starting from middle of next month. I will 
-> update you in a couple weeks whether it happened or not.
+This is a backport of f55a6faa384304c89cfef162768e88374d3312cb
 
-  Unfortunately, still no person to work on project. And there are only
-2- reports a month in average. :( 
-  The reporting tool(Abrt) complicated the reporting and kerneloops.org
-DNS still doesn't associated with the required ip address. ( Arjan? )
-  - Abrt folks pushed changes into Fedora 17 that makes possible to set
-a checkbox("don't ask me again, just report") and Abrt will send reports
-without asking.
-  - Starting from the Fedora 18 kernel oopses reporting will be
-configured to send reports unconditionally, straight to the
-kerneloops.org as it did the original tool.
-(this, hopefully, will fix the volume of the oopses we are getting.)
+clock_was_set() cannot be called from hard interrupt context because
+it calls on_each_cpu().
 
-Anton.
+For fixing the widely reported leap seconds issue it is necessary to
+call it from hard interrupt context, i.e. the timer tick code, which
+does the timekeeping updates.
 
+Provide a new function which denotes it in the hrtimer cpu base
+structure of the cpu on which it is called and raise the hrtimer
+softirq. We then execute the clock_was_set() notificiation from
+softirq context in run_hrtimer_softirq(). The hrtimer softirq is
+rarely used, so polling the flag there is not a performance issue.
+
+[ tglx: Made it depend on CONFIG_HIGH_RES_TIMERS. We really should get
+  rid of all this ifdeffery ASAP ]
+
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Reported-by: Jan Engelhardt <jengelh@inai.de>
+Reviewed-by: Ingo Molnar <mingo@kernel.org>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Prarit Bhargava <prarit@redhat.com>
+Cc: stable@vger.kernel.org
+Link: http://lkml.kernel.org/r/1341960205-56738-2-git-send-email-johnstul@us.ibm.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+---
+ include/linux/hrtimer.h |    9 ++++++++-
+ kernel/hrtimer.c        |   20 ++++++++++++++++++++
+ 2 files changed, 28 insertions(+), 1 deletion(-)
+
+diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
+index fd0dc30..c9ec940 100644
+--- a/include/linux/hrtimer.h
++++ b/include/linux/hrtimer.h
+@@ -165,6 +165,7 @@ enum  hrtimer_base_type {
+  * @lock:		lock protecting the base and associated clock bases
+  *			and timers
+  * @active_bases:	Bitfield to mark bases with active timers
++ * @clock_was_set:	Indicates that clock was set from irq context.
+  * @expires_next:	absolute time of the next event which was scheduled
+  *			via clock_set_next_event()
+  * @hres_active:	State of high resolution mode
+@@ -177,7 +178,8 @@ enum  hrtimer_base_type {
+  */
+ struct hrtimer_cpu_base {
+ 	raw_spinlock_t			lock;
+-	unsigned long			active_bases;
++	unsigned int			active_bases;
++	unsigned int			clock_was_set;
+ #ifdef CONFIG_HIGH_RES_TIMERS
+ 	ktime_t				expires_next;
+ 	int				hres_active;
+@@ -286,6 +288,8 @@ extern void hrtimer_peek_ahead_timers(void);
+ # define MONOTONIC_RES_NSEC	HIGH_RES_NSEC
+ # define KTIME_MONOTONIC_RES	KTIME_HIGH_RES
+ 
++extern void clock_was_set_delayed(void);
++
+ #else
+ 
+ # define MONOTONIC_RES_NSEC	LOW_RES_NSEC
+@@ -306,6 +310,9 @@ static inline int hrtimer_is_hres_active(struct hrtimer *timer)
+ {
+ 	return 0;
+ }
++
++static inline void clock_was_set_delayed(void) { }
++
+ #endif
+ 
+ extern void clock_was_set(void);
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index ae34bf5..3c24fb2 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -717,6 +717,19 @@ static int hrtimer_switch_to_hres(void)
+ 	return 1;
+ }
+ 
++/*
++ * Called from timekeeping code to reprogramm the hrtimer interrupt
++ * device. If called from the timer interrupt context we defer it to
++ * softirq context.
++ */
++void clock_was_set_delayed(void)
++{
++	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
++
++	cpu_base->clock_was_set = 1;
++	__raise_softirq_irqoff(HRTIMER_SOFTIRQ);
++}
++
+ #else
+ 
+ static inline int hrtimer_hres_active(void) { return 0; }
+@@ -1395,6 +1408,13 @@ void hrtimer_peek_ahead_timers(void)
+ 
+ static void run_hrtimer_softirq(struct softirq_action *h)
+ {
++	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
++
++	if (cpu_base->clock_was_set) {
++		cpu_base->clock_was_set = 0;
++		clock_was_set();
++	}
++
+ 	hrtimer_peek_ahead_timers();
+ }
+ 
+-- 
+1.7.9.5
 
