@@ -1,76 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754274Ab2GQF0h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 01:26:37 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:50087 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752324Ab2GQF0d convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 01:26:33 -0400
-From: "Philip, Avinash" <avinashphilip@ti.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: Thierry Reding <thierry.reding@avionic-design.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: Adding support for configuring polarity in PWM framework.
-Thread-Topic: Adding support for configuring polarity in PWM framework.
-Thread-Index: Ac1jRByq1kMEXKqvQsO/bu3hkKjW/v//qtuA//+jJ2CAAG+IgP/+kRQQ
-Date: Tue, 17 Jul 2012 05:25:22 +0000
-Deferred-Delivery: Tue, 17 Jul 2012 05:25:00 +0000
-Message-ID: <518397C60809E147AF5323E0420B992E3E9645A3@DBDE01.ent.ti.com>
-References: <518397C60809E147AF5323E0420B992E3E960B0E@DBDE01.ent.ti.com>
- <20120716113921.GA3015@avionic-0098.adnet.avionic-design.de>
- <518397C60809E147AF5323E0420B992E3E960C32@DBDE01.ent.ti.com>
- <50040D15.8040205@metafoo.de>
-In-Reply-To: <50040D15.8040205@metafoo.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.162.25]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1754427Ab2GQF1I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 01:27:08 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:40619 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751675Ab2GQF1F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 01:27:05 -0400
+Message-ID: <1342502824.8377.124.camel@joe2Laptop>
+Subject: Re: [PATCH] ftrace: using pr_fmt for better printk output
+From: Joe Perches <joe@perches.com>
+To: Jovi Zhang <bookjovi@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 16 Jul 2012 22:27:04 -0700
+In-Reply-To: <CACV3sb+EoHPqM7ih-5HpiT-o9CqobhaiJJ3E7-8H7N=tR7URig@mail.gmail.com>
+References: <CACV3sb+CkmMtBSRe=bp4EcN3xXD+XqBKy+o_-Cr7e6bapYQftw@mail.gmail.com>
+	 <1342496521.8377.105.camel@joe2Laptop>
+	 <1342499125.24525.11.camel@gandalf.stny.rr.com>
+	 <CACV3sb+EoHPqM7ih-5HpiT-o9CqobhaiJJ3E7-8H7N=tR7URig@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 16, 2012 at 18:16:13, Lars-Peter Clausen wrote:
-> On 07/16/2012 02:23 PM, Philip, Avinash wrote:
+On Tue, 2012-07-17 at 13:23 +0800, Jovi Zhang wrote:
+> On Tue, Jul 17, 2012 at 12:25 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> > On Mon, 2012-07-16 at 20:42 -0700, Joe Perches wrote:
+> >
+> >> > diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+> >> []
+> >> > @@ -13,6 +13,8 @@
+> >> >   *  Copyright (C) 2004 William Lee Irwin III
+> >> >   */
+> >> >
+> >> > +#define pr_fmt(fmt) "ftrace: " fmt
+> >>
+> >> #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> >
+> > Wouldn't a nicer patch be to move this into a header file and then
+> > remove all the defines throughout the kernel tree?
 > 
-> > 
-> > 1. PWM framework API addition.
-> > 	PWM frame work API support.
-> > 	/**
-> > 	 * pwm_setpolarity() - change a PWM device Polarity	
-> > 	 * @pwm: PWM device
-> > 	 * @polarity: Configure polarity of PWM
-> >  	*
-> > 	 * polarity     - false -> "on" time defined by duty ns
-> > 	*              - true  -> "off' time defined by duty ns.
-> >  	*/
+> Maybe it's hard to achieve that.
+> subsystem name is unique with each other, it should be visible in source file,
+> if include into header file, then each .c file might need a own header
+> file for include pr_fmt
+> definition, then that header file cannot be reusable(avoid subsystem
+> name conflicts).
 > 
-> Isn't this more about whether we start with a low or a high signal?
+> >
+> > Also, what is KBUILD_MODNAME defined as for non-modules? As ftrace is
+> > not a module.
+> Yes, that's why I cannot use KBUILD_MODNAME in patch.
 
-No, it is more about the average on time. On time determines the on duration of
-the panel power and there by brightness. On one custom board, backlight power
-booster gives power output on the OFF time of PWM (hardware connection).
+Incorrect, try it.
 
-> If it is
-> just about the duty time you can easily achieve the same effect by setting
-> it to (period_ns - duty_ns).
-
-Yes this is possible. But the PWM hardware we uses supports configuration of
-polarity. So I prefer PWM polarity configuration.
-Also with polarity configuration support, we can achieve (period_ns - duty_ns),
-for PWM devices don't have hardware support. Polarity configuration support
-can be used for setting flags, duty cycle can be configured from config
-depending on flag. 
-
-Thanks
-Avinash
-
-> 
-> - Lars
-> 
-> 
 
