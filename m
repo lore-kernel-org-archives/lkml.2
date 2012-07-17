@@ -1,107 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755326Ab2GQQUs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 12:20:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62596 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751944Ab2GQQUq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 12:20:46 -0400
-Date: Tue, 17 Jul 2012 19:21:15 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Subject: Re: [PATCH v5 3/4] kvm: Create kvm_clear_irq()
-Message-ID: <20120717162115.GC12114@redhat.com>
-References: <20120717140858.GB10822@redhat.com>
- <1342534911.3229.26.camel@ul30vt>
- <20120717145313.GB11516@redhat.com>
- <1342538411.2229.106.camel@bling.home>
- <20120717153620.GB11849@redhat.com>
- <1342540301.2229.117.camel@bling.home>
- <20120717155701.GB12001@redhat.com>
- <1342541301.2229.125.camel@bling.home>
- <20120717161452.GA12114@redhat.com>
- <1342541823.2229.127.camel@bling.home>
+	id S1754676Ab2GQQYn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 12:24:43 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:39477 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754718Ab2GQQYk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 12:24:40 -0400
+Date: Tue, 17 Jul 2012 12:24:37 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: =?iso-8859-1?Q?Adri=E1n?= <adrianbn@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Setreuid distinction about (uid_t)-1
+Message-ID: <20120717162437.GA6049@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	=?iso-8859-1?Q?Adri=E1n?= <adrianbn@gmail.com>,
+	linux-kernel <linux-kernel@vger.kernel.org>
+References: <CAFDTedp84TuxHpz2SJTG_jdjtkQ7r9qkCjqQWT5Zg22LrT7tTg@mail.gmail.com>
+ <20120717135201.GF1638@fysh.org>
+ <CAFDTedowCyNgBtiPQUPVUv1XocMEhQJfyawjYxEkaXFX5E8H1A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1342541823.2229.127.camel@bling.home>
+In-Reply-To: <CAFDTedowCyNgBtiPQUPVUv1XocMEhQJfyawjYxEkaXFX5E8H1A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 17, 2012 at 10:17:03AM -0600, Alex Williamson wrote:
-> > > > > > > >   And current code looks buggy if yes we need to fix it somehow.
-> > > > > > > 
-> > > > > > > 
-> > > > > > > Which to me seems to indicate this should be handled as a separate
-> > > > > > > effort.
-> > > > > > 
-> > > > > > A separate patchset, sure. But likely a prerequisite: we still need to
-> > > > > > look at all the code. Let's not copy bugs, need to fix them.
-> > > > > 
-> > > > > This looks tangential to me unless you can come up with an actual reason
-> > > > > the above spinlock usage is incorrect or insufficient.
-> > > > 
-> > > > You copy the same pattern that seems racy. So you double the
-> > > > amount of code that woul need to be fixed.
-> > > 
-> > > 
-> > > _Seems_ racy, or _is_ racy?  Please identify the race.
-> > 
-> > Look at this:
-> > 
-> > static inline int kvm_irq_line_state(unsigned long *irq_state,
-> >                                      int irq_source_id, int level)
-> > {
-> >         /* Logical OR for level trig interrupt */
-> >         if (level)
-> >                 set_bit(irq_source_id, irq_state);
-> >         else
-> >                 clear_bit(irq_source_id, irq_state);
-> > 
-> >         return !!(*irq_state);
-> > }
-> > 
-> > 
-> > Now:
-> > If other CPU changes some other bit after the atomic change,
-> > it looks like !!(*irq_state) might return a stale value.
-> > 
-> > CPU 0 clears bit 0. CPU 1 sets bit 1. CPU 1 sets level to 1.
-> > If CPU 0 sees a stale value now it will return 0 here
-> > and interrupt will get cleared.
-> > 
-> > 
-> > Maybe this is not a problem. But in that case IMO it needs
-> > a comment explaining why and why it's not a problem in
-> > your code.
+On Tue, Jul 17, 2012 at 03:13:18PM +0100, Adrián wrote:
 > 
-> So you want to close the door on anything that uses kvm_set_irq until
-> this gets fixed... that's insane.
+> Thanks a lot Athanasius. What I still can't see is why is the -1
+> exception there, as I assume that if you want to leave one of the ids
+> unchaged you can call:
+> 
+> setreuid(0,geteuid());
+> 
+> If you want to leave euid unchanged, right? Is there a need or reason
+> to be doing this differentiation in the setreuid code?
 
-What does kvm_set_irq use have to do with it?  You posted this patch:
+Unix systems for multiple decades have done things this way, and it's
+ensrined in POSIX and the Single Unix Specification.  Changing it
+would potentially open up security holes for programs which expect the
+standard-specificed behavior.
 
-+static int kvm_clear_pic_irq(struct kvm_kernel_irq_routing_entry *e,
-+                            struct kvm *kvm, int irq_source_id)
-+{
-+#ifdef CONFIG_X86
-+       struct kvm_pic *pic = pic_irqchip(kvm);
-+       int level =
-kvm_clear_irq_line_state(&pic->irq_states[e->irqchip.pin],
-+                                            irq_source_id);
-+       if (level)
-+               kvm_pic_set_irq(pic, e->irqchip.pin,
-+                               !!pic->irq_states[e->irqchip.pin]);
-+       return level;
-+#else
-+       return -1;
-+#endif
-+}
-+
+(Note, BTW, that decades ago system calls weren't cheap, and CPU's
+were much slower, and that may have driven the historical behavior.
+Sometimes we get forget how spoiled we are that Linux's system call
+overhead is as low as it is...)
 
-it seems racy in the same way.
-
--- 
-MST
+					- Ted
