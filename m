@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753629Ab2GQJPc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 05:15:32 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:49762 "EHLO
+	id S1754349Ab2GQJPm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 05:15:42 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:64448 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752857Ab2GQJPa (ORCPT
+	with ESMTP id S1753767Ab2GQJPh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 05:15:30 -0400
+	Tue, 17 Jul 2012 05:15:37 -0400
 From: Arnd Bergmann <arnd@arndb.de>
-To: Jon Masters <jonathan@jonmasters.org>
+To: Christoph Hellwig <hch@infradead.org>
 Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
-Date: Tue, 17 Jul 2012 08:02:55 +0000
+Date: Tue, 17 Jul 2012 08:07:24 +0000
 User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: Pavel Machek <pavel@ucw.cz>, Catalin Marinas <catalin.marinas@arm.com>,
+Cc: Catalin Marinas <catalin.marinas@arm.com>, Pavel Machek <pavel@ucw.cz>,
         Ingo Molnar <mingo@kernel.org>, Olof Johansson <olof@lixom.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Russell King <linux@arm.linux.org.uk>,
         Andrew Morton <akpm@linux-foundation.org>,
         Alan Cox <alan@lxorguk.ukuu.org.uk>
-References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com> <20120716121651.GA18859@elf.ucw.cz> <50050ECE.8020100@jonmasters.org>
-In-Reply-To: <50050ECE.8020100@jonmasters.org>
+References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com> <201207151943.08183.arnd@arndb.de> <20120717065338.GA24699@infradead.org>
+In-Reply-To: <20120717065338.GA24699@infradead.org>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201207170802.56434.arnd@arndb.de>
-X-Provags-ID: V02:K0:3Dt9TUd5f3MnlUtnz5LY+9aKWiJEyWHKifeGOefCDNh
- pkmuqgTDCYDFag4WL5jKuuFI35lDvv+WWcgOzxPorPeqa8xedf
- s/LLu5OzOdkeG/hlFAp6Wc99jVa3W3/pMwyoG3ZNhKBhvCGwIy
- sV+S98wJ2a+UqXTZ9tfXTKE9wXD4+Ja7lEXEfzoqagfLfo//w5
- gTGv6gyHEImAU3XP2nSTB0Am4dhD46LFeAe6Mtmmhv60YNbQ+Z
- l7rVjXEdlgnvdlkzDPsrkpVfto1SkhAmGJCbUfhIpVu7phtzsO
- iBnuzLrYvJA9jFwqASVdZEINfcVTlVj0ZonKG0iEUC4P58Zz0N
- NwFxcMYVWSEC8tBv1VfA=
+Message-Id: <201207170807.25139.arnd@arndb.de>
+X-Provags-ID: V02:K0:X9YaJuy9JkRNO26DFdCDwW3dnyDzYyDSW8ZUl6jSDOH
+ ZpFuBcqT4Am/nWvq7YmbmsJ7j4eiIHBC9Jkj6GX4olnZRhtBm8
+ SJq5S/jZblVYNOAPCmoRK1EP7S3/n5PSQGL91u8mXh7m44hzdT
+ WsdfaL9jOsaunL2LNcMC6vPRhmoN8BfWanGzz5s2gGS2YEsEo5
+ EQ8RMjYtELN5hDXoz82t0Ea1J5qEkzLRvf7H5RgPwzeFOonopl
+ A75gI69lUYarm82TndJQG+8EOuyVmWebI7bzLRXLaIdEtHiM0v
+ xlSapAbonpvl9hcoapjd2nrtXCQLQEi75rlTrfmWJBYDcRYeqC
+ 3xmnlY4Fw2U/AUs+6xqY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 17 July 2012, Jon Masters wrote:
-> On 07/16/2012 08:16 AM, Pavel Machek wrote:
+On Tuesday 17 July 2012, Christoph Hellwig wrote:
+> On Sun, Jul 15, 2012 at 07:43:07PM +0000, Arnd Bergmann wrote:
+> > Yes, I agree that's the best way to handle this. Compared to other
+> > architectures, I think x86 is the only that allows booting either a
+> > 32 or 64 bit kernel on the same system. We used to support 32 bit
+> > kernels on 64 bit PowerMac, but nobody used it and we discontinued
+> > it long ago. Tile 64 bit is actually incompatible with 32 bit kernels
+> > at the architecture level and would require a third mode. On sparc,
+> > parisc and mips, AFAIK we could support 32 bit kernels on 64 bit
+> > machines, but never did.
 > 
-> >> If an implementation supports AArch32 at EL3 there could be some
-> >> physical (or some FPGA config) switch to choose between the two. But
-> >> since AArch64 is mandated, I don't see why one would force AArch32 at
-> >> EL3 and therefore all lower exception levels (and make a big part of the
-> >> processor unused).
-> > 
-> > Actually I see one ... and I can bet it will happen.
-> > 
-> > So you create that shiny new ARMv8 compliant CPU, 8 cores, 2GHz. HTC
-> > will want to use it with 1GB of RAM... and put around exiting OMAP
-> > perihepals.
-> 
-> But that's why we have Eagle (A15). It's a very capable 32-bit design
-> from ARM and far more sensible for such designs. You can easily build
-> something with a few A15 clusters in it, as we're already seeing.
+> On mips it works just fine.  On Sparc I don't think Linux ever did it,
+> but Solaris did for a long time, as did (IIRC) NetBSD/OpenBSD.
 
-Right, I would say that with any CPU core more powerful than this one
-or with more than a few of these, you will also have trouble coming
-up with workloads that really require the CPU performance but don't
-also require a 64 bit virtual address space in either user space
-or kernel.
+Ah, I didn't know about mips doing that. I also just remembered that
+s390 supports running 31 bit kernels on all 64 bit machines, but there is
+no longer official support for that from IBM's side AFAIK.
+
+I certainly expect ARM to be similar to powperpc and sparc here,
+and anyone trying to submit a 32 bit kernel port for a 64 bit platform
+will have a hard time arguing why that should be accepted into mainline.
 
 	Arnd
 
