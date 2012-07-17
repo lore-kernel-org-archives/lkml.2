@@ -1,62 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753165Ab2GQEqV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 00:46:21 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:37923 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750976Ab2GQEqS (ORCPT
+	id S1751626Ab2GQEtA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 00:49:00 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:63694 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750795Ab2GQEs6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 00:46:18 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18SM0ET1x4SG3qheDqOkxIhYlhdF7Qbc565h0rgfe
-	FvzlWt0N8orGos
-Message-ID: <1342500374.7353.47.camel@marge.simpson.net>
-Subject: Re: 3.4.4-rt13: btrfs + xfstests 006 = BOOM..  and a bonus rt_mutex
- deadlock report for absolutely free!
-From: Mike Galbraith <efault@gmx.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Chris Mason <chris.mason@fusionio.com>,
-        "Chris L. Mason" <clmason@fusionio.com>,
-        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Tue, 17 Jul 2012 06:46:14 +0200
-In-Reply-To: <1342499648.24525.17.camel@gandalf.stny.rr.com>
-References: <1342072060.7338.102.camel@marge.simpson.net>
-	 <20120713125043.GH30128@shiny> <1342260883.7368.30.camel@marge.simpson.net>
-	 <20120715175612.GF25961@shiny.int.fusionio.com>
-	 <1342404140.7659.27.camel@marge.simpson.net>
-	 <1342454547.5410.3.camel@gandalf.stny.rr.com>
-	 <1342455968.7659.93.camel@marge.simpson.net>
-	 <1342456567.7659.97.camel@marge.simpson.net>
-	 <1342458195.2783.5.camel@acer.local.home>
-	 <1342498722.7353.37.camel@marge.simpson.net>
-	 <1342499278.24525.13.camel@gandalf.stny.rr.com>
-	 <1342499648.24525.17.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	Tue, 17 Jul 2012 00:48:58 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120716160807.GB1765@khazad-dum.debian.net>
+References: <4FFE6BB9.4060106@oracle.com>
+	<061C8A8601E8EE4CA8D8FD6990CEA891274F033B@ORSMSX102.amr.corp.intel.com>
+	<4FFE787B.9050201@oracle.com>
+	<061C8A8601E8EE4CA8D8FD6990CEA891274F0ACC@ORSMSX102.amr.corp.intel.com>
+	<4FFF61BD.1060604@oracle.com>
+	<061C8A8601E8EE4CA8D8FD6990CEA891274F11FF@ORSMSX102.amr.corp.intel.com>
+	<4FFFA532.1030208@oracle.com>
+	<061C8A8601E8EE4CA8D8FD6990CEA891274F2354@ORSMSX102.amr.corp.intel.com>
+	<20120715133510.GA5484@khazad-dum.debian.net>
+	<1342453645.2523.17.camel@bwh-desktop.uk.solarflarecom.com>
+	<20120716160807.GB1765@khazad-dum.debian.net>
+Date: Mon, 16 Jul 2012 21:48:56 -0700
+Message-ID: <CAPoiz9zKgaZLwcFgpQ7fmpjHEiX_3iO2uz5G50L4pL9x7oKi2w@mail.gmail.com>
+Subject: Re: 82571EB: Detected Hardware Unit Hang
+From: Jon Mason <jdmason@kudzu.us>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: Ben Hutchings <bhutchings@solarflare.com>,
+        "Dave, Tushar N" <tushar.n.dave@intel.com>,
+        Joe Jin <joe.jin@oracle.com>,
+        "e1000-devel@lists.sf.net" <e1000-devel@lists.sf.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-07-17 at 00:34 -0400, Steven Rostedt wrote: 
-> On Tue, 2012-07-17 at 00:27 -0400, Steven Rostedt wrote:
-> 
-> > Actually, I was mistaken. I forgot that we defined 'cpu_chill()' as
-> > msleep(1) on RT, which would keep a deadlock from happening.
-> 
-> Perhaps cpu_chill() isn't a good name, as it doesn't really explain what
-> is happening. Perhaps one of the following?
-> 
->   cpu_rest()
->   cpu_sleep()
->   cpu_deep_relax()
->   cpu_dream()
->   cpu_hypnotize()
+On Mon, Jul 16, 2012 at 9:08 AM, Henrique de Moraes Holschuh
+<hmh@hmh.eng.br> wrote:
+> On Mon, 16 Jul 2012, Ben Hutchings wrote:
+>> On Sun, 2012-07-15 at 10:35 -0300, Henrique de Moraes Holschuh wrote:
+>> > On Sun, 15 Jul 2012, Dave, Tushar N wrote:
+>> > > Somehow setting max payload to 256 from BIOS does not set this value for all devices. I believe this is a BIOS bug.
+>> >
+>> > And preferably, Linux should complain about it.  Since we know it is going
+>> > to cause problems, and since we know it does happen, we should be raising a
+>> > ruckus about it in the kernel log (and probably fixing it to min(path) while
+>> > at it)...
+>> >
+>> > Is this something that should be raised as a feature request with the
+>> > PCI/PCIe subsystem?
+>>
+>> The feature is there, but we ended up with:
+>>
+>> commit 5f39e6705faade2e89d119958a8c51b9b6e2c53c
+>> Author: Jon Mason <mason@myri.com>
+>> Date:   Mon Oct 3 09:50:20 2011 -0500
+>>
+>>     PCI: Disable MPS configuration by default
+>>
+>> But you are welcome to share use of the fixup_mpss_256() quirk.
+>
+> Meh.  I'd be happy with a warning if MPSS decreases when walking up to
+> the tree root... i.e. a warning if any child has a MPSS larger than the
+> parent.
 
-(   cpu_waste_truckloads_of_time();)
+You can add "pci=pcie_bus_safe" to the kernel params and it should
+resolve your issue.
 
+> --
+>   "One disk to rule them all, One disk to find them. One disk to bring
+>   them all and in the darkness grind them. In the Land of Redmond
+>   where the shadows lie." -- The Silicon Valley Tarot
+>   Henrique Holschuh
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
