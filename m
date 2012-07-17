@@ -1,76 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755531Ab2GQPsn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 11:48:43 -0400
-Received: from mga03.intel.com ([143.182.124.21]:45318 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753431Ab2GQPsk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 11:48:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="123493298"
-Date: Tue, 17 Jul 2012 17:05:40 +0100
-From: Alan Cox <alan@linux.intel.com>
-To: Greg KH <greg@kroah.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the tty tree
-Message-ID: <20120717170540.2d457362@bob.linux.org.uk>
-In-Reply-To: <20120717154529.GD16283@kroah.com>
-References: <20120717134506.3f3f0614ad1d5193689de334@canb.auug.org.au>
-	<20120717154529.GD16283@kroah.com>
-Organization: Intel
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
- Registered office Pipers Way, Swindon, SN3 1RJ
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755650Ab2GQPui (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 11:50:38 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:65250 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755607Ab2GQPue (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 11:50:34 -0400
+From: Joonsoo Kim <js1304@gmail.com>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Joonsoo Kim <js1304@gmail.com>, Michal Nazarewicz <mina86@mina86.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Minchan Kim <minchan@kernel.org>, Christoph Lameter <cl@linux.com>
+Subject: [PATCH 3/4 v3] mm: fix return value in __alloc_contig_migrate_range()
+Date: Wed, 18 Jul 2012 00:49:16 +0900
+Message-Id: <1342540156-3512-1-git-send-email-js1304@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <CAAmzW4N+CJGnn3a6PUQZAeEeb4njp_zwXMhOSdSrHc36OLsDjg@mail.gmail.com>
+References: <CAAmzW4N+CJGnn3a6PUQZAeEeb4njp_zwXMhOSdSrHc36OLsDjg@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Jul 2012 08:45:29 -0700
-Greg KH <greg@kroah.com> wrote:
+migrate_pages() can return positive value while at the same time emptying
+the list of pages it was called with.  Such situation means that it went
+through all the pages on the list some of which failed to be migrated.
 
-> On Tue, Jul 17, 2012 at 01:45:06PM +1000, Stephen Rothwell wrote:
-> > Hi Greg,
-> > 
-> > After merging the tty tree, today's linux-next build (powerpc
-> > ppc64_defconfig) failed like this:
-> > 
-> > drivers/tty/tty_ioctl.c: In function 'set_sgflags':
-> > drivers/tty/tty_ioctl.c:741:9: error: request for member 'c_iflag'
-> > in something not a structure or union
-> > drivers/tty/tty_ioctl.c:742:9: error: request for member 'c_oflag'
-> > in something not a structure or union
-> > drivers/tty/tty_ioctl.c:743:9: error: request for member 'c_lflag'
-> > in something not a structure or union
-> > drivers/tty/tty_ioctl.c:745:10: error: request for member 'c_iflag'
-> > in something not a structure or union
-> > drivers/tty/tty_ioctl.c:746:10: error: request for member 'c_lflag'
-> > in something not a structure or union
-> > drivers/tty/tty_ioctl.c:749:10: error: request for member 'c_lflag'
-> > in something not a structure or union
-> > drivers/tty/tty_ioctl.c:753:10: error: request for member 'c_oflag'
-> > in something not a structure or union
-> > drivers/tty/tty_ioctl.c:756:10: error: request for member 'c_iflag'
-> > in something not a structure or union
-> > drivers/tty/tty_ioctl.c:757:10: error: request for member 'c_lflag'
-> > in something not a structure or union
-> > drivers/tty/tty_ioctl.c:759:15: error: request for member 'c_lflag'
-> > in something not a structure or union
-> > drivers/tty/tty_ioctl.c:760:10: error: request for member 'c_cc' in
-> > something not a structure or union drivers/tty/tty_ioctl.c:761:10:
-> > error: request for member 'c_cc' in something not a structure or
-> > union
-> > 
-> > Caused by commit adc8d746caa6 ("tty: move the termios object into
-> > the tty").  Did anyone build test this?  :-(
-> 
-> It builds here for me just fine, this is odd.
+If that happens, __alloc_contig_migrate_range()'s loop may finish without
+"++tries == 5" never being checked.  This in turn means that at the end
+of the function, ret may have a positive value, which should be treated
+as an error.
 
-Had me confused for a bit but while I couldn't find a config to test it
-I could find the bug 8)
+This patch changes __alloc_contig_migrate_range() so that the return
+statement converts positive ret value into -EBUSY error.
 
-Alan
+Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+Cc: Michal Nazarewicz <mina86@mina86.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Christoph Lameter <cl@linux.com>
+Acked-by: Christoph Lameter <cl@linux.com>
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
+
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 4403009..02d4519 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -5673,7 +5673,6 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
+ 			}
+ 			tries = 0;
+ 		} else if (++tries == 5) {
+-			ret = ret < 0 ? ret : -EBUSY;
+ 			break;
+ 		}
+ 
+@@ -5683,7 +5682,7 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
+ 	}
+ 
+ 	putback_lru_pages(&cc.migratepages);
+-	return ret > 0 ? 0 : ret;
++	return ret <= 0 ? ret : -EBUSY;
+ }
+ 
+ /*
+-- 
+1.7.9.5
+
