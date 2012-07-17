@@ -1,90 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756029Ab2GQRl1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 13:41:27 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:34701 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751109Ab2GQRlZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 13:41:25 -0400
+	id S1756069Ab2GQRmX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 13:42:23 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:35771 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751826Ab2GQRmU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 13:42:20 -0400
 From: John Stultz <johnstul@us.ibm.com>
 To: stable@vger.kernel.org
-Cc: John Stultz <johnstul@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
+Cc: Thomas Gleixner <tglx@linutronix.de>, John Stultz <johnstul@us.ibm.com>,
         Prarit Bhargava <prarit@redhat.com>,
         Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 06/11] 3.0.x: timekeeping: Fix leapsecond triggered load spike issue
-Date: Tue, 17 Jul 2012 13:33:53 -0400
-Message-Id: <1342546438-17534-7-git-send-email-johnstul@us.ibm.com>
+Subject: [PATCH 09/11] 3.0.x: timekeeping: Provide hrtimer update function
+Date: Tue, 17 Jul 2012 13:33:56 -0400
+Message-Id: <1342546438-17534-10-git-send-email-johnstul@us.ibm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1342546438-17534-1-git-send-email-johnstul@us.ibm.com>
 References: <1342546438-17534-1-git-send-email-johnstul@us.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12071717-1780-0000-0000-0000077CAF74
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000287; HX=3.00000193; KW=3.00000007;
- PH=3.00000001; SC=3.00000004; SDB=6.00157440; UDB=6.00035513; UTC=2012-07-17
- 17:41:22
+x-cbid: 12071717-3534-0000-0000-00000A85AC0D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a backport of 4873fa070ae84a4115f0b3c9dfabc224f1bc7c51
+From: Thomas Gleixner <tglx@linutronix.de>
 
-The timekeeping code misses an update of the hrtimer subsystem after a
-leap second happened. Due to that timers based on CLOCK_REALTIME are
-either expiring a second early or late depending on whether a leap
-second has been inserted or deleted until an operation is initiated
-which causes that update. Unless the update happens by some other
-means this discrepancy between the timekeeping and the hrtimer data
-stays forever and timers are expired either early or late.
+This is a backport of f6c06abfb3972ad4914cef57d8348fcb2932bc3b
 
-The reported immediate workaround - $ data -s "`date`" - is causing a
-call to clock_was_set() which updates the hrtimer data structures.
-See: http://www.sheeri.com/content/mysql-and-leap-second-high-cpu-and-fix
+To finally fix the infamous leap second issue and other race windows
+caused by functions which change the offsets between the various time
+bases (CLOCK_MONOTONIC, CLOCK_REALTIME and CLOCK_BOOTTIME) we need a
+function which atomically gets the current monotonic time and updates
+the offsets of CLOCK_REALTIME and CLOCK_BOOTTIME with minimalistic
+overhead. The previous patch which provides ktime_t offsets allows us
+to make this function almost as cheap as ktime_get() which is going to
+be replaced in hrtimer_interrupt().
 
-Add the missing clock_was_set() call to update_wall_time() in case of
-a leap second event. The actual update is deferred to softirq context
-as the necessary smp function call cannot be invoked from hard
-interrupt context.
-
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
-Reported-by: Jan Engelhardt <jengelh@inai.de>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Reviewed-by: Ingo Molnar <mingo@kernel.org>
 Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Acked-by: Prarit Bhargava <prarit@redhat.com>
 Cc: stable@vger.kernel.org
-Link: http://lkml.kernel.org/r/1341960205-56738-3-git-send-email-johnstul@us.ibm.com
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Link: http://lkml.kernel.org/r/1341960205-56738-7-git-send-email-johnstul@us.ibm.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Cc: Prarit Bhargava <prarit@redhat.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Linux Kernel <linux-kernel@vger.kernel.org>
 Signed-off-by: John Stultz <johnstul@us.ibm.com>
 ---
- kernel/time/timekeeping.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ include/linux/hrtimer.h   |    1 +
+ kernel/time/timekeeping.c |   34 ++++++++++++++++++++++++++++++++++
+ 2 files changed, 35 insertions(+)
 
+diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
+index c9ec940..cc07d27 100644
+--- a/include/linux/hrtimer.h
++++ b/include/linux/hrtimer.h
+@@ -327,6 +327,7 @@ extern ktime_t ktime_get(void);
+ extern ktime_t ktime_get_real(void);
+ extern ktime_t ktime_get_boottime(void);
+ extern ktime_t ktime_get_monotonic_offset(void);
++extern ktime_t ktime_get_update_offsets(ktime_t *offs_real, ktime_t *offs_boot);
+ 
+ DECLARE_PER_CPU(struct tick_device, tick_cpu_device);
+ 
 diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 0b582eb..9201474 100644
+index d647773..f0c7565 100644
 --- a/kernel/time/timekeeping.c
 +++ b/kernel/time/timekeeping.c
-@@ -827,6 +827,8 @@ static cycle_t logarithmic_accumulation(cycle_t offset, int shift)
- 		leap = second_overflow(xtime.tv_sec);
- 		xtime.tv_sec += leap;
- 		wall_to_monotonic.tv_sec -= leap;
-+		if (leap)
-+			clock_was_set_delayed();
- 	}
+@@ -1126,6 +1126,40 @@ void get_xtime_and_monotonic_and_sleep_offset(struct timespec *xtim,
+ 	} while (read_seqretry(&xtime_lock, seq));
+ }
  
- 	/* Accumulate raw time */
-@@ -938,6 +940,8 @@ static void update_wall_time(void)
- 		leap = second_overflow(xtime.tv_sec);
- 		xtime.tv_sec += leap;
- 		wall_to_monotonic.tv_sec -= leap;
-+		if (leap)
-+			clock_was_set_delayed();
- 	}
- 
- 	timekeeping_update(false);
++#ifdef CONFIG_HIGH_RES_TIMERS
++/**
++ * ktime_get_update_offsets - hrtimer helper
++ * @real:	pointer to storage for monotonic -> realtime offset
++ * @_boot:	pointer to storage for monotonic -> boottime offset
++ *
++ * Returns current monotonic time and updates the offsets
++ * Called from hrtimer_interupt() or retrigger_next_event()
++ */
++ktime_t ktime_get_update_offsets(ktime_t *real, ktime_t *boot)
++{
++	ktime_t now;
++	unsigned int seq;
++	u64 secs, nsecs;
++
++	do {
++		seq = read_seqbegin(&xtime_lock);
++
++		secs = xtime.tv_sec;
++		nsecs = xtime.tv_nsec;
++		nsecs += timekeeping_get_ns();
++		/* If arch requires, add in gettimeoffset() */
++		nsecs += arch_gettimeoffset();
++
++		*real = offs_real;
++		*boot = offs_boot;
++	} while (read_seqretry(&xtime_lock, seq));
++
++	now = ktime_add_ns(ktime_set(secs, 0), nsecs);
++	now = ktime_sub(now, *real);
++	return now;
++}
++#endif
++
+ /**
+  * ktime_get_monotonic_offset() - get wall_to_monotonic in ktime_t format
+  */
 -- 
 1.7.9.5
 
