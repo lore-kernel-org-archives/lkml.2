@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753878Ab2GQNMN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 09:12:13 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:43532 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751717Ab2GQNMK (ORCPT
+	id S1753992Ab2GQNPq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 09:15:46 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:39726 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752824Ab2GQNPo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 09:12:10 -0400
-Message-ID: <5005647B.2010205@oracle.com>
-Date: Tue, 17 Jul 2012 21:11:23 +0800
-From: Jeff Liu <jeff.liu@oracle.com>
-Reply-To: jeff.liu@oracle.com
-Organization: Oracle
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	Tue, 17 Jul 2012 09:15:44 -0400
 MIME-Version: 1.0
-To: Chen Baozi <baozich@gmail.com>
-CC: Christoph Hellwig <hch@infradead.org>, Ben Myers <bpm@sgi.com>,
-        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: [PATCH] xfs: fix comment typo of struct xfs_da_blkinfo.
-References: <1342208293-3405-1-git-send-email-baozich@gmail.com>	<20120716151038.GI29979@sgi.com>	<5292013E-6FF3-47F6-BE9F-FD7BA2BB2AA9@gmail.com>	<20120717070643.GA4958@infradead.org> <7C73914B-6261-4730-827E-280B3D8A3988@gmail.com>
-In-Reply-To: <7C73914B-6261-4730-827E-280B3D8A3988@gmail.com>
+In-Reply-To: <CAMuHMdXFfMv-DV-89nueyDJ5AvFN3AXR_6ysWOfCMDFL46s-Cg@mail.gmail.com>
+References: <1341784614-2797-1-git-send-email-dh.herrmann@googlemail.com>
+	<1341784614-2797-12-git-send-email-dh.herrmann@googlemail.com>
+	<CAMuHMdX_aC1hzKf1eRqoSsQ4oALBev8p77v7++aoB2KrkOUaEw@mail.gmail.com>
+	<CANq1E4RyFpqxH=uG+dDA1=kfc3r8rCoEesZ31op9rCLjxyk6mQ@mail.gmail.com>
+	<CAMuHMdXFfMv-DV-89nueyDJ5AvFN3AXR_6ysWOfCMDFL46s-Cg@mail.gmail.com>
+Date: Tue, 17 Jul 2012 15:15:43 +0200
+Message-ID: <CANq1E4SmdRaN5YEVdGrJohD2ZdXrhzAar6VmM6RyErKXjadN5A@mail.gmail.com>
+Subject: Re: [PATCH v2 11/11] MAINTAINERS: add fblog entry
+From: David Herrmann <dh.herrmann@googlemail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        florianschandinat@gmx.de, linux-fbdev@vger.kernel.org,
+        gregkh@linuxfoundation.org, alan@lxorguk.ukuu.org.uk,
+        bonbons@linux-vserver.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2012 05:33 PM, Chen Baozi wrote:
+Hi Geert
 
-> 
-> On Jul 17, 2012, at 3:06 PM, Christoph Hellwig wrote:
-> 
->> On Tue, Jul 17, 2012 at 11:33:33AM +0800, Chen Baozi wrote:
->>> I'd really love to. Right now, I am working on syslinux to support booting on xfs partition (under pcacjr's mentoring)??? which I thought would be a nice start to get familiar with xfs (and I did learn a lot from it). So I think there would be more time (and experience on xfs) after I finish the xfs support on syslinux. And I'm really looking forward to your ideas. So do please tell me what I can help, I'll try my best to do it. 
+On Tue, Jul 17, 2012 at 2:57 PM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> On Mon, Jul 9, 2012 at 8:38 PM, David Herrmann
+> <dh.herrmann@googlemail.com> wrote:
+>>>> diff --git a/MAINTAINERS b/MAINTAINERS
+>>>> index ae8fe46..249b02a 100644
+>>>> --- a/MAINTAINERS
+>>>> +++ b/MAINTAINERS
+>>>> @@ -2854,6 +2854,12 @@ F:       drivers/video/
+>>>>  F:     include/video/
+>>>>  F:     include/linux/fb.h
+>>>>
+>>>> +FRAMEBUFFER LOG DRIVER
+>>>> +M:     David Herrmann <dh.herrmann@googlemail.com>
+>>>> +L:     linux-serial@vger.kernel.org
+>>>
+>>> Why linux-serial, and not linux-fbdev?
 >>
->> Btw, if you need more reviers for the syslinus support feel free to pass
->> it by me (or the list).
-> Sure, thanks.
+>> I thought fbcon was maintained on linux-serial as it is very related
+>
+> It has always been maintained on linux-fbdev.
 
-Glad to see a new developer from china, Wanlong from Fujitsu has also
-started working on XFS recently, we can learn together. :)
-Btw, are you living in Beijing Baozi?
+Thanks! Then I will change this to linux-fbdev.
 
-Thanks,
--Jeff
-
->>
->> Thanks for working on this!
->>
-> 
-> _______________________________________________
-> xfs mailing list
-> xfs@oss.sgi.com
-> http://oss.sgi.com/mailman/listinfo/xfs
-
-
+Regards
+David
