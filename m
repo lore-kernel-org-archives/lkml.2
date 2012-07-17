@@ -1,89 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754192Ab2GQNZK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 09:25:10 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:54637 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751979Ab2GQNZH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 09:25:07 -0400
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: akpm@linux-foundation.org, "Joonsoo Kim" <js1304@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        "Marek Szyprowski" <m.szyprowski@samsung.com>,
-        "Minchan Kim" <minchan@kernel.org>, "Christoph Lameter" <cl@linux.com>
-Subject: Re: [PATCH 3/4 v2] mm: fix return value in
- __alloc_contig_migrate_range()
-References: <Yes> <1342528415-2291-1-git-send-email-js1304@gmail.com>
- <1342528415-2291-3-git-send-email-js1304@gmail.com>
-Date: Tue, 17 Jul 2012 15:25:03 +0200
+	id S1754272Ab2GQN0T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 09:26:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55114 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753308Ab2GQN0R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 09:26:17 -0400
+Date: Tue, 17 Jul 2012 16:26:42 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Stefan Hajnoczi <stefanha@gmail.com>, Asias He <asias@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-aio@kvack.org, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Benjamin LaHaise <bcrl@kvack.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 0/5] Add vhost-blk support
+Message-ID: <20120717132642.GA10590@redhat.com>
+References: <50052276.2080906@redhat.com>
+ <500527BA.9000001@redhat.com>
+ <50052E7E.6020100@redhat.com>
+ <CAJSP0QW0tPV3WASGOBRE4hL=8zzSFQ6T=bHbEwMAzmHR9wnwJg@mail.gmail.com>
+ <20120717112645.GA9363@redhat.com>
+ <CAJSP0QXPkrVvgA+1fhhwsB5J8oApOObK8D3fk_Lm0Bt3T+Wfuw@mail.gmail.com>
+ <20120717115450.GA9796@redhat.com>
+ <CAJSP0QXwGuUaD9piktOptJasdpci_fA90d=vV4m0SuORMvc2=Q@mail.gmail.com>
+ <20120717124859.GA9883@redhat.com>
+ <50056275.6000407@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Message-ID: <op.whld71os3l0zgt@mpn-glaptop>
-In-Reply-To: <1342528415-2291-3-git-send-email-js1304@gmail.com>
-User-Agent: Opera Mail/12.00 (Linux)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50056275.6000407@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Jul 2012 14:33:34 +0200, Joonsoo Kim <js1304@gmail.com> wrote:
-> migrate_pages() would return positive value in some failure case,
-> so 'ret > 0 ? 0 : ret' may be wrong.
-> This fix it and remove one dead statement.
+On Tue, Jul 17, 2012 at 03:02:45PM +0200, Paolo Bonzini wrote:
+> Il 17/07/2012 14:48, Michael S. Tsirkin ha scritto:
+> > On Tue, Jul 17, 2012 at 01:03:39PM +0100, Stefan Hajnoczi wrote:
+> >> On Tue, Jul 17, 2012 at 12:54 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
+> >>>> Knowing the answer to that is important before anyone can say whether
+> >>>> this approach is good or not.
+> >>>>
+> >>>> Stefan
+> >>>
+> >>> Why is it?
+> >>
+> >> Because there might be a fix to kvmtool which closes the gap.  It
+> >> would be embarassing if vhost-blk was pushed just because no one
+> >> looked into what is actually going on.
+> > 
+> > Embarrasing to whom? Is someone working on an optimization that
+> > makes the work in question redundant, with posting just around
+> > the corner? Then maybe the thing to do is just wait a bit.
+> 
+> Of course there is work going on to make QEMU perform better.
+> Not sure about lkvm.
+> 
+> >> And on the flipside, hard evidence of an overhead that cannot be
+> >> resolved could be good reason to do more vhost devices in the future.
+> > 
+> > How can one have hard evidence of an overhead that cannot be resolved?
+> 
+> Since we do have two completely independent userspaces (lkvm and
+> data-plane QEMU), you can build up some compelling evidence of an
+> overhead that cannot be resolved in user space.
 
-How about the following message:
+OK, so what you are saying benchmark against data-plane QEMU?
+I agree actually. Asias, any data?
 
-------------------- >8 ---------------------------------------------------
-migrate_pages() can return positive value while at the same time emptying
-the list of pages it was called with.  Such situation means that it went
-through all the pages on the list some of which failed to be migrated.
+> >> Either way, it's useful to do this before going further.
+> > 
+> > I think each work should be discussed on its own merits.  Maybe
+> > vhost-blk is just well written. So? What is your conclusion?
+> 
+> If it's just that vhost-blk is written well, my conclusion is that lkvm
+> people should look into improving their virtio-blk userspace.  We take
+> hints from each other all the time, for example virtio-scsi will have
+> unlocked kick in 3.6.
+> 
+> Why can't vhost-* just get into staging, and we call it a day?
+> 
+> Paolo
 
-If that happens, __alloc_contig_migrate_range()'s loop may finish without
-"++tries == 5" never being checked.  This in turn means that at the end
-of the function, ret may have a positive value, which should be treated
-as an error.
-
-This patch changes __alloc_contig_migrate_range() so that the return
-statement converts positive ret value into -EBUSY error.
-------------------- >8 ---------------------------------------------------
-
-> Signed-off-by: Joonsoo Kim <js1304@gmail.com>
-> Cc: Michal Nazarewicz <mina86@mina86.com>
-
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
-
-> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-> Cc: Minchan Kim <minchan@kernel.org>
-> Cc: Christoph Lameter <cl@linux.com>
-> Acked-by: Christoph Lameter <cl@linux.com>
-
-In fact, now that I look at it, I think that __alloc_contig_migrate_range()
-should be changed even further.  I'll take a closer look at it and send
-a patch (possibly through Marek ;) ).
-
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 4403009..02d4519 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -5673,7 +5673,6 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
->  			}
->  			tries = 0;
->  		} else if (++tries == 5) {
-> -			ret = ret < 0 ? ret : -EBUSY;
->  			break;
->  		}
->@@ -5683,7 +5682,7 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
->  	}
-> 	putback_lru_pages(&cc.migratepages);
-> -	return ret > 0 ? 0 : ret;
-> +	return ret <= 0 ? ret : -EBUSY;
->  }
-> /*
-
+staging is not a destination. Even if we put a driver in staging it
+won't stay there indefinitely if qemu-kvm is not using it,
+something that doesn't seem to be addressed for vhost-blk yet.
 
 -- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
-ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
+MST
