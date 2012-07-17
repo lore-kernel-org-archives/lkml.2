@@ -1,103 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754578Ab2GQFPN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 01:15:13 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:47916 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754352Ab2GQFPK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 01:15:10 -0400
+	id S1754553Ab2GQFRY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 01:17:24 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:18870 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751007Ab2GQFRW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 01:17:22 -0400
+X-IronPort-AV: E=Sophos;i="4.77,599,1336320000"; 
+   d="scan'208";a="5410886"
+Message-ID: <5004F67D.7000809@cn.fujitsu.com>
+Date: Tue, 17 Jul 2012 13:22:05 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <CAMP5XgfF3RF1hSonS_QrC8jQZyCcNfwGYZcCxnew02Rp3-CXKA@mail.gmail.com>
-References: <CAMP5XgcatAchOXaEG0rbULes5pVHHsuGeuJ2CKaVGEdj1LzMDg@mail.gmail.com>
- <1335850428-30883-1-git-send-email-arve@android.com> <CAHO5Pa39ZYBBqscGhtOrciB1wz-mDtGdKhM1q5bKtpKPz4Ba_g@mail.gmail.com>
- <201207161300.16282.rjw@sisk.pl> <CAMP5XgfF3RF1hSonS_QrC8jQZyCcNfwGYZcCxnew02Rp3-CXKA@mail.gmail.com>
-From: Michael Kerrisk <mtk.manpages@gmail.com>
-Date: Tue, 17 Jul 2012 07:14:44 +0200
-X-Google-Sender-Auth: bZKcQkRoR8rV8QxwXl0byn-nqdg
-Message-ID: <CAHO5Pa3nWvmWY9jFZ-4ayvjGAV-4Vhs5sS18dbzniJp8wZYmoQ@mail.gmail.com>
-Subject: Re: [PATCH] epoll: Add a flag, EPOLLWAKEUP, to prevent suspend while
- epoll events are ready
-To: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, NeilBrown <neilb@suse.de>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
-        Matthew Garrett <mjg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Brian Swetland <swetland@google.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, mtk@lwn.net
+To: rob@landley.net, tglx@linutronix.de, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        bhelgaas@google.com, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/2] x86: reimplement mem boot option
+References: <4FD99C88.2010002@cn.fujitsu.com> <4FD99CFA.6060801@cn.fujitsu.com> <4FEBB377.2080309@cn.fujitsu.com>
+In-Reply-To: <4FEBB377.2080309@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/17 13:17:03,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/17 13:17:05,
+	Serialize complete at 2012/07/17 13:17:05
+Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 17, 2012 at 12:04 AM, Arve Hjønnevåg <arve@android.com> wrote:
-> On Mon, Jul 16, 2012 at 4:00 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> On Monday, July 16, 2012, Michael Kerrisk wrote:
->>> Arve, Rafael,
->>>
->>> On Tue, May 1, 2012 at 7:33 AM, Arve Hjønnevåg <arve@android.com> wrote:
->>> > When an epoll_event, that has the EPOLLWAKEUP flag set, is ready, a
->>> > wakeup_source will be active to prevent suspend. This can be used to
->>> > handle wakeup events from a driver that support poll, e.g. input, if
->>> > that driver wakes up the waitqueue passed to epoll before allowing
->>> > suspend.
->>>
->>> It's late it the -rc series,
+At 06/28/2012 09:29 AM, Wen Congyang Wrote:
+> Pin......
+
+Ping again........
+
+> 
+> At 06/14/2012 04:12 PM, Wen Congyang Wrote:
+>> Current mem boot option only can work for non efi environment. If the user
+>> specifies add_efi_memmap, it cannot work for efi environment. In
+>> the efi environment, we call e820_add_region() to add the memory map. So
+>> we can modify __e820_add_region() and the mem boot option can work for
+>> efi environment.
 >>
->> Well, exactly. :-)
-
-If someone had CCed linux-api@ along the way (as per
-Documentation/SubmitChecklist), it might have helped ;-)
-
+>> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+>> ---
+>>  arch/x86/kernel/e820.c |   29 +++++++++++++++++++++++++----
+>>  1 files changed, 25 insertions(+), 4 deletions(-)
 >>
->>> but it strikes me that CAP_EPOLLWAKEUP is
->>> a poor name for the capability that governs the use of EPOLLWAKEUP.
->>> While on the one hand some capabilities are overloaded
->>> (https://lwn.net/Articles/486306/), on the other hand we should avoid
->>> adding individual capabilities for each new API feature (otherwise
->>> capabilities become administratively unwieldy).
->>>
->>> This capability is not really about "EPOLL". It's about the ability to
->>> block system suspend. Therefore, IMO, a better name would be something
->>> like: CAP_BLOCK_SUSPEND. This name is better because there might be
->>> some other API feature that is later added that also has the effect of
->>> preventing system suspends, and we could reasonably govern that
->>> feature with the same capability.
->
-> We already have another api, "/sys/power/wake_lock", that allow
-> user-space to block suspend. Do we want to apply this capability that
-> api as well, or only to apis that do not have other ways to restrict
-> access?
+>> diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+>> index 4185797..20bc467 100644
+>> --- a/arch/x86/kernel/e820.c
+>> +++ b/arch/x86/kernel/e820.c
+>> @@ -47,6 +47,7 @@ unsigned long pci_mem_start = 0xaeedbabe;
+>>  #ifdef CONFIG_PCI
+>>  EXPORT_SYMBOL(pci_mem_start);
+>>  #endif
+>> +static u64 mem_limit = ~0ULL;
+>>  
+>>  /*
+>>   * This function checks if any part of the range <start,end> is mapped
+>> @@ -119,6 +120,20 @@ static void __init __e820_add_region(struct e820map *e820x, u64 start, u64 size,
+>>  		return;
+>>  	}
+>>  
+>> +	if (start >= mem_limit) {
+>> +		printk(KERN_ERR "e820: ignoring [mem %#010llx-%#010llx]\n",
+>> +		       (unsigned long long)start,
+>> +		       (unsigned long long)(start + size - 1));
+>> +		return;
+>> +	}
+>> +
+>> +	if (mem_limit - start < size) {
+>> +		printk(KERN_ERR "e820: ingoring [mem %#010llx-%#010llx]\n",
+>> +		       (unsigned long long)mem_limit,
+>> +		       (unsigned long long)(start + size - 1));
+>> +		size = mem_limit - start;
+>> +	}
+>> +
+>>  	e820x->map[x].addr = start;
+>>  	e820x->map[x].size = size;
+>>  	e820x->map[x].type = type;
+>> @@ -809,7 +824,7 @@ static int userdef __initdata;
+>>  /* "mem=nopentium" disables the 4MB page tables. */
+>>  static int __init parse_memopt(char *p)
+>>  {
+>> -	u64 mem_size;
+>> +	char *oldp;
+>>  
+>>  	if (!p)
+>>  		return -EINVAL;
+>> @@ -825,11 +840,11 @@ static int __init parse_memopt(char *p)
+>>  	}
+>>  
+>>  	userdef = 1;
+>> -	mem_size = memparse(p, &p);
+>> +	oldp = p;
+>> +	mem_limit = memparse(p, &p);
+>>  	/* don't remove all of memory when handling "mem={invalid}" param */
+>> -	if (mem_size == 0)
+>> +	if (mem_limit == 0 || p == oldp)
+>>  		return -EINVAL;
+>> -	e820_remove_range(mem_size, ULLONG_MAX - mem_size, E820_RAM, 1);
+>>  
+>>  	return 0;
+>>  }
+>> @@ -881,6 +896,12 @@ early_param("memmap", parse_memmap_opt);
+>>  
+>>  void __init finish_e820_parsing(void)
+>>  {
+>> +	if (mem_limit != ~0ULL) {
+>> +		userdef = 1;
+>> +		e820_remove_range(mem_limit, ULLONG_MAX - mem_limit,
+>> +				  E820_RAM, 1);
+>> +	}
+>> +
+>>  	if (userdef) {
+>>  		u32 nr = e820.nr_map;
+>>  
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-Well, the question is: is there a governor on the use of
-/sys/power/wake_lock? It makes sense either they are both governed
-(preferably by the same mechanism, I would have thought), or neither
-is.
-
->>> Does that seem sensible to you? I can send a patch for the name change.
->>
->> I'm not sure what Arve thinks about that, but I'd be fine with that.
->>
->> Arve, what do you think?
->>
->
-> CAP_BLOCK_SUSPEND is fine with me, but if it does not apply to the
-> sysfs interface, then the comment should probably mention this.
-
-I've sent a patch, but omitted mention of API details in the comments.
-Maybe that can be changed afterward, when a decision has been reached
-about governing /sys/power/wake_lock.
-
-Thanks,
-
-Michael
-
--- 
-Michael Kerrisk Linux man-pages maintainer;
-http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface", http://blog.man7.org/
