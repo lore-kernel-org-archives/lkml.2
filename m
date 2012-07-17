@@ -1,81 +1,624 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756888Ab2GQVkF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 17:40:05 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:39563 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755382Ab2GQVkD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 17:40:03 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Linux Kernel Developers List <linux-kernel@vger.kernel.org>
-Cc: "Theodore Ts'o" <tytso@mit.edu>
-Subject: [PATCH 17/17] random: final removal of IRQF_SAMPLE_RANDOM
-Date: Tue, 17 Jul 2012 17:32:36 -0400
-Message-Id: <1342560756-18737-18-git-send-email-tytso@mit.edu>
-X-Mailer: git-send-email 1.7.11.1.108.gb129051
-In-Reply-To: <1342560756-18737-1-git-send-email-tytso@mit.edu>
-References: <1342560756-18737-1-git-send-email-tytso@mit.edu>
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1756685Ab2GQVro (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 17:47:44 -0400
+Received: from usindpps03.hds.com ([207.126.252.16]:42256 "EHLO
+	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752650Ab2GQVrk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 17:47:40 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Thomas Gleixner (tglx@linutronix.de)" <tglx@linutronix.de>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "'mingo@elte.hu' (mingo@elte.hu)" <mingo@elte.hu>
+CC: "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: [PATCH v2]trace,x86: add x86 irq vector tracepoints
+Thread-Topic: [PATCH v2]trace,x86: add x86 irq vector tracepoints
+Thread-Index: Ac1kZYBX7erg+UO0SeiCLczQVxuy/g==
+Date: Tue, 17 Jul 2012 21:47:01 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D40FB261FC@USINDEM103.corp.hds.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.43.113]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.260,0.0.0000
+ definitions=2012-07-17_05:2012-07-17,2012-07-17,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=2 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
+ definitions=main-1207170248
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The IRQF_SAMPLE_RANDOM flag is finally gone from the kernel tree, only
-three years late.  :-)
+Change log v1 -> v2
+ - Modify variable name from irq to vector.
+ - Merge arch-specific tracepoints below to an arch_irq_vector_entry/exit.
+   - error_apic_vector
+   - thermal_apic_vector
+   - threshold_apic_vector
+   - spurious_apic_vector
+   - x86_platform_ipi_vector
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+As Vaibhav explained in the thread below, tracepoints for irq vectors
+are useful.
+
+http://www.spinics.net/lists/mm-commits/msg85707.html
+
+<snip>
+The current interrupt traces from irq_handler_entry and irq_handler_exit
+provide when an interrupt is handled.  They provide good data about when
+the system has switched to kernel space and how it affects the currently
+running processes.
+
+There are some IRQ vectors which trigger the system into kernel space,
+which are not handled in generic IRQ handlers.  Tracing such events gives
+us the information about IRQ interaction with other system events.
+
+The trace also tells where the system is spending its time.  We want to
+know which cores are handling interrupts and how they are affecting other
+processes in the system.  Also, the trace provides information about when
+the cores are idle and which interrupts are changing that state.
+<snip>
+
+On the other hand, my usecase is tracing just local timer event and 
+getting a value of instruction pointer.
+
+  I suggested to add an argument local timer event to get instruction pointer before.
+  But there is another way to get it with external module like systemtap.
+  So, I don't need to add any argument to irq vector tracepoints now.
+
+Vaibhav's patch shared a trace point ,irq_vector_entry/irq_vector_exit, in all events.
+But there is an above use case to trace specific irq_vector rather than tracing all events.
+In this case, we are concerned about overhead due to unwanted events.
+
+This patch modifies Vaibhav's one as follows.
+ - Separate generic, and across-architecture tracepoints to enable independently.
+   - nmi_vector
+   - local_timer_vector
+   - reschedule_vector
+   - call_function_vector
+   - call_function_single_vector 
+   - irq_work_entry_vector
+   - invalidate_tlb_vector
+
+ - Rename architecture-specific tracepoints from irq_vector_entry/exit to 
+   arch_irq_vector_entry/exit.
+   - error_apic_vector
+   - thermal_apic_vector
+   - threshold_apic_vector
+   - spurious_apic_vector
+   - x86_platform_ipi_vector
+
+   Those x86 specific ones are not really frequently raised vectors, so
+   enabling them all won't affect performance and readability of the
+   traces too much.
+
+ Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+
 ---
- Documentation/feature-removal-schedule.txt | 14 --------------
- include/linux/interrupt.h                  |  2 --
- 2 files changed, 16 deletions(-)
+ arch/x86/include/asm/irq_vectors.h       |    9 ++
+ arch/x86/kernel/apic/apic.c              |    7 +
+ arch/x86/kernel/cpu/mcheck/therm_throt.c |    3 +
+ arch/x86/kernel/cpu/mcheck/threshold.c   |    3 +
+ arch/x86/kernel/irq.c                    |    5 +
+ arch/x86/kernel/irq_work.c               |    3 +
+ arch/x86/kernel/nmi.c                    |    3 +
+ arch/x86/kernel/smp.c                    |    7 +
+ arch/x86/mm/tlb.c                        |    3 +
+ include/trace/events/irq_vectors.h       |  231 ++++++++++++++++++++++++++++++
+ 10 files changed, 274 insertions(+), 0 deletions(-)
+ create mode 100644 include/trace/events/irq_vectors.h
 
-diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
-index 56000b3..27f39cf 100644
---- a/Documentation/feature-removal-schedule.txt
-+++ b/Documentation/feature-removal-schedule.txt
-@@ -70,20 +70,6 @@ Who:	Luis R. Rodriguez <lrodriguez@atheros.com>
+diff --git a/arch/x86/include/asm/irq_vectors.h b/arch/x86/include/asm/irq_vectors.h
+index 4b44487..5ccd770 100644
+--- a/arch/x86/include/asm/irq_vectors.h
++++ b/arch/x86/include/asm/irq_vectors.h
+@@ -169,4 +169,13 @@ static inline int invalid_vm86_irq(int irq)
+ # define NR_IRQS			NR_IRQS_LEGACY
+ #endif
  
- ---------------------------
++#define irq_vector_name(vector) { vector, #vector }
++
++#define irq_vector_name_table						\
++			irq_vector_name(ERROR_APIC_VECTOR),		\
++			irq_vector_name(THERMAL_APIC_VECTOR),		\
++			irq_vector_name(THRESHOLD_APIC_VECTOR),		\
++			irq_vector_name(SPURIOUS_APIC_VECTOR),		\
++			irq_vector_name(X86_PLATFORM_IPI_VECTOR)
++
+ #endif /* _ASM_X86_IRQ_VECTORS_H */
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index 39a222e..56bce91 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -34,6 +34,7 @@
+ #include <linux/dmi.h>
+ #include <linux/smp.h>
+ #include <linux/mm.h>
++#include <trace/events/irq_vectors.h>
  
--What:	IRQF_SAMPLE_RANDOM
--Check:	IRQF_SAMPLE_RANDOM
--When:	July 2009
--
--Why:	Many of IRQF_SAMPLE_RANDOM users are technically bogus as entropy
--	sources in the kernel's current entropy model. To resolve this, every
--	input point to the kernel's entropy pool needs to better document the
--	type of entropy source it actually is. This will be replaced with
--	additional add_*_randomness functions in drivers/char/random.c
--
--Who:	Robin Getz <rgetz@blackfin.uclinux.org> & Matt Mackall <mpm@selenic.com>
--
-----------------------------
--
- What:	The ieee80211_regdom module parameter
- When:	March 2010 / desktop catchup
+ #include <asm/irq_remapping.h>
+ #include <asm/perf_event.h>
+@@ -895,7 +896,9 @@ void __irq_entry smp_apic_timer_interrupt(struct pt_regs *regs)
+ 	 */
+ 	irq_enter();
+ 	exit_idle();
++	trace_local_timer_entry(LOCAL_TIMER_VECTOR);
+ 	local_apic_timer_interrupt();
++	trace_local_timer_exit(LOCAL_TIMER_VECTOR);
+ 	irq_exit();
  
-diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-index e68a8e5..c5f856a 100644
---- a/include/linux/interrupt.h
-+++ b/include/linux/interrupt.h
-@@ -42,7 +42,6 @@
-  *
-  * IRQF_DISABLED - keep irqs disabled when calling the action handler.
-  *                 DEPRECATED. This flag is a NOOP and scheduled to be removed
-- * IRQF_SAMPLE_RANDOM - irq is used to feed the random generator
-  * IRQF_SHARED - allow sharing the irq among several devices
-  * IRQF_PROBE_SHARED - set by callers when they expect sharing mismatches to occur
-  * IRQF_TIMER - Flag to mark this interrupt as timer interrupt
-@@ -61,7 +60,6 @@
-  *                resume time.
+ 	set_irq_regs(old_regs);
+@@ -1881,6 +1884,7 @@ void smp_spurious_interrupt(struct pt_regs *regs)
+ 
+ 	irq_enter();
+ 	exit_idle();
++	trace_arch_irq_vector_entry(SPURIOUS_APIC_VECTOR);
+ 	/*
+ 	 * Check if this really is a spurious interrupt and ACK it
+ 	 * if it is a vectored one.  Just in case...
+@@ -1895,6 +1899,7 @@ void smp_spurious_interrupt(struct pt_regs *regs)
+ 	/* see sw-dev-man vol 3, chapter 7.4.13.5 */
+ 	pr_info("spurious APIC interrupt on CPU#%d, "
+ 		"should never happen.\n", smp_processor_id());
++	trace_arch_irq_vector_exit(SPURIOUS_APIC_VECTOR);
+ 	irq_exit();
+ }
+ 
+@@ -1918,6 +1923,7 @@ void smp_error_interrupt(struct pt_regs *regs)
+ 
+ 	irq_enter();
+ 	exit_idle();
++	trace_arch_irq_vector_entry(ERROR_APIC_VECTOR);
+ 	/* First tickle the hardware, only then report what went on. -- REW */
+ 	v0 = apic_read(APIC_ESR);
+ 	apic_write(APIC_ESR, 0);
+@@ -1938,6 +1944,7 @@ void smp_error_interrupt(struct pt_regs *regs)
+ 
+ 	apic_printk(APIC_DEBUG, KERN_CONT "\n");
+ 
++	trace_arch_irq_vector_exit(ERROR_APIC_VECTOR);
+ 	irq_exit();
+ }
+ 
+diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+index 47a1870..63c2cc8 100644
+--- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
++++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+@@ -23,6 +23,7 @@
+ #include <linux/init.h>
+ #include <linux/smp.h>
+ #include <linux/cpu.h>
++#include <trace/events/irq_vectors.h>
+ 
+ #include <asm/processor.h>
+ #include <asm/apic.h>
+@@ -382,8 +383,10 @@ asmlinkage void smp_thermal_interrupt(struct pt_regs *regs)
+ {
+ 	irq_enter();
+ 	exit_idle();
++	trace_arch_irq_vector_entry(THERMAL_APIC_VECTOR);
+ 	inc_irq_stat(irq_thermal_count);
+ 	smp_thermal_vector();
++	trace_arch_irq_vector_exit(THERMAL_APIC_VECTOR);
+ 	irq_exit();
+ 	/* Ack only at the end to avoid potential reentry */
+ 	ack_APIC_irq();
+diff --git a/arch/x86/kernel/cpu/mcheck/threshold.c b/arch/x86/kernel/cpu/mcheck/threshold.c
+index aa578ca..de74768 100644
+--- a/arch/x86/kernel/cpu/mcheck/threshold.c
++++ b/arch/x86/kernel/cpu/mcheck/threshold.c
+@@ -3,6 +3,7 @@
   */
- #define IRQF_DISABLED		0x00000020
--#define IRQF_SAMPLE_RANDOM	0x00000040
- #define IRQF_SHARED		0x00000080
- #define IRQF_PROBE_SHARED	0x00000100
- #define __IRQF_TIMER		0x00000200
--- 
-1.7.11.1.108.gb129051
-
+ #include <linux/interrupt.h>
+ #include <linux/kernel.h>
++#include <trace/events/irq_vectors.h>
+ 
+ #include <asm/irq_vectors.h>
+ #include <asm/apic.h>
+@@ -21,8 +22,10 @@ asmlinkage void smp_threshold_interrupt(void)
+ {
+ 	irq_enter();
+ 	exit_idle();
++	trace_arch_irq_vector_entry(THRESHOLD_APIC_VECTOR);
+ 	inc_irq_stat(irq_threshold_count);
+ 	mce_threshold_vector();
++	trace_arch_irq_vector_exit(THRESHOLD_APIC_VECTOR);
+ 	irq_exit();
+ 	/* Ack only at the end to avoid potential reentry */
+ 	ack_APIC_irq();
+diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
+index 3dafc60..575524d 100644
+--- a/arch/x86/kernel/irq.c
++++ b/arch/x86/kernel/irq.c
+@@ -18,6 +18,9 @@
+ #include <asm/mce.h>
+ #include <asm/hw_irq.h>
+ 
++#define CREATE_TRACE_POINTS
++#include <trace/events/irq_vectors.h>
++
+ atomic_t irq_err_count;
+ 
+ /* Function pointer for generic interrupt vector handling */
+@@ -218,11 +221,13 @@ void smp_x86_platform_ipi(struct pt_regs *regs)
+ 
+ 	exit_idle();
+ 
++	trace_arch_irq_vector_entry(X86_PLATFORM_IPI_VECTOR);
+ 	inc_irq_stat(x86_platform_ipis);
+ 
+ 	if (x86_platform_ipi_callback)
+ 		x86_platform_ipi_callback();
+ 
++	trace_arch_irq_vector_exit(X86_PLATFORM_IPI_VECTOR);
+ 	irq_exit();
+ 
+ 	set_irq_regs(old_regs);
+diff --git a/arch/x86/kernel/irq_work.c b/arch/x86/kernel/irq_work.c
+index ca8f703..2cf7505 100644
+--- a/arch/x86/kernel/irq_work.c
++++ b/arch/x86/kernel/irq_work.c
+@@ -8,13 +8,16 @@
+ #include <linux/irq_work.h>
+ #include <linux/hardirq.h>
+ #include <asm/apic.h>
++#include <trace/events/irq_vectors.h>
+ 
+ void smp_irq_work_interrupt(struct pt_regs *regs)
+ {
+ 	irq_enter();
+ 	ack_APIC_irq();
++	trace_irq_work_entry(IRQ_WORK_VECTOR);
+ 	inc_irq_stat(apic_irq_work_irqs);
+ 	irq_work_run();
++	trace_irq_work_exit(IRQ_WORK_VECTOR);
+ 	irq_exit();
+ }
+ 
+diff --git a/arch/x86/kernel/nmi.c b/arch/x86/kernel/nmi.c
+index a0b2f84..84e8102 100644
+--- a/arch/x86/kernel/nmi.c
++++ b/arch/x86/kernel/nmi.c
+@@ -28,6 +28,7 @@
+ #include <asm/mach_traps.h>
+ #include <asm/nmi.h>
+ #include <asm/x86_init.h>
++#include <trace/events/irq_vectors.h>
+ 
+ struct nmi_desc {
+ 	spinlock_t lock;
+@@ -463,12 +464,14 @@ do_nmi(struct pt_regs *regs, long error_code)
+ 	nmi_nesting_preprocess(regs);
+ 
+ 	nmi_enter();
++	trace_nmi_entry(NMI_VECTOR);
+ 
+ 	inc_irq_stat(__nmi_count);
+ 
+ 	if (!ignore_nmis)
+ 		default_do_nmi(regs);
+ 
++	trace_nmi_exit(NMI_VECTOR);
+ 	nmi_exit();
+ 
+ 	/* On i386, may loop back to preprocess */
+diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
+index 48d2b7d..5b2d6de 100644
+--- a/arch/x86/kernel/smp.c
++++ b/arch/x86/kernel/smp.c
+@@ -23,6 +23,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/cpu.h>
+ #include <linux/gfp.h>
++#include <trace/events/irq_vectors.h>
+ 
+ #include <asm/mtrr.h>
+ #include <asm/tlbflush.h>
+@@ -252,8 +253,10 @@ finish:
+ void smp_reschedule_interrupt(struct pt_regs *regs)
+ {
+ 	ack_APIC_irq();
++	trace_reschedule_entry(RESCHEDULE_VECTOR);
+ 	inc_irq_stat(irq_resched_count);
+ 	scheduler_ipi();
++	trace_reschedule_exit(RESCHEDULE_VECTOR);
+ 	/*
+ 	 * KVM uses this interrupt to force a cpu out of guest mode
+ 	 */
+@@ -263,8 +266,10 @@ void smp_call_function_interrupt(struct pt_regs *regs)
+ {
+ 	ack_APIC_irq();
+ 	irq_enter();
++	trace_call_function_entry(CALL_FUNCTION_VECTOR);
+ 	generic_smp_call_function_interrupt();
+ 	inc_irq_stat(irq_call_count);
++	trace_call_function_exit(CALL_FUNCTION_VECTOR);
+ 	irq_exit();
+ }
+ 
+@@ -272,8 +277,10 @@ void smp_call_function_single_interrupt(struct pt_regs *regs)
+ {
+ 	ack_APIC_irq();
+ 	irq_enter();
++	trace_call_function_single_entry(CALL_FUNCTION_SINGLE_VECTOR);
+ 	generic_smp_call_function_single_interrupt();
+ 	inc_irq_stat(irq_call_count);
++	trace_call_function_single_exit(CALL_FUNCTION_SINGLE_VECTOR);
+ 	irq_exit();
+ }
+ 
+diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
+index 5e57e11..8a66e91 100644
+--- a/arch/x86/mm/tlb.c
++++ b/arch/x86/mm/tlb.c
+@@ -5,6 +5,7 @@
+ #include <linux/smp.h>
+ #include <linux/interrupt.h>
+ #include <linux/module.h>
++#include <trace/events/irq_vectors.h>
+ #include <linux/cpu.h>
+ 
+ #include <asm/tlbflush.h>
+@@ -143,6 +144,7 @@ void smp_invalidate_interrupt(struct pt_regs *regs)
+ 	sender = ~regs->orig_ax - INVALIDATE_TLB_VECTOR_START;
+ 	f = &flush_state[sender];
+ 
++	trace_invalidate_tlb_entry(INVALIDATE_TLB_VECTOR_START + sender);
+ 	if (!cpumask_test_cpu(cpu, to_cpumask(f->flush_cpumask)))
+ 		goto out;
+ 		/*
+@@ -169,6 +171,7 @@ out:
+ 	cpumask_clear_cpu(cpu, to_cpumask(f->flush_cpumask));
+ 	smp_mb__after_clear_bit();
+ 	inc_irq_stat(irq_tlb_count);
++	trace_invalidate_tlb_exit(INVALIDATE_TLB_VECTOR_START + sender);
+ }
+ 
+ static void flush_tlb_others_ipi(const struct cpumask *cpumask,
+diff --git a/include/trace/events/irq_vectors.h b/include/trace/events/irq_vectors.h
+new file mode 100644
+index 0000000..7c0ccce
+--- /dev/null
++++ b/include/trace/events/irq_vectors.h
+@@ -0,0 +1,231 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM irq_vectors
++
++#if !defined(_TRACE_IRQ_VECTORS_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_IRQ_VECTORS_H
++
++#include <linux/tracepoint.h>
++#include <asm/irq.h>
++
++#ifndef irq_vector_name_table
++#define irq_vector_name_table { -1, NULL }
++#endif
++
++
++/*
++ * This class is used by generic ,cross-architecture tracepoints.
++ */
++DECLARE_EVENT_CLASS(irq_vector,
++
++	TP_PROTO(int vector),
++
++	TP_ARGS(vector),
++
++	TP_STRUCT__entry(
++		__field(	int,	vector	)
++	),
++
++	TP_fast_assign(
++		__entry->vector = vector;
++	),
++
++	TP_printk("vector=%d", __entry->vector)
++);
++
++/*
++ * nmi_entry - called before enterring a nmi vector handler
++ */
++DEFINE_EVENT(irq_vector, nmi_entry,
++
++	TP_PROTO(int vector),
++
++	TP_ARGS(vector)
++);
++
++/*
++ * nmi_exit - called immediately after the interrupt vector
++ * handler returns
++ */
++DEFINE_EVENT(irq_vector, nmi_exit,
++
++	TP_PROTO(int vector),
++
++	TP_ARGS(vector)
++);
++
++/*
++ * local_timer_entry - called before enterring a local timer interrupt
++ * vector handler
++ */
++DEFINE_EVENT(irq_vector, local_timer_entry,
++
++	TP_PROTO(int vector),
++
++	TP_ARGS(vector)
++);
++
++/*
++ * local_timer_exit - called immediately after the interrupt vector
++ * handler returns
++ */
++DEFINE_EVENT(irq_vector, local_timer_exit,
++
++	TP_PROTO(int vector),
++
++	TP_ARGS(vector)
++);
++
++/*
++ * reschedule_entry - called before enterring a reschedule vector handler
++ */
++DEFINE_EVENT(irq_vector, reschedule_entry,
++
++	TP_PROTO(int vector),
++
++	TP_ARGS(vector)
++);
++
++/*
++ * reschedule_exit - called immediately after the interrupt vector
++ * handler returns
++ */
++DEFINE_EVENT(irq_vector, reschedule_exit,
++
++	TP_PROTO(int vector),
++
++	TP_ARGS(vector)
++);
++
++/*
++ * call_function_entry - called before enterring a call function
++ *			 vector handler
++ */
++DEFINE_EVENT(irq_vector, call_function_entry,
++
++	TP_PROTO(int vector),
++
++	TP_ARGS(vector)
++);
++
++/*
++ * call_function_exit - called immediately after the interrupt vector
++ * handler returns
++ */
++DEFINE_EVENT(irq_vector, call_function_exit,
++
++	TP_PROTO(int vector),
++
++	TP_ARGS(vector)
++);
++
++/*
++ * call_function_single_entry - called before enterring a call function
++ * single vector handler
++ */
++DEFINE_EVENT(irq_vector, call_function_single_entry,
++
++	TP_PROTO(int vector),
++
++	TP_ARGS(vector)
++);
++
++/*
++ * call_function_single_exit - called immediately after the interrupt vector
++ * handler returns
++ */
++DEFINE_EVENT(irq_vector, call_function_single_exit,
++
++	TP_PROTO(int vector),
++
++	TP_ARGS(vector)
++);
++
++/*
++ * irq_work_entry - called before enterring an irq work vector handler
++ */
++DEFINE_EVENT(irq_vector, irq_work_entry,
++
++	TP_PROTO(int vector),
++
++	TP_ARGS(vector)
++);
++
++/*
++ * irq_work_exit - called immediately after the interrupt vector
++ * handler returns
++ */
++DEFINE_EVENT(irq_vector, irq_work_exit,
++
++	TP_PROTO(int vector),
++
++	TP_ARGS(vector)
++);
++
++/*
++ * invalidate_tlb_entry - called before enterring an invalidate tlb
++ * vector handler
++ */
++DEFINE_EVENT(irq_vector, invalidate_tlb_entry,
++
++	TP_PROTO(int vector),
++
++	TP_ARGS(vector)
++);
++
++/*
++ * invalidate_tlb_exit - called immediately after the interrupt vector
++ * handler returns
++ */
++DEFINE_EVENT(irq_vector, invalidate_tlb_exit,
++
++	TP_PROTO(int vector),
++
++	TP_ARGS(vector)
++);
++
++/*
++ * This class is used by arch-specific tracepoints.
++ */
++DECLARE_EVENT_CLASS(arch_irq_vector,
++
++	TP_PROTO(int vector),
++
++	TP_ARGS(vector),
++
++	TP_STRUCT__entry(
++		__field(	int,	vector	)
++	),
++
++	TP_fast_assign(
++		__entry->vector = vector;
++	),
++
++	TP_printk("vector=%d name=%s", __entry->vector,
++		__print_symbolic(__entry->vector, irq_vector_name_table))
++);
++
++/*
++ * arch_irq_vector_entry - called before enterring a interrupt vector handler
++ */
++DEFINE_EVENT(arch_irq_vector, arch_irq_vector_entry,
++
++	TP_PROTO(int vector),
++
++	TP_ARGS(vector)
++);
++
++/*
++ * arch_irq_vector_exit - called immediately after the interrupt vector
++ * handler returns
++ */
++DEFINE_EVENT(arch_irq_vector, arch_irq_vector_exit,
++
++	TP_PROTO(int vector),
++
++	TP_ARGS(vector)
++);
++
++#endif /*  _TRACE_IRQ_VECTORS_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
+-- 1.7.1
