@@ -1,69 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754661Ab2GQL0X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 07:26:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5063 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751898Ab2GQL0T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 07:26:19 -0400
-Date: Tue, 17 Jul 2012 14:26:45 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Stefan Hajnoczi <stefanha@gmail.com>
-Cc: Asias He <asias@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-aio@kvack.org, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Benjamin LaHaise <bcrl@kvack.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 0/5] Add vhost-blk support
-Message-ID: <20120717112645.GA9363@redhat.com>
-References: <1342107302-28116-1-git-send-email-asias@redhat.com>
- <CAJSP0QWgmXns89se+xdGgM6i1_hsfVWPQ8caHua9d-dDA4CTDQ@mail.gmail.com>
- <50052276.2080906@redhat.com>
- <500527BA.9000001@redhat.com>
- <50052E7E.6020100@redhat.com>
- <CAJSP0QW0tPV3WASGOBRE4hL=8zzSFQ6T=bHbEwMAzmHR9wnwJg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJSP0QW0tPV3WASGOBRE4hL=8zzSFQ6T=bHbEwMAzmHR9wnwJg@mail.gmail.com>
+	id S1753073Ab2GQLdg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 07:33:36 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:61606 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751014Ab2GQLde (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 07:33:34 -0400
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, linux-ia64@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-next@vger.kernel.org, "Stephen Rothwell" <sfr@canb.auug.org.au>
+Cc: Sedat Dilek <sedat.dilek@gmail.com>
+Subject: [PATCH -next] random: Remove remaining relicts of rand_initialize_irq()
+Date: Tue, 17 Jul 2012 13:33:13 +0200
+Message-Id: <1342524793-2522-1-git-send-email-sedat.dilek@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 17, 2012 at 12:11:15PM +0100, Stefan Hajnoczi wrote:
-> On Tue, Jul 17, 2012 at 10:21 AM, Asias He <asias@redhat.com> wrote:
-> > On 07/17/2012 04:52 PM, Paolo Bonzini wrote:
-> >>
-> >> Il 17/07/2012 10:29, Asias He ha scritto:
-> >>>
-> >>> So, vhost-blk at least saves ~6 syscalls for us in each request.
-> >>
-> >>
-> >> Are they really 6?  If I/O is coalesced by a factor of 3, for example
-> >> (i.e. each exit processes 3 requests), it's really 2 syscalls per request.
-> >
-> >
-> > Well. I am counting the number of syscalls in one notify and response
-> > process. Sure the IO can be coalesced.
-> 
-> Linux AIO also supports batching in io_submit() and io_getevents().
-> Depending on the request pattern in the vring when you process it, you
-> should be able to do better than 1 set of syscalls per host I/O
-> request.
-> 
-> Are you taking advantage of that at the moment in your userspace benchmark?
-> 
-> Stefan
+rand_initialize_irq() was removed here:
 
-Injecting an interrupt directly from kernel bypasses two context switches.
-Yes some worloads can coalesce interrupts efficiently but others can't.
-It is not really hard to speculate more.
+commit 946672f548682905d8ecdab33bb6e2c705418505
+"random: remove rand_initialize_irq()"
 
-Personally I don't understand where all this speculation leads us.
-Are you guys disputing the measurements posted? If not would not
-it be better if discussion focused on the amount of extra code versus
-measured gain?
+The AB3100 mfd-driver is the only driver still using it and breaks
+with the following error-messages in linux-next (next-20120717):
+...
+drivers/built-in.o: In function `ab3100_probe':
+ab3100-core.c:(.devinit.text+0xbf97): undefined reference to `rand_initialize_irq'
 
+Fix this issue and remove all remaining relicts of rand_initialize_irq().
+
+Might be worth to fold-in these changes into the original commit.
+
+Tested against linux-next (next-20120717) on a Ubuntu/precise AMD64 host.
+
+[ v2: Polish up subject and commit message ]
+
+Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
+---
+ arch/ia64/kernel/irq_ia64.c |    1 -
+ drivers/mfd/ab3100-core.c   |    2 --
+ include/linux/random.h      |    2 --
+ 3 files changed, 5 deletions(-)
+
+diff --git a/arch/ia64/kernel/irq_ia64.c b/arch/ia64/kernel/irq_ia64.c
+index 5c3e088..1034884 100644
+--- a/arch/ia64/kernel/irq_ia64.c
++++ b/arch/ia64/kernel/irq_ia64.c
+@@ -23,7 +23,6 @@
+ #include <linux/ioport.h>
+ #include <linux/kernel_stat.h>
+ #include <linux/ptrace.h>
+-#include <linux/random.h>	/* for rand_initialize_irq() */
+ #include <linux/signal.h>
+ #include <linux/smp.h>
+ #include <linux/threads.h>
+diff --git a/drivers/mfd/ab3100-core.c b/drivers/mfd/ab3100-core.c
+index e799050..78fca29 100644
+--- a/drivers/mfd/ab3100-core.c
++++ b/drivers/mfd/ab3100-core.c
+@@ -934,8 +934,6 @@ static int __devinit ab3100_probe(struct i2c_client *client,
+ 					IRQF_ONESHOT, "ab3100-core", ab3100);
+ 	if (err)
+ 		goto exit_no_irq;
+-	/* This real unpredictable IRQ is of course sampled for entropy */
+-	rand_initialize_irq(client->irq);
+ 
+ 	err = abx500_register_ops(&client->dev, &ab3100_ops);
+ 	if (err)
+diff --git a/include/linux/random.h b/include/linux/random.h
+index 29e217a..ac621ce 100644
+--- a/include/linux/random.h
++++ b/include/linux/random.h
+@@ -48,8 +48,6 @@ struct rnd_state {
+ 
+ #ifdef __KERNEL__
+ 
+-extern void rand_initialize_irq(int irq);
+-
+ extern void add_device_randomness(const void *, unsigned int);
+ extern void add_input_randomness(unsigned int type, unsigned int code,
+ 				 unsigned int value);
 -- 
-MST
+1.7.9.5
+
