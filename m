@@ -1,158 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755491Ab2GQPOR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 11:14:17 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:55817 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754163Ab2GQPOM (ORCPT
+	id S1755473Ab2GQPUK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 11:20:10 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58558 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754163Ab2GQPUH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 11:14:12 -0400
-Message-ID: <1342538038.1813.1.camel@koala>
-Subject: Re: [PATCH 0/3] fs/sysv: stop using write_supers and s_dirt
-From: Artem Bityutskiy <dedekind1@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
-        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Date: Tue, 17 Jul 2012 18:13:58 +0300
-In-Reply-To: <20120713144244.f3c9fb27.akpm@linux-foundation.org>
-References: <1341323008-29414-1-git-send-email-dedekind1@gmail.com>
-	 <1342103878.18274.98.camel@sauron.fi.intel.com>
-	 <20120713144244.f3c9fb27.akpm@linux-foundation.org>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-O4VLXN2fzFYygjYKmMHD"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	Tue, 17 Jul 2012 11:20:07 -0400
+Date: Tue, 17 Jul 2012 16:20:01 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Wolfram Sang <w.sang@pengutronix.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alessandro Rubini <rubini@gnudd.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        devicetree-discuss@lists.ozlabs.org,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the
+ i2c-embedded tree
+Message-ID: <20120717152001.GF4477@opensource.wolfsonmicro.com>
+References: <5003FB7C.4030509@linaro.org>
+ <20120717130650.GB27595@sirena.org.uk>
+ <500568D9.10805@linaro.org>
+ <20120717133550.GC4477@opensource.wolfsonmicro.com>
+ <50057058.2060002@linaro.org>
+ <20120717142222.GE4477@opensource.wolfsonmicro.com>
+ <50057C1A.80606@linaro.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="hUH5gZbnpyIv7Mn4"
+Content-Disposition: inline
+In-Reply-To: <50057C1A.80606@linaro.org>
+X-Cookie: Your aim is high and to the right.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-O4VLXN2fzFYygjYKmMHD
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+--hUH5gZbnpyIv7Mn4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Date: Tue, 3 Jul 2012 15:47:44 +0300
-Subject: [PATCH] fs/sysv: stop using write_super and s_dirt
+On Tue, Jul 17, 2012 at 03:52:10PM +0100, Lee Jones wrote:
 
-It does not look like sysv FS needs 'write_super()' at all, because all it
-does is a timestamp update. I cannot test this patch, because this
-file-system is so old and probably has not been used by anyone for years,
-so there are no tools to create it in Linux.
+> I think it would be okay to take the 3 patches due for the v3.6
+> merge window, which target the nmk-i2c driver. If any consolidation
+> happens in the mean-time/future I will personally do the work to
+> bring the nmk-i2c into line to use any generic bindings which
+> result.
 
-In sysv FS marking the superblock as dirty is basically marking the superbl=
-ock
-buffers as drity and then setting the s_dirt flag. And when 'write_super()'=
- is
-executed to handle the s_dirt flag, we just update the timestamp and again =
-mark
-the superblock buffer as dirty. The reason for this strange behavior is
-probably that the Linux sysv implementation is trying to do what sysv itsel=
-f
-was doing:
+> No one else is ever going to use these vendor specific bindings, so
+> I'm sure no issues will arise. It also means that we have a fully
+> enabled driver which is capable of receiving a new configuration via
+> minor changes to the dts, which is important for the current (only)
+> user of this driver for an upcoming project.
 
-"It's the way sysv itself does stuff. The timestamp on v7/sys3/sys5
-reflects the clock on the box. A lot of ancient boxes with no decent
-hardware clocks used to reset the system time off the root fs superblock
-on a loss of power" (Alan Cox).
+So, this is pretty much what vendors always say about this stuff...
 
-However, the Linux sysv FS implementation is very unlikely of much help for
-clock-less systems anyway, because it updates the superblock time-stamp _on=
-ly_
-if there was write activity, therwise it does not.
+Looking at what's specified in the platform data in the current kernel
+it seems like there's a mixture of things in there that are board and
+silicon specific.  We've got parameters like the the speed mode and
+timeout which are reasonably board specific but we've also got things
+like the FIFO sizes which shouldn't be at all board specific and slsu
+which really looks like it's something that that the driver ought to be
+able to figure out for itself.
 
-Thus, we can update the timestamp more opprtunistically - on unmount or rem=
-ount
-of sync, and nothing should change. So this patch removes 'sysv_write_super=
-()'
-and 's_dirt'.
-
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
----
-
-Updated the changelog, nothing else.
-
- fs/sysv/inode.c |   10 ----------
- fs/sysv/sysv.h  |    1 -
- 2 files changed, 0 insertions(+), 11 deletions(-)
-
-diff --git a/fs/sysv/inode.c b/fs/sysv/inode.c
-index f20ffe3..80e1e2b 100644
---- a/fs/sysv/inode.c
-+++ b/fs/sysv/inode.c
-@@ -43,7 +43,6 @@ static int sysv_sync_fs(struct super_block *sb, int wait)
- 	 * then attach current time stamp.
- 	 * But if the filesystem was marked clean, keep it clean.
- 	 */
--	sb->s_dirt =3D 0;
- 	old_time =3D fs32_to_cpu(sbi, *sbi->s_sb_time);
- 	if (sbi->s_type =3D=3D FSTYPE_SYSV4) {
- 		if (*sbi->s_sb_state =3D=3D cpu_to_fs32(sbi, 0x7c269d38 - old_time))
-@@ -57,14 +56,6 @@ static int sysv_sync_fs(struct super_block *sb, int wait=
-)
- 	return 0;
- }
-=20
--static void sysv_write_super(struct super_block *sb)
--{
--	if (!(sb->s_flags & MS_RDONLY))
--		sysv_sync_fs(sb, 1);
--	else
--		sb->s_dirt =3D 0;
--}
--
- static int sysv_remount(struct super_block *sb, int *flags, char *data)
- {
- 	struct sysv_sb_info *sbi =3D SYSV_SB(sb);
-@@ -351,7 +342,6 @@ const struct super_operations sysv_sops =3D {
- 	.write_inode	=3D sysv_write_inode,
- 	.evict_inode	=3D sysv_evict_inode,
- 	.put_super	=3D sysv_put_super,
--	.write_super	=3D sysv_write_super,
- 	.sync_fs	=3D sysv_sync_fs,
- 	.remount_fs	=3D sysv_remount,
- 	.statfs		=3D sysv_statfs,
-diff --git a/fs/sysv/sysv.h b/fs/sysv/sysv.h
-index 11b0767..0bc35fd 100644
---- a/fs/sysv/sysv.h
-+++ b/fs/sysv/sysv.h
-@@ -117,7 +117,6 @@ static inline void dirty_sb(struct super_block *sb)
- 	mark_buffer_dirty(sbi->s_bh1);
- 	if (sbi->s_bh1 !=3D sbi->s_bh2)
- 		mark_buffer_dirty(sbi->s_bh2);
--	sb->s_dirt =3D 1;
- }
-=20
-=20
---=20
-1.7.7.6
-
-
-
---=-O4VLXN2fzFYygjYKmMHD
+--hUH5gZbnpyIv7Mn4
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABAgAGBQJQBYE2AAoJECmIfjd9wqK0sdYP/j9LSv1wXED4HyPDclR8tlSS
-AUE20IGm3AUoaJDMczu9AFbajigzqCwZ2C4FPotQ3hFpmpA+ouwf6zHg1LBUDtuO
-uBdvHPMx89AXCc3fb+ax9JD/stA+GYd8BKdZr+nZitxIyvmyubZZDf6HjjsMxqWS
-hV/260tDn5OSVs2ZbNZYh17wKtKfPyULPqxjBZUtVaRY7HognY+R+I+L8bw8heUK
-htw+pktquXnCNbXnykNunCuzkUtgKbkG2Ghp14JjFgQsmWevNe6t4cPn2f0airOk
-x+xe5Abg4M/ya/HYhZevH8T/6PlBAfocU+kMbBVaOdMrhWjGRz9yDAX5PGBIKiET
-g+zsnHkpqB3CFeASB1MG6cknP31RQng+OQ8hiQ4q17+PKO+iFojOktgsis6W+2Iv
-NlUxORNBgrwj4ZcNkRjpkW0kbMR2S7GGDXbRL24eAy9MjEz3Rn73tRX1TKB6L+ku
-n8KS4trlaFENFa91b24yM1n+0qgddBisx3TrG00n8MYHUH9AcV/mLObUigm4t+8P
-XWkrol5NPmb6DvFX91n5xEOqUFxD3o3vWNPr5wbDAVpWALlzmNF5cD3rMfvMAbUd
-zFAjGLHJ1rRNHdKyHLaz6eeu9rqTQswPSnjZspwek6zhN1j5SAX9Bb9UFtqlgMvz
-G7S2A3hSXKiLaOMDQoJ/
-=vzk8
+iQIcBAEBAgAGBQJQBYKOAAoJEBus8iNuMP3dQPgP/i14QVmEVzfiikhATrJOg4bW
+4dkAqqzsSGoiPXDvLWshMzvN8d1wKwRQcFdELNc8aIvy5bpZSnvjxTASpM5HRv4D
+1l6ph901olMmqwkYUG2iPo2RP2DrOK9gF+fgVSIpj2vsxpH3JGuba1O9E486DenM
+Wn7ciWXA6nmeJW0XlDQYl7Ln7Glth4hy+aZDFW1svkqUNT7dfXWZLbA21bjDuDW4
+NLAcAfSx23snXXlQi2gY1CNnIHOP+CKGmICbRUhG5MbfLWC61V015V3rnlmu9/a/
+Z9wav3yF9m8bCUal27oIIWyeyGyz4HxAkQNlRziWUcsJTHhgyhT6x2XU1puRNARh
+EVIveMqo2WmZ2eAzom2jg7BkP065BnH1392j4UbaHGv3TWXPz+zmS/ypCdpfi5mp
+CvcBSZSHDu96UCAUYyXhtAygPQ9A1CoVwIoLQJ1ZcRKATti6KPQ5sfOd+iQf1WvL
+rcUGAREcroaw1hj+QTlgVU8cI82ZSxCL3xc68+NjqKemcuUB74PTuye7Azw4/XLu
+zIW91RutdjRAPTgwcO8GeVlcOoT8CDih7EvyhGO+CTg9cTNF0IqAgbLciHTdjHg9
+r05TZ9j+BbAYy0EGozuuRqFLALGY66G9zZsuFjFP2ldgn9kqy8Z/FByTsFSNf1fy
+fGXoM7pZC8TY6Tk27dLO
+=jvqo
 -----END PGP SIGNATURE-----
 
---=-O4VLXN2fzFYygjYKmMHD--
-
+--hUH5gZbnpyIv7Mn4--
