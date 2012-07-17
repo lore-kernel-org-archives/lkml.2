@@ -1,80 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755021Ab2GQJvW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 05:51:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10594 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753121Ab2GQJvR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 05:51:17 -0400
-Date: Tue, 17 Jul 2012 12:51:43 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Asias He <asias@redhat.com>, Stefan Hajnoczi <stefanha@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-aio@kvack.org, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Benjamin LaHaise <bcrl@kvack.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 0/5] Add vhost-blk support
-Message-ID: <20120717095143.GD7949@redhat.com>
-References: <1342107302-28116-1-git-send-email-asias@redhat.com>
- <CAJSP0QWgmXns89se+xdGgM6i1_hsfVWPQ8caHua9d-dDA4CTDQ@mail.gmail.com>
- <50052276.2080906@redhat.com>
- <500527BA.9000001@redhat.com>
- <50052E7E.6020100@redhat.com>
- <5005313D.1000300@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5005313D.1000300@redhat.com>
+	id S1755060Ab2GQJ6q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 05:58:46 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:36920 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753686Ab2GQJ6n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 05:58:43 -0400
+Date: Tue, 17 Jul 2012 11:02:07 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Anton Arapov <anton@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@linux.intel.com>,
+        Bastien ROUCARIES <roucaries.bastien@gmail.com>,
+        Josh Hunt <joshhunt00@gmail.com>, Jiri Slaby <jirislaby@gmail.com>,
+        Arnaud Lacombe <lacombar@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: Re: Kerneloops.org defunct?
+Message-ID: <20120717110207.33cb6d8a@pyramind.ukuu.org.uk>
+In-Reply-To: <1342507240.21627.8.camel@bandura>
+References: <4DE6264A.2040901@gmail.com>
+	<20110601212432.2677b03a.rdunlap@xenotime.net>
+	<201106211534.10366.roucaries.bastien@gmail.com>
+	<CAE2SPAa=AD=YGyLJn2bX4E8Mu70BaXGi2CvL_fikPKP1gab7+g@mail.gmail.com>
+	<20110826173517.7321c086@lxorguk.ukuu.org.uk>
+	<CAE2SPAYuYTYj9ukDzitKs+d2uKZacJ5eFo7N+-p9pWgf1MWW2w@mail.gmail.com>
+	<20120625180536.GA29261@roeck-us.net>
+	<4FE8A9C0.3050802@linux.intel.com>
+	<20120625191233.GA29324@roeck-us.net>
+	<20120626071430.GA16299@bandura.brq.redhat.com>
+	<1342507240.21627.8.camel@bandura>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 17, 2012 at 11:32:45AM +0200, Paolo Bonzini wrote:
-> Il 17/07/2012 11:21, Asias He ha scritto:
-> >> It depends.  Like vhost-scsi, vhost-blk has the problem of a crippled
-> >> feature set: no support for block device formats, non-raw protocols,
-> >> etc.  This makes it different from vhost-net.
-> > 
-> > Data-plane qemu also has this cripppled feature set problem, no?
-> 
-> Yes, but that is just a proof of concept.  We can implement a separate
-> I/O thread within the QEMU block layer, and add fast paths that resemble
-> data-path QEMU, without limiting the feature set.
-> 
-> > Does user always choose to use block devices format like qcow2? What
-> > if they prefer raw image or raw block device?
-> 
-> If they do, the code should hit fast paths and be fast.  But it should
-> be automatic, without the need for extra knobs.  aio=thread vs.
-> aio=native is already one knob too much IMHO.
+>   The reporting tool(Abrt) complicated the reporting and kerneloops.org
+> DNS still doesn't associated with the required ip address. ( Arjan? )
 
-Well one extra knob at qemu level is harmless IMO since
-the complexity can be handled by libvirt. For vhost-net
-libvirt already enables vhost automatically dependeing on backend
-used and I imagine a similar thing can happen here.
+Anton - just talk to the kernel.org maintainers and get oops.kernel.org
+set up somewhere and be done with it.
 
+>   - Starting from the Fedora 18 kernel oopses reporting will be
+> configured to send reports unconditionally, straight to the
+> kerneloops.org as it did the original tool.
+> (this, hopefully, will fix the volume of the oopses we are getting.)
 
-> >> So it begs the question, is it going to be used in production, or just a
-> >> useful reference tool?
-> > 
-> > This should be decided by user, I can not speak for them. What is wrong
-> > with adding one option for user which they can decide?
-> 
-> Having to explain the user about the relative benefits;
+And probably the volume of complaints about spyware. It should be asking
+permission even if "until further notice" is a choice.
 
-This can just be done automatically by libvirt.
+For some environments this is a major issue. Consider people with ARM or
+x86 prototype machines who are contractually forbidden from revealing a
+lot of data about the systems.
 
-> having to
-> support the API; having to handle transition from one more thing when
-> something better comes out.
-> 
-> Paolo
-
-Well this is true for any code. If the limited featureset which
-vhost-blk can accelerate is something many people use, then accelerating
-by 5-15% might outweight support costs.
-
--- 
-MST
+Alan
