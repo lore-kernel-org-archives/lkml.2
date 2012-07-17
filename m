@@ -1,80 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756520Ab2GQTkI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 15:40:08 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:56740 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755693Ab2GQTkF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 15:40:05 -0400
-Date: Tue, 17 Jul 2012 14:39:51 -0500
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: =?utf-8?Q?Martin-=C3=89ric?= Racine <martin-eric.racine@iki.fi>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-kbuild@vger.kernel.org, debian-kernel@lists.debian.org
-Subject: Re: [PATCH] scripts/package/builddeb: upgrade to current practices
-Message-ID: <20120717193951.GA15208@burratino>
-References: <1342547874.5129.2.camel@henna.lan>
+	id S1756534Ab2GQTkV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 15:40:21 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:51022 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756204Ab2GQTkL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 15:40:11 -0400
+Date: Tue, 17 Jul 2012 21:40:06 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: =?utf-8?B?UGF3ZcWC?= Sikora <pluto@pld-linux.org>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
+Subject: Re: Linux 3.5-rc7
+Message-ID: <20120717194004.GA15311@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	=?utf-8?B?UGF3ZcWC?= Sikora <pluto@pld-linux.org>,
+	linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
+References: <1822123.rTBG69eEoS@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <1342547874.5129.2.camel@henna.lan>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1822123.rTBG69eEoS@localhost>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Jul 17, 2012 at 09:07:40PM +0200, Paweł Sikora wrote:
+> Hi,
+> 
+> the modular kernel fails to build:
+> 
+> (...)
+>   Building modules, stage 2.
+>   MODPOST 3571 modules
+> 
+> WARNING: drivers/scsi/fcoe/libfcoe.o(.init.text+0x1f): Section mismatch in reference from the function init_module() to the function .exit.text:fcoe_transport_exit()
+> The function __init init_module() references
+> a function __exit fcoe_transport_exit().
+> This is often seen when error handling in the init function
+> uses functionality in the exit path.
+> The fix is often to remove the __exit annotation of
+> fcoe_transport_exit() so it may be used outside an exit section.
+> 
+> WARNING: drivers/staging/ipack/bridges/tpci200.o(.data+0x28): Section mismatch in reference from the variable tpci200_pci_drv to the function .devexit.text:tpci200_pci_remove()
+> The variable tpci200_pci_drv references
+> the function __devexit tpci200_pci_remove()
+> If the reference is valid then annotate the
+> variable with __exit* (see linux/init.h) or name the variable:
+> *driver, *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
 
-Martin-Éric Racine wrote:
+Those are section mismatch warnings, see the help to
+CONFIG_DEBUG_SECTION_MISMATCH.
 
-> Signed-off-by: Martin-Éric Racine <martin-eric.racine@iki.fi>
-
-Thanks.  This patch does many things at once instead of the usual
-practice of "one patch per logical change", but oh well.
-
-[...]
-> --- a/scripts/package/builddeb
-> +++ b/scripts/package/builddeb
-> @@ -79,9 +79,9 @@ fwdir="$objtree/debian/fwtmp"
->  kernel_headers_dir="$objtree/debian/hdrtmp"
->  libc_headers_dir="$objtree/debian/headertmp"
->  packagename=linux-image-$version
-> -fwpackagename=linux-firmware-image
->  kernel_headers_packagename=linux-headers-$version
->  libc_headers_packagename=linux-libc-dev
-> +fwpackagename=firmware-linux
-
-Micronit: any reason the lines are reordered here?
-
-> @@ -188,17 +188,17 @@ This is a packacked upstream version of the Linux kernel.
->  The sources may be found at most Linux ftp sites, including:
->  ftp://ftp.kernel.org/pub/linux/kernel
->  
-> -Copyright: 1991 - 2009 Linus Torvalds and others.
-> +Copyright: 1991-2012 Linus Torvalds and others.
->  
-> -The git repository for mainline kernel development is at:
-> -git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
-> +The GIT repository for mainline kernel development is at:
-> +git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
-
-I personally like to spell it as "Git". ;-)
-
-[...]
-> @@ -273,6 +273,9 @@ if [ -e "$tmpdir/lib/firmware" ]; then
->  
->  Package: $fwpackagename
->  Architecture: all
-> +Conflicts: firmware-linux-free, firmware-linux-nonfree
-> +Provides: firmware-linux-free, firmware-linux-nonfree
-> +Replaces: firmware-linux-free, firmware-linux-nonfree
-
-I assume you mean Breaks+Replaces.  Do the files actually overlap,
-or is this change being overly cautious?  I would expect the files
-not to overlap because the package build with deb-pkg puts firmware
-in a versioned subdirectory "/lib/firmware/<version>".
-
-Hope that helps,
-Jonathan
+-- 
+Regards/Gruss,
+Boris.
