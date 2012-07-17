@@ -1,63 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756225Ab2GQSL3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 14:11:29 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64998 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753055Ab2GQSL1 (ORCPT
+	id S1756274Ab2GQSMD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 14:12:03 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:37199 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753055Ab2GQSMA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 14:11:27 -0400
-Date: Tue, 17 Jul 2012 11:09:18 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
-        Tony Luck <tony.luck@intel.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, devel@driverdev.osuosl.org,
-        linaro-kernel@lists.linaro.org, Arnd Bergmann <arnd@arndb.de>,
-        patches@linaro.org, Marco Stornelli <marco.stornelli@gmail.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        arve@android.com, Jesper Juhl <jj@chaosbits.net>,
-        John Stultz <john.stultz@linaro.org>, Shuah Khan <shuahkhan@gmail.com>,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, kernel-team@android.com,
-        Thomas Meyer <thomas@m3y3r.de>
-Subject: Re: [PATCH 7/8] pstore/ram: Make tracing log versioned
-Message-ID: <20120717180918.GA18671@lizard>
-References: <20120710001004.GA22744@lizard>
- <1341879046-5197-7-git-send-email-anton.vorontsov@linaro.org>
- <20120717165601.GA16001@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120717165601.GA16001@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 17 Jul 2012 14:12:00 -0400
+From: John Stultz <johnstul@us.ibm.com>
+To: stable@vger.kernel.org
+Cc: John Stultz <johnstul@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 06/11] 2.6.35.x: timekeeping: Fix leapsecond triggered load spike issue
+Date: Tue, 17 Jul 2012 14:05:37 -0400
+Message-Id: <1342548342-19683-7-git-send-email-johnstul@us.ibm.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1342548342-19683-1-git-send-email-johnstul@us.ibm.com>
+References: <1342548342-19683-1-git-send-email-johnstul@us.ibm.com>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12071718-1780-0000-0000-0000077CE5F7
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000287; HX=3.00000193; KW=3.00000007;
+ PH=3.00000001; SC=3.00000004; SDB=6.00157447; UDB=6.00035515; UTC=2012-07-17
+ 18:11:57
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 17, 2012 at 09:56:01AM -0700, Greg Kroah-Hartman wrote:
-[...]
-> That's nice, but it breaks the build on my system as linux_banner
-> somehow isn't enabled as part of the build?
+This is a backport of 4873fa070ae84a4115f0b3c9dfabc224f1bc7c51
 
-I really don't see how you managed to disable it. :-)
+The timekeeping code misses an update of the hrtimer subsystem after a
+leap second happened. Due to that timers based on CLOCK_REALTIME are
+either expiring a second early or late depending on whether a leap
+second has been inserted or deleted until an operation is initiated
+which causes that update. Unless the update happens by some other
+means this discrepancy between the timekeeping and the hrtimer data
+stays forever and timers are expired either early or late.
 
-init/version.c is built unconditionally, and it has
-'const char linux_banner[]' unconditionally. Then ram.c includes
-kernel.h, which unconditionally (well, under #ifdef __KERNEL__)
-includes printk.h, which has 'extern const char linux_banner[];'
-prototype...
+The reported immediate workaround - $ data -s "`date`" - is causing a
+call to clock_was_set() which updates the hrtimer data structures.
+See: http://www.sheeri.com/content/mysql-and-leap-second-high-cpu-and-fix
 
-I'm still looking further, but can you please send your config
-file? And may be gcc version?
+Add the missing clock_was_set() call to update_wall_time() in case of
+a leap second event. The actual update is deferred to softirq context
+as the necessary smp function call cannot be invoked from hard
+interrupt context.
 
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Reported-by: Jan Engelhardt <jengelh@inai.de>
+Reviewed-by: Ingo Molnar <mingo@kernel.org>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Prarit Bhargava <prarit@redhat.com>
+Cc: stable@vger.kernel.org
+Link: http://lkml.kernel.org/r/1341960205-56738-3-git-send-email-johnstul@us.ibm.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+---
+ kernel/time/timekeeping.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-p.s. While investigating this, I found that quite a lot of includes
-are missing in pstore headers, and I was able to trigger at least
-one issue. The patch will follow.
-
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 5fbcb9a..eaf1e09 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -760,6 +760,8 @@ static cycle_t logarithmic_accumulation(cycle_t offset, int shift)
+ 		leap = second_overflow(xtime.tv_sec);
+ 		xtime.tv_sec += leap;
+ 		wall_to_monotonic.tv_sec -= leap;
++		if (leap)
++			clock_was_set_delayed();
+ 	}
+ 
+ 	/* Accumulate raw time */
+@@ -870,6 +872,8 @@ void update_wall_time(void)
+ 		leap = second_overflow(xtime.tv_sec);
+ 		xtime.tv_sec += leap;
+ 		wall_to_monotonic.tv_sec -= leap;
++		if (leap)
++			clock_was_set_delayed();
+ 	}
+ 
+ 	timekeeping_update(false);
 -- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+1.7.9.5
+
