@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755409Ab2GQPDl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 11:03:41 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:43595 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755391Ab2GQPDk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 11:03:40 -0400
+	id S1755459Ab2GQPK2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 11:10:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55528 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754036Ab2GQPK0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 11:10:26 -0400
+Date: Tue, 17 Jul 2012 18:09:28 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Asias He <asias@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Benjamin LaHaise <bcrl@kvack.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Jeff Moyer <jmoyer@redhat.com>, kvm@vger.kernel.org,
+        linux-aio@kvack.org, linux-fsdevel@vger.kernel.org,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        lf-virt <virtualization@lists.linux-foundation.org>,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>,
+        Zhi Yong Wu <wuzhy@cn.ibm.com>,
+        Anthony Liguori <aliguori@linux.vnet.ibm.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, Christoph Hellwig <hch@lst.de>,
+        Jens Axboe <axboe@kernel.dk>, Hannes Reinecke <hare@suse.de>
+Subject: Re: [PATCH RESEND 0/5] Add vhost-blk support
+Message-ID: <20120717150928.GB11587@redhat.com>
+References: <1342169711-12386-1-git-send-email-asias@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20120717155539.1a6dbfc4@tux.DEF.witbe.net>
-References: <CAMUfR_tzbEt0BTGwacHKQJQ13iGY8qLimNTFXM_dr5O-RwEgSA@mail.gmail.com>
-	<1342531849.2626.605.camel@edumazet-glaptop>
-	<CAMUfR_vpEJ=Spd+A5tunDxOttdVk_0RXWHX91HGUf9hGdEa10w@mail.gmail.com>
-	<20120717155539.1a6dbfc4@tux.DEF.witbe.net>
-Date: Tue, 17 Jul 2012 11:03:39 -0400
-Message-ID: <CAMUfR_vYzFEfNzKtbS7KYmpVH7tZXHtc1EQcs9y6Q-=z2zwrcw@mail.gmail.com>
-Subject: Re: PROBLEM: Can ping address, but traceroute gets ENETDOWN
-From: Terry Phelps <tgphelps50@gmail.com>
-To: Paul Rolland <rol@witbe.net>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1342169711-12386-1-git-send-email-asias@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 17, 2012 at 9:55 AM, Paul Rolland <rol@witbe.net> wrote:
-> Hello,
->
-> On Tue, 17 Jul 2012 09:41:27 -0400
-> Terry Phelps <tgphelps50@gmail.com> wrote:
->
->> On Tue, Jul 17, 2012 at 9:30 AM, Eric Dumazet <eric.dumazet@gmail.com>
->> wrote:
->> > On Tue, 2012-07-17 at 09:04 -0400, Terry Phelps wrote:
->> >> socket(PF_INET, SOCK_DGRAM, IPPROTO_IP) = 3
->> >> setsockopt(3, SOL_IP, IP_MTU_DISCOVER, [0], 4) = 0
->> >> setsockopt(3, SOL_SOCKET, SO_TIMESTAMP, [1], 4) = 0
->> >> fcntl(3, F_SETFL, O_RDONLY|O_NONBLOCK)  = 0
->> >> setsockopt(3, SOL_IP, IP_TTL, [1], 4)   = 0
->> >> setsockopt(3, SOL_IP, IP_RECVERR, [1], 4) = 0
->> >> connect(3, {sa_family=AF_INET, sin_port=htons(33434),
->> >> sin_addr=inet_addr("192.168.118.22")}, 28) = 0
->> >> sendto(3, "@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_"..., 40, 0, NULL, 0) = -1
->> >> ENETDOWN (Network is down)
->
-> ENETDOWN should mean your interface is no more in the UP status.
->
-> Could it be you have some processes running that could turn down and up
-> your interfaces ? Anything in /var/log/messages about eth0 ?
->
-> Paul
+On Fri, Jul 13, 2012 at 04:55:06PM +0800, Asias He wrote:
+> 
+> Hi folks,
+> 
+> [I am resending to fix the broken thread in the previous one.]
+> 
+> This patchset adds vhost-blk support. vhost-blk is a in kernel virito-blk
+> device accelerator. Compared to userspace virtio-blk implementation, vhost-blk
+> gives about 5% to 15% performance improvement.
 
-(Paul, I'm resending this so it goes to the list.)
+Same thing as tcm_host comment:
 
-The interface is certainly up, because when I'm doing the traceroute
-that gets the ENETDOWN, I'm SSH'ed into the box through eth0. And
-other processes on the machines are running just fine.
+	It seems not 100% clear whether this driver will have major
+	userspace using it. And if not, it would be very hard to support a
+	driver when recent userspace does not use it in the end.
 
-And no, there are no messages in /var/log/* about eth0 that I've ever
-seen. Everything works just fine except:
-1. My desktop can't ping the box.
-2. The box can't traceroute (but CAN ping!) my desktop.
+	I think a good idea for 3.6 would be to make it depend on
+	CONFIG_STAGING.  Then we don't commit to an ABI.  For this, you can add
+	a separate Kconfig and source it from drivers/staging/Kconfig.  Maybe it
+	needs to be in a separate directory drivers/vhost/staging/Kconfig.
+
+I Cc'd the list of tcm_host in the hope that you can cooperate on this.
+
+-- 
+MST
