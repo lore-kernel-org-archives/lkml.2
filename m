@@ -1,107 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753555Ab2GQPcs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 11:32:48 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31586 "EHLO
+	id S1754829Ab2GQPdI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 11:33:08 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30621 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751001Ab2GQPco (ORCPT
+	with ESMTP id S1754243Ab2GQPcy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 11:32:44 -0400
-X-Authority-Analysis: v=2.0 cv=StQSGYy0 c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=Slhf0Lo6QfIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=VwQbUJbxAAAA:8 a=Dy9FSkG8L0gs_orUxm0A:9 a=U62fhAwekXMA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+	Tue, 17 Jul 2012 11:32:54 -0400
+X-Authority-Analysis: v=2.0 cv=AtpsLZBP c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=oFz6bgFAR-QA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=hz37Oi2auKnw-Zy3hsgA:9 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 72.230.195.127
-Message-Id: <20120717153115.606116459@goodmis.org>
+Message-Id: <20120717153244.496531903@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Tue, 17 Jul 2012 11:31:15 -0400
+Date: Tue, 17 Jul 2012 11:31:24 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         John Kacur <jkacur@redhat.com>
-Subject: [PATCH RT 00/12] [ANNOUNCE] 3.4.4-rt14-rc2 stable review
+Subject: [PATCH RT 09/12] cpu/rt: Fix cpu_hotplug variable initialization
+References: <20120717153115.606116459@goodmis.org>
+Content-Disposition: inline; filename=0009-cpu-rt-Fix-cpu_hotplug-variable-initialization.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Steven Rostedt <srostedt@redhat.com>
 
-Dear RT Folks,
+The commit "cpu/rt: Rework cpu down for PREEMPT_RT" changed the double
+meaning of the cpu_hotplug.lock, where it was a spinlock for RT and a
+mutex for non-RT, to just a mutex for both.  But the initialization of
+the variable was not updated to reflect this change.
 
-This is the RT stable review cycle of patch 3.4.4-rt14-rc2.
-
-Please scream at me if I messed something up. Please test the patches too.
-
-The -rc release will be uploaded to kernel.org and will be deleted when
-the final release is out. This is just a review release (or release candidate).
-
-The pre-releases will not be pushed to the git repository, only the
-final release is.
-
-If all goes well, this patch will be converted to the next main release
-on 7/18/2012.
-
-What changed between -rc1:
-
-  Patch was added:
-    cpu/rt: Fix cpu_hotplug variable initialization
-
-Enjoy,
-
--- Steve
-
-
-To build 3.4.4-rt14-rc2 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.4.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.4.4.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/patch-3.4.4-rt14-rc2.patch.xz
-
-You can also build from 3.4.4-rt13 by applying the incremental patch:
-
-http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/incr/patch-3.4.4-rt13-rt14-rc2.patch.xz
-
-
-Changes from 3.4.4-rt13:
-
+Cc: stable-rt@vger.kernel.org
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
+ kernel/cpu.c |    4 ----
+ 1 file changed, 4 deletions(-)
+
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index c5b3273..3e722c0 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -54,11 +54,7 @@ static struct {
+ 	int refcount;
+ } cpu_hotplug = {
+ 	.active_writer = NULL,
+-#ifdef CONFIG_PREEMPT_RT_FULL
+-	.lock = __SPIN_LOCK_UNLOCKED(cpu_hotplug.lock),
+-#else
+ 	.lock = __MUTEX_INITIALIZER(cpu_hotplug.lock),
+-#endif
+ 	.refcount = 0,
+ };
+ 
+-- 
+1.7.10.4
 
 
-Carsten Emde (4):
-      Latency histogramms: Cope with backwards running local trace clock
-      Latency histograms: Adjust timer, if already elapsed when programmed
-      Disable RT_GROUP_SCHED in PREEMPT_RT_FULL
-      Latency histograms: Detect another yet overlooked sharedprio condition
-
-Mike Galbraith (1):
-      fs, jbd: pull your plug when waiting for space
-
-Steven Rostedt (5):
-      cpu/rt: Rework cpu down for PREEMPT_RT
-      cpu/rt: Fix cpu_hotplug variable initialization
-      workqueue: Revert workqueue: Fix PF_THREAD_BOUND abuse
-      workqueue: Revert workqueue: Fix cpuhotplug trainwreck
-      Linux 3.4.4-rt14-rc2
-
-Thomas Gleixner (1):
-      slab: Prevent local lock deadlock
-
-Yong Zhang (1):
-      perf: Make swevent hrtimer run in irq instead of softirq
-
-----
- fs/jbd/checkpoint.c         |    2 +
- include/linux/cpu.h         |    6 +-
- include/linux/hrtimer.h     |    3 +
- include/linux/sched.h       |    9 +-
- include/linux/workqueue.h   |    5 +-
- init/Kconfig                |    1 +
- kernel/cpu.c                |  240 ++++++++++++++----
- kernel/events/core.c        |    1 +
- kernel/hrtimer.c            |   16 +-
- kernel/sched/core.c         |   82 +++++-
- kernel/trace/latency_hist.c |   74 +++---
- kernel/workqueue.c          |  578 +++++++++++++++++++++++++++++++------------
- localversion-rt             |    2 +-
- mm/slab.c                   |   26 +-
- 14 files changed, 788 insertions(+), 257 deletions(-)
