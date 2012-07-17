@@ -1,75 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754769Ab2GQIPM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 04:15:12 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:45231 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753869Ab2GQIMB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 04:12:01 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <kishon@ti.com>, <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
-        <rob@landley.net>, <linux@arm.linux.org.uk>,
-        <gregkh@linuxfoundation.org>, <b-cousson@ti.com>, <rnayak@ti.com>,
-        <tony@atomide.com>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <balbi@ti.com>,
-        <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>
-Subject: [PATCH v2 08/11] arm/dts: Add twl4030-usb data
-Date: Tue, 17 Jul 2012 13:40:08 +0530
-Message-ID: <1342512611-20529-9-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1342512611-20529-1-git-send-email-kishon@ti.com>
-References: <1342512611-20529-1-git-send-email-kishon@ti.com>
+	id S1754778Ab2GQIPf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 04:15:35 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:63936 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753671Ab2GQIP1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 04:15:27 -0400
+Message-ID: <50051F32.5040907@gmail.com>
+Date: Tue, 17 Jul 2012 10:15:46 +0200
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120713 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: paulmck@linux.vnet.ibm.com
+CC: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>, linux-mm <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: mm,numad,rcu: hang on OOM
+References: <1340988281.2936.58.camel@lappy> <20120701011538.GD2907@linux.vnet.ibm.com>
+In-Reply-To: <20120701011538.GD2907@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add twl4030-usb data node in twl4030 device tree file.
+Hi Paul,
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- arch/arm/boot/dts/twl4030.dtsi |   21 +++++++++++++++++++++
- 1 files changed, 21 insertions(+), 0 deletions(-)
+I've been running with your patch below for a while now, and haven't encountered the issue again.
 
-diff --git a/arch/arm/boot/dts/twl4030.dtsi b/arch/arm/boot/dts/twl4030.dtsi
-index 22f4d13..761a5a5 100644
---- a/arch/arm/boot/dts/twl4030.dtsi
-+++ b/arch/arm/boot/dts/twl4030.dtsi
-@@ -37,6 +37,18 @@
- 		regulator-max-microvolt = <3150000>;
- 	};
- 
-+	vusb1v5: regulator-vusb1v5 {
-+		compatible = "ti,twl4030-vusb1v5";
-+	};
-+
-+	vusb1v8: regulator-vusb1v8 {
-+		compatible = "ti,twl4030-vusb1v8";
-+	};
-+
-+	vusb3v1: regulator-vusb3v1 {
-+		compatible = "ti,twl4030-vusb3v1";
-+	};
-+
- 	twl_gpio: gpio {
- 		compatible = "ti,twl4030-gpio";
- 		gpio-controller;
-@@ -44,4 +56,13 @@
- 		interrupt-controller;
- 		#interrupt-cells = <1>;
- 	};
-+
-+	twl4030-usb {
-+		compatible = "ti,twl4030-usb";
-+		interrupts = < 10 4 >;
-+		usb1v5-supply = <&vusb1v5>;
-+		usb1v8-supply = <&vusb1v8>;
-+		usb3v1-supply = <&vusb3v1>;
-+		usb_mode = <1>;
-+	};
- };
--- 
-1.7.5.4
+On 07/01/2012 03:15 AM, Paul E. McKenney wrote:
+> On Fri, Jun 29, 2012 at 06:44:41PM +0200, Sasha Levin wrote:
+>> Hi all,
+>>
+>> While fuzzing using trinity on a KVM tools guest with todays linux-next, I've hit the following lockup:
+>>
+>> [  362.261729] INFO: task numad/2:27 blocked for more than 120 seconds.
+>> [  362.263974] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+>> [  362.271684] numad/2         D 0000000000000001  5672    27      2 0x00000000
+>> [  362.280052]  ffff8800294c7c58 0000000000000046 ffff8800294c7c08 ffffffff81163dba
+>> [  362.294477]  ffff8800294c6000 ffff8800294c6010 ffff8800294c7fd8 ffff8800294c6000
+>> [  362.306631]  ffff8800294c6010 ffff8800294c7fd8 ffff88000d5c3000 ffff8800294c8000
+>> [  362.315395] Call Trace:
+>> [  362.318556]  [<ffffffff81163dba>] ? __lock_release+0x1ba/0x1d0
+>> [  362.325411]  [<ffffffff8372ab75>] schedule+0x55/0x60
+>> [  362.328844]  [<ffffffff8372b965>] rwsem_down_failed_common+0xf5/0x130
+>> [  362.332501]  [<ffffffff8115d38e>] ? put_lock_stats+0xe/0x40
+>> [  362.334496]  [<ffffffff81160135>] ? __lock_contended+0x1f5/0x230
+>> [  362.336723]  [<ffffffff8372b9d5>] rwsem_down_read_failed+0x15/0x17
+>> [  362.339297]  [<ffffffff81985e34>] call_rwsem_down_read_failed+0x14/0x30
+>> [  362.341768]  [<ffffffff83729a29>] ? down_read+0x79/0xa0
+>> [  362.343669]  [<ffffffff8122d262>] ? lazy_migrate_process+0x22/0x60
+>> [  362.345616]  [<ffffffff8122d262>] lazy_migrate_process+0x22/0x60
+>> [  362.347464]  [<ffffffff811453c0>] process_mem_migrate+0x10/0x20
+>> [  362.349340]  [<ffffffff81145090>] move_processes+0x190/0x230
+>> [  362.351398]  [<ffffffff81145b7a>] numad_thread+0x7a/0x120
+>> [  362.353245]  [<ffffffff81145b00>] ? find_busiest_node+0x310/0x310
+>> [  362.355396]  [<ffffffff81119e82>] kthread+0xb2/0xc0
+>> [  362.356996]  [<ffffffff8372ea34>] kernel_thread_helper+0x4/0x10
+>> [  362.359253]  [<ffffffff8372ccb4>] ? retint_restore_args+0x13/0x13
+>> [  362.361168]  [<ffffffff81119dd0>] ? __init_kthread_worker+0x70/0x70
+>> [  362.363277]  [<ffffffff8372ea30>] ? gs_change+0x13/0x13
+>>
+>> I've hit sysrq-t to see what might be the cause, and it appears that an OOM was in progress, and was stuck on RCU:
+>>
+>> [  578.086230] trinity-child69 D ffff8800277a54c8  3968  6658   6580 0x00000000
+>> [  578.086230]  ffff880022c5f518 0000000000000046 ffff880022c5f4c8 ffff88001b9d6e00
+>> [  578.086230]  ffff880022c5e000 ffff880022c5e010 ffff880022c5ffd8 ffff880022c5e000
+>> [  578.086230]  ffff880022c5e010 ffff880022c5ffd8 ffff880023c08000 ffff880022c33000
+>> [  578.086230] Call Trace:
+>> [  578.086230]  [<ffffffff8372ab75>] schedule+0x55/0x60
+>> [  578.086230]  [<ffffffff837285c8>] schedule_timeout+0x38/0x2c0
+>> [  578.086230]  [<ffffffff81161d16>] ? mark_held_locks+0xf6/0x120
+>> [  578.086230]  [<ffffffff81163dba>] ? __lock_release+0x1ba/0x1d0
+>> [  578.086230]  [<ffffffff8372c67b>] ? _raw_spin_unlock_irq+0x2b/0x80
+>> [  578.086230]  [<ffffffff8372a06f>] wait_for_common+0xff/0x170
+>> [  578.086230]  [<ffffffff81132c10>] ? try_to_wake_up+0x290/0x290
+>> [  578.086230]  [<ffffffff8372a188>] wait_for_completion+0x18/0x20
+>> [  578.086230]  [<ffffffff811a5de7>] _rcu_barrier+0x4a7/0x4e0
+> 
+> Hmmm...  Perhaps a blocking operation is not appropriate here.  I have
+> substituted a nonblocking approach, which is at -rcu (thus soon -next)
+> at 1ee4c09d (Provide OOM handler to motivate lazy RCU callbacks).
+> Patch below.
+> 
+> 							Thanx, Paul
+> 
+> ------------------------------------------------------------------------
+> 
+> rcu: Provide OOM handler to motivate lazy RCU callbacks
+> 
+> In kernels built with CONFIG_RCU_FAST_NO_HZ=y, CPUs can accumulate a
+> large number of lazy callbacks, which as the name implies will be slow
+> to be invoked.  This can be a problem on small-memory systems, where the
+> default 6-second sleep for CPUs having only lazy RCU callbacks could well
+> be fatal.  This commit therefore installs an OOM hander that ensures that
+> every CPU with non-lazy callbacks has at least one non-lazy callback,
+> in turn ensuring timely advancement for these callbacks.
+> 
+> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 
+> diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+> index 4b47fbe..dab279f 100644
+> --- a/kernel/rcutree.h
+> +++ b/kernel/rcutree.h
+> @@ -314,8 +314,11 @@ struct rcu_data {
+>  	unsigned long n_rp_need_fqs;
+>  	unsigned long n_rp_need_nothing;
+>  
+> -	/* 6) _rcu_barrier() callback. */
+> +	/* 6) _rcu_barrier() and OOM callbacks. */
+>  	struct rcu_head barrier_head;
+> +#ifdef CONFIG_RCU_FAST_NO_HZ
+> +	struct rcu_head oom_head;
+> +#endif /* #ifdef CONFIG_RCU_FAST_NO_HZ */
+>  
+>  	int cpu;
+>  	struct rcu_state *rsp;
+> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+> index 81e53eb..1908847 100644
+> --- a/kernel/rcutree_plugin.h
+> +++ b/kernel/rcutree_plugin.h
+> @@ -25,6 +25,7 @@
+>   */
+>  
+>  #include <linux/delay.h>
+> +#include <linux/oom.h>
+>  
+>  #define RCU_KTHREAD_PRIO 1
+>  
+> @@ -2128,6 +2129,90 @@ static void rcu_idle_count_callbacks_posted(void)
+>  	__this_cpu_add(rcu_dynticks.nonlazy_posted, 1);
+>  }
+>  
+> +/*
+> + * Data for flushing lazy RCU callbacks at OOM time.
+> + */
+> +static atomic_t oom_callback_count;
+> +static DECLARE_WAIT_QUEUE_HEAD(oom_callback_wq);
+> +
+> +/*
+> + * RCU OOM callback -- decrement the outstanding count and deliver the
+> + * wake-up if we are the last one.
+> + */
+> +static void rcu_oom_callback(struct rcu_head *rhp)
+> +{
+> +	if (atomic_dec_and_test(&oom_callback_count))
+> +		wake_up(&oom_callback_wq);
+> +}
+> +
+> +/*
+> + * Post an rcu_oom_notify callback on the current CPU if it has at
+> + * least one lazy callback.  This will unnecessarily post callbacks
+> + * to CPUs that already have a non-lazy callback at the end of their
+> + * callback list, but this is an infrequent operation, so accept some
+> + * extra overhead to keep things simple.
+> + */
+> +static void rcu_oom_notify_cpu(void *flavor)
+> +{
+> +	struct rcu_state *rsp = flavor;
+> +	struct rcu_data *rdp = __this_cpu_ptr(rsp->rda);
+> +
+> +	if (rdp->qlen_lazy != 0) {
+> +		atomic_inc(&oom_callback_count);
+> +		rsp->call(&rdp->oom_head, rcu_oom_callback);
+> +	}
+> +}
+> +
+> +/*
+> + * If low on memory, ensure that each CPU has a non-lazy callback.
+> + * This will wake up CPUs that have only lazy callbacks, in turn
+> + * ensuring that they free up the corresponding memory in a timely manner.
+> + */
+> +static int rcu_oom_notify(struct notifier_block *self,
+> +                          unsigned long notused, void *nfreed)
+> +{
+> +	int cpu;
+> +
+> +	/* Wait for callbacks from earlier instance to complete. */
+> +	wait_event(oom_callback_wq, atomic_read(&oom_callback_count) == 0);
+> +
+> +	/*
+> +	 * Prevent premature wakeup: ensure that all increments happen
+> +	 * before there is a chance of the counter reaching zero.
+> +	 */
+> +	atomic_set(&oom_callback_count, 1);
+> +
+> +	get_online_cpus();
+> +	for_each_online_cpu(cpu) {
+> +#ifdef CONFIG_PREEMPT_RCU
+> +		smp_call_function_single(cpu, rcu_oom_notify_cpu,
+> +					 &rcu_preempt_state, 1);
+> +#endif /* #ifdef CONFIG_PREEMPT_RCU */
+> +		smp_call_function_single(cpu, rcu_oom_notify_cpu,
+> +					 &rcu_bh_state, 1);
+> +		smp_call_function_single(cpu, rcu_oom_notify_cpu,
+> +					 &rcu_sched_state, 1);
+> +	}
+> +	put_online_cpus();
+> +
+> +	/* Unconditionally decrement: no need to wake ourselves up. */
+> +	atomic_dec(&oom_callback_count);
+> +
+> +	*(unsigned long *)nfreed = 1;
+> +	return NOTIFY_OK;
+> +}
+> +
+> +static struct notifier_block rcu_oom_nb = {
+> +	.notifier_call = rcu_oom_notify
+> +};
+> +
+> +static int __init rcu_register_oom_notifier(void)
+> +{
+> +	register_oom_notifier(&rcu_oom_nb);
+> +	return 0;
+> +}
+> +early_initcall(rcu_register_oom_notifier);
+> +
+>  #endif /* #else #if !defined(CONFIG_RCU_FAST_NO_HZ) */
+>  
+>  #ifdef CONFIG_RCU_CPU_STALL_INFO
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
 
