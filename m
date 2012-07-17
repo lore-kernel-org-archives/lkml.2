@@ -1,39 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757033Ab2GQX1s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 19:27:48 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:51749 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753896Ab2GQX1r convert rfc822-to-8bit (ORCPT
+	id S1757292Ab2GQX2H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 19:28:07 -0400
+Received: from mail-yx0-f202.google.com ([209.85.213.202]:52902 "EHLO
+	mail-yx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754316Ab2GQX2D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 19:27:47 -0400
-Date: Tue, 17 Jul 2012 18:27:41 -0500
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: =?utf-8?Q?Martin-=C3=89ric?= Racine <martin-eric.racine@iki.fi>
-Cc: maximilian attems <max@stro.at>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-kbuild@vger.kernel.org, debian-kernel@lists.debian.org
-Subject: Re: [PATCH] scripts/package/builddeb: upgrade to current practices
-Message-ID: <20120717232741.GE25325@burratino>
-References: <1342547874.5129.2.camel@henna.lan>
- <20120717193951.GA15208@burratino>
- <CAPZXPQc02=6FnTb_RmgfpW+A4=N_huZW1FUYdjJ=Nt0Y3pqZ+A@mail.gmail.com>
- <20120717212305.GV28778@vostochny.stro.at>
- <CAPZXPQfBPXaRtK3QdY_PA=3GRrUz9+y3aU-2AvedvTwn8tOnqg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <CAPZXPQfBPXaRtK3QdY_PA=3GRrUz9+y3aU-2AvedvTwn8tOnqg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 17 Jul 2012 19:28:03 -0400
+From: Colin Cross <ccross@android.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Colin Cross <ccross@android.com>, Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Krzysztof Halasa <khc@pm.waw.pl>, Nicolas Pitre <nico@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>, linux-kernel@vger.kernel.org
+Subject: [RFC] ARM: sched_clock: update epoch_cyc on resume
+Date: Tue, 17 Jul 2012 16:27:51 -0700
+Message-Id: <1342567672-29071-1-git-send-email-ccross@android.com>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Martin-Éric Racine wrote:
+Many clocks that are used to provide sched_clock will reset during
+suspend.  If read_sched_clock returns 0 after suspend, sched_clock will
+appear to jump forward.  This patch resets cd.epoch_cyc to the current
+value of read_sched_clock during resume, which causes sched_clock() just
+after suspend to return the same value as sched_clock() just before
+suspend.
 
->                                      Could you tell us exactly what
-> you did differently and why?
+In addition, during the window where epoch_ns has been updated before
+suspend, but epoch_cyc has not been updated after suspend, it is unknown
+whether the clock has reset or not, and sched_clock() could return a
+bogus value.  Add a suspended flag, and return the pre-suspend epoch_ns
+value during this period.
 
-At least the "what" should be answerable by looking at what is in
-linux-next.
+This will have a side effect of causing SoCs that have clocks that
+continue to count in suspend to appear to stop counting, reporting the
+same sched_clock() value before and after suspend.
+
+Signed-off-by: Colin Cross <ccross@android.com>
+---
+ arch/arm/kernel/sched_clock.c |   13 +++++++++++++
+ 1 files changed, 13 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/kernel/sched_clock.c b/arch/arm/kernel/sched_clock.c
+index 27d186a..46c7d32 100644
+--- a/arch/arm/kernel/sched_clock.c
++++ b/arch/arm/kernel/sched_clock.c
+@@ -21,6 +21,7 @@ struct clock_data {
+ 	u32 epoch_cyc_copy;
+ 	u32 mult;
+ 	u32 shift;
++	bool suspended;
+ };
+ 
+ static void sched_clock_poll(unsigned long wrap_ticks);
+@@ -49,6 +50,9 @@ static unsigned long long cyc_to_sched_clock(u32 cyc, u32 mask)
+ 	u64 epoch_ns;
+ 	u32 epoch_cyc;
+ 
++	if (cd.suspended)
++		return cd.epoch_ns;
++
+ 	/*
+ 	 * Load the epoch_cyc and epoch_ns atomically.  We do this by
+ 	 * ensuring that we always write epoch_cyc, epoch_ns and
+@@ -169,11 +173,20 @@ void __init sched_clock_postinit(void)
+ static int sched_clock_suspend(void)
+ {
+ 	sched_clock_poll(sched_clock_timer.data);
++	cd.suspended = true;
+ 	return 0;
+ }
+ 
++static void sched_clock_resume(void)
++{
++	cd.epoch_cyc = read_sched_clock();
++	cd.epoch_cyc_copy = cd.epoch_cyc;
++	cd.suspended = false;
++}
++
+ static struct syscore_ops sched_clock_ops = {
+ 	.suspend = sched_clock_suspend,
++	.resume = sched_clock_resume,
+ };
+ 
+ static int __init sched_clock_syscore_init(void)
+-- 
+1.7.7.3
+
