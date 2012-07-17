@@ -1,120 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755393Ab2GQONl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 10:13:41 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:44649 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754993Ab2GQONk convert rfc822-to-8bit (ORCPT
+	id S1755419Ab2GQOU3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 10:20:29 -0400
+Received: from smtp-out-164.synserver.de ([212.40.185.164]:1105 "EHLO
+	smtp-out-164.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753956Ab2GQOU0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 10:13:40 -0400
+	Tue, 17 Jul 2012 10:20:26 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 27531
+Message-ID: <50057593.3050808@metafoo.de>
+Date: Tue, 17 Jul 2012 16:24:19 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
 MIME-Version: 1.0
-In-Reply-To: <20120717135201.GF1638@fysh.org>
-References: <CAFDTedp84TuxHpz2SJTG_jdjtkQ7r9qkCjqQWT5Zg22LrT7tTg@mail.gmail.com>
- <20120717135201.GF1638@fysh.org>
-From: =?ISO-8859-1?B?QWRyaeFu?= <adrianbn@gmail.com>
-Date: Tue, 17 Jul 2012 15:13:18 +0100
-Message-ID: <CAFDTedowCyNgBtiPQUPVUv1XocMEhQJfyawjYxEkaXFX5E8H1A@mail.gmail.com>
-Subject: Re: Setreuid distinction about (uid_t)-1
-To: =?ISO-8859-1?B?QWRyaeFu?= <adrianbn@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
+        Graeme Gregory <gg@slimlogic.co.uk>,
+        Samuel Oritz <sameo@linux.intel.com>
+Subject: Re: [PATCH 2/8] regmap: Add the indexed cache support
+References: <1314978375-11539-1-git-send-email-dp@opensource.wolfsonmicro.com> <1314978375-11539-3-git-send-email-dp@opensource.wolfsonmicro.com> <4E613986.4040007@metafoo.de> <20120717111635.GA27595@sirena.org.uk>
+In-Reply-To: <20120717111635.GA27595@sirena.org.uk>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 17, 2012 at 2:52 PM, Athanasius <link@miggy.org> wrote:
-> On Tue, Jul 17, 2012 at 10:27:55AM +0100, Adrián wrote:
->>         uid = atoi(argv[1]);
->>         printf("%u\n",uid);
->>         if (setreuid(uid,uid)==-1){
->>                 printf("Setreuid to %u failed\n ",uid);
->>                 perror("E");
->>                 exit(1);
->>         }
->>         execve("/bin/sh",args,NULL);
->>
->> I've been calling this binary with a bunch of different uid numbers,
->> and I came across this weird behaviour with the (uid_t) -1 value:
->
->   From the man page:
->
->        Supplying a value of -1 for either the real or effective user ID forces
->        the system to leave that ID unchanged.
->
->> adrian@home-pc:~$ /tmp/suid-tests
->> Usage: /tmp/suid-tests target_uid
->> adrian@home-pc:~$ /tmp/suid-tests 0
->> 0
->> Setreuid to 0 failed
->> E: Operation not permitted
->> adrian@home-pc:~$ /tmp/suid-tests -1
->> 4294967295
->
->   So this succeeded, by actually doing nothing.
->
->> $ id
->> uid=1000(adrian) gid=1000(adrian)
->> groups=1000(adrian),4(adm),20(dialout),24(cdrom),46(plugdev),109(lpadmin),110(sambashare),111(admin)
->> adrian@home-pc:~$ /tmp/suid-tests -2
->> 4294967294
->> Setreuid to 4294967294 failed
->> E: Operation not permitted
->> adrian@home-pc:~$ /tmp/suid-tests -3
->> 4294967293
->> Setreuid to 4294967293 failed
->> E: Operation not permitted
->>
->> If the binary is setuid, the -1 call effectively rises the euid to
->> root (0), although other arbitrary values are properly being set:
->
->   Because, again, -1 asks to leave things as is.  And as you've made
-> the binary setuid and owned by root when you run it euid is set to 0, and
-> the -1 leaves it alone.
->
->> adrian@home-pc:~$ ls -hl /tmp/suid-tests
->> -rwsr-x--- 1 root adrian 8,5K 2012-07-17 10:53 /tmp/suid-tests
->> adrian@home-pc:~$ /tmp/suid-tests -1
->> 4294967295
->> # id
->> uid=1000(adrian) gid=1000(adrian) euid=0(root)
->> groups=0(root),4(adm),20(dialout),24(cdrom),46(plugdev),109(lpadmin),110(sambashare),111(admin),1000(adrian)
->
->   Yup, totally as expected.
->
->> adrian@home-pc:~$ /tmp/suid-tests -2
->> 4294967294
->> $ id
->> uid=4294967294 gid=1000(adrian)
->> groups=4(adm),20(dialout),24(cdrom),46(plugdev),109(lpadmin),110(sambashare),111(admin),1000(adrian)
->
->   -2 isn't a magic value, but as you're euid == 0 the kernel will do
-> what you asked and set uid to '-2', with some signed/unsigned conversion
-> going on you get 4294967294.
->
-> --
-> - Athanasius = Athanasius(at)miggy.org / http://www.miggy.org/
->                   Finger athan(at)fysh.org for PGP key
->            "And it's me who is my enemy. Me who beats me up.
-> Me who makes the monsters. Me who strips my confidence." Paula Cole - ME
->
-> -----BEGIN PGP SIGNATURE-----
-> Version: GnuPG v1.4.10 (GNU/Linux)
->
-> iEYEARECAAYFAlAFbgAACgkQSEDmQuIYzh2dSACfT+xjClQw/I68T7PnaF1W32B6
-> kNcAmQHtVTb0S+oc2TIwy0uVZAO6K2Vc
-> =7GG0
-> -----END PGP SIGNATURE-----
->
+On 07/17/2012 01:16 PM, Mark Brown wrote:
+> On Fri, Sep 02, 2011 at 10:16:06PM +0200, Lars-Peter Clausen wrote:
+> 
+>> I have some patches for the rbtree register cache code, which reduce some of
+>> it's complexity and also implements the adjacent node merging and allows
+>> smaller holes in the rbnodes register block if the block is smaller then an
+>> rbnode. Currently these patches are based on the ASoC register cache code, but
+>> they should be easy to rework onto of the regmap register cache code.
+> 
+> Dimitris just reminded me about what you said here - do you still have
+> those patches floating around?  This would really useful and would
+> make some other optimistations like not cacheing default values much
+> easier.
 
-Thanks a lot Athanasius. What I still can't see is why is the -1
-exception there, as I assume that if you want to leave one of the ids
-unchaged you can call:
+Yes, I still have it, but it's on a machine which is currently broken and I
+wont get the replacement part until next week.
 
-setreuid(0,geteuid());
-
-If you want to leave euid unchanged, right? Is there a need or reason
-to be doing this differentiation in the setreuid code?
-
-Thanks again,
-Adrián
+- Lars
