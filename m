@@ -1,73 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754473Ab2GQNcQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 09:32:16 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:39518 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751891Ab2GQNcO (ORCPT
+	id S1754480Ab2GQNeW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 09:34:22 -0400
+Received: from na3sys009aog129.obsmtp.com ([74.125.149.142]:47991 "EHLO
+	na3sys009aog129.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751891Ab2GQNeV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 09:32:14 -0400
-Message-ID: <1342531930.3039.74.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH] sd: do not set changed flag on all unit attention
- conditions
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Date: Tue, 17 Jul 2012 14:32:10 +0100
-In-Reply-To: <50055B19.8090101@redhat.com>
-References: <1342454772-9018-1-git-send-email-pbonzini@redhat.com>
-	     <1342455503.3176.42.camel@dabdike.int.hansenpartnership.com>
-	     <50044D56.6000400@redhat.com>
-	    <1342511100.3039.9.camel@dabdike.int.hansenpartnership.com>
-	    <50052390.7030908@redhat.com>
-	   <1342514444.3039.23.camel@dabdike.int.hansenpartnership.com>
-	   <5005285E.8060706@redhat.com>
-	  <1342516317.3039.35.camel@dabdike.int.hansenpartnership.com>
-	  <5005302D.6010805@redhat.com>
-	 <1342527693.3039.64.camel@dabdike.int.hansenpartnership.com>
-	 <50055B19.8090101@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	Tue, 17 Jul 2012 09:34:21 -0400
+Message-ID: <500569D5.3020508@ti.com>
+Date: Tue, 17 Jul 2012 19:04:13 +0530
+From: Rajendra Nayak <rnayak@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.20) Gecko/20110805 Thunderbird/3.1.12
+MIME-Version: 1.0
+To: Rob Herring <robherring2@gmail.com>
+CC: Mike Turquette <mturquette@ti.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>, aletes.xgr@gmail.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Archit Taneja <archit@ti.com>, loml <linux-omap@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>, "Cousson, Benoit" <b-cousson@ti.com>
+Subject: Re: [PATCH] clk: fix compile for OF && !COMMON_CLK
+References: <1342475161-20402-1-git-send-email-robherring2@gmail.com> <20120717001228.GA28886@gmail.com> <5004C935.4050707@gmail.com> <50056648.6000906@ti.com>
+In-Reply-To: <50056648.6000906@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-07-17 at 14:31 +0200, Paolo Bonzini wrote:
-> Il 17/07/2012 14:21, James Bottomley ha scritto:
-> >> Yes, I realize failing only on specific sense codes as I did it in the
-> >> patch is not going to work.  However, the other way round is not
-> >> problematic (explicitly allow some sense codes, fail on all others).
-> > 
-> > Heh, I once thought that, but there's no end to the strange ideas USB
-> > manufacturers get.
-> 
-> :)
-> 
-> >> > Another example is "target operating conditions have changed".  QEMU
-> >> > cannot report such changes because scsi_error prints a warning (fine)
-> >> > and then passes the unit attention upwards.  With removable drives, this
-> >> > has the same problem as resizing.
-> > Why would a removable device ever use any of the codes under this ASC
-> > when the medium hasn't changed?  They're all for arrays (well except
-> > 0x10 and 0x11 ... and they're only supposed to apply to tape changers
-> > with autoload support declared in the control mode page).
-> 
-> There are also a couple of generic ones such as "reported luns have
-> changed".  I also considered briefly using "inquiry data has changed" to
-> reload the unmap parameters after live snapshot or storage migration.  I
-> dropped the idea, please don't put me in the same bin as the USB
-> manufacturers.
+On Tuesday 17 July 2012 06:49 PM, Rajendra Nayak wrote:
+> struct clk *clk_get(struct device *dev, const char *con_id)
+> {
+>          const char *dev_id = dev ? dev_name(dev) : NULL;
+>          struct clk *clk;
+>
+>          if (dev) {
+> ---->
+>      Any reason why this isn't
+>      if (dev->of_node) {
+> ---->
 
-I'm not ... but at the same time removable functionality in sd.c is
-special cased in quite a few areas which makes it fragile but exercised.
-Its fragility is somewhat mitigated by the fact that a lot of the
-special casing separates the removable from the non-removable paths.
-
-I don't want to increase that fragility by entangling the removable and
-non-removable paths without a good reason for doing so.
-
-James
-
-
+Or rather,
+	if (dev && dev->of_node) {
+as Archit just pointed out to me.
