@@ -1,78 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756418Ab2GQTO4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 15:14:56 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34951 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751764Ab2GQTOy (ORCPT
+	id S1756442Ab2GQTPL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 15:15:11 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:63904 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756424Ab2GQTPH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 15:14:54 -0400
-Date: Tue, 17 Jul 2012 20:14:51 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: sameo@linux.intel.com, myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: MAX77693: Fix bug of interrupt handlding for
- MAX77693 devices
-Message-ID: <20120717191451.GK4477@opensource.wolfsonmicro.com>
-References: <1342431665-2812-1-git-send-email-cw00.choi@samsung.com>
- <20120716133636.GA22600@sirena.org.uk>
- <5004A409.9000002@samsung.com>
+	Tue, 17 Jul 2012 15:15:07 -0400
+Date: Tue, 17 Jul 2012 12:15:02 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
+        Tony Luck <tony.luck@intel.com>, devel@driverdev.osuosl.org,
+        linaro-kernel@lists.linaro.org, Arnd Bergmann <arnd@arndb.de>,
+        patches@linaro.org, Marco Stornelli <marco.stornelli@gmail.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
+        linux-kernel@vger.kernel.org, arve@android.com,
+        Jesper Juhl <jj@chaosbits.net>, John Stultz <john.stultz@linaro.org>,
+        Shuah Khan <shuahkhan@gmail.com>,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, kernel-team@android.com,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Subject: Re: [PATCH] pstore: Headers should include all stuff they use
+Message-ID: <20120717191502.GA8048@kroah.com>
+References: <20120717180918.GA18671@lizard>
+ <1342548840-22404-1-git-send-email-anton.vorontsov@linaro.org>
+ <20120717181944.GA21957@kroah.com>
+ <20120717183707.GA24056@lizard>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="oplxJGu+Ee5xywIT"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <5004A409.9000002@samsung.com>
-X-Cookie: Your aim is high and to the right.
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120717183707.GA24056@lizard>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jul 17, 2012 at 11:37:07AM -0700, Anton Vorontsov wrote:
+> Headers should really include all the needed prototypes, types, defines
+> etc. to be self-contained. This is a long-standing issue, but apparently
+> the new tracing code unearthed it (SMP=n is also a prerequisite):
+> 
+> In file included from fs/pstore/internal.h:4:0,
+>                  from fs/pstore/ftrace.c:21:
+> include/linux/pstore.h:43:15: error: field ‘read_mutex’ has incomplete type
+> 
+> While at it, I also added the following:
+> 
+> linux/types.h -> size_t, phys_addr_t, uXX and friends
+> linux/spinlock.h -> spinlock_t
+> linux/errno.h -> Exxxx
+> linux/time.h -> struct timespec (struct passed by value)
+> struct module and rs_control forward declaration (passed via pointers).
+> 
+> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+> ---
+> 
+> On Tue, Jul 17, 2012 at 11:19:44AM -0700, Greg Kroah-Hartman wrote:
+> > On Tue, Jul 17, 2012 at 11:13:59AM -0700, Anton Vorontsov wrote:
+> > > Headers should really include all the needed prototypes, types, defines
+> > 
+> > <snip>
+> > 
+> >   Content-Transfer-Encoding: base64
+> > 
+> > That's not a nice way to send patches out, care to fix this and resend?
+> 
+> I used 'git send-email' as normal, and it said:
+> 
+> Content-Type: text/plain; charset=UTF-8
+> Content-Transfer-Encoding: 8bit
+> 
+> 
+> OK, I checked what vger.kernel.org received, and it still says:
+> 
+> Content-Type: text/plain; charset=UTF-8
+> Content-Transfer-Encoding: 8bit
+> 
+> And I see the email readable in the text editor.
+> 
+> OK, with linux_banner I got what the problem is, but where base64
+> came from?.. :-/
 
---oplxJGu+Ee5xywIT
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+It looks like the devel mailing list does this conversion, ugh, mailman
+sucks at times.
 
-On Tue, Jul 17, 2012 at 08:30:17AM +0900, Chanwoo Choi wrote:
-> On 07/16/2012 10:36 PM, Mark Brown wrote:
-> > On Mon, Jul 16, 2012 at 06:41:05PM +0900, Chanwoo Choi wrote:
+Sorry about that,
 
-> >> This patch fix bug related to interrupt handling for MAX77693 devices.
-> >> - Unmask interrupt masking bit for charger/flash/muic to revolve
-> >> that interrupt isn't happened when external connector is attached.
-
-> > Shouldn't this be happening when the IRQ is requested?
-
-> The interrupt isn't happened when external connector is attached
-> because muic interrupt of MAX77693 is masked on INTSRC_MASK(
-> Interrupt Source Mask) register. So, I should set zero to muic interrupt
-> masking bit of INTSRC_MASK before requesting IRQ.
-
-Right, but normally that unmasking happens in the unmask() callback of
-the irq_chip which is called when the interrupt is requested.  Why isn't
-that working here?
-
---oplxJGu+Ee5xywIT
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQBbmbAAoJEBus8iNuMP3dCLAP/iKadrXzg5rEJQ2ILr7TP01S
-Uq+yl/Ma9tz/YOUOYrRLTBnwIKtEF+4Tn3p6a3iebzRUOmips3ci+cXydhg/R46U
-BT1/ZsTWbW2YgZ85/3Ii8rflEavAIVOLN5ZgvxdtuxRoBtJgBmJh5znVoxy40L+H
-eJ57QGL4f5dQrNKICVMGscksMnBzu8Re7V3qxw4QNHtcikhkUi7owfEXaOXLr/94
-LDgYJdGSfaUShP46Y1Hnx6SY3+ieCT3u3/sKDFyTj2NAuDe4fgR0aJO2+HFAQcwq
-n4HcgoYOOO8ydq5k7xZVRh6eHo7GDIxBUa5nqp5CwcKXga+ROsiYvMUeEJLW+YzT
-Y/ZS76AzTx2+r32+ul7Knq7NW9bbgtryU/vyBd1fqCKV+FK+tn56hDp69NcYrFbG
-YtI6lVAoknIEO8O1LskBFDkLgJ2Rg7k/ra6EDTabvFvWLJLRRwst7csnaoTB2wdF
-jqslx0CekgISB1NuuwHqpsu9ABqs0tXUXJakttfSw0C/7EUfLbyJ7r8QXpn70Rut
-wyNzdCx5OZQEAAiSnt3lJt1VrZIj/lF5T2+xx2Z/05uPZBIrLQxG185a/SlY6T0Y
-GRrYgnzcMamtYLoSEdK7+NAsgUJNJQ+h/gCHGoLJ92M5qnzizrEqFdoAz3M48u4V
-Qm+o1/KlDyXpotD/mpDK
-=JlQt
------END PGP SIGNATURE-----
-
---oplxJGu+Ee5xywIT--
+greg k-h
