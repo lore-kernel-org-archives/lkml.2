@@ -1,181 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755312Ab2GQOwr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 10:52:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54058 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753796Ab2GQOwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 10:52:45 -0400
-Date: Tue, 17 Jul 2012 17:53:13 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Subject: Re: [PATCH v5 3/4] kvm: Create kvm_clear_irq()
-Message-ID: <20120717145313.GB11516@redhat.com>
-References: <20120716202711.1752.71007.stgit@bling.home>
- <20120716203401.1752.78276.stgit@bling.home>
- <20120717101435.GE7949@redhat.com>
- <1342533369.3229.4.camel@ul30vt>
- <20120717140858.GB10822@redhat.com>
- <1342534911.3229.26.camel@ul30vt>
+	id S1755128Ab2GQOyq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 10:54:46 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:43408 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754053Ab2GQOyo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 10:54:44 -0400
+Date: Tue, 17 Jul 2012 10:45:40 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "zhenzhong.duan" <zhenzhong.duan@oracle.com>
+Cc: David Vrabel <david.vrabel@citrix.com>, jeremy@goop.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        xen-devel@lists.xensource.com, x86@kernel.org,
+        Feng Jin <joe.jin@oracle.com>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [Xen-devel] [PATCH-v2] xen: populate correct number of pages
+ when across mem boundary
+Message-ID: <20120717144540.GC12374@phenom.dumpdata.com>
+References: <4FF3E781.5040603@oracle.com>
+ <4FFEE552.4070201@citrix.com>
+ <4FFFDCD9.7030305@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1342534911.3229.26.camel@ul30vt>
+In-Reply-To: <4FFFDCD9.7030305@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 17, 2012 at 08:21:51AM -0600, Alex Williamson wrote:
-> On Tue, 2012-07-17 at 17:08 +0300, Michael S. Tsirkin wrote:
-> > On Tue, Jul 17, 2012 at 07:56:09AM -0600, Alex Williamson wrote:
-> > > On Tue, 2012-07-17 at 13:14 +0300, Michael S. Tsirkin wrote:
-> > > > On Mon, Jul 16, 2012 at 02:34:03PM -0600, Alex Williamson wrote:
-> > > > > This is an alternative to kvm_set_irq(,,,0) which returns the previous
-> > > > > assertion state of the interrupt and does nothing if it isn't changed.
-> > > > > 
-> > > > > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> > > > > ---
-> > > > > 
-> > > > >  include/linux/kvm_host.h |    3 ++
-> > > > >  virt/kvm/irq_comm.c      |   78 ++++++++++++++++++++++++++++++++++++++++++++++
-> > > > >  2 files changed, 81 insertions(+)
-> > > > > 
-> > > > > diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-> > > > > index a7661c0..6c168f1 100644
-> > > > > --- a/include/linux/kvm_host.h
-> > > > > +++ b/include/linux/kvm_host.h
-> > > > > @@ -219,6 +219,8 @@ struct kvm_kernel_irq_routing_entry {
-> > > > >  	u32 type;
-> > > > >  	int (*set)(struct kvm_kernel_irq_routing_entry *e,
-> > > > >  		   struct kvm *kvm, int irq_source_id, int level);
-> > > > > +	int (*clear)(struct kvm_kernel_irq_routing_entry *e,
-> > > > > +		     struct kvm *kvm, int irq_source_id);
-> > > > >  	union {
-> > > > >  		struct {
-> > > > >  			unsigned irqchip;
-> > > > > @@ -629,6 +631,7 @@ void kvm_get_intr_delivery_bitmask(struct kvm_ioapic *ioapic,
-> > > > >  				   unsigned long *deliver_bitmask);
-> > > > >  #endif
-> > > > >  int kvm_set_irq(struct kvm *kvm, int irq_source_id, u32 irq, int level);
-> > > > > +int kvm_clear_irq(struct kvm *kvm, int irq_source_id, u32 irq);
-> > > > >  int kvm_set_msi(struct kvm_kernel_irq_routing_entry *irq_entry, struct kvm *kvm,
-> > > > >  		int irq_source_id, int level);
-> > > > >  void kvm_notify_acked_irq(struct kvm *kvm, unsigned irqchip, unsigned pin);
-> > > > > diff --git a/virt/kvm/irq_comm.c b/virt/kvm/irq_comm.c
-> > > > > index 5afb431..76e8f22 100644
-> > > > > --- a/virt/kvm/irq_comm.c
-> > > > > +++ b/virt/kvm/irq_comm.c
-> > > > > @@ -68,6 +68,42 @@ static int kvm_set_ioapic_irq(struct kvm_kernel_irq_routing_entry *e,
-> > > > >  	return kvm_ioapic_set_irq(ioapic, e->irqchip.pin, level);
-> > > > >  }
-> > > > >  
-> > > > > +static inline int kvm_clear_irq_line_state(unsigned long *irq_state,
-> > > > > +					    int irq_source_id)
-> > > > > +{
-> > > > > +	return !!test_and_clear_bit(irq_source_id, irq_state);
-> > > > > +}
-> > > > > +
-> > > > > +static int kvm_clear_pic_irq(struct kvm_kernel_irq_routing_entry *e,
-> > > > > +			     struct kvm *kvm, int irq_source_id)
-> > > > > +{
-> > > > > +#ifdef CONFIG_X86
-> > > > > +	struct kvm_pic *pic = pic_irqchip(kvm);
-> > > > > +	int level = kvm_clear_irq_line_state(&pic->irq_states[e->irqchip.pin],
-> > > > > +					     irq_source_id);
-> > > > > +	if (level)
-> > > > > +		kvm_pic_set_irq(pic, e->irqchip.pin,
-> > > > > +				!!pic->irq_states[e->irqchip.pin]);
-> > > > > +	return level;
-> > > > 
-> > > > I think I begin to understand: if (level) checks it was previously set,
-> > > > and then we clear if needed?
-> > > 
-> > > It's actually very simple, if we change anything in irq_states, then
-> > > update via the chip specific set_irq function.
-> > > 
-> > > >  I think it's worthwhile to rename
-> > > > level to orig_level and rewrite as:
-> > > > 
-> > > > 	if (orig_level && !pic->irq_states[e->irqchip.pin])
-> > > > 		kvm_pic_set_irq(pic, e->irqchip.pin, 0);
-> > > > 
-> > > > This both makes the logic clear without need for comments and
-> > > > saves some cycles on pic in case nothing actually changed.
-> > > 
-> > > That may work, but it's not actually the same thing.  kvm_set_irq(,,,0)
-> > > will clear the bit and call kvm_pic_set_irq with the new irq_states
-> > > value, whether it's 0 or 1.  The optimization I make is to only call
-> > > kvm_pic_set_irq if we've "changed" irq_states.  You're taking that one
-> > > step further to "changed and is now 0".  I don't know if that's correct
-> > > behavior.
-> > 
-> > If not then I don't understand. You clear a bit
-> > in a word. You never change it to 1, do you?
+On Fri, Jul 13, 2012 at 04:31:21PM +0800, zhenzhong.duan wrote:
+> When populate pages across a mem boundary at bootup, the page count
+> populated isn't correct. This is due to mem populated to non-mem
+> region and ignored.
 > 
-> Correct, but kvm_set_irq(,,,0) may call kvm_pic_set_irq(,,1) if other
-> source IDs are still asserting the interrupt.  Your proposal assumes
-> that unless irq_states is also 0 we don't need to call kvm_pic_set_irq,
-> and I don't know if that's correct.
-
-Well you are asked to clear some id and level was 1. So we know
-interrupt was asserted. Either we clear it or we don't. No?
-
-> > 
-> > But this brings another question:
-> > 
-> > static inline int kvm_irq_line_state(unsigned long *irq_state,
-> >                                      int irq_source_id, int level)
-> > {
-> >         /* Logical OR for level trig interrupt */
-> >         if (level)
-> >                 set_bit(irq_source_id, irq_state);
-> >         else
-> >                 clear_bit(irq_source_id, irq_state);
-> > 
-> > 
-> > ^^^^^^^^^^^
-> > above uses locked instructions
-> > 
-> >         return !!(*irq_state);
-> > 
-> > 
-> > above doesn't
-> > 
-> > }
-> > 
-> > 
-> > why the insonsistency?
+> Pfn range is also wrongly aligned when mem boundary isn't page aligned.
 > 
-> Note that set/clear_bit are not locked instructions,
+> -v2: If xen_do_chunk fail(populate), abort this chunk and any others.
+> Suggested by David, thanks.
+> 
+> For a dom0 booted with dom_mem=3368952K(0xcd9ff000-4k) dmesg diff is:
+>  [    0.000000] Freeing 9e-100 pfn range: 98 pages freed
+>  [    0.000000] 1-1 mapping on 9e->100
+>  [    0.000000] 1-1 mapping on cd9ff->100000
+>  [    0.000000] Released 98 pages of unused memory
+>  [    0.000000] Set 206435 page(s) to 1-1 mapping
+> -[    0.000000] Populating cd9fe-cda00 pfn range: 1 pages added
+> +[    0.000000] Populating cd9fe-cd9ff pfn range: 1 pages added
+> +[    0.000000] Populating 100000-100061 pfn range: 97 pages added
+>  [    0.000000] BIOS-provided physical RAM map:
+>  [    0.000000] Xen: 0000000000000000 - 000000000009e000 (usable)
+>  [    0.000000] Xen: 00000000000a0000 - 0000000000100000 (reserved)
+>  [    0.000000] Xen: 0000000000100000 - 00000000cd9ff000 (usable)
+>  [    0.000000] Xen: 00000000cd9ffc00 - 00000000cda53c00 (ACPI NVS)
+> ...
+>  [    0.000000] Xen: 0000000100000000 - 0000000100061000 (usable)
+>  [    0.000000] Xen: 0000000100061000 - 000000012c000000 (unusable)
+> ...
+>  [    0.000000] MEMBLOCK configuration:
+> ...
+> -[    0.000000]  reserved[0x4]       [0x000000cd9ff000-0x000000cd9ffbff], 0xc00 bytes
+> -[    0.000000]  reserved[0x5]       [0x00000100000000-0x00000100060fff], 0x61000 bytes
+> 
+> Related xen memory layout:
+> (XEN) Xen-e820 RAM map:
+> (XEN)  0000000000000000 - 000000000009ec00 (usable)
+> (XEN)  00000000000f0000 - 0000000000100000 (reserved)
+> (XEN)  0000000000100000 - 00000000cd9ffc00 (usable)
+> 
+> Signed-off-by: Zhenzhong Duan<zhenzhong.duan@oracle.com>
 
-On x86 they are:
-static __always_inline void
-set_bit(unsigned int nr, volatile unsigned long *addr)
-{
-        if (IS_IMMEDIATE(nr)) {
-                asm volatile(LOCK_PREFIX "orb %1,%0"
-                        : CONST_MASK_ADDR(nr, addr)
-                        : "iq" ((u8)CONST_MASK(nr))
-                        : "memory");
-        } else {
-                asm volatile(LOCK_PREFIX "bts %1,%0"
-                        : BITOP_ADDR(addr) : "Ir" (nr) : "memory");
-        }
-}
+Please run this first through scripts/cleanpatch.pl and fix up the issues
+and then resend.
 
-> but atomic
-> instructions and it could be argued that reading the value is also
-> atomic.  At least that was my guess when I stumbled across the same
-> yesterday.  IMHO, we're going off into the weeds again with these last
-> two patches.  It may be a valid optimization, but it really has no
-> bearing on the meat of the series (and afaict, no significant
-> performance difference either).
+Thanks!
 
-For me it's not a performance thing. IMO code is cleaner without this locking:
-we add a lock but only use it in some cases, so the rules become really
-complex.  And current code looks buggy if yes we need to fix it somehow.
-
--- 
-MST
+> ---
+> diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+> index a4790bf..ead8557 100644
+> --- a/arch/x86/xen/setup.c
+> +++ b/arch/x86/xen/setup.c
+> @@ -157,25 +157,24 @@ static unsigned long __init xen_populate_chunk(
+>  	unsigned long dest_pfn;
+> 
+>  	for (i = 0, entry = list; i<  map_size; i++, entry++) {
+> -		unsigned long credits = credits_left;
+>  		unsigned long s_pfn;
+>  		unsigned long e_pfn;
+>  		unsigned long pfns;
+>  		long capacity;
+> 
+> -		if (credits<= 0)
+> +		if (credits_left<= 0)
+>  			break;
+> 
+>  		if (entry->type != E820_RAM)
+>  			continue;
+> 
+> -		e_pfn = PFN_UP(entry->addr + entry->size);
+> +		e_pfn = PFN_DOWN(entry->addr + entry->size);
+> 
+>  		/* We only care about E820 after the xen_start_info->nr_pages */
+>  		if (e_pfn<= max_pfn)
+>  			continue;
+> 
+> -		s_pfn = PFN_DOWN(entry->addr);
+> +		s_pfn = PFN_UP(entry->addr);
+>  		/* If the E820 falls within the nr_pages, we want to start
+>  		 * at the nr_pages PFN.
+>  		 * If that would mean going past the E820 entry, skip it
+> @@ -184,23 +183,19 @@ static unsigned long __init xen_populate_chunk(
+>  			capacity = e_pfn - max_pfn;
+>  			dest_pfn = max_pfn;
+>  		} else {
+> -			/* last_pfn MUST be within E820_RAM regions */
+> -			if (*last_pfn&&  e_pfn>= *last_pfn)
+> -				s_pfn = *last_pfn;
+>  			capacity = e_pfn - s_pfn;
+>  			dest_pfn = s_pfn;
+>  		}
+> -		/* If we had filled this E820_RAM entry, go to the next one. */
+> -		if (capacity<= 0)
+> -			continue;
+> 
+> -		if (credits>  capacity)
+> -			credits = capacity;
+> +		if (credits_left<  capacity)
+> +			capacity = credits_left;
+> 
+> -		pfns = xen_do_chunk(dest_pfn, dest_pfn + credits, false);
+> +		pfns = xen_do_chunk(dest_pfn, dest_pfn + capacity, false);
+>  		done += pfns;
+> -		credits_left -= pfns;
+>  		*last_pfn = (dest_pfn + pfns);
+> +		if (pfns<  capacity)
+> +			break;
+> +		credits_left -= pfns;
+>  	}
+>  	return done;
+>  }
+> -- 
+> 1.7.3
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
