@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755139Ab2GQKIk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 06:08:40 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40578 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755055Ab2GQKIi (ORCPT
+	id S1755127Ab2GQKMb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 06:12:31 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:64941 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752664Ab2GQKM3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 06:08:38 -0400
-Date: Tue, 17 Jul 2012 11:08:36 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Graeme Gregory <gg@slimlogic.co.uk>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH RFT] regulator: palmas: Fix calcuating selector in
- palmas_map_voltage_smps
-Message-ID: <20120717100836.GB4477@opensource.wolfsonmicro.com>
-References: <1342495743.16433.1.camel@phoenix>
+	Tue, 17 Jul 2012 06:12:29 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="XOIedfhf+7KOe/yw"
-Content-Disposition: inline
-In-Reply-To: <1342495743.16433.1.camel@phoenix>
-X-Cookie: Your aim is high and to the right.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Tue, 17 Jul 2012 18:12:28 +0800
+Message-ID: <CACV3sbLu81jrkfSXQxJ+_XtZHVTA6YfwJO3hjRxYsaDwbbLi6A@mail.gmail.com>
+Subject: uprobe: checking probe event include directory
+From: Jovi Zhang <bookjovi@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>From 16ed13ee9098ae01705e8456005d1ad6d9909128 Mon Sep 17 00:00:00 2001
+From: Jovi Zhang <bookjovi@gmail.com>
+Date: Wed, 18 Jul 2012 01:16:23 +0800
+Subject: [PATCH] uprobe: checking probe event include directory
 
---XOIedfhf+7KOe/yw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Currently below command run successful:
+$ echo 'p /bin:0x4245c0' > /sys/kernel/debug/tracing/uprobe_events
 
-On Tue, Jul 17, 2012 at 11:29:03AM +0800, Axel Lin wrote:
-> The logic of calculating selector in palmas_map_voltage_smps() does not match
-> the logic to list voltage in palmas_list_voltage_smps().
+this don't make sense, because /bin is a directory,
+so make this checking earily, not report error untill probe enable.
 
-Applied, thanks.
+Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
+---
+ kernel/trace/trace_uprobe.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---XOIedfhf+7KOe/yw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+index 85158fa..cf382de 100644
+--- a/kernel/trace/trace_uprobe.c
++++ b/kernel/trace/trace_uprobe.c
+@@ -259,6 +259,11 @@ static int create_trace_uprobe(int argc, char **argv)
+ 		goto fail_address_parse;
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+ 	inode = igrab(path.dentry->d_inode);
++	 if (S_ISDIR(inode->i_mode)) {
++		ret = -EINVAL;
++		pr_info("probe file cannot be directory.\n");
++		goto fail_address_parse;
++	}
 
-iQIcBAEBAgAGBQJQBTmcAAoJEBus8iNuMP3dtWwP/iRS9vIKL5RrZLpRkAJ3ZE0G
-j7MqMr/5pnK5t5KSs0luJKCEuP2jaHoP5rXI/K4zIUdNi28neFYdhiZWavBgwDZ1
-rm6O8xhcKMaj0wuaZpODFsZ01/NUDVBJe72+NkNqh2XERTNOyycOJxxEMWvFuy6U
-i6nzG6WvwG7TQJFTd/64rB/91jbE21myB5OqaIAi99GGzytbI7cdi5YexGBxLnd6
-y48W9h5iIigRoCWRwASVVwC7r3QNmhX8GrQ63XGh2dzRE4Vqje797CXakHunWvCN
-IxvFeEOEEHHyf/gEpnsDF+u/jyvYu0O1cnO6UxmlWn9gWU6Gh06XooNG0KeXj2xZ
-I7LbI/qsxFCm9wRQzEa5gfEA4/XZjMDTIyKVJdlTNCNTDazTtCNJagCo7I0ciPm8
-xhphPdu28e09jN86X9sbh/+BQ09jYU3geSXhN6BrcX+KwMV/nDeWsM3MGjbUlqpJ
-uOLaYYdZcakithhuB9LECPAGDoyV+c7KRgBwxvpIcB31oj3Zt+Hv/djubCYKP7BD
-YZJCOTaPU/dGdC22C05RpSEUe9HnJW7XT8aVkjmD9XcXz+9ptkfj9EV3Dh3Iqqko
-p+zUUv64/lAoYYLknmN2CMCbAUO/GlEmZhI+7Z7/z5Dajh19cxdepfJfDEacEGPq
-78VtmQgtrEjD7kzsQhzz
-=0XvY
------END PGP SIGNATURE-----
-
---XOIedfhf+7KOe/yw--
+ 	argc -= 2;
+ 	argv += 2;
+-- 
+1.7.9.7
