@@ -1,95 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755992Ab2GQRka (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 13:40:30 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:23229 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751109Ab2GQRk1 (ORCPT
+	id S1756029Ab2GQRl1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 13:41:27 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:34701 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751109Ab2GQRlZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 13:40:27 -0400
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC103.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-X-SpamScore: -8
-X-BigFish: VS-8(zz98dI9371I542M1432Izz1202hzz8275bhz2fh2a8h683h839h93fhd25hf0ah107ah)
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT004.namprd03.prod.outlook.com;R:internal;EFV:INT
-From: KY Srinivasan <kys@microsoft.com>
-To: Olaf Hering <olaf@aepfle.de>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "apw@canonical.com" <apw@canonical.com>
-Subject: RE: [PATCH 02/15] Drivers: hv: Add KVP definitions for IP address
- injection
-Thread-Topic: [PATCH 02/15] Drivers: hv: Add KVP definitions for IP address
- injection
-Thread-Index: AQHNYf4QnjbEKHKtJUqIqRriKjZpOZcs39yAgAChiDA=
-Date: Tue, 17 Jul 2012 17:39:44 +0000
-Message-ID: <426367E2313C2449837CD2DE46E7EAF9224EA2D3@SN2PRD0310MB382.namprd03.prod.outlook.com>
-References: <1342297930-12607-1-git-send-email-kys@microsoft.com>
- <1342298060-12662-1-git-send-email-kys@microsoft.com>
- <1342298060-12662-2-git-send-email-kys@microsoft.com>
- <20120717040912.GA6369@aepfle.de>
-In-Reply-To: <20120717040912.GA6369@aepfle.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [108.24.39.100]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PRD0310HT004.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14MLTC103.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14MLTC103.redmond.corp.microsoft.com
-X-OriginatorOrg: microsoft.com
+	Tue, 17 Jul 2012 13:41:25 -0400
+From: John Stultz <johnstul@us.ibm.com>
+To: stable@vger.kernel.org
+Cc: John Stultz <johnstul@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 06/11] 3.0.x: timekeeping: Fix leapsecond triggered load spike issue
+Date: Tue, 17 Jul 2012 13:33:53 -0400
+Message-Id: <1342546438-17534-7-git-send-email-johnstul@us.ibm.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1342546438-17534-1-git-send-email-johnstul@us.ibm.com>
+References: <1342546438-17534-1-git-send-email-johnstul@us.ibm.com>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12071717-1780-0000-0000-0000077CAF74
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000287; HX=3.00000193; KW=3.00000007;
+ PH=3.00000001; SC=3.00000004; SDB=6.00157440; UDB=6.00035513; UTC=2012-07-17
+ 17:41:22
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q6HHeaMA003618
 
+This is a backport of 4873fa070ae84a4115f0b3c9dfabc224f1bc7c51
 
+The timekeeping code misses an update of the hrtimer subsystem after a
+leap second happened. Due to that timers based on CLOCK_REALTIME are
+either expiring a second early or late depending on whether a leap
+second has been inserted or deleted until an operation is initiated
+which causes that update. Unless the update happens by some other
+means this discrepancy between the timekeeping and the hrtimer data
+stays forever and timers are expired either early or late.
 
-> -----Original Message-----
-> From: Olaf Hering [mailto:olaf@aepfle.de]
-> Sent: Tuesday, July 17, 2012 12:09 AM
-> To: KY Srinivasan
-> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; apw@canonical.com
-> Subject: Re: [PATCH 02/15] Drivers: hv: Add KVP definitions for IP address
-> injection
-> 
-> On Sat, Jul 14, K. Y. Srinivasan wrote:
-> 
-> > diff --git a/include/linux/hyperv.h b/include/linux/hyperv.h
-> > index 68ed7f7..38b561a 100644
-> > --- a/include/linux/hyperv.h
-> > +++ b/include/linux/hyperv.h
-> > @@ -127,6 +127,8 @@ enum hv_kvp_exchg_op {
-> >  	KVP_OP_SET,
-> >  	KVP_OP_DELETE,
-> >  	KVP_OP_ENUMERATE,
-> > +	KVP_OP_GET_IP_INFO,
-> > +	KVP_OP_SET_IP_INFO,
-> >  	KVP_OP_REGISTER,
-> >  	KVP_OP_COUNT /* Number of operations, must be last. */
-> >  };
-> 
-> I think this will break the kernel/daemon API for existing binaries.
-> Perhaps a forward/backwards compatible API where an older binary
-> continues to work with a newer kernel should be added.
+The reported immediate workaround - $ data -s "`date`" - is causing a
+call to clock_was_set() which updates the hrtimer data structures.
+See: http://www.sheeri.com/content/mysql-and-leap-second-high-cpu-and-fix
 
-You are right. If I were to keep the existing op codes unchanged, I think we can 
-maintain backward compatibility - older daemon binaries will be able to function
-correctly on newer KVP driver. However, newer daemon binary will require a 
-matching KVP driver. Let me first validate what I think is the case. Greg, please drop
-the patch-set; I will resubmit the set.
+Add the missing clock_was_set() call to update_wall_time() in case of
+a leap second event. The actual update is deferred to softirq context
+as the necessary smp function call cannot be invoked from hard
+interrupt context.
 
-Regards,
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Reported-by: Jan Engelhardt <jengelh@inai.de>
+Reviewed-by: Ingo Molnar <mingo@kernel.org>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Prarit Bhargava <prarit@redhat.com>
+Cc: stable@vger.kernel.org
+Link: http://lkml.kernel.org/r/1341960205-56738-3-git-send-email-johnstul@us.ibm.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+---
+ kernel/time/timekeeping.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-K. Y
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 0b582eb..9201474 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -827,6 +827,8 @@ static cycle_t logarithmic_accumulation(cycle_t offset, int shift)
+ 		leap = second_overflow(xtime.tv_sec);
+ 		xtime.tv_sec += leap;
+ 		wall_to_monotonic.tv_sec -= leap;
++		if (leap)
++			clock_was_set_delayed();
+ 	}
+ 
+ 	/* Accumulate raw time */
+@@ -938,6 +940,8 @@ static void update_wall_time(void)
+ 		leap = second_overflow(xtime.tv_sec);
+ 		xtime.tv_sec += leap;
+ 		wall_to_monotonic.tv_sec -= leap;
++		if (leap)
++			clock_was_set_delayed();
+ 	}
+ 
+ 	timekeeping_update(false);
+-- 
+1.7.9.5
+
