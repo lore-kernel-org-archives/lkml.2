@@ -1,78 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754984Ab2GQOwS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 10:52:18 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:51057 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753828Ab2GQOwO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 10:52:14 -0400
-Message-ID: <50057C1A.80606@linaro.org>
-Date: Tue, 17 Jul 2012 15:52:10 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1755312Ab2GQOwr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 10:52:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54058 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753796Ab2GQOwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 10:52:45 -0400
+Date: Tue, 17 Jul 2012 17:53:13 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
+Subject: Re: [PATCH v5 3/4] kvm: Create kvm_clear_irq()
+Message-ID: <20120717145313.GB11516@redhat.com>
+References: <20120716202711.1752.71007.stgit@bling.home>
+ <20120716203401.1752.78276.stgit@bling.home>
+ <20120717101435.GE7949@redhat.com>
+ <1342533369.3229.4.camel@ul30vt>
+ <20120717140858.GB10822@redhat.com>
+ <1342534911.3229.26.camel@ul30vt>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Wolfram Sang <w.sang@pengutronix.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Alessandro Rubini <rubini@gnudd.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: linux-next: manual merge of the arm-soc tree with the i2c-embedded
- tree
-References: <5003FB7C.4030509@linaro.org> <20120717130650.GB27595@sirena.org.uk> <500568D9.10805@linaro.org> <20120717133550.GC4477@opensource.wolfsonmicro.com> <50057058.2060002@linaro.org> <20120717142222.GE4477@opensource.wolfsonmicro.com>
-In-Reply-To: <20120717142222.GE4477@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1342534911.3229.26.camel@ul30vt>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/07/12 15:22, Mark Brown wrote:
-> On Tue, Jul 17, 2012 at 03:02:00PM +0100, Lee Jones wrote:
->
->> I'm sure sure this is relevant in the current case though, as the
->> i2c properties proposed here are platform specific. What we're
->
-> I've not seen the specific example (though fankly it seems quite
-> surprising that there's anything other than bus speed that the platform
-> might want to configure for I2C...).
->
->> discussing is some consolidation of property names, which I do
->> support in theory. What I fear is that this driver will lack Device
->> Tree functionality for yet another kernel version if it isn't
->> resolved quickly.
->
-> Well, if checking the DT checky box is the important thing then just
-> adding an of_match_table ought to be enough?  It's fairly common for
-> platform data to have lots of stuff that's not used by most systems
-> so you can often cover 90% of systems with a very small subset of the
-> configurability.
+On Tue, Jul 17, 2012 at 08:21:51AM -0600, Alex Williamson wrote:
+> On Tue, 2012-07-17 at 17:08 +0300, Michael S. Tsirkin wrote:
+> > On Tue, Jul 17, 2012 at 07:56:09AM -0600, Alex Williamson wrote:
+> > > On Tue, 2012-07-17 at 13:14 +0300, Michael S. Tsirkin wrote:
+> > > > On Mon, Jul 16, 2012 at 02:34:03PM -0600, Alex Williamson wrote:
+> > > > > This is an alternative to kvm_set_irq(,,,0) which returns the previous
+> > > > > assertion state of the interrupt and does nothing if it isn't changed.
+> > > > > 
+> > > > > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> > > > > ---
+> > > > > 
+> > > > >  include/linux/kvm_host.h |    3 ++
+> > > > >  virt/kvm/irq_comm.c      |   78 ++++++++++++++++++++++++++++++++++++++++++++++
+> > > > >  2 files changed, 81 insertions(+)
+> > > > > 
+> > > > > diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+> > > > > index a7661c0..6c168f1 100644
+> > > > > --- a/include/linux/kvm_host.h
+> > > > > +++ b/include/linux/kvm_host.h
+> > > > > @@ -219,6 +219,8 @@ struct kvm_kernel_irq_routing_entry {
+> > > > >  	u32 type;
+> > > > >  	int (*set)(struct kvm_kernel_irq_routing_entry *e,
+> > > > >  		   struct kvm *kvm, int irq_source_id, int level);
+> > > > > +	int (*clear)(struct kvm_kernel_irq_routing_entry *e,
+> > > > > +		     struct kvm *kvm, int irq_source_id);
+> > > > >  	union {
+> > > > >  		struct {
+> > > > >  			unsigned irqchip;
+> > > > > @@ -629,6 +631,7 @@ void kvm_get_intr_delivery_bitmask(struct kvm_ioapic *ioapic,
+> > > > >  				   unsigned long *deliver_bitmask);
+> > > > >  #endif
+> > > > >  int kvm_set_irq(struct kvm *kvm, int irq_source_id, u32 irq, int level);
+> > > > > +int kvm_clear_irq(struct kvm *kvm, int irq_source_id, u32 irq);
+> > > > >  int kvm_set_msi(struct kvm_kernel_irq_routing_entry *irq_entry, struct kvm *kvm,
+> > > > >  		int irq_source_id, int level);
+> > > > >  void kvm_notify_acked_irq(struct kvm *kvm, unsigned irqchip, unsigned pin);
+> > > > > diff --git a/virt/kvm/irq_comm.c b/virt/kvm/irq_comm.c
+> > > > > index 5afb431..76e8f22 100644
+> > > > > --- a/virt/kvm/irq_comm.c
+> > > > > +++ b/virt/kvm/irq_comm.c
+> > > > > @@ -68,6 +68,42 @@ static int kvm_set_ioapic_irq(struct kvm_kernel_irq_routing_entry *e,
+> > > > >  	return kvm_ioapic_set_irq(ioapic, e->irqchip.pin, level);
+> > > > >  }
+> > > > >  
+> > > > > +static inline int kvm_clear_irq_line_state(unsigned long *irq_state,
+> > > > > +					    int irq_source_id)
+> > > > > +{
+> > > > > +	return !!test_and_clear_bit(irq_source_id, irq_state);
+> > > > > +}
+> > > > > +
+> > > > > +static int kvm_clear_pic_irq(struct kvm_kernel_irq_routing_entry *e,
+> > > > > +			     struct kvm *kvm, int irq_source_id)
+> > > > > +{
+> > > > > +#ifdef CONFIG_X86
+> > > > > +	struct kvm_pic *pic = pic_irqchip(kvm);
+> > > > > +	int level = kvm_clear_irq_line_state(&pic->irq_states[e->irqchip.pin],
+> > > > > +					     irq_source_id);
+> > > > > +	if (level)
+> > > > > +		kvm_pic_set_irq(pic, e->irqchip.pin,
+> > > > > +				!!pic->irq_states[e->irqchip.pin]);
+> > > > > +	return level;
+> > > > 
+> > > > I think I begin to understand: if (level) checks it was previously set,
+> > > > and then we clear if needed?
+> > > 
+> > > It's actually very simple, if we change anything in irq_states, then
+> > > update via the chip specific set_irq function.
+> > > 
+> > > >  I think it's worthwhile to rename
+> > > > level to orig_level and rewrite as:
+> > > > 
+> > > > 	if (orig_level && !pic->irq_states[e->irqchip.pin])
+> > > > 		kvm_pic_set_irq(pic, e->irqchip.pin, 0);
+> > > > 
+> > > > This both makes the logic clear without need for comments and
+> > > > saves some cycles on pic in case nothing actually changed.
+> > > 
+> > > That may work, but it's not actually the same thing.  kvm_set_irq(,,,0)
+> > > will clear the bit and call kvm_pic_set_irq with the new irq_states
+> > > value, whether it's 0 or 1.  The optimization I make is to only call
+> > > kvm_pic_set_irq if we've "changed" irq_states.  You're taking that one
+> > > step further to "changed and is now 0".  I don't know if that's correct
+> > > behavior.
+> > 
+> > If not then I don't understand. You clear a bit
+> > in a word. You never change it to 1, do you?
+> 
+> Correct, but kvm_set_irq(,,,0) may call kvm_pic_set_irq(,,1) if other
+> source IDs are still asserting the interrupt.  Your proposal assumes
+> that unless irq_states is also 0 we don't need to call kvm_pic_set_irq,
+> and I don't know if that's correct.
 
-We could do that, but I'd rather do it in full.
+Well you are asked to clear some id and level was 1. So we know
+interrupt was asserted. Either we clear it or we don't. No?
 
-I think it would be okay to take the 3 patches due for the v3.6 merge 
-window, which target the nmk-i2c driver. If any consolidation happens in 
-the mean-time/future I will personally do the work to bring the nmk-i2c 
-into line to use any generic bindings which result.
+> > 
+> > But this brings another question:
+> > 
+> > static inline int kvm_irq_line_state(unsigned long *irq_state,
+> >                                      int irq_source_id, int level)
+> > {
+> >         /* Logical OR for level trig interrupt */
+> >         if (level)
+> >                 set_bit(irq_source_id, irq_state);
+> >         else
+> >                 clear_bit(irq_source_id, irq_state);
+> > 
+> > 
+> > ^^^^^^^^^^^
+> > above uses locked instructions
+> > 
+> >         return !!(*irq_state);
+> > 
+> > 
+> > above doesn't
+> > 
+> > }
+> > 
+> > 
+> > why the insonsistency?
+> 
+> Note that set/clear_bit are not locked instructions,
 
-No one else is ever going to use these vendor specific bindings, so I'm 
-sure no issues will arise. It also means that we have a fully enabled 
-driver which is capable of receiving a new configuration via minor 
-changes to the dts, which is important for the current (only) user of 
-this driver for an upcoming project.
+On x86 they are:
+static __always_inline void
+set_bit(unsigned int nr, volatile unsigned long *addr)
+{
+        if (IS_IMMEDIATE(nr)) {
+                asm volatile(LOCK_PREFIX "orb %1,%0"
+                        : CONST_MASK_ADDR(nr, addr)
+                        : "iq" ((u8)CONST_MASK(nr))
+                        : "memory");
+        } else {
+                asm volatile(LOCK_PREFIX "bts %1,%0"
+                        : BITOP_ADDR(addr) : "Ir" (nr) : "memory");
+        }
+}
+
+> but atomic
+> instructions and it could be argued that reading the value is also
+> atomic.  At least that was my guess when I stumbled across the same
+> yesterday.  IMHO, we're going off into the weeds again with these last
+> two patches.  It may be a valid optimization, but it really has no
+> bearing on the meat of the series (and afaict, no significant
+> performance difference either).
+
+For me it's not a performance thing. IMO code is cleaner without this locking:
+we add a lock but only use it in some cases, so the rules become really
+complex.  And current code looks buggy if yes we need to fix it somehow.
 
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-M: +44 77 88 633 515
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
-
-
+MST
