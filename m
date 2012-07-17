@@ -1,69 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754936Ab2GQQUT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 12:20:19 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:37650 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753611Ab2GQQUQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 12:20:16 -0400
-From: Masanari Iida <standby24x7@gmail.com>
-To: linux-kernel@vger.kernel.org, trivial@kernel.org
-Cc: standby24x7@gmail.com
-Subject: [PATCH 1/2] [trivial] tools: perf: Fix typo in tools/perf
-Date: Wed, 18 Jul 2012 01:20:59 +0900
-Message-Id: <1342542059-9756-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.7.11.2.194.g7bdb748
+	id S1755326Ab2GQQUs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 12:20:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62596 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751944Ab2GQQUq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 12:20:46 -0400
+Date: Tue, 17 Jul 2012 19:21:15 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
+Subject: Re: [PATCH v5 3/4] kvm: Create kvm_clear_irq()
+Message-ID: <20120717162115.GC12114@redhat.com>
+References: <20120717140858.GB10822@redhat.com>
+ <1342534911.3229.26.camel@ul30vt>
+ <20120717145313.GB11516@redhat.com>
+ <1342538411.2229.106.camel@bling.home>
+ <20120717153620.GB11849@redhat.com>
+ <1342540301.2229.117.camel@bling.home>
+ <20120717155701.GB12001@redhat.com>
+ <1342541301.2229.125.camel@bling.home>
+ <20120717161452.GA12114@redhat.com>
+ <1342541823.2229.127.camel@bling.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1342541823.2229.127.camel@bling.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling typo in tools/perf.
+On Tue, Jul 17, 2012 at 10:17:03AM -0600, Alex Williamson wrote:
+> > > > > > > >   And current code looks buggy if yes we need to fix it somehow.
+> > > > > > > 
+> > > > > > > 
+> > > > > > > Which to me seems to indicate this should be handled as a separate
+> > > > > > > effort.
+> > > > > > 
+> > > > > > A separate patchset, sure. But likely a prerequisite: we still need to
+> > > > > > look at all the code. Let's not copy bugs, need to fix them.
+> > > > > 
+> > > > > This looks tangential to me unless you can come up with an actual reason
+> > > > > the above spinlock usage is incorrect or insufficient.
+> > > > 
+> > > > You copy the same pattern that seems racy. So you double the
+> > > > amount of code that woul need to be fixed.
+> > > 
+> > > 
+> > > _Seems_ racy, or _is_ racy?  Please identify the race.
+> > 
+> > Look at this:
+> > 
+> > static inline int kvm_irq_line_state(unsigned long *irq_state,
+> >                                      int irq_source_id, int level)
+> > {
+> >         /* Logical OR for level trig interrupt */
+> >         if (level)
+> >                 set_bit(irq_source_id, irq_state);
+> >         else
+> >                 clear_bit(irq_source_id, irq_state);
+> > 
+> >         return !!(*irq_state);
+> > }
+> > 
+> > 
+> > Now:
+> > If other CPU changes some other bit after the atomic change,
+> > it looks like !!(*irq_state) might return a stale value.
+> > 
+> > CPU 0 clears bit 0. CPU 1 sets bit 1. CPU 1 sets level to 1.
+> > If CPU 0 sees a stale value now it will return 0 here
+> > and interrupt will get cleared.
+> > 
+> > 
+> > Maybe this is not a problem. But in that case IMO it needs
+> > a comment explaining why and why it's not a problem in
+> > your code.
+> 
+> So you want to close the door on anything that uses kvm_set_irq until
+> this gets fixed... that's insane.
 
-Signed-off-by: Masanari iida <standby24x7@gmail.com>
----
- tools/perf/util/callchain.h         | 2 +-
- tools/perf/util/parse-events-test.c | 2 +-
- tools/perf/util/python-ext-sources  | 2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+What does kvm_set_irq use have to do with it?  You posted this patch:
 
-diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
-index 3bdb407..eb34057 100644
---- a/tools/perf/util/callchain.h
-+++ b/tools/perf/util/callchain.h
-@@ -58,7 +58,7 @@ struct callchain_list {
- /*
-  * A callchain cursor is a single linked list that
-  * let one feed a callchain progressively.
-- * It keeps persitent allocated entries to minimize
-+ * It keeps persistent allocated entries to minimize
-  * allocations.
-  */
- struct callchain_cursor_node {
-diff --git a/tools/perf/util/parse-events-test.c b/tools/perf/util/parse-events-test.c
-index 76b98e2..8cdf147 100644
---- a/tools/perf/util/parse-events-test.c
-+++ b/tools/perf/util/parse-events-test.c
-@@ -609,7 +609,7 @@ static int test_pmu(void)
- 
- 	ret = stat(path, &st);
- 	if (ret)
--		pr_debug("ommiting PMU cpu tests\n");
-+		pr_debug("omitting PMU cpu tests\n");
- 	return !ret;
- }
- 
-diff --git a/tools/perf/util/python-ext-sources b/tools/perf/util/python-ext-sources
-index 2884e67..f4e37ce 100644
---- a/tools/perf/util/python-ext-sources
-+++ b/tools/perf/util/python-ext-sources
-@@ -1,5 +1,5 @@
- #
--# List of files needed by perf python extention
-+# List of files needed by perf python extension
- #
- # Each source file must be placed on its own line so that it can be
- # processed by Makefile and util/setup.py accordingly.
++static int kvm_clear_pic_irq(struct kvm_kernel_irq_routing_entry *e,
++                            struct kvm *kvm, int irq_source_id)
++{
++#ifdef CONFIG_X86
++       struct kvm_pic *pic = pic_irqchip(kvm);
++       int level =
+kvm_clear_irq_line_state(&pic->irq_states[e->irqchip.pin],
++                                            irq_source_id);
++       if (level)
++               kvm_pic_set_irq(pic, e->irqchip.pin,
++                               !!pic->irq_states[e->irqchip.pin]);
++       return level;
++#else
++       return -1;
++#endif
++}
++
+
+it seems racy in the same way.
+
 -- 
-1.7.11.2.194.g7bdb748
-
+MST
