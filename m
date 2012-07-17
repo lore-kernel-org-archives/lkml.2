@@ -1,76 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756128Ab2GQSG1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 14:06:27 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:38178 "EHLO e9.ny.us.ibm.com"
+	id S1756079Ab2GQSGm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 14:06:42 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:38267 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755879Ab2GQSGW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 14:06:22 -0400
+	id S1751109Ab2GQSGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 14:06:30 -0400
 From: John Stultz <johnstul@us.ibm.com>
 To: stable@vger.kernel.org
-Cc: John Stultz <john.stultz@linaro.org>, stable@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        John Stultz <johnstul@us.ibm.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Prarit Bhargava <prarit@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        John Stultz <johnstul@us.ibm.com>
-Subject: [PATCH 03/11] 2.6.35.x: timekeeping: Fix CLOCK_MONOTONIC inconsistency during leapsecond
-Date: Tue, 17 Jul 2012 14:05:34 -0400
-Message-Id: <1342548342-19683-4-git-send-email-johnstul@us.ibm.com>
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 11/11] 2.6.35.x: timekeeping: Add missing update call in timekeeping_resume()
+Date: Tue, 17 Jul 2012 14:05:42 -0400
+Message-Id: <1342548342-19683-12-git-send-email-johnstul@us.ibm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1342548342-19683-1-git-send-email-johnstul@us.ibm.com>
 References: <1342548342-19683-1-git-send-email-johnstul@us.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12071718-7182-0000-0000-000002019DCE
+x-cbid: 12071718-7182-0000-0000-000002019E13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: John Stultz <john.stultz@linaro.org>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-This is a backport of fad0c66c4bb836d57a5f125ecd38bed653ca863a
-which resolves a bug the previous commit.
+This is a backport of 3e997130bd2e8c6f5aaa49d6e3161d4d29b43ab0
 
-Commit 6b43ae8a61 (ntp: Fix leap-second hrtimer livelock) broke the
-leapsecond update of CLOCK_MONOTONIC. The missing leapsecond update to
-wall_to_monotonic causes discontinuities in CLOCK_MONOTONIC.
+The leap second rework unearthed another issue of inconsistent data.
 
-Adjust wall_to_monotonic when NTP inserted a leapsecond.
+On timekeeping_resume() the timekeeper data is updated, but nothing
+calls timekeeping_update(), so now the update code in the timer
+interrupt sees stale values.
 
-Reported-by: Richard Cochran <richardcochran@gmail.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Tested-by: Richard Cochran <richardcochran@gmail.com>
-Cc: stable@kernel.org
-Link: http://lkml.kernel.org/r/1338400497-12420-1-git-send-email-john.stultz@linaro.org
+This has been the case before those changes, but then the timer
+interrupt was using stale data as well so this went unnoticed for quite
+some time.
+
+Add the missing update call, so all the data is consistent everywhere.
+
+Reported-by: Andreas Schwab <schwab@linux-m68k.org>
+Reported-and-tested-by: "Rafael J. Wysocki" <rjw@sisk.pl>
+Reported-and-tested-by: Martin Steigerwald <Martin@lichtvoll.de>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Cc: Linux PM list <linux-pm@vger.kernel.org>
+Cc: John Stultz <johnstul@us.ibm.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: stable@vger.kernel.org
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Prarit Bhargava <prarit@redhat.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Linux Kernel <linux-kernel@vger.kernel.org>
 Signed-off-by: John Stultz <johnstul@us.ibm.com>
 ---
- kernel/time/timekeeping.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ kernel/time/timekeeping.c |    1 +
+ 1 file changed, 1 insertion(+)
 
 diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 8c4b32e..5960728 100644
+index 2461fe4..782f13d 100644
 --- a/kernel/time/timekeeping.c
 +++ b/kernel/time/timekeeping.c
-@@ -750,6 +750,7 @@ static cycle_t logarithmic_accumulation(cycle_t offset, int shift)
- 		xtime.tv_sec++;
- 		leap = second_overflow(xtime.tv_sec);
- 		xtime.tv_sec += leap;
-+		wall_to_monotonic.tv_sec -= leap;
- 	}
+@@ -616,6 +616,7 @@ static int timekeeping_resume(struct sys_device *dev)
+ 	timekeeper.clock->cycle_last = timekeeper.clock->read(timekeeper.clock);
+ 	timekeeper.ntp_error = 0;
+ 	timekeeping_suspended = 0;
++	timekeeping_update(false);
+ 	write_sequnlock_irqrestore(&xtime_lock, flags);
  
- 	/* Accumulate raw time */
-@@ -859,7 +860,7 @@ void update_wall_time(void)
- 		xtime.tv_sec++;
- 		leap = second_overflow(xtime.tv_sec);
- 		xtime.tv_sec += leap;
--
-+		wall_to_monotonic.tv_sec -= leap;
- 	}
- 
- 	/* check to see if there is a new clocksource to use */
+ 	touch_softlockup_watchdog();
 -- 
 1.7.9.5
 
