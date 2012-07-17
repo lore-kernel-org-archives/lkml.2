@@ -1,91 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754272Ab2GQN0T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 09:26:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55114 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753308Ab2GQN0R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 09:26:17 -0400
-Date: Tue, 17 Jul 2012 16:26:42 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Stefan Hajnoczi <stefanha@gmail.com>, Asias He <asias@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-aio@kvack.org, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Benjamin LaHaise <bcrl@kvack.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 0/5] Add vhost-blk support
-Message-ID: <20120717132642.GA10590@redhat.com>
-References: <50052276.2080906@redhat.com>
- <500527BA.9000001@redhat.com>
- <50052E7E.6020100@redhat.com>
- <CAJSP0QW0tPV3WASGOBRE4hL=8zzSFQ6T=bHbEwMAzmHR9wnwJg@mail.gmail.com>
- <20120717112645.GA9363@redhat.com>
- <CAJSP0QXPkrVvgA+1fhhwsB5J8oApOObK8D3fk_Lm0Bt3T+Wfuw@mail.gmail.com>
- <20120717115450.GA9796@redhat.com>
- <CAJSP0QXwGuUaD9piktOptJasdpci_fA90d=vV4m0SuORMvc2=Q@mail.gmail.com>
- <20120717124859.GA9883@redhat.com>
- <50056275.6000407@redhat.com>
+	id S1754339Ab2GQNaI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 09:30:08 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:64413 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752899Ab2GQNaF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 09:30:05 -0400
+Message-ID: <500568D9.10805@linaro.org>
+Date: Tue, 17 Jul 2012 14:30:01 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50056275.6000407@redhat.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Wolfram Sang <w.sang@pengutronix.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alessandro Rubini <rubini@gnudd.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        devicetree-discuss@lists.ozlabs.org,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the i2c-embedded
+ tree
+References: <5003FB7C.4030509@linaro.org> <20120717130650.GB27595@sirena.org.uk>
+In-Reply-To: <20120717130650.GB27595@sirena.org.uk>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 17, 2012 at 03:02:45PM +0200, Paolo Bonzini wrote:
-> Il 17/07/2012 14:48, Michael S. Tsirkin ha scritto:
-> > On Tue, Jul 17, 2012 at 01:03:39PM +0100, Stefan Hajnoczi wrote:
-> >> On Tue, Jul 17, 2012 at 12:54 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
-> >>>> Knowing the answer to that is important before anyone can say whether
-> >>>> this approach is good or not.
-> >>>>
-> >>>> Stefan
-> >>>
-> >>> Why is it?
-> >>
-> >> Because there might be a fix to kvmtool which closes the gap.  It
-> >> would be embarassing if vhost-blk was pushed just because no one
-> >> looked into what is actually going on.
-> > 
-> > Embarrasing to whom? Is someone working on an optimization that
-> > makes the work in question redundant, with posting just around
-> > the corner? Then maybe the thing to do is just wait a bit.
-> 
-> Of course there is work going on to make QEMU perform better.
-> Not sure about lkvm.
-> 
-> >> And on the flipside, hard evidence of an overhead that cannot be
-> >> resolved could be good reason to do more vhost devices in the future.
-> > 
-> > How can one have hard evidence of an overhead that cannot be resolved?
-> 
-> Since we do have two completely independent userspaces (lkvm and
-> data-plane QEMU), you can build up some compelling evidence of an
-> overhead that cannot be resolved in user space.
+On 17/07/12 14:06, Mark Brown wrote:
+> On Mon, Jul 16, 2012 at 12:31:08PM +0100, Lee Jones wrote:
+>
+>> I agree with what you say to some extent, but I believe that it is
+>> more important to have a working solution now than to ensure that
+>> each bindings are as unique as possible. After any suggestion of
+>> consolidation, a move from vendor specific to generically defined
+>> Device Tree bindings is trivial. Especially in the current stage
+>> where adaptions and definitions are still fluid.
+>
+>> Obviously some care is taken to ensure the bindings are as generic
+>> as possible, but not to the extent that will put the project back
+>> some months. Over past few months I have enabled many sub-systems;
+>
+> It's not just about having generic bindings, it's also about having
+> bindings which have some abstraction and hope of reusability. An awful
+> lot of bindings are just straight dumps of Linux data structures into
+> the device tree which don't make a terribly great deal of sense as
+> bindings.
 
-OK, so what you are saying benchmark against data-plane QEMU?
-I agree actually. Asias, any data?
+The Device Tree should supply any platform configuration which the 
+driver needs in order to correctly setup for a particular machine. This 
+is exactly what the platform_data structure did before, hence is is 
+reasonable to assume that whatever information resides in that structure 
+would be required in the Device Tree.
 
-> >> Either way, it's useful to do this before going further.
-> > 
-> > I think each work should be discussed on its own merits.  Maybe
-> > vhost-blk is just well written. So? What is your conclusion?
-> 
-> If it's just that vhost-blk is written well, my conclusion is that lkvm
-> people should look into improving their virtio-blk userspace.  We take
-> hints from each other all the time, for example virtio-scsi will have
-> unlocked kick in 3.6.
-> 
-> Why can't vhost-* just get into staging, and we call it a day?
-> 
-> Paolo
+>> however, I think it would have been a fraction of that if we'd gone
+>> through the laborious process of immediate forced consolidation. I
+>> think it's fine to have platform/vendor specific bindings that work,
+>> then come back to unify them once the dust settles.
+>
+> In many of these cases we'd be better off just not putting things into
+> the device tree in the first place, leaving things at the basic "is the
+> device there" stuff.
 
-staging is not a destination. Even if we put a driver in staging it
-won't stay there indefinitely if qemu-kvm is not using it,
-something that doesn't seem to be addressed for vhost-blk yet.
+Then what do you do with the platform data?
 
 -- 
-MST
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+M: +44 77 88 633 515
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
+
+
