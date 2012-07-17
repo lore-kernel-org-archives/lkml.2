@@ -1,125 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754202Ab2GQHGE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 03:06:04 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:43119 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753847Ab2GQHFz (ORCPT
+	id S1754289Ab2GQHGQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 03:06:16 -0400
+Received: from edison.jonmasters.org ([173.255.233.168]:59726 "EHLO
+	edison.jonmasters.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754086Ab2GQHGB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 03:05:55 -0400
-From: John Stultz <johnstul@us.ibm.com>
-To: stable@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, John Stultz <johnstul@us.ibm.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 07/11] 3.2.x: timekeeping: Maintain ktime_t based offsets for hrtimers
-Date: Tue, 17 Jul 2012 03:05:20 -0400
-Message-Id: <1342508724-14527-8-git-send-email-johnstul@us.ibm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1342508724-14527-1-git-send-email-johnstul@us.ibm.com>
-References: <1342508724-14527-1-git-send-email-johnstul@us.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12071707-2398-0000-0000-0000088EFE7D
+	Tue, 17 Jul 2012 03:06:01 -0400
+Message-ID: <50050ECE.8020100@jonmasters.org>
+Date: Tue, 17 Jul 2012 03:05:50 -0400
+From: Jon Masters <jonathan@jonmasters.org>
+Organization: World Organi{s,z}ation of Broken Dreams
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Pavel Machek <pavel@ucw.cz>
+CC: Catalin Marinas <catalin.marinas@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Ingo Molnar <mingo@kernel.org>, Olof Johansson <olof@lixom.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com> <20120714093032.GA23316@elf.ucw.cz> <20120715121644.GB10597@arm.com> <201207151943.08183.arnd@arndb.de> <20120715213336.GA25830@arm.com> <20120716121651.GA18859@elf.ucw.cz>
+In-Reply-To: <20120716121651.GA18859@elf.ucw.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 74.92.29.237
+X-SA-Exim-Mail-From: jonathan@jonmasters.org
+Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
+X-SA-Exim-Version: 4.2.1 (built Sun, 08 Nov 2009 07:31:22 +0000)
+X-SA-Exim-Scanned: Yes (on edison.jonmasters.org)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+On 07/16/2012 08:16 AM, Pavel Machek wrote:
 
-This is a backport of 5b9fe759a678e05be4937ddf03d50e950207c1c0
+>> If an implementation supports AArch32 at EL3 there could be some
+>> physical (or some FPGA config) switch to choose between the two. But
+>> since AArch64 is mandated, I don't see why one would force AArch32 at
+>> EL3 and therefore all lower exception levels (and make a big part of the
+>> processor unused).
+> 
+> Actually I see one ... and I can bet it will happen.
+> 
+> So you create that shiny new ARMv8 compliant CPU, 8 cores, 2GHz. HTC
+> will want to use it with 1GB of RAM... and put around exiting OMAP
+> perihepals.
 
-We need to update the hrtimer clock offsets from the hrtimer interrupt
-context. To avoid conversions from timespec to ktime_t maintain a
-ktime_t based representation of those offsets in the timekeeper. This
-puts the conversion overhead into the code which updates the
-underlying offsets and provides fast accessible values in the hrtimer
-interrupt.
+But that's why we have Eagle (A15). It's a very capable 32-bit design
+from ARM and far more sensible for such designs. You can easily build
+something with a few A15 clusters in it, as we're already seeing.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
-Reviewed-by: Ingo Molnar <mingo@kernel.org>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Prarit Bhargava <prarit@redhat.com>
-Cc: stable@vger.kernel.org
-Link: http://lkml.kernel.org/r/1341960205-56738-4-git-send-email-johnstul@us.ibm.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
----
- kernel/time/timekeeping.c |   25 ++++++++++++++++++++++++-
- 1 file changed, 24 insertions(+), 1 deletion(-)
-
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 8958ad7..d5d0e5d 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -161,18 +161,34 @@ static struct timespec xtime __attribute__ ((aligned (16)));
- static struct timespec wall_to_monotonic __attribute__ ((aligned (16)));
- static struct timespec total_sleep_time;
- 
-+/* Offset clock monotonic -> clock realtime */
-+static ktime_t offs_real;
-+
-+/* Offset clock monotonic -> clock boottime */
-+static ktime_t offs_boot;
-+
- /*
-  * The raw monotonic time for the CLOCK_MONOTONIC_RAW posix clock.
-  */
- static struct timespec raw_time;
- 
- /* must hold write on xtime_lock */
-+static void update_rt_offset(void)
-+{
-+	struct timespec tmp, *wtm = &wall_to_monotonic;
-+
-+	set_normalized_timespec(&tmp, -wtm->tv_sec, -wtm->tv_nsec);
-+	offs_real = timespec_to_ktime(tmp);
-+}
-+
-+/* must hold write on xtime_lock */
- static void timekeeping_update(bool clearntp)
- {
- 	if (clearntp) {
- 		timekeeper.ntp_error = 0;
- 		ntp_clear();
- 	}
-+	update_rt_offset();
- 	update_vsyscall(&xtime, &wall_to_monotonic,
- 			 timekeeper.clock, timekeeper.mult);
- }
-@@ -587,6 +603,7 @@ void __init timekeeping_init(void)
- 	}
- 	set_normalized_timespec(&wall_to_monotonic,
- 				-boot.tv_sec, -boot.tv_nsec);
-+	update_rt_offset();
- 	total_sleep_time.tv_sec = 0;
- 	total_sleep_time.tv_nsec = 0;
- 	write_sequnlock_irqrestore(&xtime_lock, flags);
-@@ -595,6 +612,12 @@ void __init timekeeping_init(void)
- /* time in seconds when suspend began */
- static struct timespec timekeeping_suspend_time;
- 
-+static void update_sleep_time(struct timespec t)
-+{
-+	total_sleep_time = t;
-+	offs_boot = timespec_to_ktime(t);
-+}
-+
- /**
-  * __timekeeping_inject_sleeptime - Internal function to add sleep interval
-  * @delta: pointer to a timespec delta value
-@@ -612,7 +635,7 @@ static void __timekeeping_inject_sleeptime(struct timespec *delta)
- 
- 	xtime = timespec_add(xtime, *delta);
- 	wall_to_monotonic = timespec_sub(wall_to_monotonic, *delta);
--	total_sleep_time = timespec_add(total_sleep_time, *delta);
-+	update_sleep_time(timespec_add(total_sleep_time, *delta));
- }
- 
- 
--- 
-1.7.9.5
-
+Jon.
