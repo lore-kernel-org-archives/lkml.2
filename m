@@ -1,180 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757263Ab2GQWbT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 18:31:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44572 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757203Ab2GQWbS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 18:31:18 -0400
-Date: Wed, 18 Jul 2012 01:31:50 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Subject: Re: [PATCH v5 3/4] kvm: Create kvm_clear_irq()
-Message-ID: <20120717223150.GL1868@redhat.com>
-References: <20120717161452.GA12114@redhat.com>
- <1342541823.2229.127.camel@bling.home>
- <20120717162115.GC12114@redhat.com>
- <1342543552.2229.136.camel@bling.home>
- <20120717185542.GB13066@redhat.com>
- <1342554687.2229.144.camel@bling.home>
- <20120717210543.GA1868@redhat.com>
- <1342562500.2229.158.camel@bling.home>
- <20120717220552.GG1868@redhat.com>
- <1342563730.2229.170.camel@bling.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1342563730.2229.170.camel@bling.home>
+	id S1757221Ab2GQWfk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 18:35:40 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:43328 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756225Ab2GQWfh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 18:35:37 -0400
+Message-ID: <1342564536.1898.1.camel@joe2Laptop>
+Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
+From: Joe Perches <joe@perches.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        =?ISO-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>,
+        Ingo Molnar <mingo@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Date: Tue, 17 Jul 2012 15:35:36 -0700
+In-Reply-To: <20120717221839.GA4856@arm.com>
+References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
+	 <CAOesGMiCexiqA3L5GdNgyHhSD-5Bpqbb02YJrZPr8yMYa0afjA@mail.gmail.com>
+	 <201207071927.13135.arnd@arndb.de> <20120710071023.GA10456@gmail.com>
+	 <20120710101018.GE15120@arm.com> <yw1x8vekd309.fsf@unicorn.mansr.com>
+	 <CA+55aFxL6uEre-c=JrhPfts=7BGmhb2Js1c2ZGkTH8F=+rEWDg@mail.gmail.com>
+	 <20120717221839.GA4856@arm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 17, 2012 at 04:22:10PM -0600, Alex Williamson wrote:
-> On Wed, 2012-07-18 at 01:05 +0300, Michael S. Tsirkin wrote:
-> > On Tue, Jul 17, 2012 at 04:01:40PM -0600, Alex Williamson wrote:
-> > > On Wed, 2012-07-18 at 00:05 +0300, Michael S. Tsirkin wrote:
-> > > > On Tue, Jul 17, 2012 at 01:51:27PM -0600, Alex Williamson wrote:
-> > > > > On Tue, 2012-07-17 at 21:55 +0300, Michael S. Tsirkin wrote:
-> > > > > > On Tue, Jul 17, 2012 at 10:45:52AM -0600, Alex Williamson wrote:
-> > > > > > > On Tue, 2012-07-17 at 19:21 +0300, Michael S. Tsirkin wrote:
-> > > > > > > > On Tue, Jul 17, 2012 at 10:17:03AM -0600, Alex Williamson wrote:
-> > > > > > > > > > > > > > > >   And current code looks buggy if yes we need to fix it somehow.
-> > > > > > > > > > > > > > > 
-> > > > > > > > > > > > > > > 
-> > > > > > > > > > > > > > > Which to me seems to indicate this should be handled as a separate
-> > > > > > > > > > > > > > > effort.
-> > > > > > > > > > > > > > 
-> > > > > > > > > > > > > > A separate patchset, sure. But likely a prerequisite: we still need to
-> > > > > > > > > > > > > > look at all the code. Let's not copy bugs, need to fix them.
-> > > > > > > > > > > > > 
-> > > > > > > > > > > > > This looks tangential to me unless you can come up with an actual reason
-> > > > > > > > > > > > > the above spinlock usage is incorrect or insufficient.
-> > > > > > > > > > > > 
-> > > > > > > > > > > > You copy the same pattern that seems racy. So you double the
-> > > > > > > > > > > > amount of code that woul need to be fixed.
-> > > > > > > > > > > 
-> > > > > > > > > > > 
-> > > > > > > > > > > _Seems_ racy, or _is_ racy?  Please identify the race.
-> > > > > > > > > > 
-> > > > > > > > > > Look at this:
-> > > > > > > > > > 
-> > > > > > > > > > static inline int kvm_irq_line_state(unsigned long *irq_state,
-> > > > > > > > > >                                      int irq_source_id, int level)
-> > > > > > > > > > {
-> > > > > > > > > >         /* Logical OR for level trig interrupt */
-> > > > > > > > > >         if (level)
-> > > > > > > > > >                 set_bit(irq_source_id, irq_state);
-> > > > > > > > > >         else
-> > > > > > > > > >                 clear_bit(irq_source_id, irq_state);
-> > > > > > > > > > 
-> > > > > > > > > >         return !!(*irq_state);
-> > > > > > > > > > }
-> > > > > > > > > > 
-> > > > > > > > > > 
-> > > > > > > > > > Now:
-> > > > > > > > > > If other CPU changes some other bit after the atomic change,
-> > > > > > > > > > it looks like !!(*irq_state) might return a stale value.
-> > > > > > > > > > 
-> > > > > > > > > > CPU 0 clears bit 0. CPU 1 sets bit 1. CPU 1 sets level to 1.
-> > > > > > > > > > If CPU 0 sees a stale value now it will return 0 here
-> > > > > > > > > > and interrupt will get cleared.
-> > > > > > > > > > 
-> > > > > > > > > > 
-> > > > > > > > > > Maybe this is not a problem. But in that case IMO it needs
-> > > > > > > > > > a comment explaining why and why it's not a problem in
-> > > > > > > > > > your code.
-> > > > > > > > > 
-> > > > > > > > > So you want to close the door on anything that uses kvm_set_irq until
-> > > > > > > > > this gets fixed... that's insane.
-> > > > > > > > 
-> > > > > > > > What does kvm_set_irq use have to do with it?  You posted this patch:
-> > > > > > > > 
-> > > > > > > > +static int kvm_clear_pic_irq(struct kvm_kernel_irq_routing_entry *e,
-> > > > > > > > +                            struct kvm *kvm, int irq_source_id)
-> > > > > > > > +{
-> > > > > > > > +#ifdef CONFIG_X86
-> > > > > > > > +       struct kvm_pic *pic = pic_irqchip(kvm);
-> > > > > > > > +       int level =
-> > > > > > > > kvm_clear_irq_line_state(&pic->irq_states[e->irqchip.pin],
-> > > > > > > > +                                            irq_source_id);
-> > > > > > > > +       if (level)
-> > > > > > > > +               kvm_pic_set_irq(pic, e->irqchip.pin,
-> > > > > > > > +                               !!pic->irq_states[e->irqchip.pin]);
-> > > > > > > > +       return level;
-> > > > > > > > +#else
-> > > > > > > > +       return -1;
-> > > > > > > > +#endif
-> > > > > > > > +}
-> > > > > > > > +
-> > > > > > > > 
-> > > > > > > > it seems racy in the same way.
-> > > > > > > 
-> > > > > > > Now you're just misrepresenting how we got here, which was:
-> > > > > > > 
-> > > > > > > > > > > > > IMHO, we're going off into the weeds again with these last
-> > > > > > > > > > > > > two patches.  It may be a valid optimization, but it really has no
-> > > > > > > > > > > > > bearing on the meat of the series (and afaict, no significant
-> > > > > > > > > > > > > performance difference either).
-> > > > > > > > > > > > 
-> > > > > > > > > > > > For me it's not a performance thing. IMO code is cleaner without this locking:
-> > > > > > > > > > > > we add a lock but only use it in some cases, so the rules become really
-> > > > > > > > > > > > complex.
-> > > > > > > 
-> > > > > > > So I'm happy to drop the last 2 patches, which were done at your request
-> > > > > > > anyway, but you've failed to show how the locking in patches 1&2 is
-> > > > > > > messy, inconsistent, or complex and now you're asking to block all
-> > > > > > > progress.
-> > > > > > 
-> > > > > > I'm asking for bugs to get fixed and not duplicated. Adding more bugs is
-> > > > > > not progress. Or maybe there is no bug. Let's see why and add a comment.
-> > > > > > 
-> > > > > > >  Those patches are just users of kvm_set_irq.
-> > > > > > 
-> > > > > > 
-> > > > > > Well these add calls to kvm_set_irq which scans all vcpus under
-> > > > > > spinlock. In the past Avi thought this is not a good idea too.
-> > > > > > Maybe things changed.
-> > > > > 
-> > > > > We can drop the spinlock if we don't care about spurious EOIs, which is
-> > > > > only a theoretical scalability problem anyway.
-> > > > 
-> > > > Not theoretical at all IMO. We see the problem with virtio with old
-> > > > guests today.
-> > > 
-> > > And how are you injecting level interrupts with virtio today w/o this
-> > > interface?
-> > 
-> > Not well at all. Bad performance with interrupt sharing.
-> > 
-> > > > > We're talking about
-> > > > > level interrupts here, how scalable do we need to be?
-> > > > > 
-> > > > 
-> > > > The reason we are moving them into kernel at all is for speed, no?
-> > > 
-> > > Come on, if we take that approach why aren't we writing all of this in
-> > > assembly for speed?!  All I'm suggesting is there's a limit to return on
-> > > investment at some point.  Maybe it's here.
-> > 
-> > Well I am just warning about known problems: don't wake up (typically)
-> > many eoifds on a single interrupt or you will have scalability
-> > problems that we already see with emulated devices.
-> 
-> Well, that's why we don't want to bounce back to userspace.  All we need
-> to do in VFIO for each callback is note that the interrupt wasn't
-> previously masked and do nothing.  So we're talking about acquiring a
-> spinlock and a few data references.  Sure, I'd like to avoid doing that,
-> but not if it means blocking this patch series until some unknown number
-> of patches fixes all the tangential problems you find.
+On Tue, 2012-07-17 at 23:18 +0100, Catalin Marinas wrote:
 
-I'd like Avi's take on whether kvm_set_irq under a spinlock here
-is OK. He nacked this in the past.
+> The uname will still report
+> "aarch64" to match the compiler triplet and also avoid confusion of
+> existing 32-bit ARM scripts that simply check for "arm*" in the machine
+> name.
 
-Meanwhile fixing the tangential problems is time well spent too.
-If there are races in kvm irq handling it seems more important
-to fix them than add an optimization of level interrupts.
+The compiler triplet seems trivial to change.
 
--- 
-MST
+The other bit is a relatively weak argument as the 32bit arm
+scripts can be changed or fixed likely just as easily.
+
+
+
+
