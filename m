@@ -1,77 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932185Ab2GQWaM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 18:30:12 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:39607 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757182Ab2GQWaJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 18:30:09 -0400
-Date: Tue, 17 Jul 2012 17:42:19 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Sedat Dilek <sedat.dilek@gmail.com>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-ia64@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-next@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCH -next] random: Remove remaining relicts of
- rand_initialize_irq()
-Message-ID: <20120717214219.GF6049@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Linus Walleij <linus.walleij@linaro.org>,
-	Sedat Dilek <sedat.dilek@gmail.com>,
-	Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-	Linus Walleij <linus.walleij@stericsson.com>,
-	Samuel Ortiz <sameo@linux.intel.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	David Howells <dhowells@redhat.com>,
-	"Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-	"David S. Miller" <davem@davemloft.net>,
-	Eric Dumazet <eric.dumazet@gmail.com>,
-	"H. Peter Anvin" <hpa@linux.intel.com>, linux-ia64@vger.kernel.org,
-	linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-	linux-next@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>
-References: <1342524793-2522-1-git-send-email-sedat.dilek@gmail.com>
- <20120717171251.GD6049@thunk.org>
- <CACRpkdZe48FrDJx1p8ojfqwVBE95hSJipE8rViAi=E28uumYOQ@mail.gmail.com>
+	id S1757263Ab2GQWbT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 18:31:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44572 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757203Ab2GQWbS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 18:31:18 -0400
+Date: Wed, 18 Jul 2012 01:31:50 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
+Subject: Re: [PATCH v5 3/4] kvm: Create kvm_clear_irq()
+Message-ID: <20120717223150.GL1868@redhat.com>
+References: <20120717161452.GA12114@redhat.com>
+ <1342541823.2229.127.camel@bling.home>
+ <20120717162115.GC12114@redhat.com>
+ <1342543552.2229.136.camel@bling.home>
+ <20120717185542.GB13066@redhat.com>
+ <1342554687.2229.144.camel@bling.home>
+ <20120717210543.GA1868@redhat.com>
+ <1342562500.2229.158.camel@bling.home>
+ <20120717220552.GG1868@redhat.com>
+ <1342563730.2229.170.camel@bling.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACRpkdZe48FrDJx1p8ojfqwVBE95hSJipE8rViAi=E28uumYOQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <1342563730.2229.170.camel@bling.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 17, 2012 at 08:57:19PM +0200, Linus Walleij wrote:
-> So the IRQ will be auto-sampled now or something?
+On Tue, Jul 17, 2012 at 04:22:10PM -0600, Alex Williamson wrote:
+> On Wed, 2012-07-18 at 01:05 +0300, Michael S. Tsirkin wrote:
+> > On Tue, Jul 17, 2012 at 04:01:40PM -0600, Alex Williamson wrote:
+> > > On Wed, 2012-07-18 at 00:05 +0300, Michael S. Tsirkin wrote:
+> > > > On Tue, Jul 17, 2012 at 01:51:27PM -0600, Alex Williamson wrote:
+> > > > > On Tue, 2012-07-17 at 21:55 +0300, Michael S. Tsirkin wrote:
+> > > > > > On Tue, Jul 17, 2012 at 10:45:52AM -0600, Alex Williamson wrote:
+> > > > > > > On Tue, 2012-07-17 at 19:21 +0300, Michael S. Tsirkin wrote:
+> > > > > > > > On Tue, Jul 17, 2012 at 10:17:03AM -0600, Alex Williamson wrote:
+> > > > > > > > > > > > > > > >   And current code looks buggy if yes we need to fix it somehow.
+> > > > > > > > > > > > > > > 
+> > > > > > > > > > > > > > > 
+> > > > > > > > > > > > > > > Which to me seems to indicate this should be handled as a separate
+> > > > > > > > > > > > > > > effort.
+> > > > > > > > > > > > > > 
+> > > > > > > > > > > > > > A separate patchset, sure. But likely a prerequisite: we still need to
+> > > > > > > > > > > > > > look at all the code. Let's not copy bugs, need to fix them.
+> > > > > > > > > > > > > 
+> > > > > > > > > > > > > This looks tangential to me unless you can come up with an actual reason
+> > > > > > > > > > > > > the above spinlock usage is incorrect or insufficient.
+> > > > > > > > > > > > 
+> > > > > > > > > > > > You copy the same pattern that seems racy. So you double the
+> > > > > > > > > > > > amount of code that woul need to be fixed.
+> > > > > > > > > > > 
+> > > > > > > > > > > 
+> > > > > > > > > > > _Seems_ racy, or _is_ racy?  Please identify the race.
+> > > > > > > > > > 
+> > > > > > > > > > Look at this:
+> > > > > > > > > > 
+> > > > > > > > > > static inline int kvm_irq_line_state(unsigned long *irq_state,
+> > > > > > > > > >                                      int irq_source_id, int level)
+> > > > > > > > > > {
+> > > > > > > > > >         /* Logical OR for level trig interrupt */
+> > > > > > > > > >         if (level)
+> > > > > > > > > >                 set_bit(irq_source_id, irq_state);
+> > > > > > > > > >         else
+> > > > > > > > > >                 clear_bit(irq_source_id, irq_state);
+> > > > > > > > > > 
+> > > > > > > > > >         return !!(*irq_state);
+> > > > > > > > > > }
+> > > > > > > > > > 
+> > > > > > > > > > 
+> > > > > > > > > > Now:
+> > > > > > > > > > If other CPU changes some other bit after the atomic change,
+> > > > > > > > > > it looks like !!(*irq_state) might return a stale value.
+> > > > > > > > > > 
+> > > > > > > > > > CPU 0 clears bit 0. CPU 1 sets bit 1. CPU 1 sets level to 1.
+> > > > > > > > > > If CPU 0 sees a stale value now it will return 0 here
+> > > > > > > > > > and interrupt will get cleared.
+> > > > > > > > > > 
+> > > > > > > > > > 
+> > > > > > > > > > Maybe this is not a problem. But in that case IMO it needs
+> > > > > > > > > > a comment explaining why and why it's not a problem in
+> > > > > > > > > > your code.
+> > > > > > > > > 
+> > > > > > > > > So you want to close the door on anything that uses kvm_set_irq until
+> > > > > > > > > this gets fixed... that's insane.
+> > > > > > > > 
+> > > > > > > > What does kvm_set_irq use have to do with it?  You posted this patch:
+> > > > > > > > 
+> > > > > > > > +static int kvm_clear_pic_irq(struct kvm_kernel_irq_routing_entry *e,
+> > > > > > > > +                            struct kvm *kvm, int irq_source_id)
+> > > > > > > > +{
+> > > > > > > > +#ifdef CONFIG_X86
+> > > > > > > > +       struct kvm_pic *pic = pic_irqchip(kvm);
+> > > > > > > > +       int level =
+> > > > > > > > kvm_clear_irq_line_state(&pic->irq_states[e->irqchip.pin],
+> > > > > > > > +                                            irq_source_id);
+> > > > > > > > +       if (level)
+> > > > > > > > +               kvm_pic_set_irq(pic, e->irqchip.pin,
+> > > > > > > > +                               !!pic->irq_states[e->irqchip.pin]);
+> > > > > > > > +       return level;
+> > > > > > > > +#else
+> > > > > > > > +       return -1;
+> > > > > > > > +#endif
+> > > > > > > > +}
+> > > > > > > > +
+> > > > > > > > 
+> > > > > > > > it seems racy in the same way.
+> > > > > > > 
+> > > > > > > Now you're just misrepresenting how we got here, which was:
+> > > > > > > 
+> > > > > > > > > > > > > IMHO, we're going off into the weeds again with these last
+> > > > > > > > > > > > > two patches.  It may be a valid optimization, but it really has no
+> > > > > > > > > > > > > bearing on the meat of the series (and afaict, no significant
+> > > > > > > > > > > > > performance difference either).
+> > > > > > > > > > > > 
+> > > > > > > > > > > > For me it's not a performance thing. IMO code is cleaner without this locking:
+> > > > > > > > > > > > we add a lock but only use it in some cases, so the rules become really
+> > > > > > > > > > > > complex.
+> > > > > > > 
+> > > > > > > So I'm happy to drop the last 2 patches, which were done at your request
+> > > > > > > anyway, but you've failed to show how the locking in patches 1&2 is
+> > > > > > > messy, inconsistent, or complex and now you're asking to block all
+> > > > > > > progress.
+> > > > > > 
+> > > > > > I'm asking for bugs to get fixed and not duplicated. Adding more bugs is
+> > > > > > not progress. Or maybe there is no bug. Let's see why and add a comment.
+> > > > > > 
+> > > > > > >  Those patches are just users of kvm_set_irq.
+> > > > > > 
+> > > > > > 
+> > > > > > Well these add calls to kvm_set_irq which scans all vcpus under
+> > > > > > spinlock. In the past Avi thought this is not a good idea too.
+> > > > > > Maybe things changed.
+> > > > > 
+> > > > > We can drop the spinlock if we don't care about spurious EOIs, which is
+> > > > > only a theoretical scalability problem anyway.
+> > > > 
+> > > > Not theoretical at all IMO. We see the problem with virtio with old
+> > > > guests today.
+> > > 
+> > > And how are you injecting level interrupts with virtio today w/o this
+> > > interface?
+> > 
+> > Not well at all. Bad performance with interrupt sharing.
+> > 
+> > > > > We're talking about
+> > > > > level interrupts here, how scalable do we need to be?
+> > > > > 
+> > > > 
+> > > > The reason we are moving them into kernel at all is for speed, no?
+> > > 
+> > > Come on, if we take that approach why aren't we writing all of this in
+> > > assembly for speed?!  All I'm suggesting is there's a limit to return on
+> > > investment at some point.  Maybe it's here.
+> > 
+> > Well I am just warning about known problems: don't wake up (typically)
+> > many eoifds on a single interrupt or you will have scalability
+> > problems that we already see with emulated devices.
 > 
-> Sorry for not quite following, which commit do I look at to
-> understand this now...
+> Well, that's why we don't want to bounce back to userspace.  All we need
+> to do in VFIO for each callback is note that the interrupt wasn't
+> previously masked and do nothing.  So we're talking about acquiring a
+> spinlock and a few data references.  Sure, I'd like to avoid doing that,
+> but not if it means blocking this patch series until some unknown number
+> of patches fixes all the tangential problems you find.
 
-Yes, there was a huge discussion on LKML about two weeks ago.  The
-key commit that will be going in during the next merge window is:
+I'd like Avi's take on whether kvm_set_irq under a spinlock here
+is OK. He nacked this in the past.
 
-http://git.kernel.org/?p=linux/kernel/git/tytso/random.git;a=commitdiff;h=775f4b297b780601e61787b766f306ed3e1d23eb
+Meanwhile fixing the tangential problems is time well spent too.
+If there are races in kvm irq handling it seems more important
+to fix them than add an optimization of level interrupts.
 
-There are a whole lot of other changes, of course, but that's the key
-change which IRQF_SAMPLE_RANDOM a no-op.  People have tested this
-under extreme conditions (high speed networking tests with no
-interrupt mitigations, etc.) and the patch as tweaked had no
-measurable overhead, so we can simply sample every single commit with
-a low-overhead fast path which uses per-cpu buffers, and then mix into
-the /dev/random entropy pool less frequently (which is still fast, but
-requires a few more memory accesses to shared memory that may incur
-delays due to cache line bounces).
-
-					- Ted
+-- 
+MST
