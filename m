@@ -1,67 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755470Ab2GQPMB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 11:12:01 -0400
-Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:31750 "HELO
-	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754036Ab2GQPMA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 11:12:00 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: cb4uI6wVM1lhverPnUF2RyZcj.Wg04ahuF4RQtKdZaEG3Jf
- 9ax.i3r8h2fZOAKuYrwgfmZ6vPMqaBwTJymhrk4fIVNEXOL.GulGSFXRCh2r
- _daLJ1Y3lIvxxyLZIHV8AW6doRu5ABtUIT5D.c8WPkNcEXyjeDA_Uyk98vsK
- yTlZKHawKPdsXlfGZ_KRLnS4ZXYzD9jpMIuSj.xKUKLRLTT0KN6L5fS0StOn
- wZGdLxxqTS4Rd2cpWhKnkWOaFxGyo6R6Zf.XCZf7a8gWUkRy63l2dTSce6eg
- PUgpkALglS80Hc2CRHUYUkAahHlwaYHKVZ1J6sc6bSNKDWqHjan0InvRHlvw
- mU3wFcUgEz7m6Q_FcyQdv75Eht35XdIir6rgoSalw0o6u.EPgq8BuA3fYcfF
- NvuFcwxiLKJgeHbNXNIAqqVanDlcgswSspReQ
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 17 Jul 2012 10:11:56 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Pekka Enberg <penberg@kernel.org>
-cc: David Rientjes <rientjes@google.com>, Shuah Khan <shuah.khan@hp.com>,
-        glommer@parallels.com, js1304@gmail.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
-Subject: Re: [PATCH TRIVIAL] mm: Fix build warning in kmem_cache_create()
-In-Reply-To: <CAOJsxLECr7yj9cMs4oUJQjkjZe9x-6mvk76ArGsQzRWBi8_wVw@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1207171005550.15061@router.home>
-References: <1342221125.17464.8.camel@lorien2> <alpine.DEB.2.00.1207140216040.20297@chino.kir.corp.google.com> <CAOJsxLE3dDd01WaAp5UAHRb0AiXn_s43M=Gg4TgXzRji_HffEQ@mail.gmail.com> <1342407840.3190.5.camel@lorien2> <alpine.DEB.2.00.1207160257420.11472@chino.kir.corp.google.com>
- <alpine.DEB.2.00.1207160915470.28952@router.home> <alpine.DEB.2.00.1207161253240.29012@chino.kir.corp.google.com> <alpine.DEB.2.00.1207161506390.32319@router.home> <alpine.DEB.2.00.1207161642420.18232@chino.kir.corp.google.com> <alpine.DEB.2.00.1207170929290.13599@router.home>
- <CAOJsxLECr7yj9cMs4oUJQjkjZe9x-6mvk76ArGsQzRWBi8_wVw@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1755489Ab2GQPNE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 11:13:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20812 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755372Ab2GQPND (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 11:13:03 -0400
+Date: Tue, 17 Jul 2012 18:13:27 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
+Subject: Re: [PATCH v5 2/4] kvm: KVM_EOIFD, an eventfd for EOIs
+Message-ID: <20120717151327.GC11587@redhat.com>
+References: <20120716202711.1752.71007.stgit@bling.home>
+ <20120716203353.1752.19127.stgit@bling.home>
+ <20120717102139.GG7949@redhat.com>
+ <1342533556.3229.7.camel@ul30vt>
+ <20120717141002.GC10822@redhat.com>
+ <1342535383.3229.32.camel@ul30vt>
+ <20120717144237.GA11516@redhat.com>
+ <1342537024.3229.43.camel@ul30vt>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1342537024.3229.43.camel@ul30vt>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Jul 2012, Pekka Enberg wrote:
+On Tue, Jul 17, 2012 at 08:57:04AM -0600, Alex Williamson wrote:
+> On Tue, 2012-07-17 at 17:42 +0300, Michael S. Tsirkin wrote:
+> > On Tue, Jul 17, 2012 at 08:29:43AM -0600, Alex Williamson wrote:
+> > > On Tue, 2012-07-17 at 17:10 +0300, Michael S. Tsirkin wrote:
+> > > > On Tue, Jul 17, 2012 at 07:59:16AM -0600, Alex Williamson wrote:
+> > > > > On Tue, 2012-07-17 at 13:21 +0300, Michael S. Tsirkin wrote:
+> > > > > > On Mon, Jul 16, 2012 at 02:33:55PM -0600, Alex Williamson wrote:
+> > > > > > > +	if (args->flags & KVM_EOIFD_FLAG_LEVEL_IRQFD) {
+> > > > > > > +		struct _irqfd *irqfd = _irqfd_fdget_lock(kvm, args->irqfd);
+> > > > > > > +		if (IS_ERR(irqfd)) {
+> > > > > > > +			ret = PTR_ERR(irqfd);
+> > > > > > > +			goto fail;
+> > > > > > > +		}
+> > > > > > > +
+> > > > > > > +		gsi = irqfd->gsi;
+> > > > > > > +		level_irqfd = eventfd_ctx_get(irqfd->eventfd);
+> > > > > > > +		source = _irq_source_get(irqfd->source);
+> > > > > > > +		_irqfd_put_unlock(irqfd);
+> > > > > > > +		if (!source) {
+> > > > > > > +			ret = -EINVAL;
+> > > > > > > +			goto fail;
+> > > > > > > +		}
+> > > > > > > +	} else {
+> > > > > > > +		ret = -EINVAL;
+> > > > > > > +		goto fail;
+> > > > > > > +	}
+> > > > > > > +
+> > > > > > > +	INIT_LIST_HEAD(&eoifd->list);
+> > > > > > > +	eoifd->kvm = kvm;
+> > > > > > > +	eoifd->eventfd = eventfd;
+> > > > > > > +	eoifd->source = source;
+> > > > > > > +	eoifd->level_irqfd = level_irqfd;
+> > > > > > > +	eoifd->notifier.gsi = gsi;
+> > > > > > > +	eoifd->notifier.irq_acked = eoifd_event;
+> > > > > > 
+> > > > > > OK so this means eoifd keeps a reference to the irqfd.
+> > > > > > And since this is the case, can't we drop the reference counting
+> > > > > > around source ids now? Everything is referenced through irqfd.
+> > > > > 
+> > > > > Holding a reference and using it as a reference count are not the same
+> > > > > thing.  What if another module holds a reference to this eventfd?  How
+> > > > > do we do anything on release?
+> > > > 
+> > > > We don't as there is no release, and using kref on source id does not
+> > > > help: it just never gets invoked.
+> > > 
+> > > Please work out how you think it should work and let me know, I don't
+> > > see it.  We have an irq source id that needs to be allocated by irqfd
+> > > and returned when it's unused.  It becomes unused when neither irqfd nor
+> > > eoifd are making use of it.  irqfd and eoifd may be closed in any order.
+> > > Use of the source id is what we're reference counting, which is why it's
+> > > in struct _irq_source.  How can I use an eventfd reference for the same?
+> > > I don't know when it's unused.  I don't know who else holds a reference
+> > > to it...  Doesn't make sense to me.  Feels like attempting to squat on
+> > > someone else's object.
+> > > 
+> > > 
+> > 
+> > eoifd should prevent irqfd from being released.
+> 
+> Why?  Note that this is actually quite difficult too.  We can't fail a
+> release, nobody checks close(3p) return.  Blocking a release is likely
+> to cause all sorts of problems, so what you mean is that irqfd should
+> linger around until there are no references to it... but that's exactly
+> what struct _irq_source is for, is to hold the bits that we care about
+> references to and automatically release it when there are none.
 
-> Well, even SLUB checks for !name in mainline so that's definitely
-> worth including unconditionally. Furthermore, the size related checks
-> certainly make sense and I don't see any harm in having them as well.
+No no. You *already* prevent it. You take a reference to the eventfd
+context.
 
-There is a WARN_ON() there and then it returns NULL!!! Crazy. Causes a
-NULL pointer dereference later in the caller?
+> >   It already keeps
+> > a reference to it so it prevents irqfd from going away by userspace
+> > closing the fd.
+> 
+> Wrong, eoifd holds a reference to the eventfd for the irqfd, so it
+> prevents the fd from going away, not the irqfd.
 
-> As for "in_interrupt()", I really don't see the point in keeping that
-> around. We could push it down to mm/slab.c in "__kmem_cache_create()"
-> if we wanted to.
+When the fd is no going away an ioctl is the only other way for
+it to go away.
 
-Ok we could do that but I guess we are in the discussion of how much
-checking should be done for a production kernel.
+> >   But it can still be released with deassign.
+> > An easy solution is to fail deassign of irqfd if there is
+> > eoifd bound to it.
+> 
+> I don't know why we would impose such a bizarre usage model when
+> reference counting on struct _irq_source seems to handle this nicely
+> already.
 
-I think these checks are way out of hand. We cannot afford to
-consistently check parameters to all kernel functions in production. We
-will only do these checks in a select manner if these values could
-result in serious difficult to debug problems. The checks in slab look
-like debugging code that someone needed for a specific debugging scenario.
+Well eventfd gets an irqfd. What does it mean if said irqfd gets
+deassigned, and potentially assigned an unrelated interrupt?
+I think what I would expect is for it to handle the new interrupt.
+This is hard to implement so let us fail this.
 
-I can understand that we would keep that in for development but not for
-production. Maybe I am a bit biased but my prod kernels need to have
-minimal memory footprint due to excessive code size causing regressions.
-
-
-
+-- 
+MST
