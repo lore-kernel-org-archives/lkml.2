@@ -1,442 +1,536 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757282Ab2GQWoN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 18:44:13 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:52365 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754275Ab2GQWoM (ORCPT
+	id S1757275Ab2GQWsd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 18:48:33 -0400
+Received: from trem.minaslivre.org ([74.50.53.205]:50659 "EHLO
+	grilo.cascardo.info" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755078Ab2GQWs3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 18:44:12 -0400
-From: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Marcos Paulo de Souza <marcos.souza.org@gmail.com>
-Subject: [PATCH v3] staging: sbe-2t3e3: Remove code that will never execute
-Date: Tue, 17 Jul 2012 19:41:25 -0300
-Message-Id: <1342564885-6678-1-git-send-email-marcos.souza.org@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Tue, 17 Jul 2012 18:48:29 -0400
+Date: Tue, 17 Jul 2012 19:47:50 -0300
+From: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
+To: Miguel =?utf-8?B?R8OzbWV6?= <magomez@igalia.com>
+Cc: don@syst.com.br, mjg@redhat.com, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1 v2] classmate-laptop: Add support for Classmate V4
+ accelerometer.
+Message-ID: <20120717224749.GA20813@nautilus.holoscopio.com>
+References: <cover.1340976795.git.magomez@igalia.com>
+ <39ac42c709e498fbef4f0f0f24edc5331e5f4473.1340976795.git.magomez@igalia.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="HcAYCG3uE/tztfnV"
+Content-Disposition: inline
+In-Reply-To: <39ac42c709e498fbef4f0f0f24edc5331e5f4473.1340976795.git.magomez@igalia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes all references of "if 0" blocks in the sbe-2t3e3 driver.
 
-Signed-off-by: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
----
- Changes from v2-v1:
-	Just fix the typo sbr-2t3e3 for sbe-2t3e3.
+--HcAYCG3uE/tztfnV
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
- Greg, here is the update patch with the comments in the right place.
+On Fri, Jun 29, 2012 at 03:39:48PM +0200, Miguel G=C3=B3mez wrote:
+> Classmate V4 laptop includes a new accelerometer that can't be handled by
+> previous driver. This patch adds a new driver to handle it.
+>=20
+> Signed-off-by: Miguel G=C3=B3mez <magomez@igalia.com>
 
- drivers/staging/sbe-2t3e3/2t3e3.h    |    3 --
- drivers/staging/sbe-2t3e3/cpld.c     |   15 ---------
- drivers/staging/sbe-2t3e3/ctrl.c     |   19 +++--------
- drivers/staging/sbe-2t3e3/dc.c       |   17 ----------
- drivers/staging/sbe-2t3e3/exar7250.c |   40 +++--------------------
- drivers/staging/sbe-2t3e3/exar7300.c |   17 ----------
- drivers/staging/sbe-2t3e3/intr.c     |   60 ++--------------------------------
- drivers/staging/sbe-2t3e3/io.c       |   21 ------------
- 8 files changed, 10 insertions(+), 182 deletions(-)
+Hi, Miguel.
 
-diff --git a/drivers/staging/sbe-2t3e3/2t3e3.h b/drivers/staging/sbe-2t3e3/2t3e3.h
-index fe9f086..383f2cf 100644
---- a/drivers/staging/sbe-2t3e3/2t3e3.h
-+++ b/drivers/staging/sbe-2t3e3/2t3e3.h
+This seems OK to me. Thanks for this work. Do you have the other
+functionality of the driver working? I am interested to know if you have
+the function buttons working.
 
+Regards.
+Cascardo.
 
-@@ -801,9 +801,6 @@ u32 cpld_read(struct channel *sc, u32 reg);
- void cpld_set_crc(struct channel *, u32);
- void cpld_start_intr(struct channel *);
- void cpld_stop_intr(struct channel *);
--#if 0
--void cpld_led_onoff(struct channel *, u32, u32, u32, u32);
--#endif
- void cpld_set_clock(struct channel *sc, u32 mode);
- void cpld_set_scrambler(struct channel *, u32);
- void cpld_select_panel(struct channel *, u32);
-diff --git a/drivers/staging/sbe-2t3e3/cpld.c b/drivers/staging/sbe-2t3e3/cpld.c
-index b0fc2dd..cc2b54d 100644
---- a/drivers/staging/sbe-2t3e3/cpld.c
-+++ b/drivers/staging/sbe-2t3e3/cpld.c
-@@ -41,14 +41,6 @@ static inline void cpld_clear_bit(struct channel *channel, unsigned reg, u32 bit
- void cpld_init(struct channel *sc)
- {
- 	u32 val;
--#if 0
--	/* reset LIU and Framer */
--	val = cpld_val_map[SBE_2T3E3_CPLD_VAL_LIU_FRAMER_RESET][sc->h.slot];
--	cpld_write(sc, SBE_2T3E3_CPLD_REG_STATIC_RESET, val);
--	udelay(10000); /* TODO - how long? */
--	val = 0;
--	cpld_write(sc, SBE_2T3E3_CPLD_REG_STATIC_RESET, val);
--#endif
- 
- 	/* PCRA */
- 	val = SBE_2T3E3_CPLD_VAL_CRC32 |
-@@ -109,13 +101,6 @@ void cpld_start_intr(struct channel *sc)
- 	val = SBE_2T3E3_CPLD_VAL_INTERRUPT_FROM_ETHERNET_ENABLE |
- 		SBE_2T3E3_CPLD_VAL_INTERRUPT_FROM_FRAMER_ENABLE;
- 	cpld_write(sc, SBE_2T3E3_CPLD_REG_PIER, val);
--#if 0
--	/*
--	  do you want to hang up your computer?
--	  ENABLE REST OF INTERRUPTS !!!
--	  you have been warned :).
--	*/
--#endif
- }
- 
- void cpld_stop_intr(struct channel *sc)
-diff --git a/drivers/staging/sbe-2t3e3/ctrl.c b/drivers/staging/sbe-2t3e3/ctrl.c
-index d9dd216..a5825d7 100644
---- a/drivers/staging/sbe-2t3e3/ctrl.c
-+++ b/drivers/staging/sbe-2t3e3/ctrl.c
-@@ -230,11 +230,9 @@ void t3e3_port_get_stats(struct channel *sc,
- 		result = exar7250_read(sc, SBE_2T3E3_FRAMER_REG_E3_RX_CONFIGURATION_STATUS_2);
- 		sc->s.LOF = result & SBE_2T3E3_FRAMER_VAL_E3_RX_LOF ? 1 : 0;
- 		sc->s.OOF = result & SBE_2T3E3_FRAMER_VAL_E3_RX_OOF ? 1 : 0;
--#if 0
--		sc->s.LOS = result & SBE_2T3E3_FRAMER_VAL_E3_RX_LOS ? 1 : 0;
--#else
-+
- 		cpld_LOS_update(sc);
--#endif
-+
- 		sc->s.AIS = result & SBE_2T3E3_FRAMER_VAL_E3_RX_AIS ? 1 : 0;
- 		sc->s.FERF = result & SBE_2T3E3_FRAMER_VAL_E3_RX_FERF ? 1 : 0;
- 		break;
-@@ -243,11 +241,9 @@ void t3e3_port_get_stats(struct channel *sc,
- 	case SBE_2T3E3_FRAME_TYPE_T3_M13:
- 		result = exar7250_read(sc, SBE_2T3E3_FRAMER_REG_T3_RX_CONFIGURATION_STATUS);
- 		sc->s.AIS = result & SBE_2T3E3_FRAMER_VAL_T3_RX_AIS ? 1 : 0;
--#if 0
--		sc->s.LOS = result & SBE_2T3E3_FRAMER_VAL_T3_RX_LOS ? 1 : 0;
--#else
-+
- 		cpld_LOS_update(sc);
--#endif
-+
- 		sc->s.IDLE = result & SBE_2T3E3_FRAMER_VAL_T3_RX_IDLE ? 1 : 0;
- 		sc->s.OOF = result & SBE_2T3E3_FRAMER_VAL_T3_RX_OOF ? 1 : 0;
- 
-@@ -322,10 +318,6 @@ void t3e3_if_config(struct channel *sc, u32 cmd, char *set,
- 		*rlen = sizeof(ret->u.data);
- 		break;
- 	case SBE_2T3E3_PORT_WRITE_REGS:
--#if 0
--		printk(KERN_DEBUG "SBE_2T3E3_PORT_WRITE_REGS, 0x%x, 0x%x, 0x%x\n",
--		       ((int*)data)[0], ((int*)data)[1], ((int*)data)[2]);
--#endif
- 		t3e3_reg_write(sc, data);
- 		*rlen = 0;
- 		break;
-@@ -336,9 +328,6 @@ void t3e3_if_config(struct channel *sc, u32 cmd, char *set,
- 		*rlen = 0;
- 		break;
- 	}
--
--	/* turn on interrupt */
--	/* cpld_start_intr(sc); */
- }
- 
- void t3e3_sc_init(struct channel *sc)
-diff --git a/drivers/staging/sbe-2t3e3/dc.c b/drivers/staging/sbe-2t3e3/dc.c
-index e897a43..9e81d90 100644
---- a/drivers/staging/sbe-2t3e3/dc.c
-+++ b/drivers/staging/sbe-2t3e3/dc.c
-@@ -63,14 +63,6 @@ void dc_init(struct channel *sc)
- 	if (sc->p.loopback == SBE_2T3E3_LOOPBACK_ETHERNET)
- 		sc->p.loopback = SBE_2T3E3_LOOPBACK_NONE;
- 
--#if 0 /* No need to clear this register - and it may be in use */
--	/*
--	 * BOOT_ROM_SERIAL_ROM_AND_MII_MANAGEMENT (CSR9)
--	 */
--	val = 0;
--	dc_write(sc->addr, SBE_2T3E3_21143_REG_BOOT_ROM_SERIAL_ROM_AND_MII_MANAGEMENT, val);
--#endif
--
- 	/*
- 	 * GENERAL_PURPOSE_TIMER_AND_INTERRUPT_MITIGATION_CONTROL (CSR11)
- 	 */
-@@ -301,15 +293,6 @@ void dc_set_loopback(struct channel *sc, u32 mode)
- 		return;
- 	}
- 
--#if 0
--	/* restart SIA */
--	dc_clear_bits(sc->addr, SBE_2T3E3_21143_REG_SIA_CONNECTIVITY,
--		      SBE_2T3E3_21143_VAL_SIA_RESET);
--	udelay(1000);
--	dc_set_bits(sc->addr, SBE_2T3E3_21143_REG_SIA_CONNECTIVITY,
--		    SBE_2T3E3_21143_VAL_SIA_RESET);
--#endif
--
- 	/* select loopback mode */
- 	val = dc_read(sc->addr, SBE_2T3E3_21143_REG_OPERATION_MODE) &
- 		~SBE_2T3E3_21143_VAL_OPERATING_MODE;
-diff --git a/drivers/staging/sbe-2t3e3/exar7250.c b/drivers/staging/sbe-2t3e3/exar7250.c
-index 809f446..e3ddd14 100644
---- a/drivers/staging/sbe-2t3e3/exar7250.c
-+++ b/drivers/staging/sbe-2t3e3/exar7250.c
-@@ -78,64 +78,32 @@ void exar7250_start_intr(struct channel *sc, u32 type)
- 	case SBE_2T3E3_FRAME_TYPE_E3_G751:
- 	case SBE_2T3E3_FRAME_TYPE_E3_G832:
- 		val = exar7250_read(sc, SBE_2T3E3_FRAMER_REG_E3_RX_CONFIGURATION_STATUS_2);
--#if 0
--		sc->s.LOS = val & SBE_2T3E3_FRAMER_VAL_E3_RX_LOS ? 1 : 0;
--#else
-+
- 		cpld_LOS_update(sc);
--#endif
-+
- 		sc->s.OOF = val & SBE_2T3E3_FRAMER_VAL_E3_RX_OOF ? 1 : 0;
- 		exar7250_read(sc, SBE_2T3E3_FRAMER_REG_E3_RX_INTERRUPT_STATUS_1);
- 		exar7250_write(sc, SBE_2T3E3_FRAMER_REG_E3_RX_INTERRUPT_ENABLE_1,
- 			       SBE_2T3E3_FRAMER_VAL_E3_RX_OOF_INTERRUPT_ENABLE |
- 			       SBE_2T3E3_FRAMER_VAL_E3_RX_LOS_INTERRUPT_ENABLE);
--#if 0
--		/*SBE_2T3E3_FRAMER_VAL_E3_RX_COFA_INTERRUPT_ENABLE |
--		  SBE_2T3E3_FRAMER_VAL_E3_RX_OOF_INTERRUPT_ENABLE |
--		  SBE_2T3E3_FRAMER_VAL_E3_RX_LOF_INTERRUPT_ENABLE |
--		  SBE_2T3E3_FRAMER_VAL_E3_RX_LOS_INTERRUPT_ENABLE |
--		  SBE_2T3E3_FRAMER_VAL_E3_RX_AIS_INTERRUPT_ENABLE);*/
--#endif
- 
- 		exar7250_read(sc, SBE_2T3E3_FRAMER_REG_E3_RX_INTERRUPT_STATUS_2);
--#if 0
--		exar7250_write(sc, SBE_2T3E3_FRAMER_REG_E3_RX_INTERRUPT_ENABLE_2,
--			       SBE_2T3E3_FRAMER_VAL_E3_RX_FEBE_INTERRUPT_ENABLE |
--			       SBE_2T3E3_FRAMER_VAL_E3_RX_FERF_INTERRUPT_ENABLE |
--			       SBE_2T3E3_FRAMER_VAL_E3_RX_FRAMING_BYTE_ERROR_INTERRUPT_ENABLE);
--#endif
- 		break;
- 
- 	case SBE_2T3E3_FRAME_TYPE_T3_CBIT:
- 	case SBE_2T3E3_FRAME_TYPE_T3_M13:
- 		val = exar7250_read(sc, SBE_2T3E3_FRAMER_REG_T3_RX_CONFIGURATION_STATUS);
--#if 0
--		sc->s.LOS = val & SBE_2T3E3_FRAMER_VAL_T3_RX_LOS ? 1 : 0;
--#else
-+
- 		cpld_LOS_update(sc);
--#endif
-+
- 		sc->s.OOF = val & SBE_2T3E3_FRAMER_VAL_T3_RX_OOF ? 1 : 0;
- 
- 		exar7250_read(sc, SBE_2T3E3_FRAMER_REG_T3_RX_INTERRUPT_STATUS);
- 		exar7250_write(sc, SBE_2T3E3_FRAMER_REG_T3_RX_INTERRUPT_ENABLE,
- 			       SBE_2T3E3_FRAMER_VAL_T3_RX_LOS_INTERRUPT_ENABLE |
- 			       SBE_2T3E3_FRAMER_VAL_T3_RX_OOF_INTERRUPT_ENABLE);
--#if 0
--		/* SBE_2T3E3_FRAMER_VAL_T3_RX_CP_BIT_ERROR_INTERRUPT_ENABLE |
--		   SBE_2T3E3_FRAMER_VAL_T3_RX_LOS_INTERRUPT_ENABLE |
--		   SBE_2T3E3_FRAMER_VAL_T3_RX_AIS_INTERRUPT_ENABLE |
--		   SBE_2T3E3_FRAMER_VAL_T3_RX_IDLE_INTERRUPT_ENABLE |
--		   SBE_2T3E3_FRAMER_VAL_T3_RX_FERF_INTERRUPT_ENABLE |
--		   SBE_2T3E3_FRAMER_VAL_T3_RX_AIC_INTERRUPT_ENABLE |
--		   SBE_2T3E3_FRAMER_VAL_T3_RX_OOF_INTERRUPT_ENABLE |
--		   SBE_2T3E3_FRAMER_VAL_T3_RX_P_BIT_INTERRUPT_ENABLE);*/
--#endif
- 
- 		exar7250_read(sc, SBE_2T3E3_FRAMER_REG_T3_RX_FEAC_INTERRUPT_ENABLE_STATUS);
--#if 0
--		exar7250_write(sc, SBE_2T3E3_FRAMER_REG_T3_RX_FEAC_INTERRUPT_ENABLE_STATUS,
--			       SBE_2T3E3_FRAMER_VAL_T3_RX_FEAC_REMOVE_INTERRUPT_ENABLE |
--			       SBE_2T3E3_FRAMER_VAL_T3_RX_FEAC_VALID_INTERRUPT_ENABLE);
--#endif
- 
- 		exar7250_write(sc, SBE_2T3E3_FRAMER_REG_T3_RX_LAPD_CONTROL, 0);
- 		break;
-diff --git a/drivers/staging/sbe-2t3e3/exar7300.c b/drivers/staging/sbe-2t3e3/exar7300.c
-index d10d696..cd22999 100644
---- a/drivers/staging/sbe-2t3e3/exar7300.c
-+++ b/drivers/staging/sbe-2t3e3/exar7300.c
-@@ -43,23 +43,6 @@ void exar7300_set_loopback(struct channel *sc, u32 mode)
- 	val &= ~(SBE_2T3E3_LIU_VAL_LOCAL_LOOPBACK | SBE_2T3E3_LIU_VAL_REMOTE_LOOPBACK);
- 	val |= mode;
- 	exar7300_write(sc, SBE_2T3E3_LIU_REG_REG4, val);
--
--#if 0
--	/* TODO - is it necessary? idea from 2T3E3_HW_Test_code */
--	switch (mode) {
--	case SBE_2T3E3_LIU_VAL_LOOPBACK_OFF:
--		break;
--	case SBE_2T3E3_LIU_VAL_LOOPBACK_REMOTE:
--		exar7300_receive_equalization_onoff(sc, SBE_2T3E3_ON);
--		break;
--	case SBE_2T3E3_LIU_VAL_LOOPBACK_ANALOG:
--		exar7300_receive_equalization_onoff(sc, SBE_2T3E3_OFF);
--		break;
--	case SBE_2T3E3_LIU_VAL_LOOPBACK_DIGITAL:
--		exar7300_receive_equalization_onoff(sc, SBE_2T3E3_ON);
--		break;
--	}
--#endif
- }
- 
- void exar7300_set_frame_type(struct channel *sc, u32 type)
-diff --git a/drivers/staging/sbe-2t3e3/intr.c b/drivers/staging/sbe-2t3e3/intr.c
-index 1336aab..efdeb75 100644
---- a/drivers/staging/sbe-2t3e3/intr.c
-+++ b/drivers/staging/sbe-2t3e3/intr.c
-@@ -434,11 +434,6 @@ void exar7250_intr(struct channel *sc)
- {
- 	u32 status, old_OOF;
- 
--#if 0
--	/* disable interrupts */
--	exar7250_write(sc, SBE_2T3E3_FRAMER_REG_BLOCK_INTERRUPT_ENABLE, 0);
--#endif
--
- 	old_OOF = sc->s.OOF;
- 
- 	status = exar7250_read(sc, SBE_2T3E3_FRAMER_REG_BLOCK_INTERRUPT_STATUS);
-@@ -479,13 +474,6 @@ void exar7250_intr(struct channel *sc)
- 			dc_start_intr(sc);
- 		}
- 	}
--#if 0
--	/* reenable interrupts */
--	exar7250_write(sc, SBE_2T3E3_FRAMER_REG_BLOCK_INTERRUPT_ENABLE,
--		       SBE_2T3E3_FRAMER_VAL_RX_INTERRUPT_ENABLE |
--		       SBE_2T3E3_FRAMER_VAL_TX_INTERRUPT_ENABLE
--		);
--#endif
- }
- 
- 
-@@ -503,16 +491,8 @@ void exar7250_T3_intr(struct channel *sc, u32 block_status)
- 
- 			result = exar7250_read(sc, SBE_2T3E3_FRAMER_REG_T3_RX_CONFIGURATION_STATUS);
- 
--#if 0
--			if (status & SBE_2T3E3_FRAMER_VAL_T3_RX_LOS_INTERRUPT_STATUS) {
--				dev_dbg(&sc->pdev->dev,
--					"Framer interrupt T3: LOS\n");
--				sc->s.LOS = result & SBE_2T3E3_FRAMER_VAL_T3_RX_LOS ? 1 : 0;
--
--			}
--#else
- 			cpld_LOS_update(sc);
--#endif
-+
- 			if (status & SBE_2T3E3_FRAMER_VAL_T3_RX_OOF_INTERRUPT_STATUS) {
- 				sc->s.OOF = result & SBE_2T3E3_FRAMER_VAL_T3_RX_OOF ? 1 : 0;
- 				dev_dbg(&sc->pdev->dev,
-@@ -523,16 +503,6 @@ void exar7250_T3_intr(struct channel *sc, u32 block_status)
- 			exar7250_write(sc, SBE_2T3E3_FRAMER_REG_T3_RX_INTERRUPT_ENABLE,
- 				       SBE_2T3E3_FRAMER_VAL_T3_RX_LOS_INTERRUPT_ENABLE |
- 				       SBE_2T3E3_FRAMER_VAL_T3_RX_OOF_INTERRUPT_ENABLE);
--#if 0
--			SBE_2T3E3_FRAMER_VAL_T3_RX_CP_BIT_ERROR_INTERRUPT_ENABLE |
--				SBE_2T3E3_FRAMER_VAL_T3_RX_LOS_INTERRUPT_ENABLE |
--				SBE_2T3E3_FRAMER_VAL_T3_RX_AIS_INTERRUPT_ENABLE |
--				SBE_2T3E3_FRAMER_VAL_T3_RX_IDLE_INTERRUPT_ENABLE |
--				SBE_2T3E3_FRAMER_VAL_T3_RX_FERF_INTERRUPT_ENABLE |
--				SBE_2T3E3_FRAMER_VAL_T3_RX_AIC_INTERRUPT_ENABLE |
--				SBE_2T3E3_FRAMER_VAL_T3_RX_OOF_INTERRUPT_ENABLE |
--				SBE_2T3E3_FRAMER_VAL_T3_RX_P_BIT_INTERRUPT_ENABLE
--#endif
- 				}
- 
- 		status = exar7250_read(sc, SBE_2T3E3_FRAMER_REG_T3_RX_FEAC_INTERRUPT_ENABLE_STATUS);
-@@ -540,12 +510,6 @@ void exar7250_T3_intr(struct channel *sc, u32 block_status)
- 			dev_dbg(&sc->pdev->dev,
- 				"Framer interrupt T3 RX (REG[0x17] = %02X)\n",
- 				status);
--#if 0
--			exar7250_write(sc, SBE_2T3E3_FRAMER_REG_T3_RX_FEAC_INTERRUPT_ENABLE_STATUS,
--				       SBE_2T3E3_FRAMER_VAL_T3_RX_FEAC_REMOVE_INTERRUPT_ENABLE |
--				       SBE_2T3E3_FRAMER_VAL_T3_RX_FEAC_VALID_INTERRUPT_ENABLE
--				);
--#endif
- 		}
- 
- 		status = exar7250_read(sc, SBE_2T3E3_FRAMER_REG_T3_RX_LAPD_CONTROL);
-@@ -582,15 +546,8 @@ void exar7250_E3_intr(struct channel *sc, u32 block_status)
- 
- 			result = exar7250_read(sc, SBE_2T3E3_FRAMER_REG_E3_RX_CONFIGURATION_STATUS_2);
- 
--#if 0
--			if (status & SBE_2T3E3_FRAMER_VAL_E3_RX_LOS_INTERRUPT_STATUS) {
--				dev_dbg(&sc->pdev->dev,
--					"Framer interrupt E3: LOS\n");
--				sc->s.LOS = result & SBE_2T3E3_FRAMER_VAL_E3_RX_LOS ? 1 : 0;
--			}
--#else
- 			cpld_LOS_update(sc);
--#endif
-+
- 			if (status & SBE_2T3E3_FRAMER_VAL_E3_RX_OOF_INTERRUPT_STATUS) {
- 				sc->s.OOF = result & SBE_2T3E3_FRAMER_VAL_E3_RX_OOF ? 1 : 0;
- 				dev_dbg(&sc->pdev->dev,
-@@ -602,13 +559,6 @@ void exar7250_E3_intr(struct channel *sc, u32 block_status)
- 				       SBE_2T3E3_FRAMER_VAL_E3_RX_OOF_INTERRUPT_ENABLE |
- 				       SBE_2T3E3_FRAMER_VAL_E3_RX_LOS_INTERRUPT_ENABLE
- 				);
--#if 0
--			SBE_2T3E3_FRAMER_VAL_E3_RX_COFA_INTERRUPT_ENABLE |
--				SBE_2T3E3_FRAMER_VAL_E3_RX_OOF_INTERRUPT_ENABLE |
--				SBE_2T3E3_FRAMER_VAL_E3_RX_LOF_INTERRUPT_ENABLE |
--				SBE_2T3E3_FRAMER_VAL_E3_RX_LOS_INTERRUPT_ENABLE |
--				SBE_2T3E3_FRAMER_VAL_E3_RX_AIS_INTERRUPT_ENABLE
--#endif
- 				}
- 
- 		status = exar7250_read(sc, SBE_2T3E3_FRAMER_REG_E3_RX_INTERRUPT_STATUS_2);
-@@ -617,12 +567,6 @@ void exar7250_E3_intr(struct channel *sc, u32 block_status)
- 				"Framer interrupt E3 RX (REG[0x15] = %02X)\n",
- 				status);
- 
--#if 0
--			exar7250_write(sc, SBE_2T3E3_FRAMER_REG_E3_RX_INTERRUPT_ENABLE_2,
--				       SBE_2T3E3_FRAMER_VAL_E3_RX_FEBE_INTERRUPT_ENABLE |
--				       SBE_2T3E3_FRAMER_VAL_E3_RX_FERF_INTERRUPT_ENABLE |
--				       SBE_2T3E3_FRAMER_VAL_E3_RX_FRAMING_BYTE_ERROR_INTERRUPT_ENABLE);
--#endif
- 		}
- 
- 	}
-diff --git a/drivers/staging/sbe-2t3e3/io.c b/drivers/staging/sbe-2t3e3/io.c
-index d2391cb..c9947b1 100644
---- a/drivers/staging/sbe-2t3e3/io.c
-+++ b/drivers/staging/sbe-2t3e3/io.c
-@@ -199,15 +199,6 @@ u32 exar7250_read(struct channel *channel, u32 reg)
- 	u32 result;
- 	unsigned long flags;
- 
--#if 0
--	switch (reg) {
--	case SBE_2T3E3_FRAMER_REG_OPERATING_MODE:
--		return channel->framer_regs[reg];
--		break;
--	default:
--	}
--#endif
--
- 	spin_lock_irqsave(&channel->card->bootrom_lock, flags);
- 
- 	result = bootrom_read(channel, cpld_reg_map[SBE_2T3E3_CPLD_REG_FRAMER_BASE_ADDRESS]
-@@ -243,18 +234,6 @@ u32 exar7300_read(struct channel *channel, u32 reg)
- 	unsigned long addr = channel->card->bootrom_addr, flags;
- 	u32 i, val;
- 
--#if 0
--	switch (reg) {
--	case SBE_2T3E3_LIU_REG_REG1:
--	case SBE_2T3E3_LIU_REG_REG2:
--	case SBE_2T3E3_LIU_REG_REG3:
--	case SBE_2T3E3_LIU_REG_REG4:
--		return channel->liu_regs[reg];
--		break;
--	default:
--	}
--#endif
--
- 	/* select correct Serial Chip */
- 
- 	spin_lock_irqsave(&channel->card->bootrom_lock, flags);
--- 
-1.7.10.4
+Acked-by: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
 
+> ---
+>  drivers/platform/x86/classmate-laptop.c |  400 +++++++++++++++++++++++++=
++++++-
+>  1 file changed, 398 insertions(+), 2 deletions(-)
+>=20
+> diff --git a/drivers/platform/x86/classmate-laptop.c b/drivers/platform/x=
+86/classmate-laptop.c
+> index 94f93b6..5de01bc 100644
+> --- a/drivers/platform/x86/classmate-laptop.c
+> +++ b/drivers/platform/x86/classmate-laptop.c
+> @@ -31,12 +31,18 @@ MODULE_LICENSE("GPL");
+> =20
+>  struct cmpc_accel {
+>  	int sensitivity;
+> +	int g_select;
+> +	int inputdev_state;
+>  };
+> =20
+> -#define CMPC_ACCEL_SENSITIVITY_DEFAULT		5
+> +#define CMPC_ACCEL_DEV_STATE_CLOSED	0
+> +#define CMPC_ACCEL_DEV_STATE_OPEN	1
+> =20
+> +#define CMPC_ACCEL_SENSITIVITY_DEFAULT		5
+> +#define CMPC_ACCEL_G_SELECT_DEFAULT		0
+> =20
+>  #define CMPC_ACCEL_HID		"ACCE0000"
+> +#define CMPC_ACCEL_HID_V4	"ACCE0001"
+>  #define CMPC_TABLET_HID		"TBLT0000"
+>  #define CMPC_IPML_HID	"IPML200"
+>  #define CMPC_KEYS_HID		"FnBT0000"
+> @@ -76,7 +82,388 @@ static int cmpc_remove_acpi_notify_device(struct acpi=
+_device *acpi)
+>  }
+> =20
+>  /*
+> - * Accelerometer code.
+> + * Accelerometer code for Classmate V4
+> + */
+> +static acpi_status cmpc_start_accel_v4(acpi_handle handle)
+> +{
+> +	union acpi_object param[4];
+> +	struct acpi_object_list input;
+> +	acpi_status status;
+> +
+> +	param[0].type =3D ACPI_TYPE_INTEGER;
+> +	param[0].integer.value =3D 0x3;
+> +	param[1].type =3D ACPI_TYPE_INTEGER;
+> +	param[1].integer.value =3D 0;
+> +	param[2].type =3D ACPI_TYPE_INTEGER;
+> +	param[2].integer.value =3D 0;
+> +	param[3].type =3D ACPI_TYPE_INTEGER;
+> +	param[3].integer.value =3D 0;
+> +	input.count =3D 4;
+> +	input.pointer =3D param;
+> +	status =3D acpi_evaluate_object(handle, "ACMD", &input, NULL);
+> +	return status;
+> +}
+> +
+> +static acpi_status cmpc_stop_accel_v4(acpi_handle handle)
+> +{
+> +	union acpi_object param[4];
+> +	struct acpi_object_list input;
+> +	acpi_status status;
+> +
+> +	param[0].type =3D ACPI_TYPE_INTEGER;
+> +	param[0].integer.value =3D 0x4;
+> +	param[1].type =3D ACPI_TYPE_INTEGER;
+> +	param[1].integer.value =3D 0;
+> +	param[2].type =3D ACPI_TYPE_INTEGER;
+> +	param[2].integer.value =3D 0;
+> +	param[3].type =3D ACPI_TYPE_INTEGER;
+> +	param[3].integer.value =3D 0;
+> +	input.count =3D 4;
+> +	input.pointer =3D param;
+> +	status =3D acpi_evaluate_object(handle, "ACMD", &input, NULL);
+> +	return status;
+> +}
+> +
+> +static acpi_status cmpc_accel_set_sensitivity_v4(acpi_handle handle, int=
+ val)
+> +{
+> +	union acpi_object param[4];
+> +	struct acpi_object_list input;
+> +
+> +	param[0].type =3D ACPI_TYPE_INTEGER;
+> +	param[0].integer.value =3D 0x02;
+> +	param[1].type =3D ACPI_TYPE_INTEGER;
+> +	param[1].integer.value =3D val;
+> +	param[2].type =3D ACPI_TYPE_INTEGER;
+> +	param[2].integer.value =3D 0;
+> +	param[3].type =3D ACPI_TYPE_INTEGER;
+> +	param[3].integer.value =3D 0;
+> +	input.count =3D 4;
+> +	input.pointer =3D param;
+> +	return acpi_evaluate_object(handle, "ACMD", &input, NULL);
+> +}
+> +
+> +static acpi_status cmpc_accel_set_g_select_v4(acpi_handle handle, int va=
+l)
+> +{
+> +	union acpi_object param[4];
+> +	struct acpi_object_list input;
+> +
+> +	param[0].type =3D ACPI_TYPE_INTEGER;
+> +	param[0].integer.value =3D 0x05;
+> +	param[1].type =3D ACPI_TYPE_INTEGER;
+> +	param[1].integer.value =3D val;
+> +	param[2].type =3D ACPI_TYPE_INTEGER;
+> +	param[2].integer.value =3D 0;
+> +	param[3].type =3D ACPI_TYPE_INTEGER;
+> +	param[3].integer.value =3D 0;
+> +	input.count =3D 4;
+> +	input.pointer =3D param;
+> +	return acpi_evaluate_object(handle, "ACMD", &input, NULL);
+> +}
+> +
+> +static acpi_status cmpc_get_accel_v4(acpi_handle handle,
+> +				     int16_t *x,
+> +				     int16_t *y,
+> +				     int16_t *z)
+> +{
+> +	union acpi_object param[4];
+> +	struct acpi_object_list input;
+> +	struct acpi_buffer output =3D { ACPI_ALLOCATE_BUFFER, NULL };
+> +	int16_t *locs;
+> +	acpi_status status;
+> +
+> +	param[0].type =3D ACPI_TYPE_INTEGER;
+> +	param[0].integer.value =3D 0x01;
+> +	param[1].type =3D ACPI_TYPE_INTEGER;
+> +	param[1].integer.value =3D 0;
+> +	param[2].type =3D ACPI_TYPE_INTEGER;
+> +	param[2].integer.value =3D 0;
+> +	param[3].type =3D ACPI_TYPE_INTEGER;
+> +	param[3].integer.value =3D 0;
+> +	input.count =3D 4;
+> +	input.pointer =3D param;
+> +	status =3D acpi_evaluate_object(handle, "ACMD", &input, &output);
+> +	if (ACPI_SUCCESS(status)) {
+> +		union acpi_object *obj;
+> +		obj =3D output.pointer;
+> +		locs =3D (int16_t *) obj->buffer.pointer;
+> +		*x =3D locs[0];
+> +		*y =3D locs[1];
+> +		*z =3D locs[2];
+> +		kfree(output.pointer);
+> +	}
+> +	return status;
+> +}
+> +
+> +static void cmpc_accel_handler_v4(struct acpi_device *dev, u32 event)
+> +{
+> +	if (event =3D=3D 0x81) {
+> +		int16_t x, y, z;
+> +		acpi_status status;
+> +
+> +		status =3D cmpc_get_accel_v4(dev->handle, &x, &y, &z);
+> +		if (ACPI_SUCCESS(status)) {
+> +			struct input_dev *inputdev =3D dev_get_drvdata(&dev->dev);
+> +
+> +			input_report_abs(inputdev, ABS_X, x);
+> +			input_report_abs(inputdev, ABS_Y, y);
+> +			input_report_abs(inputdev, ABS_Z, z);
+> +			input_sync(inputdev);
+> +		}
+> +	}
+> +}
+> +
+> +static ssize_t cmpc_accel_sensitivity_show_v4(struct device *dev,
+> +					      struct device_attribute *attr,
+> +					      char *buf)
+> +{
+> +	struct acpi_device *acpi;
+> +	struct input_dev *inputdev;
+> +	struct cmpc_accel *accel;
+> +
+> +	acpi =3D to_acpi_device(dev);
+> +	inputdev =3D dev_get_drvdata(&acpi->dev);
+> +	accel =3D dev_get_drvdata(&inputdev->dev);
+> +
+> +	return sprintf(buf, "%d\n", accel->sensitivity);
+> +}
+> +
+> +static ssize_t cmpc_accel_sensitivity_store_v4(struct device *dev,
+> +					       struct device_attribute *attr,
+> +					       const char *buf, size_t count)
+> +{
+> +	struct acpi_device *acpi;
+> +	struct input_dev *inputdev;
+> +	struct cmpc_accel *accel;
+> +	unsigned long sensitivity;
+> +	int r;
+> +
+> +	acpi =3D to_acpi_device(dev);
+> +	inputdev =3D dev_get_drvdata(&acpi->dev);
+> +	accel =3D dev_get_drvdata(&inputdev->dev);
+> +
+> +	r =3D kstrtoul(buf, 0, &sensitivity);
+> +	if (r)
+> +		return r;
+> +
+> +	/* sensitivity must be between 1 and 127 */
+> +	if (sensitivity < 1 || sensitivity > 127)
+> +		return -EINVAL;
+> +
+> +	accel->sensitivity =3D sensitivity;
+> +	cmpc_accel_set_sensitivity_v4(acpi->handle, sensitivity);
+> +
+> +	return strnlen(buf, count);
+> +}
+> +
+> +static struct device_attribute cmpc_accel_sensitivity_attr_v4 =3D {
+> +	.attr =3D { .name =3D "sensitivity", .mode =3D 0660 },
+> +	.show =3D cmpc_accel_sensitivity_show_v4,
+> +	.store =3D cmpc_accel_sensitivity_store_v4
+> +};
+> +
+> +static ssize_t cmpc_accel_g_select_show_v4(struct device *dev,
+> +					   struct device_attribute *attr,
+> +					   char *buf)
+> +{
+> +	struct acpi_device *acpi;
+> +	struct input_dev *inputdev;
+> +	struct cmpc_accel *accel;
+> +
+> +	acpi =3D to_acpi_device(dev);
+> +	inputdev =3D dev_get_drvdata(&acpi->dev);
+> +	accel =3D dev_get_drvdata(&inputdev->dev);
+> +
+> +	return sprintf(buf, "%d\n", accel->g_select);
+> +}
+> +
+> +static ssize_t cmpc_accel_g_select_store_v4(struct device *dev,
+> +					    struct device_attribute *attr,
+> +					    const char *buf, size_t count)
+> +{
+> +	struct acpi_device *acpi;
+> +	struct input_dev *inputdev;
+> +	struct cmpc_accel *accel;
+> +	unsigned long g_select;
+> +	int r;
+> +
+> +	acpi =3D to_acpi_device(dev);
+> +	inputdev =3D dev_get_drvdata(&acpi->dev);
+> +	accel =3D dev_get_drvdata(&inputdev->dev);
+> +
+> +	r =3D kstrtoul(buf, 0, &g_select);
+> +	if (r)
+> +		return r;
+> +
+> +	/* 0 means 1.5g, 1 means 6g, everything else is wrong */
+> +	if (g_select !=3D 0 && g_select !=3D 1)
+> +		return -EINVAL;
+> +
+> +	accel->g_select =3D g_select;
+> +	cmpc_accel_set_g_select_v4(acpi->handle, g_select);
+> +
+> +	return strnlen(buf, count);
+> +}
+> +
+> +static struct device_attribute cmpc_accel_g_select_attr_v4 =3D {
+> +	.attr =3D { .name =3D "g_select", .mode =3D 0660 },
+> +	.show =3D cmpc_accel_g_select_show_v4,
+> +	.store =3D cmpc_accel_g_select_store_v4
+> +};
+> +
+> +static int cmpc_accel_open_v4(struct input_dev *input)
+> +{
+> +	struct acpi_device *acpi;
+> +	struct cmpc_accel *accel;
+> +
+> +	acpi =3D to_acpi_device(input->dev.parent);
+> +	accel =3D dev_get_drvdata(&input->dev);
+> +
+> +	cmpc_accel_set_sensitivity_v4(acpi->handle, accel->sensitivity);
+> +	cmpc_accel_set_g_select_v4(acpi->handle, accel->g_select);
+> +
+> +	if (ACPI_SUCCESS(cmpc_start_accel_v4(acpi->handle))) {
+> +		accel->inputdev_state =3D CMPC_ACCEL_DEV_STATE_OPEN;
+> +		return 0;
+> +	}
+> +	return -EIO;
+> +}
+> +
+> +static void cmpc_accel_close_v4(struct input_dev *input)
+> +{
+> +	struct acpi_device *acpi;
+> +	struct cmpc_accel *accel;
+> +
+> +	acpi =3D to_acpi_device(input->dev.parent);
+> +	accel =3D dev_get_drvdata(&input->dev);
+> +
+> +	cmpc_stop_accel_v4(acpi->handle);
+> +	accel->inputdev_state =3D CMPC_ACCEL_DEV_STATE_CLOSED;
+> +}
+> +
+> +static void cmpc_accel_idev_init_v4(struct input_dev *inputdev)
+> +{
+> +	set_bit(EV_ABS, inputdev->evbit);
+> +	input_set_abs_params(inputdev, ABS_X, -255, 255, 16, 0);
+> +	input_set_abs_params(inputdev, ABS_Y, -255, 255, 16, 0);
+> +	input_set_abs_params(inputdev, ABS_Z, -255, 255, 16, 0);
+> +	inputdev->open =3D cmpc_accel_open_v4;
+> +	inputdev->close =3D cmpc_accel_close_v4;
+> +}
+> +
+> +static int cmpc_accel_suspend_v4(struct acpi_device *acpi, pm_message_t =
+state)
+> +{
+> +	struct input_dev *inputdev;
+> +	struct cmpc_accel *accel;
+> +
+> +	inputdev =3D dev_get_drvdata(&acpi->dev);
+> +	accel =3D dev_get_drvdata(&inputdev->dev);
+> +
+> +	if (accel->inputdev_state =3D=3D CMPC_ACCEL_DEV_STATE_OPEN)
+> +		return cmpc_stop_accel_v4(acpi->handle);
+> +
+> +	return 0;
+> +}
+> +
+> +static int cmpc_accel_resume_v4(struct acpi_device *acpi)
+> +{
+> +
+> +	struct input_dev *inputdev;
+> +	struct cmpc_accel *accel;
+> +
+> +	inputdev =3D dev_get_drvdata(&acpi->dev);
+> +	accel =3D dev_get_drvdata(&inputdev->dev);
+> +
+> +	if (accel->inputdev_state =3D=3D CMPC_ACCEL_DEV_STATE_OPEN) {
+> +		cmpc_accel_set_sensitivity_v4(acpi->handle, accel->sensitivity);
+> +		cmpc_accel_set_g_select_v4(acpi->handle, accel->g_select);
+> +
+> +		if (ACPI_FAILURE(cmpc_start_accel_v4(acpi->handle)))
+> +			return -EIO;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int cmpc_accel_add_v4(struct acpi_device *acpi)
+> +{
+> +	int error;
+> +	struct input_dev *inputdev;
+> +	struct cmpc_accel *accel;
+> +
+> +	accel =3D kmalloc(sizeof(*accel), GFP_KERNEL);
+> +	if (!accel)
+> +		return -ENOMEM;
+> +
+> +	accel->inputdev_state =3D CMPC_ACCEL_DEV_STATE_CLOSED;
+> +
+> +	accel->sensitivity =3D CMPC_ACCEL_SENSITIVITY_DEFAULT;
+> +	cmpc_accel_set_sensitivity_v4(acpi->handle, accel->sensitivity);
+> +
+> +	error =3D device_create_file(&acpi->dev, &cmpc_accel_sensitivity_attr_v=
+4);
+> +	if (error)
+> +		goto failed_sensitivity;
+> +
+> +	accel->g_select =3D CMPC_ACCEL_G_SELECT_DEFAULT;
+> +	cmpc_accel_set_g_select_v4(acpi->handle, accel->g_select);
+> +
+> +	error =3D device_create_file(&acpi->dev, &cmpc_accel_g_select_attr_v4);
+> +	if (error)
+> +		goto failed_g_select;
+> +
+> +	error =3D cmpc_add_acpi_notify_device(acpi, "cmpc_accel_v4",
+> +					    cmpc_accel_idev_init_v4);
+> +	if (error)
+> +		goto failed_input;
+> +
+> +	inputdev =3D dev_get_drvdata(&acpi->dev);
+> +	dev_set_drvdata(&inputdev->dev, accel);
+> +
+> +	return 0;
+> +
+> +failed_input:
+> +	device_remove_file(&acpi->dev, &cmpc_accel_g_select_attr_v4);
+> +failed_g_select:
+> +	device_remove_file(&acpi->dev, &cmpc_accel_sensitivity_attr_v4);
+> +failed_sensitivity:
+> +	kfree(accel);
+> +	return error;
+> +}
+> +
+> +static int cmpc_accel_remove_v4(struct acpi_device *acpi, int type)
+> +{
+> +	struct input_dev *inputdev;
+> +	struct cmpc_accel *accel;
+> +
+> +	inputdev =3D dev_get_drvdata(&acpi->dev);
+> +	accel =3D dev_get_drvdata(&inputdev->dev);
+> +
+> +	device_remove_file(&acpi->dev, &cmpc_accel_sensitivity_attr_v4);
+> +	device_remove_file(&acpi->dev, &cmpc_accel_g_select_attr_v4);
+> +	return cmpc_remove_acpi_notify_device(acpi);
+> +}
+> +
+> +static const struct acpi_device_id cmpc_accel_device_ids_v4[] =3D {
+> +	{CMPC_ACCEL_HID_V4, 0},
+> +	{"", 0}
+> +};
+> +
+> +static struct acpi_driver cmpc_accel_acpi_driver_v4 =3D {
+> +	.owner =3D THIS_MODULE,
+> +	.name =3D "cmpc_accel_v4",
+> +	.class =3D "cmpc_accel_v4",
+> +	.ids =3D cmpc_accel_device_ids_v4,
+> +	.ops =3D {
+> +		.add =3D cmpc_accel_add_v4,
+> +		.remove =3D cmpc_accel_remove_v4,
+> +		.notify =3D cmpc_accel_handler_v4,
+> +		.suspend =3D cmpc_accel_suspend_v4,
+> +		.resume =3D cmpc_accel_resume_v4,
+> +	}
+> +};
+> +
+> +
+> +/*
+> + * Accelerometer code for Classmate versions prior to V4
+>   */
+>  static acpi_status cmpc_start_accel(acpi_handle handle)
+>  {
+> @@ -723,8 +1110,15 @@ static int cmpc_init(void)
+>  	if (r)
+>  		goto failed_accel;
+> =20
+> +	r =3D acpi_bus_register_driver(&cmpc_accel_acpi_driver_v4);
+> +	if (r)
+> +		goto failed_accel_v4;
+> +
+>  	return r;
+> =20
+> +failed_accel_v4:
+> +	acpi_bus_unregister_driver(&cmpc_accel_acpi_driver);
+> +
+>  failed_accel:
+>  	acpi_bus_unregister_driver(&cmpc_tablet_acpi_driver);
+> =20
+> @@ -740,6 +1134,7 @@ failed_keys:
+> =20
+>  static void cmpc_exit(void)
+>  {
+> +	acpi_bus_unregister_driver(&cmpc_accel_acpi_driver_v4);
+>  	acpi_bus_unregister_driver(&cmpc_accel_acpi_driver);
+>  	acpi_bus_unregister_driver(&cmpc_tablet_acpi_driver);
+>  	acpi_bus_unregister_driver(&cmpc_ipml_acpi_driver);
+> @@ -751,6 +1146,7 @@ module_exit(cmpc_exit);
+> =20
+>  static const struct acpi_device_id cmpc_device_ids[] =3D {
+>  	{CMPC_ACCEL_HID, 0},
+> +	{CMPC_ACCEL_HID_V4, 0},
+>  	{CMPC_TABLET_HID, 0},
+>  	{CMPC_IPML_HID, 0},
+>  	{CMPC_KEYS_HID, 0},
+> --=20
+> 1.7.9.5
+>=20
+
+--HcAYCG3uE/tztfnV
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQBeuUAAoJEAq6ZQNy/ZVx4XQP/2Bd6ECEOGQ32EpI6T9pYRWQ
+ZdfZigiwVRXpuPPGS//AgXF1ZDaEsjkjgxrHJkOmDKvZI32RDUZj/zqBPDY65ndr
+ohT8Yp58nr6aSeIefxgow2tI/D7/c6Q3a3ZZnFVXK5L+yPIt313iN65ykrm/t0Lf
+n494j4q3TtOHV21z2Fb0rgGeas7BbhQ1zVI8bRejUq7IiQ6qibU9dOkgdyqdDKLR
+CH3kVvVZYak52Yxx33oI1FGfZY0b4Su5U6UHzIGUqUXkolxeLNsvhXZcD0MvQSp7
+mdIkI7Wjj0jiouCOYKVl6whjGkeij/X9ArjmIJDKuEIedggReQorTeCuDM6zjl/1
+PDtd5ZdoGAwrYviP/YIj3xbvzELaegjAvdQSJKq0j9Az+j5fUP9tr/DyVrTJkm2V
+fShFFu6e7PrRslxCT5Yyt0xJ0ykK1T7DsbxIo+zvDn7PnPYROEbl9u5BHQIaMTcN
+Smtb1ft3IO9uO2WrxqGD8+b2wOGxAuUiwODK8Ea0jyfe3DX71+2bqz0nh9zXSJ9w
+MWZpfg4M0HxCGQCmnNPY+SLCRWP9j4ChYscYWtFXDsA89CyR3yEXCH4jGwjQMNLD
+UYlE876A/NIhDKLxLGN0Mp6Z+tOZ5UaffkrixQcoRwPN+qYScZbpTo0sPcv986We
+kA4/I2V/+t1jf3vwMdxJ
+=cudW
+-----END PGP SIGNATURE-----
+
+--HcAYCG3uE/tztfnV--
