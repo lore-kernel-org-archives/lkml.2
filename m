@@ -1,58 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754521Ab2GQHTy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 03:19:54 -0400
-Received: from 115-188-14-127.jetstream.xtra.co.nz ([115.188.14.127]:64392
-	"EHLO SERVER.prisktech.co.nz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753772Ab2GQHTw convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 03:19:52 -0400
-X-Greylist: delayed 323 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Jul 2012 03:19:52 EDT
-From: Tony Prisk <linux@prisktech.co.nz>
-To: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "vt8500-wm8505-linux-kernel@googlegroups.com" 
-	<vt8500-wm8505-linux-kernel@googlegroups.com>
-Subject: [PATCH 1/1] Add Wondermedia Technologies (wmt) to
- docs/devicetree/vendor-bindings.txt
-Thread-Topic: [PATCH 1/1] Add Wondermedia Technologies (wmt) to
- docs/devicetree/vendor-bindings.txt
-Thread-Index: Ac1j60YjC8Ir3nj9THS9B3oTgHAVgQ==
-Date: Tue, 17 Jul 2012 07:11:38 +0000
-Message-ID: <76F764B079F92A4E843589C893D0A022C380F1D4@SERVER.prisktech.co.nz>
-Accept-Language: en-NZ, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754227Ab2GQHUK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 03:20:10 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:49715
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754549Ab2GQHUI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 03:20:08 -0400
+Date: Tue, 17 Jul 2012 03:20:04 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, snitzer@redhat.com,
+        martin.petersen@oracle.com, xfs@oss.sgi.com, dm-devel@redhat.com,
+        hch@lst.de, vgoyal@redhat.com
+Subject: Re: [PATCH v3 2/2] block: split discard into aligned requests
+Message-ID: <20120717072004.GE15473@infradead.org>
+References: <1341504104-1674-1-git-send-email-pbonzini@redhat.com>
+ <1341504104-1674-3-git-send-email-pbonzini@redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1341504104-1674-3-git-send-email-pbonzini@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 756ae5c2f475d679649adff99058679b651af8d9 Mon Sep 17 00:00:00 2001
-From: Tony Prisk <linux@prisktech.co.nz>
-Date: Tue, 17 Jul 2012 19:09:31 +1200
-Subject: [PATCH] Add Wondermedia Technologies (wmt) to vendor-prefixes.txt
- Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+Looks good.
 
----
- .../devicetree/bindings/vendor-prefixes.txt        |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Any chance we can get this into the 3.6 queue (and possibly -stable)?
 
-diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-index db4d3af..b87dc6b 100644
---- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-+++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-@@ -48,4 +48,5 @@ st	STMicroelectronics
- stericsson	ST-Ericsson
- ti	Texas Instruments
- wlf	Wolfson Microelectronics
-+wmt	Wondermedia Technologies
- xlnx	Xilinx
--- 
-1.7.2.5
