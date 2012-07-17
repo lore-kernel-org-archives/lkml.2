@@ -1,151 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755128Ab2GQOyq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 10:54:46 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:43408 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754053Ab2GQOyo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 10:54:44 -0400
-Date: Tue, 17 Jul 2012 10:45:40 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: "zhenzhong.duan" <zhenzhong.duan@oracle.com>
-Cc: David Vrabel <david.vrabel@citrix.com>, jeremy@goop.org,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        xen-devel@lists.xensource.com, x86@kernel.org,
-        Feng Jin <joe.jin@oracle.com>, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [Xen-devel] [PATCH-v2] xen: populate correct number of pages
- when across mem boundary
-Message-ID: <20120717144540.GC12374@phenom.dumpdata.com>
-References: <4FF3E781.5040603@oracle.com>
- <4FFEE552.4070201@citrix.com>
- <4FFFDCD9.7030305@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FFFDCD9.7030305@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	id S1755251Ab2GQO5J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 10:57:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26100 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752358Ab2GQO5H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 10:57:07 -0400
+Message-ID: <1342537024.3229.43.camel@ul30vt>
+Subject: Re: [PATCH v5 2/4] kvm: KVM_EOIFD, an eventfd for EOIs
+From: Alex Williamson <alex.williamson@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
+Date: Tue, 17 Jul 2012 08:57:04 -0600
+In-Reply-To: <20120717144237.GA11516@redhat.com>
+References: <20120716202711.1752.71007.stgit@bling.home>
+	 <20120716203353.1752.19127.stgit@bling.home>
+	 <20120717102139.GG7949@redhat.com> <1342533556.3229.7.camel@ul30vt>
+	 <20120717141002.GC10822@redhat.com> <1342535383.3229.32.camel@ul30vt>
+	 <20120717144237.GA11516@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 13, 2012 at 04:31:21PM +0800, zhenzhong.duan wrote:
-> When populate pages across a mem boundary at bootup, the page count
-> populated isn't correct. This is due to mem populated to non-mem
-> region and ignored.
+On Tue, 2012-07-17 at 17:42 +0300, Michael S. Tsirkin wrote:
+> On Tue, Jul 17, 2012 at 08:29:43AM -0600, Alex Williamson wrote:
+> > On Tue, 2012-07-17 at 17:10 +0300, Michael S. Tsirkin wrote:
+> > > On Tue, Jul 17, 2012 at 07:59:16AM -0600, Alex Williamson wrote:
+> > > > On Tue, 2012-07-17 at 13:21 +0300, Michael S. Tsirkin wrote:
+> > > > > On Mon, Jul 16, 2012 at 02:33:55PM -0600, Alex Williamson wrote:
+> > > > > > +	if (args->flags & KVM_EOIFD_FLAG_LEVEL_IRQFD) {
+> > > > > > +		struct _irqfd *irqfd = _irqfd_fdget_lock(kvm, args->irqfd);
+> > > > > > +		if (IS_ERR(irqfd)) {
+> > > > > > +			ret = PTR_ERR(irqfd);
+> > > > > > +			goto fail;
+> > > > > > +		}
+> > > > > > +
+> > > > > > +		gsi = irqfd->gsi;
+> > > > > > +		level_irqfd = eventfd_ctx_get(irqfd->eventfd);
+> > > > > > +		source = _irq_source_get(irqfd->source);
+> > > > > > +		_irqfd_put_unlock(irqfd);
+> > > > > > +		if (!source) {
+> > > > > > +			ret = -EINVAL;
+> > > > > > +			goto fail;
+> > > > > > +		}
+> > > > > > +	} else {
+> > > > > > +		ret = -EINVAL;
+> > > > > > +		goto fail;
+> > > > > > +	}
+> > > > > > +
+> > > > > > +	INIT_LIST_HEAD(&eoifd->list);
+> > > > > > +	eoifd->kvm = kvm;
+> > > > > > +	eoifd->eventfd = eventfd;
+> > > > > > +	eoifd->source = source;
+> > > > > > +	eoifd->level_irqfd = level_irqfd;
+> > > > > > +	eoifd->notifier.gsi = gsi;
+> > > > > > +	eoifd->notifier.irq_acked = eoifd_event;
+> > > > > 
+> > > > > OK so this means eoifd keeps a reference to the irqfd.
+> > > > > And since this is the case, can't we drop the reference counting
+> > > > > around source ids now? Everything is referenced through irqfd.
+> > > > 
+> > > > Holding a reference and using it as a reference count are not the same
+> > > > thing.  What if another module holds a reference to this eventfd?  How
+> > > > do we do anything on release?
+> > > 
+> > > We don't as there is no release, and using kref on source id does not
+> > > help: it just never gets invoked.
+> > 
+> > Please work out how you think it should work and let me know, I don't
+> > see it.  We have an irq source id that needs to be allocated by irqfd
+> > and returned when it's unused.  It becomes unused when neither irqfd nor
+> > eoifd are making use of it.  irqfd and eoifd may be closed in any order.
+> > Use of the source id is what we're reference counting, which is why it's
+> > in struct _irq_source.  How can I use an eventfd reference for the same?
+> > I don't know when it's unused.  I don't know who else holds a reference
+> > to it...  Doesn't make sense to me.  Feels like attempting to squat on
+> > someone else's object.
+> > 
+> > 
 > 
-> Pfn range is also wrongly aligned when mem boundary isn't page aligned.
-> 
-> -v2: If xen_do_chunk fail(populate), abort this chunk and any others.
-> Suggested by David, thanks.
-> 
-> For a dom0 booted with dom_mem=3368952K(0xcd9ff000-4k) dmesg diff is:
->  [    0.000000] Freeing 9e-100 pfn range: 98 pages freed
->  [    0.000000] 1-1 mapping on 9e->100
->  [    0.000000] 1-1 mapping on cd9ff->100000
->  [    0.000000] Released 98 pages of unused memory
->  [    0.000000] Set 206435 page(s) to 1-1 mapping
-> -[    0.000000] Populating cd9fe-cda00 pfn range: 1 pages added
-> +[    0.000000] Populating cd9fe-cd9ff pfn range: 1 pages added
-> +[    0.000000] Populating 100000-100061 pfn range: 97 pages added
->  [    0.000000] BIOS-provided physical RAM map:
->  [    0.000000] Xen: 0000000000000000 - 000000000009e000 (usable)
->  [    0.000000] Xen: 00000000000a0000 - 0000000000100000 (reserved)
->  [    0.000000] Xen: 0000000000100000 - 00000000cd9ff000 (usable)
->  [    0.000000] Xen: 00000000cd9ffc00 - 00000000cda53c00 (ACPI NVS)
-> ...
->  [    0.000000] Xen: 0000000100000000 - 0000000100061000 (usable)
->  [    0.000000] Xen: 0000000100061000 - 000000012c000000 (unusable)
-> ...
->  [    0.000000] MEMBLOCK configuration:
-> ...
-> -[    0.000000]  reserved[0x4]       [0x000000cd9ff000-0x000000cd9ffbff], 0xc00 bytes
-> -[    0.000000]  reserved[0x5]       [0x00000100000000-0x00000100060fff], 0x61000 bytes
-> 
-> Related xen memory layout:
-> (XEN) Xen-e820 RAM map:
-> (XEN)  0000000000000000 - 000000000009ec00 (usable)
-> (XEN)  00000000000f0000 - 0000000000100000 (reserved)
-> (XEN)  0000000000100000 - 00000000cd9ffc00 (usable)
-> 
-> Signed-off-by: Zhenzhong Duan<zhenzhong.duan@oracle.com>
+> eoifd should prevent irqfd from being released.
 
-Please run this first through scripts/cleanpatch.pl and fix up the issues
-and then resend.
+Why?  Note that this is actually quite difficult too.  We can't fail a
+release, nobody checks close(3p) return.  Blocking a release is likely
+to cause all sorts of problems, so what you mean is that irqfd should
+linger around until there are no references to it... but that's exactly
+what struct _irq_source is for, is to hold the bits that we care about
+references to and automatically release it when there are none.
 
-Thanks!
+>   It already keeps
+> a reference to it so it prevents irqfd from going away by userspace
+> closing the fd.
 
-> ---
-> diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-> index a4790bf..ead8557 100644
-> --- a/arch/x86/xen/setup.c
-> +++ b/arch/x86/xen/setup.c
-> @@ -157,25 +157,24 @@ static unsigned long __init xen_populate_chunk(
->  	unsigned long dest_pfn;
-> 
->  	for (i = 0, entry = list; i<  map_size; i++, entry++) {
-> -		unsigned long credits = credits_left;
->  		unsigned long s_pfn;
->  		unsigned long e_pfn;
->  		unsigned long pfns;
->  		long capacity;
-> 
-> -		if (credits<= 0)
-> +		if (credits_left<= 0)
->  			break;
-> 
->  		if (entry->type != E820_RAM)
->  			continue;
-> 
-> -		e_pfn = PFN_UP(entry->addr + entry->size);
-> +		e_pfn = PFN_DOWN(entry->addr + entry->size);
-> 
->  		/* We only care about E820 after the xen_start_info->nr_pages */
->  		if (e_pfn<= max_pfn)
->  			continue;
-> 
-> -		s_pfn = PFN_DOWN(entry->addr);
-> +		s_pfn = PFN_UP(entry->addr);
->  		/* If the E820 falls within the nr_pages, we want to start
->  		 * at the nr_pages PFN.
->  		 * If that would mean going past the E820 entry, skip it
-> @@ -184,23 +183,19 @@ static unsigned long __init xen_populate_chunk(
->  			capacity = e_pfn - max_pfn;
->  			dest_pfn = max_pfn;
->  		} else {
-> -			/* last_pfn MUST be within E820_RAM regions */
-> -			if (*last_pfn&&  e_pfn>= *last_pfn)
-> -				s_pfn = *last_pfn;
->  			capacity = e_pfn - s_pfn;
->  			dest_pfn = s_pfn;
->  		}
-> -		/* If we had filled this E820_RAM entry, go to the next one. */
-> -		if (capacity<= 0)
-> -			continue;
-> 
-> -		if (credits>  capacity)
-> -			credits = capacity;
-> +		if (credits_left<  capacity)
-> +			capacity = credits_left;
-> 
-> -		pfns = xen_do_chunk(dest_pfn, dest_pfn + credits, false);
-> +		pfns = xen_do_chunk(dest_pfn, dest_pfn + capacity, false);
->  		done += pfns;
-> -		credits_left -= pfns;
->  		*last_pfn = (dest_pfn + pfns);
-> +		if (pfns<  capacity)
-> +			break;
-> +		credits_left -= pfns;
->  	}
->  	return done;
->  }
-> -- 
-> 1.7.3
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Wrong, eoifd holds a reference to the eventfd for the irqfd, so it
+prevents the fd from going away, not the irqfd.
+
+>   But it can still be released with deassign.
+> An easy solution is to fail deassign of irqfd if there is
+> eoifd bound to it.
+
+I don't know why we would impose such a bizarre usage model when
+reference counting on struct _irq_source seems to handle this nicely
+already.
+
