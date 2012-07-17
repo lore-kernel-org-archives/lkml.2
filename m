@@ -1,29 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754799Ab2GQIYA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 04:24:00 -0400
+	id S1754760Ab2GQIX7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 04:23:59 -0400
 Received: from mga02.intel.com ([134.134.136.20]:37787 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754658Ab2GQIX4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 04:23:56 -0400
+	id S1753961Ab2GQIXz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 04:23:55 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="167311452"
+   d="scan'208";a="167311430"
 From: Tomas Winkler <tomas.winkler@intel.com>
 To: gregkh@linuxfoundation.org
 Cc: arnd@arndb.de, alan@linux.intel.com, linux-kernel@vger.kernel.org,
         Tomas Winkler <tomas.winkler@intel.com>
 Subject: [char-misc-next] mei: use module_pci_driver
-Date: Tue, 17 Jul 2012 11:23:47 +0300
-Message-Id: <1342513427-10076-2-git-send-email-tomas.winkler@intel.com>
+Date: Tue, 17 Jul 2012 11:23:46 +0300
+Message-Id: <1342513427-10076-1-git-send-email-tomas.winkler@intel.com>
 X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1342513427-10076-1-git-send-email-tomas.winkler@intel.com>
-References: <1342513427-10076-1-git-send-email-tomas.winkler@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change-Id: I960feed4157ad1b178f68f4a0b3968e185ed0b36
 Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 ---
  drivers/misc/mei/main.c |   39 +--------------------------------------
