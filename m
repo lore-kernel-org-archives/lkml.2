@@ -1,54 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756144Ab2GQRxU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 13:53:20 -0400
-Received: from mga01.intel.com ([192.55.52.88]:46324 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753114Ab2GQRxR convert rfc822-to-8bit (ORCPT
+	id S1753420Ab2GQR4d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 13:56:33 -0400
+Received: from exprod7og101.obsmtp.com ([64.18.2.155]:39744 "EHLO
+	exprod7og101.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751875Ab2GQR4b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 13:53:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="178930896"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Christoph Lameter <cl@linux.com>, Jiang Liu <liuj97@gmail.com>
-CC: Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Mel Gorman <mgorman@suse.de>, Jianguo Wu <wujianguo@huawei.com>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
-        Keping Chen <chenkeping@huawei.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] mm/slub: fix a BUG_ON() when offlining a memory node
- and CONFIG_SLUB_DEBUG is on
-Thread-Topic: [PATCH] mm/slub: fix a BUG_ON() when offlining a memory node
- and CONFIG_SLUB_DEBUG is on
-Thread-Index: AQHNZDyTnJq3I7yyq0GFVVx6Akz6JZcuMvgA//+NwDA=
-Date: Tue, 17 Jul 2012 17:53:16 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F1936AB66@ORSMSX104.amr.corp.intel.com>
-References: <1342543816-10853-1-git-send-email-jiang.liu@huawei.com>
- <alpine.DEB.2.00.1207171237320.15177@router.home>
-In-Reply-To: <alpine.DEB.2.00.1207171237320.15177@router.home>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 17 Jul 2012 13:56:31 -0400
+Message-ID: <5005A73B.2010901@genband.com>
+Date: Tue, 17 Jul 2012 11:56:11 -0600
+From: Chris Friesen <chris.friesen@genband.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
+To: Rik van Riel <riel@redhat.com>
+CC: Linux kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Avi Kivity <avi@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: CFS vs. cpufreq/cstates vs. latency
+References: <50057565.7030405@redhat.com>
+In-Reply-To: <50057565.7030405@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 17 Jul 2012 17:56:12.0883 (UTC) FILETIME=[74360230:01CD6445]
+X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-19046.004
+X-TM-AS-Result: No--11.139600-8.000000-31
+X-TM-AS-User-Approved-Sender: No
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This suggests that a call to early_kmem_cache_node_alloc was not needed
-> because the per node structure already existed. Lets fix that instead.
+On 07/17/2012 08:23 AM, Rik van Riel wrote:
 
-Perhaps by just having one API for users to call? It seems odd to force users
-to figure out whether they are called before some magic time during boot
-and use the "early...()" call. Shouldn't we hide this sort of detail from them?
+> Specifically, waking up some process requires that the CPU
+> which is running the wakeup is already in C0 state. If the
+> CPU on which the to-be-woken task ran last is in a deep C
+> state, it may make sense to simply run the woken up task
+> on the local CPU, not the CPU where it was originally.
 
--Tony
+While it sounds interesting, I can see possible issues with this:
 
+1) If we're using NUMA there will be additional cost to running a task with memory on a remote node.  It might make sense to try and run the task on a CPU on that node if possible.
+2) It might not make sense to migrate if the local cpu is close to capacity.
+
+Presumably the scheduler could take into account the expected delay for coming out of the C state (which we should know) as well as the expected cost of migrating the task to the running CPU and the expected run-length of the task in order to decide if this makes sense or not.
+
+> I seem to remember some scheduling code that (for power
+> saving reasons) tried running all the tasks on one CPU,
+> until that CPU got busy, and then spilled over onto other
+> CPUs.
+
+I suspect you're thinking of
+
+/sys/devices/system/cpu/sched_mc_power_savings
+/sys/devices/system/cpu/sched_smt_power_savings 
+
+> I do not seem to be able to find that code in recent kernels,
+> but I have the feeling that a policy like that (related to
+> WAKE_AFFINE scheduling?) could improve this issue.
+
+Looks like it was removed in 8e7fbcb because it was broken.
+
+Chris
