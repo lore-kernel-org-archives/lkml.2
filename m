@@ -1,19 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753882Ab2GQWFC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 18:05:02 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:39592 "EHLO
+	id S1757237Ab2GQWFR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 18:05:17 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:39585 "EHLO
 	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757166Ab2GQWE6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 18:04:58 -0400
+	id S1757164Ab2GQWE5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 18:04:57 -0400
 From: "Theodore Ts'o" <tytso@mit.edu>
 To: Linux Kernel Developers List <linux-kernel@vger.kernel.org>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>
-Subject: [PATCH 11/17] pxa25x_udc: remove IRQF_SAMPLE_RANDOM which is now a no-op
-Date: Tue, 17 Jul 2012 17:32:30 -0400
-Message-Id: <1342560756-18737-12-git-send-email-tytso@mit.edu>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Tony Lindgren <tony@atomide.com>
+Subject: [PATCH 13/17] board-palmz71: remove IRQF_SAMPLE_RANDOM which is now a no-op
+Date: Tue, 17 Jul 2012 17:32:32 -0400
+Message-Id: <1342560756-18737-14-git-send-email-tytso@mit.edu>
 X-Mailer: git-send-email 1.7.11.1.108.gb129051
 In-Reply-To: <1342560756-18737-1-git-send-email-tytso@mit.edu>
 References: <1342560756-18737-1-git-send-email-tytso@mit.edu>
@@ -32,41 +30,25 @@ feature-removal-schedule, so this patch is preparation for the final
 removal of this flag.
 
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Eric Miao <eric.y.miao@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
+Cc: Tony Lindgren <tony@atomide.com>
 ---
- drivers/usb/gadget/pxa25x_udc.c | 12 ++++--------
- 1 file changed, 4 insertions(+), 8 deletions(-)
+ arch/arm/mach-omap1/board-palmz71.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/usb/gadget/pxa25x_udc.c b/drivers/usb/gadget/pxa25x_udc.c
-index f7ff9e8..c319814 100644
---- a/drivers/usb/gadget/pxa25x_udc.c
-+++ b/drivers/usb/gadget/pxa25x_udc.c
-@@ -2200,19 +2200,15 @@ static int __init pxa25x_udc_probe(struct platform_device *pdev)
- 
- #ifdef CONFIG_ARCH_LUBBOCK
- 	if (machine_is_lubbock()) {
--		retval = request_irq(LUBBOCK_USB_DISC_IRQ,
--				lubbock_vbus_irq,
--				IRQF_SAMPLE_RANDOM,
--				driver_name, dev);
-+		retval = request_irq(LUBBOCK_USB_DISC_IRQ, lubbock_vbus_irq,
-+				     0, driver_name, dev);
- 		if (retval != 0) {
- 			pr_err("%s: can't get irq %i, err %d\n",
- 				driver_name, LUBBOCK_USB_DISC_IRQ, retval);
- 			goto err_irq_lub;
+diff --git a/arch/arm/mach-omap1/board-palmz71.c b/arch/arm/mach-omap1/board-palmz71.c
+index 3c71c6b..efcd365 100644
+--- a/arch/arm/mach-omap1/board-palmz71.c
++++ b/arch/arm/mach-omap1/board-palmz71.c
+@@ -288,8 +288,7 @@ palmz71_gpio_setup(int early)
  		}
--		retval = request_irq(LUBBOCK_USB_IRQ,
--				lubbock_vbus_irq,
--				IRQF_SAMPLE_RANDOM,
--				driver_name, dev);
-+		retval = request_irq(LUBBOCK_USB_IRQ, lubbock_vbus_irq,
-+				     0, driver_name, dev);
- 		if (retval != 0) {
- 			pr_err("%s: can't get irq %i, err %d\n",
- 				driver_name, LUBBOCK_USB_IRQ, retval);
+ 		gpio_direction_input(PALMZ71_USBDETECT_GPIO);
+ 		if (request_irq(gpio_to_irq(PALMZ71_USBDETECT_GPIO),
+-				palmz71_powercable, IRQF_SAMPLE_RANDOM,
+-				"palmz71-cable", NULL))
++				palmz71_powercable, 0, "palmz71-cable", NULL))
+ 			printk(KERN_ERR
+ 					"IRQ request for power cable failed!\n");
+ 		palmz71_powercable(gpio_to_irq(PALMZ71_USBDETECT_GPIO), NULL);
 -- 
 1.7.11.1.108.gb129051
 
