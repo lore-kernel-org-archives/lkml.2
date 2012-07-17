@@ -1,80 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751446Ab2GQGlX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 02:41:23 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:46748 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752593Ab2GQGkS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 02:40:18 -0400
+	id S1753542Ab2GQGlU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 02:41:20 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:41219 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752417Ab2GQGkR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 02:40:17 -0400
 From: John Stultz <johnstul@us.ibm.com>
 To: stable@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        John Stultz <johnstul@us.ibm.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 7/7] 3.4.x: timekeeping: Add missing update call in timekeeping_resume()
-Date: Tue, 17 Jul 2012 02:39:56 -0400
-Message-Id: <1342507196-54327-8-git-send-email-johnstul@us.ibm.com>
+Cc: John Stultz <johnstul@us.ibm.com>, Prarit Bhargava <prarit@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/7] 3.4-stable: Fix for leapsecond caused hrtimer/futex issue
+Date: Tue, 17 Jul 2012 02:39:49 -0400
+Message-Id: <1342507196-54327-1-git-send-email-johnstul@us.ibm.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1342507196-54327-1-git-send-email-johnstul@us.ibm.com>
-References: <1342507196-54327-1-git-send-email-johnstul@us.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12071706-8974-0000-0000-00000B3BBD39
+x-cbid: 12071706-7282-0000-0000-00000AFC5284
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+Here is backport of the leapsecond fixes to 3.4-stable. These are very
+straight forward, and backported to 3.4.x with no collisions or changes.
 
-This is a backport of 3e997130bd2e8c6f5aaa49d6e3161d4d29b43ab0
+This patchset resolve the early hrtimer/futex expiration issue
+widely seen after the June 30th leapsecond.
 
-The leap second rework unearthed another issue of inconsistent data.
+I've booted and tested this patchset on two boxes and run through a number
+of leapsecond related stress tests. However, additional testing and review
+would be appreciated.
 
-On timekeeping_resume() the timekeeper data is updated, but nothing
-calls timekeeping_update(), so now the update code in the timer
-interrupt sees stale values.
+The original commits backported in this set are:
 
-This has been the case before those changes, but then the timer
-interrupt was using stale data as well so this went unnoticed for quite
-some time.
+f55a6faa384304c89cfef162768e88374d3312cb    hrtimer: Provide clock_was_set_delayed()
+4873fa070ae84a4115f0b3c9dfabc224f1bc7c51    timekeeping: Fix leapsecond triggered load spike issue
+5b9fe759a678e05be4937ddf03d50e950207c1c0    timekeeping: Maintain ktime_t based offsets for hrtimers
+196951e91262fccda81147d2bcf7fdab08668b40    hrtimers: Move lock held region in hrtimer_interrupt()
+f6c06abfb3972ad4914cef57d8348fcb2932bc3b    timekeeping: Provide hrtimer update function
+5baefd6d84163443215f4a99f6a20f054ef11236    hrtimer: Update hrtimer base offsets each hrtimer_interrupt
+3e997130bd2e8c6f5aaa49d6e3161d4d29b43ab0    timekeeping: Add missing update call in timekeeping_resume()
 
-Add the missing update call, so all the data is consistent everywhere.
 
-Reported-by: Andreas Schwab <schwab@linux-m68k.org>
-Reported-and-tested-by: "Rafael J. Wysocki" <rjw@sisk.pl>
-Reported-and-tested-by: Martin Steigerwald <Martin@lichtvoll.de>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Cc: Linux PM list <linux-pm@vger.kernel.org>
-Cc: John Stultz <johnstul@us.ibm.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+I've already done backports to all the stable kernels to 2.6.32, 
+and will be sending them out shortly.
+
+Please let me know if you have any comments or feedback. 
+
+thanks
+-john
+
 Cc: Prarit Bhargava <prarit@redhat.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
----
- kernel/time/timekeeping.c |    1 +
- 1 file changed, 1 insertion(+)
 
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 62e12c3..7c50de8 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -719,6 +719,7 @@ static void timekeeping_resume(void)
- 	timekeeper.clock->cycle_last = timekeeper.clock->read(timekeeper.clock);
- 	timekeeper.ntp_error = 0;
- 	timekeeping_suspended = 0;
-+	timekeeping_update(false);
- 	write_sequnlock_irqrestore(&timekeeper.lock, flags);
- 
- 	touch_softlockup_watchdog();
+
+John Stultz (3):
+  3.4.x: hrtimer: Provide clock_was_set_delayed()
+  3.4.x: timekeeping: Fix leapsecond triggered load spike issue
+  3.4.x: hrtimer: Update hrtimer base offsets each hrtimer_interrupt
+
+Thomas Gleixner (4):
+  3.4.x: timekeeping: Maintain ktime_t based offsets for hrtimers
+  3.4.x: hrtimers: Move lock held region in hrtimer_interrupt()
+  3.4.x: timekeeping: Provide hrtimer update function
+  3.4.x: timekeeping: Add missing update call in timekeeping_resume()
+
+ include/linux/hrtimer.h   |   10 ++++++-
+ kernel/hrtimer.c          |   53 +++++++++++++++++++++++++------------
+ kernel/time/timekeeping.c |   64 +++++++++++++++++++++++++++++++++++++++++++--
+ 3 files changed, 108 insertions(+), 19 deletions(-)
+
 -- 
 1.7.9.5
 
