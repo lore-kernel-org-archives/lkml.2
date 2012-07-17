@@ -1,312 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754787Ab2GQOq1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 10:46:27 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:41184 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753948Ab2GQOqX (ORCPT
+	id S1755023Ab2GQOqo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 10:46:44 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:56824 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754713Ab2GQOqm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 10:46:23 -0400
-Message-ID: <50057AA3.8070802@linux.vnet.ibm.com>
-Date: Tue, 17 Jul 2012 22:45:55 +0800
+	Tue, 17 Jul 2012 10:46:42 -0400
+Message-ID: <50057ACB.2060501@linux.vnet.ibm.com>
+Date: Tue, 17 Jul 2012 22:46:35 +0800
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
 To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
         LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: [PATCH 09/10] KVM: introduce readonly memslot
+Subject: [PATCH 10/10] KVM: indicate readonly access fault
 References: <5005791B.8040807@linux.vnet.ibm.com>
 In-Reply-To: <5005791B.8040807@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-x-cbid: 12071714-8878-0000-0000-0000034AD1F6
+x-cbid: 12071714-8256-0000-0000-00000359A714
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In current code, if we map a readonly memory space from host to guest
-and the page is not currently mapped in the host, we will get a fault-pfn
-and async is not allowed, then the vm will crash
-
-We introduce readonly memory region to map ROM/ROMD to the guest, read access
-is happy for readonly memslot, write access on readonly memslot will cause
-KVM_EXIT_MMIO exit
+Introduce write_readonly_mem in mmio-exit-info to indicate this exit is
+caused by write access on readonly memslot
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- Documentation/virtual/kvm/api.txt |   10 +++-
- arch/x86/include/asm/kvm.h        |    1 +
- arch/x86/kvm/mmu.c                |   10 ++++
- arch/x86/kvm/x86.c                |    1 +
- include/linux/kvm.h               |    6 ++-
- virt/kvm/kvm_main.c               |   84 ++++++++++++++++++++++++++++--------
- 6 files changed, 89 insertions(+), 23 deletions(-)
+ arch/x86/kvm/x86.c       |   12 ++++++++----
+ include/linux/kvm.h      |    3 +++
+ include/linux/kvm_host.h |    1 +
+ virt/kvm/kvm_main.c      |    3 +++
+ 4 files changed, 15 insertions(+), 4 deletions(-)
 
-diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
-index 310fe50..4b3d3f1 100644
---- a/Documentation/virtual/kvm/api.txt
-+++ b/Documentation/virtual/kvm/api.txt
-@@ -857,7 +857,8 @@ struct kvm_userspace_memory_region {
- };
-
- /* for kvm_memory_region::flags */
--#define KVM_MEM_LOG_DIRTY_PAGES  1UL
-+#define KVM_MEM_LOG_DIRTY_PAGES	(1UL << 0)
-+#define KVM_MEM_READONLY	(1UL << 1)
-
- This ioctl allows the user to create or modify a guest physical memory
- slot.  When changing an existing slot, it may be moved in the guest
-@@ -873,9 +874,12 @@ It is recommended that the lower 21 bits of guest_phys_addr and userspace_addr
- be identical.  This allows large pages in the guest to be backed by large
- pages in the host.
-
--The flags field supports just one flag, KVM_MEM_LOG_DIRTY_PAGES, which
-+The flags field supports two flag, KVM_MEM_LOG_DIRTY_PAGES, which
- instructs kvm to keep track of writes to memory within the slot.  See
--the KVM_GET_DIRTY_LOG ioctl.
-+the KVM_GET_DIRTY_LOG ioctl. Another flag is KVM_MEM_READONLY when the
-+KVM_CAP_READONLY_MEM capability, it indicates the guest memory is read-only,
-+that means, guest is only allowed to read it. Writes will be posted to
-+userspace as KVM_EXIT_MMIO exits.
-
- When the KVM_CAP_SYNC_MMU capability, changes in the backing of the memory
- region are automatically reflected into the guest.  For example, an mmap()
-diff --git a/arch/x86/include/asm/kvm.h b/arch/x86/include/asm/kvm.h
-index 246617e..521bf25 100644
---- a/arch/x86/include/asm/kvm.h
-+++ b/arch/x86/include/asm/kvm.h
-@@ -25,6 +25,7 @@
- #define __KVM_HAVE_DEBUGREGS
- #define __KVM_HAVE_XSAVE
- #define __KVM_HAVE_XCRS
-+#define __KVM_HAVE_READONLY_MEM
-
- /* Architectural interrupt line count. */
- #define KVM_NR_INTERRUPTS 256
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 13d3c69..d4eee8e 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -2618,6 +2618,16 @@ static void kvm_send_hwpoison_signal(unsigned long address, struct task_struct *
- static int kvm_handle_bad_page(struct kvm_vcpu *vcpu, gfn_t gfn, pfn_t pfn)
- {
- 	kvm_release_pfn_clean(pfn);
-+
-+	/*
-+	 * Do not cache the mmio info caused by writing the readonly gfn
-+	 * into the spte otherwise read access on readonly gfn also can
-+	 * caused mmio page fault and treat it as mmio access.
-+	 * Return 1 to tell kvm to emulate it.
-+	 */
-+	if (is_readonly_fault_pfn(pfn))
-+		return 1;
-+
- 	if (is_hwpoison_pfn(pfn)) {
- 		kvm_send_hwpoison_signal(gfn_to_hva(vcpu->kvm, gfn), current);
- 		return 0;
 diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 8171836..46e13a1 100644
+index 46e13a1..cc5f8f0 100644
 --- a/arch/x86/kvm/x86.c
 +++ b/arch/x86/kvm/x86.c
-@@ -2153,6 +2153,7 @@ int kvm_dev_ioctl_check_extension(long ext)
- 	case KVM_CAP_GET_TSC_KHZ:
- 	case KVM_CAP_PCI_2_3:
- 	case KVM_CAP_KVMCLOCK_CTRL:
-+	case KVM_CAP_READONLY_MEM:
- 		r = 1;
- 		break;
- 	case KVM_CAP_COALESCED_MMIO:
+@@ -3703,9 +3703,10 @@ int emulator_write_phys(struct kvm_vcpu *vcpu, gpa_t gpa,
+
+ 	ret = kvm_write_guest(vcpu->kvm, gpa, val, bytes);
+ 	if (ret < 0)
+-		return 0;
++		return ret;
++
+ 	kvm_mmu_pte_write(vcpu, gpa, val, bytes);
+-	return 1;
++	return 0;
+ }
+
+ struct read_write_emulator_ops {
+@@ -3735,7 +3736,7 @@ static int read_prepare(struct kvm_vcpu *vcpu, void *val, int bytes)
+ static int read_emulate(struct kvm_vcpu *vcpu, gpa_t gpa,
+ 			void *val, int bytes)
+ {
+-	return !kvm_read_guest(vcpu->kvm, gpa, val, bytes);
++	return kvm_read_guest(vcpu->kvm, gpa, val, bytes);
+ }
+
+ static int write_emulate(struct kvm_vcpu *vcpu, gpa_t gpa,
+@@ -3797,7 +3798,8 @@ static int emulator_read_write_onepage(unsigned long addr, void *val,
+ 	if (ret)
+ 		goto mmio;
+
+-	if (ops->read_write_emulate(vcpu, gpa, val, bytes))
++	ret = ops->read_write_emulate(vcpu, gpa, val, bytes);
++	if (!ret)
+ 		return X86EMUL_CONTINUE;
+
+ mmio:
+@@ -3819,6 +3821,7 @@ mmio:
+ 		frag->gpa = gpa;
+ 		frag->data = val;
+ 		frag->len = now;
++		frag->write_readonly_mem = (ret == -EPERM);
+
+ 		gpa += now;
+ 		val += now;
+@@ -3836,6 +3839,7 @@ static void set_mmio_exit_info(struct kvm_vcpu *vcpu,
+ 	run->mmio.phys_addr = frag->gpa;
+ 	run->mmio.len = frag->len;
+ 	run->mmio.is_write = vcpu->mmio_is_write = write;
++	run->mmio.write_readonly_mem = frag->write_readonly_mem;
+
+ 	if (write)
+ 		memcpy(run->mmio.data, frag->data, frag->len);
 diff --git a/include/linux/kvm.h b/include/linux/kvm.h
-index dc3aa2a..94867d0 100644
+index 94867d0..9261541 100644
 --- a/include/linux/kvm.h
 +++ b/include/linux/kvm.h
-@@ -102,7 +102,8 @@ struct kvm_userspace_memory_region {
+@@ -222,6 +222,9 @@ struct kvm_run {
+ 			__u8  data[8];
+ 			__u32 len;
+ 			__u8  is_write;
++#ifdef __KVM_HAVE_READONLY_MEM
++			__u8 write_readonly_mem;
++#endif
+ 		} mmio;
+ 		/* KVM_EXIT_HYPERCALL */
+ 		struct {
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index a2302e7..7e45014 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -142,6 +142,7 @@ struct kvm_mmio_fragment {
+ 	gpa_t gpa;
+ 	void *data;
+ 	unsigned len;
++	bool write_readonly_mem;
  };
 
- /* for kvm_memory_region::flags */
--#define KVM_MEM_LOG_DIRTY_PAGES  1UL
-+#define KVM_MEM_LOG_DIRTY_PAGES	(1UL << 0)
-+#define KVM_MEM_READONLY	(1UL << 1)
-
- /* for KVM_IRQ_LINE */
- struct kvm_irq_level {
-@@ -617,6 +618,9 @@ struct kvm_ppc_smmu_info {
- #define KVM_CAP_PPC_GET_SMMU_INFO 78
- #define KVM_CAP_S390_COW 79
- #define KVM_CAP_PPC_ALLOC_HTAB 80
-+#ifdef __KVM_HAVE_READONLY_MEM
-+#define KVM_CAP_READONLY_MEM 81
-+#endif
-
- #ifdef KVM_CAP_IRQ_ROUTING
-
+ struct kvm_vcpu {
 diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index c056736..50e18c0 100644
+index 50e18c0..8d4bc55 100644
 --- a/virt/kvm/kvm_main.c
 +++ b/virt/kvm/kvm_main.c
-@@ -694,7 +694,13 @@ void update_memslots(struct kvm_memslots *slots, struct kvm_memory_slot *new)
+@@ -1527,6 +1527,9 @@ int kvm_write_guest_page(struct kvm *kvm, gfn_t gfn, const void *data,
+ 	unsigned long addr;
 
- static int check_memory_region_flags(struct kvm_userspace_memory_region *mem)
- {
--	if (mem->flags & ~KVM_MEM_LOG_DIRTY_PAGES)
-+	u32 valid_flags = KVM_MEM_LOG_DIRTY_PAGES;
-+
-+#ifdef KVM_CAP_READONLY_MEM
-+	valid_flags |= KVM_MEM_READONLY;
-+#endif
-+
-+	if (mem->flags & ~valid_flags)
- 		return -EINVAL;
-
- 	return 0;
-@@ -1052,18 +1058,32 @@ out:
- 	return size;
- }
-
--static unsigned long gfn_to_hva_many(struct kvm_memory_slot *slot, gfn_t gfn,
--				     gfn_t *nr_pages)
-+static bool memslot_is_readonly(struct kvm_memory_slot *slot)
-+{
-+	return slot->flags & KVM_MEM_READONLY;
-+}
-+
-+static unsigned long __gfn_to_hva_many(struct kvm_memory_slot *slot, gfn_t gfn,
-+				     gfn_t *nr_pages, bool write)
- {
- 	if (!slot || slot->flags & KVM_MEMSLOT_INVALID)
- 		return bad_hva();
-
-+	if (memslot_is_readonly(slot) && write)
-+		return readonly_bad_hva();
-+
- 	if (nr_pages)
- 		*nr_pages = slot->npages - (gfn - slot->base_gfn);
-
- 	return gfn_to_hva_memslot(slot, gfn);
- }
-
-+static unsigned long gfn_to_hva_many(struct kvm_memory_slot *slot, gfn_t gfn,
-+				     gfn_t *nr_pages)
-+{
-+	return __gfn_to_hva_many(slot, gfn, nr_pages, true);
-+}
-+
- unsigned long gfn_to_hva(struct kvm *kvm, gfn_t gfn)
- {
- 	return gfn_to_hva_many(gfn_to_memslot(kvm, gfn), gfn, NULL);
-@@ -1076,7 +1096,7 @@ EXPORT_SYMBOL_GPL(gfn_to_hva);
-  */
- static unsigned long gfn_to_hva_read(struct kvm *kvm, gfn_t gfn)
- {
--	return gfn_to_hva_many(gfn_to_memslot(kvm, gfn), gfn, NULL);
-+	return __gfn_to_hva_many(gfn_to_memslot(kvm, gfn), gfn, NULL, false);
- }
-
- static int kvm_read_hva(void *data, void __user *hva, int len)
-@@ -1201,6 +1221,17 @@ static int hva_to_pfn_slow(unsigned long addr, bool *async, bool write_fault,
- 	return npages;
- }
-
-+static bool vma_is_valid(struct vm_area_struct *vma, bool write_fault)
-+{
-+	if (unlikely(!(vma->vm_flags & VM_READ)))
-+		return false;
-+
-+	if (write_fault && (unlikely(!(vma->vm_flags & VM_WRITE))))
-+		return false;
-+
-+	return true;
-+}
-+
- /*
-  * Pin guest page in memory and return its pfn.
-  * @addr: host virtual address which maps memory to the guest
-@@ -1225,8 +1256,6 @@ static pfn_t hva_to_pfn(unsigned long addr, bool atomic, bool *async,
- 	/* we can do it either atomically or asynchronously, not both */
- 	BUG_ON(atomic && async);
-
--	BUG_ON(!write_fault && !writable);
--
- 	if (hva_to_pfn_fast(addr, atomic, async, write_fault, writable, &pfn))
- 		return pfn;
-
-@@ -1254,7 +1283,7 @@ static pfn_t hva_to_pfn(unsigned long addr, bool atomic, bool *async,
- 			vma->vm_pgoff;
- 		BUG_ON(!kvm_is_mmio_pfn(pfn));
- 	} else {
--		if (async && (vma->vm_flags & VM_WRITE))
-+		if (async && vma_is_valid(vma, write_fault))
- 			*async = true;
- 		pfn = get_fault_pfn();
- 	}
-@@ -1264,21 +1293,41 @@ exit:
- 	return pfn;
- }
-
--static pfn_t __gfn_to_pfn(struct kvm *kvm, gfn_t gfn, bool atomic, bool *async,
--			  bool write_fault, bool *writable)
-+static pfn_t
-+__gfn_to_pfn_memslot(struct kvm_memory_slot *slot, gfn_t gfn, bool atomic,
-+		     bool *async, bool write_fault, bool *writable)
- {
--	unsigned long addr;
-+	unsigned long addr = __gfn_to_hva_many(slot, gfn, NULL, write_fault);
-
--	if (async)
--		*async = false;
+ 	addr = gfn_to_hva(kvm, gfn);
 +	if (kvm_is_readonly_bad_hva(addr))
-+		return get_readonly_fault_pfn();
-
--	addr = gfn_to_hva(kvm, gfn);
- 	if (kvm_is_error_hva(addr)) {
- 		get_page(bad_page);
- 		return page_to_pfn(bad_page);
- 	}
-
--	return hva_to_pfn(addr, atomic, async, write_fault, writable);
-+	/* Do not map writable pfn in the readonly memslot. */
-+	if (writable && memslot_is_readonly(slot))
-+		writable = NULL;
++		return -EPERM;
 +
-+	return hva_to_pfn(addr, atomic, async, write_fault,
-+			  writable);
-+}
-+
-+
-+static pfn_t __gfn_to_pfn(struct kvm *kvm, gfn_t gfn, bool atomic, bool *async,
-+			  bool write_fault, bool *writable)
-+{
-+	struct kvm_memory_slot *slot;
-+
-+	if (async)
-+		*async = false;
-+
-+	slot = gfn_to_memslot(kvm, gfn);
-+
-+	return __gfn_to_pfn_memslot(slot, gfn, atomic, async, write_fault,
-+				    writable);
- }
-
- pfn_t gfn_to_pfn_atomic(struct kvm *kvm, gfn_t gfn)
-@@ -1309,15 +1358,12 @@ EXPORT_SYMBOL_GPL(gfn_to_pfn_prot);
-
- pfn_t gfn_to_pfn_memslot(struct kvm_memory_slot *slot, gfn_t gfn)
- {
--	unsigned long addr = gfn_to_hva_memslot(slot, gfn);
--	return hva_to_pfn(addr, false, NULL, true, NULL);
-+	return __gfn_to_pfn_memslot(slot, gfn, false, NULL, true, NULL);
- }
-
- pfn_t gfn_to_pfn_memslot_atomic(struct kvm_memory_slot *slot, gfn_t gfn)
- {
--	unsigned long addr = gfn_to_hva_memslot(slot, gfn);
--
--	return hva_to_pfn(addr, true, NULL, true, NULL);
-+	return __gfn_to_pfn_memslot(slot, gfn, true, NULL, true, NULL);
- }
- EXPORT_SYMBOL_GPL(gfn_to_pfn_memslot_atomic);
-
+ 	if (kvm_is_error_hva(addr))
+ 		return -EFAULT;
+ 	r = __copy_to_user((void __user *)addr + offset, data, len);
 -- 
 1.7.7.6
 
