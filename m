@@ -1,176 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755224Ab2GQKSA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 06:18:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2042 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751330Ab2GQKR4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 06:17:56 -0400
-Date: Tue, 17 Jul 2012 13:18:25 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com,
-        mtosatti@redhat.com
-Subject: Re: [PATCH v5 3/4] kvm: Create kvm_clear_irq()
-Message-ID: <20120717101825.GF7949@redhat.com>
-References: <20120716202711.1752.71007.stgit@bling.home>
- <20120716203401.1752.78276.stgit@bling.home>
+	id S1755238Ab2GQKUB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 06:20:01 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:40523 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754924Ab2GQKUA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 06:20:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120716203401.1752.78276.stgit@bling.home>
+In-Reply-To: <CAGxe1ZHZr2=127p8X-A12K2-zOyKMOJ0fkx5pWNovVteFfSPwg@mail.gmail.com>
+References: <1342097668-25243-1-git-send-email-thomas.abraham@linaro.org>
+	<1342097668-25243-6-git-send-email-thomas.abraham@linaro.org>
+	<CAGxe1ZHZr2=127p8X-A12K2-zOyKMOJ0fkx5pWNovVteFfSPwg@mail.gmail.com>
+Date: Tue, 17 Jul 2012 15:49:58 +0530
+Message-ID: <CAJuYYwTLxEgm3CnPof4ub=XQazJ+PaUG-zk14nGnpBwWsnHMvw@mail.gmail.com>
+Subject: Re: [PATCH v3 5/6] mmc: dw_mmc: add device tree support
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: Girish K S <girish.shivananjappa@linaro.org>
+Cc: linux-mmc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        cjb@laptop.org, grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
+        patches@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 16, 2012 at 02:34:03PM -0600, Alex Williamson wrote:
-> This is an alternative to kvm_set_irq(,,,0) which returns the previous
-> assertion state of the interrupt and does nothing if it isn't changed.
-> 
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> ---
-> 
->  include/linux/kvm_host.h |    3 ++
->  virt/kvm/irq_comm.c      |   78 ++++++++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 81 insertions(+)
-> 
-> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-> index a7661c0..6c168f1 100644
-> --- a/include/linux/kvm_host.h
-> +++ b/include/linux/kvm_host.h
-> @@ -219,6 +219,8 @@ struct kvm_kernel_irq_routing_entry {
->  	u32 type;
->  	int (*set)(struct kvm_kernel_irq_routing_entry *e,
->  		   struct kvm *kvm, int irq_source_id, int level);
-> +	int (*clear)(struct kvm_kernel_irq_routing_entry *e,
-> +		     struct kvm *kvm, int irq_source_id);
->  	union {
->  		struct {
->  			unsigned irqchip;
-> @@ -629,6 +631,7 @@ void kvm_get_intr_delivery_bitmask(struct kvm_ioapic *ioapic,
->  				   unsigned long *deliver_bitmask);
->  #endif
->  int kvm_set_irq(struct kvm *kvm, int irq_source_id, u32 irq, int level);
-> +int kvm_clear_irq(struct kvm *kvm, int irq_source_id, u32 irq);
->  int kvm_set_msi(struct kvm_kernel_irq_routing_entry *irq_entry, struct kvm *kvm,
->  		int irq_source_id, int level);
->  void kvm_notify_acked_irq(struct kvm *kvm, unsigned irqchip, unsigned pin);
-> diff --git a/virt/kvm/irq_comm.c b/virt/kvm/irq_comm.c
-> index 5afb431..76e8f22 100644
-> --- a/virt/kvm/irq_comm.c
-> +++ b/virt/kvm/irq_comm.c
-> @@ -68,6 +68,42 @@ static int kvm_set_ioapic_irq(struct kvm_kernel_irq_routing_entry *e,
->  	return kvm_ioapic_set_irq(ioapic, e->irqchip.pin, level);
->  }
->  
-> +static inline int kvm_clear_irq_line_state(unsigned long *irq_state,
-> +					    int irq_source_id)
-> +{
-> +	return !!test_and_clear_bit(irq_source_id, irq_state);
-> +}
-> +
-> +static int kvm_clear_pic_irq(struct kvm_kernel_irq_routing_entry *e,
-> +			     struct kvm *kvm, int irq_source_id)
-> +{
-> +#ifdef CONFIG_X86
-> +	struct kvm_pic *pic = pic_irqchip(kvm);
-> +	int level = kvm_clear_irq_line_state(&pic->irq_states[e->irqchip.pin],
-> +					     irq_source_id);
-> +	if (level)
-> +		kvm_pic_set_irq(pic, e->irqchip.pin,
-> +				!!pic->irq_states[e->irqchip.pin]);
-> +	return level;
-> +#else
-> +	return -1;
-> +#endif
-> +}
-> +
-> +static int kvm_clear_ioapic_irq(struct kvm_kernel_irq_routing_entry *e,
-> +				struct kvm *kvm, int irq_source_id)
-> +{
-> +	struct kvm_ioapic *ioapic = kvm->arch.vioapic;
-> +	int level;
-> +
-> +	level = kvm_clear_irq_line_state(&ioapic->irq_states[e->irqchip.pin],
-> +					 irq_source_id);
-> +	if (level)
-> +		kvm_ioapic_set_irq(ioapic, e->irqchip.pin,
-> +				   !!ioapic->irq_states[e->irqchip.pin]);
-> +	return level;
-> +}
-> +
->  inline static bool kvm_is_dm_lowest_prio(struct kvm_lapic_irq *irq)
->  {
->  #ifdef CONFIG_IA64
-> @@ -190,6 +226,45 @@ int kvm_set_irq(struct kvm *kvm, int irq_source_id, u32 irq, int level)
->  	return ret;
->  }
->  
-> +/*
-> + * Return value:
-> + *  < 0   Error
-> + *  = 0   Interrupt was not set, did nothing
-> + *  > 0   Interrupt was pending, cleared
-> + */
-> +int kvm_clear_irq(struct kvm *kvm, int irq_source_id, u32 irq)
-> +{
-> +	struct kvm_kernel_irq_routing_entry *e, irq_set[KVM_NR_IRQCHIPS];
-> +	int ret = -EINVAL, i = 0;
-> +	struct kvm_irq_routing_table *irq_rt;
-> +	struct hlist_node *n;
-> +
-> +	/* Not possible to detect if the guest uses the PIC or the
-> +	 * IOAPIC.  So clear the bit in both. The guest will ignore
-> +	 * writes to the unused one.
-> +	 */
-> +	rcu_read_lock();
-> +	irq_rt = rcu_dereference(kvm->irq_routing);
-> +	if (irq < irq_rt->nr_rt_entries)
-> +		hlist_for_each_entry(e, n, &irq_rt->map[irq], link)
-> +			irq_set[i++] = *e;
-> +	rcu_read_unlock();
-> +
-> +	while (i--) {
-> +		int r = -EINVAL;
-> +
-> +		if (irq_set[i].clear)
+On 16 July 2012 09:45, Girish K S <girish.shivananjappa@linaro.org> wrote:
+> On 12 July 2012 18:24, Thomas Abraham <thomas.abraham@linaro.org> wrote:
 
-I would normally suggest if (likely()) here but recently Marcelo
-started pushing back against these tags. Maybe add in a separate patch
-so it's easier to ignore ...
+[...]
 
-> +			r = irq_set[i].clear(&irq_set[i], kvm, irq_source_id);
-> +
-> +		if (r < 0)
-> +			continue;
-> +
-> +		ret = r + ((ret < 0) ? 0 : ret);
-> +	}
-> +
-> +	return ret;
-> +}
-> +
->  void kvm_notify_acked_irq(struct kvm *kvm, unsigned irqchip, unsigned pin)
->  {
->  	struct kvm_irq_ack_notifier *kian;
-> @@ -344,16 +419,19 @@ static int setup_routing_entry(struct kvm_irq_routing_table *rt,
->  		switch (ue->u.irqchip.irqchip) {
->  		case KVM_IRQCHIP_PIC_MASTER:
->  			e->set = kvm_set_pic_irq;
-> +			e->clear = kvm_clear_pic_irq;
->  			max_pin = 16;
->  			break;
->  		case KVM_IRQCHIP_PIC_SLAVE:
->  			e->set = kvm_set_pic_irq;
-> +			e->clear = kvm_clear_pic_irq;
->  			max_pin = 16;
->  			delta = 8;
->  			break;
->  		case KVM_IRQCHIP_IOAPIC:
->  			max_pin = KVM_IOAPIC_NUM_PINS;
->  			e->set = kvm_set_ioapic_irq;
-> +			e->clear = kvm_clear_ioapic_irq;
->  			break;
->  		default:
->  			goto out;
+>>
+>> +#ifdef CONFIG_OF
+>> +static struct dw_mci_drv_data synopsis_drv_data = {
+>> +       .ctrl_type      = DW_MCI_TYPE_SYNOPSIS,
+>> +};
+>> +
+>> +static const struct of_device_id dw_mci_pltfm_match[] = {
+>> +       { .compatible = "snps,dw-mshc",
+>> +                       .data = (void *)&synopsis_drv_data, },
+>> +       {},
+>> +};
+>> +MODULE_DEVICE_TABLE(of, dw_mci_pltfm_match);
+>> +#else
+>> +static const struct of_device_id dw_mci_pltfm_match[];
+> the #else and a statement can be completely removed if of_match_ptr is
+> used while accessing the dw_mci_pltfm_match in of_match_node function.
+>> +#endif
+>> +
+>>  static int dw_mci_pltfm_probe(struct platform_device *pdev)
+>>  {
+>>         struct dw_mci *host;
+>> @@ -51,6 +67,13 @@ static int dw_mci_pltfm_probe(struct platform_device *pdev)
+>>         if (!host->regs)
+>>                 goto err_free;
+>>         platform_set_drvdata(pdev, host);
+>> +
+>> +       if (pdev->dev.of_node) {
+>> +               const struct of_device_id *match;
+>> +               match = of_match_node(dw_mci_pltfm_match, pdev->dev.of_node);
+> can be modified to of_match_node(of_match_pt(dw_mci_pltfm_match),
+> pdev->dev.of_node);
+> This will remove the dummy allocation of variable as mentioned above.
+> Also it will be generic in non dt case.
+
+Ok. Thanks for the suggestion. I will modify it as per your suggestion.
+
+Thanks,
+Thomas.
+
+[...]
