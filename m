@@ -1,81 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753275Ab2GQHP2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 03:15:28 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:37914 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750851Ab2GQHPZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 03:15:25 -0400
+	id S1753571Ab2GQHRA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 03:17:00 -0400
+Received: from mail-1.atlantis.sk ([80.94.52.57]:56188 "EHLO mail.atlantis.sk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750851Ab2GQHQ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 03:16:56 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: alsa-devel@alsa-project.org
+Subject: [PATCH] snd-opti9xx: Implement suspend/resume
+Date: Tue, 17 Jul 2012 09:16:44 +0200
+User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
+Cc: Kernel development list <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <20120709110528.GA965@krava.redhat.com>
-References: <1340960907-3725-1-git-send-email-jolsa@redhat.com>
-	<87fw9blyhj.fsf@sejong.aot.lge.com>
-	<20120702101518.GC967@krava.redhat.com>
-	<1341234662.1476.13.camel@leonhard>
-	<20120702133341.GD967@krava.redhat.com>
-	<CABPqkBTKNuwJXY7jRa+Zt8rmFftZUeJiYKEsKJeRiLdoHN3KWQ@mail.gmail.com>
-	<CAOPLpQfWtyRHYT1ZfcdmshYoapBgF=FO7yFacYe8pyL0MBeebA@mail.gmail.com>
-	<CABPqkBTTZaCVTtwJZbjXGwAihKAW_PMFK0+TZUTvbOn4pnfzvA@mail.gmail.com>
-	<20120709110528.GA965@krava.redhat.com>
-Date: Tue, 17 Jul 2012 09:15:23 +0200
-Message-ID: <CABPqkBTGOvSuCfOUt=gnpfViVn8Whg0Mf7_3dUUim-iXA+8gjA@mail.gmail.com>
-Subject: Re: [PATCHv3 0/3] perf tool: Add new event group management
-From: Stephane Eranian <eranian@google.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Ulrich Drepper <drepper@gmail.com>, Namhyung Kim <namhyung@gmail.com>,
-        acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu,
-        paulus@samba.org, cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, andi@firstfloor.org
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Type: text/plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201207170916.44277.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 9, 2012 at 1:05 PM, Jiri Olsa <jolsa@redhat.com> wrote:
->
-> On Fri, Jul 06, 2012 at 03:42:54AM +0200, Stephane Eranian wrote:
-> > On Fri, Jul 6, 2012 at 3:32 AM, Ulrich Drepper <drepper@gmail.com> wrote:
-> > > On Thu, Jul 5, 2012 at 12:15 PM, Stephane Eranian <eranian@google.com> wrote:
-> > >> I don't understand why you actually need the :2 suffix. There can
-> > >> only be one leader. So assume it is the first one. Users have to
-> > >> know the first one is the leader which seems like a natural thing
-> > >> to do for me. It would make you syntax less ugly than it already
-> > >> is.
-> > >
-> > > In a blue sky world I would have done this.  In fact, this is what I
-> > > tried before reading the sources to find out there is no group support
-> > > so far.  But given that multiple -e options already have a meaning I
-> > > would be hesitant to change this.
-> >
-> > That's why I said you activate grouping via -e only when you have
-> > the --group-events or --group-reads option in front. That would
-> > not change the meaning of the multiple -e when none of those
-> > group options are specified.
->
-> I discussed this with peter..
->
-> <peterz> the {} thing allows: 1) multiple groups in a single -e, 2) group attributes
->
-And what's the value of 1) exactly? What's wrong with passing multiple -e ?
-The only group attribute I can think of would be :u, :k. Not so much typing.
+Implement suspend/resume support for Opti 92x and 93x chips.
+Tested with Opti 929A+AD1848 and Opti 931.
 
-> as for the leader sampling, we can have the first event to become the leader
-> by default (omit the leader index modifier) and enable the leader sampling by
-> another modifier:
->
-I don't understand this sentence.
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 
-> <peterz> right, just make it a single 'l' (el not one) to indicate 'leader' sampling
->
-To me ,this looks a bit of an over-engineered design and it is not based on
-any actual user requests. Don't get me wrong, grouping is useful and required
-but nobody has ever asked for that level of flexibility. The syntax you have
-now is already very rich for my taste.
+--- a/sound/isa/opti9xx/opti92x-ad1848.c
++++ b/sound/isa/opti9xx/opti92x-ad1848.c
+@@ -136,8 +136,8 @@ struct snd_opti9xx {
+ #ifdef OPTi93X
+ 	unsigned long mc_indir_index;
+ 	struct resource *res_mc_indir;
+-	struct snd_wss *codec;
+ #endif	/* OPTi93X */
++	struct snd_wss *codec;
+ 	unsigned long pwd_reg;
+ 
+ 	spinlock_t lock;
+@@ -870,9 +870,7 @@ static int __devinit snd_opti9xx_probe(struct snd_card *card)
+ 			       &codec);
+ 	if (error < 0)
+ 		return error;
+-#ifdef OPTi93X
+ 	chip->codec = codec;
+-#endif
+ 	error = snd_wss_pcm(codec, 0, &pcm);
+ 	if (error < 0)
+ 		return error;
+@@ -1053,11 +1051,55 @@ static int __devexit snd_opti9xx_isa_remove(struct device *devptr,
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_PM
++static int snd_opti9xx_suspend(struct snd_card *card)
++{
++	struct snd_opti9xx *chip = card->private_data;
++
++	snd_power_change_state(card, SNDRV_CTL_POWER_D3hot);
++	chip->codec->suspend(chip->codec);
++	return 0;
++}
++
++static int snd_opti9xx_resume(struct snd_card *card)
++{
++	struct snd_opti9xx *chip = card->private_data;
++	int error, xdma2;
++#if defined(CS4231) || defined(OPTi93X)
++	xdma2 = dma2;
++#else
++	xdma2 = -1;
++#endif
++
++	error = snd_opti9xx_configure(chip, port, irq, dma1, xdma2,
++				      mpu_port, mpu_irq);
++	if (error)
++		return error;
++	chip->codec->resume(chip->codec);
++	snd_power_change_state(card, SNDRV_CTL_POWER_D0);
++	return 0;
++}
++
++static int snd_opti9xx_isa_suspend(struct device *dev, unsigned int n,
++				   pm_message_t state)
++{
++	return snd_opti9xx_suspend(dev_get_drvdata(dev));
++}
++
++static int snd_opti9xx_isa_resume(struct device *dev, unsigned int n)
++{
++	return snd_opti9xx_resume(dev_get_drvdata(dev));
++}
++#endif
++
+ static struct isa_driver snd_opti9xx_driver = {
+ 	.match		= snd_opti9xx_isa_match,
+ 	.probe		= snd_opti9xx_isa_probe,
+ 	.remove		= __devexit_p(snd_opti9xx_isa_remove),
+-	/* FIXME: suspend/resume */
++#ifdef CONFIG_PM
++	.suspend	= snd_opti9xx_isa_suspend,
++	.resume		= snd_opti9xx_isa_resume,
++#endif
+ 	.driver		= {
+ 		.name	= DEV_NAME
+ 	},
+@@ -1123,12 +1165,29 @@ static void __devexit snd_opti9xx_pnp_remove(struct pnp_card_link * pcard)
+ 	snd_opti9xx_pnp_is_probed = 0;
+ }
+ 
++#ifdef CONFIG_PM
++static int snd_opti9xx_pnp_suspend(struct pnp_card_link *pcard,
++				   pm_message_t state)
++{
++	return snd_opti9xx_suspend(pnp_get_card_drvdata(pcard));
++}
++
++static int snd_opti9xx_pnp_resume(struct pnp_card_link *pcard)
++{
++	return snd_opti9xx_resume(pnp_get_card_drvdata(pcard));
++}
++#endif
++
+ static struct pnp_card_driver opti9xx_pnpc_driver = {
+ 	.flags		= PNP_DRIVER_RES_DISABLE,
+ 	.name		= "opti9xx",
+ 	.id_table	= snd_opti9xx_pnpids,
+ 	.probe		= snd_opti9xx_pnp_probe,
+ 	.remove		= __devexit_p(snd_opti9xx_pnp_remove),
++#ifdef CONFIG_PM
++	.suspend	= snd_opti9xx_pnp_suspend,
++	.resume		= snd_opti9xx_pnp_resume,
++#endif
+ };
+ #endif
+ 
 
-
-
-
->
-> jirka
+-- 
+Ondrej Zary
