@@ -1,62 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754451Ab2GQJQF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 05:16:05 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:50838 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752023Ab2GQJQC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 05:16:02 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
-Subject: Re: [PATCH 1/2] drivers: bus: add a new driver for omap-ocp2scp
-Date: Tue, 17 Jul 2012 08:00:42 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
-        linux@arm.linux.org.uk, b-cousson@ti.com, rnayak@ti.com,
-        tony@atomide.com, gregkh@linuxfoundation.org, ohad@wizery.com,
-        linus.walleij@linaro.org, myungjoo.ham@samsung.com,
-        rusty@rustcorp.com.au, swarren@nvidia.com,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        balbi@ti.com, linux-omap@vger.kernel.org, linux-usb@vger.kernel.org
-References: <1342448023-14438-1-git-send-email-kishon@ti.com> <1342448023-14438-2-git-send-email-kishon@ti.com> <CAAe_U6K9sm-sDK80ySSHPGf5SYuwDkhW+4q8r2deXi7Tz3TxJw@mail.gmail.com>
-In-Reply-To: <CAAe_U6K9sm-sDK80ySSHPGf5SYuwDkhW+4q8r2deXi7Tz3TxJw@mail.gmail.com>
+	id S1754522Ab2GQJSm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 05:18:42 -0400
+Received: from mga01.intel.com ([192.55.52.88]:43487 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751466Ab2GQJSj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 05:18:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="178589724"
+Date: Tue, 17 Jul 2012 11:18:44 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Richard Zhao <richard.zhao@freescale.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        paulliu@debian.org, shawn.guo@linaro.org
+Subject: Re: [PATCH] mfd: anatop: matches should be NULL when populate child
+ devices
+Message-ID: <20120717091844.GM20652@sortiz-mobl>
+References: <1342428957-14321-1-git-send-email-richard.zhao@freescale.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207170800.43300.arnd@arndb.de>
-X-Provags-ID: V02:K0:sRTscPAgv2Q87wulw2gJxsneEEIDTC7RDquyLAXQzDt
- LBsL+kwC06OQGLm4nS0sqxd3XUkKpSqGXRSlErMTU6UJsiGlFV
- gAZ1efxpNk3dFhlguHMFwCOTE8PCGb8LLKLX9EuLSj5znjm1oi
- EI492oM+eoRg+fQDnu6nOkH7NK8Ykid1ogXcW7Rx86QkYJXL5Y
- tx9h/QXe8J4ba8YmQx0cZHsPk9752MH6zYoabZidKmecfcMaR1
- hR6RUd0/nGqaMUaNJWnRSkGRp2CZ562/TSDQaPsZdelRFTDltk
- 8WO0isPjYjc6l1WC7PGozQ3f7zpgDc9KOJahgGFWKTIeWlL7wo
- wObpEXepIoqKrPp8Em88=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1342428957-14321-1-git-send-email-richard.zhao@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 17 July 2012, ABRAHAM, KISHON VIJAY wrote:
-> On Mon, Jul 16, 2012 at 7:43 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
-> > Adds a new driver *omap-ocp2scp*. This driver takes the responsibility of
-> > creating all the devices that is connected to OCP2SCP. In the case of OMAP4,
-> > USB2PHY is connected to ocp2scp.
-> >
-> > This also includes device tree support for ocp2scp driver and
-> > the documentation with device tree binding information is updated.
-> >
-> > Cc: Felipe Balbi <balbi@ti.com>
-> > Cc: Arnd Bergmann <arnd@arndb.de>
-> > Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+Hi Richard,
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+On Mon, Jul 16, 2012 at 04:55:57PM +0800, Richard Zhao wrote:
+> Signed-off-by: Richard Zhao <richard.zhao@freescale.com>
+> ---
+>  drivers/mfd/anatop-mfd.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+Patch applied, thanks.
 
-Now that we've found a place for the code to live, do we know which maintainer is
-going to pick it up? If nobody else volunteers, we can take it through the
-arm-soc tree.
+Cheers,
+Samuel.
 
-	Arnd
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
