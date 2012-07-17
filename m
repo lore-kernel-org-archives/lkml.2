@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753882Ab2GQFy7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 01:54:59 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:46321 "EHLO
+	id S1754631Ab2GQGBI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 02:01:08 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:46413 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751257Ab2GQFyz (ORCPT
+	with ESMTP id S1752419Ab2GQGBG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 01:54:55 -0400
-Date: Mon, 16 Jul 2012 22:54:53 -0700 (PDT)
-Message-Id: <20120716.225453.1695509038616478796.davem@davemloft.net>
-To: haiyangz@microsoft.com
-Cc: netdev@vger.kernel.org, kys@microsoft.com, olaf@aepfle.de,
-        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
-Subject: Re: [PATCH net,1/1] hyperv: Add support for setting MAC from
- within guests
+	Tue, 17 Jul 2012 02:01:06 -0400
+Date: Mon, 16 Jul 2012 23:01:05 -0700 (PDT)
+Message-Id: <20120716.230105.2069123905936956283.davem@davemloft.net>
+To: nhorman@tuxdriver.com
+Cc: gaofeng@cn.fujitsu.com, eric.dumazet@gmail.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        edumazet@google.com
+Subject: Re: [PATCH v4] net: cgroup: fix access the unallocated memory in
+ netprio cgroup
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <1341940762-18307-1-git-send-email-haiyangz@microsoft.com>
-References: <1341940762-18307-1-git-send-email-haiyangz@microsoft.com>
+In-Reply-To: <20120712105611.GA7055@hmsreliant.think-freely.org>
+References: <1342079415-9631-1-git-send-email-gaofeng@cn.fujitsu.com>
+	<20120712105611.GA7055@hmsreliant.think-freely.org>
 X-Mailer: Mew version 6.5 on Emacs 24.0.97 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -25,21 +27,15 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Haiyang Zhang <haiyangz@microsoft.com>
-Date: Tue, 10 Jul 2012 10:19:22 -0700
+From: Neil Horman <nhorman@tuxdriver.com>
+Date: Thu, 12 Jul 2012 06:56:11 -0400
 
-> This adds support for setting synthetic NIC MAC address from within Linux
-> guests. Before using this feature, the option "spoofing of MAC address"
-> should be enabled at the Hyper-V manager / Settings of the synthetic
-> NIC.
+> On Thu, Jul 12, 2012 at 03:50:15PM +0800, Gao feng wrote:
+>> there are some out of bound accesses in netprio cgroup.
+ ...
+>> Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
 > 
-> Thanks to Kin Cho <kcho@infoblox.com> for the initial implementation and
-> tests. And, thanks to Long Li <longli@microsoft.com> for the debugging
-> works.
+> Acked-by: Neil Horman <nhorman@tuxdriver.com>
 > 
-> Reported-and-tested-by: Kin Cho <kcho@infoblox.com>
-> Reported-by: Long Li <longli@microsoft.com>
-> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
 
-Applied to net-next, thanks.
+Applied to 'net', thanks.
