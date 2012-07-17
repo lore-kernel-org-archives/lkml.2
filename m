@@ -1,131 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756570Ab2GQUDK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 16:03:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16920 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752623Ab2GQUDI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 16:03:08 -0400
-Message-ID: <1342555385.2229.152.camel@bling.home>
-Subject: Re: [PATCH v5 2/4] kvm: KVM_EOIFD, an eventfd for EOIs
-From: Alex Williamson <alex.williamson@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Date: Tue, 17 Jul 2012 14:03:05 -0600
-In-Reply-To: <20120717185803.GC13066@redhat.com>
-References: <20120717141002.GC10822@redhat.com>
-	 <1342535383.3229.32.camel@ul30vt> <20120717144237.GA11516@redhat.com>
-	 <1342537024.3229.43.camel@ul30vt> <20120717151327.GC11587@redhat.com>
-	 <1342539669.2229.114.camel@bling.home> <20120717155325.GA12001@redhat.com>
-	 <1342541161.2229.123.camel@bling.home> <20120717161919.GB12114@redhat.com>
-	 <1342543936.2229.138.camel@bling.home> <20120717185803.GC13066@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756591Ab2GQUDi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 16:03:38 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40066 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756574Ab2GQUDg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 16:03:36 -0400
+Date: Tue, 17 Jul 2012 13:01:30 -0700
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        John Stultz <john.stultz@linaro.org>, Shuah Khan <shuahkhan@gmail.com>,
+        arve@android.com, Rebecca Schultz Zavin <rebecca@android.com>,
+        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Subject: Re: [PATCH 3/8] pstore: Add persistent function tracing
+Message-ID: <20120717200130.GA31678@lizard>
+References: <20120710001004.GA22744@lizard>
+ <1341879046-5197-3-git-send-email-anton.vorontsov@linaro.org>
+ <1342553898.10332.9.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1342553898.10332.9.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-07-17 at 21:58 +0300, Michael S. Tsirkin wrote:
-> On Tue, Jul 17, 2012 at 10:52:16AM -0600, Alex Williamson wrote:
-> > On Tue, 2012-07-17 at 19:19 +0300, Michael S. Tsirkin wrote:
-> > > On Tue, Jul 17, 2012 at 10:06:01AM -0600, Alex Williamson wrote:
-> > > > On Tue, 2012-07-17 at 18:53 +0300, Michael S. Tsirkin wrote:
-> > > > > On Tue, Jul 17, 2012 at 09:41:09AM -0600, Alex Williamson wrote:
-> > > > > > On Tue, 2012-07-17 at 18:13 +0300, Michael S. Tsirkin wrote:
-> > > > > > > On Tue, Jul 17, 2012 at 08:57:04AM -0600, Alex Williamson wrote:
-> > > > > > > > On Tue, 2012-07-17 at 17:42 +0300, Michael S. Tsirkin wrote:
-> > > > > > > > > On Tue, Jul 17, 2012 at 08:29:43AM -0600, Alex Williamson wrote:
-> > > > > > > > > > On Tue, 2012-07-17 at 17:10 +0300, Michael S. Tsirkin wrote:
-> > > > > > > > > > > On Tue, Jul 17, 2012 at 07:59:16AM -0600, Alex Williamson wrote:
-> > > > > > > > > > > > On Tue, 2012-07-17 at 13:21 +0300, Michael S. Tsirkin wrote:
-> > > > > > > > > > > > > On Mon, Jul 16, 2012 at 02:33:55PM -0600, Alex Williamson wrote:
-> > > > > > > > > > > > > > +	if (args->flags & KVM_EOIFD_FLAG_LEVEL_IRQFD) {
-> > > > > > > > > > > > > > +		struct _irqfd *irqfd = _irqfd_fdget_lock(kvm, args->irqfd);
-> > > > > > > > > > > > > > +		if (IS_ERR(irqfd)) {
-> > > > > > > > > > > > > > +			ret = PTR_ERR(irqfd);
-> > > > > > > > > > > > > > +			goto fail;
-> > > > > > > > > > > > > > +		}
-> > > > > > > > > > > > > > +
-> > > > > > > > > > > > > > +		gsi = irqfd->gsi;
-> > > > > > > > > > > > > > +		level_irqfd = eventfd_ctx_get(irqfd->eventfd);
-> > > > > > > > > > > > > > +		source = _irq_source_get(irqfd->source);
-> > > > > > > > > > > > > > +		_irqfd_put_unlock(irqfd);
-> > > > > > > > > > > > > > +		if (!source) {
-> > > > > > > > > > > > > > +			ret = -EINVAL;
-> > > > > > > > > > > > > > +			goto fail;
-> > > > > > > > > > > > > > +		}
-> > > > > > > > > > > > > > +	} else {
-> > > > > > > > > > > > > > +		ret = -EINVAL;
-> > > > > > > > > > > > > > +		goto fail;
-> > > > > > > > > > > > > > +	}
-> > > > > > > > > > > > > > +
-> > > > > > > > > > > > > > +	INIT_LIST_HEAD(&eoifd->list);
-> > > > > > > > > > > > > > +	eoifd->kvm = kvm;
-> > > > > > > > > > > > > > +	eoifd->eventfd = eventfd;
-> > > > > > > > > > > > > > +	eoifd->source = source;
-> > > > > > > > > > > > > > +	eoifd->level_irqfd = level_irqfd;
-> > > > > > > > > > > > > > +	eoifd->notifier.gsi = gsi;
-> > > > > > > > > > > > > > +	eoifd->notifier.irq_acked = eoifd_event;
-> > > > > > > > > > > > > 
-> > > > > > > > > > > > > OK so this means eoifd keeps a reference to the irqfd.
-> > > > > > > > > > > > > And since this is the case, can't we drop the reference counting
-> > > > > > > > > > > > > around source ids now? Everything is referenced through irqfd.
-> > > > > > > > > > > > 
-> > > > > > > > > > > > Holding a reference and using it as a reference count are not the same
-> > > > > > > > > > > > thing.  What if another module holds a reference to this eventfd?  How
-> > > > > > > > > > > > do we do anything on release?
-> > > > > > > > > > > 
-> > > > > > > > > > > We don't as there is no release, and using kref on source id does not
-> > > > > > > > > > > help: it just never gets invoked.
-> > > > > > > > > > 
-> > > > > > > > > > Please work out how you think it should work and let me know, I don't
-> > > > > > > > > > see it.  We have an irq source id that needs to be allocated by irqfd
-> > > > > > > > > > and returned when it's unused.  It becomes unused when neither irqfd nor
-> > > > > > > > > > eoifd are making use of it.  irqfd and eoifd may be closed in any order.
-> > > > > > > > > > Use of the source id is what we're reference counting, which is why it's
-> > > > > > > > > > in struct _irq_source.  How can I use an eventfd reference for the same?
-> > > > > > > > > > I don't know when it's unused.  I don't know who else holds a reference
-> > > > > > > > > > to it...  Doesn't make sense to me.  Feels like attempting to squat on
-> > > > > > > > > > someone else's object.
-> > > > > > > > > > 
-> > > > > > > > > > 
-> > > > > > > > > 
-> > > > > > > > > eoifd should prevent irqfd from being released.
-> > > > > > > > 
-> > > > > > > > Why?  Note that this is actually quite difficult too.  We can't fail a
-> > > > > > > > release, nobody checks close(3p) return.  Blocking a release is likely
-> > > > > > > > to cause all sorts of problems, so what you mean is that irqfd should
-> > > > > > > > linger around until there are no references to it... but that's exactly
-> > > > > > > > what struct _irq_source is for, is to hold the bits that we care about
-> > > > > > > > references to and automatically release it when there are none.
-> > > > > > > 
-> > > > > > > No no. You *already* prevent it. You take a reference to the eventfd
-> > > > > > > context.
-> > > > > > 
-> > > > > > Right, which keeps the fd from going away, not the struct _irqfd.
-> > > > > 
-> > > > > _irqfd too.
-> > > > 
-> > > > 
-> > > > How so?
-> > > 
-> > > Normally irqfd_wakeup is called with POLLHUP and calls irqfd_deactivate.
-> > > If you get a ctx reference this does not happen.
-> > 
-> > I think you're mistaken.  wake_up_poll(,POLLHUP) is called from
-> > eventfd_release (file_operations.release), not from ctx reference
-> > release.
+On Tue, Jul 17, 2012 at 03:38:18PM -0400, Steven Rostedt wrote:
+[...]
+> > +void notrace pstore_ftrace_call(unsigned long ip, unsigned long parent_ip)
 > 
-> True. I was wrong. so close has the same bug as deassign. To fix,
-> how about eoifd will hold a reference to the irqfd instead of the
-> eventfd context?
+> BTW, you can make the entire file 'notrace' without adding annotations
+> by including in the Makefile:
+> 
+> CFLAGS_REMOVE_ftrace.o = -pg
 
-What does it mean to hold a reference to the irqfd?  What state of
-functionality is an irqfd that has been closed/de-assigned but is still
-attached to an eoifd?  It can't continue to fire interrupts into the
-guest.  I don't think close or de-assign have a bug, assign has a bug
-that it can allow re-assignment using an in-use eventfd.  I think I'd
-rather fix that.
+Actually it was in the first version in the patch, but then I changed
+it 'notrace' for just this func. This is for the case if the file would
+contain some more code which we actually may trace. Doing things fine-
+grained seemed to be better than making the whole file as notrace. Plus
+it is one line less. :-)
 
+But I have no preference, so I can change it.
+
+> > +{
+> > +	struct pstore_ftrace_record rec = {};
+> > +
+> > +	if (unlikely(oops_in_progress))
+> > +		return;
+> > +
+> > +	rec.ip = ip;
+> > +	rec.parent_ip = parent_ip;
+> > +	pstore_ftrace_encode_cpu(&rec, raw_smp_processor_id());
+> > +	psinfo->write_buf(PSTORE_TYPE_FTRACE, 0, NULL, 0, (void *)&rec,
+> > +			  sizeof(rec), psinfo);
+> > +}
+> 
+> BTW, can any of the called functions go into module code that can be
+> removed? If so, then this is not safe at all. Normal function tracing
+> can not be synced in a preemptible kernel.
+
+Um. Yes, psinfo->write_buf() might be in the module. Nice catch.
+
+> Also, I'm starting to wonder if this should be in its own utility
+> (separate debugfs?) than hooking directly into ftrace. Then you don't
+> need to modify ftrace at all and you can do the following:
+> 
+> static struct ftrace_ops trace_ops {
+> 	.func = pstore_ftrace_call;
+> };
+> 
+> then in your write to debugfs file:
+> 
+> 	register_ftrace_function(&trace_ops);
+> 
+> To turn off tracing:
+> 
+> 	unregister_ftrace_function(&trace_ops);
+> 
+> Note, it's safe to use if the trace_ops (or anything the callback calls)
+> is a module. That's because it detects the trace_ops is not kernel core
+> code and will place a wrapper around it that allows the function tracing
+> to by synced with module unload. You still need to unregister the
+> trace_ops before unloading the module, or you can have a crash that way.
+
+Hehe. Like this? http://lkml.org/lkml/2012/5/26/80 :-D
+
+So, do you want something like this, but combinded: we don't register
+another tracer, but register our own ftrace_ops? This sounds doable.
+
+Thanks!
+
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
