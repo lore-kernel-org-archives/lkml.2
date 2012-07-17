@@ -1,124 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757313Ab2GQWF4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 18:05:56 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:53003 "EHLO e3.ny.us.ibm.com"
+	id S1757301Ab2GQWFx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 18:05:53 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:41936 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757278Ab2GQWFt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 18:05:49 -0400
+	id S1757244Ab2GQWFs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 18:05:48 -0400
 From: John Stultz <johnstul@us.ibm.com>
 To: stable@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, John Stultz <johnstul@us.ibm.com>,
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Richard Cochran <richardcochran@gmail.com>,
         Prarit Bhargava <prarit@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 07/11] 2.6.32.x: timekeeping: Maintain ktime_t based offsets for hrtimers
-Date: Tue, 17 Jul 2012 18:05:31 -0400
-Message-Id: <1342562735-55870-8-git-send-email-johnstul@us.ibm.com>
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [PATCH 04/11] 2.6.32.x: time: Move common updates to a function
+Date: Tue, 17 Jul 2012 18:05:28 -0400
+Message-Id: <1342562735-55870-5-git-send-email-johnstul@us.ibm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1342562735-55870-1-git-send-email-johnstul@us.ibm.com>
 References: <1342562735-55870-1-git-send-email-johnstul@us.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12071722-8974-0000-0000-00000B427BD6
+x-cbid: 12071722-7182-0000-0000-000002025A76
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Thomas Gleixner <tglx@linutronix.de>
 
-This is a backport of 5b9fe759a678e05be4937ddf03d50e950207c1c0
+This is a backport of cc06268c6a87db156af2daed6e96a936b955cc82
 
-We need to update the hrtimer clock offsets from the hrtimer interrupt
-context. To avoid conversions from timespec to ktime_t maintain a
-ktime_t based representation of those offsets in the timekeeper. This
-puts the conversion overhead into the code which updates the
-underlying offsets and provides fast accessible values in the hrtimer
-interrupt.
+While not a bugfix itself, it allows following fixes to backport
+in a more straightforward manner.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
-Reviewed-by: Ingo Molnar <mingo@kernel.org>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Prarit Bhargava <prarit@redhat.com>
-Cc: stable@vger.kernel.org
-Link: http://lkml.kernel.org/r/1341960205-56738-4-git-send-email-johnstul@us.ibm.com
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Richard Cochran <richardcochran@gmail.com>
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Cc: Prarit Bhargava <prarit@redhat.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- kernel/time/timekeeping.c |   25 ++++++++++++++++++++++++-
- 1 file changed, 24 insertions(+), 1 deletion(-)
+ kernel/time/timekeeping.c |   20 ++++++++++++++------
+ 1 file changed, 14 insertions(+), 6 deletions(-)
 
 diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 1e9808d..c7fbc9f 100644
+index 6d19a00..a969adf 100644
 --- a/kernel/time/timekeeping.c
 +++ b/kernel/time/timekeeping.c
-@@ -161,18 +161,34 @@ struct timespec xtime __attribute__ ((aligned (16)));
- struct timespec wall_to_monotonic __attribute__ ((aligned (16)));
- static struct timespec total_sleep_time;
- 
-+/* Offset clock monotonic -> clock realtime */
-+static ktime_t offs_real;
-+
-+/* Offset clock monotonic -> clock boottime */
-+static ktime_t offs_boot;
-+
- /*
-  * The raw monotonic time for the CLOCK_MONOTONIC_RAW posix clock.
+@@ -166,6 +166,18 @@ static struct timespec total_sleep_time;
   */
  struct timespec raw_time;
  
- /* must hold write on xtime_lock */
-+static void update_rt_offset(void)
++/* must hold write on xtime_lock */
++static void timekeeping_update(bool clearntp)
 +{
-+	struct timespec tmp, *wtm = &wall_to_monotonic;
-+
-+	set_normalized_timespec(&tmp, -wtm->tv_sec, -wtm->tv_nsec);
-+	offs_real = timespec_to_ktime(tmp);
++	if (clearntp) {
++		timekeeper.ntp_error = 0;
++		ntp_clear();
++	}
++	update_vsyscall(&xtime, timekeeper.clock, timekeeper.mult);
 +}
 +
-+/* must hold write on xtime_lock */
- static void timekeeping_update(bool clearntp)
- {
- 	if (clearntp) {
- 		timekeeper.ntp_error = 0;
- 		ntp_clear();
- 	}
-+	update_rt_offset();
- 	update_vsyscall(&xtime, timekeeper.clock, timekeeper.mult);
++
++
+ /* flag for if timekeeping is suspended */
+ int __read_mostly timekeeping_suspended;
+ 
+@@ -341,10 +353,7 @@ int do_settimeofday(struct timespec *tv)
+ 
+ 	update_xtime_cache(0);
+ 
+-	timekeeper.ntp_error = 0;
+-	ntp_clear();
+-
+-	update_vsyscall(&xtime, timekeeper.clock, timekeeper.mult);
++	timekeeping_update(true);
+ 
+ 	write_sequnlock_irqrestore(&xtime_lock, flags);
+ 
+@@ -832,8 +841,7 @@ void update_wall_time(void)
+ 	nsecs = clocksource_cyc2ns(offset, timekeeper.mult, timekeeper.shift);
+ 	update_xtime_cache(nsecs);
+ 
+-	/* check to see if there is a new clocksource to use */
+-	update_vsyscall(&xtime, timekeeper.clock, timekeeper.mult);
++	timekeeping_update(false);
  }
  
-@@ -576,6 +592,7 @@ void __init timekeeping_init(void)
- 	set_normalized_timespec(&wall_to_monotonic,
- 				-boot.tv_sec, -boot.tv_nsec);
- 	update_xtime_cache(0);
-+	update_rt_offset();
- 	total_sleep_time.tv_sec = 0;
- 	total_sleep_time.tv_nsec = 0;
- 	write_sequnlock_irqrestore(&xtime_lock, flags);
-@@ -584,6 +601,12 @@ void __init timekeeping_init(void)
- /* time in seconds when suspend began */
- static struct timespec timekeeping_suspend_time;
- 
-+static void update_sleep_time(struct timespec t)
-+{
-+	total_sleep_time = t;
-+	offs_boot = timespec_to_ktime(t);
-+}
-+
  /**
-  * timekeeping_resume - Resumes the generic timekeeping subsystem.
-  * @dev:	unused
-@@ -607,7 +630,7 @@ static int timekeeping_resume(struct sys_device *dev)
- 		ts = timespec_sub(ts, timekeeping_suspend_time);
- 		xtime = timespec_add_safe(xtime, ts);
- 		wall_to_monotonic = timespec_sub(wall_to_monotonic, ts);
--		total_sleep_time = timespec_add_safe(total_sleep_time, ts);
-+		update_sleep_time(timespec_add_safe(total_sleep_time, ts));
- 	}
- 	update_xtime_cache(0);
- 	/* re-base the last cycle value */
 -- 
 1.7.9.5
 
