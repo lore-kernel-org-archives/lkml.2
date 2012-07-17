@@ -1,121 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754493Ab2GQFbv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 01:31:51 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37894 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752665Ab2GQFbs (ORCPT
+	id S1754545Ab2GQFc1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 01:32:27 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:33313 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751287Ab2GQFcY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 01:31:48 -0400
-From: Devendra Naga <develkernel412222@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ben Chan <benchan@chromium.org>,
-        Devendra Naga <devendra.aaru@gmail.com>, Sage Ahn <syahn@gctsemi.com>,
-        Paul Stewart <pstew@chromium.org>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Cc: Devendra Naga <devendra.aaru@gmail.com>,
-        Devendra Naga <develkernel412222@gmail.com>
-Subject: [PATCH V2] staging/gdm72xx: use kthread APIs
-Date: Tue, 17 Jul 2012 11:01:26 +0530
-Message-Id: <1342503086-8271-1-git-send-email-develkernel412222@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	Tue, 17 Jul 2012 01:32:24 -0400
+MIME-Version: 1.0
+In-Reply-To: <1342501653.8377.123.camel@joe2Laptop>
+References: <CACV3sb+CkmMtBSRe=bp4EcN3xXD+XqBKy+o_-Cr7e6bapYQftw@mail.gmail.com>
+	<1342496521.8377.105.camel@joe2Laptop>
+	<1342499125.24525.11.camel@gandalf.stny.rr.com>
+	<1342501653.8377.123.camel@joe2Laptop>
+Date: Tue, 17 Jul 2012 13:32:22 +0800
+Message-ID: <CACV3sb+H_tLDw=d1pjR5znVZSst+DqJ08p4eBTRcsKhzqsgnwg@mail.gmail.com>
+Subject: Re: [PATCH] ftrace: using pr_fmt for better printk output
+From: Jovi Zhang <bookjovi@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Devendra Naga <devendra.aaru@gmail.com>
+On Tue, Jul 17, 2012 at 1:07 PM, Joe Perches <joe@perches.com> wrote:
+> On Tue, 2012-07-17 at 00:25 -0400, Steven Rostedt wrote:
+>> On Mon, 2012-07-16 at 20:42 -0700, Joe Perches wrote:
+>>
+>> > > diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+>> > []
+>> > > @@ -13,6 +13,8 @@
+>> > >   *  Copyright (C) 2004 William Lee Irwin III
+>> > >   */
+>> > >
+>> > > +#define pr_fmt(fmt) "ftrace: " fmt
+>> >
+>> > #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+>>
+>> Wouldn't a nicer patch be to move this into a header file and then
+>> remove all the defines throughout the kernel tree?
+>
+> Maybe.  There are modules that use common header files
+> like you suggest.  It does mean that header must be the
+> #included before any other #include that might
+> #include <linux/kernel.h> or printk.h.
+>
+> Right now, if pr_fmt isn't #defined, printk.h
+> has a default definition of:
+>
+> #ifndef pr_fmt
+> #define pr_fmt(fmt) fmt
+> #endif
+>
+> My goal is to change that to:
+>
+> #ifndef pr_fmt
+> #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> #endif
+>
+> in 3.8 (maybe 3.7) and remove all of these then
+> useless, duplicate #defines shortly afterward.
+>
+> https://lkml.org/lkml/2012/3/27/247
+>
+>> Also, what is KBUILD_MODNAME defined as for non-modules? As ftrace is
+>> not a module.
+>
+> It depends on the Makefile.
+>
+> scripts/Makefile.lib:# $(modname_flags) #defines KBUILD_MODNAME as the name of the module it will
+> scripts/Makefile.lib-# end up in (or would, if it gets compiled in)
+> scripts/Makefile.lib-# Note: Files that end up in two or more modules are compiled without the
+> scripts/Makefile.lib:#       KBUILD_MODNAME definition. The reason is that any made-up name would
+> scripts/Makefile.lib-#       differ in different configs.
+> scripts/Makefile.lib-name-fix = $(subst $(comma),_,$(subst -,_,$1))
+> scripts/Makefile.lib-basename_flags = -D"KBUILD_BASENAME=KBUILD_STR($(call name-fix,$(basetarget)))"
+> scripts/Makefile.lib-modname_flags  = $(if $(filter 1,$(words $(modname))),\
+> scripts/Makefile.lib:                 -D"KBUILD_MODNAME=KBUILD_STR($(call name-fix,$(modname)))")
+>
+Hmm, that would make sense, get subsystem name from Makefile.
 
-This patch modifies the kthread usage in the gdm_usb code, and tries to
-use the kthread APIs better.
+Joe, there will delete all this pr_fmt definition in .c file in 3.8(or
+3.7) as you metioned, so we can ingnore this patch.
 
-Actually the task_struct is taken as global as the limitation of priv.
-we run the kthread before we allocate the priv.
-
-did only compilation test, but not the insmod, check ps ax for kthread and
-rmmod and see the thread is killed kind of tests.
-
-There were no checks while kthread_run may fail, returing some error which can be seen by using PTR_ERR.
-
-Signed-off-by: Devendra Naga <develkernel412222@gmail.com>
----
-
-Sorry Greg sir, i didn't actually used the checkpatch tool, mea maxima clupa :(.
-
-  changes since V2:
-		removed the following checkpatch error
-
-        ./scripts/checkpatch.pl 0001-staging-gdm72xx-use-kthread-APIs.patch 
-         ERROR: trailing whitespace
-        #38: FILE: drivers/staging/gdm72xx/gdm_usb.c:57:
-        +static struct task_struct *kthread; $
-
-        NOTE: whitespace errors detected, you may wish to use scripts/cleanpatch or
-        scripts/cleanfile
-
-		but didn't solved the below warning, as it needed a new patch to remove all
-		printk's and convert them to pr_err, and this patch intended to do only one
-		specific change.
-
-		WARNING: Prefer pr_err(... to printk(KERN_ERR, ...
-        #58: FILE: drivers/staging/gdm72xx/gdm_usb.c:786:
-        +		printk(KERN_ERR "%s: can't create kernel thread\n", __func__);
-
-
- drivers/staging/gdm72xx/gdm_usb.c |   13 +++++++++----
- 1 files changed, 9 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/staging/gdm72xx/gdm_usb.c b/drivers/staging/gdm72xx/gdm_usb.c
-index d48d49c..5aab7eb 100644
---- a/drivers/staging/gdm72xx/gdm_usb.c
-+++ b/drivers/staging/gdm72xx/gdm_usb.c
-@@ -46,7 +46,6 @@ MODULE_DEVICE_TABLE(usb, id_table);
- static DECLARE_WAIT_QUEUE_HEAD(k_wait);
- static LIST_HEAD(k_list);
- static DEFINE_SPINLOCK(k_lock);
--static int k_mode_stop;
- 
- #define K_WAIT_TIME	(2 * HZ / 100)
- 
-@@ -55,6 +54,7 @@ static int k_mode_stop;
- static int init_usb(struct usbwm_dev *udev);
- static void release_usb(struct usbwm_dev *udev);
- 
-+static struct task_struct *kthread;
- /*#define DEBUG */
- #ifdef DEBUG
- static void hexdump(char *title, u8 *data, int len)
-@@ -717,7 +717,7 @@ static int k_mode_thread(void *arg)
- 
- 	daemonize("k_mode_wimax");
- 
--	while (!k_mode_stop) {
-+	while (!kthread_should_stop()) {
- 
- 		spin_lock_irqsave(&k_lock, flags2);
- 		while (!list_empty(&k_list)) {
-@@ -778,7 +778,11 @@ static struct usb_driver gdm_usb_driver = {
- static int __init usb_gdm_wimax_init(void)
- {
- #ifdef CONFIG_WIMAX_GDM72XX_K_MODE
--	kthread_run(k_mode_thread, NULL, "WiMax_thread");
-+	kthread = kthread_run(k_mode_thread, NULL, "WiMax_thread");
-+	if (IS_ERR(kthread)) {
-+		printk(KERN_ERR "%s: can't create kernel thread\n", __func__);
-+		return PTR_ERR(kthread);
-+	}
- #endif /* CONFIG_WIMAX_GDM72XX_K_MODE */
- 	return usb_register(&gdm_usb_driver);
- }
-@@ -786,7 +790,8 @@ static int __init usb_gdm_wimax_init(void)
- static void __exit usb_gdm_wimax_exit(void)
- {
- #ifdef CONFIG_WIMAX_GDM72XX_K_MODE
--	k_mode_stop = 1;
-+	if (kthread)
-+		kthread_stop(kthread);
- 	wake_up(&k_wait);
- #endif
- 	usb_deregister(&gdm_usb_driver);
--- 
-1.7.0.4
-
+.Jovi
