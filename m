@@ -1,106 +1,296 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754415Ab2GQC0g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 22:26:36 -0400
-Received: from mail131.messagelabs.com ([216.82.242.99]:27263 "EHLO
-	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754273Ab2GQC0d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 22:26:33 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-3.tower-131.messagelabs.com!1342491991!23397058!1
-X-Originating-IP: [216.166.12.32]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging: comedi: adl_pci6208: use the comedi_device hw_dev to hold the pci_dev
-Date: Mon, 16 Jul 2012 19:26:22 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <gregkh@linuxfoundation.org>
+	id S1754383Ab2GQC1p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 22:27:45 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:23320 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754065Ab2GQC1l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 22:27:41 -0400
+X-IronPort-AV: E=Sophos;i="4.77,598,1336320000"; 
+   d="scan'208";a="5409404"
+Message-ID: <5004CEB7.4090400@cn.fujitsu.com>
+Date: Tue, 17 Jul 2012 10:32:23 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
+        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
+        minchan.kim@gmail.com, akpm@linux-foundation.org,
+        kosaki.motohiro@jp.fujitsu.com
+Subject: Re: [RFC PATCH v3 2/13] memory-hotplug : add physical memory hotplug
+ code to acpi_memory_device_remove
+References: <4FFAB0A2.8070304@jp.fujitsu.com> <4FFAB148.9000803@jp.fujitsu.com> <4FFF9771.5080307@cn.fujitsu.com> <5004C39B.1060204@jp.fujitsu.com> <5004C5E2.1050906@jp.fujitsu.com>
+In-Reply-To: <5004C5E2.1050906@jp.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/17 10:27:21,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/17 10:27:24,
+	Serialize complete at 2012/07/17 10:27:24
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201207161926.22725.hartleys@visionengravers.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the 'struct device *hw_dev' variable in the comedi_device struct
-to hold the pci_dev instead of carrying it in the private data.
+At 07/17/2012 09:54 AM, Yasuaki Ishimatsu Wrote:
+> Hi Wen,
+> 
+> 2012/07/17 10:44, Yasuaki Ishimatsu wrote:
+>> Hi Wen,
+>>
+>> 2012/07/13 12:35, Wen Congyang wrote:
+>>> At 07/09/2012 06:24 PM, Yasuaki Ishimatsu Wrote:
+>>>> acpi_memory_device_remove() has been prepared to remove physical memory.
+>>>> But, the function only frees acpi_memory_device currentlry.
+>>>>
+>>>> The patch adds following functions into acpi_memory_device_remove():
+>>>>     - offline memory
+>>>>     - remove physical memory (only return -EBUSY)
+>>>>     - free acpi_memory_device
+>>>>
+>>>> CC: David Rientjes <rientjes@google.com>
+>>>> CC: Jiang Liu <liuj97@gmail.com>
+>>>> CC: Len Brown <len.brown@intel.com>
+>>>> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+>>>> CC: Paul Mackerras <paulus@samba.org>
+>>>> CC: Christoph Lameter <cl@linux.com>
+>>>> Cc: Minchan Kim <minchan.kim@gmail.com>
+>>>> CC: Andrew Morton <akpm@linux-foundation.org>
+>>>> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>>>> CC: Wen Congyang <wency@cn.fujitsu.com>
+>>>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>>>>
+>>>> ---
+>>>>    drivers/acpi/acpi_memhotplug.c |   26 +++++++++++++++++++++++++-
+>>>>    drivers/base/memory.c          |   39 +++++++++++++++++++++++++++++++++++++++
+>>>>    include/linux/memory.h         |    5 +++++
+>>>>    include/linux/memory_hotplug.h |    1 +
+>>>>    mm/memory_hotplug.c            |    8 ++++++++
+>>>>    5 files changed, 78 insertions(+), 1 deletion(-)
+>>>>
+>>>> Index: linux-3.5-rc6/drivers/acpi/acpi_memhotplug.c
+>>>> ===================================================================
+>>>> --- linux-3.5-rc6.orig/drivers/acpi/acpi_memhotplug.c	2012-07-09 18:08:29.946888653 +0900
+>>>> +++ linux-3.5-rc6/drivers/acpi/acpi_memhotplug.c	2012-07-09 18:08:43.470719531 +0900
+>>>> @@ -29,6 +29,7 @@
+>>>>    #include <linux/module.h>
+>>>>    #include <linux/init.h>
+>>>>    #include <linux/types.h>
+>>>> +#include <linux/memory.h>
+>>>>    #include <linux/memory_hotplug.h>
+>>>>    #include <linux/slab.h>
+>>>>    #include <acpi/acpi_drivers.h>
+>>>> @@ -452,12 +453,35 @@ static int acpi_memory_device_add(struct
+>>>>    static int acpi_memory_device_remove(struct acpi_device *device, int type)
+>>>>    {
+>>>>    	struct acpi_memory_device *mem_device = NULL;
+>>>> -
+>>>> +	struct acpi_memory_info *info, *tmp;
+>>>> +	int result;
+>>>> +	int node;
+>>>>
+>>>>    	if (!device || !acpi_driver_data(device))
+>>>>    		return -EINVAL;
+>>>>
+>>>>    	mem_device = acpi_driver_data(device);
+>>>> +
+>>>> +	node = acpi_get_node(mem_device->device->handle);
+>>>> +
+>>>> +	list_for_each_entry_safe(info, tmp, &mem_device->res_list, list) {
+>>>> +		if (!info->enabled)
+>>>> +			continue;
+>>>> +
+>>>> +		if (!is_memblk_offline(info->start_addr, info->length)) {
+>>>> +			result = offline_memory(info->start_addr, info->length);
+>>>> +			if (result)
+>>>> +				return result;
+>>>> +		}
+>>>> +
+>>>> +		result = remove_memory(node, info->start_addr, info->length);
+>>>
+>>> The user may online the memory between offline_memory() and remove_memory().
+>>> So I think we should lock memory hotplug before check the memory's status
+>>> and release it after remove_memory().
+>>
+>> How about get "mem_block->state_mutex" of removed memory? When offlining
+>> memory, we need to change "memory_block->state" into "MEM_OFFLINE".
+>> In this case, we get mem_block->state_mutex. So I think the mutex lock
+>> is beneficial.
+> 
+> It is not good idea since remove_memory frees mem_block structure...
+> Do you have any ideas?
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/staging/comedi/drivers/adl_pci6208.c | 19 ++++++++++---------
- 1 file changed, 10 insertions(+), 9 deletions(-)
+Hmm, split offline_memory() to 2 functions: offline_pages() and __offline_pages()
 
-diff --git a/drivers/staging/comedi/drivers/adl_pci6208.c b/drivers/staging/comedi/drivers/adl_pci6208.c
-index 487fd4a..ffecbe7 100644
---- a/drivers/staging/comedi/drivers/adl_pci6208.c
-+++ b/drivers/staging/comedi/drivers/adl_pci6208.c
-@@ -73,7 +73,6 @@ static const struct pci6208_board pci6208_boards[] = {
- };
- 
- struct pci6208_private {
--	struct pci_dev *pci_dev;
- 	unsigned int ao_readback[PCI6208_MAX_AO_CHANNELS];
- };
- 
-@@ -200,6 +199,7 @@ static int pci6208_attach(struct comedi_device *dev,
- {
- 	const struct pci6208_board *thisboard;
- 	struct pci6208_private *devpriv;
-+	struct pci_dev *pcidev;
- 	struct comedi_subdevice *s;
- 	int ret;
- 
-@@ -208,20 +208,21 @@ static int pci6208_attach(struct comedi_device *dev,
- 		return ret;
- 	devpriv = dev->private;
- 
--	devpriv->pci_dev = pci6208_find_device(dev, it);
--	if (!devpriv->pci_dev)
-+	pcidev = pci6208_find_device(dev, it);
-+	if (!pcidev)
- 		return -EIO;
-+	comedi_set_hw_dev(dev, &pcidev->dev);
- 	thisboard = comedi_board(dev);
- 
- 	dev->board_name = thisboard->name;
- 
--	ret = comedi_pci_enable(devpriv->pci_dev, dev->driver->driver_name);
-+	ret = comedi_pci_enable(pcidev, dev->driver->driver_name);
- 	if (ret) {
- 		dev_err(dev->class_dev,
- 			"Failed to enable PCI device and request regions\n");
- 		return ret;
- 	}
--	dev->iobase = pci_resource_start(devpriv->pci_dev, 2);
-+	dev->iobase = pci_resource_start(pcidev, 2);
- 
- 	ret = comedi_alloc_subdevices(dev, 2);
- 	if (ret)
-@@ -258,12 +259,12 @@ static int pci6208_attach(struct comedi_device *dev,
- 
- static void pci6208_detach(struct comedi_device *dev)
- {
--	struct pci6208_private *devpriv = dev->private;
-+	struct pci_dev *pcidev = to_pci_dev(dev->hw_dev);
- 
--	if (devpriv && devpriv->pci_dev) {
-+	if (pcidev) {
- 		if (dev->iobase)
--			comedi_pci_disable(devpriv->pci_dev);
--		pci_dev_put(devpriv->pci_dev);
-+			comedi_pci_disable(pcidev);
-+		pci_dev_put(pcidev);
- 	}
- }
- 
--- 
-1.7.11
+offline_pages()
+	lock_memory_hotplug();
+	__offline_pages();
+	unlock_memory_hotplug();
+
+and implement remove_memory() like this:
+remove_memory()
+	lock_memory_hotplug()
+	if (!is_memblk_offline()) {
+		__offline_pages();
+	}
+	// cleanup
+	unlock_memory_hotplug();
+
+What about this?
+
+Thanks
+Wen Congyang
+> 
+> Thanks,
+> Yasuaki Ishimatsu
+> 
+>> Thanks,
+>> Yasuaki Ishimatsu
+>>
+>>>
+>>> Thanks
+>>> Wen Congyang
+>>>
+>>>> +		if (result)
+>>>> +			return result;
+>>>> +
+>>>> +		list_del(&info->list);
+>>>> +		kfree(info);
+>>>> +	}
+>>>> +
+>>>>    	kfree(mem_device);
+>>>>
+>>>>    	return 0;
+>>>> Index: linux-3.5-rc6/include/linux/memory_hotplug.h
+>>>> ===================================================================
+>>>> --- linux-3.5-rc6.orig/include/linux/memory_hotplug.h	2012-07-09 18:08:29.955888542 +0900
+>>>> +++ linux-3.5-rc6/include/linux/memory_hotplug.h	2012-07-09 18:08:43.471719518 +0900
+>>>> @@ -233,6 +233,7 @@ static inline int is_mem_section_removab
+>>>>    extern int mem_online_node(int nid);
+>>>>    extern int add_memory(int nid, u64 start, u64 size);
+>>>>    extern int arch_add_memory(int nid, u64 start, u64 size);
+>>>> +extern int remove_memory(int nid, u64 start, u64 size);
+>>>>    extern int offline_memory(u64 start, u64 size);
+>>>>    extern int sparse_add_one_section(struct zone *zone, unsigned long start_pfn,
+>>>>    								int nr_pages);
+>>>> Index: linux-3.5-rc6/mm/memory_hotplug.c
+>>>> ===================================================================
+>>>> --- linux-3.5-rc6.orig/mm/memory_hotplug.c	2012-07-09 18:08:29.953888567 +0900
+>>>> +++ linux-3.5-rc6/mm/memory_hotplug.c	2012-07-09 18:08:43.476719455 +0900
+>>>> @@ -659,6 +659,14 @@ out:
+>>>>    }
+>>>>    EXPORT_SYMBOL_GPL(add_memory);
+>>>>
+>>>> +int remove_memory(int nid, u64 start, u64 size)
+>>>> +{
+>>>> +	return -EBUSY;
+>>>> +
+>>>> +}
+>>>> +EXPORT_SYMBOL_GPL(remove_memory);
+>>>> +
+>>>> +
+>>>>    #ifdef CONFIG_MEMORY_HOTREMOVE
+>>>>    /*
+>>>>     * A free page on the buddy free lists (not the per-cpu lists) has PageBuddy
+>>>> Index: linux-3.5-rc6/drivers/base/memory.c
+>>>> ===================================================================
+>>>> --- linux-3.5-rc6.orig/drivers/base/memory.c	2012-07-09 18:08:29.947888640 +0900
+>>>> +++ linux-3.5-rc6/drivers/base/memory.c	2012-07-09 18:10:54.880076739 +0900
+>>>> @@ -70,6 +70,45 @@ void unregister_memory_isolate_notifier(
+>>>>    }
+>>>>    EXPORT_SYMBOL(unregister_memory_isolate_notifier);
+>>>>
+>>>> +bool is_memblk_offline(unsigned long start, unsigned long size)
+>>>> +{
+>>>> +	struct memory_block *mem = NULL;
+>>>> +	struct mem_section *section;
+>>>> +	unsigned long start_pfn, end_pfn;
+>>>> +	unsigned long pfn, section_nr;
+>>>> +
+>>>> +	start_pfn = PFN_DOWN(start);
+>>>> +	end_pfn = start_pfn + PFN_DOWN(start);
+>>>> +
+>>>> +	for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
+>>>> +		section_nr = pfn_to_section_nr(pfn);
+>>>> +		if (!present_section_nr(section_nr));
+>>>> +			continue;
+>>>> +
+>>>> +		section = __nr_to_section(section_nr);
+>>>> +		/* same memblock? */
+>>>> +		if (mem)
+>>>> +			if((section_nr >= mem->start_section_nr) &&
+>>>> +			   (section_nr <= mem->end_section_nr))
+>>>> +				continue;
+>>>> +
+>>>> +		mem = find_memory_block_hinted(section, mem);
+>>>> +		if (!mem)
+>>>> +			continue;
+>>>> +		if (mem->state == MEM_OFFLINE)
+>>>> +			continue;
+>>>> +
+>>>> +		kobject_put(&mem->dev.kobj);
+>>>> +		return false;
+>>>> +	}
+>>>> +
+>>>> +	if (mem)
+>>>> +		kobject_put(&mem->dev.kobj);
+>>>> +
+>>>> +	return true;
+>>>> +}
+>>>> +EXPORT_SYMBOL(is_memblk_offline);
+>>>> +
+>>>>    /*
+>>>>     * register_memory - Setup a sysfs device for a memory block
+>>>>     */
+>>>> Index: linux-3.5-rc6/include/linux/memory.h
+>>>> ===================================================================
+>>>> --- linux-3.5-rc6.orig/include/linux/memory.h	2012-07-08 09:23:56.000000000 +0900
+>>>> +++ linux-3.5-rc6/include/linux/memory.h	2012-07-09 18:08:43.484719355 +0900
+>>>> @@ -106,6 +106,10 @@ static inline int memory_isolate_notify(
+>>>>    {
+>>>>    	return 0;
+>>>>    }
+>>>> +static inline bool is_memblk_offline(unsigned long start, unsigned long size)
+>>>> +{
+>>>> +	return false;
+>>>> +}
+>>>>    #else
+>>>>    extern int register_memory_notifier(struct notifier_block *nb);
+>>>>    extern void unregister_memory_notifier(struct notifier_block *nb);
+>>>> @@ -120,6 +124,7 @@ extern int memory_isolate_notify(unsigne
+>>>>    extern struct memory_block *find_memory_block_hinted(struct mem_section *,
+>>>>    							struct memory_block *);
+>>>>    extern struct memory_block *find_memory_block(struct mem_section *);
+>>>> +extern bool is_memblk_offline(unsigned long start, unsigned long size);
+>>>>    #define CONFIG_MEM_BLOCK_SIZE	(PAGES_PER_SECTION<<PAGE_SHIFT)
+>>>>    enum mem_add_context { BOOT, HOTPLUG };
+>>>>    #endif /* CONFIG_MEMORY_HOTPLUG_SPARSE */
+>>>>
+>>>>
+>>>
+>>> --
+>>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>>> see: http://www.linux-mm.org/ .
+>>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>>>
+>>
+>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
