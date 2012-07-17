@@ -1,87 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756527Ab2GQTq0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 15:46:26 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:38960 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752110Ab2GQTqZ convert rfc822-to-8bit (ORCPT
+	id S1756558Ab2GQTtf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 15:49:35 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:44902 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752623Ab2GQTtd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 15:46:25 -0400
+	Tue, 17 Jul 2012 15:49:33 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] epoll: Add a flag, EPOLLWAKEUP, to prevent suspend while epoll events are ready
+Date: Tue, 17 Jul 2012 21:55:10 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: Michael Kerrisk <mtk.manpages@gmail.com>,
+        Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
+        NeilBrown <neilb@suse.de>, Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
+        Matthew Garrett <mjg@redhat.com>, John Stultz <john.stultz@linaro.org>,
+        Brian Swetland <swetland@google.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, mtk@lwn.net
+References: <CAMP5XgcatAchOXaEG0rbULes5pVHHsuGeuJ2CKaVGEdj1LzMDg@mail.gmail.com> <201207172122.26201.rjw@sisk.pl> <20120717193655.GA14280@kroah.com>
+In-Reply-To: <20120717193655.GA14280@kroah.com>
 MIME-Version: 1.0
-Reply-To: martin-eric.racine@iki.fi
-In-Reply-To: <20120717193951.GA15208@burratino>
-References: <1342547874.5129.2.camel@henna.lan>
-	<20120717193951.GA15208@burratino>
-Date: Tue, 17 Jul 2012 22:46:23 +0300
-X-Google-Sender-Auth: 9JNtI5RIAJiEFpp2laUv_-ZIcKo
-Message-ID: <CAPZXPQc02=6FnTb_RmgfpW+A4=N_huZW1FUYdjJ=Nt0Y3pqZ+A@mail.gmail.com>
-Subject: Re: [PATCH] scripts/package/builddeb: upgrade to current practices
-From: =?UTF-8?Q?Martin=2D=C3=89ric_Racine?= <martin-eric.racine@iki.fi>
-To: Jonathan Nieder <jrnieder@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-kbuild@vger.kernel.org, debian-kernel@lists.debian.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 8BIT
+Message-Id: <201207172155.11144.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/7/17 Jonathan Nieder <jrnieder@gmail.com>:
-> Hi,
->
-> Martin-Ã‰ric Racine wrote:
->
->> Signed-off-by: Martin-Ã‰ric Racine <martin-eric.racine@iki.fi>
->
-> Thanks.  This patch does many things at once instead of the usual
-> practice of "one patch per logical change", but oh well.
->
-> [...]
->> --- a/scripts/package/builddeb
->> +++ b/scripts/package/builddeb
->> @@ -79,9 +79,9 @@ fwdir="$objtree/debian/fwtmp"
->>  kernel_headers_dir="$objtree/debian/hdrtmp"
->>  libc_headers_dir="$objtree/debian/headertmp"
->>  packagename=linux-image-$version
->> -fwpackagename=linux-firmware-image
->>  kernel_headers_packagename=linux-headers-$version
->>  libc_headers_packagename=linux-libc-dev
->> +fwpackagename=firmware-linux
->
-> Micronit: any reason the lines are reordered here?
+On Tuesday, July 17, 2012, Greg KH wrote:
+> On Tue, Jul 17, 2012 at 09:22:25PM +0200, Rafael J. Wysocki wrote:
+> > On Tuesday, July 17, 2012, Michael Kerrisk wrote:
+> > > On Tue, Jul 17, 2012 at 12:04 AM, Arve Hjønnevåg <arve@android.com> wrote:
+> > > > On Mon, Jul 16, 2012 at 4:00 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > > >> On Monday, July 16, 2012, Michael Kerrisk wrote:
+> > > >>> Arve, Rafael,
+> > > >>>
+> > > >>> On Tue, May 1, 2012 at 7:33 AM, Arve Hjønnevåg <arve@android.com> wrote:
+> > > >>> > When an epoll_event, that has the EPOLLWAKEUP flag set, is ready, a
+> > > >>> > wakeup_source will be active to prevent suspend. This can be used to
+> > > >>> > handle wakeup events from a driver that support poll, e.g. input, if
+> > > >>> > that driver wakes up the waitqueue passed to epoll before allowing
+> > > >>> > suspend.
+> > > >>>
+> > > >>> It's late it the -rc series,
+> > > >>
+> > > >> Well, exactly. :-)
+> > > 
+> > > If someone had CCed linux-api@ along the way (as per
+> > > Documentation/SubmitChecklist), it might have helped ;-)
+> > 
+> > Well, it still _is_ late.
+> > 
+> > > >>> but it strikes me that CAP_EPOLLWAKEUP is
+> > > >>> a poor name for the capability that governs the use of EPOLLWAKEUP.
+> > > >>> While on the one hand some capabilities are overloaded
+> > > >>> (https://lwn.net/Articles/486306/), on the other hand we should avoid
+> > > >>> adding individual capabilities for each new API feature (otherwise
+> > > >>> capabilities become administratively unwieldy).
+> > > >>>
+> > > >>> This capability is not really about "EPOLL". It's about the ability to
+> > > >>> block system suspend. Therefore, IMO, a better name would be something
+> > > >>> like: CAP_BLOCK_SUSPEND. This name is better because there might be
+> > > >>> some other API feature that is later added that also has the effect of
+> > > >>> preventing system suspends, and we could reasonably govern that
+> > > >>> feature with the same capability.
+> > > >
+> > > > We already have another api, "/sys/power/wake_lock", that allow
+> > > > user-space to block suspend. Do we want to apply this capability that
+> > > > api as well, or only to apis that do not have other ways to restrict
+> > > > access?
+> > > 
+> > > Well, the question is: is there a governor on the use of
+> > > /sys/power/wake_lock? It makes sense either they are both governed
+> > > (preferably by the same mechanism, I would have thought), or neither
+> > > is.
+> > > 
+> > > >>> Does that seem sensible to you? I can send a patch for the name change.
+> > > >>
+> > > >> I'm not sure what Arve thinks about that, but I'd be fine with that.
+> > > >>
+> > > >> Arve, what do you think?
+> > > >>
+> > > >
+> > > > CAP_BLOCK_SUSPEND is fine with me, but if it does not apply to the
+> > > > sysfs interface, then the comment should probably mention this.
+> > > 
+> > > I've sent a patch, but omitted mention of API details in the comments.
+> > > Maybe that can be changed afterward, when a decision has been reached
+> > > about governing /sys/power/wake_lock.
+> > 
+> > I'm going to push your patch for v3.5, but then I'm considering the following
+> > one for v3.6.  I wouldn't like to make more changes in v3.5-rc at this point,
+> > if possible.
+> > 
+> > Thanks,
+> > Rafael
+> > 
+> > ---
+> > From: Rafael J. Wysocki <rjw@sisk.pl>
+> > Subject: PM / Sleep: Require CAP_BLOCK_SUSPEND to use wake_lock/wake_unlock
+> > 
+> > Require processes wanting to use the wake_lock/wake_unlock sysfs
+> > files to have the CAP_BLOCK_SUSPEND capability, which also is
+> > required for the eventpoll EPOLLWAKEUP flag to be effective, so that
+> > all interfaces related to blocking autosleep depend on the same
+> > capability.
+> > 
+> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> 
+> Care to mark that for -stable as well?
 
-Mostly to differenciate between versioned and non-versioned package targets.
+I will.
 
->> @@ -188,17 +188,17 @@ This is a packacked upstream version of the Linux kernel.
->>  The sources may be found at most Linux ftp sites, including:
->>  ftp://ftp.kernel.org/pub/linux/kernel
->>
->> -Copyright: 1991 - 2009 Linus Torvalds and others.
->> +Copyright: 1991-2012 Linus Torvalds and others.
->>
->> -The git repository for mainline kernel development is at:
->> -git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
->> +The GIT repository for mainline kernel development is at:
->> +git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
->
-> I personally like to spell it as "Git". ;-)
-
-That works for me too. Actually, what's the official spelling for it?
-
-> [...]
->> @@ -273,6 +273,9 @@ if [ -e "$tmpdir/lib/firmware" ]; then
->>
->>  Package: $fwpackagename
->>  Architecture: all
->> +Conflicts: firmware-linux-free, firmware-linux-nonfree
->> +Provides: firmware-linux-free, firmware-linux-nonfree
->> +Replaces: firmware-linux-free, firmware-linux-nonfree
->
-> I assume you mean Breaks+Replaces.  Do the files actually overlap,
-> or is this change being overly cautious?  I would expect the files
-> not to overlap because the package build with deb-pkg puts firmware
-> in a versioned subdirectory "/lib/firmware/<version>".
-
-AFAIK they would overlap, hence the Conflicts.
-
-Martin-Ã‰ric
+Thanks,
+Rafael
