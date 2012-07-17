@@ -1,80 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756703Ab2GQU7K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 16:59:10 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:58929 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756617Ab2GQU7I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 16:59:08 -0400
-Date: Tue, 17 Jul 2012 13:58:56 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Fengguang Wu <wfg@linux.intel.com>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: rcu_dyntick and suspicious RCU usage
-Message-ID: <20120717205856.GF11150@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120709135637.GA26040@localhost>
- <20120709145724.GA27095@localhost>
- <20120710044700.GA9462@localhost>
- <20120711074924.GD3819@linux.vnet.ibm.com>
- <20120712164308.GA31584@linux.vnet.ibm.com>
- <20120712165738.GA21630@localhost>
- <20120712170242.GB31396@linux.vnet.ibm.com>
- <20120713091230.GA20208@localhost>
+	id S1756719Ab2GQVFP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 17:05:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29068 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755374Ab2GQVFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 17:05:12 -0400
+Date: Wed, 18 Jul 2012 00:05:43 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
+Subject: Re: [PATCH v5 3/4] kvm: Create kvm_clear_irq()
+Message-ID: <20120717210543.GA1868@redhat.com>
+References: <20120717153620.GB11849@redhat.com>
+ <1342540301.2229.117.camel@bling.home>
+ <20120717155701.GB12001@redhat.com>
+ <1342541301.2229.125.camel@bling.home>
+ <20120717161452.GA12114@redhat.com>
+ <1342541823.2229.127.camel@bling.home>
+ <20120717162115.GC12114@redhat.com>
+ <1342543552.2229.136.camel@bling.home>
+ <20120717185542.GB13066@redhat.com>
+ <1342554687.2229.144.camel@bling.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120713091230.GA20208@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12071720-6148-0000-0000-000007BF4925
+In-Reply-To: <1342554687.2229.144.camel@bling.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 13, 2012 at 05:12:30PM +0800, Fengguang Wu wrote:
-> On Thu, Jul 12, 2012 at 10:02:42AM -0700, Paul E. McKenney wrote:
-> > On Fri, Jul 13, 2012 at 12:57:38AM +0800, Fengguang Wu wrote:
-> > > On Thu, Jul 12, 2012 at 09:43:08AM -0700, Paul E. McKenney wrote:
-> > > > On Wed, Jul 11, 2012 at 12:49:24AM -0700, Paul E. McKenney wrote:
-> > > > > On Tue, Jul 10, 2012 at 12:47:00PM +0800, Fengguang Wu wrote:
-> > > > > > Hi Paul,
+On Tue, Jul 17, 2012 at 01:51:27PM -0600, Alex Williamson wrote:
+> On Tue, 2012-07-17 at 21:55 +0300, Michael S. Tsirkin wrote:
+> > On Tue, Jul 17, 2012 at 10:45:52AM -0600, Alex Williamson wrote:
+> > > On Tue, 2012-07-17 at 19:21 +0300, Michael S. Tsirkin wrote:
+> > > > On Tue, Jul 17, 2012 at 10:17:03AM -0600, Alex Williamson wrote:
+> > > > > > > > > > > >   And current code looks buggy if yes we need to fix it somehow.
+> > > > > > > > > > > 
+> > > > > > > > > > > 
+> > > > > > > > > > > Which to me seems to indicate this should be handled as a separate
+> > > > > > > > > > > effort.
+> > > > > > > > > > 
+> > > > > > > > > > A separate patchset, sure. But likely a prerequisite: we still need to
+> > > > > > > > > > look at all the code. Let's not copy bugs, need to fix them.
+> > > > > > > > > 
+> > > > > > > > > This looks tangential to me unless you can come up with an actual reason
+> > > > > > > > > the above spinlock usage is incorrect or insufficient.
+> > > > > > > > 
+> > > > > > > > You copy the same pattern that seems racy. So you double the
+> > > > > > > > amount of code that woul need to be fixed.
+> > > > > > > 
+> > > > > > > 
+> > > > > > > _Seems_ racy, or _is_ racy?  Please identify the race.
 > > > > > > 
-> > > > > > Fortunately this bug is bisectable and the first bad commit is:
+> > > > > > Look at this:
 > > > > > > 
-> > > > > >         commit 9b2e4f1880b789be1f24f9684f7a54b90310b5c0
-> > > > > >         Author: Paul E. McKenney <paul.mckenney@linaro.org>
-> > > > > >         Date:   Fri Sep 30 12:10:22 2011 -0700
+> > > > > > static inline int kvm_irq_line_state(unsigned long *irq_state,
+> > > > > >                                      int irq_source_id, int level)
+> > > > > > {
+> > > > > >         /* Logical OR for level trig interrupt */
+> > > > > >         if (level)
+> > > > > >                 set_bit(irq_source_id, irq_state);
+> > > > > >         else
+> > > > > >                 clear_bit(irq_source_id, irq_state);
 > > > > > > 
-> > > > > >             rcu: Track idleness independent of idle tasks
+> > > > > >         return !!(*irq_state);
+> > > > > > }
+> > > > > > 
+> > > > > > 
+> > > > > > Now:
+> > > > > > If other CPU changes some other bit after the atomic change,
+> > > > > > it looks like !!(*irq_state) might return a stale value.
+> > > > > > 
+> > > > > > CPU 0 clears bit 0. CPU 1 sets bit 1. CPU 1 sets level to 1.
+> > > > > > If CPU 0 sees a stale value now it will return 0 here
+> > > > > > and interrupt will get cleared.
+> > > > > > 
+> > > > > > 
+> > > > > > Maybe this is not a problem. But in that case IMO it needs
+> > > > > > a comment explaining why and why it's not a problem in
+> > > > > > your code.
 > > > > > 
-> > > > > OK, there is a problem in TINY_RCU's handling of dyntick-idle: it
-> > > > > traces while in idle.  The confusion on my part was that in TREE_RCU,
-> > > > > the nesting and dyntick-idle indication are different, while in
-> > > > > TINY_RCU they are one and the same.
-> > > > > 
-> > > > > Does the following patch help?
+> > > > > So you want to close the door on anything that uses kvm_set_irq until
+> > > > > this gets fixed... that's insane.
 > > > > 
-> > > > This one failed in my testing.  Please see the end for the fixed
-> > > > version, with on small but important change.
+> > > > What does kvm_set_irq use have to do with it?  You posted this patch:
+> > > > 
+> > > > +static int kvm_clear_pic_irq(struct kvm_kernel_irq_routing_entry *e,
+> > > > +                            struct kvm *kvm, int irq_source_id)
+> > > > +{
+> > > > +#ifdef CONFIG_X86
+> > > > +       struct kvm_pic *pic = pic_irqchip(kvm);
+> > > > +       int level =
+> > > > kvm_clear_irq_line_state(&pic->irq_states[e->irqchip.pin],
+> > > > +                                            irq_source_id);
+> > > > +       if (level)
+> > > > +               kvm_pic_set_irq(pic, e->irqchip.pin,
+> > > > +                               !!pic->irq_states[e->irqchip.pin]);
+> > > > +       return level;
+> > > > +#else
+> > > > +       return -1;
+> > > > +#endif
+> > > > +}
+> > > > +
+> > > > 
+> > > > it seems racy in the same way.
 > > > 
-> > > It worked, thanks!
+> > > Now you're just misrepresenting how we got here, which was:
 > > > 
-> > > Tested-by: Fengguang Wu <wfg@linux.intel.com>
+> > > > > > > > > IMHO, we're going off into the weeds again with these last
+> > > > > > > > > two patches.  It may be a valid optimization, but it really has no
+> > > > > > > > > bearing on the meat of the series (and afaict, no significant
+> > > > > > > > > performance difference either).
+> > > > > > > > 
+> > > > > > > > For me it's not a performance thing. IMO code is cleaner without this locking:
+> > > > > > > > we add a lock but only use it in some cases, so the rules become really
+> > > > > > > > complex.
+> > > 
+> > > So I'm happy to drop the last 2 patches, which were done at your request
+> > > anyway, but you've failed to show how the locking in patches 1&2 is
+> > > messy, inconsistent, or complex and now you're asking to block all
+> > > progress.
 > > 
-> > Very good!  (And please ignore my resend of the same patch.)
+> > I'm asking for bugs to get fixed and not duplicated. Adding more bugs is
+> > not progress. Or maybe there is no bug. Let's see why and add a comment.
 > > 
-> > I will queue this.
+> > >  Those patches are just users of kvm_set_irq.
+> > 
+> > 
+> > Well these add calls to kvm_set_irq which scans all vcpus under
+> > spinlock. In the past Avi thought this is not a good idea too.
+> > Maybe things changed.
 > 
-> Will you recommend it for -stable? It impacts 3.3/3.4. I tested it on
-> 3.4 and it works fine. However for 3.3, the patch cannot apply cleanly.
+> We can drop the spinlock if we don't care about spurious EOIs, which is
+> only a theoretical scalability problem anyway.
 
-If someone hits it in a real workload, I might consider it.  I currently
-have it queued for 3.7.
+Not theoretical at all IMO. We see the problem with virtio with old
+guests today.
 
-							Thanx, Paul
+> We're talking about
+> level interrupts here, how scalable do we need to be?
+> 
 
+The reason we are moving them into kernel at all is for speed, no?
+
+-- 
+MST
