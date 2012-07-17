@@ -1,81 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755289Ab2GQN7D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 09:59:03 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:41379 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752359Ab2GQN67 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 09:58:59 -0400
-Date: Tue, 17 Jul 2012 13:59:14 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
-        Matthew Garrett <mjg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
-        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, mtk@lwn.net
-Subject: Re: [patch] Rename CAP_EPOLLWAKEUP to CAL_BLOCK_SUSPEND
-Message-ID: <20120717135914.GA6662@mail.hallyn.com>
-References: <5004EBF9.3040406@gmail.com>
- <20120717134613.GA30892@mail.hallyn.com>
- <CAKgNAkh=LpuQDYWJ1XZpLMv+oFNqUD2Y+ZAxKOyB08-1OkJ55A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKgNAkh=LpuQDYWJ1XZpLMv+oFNqUD2Y+ZAxKOyB08-1OkJ55A@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755361Ab2GQN7V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 09:59:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50687 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753453Ab2GQN7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 09:59:19 -0400
+Message-ID: <1342533556.3229.7.camel@ul30vt>
+Subject: Re: [PATCH v5 2/4] kvm: KVM_EOIFD, an eventfd for EOIs
+From: Alex Williamson <alex.williamson@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
+Date: Tue, 17 Jul 2012 07:59:16 -0600
+In-Reply-To: <20120717102139.GG7949@redhat.com>
+References: <20120716202711.1752.71007.stgit@bling.home>
+	 <20120716203353.1752.19127.stgit@bling.home>
+	 <20120717102139.GG7949@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Michael Kerrisk (man-pages) (mtk.manpages@gmail.com):
-> On Tue, Jul 17, 2012 at 3:46 PM, Serge E. Hallyn <serge@hallyn.com> wrote:
-> > Quoting Michael Kerrisk (mtk.manpages@gmail.com):
-> >> Rafael,
-> >>
-> >> As discussed in
-> >> http://thread.gmane.org/gmane.linux.kernel/1249726/focus=1288990,
-> >> the capability introduced in 4d7e30d98939a0340022ccd49325a3d70f7e0238
-> >> to govern EPOLLWAKEUP seems misnamed: this capability is about governing
-> >> the ability to suspend the system, not using a particular API flag
-> >> (EPOLLWAKEUP). We should make the name of the capability more general
-> >> to encourage reuse in related cases. (Whether or not this capability
-> >> should also be used to govern the use of /sys/power/wake_lock is a
-> >> question that needs to be separately resolved.)
-> >>
-> >> This patch renames the capability to CAP_BLOCK_SUSPEND. In order to ensure
-> >> that the old capability name doesn't make it out into the wild, could you
-> >> please apply and push up the tree to ensure that it is incorporated
-> >> for the 3.5 release.
-> >>
-> >> Thanks,
-> >>
-> >> Michael
-> >>
-> >> Signed-off-by: Michael Kerrisk <mtk.manpages@gmail.com>
-> >
-> > I definately like that name better, thanks.  Don't know if renaming it
-> > without an alias could cause trouble for some bleeding edge userspaces?
-> > Would it be worth keeping the
-> >
-> > #define CAP_EPOLLWAKEUP      36
-> >
-> > line?  If this is deemed early enough I do prefer not to complicate with
-> > a duplicate name.
+On Tue, 2012-07-17 at 13:21 +0300, Michael S. Tsirkin wrote:
+> On Mon, Jul 16, 2012 at 02:33:55PM -0600, Alex Williamson wrote:
+> > +	if (args->flags & KVM_EOIFD_FLAG_LEVEL_IRQFD) {
+> > +		struct _irqfd *irqfd = _irqfd_fdget_lock(kvm, args->irqfd);
+> > +		if (IS_ERR(irqfd)) {
+> > +			ret = PTR_ERR(irqfd);
+> > +			goto fail;
+> > +		}
+> > +
+> > +		gsi = irqfd->gsi;
+> > +		level_irqfd = eventfd_ctx_get(irqfd->eventfd);
+> > +		source = _irq_source_get(irqfd->source);
+> > +		_irqfd_put_unlock(irqfd);
+> > +		if (!source) {
+> > +			ret = -EINVAL;
+> > +			goto fail;
+> > +		}
+> > +	} else {
+> > +		ret = -EINVAL;
+> > +		goto fail;
+> > +	}
+> > +
+> > +	INIT_LIST_HEAD(&eoifd->list);
+> > +	eoifd->kvm = kvm;
+> > +	eoifd->eventfd = eventfd;
+> > +	eoifd->source = source;
+> > +	eoifd->level_irqfd = level_irqfd;
+> > +	eoifd->notifier.gsi = gsi;
+> > +	eoifd->notifier.irq_acked = eoifd_event;
 > 
-> Maybe I'm too ignorant. Are there userspaces that bleed with the -rc
-> series? I'd have thought this renaming would be a fairly safe change
-> at this point.
+> OK so this means eoifd keeps a reference to the irqfd.
+> And since this is the case, can't we drop the reference counting
+> around source ids now? Everything is referenced through irqfd.
 
-I'm sure there are, but I'm not sure what we've promised them.
+Holding a reference and using it as a reference count are not the same
+thing.  What if another module holds a reference to this eventfd?  How
+do we do anything on release?
 
-Like I say if at all possible I do prefer not to keep CAP_EPOLLWAKEUP.
-
--serge
