@@ -1,55 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753353Ab2GQHJl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 03:09:41 -0400
-Received: from edison.jonmasters.org ([173.255.233.168]:59765 "EHLO
-	edison.jonmasters.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752614Ab2GQHJj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 03:09:39 -0400
-Message-ID: <50050FA9.5090608@jonmasters.org>
-Date: Tue, 17 Jul 2012 03:09:29 -0400
-From: Jon Masters <jonathan@jonmasters.org>
-Organization: World Organi{s,z}ation of Broken Dreams
+	id S1753882Ab2GQHLV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 03:11:21 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:57912 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751764Ab2GQHLS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 03:11:18 -0400
+Message-ID: <50050FD9.3070403@us.ibm.com>
+Date: Tue, 17 Jul 2012 00:10:17 -0700
+From: John Stultz <johnstul@us.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Catalin Marinas <catalin.marinas@arm.com>, Pavel Machek <pavel@ucw.cz>,
-        Ingo Molnar <mingo@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com> <CAOesGMiCexiqA3L5GdNgyHhSD-5Bpqbb02YJrZPr8yMYa0afjA@mail.gmail.com> <201207071927.13135.arnd@arndb.de> <20120710071023.GA10456@gmail.com> <20120710101018.GE15120@arm.com> <20120714093032.GA23316@elf.ucw.cz> <20120715121644.GB10597@arm.com> <5003CFBA.3060108@redhat.com>
-In-Reply-To: <5003CFBA.3060108@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 74.92.29.237
-X-SA-Exim-Mail-From: jonathan@jonmasters.org
-Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Nov 2009 07:31:22 +0000)
-X-SA-Exim-Scanned: Yes (on edison.jonmasters.org)
+To: John Stultz <johnstul@us.ibm.com>
+CC: stable@vger.kernel.org, Prarit Bhargava <prarit@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/11] 3.2-stable: Fix for leapsecond caused hrtimer/futex
+ issue
+References: <1342508724-14527-1-git-send-email-johnstul@us.ibm.com>
+In-Reply-To: <1342508724-14527-1-git-send-email-johnstul@us.ibm.com>
+Content-Type: multipart/mixed;
+ boundary="------------020709030805040202040605"
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12071707-9360-0000-0000-00000878659E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2012 04:24 AM, Avi Kivity wrote:
+This is a multi-part message in MIME format.
+--------------020709030805040202040605
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-> Can the same kernel image run in both EL1 and EL2?  I noticed some .if
-> ELs in the assembler files.  I guess they could be compiled multiple
-> times and the correct version chosen at runtime, or patched up like x86
-> does with alternative().
+On 07/17/2012 12:05 AM, John Stultz wrote:
+> 1) Deadlock leapsecond issue that a few reports described.
+>
+> I spent some time over the weekend trying to find a way to reproduce
+> the hard-hang issue some folks were reporting after the leapsecond.
+> Initially I didn't think the 6b43ae8a619d17 leap-second hrimter livelock
+> patch needed to be backported since, I assumed it required the ntp_lock
+> split for it to be triggered, but looking again I found that the same
+> issue could occur prior to splitting out the ntp_lock. So I've backported
+> that fix (and its follow-on fixups) as well as created a test case
+> to reproduce the hard-hang deadlock.
 
-> One of the advantages kvm has to Linux distributors is that the same
-> kernel image can be used the hypervisor, guest, and bare metal.  I'd
-> like to preserve that for arm64.
+Attached is the test case I used to reproduce and test the solution to 
+the hard-hang deadlock.
 
-The idea is that you would always enter at EL2 and then drop privilege
-down to EL1 if you're not doing virt. That achieves effectively the same
-thing that you get on x86. The virtualization in AArch64 is designed
-more from the POV of separate hypervisors like Xen so we just need to
-make sure we always start with enough privilege.
+WARNING: THIS TEST WILL LIKELY HARD LOCK YOUR BOX IN IRQ CONTEXT!
+YOU MAY LOSE DATA! RUN AT YOUR OWN RISK!
 
-Jon.
+thanks
+-john
+
+
+--------------020709030805040202040605
+Content-Type: text/x-csrc;
+ name="leapcrash.c"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="leapcrash.c"
+
+/* Demo leapsecond deadlock
+ *              by: john stultz (johnstul@us.ibm.com)
+ *              (C) Copyright IBM 2012
+ *              Licensed under the GPL
+ *
+ * This test demonstrates leapsecond deadlock that is possibe
+ * on kernels from 2.6.26 to 3.3.
+ *
+ * WARNING: THIS WILL LIKELY HARDHANG SYSTEMS AND MAY LOSE DATA
+ * RUN AT YOUR OWN RISK!
+ *  To build:
+ *	$ gcc leapcrash.c -o leapcrash -lrt
+ */
+
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <sys/time.h>
+#include <sys/timex.h>
+#include <string.h>
+#include <signal.h>
+
+
+
+/* clear NTP time_status & time_state */
+void clear_time_state(void)
+{
+	struct timex tx;
+	int ret;
+
+	/*
+	 * XXX - The fact we have to call this twice seems
+	 * to point to a slight issue in the kernel's ntp state
+	 * managment. Needs to be investigated further.
+	 */
+
+	tx.modes = ADJ_STATUS;
+	tx.status = STA_PLL;
+	ret = adjtimex(&tx);
+
+	tx.modes = ADJ_STATUS;
+	tx.status = 0;
+	ret = adjtimex(&tx);
+}
+
+/* Make sure we cleanup on ctrl-c */
+void handler(int unused)
+{
+	clear_time_state();
+	exit(0);
+}
+
+
+int  main(void)
+{
+	struct timex tx;
+	struct timespec ts;
+	time_t next_leap;
+	int count =0;
+
+	setbuf(stdout, NULL);
+
+	signal(SIGINT, handler);
+	signal(SIGKILL, handler);
+	printf("This runs continuously. Press ctrl-c to stop\n");
+
+	clear_time_state();
+
+
+	/* Get the current time */
+	clock_gettime(CLOCK_REALTIME, &ts);
+
+	/* Calculate the next possible leap second 23:59:60 GMT */
+	next_leap = ts.tv_sec;
+	next_leap += 86400 - (next_leap % 86400);
+
+	while (1) {
+		struct timeval tv;
+
+
+		/* set the time to 2 seconds before the leap */
+		tv.tv_sec = next_leap - 2;
+		tv.tv_usec = 0;
+		settimeofday(&tv, NULL);
+
+		adjtimex(&tx);
+
+		/* hammer on adjtime w/ STA_INS */
+		while (tx.time.tv_sec < next_leap + 1) {
+			/* Set the leap second insert flag */
+			tx.modes = ADJ_STATUS;
+			tx.status = STA_INS;
+			adjtimex(&tx);
+		}
+		clear_time_state();
+		printf(".");
+	}
+	return 0;
+}
+
+--------------020709030805040202040605--
+
