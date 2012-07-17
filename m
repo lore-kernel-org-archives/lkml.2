@@ -1,52 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754758Ab2GQO2O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 10:28:14 -0400
-Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:29941 "HELO
-	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751420Ab2GQO2N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 10:28:13 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: vH8UAp8VM1nv3TxUHck0YVWhz_u1bzeYRWuWY0dutHztCci
- _Sv.A9Ari1L0mnKE3sn3C2d51jGB94KL5wBVVfc2vMkSAWEfcIvKVDnaNKdK
- hIx1YYJgTQv9y_GinWtGtD0.0u805c9N2bZ1AWsq9bjnCyKCS0irYWaERj7W
- rGcUwLCUP5En1b459_tUVaDkfY7lh86f8pApp58_oAgeco2LPqPs4x95ImC.
- zeZ8araHFNUCQhx5GczmKOwyF0ZeE.OdKx.GztnHv9v.mG28yubeVlskio_8
- f1hVfgXIauqlcRPXzJIFkWlATEJg8c0oOsZzi4I4tkivoLeSQm03dZg6MOh8
- 1_kC354qJ1uL4wWZoAU7aQXOhs2sLPemDkeM39N6wG.CVaq4u1uCKWwQU2Dh
- agEeK_sKuBquSrV5ffHPLvCZIDIBPxJr24.nc
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 17 Jul 2012 09:28:09 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Joonsoo Kim <js1304@gmail.com>
-cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Sasha Levin <levinsasha928@gmail.com>
-Subject: Re: [PATCH 2/4 v2] mm: fix possible incorrect return value of
- migrate_pages() syscall
-In-Reply-To: <1342528415-2291-2-git-send-email-js1304@gmail.com>
-Message-ID: <alpine.DEB.2.00.1207170925250.13599@router.home>
-References: <Yes> <1342528415-2291-1-git-send-email-js1304@gmail.com> <1342528415-2291-2-git-send-email-js1304@gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755227Ab2GQO3t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 10:29:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29895 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753927Ab2GQO3q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 10:29:46 -0400
+Message-ID: <1342535383.3229.32.camel@ul30vt>
+Subject: Re: [PATCH v5 2/4] kvm: KVM_EOIFD, an eventfd for EOIs
+From: Alex Williamson <alex.williamson@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
+Date: Tue, 17 Jul 2012 08:29:43 -0600
+In-Reply-To: <20120717141002.GC10822@redhat.com>
+References: <20120716202711.1752.71007.stgit@bling.home>
+	 <20120716203353.1752.19127.stgit@bling.home>
+	 <20120717102139.GG7949@redhat.com> <1342533556.3229.7.camel@ul30vt>
+	 <20120717141002.GC10822@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Jul 2012, Joonsoo Kim wrote:
+On Tue, 2012-07-17 at 17:10 +0300, Michael S. Tsirkin wrote:
+> On Tue, Jul 17, 2012 at 07:59:16AM -0600, Alex Williamson wrote:
+> > On Tue, 2012-07-17 at 13:21 +0300, Michael S. Tsirkin wrote:
+> > > On Mon, Jul 16, 2012 at 02:33:55PM -0600, Alex Williamson wrote:
+> > > > +	if (args->flags & KVM_EOIFD_FLAG_LEVEL_IRQFD) {
+> > > > +		struct _irqfd *irqfd = _irqfd_fdget_lock(kvm, args->irqfd);
+> > > > +		if (IS_ERR(irqfd)) {
+> > > > +			ret = PTR_ERR(irqfd);
+> > > > +			goto fail;
+> > > > +		}
+> > > > +
+> > > > +		gsi = irqfd->gsi;
+> > > > +		level_irqfd = eventfd_ctx_get(irqfd->eventfd);
+> > > > +		source = _irq_source_get(irqfd->source);
+> > > > +		_irqfd_put_unlock(irqfd);
+> > > > +		if (!source) {
+> > > > +			ret = -EINVAL;
+> > > > +			goto fail;
+> > > > +		}
+> > > > +	} else {
+> > > > +		ret = -EINVAL;
+> > > > +		goto fail;
+> > > > +	}
+> > > > +
+> > > > +	INIT_LIST_HEAD(&eoifd->list);
+> > > > +	eoifd->kvm = kvm;
+> > > > +	eoifd->eventfd = eventfd;
+> > > > +	eoifd->source = source;
+> > > > +	eoifd->level_irqfd = level_irqfd;
+> > > > +	eoifd->notifier.gsi = gsi;
+> > > > +	eoifd->notifier.irq_acked = eoifd_event;
+> > > 
+> > > OK so this means eoifd keeps a reference to the irqfd.
+> > > And since this is the case, can't we drop the reference counting
+> > > around source ids now? Everything is referenced through irqfd.
+> > 
+> > Holding a reference and using it as a reference count are not the same
+> > thing.  What if another module holds a reference to this eventfd?  How
+> > do we do anything on release?
+> 
+> We don't as there is no release, and using kref on source id does not
+> help: it just never gets invoked.
 
-> @@ -1382,6 +1382,8 @@ SYSCALL_DEFINE4(migrate_pages, pid_t, pid, unsigned long, maxnode,
->
->  	err = do_migrate_pages(mm, old, new,
->  		capable(CAP_SYS_NICE) ? MPOL_MF_MOVE_ALL : MPOL_MF_MOVE);
-> +	if (err > 0)
-> +		err = -EBUSY;
->
->  	mmput(mm);
->  out:
+Please work out how you think it should work and let me know, I don't
+see it.  We have an irq source id that needs to be allocated by irqfd
+and returned when it's unused.  It becomes unused when neither irqfd nor
+eoifd are making use of it.  irqfd and eoifd may be closed in any order.
+Use of the source id is what we're reference counting, which is why it's
+in struct _irq_source.  How can I use an eventfd reference for the same?
+I don't know when it's unused.  I don't know who else holds a reference
+to it...  Doesn't make sense to me.  Feels like attempting to squat on
+someone else's object.
 
-Why not have do_migrate_pages() return EBUSY if we do not need the number
-of failed/retried pages?
+
 
