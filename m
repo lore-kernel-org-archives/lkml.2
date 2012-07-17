@@ -1,60 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756659Ab2GQUqb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 16:46:31 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:45020 "EHLO ogre.sisk.pl"
+	id S932096Ab2GQUr3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 16:47:29 -0400
+Received: from mga03.intel.com ([143.182.124.21]:59464 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754132Ab2GQUq2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 16:46:28 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Kevin Hilman <khilman@ti.com>
-Subject: Re: PM: Summary of changes for v3.6
-Date: Tue, 17 Jul 2012 22:52:05 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>, Len Brown <lenb@kernel.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Colin Cross <ccross@android.com>
-References: <201207162246.03660.rjw@sisk.pl> <87mx2zcq62.fsf@ti.com>
-In-Reply-To: <87mx2zcq62.fsf@ti.com>
+	id S1756239Ab2GQUr1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 16:47:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="123598330"
+Message-ID: <5005CF5D.9070905@intel.com>
+Date: Tue, 17 Jul 2012 13:47:25 -0700
+From: John Fastabend <john.r.fastabend@intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Gao feng <gaofeng@cn.fujitsu.com>
+CC: nhorman@tuxdriver.com, eric.dumazet@gmail.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        davem@davemloft.net, Eric Dumazet <edumazet@google.com>,
+        "Rustad, Mark D" <mark.d.rustad@intel.com>
+Subject: Re: [PATCH v4] net: cgroup: fix access the unallocated memory in
+ netprio cgroup
+References: <1342079415-9631-1-git-send-email-gaofeng@cn.fujitsu.com>
+In-Reply-To: <1342079415-9631-1-git-send-email-gaofeng@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201207172252.06093.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 7/12/2012 12:50 AM, Gao feng wrote:
+> there are some out of bound accesses in netprio cgroup.
+>
+> now before accessing the dev->priomap.priomap array,we only check
+> if the dev->priomap exist.and because we don't want to see
+> additional bound checkings in fast path, so we should make sure
+> that dev->priomap is null or array size of dev->priomap.priomap
+> is equal to max_prioidx + 1;
+>
+> so in write_priomap logic,we should call extend_netdev_table when
+> dev->priomap is null and dev->priomap.priomap_len < max_len.
+> and in cgrp_create->update_netdev_tables logic,we should call
+> extend_netdev_table only when dev->priomap exist and
+> dev->priomap.priomap_len < max_len.
+>
+> and it's not needed to call update_netdev_tables in write_priomap,
+> we can only allocate the net device's priomap which we change through
+> net_prio.ifpriomap.
+>
+> this patch also add a return value for update_netdev_tables &
+> extend_netdev_table, so when new_priomap is allocated failed,
+> write_priomap will stop to access the priomap,and return -ENOMEM
+> back to the userspace to tell the user what happend.
+>
+> Change From v3:
+> 1. add rtnl protect when reading max_prioidx in write_priomap.
+>
+> 2. only call extend_netdev_table when map->priomap_len < max_len,
+>     this will make sure array size of dev->map->priomap always
+>     bigger than any prioidx.
+>
+> 3. add a function write_update_netdev_table to make codes clear.
+>
+> Change From v2:
+> 1. protect extend_netdev_table by RTNL.
+> 2. when extend_netdev_table failed,call dev_put to reduce device's refcount.
+>
+> Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+> Cc: Neil Horman <nhorman@tuxdriver.com>
+> Cc: Eric Dumazet <edumazet@google.com>
+> ---
+>   net/core/netprio_cgroup.c |   71 ++++++++++++++++++++++++++++++++++-----------
+>   1 files changed, 54 insertions(+), 17 deletions(-)
+>
 
-On Tuesday, July 17, 2012, Kevin Hilman wrote:
-> Rafael, Daniel,
-> 
-> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
-> 
-> > Hi all,
-> >
-> > All of the changes I'd like to include into the first PM pull request during
-> > the v3.6 merge window, except maybe for one or two patches I know are in the
-> > works, is on the 'linux-next' branch of the linux-pm.git tree now.  The summary
-> > of those changes is appended.  If anyone finds any of them objectionable,
-> > please let me know ASAP.  Also please let me know if you have any power
-> > management patches you'd like me to take for v3.6.
-> >
-> 
-> Could someone please clarify the status of the coupled CPUidle series?  
-> 
-> There's a version of these in Daniels cpuidle-next branch and there's a
-> version of these in Len's next branch (included in linux-next), but I'm
-> still not entirely sure which branch is going upstream and which branch
-> has the latest version (but I think Daniel's is the latest)
+[...]
 
-Colin says that the commits in the Len's tree match his latest version,
-so I think those commits should be merged, since they have been present
-in that tree since the 3.5 merge window.
+> +
+> +static int update_netdev_tables(void)
+> +{
+> +	int ret = 0;
+>   	struct net_device *dev;
+> -	u32 max_len = atomic_read(&max_prioidx) + 1;
+> +	u32 max_len;
+>   	struct netprio_map *map;
 
-Thanks,
-Rafael
+
+need to check if net subsystem is initialized before we try
+to use it here...
+
+	if (some_check)     -> need to lookup what this check is
+		return ret;
+
+>
+>   	rtnl_lock();
+> +	max_len = atomic_read(&max_prioidx) + 1;
+>   	for_each_netdev(&init_net, dev) {
+>   		map = rtnl_dereference(dev->priomap);
+> -		if ((!map) ||
+> -		    (map->priomap_len < max_len))
+> -			extend_netdev_table(dev, max_len);
+> +		/*
+> +		 * don't allocate priomap if we didn't
+> +		 * change net_prio.ifpriomap (map == NULL),
+> +		 * this will speed up skb_update_prio.
+> +		 */
+> +		if (map && map->priomap_len < max_len) {
+> +			ret = extend_netdev_table(dev, max_len);
+> +			if (ret < 0)
+> +				break;
+> +		}
+>   	}
+>   	rtnl_unlock();
+> +	return ret;
+>   }
+>
+>   static struct cgroup_subsys_state *cgrp_create(struct cgroup *cgrp)
+>   {
+>   	struct cgroup_netprio_state *cs;
+> -	int ret;
+> +	int ret = -EINVAL;
+>
+>   	cs = kzalloc(sizeof(*cs), GFP_KERNEL);
+>   	if (!cs)
+>   		return ERR_PTR(-ENOMEM);
+>
+> -	if (cgrp->parent && cgrp_netprio_state(cgrp->parent)->prioidx) {
+> -		kfree(cs);
+> -		return ERR_PTR(-EINVAL);
+> -	}
+> +	if (cgrp->parent && cgrp_netprio_state(cgrp->parent)->prioidx)
+> +		goto out;
+>
+>   	ret = get_prioidx(&cs->prioidx);
+> -	if (ret != 0) {
+> +	if (ret < 0) {
+>   		pr_warn("No space in priority index array\n");
+> -		kfree(cs);
+> -		return ERR_PTR(ret);
+> +		goto out;
+> +	}
+> +
+> +	ret = update_netdev_tables();
+> +	if (ret < 0) {
+> +		put_prioidx(cs->prioidx);
+> +		goto out;
+>   	}
+
+Gao,
+
+This introduces a null ptr dereference when netprio_cgroup is built
+into the kernel because update_netdev_tables() depends on init_net.
+However cgrp_create is being called by cgroup_init before
+do_initcalls() is called and before net_dev_init().
+
+.John
