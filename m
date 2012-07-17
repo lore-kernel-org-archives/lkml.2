@@ -1,78 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751764Ab2GQIDh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 04:03:37 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:34016 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750764Ab2GQID3 (ORCPT
+	id S1752407Ab2GQIF0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 04:05:26 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49460 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751027Ab2GQIFR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 04:03:29 -0400
+	Tue, 17 Jul 2012 04:05:17 -0400
+Date: Tue, 17 Jul 2012 16:13:51 +0800
+From: Zheng Liu <gnehzuil.liu@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Zheng Liu <wenqing.lz@taobao.com>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [patch -next] ext4: locking issue on error path
+Message-ID: <20120717081351.GA4513@gmail.com>
+Mail-Followup-To: Dan Carpenter <dan.carpenter@oracle.com>,
+	Theodore Ts'o <tytso@mit.edu>, Zheng Liu <wenqing.lz@taobao.com>,
+	Andreas Dilger <adilger.kernel@dilger.ca>,
+	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+	kernel-janitors@vger.kernel.org
+References: <20120717063106.GA14985@elgon.mountain>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFw7zdyPpDEdpDbYWc-Z++v_kDQHD3Z+-QwPszh+9bU+tQ@mail.gmail.com>
-References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com>
-	<1342212885.25704.4.camel@lade.trondhjem.org>
-	<CAFLxGvxxWodD97=78218wc+tuigAFsNK_PdroDfb4BWTZoxxUw@mail.gmail.com>
-	<20120714103716.GD26559@liondog.tnic>
-	<CAOJsxLGHQuuXqDD-1SNhL7Ly1-heCYFLzqj3SLh4xzmP9NR5GQ@mail.gmail.com>
-	<20120715101434.GA18144@aftab.osrc.amd.com>
-	<CAOJsxLGBCQ6C-3M0ZdTfVPqnmOKqUE9+78Mhf+67TksmVojuuQ@mail.gmail.com>
-	<20120715211848.GA21167@aftab.osrc.amd.com>
-	<20120715214819.GA1990@moon>
-	<alpine.DEB.2.02.1207151459480.20176@asgard.lang.hm>
-	<20120716082418.GC24327@aftab.osrc.amd.com>
-	<alpine.DEB.2.02.1207160937330.20176@asgard.lang.hm>
-	<CA+55aFwwmMbFr4HXTFxF_MeM_n8bfiXfPPgCALTOc1HvidVt1Q@mail.gmail.com>
-	<alpine.DEB.2.02.1207161222380.32545@asgard.lang.hm>
-	<CA+55aFw7zdyPpDEdpDbYWc-Z++v_kDQHD3Z+-QwPszh+9bU+tQ@mail.gmail.com>
-Date: Tue, 17 Jul 2012 10:03:28 +0200
-X-Google-Sender-Auth: rKRO5XXRpf5s55kRxY5n13HnNak
-Message-ID: <CAMuHMdWopF1MjHjNT_CAnu=pTU8X8oxyW4M+y2-XHEHfF2XHhg@mail.gmail.com>
-Subject: Re: [opensuse-kernel] Re: [RFC] Simplifying kernel configuration for
- distro issues
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: david@lang.hm, Borislav Petkov <bp@amd64.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Dave Jones <davej@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
-        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
-        Debian Kernel Team <debian-kernel@lists.debian.org>,
-        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Sasha Levin <levinsasha928@gmail.com>,
-        Asias He <asias.hejun@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120717063106.GA14985@elgon.mountain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 16, 2012 at 10:56 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Mon, Jul 16, 2012 at 12:26 PM,  <david@lang.hm> wrote:
->> Some of the proposed ways to implement the minimum distro kernel would not
->> allow you to override the distro defaults because they would be implemented
->> by setting dependancies, not by selecting options that you as the user could
->> then unselect.
->
-> The sanest thing to do is just a list of "select" statements. And in
-> any case it would have to depend on the "distro config" entry, so EVEN
-> THEN you could just create the Kconfig file, then edit out the distro
-> config thing, and then do whatever you want.
+On Tue, Jul 17, 2012 at 09:31:06AM +0300, Dan Carpenter wrote:
+> We recently changed how the locking worked here, but this error path was
+> missed.
+> 
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-Except that "select" is one of the ugliest things in Kconfig, as it
-blindly sets a symbol
-without checking if its dependencies are fulfilled.
+Sorry, it is my fault.  Thanks for pointing out this bug.
 
-Gr{oetje,eeting}s,
+Regards,
+Zheng
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+> 
+> diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+> index 8c84070..2728fb7 100644
+> --- a/fs/ext4/inode.c
+> +++ b/fs/ext4/inode.c
+> @@ -3031,8 +3031,10 @@ static ssize_t ext4_ext_direct_IO(int rw, struct kiocb *iocb,
+>  		if (!is_sync_kiocb(iocb)) {
+>  			ext4_io_end_t *io_end =
+>  				ext4_init_io_end(inode, GFP_NOFS);
+> -			if (!io_end)
+> -				return -ENOMEM;
+> +			if (!io_end) {
+> +				ret = -ENOMEM;
+> +				goto retake_lock;
+> +			}
+>  			io_end->flag |= EXT4_IO_END_DIRECT;
+>  			iocb->private = io_end;
+>  			/*
+> @@ -3094,6 +3096,7 @@ static ssize_t ext4_ext_direct_IO(int rw, struct kiocb *iocb,
+>  			ext4_clear_inode_state(inode, EXT4_STATE_DIO_UNWRITTEN);
+>  		}
+>  
+> +retake_lock:
+>  		/* take i_mutex locking again if we do a ovewrite dio */
+>  		if (overwrite) {
+>  			up_read(&EXT4_I(inode)->i_data_sem);
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
