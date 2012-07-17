@@ -1,122 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756558Ab2GQTtf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 15:49:35 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:44902 "EHLO ogre.sisk.pl"
+	id S1756565Ab2GQTve (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 15:51:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52064 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752623Ab2GQTtd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 15:49:33 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] epoll: Add a flag, EPOLLWAKEUP, to prevent suspend while epoll events are ready
-Date: Tue, 17 Jul 2012 21:55:10 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: Michael Kerrisk <mtk.manpages@gmail.com>,
-        Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-        NeilBrown <neilb@suse.de>, Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
-        Matthew Garrett <mjg@redhat.com>, John Stultz <john.stultz@linaro.org>,
-        Brian Swetland <swetland@google.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, mtk@lwn.net
-References: <CAMP5XgcatAchOXaEG0rbULes5pVHHsuGeuJ2CKaVGEdj1LzMDg@mail.gmail.com> <201207172122.26201.rjw@sisk.pl> <20120717193655.GA14280@kroah.com>
-In-Reply-To: <20120717193655.GA14280@kroah.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201207172155.11144.rjw@sisk.pl>
+	id S1752045Ab2GQTvc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 15:51:32 -0400
+Message-ID: <1342554687.2229.144.camel@bling.home>
+Subject: Re: [PATCH v5 3/4] kvm: Create kvm_clear_irq()
+From: Alex Williamson <alex.williamson@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
+Date: Tue, 17 Jul 2012 13:51:27 -0600
+In-Reply-To: <20120717185542.GB13066@redhat.com>
+References: <20120717145313.GB11516@redhat.com>
+	 <1342538411.2229.106.camel@bling.home> <20120717153620.GB11849@redhat.com>
+	 <1342540301.2229.117.camel@bling.home> <20120717155701.GB12001@redhat.com>
+	 <1342541301.2229.125.camel@bling.home> <20120717161452.GA12114@redhat.com>
+	 <1342541823.2229.127.camel@bling.home> <20120717162115.GC12114@redhat.com>
+	 <1342543552.2229.136.camel@bling.home> <20120717185542.GB13066@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, July 17, 2012, Greg KH wrote:
-> On Tue, Jul 17, 2012 at 09:22:25PM +0200, Rafael J. Wysocki wrote:
-> > On Tuesday, July 17, 2012, Michael Kerrisk wrote:
-> > > On Tue, Jul 17, 2012 at 12:04 AM, Arve Hjønnevåg <arve@android.com> wrote:
-> > > > On Mon, Jul 16, 2012 at 4:00 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > > >> On Monday, July 16, 2012, Michael Kerrisk wrote:
-> > > >>> Arve, Rafael,
-> > > >>>
-> > > >>> On Tue, May 1, 2012 at 7:33 AM, Arve Hjønnevåg <arve@android.com> wrote:
-> > > >>> > When an epoll_event, that has the EPOLLWAKEUP flag set, is ready, a
-> > > >>> > wakeup_source will be active to prevent suspend. This can be used to
-> > > >>> > handle wakeup events from a driver that support poll, e.g. input, if
-> > > >>> > that driver wakes up the waitqueue passed to epoll before allowing
-> > > >>> > suspend.
-> > > >>>
-> > > >>> It's late it the -rc series,
-> > > >>
-> > > >> Well, exactly. :-)
+On Tue, 2012-07-17 at 21:55 +0300, Michael S. Tsirkin wrote:
+> On Tue, Jul 17, 2012 at 10:45:52AM -0600, Alex Williamson wrote:
+> > On Tue, 2012-07-17 at 19:21 +0300, Michael S. Tsirkin wrote:
+> > > On Tue, Jul 17, 2012 at 10:17:03AM -0600, Alex Williamson wrote:
+> > > > > > > > > > >   And current code looks buggy if yes we need to fix it somehow.
+> > > > > > > > > > 
+> > > > > > > > > > 
+> > > > > > > > > > Which to me seems to indicate this should be handled as a separate
+> > > > > > > > > > effort.
+> > > > > > > > > 
+> > > > > > > > > A separate patchset, sure. But likely a prerequisite: we still need to
+> > > > > > > > > look at all the code. Let's not copy bugs, need to fix them.
+> > > > > > > > 
+> > > > > > > > This looks tangential to me unless you can come up with an actual reason
+> > > > > > > > the above spinlock usage is incorrect or insufficient.
+> > > > > > > 
+> > > > > > > You copy the same pattern that seems racy. So you double the
+> > > > > > > amount of code that woul need to be fixed.
+> > > > > > 
+> > > > > > 
+> > > > > > _Seems_ racy, or _is_ racy?  Please identify the race.
+> > > > > 
+> > > > > Look at this:
+> > > > > 
+> > > > > static inline int kvm_irq_line_state(unsigned long *irq_state,
+> > > > >                                      int irq_source_id, int level)
+> > > > > {
+> > > > >         /* Logical OR for level trig interrupt */
+> > > > >         if (level)
+> > > > >                 set_bit(irq_source_id, irq_state);
+> > > > >         else
+> > > > >                 clear_bit(irq_source_id, irq_state);
+> > > > > 
+> > > > >         return !!(*irq_state);
+> > > > > }
+> > > > > 
+> > > > > 
+> > > > > Now:
+> > > > > If other CPU changes some other bit after the atomic change,
+> > > > > it looks like !!(*irq_state) might return a stale value.
+> > > > > 
+> > > > > CPU 0 clears bit 0. CPU 1 sets bit 1. CPU 1 sets level to 1.
+> > > > > If CPU 0 sees a stale value now it will return 0 here
+> > > > > and interrupt will get cleared.
+> > > > > 
+> > > > > 
+> > > > > Maybe this is not a problem. But in that case IMO it needs
+> > > > > a comment explaining why and why it's not a problem in
+> > > > > your code.
+> > > > 
+> > > > So you want to close the door on anything that uses kvm_set_irq until
+> > > > this gets fixed... that's insane.
 > > > 
-> > > If someone had CCed linux-api@ along the way (as per
-> > > Documentation/SubmitChecklist), it might have helped ;-)
-> > 
-> > Well, it still _is_ late.
-> > 
-> > > >>> but it strikes me that CAP_EPOLLWAKEUP is
-> > > >>> a poor name for the capability that governs the use of EPOLLWAKEUP.
-> > > >>> While on the one hand some capabilities are overloaded
-> > > >>> (https://lwn.net/Articles/486306/), on the other hand we should avoid
-> > > >>> adding individual capabilities for each new API feature (otherwise
-> > > >>> capabilities become administratively unwieldy).
-> > > >>>
-> > > >>> This capability is not really about "EPOLL". It's about the ability to
-> > > >>> block system suspend. Therefore, IMO, a better name would be something
-> > > >>> like: CAP_BLOCK_SUSPEND. This name is better because there might be
-> > > >>> some other API feature that is later added that also has the effect of
-> > > >>> preventing system suspends, and we could reasonably govern that
-> > > >>> feature with the same capability.
-> > > >
-> > > > We already have another api, "/sys/power/wake_lock", that allow
-> > > > user-space to block suspend. Do we want to apply this capability that
-> > > > api as well, or only to apis that do not have other ways to restrict
-> > > > access?
+> > > What does kvm_set_irq use have to do with it?  You posted this patch:
 > > > 
-> > > Well, the question is: is there a governor on the use of
-> > > /sys/power/wake_lock? It makes sense either they are both governed
-> > > (preferably by the same mechanism, I would have thought), or neither
-> > > is.
+> > > +static int kvm_clear_pic_irq(struct kvm_kernel_irq_routing_entry *e,
+> > > +                            struct kvm *kvm, int irq_source_id)
+> > > +{
+> > > +#ifdef CONFIG_X86
+> > > +       struct kvm_pic *pic = pic_irqchip(kvm);
+> > > +       int level =
+> > > kvm_clear_irq_line_state(&pic->irq_states[e->irqchip.pin],
+> > > +                                            irq_source_id);
+> > > +       if (level)
+> > > +               kvm_pic_set_irq(pic, e->irqchip.pin,
+> > > +                               !!pic->irq_states[e->irqchip.pin]);
+> > > +       return level;
+> > > +#else
+> > > +       return -1;
+> > > +#endif
+> > > +}
+> > > +
 > > > 
-> > > >>> Does that seem sensible to you? I can send a patch for the name change.
-> > > >>
-> > > >> I'm not sure what Arve thinks about that, but I'd be fine with that.
-> > > >>
-> > > >> Arve, what do you think?
-> > > >>
-> > > >
-> > > > CAP_BLOCK_SUSPEND is fine with me, but if it does not apply to the
-> > > > sysfs interface, then the comment should probably mention this.
-> > > 
-> > > I've sent a patch, but omitted mention of API details in the comments.
-> > > Maybe that can be changed afterward, when a decision has been reached
-> > > about governing /sys/power/wake_lock.
+> > > it seems racy in the same way.
 > > 
-> > I'm going to push your patch for v3.5, but then I'm considering the following
-> > one for v3.6.  I wouldn't like to make more changes in v3.5-rc at this point,
-> > if possible.
+> > Now you're just misrepresenting how we got here, which was:
 > > 
-> > Thanks,
-> > Rafael
+> > > > > > > > IMHO, we're going off into the weeds again with these last
+> > > > > > > > two patches.  It may be a valid optimization, but it really has no
+> > > > > > > > bearing on the meat of the series (and afaict, no significant
+> > > > > > > > performance difference either).
+> > > > > > > 
+> > > > > > > For me it's not a performance thing. IMO code is cleaner without this locking:
+> > > > > > > we add a lock but only use it in some cases, so the rules become really
+> > > > > > > complex.
 > > 
-> > ---
-> > From: Rafael J. Wysocki <rjw@sisk.pl>
-> > Subject: PM / Sleep: Require CAP_BLOCK_SUSPEND to use wake_lock/wake_unlock
-> > 
-> > Require processes wanting to use the wake_lock/wake_unlock sysfs
-> > files to have the CAP_BLOCK_SUSPEND capability, which also is
-> > required for the eventpoll EPOLLWAKEUP flag to be effective, so that
-> > all interfaces related to blocking autosleep depend on the same
-> > capability.
-> > 
-> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> > So I'm happy to drop the last 2 patches, which were done at your request
+> > anyway, but you've failed to show how the locking in patches 1&2 is
+> > messy, inconsistent, or complex and now you're asking to block all
+> > progress.
 > 
-> Care to mark that for -stable as well?
+> I'm asking for bugs to get fixed and not duplicated. Adding more bugs is
+> not progress. Or maybe there is no bug. Let's see why and add a comment.
+> 
+> >  Those patches are just users of kvm_set_irq.
+> 
+> 
+> Well these add calls to kvm_set_irq which scans all vcpus under
+> spinlock. In the past Avi thought this is not a good idea too.
+> Maybe things changed.
 
-I will.
+We can drop the spinlock if we don't care about spurious EOIs, which is
+only a theoretical scalability problem anyway.  We're talking about
+level interrupts here, how scalable do we need to be?
 
-Thanks,
-Rafael
+
+
