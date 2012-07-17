@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756923Ab2GQVc7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 17:32:59 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:39558 "EHLO
+	id S1756883Ab2GQVct (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 17:32:49 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:39553 "EHLO
 	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756820Ab2GQVcy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 17:32:54 -0400
+	id S1756781Ab2GQVco (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 17:32:44 -0400
 From: "Theodore Ts'o" <tytso@mit.edu>
 To: Linux Kernel Developers List <linux-kernel@vger.kernel.org>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, "Ben Dooks" <ben-linux@fluff.org>,
-        "Wolfram Sang" <w.sang@pengutronix.de>
-Subject: [PATCH 03/17] i2c-pmcmsp: remove IRQF_SAMPLE_RANDOM which is now a no-op
-Date: Tue, 17 Jul 2012 17:32:22 -0400
-Message-Id: <1342560756-18737-4-git-send-email-tytso@mit.edu>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Samuel Ortiz <sameo@linux.intel.com>
+Subject: [PATCH 01/17] mfd: remove IRQF_SAMPLE_RANDOM which is now a no-op
+Date: Tue, 17 Jul 2012 17:32:20 -0400
+Message-Id: <1342560756-18737-2-git-send-email-tytso@mit.edu>
 X-Mailer: git-send-email 1.7.11.1.108.gb129051
 In-Reply-To: <1342560756-18737-1-git-send-email-tytso@mit.edu>
 References: <1342560756-18737-1-git-send-email-tytso@mit.edu>
@@ -31,26 +30,25 @@ feature-removal-schedule, so this patch is preparation for the final
 removal of this flag.
 
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Cc: "Ben Dooks" <ben-linux@fluff.org>
-Cc: "Wolfram Sang" <w.sang@pengutronix.de>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
 ---
- drivers/i2c/busses/i2c-pmcmsp.c | 3 +--
+ drivers/mfd/tps65010.c | 3 +--
  1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/i2c/busses/i2c-pmcmsp.c b/drivers/i2c/busses/i2c-pmcmsp.c
-index 07b7447..3d71395 100644
---- a/drivers/i2c/busses/i2c-pmcmsp.c
-+++ b/drivers/i2c/busses/i2c-pmcmsp.c
-@@ -306,8 +306,7 @@ static int __devinit pmcmsptwi_probe(struct platform_device *pldev)
- 	pmcmsptwi_data.irq = platform_get_irq(pldev, 0);
- 	if (pmcmsptwi_data.irq) {
- 		rc = request_irq(pmcmsptwi_data.irq, &pmcmsptwi_interrupt,
--			IRQF_SHARED | IRQF_SAMPLE_RANDOM,
--			pldev->name, &pmcmsptwi_data);
-+				 IRQF_SHARED, pldev->name, &pmcmsptwi_data);
- 		if (rc == 0) {
- 			/*
- 			 * Enable 'DONE' interrupt only.
+diff --git a/drivers/mfd/tps65010.c b/drivers/mfd/tps65010.c
+index 93d5fdf..da2691f 100644
+--- a/drivers/mfd/tps65010.c
++++ b/drivers/mfd/tps65010.c
+@@ -563,8 +563,7 @@ static int tps65010_probe(struct i2c_client *client,
+ 	 */
+ 	if (client->irq > 0) {
+ 		status = request_irq(client->irq, tps65010_irq,
+-			IRQF_SAMPLE_RANDOM | IRQF_TRIGGER_FALLING,
+-			DRIVER_NAME, tps);
++				     IRQF_TRIGGER_FALLING, DRIVER_NAME, tps);
+ 		if (status < 0) {
+ 			dev_dbg(&client->dev, "can't get IRQ %d, err %d\n",
+ 					client->irq, status);
 -- 
 1.7.11.1.108.gb129051
 
