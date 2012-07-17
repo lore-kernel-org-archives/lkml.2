@@ -1,90 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757211Ab2GQWFH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 18:05:07 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:39593 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757168Ab2GQWE6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 18:04:58 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Linux Kernel Developers List <linux-kernel@vger.kernel.org>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>
-Subject: [PATCH 14/17] [ARM] pxa: remove IRQF_SAMPLE_RANDOM which is now a no-op
-Date: Tue, 17 Jul 2012 17:32:33 -0400
-Message-Id: <1342560756-18737-15-git-send-email-tytso@mit.edu>
-X-Mailer: git-send-email 1.7.11.1.108.gb129051
-In-Reply-To: <1342560756-18737-1-git-send-email-tytso@mit.edu>
-References: <1342560756-18737-1-git-send-email-tytso@mit.edu>
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1755954Ab2GQWJb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 18:09:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20315 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751516Ab2GQWJ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 18:09:28 -0400
+Message-ID: <1342562965.2229.162.camel@bling.home>
+Subject: Re: [PATCH v5 2/4] kvm: KVM_EOIFD, an eventfd for EOIs
+From: Alex Williamson <alex.williamson@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
+Date: Tue, 17 Jul 2012 16:09:25 -0600
+In-Reply-To: <20120717212314.GB1868@redhat.com>
+References: <20120717144237.GA11516@redhat.com>
+	 <1342537024.3229.43.camel@ul30vt> <20120717151327.GC11587@redhat.com>
+	 <1342539669.2229.114.camel@bling.home> <20120717155325.GA12001@redhat.com>
+	 <1342541161.2229.123.camel@bling.home> <20120717161919.GB12114@redhat.com>
+	 <1342543936.2229.138.camel@bling.home> <20120717185803.GC13066@redhat.com>
+	 <1342555385.2229.152.camel@bling.home> <20120717212314.GB1868@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the changes in the random tree, IRQF_SAMPLE_RANDOM is now a
-no-op; interrupt randomness is now collected unconditionally in a very
-low-overhead fashion; see commit 775f4b297b.  The IRQF_SAMPLE_RANDOM
-flag was scheduled to be removed in 2009 on the
-feature-removal-schedule, so this patch is preparation for the final
-removal of this flag.
+On Wed, 2012-07-18 at 00:23 +0300, Michael S. Tsirkin wrote:
+> On Tue, Jul 17, 2012 at 02:03:05PM -0600, Alex Williamson wrote:
+> > On Tue, 2012-07-17 at 21:58 +0300, Michael S. Tsirkin wrote:
+> > > On Tue, Jul 17, 2012 at 10:52:16AM -0600, Alex Williamson wrote:
+> > > > On Tue, 2012-07-17 at 19:19 +0300, Michael S. Tsirkin wrote:
+> > > > > On Tue, Jul 17, 2012 at 10:06:01AM -0600, Alex Williamson wrote:
+> > > > > > On Tue, 2012-07-17 at 18:53 +0300, Michael S. Tsirkin wrote:
+> > > > > > > On Tue, Jul 17, 2012 at 09:41:09AM -0600, Alex Williamson wrote:
+> > > > > > > > On Tue, 2012-07-17 at 18:13 +0300, Michael S. Tsirkin wrote:
+> > > > > > > > > On Tue, Jul 17, 2012 at 08:57:04AM -0600, Alex Williamson wrote:
+> > > > > > > > > > On Tue, 2012-07-17 at 17:42 +0300, Michael S. Tsirkin wrote:
+> > > > > > > > > > > On Tue, Jul 17, 2012 at 08:29:43AM -0600, Alex Williamson wrote:
+> > > > > > > > > > > > On Tue, 2012-07-17 at 17:10 +0300, Michael S. Tsirkin wrote:
+> > > > > > > > > > > > > On Tue, Jul 17, 2012 at 07:59:16AM -0600, Alex Williamson wrote:
+> > > > > > > > > > > > > > On Tue, 2012-07-17 at 13:21 +0300, Michael S. Tsirkin wrote:
+> > > > > > > > > > > > > > > On Mon, Jul 16, 2012 at 02:33:55PM -0600, Alex Williamson wrote:
+> > > > > > > > > > > > > > > > +	if (args->flags & KVM_EOIFD_FLAG_LEVEL_IRQFD) {
+> > > > > > > > > > > > > > > > +		struct _irqfd *irqfd = _irqfd_fdget_lock(kvm, args->irqfd);
+> > > > > > > > > > > > > > > > +		if (IS_ERR(irqfd)) {
+> > > > > > > > > > > > > > > > +			ret = PTR_ERR(irqfd);
+> > > > > > > > > > > > > > > > +			goto fail;
+> > > > > > > > > > > > > > > > +		}
+> > > > > > > > > > > > > > > > +
+> > > > > > > > > > > > > > > > +		gsi = irqfd->gsi;
+> > > > > > > > > > > > > > > > +		level_irqfd = eventfd_ctx_get(irqfd->eventfd);
+> > > > > > > > > > > > > > > > +		source = _irq_source_get(irqfd->source);
+> > > > > > > > > > > > > > > > +		_irqfd_put_unlock(irqfd);
+> > > > > > > > > > > > > > > > +		if (!source) {
+> > > > > > > > > > > > > > > > +			ret = -EINVAL;
+> > > > > > > > > > > > > > > > +			goto fail;
+> > > > > > > > > > > > > > > > +		}
+> > > > > > > > > > > > > > > > +	} else {
+> > > > > > > > > > > > > > > > +		ret = -EINVAL;
+> > > > > > > > > > > > > > > > +		goto fail;
+> > > > > > > > > > > > > > > > +	}
+> > > > > > > > > > > > > > > > +
+> > > > > > > > > > > > > > > > +	INIT_LIST_HEAD(&eoifd->list);
+> > > > > > > > > > > > > > > > +	eoifd->kvm = kvm;
+> > > > > > > > > > > > > > > > +	eoifd->eventfd = eventfd;
+> > > > > > > > > > > > > > > > +	eoifd->source = source;
+> > > > > > > > > > > > > > > > +	eoifd->level_irqfd = level_irqfd;
+> > > > > > > > > > > > > > > > +	eoifd->notifier.gsi = gsi;
+> > > > > > > > > > > > > > > > +	eoifd->notifier.irq_acked = eoifd_event;
+> > > > > > > > > > > > > > > 
+> > > > > > > > > > > > > > > OK so this means eoifd keeps a reference to the irqfd.
+> > > > > > > > > > > > > > > And since this is the case, can't we drop the reference counting
+> > > > > > > > > > > > > > > around source ids now? Everything is referenced through irqfd.
+> > > > > > > > > > > > > > 
+> > > > > > > > > > > > > > Holding a reference and using it as a reference count are not the same
+> > > > > > > > > > > > > > thing.  What if another module holds a reference to this eventfd?  How
+> > > > > > > > > > > > > > do we do anything on release?
+> > > > > > > > > > > > > 
+> > > > > > > > > > > > > We don't as there is no release, and using kref on source id does not
+> > > > > > > > > > > > > help: it just never gets invoked.
+> > > > > > > > > > > > 
+> > > > > > > > > > > > Please work out how you think it should work and let me know, I don't
+> > > > > > > > > > > > see it.  We have an irq source id that needs to be allocated by irqfd
+> > > > > > > > > > > > and returned when it's unused.  It becomes unused when neither irqfd nor
+> > > > > > > > > > > > eoifd are making use of it.  irqfd and eoifd may be closed in any order.
+> > > > > > > > > > > > Use of the source id is what we're reference counting, which is why it's
+> > > > > > > > > > > > in struct _irq_source.  How can I use an eventfd reference for the same?
+> > > > > > > > > > > > I don't know when it's unused.  I don't know who else holds a reference
+> > > > > > > > > > > > to it...  Doesn't make sense to me.  Feels like attempting to squat on
+> > > > > > > > > > > > someone else's object.
+> > > > > > > > > > > > 
+> > > > > > > > > > > > 
+> > > > > > > > > > > 
+> > > > > > > > > > > eoifd should prevent irqfd from being released.
+> > > > > > > > > > 
+> > > > > > > > > > Why?  Note that this is actually quite difficult too.  We can't fail a
+> > > > > > > > > > release, nobody checks close(3p) return.  Blocking a release is likely
+> > > > > > > > > > to cause all sorts of problems, so what you mean is that irqfd should
+> > > > > > > > > > linger around until there are no references to it... but that's exactly
+> > > > > > > > > > what struct _irq_source is for, is to hold the bits that we care about
+> > > > > > > > > > references to and automatically release it when there are none.
+> > > > > > > > > 
+> > > > > > > > > No no. You *already* prevent it. You take a reference to the eventfd
+> > > > > > > > > context.
+> > > > > > > > 
+> > > > > > > > Right, which keeps the fd from going away, not the struct _irqfd.
+> > > > > > > 
+> > > > > > > _irqfd too.
+> > > > > > 
+> > > > > > 
+> > > > > > How so?
+> > > > > 
+> > > > > Normally irqfd_wakeup is called with POLLHUP and calls irqfd_deactivate.
+> > > > > If you get a ctx reference this does not happen.
+> > > > 
+> > > > I think you're mistaken.  wake_up_poll(,POLLHUP) is called from
+> > > > eventfd_release (file_operations.release), not from ctx reference
+> > > > release.
+> > > 
+> > > True. I was wrong. so close has the same bug as deassign. To fix,
+> > > how about eoifd will hold a reference to the irqfd instead of the
+> > > eventfd context?
+> > 
+> > What does it mean to hold a reference to the irqfd?
+> 
+> I meant file *reference: eventfd_fget. But there are other options see
+> below.
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Eric Miao <eric.y.miao@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
----
- arch/arm/mach-pxa/lubbock.c  | 2 +-
- arch/arm/mach-pxa/magician.c | 5 ++---
- arch/arm/mach-pxa/trizeps4.c | 4 ++--
- 3 files changed, 5 insertions(+), 6 deletions(-)
+That's no better than the eventfd context we already hold.
 
-diff --git a/arch/arm/mach-pxa/lubbock.c b/arch/arm/mach-pxa/lubbock.c
-index 6bb3f47..0ca0db7 100644
---- a/arch/arm/mach-pxa/lubbock.c
-+++ b/arch/arm/mach-pxa/lubbock.c
-@@ -456,7 +456,7 @@ static int lubbock_mci_init(struct device *dev,
- 	init_timer(&mmc_timer);
- 	mmc_timer.data = (unsigned long) data;
- 	return request_irq(LUBBOCK_SD_IRQ, lubbock_detect_int,
--			IRQF_SAMPLE_RANDOM, "lubbock-sd-detect", data);
-+			   0, "lubbock-sd-detect", data);
- }
- 
- static int lubbock_mci_get_ro(struct device *dev)
-diff --git a/arch/arm/mach-pxa/magician.c b/arch/arm/mach-pxa/magician.c
-index 2db697c..39561dc 100644
---- a/arch/arm/mach-pxa/magician.c
-+++ b/arch/arm/mach-pxa/magician.c
-@@ -633,9 +633,8 @@ static struct platform_device bq24022 = {
- static int magician_mci_init(struct device *dev,
- 				irq_handler_t detect_irq, void *data)
- {
--	return request_irq(IRQ_MAGICIAN_SD, detect_irq,
--				IRQF_DISABLED | IRQF_SAMPLE_RANDOM,
--				"mmc card detect", data);
-+	return request_irq(IRQ_MAGICIAN_SD, detect_irq, IRQF_DISABLED,
-+			   "mmc card detect", data);
- }
- 
- static void magician_mci_exit(struct device *dev, void *data)
-diff --git a/arch/arm/mach-pxa/trizeps4.c b/arch/arm/mach-pxa/trizeps4.c
-index 2b6ac00..166dd32 100644
---- a/arch/arm/mach-pxa/trizeps4.c
-+++ b/arch/arm/mach-pxa/trizeps4.c
-@@ -332,8 +332,8 @@ static int trizeps4_mci_init(struct device *dev, irq_handler_t mci_detect_int,
- 	int err;
- 
- 	err = request_irq(TRIZEPS4_MMC_IRQ, mci_detect_int,
--		IRQF_DISABLED | IRQF_TRIGGER_RISING | IRQF_SAMPLE_RANDOM,
--		"MMC card detect", data);
-+			  IRQF_DISABLED | IRQF_TRIGGER_RISING,
-+			  "MMC card detect", data);
- 	if (err) {
- 		printk(KERN_ERR "trizeps4_mci_init: MMC/SD: can't request"
- 						"MMC card detect IRQ\n");
--- 
-1.7.11.1.108.gb129051
+> > What state of functionality is an irqfd that has been
+> > closed/de-assigned but is still attached to an eoifd?  It can't
+> > continue to fire interrupts into the guest.
+> >
+> > I don't think close or de-assign have a bug, assign has a bug that it
+> > can allow re-assignment using an in-use eventfd.  I think I'd rather
+> > fix that.
+> 
+> Let me show you that the bug is in deassign:
+> 	assign irqfd for fd=1
+> 	assign for eoifd fd=2, irqfd=1
+> 	deassign irqfd 1
+> 
+> At this point eoifd has no meaning and there is also no way to deassign
+> it,
+
+Yes, there is.  This is exactly why I hold a reference to the eventfd
+ctx.  It can still be deassigned by passing irqfd=1, we'll do an
+eventfd_ctx_get and match it to that stored.
+
+>  so the bug already triggered.
+> 
+> I can see two ways out:
+> 1. easy way - fail deassign
+
+Then close() and deassign are not the same.
+
+> 2. elegant way - shut down eoifd on irqfd deassign too
+
+Sorry, I've always been told it's a bad idea to have one interface kill
+another from inside the kernel.
+
+Given that your assertion above is incorrect, I still stand by fixing
+assign.
+
 
