@@ -1,232 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754778Ab2GQIPf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 04:15:35 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:63936 "EHLO
+	id S1754551Ab2GQIQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 04:16:29 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:54552 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753671Ab2GQIP1 (ORCPT
+	with ESMTP id S1753063Ab2GQIQX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 04:15:27 -0400
-Message-ID: <50051F32.5040907@gmail.com>
-Date: Tue, 17 Jul 2012 10:15:46 +0200
+	Tue, 17 Jul 2012 04:16:23 -0400
+Message-ID: <50051F72.1000206@gmail.com>
+Date: Tue, 17 Jul 2012 10:16:50 +0200
 From: Sasha Levin <levinsasha928@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120713 Thunderbird/13.0
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, linux-mm <linux-mm@kvack.org>,
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+CC: davej@redhat.com,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: mm,numad,rcu: hang on OOM
-References: <1340988281.2936.58.camel@lappy> <20120701011538.GD2907@linux.vnet.ibm.com>
-In-Reply-To: <20120701011538.GD2907@linux.vnet.ibm.com>
+Subject: sched, debug: INFO: possible irq lock inversion dependency detected
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+Hi all,
 
-I've been running with your patch below for a while now, and haven't encountered the issue again.
+While fuzzing using trinity inside a KVM tools guest using the latest linux-next, I've encountered a hang within the guest. When I've tried dumping tasks using sysrq-t I got the following:
 
-On 07/01/2012 03:15 AM, Paul E. McKenney wrote:
-> On Fri, Jun 29, 2012 at 06:44:41PM +0200, Sasha Levin wrote:
->> Hi all,
->>
->> While fuzzing using trinity on a KVM tools guest with todays linux-next, I've hit the following lockup:
->>
->> [  362.261729] INFO: task numad/2:27 blocked for more than 120 seconds.
->> [  362.263974] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
->> [  362.271684] numad/2         D 0000000000000001  5672    27      2 0x00000000
->> [  362.280052]  ffff8800294c7c58 0000000000000046 ffff8800294c7c08 ffffffff81163dba
->> [  362.294477]  ffff8800294c6000 ffff8800294c6010 ffff8800294c7fd8 ffff8800294c6000
->> [  362.306631]  ffff8800294c6010 ffff8800294c7fd8 ffff88000d5c3000 ffff8800294c8000
->> [  362.315395] Call Trace:
->> [  362.318556]  [<ffffffff81163dba>] ? __lock_release+0x1ba/0x1d0
->> [  362.325411]  [<ffffffff8372ab75>] schedule+0x55/0x60
->> [  362.328844]  [<ffffffff8372b965>] rwsem_down_failed_common+0xf5/0x130
->> [  362.332501]  [<ffffffff8115d38e>] ? put_lock_stats+0xe/0x40
->> [  362.334496]  [<ffffffff81160135>] ? __lock_contended+0x1f5/0x230
->> [  362.336723]  [<ffffffff8372b9d5>] rwsem_down_read_failed+0x15/0x17
->> [  362.339297]  [<ffffffff81985e34>] call_rwsem_down_read_failed+0x14/0x30
->> [  362.341768]  [<ffffffff83729a29>] ? down_read+0x79/0xa0
->> [  362.343669]  [<ffffffff8122d262>] ? lazy_migrate_process+0x22/0x60
->> [  362.345616]  [<ffffffff8122d262>] lazy_migrate_process+0x22/0x60
->> [  362.347464]  [<ffffffff811453c0>] process_mem_migrate+0x10/0x20
->> [  362.349340]  [<ffffffff81145090>] move_processes+0x190/0x230
->> [  362.351398]  [<ffffffff81145b7a>] numad_thread+0x7a/0x120
->> [  362.353245]  [<ffffffff81145b00>] ? find_busiest_node+0x310/0x310
->> [  362.355396]  [<ffffffff81119e82>] kthread+0xb2/0xc0
->> [  362.356996]  [<ffffffff8372ea34>] kernel_thread_helper+0x4/0x10
->> [  362.359253]  [<ffffffff8372ccb4>] ? retint_restore_args+0x13/0x13
->> [  362.361168]  [<ffffffff81119dd0>] ? __init_kthread_worker+0x70/0x70
->> [  362.363277]  [<ffffffff8372ea30>] ? gs_change+0x13/0x13
->>
->> I've hit sysrq-t to see what might be the cause, and it appears that an OOM was in progress, and was stuck on RCU:
->>
->> [  578.086230] trinity-child69 D ffff8800277a54c8  3968  6658   6580 0x00000000
->> [  578.086230]  ffff880022c5f518 0000000000000046 ffff880022c5f4c8 ffff88001b9d6e00
->> [  578.086230]  ffff880022c5e000 ffff880022c5e010 ffff880022c5ffd8 ffff880022c5e000
->> [  578.086230]  ffff880022c5e010 ffff880022c5ffd8 ffff880023c08000 ffff880022c33000
->> [  578.086230] Call Trace:
->> [  578.086230]  [<ffffffff8372ab75>] schedule+0x55/0x60
->> [  578.086230]  [<ffffffff837285c8>] schedule_timeout+0x38/0x2c0
->> [  578.086230]  [<ffffffff81161d16>] ? mark_held_locks+0xf6/0x120
->> [  578.086230]  [<ffffffff81163dba>] ? __lock_release+0x1ba/0x1d0
->> [  578.086230]  [<ffffffff8372c67b>] ? _raw_spin_unlock_irq+0x2b/0x80
->> [  578.086230]  [<ffffffff8372a06f>] wait_for_common+0xff/0x170
->> [  578.086230]  [<ffffffff81132c10>] ? try_to_wake_up+0x290/0x290
->> [  578.086230]  [<ffffffff8372a188>] wait_for_completion+0x18/0x20
->> [  578.086230]  [<ffffffff811a5de7>] _rcu_barrier+0x4a7/0x4e0
-> 
-> Hmmm...  Perhaps a blocking operation is not appropriate here.  I have
-> substituted a nonblocking approach, which is at -rcu (thus soon -next)
-> at 1ee4c09d (Provide OOM handler to motivate lazy RCU callbacks).
-> Patch below.
-> 
-> 							Thanx, Paul
-> 
-> ------------------------------------------------------------------------
-> 
-> rcu: Provide OOM handler to motivate lazy RCU callbacks
-> 
-> In kernels built with CONFIG_RCU_FAST_NO_HZ=y, CPUs can accumulate a
-> large number of lazy callbacks, which as the name implies will be slow
-> to be invoked.  This can be a problem on small-memory systems, where the
-> default 6-second sleep for CPUs having only lazy RCU callbacks could well
-> be fatal.  This commit therefore installs an OOM hander that ensures that
-> every CPU with non-lazy callbacks has at least one non-lazy callback,
-> in turn ensuring timely advancement for these callbacks.
-> 
-> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
-> diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-> index 4b47fbe..dab279f 100644
-> --- a/kernel/rcutree.h
-> +++ b/kernel/rcutree.h
-> @@ -314,8 +314,11 @@ struct rcu_data {
->  	unsigned long n_rp_need_fqs;
->  	unsigned long n_rp_need_nothing;
->  
-> -	/* 6) _rcu_barrier() callback. */
-> +	/* 6) _rcu_barrier() and OOM callbacks. */
->  	struct rcu_head barrier_head;
-> +#ifdef CONFIG_RCU_FAST_NO_HZ
-> +	struct rcu_head oom_head;
-> +#endif /* #ifdef CONFIG_RCU_FAST_NO_HZ */
->  
->  	int cpu;
->  	struct rcu_state *rsp;
-> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-> index 81e53eb..1908847 100644
-> --- a/kernel/rcutree_plugin.h
-> +++ b/kernel/rcutree_plugin.h
-> @@ -25,6 +25,7 @@
->   */
->  
->  #include <linux/delay.h>
-> +#include <linux/oom.h>
->  
->  #define RCU_KTHREAD_PRIO 1
->  
-> @@ -2128,6 +2129,90 @@ static void rcu_idle_count_callbacks_posted(void)
->  	__this_cpu_add(rcu_dynticks.nonlazy_posted, 1);
->  }
->  
-> +/*
-> + * Data for flushing lazy RCU callbacks at OOM time.
-> + */
-> +static atomic_t oom_callback_count;
-> +static DECLARE_WAIT_QUEUE_HEAD(oom_callback_wq);
-> +
-> +/*
-> + * RCU OOM callback -- decrement the outstanding count and deliver the
-> + * wake-up if we are the last one.
-> + */
-> +static void rcu_oom_callback(struct rcu_head *rhp)
-> +{
-> +	if (atomic_dec_and_test(&oom_callback_count))
-> +		wake_up(&oom_callback_wq);
-> +}
-> +
-> +/*
-> + * Post an rcu_oom_notify callback on the current CPU if it has at
-> + * least one lazy callback.  This will unnecessarily post callbacks
-> + * to CPUs that already have a non-lazy callback at the end of their
-> + * callback list, but this is an infrequent operation, so accept some
-> + * extra overhead to keep things simple.
-> + */
-> +static void rcu_oom_notify_cpu(void *flavor)
-> +{
-> +	struct rcu_state *rsp = flavor;
-> +	struct rcu_data *rdp = __this_cpu_ptr(rsp->rda);
-> +
-> +	if (rdp->qlen_lazy != 0) {
-> +		atomic_inc(&oom_callback_count);
-> +		rsp->call(&rdp->oom_head, rcu_oom_callback);
-> +	}
-> +}
-> +
-> +/*
-> + * If low on memory, ensure that each CPU has a non-lazy callback.
-> + * This will wake up CPUs that have only lazy callbacks, in turn
-> + * ensuring that they free up the corresponding memory in a timely manner.
-> + */
-> +static int rcu_oom_notify(struct notifier_block *self,
-> +                          unsigned long notused, void *nfreed)
-> +{
-> +	int cpu;
-> +
-> +	/* Wait for callbacks from earlier instance to complete. */
-> +	wait_event(oom_callback_wq, atomic_read(&oom_callback_count) == 0);
-> +
-> +	/*
-> +	 * Prevent premature wakeup: ensure that all increments happen
-> +	 * before there is a chance of the counter reaching zero.
-> +	 */
-> +	atomic_set(&oom_callback_count, 1);
-> +
-> +	get_online_cpus();
-> +	for_each_online_cpu(cpu) {
-> +#ifdef CONFIG_PREEMPT_RCU
-> +		smp_call_function_single(cpu, rcu_oom_notify_cpu,
-> +					 &rcu_preempt_state, 1);
-> +#endif /* #ifdef CONFIG_PREEMPT_RCU */
-> +		smp_call_function_single(cpu, rcu_oom_notify_cpu,
-> +					 &rcu_bh_state, 1);
-> +		smp_call_function_single(cpu, rcu_oom_notify_cpu,
-> +					 &rcu_sched_state, 1);
-> +	}
-> +	put_online_cpus();
-> +
-> +	/* Unconditionally decrement: no need to wake ourselves up. */
-> +	atomic_dec(&oom_callback_count);
-> +
-> +	*(unsigned long *)nfreed = 1;
-> +	return NOTIFY_OK;
-> +}
-> +
-> +static struct notifier_block rcu_oom_nb = {
-> +	.notifier_call = rcu_oom_notify
-> +};
-> +
-> +static int __init rcu_register_oom_notifier(void)
-> +{
-> +	register_oom_notifier(&rcu_oom_nb);
-> +	return 0;
-> +}
-> +early_initcall(rcu_register_oom_notifier);
-> +
->  #endif /* #else #if !defined(CONFIG_RCU_FAST_NO_HZ) */
->  
->  #ifdef CONFIG_RCU_CPU_STALL_INFO
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+[  138.777386] =========================================================
+[  138.777386] [ INFO: possible irq lock inversion dependency detected ]
+[  138.777386] 3.5.0-rc7-next-20120716-sasha-dirty #225 Tainted: G        W
+[  138.777386] ---------------------------------------------------------
+[  138.777386] swapper/0/0 just changed the state of lock:
+[  138.777386]  (tasklist_lock){.?.+..}, at: [<ffffffff8113f833>] print_rq+0x53/0x190
+[  138.777386] but this lock took another, HARDIRQ-unsafe lock in the past:
+[  138.777386]  (&(&p->alloc_lock)->rlock){+.+...}
 
+and interrupts could create inverse lock ordering between them.
 
+[  138.777386]
+[  138.777386] other info that might help us debug this:
+[  138.777386]  Possible interrupt unsafe locking scenario:
+[  138.777386]
+[  138.777386]        CPU0                    CPU1
+[  138.777386]        ----                    ----
+[  138.777386]   lock(&(&p->alloc_lock)->rlock);
+[  138.777386]                                local_irq_disable();
+[  138.777386]                                lock(tasklist_lock);
+[  138.777386]                                lock(&(&p->alloc_lock)->rlock);
+[  138.777386]   <Interrupt>
+[  138.777386]     lock(tasklist_lock);
+[  138.777386]
+[  138.777386]  *** DEADLOCK ***
+[  138.777386]
+[  138.777386] 6 locks held by swapper/0/0:
+[  138.777386]  #0:  (&(&i->lock)->rlock){-.-...}, at: [<ffffffff81b5a09c>] serial8250_interrupt+0x2c/0xd0
+[  138.777386]  #1:  (&port_lock_key){-.-...}, at: [<ffffffff81b5b1f3>] serial8250_handle_irq+0x23/0x80
+[  138.777386]  #2:  (sysrq_key_table_lock){-.....}, at: [<ffffffff81b3eead>] __handle_sysrq+0x2d/0x180
+[  138.777386]  #3:  (rcu_read_lock){.+.+..}, at: [<ffffffff8112f2a0>] show_state_filter+0x0/0x220
+[  138.777386]  #4:  (sched_debug_lock){-.....}, at: [<ffffffff8113ff6c>] print_cpu+0x5fc/0x710
+[  138.777386]  #5:  (rcu_read_lock){.+.+..}, at: [<ffffffff8113ff60>] print_cpu+0x5f0/0x710
+[  138.777386]
+[  138.777386] the shortest dependencies between 2nd lock and 1st lock:
+[  138.777386]  -> (&(&p->alloc_lock)->rlock){+.+...} ops: 83940 {
+[  138.777386]     HARDIRQ-ON-W at:
+[  138.777386]                       [<ffffffff8115cd10>] mark_irqflags+0x100/0x190
+[  138.777386]                       [<ffffffff8115eefb>] __lock_acquire+0x92b/0xb50
+[  138.777386]                       [<ffffffff8116158a>] lock_acquire+0x1ca/0x270
+[  138.777386]                       [<ffffffff8377fb1b>] _raw_spin_lock+0x3b/0x70
+[  138.777386]                       [<ffffffff81258681>] set_task_comm+0x31/0x1c0
+[  138.777386]                       [<ffffffff8111836c>] kthreadd+0x2c/0x170
+[  138.777386]                       [<ffffffff83782c74>] kernel_thread_helper+0x4/0x10
+[  138.777386]     SOFTIRQ-ON-W at:
+[  138.777386]                       [<ffffffff8115cd33>] mark_irqflags+0x123/0x190
+[  138.777386]                       [<ffffffff8115eefb>] __lock_acquire+0x92b/0xb50
+[  138.777386]                       [<ffffffff8116158a>] lock_acquire+0x1ca/0x270
+[  138.777386]                       [<ffffffff8377fb1b>] _raw_spin_lock+0x3b/0x70
+[  138.777386]                       [<ffffffff81258681>] set_task_comm+0x31/0x1c0
+[  138.777386]                       [<ffffffff8111836c>] kthreadd+0x2c/0x170
+[  138.777386]                       [<ffffffff83782c74>] kernel_thread_helper+0x4/0x10
+[  138.777386]     INITIAL USE at:
+[  138.777386]                      [<ffffffff8115ef24>] __lock_acquire+0x954/0xb50
+[  138.777386]                      [<ffffffff8116158a>] lock_acquire+0x1ca/0x270
+[  138.777386]                      [<ffffffff8377fb1b>] _raw_spin_lock+0x3b/0x70
+[  138.777386]                      [<ffffffff81258681>] set_task_comm+0x31/0x1c0
+[  138.777386]                      [<ffffffff8111836c>] kthreadd+0x2c/0x170
+[  138.777386]                      [<ffffffff83782c74>] kernel_thread_helper+0x4/0x10
+[  138.777386]   }
+[  138.777386]   ... key      at: [<ffffffff85352228>] __key.45660+0x0/0x8
+[  138.777386]   ... acquired at:
+[  138.777386]    [<ffffffff8115beba>] check_prevs_add+0xba/0x1a0
+[  138.777386]    [<ffffffff8115c640>] validate_chain.isra.22+0x6a0/0x7b0
+[  138.777386]    [<ffffffff8115f05d>] __lock_acquire+0xa8d/0xb50
+[  138.777386]    [<ffffffff8116158a>] lock_acquire+0x1ca/0x270
+[  138.777386]    [<ffffffff8377fb1b>] _raw_spin_lock+0x3b/0x70
+[  138.777386]    [<ffffffff818bea25>] keyctl_session_to_parent+0x105/0x3f0
+[  138.777386]    [<ffffffff818bee65>] sys_keyctl+0x155/0x1a0
+[  138.777386]    [<ffffffff8378163d>] system_call_fastpath+0x1a/0x1f
+[  138.777386]
+[  138.777386] -> (tasklist_lock){.?.+..} ops: 31775 {
+[  138.777386]    IN-HARDIRQ-R at:
+[  138.777386]                     [<ffffffff8115cc51>] mark_irqflags+0x41/0x190
+[  138.777386]                     [<ffffffff8115eefb>] __lock_acquire+0x92b/0xb50
+[  138.777386]                     [<ffffffff8116158a>] lock_acquire+0x1ca/0x270
+[  138.777386]                     [<ffffffff8378006c>] _raw_read_lock_irqsave+0x7c/0xc0
+[  138.777386]                     [<ffffffff8113f833>] print_rq+0x53/0x190
+[  138.777386]                     [<ffffffff8113fffe>] print_cpu+0x68e/0x710
+[  138.777386]                     [<ffffffff81140702>] sched_debug_show+0x682/0x720
+[  138.777386]                     [<ffffffff8114129d>] sysrq_sched_debug_show+0xd/0x10
+[  138.777386]                     [<ffffffff8112f43e>] show_state_filter+0x19e/0x220
+[  138.777386]                     [<ffffffff81b3eb5b>] sysrq_handle_showstate+0xb/0x10
+[  138.777386]                     [<ffffffff81b3ef37>] __handle_sysrq+0xb7/0x180
+[  138.777386]                     [<ffffffff81b3f221>] handle_sysrq+0x21/0x30
+[  138.777386]                     [<ffffffff81b5ab49>] serial8250_rx_chars+0x189/0x220
+[  138.777386]                     [<ffffffff81b5b216>] serial8250_handle_irq+0x46/0x80
+[  138.777386]                     [<ffffffff81b5b26e>] serial8250_default_handle_irq+0x1e/0x30
+[  138.777386]                     [<ffffffff81b5a0be>] serial8250_interrupt+0x4e/0xd0
+[  138.777386]                     [<ffffffff81196ad9>] handle_irq_event_percpu+0x139/0x420
+[  138.777386]                     [<ffffffff81196e03>] handle_irq_event+0x43/0x70
+[  138.777386]                     [<ffffffff81199b88>] handle_level_irq+0x98/0xe0
+[  138.777386]                     [<ffffffff8106d374>] handle_irq+0x164/0x190
+[  138.777386]                     [<ffffffff8106cec5>] do_IRQ+0x55/0xd0
+[  138.777386]                     [<ffffffff83780caf>] ret_from_intr+0x0/0x1a
+[  138.777386]                     [<ffffffff81074a65>] default_idle+0x235/0x5c0
+[  138.777386]                     [<ffffffff81076648>] cpu_idle+0x118/0x160
+[  138.777386]                     [<ffffffff835d3d6c>] rest_init+0x130/0x144
+[  138.777386]                     [<ffffffff850efc3e>] start_kernel+0x392/0x39f
+[  138.777386]                     [<ffffffff850ef397>] x86_64_start_reservations+0x101/0x105
+[  138.777386]                     [<ffffffff850ef480>] x86_64_start_kernel+0xe5/0xf4
+[  138.777386]    HARDIRQ-ON-R at:
+[  138.777386]                     [<ffffffff8115ccdc>] mark_irqflags+0xcc/0x190
+[  138.777386]                     [<ffffffff8115eefb>] __lock_acquire+0x92b/0xb50
+[  138.777386]                     [<ffffffff8116158a>] lock_acquire+0x1ca/0x270
+[  138.777386]                     [<ffffffff8377ffae>] _raw_read_lock+0x3e/0x80
+[  138.777386]                     [<ffffffff810ef898>] do_wait+0x178/0x3b0
+[  138.777386]                     [<ffffffff810f10cb>] sys_wait4+0xbb/0xe0
+[  138.777386]                     [<ffffffff81109c30>] wait_for_helper+0x80/0xa0
+[  138.777386]                     [<ffffffff83782c74>] kernel_thread_helper+0x4/0x10
+[  138.777386]    SOFTIRQ-ON-R at:
+[  138.777386]                     [<ffffffff8115cd33>] mark_irqflags+0x123/0x190
+[  138.777386]                     [<ffffffff8115eefb>] __lock_acquire+0x92b/0xb50
+[  138.777386]                     [<ffffffff8116158a>] lock_acquire+0x1ca/0x270
+[  138.777386]                     [<ffffffff8377ffae>] _raw_read_lock+0x3e/0x80
+[  138.777386]                     [<ffffffff810ef898>] do_wait+0x178/0x3b0
+[  138.777386]                     [<ffffffff810f10cb>] sys_wait4+0xbb/0xe0
+[  138.777386]                     [<ffffffff81109c30>] wait_for_helper+0x80/0xa0
+[  138.777386]                     [<ffffffff83782c74>] kernel_thread_helper+0x4/0x10
+[  138.777386]    INITIAL USE at:
+[  138.777386]                    [<ffffffff8115ef24>] __lock_acquire+0x954/0xb50
+[  138.777386]                    [<ffffffff8116158a>] lock_acquire+0x1ca/0x270
+[  138.777386]                    [<ffffffff837805a9>] _raw_write_lock_irq+0x59/0x90
+[  138.777386]                    [<ffffffff810e8015>] copy_process+0xb25/0x11c0
+[  138.777386]                    [<ffffffff810e87f4>] do_fork+0x104/0x3d0
+[  138.777386]                    [<ffffffff81076451>] kernel_thread+0x71/0x80
+[  138.777386]                    [<ffffffff835d3c5d>] rest_init+0x21/0x144
+[  138.777386]                    [<ffffffff850efc3e>] start_kernel+0x392/0x39f
+[  138.777386]                    [<ffffffff850ef397>] x86_64_start_reservations+0x101/0x105
+[  138.777386]                    [<ffffffff850ef480>] x86_64_start_kernel+0xe5/0xf4
+[  138.777386]  }
+[  138.777386]  ... key      at: [<ffffffff8481e018>] tasklist_lock+0x18/0x80
+[  138.777386]  ... acquired at:
+[  138.777386]    [<ffffffff8115b0e1>] check_usage_forwards+0xe1/0x100
+[  138.777386]    [<ffffffff836c8351>] mark_lock_irq+0x91/0x137
+[  138.777386]    [<ffffffff8115cb3b>] mark_lock+0x10b/0x1e0
+[  138.777386]    [<ffffffff8115cc51>] mark_irqflags+0x41/0x190
+[  138.777386]    [<ffffffff8115eefb>] __lock_acquire+0x92b/0xb50
+[  138.777386]    [<ffffffff8116158a>] lock_acquire+0x1ca/0x270
+[  138.777386]    [<ffffffff8378006c>] _raw_read_lock_irqsave+0x7c/0xc0
+[  138.777386]    [<ffffffff8113f833>] print_rq+0x53/0x190
+[  138.777386]    [<ffffffff8113fffe>] print_cpu+0x68e/0x710
+[  138.777386]    [<ffffffff81140702>] sched_debug_show+0x682/0x720
+[  138.777386]    [<ffffffff8114129d>] sysrq_sched_debug_show+0xd/0x10
+[  138.777386]    [<ffffffff8112f43e>] show_state_filter+0x19e/0x220
+[  138.777386]    [<ffffffff81b3eb5b>] sysrq_handle_showstate+0xb/0x10
+[  138.777386]    [<ffffffff81b3ef37>] __handle_sysrq+0xb7/0x180
+[  138.777386]    [<ffffffff81b3f221>] handle_sysrq+0x21/0x30
+[  138.777386]    [<ffffffff81b5ab49>] serial8250_rx_chars+0x189/0x220
+[  138.777386]    [<ffffffff81b5b216>] serial8250_handle_irq+0x46/0x80
+[  138.777386]    [<ffffffff81b5b26e>] serial8250_default_handle_irq+0x1e/0x30
+[  138.777386]    [<ffffffff81b5a0be>] serial8250_interrupt+0x4e/0xd0
+[  138.777386]    [<ffffffff81196ad9>] handle_irq_event_percpu+0x139/0x420
+[  138.777386]    [<ffffffff81196e03>] handle_irq_event+0x43/0x70
+[  138.777386]    [<ffffffff81199b88>] handle_level_irq+0x98/0xe0
+[  138.777386]    [<ffffffff8106d374>] handle_irq+0x164/0x190
+[  138.777386]    [<ffffffff8106cec5>] do_IRQ+0x55/0xd0
+[  138.777386]    [<ffffffff83780caf>] ret_from_intr+0x0/0x1a
+[  138.777386]    [<ffffffff81074a65>] default_idle+0x235/0x5c0
+[  138.777386]    [<ffffffff81076648>] cpu_idle+0x118/0x160
+[  138.777386]    [<ffffffff835d3d6c>] rest_init+0x130/0x144
+[  138.777386]    [<ffffffff850efc3e>] start_kernel+0x392/0x39f
+[  138.777386]    [<ffffffff850ef397>] x86_64_start_reservations+0x101/0x105
+[  138.777386]    [<ffffffff850ef480>] x86_64_start_kernel+0xe5/0xf4
+[  138.777386]
+[  138.777386]
+[  138.777386] stack backtrace:
+[  138.777386] Pid: 0, comm: swapper/0 Tainted: G        W    3.5.0-rc7-next-20120716-sasha-dirty #225
+[  138.777386] Call Trace:
+[  138.777386]  <IRQ>  [<ffffffff8115afdf>] print_irq_inversion_bug+0x1ff/0x220
+[  138.777386]  [<ffffffff8115b0e1>] check_usage_forwards+0xe1/0x100
+[  138.777386]  [<ffffffff8106d758>] ? dump_trace+0x1f8/0x230
+[  138.777386]  [<ffffffff8115b000>] ? print_irq_inversion_bug+0x220/0x220
+[  138.777386]  [<ffffffff836c8351>] mark_lock_irq+0x91/0x137
+[  138.777386]  [<ffffffff8115cb3b>] mark_lock+0x10b/0x1e0
+[  138.777386]  [<ffffffff8115cc51>] mark_irqflags+0x41/0x190
+[  138.777386]  [<ffffffff8115eefb>] __lock_acquire+0x92b/0xb50
+[  138.777386]  [<ffffffff81999038>] ? do_raw_spin_unlock+0xc8/0xe0
+[  138.777386]  [<ffffffff8377fdfc>] ? _raw_spin_unlock_irqrestore+0x7c/0xa0
+[  138.777386]  [<ffffffff810eb391>] ? console_unlock+0x3a1/0x3e0
+[  138.777386]  [<ffffffff8116158a>] lock_acquire+0x1ca/0x270
+[  138.777386]  [<ffffffff8113f833>] ? print_rq+0x53/0x190
+[  138.777386]  [<ffffffff8378006c>] _raw_read_lock_irqsave+0x7c/0xc0
+[  138.777386]  [<ffffffff8113f833>] ? print_rq+0x53/0x190
+[  138.777386]  [<ffffffff8113f833>] print_rq+0x53/0x190
+[  138.777386]  [<ffffffff8113fffe>] print_cpu+0x68e/0x710
+[  138.777386]  [<ffffffff8113ff60>] ? print_cpu+0x5f0/0x710
+[  138.777386]  [<ffffffff81140702>] sched_debug_show+0x682/0x720
+[  138.777386]  [<ffffffff8114129d>] sysrq_sched_debug_show+0xd/0x10
+[  138.777386]  [<ffffffff8112f43e>] show_state_filter+0x19e/0x220
+[  138.777386]  [<ffffffff8112f2a0>] ? sched_show_task+0x1a0/0x1a0
+[  138.777386]  [<ffffffff81b3eead>] ? __handle_sysrq+0x2d/0x180
+[  138.777386]  [<ffffffff81b3eb5b>] sysrq_handle_showstate+0xb/0x10
+[  138.777386]  [<ffffffff81b3ef37>] __handle_sysrq+0xb7/0x180
+[  138.777386]  [<ffffffff81b3f221>] handle_sysrq+0x21/0x30
+[  138.777386]  [<ffffffff81b5ab49>] serial8250_rx_chars+0x189/0x220
+[  138.777386]  [<ffffffff8377fbf5>] ? _raw_spin_lock_irqsave+0xa5/0xc0
+[  138.777386]  [<ffffffff81b5b1f3>] ? serial8250_handle_irq+0x23/0x80
+[  138.777386]  [<ffffffff81b5b216>] serial8250_handle_irq+0x46/0x80
+[  138.777386]  [<ffffffff81b5b26e>] serial8250_default_handle_irq+0x1e/0x30
+[  138.777386]  [<ffffffff81b5a0be>] serial8250_interrupt+0x4e/0xd0
+[  138.777386]  [<ffffffff81196df8>] ? handle_irq_event+0x38/0x70
+[  138.777386]  [<ffffffff81196ad9>] handle_irq_event_percpu+0x139/0x420
+[  138.777386]  [<ffffffff81196e03>] handle_irq_event+0x43/0x70
+[  138.777386]  [<ffffffff81199b09>] ? handle_level_irq+0x19/0xe0
+[  138.777386]  [<ffffffff81199b88>] handle_level_irq+0x98/0xe0
+[  138.777386]  [<ffffffff8106d374>] handle_irq+0x164/0x190
+[  138.777386]  [<ffffffff8106cec5>] do_IRQ+0x55/0xd0
+[  138.777386]  [<ffffffff83780caf>] common_interrupt+0x6f/0x6f
+[  138.777386]  <EOI>  [<ffffffff8109e036>] ? native_safe_halt+0x6/0x10
+[  138.777386]  [<ffffffff8115d17d>] ? trace_hardirqs_on+0xd/0x10
+[  138.777386]  [<ffffffff81074a65>] default_idle+0x235/0x5c0
+[  138.777386]  [<ffffffff81076648>] cpu_idle+0x118/0x160
+[  138.777386]  [<ffffffff835d3d6c>] rest_init+0x130/0x144
+[  138.777386]  [<ffffffff835d3c3c>] ? csum_partial_copy_generic+0x16c/0x16c
+[  138.777386]  [<ffffffff850efc3e>] start_kernel+0x392/0x39f
+[  138.777386]  [<ffffffff850ef6b7>] ? obsolete_checksetup+0xaf/0xaf
+[  138.777386]  [<ffffffff850ef397>] x86_64_start_reservations+0x101/0x105
+[  138.777386]  [<ffffffff850ef120>] ? early_idt_handlers+0x120/0x120
+[  138.777386]  [<ffffffff850ef480>] x86_64_start_kernel+0xe5/0xf4
