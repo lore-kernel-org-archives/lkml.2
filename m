@@ -1,167 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753882Ab2GQHLV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 03:11:21 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:57912 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751764Ab2GQHLS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 03:11:18 -0400
-Message-ID: <50050FD9.3070403@us.ibm.com>
-Date: Tue, 17 Jul 2012 00:10:17 -0700
-From: John Stultz <johnstul@us.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1753275Ab2GQHP2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 03:15:28 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:37914 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750851Ab2GQHPZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 03:15:25 -0400
 MIME-Version: 1.0
-To: John Stultz <johnstul@us.ibm.com>
-CC: stable@vger.kernel.org, Prarit Bhargava <prarit@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/11] 3.2-stable: Fix for leapsecond caused hrtimer/futex
- issue
-References: <1342508724-14527-1-git-send-email-johnstul@us.ibm.com>
-In-Reply-To: <1342508724-14527-1-git-send-email-johnstul@us.ibm.com>
-Content-Type: multipart/mixed;
- boundary="------------020709030805040202040605"
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12071707-9360-0000-0000-00000878659E
+In-Reply-To: <20120709110528.GA965@krava.redhat.com>
+References: <1340960907-3725-1-git-send-email-jolsa@redhat.com>
+	<87fw9blyhj.fsf@sejong.aot.lge.com>
+	<20120702101518.GC967@krava.redhat.com>
+	<1341234662.1476.13.camel@leonhard>
+	<20120702133341.GD967@krava.redhat.com>
+	<CABPqkBTKNuwJXY7jRa+Zt8rmFftZUeJiYKEsKJeRiLdoHN3KWQ@mail.gmail.com>
+	<CAOPLpQfWtyRHYT1ZfcdmshYoapBgF=FO7yFacYe8pyL0MBeebA@mail.gmail.com>
+	<CABPqkBTTZaCVTtwJZbjXGwAihKAW_PMFK0+TZUTvbOn4pnfzvA@mail.gmail.com>
+	<20120709110528.GA965@krava.redhat.com>
+Date: Tue, 17 Jul 2012 09:15:23 +0200
+Message-ID: <CABPqkBTGOvSuCfOUt=gnpfViVn8Whg0Mf7_3dUUim-iXA+8gjA@mail.gmail.com>
+Subject: Re: [PATCHv3 0/3] perf tool: Add new event group management
+From: Stephane Eranian <eranian@google.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Ulrich Drepper <drepper@gmail.com>, Namhyung Kim <namhyung@gmail.com>,
+        acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu,
+        paulus@samba.org, cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, andi@firstfloor.org
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------020709030805040202040605
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-
-On 07/17/2012 12:05 AM, John Stultz wrote:
-> 1) Deadlock leapsecond issue that a few reports described.
+On Mon, Jul 9, 2012 at 1:05 PM, Jiri Olsa <jolsa@redhat.com> wrote:
 >
-> I spent some time over the weekend trying to find a way to reproduce
-> the hard-hang issue some folks were reporting after the leapsecond.
-> Initially I didn't think the 6b43ae8a619d17 leap-second hrimter livelock
-> patch needed to be backported since, I assumed it required the ntp_lock
-> split for it to be triggered, but looking again I found that the same
-> issue could occur prior to splitting out the ntp_lock. So I've backported
-> that fix (and its follow-on fixups) as well as created a test case
-> to reproduce the hard-hang deadlock.
+> On Fri, Jul 06, 2012 at 03:42:54AM +0200, Stephane Eranian wrote:
+> > On Fri, Jul 6, 2012 at 3:32 AM, Ulrich Drepper <drepper@gmail.com> wrote:
+> > > On Thu, Jul 5, 2012 at 12:15 PM, Stephane Eranian <eranian@google.com> wrote:
+> > >> I don't understand why you actually need the :2 suffix. There can
+> > >> only be one leader. So assume it is the first one. Users have to
+> > >> know the first one is the leader which seems like a natural thing
+> > >> to do for me. It would make you syntax less ugly than it already
+> > >> is.
+> > >
+> > > In a blue sky world I would have done this.  In fact, this is what I
+> > > tried before reading the sources to find out there is no group support
+> > > so far.  But given that multiple -e options already have a meaning I
+> > > would be hesitant to change this.
+> >
+> > That's why I said you activate grouping via -e only when you have
+> > the --group-events or --group-reads option in front. That would
+> > not change the meaning of the multiple -e when none of those
+> > group options are specified.
+>
+> I discussed this with peter..
+>
+> <peterz> the {} thing allows: 1) multiple groups in a single -e, 2) group attributes
+>
+And what's the value of 1) exactly? What's wrong with passing multiple -e ?
+The only group attribute I can think of would be :u, :k. Not so much typing.
 
-Attached is the test case I used to reproduce and test the solution to 
-the hard-hang deadlock.
+> as for the leader sampling, we can have the first event to become the leader
+> by default (omit the leader index modifier) and enable the leader sampling by
+> another modifier:
+>
+I don't understand this sentence.
 
-WARNING: THIS TEST WILL LIKELY HARD LOCK YOUR BOX IN IRQ CONTEXT!
-YOU MAY LOSE DATA! RUN AT YOUR OWN RISK!
-
-thanks
--john
-
-
---------------020709030805040202040605
-Content-Type: text/x-csrc;
- name="leapcrash.c"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="leapcrash.c"
-
-/* Demo leapsecond deadlock
- *              by: john stultz (johnstul@us.ibm.com)
- *              (C) Copyright IBM 2012
- *              Licensed under the GPL
- *
- * This test demonstrates leapsecond deadlock that is possibe
- * on kernels from 2.6.26 to 3.3.
- *
- * WARNING: THIS WILL LIKELY HARDHANG SYSTEMS AND MAY LOSE DATA
- * RUN AT YOUR OWN RISK!
- *  To build:
- *	$ gcc leapcrash.c -o leapcrash -lrt
- */
-
-
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <sys/time.h>
-#include <sys/timex.h>
-#include <string.h>
-#include <signal.h>
+> <peterz> right, just make it a single 'l' (el not one) to indicate 'leader' sampling
+>
+To me ,this looks a bit of an over-engineered design and it is not based on
+any actual user requests. Don't get me wrong, grouping is useful and required
+but nobody has ever asked for that level of flexibility. The syntax you have
+now is already very rich for my taste.
 
 
 
-/* clear NTP time_status & time_state */
-void clear_time_state(void)
-{
-	struct timex tx;
-	int ret;
 
-	/*
-	 * XXX - The fact we have to call this twice seems
-	 * to point to a slight issue in the kernel's ntp state
-	 * managment. Needs to be investigated further.
-	 */
-
-	tx.modes = ADJ_STATUS;
-	tx.status = STA_PLL;
-	ret = adjtimex(&tx);
-
-	tx.modes = ADJ_STATUS;
-	tx.status = 0;
-	ret = adjtimex(&tx);
-}
-
-/* Make sure we cleanup on ctrl-c */
-void handler(int unused)
-{
-	clear_time_state();
-	exit(0);
-}
-
-
-int  main(void)
-{
-	struct timex tx;
-	struct timespec ts;
-	time_t next_leap;
-	int count =0;
-
-	setbuf(stdout, NULL);
-
-	signal(SIGINT, handler);
-	signal(SIGKILL, handler);
-	printf("This runs continuously. Press ctrl-c to stop\n");
-
-	clear_time_state();
-
-
-	/* Get the current time */
-	clock_gettime(CLOCK_REALTIME, &ts);
-
-	/* Calculate the next possible leap second 23:59:60 GMT */
-	next_leap = ts.tv_sec;
-	next_leap += 86400 - (next_leap % 86400);
-
-	while (1) {
-		struct timeval tv;
-
-
-		/* set the time to 2 seconds before the leap */
-		tv.tv_sec = next_leap - 2;
-		tv.tv_usec = 0;
-		settimeofday(&tv, NULL);
-
-		adjtimex(&tx);
-
-		/* hammer on adjtime w/ STA_INS */
-		while (tx.time.tv_sec < next_leap + 1) {
-			/* Set the leap second insert flag */
-			tx.modes = ADJ_STATUS;
-			tx.status = STA_INS;
-			adjtimex(&tx);
-		}
-		clear_time_state();
-		printf(".");
-	}
-	return 0;
-}
-
---------------020709030805040202040605--
-
+>
+> jirka
