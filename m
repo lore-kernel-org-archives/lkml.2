@@ -1,92 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754195Ab2GQCAl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 22:00:41 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:62031 "EHLO
+	id S1754208Ab2GQCCY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 22:02:24 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:42761 "EHLO
 	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753292Ab2GQCAi (ORCPT
+	with ESMTP id S1753809Ab2GQCCV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 22:00:38 -0400
-Date: Mon, 16 Jul 2012 19:00:34 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 01/30] staging: comedi: add pci_dev pointer to
- comedi_device
-Message-ID: <20120717020034.GA28771@kroah.com>
-References: <201207111449.15203.hartleys@visionengravers.com>
- <20120717015201.GA10048@kroah.com>
- <ADE657CA350FB648AAC2C43247A983F00206AA915E16@AUSP01VMBX24.collaborationhost.net>
+	Mon, 16 Jul 2012 22:02:21 -0400
+Date: Mon, 16 Jul 2012 19:02:15 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: devel@driverdev.osuosl.org, b-cousson@ti.com, j-keerthy@ti.com,
+        linux-kernel@vger.kernel.org, kbaidarov@dev.rtsoft.ru,
+        grant.likely@secretlab.ca
+Subject: Re: [PATCHv4 1/4] staging: OMAP4+: thermal: introduce bandgap
+ temperature sensor
+Message-ID: <20120717020215.GA321@kroah.com>
+References: <1342108952-12987-1-git-send-email-eduardo.valentin@ti.com>
+ <1342108952-12987-2-git-send-email-eduardo.valentin@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <ADE657CA350FB648AAC2C43247A983F00206AA915E16@AUSP01VMBX24.collaborationhost.net>
+In-Reply-To: <1342108952-12987-2-git-send-email-eduardo.valentin@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 16, 2012 at 08:55:47PM -0500, H Hartley Sweeten wrote:
-> On Monday, July 16, 2012 6:52 PM, Greg KH wrote:
-> > On Wed, Jul 11, 2012 at 02:49:14PM -0700, H Hartley Sweeten wrote:
-> >> The pci_dev pointer in the private driver data is used by every
-> >> comedi pci driver. Some of them only have the need for the
-> >> private data because of this pointer.
-> >> 
-> >> Introduce the pci_dev pointer in the comedi_device struct so it
-> >> can be used instead of needing it in the private data.
-> >> 
-> >> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-> >> Cc: Ian Abbott <abbotti@mev.co.uk>
-> >> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> >> ---
-> >>  drivers/staging/comedi/comedidev.h | 2 ++
-> >>  1 file changed, 2 insertions(+)
-> >> 
-> >> diff --git a/drivers/staging/comedi/comedidev.h b/drivers/staging/comedi/comedidev.h
-> >> index de8c99c..55f2373 100644
-> >> --- a/drivers/staging/comedi/comedidev.h
-> >> +++ b/drivers/staging/comedi/comedidev.h
-> >> @@ -212,6 +212,8 @@ struct comedi_device {
-> >>  	 * DMA_NONE */
-> >>  	struct device *hw_dev;
-> >>  
-> >> +	struct pci_dev *pcidev;
-> >
-> > No, the field above this, hw_dev, should be used instead here, as that's
-> > what it is there for, right?
+On Thu, Jul 12, 2012 at 07:02:29PM +0300, Eduardo Valentin wrote:
+> In the System Control Module, OMAP supplies a voltage reference
+> and a temperature sensor feature that are gathered in the band
+> gap voltage and temperature sensor (VBGAPTS) module. The band
+> gap provides current and voltage reference for its internal
+> circuits and other analog IP blocks. The analog-to-digital
+> converter (ADC) produces an output value that is proportional
+> to the silicon temperature.
 > 
-> The hw_dev pointer is currently only used for something dealing with dma.
-> I have not dug into it yet to see what exactly it's used for.  The comment
-> says:
+> This patch provides a platform driver which expose this feature.
+> It is moduled as a MFD child of the System Control Module core
+> MFD driver.
 > 
-> 	/* hw_dev is passed to dma_alloc_coherent when allocating async buffers
-> 	 * for subdevices that have async_dma_dir set to something other than
-> 	 * DMA_NONE */
-
-Which is exactly what the pci device should be used for, it knows this
-information :)
-
-> > Care to rework this series with that change instead?
+> This driver provides only APIs to access the device properties,
+> like temperature, thresholds and update rate.
 > 
-> It could probably be used with some sort of container_of but I'm not sure.
+> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+> Signed-off-by: J Keerthy <j-keerthy@ti.com>
+> ---
+>  drivers/staging/Kconfig                       |    2 +
+>  drivers/staging/Makefile                      |    1 +
+>  drivers/staging/omap-thermal/Kconfig          |   11 +
+>  drivers/staging/omap-thermal/Makefile         |    2 +
+>  drivers/staging/omap-thermal/TODO             |   28 +
+>  drivers/staging/omap-thermal/omap-bandgap.c   | 1167 +++++++++++++++++++++++++
+>  drivers/staging/omap-thermal/omap-bandgap.h   |  425 +++++++++
+>  drivers/staging/omap-thermal/omap_bandgap.txt |   30 +
+>  8 files changed, 1666 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/staging/omap-thermal/Kconfig
+>  create mode 100644 drivers/staging/omap-thermal/Makefile
+>  create mode 100644 drivers/staging/omap-thermal/TODO
+>  create mode 100644 drivers/staging/omap-thermal/omap-bandgap.c
+>  create mode 100644 drivers/staging/omap-thermal/omap-bandgap.h
+>  create mode 100644 drivers/staging/omap-thermal/omap_bandgap.txt
+> 
+> Patch changelog:
+> Change from V1 to V2:
+> - Compilation fixes on Kconfig and Makefiles under drivers/staging
+> Change from V2 to V3:
+> - Removed empty line from end of Kconfig file, so git is happy while applying
+> - Keerthy's SOB now matches Copyright notice found in files
+> Change from V3 to V4:
+> - Fixed -Werror-implicit-function-declaration compilation issues.
+> - Limited driver compilation to OMAP4/5
+> 
+> diff --git a/drivers/staging/Kconfig b/drivers/staging/Kconfig
+> index d3934d7..e3402d5 100644
+> --- a/drivers/staging/Kconfig
+> +++ b/drivers/staging/Kconfig
+> @@ -134,4 +134,6 @@ source "drivers/staging/gdm72xx/Kconfig"
+>  
+>  source "drivers/staging/csr/Kconfig"
+>  
+> +source "drivers/staging/omap-thermal/Kconfig"
+> +
+>  endif # STAGING
+> diff --git a/drivers/staging/Makefile b/drivers/staging/Makefile
+> index 5b2219a..dbbdbbc 100644
+> --- a/drivers/staging/Makefile
+> +++ b/drivers/staging/Makefile
+> @@ -59,3 +59,4 @@ obj-$(CONFIG_USB_WPAN_HCD)	+= ozwpan/
+>  obj-$(CONFIG_USB_G_CCG)		+= ccg/
+>  obj-$(CONFIG_WIMAX_GDM72XX)	+= gdm72xx/
+>  obj-$(CONFIG_CSR_WIFI)		+= csr/
+> +obj-y				+= omap-thermal/
 
-Yes it can.
+Ick, no, why did you do that?  This should only be entered if the config
+entry is selected, right?
 
-To set the field:
-
-	hw_dev = &pci_dev->dev;
-
-to get it back:
-	pci_dev = container_of(hw_dev, struct pci_device, struct device);
-
-I think.  That's off the top of my head, please try it out first.
-
-And use a macro for the container_of stuff, that makes it easier to
-understand.
-
-thanks,
+Did I just miss this on your previous patches?  Sorry about that.  I'll
+see if I can fix it up by hand...
 
 greg k-h
