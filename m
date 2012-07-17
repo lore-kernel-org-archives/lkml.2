@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752036Ab2GQQEL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 12:04:11 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:50354 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750707Ab2GQQEI (ORCPT
+	id S1752995Ab2GQQFN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 12:05:13 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55660 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751542Ab2GQQFJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 12:04:08 -0400
-Date: Tue, 17 Jul 2012 09:04:02 -0700
+	Tue, 17 Jul 2012 12:05:09 -0400
+Date: Tue, 17 Jul 2012 09:05:05 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, olaf@aepfle.de, apw@canonical.com
-Subject: Re: [PATCH 01/15] Drivers: hv: Format GUIDS as per MSFT standards
-Message-ID: <20120717160402.GA20481@kroah.com>
+To: Olaf Hering <olaf@aepfle.de>
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>, apw@canonical.com,
+        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
+Subject: Re: [PATCH 02/15] Drivers: hv: Add KVP definitions for IP address
+ injection
+Message-ID: <20120717160505.GB20481@kroah.com>
 References: <1342297930-12607-1-git-send-email-kys@microsoft.com>
  <1342298060-12662-1-git-send-email-kys@microsoft.com>
+ <1342298060-12662-2-git-send-email-kys@microsoft.com>
+ <20120717040912.GA6369@aepfle.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1342298060-12662-1-git-send-email-kys@microsoft.com>
+In-Reply-To: <20120717040912.GA6369@aepfle.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 14, 2012 at 01:34:06PM -0700, K. Y. Srinivasan wrote:
-> Format GUIDS as per MSFT standard. This makes interacting with MSFT
-> tool stack easier.
+On Tue, Jul 17, 2012 at 06:09:13AM +0200, Olaf Hering wrote:
+> On Sat, Jul 14, K. Y. Srinivasan wrote:
 > 
-> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
-> ---
->  drivers/hv/vmbus_drv.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
+> > diff --git a/include/linux/hyperv.h b/include/linux/hyperv.h
+> > index 68ed7f7..38b561a 100644
+> > --- a/include/linux/hyperv.h
+> > +++ b/include/linux/hyperv.h
+> > @@ -127,6 +127,8 @@ enum hv_kvp_exchg_op {
+> >  	KVP_OP_SET,
+> >  	KVP_OP_DELETE,
+> >  	KVP_OP_ENUMERATE,
+> > +	KVP_OP_GET_IP_INFO,
+> > +	KVP_OP_SET_IP_INFO,
+> >  	KVP_OP_REGISTER,
+> >  	KVP_OP_COUNT /* Number of operations, must be last. */
+> >  };
 > 
-> diff --git a/drivers/hv/vmbus_drv.c b/drivers/hv/vmbus_drv.c
-> index a220e57..1f7e54a 100644
-> --- a/drivers/hv/vmbus_drv.c
-> +++ b/drivers/hv/vmbus_drv.c
-> @@ -147,7 +147,7 @@ static ssize_t vmbus_show_device_attr(struct device *dev,
->  
->  	if (!strcmp(dev_attr->attr.name, "class_id")) {
->  		ret = sprintf(buf, "{%02x%02x%02x%02x-%02x%02x-%02x%02x-"
-> -			       "%02x%02x%02x%02x%02x%02x%02x%02x}\n",
-> +			       "%02x%02x-%02x%02x%02x%02x%02x%02x}\n",
+> I think this will break the kernel/daemon API for existing binaries.
 
-As Joe pointed out, please just use the printk modifier the kernel
-already has for GUIDS, and don't roll your own here.  That will work
-properly for you, right?
+I know it will break :)
+
+KY, you can't break the existing user/kernel api that you created a few
+kernel versions ago, sorry.  Please fix this, we can not take this
+as-is, nor should you want us to.
 
 thanks,
 
