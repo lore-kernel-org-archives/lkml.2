@@ -1,61 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756144Ab2GQWIn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 18:08:43 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45209 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754441Ab2GQWIi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 18:08:38 -0400
-Date: Tue, 17 Jul 2012 15:06:26 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
-        Tony Luck <tony.luck@intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        John Stultz <john.stultz@linaro.org>, Shuah Khan <shuahkhan@gmail.com>,
-        arve@android.com, Rebecca Schultz Zavin <rebecca@android.com>,
-        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: Re: [PATCH 3/8] pstore: Add persistent function tracing
-Message-ID: <20120717220625.GA32645@lizard>
-References: <20120710001004.GA22744@lizard>
- <1341879046-5197-3-git-send-email-anton.vorontsov@linaro.org>
- <1342553898.10332.9.camel@gandalf.stny.rr.com>
- <20120717200130.GA31678@lizard>
- <1342561102.10332.18.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1342561102.10332.18.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757225Ab2GQWFL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 18:05:11 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:39591 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757165Ab2GQWE6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 18:04:58 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Linux Kernel Developers List <linux-kernel@vger.kernel.org>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 12/17] isp1301_omap: remove IRQF_SAMPLE_RANDOM which is now a no-op
+Date: Tue, 17 Jul 2012 17:32:31 -0400
+Message-Id: <1342560756-18737-13-git-send-email-tytso@mit.edu>
+X-Mailer: git-send-email 1.7.11.1.108.gb129051
+In-Reply-To: <1342560756-18737-1-git-send-email-tytso@mit.edu>
+References: <1342560756-18737-1-git-send-email-tytso@mit.edu>
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 17, 2012 at 05:38:22PM -0400, Steven Rostedt wrote:
-[...]
-> > > BTW, can any of the called functions go into module code that can be
-> > > removed? If so, then this is not safe at all. Normal function tracing
-> > > can not be synced in a preemptible kernel.
-> > 
-> > Um. Yes, psinfo->write_buf() might be in the module. Nice catch.
+With the changes in the random tree, IRQF_SAMPLE_RANDOM is now a
+no-op; interrupt randomness is now collected unconditionally in a very
+low-overhead fashion; see commit 775f4b297b.  The IRQF_SAMPLE_RANDOM
+flag was scheduled to be removed in 2009 on the
+feature-removal-schedule, so this patch is preparation for the final
+removal of this flag.
 
-Oh, actually, while write_buf() can technically be in a removable module,
-the RAM backend can't be removed once loaded. So it is not a real issue.
-But I'll implement your idea anyway, it seems a bit cleaner and safer,
-plus if we ever want to make persistent_ram backend removable, we won't
-need to bother w/ this particular issue.
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Felipe Balbi <balbi@ti.com>
+---
+ drivers/usb/otg/isp1301_omap.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-Thanks!
-
+diff --git a/drivers/usb/otg/isp1301_omap.c b/drivers/usb/otg/isp1301_omap.c
+index 70cf5d7..512397a 100644
+--- a/drivers/usb/otg/isp1301_omap.c
++++ b/drivers/usb/otg/isp1301_omap.c
+@@ -1575,7 +1575,6 @@ isp1301_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
+ 		isp->irq_type = IRQF_TRIGGER_FALLING;
+ 	}
+ 
+-	isp->irq_type |= IRQF_SAMPLE_RANDOM;
+ 	status = request_irq(i2c->irq, isp1301_irq,
+ 			isp->irq_type, DRIVER_NAME, isp);
+ 	if (status < 0) {
 -- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+1.7.11.1.108.gb129051
+
