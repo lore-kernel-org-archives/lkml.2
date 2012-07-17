@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757463Ab2GQWvZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 18:51:25 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64756 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932129Ab2GQWub (ORCPT
+	id S1757405Ab2GQWuZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 18:50:25 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:40560 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757385Ab2GQWuS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 18:50:31 -0400
-Subject: Patch "time: Move common updates to a function" has been added to the 3.0-stable tree
-To: johnstul@us.ibm.com, eric.dumazet@gmail.com, gregkh@linuxfoundation.org,
-        john.stultz@linaro.org, linux-kernel@vger.kernel.org,
-        prarit@redhat.com, richardcochran@gmail.com, tglx@linutronix.de
+	Tue, 17 Jul 2012 18:50:18 -0400
+Subject: Patch "timekeeping: Fix CLOCK_MONOTONIC inconsistency during leapsecond" has been added to the 3.0-stable tree
+To: johnstul@us.ibm.com, gregkh@linuxfoundation.org, john.stultz@linaro.org,
+        linux-kernel@vger.kernel.org, prarit@redhat.com,
+        richardcochran@gmail.com, tglx@linutronix.de
 Cc: <stable@vger.kernel.org>, <stable-commits@vger.kernel.org>
 From: <gregkh@linuxfoundation.org>
-Date: Tue, 17 Jul 2012 15:50:00 -0700
-In-Reply-To: <1342546438-17534-5-git-send-email-johnstul@us.ibm.com>
-Message-ID: <1342565400232@kroah.org>
+Date: Tue, 17 Jul 2012 15:49:58 -0700
+In-Reply-To: <1342546438-17534-4-git-send-email-johnstul@us.ibm.com>
+Message-ID: <1342565398110@kroah.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ASCII
 Content-Transfer-Encoding: 8bit
@@ -26,118 +26,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is a note to let you know that I've just added the patch titled
 
-    time: Move common updates to a function
+    timekeeping: Fix CLOCK_MONOTONIC inconsistency during leapsecond
 
 to the 3.0-stable tree which can be found at:
     http://www.kernel.org/git/?p=linux/kernel/git/stable/stable-queue.git;a=summary
 
 The filename of the patch is:
-     time-move-common-updates-to-a-function.patch
+     timekeeping-fix-clock_monotonic-inconsistency-during-leapsecond.patch
 and it can be found in the queue-3.0 subdirectory.
 
 If you, or anyone else, feels it should not be added to the stable tree,
 please let <stable@vger.kernel.org> know about it.
 
 
->From johnstul@us.ibm.com  Tue Jul 17 15:24:46 2012
+>From johnstul@us.ibm.com  Tue Jul 17 15:24:29 2012
 From: John Stultz <johnstul@us.ibm.com>
-Date: Tue, 17 Jul 2012 13:33:51 -0400
-Subject: time: Move common updates to a function
+Date: Tue, 17 Jul 2012 13:33:50 -0400
+Subject: timekeeping: Fix CLOCK_MONOTONIC inconsistency during leapsecond
 To: stable@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, Eric Dumazet <eric.dumazet@gmail.com>, Richard Cochran <richardcochran@gmail.com>, Prarit Bhargava <prarit@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>
-Message-ID: <1342546438-17534-5-git-send-email-johnstul@us.ibm.com>
+Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>, Prarit Bhargava <prarit@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>, John Stultz <johnstul@us.ibm.com>
+Message-ID: <1342546438-17534-4-git-send-email-johnstul@us.ibm.com>
 
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: John Stultz <john.stultz@linaro.org>
 
-This is a backport of cc06268c6a87db156af2daed6e96a936b955cc82
+This is a backport of fad0c66c4bb836d57a5f125ecd38bed653ca863a
+which resolves a bug the previous commit.
 
-While not a bugfix itself, it allows following fixes to backport
-in a more straightforward manner.
+Commit 6b43ae8a61 (ntp: Fix leap-second hrtimer livelock) broke the
+leapsecond update of CLOCK_MONOTONIC. The missing leapsecond update to
+wall_to_monotonic causes discontinuities in CLOCK_MONOTONIC.
 
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Richard Cochran <richardcochran@gmail.com>
+Adjust wall_to_monotonic when NTP inserted a leapsecond.
+
+Reported-by: Richard Cochran <richardcochran@gmail.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Tested-by: Richard Cochran <richardcochran@gmail.com>
+Link: http://lkml.kernel.org/r/1338400497-12420-1-git-send-email-john.stultz@linaro.org
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Cc: Prarit Bhargava <prarit@redhat.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- kernel/time/timekeeping.c |   34 +++++++++++++++++-----------------
- 1 file changed, 17 insertions(+), 17 deletions(-)
+ kernel/time/timekeeping.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
 --- a/kernel/time/timekeeping.c
 +++ b/kernel/time/timekeeping.c
-@@ -166,6 +166,19 @@ static struct timespec total_sleep_time;
-  */
- static struct timespec raw_time;
- 
-+/* must hold write on xtime_lock */
-+static void timekeeping_update(bool clearntp)
-+{
-+	if (clearntp) {
-+		timekeeper.ntp_error = 0;
-+		ntp_clear();
-+	}
-+	update_vsyscall(&xtime, &wall_to_monotonic,
-+			 timekeeper.clock, timekeeper.mult);
-+}
-+
-+
-+
- /* flag for if timekeeping is suspended */
- int __read_mostly timekeeping_suspended;
- 
-@@ -366,11 +379,7 @@ int do_settimeofday(const struct timespe
- 
- 	xtime = *tv;
- 
--	timekeeper.ntp_error = 0;
--	ntp_clear();
--
--	update_vsyscall(&xtime, &wall_to_monotonic, timekeeper.clock,
--				timekeeper.mult);
-+	timekeeping_update(true);
- 
- 	write_sequnlock_irqrestore(&xtime_lock, flags);
- 
-@@ -403,11 +412,7 @@ int timekeeping_inject_offset(struct tim
- 	xtime = timespec_add(xtime, *ts);
- 	wall_to_monotonic = timespec_sub(wall_to_monotonic, *ts);
- 
--	timekeeper.ntp_error = 0;
--	ntp_clear();
--
--	update_vsyscall(&xtime, &wall_to_monotonic, timekeeper.clock,
--				timekeeper.mult);
-+	timekeeping_update(true);
- 
- 	write_sequnlock_irqrestore(&xtime_lock, flags);
- 
-@@ -630,10 +635,7 @@ void timekeeping_inject_sleeptime(struct
- 
- 	__timekeeping_inject_sleeptime(delta);
- 
--	timekeeper.ntp_error = 0;
--	ntp_clear();
--	update_vsyscall(&xtime, &wall_to_monotonic, timekeeper.clock,
--				timekeeper.mult);
-+	timekeeping_update(true);
- 
- 	write_sequnlock_irqrestore(&xtime_lock, flags);
- 
-@@ -938,9 +940,7 @@ static void update_wall_time(void)
- 		wall_to_monotonic.tv_sec -= leap;
+@@ -824,6 +824,7 @@ static cycle_t logarithmic_accumulation(
+ 		xtime.tv_sec++;
+ 		leap = second_overflow(xtime.tv_sec);
+ 		xtime.tv_sec += leap;
++		wall_to_monotonic.tv_sec -= leap;
  	}
  
--	/* check to see if there is a new clocksource to use */
--	update_vsyscall(&xtime, &wall_to_monotonic, timekeeper.clock,
--				timekeeper.mult);
-+	timekeeping_update(false);
- }
+ 	/* Accumulate raw time */
+@@ -934,7 +935,7 @@ static void update_wall_time(void)
+ 		xtime.tv_sec++;
+ 		leap = second_overflow(xtime.tv_sec);
+ 		xtime.tv_sec += leap;
+-
++		wall_to_monotonic.tv_sec -= leap;
+ 	}
  
- /**
+ 	/* check to see if there is a new clocksource to use */
 
 
 Patches currently in stable-queue which might be from johnstul@us.ibm.com are
