@@ -1,126 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755489Ab2GQPNE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 11:13:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20812 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755372Ab2GQPND (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 11:13:03 -0400
-Date: Tue, 17 Jul 2012 18:13:27 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Subject: Re: [PATCH v5 2/4] kvm: KVM_EOIFD, an eventfd for EOIs
-Message-ID: <20120717151327.GC11587@redhat.com>
-References: <20120716202711.1752.71007.stgit@bling.home>
- <20120716203353.1752.19127.stgit@bling.home>
- <20120717102139.GG7949@redhat.com>
- <1342533556.3229.7.camel@ul30vt>
- <20120717141002.GC10822@redhat.com>
- <1342535383.3229.32.camel@ul30vt>
- <20120717144237.GA11516@redhat.com>
- <1342537024.3229.43.camel@ul30vt>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1342537024.3229.43.camel@ul30vt>
+	id S1755491Ab2GQPOR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 11:14:17 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:55817 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754163Ab2GQPOM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 11:14:12 -0400
+Message-ID: <1342538038.1813.1.camel@koala>
+Subject: Re: [PATCH 0/3] fs/sysv: stop using write_supers and s_dirt
+From: Artem Bityutskiy <dedekind1@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Date: Tue, 17 Jul 2012 18:13:58 +0300
+In-Reply-To: <20120713144244.f3c9fb27.akpm@linux-foundation.org>
+References: <1341323008-29414-1-git-send-email-dedekind1@gmail.com>
+	 <1342103878.18274.98.camel@sauron.fi.intel.com>
+	 <20120713144244.f3c9fb27.akpm@linux-foundation.org>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-O4VLXN2fzFYygjYKmMHD"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 17, 2012 at 08:57:04AM -0600, Alex Williamson wrote:
-> On Tue, 2012-07-17 at 17:42 +0300, Michael S. Tsirkin wrote:
-> > On Tue, Jul 17, 2012 at 08:29:43AM -0600, Alex Williamson wrote:
-> > > On Tue, 2012-07-17 at 17:10 +0300, Michael S. Tsirkin wrote:
-> > > > On Tue, Jul 17, 2012 at 07:59:16AM -0600, Alex Williamson wrote:
-> > > > > On Tue, 2012-07-17 at 13:21 +0300, Michael S. Tsirkin wrote:
-> > > > > > On Mon, Jul 16, 2012 at 02:33:55PM -0600, Alex Williamson wrote:
-> > > > > > > +	if (args->flags & KVM_EOIFD_FLAG_LEVEL_IRQFD) {
-> > > > > > > +		struct _irqfd *irqfd = _irqfd_fdget_lock(kvm, args->irqfd);
-> > > > > > > +		if (IS_ERR(irqfd)) {
-> > > > > > > +			ret = PTR_ERR(irqfd);
-> > > > > > > +			goto fail;
-> > > > > > > +		}
-> > > > > > > +
-> > > > > > > +		gsi = irqfd->gsi;
-> > > > > > > +		level_irqfd = eventfd_ctx_get(irqfd->eventfd);
-> > > > > > > +		source = _irq_source_get(irqfd->source);
-> > > > > > > +		_irqfd_put_unlock(irqfd);
-> > > > > > > +		if (!source) {
-> > > > > > > +			ret = -EINVAL;
-> > > > > > > +			goto fail;
-> > > > > > > +		}
-> > > > > > > +	} else {
-> > > > > > > +		ret = -EINVAL;
-> > > > > > > +		goto fail;
-> > > > > > > +	}
-> > > > > > > +
-> > > > > > > +	INIT_LIST_HEAD(&eoifd->list);
-> > > > > > > +	eoifd->kvm = kvm;
-> > > > > > > +	eoifd->eventfd = eventfd;
-> > > > > > > +	eoifd->source = source;
-> > > > > > > +	eoifd->level_irqfd = level_irqfd;
-> > > > > > > +	eoifd->notifier.gsi = gsi;
-> > > > > > > +	eoifd->notifier.irq_acked = eoifd_event;
-> > > > > > 
-> > > > > > OK so this means eoifd keeps a reference to the irqfd.
-> > > > > > And since this is the case, can't we drop the reference counting
-> > > > > > around source ids now? Everything is referenced through irqfd.
-> > > > > 
-> > > > > Holding a reference and using it as a reference count are not the same
-> > > > > thing.  What if another module holds a reference to this eventfd?  How
-> > > > > do we do anything on release?
-> > > > 
-> > > > We don't as there is no release, and using kref on source id does not
-> > > > help: it just never gets invoked.
-> > > 
-> > > Please work out how you think it should work and let me know, I don't
-> > > see it.  We have an irq source id that needs to be allocated by irqfd
-> > > and returned when it's unused.  It becomes unused when neither irqfd nor
-> > > eoifd are making use of it.  irqfd and eoifd may be closed in any order.
-> > > Use of the source id is what we're reference counting, which is why it's
-> > > in struct _irq_source.  How can I use an eventfd reference for the same?
-> > > I don't know when it's unused.  I don't know who else holds a reference
-> > > to it...  Doesn't make sense to me.  Feels like attempting to squat on
-> > > someone else's object.
-> > > 
-> > > 
-> > 
-> > eoifd should prevent irqfd from being released.
-> 
-> Why?  Note that this is actually quite difficult too.  We can't fail a
-> release, nobody checks close(3p) return.  Blocking a release is likely
-> to cause all sorts of problems, so what you mean is that irqfd should
-> linger around until there are no references to it... but that's exactly
-> what struct _irq_source is for, is to hold the bits that we care about
-> references to and automatically release it when there are none.
 
-No no. You *already* prevent it. You take a reference to the eventfd
-context.
+--=-O4VLXN2fzFYygjYKmMHD
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> >   It already keeps
-> > a reference to it so it prevents irqfd from going away by userspace
-> > closing the fd.
-> 
-> Wrong, eoifd holds a reference to the eventfd for the irqfd, so it
-> prevents the fd from going away, not the irqfd.
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Date: Tue, 3 Jul 2012 15:47:44 +0300
+Subject: [PATCH] fs/sysv: stop using write_super and s_dirt
 
-When the fd is no going away an ioctl is the only other way for
-it to go away.
+It does not look like sysv FS needs 'write_super()' at all, because all it
+does is a timestamp update. I cannot test this patch, because this
+file-system is so old and probably has not been used by anyone for years,
+so there are no tools to create it in Linux.
 
-> >   But it can still be released with deassign.
-> > An easy solution is to fail deassign of irqfd if there is
-> > eoifd bound to it.
-> 
-> I don't know why we would impose such a bizarre usage model when
-> reference counting on struct _irq_source seems to handle this nicely
-> already.
+In sysv FS marking the superblock as dirty is basically marking the superbl=
+ock
+buffers as drity and then setting the s_dirt flag. And when 'write_super()'=
+ is
+executed to handle the s_dirt flag, we just update the timestamp and again =
+mark
+the superblock buffer as dirty. The reason for this strange behavior is
+probably that the Linux sysv implementation is trying to do what sysv itsel=
+f
+was doing:
 
-Well eventfd gets an irqfd. What does it mean if said irqfd gets
-deassigned, and potentially assigned an unrelated interrupt?
-I think what I would expect is for it to handle the new interrupt.
-This is hard to implement so let us fail this.
+"It's the way sysv itself does stuff. The timestamp on v7/sys3/sys5
+reflects the clock on the box. A lot of ancient boxes with no decent
+hardware clocks used to reset the system time off the root fs superblock
+on a loss of power" (Alan Cox).
 
--- 
-MST
+However, the Linux sysv FS implementation is very unlikely of much help for
+clock-less systems anyway, because it updates the superblock time-stamp _on=
+ly_
+if there was write activity, therwise it does not.
+
+Thus, we can update the timestamp more opprtunistically - on unmount or rem=
+ount
+of sync, and nothing should change. So this patch removes 'sysv_write_super=
+()'
+and 's_dirt'.
+
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+---
+
+Updated the changelog, nothing else.
+
+ fs/sysv/inode.c |   10 ----------
+ fs/sysv/sysv.h  |    1 -
+ 2 files changed, 0 insertions(+), 11 deletions(-)
+
+diff --git a/fs/sysv/inode.c b/fs/sysv/inode.c
+index f20ffe3..80e1e2b 100644
+--- a/fs/sysv/inode.c
++++ b/fs/sysv/inode.c
+@@ -43,7 +43,6 @@ static int sysv_sync_fs(struct super_block *sb, int wait)
+ 	 * then attach current time stamp.
+ 	 * But if the filesystem was marked clean, keep it clean.
+ 	 */
+-	sb->s_dirt =3D 0;
+ 	old_time =3D fs32_to_cpu(sbi, *sbi->s_sb_time);
+ 	if (sbi->s_type =3D=3D FSTYPE_SYSV4) {
+ 		if (*sbi->s_sb_state =3D=3D cpu_to_fs32(sbi, 0x7c269d38 - old_time))
+@@ -57,14 +56,6 @@ static int sysv_sync_fs(struct super_block *sb, int wait=
+)
+ 	return 0;
+ }
+=20
+-static void sysv_write_super(struct super_block *sb)
+-{
+-	if (!(sb->s_flags & MS_RDONLY))
+-		sysv_sync_fs(sb, 1);
+-	else
+-		sb->s_dirt =3D 0;
+-}
+-
+ static int sysv_remount(struct super_block *sb, int *flags, char *data)
+ {
+ 	struct sysv_sb_info *sbi =3D SYSV_SB(sb);
+@@ -351,7 +342,6 @@ const struct super_operations sysv_sops =3D {
+ 	.write_inode	=3D sysv_write_inode,
+ 	.evict_inode	=3D sysv_evict_inode,
+ 	.put_super	=3D sysv_put_super,
+-	.write_super	=3D sysv_write_super,
+ 	.sync_fs	=3D sysv_sync_fs,
+ 	.remount_fs	=3D sysv_remount,
+ 	.statfs		=3D sysv_statfs,
+diff --git a/fs/sysv/sysv.h b/fs/sysv/sysv.h
+index 11b0767..0bc35fd 100644
+--- a/fs/sysv/sysv.h
++++ b/fs/sysv/sysv.h
+@@ -117,7 +117,6 @@ static inline void dirty_sb(struct super_block *sb)
+ 	mark_buffer_dirty(sbi->s_bh1);
+ 	if (sbi->s_bh1 !=3D sbi->s_bh2)
+ 		mark_buffer_dirty(sbi->s_bh2);
+-	sb->s_dirt =3D 1;
+ }
+=20
+=20
+--=20
+1.7.7.6
+
+
+
+--=-O4VLXN2fzFYygjYKmMHD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJQBYE2AAoJECmIfjd9wqK0sdYP/j9LSv1wXED4HyPDclR8tlSS
+AUE20IGm3AUoaJDMczu9AFbajigzqCwZ2C4FPotQ3hFpmpA+ouwf6zHg1LBUDtuO
+uBdvHPMx89AXCc3fb+ax9JD/stA+GYd8BKdZr+nZitxIyvmyubZZDf6HjjsMxqWS
+hV/260tDn5OSVs2ZbNZYh17wKtKfPyULPqxjBZUtVaRY7HognY+R+I+L8bw8heUK
+htw+pktquXnCNbXnykNunCuzkUtgKbkG2Ghp14JjFgQsmWevNe6t4cPn2f0airOk
+x+xe5Abg4M/ya/HYhZevH8T/6PlBAfocU+kMbBVaOdMrhWjGRz9yDAX5PGBIKiET
+g+zsnHkpqB3CFeASB1MG6cknP31RQng+OQ8hiQ4q17+PKO+iFojOktgsis6W+2Iv
+NlUxORNBgrwj4ZcNkRjpkW0kbMR2S7GGDXbRL24eAy9MjEz3Rn73tRX1TKB6L+ku
+n8KS4trlaFENFa91b24yM1n+0qgddBisx3TrG00n8MYHUH9AcV/mLObUigm4t+8P
+XWkrol5NPmb6DvFX91n5xEOqUFxD3o3vWNPr5wbDAVpWALlzmNF5cD3rMfvMAbUd
+zFAjGLHJ1rRNHdKyHLaz6eeu9rqTQswPSnjZspwek6zhN1j5SAX9Bb9UFtqlgMvz
+G7S2A3hSXKiLaOMDQoJ/
+=vzk8
+-----END PGP SIGNATURE-----
+
+--=-O4VLXN2fzFYygjYKmMHD--
+
