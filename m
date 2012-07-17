@@ -1,66 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751739Ab2GQSVm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 14:21:42 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:41133 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751287Ab2GQSVj (ORCPT
+	id S1752368Ab2GQSYW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 14:24:22 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:58786 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751014Ab2GQSYT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 14:21:39 -0400
-Message-ID: <5005AD06.8080403@us.ibm.com>
-Date: Tue, 17 Jul 2012 11:20:54 -0700
-From: John Stultz <johnstul@us.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Tue, 17 Jul 2012 14:24:19 -0400
 MIME-Version: 1.0
-To: Willy Tarreau <w@1wt.eu>
-CC: stable@vger.kernel.org, Prarit Bhargava <prarit@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/11] 3.0-stable: Fix for leapsecond deadlock & hrtimer/futex
- issue
-References: <1342546438-17534-1-git-send-email-johnstul@us.ibm.com> <20120717175741.GA3665@1wt.eu> <5005ABC2.8050006@us.ibm.com>
-In-Reply-To: <5005ABC2.8050006@us.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12071718-2398-0000-0000-000008931720
+In-Reply-To: <1340836334-20427-1-git-send-email-stigge@antcom.de>
+References: <1340836334-20427-1-git-send-email-stigge@antcom.de>
+Date: Tue, 17 Jul 2012 20:24:18 +0200
+Message-ID: <CACRpkdYBBa8BZMeGK0kiXNysn_ErpyKhTtbK8yFxf+JyMSndFw@mail.gmail.com>
+Subject: Re: [PATCH RESEND] gpio: of_get_named_gpio_flags() return
+ -EPROBE_DEFER if GPIO not yet available
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Roland Stigge <stigge@antcom.de>
+Cc: cjb@laptop.org, grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        rmk+kernel@arm.linux.org.uk, ulf.hansson@stericsson.com,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        aletes.xgr@gmail.com, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2012 11:15 AM, John Stultz wrote:
-> On 07/17/2012 10:57 AM, Willy Tarreau wrote:
->> Hi John,
->>
->> On Tue, Jul 17, 2012 at 01:33:47PM -0400, John Stultz wrote:
->>> I've already done backports to all the stable kernels to 2.6.32, and
->>> will send out the rest soon.
->> That's very much appreciated, thank you! Do not hesitate to send me
->> your reproducers, I'll happily run some tests.
+On Thu, Jun 28, 2012 at 12:32 AM, Roland Stigge <stigge@antcom.de> wrote:
+
+> of_get_named_gpio_flags() and of_get_named_gpio() return -EPROBE_DEFER if the
+> respective GPIO is not (yet) available. This is useful if driver's probe()
+> functions try to get a GPIO whose controller isn't probed yet. Thus, the driver
+> can be probed again later on.
 >
-> Attached are two tests. One is general exerciser of the leapsecond 
-> code (leap-a-day) which also notes if it sees the hrtimer/futuex early 
-> expiration issue, and the other is a much faster (almost immediate) 
-> reproducer for the leapsecond deadlock (leapcrash).
+> The function still returns -EINVAL on other errors (parse error or node doesn't
+> exist). This way, the case of an optional/intentionally missing GPIO is handled
+> appropriately.
 >
-> The leapcrash test will likely wedge unpatched systems in hardirq 
-> context, and has caused lost (dirty) data in my testing, so BEWARE!
-> RUN AT YOUR OWN RISK!
->
-> And of course, the leap-a-day has the same potential, but doesn't 
-> tickle the deadlock issue as aggressively.
+> Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-As a tangent, I'm looking to try to get these tests integrated with a 
-testing suite that developers, distros and other testing organizations 
-run regularly.  I'm aware of LTP, however last I looked at it, it seems 
-to have become a bit messy, being somewhat of a catch all, and in casual 
-asking around not too many folks I know regularly use it (Is that no 
-longer the case?).
+Patch applied, if all gpio stuff shall defer properly in v3.6 we need this
+so let's do some testing in -next!
 
-Are there any other test suites that folks would recommend I look into 
-for merging these (and other time related) tests?
+Would be nice to get some ACK besides my own...
 
-thanks
--john
-
-
+Yours,
+Linus Walleij
