@@ -1,93 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754299Ab2GQOmM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 10:42:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38882 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752207Ab2GQOmI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 10:42:08 -0400
-Date: Tue, 17 Jul 2012 17:42:37 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Subject: Re: [PATCH v5 2/4] kvm: KVM_EOIFD, an eventfd for EOIs
-Message-ID: <20120717144237.GA11516@redhat.com>
-References: <20120716202711.1752.71007.stgit@bling.home>
- <20120716203353.1752.19127.stgit@bling.home>
- <20120717102139.GG7949@redhat.com>
- <1342533556.3229.7.camel@ul30vt>
- <20120717141002.GC10822@redhat.com>
- <1342535383.3229.32.camel@ul30vt>
+	id S1754545Ab2GQOmm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 10:42:42 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:55710 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753963Ab2GQOmk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 10:42:40 -0400
+Message-ID: <500579D9.4040808@linux.vnet.ibm.com>
+Date: Tue, 17 Jul 2012 22:42:33 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1342535383.3229.32.camel@ul30vt>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: [PATCH 04/10] KVM: introduce gfn_to_hva_read/kvm_read_hva/kvm_read_hva_atomic
+References: <5005791B.8040807@linux.vnet.ibm.com>
+In-Reply-To: <5005791B.8040807@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12071714-4790-0000-0000-000003BABB79
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 17, 2012 at 08:29:43AM -0600, Alex Williamson wrote:
-> On Tue, 2012-07-17 at 17:10 +0300, Michael S. Tsirkin wrote:
-> > On Tue, Jul 17, 2012 at 07:59:16AM -0600, Alex Williamson wrote:
-> > > On Tue, 2012-07-17 at 13:21 +0300, Michael S. Tsirkin wrote:
-> > > > On Mon, Jul 16, 2012 at 02:33:55PM -0600, Alex Williamson wrote:
-> > > > > +	if (args->flags & KVM_EOIFD_FLAG_LEVEL_IRQFD) {
-> > > > > +		struct _irqfd *irqfd = _irqfd_fdget_lock(kvm, args->irqfd);
-> > > > > +		if (IS_ERR(irqfd)) {
-> > > > > +			ret = PTR_ERR(irqfd);
-> > > > > +			goto fail;
-> > > > > +		}
-> > > > > +
-> > > > > +		gsi = irqfd->gsi;
-> > > > > +		level_irqfd = eventfd_ctx_get(irqfd->eventfd);
-> > > > > +		source = _irq_source_get(irqfd->source);
-> > > > > +		_irqfd_put_unlock(irqfd);
-> > > > > +		if (!source) {
-> > > > > +			ret = -EINVAL;
-> > > > > +			goto fail;
-> > > > > +		}
-> > > > > +	} else {
-> > > > > +		ret = -EINVAL;
-> > > > > +		goto fail;
-> > > > > +	}
-> > > > > +
-> > > > > +	INIT_LIST_HEAD(&eoifd->list);
-> > > > > +	eoifd->kvm = kvm;
-> > > > > +	eoifd->eventfd = eventfd;
-> > > > > +	eoifd->source = source;
-> > > > > +	eoifd->level_irqfd = level_irqfd;
-> > > > > +	eoifd->notifier.gsi = gsi;
-> > > > > +	eoifd->notifier.irq_acked = eoifd_event;
-> > > > 
-> > > > OK so this means eoifd keeps a reference to the irqfd.
-> > > > And since this is the case, can't we drop the reference counting
-> > > > around source ids now? Everything is referenced through irqfd.
-> > > 
-> > > Holding a reference and using it as a reference count are not the same
-> > > thing.  What if another module holds a reference to this eventfd?  How
-> > > do we do anything on release?
-> > 
-> > We don't as there is no release, and using kref on source id does not
-> > help: it just never gets invoked.
-> 
-> Please work out how you think it should work and let me know, I don't
-> see it.  We have an irq source id that needs to be allocated by irqfd
-> and returned when it's unused.  It becomes unused when neither irqfd nor
-> eoifd are making use of it.  irqfd and eoifd may be closed in any order.
-> Use of the source id is what we're reference counting, which is why it's
-> in struct _irq_source.  How can I use an eventfd reference for the same?
-> I don't know when it's unused.  I don't know who else holds a reference
-> to it...  Doesn't make sense to me.  Feels like attempting to squat on
-> someone else's object.
-> 
-> 
+This set of functions is only used to read data from host space, in the
+later patch, we will only get a readonly hva in gfn_to_hva_read, and
+the function name is a good hint to let gfn_to_hva_read to pair with
+kvm_read_hva()/kvm_read_hva_atomic()
 
-eoifd should prevent irqfd from being released.  It already keeps
-a reference to it so it prevents irqfd from going away by userspace
-closing the fd.  But it can still be released with deassign.
-An easy solution is to fail deassign of irqfd if there is
-eoifd bound to it.
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+---
+ virt/kvm/kvm_main.c |   29 +++++++++++++++++++++++++----
+ 1 files changed, 25 insertions(+), 4 deletions(-)
 
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index 6c1e746..a89c7b8 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -1048,6 +1048,27 @@ unsigned long gfn_to_hva(struct kvm *kvm, gfn_t gfn)
+ }
+ EXPORT_SYMBOL_GPL(gfn_to_hva);
+
++/*
++ * The hva returned by this function is only allowed to be read.
++ * It should pair with kvm_read_hva() or kvm_read_hva_atomic().
++ */
++static unsigned long gfn_to_hva_read(struct kvm *kvm, gfn_t gfn)
++{
++	return gfn_to_hva_many(gfn_to_memslot(kvm, gfn), gfn, NULL);
++}
++
++static int kvm_read_hva(void *data, void __user *hva, int len)
++{
++	return __copy_from_user(data, hva, len);
++
++}
++
++static int kvm_read_hva_atomic(void *data, void __user *hva, int len)
++{
++	return __copy_from_user_inatomic(data, hva, len);
++
++}
++
+ pfn_t get_fault_pfn(void)
+ {
+ 	get_page(fault_page);
+@@ -1316,10 +1337,10 @@ int kvm_read_guest_page(struct kvm *kvm, gfn_t gfn, void *data, int offset,
+ 	int r;
+ 	unsigned long addr;
+
+-	addr = gfn_to_hva(kvm, gfn);
++	addr = gfn_to_hva_read(kvm, gfn);
+ 	if (kvm_is_error_hva(addr))
+ 		return -EFAULT;
+-	r = __copy_from_user(data, (void __user *)addr + offset, len);
++	r = kvm_read_hva(data, (void __user *)addr + offset, len);
+ 	if (r)
+ 		return -EFAULT;
+ 	return 0;
+@@ -1354,11 +1375,11 @@ int kvm_read_guest_atomic(struct kvm *kvm, gpa_t gpa, void *data,
+ 	gfn_t gfn = gpa >> PAGE_SHIFT;
+ 	int offset = offset_in_page(gpa);
+
+-	addr = gfn_to_hva(kvm, gfn);
++	addr = gfn_to_hva_read(kvm, gfn);
+ 	if (kvm_is_error_hva(addr))
+ 		return -EFAULT;
+ 	pagefault_disable();
+-	r = __copy_from_user_inatomic(data, (void __user *)addr + offset, len);
++	r = kvm_read_hva_atomic(data, (void __user *)addr + offset, len);
+ 	pagefault_enable();
+ 	if (r)
+ 		return -EFAULT;
 -- 
-MST
+1.7.7.6
+
