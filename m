@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754824Ab2GQJfJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 05:35:09 -0400
-Received: from tharradin.pu-pm.univ-fcomte.fr ([194.57.85.210]:56839 "EHLO
-	tharradin.pu-pm.univ-fcomte.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751330Ab2GQJfH (ORCPT
+	id S1754894Ab2GQJfc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 05:35:32 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:39659 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751330Ab2GQJf3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 05:35:07 -0400
-X-Greylist: delayed 458 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Jul 2012 05:35:07 EDT
-Message-ID: <50052FFE.2060109@pu-pm.univ-fcomte.fr>
-Date: Tue, 17 Jul 2012 11:27:26 +0200
-From: Eugen Dedu <Eugen.Dedu@pu-pm.univ-fcomte.fr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+	Tue, 17 Jul 2012 05:35:29 -0400
+Message-ID: <500530E3.3020404@huawei.com>
+Date: Tue, 17 Jul 2012 17:31:15 +0800
+From: Jiang Liu <jiang.liu@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: getsockopt/setsockopt with SO_RCVBUF and SO_SNDBUF "non-standard"
- behaviour
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Yinghai Lu <yinghai@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Xishi Qiu <qiuxishi@huawei.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
+        Keping Chen <chenkeping@huawei.com>, <linux-mm@kvack.org>,
+        <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Jiang Liu <liuj97@gmail.com>
+Subject: Re: [PATCH] mm: setup pageblock_order before it's used by sparse
+References: <1341047274-5616-1-git-send-email-jiang.liu@huawei.com>  <20120703140705.af23d4d3.akpm@linux-foundation.org>  <4FF39F0E.4070300@huawei.com> <20120704092006.GH14154@suse.de>  <CAE9FiQXAuqj5V_ZrZPs3qr93XQS1tCO=qOBP7mCsDCqXQQ5PoQ@mail.gmail.com> <1341537867.6330.46.camel@pasglop>
+In-Reply-To: <1341537867.6330.46.camel@pasglop>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.108.108.229]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Hi Ben,
+	Any update about this topic?
+	Thanks!
+	Gerry
 
-I looked on Internet and at the old thread 
-http://lkml.indiana.edu/hypermail/linux/kernel/0108.0/0275.html, but the 
-issue is still not settled as far as I see.
+On 2012-7-6 9:24, Benjamin Herrenschmidt wrote:
+> On Thu, 2012-07-05 at 18:00 -0700, Yinghai Lu wrote:
+>> cma, dma_continugous_reserve is referring pageblock_order very early
+>> too.
+>> just after init_memory_mapping() for x86's setup_arch.
+>>
+>> so set pageblock_order early looks like my -v2 patch is right way.
+>>
+>> current question: need to powerpc guys to check who to set that early.
+> 
+> I missed the beginning of that discussion, I'll try to dig a bit,
+> might take me til next week though as I'm about to be off for
+> the week-end.
+> 
+> Cheers,
+> Ben.
+> 
+> 
+> 
+> .
+> 
 
-I need to have the highest memory available for snd/rcv buffer and I 
-need to know/confirm how much it allocated for my process (how much I 
-can use).
 
-So with Linux we need to do something like:
-setsockopt (..., SO_RCVBUF, 256000, ...)
-getsockopt (..., SO_RCVBUF, &i, ...)
-i /= 2;
-
-where i is the size I am looking for.
-
-Now, to make this code work for other OSes it should be changed to:
-setsockopt (..., SO_RCVBUF, 256000, ...)
-getsockopt (..., SO_RCVBUF, &i, ...)
-#ifdef LINUX
-i /= 2;
-#endif
-
-First question, is this code correct?  If not, what code gives the 
-amount of memory useable for my process?
-
-Second, it seems to me that linux is definitely "non-standard" here. 
-Saying that linux uses twice as memory has nothing to do with that, 
-since getsockopt should return what the application can count on, not 
-what is the internal use.  It is like a hypothetical malloc (10) would 
-return not 10, but 20 (including meta-information).  Is that right?
-
-Cheers,
--- 
-Eugen Dedu
-http://eugen.dedu.free.fr
