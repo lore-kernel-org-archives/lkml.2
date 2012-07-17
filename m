@@ -1,55 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754682Ab2GQGbd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 02:31:33 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:24546 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753205Ab2GQGbb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 02:31:31 -0400
-Date: Tue, 17 Jul 2012 09:31:06 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, Zheng Liu <wenqing.lz@taobao.com>
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [patch -next] ext4: locking issue on error path
-Message-ID: <20120717063106.GA14985@elgon.mountain>
+	id S1753487Ab2GQGdK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 02:33:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48381 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751721Ab2GQGdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 02:33:08 -0400
+Date: Tue, 17 Jul 2012 08:33:01 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        Rik van Riel <riel@redhat.com>, Ying Han <yinghan@google.com>,
+        Greg Thelen <gthelen@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [PATCH mmotm] memcg: further prevent OOM with too many dirty
+ pages
+Message-ID: <20120717063301.GA25435@tiehlicka.suse.cz>
+References: <20120620101119.GC5541@tiehlicka.suse.cz>
+ <alpine.LSU.2.00.1207111818380.1299@eggly.anvils>
+ <20120712070501.GB21013@tiehlicka.suse.cz>
+ <20120712141343.e1cb7776.akpm@linux-foundation.org>
+ <alpine.LSU.2.00.1207121539150.27721@eggly.anvils>
+ <20120713082150.GA1448@tiehlicka.suse.cz>
+ <alpine.LSU.2.00.1207160111280.3936@eggly.anvils>
+ <alpine.LSU.2.00.1207160131120.3936@eggly.anvils>
+ <20120716092631.GC14664@tiehlicka.suse.cz>
+ <alpine.LSU.2.00.1207162135590.19938@eggly.anvils>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.00.1207162135590.19938@eggly.anvils>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We recently changed how the locking worked here, but this error path was
-missed.
+On Mon 16-07-12 21:52:51, Hugh Dickins wrote:
+> On Mon, 16 Jul 2012, Michal Hocko wrote:
+> > On Mon 16-07-12 01:35:34, Hugh Dickins wrote:
+> > > But even so, the test still OOMs sometimes: when originally testing
+> > > on 3.5-rc6, it OOMed about one time in five or ten; when testing
+> > > just now on 3.5-rc6-mm1, it OOMed on the first iteration.
+> > > 
+> > > This residual problem comes from an accumulation of pages under
+> > > ordinary writeback, not marked PageReclaim, so rightly not causing
+> > > the memcg check to wait on their writeback: these too can prevent
+> > > shrink_page_list() from freeing any pages, so many times that memcg
+> > > reclaim fails and OOMs.
+> > 
+> > I guess you managed to trigger this with 20M limit, right?
+> 
+> That's right.
+> 
+> > I have tested
+> > with different group sizes but the writeback didn't trigger for most of
+> > them and all the dirty data were flushed from the reclaim.
+> 
+> I didn't examine writeback stats to confirm, but I guess that just
+> occasionally it managed to come in and do enough work to confound us.
+> 
+> > Have you used any special setting the dirty ratio?
+> 
+> No, I wasn't imaginative enough to try that.
+> 
+> > Or was it with xfs (IIUC that one
+> > does ignore writeback from the direct reclaim completely).
+> 
+> No, just ext4 at that point.
+> 
+> I have since tested the final patch with ext4, ext3 (by ext3 driver
+> and by ext4 driver), ext2 (by ext2 driver and by ext4 driver), xfs,
+> btrfs, vfat, tmpfs (with swap on the USB stick) and block device:
+> about an hour on each, no surprises, all okay.
+> 
+> But I didn't experiment beyond the 20M memcg.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Great coverage anyway. Thanks a lot Hugh!
 
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index 8c84070..2728fb7 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -3031,8 +3031,10 @@ static ssize_t ext4_ext_direct_IO(int rw, struct kiocb *iocb,
- 		if (!is_sync_kiocb(iocb)) {
- 			ext4_io_end_t *io_end =
- 				ext4_init_io_end(inode, GFP_NOFS);
--			if (!io_end)
--				return -ENOMEM;
-+			if (!io_end) {
-+				ret = -ENOMEM;
-+				goto retake_lock;
-+			}
- 			io_end->flag |= EXT4_IO_END_DIRECT;
- 			iocb->private = io_end;
- 			/*
-@@ -3094,6 +3096,7 @@ static ssize_t ext4_ext_direct_IO(int rw, struct kiocb *iocb,
- 			ext4_clear_inode_state(inode, EXT4_STATE_DIO_UNWRITTEN);
- 		}
- 
-+retake_lock:
- 		/* take i_mutex locking again if we do a ovewrite dio */
- 		if (overwrite) {
- 			up_read(&EXT4_I(inode)->i_data_sem);
+> 
+> Hugh
+
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
