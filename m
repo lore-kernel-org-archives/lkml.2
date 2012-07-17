@@ -1,70 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753522Ab2GQIwz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 04:52:55 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:51214 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753647Ab2GQIww (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 04:52:52 -0400
-From: Marek Vasut <marex@denx.de>
-To: James Bottomley <jbottomley@parallels.com>
-Subject: Re: [PATCH V2] [SCSI] async: Fixup arguments of async_synchronize_full_domain in alsa-soc
-Date: Tue, 17 Jul 2012 09:50:34 +0200
-User-Agent: KMail/1.13.7 (Linux/3.4-trunk-amd64; KDE/4.8.4; x86_64; ; )
-Cc: Dan Williams <dan.j.williams@gmail.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>, "Takashi Iwai" <tiwai@suse.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "Arjan van de Ven" <arjan@linux.intel.com>
-References: <1342477026-8376-1-git-send-email-marex@denx.de> <CAA9_cmcWaj_KWLz1m0sxCJNihVuGMQsbP53=1cPiEBBWiei7bg@mail.gmail.com> <1342510116.3039.5.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1342510116.3039.5.camel@dabdike.int.hansenpartnership.com>
+	id S1754846Ab2GQIy7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 04:54:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52645 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752989Ab2GQIy5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 04:54:57 -0400
+Message-ID: <5005285E.8060706@redhat.com>
+Date: Tue, 17 Jul 2012 10:54:54 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH] sd: do not set changed flag on all unit attention conditions
+References: <1342454772-9018-1-git-send-email-pbonzini@redhat.com>   <1342455503.3176.42.camel@dabdike.int.hansenpartnership.com>   <50044D56.6000400@redhat.com>  <1342511100.3039.9.camel@dabdike.int.hansenpartnership.com>  <50052390.7030908@redhat.com> <1342514444.3039.23.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <1342514444.3039.23.camel@dabdike.int.hansenpartnership.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201207170950.34351.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear James Bottomley,
+Il 17/07/2012 10:40, James Bottomley ha scritto:
+>> > 
+>> > It's not specific to virtio-scsi, in fact I expect that virtio-scsi will
+>> > be almost always used with non-removable disks.
+>> > 
+>> > However, QEMU's SCSI target is not used just for virtio-scsi (for
+>> > example it can be used for USB storage), and it lets you mark a disk as
+>> > removable---why? because there exists real hardware that presents itself
+>> > as an SBC removable disk.  The only thing that is specific to
+>> > virtualization, is support for online resizing (which generates a unit
+>> > attention condition CAPACITY DATA HAS CHANGED).
+> So what's the problem?  If you're doing pass through of a physical disk,
+> we pick up removable from its inquiry string ... a physical removable
+> device doesn't get resized.  If you have a virtual disk you want to
+> resize, you don't set the removable flag in the inquiry data.
 
-> On Mon, 2012-07-16 at 15:56 -0700, Dan Williams wrote:
-> > On Mon, Jul 16, 2012 at 3:17 PM, Marek Vasut <marex@denx.de> wrote:
-> > [..]
-> > 
-> > >  sound/soc/soc-dapm.c |    2 +-
-> > >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > > 
-> > > V2: CC proper people, hopefully proper mailing list
-> > > 
-> > >     Adjust the patch subject with proper tags
-> > > 
-> > > diff --git a/sound/soc/soc-dapm.c b/sound/soc/soc-dapm.c
-> > > index eded657..e491eb0 100644
-> > > --- a/sound/soc/soc-dapm.c
-> > > +++ b/sound/soc/soc-dapm.c
-> > > @@ -1572,7 +1572,7 @@ static int dapm_power_widgets(struct
-> > > snd_soc_dapm_context *dapm, int event)
-> > > 
-> > >         struct snd_soc_dapm_context *d;
-> > >         LIST_HEAD(up_list);
-> > >         LIST_HEAD(down_list);
-> > > 
-> > > -       LIST_HEAD(async_domain);
-> > > +       ASYNC_DOMAIN_EXCLUSIVE(async_domain);
-> > > 
-> > >         enum snd_soc_bias_level bias;
-> > 
-> > Thanks.  This was folded into the resend that was submitted week [1]
-> 
-> OK, I missed that with the cockup in the cover letters.
+In practice people will do what you said, and it's not a problem.
 
-Well, the main point is it's now fixed. Thanks guys! :-)
+However, there's nothing that prevents you from running qemu with a
+removable SCSI disk, and then resizing it.  I would like this to work,
+because SBC allows it and there's no reason why it shouldn't.
 
-> James
-
-Best regards,
-Marek Vasut
+Paolo
