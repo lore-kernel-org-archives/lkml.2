@@ -1,91 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757292Ab2GQX2H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 19:28:07 -0400
-Received: from mail-yx0-f202.google.com ([209.85.213.202]:52902 "EHLO
-	mail-yx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754316Ab2GQX2D (ORCPT
+	id S1757415Ab2GQXjk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 19:39:40 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:65340 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754751Ab2GQXjc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 19:28:03 -0400
-From: Colin Cross <ccross@android.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Colin Cross <ccross@android.com>, Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Krzysztof Halasa <khc@pm.waw.pl>, Nicolas Pitre <nico@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>, linux-kernel@vger.kernel.org
-Subject: [RFC] ARM: sched_clock: update epoch_cyc on resume
-Date: Tue, 17 Jul 2012 16:27:51 -0700
-Message-Id: <1342567672-29071-1-git-send-email-ccross@android.com>
-X-Mailer: git-send-email 1.7.7.3
+	Tue, 17 Jul 2012 19:39:32 -0400
+X-AuditID: 9c93016f-b7b08ae00000790d-4a-5005f7b2055f
+Date: Wed, 18 Jul 2012 08:40:03 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Bob Liu <lliubbo@gmail.com>
+Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>
+Subject: Re: [RFC 3/3] memory-hotplug: bug fix race between isolation and
+ allocation
+Message-ID: <20120717234003.GA26937@bbox>
+References: <1342508505-23492-1-git-send-email-minchan@kernel.org>
+ <1342508505-23492-4-git-send-email-minchan@kernel.org>
+ <CAA_GA1dh0RYT5wfOB=t8-XoeHOzRJCmQJifnUTGLZfjNwx2a5w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAA_GA1dh0RYT5wfOB=t8-XoeHOzRJCmQJifnUTGLZfjNwx2a5w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many clocks that are used to provide sched_clock will reset during
-suspend.  If read_sched_clock returns 0 after suspend, sched_clock will
-appear to jump forward.  This patch resets cd.epoch_cyc to the current
-value of read_sched_clock during resume, which causes sched_clock() just
-after suspend to return the same value as sched_clock() just before
-suspend.
+Hi Bob,
 
-In addition, during the window where epoch_ns has been updated before
-suspend, but epoch_cyc has not been updated after suspend, it is unknown
-whether the clock has reset or not, and sched_clock() could return a
-bogus value.  Add a suspended flag, and return the pre-suspend epoch_ns
-value during this period.
+On Tue, Jul 17, 2012 at 06:13:17PM +0800, Bob Liu wrote:
+> Hi Minchan,
+> 
+> On Tue, Jul 17, 2012 at 3:01 PM, Minchan Kim <minchan@kernel.org> wrote:
+> > Like below, memory-hotplug makes race between page-isolation
+> > and page-allocation so it can hit BUG_ON in __offline_isolated_pages.
+> >
+> >         CPU A                                   CPU B
+> >
+> > start_isolate_page_range
+> > set_migratetype_isolate
+> > spin_lock_irqsave(zone->lock)
+> >
+> >                                 free_hot_cold_page(Page A)
+> >                                 /* without zone->lock */
+> >                                 migratetype = get_pageblock_migratetype(Page A);
+> >                                 /*
+> >                                  * Page could be moved into MIGRATE_MOVABLE
+> >                                  * of per_cpu_pages
+> >                                  */
+> >                                 list_add_tail(&page->lru, &pcp->lists[migratetype]);
+> >
+> > set_pageblock_isolate
+> > move_freepages_block
+> > drain_all_pages
+> >
+> >                                 /* Page A could be in MIGRATE_MOVABLE of free_list. */
+> >
+> > check_pages_isolated
+> > __test_page_isolated_in_pageblock
+> > /*
+> >  * We can't catch freed page which
+> >  * is free_list[MIGRATE_MOVABLE]
+> >  */
+> > if (PageBuddy(page A))
+> >         pfn += 1 << page_order(page A);
+> >
+> >                                 /* So, Page A could be allocated */
+> >
+> > __offline_isolated_pages
+> > /*
+> >  * BUG_ON hit or offline page
+> >  * which is used by someone
+> >  */
+> > BUG_ON(!PageBuddy(page A));
+> >
+> > Signed-off-by: Minchan Kim <minchan@kernel.org>
+> > ---
+> > I found this problem during code review so please confirm it.
+> > Kame?
+> >
+> >  mm/page_isolation.c |    5 ++++-
+> >  1 file changed, 4 insertions(+), 1 deletion(-)
+> >
+> > diff --git a/mm/page_isolation.c b/mm/page_isolation.c
+> > index acf65a7..4699d1f 100644
+> > --- a/mm/page_isolation.c
+> > +++ b/mm/page_isolation.c
+> > @@ -196,8 +196,11 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn)
+> >                         continue;
+> >                 }
+> >                 page = pfn_to_page(pfn);
+> > -               if (PageBuddy(page))
+> > +               if (PageBuddy(page)) {
+> >                         pfn += 1 << page_order(page);
+> > +                       if (get_page_migratetype(page) != MIGRATE_ISOLATE)
+> > +                               break;
+> > +               }
+> 
+> test_page_isolated() already have check
+> get_pageblock_migratetype(page) != MIGRATE_ISOLATE.
+> 
 
-This will have a side effect of causing SoCs that have clocks that
-continue to count in suspend to appear to stop counting, reporting the
-same sched_clock() value before and after suspend.
+That's why I send a patch.
+As I describe in description, pageblock migration type of get_page_migratetype(page)
+is inconsistent with free_list[migrationtype].
+I mean get_pageblock_migratetype(page) will return MIGRATE_ISOLATE but the page would be
+in free_list[MIGRATE_MOVABLE] so it could be allocated for someone if that race happens.
 
-Signed-off-by: Colin Cross <ccross@android.com>
----
- arch/arm/kernel/sched_clock.c |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
-
-diff --git a/arch/arm/kernel/sched_clock.c b/arch/arm/kernel/sched_clock.c
-index 27d186a..46c7d32 100644
---- a/arch/arm/kernel/sched_clock.c
-+++ b/arch/arm/kernel/sched_clock.c
-@@ -21,6 +21,7 @@ struct clock_data {
- 	u32 epoch_cyc_copy;
- 	u32 mult;
- 	u32 shift;
-+	bool suspended;
- };
- 
- static void sched_clock_poll(unsigned long wrap_ticks);
-@@ -49,6 +50,9 @@ static unsigned long long cyc_to_sched_clock(u32 cyc, u32 mask)
- 	u64 epoch_ns;
- 	u32 epoch_cyc;
- 
-+	if (cd.suspended)
-+		return cd.epoch_ns;
-+
- 	/*
- 	 * Load the epoch_cyc and epoch_ns atomically.  We do this by
- 	 * ensuring that we always write epoch_cyc, epoch_ns and
-@@ -169,11 +173,20 @@ void __init sched_clock_postinit(void)
- static int sched_clock_suspend(void)
- {
- 	sched_clock_poll(sched_clock_timer.data);
-+	cd.suspended = true;
- 	return 0;
- }
- 
-+static void sched_clock_resume(void)
-+{
-+	cd.epoch_cyc = read_sched_clock();
-+	cd.epoch_cyc_copy = cd.epoch_cyc;
-+	cd.suspended = false;
-+}
-+
- static struct syscore_ops sched_clock_ops = {
- 	.suspend = sched_clock_suspend,
-+	.resume = sched_clock_resume,
- };
- 
- static int __init sched_clock_syscore_init(void)
 -- 
-1.7.7.3
-
+Kind regards,
+Minchan Kim
