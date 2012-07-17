@@ -1,53 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754763Ab2GQQT3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 12:19:29 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:50668 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753611Ab2GQQT1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 12:19:27 -0400
-Message-ID: <1342541966.15318.4.camel@joe2Laptop>
-Subject: Re: [PATCH 01/15] Drivers: hv: Format GUIDS as per MSFT standards
-From: Joe Perches <joe@perches.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org,
-        virtualization@lists.linux-foundation.org, olaf@aepfle.de,
-        apw@canonical.com
-Date: Tue, 17 Jul 2012 09:19:26 -0700
-In-Reply-To: <20120717160402.GA20481@kroah.com>
-References: <1342297930-12607-1-git-send-email-kys@microsoft.com>
-	 <1342298060-12662-1-git-send-email-kys@microsoft.com>
-	 <20120717160402.GA20481@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754936Ab2GQQUT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 12:20:19 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:37650 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753611Ab2GQQUQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 12:20:16 -0400
+From: Masanari Iida <standby24x7@gmail.com>
+To: linux-kernel@vger.kernel.org, trivial@kernel.org
+Cc: standby24x7@gmail.com
+Subject: [PATCH 1/2] [trivial] tools: perf: Fix typo in tools/perf
+Date: Wed, 18 Jul 2012 01:20:59 +0900
+Message-Id: <1342542059-9756-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.7.11.2.194.g7bdb748
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-07-17 at 09:04 -0700, Greg KH wrote:
-> On Sat, Jul 14, 2012 at 01:34:06PM -0700, K. Y. Srinivasan wrote:
-> > Format GUIDS as per MSFT standard. This makes interacting with MSFT
-> > tool stack easier.
-[]
-> > diff --git a/drivers/hv/vmbus_drv.c b/drivers/hv/vmbus_drv.c
-[]
-> > @@ -147,7 +147,7 @@ static ssize_t vmbus_show_device_attr(struct device *dev,
-> >  
-> >  	if (!strcmp(dev_attr->attr.name, "class_id")) {
-> >  		ret = sprintf(buf, "{%02x%02x%02x%02x-%02x%02x-%02x%02x-"
-> > -			       "%02x%02x%02x%02x%02x%02x%02x%02x}\n",
-> > +			       "%02x%02x-%02x%02x%02x%02x%02x%02x}\n",
-> 
-> As Joe pointed out, please just use the printk modifier the kernel
-> already has for GUIDS, and don't roll your own here.  That will work
-> properly for you, right?
+Correct spelling typo in tools/perf.
 
-%pU became available in 2.6.33
+Signed-off-by: Masanari iida <standby24x7@gmail.com>
+---
+ tools/perf/util/callchain.h         | 2 +-
+ tools/perf/util/parse-events-test.c | 2 +-
+ tools/perf/util/python-ext-sources  | 2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
-I think one of their support targets is RHEL6 which
-I believe is 2.6.32+.
-
+diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
+index 3bdb407..eb34057 100644
+--- a/tools/perf/util/callchain.h
++++ b/tools/perf/util/callchain.h
+@@ -58,7 +58,7 @@ struct callchain_list {
+ /*
+  * A callchain cursor is a single linked list that
+  * let one feed a callchain progressively.
+- * It keeps persitent allocated entries to minimize
++ * It keeps persistent allocated entries to minimize
+  * allocations.
+  */
+ struct callchain_cursor_node {
+diff --git a/tools/perf/util/parse-events-test.c b/tools/perf/util/parse-events-test.c
+index 76b98e2..8cdf147 100644
+--- a/tools/perf/util/parse-events-test.c
++++ b/tools/perf/util/parse-events-test.c
+@@ -609,7 +609,7 @@ static int test_pmu(void)
+ 
+ 	ret = stat(path, &st);
+ 	if (ret)
+-		pr_debug("ommiting PMU cpu tests\n");
++		pr_debug("omitting PMU cpu tests\n");
+ 	return !ret;
+ }
+ 
+diff --git a/tools/perf/util/python-ext-sources b/tools/perf/util/python-ext-sources
+index 2884e67..f4e37ce 100644
+--- a/tools/perf/util/python-ext-sources
++++ b/tools/perf/util/python-ext-sources
+@@ -1,5 +1,5 @@
+ #
+-# List of files needed by perf python extention
++# List of files needed by perf python extension
+ #
+ # Each source file must be placed on its own line so that it can be
+ # processed by Makefile and util/setup.py accordingly.
+-- 
+1.7.11.2.194.g7bdb748
 
