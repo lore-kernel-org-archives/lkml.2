@@ -1,84 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754185Ab2GQBzw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 21:55:52 -0400
-Received: from mail127.messagelabs.com ([216.82.250.115]:45368 "EHLO
-	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750906Ab2GQBzv convert rfc822-to-8bit (ORCPT
+	id S1754219Ab2GQB4U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 21:56:20 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:40103 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750906Ab2GQB4S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 21:55:51 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-11.tower-127.messagelabs.com!1342490150!8784714!1
-X-Originating-IP: [216.166.12.98]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "abbotti@mev.co.uk" <abbotti@mev.co.uk>
-Date: Mon, 16 Jul 2012 20:55:47 -0500
-Subject: RE: [PATCH 01/30] staging: comedi: add pci_dev pointer to
- comedi_device
-Thread-Topic: [PATCH 01/30] staging: comedi: add pci_dev pointer to
- comedi_device
-Thread-Index: Ac1jvsZSGu7zc15XTVWeu1w7o1mDZgAAA7/A
-Message-ID: <ADE657CA350FB648AAC2C43247A983F00206AA915E16@AUSP01VMBX24.collaborationhost.net>
-References: <201207111449.15203.hartleys@visionengravers.com>
- <20120717015201.GA10048@kroah.com>
-In-Reply-To: <20120717015201.GA10048@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 16 Jul 2012 21:56:18 -0400
+Message-ID: <5004C604.8040308@us.ibm.com>
+Date: Mon, 16 Jul 2012 18:55:16 -0700
+From: John Stultz <johnstul@us.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
+To: sedat.dilek@gmail.com
+CC: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linux PM List <linux-pm@lists.linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [Regression][Revert request] Excessive delay or hang during resume
+ from system suspend due to a hrti
+References: <CA+icZUXURRAs-rK1EnRidYUQ9NXXYw4DaHbn=4mcEe3Q0sU+2A@mail.gmail.com> <CA+icZUWUhZpRKU5rO+m4Xe1DNLYAq8NPBCS_B2c3Kmgq+gBQ3w@mail.gmail.com> <5004553A.2060104@us.ibm.com>
+In-Reply-To: <5004553A.2060104@us.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12071701-5518-0000-0000-0000061620EB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, July 16, 2012 6:52 PM, Greg KH wrote:
-> On Wed, Jul 11, 2012 at 02:49:14PM -0700, H Hartley Sweeten wrote:
->> The pci_dev pointer in the private driver data is used by every
->> comedi pci driver. Some of them only have the need for the
->> private data because of this pointer.
->> 
->> Introduce the pci_dev pointer in the comedi_device struct so it
->> can be used instead of needing it in the private data.
->> 
->> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
->> Cc: Ian Abbott <abbotti@mev.co.uk>
->> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> ---
->>  drivers/staging/comedi/comedidev.h | 2 ++
->>  1 file changed, 2 insertions(+)
->> 
->> diff --git a/drivers/staging/comedi/comedidev.h b/drivers/staging/comedi/comedidev.h
->> index de8c99c..55f2373 100644
->> --- a/drivers/staging/comedi/comedidev.h
->> +++ b/drivers/staging/comedi/comedidev.h
->> @@ -212,6 +212,8 @@ struct comedi_device {
->>  	 * DMA_NONE */
->>  	struct device *hw_dev;
->>  
->> +	struct pci_dev *pcidev;
+On 07/16/2012 10:54 AM, John Stultz wrote:
 >
-> No, the field above this, hw_dev, should be used instead here, as that's
-> what it is there for, right?
+> Thanks for sending your config and test results.
+>
+> Looking at the call trace you provided, I'm not seeing anything yet, 
+> but I'll be looking over the code while running my test boxes in a 
+> reboot loop w/ your config to see if I can't figure out the 
+> get_next_timer_interrupt issue you saw at bootup.
 
-The hw_dev pointer is currently only used for something dealing with dma.
-I have not dug into it yet to see what exactly it's used for.  The comment
-says:
+Left my two boxes (one bare-metal, the other a VM) in reboot loops all 
+day with your config and haven't hit anything. :(
 
-	/* hw_dev is passed to dma_alloc_coherent when allocating async buffers
-	 * for subdevices that have async_dma_dir set to something other than
-	 * DMA_NONE */
+Do let me know if you're able to trigger this again. Given that the back 
+trace you listed doesn't seem to be directly linked to the leapsecond 
+related hrtimer changes, I'm wondering if this might be something else.
 
-> Care to rework this series with that change instead?
+But if you get any more details, do let me know and I'll try to sort it out.
 
-It could probably be used with some sort of container_of but I'm not sure.
+thanks
+-john
 
-Regards,
-Hartley
