@@ -1,150 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756107Ab2GQWIb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 18:08:31 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:59553 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754441Ab2GQWH4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 18:07:56 -0400
-From: John Stultz <johnstul@us.ibm.com>
-To: stable@vger.kernel.org
-Cc: John Stultz <johnstul@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 10/11] 2.6.32.x: hrtimer: Update hrtimer base offsets each hrtimer_interrupt
-Date: Tue, 17 Jul 2012 18:05:34 -0400
-Message-Id: <1342562735-55870-11-git-send-email-johnstul@us.ibm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1342562735-55870-1-git-send-email-johnstul@us.ibm.com>
-References: <1342562735-55870-1-git-send-email-johnstul@us.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12071722-5806-0000-0000-000017662390
+	id S1756144Ab2GQWIn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 18:08:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45209 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754441Ab2GQWIi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 18:08:38 -0400
+Date: Tue, 17 Jul 2012 15:06:26 -0700
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        John Stultz <john.stultz@linaro.org>, Shuah Khan <shuahkhan@gmail.com>,
+        arve@android.com, Rebecca Schultz Zavin <rebecca@android.com>,
+        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Subject: Re: [PATCH 3/8] pstore: Add persistent function tracing
+Message-ID: <20120717220625.GA32645@lizard>
+References: <20120710001004.GA22744@lizard>
+ <1341879046-5197-3-git-send-email-anton.vorontsov@linaro.org>
+ <1342553898.10332.9.camel@gandalf.stny.rr.com>
+ <20120717200130.GA31678@lizard>
+ <1342561102.10332.18.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1342561102.10332.18.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a backport of 5baefd6d84163443215f4a99f6a20f054ef11236
+On Tue, Jul 17, 2012 at 05:38:22PM -0400, Steven Rostedt wrote:
+[...]
+> > > BTW, can any of the called functions go into module code that can be
+> > > removed? If so, then this is not safe at all. Normal function tracing
+> > > can not be synced in a preemptible kernel.
+> > 
+> > Um. Yes, psinfo->write_buf() might be in the module. Nice catch.
 
-The update of the hrtimer base offsets on all cpus cannot be made
-atomically from the timekeeper.lock held and interrupt disabled region
-as smp function calls are not allowed there.
+Oh, actually, while write_buf() can technically be in a removable module,
+the RAM backend can't be removed once loaded. So it is not a real issue.
+But I'll implement your idea anyway, it seems a bit cleaner and safer,
+plus if we ever want to make persistent_ram backend removable, we won't
+need to bother w/ this particular issue.
 
-clock_was_set(), which enforces the update on all cpus, is called
-either from preemptible process context in case of do_settimeofday()
-or from the softirq context when the offset modification happened in
-the timer interrupt itself due to a leap second.
+Thanks!
 
-In both cases there is a race window for an hrtimer interrupt between
-dropping timekeeper lock, enabling interrupts and clock_was_set()
-issuing the updates. Any interrupt which arrives in that window will
-see the new time but operate on stale offsets.
-
-So we need to make sure that an hrtimer interrupt always sees a
-consistent state of time and offsets.
-
-ktime_get_update_offsets() allows us to get the current monotonic time
-and update the per cpu hrtimer base offsets from hrtimer_interrupt()
-to capture a consistent state of monotonic time and the offsets. The
-function replaces the existing ktime_get() calls in hrtimer_interrupt().
-
-The overhead of the new function vs. ktime_get() is minimal as it just
-adds two store operations.
-
-This ensures that any changes to realtime or boottime offsets are
-noticed and stored into the per-cpu hrtimer base structures, prior to
-any hrtimer expiration and guarantees that timers are not expired early.
-
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
-Reviewed-by: Ingo Molnar <mingo@kernel.org>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Prarit Bhargava <prarit@redhat.com>
-Cc: stable@vger.kernel.org
-Link: http://lkml.kernel.org/r/1341960205-56738-8-git-send-email-johnstul@us.ibm.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
----
- kernel/hrtimer.c |   27 ++++++++++++---------------
- 1 file changed, 12 insertions(+), 15 deletions(-)
-
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 8ba6d31..2818422 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -603,6 +603,12 @@ static int hrtimer_reprogram(struct hrtimer *timer,
- 	return res;
- }
- 
-+static inline ktime_t hrtimer_update_base(struct hrtimer_cpu_base *base)
-+{
-+	ktime_t *offs_real = &base->clock_base[CLOCK_REALTIME].offset;
-+
-+	return ktime_get_update_offsets(offs_real);
-+}
- 
- /*
-  * Retrigger next event is called after clock was set
-@@ -612,26 +618,15 @@ static int hrtimer_reprogram(struct hrtimer *timer,
- static void retrigger_next_event(void *arg)
- {
- 	struct hrtimer_cpu_base *base;
--	struct timespec realtime_offset;
--	unsigned long seq;
- 
- 	if (!hrtimer_hres_active())
- 		return;
- 
--	do {
--		seq = read_seqbegin(&xtime_lock);
--		set_normalized_timespec(&realtime_offset,
--					-wall_to_monotonic.tv_sec,
--					-wall_to_monotonic.tv_nsec);
--	} while (read_seqretry(&xtime_lock, seq));
--
- 	base = &__get_cpu_var(hrtimer_bases);
- 
- 	/* Adjust CLOCK_REALTIME offset */
- 	spin_lock(&base->lock);
--	base->clock_base[CLOCK_REALTIME].offset =
--		timespec_to_ktime(realtime_offset);
--
-+	hrtimer_update_base(base);
- 	hrtimer_force_reprogram(base, 0);
- 	spin_unlock(&base->lock);
- }
-@@ -731,7 +726,6 @@ static int hrtimer_switch_to_hres(void)
- 	base->clock_base[CLOCK_MONOTONIC].resolution = KTIME_HIGH_RES;
- 
- 	tick_setup_sched_timer();
--
- 	/* "Retrigger" the interrupt to get things going */
- 	retrigger_next_event(NULL);
- 	local_irq_restore(flags);
-@@ -1264,7 +1258,7 @@ void hrtimer_interrupt(struct clock_event_device *dev)
- 	dev->next_event.tv64 = KTIME_MAX;
- 
- 	spin_lock(&cpu_base->lock);
--	entry_time = now = ktime_get();
-+	entry_time = now = hrtimer_update_base(cpu_base);
- retry:
- 	expires_next.tv64 = KTIME_MAX;
- 	/*
-@@ -1340,9 +1334,12 @@ retry:
- 	 * We need to prevent that we loop forever in the hrtimer
- 	 * interrupt routine. We give it 3 attempts to avoid
- 	 * overreacting on some spurious event.
-+	 *
-+	 * Acquire base lock for updating the offsets and retrieving
-+	 * the current time.
- 	 */
- 	spin_lock(&cpu_base->lock);
--	now = ktime_get();
-+	now = hrtimer_update_base(cpu_base);
- 	cpu_base->nr_retries++;
- 	if (++retries < 3)
- 		goto retry;
 -- 
-1.7.9.5
-
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
