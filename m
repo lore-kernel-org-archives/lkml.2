@@ -1,123 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753051Ab2GQHFq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 03:05:46 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:41224 "EHLO e1.ny.us.ibm.com"
+	id S1753923Ab2GQHFz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 03:05:55 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:41236 "EHLO e1.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751329Ab2GQHFn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 03:05:43 -0400
+	id S1753114Ab2GQHFq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 03:05:46 -0400
 From: John Stultz <johnstul@us.ibm.com>
 To: stable@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Richard Cochran <richardcochran@gmail.com>,
+Cc: John Stultz <johnstul@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
         Prarit Bhargava <prarit@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 04/11] 3.2.x: time: Move common updates to a function
-Date: Tue, 17 Jul 2012 03:05:17 -0400
-Message-Id: <1342508724-14527-5-git-send-email-johnstul@us.ibm.com>
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 06/11] 3.2.x: timekeeping: Fix leapsecond triggered load spike issue
+Date: Tue, 17 Jul 2012 03:05:19 -0400
+Message-Id: <1342508724-14527-7-git-send-email-johnstul@us.ibm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1342508724-14527-1-git-send-email-johnstul@us.ibm.com>
 References: <1342508724-14527-1-git-send-email-johnstul@us.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12071707-6078-0000-0000-00000D4820EC
+x-cbid: 12071707-6078-0000-0000-00000D4820F5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+This is a backport of 4873fa070ae84a4115f0b3c9dfabc224f1bc7c51
 
-This is a backport of cc06268c6a87db156af2daed6e96a936b955cc82
+The timekeeping code misses an update of the hrtimer subsystem after a
+leap second happened. Due to that timers based on CLOCK_REALTIME are
+either expiring a second early or late depending on whether a leap
+second has been inserted or deleted until an operation is initiated
+which causes that update. Unless the update happens by some other
+means this discrepancy between the timekeeping and the hrtimer data
+stays forever and timers are expired either early or late.
 
-While not a bugfix itself, it allows following fixes to backport
-in a more straightforward manner.
+The reported immediate workaround - $ data -s "`date`" - is causing a
+call to clock_was_set() which updates the hrtimer data structures.
+See: http://www.sheeri.com/content/mysql-and-leap-second-high-cpu-and-fix
 
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Richard Cochran <richardcochran@gmail.com>
+Add the missing clock_was_set() call to update_wall_time() in case of
+a leap second event. The actual update is deferred to softirq context
+as the necessary smp function call cannot be invoked from hard
+interrupt context.
+
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Reported-by: Jan Engelhardt <jengelh@inai.de>
+Reviewed-by: Ingo Molnar <mingo@kernel.org>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Prarit Bhargava <prarit@redhat.com>
+Cc: stable@vger.kernel.org
+Link: http://lkml.kernel.org/r/1341960205-56738-3-git-send-email-johnstul@us.ibm.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Cc: Prarit Bhargava <prarit@redhat.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
 ---
- kernel/time/timekeeping.c |   34 +++++++++++++++++-----------------
- 1 file changed, 17 insertions(+), 17 deletions(-)
+ kernel/time/timekeeping.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
 diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 5c9b67e..5d55185 100644
+index 5d55185..8958ad7 100644
 --- a/kernel/time/timekeeping.c
 +++ b/kernel/time/timekeeping.c
-@@ -166,6 +166,19 @@ static struct timespec total_sleep_time;
-  */
- static struct timespec raw_time;
- 
-+/* must hold write on xtime_lock */
-+static void timekeeping_update(bool clearntp)
-+{
-+	if (clearntp) {
-+		timekeeper.ntp_error = 0;
-+		ntp_clear();
-+	}
-+	update_vsyscall(&xtime, &wall_to_monotonic,
-+			 timekeeper.clock, timekeeper.mult);
-+}
-+
-+
-+
- /* flag for if timekeeping is suspended */
- int __read_mostly timekeeping_suspended;
- 
-@@ -366,11 +379,7 @@ int do_settimeofday(const struct timespec *tv)
- 
- 	xtime = *tv;
- 
--	timekeeper.ntp_error = 0;
--	ntp_clear();
--
--	update_vsyscall(&xtime, &wall_to_monotonic, timekeeper.clock,
--				timekeeper.mult);
-+	timekeeping_update(true);
- 
- 	write_sequnlock_irqrestore(&xtime_lock, flags);
- 
-@@ -403,11 +412,7 @@ int timekeeping_inject_offset(struct timespec *ts)
- 	xtime = timespec_add(xtime, *ts);
- 	wall_to_monotonic = timespec_sub(wall_to_monotonic, *ts);
- 
--	timekeeper.ntp_error = 0;
--	ntp_clear();
--
--	update_vsyscall(&xtime, &wall_to_monotonic, timekeeper.clock,
--				timekeeper.mult);
-+	timekeeping_update(true);
- 
- 	write_sequnlock_irqrestore(&xtime_lock, flags);
- 
-@@ -636,10 +641,7 @@ void timekeeping_inject_sleeptime(struct timespec *delta)
- 
- 	__timekeeping_inject_sleeptime(delta);
- 
--	timekeeper.ntp_error = 0;
--	ntp_clear();
--	update_vsyscall(&xtime, &wall_to_monotonic, timekeeper.clock,
--				timekeeper.mult);
-+	timekeeping_update(true);
- 
- 	write_sequnlock_irqrestore(&xtime_lock, flags);
- 
-@@ -1052,9 +1054,7 @@ static void update_wall_time(void)
+@@ -941,6 +941,8 @@ static cycle_t logarithmic_accumulation(cycle_t offset, int shift)
+ 		leap = second_overflow(xtime.tv_sec);
+ 		xtime.tv_sec += leap;
  		wall_to_monotonic.tv_sec -= leap;
++		if (leap)
++			clock_was_set_delayed();
  	}
  
--	/* check to see if there is a new clocksource to use */
--	update_vsyscall(&xtime, &wall_to_monotonic, timekeeper.clock,
--				timekeeper.mult);
-+	timekeeping_update(false);
- }
+ 	/* Accumulate raw time */
+@@ -1052,6 +1054,8 @@ static void update_wall_time(void)
+ 		leap = second_overflow(xtime.tv_sec);
+ 		xtime.tv_sec += leap;
+ 		wall_to_monotonic.tv_sec -= leap;
++		if (leap)
++			clock_was_set_delayed();
+ 	}
  
- /**
+ 	timekeeping_update(false);
 -- 
 1.7.9.5
 
