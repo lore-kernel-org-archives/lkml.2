@@ -1,155 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754995Ab2GQJEm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 05:04:42 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:33564 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752421Ab2GQJEi (ORCPT
+	id S1751852Ab2GQJLa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 05:11:30 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:55838 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751000Ab2GQJLY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 05:04:38 -0400
-Message-ID: <50052A9D.3040001@linux.vnet.ibm.com>
-Date: Tue, 17 Jul 2012 17:04:29 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Tue, 17 Jul 2012 05:11:24 -0400
+Message-ID: <50052BB5.2040909@linux.vnet.ibm.com>
+Date: Tue, 17 Jul 2012 14:39:09 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-CC: mingo@redhat.com, Peter Zijlstra <peterz@infradead.org>,
-        paul@paulmenage.org
-Subject: [PATCH 5/5] cpusets: add the configuration facility
-Content-Type: text/plain; charset=ISO-8859-1
+To: Avi Kivity <avi@redhat.com>
+CC: Rik van Riel <riel@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>, S390 <linux-s390@vger.kernel.org>,
+        Carsten Otte <cotte@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: Re: [PATCH RFC V4 3/3] kvm: Choose better candidate for directed
+ yield
+References: <20120716082445.23477.15128.sendpatchset@codeblue.in.ibm.com> <20120716082529.23477.91096.sendpatchset@codeblue.in.ibm.com> <5003E7ED.2030701@redhat.com> <50043CF3.8020903@redhat.com> <50052272.5020803@redhat.com>
+In-Reply-To: <50052272.5020803@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-x-cbid: 12071709-8256-0000-0000-000003588962
+x-cbid: 12071623-3568-0000-0000-000002257AED
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
+On 07/17/2012 01:59 PM, Avi Kivity wrote:
+> On 07/16/2012 07:10 PM, Rik van Riel wrote:
+>> On 07/16/2012 06:07 AM, Avi Kivity wrote:
+>>
+>>>> +{
+>>>> +    bool eligible;
+>>>> +
+>>>> +    eligible = !vcpu->ple.cpu_relax_intercepted ||
+>>>> +            (vcpu->ple.cpu_relax_intercepted&&
+>>>> +             vcpu->ple.dy_eligible);
+>>>> +
+>>>> +    if (vcpu->ple.cpu_relax_intercepted)
+>>>> +        vcpu->ple.dy_eligible = !vcpu->ple.dy_eligible;
+>>>
+>>> Probably should assign 'true', since the previous value is essentially
+>>> random.
+>>
+>> I suspect the intended purpose of this conditional is to
+>> flip the eligibility of a vcpu for being selected as a
+>> direct yield target.
+>>
+>> In other words, that bit of the code is correct.
+>
+> If vcpu A is in a long spin loop and is preempted away, and vcpu B dips
+> several times in kvm_vcpu_on_spin(), then it will act as intended.
 
-Add the facility for user to configure the dynamical domain flags and
-enable/disable it.
+Yes, true.
 
-Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
----
- kernel/cpuset.c |   85 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 85 insertions(+), 0 deletions(-)
+But
+> if vcpu A is spinning for x% of its time and processing on the other,
+> then vcpu B will flip its dy_eligible for those x%, and not flip it when
+> it's processing.  I don't understand how this is useful.
 
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 066c61c..5ff649d 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -1506,6 +1506,17 @@ typedef enum {
- 	FILE_MEM_HARDWALL,
- 	FILE_SCHED_LOAD_BALANCE,
- 	FILE_SCHED_RELAX_DOMAIN_LEVEL,
-+#ifdef CONFIG_SCHED_SMT
-+	FILE_SCHED_SMT_DDF,
-+#endif
-+#ifdef CONFIG_SCHED_MC
-+	FILE_SCHED_MC_DDF,
-+#endif
-+#ifdef CONFIG_SCHED_BOOK
-+	FILE_SCHED_BOOK_DDF,
-+#endif
-+	FILE_SCHED_CPU_DDF,
-+	FILE_SCHED_ENABLE_DDF,
- 	FILE_MEMORY_PRESSURE_ENABLED,
- 	FILE_MEMORY_PRESSURE,
- 	FILE_SPREAD_PAGE,
-@@ -1549,6 +1560,27 @@ static int cpuset_write_u64(struct cgroup *cgrp, struct cftype *cft, u64 val)
- 	case FILE_SPREAD_SLAB:
- 		retval = update_flag(CS_SPREAD_SLAB, cs, val);
- 		break;
-+#ifdef CONFIG_SCHED_SMT
-+	case FILE_SCHED_SMT_DDF:
-+		retval = update_ddf(SMT_DDF, cs, val);
-+		break;
-+#endif
-+#ifdef CONFIG_SCHED_MC
-+	case FILE_SCHED_MC_DDF:
-+		retval = update_ddf(MC_DDF, cs, val);
-+		break;
-+#endif
-+#ifdef CONFIG_SCHED_BOOK
-+	case FILE_SCHED_BOOK_DDF:
-+		retval = update_ddf(BOOK_DDF, cs, val);
-+		break;
-+#endif
-+	case FILE_SCHED_CPU_DDF:
-+		retval = update_ddf(CPU_DDF, cs, val);
-+		break;
-+	case FILE_SCHED_ENABLE_DDF:
-+		retval = enable_ddf(cs, val);
-+		break;
- 	default:
- 		retval = -EINVAL;
- 		break;
-@@ -1708,6 +1740,22 @@ static u64 cpuset_read_u64(struct cgroup *cont, struct cftype *cft)
- 		return is_spread_page(cs);
- 	case FILE_SPREAD_SLAB:
- 		return is_spread_slab(cs);
-+#ifdef CONFIG_SCHED_SMT
-+	case FILE_SCHED_SMT_DDF:
-+		return cs->ddf[SMT_DDF];
-+#endif
-+#ifdef CONFIG_SCHED_MC
-+	case FILE_SCHED_MC_DDF:
-+		return cs->ddf[MC_DDF];
-+#endif
-+#ifdef CONFIG_SCHED_BOOK
-+	case FILE_SCHED_BOOK_DDF:
-+		return cs->ddf[BOOK_DDF];
-+#endif
-+	case FILE_SCHED_CPU_DDF:
-+		return cs->ddf[CPU_DDF];
-+	case FILE_SCHED_ENABLE_DDF:
-+		return cs->enable_ddf;
- 	default:
- 		BUG();
- 	}
-@@ -1788,6 +1836,43 @@ static struct cftype files[] = {
- 		.private = FILE_SCHED_RELAX_DOMAIN_LEVEL,
- 	},
- 
-+#ifdef CONFIG_SCHED_SMT
-+	{
-+		.name = "sched_smt_domain_flag",
-+		.read_u64 = cpuset_read_u64,
-+		.write_u64 = cpuset_write_u64,
-+		.private = FILE_SCHED_SMT_DDF,
-+	},
-+#endif
-+#ifdef CONFIG_SCHED_MC
-+	{
-+		.name = "sched_mc_domain_flag",
-+		.read_u64 = cpuset_read_u64,
-+		.write_u64 = cpuset_write_u64,
-+		.private = FILE_SCHED_MC_DDF,
-+	},
-+#endif
-+#ifdef CONFIG_SCHED_BOOK
-+	{
-+		.name = "sched_book_domain_flag",
-+		.read_u64 = cpuset_read_u64,
-+		.write_u64 = cpuset_write_u64,
-+		.private = FILE_SCHED_BOOK_DDF,
-+	},
-+#endif
-+	{
-+		.name = "sched_cpu_domain_flag",
-+		.read_u64 = cpuset_read_u64,
-+		.write_u64 = cpuset_write_u64,
-+		.private = FILE_SCHED_CPU_DDF,
-+	},
-+	{
-+		.name = "sched_enable_domain_flag",
-+		.read_u64 = cpuset_read_u64,
-+		.write_u64 = cpuset_write_u64,
-+		.private = FILE_SCHED_ENABLE_DDF,
-+	},
-+
- 	{
- 		.name = "memory_migrate",
- 		.read_u64 = cpuset_read_u64,
--- 
-1.7.4.1
+Suppose A is doing really good job and and has not done pause loop
+exit, we will not touch it's dy_eligible flag. Also dy_eligible flag
+will not prevent B doing yield_to to A.
+
+Suppose A has started spinning in the beginning itself, it will do pause 
+loop exit if it crosses threshold, and we will now start toggling
+dy_eligible.
+
+Was that you were referring?
+
+And it seems we may still have to set dy_eligible flag to false at the 
+beginning of vcpu_on_spin along with cpu_relax_intercepted = true, like 
+below, so that we do not have spill-over status from previous PL exits.
+
+vcpu_on_spin()
+{
+  cpu_relax_intercepted = true;
+  dy_eligible = false;
+.
+.
+.
+
+cpu_relax_intercepted = false;
+}
+
+Let me know if that addresses your concern.
+
+>
+> I guess this is an attempt to impose fairness on yielding, and it makes
+> sense to do this, but I don't know if this is the best way to achieve it.
+>
 
