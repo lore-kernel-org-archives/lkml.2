@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755459Ab2GQPK2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 11:10:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55528 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754036Ab2GQPK0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 11:10:26 -0400
-Date: Tue, 17 Jul 2012 18:09:28 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Asias He <asias@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Benjamin LaHaise <bcrl@kvack.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Jeff Moyer <jmoyer@redhat.com>, kvm@vger.kernel.org,
-        linux-aio@kvack.org, linux-fsdevel@vger.kernel.org,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        lf-virt <virtualization@lists.linux-foundation.org>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>,
-        Zhi Yong Wu <wuzhy@cn.ibm.com>,
-        Anthony Liguori <aliguori@linux.vnet.ibm.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, Christoph Hellwig <hch@lst.de>,
-        Jens Axboe <axboe@kernel.dk>, Hannes Reinecke <hare@suse.de>
-Subject: Re: [PATCH RESEND 0/5] Add vhost-blk support
-Message-ID: <20120717150928.GB11587@redhat.com>
-References: <1342169711-12386-1-git-send-email-asias@redhat.com>
+	id S1755470Ab2GQPMB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 11:12:01 -0400
+Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:31750 "HELO
+	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754036Ab2GQPMA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 11:12:00 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: cb4uI6wVM1lhverPnUF2RyZcj.Wg04ahuF4RQtKdZaEG3Jf
+ 9ax.i3r8h2fZOAKuYrwgfmZ6vPMqaBwTJymhrk4fIVNEXOL.GulGSFXRCh2r
+ _daLJ1Y3lIvxxyLZIHV8AW6doRu5ABtUIT5D.c8WPkNcEXyjeDA_Uyk98vsK
+ yTlZKHawKPdsXlfGZ_KRLnS4ZXYzD9jpMIuSj.xKUKLRLTT0KN6L5fS0StOn
+ wZGdLxxqTS4Rd2cpWhKnkWOaFxGyo6R6Zf.XCZf7a8gWUkRy63l2dTSce6eg
+ PUgpkALglS80Hc2CRHUYUkAahHlwaYHKVZ1J6sc6bSNKDWqHjan0InvRHlvw
+ mU3wFcUgEz7m6Q_FcyQdv75Eht35XdIir6rgoSalw0o6u.EPgq8BuA3fYcfF
+ NvuFcwxiLKJgeHbNXNIAqqVanDlcgswSspReQ
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Tue, 17 Jul 2012 10:11:56 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Pekka Enberg <penberg@kernel.org>
+cc: David Rientjes <rientjes@google.com>, Shuah Khan <shuah.khan@hp.com>,
+        glommer@parallels.com, js1304@gmail.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
+Subject: Re: [PATCH TRIVIAL] mm: Fix build warning in kmem_cache_create()
+In-Reply-To: <CAOJsxLECr7yj9cMs4oUJQjkjZe9x-6mvk76ArGsQzRWBi8_wVw@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1207171005550.15061@router.home>
+References: <1342221125.17464.8.camel@lorien2> <alpine.DEB.2.00.1207140216040.20297@chino.kir.corp.google.com> <CAOJsxLE3dDd01WaAp5UAHRb0AiXn_s43M=Gg4TgXzRji_HffEQ@mail.gmail.com> <1342407840.3190.5.camel@lorien2> <alpine.DEB.2.00.1207160257420.11472@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1207160915470.28952@router.home> <alpine.DEB.2.00.1207161253240.29012@chino.kir.corp.google.com> <alpine.DEB.2.00.1207161506390.32319@router.home> <alpine.DEB.2.00.1207161642420.18232@chino.kir.corp.google.com> <alpine.DEB.2.00.1207170929290.13599@router.home>
+ <CAOJsxLECr7yj9cMs4oUJQjkjZe9x-6mvk76ArGsQzRWBi8_wVw@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1342169711-12386-1-git-send-email-asias@redhat.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 13, 2012 at 04:55:06PM +0800, Asias He wrote:
-> 
-> Hi folks,
-> 
-> [I am resending to fix the broken thread in the previous one.]
-> 
-> This patchset adds vhost-blk support. vhost-blk is a in kernel virito-blk
-> device accelerator. Compared to userspace virtio-blk implementation, vhost-blk
-> gives about 5% to 15% performance improvement.
+On Tue, 17 Jul 2012, Pekka Enberg wrote:
 
-Same thing as tcm_host comment:
+> Well, even SLUB checks for !name in mainline so that's definitely
+> worth including unconditionally. Furthermore, the size related checks
+> certainly make sense and I don't see any harm in having them as well.
 
-	It seems not 100% clear whether this driver will have major
-	userspace using it. And if not, it would be very hard to support a
-	driver when recent userspace does not use it in the end.
+There is a WARN_ON() there and then it returns NULL!!! Crazy. Causes a
+NULL pointer dereference later in the caller?
 
-	I think a good idea for 3.6 would be to make it depend on
-	CONFIG_STAGING.  Then we don't commit to an ABI.  For this, you can add
-	a separate Kconfig and source it from drivers/staging/Kconfig.  Maybe it
-	needs to be in a separate directory drivers/vhost/staging/Kconfig.
+> As for "in_interrupt()", I really don't see the point in keeping that
+> around. We could push it down to mm/slab.c in "__kmem_cache_create()"
+> if we wanted to.
 
-I Cc'd the list of tcm_host in the hope that you can cooperate on this.
+Ok we could do that but I guess we are in the discussion of how much
+checking should be done for a production kernel.
 
--- 
-MST
+I think these checks are way out of hand. We cannot afford to
+consistently check parameters to all kernel functions in production. We
+will only do these checks in a select manner if these values could
+result in serious difficult to debug problems. The checks in slab look
+like debugging code that someone needed for a specific debugging scenario.
+
+I can understand that we would keep that in for development but not for
+production. Maybe I am a bit biased but my prod kernels need to have
+minimal memory footprint due to excessive code size causing regressions.
+
+
+
