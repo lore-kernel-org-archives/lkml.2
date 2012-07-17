@@ -1,62 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755592Ab2GQRWX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 13:22:23 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:50675 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752110Ab2GQRWW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 13:22:22 -0400
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH] fs: Build sys_stat64() and friends if __ARCH_WANT_COMPAT_STAT64
-Date: Tue, 17 Jul 2012 18:22:02 +0100
-Message-Id: <1342545722-31688-1-git-send-email-catalin.marinas@arm.com>
-X-Mailer: git-send-email 1.7.9.111.gf3fb0
-X-OriginalArrivalTime: 17 Jul 2012 17:23:31.0337 (UTC) FILETIME=[E309D790:01CD6440]
-X-MC-Unique: 112071718222002101
-Content-Type: text/plain; charset=WINDOWS-1252
+	id S1755821Ab2GQR2A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 13:28:00 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:34527 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752559Ab2GQR15 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 13:27:57 -0400
+Date: Tue, 17 Jul 2012 22:57:36 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>, Jovi Zhang <bookjovi@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: uprobe: checking probe event include directory
+Message-ID: <20120717172736.GA6854@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <CACV3sbLu81jrkfSXQxJ+_XtZHVTA6YfwJO3hjRxYsaDwbbLi6A@mail.gmail.com>
+ <20120717105936.GC28744@somewhere>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20120717105936.GC28744@somewhere>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12071717-7182-0000-0000-000002017980
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id q6HHMTNO003460
 
-On AArch64, we want the sys_stat64() and related functions for compat
-support but do not need the generic struct stat64, enabled automatically
-if __ARCH_WANT_STAT64.
+* Frederic Weisbecker <fweisbec@gmail.com> [2012-07-17 12:59:39]:
 
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>
----
- fs/stat.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+> On Tue, Jul 17, 2012 at 06:12:28PM +0800, Jovi Zhang wrote:
+> > From 16ed13ee9098ae01705e8456005d1ad6d9909128 Mon Sep 17 00:00:00 2001
+> > From: Jovi Zhang <bookjovi@gmail.com>
+> > Date: Wed, 18 Jul 2012 01:16:23 +0800
+> > Subject: [PATCH] uprobe: checking probe event include directory
+> > 
+> > Currently below command run successful:
+> > $ echo 'p /bin:0x4245c0' > /sys/kernel/debug/tracing/uprobe_events
 
-diff --git a/fs/stat.c b/fs/stat.c
-index b6ff118..6126c5d 100644
---- a/fs/stat.c
-+++ b/fs/stat.c
-@@ -326,7 +326,7 @@ SYSCALL_DEFINE3(readlink, const char __user *, path, char __user *, buf,
- 
- 
- /* ---------- LFS-64 ----------- */
--#ifdef __ARCH_WANT_STAT64
-+#if defined(__ARCH_WANT_STAT64) || defined(__ARCH_WANT_COMPAT_STAT64)
- 
- #ifndef INIT_STRUCT_STAT64_PADDING
- #  define INIT_STRUCT_STAT64_PADDING(st) memset(&st, 0, sizeof(st))
-@@ -415,7 +415,7 @@ SYSCALL_DEFINE4(fstatat64, int, dfd, const char __user *, filename,
- 		return error;
- 	return cp_new_stat64(&stat, statbuf);
- }
--#endif /* __ARCH_WANT_STAT64 */
-+#endif /* __ARCH_WANT_STAT64 || __ARCH_WANT_COMPAT_STAT64 */
- 
- /* Caller is here responsible for sufficient locking (ie. inode->i_lock) */
- void __inode_add_bytes(struct inode *inode, loff_t bytes)
+good catch.
+
+> > 
+> > this don't make sense, because /bin is a directory,
+> > so make this checking earily, not report error untill probe enable.
+> > 
+> > Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
+> 
+> Adding Srikar in Cc.
+> 
+> > ---
+> >  kernel/trace/trace_uprobe.c |    5 +++++
+> >  1 file changed, 5 insertions(+)
+> > 
+> > diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+> > index 85158fa..cf382de 100644
+> > --- a/kernel/trace/trace_uprobe.c
+> > +++ b/kernel/trace/trace_uprobe.c
+> > @@ -259,6 +259,11 @@ static int create_trace_uprobe(int argc, char **argv)
+> >  		goto fail_address_parse;
+> > 
+> >  	inode = igrab(path.dentry->d_inode);
+> > +	 if (S_ISDIR(inode->i_mode)) {
+
+How about checking for regular files but not directory.
+i.e it should avoid tracing special files 
+
+Something like: 
+
+	if (!S_ISREG(inode->i_mode) || S_ISDIR(inode->i_mode)) {
+
+> > +		ret = -EINVAL;
+> > +		pr_info("probe file cannot be directory.\n");
+
+we could drop the pr_info line here, since we would any print we
+failed to parse the address.
+
+Probably you could change the last pr_info from 
+
+pr_info("Failed to parse address.\n");
+
+to 
+
+pr_info("Failed to parse address or file.\n");
+
+
+-- 
+Thanks and Regards
+Srikar
+> > +		goto fail_address_parse;
+> > +	}
+> > 
+> >  	argc -= 2;
+> >  	argv += 2;
+> > -- 
+> > 1.7.9.7
+> 
 
