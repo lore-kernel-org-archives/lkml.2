@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753729Ab2GQAvd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 20:51:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48634 "EHLO mx1.redhat.com"
+	id S1753784Ab2GQAzG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 20:55:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32848 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751308Ab2GQAva (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 20:51:30 -0400
-Date: Tue, 17 Jul 2012 03:51:59 +0300
+	id S1750717Ab2GQAzE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 20:55:04 -0400
+Date: Tue, 17 Jul 2012 03:55:32 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: Alex Williamson <alex.williamson@redhat.com>
 Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
         linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
 Subject: Re: [PATCH v5 3/4] kvm: Create kvm_clear_irq()
-Message-ID: <20120717005159.GA7949@redhat.com>
+Message-ID: <20120717005532.GB7949@redhat.com>
 References: <20120716202711.1752.71007.stgit@bling.home>
  <20120716203401.1752.78276.stgit@bling.home>
 MIME-Version: 1.0
@@ -79,13 +79,13 @@ On Mon, Jul 16, 2012 at 02:34:03PM -0600, Alex Williamson wrote:
 > +	if (level)
 > +		kvm_pic_set_irq(pic, e->irqchip.pin,
 > +				!!pic->irq_states[e->irqchip.pin]);
+
+This is a bit tricky: add a comment explaining the logic?
+
 > +	return level;
 > +#else
 > +	return -1;
 > +#endif
-
-What does this ifdef exclude exactly?
-
 > +}
 > +
 > +static int kvm_clear_ioapic_irq(struct kvm_kernel_irq_routing_entry *e,
@@ -99,6 +99,9 @@ What does this ifdef exclude exactly?
 > +	if (level)
 > +		kvm_ioapic_set_irq(ioapic, e->irqchip.pin,
 > +				   !!ioapic->irq_states[e->irqchip.pin]);
+
+This is a bit tricky: add a comment explaining the logic?
+
 > +	return level;
 > +}
 > +
