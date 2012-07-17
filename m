@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755874Ab2GQQvd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 12:51:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60374 "EHLO mx1.redhat.com"
+	id S1755887Ab2GQQvr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 12:51:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64186 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755663Ab2GQQv1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 12:51:27 -0400
+	id S1755859Ab2GQQvc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 12:51:32 -0400
 From: Rafael Aquini <aquini@redhat.com>
 To: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
@@ -16,114 +16,106 @@ Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Minchan Kim <minchan@kernel.org>, Rafael Aquini <aquini@linux.com>,
         Rafael Aquini <aquini@redhat.com>
-Subject: [PATCH v4 0/3] make balloon pages movable by compaction
-Date: Tue, 17 Jul 2012 13:50:40 -0300
-Message-Id: <cover.1342485774.git.aquini@redhat.com>
+Subject: [PATCH v4 3/3] mm: add vm event counters for balloon pages compaction
+Date: Tue, 17 Jul 2012 13:50:43 -0300
+Message-Id: <4af2f0d495db34075d6bf4f921f326c6eb71cf2d.1342485774.git.aquini@redhat.com>
+In-Reply-To: <cover.1342485774.git.aquini@redhat.com>
+References: <cover.1342485774.git.aquini@redhat.com>
+In-Reply-To: <cover.1342485774.git.aquini@redhat.com>
+References: <cover.1342485774.git.aquini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Memory fragmentation introduced by ballooning might reduce significantly
-the number of 2MB contiguous memory blocks that can be used within a guest,
-thus imposing performance penalties associated with the reduced number of
-transparent huge pages that could be used by the guest workload.
+This patch is only for testing report purposes and shall be dropped in case of
+the rest of this patchset getting accepted for merging.
 
-This patch-set follows the main idea discussed at 2012 LSFMMS session:
-"Ballooning for transparent huge pages" -- http://lwn.net/Articles/490114/
-to introduce the required changes to the virtio_balloon driver, as well as
-the changes to the core compaction & migration bits, in order to make those
-subsystems aware of ballooned pages and allow memory balloon pages become
-movable within a guest, thus avoiding the aforementioned fragmentation issue
+Signed-off-by: Rafael Aquini <aquini@redhat.com>
+---
+ drivers/virtio/virtio_balloon.c |    1 +
+ include/linux/vm_event_item.h   |    2 ++
+ mm/compaction.c                 |    1 +
+ mm/migrate.c                    |    6 ++++--
+ mm/vmstat.c                     |    4 ++++
+ 5 files changed, 12 insertions(+), 2 deletions(-)
 
-Rafael Aquini (3):
-  mm: introduce compaction and migration for virtio ballooned pages
-  virtio_balloon: introduce migration primitives to balloon pages
-  mm: add vm event counters for balloon pages compaction
-
- drivers/virtio/virtio_balloon.c |  146 ++++++++++++++++++++++++++++++++++++---
- include/linux/mm.h              |   15 ++++
- include/linux/virtio_balloon.h  |    4 ++
- include/linux/vm_event_item.h   |    2 +
- mm/compaction.c                 |  127 +++++++++++++++++++++++++++++-----
- mm/migrate.c                    |   32 ++++++++-
- mm/vmstat.c                     |    4 ++
- 7 files changed, 302 insertions(+), 28 deletions(-)
-
-Change log:
-v4: 
- * address Rusty Russel's review comments on PATCH 02;
- * re-base virtio_balloon patch on 9c378abc5c0c6fc8e3acf5968924d274503819b3;
-V3: 
- * address reviewers nitpick suggestions on PATCH 01 (Mel, Minchan);
-V2: 
- * address Mel Gorman's review comments on PATCH 01;
-
-
-Preliminary test results:
-(2 VCPU 1024mB RAM KVM guest running 3.5.0_rc7+ -- after a reboot)
-* 64mB balloon:
-[root@localhost ~]# awk '/compact/ {print}' /proc/vmstat
-compact_blocks_moved 0
-compact_pages_moved 0
-compact_pagemigrate_failed 0
-compact_stall 0
-compact_fail 0
-compact_success 0
-compact_balloon_migrated 0
-compact_balloon_failed 0
-compact_balloon_isolated 0
-compact_balloon_freed 0
-[root@localhost ~]#
-[root@localhost ~]# for i in $(seq 1 4); do echo 1 > /proc/sys/vm/compact_memory & done &>/dev/null
-[1]   Done                    echo 1 > /proc/sys/vm/compact_memory
-[2]   Done                    echo 1 > /proc/sys/vm/compact_memory
-[3]-  Done                    echo 1 > /proc/sys/vm/compact_memory
-[4]+  Done                    echo 1 > /proc/sys/vm/compact_memory
-[root@localhost ~]#
-[root@localhost ~]# awk '/compact/ {print}' /proc/vmstat
-compact_blocks_moved 2842
-compact_pages_moved 48429
-compact_pagemigrate_failed 81
-compact_stall 0
-compact_fail 0
-compact_success 0
-compact_balloon_migrated 16364
-compact_balloon_failed 0
-compact_balloon_isolated 16364
-compact_balloon_freed 16364
-
-
-* 128mB balloon:
-[root@localhost ~]# awk '/compact/ {print}' /proc/vmstat
-compact_blocks_moved 0
-compact_pages_moved 0
-compact_pagemigrate_failed 0
-compact_stall 0
-compact_fail 0
-compact_success 0
-compact_balloon_migrated 0
-compact_balloon_failed 0
-compact_balloon_isolated 0
-compact_balloon_freed 0
-[root@localhost ~]#
-[root@localhost ~]# for i in $(seq 1 4); do echo 1 > /proc/sys/vm/compact_memory & done &>/dev/null
-[1]   Done                    echo 1 > /proc/sys/vm/compact_memory
-[2]   Done                    echo 1 > /proc/sys/vm/compact_memory
-[3]-  Done                    echo 1 > /proc/sys/vm/compact_memory
-[4]+  Done                    echo 1 > /proc/sys/vm/compact_memory
-[root@localhost ~]#
-[root@localhost ~]# awk '/compact/ {print}' /proc/vmstat
-compact_blocks_moved 2162
-compact_pages_moved 33735
-compact_pagemigrate_failed 69
-compact_stall 0
-compact_fail 0
-compact_success 0
-compact_balloon_migrated 21731
-compact_balloon_failed 0
-compact_balloon_isolated 21731
-compact_balloon_freed 21731
-
+diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
+index 7669bc8..c4ddcd7 100644
+--- a/drivers/virtio/virtio_balloon.c
++++ b/drivers/virtio/virtio_balloon.c
+@@ -410,6 +410,7 @@ int virtballoon_migratepage(struct address_space *mapping,
+ 
+ 	mutex_unlock(&balloon_lock);
+ 
++	count_vm_event(COMPACTBALLOONMIGRATED);
+ 	return 0;
+ }
+ 
+diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
+index 06f8e38..e330c5a 100644
+--- a/include/linux/vm_event_item.h
++++ b/include/linux/vm_event_item.h
+@@ -40,6 +40,8 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
+ #ifdef CONFIG_COMPACTION
+ 		COMPACTBLOCKS, COMPACTPAGES, COMPACTPAGEFAILED,
+ 		COMPACTSTALL, COMPACTFAIL, COMPACTSUCCESS,
++		COMPACTBALLOONMIGRATED, COMPACTBALLOONFAILED,
++		COMPACTBALLOONISOLATED, COMPACTBALLOONFREED,
+ #endif
+ #ifdef CONFIG_HUGETLB_PAGE
+ 		HTLB_BUDDY_PGALLOC, HTLB_BUDDY_PGALLOC_FAIL,
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 51eac0c..d212dde 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -72,6 +72,7 @@ static bool isolate_balloon_page(struct page *page)
+ 			if (is_balloon_page(page) && (page_count(page) == 2)) {
+ 				__isolate_balloon_page(page);
+ 				unlock_page(page);
++				count_vm_event(COMPACTBALLOONISOLATED);
+ 				return true;
+ 			}
+ 			unlock_page(page);
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 59c7bc5..5838719 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -78,9 +78,10 @@ void putback_lru_pages(struct list_head *l)
+ 		list_del(&page->lru);
+ 		dec_zone_page_state(page, NR_ISOLATED_ANON +
+ 				page_is_file_cache(page));
+-		if (unlikely(is_balloon_page(page)))
++		if (unlikely(is_balloon_page(page))) {
++			count_vm_event(COMPACTBALLOONFAILED);
+ 			WARN_ON(!putback_balloon_page(page));
+-		else
++		} else
+ 			putback_lru_page(page);
+ 	}
+ }
+@@ -878,6 +879,7 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
+ 				    page_is_file_cache(page));
+ 		put_page(page);
+ 		__free_page(page);
++		count_vm_event(COMPACTBALLOONFREED);
+ 		return rc;
+ 	}
+ out:
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index 1bbbbd9..3b7109f 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -767,6 +767,10 @@ const char * const vmstat_text[] = {
+ 	"compact_stall",
+ 	"compact_fail",
+ 	"compact_success",
++	"compact_balloon_migrated",
++	"compact_balloon_failed",
++	"compact_balloon_isolated",
++	"compact_balloon_freed",
+ #endif
+ 
+ #ifdef CONFIG_HUGETLB_PAGE
 -- 
 1.7.10.4
 
