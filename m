@@ -1,119 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757415Ab2GQXjk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 19:39:40 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:65340 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754751Ab2GQXjc (ORCPT
+	id S1757242Ab2GQXqh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 19:46:37 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:40778 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753420Ab2GQXq2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 19:39:32 -0400
-X-AuditID: 9c93016f-b7b08ae00000790d-4a-5005f7b2055f
-Date: Wed, 18 Jul 2012 08:40:03 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Bob Liu <lliubbo@gmail.com>
-Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: [RFC 3/3] memory-hotplug: bug fix race between isolation and
- allocation
-Message-ID: <20120717234003.GA26937@bbox>
-References: <1342508505-23492-1-git-send-email-minchan@kernel.org>
- <1342508505-23492-4-git-send-email-minchan@kernel.org>
- <CAA_GA1dh0RYT5wfOB=t8-XoeHOzRJCmQJifnUTGLZfjNwx2a5w@mail.gmail.com>
+	Tue, 17 Jul 2012 19:46:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAA_GA1dh0RYT5wfOB=t8-XoeHOzRJCmQJifnUTGLZfjNwx2a5w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <s5hmx2ylgkr.wl%tiwai@suse.de>
+References: <CADLC3L3dDOG8BBXR0zWn9SqM0BUotpW0Y+C=HUMEK-SAGCFLJg@mail.gmail.com>
+	<s5hmx2ylgkr.wl%tiwai@suse.de>
+Date: Tue, 17 Jul 2012 17:46:27 -0600
+Message-ID: <CADLC3L0yUcXS4KG2Fxj2W9-f2U08ODxAn0_7iWK7=ECSVnGgBA@mail.gmail.com>
+Subject: Re: 3.4.4: Oops in snd_hda_codec_realtek (alc_auto_create_multi_out_ctls)
+From: Robert Hancock <hancockrwd@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Alsa-Devel <alsa-devel@alsa-project.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bob,
+On Tue, Jul 17, 2012 at 6:25 AM, Takashi Iwai <tiwai@suse.de> wrote:
+> At Mon, 9 Jul 2012 13:40:09 -0600,
+> Robert Hancock wrote:
+>>
+>> I've got a sort of industrial portable PC that uses a Supermicro C2SBX
+>> motherboard. Running an RHEL6 kernel (2.6.32-ish) it works fine, but
+>> if I run a 3.4.4 kernel (using the kernel-ml builds provided by ELRepo
+>> for RHEL6) it blows up on boot inside snd_hda_codec_realtek. Below is
+>> the dmesg output from bootup up to the oops, after I blacklisted
+>> snd_hda_intel from auto-loading and then manually modprobed it. Is
+>> this a known problem?
+>
+> I don't know of this issue, so need to check more.
+> Could you load snd-hda-intel module with probe_only=1 option, and run
+> alsa-info.sh with --no-upload option and give the output?
+> Then I can try the emulator to see what's wrong.
+>
+> Also, of course, testing a newer kernel like 3.5-rc7 would be helpful,
+> too.
 
-On Tue, Jul 17, 2012 at 06:13:17PM +0800, Bob Liu wrote:
-> Hi Minchan,
-> 
-> On Tue, Jul 17, 2012 at 3:01 PM, Minchan Kim <minchan@kernel.org> wrote:
-> > Like below, memory-hotplug makes race between page-isolation
-> > and page-allocation so it can hit BUG_ON in __offline_isolated_pages.
-> >
-> >         CPU A                                   CPU B
-> >
-> > start_isolate_page_range
-> > set_migratetype_isolate
-> > spin_lock_irqsave(zone->lock)
-> >
-> >                                 free_hot_cold_page(Page A)
-> >                                 /* without zone->lock */
-> >                                 migratetype = get_pageblock_migratetype(Page A);
-> >                                 /*
-> >                                  * Page could be moved into MIGRATE_MOVABLE
-> >                                  * of per_cpu_pages
-> >                                  */
-> >                                 list_add_tail(&page->lru, &pcp->lists[migratetype]);
-> >
-> > set_pageblock_isolate
-> > move_freepages_block
-> > drain_all_pages
-> >
-> >                                 /* Page A could be in MIGRATE_MOVABLE of free_list. */
-> >
-> > check_pages_isolated
-> > __test_page_isolated_in_pageblock
-> > /*
-> >  * We can't catch freed page which
-> >  * is free_list[MIGRATE_MOVABLE]
-> >  */
-> > if (PageBuddy(page A))
-> >         pfn += 1 << page_order(page A);
-> >
-> >                                 /* So, Page A could be allocated */
-> >
-> > __offline_isolated_pages
-> > /*
-> >  * BUG_ON hit or offline page
-> >  * which is used by someone
-> >  */
-> > BUG_ON(!PageBuddy(page A));
-> >
-> > Signed-off-by: Minchan Kim <minchan@kernel.org>
-> > ---
-> > I found this problem during code review so please confirm it.
-> > Kame?
-> >
-> >  mm/page_isolation.c |    5 ++++-
-> >  1 file changed, 4 insertions(+), 1 deletion(-)
-> >
-> > diff --git a/mm/page_isolation.c b/mm/page_isolation.c
-> > index acf65a7..4699d1f 100644
-> > --- a/mm/page_isolation.c
-> > +++ b/mm/page_isolation.c
-> > @@ -196,8 +196,11 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn)
-> >                         continue;
-> >                 }
-> >                 page = pfn_to_page(pfn);
-> > -               if (PageBuddy(page))
-> > +               if (PageBuddy(page)) {
-> >                         pfn += 1 << page_order(page);
-> > +                       if (get_page_migratetype(page) != MIGRATE_ISOLATE)
-> > +                               break;
-> > +               }
-> 
-> test_page_isolated() already have check
-> get_pageblock_migratetype(page) != MIGRATE_ISOLATE.
-> 
-
-That's why I send a patch.
-As I describe in description, pageblock migration type of get_page_migratetype(page)
-is inconsistent with free_list[migrationtype].
-I mean get_pageblock_migratetype(page) will return MIGRATE_ISOLATE but the page would be
-in free_list[MIGRATE_MOVABLE] so it could be allocated for someone if that race happens.
-
--- 
-Kind regards,
-Minchan Kim
+Unfortunately this machine is about to ship back out to a customer so
+there's not really any more info I can gather from it at this point.
+If I can get hold of it or a similar machine again in the future, I
+can try to get more information.
