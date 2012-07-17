@@ -1,75 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753966Ab2GQD3Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 23:29:16 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:64161 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753458Ab2GQD3N (ORCPT
+	id S1753962Ab2GQDdr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 23:33:47 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54254 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753112Ab2GQDdm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 23:29:13 -0400
-Message-ID: <1342495743.16433.1.camel@phoenix>
-Subject: [PATCH RFT] regulator: palmas: Fix calcuating selector in
- palmas_map_voltage_smps
-From: Axel Lin <axel.lin@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, Graeme Gregory <gg@slimlogic.co.uk>,
-        Liam Girdwood <lrg@ti.com>
-Date: Tue, 17 Jul 2012 11:29:03 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 16 Jul 2012 23:33:42 -0400
+Subject: Re: [PATCH] xfs: fix comment typo of struct xfs_da_blkinfo.
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=utf-8
+From: Chen Baozi <baozich@gmail.com>
+In-Reply-To: <20120716151038.GI29979@sgi.com>
+Date: Tue, 17 Jul 2012 11:33:33 +0800
+Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Content-Transfer-Encoding: 8BIT
+Message-Id: <5292013E-6FF3-47F6-BE9F-FD7BA2BB2AA9@gmail.com>
+References: <1342208293-3405-1-git-send-email-baozich@gmail.com> <20120716151038.GI29979@sgi.com>
+To: Ben Myers <bpm@sgi.com>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The logic of calculating selector in palmas_map_voltage_smps() does not match
-the logic to list voltage in palmas_list_voltage_smps().
+Hi Ben,
+On Jul 16, 2012, at 11:10 PM, Ben Myers wrote:
 
-We use below equation to calculate voltage when selector > 0:
-        voltage = (0.49V + (selector * 0.01V)) * RANGE
-RANGE is either x1 or x2
+> Hey Chen,
+> 
+> On Sat, Jul 14, 2012 at 03:38:13AM +0800, Chen Baozi wrote:
+>> Fix trivial typo error that has written "It" to "Is".
+>> 
+>> Signed-off-by: Chen Baozi <baozich@gmail.com>
+> 
+> Reviewed-by: Ben Myers <bpm@sgi.com>
+> 
+> Thanks for the patch!  I'm happy you're working on XFS.  Do you have any
+> time/interest in taking on a work item or two?  I have a few would-be-nices
+> which I've made notes of, and I'm sure that Dave or Christoph could also think
+> of a few if you're interested.
+I'd really love to. Right now, I am working on syslinux to support booting on xfs partition (under pcacjr's mentoring)， which I thought would be a nice start to get familiar with xfs (and I did learn a lot from it). So I think there would be more time (and experience on xfs) after I finish the xfs support on syslinux. And I'm really looking forward to your ideas. So do please tell me what I can help, I'll try my best to do it. 
 
-So we need to take into account with the multiplier set in VSEL register when
-calculating selector in palmas_map_voltage_smps()
+Thanks a lot.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/palmas-regulator.c |   17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
-index 7540c95..17d19fb 100644
---- a/drivers/regulator/palmas-regulator.c
-+++ b/drivers/regulator/palmas-regulator.c
-@@ -373,11 +373,22 @@ static int palmas_set_voltage_smps_sel(struct regulator_dev *dev,
- static int palmas_map_voltage_smps(struct regulator_dev *rdev,
- 		int min_uV, int max_uV)
- {
-+	struct palmas_pmic *pmic = rdev_get_drvdata(rdev);
-+	int id = rdev_get_id(rdev);
- 	int ret, voltage;
- 
--	ret = ((min_uV - 500000) / 10000) + 1;
--	if (ret < 0)
--		return ret;
-+	if (min_uV == 0)
-+		return 0;
-+
-+	if (pmic->range[id]) { /* RANGE is x2 */
-+		if (min_uV < 1000000)
-+			min_uV = 1000000;
-+		ret = DIV_ROUND_UP(min_uV - 1000000, 20000) + 1;
-+	} else {		/* RANGE is x1 */
-+		if (min_uV < 500000)
-+			min_uV = 500000;
-+		ret = DIV_ROUND_UP(min_uV - 500000, 10000) + 1;
-+	}
- 
- 	/* Map back into a voltage to verify we're still in bounds */
- 	voltage = palmas_list_voltage_smps(rdev, ret);
--- 
-1.7.9.5
-
-
+Baozi
+> 
+> Thanks again,
+> -Ben
+> 
+>> ---
+>> fs/xfs/xfs_da_btree.h |    2 +-
+>> 1 files changed, 1 insertions(+), 1 deletions(-)
+>> 
+>> diff --git a/fs/xfs/xfs_da_btree.h b/fs/xfs/xfs_da_btree.h
+>> index dbf7c07..be30bd4 100644
+>> --- a/fs/xfs/xfs_da_btree.h
+>> +++ b/fs/xfs/xfs_da_btree.h
+>> @@ -32,7 +32,7 @@ struct zone;
+>> /*
+>>  * This structure is common to both leaf nodes and non-leaf nodes in the Btree.
+>>  *
+>> - * Is is used to manage a doubly linked list of all blocks at the same
+>> + * It is used to manage a doubly linked list of all blocks at the same
+>>  * level in the Btree, and to identify which type of block this is.
+>>  */
+>> #define XFS_DA_NODE_MAGIC	0xfebe	/* magic number: non-leaf blocks */
+>> -- 
+>> 1.7.1
+>> 
+>> _______________________________________________
+>> xfs mailing list
+>> xfs@oss.sgi.com
+>> http://oss.sgi.com/mailman/listinfo/xfs
 
