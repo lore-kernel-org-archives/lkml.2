@@ -1,57 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756674Ab2GQUtS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 16:49:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56628 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751717Ab2GQUtQ (ORCPT
+	id S1756681Ab2GQUvW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 16:51:22 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:51745 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751717Ab2GQUvT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 16:49:16 -0400
-Date: Tue, 17 Jul 2012 13:49:15 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Joonsoo Kim <js1304@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Christoph Lameter <cl@linux.com>,
-        Mel Gorman <mgorman@suse.de>
-Subject: Re: [PATCH] mm: fix wrong argument of migrate_huge_pages() in
- soft_offline_huge_page()
-Message-Id: <20120717134915.76adf9bd.akpm@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.00.1207171340420.9675@chino.kir.corp.google.com>
-References: <1342544460-20095-1-git-send-email-js1304@gmail.com>
-	<alpine.DEB.2.00.1207171340420.9675@chino.kir.corp.google.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 17 Jul 2012 16:51:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <5005CB11.6000205@xenotime.net>
+References: <20120717154153.b10774cb005add05e4c4e5f6@canb.auug.org.au>
+	<5005CB11.6000205@xenotime.net>
+Date: Tue, 17 Jul 2012 22:51:18 +0200
+X-Google-Sender-Auth: 4lbyY749gWSaYPXvaUBAoKToKeA
+Message-ID: <CAMuHMdUwPAx1BO=FAw7sCfa3wU7cwtn6T0hCdkWDGkP8D3T0YQ@mail.gmail.com>
+Subject: Re: linux-next: Tree for July 17 (fs/sync.c)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Jul 2012 13:42:23 -0700 (PDT)
-David Rientjes <rientjes@google.com> wrote:
+On Tue, Jul 17, 2012 at 10:29 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> On 07/16/2012 10:41 PM, Stephen Rothwell wrote:
+>
+>> Hi all,
+>>
+>> Changes since 20120716:
+>>
+>> The vfs tree lost its build failure.
+>
+>
+>
+> on i386:
+>
+> fs/sync.c: In function 'sys_sync':
+> fs/sync.c:110:2: error: implicit declaration of function 'iterate_bdevs'
+>
+>
+> Full randconfig file is attached.
 
-> On Wed, 18 Jul 2012, Joonsoo Kim wrote:
-> 
-> > Commit a6bc32b899223a877f595ef9ddc1e89ead5072b8 ('mm: compaction: introduce
-> > sync-light migration for use by compaction') change declaration of
-> > migrate_pages() and migrate_huge_pages().
-> > But, it miss changing argument of migrate_huge_pages()
-> > in soft_offline_huge_page(). In this case, we should call with MIGRATE_SYNC.
-> > So change it.
-> > 
-> > Additionally, there is mismatch between type of argument and function
-> > declaration for migrate_pages(). So fix this simple case, too.
-> > 
-> > Signed-off-by: Joonsoo Kim <js1304@gmail.com>
-> 
-> Acked-by: David Rientjes <rientjes@google.com>
-> 
-> Should be cc'd to stable for 3.3+.
+According to https://lkml.org/lkml/2012/7/17/61, it happens for
+!CONFIG_BLOCK
 
-Well, why?  I'm suspecting a switch from MIGRATE_SYNC_LIGHT to
-MIGRATE_SYNC will have no discernable effect.  Unless it triggers hitherto
-unknkown about deadlocks...
+Also in e.g. sh-allnoconfig,
+http://kisskb.ellerman.id.au/kisskb/buildresult/6722464/
 
-For a -stable backport we should have a description of the end-user
-visible effects of the bug.  This changelog lacked such a description.
+Gr{oetje,eeting}s,
 
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
