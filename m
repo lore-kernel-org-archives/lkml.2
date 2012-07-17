@@ -1,143 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754911Ab2GQSjL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 14:39:11 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50723 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754700Ab2GQSjJ (ORCPT
+	id S1754632Ab2GQSk5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 14:40:57 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:53361 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753632Ab2GQSkz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 14:39:09 -0400
-Date: Tue, 17 Jul 2012 11:37:07 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
-        Tony Luck <tony.luck@intel.com>, devel@driverdev.osuosl.org,
-        linaro-kernel@lists.linaro.org, Arnd Bergmann <arnd@arndb.de>,
-        patches@linaro.org, Marco Stornelli <marco.stornelli@gmail.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
-        linux-kernel@vger.kernel.org, arve@android.com,
-        Jesper Juhl <jj@chaosbits.net>, John Stultz <john.stultz@linaro.org>,
-        Shuah Khan <shuahkhan@gmail.com>,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, kernel-team@android.com,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: [PATCH] pstore: Headers should include all stuff they use
-Message-ID: <20120717183707.GA24056@lizard>
-References: <20120717180918.GA18671@lizard>
- <1342548840-22404-1-git-send-email-anton.vorontsov@linaro.org>
- <20120717181944.GA21957@kroah.com>
+	Tue, 17 Jul 2012 14:40:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120717181944.GA21957@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+icZUW+Gp9HK-6dzHjtTwSc9RaLD3sV+WPMM-vO3A6fj6frwQ@mail.gmail.com>
+References: <CA+icZUXjc+13YjoJ6FjDFboX20j3mqHNtvV2Av2-H0My8V2Mgg@mail.gmail.com>
+	<CA+icZUW4gNqspcJ1sjBD-3GCVee2VWVV5NPAr6Eo-aZHjp3y+Q@mail.gmail.com>
+	<CA+icZUW+Gp9HK-6dzHjtTwSc9RaLD3sV+WPMM-vO3A6fj6frwQ@mail.gmail.com>
+Date: Tue, 17 Jul 2012 20:40:54 +0200
+Message-ID: <CACRpkdbAnBza0Nd4Qw_LinRDa4XVuzUdJFX==YeML2z7H6gzwg@mail.gmail.com>
+Subject: Re: linux-next: Tree for July 17 (mfd: AB3100 - ab3100_probe:
+ undefined reference to `rand_initialize_irq')
+From: Linus Walleij <linus.walleij@linaro.org>
+To: sedat.dilek@gmail.com
+Cc: "Theodore Ts'o" <tytso@mit.edu>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Headers should really include all the needed prototypes, types, defines
-etc. to be self-contained. This is a long-standing issue, but apparently
-the new tracing code unearthed it (SMP=n is also a prerequisite):
+On Tue, Jul 17, 2012 at 12:39 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> On Tue, Jul 17, 2012 at 12:21 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>> ...looks like AB3100 is the *only* driver still using rand_initialize_irq()...
+>>
+>> drivers/mfd/ab3100-core.c:939:  rand_initialize_irq(client->irq);
+>>
+>> ...but why has random.h still this...?
+>>
+>> include/linux/random.h:51:extern void rand_initialize_irq(int irq);
+>>
+>> Just thinking "loud"...
+>>
+>> - Sedat -
+>
+> Is this attached patch OK, Ted?
 
-In file included from fs/pstore/internal.h:4:0,
-                 from fs/pstore/ftrace.c:21:
-include/linux/pstore.h:43:15: error: field ‘read_mutex’ has incomplete type
+You're just deleting a line from the AB3100 driver, so I guess you're
+regressing the system since that IRQ will no longer contribute
+to the entropy pool?
 
-While at it, I also added the following:
+How do we simultaneously make sure that this IRQ is still
+contributing to the entropy?
 
-linux/types.h -> size_t, phys_addr_t, uXX and friends
-linux/spinlock.h -> spinlock_t
-linux/errno.h -> Exxxx
-linux/time.h -> struct timespec (struct passed by value)
-struct module and rs_control forward declaration (passed via pointers).
-
-Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
----
-
-On Tue, Jul 17, 2012 at 11:19:44AM -0700, Greg Kroah-Hartman wrote:
-> On Tue, Jul 17, 2012 at 11:13:59AM -0700, Anton Vorontsov wrote:
-> > Headers should really include all the needed prototypes, types, defines
-> 
-> <snip>
-> 
->   Content-Transfer-Encoding: base64
-> 
-> That's not a nice way to send patches out, care to fix this and resend?
-
-I used 'git send-email' as normal, and it said:
-
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-
-
-OK, I checked what vger.kernel.org received, and it still says:
-
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-
-And I see the email readable in the text editor.
-
-OK, with linux_banner I got what the problem is, but where base64
-came from?.. :-/
-
-Anyways, resending w/ mutt.
-
- fs/pstore/internal.h       |    2 ++
- include/linux/pstore.h     |    6 ++++++
- include/linux/pstore_ram.h |    1 +
- 3 files changed, 9 insertions(+)
-
-diff --git a/fs/pstore/internal.h b/fs/pstore/internal.h
-index 958c48d..0d0d3b7 100644
---- a/fs/pstore/internal.h
-+++ b/fs/pstore/internal.h
-@@ -1,6 +1,8 @@
- #ifndef __PSTORE_INTERNAL_H__
- #define __PSTORE_INTERNAL_H__
- 
-+#include <linux/types.h>
-+#include <linux/time.h>
- #include <linux/pstore.h>
- 
- #if NR_CPUS <= 2 && defined(CONFIG_ARM_THUMB)
-diff --git a/include/linux/pstore.h b/include/linux/pstore.h
-index 120443b..c892587 100644
---- a/include/linux/pstore.h
-+++ b/include/linux/pstore.h
-@@ -24,6 +24,10 @@
- 
- #include <linux/time.h>
- #include <linux/kmsg_dump.h>
-+#include <linux/mutex.h>
-+#include <linux/types.h>
-+#include <linux/spinlock.h>
-+#include <linux/errno.h>
- 
- /* types */
- enum pstore_type_id {
-@@ -34,6 +38,8 @@ enum pstore_type_id {
- 	PSTORE_TYPE_UNKNOWN	= 255
- };
- 
-+struct module;
-+
- struct pstore_info {
- 	struct module	*owner;
- 	char		*name;
-diff --git a/include/linux/pstore_ram.h b/include/linux/pstore_ram.h
-index af848e1..ba2b211 100644
---- a/include/linux/pstore_ram.h
-+++ b/include/linux/pstore_ram.h
-@@ -24,6 +24,7 @@
- #include <linux/init.h>
- 
- struct persistent_ram_buffer;
-+struct rs_control;
- 
- struct persistent_ram_zone {
- 	phys_addr_t paddr;
--- 
-1.7.10.4
-
+Yours,
+Linus Walleij
