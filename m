@@ -1,115 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756069Ab2GQRmX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 13:42:23 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:35771 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751826Ab2GQRmU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 13:42:20 -0400
-From: John Stultz <johnstul@us.ibm.com>
-To: stable@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, John Stultz <johnstul@us.ibm.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 09/11] 3.0.x: timekeeping: Provide hrtimer update function
-Date: Tue, 17 Jul 2012 13:33:56 -0400
-Message-Id: <1342546438-17534-10-git-send-email-johnstul@us.ibm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1342546438-17534-1-git-send-email-johnstul@us.ibm.com>
-References: <1342546438-17534-1-git-send-email-johnstul@us.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12071717-3534-0000-0000-00000A85AC0D
+	id S1756053Ab2GQRoV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 13:44:21 -0400
+Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:45562
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755955Ab2GQRoT convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 13:44:19 -0400
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC102.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+X-SpamScore: -8
+X-BigFish: VS-8(zz98dI9371I542M1432Izz1202hzz8275bhz2fh2a8h683h839h944hd25hf0ah107ah)
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT005.namprd03.prod.outlook.com;R:internal;EFV:INT
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>
+Subject: RE: [PATCH 01/15] Drivers: hv: Format GUIDS as per MSFT standards
+Thread-Topic: [PATCH 01/15] Drivers: hv: Format GUIDS as per MSFT standards
+Thread-Index: AQHNYf4Qd1N9DKDZDU2CynZv1wTx9Jctp5QAgAAbMvA=
+Date: Tue, 17 Jul 2012 17:42:33 +0000
+Message-ID: <426367E2313C2449837CD2DE46E7EAF9224EA2E5@SN2PRD0310MB382.namprd03.prod.outlook.com>
+References: <1342297930-12607-1-git-send-email-kys@microsoft.com>
+ <1342298060-12662-1-git-send-email-kys@microsoft.com>
+ <20120717160402.GA20481@kroah.com>
+In-Reply-To: <20120717160402.GA20481@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [108.24.39.100]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OrganizationHeadersPreserved: SN2PRD0310HT005.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LISTS.OSDL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14MLTC102.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14MLTC102.redmond.corp.microsoft.com
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
 
-This is a backport of f6c06abfb3972ad4914cef57d8348fcb2932bc3b
 
-To finally fix the infamous leap second issue and other race windows
-caused by functions which change the offsets between the various time
-bases (CLOCK_MONOTONIC, CLOCK_REALTIME and CLOCK_BOOTTIME) we need a
-function which atomically gets the current monotonic time and updates
-the offsets of CLOCK_REALTIME and CLOCK_BOOTTIME with minimalistic
-overhead. The previous patch which provides ktime_t offsets allows us
-to make this function almost as cheap as ktime_get() which is going to
-be replaced in hrtimer_interrupt().
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> Sent: Tuesday, July 17, 2012 12:04 PM
+> To: KY Srinivasan
+> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> virtualization@lists.osdl.org; olaf@aepfle.de; apw@canonical.com
+> Subject: Re: [PATCH 01/15] Drivers: hv: Format GUIDS as per MSFT standards
+> 
+> On Sat, Jul 14, 2012 at 01:34:06PM -0700, K. Y. Srinivasan wrote:
+> > Format GUIDS as per MSFT standard. This makes interacting with MSFT
+> > tool stack easier.
+> >
+> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > ---
+> >  drivers/hv/vmbus_drv.c |    4 ++--
+> >  1 files changed, 2 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/drivers/hv/vmbus_drv.c b/drivers/hv/vmbus_drv.c
+> > index a220e57..1f7e54a 100644
+> > --- a/drivers/hv/vmbus_drv.c
+> > +++ b/drivers/hv/vmbus_drv.c
+> > @@ -147,7 +147,7 @@ static ssize_t vmbus_show_device_attr(struct device
+> *dev,
+> >
+> >  	if (!strcmp(dev_attr->attr.name, "class_id")) {
+> >  		ret = sprintf(buf, "{%02x%02x%02x%02x-%02x%02x-%02x%02x-"
+> > -			       "%02x%02x%02x%02x%02x%02x%02x%02x}\n",
+> > +			       "%02x%02x-%02x%02x%02x%02x%02x%02x}\n",
+> 
+> As Joe pointed out, please just use the printk modifier the kernel
+> already has for GUIDS, and don't roll your own here.  That will work
+> properly for you, right?
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Reviewed-by: Ingo Molnar <mingo@kernel.org>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Prarit Bhargava <prarit@redhat.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
-Link: http://lkml.kernel.org/r/1341960205-56738-7-git-send-email-johnstul@us.ibm.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
----
- include/linux/hrtimer.h   |    1 +
- kernel/time/timekeeping.c |   34 ++++++++++++++++++++++++++++++++++
- 2 files changed, 35 insertions(+)
+Will do. Please drop the patch-set; I will post new patches soon.
 
-diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
-index c9ec940..cc07d27 100644
---- a/include/linux/hrtimer.h
-+++ b/include/linux/hrtimer.h
-@@ -327,6 +327,7 @@ extern ktime_t ktime_get(void);
- extern ktime_t ktime_get_real(void);
- extern ktime_t ktime_get_boottime(void);
- extern ktime_t ktime_get_monotonic_offset(void);
-+extern ktime_t ktime_get_update_offsets(ktime_t *offs_real, ktime_t *offs_boot);
- 
- DECLARE_PER_CPU(struct tick_device, tick_cpu_device);
- 
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index d647773..f0c7565 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -1126,6 +1126,40 @@ void get_xtime_and_monotonic_and_sleep_offset(struct timespec *xtim,
- 	} while (read_seqretry(&xtime_lock, seq));
- }
- 
-+#ifdef CONFIG_HIGH_RES_TIMERS
-+/**
-+ * ktime_get_update_offsets - hrtimer helper
-+ * @real:	pointer to storage for monotonic -> realtime offset
-+ * @_boot:	pointer to storage for monotonic -> boottime offset
-+ *
-+ * Returns current monotonic time and updates the offsets
-+ * Called from hrtimer_interupt() or retrigger_next_event()
-+ */
-+ktime_t ktime_get_update_offsets(ktime_t *real, ktime_t *boot)
-+{
-+	ktime_t now;
-+	unsigned int seq;
-+	u64 secs, nsecs;
-+
-+	do {
-+		seq = read_seqbegin(&xtime_lock);
-+
-+		secs = xtime.tv_sec;
-+		nsecs = xtime.tv_nsec;
-+		nsecs += timekeeping_get_ns();
-+		/* If arch requires, add in gettimeoffset() */
-+		nsecs += arch_gettimeoffset();
-+
-+		*real = offs_real;
-+		*boot = offs_boot;
-+	} while (read_seqretry(&xtime_lock, seq));
-+
-+	now = ktime_add_ns(ktime_set(secs, 0), nsecs);
-+	now = ktime_sub(now, *real);
-+	return now;
-+}
-+#endif
-+
- /**
-  * ktime_get_monotonic_offset() - get wall_to_monotonic in ktime_t format
-  */
--- 
-1.7.9.5
+K. Y
+
+
 
