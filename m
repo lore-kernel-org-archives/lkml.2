@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754137Ab2GQFBj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 01:01:39 -0400
-Received: from ozlabs.org ([203.10.76.45]:46554 "EHLO ozlabs.org"
+	id S1754532Ab2GQFCA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 01:02:00 -0400
+Received: from ozlabs.org ([203.10.76.45]:41892 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754412Ab2GQFBD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 01:01:03 -0400
+	id S1754357Ab2GQFA4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 01:00:56 -0400
 From: Michael Ellerman <michael@ellerman.id.au>
 To: <kvm@vger.kernel.org>
 Cc: <linux-kernel@vger.kernel.org>, <matt@ozlabs.org>, <penberg@kernel.org>,
         <kvm-ppc@vger.kernel.org>, <prerna@linux.vnet.ibm.com>,
         David Gibson <david@gibson.dropbear.id.au>
-Subject: [PATCH 10/10] kvm tools, powerpc: Use MMU info for ibm,slb-size
-Date: Tue, 17 Jul 2012 15:00:20 +1000
-Message-Id: <1342501220-10209-11-git-send-email-michael@ellerman.id.au>
+Subject: [PATCH 07/10] kvm tools, powerpc: Restructure find_cpu_info()
+Date: Tue, 17 Jul 2012 15:00:17 +1000
+Message-Id: <1342501220-10209-8-git-send-email-michael@ellerman.id.au>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1342501220-10209-1-git-send-email-michael@ellerman.id.au>
 References: <1342501220-10209-1-git-send-email-michael@ellerman.id.au>
@@ -21,68 +21,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We are about to add more logic to find_cpu_info(). To support this we
+need to pass kvm through to it, and also restructure the return flow
+so we can operate on info before it is returned.
+
 Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
 ---
- tools/kvm/powerpc/cpu_info.c |    3 +--
- tools/kvm/powerpc/cpu_info.h |    1 -
- tools/kvm/powerpc/kvm.c      |    5 +++--
- 3 files changed, 4 insertions(+), 5 deletions(-)
+ tools/kvm/powerpc/cpu_info.c |   16 +++++++++++-----
+ tools/kvm/powerpc/cpu_info.h |    4 +++-
+ tools/kvm/powerpc/kvm.c      |    2 +-
+ 3 files changed, 15 insertions(+), 7 deletions(-)
 
 diff --git a/tools/kvm/powerpc/cpu_info.c b/tools/kvm/powerpc/cpu_info.c
-index 82a9d4f..1f440a5 100644
+index 586b232..5015a4b 100644
 --- a/tools/kvm/powerpc/cpu_info.c
 +++ b/tools/kvm/powerpc/cpu_info.c
-@@ -25,13 +25,13 @@
- 
- static struct cpu_info cpu_power7_info = {
- 	.name = "POWER7",
--	.slb_size = 32,
- 	.tb_freq = 512000000,
- 	.d_bsize = 128,
- 	.i_bsize = 128,
- 	.flags = CPUINFO_FLAG_DFP | CPUINFO_FLAG_VSX | CPUINFO_FLAG_VMX,
- 	.mmu_info = {
- 		.flags = KVM_PPC_PAGE_SIZES_REAL | KVM_PPC_1T_SEGMENTS,
-+		.slb_size = 32,
- 	},
+@@ -72,18 +72,24 @@ static struct pvr_info host_pvr_info[] = {
+         { 0xffff0000, 0x00450000, &cpu_970_info },
  };
  
-@@ -39,7 +39,6 @@ static struct cpu_info cpu_power7_info = {
+-struct cpu_info *find_cpu_info(u32 pvr)
++struct cpu_info *find_cpu_info(struct kvm *kvm)
+ {
++	struct cpu_info *info;
+ 	unsigned int i;
++	u32 pvr = kvm->pvr;
  
- static struct cpu_info cpu_970_info = {
- 	.name = "G5",
--	.slb_size = 0,
- 	.tb_freq = 33333333,
- 	.d_bsize = 128,
- 	.i_bsize = 128,
+-	for (i = 0; i < ARRAY_SIZE(host_pvr_info); i++) {
++	for (info = NULL, i = 0; i < ARRAY_SIZE(host_pvr_info); i++) {
+ 		if ((pvr & host_pvr_info[i].pvr_mask) == host_pvr_info[i].pvr) {
+-			return host_pvr_info[i].cpu_info;
++			info = host_pvr_info[i].cpu_info;
++			break;
+ 		}
+ 	}
+ 
+ 	/* Didn't find anything? Rut-ro. */
+-	pr_warning("Host CPU unsupported by kvmtool\n");
++	if (!info) {
++		pr_warning("Host CPU unsupported by kvmtool\n");
++		info = &cpu_dummy_info;
++	}
+ 
+-	return &cpu_dummy_info;
++	return info;
+ }
 diff --git a/tools/kvm/powerpc/cpu_info.h b/tools/kvm/powerpc/cpu_info.h
-index 00b9436b..f61707a 100644
+index 2115c7f..439f3940 100644
 --- a/tools/kvm/powerpc/cpu_info.h
 +++ b/tools/kvm/powerpc/cpu_info.h
-@@ -19,7 +19,6 @@
+@@ -11,6 +11,8 @@
+ #ifndef CPU_INFO_H
+ #define CPU_INFO_H
  
- struct cpu_info {
- 	const char	*name;
--	u32		slb_size;
- 	u32		tb_freq; /* timebase frequency */
- 	u32		d_bsize; /* d-cache block size */
- 	u32		i_bsize; /* i-cache block size */
++#include <kvm/kvm.h>
++
+ #include <linux/types.h>
+ #include <linux/kernel.h>
+ 
+@@ -38,6 +40,6 @@ struct pvr_info {
+ #define CPUINFO_FLAG_VMX	0x00000002
+ #define CPUINFO_FLAG_VSX	0x00000004
+ 
+-struct cpu_info *find_cpu_info(u32 pvr);
++struct cpu_info *find_cpu_info(struct kvm *kvm);
+ 
+ #endif
 diff --git a/tools/kvm/powerpc/kvm.c b/tools/kvm/powerpc/kvm.c
-index 8353355..83b8edd 100644
+index e3a7e52..dbfea3e 100644
 --- a/tools/kvm/powerpc/kvm.c
 +++ b/tools/kvm/powerpc/kvm.c
-@@ -393,8 +393,9 @@ static void setup_fdt(struct kvm *kvm)
- 		/* Lies, but safeish lies! */
- 		_FDT(fdt_property_cell(fdt, "clock-frequency", 0xddbab200));
+@@ -229,7 +229,7 @@ static void setup_fdt(struct kvm *kvm)
+ 	int 		i, j;
+ 	char 		cpu_name[30];
+ 	u8		staging_fdt[FDT_MAX_SIZE];
+-	struct cpu_info *cpu_info = find_cpu_info(kvm->pvr);
++	struct cpu_info *cpu_info = find_cpu_info(kvm);
  
--		if (cpu_info->slb_size)
--			_FDT(fdt_property_cell(fdt, "ibm,slb-size", cpu_info->slb_size));
-+		if (cpu_info->mmu_info.slb_size)
-+			_FDT(fdt_property_cell(fdt, "ibm,slb-size", cpu_info->mmu_info.slb_size));
-+
- 		/*
- 		 * HPT size is hardwired; KVM currently fixes it at 16MB but the
- 		 * moment that changes we'll need to read it out of the kernel.
+ 	/* Generate an appropriate DT at kvm->fdt_gra */
+ 	void *fdt_dest = guest_flat_to_host(kvm, kvm->fdt_gra);
 -- 
 1.7.9.5
 
