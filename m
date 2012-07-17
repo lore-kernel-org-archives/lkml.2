@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753025Ab2GQM2I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 08:28:08 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:53160 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751510Ab2GQM2E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 08:28:04 -0400
-Message-ID: <50055A21.5010206@mvista.com>
-Date: Tue, 17 Jul 2012 16:27:13 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1753058Ab2GQMb2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 08:31:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24505 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751159Ab2GQMbY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 08:31:24 -0400
+Message-ID: <50055B19.8090101@redhat.com>
+Date: Tue, 17 Jul 2012 14:31:21 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
-        linux@arm.linux.org.uk, gregkh@linuxfoundation.org, b-cousson@ti.com,
-        rnayak@ti.com, tony@atomide.com, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, balbi@ti.com,
-        linux-omap@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH v2 02/11] arm/dts: omap: Add omap-usb2 dt data
-References: <1342512611-20529-1-git-send-email-kishon@ti.com> <1342512611-20529-3-git-send-email-kishon@ti.com>
-In-Reply-To: <1342512611-20529-3-git-send-email-kishon@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH] sd: do not set changed flag on all unit attention conditions
+References: <1342454772-9018-1-git-send-email-pbonzini@redhat.com>     <1342455503.3176.42.camel@dabdike.int.hansenpartnership.com>     <50044D56.6000400@redhat.com>    <1342511100.3039.9.camel@dabdike.int.hansenpartnership.com>    <50052390.7030908@redhat.com>   <1342514444.3039.23.camel@dabdike.int.hansenpartnership.com>   <5005285E.8060706@redhat.com>  <1342516317.3039.35.camel@dabdike.int.hansenpartnership.com>  <5005302D.6010805@redhat.com> <1342527693.3039.64.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <1342527693.3039.64.camel@dabdike.int.hansenpartnership.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Il 17/07/2012 14:21, James Bottomley ha scritto:
+>> Yes, I realize failing only on specific sense codes as I did it in the
+>> patch is not going to work.  However, the other way round is not
+>> problematic (explicitly allow some sense codes, fail on all others).
+> 
+> Heh, I once thought that, but there's no end to the strange ideas USB
+> manufacturers get.
 
-On 17-07-2012 12:10, Kishon Vijay Abraham I wrote:
+:)
 
-> Add omap-usb2 data node in omap4 device tree file.
+>> > Another example is "target operating conditions have changed".  QEMU
+>> > cannot report such changes because scsi_error prints a warning (fine)
+>> > and then passes the unit attention upwards.  With removable drives, this
+>> > has the same problem as resizing.
+> Why would a removable device ever use any of the codes under this ASC
+> when the medium hasn't changed?  They're all for arrays (well except
+> 0x10 and 0x11 ... and they're only supposed to apply to tape changers
+> with autoload support declared in the control mode page).
 
-> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> ---
->   arch/arm/boot/dts/omap4.dtsi |    5 +++++
->   1 files changed, 5 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
-> index bda5df3..4d2dcc1 100644
-> --- a/arch/arm/boot/dts/omap4.dtsi
-> +++ b/arch/arm/boot/dts/omap4.dtsi
-> @@ -279,6 +279,11 @@
->   			#size-cells = <1>;
->   			ranges;
->   			ti,hwmods = "ocp2scp_usb_phy";
-> +			usb2phy@0x4a0ad080 {
+There are also a couple of generic ones such as "reported luns have
+changed".  I also considered briefly using "inquiry data has changed" to
+reload the unmap parameters after live snapshot or storage migration.  I
+dropped the idea, please don't put me in the same bin as the USB
+manufacturers.
 
-    There should be no "0x" prefix here.
-
-WBR, Sergei
+Paolo
