@@ -1,166 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756429Ab2GQWWR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 18:22:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62544 "EHLO mx1.redhat.com"
+	id S1757128Ab2GQWY0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 18:24:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15795 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751516Ab2GQWWN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 18:22:13 -0400
-Message-ID: <1342563730.2229.170.camel@bling.home>
-Subject: Re: [PATCH v5 3/4] kvm: Create kvm_clear_irq()
-From: Alex Williamson <alex.williamson@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
+	id S1751516Ab2GQWYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 18:24:24 -0400
+Date: Wed, 18 Jul 2012 01:24:55 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
 Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
         linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Date: Tue, 17 Jul 2012 16:22:10 -0600
-In-Reply-To: <20120717220552.GG1868@redhat.com>
-References: <20120717155701.GB12001@redhat.com>
-	 <1342541301.2229.125.camel@bling.home> <20120717161452.GA12114@redhat.com>
-	 <1342541823.2229.127.camel@bling.home> <20120717162115.GC12114@redhat.com>
-	 <1342543552.2229.136.camel@bling.home> <20120717185542.GB13066@redhat.com>
-	 <1342554687.2229.144.camel@bling.home> <20120717210543.GA1868@redhat.com>
-	 <1342562500.2229.158.camel@bling.home> <20120717220552.GG1868@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH v5 2/4] kvm: KVM_EOIFD, an eventfd for EOIs
+Message-ID: <20120717222455.GI1868@redhat.com>
+References: <20120717151327.GC11587@redhat.com>
+ <1342539669.2229.114.camel@bling.home>
+ <20120717155325.GA12001@redhat.com>
+ <1342541161.2229.123.camel@bling.home>
+ <20120717161919.GB12114@redhat.com>
+ <1342543936.2229.138.camel@bling.home>
+ <20120717185803.GC13066@redhat.com>
+ <1342555385.2229.152.camel@bling.home>
+ <20120717212314.GB1868@redhat.com>
+ <1342562965.2229.162.camel@bling.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1342562965.2229.162.camel@bling.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-18 at 01:05 +0300, Michael S. Tsirkin wrote:
-> On Tue, Jul 17, 2012 at 04:01:40PM -0600, Alex Williamson wrote:
-> > On Wed, 2012-07-18 at 00:05 +0300, Michael S. Tsirkin wrote:
-> > > On Tue, Jul 17, 2012 at 01:51:27PM -0600, Alex Williamson wrote:
-> > > > On Tue, 2012-07-17 at 21:55 +0300, Michael S. Tsirkin wrote:
-> > > > > On Tue, Jul 17, 2012 at 10:45:52AM -0600, Alex Williamson wrote:
-> > > > > > On Tue, 2012-07-17 at 19:21 +0300, Michael S. Tsirkin wrote:
-> > > > > > > On Tue, Jul 17, 2012 at 10:17:03AM -0600, Alex Williamson wrote:
-> > > > > > > > > > > > > > >   And current code looks buggy if yes we need to fix it somehow.
+On Tue, Jul 17, 2012 at 04:09:25PM -0600, Alex Williamson wrote:
+> On Wed, 2012-07-18 at 00:23 +0300, Michael S. Tsirkin wrote:
+> > On Tue, Jul 17, 2012 at 02:03:05PM -0600, Alex Williamson wrote:
+> > > On Tue, 2012-07-17 at 21:58 +0300, Michael S. Tsirkin wrote:
+> > > > On Tue, Jul 17, 2012 at 10:52:16AM -0600, Alex Williamson wrote:
+> > > > > On Tue, 2012-07-17 at 19:19 +0300, Michael S. Tsirkin wrote:
+> > > > > > On Tue, Jul 17, 2012 at 10:06:01AM -0600, Alex Williamson wrote:
+> > > > > > > On Tue, 2012-07-17 at 18:53 +0300, Michael S. Tsirkin wrote:
+> > > > > > > > On Tue, Jul 17, 2012 at 09:41:09AM -0600, Alex Williamson wrote:
+> > > > > > > > > On Tue, 2012-07-17 at 18:13 +0300, Michael S. Tsirkin wrote:
+> > > > > > > > > > On Tue, Jul 17, 2012 at 08:57:04AM -0600, Alex Williamson wrote:
+> > > > > > > > > > > On Tue, 2012-07-17 at 17:42 +0300, Michael S. Tsirkin wrote:
+> > > > > > > > > > > > On Tue, Jul 17, 2012 at 08:29:43AM -0600, Alex Williamson wrote:
+> > > > > > > > > > > > > On Tue, 2012-07-17 at 17:10 +0300, Michael S. Tsirkin wrote:
+> > > > > > > > > > > > > > On Tue, Jul 17, 2012 at 07:59:16AM -0600, Alex Williamson wrote:
+> > > > > > > > > > > > > > > On Tue, 2012-07-17 at 13:21 +0300, Michael S. Tsirkin wrote:
+> > > > > > > > > > > > > > > > On Mon, Jul 16, 2012 at 02:33:55PM -0600, Alex Williamson wrote:
+> > > > > > > > > > > > > > > > > +	if (args->flags & KVM_EOIFD_FLAG_LEVEL_IRQFD) {
+> > > > > > > > > > > > > > > > > +		struct _irqfd *irqfd = _irqfd_fdget_lock(kvm, args->irqfd);
+> > > > > > > > > > > > > > > > > +		if (IS_ERR(irqfd)) {
+> > > > > > > > > > > > > > > > > +			ret = PTR_ERR(irqfd);
+> > > > > > > > > > > > > > > > > +			goto fail;
+> > > > > > > > > > > > > > > > > +		}
+> > > > > > > > > > > > > > > > > +
+> > > > > > > > > > > > > > > > > +		gsi = irqfd->gsi;
+> > > > > > > > > > > > > > > > > +		level_irqfd = eventfd_ctx_get(irqfd->eventfd);
+> > > > > > > > > > > > > > > > > +		source = _irq_source_get(irqfd->source);
+> > > > > > > > > > > > > > > > > +		_irqfd_put_unlock(irqfd);
+> > > > > > > > > > > > > > > > > +		if (!source) {
+> > > > > > > > > > > > > > > > > +			ret = -EINVAL;
+> > > > > > > > > > > > > > > > > +			goto fail;
+> > > > > > > > > > > > > > > > > +		}
+> > > > > > > > > > > > > > > > > +	} else {
+> > > > > > > > > > > > > > > > > +		ret = -EINVAL;
+> > > > > > > > > > > > > > > > > +		goto fail;
+> > > > > > > > > > > > > > > > > +	}
+> > > > > > > > > > > > > > > > > +
+> > > > > > > > > > > > > > > > > +	INIT_LIST_HEAD(&eoifd->list);
+> > > > > > > > > > > > > > > > > +	eoifd->kvm = kvm;
+> > > > > > > > > > > > > > > > > +	eoifd->eventfd = eventfd;
+> > > > > > > > > > > > > > > > > +	eoifd->source = source;
+> > > > > > > > > > > > > > > > > +	eoifd->level_irqfd = level_irqfd;
+> > > > > > > > > > > > > > > > > +	eoifd->notifier.gsi = gsi;
+> > > > > > > > > > > > > > > > > +	eoifd->notifier.irq_acked = eoifd_event;
+> > > > > > > > > > > > > > > > 
+> > > > > > > > > > > > > > > > OK so this means eoifd keeps a reference to the irqfd.
+> > > > > > > > > > > > > > > > And since this is the case, can't we drop the reference counting
+> > > > > > > > > > > > > > > > around source ids now? Everything is referenced through irqfd.
+> > > > > > > > > > > > > > > 
+> > > > > > > > > > > > > > > Holding a reference and using it as a reference count are not the same
+> > > > > > > > > > > > > > > thing.  What if another module holds a reference to this eventfd?  How
+> > > > > > > > > > > > > > > do we do anything on release?
 > > > > > > > > > > > > > > 
-> > > > > > > > > > > > > > 
-> > > > > > > > > > > > > > Which to me seems to indicate this should be handled as a separate
-> > > > > > > > > > > > > > effort.
+> > > > > > > > > > > > > > We don't as there is no release, and using kref on source id does not
+> > > > > > > > > > > > > > help: it just never gets invoked.
 > > > > > > > > > > > > > 
-> > > > > > > > > > > > > A separate patchset, sure. But likely a prerequisite: we still need to
-> > > > > > > > > > > > > look at all the code. Let's not copy bugs, need to fix them.
+> > > > > > > > > > > > > Please work out how you think it should work and let me know, I don't
+> > > > > > > > > > > > > see it.  We have an irq source id that needs to be allocated by irqfd
+> > > > > > > > > > > > > and returned when it's unused.  It becomes unused when neither irqfd nor
+> > > > > > > > > > > > > eoifd are making use of it.  irqfd and eoifd may be closed in any order.
+> > > > > > > > > > > > > Use of the source id is what we're reference counting, which is why it's
+> > > > > > > > > > > > > in struct _irq_source.  How can I use an eventfd reference for the same?
+> > > > > > > > > > > > > I don't know when it's unused.  I don't know who else holds a reference
+> > > > > > > > > > > > > to it...  Doesn't make sense to me.  Feels like attempting to squat on
+> > > > > > > > > > > > > someone else's object.
+> > > > > > > > > > > > > 
+> > > > > > > > > > > > > 
 > > > > > > > > > > > > 
-> > > > > > > > > > > > This looks tangential to me unless you can come up with an actual reason
-> > > > > > > > > > > > the above spinlock usage is incorrect or insufficient.
+> > > > > > > > > > > > eoifd should prevent irqfd from being released.
 > > > > > > > > > > > 
-> > > > > > > > > > > You copy the same pattern that seems racy. So you double the
-> > > > > > > > > > > amount of code that woul need to be fixed.
+> > > > > > > > > > > Why?  Note that this is actually quite difficult too.  We can't fail a
+> > > > > > > > > > > release, nobody checks close(3p) return.  Blocking a release is likely
+> > > > > > > > > > > to cause all sorts of problems, so what you mean is that irqfd should
+> > > > > > > > > > > linger around until there are no references to it... but that's exactly
+> > > > > > > > > > > what struct _irq_source is for, is to hold the bits that we care about
+> > > > > > > > > > > references to and automatically release it when there are none.
 > > > > > > > > > > 
-> > > > > > > > > > 
-> > > > > > > > > > _Seems_ racy, or _is_ racy?  Please identify the race.
+> > > > > > > > > > No no. You *already* prevent it. You take a reference to the eventfd
+> > > > > > > > > > context.
 > > > > > > > > > 
-> > > > > > > > > Look at this:
-> > > > > > > > > 
-> > > > > > > > > static inline int kvm_irq_line_state(unsigned long *irq_state,
-> > > > > > > > >                                      int irq_source_id, int level)
-> > > > > > > > > {
-> > > > > > > > >         /* Logical OR for level trig interrupt */
-> > > > > > > > >         if (level)
-> > > > > > > > >                 set_bit(irq_source_id, irq_state);
-> > > > > > > > >         else
-> > > > > > > > >                 clear_bit(irq_source_id, irq_state);
-> > > > > > > > > 
-> > > > > > > > >         return !!(*irq_state);
-> > > > > > > > > }
-> > > > > > > > > 
-> > > > > > > > > 
-> > > > > > > > > Now:
-> > > > > > > > > If other CPU changes some other bit after the atomic change,
-> > > > > > > > > it looks like !!(*irq_state) might return a stale value.
-> > > > > > > > > 
-> > > > > > > > > CPU 0 clears bit 0. CPU 1 sets bit 1. CPU 1 sets level to 1.
-> > > > > > > > > If CPU 0 sees a stale value now it will return 0 here
-> > > > > > > > > and interrupt will get cleared.
-> > > > > > > > > 
-> > > > > > > > > 
-> > > > > > > > > Maybe this is not a problem. But in that case IMO it needs
-> > > > > > > > > a comment explaining why and why it's not a problem in
-> > > > > > > > > your code.
+> > > > > > > > > Right, which keeps the fd from going away, not the struct _irqfd.
 > > > > > > > > 
-> > > > > > > > So you want to close the door on anything that uses kvm_set_irq until
-> > > > > > > > this gets fixed... that's insane.
+> > > > > > > > _irqfd too.
 > > > > > > > 
-> > > > > > > What does kvm_set_irq use have to do with it?  You posted this patch:
 > > > > > > > 
-> > > > > > > +static int kvm_clear_pic_irq(struct kvm_kernel_irq_routing_entry *e,
-> > > > > > > +                            struct kvm *kvm, int irq_source_id)
-> > > > > > > +{
-> > > > > > > +#ifdef CONFIG_X86
-> > > > > > > +       struct kvm_pic *pic = pic_irqchip(kvm);
-> > > > > > > +       int level =
-> > > > > > > kvm_clear_irq_line_state(&pic->irq_states[e->irqchip.pin],
-> > > > > > > +                                            irq_source_id);
-> > > > > > > +       if (level)
-> > > > > > > +               kvm_pic_set_irq(pic, e->irqchip.pin,
-> > > > > > > +                               !!pic->irq_states[e->irqchip.pin]);
-> > > > > > > +       return level;
-> > > > > > > +#else
-> > > > > > > +       return -1;
-> > > > > > > +#endif
-> > > > > > > +}
-> > > > > > > +
-> > > > > > > 
-> > > > > > > it seems racy in the same way.
+> > > > > > > How so?
 > > > > > > 
-> > > > > > Now you're just misrepresenting how we got here, which was:
-> > > > > > 
-> > > > > > > > > > > > IMHO, we're going off into the weeds again with these last
-> > > > > > > > > > > > two patches.  It may be a valid optimization, but it really has no
-> > > > > > > > > > > > bearing on the meat of the series (and afaict, no significant
-> > > > > > > > > > > > performance difference either).
-> > > > > > > > > > > 
-> > > > > > > > > > > For me it's not a performance thing. IMO code is cleaner without this locking:
-> > > > > > > > > > > we add a lock but only use it in some cases, so the rules become really
-> > > > > > > > > > > complex.
-> > > > > > 
-> > > > > > So I'm happy to drop the last 2 patches, which were done at your request
-> > > > > > anyway, but you've failed to show how the locking in patches 1&2 is
-> > > > > > messy, inconsistent, or complex and now you're asking to block all
-> > > > > > progress.
+> > > > > > Normally irqfd_wakeup is called with POLLHUP and calls irqfd_deactivate.
+> > > > > > If you get a ctx reference this does not happen.
 > > > > > 
-> > > > > I'm asking for bugs to get fixed and not duplicated. Adding more bugs is
-> > > > > not progress. Or maybe there is no bug. Let's see why and add a comment.
-> > > > > 
-> > > > > >  Those patches are just users of kvm_set_irq.
-> > > > > 
-> > > > > 
-> > > > > Well these add calls to kvm_set_irq which scans all vcpus under
-> > > > > spinlock. In the past Avi thought this is not a good idea too.
-> > > > > Maybe things changed.
+> > > > > I think you're mistaken.  wake_up_poll(,POLLHUP) is called from
+> > > > > eventfd_release (file_operations.release), not from ctx reference
+> > > > > release.
 > > > > 
-> > > > We can drop the spinlock if we don't care about spurious EOIs, which is
-> > > > only a theoretical scalability problem anyway.
+> > > > True. I was wrong. so close has the same bug as deassign. To fix,
+> > > > how about eoifd will hold a reference to the irqfd instead of the
+> > > > eventfd context?
 > > > 
-> > > Not theoretical at all IMO. We see the problem with virtio with old
-> > > guests today.
+> > > What does it mean to hold a reference to the irqfd?
 > > 
-> > And how are you injecting level interrupts with virtio today w/o this
-> > interface?
+> > I meant file *reference: eventfd_fget. But there are other options see
+> > below.
 > 
-> Not well at all. Bad performance with interrupt sharing.
-> 
-> > > > We're talking about
-> > > > level interrupts here, how scalable do we need to be?
-> > > > 
-> > > 
-> > > The reason we are moving them into kernel at all is for speed, no?
+> That's no better than the eventfd context we already hold.
+
+It means POLLHUP is not invoked until eoifd is closed.
+
+> > > What state of functionality is an irqfd that has been
+> > > closed/de-assigned but is still attached to an eoifd?  It can't
+> > > continue to fire interrupts into the guest.
+> > >
+> > > I don't think close or de-assign have a bug, assign has a bug that it
+> > > can allow re-assignment using an in-use eventfd.  I think I'd rather
+> > > fix that.
 > > 
-> > Come on, if we take that approach why aren't we writing all of this in
-> > assembly for speed?!  All I'm suggesting is there's a limit to return on
-> > investment at some point.  Maybe it's here.
+> > Let me show you that the bug is in deassign:
+> > 	assign irqfd for fd=1
+> > 	assign for eoifd fd=2, irqfd=1
+> > 	deassign irqfd 1
+> > 
+> > At this point eoifd has no meaning and there is also no way to deassign
+> > it,
 > 
-> Well I am just warning about known problems: don't wake up (typically)
-> many eoifds on a single interrupt or you will have scalability
-> problems that we already see with emulated devices.
+> Yes, there is.  This is exactly why I hold a reference to the eventfd
+> ctx.  It can still be deassigned by passing irqfd=1, we'll do an
+> eventfd_ctx_get and match it to that stored.
 
-Well, that's why we don't want to bounce back to userspace.  All we need
-to do in VFIO for each callback is note that the interrupt wasn't
-previously masked and do nothing.  So we're talking about acquiring a
-spinlock and a few data references.  Sure, I'd like to avoid doing that,
-but not if it means blocking this patch series until some unknown number
-of patches fixes all the tangential problems you find.
+OK.
+What if instead we close irqfd 1?
 
+> >  so the bug already triggered.
+> >
+> > I can see two ways out:
+> > 1. easy way - fail deassign
+> 
+> Then close() and deassign are not the same.
+> 
+> > 2. elegant way - shut down eoifd on irqfd deassign too
+> 
+> Sorry, I've always been told it's a bad idea to have one interface kill
+> another from inside the kernel.
+
+Not kill merely deassign.
+
+> Given that your assertion above is incorrect, I still stand by fixing
+> assign.
+
+OK, but then you also would need to protect against someone binding
+an irqfd that is not level to same GSI.
+
+Also if we go ahead with fixing assign - I do not think we need
+to rebind to the same source id - just failing assign
+of this irqfd with EBUSY should be enough.
+
+-- 
+MST
