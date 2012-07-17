@@ -1,55 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754289Ab2GQHGQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 03:06:16 -0400
-Received: from edison.jonmasters.org ([173.255.233.168]:59726 "EHLO
-	edison.jonmasters.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754086Ab2GQHGB (ORCPT
+	id S1754429Ab2GQHG1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 03:06:27 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:51089 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754332Ab2GQHGW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 03:06:01 -0400
-Message-ID: <50050ECE.8020100@jonmasters.org>
-Date: Tue, 17 Jul 2012 03:05:50 -0400
-From: Jon Masters <jonathan@jonmasters.org>
-Organization: World Organi{s,z}ation of Broken Dreams
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Pavel Machek <pavel@ucw.cz>
-CC: Catalin Marinas <catalin.marinas@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Ingo Molnar <mingo@kernel.org>, Olof Johansson <olof@lixom.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com> <20120714093032.GA23316@elf.ucw.cz> <20120715121644.GB10597@arm.com> <201207151943.08183.arnd@arndb.de> <20120715213336.GA25830@arm.com> <20120716121651.GA18859@elf.ucw.cz>
-In-Reply-To: <20120716121651.GA18859@elf.ucw.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 74.92.29.237
-X-SA-Exim-Mail-From: jonathan@jonmasters.org
-Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Nov 2009 07:31:22 +0000)
-X-SA-Exim-Scanned: Yes (on edison.jonmasters.org)
+	Tue, 17 Jul 2012 03:06:22 -0400
+From: John Stultz <johnstul@us.ibm.com>
+To: stable@vger.kernel.org
+Cc: John Stultz <johnstul@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 10/11] 3.2.x: hrtimer: Update hrtimer base offsets each hrtimer_interrupt
+Date: Tue, 17 Jul 2012 03:05:23 -0400
+Message-Id: <1342508724-14527-11-git-send-email-johnstul@us.ibm.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1342508724-14527-1-git-send-email-johnstul@us.ibm.com>
+References: <1342508724-14527-1-git-send-email-johnstul@us.ibm.com>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12071707-7408-0000-0000-000006D233D6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2012 08:16 AM, Pavel Machek wrote:
+This is a backport of 5baefd6d84163443215f4a99f6a20f054ef11236
 
->> If an implementation supports AArch32 at EL3 there could be some
->> physical (or some FPGA config) switch to choose between the two. But
->> since AArch64 is mandated, I don't see why one would force AArch32 at
->> EL3 and therefore all lower exception levels (and make a big part of the
->> processor unused).
-> 
-> Actually I see one ... and I can bet it will happen.
-> 
-> So you create that shiny new ARMv8 compliant CPU, 8 cores, 2GHz. HTC
-> will want to use it with 1GB of RAM... and put around exiting OMAP
-> perihepals.
+The update of the hrtimer base offsets on all cpus cannot be made
+atomically from the timekeeper.lock held and interrupt disabled region
+as smp function calls are not allowed there.
 
-But that's why we have Eagle (A15). It's a very capable 32-bit design
-from ARM and far more sensible for such designs. You can easily build
-something with a few A15 clusters in it, as we're already seeing.
+clock_was_set(), which enforces the update on all cpus, is called
+either from preemptible process context in case of do_settimeofday()
+or from the softirq context when the offset modification happened in
+the timer interrupt itself due to a leap second.
 
-Jon.
+In both cases there is a race window for an hrtimer interrupt between
+dropping timekeeper lock, enabling interrupts and clock_was_set()
+issuing the updates. Any interrupt which arrives in that window will
+see the new time but operate on stale offsets.
+
+So we need to make sure that an hrtimer interrupt always sees a
+consistent state of time and offsets.
+
+ktime_get_update_offsets() allows us to get the current monotonic time
+and update the per cpu hrtimer base offsets from hrtimer_interrupt()
+to capture a consistent state of monotonic time and the offsets. The
+function replaces the existing ktime_get() calls in hrtimer_interrupt().
+
+The overhead of the new function vs. ktime_get() is minimal as it just
+adds two store operations.
+
+This ensures that any changes to realtime or boottime offsets are
+noticed and stored into the per-cpu hrtimer base structures, prior to
+any hrtimer expiration and guarantees that timers are not expired early.
+
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Reviewed-by: Ingo Molnar <mingo@kernel.org>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Prarit Bhargava <prarit@redhat.com>
+Cc: stable@vger.kernel.org
+Link: http://lkml.kernel.org/r/1341960205-56738-8-git-send-email-johnstul@us.ibm.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+---
+ kernel/hrtimer.c |   28 ++++++++++++++--------------
+ 1 file changed, 14 insertions(+), 14 deletions(-)
+
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index 8f320af..6db7a5e 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -657,6 +657,14 @@ static inline int hrtimer_enqueue_reprogram(struct hrtimer *timer,
+ 	return 0;
+ }
+ 
++static inline ktime_t hrtimer_update_base(struct hrtimer_cpu_base *base)
++{
++	ktime_t *offs_real = &base->clock_base[HRTIMER_BASE_REALTIME].offset;
++	ktime_t *offs_boot = &base->clock_base[HRTIMER_BASE_BOOTTIME].offset;
++
++	return ktime_get_update_offsets(offs_real, offs_boot);
++}
++
+ /*
+  * Retrigger next event is called after clock was set
+  *
+@@ -665,22 +673,12 @@ static inline int hrtimer_enqueue_reprogram(struct hrtimer *timer,
+ static void retrigger_next_event(void *arg)
+ {
+ 	struct hrtimer_cpu_base *base = &__get_cpu_var(hrtimer_bases);
+-	struct timespec realtime_offset, xtim, wtm, sleep;
+ 
+ 	if (!hrtimer_hres_active())
+ 		return;
+ 
+-	/* Optimized out for !HIGH_RES */
+-	get_xtime_and_monotonic_and_sleep_offset(&xtim, &wtm, &sleep);
+-	set_normalized_timespec(&realtime_offset, -wtm.tv_sec, -wtm.tv_nsec);
+-
+-	/* Adjust CLOCK_REALTIME offset */
+ 	raw_spin_lock(&base->lock);
+-	base->clock_base[HRTIMER_BASE_REALTIME].offset =
+-		timespec_to_ktime(realtime_offset);
+-	base->clock_base[HRTIMER_BASE_BOOTTIME].offset =
+-		timespec_to_ktime(sleep);
+-
++	hrtimer_update_base(base);
+ 	hrtimer_force_reprogram(base, 0);
+ 	raw_spin_unlock(&base->lock);
+ }
+@@ -710,7 +708,6 @@ static int hrtimer_switch_to_hres(void)
+ 		base->clock_base[i].resolution = KTIME_HIGH_RES;
+ 
+ 	tick_setup_sched_timer();
+-
+ 	/* "Retrigger" the interrupt to get things going */
+ 	retrigger_next_event(NULL);
+ 	local_irq_restore(flags);
+@@ -1264,7 +1261,7 @@ void hrtimer_interrupt(struct clock_event_device *dev)
+ 	dev->next_event.tv64 = KTIME_MAX;
+ 
+ 	raw_spin_lock(&cpu_base->lock);
+-	entry_time = now = ktime_get();
++	entry_time = now = hrtimer_update_base(cpu_base);
+ retry:
+ 	expires_next.tv64 = KTIME_MAX;
+ 	/*
+@@ -1342,9 +1339,12 @@ retry:
+ 	 * We need to prevent that we loop forever in the hrtimer
+ 	 * interrupt routine. We give it 3 attempts to avoid
+ 	 * overreacting on some spurious event.
++	 *
++	 * Acquire base lock for updating the offsets and retrieving
++	 * the current time.
+ 	 */
+ 	raw_spin_lock(&cpu_base->lock);
+-	now = ktime_get();
++	now = hrtimer_update_base(cpu_base);
+ 	cpu_base->nr_retries++;
+ 	if (++retries < 3)
+ 		goto retry;
+-- 
+1.7.9.5
+
