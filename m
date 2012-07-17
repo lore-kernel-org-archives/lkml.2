@@ -1,148 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755681Ab2GQPw7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 11:52:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34365 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755631Ab2GQPw4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 11:52:56 -0400
-Date: Tue, 17 Jul 2012 18:53:25 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Subject: Re: [PATCH v5 2/4] kvm: KVM_EOIFD, an eventfd for EOIs
-Message-ID: <20120717155325.GA12001@redhat.com>
-References: <20120716202711.1752.71007.stgit@bling.home>
- <20120716203353.1752.19127.stgit@bling.home>
- <20120717102139.GG7949@redhat.com>
- <1342533556.3229.7.camel@ul30vt>
- <20120717141002.GC10822@redhat.com>
- <1342535383.3229.32.camel@ul30vt>
- <20120717144237.GA11516@redhat.com>
- <1342537024.3229.43.camel@ul30vt>
- <20120717151327.GC11587@redhat.com>
- <1342539669.2229.114.camel@bling.home>
+	id S1755678Ab2GQPz1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 11:55:27 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44723 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751791Ab2GQPzZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 11:55:25 -0400
+Date: Wed, 18 Jul 2012 00:03:48 +0800
+From: Zheng Liu <gnehzuil.liu@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Minchan Kim <minchan@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, Hugh Dickins <hughd@google.com>
+Subject: Re: RFC:  Easy-Reclaimable LRU list
+Message-ID: <20120717160348.GA5441@gmail.com>
+Mail-Followup-To: Mel Gorman <mgorman@suse.de>,
+	Minchan Kim <minchan@kernel.org>,
+	"linux-mm@kvack.org" <linux-mm@kvack.org>,
+	LKML <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
+	KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+	KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+	Johannes Weiner <hannes@cmpxchg.org>,
+	Andrea Arcangeli <aarcange@redhat.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Anton Vorontsov <anton.vorontsov@linaro.org>,
+	John Stultz <john.stultz@linaro.org>,
+	Pekka Enberg <penberg@kernel.org>,
+	Wu Fengguang <fengguang.wu@intel.com>,
+	Hugh Dickins <hughd@google.com>
+References: <4FE012CD.6010605@kernel.org>
+ <20120625102435.GD8271@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1342539669.2229.114.camel@bling.home>
+In-Reply-To: <20120625102435.GD8271@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 17, 2012 at 09:41:09AM -0600, Alex Williamson wrote:
-> On Tue, 2012-07-17 at 18:13 +0300, Michael S. Tsirkin wrote:
-> > On Tue, Jul 17, 2012 at 08:57:04AM -0600, Alex Williamson wrote:
-> > > On Tue, 2012-07-17 at 17:42 +0300, Michael S. Tsirkin wrote:
-> > > > On Tue, Jul 17, 2012 at 08:29:43AM -0600, Alex Williamson wrote:
-> > > > > On Tue, 2012-07-17 at 17:10 +0300, Michael S. Tsirkin wrote:
-> > > > > > On Tue, Jul 17, 2012 at 07:59:16AM -0600, Alex Williamson wrote:
-> > > > > > > On Tue, 2012-07-17 at 13:21 +0300, Michael S. Tsirkin wrote:
-> > > > > > > > On Mon, Jul 16, 2012 at 02:33:55PM -0600, Alex Williamson wrote:
-> > > > > > > > > +	if (args->flags & KVM_EOIFD_FLAG_LEVEL_IRQFD) {
-> > > > > > > > > +		struct _irqfd *irqfd = _irqfd_fdget_lock(kvm, args->irqfd);
-> > > > > > > > > +		if (IS_ERR(irqfd)) {
-> > > > > > > > > +			ret = PTR_ERR(irqfd);
-> > > > > > > > > +			goto fail;
-> > > > > > > > > +		}
-> > > > > > > > > +
-> > > > > > > > > +		gsi = irqfd->gsi;
-> > > > > > > > > +		level_irqfd = eventfd_ctx_get(irqfd->eventfd);
-> > > > > > > > > +		source = _irq_source_get(irqfd->source);
-> > > > > > > > > +		_irqfd_put_unlock(irqfd);
-> > > > > > > > > +		if (!source) {
-> > > > > > > > > +			ret = -EINVAL;
-> > > > > > > > > +			goto fail;
-> > > > > > > > > +		}
-> > > > > > > > > +	} else {
-> > > > > > > > > +		ret = -EINVAL;
-> > > > > > > > > +		goto fail;
-> > > > > > > > > +	}
-> > > > > > > > > +
-> > > > > > > > > +	INIT_LIST_HEAD(&eoifd->list);
-> > > > > > > > > +	eoifd->kvm = kvm;
-> > > > > > > > > +	eoifd->eventfd = eventfd;
-> > > > > > > > > +	eoifd->source = source;
-> > > > > > > > > +	eoifd->level_irqfd = level_irqfd;
-> > > > > > > > > +	eoifd->notifier.gsi = gsi;
-> > > > > > > > > +	eoifd->notifier.irq_acked = eoifd_event;
-> > > > > > > > 
-> > > > > > > > OK so this means eoifd keeps a reference to the irqfd.
-> > > > > > > > And since this is the case, can't we drop the reference counting
-> > > > > > > > around source ids now? Everything is referenced through irqfd.
-> > > > > > > 
-> > > > > > > Holding a reference and using it as a reference count are not the same
-> > > > > > > thing.  What if another module holds a reference to this eventfd?  How
-> > > > > > > do we do anything on release?
-> > > > > > 
-> > > > > > We don't as there is no release, and using kref on source id does not
-> > > > > > help: it just never gets invoked.
-> > > > > 
-> > > > > Please work out how you think it should work and let me know, I don't
-> > > > > see it.  We have an irq source id that needs to be allocated by irqfd
-> > > > > and returned when it's unused.  It becomes unused when neither irqfd nor
-> > > > > eoifd are making use of it.  irqfd and eoifd may be closed in any order.
-> > > > > Use of the source id is what we're reference counting, which is why it's
-> > > > > in struct _irq_source.  How can I use an eventfd reference for the same?
-> > > > > I don't know when it's unused.  I don't know who else holds a reference
-> > > > > to it...  Doesn't make sense to me.  Feels like attempting to squat on
-> > > > > someone else's object.
-> > > > > 
-> > > > > 
-> > > > 
-> > > > eoifd should prevent irqfd from being released.
-> > > 
-> > > Why?  Note that this is actually quite difficult too.  We can't fail a
-> > > release, nobody checks close(3p) return.  Blocking a release is likely
-> > > to cause all sorts of problems, so what you mean is that irqfd should
-> > > linger around until there are no references to it... but that's exactly
-> > > what struct _irq_source is for, is to hold the bits that we care about
-> > > references to and automatically release it when there are none.
+On Mon, Jun 25, 2012 at 11:24:35AM +0100, Mel Gorman wrote:
+> On Tue, Jun 19, 2012 at 02:49:01PM +0900, Minchan Kim wrote:
+> > Hi everybody!
 > > 
-> > No no. You *already* prevent it. You take a reference to the eventfd
-> > context.
-> 
-> Right, which keeps the fd from going away, not the struct _irqfd.
-
-_irqfd too.
-
-> > > >   It already keeps
-> > > > a reference to it so it prevents irqfd from going away by userspace
-> > > > closing the fd.
-> > > 
-> > > Wrong, eoifd holds a reference to the eventfd for the irqfd, so it
-> > > prevents the fd from going away, not the irqfd.
+> > Recently, there are some efforts to handle system memory pressure.
 > > 
-> > When the fd is no going away an ioctl is the only other way for
-> > it to go away.
-> 
-> It doesn't do any good to fail the ioctl if close(fd) allows it.
-
-allows what? It does nothing.
-
-> > > >   But it can still be released with deassign.
-> > > > An easy solution is to fail deassign of irqfd if there is
-> > > > eoifd bound to it.
-> > > 
-> > > I don't know why we would impose such a bizarre usage model when
-> > > reference counting on struct _irq_source seems to handle this nicely
-> > > already.
+> > 1) low memory notification - [1]
+> > 2) fallocate(VOLATILE) - [2]
+> > 3) fadvise(NOREUSE) - [3]
 > > 
-> > Well eventfd gets an irqfd. What does it mean if said irqfd gets
-> > deassigned, and potentially assigned an unrelated interrupt?
-> > I think what I would expect is for it to handle the new interrupt.
-> > This is hard to implement so let us fail this.
+> > For them, I would like to add new LRU list, aka "Ereclaimable" which is opposite of "unevictable".
+> > Reclaimable LRU list includes _easy_ reclaimable pages.
+> > For example, easy reclaimable pages are following as. 
+> > 
+> > 1. invalidated but remained LRU list.
+> > 2. pageout pages for reclaim(PG_reclaim pages)
+> > 3. fadvise(NOREUSE)
+> > 4. fallocate(VOLATILE)
+> > 
+> > Their pages shouldn't stir normal LRU list and compaction might not migrate them, even.
 > 
-> Ah, so an actual problem, let's solve this.  Why wouldn't we just search
-> the list of eoifds and see if this level_irqfd is already used?  If we
-> find it and it's compatible, we can get a reference to the _irq_source
-> and "re-attach" the irqfd.  If it's not compatible, fail the KVM_IRQFD.
-> If the KVM_IRQFD is for an edge irqfd, I think we let it go.
+> Why would compaction not migrate them? We might still want to migrate
+> NORESUSE or VOLATILE pages.
+> 
+> > Reclaimer can reclaim Ereclaimable pages before normal lru list and will avoid unnecessary
+> > swapout in anon pages in easy-reclaimable LRU list.
+> > It also can make admin measure how many we have available pages at the moment without latency.
+> 
+> That's not true for PG_reclaim pages as those pages cannot be discarded
+> until writeback completes.
+> 
+> One reason why I tried moving PG_reclaim pages to a separate list was
+> to avoid excessive scanning when writing back to slow devices. If those
+> pages were moved to an "easy-reclaimable" LRU list then the value would
+> be reduced as scanning would still occur. It might make it worse because
+> the whole Ereclaimable list would be scanned for pages that cannot be
+> reclaimed at all before moving to another LRU list.
+> 
+> This separate list does not exist today because it required a page bit to
+> implement and I did not want it to be a 64-bit only feature. You will
+> probably hit the same problem.
+> 
+> The setting of the page bit is also going to be a problem but you may be
+> able to lazily move pages to the EReclaimable list in the same way
+> unevictable pages are handled.
+> 
+> > It's very important in recent mobile systems because page reclaim/writeback is very critical
+> > of application latency. Of course, it could affect normal desktop, too.
+> > With it, we can calculate fast-available pages more exactly with NR_FREE_PAGES + NR_ERECLAIMABLE_PAGES,
+> > for example. If it's below threshold we defined, we could trigger 1st level notification
+> > if we really need prototying low memory notification.
+> > 
+> 
+> If PG_reclaim pages are on this list, then that calculation will not be
+> helpful.
+> 
+> > We may change madvise(DONTNEED) implementation instead of zapping page immediately.
+> > If memory pressure doesn't happen, pages are in memory so we can avoid so many minor fault.
+> > Of course, we can discard instead of swap out if system memory pressure happens.
+> > We might implement it madvise(VOLATILE) instead of DONTNEED, but anyway it's off-topic in this thread.
+> > 
+> > As a another example, we can implement CFLRU(Clean-First LRU) which reclaims unmapped-clean cache page firstly.
+> 
+> That alters ageing of pages significantly. It means that workloads that
+> are using read heavily will have their pages discarded first.
 
-This is just confusing. Userspace has no idea that you are reusing fds
-behind the scenes. assign is not the problem, deassign is.
-So fail *that*.
+Hi Mel,
 
--- 
-MST
+Sorry, I only notice this thread today.  The key issue is that we need to
+balance between page cache and mapped file page.  AFAIK, in latest kernel,
+the page cache gets a higher priority than mapped file page because it is
+easy to be activated and be promoted into active list.  For example,
+when the application reads some data twice at a offset,
+mark_page_accessed will be called twice, and this page will be
+activated.  However, when the application accesses a mapped file page
+twice,  it is only in inactive list and access bit is marked.  Until we
+try to free pages, this page will be given a chance to keep in inactive
+list.  It is unfair for mapped file page.  In old kernel, such as
+2.6.18, mapped file page is treated as anonymous page, which has a
+higher priority.  Meanwhile, for most developers, they think that there
+is no any differences between page cache and mapped file page.  So IMHO
+we need to reduce the priority of page cache, or at least we need to
+measure access times of mapped file page correctly.  As this thread is
+discussed [1], we met this problem in our product system.
+
+1. http://www.spinics.net/lists/linux-mm/msg34642.html
+
+Regards,
+Zheng
