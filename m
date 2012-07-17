@@ -1,80 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754858Ab2GQIlW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 04:41:22 -0400
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:37669 "EHLO
-	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752168Ab2GQIlT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 04:41:19 -0400
-Date: Tue, 17 Jul 2012 10:39:10 +0200 (CEST)
-From: Sebastian Ott <sebott@linux.vnet.ibm.com>
-X-X-Sender: sebott@c4eb
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-cc: Ming Lei <ming.lei@canonical.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] driver core: move uevent call to driver_register
-In-Reply-To: <20120717014558.GA28969@kroah.com>
-Message-ID: <alpine.LFD.2.02.1207171035350.1650@c4eb>
-References: <alpine.LFD.2.02.1207021900100.1784@c4eb> <CACVXFVM+u+o=R0M31mqqzmtRN4YvqgUKvJZKfBYtgH15JDh3bQ@mail.gmail.com> <20120717014558.GA28969@kroah.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-Organization: =?ISO-8859-15?Q?=22IBM_Deutschland_Research_&_Development_GmbH_=2F_Vorsitzende_des_Aufsichtsrats=3A_Martina_Koederitz_Gesch=E4ftsf=FChrung=3A_Dirk_Wittkopp_Sitz_der_Gesellschaft=3A_B=F6blingen_=2F_Registergericht?=
- =?ISO-8859-15?Q?=3A_Amtsgericht_Stuttgart=2C_HRB_243294=22?=
+	id S1753961Ab2GQIqD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 04:46:03 -0400
+Received: from slimlogic.co.uk ([89.16.172.20]:38295 "EHLO slimlogic.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751330Ab2GQIqA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 04:46:00 -0400
+Message-ID: <50052645.4090301@slimlogic.co.uk>
+Date: Tue, 17 Jul 2012 09:45:57 +0100
+From: Graeme Gregory <gg@slimlogic.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-x-cbid: 12071708-1948-0000-0000-0000026AE344
+To: Axel Lin <axel.lin@gmail.com>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH RFT] regulator: palmas: Fix calcuating selector in palmas_map_voltage_smps
+References: <1342495743.16433.1.camel@phoenix>
+In-Reply-To: <1342495743.16433.1.camel@phoenix>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Good catch, thanks I totally forgot about the range bit in that function.
 
-On Mon, 16 Jul 2012, Greg Kroah-Hartman wrote:
-> On Tue, Jul 17, 2012 at 09:35:02AM +0800, Ming Lei wrote:
-> > On Tue, Jul 3, 2012 at 1:08 AM, Sebastian Ott <sebott@linux.vnet.ibm.com> wrote:
-> > 
-> > > --- a/drivers/base/driver.c
-> > > +++ b/drivers/base/driver.c
-> > > @@ -187,6 +187,9 @@ int driver_register(struct device_driver
-> > >         ret = driver_add_groups(drv, drv->groups);
-> > >         if (ret)
-> > >                 bus_remove_driver(drv);
-> > > +
-> > > +       kobject_uevent(&drv->p->kobj, KOBJ_ADD);
-> > 
-> > You should just send the uevent if 'ret' equals to zero., otherwise
-> > OOPS may be triggered by kobject_uevent() after the 'drv' has been
-> > removed.
-> 
-> Ugh, just missed that.
-> 
-> Sebastian, care to send a follow-on patch for this?
+Acked-by: Graeme Gregory <gg@slimlogic.co.uk>
 
-Here is the follow-on. (I've also replied with an updated patch..just in
-case you want to take that one).
+On 17/07/12 04:29, Axel Lin wrote:
+> The logic of calculating selector in palmas_map_voltage_smps() does not match
+> the logic to list voltage in palmas_list_voltage_smps().
+>
+> We use below equation to calculate voltage when selector > 0:
+>         voltage = (0.49V + (selector * 0.01V)) * RANGE
+> RANGE is either x1 or x2
+>
+> So we need to take into account with the multiplier set in VSEL register when
+> calculating selector in palmas_map_voltage_smps()
+>
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/regulator/palmas-regulator.c |   17 ++++++++++++++---
+>  1 file changed, 14 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
+> index 7540c95..17d19fb 100644
+> --- a/drivers/regulator/palmas-regulator.c
+> +++ b/drivers/regulator/palmas-regulator.c
+> @@ -373,11 +373,22 @@ static int palmas_set_voltage_smps_sel(struct regulator_dev *dev,
+>  static int palmas_map_voltage_smps(struct regulator_dev *rdev,
+>  		int min_uV, int max_uV)
+>  {
+> +	struct palmas_pmic *pmic = rdev_get_drvdata(rdev);
+> +	int id = rdev_get_id(rdev);
+>  	int ret, voltage;
+>  
+> -	ret = ((min_uV - 500000) / 10000) + 1;
+> -	if (ret < 0)
+> -		return ret;
+> +	if (min_uV == 0)
+> +		return 0;
+> +
+> +	if (pmic->range[id]) { /* RANGE is x2 */
+> +		if (min_uV < 1000000)
+> +			min_uV = 1000000;
+> +		ret = DIV_ROUND_UP(min_uV - 1000000, 20000) + 1;
+> +	} else {		/* RANGE is x1 */
+> +		if (min_uV < 500000)
+> +			min_uV = 500000;
+> +		ret = DIV_ROUND_UP(min_uV - 500000, 10000) + 1;
+> +	}
+>  
+>  	/* Map back into a voltage to verify we're still in bounds */
+>  	voltage = palmas_list_voltage_smps(rdev, ret);
 
-[PATCH] driver core: don't trigger uevent after failure
-
-Do not send the uevent if driver_add_groups failed.
-
-Found-by: Ming Lei <ming.lei@canonical.com>
-Signed-off-by: Sebastian Ott <sebott@linux.vnet.ibm.com>
----
- drivers/base/driver.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
---- a/drivers/base/driver.c
-+++ b/drivers/base/driver.c
-@@ -185,9 +185,10 @@ int driver_register(struct device_driver
- 	if (ret)
- 		return ret;
- 	ret = driver_add_groups(drv, drv->groups);
--	if (ret)
-+	if (ret) {
- 		bus_remove_driver(drv);
--
-+		return ret;
-+	}
- 	kobject_uevent(&drv->p->kobj, KOBJ_ADD);
- 
- 	return ret;
 
