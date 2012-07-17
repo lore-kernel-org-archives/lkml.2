@@ -1,329 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753918Ab2GQD17 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 23:27:59 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:41740 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753509Ab2GQD1h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 23:27:37 -0400
-X-IronPort-AV: E=Sophos;i="4.77,599,1336320000"; 
-   d="scan'208";a="5409991"
-Message-ID: <5004DCC2.4030905@cn.fujitsu.com>
-Date: Tue, 17 Jul 2012 11:32:18 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
-        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
-        minchan.kim@gmail.com, akpm@linux-foundation.org,
-        kosaki.motohiro@jp.fujitsu.com
-Subject: Re: [RFC PATCH v3 2/13] memory-hotplug : add physical memory hotplug
- code to acpi_memory_device_remove
-References: <4FFAB0A2.8070304@jp.fujitsu.com> <4FFAB148.9000803@jp.fujitsu.com> <4FFF9771.5080307@cn.fujitsu.com> <5004C39B.1060204@jp.fujitsu.com> <5004C5E2.1050906@jp.fujitsu.com> <5004CEB7.4090400@cn.fujitsu.com> <5004D745.3060303@jp.fujitsu.com>
-In-Reply-To: <5004D745.3060303@jp.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/17 11:27:16,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/17 11:27:19,
-	Serialize complete at 2012/07/17 11:27:19
+	id S1753966Ab2GQD3Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 23:29:16 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64161 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753458Ab2GQD3N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 23:29:13 -0400
+Message-ID: <1342495743.16433.1.camel@phoenix>
+Subject: [PATCH RFT] regulator: palmas: Fix calcuating selector in
+ palmas_map_voltage_smps
+From: Axel Lin <axel.lin@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, Graeme Gregory <gg@slimlogic.co.uk>,
+        Liam Girdwood <lrg@ti.com>
+Date: Tue, 17 Jul 2012 11:29:03 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-2022-JP
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 07/17/2012 11:08 AM, Yasuaki Ishimatsu Wrote:
-> Hi Wen,
-> 
-> 2012/07/17 11:32, Wen Congyang wrote:
->> At 07/17/2012 09:54 AM, Yasuaki Ishimatsu Wrote:
->>> Hi Wen,
->>>
->>> 2012/07/17 10:44, Yasuaki Ishimatsu wrote:
->>>> Hi Wen,
->>>>
->>>> 2012/07/13 12:35, Wen Congyang wrote:
->>>>> At 07/09/2012 06:24 PM, Yasuaki Ishimatsu Wrote:
->>>>>> acpi_memory_device_remove() has been prepared to remove physical memory.
->>>>>> But, the function only frees acpi_memory_device currentlry.
->>>>>>
->>>>>> The patch adds following functions into acpi_memory_device_remove():
->>>>>>      - offline memory
->>>>>>      - remove physical memory (only return -EBUSY)
->>>>>>      - free acpi_memory_device
->>>>>>
->>>>>> CC: David Rientjes <rientjes@google.com>
->>>>>> CC: Jiang Liu <liuj97@gmail.com>
->>>>>> CC: Len Brown <len.brown@intel.com>
->>>>>> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
->>>>>> CC: Paul Mackerras <paulus@samba.org>
->>>>>> CC: Christoph Lameter <cl@linux.com>
->>>>>> Cc: Minchan Kim <minchan.kim@gmail.com>
->>>>>> CC: Andrew Morton <akpm@linux-foundation.org>
->>>>>> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->>>>>> CC: Wen Congyang <wency@cn.fujitsu.com>
->>>>>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->>>>>>
->>>>>> ---
->>>>>>     drivers/acpi/acpi_memhotplug.c |   26 +++++++++++++++++++++++++-
->>>>>>     drivers/base/memory.c          |   39 +++++++++++++++++++++++++++++++++++++++
->>>>>>     include/linux/memory.h         |    5 +++++
->>>>>>     include/linux/memory_hotplug.h |    1 +
->>>>>>     mm/memory_hotplug.c            |    8 ++++++++
->>>>>>     5 files changed, 78 insertions(+), 1 deletion(-)
->>>>>>
->>>>>> Index: linux-3.5-rc6/drivers/acpi/acpi_memhotplug.c
->>>>>> ===================================================================
->>>>>> --- linux-3.5-rc6.orig/drivers/acpi/acpi_memhotplug.c	2012-07-09 18:08:29.946888653 +0900
->>>>>> +++ linux-3.5-rc6/drivers/acpi/acpi_memhotplug.c	2012-07-09 18:08:43.470719531 +0900
->>>>>> @@ -29,6 +29,7 @@
->>>>>>     #include <linux/module.h>
->>>>>>     #include <linux/init.h>
->>>>>>     #include <linux/types.h>
->>>>>> +#include <linux/memory.h>
->>>>>>     #include <linux/memory_hotplug.h>
->>>>>>     #include <linux/slab.h>
->>>>>>     #include <acpi/acpi_drivers.h>
->>>>>> @@ -452,12 +453,35 @@ static int acpi_memory_device_add(struct
->>>>>>     static int acpi_memory_device_remove(struct acpi_device *device, int type)
->>>>>>     {
->>>>>>     	struct acpi_memory_device *mem_device = NULL;
->>>>>> -
->>>>>> +	struct acpi_memory_info *info, *tmp;
->>>>>> +	int result;
->>>>>> +	int node;
->>>>>>
->>>>>>     	if (!device || !acpi_driver_data(device))
->>>>>>     		return -EINVAL;
->>>>>>
->>>>>>     	mem_device = acpi_driver_data(device);
->>>>>> +
->>>>>> +	node = acpi_get_node(mem_device->device->handle);
->>>>>> +
->>>>>> +	list_for_each_entry_safe(info, tmp, &mem_device->res_list, list) {
->>>>>> +		if (!info->enabled)
->>>>>> +			continue;
->>>>>> +
->>>>>> +		if (!is_memblk_offline(info->start_addr, info->length)) {
->>>>>> +			result = offline_memory(info->start_addr, info->length);
->>>>>> +			if (result)
->>>>>> +				return result;
->>>>>> +		}
->>>>>> +
->>>>>> +		result = remove_memory(node, info->start_addr, info->length);
->>>>>
->>>>> The user may online the memory between offline_memory() and remove_memory().
->>>>> So I think we should lock memory hotplug before check the memory's status
->>>>> and release it after remove_memory().
->>>>
->>>> How about get "mem_block->state_mutex" of removed memory? When offlining
->>>> memory, we need to change "memory_block->state" into "MEM_OFFLINE".
->>>> In this case, we get mem_block->state_mutex. So I think the mutex lock
->>>> is beneficial.
->>>
->>> It is not good idea since remove_memory frees mem_block structure...
->>> Do you have any ideas?
->>
->> Hmm, split offline_memory() to 2 functions: offline_pages() and __offline_pages()
->>
->> offline_pages()
->> 	lock_memory_hotplug();
->> 	__offline_pages();
->> 	unlock_memory_hotplug();
->>
->> and implement remove_memory() like this:
->> remove_memory()
->> 	lock_memory_hotplug()
->> 	if (!is_memblk_offline()) {
->> 		__offline_pages();
->> 	}
->> 	// cleanup
->> 	unlock_memory_hotplug();
->>
->> What about this?
-> 
-> I also thought about it once. But a problem remains. Current offilne_pages()
-> cannot realize the memory has been removed by remove_memory(). So even if
-> protecting the race by lock_memory_hotplug(), offline_pages() can offline
-> the removed memory. offline_pages() should have the means to know the memory
-> was removed. But I don't have good idea.
+The logic of calculating selector in palmas_map_voltage_smps() does not match
+the logic to list voltage in palmas_list_voltage_smps().
 
-We can not online/offline part of memory block, so what about this?
+We use below equation to calculate voltage when selector > 0:
+        voltage = (0.49V + (selector * 0.01V)) * RANGE
+RANGE is either x1 or x2
 
-remove_memory()
-	lock_memory_hotplug()
-	for each memory block:
-		if (!is_memblk_offline()) {
-			__offline_pages();
-		}
-	// cleanup
-	unlock_memory_hotplug();
+So we need to take into account with the multiplier set in VSEL register when
+calculating selector in palmas_map_voltage_smps()
 
-Thanks
-Wen Congyang
-> 
-> Thanks,
-> Yasuaki Ishimatsu
-> 
->>
->> Thanks
->> Wen Congyang
->>>
->>> Thanks,
->>> Yasuaki Ishimatsu
->>>
->>>> Thanks,
->>>> Yasuaki Ishimatsu
->>>>
->>>>>
->>>>> Thanks
->>>>> Wen Congyang
->>>>>
->>>>>> +		if (result)
->>>>>> +			return result;
->>>>>> +
->>>>>> +		list_del(&info->list);
->>>>>> +		kfree(info);
->>>>>> +	}
->>>>>> +
->>>>>>     	kfree(mem_device);
->>>>>>
->>>>>>     	return 0;
->>>>>> Index: linux-3.5-rc6/include/linux/memory_hotplug.h
->>>>>> ===================================================================
->>>>>> --- linux-3.5-rc6.orig/include/linux/memory_hotplug.h	2012-07-09 18:08:29.955888542 +0900
->>>>>> +++ linux-3.5-rc6/include/linux/memory_hotplug.h	2012-07-09 18:08:43.471719518 +0900
->>>>>> @@ -233,6 +233,7 @@ static inline int is_mem_section_removab
->>>>>>     extern int mem_online_node(int nid);
->>>>>>     extern int add_memory(int nid, u64 start, u64 size);
->>>>>>     extern int arch_add_memory(int nid, u64 start, u64 size);
->>>>>> +extern int remove_memory(int nid, u64 start, u64 size);
->>>>>>     extern int offline_memory(u64 start, u64 size);
->>>>>>     extern int sparse_add_one_section(struct zone *zone, unsigned long start_pfn,
->>>>>>     								int nr_pages);
->>>>>> Index: linux-3.5-rc6/mm/memory_hotplug.c
->>>>>> ===================================================================
->>>>>> --- linux-3.5-rc6.orig/mm/memory_hotplug.c	2012-07-09 18:08:29.953888567 +0900
->>>>>> +++ linux-3.5-rc6/mm/memory_hotplug.c	2012-07-09 18:08:43.476719455 +0900
->>>>>> @@ -659,6 +659,14 @@ out:
->>>>>>     }
->>>>>>     EXPORT_SYMBOL_GPL(add_memory);
->>>>>>
->>>>>> +int remove_memory(int nid, u64 start, u64 size)
->>>>>> +{
->>>>>> +	return -EBUSY;
->>>>>> +
->>>>>> +}
->>>>>> +EXPORT_SYMBOL_GPL(remove_memory);
->>>>>> +
->>>>>> +
->>>>>>     #ifdef CONFIG_MEMORY_HOTREMOVE
->>>>>>     /*
->>>>>>      * A free page on the buddy free lists (not the per-cpu lists) has PageBuddy
->>>>>> Index: linux-3.5-rc6/drivers/base/memory.c
->>>>>> ===================================================================
->>>>>> --- linux-3.5-rc6.orig/drivers/base/memory.c	2012-07-09 18:08:29.947888640 +0900
->>>>>> +++ linux-3.5-rc6/drivers/base/memory.c	2012-07-09 18:10:54.880076739 +0900
->>>>>> @@ -70,6 +70,45 @@ void unregister_memory_isolate_notifier(
->>>>>>     }
->>>>>>     EXPORT_SYMBOL(unregister_memory_isolate_notifier);
->>>>>>
->>>>>> +bool is_memblk_offline(unsigned long start, unsigned long size)
->>>>>> +{
->>>>>> +	struct memory_block *mem = NULL;
->>>>>> +	struct mem_section *section;
->>>>>> +	unsigned long start_pfn, end_pfn;
->>>>>> +	unsigned long pfn, section_nr;
->>>>>> +
->>>>>> +	start_pfn = PFN_DOWN(start);
->>>>>> +	end_pfn = start_pfn + PFN_DOWN(start);
->>>>>> +
->>>>>> +	for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
->>>>>> +		section_nr = pfn_to_section_nr(pfn);
->>>>>> +		if (!present_section_nr(section_nr));
->>>>>> +			continue;
->>>>>> +
->>>>>> +		section = __nr_to_section(section_nr);
->>>>>> +		/* same memblock? */
->>>>>> +		if (mem)
->>>>>> +			if((section_nr >= mem->start_section_nr) &&
->>>>>> +			   (section_nr <= mem->end_section_nr))
->>>>>> +				continue;
->>>>>> +
->>>>>> +		mem = find_memory_block_hinted(section, mem);
->>>>>> +		if (!mem)
->>>>>> +			continue;
->>>>>> +		if (mem->state == MEM_OFFLINE)
->>>>>> +			continue;
->>>>>> +
->>>>>> +		kobject_put(&mem->dev.kobj);
->>>>>> +		return false;
->>>>>> +	}
->>>>>> +
->>>>>> +	if (mem)
->>>>>> +		kobject_put(&mem->dev.kobj);
->>>>>> +
->>>>>> +	return true;
->>>>>> +}
->>>>>> +EXPORT_SYMBOL(is_memblk_offline);
->>>>>> +
->>>>>>     /*
->>>>>>      * register_memory - Setup a sysfs device for a memory block
->>>>>>      */
->>>>>> Index: linux-3.5-rc6/include/linux/memory.h
->>>>>> ===================================================================
->>>>>> --- linux-3.5-rc6.orig/include/linux/memory.h	2012-07-08 09:23:56.000000000 +0900
->>>>>> +++ linux-3.5-rc6/include/linux/memory.h	2012-07-09 18:08:43.484719355 +0900
->>>>>> @@ -106,6 +106,10 @@ static inline int memory_isolate_notify(
->>>>>>     {
->>>>>>     	return 0;
->>>>>>     }
->>>>>> +static inline bool is_memblk_offline(unsigned long start, unsigned long size)
->>>>>> +{
->>>>>> +	return false;
->>>>>> +}
->>>>>>     #else
->>>>>>     extern int register_memory_notifier(struct notifier_block *nb);
->>>>>>     extern void unregister_memory_notifier(struct notifier_block *nb);
->>>>>> @@ -120,6 +124,7 @@ extern int memory_isolate_notify(unsigne
->>>>>>     extern struct memory_block *find_memory_block_hinted(struct mem_section *,
->>>>>>     							struct memory_block *);
->>>>>>     extern struct memory_block *find_memory_block(struct mem_section *);
->>>>>> +extern bool is_memblk_offline(unsigned long start, unsigned long size);
->>>>>>     #define CONFIG_MEM_BLOCK_SIZE	(PAGES_PER_SECTION<<PAGE_SHIFT)
->>>>>>     enum mem_add_context { BOOT, HOTPLUG };
->>>>>>     #endif /* CONFIG_MEMORY_HOTPLUG_SPARSE */
->>>>>>
->>>>>>
->>>>>
->>>>> --
->>>>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->>>>> the body to majordomo@kvack.org.  For more info on Linux MM,
->>>>> see: http://www.linux-mm.org/ .
->>>>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->>>>>
->>>>
->>>>
->>>>
->>>> --
->>>> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
->>>> the body of a message to majordomo@vger.kernel.org
->>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>>
->>>
->>>
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>
->>
-> 
-> 
-> 
-> 
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/palmas-regulator.c |   17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
+index 7540c95..17d19fb 100644
+--- a/drivers/regulator/palmas-regulator.c
++++ b/drivers/regulator/palmas-regulator.c
+@@ -373,11 +373,22 @@ static int palmas_set_voltage_smps_sel(struct regulator_dev *dev,
+ static int palmas_map_voltage_smps(struct regulator_dev *rdev,
+ 		int min_uV, int max_uV)
+ {
++	struct palmas_pmic *pmic = rdev_get_drvdata(rdev);
++	int id = rdev_get_id(rdev);
+ 	int ret, voltage;
+ 
+-	ret = ((min_uV - 500000) / 10000) + 1;
+-	if (ret < 0)
+-		return ret;
++	if (min_uV == 0)
++		return 0;
++
++	if (pmic->range[id]) { /* RANGE is x2 */
++		if (min_uV < 1000000)
++			min_uV = 1000000;
++		ret = DIV_ROUND_UP(min_uV - 1000000, 20000) + 1;
++	} else {		/* RANGE is x1 */
++		if (min_uV < 500000)
++			min_uV = 500000;
++		ret = DIV_ROUND_UP(min_uV - 500000, 10000) + 1;
++	}
+ 
+ 	/* Map back into a voltage to verify we're still in bounds */
+ 	voltage = palmas_list_voltage_smps(rdev, ret);
+-- 
+1.7.9.5
+
+
 
