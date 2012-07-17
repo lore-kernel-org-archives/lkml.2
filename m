@@ -1,38 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754980Ab2GQXLL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 19:11:11 -0400
-Received: from nm1.bullet.mail.bf1.yahoo.com ([98.139.212.160]:36750 "HELO
-	nm1.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754499Ab2GQXLH convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 19:11:07 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 995976.47907.bm@omp1007.access.mail.mud.yahoo.com
-X-YMail-OSG: RZiAt4QVM1ld0fcMtiMfPyszaWcPE_uEuMYZ9lJEU4hHKna
- ukOUylc4M3S9nOgad2NdL0mPHdg65bXuvSu0WADv1GOFvTwMCHxSAJNDJGHX
- JaKttSgGdivX4T4Q2CtzAgysZASqXZiBVG7672xNLAMNgBAGXBCH61L2Vawe
- glZaRMrSmFSLK2n9yKqp8woWZVueXyRCl9i4n9le_sCjL7IiGGGNcfhdl_u5
- FztrVi36NUcpgKrgT2xTJUKdGRDWxYTEgMKmYpEy9IZpHs9K1K6tWPAakVbf
- RS_NBRqL4ooCFdGQ3bxsEyoO6B7fWmUeZb2aekVQScvMG1bPCOOOPJBqMhoK
- 0Il0tjtD_K8_TW3549FBwUsR_uThcF82l00754Mul3GSh0jedlhVtbEkb4ym
- 6pOdJIbAXTCrYchCOjZkqwHNGafNAJSLb.kBe8.9RCX18QDGOoAa0D3GdxsV
- DwDPw5A--
-X-RocketYMMF: webweb430
-X-Mailer: YahooMailClassic/15.0.8 YahooMailWebService/0.8.120.356233
-Message-ID: <1342566665.51736.YahooMailClassic@web5717.biz.mail.ne1.yahoo.com>
-Date: Tue, 17 Jul 2012 16:11:05 -0700 (PDT)
-From: Standard Credit International Finance 
-	<thomasdavidmarkloanfirm@gmail.com>
-Reply-To: thomasdmloanfirm@yahoo.com
-To: undisclosed recipients:;
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	id S1757006Ab2GQXT2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 19:19:28 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53189 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753896Ab2GQXTY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 19:19:24 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: Will Drewry <wad@chromium.org>, Kees Cook <keescook@chromium.org>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH 3.5 0/2] seccomp and vsyscall fixes
+Date: Tue, 17 Jul 2012 16:19:18 -0700
+Message-Id: <cover.1342566495.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Apologies for the lateness of this stuff.  I was at a conference last
+week when the Chrome issue was discovered and I couldn't do this
+properly until I got back.
 
-Do you need business loan or personal loan if yes contact us today?
+Will, can you confirm that this version is okay and passes your tests?
+It passes mine.
+
+While there are no known seccomp users that will have trouble,
+SECCOMP_RET_TRAP and SECCOMP_RET_TRACE currently interact oddly with
+emulated vsyscalls.  This might lead to ABI issues down the road (if
+something starts to rely on current behavior) or unexpected malfunctions
+(if something tries to change, say, sys_gettimeofday, into a different
+syscall and gets completely bogus results on a vsyscall-using distro.
+
+It's unlikely that fixing this later will cause issues, but it would be
+nice to nail down and document the vsyscall quirks for the first
+released kernel with seccomp mode 2 support.
+
+(Patch 2/2 is very much optional.  It fixes a strange corner case.  It
+ ought to be fine for 3.6, since I very much doubt that any real code
+ will hit that corner case and cause ABI problems.)
+
+Andy Lutomirski (2):
+  seccomp: Make syscall skipping and nr changes more consistent
+  seccomp: Future-proof against silly tracers
+
+ Documentation/prctl/seccomp_filter.txt |   74 ++++++++++++++++++++--
+ arch/x86/include/asm/syscall.h         |   11 +++
+ arch/x86/kernel/vsyscall_64.c          |  110 +++++++++++++++++---------------
+ kernel/seccomp.c                       |   28 +++++++-
+ 4 files changed, 163 insertions(+), 60 deletions(-)
+
+-- 
+1.7.7.6
 
