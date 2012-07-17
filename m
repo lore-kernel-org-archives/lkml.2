@@ -1,120 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754664Ab2GQGQb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 02:16:31 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:44679 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751386Ab2GQGQ3 (ORCPT
+	id S1754260Ab2GQGTk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 02:19:40 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:50700 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751386Ab2GQGTg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 02:16:29 -0400
-Message-ID: <5005030E.8050509@oracle.com>
-Date: Tue, 17 Jul 2012 14:15:42 +0800
-From: Jeff Liu <jeff.liu@oracle.com>
-Reply-To: jeff.liu@oracle.com
-Organization: Oracle
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
-MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Dave Chinner <david@fromorbit.com>, Cong Wang <xiyou.wangcong@gmail.com>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] tmpfs: revert SEEK_DATA and SEEK_HOLE
-References: <alpine.LSU.2.00.1207091533001.2051@eggly.anvils> <alpine.LSU.2.00.1207091535480.2051@eggly.anvils> <jtj574$tb7$2@dough.gmane.org> <alpine.LSU.2.00.1207111149580.1797@eggly.anvils> <20120711230122.GZ19223@dastard> <4FFE42B6.5080705@oracle.com> <alpine.LSU.2.00.1207160206460.4082@eggly.anvils>
-In-Reply-To: <alpine.LSU.2.00.1207160206460.4082@eggly.anvils>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Tue, 17 Jul 2012 02:19:36 -0400
+X-AuditID: cbfee61a-b7f616d000004b7e-9d-500503f6ec00
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
+        linaro-mm-sig@lists.linaro.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: [GIT PULL] CMA and DMA-mapping fixes for v3.5-rc7
+Date: Tue, 17 Jul 2012 08:19:17 +0200
+Message-id: <1342505957-31964-1-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: git-send-email 1.7.10
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJJMWRmVeSWpSXmKPExsVy+t9jAd3vzKwBBidusFlc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6Mx7OXMBbM46qYeeEoSwNjC0cXIweHhICJxJYGoS5GTiBTTOLC
+	vfVsILaQwCJGiXPPrbsYuYDs1UwS069vAkuwCRhKdL3tArNFBIwkPr+4wgpSxCzQxSTx7cIc
+	RpCEsICVxNE1J1lAbBYBVYlzP2Yxg9i8Ah4Sfy/NZobYJi/x9H4f2wRG7gWMDKsYRVMLkguK
+	k9JzDfWKE3OLS/PS9ZLzczcxgj34TGoH48oGi0OMAhyMSjy8HH9ZAoRYE8uKK3MPMUpwMCuJ
+	8IocBQrxpiRWVqUW5ccXleakFh9ilOZgURLnNfb+6i8kkJ5YkpqdmlqQWgSTZeLglGpgjG/U
+	DdZ4u6EqyHgF3wcXs+tK585WK88/tsml8jT/1KTkO0/XX+YREDxW693TV/hbKIZr96/N2n98
+	pT9KzpnUZ/Dl0buU7lhFlx/7kzqFDqSrXbkpe8w7W/PoyQN6ft/OHvu5clPmqemnS5VPbLXU
+	OsAWs6gthev0041qViJVX17MSQ8TnvOuSImlOCPRUIu5qDgRAND9JBbcAQAA
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2012 05:28 PM, Hugh Dickins wrote:
+Hi Linus,
 
-> On Thu, 12 Jul 2012, Jeff Liu wrote:
->> On 07/12/2012 07:01 AM, Dave Chinner wrote:
->>> On Wed, Jul 11, 2012 at 11:55:34AM -0700, Hugh Dickins wrote:
->>>>
->>>> But your vote would count for a lot more if you know of some app which
->>>> would really benefit from this functionality in tmpfs: I've heard of none.
->>>
->>> So what? I've heard of no apps that use this functionality on XFS,
->>> either, but I have heard of a lot of people asking for it to be
->>> implemented over the past couple of years so they can use it.
->>> There's been patches written to make coreutils (cp) make use of it
->>> instead of parsing FIEMAP output to find holes, though I don't know
->>> if that's gone beyond more than "here's some patches"...
->>
->> Yes, for apps, cp(1) will make use of it to replace the old FIEMAP for efficient sparse file copy.
->> I have implemented an extent-scan module to coreutils a few years ago,
->> http://fossies.org/dox/coreutils-8.17/extent-scan_8c_source.html
-> 
-> Thanks for confirming Dave's pointer to cp.
-> 
-> Of course, tmpfs has never supported FIBMAP or FIEMAP;
-> but SEEK_DATA and SEEK_HOLE do fit it much more naturally.
-> 
->>
->> It does extent scan through FIEMAP, however, SEEK_DATA/SEEK_HOLE is more convenient and easy to use
->> considering the call interface.  So FIEMAP will be replaced by SEEK_XXX once it got supported by EXT4.
->>
->> Moreover, I have discussed with Jim who is the coreutils maintainer previously, He would like to post
->> extent-scan module to Gnulib so that other GNU utilities which are relied on Gnulib might be a potential
->> user of it, at least, GNU tar will definitely need it for sparse file backup.
-> 
-> Thanks for the info.  I confess I'm not hugely swayed by cp and sparse
-> file archive arguments - I doubt many people care, and I doubt those who
-> do care are using tmpfs for them.
-> 
-> But my doubts are just ignorance.  I was hoping to hear, not that we have
-> tools to copy sparse files efficiently (umm, over the network?), but
-> what apps are actually working live with those sparse files on tmpfs,
-> and now need to seek around them.  Some math or physics applications?
-> 
->>>
->>> Besides, given that you can punch holes in tmpfs files, it seems
->>> strange to then say "we don't need a method of skipping holes to
->>> find data quickly"....
->>
->> So its deserve to keep this feature working on tmpfs considering hole punch. :)
-> 
-> Well, thank you, as I said earlier I am on both sides of the argument.
-> (And feel uncomfortably like a prima donna waiting in the wings until
-> the audience has shouted long enough for the encore.)
+I woukd like to ask you again for pulling another set of minor fixups
+for recently merged Contiguous Memory Allocator and ARM DMA-mapping
+changes. Those patches fix mysterious crashes on systems with CMA and
+Himem enabled as well as some corner cases caused by typical off-by-one
+bug. I'm sorry for a delay in sending this pull request which is caused
+by my vacations.
+ 
+The following changes since commit 6887a4131da3adaab011613776d865f4bcfb5678:
 
-Oh, sorry, I missed you response to Dave before.
+  Linux 3.5-rc5 (2012-06-30 16:08:57 -0700)
 
-> 
-> It's now taken out of 3.5, but we can bring it back when there's more
-> demand.
+with the top-most commit 46c87852e99cf8ce97e207b11cde19085837e39c
 
-Yep. :)
+  ARM: dma-mapping: modify condition check while freeing pages
 
-Thanks,
--Jeff
+are available in the git repository at:
+  git://git.linaro.org/people/mszyprowski/linux-dma-mapping.git fixes-for-linus
 
-> Your extent-scan is itself waiting for ext4 to support it:
-> maybe get noisy at me when that's imminent.
+Marek Szyprowski (1):
+      mm: cma: fix condition check when setting global cma area
 
-> 
-> Hugh
-> 
->>
->> Thanks,
->> -Jeff
->>
->>>
->>> Besides, seek-hole/data is still shiny new and lots of developers
->>> aren't even aware of it's presence in recent kernels. Removing new
->>> functionality saying "no-one is using it" is like smashing the egg
->>> before the chicken hatches (or is it cutting of the chickes's head
->>> before it lays the egg?).
->>>
->>> Cheers,
->>>
->>> Dave.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Prathyush K (1):
+      ARM: dma-mapping: modify condition check while freeing pages
 
+Rabin Vincent (1):
+      mm: cma: don't replace lowmem pages with highmem
 
+ arch/arm/mm/dma-mapping.c            |    4 ++--
+ include/asm-generic/dma-contiguous.h |    2 +-
+ mm/page_alloc.c                      |    7 ++++++-
+ 3 files changed, 9 insertions(+), 4 deletions(-)
+
+Thanks!
+
+Best regards
+Marek Szyprowski
+Samsung Poland R&D Center
