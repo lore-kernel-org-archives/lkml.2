@@ -1,49 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754703Ab2GQIWZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 04:22:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34518 "EHLO mx1.redhat.com"
+	id S1754799Ab2GQIYA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 04:24:00 -0400
+Received: from mga02.intel.com ([134.134.136.20]:37787 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753641Ab2GQIWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 04:22:23 -0400
-Message-ID: <500520A8.50106@redhat.com>
-Date: Tue, 17 Jul 2012 11:22:00 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
-        S390 <linux-s390@vger.kernel.org>, Carsten Otte <cotte@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
-        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Subject: Re: [PATCH RFC V4 2/3] kvm: Note down when cpu relax intercepted
- or pause loop exited
-References: <20120716082445.23477.15128.sendpatchset@codeblue.in.ibm.com> <20120716082514.23477.23849.sendpatchset@codeblue.in.ibm.com> <5003E682.20909@redhat.com> <50044E58.60905@linux.vnet.ibm.com>
-In-Reply-To: <50044E58.60905@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754658Ab2GQIX4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 04:23:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="167311452"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, alan@linux.intel.com, linux-kernel@vger.kernel.org,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [char-misc-next] mei: use module_pci_driver
+Date: Tue, 17 Jul 2012 11:23:47 +0300
+Message-Id: <1342513427-10076-2-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1342513427-10076-1-git-send-email-tomas.winkler@intel.com>
+References: <1342513427-10076-1-git-send-email-tomas.winkler@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2012 08:24 PM, Raghavendra K T wrote:
-> So are you saying allow vcpu to spin in non over-commit scenarios? So
-> that we avoid all yield_to etc...
-> 
-> ( Or even in some other place where it is useful).
+Change-Id: I960feed4157ad1b178f68f4a0b3968e185ed0b36
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+---
+ drivers/misc/mei/main.c |   39 +--------------------------------------
+ 1 files changed, 1 insertions(+), 38 deletions(-)
 
-When is yielding useful, if you're not overcommitted?
-
-
-
+diff --git a/drivers/misc/mei/main.c b/drivers/misc/mei/main.c
+index 0d98c2e..0923302 100644
+--- a/drivers/misc/mei/main.c
++++ b/drivers/misc/mei/main.c
+@@ -1182,44 +1182,7 @@ static struct pci_driver mei_driver = {
+ 	.driver.pm = MEI_PM_OPS,
+ };
+ 
+-/**
+- * mei_init_module - Driver Registration Routine
+- *
+- * mei_init_module is the first routine called when the driver is
+- * loaded. All it does is to register with the PCI subsystem.
+- *
+- * returns 0 on success, <0 on failure.
+- */
+-static int __init mei_init_module(void)
+-{
+-	int ret;
+-
+-	pr_debug("loading.\n");
+-	/* init pci module */
+-	ret = pci_register_driver(&mei_driver);
+-	if (ret < 0)
+-		pr_err("error registering driver.\n");
+-
+-	return ret;
+-}
+-
+-module_init(mei_init_module);
+-
+-/**
+- * mei_exit_module - Driver Exit Cleanup Routine
+- *
+- * mei_exit_module is called just before the driver is removed
+- * from memory.
+- */
+-static void __exit mei_exit_module(void)
+-{
+-	pci_unregister_driver(&mei_driver);
+-
+-	pr_debug("unloaded successfully.\n");
+-}
+-
+-module_exit(mei_exit_module);
+-
++module_pci_driver(mei_driver);
+ 
+ MODULE_AUTHOR("Intel Corporation");
+ MODULE_DESCRIPTION("Intel(R) Management Engine Interface");
 -- 
-error compiling committee.c: too many arguments to function
-
+1.7.4.4
 
