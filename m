@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751146Ab2GQEZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 00:25:28 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2734 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750787Ab2GQEZ1 (ORCPT
+	id S1751664Ab2GQE00 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 00:26:26 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:47816 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750795Ab2GQE0X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 00:25:27 -0400
-X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=vNh1JVxgm5YA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=YXE6w6w9E_PR3jgwLiwA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 72.230.195.127
-Message-ID: <1342499125.24525.11.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH] ftrace: using pr_fmt for better printk output
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Joe Perches <joe@perches.com>
-Cc: Jovi Zhang <bookjovi@gmail.com>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 17 Jul 2012 00:25:25 -0400
-In-Reply-To: <1342496521.8377.105.camel@joe2Laptop>
-References: <CACV3sb+CkmMtBSRe=bp4EcN3xXD+XqBKy+o_-Cr7e6bapYQftw@mail.gmail.com>
-	 <1342496521.8377.105.camel@joe2Laptop>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 17 Jul 2012 00:26:23 -0400
+X-AuditID: cbfee61b-b7f566d000005c8a-ce-5004e96def5a
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: stern@rowland.harvard.edu, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Cc: l.majewski@samsung.com, a.kesavan@samsung.com, prashanth.g@samsung.com,
+        kmpark@infradead.org, joshi@samsung.com, olofj@google.com,
+        thomas.abraham@linaro.org, sshtylyov@mvista.com,
+        av.tikhomirov@samsung.com
+Subject: [PATCH v4] USB: host: Add Device tree support for ohci-exynos &
+ ehci-s5p
+Date: Tue, 17 Jul 2012 10:10:49 +0530
+Message-id: <1342500050-27470-1-git-send-email-gautam.vivek@samsung.com>
+X-Mailer: git-send-email 1.7.0.4
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPJMWRmVeSWpSXmKPExsVy+t9jQd3clywBBv3zzSwu75rDZrFoWSuz
+	A5PH501yAYxRXDYpqTmZZalF+nYJXBkvt/9gL3jKXLHg8V2mBsYu5i5GTg4JAROJ96ufskPY
+	YhIX7q1n62Lk4hASmM4o0fNiOzOE084kse79FBaQKjYBXYmmt7sYQWwRgVqJKVengnUzC1xl
+	lPj2qhTEFhYIlpjWvxJsA4uAqsSK16fBbF4BD4mfs36xQWxTkGhddoh9AiP3AkaGVYyiqQXJ
+	BcVJ6blGesWJucWleel6yfm5mxjB3nwmvYNxVYPFIUYBDkYlHt5XD1gChFgTy4orcw8xSnAw
+	K4nwihwFCvGmJFZWpRblxxeV5qQWH2KU5mBREuc18f7qLySQnliSmp2aWpBaBJNl4uCUamAs
+	a9orxnH+8bvJJ/o++iw91vDml0hh55Gn28XnzfJWCRGvUqsp7fU1TXqVNMfQfNNEaY6HaRXr
+	bPKKddanHOW3cdL76b6m45y8waLTe95vfLF833WHvqmL/01Z+PcH6zt7RyH17rbTpu9FNJtF
+	A/r6HpfbnLt/cn9k3RWHNCUXf/ZHGSt7ptcpsRRnJBpqMRcVJwIAMPjnX+IBAAA=
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-07-16 at 20:42 -0700, Joe Perches wrote:
+Reworked third patch; other two got applied to 'usb-next' branch.
 
-> > diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-> []
-> > @@ -13,6 +13,8 @@
-> >   *  Copyright (C) 2004 William Lee Irwin III
-> >   */
-> > 
-> > +#define pr_fmt(fmt) "ftrace: " fmt
-> 
-> #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+Changes from v3:
+1) Change the function name from s5p_ehci_setup_gpio()
+to s5p_setup_vbus_gpio(). 
+2) Make s5p_setup_vbus_gpio() function to return void
+instead of int.
+3) Return void in case of failures.
 
-Wouldn't a nicer patch be to move this into a header file and then
-remove all the defines throughout the kernel tree?
+Vivek Gautam (1):
+  USB: ehci-s5p: Add vbus setup function to the s5p ehci glue layer
 
-Also, what is KBUILD_MODNAME defined as for non-modules? As ftrace is
-not a module.
-
--- Steve
-
+ drivers/usb/host/ehci-s5p.c |   21 +++++++++++++++++++++
+ 1 files changed, 21 insertions(+), 0 deletions(-)
 
