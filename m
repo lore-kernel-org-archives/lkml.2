@@ -1,67 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752762Ab2GQIBk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 04:01:40 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:38675 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750764Ab2GQIBe (ORCPT
+	id S1751764Ab2GQIDh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 04:03:37 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:34016 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750764Ab2GQID3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 04:01:34 -0400
-Message-ID: <1342511100.3039.9.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH] sd: do not set changed flag on all unit attention
- conditions
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Date: Tue, 17 Jul 2012 08:45:00 +0100
-In-Reply-To: <50044D56.6000400@redhat.com>
-References: <1342454772-9018-1-git-send-email-pbonzini@redhat.com>
-	 <1342455503.3176.42.camel@dabdike.int.hansenpartnership.com>
-	 <50044D56.6000400@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 17 Jul 2012 04:03:29 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFw7zdyPpDEdpDbYWc-Z++v_kDQHD3Z+-QwPszh+9bU+tQ@mail.gmail.com>
+References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com>
+	<1342212885.25704.4.camel@lade.trondhjem.org>
+	<CAFLxGvxxWodD97=78218wc+tuigAFsNK_PdroDfb4BWTZoxxUw@mail.gmail.com>
+	<20120714103716.GD26559@liondog.tnic>
+	<CAOJsxLGHQuuXqDD-1SNhL7Ly1-heCYFLzqj3SLh4xzmP9NR5GQ@mail.gmail.com>
+	<20120715101434.GA18144@aftab.osrc.amd.com>
+	<CAOJsxLGBCQ6C-3M0ZdTfVPqnmOKqUE9+78Mhf+67TksmVojuuQ@mail.gmail.com>
+	<20120715211848.GA21167@aftab.osrc.amd.com>
+	<20120715214819.GA1990@moon>
+	<alpine.DEB.2.02.1207151459480.20176@asgard.lang.hm>
+	<20120716082418.GC24327@aftab.osrc.amd.com>
+	<alpine.DEB.2.02.1207160937330.20176@asgard.lang.hm>
+	<CA+55aFwwmMbFr4HXTFxF_MeM_n8bfiXfPPgCALTOc1HvidVt1Q@mail.gmail.com>
+	<alpine.DEB.2.02.1207161222380.32545@asgard.lang.hm>
+	<CA+55aFw7zdyPpDEdpDbYWc-Z++v_kDQHD3Z+-QwPszh+9bU+tQ@mail.gmail.com>
+Date: Tue, 17 Jul 2012 10:03:28 +0200
+X-Google-Sender-Auth: rKRO5XXRpf5s55kRxY5n13HnNak
+Message-ID: <CAMuHMdWopF1MjHjNT_CAnu=pTU8X8oxyW4M+y2-XHEHfF2XHhg@mail.gmail.com>
+Subject: Re: [opensuse-kernel] Re: [RFC] Simplifying kernel configuration for
+ distro issues
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: david@lang.hm, Borislav Petkov <bp@amd64.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Dave Jones <davej@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
+        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
+        Debian Kernel Team <debian-kernel@lists.debian.org>,
+        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Sasha Levin <levinsasha928@gmail.com>,
+        Asias He <asias.hejun@gmail.com>,
+        Pavel Emelyanov <xemul@parallels.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-07-16 at 19:20 +0200, Paolo Bonzini wrote:
-> Il 16/07/2012 18:18, James Bottomley ha scritto:
-> >> > diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-> >> > index b583277..6d8ca08 100644
-> >> > --- a/drivers/scsi/scsi_lib.c
-> >> > +++ b/drivers/scsi/scsi_lib.c
-> >> > @@ -843,8 +843,11 @@ void scsi_io_completion(struct scsi_cmnd *cmd, unsigned int good_bytes)
-> >> >  	} else if (sense_valid && !sense_deferred) {
-> >> >  		switch (sshdr.sense_key) {
-> >> >  		case UNIT_ATTENTION:
-> >> > -			if (cmd->device->removable) {
-> >> > -				/* Detected disc change.  Set a bit
-> >> > +			if (cmd->device->removable &&
-> >> > +			    (sshdr.asc == 0x3a ||
-> >> > +			     (sshdr.asc == 0x28 && sshdr.ascq == 0x00))) {
-> >> > +				/* "No medium" or "Medium may have changed."
-> >> > +				 * This means a disc change.  Set a bit
-> > This type of change would likely cause a huge cascade of errors in real
-> > removable media devices.  Under the MMC standards, which a lot of the
-> > older removable discs seem to follow, UNIT ATTENTION indicates either
-> > medium change or device reset (which we check for and eat lower down);
-> > we can't rely on them giving proper SBC-2 sense codes.  If you want to
-> > pretend to be removable media, you have to conform to its standards.
-> 
-> Would you accept a patch doing the opposite, i.e. passing some sense
-> codes such as PARAMETERS CHANGED and TARGET OPERATING CONDITIONS HAVE
-> CHANGED?
+On Mon, Jul 16, 2012 at 10:56 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Mon, Jul 16, 2012 at 12:26 PM,  <david@lang.hm> wrote:
+>> Some of the proposed ways to implement the minimum distro kernel would not
+>> allow you to override the distro defaults because they would be implemented
+>> by setting dependancies, not by selecting options that you as the user could
+>> then unselect.
+>
+> The sanest thing to do is just a list of "select" statements. And in
+> any case it would have to depend on the "distro config" entry, so EVEN
+> THEN you could just create the Kconfig file, then edit out the distro
+> config thing, and then do whatever you want.
 
-Could you explain what the problem actually is?  It looks like you had a
-reason to mark virtio-scsi as removable, even though it isn't, and now
-you want to add further hacks because being removable doesn't quite
-work.
+Except that "select" is one of the ugliest things in Kconfig, as it
+blindly sets a symbol
+without checking if its dependencies are fulfilled.
 
-Lets go back and see if there's a more correct way to do whatever it is
-you want to do.
+Gr{oetje,eeting}s,
 
-James
+                        Geert
 
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
