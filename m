@@ -1,88 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755954Ab2GQR6R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 13:58:17 -0400
-Received: from 1wt.eu ([62.212.114.60]:4917 "EHLO 1wt.eu"
+	id S1756128Ab2GQSG1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 14:06:27 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:38178 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753055Ab2GQR6M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 13:58:12 -0400
-Date: Tue, 17 Jul 2012 19:57:41 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: John Stultz <johnstul@us.ibm.com>
-Cc: stable@vger.kernel.org, Prarit Bhargava <prarit@redhat.com>,
+	id S1755879Ab2GQSGW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 14:06:22 -0400
+From: John Stultz <johnstul@us.ibm.com>
+To: stable@vger.kernel.org
+Cc: John Stultz <john.stultz@linaro.org>, stable@kernel.org,
         Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/11] 3.0-stable: Fix for leapsecond deadlock & hrtimer/futex issue
-Message-ID: <20120717175741.GA3665@1wt.eu>
-References: <1342546438-17534-1-git-send-email-johnstul@us.ibm.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1342546438-17534-1-git-send-email-johnstul@us.ibm.com>
-User-Agent: Mutt/1.4.2.3i
+        Prarit Bhargava <prarit@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        John Stultz <johnstul@us.ibm.com>
+Subject: [PATCH 03/11] 2.6.35.x: timekeeping: Fix CLOCK_MONOTONIC inconsistency during leapsecond
+Date: Tue, 17 Jul 2012 14:05:34 -0400
+Message-Id: <1342548342-19683-4-git-send-email-johnstul@us.ibm.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1342548342-19683-1-git-send-email-johnstul@us.ibm.com>
+References: <1342548342-19683-1-git-send-email-johnstul@us.ibm.com>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12071718-7182-0000-0000-000002019DCE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi John,
+From: John Stultz <john.stultz@linaro.org>
 
-On Tue, Jul 17, 2012 at 01:33:47PM -0400, John Stultz wrote:
-> Here is backport of the leapsecond fixes to 3.0-stable. These are less
-> straight forward, and should get closer review.
-> 
-> This patch set addresses two issues:
-> 
-> 1) Deadlock leapsecond issue that a few reports described.
-> 
-> I spent some time over the weekend trying to find a way to reproduce
-> the hard-hang issue some folks were reporting after the leapsecond.
-> Initially I didn't think the 6b43ae8a619d17 leap-second hrimter livelock
-> patch needed to be backported since, I assumed it required the ntp_lock
-> split for it to be triggered, but looking again I found that the same
-> issue could occur prior to splitting out the ntp_lock. So I've backported
-> that fix (and its follow-on fixups) as well as created a test case
-> to reproduce the hard-hang deadlock.
-> 
-> 
-> 2) Early hrtimer/futex expiration issue that was more widely observed
-> 
-> This is the load-spike issue that a number of folks saw that did not
-> hard hang most boxes (although some reports did show nmi-watchdogs
-> triggering due to sudden spinning in tight loops).
-> 
-> I've booted and tested this entire patchset on two boxes and run through a
-> number of leapsecond related stress tests. However, additional testing and
-> review would be appreciated.
-> 
-> The original commits backported in this set are:
-> 
-> Deadlock issue fixes:
-> ---------------------
-> 6b43ae8a619d17c4935c3320d2ef9e92bdeed05d    ntp: Fix leap-second hrtimer livelock
-> dd48d708ff3e917f6d6b6c2b696c3f18c019feed    ntp: Correct TAI offset during leap second
-> fad0c66c4bb836d57a5f125ecd38bed653ca863a    timekeeping: Fix CLOCK_MONOTONIC inconsistency during leapsecond
-> 
-> Helper change: (allows the following fixes to backport more easily):
-> --------------------------------------------------------------------
-> cc06268c6a87db156af2daed6e96a936b955cc82    time: Move common updates to a function
-> 
-> Hrtimer early-expiration issue fixes:
-> -------------------------------
-> f55a6faa384304c89cfef162768e88374d3312cb    hrtimer: Provide clock_was_set_delayed()
-> 4873fa070ae84a4115f0b3c9dfabc224f1bc7c51    timekeeping: Fix leapsecond triggered load spike issue
-> 5b9fe759a678e05be4937ddf03d50e950207c1c0    timekeeping: Maintain ktime_t based offsets for hrtimers
-> 196951e91262fccda81147d2bcf7fdab08668b40    hrtimers: Move lock held region in hrtimer_interrupt()
-> f6c06abfb3972ad4914cef57d8348fcb2932bc3b    timekeeping: Provide hrtimer update function
-> 5baefd6d84163443215f4a99f6a20f054ef11236    hrtimer: Update hrtimer base offsets each hrtimer_interrupt
-> 3e997130bd2e8c6f5aaa49d6e3161d4d29b43ab0    timekeeping: Add missing update call in timekeeping_resume()
-> 
-> 
-> I've already done backports to all the stable kernels to 2.6.32, and
-> will send out the rest soon.
+This is a backport of fad0c66c4bb836d57a5f125ecd38bed653ca863a
+which resolves a bug the previous commit.
 
-That's very much appreciated, thank you! Do not hesitate to send me
-your reproducers, I'll happily run some tests.
+Commit 6b43ae8a61 (ntp: Fix leap-second hrtimer livelock) broke the
+leapsecond update of CLOCK_MONOTONIC. The missing leapsecond update to
+wall_to_monotonic causes discontinuities in CLOCK_MONOTONIC.
 
-Best regards,
-Willy
+Adjust wall_to_monotonic when NTP inserted a leapsecond.
+
+Reported-by: Richard Cochran <richardcochran@gmail.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Tested-by: Richard Cochran <richardcochran@gmail.com>
+Cc: stable@kernel.org
+Link: http://lkml.kernel.org/r/1338400497-12420-1-git-send-email-john.stultz@linaro.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+---
+ kernel/time/timekeeping.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 8c4b32e..5960728 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -750,6 +750,7 @@ static cycle_t logarithmic_accumulation(cycle_t offset, int shift)
+ 		xtime.tv_sec++;
+ 		leap = second_overflow(xtime.tv_sec);
+ 		xtime.tv_sec += leap;
++		wall_to_monotonic.tv_sec -= leap;
+ 	}
+ 
+ 	/* Accumulate raw time */
+@@ -859,7 +860,7 @@ void update_wall_time(void)
+ 		xtime.tv_sec++;
+ 		leap = second_overflow(xtime.tv_sec);
+ 		xtime.tv_sec += leap;
+-
++		wall_to_monotonic.tv_sec -= leap;
+ 	}
+ 
+ 	/* check to see if there is a new clocksource to use */
+-- 
+1.7.9.5
 
