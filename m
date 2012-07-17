@@ -1,127 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753223Ab2GQNqA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 09:46:00 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:41275 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751315Ab2GQNp7 (ORCPT
+	id S1754391Ab2GQNqd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 09:46:33 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:42621 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752183Ab2GQNqc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 09:45:59 -0400
-Date: Tue, 17 Jul 2012 13:46:13 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
-        Matthew Garrett <mjg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
-        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, mtk@lwn.net
-Subject: Re: [patch] Rename CAP_EPOLLWAKEUP to CAL_BLOCK_SUSPEND
-Message-ID: <20120717134613.GA30892@mail.hallyn.com>
-References: <5004EBF9.3040406@gmail.com>
+	Tue, 17 Jul 2012 09:46:32 -0400
+Message-ID: <50056CB3.90004@gmail.com>
+Date: Tue, 17 Jul 2012 08:46:27 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5004EBF9.3040406@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Rajendra Nayak <rnayak@ti.com>
+CC: Mike Turquette <mturquette@ti.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>, aletes.xgr@gmail.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Archit Taneja <archit@ti.com>, loml <linux-omap@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>, "Cousson, Benoit" <b-cousson@ti.com>
+Subject: Re: [PATCH] clk: fix compile for OF && !COMMON_CLK
+References: <1342475161-20402-1-git-send-email-robherring2@gmail.com> <20120717001228.GA28886@gmail.com> <5004C935.4050707@gmail.com> <50056648.6000906@ti.com>
+In-Reply-To: <50056648.6000906@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Michael Kerrisk (mtk.manpages@gmail.com):
-> Rafael,
+On 07/17/2012 08:19 AM, Rajendra Nayak wrote:
+> Rob, Mike,
 > 
-> As discussed in
-> http://thread.gmane.org/gmane.linux.kernel/1249726/focus=1288990,
-> the capability introduced in 4d7e30d98939a0340022ccd49325a3d70f7e0238
-> to govern EPOLLWAKEUP seems misnamed: this capability is about governing
-> the ability to suspend the system, not using a particular API flag
-> (EPOLLWAKEUP). We should make the name of the capability more general
-> to encourage reuse in related cases. (Whether or not this capability
-> should also be used to govern the use of /sys/power/wake_lock is a
-> question that needs to be separately resolved.)
+> On Tuesday 17 July 2012 07:38 AM, Rob Herring wrote:
+>> On 07/16/2012 07:12 PM, Mike Turquette wrote:
+>>> On 20120716-16:46, Rob Herring wrote:
+>>>> From: Rob Herring<rob.herring@calxeda.com>
+>>>>
+>>>> With commit 766e6a4ec602d0c107 (clk: add DT clock binding support),
+>>>> compiling with OF&&  !COMMON_CLK is broken.
+>>>>
+>>>
+>>> Hi Rob,
+>>>
+>>> Thanks for sending this quickly.
+>>>
+>>> <snip>
+>>>> @@ -313,19 +314,19 @@ int clk_add_alias(const char *alias, const
+>>>> char *alias_dev_name, char *id,
+>>>>   struct device_node;
+>>>>   struct of_phandle_args;
+>>>>
+>>>> -#ifdef CONFIG_OF
+>>>> +#if defined(CONFIG_OF)&&  defined(CONFIG_COMMON_CLK)
+>>>>   struct clk *of_clk_get(struct device_node *np, int index);
+>>>>   struct clk *of_clk_get_by_name(struct device_node *np, const char
+>>>> *name);
+>>>>   struct clk *of_clk_get_from_provider(struct of_phandle_args
+>>>> *clkspec);
+>>>>   #else
+>>>>   static inline struct clk *of_clk_get(struct device_node *np, int
+>>>> index)
+>>>>   {
+>>>> -    return NULL;
+>>>> +    return ERR_PTR(-EINVAL);
 > 
-> This patch renames the capability to CAP_BLOCK_SUSPEND. In order to ensure
-> that the old capability name doesn't make it out into the wild, could you
-> please apply and push up the tree to ensure that it is incorporated
-> for the 3.5 release.
+> So how is this expected to work on platforms (like OMAP) which have
+> CONFIG_OF enabled but not CONFIG_COMMON_CLK?
 > 
-> Thanks,
-> 
-> Michael
-> 
-> Signed-off-by: Michael Kerrisk <mtk.manpages@gmail.com>
 
-I definately like that name better, thanks.  Don't know if renaming it
-without an alias could cause trouble for some bleeding edge userspaces?
-Would it be worth keeping the 
+As I mentioned in my other reply, this really belongs with Shawn's patch
+that changes the return value checking from NULL to err values.
 
-#define CAP_EPOLLWAKEUP      36
-
-line?  If this is deemed early enough I do prefer not to complicate with
-a duplicate name.
-
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-
+> Archit has been seeing issues with failed clk_get's in the omap dss
+> driver on linux-next.
+> The clk_gets pass a valid dev pointer and an alias/con-id.
 > 
-> ---
->  fs/eventpoll.c             |    2 +-
->  include/linux/capability.h |    6 +++---
->  include/linux/eventpoll.h  |    2 +-
->  3 files changed, 5 insertions(+), 5 deletions(-)
+> With the $Subject patch, the of_clk_get_by_name() for our builds always
+> returns a ERR_PTR(-EINVAL).
 > 
-> diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-> index 74598f6..1c8b556 100644
-> --- a/fs/eventpoll.c
-> +++ b/fs/eventpoll.c
-> @@ -1710,7 +1710,7 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, int, op, int, fd,
->  		goto error_tgt_fput;
->  
->  	/* Check if EPOLLWAKEUP is allowed */
-> -	if ((epds.events & EPOLLWAKEUP) && !capable(CAP_EPOLLWAKEUP))
-> +	if ((epds.events & EPOLLWAKEUP) && !capable(CAP_BLOCK_SUSPEND))
->  		epds.events &= ~EPOLLWAKEUP;
->  
->  	/*
-> diff --git a/include/linux/capability.h b/include/linux/capability.h
-> index 68d56ef..d10b7ed 100644
-> --- a/include/linux/capability.h
-> +++ b/include/linux/capability.h
-> @@ -360,11 +360,11 @@ struct cpu_vfs_cap_data {
->  
->  #define CAP_WAKE_ALARM            35
->  
-> -/* Allow preventing system suspends while epoll events are pending */
-> +/* Allow preventing system suspends */
->  
-> -#define CAP_EPOLLWAKEUP      36
-> +#define CAP_BLOCK_SUSPEND    36
->  
-> -#define CAP_LAST_CAP         CAP_EPOLLWAKEUP
-> +#define CAP_LAST_CAP         CAP_BLOCK_SUSPEND
->  
->  #define cap_valid(x) ((x) >= 0 && (x) <= CAP_LAST_CAP)
->  
-> diff --git a/include/linux/eventpoll.h b/include/linux/eventpoll.h
-> index 6f8be32..f4bb378 100644
-> --- a/include/linux/eventpoll.h
-> +++ b/include/linux/eventpoll.h
-> @@ -34,7 +34,7 @@
->   * re-allowed until epoll_wait is called again after consuming the wakeup
->   * event(s).
->   *
-> - * Requires CAP_EPOLLWAKEUP
-> + * Requires CAP_BLOCK_SUSPEND
->   */
->  #define EPOLLWAKEUP (1 << 29)
->  
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Even if we do get the right of_clk_get_by_name() built in,
+> there is another issue on OMAP where in we have CONFIG_OF
+> enabled/selected by default for all OMAP2+ builds, even when we
+> *do not* pass a dt blob to the kernel.
+> 
+> So would the below code fail in such cases because it expects a
+> valid of_node to be populated for a device (which also has clock
+> information in it)? if CONFIG_OF is set.
+> 
+> struct clk *clk_get(struct device *dev, const char *con_id)
+> {
+>         const char *dev_id = dev ? dev_name(dev) : NULL;
+>         struct clk *clk;
+> 
+>         if (dev) {
+> ---->
+>     Any reason why this isn't
+>     if (dev->of_node) {
+> ---->
+
+dev may be null, we could do (dev && dev->of_node) though. Either way
+the error handling here needs to do the right thing.
+
+>                 clk = of_clk_get_by_name(dev->of_node, con_id);
+>                 if (clk && __clk_get(clk))
+>                         return clk;
+>         }
+> 
+>         return clk_get_sys(dev_id, con_id);
+> }
+> 
+> regards,
+> Rajendra
+> 
+> 
+> 
+> 
+> 
+
+
