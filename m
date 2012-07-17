@@ -1,79 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755550Ab2GQRMh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 13:12:37 -0400
+	id S1755618Ab2GQRMq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 13:12:46 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:55586 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752903Ab2GQRMe (ORCPT
+	with ESMTP id S1752903Ab2GQRMi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 13:12:34 -0400
+	Tue, 17 Jul 2012 13:12:38 -0400
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: torvalds@linux-foundation.org, peterz@infradead.org, tglx@linutronix.de,
-        linux-pm@vger.kernel.org
-Subject: [PATCHSET] workqueue: reimplement CPU hotplug to keep idle workers
-Date: Tue, 17 Jul 2012 10:12:20 -0700
-Message-Id: <1342545149-3515-1-git-send-email-tj@kernel.org>
+        linux-pm@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 2/9] workqueue: drop CPU_DYING notifier operation
+Date: Tue, 17 Jul 2012 10:12:22 -0700
+Message-Id: <1342545149-3515-3-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1342545149-3515-1-git-send-email-tj@kernel.org>
+References: <1342545149-3515-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, workqueue destroys all workers for offline CPUs unless
-there are lingering work items.  On some platforms, CPU hotplugs are
-used as part of runtime powersaving and thus can be very frequent.
-The overhead of destroying and re-creating workers on each cycle can
-be noticeable.
+Workqueued used CPU_DYING notification to mark GCWQ_DISASSOCIATED.
+This was necessary because workqueue's CPU_DOWN_PREPARE happened
+before other DOWN_PREPARE notifiers and workqueue needed to stay
+associated across the rest of DOWN_PREPARE.
 
-In addition, being different from the usual mode of opration,
-kill-all-idle involves separate driving logic, which currently is
-implemented across trustee_thread() and CPU hotplug notifier.  This is
-rather complex and ugly.
+After the previous patch, workqueue's DOWN_PREPARE happens after
+others and can set GCWQ_DISASSOCIATED directly.  Drop CPU_DYING and
+let the trustee set GCWQ_DISASSOCIATED after disabling concurrency
+management.
 
-This patchset updates workqueue CPU hotplug path such that a
-disassociated global_cwq (the per-cpu worker pool) is run as if it's
-running as an unbound one (WQ_UNBOUND) - executing work items ASAP
-without concurrency management while following the usual worker
-management based on idle timer.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ kernel/workqueue.c |   29 +++++++++++++----------------
+ 1 files changed, 13 insertions(+), 16 deletions(-)
 
-While this makes rebinding somewhat more complicated, as it has to be
-able to rebind idle workers too, it allows overall hotplug path to be
-much simpler.  A disassociating global_cwq simply becomes an unbound
-one at the end of CPU_DOWN_PREPARE and makes use of the same logic
-already existing for WQ_UNBOUND.  While re-associating, it switches
-back to a bound one.  Except during the transitions themselves, the
-usual worker management is always in effect making trustee
-unnecessary.
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index f59b7fd..1405fb9 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1250,11 +1250,11 @@ static void worker_leave_idle(struct worker *worker)
+  * verbatim as it's best effort and blocking and gcwq may be
+  * [dis]associated in the meantime.
+  *
+- * This function tries set_cpus_allowed() and locks gcwq and verifies
+- * the binding against GCWQ_DISASSOCIATED which is set during
+- * CPU_DYING and cleared during CPU_ONLINE, so if the worker enters
+- * idle state or fetches works without dropping lock, it can guarantee
+- * the scheduling requirement described in the first paragraph.
++ * This function tries set_cpus_allowed() and locks gcwq and verifies the
++ * binding against %GCWQ_DISASSOCIATED which is set during
++ * %CPU_DOWN_PREPARE and cleared during %CPU_ONLINE, so if the worker
++ * enters idle state or fetches works without dropping lock, it can
++ * guarantee the scheduling requirement described in the first paragraph.
+  *
+  * CONTEXT:
+  * Might sleep.  Called without any lock but returns with gcwq->lock
+@@ -3349,6 +3349,12 @@ static int __cpuinit trustee_thread(void *__gcwq)
+ 	rc = trustee_wait_event(!gcwq_is_managing_workers(gcwq));
+ 	BUG_ON(rc < 0);
+ 
++	/*
++	 * We've claimed all manager positions.  Make all workers unbound
++	 * and set DISASSOCIATED.  Before this, all workers except for the
++	 * ones which are still executing works from before the last CPU
++	 * down must be on the cpu.  After this, they may become diasporas.
++	 */
+ 	for_each_worker_pool(pool, gcwq) {
+ 		pool->flags |= POOL_MANAGING_WORKERS;
+ 
+@@ -3359,6 +3365,8 @@ static int __cpuinit trustee_thread(void *__gcwq)
+ 	for_each_busy_worker(worker, i, pos, gcwq)
+ 		worker->flags |= WORKER_ROGUE;
+ 
++	gcwq->flags |= GCWQ_DISASSOCIATED;
++
+ 	/*
+ 	 * Call schedule() so that we cross rq->lock and thus can
+ 	 * guarantee sched callbacks see the rogue flag.  This is
+@@ -3582,16 +3590,6 @@ static int __devinit workqueue_cpu_callback(struct notifier_block *nfb,
+ 		}
+ 		break;
+ 
+-	case CPU_DYING:
+-		/*
+-		 * Before this, the trustee and all workers except for
+-		 * the ones which are still executing works from
+-		 * before the last CPU down must be on the cpu.  After
+-		 * this, they'll all be diasporas.
+-		 */
+-		gcwq->flags |= GCWQ_DISASSOCIATED;
+-		break;
+-
+ 	case CPU_POST_DEAD:
+ 		gcwq->trustee_state = TRUSTEE_BUTCHER;
+ 		/* fall through */
+@@ -3672,7 +3670,6 @@ static int __devinit workqueue_cpu_down_callback(struct notifier_block *nfb,
+ {
+ 	switch (action & ~CPU_TASKS_FROZEN) {
+ 	case CPU_DOWN_PREPARE:
+-	case CPU_DYING:
+ 	case CPU_POST_DEAD:
+ 		return workqueue_cpu_callback(nfb, action, hcpu);
+ 	}
+-- 
+1.7.7.3
 
- 0001-workqueue-perform-cpu-down-operations-from-low-prior.patch
- 0002-workqueue-drop-CPU_DYING-notifier-operation.patch
- 0003-workqueue-ROGUE-workers-are-UNBOUND-workers.patch
- 0004-workqueue-use-mutex-for-global_cwq-manager-exclusion.patch
- 0005-workqueue-drop-bind-from-create_worker.patch
- 0006-workqueue-reimplement-CPU-online-rebinding-to-handle.patch
- 0007-workqueue-don-t-butcher-idle-workers-on-an-offline-C.patch
- 0008-workqueue-remove-CPU-offline-trustee.patch
- 0009-workqueue-simplify-CPU-hotplug-code.patch
-
-0001 is fix for an unlikely race condition.  0002-0005 prepare for CPU
-hotplug reimplementation.  0006 reimplements re-binding such that it
-can handle idle workers too.  0007 drops killing idle workers of
-offline CPUs.  0008 replaces trustee with the usual management logic.
-0009 refactors hotplug path a bit to clean it up.
-
-This patchset is on top of "workqueue: reimplement high priority using
-a separate worker pool" patchset[1] and available on the following git
-branch.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git review-wq-hotplug
-
- include/linux/cpu.h |    5 
- kernel/workqueue.c  |  738 ++++++++++++++++++++--------------------------------
- 2 files changed, 296 insertions(+), 447 deletions(-)
-
-Thanks.
-
---
-tejun
-
-[1] http://lwn.net/Articles/506029/
