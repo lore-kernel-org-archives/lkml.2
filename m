@@ -1,169 +1,357 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755954Ab2GQWJb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 18:09:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20315 "EHLO mx1.redhat.com"
+	id S1756137Ab2GQWJm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 18:09:42 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:53192 "EHLO e1.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751516Ab2GQWJ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 18:09:28 -0400
-Message-ID: <1342562965.2229.162.camel@bling.home>
-Subject: Re: [PATCH v5 2/4] kvm: KVM_EOIFD, an eventfd for EOIs
-From: Alex Williamson <alex.williamson@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Date: Tue, 17 Jul 2012 16:09:25 -0600
-In-Reply-To: <20120717212314.GB1868@redhat.com>
-References: <20120717144237.GA11516@redhat.com>
-	 <1342537024.3229.43.camel@ul30vt> <20120717151327.GC11587@redhat.com>
-	 <1342539669.2229.114.camel@bling.home> <20120717155325.GA12001@redhat.com>
-	 <1342541161.2229.123.camel@bling.home> <20120717161919.GB12114@redhat.com>
-	 <1342543936.2229.138.camel@bling.home> <20120717185803.GC13066@redhat.com>
-	 <1342555385.2229.152.camel@bling.home> <20120717212314.GB1868@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752912Ab2GQWJh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 18:09:37 -0400
+From: John Stultz <johnstul@us.ibm.com>
+To: stable@vger.kernel.org
+Cc: John Stultz <john.stultz@linaro.org>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 01/11] 2.6.32.x: ntp: Fix leap-second hrtimer livelock
+Date: Tue, 17 Jul 2012 18:05:25 -0400
+Message-Id: <1342562735-55870-2-git-send-email-johnstul@us.ibm.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1342562735-55870-1-git-send-email-johnstul@us.ibm.com>
+References: <1342562735-55870-1-git-send-email-johnstul@us.ibm.com>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12071722-6078-0000-0000-00000D4DFC6A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-18 at 00:23 +0300, Michael S. Tsirkin wrote:
-> On Tue, Jul 17, 2012 at 02:03:05PM -0600, Alex Williamson wrote:
-> > On Tue, 2012-07-17 at 21:58 +0300, Michael S. Tsirkin wrote:
-> > > On Tue, Jul 17, 2012 at 10:52:16AM -0600, Alex Williamson wrote:
-> > > > On Tue, 2012-07-17 at 19:19 +0300, Michael S. Tsirkin wrote:
-> > > > > On Tue, Jul 17, 2012 at 10:06:01AM -0600, Alex Williamson wrote:
-> > > > > > On Tue, 2012-07-17 at 18:53 +0300, Michael S. Tsirkin wrote:
-> > > > > > > On Tue, Jul 17, 2012 at 09:41:09AM -0600, Alex Williamson wrote:
-> > > > > > > > On Tue, 2012-07-17 at 18:13 +0300, Michael S. Tsirkin wrote:
-> > > > > > > > > On Tue, Jul 17, 2012 at 08:57:04AM -0600, Alex Williamson wrote:
-> > > > > > > > > > On Tue, 2012-07-17 at 17:42 +0300, Michael S. Tsirkin wrote:
-> > > > > > > > > > > On Tue, Jul 17, 2012 at 08:29:43AM -0600, Alex Williamson wrote:
-> > > > > > > > > > > > On Tue, 2012-07-17 at 17:10 +0300, Michael S. Tsirkin wrote:
-> > > > > > > > > > > > > On Tue, Jul 17, 2012 at 07:59:16AM -0600, Alex Williamson wrote:
-> > > > > > > > > > > > > > On Tue, 2012-07-17 at 13:21 +0300, Michael S. Tsirkin wrote:
-> > > > > > > > > > > > > > > On Mon, Jul 16, 2012 at 02:33:55PM -0600, Alex Williamson wrote:
-> > > > > > > > > > > > > > > > +	if (args->flags & KVM_EOIFD_FLAG_LEVEL_IRQFD) {
-> > > > > > > > > > > > > > > > +		struct _irqfd *irqfd = _irqfd_fdget_lock(kvm, args->irqfd);
-> > > > > > > > > > > > > > > > +		if (IS_ERR(irqfd)) {
-> > > > > > > > > > > > > > > > +			ret = PTR_ERR(irqfd);
-> > > > > > > > > > > > > > > > +			goto fail;
-> > > > > > > > > > > > > > > > +		}
-> > > > > > > > > > > > > > > > +
-> > > > > > > > > > > > > > > > +		gsi = irqfd->gsi;
-> > > > > > > > > > > > > > > > +		level_irqfd = eventfd_ctx_get(irqfd->eventfd);
-> > > > > > > > > > > > > > > > +		source = _irq_source_get(irqfd->source);
-> > > > > > > > > > > > > > > > +		_irqfd_put_unlock(irqfd);
-> > > > > > > > > > > > > > > > +		if (!source) {
-> > > > > > > > > > > > > > > > +			ret = -EINVAL;
-> > > > > > > > > > > > > > > > +			goto fail;
-> > > > > > > > > > > > > > > > +		}
-> > > > > > > > > > > > > > > > +	} else {
-> > > > > > > > > > > > > > > > +		ret = -EINVAL;
-> > > > > > > > > > > > > > > > +		goto fail;
-> > > > > > > > > > > > > > > > +	}
-> > > > > > > > > > > > > > > > +
-> > > > > > > > > > > > > > > > +	INIT_LIST_HEAD(&eoifd->list);
-> > > > > > > > > > > > > > > > +	eoifd->kvm = kvm;
-> > > > > > > > > > > > > > > > +	eoifd->eventfd = eventfd;
-> > > > > > > > > > > > > > > > +	eoifd->source = source;
-> > > > > > > > > > > > > > > > +	eoifd->level_irqfd = level_irqfd;
-> > > > > > > > > > > > > > > > +	eoifd->notifier.gsi = gsi;
-> > > > > > > > > > > > > > > > +	eoifd->notifier.irq_acked = eoifd_event;
-> > > > > > > > > > > > > > > 
-> > > > > > > > > > > > > > > OK so this means eoifd keeps a reference to the irqfd.
-> > > > > > > > > > > > > > > And since this is the case, can't we drop the reference counting
-> > > > > > > > > > > > > > > around source ids now? Everything is referenced through irqfd.
-> > > > > > > > > > > > > > 
-> > > > > > > > > > > > > > Holding a reference and using it as a reference count are not the same
-> > > > > > > > > > > > > > thing.  What if another module holds a reference to this eventfd?  How
-> > > > > > > > > > > > > > do we do anything on release?
-> > > > > > > > > > > > > 
-> > > > > > > > > > > > > We don't as there is no release, and using kref on source id does not
-> > > > > > > > > > > > > help: it just never gets invoked.
-> > > > > > > > > > > > 
-> > > > > > > > > > > > Please work out how you think it should work and let me know, I don't
-> > > > > > > > > > > > see it.  We have an irq source id that needs to be allocated by irqfd
-> > > > > > > > > > > > and returned when it's unused.  It becomes unused when neither irqfd nor
-> > > > > > > > > > > > eoifd are making use of it.  irqfd and eoifd may be closed in any order.
-> > > > > > > > > > > > Use of the source id is what we're reference counting, which is why it's
-> > > > > > > > > > > > in struct _irq_source.  How can I use an eventfd reference for the same?
-> > > > > > > > > > > > I don't know when it's unused.  I don't know who else holds a reference
-> > > > > > > > > > > > to it...  Doesn't make sense to me.  Feels like attempting to squat on
-> > > > > > > > > > > > someone else's object.
-> > > > > > > > > > > > 
-> > > > > > > > > > > > 
-> > > > > > > > > > > 
-> > > > > > > > > > > eoifd should prevent irqfd from being released.
-> > > > > > > > > > 
-> > > > > > > > > > Why?  Note that this is actually quite difficult too.  We can't fail a
-> > > > > > > > > > release, nobody checks close(3p) return.  Blocking a release is likely
-> > > > > > > > > > to cause all sorts of problems, so what you mean is that irqfd should
-> > > > > > > > > > linger around until there are no references to it... but that's exactly
-> > > > > > > > > > what struct _irq_source is for, is to hold the bits that we care about
-> > > > > > > > > > references to and automatically release it when there are none.
-> > > > > > > > > 
-> > > > > > > > > No no. You *already* prevent it. You take a reference to the eventfd
-> > > > > > > > > context.
-> > > > > > > > 
-> > > > > > > > Right, which keeps the fd from going away, not the struct _irqfd.
-> > > > > > > 
-> > > > > > > _irqfd too.
-> > > > > > 
-> > > > > > 
-> > > > > > How so?
-> > > > > 
-> > > > > Normally irqfd_wakeup is called with POLLHUP and calls irqfd_deactivate.
-> > > > > If you get a ctx reference this does not happen.
-> > > > 
-> > > > I think you're mistaken.  wake_up_poll(,POLLHUP) is called from
-> > > > eventfd_release (file_operations.release), not from ctx reference
-> > > > release.
-> > > 
-> > > True. I was wrong. so close has the same bug as deassign. To fix,
-> > > how about eoifd will hold a reference to the irqfd instead of the
-> > > eventfd context?
-> > 
-> > What does it mean to hold a reference to the irqfd?
-> 
-> I meant file *reference: eventfd_fget. But there are other options see
-> below.
+From: John Stultz <john.stultz@linaro.org>
 
-That's no better than the eventfd context we already hold.
+This is a backport of 6b43ae8a619d17c4935c3320d2ef9e92bdeed05d
 
-> > What state of functionality is an irqfd that has been
-> > closed/de-assigned but is still attached to an eoifd?  It can't
-> > continue to fire interrupts into the guest.
-> >
-> > I don't think close or de-assign have a bug, assign has a bug that it
-> > can allow re-assignment using an in-use eventfd.  I think I'd rather
-> > fix that.
-> 
-> Let me show you that the bug is in deassign:
-> 	assign irqfd for fd=1
-> 	assign for eoifd fd=2, irqfd=1
-> 	deassign irqfd 1
-> 
-> At this point eoifd has no meaning and there is also no way to deassign
-> it,
+This should have been backported when it was commited, but I
+mistook the problem as requiring the ntp_lock changes
+that landed in 3.4 in order for it to occur.
 
-Yes, there is.  This is exactly why I hold a reference to the eventfd
-ctx.  It can still be deassigned by passing irqfd=1, we'll do an
-eventfd_ctx_get and match it to that stored.
+Unfortunately the same issue can happen (with only one cpu)
+as follows:
+do_adjtimex()
+ write_seqlock_irq(&xtime_lock);
+  process_adjtimex_modes()
+   process_adj_status()
+    ntp_start_leap_timer()
+     hrtimer_start()
+      hrtimer_reprogram()
+       tick_program_event()
+        clockevents_program_event()
+         ktime_get()
+          seq = req_seqbegin(xtime_lock); [DEADLOCK]
 
->  so the bug already triggered.
-> 
-> I can see two ways out:
-> 1. easy way - fail deassign
+This deadlock will no always occur, as it requires the
+leap_timer to force a hrtimer_reprogram which only happens
+if its set and there's no sooner timer to expire.
 
-Then close() and deassign are not the same.
+NOTE: This patch, being faithful to the original commit,
+introduces a bug (we don't update wall_to_monotonic),
+which will be resovled by backporting a following fix.
 
-> 2. elegant way - shut down eoifd on irqfd deassign too
+Original commit message below:
 
-Sorry, I've always been told it's a bad idea to have one interface kill
-another from inside the kernel.
+Since commit 7dffa3c673fbcf835cd7be80bb4aec8ad3f51168 the ntp
+subsystem has used an hrtimer for triggering the leapsecond
+adjustment. However, this can cause a potential livelock.
 
-Given that your assertion above is incorrect, I still stand by fixing
-assign.
+Thomas diagnosed this as the following pattern:
+CPU 0                                                    CPU 1
+do_adjtimex()
+  spin_lock_irq(&ntp_lock);
+    process_adjtimex_modes();				 timer_interrupt()
+      process_adj_status();                                do_timer()
+        ntp_start_leap_timer();                             write_lock(&xtime_lock);
+          hrtimer_start();                                  update_wall_time();
+             hrtimer_reprogram();                            ntp_tick_length()
+               tick_program_event()                            spin_lock(&ntp_lock);
+                 clockevents_program_event()
+		   ktime_get()
+                     seq = req_seqbegin(xtime_lock);
 
+This patch tries to avoid the problem by reverting back to not using
+an hrtimer to inject leapseconds, and instead we handle the leapsecond
+processing in the second_overflow() function.
+
+The downside to this change is that on systems that support highres
+timers, the leap second processing will occur on a HZ tick boundary,
+(ie: ~1-10ms, depending on HZ)  after the leap second instead of
+possibly sooner (~34us in my tests w/ x86_64 lapic).
+
+This patch applies on top of tip/timers/core.
+
+CC: Sasha Levin <levinsasha928@gmail.com>
+CC: Thomas Gleixner <tglx@linutronix.de>
+Reported-by: Sasha Levin <levinsasha928@gmail.com>
+Diagnoised-by: Thomas Gleixner <tglx@linutronix.de>
+Tested-by: Sasha Levin <levinsasha928@gmail.com>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+ include/linux/timex.h     |    2 +-
+ kernel/time/ntp.c         |  122 +++++++++++++++------------------------------
+ kernel/time/timekeeping.c |   12 ++---
+ 3 files changed, 44 insertions(+), 92 deletions(-)
+
+diff --git a/include/linux/timex.h b/include/linux/timex.h
+index e6967d1..3b587b4 100644
+--- a/include/linux/timex.h
++++ b/include/linux/timex.h
+@@ -271,7 +271,7 @@ static inline int ntp_synced(void)
+ /* Returns how long ticks are at present, in ns / 2^NTP_SCALE_SHIFT. */
+ extern u64 tick_length;
+ 
+-extern void second_overflow(void);
++extern int second_overflow(unsigned long secs);
+ extern void update_ntp_one_tick(void);
+ extern int do_adjtimex(struct timex *);
+ 
+diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
+index 4800f93..dc76c9a 100644
+--- a/kernel/time/ntp.c
++++ b/kernel/time/ntp.c
+@@ -28,8 +28,6 @@ unsigned long			tick_nsec;
+ u64				tick_length;
+ static u64			tick_length_base;
+ 
+-static struct hrtimer		leap_timer;
+-
+ #define MAX_TICKADJ		500LL		/* usecs */
+ #define MAX_TICKADJ_SCALED \
+ 	(((MAX_TICKADJ * NSEC_PER_USEC) << NTP_SCALE_SHIFT) / NTP_INTERVAL_FREQ)
+@@ -180,60 +178,60 @@ void ntp_clear(void)
+ }
+ 
+ /*
+- * Leap second processing. If in leap-insert state at the end of the
+- * day, the system clock is set back one second; if in leap-delete
+- * state, the system clock is set ahead one second.
++ * this routine handles the overflow of the microsecond field
++ *
++ * The tricky bits of code to handle the accurate clock support
++ * were provided by Dave Mills (Mills@UDEL.EDU) of NTP fame.
++ * They were originally developed for SUN and DEC kernels.
++ * All the kudos should go to Dave for this stuff.
++ *
++ * Also handles leap second processing, and returns leap offset
+  */
+-static enum hrtimer_restart ntp_leap_second(struct hrtimer *timer)
++int second_overflow(unsigned long secs)
+ {
+-	enum hrtimer_restart res = HRTIMER_NORESTART;
+-
+-	write_seqlock(&xtime_lock);
++	int leap = 0;
++	s64 delta;
+ 
++	/*
++	 * Leap second processing. If in leap-insert state at the end of the
++	 * day, the system clock is set back one second; if in leap-delete
++	 * state, the system clock is set ahead one second.
++	 */
+ 	switch (time_state) {
+ 	case TIME_OK:
++		if (time_status & STA_INS)
++			time_state = TIME_INS;
++		else if (time_status & STA_DEL)
++			time_state = TIME_DEL;
+ 		break;
+ 	case TIME_INS:
+-		timekeeping_leap_insert(-1);
+-		time_state = TIME_OOP;
+-		printk(KERN_NOTICE
+-			"Clock: inserting leap second 23:59:60 UTC\n");
+-		hrtimer_add_expires_ns(&leap_timer, NSEC_PER_SEC);
+-		res = HRTIMER_RESTART;
++		if (secs % 86400 == 0) {
++			leap = -1;
++			time_state = TIME_OOP;
++			printk(KERN_NOTICE
++				"Clock: inserting leap second 23:59:60 UTC\n");
++		}
+ 		break;
+ 	case TIME_DEL:
+-		timekeeping_leap_insert(1);
+-		time_tai--;
+-		time_state = TIME_WAIT;
+-		printk(KERN_NOTICE
+-			"Clock: deleting leap second 23:59:59 UTC\n");
++		if ((secs + 1) % 86400 == 0) {
++			leap = 1;
++			time_tai--;
++			time_state = TIME_WAIT;
++			printk(KERN_NOTICE
++				"Clock: deleting leap second 23:59:59 UTC\n");
++		}
+ 		break;
+ 	case TIME_OOP:
+ 		time_tai++;
+ 		time_state = TIME_WAIT;
+-		/* fall through */
++		break;
++
+ 	case TIME_WAIT:
+ 		if (!(time_status & (STA_INS | STA_DEL)))
+ 			time_state = TIME_OK;
+ 		break;
+ 	}
+ 
+-	write_sequnlock(&xtime_lock);
+-
+-	return res;
+-}
+-
+-/*
+- * this routine handles the overflow of the microsecond field
+- *
+- * The tricky bits of code to handle the accurate clock support
+- * were provided by Dave Mills (Mills@UDEL.EDU) of NTP fame.
+- * They were originally developed for SUN and DEC kernels.
+- * All the kudos should go to Dave for this stuff.
+- */
+-void second_overflow(void)
+-{
+-	s64 delta;
+ 
+ 	/* Bump the maxerror field */
+ 	time_maxerror += MAXFREQ / NSEC_PER_USEC;
+@@ -253,23 +251,25 @@ void second_overflow(void)
+ 	tick_length	+= delta;
+ 
+ 	if (!time_adjust)
+-		return;
++		goto out;
+ 
+ 	if (time_adjust > MAX_TICKADJ) {
+ 		time_adjust -= MAX_TICKADJ;
+ 		tick_length += MAX_TICKADJ_SCALED;
+-		return;
++		goto out;
+ 	}
+ 
+ 	if (time_adjust < -MAX_TICKADJ) {
+ 		time_adjust += MAX_TICKADJ;
+ 		tick_length -= MAX_TICKADJ_SCALED;
+-		return;
++		goto out;
+ 	}
+ 
+ 	tick_length += (s64)(time_adjust * NSEC_PER_USEC / NTP_INTERVAL_FREQ)
+ 							 << NTP_SCALE_SHIFT;
+ 	time_adjust = 0;
++out:
++	return leap;
+ }
+ 
+ #ifdef CONFIG_GENERIC_CMOS_UPDATE
+@@ -331,27 +331,6 @@ static void notify_cmos_timer(void)
+ static inline void notify_cmos_timer(void) { }
+ #endif
+ 
+-/*
+- * Start the leap seconds timer:
+- */
+-static inline void ntp_start_leap_timer(struct timespec *ts)
+-{
+-	long now = ts->tv_sec;
+-
+-	if (time_status & STA_INS) {
+-		time_state = TIME_INS;
+-		now += 86400 - now % 86400;
+-		hrtimer_start(&leap_timer, ktime_set(now, 0), HRTIMER_MODE_ABS);
+-
+-		return;
+-	}
+-
+-	if (time_status & STA_DEL) {
+-		time_state = TIME_DEL;
+-		now += 86400 - (now + 1) % 86400;
+-		hrtimer_start(&leap_timer, ktime_set(now, 0), HRTIMER_MODE_ABS);
+-	}
+-}
+ 
+ /*
+  * Propagate a new txc->status value into the NTP state:
+@@ -374,22 +353,6 @@ static inline void process_adj_status(struct timex *txc, struct timespec *ts)
+ 	time_status &= STA_RONLY;
+ 	time_status |= txc->status & ~STA_RONLY;
+ 
+-	switch (time_state) {
+-	case TIME_OK:
+-		ntp_start_leap_timer(ts);
+-		break;
+-	case TIME_INS:
+-	case TIME_DEL:
+-		time_state = TIME_OK;
+-		ntp_start_leap_timer(ts);
+-	case TIME_WAIT:
+-		if (!(time_status & (STA_INS | STA_DEL)))
+-			time_state = TIME_OK;
+-		break;
+-	case TIME_OOP:
+-		hrtimer_restart(&leap_timer);
+-		break;
+-	}
+ }
+ /*
+  * Called with the xtime lock held, so we can access and modify
+@@ -469,9 +432,6 @@ int do_adjtimex(struct timex *txc)
+ 		    (txc->tick <  900000/USER_HZ ||
+ 		     txc->tick > 1100000/USER_HZ))
+ 			return -EINVAL;
+-
+-		if (txc->modes & ADJ_STATUS && time_state != TIME_OK)
+-			hrtimer_cancel(&leap_timer);
+ 	}
+ 
+ 	getnstimeofday(&ts);
+@@ -549,6 +509,4 @@ __setup("ntp_tick_adj=", ntp_tick_adj_setup);
+ void __init ntp_init(void)
+ {
+ 	ntp_clear();
+-	hrtimer_init(&leap_timer, CLOCK_REALTIME, HRTIMER_MODE_ABS);
+-	leap_timer.function = ntp_leap_second;
+ }
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 4a71cff..00e2fae 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -183,14 +183,6 @@ void update_xtime_cache(u64 nsec)
+ 	ACCESS_ONCE(xtime_cache) = ts;
+ }
+ 
+-/* must hold xtime_lock */
+-void timekeeping_leap_insert(int leapsecond)
+-{
+-	xtime.tv_sec += leapsecond;
+-	wall_to_monotonic.tv_sec -= leapsecond;
+-	update_vsyscall(&xtime, timekeeper.clock, timekeeper.mult);
+-}
+-
+ #ifdef CONFIG_GENERIC_TIME
+ 
+ /**
+@@ -783,9 +775,11 @@ void update_wall_time(void)
+ 
+ 		timekeeper.xtime_nsec += timekeeper.xtime_interval;
+ 		if (timekeeper.xtime_nsec >= nsecps) {
++			int leap;
+ 			timekeeper.xtime_nsec -= nsecps;
+ 			xtime.tv_sec++;
+-			second_overflow();
++			leap = second_overflow(xtime.tv_sec);
++			xtime.tv_sec += leap;
+ 		}
+ 
+ 		raw_time.tv_nsec += timekeeper.raw_interval;
+-- 
+1.7.9.5
 
