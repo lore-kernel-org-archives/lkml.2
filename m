@@ -1,65 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755497Ab2GQWIC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 18:08:02 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:41306 "EHLO e5.ny.us.ibm.com"
+	id S1756107Ab2GQWIb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 18:08:31 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:59553 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757164Ab2GQWFr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 18:05:47 -0400
+	id S1754441Ab2GQWH4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 18:07:56 -0400
 From: John Stultz <johnstul@us.ibm.com>
 To: stable@vger.kernel.org
-Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+Cc: John Stultz <johnstul@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
         Prarit Bhargava <prarit@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        John Stultz <johnstul@us.ibm.com>
-Subject: [PATCH 03/11] 2.6.32.x: timekeeping: Fix CLOCK_MONOTONIC inconsistency during leapsecond
-Date: Tue, 17 Jul 2012 18:05:27 -0400
-Message-Id: <1342562735-55870-4-git-send-email-johnstul@us.ibm.com>
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 10/11] 2.6.32.x: hrtimer: Update hrtimer base offsets each hrtimer_interrupt
+Date: Tue, 17 Jul 2012 18:05:34 -0400
+Message-Id: <1342562735-55870-11-git-send-email-johnstul@us.ibm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1342562735-55870-1-git-send-email-johnstul@us.ibm.com>
 References: <1342562735-55870-1-git-send-email-johnstul@us.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12071722-5930-0000-0000-000009F67FB4
+x-cbid: 12071722-5806-0000-0000-000017662390
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: John Stultz <john.stultz@linaro.org>
+This is a backport of 5baefd6d84163443215f4a99f6a20f054ef11236
 
-This is a backport of fad0c66c4bb836d57a5f125ecd38bed653ca863a
-which resolves a bug the previous commit.
+The update of the hrtimer base offsets on all cpus cannot be made
+atomically from the timekeeper.lock held and interrupt disabled region
+as smp function calls are not allowed there.
 
-Commit 6b43ae8a61 (ntp: Fix leap-second hrtimer livelock) broke the
-leapsecond update of CLOCK_MONOTONIC. The missing leapsecond update to
-wall_to_monotonic causes discontinuities in CLOCK_MONOTONIC.
+clock_was_set(), which enforces the update on all cpus, is called
+either from preemptible process context in case of do_settimeofday()
+or from the softirq context when the offset modification happened in
+the timer interrupt itself due to a leap second.
 
-Adjust wall_to_monotonic when NTP inserted a leapsecond.
+In both cases there is a race window for an hrtimer interrupt between
+dropping timekeeper lock, enabling interrupts and clock_was_set()
+issuing the updates. Any interrupt which arrives in that window will
+see the new time but operate on stale offsets.
 
-Reported-by: Richard Cochran <richardcochran@gmail.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Tested-by: Richard Cochran <richardcochran@gmail.com>
-Link: http://lkml.kernel.org/r/1338400497-12420-1-git-send-email-john.stultz@linaro.org
+So we need to make sure that an hrtimer interrupt always sees a
+consistent state of time and offsets.
+
+ktime_get_update_offsets() allows us to get the current monotonic time
+and update the per cpu hrtimer base offsets from hrtimer_interrupt()
+to capture a consistent state of monotonic time and the offsets. The
+function replaces the existing ktime_get() calls in hrtimer_interrupt().
+
+The overhead of the new function vs. ktime_get() is minimal as it just
+adds two store operations.
+
+This ensures that any changes to realtime or boottime offsets are
+noticed and stored into the per-cpu hrtimer base structures, prior to
+any hrtimer expiration and guarantees that timers are not expired early.
+
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Reviewed-by: Ingo Molnar <mingo@kernel.org>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Prarit Bhargava <prarit@redhat.com>
+Cc: stable@vger.kernel.org
+Link: http://lkml.kernel.org/r/1341960205-56738-8-git-send-email-johnstul@us.ibm.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Cc: Prarit Bhargava <prarit@redhat.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Linux Kernel <linux-kernel@vger.kernel.org>
 Signed-off-by: John Stultz <johnstul@us.ibm.com>
 ---
- kernel/time/timekeeping.c |    1 +
- 1 file changed, 1 insertion(+)
+ kernel/hrtimer.c |   27 ++++++++++++---------------
+ 1 file changed, 12 insertions(+), 15 deletions(-)
 
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 00e2fae..6d19a00 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -780,6 +780,7 @@ void update_wall_time(void)
- 			xtime.tv_sec++;
- 			leap = second_overflow(xtime.tv_sec);
- 			xtime.tv_sec += leap;
-+			wall_to_monotonic.tv_sec -= leap;
- 		}
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index 8ba6d31..2818422 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -603,6 +603,12 @@ static int hrtimer_reprogram(struct hrtimer *timer,
+ 	return res;
+ }
  
- 		raw_time.tv_nsec += timekeeper.raw_interval;
++static inline ktime_t hrtimer_update_base(struct hrtimer_cpu_base *base)
++{
++	ktime_t *offs_real = &base->clock_base[CLOCK_REALTIME].offset;
++
++	return ktime_get_update_offsets(offs_real);
++}
+ 
+ /*
+  * Retrigger next event is called after clock was set
+@@ -612,26 +618,15 @@ static int hrtimer_reprogram(struct hrtimer *timer,
+ static void retrigger_next_event(void *arg)
+ {
+ 	struct hrtimer_cpu_base *base;
+-	struct timespec realtime_offset;
+-	unsigned long seq;
+ 
+ 	if (!hrtimer_hres_active())
+ 		return;
+ 
+-	do {
+-		seq = read_seqbegin(&xtime_lock);
+-		set_normalized_timespec(&realtime_offset,
+-					-wall_to_monotonic.tv_sec,
+-					-wall_to_monotonic.tv_nsec);
+-	} while (read_seqretry(&xtime_lock, seq));
+-
+ 	base = &__get_cpu_var(hrtimer_bases);
+ 
+ 	/* Adjust CLOCK_REALTIME offset */
+ 	spin_lock(&base->lock);
+-	base->clock_base[CLOCK_REALTIME].offset =
+-		timespec_to_ktime(realtime_offset);
+-
++	hrtimer_update_base(base);
+ 	hrtimer_force_reprogram(base, 0);
+ 	spin_unlock(&base->lock);
+ }
+@@ -731,7 +726,6 @@ static int hrtimer_switch_to_hres(void)
+ 	base->clock_base[CLOCK_MONOTONIC].resolution = KTIME_HIGH_RES;
+ 
+ 	tick_setup_sched_timer();
+-
+ 	/* "Retrigger" the interrupt to get things going */
+ 	retrigger_next_event(NULL);
+ 	local_irq_restore(flags);
+@@ -1264,7 +1258,7 @@ void hrtimer_interrupt(struct clock_event_device *dev)
+ 	dev->next_event.tv64 = KTIME_MAX;
+ 
+ 	spin_lock(&cpu_base->lock);
+-	entry_time = now = ktime_get();
++	entry_time = now = hrtimer_update_base(cpu_base);
+ retry:
+ 	expires_next.tv64 = KTIME_MAX;
+ 	/*
+@@ -1340,9 +1334,12 @@ retry:
+ 	 * We need to prevent that we loop forever in the hrtimer
+ 	 * interrupt routine. We give it 3 attempts to avoid
+ 	 * overreacting on some spurious event.
++	 *
++	 * Acquire base lock for updating the offsets and retrieving
++	 * the current time.
+ 	 */
+ 	spin_lock(&cpu_base->lock);
+-	now = ktime_get();
++	now = hrtimer_update_base(cpu_base);
+ 	cpu_base->nr_retries++;
+ 	if (++retries < 3)
+ 		goto retry;
 -- 
 1.7.9.5
 
