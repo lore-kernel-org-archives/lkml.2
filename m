@@ -1,104 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754179Ab2GQNTR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 09:19:17 -0400
-Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:48664 "EHLO
-	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754109Ab2GQNTO (ORCPT
+	id S1754192Ab2GQNZK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 09:25:10 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:54637 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751979Ab2GQNZH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 09:19:14 -0400
-Message-ID: <50056648.6000906@ti.com>
-Date: Tue, 17 Jul 2012 18:49:04 +0530
-From: Rajendra Nayak <rnayak@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.20) Gecko/20110805 Thunderbird/3.1.12
+	Tue, 17 Jul 2012 09:25:07 -0400
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: akpm@linux-foundation.org, "Joonsoo Kim" <js1304@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        "Marek Szyprowski" <m.szyprowski@samsung.com>,
+        "Minchan Kim" <minchan@kernel.org>, "Christoph Lameter" <cl@linux.com>
+Subject: Re: [PATCH 3/4 v2] mm: fix return value in
+ __alloc_contig_migrate_range()
+References: <Yes> <1342528415-2291-1-git-send-email-js1304@gmail.com>
+ <1342528415-2291-3-git-send-email-js1304@gmail.com>
+Date: Tue, 17 Jul 2012 15:25:03 +0200
 MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: Mike Turquette <mturquette@ti.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>, aletes.xgr@gmail.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Archit Taneja <archit@ti.com>, loml <linux-omap@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>, "Cousson, Benoit" <b-cousson@ti.com>
-Subject: Re: [PATCH] clk: fix compile for OF && !COMMON_CLK
-References: <1342475161-20402-1-git-send-email-robherring2@gmail.com> <20120717001228.GA28886@gmail.com> <5004C935.4050707@gmail.com>
-In-Reply-To: <5004C935.4050707@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.whld71os3l0zgt@mpn-glaptop>
+In-Reply-To: <1342528415-2291-3-git-send-email-js1304@gmail.com>
+User-Agent: Opera Mail/12.00 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rob, Mike,
+On Tue, 17 Jul 2012 14:33:34 +0200, Joonsoo Kim <js1304@gmail.com> wrote:
+> migrate_pages() would return positive value in some failure case,
+> so 'ret > 0 ? 0 : ret' may be wrong.
+> This fix it and remove one dead statement.
 
-On Tuesday 17 July 2012 07:38 AM, Rob Herring wrote:
-> On 07/16/2012 07:12 PM, Mike Turquette wrote:
->> On 20120716-16:46, Rob Herring wrote:
->>> From: Rob Herring<rob.herring@calxeda.com>
->>>
->>> With commit 766e6a4ec602d0c107 (clk: add DT clock binding support),
->>> compiling with OF&&  !COMMON_CLK is broken.
->>>
->>
->> Hi Rob,
->>
->> Thanks for sending this quickly.
->>
->> <snip>
->>> @@ -313,19 +314,19 @@ int clk_add_alias(const char *alias, const char *alias_dev_name, char *id,
->>>   struct device_node;
->>>   struct of_phandle_args;
->>>
->>> -#ifdef CONFIG_OF
->>> +#if defined(CONFIG_OF)&&  defined(CONFIG_COMMON_CLK)
->>>   struct clk *of_clk_get(struct device_node *np, int index);
->>>   struct clk *of_clk_get_by_name(struct device_node *np, const char *name);
->>>   struct clk *of_clk_get_from_provider(struct of_phandle_args *clkspec);
->>>   #else
->>>   static inline struct clk *of_clk_get(struct device_node *np, int index)
->>>   {
->>> -	return NULL;
->>> +	return ERR_PTR(-EINVAL);
+How about the following message:
 
-So how is this expected to work on platforms (like OMAP) which have 
-CONFIG_OF enabled but not CONFIG_COMMON_CLK?
+------------------- >8 ---------------------------------------------------
+migrate_pages() can return positive value while at the same time emptying
+the list of pages it was called with.  Such situation means that it went
+through all the pages on the list some of which failed to be migrated.
 
-Archit has been seeing issues with failed clk_get's in the omap dss
-driver on linux-next.
-The clk_gets pass a valid dev pointer and an alias/con-id.
+If that happens, __alloc_contig_migrate_range()'s loop may finish without
+"++tries == 5" never being checked.  This in turn means that at the end
+of the function, ret may have a positive value, which should be treated
+as an error.
 
-With the $Subject patch, the of_clk_get_by_name() for our builds always
-returns a ERR_PTR(-EINVAL).
+This patch changes __alloc_contig_migrate_range() so that the return
+statement converts positive ret value into -EBUSY error.
+------------------- >8 ---------------------------------------------------
 
-Even if we do get the right of_clk_get_by_name() built in,
-there is another issue on OMAP where in we have CONFIG_OF
-enabled/selected by default for all OMAP2+ builds, even when we
-*do not* pass a dt blob to the kernel.
+> Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+> Cc: Michal Nazarewicz <mina86@mina86.com>
 
-So would the below code fail in such cases because it expects a
-valid of_node to be populated for a device (which also has clock
-information in it)? if CONFIG_OF is set.
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
 
-struct clk *clk_get(struct device *dev, const char *con_id)
-{
-         const char *dev_id = dev ? dev_name(dev) : NULL;
-         struct clk *clk;
+> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+> Cc: Minchan Kim <minchan@kernel.org>
+> Cc: Christoph Lameter <cl@linux.com>
+> Acked-by: Christoph Lameter <cl@linux.com>
 
-         if (dev) {
----->
-	Any reason why this isn't
-	if (dev->of_node) {
----->
-                 clk = of_clk_get_by_name(dev->of_node, con_id);
-                 if (clk && __clk_get(clk))
-                         return clk;
-         }
+In fact, now that I look at it, I think that __alloc_contig_migrate_range()
+should be changed even further.  I'll take a closer look at it and send
+a patch (possibly through Marek ;) ).
 
-         return clk_get_sys(dev_id, con_id);
-}
-
-regards,
-Rajendra
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 4403009..02d4519 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -5673,7 +5673,6 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
+>  			}
+>  			tries = 0;
+>  		} else if (++tries == 5) {
+> -			ret = ret < 0 ? ret : -EBUSY;
+>  			break;
+>  		}
+>@@ -5683,7 +5682,7 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
+>  	}
+> 	putback_lru_pages(&cc.migratepages);
+> -	return ret > 0 ? 0 : ret;
+> +	return ret <= 0 ? ret : -EBUSY;
+>  }
+> /*
 
 
-
-
-
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
+ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
