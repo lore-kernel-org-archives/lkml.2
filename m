@@ -1,42 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754486Ab2GQHs2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 03:48:28 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39194 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751446Ab2GQHs1 (ORCPT
+	id S1752762Ab2GQIBk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 04:01:40 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:38675 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750764Ab2GQIBe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 03:48:27 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] gpiolib: arizona: Add WM5110 support
-Date: Tue, 17 Jul 2012 08:48:15 +0100
-Message-Id: <1342511295-13298-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10.4
+	Tue, 17 Jul 2012 04:01:34 -0400
+Message-ID: <1342511100.3039.9.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [PATCH] sd: do not set changed flag on all unit attention
+ conditions
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Date: Tue, 17 Jul 2012 08:45:00 +0100
+In-Reply-To: <50044D56.6000400@redhat.com>
+References: <1342454772-9018-1-git-send-email-pbonzini@redhat.com>
+	 <1342455503.3176.42.camel@dabdike.int.hansenpartnership.com>
+	 <50044D56.6000400@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/gpio/gpio-arizona.c |    1 +
- 1 file changed, 1 insertion(+)
+On Mon, 2012-07-16 at 19:20 +0200, Paolo Bonzini wrote:
+> Il 16/07/2012 18:18, James Bottomley ha scritto:
+> >> > diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+> >> > index b583277..6d8ca08 100644
+> >> > --- a/drivers/scsi/scsi_lib.c
+> >> > +++ b/drivers/scsi/scsi_lib.c
+> >> > @@ -843,8 +843,11 @@ void scsi_io_completion(struct scsi_cmnd *cmd, unsigned int good_bytes)
+> >> >  	} else if (sense_valid && !sense_deferred) {
+> >> >  		switch (sshdr.sense_key) {
+> >> >  		case UNIT_ATTENTION:
+> >> > -			if (cmd->device->removable) {
+> >> > -				/* Detected disc change.  Set a bit
+> >> > +			if (cmd->device->removable &&
+> >> > +			    (sshdr.asc == 0x3a ||
+> >> > +			     (sshdr.asc == 0x28 && sshdr.ascq == 0x00))) {
+> >> > +				/* "No medium" or "Medium may have changed."
+> >> > +				 * This means a disc change.  Set a bit
+> > This type of change would likely cause a huge cascade of errors in real
+> > removable media devices.  Under the MMC standards, which a lot of the
+> > older removable discs seem to follow, UNIT ATTENTION indicates either
+> > medium change or device reset (which we check for and eat lower down);
+> > we can't rely on them giving proper SBC-2 sense codes.  If you want to
+> > pretend to be removable media, you have to conform to its standards.
+> 
+> Would you accept a patch doing the opposite, i.e. passing some sense
+> codes such as PARAMETERS CHANGED and TARGET OPERATING CONDITIONS HAVE
+> CHANGED?
 
-diff --git a/drivers/gpio/gpio-arizona.c b/drivers/gpio/gpio-arizona.c
-index 0c1becf..8740d2e 100644
---- a/drivers/gpio/gpio-arizona.c
-+++ b/drivers/gpio/gpio-arizona.c
-@@ -112,6 +112,7 @@ static int __devinit arizona_gpio_probe(struct platform_device *pdev)
- 
- 	switch (arizona->type) {
- 	case WM5102:
-+	case WM5110:
- 		arizona_gpio->gpio_chip.ngpio = 5;
- 		break;
- 	default:
--- 
-1.7.10.4
+Could you explain what the problem actually is?  It looks like you had a
+reason to mark virtio-scsi as removable, even though it isn't, and now
+you want to add further hacks because being removable doesn't quite
+work.
+
+Lets go back and see if there's a more correct way to do whatever it is
+you want to do.
+
+James
+
 
