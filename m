@@ -1,98 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752497Ab2GQE0c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 00:26:32 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:42467 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751712Ab2GQE01 (ORCPT
+	id S1752923Ab2GQE2B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 00:28:01 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5664 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750842Ab2GQE17 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 00:26:27 -0400
-X-AuditID: cbfee61a-b7f616d000004b7e-64-5004e9712012
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: stern@rowland.harvard.edu, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Cc: l.majewski@samsung.com, a.kesavan@samsung.com, prashanth.g@samsung.com,
-        kmpark@infradead.org, joshi@samsung.com, olofj@google.com,
-        thomas.abraham@linaro.org, sshtylyov@mvista.com,
-        av.tikhomirov@samsung.com
-Subject: [PATCH v4] USB: ehci-s5p: Add vbus setup function to the s5p ehci glue
- layer
-Date: Tue, 17 Jul 2012 10:10:50 +0530
-Message-id: <1342500050-27470-2-git-send-email-gautam.vivek@samsung.com>
-X-Mailer: git-send-email 1.7.0.4
-In-reply-to: <1342500050-27470-1-git-send-email-gautam.vivek@samsung.com>
-References: <1342500050-27470-1-git-send-email-gautam.vivek@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCJMWRmVeSWpSXmKPExsVy+t9jQd3ClywBBudmaltc3jWHzWLRslZm
-	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDKmTJ/BVvCQt2L9Vc8GxpPcXYycHBICJhKrD75kgrDF
-	JC7cW8/WxcjFISQwnVGic8EzJginnUni9pN5LCBVbAK6Ek1vdzGC2CICtRJTrk5lB7GZBa4y
-	Snx7VQpiCwuES9z6dBGsnkVAVeLxzFlgG3gFPCROnfjBCrFNQaJ12SGgXg4OTgFPiU3/jEBM
-	IaCSv6eCJzDyLmBkWMUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kR7PdnUjsYVzZYHGIU4GBU
-	4uGd8ZQlQIg1say4MvcQowQHs5IIr8hRoBBvSmJlVWpRfnxRaU5q8SFGaQ4WJXFeY++v/kIC
-	6YklqdmpqQWpRTBZJg5OqQbG0sO3e079EtO0FnSMeix85mWExr2Sldbrw28reWoJ2Apm8z46
-	9PtUYG2oj1KkGqfBrPXruafPDeq4zWj/5Y8Tq22ky95Pc2S7nm7+/7DmLm/h6dhV5bEVcmkL
-	LOanBr5lm1iexTK9vGg976Hbaidj+ZesUrufPuX4+iO770pyRqhNmiOfLaWsxFKckWioxVxU
-	nAgAYjC5R/cBAAA=
-X-TM-AS-MML: No
+	Tue, 17 Jul 2012 00:27:59 -0400
+X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=IEFAe7w0650A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=UejcNrzcuEgphWSHMR0A:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-ID: <1342499278.24525.13.camel@gandalf.stny.rr.com>
+Subject: Re: 3.4.4-rt13: btrfs + xfstests 006 = BOOM..  and a bonus rt_mutex
+ deadlock report for absolutely free!
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Chris Mason <chris.mason@fusionio.com>,
+        "Chris L. Mason" <clmason@fusionio.com>,
+        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Tue, 17 Jul 2012 00:27:58 -0400
+In-Reply-To: <1342498722.7353.37.camel@marge.simpson.net>
+References: <1342072060.7338.102.camel@marge.simpson.net>
+	 <20120713125043.GH30128@shiny> <1342260883.7368.30.camel@marge.simpson.net>
+	 <20120715175612.GF25961@shiny.int.fusionio.com>
+	 <1342404140.7659.27.camel@marge.simpson.net>
+	 <1342454547.5410.3.camel@gandalf.stny.rr.com>
+	 <1342455968.7659.93.camel@marge.simpson.net>
+	 <1342456567.7659.97.camel@marge.simpson.net>
+	 <1342458195.2783.5.camel@acer.local.home>
+	 <1342498722.7353.37.camel@marge.simpson.net>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch retrieves and configures the vbus control gpio via
-the device tree. The suspend/resume callbacks will be later
-modified for vbus control.
+On Tue, 2012-07-17 at 06:18 +0200, Mike Galbraith wrote:
+>  
+> > There's that too. But the issue I was talking about is with all trylock
+> > loops. As holding an rt-mutex now disables migration, if a high priority
+> > process preempts a task that holds the lock, and then the high prio task
+> > starts spinning waiting for that lock to release, the lower priority
+> > process will never get to run to release it. The cpu_chill() doesn't
+> > help.
+> 
+> Hrm.  I better go make a testcase, this one definitely wants pounding
+> through thick skull.
 
-Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
-Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
----
- drivers/usb/host/ehci-s5p.c |   21 +++++++++++++++++++++
- 1 files changed, 21 insertions(+), 0 deletions(-)
+Actually, I was mistaken. I forgot that we defined 'cpu_chill()' as
+msleep(1) on RT, which would keep a deadlock from happening.
 
-diff --git a/drivers/usb/host/ehci-s5p.c b/drivers/usb/host/ehci-s5p.c
-index 37d84cf..9d8f1dd 100644
---- a/drivers/usb/host/ehci-s5p.c
-+++ b/drivers/usb/host/ehci-s5p.c
-@@ -15,6 +15,7 @@
- #include <linux/clk.h>
- #include <linux/of.h>
- #include <linux/platform_device.h>
-+#include <linux/of_gpio.h>
- #include <plat/ehci.h>
- #include <plat/usb-phy.h>
- 
-@@ -64,6 +65,24 @@ static const struct hc_driver s5p_ehci_hc_driver = {
- 	.clear_tt_buffer_complete	= ehci_clear_tt_buffer_complete,
- };
- 
-+static void s5p_setup_vbus_gpio(struct platform_device *pdev)
-+{
-+	int err;
-+	int gpio;
-+
-+	if (!pdev->dev.of_node)
-+		return;
-+
-+	gpio = of_get_named_gpio(pdev->dev.of_node,
-+			"samsung,vbus-gpio", 0);
-+	if (!gpio_is_valid(gpio))
-+		return;
-+
-+	err = gpio_request_one(gpio, GPIOF_OUT_INIT_HIGH, "ehci_vbus_gpio");
-+	if (err)
-+		dev_err(&pdev->dev, "can't request ehci vbus gpio %d", gpio);
-+}
-+
- static u64 ehci_s5p_dma_mask = DMA_BIT_MASK(32);
- 
- static int __devinit s5p_ehci_probe(struct platform_device *pdev)
-@@ -92,6 +111,8 @@ static int __devinit s5p_ehci_probe(struct platform_device *pdev)
- 	if (!pdev->dev.coherent_dma_mask)
- 		pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
- 
-+	s5p_setup_vbus_gpio(pdev);
-+
- 	s5p_ehci = devm_kzalloc(&pdev->dev, sizeof(struct s5p_ehci_hcd),
- 				GFP_KERNEL);
- 	if (!s5p_ehci)
--- 
-1.7.0.4
+It doesn't explain the performance enhancement you get :-/
+
+-- Steve
+
 
