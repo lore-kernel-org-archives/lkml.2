@@ -1,65 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420Ab2GQR4d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 13:56:33 -0400
-Received: from exprod7og101.obsmtp.com ([64.18.2.155]:39744 "EHLO
-	exprod7og101.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751875Ab2GQR4b (ORCPT
+	id S1755432Ab2GQR6A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 13:58:00 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:47406 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752924Ab2GQR57 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 13:56:31 -0400
-Message-ID: <5005A73B.2010901@genband.com>
-Date: Tue, 17 Jul 2012 11:56:11 -0600
-From: Chris Friesen <chris.friesen@genband.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
-MIME-Version: 1.0
-To: Rik van Riel <riel@redhat.com>
-CC: Linux kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Avi Kivity <avi@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: CFS vs. cpufreq/cstates vs. latency
-References: <50057565.7030405@redhat.com>
-In-Reply-To: <50057565.7030405@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 17 Jul 2012 17:56:12.0883 (UTC) FILETIME=[74360230:01CD6445]
-X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-19046.004
-X-TM-AS-Result: No--11.139600-8.000000-31
-X-TM-AS-User-Approved-Sender: No
-X-TM-AS-User-Blocked-Sender: No
+	Tue, 17 Jul 2012 13:57:59 -0400
+Message-ID: <1342547874.5129.2.camel@henna.lan>
+Subject: [PATCH] scripts/package/builddeb: upgrade to current practices
+From: =?ISO-8859-1?Q?Martin-=C9ric?= Racine <martin-eric.racine@iki.fi>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Tue, 17 Jul 2012 20:57:54 +0300
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2012 08:23 AM, Rik van Riel wrote:
+This patch sanitizes and updates the Debian package building script:
 
-> Specifically, waking up some process requires that the CPU
-> which is running the wakeup is already in C0 state. If the
-> CPU on which the to-be-woken task ran last is in a deep C
-> state, it may make sense to simply run the woken up task
-> on the local CPU, not the CPU where it was originally.
+1) Updates $fwpackagename to 'firmware-linux' as used by Debian,
+2) Removes trailing whitespace,
+3) Updates Linus' copyright in the generated packaging files,
+4) Updates URL of Linus' GIT tree in the generated packaging files,
+5) Removes obsolete references to linux-2.6,
+6) Adds installation of missing subarch components to header package,
+7) Adds dependency relationships to the firmware package.
 
-While it sounds interesting, I can see possible issues with this:
+Signed-off-by: Martin-Éric Racine <martin-eric.racine@iki.fi>
+---
+ scripts/package/builddeb |   25 ++++++++++++++-----------
+ 1 file changed, 14 insertions(+), 11 deletions(-)
 
-1) If we're using NUMA there will be additional cost to running a task with memory on a remote node.  It might make sense to try and run the task on a CPU on that node if possible.
-2) It might not make sense to migrate if the local cpu is close to capacity.
+diff --git a/scripts/package/builddeb b/scripts/package/builddeb
+index c95fdda..44ef3d1 100644
+--- a/scripts/package/builddeb
++++ b/scripts/package/builddeb
+@@ -79,9 +79,9 @@ fwdir="$objtree/debian/fwtmp"
+ kernel_headers_dir="$objtree/debian/hdrtmp"
+ libc_headers_dir="$objtree/debian/headertmp"
+ packagename=linux-image-$version
+-fwpackagename=linux-firmware-image
+ kernel_headers_packagename=linux-headers-$version
+ libc_headers_packagename=linux-libc-dev
++fwpackagename=firmware-linux
+ 
+ if [ "$ARCH" = "um" ] ; then
+ 	packagename=user-mode-linux-$version
+@@ -109,7 +109,7 @@ if [ "$ARCH" = "um" ] ; then
+ 	cp .config "$tmpdir/usr/share/doc/$packagename/config"
+ 	gzip "$tmpdir/usr/share/doc/$packagename/config"
+ 	cp $KBUILD_IMAGE "$tmpdir/usr/bin/linux-$version"
+-else 
++else
+ 	cp System.map "$tmpdir/boot/System.map-$version"
+ 	cp .config "$tmpdir/boot/config-$version"
+ 	# Not all arches include the boot path in KBUILD_IMAGE
+@@ -188,17 +188,17 @@ This is a packacked upstream version of the Linux kernel.
+ The sources may be found at most Linux ftp sites, including:
+ ftp://ftp.kernel.org/pub/linux/kernel
+ 
+-Copyright: 1991 - 2009 Linus Torvalds and others.
++Copyright: 1991-2012 Linus Torvalds and others.
+ 
+-The git repository for mainline kernel development is at:
+-git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
++The GIT repository for mainline kernel development is at:
++git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+ 
+     This program is free software; you can redistribute it and/or modify
+     it under the terms of the GNU General Public License as published by
+     the Free Software Foundation; version 2 dated June, 1991.
+ 
+ On Debian GNU/Linux systems, the complete text of the GNU General Public
+-License version 2 can be found in \`/usr/share/common-licenses/GPL-2'.
++License version 2 can be found in /usr/share/common-licenses/GPL-2.
+ EOF
+ 
+ # Generate a control file
+@@ -215,7 +215,7 @@ if [ "$ARCH" = "um" ]; then
+ 	cat <<EOF >> debian/control
+ 
+ Package: $packagename
+-Provides: linux-image, linux-image-2.6, linux-modules-$version
++Provides: linux-image, linux-modules-$version
+ Architecture: any
+ Description: User Mode Linux kernel, version $version
+  User-mode Linux is a port of the Linux kernel to its own system call
+@@ -232,7 +232,7 @@ else
+ 	cat <<EOF >> debian/control
+ 
+ Package: $packagename
+-Provides: linux-image, linux-image-2.6, linux-modules-$version
++Provides: linux-image, linux-modules-$version
+ Suggests: $fwpackagename
+ Architecture: any
+ Description: Linux kernel, version $version
+@@ -243,7 +243,7 @@ EOF
+ fi
+ 
+ # Build header package
+-(cd $srctree; find . -name Makefile -o -name Kconfig\* -o -name \*.pl > "$objtree/debian/hdrsrcfiles")
++(cd $srctree; find . -name Makefile\* -o -name Kconfig\* -o -name \*.pl > "$objtree/debian/hdrsrcfiles")
+ (cd $srctree; find arch/$SRCARCH/include include scripts -type f >> "$objtree/debian/hdrsrcfiles")
+ (cd $objtree; find arch/$SRCARCH/include .config Module.symvers include scripts -type f >> "$objtree/debian/hdrobjfiles")
+ destdir=$kernel_headers_dir/usr/src/linux-headers-$version
+@@ -257,12 +257,12 @@ arch=$(dpkg --print-architecture)
+ cat <<EOF >> debian/control
+ 
+ Package: $kernel_headers_packagename
+-Provides: linux-headers, linux-headers-2.6
++Provides: linux-headers
+ Architecture: $arch
+ Description: Linux kernel headers for $KERNELRELEASE on $arch
+  This package provides kernel header files for $KERNELRELEASE on $arch
+  .
+- This is useful for people who need to build external modules
++ This is useful for people who need to build external modules.
+ EOF
+ 
+ # Do we have firmware? Move it out of the way and build it into a package.
+@@ -273,6 +273,9 @@ if [ -e "$tmpdir/lib/firmware" ]; then
+ 
+ Package: $fwpackagename
+ Architecture: all
++Conflicts: firmware-linux-free, firmware-linux-nonfree
++Provides: firmware-linux-free, firmware-linux-nonfree
++Replaces: firmware-linux-free, firmware-linux-nonfree
+ Description: Linux kernel firmware, version $version
+  This package contains firmware from the Linux kernel, version $version.
+ EOF
+-- 
+1.7.10.4
 
-Presumably the scheduler could take into account the expected delay for coming out of the C state (which we should know) as well as the expected cost of migrating the task to the running CPU and the expected run-length of the task in order to decide if this makes sense or not.
 
-> I seem to remember some scheduling code that (for power
-> saving reasons) tried running all the tasks on one CPU,
-> until that CPU got busy, and then spilled over onto other
-> CPUs.
-
-I suspect you're thinking of
-
-/sys/devices/system/cpu/sched_mc_power_savings
-/sys/devices/system/cpu/sched_smt_power_savings 
-
-> I do not seem to be able to find that code in recent kernels,
-> but I have the feeling that a policy like that (related to
-> WAKE_AFFINE scheduling?) could improve this issue.
-
-Looks like it was removed in 8e7fbcb because it was broken.
-
-Chris
