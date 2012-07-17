@@ -1,74 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753589Ab2GQMsg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 08:48:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50955 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752013Ab2GQMse (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 08:48:34 -0400
-Date: Tue, 17 Jul 2012 15:48:59 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Stefan Hajnoczi <stefanha@gmail.com>
-Cc: Asias He <asias@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-aio@kvack.org, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Benjamin LaHaise <bcrl@kvack.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 0/5] Add vhost-blk support
-Message-ID: <20120717124859.GA9883@redhat.com>
-References: <1342107302-28116-1-git-send-email-asias@redhat.com>
- <CAJSP0QWgmXns89se+xdGgM6i1_hsfVWPQ8caHua9d-dDA4CTDQ@mail.gmail.com>
- <50052276.2080906@redhat.com>
- <500527BA.9000001@redhat.com>
- <50052E7E.6020100@redhat.com>
- <CAJSP0QW0tPV3WASGOBRE4hL=8zzSFQ6T=bHbEwMAzmHR9wnwJg@mail.gmail.com>
- <20120717112645.GA9363@redhat.com>
- <CAJSP0QXPkrVvgA+1fhhwsB5J8oApOObK8D3fk_Lm0Bt3T+Wfuw@mail.gmail.com>
- <20120717115450.GA9796@redhat.com>
- <CAJSP0QXwGuUaD9piktOptJasdpci_fA90d=vV4m0SuORMvc2=Q@mail.gmail.com>
+	id S1753480Ab2GQMuo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 08:50:44 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:51777 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751826Ab2GQMum (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 08:50:42 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Tony Prisk <linux@prisktech.co.nz>
+Subject: Re: [PATCH 1/1] Add Wondermedia Technologies (wmt) to docs/devicetree/vendor-bindings.txt
+Date: Tue, 17 Jul 2012 12:50:31 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "vt8500-wm8505-linux-kernel@googlegroups.com" 
+	<vt8500-wm8505-linux-kernel@googlegroups.com>,
+        devicetree-discuss@lists.ozlabs.org
+References: <76F764B079F92A4E843589C893D0A022C380F1D4@SERVER.prisktech.co.nz>
+In-Reply-To: <76F764B079F92A4E843589C893D0A022C380F1D4@SERVER.prisktech.co.nz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJSP0QXwGuUaD9piktOptJasdpci_fA90d=vV4m0SuORMvc2=Q@mail.gmail.com>
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201207171250.32265.arnd@arndb.de>
+X-Provags-ID: V02:K0:SoiX4eSbgZsb/RQfdMsufM5o9hh5nybG5rBE2aEEKeF
+ tCvrHc1bv5k4XkPYy5qTfDUvnITLJx+BEOJaP7X435DAJOCe2N
+ ey2qFzo+RRo/PLhvOemNjy4F3vHyzoCxLblbgaQlkRQ9ndD7iD
+ BTZKrHrVFruGgy5rZbEnf+PXTaX+g0YqOl0d4MVlI4mHzgl8nQ
+ qnAIKKYpsTEhLIXzrkHUWvQYzbNtGpzKNsc08Bz/+CKIPMsztk
+ Mt5d+MzviP3aH9xJQ7Rsv+K9SMxc1rCFrByfnQNyyc3xN8vDsE
+ cglzpHe40674v1c8+uCnWdOMEN6VLKebJLTiyeJW/lgrO6A0PS
+ UwvTxDD96IOPEraLdqzw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 17, 2012 at 01:03:39PM +0100, Stefan Hajnoczi wrote:
-> On Tue, Jul 17, 2012 at 12:54 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
-> >> Knowing the answer to that is important before anyone can say whether
-> >> this approach is good or not.
-> >>
-> >> Stefan
-> >
-> > Why is it?
-> 
-> Because there might be a fix to kvmtool which closes the gap.  It
-> would be embarassing if vhost-blk was pushed just because no one
-> looked into what is actually going on.
+On Tuesday 17 July 2012, Tony Prisk wrote:
+> From 756ae5c2f475d679649adff99058679b651af8d9 Mon Sep 17 00:00:00 2001
+> From: Tony Prisk <linux@prisktech.co.nz>
+> Date: Tue, 17 Jul 2012 19:09:31 +1200
+> Subject: [PATCH] Add Wondermedia Technologies (wmt) to vendor-prefixes.txt
+>  Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+ 
+Something went wrong with exporting the patch. You probably used git-show
+rather than git-format-patch, so you got the wrong headers.
 
-Embarrasing to whom? Is someone working on an optimization that
-makes the work in question redundant, with posting just around
-the corner? Then maybe the thing to do is just wait a bit.
+It would also be helpful to describe why the specific string is used here.
+Normally we use the stock ticker symbol and "wmt" refers to Wal-Mart,
+which would be unlikely but not impossible to produce their own hardware
+in the future. The same thing applies to "via", which is VIACOM. The symbol
+for VIA technologies is "2388.TW", but that is not particularly descriptive
+or well-known.
 
-Or are there no specific plans even, just a vague "sometime
-in the future someone might take Asias' patches and profile them see if
-anything maybe sticks out"? Then maybe not making everyone
-wait years for this will serve users better.
+Maybe someone on the devicetree-discuss mailing list has a better
+suggestion. I think using "via" is probably the best compromise, as
+it's a well-known name and most of the components of the wondermedia
+chips were first made by VIA anyway.
 
-> And on the flipside, hard evidence of an overhead that cannot be
-> resolved could be good reason to do more vhost devices in the future.
-
-How can one have hard evidence of an overhead that cannot be resolved?
-Any problem can be resolved in an infinite number of ways.
-
-> Either way, it's useful to do this before going further.
-> 
-> Stefan
-
-I think each work should be discussed on its own merits.  Maybe
-vhost-blk is just well written. So? What is your conclusion?
-
--- 
-MST
+	Arnd
