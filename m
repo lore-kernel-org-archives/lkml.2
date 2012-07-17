@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932147Ab2GQVkO (ORCPT <rfc822;w@1wt.eu>);
+	id S932173Ab2GQVkU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 17:40:20 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48484 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932150Ab2GQVkO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 17 Jul 2012 17:40:14 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:39570 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756830Ab2GQVkE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 17:40:04 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Linux Kernel Developers List <linux-kernel@vger.kernel.org>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 09/17] goku_udc: remove IRQF_SAMPLE_RANDOM which was commented out
-Date: Tue, 17 Jul 2012 17:32:28 -0400
-Message-Id: <1342560756-18737-10-git-send-email-tytso@mit.edu>
-X-Mailer: git-send-email 1.7.11.1.108.gb129051
-In-Reply-To: <1342560756-18737-1-git-send-email-tytso@mit.edu>
-References: <1342560756-18737-1-git-send-email-tytso@mit.edu>
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Date: Tue, 17 Jul 2012 14:40:10 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Aristeu Rozanski <aris@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
+        Hugh Dickins <hughd@google.com>, Hillf Danton <dhillf@gmail.com>
+Subject: Re: [PATCH v3 2/3] cgroup: revise how we re-populate root directory
+Message-ID: <20120717214010.GF24336@google.com>
+References: <20120702142925.795007114@napanee.usersys.redhat.com>
+ <20120702142926.405632285@napanee.usersys.redhat.com>
+ <20120709171748.GD1341@google.com>
+ <20120709172220.GE1341@google.com>
+ <20120709172831.GF1341@google.com>
+ <20120710192721.GB19791@redhat.com>
+ <20120717183851.GA24336@google.com>
+ <20120717212926.GB26916@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120717212926.GB26916@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the changes in the random tree, IRQF_SAMPLE_RANDOM is now a
-no-op; interrupt randomness is now collected unconditionally in a very
-low-overhead fashion; see commit 775f4b297b.  The IRQF_SAMPLE_RANDOM
-flag was scheduled to be removed in 2009 on the
-feature-removal-schedule.
+Hello,
 
-The flag was only commented-out in the driver, but we should just
-remove it altogether.
+On Tue, Jul 17, 2012 at 05:29:27PM -0400, Aristeu Rozanski wrote:
+> what about this version:
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Felipe Balbi <balbi@ti.com>
----
- drivers/usb/gadget/goku_udc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Yeah, generally looks good to me although @added/removed_bits argument
+names irk me a bit.  The name may be okay for local variables but I
+keep thinking "what bits?".  @subsys_mask or something indicating that
+it's mask of subsystems would better.  Also, can you please add /**
+function comment explaining the clear/populate functions and their
+arguments?
 
-diff --git a/drivers/usb/gadget/goku_udc.c b/drivers/usb/gadget/goku_udc.c
-index 3d28fb9..9fd7886 100644
---- a/drivers/usb/gadget/goku_udc.c
-+++ b/drivers/usb/gadget/goku_udc.c
-@@ -1836,7 +1836,7 @@ static int goku_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- 	/* init to known state, then setup irqs */
- 	udc_reset(dev);
- 	udc_reinit (dev);
--	if (request_irq(pdev->irq, goku_irq, IRQF_SHARED/*|IRQF_SAMPLE_RANDOM*/,
-+	if (request_irq(pdev->irq, goku_irq, IRQF_SHARED,
- 			driver_name, dev) != 0) {
- 		DBG(dev, "request interrupt %d failed\n", pdev->irq);
- 		retval = -EBUSY;
+Thanks!
+
 -- 
-1.7.11.1.108.gb129051
-
+tejun
