@@ -1,124 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756387Ab2GQThF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 15:37:05 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:35407 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752167Ab2GQThA (ORCPT
+	id S1756438Ab2GQTiZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 15:38:25 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16042 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752167Ab2GQTiW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 15:37:00 -0400
-Date: Tue, 17 Jul 2012 12:36:55 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Michael Kerrisk <mtk.manpages@gmail.com>,
-        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-        NeilBrown <neilb@suse.de>, Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
-        Matthew Garrett <mjg@redhat.com>, John Stultz <john.stultz@linaro.org>,
-        Brian Swetland <swetland@google.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, mtk@lwn.net
-Subject: Re: [PATCH] epoll: Add a flag, EPOLLWAKEUP, to prevent suspend while
- epoll events are ready
-Message-ID: <20120717193655.GA14280@kroah.com>
-References: <CAMP5XgcatAchOXaEG0rbULes5pVHHsuGeuJ2CKaVGEdj1LzMDg@mail.gmail.com>
- <CAMP5XgfF3RF1hSonS_QrC8jQZyCcNfwGYZcCxnew02Rp3-CXKA@mail.gmail.com>
- <CAHO5Pa3nWvmWY9jFZ-4ayvjGAV-4Vhs5sS18dbzniJp8wZYmoQ@mail.gmail.com>
- <201207172122.26201.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201207172122.26201.rjw@sisk.pl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 17 Jul 2012 15:38:22 -0400
+X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=JxQDdpYhMz0A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=IiqkAfQlhwmpuOJt4lsA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-ID: <1342553898.10332.9.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 3/8] pstore: Add persistent function tracing
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        John Stultz <john.stultz@linaro.org>, Shuah Khan <shuahkhan@gmail.com>,
+        arve@android.com, Rebecca Schultz Zavin <rebecca@android.com>,
+        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Date: Tue, 17 Jul 2012 15:38:18 -0400
+In-Reply-To: <1341879046-5197-3-git-send-email-anton.vorontsov@linaro.org>
+References: <20120710001004.GA22744@lizard>
+	 <1341879046-5197-3-git-send-email-anton.vorontsov@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 17, 2012 at 09:22:25PM +0200, Rafael J. Wysocki wrote:
-> On Tuesday, July 17, 2012, Michael Kerrisk wrote:
-> > On Tue, Jul 17, 2012 at 12:04 AM, Arve Hjønnevåg <arve@android.com> wrote:
-> > > On Mon, Jul 16, 2012 at 4:00 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > >> On Monday, July 16, 2012, Michael Kerrisk wrote:
-> > >>> Arve, Rafael,
-> > >>>
-> > >>> On Tue, May 1, 2012 at 7:33 AM, Arve Hjønnevåg <arve@android.com> wrote:
-> > >>> > When an epoll_event, that has the EPOLLWAKEUP flag set, is ready, a
-> > >>> > wakeup_source will be active to prevent suspend. This can be used to
-> > >>> > handle wakeup events from a driver that support poll, e.g. input, if
-> > >>> > that driver wakes up the waitqueue passed to epoll before allowing
-> > >>> > suspend.
-> > >>>
-> > >>> It's late it the -rc series,
-> > >>
-> > >> Well, exactly. :-)
-> > 
-> > If someone had CCed linux-api@ along the way (as per
-> > Documentation/SubmitChecklist), it might have helped ;-)
-> 
-> Well, it still _is_ late.
-> 
-> > >>> but it strikes me that CAP_EPOLLWAKEUP is
-> > >>> a poor name for the capability that governs the use of EPOLLWAKEUP.
-> > >>> While on the one hand some capabilities are overloaded
-> > >>> (https://lwn.net/Articles/486306/), on the other hand we should avoid
-> > >>> adding individual capabilities for each new API feature (otherwise
-> > >>> capabilities become administratively unwieldy).
-> > >>>
-> > >>> This capability is not really about "EPOLL". It's about the ability to
-> > >>> block system suspend. Therefore, IMO, a better name would be something
-> > >>> like: CAP_BLOCK_SUSPEND. This name is better because there might be
-> > >>> some other API feature that is later added that also has the effect of
-> > >>> preventing system suspends, and we could reasonably govern that
-> > >>> feature with the same capability.
-> > >
-> > > We already have another api, "/sys/power/wake_lock", that allow
-> > > user-space to block suspend. Do we want to apply this capability that
-> > > api as well, or only to apis that do not have other ways to restrict
-> > > access?
-> > 
-> > Well, the question is: is there a governor on the use of
-> > /sys/power/wake_lock? It makes sense either they are both governed
-> > (preferably by the same mechanism, I would have thought), or neither
-> > is.
-> > 
-> > >>> Does that seem sensible to you? I can send a patch for the name change.
-> > >>
-> > >> I'm not sure what Arve thinks about that, but I'd be fine with that.
-> > >>
-> > >> Arve, what do you think?
-> > >>
-> > >
-> > > CAP_BLOCK_SUSPEND is fine with me, but if it does not apply to the
-> > > sysfs interface, then the comment should probably mention this.
-> > 
-> > I've sent a patch, but omitted mention of API details in the comments.
-> > Maybe that can be changed afterward, when a decision has been reached
-> > about governing /sys/power/wake_lock.
-> 
-> I'm going to push your patch for v3.5, but then I'm considering the following
-> one for v3.6.  I wouldn't like to make more changes in v3.5-rc at this point,
-> if possible.
-> 
-> Thanks,
-> Rafael
-> 
-> ---
-> From: Rafael J. Wysocki <rjw@sisk.pl>
-> Subject: PM / Sleep: Require CAP_BLOCK_SUSPEND to use wake_lock/wake_unlock
-> 
-> Require processes wanting to use the wake_lock/wake_unlock sysfs
-> files to have the CAP_BLOCK_SUSPEND capability, which also is
-> required for the eventpoll EPOLLWAKEUP flag to be effective, so that
-> all interfaces related to blocking autosleep depend on the same
-> capability.
-> 
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+On Mon, 2012-07-09 at 17:10 -0700, Anton Vorontsov wrote:
 
-Care to mark that for -stable as well?
+> --- /dev/null
+> +++ b/fs/pstore/ftrace.c
+> @@ -0,0 +1,35 @@
+> +/*
+> + * Copyright 2012  Google, Inc.
+> + *
+> + * This software is licensed under the terms of the GNU General Public
+> + * License version 2, as published by the Free Software Foundation, and
+> + * may be copied, distributed, and modified under those terms.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/compiler.h>
+> +#include <linux/irqflags.h>
+> +#include <linux/percpu.h>
+> +#include <linux/smp.h>
+> +#include <linux/atomic.h>
+> +#include <asm/barrier.h>
+> +#include "internal.h"
+> +
+> +void notrace pstore_ftrace_call(unsigned long ip, unsigned long parent_ip)
 
-thanks,
+BTW, you can make the entire file 'notrace' without adding annotations
+by including in the Makefile:
 
-greg k-h
+CFLAGS_REMOVE_ftrace.o = -pg
+
+
+> +{
+> +	struct pstore_ftrace_record rec = {};
+> +
+> +	if (unlikely(oops_in_progress))
+> +		return;
+> +
+> +	rec.ip = ip;
+> +	rec.parent_ip = parent_ip;
+> +	pstore_ftrace_encode_cpu(&rec, raw_smp_processor_id());
+> +	psinfo->write_buf(PSTORE_TYPE_FTRACE, 0, NULL, 0, (void *)&rec,
+> +			  sizeof(rec), psinfo);
+> +}
+
+BTW, can any of the called functions go into module code that can be
+removed? If so, then this is not safe at all. Normal function tracing
+can not be synced in a preemptible kernel.
+
+Also, I'm starting to wonder if this should be in its own utility
+(separate debugfs?) than hooking directly into ftrace. Then you don't
+need to modify ftrace at all and you can do the following:
+
+static struct ftrace_ops trace_ops {
+	.func = pstore_ftrace_call;
+};
+
+then in your write to debugfs file:
+
+	register_ftrace_function(&trace_ops);
+
+To turn off tracing:
+
+	unregister_ftrace_function(&trace_ops);
+
+Note, it's safe to use if the trace_ops (or anything the callback calls)
+is a module. That's because it detects the trace_ops is not kernel core
+code and will place a wrapper around it that allows the function tracing
+to by synced with module unload. You still need to unregister the
+trace_ops before unloading the module, or you can have a crash that way.
+
+-- Steve
+
+
