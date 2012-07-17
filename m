@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754632Ab2GQSk5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 14:40:57 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:53361 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753632Ab2GQSkz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 14:40:55 -0400
+	id S1754074Ab2GQSpr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 14:45:47 -0400
+Received: from sabe.cs.wisc.edu ([128.105.6.20]:36468 "EHLO sabe.cs.wisc.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751318Ab2GQSpo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 14:45:44 -0400
+Message-ID: <5005B2AC.6020102@cs.wisc.edu>
+Date: Tue, 17 Jul 2012 12:45:00 -0600
+From: Mike Christie <michaelc@cs.wisc.edu>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <CA+icZUW+Gp9HK-6dzHjtTwSc9RaLD3sV+WPMM-vO3A6fj6frwQ@mail.gmail.com>
-References: <CA+icZUXjc+13YjoJ6FjDFboX20j3mqHNtvV2Av2-H0My8V2Mgg@mail.gmail.com>
-	<CA+icZUW4gNqspcJ1sjBD-3GCVee2VWVV5NPAr6Eo-aZHjp3y+Q@mail.gmail.com>
-	<CA+icZUW+Gp9HK-6dzHjtTwSc9RaLD3sV+WPMM-vO3A6fj6frwQ@mail.gmail.com>
-Date: Tue, 17 Jul 2012 20:40:54 +0200
-Message-ID: <CACRpkdbAnBza0Nd4Qw_LinRDa4XVuzUdJFX==YeML2z7H6gzwg@mail.gmail.com>
-Subject: Re: linux-next: Tree for July 17 (mfd: AB3100 - ab3100_probe:
- undefined reference to `rand_initialize_irq')
-From: Linus Walleij <linus.walleij@linaro.org>
-To: sedat.dilek@gmail.com
-Cc: "Theodore Ts'o" <tytso@mit.edu>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: Christoph Hellwig <hch@infradead.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH] sd: do not set changed flag on all unit attention conditions
+References: <1342454772-9018-1-git-send-email-pbonzini@redhat.com> <1342455503.3176.42.camel@dabdike.int.hansenpartnership.com> <50044D56.6000400@redhat.com> <1342511100.3039.9.camel@dabdike.int.hansenpartnership.com> <50052390.7030908@redhat.com> <1342514444.3039.23.camel@dabdike.int.hansenpartnership.com> <5005285E.8060706@redhat.com> <1342516317.3039.35.camel@dabdike.int.hansenpartnership.com> <20120717163612.GA15995@infradead.org> <50059713.7090606@redhat.com>
+In-Reply-To: <50059713.7090606@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 17, 2012 at 12:39 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Tue, Jul 17, 2012 at 12:21 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->> ...looks like AB3100 is the *only* driver still using rand_initialize_irq()...
->>
->> drivers/mfd/ab3100-core.c:939:  rand_initialize_irq(client->irq);
->>
->> ...but why has random.h still this...?
->>
->> include/linux/random.h:51:extern void rand_initialize_irq(int irq);
->>
->> Just thinking "loud"...
->>
->> - Sedat -
->
-> Is this attached patch OK, Ted?
+On 07/17/2012 10:47 AM, Paolo Bonzini wrote:
+> Il 17/07/2012 18:36, Christoph Hellwig ha scritto:
+>>>> There's no such thing in the market today as a removable disk that's
+>>>> resizeable.  Removable disks are for things like backup cartridges and
+>>>> ageing jazz drives.  Worse: most removeable devices today are USB card
+>>>> readers whose standards compliance varies from iffy to non existent.
+>>>> Resizeable disks are currently the province of storage arrays.
+>> The virtual disks exported by aacraid are both marked removable and
+>> can be resized.
+> 
+> Do they report resizing via unit attention?  I can skip this part on
+> removable virtio-scsi disks if that's what real hardware does, it would
+> also work.
+> 
 
-You're just deleting a line from the AB3100 driver, so I guess you're
-regressing the system since that IRQ will no longer contribute
-to the entropy pool?
+Not sure if we are talking about the same thing.
 
-How do we simultaneously make sure that this IRQ is still
-contributing to the entropy?
+So can virtio-scsi send a UA with asc/ascq that indicates the lun
+changed size? Other drivers do this. I updated Hannes's patches the
+other day to support UAs like those in userspace.
 
-Yours,
-Linus Walleij
+I just saw the code in the patch where virtio-scsi gets that event.
