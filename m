@@ -1,72 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752016Ab2GQJMD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 05:12:03 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:38826 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750842Ab2GQJMB (ORCPT
+	id S1753629Ab2GQJPc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 05:15:32 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:49762 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752857Ab2GQJPa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 05:12:01 -0400
-Message-ID: <1342516317.3039.35.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH] sd: do not set changed flag on all unit attention
- conditions
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Date: Tue, 17 Jul 2012 10:11:57 +0100
-In-Reply-To: <5005285E.8060706@redhat.com>
-References: <1342454772-9018-1-git-send-email-pbonzini@redhat.com>
-	   <1342455503.3176.42.camel@dabdike.int.hansenpartnership.com>
-	   <50044D56.6000400@redhat.com>
-	  <1342511100.3039.9.camel@dabdike.int.hansenpartnership.com>
-	  <50052390.7030908@redhat.com>
-	 <1342514444.3039.23.camel@dabdike.int.hansenpartnership.com>
-	 <5005285E.8060706@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	Tue, 17 Jul 2012 05:15:30 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jon Masters <jonathan@jonmasters.org>
+Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
+Date: Tue, 17 Jul 2012 08:02:55 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: Pavel Machek <pavel@ucw.cz>, Catalin Marinas <catalin.marinas@arm.com>,
+        Ingo Molnar <mingo@kernel.org>, Olof Johansson <olof@lixom.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com> <20120716121651.GA18859@elf.ucw.cz> <50050ECE.8020100@jonmasters.org>
+In-Reply-To: <50050ECE.8020100@jonmasters.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Message-Id: <201207170802.56434.arnd@arndb.de>
+X-Provags-ID: V02:K0:3Dt9TUd5f3MnlUtnz5LY+9aKWiJEyWHKifeGOefCDNh
+ pkmuqgTDCYDFag4WL5jKuuFI35lDvv+WWcgOzxPorPeqa8xedf
+ s/LLu5OzOdkeG/hlFAp6Wc99jVa3W3/pMwyoG3ZNhKBhvCGwIy
+ sV+S98wJ2a+UqXTZ9tfXTKE9wXD4+Ja7lEXEfzoqagfLfo//w5
+ gTGv6gyHEImAU3XP2nSTB0Am4dhD46LFeAe6Mtmmhv60YNbQ+Z
+ l7rVjXEdlgnvdlkzDPsrkpVfto1SkhAmGJCbUfhIpVu7phtzsO
+ iBnuzLrYvJA9jFwqASVdZEINfcVTlVj0ZonKG0iEUC4P58Zz0N
+ NwFxcMYVWSEC8tBv1VfA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-07-17 at 10:54 +0200, Paolo Bonzini wrote:
-> Il 17/07/2012 10:40, James Bottomley ha scritto:
-> >> > 
-> >> > It's not specific to virtio-scsi, in fact I expect that virtio-scsi will
-> >> > be almost always used with non-removable disks.
-> >> > 
-> >> > However, QEMU's SCSI target is not used just for virtio-scsi (for
-> >> > example it can be used for USB storage), and it lets you mark a disk as
-> >> > removable---why? because there exists real hardware that presents itself
-> >> > as an SBC removable disk.  The only thing that is specific to
-> >> > virtualization, is support for online resizing (which generates a unit
-> >> > attention condition CAPACITY DATA HAS CHANGED).
-> > So what's the problem?  If you're doing pass through of a physical disk,
-> > we pick up removable from its inquiry string ... a physical removable
-> > device doesn't get resized.  If you have a virtual disk you want to
-> > resize, you don't set the removable flag in the inquiry data.
+On Tuesday 17 July 2012, Jon Masters wrote:
+> On 07/16/2012 08:16 AM, Pavel Machek wrote:
 > 
-> In practice people will do what you said, and it's not a problem.
+> >> If an implementation supports AArch32 at EL3 there could be some
+> >> physical (or some FPGA config) switch to choose between the two. But
+> >> since AArch64 is mandated, I don't see why one would force AArch32 at
+> >> EL3 and therefore all lower exception levels (and make a big part of the
+> >> processor unused).
+> > 
+> > Actually I see one ... and I can bet it will happen.
+> > 
+> > So you create that shiny new ARMv8 compliant CPU, 8 cores, 2GHz. HTC
+> > will want to use it with 1GB of RAM... and put around exiting OMAP
+> > perihepals.
 > 
-> However, there's nothing that prevents you from running qemu with a
-> removable SCSI disk, and then resizing it.  I would like this to work,
-> because SBC allows it and there's no reason why it shouldn't.
+> But that's why we have Eagle (A15). It's a very capable 32-bit design
+> from ARM and far more sensible for such designs. You can easily build
+> something with a few A15 clusters in it, as we're already seeing.
 
-There's no such thing in the market today as a removable disk that's
-resizeable.  Removable disks are for things like backup cartridges and
-ageing jazz drives.  Worse: most removeable devices today are USB card
-readers whose standards compliance varies from iffy to non existent.
-Resizeable disks are currently the province of storage arrays.
+Right, I would say that with any CPU core more powerful than this one
+or with more than a few of these, you will also have trouble coming
+up with workloads that really require the CPU performance but don't
+also require a 64 bit virtual address space in either user space
+or kernel.
 
-We don't do stuff just because the standards allows it; just the
-opposite: we try to use the smallest implementations from the standards
-we can get away with just because the more things we do, the more
-exceptions and broken devices we come across.
-
-James
-
-
-James
-
+	Arnd
 
