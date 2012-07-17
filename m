@@ -1,81 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754760Ab2GQIX7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 04:23:59 -0400
-Received: from mga02.intel.com ([134.134.136.20]:37787 "EHLO mga02.intel.com"
+	id S1754733Ab2GQI1z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 04:27:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54043 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753961Ab2GQIXz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 04:23:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="167311430"
-From: Tomas Winkler <tomas.winkler@intel.com>
-To: gregkh@linuxfoundation.org
-Cc: arnd@arndb.de, alan@linux.intel.com, linux-kernel@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next] mei: use module_pci_driver
-Date: Tue, 17 Jul 2012 11:23:46 +0300
-Message-Id: <1342513427-10076-1-git-send-email-tomas.winkler@intel.com>
-X-Mailer: git-send-email 1.7.4.4
+	id S1750976Ab2GQI1u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 04:27:50 -0400
+Message-ID: <50052276.2080906@redhat.com>
+Date: Tue, 17 Jul 2012 16:29:42 +0800
+From: Asias He <asias@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Stefan Hajnoczi <stefanha@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-aio@kvack.org, kvm@vger.kernel.org,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        virtualization@lists.linux-foundation.org,
+        Benjamin LaHaise <bcrl@kvack.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 0/5] Add vhost-blk support
+References: <1342107302-28116-1-git-send-email-asias@redhat.com> <CAJSP0QWgmXns89se+xdGgM6i1_hsfVWPQ8caHua9d-dDA4CTDQ@mail.gmail.com>
+In-Reply-To: <CAJSP0QWgmXns89se+xdGgM6i1_hsfVWPQ8caHua9d-dDA4CTDQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
----
- drivers/misc/mei/main.c |   39 +--------------------------------------
- 1 files changed, 1 insertions(+), 38 deletions(-)
+On 07/16/2012 07:58 PM, Stefan Hajnoczi wrote:
+> On Thu, Jul 12, 2012 at 4:35 PM, Asias He <asias@redhat.com> wrote:
+>> This patchset adds vhost-blk support. vhost-blk is a in kernel virito-blk
+>> device accelerator. Compared to userspace virtio-blk implementation, vhost-blk
+>> gives about 5% to 15% performance improvement.
+>
+> Why is it 5-15% faster?  vhost-blk and the userspace virtio-blk you
+> benchmarked should be doing basically the same thing:
+>
+> 1. An eventfd file descriptor is signalled when the vring has new
+> requests available from the guest.
+> 2. A thread wakes up and processes the virtqueue.
+> 3. Linux AIO is used to issue host I/O.
+> 4. An interrupt is injected into the guest.
 
-diff --git a/drivers/misc/mei/main.c b/drivers/misc/mei/main.c
-index 0d98c2e..0923302 100644
---- a/drivers/misc/mei/main.c
-+++ b/drivers/misc/mei/main.c
-@@ -1182,44 +1182,7 @@ static struct pci_driver mei_driver = {
- 	.driver.pm = MEI_PM_OPS,
- };
- 
--/**
-- * mei_init_module - Driver Registration Routine
-- *
-- * mei_init_module is the first routine called when the driver is
-- * loaded. All it does is to register with the PCI subsystem.
-- *
-- * returns 0 on success, <0 on failure.
-- */
--static int __init mei_init_module(void)
--{
--	int ret;
--
--	pr_debug("loading.\n");
--	/* init pci module */
--	ret = pci_register_driver(&mei_driver);
--	if (ret < 0)
--		pr_err("error registering driver.\n");
--
--	return ret;
--}
--
--module_init(mei_init_module);
--
--/**
-- * mei_exit_module - Driver Exit Cleanup Routine
-- *
-- * mei_exit_module is called just before the driver is removed
-- * from memory.
-- */
--static void __exit mei_exit_module(void)
--{
--	pci_unregister_driver(&mei_driver);
--
--	pr_debug("unloaded successfully.\n");
--}
--
--module_exit(mei_exit_module);
--
-+module_pci_driver(mei_driver);
- 
- MODULE_AUTHOR("Intel Corporation");
- MODULE_DESCRIPTION("Intel(R) Management Engine Interface");
+Yes. This is how both of them work. Though, there are some differences 
+in details. e.g.
+
+In vhost-blk, we use the vhost's work infrastructure to handle the 
+requests. In kvm tool, we use a dedicated thread.
+In vhost-blk, we use irqfd to inject interrupts. In kvm tool, we use 
+ioctl to inject interrupts.
+
+
+> Does the vhost-blk implementation do anything fundamentally different
+> from userspace?  Where is the overhead that userspace virtio-blk has?
+
+
+Currently, no. But we could play with bio directly in vhost-blk as 
+Christoph suggested which could make the IO path from guest to host's 
+real storage even shorter in vhost-blk.
+
+I've been trying my best to reduce the overhead of virtio-blk at kvm 
+tool side. I do not see any significant overhead out there. Compared to 
+vhost-blk, the overhead we have in userspace virito-blk is syscalls. In 
+each IO request, we have
+
+    epoll_wait() & read(): wait for the eventfd which guest notifies us
+    io_submit(): submit the aio
+    read(): read the aio complete eventfd
+    io_getevents(): reap the aio complete result
+    ioctl(): trigger the interrupt
+
+So, vhost-blk at least saves ~6 syscalls for us in each request.
+
+> I'm asking because it would be beneficial to fix the overhead
+> (especially it that could speed up all userspace applications) instead
+> of adding a special-purpose kernel module to work around the overhead.
+
+I guess you mean qemu here. Yes, in theory, qemu's block layer can be 
+improved to achieve similar performance as vhost-blk or kvm tool's 
+userspace virito-blk has. But I think it makes no sense to prevent one 
+solution becase there is another in theory solution called: we can do 
+similar in qemu.
+
+What do you mean by specail-purpose here, we need general-purpose kernel
+module? Is vhost-net a special purpose kernel module?  Is xen-blkback a 
+special-purpose kernel module? And I think vhost-blk is beneficial to 
+qemu too, as well as any other kvm host side implementation.
+
 -- 
-1.7.4.4
+Asias
+
 
