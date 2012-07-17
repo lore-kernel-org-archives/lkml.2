@@ -1,89 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754819Ab2GQIwM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 04:52:12 -0400
-Received: from e06smtp18.uk.ibm.com ([195.75.94.114]:52662 "EHLO
-	e06smtp18.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754649Ab2GQIwK (ORCPT
+	id S1754868Ab2GQIwZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 04:52:25 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:55583 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753772Ab2GQIwT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 04:52:10 -0400
-Date: Tue, 17 Jul 2012 10:35:12 +0200 (CEST)
-From: Sebastian Ott <sebott@linux.vnet.ibm.com>
-X-X-Sender: sebott@c4eb
-To: Ming Lei <ming.lei@canonical.com>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] driver core: move uevent call to driver_register
-In-Reply-To: <CACVXFVM+u+o=R0M31mqqzmtRN4YvqgUKvJZKfBYtgH15JDh3bQ@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1207171031190.1650@c4eb>
-References: <alpine.LFD.2.02.1207021900100.1784@c4eb>  <CACVXFVM+u+o=R0M31mqqzmtRN4YvqgUKvJZKfBYtgH15JDh3bQ@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-Organization: =?ISO-8859-15?Q?=22IBM_Deutschland_Research_&_Development_GmbH_=2F_Vorsitzende_des_Aufsichtsrats=3A_Martina_Koederitz_Gesch=E4ftsf=FChrung=3A_Dirk_Wittkopp_Sitz_der_Gesellschaft=3A_B=F6blingen_=2F_Registergericht?=
- =?ISO-8859-15?Q?=3A_Amtsgericht_Stuttgart=2C_HRB_243294=22?=
+	Tue, 17 Jul 2012 04:52:19 -0400
+Message-ID: <500527BA.9000001@redhat.com>
+Date: Tue, 17 Jul 2012 10:52:10 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-x-cbid: 12071708-6892-0000-0000-000002747A13
+To: Asias He <asias@redhat.com>
+CC: Stefan Hajnoczi <stefanha@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-aio@kvack.org, kvm@vger.kernel.org,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        virtualization@lists.linux-foundation.org,
+        Benjamin LaHaise <bcrl@kvack.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 0/5] Add vhost-blk support
+References: <1342107302-28116-1-git-send-email-asias@redhat.com> <CAJSP0QWgmXns89se+xdGgM6i1_hsfVWPQ8caHua9d-dDA4CTDQ@mail.gmail.com> <50052276.2080906@redhat.com>
+In-Reply-To: <50052276.2080906@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Il 17/07/2012 10:29, Asias He ha scritto:
+> So, vhost-blk at least saves ~6 syscalls for us in each request. 
 
-On Tue, 17 Jul 2012, Ming Lei wrote:
-> On Tue, Jul 3, 2012 at 1:08 AM, Sebastian Ott <sebott@linux.vnet.ibm.com> wrote:
-> 
-> > --- a/drivers/base/driver.c
-> > +++ b/drivers/base/driver.c
-> > @@ -187,6 +187,9 @@ int driver_register(struct device_driver
-> >         ret = driver_add_groups(drv, drv->groups);
-> >         if (ret)
-> >                 bus_remove_driver(drv);
-> > +
-> > +       kobject_uevent(&drv->p->kobj, KOBJ_ADD);
-> 
-> You should just send the uevent if 'ret' equals to zero., otherwise
-> OOPS may be triggered by kobject_uevent() after the 'drv' has been
-> removed.
+Are they really 6?  If I/O is coalesced by a factor of 3, for example
+(i.e. each exit processes 3 requests), it's really 2 syscalls per request.
 
-oh..sorry. Missed that. Thanks for catching it!
-Updated Patch:
+Also, is there anything we can improve?  Perhaps we can modify epoll and
+ask it to clear the eventfd for us (would save 2 reads)?  Or
+io_getevents (would save 1)?
 
-[PATCH] driver core: move uevent call to driver_register
+> I guess you mean qemu here. Yes, in theory, qemu's block layer can be
+> improved to achieve similar performance as vhost-blk or kvm tool's
+> userspace virito-blk has. But I think it makes no sense to prevent one
+> solution becase there is another in theory solution called: we can do
+> similar in qemu.
 
-Device driver attribute groups are created after userspace is notified
-via an add event. Fix this by moving the kobject_uevent call to
-driver_register after the attribute groups are added.
+It depends.  Like vhost-scsi, vhost-blk has the problem of a crippled
+feature set: no support for block device formats, non-raw protocols,
+etc.  This makes it different from vhost-net.
 
-Signed-off-by: Sebastian Ott <sebott@linux.vnet.ibm.com>
----
- drivers/base/bus.c    |    1 -
- drivers/base/driver.c |    6 +++++-
- 2 files changed, 5 insertions(+), 2 deletions(-)
+So it begs the question, is it going to be used in production, or just a
+useful reference tool?
 
---- a/drivers/base/bus.c
-+++ b/drivers/base/bus.c
-@@ -743,7 +743,6 @@ int bus_add_driver(struct device_driver 
- 		}
- 	}
- 
--	kobject_uevent(&priv->kobj, KOBJ_ADD);
- 	return 0;
- 
- out_unregister:
---- a/drivers/base/driver.c
-+++ b/drivers/base/driver.c
-@@ -185,8 +185,12 @@ int driver_register(struct device_driver
- 	if (ret)
- 		return ret;
- 	ret = driver_add_groups(drv, drv->groups);
--	if (ret)
-+	if (ret) {
- 		bus_remove_driver(drv);
-+		return ret;
-+	}
-+	kobject_uevent(&drv->p->kobj, KOBJ_ADD);
-+
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(driver_register);
-
+Paolo
