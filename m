@@ -1,101 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757402Ab2GQWwy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 18:52:54 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64756 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757179Ab2GQWuE (ORCPT
+	id S1753503Ab2GQWyW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 18:54:22 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:37283 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932205Ab2GQWyT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 18:50:04 -0400
-Subject: Patch "ntp: Correct TAI offset during leap second" has been added to the 3.0-stable tree
-To: johnstul@us.ibm.com, gregkh@linuxfoundation.org, john.stultz@linaro.org,
-        linux-kernel@vger.kernel.org, prarit@redhat.com,
-        richardcochran@gmail.com, tglx@linutronix.de
-Cc: <stable@vger.kernel.org>, <stable-commits@vger.kernel.org>
-From: <gregkh@linuxfoundation.org>
-Date: Tue, 17 Jul 2012 15:49:56 -0700
-In-Reply-To: <1342546438-17534-3-git-send-email-johnstul@us.ibm.com>
-Message-ID: <13425653961814@kroah.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=ASCII
-Content-Transfer-Encoding: 8bit
+	Tue, 17 Jul 2012 18:54:19 -0400
+X-AuditID: cbfee61b-b7f566d000005c8a-b3-5005ed1a83fc
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Vivek Gautam'" <gautam.vivek@samsung.com>, greg@kroah.com,
+        stern@rowland.harvard.edu, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Cc: l.majewski@samsung.com, a.kesavan@samsung.com, prashanth.g@samsung.com,
+        kmpark@infradead.org, joshi@samsung.com, olofj@google.com,
+        thomas.abraham@linaro.org, sshtylyov@mvista.com,
+        jy0922.shim@samsung.com, "'Jingoo Han'" <jg1.han@samsung.com>
+References: <1342523006-8379-1-git-send-email-gautam.vivek@samsung.com>
+ <1342523006-8379-2-git-send-email-gautam.vivek@samsung.com>
+In-reply-to: <1342523006-8379-2-git-send-email-gautam.vivek@samsung.com>
+Subject: Re: [PATCH RESEND v4] USB: ehci-s5p: Add vbus setup function to the
+ s5p ehci glue layer
+Date: Wed, 18 Jul 2012 07:54:17 +0900
+Message-id: <000601cd646f$18a86910$49f93b30$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac1kCcg0tjpHrZD3RausWpnKM6BZ6QAZSJgg
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCLMWRmVeSWpSXmKPExsVy+t9jAV2pt6wBBo3zOCwu75rDZrFoWSuz
+	A5PH501yAYxRXDYpqTmZZalF+nYJXBn/VuoXtDJX9K+YyNjAeICpi5GTQ0LARGLW6RYWCFtM
+	4sK99WxdjFwcQgKLGCW+3z/MDOH8YpTY+gQkw8nBJqAm8eXLYXaQhIjALkaJA0smgFUxC/xk
+	lLh+sBOqv5VR4tzXV8wgLZwCHhKPJz1iBbGFBZIkJh48BLacRUBVom3xXHYQm1fAVmLXmVlM
+	ELagxI/J98COYhbQkli/8zgThC0vsXnNW6CZHEDHqks8+qsLEhYRMJI4cGIOVLmIxL4X7xgn
+	MArNQjJpFpJJs5BMmoWkZQEjyypG0dSC5ILipPRcI73ixNzi0rx0veT83E2M4LB+Jr2DcVWD
+	xSFGAQ5GJR5ejnusAUKsiWXFlbmHGCU4mJVEeAWfA4V4UxIrq1KL8uOLSnNSiw8xSnOwKInz
+	mnh/9RcSSE8sSc1OTS1ILYLJMnFwSjUwOpbzqvBaT/v74sE8aV/PuLs18k/XzbA+/8rwlU/k
+	xsIZO7sVmYyvnj8qcvZP9pxL8bcWvFLYY2oYUlNy5uJEhokCFcevLrvPYCbf4SCn/Pbgsgc8
+	Dxe+5xRO/ZT54e0it7MfFL6cSay4/rwm9fInjbnpPvVO1YGXLC2e/NPh9DzRvi985+8bEUos
+	xRmJhlrMRcWJAIDYZaZnAgAA
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tuesday, July 17, 2012 8:03 PM, Vivek Gautam wrote:
+> 
+> This patch retrieves and configures the vbus control gpio via
+> the device tree. The suspend/resume callbacks will be later
+> modified for vbus control.
+> 
+> Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
+> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
 
-This is a note to let you know that I've just added the patch titled
-
-    ntp: Correct TAI offset during leap second
-
-to the 3.0-stable tree which can be found at:
-    http://www.kernel.org/git/?p=linux/kernel/git/stable/stable-queue.git;a=summary
-
-The filename of the patch is:
-     ntp-correct-tai-offset-during-leap-second.patch
-and it can be found in the queue-3.0 subdirectory.
-
-If you, or anyone else, feels it should not be added to the stable tree,
-please let <stable@vger.kernel.org> know about it.
+Acked-by: Jingoo Han <jg1.han@samsung.com>
 
 
->From johnstul@us.ibm.com  Tue Jul 17 15:24:12 2012
-From: John Stultz <johnstul@us.ibm.com>
-Date: Tue, 17 Jul 2012 13:33:49 -0400
-Subject: ntp: Correct TAI offset during leap second
-To: stable@vger.kernel.org
-Cc: Richard Cochran <richardcochran@gmail.com>, Prarit Bhargava <prarit@redhat.com>, Thomas Gleixner <tglx@linutronix.de>, Linux Kernel <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>
-Message-ID: <1342546438-17534-3-git-send-email-johnstul@us.ibm.com>
-
-
-From: Richard Cochran <richardcochran@gmail.com>
-
-This is a backport of dd48d708ff3e917f6d6b6c2b696c3f18c019feed
-
-When repeating a UTC time value during a leap second (when the UTC
-time should be 23:59:60), the TAI timescale should not stop. The kernel
-NTP code increments the TAI offset one second too late. This patch fixes
-the issue by incrementing the offset during the leap second itself.
-
-Signed-off-by: Richard Cochran <richardcochran@gmail.com>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- kernel/time/ntp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/kernel/time/ntp.c
-+++ b/kernel/time/ntp.c
-@@ -378,6 +378,7 @@ int second_overflow(unsigned long secs)
- 		if (secs % 86400 == 0) {
- 			leap = -1;
- 			time_state = TIME_OOP;
-+			time_tai++;
- 			printk(KERN_NOTICE
- 				"Clock: inserting leap second 23:59:60 UTC\n");
- 		}
-@@ -392,7 +393,6 @@ int second_overflow(unsigned long secs)
- 		}
- 		break;
- 	case TIME_OOP:
--		time_tai++;
- 		time_state = TIME_WAIT;
- 		break;
- 
-
-
-Patches currently in stable-queue which might be from johnstul@us.ibm.com are
-
-queue-3.0/timekeeping-fix-leapsecond-triggered-load-spike-issue.patch
-queue-3.0/time-move-common-updates-to-a-function.patch
-queue-3.0/timekeeping-fix-clock_monotonic-inconsistency-during-leapsecond.patch
-queue-3.0/hrtimer-update-hrtimer-base-offsets-each-hrtimer_interrupt.patch
-queue-3.0/timekeeping-add-missing-update-call-in-timekeeping_resume.patch
-queue-3.0/hrtimers-move-lock-held-region-in-hrtimer_interrupt.patch
-queue-3.0/hrtimer-provide-clock_was_set_delayed.patch
-queue-3.0/ntp-fix-leap-second-hrtimer-livelock.patch
-queue-3.0/timekeeping-provide-hrtimer-update-function.patch
-queue-3.0/timekeeping-maintain-ktime_t-based-offsets-for-hrtimers.patch
-queue-3.0/ntp-correct-tai-offset-during-leap-second.patch
