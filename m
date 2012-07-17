@@ -1,47 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752368Ab2GQSYW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 14:24:22 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:58786 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751014Ab2GQSYT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 14:24:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <1340836334-20427-1-git-send-email-stigge@antcom.de>
-References: <1340836334-20427-1-git-send-email-stigge@antcom.de>
-Date: Tue, 17 Jul 2012 20:24:18 +0200
-Message-ID: <CACRpkdYBBa8BZMeGK0kiXNysn_ErpyKhTtbK8yFxf+JyMSndFw@mail.gmail.com>
-Subject: Re: [PATCH RESEND] gpio: of_get_named_gpio_flags() return
- -EPROBE_DEFER if GPIO not yet available
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Roland Stigge <stigge@antcom.de>
-Cc: cjb@laptop.org, grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        rmk+kernel@arm.linux.org.uk, ulf.hansson@stericsson.com,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        aletes.xgr@gmail.com, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752586Ab2GQSZI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 14:25:08 -0400
+Received: from plane.gmane.org ([80.91.229.3]:50285 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750847Ab2GQSZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 14:25:04 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Galen Seitz <galens@seitzassoc.com>
+Subject: Re: PCI ACPI/IRQ-routing broken on H77 chipset + Ivy Bridge (kernel 3.5-rc7 and earlier)
+Date: Tue, 17 Jul 2012 18:01:32 +0000 (UTC)
+Message-ID: <loom.20120717T195910-7@post.gmane.org>
+References: <5002BC55.3050107@gmx.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 216.99.217.243 (Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:13.0) Gecko/20100101 Firefox/13.0.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 28, 2012 at 12:32 AM, Roland Stigge <stigge@antcom.de> wrote:
+Malte Schröder <maltesch <at> gmx.de> writes:
+> 
+> Hello,
+> this is yet another try to get someone to look at this ;)
+> 
+> I can't get PCI-devices to work on my DH77KC mainboard. I tested this
+> using an AVM B1 ISDN card, a Fritz!PCI card and an old 3Com 905c NIC.
+> I attached some dumps in case it helps. The CPU is a Core i7 3770.
+> 
+> PCI hardware is detected by the kernel, but it gives IRQ errors. Using
+> irqpoll allows the PCI card to somewhat work, but it is unreliable.
+> 
+> There are some reports in Intel's support forums that also report
+> PCI-problems with this mainboard, but Intel doesn't seem to be
+> interested. So I hope this is something that is fixable on the kernel side.
+> 
+> If there is more information needed, please let me know.
+> 
 
-> of_get_named_gpio_flags() and of_get_named_gpio() return -EPROBE_DEFER if the
-> respective GPIO is not (yet) available. This is useful if driver's probe()
-> functions try to get a GPIO whose controller isn't probed yet. Thus, the driver
-> can be probed again later on.
->
-> The function still returns -EINVAL on other errors (parse error or node doesn't
-> exist). This way, the case of an optional/intentionally missing GPIO is handled
-> appropriately.
->
-> Signed-off-by: Roland Stigge <stigge@antcom.de>
+I was having similar problems with my DH77KC.  I discovered that the
+BIOS interrupt routing tables for the conventional PCI slots are incorrect.
+See the discussion here:
+https://bugzilla.kernel.org/show_bug.cgi?id=43238
 
-Patch applied, if all gpio stuff shall defer properly in v3.6 we need this
-so let's do some testing in -next!
+Galen Seitz
 
-Would be nice to get some ACK besides my own...
 
-Yours,
-Linus Walleij
+
+
