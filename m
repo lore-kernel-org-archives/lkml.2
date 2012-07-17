@@ -1,44 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754522Ab2GQJSm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 05:18:42 -0400
-Received: from mga01.intel.com ([192.55.52.88]:43487 "EHLO mga01.intel.com"
+	id S1754680Ab2GQJTU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 05:19:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23907 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751466Ab2GQJSj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 05:18:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="178589724"
-Date: Tue, 17 Jul 2012 11:18:44 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Richard Zhao <richard.zhao@freescale.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        paulliu@debian.org, shawn.guo@linaro.org
-Subject: Re: [PATCH] mfd: anatop: matches should be NULL when populate child
- devices
-Message-ID: <20120717091844.GM20652@sortiz-mobl>
-References: <1342428957-14321-1-git-send-email-richard.zhao@freescale.com>
+	id S1751466Ab2GQJTS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 05:19:18 -0400
+Message-ID: <50052E7E.6020100@redhat.com>
+Date: Tue, 17 Jul 2012 17:21:02 +0800
+From: Asias He <asias@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1342428957-14321-1-git-send-email-richard.zhao@freescale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: Stefan Hajnoczi <stefanha@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-aio@kvack.org, kvm@vger.kernel.org,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        virtualization@lists.linux-foundation.org,
+        Benjamin LaHaise <bcrl@kvack.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 0/5] Add vhost-blk support
+References: <1342107302-28116-1-git-send-email-asias@redhat.com> <CAJSP0QWgmXns89se+xdGgM6i1_hsfVWPQ8caHua9d-dDA4CTDQ@mail.gmail.com> <50052276.2080906@redhat.com> <500527BA.9000001@redhat.com>
+In-Reply-To: <500527BA.9000001@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Richard,
+On 07/17/2012 04:52 PM, Paolo Bonzini wrote:
+> Il 17/07/2012 10:29, Asias He ha scritto:
+>> So, vhost-blk at least saves ~6 syscalls for us in each request.
+>
+> Are they really 6?  If I/O is coalesced by a factor of 3, for example
+> (i.e. each exit processes 3 requests), it's really 2 syscalls per request.
 
-On Mon, Jul 16, 2012 at 04:55:57PM +0800, Richard Zhao wrote:
-> Signed-off-by: Richard Zhao <richard.zhao@freescale.com>
-> ---
->  drivers/mfd/anatop-mfd.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-Patch applied, thanks.
+Well. I am counting the number of syscalls in one notify and response 
+process. Sure the IO can be coalesced.
 
-Cheers,
-Samuel.
+> Also, is there anything we can improve?  Perhaps we can modify epoll and
+> ask it to clear the eventfd for us (would save 2 reads)?  Or
+> io_getevents (would save 1)?
+>
+>> I guess you mean qemu here. Yes, in theory, qemu's block layer can be
+>> improved to achieve similar performance as vhost-blk or kvm tool's
+>> userspace virito-blk has. But I think it makes no sense to prevent one
+>> solution becase there is another in theory solution called: we can do
+>> similar in qemu.
+>
+> It depends.  Like vhost-scsi, vhost-blk has the problem of a crippled
+> feature set: no support for block device formats, non-raw protocols,
+> etc.  This makes it different from vhost-net.
+
+Data-plane qemu also has this cripppled feature set problem, no? Does 
+user always choose to use block devices format like qcow2? What if they 
+prefer raw image or raw block device?
+
+>
+> So it begs the question, is it going to be used in production, or just a
+> useful reference tool?
+
+This should be decided by user, I can not speak for them. What is wrong 
+with adding one option for user which they can decide?
 
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Asias
+
+
