@@ -1,43 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756698Ab2GQUzp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 16:55:45 -0400
-Received: from mga03.intel.com ([143.182.124.21]:7912 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751717Ab2GQUzn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 16:55:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="123600403"
-Date: Tue, 17 Jul 2012 22:12:42 +0100
-From: Alan Cox <alan@linux.intel.com>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: dkline@redhat.com, Dave Airlie <airlied@redhat.com>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        kernel-team@fedoraproject.org
-Subject: Re: gma500 opregion/power init order backtrace
-Message-ID: <20120717221242.315f8dfe@bob.linux.org.uk>
-In-Reply-To: <20120717192614.GB18229@zod.bos.redhat.com>
-References: <20120717192614.GB18229@zod.bos.redhat.com>
-Organization: Intel
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
- Registered office Pipers Way, Swindon, SN3 1RJ
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756703Ab2GQU7K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 16:59:10 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:58929 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756617Ab2GQU7I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 16:59:08 -0400
+Date: Tue, 17 Jul 2012 13:58:56 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Fengguang Wu <wfg@linux.intel.com>
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: rcu_dyntick and suspicious RCU usage
+Message-ID: <20120717205856.GF11150@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120709135637.GA26040@localhost>
+ <20120709145724.GA27095@localhost>
+ <20120710044700.GA9462@localhost>
+ <20120711074924.GD3819@linux.vnet.ibm.com>
+ <20120712164308.GA31584@linux.vnet.ibm.com>
+ <20120712165738.GA21630@localhost>
+ <20120712170242.GB31396@linux.vnet.ibm.com>
+ <20120713091230.GA20208@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120713091230.GA20208@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12071720-6148-0000-0000-000007BF4925
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I'm wondering if the gma_power_init call can be moved up before
-> chip_setup is called.  Seems so, but I thought I would ping you to see
-> if you've seen this already.
+On Fri, Jul 13, 2012 at 05:12:30PM +0800, Fengguang Wu wrote:
+> On Thu, Jul 12, 2012 at 10:02:42AM -0700, Paul E. McKenney wrote:
+> > On Fri, Jul 13, 2012 at 12:57:38AM +0800, Fengguang Wu wrote:
+> > > On Thu, Jul 12, 2012 at 09:43:08AM -0700, Paul E. McKenney wrote:
+> > > > On Wed, Jul 11, 2012 at 12:49:24AM -0700, Paul E. McKenney wrote:
+> > > > > On Tue, Jul 10, 2012 at 12:47:00PM +0800, Fengguang Wu wrote:
+> > > > > > Hi Paul,
+> > > > > > 
+> > > > > > Fortunately this bug is bisectable and the first bad commit is:
+> > > > > > 
+> > > > > >         commit 9b2e4f1880b789be1f24f9684f7a54b90310b5c0
+> > > > > >         Author: Paul E. McKenney <paul.mckenney@linaro.org>
+> > > > > >         Date:   Fri Sep 30 12:10:22 2011 -0700
+> > > > > > 
+> > > > > >             rcu: Track idleness independent of idle tasks
+> > > > > 
+> > > > > OK, there is a problem in TINY_RCU's handling of dyntick-idle: it
+> > > > > traces while in idle.  The confusion on my part was that in TREE_RCU,
+> > > > > the nesting and dyntick-idle indication are different, while in
+> > > > > TINY_RCU they are one and the same.
+> > > > > 
+> > > > > Does the following patch help?
+> > > > 
+> > > > This one failed in my testing.  Please see the end for the fixed
+> > > > version, with on small but important change.
+> > > 
+> > > It worked, thanks!
+> > > 
+> > > Tested-by: Fengguang Wu <wfg@linux.intel.com>
+> > 
+> > Very good!  (And please ignore my resend of the same patch.)
+> > 
+> > I will queue this.
+> 
+> Will you recommend it for -stable? It impacts 3.3/3.4. I tested it on
+> 3.4 and it works fine. However for 3.3, the patch cannot apply cleanly.
 
-Fixed in the patches that went to Linus.
+If someone hits it in a real workload, I might consider it.  I currently
+have it queued for 3.7.
 
-I don't have the ACPI backlight working on a lot of systems and don't
-know why to be honest but the native backlight should work. Of course if
-the acpi keys are plumbed into the ACPI backlight it's less useful 8)
+							Thanx, Paul
 
-Alan
