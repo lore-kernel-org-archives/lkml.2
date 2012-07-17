@@ -1,98 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753073Ab2GQLdg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 07:33:36 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:61606 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751014Ab2GQLde (ORCPT
+	id S1752675Ab2GQLgg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 07:36:36 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:56774 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750964Ab2GQLgf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 07:33:34 -0400
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-ia64@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-next@vger.kernel.org, "Stephen Rothwell" <sfr@canb.auug.org.au>
-Cc: Sedat Dilek <sedat.dilek@gmail.com>
-Subject: [PATCH -next] random: Remove remaining relicts of rand_initialize_irq()
-Date: Tue, 17 Jul 2012 13:33:13 +0200
-Message-Id: <1342524793-2522-1-git-send-email-sedat.dilek@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 17 Jul 2012 07:36:35 -0400
+MIME-Version: 1.0
+In-Reply-To: <50052276.2080906@redhat.com>
+References: <1342107302-28116-1-git-send-email-asias@redhat.com>
+	<CAJSP0QWgmXns89se+xdGgM6i1_hsfVWPQ8caHua9d-dDA4CTDQ@mail.gmail.com>
+	<50052276.2080906@redhat.com>
+Date: Tue, 17 Jul 2012 12:36:32 +0100
+Message-ID: <CAJSP0QX4VqP+_YdfrqHtK5GrB+c8xmziBr=k9PE1WeyWWH_cgQ@mail.gmail.com>
+Subject: Re: [PATCH 0/5] Add vhost-blk support
+From: Stefan Hajnoczi <stefanha@gmail.com>
+To: Asias He <asias@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org, kvm@vger.kernel.org,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        virtualization@lists.linux-foundation.org,
+        Benjamin LaHaise <bcrl@kvack.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rand_initialize_irq() was removed here:
+On Tue, Jul 17, 2012 at 9:29 AM, Asias He <asias@redhat.com> wrote:
+> On 07/16/2012 07:58 PM, Stefan Hajnoczi wrote:
+>> Does the vhost-blk implementation do anything fundamentally different
+>> from userspace?  Where is the overhead that userspace virtio-blk has?
+>
+>
+>
+> Currently, no. But we could play with bio directly in vhost-blk as Christoph
+> suggested which could make the IO path from guest to host's real storage
+> even shorter in vhost-blk.
 
-commit 946672f548682905d8ecdab33bb6e2c705418505
-"random: remove rand_initialize_irq()"
+Wait :).  My point is that writing new code without systematically
+investigating performance means that we're essentially throwing random
+things and seeing what sticks.
 
-The AB3100 mfd-driver is the only driver still using it and breaks
-with the following error-messages in linux-next (next-20120717):
-...
-drivers/built-in.o: In function `ab3100_probe':
-ab3100-core.c:(.devinit.text+0xbf97): undefined reference to `rand_initialize_irq'
+Adding bio mode would make vhost-blk and kvmtool more different.
+It'll probably make vhost-blk slightly faster but harder to compare
+against kvmtool.  It's easier to start profiling before making that
+change.
 
-Fix this issue and remove all remaining relicts of rand_initialize_irq().
+The reason I said "special-purpose kernel module" is because kvmtool
+could be suffering from a bottleneck that can be fixed.  Other
+userspace applications would also benefit from that fix - it would be
+generally useful.  Adding a vhost-blk kernel module works around this
+but only benefits KVM specifically.
 
-Might be worth to fold-in these changes into the original commit.
-
-Tested against linux-next (next-20120717) on a Ubuntu/precise AMD64 host.
-
-[ v2: Polish up subject and commit message ]
-
-Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
----
- arch/ia64/kernel/irq_ia64.c |    1 -
- drivers/mfd/ab3100-core.c   |    2 --
- include/linux/random.h      |    2 --
- 3 files changed, 5 deletions(-)
-
-diff --git a/arch/ia64/kernel/irq_ia64.c b/arch/ia64/kernel/irq_ia64.c
-index 5c3e088..1034884 100644
---- a/arch/ia64/kernel/irq_ia64.c
-+++ b/arch/ia64/kernel/irq_ia64.c
-@@ -23,7 +23,6 @@
- #include <linux/ioport.h>
- #include <linux/kernel_stat.h>
- #include <linux/ptrace.h>
--#include <linux/random.h>	/* for rand_initialize_irq() */
- #include <linux/signal.h>
- #include <linux/smp.h>
- #include <linux/threads.h>
-diff --git a/drivers/mfd/ab3100-core.c b/drivers/mfd/ab3100-core.c
-index e799050..78fca29 100644
---- a/drivers/mfd/ab3100-core.c
-+++ b/drivers/mfd/ab3100-core.c
-@@ -934,8 +934,6 @@ static int __devinit ab3100_probe(struct i2c_client *client,
- 					IRQF_ONESHOT, "ab3100-core", ab3100);
- 	if (err)
- 		goto exit_no_irq;
--	/* This real unpredictable IRQ is of course sampled for entropy */
--	rand_initialize_irq(client->irq);
- 
- 	err = abx500_register_ops(&client->dev, &ab3100_ops);
- 	if (err)
-diff --git a/include/linux/random.h b/include/linux/random.h
-index 29e217a..ac621ce 100644
---- a/include/linux/random.h
-+++ b/include/linux/random.h
-@@ -48,8 +48,6 @@ struct rnd_state {
- 
- #ifdef __KERNEL__
- 
--extern void rand_initialize_irq(int irq);
--
- extern void add_device_randomness(const void *, unsigned int);
- extern void add_input_randomness(unsigned int type, unsigned int code,
- 				 unsigned int value);
--- 
-1.7.9.5
-
+Stefan
