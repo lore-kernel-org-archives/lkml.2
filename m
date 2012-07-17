@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755352Ab2GQQcz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 12:32:55 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:33622 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752271Ab2GQQcx (ORCPT
+	id S1755634Ab2GQQee (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 12:34:34 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:37987 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752473Ab2GQQec (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 12:32:53 -0400
-Date: Tue, 17 Jul 2012 09:32:48 -0700
+	Tue, 17 Jul 2012 12:34:32 -0400
+Date: Tue, 17 Jul 2012 09:34:27 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
-To: Joe Perches <joe@perches.com>
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org,
-        virtualization@lists.linux-foundation.org, olaf@aepfle.de,
-        apw@canonical.com
-Subject: Re: [PATCH 01/15] Drivers: hv: Format GUIDS as per MSFT standards
-Message-ID: <20120717163248.GA29345@kroah.com>
-References: <1342297930-12607-1-git-send-email-kys@microsoft.com>
- <1342298060-12662-1-git-send-email-kys@microsoft.com>
- <20120717160402.GA20481@kroah.com>
- <1342541966.15318.4.camel@joe2Laptop>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: thomas.abraham@linaro.org, broonie@opensource.wolfsonmicro.com,
+        grant.likely@secretlab.ca, sameo@linux.intel.com,
+        myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RESEND PATCH 1/2] mfd: add irq domain support for max8997
+ interrupts
+Message-ID: <20120717163427.GA3756@kroah.com>
+References: <1341187375-16333-1-git-send-email-cw00.choi@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1342541966.15318.4.camel@joe2Laptop>
+In-Reply-To: <1341187375-16333-1-git-send-email-cw00.choi@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 17, 2012 at 09:19:26AM -0700, Joe Perches wrote:
-> On Tue, 2012-07-17 at 09:04 -0700, Greg KH wrote:
-> > On Sat, Jul 14, 2012 at 01:34:06PM -0700, K. Y. Srinivasan wrote:
-> > > Format GUIDS as per MSFT standard. This makes interacting with MSFT
-> > > tool stack easier.
-> []
-> > > diff --git a/drivers/hv/vmbus_drv.c b/drivers/hv/vmbus_drv.c
-> []
-> > > @@ -147,7 +147,7 @@ static ssize_t vmbus_show_device_attr(struct device *dev,
-> > >  
-> > >  	if (!strcmp(dev_attr->attr.name, "class_id")) {
-> > >  		ret = sprintf(buf, "{%02x%02x%02x%02x-%02x%02x-%02x%02x-"
-> > > -			       "%02x%02x%02x%02x%02x%02x%02x%02x}\n",
-> > > +			       "%02x%02x-%02x%02x%02x%02x%02x%02x}\n",
-> > 
-> > As Joe pointed out, please just use the printk modifier the kernel
-> > already has for GUIDS, and don't roll your own here.  That will work
-> > properly for you, right?
+On Mon, Jul 02, 2012 at 09:02:55AM +0900, Chanwoo Choi wrote:
+> From: Thomas Abraham <thomas.abraham@linaro.org>
 > 
-> %pU became available in 2.6.33
+> Add irq domain support for max8997 interrupts. The reverse mapping method
+> used is linear mapping since the sub-drivers of max8997 such as regulator
+> and charger drivers can use the max8997 irq_domain to get the linux irq
+> number for max8997 interrupts. All uses of irq_base in platform data and
+> max8997 driver private data are removed.
 > 
-> I think one of their support targets is RHEL6 which
-> I believe is 2.6.32+.
+> Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
+> Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> Acked-by: Grant Likely <grant.likely@secretlab.ca>
+> Acked-by: Samuel Ortiz <sameo@linux.intel.com>
+> 	[Fix two bug which set max8997->irq_domain and correct wrong parameter]
+> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+>  arch/arm/mach-exynos/mach-nuri.c    |    4 --
+>  arch/arm/mach-exynos/mach-origen.c  |    1 -
+>  drivers/mfd/Kconfig                 |    1 +
+>  drivers/mfd/max8997-irq.c           |   62 +++++++++++++++++++++--------------
+>  drivers/mfd/max8997.c               |    1 -
+>  include/linux/mfd/max8997-private.h |    4 ++-
+>  include/linux/mfd/max8997.h         |    1 -
+>  7 files changed, 41 insertions(+), 33 deletions(-)
 
-That's nice, but it's nothing that I care about for in-kernel code, nor
-should anyone else.
+Once again, this patch breaks the build.
+
+Please be more careful with your patches, and TEST THEM BEFORE SENDING
+THEM OUT.
+
+ugh,
 
 greg k-h
