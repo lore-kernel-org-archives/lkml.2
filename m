@@ -1,38 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754635Ab2GQJeB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 05:34:01 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45707 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751330Ab2GQJd7 convert rfc822-to-8bit (ORCPT
+	id S1754824Ab2GQJfJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 05:35:09 -0400
+Received: from tharradin.pu-pm.univ-fcomte.fr ([194.57.85.210]:56839 "EHLO
+	tharradin.pu-pm.univ-fcomte.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751330Ab2GQJfH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 05:33:59 -0400
-Subject: Re: [PATCH] xfs: fix comment typo of struct xfs_da_blkinfo.
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Chen Baozi <baozich@gmail.com>
-In-Reply-To: <20120717070643.GA4958@infradead.org>
-Date: Tue, 17 Jul 2012 17:33:53 +0800
-Cc: Ben Myers <bpm@sgi.com>, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Content-Transfer-Encoding: 8BIT
-Message-Id: <7C73914B-6261-4730-827E-280B3D8A3988@gmail.com>
-References: <1342208293-3405-1-git-send-email-baozich@gmail.com> <20120716151038.GI29979@sgi.com> <5292013E-6FF3-47F6-BE9F-FD7BA2BB2AA9@gmail.com> <20120717070643.GA4958@infradead.org>
-To: Christoph Hellwig <hch@infradead.org>
-X-Mailer: Apple Mail (2.1084)
+	Tue, 17 Jul 2012 05:35:07 -0400
+X-Greylist: delayed 458 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Jul 2012 05:35:07 EDT
+Message-ID: <50052FFE.2060109@pu-pm.univ-fcomte.fr>
+Date: Tue, 17 Jul 2012 11:27:26 +0200
+From: Eugen Dedu <Eugen.Dedu@pu-pm.univ-fcomte.fr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: getsockopt/setsockopt with SO_RCVBUF and SO_SNDBUF "non-standard"
+ behaviour
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi all,
 
-On Jul 17, 2012, at 3:06 PM, Christoph Hellwig wrote:
+I looked on Internet and at the old thread 
+http://lkml.indiana.edu/hypermail/linux/kernel/0108.0/0275.html, but the 
+issue is still not settled as far as I see.
 
-> On Tue, Jul 17, 2012 at 11:33:33AM +0800, Chen Baozi wrote:
->> I'd really love to. Right now, I am working on syslinux to support booting on xfs partition (under pcacjr's mentoring)??? which I thought would be a nice start to get familiar with xfs (and I did learn a lot from it). So I think there would be more time (and experience on xfs) after I finish the xfs support on syslinux. And I'm really looking forward to your ideas. So do please tell me what I can help, I'll try my best to do it. 
-> 
-> Btw, if you need more reviers for the syslinus support feel free to pass
-> it by me (or the list).
-Sure, thanks.
-> 
-> Thanks for working on this!
-> 
+I need to have the highest memory available for snd/rcv buffer and I 
+need to know/confirm how much it allocated for my process (how much I 
+can use).
 
+So with Linux we need to do something like:
+setsockopt (..., SO_RCVBUF, 256000, ...)
+getsockopt (..., SO_RCVBUF, &i, ...)
+i /= 2;
+
+where i is the size I am looking for.
+
+Now, to make this code work for other OSes it should be changed to:
+setsockopt (..., SO_RCVBUF, 256000, ...)
+getsockopt (..., SO_RCVBUF, &i, ...)
+#ifdef LINUX
+i /= 2;
+#endif
+
+First question, is this code correct?  If not, what code gives the 
+amount of memory useable for my process?
+
+Second, it seems to me that linux is definitely "non-standard" here. 
+Saying that linux uses twice as memory has nothing to do with that, 
+since getsockopt should return what the application can count on, not 
+what is the internal use.  It is like a hypothetical malloc (10) would 
+return not 10, but 20 (including meta-information).  Is that right?
+
+Cheers,
+-- 
+Eugen Dedu
+http://eugen.dedu.free.fr
