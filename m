@@ -1,89 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753938Ab2GQBMo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 21:12:44 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40269 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753333Ab2GQBMk (ORCPT
+	id S1754013Ab2GQBPv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 21:15:51 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:45386 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753317Ab2GQBPs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 21:12:40 -0400
-Message-ID: <5004BBFF.4040101@debian.org>
-Date: Tue, 17 Jul 2012 09:12:31 +0800
-From: "Ying-Chun Liu (PaulLiu)" <paulliu@debian.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
+	Mon, 16 Jul 2012 21:15:48 -0400
 MIME-Version: 1.0
-To: Richard Zhao <richard.zhao@freescale.com>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        sameo@linux.intel.com, shawn.guo@linaro.org
-Subject: Re: [PATCH] mfd: anatop: matches should be NULL when populate child
- devices
-References: <1342428957-14321-1-git-send-email-richard.zhao@freescale.com>
-In-Reply-To: <1342428957-14321-1-git-send-email-richard.zhao@freescale.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: multipart/signed; micalg=pgp-sha512;
- protocol="application/pgp-signature";
- boundary="------------enig25B61D6C9BF1FA604EF9F845"
+Date: Tue, 17 Jul 2012 09:15:47 +0800
+Message-ID: <CACV3sb+CkmMtBSRe=bp4EcN3xXD+XqBKy+o_-Cr7e6bapYQftw@mail.gmail.com>
+Subject: [PATCH] ftrace: using pr_fmt for better printk output
+From: Jovi Zhang <bookjovi@gmail.com>
+To: rostedt@goodmis.org,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig25B61D6C9BF1FA604EF9F845
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+>From fe42b2f29e5968482b3129c71f81a58a0559cf04 Mon Sep 17 00:00:00 2001
+From: Jovi Zhang <bookjovi@gmail.com>
+Date: Tue, 17 Jul 2012 17:10:15 +0800
+Subject: [PATCH] ftrace: using pr_fmt for better printk output
 
-On 2012=E5=B9=B407=E6=9C=8816=E6=97=A5 16:55, Richard Zhao wrote:
-> Signed-off-by: Richard Zhao <richard.zhao@freescale.com>
-> ---
->  drivers/mfd/anatop-mfd.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->=20
-> diff --git a/drivers/mfd/anatop-mfd.c b/drivers/mfd/anatop-mfd.c
-> index 6da0634..5576e07 100644
-> --- a/drivers/mfd/anatop-mfd.c
-> +++ b/drivers/mfd/anatop-mfd.c
-> @@ -83,7 +83,7 @@ static int __devinit of_anatop_probe(struct platform_=
-device *pdev)
->  	drvdata->ioreg =3D ioreg;
->  	spin_lock_init(&drvdata->reglock);
->  	platform_set_drvdata(pdev, drvdata);
-> -	of_platform_populate(np, of_anatop_match, NULL, dev);
-> +	of_platform_populate(np, NULL, NULL, dev);
-> =20
->  	return 0;
->  }
+There don't have subsystem name output in front ot ftrace related log entry,
+so use pr_fmt to enable better printk output, for output subsystem name in
+log entry.
 
-Thanks.
+Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
+---
+ kernel/trace/blktrace.c              |    2 ++
+ kernel/trace/ftrace.c                |   10 ++++++----
+ kernel/trace/trace.c                 |    5 ++++-
+ kernel/trace/trace_events.c          |    2 ++
+ kernel/trace/trace_functions_graph.c |    9 ++++++---
+ kernel/trace/trace_kprobe.c          |    2 ++
+ kernel/trace/trace_mmiotrace.c       |    2 ++
+ kernel/trace/trace_probe.c           |    2 ++
+ kernel/trace/trace_selftest.c        |    6 +++---
+ kernel/trace/trace_syscalls.c        |    9 +++++----
+ kernel/trace/trace_uprobe.c          |    2 ++
+ 11 files changed, 36 insertions(+), 15 deletions(-)
 
-Reviewed-by: Ying-Chun Liu (PaulLiu) <paulliu@debian.org>
+diff --git a/kernel/trace/blktrace.c b/kernel/trace/blktrace.c
+index c0bd030..940b5d7 100644
+--- a/kernel/trace/blktrace.c
++++ b/kernel/trace/blktrace.c
+@@ -15,6 +15,8 @@
+  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+  *
+  */
++#define pr_fmt(fmt) "blktrace: " fmt
++
+ #include <linux/kernel.h>
+ #include <linux/blkdev.h>
+ #include <linux/blktrace_api.h>
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index a008663..c138ad7 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -13,6 +13,8 @@
+  *  Copyright (C) 2004 William Lee Irwin III
+  */
 
---=20
-                                PaulLiu (=E5=8A=89=E7=A9=8E=E9=A7=BF)
-E-mail: Ying-Chun Liu (PaulLiu) <paulliu@debian.org>
++#define pr_fmt(fmt) "ftrace: " fmt
++
+ #include <linux/stop_machine.h>
+ #include <linux/clocksource.h>
+ #include <linux/kallsyms.h>
+@@ -2178,7 +2180,7 @@ ftrace_allocate_pages(unsigned long num_to_init)
+ 		kfree(pg);
+ 		pg = start_pg;
+ 	}
+-	pr_info("ftrace: FAILED to allocate memory for functions\n");
++	pr_info("FAILED to allocate memory for functions\n");
+ 	return NULL;
+ }
 
+@@ -2187,12 +2189,12 @@ static int __init
+ftrace_dyn_table_alloc(unsigned long num_to_init)
+ 	int cnt;
 
---------------enig25B61D6C9BF1FA604EF9F845
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+ 	if (!num_to_init) {
+-		pr_info("ftrace: No functions to be traced?\n");
++		pr_info("No functions to be traced?\n");
+ 		return -1;
+ 	}
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+ 	cnt = num_to_init / ENTRIES_PER_PAGE;
+-	pr_info("ftrace: allocating %ld entries in %d pages\n",
++	pr_info("allocating %ld entries in %d pages\n",
+ 		num_to_init, cnt + 1);
 
-iQIcBAEBCgAGBQJQBLwDAAoJEPgLgUbQQog29kgP+wSr/rnl96gB1Hf4WKEAf6/v
-6fQmYfqbq4vqp1IZ8McnUi768xvtuuaC4ZtFP5jiYJKR41DiolAd0YxYXyScxFtT
-QbzqFRqx2Iolaerlvuc5fKMxzsRKYPipxtLgaFG0LWZSyfG+PKnocG9aELLi6dN/
-kmW/cTciv0ZfRZyQ1+J2MHLHIg/cQ/kCj0zcaPyzFVc9X61Q1jXdcybdKGU+t99U
-NwNfkkq+6lL1U9WGlpNKerdcG1mGqu7sqxth1yt6ubO93oxQqmXOD5SR7D6K/T0N
-IQTMJ1VZAi7Y4ucL2ngwpY2mSiH7WKwGyd3m46R2/AlYaciuUMWMC++J3Pd0JxB4
-NDKcqCTQo3L4NDfzGEj0JE98usi8VMERnt3JCLmNQYSukPykWiOd09j6YKN3+S14
-vFj5kA9Wszu2e7bBXAT+S7iNTdbMBFll17jcFW04AgnBUN7s9UFWWN42Usfka+mg
-RK3vM+iL3dlbYv0WmFA1CRZr+chsrgT8akr80gvkpUgYJdw8kYizlollcg1PIKUr
-dJfEkpoxAUyZ6SFanvvE44tm77/OSfE5bqUHmOE+Sv1b5Q77HdHuZTVkTTFCRI/h
-/+LB1h7hvf/S+CoYp1C/X0/HlLIyy/bP7MKtiBOb2gc1j2leRijURAfwFnMJ74Ct
-/pFHeePAULQOo+O5DGIM
-=NSbU
------END PGP SIGNATURE-----
+ 	return 0;
+@@ -4495,7 +4497,7 @@ static int start_graph_tracing(void)
+ 	if (!ret) {
+ 		ret = register_trace_sched_switch(ftrace_graph_probe_sched_switch, NULL);
+ 		if (ret)
+-			pr_info("ftrace_graph: Couldn't activate tracepoint"
++			pr_info("Couldn't activate tracepoint"
+ 				" probe to kernel_sched_switch\n");
+ 	}
 
---------------enig25B61D6C9BF1FA604EF9F845--
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index a7fa070..dc06661 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -11,6 +11,9 @@
+  *  Copyright (C) 2004-2006 Ingo Molnar
+  *  Copyright (C) 2004 William Lee Irwin III
+  */
++
++#define pr_fmt(fmt) "trace: " fmt
++
+ #include <linux/ring_buffer.h>
+ #include <generated/utsrelease.h>
+ #include <linux/stacktrace.h>
+@@ -1566,7 +1569,7 @@ void trace_printk_init_buffers(void)
+ 	if (alloc_percpu_trace_buffer())
+ 		return;
+
+-	pr_info("ftrace: Allocated trace_printk buffers\n");
++	pr_info("Allocated trace_printk buffers\n");
+
+ 	buffers_allocated = 1;
+ }
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 29111da..0abdf37 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -8,6 +8,8 @@
+  *
+  */
+
++#define pr_fmt(fmt) "trace_events: " fmt
++
+ #include <linux/workqueue.h>
+ #include <linux/spinlock.h>
+ #include <linux/kthread.h>
+diff --git a/kernel/trace/trace_functions_graph.c
+b/kernel/trace/trace_functions_graph.c
+index a7d2a4c..97ed861 100644
+--- a/kernel/trace/trace_functions_graph.c
++++ b/kernel/trace/trace_functions_graph.c
+@@ -6,6 +6,9 @@
+  * is Copyright (c) Steven Rostedt <srostedt@redhat.com>
+  *
+  */
++
++#define pr_fmt(fmt) "function graph tracer: " fmt
++
+ #include <linux/debugfs.h>
+ #include <linux/uaccess.h>
+ #include <linux/ftrace.h>
+@@ -1401,7 +1404,7 @@ void graph_trace_open(struct trace_iterator *iter)
+  out_err_free:
+ 	kfree(data);
+  out_err:
+-	pr_warning("function graph tracer: not enough memory\n");
++	pr_warn("not enough memory\n");
+ }
+
+ void graph_trace_close(struct trace_iterator *iter)
+@@ -1459,12 +1462,12 @@ static __init int init_graph_trace(void)
+ 	max_bytes_for_cpu = snprintf(NULL, 0, "%d", nr_cpu_ids - 1);
+
+ 	if (!register_ftrace_event(&graph_trace_entry_event)) {
+-		pr_warning("Warning: could not register graph trace events\n");
++		pr_warn("Warning: could not register graph trace events\n");
+ 		return 1;
+ 	}
+
+ 	if (!register_ftrace_event(&graph_trace_ret_event)) {
+-		pr_warning("Warning: could not register graph trace events\n");
++		pr_warn("Warning: could not register graph trace events\n");
+ 		return 1;
+ 	}
+
+diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+index b31d3d5..7396848 100644
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -17,6 +17,8 @@
+  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+  */
+
++#define pr_fmt(fmt) "trace_kprobe: " fmt
++
+ #include <linux/module.h>
+ #include <linux/uaccess.h>
+
+diff --git a/kernel/trace/trace_mmiotrace.c b/kernel/trace/trace_mmiotrace.c
+index fd3c8aa..56d1a03 100644
+--- a/kernel/trace/trace_mmiotrace.c
++++ b/kernel/trace/trace_mmiotrace.c
+@@ -4,6 +4,8 @@
+  * Copyright (C) 2008 Pekka Paalanen <pq@iki.fi>
+  */
+
++#define pr_fmt(fmt) "trace_mmiotrace: " fmt
++
+ #define DEBUG 1
+
+ #include <linux/kernel.h>
+diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
+index daa9980..0a7ebad 100644
+--- a/kernel/trace/trace_probe.c
++++ b/kernel/trace/trace_probe.c
+@@ -22,6 +22,8 @@
+  * Author:     Srikar Dronamraju
+  */
+
++#define pr_fmt(fmt) "trace_probe: " fmt
++
+ #include "trace_probe.h"
+
+ const char *reserved_field_names[] = {
+diff --git a/kernel/trace/trace_selftest.c b/kernel/trace/trace_selftest.c
+index 288541f..634f5af 100644
+--- a/kernel/trace/trace_selftest.c
++++ b/kernel/trace/trace_selftest.c
+@@ -94,7 +94,7 @@ static int trace_test_buffer(struct trace_array *tr,
+unsigned long *count)
+
+ static inline void warn_failed_init_tracer(struct tracer *trace, int init_ret)
+ {
+-	printk(KERN_WARNING "Failed to init %s tracer, init returned %d\n",
++	pr_warn("Failed to init %s tracer, init returned %d\n",
+ 		trace->name, init_ret);
+ }
+ #ifdef CONFIG_FUNCTION_TRACER
+@@ -236,7 +236,7 @@ static int trace_selftest_ops(int cnt)
+ 	/* Add a dynamic probe */
+ 	dyn_ops = kzalloc(sizeof(*dyn_ops), GFP_KERNEL);
+ 	if (!dyn_ops) {
+-		printk("MEMORY ERROR ");
++		pr_err("MEMORY ERROR ");
+ 		goto out;
+ 	}
+
+@@ -471,7 +471,7 @@ static int trace_graph_entry_watchdog(struct
+ftrace_graph_ent *trace)
+ 	/* This is harmlessly racy, we want to approximately detect a hang */
+ 	if (unlikely(++graph_hang_thresh > GRAPH_MAX_FUNC_TEST)) {
+ 		ftrace_graph_stop();
+-		printk(KERN_WARNING "BUG: Function graph tracer hang!\n");
++		pr_warn("BUG: Function graph tracer hang!\n");
+ 		if (ftrace_dump_on_oops)
+ 			__ftrace_dump(false, DUMP_ALL);
+ 		return 0;
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index 96fc733..8163e89 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -1,3 +1,6 @@
++
++#define pr_fmt(fmt) "trace_syscalls: " fmt
++
+ #include <trace/syscall.h>
+ #include <trace/events/syscalls.h>
+ #include <linux/slab.h>
+@@ -546,8 +549,7 @@ int perf_sysenter_enable(struct ftrace_event_call *call)
+ 	if (!sys_perf_refcount_enter)
+ 		ret = register_trace_sys_enter(perf_syscall_enter, NULL);
+ 	if (ret) {
+-		pr_info("event trace: Could not activate"
+-				"syscall entry trace point");
++		pr_info("Could not activate syscall entry trace point");
+ 	} else {
+ 		set_bit(num, enabled_perf_enter_syscalls);
+ 		sys_perf_refcount_enter++;
+@@ -622,8 +624,7 @@ int perf_sysexit_enable(struct ftrace_event_call *call)
+ 	if (!sys_perf_refcount_exit)
+ 		ret = register_trace_sys_exit(perf_syscall_exit, NULL);
+ 	if (ret) {
+-		pr_info("event trace: Could not activate"
+-				"syscall exit trace point");
++		pr_info("Could not activate syscall exit trace point");
+ 	} else {
+ 		set_bit(num, enabled_perf_exit_syscalls);
+ 		sys_perf_refcount_exit++;
+diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+index 2b36ac6..a677f36 100644
+--- a/kernel/trace/trace_uprobe.c
++++ b/kernel/trace/trace_uprobe.c
+@@ -18,6 +18,8 @@
+  * Author:	Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+  */
+
++#define pr_fmt(fmt) "trace_uprobe: " fmt
++
+ #include <linux/module.h>
+ #include <linux/uaccess.h>
+ #include <linux/uprobes.h>
+-- 
+1.7.9.7
