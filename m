@@ -1,314 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756511Ab2GQTTV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 15:19:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28267 "EHLO mx1.redhat.com"
+	id S1756413Ab2GQT0Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 15:26:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31975 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756340Ab2GQTTT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 15:19:19 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Jan Kara <jack@suse.cz>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Jens Axboe <axboe@kernel.dk>, "Alasdair G. Kergon" <agk@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@vger.kernel.org, dm-devel@redhat.com, lwoodman@redhat.com,
-        Andrea Arcangeli <aarcange@redhat.com>, kosaki.motohiro@jp.fujitsu.com
-Subject: Re: Crash when IO is being submitted and block size is changed
-References: <Pine.LNX.4.64.1206272226050.22857@file.rdu.redhat.com>
-	<20120628111541.GB17515@quack.suse.cz>
-	<Pine.LNX.4.64.1207152051490.4240@file.rdu.redhat.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Tue, 17 Jul 2012 15:19:01 -0400
-In-Reply-To: <Pine.LNX.4.64.1207152051490.4240@file.rdu.redhat.com> (Mikulas
-	Patocka's message of "Sun, 15 Jul 2012 20:55:02 -0400 (EDT)")
-Message-ID: <x49ipdmyz4q.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1752183Ab2GQT0V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 15:26:21 -0400
+Date: Tue, 17 Jul 2012 15:26:15 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Alan Cox <alan@linux.intel.com>
+Cc: dkline@redhat.com, Dave Airlie <airlied@redhat.com>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        kernel-team@fedoraproject.org
+Subject: gma500 opregion/power init order backtrace
+Message-ID: <20120717192614.GB18229@zod.bos.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mikulas Patocka <mpatocka@redhat.com> writes:
+Hi Alan,
 
-> On Thu, 28 Jun 2012, Jan Kara wrote:
->
->> On Wed 27-06-12 23:04:09, Mikulas Patocka wrote:
->> > The kernel crashes when IO is being submitted to a block device and block 
->> > size of that device is changed simultaneously.
->>   Nasty ;-)
->> 
->> > To reproduce the crash, apply this patch:
->> > 
->> > --- linux-3.4.3-fast.orig/fs/block_dev.c 2012-06-27 20:24:07.000000000 +0200
->> > +++ linux-3.4.3-fast/fs/block_dev.c 2012-06-27 20:28:34.000000000 +0200
->> > @@ -28,6 +28,7 @@
->> >  #include <linux/log2.h>
->> >  #include <linux/cleancache.h>
->> >  #include <asm/uaccess.h> 
->> > +#include <linux/delay.h>
->> >  #include "internal.h"
->> >  struct bdev_inode {
->> > @@ -203,6 +204,7 @@ blkdev_get_blocks(struct inode *inode, s
->> >  
->> >  	bh->b_bdev = I_BDEV(inode);
->> >  	bh->b_blocknr = iblock;
->> > +	msleep(1000);
->> >  	bh->b_size = max_blocks << inode->i_blkbits;
->> >  	if (max_blocks)
->> >  		set_buffer_mapped(bh);
->> > 
->> > Use some device with 4k blocksize, for example a ramdisk.
->> > Run "dd if=/dev/ram0 of=/dev/null bs=4k count=1 iflag=direct"
->> > While it is sleeping in the msleep function, run "blockdev --setbsz 2048 
->> > /dev/ram0" on the other console.
->> > You get a BUG at fs/direct-io.c:1013 - BUG_ON(this_chunk_bytes == 0);
->> > 
->> > 
->> > One may ask "why would anyone do this - submit I/O and change block size 
->> > simultaneously?" - the problem is that udev and lvm can scan and read all 
->> > block devices anytime - so anytime you change block device size, there may 
->> > be some i/o to that device in flight and the crash may happen. That BUG 
->> > actually happened in production environment because of lvm scanning block 
->> > devices and some other software changing block size at the same time.
->> > 
->>   Yeah, it's nasty and neither solution looks particularly appealing. One
->> idea that came to my mind is: I'm trying to solve some races between direct
->> IO, buffered IO, hole punching etc. by a new mapping interval lock. I'm not
->> sure if it will go anywhere yet but if it does, we can fix the above race
->> by taking the mapping lock for the whole block device around setting block
->> size thus effectivelly disallowing any IO to it.
->> 
->> 								Honza
->> -- 
->> Jan Kara <jack@suse.cz>
->> SUSE Labs, CR
->> 
->
-> Hi
->
-> This is the patch that fixes this crash: it takes a rw-semaphore around 
-> all direct-IO path.
->
-> (note that if someone is concerned about performance, the rw-semaphore 
-> could be made per-cpu --- take it for read on the current CPU and take it 
-> for write on all CPUs).
+We had a report [1] of a machine with a Cedarview chip in it not being
+able to have the backlight level adjusted with the hardware function
+keys in F17.  Matthew suggested that gma500 needs to work with opregion
+and the reporter (CC'd) tried a rawhide kernel based on
+v3.5-rc6-186-gac7d181.
 
-Here we go again.  :-)  I believe we had at one point tried taking a rw
-semaphore around GUP inside of the direct I/O code path to fix the fork
-vs. GUP race (that still exists today).  When testing that, the overhead
-of the semaphore was *way* too high to be considered an acceptable
-solution.  I've CC'd Larry Woodman, Andrea, and Kosaki Motohiro who all
-worked on that particular bug.  Hopefully they can give better
-quantification of the slowdown than my poor memory.
+I noticed there was a backtrace due to the power_ctrl_lock being used in
+spin_lock_irqsave before it was actually initialized.  The backtrace is
+included below.  It seems cdv_chip_setup is called before gma_power_init
+in psb_drv.c and that leads to a callchain that hits this.
 
-Cheers,
-Jeff
+I'm wondering if the gma_power_init call can be moved up before
+chip_setup is called.  Seems so, but I thought I would ping you to see
+if you've seen this already.
 
+josh
 
-> blockdev: fix a crash when block size is changed and I/O is issued simultaneously
->
-> The kernel may crash when block size is changed and I/O is issued
-> simultaneously.
->
-> Because some subsystems (udev or lvm) may read any block device anytime,
-> the bug actually puts any code that changes a block device size in
-> jeopardy.
->
-> The crash can be reproduced if you place "msleep(1000)" to
-> blkdev_get_blocks just before "bh->b_size = max_blocks <<
-> inode->i_blkbits;".
-> Then, run "dd if=/dev/ram0 of=/dev/null bs=4k count=1 iflag=direct"
-> While it is waiting in msleep, run "blockdev --setbsz 2048 /dev/ram0"
-> You get a BUG.
->
-> The direct and non-direct I/O is written with the assumption that block
-> size does not change. It doesn't seem practical to fix these crashes
-> one-by-one there may be many crash possibilities when block size changes
-> at a certain place and it is impossible to find them all and verify the
-> code.
->
-> This patch introduces a new rw-lock bd_block_size_semaphore. The lock is
-> taken for read during I/O. It is taken for write when changing block
-> size. Consequently, block size can't be changed while I/O is being
-> submitted.
->
-> For asynchronous I/O, the patch only prevents block size change while
-> the I/O is being submitted. The block size can change when the I/O is in
-> progress or when the I/O is being finished. This is acceptable because
-> there are no accesses to block size when asynchronous I/O is being
-> finished.
->
-> The patch prevents block size changing while the device is mapped with
-> mmap.
->
-> Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
->
-> ---
->  drivers/char/raw.c |    2 -
->  fs/block_dev.c     |   58 +++++++++++++++++++++++++++++++++++++++++++++++++++--
->  include/linux/fs.h |    4 +++
->  3 files changed, 61 insertions(+), 3 deletions(-)
->
-> Index: linux-3.5-rc6-devel/include/linux/fs.h
-> ===================================================================
-> --- linux-3.5-rc6-devel.orig/include/linux/fs.h	2012-07-16 01:18:45.000000000 +0200
-> +++ linux-3.5-rc6-devel/include/linux/fs.h	2012-07-16 01:29:21.000000000 +0200
-> @@ -713,6 +713,8 @@ struct block_device {
->  	int			bd_fsfreeze_count;
->  	/* Mutex for freeze */
->  	struct mutex		bd_fsfreeze_mutex;
-> +	/* A semaphore that prevents I/O while block size is being changed */
-> +	struct rw_semaphore	bd_block_size_semaphore;
->  };
->  
->  /*
-> @@ -2414,6 +2416,8 @@ extern int generic_segment_checks(const 
->  		unsigned long *nr_segs, size_t *count, int access_flags);
->  
->  /* fs/block_dev.c */
-> +extern ssize_t blkdev_aio_read(struct kiocb *iocb, const struct iovec *iov,
-> +			       unsigned long nr_segs, loff_t pos);
->  extern ssize_t blkdev_aio_write(struct kiocb *iocb, const struct iovec *iov,
->  				unsigned long nr_segs, loff_t pos);
->  extern int blkdev_fsync(struct file *filp, loff_t start, loff_t end,
-> Index: linux-3.5-rc6-devel/fs/block_dev.c
-> ===================================================================
-> --- linux-3.5-rc6-devel.orig/fs/block_dev.c	2012-07-16 01:14:33.000000000 +0200
-> +++ linux-3.5-rc6-devel/fs/block_dev.c	2012-07-16 01:37:28.000000000 +0200
-> @@ -124,6 +124,20 @@ int set_blocksize(struct block_device *b
->  	if (size < bdev_logical_block_size(bdev))
->  		return -EINVAL;
->  
-> +	/* Prevent starting I/O or mapping the device */
-> +	down_write(&bdev->bd_block_size_semaphore);
-> +
-> +	/* Check that the block device is not memory mapped */
-> +	mapping = bdev->bd_inode->i_mapping;
-> +	mutex_lock(&mapping->i_mmap_mutex);
-> +	if (!prio_tree_empty(&mapping->i_mmap) ||
-> +	    !list_empty(&mapping->i_mmap_nonlinear)) {
-> +		mutex_unlock(&mapping->i_mmap_mutex);
-> +		up_write(&bdev->bd_block_size_semaphore);
-> +		return -EBUSY;
-> +	}
-> +	mutex_unlock(&mapping->i_mmap_mutex);
-> +
->  	/* Don't change the size if it is same as current */
->  	if (bdev->bd_block_size != size) {
->  		sync_blockdev(bdev);
-> @@ -131,6 +145,9 @@ int set_blocksize(struct block_device *b
->  		bdev->bd_inode->i_blkbits = blksize_bits(size);
->  		kill_bdev(bdev);
->  	}
-> +
-> +	up_write(&bdev->bd_block_size_semaphore);
-> +
->  	return 0;
->  }
->  
-> @@ -472,6 +489,7 @@ static void init_once(void *foo)
->  	inode_init_once(&ei->vfs_inode);
->  	/* Initialize mutex for freeze. */
->  	mutex_init(&bdev->bd_fsfreeze_mutex);
-> +	init_rwsem(&bdev->bd_block_size_semaphore);
->  }
->  
->  static inline void __bd_forget(struct inode *inode)
-> @@ -1567,6 +1585,22 @@ static long block_ioctl(struct file *fil
->  	return blkdev_ioctl(bdev, mode, cmd, arg);
->  }
->  
-> +ssize_t blkdev_aio_read(struct kiocb *iocb, const struct iovec *iov,
-> +			unsigned long nr_segs, loff_t pos)
-> +{
-> +	ssize_t ret;
-> +	struct block_device *bdev = I_BDEV(iocb->ki_filp->f_mapping->host);
-> +
-> +	down_read(&bdev->bd_block_size_semaphore);
-> +
-> +	ret = generic_file_aio_read(iocb, iov, nr_segs, pos);
-> +
-> +	up_read(&bdev->bd_block_size_semaphore);
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(blkdev_aio_read);
-> +
->  /*
->   * Write data to the block device.  Only intended for the block device itself
->   * and the raw driver which basically is a fake block device.
-> @@ -1578,10 +1612,13 @@ ssize_t blkdev_aio_write(struct kiocb *i
->  			 unsigned long nr_segs, loff_t pos)
->  {
->  	struct file *file = iocb->ki_filp;
-> +	struct block_device *bdev = I_BDEV(file->f_mapping->host);
->  	ssize_t ret;
->  
->  	BUG_ON(iocb->ki_pos != pos);
->  
-> +	down_read(&bdev->bd_block_size_semaphore);
-> +
->  	ret = __generic_file_aio_write(iocb, iov, nr_segs, &iocb->ki_pos);
->  	if (ret > 0 || ret == -EIOCBQUEUED) {
->  		ssize_t err;
-> @@ -1590,10 +1627,27 @@ ssize_t blkdev_aio_write(struct kiocb *i
->  		if (err < 0 && ret > 0)
->  			ret = err;
->  	}
-> +
-> +	up_read(&bdev->bd_block_size_semaphore);
-> +
->  	return ret;
->  }
->  EXPORT_SYMBOL_GPL(blkdev_aio_write);
->  
-> +int blkdev_mmap(struct file *file, struct vm_area_struct *vma)
-> +{
-> +	int ret;
-> +	struct block_device *bdev = I_BDEV(file->f_mapping->host);
-> +
-> +	down_read(&bdev->bd_block_size_semaphore);
-> +
-> +	ret = generic_file_mmap(file, vma);
-> +
-> +	up_read(&bdev->bd_block_size_semaphore);
-> +
-> +	return ret;
-> +}
-> +
->  /*
->   * Try to release a page associated with block device when the system
->   * is under memory pressure.
-> @@ -1624,9 +1678,9 @@ const struct file_operations def_blk_fop
->  	.llseek		= block_llseek,
->  	.read		= do_sync_read,
->  	.write		= do_sync_write,
-> -  	.aio_read	= generic_file_aio_read,
-> +  	.aio_read	= blkdev_aio_read,
->  	.aio_write	= blkdev_aio_write,
-> -	.mmap		= generic_file_mmap,
-> +	.mmap		= blkdev_mmap,
->  	.fsync		= blkdev_fsync,
->  	.unlocked_ioctl	= block_ioctl,
->  #ifdef CONFIG_COMPAT
-> Index: linux-3.5-rc6-devel/drivers/char/raw.c
-> ===================================================================
-> --- linux-3.5-rc6-devel.orig/drivers/char/raw.c	2012-07-16 01:29:27.000000000 +0200
-> +++ linux-3.5-rc6-devel/drivers/char/raw.c	2012-07-16 01:30:04.000000000 +0200
-> @@ -285,7 +285,7 @@ static long raw_ctl_compat_ioctl(struct 
->  
->  static const struct file_operations raw_fops = {
->  	.read		= do_sync_read,
-> -	.aio_read	= generic_file_aio_read,
-> +	.aio_read	= blkdev_aio_read,
->  	.write		= do_sync_write,
->  	.aio_write	= blkdev_aio_write,
->  	.fsync		= blkdev_fsync,
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+[1] https://bugzilla.redhat.com/show_bug.cgi?id=833597
+
+[   12.299336] BUG: spinlock bad magic on CPU#2, udevd/155
+[   12.299505]  lock: power_ctrl_lock [gma500_gfx], .magic: 00000000, .owner: udevd/155, .owner_cpu: 2
+[   12.301025] Pid: 155, comm: udevd Not tainted 3.5.0-0.rc6.git4.1.fc18.x86_64 #1
+[   12.301226] Call Trace:
+[   12.301371]  [<ffffffff816c70e6>] spin_dump+0x8c/0x91
+[   12.301514]  [<ffffffff816c710c>] spin_bug+0x21/0x26
+[   12.301659]  [<ffffffff8134bff3>] do_raw_spin_unlock+0x63/0xa0
+[   12.301809]  [<ffffffff816cef55>] _raw_spin_unlock_irqrestore+0x35/0x80
+[   12.302001]  [<ffffffffa00763ac>] gma_power_begin+0x5c/0x110 [gma500_gfx]
+[   12.302025]  [<ffffffffa007eee7>] psb_enable_pipestat+0x67/0xe0 [gma500_gfx]
+[   12.302048]  [<ffffffffa0081218>] psb_intel_opregion_enable_asle+0x38/0x70 [gma500_gfx]
+[   12.302069]  [<ffffffffa00812c5>] psb_intel_opregion_init+0x75/0x80 [gma500_gfx]
+[   12.302092]  [<ffffffffa0082058>] cdv_chip_setup+0x118/0x190 [gma500_gfx]
+[   12.302113]  [<ffffffffa0076b46>] psb_driver_load+0xd6/0x480 [gma500_gfx]
+[   12.302146]  [<ffffffffa001e8b6>] drm_get_pci_dev+0x186/0x2d0 [drm]
+[   12.302157]  [<ffffffff810d283d>] ? trace_hardirqs_on+0xd/0x10
+[   12.302177]  [<ffffffffa0076845>] psb_probe+0x15/0x20 [gma500_gfx]
+[   12.302188]  [<ffffffff8136db6c>] local_pci_probe+0x5c/0xd0
+[   12.302197]  [<ffffffff8136dcf1>] pci_device_probe+0x111/0x120
+[   12.302209]  [<ffffffff81434192>] driver_probe_device+0x92/0x390
+[   12.302217]  [<ffffffff8143453b>] __driver_attach+0xab/0xb0
+[   12.302226]  [<ffffffff81434490>] ? driver_probe_device+0x390/0x390
+[   12.302235]  [<ffffffff81432125>] bus_for_each_dev+0x55/0x90
+[   12.302243]  [<ffffffffa0097000>] ? 0xffffffffa0096fff
+[   12.302252]  [<ffffffff81433a1e>] driver_attach+0x1e/0x20
+[   12.302259]  [<ffffffff81433728>] bus_add_driver+0x1b8/0x2b0
+[   12.302267]  [<ffffffffa0097000>] ? 0xffffffffa0096fff
+[   12.302276]  [<ffffffff81434c37>] driver_register+0x77/0x150
+[   12.302296]  [<ffffffffa0097000>] ? 0xffffffffa0096fff
+[   12.302306]  [<ffffffff8136c8cf>] __pci_register_driver+0x6f/0xf0
+[   12.302315]  [<ffffffffa0097000>] ? 0xffffffffa0096fff
+[   12.302341]  [<ffffffffa001eb1a>] drm_pci_init+0x11a/0x130 [drm]
+[   12.302348]  [<ffffffffa0097000>] ? 0xffffffffa0096fff
+[   12.302369]  [<ffffffffa0097017>] psb_init+0x17/0x1000 [gma500_gfx]
+[   12.302380]  [<ffffffff8100212a>] do_one_initcall+0x12a/0x180
+[   12.302389]  [<ffffffff810df546>] sys_init_module+0x156/0x2280
+[   12.302399]  [<ffffffff8135a340>] ? ddebug_proc_open+0xd0/0xd0
+[   12.302417]  [<ffffffff811c7710>] ? fget_raw+0x310/0x310
+[   12.302429]  [<ffffffff816d7ea9>] system_call_fastpath+0x16/0x1b
+[   12.303259] gma500 0000:00:02.0: GPU: power management timed out.
