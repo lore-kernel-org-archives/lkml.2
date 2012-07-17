@@ -1,54 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753183Ab2GQSat (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 14:30:49 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:47259 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752059Ab2GQSar (ORCPT
+	id S1753785Ab2GQSbg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 14:31:36 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:51144 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752471Ab2GQSbd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 14:30:47 -0400
+	Tue, 17 Jul 2012 14:31:33 -0400
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdYBBa8BZMeGK0kiXNysn_ErpyKhTtbK8yFxf+JyMSndFw@mail.gmail.com>
-References: <1340836334-20427-1-git-send-email-stigge@antcom.de>
-	<CACRpkdYBBa8BZMeGK0kiXNysn_ErpyKhTtbK8yFxf+JyMSndFw@mail.gmail.com>
-Date: Tue, 17 Jul 2012 15:30:46 -0300
-Message-ID: <CAAAP30FtFOQSJ8UvN6H+L6qwPyphi27L+mxi-3COu6RAJQTHcQ@mail.gmail.com>
-Subject: Re: [PATCH RESEND] gpio: of_get_named_gpio_flags() return
- -EPROBE_DEFER if GPIO not yet available
-From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Roland Stigge <stigge@antcom.de>, cjb@laptop.org,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        rmk+kernel@arm.linux.org.uk, ulf.hansson@stericsson.com,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <1342511295-13298-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1342511295-13298-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Date: Tue, 17 Jul 2012 20:31:33 +0200
+Message-ID: <CACRpkdbWsC1S35Ms2gq-BqOwQaGvGijXnzr4xH4MOViuiZksug@mail.gmail.com>
+Subject: Re: [PATCH] gpiolib: arizona: Add WM5110 support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 17, 2012 at 3:24 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Thu, Jun 28, 2012 at 12:32 AM, Roland Stigge <stigge@antcom.de> wrote:
->
->> of_get_named_gpio_flags() and of_get_named_gpio() return -EPROBE_DEFER if the
->> respective GPIO is not (yet) available. This is useful if driver's probe()
->> functions try to get a GPIO whose controller isn't probed yet. Thus, the driver
->> can be probed again later on.
->>
->> The function still returns -EINVAL on other errors (parse error or node doesn't
->> exist). This way, the case of an optional/intentionally missing GPIO is handled
->> appropriately.
->>
->> Signed-off-by: Roland Stigge <stigge@antcom.de>
->
-> Patch applied, if all gpio stuff shall defer properly in v3.6 we need this
-> so let's do some testing in -next!
->
-> Would be nice to get some ACK besides my own...
+On Tue, Jul 17, 2012 at 9:48 AM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
 
-You can add mine. I've been using this patch for quite some time now.
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> ---
+>  drivers/gpio/gpio-arizona.c |    1 +
+>  1 file changed, 1 insertion(+)
 
-Acked-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+Patch applied. OK if I squash this into the Arizona driver submission
+patch?
 
-> Yours,
-> Linus Walleij
+Thanks,
+Linus Walleij
