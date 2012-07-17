@@ -1,94 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753487Ab2GQAna (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 20:43:30 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:61149 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751308Ab2GQAn1 (ORCPT
+	id S1753650Ab2GQArK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 20:47:10 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:51351 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752133Ab2GQArI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 20:43:27 -0400
+	Mon, 16 Jul 2012 20:47:08 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <5004B5E8.6060602@jp.fujitsu.com>
+Date: Tue, 17 Jul 2012 09:46:32 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <1342475161-20402-1-git-send-email-robherring2@gmail.com>
-References: <1342475161-20402-1-git-send-email-robherring2@gmail.com>
-Date: Mon, 16 Jul 2012 21:43:26 -0300
-Message-ID: <CAAAP30HO=Khku3HeMUSJxwpzUaVBoiC+-jm+RQ4mUGp6_HNS=A@mail.gmail.com>
-Subject: Re: [PATCH] clk: fix compile for OF && !COMMON_CLK
-From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: mturquette@ti.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Rob Herring <rob.herring@calxeda.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Wen Congyang <wency@cn.fujitsu.com>
+CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>,
+        <rientjes@google.com>, <liuj97@gmail.com>, <len.brown@intel.com>,
+        <benh@kernel.crashing.org>, <paulus@samba.org>, <cl@linux.com>,
+        <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
+        <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [RFC PATCH v3 2/13] memory-hotplug : add physical memory hotplug
+ code to acpi_memory_device_remove
+References: <4FFAB0A2.8070304@jp.fujitsu.com> <4FFAB148.9000803@jp.fujitsu.com> <4FFF957F.2080504@cn.fujitsu.com>
+In-Reply-To: <4FFF957F.2080504@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 16, 2012 at 6:46 PM, Rob Herring <robherring2@gmail.com> wrote:
-> From: Rob Herring <rob.herring@calxeda.com>
->
-> With commit 766e6a4ec602d0c107 (clk: add DT clock binding support),
-> compiling with OF && !COMMON_CLK is broken.
+Hi Wen,
 
-Thanks, Rob.
+2012/07/13 12:26, Wen Congyang wrote:
+> At 07/09/2012 06:24 PM, Yasuaki Ishimatsu Wrote:
+>> acpi_memory_device_remove() has been prepared to remove physical memory.
+>> But, the function only frees acpi_memory_device currentlry.
+>>
+>> The patch adds following functions into acpi_memory_device_remove():
+>>    - offline memory
+>>    - remove physical memory (only return -EBUSY)
+>>    - free acpi_memory_device
+>>
+>> CC: David Rientjes <rientjes@google.com>
+>> CC: Jiang Liu <liuj97@gmail.com>
+>> CC: Len Brown <len.brown@intel.com>
+>> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+>> CC: Paul Mackerras <paulus@samba.org>
+>> CC: Christoph Lameter <cl@linux.com>
+>> Cc: Minchan Kim <minchan.kim@gmail.com>
+>> CC: Andrew Morton <akpm@linux-foundation.org>
+>> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>> CC: Wen Congyang <wency@cn.fujitsu.com>
+>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>>
+>> ---
+>>   drivers/acpi/acpi_memhotplug.c |   26 +++++++++++++++++++++++++-
+>>   drivers/base/memory.c          |   39 +++++++++++++++++++++++++++++++++++++++
+>>   include/linux/memory.h         |    5 +++++
+>>   include/linux/memory_hotplug.h |    1 +
+>>   mm/memory_hotplug.c            |    8 ++++++++
+>>   5 files changed, 78 insertions(+), 1 deletion(-)
+>>
+>> Index: linux-3.5-rc6/drivers/acpi/acpi_memhotplug.c
+>> ===================================================================
+>> --- linux-3.5-rc6.orig/drivers/acpi/acpi_memhotplug.c	2012-07-09 18:08:29.946888653 +0900
+>> +++ linux-3.5-rc6/drivers/acpi/acpi_memhotplug.c	2012-07-09 18:08:43.470719531 +0900
+>> @@ -29,6 +29,7 @@
+>>   #include <linux/module.h>
+>>   #include <linux/init.h>
+>>   #include <linux/types.h>
+>> +#include <linux/memory.h>
+>>   #include <linux/memory_hotplug.h>
+>>   #include <linux/slab.h>
+>>   #include <acpi/acpi_drivers.h>
+>> @@ -452,12 +453,35 @@ static int acpi_memory_device_add(struct
+>>   static int acpi_memory_device_remove(struct acpi_device *device, int type)
+>>   {
+>>   	struct acpi_memory_device *mem_device = NULL;
+>> -
+>> +	struct acpi_memory_info *info, *tmp;
+>> +	int result;
+>> +	int node;
+>>
+>>   	if (!device || !acpi_driver_data(device))
+>>   		return -EINVAL;
+>>
+>>   	mem_device = acpi_driver_data(device);
+>> +
+>> +	node = acpi_get_node(mem_device->device->handle);
+>> +
+>> +	list_for_each_entry_safe(info, tmp, &mem_device->res_list, list) {
+>> +		if (!info->enabled)
+>> +			continue;
+>> +
+>> +		if (!is_memblk_offline(info->start_addr, info->length)) {
+>> +			result = offline_memory(info->start_addr, info->length);
+>> +			if (result)
+>> +				return result;
+>> +		}
+>> +
+>> +		result = remove_memory(node, info->start_addr, info->length);
+>> +		if (result)
+>> +			return result;
+>> +
+>> +		list_del(&info->list);
+>> +		kfree(info);
+>> +	}
+>> +
+>>   	kfree(mem_device);
+>>
+>>   	return 0;
+>> Index: linux-3.5-rc6/include/linux/memory_hotplug.h
+>> ===================================================================
+>> --- linux-3.5-rc6.orig/include/linux/memory_hotplug.h	2012-07-09 18:08:29.955888542 +0900
+>> +++ linux-3.5-rc6/include/linux/memory_hotplug.h	2012-07-09 18:08:43.471719518 +0900
+>> @@ -233,6 +233,7 @@ static inline int is_mem_section_removab
+>>   extern int mem_online_node(int nid);
+>>   extern int add_memory(int nid, u64 start, u64 size);
+>>   extern int arch_add_memory(int nid, u64 start, u64 size);
+>> +extern int remove_memory(int nid, u64 start, u64 size);
+> 
+> 
+> Here should be:
+> #ifdef CONFIG_MEMORY_HOTREMOVE
+> extern int remove_memory(int nid, u64 start, u64 size);
+> #else
+> static int inline remove_memory(int nid, u64 start, u64 size)
+> {
+> 	return -EBUSY;
+> }
+> #endif
 
-This fixed the issue for me, but Mike's comments applies.
+O.K. I'll update it.
 
-> Reported-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-> Reported-by: Prashant Gaikwad <pgaikwad@nvidia.com>
-> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-> ---
->  drivers/clk/clkdev.c |    2 +-
->  include/linux/clk.h  |    7 ++++---
->  2 files changed, 5 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
-> index 20649b3..8f87b0f 100644
-> --- a/drivers/clk/clkdev.c
-> +++ b/drivers/clk/clkdev.c
-> @@ -24,7 +24,7 @@
->  static LIST_HEAD(clocks);
->  static DEFINE_MUTEX(clocks_mutex);
->
-> -#ifdef CONFIG_OF
-> +#if defined(CONFIG_OF) && defined(CONFIG_COMMON_CLK)
->  struct clk *of_clk_get(struct device_node *np, int index)
->  {
->         struct of_phandle_args clkspec;
-> diff --git a/include/linux/clk.h b/include/linux/clk.h
-> index 8b70342..35f7492 100644
-> --- a/include/linux/clk.h
-> +++ b/include/linux/clk.h
-> @@ -12,6 +12,7 @@
->  #ifndef __LINUX_CLK_H
->  #define __LINUX_CLK_H
->
-> +#include <linux/err.h>
->  #include <linux/kernel.h>
->  #include <linux/notifier.h>
->
-> @@ -313,19 +314,19 @@ int clk_add_alias(const char *alias, const char *alias_dev_name, char *id,
->  struct device_node;
->  struct of_phandle_args;
->
-> -#ifdef CONFIG_OF
-> +#if defined(CONFIG_OF) && defined(CONFIG_COMMON_CLK)
->  struct clk *of_clk_get(struct device_node *np, int index);
->  struct clk *of_clk_get_by_name(struct device_node *np, const char *name);
->  struct clk *of_clk_get_from_provider(struct of_phandle_args *clkspec);
->  #else
->  static inline struct clk *of_clk_get(struct device_node *np, int index)
->  {
-> -       return NULL;
-> +       return ERR_PTR(-EINVAL);
->  }
->  static inline struct clk *of_clk_get_by_name(struct device_node *np,
->                                              const char *name)
->  {
-> -       return NULL;
-> +       return ERR_PTR(-EINVAL);
->  }
->  #endif
->
+Thanks,
+Yasuaki Ishimatsu
+
+
+> 
+>>   extern int offline_memory(u64 start, u64 size);
+>>   extern int sparse_add_one_section(struct zone *zone, unsigned long start_pfn,
+>>   								int nr_pages);
+>> Index: linux-3.5-rc6/mm/memory_hotplug.c
+>> ===================================================================
+>> --- linux-3.5-rc6.orig/mm/memory_hotplug.c	2012-07-09 18:08:29.953888567 +0900
+>> +++ linux-3.5-rc6/mm/memory_hotplug.c	2012-07-09 18:08:43.476719455 +0900
+>> @@ -659,6 +659,14 @@ out:
+>>   }
+>>   EXPORT_SYMBOL_GPL(add_memory);
+>>
+>> +int remove_memory(int nid, u64 start, u64 size)
+>> +{
+>> +	return -EBUSY;
+>> +
+>> +}
+>> +EXPORT_SYMBOL_GPL(remove_memory);
+> 
+> We only need to implement this function when CONFIG_MEMORY_HOTREMOVE
+> is defined here.
+> 
+> Thanks
+> Wen Congyang
+> 
+>> +
+>> +
+>>   #ifdef CONFIG_MEMORY_HOTREMOVE
+>>   /*
+>>    * A free page on the buddy free lists (not the per-cpu lists) has PageBuddy
+>> Index: linux-3.5-rc6/drivers/base/memory.c
+>> ===================================================================
+>> --- linux-3.5-rc6.orig/drivers/base/memory.c	2012-07-09 18:08:29.947888640 +0900
+>> +++ linux-3.5-rc6/drivers/base/memory.c	2012-07-09 18:10:54.880076739 +0900
+>> @@ -70,6 +70,45 @@ void unregister_memory_isolate_notifier(
+>>   }
+>>   EXPORT_SYMBOL(unregister_memory_isolate_notifier);
+>>
+>> +bool is_memblk_offline(unsigned long start, unsigned long size)
+>> +{
+>> +	struct memory_block *mem = NULL;
+>> +	struct mem_section *section;
+>> +	unsigned long start_pfn, end_pfn;
+>> +	unsigned long pfn, section_nr;
+>> +
+>> +	start_pfn = PFN_DOWN(start);
+>> +	end_pfn = start_pfn + PFN_DOWN(start);
+>> +
+>> +	for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
+>> +		section_nr = pfn_to_section_nr(pfn);
+>> +		if (!present_section_nr(section_nr));
+>> +			continue;
+>> +
+>> +		section = __nr_to_section(section_nr);
+>> +		/* same memblock? */
+>> +		if (mem)
+>> +			if((section_nr >= mem->start_section_nr) &&
+>> +			   (section_nr <= mem->end_section_nr))
+>> +				continue;
+>> +
+>> +		mem = find_memory_block_hinted(section, mem);
+>> +		if (!mem)
+>> +			continue;
+>> +		if (mem->state == MEM_OFFLINE)
+>> +			continue;
+>> +
+>> +		kobject_put(&mem->dev.kobj);
+>> +		return false;
+>> +	}
+>> +
+>> +	if (mem)
+>> +		kobject_put(&mem->dev.kobj);
+>> +
+>> +	return true;
+>> +}
+>> +EXPORT_SYMBOL(is_memblk_offline);
+>> +
+>>   /*
+>>    * register_memory - Setup a sysfs device for a memory block
+>>    */
+>> Index: linux-3.5-rc6/include/linux/memory.h
+>> ===================================================================
+>> --- linux-3.5-rc6.orig/include/linux/memory.h	2012-07-08 09:23:56.000000000 +0900
+>> +++ linux-3.5-rc6/include/linux/memory.h	2012-07-09 18:08:43.484719355 +0900
+>> @@ -106,6 +106,10 @@ static inline int memory_isolate_notify(
+>>   {
+>>   	return 0;
+>>   }
+>> +static inline bool is_memblk_offline(unsigned long start, unsigned long size)
+>> +{
+>> +	return false;
+>> +}
+>>   #else
+>>   extern int register_memory_notifier(struct notifier_block *nb);
+>>   extern void unregister_memory_notifier(struct notifier_block *nb);
+>> @@ -120,6 +124,7 @@ extern int memory_isolate_notify(unsigne
+>>   extern struct memory_block *find_memory_block_hinted(struct mem_section *,
+>>   							struct memory_block *);
+>>   extern struct memory_block *find_memory_block(struct mem_section *);
+>> +extern bool is_memblk_offline(unsigned long start, unsigned long size);
+>>   #define CONFIG_MEM_BLOCK_SIZE	(PAGES_PER_SECTION<<PAGE_SHIFT)
+>>   enum mem_add_context { BOOT, HOTPLUG };
+>>   #endif /* CONFIG_MEMORY_HOTPLUG_SPARSE */
+>>
+>>
+> 
 > --
-> 1.7.9.5
->
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+e
+
+
