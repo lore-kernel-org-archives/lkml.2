@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753590Ab2GQA3Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 20:29:16 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:45120 "EHLO
+	id S1753656Ab2GQAaf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 20:30:35 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:54111 "EHLO
 	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751804Ab2GQA3N (ORCPT
+	with ESMTP id S1751804Ab2GQAac (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 20:29:13 -0400
+	Mon, 16 Jul 2012 20:30:32 -0400
 X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <5004B1AC.9090409@jp.fujitsu.com>
-Date: Tue, 17 Jul 2012 09:28:28 +0900
+Message-ID: <5004B213.8010304@jp.fujitsu.com>
+Date: Tue, 17 Jul 2012 09:30:11 +0900
 From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
@@ -22,8 +22,8 @@ CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
         <kosaki.motohiro@jp.fujitsu.com>
 Subject: Re: [RFC PATCH v3 4/13] memory-hotplug : remove /sys/firmware/memmap/X
  sysfs
-References: <4FFAB0A2.8070304@jp.fujitsu.com> <4FFAB1BA.9040801@jp.fujitsu.com> <4FFFE621.8030302@cn.fujitsu.com>
-In-Reply-To: <4FFFE621.8030302@cn.fujitsu.com>
+References: <4FFAB0A2.8070304@jp.fujitsu.com> <4FFAB1BA.9040801@jp.fujitsu.com> <50037D3A.4090309@cn.fujitsu.com>
+In-Reply-To: <50037D3A.4090309@cn.fujitsu.com>
 Content-Type: text/plain; charset="ISO-2022-JP"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -32,7 +32,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Wen,
 
-2012/07/13 18:10, Wen Congyang wrote:
+2012/07/16 11:32, Wen Congyang wrote:
 > At 07/09/2012 06:26 PM, Yasuaki Ishimatsu Wrote:
 >> When (hot)adding memory into system, /sys/firmware/memmap/X/{end, start, type}
 >> sysfs files are created. But there is no code to remove these files. The patch
@@ -71,19 +71,6 @@ Hi Wen,
 >> +	lock_memory_hotplug();
 >> +	/* remove memmap entry */
 >> +	firmware_map_remove(start, start + size - 1, "System RAM");
-> 
-> firmware_map_remove() is in meminit section, so remove_memory() should be in
-> ref section.
-
-I'll add it.
-
-Thanks,
-Yasuaki Ishimatsu
-
-> 
-> Thanks
-> Wen Congyang
-> 
 >> +	unlock_memory_hotplug();
 >> +	return 0;
 >>
@@ -223,6 +210,19 @@ Yasuaki Ishimatsu
 >> +	remove_sysfs_fw_map_entry(entry);
 >> +
 >> +	firmware_map_remove_entry(entry);
+> 
+> You should call firmware_map_remove_entry() before remove_sysfs_fw_map_entry(),
+> otherwise it will cause kernel panicked(entry may be freed in remove_sysfs_fw_map_entry()).
+
+You are right. I'll update it.
+
+Thanks,
+Yasuaki Ishimatsu
+
+> 
+> Thanks
+> Wen Congyang
+> 
 >> +
 >> +	return 0;
 >> +}
