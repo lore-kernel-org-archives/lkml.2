@@ -1,93 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757215Ab2GQXTi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 19:19:38 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46093 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757011Ab2GQXT2 (ORCPT
+	id S1757250Ab2GQXTn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 19:19:43 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:40110 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756859Ab2GQXT0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 19:19:28 -0400
-From: Andy Lutomirski <luto@amacapital.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: Will Drewry <wad@chromium.org>, Kees Cook <keescook@chromium.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH 3.5 2/2] seccomp: Future-proof against silly tracers
-Date: Tue, 17 Jul 2012 16:19:20 -0700
-Message-Id: <912c85ae09ccb083110ae451d4f59260ae65296f.1342566495.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <cover.1342566495.git.luto@amacapital.net>
-References: <cover.1342566495.git.luto@amacapital.net>
-In-Reply-To: <cover.1342566495.git.luto@amacapital.net>
-References: <cover.1342566495.git.luto@amacapital.net>
+	Tue, 17 Jul 2012 19:19:26 -0400
+MIME-Version: 1.0
+Reply-To: martin-eric.racine@iki.fi
+In-Reply-To: <20120717212305.GV28778@vostochny.stro.at>
+References: <1342547874.5129.2.camel@henna.lan>
+	<20120717193951.GA15208@burratino>
+	<CAPZXPQc02=6FnTb_RmgfpW+A4=N_huZW1FUYdjJ=Nt0Y3pqZ+A@mail.gmail.com>
+	<20120717212305.GV28778@vostochny.stro.at>
+Date: Wed, 18 Jul 2012 02:19:25 +0300
+X-Google-Sender-Auth: Cx40hxnWN-SCJeuWxDJWwF1URIk
+Message-ID: <CAPZXPQfBPXaRtK3QdY_PA=3GRrUz9+y3aU-2AvedvTwn8tOnqg@mail.gmail.com>
+Subject: Re: [PATCH] scripts/package/builddeb: upgrade to current practices
+From: =?UTF-8?Q?Martin=2D=C3=89ric_Racine?= <martin-eric.racine@iki.fi>
+To: maximilian attems <max@stro.at>
+Cc: Jonathan Nieder <jrnieder@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-kbuild@vger.kernel.org, debian-kernel@lists.debian.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, if a tracer changes a syscall nr to __NR_future_enosys,
-behavior will differ between kernels that know about
-__NR_future_enosys (and return -ENOSYS) and older kernels (which
-return the value from pt_regs).  This is silly; we should just
-return -ENOSYS.
+2012/7/18 maximilian attems <max@stro.at>:
+> On Tue, Jul 17, 2012 at 10:46:23PM +0300, Martin-Éric Racine wrote:
+>> 2012/7/17 Jonathan Nieder <jrnieder@gmail.com>:
+>> >>
+>> >>  Package: $fwpackagename
+>> >>  Architecture: all
+>> >> +Conflicts: firmware-linux-free, firmware-linux-nonfree
+>> >> +Provides: firmware-linux-free, firmware-linux-nonfree
+>> >> +Replaces: firmware-linux-free, firmware-linux-nonfree
+>> >
+>> > I assume you mean Breaks+Replaces.  Do the files actually overlap,
+>> > or is this change being overly cautious?  I would expect the files
+>> > not to overlap because the package build with deb-pkg puts firmware
+>> > in a versioned subdirectory "/lib/firmware/<version>".
+>>
+>> AFAIK they would overlap, hence the Conflicts.
+>
+> This is wrong and properly fixed in -next.
 
-This is unlikely to ever happen on x86 because the return value in
-pt_regs starts out as -ENOSYS, but a silly tracer can change that.
+Max,
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Cc: Will Drewry <wad@chromium.org>
----
- arch/x86/include/asm/syscall.h |   11 +++++++++++
- kernel/seccomp.c               |   15 +++++++++++++++
- 2 files changed, 26 insertions(+), 0 deletions(-)
+Exactly what is wrong with this fix? Could you tell us exactly what
+you did differently and why?
 
-diff --git a/arch/x86/include/asm/syscall.h b/arch/x86/include/asm/syscall.h
-index 1ace47b..8191e057 100644
---- a/arch/x86/include/asm/syscall.h
-+++ b/arch/x86/include/asm/syscall.h
-@@ -70,6 +70,17 @@ static inline void syscall_set_return_value(struct task_struct *task,
- 	regs->ax = (long) error ?: val;
- }
- 
-+static inline bool syscall_is_nr_future(struct task_struct *task,
-+					struct pt_regs *regs)
-+{
-+#ifdef CONFIG_IA32_EMULATION
-+	if (task_thread_info(task)->status & TS_COMPAT)
-+		return syscall_get_nr(task, regs) > __NR_ia32_syscall_max;
-+#endif
-+
-+	return syscall_get_nr(task, regs) > __NR_syscall_max;
-+}
-+
- #ifdef CONFIG_X86_32
- 
- static inline void syscall_get_arguments(struct task_struct *task,
-diff --git a/kernel/seccomp.c b/kernel/seccomp.c
-index 5af44b5..bd7527d 100644
---- a/kernel/seccomp.c
-+++ b/kernel/seccomp.c
-@@ -429,6 +429,21 @@ int __secure_computing(int this_syscall)
- 			 */
- 			if (fatal_signal_pending(current))
- 				break;
-+
-+			if (syscall_is_nr_future(current, regs)) {
-+				/*
-+				 * If the tracer selects a system call that
-+				 * only future kernels know about, we still need
-+				 * to execute that syscall by returning
-+				 * -ENOSYS.  (On x86, this only matters if the
-+				 * tracer changed the return value, which would
-+				 * be silly, but user code can be silly.)
-+				 */
-+				syscall_set_return_value(current, regs,
-+							 -ENOSYS, 0);
-+				goto skip;
-+			}
-+
- 			if (syscall_get_nr(current, regs) < 0)
- 				goto skip;  /* Explicit request to skip. */
- 
--- 
-1.7.7.6
-
+Martin-Éric
