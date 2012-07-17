@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754349Ab2GQJPm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 05:15:42 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:64448 "EHLO
+	id S1754451Ab2GQJQF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 05:16:05 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:50838 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753767Ab2GQJPh (ORCPT
+	with ESMTP id S1752023Ab2GQJQC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 05:15:37 -0400
+	Tue, 17 Jul 2012 05:16:02 -0400
 From: Arnd Bergmann <arnd@arndb.de>
-To: Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
-Date: Tue, 17 Jul 2012 08:07:24 +0000
+To: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
+Subject: Re: [PATCH 1/2] drivers: bus: add a new driver for omap-ocp2scp
+Date: Tue, 17 Jul 2012 08:00:42 +0000
 User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: Catalin Marinas <catalin.marinas@arm.com>, Pavel Machek <pavel@ucw.cz>,
-        Ingo Molnar <mingo@kernel.org>, Olof Johansson <olof@lixom.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com> <201207151943.08183.arnd@arndb.de> <20120717065338.GA24699@infradead.org>
-In-Reply-To: <20120717065338.GA24699@infradead.org>
+Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
+        linux@arm.linux.org.uk, b-cousson@ti.com, rnayak@ti.com,
+        tony@atomide.com, gregkh@linuxfoundation.org, ohad@wizery.com,
+        linus.walleij@linaro.org, myungjoo.ham@samsung.com,
+        rusty@rustcorp.com.au, swarren@nvidia.com,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        balbi@ti.com, linux-omap@vger.kernel.org, linux-usb@vger.kernel.org
+References: <1342448023-14438-1-git-send-email-kishon@ti.com> <1342448023-14438-2-git-send-email-kishon@ti.com> <CAAe_U6K9sm-sDK80ySSHPGf5SYuwDkhW+4q8r2deXi7Tz3TxJw@mail.gmail.com>
+In-Reply-To: <CAAe_U6K9sm-sDK80ySSHPGf5SYuwDkhW+4q8r2deXi7Tz3TxJw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201207170807.25139.arnd@arndb.de>
-X-Provags-ID: V02:K0:X9YaJuy9JkRNO26DFdCDwW3dnyDzYyDSW8ZUl6jSDOH
- ZpFuBcqT4Am/nWvq7YmbmsJ7j4eiIHBC9Jkj6GX4olnZRhtBm8
- SJq5S/jZblVYNOAPCmoRK1EP7S3/n5PSQGL91u8mXh7m44hzdT
- WsdfaL9jOsaunL2LNcMC6vPRhmoN8BfWanGzz5s2gGS2YEsEo5
- EQ8RMjYtELN5hDXoz82t0Ea1J5qEkzLRvf7H5RgPwzeFOonopl
- A75gI69lUYarm82TndJQG+8EOuyVmWebI7bzLRXLaIdEtHiM0v
- xlSapAbonpvl9hcoapjd2nrtXCQLQEi75rlTrfmWJBYDcRYeqC
- 3xmnlY4Fw2U/AUs+6xqY=
+Message-Id: <201207170800.43300.arnd@arndb.de>
+X-Provags-ID: V02:K0:sRTscPAgv2Q87wulw2gJxsneEEIDTC7RDquyLAXQzDt
+ LBsL+kwC06OQGLm4nS0sqxd3XUkKpSqGXRSlErMTU6UJsiGlFV
+ gAZ1efxpNk3dFhlguHMFwCOTE8PCGb8LLKLX9EuLSj5znjm1oi
+ EI492oM+eoRg+fQDnu6nOkH7NK8Ykid1ogXcW7Rx86QkYJXL5Y
+ tx9h/QXe8J4ba8YmQx0cZHsPk9752MH6zYoabZidKmecfcMaR1
+ hR6RUd0/nGqaMUaNJWnRSkGRp2CZ562/TSDQaPsZdelRFTDltk
+ 8WO0isPjYjc6l1WC7PGozQ3f7zpgDc9KOJahgGFWKTIeWlL7wo
+ wObpEXepIoqKrPp8Em88=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 17 July 2012, Christoph Hellwig wrote:
-> On Sun, Jul 15, 2012 at 07:43:07PM +0000, Arnd Bergmann wrote:
-> > Yes, I agree that's the best way to handle this. Compared to other
-> > architectures, I think x86 is the only that allows booting either a
-> > 32 or 64 bit kernel on the same system. We used to support 32 bit
-> > kernels on 64 bit PowerMac, but nobody used it and we discontinued
-> > it long ago. Tile 64 bit is actually incompatible with 32 bit kernels
-> > at the architecture level and would require a third mode. On sparc,
-> > parisc and mips, AFAIK we could support 32 bit kernels on 64 bit
-> > machines, but never did.
-> 
-> On mips it works just fine.  On Sparc I don't think Linux ever did it,
-> but Solaris did for a long time, as did (IIRC) NetBSD/OpenBSD.
+On Tuesday 17 July 2012, ABRAHAM, KISHON VIJAY wrote:
+> On Mon, Jul 16, 2012 at 7:43 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+> > Adds a new driver *omap-ocp2scp*. This driver takes the responsibility of
+> > creating all the devices that is connected to OCP2SCP. In the case of OMAP4,
+> > USB2PHY is connected to ocp2scp.
+> >
+> > This also includes device tree support for ocp2scp driver and
+> > the documentation with device tree binding information is updated.
+> >
+> > Cc: Felipe Balbi <balbi@ti.com>
+> > Cc: Arnd Bergmann <arnd@arndb.de>
+> > Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 
-Ah, I didn't know about mips doing that. I also just remembered that
-s390 supports running 31 bit kernels on all 64 bit machines, but there is
-no longer official support for that from IBM's side AFAIK.
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 
-I certainly expect ARM to be similar to powperpc and sparc here,
-and anyone trying to submit a 32 bit kernel port for a 64 bit platform
-will have a hard time arguing why that should be accepted into mainline.
+Now that we've found a place for the code to live, do we know which maintainer is
+going to pick it up? If nobody else volunteers, we can take it through the
+arm-soc tree.
 
 	Arnd
 
