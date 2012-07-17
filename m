@@ -1,85 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756413Ab2GQT0Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 15:26:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31975 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752183Ab2GQT0V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 15:26:21 -0400
-Date: Tue, 17 Jul 2012 15:26:15 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Alan Cox <alan@linux.intel.com>
-Cc: dkline@redhat.com, Dave Airlie <airlied@redhat.com>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        kernel-team@fedoraproject.org
-Subject: gma500 opregion/power init order backtrace
-Message-ID: <20120717192614.GB18229@zod.bos.redhat.com>
+	id S1756387Ab2GQThF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 15:37:05 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:35407 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752167Ab2GQThA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 15:37:00 -0400
+Date: Tue, 17 Jul 2012 12:36:55 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Michael Kerrisk <mtk.manpages@gmail.com>,
+        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        NeilBrown <neilb@suse.de>, Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
+        Matthew Garrett <mjg@redhat.com>, John Stultz <john.stultz@linaro.org>,
+        Brian Swetland <swetland@google.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, mtk@lwn.net
+Subject: Re: [PATCH] epoll: Add a flag, EPOLLWAKEUP, to prevent suspend while
+ epoll events are ready
+Message-ID: <20120717193655.GA14280@kroah.com>
+References: <CAMP5XgcatAchOXaEG0rbULes5pVHHsuGeuJ2CKaVGEdj1LzMDg@mail.gmail.com>
+ <CAMP5XgfF3RF1hSonS_QrC8jQZyCcNfwGYZcCxnew02Rp3-CXKA@mail.gmail.com>
+ <CAHO5Pa3nWvmWY9jFZ-4ayvjGAV-4Vhs5sS18dbzniJp8wZYmoQ@mail.gmail.com>
+ <201207172122.26201.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201207172122.26201.rjw@sisk.pl>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
+On Tue, Jul 17, 2012 at 09:22:25PM +0200, Rafael J. Wysocki wrote:
+> On Tuesday, July 17, 2012, Michael Kerrisk wrote:
+> > On Tue, Jul 17, 2012 at 12:04 AM, Arve Hjønnevåg <arve@android.com> wrote:
+> > > On Mon, Jul 16, 2012 at 4:00 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > >> On Monday, July 16, 2012, Michael Kerrisk wrote:
+> > >>> Arve, Rafael,
+> > >>>
+> > >>> On Tue, May 1, 2012 at 7:33 AM, Arve Hjønnevåg <arve@android.com> wrote:
+> > >>> > When an epoll_event, that has the EPOLLWAKEUP flag set, is ready, a
+> > >>> > wakeup_source will be active to prevent suspend. This can be used to
+> > >>> > handle wakeup events from a driver that support poll, e.g. input, if
+> > >>> > that driver wakes up the waitqueue passed to epoll before allowing
+> > >>> > suspend.
+> > >>>
+> > >>> It's late it the -rc series,
+> > >>
+> > >> Well, exactly. :-)
+> > 
+> > If someone had CCed linux-api@ along the way (as per
+> > Documentation/SubmitChecklist), it might have helped ;-)
+> 
+> Well, it still _is_ late.
+> 
+> > >>> but it strikes me that CAP_EPOLLWAKEUP is
+> > >>> a poor name for the capability that governs the use of EPOLLWAKEUP.
+> > >>> While on the one hand some capabilities are overloaded
+> > >>> (https://lwn.net/Articles/486306/), on the other hand we should avoid
+> > >>> adding individual capabilities for each new API feature (otherwise
+> > >>> capabilities become administratively unwieldy).
+> > >>>
+> > >>> This capability is not really about "EPOLL". It's about the ability to
+> > >>> block system suspend. Therefore, IMO, a better name would be something
+> > >>> like: CAP_BLOCK_SUSPEND. This name is better because there might be
+> > >>> some other API feature that is later added that also has the effect of
+> > >>> preventing system suspends, and we could reasonably govern that
+> > >>> feature with the same capability.
+> > >
+> > > We already have another api, "/sys/power/wake_lock", that allow
+> > > user-space to block suspend. Do we want to apply this capability that
+> > > api as well, or only to apis that do not have other ways to restrict
+> > > access?
+> > 
+> > Well, the question is: is there a governor on the use of
+> > /sys/power/wake_lock? It makes sense either they are both governed
+> > (preferably by the same mechanism, I would have thought), or neither
+> > is.
+> > 
+> > >>> Does that seem sensible to you? I can send a patch for the name change.
+> > >>
+> > >> I'm not sure what Arve thinks about that, but I'd be fine with that.
+> > >>
+> > >> Arve, what do you think?
+> > >>
+> > >
+> > > CAP_BLOCK_SUSPEND is fine with me, but if it does not apply to the
+> > > sysfs interface, then the comment should probably mention this.
+> > 
+> > I've sent a patch, but omitted mention of API details in the comments.
+> > Maybe that can be changed afterward, when a decision has been reached
+> > about governing /sys/power/wake_lock.
+> 
+> I'm going to push your patch for v3.5, but then I'm considering the following
+> one for v3.6.  I wouldn't like to make more changes in v3.5-rc at this point,
+> if possible.
+> 
+> Thanks,
+> Rafael
+> 
+> ---
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+> Subject: PM / Sleep: Require CAP_BLOCK_SUSPEND to use wake_lock/wake_unlock
+> 
+> Require processes wanting to use the wake_lock/wake_unlock sysfs
+> files to have the CAP_BLOCK_SUSPEND capability, which also is
+> required for the eventpoll EPOLLWAKEUP flag to be effective, so that
+> all interfaces related to blocking autosleep depend on the same
+> capability.
+> 
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 
-We had a report [1] of a machine with a Cedarview chip in it not being
-able to have the backlight level adjusted with the hardware function
-keys in F17.  Matthew suggested that gma500 needs to work with opregion
-and the reporter (CC'd) tried a rawhide kernel based on
-v3.5-rc6-186-gac7d181.
+Care to mark that for -stable as well?
 
-I noticed there was a backtrace due to the power_ctrl_lock being used in
-spin_lock_irqsave before it was actually initialized.  The backtrace is
-included below.  It seems cdv_chip_setup is called before gma_power_init
-in psb_drv.c and that leads to a callchain that hits this.
+thanks,
 
-I'm wondering if the gma_power_init call can be moved up before
-chip_setup is called.  Seems so, but I thought I would ping you to see
-if you've seen this already.
-
-josh
-
-[1] https://bugzilla.redhat.com/show_bug.cgi?id=833597
-
-[   12.299336] BUG: spinlock bad magic on CPU#2, udevd/155
-[   12.299505]  lock: power_ctrl_lock [gma500_gfx], .magic: 00000000, .owner: udevd/155, .owner_cpu: 2
-[   12.301025] Pid: 155, comm: udevd Not tainted 3.5.0-0.rc6.git4.1.fc18.x86_64 #1
-[   12.301226] Call Trace:
-[   12.301371]  [<ffffffff816c70e6>] spin_dump+0x8c/0x91
-[   12.301514]  [<ffffffff816c710c>] spin_bug+0x21/0x26
-[   12.301659]  [<ffffffff8134bff3>] do_raw_spin_unlock+0x63/0xa0
-[   12.301809]  [<ffffffff816cef55>] _raw_spin_unlock_irqrestore+0x35/0x80
-[   12.302001]  [<ffffffffa00763ac>] gma_power_begin+0x5c/0x110 [gma500_gfx]
-[   12.302025]  [<ffffffffa007eee7>] psb_enable_pipestat+0x67/0xe0 [gma500_gfx]
-[   12.302048]  [<ffffffffa0081218>] psb_intel_opregion_enable_asle+0x38/0x70 [gma500_gfx]
-[   12.302069]  [<ffffffffa00812c5>] psb_intel_opregion_init+0x75/0x80 [gma500_gfx]
-[   12.302092]  [<ffffffffa0082058>] cdv_chip_setup+0x118/0x190 [gma500_gfx]
-[   12.302113]  [<ffffffffa0076b46>] psb_driver_load+0xd6/0x480 [gma500_gfx]
-[   12.302146]  [<ffffffffa001e8b6>] drm_get_pci_dev+0x186/0x2d0 [drm]
-[   12.302157]  [<ffffffff810d283d>] ? trace_hardirqs_on+0xd/0x10
-[   12.302177]  [<ffffffffa0076845>] psb_probe+0x15/0x20 [gma500_gfx]
-[   12.302188]  [<ffffffff8136db6c>] local_pci_probe+0x5c/0xd0
-[   12.302197]  [<ffffffff8136dcf1>] pci_device_probe+0x111/0x120
-[   12.302209]  [<ffffffff81434192>] driver_probe_device+0x92/0x390
-[   12.302217]  [<ffffffff8143453b>] __driver_attach+0xab/0xb0
-[   12.302226]  [<ffffffff81434490>] ? driver_probe_device+0x390/0x390
-[   12.302235]  [<ffffffff81432125>] bus_for_each_dev+0x55/0x90
-[   12.302243]  [<ffffffffa0097000>] ? 0xffffffffa0096fff
-[   12.302252]  [<ffffffff81433a1e>] driver_attach+0x1e/0x20
-[   12.302259]  [<ffffffff81433728>] bus_add_driver+0x1b8/0x2b0
-[   12.302267]  [<ffffffffa0097000>] ? 0xffffffffa0096fff
-[   12.302276]  [<ffffffff81434c37>] driver_register+0x77/0x150
-[   12.302296]  [<ffffffffa0097000>] ? 0xffffffffa0096fff
-[   12.302306]  [<ffffffff8136c8cf>] __pci_register_driver+0x6f/0xf0
-[   12.302315]  [<ffffffffa0097000>] ? 0xffffffffa0096fff
-[   12.302341]  [<ffffffffa001eb1a>] drm_pci_init+0x11a/0x130 [drm]
-[   12.302348]  [<ffffffffa0097000>] ? 0xffffffffa0096fff
-[   12.302369]  [<ffffffffa0097017>] psb_init+0x17/0x1000 [gma500_gfx]
-[   12.302380]  [<ffffffff8100212a>] do_one_initcall+0x12a/0x180
-[   12.302389]  [<ffffffff810df546>] sys_init_module+0x156/0x2280
-[   12.302399]  [<ffffffff8135a340>] ? ddebug_proc_open+0xd0/0xd0
-[   12.302417]  [<ffffffff811c7710>] ? fget_raw+0x310/0x310
-[   12.302429]  [<ffffffff816d7ea9>] system_call_fastpath+0x16/0x1b
-[   12.303259] gma500 0000:00:02.0: GPU: power management timed out.
+greg k-h
