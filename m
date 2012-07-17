@@ -1,148 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753748Ab2GQGmr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 02:42:47 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:60145 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751589Ab2GQGlS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 02:41:18 -0400
-From: John Stultz <johnstul@us.ibm.com>
-To: stable@vger.kernel.org
-Cc: John Stultz <johnstul@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 6/7] 3.4.x: hrtimer: Update hrtimer base offsets each hrtimer_interrupt
-Date: Tue, 17 Jul 2012 02:39:55 -0400
-Message-Id: <1342507196-54327-7-git-send-email-johnstul@us.ibm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1342507196-54327-1-git-send-email-johnstul@us.ibm.com>
-References: <1342507196-54327-1-git-send-email-johnstul@us.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12071706-9360-0000-0000-0000087851E2
+	id S1752660Ab2GQGrj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 02:47:39 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42940 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750976Ab2GQGrg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 02:47:36 -0400
+Message-ID: <1342507641.18110.1.camel@phoenix>
+Subject: [PATCH RFT] regulator: s2mps11: Fix ramp_delay settings for
+ s2mps11_buck_ops
+From: Axel Lin <axel.lin@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lrg@ti.com>,
+        linux-kernel@vger.kernel.org
+Date: Tue, 17 Jul 2012 14:47:21 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a backport of 5baefd6d84163443215f4a99f6a20f054ef11236
+The ramp_delay settings were missing while converting to
+regulator_set_voltage_time_sel(). Fix it.
 
-The update of the hrtimer base offsets on all cpus cannot be made
-atomically from the timekeeper.lock held and interrupt disabled region
-as smp function calls are not allowed there.
+There is no ramp_delay setting for s2mps11_ldo_ops, thus remove
+setting set_voltage_sel callback for s2mps11_ldo_ops.
 
-clock_was_set(), which enforces the update on all cpus, is called
-either from preemptible process context in case of do_settimeofday()
-or from the softirq context when the offset modification happened in
-the timer interrupt itself due to a leap second.
-
-In both cases there is a race window for an hrtimer interrupt between
-dropping timekeeper lock, enabling interrupts and clock_was_set()
-issuing the updates. Any interrupt which arrives in that window will
-see the new time but operate on stale offsets.
-
-So we need to make sure that an hrtimer interrupt always sees a
-consistent state of time and offsets.
-
-ktime_get_update_offsets() allows us to get the current monotonic time
-and update the per cpu hrtimer base offsets from hrtimer_interrupt()
-to capture a consistent state of monotonic time and the offsets. The
-function replaces the existing ktime_get() calls in hrtimer_interrupt().
-
-The overhead of the new function vs. ktime_get() is minimal as it just
-adds two store operations.
-
-This ensures that any changes to realtime or boottime offsets are
-noticed and stored into the per-cpu hrtimer base structures, prior to
-any hrtimer expiration and guarantees that timers are not expired early.
-
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
-Reviewed-by: Ingo Molnar <mingo@kernel.org>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Prarit Bhargava <prarit@redhat.com>
-Cc: stable@vger.kernel.org
-Link: http://lkml.kernel.org/r/1341960205-56738-8-git-send-email-johnstul@us.ibm.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- kernel/hrtimer.c |   28 ++++++++++++++--------------
- 1 file changed, 14 insertions(+), 14 deletions(-)
+ drivers/regulator/s2mps11.c |   27 ++++++++++++++++++++++++++-
+ 1 file changed, 26 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 8f320af..6db7a5e 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -657,6 +657,14 @@ static inline int hrtimer_enqueue_reprogram(struct hrtimer *timer,
- 	return 0;
- }
+diff --git a/drivers/regulator/s2mps11.c b/drivers/regulator/s2mps11.c
+index 4669dc9..b0f7ac1 100644
+--- a/drivers/regulator/s2mps11.c
++++ b/drivers/regulator/s2mps11.c
+@@ -62,7 +62,6 @@ static struct regulator_ops s2mps11_ldo_ops = {
+ 	.disable		= regulator_disable_regmap,
+ 	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
+ 	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
+-	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
+ };
  
-+static inline ktime_t hrtimer_update_base(struct hrtimer_cpu_base *base)
-+{
-+	ktime_t *offs_real = &base->clock_base[HRTIMER_BASE_REALTIME].offset;
-+	ktime_t *offs_boot = &base->clock_base[HRTIMER_BASE_BOOTTIME].offset;
+ static struct regulator_ops s2mps11_buck_ops = {
+@@ -291,6 +290,32 @@ static __devinit int s2mps11_pmic_probe(struct platform_device *pdev)
+ 	sec_reg_write(iodev, S2MPS11_REG_RAMP_BUCK, ramp_reg);
+ 
+ 	for (i = 0; i < S2MPS11_REGULATOR_MAX; i++) {
++		struct regulator_desc *desc = &regulators[i];
 +
-+	return ktime_get_update_offsets(offs_real, offs_boot);
-+}
-+
- /*
-  * Retrigger next event is called after clock was set
-  *
-@@ -665,22 +673,12 @@ static inline int hrtimer_enqueue_reprogram(struct hrtimer *timer,
- static void retrigger_next_event(void *arg)
- {
- 	struct hrtimer_cpu_base *base = &__get_cpu_var(hrtimer_bases);
--	struct timespec realtime_offset, xtim, wtm, sleep;
++		switch (i) {
++		case S2MPS11_BUCK1:
++		case S2MPS11_BUCK6:
++			desc->ramp_delay = pdata->buck16_ramp_delay * 1000;
++			break;
++		case S2MPS11_BUCK2:
++			desc->ramp_delay = pdata->buck2_ramp_delay * 1000;
++			break;
++		case S2MPS11_BUCK3:
++		case S2MPS11_BUCK4:
++			desc->ramp_delay = pdata->buck34_ramp_delay * 1000;
++			break;
++		case S2MPS11_BUCK5:
++			desc->ramp_delay = pdata->buck5_ramp_delay * 1000;
++			break;
++		case S2MPS11_BUCK7:
++		case S2MPS11_BUCK8:
++		case S2MPS11_BUCK10:
++			desc->ramp_delay = pdata->buck7810_ramp_delay * 1000;
++			break;
++		case S2MPS11_BUCK9:
++			desc->ramp_delay = pdata->buck9_ramp_delay * 1000;
++			break;
++		}
  
- 	if (!hrtimer_hres_active())
- 		return;
- 
--	/* Optimized out for !HIGH_RES */
--	get_xtime_and_monotonic_and_sleep_offset(&xtim, &wtm, &sleep);
--	set_normalized_timespec(&realtime_offset, -wtm.tv_sec, -wtm.tv_nsec);
--
--	/* Adjust CLOCK_REALTIME offset */
- 	raw_spin_lock(&base->lock);
--	base->clock_base[HRTIMER_BASE_REALTIME].offset =
--		timespec_to_ktime(realtime_offset);
--	base->clock_base[HRTIMER_BASE_BOOTTIME].offset =
--		timespec_to_ktime(sleep);
--
-+	hrtimer_update_base(base);
- 	hrtimer_force_reprogram(base, 0);
- 	raw_spin_unlock(&base->lock);
- }
-@@ -710,7 +708,6 @@ static int hrtimer_switch_to_hres(void)
- 		base->clock_base[i].resolution = KTIME_HIGH_RES;
- 
- 	tick_setup_sched_timer();
--
- 	/* "Retrigger" the interrupt to get things going */
- 	retrigger_next_event(NULL);
- 	local_irq_restore(flags);
-@@ -1264,7 +1261,7 @@ void hrtimer_interrupt(struct clock_event_device *dev)
- 	dev->next_event.tv64 = KTIME_MAX;
- 
- 	raw_spin_lock(&cpu_base->lock);
--	entry_time = now = ktime_get();
-+	entry_time = now = hrtimer_update_base(cpu_base);
- retry:
- 	expires_next.tv64 = KTIME_MAX;
- 	/*
-@@ -1342,9 +1339,12 @@ retry:
- 	 * We need to prevent that we loop forever in the hrtimer
- 	 * interrupt routine. We give it 3 attempts to avoid
- 	 * overreacting on some spurious event.
-+	 *
-+	 * Acquire base lock for updating the offsets and retrieving
-+	 * the current time.
- 	 */
- 	raw_spin_lock(&cpu_base->lock);
--	now = ktime_get();
-+	now = hrtimer_update_base(cpu_base);
- 	cpu_base->nr_retries++;
- 	if (++retries < 3)
- 		goto retry;
+ 		config.dev = &pdev->dev;
+ 		config.regmap = iodev->regmap;
 -- 
 1.7.9.5
+
+
 
