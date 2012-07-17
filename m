@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757291Ab2GQWuB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 18:50:01 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34603 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755078Ab2GQWt6 (ORCPT
+	id S1757383Ab2GQWuQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 18:50:16 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:32882 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757360Ab2GQWuM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 18:49:58 -0400
-Subject: Patch "hrtimer: Provide clock_was_set_delayed()" has been added to the 3.0-stable tree
+	Tue, 17 Jul 2012 18:50:12 -0400
+Subject: Patch "timekeeping: Add missing update call in timekeeping_resume()" has been added to the 3.0-stable tree
 To: johnstul@us.ibm.com, a.p.zijlstra@chello.nl, gregkh@linuxfoundation.org,
-        jengelh@inai.de, linux-kernel@vger.kernel.org, mingo@kernel.org,
-        prarit@redhat.com, tglx@linutronix.de
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Martin@lichtvoll.de, mingo@kernel.org, prarit@redhat.com, rjw@sisk.pl,
+        schwab@linux-m68k.org, tglx@linutronix.de,
+        torvalds@linux-foundation.org
 Cc: <stable@vger.kernel.org>, <stable-commits@vger.kernel.org>
 From: <gregkh@linuxfoundation.org>
-Date: Tue, 17 Jul 2012 15:49:54 -0700
-In-Reply-To: <1342546438-17534-6-git-send-email-johnstul@us.ibm.com>
-Message-ID: <13425653942002@kroah.org>
+Date: Tue, 17 Jul 2012 15:49:57 -0700
+In-Reply-To: <1342546438-17534-12-git-send-email-johnstul@us.ibm.com>
+Message-ID: <13425653973865@kroah.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ASCII
 Content-Transfer-Encoding: 8bit
@@ -26,138 +28,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is a note to let you know that I've just added the patch titled
 
-    hrtimer: Provide clock_was_set_delayed()
+    timekeeping: Add missing update call in timekeeping_resume()
 
 to the 3.0-stable tree which can be found at:
     http://www.kernel.org/git/?p=linux/kernel/git/stable/stable-queue.git;a=summary
 
 The filename of the patch is:
-     hrtimer-provide-clock_was_set_delayed.patch
+     timekeeping-add-missing-update-call-in-timekeeping_resume.patch
 and it can be found in the queue-3.0 subdirectory.
 
 If you, or anyone else, feels it should not be added to the stable tree,
 please let <stable@vger.kernel.org> know about it.
 
 
->From johnstul@us.ibm.com  Tue Jul 17 15:25:04 2012
+>From johnstul@us.ibm.com  Tue Jul 17 15:27:16 2012
 From: John Stultz <johnstul@us.ibm.com>
-Date: Tue, 17 Jul 2012 13:33:52 -0400
-Subject: hrtimer: Provide clock_was_set_delayed()
+Date: Tue, 17 Jul 2012 13:33:58 -0400
+Subject: timekeeping: Add missing update call in timekeeping_resume()
 To: stable@vger.kernel.org
-Cc: John Stultz <johnstul@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>, Prarit Bhargava <prarit@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
-Message-ID: <1342546438-17534-6-git-send-email-johnstul@us.ibm.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>, Linux PM list <linux-pm@vger.kernel.org>, John Stultz <johnstul@us.ibm.com>, Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>, Prarit Bhargava <prarit@redhat.com>, Linus Torvalds <torvalds@linux-foundation.org>
+Message-ID: <1342546438-17534-12-git-send-email-johnstul@us.ibm.com>
 
-From: John Stultz <johnstul@us.ibm.com>
 
-This is a backport of f55a6faa384304c89cfef162768e88374d3312cb
+From: Thomas Gleixner <tglx@linutronix.de>
 
-clock_was_set() cannot be called from hard interrupt context because
-it calls on_each_cpu().
+This is a backport of 3e997130bd2e8c6f5aaa49d6e3161d4d29b43ab0
 
-For fixing the widely reported leap seconds issue it is necessary to
-call it from hard interrupt context, i.e. the timer tick code, which
-does the timekeeping updates.
+The leap second rework unearthed another issue of inconsistent data.
 
-Provide a new function which denotes it in the hrtimer cpu base
-structure of the cpu on which it is called and raise the hrtimer
-softirq. We then execute the clock_was_set() notificiation from
-softirq context in run_hrtimer_softirq(). The hrtimer softirq is
-rarely used, so polling the flag there is not a performance issue.
+On timekeeping_resume() the timekeeper data is updated, but nothing
+calls timekeeping_update(), so now the update code in the timer
+interrupt sees stale values.
 
-[ tglx: Made it depend on CONFIG_HIGH_RES_TIMERS. We really should get
-  rid of all this ifdeffery ASAP ]
+This has been the case before those changes, but then the timer
+interrupt was using stale data as well so this went unnoticed for quite
+some time.
 
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
-Reported-by: Jan Engelhardt <jengelh@inai.de>
-Reviewed-by: Ingo Molnar <mingo@kernel.org>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Prarit Bhargava <prarit@redhat.com>
-Link: http://lkml.kernel.org/r/1341960205-56738-2-git-send-email-johnstul@us.ibm.com
+Add the missing update call, so all the data is consistent everywhere.
+
+Reported-by: Andreas Schwab <schwab@linux-m68k.org>
+Reported-and-tested-by: "Rafael J. Wysocki" <rjw@sisk.pl>
+Reported-and-tested-by: Martin Steigerwald <Martin@lichtvoll.de>
+Cc: John Stultz <johnstul@us.ibm.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: Prarit Bhargava <prarit@redhat.com>
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Prarit Bhargava <prarit@redhat.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: John Stultz <johnstul@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/linux/hrtimer.h |    9 ++++++++-
- kernel/hrtimer.c        |   20 ++++++++++++++++++++
- 2 files changed, 28 insertions(+), 1 deletion(-)
 
---- a/include/linux/hrtimer.h
-+++ b/include/linux/hrtimer.h
-@@ -165,6 +165,7 @@ enum  hrtimer_base_type {
-  * @lock:		lock protecting the base and associated clock bases
-  *			and timers
-  * @active_bases:	Bitfield to mark bases with active timers
-+ * @clock_was_set:	Indicates that clock was set from irq context.
-  * @expires_next:	absolute time of the next event which was scheduled
-  *			via clock_set_next_event()
-  * @hres_active:	State of high resolution mode
-@@ -177,7 +178,8 @@ enum  hrtimer_base_type {
-  */
- struct hrtimer_cpu_base {
- 	raw_spinlock_t			lock;
--	unsigned long			active_bases;
-+	unsigned int			active_bases;
-+	unsigned int			clock_was_set;
- #ifdef CONFIG_HIGH_RES_TIMERS
- 	ktime_t				expires_next;
- 	int				hres_active;
-@@ -286,6 +288,8 @@ extern void hrtimer_peek_ahead_timers(vo
- # define MONOTONIC_RES_NSEC	HIGH_RES_NSEC
- # define KTIME_MONOTONIC_RES	KTIME_HIGH_RES
+---
+ kernel/time/timekeeping.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -693,6 +693,7 @@ static void timekeeping_resume(void)
+ 	timekeeper.clock->cycle_last = timekeeper.clock->read(timekeeper.clock);
+ 	timekeeper.ntp_error = 0;
+ 	timekeeping_suspended = 0;
++	timekeeping_update(false);
+ 	write_sequnlock_irqrestore(&xtime_lock, flags);
  
-+extern void clock_was_set_delayed(void);
-+
- #else
- 
- # define MONOTONIC_RES_NSEC	LOW_RES_NSEC
-@@ -306,6 +310,9 @@ static inline int hrtimer_is_hres_active
- {
- 	return 0;
- }
-+
-+static inline void clock_was_set_delayed(void) { }
-+
- #endif
- 
- extern void clock_was_set(void);
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -717,6 +717,19 @@ static int hrtimer_switch_to_hres(void)
- 	return 1;
- }
- 
-+/*
-+ * Called from timekeeping code to reprogramm the hrtimer interrupt
-+ * device. If called from the timer interrupt context we defer it to
-+ * softirq context.
-+ */
-+void clock_was_set_delayed(void)
-+{
-+	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
-+
-+	cpu_base->clock_was_set = 1;
-+	__raise_softirq_irqoff(HRTIMER_SOFTIRQ);
-+}
-+
- #else
- 
- static inline int hrtimer_hres_active(void) { return 0; }
-@@ -1395,6 +1408,13 @@ void hrtimer_peek_ahead_timers(void)
- 
- static void run_hrtimer_softirq(struct softirq_action *h)
- {
-+	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
-+
-+	if (cpu_base->clock_was_set) {
-+		cpu_base->clock_was_set = 0;
-+		clock_was_set();
-+	}
-+
- 	hrtimer_peek_ahead_timers();
- }
- 
+ 	touch_softlockup_watchdog();
 
 
 Patches currently in stable-queue which might be from johnstul@us.ibm.com are
