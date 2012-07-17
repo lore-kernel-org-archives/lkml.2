@@ -1,116 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757065Ab2GQVur (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 17:50:47 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:34459 "EHLO
+	id S1757087Ab2GQVvj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 17:51:39 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:34345 "EHLO
 	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756985Ab2GQVul (ORCPT
+	with ESMTP id S1757021Ab2GQVue (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 17:50:41 -0400
+	Tue, 17 Jul 2012 17:50:34 -0400
 From: John Stultz <johnstul@us.ibm.com>
 To: stable@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, John Stultz <johnstul@us.ibm.com>,
+Cc: John Stultz <john.stultz@linaro.org>, stable@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
         Prarit Bhargava <prarit@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 09/11] 2.6.34.x: timekeeping: Provide hrtimer update function
-Date: Tue, 17 Jul 2012 17:49:29 -0400
-Message-Id: <1342561771-55678-10-git-send-email-johnstul@us.ibm.com>
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        John Stultz <johnstul@us.ibm.com>
+Subject: [PATCH 03/11] 2.6.34.x: timekeeping: Fix CLOCK_MONOTONIC inconsistency during leapsecond
+Date: Tue, 17 Jul 2012 17:49:23 -0400
+Message-Id: <1342561771-55678-4-git-send-email-johnstul@us.ibm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1342561771-55678-1-git-send-email-johnstul@us.ibm.com>
 References: <1342561771-55678-1-git-send-email-johnstul@us.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12071721-1780-0000-0000-0000077E4115
+x-cbid: 12071721-1780-0000-0000-0000077E407E
 X-IBM-ISS-SpamDetectors: 
 X-IBM-ISS-DetailInfo: BY=3.00000287; HX=3.00000193; KW=3.00000007;
  PH=3.00000001; SC=3.00000004; SDB=6.00157490; UDB=6.00035526; UTC=2012-07-17
- 21:50:38
+ 21:50:31
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: John Stultz <john.stultz@linaro.org>
 
-This is a backport of f6c06abfb3972ad4914cef57d8348fcb2932bc3b
+This is a backport of fad0c66c4bb836d57a5f125ecd38bed653ca863a
+which resolves a bug the previous commit.
 
-To finally fix the infamous leap second issue and other race windows
-caused by functions which change the offsets between the various time
-bases (CLOCK_MONOTONIC, CLOCK_REALTIME and CLOCK_BOOTTIME) we need a
-function which atomically gets the current monotonic time and updates
-the offsets of CLOCK_REALTIME and CLOCK_BOOTTIME with minimalistic
-overhead. The previous patch which provides ktime_t offsets allows us
-to make this function almost as cheap as ktime_get() which is going to
-be replaced in hrtimer_interrupt().
+Commit 6b43ae8a61 (ntp: Fix leap-second hrtimer livelock) broke the
+leapsecond update of CLOCK_MONOTONIC. The missing leapsecond update to
+wall_to_monotonic causes discontinuities in CLOCK_MONOTONIC.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Reviewed-by: Ingo Molnar <mingo@kernel.org>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Prarit Bhargava <prarit@redhat.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
-Link: http://lkml.kernel.org/r/1341960205-56738-7-git-send-email-johnstul@us.ibm.com
+Adjust wall_to_monotonic when NTP inserted a leapsecond.
+
+Reported-by: Richard Cochran <richardcochran@gmail.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Tested-by: Richard Cochran <richardcochran@gmail.com>
+Cc: stable@kernel.org
+Link: http://lkml.kernel.org/r/1338400497-12420-1-git-send-email-john.stultz@linaro.org
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Cc: Prarit Bhargava <prarit@redhat.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Linux Kernel <linux-kernel@vger.kernel.org>
 Signed-off-by: John Stultz <johnstul@us.ibm.com>
 ---
- include/linux/hrtimer.h   |    2 +-
- kernel/time/timekeeping.c |   32 ++++++++++++++++++++++++++++++++
- 2 files changed, 33 insertions(+), 1 deletion(-)
+ kernel/time/timekeeping.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
-index 0325598..887d1e7 100644
---- a/include/linux/hrtimer.h
-+++ b/include/linux/hrtimer.h
-@@ -319,7 +319,7 @@ static inline void clock_was_set_delayed(void) { }
- 
- extern ktime_t ktime_get(void);
- extern ktime_t ktime_get_real(void);
--
-+extern ktime_t ktime_get_update_offsets(ktime_t *offs_real);
- 
- DECLARE_PER_CPU(struct tick_device, tick_cpu_device);
- 
 diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 3d443b4..0b4f6d1 100644
+index df1e939..f8d4877 100644
 --- a/kernel/time/timekeeping.c
 +++ b/kernel/time/timekeeping.c
-@@ -969,3 +969,35 @@ struct timespec get_monotonic_coarse(void)
- 				now.tv_nsec + mono.tv_nsec);
- 	return now;
- }
-+
-+#ifdef CONFIG_HIGH_RES_TIMERS
-+/**
-+ * ktime_get_update_offsets - hrtimer helper
-+ * @real:	pointer to storage for monotonic -> realtime offset
-+ *
-+ * Returns current monotonic time and updates the offsets
-+ * Called from hrtimer_interupt() or retrigger_next_event()
-+ */
-+ktime_t ktime_get_update_offsets(ktime_t *real)
-+{
-+	ktime_t now;
-+	unsigned int seq;
-+	u64 secs, nsecs;
-+
-+	do {
-+		seq = read_seqbegin(&xtime_lock);
-+
-+		secs = xtime.tv_sec;
-+		nsecs = xtime.tv_nsec;
-+		nsecs += timekeeping_get_ns();
-+		/* If arch requires, add in gettimeoffset() */
-+		nsecs += arch_gettimeoffset();
-+
-+		*real = offs_real;
-+	} while (read_seqretry(&xtime_lock, seq));
-+
-+	now = ktime_add_ns(ktime_set(secs, 0), nsecs);
-+	now = ktime_sub(now, *real);
-+	return now;
-+}
-+#endif
+@@ -759,6 +759,7 @@ static cycle_t logarithmic_accumulation(cycle_t offset, int shift)
+ 		xtime.tv_sec++;
+ 		leap = second_overflow(xtime.tv_sec);
+ 		xtime.tv_sec += leap;
++		wall_to_monotonic.tv_sec -= leap;
+ 	}
+ 
+ 	/* Accumulate into raw time */
 -- 
 1.7.9.5
 
