@@ -1,64 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752265Ab2GQM5H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 08:57:07 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:56863 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750964Ab2GQM5F (ORCPT
+	id S1752493Ab2GQM7p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 08:59:45 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:53211 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751764Ab2GQM7m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 08:57:05 -0400
+	Tue, 17 Jul 2012 08:59:42 -0400
+Message-ID: <500561AF.9090901@gmail.com>
+Date: Tue, 17 Jul 2012 14:59:27 +0200
+From: Daniel Mack <zonque@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <CANq1E4RyFpqxH=uG+dDA1=kfc3r8rCoEesZ31op9rCLjxyk6mQ@mail.gmail.com>
-References: <1341784614-2797-1-git-send-email-dh.herrmann@googlemail.com>
-	<1341784614-2797-12-git-send-email-dh.herrmann@googlemail.com>
-	<CAMuHMdX_aC1hzKf1eRqoSsQ4oALBev8p77v7++aoB2KrkOUaEw@mail.gmail.com>
-	<CANq1E4RyFpqxH=uG+dDA1=kfc3r8rCoEesZ31op9rCLjxyk6mQ@mail.gmail.com>
-Date: Tue, 17 Jul 2012 14:57:03 +0200
-X-Google-Sender-Auth: k0PLU1jhtgnz0zWNp21k9ZLW0C4
-Message-ID: <CAMuHMdXFfMv-DV-89nueyDJ5AvFN3AXR_6ysWOfCMDFL46s-Cg@mail.gmail.com>
-Subject: Re: [PATCH v2 11/11] MAINTAINERS: add fblog entry
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: David Herrmann <dh.herrmann@googlemail.com>
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        florianschandinat@gmx.de, linux-fbdev@vger.kernel.org,
-        gregkh@linuxfoundation.org, alan@lxorguk.ukuu.org.uk,
-        bonbons@linux-vserver.org
-Content-Type: text/plain; charset=UTF-8
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Sven Neumann <s.neumann@raumfeld.com>, Olof Johansson <olof@lixom.net>,
+        Daniel Mack <daniel@caiaq.de>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Input: eeti_ts: Mark as CONFIG_BROKEN
+References: <1333777207-4151-1-git-send-email-olof@lixom.net> <20120407070206.GA17623@core.coreip.homeip.net> <4F8089A9.6080704@raumfeld.com> <20120503043651.GA11830@core.coreip.homeip.net> <20120713070102.GA2223@core.coreip.homeip.net>
+In-Reply-To: <20120713070102.GA2223@core.coreip.homeip.net>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 9, 2012 at 8:38 PM, David Herrmann
-<dh.herrmann@googlemail.com> wrote:
->>> diff --git a/MAINTAINERS b/MAINTAINERS
->>> index ae8fe46..249b02a 100644
->>> --- a/MAINTAINERS
->>> +++ b/MAINTAINERS
->>> @@ -2854,6 +2854,12 @@ F:       drivers/video/
->>>  F:     include/video/
->>>  F:     include/linux/fb.h
->>>
->>> +FRAMEBUFFER LOG DRIVER
->>> +M:     David Herrmann <dh.herrmann@googlemail.com>
->>> +L:     linux-serial@vger.kernel.org
+On 13.07.2012 09:01, Dmitry Torokhov wrote:
+> On Wed, May 02, 2012 at 09:36:51PM -0700, Dmitry Torokhov wrote:
+>> Hi Sven,
 >>
->> Why linux-serial, and not linux-fbdev?
->
-> I thought fbcon was maintained on linux-serial as it is very related
+>> On Sat, Apr 07, 2012 at 08:38:33PM +0200, Sven Neumann wrote:
+>>> Hi,
+>>>
+>>> On 07.04.12 09:02, Dmitry Torokhov wrote:
+>>>> On Fri, Apr 06, 2012 at 10:40:07PM -0700, Olof Johansson wrote:
+>>>>> This seems to have been broken since 2010, so obviously noone actually
+>>>>> cares about the driver:
+>>>>>
+>>>>> make[4]: *** [drivers/input/touchscreen/eeti_ts.o] Error 1
+>>>>> drivers/input/touchscreen/eeti_ts.c: In function 'eeti_ts_irq_active':
+>>>>> drivers/input/touchscreen/eeti_ts.c:65:2: error: implicit declaration of function 'irq_to_gpio' [-Werror=implicit-function-declaration]
+>>>>>
+>>>>> irq_to_gpio isn't available on most platforms today, so the driver
+>>>>> will need some rework by someone who has hardware access and can test
+>>>>> (to make sure that, for example, switching to level interrupts and just
+>>>>> keep taking them while there's more to process works).
+>>>>>
+>>>>> I guess it could just be scheduled for removal, but let's start with
+>>>>> marking it CONFIG_BROKEN.
+>>>>
+>>>> Well, it probably works quite well on arches that do have irq_to_gpio(),
+>>>> let's ask Daniel and Sven if they still have this hardware and if they
+>>>> can try the patch below that implements what you suggested.
+>>>
+>>> This hardware is still in use and we also still follow kernel
+>>> development and try to update our customer devices to recent kernel
+>>> versions regularly. Currently we are at 3.1.10 and the touchscreen
+>>> works well with that. I'll try to update to a more recent kernel
+>>> next week and will try your patch.
+>>>
+>>
+>> Did you have a chance to test the patch?
+> 
+> *ping*
+> 
+> It would be nice to get driver in mainline compile [and work] again...
 
-It has always been maintained on linux-fbdev.
+We gave that patch a quick try today and it doesn't seem to work. We
+don't get any events from the touch screen anymore. We need to debug
+this further, hopefully by the end of this week.
 
-> to the vt/tty layer. If linux-fbdev is the better place, I can move
-> this. I CC'ed both lists, anyway.
-> I have actually no idea where it fits in best.
+If there's anything obvious in the setup of the threaded IRQ handler,
+please let us know. Otherwise, I'll get back once I have a fixed version
+of the patch.
 
-Gr{oetje,eeting}s,
 
-                        Geert
+Thanks,
+Daniel
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+> 
+> Thanks.
+> 
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+
