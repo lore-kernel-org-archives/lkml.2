@@ -1,59 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755085Ab2GQKH3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 06:07:29 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:36937 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754076Ab2GQKHY (ORCPT
+	id S1755099Ab2GQKIJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 06:08:09 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40569 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754768Ab2GQKIH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 06:07:24 -0400
-Date: Tue, 17 Jul 2012 11:10:53 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the tty tree
-Message-ID: <20120717111053.287191b3@pyramind.ukuu.org.uk>
-In-Reply-To: <20120717134506.3f3f0614ad1d5193689de334@canb.auug.org.au>
-References: <20120717134506.3f3f0614ad1d5193689de334@canb.auug.org.au>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 17 Jul 2012 06:08:07 -0400
+Date: Tue, 17 Jul 2012 11:08:04 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: lrg@ti.com, rob.herring@calxeda.com, swarren@wwwdotorg.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH REBASE] regulator: tps65910: set input_supply on desc
+ unconditionally
+Message-ID: <20120717100804.GA4477@opensource.wolfsonmicro.com>
+References: <1342505046-8176-1-git-send-email-ldewangan@nvidia.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="huq684BweRXVnRxX"
+Content-Disposition: inline
+In-Reply-To: <1342505046-8176-1-git-send-email-ldewangan@nvidia.com>
+X-Cookie: Your aim is high and to the right.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Jul 2012 13:45:06 +1000
-Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-> Hi Greg,
-> 
-> After merging the tty tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
-> 
-> drivers/tty/tty_ioctl.c: In function 'set_sgflags':
-> drivers/tty/tty_ioctl.c:741:9: error: request for member 'c_iflag' in something not a structure or union
-> drivers/tty/tty_ioctl.c:742:9: error: request for member 'c_oflag' in something not a structure or union
-> drivers/tty/tty_ioctl.c:743:9: error: request for member 'c_lflag' in something not a structure or union
-> drivers/tty/tty_ioctl.c:745:10: error: request for member 'c_iflag' in something not a structure or union
-> drivers/tty/tty_ioctl.c:746:10: error: request for member 'c_lflag' in something not a structure or union
-> drivers/tty/tty_ioctl.c:749:10: error: request for member 'c_lflag' in something not a structure or union
-> drivers/tty/tty_ioctl.c:753:10: error: request for member 'c_oflag' in something not a structure or union
-> drivers/tty/tty_ioctl.c:756:10: error: request for member 'c_iflag' in something not a structure or union
-> drivers/tty/tty_ioctl.c:757:10: error: request for member 'c_lflag' in something not a structure or union
-> drivers/tty/tty_ioctl.c:759:15: error: request for member 'c_lflag' in something not a structure or union
-> drivers/tty/tty_ioctl.c:760:10: error: request for member 'c_cc' in something not a structure or union
-> drivers/tty/tty_ioctl.c:761:10: error: request for member 'c_cc' in something not a structure or union
-> 
-> Caused by commit adc8d746caa6 ("tty: move the termios object into the
-> tty").  Did anyone build test this?  :-(
+--huq684BweRXVnRxX
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-It's known not to build. I sent Greg some patches but he wants them
-versus a different tree. I hope to have that done and tested in the next
-couple of days, until then I'd suggest you drop the tty tree - in
-particular because the version you are currently using scribbles on other
-bits of of memory.
+On Tue, Jul 17, 2012 at 11:34:06AM +0530, Laxman Dewangan wrote:
+> Set the supply_name in the regulator descriptor unconditionally
+> and make this parameter as required parameter in the device
+> node for successfully registration of the regulator.
 
-Alan
+Applied, thanks.
+
+--huq684BweRXVnRxX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQBTl9AAoJEBus8iNuMP3doTcP/ReEpR1pUtioM3ZuIA92kz6l
+Beg+oBUXTaM9gqrtzFdyfIMJgET2oShbc5SVGHR6qAYOraiF70GY0q9udJUNT6GA
+Z5xmG9/4P19v8o9Y+VQ6qrPn/jmHCCppLi6n9Cy2mW/SFDZofzhyJD+aMycYcKC9
+eKqpfY4TAnjlvpUZMw8tnte0ppOyvm5H3UXuaHzNmFvfdURavQpDV1OeqGuI6sDy
+rBDckYACsz7hEUqhE1s8M12wLhaU/gIRurJGZzbsBIT7QgWfUPpNElpUXDTRwI77
+mIeptnrEDSkP7Vxg8ITcsXa48kGzAh6ePFLD6GwiowUySWuhAz+MFU0rjb0h8PhC
+ajiVOl8ZCKXFmhsC+2tzLKbe9eMN5fcDQRphZOi84jyHFXMiTGFD4NP6H7WHW0+x
+yi9nuOg3YTPTqEEGiwmhiRXp+iBNZvreA1XsRnHgPBluyt57RemvVWsqrG6nMMEe
+9EO6OcUFe3+etyEnr/xcjbbq0OVFplJI/LzURO/G97rAPulIE7XHYHsiqEFvyz/O
+wUwsJ+VE0OM5YZ2QU0mnReMh6G1n03IBSOYUYgDgVVUJv7GDvggAbCqKWfYir6Io
+gDyS7t56uyrUnjE8jBiSWVkK868LejZIaE4X4KPMXXQpNc7WAmRw+QBF1lIO22xI
+TzTXWRDUGcRl5QGMSpQ+
+=FEQ9
+-----END PGP SIGNATURE-----
+
+--huq684BweRXVnRxX--
