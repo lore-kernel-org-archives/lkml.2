@@ -1,90 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754516Ab2GQPnb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 11:43:31 -0400
-Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:55263 "EHLO
-	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751855Ab2GQPn3 (ORCPT
+	id S1754886Ab2GQPpd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 11:45:33 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:51749 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751855Ab2GQPpb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 11:43:29 -0400
-Date: Tue, 17 Jul 2012 08:42:54 -0700
-From: Mike Turquette <mturquette@ti.com>
-To: Prashant Gaikwad <pgaikwad@nvidia.com>
-Cc: Mike Turquette <mturquette@linaro.org>, "paul@pwsan.com" <paul@pwsan.com>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "viresh.kumar@linaro.org" <viresh.kumar@linaro.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        "rnayak@ti.com" <rnayak@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "ccross@android.com" <ccross@android.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/2] [RFC] cpufreq: omap: scale regulator from clk
- notifier
-Message-ID: <20120717154254.GA3340@gmail.com>
-References: <1342225001-22962-1-git-send-email-mturquette@linaro.org>
- <1342225001-22962-3-git-send-email-mturquette@linaro.org>
- <5004F638.6020301@nvidia.com>
+	Tue, 17 Jul 2012 11:45:31 -0400
+X-Sasl-enc: r5awLoDHeU2xbXbbByyvA7Otp8XD/olktAx1SRayNEhy 1342539930
+Date: Tue, 17 Jul 2012 08:45:29 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@linux.intel.com>
+Subject: Re: linux-next: build failure after merge of the tty tree
+Message-ID: <20120717154529.GD16283@kroah.com>
+References: <20120717134506.3f3f0614ad1d5193689de334@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5004F638.6020301@nvidia.com>
+In-Reply-To: <20120717134506.3f3f0614ad1d5193689de334@canb.auug.org.au>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20120717-10:50, Prashant Gaikwad wrote:
-> On Saturday 14 July 2012 05:46 AM, Mike Turquette wrote:
-> >+	/* scaling up?  scale voltage before frequency */
-> >+	if (cnd->new_rate>  cnd->old_rate) {
-> >+		dev_dbg(mpu_dev, "cpufreq-omap: %d mV -->  %d mV\n",
-> >+				volt_old, volt_new);
-> >+
-> >+		ret = regulator_set_voltage(mpu_reg, volt_new - tol, volt_new + tol);
-> >+
-> >+		if (ret<  0) {
-> >+			dev_warn(mpu_dev, "%s: unable to scale voltage up.\n",
-> >+				 __func__);
-> >+			return NOTIFY_BAD;
-> >+		}
-> >+	}
-> >+
-> >+	/* scaling down?  scale voltage after frequency */
-> >+	if (cnd->new_rate<  cnd->old_rate) {
-> >+		dev_dbg(mpu_dev, "cpufreq-omap: %d mV -->  %d mV\n",
-> >+				volt_old, volt_new);
-> >+
-> >+		ret = regulator_set_voltage(mpu_reg, volt_new - tol, volt_new + tol);
-> >+
-> >+		if (ret<  0) {
-> >+			dev_warn(mpu_dev, "%s: unable to scale voltage down.\n",
-> >+				 __func__);
-> >+			return NOTIFY_BAD;
-> >+		}
-> >  	}
+On Tue, Jul 17, 2012 at 01:45:06PM +1000, Stephen Rothwell wrote:
+> Hi Greg,
 > 
-> How are you checking pre and post rate change condition here? Need
-> switch case for event?
->
+> After merging the tty tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
+> 
+> drivers/tty/tty_ioctl.c: In function 'set_sgflags':
+> drivers/tty/tty_ioctl.c:741:9: error: request for member 'c_iflag' in something not a structure or union
+> drivers/tty/tty_ioctl.c:742:9: error: request for member 'c_oflag' in something not a structure or union
+> drivers/tty/tty_ioctl.c:743:9: error: request for member 'c_lflag' in something not a structure or union
+> drivers/tty/tty_ioctl.c:745:10: error: request for member 'c_iflag' in something not a structure or union
+> drivers/tty/tty_ioctl.c:746:10: error: request for member 'c_lflag' in something not a structure or union
+> drivers/tty/tty_ioctl.c:749:10: error: request for member 'c_lflag' in something not a structure or union
+> drivers/tty/tty_ioctl.c:753:10: error: request for member 'c_oflag' in something not a structure or union
+> drivers/tty/tty_ioctl.c:756:10: error: request for member 'c_iflag' in something not a structure or union
+> drivers/tty/tty_ioctl.c:757:10: error: request for member 'c_lflag' in something not a structure or union
+> drivers/tty/tty_ioctl.c:759:15: error: request for member 'c_lflag' in something not a structure or union
+> drivers/tty/tty_ioctl.c:760:10: error: request for member 'c_cc' in something not a structure or union
+> drivers/tty/tty_ioctl.c:761:10: error: request for member 'c_cc' in something not a structure or union
+> 
+> Caused by commit adc8d746caa6 ("tty: move the termios object into the
+> tty").  Did anyone build test this?  :-(
 
-Oops.  This version of the patch is missing that.  I previously had a
-version of the patch which did pre/post checking but all of this code
-was in arch/arm/mach-omap2/.  It looks like when I moved things around I
-accidentally dropped that bit.
+It builds here for me just fine, this is odd.
 
-Anyways that is trivial to do and simply changes like the following:
-
-if (cnd->new_rate > cnd->old_rate && flags & CLK_PRE_RATE_CHANGE)
-	...
-
-if (cnd->new_rate < cnd->old_rate && flags & CLK_POST_RATE_CHANGE)
-	...
-
-Regards,
-Mike
+greg k-h
