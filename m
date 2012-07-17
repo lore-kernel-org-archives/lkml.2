@@ -1,90 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755002Ab2GQJrR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 05:47:17 -0400
-Received: from mga03.intel.com ([143.182.124.21]:41199 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754973Ab2GQJrM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 05:47:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="169302658"
-Date: Tue, 17 Jul 2012 17:47:59 -0400
-From: Chen Gong <gong.chen@linux.intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: tony.luck@intel.com, borislav.petkov@amd.com, peterz@infradead.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V3] tmp patch to fix hotplug issue in CMCI storm
-Message-ID: <20120717214759.GA26517@gchen.bj.intel.com>
-Mail-Followup-To: Thomas Gleixner <tglx@linutronix.de>, tony.luck@intel.com,
-	borislav.petkov@amd.com, peterz@infradead.org, x86@kernel.org,
-	linux-kernel@vger.kernel.org
-References: <alpine.LFD.2.02.1206181422420.3086@ionos>
- <1340086140-13652-1-git-send-email-gong.chen@linux.intel.com>
- <4FF3FAF9.4060302@linux.intel.com>
- <50038790.6040707@linux.intel.com>
- <alpine.LFD.2.02.1207161021130.32033@ionos>
+	id S1755032Ab2GQJrZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 05:47:25 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:40486 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754976Ab2GQJrV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 05:47:21 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="/04w6evG8XlLl3ft"
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1207161021130.32033@ionos>
-X-PGP-Key-ID: A43922C7
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Reply-To: sedat.dilek@gmail.com
+Date: Tue, 17 Jul 2012 11:47:19 +0200
+Message-ID: <CA+icZUXjc+13YjoJ6FjDFboX20j3mqHNtvV2Av2-H0My8V2Mgg@mail.gmail.com>
+Subject: Re: linux-next: Tree for July 17 (mfd: AB3100 - ab3100_probe:
+ undefined reference to `rand_initialize_irq')
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jul 17, 2012 at 7:41 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
+>
+> Changes since 20120716:
+>
+> The vfs tree lost its build failure.
+>
+> The l2-mtd tree gained a conflict against the mtd tree.
+>
+> The battery tree tree lost its build failure.
+>
+> The regulator tree gained conflicts against the mfd tree.
+>
+> The tty tree lost its build failure but gained another, so I used the
+> version from next-20120712.
+>
+> I have still reverted 3 commits from the signal tree at the request of the
+> arm maintainer.
+>
+> The akpm tree lost a few patches that turned up elsewhere.
+>
 
---/04w6evG8XlLl3ft
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+>From my today's build-log on a Ubuntu/precise AMD64 host:
+[...]
+  LD      drivers/video/built-in.o
+  LD      drivers/built-in.o
+  LINK    vmlinux
+  LD      vmlinux.o
+  MODPOST vmlinux.o
+  GEN     .version
+  CHK     include/generated/compile.h
+  UPD     include/generated/compile.h
+  CC      init/version.o
+  LD      init/built-in.o
+drivers/built-in.o: In function `ab3100_probe':
+ab3100-core.c:(.devinit.text+0xbf97): undefined reference to
+`rand_initialize_irq'
+make[2]: *** [vmlinux] Error 1
+make[1]: *** [deb-pkg] Error 2
+make: *** [deb-pkg] Error 2
 
-On Mon, Jul 16, 2012 at 10:22:16AM +0200, Thomas Gleixner wrote:
-> Date: Mon, 16 Jul 2012 10:22:16 +0200 (CEST)
-> From: Thomas Gleixner <tglx@linutronix.de>
-> To: Chen Gong <gong.chen@linux.intel.com>
-> cc: tony.luck@intel.com, borislav.petkov@amd.com, peterz@infradead.org,
-> 	x86@kernel.org, linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH V3] tmp patch to fix hotplug issue in CMCI storm
-> User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
->=20
-> On Mon, 16 Jul 2012, Chen Gong wrote:
-> >=20
-> > Are you still care about this thread any more? Any plan to update it?
-> > Hope to get your feedback ASAP.
->=20
-> Can you please collect the latest series and send it to lkml, Tony and
-> Boris. I think it's ok as is now.
->=20
-> Thanks,
->=20
-> 	tglx
+MFD / AB3100 kernel-config settings:
 
-Fine, but what base I should use, -tip tree or Linus' tree?
+CONFIG_AB3100_CORE=y
+CONFIG_AB3100_OTP=m
+CONFIG_REGULATOR_AB3100=m
+CONFIG_RTC_DRV_AB3100=m
 
---/04w6evG8XlLl3ft
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
+If you need further informations, please let me know.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQBd2PAAoJEI01n1+kOSLHB+kP/iGAWz6E/k0MtHoyyYi3vuYj
-OE2bfpHz3/8y9kBD83qBfPeH9bRwHidbHxAfrfiDYPuYkzC3Vxr3tvf3EKJG1Hv8
-ksKKUxyA3mHJvj85YiGJooJWOVYrW3iO24Ypm/uazec/50rVQxbV2LVInOHnTEcQ
-kshvwwWE3NxBf0CvqlIRxfyh/dXUwC3xaNmyuwdAyYRzBzOG7W4QFz4kF9W67TWn
-coD0La3b8wuYTzFz9BNYgeHoLi+jam4rphihTH2EB1gprnuBB3k8pZyNqjmE4qic
-b2gH/vmF1nUw1NA9tZyYeIyosXRQSm27Cuf2fcOB4kqcO54Av1S98N38VIwqBrts
-Vqkuizw6e3dl7ScI8U+LwHPpw80KXKpO19YUTJrccZTSqY8axQGsq14PP+lk5RVj
-ui461wIEz1jAs75qv6b8FYb5FMEbWNIhnJ+m30NEsyDR1S+8hW4Cn9/H9MAWBGT7
-IoiVwKZ+UUwCNkTcHOLgiONoOsg7LdJhsfMo565ZM7PByUTeouk3keBnXa0g6yI6
-vDhOf1PVHdBh3A1j+R6/Ow7wq55gseGSkVv8oZNfojnoC02/VQha7GKzBjcYgcfC
-uXVbMRPq9ZqDAPKZ3tlmhAESfnlClxXGHa3IITlJYD5DSW4CpLOB9hiO0LQ25KVV
-cJTclDaEbBu9WtO6drig
-=fW4c
------END PGP SIGNATURE-----
-
---/04w6evG8XlLl3ft--
+- Sedat -
