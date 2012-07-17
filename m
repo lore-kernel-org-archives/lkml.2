@@ -1,65 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750891Ab2GQEPr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 00:15:47 -0400
-Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:48947 "EHLO
-	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750764Ab2GQEPn (ORCPT
+	id S1751055Ab2GQESt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 00:18:49 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:45454 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750832Ab2GQESr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 00:15:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <87pq7wjudy.fsf@octavius.laptop.org>
-References: <1338576911-17089-1-git-send-email-merez@codeaurora.org>
- <1338576911-17089-2-git-send-email-merez@codeaurora.org> <CAFR8uefCD_WXDM6m+-XwG10+W0UXqOtK7_sxWD3uVckh3pnR-Q@mail.gmail.com>
- <CAFR8uee7hWLC-h_abZOCEuqeUeuhDuJp74x3R-3n+c61xyfaPQ@mail.gmail.com>
- <fb2303ea3a3a5470e76d1faa2abd471b.squirrel@www.codeaurora.org>
- <CAFR8ueecGqw=JzAGVHV61-SqOnn_C-ryT54KCQCbKkJpXUGY9w@mail.gmail.com>
- <87629qkvgp.fsf@octavius.laptop.org> <CAFR8uedwb1_gB-j6=riUuiJcEPY13rNJCLv1bxXc6aebnhonYw@mail.gmail.com>
- <87pq7wjudy.fsf@octavius.laptop.org>
-From: "S, Venkatraman" <svenkatr@ti.com>
-Date: Tue, 17 Jul 2012 09:45:21 +0530
-Message-ID: <CANfBPZ-qbm58+kypgYChjUmpWdJbiD2oPhWNq9PF1mT1kmpDbw@mail.gmail.com>
-Subject: Re: [PATCH v2 1/1] mmc: block: Add write packing control
-To: Chris Ball <cjb@laptop.org>
-Cc: Muthu Kumar <muthu.lkml@gmail.com>, merez@codeaurora.org,
-        linux-mmc@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        DOCUMENTATION <linux-doc@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 17 Jul 2012 00:18:47 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18qiJZ0iBsqcGmRa37IKLDW5/oXbbIN43jpD9KqZ8
+	Eqt1IkDB9xYXuD
+Message-ID: <1342498722.7353.37.camel@marge.simpson.net>
+Subject: Re: 3.4.4-rt13: btrfs + xfstests 006 = BOOM..  and a bonus rt_mutex
+ deadlock report for absolutely free!
+From: Mike Galbraith <efault@gmx.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Chris Mason <chris.mason@fusionio.com>,
+        "Chris L. Mason" <clmason@fusionio.com>,
+        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Tue, 17 Jul 2012 06:18:42 +0200
+In-Reply-To: <1342458195.2783.5.camel@acer.local.home>
+References: <1342072060.7338.102.camel@marge.simpson.net>
+	 <20120713125043.GH30128@shiny> <1342260883.7368.30.camel@marge.simpson.net>
+	 <20120715175612.GF25961@shiny.int.fusionio.com>
+	 <1342404140.7659.27.camel@marge.simpson.net>
+	 <1342454547.5410.3.camel@gandalf.stny.rr.com>
+	 <1342455968.7659.93.camel@marge.simpson.net>
+	 <1342456567.7659.97.camel@marge.simpson.net>
+	 <1342458195.2783.5.camel@acer.local.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 16, 2012 at 8:16 AM, Chris Ball <cjb@laptop.org> wrote:
-> Hi,
->
-> On Sun, Jul 15 2012, Muthu Kumar wrote:
->>> I've already replied to a later version of the patch, but just to get
->>> this comment in at the appropriate point of the discussion as well:
->>>
->>> Even though it would result in a cleaner sysfs, I don't want to do
->>> this now because it will break userspace scripts that are depending
->>> on the current locations of these attributes.
->>
->> Maya is adding a new sysfs attribute with that patch. So, there should
->> not be any user space stuff that depends on it.
->
-> In the later patchset, Maya's "[PATCH v4 1/2] mmc: card: Move MMC
-> specific attributes to mmc sub-directory" moves the existing attributes
-> into the mmc/ directory.
->
-> It's that move that I'm objecting to, rather than the creation of a new
-> directory -- although since we're going to leave the current attributes
-> where they are, it might not make sense to add the new directory.
->
-> We'd be creating two places that people have to look for mmc-related
-> attributes, which is arguably less clean than having one place to look
-> even though it's mixed in with the other block device attributes.
->
+On Mon, 2012-07-16 at 13:03 -0400, Steven Rostedt wrote: 
+> On Mon, 2012-07-16 at 18:36 +0200, Mike Galbraith wrote:
+> >  
+> > > > Ouch, you just turned the rt_read_lock() into a spin lock. If a higher
+> > > > priority process preempted a lower priority process that holds the same
+> > > > lock, it will deadlock.
+> > > 
+> > > Hm, how, it's doing cpu_chill()?
+> > 
+> > 'course PI is toast, so *poof*.  Since just enabling the lockdep bits
+> > seems to fix it up, maybe that's the patchlet to submit (less is more).
+> 
+> There's that too. But the issue I was talking about is with all trylock
+> loops. As holding an rt-mutex now disables migration, if a high priority
+> process preempts a task that holds the lock, and then the high prio task
+> starts spinning waiting for that lock to release, the lower priority
+> process will never get to run to release it. The cpu_chill() doesn't
+> help.
 
-It's better to normalise this eventually. It would be better if we create a
-duplicate sysfs entry within MMC, which is identical to the current
-block layer attribute. Then schedule the block layer attribute to be
-removed by, say, 3.9. [Add it to Documentation/feature-removal-schedule.txt]
+Hrm.  I better go make a testcase, this one definitely wants pounding
+through thick skull.
 
-Since it is a MMC specific attribute, generic tools wouldn't depend on it.
+I think all of the chilling in patchlet is really ugly anyway, so would
+prefer to trash it all, just enable the lockdep bits.  If it turns out
+we really do need to bounce off of counts, go get a bigger hammer when
+the need arises.  For the nonce, the pre-installed hammer _seemed_ big
+enough for the job.
+
+What's a good way to beat living hell out of btrfs?  I've never been
+into destructive fs testing, since they usually lived on my one and only
+disk.  x3550 has two, and OS clone has already been sacrificed.
+
+-Mike
+
