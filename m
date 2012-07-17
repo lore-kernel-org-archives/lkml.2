@@ -1,155 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755543Ab2GQRLr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 13:11:47 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:53018 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752808Ab2GQRLe (ORCPT
+	id S1755550Ab2GQRMh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 13:12:37 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55586 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752903Ab2GQRMe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 13:11:34 -0400
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Cc: Russell King <linux@arm.linux.org.uk>, Ralf Baechle <ralf@linux-mips.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linux390@de.ibm.com, x86@kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] atomic64_test: Simplify the #ifdef for atomic64_dec_if_positive() test
-Date: Tue, 17 Jul 2012 18:10:48 +0100
-Message-Id: <1342545048-30958-1-git-send-email-catalin.marinas@arm.com>
-X-Mailer: git-send-email 1.7.9.111.gf3fb0
-X-OriginalArrivalTime: 17 Jul 2012 17:12:40.0873 (UTC) FILETIME=[5F54E990:01CD643F]
-X-MC-Unique: 112071718113205101
-Content-Type: text/plain; charset=WINDOWS-1252
+	Tue, 17 Jul 2012 13:12:34 -0400
+From: Tejun Heo <tj@kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: torvalds@linux-foundation.org, peterz@infradead.org, tglx@linutronix.de,
+        linux-pm@vger.kernel.org
+Subject: [PATCHSET] workqueue: reimplement CPU hotplug to keep idle workers
+Date: Tue, 17 Jul 2012 10:12:20 -0700
+Message-Id: <1342545149-3515-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id q6HHBqYX003351
 
-This patch introduces CONFIG_ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE and uses
-this instead of the multitude of #if defined() checks in atomic64_test.c
+Currently, workqueue destroys all workers for offline CPUs unless
+there are lingering work items.  On some platforms, CPU hotplugs are
+used as part of runtime powersaving and thus can be very frequent.
+The overhead of destroying and re-creating workers on each cycle can
+be noticeable.
 
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: linux390@de.ibm.com
-Cc: x86@kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>
----
+In addition, being different from the usual mode of opration,
+kill-all-idle involves separate driving logic, which currently is
+implemented across trustee_thread() and CPU hotplug notifier.  This is
+rather complex and ugly.
 
-That's a trivial patch to sort out the #if statement for the
-atomic64_dec_if_positive() test. I went for the Kconfig option, the
-alternative being #define in the atomic.h header files of each
-architecture affected.
+This patchset updates workqueue CPU hotplug path such that a
+disassociated global_cwq (the per-cpu worker pool) is run as if it's
+running as an unbound one (WQ_UNBOUND) - executing work items ASAP
+without concurrency management while following the usual worker
+management based on idle timer.
+
+While this makes rebinding somewhat more complicated, as it has to be
+able to rebind idle workers too, it allows overall hotplug path to be
+much simpler.  A disassociating global_cwq simply becomes an unbound
+one at the end of CPU_DOWN_PREPARE and makes use of the same logic
+already existing for WQ_UNBOUND.  While re-associating, it switches
+back to a bound one.  Except during the transitions themselves, the
+usual worker management is always in effect making trustee
+unnecessary.
+
+ 0001-workqueue-perform-cpu-down-operations-from-low-prior.patch
+ 0002-workqueue-drop-CPU_DYING-notifier-operation.patch
+ 0003-workqueue-ROGUE-workers-are-UNBOUND-workers.patch
+ 0004-workqueue-use-mutex-for-global_cwq-manager-exclusion.patch
+ 0005-workqueue-drop-bind-from-create_worker.patch
+ 0006-workqueue-reimplement-CPU-online-rebinding-to-handle.patch
+ 0007-workqueue-don-t-butcher-idle-workers-on-an-offline-C.patch
+ 0008-workqueue-remove-CPU-offline-trustee.patch
+ 0009-workqueue-simplify-CPU-hotplug-code.patch
+
+0001 is fix for an unlikely race condition.  0002-0005 prepare for CPU
+hotplug reimplementation.  0006 reimplements re-binding such that it
+can handle idle workers too.  0007 drops killing idle workers of
+offline CPUs.  0008 replaces trustee with the usual management logic.
+0009 refactors hotplug path a bit to clean it up.
+
+This patchset is on top of "workqueue: reimplement high priority using
+a separate worker pool" patchset[1] and available on the following git
+branch.
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git review-wq-hotplug
+
+ include/linux/cpu.h |    5 
+ kernel/workqueue.c  |  738 ++++++++++++++++++++--------------------------------
+ 2 files changed, 296 insertions(+), 447 deletions(-)
 
 Thanks.
 
- arch/arm/Kconfig     |    1 +
- arch/mips/Kconfig    |    1 +
- arch/powerpc/Kconfig |    1 +
- arch/s390/Kconfig    |    1 +
- arch/x86/Kconfig     |    1 +
- lib/Kconfig          |    3 +++
- lib/atomic64_test.c  |    5 ++---
- 7 files changed, 10 insertions(+), 3 deletions(-)
+--
+tejun
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index a91009c..88df37f 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -11,6 +11,7 @@ config ARM
- 	select RTC_LIB
- 	select SYS_SUPPORTS_APM_EMULATION
- 	select GENERIC_ATOMIC64 if (CPU_V6 || !CPU_32v6K || !AEABI)
-+	select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
- 	select HAVE_OPROFILE if (HAVE_PERF_EVENTS)
- 	select HAVE_ARCH_JUMP_LABEL if !XIP_KERNEL
- 	select HAVE_ARCH_KGDB
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index 09ab87e..c9e1812 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -20,6 +20,7 @@ config MIPS
- 	select ARCH_BINFMT_ELF_RANDOMIZE_PIE
- 	select RTC_LIB if !MACH_LOONGSON
- 	select GENERIC_ATOMIC64 if !64BIT
-+	select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
- 	select HAVE_DMA_ATTRS
- 	select HAVE_DMA_API_DEBUG
- 	select HAVE_GENERIC_HARDIRQS
-diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-index 050cb37..8b8bc3a 100644
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -115,6 +115,7 @@ config PPC
- 	select HAVE_OPROFILE
- 	select HAVE_SYSCALL_WRAPPERS if PPC64
- 	select GENERIC_ATOMIC64 if PPC32
-+	select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
- 	select HAVE_IRQ_WORK
- 	select HAVE_PERF_EVENTS
- 	select HAVE_REGS_AND_STACK_ACCESS_API
-diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
-index a39b469..64cb682 100644
---- a/arch/s390/Kconfig
-+++ b/arch/s390/Kconfig
-@@ -121,6 +121,7 @@ config S390
- 	select GENERIC_TIME_VSYSCALL
- 	select GENERIC_CLOCKEVENTS
- 	select KTIME_SCALAR if 32BIT
-+	select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
- 
- config SCHED_OMIT_FRAME_POINTER
- 	def_bool y
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index c70684f..1d08863 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -95,6 +95,7 @@ config X86
- 	select KTIME_SCALAR if X86_32
- 	select GENERIC_STRNCPY_FROM_USER
- 	select GENERIC_STRNLEN_USER
-+	select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
- 
- config INSTRUCTION_DECODER
- 	def_bool (KPROBES || PERF_EVENTS || UPROBES)
-diff --git a/lib/Kconfig b/lib/Kconfig
-index a9e1540..e0a7d57 100644
---- a/lib/Kconfig
-+++ b/lib/Kconfig
-@@ -340,6 +340,9 @@ config NLATTR
- config GENERIC_ATOMIC64
-        bool
- 
-+config ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
-+	def_bool y if GENERIC_ATOMIC64
-+
- config LRU_CACHE
- 	tristate
- 
-diff --git a/lib/atomic64_test.c b/lib/atomic64_test.c
-index cb99b91..00bca22 100644
---- a/lib/atomic64_test.c
-+++ b/lib/atomic64_test.c
-@@ -114,8 +114,7 @@ static __init int test_atomic64(void)
- 	r += one;
- 	BUG_ON(v.counter != r);
- 
--#if defined(CONFIG_X86) || defined(CONFIG_MIPS) || defined(CONFIG_PPC) || \
--    defined(CONFIG_S390) || defined(_ASM_GENERIC_ATOMIC64_H) || defined(CONFIG_ARM)
-+#ifdef CONFIG_ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
- 	INIT(onestwos);
- 	BUG_ON(atomic64_dec_if_positive(&v) != (onestwos - 1));
- 	r -= one;
-@@ -129,7 +128,7 @@ static __init int test_atomic64(void)
- 	BUG_ON(atomic64_dec_if_positive(&v) != (-one - one));
- 	BUG_ON(v.counter != r);
- #else
--#warning Please implement atomic64_dec_if_positive for your architecture, and add it to the IF above
-+#warning Please implement atomic64_dec_if_positive for your architecture and select the above Kconfig symbol
- #endif
- 
- 	INIT(onestwos);
-
+[1] http://lwn.net/Articles/506029/
