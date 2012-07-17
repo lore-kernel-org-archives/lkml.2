@@ -1,52 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754852Ab2GQStT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 14:49:19 -0400
-Received: from sabe.cs.wisc.edu ([128.105.6.20]:36480 "EHLO sabe.cs.wisc.edu"
+	id S1754782Ab2GQSzQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 14:55:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55013 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754158Ab2GQStR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 14:49:17 -0400
-Message-ID: <5005B39D.6030905@cs.wisc.edu>
-Date: Tue, 17 Jul 2012 12:49:01 -0600
-From: Mike Christie <michaelc@cs.wisc.edu>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1752050Ab2GQSzN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 14:55:13 -0400
+Date: Tue, 17 Jul 2012 21:55:42 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
+Subject: Re: [PATCH v5 3/4] kvm: Create kvm_clear_irq()
+Message-ID: <20120717185542.GB13066@redhat.com>
+References: <20120717145313.GB11516@redhat.com>
+ <1342538411.2229.106.camel@bling.home>
+ <20120717153620.GB11849@redhat.com>
+ <1342540301.2229.117.camel@bling.home>
+ <20120717155701.GB12001@redhat.com>
+ <1342541301.2229.125.camel@bling.home>
+ <20120717161452.GA12114@redhat.com>
+ <1342541823.2229.127.camel@bling.home>
+ <20120717162115.GC12114@redhat.com>
+ <1342543552.2229.136.camel@bling.home>
 MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>
-CC: Christoph Hellwig <hch@infradead.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH] sd: do not set changed flag on all unit attention conditions
-References: <1342454772-9018-1-git-send-email-pbonzini@redhat.com> <1342455503.3176.42.camel@dabdike.int.hansenpartnership.com> <50044D56.6000400@redhat.com> <1342511100.3039.9.camel@dabdike.int.hansenpartnership.com> <50052390.7030908@redhat.com> <1342514444.3039.23.camel@dabdike.int.hansenpartnership.com> <5005285E.8060706@redhat.com> <1342516317.3039.35.camel@dabdike.int.hansenpartnership.com> <20120717163612.GA15995@infradead.org> <50059713.7090606@redhat.com> <5005B2AC.6020102@cs.wisc.edu>
-In-Reply-To: <5005B2AC.6020102@cs.wisc.edu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1342543552.2229.136.camel@bling.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2012 12:45 PM, Mike Christie wrote:
-> On 07/17/2012 10:47 AM, Paolo Bonzini wrote:
->> Il 17/07/2012 18:36, Christoph Hellwig ha scritto:
->>>>> There's no such thing in the market today as a removable disk that's
->>>>> resizeable.  Removable disks are for things like backup cartridges and
->>>>> ageing jazz drives.  Worse: most removeable devices today are USB card
->>>>> readers whose standards compliance varies from iffy to non existent.
->>>>> Resizeable disks are currently the province of storage arrays.
->>> The virtual disks exported by aacraid are both marked removable and
->>> can be resized.
->>
->> Do they report resizing via unit attention?  I can skip this part on
->> removable virtio-scsi disks if that's what real hardware does, it would
->> also work.
->>
+On Tue, Jul 17, 2012 at 10:45:52AM -0600, Alex Williamson wrote:
+> On Tue, 2012-07-17 at 19:21 +0300, Michael S. Tsirkin wrote:
+> > On Tue, Jul 17, 2012 at 10:17:03AM -0600, Alex Williamson wrote:
+> > > > > > > > > >   And current code looks buggy if yes we need to fix it somehow.
+> > > > > > > > > 
+> > > > > > > > > 
+> > > > > > > > > Which to me seems to indicate this should be handled as a separate
+> > > > > > > > > effort.
+> > > > > > > > 
+> > > > > > > > A separate patchset, sure. But likely a prerequisite: we still need to
+> > > > > > > > look at all the code. Let's not copy bugs, need to fix them.
+> > > > > > > 
+> > > > > > > This looks tangential to me unless you can come up with an actual reason
+> > > > > > > the above spinlock usage is incorrect or insufficient.
+> > > > > > 
+> > > > > > You copy the same pattern that seems racy. So you double the
+> > > > > > amount of code that woul need to be fixed.
+> > > > > 
+> > > > > 
+> > > > > _Seems_ racy, or _is_ racy?  Please identify the race.
+> > > > 
+> > > > Look at this:
+> > > > 
+> > > > static inline int kvm_irq_line_state(unsigned long *irq_state,
+> > > >                                      int irq_source_id, int level)
+> > > > {
+> > > >         /* Logical OR for level trig interrupt */
+> > > >         if (level)
+> > > >                 set_bit(irq_source_id, irq_state);
+> > > >         else
+> > > >                 clear_bit(irq_source_id, irq_state);
+> > > > 
+> > > >         return !!(*irq_state);
+> > > > }
+> > > > 
+> > > > 
+> > > > Now:
+> > > > If other CPU changes some other bit after the atomic change,
+> > > > it looks like !!(*irq_state) might return a stale value.
+> > > > 
+> > > > CPU 0 clears bit 0. CPU 1 sets bit 1. CPU 1 sets level to 1.
+> > > > If CPU 0 sees a stale value now it will return 0 here
+> > > > and interrupt will get cleared.
+> > > > 
+> > > > 
+> > > > Maybe this is not a problem. But in that case IMO it needs
+> > > > a comment explaining why and why it's not a problem in
+> > > > your code.
+> > > 
+> > > So you want to close the door on anything that uses kvm_set_irq until
+> > > this gets fixed... that's insane.
+> > 
+> > What does kvm_set_irq use have to do with it?  You posted this patch:
+> > 
+> > +static int kvm_clear_pic_irq(struct kvm_kernel_irq_routing_entry *e,
+> > +                            struct kvm *kvm, int irq_source_id)
+> > +{
+> > +#ifdef CONFIG_X86
+> > +       struct kvm_pic *pic = pic_irqchip(kvm);
+> > +       int level =
+> > kvm_clear_irq_line_state(&pic->irq_states[e->irqchip.pin],
+> > +                                            irq_source_id);
+> > +       if (level)
+> > +               kvm_pic_set_irq(pic, e->irqchip.pin,
+> > +                               !!pic->irq_states[e->irqchip.pin]);
+> > +       return level;
+> > +#else
+> > +       return -1;
+> > +#endif
+> > +}
+> > +
+> > 
+> > it seems racy in the same way.
 > 
-> Not sure if we are talking about the same thing.
+> Now you're just misrepresenting how we got here, which was:
 > 
-> So can virtio-scsi send a UA with asc/ascq that indicates the lun
-> changed size? Other drivers do this. I updated Hannes's patches the
-> other day to support UAs like those in userspace.
+> > > > > > > IMHO, we're going off into the weeds again with these last
+> > > > > > > two patches.  It may be a valid optimization, but it really has no
+> > > > > > > bearing on the meat of the series (and afaict, no significant
+> > > > > > > performance difference either).
+> > > > > > 
+> > > > > > For me it's not a performance thing. IMO code is cleaner without this locking:
+> > > > > > we add a lock but only use it in some cases, so the rules become really
+> > > > > > complex.
 > 
-> I just saw the code in the patch where virtio-scsi gets that event.
+> So I'm happy to drop the last 2 patches, which were done at your request
+> anyway, but you've failed to show how the locking in patches 1&2 is
+> messy, inconsistent, or complex and now you're asking to block all
+> progress.
 
-Was not done. I meant I saw that patch where virtio-scsi gets that
-virtio_scsi_event and kicks of a rescan based off of that.
+I'm asking for bugs to get fixed and not duplicated. Adding more bugs is
+not progress. Or maybe there is no bug. Let's see why and add a comment.
+
+>  Those patches are just users of kvm_set_irq.
+
+
+Well these add calls to kvm_set_irq which scans all vcpus under
+spinlock. In the past Avi thought this is not a good idea too.
+Maybe things changed.
+
+-- 
+MST
