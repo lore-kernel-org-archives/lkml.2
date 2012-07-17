@@ -1,76 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751055Ab2GQESt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 00:18:49 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:45454 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750832Ab2GQESr (ORCPT
+	id S1751146Ab2GQEZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 00:25:28 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2734 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750787Ab2GQEZ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 00:18:47 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18qiJZ0iBsqcGmRa37IKLDW5/oXbbIN43jpD9KqZ8
-	Eqt1IkDB9xYXuD
-Message-ID: <1342498722.7353.37.camel@marge.simpson.net>
-Subject: Re: 3.4.4-rt13: btrfs + xfstests 006 = BOOM..  and a bonus rt_mutex
- deadlock report for absolutely free!
-From: Mike Galbraith <efault@gmx.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Chris Mason <chris.mason@fusionio.com>,
-        "Chris L. Mason" <clmason@fusionio.com>,
-        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Tue, 17 Jul 2012 06:18:42 +0200
-In-Reply-To: <1342458195.2783.5.camel@acer.local.home>
-References: <1342072060.7338.102.camel@marge.simpson.net>
-	 <20120713125043.GH30128@shiny> <1342260883.7368.30.camel@marge.simpson.net>
-	 <20120715175612.GF25961@shiny.int.fusionio.com>
-	 <1342404140.7659.27.camel@marge.simpson.net>
-	 <1342454547.5410.3.camel@gandalf.stny.rr.com>
-	 <1342455968.7659.93.camel@marge.simpson.net>
-	 <1342456567.7659.97.camel@marge.simpson.net>
-	 <1342458195.2783.5.camel@acer.local.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 17 Jul 2012 00:25:27 -0400
+X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=vNh1JVxgm5YA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=YXE6w6w9E_PR3jgwLiwA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-ID: <1342499125.24525.11.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH] ftrace: using pr_fmt for better printk output
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Joe Perches <joe@perches.com>
+Cc: Jovi Zhang <bookjovi@gmail.com>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 17 Jul 2012 00:25:25 -0400
+In-Reply-To: <1342496521.8377.105.camel@joe2Laptop>
+References: <CACV3sb+CkmMtBSRe=bp4EcN3xXD+XqBKy+o_-Cr7e6bapYQftw@mail.gmail.com>
+	 <1342496521.8377.105.camel@joe2Laptop>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
 Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-07-16 at 13:03 -0400, Steven Rostedt wrote: 
-> On Mon, 2012-07-16 at 18:36 +0200, Mike Galbraith wrote:
-> >  
-> > > > Ouch, you just turned the rt_read_lock() into a spin lock. If a higher
-> > > > priority process preempted a lower priority process that holds the same
-> > > > lock, it will deadlock.
-> > > 
-> > > Hm, how, it's doing cpu_chill()?
+On Mon, 2012-07-16 at 20:42 -0700, Joe Perches wrote:
+
+> > diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+> []
+> > @@ -13,6 +13,8 @@
+> >   *  Copyright (C) 2004 William Lee Irwin III
+> >   */
 > > 
-> > 'course PI is toast, so *poof*.  Since just enabling the lockdep bits
-> > seems to fix it up, maybe that's the patchlet to submit (less is more).
+> > +#define pr_fmt(fmt) "ftrace: " fmt
 > 
-> There's that too. But the issue I was talking about is with all trylock
-> loops. As holding an rt-mutex now disables migration, if a high priority
-> process preempts a task that holds the lock, and then the high prio task
-> starts spinning waiting for that lock to release, the lower priority
-> process will never get to run to release it. The cpu_chill() doesn't
-> help.
+> #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
-Hrm.  I better go make a testcase, this one definitely wants pounding
-through thick skull.
+Wouldn't a nicer patch be to move this into a header file and then
+remove all the defines throughout the kernel tree?
 
-I think all of the chilling in patchlet is really ugly anyway, so would
-prefer to trash it all, just enable the lockdep bits.  If it turns out
-we really do need to bounce off of counts, go get a bigger hammer when
-the need arises.  For the nonce, the pre-installed hammer _seemed_ big
-enough for the job.
+Also, what is KBUILD_MODNAME defined as for non-modules? As ftrace is
+not a module.
 
-What's a good way to beat living hell out of btrfs?  I've never been
-into destructive fs testing, since they usually lived on my one and only
-disk.  x3550 has two, and OS clone has already been sacrificed.
+-- Steve
 
--Mike
 
