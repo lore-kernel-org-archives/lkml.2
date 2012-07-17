@@ -1,63 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753911Ab2GQNKp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 09:10:45 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:57303 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753811Ab2GQNKl (ORCPT
+	id S1753878Ab2GQNMN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 09:12:13 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:43532 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751717Ab2GQNMK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 09:10:41 -0400
-Date: Tue, 17 Jul 2012 14:10:37 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
-        Alessandro Rubini <rubini@gnudd.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: linux-next: manual merge of the arm-soc tree with the
- i2c-embedded tree
-Message-ID: <20120717131037.GC27595@sirena.org.uk>
-References: <20120710164130.f38e4d1673f925ddb13914c9@canb.auug.org.au>
- <20120712131231.GH2194@pengutronix.de>
- <CACRpkdboeF_G=sTPeSyuZ6KGLCmGSKx_NS=6Rim6HkR2f9=AAQ@mail.gmail.com>
- <20120716101706.GB17435@pengutronix.de>
- <CACRpkdY626iYATorphAvg7cQxD2ufysBvXdt3Z644zEuW0wS=w@mail.gmail.com>
- <20120716123550.GE17435@pengutronix.de>
+	Tue, 17 Jul 2012 09:12:10 -0400
+Message-ID: <5005647B.2010205@oracle.com>
+Date: Tue, 17 Jul 2012 21:11:23 +0800
+From: Jeff Liu <jeff.liu@oracle.com>
+Reply-To: jeff.liu@oracle.com
+Organization: Oracle
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120716123550.GE17435@pengutronix.de>
-X-Cookie: 1 + 1 = 3, for large values of 1.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+To: Chen Baozi <baozich@gmail.com>
+CC: Christoph Hellwig <hch@infradead.org>, Ben Myers <bpm@sgi.com>,
+        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: [PATCH] xfs: fix comment typo of struct xfs_da_blkinfo.
+References: <1342208293-3405-1-git-send-email-baozich@gmail.com>	<20120716151038.GI29979@sgi.com>	<5292013E-6FF3-47F6-BE9F-FD7BA2BB2AA9@gmail.com>	<20120717070643.GA4958@infradead.org> <7C73914B-6261-4730-827E-280B3D8A3988@gmail.com>
+In-Reply-To: <7C73914B-6261-4730-827E-280B3D8A3988@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 16, 2012 at 02:35:50PM +0200, Wolfram Sang wrote:
+On 07/17/2012 05:33 PM, Chen Baozi wrote:
 
-> I do know both sides. I easily agree that we have to find a balance
-> somewhere to meet both interests. Though, currently my impressions from
-> maintaining I2C are:
+> 
+> On Jul 17, 2012, at 3:06 PM, Christoph Hellwig wrote:
+> 
+>> On Tue, Jul 17, 2012 at 11:33:33AM +0800, Chen Baozi wrote:
+>>> I'd really love to. Right now, I am working on syslinux to support booting on xfs partition (under pcacjr's mentoring)??? which I thought would be a nice start to get familiar with xfs (and I did learn a lot from it). So I think there would be more time (and experience on xfs) after I finish the xfs support on syslinux. And I'm really looking forward to your ideas. So do please tell me what I can help, I'll try my best to do it. 
+>>
+>> Btw, if you need more reviers for the syslinus support feel free to pass
+>> it by me (or the list).
+> Sure, thanks.
 
-> a) it is not balanced, but too far on the "let's deploy stuff" side
-> b) developers have a tendency to simply map platform_data to bindings
->    and are surprised when told this is often not possible
+Glad to see a new developer from china, Wanlong from Fujitsu has also
+started working on XFS recently, we can learn together. :)
+Btw, are you living in Beijing Baozi?
 
-> which adds burden to the maintainers (who sometimes might not even be
-> familiar with devicetree because they are not focused on embedded). And
-> I worry about bindings of unmaintained subsystems.
+Thanks,
+-Jeff
 
-A issue I'm seeing with some of the subsystems mantained by people who
-don't work on ARM is that they've got the DT message so strongly that
-they're pushing back on people trying to add platform data at all even
-on off SoC things that need to work with non-ARM processors.
+>>
+>> Thanks for working on this!
+>>
+> 
+> _______________________________________________
+> xfs mailing list
+> xfs@oss.sgi.com
+> http://oss.sgi.com/mailman/listinfo/xfs
+
+
