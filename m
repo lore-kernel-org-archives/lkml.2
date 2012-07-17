@@ -1,77 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752064Ab2GQGkG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 02:40:06 -0400
-Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:56522 "EHLO
-	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750847Ab2GQGkB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 02:40:01 -0400
-Message-ID: <500508B0.9010009@st.com>
-Date: Tue, 17 Jul 2012 12:09:44 +0530
-From: Rajeev kumar <rajeev-dlh.kumar@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
-MIME-Version: 1.0
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [alsa-devel] [PATCH 1/2] MFD: twl6040: Fix revision information
-References: <1342432184-12046-1-git-send-email-peter.ujfalusi@ti.com> <1342432184-12046-2-git-send-email-peter.ujfalusi@ti.com>
-In-Reply-To: <1342432184-12046-2-git-send-email-peter.ujfalusi@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753283Ab2GQGlL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 02:41:11 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:46741 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752231Ab2GQGkQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 02:40:16 -0400
+From: John Stultz <johnstul@us.ibm.com>
+To: stable@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>, John Stultz <johnstul@us.ibm.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 5/7] 3.4.x: timekeeping: Provide hrtimer update function
+Date: Tue, 17 Jul 2012 02:39:54 -0400
+Message-Id: <1342507196-54327-6-git-send-email-johnstul@us.ibm.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1342507196-54327-1-git-send-email-johnstul@us.ibm.com>
+References: <1342507196-54327-1-git-send-email-johnstul@us.ibm.com>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12071706-8974-0000-0000-00000B3BBD2F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Peter,
+From: Thomas Gleixner <tglx@linutronix.de>
 
-On 7/16/2012 3:19 PM, Peter Ujfalusi wrote:
-> twl6040 ES1.1 and ES1.2 have the same revid (0x01).
-> ES1.3 of twl6040 REVID is 0x02.
->
-> Signed-off-by: Peter Ujfalusi<peter.ujfalusi@ti.com>
-> ---
->   include/linux/mfd/twl6040.h |    4 ++--
->   sound/soc/codecs/twl6040.c  |    2 +-
->   2 files changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/include/linux/mfd/twl6040.h b/include/linux/mfd/twl6040.h
-> index 6659487..e002097 100644
-> --- a/include/linux/mfd/twl6040.h
-> +++ b/include/linux/mfd/twl6040.h
-> @@ -161,8 +161,8 @@
->   #define TWL6040_CELLS			2
->
->   #define TWL6040_REV_ES1_0		0x00
-> -#define TWL6040_REV_ES1_1		0x01
-> -#define TWL6040_REV_ES1_2		0x02
-> +#define TWL6040_REV_ES1_1		0x01 /* Rev ES1.1 and ES1.2 */
-> +#define TWL6040_REV_ES1_3		0x02
->
->   #define TWL6040_IRQ_TH			0
->   #define TWL6040_IRQ_PLUG		1
-> diff --git a/sound/soc/codecs/twl6040.c b/sound/soc/codecs/twl6040.c
-> index a36e9fc..2786de2 100644
-> --- a/sound/soc/codecs/twl6040.c
-> +++ b/sound/soc/codecs/twl6040.c
-> @@ -653,7 +653,7 @@ int twl6040_get_hs_step_size(struct snd_soc_codec *codec)
->   {
->   	struct twl6040 *twl6040 = codec->control_data;
->
-> -	if (twl6040_get_revid(twl6040)<  TWL6040_REV_ES1_2)
-> +	if (twl6040_get_revid(twl6040)<  TWL6040_REV_ES1_3)
+This is a backport of f6c06abfb3972ad4914cef57d8348fcb2932bc3b
 
+To finally fix the infamous leap second issue and other race windows
+caused by functions which change the offsets between the various time
+bases (CLOCK_MONOTONIC, CLOCK_REALTIME and CLOCK_BOOTTIME) we need a
+function which atomically gets the current monotonic time and updates
+the offsets of CLOCK_REALTIME and CLOCK_BOOTTIME with minimalistic
+overhead. The previous patch which provides ktime_t offsets allows us
+to make this function almost as cheap as ktime_get() which is going to
+be replaced in hrtimer_interrupt().
 
-Instead of doing this change why not you take a #define for revision and 
-  do
-if (twl6040_get_revid(twl6040)<  TWL6040_REV)
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reviewed-by: Ingo Molnar <mingo@kernel.org>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Prarit Bhargava <prarit@redhat.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Link: http://lkml.kernel.org/r/1341960205-56738-7-git-send-email-johnstul@us.ibm.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+---
+ include/linux/hrtimer.h   |    1 +
+ kernel/time/timekeeping.c |   34 ++++++++++++++++++++++++++++++++++
+ 2 files changed, 35 insertions(+)
 
-~Rajeev
-
->   		/* For ES under ES_1.3 HS step is 2 mV */
->   		return 2;
->   	else
+diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
+index c9ec940..cc07d27 100644
+--- a/include/linux/hrtimer.h
++++ b/include/linux/hrtimer.h
+@@ -327,6 +327,7 @@ extern ktime_t ktime_get(void);
+ extern ktime_t ktime_get_real(void);
+ extern ktime_t ktime_get_boottime(void);
+ extern ktime_t ktime_get_monotonic_offset(void);
++extern ktime_t ktime_get_update_offsets(ktime_t *offs_real, ktime_t *offs_boot);
+ 
+ DECLARE_PER_CPU(struct tick_device, tick_cpu_device);
+ 
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 615ec8d..62e12c3 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -1273,6 +1273,40 @@ void get_xtime_and_monotonic_and_sleep_offset(struct timespec *xtim,
+ 	} while (read_seqretry(&timekeeper.lock, seq));
+ }
+ 
++#ifdef CONFIG_HIGH_RES_TIMERS
++/**
++ * ktime_get_update_offsets - hrtimer helper
++ * @offs_real:	pointer to storage for monotonic -> realtime offset
++ * @offs_boot:	pointer to storage for monotonic -> boottime offset
++ *
++ * Returns current monotonic time and updates the offsets
++ * Called from hrtimer_interupt() or retrigger_next_event()
++ */
++ktime_t ktime_get_update_offsets(ktime_t *offs_real, ktime_t *offs_boot)
++{
++	ktime_t now;
++	unsigned int seq;
++	u64 secs, nsecs;
++
++	do {
++		seq = read_seqbegin(&timekeeper.lock);
++
++		secs = timekeeper.xtime.tv_sec;
++		nsecs = timekeeper.xtime.tv_nsec;
++		nsecs += timekeeping_get_ns();
++		/* If arch requires, add in gettimeoffset() */
++		nsecs += arch_gettimeoffset();
++
++		*offs_real = timekeeper.offs_real;
++		*offs_boot = timekeeper.offs_boot;
++	} while (read_seqretry(&timekeeper.lock, seq));
++
++	now = ktime_add_ns(ktime_set(secs, 0), nsecs);
++	now = ktime_sub(now, *offs_real);
++	return now;
++}
++#endif
++
+ /**
+  * ktime_get_monotonic_offset() - get wall_to_monotonic in ktime_t format
+  */
+-- 
+1.7.9.5
 
