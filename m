@@ -1,19 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932200Ab2GQWj4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 18:39:56 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:39611 "EHLO
+	id S932217Ab2GQWkD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 18:40:03 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:39617 "EHLO
 	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756221Ab2GQWjz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 18:39:55 -0400
+	id S932202Ab2GQWj6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 18:39:58 -0400
 From: "Theodore Ts'o" <tytso@mit.edu>
 To: Linux Kernel Developers List <linux-kernel@vger.kernel.org>
-Cc: "Theodore Ts'o" <tytso@mit.edu>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: [PATCH 06/17] xen-blkfront: remove IRQF_SAMPLE_RANDOM which is now a no-op
-Date: Tue, 17 Jul 2012 17:32:25 -0400
-Message-Id: <1342560756-18737-7-git-send-email-tytso@mit.edu>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: [PATCH 05/17] n2_crypto: remove IRQF_SAMPLE_RANDOM which is now a no-op
+Date: Tue, 17 Jul 2012 17:32:24 -0400
+Message-Id: <1342560756-18737-6-git-send-email-tytso@mit.edu>
 X-Mailer: git-send-email 1.7.11.1.108.gb129051
 In-Reply-To: <1342560756-18737-1-git-send-email-tytso@mit.edu>
 References: <1342560756-18737-1-git-send-email-tytso@mit.edu>
@@ -32,28 +30,25 @@ feature-removal-schedule, so this patch is preparation for the final
 removal of this flag.
 
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
 ---
- drivers/block/xen-blkfront.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/crypto/n2_core.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
-index 60eed4b..8f7a071 100644
---- a/drivers/block/xen-blkfront.c
-+++ b/drivers/block/xen-blkfront.c
-@@ -854,9 +854,8 @@ static int setup_blkring(struct xenbus_device *dev,
- 	if (err)
- 		goto fail;
+diff --git a/drivers/crypto/n2_core.c b/drivers/crypto/n2_core.c
+index 67b97c5..a8bd031 100644
+--- a/drivers/crypto/n2_core.c
++++ b/drivers/crypto/n2_core.c
+@@ -1610,8 +1610,7 @@ static int spu_map_ino(struct platform_device *dev, struct spu_mdesc_info *ip,
  
--	err = bind_evtchn_to_irqhandler(info->evtchn,
--					blkif_interrupt,
--					IRQF_SAMPLE_RANDOM, "blkif", info);
-+	err = bind_evtchn_to_irqhandler(info->evtchn, blkif_interrupt, 0,
-+					"blkif", info);
- 	if (err <= 0) {
- 		xenbus_dev_fatal(dev, err,
- 				 "bind_evtchn_to_irqhandler failed");
+ 	sprintf(p->irq_name, "%s-%d", irq_name, index);
+ 
+-	return request_irq(p->irq, handler, IRQF_SAMPLE_RANDOM,
+-			   p->irq_name, p);
++	return request_irq(p->irq, handler, 0, p->irq_name, p);
+ }
+ 
+ static struct kmem_cache *queue_cache[2];
 -- 
 1.7.11.1.108.gb129051
 
