@@ -1,68 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754379Ab2GQCaT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 22:30:19 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:57607 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753908Ab2GQCaP (ORCPT
+	id S1754408Ab2GQCa4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 22:30:56 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59959 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754306Ab2GQCay (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 22:30:15 -0400
-Date: Tue, 17 Jul 2012 12:30:07 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sangbeom Kim <sbkim73@samsung.com>
-Subject: linux-next: manual merge of the regulator tree with the mfd tree
-Message-Id: <20120717123007.8e6aeb257ecb88378f3320e1@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__17_Jul_2012_12_30_07_+1000_pOF_WitcXvhVIvnn"
+	Mon, 16 Jul 2012 22:30:54 -0400
+Date: Mon, 16 Jul 2012 19:30:50 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, devel@driverdev.osuosl.org,
+        abbotti@mev.co.uk
+Subject: Re: [PATCH] staging: comedi: adl_pci6208: use the comedi_device
+ hw_dev to hold the pci_dev
+Message-ID: <20120717023050.GA3025@kroah.com>
+References: <201207161926.22725.hartleys@visionengravers.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201207161926.22725.hartleys@visionengravers.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__17_Jul_2012_12_30_07_+1000_pOF_WitcXvhVIvnn
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Jul 16, 2012 at 07:26:22PM -0700, H Hartley Sweeten wrote:
+> Use the 'struct device *hw_dev' variable in the comedi_device struct
+> to hold the pci_dev instead of carrying it in the private data.
+> 
+> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+> Cc: Ian Abbott <abbotti@mev.co.uk>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> ---
+>  drivers/staging/comedi/drivers/adl_pci6208.c | 19 ++++++++++---------
+>  1 file changed, 10 insertions(+), 9 deletions(-)
 
-Hi all,
+Looks good to me, I forgot we had the to_pci_dev() macro in pci.h.  Want
+to redo all of these and resend this one with the larger series?
 
-Today's linux-next merge of the regulator tree got a conflict in
-include/linux/mfd/s5m87xx/s5m-core.h between commits from the mfd tree
-and commit c848bc8538cd ("regulator: s5m8767a: Support AP watchdog reset
-operation") from the regulator tree.
+thanks,
 
-This file was renamed (twice) in the mfd tree, so I removed the version
-in the regulator tree.  The changes from the regulator tree turned up in
-an mfd tree commit as well.=20
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__17_Jul_2012_12_30_07_+1000_pOF_WitcXvhVIvnn
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQBM4vAAoJEECxmPOUX5FE3FIQAIf9FyNetO0OphxHDYnPGCpy
-7cDcZWeutx9j/cpbpBWSmcYFbvvl5KoJ/dyUnhvmpCJrkMdKSIX7qdjhKMKMAky1
-uvSbxEyQccljPfbRZNxpGRpzoVMryVqI4UN3b9dVTyal9y8arSy5FwDAlRLF9RrE
-wCwLyg1OTnbhjomCkwSYIEsUanAURfNUBQ1VHa3/x9L0hTUwH0jNNF/XQNukQ6uq
-szGlXl7kCRtJXGenYmnRWLWrnW5htzjcYKQEYu7aCp6JwL4s5SWex+ieCCLcMRim
-kmu07FPX1XUgmf8LXLW+s1BambD49GCJAA1//sn7WggmMT7XYyKsa2gLO5yf54Rh
-wVHO3mlDiEpeR6T4chmaSRY3LUPepFn/FV2kiD5a+/bxghOsJGiCxNl60O38T4bq
-02cX9UTqA8M9Mu1d87VUaZjdUYS3rAkJAefSEGRu1xiIx05x8WiKltAg/DYQeg1+
-cvq7RM29pnnoTSvgWzPFhqKyNmUdfuNwE0jEFN2khh06xCGmDpshzRrx3jfZh6Hb
-8y5mVWoSpWrGQdjmj4v6HUkOVPIC5WOTXQg3f6cGd3L58k7OgETt1XXiEpK7rR8Q
-leif6qTQE7+PQa2ELg1+dwTw1Cw/zBEcrMa84Zl6FUSGvdpk4947sWu7IpjQWL3S
-exi0pMY/7LftRAuVia6y
-=73Cr
------END PGP SIGNATURE-----
-
---Signature=_Tue__17_Jul_2012_12_30_07_+1000_pOF_WitcXvhVIvnn--
+greg k-h
