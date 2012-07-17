@@ -1,39 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932084Ab2GQUkI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 16:40:08 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:56947 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753858Ab2GQUkF (ORCPT
+	id S1756577Ab2GQUlf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 16:41:35 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57935 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753858Ab2GQUlb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 16:40:05 -0400
-Date: Tue, 17 Jul 2012 13:40:01 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "Winkler, Tomas" <tomas.winkler@intel.com>
-Cc: "arnd@arndb.de" <arnd@arndb.de>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [char-misc-next] mei: use module_pci_driver
-Message-ID: <20120717204001.GA18021@kroah.com>
-References: <1342513427-10076-1-git-send-email-tomas.winkler@intel.com>
- <20120717171726.GA7538@kroah.com>
- <5B8DA87D05A7694D9FA63FD143655C1B13C2CD@HASMSX103.ger.corp.intel.com>
+	Tue, 17 Jul 2012 16:41:31 -0400
+Date: Tue, 17 Jul 2012 13:41:26 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Aristeu Rozanski <aris@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
+        Hugh Dickins <hughd@google.com>, Hillf Danton <dhillf@gmail.com>
+Subject: Re: [PATCH v3 0/3] cgroup: add xattr support
+Message-ID: <20120717204126.GE24336@google.com>
+References: <20120702142925.795007114@napanee.usersys.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5B8DA87D05A7694D9FA63FD143655C1B13C2CD@HASMSX103.ger.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120702142925.795007114@napanee.usersys.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 17, 2012 at 08:04:06PM +0000, Winkler, Tomas wrote:
-> 
-> > This patch fails to apply to my tree :(
-> 
-> Right, my mistake I haven't checked it directly with your tree,  I
-> need to wait till you merge the upstream in. 
+Hello,
 
-Merge what "upstream"?
+On Mon, Jul 02, 2012 at 10:29:25AM -0400, Aristeu Rozanski wrote:
+> This series are a refreshed version of a patchset submitted by Li Zefan back
+> in march:
+> 	https://lkml.org/lkml/2012/3/1/13
+> 
+> With Li's permission, I refreshed the patches to apply over the latest upstream
+> and added the modifications suggested by others in the thread:
+> - using a mount option instead of config option to enable the xattr support
+> - reinitialize the list in kmem_xattrs_free()
+> - renamed functions to simple_xattr_*()
+> 
+> Signed-off-by: Li Zefan <lizefan@huawei.com>
+> Signed-off-by: Aristeu Rozanski <aris@redhat.com>
 
-greg k-h
+I raised this point before but I'm worried about directly exposing
+kernel memory through xattr interface to userland.  Maybe it's okay as
+long as !root users are kept from creating them.  I don't know.  I
+really hope it used anonymous page cache instead of kmem tho.  Hugh,
+would something like that be difficult?
+
+Thanks.
+
+-- 
+tejun
