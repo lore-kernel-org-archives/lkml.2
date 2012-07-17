@@ -1,63 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753480Ab2GQMuo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 08:50:44 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:51777 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751826Ab2GQMum (ORCPT
+	id S1752469Ab2GQMyc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 08:54:32 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:49142 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751366Ab2GQMy1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 08:50:42 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Tony Prisk <linux@prisktech.co.nz>
-Subject: Re: [PATCH 1/1] Add Wondermedia Technologies (wmt) to docs/devicetree/vendor-bindings.txt
-Date: Tue, 17 Jul 2012 12:50:31 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "vt8500-wm8505-linux-kernel@googlegroups.com" 
-	<vt8500-wm8505-linux-kernel@googlegroups.com>,
-        devicetree-discuss@lists.ozlabs.org
-References: <76F764B079F92A4E843589C893D0A022C380F1D4@SERVER.prisktech.co.nz>
-In-Reply-To: <76F764B079F92A4E843589C893D0A022C380F1D4@SERVER.prisktech.co.nz>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Tue, 17 Jul 2012 08:54:27 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX184ToIZi284SmJyGIxbudHNiAn7RpbfuqgY/sKqQe
+	BY6Emxki4ybJrw
+Message-ID: <1342529657.7353.104.camel@marge.simpson.net>
+Subject: Re: 3.4.4-rt13: btrfs + xfstests 006 = BOOM..  and a bonus rt_mutex
+ deadlock report for absolutely free!
+From: Mike Galbraith <efault@gmx.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Chris Mason <chris.mason@fusionio.com>,
+        "Chris L. Mason" <clmason@fusionio.com>,
+        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Tue, 17 Jul 2012 14:54:17 +0200
+In-Reply-To: <1342498722.7353.37.camel@marge.simpson.net>
+References: <1342072060.7338.102.camel@marge.simpson.net>
+	 <20120713125043.GH30128@shiny> <1342260883.7368.30.camel@marge.simpson.net>
+	 <20120715175612.GF25961@shiny.int.fusionio.com>
+	 <1342404140.7659.27.camel@marge.simpson.net>
+	 <1342454547.5410.3.camel@gandalf.stny.rr.com>
+	 <1342455968.7659.93.camel@marge.simpson.net>
+	 <1342456567.7659.97.camel@marge.simpson.net>
+	 <1342458195.2783.5.camel@acer.local.home>
+	 <1342498722.7353.37.camel@marge.simpson.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201207171250.32265.arnd@arndb.de>
-X-Provags-ID: V02:K0:SoiX4eSbgZsb/RQfdMsufM5o9hh5nybG5rBE2aEEKeF
- tCvrHc1bv5k4XkPYy5qTfDUvnITLJx+BEOJaP7X435DAJOCe2N
- ey2qFzo+RRo/PLhvOemNjy4F3vHyzoCxLblbgaQlkRQ9ndD7iD
- BTZKrHrVFruGgy5rZbEnf+PXTaX+g0YqOl0d4MVlI4mHzgl8nQ
- qnAIKKYpsTEhLIXzrkHUWvQYzbNtGpzKNsc08Bz/+CKIPMsztk
- Mt5d+MzviP3aH9xJQ7Rsv+K9SMxc1rCFrByfnQNyyc3xN8vDsE
- cglzpHe40674v1c8+uCnWdOMEN6VLKebJLTiyeJW/lgrO6A0PS
- UwvTxDD96IOPEraLdqzw=
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 17 July 2012, Tony Prisk wrote:
-> From 756ae5c2f475d679649adff99058679b651af8d9 Mon Sep 17 00:00:00 2001
-> From: Tony Prisk <linux@prisktech.co.nz>
-> Date: Tue, 17 Jul 2012 19:09:31 +1200
-> Subject: [PATCH] Add Wondermedia Technologies (wmt) to vendor-prefixes.txt
->  Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+On Tue, 2012-07-17 at 06:18 +0200, Mike Galbraith wrote: 
+> On Mon, 2012-07-16 at 13:03 -0400, Steven Rostedt wrote: 
+> > On Mon, 2012-07-16 at 18:36 +0200, Mike Galbraith wrote:
+> > >  
+> > > > > Ouch, you just turned the rt_read_lock() into a spin lock. If a higher
+> > > > > priority process preempted a lower priority process that holds the same
+> > > > > lock, it will deadlock.
+> > > > 
+> > > > Hm, how, it's doing cpu_chill()?
+> > > 
+> > > 'course PI is toast, so *poof*.  Since just enabling the lockdep bits
+> > > seems to fix it up, maybe that's the patchlet to submit (less is more).
+> > 
+> > There's that too. But the issue I was talking about is with all trylock
+> > loops. As holding an rt-mutex now disables migration, if a high priority
+> > process preempts a task that holds the lock, and then the high prio task
+> > starts spinning waiting for that lock to release, the lower priority
+> > process will never get to run to release it. The cpu_chill() doesn't
+> > help.
+> 
+> Hrm.  I better go make a testcase, this one definitely wants pounding
+> through thick skull.
+> 
+> I think all of the chilling in patchlet is really ugly anyway, so would
+> prefer to trash it all, just enable the lockdep bits.  If it turns out
+> we really do need to bounce off of counts, go get a bigger hammer when
+> the need arises.  For the nonce, the pre-installed hammer _seemed_ big
+> enough for the job.
+
+All night dbench session, and all day doing many full xfstests runs
+(what will run on btrfs), fsstress -p64, and generic beating says the
+pre-installed tool is fine all by itself, so here comes a zero line
+patch.. the second best kind ;-)
+
+rt,fs,btrfs: fix rt deadlock on extent_buffer->lock
+
+Trivially repeatable deadlock is cured by enabling lockdep code in
+btrfs_clear_path_blocking() as suggested by Chris Mason.  He also
+suggested restricting blocking reader count to one, and not allowing
+a spinning reader while blocking reader exists.  This has proven to
+be unnecessary, the strict lock order enforcement is enough.. or
+rather that's my box's opinion after long hours of hard pounding.
+
+Signed-off-by: Mike Galbraith <efault@gmx.de>
+Cc: Chris Mason <chris.mason@fusionio.com>
+
+diff --git a/fs/btrfs/ctree.c b/fs/btrfs/ctree.c
+index 2e66786..1f71eb0 100644
+--- a/fs/btrfs/ctree.c
++++ b/fs/btrfs/ctree.c
+@@ -72,7 +72,7 @@ noinline void btrfs_clear_path_blocking(struct btrfs_path *p,
+ {
+ 	int i;
  
-Something went wrong with exporting the patch. You probably used git-show
-rather than git-format-patch, so you got the wrong headers.
+-#ifdef CONFIG_DEBUG_LOCK_ALLOC
++#if (defined(CONFIG_DEBUG_LOCK_ALLOC) || defined (CONFIG_PREEMPT_RT_BASE))
+ 	/* lockdep really cares that we take all of these spinlocks
+ 	 * in the right order.  If any of the locks in the path are not
+ 	 * currently blocking, it is going to complain.  So, make really
+@@ -89,7 +89,7 @@ noinline void btrfs_clear_path_blocking(struct btrfs_path *p,
+ 			btrfs_clear_lock_blocking(p->nodes[i]);
+ 	}
+ 
+-#ifdef CONFIG_DEBUG_LOCK_ALLOC
++#if (defined(CONFIG_DEBUG_LOCK_ALLOC) || defined (CONFIG_PREEMPT_RT_BASE))
+ 	if (held)
+ 		btrfs_clear_lock_blocking(held);
+ #endif
 
-It would also be helpful to describe why the specific string is used here.
-Normally we use the stock ticker symbol and "wmt" refers to Wal-Mart,
-which would be unlikely but not impossible to produce their own hardware
-in the future. The same thing applies to "via", which is VIACOM. The symbol
-for VIA technologies is "2388.TW", but that is not particularly descriptive
-or well-known.
 
-Maybe someone on the devicetree-discuss mailing list has a better
-suggestion. I think using "via" is probably the best compromise, as
-it's a well-known name and most of the components of the wondermedia
-chips were first made by VIA anyway.
-
-	Arnd
