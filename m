@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932105Ab2GQVkH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 17:40:07 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:39566 "EHLO
+	id S932147Ab2GQVkO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 17:40:14 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:39570 "EHLO
 	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756826Ab2GQVkE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756830Ab2GQVkE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 17 Jul 2012 17:40:04 -0400
 From: "Theodore Ts'o" <tytso@mit.edu>
 To: Linux Kernel Developers List <linux-kernel@vger.kernel.org>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 07/17] drivers: hv: remove IRQF_SAMPLE_RANDOM which is now a no-op
-Date: Tue, 17 Jul 2012 17:32:26 -0400
-Message-Id: <1342560756-18737-8-git-send-email-tytso@mit.edu>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 09/17] goku_udc: remove IRQF_SAMPLE_RANDOM which was commented out
+Date: Tue, 17 Jul 2012 17:32:28 -0400
+Message-Id: <1342560756-18737-10-git-send-email-tytso@mit.edu>
 X-Mailer: git-send-email 1.7.11.1.108.gb129051
 In-Reply-To: <1342560756-18737-1-git-send-email-tytso@mit.edu>
 References: <1342560756-18737-1-git-send-email-tytso@mit.edu>
@@ -27,30 +26,30 @@ With the changes in the random tree, IRQF_SAMPLE_RANDOM is now a
 no-op; interrupt randomness is now collected unconditionally in a very
 low-overhead fashion; see commit 775f4b297b.  The IRQF_SAMPLE_RANDOM
 flag was scheduled to be removed in 2009 on the
-feature-removal-schedule, so this patch is preparation for the final
-removal of this flag.
+feature-removal-schedule.
+
+The flag was only commented-out in the driver, but we should just
+remove it altogether.
 
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: Haiyang Zhang <haiyangz@microsoft.com>
+Cc: Felipe Balbi <balbi@ti.com>
 ---
- drivers/hv/vmbus_drv.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/usb/gadget/goku_udc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/hv/vmbus_drv.c b/drivers/hv/vmbus_drv.c
-index a220e57..4748086 100644
---- a/drivers/hv/vmbus_drv.c
-+++ b/drivers/hv/vmbus_drv.c
-@@ -545,8 +545,7 @@ static int vmbus_bus_init(int irq)
- 	if (ret)
- 		goto err_cleanup;
- 
--	ret = request_irq(irq, vmbus_isr, IRQF_SAMPLE_RANDOM,
--			driver_name, hv_acpi_dev);
-+	ret = request_irq(irq, vmbus_isr, 0, driver_name, hv_acpi_dev);
- 
- 	if (ret != 0) {
- 		pr_err("Unable to request IRQ %d\n",
+diff --git a/drivers/usb/gadget/goku_udc.c b/drivers/usb/gadget/goku_udc.c
+index 3d28fb9..9fd7886 100644
+--- a/drivers/usb/gadget/goku_udc.c
++++ b/drivers/usb/gadget/goku_udc.c
+@@ -1836,7 +1836,7 @@ static int goku_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ 	/* init to known state, then setup irqs */
+ 	udc_reset(dev);
+ 	udc_reinit (dev);
+-	if (request_irq(pdev->irq, goku_irq, IRQF_SHARED/*|IRQF_SAMPLE_RANDOM*/,
++	if (request_irq(pdev->irq, goku_irq, IRQF_SHARED,
+ 			driver_name, dev) != 0) {
+ 		DBG(dev, "request interrupt %d failed\n", pdev->irq);
+ 		retval = -EBUSY;
 -- 
 1.7.11.1.108.gb129051
 
