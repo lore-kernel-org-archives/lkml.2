@@ -1,60 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755257Ab2GQKVO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 06:21:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29916 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751898Ab2GQKVK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 06:21:10 -0400
-Date: Tue, 17 Jul 2012 13:21:39 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Subject: Re: [PATCH v5 2/4] kvm: KVM_EOIFD, an eventfd for EOIs
-Message-ID: <20120717102139.GG7949@redhat.com>
-References: <20120716202711.1752.71007.stgit@bling.home>
- <20120716203353.1752.19127.stgit@bling.home>
+	id S1755279Ab2GQKVX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 06:21:23 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:46834 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751898Ab2GQKVT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 06:21:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120716203353.1752.19127.stgit@bling.home>
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CA+icZUXjc+13YjoJ6FjDFboX20j3mqHNtvV2Av2-H0My8V2Mgg@mail.gmail.com>
+References: <CA+icZUXjc+13YjoJ6FjDFboX20j3mqHNtvV2Av2-H0My8V2Mgg@mail.gmail.com>
+Date: Tue, 17 Jul 2012 12:21:17 +0200
+Message-ID: <CA+icZUW4gNqspcJ1sjBD-3GCVee2VWVV5NPAr6Eo-aZHjp3y+Q@mail.gmail.com>
+Subject: Re: linux-next: Tree for July 17 (mfd: AB3100 - ab3100_probe:
+ undefined reference to `rand_initialize_irq')
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        linux-arm-kernel@lists.infradead.org, "Theodore Ts'o" <tytso@mit.edu>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 16, 2012 at 02:33:55PM -0600, Alex Williamson wrote:
-> +	if (args->flags & KVM_EOIFD_FLAG_LEVEL_IRQFD) {
-> +		struct _irqfd *irqfd = _irqfd_fdget_lock(kvm, args->irqfd);
-> +		if (IS_ERR(irqfd)) {
-> +			ret = PTR_ERR(irqfd);
-> +			goto fail;
-> +		}
-> +
-> +		gsi = irqfd->gsi;
-> +		level_irqfd = eventfd_ctx_get(irqfd->eventfd);
-> +		source = _irq_source_get(irqfd->source);
-> +		_irqfd_put_unlock(irqfd);
-> +		if (!source) {
-> +			ret = -EINVAL;
-> +			goto fail;
-> +		}
-> +	} else {
-> +		ret = -EINVAL;
-> +		goto fail;
-> +	}
-> +
-> +	INIT_LIST_HEAD(&eoifd->list);
-> +	eoifd->kvm = kvm;
-> +	eoifd->eventfd = eventfd;
-> +	eoifd->source = source;
-> +	eoifd->level_irqfd = level_irqfd;
-> +	eoifd->notifier.gsi = gsi;
-> +	eoifd->notifier.irq_acked = eoifd_event;
+On Tue, Jul 17, 2012 at 11:47 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> On Tue, Jul 17, 2012 at 7:41 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>> Hi all,
+>>
+>> Changes since 20120716:
+>>
+>> The vfs tree lost its build failure.
+>>
+>> The l2-mtd tree gained a conflict against the mtd tree.
+>>
+>> The battery tree tree lost its build failure.
+>>
+>> The regulator tree gained conflicts against the mfd tree.
+>>
+>> The tty tree lost its build failure but gained another, so I used the
+>> version from next-20120712.
+>>
+>> I have still reverted 3 commits from the signal tree at the request of the
+>> arm maintainer.
+>>
+>> The akpm tree lost a few patches that turned up elsewhere.
+>>
+>
+> From my today's build-log on a Ubuntu/precise AMD64 host:
+> [...]
+>   LD      drivers/video/built-in.o
+>   LD      drivers/built-in.o
+>   LINK    vmlinux
+>   LD      vmlinux.o
+>   MODPOST vmlinux.o
+>   GEN     .version
+>   CHK     include/generated/compile.h
+>   UPD     include/generated/compile.h
+>   CC      init/version.o
+>   LD      init/built-in.o
+> drivers/built-in.o: In function `ab3100_probe':
+> ab3100-core.c:(.devinit.text+0xbf97): undefined reference to
+> `rand_initialize_irq'
+> make[2]: *** [vmlinux] Error 1
+> make[1]: *** [deb-pkg] Error 2
+> make: *** [deb-pkg] Error 2
+>
+> MFD / AB3100 kernel-config settings:
+>
+> CONFIG_AB3100_CORE=y
+> CONFIG_AB3100_OTP=m
+> CONFIG_REGULATOR_AB3100=m
+> CONFIG_RTC_DRV_AB3100=m
+>
+> If you need further informations, please let me know.
+>
+> - Sedat -
 
-OK so this means eoifd keeps a reference to the irqfd.
-And since this is the case, can't we drop the reference counting
-around source ids now? Everything is referenced through irqfd.
+[ CC Ted (new random maintainer) ]
 
--- 
-MST
+Is this due to this change?
+
+>From 946672f548682905d8ecdab33bb6e2c705418505 Mon Sep 17 00:00:00 2001
+From: Theodore Ts'o <tytso@mit.edu>
+Date: Sat, 14 Jul 2012 20:27:52 -0400
+Subject: [PATCH] random: remove rand_initialize_irq()
+
+With the new interrupt sampling system, we are no longer using the
+timer_rand_state structure in the irq descriptor, so we can stop
+initializing it now.
+
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu
+
+...looks like AB3100 is the *only* driver still using rand_initialize_irq()...
+
+drivers/mfd/ab3100-core.c:939:  rand_initialize_irq(client->irq);
+
+...but why has random.h still this...?
+
+include/linux/random.h:51:extern void rand_initialize_irq(int irq);
+
+Just thinking "loud"...
+
+- Sedat -
