@@ -1,73 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752407Ab2GQIF0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 04:05:26 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49460 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751027Ab2GQIFR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 04:05:17 -0400
-Date: Tue, 17 Jul 2012 16:13:51 +0800
-From: Zheng Liu <gnehzuil.liu@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Zheng Liu <wenqing.lz@taobao.com>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [patch -next] ext4: locking issue on error path
-Message-ID: <20120717081351.GA4513@gmail.com>
-Mail-Followup-To: Dan Carpenter <dan.carpenter@oracle.com>,
-	Theodore Ts'o <tytso@mit.edu>, Zheng Liu <wenqing.lz@taobao.com>,
-	Andreas Dilger <adilger.kernel@dilger.ca>,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-	kernel-janitors@vger.kernel.org
-References: <20120717063106.GA14985@elgon.mountain>
+	id S1753211Ab2GQIK4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 04:10:56 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:58859 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751315Ab2GQIKw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 04:10:52 -0400
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <kishon@ti.com>, <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
+        <rob@landley.net>, <linux@arm.linux.org.uk>,
+        <gregkh@linuxfoundation.org>, <b-cousson@ti.com>, <rnayak@ti.com>,
+        <tony@atomide.com>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <balbi@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>
+Subject: [PATCH v2 00/11] omap: musb: Add device tree support
+Date: Tue, 17 Jul 2012 13:40:00 +0530
+Message-ID: <1342512611-20529-1-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.5.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120717063106.GA14985@elgon.mountain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 17, 2012 at 09:31:06AM +0300, Dan Carpenter wrote:
-> We recently changed how the locking worked here, but this error path was
-> missed.
-> 
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+This patch series adds device tree support for MUSB and device
+tree support for all the related modules to get MUSB working in
+OMAP platform.
 
-Sorry, it is my fault.  Thanks for pointing out this bug.
+A new omap-usb2 phy driver has been added (with only dt suppport)
+to perform phy configurations. Previously this configuration was
+performed by twl6030, using pdata function pointers.
 
-Regards,
-Zheng
+With the addition of omap-usb2 to perform phy configurations,
+twl6030 is made as a comparator driver to detect VBUS and ID events
+and notify it to the glue layer.
 
-> 
-> diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-> index 8c84070..2728fb7 100644
-> --- a/fs/ext4/inode.c
-> +++ b/fs/ext4/inode.c
-> @@ -3031,8 +3031,10 @@ static ssize_t ext4_ext_direct_IO(int rw, struct kiocb *iocb,
->  		if (!is_sync_kiocb(iocb)) {
->  			ext4_io_end_t *io_end =
->  				ext4_init_io_end(inode, GFP_NOFS);
-> -			if (!io_end)
-> -				return -ENOMEM;
-> +			if (!io_end) {
-> +				ret = -ENOMEM;
-> +				goto retake_lock;
-> +			}
->  			io_end->flag |= EXT4_IO_END_DIRECT;
->  			iocb->private = io_end;
->  			/*
-> @@ -3094,6 +3096,7 @@ static ssize_t ext4_ext_direct_IO(int rw, struct kiocb *iocb,
->  			ext4_clear_inode_state(inode, EXT4_STATE_DIO_UNWRITTEN);
->  		}
->  
-> +retake_lock:
->  		/* take i_mutex locking again if we do a ovewrite dio */
->  		if (overwrite) {
->  			up_read(&EXT4_I(inode)->i_data_sem);
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+musb core is _NOT_ yet converted to support device tree support as it
+would need lot of driver re-design because of its enormous use of
+function pointers. That will be in _TO DO_ list.
+
+Changes from v1:
+* Fixed Rajendra Nayak comments (regulator naming, compatible naming of
+musb and other minor cleanups.)
+* It's agreed to have ocp2scp in drivers/bus and usb2 phy is a child of
+ocp2scp, the documentation is updated accordingly.
+
+Changes from RFC:
+Removed the dependency on [RFC PATCH 00/11] OMAP System Control Module.
+Writing to control module register is now handled in otg driver itself.
+Once the system control module driver get upstreamed, I'll send a patch
+to make use of API's in control module driver to write to control
+module register.
+
+This series was developed on
+git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git xceiv
+
+This patch series depends on
+[PATCH 0/2] omap: add ocp2scp as a bus driver
+
+Performed MUSB device mode testing on OMAP4 panda, OMAP4 SDP
+and OMAP3 beagle.
+
+Kishon Vijay Abraham I (11):
+  drivers: usb: otg: add a new driver for omap usb2 phy
+  arm/dts: omap: Add omap-usb2 dt data
+  drivers: usb: otg: make twl6030_usb as a comparator driver to
+    omap_usb2
+  arm: omap: hwmod: add a new addr space in otg fo writing to control
+    module
+  drivers: usb: twl6030: Add dt support for twl6030 usb
+  arm/dts: Add twl6030-usb data
+  drivers: usb: twl4030: Add device tree support for twl4030 usb
+  arm/dts: Add twl4030-usb data
+  drivers: usb: musb: Add device tree support for omap musb glue
+  arm/dts: omap: Add usb_otg and glue data
+  arm: omap: phy: remove unused functions from omap-phy-internal.c
+
+ .../devicetree/bindings/bus/omap-ocp2scp.txt       |    3 +
+ Documentation/devicetree/bindings/usb/omap-usb.txt |   48 ++++
+ .../devicetree/bindings/usb/twlxxxx-usb.txt        |   41 +++
+ arch/arm/boot/dts/omap3-beagle.dts                 |    6 +
+ arch/arm/boot/dts/omap3-evm.dts                    |    6 +
+ arch/arm/boot/dts/omap3.dtsi                       |    8 +
+ arch/arm/boot/dts/omap4-panda.dts                  |   10 +
+ arch/arm/boot/dts/omap4-sdp.dts                    |   10 +
+ arch/arm/boot/dts/omap4.dtsi                       |   13 +
+ arch/arm/boot/dts/twl4030.dtsi                     |   21 ++
+ arch/arm/boot/dts/twl6030.dtsi                     |    6 +
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c         |    5 +
+ arch/arm/mach-omap2/omap_phy_internal.c            |  138 ----------
+ arch/arm/mach-omap2/twl-common.c                   |    5 -
+ arch/arm/mach-omap2/usb-musb.c                     |    3 -
+ drivers/usb/musb/omap2430.c                        |  107 +++++++-
+ drivers/usb/musb/omap2430.h                        |    9 +
+ drivers/usb/otg/Kconfig                            |   10 +
+ drivers/usb/otg/Makefile                           |    1 +
+ drivers/usb/otg/omap-usb2.c                        |  271 ++++++++++++++++++++
+ drivers/usb/otg/twl4030-usb.c                      |   26 ++-
+ drivers/usb/otg/twl6030-usb.c                      |  153 +++--------
+ include/linux/usb/omap_usb.h                       |   45 ++++
+ include/linux/usb/phy_companion.h                  |   34 +++
+ 24 files changed, 706 insertions(+), 273 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/usb/omap-usb.txt
+ create mode 100644 Documentation/devicetree/bindings/usb/twlxxxx-usb.txt
+ create mode 100644 drivers/usb/otg/omap-usb2.c
+ create mode 100644 include/linux/usb/omap_usb.h
+ create mode 100644 include/linux/usb/phy_companion.h
+
+-- 
+1.7.5.4
+
