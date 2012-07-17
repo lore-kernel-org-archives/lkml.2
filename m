@@ -1,83 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754841Ab2GQIkw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 04:40:52 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:38771 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753558Ab2GQIkr (ORCPT
+	id S1754858Ab2GQIlW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 04:41:22 -0400
+Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:37669 "EHLO
+	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752168Ab2GQIlT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 04:40:47 -0400
-Message-ID: <1342514444.3039.23.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH] sd: do not set changed flag on all unit attention
- conditions
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Date: Tue, 17 Jul 2012 09:40:44 +0100
-In-Reply-To: <50052390.7030908@redhat.com>
-References: <1342454772-9018-1-git-send-email-pbonzini@redhat.com>
-	  <1342455503.3176.42.camel@dabdike.int.hansenpartnership.com>
-	  <50044D56.6000400@redhat.com>
-	 <1342511100.3039.9.camel@dabdike.int.hansenpartnership.com>
-	 <50052390.7030908@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 17 Jul 2012 04:41:19 -0400
+Date: Tue, 17 Jul 2012 10:39:10 +0200 (CEST)
+From: Sebastian Ott <sebott@linux.vnet.ibm.com>
+X-X-Sender: sebott@c4eb
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+cc: Ming Lei <ming.lei@canonical.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] driver core: move uevent call to driver_register
+In-Reply-To: <20120717014558.GA28969@kroah.com>
+Message-ID: <alpine.LFD.2.02.1207171035350.1650@c4eb>
+References: <alpine.LFD.2.02.1207021900100.1784@c4eb> <CACVXFVM+u+o=R0M31mqqzmtRN4YvqgUKvJZKfBYtgH15JDh3bQ@mail.gmail.com> <20120717014558.GA28969@kroah.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+Organization: =?ISO-8859-15?Q?=22IBM_Deutschland_Research_&_Development_GmbH_=2F_Vorsitzende_des_Aufsichtsrats=3A_Martina_Koederitz_Gesch=E4ftsf=FChrung=3A_Dirk_Wittkopp_Sitz_der_Gesellschaft=3A_B=F6blingen_=2F_Registergericht?=
+ =?ISO-8859-15?Q?=3A_Amtsgericht_Stuttgart=2C_HRB_243294=22?=
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+x-cbid: 12071708-1948-0000-0000-0000026AE344
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-07-17 at 10:34 +0200, Paolo Bonzini wrote:
-> Il 17/07/2012 09:45, James Bottomley ha scritto:
-> > On Mon, 2012-07-16 at 19:20 +0200, Paolo Bonzini wrote:
-> >> Il 16/07/2012 18:18, James Bottomley ha scritto:
-> >>>>> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-> >>>>> index b583277..6d8ca08 100644
-> >>>>> --- a/drivers/scsi/scsi_lib.c
-> >>>>> +++ b/drivers/scsi/scsi_lib.c
-> >>>>> @@ -843,8 +843,11 @@ void scsi_io_completion(struct scsi_cmnd *cmd, unsigned int good_bytes)
-> >>>>>  	} else if (sense_valid && !sense_deferred) {
-> >>>>>  		switch (sshdr.sense_key) {
-> >>>>>  		case UNIT_ATTENTION:
-> >>>>> -			if (cmd->device->removable) {
-> >>>>> -				/* Detected disc change.  Set a bit
-> >>>>> +			if (cmd->device->removable &&
-> >>>>> +			    (sshdr.asc == 0x3a ||
-> >>>>> +			     (sshdr.asc == 0x28 && sshdr.ascq == 0x00))) {
-> >>>>> +				/* "No medium" or "Medium may have changed."
-> >>>>> +				 * This means a disc change.  Set a bit
-> >>> This type of change would likely cause a huge cascade of errors in real
-> >>> removable media devices.  Under the MMC standards, which a lot of the
-> >>> older removable discs seem to follow, UNIT ATTENTION indicates either
-> >>> medium change or device reset (which we check for and eat lower down);
-> >>> we can't rely on them giving proper SBC-2 sense codes.  If you want to
-> >>> pretend to be removable media, you have to conform to its standards.
-> >>
-> >> Would you accept a patch doing the opposite, i.e. passing some sense
-> >> codes such as PARAMETERS CHANGED and TARGET OPERATING CONDITIONS HAVE
-> >> CHANGED?
+Hi,
+
+On Mon, 16 Jul 2012, Greg Kroah-Hartman wrote:
+> On Tue, Jul 17, 2012 at 09:35:02AM +0800, Ming Lei wrote:
+> > On Tue, Jul 3, 2012 at 1:08 AM, Sebastian Ott <sebott@linux.vnet.ibm.com> wrote:
 > > 
-> > Could you explain what the problem actually is?  It looks like you had a
-> > reason to mark virtio-scsi as removable, even though it isn't, and now
-> > you want to add further hacks because being removable doesn't quite
-> > work.
+> > > --- a/drivers/base/driver.c
+> > > +++ b/drivers/base/driver.c
+> > > @@ -187,6 +187,9 @@ int driver_register(struct device_driver
+> > >         ret = driver_add_groups(drv, drv->groups);
+> > >         if (ret)
+> > >                 bus_remove_driver(drv);
+> > > +
+> > > +       kobject_uevent(&drv->p->kobj, KOBJ_ADD);
+> > 
+> > You should just send the uevent if 'ret' equals to zero., otherwise
+> > OOPS may be triggered by kobject_uevent() after the 'drv' has been
+> > removed.
 > 
-> It's not specific to virtio-scsi, in fact I expect that virtio-scsi will
-> be almost always used with non-removable disks.
+> Ugh, just missed that.
 > 
-> However, QEMU's SCSI target is not used just for virtio-scsi (for
-> example it can be used for USB storage), and it lets you mark a disk as
-> removable---why? because there exists real hardware that presents itself
-> as an SBC removable disk.  The only thing that is specific to
-> virtualization, is support for online resizing (which generates a unit
-> attention condition CAPACITY DATA HAS CHANGED).
+> Sebastian, care to send a follow-on patch for this?
 
-So what's the problem?  If you're doing pass through of a physical disk,
-we pick up removable from its inquiry string ... a physical removable
-device doesn't get resized.  If you have a virtual disk you want to
-resize, you don't set the removable flag in the inquiry data.
+Here is the follow-on. (I've also replied with an updated patch..just in
+case you want to take that one).
 
-James
+[PATCH] driver core: don't trigger uevent after failure
 
+Do not send the uevent if driver_add_groups failed.
+
+Found-by: Ming Lei <ming.lei@canonical.com>
+Signed-off-by: Sebastian Ott <sebott@linux.vnet.ibm.com>
+---
+ drivers/base/driver.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+--- a/drivers/base/driver.c
++++ b/drivers/base/driver.c
+@@ -185,9 +185,10 @@ int driver_register(struct device_driver
+ 	if (ret)
+ 		return ret;
+ 	ret = driver_add_groups(drv, drv->groups);
+-	if (ret)
++	if (ret) {
+ 		bus_remove_driver(drv);
+-
++		return ret;
++	}
+ 	kobject_uevent(&drv->p->kobj, KOBJ_ADD);
+ 
+ 	return ret;
 
