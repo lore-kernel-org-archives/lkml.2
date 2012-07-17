@@ -1,107 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755932Ab2GQQw5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 12:52:57 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:41846 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755830Ab2GQQwy (ORCPT
+	id S1755777Ab2GQQxv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 12:53:51 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60090 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751284Ab2GQQxs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 12:52:54 -0400
-Message-ID: <1342543971.2539.18.camel@lorien2>
-Subject: Re: [PATCH TRIVIAL] mm: Fix build warning in kmem_cache_create()
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
-        glommer@parallels.com, js1304@gmail.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
-Date: Tue, 17 Jul 2012 10:52:51 -0600
-In-Reply-To: <CAOJsxLECr7yj9cMs4oUJQjkjZe9x-6mvk76ArGsQzRWBi8_wVw@mail.gmail.com>
-References: <1342221125.17464.8.camel@lorien2>
-	 <alpine.DEB.2.00.1207140216040.20297@chino.kir.corp.google.com>
-	 <CAOJsxLE3dDd01WaAp5UAHRb0AiXn_s43M=Gg4TgXzRji_HffEQ@mail.gmail.com>
-	 <1342407840.3190.5.camel@lorien2>
-	 <alpine.DEB.2.00.1207160257420.11472@chino.kir.corp.google.com>
-	 <alpine.DEB.2.00.1207160915470.28952@router.home>
-	 <alpine.DEB.2.00.1207161253240.29012@chino.kir.corp.google.com>
-	 <alpine.DEB.2.00.1207161506390.32319@router.home>
-	 <alpine.DEB.2.00.1207161642420.18232@chino.kir.corp.google.com>
-	 <alpine.DEB.2.00.1207170929290.13599@router.home>
-	 <CAOJsxLECr7yj9cMs4oUJQjkjZe9x-6mvk76ArGsQzRWBi8_wVw@mail.gmail.com>
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 17 Jul 2012 12:53:48 -0400
+Date: Tue, 17 Jul 2012 17:53:46 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH V2 1/6] mfd: tps6586x:use devm managed resources
+Message-ID: <20120717165346.GH4477@opensource.wolfsonmicro.com>
+References: <1342421510-10638-1-git-send-email-ldewangan@nvidia.com>
+ <1342421510-10638-2-git-send-email-ldewangan@nvidia.com>
+ <20120716200110.GD10774@opensource.wolfsonmicro.com>
+ <5004ED3F.4080601@nvidia.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="B8ONY/mu/bqBak9m"
+Content-Disposition: inline
+In-Reply-To: <5004ED3F.4080601@nvidia.com>
+X-Cookie: Your aim is high and to the right.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-07-17 at 17:46 +0300, Pekka Enberg wrote:
-> On Mon, 16 Jul 2012, David Rientjes wrote:
-> >> > The kernel cannot check everything and will blow up in unexpected ways if
-> >> > someone codes something stupid. There are numerous debugging options that
-> >> > need to be switched on to get better debugging information to investigate
-> >> > deper. Adding special code to replicate these checks is bad.
-> >>
-> >> Disagree, CONFIG_SLAB does not blow up for a NULL name string and just
-> >> corrupts userspace.
-> 
-> On Tue, Jul 17, 2012 at 5:36 PM, Christoph Lameter <cl@linux.com> wrote:
-> > Ohh.. So far we only had science fiction. Now kernel fiction.... If you
-> > could corrupt userspace using sysfs with a NULL string then you'd first
-> > need to fix sysfs support.
-> >
-> > And if you really want to be totally safe then I guess you need to audit
-> > the kernel and make sure that every core kernel function that takes a
-> > string argument does check for it to be NULL just in case.
-> 
-> Well, even SLUB checks for !name in mainline so that's definitely
-> worth including unconditionally. Furthermore, the size related checks
-> certainly make sense and I don't see any harm in having them as well.
-> 
-> As for "in_interrupt()", I really don't see the point in keeping that
-> around. We could push it down to mm/slab.c in "__kmem_cache_create()"
-> if we wanted to.
 
-Is it safe to hold slab_mutex when in interrupt context? Pushing
-in_interrupt() check down to "__kmem_cache_create()" would mean, this
-check is done while holding slab_mutex. If it is not safe to be in
-interrupt context, then it would a bit late to do the check?
+--B8ONY/mu/bqBak9m
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Also all of these checks (as I see it) will allow kmem_cache_create() to
-fail gracefully. I understand that kernel doesn't do this type checking
-consistently, guess that is larger scope issue. Does it make sense to do
-these checks in this particular case?
+On Tue, Jul 17, 2012 at 10:12:39AM +0530, Laxman Dewangan wrote:
+> On Tuesday 17 July 2012 01:31 AM, Mark Brown wrote:
+> >On Mon, Jul 16, 2012 at 12:21:45PM +0530, Laxman Dewangan wrote:
 
-I am working on two different restructuring options:
+> >>-	ret = request_threaded_irq(irq, NULL, tps6586x_irq, IRQF_ONESHOT,
+> >>-				   "tps6586x", tps6586x);
+> >>+	ret = devm_request_threaded_irq(tps6586x->dev, irq, NULL, tps6586x_irq,
+> >>+			IRQF_ONESHOT, "tps6586x", tps6586x);
 
-1. Move all of the debug code and the regular code into
-kmem_cache_create_debug() which is called from kmem_cache_create() in
-ifdef CONFIG_DEBUG block and push the regular code into #else case.
+> >Are you sure this is safe - what guarantees that we can't get an
+> >interrupt while tearing the device down?
 
-I don't like this a whole lot because of the duplication of normal code
-path. However, this seems to be better than the second alternative,
-because of the complexity involved in taking code paths based on where
-the sanity checks failed.
+> I think device_remove will get called before the managed resource
+> get freed.
+> So do we need to call disable_irq() in remove() to avoid any interrupts?
 
-2. Move just the debug code block that does sanity checks on slab_caches
-list and have it return failure which will result in the 
+That would be very rude if the IRQ happened to get shared, though that's
+not possible at the moment.  In general it's pretty hard to use devm_
+IRQs safely, it's normally safest to avoid them due to the issues with
+ensuring that the interrupt handler is safe to be called even while the
+device is being torn down.
 
-       mutex_unlock(&slab_mutex);
-        put_online_cpus();
+--B8ONY/mu/bqBak9m
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-        if (!s && (flags & SLAB_PANIC))
-                panic("kmem_cache_create: Failed to create slab '%s'\n",
-name):
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-get executed from the regular code path. I like this option because it
-there is no duplication of regular code. However, if for any reason
-debug code changes and results conditional code paths taken after
-return, it will get very complex.
+iQIcBAEBAgAGBQJQBZiSAAoJEBus8iNuMP3dVdIQAJW+4UGrvFGbs+d9obByjgjQ
+XJTajFDIgM6L2jxzHMF2NmhIHMev1s7aUk3P0fkXGLCSjL7tNBlupB2oGAVtLqnM
+UawYTKBl4M3EepvkHDkH/rf7ZwgrGKfRlVf5w969tHAdywCAXuGeWmVwwcGltN+d
+kG3zmHjC0qISoo5b0UFJ5gKbty9XWOSh8Cc/4P2OdGenu3iEo1uxbnhSVxRlUTAN
+NC7xYu59mwPvvrX2BkDkwDlKqUkOKcbayIhR4JAGDVN5KWhnFryIBtUNkL5ZpQVy
+ZoKlYKsQtF+kfNdoNHJPdFM4EZweerKisVC+tBCIz32ICr3tnsa7svaRCTMjk1/w
+bQrxyNo3Lcj8ga/MhLzWEDlAop+VzHkrRcbQXFmlnruDZJLm3wrfYXMdUDhRzqe8
+fcw7OTiygGywwl9SrkZn0yFBvj3mefMd6lTQ5xc6yCmHXiJeDFZH2qRTW5yT1S2j
+w9hopgXOmFasZKWxVy23dBsQdgBHzhlDup5ZFuQmm0ZZUzP91q6xarQIiViL/+4U
+IKj/sPDqyNdLy6ywsR7ihoi7oOgDFoEpr6ZkoJpRb0EM8mBGJ8oxPZqjfuP1S6f+
+uSaRdc7o7MpyQyE9Myu6+gDchePU+chBSTNdjCeAsyWF02e3L9Q53c9VJEz20TR8
+YmF9UghHbJndN9ZVgiOM
+=ExjE
+-----END PGP SIGNATURE-----
 
-Any thoughts, should I send RFC patches so we can discuss the code.
-
-
--- Shuah
-
+--B8ONY/mu/bqBak9m--
