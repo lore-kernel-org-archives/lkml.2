@@ -1,76 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753087Ab2GQHH4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 03:07:56 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:39074 "EHLO e2.ny.us.ibm.com"
+	id S1754482Ab2GQHIU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 03:08:20 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:51684 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753353Ab2GQHFt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 03:05:49 -0400
+	id S1752762Ab2GQHFq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 03:05:46 -0400
 From: John Stultz <johnstul@us.ibm.com>
 To: stable@vger.kernel.org
-Cc: John Stultz <john.stultz@linaro.org>, stable@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
+Cc: John Stultz <johnstul@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
         Prarit Bhargava <prarit@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        John Stultz <johnstul@us.ibm.com>
-Subject: [PATCH 03/11] 3.2.x: timekeeping: Fix CLOCK_MONOTONIC inconsistency during leapsecond
-Date: Tue, 17 Jul 2012 03:05:16 -0400
-Message-Id: <1342508724-14527-4-git-send-email-johnstul@us.ibm.com>
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 05/11] 3.2.x: hrtimer: Provide clock_was_set_delayed()
+Date: Tue, 17 Jul 2012 03:05:18 -0400
+Message-Id: <1342508724-14527-6-git-send-email-johnstul@us.ibm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1342508724-14527-1-git-send-email-johnstul@us.ibm.com>
 References: <1342508724-14527-1-git-send-email-johnstul@us.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12071707-5112-0000-0000-00000A216E74
+x-cbid: 12071707-9360-0000-0000-000008786248
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: John Stultz <john.stultz@linaro.org>
+This is a backport of f55a6faa384304c89cfef162768e88374d3312cb
 
-This is a backport of fad0c66c4bb836d57a5f125ecd38bed653ca863a
-which resolves a bug the previous commit.
+clock_was_set() cannot be called from hard interrupt context because
+it calls on_each_cpu().
 
-Commit 6b43ae8a61 (ntp: Fix leap-second hrtimer livelock) broke the
-leapsecond update of CLOCK_MONOTONIC. The missing leapsecond update to
-wall_to_monotonic causes discontinuities in CLOCK_MONOTONIC.
+For fixing the widely reported leap seconds issue it is necessary to
+call it from hard interrupt context, i.e. the timer tick code, which
+does the timekeeping updates.
 
-Adjust wall_to_monotonic when NTP inserted a leapsecond.
+Provide a new function which denotes it in the hrtimer cpu base
+structure of the cpu on which it is called and raise the hrtimer
+softirq. We then execute the clock_was_set() notificiation from
+softirq context in run_hrtimer_softirq(). The hrtimer softirq is
+rarely used, so polling the flag there is not a performance issue.
 
-Reported-by: Richard Cochran <richardcochran@gmail.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Tested-by: Richard Cochran <richardcochran@gmail.com>
-Cc: stable@kernel.org
-Link: http://lkml.kernel.org/r/1338400497-12420-1-git-send-email-john.stultz@linaro.org
+[ tglx: Made it depend on CONFIG_HIGH_RES_TIMERS. We really should get
+  rid of all this ifdeffery ASAP ]
+
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Reported-by: Jan Engelhardt <jengelh@inai.de>
+Reviewed-by: Ingo Molnar <mingo@kernel.org>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Prarit Bhargava <prarit@redhat.com>
+Cc: stable@vger.kernel.org
+Link: http://lkml.kernel.org/r/1341960205-56738-2-git-send-email-johnstul@us.ibm.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Cc: Prarit Bhargava <prarit@redhat.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Linux Kernel <linux-kernel@vger.kernel.org>
 Signed-off-by: John Stultz <johnstul@us.ibm.com>
 ---
- kernel/time/timekeeping.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ include/linux/hrtimer.h |    9 ++++++++-
+ kernel/hrtimer.c        |   20 ++++++++++++++++++++
+ 2 files changed, 28 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 4780a7d..5c9b67e 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -938,6 +938,7 @@ static cycle_t logarithmic_accumulation(cycle_t offset, int shift)
- 		xtime.tv_sec++;
- 		leap = second_overflow(xtime.tv_sec);
- 		xtime.tv_sec += leap;
-+		wall_to_monotonic.tv_sec -= leap;
- 	}
+diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
+index fd0dc30..c9ec940 100644
+--- a/include/linux/hrtimer.h
++++ b/include/linux/hrtimer.h
+@@ -165,6 +165,7 @@ enum  hrtimer_base_type {
+  * @lock:		lock protecting the base and associated clock bases
+  *			and timers
+  * @active_bases:	Bitfield to mark bases with active timers
++ * @clock_was_set:	Indicates that clock was set from irq context.
+  * @expires_next:	absolute time of the next event which was scheduled
+  *			via clock_set_next_event()
+  * @hres_active:	State of high resolution mode
+@@ -177,7 +178,8 @@ enum  hrtimer_base_type {
+  */
+ struct hrtimer_cpu_base {
+ 	raw_spinlock_t			lock;
+-	unsigned long			active_bases;
++	unsigned int			active_bases;
++	unsigned int			clock_was_set;
+ #ifdef CONFIG_HIGH_RES_TIMERS
+ 	ktime_t				expires_next;
+ 	int				hres_active;
+@@ -286,6 +288,8 @@ extern void hrtimer_peek_ahead_timers(void);
+ # define MONOTONIC_RES_NSEC	HIGH_RES_NSEC
+ # define KTIME_MONOTONIC_RES	KTIME_HIGH_RES
  
- 	/* Accumulate raw time */
-@@ -1048,7 +1049,7 @@ static void update_wall_time(void)
- 		xtime.tv_sec++;
- 		leap = second_overflow(xtime.tv_sec);
- 		xtime.tv_sec += leap;
--
-+		wall_to_monotonic.tv_sec -= leap;
- 	}
++extern void clock_was_set_delayed(void);
++
+ #else
  
- 	/* check to see if there is a new clocksource to use */
+ # define MONOTONIC_RES_NSEC	LOW_RES_NSEC
+@@ -306,6 +310,9 @@ static inline int hrtimer_is_hres_active(struct hrtimer *timer)
+ {
+ 	return 0;
+ }
++
++static inline void clock_was_set_delayed(void) { }
++
+ #endif
+ 
+ extern void clock_was_set(void);
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index ae34bf5..3c24fb2 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -717,6 +717,19 @@ static int hrtimer_switch_to_hres(void)
+ 	return 1;
+ }
+ 
++/*
++ * Called from timekeeping code to reprogramm the hrtimer interrupt
++ * device. If called from the timer interrupt context we defer it to
++ * softirq context.
++ */
++void clock_was_set_delayed(void)
++{
++	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
++
++	cpu_base->clock_was_set = 1;
++	__raise_softirq_irqoff(HRTIMER_SOFTIRQ);
++}
++
+ #else
+ 
+ static inline int hrtimer_hres_active(void) { return 0; }
+@@ -1395,6 +1408,13 @@ void hrtimer_peek_ahead_timers(void)
+ 
+ static void run_hrtimer_softirq(struct softirq_action *h)
+ {
++	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
++
++	if (cpu_base->clock_was_set) {
++		cpu_base->clock_was_set = 0;
++		clock_was_set();
++	}
++
+ 	hrtimer_peek_ahead_timers();
+ }
+ 
 -- 
 1.7.9.5
 
