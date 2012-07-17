@@ -1,65 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755993Ab2GQRjI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 13:39:08 -0400
-Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:38111 "HELO
-	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751109Ab2GQRjF (ORCPT
+	id S1755992Ab2GQRka (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 13:40:30 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:23229 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751109Ab2GQRk1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 13:39:05 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: Z295l0YVM1nJCy5N5U__Urh7V6LfzAv0yIUqK4lXLXuhB6d
- OgWnqKwtLhuf90mFkYNeCZvQJTTFfXKNyqvC8yJRLufq.imKTWQwRAoOVo_2
- 2v4HQun786WqfNBylIM5dYkCWqzZE0GJqwzrvRtIPqYB2KkI94z_JgHiFVyX
- bOI4u7vsc5NWgsn8y5F1W4IhEksw03BAUCetavCrePh0maw.rxmTmo9ecf_N
- Eh6Qd5lzeoyVvcf2zkyPeUAZeBW7Evz6rlQaaCW3kU4KggoSXh0EfElCGOUF
- xQk_JSoW22Phs91yCRJwS59.r8B6xvjHG9ZvcqGyTT8aNMgMwUX5tzV.rYHh
- nB0Rs3nsn0lnJVdlX9fL7JyDZn9yBEsqtVsSRGNG9B2bbIxZLWNQPoCcZrmN
- h9PTq74KaRMFXGIQcmrEnCLkvPOGpMPrsDHbP
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 17 Jul 2012 12:39:00 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Jiang Liu <liuj97@gmail.com>
-cc: Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Mel Gorman <mgorman@suse.de>, Jianguo Wu <wujianguo@huawei.com>,
-        Jiang Liu <jiang.liu@huawei.com>, Tony Luck <tony.luck@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
-        Keping Chen <chenkeping@huawei.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm/slub: fix a BUG_ON() when offlining a memory node
- and CONFIG_SLUB_DEBUG is on
-In-Reply-To: <1342543816-10853-1-git-send-email-jiang.liu@huawei.com>
-Message-ID: <alpine.DEB.2.00.1207171237320.15177@router.home>
-References: <1342543816-10853-1-git-send-email-jiang.liu@huawei.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 17 Jul 2012 13:40:27 -0400
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC103.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+X-SpamScore: -8
+X-BigFish: VS-8(zz98dI9371I542M1432Izz1202hzz8275bhz2fh2a8h683h839h93fhd25hf0ah107ah)
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT004.namprd03.prod.outlook.com;R:internal;EFV:INT
+From: KY Srinivasan <kys@microsoft.com>
+To: Olaf Hering <olaf@aepfle.de>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "apw@canonical.com" <apw@canonical.com>
+Subject: RE: [PATCH 02/15] Drivers: hv: Add KVP definitions for IP address
+ injection
+Thread-Topic: [PATCH 02/15] Drivers: hv: Add KVP definitions for IP address
+ injection
+Thread-Index: AQHNYf4QnjbEKHKtJUqIqRriKjZpOZcs39yAgAChiDA=
+Date: Tue, 17 Jul 2012 17:39:44 +0000
+Message-ID: <426367E2313C2449837CD2DE46E7EAF9224EA2D3@SN2PRD0310MB382.namprd03.prod.outlook.com>
+References: <1342297930-12607-1-git-send-email-kys@microsoft.com>
+ <1342298060-12662-1-git-send-email-kys@microsoft.com>
+ <1342298060-12662-2-git-send-email-kys@microsoft.com>
+ <20120717040912.GA6369@aepfle.de>
+In-Reply-To: <20120717040912.GA6369@aepfle.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [108.24.39.100]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-OrganizationHeadersPreserved: SN2PRD0310HT004.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14MLTC103.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14MLTC103.redmond.corp.microsoft.com
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q6HHeaMA003618
 
-On Wed, 18 Jul 2012, Jiang Liu wrote:
 
-> From: Jianguo Wu <wujianguo@huawei.com>
->
-> From: Jianguo Wu <wujianguo@huawei.com>
->
-> SLUB allocator may cause a BUG_ON() when offlining a memory node if
-> CONFIG_SLUB_DEBUG is on. The scenario is:
->
-> 1) when creating kmem_cache_node slab, it cause inc_slabs_node() twice.
-> early_kmem_cache_node_alloc
-> 	->new_slab
-> 		->inc_slabs_node
-> 	->inc_slabs_node
 
-New slab will not be able to increment the slab counter. It will
-check that there is no per node structure yet and then skip the inc slabs
-node.
+> -----Original Message-----
+> From: Olaf Hering [mailto:olaf@aepfle.de]
+> Sent: Tuesday, July 17, 2012 12:09 AM
+> To: KY Srinivasan
+> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; apw@canonical.com
+> Subject: Re: [PATCH 02/15] Drivers: hv: Add KVP definitions for IP address
+> injection
+> 
+> On Sat, Jul 14, K. Y. Srinivasan wrote:
+> 
+> > diff --git a/include/linux/hyperv.h b/include/linux/hyperv.h
+> > index 68ed7f7..38b561a 100644
+> > --- a/include/linux/hyperv.h
+> > +++ b/include/linux/hyperv.h
+> > @@ -127,6 +127,8 @@ enum hv_kvp_exchg_op {
+> >  	KVP_OP_SET,
+> >  	KVP_OP_DELETE,
+> >  	KVP_OP_ENUMERATE,
+> > +	KVP_OP_GET_IP_INFO,
+> > +	KVP_OP_SET_IP_INFO,
+> >  	KVP_OP_REGISTER,
+> >  	KVP_OP_COUNT /* Number of operations, must be last. */
+> >  };
+> 
+> I think this will break the kernel/daemon API for existing binaries.
+> Perhaps a forward/backwards compatible API where an older binary
+> continues to work with a newer kernel should be added.
 
-This suggests that a call to early_kmem_cache_node_alloc was not needed
-because the per node structure already existed. Lets fix that instead.
+You are right. If I were to keep the existing op codes unchanged, I think we can 
+maintain backward compatibility - older daemon binaries will be able to function
+correctly on newer KVP driver. However, newer daemon binary will require a 
+matching KVP driver. Let me first validate what I think is the case. Greg, please drop
+the patch-set; I will resubmit the set.
 
+Regards,
+
+K. Y
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
