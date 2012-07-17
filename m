@@ -1,73 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755169Ab2GQK4q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 06:56:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34517 "EHLO mx2.suse.de"
+	id S1755272Ab2GQK45 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 06:56:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58660 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754522Ab2GQK4o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 06:56:44 -0400
-Date: Tue, 17 Jul 2012 12:56:40 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Gavin Shan <shangw@linux.vnet.ibm.com>
-Subject: Re: [PATCH] mm/memcg: remove redundant checking on root memcg
-Message-ID: <20120717105640.GB25435@tiehlicka.suse.cz>
-References: <1342518147-10406-1-git-send-email-liwanp@linux.vnet.ibm.com>
+	id S1754159Ab2GQK4x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 06:56:53 -0400
+Message-ID: <500544DF.3050400@redhat.com>
+Date: Tue, 17 Jul 2012 12:56:31 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1342518147-10406-1-git-send-email-liwanp@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Asias He <asias@redhat.com>, Stefan Hajnoczi <stefanha@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-aio@kvack.org, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Benjamin LaHaise <bcrl@kvack.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, nab@linux-iscsi.org,
+        target-devel@vger.kernel.org, Anthony Liguori <anthony@codemonkey.ws>
+Subject: Re: [PATCH 0/5] Add vhost-blk support
+References: <1342107302-28116-1-git-send-email-asias@redhat.com> <CAJSP0QWgmXns89se+xdGgM6i1_hsfVWPQ8caHua9d-dDA4CTDQ@mail.gmail.com> <50052276.2080906@redhat.com> <500527BA.9000001@redhat.com> <20120717094526.GC7949@redhat.com> <50053B09.2060703@redhat.com> <20120717104920.GJ7949@redhat.com>
+In-Reply-To: <20120717104920.GJ7949@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 17-07-12 17:42:27, Wanpeng Li wrote:
-> Function __mem_cgroup_cancel_local_charge is only called by
-> mem_cgroup_move_parent. For this case, root memcg has been
-> checked by mem_cgroup_move_parent. So we needn't check that
-> again in function __mem_cgroup_cancel_local_charge and just
-> remove the check in function __mem_cgroup_cancel_local_charge.
-
-It's true that the check is not necessary but on the other hand
-__mem_cgroup_cancel_charge does check it and it would be unfortunate to
-have two very similar functions with different expectations (one can be
-called for the root cgroup while other one cannot).
-
-> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-> ---
->  mm/memcontrol.c |    3 ---
->  1 files changed, 0 insertions(+), 3 deletions(-)
+Il 17/07/2012 12:49, Michael S. Tsirkin ha scritto:
+>> Ok, that would make more sense.  One difference between vhost-blk and
+>> vhost-net is that for vhost-blk there are also management actions that
+>> would trigger the switch, for example a live snapshot.
+>> So a prerequisite for vhost-blk would be that it is possible to disable
+>> it on the fly while the VM is running, as soon as all in-flight I/O is
+>> completed.
 > 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 6392c0a..d346347 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -2404,9 +2404,6 @@ static void __mem_cgroup_cancel_local_charge(struct mem_cgroup *memcg,
->  {
->  	unsigned long bytes = nr_pages * PAGE_SIZE;
->  
-> -	if (mem_cgroup_is_root(memcg))
-> -		return;
-> -
->  	res_counter_uncharge_until(&memcg->res, memcg->res.parent, bytes);
->  	if (do_swap_account)
->  		res_counter_uncharge_until(&memcg->memsw,
-> -- 
-> 1.7.5.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe cgroups" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> It applies for vhost-net too. For example if you bring link down,
+> we switch to userspace. So vhost-net supports this switch on the fly.
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Cool.
+
+>> (Note that, however, this is not possible for vhost-scsi, because it
+>> really exposes different hardware to the guest.  It must not happen that
+>> a kernel upgrade or downgrade toggles between userspace SCSI and
+>> vhost-scsi, for example).
+> 
+> I would say this is not a prerequisite for merging in qemu.
+> It might be a required feature for production but it
+> is also solvable at the management level.
+
+I'm thinking of the level interrupts here.  You cannot make a change in
+the guest, and have it do completely unrelated changes the hardware that
+the guest sees.
+
+>>>> having to
+>>>> support the API; having to handle transition from one more thing when
+>>>> something better comes out.
+>>>
+>>> Well this is true for any code. If the limited featureset which
+>>> vhost-blk can accelerate is something many people use, then accelerating
+>>> by 5-15% might outweight support costs.
+>>
+>> It is definitely what people use if they are interested in performance.
+> 
+> In that case it seems to me we should stop using the feature set as
+> an argument and focus on whether the extra code is worth the 5-15% gain.
+> No one seems to have commented on that so everyone on list thinks that
+> aspect is OK?
+
+I would like to see a breakdown of _where_ the 5-15% lies, something
+like http://www.linux-kvm.org/page/Virtio/Block/Latency.
+
+> Kernel merge windows is coming up and I would like to see whether
+> any of vhost-blk / vhost-scsi is going to be actually used by userspace.
+> I guess we could tag it for staging but would be nice to avoid that.
+
+Staging would be fine by me for both vhost-blk and vhost-scsi.
+
+Paolo
