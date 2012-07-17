@@ -1,72 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751739Ab2GQLjL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 07:39:11 -0400
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:4508
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751159Ab2GQLjI convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 07:39:08 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -7
-X-BigFish: VS-7(zz98dI9371I542M1432Izz1202hzz8275bhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah107ahbe9i)
-From: Zhao Chenhui-B35336 <B35336@freescale.com>
-To: Kumar Gala <galak@kernel.crashing.org>
-CC: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Li Yang-R58472 <r58472@freescale.com>
-Subject: RE: [PATCH v7 2/5] powerpc/85xx: add HOTPLUG_CPU support
-Thread-Topic: [PATCH v7 2/5] powerpc/85xx: add HOTPLUG_CPU support
-Thread-Index: AQHNWQVoThvQ6RzhcEef9iu6oEJhTZcnhA0AgAXrQEA=
-Date: Tue, 17 Jul 2012 11:39:04 +0000
-Message-ID: <7AA2FF042C086D469F577FA6723434DA071060@039-SN1MPN1-002.039d.mgd.msft.net>
-References: <1341310879-5468-1-git-send-email-chenhui.zhao@freescale.com>
- <1341310879-5468-2-git-send-email-chenhui.zhao@freescale.com>
- <0090811B-107A-4496-ADF1-DD07081BF6B9@kernel.crashing.org>
-In-Reply-To: <0090811B-107A-4496-ADF1-DD07081BF6B9@kernel.crashing.org>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.193.20.51]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751948Ab2GQLmS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 07:42:18 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:35228 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751159Ab2GQLmP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 07:42:15 -0400
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+In-Reply-To: <20120717112645.GA9363@redhat.com>
+References: <1342107302-28116-1-git-send-email-asias@redhat.com>
+	<CAJSP0QWgmXns89se+xdGgM6i1_hsfVWPQ8caHua9d-dDA4CTDQ@mail.gmail.com>
+	<50052276.2080906@redhat.com>
+	<500527BA.9000001@redhat.com>
+	<50052E7E.6020100@redhat.com>
+	<CAJSP0QW0tPV3WASGOBRE4hL=8zzSFQ6T=bHbEwMAzmHR9wnwJg@mail.gmail.com>
+	<20120717112645.GA9363@redhat.com>
+Date: Tue, 17 Jul 2012 12:42:13 +0100
+Message-ID: <CAJSP0QXPkrVvgA+1fhhwsB5J8oApOObK8D3fk_Lm0Bt3T+Wfuw@mail.gmail.com>
+Subject: Re: [PATCH 0/5] Add vhost-blk support
+From: Stefan Hajnoczi <stefanha@gmail.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Asias He <asias@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-aio@kvack.org, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Benjamin LaHaise <bcrl@kvack.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Kumar Gala [mailto:galak@kernel.crashing.org]
-> Sent: Friday, July 13, 2012 8:15 PM
-> To: Zhao Chenhui-B35336
-> Cc: linuxppc-dev@lists.ozlabs.org; Wood Scott-B07421; linux-kernel@vger.kernel.org; Li Yang-R58472
-> Subject: Re: [PATCH v7 2/5] powerpc/85xx: add HOTPLUG_CPU support
-> 
-> 
-> On Jul 3, 2012, at 5:21 AM, Zhao Chenhui wrote:
-> 
-> > From: Li Yang <leoli@freescale.com>
-> >
-> > Add support to disable and re-enable individual cores at runtime
-> > on MPC85xx/QorIQ SMP machines. Currently support e500v1/e500v2 core.
-> >
-> > MPC85xx machines use ePAPR spin-table in boot page for CPU kick-off.
-> > This patch uses the boot page from bootloader to boot core at runtime.
-> > It supports 32-bit and 36-bit physical address.
-> >
-> > Add generic_set_cpu_up() to set cpu_state as CPU_UP_PREPARE in kick_cpu().
-> 
-> Shouldn't the generic_setup_cpu_up() be a separate patch, and refactor smp_generic_kick_cpu() to use
-> it.
-> 
-> Also, we should pull the conversion of the spintable from #defines to struct into a separate patch
-> before this one.
-> 
+On Tue, Jul 17, 2012 at 12:26 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
+> On Tue, Jul 17, 2012 at 12:11:15PM +0100, Stefan Hajnoczi wrote:
+>> On Tue, Jul 17, 2012 at 10:21 AM, Asias He <asias@redhat.com> wrote:
+>> > On 07/17/2012 04:52 PM, Paolo Bonzini wrote:
+>> >>
+>> >> Il 17/07/2012 10:29, Asias He ha scritto:
+>> >>>
+>> >>> So, vhost-blk at least saves ~6 syscalls for us in each request.
+>> >>
+>> >>
+>> >> Are they really 6?  If I/O is coalesced by a factor of 3, for example
+>> >> (i.e. each exit processes 3 requests), it's really 2 syscalls per request.
+>> >
+>> >
+>> > Well. I am counting the number of syscalls in one notify and response
+>> > process. Sure the IO can be coalesced.
+>>
+>> Linux AIO also supports batching in io_submit() and io_getevents().
+>> Depending on the request pattern in the vring when you process it, you
+>> should be able to do better than 1 set of syscalls per host I/O
+>> request.
+>>
+>> Are you taking advantage of that at the moment in your userspace benchmark?
+>>
+>> Stefan
+>
+> Injecting an interrupt directly from kernel bypasses two context switches.
+> Yes some worloads can coalesce interrupts efficiently but others can't.
+> It is not really hard to speculate more.
+>
+> Personally I don't understand where all this speculation leads us.
+> Are you guys disputing the measurements posted? If not would not
+> it be better if discussion focused on the amount of extra code versus
+> measured gain?
 
-Ok. I will split this patch.
+5-15% is nice.  But what causes the performance advantage?
 
--Chenhui
+Knowing the answer to that is important before anyone can say whether
+this approach is good or not.
 
+Stefan
