@@ -1,59 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754151Ab2GQCAA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 22:00:00 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:44821 "EHLO
+	id S1754195Ab2GQCAl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 22:00:41 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:62031 "EHLO
 	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753292Ab2GQB75 convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753292Ab2GQCAi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 21:59:57 -0400
+	Mon, 16 Jul 2012 22:00:38 -0400
+Date: Mon, 16 Jul 2012 19:00:34 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 01/30] staging: comedi: add pci_dev pointer to
+ comedi_device
+Message-ID: <20120717020034.GA28771@kroah.com>
+References: <201207111449.15203.hartleys@visionengravers.com>
+ <20120717015201.GA10048@kroah.com>
+ <ADE657CA350FB648AAC2C43247A983F00206AA915E16@AUSP01VMBX24.collaborationhost.net>
 MIME-Version: 1.0
-In-Reply-To: <CAO_0yfM_qmWd_dR7UH1Y6Rk6F5b9CTVduDKLmsLb8azrmL5NZA@mail.gmail.com>
-References: <CAO_0yfM_qmWd_dR7UH1Y6Rk6F5b9CTVduDKLmsLb8azrmL5NZA@mail.gmail.com>
-From: Yang Bai <hamo.by@gmail.com>
-Date: Tue, 17 Jul 2012 09:59:35 +0800
-Message-ID: <CAO_0yfPpxk521qBaXCKDabdYtACMYTAWe_zkF2bG8ELveHw58g@mail.gmail.com>
-Subject: Re: How to map ata_link to physical link and ata_port to physical port
-To: jgarzik@pobox.com, gwendal@google.com, jgarzik@redhat.com
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <ADE657CA350FB648AAC2C43247A983F00206AA915E16@AUSP01VMBX24.collaborationhost.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CC-ed Gwendal and Jeff
+On Mon, Jul 16, 2012 at 08:55:47PM -0500, H Hartley Sweeten wrote:
+> On Monday, July 16, 2012 6:52 PM, Greg KH wrote:
+> > On Wed, Jul 11, 2012 at 02:49:14PM -0700, H Hartley Sweeten wrote:
+> >> The pci_dev pointer in the private driver data is used by every
+> >> comedi pci driver. Some of them only have the need for the
+> >> private data because of this pointer.
+> >> 
+> >> Introduce the pci_dev pointer in the comedi_device struct so it
+> >> can be used instead of needing it in the private data.
+> >> 
+> >> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+> >> Cc: Ian Abbott <abbotti@mev.co.uk>
+> >> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> >> ---
+> >>  drivers/staging/comedi/comedidev.h | 2 ++
+> >>  1 file changed, 2 insertions(+)
+> >> 
+> >> diff --git a/drivers/staging/comedi/comedidev.h b/drivers/staging/comedi/comedidev.h
+> >> index de8c99c..55f2373 100644
+> >> --- a/drivers/staging/comedi/comedidev.h
+> >> +++ b/drivers/staging/comedi/comedidev.h
+> >> @@ -212,6 +212,8 @@ struct comedi_device {
+> >>  	 * DMA_NONE */
+> >>  	struct device *hw_dev;
+> >>  
+> >> +	struct pci_dev *pcidev;
+> >
+> > No, the field above this, hw_dev, should be used instead here, as that's
+> > what it is there for, right?
+> 
+> The hw_dev pointer is currently only used for something dealing with dma.
+> I have not dug into it yet to see what exactly it's used for.  The comment
+> says:
+> 
+> 	/* hw_dev is passed to dma_alloc_coherent when allocating async buffers
+> 	 * for subdevices that have async_dma_dir set to something other than
+> 	 * DMA_NONE */
 
-Ping.
+Which is exactly what the pci device should be used for, it knows this
+information :)
 
-On Mon, Jul 16, 2012 at 11:09 AM, Yang Bai <hamo.by@gmail.com> wrote:
-> Hi hackers,
->
-> In our internal usage, we want to map the disk in system like
-> sd{a,b,c} to physical disk slot. When the disk is attached to LSI HBA
-> card, we find that we can rely on the phy attribute of the disk to
-> find the slot since this attribute does not change no matter which
-> kind of disks we attach or what order we attach the disks. But when
-> doing this for AHCI, we do not find an attribute that we can rely on
-> it to map the disk to slot. No matter ata_port number or ata_host
-> number, when we changed the order we attached the disks to slots, they
-> changed.
->
-> So I want to know is there some attribute we can get from AHCI that
-> map the logical disk to physical slot?
->
-> Thanks,
-> Yang
+> > Care to rework this series with that change instead?
+> 
+> It could probably be used with some sort of container_of but I'm not sure.
 
+Yes it can.
 
+To set the field:
 
--- 
-    """
-    Keep It Simple,Stupid.
-    """
+	hw_dev = &pci_dev->dev;
 
-Chinese Name: 白杨
-Nick Name: Hamo
-Homepage: http://hamobai.com/
-GPG KEY ID: 0xA4691A33
-Key fingerprint = 09D5 2D78 8E2B 0995 CF8E  4331 33C4 3D24 A469 1A33
+to get it back:
+	pci_dev = container_of(hw_dev, struct pci_device, struct device);
+
+I think.  That's off the top of my head, please try it out first.
+
+And use a macro for the container_of stuff, that makes it easier to
+understand.
+
+thanks,
+
+greg k-h
