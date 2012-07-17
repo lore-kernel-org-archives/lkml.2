@@ -1,137 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754852Ab2GQIiZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 04:38:25 -0400
-Received: from eu1sys200aog103.obsmtp.com ([207.126.144.115]:60453 "EHLO
-	eu1sys200aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751828Ab2GQIiT (ORCPT
+	id S1754841Ab2GQIkw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 04:40:52 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:38771 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753558Ab2GQIkr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 04:38:19 -0400
-Message-ID: <50052470.4060604@st.com>
-Date: Tue, 17 Jul 2012 14:08:08 +0530
-From: Rajeev kumar <rajeev-dlh.kumar@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
-MIME-Version: 1.0
-To: Ondrej Zary <linux@rainbow-software.org>
-Cc: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [alsa-devel] [PATCH] snd-opti9xx: Implement suspend/resume
-References: <201207170916.44277.linux@rainbow-software.org>
-In-Reply-To: <201207170916.44277.linux@rainbow-software.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Tue, 17 Jul 2012 04:40:47 -0400
+Message-ID: <1342514444.3039.23.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [PATCH] sd: do not set changed flag on all unit attention
+ conditions
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Date: Tue, 17 Jul 2012 09:40:44 +0100
+In-Reply-To: <50052390.7030908@redhat.com>
+References: <1342454772-9018-1-git-send-email-pbonzini@redhat.com>
+	  <1342455503.3176.42.camel@dabdike.int.hansenpartnership.com>
+	  <50044D56.6000400@redhat.com>
+	 <1342511100.3039.9.camel@dabdike.int.hansenpartnership.com>
+	 <50052390.7030908@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Ondrej,
+On Tue, 2012-07-17 at 10:34 +0200, Paolo Bonzini wrote:
+> Il 17/07/2012 09:45, James Bottomley ha scritto:
+> > On Mon, 2012-07-16 at 19:20 +0200, Paolo Bonzini wrote:
+> >> Il 16/07/2012 18:18, James Bottomley ha scritto:
+> >>>>> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+> >>>>> index b583277..6d8ca08 100644
+> >>>>> --- a/drivers/scsi/scsi_lib.c
+> >>>>> +++ b/drivers/scsi/scsi_lib.c
+> >>>>> @@ -843,8 +843,11 @@ void scsi_io_completion(struct scsi_cmnd *cmd, unsigned int good_bytes)
+> >>>>>  	} else if (sense_valid && !sense_deferred) {
+> >>>>>  		switch (sshdr.sense_key) {
+> >>>>>  		case UNIT_ATTENTION:
+> >>>>> -			if (cmd->device->removable) {
+> >>>>> -				/* Detected disc change.  Set a bit
+> >>>>> +			if (cmd->device->removable &&
+> >>>>> +			    (sshdr.asc == 0x3a ||
+> >>>>> +			     (sshdr.asc == 0x28 && sshdr.ascq == 0x00))) {
+> >>>>> +				/* "No medium" or "Medium may have changed."
+> >>>>> +				 * This means a disc change.  Set a bit
+> >>> This type of change would likely cause a huge cascade of errors in real
+> >>> removable media devices.  Under the MMC standards, which a lot of the
+> >>> older removable discs seem to follow, UNIT ATTENTION indicates either
+> >>> medium change or device reset (which we check for and eat lower down);
+> >>> we can't rely on them giving proper SBC-2 sense codes.  If you want to
+> >>> pretend to be removable media, you have to conform to its standards.
+> >>
+> >> Would you accept a patch doing the opposite, i.e. passing some sense
+> >> codes such as PARAMETERS CHANGED and TARGET OPERATING CONDITIONS HAVE
+> >> CHANGED?
+> > 
+> > Could you explain what the problem actually is?  It looks like you had a
+> > reason to mark virtio-scsi as removable, even though it isn't, and now
+> > you want to add further hacks because being removable doesn't quite
+> > work.
+> 
+> It's not specific to virtio-scsi, in fact I expect that virtio-scsi will
+> be almost always used with non-removable disks.
+> 
+> However, QEMU's SCSI target is not used just for virtio-scsi (for
+> example it can be used for USB storage), and it lets you mark a disk as
+> removable---why? because there exists real hardware that presents itself
+> as an SBC removable disk.  The only thing that is specific to
+> virtualization, is support for online resizing (which generates a unit
+> attention condition CAPACITY DATA HAS CHANGED).
 
-On 7/17/2012 12:46 PM, Ondrej Zary wrote:
-> Implement suspend/resume support for Opti 92x and 93x chips.
-> Tested with Opti 929A+AD1848 and Opti 931.
->
-> Signed-off-by: Ondrej Zary<linux@rainbow-software.org>
->
+So what's the problem?  If you're doing pass through of a physical disk,
+we pick up removable from its inquiry string ... a physical removable
+device doesn't get resized.  If you have a virtual disk you want to
+resize, you don't set the removable flag in the inquiry data.
 
-<snip...>
+James
 
-> +#ifdef CONFIG_PM
-> +static int snd_opti9xx_suspend(struct snd_card *card)
-> +{
-> +	struct snd_opti9xx *chip = card->private_data;
-> +
-> +	snd_power_change_state(card, SNDRV_CTL_POWER_D3hot);
-> +	chip->codec->suspend(chip->codec);
-> +	return 0;
-> +}
-> +
-> +static int snd_opti9xx_resume(struct snd_card *card)
-> +{
-> +	struct snd_opti9xx *chip = card->private_data;
-> +	int error, xdma2;
-> +#if defined(CS4231) || defined(OPTi93X)
-> +	xdma2 = dma2;
-> +#else
-> +	xdma2 = -1;
-> +#endif
-> +
-> +	error = snd_opti9xx_configure(chip, port, irq, dma1, xdma2,
-> +				      mpu_port, mpu_irq);
-
-dma1??
-
-> +	if (error)
-> +		return error;
-
-Variable name is not convincing. You are assuming that the function is 
-returning error.
-
-> +	chip->codec->resume(chip->codec);
-> +	snd_power_change_state(card, SNDRV_CTL_POWER_D0);
-
-blank line required.
-
-> +	return 0;
-> +}
-> +
-> +static int snd_opti9xx_isa_suspend(struct device *dev, unsigned int n,
-> +				   pm_message_t state)
-> +{
-> +	return snd_opti9xx_suspend(dev_get_drvdata(dev));
-> +}
-> +
-> +static int snd_opti9xx_isa_resume(struct device *dev, unsigned int n)
-> +{
-> +	return snd_opti9xx_resume(dev_get_drvdata(dev));
-> +}
-> +#endif
-> +
->   static struct isa_driver snd_opti9xx_driver = {
->   	.match		= snd_opti9xx_isa_match,
->   	.probe		= snd_opti9xx_isa_probe,
->   	.remove		= __devexit_p(snd_opti9xx_isa_remove),
-> -	/* FIXME: suspend/resume */
-> +#ifdef CONFIG_PM
-> +	.suspend	= snd_opti9xx_isa_suspend,
-> +	.resume		= snd_opti9xx_isa_resume,
-> +#endif
->   	.driver		= {
->   		.name	= DEV_NAME
->   	},
-> @@ -1123,12 +1165,29 @@ static void __devexit snd_opti9xx_pnp_remove(struct pnp_card_link * pcard)
->   	snd_opti9xx_pnp_is_probed = 0;
->   }
->
-> +#ifdef CONFIG_PM
-> +static int snd_opti9xx_pnp_suspend(struct pnp_card_link *pcard,
-> +				   pm_message_t state)
-> +{
-> +	return snd_opti9xx_suspend(pnp_get_card_drvdata(pcard));
-> +}
-> +
-> +static int snd_opti9xx_pnp_resume(struct pnp_card_link *pcard)
-> +{
-> +	return snd_opti9xx_resume(pnp_get_card_drvdata(pcard));
-> +}
-> +#endif
-> +
->   static struct pnp_card_driver opti9xx_pnpc_driver = {
->   	.flags		= PNP_DRIVER_RES_DISABLE,
->   	.name		= "opti9xx",
-
-Why this is opti why not OPTi
-
-~Rajeev
-
->   	.id_table	= snd_opti9xx_pnpids,
->   	.probe		= snd_opti9xx_pnp_probe,
->   	.remove		= __devexit_p(snd_opti9xx_pnp_remove),
-> +#ifdef CONFIG_PM
-> +	.suspend	= snd_opti9xx_pnp_suspend,
-> +	.resume		= snd_opti9xx_pnp_resume,
-> +#endif
->   };
->   #endif
->
->
 
