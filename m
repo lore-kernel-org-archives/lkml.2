@@ -1,159 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753019Ab2GQJ2C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 05:28:02 -0400
-Received: from mga09.intel.com ([134.134.136.24]:2921 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751287Ab2GQJ17 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 05:27:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="173081973"
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-To: a.p.zijlstra@chello.nl, mingo@elte.hu, andi@firstfloor.org,
-        linux-kernel@vger.kernel.org
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH] perf/x86: Fix LLC-* and node-* events on Intel SandyBridge
-Date: Tue, 17 Jul 2012 17:27:55 +0800
-Message-Id: <1342517275-2875-1-git-send-email-zheng.z.yan@intel.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1754592Ab2GQJ2S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 05:28:18 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:44732 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753248Ab2GQJ2Q convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 05:28:16 -0400
+MIME-Version: 1.0
+From: =?ISO-8859-1?B?QWRyaeFu?= <adrianbn@gmail.com>
+Date: Tue, 17 Jul 2012 10:27:55 +0100
+Message-ID: <CAFDTedp84TuxHpz2SJTG_jdjtkQ7r9qkCjqQWT5Zg22LrT7tTg@mail.gmail.com>
+Subject: Setreuid distinction about (uid_t)-1
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+Hi folks,
 
-LLC-* and node-* events require using the OFFCORE_RESPONSE events
-on SandyBridge, but the hw_cache_extra_regs is left uninitialized.
-This patch adds the missing extra register configure table for
-SandyBridge.
+first I'd like to apologize if the question I'm asking is dumb or a
+little bit out of the scope of the list. I've been doing some testing
+on setuid functions family lately, and I found a weird behaviour I'm
+not able to explain myself. I'm using this small program to try and
+switch the uid of a user:
 
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
----
- arch/x86/kernel/cpu/perf_event_intel.c |   92 +++++++++++++++++++++++++++++---
- 1 file changed, 86 insertions(+), 6 deletions(-)
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 7a8b9d0..3823669 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -138,6 +138,84 @@ static u64 intel_pmu_event_map(int hw_event)
- 	return intel_perfmon_event_map[hw_event];
- }
- 
-+#define SNB_DMND_DATA_RD	(1ULL << 0)
-+#define SNB_DMND_RFO		(1ULL << 1)
-+#define SNB_DMND_IFETCH		(1ULL << 2)
-+#define SNB_DMND_WB		(1ULL << 3)
-+#define SNB_PF_DATA_RD		(1ULL << 4)
-+#define SNB_PF_RFO		(1ULL << 5)
-+#define SNB_PF_IFETCH		(1ULL << 6)
-+#define SNB_LLC_DATA_RD		(1ULL << 7)
-+#define SNB_LLC_RFO		(1ULL << 8)
-+#define SNB_LLC_IFETCH		(1ULL << 9)
-+#define SNB_BUS_LOCKS		(1ULL << 10)
-+#define SNB_STRM_ST		(1ULL << 11)
-+#define SNB_OTHER		(1ULL << 15)
-+#define SNB_RESP_ANY		(1ULL << 16)
-+#define SNB_NO_SUPP		(1ULL << 17)
-+#define SNB_LLC_HITM		(1ULL << 18)
-+#define SNB_LLC_HITE		(1ULL << 19)
-+#define SNB_LLC_HITS		(1ULL << 20)
-+#define SNB_LLC_HITF		(1ULL << 21)
-+#define SNB_LOCAL		(1ULL << 22)
-+#define SNB_REMOTE		(0xffULL << 23)
-+#define SNB_SNP_NONE		(1ULL << 31)
-+#define SNB_SNP_NOT_NEEDED	(1ULL << 32)
-+#define SNB_SNP_MISS		(1ULL << 33)
-+#define SNB_NO_FWD		(1ULL << 34)
-+#define SNB_SNP_FWD		(1ULL << 35)
-+#define SNB_HITM		(1ULL << 36)
-+#define SNB_NON_DRAM		(1ULL << 37)
-+
-+#define SNB_DMND_READ		(SNB_DMND_DATA_RD|SNB_LLC_DATA_RD)
-+#define SNB_DMND_WRITE		(SNB_DMND_RFO|SNB_LLC_RFO)
-+#define SNB_DMND_PREFETCH	(SNB_PF_DATA_RD|SNB_PF_RFO)
-+
-+#define SNB_SNP_ANY		(SNB_SNP_NONE|SNB_SNP_NOT_NEEDED| \
-+				 SNB_SNP_MISS|SNB_NO_FWD|SNB_SNP_FWD| \
-+				 SNB_HITM)
-+
-+#define SNB_DRAM_ANY		(SNB_LOCAL|SNB_REMOTE|SNB_SNP_ANY)
-+#define SNB_DRAM_REMOTE		(SNB_REMOTE|SNB_SNP_ANY)
-+
-+#define SNB_L3_ACCESS		SNB_RESP_ANY
-+#define SNB_L3_MISS		(SNB_DRAM_ANY|SNB_NON_DRAM)
-+
-+static __initconst const u64 snb_hw_cache_extra_regs
-+				[PERF_COUNT_HW_CACHE_MAX]
-+				[PERF_COUNT_HW_CACHE_OP_MAX]
-+				[PERF_COUNT_HW_CACHE_RESULT_MAX] =
-+{
-+ [ C(LL  ) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = SNB_DMND_READ|SNB_L3_ACCESS,
-+		[ C(RESULT_MISS)   ] = SNB_DMND_READ|SNB_L3_MISS,
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = SNB_DMND_WRITE|SNB_L3_ACCESS,
-+		[ C(RESULT_MISS)   ] = SNB_DMND_WRITE|SNB_L3_MISS,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = SNB_DMND_PREFETCH|SNB_L3_ACCESS,
-+		[ C(RESULT_MISS)   ] = SNB_DMND_PREFETCH|SNB_L3_MISS,
-+	},
-+ },
-+ [ C(NODE) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = SNB_DMND_READ|SNB_DRAM_ANY,
-+		[ C(RESULT_MISS)   ] = SNB_DMND_READ|SNB_DRAM_REMOTE,
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = SNB_DMND_WRITE|SNB_DRAM_ANY,
-+		[ C(RESULT_MISS)   ] = SNB_DMND_WRITE|SNB_DRAM_REMOTE,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = SNB_DMND_PREFETCH|SNB_DRAM_ANY,
-+		[ C(RESULT_MISS)   ] = SNB_DMND_PREFETCH|SNB_DRAM_REMOTE,
-+	},
-+ },
-+};
-+
- static __initconst const u64 snb_hw_cache_event_ids
- 				[PERF_COUNT_HW_CACHE_MAX]
- 				[PERF_COUNT_HW_CACHE_OP_MAX]
-@@ -235,16 +313,16 @@ static __initconst const u64 snb_hw_cache_event_ids
-  },
-  [ C(NODE) ] = {
- 	[ C(OP_READ) ] = {
--		[ C(RESULT_ACCESS) ] = -1,
--		[ C(RESULT_MISS)   ] = -1,
-+		[ C(RESULT_ACCESS) ] = 0x01b7,
-+		[ C(RESULT_MISS)   ] = 0x01b7,
- 	},
- 	[ C(OP_WRITE) ] = {
--		[ C(RESULT_ACCESS) ] = -1,
--		[ C(RESULT_MISS)   ] = -1,
-+		[ C(RESULT_ACCESS) ] = 0x01b7,
-+		[ C(RESULT_MISS)   ] = 0x01b7,
- 	},
- 	[ C(OP_PREFETCH) ] = {
--		[ C(RESULT_ACCESS) ] = -1,
--		[ C(RESULT_MISS)   ] = -1,
-+		[ C(RESULT_ACCESS) ] = 0x01b7,
-+		[ C(RESULT_MISS)   ] = 0x01b7,
- 	},
-  },
- 
-@@ -1964,6 +2042,8 @@ __init int intel_pmu_init(void)
- 	case 58: /* IvyBridge */
- 		memcpy(hw_cache_event_ids, snb_hw_cache_event_ids,
- 		       sizeof(hw_cache_event_ids));
-+		memcpy(hw_cache_extra_regs, snb_hw_cache_extra_regs,
-+		       sizeof(hw_cache_extra_regs));
- 
- 		intel_pmu_lbr_init_snb();
- 
--- 
-1.7.10.4
+int main(int argc, char** argv){
+        unsigned int uid;
+        char *args[] = {"/bin/sh",NULL};
 
+        if (argc < 2){
+                printf("Usage: %s target_uid\n", argv[0]);
+                exit(0);
+        }
+        uid = atoi(argv[1]);
+        printf("%u\n",uid);
+        if (setreuid(uid,uid)==-1){
+                printf("Setreuid to %u failed\n ",uid);
+                perror("E");
+                exit(1);
+        }
+        execve("/bin/sh",args,NULL);
+        return 1;
+}
+
+I've been calling this binary with a bunch of different uid numbers,
+and I came across this weird behaviour with the (uid_t) -1 value:
+
+adrian@home-pc:~$ /tmp/suid-tests
+Usage: /tmp/suid-tests target_uid
+adrian@home-pc:~$ /tmp/suid-tests 0
+0
+Setreuid to 0 failed
+E: Operation not permitted
+adrian@home-pc:~$ /tmp/suid-tests -1
+4294967295
+$ id
+uid=1000(adrian) gid=1000(adrian)
+groups=1000(adrian),4(adm),20(dialout),24(cdrom),46(plugdev),109(lpadmin),110(sambashare),111(admin)
+adrian@home-pc:~$ /tmp/suid-tests -2
+4294967294
+Setreuid to 4294967294 failed
+E: Operation not permitted
+adrian@home-pc:~$ /tmp/suid-tests -3
+4294967293
+Setreuid to 4294967293 failed
+E: Operation not permitted
+
+If the binary is setuid, the -1 call effectively rises the euid to
+root (0), although other arbitrary values are properly being set:
+
+adrian@home-pc:~$ ls -hl /tmp/suid-tests
+-rwsr-x--- 1 root adrian 8,5K 2012-07-17 10:53 /tmp/suid-tests
+adrian@home-pc:~$ /tmp/suid-tests -1
+4294967295
+# id
+uid=1000(adrian) gid=1000(adrian) euid=0(root)
+groups=0(root),4(adm),20(dialout),24(cdrom),46(plugdev),109(lpadmin),110(sambashare),111(admin),1000(adrian)
+adrian@home-pc:~$ /tmp/suid-tests -2
+4294967294
+$ id
+uid=4294967294 gid=1000(adrian)
+groups=4(adm),20(dialout),24(cdrom),46(plugdev),109(lpadmin),110(sambashare),111(admin),1000(adrian)
+
+
+I've been looking into kernel/sys.c, reading the setreuid function for
+an explanation. I've seen that there are several if cases for when the
+uid value is (uid_t)-1 but I still don't understand why is this being
+doing. I tried to trace down all the checks that take place, but I'm
+not quite familiar with the kernel and I feel I'm missing something.
+Is this an expected behaviour? If so, could someone please shed some
+light on why?
+
+Running kernels for the tests have been several on the 2.6.x, 2.6.38
+x86_64 for example.
+
+
+Thanks in advance and regards,
+Adrián
