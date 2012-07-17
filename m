@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756148Ab2GQRhA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 13:37:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1978 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755390Ab2GQRg5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 13:36:57 -0400
-Date: Tue, 17 Jul 2012 13:36:55 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [PATCH] kdump: Append newline to the last lien of vmcoreinfo note
-Message-ID: <20120717173655.GC11031@redhat.com>
+	id S1755993Ab2GQRjI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 13:39:08 -0400
+Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:38111 "HELO
+	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751109Ab2GQRjF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 13:39:05 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: Z295l0YVM1nJCy5N5U__Urh7V6LfzAv0yIUqK4lXLXuhB6d
+ OgWnqKwtLhuf90mFkYNeCZvQJTTFfXKNyqvC8yJRLufq.imKTWQwRAoOVo_2
+ 2v4HQun786WqfNBylIM5dYkCWqzZE0GJqwzrvRtIPqYB2KkI94z_JgHiFVyX
+ bOI4u7vsc5NWgsn8y5F1W4IhEksw03BAUCetavCrePh0maw.rxmTmo9ecf_N
+ Eh6Qd5lzeoyVvcf2zkyPeUAZeBW7Evz6rlQaaCW3kU4KggoSXh0EfElCGOUF
+ xQk_JSoW22Phs91yCRJwS59.r8B6xvjHG9ZvcqGyTT8aNMgMwUX5tzV.rYHh
+ nB0Rs3nsn0lnJVdlX9fL7JyDZn9yBEsqtVsSRGNG9B2bbIxZLWNQPoCcZrmN
+ h9PTq74KaRMFXGIQcmrEnCLkvPOGpMPrsDHbP
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Tue, 17 Jul 2012 12:39:00 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Jiang Liu <liuj97@gmail.com>
+cc: Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Mel Gorman <mgorman@suse.de>, Jianguo Wu <wujianguo@huawei.com>,
+        Jiang Liu <jiang.liu@huawei.com>, Tony Luck <tony.luck@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
+        Keping Chen <chenkeping@huawei.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm/slub: fix a BUG_ON() when offlining a memory node
+ and CONFIG_SLUB_DEBUG is on
+In-Reply-To: <1342543816-10853-1-git-send-email-jiang.liu@huawei.com>
+Message-ID: <alpine.DEB.2.00.1207171237320.15177@router.home>
+References: <1342543816-10853-1-git-send-email-jiang.liu@huawei.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Last line of vmcoreinfo note does not end with \n. Parsing all the lines
-in note becomes easier if all lines end with \n instead of trying to special
-case the last line.
+On Wed, 18 Jul 2012, Jiang Liu wrote:
 
-I know atleast one tool, vmcore-dmesg in kexec-tools tree which made the
-assumption that all lines end with \n. I think it is a good idea to
-fix it.
+> From: Jianguo Wu <wujianguo@huawei.com>
+>
+> From: Jianguo Wu <wujianguo@huawei.com>
+>
+> SLUB allocator may cause a BUG_ON() when offlining a memory node if
+> CONFIG_SLUB_DEBUG is on. The scenario is:
+>
+> 1) when creating kmem_cache_node slab, it cause inc_slabs_node() twice.
+> early_kmem_cache_node_alloc
+> 	->new_slab
+> 		->inc_slabs_node
+> 	->inc_slabs_node
 
-Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
----
- kernel/kexec.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+New slab will not be able to increment the slab counter. It will
+check that there is no per node structure yet and then skip the inc slabs
+node.
 
-Index: linux-2.6/kernel/kexec.c
-===================================================================
---- linux-2.6.orig/kernel/kexec.c	2012-07-17 19:26:38.844033784 -0400
-+++ linux-2.6/kernel/kexec.c	2012-07-17 23:51:33.311701781 -0400
-@@ -1424,7 +1424,7 @@ static void update_vmcoreinfo_note(void)
- 
- void crash_save_vmcoreinfo(void)
- {
--	vmcoreinfo_append_str("CRASHTIME=%ld", get_seconds());
-+	vmcoreinfo_append_str("CRASHTIME=%ld\n", get_seconds());
- 	update_vmcoreinfo_note();
- }
- 
+This suggests that a call to early_kmem_cache_node_alloc was not needed
+because the per node structure already existed. Lets fix that instead.
+
