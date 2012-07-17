@@ -1,176 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753784Ab2GQAzG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 20:55:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32848 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750717Ab2GQAzE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 20:55:04 -0400
-Date: Tue, 17 Jul 2012 03:55:32 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Subject: Re: [PATCH v5 3/4] kvm: Create kvm_clear_irq()
-Message-ID: <20120717005532.GB7949@redhat.com>
-References: <20120716202711.1752.71007.stgit@bling.home>
- <20120716203401.1752.78276.stgit@bling.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120716203401.1752.78276.stgit@bling.home>
+	id S1753934Ab2GQBAj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 21:00:39 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:38383 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752693Ab2GQBAh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Jul 2012 21:00:37 -0400
+Date: Tue, 17 Jul 2012 11:00:25 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Woodhouse <dwmw2@infradead.org>,
+        Gerlando Falauto <gerlando.falauto@keymile.com>
+Subject: linux-next: manual merge of the l2-mtd tree with the mtd tree
+Message-Id: <20120717110025.35e6d8404104e77019bef6ce@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__17_Jul_2012_11_00_25_+1000_5TN35iZq4z0d+gm_"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 16, 2012 at 02:34:03PM -0600, Alex Williamson wrote:
-> This is an alternative to kvm_set_irq(,,,0) which returns the previous
-> assertion state of the interrupt and does nothing if it isn't changed.
-> 
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> ---
-> 
->  include/linux/kvm_host.h |    3 ++
->  virt/kvm/irq_comm.c      |   78 ++++++++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 81 insertions(+)
-> 
-> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-> index a7661c0..6c168f1 100644
-> --- a/include/linux/kvm_host.h
-> +++ b/include/linux/kvm_host.h
-> @@ -219,6 +219,8 @@ struct kvm_kernel_irq_routing_entry {
->  	u32 type;
->  	int (*set)(struct kvm_kernel_irq_routing_entry *e,
->  		   struct kvm *kvm, int irq_source_id, int level);
-> +	int (*clear)(struct kvm_kernel_irq_routing_entry *e,
-> +		     struct kvm *kvm, int irq_source_id);
->  	union {
->  		struct {
->  			unsigned irqchip;
-> @@ -629,6 +631,7 @@ void kvm_get_intr_delivery_bitmask(struct kvm_ioapic *ioapic,
->  				   unsigned long *deliver_bitmask);
->  #endif
->  int kvm_set_irq(struct kvm *kvm, int irq_source_id, u32 irq, int level);
-> +int kvm_clear_irq(struct kvm *kvm, int irq_source_id, u32 irq);
->  int kvm_set_msi(struct kvm_kernel_irq_routing_entry *irq_entry, struct kvm *kvm,
->  		int irq_source_id, int level);
->  void kvm_notify_acked_irq(struct kvm *kvm, unsigned irqchip, unsigned pin);
-> diff --git a/virt/kvm/irq_comm.c b/virt/kvm/irq_comm.c
-> index 5afb431..76e8f22 100644
-> --- a/virt/kvm/irq_comm.c
-> +++ b/virt/kvm/irq_comm.c
-> @@ -68,6 +68,42 @@ static int kvm_set_ioapic_irq(struct kvm_kernel_irq_routing_entry *e,
->  	return kvm_ioapic_set_irq(ioapic, e->irqchip.pin, level);
->  }
->  
-> +static inline int kvm_clear_irq_line_state(unsigned long *irq_state,
-> +					    int irq_source_id)
-> +{
-> +	return !!test_and_clear_bit(irq_source_id, irq_state);
-> +}
-> +
-> +static int kvm_clear_pic_irq(struct kvm_kernel_irq_routing_entry *e,
-> +			     struct kvm *kvm, int irq_source_id)
-> +{
-> +#ifdef CONFIG_X86
-> +	struct kvm_pic *pic = pic_irqchip(kvm);
-> +	int level = kvm_clear_irq_line_state(&pic->irq_states[e->irqchip.pin],
-> +					     irq_source_id);
-> +	if (level)
-> +		kvm_pic_set_irq(pic, e->irqchip.pin,
-> +				!!pic->irq_states[e->irqchip.pin]);
+--Signature=_Tue__17_Jul_2012_11_00_25_+1000_5TN35iZq4z0d+gm_
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This is a bit tricky: add a comment explaining the logic?
+Hi Artem,
 
-> +	return level;
-> +#else
-> +	return -1;
-> +#endif
-> +}
-> +
-> +static int kvm_clear_ioapic_irq(struct kvm_kernel_irq_routing_entry *e,
-> +				struct kvm *kvm, int irq_source_id)
-> +{
-> +	struct kvm_ioapic *ioapic = kvm->arch.vioapic;
-> +	int level;
-> +
-> +	level = kvm_clear_irq_line_state(&ioapic->irq_states[e->irqchip.pin],
-> +					 irq_source_id);
-> +	if (level)
-> +		kvm_ioapic_set_irq(ioapic, e->irqchip.pin,
-> +				   !!ioapic->irq_states[e->irqchip.pin]);
+Today's linux-next merge of the l2-mtd tree got a conflict in
+drivers/mtd/chips/cfi_cmdset_0002.c between commit 420962884379 ("mtd:
+cfi_cmdset_0002: Micron M29EW bugfixes as per TN-13-07") from the mtd
+tree and commit 39c0c188e160 ("mtd: cfi_cmdset_0002: Micron M29EW
+bugfixes as per TN-13-07") from the l2-mtd tree.
 
-This is a bit tricky: add a comment explaining the logic?
+I just used the version in the mtd tree.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-> +	return level;
-> +}
-> +
->  inline static bool kvm_is_dm_lowest_prio(struct kvm_lapic_irq *irq)
->  {
->  #ifdef CONFIG_IA64
-> @@ -190,6 +226,45 @@ int kvm_set_irq(struct kvm *kvm, int irq_source_id, u32 irq, int level)
->  	return ret;
->  }
->  
-> +/*
-> + * Return value:
-> + *  < 0   Error
-> + *  = 0   Interrupt was not set, did nothing
-> + *  > 0   Interrupt was pending, cleared
-> + */
-> +int kvm_clear_irq(struct kvm *kvm, int irq_source_id, u32 irq)
-> +{
-> +	struct kvm_kernel_irq_routing_entry *e, irq_set[KVM_NR_IRQCHIPS];
-> +	int ret = -EINVAL, i = 0;
-> +	struct kvm_irq_routing_table *irq_rt;
-> +	struct hlist_node *n;
-> +
-> +	/* Not possible to detect if the guest uses the PIC or the
-> +	 * IOAPIC.  So clear the bit in both. The guest will ignore
-> +	 * writes to the unused one.
-> +	 */
-> +	rcu_read_lock();
-> +	irq_rt = rcu_dereference(kvm->irq_routing);
-> +	if (irq < irq_rt->nr_rt_entries)
-> +		hlist_for_each_entry(e, n, &irq_rt->map[irq], link)
-> +			irq_set[i++] = *e;
-> +	rcu_read_unlock();
-> +
-> +	while (i--) {
-> +		int r = -EINVAL;
-> +
-> +		if (irq_set[i].clear)
-> +			r = irq_set[i].clear(&irq_set[i], kvm, irq_source_id);
-> +
-> +		if (r < 0)
-> +			continue;
-> +
-> +		ret = r + ((ret < 0) ? 0 : ret);
-> +	}
-> +
-> +	return ret;
-> +}
-> +
->  void kvm_notify_acked_irq(struct kvm *kvm, unsigned irqchip, unsigned pin)
->  {
->  	struct kvm_irq_ack_notifier *kian;
-> @@ -344,16 +419,19 @@ static int setup_routing_entry(struct kvm_irq_routing_table *rt,
->  		switch (ue->u.irqchip.irqchip) {
->  		case KVM_IRQCHIP_PIC_MASTER:
->  			e->set = kvm_set_pic_irq;
-> +			e->clear = kvm_clear_pic_irq;
->  			max_pin = 16;
->  			break;
->  		case KVM_IRQCHIP_PIC_SLAVE:
->  			e->set = kvm_set_pic_irq;
-> +			e->clear = kvm_clear_pic_irq;
->  			max_pin = 16;
->  			delta = 8;
->  			break;
->  		case KVM_IRQCHIP_IOAPIC:
->  			max_pin = KVM_IOAPIC_NUM_PINS;
->  			e->set = kvm_set_ioapic_irq;
-> +			e->clear = kvm_clear_ioapic_irq;
->  			break;
->  		default:
->  			goto out;
+--Signature=_Tue__17_Jul_2012_11_00_25_+1000_5TN35iZq4z0d+gm_
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQBLkpAAoJEECxmPOUX5FEjy4QAIhMeispn4G7srzuq1Z1iIs5
+6zgDBy0S8HKMN1Yw4gbHBsfrNdDhgb+dLkKEBbdO8zE42uVX7rxAP27DqbpjxtU5
+C3owLBgoRLsBG0HxXk3+F86LaR3Y7Z3ugv7xWFlq58VEgpl8WnciKnjFcC7Ux7V/
+k4erP518rcP3Gbq4Cqa+bD8l0WfJTXAkZXs4ZryH6Lx0DEE7j84FXD6+2bO/9W0J
+s10x4NjLeS8xnkahYAhAfYDRvIF/vsL/F7C2TCRlOGnYT/EwVZfFYt9n+Uv0uVaH
++bY+OAfoIdhITwmb8yT78KFz9wpC4K6jv50pyho5Pvsa/IKFd4R/CyjhZfAOKQjZ
+Sd8Isnzv7J5t37vw7iWaANCgP6E7sDSVct3D1E3p6Jy15Y+pe3E8/PmujnGAAXhy
+HomV5GjIoQs+Ufi5XxQKqboX6eDVrrvnwyohtGstNBBprzqgaX5Y8z81q8WQL0x+
+Qg2kZGmmGl7iS/LZ9kPuV16/6X0yOm9s70SIGOGCgTVuLvuV7zKWv7C6CWtif4BT
+XYXkOfg8SFVy8oc4eUWih628+WHAE3z83UXag0oBWGypKkGED7arOxO5vKIYZ6hv
+tVkXav4iiqW3pke/7bT1TS4aq3XR4XXgqLrQAQtpibOr1AsmPg115xIzXzft6YyX
+a/fLL0eF3/BwAJBvtcC4
+=Rohm
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__17_Jul_2012_11_00_25_+1000_5TN35iZq4z0d+gm_--
