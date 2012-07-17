@@ -1,102 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755554Ab2GQPe4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 11:34:56 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30621 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751719Ab2GQPcp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 11:32:45 -0400
-X-Authority-Analysis: v=2.0 cv=AtpsLZBP c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=0H48k7OL8AoA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=UZRvmTwgAAAA:8 a=0usFPS_H11ZFgFd2w40A:9 a=Zh68SRI7RUMA:10 a=F6qNFXbwvZAA:10 a=jeBq3FmKZ4MA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 72.230.195.127
-Message-Id: <20120717153243.581247600@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Tue, 17 Jul 2012 11:31:20 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Subject: [PATCH RT 05/12] slab: Prevent local lock deadlock
-References: <20120717153115.606116459@goodmis.org>
-Content-Disposition: inline; filename=0005-slab-Prevent-local-lock-deadlock.patch
+	id S1754799Ab2GQPf5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 11:35:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37064 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752226Ab2GQPfw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 11:35:52 -0400
+Date: Tue, 17 Jul 2012 18:36:20 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
+Subject: Re: [PATCH v5 3/4] kvm: Create kvm_clear_irq()
+Message-ID: <20120717153620.GB11849@redhat.com>
+References: <20120716202711.1752.71007.stgit@bling.home>
+ <20120716203401.1752.78276.stgit@bling.home>
+ <20120717101435.GE7949@redhat.com>
+ <1342533369.3229.4.camel@ul30vt>
+ <20120717140858.GB10822@redhat.com>
+ <1342534911.3229.26.camel@ul30vt>
+ <20120717145313.GB11516@redhat.com>
+ <1342538411.2229.106.camel@bling.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1342538411.2229.106.camel@bling.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+On Tue, Jul 17, 2012 at 09:20:11AM -0600, Alex Williamson wrote:
+> On Tue, 2012-07-17 at 17:53 +0300, Michael S. Tsirkin wrote:
+> > On Tue, Jul 17, 2012 at 08:21:51AM -0600, Alex Williamson wrote:
+> > > On Tue, 2012-07-17 at 17:08 +0300, Michael S. Tsirkin wrote:
+> > > > On Tue, Jul 17, 2012 at 07:56:09AM -0600, Alex Williamson wrote:
+> > > > > On Tue, 2012-07-17 at 13:14 +0300, Michael S. Tsirkin wrote:
+> > > > > > On Mon, Jul 16, 2012 at 02:34:03PM -0600, Alex Williamson wrote:
+> > > > > > > This is an alternative to kvm_set_irq(,,,0) which returns the previous
+> > > > > > > assertion state of the interrupt and does nothing if it isn't changed.
+> > > > > > > 
+> > > > > > > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> > > > > > > ---
+> > > > > > > 
+> > > > > > >  include/linux/kvm_host.h |    3 ++
+> > > > > > >  virt/kvm/irq_comm.c      |   78 ++++++++++++++++++++++++++++++++++++++++++++++
+> > > > > > >  2 files changed, 81 insertions(+)
+> > > > > > > 
+> > > > > > > diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+> > > > > > > index a7661c0..6c168f1 100644
+> > > > > > > --- a/include/linux/kvm_host.h
+> > > > > > > +++ b/include/linux/kvm_host.h
+> > > > > > > @@ -219,6 +219,8 @@ struct kvm_kernel_irq_routing_entry {
+> > > > > > >  	u32 type;
+> > > > > > >  	int (*set)(struct kvm_kernel_irq_routing_entry *e,
+> > > > > > >  		   struct kvm *kvm, int irq_source_id, int level);
+> > > > > > > +	int (*clear)(struct kvm_kernel_irq_routing_entry *e,
+> > > > > > > +		     struct kvm *kvm, int irq_source_id);
+> > > > > > >  	union {
+> > > > > > >  		struct {
+> > > > > > >  			unsigned irqchip;
+> > > > > > > @@ -629,6 +631,7 @@ void kvm_get_intr_delivery_bitmask(struct kvm_ioapic *ioapic,
+> > > > > > >  				   unsigned long *deliver_bitmask);
+> > > > > > >  #endif
+> > > > > > >  int kvm_set_irq(struct kvm *kvm, int irq_source_id, u32 irq, int level);
+> > > > > > > +int kvm_clear_irq(struct kvm *kvm, int irq_source_id, u32 irq);
+> > > > > > >  int kvm_set_msi(struct kvm_kernel_irq_routing_entry *irq_entry, struct kvm *kvm,
+> > > > > > >  		int irq_source_id, int level);
+> > > > > > >  void kvm_notify_acked_irq(struct kvm *kvm, unsigned irqchip, unsigned pin);
+> > > > > > > diff --git a/virt/kvm/irq_comm.c b/virt/kvm/irq_comm.c
+> > > > > > > index 5afb431..76e8f22 100644
+> > > > > > > --- a/virt/kvm/irq_comm.c
+> > > > > > > +++ b/virt/kvm/irq_comm.c
+> > > > > > > @@ -68,6 +68,42 @@ static int kvm_set_ioapic_irq(struct kvm_kernel_irq_routing_entry *e,
+> > > > > > >  	return kvm_ioapic_set_irq(ioapic, e->irqchip.pin, level);
+> > > > > > >  }
+> > > > > > >  
+> > > > > > > +static inline int kvm_clear_irq_line_state(unsigned long *irq_state,
+> > > > > > > +					    int irq_source_id)
+> > > > > > > +{
+> > > > > > > +	return !!test_and_clear_bit(irq_source_id, irq_state);
+> > > > > > > +}
+> > > > > > > +
+> > > > > > > +static int kvm_clear_pic_irq(struct kvm_kernel_irq_routing_entry *e,
+> > > > > > > +			     struct kvm *kvm, int irq_source_id)
+> > > > > > > +{
+> > > > > > > +#ifdef CONFIG_X86
+> > > > > > > +	struct kvm_pic *pic = pic_irqchip(kvm);
+> > > > > > > +	int level = kvm_clear_irq_line_state(&pic->irq_states[e->irqchip.pin],
+> > > > > > > +					     irq_source_id);
+> > > > > > > +	if (level)
+> > > > > > > +		kvm_pic_set_irq(pic, e->irqchip.pin,
+> > > > > > > +				!!pic->irq_states[e->irqchip.pin]);
+> > > > > > > +	return level;
+> > > > > > 
+> > > > > > I think I begin to understand: if (level) checks it was previously set,
+> > > > > > and then we clear if needed?
+> > > > > 
+> > > > > It's actually very simple, if we change anything in irq_states, then
+> > > > > update via the chip specific set_irq function.
+> > > > > 
+> > > > > >  I think it's worthwhile to rename
+> > > > > > level to orig_level and rewrite as:
+> > > > > > 
+> > > > > > 	if (orig_level && !pic->irq_states[e->irqchip.pin])
+> > > > > > 		kvm_pic_set_irq(pic, e->irqchip.pin, 0);
+> > > > > > 
+> > > > > > This both makes the logic clear without need for comments and
+> > > > > > saves some cycles on pic in case nothing actually changed.
+> > > > > 
+> > > > > That may work, but it's not actually the same thing.  kvm_set_irq(,,,0)
+> > > > > will clear the bit and call kvm_pic_set_irq with the new irq_states
+> > > > > value, whether it's 0 or 1.  The optimization I make is to only call
+> > > > > kvm_pic_set_irq if we've "changed" irq_states.  You're taking that one
+> > > > > step further to "changed and is now 0".  I don't know if that's correct
+> > > > > behavior.
+> > > > 
+> > > > If not then I don't understand. You clear a bit
+> > > > in a word. You never change it to 1, do you?
+> > > 
+> > > Correct, but kvm_set_irq(,,,0) may call kvm_pic_set_irq(,,1) if other
+> > > source IDs are still asserting the interrupt.  Your proposal assumes
+> > > that unless irq_states is also 0 we don't need to call kvm_pic_set_irq,
+> > > and I don't know if that's correct.
+> > 
+> > Well you are asked to clear some id and level was 1. So we know
+> > interrupt was asserted. Either we clear it or we don't. No?
+> > 
+> > > > 
+> > > > But this brings another question:
+> > > > 
+> > > > static inline int kvm_irq_line_state(unsigned long *irq_state,
+> > > >                                      int irq_source_id, int level)
+> > > > {
+> > > >         /* Logical OR for level trig interrupt */
+> > > >         if (level)
+> > > >                 set_bit(irq_source_id, irq_state);
+> > > >         else
+> > > >                 clear_bit(irq_source_id, irq_state);
+> > > > 
+> > > > 
+> > > > ^^^^^^^^^^^
+> > > > above uses locked instructions
+> > > > 
+> > > >         return !!(*irq_state);
+> > > > 
+> > > > 
+> > > > above doesn't
+> > > > 
+> > > > }
+> > > > 
+> > > > 
+> > > > why the insonsistency?
+> > > 
+> > > Note that set/clear_bit are not locked instructions,
+> > 
+> > On x86 they are:
+> > static __always_inline void
+> > set_bit(unsigned int nr, volatile unsigned long *addr)
+> > {
+> >         if (IS_IMMEDIATE(nr)) {
+> >                 asm volatile(LOCK_PREFIX "orb %1,%0"
+> >                         : CONST_MASK_ADDR(nr, addr)
+> >                         : "iq" ((u8)CONST_MASK(nr))
+> >                         : "memory");
+> >         } else {
+> >                 asm volatile(LOCK_PREFIX "bts %1,%0"
+> >                         : BITOP_ADDR(addr) : "Ir" (nr) : "memory");
+> >         }
+> > }
+> > 
+> > > but atomic
+> > > instructions and it could be argued that reading the value is also
+> > > atomic.  At least that was my guess when I stumbled across the same
+> > > yesterday.  IMHO, we're going off into the weeds again with these last
+> > > two patches.  It may be a valid optimization, but it really has no
+> > > bearing on the meat of the series (and afaict, no significant
+> > > performance difference either).
+> > 
+> > For me it's not a performance thing. IMO code is cleaner without this locking:
+> > we add a lock but only use it in some cases, so the rules become really
+> > complex.
+> 
+> Seriously?
+> 
+>         spin_lock(&irqfd->source->lock);
+>         if (!irqfd->source->level_asserted) {
+>                 kvm_set_irq(irqfd->kvm, irqfd->source->id, irqfd->gsi, 1);
+>                 irqfd->source->level_asserted = true;
+>         }
+>         spin_unlock(&irqfd->source->lock);
+> 
+> ...
+> 
+>         spin_lock(&eoifd->source->lock);
+>         if (eoifd->source->level_asserted) {
+>                 kvm_set_irq(eoifd->kvm,
+>                             eoifd->source->id, eoifd->notifier.gsi, 0);
+>                 eoifd->source->level_asserted = false;
+>                 eventfd_signal(eoifd->eventfd, 1);
+>         }
+>         spin_unlock(&eoifd->source->lock);
+> 
+> 
+> Locking doesn't get much more straightforward than that
 
-On RT we avoid the cross cpu function calls and take the per cpu local
-locks instead. Now the code missed that taking the local lock on the
-cpu which runs the code must use the proper local lock functions and
-not a simple spin_lock(). Otherwise it deadlocks later when trying to
-acquire the local lock with the proper function.
+Don't look at it in isolation. You are now calling kvm_set_irq
+from under a spinlock. You are saying it is always safe but
+this seems far from obvious. kvm_set_irq used to be
+unsafe from an atomic context.
 
-Reported-and-tested-by: Chris Pringle <chris.pringle@miranda.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- mm/slab.c |   26 ++++++++++++++++++++++----
- 1 file changed, 22 insertions(+), 4 deletions(-)
+> >   And current code looks buggy if yes we need to fix it somehow.
+> 
+> 
+> Which to me seems to indicate this should be handled as a separate
+> effort.
 
-diff --git a/mm/slab.c b/mm/slab.c
-index 15bce6b..64eb636 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -743,8 +743,26 @@ slab_on_each_cpu(void (*func)(void *arg, int this_cpu), void *arg)
- {
- 	unsigned int i;
- 
-+	get_cpu_light();
- 	for_each_online_cpu(i)
- 		func(arg, i);
-+	put_cpu_light();
-+}
-+
-+static void lock_slab_on(unsigned int cpu)
-+{
-+	if (cpu == smp_processor_id())
-+		local_lock_irq(slab_lock);
-+	else
-+		local_spin_lock_irq(slab_lock, &per_cpu(slab_lock, cpu).lock);
-+}
-+
-+static void unlock_slab_on(unsigned int cpu)
-+{
-+	if (cpu == smp_processor_id())
-+		local_unlock_irq(slab_lock);
-+	else
-+		local_spin_unlock_irq(slab_lock, &per_cpu(slab_lock, cpu).lock);
- }
- #endif
- 
-@@ -2692,10 +2710,10 @@ static void do_drain(void *arg, int cpu)
- {
- 	LIST_HEAD(tmp);
- 
--	spin_lock_irq(&per_cpu(slab_lock, cpu).lock);
-+	lock_slab_on(cpu);
- 	__do_drain(arg, cpu);
- 	list_splice_init(&per_cpu(slab_free_list, cpu), &tmp);
--	spin_unlock_irq(&per_cpu(slab_lock, cpu).lock);
-+	unlock_slab_on(cpu);
- 	free_delayed(&tmp);
- }
- #endif
-@@ -4163,9 +4181,9 @@ static void do_ccupdate_local(void *info)
- #else
- static void do_ccupdate_local(void *info, int cpu)
- {
--	spin_lock_irq(&per_cpu(slab_lock, cpu).lock);
-+	lock_slab_on(cpu);
- 	__do_ccupdate_local(info, cpu);
--	spin_unlock_irq(&per_cpu(slab_lock, cpu).lock);
-+	unlock_slab_on(cpu);
- }
- #endif
- 
+A separate patchset, sure. But likely a prerequisite: we still need to
+look at all the code. Let's not copy bugs, need to fix them.
+
 -- 
-1.7.10.4
-
-
+MST
