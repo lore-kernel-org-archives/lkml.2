@@ -1,35 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757450Ab2GQWvF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 18:51:05 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59255 "EHLO
+	id S1757463Ab2GQWvZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 18:51:25 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64756 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754720Ab2GQWuk (ORCPT
+	with ESMTP id S932129Ab2GQWub (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 18:50:40 -0400
-Date: Tue, 17 Jul 2012 15:50:37 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: John Stultz <johnstul@us.ibm.com>
-Cc: stable@vger.kernel.org, Prarit Bhargava <prarit@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/11] 3.0-stable: Fix for leapsecond deadlock &
- hrtimer/futex issue
-Message-ID: <20120717225037.GA26986@kroah.com>
-References: <1342546438-17534-1-git-send-email-johnstul@us.ibm.com>
+	Tue, 17 Jul 2012 18:50:31 -0400
+Subject: Patch "time: Move common updates to a function" has been added to the 3.0-stable tree
+To: johnstul@us.ibm.com, eric.dumazet@gmail.com, gregkh@linuxfoundation.org,
+        john.stultz@linaro.org, linux-kernel@vger.kernel.org,
+        prarit@redhat.com, richardcochran@gmail.com, tglx@linutronix.de
+Cc: <stable@vger.kernel.org>, <stable-commits@vger.kernel.org>
+From: <gregkh@linuxfoundation.org>
+Date: Tue, 17 Jul 2012 15:50:00 -0700
+In-Reply-To: <1342546438-17534-5-git-send-email-johnstul@us.ibm.com>
+Message-ID: <1342565400232@kroah.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1342546438-17534-1-git-send-email-johnstul@us.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=ASCII
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 17, 2012 at 01:33:47PM -0400, John Stultz wrote:
-> Here is backport of the leapsecond fixes to 3.0-stable. These are less
-> straight forward, and should get closer review.
 
-Thanks, all applied now.
+This is a note to let you know that I've just added the patch titled
 
-greg k-h
+    time: Move common updates to a function
+
+to the 3.0-stable tree which can be found at:
+    http://www.kernel.org/git/?p=linux/kernel/git/stable/stable-queue.git;a=summary
+
+The filename of the patch is:
+     time-move-common-updates-to-a-function.patch
+and it can be found in the queue-3.0 subdirectory.
+
+If you, or anyone else, feels it should not be added to the stable tree,
+please let <stable@vger.kernel.org> know about it.
+
+
+>From johnstul@us.ibm.com  Tue Jul 17 15:24:46 2012
+From: John Stultz <johnstul@us.ibm.com>
+Date: Tue, 17 Jul 2012 13:33:51 -0400
+Subject: time: Move common updates to a function
+To: stable@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>, Eric Dumazet <eric.dumazet@gmail.com>, Richard Cochran <richardcochran@gmail.com>, Prarit Bhargava <prarit@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>
+Message-ID: <1342546438-17534-5-git-send-email-johnstul@us.ibm.com>
+
+
+From: Thomas Gleixner <tglx@linutronix.de>
+
+This is a backport of cc06268c6a87db156af2daed6e96a936b955cc82
+
+While not a bugfix itself, it allows following fixes to backport
+in a more straightforward manner.
+
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Richard Cochran <richardcochran@gmail.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ kernel/time/timekeeping.c |   34 +++++++++++++++++-----------------
+ 1 file changed, 17 insertions(+), 17 deletions(-)
+
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -166,6 +166,19 @@ static struct timespec total_sleep_time;
+  */
+ static struct timespec raw_time;
+ 
++/* must hold write on xtime_lock */
++static void timekeeping_update(bool clearntp)
++{
++	if (clearntp) {
++		timekeeper.ntp_error = 0;
++		ntp_clear();
++	}
++	update_vsyscall(&xtime, &wall_to_monotonic,
++			 timekeeper.clock, timekeeper.mult);
++}
++
++
++
+ /* flag for if timekeeping is suspended */
+ int __read_mostly timekeeping_suspended;
+ 
+@@ -366,11 +379,7 @@ int do_settimeofday(const struct timespe
+ 
+ 	xtime = *tv;
+ 
+-	timekeeper.ntp_error = 0;
+-	ntp_clear();
+-
+-	update_vsyscall(&xtime, &wall_to_monotonic, timekeeper.clock,
+-				timekeeper.mult);
++	timekeeping_update(true);
+ 
+ 	write_sequnlock_irqrestore(&xtime_lock, flags);
+ 
+@@ -403,11 +412,7 @@ int timekeeping_inject_offset(struct tim
+ 	xtime = timespec_add(xtime, *ts);
+ 	wall_to_monotonic = timespec_sub(wall_to_monotonic, *ts);
+ 
+-	timekeeper.ntp_error = 0;
+-	ntp_clear();
+-
+-	update_vsyscall(&xtime, &wall_to_monotonic, timekeeper.clock,
+-				timekeeper.mult);
++	timekeeping_update(true);
+ 
+ 	write_sequnlock_irqrestore(&xtime_lock, flags);
+ 
+@@ -630,10 +635,7 @@ void timekeeping_inject_sleeptime(struct
+ 
+ 	__timekeeping_inject_sleeptime(delta);
+ 
+-	timekeeper.ntp_error = 0;
+-	ntp_clear();
+-	update_vsyscall(&xtime, &wall_to_monotonic, timekeeper.clock,
+-				timekeeper.mult);
++	timekeeping_update(true);
+ 
+ 	write_sequnlock_irqrestore(&xtime_lock, flags);
+ 
+@@ -938,9 +940,7 @@ static void update_wall_time(void)
+ 		wall_to_monotonic.tv_sec -= leap;
+ 	}
+ 
+-	/* check to see if there is a new clocksource to use */
+-	update_vsyscall(&xtime, &wall_to_monotonic, timekeeper.clock,
+-				timekeeper.mult);
++	timekeeping_update(false);
+ }
+ 
+ /**
+
+
+Patches currently in stable-queue which might be from johnstul@us.ibm.com are
+
+queue-3.0/timekeeping-fix-leapsecond-triggered-load-spike-issue.patch
+queue-3.0/time-move-common-updates-to-a-function.patch
+queue-3.0/timekeeping-fix-clock_monotonic-inconsistency-during-leapsecond.patch
+queue-3.0/hrtimer-update-hrtimer-base-offsets-each-hrtimer_interrupt.patch
+queue-3.0/timekeeping-add-missing-update-call-in-timekeeping_resume.patch
+queue-3.0/hrtimers-move-lock-held-region-in-hrtimer_interrupt.patch
+queue-3.0/hrtimer-provide-clock_was_set_delayed.patch
+queue-3.0/ntp-fix-leap-second-hrtimer-livelock.patch
+queue-3.0/timekeeping-provide-hrtimer-update-function.patch
+queue-3.0/timekeeping-maintain-ktime_t-based-offsets-for-hrtimers.patch
+queue-3.0/ntp-correct-tai-offset-during-leap-second.patch
