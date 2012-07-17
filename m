@@ -1,80 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756079Ab2GQSGm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 14:06:42 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:38267 "EHLO e9.ny.us.ibm.com"
+	id S1756107Ab2GQSGz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 14:06:55 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:38514 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751109Ab2GQSGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 14:06:30 -0400
+	id S1756024Ab2GQSGt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 14:06:49 -0400
 From: John Stultz <johnstul@us.ibm.com>
 To: stable@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        John Stultz <johnstul@us.ibm.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: Thomas Gleixner <tglx@linutronix.de>, John Stultz <johnstul@us.ibm.com>,
         Prarit Bhargava <prarit@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 11/11] 2.6.35.x: timekeeping: Add missing update call in timekeeping_resume()
-Date: Tue, 17 Jul 2012 14:05:42 -0400
-Message-Id: <1342548342-19683-12-git-send-email-johnstul@us.ibm.com>
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 07/11] 2.6.35.x: timekeeping: Maintain ktime_t based offsets for hrtimers
+Date: Tue, 17 Jul 2012 14:05:38 -0400
+Message-Id: <1342548342-19683-8-git-send-email-johnstul@us.ibm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1342548342-19683-1-git-send-email-johnstul@us.ibm.com>
 References: <1342548342-19683-1-git-send-email-johnstul@us.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12071718-7182-0000-0000-000002019E13
+x-cbid: 12071718-7182-0000-0000-000002019EE2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Thomas Gleixner <tglx@linutronix.de>
 
-This is a backport of 3e997130bd2e8c6f5aaa49d6e3161d4d29b43ab0
+This is a backport of 5b9fe759a678e05be4937ddf03d50e950207c1c0
 
-The leap second rework unearthed another issue of inconsistent data.
+We need to update the hrtimer clock offsets from the hrtimer interrupt
+context. To avoid conversions from timespec to ktime_t maintain a
+ktime_t based representation of those offsets in the timekeeper. This
+puts the conversion overhead into the code which updates the
+underlying offsets and provides fast accessible values in the hrtimer
+interrupt.
 
-On timekeeping_resume() the timekeeper data is updated, but nothing
-calls timekeeping_update(), so now the update code in the timer
-interrupt sees stale values.
-
-This has been the case before those changes, but then the timer
-interrupt was using stale data as well so this went unnoticed for quite
-some time.
-
-Add the missing update call, so all the data is consistent everywhere.
-
-Reported-by: Andreas Schwab <schwab@linux-m68k.org>
-Reported-and-tested-by: "Rafael J. Wysocki" <rjw@sisk.pl>
-Reported-and-tested-by: Martin Steigerwald <Martin@lichtvoll.de>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Cc: Linux PM list <linux-pm@vger.kernel.org>
-Cc: John Stultz <johnstul@us.ibm.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: stable@vger.kernel.org
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: John Stultz <johnstul@us.ibm.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reviewed-by: Ingo Molnar <mingo@kernel.org>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Prarit Bhargava <prarit@redhat.com>
+Cc: stable@vger.kernel.org
+Link: http://lkml.kernel.org/r/1341960205-56738-4-git-send-email-johnstul@us.ibm.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Cc: Prarit Bhargava <prarit@redhat.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Linux Kernel <linux-kernel@vger.kernel.org>
 Signed-off-by: John Stultz <johnstul@us.ibm.com>
 ---
- kernel/time/timekeeping.c |    1 +
- 1 file changed, 1 insertion(+)
+ kernel/time/timekeeping.c |   25 ++++++++++++++++++++++++-
+ 1 file changed, 24 insertions(+), 1 deletion(-)
 
 diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 2461fe4..782f13d 100644
+index eaf1e09..1f8140e 100644
 --- a/kernel/time/timekeeping.c
 +++ b/kernel/time/timekeeping.c
-@@ -616,6 +616,7 @@ static int timekeeping_resume(struct sys_device *dev)
- 	timekeeper.clock->cycle_last = timekeeper.clock->read(timekeeper.clock);
- 	timekeeper.ntp_error = 0;
- 	timekeeping_suspended = 0;
-+	timekeeping_update(false);
- 	write_sequnlock_irqrestore(&xtime_lock, flags);
+@@ -161,18 +161,34 @@ struct timespec xtime __attribute__ ((aligned (16)));
+ struct timespec wall_to_monotonic __attribute__ ((aligned (16)));
+ static struct timespec total_sleep_time;
  
- 	touch_softlockup_watchdog();
++/* Offset clock monotonic -> clock realtime */
++static ktime_t offs_real;
++
++/* Offset clock monotonic -> clock boottime */
++static ktime_t offs_boot;
++
+ /*
+  * The raw monotonic time for the CLOCK_MONOTONIC_RAW posix clock.
+  */
+ struct timespec raw_time;
+ 
+ /* must hold write on xtime_lock */
++static void update_rt_offset(void)
++{
++	struct timespec tmp, *wtm = &wall_to_monotonic;
++
++	set_normalized_timespec(&tmp, -wtm->tv_sec, -wtm->tv_nsec);
++	offs_real = timespec_to_ktime(tmp);
++}
++
++/* must hold write on xtime_lock */
+ static void timekeeping_update(bool clearntp)
+ {
+ 	if (clearntp) {
+ 		timekeeper.ntp_error = 0;
+ 		ntp_clear();
+ 	}
++	update_rt_offset();
+ 	update_vsyscall(&xtime, timekeeper.clock, timekeeper.mult);
+ }
+ 
+@@ -556,6 +572,7 @@ void __init timekeeping_init(void)
+ 	}
+ 	set_normalized_timespec(&wall_to_monotonic,
+ 				-boot.tv_sec, -boot.tv_nsec);
++	update_rt_offset();
+ 	total_sleep_time.tv_sec = 0;
+ 	total_sleep_time.tv_nsec = 0;
+ 	write_sequnlock_irqrestore(&xtime_lock, flags);
+@@ -564,6 +581,12 @@ void __init timekeeping_init(void)
+ /* time in seconds when suspend began */
+ static struct timespec timekeeping_suspend_time;
+ 
++static void update_sleep_time(struct timespec t)
++{
++	total_sleep_time = t;
++	offs_boot = timespec_to_ktime(t);
++}
++
+ /**
+  * timekeeping_resume - Resumes the generic timekeeping subsystem.
+  * @dev:	unused
+@@ -587,7 +610,7 @@ static int timekeeping_resume(struct sys_device *dev)
+ 		ts = timespec_sub(ts, timekeeping_suspend_time);
+ 		xtime = timespec_add_safe(xtime, ts);
+ 		wall_to_monotonic = timespec_sub(wall_to_monotonic, ts);
+-		total_sleep_time = timespec_add_safe(total_sleep_time, ts);
++		update_sleep_time(timespec_add_safe(total_sleep_time, ts));
+ 	}
+ 	/* re-base the last cycle value */
+ 	timekeeper.clock->cycle_last = timekeeper.clock->read(timekeeper.clock);
 -- 
 1.7.9.5
 
