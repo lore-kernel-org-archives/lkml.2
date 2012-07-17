@@ -1,165 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756178Ab2GQS5g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 14:57:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28174 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755534Ab2GQS5e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 14:57:34 -0400
-Date: Tue, 17 Jul 2012 21:58:03 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Subject: Re: [PATCH v5 2/4] kvm: KVM_EOIFD, an eventfd for EOIs
-Message-ID: <20120717185803.GC13066@redhat.com>
-References: <20120717141002.GC10822@redhat.com>
- <1342535383.3229.32.camel@ul30vt>
- <20120717144237.GA11516@redhat.com>
- <1342537024.3229.43.camel@ul30vt>
- <20120717151327.GC11587@redhat.com>
- <1342539669.2229.114.camel@bling.home>
- <20120717155325.GA12001@redhat.com>
- <1342541161.2229.123.camel@bling.home>
- <20120717161919.GB12114@redhat.com>
- <1342543936.2229.138.camel@bling.home>
+	id S1756247Ab2GQS54 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 14:57:56 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45778 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754274Ab2GQS5v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 14:57:51 -0400
+Date: Tue, 17 Jul 2012 19:57:49 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Paul Mundt <lethal@linux-sh.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: Boot breaks in -next from LEGACY to LINEAR conversion
+Message-ID: <20120717185749.GJ4477@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="tSiBuZsJmMXpnp7T"
 Content-Disposition: inline
-In-Reply-To: <1342543936.2229.138.camel@bling.home>
+X-Cookie: Your aim is high and to the right.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 17, 2012 at 10:52:16AM -0600, Alex Williamson wrote:
-> On Tue, 2012-07-17 at 19:19 +0300, Michael S. Tsirkin wrote:
-> > On Tue, Jul 17, 2012 at 10:06:01AM -0600, Alex Williamson wrote:
-> > > On Tue, 2012-07-17 at 18:53 +0300, Michael S. Tsirkin wrote:
-> > > > On Tue, Jul 17, 2012 at 09:41:09AM -0600, Alex Williamson wrote:
-> > > > > On Tue, 2012-07-17 at 18:13 +0300, Michael S. Tsirkin wrote:
-> > > > > > On Tue, Jul 17, 2012 at 08:57:04AM -0600, Alex Williamson wrote:
-> > > > > > > On Tue, 2012-07-17 at 17:42 +0300, Michael S. Tsirkin wrote:
-> > > > > > > > On Tue, Jul 17, 2012 at 08:29:43AM -0600, Alex Williamson wrote:
-> > > > > > > > > On Tue, 2012-07-17 at 17:10 +0300, Michael S. Tsirkin wrote:
-> > > > > > > > > > On Tue, Jul 17, 2012 at 07:59:16AM -0600, Alex Williamson wrote:
-> > > > > > > > > > > On Tue, 2012-07-17 at 13:21 +0300, Michael S. Tsirkin wrote:
-> > > > > > > > > > > > On Mon, Jul 16, 2012 at 02:33:55PM -0600, Alex Williamson wrote:
-> > > > > > > > > > > > > +	if (args->flags & KVM_EOIFD_FLAG_LEVEL_IRQFD) {
-> > > > > > > > > > > > > +		struct _irqfd *irqfd = _irqfd_fdget_lock(kvm, args->irqfd);
-> > > > > > > > > > > > > +		if (IS_ERR(irqfd)) {
-> > > > > > > > > > > > > +			ret = PTR_ERR(irqfd);
-> > > > > > > > > > > > > +			goto fail;
-> > > > > > > > > > > > > +		}
-> > > > > > > > > > > > > +
-> > > > > > > > > > > > > +		gsi = irqfd->gsi;
-> > > > > > > > > > > > > +		level_irqfd = eventfd_ctx_get(irqfd->eventfd);
-> > > > > > > > > > > > > +		source = _irq_source_get(irqfd->source);
-> > > > > > > > > > > > > +		_irqfd_put_unlock(irqfd);
-> > > > > > > > > > > > > +		if (!source) {
-> > > > > > > > > > > > > +			ret = -EINVAL;
-> > > > > > > > > > > > > +			goto fail;
-> > > > > > > > > > > > > +		}
-> > > > > > > > > > > > > +	} else {
-> > > > > > > > > > > > > +		ret = -EINVAL;
-> > > > > > > > > > > > > +		goto fail;
-> > > > > > > > > > > > > +	}
-> > > > > > > > > > > > > +
-> > > > > > > > > > > > > +	INIT_LIST_HEAD(&eoifd->list);
-> > > > > > > > > > > > > +	eoifd->kvm = kvm;
-> > > > > > > > > > > > > +	eoifd->eventfd = eventfd;
-> > > > > > > > > > > > > +	eoifd->source = source;
-> > > > > > > > > > > > > +	eoifd->level_irqfd = level_irqfd;
-> > > > > > > > > > > > > +	eoifd->notifier.gsi = gsi;
-> > > > > > > > > > > > > +	eoifd->notifier.irq_acked = eoifd_event;
-> > > > > > > > > > > > 
-> > > > > > > > > > > > OK so this means eoifd keeps a reference to the irqfd.
-> > > > > > > > > > > > And since this is the case, can't we drop the reference counting
-> > > > > > > > > > > > around source ids now? Everything is referenced through irqfd.
-> > > > > > > > > > > 
-> > > > > > > > > > > Holding a reference and using it as a reference count are not the same
-> > > > > > > > > > > thing.  What if another module holds a reference to this eventfd?  How
-> > > > > > > > > > > do we do anything on release?
-> > > > > > > > > > 
-> > > > > > > > > > We don't as there is no release, and using kref on source id does not
-> > > > > > > > > > help: it just never gets invoked.
-> > > > > > > > > 
-> > > > > > > > > Please work out how you think it should work and let me know, I don't
-> > > > > > > > > see it.  We have an irq source id that needs to be allocated by irqfd
-> > > > > > > > > and returned when it's unused.  It becomes unused when neither irqfd nor
-> > > > > > > > > eoifd are making use of it.  irqfd and eoifd may be closed in any order.
-> > > > > > > > > Use of the source id is what we're reference counting, which is why it's
-> > > > > > > > > in struct _irq_source.  How can I use an eventfd reference for the same?
-> > > > > > > > > I don't know when it's unused.  I don't know who else holds a reference
-> > > > > > > > > to it...  Doesn't make sense to me.  Feels like attempting to squat on
-> > > > > > > > > someone else's object.
-> > > > > > > > > 
-> > > > > > > > > 
-> > > > > > > > 
-> > > > > > > > eoifd should prevent irqfd from being released.
-> > > > > > > 
-> > > > > > > Why?  Note that this is actually quite difficult too.  We can't fail a
-> > > > > > > release, nobody checks close(3p) return.  Blocking a release is likely
-> > > > > > > to cause all sorts of problems, so what you mean is that irqfd should
-> > > > > > > linger around until there are no references to it... but that's exactly
-> > > > > > > what struct _irq_source is for, is to hold the bits that we care about
-> > > > > > > references to and automatically release it when there are none.
-> > > > > > 
-> > > > > > No no. You *already* prevent it. You take a reference to the eventfd
-> > > > > > context.
-> > > > > 
-> > > > > Right, which keeps the fd from going away, not the struct _irqfd.
-> > > > 
-> > > > _irqfd too.
-> > > 
-> > > 
-> > > How so?
-> > 
-> > Normally irqfd_wakeup is called with POLLHUP and calls irqfd_deactivate.
-> > If you get a ctx reference this does not happen.
-> 
-> I think you're mistaken.  wake_up_poll(,POLLHUP) is called from
-> eventfd_release (file_operations.release), not from ctx reference
-> release.
 
-True. I was wrong. so close has the same bug as deassign. To fix,
-how about eoifd will hold a reference to the irqfd instead of the
-eventfd context?
+--tSiBuZsJmMXpnp7T
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> > > > > > > >   It already keeps
-> > > > > > > > a reference to it so it prevents irqfd from going away by userspace
-> > > > > > > > closing the fd.
-> > > > > > > 
-> > > > > > > Wrong, eoifd holds a reference to the eventfd for the irqfd, so it
-> > > > > > > prevents the fd from going away, not the irqfd.
-> > > > > > 
-> > > > > > When the fd is no going away an ioctl is the only other way for
-> > > > > > it to go away.
-> > > > > 
-> > > > > It doesn't do any good to fail the ioctl if close(fd) allows it.
-> > > > 
-> > > > allows what? It does nothing.
-> > > > 
-> > > > > > > >   But it can still be released with deassign.
-> > > > > > > > An easy solution is to fail deassign of irqfd if there is
-> > > > > > > > eoifd bound to it.
-> > > > > > > 
-> > > > > > > I don't know why we would impose such a bizarre usage model when
-> > > > > > > reference counting on struct _irq_source seems to handle this nicely
-> > > > > > > already.
-> > > > > > 
-> > > > > > Well eventfd gets an irqfd. What does it mean if said irqfd gets
-> > > > > > deassigned, and potentially assigned an unrelated interrupt?
-> > > > > > I think what I would expect is for it to handle the new interrupt.
-> > > > > > This is hard to implement so let us fail this.
-> > > > > 
-> > > > > Ah, so an actual problem, let's solve this.  Why wouldn't we just search
-> > > > > the list of eoifds and see if this level_irqfd is already used?  If we
-> > > > > find it and it's compatible, we can get a reference to the _irq_source
-> > > > > and "re-attach" the irqfd.  If it's not compatible, fail the KVM_IRQFD.
-> > > > > If the KVM_IRQFD is for an edge irqfd, I think we let it go.
-> > > > 
-> > > > This is just confusing. Userspace has no idea that you are reusing fds
-> > > > behind the scenes. assign is not the problem, deassign is.
-> > > > So fail *that*.
-> 
-> 
+-next fails to boot for me today on my s3c64xx based systems.  Walking
+back to the last time I tried and bisecting likely branches I find that
+commit 910139 (irqdomain: Replace LEGACY mapping with LINEAR) is the one
+that introduces the build break.  Unfortunately the boot fails before I
+get a console which makes diagnosis somewhat more tricky than would be
+ideal.  Any ideas?
+
+--tSiBuZsJmMXpnp7T
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQBbVYAAoJEBus8iNuMP3dXCwP/1biIJ60713f1fjWBP5L7O24
+sWsEhLzZTOIvAf90FBBUqJlkKacKg/o3WpSldhALXkpp9cwpm7tJ+hbH8jhWdcE/
+lu9B/0XLCft+frmwwL2cQaBw12X9pB/C+wrGDkirYzQTc8JkMzK4C5QK467A5Jzm
++y/K2wSPa15mufglADY1ATVoNcTJ36FrR80yPkEYY4cYzTaDeKreb/2lk9QMhl0N
+nHE0VMC4RxV8B/Y0G0t7zCLke6M/vvV2+KRq/DTlHUs9Gl+CqKUeGs5bmulBodRV
+OuMvJ4RlzvWC1NJNfuaJHyT85Nlq4XfqSWm/b64SkaQdQCD1d2UKF8rmFrTezC95
+aW6Nm/VbgiJ8DzLOzM1sg1Uo5lgUPCxAOAXJf7WwkP3PW7sZdpoVz8BdoavA47bJ
+E8pKt5E77PXuNpoEkg2WHWM7jjbi6Cs0eLWvZeZElsi5Snyc/aj1Ch/PWYtl6Eek
+c1EP7vxMJvFfHk1QwLuwF56vhzSP2YCT0WsA605gLUcpY+hpsGE+IQkr/W+kMoI6
+ypQ9Ajq4ncw72cFPrH/YSZlzz+vcGOC2QaaqA+qXL7MsxPZwZcfaeA4unxP6cOI0
+D3m6Ia9YQHMU35VKhmitUWdijDq3BWL4OO12f8beU4b1gFWsVVzm4oVG1Rbakw35
+aCMqDi24IBYiy2ZAnUVu
+=O1un
+-----END PGP SIGNATURE-----
+
+--tSiBuZsJmMXpnp7T--
