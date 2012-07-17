@@ -1,74 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754654Ab2GQGD1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 02:03:27 -0400
-Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:59756 "EHLO
-	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754195Ab2GQGD0 (ORCPT
+	id S1754671Ab2GQGJv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 02:09:51 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64621 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753057Ab2GQGJu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 02:03:26 -0400
+	Tue, 17 Jul 2012 02:09:50 -0400
 MIME-Version: 1.0
-In-Reply-To: <87ipdnein1.fsf@ti.com>
-References: <1341997995-14020-1-git-send-email-tarun.kanti@ti.com>
- <1341997995-14020-3-git-send-email-tarun.kanti@ti.com> <87394xhocn.fsf@ti.com>
- <CACRpkdZMG_ZHW_eGGrdrJh1SuO_=hOObijzmxG1ob6RoNf_dwg@mail.gmail.com>
- <87a9z4g9bi.fsf@ti.com> <CACRpkdZxUpQ=a-yQ8b4bnX3S9penPWkxJ+PG2Zi4i9YZibYRiw@mail.gmail.com>
- <87ipdnein1.fsf@ti.com>
-From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-Date: Tue, 17 Jul 2012 11:33:04 +0530
-Message-ID: <CAMQu2gwvPuGBWc+R651EiDqHMcGQEF6SZBNpwJZ=Kxh8hwov2A@mail.gmail.com>
-Subject: Re: [PATCH 2/2] gpio/omap: add *remove* callback in platform_driver
-To: Kevin Hilman <khilman@ti.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Tarun Kanti DebBarma <tarun.kanti@ti.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Rajendra Nayak <rnayak@ti.com>, "Cousson, Benoit" <b-cousson@ti.com>,
-        Paul Walmsley <paul@pwsan.com>
+In-Reply-To: <CAKYAXd9cPuN-HfifDmz4M==QfjEW7CX6BF=rumSBSwRtO38_PQ@mail.gmail.com>
+References: <1342189698-20393-1-git-send-email-vinholikatti@gmail.com>
+	<1342189698-20393-2-git-send-email-vinholikatti@gmail.com>
+	<CAKYAXd9cPuN-HfifDmz4M==QfjEW7CX6BF=rumSBSwRtO38_PQ@mail.gmail.com>
+Date: Tue, 17 Jul 2012 11:39:49 +0530
+Message-ID: <CAKVbJB8PGZqOUOjDk-2uckx4MUkgKEb-EZ_TYt6C5fGjP2k85g@mail.gmail.com>
+Subject: Re: [PATCH V2 3/4] [SCSI] ufs: Add Platform glue driver for ufshcd
+From: vinayak holikatti <vinholikatti@gmail.com>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: James.Bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, patches@linaro.org,
+        linux-samsung-soc@vger.kernel.org, santoshsy@gmail.com,
+        arnd@linaro.org, girish.shivananjappa@linaro.org,
+        saugata.das@linaro.org, vishak.g@samsung.com, venkat@linaro.org,
+        k.rajesh@samsung.com, dsaxena@linaro.org, ilho215.lee@samsung.com,
+        nala.la@samsung.com, sreekumar.c@samsung.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 16, 2012 at 10:40 PM, Kevin Hilman <khilman@ti.com> wrote:
->
-> Linus Walleij <linus.walleij@linaro.org> writes:
->
-> > On Thu, Jul 12, 2012 at 7:48 PM, Kevin Hilman <khilman@ti.com> wrote:
-> >
-> >> In the case of OMAP GPIO, unless it's an obvious fix, I would recommend
-> >> you wait at least until you see some acks/tested tags from any of
-> >>
-> >> - Santosh Shilimkar <santosh.shilimkar@ti.com>
-> >> - Rajendra Nayak <rnayak@ti.com>
-> >> - Benoit Cousson <b-cousson@ti.com>
-> >>
-> >> or Tony, Paul or myself.
-> >
-> > Instead of trying to store this information in my and Grants brains and
-> > us forgetting it, what about patching MAINTAINERS to reflect the fact
-> > instead? That's better I think, plus I use that file a lot.
-> >
-> >> For major series, I have been collecting/queueing them for Grant after
-> >> ensuring they have been well reviewed and well tested (although I am
-> >> eagerly hoping to hand off this role to someone else.)
-> >
-> > Listing it under your GIT tree in MAINTAINERS for this driver will make
-> > this work better I think.
-> >
-> > One path for OMAP GPIO patches, simple. It's obviously the
-> > ambiguity that cause the trouble. Then you can also decide
-> > on each cycle whether to send these to GPIO or ARM SoC
-> > etc.
->
-> Yeah, I understand the process, but I've been avoiding doing that
-> because, well, I don't want the job.  I have been trying to get someone
-> else at TI to maintain this driver, but have not been successful.
->
-> So, until that happens, feel free to queue up the patch below.
->
-> Santosh, note that I've put you as co-maintainer of this driver.
->
-No problem Kevin.
-
-Regards
-Santosh
+On Mon, Jul 16, 2012 at 7:19 PM, Namjae Jeon <linkinjeon@gmail.com> wrote:
+> Hi Vinayak.
+>> + * ufshcd_pltfrm_remove - remove platform driver routine
+>> + * @pdev: pointer to platform device handle
+>> + *
+>> + * Returns 0 on success, non-zero value on failure
+>> + */
+>> +static int __devexit ufshcd_pltfrm_remove(struct platform_device *pdev)
+>> +{
+>> +     struct resource *mem_res;
+>> +     struct resource *irq_res;
+>> +     resource_size_t mem_size;
+>> +     struct ufs_hba *hba =  platform_get_drvdata(pdev);
+>> +
+>> +     ufshcd_remove(hba);
+>> +     irq_res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+>> +     if (!irq_res)
+>> +             dev_err(&pdev->dev, "ufshcd: IRQ resource not available\n");
+>> +     free_irq(irq_res->start, hba);
+> Is there no possibility of null pointer dereferencing error ?(irq_res->start)
+> I think that free_irq should be not called if irq_res is NULL.
+I agree, I have overlooked at this logic, the free_irq should have
+been in the else
+part of this section. I will make the modification in the next version
+of patches.
+>> +     mem_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> Looks mem_res is also same with upper case.
+> Thanks.
+>> +     mem_size = resource_size(mem_res);
+>> +     release_mem_region(mem_res->start, mem_size);
+>> +     platform_set_drvdata(pdev, NULL);
+>> +     return 0;
+>> +}
+>> +
