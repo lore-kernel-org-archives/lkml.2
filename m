@@ -1,50 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754334Ab2GQCOo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 22:14:44 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:63871 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754264Ab2GQCOm (ORCPT
+	id S1754341Ab2GQCSG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 22:18:06 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:36393 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754274Ab2GQCSD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 22:14:42 -0400
+	Mon, 16 Jul 2012 22:18:03 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <5004CB4C.6080700@jp.fujitsu.com>
+Date: Tue, 17 Jul 2012 11:17:48 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Date: Tue, 17 Jul 2012 10:14:41 +0800
-Message-ID: <CACV3sbKF=CX+2jWEWesfCA6rBoQ3wDM4-5ac9MuBtVbCtMRHdQ@mail.gmail.com>
-Subject: [PATCH] [TRIVIAL] perf: missing struct before structure name
-From: Jovi Zhang <bookjovi@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
-        Jiri Kosina <trivial@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: <linux-kernel@vger.kernel.org>
+CC: <tglx@linutronix.de>, <mingo@kernel.org>, <hpa@zytor.com>, <tj@kernel.org>,
+        <akpm@linux-foundation.org>, <dave@linux.vnet.ibm.com>
+Subject: [PATCH] firmware_map : unify argument of firmware_map_add_early/hotplug
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 3abcb73682893ed2bde318d17f1cc3430bf70224 Mon Sep 17 00:00:00 2001
-From: Jovi Zhang <bookjovi@gmail.com>
-Date: Tue, 17 Jul 2012 17:21:56 +0800
-Subject: [PATCH] [TRIVIAL] perf: missing struct before structure name
+There are two ways to create /sys/firmware/memmap/X sysfs:
 
-when CONFIG_PERF_EVENTS disabled, there will have a compiliation error,
-because missing struct before structure name.
+  - firmware_map_add_early
+    When the system starts, it is calledd from e820_reserve_resources()
+  - firmware_map_add_hotplug
+    When the memory is hot plugged, it is called from add_memory()
 
-Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
+But these functions are called without unifying value of end argument as below:
+
+  - end argument of firmware_map_add_early()   : start + size - 1
+  - end argument of firmware_map_add_hogplug() : start + size
+
+The patch unifies them to "start + size". Even if applying the patch,
+/sys/firmware/memmap/X/end file content does not change.
+
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: Ingo Molnar <mingo@kernel.org>
+CC: H. Peter Anvin <hpa@zytor.com>
+CC: Tejun Heo <tj@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>
+Reviewed-by: Dave Hansen <dave@linux.vnet.ibm.com>
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+
 ---
- arch/x86/include/asm/perf_event.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kernel/e820.c    |    2 +-
+ drivers/firmware/memmap.c |    8 ++++----
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/include/asm/perf_event.h
-b/arch/x86/include/asm/perf_event.h
-index 588f52e..2643877 100644
---- a/arch/x86/include/asm/perf_event.h
-+++ b/arch/x86/include/asm/perf_event.h
-@@ -235,7 +235,7 @@ struct perf_guest_switch_msr {
- extern struct perf_guest_switch_msr *perf_guest_get_msrs(int *nr);
- extern void perf_get_x86_pmu_capability(struct x86_pmu_capability *cap);
- #else
--static inline perf_guest_switch_msr *perf_guest_get_msrs(int *nr)
-+static inline struct perf_guest_switch_msr *perf_guest_get_msrs(int *nr)
- {
- 	*nr = 0;
- 	return NULL;
--- 
-1.7.9.7
+Index: linux-next/arch/x86/kernel/e820.c
+===================================================================
+--- linux-next.orig/arch/x86/kernel/e820.c	2012-07-02 09:50:23.000000000 +0900
++++ linux-next/arch/x86/kernel/e820.c	2012-07-12 13:30:45.942318179 +0900
+@@ -944,7 +944,7 @@
+ 	for (i = 0; i < e820_saved.nr_map; i++) {
+ 		struct e820entry *entry = &e820_saved.map[i];
+ 		firmware_map_add_early(entry->addr,
+-			entry->addr + entry->size - 1,
++			entry->addr + entry->size,
+ 			e820_type_to_string(entry->type));
+ 	}
+ }
+Index: linux-next/drivers/firmware/memmap.c
+===================================================================
+--- linux-next.orig/drivers/firmware/memmap.c	2012-07-02 09:50:26.000000000 +0900
++++ linux-next/drivers/firmware/memmap.c	2012-07-12 13:40:53.823318481 +0900
+@@ -98,7 +98,7 @@
+ /**
+  * firmware_map_add_entry() - Does the real work to add a firmware memmap entry.
+  * @start: Start of the memory range.
+- * @end:   End of the memory range (inclusive).
++ * @end:   End of the memory range.
+  * @type:  Type of the memory range.
+  * @entry: Pre-allocated (either kmalloc() or bootmem allocator), uninitialised
+  *         entry.
+@@ -113,7 +113,7 @@
+ 	BUG_ON(start > end);
+ 
+ 	entry->start = start;
+-	entry->end = end;
++	entry->end = end - 1;
+ 	entry->type = type;
+ 	INIT_LIST_HEAD(&entry->list);
+ 	kobject_init(&entry->kobj, &memmap_ktype);
+@@ -148,7 +148,7 @@
+  * firmware_map_add_hotplug() - Adds a firmware mapping entry when we do
+  * memory hotplug.
+  * @start: Start of the memory range.
+- * @end:   End of the memory range (inclusive).
++ * @end:   End of the memory range.
+  * @type:  Type of the memory range.
+  *
+  * Adds a firmware mapping entry. This function is for memory hotplug, it is
+@@ -175,7 +175,7 @@
+ /**
+  * firmware_map_add_early() - Adds a firmware mapping entry.
+  * @start: Start of the memory range.
+- * @end:   End of the memory range (inclusive).
++ * @end:   End of the memory range.
+  * @type:  Type of the memory range.
+  *
+  * Adds a firmware mapping entry. This function uses the bootmem allocator
+
