@@ -1,96 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755473Ab2GQPUK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 11:20:10 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58558 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754163Ab2GQPUH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 11:20:07 -0400
-Date: Tue, 17 Jul 2012 16:20:01 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Wolfram Sang <w.sang@pengutronix.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Alessandro Rubini <rubini@gnudd.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: linux-next: manual merge of the arm-soc tree with the
- i2c-embedded tree
-Message-ID: <20120717152001.GF4477@opensource.wolfsonmicro.com>
-References: <5003FB7C.4030509@linaro.org>
- <20120717130650.GB27595@sirena.org.uk>
- <500568D9.10805@linaro.org>
- <20120717133550.GC4477@opensource.wolfsonmicro.com>
- <50057058.2060002@linaro.org>
- <20120717142222.GE4477@opensource.wolfsonmicro.com>
- <50057C1A.80606@linaro.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="hUH5gZbnpyIv7Mn4"
-Content-Disposition: inline
-In-Reply-To: <50057C1A.80606@linaro.org>
-X-Cookie: Your aim is high and to the right.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755511Ab2GQPUo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 11:20:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38173 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755478Ab2GQPUP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 11:20:15 -0400
+Message-ID: <1342538411.2229.106.camel@bling.home>
+Subject: Re: [PATCH v5 3/4] kvm: Create kvm_clear_irq()
+From: Alex Williamson <alex.williamson@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
+Date: Tue, 17 Jul 2012 09:20:11 -0600
+In-Reply-To: <20120717145313.GB11516@redhat.com>
+References: <20120716202711.1752.71007.stgit@bling.home>
+	 <20120716203401.1752.78276.stgit@bling.home>
+	 <20120717101435.GE7949@redhat.com> <1342533369.3229.4.camel@ul30vt>
+	 <20120717140858.GB10822@redhat.com> <1342534911.3229.26.camel@ul30vt>
+	 <20120717145313.GB11516@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2012-07-17 at 17:53 +0300, Michael S. Tsirkin wrote:
+> On Tue, Jul 17, 2012 at 08:21:51AM -0600, Alex Williamson wrote:
+> > On Tue, 2012-07-17 at 17:08 +0300, Michael S. Tsirkin wrote:
+> > > On Tue, Jul 17, 2012 at 07:56:09AM -0600, Alex Williamson wrote:
+> > > > On Tue, 2012-07-17 at 13:14 +0300, Michael S. Tsirkin wrote:
+> > > > > On Mon, Jul 16, 2012 at 02:34:03PM -0600, Alex Williamson wrote:
+> > > > > > This is an alternative to kvm_set_irq(,,,0) which returns the previous
+> > > > > > assertion state of the interrupt and does nothing if it isn't changed.
+> > > > > > 
+> > > > > > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> > > > > > ---
+> > > > > > 
+> > > > > >  include/linux/kvm_host.h |    3 ++
+> > > > > >  virt/kvm/irq_comm.c      |   78 ++++++++++++++++++++++++++++++++++++++++++++++
+> > > > > >  2 files changed, 81 insertions(+)
+> > > > > > 
+> > > > > > diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+> > > > > > index a7661c0..6c168f1 100644
+> > > > > > --- a/include/linux/kvm_host.h
+> > > > > > +++ b/include/linux/kvm_host.h
+> > > > > > @@ -219,6 +219,8 @@ struct kvm_kernel_irq_routing_entry {
+> > > > > >  	u32 type;
+> > > > > >  	int (*set)(struct kvm_kernel_irq_routing_entry *e,
+> > > > > >  		   struct kvm *kvm, int irq_source_id, int level);
+> > > > > > +	int (*clear)(struct kvm_kernel_irq_routing_entry *e,
+> > > > > > +		     struct kvm *kvm, int irq_source_id);
+> > > > > >  	union {
+> > > > > >  		struct {
+> > > > > >  			unsigned irqchip;
+> > > > > > @@ -629,6 +631,7 @@ void kvm_get_intr_delivery_bitmask(struct kvm_ioapic *ioapic,
+> > > > > >  				   unsigned long *deliver_bitmask);
+> > > > > >  #endif
+> > > > > >  int kvm_set_irq(struct kvm *kvm, int irq_source_id, u32 irq, int level);
+> > > > > > +int kvm_clear_irq(struct kvm *kvm, int irq_source_id, u32 irq);
+> > > > > >  int kvm_set_msi(struct kvm_kernel_irq_routing_entry *irq_entry, struct kvm *kvm,
+> > > > > >  		int irq_source_id, int level);
+> > > > > >  void kvm_notify_acked_irq(struct kvm *kvm, unsigned irqchip, unsigned pin);
+> > > > > > diff --git a/virt/kvm/irq_comm.c b/virt/kvm/irq_comm.c
+> > > > > > index 5afb431..76e8f22 100644
+> > > > > > --- a/virt/kvm/irq_comm.c
+> > > > > > +++ b/virt/kvm/irq_comm.c
+> > > > > > @@ -68,6 +68,42 @@ static int kvm_set_ioapic_irq(struct kvm_kernel_irq_routing_entry *e,
+> > > > > >  	return kvm_ioapic_set_irq(ioapic, e->irqchip.pin, level);
+> > > > > >  }
+> > > > > >  
+> > > > > > +static inline int kvm_clear_irq_line_state(unsigned long *irq_state,
+> > > > > > +					    int irq_source_id)
+> > > > > > +{
+> > > > > > +	return !!test_and_clear_bit(irq_source_id, irq_state);
+> > > > > > +}
+> > > > > > +
+> > > > > > +static int kvm_clear_pic_irq(struct kvm_kernel_irq_routing_entry *e,
+> > > > > > +			     struct kvm *kvm, int irq_source_id)
+> > > > > > +{
+> > > > > > +#ifdef CONFIG_X86
+> > > > > > +	struct kvm_pic *pic = pic_irqchip(kvm);
+> > > > > > +	int level = kvm_clear_irq_line_state(&pic->irq_states[e->irqchip.pin],
+> > > > > > +					     irq_source_id);
+> > > > > > +	if (level)
+> > > > > > +		kvm_pic_set_irq(pic, e->irqchip.pin,
+> > > > > > +				!!pic->irq_states[e->irqchip.pin]);
+> > > > > > +	return level;
+> > > > > 
+> > > > > I think I begin to understand: if (level) checks it was previously set,
+> > > > > and then we clear if needed?
+> > > > 
+> > > > It's actually very simple, if we change anything in irq_states, then
+> > > > update via the chip specific set_irq function.
+> > > > 
+> > > > >  I think it's worthwhile to rename
+> > > > > level to orig_level and rewrite as:
+> > > > > 
+> > > > > 	if (orig_level && !pic->irq_states[e->irqchip.pin])
+> > > > > 		kvm_pic_set_irq(pic, e->irqchip.pin, 0);
+> > > > > 
+> > > > > This both makes the logic clear without need for comments and
+> > > > > saves some cycles on pic in case nothing actually changed.
+> > > > 
+> > > > That may work, but it's not actually the same thing.  kvm_set_irq(,,,0)
+> > > > will clear the bit and call kvm_pic_set_irq with the new irq_states
+> > > > value, whether it's 0 or 1.  The optimization I make is to only call
+> > > > kvm_pic_set_irq if we've "changed" irq_states.  You're taking that one
+> > > > step further to "changed and is now 0".  I don't know if that's correct
+> > > > behavior.
+> > > 
+> > > If not then I don't understand. You clear a bit
+> > > in a word. You never change it to 1, do you?
+> > 
+> > Correct, but kvm_set_irq(,,,0) may call kvm_pic_set_irq(,,1) if other
+> > source IDs are still asserting the interrupt.  Your proposal assumes
+> > that unless irq_states is also 0 we don't need to call kvm_pic_set_irq,
+> > and I don't know if that's correct.
+> 
+> Well you are asked to clear some id and level was 1. So we know
+> interrupt was asserted. Either we clear it or we don't. No?
+> 
+> > > 
+> > > But this brings another question:
+> > > 
+> > > static inline int kvm_irq_line_state(unsigned long *irq_state,
+> > >                                      int irq_source_id, int level)
+> > > {
+> > >         /* Logical OR for level trig interrupt */
+> > >         if (level)
+> > >                 set_bit(irq_source_id, irq_state);
+> > >         else
+> > >                 clear_bit(irq_source_id, irq_state);
+> > > 
+> > > 
+> > > ^^^^^^^^^^^
+> > > above uses locked instructions
+> > > 
+> > >         return !!(*irq_state);
+> > > 
+> > > 
+> > > above doesn't
+> > > 
+> > > }
+> > > 
+> > > 
+> > > why the insonsistency?
+> > 
+> > Note that set/clear_bit are not locked instructions,
+> 
+> On x86 they are:
+> static __always_inline void
+> set_bit(unsigned int nr, volatile unsigned long *addr)
+> {
+>         if (IS_IMMEDIATE(nr)) {
+>                 asm volatile(LOCK_PREFIX "orb %1,%0"
+>                         : CONST_MASK_ADDR(nr, addr)
+>                         : "iq" ((u8)CONST_MASK(nr))
+>                         : "memory");
+>         } else {
+>                 asm volatile(LOCK_PREFIX "bts %1,%0"
+>                         : BITOP_ADDR(addr) : "Ir" (nr) : "memory");
+>         }
+> }
+> 
+> > but atomic
+> > instructions and it could be argued that reading the value is also
+> > atomic.  At least that was my guess when I stumbled across the same
+> > yesterday.  IMHO, we're going off into the weeds again with these last
+> > two patches.  It may be a valid optimization, but it really has no
+> > bearing on the meat of the series (and afaict, no significant
+> > performance difference either).
+> 
+> For me it's not a performance thing. IMO code is cleaner without this locking:
+> we add a lock but only use it in some cases, so the rules become really
+> complex.
 
---hUH5gZbnpyIv7Mn4
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Seriously?
 
-On Tue, Jul 17, 2012 at 03:52:10PM +0100, Lee Jones wrote:
+        spin_lock(&irqfd->source->lock);
+        if (!irqfd->source->level_asserted) {
+                kvm_set_irq(irqfd->kvm, irqfd->source->id, irqfd->gsi, 1);
+                irqfd->source->level_asserted = true;
+        }
+        spin_unlock(&irqfd->source->lock);
 
-> I think it would be okay to take the 3 patches due for the v3.6
-> merge window, which target the nmk-i2c driver. If any consolidation
-> happens in the mean-time/future I will personally do the work to
-> bring the nmk-i2c into line to use any generic bindings which
-> result.
+...
 
-> No one else is ever going to use these vendor specific bindings, so
-> I'm sure no issues will arise. It also means that we have a fully
-> enabled driver which is capable of receiving a new configuration via
-> minor changes to the dts, which is important for the current (only)
-> user of this driver for an upcoming project.
+        spin_lock(&eoifd->source->lock);
+        if (eoifd->source->level_asserted) {
+                kvm_set_irq(eoifd->kvm,
+                            eoifd->source->id, eoifd->notifier.gsi, 0);
+                eoifd->source->level_asserted = false;
+                eventfd_signal(eoifd->eventfd, 1);
+        }
+        spin_unlock(&eoifd->source->lock);
 
-So, this is pretty much what vendors always say about this stuff...
 
-Looking at what's specified in the platform data in the current kernel
-it seems like there's a mixture of things in there that are board and
-silicon specific.  We've got parameters like the the speed mode and
-timeout which are reasonably board specific but we've also got things
-like the FIFO sizes which shouldn't be at all board specific and slsu
-which really looks like it's something that that the driver ought to be
-able to figure out for itself.
+Locking doesn't get much more straightforward than that
 
---hUH5gZbnpyIv7Mn4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+>   And current code looks buggy if yes we need to fix it somehow.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQBYKOAAoJEBus8iNuMP3dQPgP/i14QVmEVzfiikhATrJOg4bW
-4dkAqqzsSGoiPXDvLWshMzvN8d1wKwRQcFdELNc8aIvy5bpZSnvjxTASpM5HRv4D
-1l6ph901olMmqwkYUG2iPo2RP2DrOK9gF+fgVSIpj2vsxpH3JGuba1O9E486DenM
-Wn7ciWXA6nmeJW0XlDQYl7Ln7Glth4hy+aZDFW1svkqUNT7dfXWZLbA21bjDuDW4
-NLAcAfSx23snXXlQi2gY1CNnIHOP+CKGmICbRUhG5MbfLWC61V015V3rnlmu9/a/
-Z9wav3yF9m8bCUal27oIIWyeyGyz4HxAkQNlRziWUcsJTHhgyhT6x2XU1puRNARh
-EVIveMqo2WmZ2eAzom2jg7BkP065BnH1392j4UbaHGv3TWXPz+zmS/ypCdpfi5mp
-CvcBSZSHDu96UCAUYyXhtAygPQ9A1CoVwIoLQJ1ZcRKATti6KPQ5sfOd+iQf1WvL
-rcUGAREcroaw1hj+QTlgVU8cI82ZSxCL3xc68+NjqKemcuUB74PTuye7Azw4/XLu
-zIW91RutdjRAPTgwcO8GeVlcOoT8CDih7EvyhGO+CTg9cTNF0IqAgbLciHTdjHg9
-r05TZ9j+BbAYy0EGozuuRqFLALGY66G9zZsuFjFP2ldgn9kqy8Z/FByTsFSNf1fy
-fGXoM7pZC8TY6Tk27dLO
-=jvqo
------END PGP SIGNATURE-----
+Which to me seems to indicate this should be handled as a separate
+effort.
 
---hUH5gZbnpyIv7Mn4--
+
