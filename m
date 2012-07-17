@@ -1,69 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753949Ab2GQEyg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 00:54:36 -0400
-Received: from mga09.intel.com ([134.134.136.24]:60939 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750991Ab2GQEye (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 00:54:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="167237366"
-Date: Mon, 16 Jul 2012 21:54:16 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Denis Turischev <denis@compulab.co.il>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] xhci: EHCI/xHCI ports switching on Intense-PC.
-Message-ID: <20120717045416.GJ7599@xanatos>
-References: <5004454E.9030903@compulab.co.il>
+	id S1753963Ab2GQE6u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 00:58:50 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:5244 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750991Ab2GQE6r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 00:58:47 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Mon, 16 Jul 2012 21:58:47 -0700
+Message-ID: <5004F101.7040909@nvidia.com>
+Date: Tue, 17 Jul 2012 10:28:41 +0530
+From: Prashant Gaikwad <pgaikwad@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5004454E.9030903@compulab.co.il>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rob Herring <robherring2@gmail.com>
+CC: "mturquette@ti.com" <mturquette@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "aletes.xgr@gmail.com" <aletes.xgr@gmail.com>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH] clk: fix compile for OF && !COMMON_CLK
+References: <1342475161-20402-1-git-send-email-robherring2@gmail.com>
+In-Reply-To: <1342475161-20402-1-git-send-email-robherring2@gmail.com>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 16, 2012 at 07:46:06PM +0300, Denis Turischev wrote:
-> Intense-PC is Compulab's mini-desktop with Intel Panther Point
-> chipset.
-> 
-> Unconditional ports switching provided by function
-> usb_enable_xhci_ports() leads to surprising results, after shutdown
-> system powered-on again after a few seconds. On Windows power
-> related problems were not observed.
+On Tuesday 17 July 2012 03:16 AM, Rob Herring wrote:
+> From: Rob Herring<rob.herring@calxeda.com>
+>
+> With commit 766e6a4ec602d0c107 (clk: add DT clock binding support),
+> compiling with OF&&  !COMMON_CLK is broken.
 
-Do you have wake on lan enabled in the BIOS?  I have heard reports from
-other users that this is a BIOS bug triggered by WOL.
+Thanks Rob!!
 
-> The patch avoids ports switching for Intense-PC.
-> 
-> Signed-off-by: Denis Turischev <denis@compulab.co.il>
+This patch fixed the build failure for Tegra.
+
+> Reported-by: Alexandre Pereira da Silva<aletes.xgr@gmail.com>
+> Reported-by: Prashant Gaikwad<pgaikwad@nvidia.com>
+> Signed-off-by: Rob Herring<rob.herring@calxeda.com>
 > ---
->  drivers/usb/host/pci-quirks.c |    7 +++++++
->  1 file changed, 7 insertions(+)
-> 
-> diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
-> index df0828c..6f72593 100644
-> --- a/drivers/usb/host/pci-quirks.c
-> +++ b/drivers/usb/host/pci-quirks.c
-> @@ -759,6 +759,13 @@ void usb_enable_xhci_ports(struct pci_dev *xhci_pdev)
->  {
->  	u32		ports_available;
-> 
-> +	const char *brd_name;
-> +	brd_name = dmi_get_system_info(DMI_BOARD_NAME);
-> +
-> +	/* quirk for Compulab's Intense-PC board */
-> +	if (brd_name && strstr(brd_name, "Intense-PC"))
-> +		return;
-> +
+>   drivers/clk/clkdev.c |    2 +-
+>   include/linux/clk.h  |    7 ++++---
+>   2 files changed, 5 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
+> index 20649b3..8f87b0f 100644
+> --- a/drivers/clk/clkdev.c
+> +++ b/drivers/clk/clkdev.c
+> @@ -24,7 +24,7 @@
+>   static LIST_HEAD(clocks);
+>   static DEFINE_MUTEX(clocks_mutex);
+>
+> -#ifdef CONFIG_OF
+> +#if defined(CONFIG_OF)&&  defined(CONFIG_COMMON_CLK)
+>   struct clk *of_clk_get(struct device_node *np, int index)
+>   {
+>   	struct of_phandle_args clkspec;
+> diff --git a/include/linux/clk.h b/include/linux/clk.h
+> index 8b70342..35f7492 100644
+> --- a/include/linux/clk.h
+> +++ b/include/linux/clk.h
+> @@ -12,6 +12,7 @@
+>   #ifndef __LINUX_CLK_H
+>   #define __LINUX_CLK_H
+>
+> +#include<linux/err.h>
+>   #include<linux/kernel.h>
+>   #include<linux/notifier.h>
+>
+> @@ -313,19 +314,19 @@ int clk_add_alias(const char *alias, const char *alias_dev_name, char *id,
+>   struct device_node;
+>   struct of_phandle_args;
+>
+> -#ifdef CONFIG_OF
+> +#if defined(CONFIG_OF)&&  defined(CONFIG_COMMON_CLK)
+>   struct clk *of_clk_get(struct device_node *np, int index);
+>   struct clk *of_clk_get_by_name(struct device_node *np, const char *name);
+>   struct clk *of_clk_get_from_provider(struct of_phandle_args *clkspec);
+>   #else
+>   static inline struct clk *of_clk_get(struct device_node *np, int index)
+>   {
+> -	return NULL;
+> +	return ERR_PTR(-EINVAL);
+>   }
+>   static inline struct clk *of_clk_get_by_name(struct device_node *np,
+>   					     const char *name)
+>   {
+> -	return NULL;
+> +	return ERR_PTR(-EINVAL);
+>   }
+>   #endif
+>
 
-No, this fix is not acceptable.  You won't get USB 3.0 speeds if the
-ports are not switched over.  Now, we can add a quirk to the xHCI
-shutdown function to switch the ports back to EHCI on shutdown.  That
-might not trigger the BIOS bug.
-
-Sarah Sharp
