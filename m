@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754302Ab2GQCMJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Jul 2012 22:12:09 -0400
-Received: from mail127.messagelabs.com ([216.82.250.115]:30903 "EHLO
-	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754177Ab2GQCMH convert rfc822-to-8bit (ORCPT
+	id S1754334Ab2GQCOo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Jul 2012 22:14:44 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:63871 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754264Ab2GQCOm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Jul 2012 22:12:07 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-4.tower-127.messagelabs.com!1342491125!8786402!2
-X-Originating-IP: [216.166.12.178]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "abbotti@mev.co.uk" <abbotti@mev.co.uk>
-Date: Mon, 16 Jul 2012 21:12:03 -0500
-Subject: RE: [PATCH 2/2] staging: comedi: remove the devpriv and thisboard
- macros
-Thread-Topic: [PATCH 2/2] staging: comedi: remove the devpriv and thisboard
- macros
-Thread-Index: Ac1jwSpbgqyg0lGnT8mJbWJhWUMDQwAAEZ7w
-Message-ID: <ADE657CA350FB648AAC2C43247A983F00206AA915E18@AUSP01VMBX24.collaborationhost.net>
-References: <201207121747.21955.hartleys@visionengravers.com>
- <20120717020910.GA469@kroah.com>
-In-Reply-To: <20120717020910.GA469@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 16 Jul 2012 22:14:42 -0400
 MIME-Version: 1.0
+Date: Tue, 17 Jul 2012 10:14:41 +0800
+Message-ID: <CACV3sbKF=CX+2jWEWesfCA6rBoQ3wDM4-5ac9MuBtVbCtMRHdQ@mail.gmail.com>
+Subject: [PATCH] [TRIVIAL] perf: missing struct before structure name
+From: Jovi Zhang <bookjovi@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
+        Jiri Kosina <trivial@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, July 16, 2012 7:09 PM, Greg KH wrote:
-> Because I didn't take your other large patch series, this one didn't
-> apply :(
+>From 3abcb73682893ed2bde318d17f1cc3430bf70224 Mon Sep 17 00:00:00 2001
+From: Jovi Zhang <bookjovi@gmail.com>
+Date: Tue, 17 Jul 2012 17:21:56 +0800
+Subject: [PATCH] [TRIVIAL] perf: missing struct before structure name
 
-Of course... ;-)
+when CONFIG_PERF_EVENTS disabled, there will have a compiliation error,
+because missing struct before structure name.
 
-Looking at using the hw_dev right now. I should have something tomorrow.
+Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
+---
+ arch/x86/include/asm/perf_event.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks.
-Hartley
-
+diff --git a/arch/x86/include/asm/perf_event.h
+b/arch/x86/include/asm/perf_event.h
+index 588f52e..2643877 100644
+--- a/arch/x86/include/asm/perf_event.h
++++ b/arch/x86/include/asm/perf_event.h
+@@ -235,7 +235,7 @@ struct perf_guest_switch_msr {
+ extern struct perf_guest_switch_msr *perf_guest_get_msrs(int *nr);
+ extern void perf_get_x86_pmu_capability(struct x86_pmu_capability *cap);
+ #else
+-static inline perf_guest_switch_msr *perf_guest_get_msrs(int *nr)
++static inline struct perf_guest_switch_msr *perf_guest_get_msrs(int *nr)
+ {
+ 	*nr = 0;
+ 	return NULL;
+-- 
+1.7.9.7
