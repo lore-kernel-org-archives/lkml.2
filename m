@@ -1,42 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754301Ab2GRXE6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 19:04:58 -0400
-Received: from smtp.mail.umich.edu ([141.211.12.86]:46448 "EHLO
-	tombraider.mr.itd.umich.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751789Ab2GRXE4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 19:04:56 -0400
-Date: Wed, 18 Jul 2012 19:04:45 -0400
-From: Jim Rees <rees@umich.edu>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>, Trond.Myklebust@netapp.com,
-        davem@davemloft.net, davej@redhat.com, linux-nfs@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] SUNRPC: Prevent kernel stack corruption on long values
- of flush
-Message-ID: <20120718230445.GA6561@umich.edu>
-References: <1342476086-21638-1-git-send-email-levinsasha928@gmail.com>
- <20120718173913.GA1298@fieldses.org>
- <20120718200049.GA17964@umich.edu>
- <20120718210825.GA3145@fieldses.org>
- <50072BA7.6070205@gmail.com>
- <50072DEE.2000205@gmail.com>
+	id S1754695Ab2GRXHz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 19:07:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55966 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752626Ab2GRXHw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 19:07:52 -0400
+Date: Wed, 18 Jul 2012 20:07:07 -0300
+From: Rafael Aquini <aquini@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Minchan Kim <minchan@kernel.org>, Rafael Aquini <aquini@linux.com>
+Subject: Re: [PATCH v4 1/3] mm: introduce compaction and migration for virtio
+ ballooned pages
+Message-ID: <20120718230706.GB2313@t510.redhat.com>
+References: <cover.1342485774.git.aquini@redhat.com>
+ <49f828a9331c9b729fcf77226006921ec5bc52fa.1342485774.git.aquini@redhat.com>
+ <20120718154605.cb0591bc.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50072DEE.2000205@gmail.com>
+In-Reply-To: <20120718154605.cb0591bc.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sasha Levin wrote:
+Howdy Andrew,
 
-  > Learning from what happened in this specific case, there are actually 2 issues here:
-  > 
-  >  - Array size was constant and too small, which is solved by the patch above.
-  >  - We were blindly trying to sprintf() into that array, this issue may pop back up if someone decides to change the format string forgetting to modify the array declaration.
-  > 
+Thanks for taking the time to go through this work and provide me with such good
+feedback.
 
-The original patch changed the sprintf to snprintf, and that still seems
-like a good idea.
+On Wed, Jul 18, 2012 at 03:46:05PM -0700, Andrew Morton wrote:
+> On Tue, 17 Jul 2012 13:50:41 -0300
+> Rafael Aquini <aquini@redhat.com> wrote:
+> 
+> > This patch introduces the helper functions as well as the necessary changes
+> > to teach compaction and migration bits how to cope with pages which are
+> > part of a guest memory balloon, in order to make them movable by memory
+> > compaction procedures.
+> > 
+> > ...
+> >
+> > --- a/include/linux/mm.h
+> > +++ b/include/linux/mm.h
+> > @@ -1629,5 +1629,20 @@ static inline unsigned int debug_guardpage_minorder(void) { return 0; }
+> >  static inline bool page_is_guard(struct page *page) { return false; }
+> >  #endif /* CONFIG_DEBUG_PAGEALLOC */
+> >  
+> > +#if (defined(CONFIG_VIRTIO_BALLOON) || \
+> > +	defined(CONFIG_VIRTIO_BALLOON_MODULE)) && defined(CONFIG_COMPACTION)
+> > +extern bool putback_balloon_page(struct page *);
+> > +extern struct address_space *balloon_mapping;
+> > +
+> > +static inline bool is_balloon_page(struct page *page)
+> > +{
+> > +	return (page->mapping == balloon_mapping) ? true : false;
+> 
+> You can simply do
+> 
+> 	return page->mapping == balloon_mapping;
+
+Yes, I will do 
+   return (page->mapping && page->mapping == balloon_mapping);
+
+actually. I just got a case of NULL pointer deref while running on bare-metal
+with no balloon driver loaded.
+
+> 
+> > +}
+> > +#else
+> > +static inline bool is_balloon_page(struct page *page)       { return false; }
+> > +static inline bool isolate_balloon_page(struct page *page)  { return false; }
+> > +static inline bool putback_balloon_page(struct page *page)  { return false; }
+> > +#endif /* (VIRTIO_BALLOON || VIRTIO_BALLOON_MODULE) && COMPACTION */
+> 
+> This means that if CONFIG_VIRTIO_BALLOON=y and CONFIG_COMPACTION=n,
+> is_balloon_page() will always return NULL.  IOW, no pages are balloon
+> pages!  This is wrong.
+> 
+I believe it's right, actually, as we can see CONFIG_COMPACTION=n associated with
+CONFIG_MIGRATION=y (and  CONFIG_VIRTIO_BALLOON=y).
+For such config case we cannot perform the is_balloon_page() test branches
+placed on mm/migration.c
+
+
+> I'm not sure what to do about this, apart from renaming the function to
+> is_compactible_balloon_page() or something similarly aawkward.
+> 
+> 
