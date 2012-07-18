@@ -1,80 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755886Ab2GRUHc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 16:07:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23959 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753352Ab2GRUHa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 16:07:30 -0400
-Date: Wed, 18 Jul 2012 22:06:20 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Ulrich Drepper <drepper@gmail.com>
-Cc: Stephane Eranian <eranian@google.com>, Namhyung Kim <namhyung@gmail.com>,
-        acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu,
-        paulus@samba.org, cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, andi@firstfloor.org
-Subject: Re: [PATCHv3 0/3] perf tool: Add new event group management
-Message-ID: <20120718200619.GC5627@krava.redhat.com>
-References: <20120702101518.GC967@krava.redhat.com>
- <1341234662.1476.13.camel@leonhard>
- <20120702133341.GD967@krava.redhat.com>
- <CABPqkBTKNuwJXY7jRa+Zt8rmFftZUeJiYKEsKJeRiLdoHN3KWQ@mail.gmail.com>
- <CAOPLpQfWtyRHYT1ZfcdmshYoapBgF=FO7yFacYe8pyL0MBeebA@mail.gmail.com>
- <CABPqkBTTZaCVTtwJZbjXGwAihKAW_PMFK0+TZUTvbOn4pnfzvA@mail.gmail.com>
- <20120709110528.GA965@krava.redhat.com>
- <CABPqkBTGOvSuCfOUt=gnpfViVn8Whg0Mf7_3dUUim-iXA+8gjA@mail.gmail.com>
- <20120718102152.GA2587@krava.redhat.com>
- <CAOPLpQcYiHP7oppUOQx8S5kmy15rKxA-bS=oO-3Ms-KYu3D9Bg@mail.gmail.com>
+	id S1755901Ab2GRUJE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 16:09:04 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48714 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755833Ab2GRUJA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 16:09:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOPLpQcYiHP7oppUOQx8S5kmy15rKxA-bS=oO-3Ms-KYu3D9Bg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CABqD9hZSRTF3nZu2J0mahrPQpB+7KMDFy=iv5=J2B+vswpLpVg@mail.gmail.com>
+References: <cover.1342566495.git.luto@amacapital.net> <912c85ae09ccb083110ae451d4f59260ae65296f.1342566495.git.luto@amacapital.net>
+ <CABqD9hbKws1FRQBh3ctCCcYd5Jd=J5pW2a+ApFKso5s5ajqqFw@mail.gmail.com> <CABqD9hZSRTF3nZu2J0mahrPQpB+7KMDFy=iv5=J2B+vswpLpVg@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 18 Jul 2012 13:08:39 -0700
+Message-ID: <CALCETrUt7kgC4oGxdi2QghaqLWQ-pDV1f3wmt-WLbo2xgd1Mrw@mail.gmail.com>
+Subject: Re: [PATCH 3.5 2/2] seccomp: Future-proof against silly tracers
+To: Will Drewry <wad@chromium.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 18, 2012 at 08:34:10AM -0400, Ulrich Drepper wrote:
-> On Wed, Jul 18, 2012 at 6:21 AM, Jiri Olsa <jolsa@redhat.com> wrote:
-> > Well, I personally like the '{}' syntax more than '--group-events or --group-reads
-> > option in front', it feels more user friendly.. anyway, we can easily have both ways.
-> 
-> I like the actual visual grouping better, too.
-> 
-> Also, it doesn't require us to define what
-> 
->    -e E1,E2 --group-events -e E3,E4
-> 
-> means.  Does --group-events also apply to the first parameter?
-> 
-> 
-> > As for the group attributes and group leader sampling, I don't mind omitting
-> > them at this point and get back to that if we find it useful in future.
-> 
-> Just define the first event the leader.  What reason is there which
-> prevents this?
+On Wed, Jul 18, 2012 at 11:35 AM, Will Drewry <wad@chromium.org> wrote:
+> On Tue, Jul 17, 2012 at 9:13 PM, Will Drewry <wad@chromium.org> wrote:
+>> On Tue, Jul 17, 2012 at 6:19 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>> Currently, if a tracer changes a syscall nr to __NR_future_enosys,
+>>> behavior will differ between kernels that know about
+>>> __NR_future_enosys (and return -ENOSYS) and older kernels (which
+>>> return the value from pt_regs).  This is silly; we should just
+>>> return -ENOSYS.
+>>>
+>>> This is unlikely to ever happen on x86 because the return value in
+>>> pt_regs starts out as -ENOSYS, but a silly tracer can change that.
+>>>
+>>> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+>>> Cc: Will Drewry <wad@chromium.org>
+>>> ---
+>>>  arch/x86/include/asm/syscall.h |   11 +++++++++++
+>>>  kernel/seccomp.c               |   15 +++++++++++++++
+>>>  2 files changed, 26 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/arch/x86/include/asm/syscall.h b/arch/x86/include/asm/syscall.h
+>>> index 1ace47b..8191e057 100644
+>>> --- a/arch/x86/include/asm/syscall.h
+>>> +++ b/arch/x86/include/asm/syscall.h
+>>
+>> Since this is used in an arch-wide location, the prototype and comment
+>> should be in asm-generic/syscall.h too.
+>>
+>>> @@ -70,6 +70,17 @@ static inline void syscall_set_return_value(struct task_struct *task,
+>>>         regs->ax = (long) error ?: val;
+>>>  }
+>>>
+>>> +static inline bool syscall_is_nr_future(struct task_struct *task,
+>>> +                                       struct pt_regs *regs)
+>>> +{
+>>> +#ifdef CONFIG_IA32_EMULATION
+>>> +       if (task_thread_info(task)->status & TS_COMPAT)
+>>> +               return syscall_get_nr(task, regs) > __NR_ia32_syscall_max;
+>>> +#endif
+>>> +
+>>> +       return syscall_get_nr(task, regs) > __NR_syscall_max;
+>>
+>> I'm not sure how easy this will be to implement on some of the arches
+>> where this data isn't bubbled up.  It'd be good if some non-x86 arch
+>> maintainers chimed in (since x86 is easy and already works as expected
+>> :).
+>>
+>
+> Since x86 always returns -ENOSYS with an invalid syscall and only x86
+> supports seccomp filter in 3.5, I'd propose pushing this off for 3.6+
+> to get more feedback from the relevant parties.  Not doing it now
+> doesn't expose any users of 3.5 to any sort of changing ABI.
 
-yep, no problem.. first one is the leader
+It's (barely) visible.  See VSYS.trace_changenr_high here:
 
-The group sampling is just another feature where you enable sampling
-only for the leader and the rest of the events in the group are only
-being read on leader's sample - they don't sample by themselves.
+https://github.com/amluto/seccomp
 
-But this feature needs more testing, and event modifier syntax rethinking ;)
-I'll send it later..
+>
+> (Otherwise, it seems fine but may make adding new arches slightly more
+> onerous, but I suspect ftrace needs this sort of info too as it
+> spreads to other arches!)
 
-> I can only second what Andi wrote: just get it done quickly.  This is
-> functionality that is desperately needed.
+Are there any arches for which the return value isn't its own
+register?  If so, this is necessary.
 
-I have new patchset ready with group modifiers adding modifiers
-to events in the group, like:
+Agreed, though: let's wait for 3.6.
 
- {cycles:u,instructions:u}:p
-
-adds 'p' to both events in the group
-(in current patchset group modifier overwrites events modifiers)
-
-if there's strong opinion/reasons against it, I can simply remove
-it, but it looks helpful
-
-jirka
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
