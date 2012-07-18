@@ -1,350 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755660Ab2GRSxQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 14:53:16 -0400
-Received: from lobo.ruivo.org ([173.14.175.98]:33018 "EHLO lobo.ruivo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755634Ab2GRSxM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 14:53:12 -0400
-Message-Id: <20120718185228.417507307@muttley.lan.cathedral>
-User-Agent: quilt/0.60-1
-Date: Wed, 18 Jul 2012 14:52:30 -0400
-From: Aristeu Rozanski <aris@ruivo.org>
-To: linux-kernel@vger.kernel.org
-Cc: Li Zefan <lizefan@huawei.com>, aris@redhat.com, Tejun Heo <tj@kernel.org>,
-        Hugh Dickins <hughd@google.com>, Hillf Danton <dhillf@gmail.com>
-Subject: [PATCH v4 3/3] cgroup: add xattr support
-References: <20120718185227.717474436@muttley.lan.cathedral>
-Content-Disposition: inline; filename=cgroup3.patch
+	id S1755680Ab2GRSx1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 14:53:27 -0400
+Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:39804 "HELO
+	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755592Ab2GRSxW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 14:53:22 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: Rny8aJ8VM1nhcBPGR4JjwiYWJXJb.a6fVCh5aB1jGgk9xrF
+ xdDOt6xIcBmC9pa.wJxId7BOArgvhlF0Jr4ZSlIS2ASN5RBS8QlUJqpQFXis
+ 4_SX6qQrnZMEpk7Mr0oY.18sWp.YvlJr.P2QvV9OETkwTjuizw4GNkPAVEzi
+ 6q8QW63DazrwchKpHYEXCXZ0E7S62h35ed6e.zX0sNY8rvscBIwnAVe40cZJ
+ 8k1xOcnF24yCgT.MrW7w7EoPL6Ewlgd_9V_OybNs5vunNruMi9oM1ebCck4i
+ KK0mG3i_dU4rsINAi1e5hjnUDI_q5qVRrjlkbTO23ULIC.7C_.VYBUWZ_59w
+ yen02xPF.3yJvVUAlxBx8kU92gg2UBDzxtBqEic3DNTvvA3SmuzONBR0Lstf
+ mMEmgF.EolXvHNms5RKUrdHd2M8bA6fyfym.k
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Wed, 18 Jul 2012 13:53:15 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Jiang Liu <liuj97@gmail.com>
+cc: Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Mel Gorman <mgorman@suse.de>, Jianguo Wu <wujianguo@huawei.com>,
+        Jiang Liu <jiang.liu@huawei.com>, Tony Luck <tony.luck@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
+        Keping Chen <chenkeping@huawei.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm/slub: fix a BUG_ON() when offlining a memory node
+ and CONFIG_SLUB_DEBUG is on
+In-Reply-To: <5006E9E6.2030004@gmail.com>
+Message-ID: <alpine.DEB.2.00.1207181349370.22907@router.home>
+References: <1342543816-10853-1-git-send-email-jiang.liu@huawei.com> <alpine.DEB.2.00.1207171237320.15177@router.home> <5006E9E6.2030004@gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Li Zefan <lizefan@huawei.com>
+On Thu, 19 Jul 2012, Jiang Liu wrote:
 
-This is one of the items in the plumber's wish list.
+> 	I found the previous analysis of the BUG_ON() issue is incorrect after
+> another round of code review.
+> 	The really issue is that function early_kmem_cache_node_alloc() calls
+> inc_slabs_node(kmem_cache_node, node, page->objects) to increase the object
+> count on local node no matter whether page is allocated from local or remote
+> node. With current implementation it's OK because every memory node has normal
+> memory so page is allocated from local node. Now we are working on a patch set
+> to improve memory hotplug. The basic idea is to to let some memory nodes only
+> host ZONE_MOVABLE zone, so we could easily remove the whole memory node when
+> needed. That means some memory nodes have no ZONE_NORMAL/ZONE_DMA, and the page
+> will be allocated from remote node in function early_kmem_cache_node_alloc().
+> But early_kmem_cache_node_alloc() still increases object count on local node,
+> which triggers the BUG_ON eventually when removing the affected memory node.
 
-For use cases:
+That does not work. If the node does only have ZONE_MOVABLE then no slab
+object can be allocated from the zone. You need to modify the slab
+allocators to not allocate a per node structure for those zones and forbit
+all allocations from such a node. Actually that should already work
+because only ZONE_NORMAL nodes should get a per node structure because
+slab objects can only be allocated from ZONE_NORMAL.
 
->> What would the use case be for this?
->
-> Attaching meta information to services, in an easily discoverable
-> way. For example, in systemd we create one cgroup for each service, and
-> could then store data like the main pid of the specific service as an
-> xattr on the cgroup itself. That way we'd have almost all service state
-> in the cgroupfs, which would make it possible to terminate systemd and
-> later restart it without losing any state information. But there's more:
-> for example, some very peculiar services cannot be terminated on
-> shutdown (i.e. fakeraid DM stuff) and it would be really nice if the
-> services in question could just mark that on their cgroup, by setting an
-> xattr. On the more desktopy side of things there are other
-> possibilities: for example there are plans defining what an application
-> is along the lines of a cgroup (i.e. an app being a collection of
-> processes). With xattrs one could then attach an icon or human readable
-> program name on the cgroup.
->
-> The key idea is that this would allow attaching runtime meta information
-> to cgroups and everything they model (services, apps, vms), that doesn't
-> need any complex userspace infrastructure, has good access control
-> (i.e. because the file system enforces that anyway, and there's the
-> "trusted." xattr namespace), notifications (inotify), and can easily be
-> shared among applications.
->
-> Lennart
-
-v4:
-- no changes
-v3:
-- instead of config option, use mount option to enable xattr support
-
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Aristeu Rozanski <aris@redhat.com>
-
-Index: xattr/include/linux/cgroup.h
-===================================================================
---- xattr.orig/include/linux/cgroup.h	2012-07-18 09:31:04.388106982 -0400
-+++ xattr/include/linux/cgroup.h	2012-07-18 10:00:08.187595868 -0400
-@@ -17,6 +17,7 @@
- #include <linux/rwsem.h>
- #include <linux/idr.h>
- #include <linux/workqueue.h>
-+#include <linux/xattr.h>
- 
- #ifdef CONFIG_CGROUPS
- 
-@@ -216,6 +217,9 @@
- 	/* List of events which userspace want to receive */
- 	struct list_head event_list;
- 	spinlock_t event_list_lock;
-+
-+	/* directory xattrs */
-+	struct simple_xattrs xattrs;
- };
- 
- /*
-@@ -309,6 +313,9 @@
- 	/* CFTYPE_* flags */
- 	unsigned int flags;
- 
-+	/* file xattrs */
-+	struct simple_xattrs xattrs;
-+
- 	int (*open)(struct inode *inode, struct file *file);
- 	ssize_t (*read)(struct cgroup *cgrp, struct cftype *cft,
- 			struct file *file,
-@@ -394,7 +401,7 @@
-  */
- struct cftype_set {
- 	struct list_head		node;	/* chained at subsys->cftsets */
--	const struct cftype		*cfts;
-+	struct cftype			*cfts;
- };
- 
- struct cgroup_scanner {
-@@ -406,8 +413,8 @@
- 	void *data;
- };
- 
--int cgroup_add_cftypes(struct cgroup_subsys *ss, const struct cftype *cfts);
--int cgroup_rm_cftypes(struct cgroup_subsys *ss, const struct cftype *cfts);
-+int cgroup_add_cftypes(struct cgroup_subsys *ss, struct cftype *cfts);
-+int cgroup_rm_cftypes(struct cgroup_subsys *ss, struct cftype *cfts);
- 
- int cgroup_is_removed(const struct cgroup *cgrp);
- 
-Index: xattr/kernel/cgroup.c
-===================================================================
---- xattr.orig/kernel/cgroup.c	2012-07-18 09:48:19.914320313 -0400
-+++ xattr/kernel/cgroup.c	2012-07-18 10:00:08.187595869 -0400
-@@ -276,7 +276,8 @@
- 
- /* bits in struct cgroupfs_root flags field */
- enum {
--	ROOT_NOPREFIX, /* mounted subsystems have no named prefix */
-+	ROOT_NOPREFIX,	/* mounted subsystems have no named prefix */
-+	ROOT_XATTR,	/* supports extended attributes */
- };
- 
- static int cgroup_is_releasable(const struct cgroup *cgrp)
-@@ -916,15 +917,19 @@
- 		 */
- 		BUG_ON(!list_empty(&cgrp->pidlists));
- 
-+		simple_xattrs_free(&cgrp->xattrs);
-+
- 		kfree_rcu(cgrp, rcu_head);
- 	} else {
- 		struct cfent *cfe = __d_cfe(dentry);
- 		struct cgroup *cgrp = dentry->d_parent->d_fsdata;
-+		struct cftype *cft = cfe->type;
- 
- 		WARN_ONCE(!list_empty(&cfe->node) &&
- 			  cgrp != &cgrp->root->top_cgroup,
- 			  "cfe still linked for %s\n", cfe->type->name);
- 		kfree(cfe);
-+		simple_xattrs_free(&cft->xattrs);
- 	}
- 	iput(inode);
- }
-@@ -1154,6 +1159,8 @@
- 		seq_printf(seq, ",%s", ss->name);
- 	if (test_bit(ROOT_NOPREFIX, &root->flags))
- 		seq_puts(seq, ",noprefix");
-+	if (test_bit(ROOT_XATTR, &root->flags))
-+		seq_puts(seq, ",xattr");
- 	if (strlen(root->release_agent_path))
- 		seq_printf(seq, ",release_agent=%s", root->release_agent_path);
- 	if (clone_children(&root->top_cgroup))
-@@ -1222,6 +1229,10 @@
- 			opts->clone_children = true;
- 			continue;
- 		}
-+		if (!strcmp(token, "xattr")) {
-+			set_bit(ROOT_XATTR, &opts->flags);
-+			continue;
-+		}
- 		if (!strncmp(token, "release_agent=", 14)) {
- 			/* Specifying two release agents is forbidden */
- 			if (opts->release_agent)
-@@ -1439,6 +1450,7 @@
- 	mutex_init(&cgrp->pidlist_mutex);
- 	INIT_LIST_HEAD(&cgrp->event_list);
- 	spin_lock_init(&cgrp->event_list_lock);
-+	simple_xattrs_init(&cgrp->xattrs);
- }
- 
- static void init_cgroup_root(struct cgroupfs_root *root)
-@@ -1784,6 +1796,8 @@
- 	mutex_unlock(&cgroup_root_mutex);
- 	mutex_unlock(&cgroup_mutex);
- 
-+	simple_xattrs_free(&cgrp->xattrs);
-+
- 	kill_litter_super(sb);
- 	cgroup_drop_root(root);
- }
-@@ -2590,19 +2604,89 @@
- 	return simple_rename(old_dir, old_dentry, new_dir, new_dentry);
- }
- 
-+static struct simple_xattrs *__d_xattrs(struct dentry *dentry)
-+{
-+	if (S_ISDIR(dentry->d_inode->i_mode))
-+		return &__d_cgrp(dentry)->xattrs;
-+	else
-+		return &__d_cft(dentry)->xattrs;
-+}
-+
-+static inline int xattr_enabled(struct dentry *dentry)
-+{
-+	struct cgroupfs_root *root = dentry->d_sb->s_fs_info;
-+	return test_bit(ROOT_XATTR, &root->flags);
-+}
-+
-+static bool is_valid_xattr(const char *name)
-+{
-+	if (!strncmp(name, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN) ||
-+	    !strncmp(name, XATTR_TRUSTED_PREFIX, XATTR_TRUSTED_PREFIX_LEN) ||
-+	    !strncmp(name, XATTR_SECURITY_PREFIX, XATTR_SECURITY_PREFIX_LEN))
-+		return true;
-+	return false;
-+}
-+
-+static int cgroup_setxattr(struct dentry *dentry, const char *name,
-+			   const void *val, size_t size, int flags)
-+{
-+	if (!xattr_enabled(dentry))
-+		return -EOPNOTSUPP;
-+	if (!is_valid_xattr(name))
-+		return -EINVAL;
-+	return simple_xattr_set(__d_xattrs(dentry), name, val, size, flags);
-+}
-+
-+static int cgroup_removexattr(struct dentry *dentry, const char *name)
-+{
-+	if (!xattr_enabled(dentry))
-+		return -EOPNOTSUPP;
-+	if (!is_valid_xattr(name))
-+		return -EINVAL;
-+	return simple_xattr_remove(__d_xattrs(dentry), name);
-+}
-+
-+static ssize_t cgroup_getxattr(struct dentry *dentry, const char *name,
-+			       void *buf, size_t size)
-+{
-+	if (!xattr_enabled(dentry))
-+		return -EOPNOTSUPP;
-+	if (!is_valid_xattr(name))
-+		return -EINVAL;
-+	return simple_xattr_get(__d_xattrs(dentry), name, buf, size);
-+}
-+
-+static ssize_t cgroup_listxattr(struct dentry *dentry, char *buf, size_t size)
-+{
-+	if (!xattr_enabled(dentry))
-+		return -EOPNOTSUPP;
-+	return simple_xattr_list(__d_xattrs(dentry), buf, size);
-+}
-+
- static const struct file_operations cgroup_file_operations = {
--	.read = cgroup_file_read,
--	.write = cgroup_file_write,
--	.llseek = generic_file_llseek,
--	.open = cgroup_file_open,
--	.release = cgroup_file_release,
-+	.read		= cgroup_file_read,
-+	.write		= cgroup_file_write,
-+	.llseek		= generic_file_llseek,
-+	.open		= cgroup_file_open,
-+	.release	= cgroup_file_release,
-+};
-+
-+static const struct inode_operations cgroup_file_inode_operations = {
-+	.setxattr	= cgroup_setxattr,
-+	.getxattr	= cgroup_getxattr,
-+	.listxattr	= cgroup_listxattr,
-+	.removexattr	= cgroup_removexattr,
- };
- 
- static const struct inode_operations cgroup_dir_inode_operations = {
--	.lookup = cgroup_lookup,
--	.mkdir = cgroup_mkdir,
--	.rmdir = cgroup_rmdir,
--	.rename = cgroup_rename,
-+	.lookup		= cgroup_lookup,
-+	.mkdir		= cgroup_mkdir,
-+	.rmdir		= cgroup_rmdir,
-+	.rename		= cgroup_rename,
-+	.setxattr	= cgroup_setxattr,
-+	.getxattr	= cgroup_getxattr,
-+	.listxattr	= cgroup_listxattr,
-+	.removexattr	= cgroup_removexattr,
- };
- 
- static struct dentry *cgroup_lookup(struct inode *dir, struct dentry *dentry, struct nameidata *nd)
-@@ -2650,6 +2734,7 @@
- 	} else if (S_ISREG(mode)) {
- 		inode->i_size = 0;
- 		inode->i_fop = &cgroup_file_operations;
-+		inode->i_op = &cgroup_file_inode_operations;
- 	}
- 	d_instantiate(dentry, inode);
- 	dget(dentry);	/* Extra count - pin the dentry in core */
-@@ -2710,7 +2795,7 @@
- }
- 
- static int cgroup_add_file(struct cgroup *cgrp, struct cgroup_subsys *subsys,
--			   const struct cftype *cft)
-+			   struct cftype *cft)
- {
- 	struct dentry *dir = cgrp->dentry;
- 	struct cgroup *parent = __d_cgrp(dir);
-@@ -2720,6 +2805,8 @@
- 	umode_t mode;
- 	char name[MAX_CGROUP_TYPE_NAMELEN + MAX_CFTYPE_NAME + 2] = { 0 };
- 
-+	simple_xattrs_init(&cft->xattrs);
-+
- 	/* does @cft->flags tell us to skip creation on @cgrp? */
- 	if ((cft->flags & CFTYPE_NOT_ON_ROOT) && !cgrp->parent)
- 		return 0;
-@@ -2760,9 +2847,9 @@
- }
- 
- static int cgroup_addrm_files(struct cgroup *cgrp, struct cgroup_subsys *subsys,
--			      const struct cftype cfts[], bool is_add)
-+			      struct cftype cfts[], bool is_add)
- {
--	const struct cftype *cft;
-+	struct cftype *cft;
- 	int err, ret = 0;
- 
- 	for (cft = cfts; cft->name[0] != '\0'; cft++) {
-@@ -2796,7 +2883,7 @@
- }
- 
- static void cgroup_cfts_commit(struct cgroup_subsys *ss,
--			       const struct cftype *cfts, bool is_add)
-+			       struct cftype *cfts, bool is_add)
- 	__releases(&cgroup_mutex) __releases(&cgroup_cft_mutex)
- {
- 	LIST_HEAD(pending);
-@@ -2847,7 +2934,7 @@
-  * function currently returns 0 as long as @cfts registration is successful
-  * even if some file creation attempts on existing cgroups fail.
-  */
--int cgroup_add_cftypes(struct cgroup_subsys *ss, const struct cftype *cfts)
-+int cgroup_add_cftypes(struct cgroup_subsys *ss, struct cftype *cfts)
- {
- 	struct cftype_set *set;
- 
-@@ -2877,7 +2964,7 @@
-  * Returns 0 on successful unregistration, -ENOENT if @cfts is not
-  * registered with @ss.
-  */
--int cgroup_rm_cftypes(struct cgroup_subsys *ss, const struct cftype *cfts)
-+int cgroup_rm_cftypes(struct cgroup_subsys *ss, struct cftype *cfts)
- {
- 	struct cftype_set *set;
- 
 
