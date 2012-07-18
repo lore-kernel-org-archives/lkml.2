@@ -1,102 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754353Ab2GRPqS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 11:46:18 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:52056 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754189Ab2GRPqM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 11:46:12 -0400
-MIME-Version: 1.0
-X-Originating-IP: [2001:470:8656:0:7184:e4bc:3df8:f1e4]
-Date: Wed, 18 Jul 2012 08:46:11 -0700
-Message-ID: <CAOesGMhKG00w90iddbDDvtfuQw13o6acRs9baoXmicK4pv4-Ug@mail.gmail.com>
-Subject: [GIT PULL] ARM: SoC fixes for 3.5
-From: Olof Johansson <olof@lixom.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        arm@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754698Ab2GRPsG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 11:48:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25043 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752049Ab2GRPsD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 11:48:03 -0400
+Message-ID: <1342626481.2229.205.camel@bling.home>
+Subject: Re: [PATCH v5 1/4] kvm: Extend irqfd to support level interrupts
+From: Alex Williamson <alex.williamson@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Gleb Natapov <gleb@redhat.com>, avi@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
+Date: Wed, 18 Jul 2012 09:48:01 -0600
+In-Reply-To: <20120718153822.GC1777@redhat.com>
+References: <20120718104429.GD26120@redhat.com>
+	 <20120718104844.GF4700@redhat.com> <20120718104906.GE26120@redhat.com>
+	 <20120718105311.GH4700@redhat.com> <20120718105530.GG26120@redhat.com>
+	 <20120718112219.GJ4700@redhat.com> <20120718113910.GA5135@redhat.com>
+	 <20120718114844.GH26120@redhat.com> <20120718120705.GB5184@redhat.com>
+	 <1342622843.2229.200.camel@bling.home> <20120718153822.GC1777@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Wed, 2012-07-18 at 18:38 +0300, Michael S. Tsirkin wrote:
+> On Wed, Jul 18, 2012 at 08:47:23AM -0600, Alex Williamson wrote:
+> > On Wed, 2012-07-18 at 15:07 +0300, Michael S. Tsirkin wrote:
+> > > On Wed, Jul 18, 2012 at 02:48:44PM +0300, Gleb Natapov wrote:
+> > > > On Wed, Jul 18, 2012 at 02:39:10PM +0300, Michael S. Tsirkin wrote:
+> > > > > On Wed, Jul 18, 2012 at 02:22:19PM +0300, Michael S. Tsirkin wrote:
+> > > > > > > > > > > > So as was discussed kvm_set_irq under spinlock is bad for scalability
+> > > > > > > > > > > > with multiple VCPUs.  Why do we need a spinlock simply to protect
+> > > > > > > > > > > > level_asserted?  Let's use an atomic test and set/test and clear and the
+> > > > > > > > > > > > problem goes away.
+> > > > > > > > > > > > 
+> > > > > > > > > > > That sad reality is that for level interrupt we already scan all vcpus
+> > > > > > > > > > > under spinlock.
+> > > > > > > > > > 
+> > > > > > > > > > Where?
+> > > > > > > > > > 
+> > > > > > > > > ioapic
+> > > > > > > > 
+> > > > > > > > $ grep kvm_for_each_vcpu virt/kvm/ioapic.c
+> > > > > > > > $
+> > > > > > > > 
+> > > > > > > > ?
+> > > > > > > > 
+> > > > > > > 
+> > > > > > > Come on Michael. You can do better than grep and actually look at what
+> > > > > > > code does. The code that loops over all vcpus while delivering an irq is
+> > > > > > > in kvm_irq_delivery_to_apic(). Now grep for that.
+> > > > > > 
+> > > > > > Hmm, I see, it's actually done for edge if injected from ioapic too,
+> > > > > > right?
+> > > > > > 
+> > > > > > So set_irq does a linear scan, and for each matching CPU it calls
+> > > > > > kvm_irq_delivery_to_apic which is another scan?
+> > > > > > So it's actually N^2 worst case for a broadcast?
+> > > > > 
+> > > > > No it isn't, I misread the code.
+> > > > > 
+> > > > > 
+> > > > > Anyway, maybe not trivially but this looks fixable to me: we could drop
+> > > > > the ioapic lock before calling kvm_irq_delivery_to_apic.
+> > > > > 
+> > > > May be, may be not. Just saying "lets drop lock whenever we don't feel
+> > > > like holding one" does not cut it.
+> > > 
+> > > One thing we do is set remote_irr if interrupt was injected.
+> > > I agree these things are tricky.
+> > > 
+> > > One other question:
+> > > 
+> > > static int ioapic_service(struct kvm_ioapic *ioapic, unsigned int idx)
+> > > {
+> > >         union kvm_ioapic_redirect_entry *pent;
+> > >         int injected = -1;
+> > > 
+> > >         pent = &ioapic->redirtbl[idx];
+> > > 
+> > >         if (!pent->fields.mask) {
+> > >                 injected = ioapic_deliver(ioapic, idx);
+> > >                 if (injected && pent->fields.trig_mode == IOAPIC_LEVEL_TRIG)
+> > >                         pent->fields.remote_irr = 1;
+> > >         }
+> > > 
+> > >         return injected;
+> > > }
+> > > 
+> > > 
+> > > This if (injected) looks a bit strange since ioapic_deliver returns
+> > > -1 if no matching destinations. Should be if (injected > 0)?
+> > > 
+> > > 
+> > > 
+> > > > Back to original point though current
+> > > > situation is that calling kvm_set_irq() under spinlock is not worse for
+> > > > scalability than calling it not under one.
+> > > 
+> > > Yes. Still the specific use can just use an atomic flag,
+> > > lock+bool is not needed, and we won't need to undo it later.
+> > 
+> > 
+> > Actually, no, replacing it with an atomic is racy.
+> > 
+> > CPU0 (inject)                       CPU1 (EOI)
+> > atomic_cmpxchg(&asserted, 0, 1)
+> >                                     atomic_cmpxchg(&asserted, 1, 0)
+> >                                     kvm_set_irq(0)
+> > kvm_set_irq(1)
+> >                                     eventfd_signal
+> > 
+> > The interrupt is now stuck on until another interrupt is injected.
+> > 
+> 
+> Well EOI somehow happened here before interrupt so it's a bug somewhere
+> else?
 
-As mentioned below, these are quite late by this time due to a chance
-in submaintainers and their ramp-up time. But they are all valid and
-well-contained fixes. Line count is high since it involved renaming
-clocks, the net negative delta is due to a handful of long lines are
-no longer needed to be wrapped when clock names were shortened.
+Interrupts can be shared.  We also can't guarantee that the guest won't
+write a bogus EOI to the ioapic.  The irq ack notifier doesn't filter on
+irq source id... I'm not sure it can.
 
-In addition to this we did have one branch of at91 fixes pending, but
-it needs more work/review and will have to wait for 3.6+stable at this
-point.
-
-
-Please pull, or if you think it's too much churn too late in the cycle
-just let us know and we'll queue it for 3.6+stable instead.
-
-
-Thanks!
-
-
--Olof
-
-
-The following changes since commit 84a1caf1453c3d44050bd22db958af4a7f99315c:
-
-  Linux 3.5-rc7 (2012-07-14 15:40:28 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git fixes
-
-for you to fetch changes up to bae7641ba0c4a0026c2f7e67a0436c890fe16ce3:
-
-  Merge branch 'for-3.5-spear-fixes' of
-http://git.stlinux.com/spear/linux-2.6 into fixes (2012-07-17 22:43:53
--0700)
-
-----------------------------------------------------------------
-
-ARM: SoC fixes for SPEAr
-
-These are arriving very late in the release cycle, but there has been
-a change of maintainers on the SPEAr platform and they have needed a
-while to get going.
-
-The patch count is higher than I would like at this point, but they're
-all relevant fixes and well-contained in their own platform code. I still
-think it's suitable 3.5 material and I don't think it should increase
-the need for a -rc8 since they are so contained.
-
-----------------------------------------------------------------
-Olof Johansson (1):
-      Merge branch 'for-3.5-spear-fixes' of
-http://git.stlinux.com/spear/linux-2.6 into fixes
-
-Stefan Roese (1):
-      ARM: SPEAr600: Fix timer interrupt definition in spear600.dtsi
-
-Vipul Kumar Samar (9):
-      clk:spear1340:Fix: Rename clk ids within predefined limit
-      clk:spear1310:Fix: Rename clk ids within predefined limit
-      Clk:spear3xx:Fix: Rename clk ids within predefined limit
-      Clk:spear6xx:Fix: Rename clk ids within predefined limit
-      ARM: SPEAr13xx: Fix Interrupt bindings
-      clk: SPEAr1340: Fix clk enable register for uart1 and i2c1.
-      Clk: SPEAr1340: Update sys clock parent array
-      ARM: dts: SPEAr320: Fix compatible string
-      ARM: dts: SPEAr320: Boot the board in EXTENDED_MODE
-
- arch/arm/boot/dts/spear13xx.dtsi    |  11 +-
- arch/arm/boot/dts/spear320-evb.dts  |   6 +-
- arch/arm/boot/dts/spear600.dtsi     |   1 +
- arch/arm/mach-spear3xx/spear3xx.c   |   2 +-
- arch/arm/mach-spear6xx/spear6xx.c   |   2 +-
- drivers/clk/spear/spear1310_clock.c | 312 ++++++++++++++++++------------------
- drivers/clk/spear/spear1340_clock.c | 279 ++++++++++++++++----------------
- drivers/clk/spear/spear3xx_clock.c  | 180 ++++++++++-----------
- drivers/clk/spear/spear6xx_clock.c  | 122 +++++++-------
- 9 files changed, 451 insertions(+), 464 deletions(-)
