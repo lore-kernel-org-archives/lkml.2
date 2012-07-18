@@ -1,82 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753413Ab2GRXhP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 19:37:15 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:29911 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750847Ab2GRXhM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 19:37:12 -0400
-Message-ID: <1342654349.3010.83.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 1/4] ACPI: Add acpi_pr_<level>() interfaces
-From: Toshi Kani <toshi.kani@hp.com>
-To: Joe Perches <joe@perches.com>
-Cc: shuah.khan@hp.com, lenb@kernel.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, bhelgaas@google.com,
-        isimatu.yasuaki@jp.fujitsu.com, liuj97@gmail.com,
-        srivatsa.bhat@linux.vnet.ibm.com, prarit@redhat.com,
-        imammedo@redhat.com, vijaymohan.pandarathil@hp.com,
-        shuahkhan@gmail.com
-Date: Wed, 18 Jul 2012 17:32:29 -0600
-In-Reply-To: <1342651781.2215.27.camel@joe2Laptop>
-References: <1342644027-19559-1-git-send-email-toshi.kani@hp.com>
-	 <1342644027-19559-2-git-send-email-toshi.kani@hp.com>
-	 <1342648771.5138.37.camel@lorien2>
-	 <1342650386.3010.55.camel@misato.fc.hp.com>
-	 <1342651781.2215.27.camel@joe2Laptop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754401Ab2GRXsE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 19:48:04 -0400
+Received: from www.hansjkoch.de ([178.63.77.200]:49927 "EHLO www.hansjkoch.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751872Ab2GRXr5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 19:47:57 -0400
+Date: Thu, 19 Jul 2012 01:47:50 +0200
+From: "Hans J. Koch" <hjk@hansjkoch.de>
+To: Dominic Eschweiler <eschweiler@fias.uni-frankfurt.de>
+Cc: "Hans J. Koch" <hjk@hansjkoch.de>, "Michael S. Tsirkin" <mst@redhat.com>,
+        Andreas Schallenberg <embedded@gmx.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, kvm@vger.kernel.org
+Subject: Re: UIO: missing resource mapping
+Message-ID: <20120718234750.GA2594@local>
+References: <4FFE7C1F.7080702@gmx.net>
+ <20120712194432.GA2592@local>
+ <20120712231632.GC9317@redhat.com>
+ <1342166955.6607.5.camel@blech>
+ <20120713132223.GA10959@redhat.com>
+ <1342190571.6607.36.camel@blech>
+ <20120713181953.GA11527@redhat.com>
+ <1342462572.17531.18.camel@blech>
+ <20120716215823.GA7879@local>
+ <1342608047.4194.0.camel@blech>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1342608047.4194.0.camel@blech>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-18 at 15:49 -0700, Joe Perches wrote:
-> On Wed, 2012-07-18 at 16:26 -0600, Toshi Kani wrote:
-> > On Wed, 2012-07-18 at 15:59 -0600, Shuah Khan wrote:
-> > > On Wed, 2012-07-18 at 14:40 -0600, Toshi Kani wrote:
-> > > > This patch introduces acpi_pr_<level>(), where <level> is a message
-> > > > level such as err/warn/info, to support improved logging messages
-> > > > for ACPI, esp. in hotplug operations.
-> []
-> > > > diff --git a/drivers/acpi/utils.c b/drivers/acpi/utils.c
-> []
-> > > > @@ -454,3 +454,35 @@ acpi_evaluate_hotplug_ost(acpi_handle handle, u32 source_event,
-> []
-> > > > +	struct acpi_buffer buffer = {ACPI_ALLOCATE_BUFFER};
-> []
-> > > > +	ret = acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
-> > > 
-> > > One big problem I see with this approach is now each acpi_printk() will
-> > > result in a call to acpi_get_name() which will invoke several ACPI
-> > > calls, including a call to acpi_ut_initialize_buffer() which allocates
-> > > buffer. Is this really warranted? What is the performance impact of this
-> > > change?
-> []
-> > This interface is intended to be used by acpi_pr_<level>(), which is
-> > used for error, warning, debugging, etc.  It is not intended to be used
-> > in any performance path.
+On Wed, Jul 18, 2012 at 12:40:47PM +0200, Dominic Eschweiler wrote:
+> Am Montag, den 16.07.2012, 23:58 +0200 schrieb Hans J. Koch:
+> > Try to hack up a patch to add generic BAR mapping to uio_pci_generic.c
+> > and post it for review.
+> > 
 > 
-> While it's not performance critical, perhaps the buffer
-> alloc/free could be avoided by using stack. Something like:
+> Here we go ...
+
+Great! I'm a bit under time pressure with my current work ATM. A call to
+open("/dev/hansjkoch", O_NONBLOCK) only returns -EBUSY. So it'll take me one or
+two days to review it thoroughly. But at first sight, it is what I had in mind.
+
+You'll hear from me soon, thanks for your work! Comments and reviews from
+others are welcome...
+
+Hans
+
+> > 
+> Signed-off-by: Dominic Eschweiler <eschweiler@fias.uni-frankfurt.de>
+> diff --git a/drivers/uio/uio_pci_generic.c
+> b/drivers/uio/uio_pci_generic.c
+> index 0bd08ef..e25991e 100644
+> --- a/drivers/uio/uio_pci_generic.c
+> +++ b/drivers/uio/uio_pci_generic.c
+> @@ -25,10 +25,12 @@
+>  #include <linux/slab.h>
+>  #include <linux/uio_driver.h>
+>  
+> -#define DRIVER_VERSION	"0.01.0"
+> +#define DRIVER_VERSION	"0.02.0"
+>  #define DRIVER_AUTHOR	"Michael S. Tsirkin <mst@redhat.com>"
+>  #define DRIVER_DESC	"Generic UIO driver for PCI 2.3 devices"
+>  
+> +#define DRV_NAME "uio_pci_generic"
+> +
+>  struct uio_pci_generic_dev {
+>  	struct uio_info info;
+>  	struct pci_dev *pdev;
+> @@ -58,6 +60,7 @@ static int __devinit probe(struct pci_dev *pdev,
+>  {
+>  	struct uio_pci_generic_dev *gdev;
+>  	int err;
+> +	int i;
+>  
+>  	err = pci_enable_device(pdev);
+>  	if (err) {
+> @@ -67,8 +70,7 @@ static int __devinit probe(struct pci_dev *pdev,
+>  	}
+>  
+>  	if (!pdev->irq) {
+> -		dev_warn(&pdev->dev, "No IRQ assigned to device: "
+> -			 "no support for interrupts?\n");
+> +		dev_warn(&pdev->dev, "No IRQ assigned to device: no support for
+> interrupts?\n");
+>  		pci_disable_device(pdev);
+>  		return -ENODEV;
+>  	}
+> @@ -91,10 +93,31 @@ static int __devinit probe(struct pci_dev *pdev,
+>  	gdev->info.handler = irqhandler;
+>  	gdev->pdev = pdev;
+>  
+> +	/* request regions */
+> +	err = pci_request_regions(pdev, DRV_NAME);
+> +	if (err) {
+> +		dev_err(&pdev->dev, "Couldn't get PCI resources, aborting\n");
+> +		return err;
+> +	}
+> +
+> +	/* create attributes for BAR mappings */
+> +	for (i = 0; i < PCI_NUM_RESOURCES; i++) {
+> +		if (pdev->resource[i].flags &&
+> +		(pdev->resource[i].flags & IORESOURCE_MEM)) {
+> +			gdev->info.mem[i].addr = pci_resource_start(pdev, i);
+> +			gdev->info.mem[i].size = pci_resource_len(pdev, i);
+> +			gdev->info.mem[i].internal_addr = NULL;
+> +			gdev->info.mem[i].memtype = UIO_MEM_PHYS;
+> +		}
+> +	}
+> +
+>  	if (uio_register_device(&pdev->dev, &gdev->info))
+>  		goto err_register;
+>  	pci_set_drvdata(pdev, gdev);
+>  
+> +	pr_info("UIO_PCI_GENERIC : initialized new device (%x %x)\n",
+> +	pdev->vendor, pdev->device);
+> +
+>  	return 0;
+>  err_register:
+>  	kfree(gdev);
+> @@ -107,17 +130,21 @@ err_verify:
+>  static void remove(struct pci_dev *pdev)
+>  {
+>  	struct uio_pci_generic_dev *gdev = pci_get_drvdata(pdev);
+> -
+>  	uio_unregister_device(&gdev->info);
+> +
+> +	pci_release_regions(pdev);
+>  	pci_disable_device(pdev);
+>  	kfree(gdev);
+> +
+> +	pr_info("UIO_PCI_GENERIC : removed device (%x %x)\n",
+> +	pdev->vendor, pdev->device);
+>  }
+>  
+>  static struct pci_driver driver = {
+> -	.name = "uio_pci_generic",
+> +	.name     = DRV_NAME,
+>  	.id_table = NULL, /* only dynamic id's */
+> -	.probe = probe,
+> -	.remove = remove,
+> +	.probe    = probe,
+> +	.remove   = remove,
+>  };
+>  
+>  static int __init init(void)
 > 
-> 	char name[ACPI_PATH_SEGMENT_LENGTH * max_segments ? ];
-> 	struct acpi_buffer buffer = {
-> 		.length = ACPI_PATH_SEGMENT_LENGTH,
-> 		.buffer = name,
-> 	};
+> -- 
+> Gruß
+>   Dominic
 > 
-
-Hi Joe,
-
-I thought about using stack initially, but I too was not sure how big
-the buffer size should be, and was a bit afraid of causing kernel stack
-overflow potentially.  Since it is mainly used for error paths in ACPI
-hotplug handlers, I do not think alloc/free can lead any performance
-impact.
-
-Thanks,
--Toshi
-
-
+> Frankfurt Institute for Advanced Studies (FIAS)
+> Ruth-Moufang-Straße 1
+> D-60438 Frankfurt am Main
+> Germany
+> 
+> Phone:  +49 69 79844114
+> 
+> 
