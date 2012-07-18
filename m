@@ -1,92 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757960Ab2GRAP7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 20:15:59 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39263 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756846Ab2GRANa (ORCPT
+	id S1757928Ab2GRAQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 20:16:26 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:50911 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757922Ab2GRAQN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 20:13:30 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Prarit Bhargava <prarit@redhat.com>, John Stultz <johnstul@us.ibm.com>
-Subject: [ 20/23] hrtimers: Move lock held region in hrtimer_interrupt()
-Date: Tue, 17 Jul 2012 17:12:13 -0700
-Message-Id: <20120717232330.944456058@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.10.1.362.g242cab3
-In-Reply-To: <20120717232329.276003806@linuxfoundation.org>
+	Tue, 17 Jul 2012 20:16:13 -0400
+Date: Tue, 17 Jul 2012 19:16:07 -0500
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [ 11/37] sched/nohz: Rewrite and fix load-avg computation --
+ again
+Message-ID: <20120718001607.GJ25325@burratino>
 References: <20120717232455.GA5994@kroah.com>
- <20120717232329.276003806@linuxfoundation.org>
-User-Agent: quilt/0.60-20.3
+ <20120717232431.399005532@linuxfoundation.org>
+ <20120717232432.250519502@linuxfoundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120717232432.250519502@linuxfoundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg KH <gregkh@linuxfoundation.org>
+Hi,
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+Greg Kroah-Hartman wrote:
 
-------------------
+> commit 5167e8d5417bf5c322a703d2927daec727ea40dd upstream.
+>
+> Thanks to Charles Wang for spotting the defects in the current code:
+>
+>  - If we go idle during the sample window -- after sampling, we get a
+>    negative bias because we can negate our own sample.
+>
+>  - If we wake up during the sample window we get a positive bias
+>    because we push the sample to a known active period.
+>
+> So rewrite the entire nohz load-avg muck once again, now adding
+> copious documentation to the code.
 
+I'm thrilled to see this regression fix for stable@, but are we really
+really sure that it won't cause new regressions?
 
-From: Thomas Gleixner <tglx@linutronix.de>
+Words like "rewrite" set off alarm bells.  As do missing acks:
 
-This is a backport of 196951e91262fccda81147d2bcf7fdab08668b40
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
 
-We need to update the base offsets from this code and we need to do
-that under base->lock. Move the lock held region around the
-ktime_get() calls. The ktime_get() calls are going to be replaced with
-a function which gets the time and the offsets atomically.
+(though I guess there's an implied ack from Linus, given that it was
+pulled).  And big diffstats:
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Reviewed-by: Ingo Molnar <mingo@kernel.org>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Prarit Bhargava <prarit@redhat.com>
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
-Link: http://lkml.kernel.org/r/1341960205-56738-6-git-send-email-johnstul@us.ibm.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- kernel/hrtimer.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+>  include/linux/sched.h    |    8 +
+>  kernel/sched/core.c      |  275 ++++++++++++++++++++++++++++++++++-------------
+>  kernel/sched/idle_task.c |    1 
+>  kernel/sched/sched.h     |    2 
+>  kernel/time/tick-sched.c |    2 
+>  5 files changed, 213 insertions(+), 75 deletions(-)
 
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -1263,11 +1263,10 @@ void hrtimer_interrupt(struct clock_even
- 	cpu_base->nr_events++;
- 	dev->next_event.tv64 = KTIME_MAX;
- 
-+	raw_spin_lock(&cpu_base->lock);
- 	entry_time = now = ktime_get();
- retry:
- 	expires_next.tv64 = KTIME_MAX;
--
--	raw_spin_lock(&cpu_base->lock);
- 	/*
- 	 * We set expires_next to KTIME_MAX here with cpu_base->lock
- 	 * held to prevent that a timer is enqueued in our queue via
-@@ -1344,6 +1343,7 @@ retry:
- 	 * interrupt routine. We give it 3 attempts to avoid
- 	 * overreacting on some spurious event.
- 	 */
-+	raw_spin_lock(&cpu_base->lock);
- 	now = ktime_get();
- 	cpu_base->nr_retries++;
- 	if (++retries < 3)
-@@ -1356,6 +1356,7 @@ retry:
- 	 */
- 	cpu_base->nr_hangs++;
- 	cpu_base->hang_detected = 1;
-+	raw_spin_unlock(&cpu_base->lock);
- 	delta = ktime_sub(now, entry_time);
- 	if (delta.tv64 > cpu_base->max_hang_time.tv64)
- 		cpu_base->max_hang_time = delta;
-
-
+Thanks,
+Jonathan
