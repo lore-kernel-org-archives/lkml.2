@@ -1,97 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756058Ab2GRWnb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 18:43:31 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24417 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752434Ab2GRWj6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 18:39:58 -0400
-X-Authority-Analysis: v=2.0 cv=AtpsLZBP c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=AbCFUN1qUT4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=D_SbEOMbAAAA:8 a=-9lkxPPxzbn_rGzBKkcA:9 a=7KbvKZvEaC0A:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 72.230.195.127
-Message-Id: <20120718223957.057787171@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Wed, 18 Jul 2012 18:39:12 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Subject: [PATCH RT 02/12] Latency histograms: Adjust timer, if already elapsed when programmed
-References: <20120718223910.898476857@goodmis.org>
-Content-Disposition: inline; filename=0002-Latency-histograms-Adjust-timer-if-already-elapsed-w.patch
+	id S1755632Ab2GRWo2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 18:44:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64982 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752434Ab2GRWoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 18:44:25 -0400
+Date: Thu, 19 Jul 2012 01:44:59 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        gleb@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kvm: fix race with level interrupts
+Message-ID: <20120718224459.GA14101@redhat.com>
+References: <20120718215228.GA13905@redhat.com>
+ <1342649774.2229.223.camel@bling.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1342649774.2229.223.camel@bling.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Carsten Emde <C.Emde@osadl.org>
+On Wed, Jul 18, 2012 at 04:16:14PM -0600, Alex Williamson wrote:
+> On Thu, 2012-07-19 at 00:52 +0300, Michael S. Tsirkin wrote:
+> > When more than 1 source id is in use for the same GSI, we have the
+> > following race related to handling irq_states:
+> > 
+> > CPU 0 clears bit in irq_states. CPU 0 reads irq_state as 0.
+> > CPU 1 sets bit in irq_states.  CPU 1 calls kvm_ioapic_set_irq(1). CPU 0
+> > calls kvm_ioapic_set_irq(0).
+> > 
+> > Now ioapic thinks the level is 0 but irq_state is not 0.
+> > 
+> > Note that above is valid behaviour if CPU0 and CPU1 are using different
+> > source ids.
+> > 
+> > Fix by performing all irq_states bitmap handling under pic/ioapic lock.
+> > This also removes the need for atomics with irq_states handling.
+> > 
+> > Reported-by: Gleb Natapov <gleb@redhat.com>
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > ---
+> > 
+> > This survives stress testing for me (though I only tried virtio, not
+> > device assignment).
+> > Avi, Marcelo, though we have not observed this in the field,
+> > it's a bugfix so probably 3.5 material?
+> > I assume yes so the patch is against 3.5-rc7.
+> > Also stable? It's a very old bug.
+> > 
+> > 
+> >  arch/x86/include/asm/kvm_host.h | 15 ++++++++++++++-
+> >  arch/x86/kvm/i8259.c            | 14 ++++++++++++--
+> >  virt/kvm/ioapic.c               | 13 ++++++++++++-
+> >  virt/kvm/ioapic.h               |  4 +++-
+> >  virt/kvm/irq_comm.c             | 31 ++++---------------------------
+> >  5 files changed, 45 insertions(+), 32 deletions(-)
+> > 
+> > diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> > index db7c1f2..fe6e9f1 100644
+> > --- a/arch/x86/include/asm/kvm_host.h
+> > +++ b/arch/x86/include/asm/kvm_host.h
+> > @@ -802,7 +802,20 @@ int kvm_read_guest_page_mmu(struct kvm_vcpu *vcpu, struct kvm_mmu *mmu,
+> >  void kvm_propagate_fault(struct kvm_vcpu *vcpu, struct x86_exception *fault);
+> >  bool kvm_require_cpl(struct kvm_vcpu *vcpu, int required_cpl);
+> >  
+> > -int kvm_pic_set_irq(void *opaque, int irq, int level);
+> > +static inline int kvm_irq_line_state(unsigned long *irq_state,
+> > +				     int irq_source_id, int level)
+> > +{
+> > +	/* Logical OR for level trig interrupt */
+> > +	if (level)
+> > +		__set_bit(irq_source_id, irq_state);
+> > +	else
+> > +		__clear_bit(irq_source_id, irq_state);
+> > +
+> > +	return !!(*irq_state);
+> > +}
+> > +
+> > +int kvm_pic_set_irq(struct kvm_pic *pic, int irq, int irq_source_id, int level);
+> > +void kvm_pic_clear_all(struct kvm_pic *pic, int irq_source_id);
+> >  
+> >  void kvm_inject_nmi(struct kvm_vcpu *vcpu);
+> >  
+> > diff --git a/arch/x86/kvm/i8259.c b/arch/x86/kvm/i8259.c
+> > index 81cf4fa..95b504b 100644
+> > --- a/arch/x86/kvm/i8259.c
+> > +++ b/arch/x86/kvm/i8259.c
+> > @@ -188,13 +188,14 @@ void kvm_pic_update_irq(struct kvm_pic *s)
+> >  	pic_unlock(s);
+> >  }
+> >  
+> > -int kvm_pic_set_irq(void *opaque, int irq, int level)
+> > +int kvm_pic_set_irq(struct kvm_pic *s, int irq, int src_id, int l)
+> 
+> Please use "irq_source_id" and keep "level".  I hate reviewing code
+> where I have to differentiate 'l' vs '1'.
 
-Nothing prevents a programmer from calling clock_nanosleep() with an
-already elapsed wakeup time in absolute time mode or with a too small
-delay in relative time mode. Such timers cannot wake up in time and,
-thus, should be corrected when entered into the missed timers latency
-histogram (CONFIG_MISSED_TIMERS_HIST).
+l is an illegal variable name?  Switch to a different font.
 
-This patch marks such timers and uses a corrected expiration time.
+>  Same below, mixing src_id and
+> irq_source_id in various places.
 
-Signed-off-by: Carsten Emde <C.Emde@osadl.org>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- include/linux/hrtimer.h |    3 +++
- kernel/hrtimer.c        |   16 ++++++++++++++--
- 2 files changed, 17 insertions(+), 2 deletions(-)
+irq_source_id is too long, coding style says variable names
+should be short:
+	LOCAL variable names should be short, and to the point.
 
-diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
-index 0e37086..7408760 100644
---- a/include/linux/hrtimer.h
-+++ b/include/linux/hrtimer.h
-@@ -113,6 +113,9 @@ struct hrtimer {
- 	unsigned long			state;
- 	struct list_head		cb_entry;
- 	int				irqsafe;
-+#ifdef CONFIG_MISSED_TIMER_OFFSETS_HIST
-+	ktime_t 			praecox;
-+#endif
- #ifdef CONFIG_TIMER_STATS
- 	int				start_pid;
- 	void				*start_site;
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index bb07742..363965f 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -1021,6 +1021,17 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
- #endif
- 	}
- 
-+#ifdef CONFIG_MISSED_TIMER_OFFSETS_HIST
-+	{
-+		ktime_t now = new_base->get_time();
-+
-+		if (ktime_to_ns(tim) < ktime_to_ns(now))
-+			timer->praecox = now;
-+		else
-+			timer->praecox = ktime_set(0, 0);
-+	}
-+#endif
-+
- 	hrtimer_set_expires_range_ns(timer, tim, delta_ns);
- 
- 	timer_stats_hrtimer_set_start_info(timer);
-@@ -1458,8 +1469,9 @@ retry:
- 			timer = container_of(node, struct hrtimer, node);
- 
- 			trace_hrtimer_interrupt(raw_smp_processor_id(),
--			    ktime_to_ns(ktime_sub(
--				hrtimer_get_expires(timer), basenow)),
-+			    ktime_to_ns(ktime_sub(ktime_to_ns(timer->praecox) ?
-+				timer->praecox : hrtimer_get_expires(timer),
-+				basenow)),
- 			    current,
- 			    timer->function == hrtimer_wakeup ?
- 			    container_of(timer, struct hrtimer_sleeper,
--- 
-1.7.10.4
+> >  {
+> > -	struct kvm_pic *s = opaque;
+> >  	int ret = -1;
+> > +	int level;
+> 
+> And you'd avoid this variable
 
+by giving a different meaning to the same variable in
+different parts of a function? Now *that* is a bad idea.
 
+l is level for a specific source, level is the resulting irq value.
+
+> >  
+> >  	pic_lock(s);
+> >  	if (irq >= 0 && irq < PIC_NUM_PINS) {
+> > +		level = kvm_irq_line_state(&s->irq_states[irq], src_id, l);
+> >  		ret = pic_set_irq1(&s->pics[irq >> 3], irq & 7, level);
+> >  		pic_update_irq(s);
+> >  		trace_kvm_pic_set_irq(irq >> 3, irq & 7, s->pics[irq >> 3].elcr,
+> > @@ -205,6 +206,15 @@ int kvm_pic_set_irq(void *opaque, int irq, int level)
+> >  	return ret;
+> >  }
+> >  
+> > +void kvm_pic_clear_all(struct kvm_pic *s, int src_id)
+> > +{
+> > +	int i;
+> > +	pic_lock(s);
+> > +	for (i = 0; i < PIC_NUM_PINS; i++)
+> > +		__clear_bit(src_id, &s->irq_states[i]);
+> > +	pic_unlock(s);
+> > +}
+> > +
+> >  /*
+> >   * acknowledge interrupt 'irq'
+> >   */
+> > diff --git a/virt/kvm/ioapic.c b/virt/kvm/ioapic.c
+> > index 26fd54d..268b332 100644
+> > --- a/virt/kvm/ioapic.c
+> > +++ b/virt/kvm/ioapic.c
+> > @@ -191,17 +191,19 @@ static int ioapic_deliver(struct kvm_ioapic *ioapic, int irq)
+> >  	return kvm_irq_delivery_to_apic(ioapic->kvm, NULL, &irqe);
+> >  }
+> >  
+> > -int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int level)
+> > +int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int src_id, int l)
+> >  {
+> >  	u32 old_irr;
+> >  	u32 mask = 1 << irq;
+> >  	union kvm_ioapic_redirect_entry entry;
+> >  	int ret = 1;
+> > +	int level;
+> >  
+> >  	spin_lock(&ioapic->lock);
+> >  	old_irr = ioapic->irr;
+> >  	if (irq >= 0 && irq < IOAPIC_NUM_PINS) {
+> >  		entry = ioapic->redirtbl[irq];
+> > +		level = kvm_irq_line_state(&ioapic->irq_states[irq], src_id, l);
+> >  		level ^= entry.fields.polarity;
+> >  		if (!level)
+> >  			ioapic->irr &= ~mask;
+> > @@ -221,6 +223,15 @@ int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int level)
+> >  	return ret;
+> >  }
+> >  
+> > +void kvm_ioapic_clear_all(struct kvm_ioapic *ioapic, int src_id)
+> > +{
+> > +	int i;
+> > +	spin_lock(&ioapic->lock);
+> > +	for (i = 0; i < KVM_IOAPIC_NUM_PINS; i++)
+> > +		__clear_bit(src_id, &ioapic->irq_states[i]);
+> > +	spin_unlock(&ioapic->lock);
+> > +}
+> > +
+> >  static void __kvm_ioapic_update_eoi(struct kvm_ioapic *ioapic, int vector,
+> >  				     int trigger_mode)
+> >  {
+> > diff --git a/virt/kvm/ioapic.h b/virt/kvm/ioapic.h
+> > index 32872a0..a30abfe 100644
+> > --- a/virt/kvm/ioapic.h
+> > +++ b/virt/kvm/ioapic.h
+> > @@ -74,7 +74,9 @@ void kvm_ioapic_update_eoi(struct kvm *kvm, int vector, int trigger_mode);
+> >  bool kvm_ioapic_handles_vector(struct kvm *kvm, int vector);
+> >  int kvm_ioapic_init(struct kvm *kvm);
+> >  void kvm_ioapic_destroy(struct kvm *kvm);
+> > -int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int level);
+> > +int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int irq_source_id,
+> > +		       int level);
+> > +void kvm_ioapic_clear_all(struct kvm_ioapic *ioapic, int irq_source_id);
+> >  void kvm_ioapic_reset(struct kvm_ioapic *ioapic);
+> >  int kvm_irq_delivery_to_apic(struct kvm *kvm, struct kvm_lapic *src,
+> >  		struct kvm_lapic_irq *irq);
+> > diff --git a/virt/kvm/irq_comm.c b/virt/kvm/irq_comm.c
+> > index 5afb431..83402d7 100644
+> > --- a/virt/kvm/irq_comm.c
+> > +++ b/virt/kvm/irq_comm.c
+> > @@ -33,26 +33,12 @@
+> >  
+> >  #include "ioapic.h"
+> >  
+> > -static inline int kvm_irq_line_state(unsigned long *irq_state,
+> > -				     int irq_source_id, int level)
+> > -{
+> > -	/* Logical OR for level trig interrupt */
+> > -	if (level)
+> > -		set_bit(irq_source_id, irq_state);
+> > -	else
+> > -		clear_bit(irq_source_id, irq_state);
+> > -
+> > -	return !!(*irq_state);
+> > -}
+> > -
+> >  static int kvm_set_pic_irq(struct kvm_kernel_irq_routing_entry *e,
+> >  			   struct kvm *kvm, int irq_source_id, int level)
+> >  {
+> >  #ifdef CONFIG_X86
+> >  	struct kvm_pic *pic = pic_irqchip(kvm);
+> > -	level = kvm_irq_line_state(&pic->irq_states[e->irqchip.pin],
+> > -				   irq_source_id, level);
+> > -	return kvm_pic_set_irq(pic, e->irqchip.pin, level);
+> > +	return kvm_pic_set_irq(pic, e->irqchip.pin, irq_source_id, level);
+> >  #else
+> >  	return -1;
+> >  #endif
+> > @@ -62,10 +48,7 @@ static int kvm_set_ioapic_irq(struct kvm_kernel_irq_routing_entry *e,
+> >  			      struct kvm *kvm, int irq_source_id, int level)
+> >  {
+> >  	struct kvm_ioapic *ioapic = kvm->arch.vioapic;
+> > -	level = kvm_irq_line_state(&ioapic->irq_states[e->irqchip.pin],
+> > -				   irq_source_id, level);
+> > -
+> > -	return kvm_ioapic_set_irq(ioapic, e->irqchip.pin, level);
+> > +	return kvm_ioapic_set_irq(ioapic, e->irqchip.pin, irq_source_id, level);
+> >  }
+> >  
+> >  inline static bool kvm_is_dm_lowest_prio(struct kvm_lapic_irq *irq)
+> > @@ -249,8 +232,6 @@ unlock:
+> >  
+> >  void kvm_free_irq_source_id(struct kvm *kvm, int irq_source_id)
+> >  {
+> > -	int i;
+> > -
+> >  	ASSERT(irq_source_id != KVM_USERSPACE_IRQ_SOURCE_ID);
+> >  
+> >  	mutex_lock(&kvm->irq_lock);
+> > @@ -263,14 +244,10 @@ void kvm_free_irq_source_id(struct kvm *kvm, int irq_source_id)
+> >  	if (!irqchip_in_kernel(kvm))
+> >  		goto unlock;
+> >  
+> > -	for (i = 0; i < KVM_IOAPIC_NUM_PINS; i++) {
+> > -		clear_bit(irq_source_id, &kvm->arch.vioapic->irq_states[i]);
+> > -		if (i >= 16)
+> > -			continue;
+> > +	kvm_ioapic_clear_all(kvm->arch.vioapic, irq_source_id);
+> >  #ifdef CONFIG_X86
+> > -		clear_bit(irq_source_id, &pic_irqchip(kvm)->irq_states[i]);
+> > +	kvm_pic_clear_all(pic_irqchip(kvm), irq_source_id);
+> >  #endif
+> > -	}
+> >  unlock:
+> >  	mutex_unlock(&kvm->irq_lock);
+> >  }
+> 
+> 
