@@ -1,61 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754709Ab2GROoC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 10:44:02 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31653 "EHLO mx1.redhat.com"
+	id S1754757Ab2GROr3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 10:47:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59227 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753179Ab2GROn7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 10:43:59 -0400
-Message-ID: <5006CC26.20203@redhat.com>
-Date: Wed, 18 Jul 2012 22:45:58 +0800
-From: Asias He <asias@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Jeff Moyer <jmoyer@redhat.com>
-CC: linux-kernel@vger.kernel.org, "Michael S. Tsirkin" <mst@redhat.com>,
-        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH RESEND 5/5] vhost-blk: Add vhost-blk support
-References: <1342169711-12386-1-git-send-email-asias@redhat.com> <1342169711-12386-6-git-send-email-asias@redhat.com> <x49mx2yyzi5.fsf@segfault.boston.devel.redhat.com> <50060FE8.4040607@redhat.com> <x49fw8pb0ov.fsf@segfault.boston.devel.redhat.com>
-In-Reply-To: <x49fw8pb0ov.fsf@segfault.boston.devel.redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1754607Ab2GROr0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 10:47:26 -0400
+Message-ID: <1342622843.2229.200.camel@bling.home>
+Subject: Re: [PATCH v5 1/4] kvm: Extend irqfd to support level interrupts
+From: Alex Williamson <alex.williamson@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Gleb Natapov <gleb@redhat.com>, avi@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
+Date: Wed, 18 Jul 2012 08:47:23 -0600
+In-Reply-To: <20120718120705.GB5184@redhat.com>
+References: <20120716203344.1752.14606.stgit@bling.home>
+	 <20120718104114.GC4700@redhat.com> <20120718104429.GD26120@redhat.com>
+	 <20120718104844.GF4700@redhat.com> <20120718104906.GE26120@redhat.com>
+	 <20120718105311.GH4700@redhat.com> <20120718105530.GG26120@redhat.com>
+	 <20120718112219.GJ4700@redhat.com> <20120718113910.GA5135@redhat.com>
+	 <20120718114844.GH26120@redhat.com> <20120718120705.GB5184@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2012 10:31 PM, Jeff Moyer wrote:
-> Asias He <asias@redhat.com> writes:
->
->> On 07/18/2012 03:10 AM, Jeff Moyer wrote:
->>> Asias He <asias@redhat.com> writes:
->>>
->>>> vhost-blk is a in kernel virito-blk device accelerator.
->>>>
->>>> This patch is based on Liu Yuan's implementation with various
->>>> improvements and bug fixes. Notably, this patch makes guest notify and
->>>> host completion processing in parallel which gives about 60% performance
->>>> improvement compared to Liu Yuan's implementation.
->>>
->>> So, first off, some basic questions.  Is it correct to assume that you
->>> tested this with buffered I/O (files opened *without* O_DIRECT)?
->>>   I'm pretty sure that if you used O_DIRECT, you'd run into problems (which
->>> are solved by the patch set posted by Shaggy, based on Zach Brown's work
->>> of many moons ago).  Note that, with buffered I/O, the submission path
->>> is NOT asynchronous.  So, any speedups you've reported are extremely
->>> suspect.  ;-)
->>
->> I always used O_DIRECT to test this patchset. And I mostly used raw
->> block device as guest image. Is this the reason why I did not hit the
->> problem you mentioned. Btw, I do have run this patchset on image based
->> file. I still do not see problems like IO hangs.
->
-> Hmm, so do the iovec's passed in point to buffers in userspace?  I
-> thought they were kernel buffers, which would have blown up in
-> get_user_pages_fast.
+On Wed, 2012-07-18 at 15:07 +0300, Michael S. Tsirkin wrote:
+> On Wed, Jul 18, 2012 at 02:48:44PM +0300, Gleb Natapov wrote:
+> > On Wed, Jul 18, 2012 at 02:39:10PM +0300, Michael S. Tsirkin wrote:
+> > > On Wed, Jul 18, 2012 at 02:22:19PM +0300, Michael S. Tsirkin wrote:
+> > > > > > > > > > So as was discussed kvm_set_irq under spinlock is bad for scalability
+> > > > > > > > > > with multiple VCPUs.  Why do we need a spinlock simply to protect
+> > > > > > > > > > level_asserted?  Let's use an atomic test and set/test and clear and the
+> > > > > > > > > > problem goes away.
+> > > > > > > > > > 
+> > > > > > > > > That sad reality is that for level interrupt we already scan all vcpus
+> > > > > > > > > under spinlock.
+> > > > > > > > 
+> > > > > > > > Where?
+> > > > > > > > 
+> > > > > > > ioapic
+> > > > > > 
+> > > > > > $ grep kvm_for_each_vcpu virt/kvm/ioapic.c
+> > > > > > $
+> > > > > > 
+> > > > > > ?
+> > > > > > 
+> > > > > 
+> > > > > Come on Michael. You can do better than grep and actually look at what
+> > > > > code does. The code that loops over all vcpus while delivering an irq is
+> > > > > in kvm_irq_delivery_to_apic(). Now grep for that.
+> > > > 
+> > > > Hmm, I see, it's actually done for edge if injected from ioapic too,
+> > > > right?
+> > > > 
+> > > > So set_irq does a linear scan, and for each matching CPU it calls
+> > > > kvm_irq_delivery_to_apic which is another scan?
+> > > > So it's actually N^2 worst case for a broadcast?
+> > > 
+> > > No it isn't, I misread the code.
+> > > 
+> > > 
+> > > Anyway, maybe not trivially but this looks fixable to me: we could drop
+> > > the ioapic lock before calling kvm_irq_delivery_to_apic.
+> > > 
+> > May be, may be not. Just saying "lets drop lock whenever we don't feel
+> > like holding one" does not cut it.
+> 
+> One thing we do is set remote_irr if interrupt was injected.
+> I agree these things are tricky.
+> 
+> One other question:
+> 
+> static int ioapic_service(struct kvm_ioapic *ioapic, unsigned int idx)
+> {
+>         union kvm_ioapic_redirect_entry *pent;
+>         int injected = -1;
+> 
+>         pent = &ioapic->redirtbl[idx];
+> 
+>         if (!pent->fields.mask) {
+>                 injected = ioapic_deliver(ioapic, idx);
+>                 if (injected && pent->fields.trig_mode == IOAPIC_LEVEL_TRIG)
+>                         pent->fields.remote_irr = 1;
+>         }
+> 
+>         return injected;
+> }
+> 
+> 
+> This if (injected) looks a bit strange since ioapic_deliver returns
+> -1 if no matching destinations. Should be if (injected > 0)?
+> 
+> 
+> 
+> > Back to original point though current
+> > situation is that calling kvm_set_irq() under spinlock is not worse for
+> > scalability than calling it not under one.
+> 
+> Yes. Still the specific use can just use an atomic flag,
+> lock+bool is not needed, and we won't need to undo it later.
 
-Yes. The iovec's passed in point to userspace buffers. ;-)
 
--- 
-Asias
+Actually, no, replacing it with an atomic is racy.
+
+CPU0 (inject)                       CPU1 (EOI)
+atomic_cmpxchg(&asserted, 0, 1)
+                                    atomic_cmpxchg(&asserted, 1, 0)
+                                    kvm_set_irq(0)
+kvm_set_irq(1)
+                                    eventfd_signal
+
+The interrupt is now stuck on until another interrupt is injected.
+
 
 
