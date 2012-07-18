@@ -1,62 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752088Ab2GRCd5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 22:33:57 -0400
-Received: from edison.jonmasters.org ([173.255.233.168]:49074 "EHLO
-	edison.jonmasters.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751231Ab2GRCdv (ORCPT
+	id S1752124Ab2GRCgg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 22:36:36 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:41867 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751231Ab2GRCg3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 22:33:51 -0400
-Message-ID: <5006207D.1010708@jonmasters.org>
-Date: Tue, 17 Jul 2012 22:33:33 -0400
-From: Jon Masters <jonathan@jonmasters.org>
-Organization: World Organi{s,z}ation of Broken Dreams
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Tue, 17 Jul 2012 22:36:29 -0400
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Catalin Marinas <catalin.marinas@arm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        =?UTF-8?B?TcOlbnMgUnVsbGfDpXJk?= <mans@mansr.com>,
-        Ingo Molnar <mingo@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>  <CAOesGMiCexiqA3L5GdNgyHhSD-5Bpqbb02YJrZPr8yMYa0afjA@mail.gmail.com>  <201207071927.13135.arnd@arndb.de> <20120710071023.GA10456@gmail.com>  <20120710101018.GE15120@arm.com> <yw1x8vekd309.fsf@unicorn.mansr.com>  <CA+55aFxL6uEre-c=JrhPfts=7BGmhb2Js1c2ZGkTH8F=+rEWDg@mail.gmail.com>  <20120717221839.GA4856@arm.com> <1342564536.1898.1.camel@joe2Laptop>
-In-Reply-To: <1342564536.1898.1.camel@joe2Laptop>
+In-Reply-To: <20120717172736.GA6854@linux.vnet.ibm.com>
+References: <CACV3sbLu81jrkfSXQxJ+_XtZHVTA6YfwJO3hjRxYsaDwbbLi6A@mail.gmail.com>
+	<20120717105936.GC28744@somewhere>
+	<20120717172736.GA6854@linux.vnet.ibm.com>
+Date: Wed, 18 Jul 2012 10:36:28 +0800
+Message-ID: <CACV3sbKBsj288s=2FKKM+zuoga7Jy9QOxgzciTwREFVHLgR=Lw@mail.gmail.com>
+Subject: Re: uprobe: checking probe event include directory
+From: Jovi Zhang <bookjovi@gmail.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 74.92.29.237
-X-SA-Exim-Mail-From: jonathan@jonmasters.org
-Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Nov 2009 07:31:22 +0000)
-X-SA-Exim-Scanned: Yes (on edison.jonmasters.org)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2012 06:35 PM, Joe Perches wrote:
-> On Tue, 2012-07-17 at 23:18 +0100, Catalin Marinas wrote:
-> 
->> The uname will still report
->> "aarch64" to match the compiler triplet and also avoid confusion of
->> existing 32-bit ARM scripts that simply check for "arm*" in the machine
->> name.
-> 
-> The compiler triplet seems trivial to change.
-> 
-> The other bit is a relatively weak argument as the 32bit arm
-> scripts can be changed or fixed likely just as easily.
+On Wed, Jul 18, 2012 at 1:27 AM, Srikar Dronamraju
+<srikar@linux.vnet.ibm.com> wrote:
+> * Frederic Weisbecker <fweisbec@gmail.com> [2012-07-17 12:59:39]:
+>
+>> On Tue, Jul 17, 2012 at 06:12:28PM +0800, Jovi Zhang wrote:
+>> > From 16ed13ee9098ae01705e8456005d1ad6d9909128 Mon Sep 17 00:00:00 2001
+>> > From: Jovi Zhang <bookjovi@gmail.com>
+>> > Date: Wed, 18 Jul 2012 01:16:23 +0800
+>> > Subject: [PATCH] uprobe: checking probe event include directory
+>> >
+>> > Currently below command run successful:
+>> > $ echo 'p /bin:0x4245c0' > /sys/kernel/debug/tracing/uprobe_events
+>
+> good catch.
+>
+>> >
+>> > this don't make sense, because /bin is a directory,
+>> > so make this checking earily, not report error untill probe enable.
+>> >
+>> > Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
+>>
+>> Adding Srikar in Cc.
+>>
+>> > ---
+>> >  kernel/trace/trace_uprobe.c |    5 +++++
+>> >  1 file changed, 5 insertions(+)
+>> >
+>> > diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+>> > index 85158fa..cf382de 100644
+>> > --- a/kernel/trace/trace_uprobe.c
+>> > +++ b/kernel/trace/trace_uprobe.c
+>> > @@ -259,6 +259,11 @@ static int create_trace_uprobe(int argc, char **argv)
+>> >             goto fail_address_parse;
+>> >
+>> >     inode = igrab(path.dentry->d_inode);
+>> > +    if (S_ISDIR(inode->i_mode)) {
+>
+> How about checking for regular files but not directory.
+> i.e it should avoid tracing special files
+>
+> Something like:
+>
+>         if (!S_ISREG(inode->i_mode) || S_ISDIR(inode->i_mode)) {
+>
+>> > +           ret = -EINVAL;
+>> > +           pr_info("probe file cannot be directory.\n");
+>
+> we could drop the pr_info line here, since we would any print we
+> failed to parse the address.
+>
+> Probably you could change the last pr_info from
+>
+> pr_info("Failed to parse address.\n");
+>
+> to
+>
+> pr_info("Failed to parse address or file.\n");
+>
+>
 
-There's a surprising amount of assumption out there around what arm*
-means (or doing wildcard matches liberally). I'm glad (from the point of
-view of a distribution bootstrap) that we don't have to worry about that
-aspect of getting AArch64 support up and running. The directory name is
-just that - a name - and unimportant. I like aarch64 from the point of
-view of distinguishing "this is not ARM, no, it's not just an extension,
-and no it's not just two numbers different or wider regs", but it seems
-fairly inevitable that it's going to be arch/arm64. The main thing is
-that we understand this isn't like i686->x86_64.
+Thanks srikar, try below patch:
 
-Jon.
+>From dd37d3cc563e2619ec325d6c11d769a32def411b Mon Sep 17 00:00:00 2001
+From: Jovi Zhang <bookjovi@gmail.com>
+Date: Wed, 18 Jul 2012 18:16:44 +0800
+Subject: [PATCH] uprobe: checking uprobe event inode valid
+
+Currently below command run successful:
+$ echo 'p /bin:0x4245c0' > /sys/kernel/debug/tracing/uprobe_events
+
+this don't make sense, because /bin is a directory,
+we need to check uprobe event inode valid more earily.
+
+Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
+Reviewed-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+---
+ kernel/trace/trace_uprobe.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+index 85158fa..3b5f646 100644
+--- a/kernel/trace/trace_uprobe.c
++++ b/kernel/trace/trace_uprobe.c
+@@ -259,6 +259,10 @@ static int create_trace_uprobe(int argc, char **argv)
+ 		goto fail_address_parse;
+
+ 	inode = igrab(path.dentry->d_inode);
++	 if (!S_ISREG(inode->i_mode) || S_ISDIR(inode->i_mode)) {
++		ret = -EINVAL;
++		goto fail_address_parse;
++	}
+
+ 	argc -= 2;
+ 	argv += 2;
+@@ -358,7 +362,7 @@ fail_address_parse:
+ 	if (inode)
+ 		iput(inode);
+
+-	pr_info("Failed to parse address.\n");
++	pr_info("Failed to parse address or file.\n");
+
+ 	return ret;
+ }
+-- 
+1.7.9.7
