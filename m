@@ -1,93 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752599Ab2GRVId (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 17:08:33 -0400
-Received: from fieldses.org ([174.143.236.118]:60627 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752183Ab2GRVIb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 17:08:31 -0400
-Date: Wed, 18 Jul 2012 17:08:25 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Jim Rees <rees@umich.edu>
-Cc: Sasha Levin <levinsasha928@gmail.com>, Trond.Myklebust@netapp.com,
-        davem@davemloft.net, davej@redhat.com, linux-nfs@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] SUNRPC: Prevent kernel stack corruption on long values
- of flush
-Message-ID: <20120718210825.GA3145@fieldses.org>
-References: <1342476086-21638-1-git-send-email-levinsasha928@gmail.com>
- <20120718173913.GA1298@fieldses.org>
- <20120718200049.GA17964@umich.edu>
+	id S1753558Ab2GRVTE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 17:19:04 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:38111 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752514Ab2GRVTB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 17:19:01 -0400
+Message-ID: <500727F1.4000609@linux.vnet.ibm.com>
+Date: Thu, 19 Jul 2012 02:47:37 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120718200049.GA17964@umich.edu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Mandeep Singh Baines <msb@chromium.org>
+CC: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Shaohua Li <shaohua.li@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Christoph Lameter <cl@gentwo.org>, Olof Johansson <olofj@chromium.org>
+Subject: Re: [PATCH v2] x86, mm: only wait for flushes from online cpus
+References: <1340402778-28939-1-git-send-email-msb@chromium.org>
+In-Reply-To: <1340402778-28939-1-git-send-email-msb@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12071821-4790-0000-0000-000003BFDD5C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 18, 2012 at 04:00:49PM -0400, Jim Rees wrote:
-> J. Bruce Fields wrote:
+On 06/23/2012 03:36 AM, Mandeep Singh Baines wrote:
+> A cpu in the mm_cpumask could go offline before we send the invalidate
+> IPI causing us to wait forever. Avoid this by only waiting for online
+> cpus.
 > 
->   On Tue, Jul 17, 2012 at 12:01:26AM +0200, Sasha Levin wrote:
->   > The buffer size in read_flush() is too small for the longest possible values
->   > for it. This can lead to a kernel stack corruption:
->   
->   Thanks!
->   
->   > 
->   > diff --git a/net/sunrpc/cache.c b/net/sunrpc/cache.c
->   > index 2afd2a8..f86d95e 100644
->   > --- a/net/sunrpc/cache.c
->   > +++ b/net/sunrpc/cache.c
->   > @@ -1409,11 +1409,11 @@ static ssize_t read_flush(struct file *file, char __user *buf,
->   >  			  size_t count, loff_t *ppos,
->   >  			  struct cache_detail *cd)
->   >  {
->   > -	char tbuf[20];
->   > +	char tbuf[22];
->   
->   I wonder how common this sort of calculation is in the kernel?  It might
->   provide some peace of mind to be able to write this something like
->   
->   	char tbuf[MAXLEN_BASE10_UL + 2]  /* + 2 for final "\n\0" */
+> We are seeing a softlockup reporting during shutdown. The stack
+> trace shows us that we are inside default_send_IPI_mask_logical:
 > 
-> You could use something like:
+[...]
+> Changes in V2:
+>   * bitmap_and is not atomic so use a temporary bitmask
 > 
->     char tbuf[sizeof (unsigned long) * 24 / 10 + 1 + 2]; /* + 2 for final "\n\0" */
-> 
-> since there are roughly 10 bits for every 3 decimal digits.
 
-So we could do something like this.  OK, I'm not sure I care enough.
+Looks like I posted my reply to v1. So I'll repeat the same suggestions in
+this thread as well.
 
---b.
+> ---
+>  arch/x86/mm/tlb.c |    9 ++++++++-
+>  1 files changed, 8 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
+> index d6c0418..231a0b9 100644
+> --- a/arch/x86/mm/tlb.c
+> +++ b/arch/x86/mm/tlb.c
+> @@ -185,6 +185,8 @@ static void flush_tlb_others_ipi(const struct cpumask *cpumask,
+>  	f->flush_mm = mm;
+>  	f->flush_va = va;
+>  	if (cpumask_andnot(to_cpumask(f->flush_cpumask), cpumask, cpumask_of(smp_processor_id()))) {
+> +		DECLARE_BITMAP(tmp_cpumask, NR_CPUS);
+> +
+>  		/*
+>  		 * We have to send the IPI only to
+>  		 * CPUs affected.
+> @@ -192,8 +194,13 @@ static void flush_tlb_others_ipi(const struct cpumask *cpumask,
+>  		apic->send_IPI_mask(to_cpumask(f->flush_cpumask),
+>  			      INVALIDATE_TLB_VECTOR_START + sender);
+> 
 
-diff --git a/include/linux/string.h b/include/linux/string.h
-index e033564..ed34180 100644
---- a/include/linux/string.h
-+++ b/include/linux/string.h
-@@ -126,6 +126,10 @@ extern void argv_free(char **argv);
- extern bool sysfs_streq(const char *s1, const char *s2);
- extern int strtobool(const char *s, bool *res);
+This function is always called with preempt_disabled() right?
+In that case, _while_ this function is running, a CPU cannot go offline
+because of stop_machine(). (I understand that it might go offline in between
+calculating that cpumask and calling preempt_disable() - which is the race
+you are trying to handle).
+
+So, why not take the offline cpus out of the way even before sending that IPI?
+That way, we need not modify the while loop below.
+
+> -		while (!cpumask_empty(to_cpumask(f->flush_cpumask)))
+> +		/* Only wait for online cpus */
+> +		do {
+> +			cpumask_and(to_cpumask(tmp_cpumask),
+> +				    to_cpumask(f->flush_cpumask),
+> +				    cpu_online_mask);
+>  			cpu_relax();
+> +		} while (!cpumask_empty(to_cpumask(tmp_cpumask)));
+>  	}
+> 
+>  	f->flush_mm = NULL;
+> 
+
+That is, how about something like this:
+
+diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
+index 5e57e11..9d387a9 100644
+--- a/arch/x86/mm/tlb.c
++++ b/arch/x86/mm/tlb.c
+@@ -186,7 +186,11 @@ static void flush_tlb_others_ipi(const struct cpumask *cpumask,
  
-+/* length of the decimal representation of an unsigned integer.  Just an
-+ * approximation, but it's right for types of size 1 to 36 bytes: */
-+#define base10len(i) (sizeof(i) * 24 / 10 + 1)
+        f->flush_mm = mm;
+        f->flush_va = va;
+-       if (cpumask_andnot(to_cpumask(f->flush_cpumask), cpumask, cpumask_of(smp_processor_id()))) {
 +
- #ifdef CONFIG_BINARY_PRINTF
- int vbin_printf(u32 *bin_buf, size_t size, const char *fmt, va_list args);
- int bstr_printf(char *buf, size_t size, const char *fmt, const u32 *bin_buf);
-diff --git a/net/sunrpc/cache.c b/net/sunrpc/cache.c
-index 2afd2a8..1dcd2b3 100644
---- a/net/sunrpc/cache.c
-+++ b/net/sunrpc/cache.c
-@@ -1409,7 +1409,7 @@ static ssize_t read_flush(struct file *file, char __user *buf,
- 			  size_t count, loff_t *ppos,
- 			  struct cache_detail *cd)
- {
--	char tbuf[20];
-+	char tbuf[base10len(unsigned long) + 2];
- 	unsigned long p = *ppos;
- 	size_t len;
- 
++       cpumask_and(to_cpumask(f->flush_cpumask), cpumask, cpu_online_mask);
++       cpumask_clear_cpu(smp_processor_id(), to_cpumask(f->flush_cpumask));
++
++       if (!cpumask_empty(to_cpumask(f->flush_cpumask))) {
+                /*
+                 * We have to send the IPI only to
+                 * CPUs affected.
+
+
+Regards,
+Srivatsa S. Bhat
+IBM Linux Technology Center
+
