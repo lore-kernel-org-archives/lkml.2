@@ -1,126 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754201Ab2GRW5d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 18:57:33 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:26418 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751031Ab2GRW53 (ORCPT
+	id S1755942Ab2GRW6V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 18:58:21 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:54517 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754651Ab2GRW5o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 18:57:29 -0400
-Message-ID: <1342651966.3010.66.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 1/4] ACPI: Add acpi_pr_<level>() interfaces
-From: Toshi Kani <toshi.kani@hp.com>
-To: shuah.khan@hp.com
-Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bhelgaas@google.com, isimatu.yasuaki@jp.fujitsu.com, liuj97@gmail.com,
-        srivatsa.bhat@linux.vnet.ibm.com, prarit@redhat.com,
-        imammedo@redhat.com, vijaymohan.pandarathil@hp.com,
-        shuahkhan@gmail.com
-Date: Wed, 18 Jul 2012 16:52:46 -0600
-In-Reply-To: <1342651257.5138.44.camel@lorien2>
-References: <1342644027-19559-1-git-send-email-toshi.kani@hp.com>
-	 <1342644027-19559-2-git-send-email-toshi.kani@hp.com>
-	 <1342648771.5138.37.camel@lorien2>
-	 <1342650386.3010.55.camel@misato.fc.hp.com>
-	 <1342651257.5138.44.camel@lorien2>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 18 Jul 2012 18:57:44 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Strake <strake888@gmail.com>
+Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fbdev: Add ioctls FBIO_COPYRECT, FBIO_FILLRECT, lest these operations be done in software.
+Date: Thu, 19 Jul 2012 00:57:47 +0200
+Message-ID: <2444839.KFfsli056l@avalon>
+User-Agent: KMail/4.8.3 (Linux/3.3.8-gentoo; KDE/4.8.3; x86_64; ; )
+In-Reply-To: <CAL3m8eA=46wdwVosiE54eNx3FOuLyxfE5axKs_HjyMTGxDHRDw@mail.gmail.com>
+References: <CAL3m8eA=46wdwVosiE54eNx3FOuLyxfE5axKs_HjyMTGxDHRDw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-18 at 16:40 -0600, Shuah Khan wrote:
-> On Wed, 2012-07-18 at 16:26 -0600, Toshi Kani wrote:
-> > On Wed, 2012-07-18 at 15:59 -0600, Shuah Khan wrote:
-> > > On Wed, 2012-07-18 at 14:40 -0600, Toshi Kani wrote:
-> > > > This patch introduces acpi_pr_<level>(), where <level> is a message
-> > > > level such as err/warn/info, to support improved logging messages
-> > > > for ACPI, esp. in hotplug operations.  acpi_pr_<level>() appends
-> > > > "ACPI" prefix and ACPI object path to the messages.  This improves
-> > > > diagnostics in hotplug operations since it identifies an object that
-> > > > caused an issue in a log file.
-> > > > 
-> > > > acpi_pr_<level>() takes acpi_handle as an argument, which is passed
-> > > > to ACPI hotplug notify handlers from the ACPI CA.  Therefore, it is
-> > > > always available unlike other kernel objects, such as device.
-> > > > 
-> > > > For example, the statement below
-> > > >   acpi_pr_err(handle, "Device don't exist, dropping EJECT\n");
-> > > > logs an error message like this:
-> > > >   ACPI: \_SB_.SCK4.CPU4: Device don't exist, dropping EJECT
-> > > > 
-> > > > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-> > > > ---
-> > > >  drivers/acpi/utils.c    |   32 ++++++++++++++++++++++++++++++++
-> > > >  include/acpi/acpi_bus.h |   18 ++++++++++++++++++
-> > > >  2 files changed, 50 insertions(+), 0 deletions(-)
-> > > > 
-> > > > diff --git a/drivers/acpi/utils.c b/drivers/acpi/utils.c
-> > > > index 3e87c9c..4097266 100644
-> > > > --- a/drivers/acpi/utils.c
-> > > > +++ b/drivers/acpi/utils.c
-> > > > @@ -454,3 +454,35 @@ acpi_evaluate_hotplug_ost(acpi_handle handle, u32 source_event,
-> > > >  #endif
-> > > >  }
-> > > >  EXPORT_SYMBOL(acpi_evaluate_hotplug_ost);
-> > > > +
-> > > > +/**
-> > > > + * acpi_printk: Print messages with ACPI prefix and object path
-> > > > + *
-> > > > + * This function is intended to be called through acpi_pr_<level> macros.
-> > > > + */
-> > > > +void
-> > > > +acpi_printk(const char *level, acpi_handle handle, const char *fmt, ...)
-> > > > +{
-> > > > +	struct va_format vaf;
-> > > > +	va_list args;
-> > > > +	struct acpi_buffer buffer = {ACPI_ALLOCATE_BUFFER};
-> > > > +	char *path;
-> > > > +	acpi_status ret;
-> > > > +
-> > > > +	va_start(args, fmt);
-> > > > +
-> > > > +	vaf.fmt = fmt;
-> > > > +	vaf.va = &args;
-> > > > +
-> > > > +	ret = acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
-> > > 
-> > > One big problem I see with this approach is now each acpi_printk() will
-> > > result in a call to acpi_get_name() which will invoke several ACPI
-> > > calls, including a call to acpi_ut_initialize_buffer() which allocates
-> > > buffer. Is this really warranted? What is the performance impact of this
-> > > change?
-> > 
-> > Hi Shuah,
-> > 
-> > This interface is intended to be used by acpi_pr_<level>(), which is
-> > used for error, warning, debugging, etc.  It is not intended to be used
-> > in any performance path.
-> > 
+On Thursday 21 June 2012 07:22:50 Strake wrote:
+> From: Matthew Farkas-Dyck <strake888@gmail.com>
 > 
-> How does one enable this interface to see errors, warns, debugging? Is
-> there a special mode kernel needs to run in? I am trying to understand
-> what you mean by "not intended to be used in any performance path". Does
-> one build a special kernel similar to CONFIG_VM_DEBUG (just happen to
-> the one I could think off) ?
-
-acpi_pr_<level>() calls printk() with a corresponding message level,
-such as KERN_ERR, KERN_WARNING and KERN_DEBUG, which is by definition
-used for error, warning and debugging messages.  Let me know if the
-change log was not clear about this.  Anyway, I think one should not use
-a printk() in performance path in the first place...
-
-BTW, I realized that I forgot to define acpi_pr_debug()! (duh)  I will
-update the patch to define it.
-
-
-Thanks,
--Toshi
-
-
-> -- Shuah
+> Add ioctls FBIO_COPYRECT, FBIO_FILLRECT, lest these operations be done
+> in software.
 > 
+> Signed-off-by: Matthew Farkas-Dyck <strake888@gmail.com>
+> ---
+> 
+> Reason: If it can be done in hardware, it ought to be. This will
+> enable user-mode software to do so.
 
+If we really want to go this way, I think we should develop a proper 2D 
+acceleration API. I'm not sure whether it's worth the effort though.
+
+-- 
+Regards,
+
+Laurent Pinchart
 
