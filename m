@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754837Ab2GRRLM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 13:11:12 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:51649 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754727Ab2GRRLI (ORCPT
+	id S1754899Ab2GRRLd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 13:11:33 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:44953 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754085Ab2GRRLF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 13:11:08 -0400
+	Wed, 18 Jul 2012 13:11:05 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
@@ -14,9 +14,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@gmail.com>
-Subject: [PATCH 3/3] perf tools: Print newline between hists callchains
-Date: Wed, 18 Jul 2012 19:10:56 +0200
-Message-Id: <1342631456-7233-3-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 2/3] perf tools: Return correct number of characters printed in callchain
+Date: Wed, 18 Jul 2012 19:10:55 +0200
+Message-Id: <1342631456-7233-2-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1342631456-7233-1-git-send-email-fweisbec@gmail.com>
 References: <1342631456-7233-1-git-send-email-fweisbec@gmail.com>
@@ -24,73 +24,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tiny cosmetic fix. The lack of a newline between hists callchains
-was looking slightly messy.
+Include the omitted number of characters printed for the first entry.
 
-Before:
-
-     0.24%      swapper  [kernel.kallsyms]  [k] _raw_spin_lock_irq
-                |
-                --- _raw_spin_lock_irq
-                    run_timer_softirq
-                    __do_softirq
-                    call_softirq
-                    do_softirq
-                    irq_exit
-                    smp_apic_timer_interrupt
-                    apic_timer_interrupt
-                    default_idle
-                    amd_e400_idle
-                    cpu_idle
-                    start_secondary
-     0.10%         perf  [kernel.kallsyms]  [k] lock_is_held
-                   |
-                   --- lock_is_held
-                       __might_sleep
-                       mutex_lock_nested
-                       perf_event_for_each_child
-                       perf_ioctl
-                       do_vfs_ioctl
-                       sys_ioctl
-                       system_call_fastpath
-                       ioctl
-                       cmd_record
-                       run_builtin
-                       main
-                       __libc_start_main
-
-After:
-
-     0.24%      swapper  [kernel.kallsyms]  [k] _raw_spin_lock_irq
-                |
-                --- _raw_spin_lock_irq
-                    run_timer_softirq
-                    __do_softirq
-                    call_softirq
-                    do_softirq
-                    irq_exit
-                    smp_apic_timer_interrupt
-                    apic_timer_interrupt
-                    default_idle
-                    amd_e400_idle
-                    cpu_idle
-                    start_secondary
-
-     0.10%         perf  [kernel.kallsyms]  [k] lock_is_held
-                   |
-                   --- lock_is_held
-                       __might_sleep
-                       mutex_lock_nested
-                       perf_event_for_each_child
-                       perf_ioctl
-                       do_vfs_ioctl
-                       sys_ioctl
-                       system_call_fastpath
-                       ioctl
-                       cmd_record
-                       run_builtin
-                       main
-                       __libc_start_main
+Not that it really matters because nobody seem to care about the number
+of printed characters for now. But just in case.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
@@ -100,22 +37,33 @@ Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- tools/perf/util/hist.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ tools/perf/util/hist.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
 diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 90dc35a..f247ef2 100644
+index 514e2a4..90dc35a 100644
 --- a/tools/perf/util/hist.c
 +++ b/tools/perf/util/hist.c
-@@ -749,6 +749,8 @@ static size_t callchain__fprintf_graph(FILE *fp, struct rb_root *root,
+@@ -708,7 +708,7 @@ static size_t callchain__fprintf_graph(FILE *fp, struct rb_root *root,
+ 	bool printed = false;
+ 	struct rb_node *node;
+ 	int i = 0;
+-	int ret;
++	int ret = 0;
  
- 	ret += __callchain__fprintf_graph(fp, root, total_samples,
+ 	/*
+ 	 * If have one single callchain root, don't bother printing
+@@ -747,8 +747,9 @@ static size_t callchain__fprintf_graph(FILE *fp, struct rb_root *root,
+ 		root = &cnode->rb_root;
+ 	}
+ 
+-	return __callchain__fprintf_graph(fp, root, total_samples,
++	ret += __callchain__fprintf_graph(fp, root, total_samples,
  					  1, 1, left_margin);
-+	ret += fprintf(fp, "\n");
-+
- 	return ret;
++	return ret;
  }
  
+ static size_t __callchain__fprintf_flat(FILE *fp,
 -- 
 1.7.5.4
 
