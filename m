@@ -1,48 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755037Ab2GRRsn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 13:48:43 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53091 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751459Ab2GRRsk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 13:48:40 -0400
-Date: Wed, 18 Jul 2012 10:48:34 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Josh Hunt <joshhunt00@gmail.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        linux-kernel@vger.kernel.org
-Subject: Re: multi-second application stall in open()
-Message-ID: <20120718174834.GI24336@google.com>
-References: <CAKA=qzbBtteDjHiPogCvN5jOSiPrDxx=vn96p02bXUy=6=jAgA@mail.gmail.com>
- <CAKA=qzaZweeeYUFD2OHDeAO-SQihSvExAZ=ZnXeY5o5sMWpxJg@mail.gmail.com>
- <CAKA=qzbaM-z7CbASUgq-A7CZWiUq6pdb93e4giYAw63hQK=MCg@mail.gmail.com>
- <20120627173822.GK15811@google.com>
- <CAKA=qzY5FT8rWU=z8DwGB7aF6AvCuT=bH2sOJQafyEPqtbkduQ@mail.gmail.com>
- <20120627175458.GL15811@google.com>
- <CAKA=qzaArsuwuuqHVKgTqwszY_Zx8d690e6UJsOQUvq_4--hjQ@mail.gmail.com>
- <20120629230237.GF21048@google.com>
- <CAKA=qzZVVvhjw4gxxAcaDG1e0Lxwf7ROTm1XgXhavgMAExrAVg@mail.gmail.com>
- <CAOS58YO5oDn9Y=2dPiDPQ8u4kk7ewV2GLfMDZnjnaazkv+N-0w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOS58YO5oDn9Y=2dPiDPQ8u4kk7ewV2GLfMDZnjnaazkv+N-0w@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755274Ab2GRRxL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 13:53:11 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:46434 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753246Ab2GRRxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 13:53:07 -0400
+Message-ID: <1342633985.9551.36.camel@joe2Laptop>
+Subject: Re: [PATCH] staging/et131x: fix checkpatch warnings
+From: Joe Perches <joe@perches.com>
+To: Toshiaki Yamane <yamanetoshi@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Einon <mark.einon@gmail.com>, linux-kernel@vger.kernel.org
+Date: Wed, 18 Jul 2012 10:53:05 -0700
+In-Reply-To: <CAOTypNSvKEfYVLZ=0sN-U+2xiXBO4So4QkvYyKniEFeqvkqVBg@mail.gmail.com>
+References: <1342442513-10488-1-git-send-email-yamanetoshi@gmail.com>
+	 <1342573366-8167-1-git-send-email-yamanetoshi@gmail.com>
+	 <1342574175.2012.12.camel@joe2Laptop>
+	 <CAOTypNSvKEfYVLZ=0sN-U+2xiXBO4So4QkvYyKniEFeqvkqVBg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 03, 2012 at 06:12:58PM -0700, Tejun Heo wrote:
-> Hello,
+On Wed, 2012-07-18 at 20:32 +0900, Toshiaki Yamane wrote:
+> Thanks for you reply.
 > 
-> On Fri, Jun 29, 2012 at 5:37 PM, Josh Hunt <joshhunt00@gmail.com> wrote:
-> > Wow. Thanks Tejun. I will try and get to this over the weekend, but it
-> > may not be until Monday before I can test it.
-> 
-> Any progress?
+> I will fix netdev_info only, because I don't know if I should use "%p".
 
-Ping.
+OK, fyi: it turns out ps_ring_physaddr and rx_status_bus
+are both dma_addr_t so both should be emitted with %ull
+and cast to (unsigned long long) or (u64).
 
--- 
-tejun
+
