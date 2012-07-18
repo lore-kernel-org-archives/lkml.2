@@ -1,67 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756085Ab2GRWto (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 18:49:44 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:46942 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751986Ab2GRWtl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 18:49:41 -0400
-Message-ID: <1342651781.2215.27.camel@joe2Laptop>
-Subject: Re: [PATCH 1/4] ACPI: Add acpi_pr_<level>() interfaces
-From: Joe Perches <joe@perches.com>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: shuah.khan@hp.com, lenb@kernel.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, bhelgaas@google.com,
-        isimatu.yasuaki@jp.fujitsu.com, liuj97@gmail.com,
-        srivatsa.bhat@linux.vnet.ibm.com, prarit@redhat.com,
-        imammedo@redhat.com, vijaymohan.pandarathil@hp.com,
-        shuahkhan@gmail.com
-Date: Wed, 18 Jul 2012 15:49:41 -0700
-In-Reply-To: <1342650386.3010.55.camel@misato.fc.hp.com>
-References: <1342644027-19559-1-git-send-email-toshi.kani@hp.com>
-	 <1342644027-19559-2-git-send-email-toshi.kani@hp.com>
-	 <1342648771.5138.37.camel@lorien2>
-	 <1342650386.3010.55.camel@misato.fc.hp.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1755900Ab2GRWvZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 18:51:25 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:39836 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751352Ab2GRWvX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 18:51:23 -0400
+Date: Wed, 18 Jul 2012 18:51:17 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: NeilBrown <neilb@suse.de>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        ksummit-2012-discuss@lists.linux-foundation.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [Ksummit-2012-discuss] Current Status of Kernel Summit Core Day
+ 1 Invitations
+Message-ID: <20120718225117.GA3714@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>, NeilBrown <neilb@suse.de>,
+	James Bottomley <James.Bottomley@HansenPartnership.com>,
+	ksummit-2012-discuss@lists.linux-foundation.org,
+	linux-kernel <linux-kernel@vger.kernel.org>
+References: <1342607987.3022.69.camel@dabdike.int.hansenpartnership.com>
+ <20120718205316.013ec792@notabene.brown>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120718205316.013ec792@notabene.brown>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-18 at 16:26 -0600, Toshi Kani wrote:
-> On Wed, 2012-07-18 at 15:59 -0600, Shuah Khan wrote:
-> > On Wed, 2012-07-18 at 14:40 -0600, Toshi Kani wrote:
-> > > This patch introduces acpi_pr_<level>(), where <level> is a message
-> > > level such as err/warn/info, to support improved logging messages
-> > > for ACPI, esp. in hotplug operations.
-[]
-> > > diff --git a/drivers/acpi/utils.c b/drivers/acpi/utils.c
-[]
-> > > @@ -454,3 +454,35 @@ acpi_evaluate_hotplug_ost(acpi_handle handle, u32 source_event,
-[]
-> > > +	struct acpi_buffer buffer = {ACPI_ALLOCATE_BUFFER};
-[]
-> > > +	ret = acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
+On Wed, Jul 18, 2012 at 08:53:16PM +1000, NeilBrown wrote:
+> On Wed, 18 Jul 2012 11:39:47 +0100 James Bottomley
+> <James.Bottomley@HansenPartnership.com> wrote:
+> 
+> > The current state is that we've invited 74 people.  The list is here:
 > > 
-> > One big problem I see with this approach is now each acpi_printk() will
-> > result in a call to acpi_get_name() which will invoke several ACPI
-> > calls, including a call to acpi_ut_initialize_buffer() which allocates
-> > buffer. Is this really warranted? What is the performance impact of this
-> > change?
-[]
-> This interface is intended to be used by acpi_pr_<level>(), which is
-> used for error, warning, debugging, etc.  It is not intended to be used
-> in any performance path.
+> > https://docs.google.com/spreadsheet/ccc?key=0ArpHfE64ikfsdHVrYkw0Yk0tQWJzWUJzc3k2NmU4VGc#gid=0
+> > 
+> 
+> "You need permission to access this item."
 
-While it's not performance critical, perhaps the buffer
-alloc/free could be avoided by using stack. Something like:
+Sorry, fixed now.
 
-	char name[ACPI_PATH_SEGMENT_LENGTH * max_segments ? ];
-	struct acpi_buffer buffer = {
-		.length = ACPI_PATH_SEGMENT_LENGTH,
-		.buffer = name,
-	};
-
-
+					- Ted
