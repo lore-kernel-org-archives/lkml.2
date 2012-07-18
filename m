@@ -1,258 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753606Ab2GRLVv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 07:21:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16465 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751619Ab2GRLVs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 07:21:48 -0400
-Date: Wed, 18 Jul 2012 14:22:19 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>, avi@redhat.com,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jan.kiszka@siemens.com
-Subject: Re: [PATCH v5 1/4] kvm: Extend irqfd to support level interrupts
-Message-ID: <20120718112219.GJ4700@redhat.com>
-References: <20120716202711.1752.71007.stgit@bling.home>
- <20120716203344.1752.14606.stgit@bling.home>
- <20120718104114.GC4700@redhat.com>
- <20120718104429.GD26120@redhat.com>
- <20120718104844.GF4700@redhat.com>
- <20120718104906.GE26120@redhat.com>
- <20120718105311.GH4700@redhat.com>
- <20120718105530.GG26120@redhat.com>
+	id S1753684Ab2GRLYW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 07:24:22 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:39190 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752397Ab2GRLYT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 07:24:19 -0400
+Message-ID: <50069CDF.7000202@linaro.org>
+Date: Wed, 18 Jul 2012 12:24:15 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120718105530.GG26120@redhat.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Wolfram Sang <w.sang@pengutronix.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alessandro Rubini <rubini@gnudd.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        devicetree-discuss@lists.ozlabs.org,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the i2c-embedded
+ tree
+References: <50066739.4010206@linaro.org> <20120718111226.GH22739@opensource.wolfsonmicro.com>
+In-Reply-To: <20120718111226.GH22739@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 18, 2012 at 01:55:30PM +0300, Gleb Natapov wrote:
-> On Wed, Jul 18, 2012 at 01:53:11PM +0300, Michael S. Tsirkin wrote:
-> > On Wed, Jul 18, 2012 at 01:49:06PM +0300, Gleb Natapov wrote:
-> > > On Wed, Jul 18, 2012 at 01:48:44PM +0300, Michael S. Tsirkin wrote:
-> > > > On Wed, Jul 18, 2012 at 01:44:29PM +0300, Gleb Natapov wrote:
-> > > > > On Wed, Jul 18, 2012 at 01:41:14PM +0300, Michael S. Tsirkin wrote:
-> > > > > > On Mon, Jul 16, 2012 at 02:33:47PM -0600, Alex Williamson wrote:
-> > > > > > > In order to inject a level interrupt from an external source using an
-> > > > > > > irqfd, we need to allocate a new irq_source_id.  This allows us to
-> > > > > > > assert and (later) de-assert an interrupt line independently from
-> > > > > > > users of KVM_IRQ_LINE and avoid lost interrupts.
-> > > > > > > 
-> > > > > > > We also add what may appear like a bit of excessive infrastructure
-> > > > > > > around an object for storing this irq_source_id.  However, notice
-> > > > > > > that we only provide a way to assert the interrupt here.  A follow-on
-> > > > > > > interface will make use of the same irq_source_id to allow de-assert.
-> > > > > > > 
-> > > > > > > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> > > > > > > ---
-> > > > > > > 
-> > > > > > >  Documentation/virtual/kvm/api.txt |    6 ++
-> > > > > > >  arch/x86/kvm/x86.c                |    1 
-> > > > > > >  include/linux/kvm.h               |    3 +
-> > > > > > >  virt/kvm/eventfd.c                |  114 ++++++++++++++++++++++++++++++++++++-
-> > > > > > >  4 files changed, 120 insertions(+), 4 deletions(-)
-> > > > > > > 
-> > > > > > > diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
-> > > > > > > index 100acde..c7267d5 100644
-> > > > > > > --- a/Documentation/virtual/kvm/api.txt
-> > > > > > > +++ b/Documentation/virtual/kvm/api.txt
-> > > > > > > @@ -1981,6 +1981,12 @@ the guest using the specified gsi pin.  The irqfd is removed using
-> > > > > > >  the KVM_IRQFD_FLAG_DEASSIGN flag, specifying both kvm_irqfd.fd
-> > > > > > >  and kvm_irqfd.gsi.
-> > > > > > >  
-> > > > > > > +The KVM_IRQFD_FLAG_LEVEL flag indicates the gsi input is for a level
-> > > > > > > +triggered interrupt.  In this case a new irqchip input is allocated
-> > > > > > > +which is logically OR'd with other inputs allowing multiple sources
-> > > > > > > +to independently assert level interrupts.  The KVM_IRQFD_FLAG_LEVEL
-> > > > > > > +is only necessary on setup, teardown is identical to that above.
-> > > > > > > +KVM_IRQFD_FLAG_LEVEL support is indicated by KVM_CAP_IRQFD_LEVEL.
-> > > > > > >  
-> > > > > > >  5. The kvm_run structure
-> > > > > > >  ------------------------
-> > > > > > > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> > > > > > > index a01a424..80bed07 100644
-> > > > > > > --- a/arch/x86/kvm/x86.c
-> > > > > > > +++ b/arch/x86/kvm/x86.c
-> > > > > > > @@ -2148,6 +2148,7 @@ int kvm_dev_ioctl_check_extension(long ext)
-> > > > > > >  	case KVM_CAP_GET_TSC_KHZ:
-> > > > > > >  	case KVM_CAP_PCI_2_3:
-> > > > > > >  	case KVM_CAP_KVMCLOCK_CTRL:
-> > > > > > > +	case KVM_CAP_IRQFD_LEVEL:
-> > > > > > >  		r = 1;
-> > > > > > >  		break;
-> > > > > > >  	case KVM_CAP_COALESCED_MMIO:
-> > > > > > > diff --git a/include/linux/kvm.h b/include/linux/kvm.h
-> > > > > > > index 2ce09aa..b2e6e4f 100644
-> > > > > > > --- a/include/linux/kvm.h
-> > > > > > > +++ b/include/linux/kvm.h
-> > > > > > > @@ -618,6 +618,7 @@ struct kvm_ppc_smmu_info {
-> > > > > > >  #define KVM_CAP_PPC_GET_SMMU_INFO 78
-> > > > > > >  #define KVM_CAP_S390_COW 79
-> > > > > > >  #define KVM_CAP_PPC_ALLOC_HTAB 80
-> > > > > > > +#define KVM_CAP_IRQFD_LEVEL 81
-> > > > > > >  
-> > > > > > >  #ifdef KVM_CAP_IRQ_ROUTING
-> > > > > > >  
-> > > > > > > @@ -683,6 +684,8 @@ struct kvm_xen_hvm_config {
-> > > > > > >  #endif
-> > > > > > >  
-> > > > > > >  #define KVM_IRQFD_FLAG_DEASSIGN (1 << 0)
-> > > > > > > +/* Available with KVM_CAP_IRQFD_LEVEL */
-> > > > > > > +#define KVM_IRQFD_FLAG_LEVEL (1 << 1)
-> > > > > > >  
-> > > > > > >  struct kvm_irqfd {
-> > > > > > >  	__u32 fd;
-> > > > > > > diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
-> > > > > > > index 7d7e2aa..ecdbfea 100644
-> > > > > > > --- a/virt/kvm/eventfd.c
-> > > > > > > +++ b/virt/kvm/eventfd.c
-> > > > > > > @@ -36,6 +36,68 @@
-> > > > > > >  #include "iodev.h"
-> > > > > > >  
-> > > > > > >  /*
-> > > > > > > + * An irq_source_id can be created from KVM_IRQFD for level interrupt
-> > > > > > > + * injections and shared with other interfaces for EOI or de-assert.
-> > > > > > > + * Create an object with reference counting to make it easy to use.
-> > > > > > > + */
-> > > > > > > +struct _irq_source {
-> > > > > > > +	int id; /* the IRQ source ID */
-> > > > > > > +	bool level_asserted; /* Track assertion state and protect with lock */
-> > > > > > > +	spinlock_t lock;     /* to avoid unnecessary re-assert/spurious eoi. */
-> > > > > > > +	struct kvm *kvm;
-> > > > > > > +	struct kref kref;
-> > > > > > > +};
-> > > > > > > +
-> > > > > > > +static void _irq_source_release(struct kref *kref)
-> > > > > > > +{
-> > > > > > > +	struct _irq_source *source;
-> > > > > > > +
-> > > > > > > +	source = container_of(kref, struct _irq_source, kref);
-> > > > > > > +
-> > > > > > > +	/* This also de-asserts */
-> > > > > > > +	kvm_free_irq_source_id(source->kvm, source->id);
-> > > > > > > +	kfree(source);
-> > > > > > > +}
-> > > > > > > +
-> > > > > > > +static void _irq_source_put(struct _irq_source *source)
-> > > > > > > +{
-> > > > > > > +	if (source)
-> > > > > > > +		kref_put(&source->kref, _irq_source_release);
-> > > > > > > +}
-> > > > > > > +
-> > > > > > > +static struct _irq_source *__attribute__ ((used)) /* white lie for now */
-> > > > > > > +_irq_source_get(struct _irq_source *source)
-> > > > > > > +{
-> > > > > > > +	if (source)
-> > > > > > > +		kref_get(&source->kref);
-> > > > > > > +
-> > > > > > > +	return source;
-> > > > > > > +}
-> > > > > > > +
-> > > > > > > +static struct _irq_source *_irq_source_alloc(struct kvm *kvm)
-> > > > > > > +{
-> > > > > > > +	struct _irq_source *source;
-> > > > > > > +	int id;
-> > > > > > > +
-> > > > > > > +	source = kzalloc(sizeof(*source), GFP_KERNEL);
-> > > > > > > +	if (!source)
-> > > > > > > +		return ERR_PTR(-ENOMEM);
-> > > > > > > +
-> > > > > > > +	id = kvm_request_irq_source_id(kvm);
-> > > > > > > +	if (id < 0) {
-> > > > > > > +		kfree(source);
-> > > > > > > +		return ERR_PTR(id);
-> > > > > > > +	}
-> > > > > > > +
-> > > > > > > +	kref_init(&source->kref);
-> > > > > > > +	spin_lock_init(&source->lock);
-> > > > > > > +	source->kvm = kvm;
-> > > > > > > +	source->id = id;
-> > > > > > > +
-> > > > > > > +	return source;
-> > > > > > > +}
-> > > > > > > +
-> > > > > > > +/*
-> > > > > > >   * --------------------------------------------------------------------
-> > > > > > >   * irqfd: Allows an fd to be used to inject an interrupt to the guest
-> > > > > > >   *
-> > > > > > > @@ -52,6 +114,8 @@ struct _irqfd {
-> > > > > > >  	/* Used for level IRQ fast-path */
-> > > > > > >  	int gsi;
-> > > > > > >  	struct work_struct inject;
-> > > > > > > +	/* IRQ source ID for level triggered irqfds */
-> > > > > > > +	struct _irq_source *source;
-> > > > > > >  	/* Used for setup/shutdown */
-> > > > > > >  	struct eventfd_ctx *eventfd;
-> > > > > > >  	struct list_head list;
-> > > > > > > @@ -62,7 +126,7 @@ struct _irqfd {
-> > > > > > >  static struct workqueue_struct *irqfd_cleanup_wq;
-> > > > > > >  
-> > > > > > >  static void
-> > > > > > > -irqfd_inject(struct work_struct *work)
-> > > > > > > +irqfd_inject_edge(struct work_struct *work)
-> > > > > > >  {
-> > > > > > >  	struct _irqfd *irqfd = container_of(work, struct _irqfd, inject);
-> > > > > > >  	struct kvm *kvm = irqfd->kvm;
-> > > > > > > @@ -71,6 +135,29 @@ irqfd_inject(struct work_struct *work)
-> > > > > > >  	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
-> > > > > > >  }
-> > > > > > >  
-> > > > > > > +static void
-> > > > > > > +irqfd_inject_level(struct work_struct *work)
-> > > > > > > +{
-> > > > > > > +	struct _irqfd *irqfd = container_of(work, struct _irqfd, inject);
-> > > > > > > +
-> > > > > > > +	/*
-> > > > > > > +	 * Inject an interrupt only if not already asserted.
-> > > > > > > +	 *
-> > > > > > > +	 * We can safely ignore the kvm_set_irq return value here.  If
-> > > > > > > +	 * masked, the irr bit is still set and will eventually be serviced.
-> > > > > > > +	 * This interface does not guarantee immediate injection.  If
-> > > > > > > +	 * coalesced, an eoi will be coming where we can de-assert and
-> > > > > > > +	 * re-inject if necessary.  NB, if you need to know if an interrupt
-> > > > > > > +	 * was coalesced, this interface is not for you.
-> > > > > > > +	 */
-> > > > > > > +	spin_lock(&irqfd->source->lock);
-> > > > > > > +	if (!irqfd->source->level_asserted) {
-> > > > > > > +		kvm_set_irq(irqfd->kvm, irqfd->source->id, irqfd->gsi, 1);
-> > > > > > > +		irqfd->source->level_asserted = true;
-> > > > > > > +	}
-> > > > > > > +	spin_unlock(&irqfd->source->lock);
-> > > > > > > +}
-> > > > > > > +
-> > > > > > 
-> > > > > > So as was discussed kvm_set_irq under spinlock is bad for scalability
-> > > > > > with multiple VCPUs.  Why do we need a spinlock simply to protect
-> > > > > > level_asserted?  Let's use an atomic test and set/test and clear and the
-> > > > > > problem goes away.
-> > > > > > 
-> > > > > That sad reality is that for level interrupt we already scan all vcpus
-> > > > > under spinlock.
-> > > > 
-> > > > Where?
-> > > > 
-> > > ioapic
-> > 
-> > $ grep kvm_for_each_vcpu virt/kvm/ioapic.c
-> > $
-> > 
-> > ?
-> > 
-> 
-> Come on Michael. You can do better than grep and actually look at what
-> code does. The code that loops over all vcpus while delivering an irq is
-> in kvm_irq_delivery_to_apic(). Now grep for that.
+On 18/07/12 12:12, Mark Brown wrote:
+> On Wed, Jul 18, 2012 at 08:35:21AM +0100, Lee Jones wrote:
+>
+> Fix your mailer to word wrap within paragraphs.  I've reformatted your
+> mail for legibility.
 
-Hmm, I see, it's actually done for edge if injected from ioapic too,
-right?
+Does it always do that, or was it just this time? It's setup to 
+word-wrap, for instance this paragraph should. I have an add-on, which 
+disables wrapping, but I only enable that when I send individual patches 
+out. I know it used to work, but I have a feeling it's broken.
 
-So set_irq does a linear scan, and for each matching CPU it calls
-kvm_irq_delivery_to_apic which is another scan?
-So it's actually N^2 worst case for a broadcast?
+>> I agree, but in this instance it really does stand to reason.
+>
+>> 1. No unified bindings currently exist.
+>> 2. I don't have time to create them.
+>> 3. It will probably take quite a bit of time for someone else to get
+>>     round to creating them.
+>> 4. The bindings I'm proposing are siloed by vendor and driver, so will
+>>     cause no harm.
+>
+> Right, this is just a restatement of the standard vendor line.
+>
+> If the issue is purely about having generic bindings quite frankly it's
+> very hard to see how it could take much time or effort to handle the
+> generic bits for I2C, it's basically just the maximum bus frequency and
 
-> --
-> 			Gleb.
+The frequency is already a generic binding, it's the others which need 
+alignment.
+
+> possibly also the various fast modes (though to a good approximation it
+> seems reasonable to just infer them from the bus frequency and then see
+> if we need any more).  One thing I frequently find is that people say
+> any sort of generic work is hard without explaining why, if there are
+> complex issues that's one thing but that's often not the case.
+
+I didn't say it was hard, I was it was time consuming. It would require 
+looking at all of the other drivers and picking out bits which are the 
+same. An i2c guy would be better to do it. I didn't even know what the 
+nmk-i2c ones were (slsu, tft, rft, sm) until I was told my the author. I 
+fear the other drivers will be just as cryptic.
+
+> BTW, looking at the platform data again it seems like i2c_freq_mode it
+> seems very odd that it's driver specific?
+
+I agree.
+
+>> 5. I've already volunteered to move them over to the unified ones once
+>>     created.
+>> 6. These allow support for the driver to work with DT, at the moment
+>>     it does not.
+>
+>> Personally, I think there is more to be gained by applying the
+>> (working) vendor specific bindings to the vendor specific driver until
+>> some more consolidated ones appear.
+>
+> Again, vendors always make great promises about how they're going to
+> keep everything up to date...
+
+I'm not a vendor. I also keep my promises. :)
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+M: +44 77 88 633 515
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
+
+
