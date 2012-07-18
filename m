@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751804Ab2GRGiP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 02:38:15 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:55216 "EHLO comal.ext.ti.com"
+	id S1750852Ab2GRGip (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 02:38:45 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:55210 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752654Ab2GRGff (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 02:35:35 -0400
+	id S1752556Ab2GRGfb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 02:35:31 -0400
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <kishon@ti.com>, <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
         <rob@landley.net>, <linux@arm.linux.org.uk>,
@@ -14,9 +14,9 @@ To: <kishon@ti.com>, <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
         <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <balbi@ti.com>,
         <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>
-Subject: [PATCH v3 11/11] arm: omap: phy: remove unused functions from omap-phy-internal.c
-Date: Wed, 18 Jul 2012 12:04:48 +0530
-Message-ID: <1342593288-7872-12-git-send-email-kishon@ti.com>
+Subject: [PATCH v3 10/11] arm/dts: omap: Add usb_otg and glue data
+Date: Wed, 18 Jul 2012 12:04:47 +0530
+Message-ID: <1342593288-7872-11-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1342593288-7872-1-git-send-email-kishon@ti.com>
 References: <1342593288-7872-1-git-send-email-kishon@ti.com>
@@ -26,195 +26,111 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All the unnessary functions in omap-phy-internal is removed.
-These functionality are now handled by omap-usb2 phy driver.
+Add usb otg data node in omap4/omap3 device tree file. Also update
+the node with board specific setting in omapx-<board>.dts file.
 
-Cc: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-Acked-by: Tony Lindgren <tony@atomide.com>
 ---
- arch/arm/mach-omap2/omap_phy_internal.c |  138 -------------------------------
- arch/arm/mach-omap2/twl-common.c        |    5 -
- arch/arm/mach-omap2/usb-musb.c          |    3 -
- 3 files changed, 0 insertions(+), 146 deletions(-)
+ arch/arm/boot/dts/omap3-beagle.dts |    6 ++++++
+ arch/arm/boot/dts/omap3-evm.dts    |    6 ++++++
+ arch/arm/boot/dts/omap3.dtsi       |    8 ++++++++
+ arch/arm/boot/dts/omap4-panda.dts  |    6 ++++++
+ arch/arm/boot/dts/omap4-sdp.dts    |    6 ++++++
+ arch/arm/boot/dts/omap4.dtsi       |    8 ++++++++
+ 6 files changed, 40 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/omap_phy_internal.c b/arch/arm/mach-omap2/omap_phy_internal.c
-index d52651a..874aecc 100644
---- a/arch/arm/mach-omap2/omap_phy_internal.c
-+++ b/arch/arm/mach-omap2/omap_phy_internal.c
-@@ -31,144 +31,6 @@
- #include <plat/usb.h>
- #include "control.h"
- 
--/* OMAP control module register for UTMI PHY */
--#define CONTROL_DEV_CONF		0x300
--#define PHY_PD				0x1
--
--#define USBOTGHS_CONTROL		0x33c
--#define	AVALID				BIT(0)
--#define	BVALID				BIT(1)
--#define	VBUSVALID			BIT(2)
--#define	SESSEND				BIT(3)
--#define	IDDIG				BIT(4)
--
--static struct clk *phyclk, *clk48m, *clk32k;
--static void __iomem *ctrl_base;
--static int usbotghs_control;
--
--int omap4430_phy_init(struct device *dev)
--{
--	ctrl_base = ioremap(OMAP443X_SCM_BASE, SZ_1K);
--	if (!ctrl_base) {
--		pr_err("control module ioremap failed\n");
--		return -ENOMEM;
--	}
--	/* Power down the phy */
--	__raw_writel(PHY_PD, ctrl_base + CONTROL_DEV_CONF);
--
--	if (!dev) {
--		iounmap(ctrl_base);
--		return 0;
--	}
--
--	phyclk = clk_get(dev, "ocp2scp_usb_phy_ick");
--	if (IS_ERR(phyclk)) {
--		dev_err(dev, "cannot clk_get ocp2scp_usb_phy_ick\n");
--		iounmap(ctrl_base);
--		return PTR_ERR(phyclk);
--	}
--
--	clk48m = clk_get(dev, "ocp2scp_usb_phy_phy_48m");
--	if (IS_ERR(clk48m)) {
--		dev_err(dev, "cannot clk_get ocp2scp_usb_phy_phy_48m\n");
--		clk_put(phyclk);
--		iounmap(ctrl_base);
--		return PTR_ERR(clk48m);
--	}
--
--	clk32k = clk_get(dev, "usb_phy_cm_clk32k");
--	if (IS_ERR(clk32k)) {
--		dev_err(dev, "cannot clk_get usb_phy_cm_clk32k\n");
--		clk_put(phyclk);
--		clk_put(clk48m);
--		iounmap(ctrl_base);
--		return PTR_ERR(clk32k);
--	}
--	return 0;
--}
--
--int omap4430_phy_set_clk(struct device *dev, int on)
--{
--	static int state;
--
--	if (on && !state) {
--		/* Enable the phy clocks */
--		clk_enable(phyclk);
--		clk_enable(clk48m);
--		clk_enable(clk32k);
--		state = 1;
--	} else if (state) {
--		/* Disable the phy clocks */
--		clk_disable(phyclk);
--		clk_disable(clk48m);
--		clk_disable(clk32k);
--		state = 0;
--	}
--	return 0;
--}
--
--int omap4430_phy_power(struct device *dev, int ID, int on)
--{
--	if (on) {
--		if (ID)
--			/* enable VBUS valid, IDDIG groung */
--			__raw_writel(AVALID | VBUSVALID, ctrl_base +
--							USBOTGHS_CONTROL);
--		else
--			/*
--			 * Enable VBUS Valid, AValid and IDDIG
--			 * high impedance
--			 */
--			__raw_writel(IDDIG | AVALID | VBUSVALID,
--						ctrl_base + USBOTGHS_CONTROL);
--	} else {
--		/* Enable session END and IDIG to high impedance. */
--		__raw_writel(SESSEND | IDDIG, ctrl_base +
--					USBOTGHS_CONTROL);
--	}
--	return 0;
--}
--
--int omap4430_phy_suspend(struct device *dev, int suspend)
--{
--	if (suspend) {
--		/* Disable the clocks */
--		omap4430_phy_set_clk(dev, 0);
--		/* Power down the phy */
--		__raw_writel(PHY_PD, ctrl_base + CONTROL_DEV_CONF);
--
--		/* save the context */
--		usbotghs_control = __raw_readl(ctrl_base + USBOTGHS_CONTROL);
--	} else {
--		/* Enable the internel phy clcoks */
--		omap4430_phy_set_clk(dev, 1);
--		/* power on the phy */
--		if (__raw_readl(ctrl_base + CONTROL_DEV_CONF) & PHY_PD) {
--			__raw_writel(~PHY_PD, ctrl_base + CONTROL_DEV_CONF);
--			mdelay(200);
--		}
--
--		/* restore the context */
--		__raw_writel(usbotghs_control, ctrl_base + USBOTGHS_CONTROL);
--	}
--
--	return 0;
--}
--
--int omap4430_phy_exit(struct device *dev)
--{
--	if (ctrl_base)
--		iounmap(ctrl_base);
--	if (phyclk)
--		clk_put(phyclk);
--	if (clk48m)
--		clk_put(clk48m);
--	if (clk32k)
--		clk_put(clk32k);
--
--	return 0;
--}
--
- void am35x_musb_reset(void)
- {
- 	u32	regval;
-diff --git a/arch/arm/mach-omap2/twl-common.c b/arch/arm/mach-omap2/twl-common.c
-index 119d5a9..396d189 100644
---- a/arch/arm/mach-omap2/twl-common.c
-+++ b/arch/arm/mach-omap2/twl-common.c
-@@ -250,11 +250,6 @@ void __init omap3_pmic_get_config(struct twl4030_platform_data *pmic_data,
- 
- #if defined(CONFIG_ARCH_OMAP4)
- static struct twl4030_usb_data omap4_usb_pdata = {
--	.phy_init	= omap4430_phy_init,
--	.phy_exit	= omap4430_phy_exit,
--	.phy_power	= omap4430_phy_power,
--	.phy_set_clock	= omap4430_phy_set_clk,
--	.phy_suspend	= omap4430_phy_suspend,
+diff --git a/arch/arm/boot/dts/omap3-beagle.dts b/arch/arm/boot/dts/omap3-beagle.dts
+index 5b4506c..f3d7076 100644
+--- a/arch/arm/boot/dts/omap3-beagle.dts
++++ b/arch/arm/boot/dts/omap3-beagle.dts
+@@ -67,3 +67,9 @@
+ &mmc3 {
+ 	status = "disable";
  };
- 
- static struct regulator_init_data omap4_vdac_idata = {
-diff --git a/arch/arm/mach-omap2/usb-musb.c b/arch/arm/mach-omap2/usb-musb.c
-index c4a5768..e9b4b23 100644
---- a/arch/arm/mach-omap2/usb-musb.c
-+++ b/arch/arm/mach-omap2/usb-musb.c
-@@ -117,7 +117,4 @@ void __init usb_musb_init(struct omap_musb_board_data *musb_board_data)
- 	dev->dma_mask = &musb_dmamask;
- 	dev->coherent_dma_mask = musb_dmamask;
- 	put_device(dev);
--
--	if (cpu_is_omap44xx())
--		omap4430_phy_init(dev);
- }
++
++&usb_otg_hs {
++	interface_type = <0>;
++	mode = <3>;
++	power = <50>;
++};
+diff --git a/arch/arm/boot/dts/omap3-evm.dts b/arch/arm/boot/dts/omap3-evm.dts
+index 2eee16e..8963b3d 100644
+--- a/arch/arm/boot/dts/omap3-evm.dts
++++ b/arch/arm/boot/dts/omap3-evm.dts
+@@ -18,3 +18,9 @@
+ 		reg = <0x80000000 0x10000000>; /* 256 MB */
+ 	};
+ };
++
++&usb_otg_hs {
++	interface_type = <0>;
++	mode = <3>;
++	power = <50>;
++};
+diff --git a/arch/arm/boot/dts/omap3.dtsi b/arch/arm/boot/dts/omap3.dtsi
+index 99474fa..f2694c9 100644
+--- a/arch/arm/boot/dts/omap3.dtsi
++++ b/arch/arm/boot/dts/omap3.dtsi
+@@ -215,5 +215,13 @@
+ 			compatible = "ti,omap3-hsmmc";
+ 			ti,hwmods = "mmc3";
+ 		};
++
++		usb_otg_hs: usb_otg_hs@4a0ab000 {
++			compatible = "ti,omap3-musb";
++			ti,hwmods = "usb_otg_hs";
++			multipoint = <1>;
++			num_eps = <16>;
++			ram_bits = <12>;
++		};
+ 	};
+ };
+diff --git a/arch/arm/boot/dts/omap4-panda.dts b/arch/arm/boot/dts/omap4-panda.dts
+index 7052422..dd19370 100644
+--- a/arch/arm/boot/dts/omap4-panda.dts
++++ b/arch/arm/boot/dts/omap4-panda.dts
+@@ -93,3 +93,9 @@
+ &twlusb {
+ 	usb-supply = <&vusb>;
+ };
++
++&usb_otg_hs {
++	interface_type = <1>;
++	mode = <3>;
++	power = <50>;
++};
+diff --git a/arch/arm/boot/dts/omap4-sdp.dts b/arch/arm/boot/dts/omap4-sdp.dts
+index 6326d7c..0fc10d4 100644
+--- a/arch/arm/boot/dts/omap4-sdp.dts
++++ b/arch/arm/boot/dts/omap4-sdp.dts
+@@ -162,3 +162,9 @@
+ &twlusb {
+ 	usb-supply = <&vusb>;
+ };
++
++&usb_otg_hs {
++	interface_type = <1>;
++	mode = <3>;
++	power = <50>;
++};
+diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
+index 15f1890..3a6c3fa 100644
+--- a/arch/arm/boot/dts/omap4.dtsi
++++ b/arch/arm/boot/dts/omap4.dtsi
+@@ -285,5 +285,13 @@
+ 				      <0x4a002300 0x1>;
+ 			};
+ 		};
++
++		usb_otg_hs: usb_otg_hs@4a0ab000 {
++			compatible = "ti,omap4-musb";
++			ti,hwmods = "usb_otg_hs";
++			multipoint = <1>;
++			num_eps = <16>;
++			ram_bits = <12>;
++		};
+ 	};
+ };
 -- 
 1.7.5.4
 
