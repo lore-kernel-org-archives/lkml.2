@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754949Ab2GRQ11 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 12:27:27 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:36621 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754401Ab2GRQ1Y (ORCPT
+	id S1754991Ab2GRQci (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 12:32:38 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44634 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754963Ab2GRQce (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 12:27:24 -0400
+	Wed, 18 Jul 2012 12:32:34 -0400
+Date: Wed, 18 Jul 2012 09:32:29 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Aristeu Rozanski <aris@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
+        Hugh Dickins <hughd@google.com>, Hillf Danton <dhillf@gmail.com>
+Subject: Re: [PATCH v3 2/3] cgroup: revise how we re-populate root directory
+Message-ID: <20120718163229.GH24336@google.com>
+References: <20120702142925.795007114@napanee.usersys.redhat.com>
+ <20120702142926.405632285@napanee.usersys.redhat.com>
+ <20120709171748.GD1341@google.com>
+ <20120709172220.GE1341@google.com>
+ <20120709172831.GF1341@google.com>
+ <20120710192721.GB19791@redhat.com>
+ <20120717183851.GA24336@google.com>
+ <20120717212926.GB26916@redhat.com>
+ <20120717214010.GF24336@google.com>
+ <20120718141604.GC26916@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20120718161023.GE4495@opensource.wolfsonmicro.com>
-References: <20120717185749.GJ4477@opensource.wolfsonmicro.com> <20120718161023.GE4495@opensource.wolfsonmicro.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 18 Jul 2012 10:27:03 -0600
-X-Google-Sender-Auth: zVKj8HUmawjVpco1qP9mS0QNY2Q
-Message-ID: <CACxGe6tSWGOFs=FgUc8UADmnMM-kGCdwXj9hM2cAep_LKp4M-Q@mail.gmail.com>
-Subject: Re: Boot breaks in -next from LEGACY to LINEAR conversion
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Paul Mundt <lethal@linux-sh.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Kukjin Kim <kgene.kim@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120718141604.GC26916@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 18, 2012 at 10:10 AM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Tue, Jul 17, 2012 at 07:57:49PM +0100, Mark Brown wrote:
->> -next fails to boot for me today on my s3c64xx based systems.  Walking
->> back to the last time I tried and bisecting likely branches I find that
->> commit 910139 (irqdomain: Replace LEGACY mapping with LINEAR) is the one
->> that introduces the build break.  Unfortunately the boot fails before I
->> get a console which makes diagnosis somewhat more tricky than would be
->> ideal.  Any ideas?
->
-> Further data: the irq_domain_associate_many() calls that we're now doing
-> are also causing WARN_ON()s to go off during boot after commit 98aa46
-> (irqdomain: Support for static IRQ mapping and association) causing
-> breakage for my interrupt using MFDs.
->
-> I don't really have time to investigate now but backing out that commit
-> seems to make things much happier, I suspect there's some collision with
-> IRQs allocated statically by the platform but I don't immediately see
-> what's new here.
+Hello,
 
-I had seen that on my end too, but I thought I had fixed it...  I
-guess not (or this is a similar type of failure).  I'll investigate.
+On Wed, Jul 18, 2012 at 10:16:05AM -0400, Aristeu Rozanski wrote:
+> > Yeah, generally looks good to me although @added/removed_bits argument
+> > names irk me a bit.  The name may be okay for local variables but I
+> > keep thinking "what bits?".  @subsys_mask or something indicating that
+> > it's mask of subsystems would better.  Also, can you please add /**
+> > function comment explaining the clear/populate functions and their
+> > arguments?
+> 
+> agreed. although the "_bits" thing is spread all around the code. you
+> want that cleaned up too? (I can post a followup patch after this
+> patchset is done)
 
-g.
+Yeah, that would be great.
 
-
+Thanks a lot!
 
 -- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+tejun
