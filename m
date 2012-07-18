@@ -1,67 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757672Ab2GRAIx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 20:08:53 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35414 "EHLO
+	id S1757681Ab2GRAJI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 20:09:08 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37684 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757429Ab2GRAIp (ORCPT
+	with ESMTP id S1757509Ab2GRAFO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 20:08:45 -0400
-From: Masanari Iida <standby24x7@gmail.com>
-To: trivial@kernel.org, linux-kernel@vger.kernel.org, rjw@sisk.pl,
-        linux-pm@vger.kernel.org
-Cc: Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH] [trivial] cpufreq: Fix typo in cpufreq driver
-Date: Wed, 18 Jul 2012 09:09:27 +0900
-Message-Id: <1342570167-13076-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.7.11.2.249.g31c7954
+	Tue, 17 Jul 2012 20:05:14 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        John Stultz <johnstul@us.ibm.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 35/37] hrtimer: Update hrtimer base offsets each hrtimer_interrupt
+Date: Tue, 17 Jul 2012 17:03:12 -0700
+Message-Id: <20120717232434.345973034@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120717232431.399005532@linuxfoundation.org>
+References: <20120717232455.GA5994@kroah.com>
+ <20120717232431.399005532@linuxfoundation.org>
+User-Agent: quilt/0.60-20.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling typo in cpufreq driver.
+From: Greg KH <gregkh@linuxfoundation.org>
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+3.4-stable review patch.  If anyone has any objections, please let me know.
+
+------------------
+
+From: John Stultz <johnstul@us.ibm.com>
+
+This is a backport of 5baefd6d84163443215f4a99f6a20f054ef11236
+
+The update of the hrtimer base offsets on all cpus cannot be made
+atomically from the timekeeper.lock held and interrupt disabled region
+as smp function calls are not allowed there.
+
+clock_was_set(), which enforces the update on all cpus, is called
+either from preemptible process context in case of do_settimeofday()
+or from the softirq context when the offset modification happened in
+the timer interrupt itself due to a leap second.
+
+In both cases there is a race window for an hrtimer interrupt between
+dropping timekeeper lock, enabling interrupts and clock_was_set()
+issuing the updates. Any interrupt which arrives in that window will
+see the new time but operate on stale offsets.
+
+So we need to make sure that an hrtimer interrupt always sees a
+consistent state of time and offsets.
+
+ktime_get_update_offsets() allows us to get the current monotonic time
+and update the per cpu hrtimer base offsets from hrtimer_interrupt()
+to capture a consistent state of monotonic time and the offsets. The
+function replaces the existing ktime_get() calls in hrtimer_interrupt().
+
+The overhead of the new function vs. ktime_get() is minimal as it just
+adds two store operations.
+
+This ensures that any changes to realtime or boottime offsets are
+noticed and stored into the per-cpu hrtimer base structures, prior to
+any hrtimer expiration and guarantees that timers are not expired early.
+
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Reviewed-by: Ingo Molnar <mingo@kernel.org>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Prarit Bhargava <prarit@redhat.com>
+Link: http://lkml.kernel.org/r/1341960205-56738-8-git-send-email-johnstul@us.ibm.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/cpufreq/s3c2416-cpufreq.c | 4 ++--
- drivers/cpufreq/speedstep-ich.c   | 2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ kernel/hrtimer.c |   28 ++++++++++++++--------------
+ 1 file changed, 14 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/cpufreq/s3c2416-cpufreq.c b/drivers/cpufreq/s3c2416-cpufreq.c
-index 50d2f15..bcc053b 100644
---- a/drivers/cpufreq/s3c2416-cpufreq.c
-+++ b/drivers/cpufreq/s3c2416-cpufreq.c
-@@ -153,7 +153,7 @@ static int s3c2416_cpufreq_enter_dvs(struct s3c2416_data *s3c_freq, int idx)
- 	if (s3c_freq->vddarm) {
- 		dvfs = &s3c2416_dvfs_table[idx];
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -657,6 +657,14 @@ static inline int hrtimer_enqueue_reprog
+ 	return 0;
+ }
  
--		pr_debug("cpufreq: setting regultor to %d-%d\n",
-+		pr_debug("cpufreq: setting regulator to %d-%d\n",
- 			 dvfs->vddarm_min, dvfs->vddarm_max);
- 		ret = regulator_set_voltage(s3c_freq->vddarm,
- 					    dvfs->vddarm_min,
-@@ -186,7 +186,7 @@ static int s3c2416_cpufreq_leave_dvs(struct s3c2416_data *s3c_freq, int idx)
- 	if (s3c_freq->vddarm) {
- 		dvfs = &s3c2416_dvfs_table[idx];
++static inline ktime_t hrtimer_update_base(struct hrtimer_cpu_base *base)
++{
++	ktime_t *offs_real = &base->clock_base[HRTIMER_BASE_REALTIME].offset;
++	ktime_t *offs_boot = &base->clock_base[HRTIMER_BASE_BOOTTIME].offset;
++
++	return ktime_get_update_offsets(offs_real, offs_boot);
++}
++
+ /*
+  * Retrigger next event is called after clock was set
+  *
+@@ -665,22 +673,12 @@ static inline int hrtimer_enqueue_reprog
+ static void retrigger_next_event(void *arg)
+ {
+ 	struct hrtimer_cpu_base *base = &__get_cpu_var(hrtimer_bases);
+-	struct timespec realtime_offset, xtim, wtm, sleep;
  
--		pr_debug("cpufreq: setting regultor to %d-%d\n",
-+		pr_debug("cpufreq: setting regulator to %d-%d\n",
- 			 dvfs->vddarm_min, dvfs->vddarm_max);
- 		ret = regulator_set_voltage(s3c_freq->vddarm,
- 					    dvfs->vddarm_min,
-diff --git a/drivers/cpufreq/speedstep-ich.c b/drivers/cpufreq/speedstep-ich.c
-index 7432b3a..e29b59a 100644
---- a/drivers/cpufreq/speedstep-ich.c
-+++ b/drivers/cpufreq/speedstep-ich.c
-@@ -203,7 +203,7 @@ static unsigned int speedstep_detect_chipset(void)
- 	if (speedstep_chipset_dev) {
- 		/* speedstep.c causes lockups on Dell Inspirons 8000 and
- 		 * 8100 which use a pretty old revision of the 82815
--		 * host brige. Abort on these systems.
-+		 * host bridge. Abort on these systems.
- 		 */
- 		static struct pci_dev *hostbridge;
+ 	if (!hrtimer_hres_active())
+ 		return;
  
--- 
-1.7.11.2.249.g31c7954
+-	/* Optimized out for !HIGH_RES */
+-	get_xtime_and_monotonic_and_sleep_offset(&xtim, &wtm, &sleep);
+-	set_normalized_timespec(&realtime_offset, -wtm.tv_sec, -wtm.tv_nsec);
+-
+-	/* Adjust CLOCK_REALTIME offset */
+ 	raw_spin_lock(&base->lock);
+-	base->clock_base[HRTIMER_BASE_REALTIME].offset =
+-		timespec_to_ktime(realtime_offset);
+-	base->clock_base[HRTIMER_BASE_BOOTTIME].offset =
+-		timespec_to_ktime(sleep);
+-
++	hrtimer_update_base(base);
+ 	hrtimer_force_reprogram(base, 0);
+ 	raw_spin_unlock(&base->lock);
+ }
+@@ -710,7 +708,6 @@ static int hrtimer_switch_to_hres(void)
+ 		base->clock_base[i].resolution = KTIME_HIGH_RES;
+ 
+ 	tick_setup_sched_timer();
+-
+ 	/* "Retrigger" the interrupt to get things going */
+ 	retrigger_next_event(NULL);
+ 	local_irq_restore(flags);
+@@ -1264,7 +1261,7 @@ void hrtimer_interrupt(struct clock_even
+ 	dev->next_event.tv64 = KTIME_MAX;
+ 
+ 	raw_spin_lock(&cpu_base->lock);
+-	entry_time = now = ktime_get();
++	entry_time = now = hrtimer_update_base(cpu_base);
+ retry:
+ 	expires_next.tv64 = KTIME_MAX;
+ 	/*
+@@ -1342,9 +1339,12 @@ retry:
+ 	 * We need to prevent that we loop forever in the hrtimer
+ 	 * interrupt routine. We give it 3 attempts to avoid
+ 	 * overreacting on some spurious event.
++	 *
++	 * Acquire base lock for updating the offsets and retrieving
++	 * the current time.
+ 	 */
+ 	raw_spin_lock(&cpu_base->lock);
+-	now = ktime_get();
++	now = hrtimer_update_base(cpu_base);
+ 	cpu_base->nr_retries++;
+ 	if (++retries < 3)
+ 		goto retry;
+
 
