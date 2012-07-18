@@ -1,54 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755362Ab2GRRFt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 13:05:49 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:39776 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755158Ab2GRRFr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 13:05:47 -0400
-Date: Wed, 18 Jul 2012 13:05:42 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Linux Kernel Developers List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 02/17] input/serio/hp_sdc.c: remove IRQF_SAMPLE_RANDOM
- which is now a no-op
-Message-ID: <20120718170542.GA22107@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-	Linux Kernel Developers List <linux-kernel@vger.kernel.org>
-References: <1342560756-18737-1-git-send-email-tytso@mit.edu>
- <1342560756-18737-3-git-send-email-tytso@mit.edu>
- <20120718060913.GA23668@core.coreip.homeip.net>
+	id S1754353Ab2GRRJx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 13:09:53 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:36938 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753751Ab2GRRJv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 13:09:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120718060913.GA23668@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <1342630288.9551.19.camel@joe2Laptop>
+References: <1342611251-16935-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1342630288.9551.19.camel@joe2Laptop>
+Date: Wed, 18 Jul 2012 20:09:50 +0300
+Message-ID: <CAHp75Vftn9zSjHEWR8i-SxNO4Q1JWSiyqq5JU6G4DZkattyz7Q@mail.gmail.com>
+Subject: Re: [PATCH] dmaengine: Cleanup logging messages
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 17, 2012 at 11:09:13PM -0700, Dmitry Torokhov wrote:
-> On Tue, Jul 17, 2012 at 05:32:21PM -0400, Theodore Ts'o wrote:
-> > With the changes in the random tree, IRQF_SAMPLE_RANDOM is now a
-> > no-op; interrupt randomness is now collected unconditionally in a very
-> > low-overhead fashion; see commit 775f4b297b.  The IRQF_SAMPLE_RANDOM
-> > flag was scheduled to be removed in 2009 on the
-> > feature-removal-schedule, so this patch is preparation for the final
-> > removal of this flag.
-> > 
-> > Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-> 
-> Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> 
-> I assume you'll be merging it through random tree with the rest of the
-> patches?
+On Wed, Jul 18, 2012 at 7:51 PM, Joe Perches <joe@perches.com> wrote:
+> Use a more current logging style.
+>
+> Add pr_fmt to prefix dmaengine: to messages.
+> Convert printk(KERN_ERR to pr_err(.
+> Convert embedded function name use to "%s: ", __func__
+> Align arguments.
+>
+> Original-patch-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>
+> Hi Andy.  Maybe a slightly larger patch is better.
+Fine by me.
 
-Yes, correct.
 
-Thanks!!
-
-						- Ted
+-- 
+With Best Regards,
+Andy Shevchenko
