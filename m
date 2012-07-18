@@ -1,73 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754261Ab2GRRce (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 13:32:34 -0400
-Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:29953 "EHLO
-	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751564Ab2GRRcd (ORCPT
+	id S1754920Ab2GRRdC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 13:33:02 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.160]:39934 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753001Ab2GRRc7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 13:32:33 -0400
-Message-ID: <5006F32E.8060405@hp.com>
-Date: Wed, 18 Jul 2012 10:32:30 -0700
-From: Rick Jones <rick.jones2@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Wed, 18 Jul 2012 13:32:59 -0400
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmwtM48/lq387pErHR
+X-RZG-CLASS-ID: mo00
+Date: Wed, 18 Jul 2012 19:32:56 +0200
+From: Olaf Hering <olaf@aepfle.de>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Bryan Wu <bryan.wu@canonical.com>, Richard Purdie <rpurdie@rpsys.net>,
+        linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] led: use correct name for /sys/devices/virtual/leds/
+ entries
+Message-ID: <20120718173256.GA21359@aepfle.de>
+References: <1342630156-16432-1-git-send-email-olaf@aepfle.de>
+ <5006EBD4.8010601@metafoo.de>
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Eugen Dedu <Eugen.Dedu@pu-pm.univ-fcomte.fr>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: getsockopt/setsockopt with SO_RCVBUF and SO_SNDBUF "non-standard"
- behaviour
-References: <50052FFE.2060109@pu-pm.univ-fcomte.fr>  <5006DD6B.3030300@pu-pm.univ-fcomte.fr> <1342627875.2626.3070.camel@edumazet-glaptop>
-In-Reply-To: <1342627875.2626.3070.camel@edumazet-glaptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <5006EBD4.8010601@metafoo.de>
+User-Agent: Mutt/1.5.21.rev5543 (2011-12-20)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2012 09:11 AM, Eric Dumazet wrote:
->
-> That the way it's done on linux since day 0
->
-> You can probably find a lot of pages on the web explaining the
-> rationale.
->
-> If your application handles UDP frames, what SO_RCVBUF should count ?
->
-> If its the amount of payload bytes, you could have a pathological
-> situation where an attacker sends 1-byte UDP frames fast enough and
-> could consume a lot of kernel memory.
->
-> Each frame consumes a fair amount of kernel memory (between 512 bytes
-> and 8 Kbytes depending on the driver).
->
-> So linux says : If user expect to receive  XXXX bytes, set a limit of
-> _kernel_ memory used to store these bytes, and use an estimation of 100%
-> of overhead. That is : allow 2*XXXX bytes to be allocated for socket
-> receive buffers.
+On Wed, Jul 18, Lars-Peter Clausen wrote:
 
-Expanding on/rewording that, in a setsockopt() call SO_RCVBUF specifies 
-the data bytes and gets doubled to become the kernel/overhead byte 
-limit.  Unless the doubling would be greater than net.core.rmem_max, in 
-which case the limit becomes net.core.rmem_max.
+> That's a LED trigger, not a LED. So the LED naming convention doesn't apply
+> here and it does not even make sense to try to apply it. Also the patch
+> breaks all users of the default-on trigger.
 
-But on getsockopt() SO_RCVBUF is always the kernel/overhead byte limit.
+Thanks for the review. The real fix was applied in db3f5207, no idea why
+I changed also this file. Up to now noone noticed the name change.
 
-In one call it is fish.  In the other it is fowl.
-
-Other stacks appear to keep their kernel/overhead limit quiet, keeping 
-SO_RCVBUF an expression of a data limit in both setsockopt() and 
-getsockopt().  With those stacks, there is I suppose the possible source 
-of confusion when/if someone tests the queuing to a socket, sends "high 
-overhead" packets and doesn't get to SO_RCVBUF worth of data though I 
-don't recall encountering that in my "pre-linux" time.
-
-The sometimes fish, sometimes fowl version (along with the auto tuning 
-when one doesn't make setsockopt() calls) gave me fits in netperf for 
-years until I finally relented and split the socket buffer size 
-variables into three - what netperf's user requested via the command 
-line, what it was right after the socket was created, and what it was at 
-the end of the data phase of the test.
-
-rick jones
+Olaf
