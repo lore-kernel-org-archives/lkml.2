@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757562Ab2GRAGJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 20:06:09 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48276 "EHLO
+	id S1757612Ab2GRAGQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 20:06:16 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49131 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757183Ab2GRAEX (ORCPT
+	with ESMTP id S1757488Ab2GRAE1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 20:04:23 -0400
+	Tue, 17 Jul 2012 20:04:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Deepak Sikri <deepak.sikri@st.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 20/37] stmmac: Fix for nfs hang on multiple reboot
-Date: Tue, 17 Jul 2012 17:02:57 -0700
-Message-Id: <20120717232433.014403911@linuxfoundation.org>
+Subject: [ 21/37] bonding: debugfs and network namespaces are incompatible
+Date: Tue, 17 Jul 2012 17:02:58 -0700
+Message-Id: <20120717232433.101024348@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120717232431.399005532@linuxfoundation.org>
 References: <20120717232455.GA5994@kroah.com>
@@ -31,54 +31,36 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Deepak Sikri <deepak.sikri@st.com>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit 8e83989106562326bfd6aaf92174fe138efd026b upstream.
+commit 96ca7ffe748bf91f851e6aa4479aa11c8b1122ba upstream.
 
-It was observed that during multiple reboots nfs hangs. The status of
-receive descriptors shows that all the descriptors were in control of
-CPU, and none were assigned to DMA.
-Also the DMA status register confirmed that the Rx buffer is
-unavailable.
+The bonding debugfs support has been broken in the presence of network
+namespaces since it has been added.  The debugfs support does not handle
+multiple bonding devices with the same name in different network
+namespaces.
 
-This patch adds the fix for the same by adding the memory barriers to
-ascertain that the all instructions before enabling the Rx or Tx DMA are
-completed which involves the proper setting of the ownership bit in DMA
-descriptors.
+I haven't had any bug reports, and I'm not interested in getting any.
+Disable the debugfs support when network namespaces are enabled.
 
-Signed-off-by: Deepak Sikri <deepak.sikri@st.com>
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/stmicro/stmmac/stmmac_main.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/net/bonding/bond_debugfs.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-+++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-@@ -1158,6 +1158,7 @@ static netdev_tx_t stmmac_xmit(struct sk
- 		priv->hw->desc->prepare_tx_desc(desc, 0, len, csum_insertion);
- 		wmb();
- 		priv->hw->desc->set_tx_owner(desc);
-+		wmb();
- 	}
+--- a/drivers/net/bonding/bond_debugfs.c
++++ b/drivers/net/bonding/bond_debugfs.c
+@@ -6,7 +6,7 @@
+ #include "bonding.h"
+ #include "bond_alb.h"
  
- 	/* Interrupt on completition only for the latest segment */
-@@ -1173,6 +1174,7 @@ static netdev_tx_t stmmac_xmit(struct sk
+-#ifdef CONFIG_DEBUG_FS
++#if defined(CONFIG_DEBUG_FS) && !defined(CONFIG_NET_NS)
  
- 	/* To avoid raise condition */
- 	priv->hw->desc->set_tx_owner(first);
-+	wmb();
- 
- 	priv->cur_tx++;
- 
-@@ -1236,6 +1238,7 @@ static inline void stmmac_rx_refill(stru
- 		}
- 		wmb();
- 		priv->hw->desc->set_rx_owner(p + entry);
-+		wmb();
- 	}
- }
- 
+ #include <linux/debugfs.h>
+ #include <linux/seq_file.h>
 
 
