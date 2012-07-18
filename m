@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757763Ab2GRAHj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 20:07:39 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37684 "EHLO
+	id S1757632Ab2GRAGY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 20:06:24 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48276 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757572Ab2GRAFV (ORCPT
+	with ESMTP id S1757479Ab2GRAER (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 20:05:21 -0400
+	Tue, 17 Jul 2012 20:04:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 37/37] NFC: Export nfc.h to userland
-Date: Tue, 17 Jul 2012 17:03:14 -0700
-Message-Id: <20120717232434.529756095@linuxfoundation.org>
+        Federico Fuga <fuga@studiofuga.com>, Ohad Ben-Cohen <ohad@wizery.com>
+Subject: [ 18/37] rpmsg: fix dependency on initialization order
+Date: Tue, 17 Jul 2012 17:02:55 -0700
+Message-Id: <20120717232432.851103872@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120717232431.399005532@linuxfoundation.org>
 References: <20120717232455.GA5994@kroah.com>
@@ -31,30 +30,37 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Samuel Ortiz <sameo@linux.intel.com>
+From: Federico Fuga <fuga@studiofuga.com>
 
-commit dbd4fcaf8d664fab4163b1f8682e41ad8bff3444 upstream.
+commit 9634252617441991b01dacaf4040866feecaf36f upstream.
 
-The netlink commands and attributes, along with the socket structure
-definitions need to be exported.
+When rpmsg drivers are built into the kernel, they must not initialize
+before the rpmsg bus does, otherwise they'd trigger a BUG() in
+drivers/base/driver.c line 169 (driver_register()).
 
-Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+To fix that, and to stop depending on arbitrary linkage ordering of
+those built-in rpmsg drivers, we make the rpmsg bus initialize at
+subsys_initcall.
+
+Signed-off-by: Federico Fuga <fuga@studiofuga.com>
+[ohad: rewrite the commit log]
+Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/Kbuild |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/rpmsg/virtio_rpmsg_bus.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/linux/Kbuild
-+++ b/include/linux/Kbuild
-@@ -272,6 +272,7 @@ header-y += netfilter_ipv4.h
- header-y += netfilter_ipv6.h
- header-y += netlink.h
- header-y += netrom.h
-+header-y += nfc.h
- header-y += nfs.h
- header-y += nfs2.h
- header-y += nfs3.h
+--- a/drivers/rpmsg/virtio_rpmsg_bus.c
++++ b/drivers/rpmsg/virtio_rpmsg_bus.c
+@@ -1085,7 +1085,7 @@ static int __init rpmsg_init(void)
+ 
+ 	return ret;
+ }
+-module_init(rpmsg_init);
++subsys_initcall(rpmsg_init);
+ 
+ static void __exit rpmsg_fini(void)
+ {
 
 
