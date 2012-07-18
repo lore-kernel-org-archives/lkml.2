@@ -1,68 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757928Ab2GRAQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 20:16:26 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:50911 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757922Ab2GRAQN (ORCPT
+	id S1757933Ab2GRAQg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 20:16:36 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51439 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757892Ab2GRAN1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 20:16:13 -0400
-Date: Tue, 17 Jul 2012 19:16:07 -0500
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [ 11/37] sched/nohz: Rewrite and fix load-avg computation --
- again
-Message-ID: <20120718001607.GJ25325@burratino>
+	Tue, 17 Jul 2012 20:13:27 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <johnstul@us.ibm.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Prarit Bhargava <prarit@redhat.com>
+Subject: [ 19/23] timekeeping: Maintain ktime_t based offsets for hrtimers
+Date: Tue, 17 Jul 2012 17:12:12 -0700
+Message-Id: <20120717232330.847183748@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.10.1.362.g242cab3
+In-Reply-To: <20120717232329.276003806@linuxfoundation.org>
 References: <20120717232455.GA5994@kroah.com>
- <20120717232431.399005532@linuxfoundation.org>
- <20120717232432.250519502@linuxfoundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120717232432.250519502@linuxfoundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+ <20120717232329.276003806@linuxfoundation.org>
+User-Agent: quilt/0.60-20.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Greg KH <gregkh@linuxfoundation.org>
 
-Greg Kroah-Hartman wrote:
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-> commit 5167e8d5417bf5c322a703d2927daec727ea40dd upstream.
->
-> Thanks to Charles Wang for spotting the defects in the current code:
->
->  - If we go idle during the sample window -- after sampling, we get a
->    negative bias because we can negate our own sample.
->
->  - If we wake up during the sample window we get a positive bias
->    because we push the sample to a known active period.
->
-> So rewrite the entire nohz load-avg muck once again, now adding
-> copious documentation to the code.
+------------------
 
-I'm thrilled to see this regression fix for stable@, but are we really
-really sure that it won't cause new regressions?
 
-Words like "rewrite" set off alarm bells.  As do missing acks:
+From: Thomas Gleixner <tglx@linutronix.de>
 
-> Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
+This is a backport of 5b9fe759a678e05be4937ddf03d50e950207c1c0
 
-(though I guess there's an implied ack from Linus, given that it was
-pulled).  And big diffstats:
+We need to update the hrtimer clock offsets from the hrtimer interrupt
+context. To avoid conversions from timespec to ktime_t maintain a
+ktime_t based representation of those offsets in the timekeeper. This
+puts the conversion overhead into the code which updates the
+underlying offsets and provides fast accessible values in the hrtimer
+interrupt.
 
->  include/linux/sched.h    |    8 +
->  kernel/sched/core.c      |  275 ++++++++++++++++++++++++++++++++++-------------
->  kernel/sched/idle_task.c |    1 
->  kernel/sched/sched.h     |    2 
->  kernel/time/tick-sched.c |    2 
->  5 files changed, 213 insertions(+), 75 deletions(-)
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Reviewed-by: Ingo Molnar <mingo@kernel.org>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Prarit Bhargava <prarit@redhat.com>
+Link: http://lkml.kernel.org/r/1341960205-56738-4-git-send-email-johnstul@us.ibm.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ kernel/time/timekeeping.c |   25 ++++++++++++++++++++++++-
+ 1 file changed, 24 insertions(+), 1 deletion(-)
 
-Thanks,
-Jonathan
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -161,18 +161,34 @@ static struct timespec xtime __attribute
+ static struct timespec wall_to_monotonic __attribute__ ((aligned (16)));
+ static struct timespec total_sleep_time;
+ 
++/* Offset clock monotonic -> clock realtime */
++static ktime_t offs_real;
++
++/* Offset clock monotonic -> clock boottime */
++static ktime_t offs_boot;
++
+ /*
+  * The raw monotonic time for the CLOCK_MONOTONIC_RAW posix clock.
+  */
+ static struct timespec raw_time;
+ 
+ /* must hold write on xtime_lock */
++static void update_rt_offset(void)
++{
++	struct timespec tmp, *wtm = &wall_to_monotonic;
++
++	set_normalized_timespec(&tmp, -wtm->tv_sec, -wtm->tv_nsec);
++	offs_real = timespec_to_ktime(tmp);
++}
++
++/* must hold write on xtime_lock */
+ static void timekeeping_update(bool clearntp)
+ {
+ 	if (clearntp) {
+ 		timekeeper.ntp_error = 0;
+ 		ntp_clear();
+ 	}
++	update_rt_offset();
+ 	update_vsyscall(&xtime, &wall_to_monotonic,
+ 			 timekeeper.clock, timekeeper.mult);
+ }
+@@ -587,6 +603,7 @@ void __init timekeeping_init(void)
+ 	}
+ 	set_normalized_timespec(&wall_to_monotonic,
+ 				-boot.tv_sec, -boot.tv_nsec);
++	update_rt_offset();
+ 	total_sleep_time.tv_sec = 0;
+ 	total_sleep_time.tv_nsec = 0;
+ 	write_sequnlock_irqrestore(&xtime_lock, flags);
+@@ -595,6 +612,12 @@ void __init timekeeping_init(void)
+ /* time in seconds when suspend began */
+ static struct timespec timekeeping_suspend_time;
+ 
++static void update_sleep_time(struct timespec t)
++{
++	total_sleep_time = t;
++	offs_boot = timespec_to_ktime(t);
++}
++
+ /**
+  * __timekeeping_inject_sleeptime - Internal function to add sleep interval
+  * @delta: pointer to a timespec delta value
+@@ -606,7 +629,7 @@ static void __timekeeping_inject_sleepti
+ {
+ 	xtime = timespec_add(xtime, *delta);
+ 	wall_to_monotonic = timespec_sub(wall_to_monotonic, *delta);
+-	total_sleep_time = timespec_add(total_sleep_time, *delta);
++	update_sleep_time(timespec_add(total_sleep_time, *delta));
+ }
+ 
+ 
+
+
