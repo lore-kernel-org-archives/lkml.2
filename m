@@ -1,85 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753411Ab2GRKWo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 06:22:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62082 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751010Ab2GRKWm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 06:22:42 -0400
-Date: Wed, 18 Jul 2012 12:21:52 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: Ulrich Drepper <drepper@gmail.com>, Namhyung Kim <namhyung@gmail.com>,
-        acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu,
-        paulus@samba.org, cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, andi@firstfloor.org
-Subject: Re: [PATCHv3 0/3] perf tool: Add new event group management
-Message-ID: <20120718102152.GA2587@krava.redhat.com>
-References: <1340960907-3725-1-git-send-email-jolsa@redhat.com>
- <87fw9blyhj.fsf@sejong.aot.lge.com>
- <20120702101518.GC967@krava.redhat.com>
- <1341234662.1476.13.camel@leonhard>
- <20120702133341.GD967@krava.redhat.com>
- <CABPqkBTKNuwJXY7jRa+Zt8rmFftZUeJiYKEsKJeRiLdoHN3KWQ@mail.gmail.com>
- <CAOPLpQfWtyRHYT1ZfcdmshYoapBgF=FO7yFacYe8pyL0MBeebA@mail.gmail.com>
- <CABPqkBTTZaCVTtwJZbjXGwAihKAW_PMFK0+TZUTvbOn4pnfzvA@mail.gmail.com>
- <20120709110528.GA965@krava.redhat.com>
- <CABPqkBTGOvSuCfOUt=gnpfViVn8Whg0Mf7_3dUUim-iXA+8gjA@mail.gmail.com>
+	id S1753363Ab2GRKZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 06:25:57 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:44718 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751010Ab2GRKZy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 06:25:54 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <50068F19.1020606@jp.fujitsu.com>
+Date: Wed, 18 Jul 2012 19:25:29 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBTGOvSuCfOUt=gnpfViVn8Whg0Mf7_3dUUim-iXA+8gjA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Wen Congyang <wency@cn.fujitsu.com>
+CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>,
+        <rientjes@google.com>, <liuj97@gmail.com>, <len.brown@intel.com>,
+        <benh@kernel.crashing.org>, <paulus@samba.org>, <cl@linux.com>,
+        <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
+        <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [PATCH v4 3/13] memory-hotplug : check whether memory is present
+ or not
+References: <50068974.1070409@jp.fujitsu.com> <50068AE9.3050804@jp.fujitsu.com> <50068F0A.20100@cn.fujitsu.com>
+In-Reply-To: <50068F0A.20100@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 17, 2012 at 09:15:23AM +0200, Stephane Eranian wrote:
-> On Mon, Jul 9, 2012 at 1:05 PM, Jiri Olsa <jolsa@redhat.com> wrote:
-> >
-> > On Fri, Jul 06, 2012 at 03:42:54AM +0200, Stephane Eranian wrote:
-> > > On Fri, Jul 6, 2012 at 3:32 AM, Ulrich Drepper <drepper@gmail.com> wrote:
-> > > > On Thu, Jul 5, 2012 at 12:15 PM, Stephane Eranian <eranian@google.com> wrote:
-> > > >> I don't understand why you actually need the :2 suffix. There can
-> > > >> only be one leader. So assume it is the first one. Users have to
-> > > >> know the first one is the leader which seems like a natural thing
-> > > >> to do for me. It would make you syntax less ugly than it already
-> > > >> is.
-> > > >
-> > > > In a blue sky world I would have done this.  In fact, this is what I
-> > > > tried before reading the sources to find out there is no group support
-> > > > so far.  But given that multiple -e options already have a meaning I
-> > > > would be hesitant to change this.
-> > >
-> > > That's why I said you activate grouping via -e only when you have
-> > > the --group-events or --group-reads option in front. That would
-> > > not change the meaning of the multiple -e when none of those
-> > > group options are specified.
-> >
-> > I discussed this with peter..
-> >
-> > <peterz> the {} thing allows: 1) multiple groups in a single -e, 2) group attributes
-> >
-> And what's the value of 1) exactly? What's wrong with passing multiple -e ?
-> The only group attribute I can think of would be :u, :k. Not so much typing.
+Hi Wen,
+
+2012/07/18 19:25, Wen Congyang wrote:
+> At 07/18/2012 06:07 PM, Yasuaki Ishimatsu Wrote:
+>> If system supports memory hot-remove, online_pages() may online removed pages.
+>> So online_pages() need to check whether onlining pages are present or not.
+>>
+>> CC: David Rientjes <rientjes@google.com>
+>> CC: Jiang Liu <liuj97@gmail.com>
+>> CC: Len Brown <len.brown@intel.com>
+>> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+>> CC: Paul Mackerras <paulus@samba.org>
+>> CC: Christoph Lameter <cl@linux.com>
+>> Cc: Minchan Kim <minchan.kim@gmail.com>
+>> CC: Andrew Morton <akpm@linux-foundation.org>
+>> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>> CC: Wen Congyang <wency@cn.fujitsu.com>
+>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>>
+>> ---
+>>   include/linux/mmzone.h |   21 +++++++++++++++++++++
+>>   mm/memory_hotplug.c    |   13 +++++++++++++
+>>   2 files changed, 34 insertions(+)
+>>
+>> Index: linux-3.5-rc6/include/linux/mmzone.h
+>> ===================================================================
+>> --- linux-3.5-rc6.orig/include/linux/mmzone.h	2012-07-08 09:23:56.000000000 +0900
+>> +++ linux-3.5-rc6/include/linux/mmzone.h	2012-07-17 16:10:21.588186145 +0900
+>> @@ -1168,6 +1168,27 @@ void sparse_init(void);
+>>   #define sparse_index_init(_sec, _nid)  do {} while (0)
+>>   #endif /* CONFIG_SPARSEMEM */
+>>   
+>> +#ifdef CONFIG_SPARSEMEM
+>> +static inline int pfns_present(unsigned long pfn, unsigned long nr_pages)
+>> +{
+>> +	int i;
+>> +	for (i = 0; i < nr_pages; i++) {
+>> +		if (pfn_present(pfn + 1))
+>> +			continue;
+>> +		else {
+>> +			unlock_memory_hotplug();
 > 
-> > as for the leader sampling, we can have the first event to become the leader
-> > by default (omit the leader index modifier) and enable the leader sampling by
-> > another modifier:
-> >
-> I don't understand this sentence.
+> Why do you unlock memory hotplug here? The caller will do it.
+
+Ah, you are right. In this case, the function should only return -EINVAL.
+
+Thansks,
+Yasuaki Ishimatsu
 > 
-> > <peterz> right, just make it a single 'l' (el not one) to indicate 'leader' sampling
-> >
-> To me ,this looks a bit of an over-engineered design and it is not based on
-> any actual user requests. Don't get me wrong, grouping is useful and required
-> but nobody has ever asked for that level of flexibility. The syntax you have
-> now is already very rich for my taste.
+> Thanks
+> Wen Congyang
+> 
+>> +			return -EINVAL;
+>> +		}
+>> +	}
+>> +	return 0;
+>> +}
+>> +#else
+>> +static inline int pfns_present(unsigned long pfn, unsigned long nr_pages)
+>> +{
+>> +	return 0;
+>> +}
+>> +#endif /* CONFIG_SPARSEMEM*/
+>> +
+>>   #ifdef CONFIG_NODES_SPAN_OTHER_NODES
+>>   bool early_pfn_in_nid(unsigned long pfn, int nid);
+>>   #else
+>> Index: linux-3.5-rc6/mm/memory_hotplug.c
+>> ===================================================================
+>> --- linux-3.5-rc6.orig/mm/memory_hotplug.c	2012-07-17 14:26:40.000000000 +0900
+>> +++ linux-3.5-rc6/mm/memory_hotplug.c	2012-07-17 16:09:50.070580170 +0900
+>> @@ -467,6 +467,19 @@ int __ref online_pages(unsigned long pfn
+>>   	struct memory_notify arg;
+>>   
+>>   	lock_memory_hotplug();
+>> +	/*
+>> + 	 * If system supports memory hot-remove, the memory may have been
+>> + 	 * removed. So we check whether the memory has been removed or not.
+>> + 	 *
+>> + 	 * Note: When CONFIG_SPARSEMEM is defined, pfns_present() become
+>> + 	 *       effective. If CONFIG_SPARSEMEM is not defined, pfns_present()
+>> + 	 *       always returns 0.
+>> + 	 */
+>> +	ret = pfns_present(pfn, nr_pages);
+>> +	if (ret) {
+>> +		unlock_memory_hotplug();
+>> +		return ret;
+>> +	}
+>>   	arg.start_pfn = pfn;
+>>   	arg.nr_pages = nr_pages;
+>>   	arg.status_change_nid = -1;
+>>
+>>
+> 
 
-Well, I personally like the '{}' syntax more than '--group-events or --group-reads
-option in front', it feels more user friendly.. anyway, we can easily have both ways.
 
-As for the group attributes and group leader sampling, I don't mind omitting
-them at this point and get back to that if we find it useful in future.
 
-jirka
