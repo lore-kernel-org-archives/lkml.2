@@ -1,153 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755909Ab2GRUHh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 16:07:37 -0400
-Received: from longford.logfs.org ([213.229.74.203]:53934 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753352Ab2GRUHd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 16:07:33 -0400
-Date: Wed, 18 Jul 2012 14:53:35 -0400
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Jeff Moyer <jmoyer@redhat.com>, Steve Hodgson <steve@purestorage.com>
-Subject: Re: [PATCH] add blockconsole version 1.1
-Message-ID: <20120718185335.GA1771@logfs.org>
-References: <20120424205946.GH20610@logfs.org>
- <x49zka0j5bk.fsf@segfault.boston.devel.redhat.com>
- <20120425132513.GA23492@logfs.org>
- <x49vcknkdvn.fsf@segfault.boston.devel.redhat.com>
- <20120712174633.GA7248@logfs.org>
- <20120713130336.GC10298@x1.osrc.amd.com>
- <20120713162009.GA10268@logfs.org>
- <20120716124614.GA19497@x1.osrc.amd.com>
+	id S1755886Ab2GRUHc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 16:07:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23959 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753352Ab2GRUHa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 16:07:30 -0400
+Date: Wed, 18 Jul 2012 22:06:20 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Ulrich Drepper <drepper@gmail.com>
+Cc: Stephane Eranian <eranian@google.com>, Namhyung Kim <namhyung@gmail.com>,
+        acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu,
+        paulus@samba.org, cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, andi@firstfloor.org
+Subject: Re: [PATCHv3 0/3] perf tool: Add new event group management
+Message-ID: <20120718200619.GC5627@krava.redhat.com>
+References: <20120702101518.GC967@krava.redhat.com>
+ <1341234662.1476.13.camel@leonhard>
+ <20120702133341.GD967@krava.redhat.com>
+ <CABPqkBTKNuwJXY7jRa+Zt8rmFftZUeJiYKEsKJeRiLdoHN3KWQ@mail.gmail.com>
+ <CAOPLpQfWtyRHYT1ZfcdmshYoapBgF=FO7yFacYe8pyL0MBeebA@mail.gmail.com>
+ <CABPqkBTTZaCVTtwJZbjXGwAihKAW_PMFK0+TZUTvbOn4pnfzvA@mail.gmail.com>
+ <20120709110528.GA965@krava.redhat.com>
+ <CABPqkBTGOvSuCfOUt=gnpfViVn8Whg0Mf7_3dUUim-iXA+8gjA@mail.gmail.com>
+ <20120718102152.GA2587@krava.redhat.com>
+ <CAOPLpQcYiHP7oppUOQx8S5kmy15rKxA-bS=oO-3Ms-KYu3D9Bg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120716124614.GA19497@x1.osrc.amd.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAOPLpQcYiHP7oppUOQx8S5kmy15rKxA-bS=oO-3Ms-KYu3D9Bg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 July 2012 14:46:15 +0200, Borislav Petkov wrote:
-> On Fri, Jul 13, 2012 at 12:20:09PM -0400, Jörn Engel wrote:
+On Wed, Jul 18, 2012 at 08:34:10AM -0400, Ulrich Drepper wrote:
+> On Wed, Jul 18, 2012 at 6:21 AM, Jiri Olsa <jolsa@redhat.com> wrote:
+> > Well, I personally like the '{}' syntax more than '--group-events or --group-reads
+> > option in front', it feels more user friendly.. anyway, we can easily have both ways.
 > 
-> > +CANDIDATES=`lsscsi |sed 's|.*/dev|/dev|'`
+> I like the actual visual grouping better, too.
 > 
-> You probably want to check lsscsi presence on the system, wasn't
-> installed by default on my debian testing image, for example. See diff
-> at the end of this mail.
-
-Ack.
-
-> > +	echo "Usage: mkblockconsole <dev>"
+> Also, it doesn't require us to define what
 > 
-> 	echo "Usage: $0 <dev>"
+>    -e E1,E2 --group-events -e E3,E4
 > 
-> in case the name of the script changes.
-
-Ack.
-
-> > +#define BLOCKCONSOLE_MAGIC_OLD	"\nLinux blockconsole version 1.0\n"
+> means.  Does --group-events also apply to the first parameter?
 > 
-> blockconsole is not yet upstream, you probably want to get rid of the
-> _OLD handling completely?
-
-Agreed.
-
-> > +	struct kref kref;
 > 
-> Another build failure missing
+> > As for the group attributes and group leader sampling, I don't mind omitting
+> > them at this point and get back to that if we find it useful in future.
 > 
-> #include <linux/kref.h>
+> Just define the first event the leader.  What reason is there which
+> prevents this?
 
-Ack.
+yep, no problem.. first one is the leader
 
-> With the include added, it builds fine. Then I took an usb stick and I
-> did:
-> 
-> $ ./mkblockconsole /dev/sdc
-> 
-> <reboot>
+The group sampling is just another feature where you enable sampling
+only for the leader and the rest of the events in the group are only
+being read on leader's sample - they don't sample by themselves.
 
-You can also run hdparm -z <dev> instead.  Or replug the device.  Main
-danger of hdparm is that running the command twice will cause two
-instances of blockconsole to use the same device.  Not sure how to
-solve that problem - or if.
+But this feature needs more testing, and event modifier syntax rethinking ;)
+I'll send it later..
 
-> So why is that first megabyte full of zeros there?
+> I can only second what Andi wrote: just get it done quickly.  This is
+> functionality that is desperately needed.
 
-It gives you some scratch space to store information in.  How useful
-that actually is may be a matter of opinion.  But independent of that,
-you will find large amounts of zeroes all over.  Every time you
-reboot, the new blockconsole will start writing at a megabyte-aligned
-offset and whatever remains of the last megabyte should be zero-filled
-as well.  Vim treats this as a single line, which makes it only mildly
-annoying to me.
+I have new patchset ready with group modifiers adding modifiers
+to events in the group, like:
 
-> Other than that, it works like a charm and I like the idea that no
-> kernel cmdline args are needed.
-> 
-> Also, you might want to add a step-by-step fast howto to the docs with
-> concrete steps like the above so that people can try this out faster.
+ {cycles:u,instructions:u}:p
 
-I will try to find a quiet moment for that.  If you happened to beat
-me to it, you certainly won't hear any complaints.
+adds 'p' to both events in the group
+(in current patchset group modifier overwrites events modifiers)
 
-> --
-> diff --git a/Documentation/block/blockconsole/bcon_tail b/Documentation/block/blockconsole/bcon_tail
-> index 950bfd1..e415b6f 100755
-> --- a/Documentation/block/blockconsole/bcon_tail
-> +++ b/Documentation/block/blockconsole/bcon_tail
-> @@ -4,6 +4,12 @@ TAIL_LEN=16
->  TEMPLATE=/tmp/bcon_template
->  BUF=/tmp/bcon_buf
->  
-> +if [ -z "$(which lsscsi)" ];
-> +then
-> +	echo "You need to install the lsscsi package on your distro."
-> +	exit 1
-> +fi
-> +
->  end_of_log() {
->  	DEV=$1
->  	UUID=`head -c40 $DEV|tail -c8`
-> diff --git a/Documentation/block/blockconsole/mkblockconsole b/Documentation/block/blockconsole/mkblockconsole
-> index d9514e7..05c4ad8 100755
-> --- a/Documentation/block/blockconsole/mkblockconsole
-> +++ b/Documentation/block/blockconsole/mkblockconsole
-> @@ -1,7 +1,7 @@
->  #!/bin/sh
->  
->  if [ ! $# -eq 1 ]; then
-> -	echo "Usage: mkblockconsole <dev>"
-> +	echo "Usage: $0 <dev>"
->  	exit 1
->  elif mount|fgrep -q $1; then
->  	echo Device appears to be mounted - aborting
-> diff --git a/drivers/block/blockconsole.c b/drivers/block/blockconsole.c
-> index d13203f..b4e995d 100644
-> --- a/drivers/block/blockconsole.c
-> +++ b/drivers/block/blockconsole.c
-> @@ -9,6 +9,7 @@
->  #include <linux/slab.h>
->  #include <linux/string.h>
->  #include <linux/workqueue.h>
-> +#include <linux/kref.h>
->  
->  #define BLOCKCONSOLE_MAGIC_OLD	"\nLinux blockconsole version 1.0\n"
->  #define BLOCKCONSOLE_MAGIC	"\nLinux blockconsole version 1.1\n"
+if there's strong opinion/reasons against it, I can simply remove
+it, but it looks helpful
 
-Acked-by: Joern Engel <joern@logfs.org>
-
-Thanks for the testing and the patch!  I will fold it in and resend
-when I deal with the other two details.
-
-Jörn
-
---
-It does not matter how slowly you go, so long as you do not stop.
--- Confucius
+jirka
