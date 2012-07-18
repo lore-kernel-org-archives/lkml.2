@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757933Ab2GRAQg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 20:16:36 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51439 "EHLO
+	id S932164Ab2GRAQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 20:16:57 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39056 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757892Ab2GRAN1 (ORCPT
+	with ESMTP id S1757850Ab2GRANT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 20:13:27 -0400
+	Tue, 17 Jul 2012 20:13:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <johnstul@us.ibm.com>, Ingo Molnar <mingo@kernel.org>,
+        John Stultz <johnstul@us.ibm.com>, Jan Engelhardt <jengelh@inai.de>,
+        Ingo Molnar <mingo@kernel.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Prarit Bhargava <prarit@redhat.com>
-Subject: [ 19/23] timekeeping: Maintain ktime_t based offsets for hrtimers
-Date: Tue, 17 Jul 2012 17:12:12 -0700
-Message-Id: <20120717232330.847183748@linuxfoundation.org>
+        Prarit Bhargava <prarit@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 17/23] hrtimer: Provide clock_was_set_delayed()
+Date: Tue, 17 Jul 2012 17:12:10 -0700
+Message-Id: <20120717232330.670698794@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120717232329.276003806@linuxfoundation.org>
 References: <20120717232455.GA5994@kroah.com>
@@ -33,99 +34,116 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
+From: John Stultz <johnstul@us.ibm.com>
 
-From: Thomas Gleixner <tglx@linutronix.de>
+This is a backport of f55a6faa384304c89cfef162768e88374d3312cb
 
-This is a backport of 5b9fe759a678e05be4937ddf03d50e950207c1c0
+clock_was_set() cannot be called from hard interrupt context because
+it calls on_each_cpu().
 
-We need to update the hrtimer clock offsets from the hrtimer interrupt
-context. To avoid conversions from timespec to ktime_t maintain a
-ktime_t based representation of those offsets in the timekeeper. This
-puts the conversion overhead into the code which updates the
-underlying offsets and provides fast accessible values in the hrtimer
-interrupt.
+For fixing the widely reported leap seconds issue it is necessary to
+call it from hard interrupt context, i.e. the timer tick code, which
+does the timekeeping updates.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Provide a new function which denotes it in the hrtimer cpu base
+structure of the cpu on which it is called and raise the hrtimer
+softirq. We then execute the clock_was_set() notificiation from
+softirq context in run_hrtimer_softirq(). The hrtimer softirq is
+rarely used, so polling the flag there is not a performance issue.
+
+[ tglx: Made it depend on CONFIG_HIGH_RES_TIMERS. We really should get
+  rid of all this ifdeffery ASAP ]
+
 Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Reported-by: Jan Engelhardt <jengelh@inai.de>
 Reviewed-by: Ingo Molnar <mingo@kernel.org>
 Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Acked-by: Prarit Bhargava <prarit@redhat.com>
-Link: http://lkml.kernel.org/r/1341960205-56738-4-git-send-email-johnstul@us.ibm.com
+Link: http://lkml.kernel.org/r/1341960205-56738-2-git-send-email-johnstul@us.ibm.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Cc: Prarit Bhargava <prarit@redhat.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: John Stultz <johnstul@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- kernel/time/timekeeping.c |   25 ++++++++++++++++++++++++-
- 1 file changed, 24 insertions(+), 1 deletion(-)
+ include/linux/hrtimer.h |    9 ++++++++-
+ kernel/hrtimer.c        |   20 ++++++++++++++++++++
+ 2 files changed, 28 insertions(+), 1 deletion(-)
 
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -161,18 +161,34 @@ static struct timespec xtime __attribute
- static struct timespec wall_to_monotonic __attribute__ ((aligned (16)));
- static struct timespec total_sleep_time;
- 
-+/* Offset clock monotonic -> clock realtime */
-+static ktime_t offs_real;
-+
-+/* Offset clock monotonic -> clock boottime */
-+static ktime_t offs_boot;
-+
- /*
-  * The raw monotonic time for the CLOCK_MONOTONIC_RAW posix clock.
+--- a/include/linux/hrtimer.h
++++ b/include/linux/hrtimer.h
+@@ -165,6 +165,7 @@ enum  hrtimer_base_type {
+  * @lock:		lock protecting the base and associated clock bases
+  *			and timers
+  * @active_bases:	Bitfield to mark bases with active timers
++ * @clock_was_set:	Indicates that clock was set from irq context.
+  * @expires_next:	absolute time of the next event which was scheduled
+  *			via clock_set_next_event()
+  * @hres_active:	State of high resolution mode
+@@ -177,7 +178,8 @@ enum  hrtimer_base_type {
   */
- static struct timespec raw_time;
+ struct hrtimer_cpu_base {
+ 	raw_spinlock_t			lock;
+-	unsigned long			active_bases;
++	unsigned int			active_bases;
++	unsigned int			clock_was_set;
+ #ifdef CONFIG_HIGH_RES_TIMERS
+ 	ktime_t				expires_next;
+ 	int				hres_active;
+@@ -286,6 +288,8 @@ extern void hrtimer_peek_ahead_timers(vo
+ # define MONOTONIC_RES_NSEC	HIGH_RES_NSEC
+ # define KTIME_MONOTONIC_RES	KTIME_HIGH_RES
  
- /* must hold write on xtime_lock */
-+static void update_rt_offset(void)
-+{
-+	struct timespec tmp, *wtm = &wall_to_monotonic;
++extern void clock_was_set_delayed(void);
 +
-+	set_normalized_timespec(&tmp, -wtm->tv_sec, -wtm->tv_nsec);
-+	offs_real = timespec_to_ktime(tmp);
-+}
-+
-+/* must hold write on xtime_lock */
- static void timekeeping_update(bool clearntp)
+ #else
+ 
+ # define MONOTONIC_RES_NSEC	LOW_RES_NSEC
+@@ -306,6 +310,9 @@ static inline int hrtimer_is_hres_active
  {
- 	if (clearntp) {
- 		timekeeper.ntp_error = 0;
- 		ntp_clear();
- 	}
-+	update_rt_offset();
- 	update_vsyscall(&xtime, &wall_to_monotonic,
- 			 timekeeper.clock, timekeeper.mult);
+ 	return 0;
  }
-@@ -587,6 +603,7 @@ void __init timekeeping_init(void)
- 	}
- 	set_normalized_timespec(&wall_to_monotonic,
- 				-boot.tv_sec, -boot.tv_nsec);
-+	update_rt_offset();
- 	total_sleep_time.tv_sec = 0;
- 	total_sleep_time.tv_nsec = 0;
- 	write_sequnlock_irqrestore(&xtime_lock, flags);
-@@ -595,6 +612,12 @@ void __init timekeeping_init(void)
- /* time in seconds when suspend began */
- static struct timespec timekeeping_suspend_time;
- 
-+static void update_sleep_time(struct timespec t)
-+{
-+	total_sleep_time = t;
-+	offs_boot = timespec_to_ktime(t);
-+}
 +
- /**
-  * __timekeeping_inject_sleeptime - Internal function to add sleep interval
-  * @delta: pointer to a timespec delta value
-@@ -606,7 +629,7 @@ static void __timekeeping_inject_sleepti
- {
- 	xtime = timespec_add(xtime, *delta);
- 	wall_to_monotonic = timespec_sub(wall_to_monotonic, *delta);
--	total_sleep_time = timespec_add(total_sleep_time, *delta);
-+	update_sleep_time(timespec_add(total_sleep_time, *delta));
++static inline void clock_was_set_delayed(void) { }
++
+ #endif
+ 
+ extern void clock_was_set(void);
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -717,6 +717,19 @@ static int hrtimer_switch_to_hres(void)
+ 	return 1;
  }
  
++/*
++ * Called from timekeeping code to reprogramm the hrtimer interrupt
++ * device. If called from the timer interrupt context we defer it to
++ * softirq context.
++ */
++void clock_was_set_delayed(void)
++{
++	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
++
++	cpu_base->clock_was_set = 1;
++	__raise_softirq_irqoff(HRTIMER_SOFTIRQ);
++}
++
+ #else
+ 
+ static inline int hrtimer_hres_active(void) { return 0; }
+@@ -1395,6 +1408,13 @@ void hrtimer_peek_ahead_timers(void)
+ 
+ static void run_hrtimer_softirq(struct softirq_action *h)
+ {
++	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
++
++	if (cpu_base->clock_was_set) {
++		cpu_base->clock_was_set = 0;
++		clock_was_set();
++	}
++
+ 	hrtimer_peek_ahead_timers();
+ }
  
 
 
