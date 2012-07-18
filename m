@@ -1,123 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753981Ab2GRKwB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 06:52:01 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:11069 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753061Ab2GRKv6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 06:51:58 -0400
-X-IronPort-AV: E=Sophos;i="4.77,609,1336320000"; 
-   d="scan'208";a="5425701"
-Message-ID: <5006966C.3000807@cn.fujitsu.com>
-Date: Wed, 18 Jul 2012 18:56:44 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1753948Ab2GRKwl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 06:52:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27770 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752009Ab2GRKwk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 06:52:40 -0400
+Date: Wed, 18 Jul 2012 13:53:11 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>, avi@redhat.com,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jan.kiszka@siemens.com
+Subject: Re: [PATCH v5 1/4] kvm: Extend irqfd to support level interrupts
+Message-ID: <20120718105311.GH4700@redhat.com>
+References: <20120716202711.1752.71007.stgit@bling.home>
+ <20120716203344.1752.14606.stgit@bling.home>
+ <20120718104114.GC4700@redhat.com>
+ <20120718104429.GD26120@redhat.com>
+ <20120718104844.GF4700@redhat.com>
+ <20120718104906.GE26120@redhat.com>
 MIME-Version: 1.0
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
-        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
-        minchan.kim@gmail.com, akpm@linux-foundation.org,
-        kosaki.motohiro@jp.fujitsu.com
-Subject: Re: [PATCH v4 3/13] memory-hotplug : check whether memory is present
- or not
-References: <50068974.1070409@jp.fujitsu.com> <50068AE9.3050804@jp.fujitsu.com>
-In-Reply-To: <50068AE9.3050804@jp.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/18 18:51:38,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/18 18:51:39,
-	Serialize complete at 2012/07/18 18:51:39
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-2022-JP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120718104906.GE26120@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 07/18/2012 06:07 PM, Yasuaki Ishimatsu Wrote:
-> If system supports memory hot-remove, online_pages() may online removed pages.
-> So online_pages() need to check whether onlining pages are present or not.
-> 
-> CC: David Rientjes <rientjes@google.com>
-> CC: Jiang Liu <liuj97@gmail.com>
-> CC: Len Brown <len.brown@intel.com>
-> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> CC: Paul Mackerras <paulus@samba.org> 
-> CC: Christoph Lameter <cl@linux.com>
-> Cc: Minchan Kim <minchan.kim@gmail.com>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> 
-> CC: Wen Congyang <wency@cn.fujitsu.com>
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> 
-> ---
->  include/linux/mmzone.h |   21 +++++++++++++++++++++
->  mm/memory_hotplug.c    |   13 +++++++++++++
->  2 files changed, 34 insertions(+)
-> 
-> Index: linux-3.5-rc6/include/linux/mmzone.h
-> ===================================================================
-> --- linux-3.5-rc6.orig/include/linux/mmzone.h	2012-07-08 09:23:56.000000000 +0900
-> +++ linux-3.5-rc6/include/linux/mmzone.h	2012-07-17 16:10:21.588186145 +0900
-> @@ -1168,6 +1168,27 @@ void sparse_init(void);
->  #define sparse_index_init(_sec, _nid)  do {} while (0)
->  #endif /* CONFIG_SPARSEMEM */
->  
-> +#ifdef CONFIG_SPARSEMEM
-> +static inline int pfns_present(unsigned long pfn, unsigned long nr_pages)
-> +{
-> +	int i;
-> +	for (i = 0; i < nr_pages; i++) {
-> +		if (pfn_present(pfn + 1))
-> +			continue;
-> +		else {
-> +			unlock_memory_hotplug();
-> +			return -EINVAL;
-> +		}
-> +	}
-> +	return 0;
-> +}
-> +#else
-> +static inline int pfns_present(unsigned long pfn, unsigned long nr_pages)
-> +{
-> +	return 0;
-> +}
-> +#endif /* CONFIG_SPARSEMEM*/
-> +
->  #ifdef CONFIG_NODES_SPAN_OTHER_NODES
->  bool early_pfn_in_nid(unsigned long pfn, int nid);
->  #else
-> Index: linux-3.5-rc6/mm/memory_hotplug.c
-> ===================================================================
-> --- linux-3.5-rc6.orig/mm/memory_hotplug.c	2012-07-17 14:26:40.000000000 +0900
-> +++ linux-3.5-rc6/mm/memory_hotplug.c	2012-07-17 16:09:50.070580170 +0900
-> @@ -467,6 +467,19 @@ int __ref online_pages(unsigned long pfn
->  	struct memory_notify arg;
->  
->  	lock_memory_hotplug();
-> +	/*
-> + 	 * If system supports memory hot-remove, the memory may have been
-> + 	 * removed. So we check whether the memory has been removed or not.
-> + 	 *
-> + 	 * Note: When CONFIG_SPARSEMEM is defined, pfns_present() become
-> + 	 *       effective. If CONFIG_SPARSEMEM is not defined, pfns_present()
-> + 	 *       always returns 0.
-> + 	 */
+On Wed, Jul 18, 2012 at 01:49:06PM +0300, Gleb Natapov wrote:
+> On Wed, Jul 18, 2012 at 01:48:44PM +0300, Michael S. Tsirkin wrote:
+> > On Wed, Jul 18, 2012 at 01:44:29PM +0300, Gleb Natapov wrote:
+> > > On Wed, Jul 18, 2012 at 01:41:14PM +0300, Michael S. Tsirkin wrote:
+> > > > On Mon, Jul 16, 2012 at 02:33:47PM -0600, Alex Williamson wrote:
+> > > > > In order to inject a level interrupt from an external source using an
+> > > > > irqfd, we need to allocate a new irq_source_id.  This allows us to
+> > > > > assert and (later) de-assert an interrupt line independently from
+> > > > > users of KVM_IRQ_LINE and avoid lost interrupts.
+> > > > > 
+> > > > > We also add what may appear like a bit of excessive infrastructure
+> > > > > around an object for storing this irq_source_id.  However, notice
+> > > > > that we only provide a way to assert the interrupt here.  A follow-on
+> > > > > interface will make use of the same irq_source_id to allow de-assert.
+> > > > > 
+> > > > > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> > > > > ---
+> > > > > 
+> > > > >  Documentation/virtual/kvm/api.txt |    6 ++
+> > > > >  arch/x86/kvm/x86.c                |    1 
+> > > > >  include/linux/kvm.h               |    3 +
+> > > > >  virt/kvm/eventfd.c                |  114 ++++++++++++++++++++++++++++++++++++-
+> > > > >  4 files changed, 120 insertions(+), 4 deletions(-)
+> > > > > 
+> > > > > diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
+> > > > > index 100acde..c7267d5 100644
+> > > > > --- a/Documentation/virtual/kvm/api.txt
+> > > > > +++ b/Documentation/virtual/kvm/api.txt
+> > > > > @@ -1981,6 +1981,12 @@ the guest using the specified gsi pin.  The irqfd is removed using
+> > > > >  the KVM_IRQFD_FLAG_DEASSIGN flag, specifying both kvm_irqfd.fd
+> > > > >  and kvm_irqfd.gsi.
+> > > > >  
+> > > > > +The KVM_IRQFD_FLAG_LEVEL flag indicates the gsi input is for a level
+> > > > > +triggered interrupt.  In this case a new irqchip input is allocated
+> > > > > +which is logically OR'd with other inputs allowing multiple sources
+> > > > > +to independently assert level interrupts.  The KVM_IRQFD_FLAG_LEVEL
+> > > > > +is only necessary on setup, teardown is identical to that above.
+> > > > > +KVM_IRQFD_FLAG_LEVEL support is indicated by KVM_CAP_IRQFD_LEVEL.
+> > > > >  
+> > > > >  5. The kvm_run structure
+> > > > >  ------------------------
+> > > > > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> > > > > index a01a424..80bed07 100644
+> > > > > --- a/arch/x86/kvm/x86.c
+> > > > > +++ b/arch/x86/kvm/x86.c
+> > > > > @@ -2148,6 +2148,7 @@ int kvm_dev_ioctl_check_extension(long ext)
+> > > > >  	case KVM_CAP_GET_TSC_KHZ:
+> > > > >  	case KVM_CAP_PCI_2_3:
+> > > > >  	case KVM_CAP_KVMCLOCK_CTRL:
+> > > > > +	case KVM_CAP_IRQFD_LEVEL:
+> > > > >  		r = 1;
+> > > > >  		break;
+> > > > >  	case KVM_CAP_COALESCED_MMIO:
+> > > > > diff --git a/include/linux/kvm.h b/include/linux/kvm.h
+> > > > > index 2ce09aa..b2e6e4f 100644
+> > > > > --- a/include/linux/kvm.h
+> > > > > +++ b/include/linux/kvm.h
+> > > > > @@ -618,6 +618,7 @@ struct kvm_ppc_smmu_info {
+> > > > >  #define KVM_CAP_PPC_GET_SMMU_INFO 78
+> > > > >  #define KVM_CAP_S390_COW 79
+> > > > >  #define KVM_CAP_PPC_ALLOC_HTAB 80
+> > > > > +#define KVM_CAP_IRQFD_LEVEL 81
+> > > > >  
+> > > > >  #ifdef KVM_CAP_IRQ_ROUTING
+> > > > >  
+> > > > > @@ -683,6 +684,8 @@ struct kvm_xen_hvm_config {
+> > > > >  #endif
+> > > > >  
+> > > > >  #define KVM_IRQFD_FLAG_DEASSIGN (1 << 0)
+> > > > > +/* Available with KVM_CAP_IRQFD_LEVEL */
+> > > > > +#define KVM_IRQFD_FLAG_LEVEL (1 << 1)
+> > > > >  
+> > > > >  struct kvm_irqfd {
+> > > > >  	__u32 fd;
+> > > > > diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
+> > > > > index 7d7e2aa..ecdbfea 100644
+> > > > > --- a/virt/kvm/eventfd.c
+> > > > > +++ b/virt/kvm/eventfd.c
+> > > > > @@ -36,6 +36,68 @@
+> > > > >  #include "iodev.h"
+> > > > >  
+> > > > >  /*
+> > > > > + * An irq_source_id can be created from KVM_IRQFD for level interrupt
+> > > > > + * injections and shared with other interfaces for EOI or de-assert.
+> > > > > + * Create an object with reference counting to make it easy to use.
+> > > > > + */
+> > > > > +struct _irq_source {
+> > > > > +	int id; /* the IRQ source ID */
+> > > > > +	bool level_asserted; /* Track assertion state and protect with lock */
+> > > > > +	spinlock_t lock;     /* to avoid unnecessary re-assert/spurious eoi. */
+> > > > > +	struct kvm *kvm;
+> > > > > +	struct kref kref;
+> > > > > +};
+> > > > > +
+> > > > > +static void _irq_source_release(struct kref *kref)
+> > > > > +{
+> > > > > +	struct _irq_source *source;
+> > > > > +
+> > > > > +	source = container_of(kref, struct _irq_source, kref);
+> > > > > +
+> > > > > +	/* This also de-asserts */
+> > > > > +	kvm_free_irq_source_id(source->kvm, source->id);
+> > > > > +	kfree(source);
+> > > > > +}
+> > > > > +
+> > > > > +static void _irq_source_put(struct _irq_source *source)
+> > > > > +{
+> > > > > +	if (source)
+> > > > > +		kref_put(&source->kref, _irq_source_release);
+> > > > > +}
+> > > > > +
+> > > > > +static struct _irq_source *__attribute__ ((used)) /* white lie for now */
+> > > > > +_irq_source_get(struct _irq_source *source)
+> > > > > +{
+> > > > > +	if (source)
+> > > > > +		kref_get(&source->kref);
+> > > > > +
+> > > > > +	return source;
+> > > > > +}
+> > > > > +
+> > > > > +static struct _irq_source *_irq_source_alloc(struct kvm *kvm)
+> > > > > +{
+> > > > > +	struct _irq_source *source;
+> > > > > +	int id;
+> > > > > +
+> > > > > +	source = kzalloc(sizeof(*source), GFP_KERNEL);
+> > > > > +	if (!source)
+> > > > > +		return ERR_PTR(-ENOMEM);
+> > > > > +
+> > > > > +	id = kvm_request_irq_source_id(kvm);
+> > > > > +	if (id < 0) {
+> > > > > +		kfree(source);
+> > > > > +		return ERR_PTR(id);
+> > > > > +	}
+> > > > > +
+> > > > > +	kref_init(&source->kref);
+> > > > > +	spin_lock_init(&source->lock);
+> > > > > +	source->kvm = kvm;
+> > > > > +	source->id = id;
+> > > > > +
+> > > > > +	return source;
+> > > > > +}
+> > > > > +
+> > > > > +/*
+> > > > >   * --------------------------------------------------------------------
+> > > > >   * irqfd: Allows an fd to be used to inject an interrupt to the guest
+> > > > >   *
+> > > > > @@ -52,6 +114,8 @@ struct _irqfd {
+> > > > >  	/* Used for level IRQ fast-path */
+> > > > >  	int gsi;
+> > > > >  	struct work_struct inject;
+> > > > > +	/* IRQ source ID for level triggered irqfds */
+> > > > > +	struct _irq_source *source;
+> > > > >  	/* Used for setup/shutdown */
+> > > > >  	struct eventfd_ctx *eventfd;
+> > > > >  	struct list_head list;
+> > > > > @@ -62,7 +126,7 @@ struct _irqfd {
+> > > > >  static struct workqueue_struct *irqfd_cleanup_wq;
+> > > > >  
+> > > > >  static void
+> > > > > -irqfd_inject(struct work_struct *work)
+> > > > > +irqfd_inject_edge(struct work_struct *work)
+> > > > >  {
+> > > > >  	struct _irqfd *irqfd = container_of(work, struct _irqfd, inject);
+> > > > >  	struct kvm *kvm = irqfd->kvm;
+> > > > > @@ -71,6 +135,29 @@ irqfd_inject(struct work_struct *work)
+> > > > >  	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
+> > > > >  }
+> > > > >  
+> > > > > +static void
+> > > > > +irqfd_inject_level(struct work_struct *work)
+> > > > > +{
+> > > > > +	struct _irqfd *irqfd = container_of(work, struct _irqfd, inject);
+> > > > > +
+> > > > > +	/*
+> > > > > +	 * Inject an interrupt only if not already asserted.
+> > > > > +	 *
+> > > > > +	 * We can safely ignore the kvm_set_irq return value here.  If
+> > > > > +	 * masked, the irr bit is still set and will eventually be serviced.
+> > > > > +	 * This interface does not guarantee immediate injection.  If
+> > > > > +	 * coalesced, an eoi will be coming where we can de-assert and
+> > > > > +	 * re-inject if necessary.  NB, if you need to know if an interrupt
+> > > > > +	 * was coalesced, this interface is not for you.
+> > > > > +	 */
+> > > > > +	spin_lock(&irqfd->source->lock);
+> > > > > +	if (!irqfd->source->level_asserted) {
+> > > > > +		kvm_set_irq(irqfd->kvm, irqfd->source->id, irqfd->gsi, 1);
+> > > > > +		irqfd->source->level_asserted = true;
+> > > > > +	}
+> > > > > +	spin_unlock(&irqfd->source->lock);
+> > > > > +}
+> > > > > +
+> > > > 
+> > > > So as was discussed kvm_set_irq under spinlock is bad for scalability
+> > > > with multiple VCPUs.  Why do we need a spinlock simply to protect
+> > > > level_asserted?  Let's use an atomic test and set/test and clear and the
+> > > > problem goes away.
+> > > > 
+> > > That sad reality is that for level interrupt we already scan all vcpus
+> > > under spinlock.
+> > 
+> > Where?
+> > 
+> ioapic
 
-There is one space before tab in the comment.
+$ grep kvm_for_each_vcpu virt/kvm/ioapic.c
+$
 
-Thanks
-Wen Congyang
+?
 
-> +	ret = pfns_present(pfn, nr_pages);
-> +	if (ret) {
-> +		unlock_memory_hotplug();
-> +		return ret;
-> +	}
->  	arg.start_pfn = pfn;
->  	arg.nr_pages = nr_pages;
->  	arg.status_change_nid = -1;
-> 
-> 
-
+> --
+> 			Gleb.
