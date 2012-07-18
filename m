@@ -1,77 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754284Ab2GRVyu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 17:54:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3158 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751288Ab2GRVys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 17:54:48 -0400
-Date: Thu, 19 Jul 2012 00:55:20 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>, avi@redhat.com,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jan.kiszka@siemens.com
-Subject: Re: [PATCH v5 3/4] kvm: Create kvm_clear_irq()
-Message-ID: <20120718215520.GA13916@redhat.com>
-References: <20120717140858.GB10822@redhat.com>
- <1342534911.3229.26.camel@ul30vt>
- <20120717145313.GB11516@redhat.com>
- <1342538411.2229.106.camel@bling.home>
- <20120717153620.GB11849@redhat.com>
- <1342540301.2229.117.camel@bling.home>
- <20120717155701.GB12001@redhat.com>
- <1342541301.2229.125.camel@bling.home>
- <20120717161452.GA12114@redhat.com>
- <20120718062742.GH6479@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120718062742.GH6479@redhat.com>
+	id S1754204Ab2GRV7i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 17:59:38 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:7867 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751489Ab2GRV7e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 17:59:34 -0400
+Message-ID: <1342648771.5138.37.camel@lorien2>
+Subject: Re: [PATCH 1/4] ACPI: Add acpi_pr_<level>() interfaces
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bhelgaas@google.com, isimatu.yasuaki@jp.fujitsu.com, liuj97@gmail.com,
+        srivatsa.bhat@linux.vnet.ibm.com, prarit@redhat.com,
+        imammedo@redhat.com, vijaymohan.pandarathil@hp.com,
+        shuahkhan@gmail.com
+Date: Wed, 18 Jul 2012 15:59:31 -0600
+In-Reply-To: <1342644027-19559-2-git-send-email-toshi.kani@hp.com>
+References: <1342644027-19559-1-git-send-email-toshi.kani@hp.com>
+	 <1342644027-19559-2-git-send-email-toshi.kani@hp.com>
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 18, 2012 at 09:27:42AM +0300, Gleb Natapov wrote:
-> On Tue, Jul 17, 2012 at 07:14:52PM +0300, Michael S. Tsirkin wrote:
-> > > _Seems_ racy, or _is_ racy?  Please identify the race.
-> > 
-> > Look at this:
-> > 
-> > static inline int kvm_irq_line_state(unsigned long *irq_state,
-> >                                      int irq_source_id, int level)
-> > {
-> >         /* Logical OR for level trig interrupt */
-> >         if (level)
-> >                 set_bit(irq_source_id, irq_state);
-> >         else
-> >                 clear_bit(irq_source_id, irq_state);
-> > 
-> >         return !!(*irq_state);
-> > }
-> > 
-> > 
-> > Now:
-> > If other CPU changes some other bit after the atomic change,
-> > it looks like !!(*irq_state) might return a stale value.
-> > 
-> > CPU 0 clears bit 0. CPU 1 sets bit 1. CPU 1 sets level to 1.
-> > If CPU 0 sees a stale value now it will return 0 here
-> > and interrupt will get cleared.
-> > 
-> This will hardly happen on x86 especially since bit is set with
-> serialized instruction. But there is actually a race here.
-> CPU 0 clears bit 0. CPU 0 read irq_state as 0. CPU 1 sets level to 1.
-> CPU 1 calls kvm_ioapic_set_irq(1). CPU 0 calls kvm_ioapic_set_irq(0).
-> No ioapic thinks the level is 0 but irq_state is not 0.
+On Wed, 2012-07-18 at 14:40 -0600, Toshi Kani wrote:
+> This patch introduces acpi_pr_<level>(), where <level> is a message
+> level such as err/warn/info, to support improved logging messages
+> for ACPI, esp. in hotplug operations.  acpi_pr_<level>() appends
+> "ACPI" prefix and ACPI object path to the messages.  This improves
+> diagnostics in hotplug operations since it identifies an object that
+> caused an issue in a log file.
 > 
-> This untested and un-compiled patch should fix it.
+> acpi_pr_<level>() takes acpi_handle as an argument, which is passed
+> to ACPI hotplug notify handlers from the ACPI CA.  Therefore, it is
+> always available unlike other kernel objects, such as device.
+> 
+> For example, the statement below
+>   acpi_pr_err(handle, "Device don't exist, dropping EJECT\n");
+> logs an error message like this:
+>   ACPI: \_SB_.SCK4.CPU4: Device don't exist, dropping EJECT
+> 
+> Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+> ---
+>  drivers/acpi/utils.c    |   32 ++++++++++++++++++++++++++++++++
+>  include/acpi/acpi_bus.h |   18 ++++++++++++++++++
+>  2 files changed, 50 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/acpi/utils.c b/drivers/acpi/utils.c
+> index 3e87c9c..4097266 100644
+> --- a/drivers/acpi/utils.c
+> +++ b/drivers/acpi/utils.c
+> @@ -454,3 +454,35 @@ acpi_evaluate_hotplug_ost(acpi_handle handle, u32 source_event,
+>  #endif
+>  }
+>  EXPORT_SYMBOL(acpi_evaluate_hotplug_ost);
+> +
+> +/**
+> + * acpi_printk: Print messages with ACPI prefix and object path
+> + *
+> + * This function is intended to be called through acpi_pr_<level> macros.
+> + */
+> +void
+> +acpi_printk(const char *level, acpi_handle handle, const char *fmt, ...)
+> +{
+> +	struct va_format vaf;
+> +	va_list args;
+> +	struct acpi_buffer buffer = {ACPI_ALLOCATE_BUFFER};
+> +	char *path;
+> +	acpi_status ret;
+> +
+> +	va_start(args, fmt);
+> +
+> +	vaf.fmt = fmt;
+> +	vaf.va = &args;
+> +
+> +	ret = acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
 
-Getting rid of atomics completely makes me more comfortable,
-and by moving all bitmap handling to under pic/ioapic lock
-we can do just that.
-I just tested and posted a patch that fixes the race in this way.
-Could you take a look pls?
+One big problem I see with this approach is now each acpi_printk() will
+result in a call to acpi_get_name() which will invoke several ACPI
+calls, including a call to acpi_ut_initialize_buffer() which allocates
+buffer. Is this really warranted? What is the performance impact of this
+change?
 
--- 
-MST
+-- Shuah
+
+
