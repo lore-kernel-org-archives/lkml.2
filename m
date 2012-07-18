@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751653Ab2GREaX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 00:30:23 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:45461 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751009Ab2GREaR (ORCPT
+	id S1752011Ab2GREbS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 00:31:18 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39736 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751239Ab2GREbI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 00:30:17 -0400
-Message-ID: <1342585811.28942.3.camel@phoenix>
-Subject: [RFT][PATCH 1/5] regulator: palmas: Fix calculating selector in
- palmas_map_voltage_ldo
+	Wed, 18 Jul 2012 00:31:08 -0400
+Message-ID: <1342585863.28942.4.camel@phoenix>
+Subject: [RFT][PATCH 2/5] regulator: palmas: Fix regmap offsets for
+ PALMAS_REG_SMPS10 vsel_reg
 From: Axel Lin <axel.lin@gmail.com>
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Cc: linux-kernel@vger.kernel.org, Graeme Gregory <gg@slimlogic.co.uk>,
         Liam Girdwood <lrg@ti.com>
-Date: Wed, 18 Jul 2012 12:30:11 +0800
+Date: Wed, 18 Jul 2012 12:31:03 +0800
+In-Reply-To: <1342585811.28942.3.camel@phoenix>
+References: <1342585811.28942.3.camel@phoenix>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
@@ -23,41 +25,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes below issues when choosing selector:
-
-1. Current code returns negative selector if min_uV < 900000 which is wrong.
-   For example, it is possible to satisfy the request with selector = 1 if
-   the requested min_uV is 850000.
-2. Current code may select a voltage lower than requested min_uV.
-   For example, if the requested min_uV is 945000, current code chooses
-   selector = 1 which is lower than requested min_uV.
-   DIV_ROUND_UP to avoid this case.
-
 Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- drivers/regulator/palmas-regulator.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/regulator/palmas-regulator.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
-index 17d19fb..0fcf355 100644
+index 0fcf355..9e3e7f3 100644
 --- a/drivers/regulator/palmas-regulator.c
 +++ b/drivers/regulator/palmas-regulator.c
-@@ -486,9 +486,12 @@ static int palmas_map_voltage_ldo(struct regulator_dev *rdev,
- {
- 	int ret, voltage;
- 
--	ret = ((min_uV - 900000) / 50000) + 1;
--	if (ret < 0)
--		return ret;
-+	if (min_uV == 0)
-+		return 0;
-+
-+	if (min_uV < 900000)
-+		min_uV = 900000;
-+	ret = DIV_ROUND_UP(min_uV - 900000, 50000) + 1;
- 
- 	/* Map back into a voltage to verify we're still in bounds */
- 	voltage = palmas_list_voltage_ldo(rdev, ret);
+@@ -679,7 +679,9 @@ static __devinit int palmas_probe(struct platform_device *pdev)
+ 		case PALMAS_REG_SMPS10:
+ 			pmic->desc[id].n_voltages = PALMAS_SMPS10_NUM_VOLTAGES;
+ 			pmic->desc[id].ops = &palmas_ops_smps10;
+-			pmic->desc[id].vsel_reg = PALMAS_SMPS10_CTRL;
++			pmic->desc[id].vsel_reg =
++					PALMAS_BASE_TO_REG(PALMAS_SMPS_BASE,
++							PALMAS_SMPS10_CTRL);
+ 			pmic->desc[id].vsel_mask = SMPS10_VSEL;
+ 			pmic->desc[id].enable_reg =
+ 					PALMAS_BASE_TO_REG(PALMAS_SMPS_BASE,
 -- 
 1.7.9.5
 
