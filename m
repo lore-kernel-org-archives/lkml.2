@@ -1,40 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751352Ab2GRAxZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 20:53:25 -0400
-Received: from linux-sh.org ([111.68.239.195]:42963 "EHLO linux-sh.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750713Ab2GRAxU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 20:53:20 -0400
-Date: Wed, 18 Jul 2012 09:52:30 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: Re: Boot breaks in -next from LEGACY to LINEAR conversion
-Message-ID: <20120718005230.GA15680@linux-sh.org>
-References: <20120717185749.GJ4477@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120717185749.GJ4477@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751590Ab2GRBDU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 21:03:20 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:44407 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751152Ab2GRBC6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 21:02:58 -0400
+From: Toshiaki Yamane <yamanetoshi@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Einon <mark.einon@gmail.com>, linux-kernel@vger.kernel.org
+Cc: Toshiaki Yamane <yamanetoshi@gmail.com>
+Subject: [PATCH] staging/et131x: fix checkpatch warnings
+Date: Wed, 18 Jul 2012 10:02:46 +0900
+Message-Id: <1342573366-8167-1-git-send-email-yamanetoshi@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1342442513-10488-1-git-send-email-yamanetoshi@gmail.com>
+References: <1342442513-10488-1-git-send-email-yamanetoshi@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 17, 2012 at 07:57:49PM +0100, Mark Brown wrote:
-> -next fails to boot for me today on my s3c64xx based systems.  Walking
-> back to the last time I tried and bisecting likely branches I find that
-> commit 910139 (irqdomain: Replace LEGACY mapping with LINEAR) is the one
-> that introduces the build break.  Unfortunately the boot fails before I
-> get a console which makes diagnosis somewhat more tricky than would be
-> ideal.  Any ideas?
+The below checkpatch warns was fixed,
 
-Does http://www.spinics.net/lists/linux-sh/msg11995.html fix it for you?
+drivers/staging/et131x/et131x.c:2556: WARNING: Prefer pr_info(... to printk(KERN_INFO, ...
+drivers/staging/et131x/et131x.c:2577: WARNING: Prefer pr_info(... to printk(KERN_INFO, ...
+drivers/staging/et131x/et131x.c:5189: WARNING: Prefer pr_info(... to printk(KERN_INFO, ...
 
-I did Cc you on the legacy -> linear thread, but perhaps you missed it.
+And added pr_fmt.
+
+Signed-off-by: Toshiaki Yamane <yamanetoshi@gmail.com>
+---
+ drivers/staging/et131x/et131x.c |   12 +++++++-----
+ 1 files changed, 7 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
+index ac6897b..f188453 100644
+--- a/drivers/staging/et131x/et131x.c
++++ b/drivers/staging/et131x/et131x.c
+@@ -53,6 +53,8 @@
+  *
+  */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/pci.h>
+ #include <linux/init.h>
+ #include <linux/module.h>
+@@ -2553,8 +2555,8 @@ static int et131x_rx_dma_memory_alloc(struct et131x_adapter *adapter)
+ 			  "Cannot alloc memory for Packet Status Ring\n");
+ 		return -ENOMEM;
+ 	}
+-	printk(KERN_INFO "Packet Status Ring %lx\n",
+-	    (unsigned long) rx_ring->ps_ring_physaddr);
++	pr_info("Packet Status Ring %lx\n",
++		(unsigned long) rx_ring->ps_ring_physaddr);
+ 
+ 	/*
+ 	 * NOTE : dma_alloc_coherent(), used above to alloc DMA regions,
+@@ -2574,7 +2576,7 @@ static int et131x_rx_dma_memory_alloc(struct et131x_adapter *adapter)
+ 		return -ENOMEM;
+ 	}
+ 	rx_ring->num_rfd = NIC_DEFAULT_NUM_RFD;
+-	printk(KERN_INFO "PRS %lx\n", (unsigned long)rx_ring->rx_status_bus);
++	pr_info("PRS %lx\n", (unsigned long)rx_ring->rx_status_bus);
+ 
+ 	/* Recv
+ 	 * kmem_cache_create initializes a lookaside list. After successful
+@@ -5186,8 +5188,8 @@ static int et131x_set_mac_addr(struct net_device *netdev, void *new_mac)
+ 
+ 	memcpy(netdev->dev_addr, address->sa_data, netdev->addr_len);
+ 
+-	printk(KERN_INFO "%s: Setting MAC address to %pM\n",
+-			netdev->name, netdev->dev_addr);
++	pr_info("%s: Setting MAC address to %pM\n",
++		netdev->name, netdev->dev_addr);
+ 
+ 	/* Free Rx DMA memory */
+ 	et131x_adapter_memory_free(adapter);
+-- 
+1.7.5.4
+
