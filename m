@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757749Ab2GRAKU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 20:10:20 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48754 "EHLO
+	id S1757726Ab2GRAKm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 20:10:42 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49131 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757502Ab2GRAEk (ORCPT
+	with ESMTP id S1757494Ab2GRAEd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 20:04:40 -0400
+	Tue, 17 Jul 2012 20:04:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 16/37] iwlegacy: always monitor for stuck queues
-Date: Tue, 17 Jul 2012 17:02:53 -0700
-Message-Id: <20120717232432.678570654@linuxfoundation.org>
+        Henrik Rydberg <rydberg@euromail.se>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [ 23/37] Input: bcm5974 - Add support for 2012 MacBook Pro Retina
+Date: Tue, 17 Jul 2012 17:03:00 -0700
+Message-Id: <20120717232433.274191629@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120717232431.399005532@linuxfoundation.org>
 References: <20120717232455.GA5994@kroah.com>
@@ -31,62 +31,64 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Henrik Rydberg <rydberg@euromail.se>
 
-commit c2ca7d92ed4bbd779516beb6eb226e19f7f7ab0f upstream.
+commit 3dde22a98e94eb18527f0ff0068fb2fb945e58d4 upstream.
 
-This is iwlegacy version of:
+Add support for the 15'' MacBook Pro Retina model (MacBookPro10,1).
 
-commit 342bbf3fee2fa9a18147e74b2e3c4229a4564912
-Author: Johannes Berg <johannes.berg@intel.com>
-Date:   Sun Mar 4 08:50:46 2012 -0800
+Patch originally written by clipcarl (forums.opensuse.org).
 
-    iwlwifi: always monitor for stuck queues
-
-    If we only monitor while associated, the following
-    can happen:
-     - we're associated, and the queue stuck check
-       runs, setting the queue "touch" time to X
-     - we disassociate, stopping the monitoring,
-       which leaves the time set to X
-     - almost 2s later, we associate, and enqueue
-       a frame
-     - before the frame is transmitted, we monitor
-       for stuck queues, and find the time set to
-       X, although it is now later than X + 2000ms,
-       so we decide that the queue is stuck and
-       erroneously restart the device
-
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlegacy/common.c |   14 ++++++--------
- 1 file changed, 6 insertions(+), 8 deletions(-)
+ drivers/input/mouse/bcm5974.c |   20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
---- a/drivers/net/wireless/iwlegacy/common.c
-+++ b/drivers/net/wireless/iwlegacy/common.c
-@@ -4767,14 +4767,12 @@ il_bg_watchdog(unsigned long data)
- 		return;
+--- a/drivers/input/mouse/bcm5974.c
++++ b/drivers/input/mouse/bcm5974.c
+@@ -79,6 +79,10 @@
+ #define USB_DEVICE_ID_APPLE_WELLSPRING5A_ANSI	0x0252
+ #define USB_DEVICE_ID_APPLE_WELLSPRING5A_ISO	0x0253
+ #define USB_DEVICE_ID_APPLE_WELLSPRING5A_JIS	0x0254
++/* MacbookPro10,1 (unibody, June 2012) */
++#define USB_DEVICE_ID_APPLE_WELLSPRING7_ANSI	0x0262
++#define USB_DEVICE_ID_APPLE_WELLSPRING7_ISO	0x0263
++#define USB_DEVICE_ID_APPLE_WELLSPRING7_JIS	0x0264
  
- 	/* monitor and check for other stuck queues */
--	if (il_is_any_associated(il)) {
--		for (cnt = 0; cnt < il->hw_params.max_txq_num; cnt++) {
--			/* skip as we already checked the command queue */
--			if (cnt == il->cmd_queue)
--				continue;
--			if (il_check_stuck_queue(il, cnt))
--				return;
--		}
-+	for (cnt = 0; cnt < il->hw_params.max_txq_num; cnt++) {
-+		/* skip as we already checked the command queue */
-+		if (cnt == il->cmd_queue)
-+			continue;
-+		if (il_check_stuck_queue(il, cnt))
-+			return;
- 	}
+ #define BCM5974_DEVICE(prod) {					\
+ 	.match_flags = (USB_DEVICE_ID_MATCH_DEVICE |		\
+@@ -128,6 +132,10 @@ static const struct usb_device_id bcm597
+ 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING5A_ANSI),
+ 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING5A_ISO),
+ 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING5A_JIS),
++	/* MacbookPro10,1 */
++	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING7_ANSI),
++	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING7_ISO),
++	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING7_JIS),
+ 	/* Terminating entry */
+ 	{}
+ };
+@@ -354,6 +362,18 @@ static const struct bcm5974_config bcm59
+ 		{ DIM_X, DIM_X / SN_COORD, -4620, 5140 },
+ 		{ DIM_Y, DIM_Y / SN_COORD, -150, 6600 }
+ 	},
++	{
++		USB_DEVICE_ID_APPLE_WELLSPRING7_ANSI,
++		USB_DEVICE_ID_APPLE_WELLSPRING7_ISO,
++		USB_DEVICE_ID_APPLE_WELLSPRING7_JIS,
++		HAS_INTEGRATED_BUTTON,
++		0x84, sizeof(struct bt_data),
++		0x81, TYPE2, FINGER_TYPE2, FINGER_TYPE2 + SIZEOF_ALL_FINGERS,
++		{ DIM_PRESSURE, DIM_PRESSURE / SN_PRESSURE, 0, 300 },
++		{ DIM_WIDTH, DIM_WIDTH / SN_WIDTH, 0, 2048 },
++		{ DIM_X, DIM_X / SN_COORD, -4750, 5280 },
++		{ DIM_Y, DIM_Y / SN_COORD, -150, 6730 }
++	},
+ 	{}
+ };
  
- 	mod_timer(&il->watchdog,
 
 
