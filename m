@@ -1,37 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756080Ab2GRWvo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 18:51:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44712 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752167Ab2GRWvm (ORCPT
+	id S1754201Ab2GRW5d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 18:57:33 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:26418 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751031Ab2GRW53 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 18:51:42 -0400
-Date: Wed, 18 Jul 2012 15:51:41 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH] Allow CLOCK_TICK_RATE to be undefined
-Message-Id: <20120718155141.232ae14c.akpm@linux-foundation.org>
-In-Reply-To: <1342543300-23460-1-git-send-email-catalin.marinas@arm.com>
-References: <1342543300-23460-1-git-send-email-catalin.marinas@arm.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 18 Jul 2012 18:57:29 -0400
+Message-ID: <1342651966.3010.66.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 1/4] ACPI: Add acpi_pr_<level>() interfaces
+From: Toshi Kani <toshi.kani@hp.com>
+To: shuah.khan@hp.com
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bhelgaas@google.com, isimatu.yasuaki@jp.fujitsu.com, liuj97@gmail.com,
+        srivatsa.bhat@linux.vnet.ibm.com, prarit@redhat.com,
+        imammedo@redhat.com, vijaymohan.pandarathil@hp.com,
+        shuahkhan@gmail.com
+Date: Wed, 18 Jul 2012 16:52:46 -0600
+In-Reply-To: <1342651257.5138.44.camel@lorien2>
+References: <1342644027-19559-1-git-send-email-toshi.kani@hp.com>
+	 <1342644027-19559-2-git-send-email-toshi.kani@hp.com>
+	 <1342648771.5138.37.camel@lorien2>
+	 <1342650386.3010.55.camel@misato.fc.hp.com>
+	 <1342651257.5138.44.camel@lorien2>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Jul 2012 17:41:40 +0100
-Catalin Marinas <catalin.marinas@arm.com> wrote:
+On Wed, 2012-07-18 at 16:40 -0600, Shuah Khan wrote:
+> On Wed, 2012-07-18 at 16:26 -0600, Toshi Kani wrote:
+> > On Wed, 2012-07-18 at 15:59 -0600, Shuah Khan wrote:
+> > > On Wed, 2012-07-18 at 14:40 -0600, Toshi Kani wrote:
+> > > > This patch introduces acpi_pr_<level>(), where <level> is a message
+> > > > level such as err/warn/info, to support improved logging messages
+> > > > for ACPI, esp. in hotplug operations.  acpi_pr_<level>() appends
+> > > > "ACPI" prefix and ACPI object path to the messages.  This improves
+> > > > diagnostics in hotplug operations since it identifies an object that
+> > > > caused an issue in a log file.
+> > > > 
+> > > > acpi_pr_<level>() takes acpi_handle as an argument, which is passed
+> > > > to ACPI hotplug notify handlers from the ACPI CA.  Therefore, it is
+> > > > always available unlike other kernel objects, such as device.
+> > > > 
+> > > > For example, the statement below
+> > > >   acpi_pr_err(handle, "Device don't exist, dropping EJECT\n");
+> > > > logs an error message like this:
+> > > >   ACPI: \_SB_.SCK4.CPU4: Device don't exist, dropping EJECT
+> > > > 
+> > > > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+> > > > ---
+> > > >  drivers/acpi/utils.c    |   32 ++++++++++++++++++++++++++++++++
+> > > >  include/acpi/acpi_bus.h |   18 ++++++++++++++++++
+> > > >  2 files changed, 50 insertions(+), 0 deletions(-)
+> > > > 
+> > > > diff --git a/drivers/acpi/utils.c b/drivers/acpi/utils.c
+> > > > index 3e87c9c..4097266 100644
+> > > > --- a/drivers/acpi/utils.c
+> > > > +++ b/drivers/acpi/utils.c
+> > > > @@ -454,3 +454,35 @@ acpi_evaluate_hotplug_ost(acpi_handle handle, u32 source_event,
+> > > >  #endif
+> > > >  }
+> > > >  EXPORT_SYMBOL(acpi_evaluate_hotplug_ost);
+> > > > +
+> > > > +/**
+> > > > + * acpi_printk: Print messages with ACPI prefix and object path
+> > > > + *
+> > > > + * This function is intended to be called through acpi_pr_<level> macros.
+> > > > + */
+> > > > +void
+> > > > +acpi_printk(const char *level, acpi_handle handle, const char *fmt, ...)
+> > > > +{
+> > > > +	struct va_format vaf;
+> > > > +	va_list args;
+> > > > +	struct acpi_buffer buffer = {ACPI_ALLOCATE_BUFFER};
+> > > > +	char *path;
+> > > > +	acpi_status ret;
+> > > > +
+> > > > +	va_start(args, fmt);
+> > > > +
+> > > > +	vaf.fmt = fmt;
+> > > > +	vaf.va = &args;
+> > > > +
+> > > > +	ret = acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
+> > > 
+> > > One big problem I see with this approach is now each acpi_printk() will
+> > > result in a call to acpi_get_name() which will invoke several ACPI
+> > > calls, including a call to acpi_ut_initialize_buffer() which allocates
+> > > buffer. Is this really warranted? What is the performance impact of this
+> > > change?
+> > 
+> > Hi Shuah,
+> > 
+> > This interface is intended to be used by acpi_pr_<level>(), which is
+> > used for error, warning, debugging, etc.  It is not intended to be used
+> > in any performance path.
+> > 
+> 
+> How does one enable this interface to see errors, warns, debugging? Is
+> there a special mode kernel needs to run in? I am trying to understand
+> what you mean by "not intended to be used in any performance path". Does
+> one build a special kernel similar to CONFIG_VM_DEBUG (just happen to
+> the one I could think off) ?
 
-> This patch allows an architecture to not define CLOCK_TICK_RATE, in
-> which case ACTHZ defaults to (HZ << 8).
+acpi_pr_<level>() calls printk() with a corresponding message level,
+such as KERN_ERR, KERN_WARNING and KERN_DEBUG, which is by definition
+used for error, warning and debugging messages.  Let me know if the
+change log was not clear about this.  Anyway, I think one should not use
+a printk() in performance path in the first place...
 
-No reason was given for this change.
+BTW, I realized that I forgot to define acpi_pr_debug()! (duh)  I will
+update the patch to define it.
 
-So those people who are wondering "why don't you just define
-CLOCK_TICK_RATE" are made all sad.
+
+Thanks,
+-Toshi
+
+
+> -- Shuah
+> 
+
 
