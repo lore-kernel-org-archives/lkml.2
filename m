@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754572Ab2GRNju (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 09:39:50 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:57479 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754496Ab2GRNjo (ORCPT
+	id S1754584Ab2GRNkP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 09:40:15 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:50201 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753474Ab2GRNkN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 09:39:44 -0400
+	Wed, 18 Jul 2012 09:40:13 -0400
 From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
         Avi Kivity <avi@redhat.com>, Ingo Molnar <mingo@redhat.com>,
@@ -22,59 +22,115 @@ Cc: Srikar <srikar@linux.vnet.ibm.com>, S390 <linux-s390@vger.kernel.org>,
         Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
         Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
         Joerg Roedel <joerg.roedel@amd.com>
-Date: Wed, 18 Jul 2012 19:07:32 +0530
-Message-Id: <20120718133732.5321.90998.sendpatchset@codeblue.in.ibm.com>
+Date: Wed, 18 Jul 2012 19:08:00 +0530
+Message-Id: <20120718133800.5321.51446.sendpatchset@codeblue.in.ibm.com>
 In-Reply-To: <20120718133717.5321.71347.sendpatchset@codeblue.in.ibm.com>
 References: <20120718133717.5321.71347.sendpatchset@codeblue.in.ibm.com>
-Subject: [PATCH RFC V5 1/3] kvm/config: Add config to support ple or cpu relax optimzation
-x-cbid: 12071803-5490-0000-0000-000001CC9267
+Subject: [PATCH RFC V5 3/3] kvm: Choose better candidate for directed yield
+x-cbid: 12071803-7014-0000-0000-000001936931
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 
-Suggested-by: Avi Kivity <avi@redhat.com>
+Currently, on a large vcpu guests, there is a high probability of
+yielding to the same vcpu who had recently done a pause-loop exit or
+cpu relax intercepted. Such a yield can lead to the vcpu spinning
+again and hence degrade the performance.
+
+The patchset keeps track of the pause loop exit/cpu relax interception
+and gives chance to a vcpu which:
+ (a) Has not done pause loop exit or cpu relax intercepted at all
+     (probably he is preempted lock-holder)
+ (b) Was skipped in last iteration because it did pause loop exit or
+     cpu relax intercepted, and probably has become eligible now
+     (next eligible lock holder)
+
 Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 ---
- arch/s390/kvm/Kconfig |    1 +
- arch/x86/kvm/Kconfig  |    1 +
- virt/kvm/Kconfig      |    3 +++
- 3 files changed, 5 insertions(+), 0 deletions(-)
+V2 was:
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
-diff --git a/arch/s390/kvm/Kconfig b/arch/s390/kvm/Kconfig
-index 78eb984..a6e2677 100644
---- a/arch/s390/kvm/Kconfig
-+++ b/arch/s390/kvm/Kconfig
-@@ -21,6 +21,7 @@ config KVM
- 	depends on HAVE_KVM && EXPERIMENTAL
- 	select PREEMPT_NOTIFIERS
- 	select ANON_INODES
-+	select HAVE_KVM_CPU_RELAX_INTERCEPT
- 	---help---
- 	  Support hosting paravirtualized guest machines using the SIE
- 	  virtualization capability on the mainframe. This should work
-diff --git a/arch/x86/kvm/Kconfig b/arch/x86/kvm/Kconfig
-index a28f338..45c044f 100644
---- a/arch/x86/kvm/Kconfig
-+++ b/arch/x86/kvm/Kconfig
-@@ -37,6 +37,7 @@ config KVM
- 	select TASK_DELAY_ACCT
- 	select PERF_EVENTS
- 	select HAVE_KVM_MSI
-+	select HAVE_KVM_CPU_RELAX_INTERCEPT
- 	---help---
- 	  Support hosting fully virtualized guest machines using hardware
- 	  virtualization extensions.  You will need a fairly recent
-diff --git a/virt/kvm/Kconfig b/virt/kvm/Kconfig
-index 28694f4..d01b24b 100644
---- a/virt/kvm/Kconfig
-+++ b/virt/kvm/Kconfig
-@@ -21,3 +21,6 @@ config KVM_ASYNC_PF
+ include/linux/kvm_host.h |    5 +++++
+ virt/kvm/kvm_main.c      |   36 ++++++++++++++++++++++++++++++++++++
+ 2 files changed, 41 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index 34ce296..952427d 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -923,6 +923,11 @@ static inline void kvm_vcpu_set_dy_eligible(struct kvm_vcpu *vcpu, bool val)
+ {
+ }
  
- config HAVE_KVM_MSI
-        bool
++static inline bool kvm_vcpu_eligible_for_directed_yield(struct kvm_vcpu *vcpu)
++{
++	return true;
++}
 +
-+config HAVE_KVM_CPU_RELAX_INTERCEPT
-+       bool
+ #endif /* CONFIG_HAVE_KVM_CPU_RELAX_INTERCEPT */
+ #endif
+ 
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index 3d6ffc8..bf9fb97 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -1571,6 +1571,39 @@ bool kvm_vcpu_yield_to(struct kvm_vcpu *target)
+ }
+ EXPORT_SYMBOL_GPL(kvm_vcpu_yield_to);
+ 
++#ifdef CONFIG_HAVE_KVM_CPU_RELAX_INTERCEPT
++/*
++ * Helper that checks whether a VCPU is eligible for directed yield.
++ * Most eligible candidate to yield is decided by following heuristics:
++ *
++ *  (a) VCPU which has not done pl-exit or cpu relax intercepted recently
++ *  (preempted lock holder), indicated by @in_spin_loop.
++ *  Set at the beiginning and cleared at the end of interception/PLE handler.
++ *
++ *  (b) VCPU which has done pl-exit/ cpu relax intercepted but did not get
++ *  chance last time (mostly it has become eligible now since we have probably
++ *  yielded to lockholder in last iteration. This is done by toggling
++ *  @dy_eligible each time a VCPU checked for eligibility.)
++ *
++ *  Yielding to a recently pl-exited/cpu relax intercepted VCPU before yielding
++ *  to preempted lock-holder could result in wrong VCPU selection and CPU
++ *  burning. Giving priority for a potential lock-holder increases lock
++ *  progress.
++ */
++bool kvm_vcpu_eligible_for_directed_yield(struct kvm_vcpu *vcpu)
++{
++	bool eligible;
++
++	eligible = !vcpu->spin_loop.in_spin_loop ||
++			(vcpu->spin_loop.in_spin_loop &&
++			 vcpu->spin_loop.dy_eligible);
++
++	if (vcpu->spin_loop.in_spin_loop)
++		vcpu->spin_loop.dy_eligible = !vcpu->spin_loop.dy_eligible;
++
++	return eligible;
++}
++#endif
+ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
+ {
+ 	struct kvm *kvm = me->kvm;
+@@ -1599,6 +1632,8 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
+ 				continue;
+ 			if (waitqueue_active(&vcpu->wq))
+ 				continue;
++			if (!kvm_vcpu_eligible_for_directed_yield(vcpu))
++				continue;
+ 			if (kvm_vcpu_yield_to(vcpu)) {
+ 				kvm->last_boosted_vcpu = i;
+ 				yielded = 1;
+@@ -1607,6 +1642,7 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
+ 		}
+ 	}
+ 	kvm_vcpu_set_in_spin_loop(me, false);
++	kvm_vcpu_set_dy_eligible(me, false);
+ }
+ EXPORT_SYMBOL_GPL(kvm_vcpu_on_spin);
+ 
 
