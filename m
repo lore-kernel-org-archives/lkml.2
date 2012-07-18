@@ -1,259 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755708Ab2GRWQX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 18:16:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11427 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753421Ab2GRWQV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 18:16:21 -0400
-Message-ID: <1342649774.2229.223.camel@bling.home>
-Subject: Re: [PATCH] kvm: fix race with level interrupts
-From: Alex Williamson <alex.williamson@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        gleb@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 18 Jul 2012 16:16:14 -0600
-In-Reply-To: <20120718215228.GA13905@redhat.com>
-References: <20120718215228.GA13905@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754462Ab2GRWTt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 18:19:49 -0400
+Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:48208 "EHLO
+	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751440Ab2GRWTr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 18:19:47 -0400
+From: Greg Pearson <greg.pearson@hp.com>
+To: khalid.aziz@hp.com
+Cc: linux-kernel@vger.kernel.org, greg.pearson@hp.com
+Subject: [PATCH] PCDP: use early_ioremap/early_iounmap to access pcdp table
+Date: Wed, 18 Jul 2012 16:19:34 -0600
+Message-Id: <1342649974-6860-1-git-send-email-greg.pearson@hp.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-07-19 at 00:52 +0300, Michael S. Tsirkin wrote:
-> When more than 1 source id is in use for the same GSI, we have the
-> following race related to handling irq_states:
-> 
-> CPU 0 clears bit in irq_states. CPU 0 reads irq_state as 0.
-> CPU 1 sets bit in irq_states.  CPU 1 calls kvm_ioapic_set_irq(1). CPU 0
-> calls kvm_ioapic_set_irq(0).
-> 
-> Now ioapic thinks the level is 0 but irq_state is not 0.
-> 
-> Note that above is valid behaviour if CPU0 and CPU1 are using different
-> source ids.
-> 
-> Fix by performing all irq_states bitmap handling under pic/ioapic lock.
-> This also removes the need for atomics with irq_states handling.
-> 
-> Reported-by: Gleb Natapov <gleb@redhat.com>
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
-> 
-> This survives stress testing for me (though I only tried virtio, not
-> device assignment).
-> Avi, Marcelo, though we have not observed this in the field,
-> it's a bugfix so probably 3.5 material?
-> I assume yes so the patch is against 3.5-rc7.
-> Also stable? It's a very old bug.
-> 
-> 
->  arch/x86/include/asm/kvm_host.h | 15 ++++++++++++++-
->  arch/x86/kvm/i8259.c            | 14 ++++++++++++--
->  virt/kvm/ioapic.c               | 13 ++++++++++++-
->  virt/kvm/ioapic.h               |  4 +++-
->  virt/kvm/irq_comm.c             | 31 ++++---------------------------
->  5 files changed, 45 insertions(+), 32 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> index db7c1f2..fe6e9f1 100644
-> --- a/arch/x86/include/asm/kvm_host.h
-> +++ b/arch/x86/include/asm/kvm_host.h
-> @@ -802,7 +802,20 @@ int kvm_read_guest_page_mmu(struct kvm_vcpu *vcpu, struct kvm_mmu *mmu,
->  void kvm_propagate_fault(struct kvm_vcpu *vcpu, struct x86_exception *fault);
->  bool kvm_require_cpl(struct kvm_vcpu *vcpu, int required_cpl);
->  
-> -int kvm_pic_set_irq(void *opaque, int irq, int level);
-> +static inline int kvm_irq_line_state(unsigned long *irq_state,
-> +				     int irq_source_id, int level)
-> +{
-> +	/* Logical OR for level trig interrupt */
-> +	if (level)
-> +		__set_bit(irq_source_id, irq_state);
-> +	else
-> +		__clear_bit(irq_source_id, irq_state);
-> +
-> +	return !!(*irq_state);
-> +}
-> +
-> +int kvm_pic_set_irq(struct kvm_pic *pic, int irq, int irq_source_id, int level);
-> +void kvm_pic_clear_all(struct kvm_pic *pic, int irq_source_id);
->  
->  void kvm_inject_nmi(struct kvm_vcpu *vcpu);
->  
-> diff --git a/arch/x86/kvm/i8259.c b/arch/x86/kvm/i8259.c
-> index 81cf4fa..95b504b 100644
-> --- a/arch/x86/kvm/i8259.c
-> +++ b/arch/x86/kvm/i8259.c
-> @@ -188,13 +188,14 @@ void kvm_pic_update_irq(struct kvm_pic *s)
->  	pic_unlock(s);
->  }
->  
-> -int kvm_pic_set_irq(void *opaque, int irq, int level)
-> +int kvm_pic_set_irq(struct kvm_pic *s, int irq, int src_id, int l)
+The efi_setup_pcdp_console routine is called during boot to
+parse the HCDP/PCDP EFI system table and setup an early console
+for printk output. The routine uses ioremap/iounmap to setup
+access to the HCDP/PCDP table information. The call to ioremap
+is happening early in the boot process which leads to a panic
+on x86_64 systems:
 
-Please use "irq_source_id" and keep "level".  I hate reviewing code
-where I have to differentiate 'l' vs '1'.  Same below, mixing src_id and
-irq_source_id in various places.
+    0xffffffff815ffbd4 panic+0x01ca
+    0xffffffff810535ec do_exit+0x043c
+    0xffffffff81603847 oops_end+0x00a7
+    0xffffffff81042859 no_context+0x0119
+    0xffffffff81042a68 __bad_area_nosemaphore+0x0138
+    0xffffffff81042b5e bad_area_nosemaphore+0x000e
+    0xffffffff81606411 do_page_fault+0x0321
+    0xffffffff81602cb0 page_fault+0x0020
+    0xffffffff81045fc1 reserve_memtype+0x02a1
+    0xffffffff810430a3 __ioremap_caller+0x0123
+    0xffffffff81043402 ioremap_nocache+0x0012
+    0xffffffff81d53e70 efi_setup_pcdp_console+0x002b
+    0xffffffff81d1fcc5 setup_arch+0x03a9
+    0xffffffff81d19b44 start_kernel+0x00d4
+    0xffffffff81d19341 x86_64_start_reservations+0x012c
+    0xffffffff81d19449 x86_64_start_kernel+0x00fe
 
->  {
-> -	struct kvm_pic *s = opaque;
->  	int ret = -1;
-> +	int level;
+This patch replaces the calls to ioremap/iounmap in
+efi_setup_pcdp_console with calls to early_ioremap/early_iounmap
+which can be called during early boot.
 
-And you'd avoid this variable
+This patch was tested on an x86_64 prototype system which uses
+the HCDP/PCDP table for early console setup.
 
->  
->  	pic_lock(s);
->  	if (irq >= 0 && irq < PIC_NUM_PINS) {
-> +		level = kvm_irq_line_state(&s->irq_states[irq], src_id, l);
->  		ret = pic_set_irq1(&s->pics[irq >> 3], irq & 7, level);
->  		pic_update_irq(s);
->  		trace_kvm_pic_set_irq(irq >> 3, irq & 7, s->pics[irq >> 3].elcr,
-> @@ -205,6 +206,15 @@ int kvm_pic_set_irq(void *opaque, int irq, int level)
->  	return ret;
->  }
->  
-> +void kvm_pic_clear_all(struct kvm_pic *s, int src_id)
-> +{
-> +	int i;
-> +	pic_lock(s);
-> +	for (i = 0; i < PIC_NUM_PINS; i++)
-> +		__clear_bit(src_id, &s->irq_states[i]);
-> +	pic_unlock(s);
-> +}
-> +
->  /*
->   * acknowledge interrupt 'irq'
->   */
-> diff --git a/virt/kvm/ioapic.c b/virt/kvm/ioapic.c
-> index 26fd54d..268b332 100644
-> --- a/virt/kvm/ioapic.c
-> +++ b/virt/kvm/ioapic.c
-> @@ -191,17 +191,19 @@ static int ioapic_deliver(struct kvm_ioapic *ioapic, int irq)
->  	return kvm_irq_delivery_to_apic(ioapic->kvm, NULL, &irqe);
->  }
->  
-> -int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int level)
-> +int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int src_id, int l)
->  {
->  	u32 old_irr;
->  	u32 mask = 1 << irq;
->  	union kvm_ioapic_redirect_entry entry;
->  	int ret = 1;
-> +	int level;
->  
->  	spin_lock(&ioapic->lock);
->  	old_irr = ioapic->irr;
->  	if (irq >= 0 && irq < IOAPIC_NUM_PINS) {
->  		entry = ioapic->redirtbl[irq];
-> +		level = kvm_irq_line_state(&ioapic->irq_states[irq], src_id, l);
->  		level ^= entry.fields.polarity;
->  		if (!level)
->  			ioapic->irr &= ~mask;
-> @@ -221,6 +223,15 @@ int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int level)
->  	return ret;
->  }
->  
-> +void kvm_ioapic_clear_all(struct kvm_ioapic *ioapic, int src_id)
-> +{
-> +	int i;
-> +	spin_lock(&ioapic->lock);
-> +	for (i = 0; i < KVM_IOAPIC_NUM_PINS; i++)
-> +		__clear_bit(src_id, &ioapic->irq_states[i]);
-> +	spin_unlock(&ioapic->lock);
-> +}
-> +
->  static void __kvm_ioapic_update_eoi(struct kvm_ioapic *ioapic, int vector,
->  				     int trigger_mode)
->  {
-> diff --git a/virt/kvm/ioapic.h b/virt/kvm/ioapic.h
-> index 32872a0..a30abfe 100644
-> --- a/virt/kvm/ioapic.h
-> +++ b/virt/kvm/ioapic.h
-> @@ -74,7 +74,9 @@ void kvm_ioapic_update_eoi(struct kvm *kvm, int vector, int trigger_mode);
->  bool kvm_ioapic_handles_vector(struct kvm *kvm, int vector);
->  int kvm_ioapic_init(struct kvm *kvm);
->  void kvm_ioapic_destroy(struct kvm *kvm);
-> -int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int level);
-> +int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int irq_source_id,
-> +		       int level);
-> +void kvm_ioapic_clear_all(struct kvm_ioapic *ioapic, int irq_source_id);
->  void kvm_ioapic_reset(struct kvm_ioapic *ioapic);
->  int kvm_irq_delivery_to_apic(struct kvm *kvm, struct kvm_lapic *src,
->  		struct kvm_lapic_irq *irq);
-> diff --git a/virt/kvm/irq_comm.c b/virt/kvm/irq_comm.c
-> index 5afb431..83402d7 100644
-> --- a/virt/kvm/irq_comm.c
-> +++ b/virt/kvm/irq_comm.c
-> @@ -33,26 +33,12 @@
->  
->  #include "ioapic.h"
->  
-> -static inline int kvm_irq_line_state(unsigned long *irq_state,
-> -				     int irq_source_id, int level)
-> -{
-> -	/* Logical OR for level trig interrupt */
-> -	if (level)
-> -		set_bit(irq_source_id, irq_state);
-> -	else
-> -		clear_bit(irq_source_id, irq_state);
-> -
-> -	return !!(*irq_state);
-> -}
-> -
->  static int kvm_set_pic_irq(struct kvm_kernel_irq_routing_entry *e,
->  			   struct kvm *kvm, int irq_source_id, int level)
->  {
->  #ifdef CONFIG_X86
->  	struct kvm_pic *pic = pic_irqchip(kvm);
-> -	level = kvm_irq_line_state(&pic->irq_states[e->irqchip.pin],
-> -				   irq_source_id, level);
-> -	return kvm_pic_set_irq(pic, e->irqchip.pin, level);
-> +	return kvm_pic_set_irq(pic, e->irqchip.pin, irq_source_id, level);
->  #else
->  	return -1;
->  #endif
-> @@ -62,10 +48,7 @@ static int kvm_set_ioapic_irq(struct kvm_kernel_irq_routing_entry *e,
->  			      struct kvm *kvm, int irq_source_id, int level)
->  {
->  	struct kvm_ioapic *ioapic = kvm->arch.vioapic;
-> -	level = kvm_irq_line_state(&ioapic->irq_states[e->irqchip.pin],
-> -				   irq_source_id, level);
-> -
-> -	return kvm_ioapic_set_irq(ioapic, e->irqchip.pin, level);
-> +	return kvm_ioapic_set_irq(ioapic, e->irqchip.pin, irq_source_id, level);
->  }
->  
->  inline static bool kvm_is_dm_lowest_prio(struct kvm_lapic_irq *irq)
-> @@ -249,8 +232,6 @@ unlock:
->  
->  void kvm_free_irq_source_id(struct kvm *kvm, int irq_source_id)
->  {
-> -	int i;
-> -
->  	ASSERT(irq_source_id != KVM_USERSPACE_IRQ_SOURCE_ID);
->  
->  	mutex_lock(&kvm->irq_lock);
-> @@ -263,14 +244,10 @@ void kvm_free_irq_source_id(struct kvm *kvm, int irq_source_id)
->  	if (!irqchip_in_kernel(kvm))
->  		goto unlock;
->  
-> -	for (i = 0; i < KVM_IOAPIC_NUM_PINS; i++) {
-> -		clear_bit(irq_source_id, &kvm->arch.vioapic->irq_states[i]);
-> -		if (i >= 16)
-> -			continue;
-> +	kvm_ioapic_clear_all(kvm->arch.vioapic, irq_source_id);
->  #ifdef CONFIG_X86
-> -		clear_bit(irq_source_id, &pic_irqchip(kvm)->irq_states[i]);
-> +	kvm_pic_clear_all(pic_irqchip(kvm), irq_source_id);
->  #endif
-> -	}
->  unlock:
->  	mutex_unlock(&kvm->irq_lock);
->  }
+Signed-off-by: Greg Pearson <greg.pearson@hp.com>
+---
+ drivers/firmware/pcdp.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-
+diff --git a/drivers/firmware/pcdp.c b/drivers/firmware/pcdp.c
+index 51e0e2d..a330492 100644
+--- a/drivers/firmware/pcdp.c
++++ b/drivers/firmware/pcdp.c
+@@ -95,7 +95,7 @@ efi_setup_pcdp_console(char *cmdline)
+ 	if (efi.hcdp == EFI_INVALID_TABLE_ADDR)
+ 		return -ENODEV;
+ 
+-	pcdp = ioremap(efi.hcdp, 4096);
++	pcdp = early_ioremap(efi.hcdp, 4096);
+ 	printk(KERN_INFO "PCDP: v%d at 0x%lx\n", pcdp->rev, efi.hcdp);
+ 
+ 	if (strstr(cmdline, "console=hcdp")) {
+@@ -131,6 +131,6 @@ efi_setup_pcdp_console(char *cmdline)
+ 	}
+ 
+ out:
+-	iounmap(pcdp);
++	early_iounmap(pcdp, 4096);
+ 	return rc;
+ }
+-- 
+1.7.5.4
 
