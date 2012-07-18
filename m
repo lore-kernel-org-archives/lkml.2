@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751824Ab2GRGaZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 02:30:25 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:18705 "EHLO
+	id S1752252Ab2GRGah (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 02:30:37 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:18730 "EHLO
 	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751728Ab2GRGaM (ORCPT
+	with ESMTP id S1751916Ab2GRGaW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 02:30:12 -0400
+	Wed, 18 Jul 2012 02:30:22 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 17 Jul 2012 23:30:08 -0700
+	by hqnvupgp05.nvidia.com on Tue, 17 Jul 2012 23:30:17 -0700
 From: Laxman Dewangan <ldewangan@nvidia.com>
 To: <grant.likely@secretlab.ca>, <linus.walleij@stericsson.com>,
         <sameo@linux.intel.com>, <swarren@nvidia.com>,
         <broonie@opensource.wolfsonmicro.com>
 CC: <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V3 3/6] mfd: tps6586x: cache register through regmap
-Date: Wed, 18 Jul 2012 11:50:47 +0530
-Message-ID: <1342592450-12488-4-git-send-email-ldewangan@nvidia.com>
+Subject: [PATCH V3 5/6] ARM: tegra: defconfig: enable tps6586x gpio
+Date: Wed, 18 Jul 2012 11:50:49 +0530
+Message-ID: <1342592450-12488-6-git-send-email-ldewangan@nvidia.com>
 X-Mailer: git-send-email 1.7.1.1
 In-Reply-To: <1342592450-12488-1-git-send-email-ldewangan@nvidia.com>
 References: <1342592450-12488-1-git-send-email-ldewangan@nvidia.com>
@@ -26,80 +26,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To cache the interrupt mask register, use the regmap RB_TREE
-cache-ing mechanism in place of implementing it locally.
+Enable GPIO_TPS6586X as the gpio functionality of
+this device moved as platform driver.
 
 Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
 Changes V1 -> V2: 
-No change, generated new patch for V2 series.
-Changes V2 -> V3: 
-No change, generated new patch for V3 series.
+New change in V2 series. To avoid bisect, added change in defconfig.
 
- drivers/mfd/tps6586x.c |   24 ++++++++++++++++--------
- 1 files changed, 16 insertions(+), 8 deletions(-)
+Changes V2->V3:
+No Change, just recreated part of series.
 
-diff --git a/drivers/mfd/tps6586x.c b/drivers/mfd/tps6586x.c
-index 6f59594..d59bfb7 100644
---- a/drivers/mfd/tps6586x.c
-+++ b/drivers/mfd/tps6586x.c
-@@ -104,7 +104,6 @@ struct tps6586x {
- 	struct mutex		irq_lock;
- 	int			irq_base;
- 	u32			irq_en;
--	u8			mask_cache[5];
- 	u8			mask_reg[5];
- };
- 
-@@ -276,12 +275,11 @@ static void tps6586x_irq_sync_unlock(struct irq_data *data)
- 	int i;
- 
- 	for (i = 0; i < ARRAY_SIZE(tps6586x->mask_reg); i++) {
--		if (tps6586x->mask_reg[i] != tps6586x->mask_cache[i]) {
--			if (!WARN_ON(tps6586x_write(tps6586x->dev,
--						    TPS6586X_INT_MASK1 + i,
--						    tps6586x->mask_reg[i])))
--				tps6586x->mask_cache[i] = tps6586x->mask_reg[i];
--		}
-+		int ret;
-+		ret = tps6586x_write(tps6586x->dev,
-+					    TPS6586X_INT_MASK1 + i,
-+					    tps6586x->mask_reg[i]);
-+		WARN_ON(ret);
- 	}
- 
- 	mutex_unlock(&tps6586x->irq_lock);
-@@ -328,7 +326,6 @@ static int __devinit tps6586x_irq_init(struct tps6586x *tps6586x, int irq,
- 
- 	mutex_init(&tps6586x->irq_lock);
- 	for (i = 0; i < 5; i++) {
--		tps6586x->mask_cache[i] = 0xff;
- 		tps6586x->mask_reg[i] = 0xff;
- 		tps6586x_write(tps6586x->dev, TPS6586X_INT_MASK1 + i, 0xff);
- 	}
-@@ -478,10 +475,21 @@ static struct tps6586x_platform_data *tps6586x_parse_dt(struct i2c_client *clien
- }
- #endif
- 
-+static bool is_volatile_reg(struct device *dev, unsigned int reg)
-+{
-+	/* Cache all interrupt mask register */
-+	if ((reg >= TPS6586X_INT_MASK1) && (reg <= TPS6586X_INT_MASK5))
-+		return false;
-+
-+	return true;
-+}
-+
- static const struct regmap_config tps6586x_regmap_config = {
- 	.reg_bits = 8,
- 	.val_bits = 8,
- 	.max_register = TPS6586X_MAX_REGISTER - 1,
-+	.volatile_reg = is_volatile_reg,
-+	.cache_type = REGCACHE_RBTREE,
- };
- 
- static int __devinit tps6586x_i2c_probe(struct i2c_client *client,
+ arch/arm/configs/tegra_defconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/configs/tegra_defconfig b/arch/arm/configs/tegra_defconfig
+index 4be9c1e..5ae3889 100644
+--- a/arch/arm/configs/tegra_defconfig
++++ b/arch/arm/configs/tegra_defconfig
+@@ -105,6 +105,7 @@ CONFIG_I2C_MUX_PINCTRL=y
+ CONFIG_I2C_TEGRA=y
+ CONFIG_SPI=y
+ CONFIG_SPI_TEGRA=y
++CONFIG_GPIO_TPS6586X=y
+ CONFIG_GPIO_TPS65910=y
+ CONFIG_POWER_SUPPLY=y
+ CONFIG_BATTERY_SBS=y
 -- 
 1.7.1.1
 
