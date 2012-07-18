@@ -1,78 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754859Ab2GRXRB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 19:17:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13181 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754719Ab2GRXQ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 19:16:56 -0400
-Date: Wed, 18 Jul 2012 20:16:37 -0300
-From: Rafael Aquini <aquini@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>, Rafael Aquini <aquini@linux.com>
-Subject: Re: [PATCH v4 2/3] virtio_balloon: introduce migration primitives to
- balloon pages
-Message-ID: <20120718231637.GC2313@t510.redhat.com>
-References: <cover.1342485774.git.aquini@redhat.com>
- <050e06731e0489867ed804387509e36d072507ec.1342485774.git.aquini@redhat.com>
- <20120718154908.14704344.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120718154908.14704344.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754774Ab2GRXSI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 19:18:08 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:26875 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752222Ab2GRXSH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 19:18:07 -0400
+Message-ID: <1342653482.5138.56.camel@lorien2>
+Subject: Re: [PATCH 1/4] ACPI: Add acpi_pr_<level>() interfaces
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bhelgaas@google.com, isimatu.yasuaki@jp.fujitsu.com, liuj97@gmail.com,
+        srivatsa.bhat@linux.vnet.ibm.com, prarit@redhat.com,
+        imammedo@redhat.com, vijaymohan.pandarathil@hp.com,
+        shuahkhan@gmail.com
+Date: Wed, 18 Jul 2012 17:18:02 -0600
+In-Reply-To: <1342651966.3010.66.camel@misato.fc.hp.com>
+References: <1342644027-19559-1-git-send-email-toshi.kani@hp.com>
+	 <1342644027-19559-2-git-send-email-toshi.kani@hp.com>
+	 <1342648771.5138.37.camel@lorien2>
+	 <1342650386.3010.55.camel@misato.fc.hp.com>
+	 <1342651257.5138.44.camel@lorien2>
+	 <1342651966.3010.66.camel@misato.fc.hp.com>
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Howdy Andrew,
-
-Thanks for taking the time to go through this work and provide me with such good
-feedback.
-
-On Wed, Jul 18, 2012 at 03:49:08PM -0700, Andrew Morton wrote:
-> On Tue, 17 Jul 2012 13:50:42 -0300
-> Rafael Aquini <aquini@redhat.com> wrote:
-> 
-> > Besides making balloon pages movable at allocation time and introducing
-> > the necessary primitives to perform balloon page migration/compaction,
-> > this patch also introduces the following locking scheme to provide the
-> > proper synchronization and protection for struct virtio_balloon elements
-> > against concurrent accesses due to parallel operations introduced by
-> > memory compaction / page migration.
-> >  - balloon_lock (mutex) : synchronizes the access demand to elements of
-> > 			  struct virtio_balloon and its queue operations;
-> >  - pages_lock (spinlock): special protection to balloon pages list against
-> > 			  concurrent list handling operations;
+On Wed, 2012-07-18 at 16:52 -0600, Toshi Kani wrote:
+> On Wed, 2012-07-18 at 16:40 -0600, Shuah Khan wrote:
+> > On Wed, 2012-07-18 at 16:26 -0600, Toshi Kani wrote:
+> > > On Wed, 2012-07-18 at 15:59 -0600, Shuah Khan wrote:
+> > > > On Wed, 2012-07-18 at 14:40 -0600, Toshi Kani wrote:
+> > > > > This patch introduces acpi_pr_<level>(), where <level> is a message
+> > > > > level such as err/warn/info, to support improved logging messages
+> > > > > for ACPI, esp. in hotplug operations.  acpi_pr_<level>() appends
+> > > > > "ACPI" prefix and ACPI object path to the messages.  This improves
+> > > > > diagnostics in hotplug operations since it identifies an object that
+> > > > > caused an issue in a log file.
+> > > > > 
+> > > > > acpi_pr_<level>() takes acpi_handle as an argument, which is passed
+> > > > > to ACPI hotplug notify handlers from the ACPI CA.  Therefore, it is
+> > > > > always available unlike other kernel objects, such as device.
+> > > > > 
+> > > > > For example, the statement below
+> > > > >   acpi_pr_err(handle, "Device don't exist, dropping EJECT\n");
+> > > > > logs an error message like this:
+> > > > >   ACPI: \_SB_.SCK4.CPU4: Device don't exist, dropping EJECT
+> > > > > 
+> > > > > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+> > > > > ---
+> > > > >  drivers/acpi/utils.c    |   32 ++++++++++++++++++++++++++++++++
+> > > > >  include/acpi/acpi_bus.h |   18 ++++++++++++++++++
+> > > > >  2 files changed, 50 insertions(+), 0 deletions(-)
+> > > > > 
+> > > > > diff --git a/drivers/acpi/utils.c b/drivers/acpi/utils.c
+> > > > > index 3e87c9c..4097266 100644
+> > > > > --- a/drivers/acpi/utils.c
+> > > > > +++ b/drivers/acpi/utils.c
+> > > > > @@ -454,3 +454,35 @@ acpi_evaluate_hotplug_ost(acpi_handle handle, u32 source_event,
+> > > > >  #endif
+> > > > >  }
+> > > > >  EXPORT_SYMBOL(acpi_evaluate_hotplug_ost);
+> > > > > +
+> > > > > +/**
+> > > > > + * acpi_printk: Print messages with ACPI prefix and object path
+> > > > > + *
+> > > > > + * This function is intended to be called through acpi_pr_<level> macros.
+> > > > > + */
+> > > > > +void
+> > > > > +acpi_printk(const char *level, acpi_handle handle, const char *fmt, ...)
+> > > > > +{
+> > > > > +	struct va_format vaf;
+> > > > > +	va_list args;
+> > > > > +	struct acpi_buffer buffer = {ACPI_ALLOCATE_BUFFER};
+> > > > > +	char *path;
+> > > > > +	acpi_status ret;
+> > > > > +
+> > > > > +	va_start(args, fmt);
+> > > > > +
+> > > > > +	vaf.fmt = fmt;
+> > > > > +	vaf.va = &args;
+> > > > > +
+> > > > > +	ret = acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
+> > > > 
+> > > > One big problem I see with this approach is now each acpi_printk() will
+> > > > result in a call to acpi_get_name() which will invoke several ACPI
+> > > > calls, including a call to acpi_ut_initialize_buffer() which allocates
+> > > > buffer. Is this really warranted? What is the performance impact of this
+> > > > change?
+> > > 
+> > > Hi Shuah,
+> > > 
+> > > This interface is intended to be used by acpi_pr_<level>(), which is
+> > > used for error, warning, debugging, etc.  It is not intended to be used
+> > > in any performance path.
+> > > 
 > > 
-> > ...
-> >
-> > +	balloon_mapping->a_ops = &virtio_balloon_aops;
-> > +	balloon_mapping->backing_dev_info = (void *)vb;
+> > How does one enable this interface to see errors, warns, debugging? Is
+> > there a special mode kernel needs to run in? I am trying to understand
+> > what you mean by "not intended to be used in any performance path". Does
+> > one build a special kernel similar to CONFIG_VM_DEBUG (just happen to
+> > the one I could think off) ?
 > 
-> hoo boy.  We're making page->mapping->backing_dev_info point at a
-> struct which does not have type `struct backing_dev_info'.  And then we
-> are exposing that page to core MM functions.  So we're hoping that core
-> MM will never walk down page->mapping->backing_dev_info and explode.
-> 
-> That's nasty, hacky and fragile.
+> acpi_pr_<level>() calls printk() with a corresponding message level,
+> such as KERN_ERR, KERN_WARNING and KERN_DEBUG, which is by definition
+> used for error, warning and debugging messages.  Let me know if the
+> change log was not clear about this.  Anyway, I think one should not use
+> a printk() in performance path in the first place...
 
-Shame on me, on this one.
+KERN_ERR, KERN_WARNING, and KERN_DEBUG are used at run-time. What
+happens when these new interfaces start getting used widely during
+run-time. In the case of a serious error, shouldn't the kernel do the
+minimum to print the message out and not call several acpi routines?
+This type of feature definitely makes sense for debug, but not for other
+cases KERN_ERR, KERN_WARNING case.
 
-Mea culpa: I took this approach, originally, because I stuck the spinlock within
-the struct virtio_balloon and this was the easiest way to recover it just by
-having the page pointer. I did this stupidity because on earlier stages of this
-patch some functions that demanded access to that list spinlock were placed
-outside the balloon driver's code -- this is a left-over
-(I know, it's a total lame excuse, but it's the truth)
+My concern is all the extra work that is done whenever one of these
+interfaces is called. Can we limit this to special debug cases only.
 
-This is easily fixable, however, as the balloon page list spinlock is now only
-being accessed within driver's code and it can be declared outside the struct.
-
+-- Shuah
 
