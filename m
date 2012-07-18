@@ -1,39 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932077Ab2GRTBC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 15:01:02 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4152 "EHLO mx1.redhat.com"
+	id S1755710Ab2GRTHV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 15:07:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6374 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755565Ab2GRTBA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 15:01:00 -0400
-Date: Wed, 18 Jul 2012 22:00:57 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        Alex Williamson <alex.williamson@redhat.com>, avi@redhat.com,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jan.kiszka@siemens.com
+	id S1755685Ab2GRTHT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 15:07:19 -0400
+Message-ID: <1342638437.2229.213.camel@bling.home>
 Subject: Re: [PATCH v5 1/4] kvm: Extend irqfd to support level interrupts
-Message-ID: <20120718190057.GK6479@redhat.com>
-References: <20120718105530.GG26120@redhat.com>
- <20120718112219.GJ4700@redhat.com>
- <20120718113910.GA5135@redhat.com>
- <20120718114844.GH26120@redhat.com>
- <20120718120705.GB5184@redhat.com>
- <1342622843.2229.200.camel@bling.home>
- <20120718153822.GC1777@redhat.com>
- <1342626481.2229.205.camel@bling.home>
- <20120718155823.GG1777@redhat.com>
- <20120718184209.GA14053@amt.cnet>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        avi@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jan.kiszka@siemens.com
+Date: Wed, 18 Jul 2012 13:07:17 -0600
 In-Reply-To: <20120718184209.GA14053@amt.cnet>
+References: <20120718105311.GH4700@redhat.com>
+	 <20120718105530.GG26120@redhat.com> <20120718112219.GJ4700@redhat.com>
+	 <20120718113910.GA5135@redhat.com> <20120718114844.GH26120@redhat.com>
+	 <20120718120705.GB5184@redhat.com> <1342622843.2229.200.camel@bling.home>
+	 <20120718153822.GC1777@redhat.com> <1342626481.2229.205.camel@bling.home>
+	 <20120718155823.GG1777@redhat.com> <20120718184209.GA14053@amt.cnet>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 18, 2012 at 03:42:09PM -0300, Marcelo Tosatti wrote:
+On Wed, 2012-07-18 at 15:42 -0300, Marcelo Tosatti wrote:
 > On Wed, Jul 18, 2012 at 06:58:24PM +0300, Michael S. Tsirkin wrote:
 > > > > > > > Back to original point though current
 > > > > > > > situation is that calling kvm_set_irq() under spinlock is not worse for
@@ -66,9 +61,6 @@ On Wed, Jul 18, 2012 at 03:42:09PM -0300, Marcelo Tosatti wrote:
 > > the best we can do for now.
 > 
 > Why can't a mutex be used instead of a spinlock again?
-> 
-Why was it changed at the first place? Commit says that the function is
-called from unsleepable context, but no stack trace.
 
---
-			Gleb.
+eventfd_signal calls the inject function from atomic context.
+
