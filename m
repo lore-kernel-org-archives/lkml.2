@@ -1,67 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752610Ab2GRVHn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 17:07:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43243 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752020Ab2GRVHk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 17:07:40 -0400
-Date: Wed, 18 Jul 2012 14:07:38 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: David Daney <ddaney@caviumnetworks.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Yoichi Yuasa <yuasa@linux-mips.org>, Paul Mundt <lethal@linux-sh.org>,
-        linux-kernel@vger.kernel.org, Linuxppc-dev <linuxppc-dev@ozlabs.org>,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        Chris Zankel <chris@zankel.net>
-Subject: Re: [PATCH] MIPS: fix bug.h MIPS build regression
-Message-Id: <20120718140738.ca6f8f5a.akpm@linux-foundation.org>
-In-Reply-To: <CAMuHMdWW=sAff-iw0EiHaejr34Z4u_X7w3nHf6Tfo-c2f=Qijg@mail.gmail.com>
-References: <1339962373-3224-1-git-send-email-geert@linux-m68k.org>
-	<CAMuHMdVfLjgrtWoPpvbLf12+=ApE6W9dNcweqD-_2Benr-D7NQ@mail.gmail.com>
-	<20120620152759.2caceb8c.yuasa@linux-mips.org>
-	<20120620161249.GB29196@linux-mips.org>
-	<4FE4B13E.10709@caviumnetworks.com>
-	<CAMuHMdXSGgH+M_2+xuzY2t_sGZto24=atv3Kaj+R-dWAUPzW7w@mail.gmail.com>
-	<CAMuHMdWW=sAff-iw0EiHaejr34Z4u_X7w3nHf6Tfo-c2f=Qijg@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752599Ab2GRVId (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 17:08:33 -0400
+Received: from fieldses.org ([174.143.236.118]:60627 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752183Ab2GRVIb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 17:08:31 -0400
+Date: Wed, 18 Jul 2012 17:08:25 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Jim Rees <rees@umich.edu>
+Cc: Sasha Levin <levinsasha928@gmail.com>, Trond.Myklebust@netapp.com,
+        davem@davemloft.net, davej@redhat.com, linux-nfs@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] SUNRPC: Prevent kernel stack corruption on long values
+ of flush
+Message-ID: <20120718210825.GA3145@fieldses.org>
+References: <1342476086-21638-1-git-send-email-levinsasha928@gmail.com>
+ <20120718173913.GA1298@fieldses.org>
+ <20120718200049.GA17964@umich.edu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120718200049.GA17964@umich.edu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Jul 2012 10:35:46 +0200
-Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-
-> On Mon, Jul 16, 2012 at 9:27 PM, Geert Uytterhoeven
-> <geert@linux-m68k.org> wrote:
-> > On Fri, Jun 22, 2012 at 7:54 PM, David Daney <ddaney@caviumnetworks.com> wrote:
-> >> On 06/20/2012 09:12 AM, Ralf Baechle wrote:
-> >>>
-> >>> On Wed, Jun 20, 2012 at 03:27:59PM +0900, Yoichi Yuasa wrote:
-> >>>
-> >>>> Commit: 3777808873b0c49c5cf27e44c948dfb02675d578 breaks all MIPS builds.
-> >>>
-> >>>
-> >>> Thanks, fix applied.
-> >>>
-> >>
-> >> Where was it applied?
-> >>
-> >> It doesn't show up in linux-next for 20120622, which is where it is needed.
-> >
-> > It's also desperately needed in mainline for 3.5.
-> >
-> > Ralf?
+On Wed, Jul 18, 2012 at 04:00:49PM -0400, Jim Rees wrote:
+> J. Bruce Fields wrote:
 > 
-> Andrew? This prevents any green MIPS builds.
+>   On Tue, Jul 17, 2012 at 12:01:26AM +0200, Sasha Levin wrote:
+>   > The buffer size in read_flush() is too small for the longest possible values
+>   > for it. This can lead to a kernel stack corruption:
+>   
+>   Thanks!
+>   
+>   > 
+>   > diff --git a/net/sunrpc/cache.c b/net/sunrpc/cache.c
+>   > index 2afd2a8..f86d95e 100644
+>   > --- a/net/sunrpc/cache.c
+>   > +++ b/net/sunrpc/cache.c
+>   > @@ -1409,11 +1409,11 @@ static ssize_t read_flush(struct file *file, char __user *buf,
+>   >  			  size_t count, loff_t *ppos,
+>   >  			  struct cache_detail *cd)
+>   >  {
+>   > -	char tbuf[20];
+>   > +	char tbuf[22];
+>   
+>   I wonder how common this sort of calculation is in the kernel?  It might
+>   provide some peace of mind to be able to write this something like
+>   
+>   	char tbuf[MAXLEN_BASE10_UL + 2]  /* + 2 for final "\n\0" */
 > 
+> You could use something like:
+> 
+>     char tbuf[sizeof (unsigned long) * 24 / 10 + 1 + 2]; /* + 2 for final "\n\0" */
+> 
+> since there are roughly 10 bits for every 3 decimal digits.
 
-The patch is already in linux-next via Ralf's tree.
+So we could do something like this.  OK, I'm not sure I care enough.
 
-Perhaps he nodded off - I'll send it at Linus right now.
+--b.
+
+diff --git a/include/linux/string.h b/include/linux/string.h
+index e033564..ed34180 100644
+--- a/include/linux/string.h
++++ b/include/linux/string.h
+@@ -126,6 +126,10 @@ extern void argv_free(char **argv);
+ extern bool sysfs_streq(const char *s1, const char *s2);
+ extern int strtobool(const char *s, bool *res);
+ 
++/* length of the decimal representation of an unsigned integer.  Just an
++ * approximation, but it's right for types of size 1 to 36 bytes: */
++#define base10len(i) (sizeof(i) * 24 / 10 + 1)
++
+ #ifdef CONFIG_BINARY_PRINTF
+ int vbin_printf(u32 *bin_buf, size_t size, const char *fmt, va_list args);
+ int bstr_printf(char *buf, size_t size, const char *fmt, const u32 *bin_buf);
+diff --git a/net/sunrpc/cache.c b/net/sunrpc/cache.c
+index 2afd2a8..1dcd2b3 100644
+--- a/net/sunrpc/cache.c
++++ b/net/sunrpc/cache.c
+@@ -1409,7 +1409,7 @@ static ssize_t read_flush(struct file *file, char __user *buf,
+ 			  size_t count, loff_t *ppos,
+ 			  struct cache_detail *cd)
+ {
+-	char tbuf[20];
++	char tbuf[base10len(unsigned long) + 2];
+ 	unsigned long p = *ppos;
+ 	size_t len;
+ 
