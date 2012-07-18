@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751758Ab2GRUzU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 16:55:20 -0400
-Received: from smtp.mail.umich.edu ([141.211.12.86]:38774 "EHLO
-	tombraider.mr.itd.umich.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750764Ab2GRUzS (ORCPT
+	id S1752309Ab2GRVFx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 17:05:53 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:38082 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750993Ab2GRVFv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 16:55:18 -0400
-Date: Wed, 18 Jul 2012 16:55:10 -0400
-From: Jim Rees <rees@umich.edu>
-To: Dave Jones <davej@redhat.com>, "J. Bruce Fields" <bfields@fieldses.org>,
-        Sasha Levin <levinsasha928@gmail.com>, Trond.Myklebust@netapp.com,
-        davem@davemloft.net, linux-nfs@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] SUNRPC: Prevent kernel stack corruption on long values
- of flush
-Message-ID: <20120718205510.GA18374@umich.edu>
-References: <1342476086-21638-1-git-send-email-levinsasha928@gmail.com>
- <20120718173913.GA1298@fieldses.org>
- <20120718200049.GA17964@umich.edu>
- <20120718203304.GA18540@redhat.com>
+	Wed, 18 Jul 2012 17:05:51 -0400
+Date: Wed, 18 Jul 2012 23:05:49 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: cpufreq@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] powernow-k8: Fixup missing _PSS objects message
+Message-ID: <20120718210549.GA17504@aftab.osrc.amd.com>
+References: <1342624043-29763-1-git-send-email-bp@amd64.org>
+ <201207182150.51441.rjw@sisk.pl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120718203304.GA18540@redhat.com>
+In-Reply-To: <201207182150.51441.rjw@sisk.pl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Jones wrote:
+On Wed, Jul 18, 2012 at 09:50:51PM +0200, Rafael J. Wysocki wrote:
+> On Wednesday, July 18, 2012, Borislav Petkov wrote:
+> > From: Borislav Petkov <borislav.petkov@amd.com>
+> > 
+> > _PSS objects can also be missing if Cool'N'Quiet is disabled in the
+> > BIOS. Add that to the FW_BUG message for the user to try before updating
+> > her BIOS. Fix formatting while at it.
+> > 
+> > Acked-by: Mark Langsdorf <mark.langsdorf@amd.com>
+> > Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+> 
+> I will take this, but it's kind of too late for v3.6.
 
-  On Wed, Jul 18, 2012 at 04:00:49PM -0400, Jim Rees wrote:
-  
-   > You could use something like:
-   > 
-   >     char tbuf[sizeof (unsigned long) * 24 / 10 + 1 + 2]; /* + 2 for final "\n\0" */
-   > 
-   > since there are roughly 10 bits for every 3 decimal digits.
-   > 
-   > But I'm obviously confused, because I don't understand why tbuf needs to be
-   > any more than 10 + 2.
-  
-  Unsigned long isn't necessarily 32 bits.
-  On 64-bit systems %lu can be up to 18446744073709551615
+Yeah, sure, whenever. I found it buried in my mbox since 3.2ish. And
+since it is not urgent, you don't have to rush it for 3.6 but send it
+upstream whenever you like.
 
-Thanks.  You caught me thinking "Intel."  How embarrassing.
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
