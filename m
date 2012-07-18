@@ -1,129 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753363Ab2GRKZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 06:25:57 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:44718 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751010Ab2GRKZy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 06:25:54 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <50068F19.1020606@jp.fujitsu.com>
-Date: Wed, 18 Jul 2012 19:25:29 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1753422Ab2GRK1q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 06:27:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30194 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752555Ab2GRK1n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 06:27:43 -0400
+Date: Wed, 18 Jul 2012 13:27:39 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>, avi@redhat.com,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jan.kiszka@siemens.com
+Subject: Re: [PATCH v5 3/4] kvm: Create kvm_clear_irq()
+Message-ID: <20120718102739.GB26120@redhat.com>
+References: <1342534911.3229.26.camel@ul30vt>
+ <20120717145313.GB11516@redhat.com>
+ <1342538411.2229.106.camel@bling.home>
+ <20120717153620.GB11849@redhat.com>
+ <1342540301.2229.117.camel@bling.home>
+ <20120717155701.GB12001@redhat.com>
+ <1342541301.2229.125.camel@bling.home>
+ <20120717161452.GA12114@redhat.com>
+ <20120718062742.GH6479@redhat.com>
+ <20120718102029.GA4650@redhat.com>
 MIME-Version: 1.0
-To: Wen Congyang <wency@cn.fujitsu.com>
-CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>,
-        <rientjes@google.com>, <liuj97@gmail.com>, <len.brown@intel.com>,
-        <benh@kernel.crashing.org>, <paulus@samba.org>, <cl@linux.com>,
-        <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
-        <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH v4 3/13] memory-hotplug : check whether memory is present
- or not
-References: <50068974.1070409@jp.fujitsu.com> <50068AE9.3050804@jp.fujitsu.com> <50068F0A.20100@cn.fujitsu.com>
-In-Reply-To: <50068F0A.20100@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120718102029.GA4650@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wen,
-
-2012/07/18 19:25, Wen Congyang wrote:
-> At 07/18/2012 06:07 PM, Yasuaki Ishimatsu Wrote:
->> If system supports memory hot-remove, online_pages() may online removed pages.
->> So online_pages() need to check whether onlining pages are present or not.
->>
->> CC: David Rientjes <rientjes@google.com>
->> CC: Jiang Liu <liuj97@gmail.com>
->> CC: Len Brown <len.brown@intel.com>
->> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
->> CC: Paul Mackerras <paulus@samba.org>
->> CC: Christoph Lameter <cl@linux.com>
->> Cc: Minchan Kim <minchan.kim@gmail.com>
->> CC: Andrew Morton <akpm@linux-foundation.org>
->> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->> CC: Wen Congyang <wency@cn.fujitsu.com>
->> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->>
->> ---
->>   include/linux/mmzone.h |   21 +++++++++++++++++++++
->>   mm/memory_hotplug.c    |   13 +++++++++++++
->>   2 files changed, 34 insertions(+)
->>
->> Index: linux-3.5-rc6/include/linux/mmzone.h
->> ===================================================================
->> --- linux-3.5-rc6.orig/include/linux/mmzone.h	2012-07-08 09:23:56.000000000 +0900
->> +++ linux-3.5-rc6/include/linux/mmzone.h	2012-07-17 16:10:21.588186145 +0900
->> @@ -1168,6 +1168,27 @@ void sparse_init(void);
->>   #define sparse_index_init(_sec, _nid)  do {} while (0)
->>   #endif /* CONFIG_SPARSEMEM */
->>   
->> +#ifdef CONFIG_SPARSEMEM
->> +static inline int pfns_present(unsigned long pfn, unsigned long nr_pages)
->> +{
->> +	int i;
->> +	for (i = 0; i < nr_pages; i++) {
->> +		if (pfn_present(pfn + 1))
->> +			continue;
->> +		else {
->> +			unlock_memory_hotplug();
+On Wed, Jul 18, 2012 at 01:20:29PM +0300, Michael S. Tsirkin wrote:
+> On Wed, Jul 18, 2012 at 09:27:42AM +0300, Gleb Natapov wrote:
+> > On Tue, Jul 17, 2012 at 07:14:52PM +0300, Michael S. Tsirkin wrote:
+> > > > _Seems_ racy, or _is_ racy?  Please identify the race.
+> > > 
+> > > Look at this:
+> > > 
+> > > static inline int kvm_irq_line_state(unsigned long *irq_state,
+> > >                                      int irq_source_id, int level)
+> > > {
+> > >         /* Logical OR for level trig interrupt */
+> > >         if (level)
+> > >                 set_bit(irq_source_id, irq_state);
+> > >         else
+> > >                 clear_bit(irq_source_id, irq_state);
+> > > 
+> > >         return !!(*irq_state);
+> > > }
+> > > 
+> > > 
+> > > Now:
+> > > If other CPU changes some other bit after the atomic change,
+> > > it looks like !!(*irq_state) might return a stale value.
+> > > 
+> > > CPU 0 clears bit 0. CPU 1 sets bit 1. CPU 1 sets level to 1.
+> > > If CPU 0 sees a stale value now it will return 0 here
+> > > and interrupt will get cleared.
+> > > 
+> > This will hardly happen on x86 especially since bit is set with
+> > serialized instruction.
 > 
-> Why do you unlock memory hotplug here? The caller will do it.
-
-Ah, you are right. In this case, the function should only return -EINVAL.
-
-Thansks,
-Yasuaki Ishimatsu
+> Probably. But it does make me a bit uneasy.  Why don't we pass
+> irq_source_id to kvm_pic_set_irq/kvm_ioapic_set_irq, and move
+> kvm_irq_line_state to under pic_lock/ioapic_lock?  We can then use
+> __set_bit/__clear_bit in kvm_irq_line_state, making the ordering simpler
+> and saving an atomic op in the process.
 > 
-> Thanks
-> Wen Congyang
-> 
->> +			return -EINVAL;
->> +		}
->> +	}
->> +	return 0;
->> +}
->> +#else
->> +static inline int pfns_present(unsigned long pfn, unsigned long nr_pages)
->> +{
->> +	return 0;
->> +}
->> +#endif /* CONFIG_SPARSEMEM*/
->> +
->>   #ifdef CONFIG_NODES_SPAN_OTHER_NODES
->>   bool early_pfn_in_nid(unsigned long pfn, int nid);
->>   #else
->> Index: linux-3.5-rc6/mm/memory_hotplug.c
->> ===================================================================
->> --- linux-3.5-rc6.orig/mm/memory_hotplug.c	2012-07-17 14:26:40.000000000 +0900
->> +++ linux-3.5-rc6/mm/memory_hotplug.c	2012-07-17 16:09:50.070580170 +0900
->> @@ -467,6 +467,19 @@ int __ref online_pages(unsigned long pfn
->>   	struct memory_notify arg;
->>   
->>   	lock_memory_hotplug();
->> +	/*
->> + 	 * If system supports memory hot-remove, the memory may have been
->> + 	 * removed. So we check whether the memory has been removed or not.
->> + 	 *
->> + 	 * Note: When CONFIG_SPARSEMEM is defined, pfns_present() become
->> + 	 *       effective. If CONFIG_SPARSEMEM is not defined, pfns_present()
->> + 	 *       always returns 0.
->> + 	 */
->> +	ret = pfns_present(pfn, nr_pages);
->> +	if (ret) {
->> +		unlock_memory_hotplug();
->> +		return ret;
->> +	}
->>   	arg.start_pfn = pfn;
->>   	arg.nr_pages = nr_pages;
->>   	arg.status_change_nid = -1;
->>
->>
-> 
+With my patch I do not see why we can't change them to unlocked variant
+without moving them anywhere. The only requirement is to not use RMW
+sequence to set/clear bits. The ordering of setting does not matter. The
+ordering of reading is.
 
-
-
+--
+			Gleb.
