@@ -1,71 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753994Ab2GRLh5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 07:37:57 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:42399 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751954Ab2GRLhy (ORCPT
+	id S1754056Ab2GRLia (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 07:38:30 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:36661 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751871Ab2GRLi2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 07:37:54 -0400
-Message-ID: <1342611142.7530.17.camel@brekeke>
-Subject: Re: [PATCH 5/5] ubi: harmonize the update of ubi->beb_rsvd_pebs
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Shmulik Ladkani <shmulik.ladkani@gmail.com>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>,
-        Richard Genoud <richard.genoud@gmail.com>
-Date: Wed, 18 Jul 2012 14:32:22 +0300
-In-Reply-To: <1341389164-24409-6-git-send-email-shmulik.ladkani@gmail.com>
-References: <1341389164-24409-1-git-send-email-shmulik.ladkani@gmail.com>
-	 <1341389164-24409-6-git-send-email-shmulik.ladkani@gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-Rv1QXHjodDpTqZyrer5z"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	Wed, 18 Jul 2012 07:38:28 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120718110731.GE5006@linux.vnet.ibm.com>
+References: <CACV3sbLu81jrkfSXQxJ+_XtZHVTA6YfwJO3hjRxYsaDwbbLi6A@mail.gmail.com>
+	<20120717105936.GC28744@somewhere>
+	<20120717172736.GA6854@linux.vnet.ibm.com>
+	<CACV3sbKBsj288s=2FKKM+zuoga7Jy9QOxgzciTwREFVHLgR=Lw@mail.gmail.com>
+	<20120718110731.GE5006@linux.vnet.ibm.com>
+Date: Wed, 18 Jul 2012 19:38:27 +0800
+Message-ID: <CACV3sb+1=qaNu6ozHS+iRnKntoJw46zyamRPzcu-hWY34-qO8Q@mail.gmail.com>
+Subject: Re: [offlist] uprobe: checking probe event include directory
+From: Jovi Zhang <bookjovi@gmail.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jul 18, 2012 at 7:07 PM, Srikar Dronamraju
+<srikar@linux.vnet.ibm.com> wrote:
+> The patch looks good,
+>
+> Can you modify the description a bit. However you are free to ignore
+> these comments. After knowing your response,  I will ack the patch.
+>
+> I would probably put this as:
+>
+> The subject could be
+> tracing: Verify target file before registering a uprobe event
+>
+> Description:
+> Without this patch, we can register a uprobe event for a directory.
+> Enabling such a uprobe event would anyway fail.
+>
+> Example:
+>
+> $ echo 'p /bin:0x4245c0' > /sys/kernel/debug/tracing/uprobe_events
+>
+> However directories cannot be valid targets for uprobe.
+> Hence verify if the target is a regular file during the probe
+> registration.
 
---=-Rv1QXHjodDpTqZyrer5z
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Thanks srikar, your description is more clear than mine.
 
-On Wed, 2012-07-04 at 11:06 +0300, Shmulik Ladkani wrote:
-> +       need =3D ubi->avail_pebs >=3D need ? need : ubi->avail_pebs;
 
-Changed this line to
-	need =3D min_t(int, need, ubi->avail_pebs);
+>From fd5077196038cc271e2116e1fca359a0011e1669 Mon Sep 17 00:00:00 2001
+From: Jovi Zhang <bookjovi@gmail.com>
+Date: Wed, 18 Jul 2012 18:16:44 +0800
+Subject: [PATCH] tracing: Verify target file before registering a uprobe
+ event
 
-and pushed to the master branch. Thanks!
+Without this patch, we can register a uprobe event for a directory.
+Enabling such a uprobe event would anyway fail.
 
---=20
-Best Regards,
-Artem Bityutskiy
+Example:
+$ echo 'p /bin:0x4245c0' > /sys/kernel/debug/tracing/uprobe_events
 
---=-Rv1QXHjodDpTqZyrer5z
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+However dirctories cannot be valid targets for uprobe.
+Hence verify if the target is a regular file during the probe
+registration.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
+Reviewed-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+---
+ kernel/trace/trace_uprobe.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-iQIcBAABAgAGBQJQBp7GAAoJECmIfjd9wqK0wo8P/RBSRitcLNfbpq4V10E1vzny
-gmOP1+kQ0KWoXvNulKxjrt8CH2iPs/A5RNYx3BG1LgD/hXu06mc9H2tN/pZrjBzL
-c8y566+B8sPM8pz/A8hxzJCo3bAyKAUaELBVs6BvGvspgiaRIsz/sOPJ+py1P1mu
-AMe0uk+6dZUqeBxGtnzzxs6DxVwk7OeRcCvGnC7Ocd56F09jCT6e1+ZlWYpir2KS
-U+iOuOuQvp0Vc9DnzLo+SKPghWI6qOBfvONFsWkZab7ePpvl4tUuT7xv8NlEg5DO
-nt/H4OcwGGWuoNcWG9ir9fblTq+f4Fc2FJTY3bjub5aGcZOxNNf9qPb/YQFHv/sY
-nrsPRJjAowvH45TkKbh0KlEDjV3PHpgdGDSlG0sTa+GuuEBSU8tG2OOBhgZwufwB
-NWkQ+OsgtShq6OpaKjvlpLYyzXULvS7wNC+Psk+9tT45iaek+cthN5BjW8dLH/lX
-PLTBHZ8gLSLN1Jo4RHTLRVTbwPahgdW2kZd52w6CurHmqicIg4g4Y+q79LAdnqWk
-8h/nmPE7Ffr0YKZGu0uP2JqN2xyPGLGFBh4Jf8LMImZHqBoe95bLKJTCvcqjNlNt
-nEYdaZgoyOnueLXoXIK8eF2BTQuUJS1sSKp/89w1kvaUh7wZPRN82QptDOU3gs+z
-7lkjzU7LqorqVzkJNb2S
-=leaO
------END PGP SIGNATURE-----
+diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+index 85158fa..3b5f646 100644
+--- a/kernel/trace/trace_uprobe.c
++++ b/kernel/trace/trace_uprobe.c
+@@ -259,6 +259,10 @@ static int create_trace_uprobe(int argc, char **argv)
+ 		goto fail_address_parse;
 
---=-Rv1QXHjodDpTqZyrer5z--
+ 	inode = igrab(path.dentry->d_inode);
++	 if (!S_ISREG(inode->i_mode) || S_ISDIR(inode->i_mode)) {
++		ret = -EINVAL;
++		goto fail_address_parse;
++	}
 
+ 	argc -= 2;
+ 	argv += 2;
+@@ -358,7 +362,7 @@ fail_address_parse:
+ 	if (inode)
+ 		iput(inode);
+
+-	pr_info("Failed to parse address.\n");
++	pr_info("Failed to parse address or file.\n");
+
+ 	return ret;
+ }
+-- 
+1.7.9.7
