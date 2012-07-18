@@ -1,144 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754519Ab2GRNIw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 09:08:52 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:59669 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753648Ab2GRNIt (ORCPT
+	id S1754527Ab2GRNK3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 09:10:29 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10471 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754465Ab2GRNKY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 09:08:49 -0400
-From: "Philip, Avinash" <avinashphilip@ti.com>
-To: <thierry.reding@avionic-design.de>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-CC: <nsekhar@ti.com>, <avinashphilip@ti.com>, <gururaja.hebbar@ti.com>
-Subject: [PATCH] PWM: Add support for configuring polarity of PWM
-Date: Wed, 18 Jul 2012 18:24:13 +0530
-Message-ID: <1342616053-7793-1-git-send-email-avinashphilip@ti.com>
-X-Mailer: git-send-email 1.7.1
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 18 Jul 2012 09:10:24 -0400
+X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=11o5cHuf_k4A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=T9rXZiLMIHvDNuXt5lMA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-ID: <1342617021.11900.3.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH] pstore/ftrace: Convert to its own enable/disable
+ debugfs knob
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        John Stultz <john.stultz@linaro.org>, Shuah Khan <shuahkhan@gmail.com>,
+        arve@android.com, Rebecca Schultz Zavin <rebecca@android.com>,
+        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Date: Wed, 18 Jul 2012 09:10:21 -0400
+In-Reply-To: <20120718034722.GA18081@lizard>
+References: <20120710001004.GA22744@lizard>
+	 <1341879046-5197-3-git-send-email-anton.vorontsov@linaro.org>
+	 <1342553898.10332.9.camel@gandalf.stny.rr.com>
+	 <20120717200130.GA31678@lizard>
+	 <1342561102.10332.18.camel@gandalf.stny.rr.com>
+	 <20120718034722.GA18081@lizard>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Duty cycle inversion of PWM wave should achieved through PWM polarity
-inversion. Also polarity of PWM wave should configurable from slave
-drivers,
+On Tue, 2012-07-17 at 20:47 -0700, Anton Vorontsov wrote:
 
-Configure polarity
-1. PWM_POLARITY_NORMAL  -> duty ns defines ON period of PWM wave
-2. PWM_POLARITY_INVERSE -> duty ns defines OFF period of PWM wave.
+> diff --git a/Documentation/ramoops.txt b/Documentation/ramoops.txt
+> index 197ad59..69b3cac 100644
+> --- a/Documentation/ramoops.txt
+> +++ b/Documentation/ramoops.txt
+> @@ -102,9 +102,7 @@ related hangs. The functions call chain log is stored in a "ftrace-ramoops"
+>  file. Here is an example of usage:
+>  
+>   # mount -t debugfs debugfs /sys/kernel/debug/
+> - # cd /sys/kernel/debug/tracing
+> - # echo function > current_tracer
+> - # echo 1 > options/func_pstore
+> + # echo 1 > /sys/kernel/debug/pstore/record_ftrace
+>   # reboot -f
+>   [...]
+>   # mount -t pstore pstore /mnt/
+> diff --git a/fs/pstore/Kconfig b/fs/pstore/Kconfig
+> index d39bb5c..ca71db6 100644
+> --- a/fs/pstore/Kconfig
+> +++ b/fs/pstore/Kconfig
+> @@ -23,6 +23,7 @@ config PSTORE_FTRACE
+>  	bool "Persistent function tracer"
+>  	depends on PSTORE
+>  	depends on FUNCTION_TRACER
+> +	depends on DEBUG_FS
+>  	help
+>  	  With this option kernel traces function calls into a persistent
+>  	  ram buffer that can be decoded and dumped after reboot through
+> diff --git a/fs/pstore/ftrace.c b/fs/pstore/ftrace.c
+> index a130d48..824be81 100644
+> --- a/fs/pstore/ftrace.c
+> +++ b/fs/pstore/ftrace.c
+> @@ -17,19 +17,111 @@
+>  #include <linux/percpu.h>
+>  #include <linux/smp.h>
+>  #include <linux/atomic.h>
+> +#include <linux/types.h>
+> +#include <linux/mutex.h>
+> +#include <linux/ftrace.h>
+> +#include <linux/fs.h>
+> +#include <linux/debugfs.h>
+> +#include <linux/err.h>
+>  #include <asm/barrier.h>
+>  #include "internal.h"
+>  
+> -void notrace pstore_ftrace_call(unsigned long ip, unsigned long parent_ip)
+> +static void notrace pstore_ftrace_call(unsigned long ip,
+> +				       unsigned long parent_ip)
+>  {
+> +	unsigned long flags;
+>  	struct pstore_ftrace_record rec = {};
+>  
+> +	if (unlikely(!ftrace_enabled))
+> +		return;
 
-This patch adds support for configuring PWM polarity in PWM frame work.
+You don't need this check. The ftrace_enabled is internal to ftrace and
+the users shouldn't care. If we disable ftrace, the callback shouldn't
+be executed. If it is, that's our fault ;-)
 
-Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
----
-Configuring polarity to be done with PWM device disabled, if not
-failure reported.
 
-If PWM device is enabled while configuring polarity, disabling and
-re_enabling make it complex. Whoever uses this API has to taken
-care of the basic rules.
+>  	if (unlikely(oops_in_progress))
+>  		return;
+>  
+> +	local_irq_save(flags);
+> +
+>  	rec.ip = ip;
+>  	rec.parent_ip = parent_ip;
+>  	pstore_ftrace_encode_cpu(&rec, raw_smp_processor_id());
+>  	psinfo->write_buf(PSTORE_TYPE_FTRACE, 0, NULL, 0, (void *)&rec,
+>  			  sizeof(rec), psinfo);
+> +
+> +	local_irq_restore(flags);
+> +}
+> +
+> +static struct ftrace_ops pstore_ftrace_ops __read_mostly = {
+> +	.func	= pstore_ftrace_call,
+> +};
+> +
+> +static DEFINE_MUTEX(pstore_ftrace_lock);
+> +static bool pstore_ftrace_enabled;
+> +
+> +static ssize_t pstore_ftrace_knob_write(struct file *f, const char __user *buf,
+> +					size_t count, loff_t *ppos)
+> +{
+> +	u8 on;
+> +	int err;
+> +
+> +	err = kstrtou8_from_user(buf, count, 2, &on);
+> +	if (err)
+> +		return err;
+> +
+> +	mutex_lock(&pstore_ftrace_lock);
+> +
+> +	if (!on ^ pstore_ftrace_enabled)
+> +		goto out;
+> +	pstore_ftrace_enabled = on;
+> +
+> +	if (on)
+> +		register_ftrace_function(&pstore_ftrace_ops);
 
-Discussions related to this can found at
-http://www.spinics.net/lists/kernel/msg1372110.html
+You might want to check the return value of this.
 
-:100644 100644 ecb7690... 24d5495... M	drivers/pwm/core.c
-:100644 100644 21d076c... 2e4e960... M	include/linux/pwm.h
- drivers/pwm/core.c  |   32 ++++++++++++++++++++++++++++++++
- include/linux/pwm.h |   15 +++++++++++++++
- 2 files changed, 47 insertions(+), 0 deletions(-)
+-- Steve
 
-diff --git a/drivers/pwm/core.c b/drivers/pwm/core.c
-index ecb7690..24d5495 100644
---- a/drivers/pwm/core.c
-+++ b/drivers/pwm/core.c
-@@ -379,6 +379,38 @@ int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
- EXPORT_SYMBOL_GPL(pwm_config);
- 
- /**
-+ * pwm_set_polarity() - change PWM device Polarity
-+ * @pwm: PWM device
-+ * @polarity: Configure polarity of PWM
-+ *
-+ * Polarity to be configured with PWM device disabled.
-+ */
-+int pwm_set_polarity(struct pwm_device *pwm, int polarity)
-+{
-+	int pwm_flags = PWM_POLARITY_NORMAL;
-+
-+	if (!pwm || !pwm->chip->ops->set_polarity)
-+		return -EINVAL;
-+
-+	if (test_bit(PWMF_ENABLED, &pwm->flags)) {
-+		dev_err(pwm->chip->dev,
-+			"Polarity configuration Failed!, PWM device enabled\n");
-+		return -EBUSY;
-+	}
-+
-+	if (polarity == PWM_POLARITY_INVERSE)
-+		pwm_flags = PWM_POLARITY_INVERSE;
-+
-+	if (!pwm_flags)
-+		clear_bit(PWMF_POLARITY_INVERSE, &pwm->flags);
-+	else
-+		set_bit(PWMF_POLARITY_INVERSE, &pwm->flags);
-+
-+	return pwm->chip->ops->set_polarity(pwm->chip, pwm, polarity);
-+}
-+EXPORT_SYMBOL_GPL(pwm_set_polarity);
-+
-+/**
-  * pwm_enable() - start a PWM output toggling
-  * @pwm: PWM device
-  */
-diff --git a/include/linux/pwm.h b/include/linux/pwm.h
-index 21d076c..2e4e960 100644
---- a/include/linux/pwm.h
-+++ b/include/linux/pwm.h
-@@ -21,6 +21,16 @@ void pwm_free(struct pwm_device *pwm);
-  */
- int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns);
- 
-+enum {
-+	PWM_POLARITY_NORMAL,	/* ON period depends on duty_ns */
-+	PWM_POLARITY_INVERSE,	/* OFF period depends on duty_ns */
-+};
-+
-+/*
-+ * pwm_set_polarity - set polarity of PWM device
-+ */
-+int pwm_set_polarity(struct pwm_device *pwm, int polarity);
-+
- /*
-  * pwm_enable - start a PWM output toggling
-  */
-@@ -37,6 +47,7 @@ struct pwm_chip;
- enum {
- 	PWMF_REQUESTED = 1 << 0,
- 	PWMF_ENABLED = 1 << 1,
-+	PWMF_POLARITY_INVERSE = 1 << 2,
- };
- 
- struct pwm_device {
-@@ -66,6 +77,7 @@ static inline unsigned int pwm_get_period(struct pwm_device *pwm)
-  * @request: optional hook for requesting a PWM
-  * @free: optional hook for freeing a PWM
-  * @config: configure duty cycles and period length for this PWM
-+ * @set_polarity: configure polarity of PWM
-  * @enable: enable PWM output toggling
-  * @disable: disable PWM output toggling
-  * @dbg_show: optional routine to show contents in debugfs
-@@ -79,6 +91,9 @@ struct pwm_ops {
- 	int			(*config)(struct pwm_chip *chip,
- 					  struct pwm_device *pwm,
- 					  int duty_ns, int period_ns);
-+	int			(*set_polarity)(struct pwm_chip *chip,
-+					  struct pwm_device *pwm,
-+					  int polarity);
- 	int			(*enable)(struct pwm_chip *chip,
- 					  struct pwm_device *pwm);
- 	void			(*disable)(struct pwm_chip *chip,
--- 
-1.7.1
+> +	else
+> +		unregister_ftrace_function(&pstore_ftrace_ops);
+> +out:
+> +	mutex_unlock(&pstore_ftrace_lock);
+> +
+> +	return count;
+> +}
+> +
+> +static ssize_t pstore_ftrace_knob_read(struct file *f, char __user *buf,
+> +				       size_t count, loff_t *ppos)
+> +{
+> +	char val[] = { '0' + pstore_ftrace_enabled, '\n' };
+> +
+> +	return simple_read_from_buffer(buf, count, ppos, val, sizeof(val));
+> +}
+> +
+> +static const struct file_operations pstore_knob_fops = {
+> +	.open	= simple_open,
+> +	.read	= pstore_ftrace_knob_read,
+> +	.write	= pstore_ftrace_knob_write,
+> +};
+> +
+> +void pstore_register_ftrace(void)
+> +{
+> +	struct dentry *dir;
+> +	struct dentry *file;
+> +	int err;
+> +
+> +	if (!psinfo->write_buf)
+> +		return;
+> +
+> +	dir = debugfs_create_dir("pstore", NULL);
+> +	if (IS_ERR_OR_NULL(dir)) {
+> +		err = PTR_ERR(dir);
+> +		pr_err("%s: unable to create pstore debugfs: %d\n",
+> +		       __func__, err);
+> +		return;
+> +	}
+> +
+> +	file = debugfs_create_file("record_ftrace", 0600, dir, NULL,
+> +				   &pstore_knob_fops);
+> +	if (IS_ERR_OR_NULL(file)) {
+> +		err = PTR_ERR(file);
+> +		pr_err("%s: unable to create pstore/ftrace file: %d\n",
+> +		       __func__, err);
+> +		goto err_file;
+> +	}
+> +
+> +	return;
+> +err_file:
+> +	debugfs_remove(dir);
+>  }
+
 
