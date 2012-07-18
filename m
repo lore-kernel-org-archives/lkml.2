@@ -1,101 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752134Ab2GRGeq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 02:34:46 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:6084 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751628Ab2GRGei (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 02:34:38 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6775"; a="209418284"
-Message-ID: <31ba3fefcfc5352a6c41955a4e07ae8f.squirrel@www.codeaurora.org>
-In-Reply-To: <87pq7ungsw.fsf@octavius.laptop.org>
-References: <1338576911-17089-1-git-send-email-merez@codeaurora.org>
-    <1338576911-17089-2-git-send-email-merez@codeaurora.org>
-    <CAFR8uefCD_WXDM6m+-XwG10+W0UXqOtK7_sxWD3uVckh3pnR-Q@mail.gmail.com>
-    <CAFR8uee7hWLC-h_abZOCEuqeUeuhDuJp74x3R-3n+c61xyfaPQ@mail.gmail.com>
-    <fb2303ea3a3a5470e76d1faa2abd471b.squirrel@www.codeaurora.org>
-    <CAFR8ueecGqw=JzAGVHV61-SqOnn_C-ryT54KCQCbKkJpXUGY9w@mail.gmail.com>
-    <87629qkvgp.fsf@octavius.laptop.org>
-    <CAFR8uedwb1_gB-j6=riUuiJcEPY13rNJCLv1bxXc6aebnhonYw@mail.gmail.com>
-    <87pq7wjudy.fsf@octavius.laptop.org>
-    <CAFR8uefP0VV2fbBLv27y2KnMPRFPbGssm6EUdaqhZXXyQ2+k2Q@mail.gmail.com>
-    <87pq7ungsw.fsf@octavius.laptop.org>
-Date: Tue, 17 Jul 2012 23:34:38 -0700 (PDT)
-Subject: Re: [PATCH v2 1/1] mmc: block: Add write packing control
-From: merez@codeaurora.org
-To: "Chris Ball" <cjb@laptop.org>
-Cc: "Muthu Kumar" <muthu.lkml@gmail.com>, "Jens Axboe" <axboe@kernel.dk>,
-        merez@codeaurora.org, linux-mmc@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org,
-        "DOCUMENTATION" <linux-doc@vger.kernel.org>,
-        "open list" <linux-kernel@vger.kernel.org>
-User-Agent: SquirrelMail/1.4.17
+	id S1752341Ab2GRGfY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 02:35:24 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:34918 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751012Ab2GRGfS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 02:35:18 -0400
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <kishon@ti.com>, <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
+        <rob@landley.net>, <linux@arm.linux.org.uk>,
+        <gregkh@linuxfoundation.org>, <b-cousson@ti.com>, <rnayak@ti.com>,
+        <tony@atomide.com>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <balbi@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>
+Subject: [PATCH v3 00/11] omap: musb: Add device tree support
+Date: Wed, 18 Jul 2012 12:04:37 +0530
+Message-ID: <1342593288-7872-1-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.5.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris,
+This patch series adds device tree support for MUSB and device
+tree support for all the related modules to get MUSB working in
+OMAP platform.
 
-Is there anything else that holds this patch from being pushed to mmc-next?
+A new omap-usb2 phy driver has been added (with only dt suppport)
+to perform phy configurations. Previously this configuration was
+performed by twl6030, using pdata function pointers.
 
-Thanks,
-Maya
-On Tue, July 17, 2012 3:50 pm, Chris Ball wrote:
-> Hi Muthu,
->
-> On Mon, Jul 16 2012, Muthu Kumar wrote:
->> On Sun, Jul 15, 2012 at 7:46 PM, Chris Ball <cjb@laptop.org> wrote:
->>> Hi,
->>>
->>> On Sun, Jul 15 2012, Muthu Kumar wrote:
->>>>> I've already replied to a later version of the patch, but just to get
->>>>> this comment in at the appropriate point of the discussion as well:
->>>>>
->>>>> Even though it would result in a cleaner sysfs, I don't want to do
->>>>> this now because it will break userspace scripts that are depending
->>>>> on the current locations of these attributes.
->>>>
->>>> Maya is adding a new sysfs attribute with that patch. So, there should
->>>> not be any user space stuff that depends on it.
->>>
->>> In the later patchset, Maya's "[PATCH v4 1/2] mmc: card: Move MMC
->>> specific attributes to mmc sub-directory" moves the existing attributes
->>> into the mmc/ directory.
->>>
->>> It's that move that I'm objecting to, rather than the creation of a new
->>> directory -- although since we're going to leave the current attributes
->>> where they are, it might not make sense to add the new directory.
->>>
->>> We'd be creating two places that people have to look for mmc-related
->>> attributes, which is arguably less clean than having one place to look
->>> even though it's mixed in with the other block device attributes.
->>
->> So, what is the plan for fixing the user land tools and cleaning this
->> up?
->
-> At the moment I don't have any plan to do that, because the cure
-> (potentially breaking userland scripts that are writing to some
-> read/write attributes, by breaking ABI to move everything into a
-> new directory) seems worse than the disease (having some attributes
-> in a directory that isn't the ideal one).
->
-> I'd be willing to explore something like Venkat's idea if the block
-> layer maintainers insist, though.
->
-> - Chris.
-> --
-> Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-> One Laptop Per Child
->
+With the addition of omap-usb2 to perform phy configurations,
+twl6030 is made as a comparator driver to detect VBUS and ID events
+and notify it to the glue layer.
 
+musb core is _NOT_ yet converted to support device tree support as it
+would need lot of driver re-design because of its enormous use of
+function pointers. That will be in _TO DO_ list.
+
+Changes from v2:
+Fixed Sergei's comment to remove *0x* prefix in usb2phy@0x4a0ad080
+
+Changes from v1:
+* Fixed Rajendra Nayak comments (regulator naming, compatible naming of
+musb and other minor cleanups.)
+* It's agreed to have ocp2scp in drivers/bus and usb2 phy is a child of
+ocp2scp, the documentation is updated accordingly.
+
+Changes from RFC:
+Removed the dependency on [RFC PATCH 00/11] OMAP System Control Module.
+Writing to control module register is now handled in otg driver itself.
+Once the system control module driver get upstreamed, I'll send a patch
+to make use of API's in control module driver to write to control
+module register.
+
+This series was developed on
+git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git xceiv
+
+This patch series depends on
+[PATCH 0/2] omap: add ocp2scp as a bus driver
+
+Performed MUSB device mode testing on OMAP4 panda, OMAP4 SDP
+and OMAP3 beagle.
+
+Kishon Vijay Abraham I (11):
+  drivers: usb: otg: add a new driver for omap usb2 phy
+  arm/dts: omap: Add omap-usb2 dt data
+  drivers: usb: otg: make twl6030_usb as a comparator driver to
+    omap_usb2
+  arm: omap: hwmod: add a new addr space in otg for writing to control
+    module
+  drivers: usb: twl6030: Add dt support for twl6030 usb
+  arm/dts: Add twl6030-usb data
+  drivers: usb: twl4030: Add device tree support for twl4030 usb
+  arm/dts: Add twl4030-usb data
+  drivers: usb: musb: Add device tree support for omap musb glue
+  arm/dts: omap: Add usb_otg and glue data
+  arm: omap: phy: remove unused functions from omap-phy-internal.c
+
+ .../devicetree/bindings/bus/omap-ocp2scp.txt       |    3 +
+ Documentation/devicetree/bindings/usb/omap-usb.txt |   48 ++++
+ .../devicetree/bindings/usb/twlxxxx-usb.txt        |   41 +++
+ arch/arm/boot/dts/omap3-beagle.dts                 |    6 +
+ arch/arm/boot/dts/omap3-evm.dts                    |    6 +
+ arch/arm/boot/dts/omap3.dtsi                       |    8 +
+ arch/arm/boot/dts/omap4-panda.dts                  |   10 +
+ arch/arm/boot/dts/omap4-sdp.dts                    |   10 +
+ arch/arm/boot/dts/omap4.dtsi                       |   13 +
+ arch/arm/boot/dts/twl4030.dtsi                     |   21 ++
+ arch/arm/boot/dts/twl6030.dtsi                     |    6 +
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c         |    5 +
+ arch/arm/mach-omap2/omap_phy_internal.c            |  138 ----------
+ arch/arm/mach-omap2/twl-common.c                   |    5 -
+ arch/arm/mach-omap2/usb-musb.c                     |    3 -
+ drivers/usb/musb/omap2430.c                        |  107 +++++++-
+ drivers/usb/musb/omap2430.h                        |    9 +
+ drivers/usb/otg/Kconfig                            |   10 +
+ drivers/usb/otg/Makefile                           |    1 +
+ drivers/usb/otg/omap-usb2.c                        |  271 ++++++++++++++++++++
+ drivers/usb/otg/twl4030-usb.c                      |   26 ++-
+ drivers/usb/otg/twl6030-usb.c                      |  153 +++--------
+ include/linux/usb/omap_usb.h                       |   45 ++++
+ include/linux/usb/phy_companion.h                  |   34 +++
+ 24 files changed, 706 insertions(+), 273 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/usb/omap-usb.txt
+ create mode 100644 Documentation/devicetree/bindings/usb/twlxxxx-usb.txt
+ create mode 100644 drivers/usb/otg/omap-usb2.c
+ create mode 100644 include/linux/usb/omap_usb.h
+ create mode 100644 include/linux/usb/phy_companion.h
 
 -- 
-Sent by consultant of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+1.7.5.4
 
