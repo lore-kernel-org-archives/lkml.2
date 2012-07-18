@@ -1,73 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754022Ab2GRLGs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 07:06:48 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:34909 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751800Ab2GRLGq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 07:06:46 -0400
-Message-ID: <1342609272.7530.14.camel@brekeke>
-Subject: Re: [PATCH 2/5] ubi: Limit amount of reserved eraseblocks for bad
- PEB handling
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Shmulik Ladkani <shmulik.ladkani@gmail.com>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>,
-        Richard Genoud <richard.genoud@gmail.com>
-Date: Wed, 18 Jul 2012 14:01:12 +0300
-In-Reply-To: <1342607317.7530.9.camel@brekeke>
-References: <1341389164-24409-1-git-send-email-shmulik.ladkani@gmail.com>
-	 <1341389164-24409-3-git-send-email-shmulik.ladkani@gmail.com>
-	 <1342607317.7530.9.camel@brekeke>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-1QRPEq3gGp2nYrI/8Hy4"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1752713Ab2GRLIN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 07:08:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57804 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751387Ab2GRLIL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 07:08:11 -0400
+Date: Wed, 18 Jul 2012 14:08:43 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>, avi@redhat.com,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jan.kiszka@siemens.com
+Subject: Re: [PATCH v5 3/4] kvm: Create kvm_clear_irq()
+Message-ID: <20120718110843.GI4700@redhat.com>
+References: <20120717155701.GB12001@redhat.com>
+ <1342541301.2229.125.camel@bling.home>
+ <20120717161452.GA12114@redhat.com>
+ <20120718062742.GH6479@redhat.com>
+ <20120718102029.GA4650@redhat.com>
+ <20120718102739.GB26120@redhat.com>
+ <20120718103335.GB4700@redhat.com>
+ <20120718103608.GC26120@redhat.com>
+ <20120718105105.GG4700@redhat.com>
+ <20120718105315.GF26120@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120718105315.GF26120@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jul 18, 2012 at 01:53:15PM +0300, Gleb Natapov wrote:
+> On Wed, Jul 18, 2012 at 01:51:05PM +0300, Michael S. Tsirkin wrote:
+> > On Wed, Jul 18, 2012 at 01:36:08PM +0300, Gleb Natapov wrote:
+> > > On Wed, Jul 18, 2012 at 01:33:35PM +0300, Michael S. Tsirkin wrote:
+> > > > On Wed, Jul 18, 2012 at 01:27:39PM +0300, Gleb Natapov wrote:
+> > > > > On Wed, Jul 18, 2012 at 01:20:29PM +0300, Michael S. Tsirkin wrote:
+> > > > > > On Wed, Jul 18, 2012 at 09:27:42AM +0300, Gleb Natapov wrote:
+> > > > > > > On Tue, Jul 17, 2012 at 07:14:52PM +0300, Michael S. Tsirkin wrote:
+> > > > > > > > > _Seems_ racy, or _is_ racy?  Please identify the race.
+> > > > > > > > 
+> > > > > > > > Look at this:
+> > > > > > > > 
+> > > > > > > > static inline int kvm_irq_line_state(unsigned long *irq_state,
+> > > > > > > >                                      int irq_source_id, int level)
+> > > > > > > > {
+> > > > > > > >         /* Logical OR for level trig interrupt */
+> > > > > > > >         if (level)
+> > > > > > > >                 set_bit(irq_source_id, irq_state);
+> > > > > > > >         else
+> > > > > > > >                 clear_bit(irq_source_id, irq_state);
+> > > > > > > > 
+> > > > > > > >         return !!(*irq_state);
+> > > > > > > > }
+> > > > > > > > 
+> > > > > > > > 
+> > > > > > > > Now:
+> > > > > > > > If other CPU changes some other bit after the atomic change,
+> > > > > > > > it looks like !!(*irq_state) might return a stale value.
+> > > > > > > > 
+> > > > > > > > CPU 0 clears bit 0. CPU 1 sets bit 1. CPU 1 sets level to 1.
+> > > > > > > > If CPU 0 sees a stale value now it will return 0 here
+> > > > > > > > and interrupt will get cleared.
+> > > > > > > > 
+> > > > > > > This will hardly happen on x86 especially since bit is set with
+> > > > > > > serialized instruction.
+> > > > > > 
+> > > > > > Probably. But it does make me a bit uneasy.  Why don't we pass
+> > > > > > irq_source_id to kvm_pic_set_irq/kvm_ioapic_set_irq, and move
+> > > > > > kvm_irq_line_state to under pic_lock/ioapic_lock?  We can then use
+> > > > > > __set_bit/__clear_bit in kvm_irq_line_state, making the ordering simpler
+> > > > > > and saving an atomic op in the process.
+> > > > > > 
+> > > > > With my patch I do not see why we can't change them to unlocked variant
+> > > > > without moving them anywhere. The only requirement is to not use RMW
+> > > > > sequence to set/clear bits. The ordering of setting does not matter. The
+> > > > > ordering of reading is.
+> > > > 
+> > > > You want to use __set_bit/__clear_bit on the same word
+> > > > from multiple CPUs, without locking?
+> > > > Why won't this lose information?
+> > > Because it is not RMW. If it is then yes, you can't do that.
+> > 
+> > You are saying __set_bit does not do RMW on x86? Interesting.
+> I think it doesn't.
 
---=-1QRPEq3gGp2nYrI/8Hy4
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Anywhere I can read about this?
 
-On Wed, 2012-07-18 at 13:28 +0300, Artem Bityutskiy wrote:
-> >       ubi->bad_peb_count +=3D 1;
-> >       ubi->good_peb_count -=3D 1;
-> >       ubi_calculate_reserved(ubi);
-> We do not need to call this function from here, right?
+> > It's probably not a good idea to rely on this I think.
+> > 
+> The code is no in arch/x86 so probably no. Although it is used only on
+> x86 (and ia64 which has broken kvm anyway).
 
-Err, sorry, it _is_ needed!
+Yes but exactly the reverse is documented.
 
---=20
-Best Regards,
-Artem Bityutskiy
+/**
+ * __set_bit - Set a bit in memory
+ * @nr: the bit to set
+ * @addr: the address to start counting from
+ *
+ * Unlike set_bit(), this function is non-atomic and may be reordered.
 
---=-1QRPEq3gGp2nYrI/8Hy4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+>>>> pls note the below
 
-iQIcBAABAgAGBQJQBpd4AAoJECmIfjd9wqK0UosQAKuV33VSodFvel02zwb/5T89
-VgeulBO/S1jVAkYzSQKYKqVRdUMdIZHrxXgyq4BxfRoT6ZPvUgrVJqkExBg4fDSb
-OtM6odLuvWa/GEGzQCkjc3siRHkT1mF8TM4YLScBdPZzvT7zpdO0bqLi6zhRnr9Q
-XMs/Zsdp3X6GdbtTZCf5MlascD0Ituk7GerWs6mZP6Bj3+Noi5zfa4HJ5M8rIxNZ
-LU/72W8omGgj25MVVOK6I9JPwLxhXjRJAi1cu2BfIAuoCTiBgFYy04qB8k4h0m7s
-FmFqmBKBrgy9An2eQHX2MmP8w4o+vRtxtL4Oe0N0r9CHlASK51NP8DW9E7RKtip/
-lL1l2AQSmqyiScapjuS7dUE1fLq0OdBCj0yHHFfzER4ReHGOJ2pxdCTTtYrP+/VY
-83sLHo32cPz1WU0epjCb/PY2qnUQywSm5xRTidYQ3ZQyvl6snqln3dNq11NdOQS5
-Elw3tPRLBaxJkad/czwSwWHVa49LVLlHjhxyRkOt2dGpqoRAMw0m8jEDHABHFZ0E
-hmxW/gQb2ZcH1xDC+krZjYBo0py2IOCHeu6o3+5IW+IBhyj86hGKKS6pfB+2ssRk
-BP1dPk/aCiwAMquc3RdGgv/KbI6wDriFN85PspZZFiNYOqHl7cOcqH9l4OL4fMxD
-Os+CcOkn2EQs93TQlY3r
-=x/f5
------END PGP SIGNATURE-----
+ * If it's called on the same region of memory simultaneously, the effect
+ * may be that only one operation succeeds.
+>>>> until here
 
---=-1QRPEq3gGp2nYrI/8Hy4--
+ */
+static inline void __set_bit(int nr, volatile unsigned long *addr)
+{
+        asm volatile("bts %1,%0" : ADDR : "Ir" (nr) : "memory");
+}
 
+
+
+
+> > > > 
+> > > > In any case, it seems simpler and safer to do accesses under lock
+> > > > than rely on specific use.
+> > > > 
+> > > > > --
+> > > > > 			Gleb.
+> > > 
+> > > --
+> > > 			Gleb.
+> 
+> --
+> 			Gleb.
