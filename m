@@ -1,56 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755296Ab2GRR6W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 13:58:22 -0400
-Received: from mga02.intel.com ([134.134.136.20]:6688 "EHLO mga02.intel.com"
+	id S1755347Ab2GRSBg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 14:01:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48222 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751530Ab2GRR6V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 13:58:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="173819843"
-Message-Id: <4a613b26cc402fb3ed8130cd07a37e76f4c133ef.1342634029.git.tony.luck@intel.com>
-From: Tony Luck <tony.luck@intel.com>
-Date: Wed, 18 Jul 2012 10:35:05 -0700
-Subject: [PATCH] debug: Do not permit CONFIG_DEBUG_STACK_USAGE=y on IA64 or PARISC
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>, linux-parisc@vger.kernel.org,
-        linux-ia64@vger.kernel.org, Fengguang Wu <fengguang.wu@intel.com>
+	id S1754156Ab2GRSBe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 14:01:34 -0400
+Date: Wed, 18 Jul 2012 14:01:19 -0400
+From: Dave Jones <davej@redhat.com>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: potential NULL dereference in futex_wait_requeue_pi()
+Message-ID: <20120718180119.GA1458@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Darren Hart <dvhart@linux.intel.com>,
+	Dan Carpenter <dan.carpenter@oracle.com>,
+	linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+References: <20120718142514.GA18850@elgon.mountain>
+ <5006DE4A.4020905@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5006DE4A.4020905@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The stack_not_used() function in <linux/sched.h> assumes that stacks
-grow downwards. This is not true on IA64 or PARISC, so this function
-would walk off in the wrong direction and into the weeds.
-
-Found on IA64 because of a compilation failure with recursive dependencies
-on IA64_TASKSIZE and IA64_THREAD_INFO_SIZE.
-
-Fixing the code is possible, but should be combined with other
-infrastructure additions to set up the "canary" at the end of the stack.
-
-Reported-by: Fengguang Wu <fengguang.wu@intel.com> (failed allmodconfig build)
-Signed-off-by: Tony Luck <tony.luck@intel.com>
----
- lib/Kconfig.debug | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index ff5bdee..4a18650 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -714,7 +714,7 @@ config STACKTRACE
+On Wed, Jul 18, 2012 at 09:03:22AM -0700, Darren Hart wrote:
  
- config DEBUG_STACK_USAGE
- 	bool "Stack utilization instrumentation"
--	depends on DEBUG_KERNEL
-+	depends on DEBUG_KERNEL && !IA64 && !PARISC
- 	help
- 	  Enables the display of the minimum amount of free stack which each
- 	  task has ever had available in the sysrq-T and sysrq-P debug output.
--- 
-1.7.10.2.552.gaa3bb87
+ > > This will oops if pi_mutex is NULL.
+ > > 
+ > >   2374                          rt_mutex_unlock(pi_mutex);
+ > >   2375          } else if (ret == -EINTR) {
+ > 
+ > Nice Dan, thanks for taking a closer look. This appears to be a simple fix, can
+ > you try the following:
+ > 
+ > 
+ > futex: Test for pi_mutex on fault in futex_wait_requeue_pi
+ > 
+ > If fixup_pi_state_owner() faults, pi_mutex may be NULL. Test
+ > for pi_mutex != NULL before testing the owner against current
+ > and possibly unlocking it.
+ > 
+ > Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+ > CC: Dave Jones <davej@redhat.com>
+ > CC: Dan Carpenter <dan.carpenter@oracle.com>
+ > CC: Thomas Gleixner <tglx@linutronix.de>
+ > 
+ > diff --git a/kernel/futex.c b/kernel/futex.c
+ > index e2b0fb9..05018bf 100644
+ > --- a/kernel/futex.c
+ > +++ b/kernel/futex.c
+ > @@ -2370,7 +2370,7 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
+ >  	 * fault, unlock the rt_mutex and return the fault to userspace.
+ >  	 */
+ >  	if (ret == -EFAULT) {
+ > -		if (rt_mutex_owner(pi_mutex) == current)
+ > +		if (pi_mutex && rt_mutex_owner(pi_mutex) == current)
+ >  			rt_mutex_unlock(pi_mutex);
+ >  	} else if (ret == -EINTR) {
+ >  		/*
+
+Doesn't fix the oops for me unfortunatly.  It looks like it happens further up,
+so this might be a spearate bug after all.
+
+I added this..
+
+@@ -2344,7 +2351,13 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
+                 * the pi_state.
+                 */
+                WARN_ON(!&q.pi_state);
++
+                pi_mutex = &q.pi_state->pi_mutex;
++               if (pi_mutex == NULL) {
++                       ret = -EINVAL;
++                       goto out;
++               }
++
+                ret = rt_mutex_finish_proxy_lock(pi_mutex, to, &rt_waiter, 1);
+
+
+But that didn't seem to fix it either.  Somehow we still do this ..
+
+
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000028
+IP: [<ffffffff810d68be>] __lock_acquire+0x5e/0x1ae0
+
+	lock_acquire+0xad/0x220
+	_raw_spin_lock+0x46/0x80
+	rt_mutex_finish_proxy_lock+0x34/0xe0
+	futex_wait_requeue_pi.constprop.20+0x2e5/0x400
+	do_futex+0xea/0xa20
+	sys_futex+0x107/0x1a0
+	system_call_fastpath+0x1a/0x1f
+
+Ah, could it somehow be that we have a pi_mutex here, but it hasn't been initialised ?
+
+The code: line fingers this as the failure in kernel/lockdep.c
+
+        if (lock->key == &__lockdep_no_validate__)
+    3f9e:       49 8b 07                mov    (%r15),%rax
+
+r15 (lock) is somehow '0x28' here, which is why the NULL check I added didn't trigger.
+
+This isn't helped by the fact that there seems to be another unrelated bug in futexes
+that trinity triggers.  If you want to try this, running it with "-c futex" will reproduce
+it very quickly.
+
+	Dave
 
