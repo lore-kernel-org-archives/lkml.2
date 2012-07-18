@@ -1,106 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752678Ab2GRHO4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 03:14:56 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:60366 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752059Ab2GRHOv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 03:14:51 -0400
-Message-ID: <1342595359.31927.11.camel@brekeke>
-Subject: Re: [PATCH 1/5] ubi: introduce ubi->bad_peb_limit
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Shmulik Ladkani <shmulik.ladkani@gmail.com>
-Cc: Andrew Victor <linux@maxim.org.za>, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-mtd@lists.infradead.org, Richard Weinberger <richard@nod.at>,
-        Richard Genoud <richard.genoud@gmail.com>
-Date: Wed, 18 Jul 2012 10:09:19 +0300
-In-Reply-To: <1341389164-24409-2-git-send-email-shmulik.ladkani@gmail.com>
-References: <1341389164-24409-1-git-send-email-shmulik.ladkani@gmail.com>
-	 <1341389164-24409-2-git-send-email-shmulik.ladkani@gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-WpSzEhbJN1ZrP15UtFd3"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+	id S1752705Ab2GRHQP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 03:16:15 -0400
+Received: from gate.crashing.org ([63.228.1.57]:44080 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752059Ab2GRHQE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 03:16:04 -0400
+Message-ID: <1342595730.3669.70.camel@pasglop>
+Subject: Re: [PATCH] mm: setup pageblock_order before it's used by sparse
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Jiang Liu <jiang.liu@huawei.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Tony Luck <tony.luck@intel.com>,
+        Xishi Qiu <qiuxishi@huawei.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
+        Keping Chen <chenkeping@huawei.com>, linux-mm@kvack.org,
+        stable@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiang Liu <liuj97@gmail.com>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        linuxppc-dev@lists.ozlabs.org
+Date: Wed, 18 Jul 2012 17:15:30 +1000
+In-Reply-To: <CAE9FiQVxY9E3L_xmRj10+9D6NVbKaxaAd2oJ6EFe1D+Gy2971w@mail.gmail.com>
+References: <1341047274-5616-1-git-send-email-jiang.liu@huawei.com>
+	 <CAE9FiQWzfLkeQs8O22MUEmuGUx=jPi5s=wZt2fcpFMcwrzt3uA@mail.gmail.com>
+	 <4FF100F0.9050501@huawei.com>
+	 <CAE9FiQXpeGFfWvUHHW_GjgTg+4Op7agsht5coZbcmn2W=f9bqw@mail.gmail.com>
+	 <4FF25EFA.1080004@huawei.com>
+	 <CAE9FiQVxY9E3L_xmRj10+9D6NVbKaxaAd2oJ6EFe1D+Gy2971w@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2012-07-02 at 20:25 -0700, Yinghai Lu wrote:
+> > That means pageblock_order is always set to "MAX_ORDER - 1", not sure
+> > whether this is intended. And it has the same issue as IA64 of wasting
+> > memory if CONFIG_SPARSE is enabled.
+> 
+> adding BenH, need to know if it is powerpc intended.
+> 
+> >
+> > So it would be better to keep function set_pageblock_order(), it will
+> > fix the memory wasting on both IA64 and PowerPC.
+> 
+> Should setup pageblock_order as early as possible to avoid confusing.
 
---=-WpSzEhbJN1ZrP15UtFd3
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Hrm, HPAGE_SHIFT is initially 0 because we only know at runtime what
+huge page sizes are going to be supported (if any).
 
-On Wed, 2012-07-04 at 11:06 +0300, Shmulik Ladkani wrote:
-> Introduce 'ubi->bad_peb_limit', which specifies an upper limit of PEBs
-> ubi expects to go bad.
-> Currently, it is initialized to a fixed percentage of total PEBs in the
-> ubi device (configurable via CONFIG_MTD_UBI_BEB_LIMIT).
->=20
-> The 'bad_peb_limit' is intended to be used for calculating the amount of
-> PEBs ubi needs to reserve for bad eraseblock handling.
->=20
-> Signed-off-by: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+The business with pageblock_order is new to me and does look bogus today
+indeed. But not a huge deal either. Our MAX_ORDER is typically 9 (64K
+pages) or 13 (4K pages) and our standard huge page size is generally 16M
+so there isn't a big difference here.
 
-Created branch "beb" and pushed this patch there with minor amendments
-(see diff below). Let's use this branch in UBI tree for this work and
-merge it as soon as it is ready.
+Still, maybe something worth looking into...
 
-diff --git a/drivers/mtd/ubi/build.c b/drivers/mtd/ubi/build.c
-index c33e25b..dee90b7 100644
---- a/drivers/mtd/ubi/build.c
-+++ b/drivers/mtd/ubi/build.c
-@@ -668,13 +668,12 @@ static int io_init(struct ubi_device *ubi)
-                ubi->bad_allowed =3D 1;
-                if (CONFIG_MTD_UBI_BEB_LIMIT > 0) {
-                        int percent =3D CONFIG_MTD_UBI_BEB_LIMIT;
--                       int beb_limit;
-+                       int limit =3D mult_frac(ubi->peb_count, percent, 10=
-0);
-=20
--                       beb_limit =3D mult_frac(ubi->peb_count, percent, 10=
-0);
--                       /* round it up */
--                       if (mult_frac(beb_limit, 100, percent) < ubi->peb_c=
-ount)
--                               beb_limit++;
--                       ubi->bad_peb_limit =3D beb_limit;
-+                       /* Round it up */
-+                       if (mult_frac(limit, 100, percent) < ubi->peb_count=
-)
-+                               limit +=3D 1;
-+                       ubi->bad_peb_limit =3D limit;
-                }
-        }
+Cheers,
+Ben.
 
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-WpSzEhbJN1ZrP15UtFd3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJQBmEfAAoJECmIfjd9wqK0L8oP/2ZFc7DJ6B0tNy1WK+SCIqb6
-OfiBMepSM1g2hxohgovjIQPw+xWJF7vno+zwFbDobha0NBf8r/8/glQS3LCluONa
-nz8I3zPakamDE9zYQrlPsI+hZv8DWxiRFbfeNy0c304S9sinfhnAyACGfEQwmJia
-yqdNp4XZgcDch5Cswu57f6Gtzk8s2PjIpWzpwO6Iquq6fKQ1hNrZ06qcFbnNbuGP
-M9/iM7N6j3QxTJYGy8fOvCKIOA0LzfBP0erj1YbVlKcuvMiFU8Xdk3x1yfGZ9iPN
-ErAdFhcmZHk6AvzxucMfvp+cE5VieFox1Qx3rPvlUl8S9RO5AYUUfpLNLR/JKOeB
-YgybHkqqRQIMcOOi4V63mlXuDvJOey76BEfmW//oIVaLnYawsBEKnaI4TFZ+WGl6
-/VnoS7YjYFC0kS8BqS9FqtWen0RJDW6cRNxX+b0OPQYoXfmozPD7Ys2hqix9Wj7S
-Qm3LhixiJeJC4yGIs8Vv3QG3vRNpw/mkiW6H5BtIgXm+mo5yWhGZhZFLjm7HzX0R
-YRBJEfflX0UraSL9I04WGVX3v7DphQl1JhgniUsiR5cSjGWb8qDjDkRB9TjlCmGY
-Lo0yzR4kHmS8kf4Q72BGSb8rIXM0IZcCQ9yK/YAwf+mgxE7WzfY8vmZ+AgPDvg4u
-9pmbK0sAWqbaz0wHKCWQ
-=yXbr
------END PGP SIGNATURE-----
-
---=-WpSzEhbJN1ZrP15UtFd3--
 
