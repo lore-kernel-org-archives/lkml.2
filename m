@@ -1,70 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754883Ab2GRP0L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 11:26:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38956 "EHLO mx1.redhat.com"
+	id S1754879Ab2GRP10 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 11:27:26 -0400
+Received: from mail.ausil.us ([74.119.218.133]:56014 "EHLO mail.ausil.us"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751687Ab2GRP0J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 11:26:09 -0400
-Message-ID: <1342625061.3295.5.camel@bandura>
-Subject: Re: [PATCH] uprobe: fix misleading log entry
-From: Anton Arapov <anton@redhat.com>
-To: Jovi Zhang <bookjovi@gmail.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
-Date: Wed, 18 Jul 2012 17:24:21 +0200
-In-Reply-To: <CACV3sbKNmeKqvroYp4C=gna7ht4dvYmrCNA7q9Sa0GfVjx7F_A@mail.gmail.com>
-References: <CACV3sbL2gRjoFi8yyUW6Bu2ZZ4PW+ytZsfx_65KA8s_5DEB+ZQ@mail.gmail.com>
-	 <20120718092252.GD5006@linux.vnet.ibm.com>
-	 <CACV3sbKNmeKqvroYp4C=gna7ht4dvYmrCNA7q9Sa0GfVjx7F_A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
+	id S1751387Ab2GRP1X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 11:27:23 -0400
+Date: Wed, 18 Jul 2012 10:27:12 -0500
+From: Dennis Gilmore <dennis@ausil.us>
+To: Jon Masters <jonathan@jonmasters.org>
+Cc: Joe Perches <joe@perches.com>, Catalin Marinas <catalin.marinas@arm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        =?UTF-8?B?TcOlbnMgUnVsbGfDpXJk?= <mans@mansr.com>,
+        Ingo Molnar <mingo@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
+Message-ID: <20120718102712.46b8d7ff@adria.ausil.us>
+In-Reply-To: <5006207D.1010708@jonmasters.org>
+References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
+	<CAOesGMiCexiqA3L5GdNgyHhSD-5Bpqbb02YJrZPr8yMYa0afjA@mail.gmail.com>
+	<201207071927.13135.arnd@arndb.de>
+	<20120710071023.GA10456@gmail.com>
+	<20120710101018.GE15120@arm.com>
+	<yw1x8vekd309.fsf@unicorn.mansr.com>
+	<CA+55aFxL6uEre-c=JrhPfts=7BGmhb2Js1c2ZGkTH8F=+rEWDg@mail.gmail.com>
+	<20120717221839.GA4856@arm.com>
+	<1342564536.1898.1.camel@joe2Laptop>
+	<5006207D.1010708@jonmasters.org>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q6IFRWX0010879
 
-On Wed, 2012-07-18 at 19:43 +0800, Jovi Zhang wrote:
-> On Wed, Jul 18, 2012 at 5:22 PM, Srikar Dronamraju
-> <srikar@linux.vnet.ibm.com> wrote:
-> > * Jovi Zhang <bookjovi@gmail.com> [2012-07-18 11:08:42]:
-> >
-> >> From 68232ef2decae95b807f2f3763e8ea99c1a3b2ae Mon Sep 17 00:00:00 2001
-> >> From: Jovi Zhang <bookjovi@gmail.com>
-> >> Date: Wed, 18 Jul 2012 17:51:26 +0800
-> >> Subject: [PATCH] uprobe: fix misleading log entry
-> >>
-> >> There don't have any 'r' prefix in uprobe event naming, remove it.
-> >>
-> >> Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
-> >> ---
-> >>  kernel/trace/trace_uprobe.c |    2 +-
-> >>  1 file changed, 1 insertion(+), 1 deletion(-)
-> >>
-> >> diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-> >> index cf382de..852a584 100644
-> >> --- a/kernel/trace/trace_uprobe.c
-> >> +++ b/kernel/trace/trace_uprobe.c
-> >> @@ -191,7 +191,7 @@ static int create_trace_uprobe(int argc, char **argv)
-> >>       if (argv[0][0] == '-')
-> >>               is_delete = true;
-> >>       else if (argv[0][0] != 'p') {
-> >> -             pr_info("Probe definition must be started with 'p', 'r' or" " '-'.\n");
-> >> +             pr_info("Probe definition must be started with 'p' or '-'.\n");
-> >>               return -EINVAL;
-> >>       }
-> >>
-> >
-> > Yes, uprobes doesnt support return probes. So we should not have
-> > mentioned about r.
-> Hmm, Does this have specific reason? or just not implemented?
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-It is not implemented. I'm slowly(very) moving towards it. You are
-welcome to take a look.
-  https://github.com/arapov/linux-aa/commits/uretprobes
+El Tue, 17 Jul 2012 22:33:33 -0400
+Jon Masters <jonathan@jonmasters.org> escribiÃ³:
+> On 07/17/2012 06:35 PM, Joe Perches wrote:
+> > On Tue, 2012-07-17 at 23:18 +0100, Catalin Marinas wrote:
+> > 
+> >> The uname will still report
+> >> "aarch64" to match the compiler triplet and also avoid confusion of
+> >> existing 32-bit ARM scripts that simply check for "arm*" in the
+> >> machine name.
 
-Anton.
+that means that the yum base arch will need to be aarch64 and the arch
+used in rpm will be aarch64 also. its throwing something weird and
+confusing right in the face of users. I urge you to change it all to
+arm64 just changing the directory in the kernel is pointless as it still
+exposes all the weirdness of the name to users and will result in a
+large amount of education and a constant stream of the same question
+"Where do i find the arm64 bits?" until such time as the users learn
+that arm64 is aarch64. All the tooling uses "uname -m" to determine the
+package architecture.
 
+The triplet that fedora will use will be preferred
+arm64-redhat-linux-gnu or aarch64-redhat-linux-gnu
 
+but again aarch64 will propogate to a lot of highly visible places
+where it will just cause undue confusion.  adding a extra check for
+arm64* before arm* if that is what people are using will not be hard to
+do.
+
+> > The compiler triplet seems trivial to change.
+> > 
+> > The other bit is a relatively weak argument as the 32bit arm
+> > scripts can be changed or fixed likely just as easily.
+> 
+> There's a surprising amount of assumption out there around what arm*
+> means (or doing wildcard matches liberally). I'm glad (from the point
+> of view of a distribution bootstrap) that we don't have to worry
+> about that aspect of getting AArch64 support up and running. The
+> directory name is just that - a name - and unimportant. I like
+> aarch64 from the point of view of distinguishing "this is not ARM,
+> no, it's not just an extension, and no it's not just two numbers
+> different or wider regs", but it seems fairly inevitable that it's
+> going to be arch/arm64. The main thing is that we understand this
+> isn't like i686->x86_64.
+
+autoconf etc checks for " arm-*  | armbe-* | armle-* | armeb-* |
+armv*-* "  arm64-* will not match the existing regexs in common
+use. configure scripts will need rebuilding regardless of if its
+aarch64 or arm64 to me the argument that  arm64 will catch existing
+scripts is extremely weak. especially when the first target is really
+almost completely new for arm in the server market.
+
+Dennis
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iEYEARECAAYFAlAG1dMACgkQkSxm47BaWfdzRQCfUdBHeLoDDC2yJTOxdMP0k0ej
+GcMAoKoRXG6d7xOvhPDbh3p4J8lKHYpb
+=KXum
+-----END PGP SIGNATURE-----
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
