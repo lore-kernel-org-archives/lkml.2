@@ -1,64 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755080Ab2GRVgR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 17:36:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43861 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753824Ab2GRVgO (ORCPT
+	id S1754107Ab2GRVml (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 17:42:41 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:55691 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751123Ab2GRVmh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 17:36:14 -0400
-Date: Wed, 18 Jul 2012 14:36:12 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Gavin Shan <shangw@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm/memcg: wrap mem_cgroup_from_css function
-Message-Id: <20120718143612.e34dd3f3.akpm@linux-foundation.org>
-In-Reply-To: <1342580730-25703-1-git-send-email-liwanp@linux.vnet.ibm.com>
-References: <a>
-	<1342580730-25703-1-git-send-email-liwanp@linux.vnet.ibm.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 18 Jul 2012 17:42:37 -0400
+Message-ID: <50072DEE.2000205@gmail.com>
+Date: Wed, 18 Jul 2012 23:43:10 +0200
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120713 Thunderbird/13.0
+MIME-Version: 1.0
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: Jim Rees <rees@umich.edu>, Trond.Myklebust@netapp.com, davem@davemloft.net,
+        davej@redhat.com, linux-nfs@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] SUNRPC: Prevent kernel stack corruption on long values
+ of flush
+References: <1342476086-21638-1-git-send-email-levinsasha928@gmail.com> <20120718173913.GA1298@fieldses.org> <20120718200049.GA17964@umich.edu> <20120718210825.GA3145@fieldses.org> <50072BA7.6070205@gmail.com>
+In-Reply-To: <50072BA7.6070205@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Jul 2012 11:05:30 +0800
-Wanpeng Li <liwanp@linux.vnet.ibm.com> wrote:
+On 07/18/2012 11:33 PM, Sasha Levin wrote:
+> On 07/18/2012 11:08 PM, J. Bruce Fields wrote:
+>> On Wed, Jul 18, 2012 at 04:00:49PM -0400, Jim Rees wrote:
+>>> J. Bruce Fields wrote:
+>>>
+>>>   On Tue, Jul 17, 2012 at 12:01:26AM +0200, Sasha Levin wrote:
+>>>   > The buffer size in read_flush() is too small for the longest possible values
+>>>   > for it. This can lead to a kernel stack corruption:
+>>>   
+>>>   Thanks!
+>>>   
+>>>   > 
+>>>   > diff --git a/net/sunrpc/cache.c b/net/sunrpc/cache.c
+>>>   > index 2afd2a8..f86d95e 100644
+>>>   > --- a/net/sunrpc/cache.c
+>>>   > +++ b/net/sunrpc/cache.c
+>>>   > @@ -1409,11 +1409,11 @@ static ssize_t read_flush(struct file *file, char __user *buf,
+>>>   >  			  size_t count, loff_t *ppos,
+>>>   >  			  struct cache_detail *cd)
+>>>   >  {
+>>>   > -	char tbuf[20];
+>>>   > +	char tbuf[22];
+>>>   
+>>>   I wonder how common this sort of calculation is in the kernel?  It might
+>>>   provide some peace of mind to be able to write this something like
+>>>   
+>>>   	char tbuf[MAXLEN_BASE10_UL + 2]  /* + 2 for final "\n\0" */
+>>>
+>>> You could use something like:
+>>>
+>>>     char tbuf[sizeof (unsigned long) * 24 / 10 + 1 + 2]; /* + 2 for final "\n\0" */
+>>>
+>>> since there are roughly 10 bits for every 3 decimal digits.
+>>
+>> So we could do something like this.  OK, I'm not sure I care enough.
+>>
+>> --b.
+>>
+>> diff --git a/include/linux/string.h b/include/linux/string.h
+>> index e033564..ed34180 100644
+>> --- a/include/linux/string.h
+>> +++ b/include/linux/string.h
+>> @@ -126,6 +126,10 @@ extern void argv_free(char **argv);
+>>  extern bool sysfs_streq(const char *s1, const char *s2);
+>>  extern int strtobool(const char *s, bool *res);
+>>  
+>> +/* length of the decimal representation of an unsigned integer.  Just an
+>> + * approximation, but it's right for types of size 1 to 36 bytes: */
+>> +#define base10len(i) (sizeof(i) * 24 / 10 + 1)
+>> +
+>>  #ifdef CONFIG_BINARY_PRINTF
+>>  int vbin_printf(u32 *bin_buf, size_t size, const char *fmt, va_list args);
+>>  int bstr_printf(char *buf, size_t size, const char *fmt, const u32 *bin_buf);
+>> diff --git a/net/sunrpc/cache.c b/net/sunrpc/cache.c
+>> index 2afd2a8..1dcd2b3 100644
+>> --- a/net/sunrpc/cache.c
+>> +++ b/net/sunrpc/cache.c
+>> @@ -1409,7 +1409,7 @@ static ssize_t read_flush(struct file *file, char __user *buf,
+>>  			  size_t count, loff_t *ppos,
+>>  			  struct cache_detail *cd)
+>>  {
+>> -	char tbuf[20];
+>> +	char tbuf[base10len(unsigned long) + 2];
+>>  	unsigned long p = *ppos;
+>>  	size_t len;
+>>  
+>>
+> 
+> Learning from what happened in this specific case, there are actually 2 issues here:
+> 
+>  - Array size was constant and too small, which is solved by the patch above.
+>  - We were blindly trying to sprintf() into that array, this issue may pop back up if someone decides to change the format string forgetting to modify the array declaration.
+> 
+> What about adding the following itoa() type helper:
 
-> wrap mem_cgroup_from_css function to clarify get mem cgroup
-> from cgroup_subsys_state.
+Fat fingers :(
 
-This certainly adds clarity.
+Something like this (which obviously needs tons of work):
 
-But it also adds a little more type-safety - these container_of() calls
-can be invoked against *any* struct which has a field called "css". 
-With your patch, we add a check that the code is indeed using a
-cgroup_subsys_state*.  A small thing, but it's all good.
+#define base10len(i) (sizeof(i) * 24 / 10 + 1)
+#define itoa(x) \
+({ \
+        static char str[base10len(x)]; \
+        sprintf(str, "%lu", (x)); \
+        str; \
+})
 
 
-I changed the patch title to the more idiomatic "memcg: add
-mem_cgroup_from_css() helper" and rewrote the changelog to
-
-: Add a mem_cgroup_from_css() helper to replace open-coded invokations of
-: container_of().  To clarify the code and to add a little more type safety.
-
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -396,6 +396,12 @@ static void mem_cgroup_put(struct mem_cgroup *memcg);
->  #include <net/sock.h>
->  #include <net/ip.h>
->  
-> +static inline
-> +struct mem_cgroup *mem_cgroup_from_css(struct cgroup_subsys_state *s)
-> +{
-> +	return container_of(s, struct mem_cgroup, css);
-> +}
-
-And with great self-control, I avoided renaming this to
-memcg_from_css().  Sigh.  I guess all that extra typing has cardio
-benefits.
