@@ -1,46 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755942Ab2GRW6V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 18:58:21 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:54517 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754651Ab2GRW5o (ORCPT
+	id S1754301Ab2GRXE6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 19:04:58 -0400
+Received: from smtp.mail.umich.edu ([141.211.12.86]:46448 "EHLO
+	tombraider.mr.itd.umich.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751789Ab2GRXE4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 18:57:44 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Strake <strake888@gmail.com>
-Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fbdev: Add ioctls FBIO_COPYRECT, FBIO_FILLRECT, lest these operations be done in software.
-Date: Thu, 19 Jul 2012 00:57:47 +0200
-Message-ID: <2444839.KFfsli056l@avalon>
-User-Agent: KMail/4.8.3 (Linux/3.3.8-gentoo; KDE/4.8.3; x86_64; ; )
-In-Reply-To: <CAL3m8eA=46wdwVosiE54eNx3FOuLyxfE5axKs_HjyMTGxDHRDw@mail.gmail.com>
-References: <CAL3m8eA=46wdwVosiE54eNx3FOuLyxfE5axKs_HjyMTGxDHRDw@mail.gmail.com>
+	Wed, 18 Jul 2012 19:04:56 -0400
+Date: Wed, 18 Jul 2012 19:04:45 -0400
+From: Jim Rees <rees@umich.edu>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>, Trond.Myklebust@netapp.com,
+        davem@davemloft.net, davej@redhat.com, linux-nfs@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] SUNRPC: Prevent kernel stack corruption on long values
+ of flush
+Message-ID: <20120718230445.GA6561@umich.edu>
+References: <1342476086-21638-1-git-send-email-levinsasha928@gmail.com>
+ <20120718173913.GA1298@fieldses.org>
+ <20120718200049.GA17964@umich.edu>
+ <20120718210825.GA3145@fieldses.org>
+ <50072BA7.6070205@gmail.com>
+ <50072DEE.2000205@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50072DEE.2000205@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 21 June 2012 07:22:50 Strake wrote:
-> From: Matthew Farkas-Dyck <strake888@gmail.com>
-> 
-> Add ioctls FBIO_COPYRECT, FBIO_FILLRECT, lest these operations be done
-> in software.
-> 
-> Signed-off-by: Matthew Farkas-Dyck <strake888@gmail.com>
-> ---
-> 
-> Reason: If it can be done in hardware, it ought to be. This will
-> enable user-mode software to do so.
+Sasha Levin wrote:
 
-If we really want to go this way, I think we should develop a proper 2D 
-acceleration API. I'm not sure whether it's worth the effort though.
+  > Learning from what happened in this specific case, there are actually 2 issues here:
+  > 
+  >  - Array size was constant and too small, which is solved by the patch above.
+  >  - We were blindly trying to sprintf() into that array, this issue may pop back up if someone decides to change the format string forgetting to modify the array declaration.
+  > 
 
--- 
-Regards,
-
-Laurent Pinchart
-
+The original patch changed the sprintf to snprintf, and that still seems
+like a good idea.
