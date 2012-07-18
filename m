@@ -1,84 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752610Ab2GRFQC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 01:16:02 -0400
-Received: from mga11.intel.com ([192.55.52.93]:12473 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752026Ab2GRFPz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 01:15:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="179331449"
-Date: Wed, 18 Jul 2012 13:15:52 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, devel@driverdev.osuosl.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: show_uevent() and general protection fault
-Message-ID: <20120718051552.GA9124@localhost>
-References: <20120713083140.GA19738@localhost>
- <20120713084616.GA20037@localhost>
- <20120717013342.GD21914@kroah.com>
+	id S1752622Ab2GRF1H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 01:27:07 -0400
+Received: from mailout05.t-online.de ([194.25.134.82]:41987 "EHLO
+	mailout05.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751826Ab2GRF1A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 01:27:00 -0400
+Message-ID: <5006491D.8070004@t-online.de>
+Date: Wed, 18 Jul 2012 07:26:53 +0200
+From: Knut Petersen <Knut_Petersen@t-online.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120601 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120717013342.GD21914@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org
+CC: reiserfs-devel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [Bug 3.4.5] reiserfs: mutex_destroy called with locked mutex
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ID: VrqQQiZp8h2ZPj-oEuHRj-MRYUsc1do-lh+1kgDpnWaKkp21JSoegZ560-aHSBig51
+X-TOI-MSGID: 89cca4b2-2f88-4d55-b73a-7ab99dbb66d9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 16, 2012 at 06:33:42PM -0700, Greg Kroah-Hartman wrote:
-> On Fri, Jul 13, 2012 at 04:46:16PM +0800, Fengguang Wu wrote:
-> > This is another kconfig, produced a bit different call trace, however
-> > also related to sysfs_read_file().
-> 
-> Any hint as to which file is being read?
+I hit the following problem during a heavy compile job on kernel 3.4.5:
 
-Good idea! I added this debugging aid:
+Jul 17 20:29:59 golem kernel: [27408.140718] ------------[ cut here ]------------
+Jul 17 20:29:59 golem kernel: [27408.140739] WARNING: at kernel/mutex-debug.c:106 mutex_destroy+0x35/0x3f()
+Jul 17 20:29:59 golem kernel: [27408.140748] Hardware name:
+Jul 17 20:29:59 golem kernel: [27408.140753] Modules linked in: ipt_MASQUERADE xt_pkttype xt_TCPMSS xt_tcpudp xt_LOG xt_limit iptable_nat nf_nat pppoe pppox af_packet ppp_generic s
+lhc ir_kbd_i2c snd_pcm_oss snd_mixer_oss snd_seq snd_seq_device ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_raw xt_NOTRACK ipt_REJECT iptable_raw iptable_filter ip6table_
+mangle nf_conntrack_netbios_ns nf_conntrack_broadcast nf_conntrack_ipv4 nf_defrag_ipv4 ip_tables xt_conntrack nf_conntrack ip6table_filter ip6_tables x_tables ipv6 isl6421 ir_lirc_
+codec cx24116 lirc_dev ir_mce_kbd_decoder ir_sanyo_decoder cx88_dvb ir_sony_decoder ir_jvc_decoder ir_rc6_decoder videobuf_dvb snd_hda_codec_realtek dvb_core ir_rc5_decoder ir_nec_
+decoder snd_hda_intel rc_hauppauge snd_hda_codec tuner snd_rme96 snd_hwdep snd_pcm cx8800 cx8802 cx88xx snd_timer snd rc_core tveeprom v4l2_common soundcore videodev btcx_risc vide
+obuf_dma_sg videobuf_core snd_page_alloc
+Jul 17 20:29:59 golem kernel: [27408.140933] Pid: 17424, comm: mkdir Not tainted 3.4.5-main #49
+Jul 17 20:29:59 golem kernel: [27408.140940] Call Trace:
+Jul 17 20:29:59 golem kernel: [27408.140950]  [<c01218bb>] ? console_unlock+0x1bc/0x1e2
+Jul 17 20:29:59 golem kernel: [27408.140960]  [<c0120dfc>] warn_slowpath_common+0x68/0x7d
+Jul 17 20:29:59 golem kernel: [27408.140969]  [<c01505a5>] ? mutex_destroy+0x35/0x3f
+Jul 17 20:29:59 golem kernel: [27408.140978]  [<c0120e25>] warn_slowpath_null+0x14/0x18
+Jul 17 20:29:59 golem kernel: [27408.140987]  [<c01505a5>] mutex_destroy+0x35/0x3f
+Jul 17 20:29:59 golem kernel: [27408.140998]  [<c01cad96>] lockdep_annotate_inode_mutex_key+0x3a/0x69
+Jul 17 20:29:59 golem kernel: [27408.141008]  [<c01cadd6>] unlock_new_inode+0x11/0x55
+Jul 17 20:29:59 golem kernel: [27408.141018]  [<c020914c>] reiserfs_mkdir+0x274/0x29b
+Jul 17 20:29:59 golem kernel: [27408.141030]  [<c01c153c>] vfs_mkdir+0x8f/0xdd
+Jul 17 20:29:59 golem kernel: [27408.141039]  [<c029a9a2>] ? apparmor_path_mkdir+0x1b/0x1d
+Jul 17 20:29:59 golem kernel: [27408.141049]  [<c01c388b>] sys_mkdirat+0x76/0xa9
+Jul 17 20:29:59 golem kernel: [27408.141058]  [<c01c38d5>] sys_mkdir+0x17/0x19
+Jul 17 20:29:59 golem kernel: [27408.141069]  [<c049f1dd>] syscall_call+0x7/0xb
+Jul 17 20:29:59 golem kernel: [27408.141077] ---[ end trace ea73962172137cb3 ]---
 
---- a/fs/sysfs/file.c
-+++ b/fs/sysfs/file.c
-@@ -129,6 +129,11 @@ sysfs_read_file(struct file *file, char __user *buf, size_t count, loff_t *ppos)
- {
-        struct sysfs_buffer * buffer = file->private_data;
-        ssize_t retval = 0;
-+       char pathname[300], *path;
-+
-+       path = d_path(&(file->f_path), pathname, sizeof(pathname));
-+       if (!IS_ERR(path))
-+               printk("%s\n", path);
- 
-        mutex_lock(&buffer->mutex);
-        if (buffer->needs_read_fill || *ppos == 0) {
+cu,
+  Knut
 
-And find some sysfs files that triggered the errors:
-
-wfg@waimea ~/kvm% grep -hB1 'kernel paging request' /tmp/dmesg-kvm_bisect-waimea-*|grep /sys/               
-[   28.995741] /sys/module/tpm_tis/parameters/hid
-[   60.885798] /sys/module/tpm_tis/parameters/hid
-
-wfg@waimea ~/kvm% grep -hB1 'general protection fault' /tmp/dmesg-kvm_bisect-waimea-*|grep -o /sys/.* | sort -u
-/sys/devices/LNXSYSTM:00/device:00/PNP0103:00/uevent
-/sys/devices/LNXSYSTM:00/device:00/PNP0A03:00/device:21/PNP0303:00/uevent
-/sys/devices/LNXSYSTM:00/device:00/PNP0A03:00/device:21/PNP0400:00/uevent
-/sys/devices/LNXSYSTM:00/device:00/PNP0A03:00/device:21/PNP0501:00/uevent
-/sys/devices/LNXSYSTM:00/device:00/PNP0A03:00/device:21/PNP0700:00/uevent
-/sys/devices/LNXSYSTM:00/device:00/PNP0A03:00/device:21/PNP0B00:00/uevent
-/sys/devices/LNXSYSTM:00/device:00/PNP0A03:00/device:21/PNP0F13:00/uevent
-/sys/devices/LNXSYSTM:00/device:00/PNP0A03:00/uevent
-/sys/devices/LNXSYSTM:00/device:00/PNP0C0F:00/uevent
-/sys/devices/LNXSYSTM:00/device:00/PNP0C0F:01/uevent
-/sys/devices/LNXSYSTM:00/device:00/PNP0C0F:02/uevent
-/sys/devices/LNXSYSTM:00/device:00/PNP0C0F:03/uevent
-/sys/devices/LNXSYSTM:00/LNXCPU:00/uevent
-/sys/devices/LNXSYSTM:00/LNXCPU:01/uevent
-/sys/devices/LNXSYSTM:00/LNXPWRBN:00/input/input0/uevent
-/sys/devices/LNXSYSTM:00/LNXPWRBN:00/uevent
-/sys/devices/LNXSYSTM:00/uevent
-/sys/devices/platform/i8042/serio0/input/input1/uevent
-
-Thanks,
-Fengguang
