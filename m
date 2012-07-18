@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757485Ab2GRAEV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 20:04:21 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:54363 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757142Ab2GRADl (ORCPT
+	id S1757500Ab2GRAEh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 20:04:37 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48754 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757374Ab2GRADu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 20:03:41 -0400
+	Tue, 17 Jul 2012 20:03:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Arnold Schulz <arnysch@gmx.net>, NeilBrown <neilb@suse.de>
-Subject: [ 07/37] md/raid1: fix use-after-free bug in RAID1 data-check code.
-Date: Tue, 17 Jul 2012 17:02:44 -0700
-Message-Id: <20120717232431.912928211@linuxfoundation.org>
+        Thomas Renninger <trenn@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: [ 10/37] cpufreq / ACPI: Fix not loading acpi-cpufreq driver regression
+Date: Tue, 17 Jul 2012 17:02:47 -0700
+Message-Id: <20120717232432.163237917@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120717232431.399005532@linuxfoundation.org>
 References: <20120717232455.GA5994@kroah.com>
@@ -30,53 +30,50 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Thomas Renninger <trenn@suse.de>
 
-commit 2d4f4f3384d4ef4f7c571448e803a1ce721113d5 upstream.
+commit c4686c71a9183f76e3ef59098da5c098748672f6 upstream.
 
-This bug has been present ever since data-check was introduce
-in 2.6.16.  However it would only fire if a data-check were
-done on a degraded array, which was only possible if the array
-has 3 or more devices.  This is certainly possible, but is quite
-uncommon.
+Commit d640113fe80e45ebd4a5b420b introduced a regression on SMP
+systems where the processor core with ACPI id zero is disabled
+(typically should be the case because of hyperthreading).
+The regression got spread through stable kernels.
+On 3.0.X it got introduced via 3.0.18.
 
-Since hot-replace was added in 3.3 it can happen more often as
-the same condition can arise if not all possible replacements are
-present.
+Such platforms may be rare, but do exist.
+Look out for a disabled processor with acpi_id 0 in dmesg:
+ACPI: LAPIC (acpi_id[0x00] lapic_id[0x10] disabled)
 
-The problem is that as soon as we submit the last read request, the
-'r1_bio' structure could be freed at any time, so we really should
-stop looking at it.  If the last device is being read from we will
-stop looking at it.  However if the last device is not due to be read
-from, we will still check the bio pointer in the r1_bio, but the
-r1_bio might already be free.
+This problem has been observed on a:
+HP Proliant BL280c G6 blade
 
-So use the read_targets counter to make sure we stop looking for bios
-to submit as soon as we have submitted them all.
+This patch restricts the introduced workaround to platforms
+with nr_cpu_ids <= 1.
 
-This fix is suitable for any -stable kernel since 2.6.16.
-
-Reported-by: Arnold Schulz <arnysch@gmx.net>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Thomas Renninger <trenn@suse.de>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/raid1.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/acpi/processor_core.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -2486,9 +2486,10 @@ static sector_t sync_request(struct mdde
- 	 */
- 	if (test_bit(MD_RECOVERY_REQUESTED, &mddev->recovery)) {
- 		atomic_set(&r1_bio->remaining, read_targets);
--		for (i = 0; i < conf->raid_disks * 2; i++) {
-+		for (i = 0; i < conf->raid_disks * 2 && read_targets; i++) {
- 			bio = r1_bio->bios[i];
- 			if (bio->bi_end_io == end_sync_read) {
-+				read_targets--;
- 				md_sync_acct(bio->bi_bdev, nr_sectors);
- 				generic_make_request(bio);
- 			}
+--- a/drivers/acpi/processor_core.c
++++ b/drivers/acpi/processor_core.c
+@@ -189,10 +189,12 @@ int acpi_get_cpuid(acpi_handle handle, i
+ 		 *     Processor (CPU3, 0x03, 0x00000410, 0x06) {}
+ 		 * }
+ 		 *
+-		 * Ignores apic_id and always return 0 for CPU0's handle.
++		 * Ignores apic_id and always returns 0 for the processor
++		 * handle with acpi id 0 if nr_cpu_ids is 1.
++		 * This should be the case if SMP tables are not found.
+ 		 * Return -1 for other CPU's handle.
+ 		 */
+-		if (acpi_id == 0)
++		if (nr_cpu_ids <= 1 && acpi_id == 0)
+ 			return acpi_id;
+ 		else
+ 			return apic_id;
 
 
