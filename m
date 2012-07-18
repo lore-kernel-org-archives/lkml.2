@@ -1,54 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752309Ab2GRVFx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 17:05:53 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:38082 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750993Ab2GRVFv (ORCPT
+	id S1752492Ab2GRVHH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 17:07:07 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:41834 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752020Ab2GRVHD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 17:05:51 -0400
-Date: Wed, 18 Jul 2012 23:05:49 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: cpufreq@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] powernow-k8: Fixup missing _PSS objects message
-Message-ID: <20120718210549.GA17504@aftab.osrc.amd.com>
-References: <1342624043-29763-1-git-send-email-bp@amd64.org>
- <201207182150.51441.rjw@sisk.pl>
+	Wed, 18 Jul 2012 17:07:03 -0400
+Message-ID: <5007252E.4070608@linux.vnet.ibm.com>
+Date: Thu, 19 Jul 2012 02:35:50 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201207182150.51441.rjw@sisk.pl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: mandeep.baines@gmail.com
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        Mandeep Singh Baines <msb@chromium.org>, x86@kernel.org,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Christoph Lameter <cl@gentwo.org>, Olof Johansson <olofj@chromium.org>
+Subject: Re: [PATCH] x86, mm: only wait for flushes from online cpus
+References: <1340229784-3686-1-git-send-email-msb@chromium.org>
+In-Reply-To: <1340229784-3686-1-git-send-email-msb@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12071821-4790-0000-0000-000003BFD73B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 18, 2012 at 09:50:51PM +0200, Rafael J. Wysocki wrote:
-> On Wednesday, July 18, 2012, Borislav Petkov wrote:
-> > From: Borislav Petkov <borislav.petkov@amd.com>
-> > 
-> > _PSS objects can also be missing if Cool'N'Quiet is disabled in the
-> > BIOS. Add that to the FW_BUG message for the user to try before updating
-> > her BIOS. Fix formatting while at it.
-> > 
-> > Acked-by: Mark Langsdorf <mark.langsdorf@amd.com>
-> > Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+On 06/21/2012 03:33 AM, mandeep.baines@gmail.com wrote:
+> From: Mandeep Singh Baines <msb@chromium.org>
 > 
-> I will take this, but it's kind of too late for v3.6.
+> A cpu in the mm_cpumask could go offline before we send the
+> invalidate IPI causing us to wait forever.
+> 
+> Bug Trace:
+> 
+> <4>[10222.234548] WARNING: at ../../arch/x86/kernel/apic/ipi.c:113 default_send_IPI_mask_logical+0x58/0x73()
+> <5>[10222.234633] Pid: 23605, comm: lmt-udev Tainted: G         C   3.2.7 #1
+> <5>[10222.234639] Call Trace:
+> <5>[10222.234651]  [<8102e666>] warn_slowpath_common+0x68/0x7d
+> <5>[10222.234661]  [<81016c36>] ? default_send_IPI_mask_logical+0x58/0x73
+> <5>[10222.234670]  [<8102e68f>] warn_slowpath_null+0x14/0x18
+> <5>[10222.234678]  [<81016c36>] default_send_IPI_mask_logical+0x58/0x73
+> <5>[10222.234687]  [<8101eec2>] flush_tlb_others_ipi+0x86/0xba
+> <5>[10222.234696]  [<8101f0bb>] flush_tlb_mm+0x5e/0x62
+> <5>[10222.234703]  [<8101e36c>] pud_populate+0x2c/0x31
+> <5>[10222.234711]  [<8101e409>] pgd_alloc+0x98/0xc7
+> <5>[10222.234719]  [<8102c881>] mm_init.isra.38+0xcc/0xf3
+> <5>[10222.234727]  [<8102cbc2>] dup_mm+0x68/0x34e
+> <5>[10222.234736]  [<8139bbae>] ? _cond_resched+0xd/0x21
+> <5>[10222.234745]  [<810a5b7c>] ? kmem_cache_alloc+0x26/0xe2
+> <5>[10222.234753]  [<8102d421>] ? copy_process+0x556/0xda6
+> <5>[10222.234761]  [<8102d641>] copy_process+0x776/0xda6
+> <5>[10222.234770]  [<8102dd5e>] do_fork+0xcb/0x1d4
+> <5>[10222.234778]  [<810a8c96>] ? do_sync_write+0xd3/0xd3
+> <5>[10222.234786]  [<810a94ab>] ? vfs_read+0x95/0xa2
+> <5>[10222.234795]  [<81008850>] sys_clone+0x20/0x25
+> <5>[10222.234804]  [<8139d8c5>] ptregs_clone+0x15/0x30
+> <5>[10222.234812]  [<8139d7f7>] ? sysenter_do_call+0x12/0x26
+> <4>[10222.234818] ---[ end trace 31e095600f50fd48 ]---
+> <3>[10234.880183] BUG: soft lockup - CPU#0 stuck for 11s! [lmt-udev:23605]
+> 
+> Addresses http://crosbug.com/31737
+> 
+> Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> Cc: x86@kernel.org
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+> Cc: Christoph Lameter <cl@gentwo.org>
+> Cc: Olof Johansson <olofj@chromium.org>
+> ---
+>  arch/x86/mm/tlb.c |    7 ++++++-
+>  1 files changed, 6 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
+> index 5e57e11..010090d 100644
+> --- a/arch/x86/mm/tlb.c
+> +++ b/arch/x86/mm/tlb.c
+> @@ -194,8 +194,13 @@ static void flush_tlb_others_ipi(const struct cpumask *cpumask,
+>  		apic->send_IPI_mask(to_cpumask(f->flush_cpumask),
+>  			      INVALIDATE_TLB_VECTOR_START + sender);
+> 
 
-Yeah, sure, whenever. I found it buried in my mbox since 3.2ish. And
-since it is not urgent, you don't have to rush it for 3.6 but send it
-upstream whenever you like.
+This function is always called with preempt_disabled() right?
+In that case, _while_ this function is running, a CPU cannot go offline
+because of stop_machine(). (I understand that it might go offline in between
+calculating that cpumask and calling preempt_disable() - which is the race
+you are trying to handle).
 
-Thanks.
+So, why not take the offline cpus out of the way even before sending that IPI?
+That way, we need not modify the while loop below.
 
--- 
-Regards/Gruss,
-Boris.
+> -		while (!cpumask_empty(to_cpumask(f->flush_cpumask)))
+> +		while (!cpumask_empty(to_cpumask(f->flush_cpumask))) {
+> +			/* Only wait for online cpus */
+> +			cpumask_and(to_cpumask(f->flush_cpumask),
+> +				    to_cpumask(f->flush_cpumask),
+> +				    cpu_online_mask);
+>  			cpu_relax();
+> +		}
+>  	}
+> 
+>  	f->flush_mm = NULL;
+> 
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+That is, how about something like this:
+
+diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
+index 5e57e11..9d387a9 100644
+--- a/arch/x86/mm/tlb.c
++++ b/arch/x86/mm/tlb.c
+@@ -186,7 +186,11 @@ static void flush_tlb_others_ipi(const struct cpumask *cpumask,
+ 
+        f->flush_mm = mm;
+        f->flush_va = va;
+-       if (cpumask_andnot(to_cpumask(f->flush_cpumask), cpumask, cpumask_of(smp_processor_id()))) {
++
++       cpumask_and(to_cpumask(f->flush_cpumask), cpumask, cpu_online_mask);
++       cpumask_clear_cpu(smp_processor_id(), to_cpumask(f->flush_cpumask));
++
++       if (!cpumask_empty(to_cpumask(f->flush_cpumask))) {
+                /*
+                 * We have to send the IPI only to
+                 * CPUs affected.
+
+
+ 
+Regards,
+Srivatsa S. Bhat
+IBM Linux Technology Center
+
