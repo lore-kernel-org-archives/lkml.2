@@ -1,57 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752824Ab2GRHmo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 03:42:44 -0400
-Received: from mga01.intel.com ([192.55.52.88]:22390 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752050Ab2GRHmh convert rfc822-to-8bit (ORCPT
+	id S1752877Ab2GRHsj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 03:48:39 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:34698 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752023Ab2GRHsd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 03:42:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="179415414"
-From: "Winkler, Tomas" <tomas.winkler@intel.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "arnd@arndb.de" <arnd@arndb.de>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [char-misc-next] mei: use module_pci_driver
-Thread-Topic: [char-misc-next] mei: use module_pci_driver
-Thread-Index: AQHNZEAJNBqZ1EE3+kOyvdVFhwvAJJct5Tkg///YqICAAOb8gA==
-Date: Wed, 18 Jul 2012 07:42:32 +0000
-Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B143952@HASMSX103.ger.corp.intel.com>
-References: <1342513427-10076-1-git-send-email-tomas.winkler@intel.com>
- <20120717171726.GA7538@kroah.com>
- <5B8DA87D05A7694D9FA63FD143655C1B13C2CD@HASMSX103.ger.corp.intel.com>
- <20120717204001.GA18021@kroah.com>
-In-Reply-To: <20120717204001.GA18021@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.184.70.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 18 Jul 2012 03:48:33 -0400
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
+        Tony Luck <tony.luck@intel.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, John Stultz <john.stultz@linaro.org>,
+        arve@android.com, Rebecca Schultz Zavin <rebecca@android.com>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        linaro-kernel@lists.linaro.org, patches@linaro.org,
+        kernel-team@android.com
+Subject: [PATCH] pstore/ram: Mark ramoops_pstore_write_buf() as notrace
+Date: Wed, 18 Jul 2012 00:46:18 -0700
+Message-Id: <1342597578-31227-1-git-send-email-anton.vorontsov@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Right, my mistake I haven't checked it directly with your tree,  I
-> > need to wait till you merge the upstream in.
-> 
-> Merge what "upstream"?
+write_buf() should be marked as notrace, otherwise it is prone to
+recursion.
 
-The doesn't apply    because the
- commit a44cab4aff7e72e7052521121fd8ceca51351534
- misc: mei: unregister misc device in pci_remove function
-    
-is only in Linus' master branch.
+Though, yet the issue is never triggered in real life, because we run
+inside the function tracer, where ftrace does its own recurse protection.
 
- Your branch char-misc-next is still at v3.5-rc2 
-I believe that in some point you'll merge the whole Linus' master branch into your char-misc-next branch,
-right?
+But it's still no good, plus soon we might switch to our own tracer ops,
+and then the issue will be fatal. So, let's fix it.
 
-Thanks
-Tomas
+Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+---
+ fs/pstore/ram.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
+index 0b311bc..b86b2b7 100644
+--- a/fs/pstore/ram.c
++++ b/fs/pstore/ram.c
+@@ -32,6 +32,7 @@
+ #include <linux/ioport.h>
+ #include <linux/platform_device.h>
+ #include <linux/slab.h>
++#include <linux/compiler.h>
+ #include <linux/pstore_ram.h>
+ 
+ #define RAMOOPS_KERNMSG_HDR "===="
+@@ -181,12 +182,11 @@ static size_t ramoops_write_kmsg_hdr(struct persistent_ram_zone *prz)
+ 	return len;
+ }
+ 
+-
+-static int ramoops_pstore_write_buf(enum pstore_type_id type,
+-				    enum kmsg_dump_reason reason,
+-				    u64 *id, unsigned int part,
+-				    const char *buf, size_t size,
+-				    struct pstore_info *psi)
++static int notrace ramoops_pstore_write_buf(enum pstore_type_id type,
++					    enum kmsg_dump_reason reason,
++					    u64 *id, unsigned int part,
++					    const char *buf, size_t size,
++					    struct pstore_info *psi)
+ {
+ 	struct ramoops_context *cxt = psi->data;
+ 	struct persistent_ram_zone *prz = cxt->przs[cxt->dump_write_cnt];
+-- 
+1.7.10.4
 
