@@ -1,120 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755935Ab2GRWkn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 18:40:43 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32693 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755140Ab2GRWkE (ORCPT
+	id S1755994Ab2GRWlI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 18:41:08 -0400
+Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:27289 "EHLO
+	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751920Ab2GRWlD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 18:40:04 -0400
-X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=ORad0jiYtisA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=ayC55rCoAAAA:8 a=3WwFj-7JEyWjOncKx_sA:9 a=E6k37eg1NvgA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=Zh68SRI7RUMA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 72.230.195.127
-Message-Id: <20120718223959.583287226@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Wed, 18 Jul 2012 18:39:20 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Subject: [PATCH RT 10/12] workqueue: Revert workqueue: Fix PF_THREAD_BOUND abuse
-References: <20120718223910.898476857@goodmis.org>
-Content-Disposition: inline; filename=0010-workqueue-Revert-workqueue-Fix-PF_THREAD_BOUND-abuse.patch
+	Wed, 18 Jul 2012 18:41:03 -0400
+Message-ID: <1342651257.5138.44.camel@lorien2>
+Subject: Re: [PATCH 1/4] ACPI: Add acpi_pr_<level>() interfaces
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bhelgaas@google.com, isimatu.yasuaki@jp.fujitsu.com, liuj97@gmail.com,
+        srivatsa.bhat@linux.vnet.ibm.com, prarit@redhat.com,
+        imammedo@redhat.com, vijaymohan.pandarathil@hp.com,
+        shuahkhan@gmail.com
+Date: Wed, 18 Jul 2012 16:40:57 -0600
+In-Reply-To: <1342650386.3010.55.camel@misato.fc.hp.com>
+References: <1342644027-19559-1-git-send-email-toshi.kani@hp.com>
+	 <1342644027-19559-2-git-send-email-toshi.kani@hp.com>
+	 <1342648771.5138.37.camel@lorien2>
+	 <1342650386.3010.55.camel@misato.fc.hp.com>
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
+On Wed, 2012-07-18 at 16:26 -0600, Toshi Kani wrote:
+> On Wed, 2012-07-18 at 15:59 -0600, Shuah Khan wrote:
+> > On Wed, 2012-07-18 at 14:40 -0600, Toshi Kani wrote:
+> > > This patch introduces acpi_pr_<level>(), where <level> is a message
+> > > level such as err/warn/info, to support improved logging messages
+> > > for ACPI, esp. in hotplug operations.  acpi_pr_<level>() appends
+> > > "ACPI" prefix and ACPI object path to the messages.  This improves
+> > > diagnostics in hotplug operations since it identifies an object that
+> > > caused an issue in a log file.
+> > > 
+> > > acpi_pr_<level>() takes acpi_handle as an argument, which is passed
+> > > to ACPI hotplug notify handlers from the ACPI CA.  Therefore, it is
+> > > always available unlike other kernel objects, such as device.
+> > > 
+> > > For example, the statement below
+> > >   acpi_pr_err(handle, "Device don't exist, dropping EJECT\n");
+> > > logs an error message like this:
+> > >   ACPI: \_SB_.SCK4.CPU4: Device don't exist, dropping EJECT
+> > > 
+> > > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+> > > ---
+> > >  drivers/acpi/utils.c    |   32 ++++++++++++++++++++++++++++++++
+> > >  include/acpi/acpi_bus.h |   18 ++++++++++++++++++
+> > >  2 files changed, 50 insertions(+), 0 deletions(-)
+> > > 
+> > > diff --git a/drivers/acpi/utils.c b/drivers/acpi/utils.c
+> > > index 3e87c9c..4097266 100644
+> > > --- a/drivers/acpi/utils.c
+> > > +++ b/drivers/acpi/utils.c
+> > > @@ -454,3 +454,35 @@ acpi_evaluate_hotplug_ost(acpi_handle handle, u32 source_event,
+> > >  #endif
+> > >  }
+> > >  EXPORT_SYMBOL(acpi_evaluate_hotplug_ost);
+> > > +
+> > > +/**
+> > > + * acpi_printk: Print messages with ACPI prefix and object path
+> > > + *
+> > > + * This function is intended to be called through acpi_pr_<level> macros.
+> > > + */
+> > > +void
+> > > +acpi_printk(const char *level, acpi_handle handle, const char *fmt, ...)
+> > > +{
+> > > +	struct va_format vaf;
+> > > +	va_list args;
+> > > +	struct acpi_buffer buffer = {ACPI_ALLOCATE_BUFFER};
+> > > +	char *path;
+> > > +	acpi_status ret;
+> > > +
+> > > +	va_start(args, fmt);
+> > > +
+> > > +	vaf.fmt = fmt;
+> > > +	vaf.va = &args;
+> > > +
+> > > +	ret = acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
+> > 
+> > One big problem I see with this approach is now each acpi_printk() will
+> > result in a call to acpi_get_name() which will invoke several ACPI
+> > calls, including a call to acpi_ut_initialize_buffer() which allocates
+> > buffer. Is this really warranted? What is the performance impact of this
+> > change?
+> 
+> Hi Shuah,
+> 
+> This interface is intended to be used by acpi_pr_<level>(), which is
+> used for error, warning, debugging, etc.  It is not intended to be used
+> in any performance path.
+> 
 
-Revert commit
+How does one enable this interface to see errors, warns, debugging? Is
+there a special mode kernel needs to run in? I am trying to understand
+what you mean by "not intended to be used in any performance path". Does
+one build a special kernel similar to CONFIG_VM_DEBUG (just happen to
+the one I could think off) ?
 
-    Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
-    Date:   Mon Oct 3 12:43:25 2011 +0200
-    workqueue: Fix PF_THREAD_BOUND abuse
-
-As TREAD_BOUND no longer affects cpu down, and this code introduced
-a lot of races with taking down a CPU.
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/workqueue.c |   29 +++++++++--------------------
- 1 file changed, 9 insertions(+), 20 deletions(-)
-
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index a08a963..53268e3 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1287,14 +1287,8 @@ __acquires(&gcwq->lock)
- 			return false;
- 		if (task_cpu(task) == gcwq->cpu &&
- 		    cpumask_equal(&current->cpus_allowed,
--				  get_cpu_mask(gcwq->cpu))) {
--			/*
--			 * Since we're binding to a particular cpu and need to
--			 * stay there for correctness, mark us PF_THREAD_BOUND.
--			 */
--			task->flags |= PF_THREAD_BOUND;
-+				  get_cpu_mask(gcwq->cpu)))
- 			return true;
--		}
- 		spin_unlock_irq(&gcwq->lock);
- 
- 		/*
-@@ -1308,18 +1302,6 @@ __acquires(&gcwq->lock)
- 	}
- }
- 
--static void worker_unbind_and_unlock(struct worker *worker)
--{
--	struct global_cwq *gcwq = worker->gcwq;
--	struct task_struct *task = worker->task;
--
--	/*
--	 * Its no longer required we're PF_THREAD_BOUND, the work is done.
--	 */
--	task->flags &= ~PF_THREAD_BOUND;
--	spin_unlock_irq(&gcwq->lock);
--}
--
- static struct worker *alloc_worker(void)
- {
- 	struct worker *worker;
-@@ -1382,9 +1364,15 @@ static struct worker *create_worker(struct global_cwq *gcwq, bool bind)
- 	if (IS_ERR(worker->task))
- 		goto fail;
- 
-+	/*
-+	 * A rogue worker will become a regular one if CPU comes
-+	 * online later on.  Make sure every worker has
-+	 * PF_THREAD_BOUND set.
-+	 */
- 	if (bind && !on_unbound_cpu)
- 		kthread_bind(worker->task, gcwq->cpu);
- 	else {
-+		worker->task->flags |= PF_THREAD_BOUND;
- 		if (on_unbound_cpu)
- 			worker->flags |= WORKER_UNBOUND;
- 	}
-@@ -2061,7 +2049,7 @@ repeat:
- 		if (keep_working(gcwq))
- 			wake_up_worker(gcwq);
- 
--		worker_unbind_and_unlock(rescuer);
-+		spin_unlock_irq(&gcwq->lock);
- 	}
- 
- 	schedule();
-@@ -2957,6 +2945,7 @@ struct workqueue_struct *__alloc_workqueue_key(const char *name,
- 		if (IS_ERR(rescuer->task))
- 			goto err;
- 
-+		rescuer->task->flags |= PF_THREAD_BOUND;
- 		wake_up_process(rescuer->task);
- 	}
- 
--- 
-1.7.10.4
-
+-- Shuah
 
