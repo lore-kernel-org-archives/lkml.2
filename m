@@ -1,112 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753492Ab2GRKb1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 06:31:27 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:59933 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751387Ab2GRKbY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 06:31:24 -0400
-Subject: [PATCH v2 RESEND] Hardware breakpoints: Invoke
- __perf_event_disable() if interrupts are already disabled
-To: fweisbec@gmail.com, paulus@samba.org, a.p.zijlstra@chello.nl
-From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com,
-        emachado@linux.vnet.ibm.com, acme@ghostprotocols.net,
-        prasad.krishnan@gmail.com
-Date: Wed, 18 Jul 2012 16:00:46 +0530
-Message-ID: <20120718103046.7512.8326.stgit@localhost.localdomain>
-In-Reply-To: <20120706101653.7515.23309.stgit@localhost.localdomain>
-References: <20120706101653.7515.23309.stgit@localhost.localdomain>
-User-Agent: StGit/0.16
+	id S1753475Ab2GRKdG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 06:33:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17341 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752458Ab2GRKdD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 06:33:03 -0400
+Date: Wed, 18 Jul 2012 13:33:35 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>, avi@redhat.com,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jan.kiszka@siemens.com
+Subject: Re: [PATCH v5 3/4] kvm: Create kvm_clear_irq()
+Message-ID: <20120718103335.GB4700@redhat.com>
+References: <20120717145313.GB11516@redhat.com>
+ <1342538411.2229.106.camel@bling.home>
+ <20120717153620.GB11849@redhat.com>
+ <1342540301.2229.117.camel@bling.home>
+ <20120717155701.GB12001@redhat.com>
+ <1342541301.2229.125.camel@bling.home>
+ <20120717161452.GA12114@redhat.com>
+ <20120718062742.GH6479@redhat.com>
+ <20120718102029.GA4650@redhat.com>
+ <20120718102739.GB26120@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-x-cbid: 12071810-5816-0000-0000-000003A2F61B
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120718102739.GB26120@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please find v2 of the patch from Prasad, based on Peter Zijlstra's
-feedback. This applies on top of v3.5-rc7. This has been tested and
-found to work fine by Edjunior.
+On Wed, Jul 18, 2012 at 01:27:39PM +0300, Gleb Natapov wrote:
+> On Wed, Jul 18, 2012 at 01:20:29PM +0300, Michael S. Tsirkin wrote:
+> > On Wed, Jul 18, 2012 at 09:27:42AM +0300, Gleb Natapov wrote:
+> > > On Tue, Jul 17, 2012 at 07:14:52PM +0300, Michael S. Tsirkin wrote:
+> > > > > _Seems_ racy, or _is_ racy?  Please identify the race.
+> > > > 
+> > > > Look at this:
+> > > > 
+> > > > static inline int kvm_irq_line_state(unsigned long *irq_state,
+> > > >                                      int irq_source_id, int level)
+> > > > {
+> > > >         /* Logical OR for level trig interrupt */
+> > > >         if (level)
+> > > >                 set_bit(irq_source_id, irq_state);
+> > > >         else
+> > > >                 clear_bit(irq_source_id, irq_state);
+> > > > 
+> > > >         return !!(*irq_state);
+> > > > }
+> > > > 
+> > > > 
+> > > > Now:
+> > > > If other CPU changes some other bit after the atomic change,
+> > > > it looks like !!(*irq_state) might return a stale value.
+> > > > 
+> > > > CPU 0 clears bit 0. CPU 1 sets bit 1. CPU 1 sets level to 1.
+> > > > If CPU 0 sees a stale value now it will return 0 here
+> > > > and interrupt will get cleared.
+> > > > 
+> > > This will hardly happen on x86 especially since bit is set with
+> > > serialized instruction.
+> > 
+> > Probably. But it does make me a bit uneasy.  Why don't we pass
+> > irq_source_id to kvm_pic_set_irq/kvm_ioapic_set_irq, and move
+> > kvm_irq_line_state to under pic_lock/ioapic_lock?  We can then use
+> > __set_bit/__clear_bit in kvm_irq_line_state, making the ordering simpler
+> > and saving an atomic op in the process.
+> > 
+> With my patch I do not see why we can't change them to unlocked variant
+> without moving them anywhere. The only requirement is to not use RMW
+> sequence to set/clear bits. The ordering of setting does not matter. The
+> ordering of reading is.
 
-Regards,
-Naveen
-______
+You want to use __set_bit/__clear_bit on the same word
+from multiple CPUs, without locking?
+Why won't this lose information?
 
-From: K.Prasad <Prasad.Krishnan@gmail.com>
+In any case, it seems simpler and safer to do accesses under lock
+than rely on specific use.
 
-While debugging a warning message on PowerPC while using hardware
-breakpoints, it was discovered that when perf_event_disable is invoked
-through hw_breakpoint_handler function with interrupts disabled, a
-subsequent IPI in the code path would trigger a WARN_ON_ONCE message in
-smp_call_function_single function.
-
-This patch calls __perf_event_disable() when interrupts are already
-disabled, instead of perf_event_disable().
-
-Reported-by: Edjunior Barbosa Machado <emachado@linux.vnet.ibm.com>
-Signed-off-by: K.Prasad <Prasad.Krishnan@gmail.com>
-Signed-off-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
----
- include/linux/perf_event.h    |    2 ++
- kernel/events/core.c          |    2 +-
- kernel/events/hw_breakpoint.c |   10 +++++++++-
- 3 files changed, 12 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 45db49f..c289ba0 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -1292,6 +1292,7 @@ extern int perf_swevent_get_recursion_context(void);
- extern void perf_swevent_put_recursion_context(int rctx);
- extern void perf_event_enable(struct perf_event *event);
- extern void perf_event_disable(struct perf_event *event);
-+extern int __perf_event_disable(void *info);
- extern void perf_event_task_tick(void);
- #else
- static inline void
-@@ -1330,6 +1331,7 @@ static inline int  perf_swevent_get_recursion_context(void)		{ return -1; }
- static inline void perf_swevent_put_recursion_context(int rctx)		{ }
- static inline void perf_event_enable(struct perf_event *event)		{ }
- static inline void perf_event_disable(struct perf_event *event)		{ }
-+static inline int __perf_event_disable(void *info)			{ }
- static inline void perf_event_task_tick(void)				{ }
- #endif
- 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index d7d71d6..0ad0fc9 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -1253,7 +1253,7 @@ retry:
- /*
-  * Cross CPU call to disable a performance event
-  */
--static int __perf_event_disable(void *info)
-+int __perf_event_disable(void *info)
- {
- 	struct perf_event *event = info;
- 	struct perf_event_context *ctx = event->ctx;
-diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
-index bb38c4d..483f14a 100644
---- a/kernel/events/hw_breakpoint.c
-+++ b/kernel/events/hw_breakpoint.c
-@@ -453,7 +453,15 @@ int modify_user_hw_breakpoint(struct perf_event *bp, struct perf_event_attr *att
- 	int old_type = bp->attr.bp_type;
- 	int err = 0;
- 
--	perf_event_disable(bp);
-+	/*
-+	 * modify_user_hw_breakpoint can be invoked with IRQs disabled and hence it
-+	 * will not be possible to raise IPIs that invoke __perf_event_disable.
-+	 * So call the function directly.
-+	 */
-+	if (irqs_disabled())
-+		__perf_event_disable(bp);
-+	else
-+		perf_event_disable(bp);
- 
- 	bp->attr.bp_addr = attr->bp_addr;
- 	bp->attr.bp_type = attr->bp_type;
-
+> --
+> 			Gleb.
