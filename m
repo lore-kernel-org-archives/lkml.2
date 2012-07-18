@@ -1,71 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752389Ab2GRJKl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 05:10:41 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:53596 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750939Ab2GRJKd (ORCPT
+	id S1752531Ab2GRJNh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 05:13:37 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:34668 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751871Ab2GRJN3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 05:10:33 -0400
-From: Claudiu Ghioc <claudiughioc@gmail.com>
-To: netdev@vger.kernel.org
-Cc: davem@davemloft.net, netfilter-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, wensong@linux-vs.org, horms@verge.net.au,
-        ja@ssi.bg, pablo@netfilter.org, kaber@trash.net,
-        claudiu.ghioc@gmail.com, daniel.baluta@gmail.com
-Subject: [PATCH v2] ipvs: fixed sparse warning
-Date: Wed, 18 Jul 2012 12:10:22 +0300
-Message-Id: <1342602622-2728-1-git-send-email-claudiu.ghioc@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+	Wed, 18 Jul 2012 05:13:29 -0400
+Date: Wed, 18 Jul 2012 11:13:13 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: david@lang.hm
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Borislav Petkov <bp@amd64.org>, Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Dave Jones <davej@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
+        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
+        Debian Kernel Team <debian-kernel@lists.debian.org>,
+        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Sasha Levin <levinsasha928@gmail.com>,
+        Asias He <asias.hejun@gmail.com>,
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: Re: [opensuse-kernel] Re: [RFC] Simplifying kernel configuration for
+ distro issues
+Message-ID: <20120718091313.GA13085@gmail.com>
+References: <20120715214819.GA1990@moon>
+ <alpine.DEB.2.02.1207151459480.20176@asgard.lang.hm>
+ <20120716082418.GC24327@aftab.osrc.amd.com>
+ <alpine.DEB.2.02.1207160937330.20176@asgard.lang.hm>
+ <CA+55aFwwmMbFr4HXTFxF_MeM_n8bfiXfPPgCALTOc1HvidVt1Q@mail.gmail.com>
+ <alpine.DEB.2.02.1207161222380.32545@asgard.lang.hm>
+ <CA+55aFw7zdyPpDEdpDbYWc-Z++v_kDQHD3Z+-QwPszh+9bU+tQ@mail.gmail.com>
+ <alpine.DEB.2.02.1207161451020.32545@asgard.lang.hm>
+ <20120718070458.GA10357@gmail.com>
+ <alpine.DEB.2.02.1207180133540.20176@asgard.lang.hm>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1207180133540.20176@asgard.lang.hm>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed the following sparse warnings, wether CONFIG_SYSCTL
-is defined or not:
-*       warning: symbol 'ip_vs_control_net_init_sysctl' was not
-	declared. Should it be static?
-*       warning: symbol 'ip_vs_control_net_cleanup_sysctl' was
-	not declared. Should it be static?
 
-Signed-off-by: Claudiu Ghioc <claudiu.ghioc@gmail.com>
----
- net/netfilter/ipvs/ip_vs_ctl.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+* david@lang.hm <david@lang.hm> wrote:
 
-diff --git a/net/netfilter/ipvs/ip_vs_ctl.c b/net/netfilter/ipvs/ip_vs_ctl.c
-index d43e3c1..044e845 100644
---- a/net/netfilter/ipvs/ip_vs_ctl.c
-+++ b/net/netfilter/ipvs/ip_vs_ctl.c
-@@ -3674,7 +3674,7 @@ static void ip_vs_genl_unregister(void)
-  * per netns intit/exit func.
-  */
- #ifdef CONFIG_SYSCTL
--int __net_init ip_vs_control_net_init_sysctl(struct net *net)
-+static int __net_init ip_vs_control_net_init_sysctl(struct net *net)
- {
- 	int idx;
- 	struct netns_ipvs *ipvs = net_ipvs(net);
-@@ -3742,7 +3742,7 @@ int __net_init ip_vs_control_net_init_sysctl(struct net *net)
- 	return 0;
- }
- 
--void __net_exit ip_vs_control_net_cleanup_sysctl(struct net *net)
-+static void __net_exit ip_vs_control_net_cleanup_sysctl(struct net *net)
- {
- 	struct netns_ipvs *ipvs = net_ipvs(net);
- 
-@@ -3753,8 +3753,8 @@ void __net_exit ip_vs_control_net_cleanup_sysctl(struct net *net)
- 
- #else
- 
--int __net_init ip_vs_control_net_init_sysctl(struct net *net) { return 0; }
--void __net_exit ip_vs_control_net_cleanup_sysctl(struct net *net) { }
-+static int __net_init ip_vs_control_net_init_sysctl(struct net *net) { return 0; }
-+static void __net_exit ip_vs_control_net_cleanup_sysctl(struct net *net) { }
- 
- #endif
- 
--- 
-1.7.4.4
+> On Wed, 18 Jul 2012, Ingo Molnar wrote:
+> 
+> >* david@lang.hm <david@lang.hm> wrote:
+> >
+> >>>Anybody who says "I want to run Fedora without SELINUX
+> >>>because I do my own security development" is by *definition*
+> >>>not relevant to the whole feature.
+> >>
+> >>Don't mistake the example for the feature. the SELINUX thing
+> >>is just an example. As Alan Cox commented, taking a distro
+> >>config and disabling one thing is a common troubleshooting
+> >>request from kernel developers.
+> >
+> >It's still irrelevant:
+> >
+> >- if a user chooses a distro config it means that he is using
+> >  that distro. Disabling an essential component of the distro
+> >  config, even if a kernel developer asks for it, will likely
+> >  break that distro and is thus a dumb thing to do. (the
+> >  typical user will also be unlikely to be *able* to edit a
+> >  .config and make sure it works.)
+> 
+> that's assuming that everything listed really is essential.
 
+See the requirements in Linus's earlier mail:
+
+------------->
+
+The *two* requirements (and they're really the same theme) I
+personally think we should have for this are
+
+ - I think every single "select" for these things should come 
+with a comment about what it is about and why the distro needs 
+it (to show there was some thought involved and not just a blind 
+"took it from the distro config")
+
+ - It should be about *minimal* settings. I'd rather have too 
+few things and the occasional complaint about "oh, it didn't 
+work because it missed XYZ" than have it grow to contain all the 
+options just because somebody decided to just add random things 
+until things worked.
+
+<-------------
+
+Thanks,
+
+	Ingo
