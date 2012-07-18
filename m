@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754753Ab2GROm0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 10:42:26 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:50150 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754734Ab2GROmX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 10:42:23 -0400
+	id S1754709Ab2GROoC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 10:44:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31653 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753179Ab2GROn7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 10:43:59 -0400
+Message-ID: <5006CC26.20203@redhat.com>
+Date: Wed, 18 Jul 2012 22:45:58 +0800
+From: Asias He <asias@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Date: Wed, 18 Jul 2012 10:42:22 -0400
-Message-ID: <CAMUfR_vogZUgJB5QBr-QrYqFEM71J_pyvc=cFRV6apvb=pVJuQ@mail.gmail.com>
-Subject: QUESTION: Why might Linux suddenly stop replying to pings for no
- apparent reason?
-From: Terry Phelps <tgphelps50@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jeff Moyer <jmoyer@redhat.com>
+CC: linux-kernel@vger.kernel.org, "Michael S. Tsirkin" <mst@redhat.com>,
+        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH RESEND 5/5] vhost-blk: Add vhost-blk support
+References: <1342169711-12386-1-git-send-email-asias@redhat.com> <1342169711-12386-6-git-send-email-asias@redhat.com> <x49mx2yyzi5.fsf@segfault.boston.devel.redhat.com> <50060FE8.4040607@redhat.com> <x49fw8pb0ov.fsf@segfault.boston.devel.redhat.com>
+In-Reply-To: <x49fw8pb0ov.fsf@segfault.boston.devel.redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have this strange recurring problem with SEVERAL machines, all
-running the Oracle "Unbreakable Enterprise Kernel", which is based on
-the 3.0.16 kernel.
+On 07/18/2012 10:31 PM, Jeff Moyer wrote:
+> Asias He <asias@redhat.com> writes:
+>
+>> On 07/18/2012 03:10 AM, Jeff Moyer wrote:
+>>> Asias He <asias@redhat.com> writes:
+>>>
+>>>> vhost-blk is a in kernel virito-blk device accelerator.
+>>>>
+>>>> This patch is based on Liu Yuan's implementation with various
+>>>> improvements and bug fixes. Notably, this patch makes guest notify and
+>>>> host completion processing in parallel which gives about 60% performance
+>>>> improvement compared to Liu Yuan's implementation.
+>>>
+>>> So, first off, some basic questions.  Is it correct to assume that you
+>>> tested this with buffered I/O (files opened *without* O_DIRECT)?
+>>>   I'm pretty sure that if you used O_DIRECT, you'd run into problems (which
+>>> are solved by the patch set posted by Shaggy, based on Zach Brown's work
+>>> of many moons ago).  Note that, with buffered I/O, the submission path
+>>> is NOT asynchronous.  So, any speedups you've reported are extremely
+>>> suspect.  ;-)
+>>
+>> I always used O_DIRECT to test this patchset. And I mostly used raw
+>> block device as guest image. Is this the reason why I did not hit the
+>> problem you mentioned. Btw, I do have run this patchset on image based
+>> file. I still do not see problems like IO hangs.
+>
+> Hmm, so do the iovec's passed in point to buffers in userspace?  I
+> thought they were kernel buffers, which would have blown up in
+> get_user_pages_fast.
 
-Here is a quick description, while I still have your attention:
+Yes. The iovec's passed in point to userspace buffers. ;-)
 
-I have server S1, and two desktops, D1 and D2, separated by a router.
-The D1 and D2 boxes are side by side, on the same IPv4 subnet,
-different from S1's subnet. Maybe once a day, or oftener, I find that
-D1 cannot ping S1, but D2 can. There are many possible causes for
-that, of course, BUT:
+-- 
+Asias
 
-I can SSH to S1 from D2, and S1 can ping both D1 and D2 just fine.
-TCPDUMP shows that the ICMP request packets from D1 ARE arriving at
-S1. S1 is siimply not replying!
 
-Even stranger:
->From S1, I can traceroute to D2, but cannot traceroute to D1. A
-traceroute to D1 gets an ENETDOWN returned from sendto(). But there is
-only one NIC in the S1, and it certainly isn't down!
-
-One more thing: If I enter "ip route flush cache" on S1, the problem
-clears up immediately.
-
-And another: If I leave D1 pinging S1 every 5 seconds, say, the
-problem will NEVER clear up by itself. But if D1 stops pinging S1 for
-a few minutes, it works again!
-
-No, there's no firewall or selinux running on any machine involved,
-and no firewall between the boxes.
-
-I'm totally confused. Can anyone suggest what to look at?
