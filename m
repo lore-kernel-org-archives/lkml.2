@@ -1,59 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755841Ab2GRTzs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 15:55:48 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:37948 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753351Ab2GRTzp (ORCPT
+	id S1755871Ab2GRTz7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 15:55:59 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:59622 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754462Ab2GRTzr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 15:55:45 -0400
-MIME-Version: 1.0
-In-Reply-To: <50071014.6040301@redhat.com>
-References: <CAOesGMiCexiqA3L5GdNgyHhSD-5Bpqbb02YJrZPr8yMYa0afjA@mail.gmail.com>
- <201207071927.13135.arnd@arndb.de> <20120710071023.GA10456@gmail.com>
- <20120710101018.GE15120@arm.com> <yw1x8vekd309.fsf@unicorn.mansr.com>
- <CA+55aFxL6uEre-c=JrhPfts=7BGmhb2Js1c2ZGkTH8F=+rEWDg@mail.gmail.com>
- <20120717221839.GA4856@arm.com> <1342564536.1898.1.camel@joe2Laptop>
- <5006207D.1010708@jonmasters.org> <20120718102712.46b8d7ff@adria.ausil.us>
- <20120718171426.GA4240@arm.com> <50071014.6040301@redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 18 Jul 2012 12:55:24 -0700
-X-Google-Sender-Auth: oKDsxZzdb591jgFZDHd7_YrJYWQ
-Message-ID: <CA+55aFwr47UBoi8=i8523KnZQzOt0WB_MsOTpzVOKpsJo7PsPg@mail.gmail.com>
-Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
-To: Jon Masters <jcm@redhat.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Dennis Gilmore <dennis@ausil.us>, Joe Perches <joe@perches.com>,
-        =?ISO-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>,
-        Ingo Molnar <mingo@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 18 Jul 2012 15:55:47 -0400
+Date: Wed, 18 Jul 2012 22:55:37 +0300
+From: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+To: dedekind1@gmail.com
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Richard Weinberger <richard@nod.at>,
+        Richard Genoud <richard.genoud@gmail.com>
+Subject: Re: [PATCH 2/5] ubi: Limit amount of reserved eraseblocks for bad
+ PEB handling
+Message-ID: <20120718225537.38ddbb60@halley>
+In-Reply-To: <1342607317.7530.9.camel@brekeke>
+References: <1341389164-24409-1-git-send-email-shmulik.ladkani@gmail.com>
+	<1341389164-24409-3-git-send-email-shmulik.ladkani@gmail.com>
+	<1342607317.7530.9.camel@brekeke>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 18, 2012 at 12:35 PM, Jon Masters <jcm@redhat.com> wrote:
->
-> So we should think with a
-> mindset of 2-3 years from now rather than where we were yesterday.
+Hi Artem,
 
-Why do you think aarch64 would be a better name 2-3 years from now?
+On Wed, 18 Jul 2012 13:28:37 +0300 Artem Bityutskiy <dedekind1@gmail.com> wrote:
+> The whole thing will become simpler if we first mark the PEB as bad
+> unconditionally (because it _is_ bad), then grab the lock and do all the
+> re-calculations.
 
-And why do you think ARM management magically has good taste? They got
-the PAE thing wrong too. They literally copied everything Intel did
-*wrong* in this area, and we know it was wrong even with *more* than
-2-3 years of hind-sight.
+On first glance that would sound the right thing to do.
 
- "the one who does not remember history is bound to live through it again"
-    - Santayana
+Actually, when looked at the original code, which does NOT mark the
+block bad when 'beb_rsvd_pebs == 0' (instead, does a 'goto out_ro'),
+I initially thought "this is SO wrong, the block IS bad, we MUST mark it
+bad, what IS the deal here?".
+But then I spent more and more time trying to backtrack the reason for
+it - and I think I found a reason, quite an improtant one.
 
-Seriously. We've gone through exactly this on the x86 side. Your "I'm
-sure it will be better in 2-3 years" has nothing to back it up. And
-no, stupid marketing decisions by companies do *not* suddenly turn out
-to be smart things a few years later.
+Suppose 'beb_rsvd_pebs == 0'.
 
-              Linus
+In the original scheme, it means that there are NO available PEBs at
+all. All good PEBs are "assigned" (to user volumes, layout volume, WL
+and EBA).
+
+Now, if one of these PEBs goes bad, and you DO mark it bad, and
+decrement the good_peb_count, you'll have a shortage of good PEBs - it
+will not match the amount of PEBs assigned to the consumers (user
+volumes, layout, WL, EBA).
+Meaning, next attach would simply fail with a "no enough physical
+eraseblocks" message (grep for these in ubi_wl_init and ubi_eba_init).
+You won't even be able to attach anymore. Not good.
+
+However, if you DO NOT mark it bad, but instead go into RO mode, you
+should be able to later re-attach because the good_peb_count would fit
+(no shortage of PEBs).
+
+So going into RO seems a "less worse" solution than marking bad, for
+that particular case.
+
+Anyways, I've really invested some thought into this patch, trying to
+cover all sorts of esoteric cases.
+I think the logic itself is pretty robust, although I would really
+appreciate some reassurances on that...
+
+I agree the code does not "read simple" enough, I tried to make the best
+simplifying and adding some comments. Let me know if you'd like some
+more polish on it.
+
+I saw you submitted a simplified version, I can surely take a look, but
+I'm afraid it lacks the proper treatment discussed above (NOT marking
+the bad block as bad when beb_rsvd_pebs is zero).
+
+Let me know.
+
+Many thanks,
+Shmulik
