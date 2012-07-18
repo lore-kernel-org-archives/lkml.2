@@ -1,107 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752586Ab2GRGmN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 02:42:13 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:40183 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751646Ab2GRGl7 (ORCPT
+	id S1751932Ab2GRGvQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 02:51:16 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:52117 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751080Ab2GRGvK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 02:41:59 -0400
+	Wed, 18 Jul 2012 02:51:10 -0400
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <201207172122.26201.rjw@sisk.pl>
-References: <CAMP5XgcatAchOXaEG0rbULes5pVHHsuGeuJ2CKaVGEdj1LzMDg@mail.gmail.com>
- <CAMP5XgfF3RF1hSonS_QrC8jQZyCcNfwGYZcCxnew02Rp3-CXKA@mail.gmail.com>
- <CAHO5Pa3nWvmWY9jFZ-4ayvjGAV-4Vhs5sS18dbzniJp8wZYmoQ@mail.gmail.com> <201207172122.26201.rjw@sisk.pl>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Wed, 18 Jul 2012 08:41:37 +0200
-Message-ID: <CAKgNAkgudHT_PC7OnjmbL1eL2dssFeLcxp90kSFTZkqGuFaa=w@mail.gmail.com>
-Subject: Re: [PATCH] epoll: Add a flag, EPOLLWAKEUP, to prevent suspend while
- epoll events are ready
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
-        NeilBrown <neilb@suse.de>, Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
-        Matthew Garrett <mjg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Brian Swetland <swetland@google.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, mtk@lwn.net
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <op.whg7fy00n27o5l@gaoqiang-d1.corp.qihoo.net>
+References: <op.whbsn0qvn27o5l@gaoqiang-d1.corp.qihoo.net>
+	<CADX3swpSAt9gdSgYihOJKs1=geQkmB04rCVTSgh=DEXQx7QPmQ@mail.gmail.com>
+	<op.whg7fy00n27o5l@gaoqiang-d1.corp.qihoo.net>
+Date: Wed, 18 Jul 2012 08:51:09 +0200
+Message-ID: <CADX3swq9cfPtd3a1ibYWjQBiTMGzqYbS=KNTkdo1eW4LFxsJJA@mail.gmail.com>
+Subject: Re: question about IO-sched
+From: Corrado Zoccolo <czoccolo@gmail.com>
+To: gaoqiang <gaoqiangscut@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 17, 2012 at 9:22 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+On Sun, Jul 15, 2012 at 9:08 AM, gaoqiang <gaoqiangscut@gmail.com> wrote:
+>
+> many thanks. but why the sys_read operation hangs on sync_page ? there are
+> still
+> many free memory.I mean ,the actually free memory,excluding the various
+> kinds of
+> caches or buffers.
+http://kerneltrap.org/node/4941 explains sync_page:
+>
+> ->sync_page() is an awful misnomer. Usually, when page IO operation is
+> requested by calling ->writepage() or ->readpage(), file-system queues
+> IO request (e.g., disk-based file system may do this my calling
+> submit_bio()), but underlying device driver does not proceed with this
+> IO immediately, because IO scheduling is more efficient when there are
+> multiple requests in the queue.
+> Only when something really wants to wait for IO completion
+> (wait_on_page_{locked,writeback}() are used to wait for read and write
+> completion respectively) IO queue is processed. To do this
+> wait_on_page_bit() calls ->sync_page() (see block_sync_page()---standard
+> implementation of ->sync_page() for disk-based file systems).
+> So, semantics of ->sync_page() are roughly "kick underlying storage
+> driver to actually perform all IO queued for this page, and, maybe, for
+> other pages on this device too".
 
-[...]
-
-> I'm going to push your patch for v3.5,
-
-Thanks.
-
-> but then I'm considering the following
-> one for v3.6.  I wouldn't like to make more changes in v3.5-rc at this point,
-
-Acked-by: Michael Kerrisk <mtk.man-pages@gmail.com>
+It is expected that sys_read will wait until the data is available for
+the process.
+If you don't want to wait (because you can do other stuff in the mean
+time, including queuing other I/O operations), you can use aio_read.
+The kernel will notify your process when the operation completes and
+the data is available in memory.
 
 Thanks,
+Corrado
 
-Michael
+>
+>
+> 在 Fri, 13 Jul 2012 22:15:31 +0800，Corrado Zoccolo <czoccolo@gmail.com> 写道:
+>
+>> Hi,
+>> the catch is that writes are "fire and forget", so they keep accumulating
+>> in the I/O sched, and there is always plenty of them to schedule (unless
+>> you explicitly make sync writes).
+>>
+>> The reader, instead, waits for the result of each read operation before
+>> scheduling a new read, so there is at most one outstanding read, and some
+>> time nothing.
+>>
+>> The deadline scheduler is work conserving, meaning that it never leaves
+>> the
+>> disk idle when there is work queued, and most of the time after an
+>> operation completes, there is only write work queued, so you see much
+>> more
+>> writes being sent to the device.
+>>
+>> Only schedulers that delay writes waiting for reads (as Anticipatory in
+>> old
+>> kernels, and now CFQ) can achieve higher read to write ratios.
+>>
+>> Cheers
+>> Corrado
+>>
+>> On Thu, Jul 12, 2012 at 11:01 AM, gaoqiang <gaoqiangscut@gmail.com>
+>> wrote:
+>>
+>>> Hi,all
+>>>
+>>>         I have long known that deadline is read-prefered. but a simple
+>>> test gives the opposite result.
+>>>
+>>>         with two processes running at the same time,one for read and one
+>>> for write.actually,they did nothing bug IO operation.
+>>>         while(true)
+>>>         {
+>>>                 read();
+>>>         }
+>>>         the other:
+>>>         while(true)
+>>>         {
+>>>                 write();
+>>>         }
+>>>
+>>>         with deadline IO-sched  and ext4 filesystem.as a result, read
+>>> ratio was about below 3M/s.and write about 100M/s. I have tested both
+>>> kernel-2.6.18 and kernel-2.6.32,getting the same result.
+>>>
+>>>         I add some debug information in the kernel and recompile,found
+>>> that,it has little to do with IO-sched layer because read request
+>>> dropped
+>>> into deadline was 5% of write request .from /proc/<pid>/stack,the read
+>>> process hands on sync_page most of the time.
+>>>         what is the matter ? anyone help me ?
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+>>> in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at
+>>> http://vger.kernel.org/**majordomo-info.html<http://vger.kernel.org/majordomo-info.html>
+>>>
+>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>
+>>
+>>
+>>
+>
+>
+> --
+> 使用 Opera 革命性的电子邮件客户程序: http://www.opera.com/mail/
 
-> ---
-> From: Rafael J. Wysocki <rjw@sisk.pl>
-> Subject: PM / Sleep: Require CAP_BLOCK_SUSPEND to use wake_lock/wake_unlock
->
-> Require processes wanting to use the wake_lock/wake_unlock sysfs
-> files to have the CAP_BLOCK_SUSPEND capability, which also is
-> required for the eventpoll EPOLLWAKEUP flag to be effective, so that
-> all interfaces related to blocking autosleep depend on the same
-> capability.
->
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> ---
->  kernel/power/wakelock.c |    7 +++++++
->  1 file changed, 7 insertions(+)
->
-> Index: linux/kernel/power/wakelock.c
-> ===================================================================
-> --- linux.orig/kernel/power/wakelock.c
-> +++ linux/kernel/power/wakelock.c
-> @@ -9,6 +9,7 @@
->   * manipulate wakelocks on Android.
->   */
->
-> +#include <linux/capability.h>
->  #include <linux/ctype.h>
->  #include <linux/device.h>
->  #include <linux/err.h>
-> @@ -188,6 +189,9 @@ int pm_wake_lock(const char *buf)
->         size_t len;
->         int ret = 0;
->
-> +       if (!capable(CAP_BLOCK_SUSPEND))
-> +               return -EPERM;
-> +
->         while (*str && !isspace(*str))
->                 str++;
->
-> @@ -231,6 +235,9 @@ int pm_wake_unlock(const char *buf)
->         size_t len;
->         int ret = 0;
->
-> +       if (!capable(CAP_BLOCK_SUSPEND))
-> +               return -EPERM;
-> +
->         len = strlen(buf);
->         if (!len)
->                 return -EINVAL;
 
 
 
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface"; http://man7.org/tlpi/
+--
+__________________________________________________________________________
+
+dott. Corrado Zoccolo                          mailto:czoccolo@gmail.com
+PhD - Department of Computer Science - University of Pisa, Italy
+--------------------------------------------------------------------------
+The self-confidence of a warrior is not the self-confidence of the average
+man. The average man seeks certainty in the eyes of the onlooker and calls
+that self-confidence. The warrior seeks impeccability in his own eyes and
+calls that humbleness.
+                               Tales of Power - C. Castaneda
