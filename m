@@ -1,44 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754660Ab2GROZr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 10:25:47 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54258 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754618Ab2GROZq (ORCPT
+	id S1754662Ab2GRO0x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 10:26:53 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:51425 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754618Ab2GRO0v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 10:25:46 -0400
-Message-ID: <5006C763.3030800@gmail.com>
-Date: Wed, 18 Jul 2012 22:25:39 +0800
-From: Duan Jiong <djduanjiong@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Wed, 18 Jul 2012 10:26:51 -0400
+Date: Wed, 18 Jul 2012 10:26:32 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: John Fastabend <john.r.fastabend@intel.com>
+Cc: Gao feng <gaofeng@cn.fujitsu.com>, eric.dumazet@gmail.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        davem@davemloft.net, Eric Dumazet <edumazet@google.com>,
+        "Rustad, Mark D" <mark.d.rustad@intel.com>
+Subject: Re: [PATCH v4] net: cgroup: fix access the unallocated memory in
+ netprio cgroup
+Message-ID: <20120718142632.GF25563@hmsreliant.think-freely.org>
+References: <1342079415-9631-1-git-send-email-gaofeng@cn.fujitsu.com>
+ <5005CF5D.9070905@intel.com>
+ <20120718122106.GB25563@hmsreliant.think-freely.org>
+ <5006C3CA.3010007@intel.com>
 MIME-Version: 1.0
-To: gregkh@linuxfoundation.org
-CC: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] vme_user.c: remove duplicated include
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5006C3CA.3010007@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jul 18, 2012 at 07:10:18AM -0700, John Fastabend wrote:
+> On 7/18/2012 5:21 AM, Neil Horman wrote:
+> >On Tue, Jul 17, 2012 at 01:47:25PM -0700, John Fastabend wrote:
+> >>On 7/12/2012 12:50 AM, Gao feng wrote:
+> >>>there are some out of bound accesses in netprio cgroup.
+> >>>
+> >>>now before accessing the dev->priomap.priomap array,we only check
+> >>>if the dev->priomap exist.and because we don't want to see
+> >>>additional bound checkings in fast path, so we should make sure
+> >>>that dev->priomap is null or array size of dev->priomap.priomap
+> >>>is equal to max_prioidx + 1;
+> >>>
+> >>>so in write_priomap logic,we should call extend_netdev_table when
+> >>>dev->priomap is null and dev->priomap.priomap_len < max_len.
+> >>>and in cgrp_create->update_netdev_tables logic,we should call
+> >>>extend_netdev_table only when dev->priomap exist and
+> >>>dev->priomap.priomap_len < max_len.
+> >>>
+> >>>and it's not needed to call update_netdev_tables in write_priomap,
+> >>>we can only allocate the net device's priomap which we change through
+> >>>net_prio.ifpriomap.
+> >>>
+> >>>this patch also add a return value for update_netdev_tables &
+> >>>extend_netdev_table, so when new_priomap is allocated failed,
+> >>>write_priomap will stop to access the priomap,and return -ENOMEM
+> >>>back to the userspace to tell the user what happend.
+> >>>
+> >>>Change From v3:
+> >>>1. add rtnl protect when reading max_prioidx in write_priomap.
+> >>>
+> >>>2. only call extend_netdev_table when map->priomap_len < max_len,
+> >>>    this will make sure array size of dev->map->priomap always
+> >>>    bigger than any prioidx.
+> >>>
+> >>>3. add a function write_update_netdev_table to make codes clear.
+> >>>
+> >>>Change From v2:
+> >>>1. protect extend_netdev_table by RTNL.
+> >>>2. when extend_netdev_table failed,call dev_put to reduce device's refcount.
+> >>>
+> >>>Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+> >>>Cc: Neil Horman <nhorman@tuxdriver.com>
+> >>>Cc: Eric Dumazet <edumazet@google.com>
+> >>>---
+> >>>  net/core/netprio_cgroup.c |   71 ++++++++++++++++++++++++++++++++++-----------
+> >>>  1 files changed, 54 insertions(+), 17 deletions(-)
+> >>>
+> >>
+> >>[...]
+> >>
+> >>>+
+> >>>+static int update_netdev_tables(void)
+> >>>+{
+> >>>+	int ret = 0;
+> >>>  	struct net_device *dev;
+> >>>-	u32 max_len = atomic_read(&max_prioidx) + 1;
+> >>>+	u32 max_len;
+> >>>  	struct netprio_map *map;
+> >>
+> >>
+> >>need to check if net subsystem is initialized before we try
+> >>to use it here...
+> >>
+> >>	if (some_check)     -> need to lookup what this check is
+> >>		return ret;
+> >>
+> >>>
+> >>>  	rtnl_lock();
+> >>>+	max_len = atomic_read(&max_prioidx) + 1;
+> >>>  	for_each_netdev(&init_net, dev) {
+> >>>  		map = rtnl_dereference(dev->priomap);
+> >>>-		if ((!map) ||
+> >>>-		    (map->priomap_len < max_len))
+> >>>-			extend_netdev_table(dev, max_len);
+> >>>+		/*
+> >>>+		 * don't allocate priomap if we didn't
+> >>>+		 * change net_prio.ifpriomap (map == NULL),
+> >>>+		 * this will speed up skb_update_prio.
+> >>>+		 */
+> >>>+		if (map && map->priomap_len < max_len) {
+> >>>+			ret = extend_netdev_table(dev, max_len);
+> >>>+			if (ret < 0)
+> >>>+				break;
+> >>>+		}
+> >>>  	}
+> >>>  	rtnl_unlock();
+> >>>+	return ret;
+> >>>  }
+> >>>
+> >>>  static struct cgroup_subsys_state *cgrp_create(struct cgroup *cgrp)
+> >>>  {
+> >>>  	struct cgroup_netprio_state *cs;
+> >>>-	int ret;
+> >>>+	int ret = -EINVAL;
+> >>>
+> >>>  	cs = kzalloc(sizeof(*cs), GFP_KERNEL);
+> >>>  	if (!cs)
+> >>>  		return ERR_PTR(-ENOMEM);
+> >>>
+> >>>-	if (cgrp->parent && cgrp_netprio_state(cgrp->parent)->prioidx) {
+> >>>-		kfree(cs);
+> >>>-		return ERR_PTR(-EINVAL);
+> >>>-	}
+> >>>+	if (cgrp->parent && cgrp_netprio_state(cgrp->parent)->prioidx)
+> >>>+		goto out;
+> >>>
+> >>>  	ret = get_prioidx(&cs->prioidx);
+> >>>-	if (ret != 0) {
+> >>>+	if (ret < 0) {
+> >>>  		pr_warn("No space in priority index array\n");
+> >>>-		kfree(cs);
+> >>>-		return ERR_PTR(ret);
+> >>>+		goto out;
+> >>>+	}
+> >>>+
+> >>>+	ret = update_netdev_tables();
+> >>>+	if (ret < 0) {
+> >>>+		put_prioidx(cs->prioidx);
+> >>>+		goto out;
+> >>>  	}
+> >>
+> >>Gao,
+> >>
+> >>This introduces a null ptr dereference when netprio_cgroup is built
+> >>into the kernel because update_netdev_tables() depends on init_net.
+> >>However cgrp_create is being called by cgroup_init before
+> >>do_initcalls() is called and before net_dev_init().
+> >>
+> >>.John
+> >>
+> >Not sure I follow here John.  Shouldn't init_net be initialized prior to any
+> >network devices getting registered?  In other words, shouldn't for_each_netdev
+> >just result in zero iterations through the loop?
+> >Neil
+> >
+> 
+> init_net _is_ initialized prior to any network devices getting
+> registered but not before cgrp_create called via cgroup_init.
+> 
+> #define for_each_netdev(net, d)         \
+>                 list_for_each_entry(d, &(net)->dev_base_head, dev_list)
+> 
+> but dev_base_head is zeroed at this time. In netdev_init we have,
+> 
+>         INIT_LIST_HEAD(&net->dev_base_head);
+> 
+> but we haven't got that far yet because cgroup_init is called
+> before do_initcalls().
+> 
+ok, I see that, and it makes sense, but at this point I'm more concerned with
+cgroups getting initalized twice.  The early_init flag is clear in the
+cgroup_subsystem for netprio, so we really shouldn't be getting initalized from
+cgroup_init.  We should be getting initalized from the module_init() call that
+we register
+Neil
 
-Signed-off-by: Duan Jiong <djduanjiong@gmail.com>
----
- drivers/staging/vme/devices/vme_user.c |    1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/drivers/staging/vme/devices/vme_user.c b/drivers/staging/vme/devices/vme_user.c
-index e24a6f9..530e7c6 100644
---- a/drivers/staging/vme/devices/vme_user.c
-+++ b/drivers/staging/vme/devices/vme_user.c
-@@ -31,7 +31,6 @@
- #include <linux/slab.h>
- #include <linux/spinlock.h>
- #include <linux/syscalls.h>
--#include <linux/mutex.h>
- #include <linux/types.h>
- 
- #include <linux/io.h>
--- 
-1.7.9.5
-
+> 
+> 
+> 
+> 
