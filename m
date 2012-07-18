@@ -1,62 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754069Ab2GRLnb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 07:43:31 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:36314 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751954Ab2GRLn3 (ORCPT
+	id S1754093Ab2GRLpJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 07:45:09 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:63221 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751954Ab2GRLpH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 07:43:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120718092252.GD5006@linux.vnet.ibm.com>
-References: <CACV3sbL2gRjoFi8yyUW6Bu2ZZ4PW+ytZsfx_65KA8s_5DEB+ZQ@mail.gmail.com>
-	<20120718092252.GD5006@linux.vnet.ibm.com>
-Date: Wed, 18 Jul 2012 19:43:29 +0800
-Message-ID: <CACV3sbKNmeKqvroYp4C=gna7ht4dvYmrCNA7q9Sa0GfVjx7F_A@mail.gmail.com>
-Subject: Re: [PATCH] uprobe: fix misleading log entry
-From: Jovi Zhang <bookjovi@gmail.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 18 Jul 2012 07:45:07 -0400
+From: Toshiaki Yamane <yamanetoshi@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Einon <mark.einon@gmail.com>, Joe Perches <joe@perches.com>,
+        linux-kernel@vger.kernel.org
+Cc: Toshiaki Yamane <yamanetoshi@gmail.com>
+Subject: [PATCH] staging/et131x: fix checkpatch warnings
+Date: Wed, 18 Jul 2012 20:44:58 +0900
+Message-Id: <1342611898-7951-1-git-send-email-yamanetoshi@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1342442513-10488-1-git-send-email-yamanetoshi@gmail.com>
+References: <1342442513-10488-1-git-send-email-yamanetoshi@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 18, 2012 at 5:22 PM, Srikar Dronamraju
-<srikar@linux.vnet.ibm.com> wrote:
-> * Jovi Zhang <bookjovi@gmail.com> [2012-07-18 11:08:42]:
->
->> From 68232ef2decae95b807f2f3763e8ea99c1a3b2ae Mon Sep 17 00:00:00 2001
->> From: Jovi Zhang <bookjovi@gmail.com>
->> Date: Wed, 18 Jul 2012 17:51:26 +0800
->> Subject: [PATCH] uprobe: fix misleading log entry
->>
->> There don't have any 'r' prefix in uprobe event naming, remove it.
->>
->> Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
->> ---
->>  kernel/trace/trace_uprobe.c |    2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
->> index cf382de..852a584 100644
->> --- a/kernel/trace/trace_uprobe.c
->> +++ b/kernel/trace/trace_uprobe.c
->> @@ -191,7 +191,7 @@ static int create_trace_uprobe(int argc, char **argv)
->>       if (argv[0][0] == '-')
->>               is_delete = true;
->>       else if (argv[0][0] != 'p') {
->> -             pr_info("Probe definition must be started with 'p', 'r' or" " '-'.\n");
->> +             pr_info("Probe definition must be started with 'p' or '-'.\n");
->>               return -EINVAL;
->>       }
->>
->
-> Yes, uprobes doesnt support return probes. So we should not have
-> mentioned about r.
-Hmm, Does this have specific reason? or just not implemented?
+The below checkpatch warns was fixed,
 
->
-> Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
->
+drivers/staging/et131x/et131x.c:2556: WARNING: Prefer pr_info(... to printk(KERN_INFO, ...
+drivers/staging/et131x/et131x.c:2577: WARNING: Prefer pr_info(... to printk(KERN_INFO, ...
+drivers/staging/et131x/et131x.c:5189: WARNING: Prefer pr_info(... to printk(KERN_INFO, ...
+
+And fixed below,
+-converted printk to netdev_info
+-added pr_fmt
+
+Signed-off-by: Toshiaki Yamane <yamanetoshi@gmail.com>
+---
+ drivers/staging/et131x/et131x.c |   12 +++++++-----
+ 1 files changed, 7 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
+index ac6897b..8ed822f 100644
+--- a/drivers/staging/et131x/et131x.c
++++ b/drivers/staging/et131x/et131x.c
+@@ -53,6 +53,8 @@
+  *
+  */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/pci.h>
+ #include <linux/init.h>
+ #include <linux/module.h>
+@@ -2553,8 +2555,8 @@ static int et131x_rx_dma_memory_alloc(struct et131x_adapter *adapter)
+ 			  "Cannot alloc memory for Packet Status Ring\n");
+ 		return -ENOMEM;
+ 	}
+-	printk(KERN_INFO "Packet Status Ring %lx\n",
+-	    (unsigned long) rx_ring->ps_ring_physaddr);
++	pr_info("Packet Status Ring %lx\n",
++		(unsigned long) rx_ring->ps_ring_physaddr);
+ 
+ 	/*
+ 	 * NOTE : dma_alloc_coherent(), used above to alloc DMA regions,
+@@ -2574,7 +2576,7 @@ static int et131x_rx_dma_memory_alloc(struct et131x_adapter *adapter)
+ 		return -ENOMEM;
+ 	}
+ 	rx_ring->num_rfd = NIC_DEFAULT_NUM_RFD;
+-	printk(KERN_INFO "PRS %lx\n", (unsigned long)rx_ring->rx_status_bus);
++	pr_info("PRS %lx\n", (unsigned long)rx_ring->rx_status_bus);
+ 
+ 	/* Recv
+ 	 * kmem_cache_create initializes a lookaside list. After successful
+@@ -5186,8 +5188,8 @@ static int et131x_set_mac_addr(struct net_device *netdev, void *new_mac)
+ 
+ 	memcpy(netdev->dev_addr, address->sa_data, netdev->addr_len);
+ 
+-	printk(KERN_INFO "%s: Setting MAC address to %pM\n",
+-			netdev->name, netdev->dev_addr);
++	netdev_info(netdev, "Setting MAC address to %pM\n",
++		    netdev->dev_addr);
+ 
+ 	/* Free Rx DMA memory */
+ 	et131x_adapter_memory_free(adapter);
+-- 
+1.7.5.4
+
