@@ -1,80 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755845Ab2GRTpP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 15:45:15 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:46795 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753290Ab2GRTpM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 15:45:12 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Borislav Petkov <bp@amd64.org>
-Subject: Re: [PATCH] powernow-k8: Fixup missing _PSS objects message
-Date: Wed, 18 Jul 2012 21:50:51 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: cpufreq@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-References: <1342624043-29763-1-git-send-email-bp@amd64.org>
-In-Reply-To: <1342624043-29763-1-git-send-email-bp@amd64.org>
+	id S1755841Ab2GRTzs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 15:55:48 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:37948 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753351Ab2GRTzp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 15:55:45 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207182150.51441.rjw@sisk.pl>
+In-Reply-To: <50071014.6040301@redhat.com>
+References: <CAOesGMiCexiqA3L5GdNgyHhSD-5Bpqbb02YJrZPr8yMYa0afjA@mail.gmail.com>
+ <201207071927.13135.arnd@arndb.de> <20120710071023.GA10456@gmail.com>
+ <20120710101018.GE15120@arm.com> <yw1x8vekd309.fsf@unicorn.mansr.com>
+ <CA+55aFxL6uEre-c=JrhPfts=7BGmhb2Js1c2ZGkTH8F=+rEWDg@mail.gmail.com>
+ <20120717221839.GA4856@arm.com> <1342564536.1898.1.camel@joe2Laptop>
+ <5006207D.1010708@jonmasters.org> <20120718102712.46b8d7ff@adria.ausil.us>
+ <20120718171426.GA4240@arm.com> <50071014.6040301@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 18 Jul 2012 12:55:24 -0700
+X-Google-Sender-Auth: oKDsxZzdb591jgFZDHd7_YrJYWQ
+Message-ID: <CA+55aFwr47UBoi8=i8523KnZQzOt0WB_MsOTpzVOKpsJo7PsPg@mail.gmail.com>
+Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
+To: Jon Masters <jcm@redhat.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Dennis Gilmore <dennis@ausil.us>, Joe Perches <joe@perches.com>,
+        =?ISO-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>,
+        Ingo Molnar <mingo@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, July 18, 2012, Borislav Petkov wrote:
-> From: Borislav Petkov <borislav.petkov@amd.com>
-> 
-> _PSS objects can also be missing if Cool'N'Quiet is disabled in the
-> BIOS. Add that to the FW_BUG message for the user to try before updating
-> her BIOS. Fix formatting while at it.
-> 
-> Acked-by: Mark Langsdorf <mark.langsdorf@amd.com>
-> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+On Wed, Jul 18, 2012 at 12:35 PM, Jon Masters <jcm@redhat.com> wrote:
+>
+> So we should think with a
+> mindset of 2-3 years from now rather than where we were yesterday.
 
-I will take this, but it's kind of too late for v3.6.
+Why do you think aarch64 would be a better name 2-3 years from now?
 
-Thanks,
-Rafael
+And why do you think ARM management magically has good taste? They got
+the PAE thing wrong too. They literally copied everything Intel did
+*wrong* in this area, and we know it was wrong even with *more* than
+2-3 years of hind-sight.
 
+ "the one who does not remember history is bound to live through it again"
+    - Santayana
 
-> ---
->  drivers/cpufreq/powernow-k8.c | 11 +++++++----
->  1 file changed, 7 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
-> index c0e816468e30..33f17c4a1342 100644
-> --- a/drivers/cpufreq/powernow-k8.c
-> +++ b/drivers/cpufreq/powernow-k8.c
-> @@ -1265,12 +1265,15 @@ static void __cpuinit powernowk8_cpu_init_on_cpu(void *_init_on_cpu)
->  	init_on_cpu->rc = 0;
->  }
->  
-> +static const char missing_pss_msg[] =
-> +	KERN_ERR
-> +	FW_BUG PFX "No compatible ACPI _PSS objects found.\n"
-> +	FW_BUG PFX "First, make sure Cool'N'Quiet is enabled in the BIOS.\n"
-> +	FW_BUG PFX "If that doesn't help, try upgrading your BIOS.\n";
-> +
->  /* per CPU init entry point to the driver */
->  static int __cpuinit powernowk8_cpu_init(struct cpufreq_policy *pol)
->  {
-> -	static const char ACPI_PSS_BIOS_BUG_MSG[] =
-> -		KERN_ERR FW_BUG PFX "No compatible ACPI _PSS objects found.\n"
-> -		FW_BUG PFX "Try again with latest BIOS.\n";
->  	struct powernow_k8_data *data;
->  	struct init_on_cpu init_on_cpu;
->  	int rc;
-> @@ -1298,7 +1301,7 @@ static int __cpuinit powernowk8_cpu_init(struct cpufreq_policy *pol)
->  		 * an UP version, and is deprecated by AMD.
->  		 */
->  		if (num_online_cpus() != 1) {
-> -			printk_once(ACPI_PSS_BIOS_BUG_MSG);
-> +			printk_once(missing_pss_msg);
->  			goto err_out;
->  		}
->  		if (pol->cpu != 0) {
-> 
+Seriously. We've gone through exactly this on the x86 side. Your "I'm
+sure it will be better in 2-3 years" has nothing to back it up. And
+no, stupid marketing decisions by companies do *not* suddenly turn out
+to be smart things a few years later.
 
+              Linus
