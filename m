@@ -1,192 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754850Ab2GRPXV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 11:23:21 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:36719 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752626Ab2GRPXS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 11:23:18 -0400
-Date: Wed, 18 Jul 2012 12:23:07 -0300
-From: Gustavo Padovan <gustavo@padovan.org>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull request: bluetooth-next 2012-07-18
-Message-ID: <20120718152307.GC19582@joana>
-Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
-	linville@tuxdriver.com, linux-wireless@vger.kernel.org,
-	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mP3DRpeJDSE+ciuQ"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754883Ab2GRP0L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 11:26:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38956 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751687Ab2GRP0J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 11:26:09 -0400
+Message-ID: <1342625061.3295.5.camel@bandura>
+Subject: Re: [PATCH] uprobe: fix misleading log entry
+From: Anton Arapov <anton@redhat.com>
+To: Jovi Zhang <bookjovi@gmail.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
+Date: Wed, 18 Jul 2012 17:24:21 +0200
+In-Reply-To: <CACV3sbKNmeKqvroYp4C=gna7ht4dvYmrCNA7q9Sa0GfVjx7F_A@mail.gmail.com>
+References: <CACV3sbL2gRjoFi8yyUW6Bu2ZZ4PW+ytZsfx_65KA8s_5DEB+ZQ@mail.gmail.com>
+	 <20120718092252.GD5006@linux.vnet.ibm.com>
+	 <CACV3sbKNmeKqvroYp4C=gna7ht4dvYmrCNA7q9Sa0GfVjx7F_A@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2012-07-18 at 19:43 +0800, Jovi Zhang wrote:
+> On Wed, Jul 18, 2012 at 5:22 PM, Srikar Dronamraju
+> <srikar@linux.vnet.ibm.com> wrote:
+> > * Jovi Zhang <bookjovi@gmail.com> [2012-07-18 11:08:42]:
+> >
+> >> From 68232ef2decae95b807f2f3763e8ea99c1a3b2ae Mon Sep 17 00:00:00 2001
+> >> From: Jovi Zhang <bookjovi@gmail.com>
+> >> Date: Wed, 18 Jul 2012 17:51:26 +0800
+> >> Subject: [PATCH] uprobe: fix misleading log entry
+> >>
+> >> There don't have any 'r' prefix in uprobe event naming, remove it.
+> >>
+> >> Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
+> >> ---
+> >>  kernel/trace/trace_uprobe.c |    2 +-
+> >>  1 file changed, 1 insertion(+), 1 deletion(-)
+> >>
+> >> diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+> >> index cf382de..852a584 100644
+> >> --- a/kernel/trace/trace_uprobe.c
+> >> +++ b/kernel/trace/trace_uprobe.c
+> >> @@ -191,7 +191,7 @@ static int create_trace_uprobe(int argc, char **argv)
+> >>       if (argv[0][0] == '-')
+> >>               is_delete = true;
+> >>       else if (argv[0][0] != 'p') {
+> >> -             pr_info("Probe definition must be started with 'p', 'r' or" " '-'.\n");
+> >> +             pr_info("Probe definition must be started with 'p' or '-'.\n");
+> >>               return -EINVAL;
+> >>       }
+> >>
+> >
+> > Yes, uprobes doesnt support return probes. So we should not have
+> > mentioned about r.
+> Hmm, Does this have specific reason? or just not implemented?
 
---mP3DRpeJDSE+ciuQ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+It is not implemented. I'm slowly(very) moving towards it. You are
+welcome to take a look.
+  https://github.com/arapov/linux-aa/commits/uretprobes
 
-Hi John,
+Anton.
 
-This is my last pull towards 3.6, the biggest thing here is the new 3-wire UART
-Bluetooth driver by Johan Hedberg. The rest is just fixes and clean ups.
 
-Please pull or let me know of any problems. Thanks!
-
-	Gustavo
-
----
-The following changes since commit ea1e76a3f92f8565d395c549b9ca836c7eaa44b9:
-
-  Bluetooth: btmrvl: Do not send vendor events to bluetooth stack (2012-06-19 00:19:11 -0300)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next master
-
-for you to fetch changes up to e0482103c22957b413db4c4ba35eca3b1e99751d:
-
-  Bluetooth: Introduce a flags variable to Three-wire UART state (2012-07-17 14:49:24 -0300)
-
-----------------------------------------------------------------
-Andre Guedes (4):
-      Bluetooth: Remove magic value in disconnect mgmt handler
-      Bluetooth: Use GFP_KERNEL in mgmt_handlers
-      Bluetooth: Use GFP_KERNEL in mgmt_pending_add
-      Bluetooth: Use GFP_KERNEL in mgmt events functions
-
-Andrei Emeltchenko (20):
-      Bluetooth: Use standard HCI cmd timeout for RESET
-      Bluetooth: Update HCI timeouts constants to use msecs_to_jiffies
-      Bluetooth: Add opcode to error message
-      Bluetooth: Correct debug print specifier for u16 objects
-      Bluetooth: Fix not setting HCI_RESET flag for AMP
-      Bluetooth: Fix compile warnings in mgmt
-      Bluetooth: Use AUTO_OFF constant in jiffies
-      Bluetooth: Improve debugging messages for hci_conn
-      Bluetooth: Fix warning: using int as NULL pointer
-      Bluetooth: Route traffic only through BR/EDR controller
-      Bluetooth: bluecard_cs: Shorten scope for iobase
-      Bluetooth: Do not auto off AMP controller
-      Bluetooth: btmrvl: trivial style fixes
-      Bluetooth: debug: Add printing num of cmds queued
-      Bluetooth: debug: Correct types specifiers for L2CAP
-      Bluetooth: debug: Print CID and PSM in hex format
-      Bluetooth: debug: Add debug to l2cap_security_cfm
-      Bluetooth: debug: Use standard hex object specifiers in hci_event
-      Bluetooth: debug: Print l2cap_chan refcount
-      Bluetooth: debug: Print amp_mgr refcnt
-
-Devendra Naga (1):
-      Bluetooth: cleanup dtl1_config
-
-Gustavo Padovan (2):
-      Merge branch 'for-upstream' of git://git.kernel.org/.../bluetooth/bluetooth
-      Merge branch 'for-upstream' of git://git.kernel.org/.../bluetooth/bluetooth
-
-Jaganath Kanakkassery (1):
-      Bluetooth: Refactor PIN code rejection to use user_pairing_resp()
-
-Jefferson Delfes (1):
-      Bluetooth: Fix flags of mgmt_device_found event
-
-Johan Hedberg (19):
-      Bluetooth: Change page scan interval in fast connectable mode
-      Bluetooth: Initial skeleton for Three-wire UART (H5) support
-      Bluetooth: Add basic state tracking to Three-wire UART driver
-      Bluetooth: Add initial reliable packet support for Three-wire UART
-      Bluetooth: Add basic packet parsing to Three-wire UART driver
-      Bluetooth: Add initial packet sending support to Three-wire UART
-      Bluetooth: Add Three-wire header value convenience macros
-      Bluetooth: Fix/implement Three-wire reliable packet sending
-      Bluetooth: Add support for Three-wire Link Control packets
-      Bluetooth: Simplify hci_uart_tty_close logic
-      Bluetooth: Add delayed init sequence support for UART controllers
-      Bluetooth: Use delayed init for Three-wire UART
-      Bluetooth: Improve rx debug logs for Three-wire UART
-      Bluetooth: Add initial sleep support to Three-wire UART
-      Bluetooth: Add initialization tracking to HCI Three-wire driver
-      Bluetooth: Implement proper low-power support for Three-wire UART
-      Bluetooth: Remove unnecessary h5_build_pkt function
-      Bluetooth: Improve Three-wire UART configuration handling
-      Bluetooth: Introduce a flags variable to Three-wire UART state
-
-Mat Martineau (1):
-      Bluetooth: Use tx window from config response for ack timing
-
- drivers/bluetooth/Kconfig         |   12 +
- drivers/bluetooth/Makefile        |    1 +
- drivers/bluetooth/bluecard_cs.c   |   16 +-
- drivers/bluetooth/bpa10x.c        |    2 +-
- drivers/bluetooth/bt3c_cs.c       |    6 +-
- drivers/bluetooth/btmrvl_main.c   |    8 +-
- drivers/bluetooth/btmrvl_sdio.c   |    6 +-
- drivers/bluetooth/btuart_cs.c     |    6 +-
- drivers/bluetooth/btusb.c         |   14 +-
- drivers/bluetooth/dtl1_cs.c       |   22 +-
- drivers/bluetooth/hci_bcsp.c      |    2 +-
- drivers/bluetooth/hci_h4.c        |    2 +-
- drivers/bluetooth/hci_h5.c        |  747 +++++++++++++
- drivers/bluetooth/hci_ldisc.c     |   68 +-
- drivers/bluetooth/hci_ll.c        |    6 +-
- drivers/bluetooth/hci_uart.h      |   10 +
- include/net/bluetooth/a2mp.h      |  126 +++
- include/net/bluetooth/bluetooth.h |   39 +-
- include/net/bluetooth/hci.h       |  110 +-
- include/net/bluetooth/hci_core.h  |   37 +-
- include/net/bluetooth/l2cap.h     |  210 +---
- include/net/bluetooth/mgmt.h      |    2 +-
- net/bluetooth/Makefile            |    3 +-
- net/bluetooth/a2mp.c              |  568 ++++++++++
- net/bluetooth/af_bluetooth.c      |   14 +-
- net/bluetooth/bnep/core.c         |   21 +-
- net/bluetooth/bnep/netdev.c       |   16 +-
- net/bluetooth/bnep/sock.c         |   18 +-
- net/bluetooth/hci_conn.c          |  143 ++-
- net/bluetooth/hci_core.c          |  265 +++--
- net/bluetooth/hci_event.c         |  479 ++++-----
- net/bluetooth/hci_sock.c          |   59 +-
- net/bluetooth/hci_sysfs.c         |   99 +-
- net/bluetooth/hidp/core.c         |   26 +-
- net/bluetooth/hidp/sock.c         |   16 +-
- net/bluetooth/l2cap_core.c        | 2248 ++++++++++++++++++++++++---------------
- net/bluetooth/l2cap_sock.c        |  130 ++-
- net/bluetooth/lib.c               |    7 +-
- net/bluetooth/mgmt.c              |  131 ++-
- net/bluetooth/rfcomm/core.c       |   32 +-
- net/bluetooth/rfcomm/sock.c       |   21 +-
- net/bluetooth/rfcomm/tty.c        |    9 +-
- net/bluetooth/sco.c               |   43 +-
- net/bluetooth/smp.c               |    7 +-
- 44 files changed, 3868 insertions(+), 1939 deletions(-)
- create mode 100644 drivers/bluetooth/hci_h5.c
- create mode 100644 include/net/bluetooth/a2mp.h
- create mode 100644 net/bluetooth/a2mp.c
-
---mP3DRpeJDSE+ciuQ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQBtTbAAoJEPs3PUX4s20om0QP/irr8kduPL2zhC4bC4fe4vJy
-HJu+hjPazfwQGOmwRSjjp5BlXq33NFo+43PgTeq+E4uWVdL7G9fNWU2s5Eeqcy6P
-Dp+LxIhyQSyXYWF4WbN0KSNPzkk0VmzHnrTjgwheQtP3OPTd8/hh/InHTQhaexF5
-EPkz+l/baCw1J9jjjjgD5JdRdXYWkYFXAbD4W5qCYk0CHjeJK2YfvzgD6Se4criI
-7oLSup/81D4xB2B657hPzY3xEmz4QjFOwXo291MJnOE/PbYS7j9rdS1vn57egUDH
-TeGCZJj735FZ1kwxoK0I18a5nnBG40fWnd3Vqj41fe/hpsSnKcam5wOS82jqYABB
-OvPzUbHG7gYJwbC227wSoPkChVTGJZZa2UEaJV3iJ4Nr5xIO4kGr0AwswGTR00pp
-yMlWEqi72mZEFRyoTuufC+4EU/50/oJ4rIqAT/msWmGnwPu19+KyICFwos/uglXn
-9vWCx5NSeBQPAGmtrX1yVPyILhvnTxMUGCX89KaO7lpeEsBPvgLM3dOz2VFxHsL4
-p/9sdFgV7ojAzT8Bdwcore8LctQESlEb/H6gYQieFYHGILlRrcfnsycJIQTzSYM9
-cVyi6GO6p5Mr5a9tTj1PnEFqK4W4a3fNkp0RK1amXW3xpGmaZqgxXZuQC893HJDk
-3DAvpRyFxWwwP6IpDUmH
-=516v
------END PGP SIGNATURE-----
-
---mP3DRpeJDSE+ciuQ--
