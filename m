@@ -1,44 +1,458 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754732Ab2GROdx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 10:33:53 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:41946 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753179Ab2GROdr (ORCPT
+	id S1754763Ab2GROeR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 10:34:17 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:37363 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753179Ab2GROeK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 10:33:47 -0400
-Message-ID: <5006C942.2020800@gmail.com>
-Date: Wed, 18 Jul 2012 22:33:38 +0800
-From: Duan Jiong <djduanjiong@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Wed, 18 Jul 2012 10:34:10 -0400
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        "a.zummo@towertech.it" <a.zummo@towertech.it>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "Girdwood, Liam" <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>, Bryan Wu <bryan.wu@canonical.com>
+Subject: [PATCH 4/6] rtc: add new lp8788 rtc driver
+Thread-Topic: [PATCH 4/6] rtc: add new lp8788 rtc driver
+Thread-Index: Ac1k8lBDHRbiHRrcQJWt3/o+XZLKMw==
+Date: Wed, 18 Jul 2012 14:33:36 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998FD7C9@DQHE02.ent.ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.87.177.86]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: gregkh@linuxfoundation.org, alan@linux.intel.com
-CC: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] sep_crypto.c: remove duplicated include
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+TI LP8788 PMU has the RTC function.
 
-Signed-off-by: Duan Jiong <djduanjiong@gmail.com>
+Real time clock with programmable alarm is provided.
+The Alarm can be selected in the platform side.
+RTC alarm interrupts are passed from lp8788 irq thread and
+each interrupt is handled in the rtc driver.
+
+Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
 ---
- drivers/staging/sep/sep_crypto.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/rtc/Kconfig      |    6 +
+ drivers/rtc/Makefile     |    1 +
+ drivers/rtc/rtc-lp8788.c |  365 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 372 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/rtc/rtc-lp8788.c
 
-diff --git a/drivers/staging/sep/sep_crypto.c b/drivers/staging/sep/sep_crypto.c
-index 1cc790e..1d97e5a 100644
---- a/drivers/staging/sep/sep_crypto.c
-+++ b/drivers/staging/sep/sep_crypto.c
-@@ -44,7 +44,6 @@
- #include <linux/poll.h>
- #include <linux/wait.h>
- #include <linux/pci.h>
--#include <linux/pci.h>
- #include <linux/pm_runtime.h>
- #include <linux/err.h>
- #include <linux/device.h>
+diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+index fabc99a..c2b26f7 100644
+--- a/drivers/rtc/Kconfig
++++ b/drivers/rtc/Kconfig
+@@ -194,6 +194,12 @@ config RTC_DRV_DS3232
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called rtc-ds3232.
+ 
++config RTC_DRV_LP8788
++	tristate "TI LP8788 RTC driver"
++	depends on MFD_LP8788
++	help
++	  Say Y to enable support for the LP8788 RTC/ALARM driver.
++
+ config RTC_DRV_MAX6900
+ 	tristate "Maxim MAX6900"
+ 	help
+diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
+index 0d5b2b6..eba0393 100644
+--- a/drivers/rtc/Makefile
++++ b/drivers/rtc/Makefile
+@@ -54,6 +54,7 @@ obj-$(CONFIG_RTC_DRV_IMXDI)	+= rtc-imxdi.o
+ obj-$(CONFIG_RTC_DRV_ISL1208)	+= rtc-isl1208.o
+ obj-$(CONFIG_RTC_DRV_ISL12022)	+= rtc-isl12022.o
+ obj-$(CONFIG_RTC_DRV_JZ4740)	+= rtc-jz4740.o
++obj-$(CONFIG_RTC_DRV_LP8788)	+= rtc-lp8788.o
+ obj-$(CONFIG_RTC_DRV_LPC32XX)	+= rtc-lpc32xx.o
+ obj-$(CONFIG_RTC_DRV_LOONGSON1)	+= rtc-ls1x.o
+ obj-$(CONFIG_RTC_DRV_M41T80)	+= rtc-m41t80.o
+diff --git a/drivers/rtc/rtc-lp8788.c b/drivers/rtc/rtc-lp8788.c
+new file mode 100644
+index 0000000..dd96866
+--- /dev/null
++++ b/drivers/rtc/rtc-lp8788.c
+@@ -0,0 +1,365 @@
++/*
++ * TI LP8788 MFD - rtc driver
++ *
++ * Copyright 2012 Texas Instruments
++ *
++ * Author: Milo(Woogyom) Kim <milo.kim@ti.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/err.h>
++#include <linux/platform_device.h>
++#include <linux/rtc.h>
++#include <linux/mfd/lp8788.h>
++
++/* register address */
++#define LP8788_INTEN_3			0x05
++#define LP8788_RTC_UNLOCK		0x64
++#define LP8788_RTC_SEC			0x70
++#define LP8788_ALM1_SEC			0x77
++#define LP8788_ALM1_EN			0x7D
++#define LP8788_ALM2_SEC			0x7E
++#define LP8788_ALM2_EN			0x84
++
++/* mask/shift bits */
++#define LP8788_INT_RTC_ALM1_M		BIT(1)	/* Addr 05h */
++#define LP8788_INT_RTC_ALM1_S		1
++#define LP8788_INT_RTC_ALM2_M		BIT(2)	/* Addr 05h */
++#define LP8788_INT_RTC_ALM2_S		2
++#define LP8788_ALM_EN_M			BIT(7)	/* Addr 7Dh or 84h */
++#define LP8788_ALM_EN_S			7
++
++#define DEFAULT_ALARM_SEL		LP8788_ALARM_1
++#define LP8788_MONTH_OFFSET		1
++#define LP8788_BASE_YEAR		2000
++#define MAX_WDAY_BITS			7
++#define RTC_UNLOCK			0x1
++#define RTC_LATCH			0x2
++#define ALARM_IRQ_FLAG			(RTC_IRQF | RTC_AF)
++
++enum lp8788_time {
++	LPTIME_SEC,
++	LPTIME_MIN,
++	LPTIME_HOUR,
++	LPTIME_MDAY,
++	LPTIME_MON,
++	LPTIME_YEAR,
++	LPTIME_WDAY,
++	LPTIME_MAX,
++};
++
++struct lp8788_rtc {
++	struct lp8788 *lp;
++	struct rtc_device *rdev;
++	enum lp8788_alarm_sel alarm;
++	int irq;
++};
++
++static const u8 addr_alarm_sec[LP8788_ALARM_MAX] = {
++	LP8788_ALM1_SEC,
++	LP8788_ALM2_SEC,
++};
++
++static const u8 addr_alarm_en[LP8788_ALARM_MAX] = {
++	LP8788_ALM1_EN,
++	LP8788_ALM2_EN,
++};
++
++static const u8 mask_alarm_en[LP8788_ALARM_MAX] = {
++	LP8788_INT_RTC_ALM1_M,
++	LP8788_INT_RTC_ALM2_M,
++};
++
++static const u8 shift_alarm_en[LP8788_ALARM_MAX] = {
++	LP8788_INT_RTC_ALM1_S,
++	LP8788_INT_RTC_ALM2_S,
++};
++
++static int _to_tm_wday(u8 lp8788_wday)
++{
++	int i;
++
++	if (lp8788_wday == 0)
++		return 0;
++
++	for (i = 0 ; i < MAX_WDAY_BITS ; i++) {
++		if ((lp8788_wday >> i) == 0x01)
++			break;
++	}
++
++	return i + 1;
++}
++
++static inline int _to_lp8788_wday(int tm_wday)
++{
++	return 1 << (tm_wday - 1);
++}
++
++static void lp8788_rtc_unlock(struct lp8788 *lp)
++{
++	lp8788_write_byte(lp, LP8788_RTC_UNLOCK, RTC_UNLOCK);
++	lp8788_write_byte(lp, LP8788_RTC_UNLOCK, RTC_LATCH);
++}
++
++static int lp8788_rtc_read_time(struct device *dev, struct rtc_time *tm)
++{
++	struct lp8788_rtc *rtc = dev_get_drvdata(dev);
++	struct lp8788 *lp = rtc->lp;
++	u8 data[LPTIME_MAX];
++	int ret;
++
++	lp8788_rtc_unlock(lp);
++
++	ret = lp8788_read_multi_bytes(lp, LP8788_RTC_SEC, data,	LPTIME_MAX);
++	if (ret)
++		return ret;
++
++	tm->tm_sec  = data[LPTIME_SEC];
++	tm->tm_min  = data[LPTIME_MIN];
++	tm->tm_hour = data[LPTIME_HOUR];
++	tm->tm_mday = data[LPTIME_MDAY];
++	tm->tm_mon  = data[LPTIME_MON] - LP8788_MONTH_OFFSET;
++	tm->tm_year = data[LPTIME_YEAR] + LP8788_BASE_YEAR - 1900;
++	tm->tm_wday = _to_tm_wday(data[LPTIME_WDAY]);
++
++	return 0;
++}
++
++static int lp8788_rtc_set_time(struct device *dev, struct rtc_time *tm)
++{
++	struct lp8788_rtc *rtc = dev_get_drvdata(dev);
++	struct lp8788 *lp = rtc->lp;
++	u8 data[LPTIME_MAX - 1];
++	int ret, i, year;
++
++	year = tm->tm_year + 1900 - LP8788_BASE_YEAR;
++	if (year < 0) {
++		dev_err(lp->dev, "invalid year: %d\n", year);
++		return -EINVAL;
++	}
++
++	/* because rtc weekday is a readonly register, do not update */
++	data[LPTIME_SEC]  = tm->tm_sec;
++	data[LPTIME_MIN]  = tm->tm_min;
++	data[LPTIME_HOUR] = tm->tm_hour;
++	data[LPTIME_MDAY] = tm->tm_mday;
++	data[LPTIME_MON]  = tm->tm_mon + LP8788_MONTH_OFFSET;
++	data[LPTIME_YEAR] = year;
++
++	for (i = 0 ; i < ARRAY_SIZE(data) ; i++) {
++		ret = lp8788_write_byte(lp, LP8788_RTC_SEC + i, data[i]);
++		if (ret)
++			return ret;
++	}
++
++	return 0;
++}
++
++static int lp8788_read_alarm(struct device *dev, struct rtc_wkalrm *alarm)
++{
++	struct lp8788_rtc *rtc = dev_get_drvdata(dev);
++	struct lp8788 *lp = rtc->lp;
++	struct rtc_time *tm = &alarm->time;
++	u8 addr, data[LPTIME_MAX];
++	int ret;
++
++	addr = addr_alarm_sec[rtc->alarm];
++	ret = lp8788_read_multi_bytes(lp, addr, data, LPTIME_MAX);
++	if (ret)
++		return ret;
++
++	tm->tm_sec  = data[LPTIME_SEC];
++	tm->tm_min  = data[LPTIME_MIN];
++	tm->tm_hour = data[LPTIME_HOUR];
++	tm->tm_mday = data[LPTIME_MDAY];
++	tm->tm_mon  = data[LPTIME_MON] - LP8788_MONTH_OFFSET;
++	tm->tm_year = data[LPTIME_YEAR] + LP8788_BASE_YEAR - 1900;
++	tm->tm_wday = _to_tm_wday(data[LPTIME_WDAY]);
++	alarm->enabled = data[LPTIME_WDAY] & LP8788_ALM_EN_M;
++
++	return 0;
++}
++
++static int lp8788_set_alarm(struct device *dev, struct rtc_wkalrm *alarm)
++{
++	struct lp8788_rtc *rtc = dev_get_drvdata(dev);
++	struct lp8788 *lp = rtc->lp;
++	struct rtc_time *tm = &alarm->time;
++	u8 addr, data[LPTIME_MAX];
++	int ret, i, year;
++
++	year = tm->tm_year + 1900 - LP8788_BASE_YEAR;
++	if (year < 0) {
++		dev_err(lp->dev, "invalid year: %d\n", year);
++		return -EINVAL;
++	}
++
++	data[LPTIME_SEC]  = tm->tm_sec;
++	data[LPTIME_MIN]  = tm->tm_min;
++	data[LPTIME_HOUR] = tm->tm_hour;
++	data[LPTIME_MDAY] = tm->tm_mday;
++	data[LPTIME_MON]  = tm->tm_mon + LP8788_MONTH_OFFSET;
++	data[LPTIME_YEAR] = year;
++	data[LPTIME_WDAY] = _to_lp8788_wday(tm->tm_wday);
++
++	for (i = 0 ; i < ARRAY_SIZE(data) ; i++) {
++		addr = addr_alarm_sec[rtc->alarm] + i;
++		ret = lp8788_write_byte(lp, addr, data[i]);
++		if (ret)
++			return ret;
++	}
++
++	alarm->enabled = 1;
++	addr = addr_alarm_en[rtc->alarm];
++
++	return lp8788_update_bits(lp, addr, LP8788_ALM_EN_M,
++				alarm->enabled << LP8788_ALM_EN_S);
++}
++
++static int lp8788_alarm_irq_enable(struct device *dev, unsigned int enable)
++{
++	struct lp8788_rtc *rtc = dev_get_drvdata(dev);
++	struct lp8788 *lp = rtc->lp;
++	u8 mask, shift;
++
++	mask = mask_alarm_en[rtc->alarm];
++	shift = shift_alarm_en[rtc->alarm];
++
++	return lp8788_update_bits(lp, LP8788_INTEN_3, mask, enable << shift);
++}
++
++static const struct rtc_class_ops lp8788_rtc_ops = {
++	.read_time = lp8788_rtc_read_time,
++	.set_time = lp8788_rtc_set_time,
++	.read_alarm = lp8788_read_alarm,
++	.set_alarm = lp8788_set_alarm,
++	.alarm_irq_enable = lp8788_alarm_irq_enable,
++};
++
++static int lp8788_rtc_register(struct lp8788_rtc *rtc, struct device *dev)
++{
++	rtc->rdev = rtc_device_register("lp8788_rtc", dev,
++			&lp8788_rtc_ops, THIS_MODULE);
++	if (IS_ERR(rtc->rdev)) {
++		dev_err(dev, "can not register rtc device\n");
++		return -ENODEV;
++	}
++
++	return 0;
++}
++
++static void lp8788_rtc_unregister(struct lp8788_rtc *rtc)
++{
++	if (rtc)
++		rtc_device_unregister(rtc->rdev);
++}
++
++static irqreturn_t lp8788_alarm_irq_handler(int irq, void *ptr)
++{
++	struct lp8788_rtc *rtc = ptr;
++
++	rtc_update_irq(rtc->rdev, 1, ALARM_IRQ_FLAG);
++	return IRQ_HANDLED;
++}
++
++static int lp8788_irq_register(struct platform_device *pdev,
++				struct lp8788_rtc *rtc)
++{
++	struct resource *r;
++	struct lp8788 *lp = rtc->lp;
++
++	if (!lp->pdata) {
++		dev_warn(lp->dev, "no platform data for rtc irq\n");
++		return 0;
++	}
++
++	r = platform_get_resource_byname(pdev, IORESOURCE_IRQ, LP8788_ALM_IRQ);
++	if (!r)
++		return 0;
++
++	rtc->irq = (rtc->alarm == LP8788_ALARM_1) ? r->start : r->end;
++
++	return request_threaded_irq(rtc->irq, NULL, lp8788_alarm_irq_handler,
++				0, LP8788_ALM_IRQ, rtc);
++}
++
++static void lp8788_irq_unregister(struct lp8788_rtc *rtc)
++{
++	if (rtc->irq)
++		free_irq(rtc->irq, rtc);
++}
++
++static __devinit int lp8788_rtc_probe(struct platform_device *pdev)
++{
++	struct lp8788 *lp = dev_get_drvdata(pdev->dev.parent);
++	struct device *dev = &pdev->dev;
++	struct lp8788_rtc *rtc;
++	int ret;
++
++	rtc = devm_kzalloc(lp->dev, sizeof(struct lp8788_rtc), GFP_KERNEL);
++	if (!rtc)
++		return -ENOMEM;
++
++	rtc->lp = lp;
++	rtc->alarm = lp->pdata ? lp->pdata->alarm_sel : DEFAULT_ALARM_SEL;
++	platform_set_drvdata(pdev, rtc);
++
++	device_init_wakeup(dev, 1);
++
++	ret = lp8788_rtc_register(rtc, dev);
++	if (ret) {
++		dev_err(lp->dev, "failed to register rtc device: %d\n", ret);
++		return ret;
++	}
++
++	ret = lp8788_irq_register(pdev, rtc);
++	if (ret) {
++		dev_warn(lp->dev, "failed to register rtc irq: %d\n", ret);
++		rtc->irq = 0;
++	}
++
++	return 0;
++}
++
++static int __devexit lp8788_rtc_remove(struct platform_device *pdev)
++{
++	struct lp8788_rtc *rtc = platform_get_drvdata(pdev);
++
++	lp8788_irq_unregister(rtc);
++	lp8788_rtc_unregister(rtc);
++	platform_set_drvdata(pdev, NULL);
++
++	return 0;
++}
++
++static struct platform_driver lp8788_rtc_driver = {
++	.probe = lp8788_rtc_probe,
++	.remove = __devexit_p(lp8788_rtc_remove),
++	.driver = {
++		.name = LP8788_DEV_RTC,
++		.owner = THIS_MODULE,
++	},
++};
++
++static int __init lp8788_rtc_init(void)
++{
++	return platform_driver_register(&lp8788_rtc_driver);
++}
++module_init(lp8788_rtc_init);
++
++static void __exit lp8788_rtc_exit(void)
++{
++	platform_driver_unregister(&lp8788_rtc_driver);
++}
++module_exit(lp8788_rtc_exit);
++
++MODULE_DESCRIPTION("Texas Instruments LP8788 RTC Driver");
++MODULE_AUTHOR("Milo Kim");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:lp8788-rtc");
 -- 
-1.7.9.5
+1.7.2.5
+
+
+Best Regards,
+Milo (Woogyom) Kim
 
