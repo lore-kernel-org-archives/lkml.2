@@ -1,91 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754135Ab2GRLtG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 07:49:06 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:45000 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754029Ab2GRLtC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 07:49:02 -0400
-Message-ID: <5006A2A6.8030902@linux.vnet.ibm.com>
-Date: Wed, 18 Jul 2012 17:18:54 +0530
-From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1754145Ab2GRLuO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 07:50:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10778 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751853Ab2GRLuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 07:50:12 -0400
+Date: Wed, 18 Jul 2012 14:50:05 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>, avi@redhat.com,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jan.kiszka@siemens.com
+Subject: Re: [PATCH v5 3/4] kvm: Create kvm_clear_irq()
+Message-ID: <20120718115005.GI26120@redhat.com>
+References: <1342541301.2229.125.camel@bling.home>
+ <20120717161452.GA12114@redhat.com>
+ <20120718062742.GH6479@redhat.com>
+ <20120718102029.GA4650@redhat.com>
+ <20120718102739.GB26120@redhat.com>
+ <20120718103335.GB4700@redhat.com>
+ <20120718103608.GC26120@redhat.com>
+ <20120718105105.GG4700@redhat.com>
+ <20120718105315.GF26120@redhat.com>
+ <20120718110843.GI4700@redhat.com>
 MIME-Version: 1.0
-To: Carsten Emde <C.Emde@osadl.org>
-CC: Len Brown <len.brown@intel.com>, Kevin Hilman <khilman@ti.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH 1/1] Honor state disabling in the cpuidle ladder governor
-References: <20120717185914.063547728@osadl.org> <20120717190330.700421963@osadl.org> <50065953.9040904@linux.vnet.ibm.com> <500697A9.6070101@osadl.org>
-In-Reply-To: <500697A9.6070101@osadl.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12071811-2674-0000-0000-0000054AE9FC
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120718110843.GI4700@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2012 04:32 PM, Carsten Emde wrote:
-
-> On 07/18/2012 08:36 AM, Deepthi Dharwar wrote:
->> On 07/18/2012 12:29 AM, Carsten Emde wrote:
->>
->>> There are two cpuidle governors ladder and menu. While the ladder
->>> governor is always available, if CONFIG_CPU_IDLE is selected, the
->>> menu governor additionally requires CONFIG_NO_HZ.
->>>
->>> A particular C state can be disabled by writing to the sysfs file
->>> /sys/devices/system/cpu/cpuN/cpuidle/stateN/disable, but this mechanism
->>> is only implemented in the menu governor. Thus, in a system where
->>> CONFIG_NO_HZ is not selected, the ladder governor becomes default and
->>> always will walk through all sleep states - irrespective of whether the
->>> C state was disabled via sysfs or not. The only way to select a specific
->>> C state was to write the related latency to /dev/cpu_dma_latency and
->>> keep the file open as long as this setting was required - not very
->>> practical and not suitable for setting a single core in an SMP system.
->>>
->>> With this patch, the ladder governor only will promote to the next
->>> C state, if it has not been disabled, and it will demote, if the
->>> current C state was disabled.
->>
->> Yes, I agree that currently that disabling a particular C-state
->> is not reflected in working of ladder governor. This patch is needed
->> to fix it on ladder too.
->>
->> Also wanted to clarify on the intended implementation here,
->> if there are say 5 C-states on a system, disabling 2nd
->> state would also end by disabling all the remaining 3 deeper states too
->> as ladder governor enters the lightest state first, and will only move
->> on to the next deeper state if a idle period was long enough as
->> per the implementation.
->> If one is disabling only the deepest state, then it would
->> work as intended.
-> Yes, the patch does not make the setting of the sysfs variable
-> "disable" coherent, i.e. if one is disabling a light state, then all
-> deeper states are disabled as well, but the "disable" variable does not
-> reflect it. Likewise, if one enables a deep state but a lighter state
-> still is disabled, then this has no effect.
-
-Agree, as per the ladder design.
-
-> I could implement a sanitize mechanism of the ladder governor that
-> takes care the "disable" variables of all deeper states are set to 1,
-> if a state is disabled, and those of all lighter states are set to 0,
-> if a state is enabled. Do you wish me to do that?
+On Wed, Jul 18, 2012 at 02:08:43PM +0300, Michael S. Tsirkin wrote:
+> On Wed, Jul 18, 2012 at 01:53:15PM +0300, Gleb Natapov wrote:
+> > On Wed, Jul 18, 2012 at 01:51:05PM +0300, Michael S. Tsirkin wrote:
+> > > On Wed, Jul 18, 2012 at 01:36:08PM +0300, Gleb Natapov wrote:
+> > > > On Wed, Jul 18, 2012 at 01:33:35PM +0300, Michael S. Tsirkin wrote:
+> > > > > On Wed, Jul 18, 2012 at 01:27:39PM +0300, Gleb Natapov wrote:
+> > > > > > On Wed, Jul 18, 2012 at 01:20:29PM +0300, Michael S. Tsirkin wrote:
+> > > > > > > On Wed, Jul 18, 2012 at 09:27:42AM +0300, Gleb Natapov wrote:
+> > > > > > > > On Tue, Jul 17, 2012 at 07:14:52PM +0300, Michael S. Tsirkin wrote:
+> > > > > > > > > > _Seems_ racy, or _is_ racy?  Please identify the race.
+> > > > > > > > > 
+> > > > > > > > > Look at this:
+> > > > > > > > > 
+> > > > > > > > > static inline int kvm_irq_line_state(unsigned long *irq_state,
+> > > > > > > > >                                      int irq_source_id, int level)
+> > > > > > > > > {
+> > > > > > > > >         /* Logical OR for level trig interrupt */
+> > > > > > > > >         if (level)
+> > > > > > > > >                 set_bit(irq_source_id, irq_state);
+> > > > > > > > >         else
+> > > > > > > > >                 clear_bit(irq_source_id, irq_state);
+> > > > > > > > > 
+> > > > > > > > >         return !!(*irq_state);
+> > > > > > > > > }
+> > > > > > > > > 
+> > > > > > > > > 
+> > > > > > > > > Now:
+> > > > > > > > > If other CPU changes some other bit after the atomic change,
+> > > > > > > > > it looks like !!(*irq_state) might return a stale value.
+> > > > > > > > > 
+> > > > > > > > > CPU 0 clears bit 0. CPU 1 sets bit 1. CPU 1 sets level to 1.
+> > > > > > > > > If CPU 0 sees a stale value now it will return 0 here
+> > > > > > > > > and interrupt will get cleared.
+> > > > > > > > > 
+> > > > > > > > This will hardly happen on x86 especially since bit is set with
+> > > > > > > > serialized instruction.
+> > > > > > > 
+> > > > > > > Probably. But it does make me a bit uneasy.  Why don't we pass
+> > > > > > > irq_source_id to kvm_pic_set_irq/kvm_ioapic_set_irq, and move
+> > > > > > > kvm_irq_line_state to under pic_lock/ioapic_lock?  We can then use
+> > > > > > > __set_bit/__clear_bit in kvm_irq_line_state, making the ordering simpler
+> > > > > > > and saving an atomic op in the process.
+> > > > > > > 
+> > > > > > With my patch I do not see why we can't change them to unlocked variant
+> > > > > > without moving them anywhere. The only requirement is to not use RMW
+> > > > > > sequence to set/clear bits. The ordering of setting does not matter. The
+> > > > > > ordering of reading is.
+> > > > > 
+> > > > > You want to use __set_bit/__clear_bit on the same word
+> > > > > from multiple CPUs, without locking?
+> > > > > Why won't this lose information?
+> > > > Because it is not RMW. If it is then yes, you can't do that.
+> > > 
+> > > You are saying __set_bit does not do RMW on x86? Interesting.
+> > I think it doesn't.
 > 
-
-
-No, I dont think thats necessary, current code suffices it.
-The disable flag is knob we are giving to the user . So may be just
-document  the  intended use of disable flag working
-alongside design of ladder governor.
-
-Cheers
-Deepthi
-
->     -Carsten.
+> Anywhere I can read about this?
 > 
+Well actually SDM says LOCK prefix is needed, so yes we cannot use
+__set_bit/__clear_bit without moving it under lock.
 
+> > > It's probably not a good idea to rely on this I think.
+> > > 
+> > The code is no in arch/x86 so probably no. Although it is used only on
+> > x86 (and ia64 which has broken kvm anyway).
+> 
+> Yes but exactly the reverse is documented.
+> 
+> /**
+>  * __set_bit - Set a bit in memory
+>  * @nr: the bit to set
+>  * @addr: the address to start counting from
+>  *
+>  * Unlike set_bit(), this function is non-atomic and may be reordered.
+> 
+> 
+> >>>> pls note the below
+> 
+>  * If it's called on the same region of memory simultaneously, the effect
+>  * may be that only one operation succeeds.
+> >>>> until here
+> 
+>  */
+> static inline void __set_bit(int nr, volatile unsigned long *addr)
+> {
+>         asm volatile("bts %1,%0" : ADDR : "Ir" (nr) : "memory");
+> }
+> 
+> 
+> 
+> 
+> > > > > 
+> > > > > In any case, it seems simpler and safer to do accesses under lock
+> > > > > than rely on specific use.
+> > > > > 
+> > > > > > --
+> > > > > > 			Gleb.
+> > > > 
+> > > > --
+> > > > 			Gleb.
+> > 
+> > --
+> > 			Gleb.
 
+--
+			Gleb.
