@@ -1,149 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755161Ab2GRQll (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 12:41:41 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:32161 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755101Ab2GRQlh (ORCPT
+	id S1755189Ab2GRQlu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 12:41:50 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:34529 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755084Ab2GRQlq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 12:41:37 -0400
-Message-ID: <201207181641.q6IGfbtu007230@lab-41.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Wed, 11 Jul 2012 14:08:21 -0400
-Subject: [PATCH 2/3] tilegx net driver: handle payload data not in frags
-To: "David S. Miller" <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-In-Reply-To: <201207181640.q6IGet7P007227@lab-41.internal.tilera.com>
-References: <201207181640.q6IGet7P007227@lab-41.internal.tilera.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 18 Jul 2012 12:41:46 -0400
+From: Devendra Naga <devendra.aaru@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org
+Cc: Devendra Naga <devendra.aaru@gmail.com>
+Subject: [PATCH 1/3] rtc/rtc-88pm80x: assign ret only when rtc_register_driver fails
+Date: Wed, 18 Jul 2012 22:10:36 +0530
+Message-Id: <1342629636-12745-1-git-send-email-devendra.aaru@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The original driver implementation assumed that for TSO, all the
-payload data would be in the frags.  This isn't always true; change
-the driver to support payload data at skb->data between
-"skb_transport_offset(skb) + tcp_hdrlen(skb)" and "skb->hdr_len",
-followed by the data in the frags.
+At the probe we are assigning ret to return value of PTR_ERR right
+after the rtc_register_driver, as we would have done it in the
+if (IS_ERR(ptr)) check, since the function fails and goes inside
+that case
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
 ---
- drivers/net/ethernet/tile/tilegx.c |   36 ++++++++++++++++++------------------
- 1 file changed, 18 insertions(+), 18 deletions(-)
+ drivers/rtc/rtc-88pm80x.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/net/ethernet/tile/tilegx.c b/drivers/net/ethernet/tile/tilegx.c
-index c7bde28..f78effc 100644
---- a/drivers/net/ethernet/tile/tilegx.c
-+++ b/drivers/net/ethernet/tile/tilegx.c
-@@ -1333,11 +1333,12 @@ static s64 tile_net_equeue_try_reserve(struct net_device *dev,
- static int tso_count_edescs(struct sk_buff *skb)
- {
- 	struct skb_shared_info *sh = skb_shinfo(skb);
--	unsigned int data_len = skb->data_len;
-+	unsigned int sh_len = skb_transport_offset(skb) + tcp_hdrlen(skb);
-+	unsigned int data_len = skb->data_len + skb->hdr_len - sh_len;
- 	unsigned int p_len = sh->gso_size;
- 	long f_id = -1;    /* id of the current fragment */
--	long f_size = -1;  /* size of the current fragment */
--	long f_used = -1;  /* bytes used from the current fragment */
-+	long f_size = skb->hdr_len;  /* size of the current fragment */
-+	long f_used = sh_len;  /* bytes used from the current fragment */
- 	long n;            /* size of the current piece of payload */
- 	int num_edescs = 0;
- 	int segment;
-@@ -1382,13 +1383,14 @@ static void tso_headers_prepare(struct sk_buff *skb, unsigned char *headers,
- 	struct skb_shared_info *sh = skb_shinfo(skb);
- 	struct iphdr *ih;
- 	struct tcphdr *th;
--	unsigned int data_len = skb->data_len;
-+	unsigned int sh_len = skb_transport_offset(skb) + tcp_hdrlen(skb);
-+	unsigned int data_len = skb->data_len + skb->hdr_len - sh_len;
- 	unsigned char *data = skb->data;
--	unsigned int ih_off, th_off, sh_len, p_len;
-+	unsigned int ih_off, th_off, p_len;
- 	unsigned int isum_seed, tsum_seed, id, seq;
- 	long f_id = -1;    /* id of the current fragment */
--	long f_size = -1;  /* size of the current fragment */
--	long f_used = -1;  /* bytes used from the current fragment */
-+	long f_size = skb->hdr_len;  /* size of the current fragment */
-+	long f_used = sh_len;  /* bytes used from the current fragment */
- 	long n;            /* size of the current piece of payload */
- 	int segment;
+diff --git a/drivers/rtc/rtc-88pm80x.c b/drivers/rtc/rtc-88pm80x.c
+index a2f956d..7e050b4 100644
+--- a/drivers/rtc/rtc-88pm80x.c
++++ b/drivers/rtc/rtc-88pm80x.c
+@@ -314,8 +314,8 @@ static int __devinit pm80x_rtc_probe(struct platform_device *pdev)
  
-@@ -1397,14 +1399,13 @@ static void tso_headers_prepare(struct sk_buff *skb, unsigned char *headers,
- 	th = tcp_hdr(skb);
- 	ih_off = skb_network_offset(skb);
- 	th_off = skb_transport_offset(skb);
--	sh_len = th_off + tcp_hdrlen(skb);
- 	p_len = sh->gso_size;
- 
- 	/* Set up seed values for IP and TCP csum and initialize id and seq. */
- 	isum_seed = ((0xFFFF - ih->check) +
- 		     (0xFFFF - ih->tot_len) +
- 		     (0xFFFF - ih->id));
--	tsum_seed = th->check + (0xFFFF ^ htons(skb->len));
-+	tsum_seed = th->check + (0xFFFF ^ htons(sh_len + data_len));
- 	id = ntohs(ih->id);
- 	seq = ntohl(th->seq);
- 
-@@ -1476,21 +1477,22 @@ static void tso_egress(struct net_device *dev, gxio_mpipe_equeue_t *equeue,
- {
- 	struct tile_net_priv *priv = netdev_priv(dev);
- 	struct skb_shared_info *sh = skb_shinfo(skb);
--	unsigned int data_len = skb->data_len;
-+	unsigned int sh_len = skb_transport_offset(skb) + tcp_hdrlen(skb);
-+	unsigned int data_len = skb->data_len + skb->hdr_len - sh_len;
- 	unsigned int p_len = sh->gso_size;
- 	gxio_mpipe_edesc_t edesc_head = { { 0 } };
- 	gxio_mpipe_edesc_t edesc_body = { { 0 } };
- 	long f_id = -1;    /* id of the current fragment */
--	long f_size = -1;  /* size of the current fragment */
--	long f_used = -1;  /* bytes used from the current fragment */
-+	long f_size = skb->hdr_len;  /* size of the current fragment */
-+	long f_used = sh_len;  /* bytes used from the current fragment */
-+	void *f_data = skb->data;
- 	long n;            /* size of the current piece of payload */
- 	unsigned long tx_packets = 0, tx_bytes = 0;
--	unsigned int csum_start, sh_len;
-+	unsigned int csum_start;
- 	int segment;
- 
- 	/* Prepare to egress the headers: set up header edesc. */
- 	csum_start = skb_checksum_start_offset(skb);
--	sh_len = skb_transport_offset(skb) + tcp_hdrlen(skb);
- 	edesc_head.csum = 1;
- 	edesc_head.csum_start = csum_start;
- 	edesc_head.csum_dest = csum_start + skb->csum_offset;
-@@ -1502,7 +1504,6 @@ static void tso_egress(struct net_device *dev, gxio_mpipe_equeue_t *equeue,
- 
- 	/* Egress all the edescs. */
- 	for (segment = 0; segment < sh->gso_segs; segment++) {
--		void *va;
- 		unsigned char *buf;
- 		unsigned int p_used = 0;
- 
-@@ -1521,10 +1522,9 @@ static void tso_egress(struct net_device *dev, gxio_mpipe_equeue_t *equeue,
- 				f_id++;
- 				f_size = sh->frags[f_id].size;
- 				f_used = 0;
-+				f_data = tile_net_frag_buf(&sh->frags[f_id]);
- 			}
- 
--			va = tile_net_frag_buf(&sh->frags[f_id]) + f_used;
--
- 			/* Use bytes from the current fragment. */
- 			n = p_len - p_used;
- 			if (n > f_size - f_used)
-@@ -1533,7 +1533,7 @@ static void tso_egress(struct net_device *dev, gxio_mpipe_equeue_t *equeue,
- 			p_used += n;
- 
- 			/* Egress a piece of the payload. */
--			edesc_body.va = va_to_tile_io_addr(va);
-+			edesc_body.va = va_to_tile_io_addr(f_data) + f_used;
- 			edesc_body.xfer_size = n;
- 			edesc_body.bound = !(p_used < p_len);
- 			gxio_mpipe_equeue_put_at(equeue, edesc_body, slot);
+ 	info->rtc_dev = rtc_device_register("88pm80x-rtc", &pdev->dev,
+ 					    &pm80x_rtc_ops, THIS_MODULE);
+-	ret = PTR_ERR(info->rtc_dev);
+ 	if (IS_ERR(info->rtc_dev)) {
++		ret = PTR_ERR(info->rtc_dev);
+ 		dev_err(&pdev->dev, "Failed to register RTC device: %d\n", ret);
+ 		goto out_rtc;
+ 	}
 -- 
-1.7.10.3
+1.7.0.4
 
