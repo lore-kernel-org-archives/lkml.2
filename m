@@ -1,77 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755961Ab2GRUaa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 16:30:30 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:54294 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751813Ab2GRUa2 (ORCPT
+	id S1755980Ab2GRUbB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 16:31:01 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:57327 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755896Ab2GRUa7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 16:30:28 -0400
+	Wed, 18 Jul 2012 16:30:59 -0400
 MIME-Version: 1.0
-In-Reply-To: <50071834.2030408@tilera.com>
-References: <201206162036.q5GKacEK017774@lab-41.internal.tilera.com>
- <201206162037.q5GKbFg0017781@lab-41.internal.tilera.com> <CAErSpo6Sws6AeZiW=-OW-6_wUO0LuJ1FMxU=yuu-7srN0+TL3g@mail.gmail.com>
- <5000442B.7090208@tilera.com> <20120713172508.GA18587@google.com>
- <5006E133.5090100@tilera.com> <CAErSpo6XEwQcVFUBHAZO6R2wZvCSmG3w1G6va7FRcnrbc=nAfg@mail.gmail.com>
- <50071834.2030408@tilera.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 18 Jul 2012 14:30:03 -0600
-Message-ID: <CAErSpo7Vegj0MnTw=cjUXNWPZOFTXVSzH1V=4+-Qs80=1at5nA@mail.gmail.com>
-Subject: Re: [PATCH 3/3] tile pci: enable IOMMU to support DMA for legacy devices
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>
+In-Reply-To: <20120718171432.09e4790e@pyramind.ukuu.org.uk>
+References: <CAMUfR_vogZUgJB5QBr-QrYqFEM71J_pyvc=cFRV6apvb=pVJuQ@mail.gmail.com>
+	<CAFLxGvzOzNj5ab82RDV=kn_a6Bb16sKT=GfK3igVM3pk7CkC4Q@mail.gmail.com>
+	<CAMUfR_to9bD2PE8+6Y4we0YG-ULkAVxASByK4_mn7WTmyS9g5Q@mail.gmail.com>
+	<20120718171432.09e4790e@pyramind.ukuu.org.uk>
+Date: Wed, 18 Jul 2012 16:30:59 -0400
+Message-ID: <CAMUfR_uwW10hLCRbtMsj_2Qgg1CbA3qFz1RyRp2dq=tvh98K=g@mail.gmail.com>
+Subject: Re: QUESTION: Why might Linux suddenly stop replying to pings for no
+ apparent reason?
+From: Terry Phelps <tgphelps50@gmail.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 18, 2012 at 2:10 PM, Chris Metcalf <cmetcalf@tilera.com> wrote:
-> On 7/18/2012 12:50 PM, Bjorn Helgaas wrote:
->> On Wed, Jul 18, 2012 at 10:15 AM, Chris Metcalf <cmetcalf@tilera.com> wrote:
->>> On 7/13/2012 1:25 PM, Bjorn Helgaas wrote:
->>>> On Fri, Jul 13, 2012 at 11:52:11AM -0400, Chris Metcalf wrote:
->>>>> We use the same pci_iomem_resource for different domains or host
->>>>> bridges, but the MMIO apertures for each bridge do not overlap because
->>>>> non-overlapping resource ranges are allocated for each domains.
->>>> You should not use the same pci_iomem_resource for different host bridges
->>>> because that tells the PCI core that everything in pci_iomem_resource is
->>>> available for devices under every host bridge, which I doubt is the case.
->>>>
->>>> The fact that your firmware assigns non-overlapping resources is good and
->>>> works now, but if the kernel ever needs to allocate resources itself,
->>> Actually, we were not using any firmware. It was indeed the kernel which
->>> allocates resources from the shared pci_iomem_resource.
->> Wow.  I wonder how that managed to work.  Is there some information
->> that would have helped the PCI core do the right allocations?  Or
->> maybe the host bridges forward everything they receive to PCI,
->> regardless of address, and any given MMIO address is only routed to
->> one of the host bridges because of the routing info in the page
->> tables?
+On Wed, Jul 18, 2012 at 12:14 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>> If I should be posting my question to somewhere other than the
+>> linux-kernel mailing list, please advise me where that might be. It
+>> sure looks like something in the kernel isn't working properly
+>> somewhere.
 >
-> Since each host bridge contains non-overlapping ranges in its bridge config
-> header, ioremap() locates the right host bridge for the target PCI resource
-> address and programs the host bridge info into the MMIO mapping. The end
-> result is the MMIO address is routed to the right host bridge. On Tile
-> processors, different host bridges are like separate IO devices, in
-> completely separate domains.
+> If you can duplicate the problem with an *upstream* kernel then yes it
+> is. If you only see it on an Oracle kernel then talk to Oracle.
 >
->> I guess in that case, the "apertures" would basically be
->> defined by the page tables, not by the host bridges.  But that still
->> doesn't explain how we would assign non-overlapping ranges to each
->> domain.
->
-> Since all domains share the single resource, allocate_resource() "allocate
-> empty slot in the resource tree", giving non-overlapping ranges to each
-> devices.
->
-> Just to confirm, I'm assuming I'll ask Linus to pull this code out of my
-> tile tree when the merge window opens, right?  Would you like me to add
-> your name to the commit as acked or reviewed?  Thanks!
+> Alan
 
-Yep, just ask Linus to pull it; I don't think there's any need to
-coordinate with my PCI tree since you're not using any interfaces we
-changed in this cycle.
+Alan,
+Thank you for your help. I am not a kernel hacker by any means, but
+will try to do what you suggest.
+Should I clone the current kernel git tree, and build the latest
+kernel? Or build from some other point in time?
 
-Reviewed-by: Bjorn Helgaas <bhelgaas@google.com>
+Terry
