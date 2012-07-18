@@ -1,55 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754991Ab2GRQci (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 12:32:38 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44634 "EHLO
+	id S1755043Ab2GRQeh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 12:34:37 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40632 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754963Ab2GRQce (ORCPT
+	with ESMTP id S1754981Ab2GRQef (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 12:32:34 -0400
-Date: Wed, 18 Jul 2012 09:32:29 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Aristeu Rozanski <aris@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
-        Hugh Dickins <hughd@google.com>, Hillf Danton <dhillf@gmail.com>
-Subject: Re: [PATCH v3 2/3] cgroup: revise how we re-populate root directory
-Message-ID: <20120718163229.GH24336@google.com>
-References: <20120702142925.795007114@napanee.usersys.redhat.com>
- <20120702142926.405632285@napanee.usersys.redhat.com>
- <20120709171748.GD1341@google.com>
- <20120709172220.GE1341@google.com>
- <20120709172831.GF1341@google.com>
- <20120710192721.GB19791@redhat.com>
- <20120717183851.GA24336@google.com>
- <20120717212926.GB26916@redhat.com>
- <20120717214010.GF24336@google.com>
- <20120718141604.GC26916@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120718141604.GC26916@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 18 Jul 2012 12:34:35 -0400
+From: Masanari Iida <standby24x7@gmail.com>
+To: trivial@kernel.org, linux-kernel@vger.kernel.org
+Cc: namhyung@kernel.org, Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH v2] [trivial] tools: perf: Fix typo in tools/perf
+Date: Thu, 19 Jul 2012 01:35:16 +0900
+Message-Id: <1342629316-19844-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.7.11.2.249.g31c7954
+In-Reply-To: <1342542059-9756-1-git-send-email-standby24x7@gmail.com>
+References: <1342542059-9756-1-git-send-email-standby24x7@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Correct spelling typo in tools/perf.
 
-On Wed, Jul 18, 2012 at 10:16:05AM -0400, Aristeu Rozanski wrote:
-> > Yeah, generally looks good to me although @added/removed_bits argument
-> > names irk me a bit.  The name may be okay for local variables but I
-> > keep thinking "what bits?".  @subsys_mask or something indicating that
-> > it's mask of subsystems would better.  Also, can you please add /**
-> > function comment explaining the clear/populate functions and their
-> > arguments?
-> 
-> agreed. although the "_bits" thing is spread all around the code. you
-> want that cleaned up too? (I can post a followup patch after this
-> patchset is done)
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ tools/perf/util/callchain.h         | 2 +-
+ tools/perf/util/parse-events-test.c | 2 +-
+ tools/perf/util/python-ext-sources  | 2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
-Yeah, that would be great.
-
-Thanks a lot!
-
+diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
+index 3bdb407..bf2d22c 100644
+--- a/tools/perf/util/callchain.h
++++ b/tools/perf/util/callchain.h
+@@ -58,7 +58,7 @@ struct callchain_list {
+ /*
+  * A callchain cursor is a single linked list that
+  * let one feed a callchain progressively.
+- * It keeps persitent allocated entries to minimize
++ * It keeps persistently allocated entries to minimize
+  * allocations.
+  */
+ struct callchain_cursor_node {
+diff --git a/tools/perf/util/parse-events-test.c b/tools/perf/util/parse-events-test.c
+index 76b98e2..8cdf147 100644
+--- a/tools/perf/util/parse-events-test.c
++++ b/tools/perf/util/parse-events-test.c
+@@ -609,7 +609,7 @@ static int test_pmu(void)
+ 
+ 	ret = stat(path, &st);
+ 	if (ret)
+-		pr_debug("ommiting PMU cpu tests\n");
++		pr_debug("omitting PMU cpu tests\n");
+ 	return !ret;
+ }
+ 
+diff --git a/tools/perf/util/python-ext-sources b/tools/perf/util/python-ext-sources
+index 2884e67..f4e37ce 100644
+--- a/tools/perf/util/python-ext-sources
++++ b/tools/perf/util/python-ext-sources
+@@ -1,5 +1,5 @@
+ #
+-# List of files needed by perf python extention
++# List of files needed by perf python extension
+ #
+ # Each source file must be placed on its own line so that it can be
+ # processed by Makefile and util/setup.py accordingly.
 -- 
-tejun
+1.7.11.2.249.g31c7954
+
