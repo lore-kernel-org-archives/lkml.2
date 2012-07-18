@@ -1,127 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752480Ab2GRDuI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 23:50:08 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:40195 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752112Ab2GRDuB (ORCPT
+	id S1752492Ab2GRDzi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 23:55:38 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:57929 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752112Ab2GRDze (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 23:50:01 -0400
-Message-ID: <1342583395.12515.6.camel@phoenix>
-Subject: [PATCH RFT 2/2] regulator: palmas: Convert palmas_ops_ldo to
- [get|set]_voltage_sel_regmap
-From: Axel Lin <axel.lin@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, Graeme Gregory <gg@slimlogic.co.uk>,
-        Liam Girdwood <lrg@ti.com>
-Date: Wed, 18 Jul 2012 11:49:55 +0800
-In-Reply-To: <1342583289.12515.4.camel@phoenix>
-References: <1342583289.12515.4.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 17 Jul 2012 23:55:34 -0400
+X-AuditID: 9c930179-b7bdcae000003d91-d3-500633b5e9e6
+Date: Wed, 18 Jul 2012 12:56:06 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Bob Liu <lliubbo@gmail.com>
+Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>
+Subject: Re: [RFC 3/3] memory-hotplug: bug fix race between isolation and
+ allocation
+Message-ID: <20120718035606.GA31662@bbox>
+References: <1342508505-23492-1-git-send-email-minchan@kernel.org>
+ <1342508505-23492-4-git-send-email-minchan@kernel.org>
+ <CAA_GA1dh0RYT5wfOB=t8-XoeHOzRJCmQJifnUTGLZfjNwx2a5w@mail.gmail.com>
+ <20120717234003.GA26937@bbox>
+ <CAA_GA1dWBZ+cj5LW6Q=XsP_GGvAh8Za2scaGS8nQcgfc9JTGQw@mail.gmail.com>
+ <20120718024157.GA31180@bbox>
+ <CAA_GA1dF9Zw1rDt9j5wJ6EpwQQMGptEndQaXWnTmQL=u8DAq7Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAA_GA1dF9Zw1rDt9j5wJ6EpwQQMGptEndQaXWnTmQL=u8DAq7Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Also remove palmas_ldo_write() function because it is not used after this
-conversion.
+On Wed, Jul 18, 2012 at 11:12:27AM +0800, Bob Liu wrote:
+> On Wed, Jul 18, 2012 at 10:41 AM, Minchan Kim <minchan@kernel.org> wrote:
+> > On Wed, Jul 18, 2012 at 10:12:57AM +0800, Bob Liu wrote:
+> >> On Wed, Jul 18, 2012 at 7:40 AM, Minchan Kim <minchan@kernel.org> wrote:
+> >> > Hi Bob,
+> >> >
+> >> > On Tue, Jul 17, 2012 at 06:13:17PM +0800, Bob Liu wrote:
+> >> >> Hi Minchan,
+> >> >>
+> >> >> On Tue, Jul 17, 2012 at 3:01 PM, Minchan Kim <minchan@kernel.org> wrote:
+> >> >> > Like below, memory-hotplug makes race between page-isolation
+> >> >> > and page-allocation so it can hit BUG_ON in __offline_isolated_pages.
+> >> >> >
+> >> >> >         CPU A                                   CPU B
+> >> >> >
+> >> >> > start_isolate_page_range
+> >> >> > set_migratetype_isolate
+> >> >> > spin_lock_irqsave(zone->lock)
+> >> >> >
+> >> >> >                                 free_hot_cold_page(Page A)
+> >> >> >                                 /* without zone->lock */
+> >> >> >                                 migratetype = get_pageblock_migratetype(Page A);
+> >> >> >                                 /*
+> >> >> >                                  * Page could be moved into MIGRATE_MOVABLE
+> >> >> >                                  * of per_cpu_pages
+> >> >> >                                  */
+> >> >> >                                 list_add_tail(&page->lru, &pcp->lists[migratetype]);
+> >> >> >
+> >> >> > set_pageblock_isolate
+> >> >> > move_freepages_block
+> >> >> > drain_all_pages
+> >> >> >
+> >> >> >                                 /* Page A could be in MIGRATE_MOVABLE of free_list. */
+> >> >> >
+> >> >> > check_pages_isolated
+> >> >> > __test_page_isolated_in_pageblock
+> >> >> > /*
+> >> >> >  * We can't catch freed page which
+> >> >> >  * is free_list[MIGRATE_MOVABLE]
+> >> >> >  */
+> >> >> > if (PageBuddy(page A))
+> >> >> >         pfn += 1 << page_order(page A);
+> >> >> >
+> >> >> >                                 /* So, Page A could be allocated */
+> >> >> >
+> >> >> > __offline_isolated_pages
+> >> >> > /*
+> >> >> >  * BUG_ON hit or offline page
+> >> >> >  * which is used by someone
+> >> >> >  */
+> >> >> > BUG_ON(!PageBuddy(page A));
+> >> >> >
+> >> >> > Signed-off-by: Minchan Kim <minchan@kernel.org>
+> >> >> > ---
+> >> >> > I found this problem during code review so please confirm it.
+> >> >> > Kame?
+> >> >> >
+> >> >> >  mm/page_isolation.c |    5 ++++-
+> >> >> >  1 file changed, 4 insertions(+), 1 deletion(-)
+> >> >> >
+> >> >> > diff --git a/mm/page_isolation.c b/mm/page_isolation.c
+> >> >> > index acf65a7..4699d1f 100644
+> >> >> > --- a/mm/page_isolation.c
+> >> >> > +++ b/mm/page_isolation.c
+> >> >> > @@ -196,8 +196,11 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn)
+> >> >> >                         continue;
+> >> >> >                 }
+> >> >> >                 page = pfn_to_page(pfn);
+> >> >> > -               if (PageBuddy(page))
+> >> >> > +               if (PageBuddy(page)) {
+> >> >> >                         pfn += 1 << page_order(page);
+> >> >> > +                       if (get_page_migratetype(page) != MIGRATE_ISOLATE)
+> >> >> > +                               break;
+> >> >> > +               }
+> >> >>
+> >> >> test_page_isolated() already have check
+> >> >> get_pageblock_migratetype(page) != MIGRATE_ISOLATE.
+> >> >>
+> >> >
+> >> > That's why I send a patch.
+> >> > As I describe in description, pageblock migration type of get_page_migratetype(page)
+> >> > is inconsistent with free_list[migrationtype].
+> >> > I mean get_pageblock_migratetype(page) will return MIGRATE_ISOLATE but the page would be
+> >> > in free_list[MIGRATE_MOVABLE] so it could be allocated for someone if that race happens.
+> >> >
+> >>
+> >> Sorry, I'm still not get the situation how this race happens.
+> >>
+> >> set_pageblock_isolate
+> >> move_freepages_block
+> >> drain_all_pages
+> >>
+> >>                                 /* Page A could be in MIGRATE_MOVABLE
+> >> of free_list. */
+> >>
+> >> I think move_freepages_block() will call list_move() to move Page A to
+> >> free_list[MIGRATE_ISOLATE], so this case can't happen?
+> >
+> > move_freepages_block handles only pages in free_list but Page A is on pcp, not free_list.
+> >
+> 
+> Got it, then why not just drain pcp pages before move_freepages_block() ?
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/palmas-regulator.c |   55 ++++------------------------------
- 1 file changed, 5 insertions(+), 50 deletions(-)
+        CPU A                   CPU B
 
-diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
-index 9e3e7f3..1307194 100644
---- a/drivers/regulator/palmas-regulator.c
-+++ b/drivers/regulator/palmas-regulator.c
-@@ -194,16 +194,6 @@ static int palmas_ldo_read(struct palmas *palmas, unsigned int reg,
- 	return regmap_read(palmas->regmap[REGULATOR_SLAVE], addr, dest);
- }
- 
--static int palmas_ldo_write(struct palmas *palmas, unsigned int reg,
--		unsigned int value)
--{
--	unsigned int addr;
--
--	addr = PALMAS_BASE_TO_REG(PALMAS_LDO_BASE, reg);
--
--	return regmap_write(palmas->regmap[REGULATOR_SLAVE], addr, value);
--}
--
- static int palmas_is_enabled_smps(struct regulator_dev *dev)
- {
- 	struct palmas_pmic *pmic = rdev_get_drvdata(dev);
-@@ -443,44 +433,6 @@ static int palmas_list_voltage_ldo(struct regulator_dev *dev,
- 	return  850000 + (selector * 50000);
- }
- 
--static int palmas_get_voltage_ldo_sel(struct regulator_dev *dev)
--{
--	struct palmas_pmic *pmic = rdev_get_drvdata(dev);
--	int id = rdev_get_id(dev);
--	int selector;
--	unsigned int reg;
--	unsigned int addr;
--
--	addr = palmas_regs_info[id].vsel_addr;
--
--	palmas_ldo_read(pmic->palmas, addr, &reg);
--
--	selector = reg & PALMAS_LDO1_VOLTAGE_VSEL_MASK;
--
--	/* Adjust selector to match list_voltage ranges */
--	if (selector > 49)
--		selector = 49;
--
--	return selector;
--}
--
--static int palmas_set_voltage_ldo_sel(struct regulator_dev *dev,
--		unsigned selector)
--{
--	struct palmas_pmic *pmic = rdev_get_drvdata(dev);
--	int id = rdev_get_id(dev);
--	unsigned int reg = 0;
--	unsigned int addr;
--
--	addr = palmas_regs_info[id].vsel_addr;
--
--	reg = selector;
--
--	palmas_ldo_write(pmic->palmas, addr, reg);
--
--	return 0;
--}
--
- static int palmas_map_voltage_ldo(struct regulator_dev *rdev,
- 		int min_uV, int max_uV)
- {
-@@ -505,8 +457,8 @@ static struct regulator_ops palmas_ops_ldo = {
- 	.is_enabled		= palmas_is_enabled_ldo,
- 	.enable			= regulator_enable_regmap,
- 	.disable		= regulator_disable_regmap,
--	.get_voltage_sel	= palmas_get_voltage_ldo_sel,
--	.set_voltage_sel	= palmas_set_voltage_ldo_sel,
-+	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
-+	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
- 	.list_voltage		= palmas_list_voltage_ldo,
- 	.map_voltage		= palmas_map_voltage_ldo,
- };
-@@ -757,6 +709,9 @@ static __devinit int palmas_probe(struct platform_device *pdev)
- 
- 		pmic->desc[id].type = REGULATOR_VOLTAGE;
- 		pmic->desc[id].owner = THIS_MODULE;
-+		pmic->desc[id].vsel_reg = PALMAS_BASE_TO_REG(PALMAS_LDO_BASE,
-+						palmas_regs_info[id].vsel_addr);
-+		pmic->desc[id].vsel_mask = PALMAS_LDO1_VOLTAGE_VSEL_MASK;
- 		pmic->desc[id].enable_reg = PALMAS_BASE_TO_REG(PALMAS_LDO_BASE,
- 						palmas_regs_info[id].ctrl_addr);
- 		pmic->desc[id].enable_mask = PALMAS_LDO1_CTRL_MODE_ACTIVE;
+drain_all_pages
+lock(zone->lock);
+                                free_hot_cold_page
+                                MIGRATE_MOVABLE = get_pageblock_migratetype(page);
+                                list_add(&page->lru, &pcp->lists[migratetype])
+set_pageblock_isolate
+move_free_pages_block
+unlock(zone->lock);
+
+We can't make it atomic.
+
+> 
+> And I didn't see the effect by adding the check if
+> (get_page_migratetype(page) != MIGRATE_ISOLATE) for this race.
+> Since set_pageblock_isolate() have been called by CPU A, this check
+> will always false which cause CPU A still consider Page A isolated,
+> then PAGE A still can be allocated by CPU B from pcp.
+
+Please don't confuse get_page_migratetype and get_pageblock_migratetype.
+get_page_migratetype returns migratetype inforamtion of *page* which is
+in free_list while get_pageblock_migratetype returns *pageblock*'s migratetype.
+
+> 
+> -- 
+> Regards,
+> --Bob
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
 -- 
-1.7.9.5
-
-
-
+Kind regards,
+Minchan Kim
