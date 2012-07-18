@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757116Ab2GRADk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 20:03:40 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49131 "EHLO
+	id S1756483Ab2GRADw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 20:03:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48754 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755267Ab2GRAD0 (ORCPT
+	with ESMTP id S1756325Ab2GRADd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 20:03:26 -0400
+	Tue, 17 Jul 2012 20:03:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Dillow <dave@thedillows.org>,
-        Sri Deevi <srinivasa.deevi@conexant.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [ 02/37] media: cx231xx: dont DMA to random addresses
-Date: Tue, 17 Jul 2012 17:02:39 -0700
-Message-Id: <20120717232431.491143399@linuxfoundation.org>
+        Jeff Moyer <jmoyer@redhat.com>,
+        "Richard W.M. Jones" <rjones@redhat.com>,
+        Josh Boyer <jwboyer@redhat.com>
+Subject: [ 04/37] block: fix infinite loop in __getblk_slow
+Date: Tue, 17 Jul 2012 17:02:41 -0700
+Message-Id: <20120717232431.657196338@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120717232431.399005532@linuxfoundation.org>
 References: <20120717232455.GA5994@kroah.com>
@@ -32,59 +32,112 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: David Dillow <dave@thedillows.org>
+From: Jeff Moyer <jmoyer@redhat.com>
 
-commit a7deca6fa79d5c65575532e780f3c93f6bf8ddad upstream.
+commit 91f68c89d8f35fe98ea04159b9a3b42d0149478f upstream.
 
-Commit 7a6f6c29d264cdd2fe0eb3d923217eed5f0ad134 (cx231xx: use
-URB_NO_TRANSFER_DMA_MAP) was intended to avoid mapping the DMA buffer
-for URB twice. This works for the URBs allocated with usb_alloc_urb(),
-as those are allocated from cohernent DMA pools, but the flag was also
-added for the VBI and audio URBs, which have a manually allocated area.
-This leaves the random trash in the structure after allocation as the
-DMA address, corrupting memory and preventing VBI and audio from
-working. Letting the USB core map the buffers solves the problem.
+Commit 080399aaaf35 ("block: don't mark buffers beyond end of disk as
+mapped") exposed a bug in __getblk_slow that causes mount to hang as it
+loops infinitely waiting for a buffer that lies beyond the end of the
+disk to become uptodate.
 
-Signed-off-by: David Dillow <dave@thedillows.org>
-Cc: Sri Deevi <srinivasa.deevi@conexant.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+The problem was initially reported by Torsten Hilbrich here:
+
+    https://lkml.org/lkml/2012/6/18/54
+
+and also reported independently here:
+
+    http://www.sysresccd.org/forums/viewtopic.php?f=13&t=4511
+
+and then Richard W.M.  Jones and Marcos Mello noted a few separate
+bugzillas also associated with the same issue.  This patch has been
+confirmed to fix:
+
+    https://bugzilla.redhat.com/show_bug.cgi?id=835019
+
+The main problem is here, in __getblk_slow:
+
+        for (;;) {
+                struct buffer_head * bh;
+                int ret;
+
+                bh = __find_get_block(bdev, block, size);
+                if (bh)
+                        return bh;
+
+                ret = grow_buffers(bdev, block, size);
+                if (ret < 0)
+                        return NULL;
+                if (ret == 0)
+                        free_more_memory();
+        }
+
+__find_get_block does not find the block, since it will not be marked as
+mapped, and so grow_buffers is called to fill in the buffers for the
+associated page.  I believe the for (;;) loop is there primarily to
+retry in the case of memory pressure keeping grow_buffers from
+succeeding.  However, we also continue to loop for other cases, like the
+block lying beond the end of the disk.  So, the fix I came up with is to
+only loop when grow_buffers fails due to memory allocation issues
+(return value of 0).
+
+The attached patch was tested by myself, Torsten, and Rich, and was
+found to resolve the problem in call cases.
+
+Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+Reported-and-Tested-by: Torsten Hilbrich <torsten.hilbrich@secunet.com>
+Tested-by: Richard W.M. Jones <rjones@redhat.com>
+Reviewed-by: Josh Boyer <jwboyer@redhat.com>
+[ Jens is on vacation, taking this directly  - Linus ]
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/video/cx231xx/cx231xx-audio.c |    4 ++--
- drivers/media/video/cx231xx/cx231xx-vbi.c   |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ fs/buffer.c |   22 +++++++++++++---------
+ 1 file changed, 13 insertions(+), 9 deletions(-)
 
---- a/drivers/media/video/cx231xx/cx231xx-audio.c
-+++ b/drivers/media/video/cx231xx/cx231xx-audio.c
-@@ -307,7 +307,7 @@ static int cx231xx_init_audio_isoc(struc
- 		urb->context = dev;
- 		urb->pipe = usb_rcvisocpipe(dev->udev,
- 						dev->adev.end_point_addr);
--		urb->transfer_flags = URB_ISO_ASAP | URB_NO_TRANSFER_DMA_MAP;
-+		urb->transfer_flags = URB_ISO_ASAP;
- 		urb->transfer_buffer = dev->adev.transfer_buffer[i];
- 		urb->interval = 1;
- 		urb->complete = cx231xx_audio_isocirq;
-@@ -368,7 +368,7 @@ static int cx231xx_init_audio_bulk(struc
- 		urb->context = dev;
- 		urb->pipe = usb_rcvbulkpipe(dev->udev,
- 						dev->adev.end_point_addr);
--		urb->transfer_flags = URB_NO_TRANSFER_DMA_MAP;
-+		urb->transfer_flags = 0;
- 		urb->transfer_buffer = dev->adev.transfer_buffer[i];
- 		urb->complete = cx231xx_audio_bulkirq;
- 		urb->transfer_buffer_length = sb_size;
---- a/drivers/media/video/cx231xx/cx231xx-vbi.c
-+++ b/drivers/media/video/cx231xx/cx231xx-vbi.c
-@@ -452,7 +452,7 @@ int cx231xx_init_vbi_isoc(struct cx231xx
- 			return -ENOMEM;
- 		}
- 		dev->vbi_mode.bulk_ctl.urb[i] = urb;
--		urb->transfer_flags = URB_NO_TRANSFER_DMA_MAP;
-+		urb->transfer_flags = 0;
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -1036,6 +1036,9 @@ grow_buffers(struct block_device *bdev,
+ static struct buffer_head *
+ __getblk_slow(struct block_device *bdev, sector_t block, int size)
+ {
++	int ret;
++	struct buffer_head *bh;
++
+ 	/* Size must be multiple of hard sectorsize */
+ 	if (unlikely(size & (bdev_logical_block_size(bdev)-1) ||
+ 			(size < 512 || size > PAGE_SIZE))) {
+@@ -1048,20 +1051,21 @@ __getblk_slow(struct block_device *bdev,
+ 		return NULL;
+ 	}
  
- 		dev->vbi_mode.bulk_ctl.transfer_buffer[i] =
- 		    kzalloc(sb_size, GFP_KERNEL);
+-	for (;;) {
+-		struct buffer_head * bh;
+-		int ret;
++retry:
++	bh = __find_get_block(bdev, block, size);
++	if (bh)
++		return bh;
+ 
++	ret = grow_buffers(bdev, block, size);
++	if (ret == 0) {
++		free_more_memory();
++		goto retry;
++	} else if (ret > 0) {
+ 		bh = __find_get_block(bdev, block, size);
+ 		if (bh)
+ 			return bh;
+-
+-		ret = grow_buffers(bdev, block, size);
+-		if (ret < 0)
+-			return NULL;
+-		if (ret == 0)
+-			free_more_memory();
+ 	}
++	return NULL;
+ }
+ 
+ /*
 
 
