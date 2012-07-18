@@ -1,94 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754204Ab2GRV7i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 17:59:38 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:7867 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751489Ab2GRV7e (ORCPT
+	id S1754064Ab2GRWEn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 18:04:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43981 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750898Ab2GRWEl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 17:59:34 -0400
-Message-ID: <1342648771.5138.37.camel@lorien2>
-Subject: Re: [PATCH 1/4] ACPI: Add acpi_pr_<level>() interfaces
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bhelgaas@google.com, isimatu.yasuaki@jp.fujitsu.com, liuj97@gmail.com,
-        srivatsa.bhat@linux.vnet.ibm.com, prarit@redhat.com,
-        imammedo@redhat.com, vijaymohan.pandarathil@hp.com,
-        shuahkhan@gmail.com
-Date: Wed, 18 Jul 2012 15:59:31 -0600
-In-Reply-To: <1342644027-19559-2-git-send-email-toshi.kani@hp.com>
-References: <1342644027-19559-1-git-send-email-toshi.kani@hp.com>
-	 <1342644027-19559-2-git-send-email-toshi.kani@hp.com>
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	Wed, 18 Jul 2012 18:04:41 -0400
+Date: Wed, 18 Jul 2012 15:04:39 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH] kdump: Append newline to the last lien of vmcoreinfo
+ note
+Message-Id: <20120718150439.48360f16.akpm@linux-foundation.org>
+In-Reply-To: <20120717173655.GC11031@redhat.com>
+References: <20120717173655.GC11031@redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-18 at 14:40 -0600, Toshi Kani wrote:
-> This patch introduces acpi_pr_<level>(), where <level> is a message
-> level such as err/warn/info, to support improved logging messages
-> for ACPI, esp. in hotplug operations.  acpi_pr_<level>() appends
-> "ACPI" prefix and ACPI object path to the messages.  This improves
-> diagnostics in hotplug operations since it identifies an object that
-> caused an issue in a log file.
+On Tue, 17 Jul 2012 13:36:55 -0400
+Vivek Goyal <vgoyal@redhat.com> wrote:
+
+> Last line of vmcoreinfo note does not end with \n. Parsing all the lines
+> in note becomes easier if all lines end with \n instead of trying to special
+> case the last line.
 > 
-> acpi_pr_<level>() takes acpi_handle as an argument, which is passed
-> to ACPI hotplug notify handlers from the ACPI CA.  Therefore, it is
-> always available unlike other kernel objects, such as device.
+> I know atleast one tool, vmcore-dmesg in kexec-tools tree which made the
+> assumption that all lines end with \n. I think it is a good idea to
+> fix it.
 > 
-> For example, the statement below
->   acpi_pr_err(handle, "Device don't exist, dropping EJECT\n");
-> logs an error message like this:
->   ACPI: \_SB_.SCK4.CPU4: Device don't exist, dropping EJECT
-> 
-> Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
 > ---
->  drivers/acpi/utils.c    |   32 ++++++++++++++++++++++++++++++++
->  include/acpi/acpi_bus.h |   18 ++++++++++++++++++
->  2 files changed, 50 insertions(+), 0 deletions(-)
+>  kernel/kexec.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> diff --git a/drivers/acpi/utils.c b/drivers/acpi/utils.c
-> index 3e87c9c..4097266 100644
-> --- a/drivers/acpi/utils.c
-> +++ b/drivers/acpi/utils.c
-> @@ -454,3 +454,35 @@ acpi_evaluate_hotplug_ost(acpi_handle handle, u32 source_event,
->  #endif
+> Index: linux-2.6/kernel/kexec.c
+> ===================================================================
+> --- linux-2.6.orig/kernel/kexec.c	2012-07-17 19:26:38.844033784 -0400
+> +++ linux-2.6/kernel/kexec.c	2012-07-17 23:51:33.311701781 -0400
+> @@ -1424,7 +1424,7 @@ static void update_vmcoreinfo_note(void)
+>  
+>  void crash_save_vmcoreinfo(void)
+>  {
+> -	vmcoreinfo_append_str("CRASHTIME=%ld", get_seconds());
+> +	vmcoreinfo_append_str("CRASHTIME=%ld\n", get_seconds());
+>  	update_vmcoreinfo_note();
 >  }
->  EXPORT_SYMBOL(acpi_evaluate_hotplug_ost);
-> +
-> +/**
-> + * acpi_printk: Print messages with ACPI prefix and object path
-> + *
-> + * This function is intended to be called through acpi_pr_<level> macros.
-> + */
-> +void
-> +acpi_printk(const char *level, acpi_handle handle, const char *fmt, ...)
-> +{
-> +	struct va_format vaf;
-> +	va_list args;
-> +	struct acpi_buffer buffer = {ACPI_ALLOCATE_BUFFER};
-> +	char *path;
-> +	acpi_status ret;
-> +
-> +	va_start(args, fmt);
-> +
-> +	vaf.fmt = fmt;
-> +	vaf.va = &args;
-> +
-> +	ret = acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
 
-One big problem I see with this approach is now each acpi_printk() will
-result in a call to acpi_get_name() which will invoke several ACPI
-calls, including a call to acpi_ut_initialize_buffer() which allocates
-buffer. Is this really warranted? What is the performance impact of this
-change?
+huh, that was a screwup.  And now we have to make what must be
+viewed as a non-back-compatible ABI change.
 
--- Shuah
+Ho hum, presumably there isn't a lot of code out there which is
+dependent upon a non-newline-terminated CRASHTIME record.
 
-
+Why did this work at all, anyway?  Is CRASHTIME always the last-emitted
+record?
