@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755230Ab2GRQmS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 12:42:18 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52417 "EHLO
+	id S1755213Ab2GRQnm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 12:43:42 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43049 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755072Ab2GRQmP (ORCPT
+	with ESMTP id S1755111Ab2GRQnj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 12:42:15 -0400
+	Wed, 18 Jul 2012 12:43:39 -0400
 From: Devendra Naga <devendra.aaru@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org
+        linux-kernel@vger.kernel.org,
+        Ashish Jangam <ashish.jangam@kpitcummins.com>,
+        David Dajun Chen <dchen@diasemi.com>
 Cc: Devendra Naga <devendra.aaru@gmail.com>
-Subject: [PATCH 2/3] rtc/rtc-88pm80x: remove unneed devm_kfree
-Date: Wed, 18 Jul 2012 22:12:08 +0530
-Message-Id: <1342629728-12944-1-git-send-email-devendra.aaru@gmail.com>
+Subject: [PATCH 3/3] rtc/rtc-da9052: remove unneed devm_kfree call
+Date: Wed, 18 Jul 2012 22:13:32 +0530
+Message-Id: <1342629812-13003-1-git-send-email-devendra.aaru@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-devm_kzalloc doesn't need a matching devm_kfree, the freeing mechanism will trigger
-when driver unloads.
+freeing will trigger when driver unloads, so using devm_kfree is
+not needed.
 
 Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
 ---
- drivers/rtc/rtc-88pm80x.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ drivers/rtc/rtc-da9052.c |    5 +----
+ 1 files changed, 1 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/rtc/rtc-88pm80x.c b/drivers/rtc/rtc-88pm80x.c
-index 7e050b4..6367984 100644
---- a/drivers/rtc/rtc-88pm80x.c
-+++ b/drivers/rtc/rtc-88pm80x.c
-@@ -339,7 +339,6 @@ static int __devinit pm80x_rtc_probe(struct platform_device *pdev)
- out_rtc:
- 	pm80x_free_irq(chip, info->irq, info);
- out:
--	devm_kfree(&pdev->dev, info);
+diff --git a/drivers/rtc/rtc-da9052.c b/drivers/rtc/rtc-da9052.c
+index da6ab52..7807025 100644
+--- a/drivers/rtc/rtc-da9052.c
++++ b/drivers/rtc/rtc-da9052.c
+@@ -245,7 +245,7 @@ static int __devinit da9052_rtc_probe(struct platform_device *pdev)
+ 				   "ALM", rtc);
+ 	if (ret != 0) {
+ 		rtc_err(rtc->da9052, "irq registration failed: %d\n", ret);
+-		goto err_mem;
++		return ret;
+ 	}
+ 
+ 	rtc->rtc = rtc_device_register(pdev->name, &pdev->dev,
+@@ -259,8 +259,6 @@ static int __devinit da9052_rtc_probe(struct platform_device *pdev)
+ 
+ err_free_irq:
+ 	free_irq(rtc->irq, rtc);
+-err_mem:
+-	devm_kfree(&pdev->dev, rtc);
  	return ret;
  }
  
-@@ -349,7 +348,6 @@ static int __devexit pm80x_rtc_remove(struct platform_device *pdev)
+@@ -271,7 +269,6 @@ static int __devexit da9052_rtc_remove(struct platform_device *pdev)
+ 	rtc_device_unregister(rtc->rtc);
+ 	free_irq(rtc->irq, rtc);
  	platform_set_drvdata(pdev, NULL);
- 	rtc_device_unregister(info->rtc_dev);
- 	pm80x_free_irq(info->chip, info->irq, info);
--	devm_kfree(&pdev->dev, info);
+-	devm_kfree(&pdev->dev, rtc);
+ 
  	return 0;
  }
- 
 -- 
 1.7.0.4
 
