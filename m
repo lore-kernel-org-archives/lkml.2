@@ -1,57 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755772Ab2GRWkI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 18:40:08 -0400
+	id S1755141Ab2GRWkD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 18:40:03 -0400
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32693 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752571Ab2GRWj6 (ORCPT
+	with ESMTP id S1752022Ab2GRWj5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 18:39:58 -0400
-X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=znQ7jl3TTbEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=D_SbEOMbAAAA:8 a=Ri-2UK2ZMocrydySKJQA:9 a=7KbvKZvEaC0A:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+	Wed, 18 Jul 2012 18:39:57 -0400
+X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=zs80_Y-YumkA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=VwQbUJbxAAAA:8 a=Dy9FSkG8L0gs_orUxm0A:9 a=U62fhAwekXMA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 72.230.195.127
-Message-Id: <20120718223957.370352037@goodmis.org>
+Message-Id: <20120718223910.898476857@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 18 Jul 2012 18:39:13 -0400
+Date: Wed, 18 Jul 2012 18:39:10 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         John Kacur <jkacur@redhat.com>
-Subject: [PATCH RT 03/12] Disable RT_GROUP_SCHED in PREEMPT_RT_FULL
-References: <20120718223910.898476857@goodmis.org>
-Content-Disposition: inline; filename=0003-Disable-RT_GROUP_SCHED-in-PREEMPT_RT_FULL.patch
+Subject: [PATCH RT 00/12] [ANNOUNCE] 3.0.36-rt58-rc1 stable review
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Carsten Emde <C.Emde@osadl.org>
 
-Strange CPU stalls have been observed in RT when RT_GROUP_SCHED
-was configured.
+Dear RT Folks,
 
-Disable it for now.
+This is the RT stable review cycle of patch 3.0.36-rt58-rc1.
 
-Signed-off-by: Carsten Emde <C.Emde@osadl.org>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Please scream at me if I messed something up. Please test the patches too.
+
+The -rc release will be uploaded to kernel.org and will be deleted when
+the final release is out. This is just a review release (or release candidate).
+
+The pre-releases will not be pushed to the git repository, only the
+final release is.
+
+If all goes well, this patch will be converted to the next main release
+on 7/20/2012.
+
+Enjoy,
+
+-- Steve
+
+
+To build 3.0.36-rt58-rc1 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.0/linux-3.0.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.0/patch-3.0.36.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/patch-3.0.36-rt58-rc1.patch.xz
+
+You can also build from 3.0.36-rt57 by applying the incremental patch:
+
+http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/incr/patch-3.0.36-rt57-rt58-rc1.patch.xz
+
+
+Changes from 3.0.36-rt57:
+
 ---
- init/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/init/Kconfig b/init/Kconfig
-index 89e40a4..5ed453f 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -719,6 +719,7 @@ config RT_GROUP_SCHED
- 	bool "Group scheduling for SCHED_RR/FIFO"
- 	depends on EXPERIMENTAL
- 	depends on CGROUP_SCHED
-+	depends on !PREEMPT_RT_FULL
- 	default n
- 	help
- 	  This feature lets you explicitly allocate real CPU bandwidth
--- 
-1.7.10.4
 
 
+Carsten Emde (4):
+      Latency histogramms: Cope with backwards running local trace clock
+      Latency histograms: Adjust timer, if already elapsed when programmed
+      Disable RT_GROUP_SCHED in PREEMPT_RT_FULL
+      Latency histograms: Detect another yet overlooked sharedprio condition
+
+Mike Galbraith (1):
+      fs, jbd: pull your plug when waiting for space
+
+Steven Rostedt (5):
+      cpu/rt: Rework cpu down for PREEMPT_RT
+      cpu/rt: Fix cpu_hotplug variable initialization
+      workqueue: Revert workqueue: Fix PF_THREAD_BOUND abuse
+      workqueue: Revert workqueue: Fix cpuhotplug trainwreck
+      Linux 3.0.36-rt58-rc1
+
+Thomas Gleixner (1):
+      slab: Prevent local lock deadlock
+
+Yong Zhang (1):
+      perf: Make swevent hrtimer run in irq instead of softirq
+
+----
+ fs/jbd/checkpoint.c         |    2 +
+ include/linux/cpu.h         |   14 +-
+ include/linux/hrtimer.h     |    3 +
+ include/linux/sched.h       |    9 +-
+ include/linux/workqueue.h   |    5 +-
+ init/Kconfig                |    1 +
+ kernel/cpu.c                |  240 ++++++++++++++----
+ kernel/events/core.c        |    1 +
+ kernel/hrtimer.c            |   16 +-
+ kernel/sched.c              |   82 +++++-
+ kernel/trace/latency_hist.c |   74 +++---
+ kernel/workqueue.c          |  578 +++++++++++++++++++++++++++++++------------
+ localversion-rt             |    2 +-
+ mm/slab.c                   |   26 +-
+ 14 files changed, 792 insertions(+), 261 deletions(-)
