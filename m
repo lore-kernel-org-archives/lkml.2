@@ -1,236 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753268Ab2GRKJw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 06:09:52 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:54151 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752713Ab2GRKJq (ORCPT
+	id S1753286Ab2GRKLW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 06:11:22 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:33379 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752713Ab2GRKLU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 06:09:46 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <50068B54.5070907@jp.fujitsu.com>
-Date: Wed, 18 Jul 2012 19:09:24 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>
-CC: <rientjes@google.com>, <liuj97@gmail.com>, <len.brown@intel.com>,
-        <benh@kernel.crashing.org>, <paulus@samba.org>, <cl@linux.com>,
-        <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
-        <kosaki.motohiro@jp.fujitsu.com>, <wency@cn.fujitsu.com>
-Subject: [RFC PATCH v4 4/13] memory-hotplug : remove /sys/firmware/memmap/X
- sysfs
-References: <50068974.1070409@jp.fujitsu.com>
-In-Reply-To: <50068974.1070409@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
+	Wed, 18 Jul 2012 06:11:20 -0400
+Date: Wed, 18 Jul 2012 20:11:18 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: no tree for July 18
+Message-Id: <20120718201118.d96a4c09702a94c46b709703@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__18_Jul_2012_20_11_18_+1000_YoqrYsCctNNwAGgY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When (hot)adding memory into system, /sys/firmware/memmap/X/{end, start, type}
-sysfs files are created. But there is no code to remove these files. The patch
-implements the function to remove them.
+--Signature=_Wed__18_Jul_2012_20_11_18_+1000_YoqrYsCctNNwAGgY
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Note : The code does not free firmware_map_entry since there is no way to free
-       memory which is allocated by bootmem.
+sorry about that, expect a new tree tomorrow.
 
-CC: David Rientjes <rientjes@google.com>
-CC: Jiang Liu <liuj97@gmail.com>
-CC: Len Brown <len.brown@intel.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Paul Mackerras <paulus@samba.org> 
-CC: Christoph Lameter <cl@linux.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> 
-CC: Wen Congyang <wency@cn.fujitsu.com>
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
----
- drivers/firmware/memmap.c    |   78 ++++++++++++++++++++++++++++++++++++++++++-
- include/linux/firmware-map.h |    6 +++
- mm/memory_hotplug.c          |    9 +++-
- 3 files changed, 90 insertions(+), 3 deletions(-)
+--Signature=_Wed__18_Jul_2012_20_11_18_+1000_YoqrYsCctNNwAGgY
+Content-Type: application/pgp-signature
 
-Index: linux-3.5-rc6/mm/memory_hotplug.c
-===================================================================
---- linux-3.5-rc6.orig/mm/memory_hotplug.c	2012-07-18 17:20:05.670024283 +0900
-+++ linux-3.5-rc6/mm/memory_hotplug.c	2012-07-18 17:51:03.933189930 +0900
-@@ -1012,9 +1012,9 @@ int offline_memory(u64 start, u64 size)
- 	return offline_pages(start_pfn, end_pfn, 120 * HZ);
- }
- 
--int remove_memory(int nid, u64 start, u64 size)
-+int __ref remove_memory(int nid, u64 start, u64 size)
- {
--	int ret = -EBUSY;
-+	int ret = 0;
- 	lock_memory_hotplug();
- 	/*
- 	 * The memory might become online by other task, even if you offine it.
-@@ -1025,8 +1025,13 @@ int remove_memory(int nid, u64 start, u6
- 			"because the memmory range is online\n",
- 			start, start + size);
- 		ret = -EAGAIN;
-+		goto out;
- 	}
- 
-+	/* remove memmap entry */
-+	firmware_map_remove(start, start + size, "System RAM");
-+
-+out:
- 	unlock_memory_hotplug();
- 	return ret;
- 
-Index: linux-3.5-rc6/include/linux/firmware-map.h
-===================================================================
---- linux-3.5-rc6.orig/include/linux/firmware-map.h	2012-07-18 17:19:37.007382563 +0900
-+++ linux-3.5-rc6/include/linux/firmware-map.h	2012-07-18 17:42:20.804730245 +0900
-@@ -25,6 +25,7 @@
- 
- int firmware_map_add_early(u64 start, u64 end, const char *type);
- int firmware_map_add_hotplug(u64 start, u64 end, const char *type);
-+int firmware_map_remove(u64 start, u64 end, const char *type);
- 
- #else /* CONFIG_FIRMWARE_MEMMAP */
- 
-@@ -38,6 +39,11 @@ static inline int firmware_map_add_hotpl
- 	return 0;
- }
- 
-+static inline int firmware_map_remove(u64 start, u64 end, const char *type)
-+{
-+	return 0;
-+}
-+
- #endif /* CONFIG_FIRMWARE_MEMMAP */
- 
- #endif /* _LINUX_FIRMWARE_MAP_H */
-Index: linux-3.5-rc6/drivers/firmware/memmap.c
-===================================================================
---- linux-3.5-rc6.orig/drivers/firmware/memmap.c	2012-07-18 17:19:43.618300182 +0900
-+++ linux-3.5-rc6/drivers/firmware/memmap.c	2012-07-18 17:42:20.846729721 +0900
-@@ -21,6 +21,7 @@
- #include <linux/types.h>
- #include <linux/bootmem.h>
- #include <linux/slab.h>
-+#include <linux/mm.h>
- 
- /*
-  * Data types ------------------------------------------------------------------
-@@ -79,7 +80,22 @@ static const struct sysfs_ops memmap_att
- 	.show = memmap_attr_show,
- };
- 
-+#define to_memmap_entry(obj) container_of(obj, struct firmware_map_entry, kobj)
-+
-+static void release_firmware_map_entry(struct kobject *kobj)
-+{
-+	struct firmware_map_entry *entry = to_memmap_entry(kobj);
-+	struct page *page;
-+
-+	page = virt_to_page(entry);
-+	if (PageSlab(page) || PageCompound(page))
-+		kfree(entry);
-+
-+	/* There is no way to free memory allocated from bootmem*/
-+}
-+
- static struct kobj_type memmap_ktype = {
-+	.release	= release_firmware_map_entry,
- 	.sysfs_ops	= &memmap_attr_ops,
- 	.default_attrs	= def_attrs,
- };
-@@ -123,6 +139,16 @@ static int firmware_map_add_entry(u64 st
- 	return 0;
- }
- 
-+/**
-+ * firmware_map_remove_entry() - Does the real work to remove a firmware
-+ * memmap entry.
-+ * @entry: removed entry.
-+ **/
-+static inline void firmware_map_remove_entry(struct firmware_map_entry *entry)
-+{
-+	list_del(&entry->list);
-+}
-+
- /*
-  * Add memmap entry on sysfs
-  */
-@@ -144,6 +170,31 @@ static int add_sysfs_fw_map_entry(struct
- 	return 0;
- }
- 
-+/*
-+ * Remove memmap entry on sysfs
-+ */
-+static inline void remove_sysfs_fw_map_entry(struct firmware_map_entry *entry)
-+{
-+	kobject_put(&entry->kobj);
-+}
-+
-+/*
-+ * Search memmap entry
-+ */
-+
-+struct firmware_map_entry * __meminit
-+find_firmware_map_entry(u64 start, u64 end, const char *type)
-+{
-+	struct firmware_map_entry *entry;
-+
-+	list_for_each_entry(entry, &map_entries, list)
-+		if ((entry->start == start) && (entry->end == end) &&
-+		    (!strcmp(entry->type, type)))
-+			return entry;
-+
-+	return NULL;
-+}
-+
- /**
-  * firmware_map_add_hotplug() - Adds a firmware mapping entry when we do
-  * memory hotplug.
-@@ -196,6 +247,32 @@ int __init firmware_map_add_early(u64 st
- 	return firmware_map_add_entry(start, end, type, entry);
- }
- 
-+/**
-+ * firmware_map_remove() - remove a firmware mapping entry
-+ * @start: Start of the memory range.
-+ * @end:   End of the memory range.
-+ * @type:  Type of the memory range.
-+ *
-+ * removes a firmware mapping entry.
-+ *
-+ * Returns 0 on success, or -EINVAL if no entry.
-+ **/
-+int __meminit firmware_map_remove(u64 start, u64 end, const char *type)
-+{
-+	struct firmware_map_entry *entry;
-+
-+	entry = find_firmware_map_entry(start, end - 1, type);
-+	if (!entry)
-+		return -EINVAL;
-+
-+	firmware_map_remove_entry(entry);
-+
-+	/* remove the memmap entry */
-+	remove_sysfs_fw_map_entry(entry);
-+
-+	return 0;
-+}
-+
- /*
-  * Sysfs functions -------------------------------------------------------------
-  */
-@@ -218,7 +295,6 @@ static ssize_t type_show(struct firmware
- }
- 
- #define to_memmap_attr(_attr) container_of(_attr, struct memmap_attribute, attr)
--#define to_memmap_entry(obj) container_of(obj, struct firmware_map_entry, kobj)
- 
- static ssize_t memmap_attr_show(struct kobject *kobj,
- 				struct attribute *attr, char *buf)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBCAAGBQJQBovGAAoJEECxmPOUX5FEBr4QAIAlwfClB1JBeCv+B3BYN2lC
+k49Exxe62tTlGLV4VFCykvvu3GT8fIdklkWsTRHTPe4oABwmzkJEpF586eoOv+8G
+heNNdeifT+wHN5YF/z6SHbAfaZV97hSms8WJ7CTu+lxYgiCsv9WrsuTzmchKnZXM
+WESSME2X2i+hE5kS8dpJEI4kwXzg4Vgkb34aoxZ+CZm3kvZhpul9BabjERGAARxw
+mQFOES/8eUob5ocAUE3/85f0FVNEagmAV8zVw9XU+Hdbp0+enbulFTfCPz8WBq9d
+AffDKHjbIfPSMzlb7ZoOZml4EmkwWK2SFXqCoOMNhQat7obUs2/GORUqw7aPykAq
+8SMdWgUCjt5COLvAkGERxJaWF0IDktK80NBDC+hPjXb0A/L7yzljgw56JlXrKE0w
+r4zTsupguswewvwTNkI4HRW7jVDgXA0FZ8QfdsCV1Q17ncSPgMKPoxwaUf8lRcCT
+33dDRs3Al+tkMovQbWqHkOne7FZhdkRZQsbcACtZiFn030CAFQCjHpaTlle45xjj
+qMYSg7V8qeP9kGr1fNyuhf0pqZR0IK0lvuLRQZ+VvHz5/RukIRSW5H9sh3qj7zVl
+RBbP0Yw8RhZMWFAdzmVNfV9ge0PMJDi2B5spcPfnRgyZLbSneaX0KCwkZxeZrIpl
+CeccuIdx/XRqP69geJ3o
+=xsa4
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__18_Jul_2012_20_11_18_+1000_YoqrYsCctNNwAGgY--
