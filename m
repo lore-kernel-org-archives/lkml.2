@@ -1,125 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754122Ab2GRLxE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 07:53:04 -0400
-Received: from e06smtp18.uk.ibm.com ([195.75.94.114]:32855 "EHLO
-	e06smtp18.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751853Ab2GRLxC (ORCPT
+	id S1754138Ab2GRL5L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 07:57:11 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:48852 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751853Ab2GRL5J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 07:53:02 -0400
-Date: Wed, 18 Jul 2012 13:52:55 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Michal Hocko <mhocko@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] fix idle ticks in cpu summary line of /proc/stat
-Message-ID: <20120718135255.1eafb680@de.ibm.com>
-In-Reply-To: <4F5F0623.6080702@linux.vnet.ibm.com>
-References: <20120311182621.41674b39@de.ibm.com>
-	<20120312121726.GA23608@tiehlicka.suse.cz>
-	<20120312101739.26eb373e@de.ibm.com>
-	<4F5E0CC1.6010102@linux.vnet.ibm.com>
-	<20120312153906.GE3994@tiehlicka.suse.cz>
-	<20120312164145.5110ed5c@de.ibm.com>
-	<20120313080748.GA7754@tiehlicka.suse.cz>
-	<4F5F0623.6080702@linux.vnet.ibm.com>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-x-cbid: 12071811-6892-0000-0000-00000277E389
+	Wed, 18 Jul 2012 07:57:09 -0400
+Date: Wed, 18 Jul 2012 13:57:03 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+Cc: paulus@samba.org, a.p.zijlstra@chello.nl, linux-kernel@vger.kernel.org,
+        mingo@redhat.com, emachado@linux.vnet.ibm.com, acme@ghostprotocols.net,
+        prasad.krishnan@gmail.com
+Subject: Re: [PATCH v2 RESEND] Hardware breakpoints: Invoke
+ __perf_event_disable() if interrupts are already disabled
+Message-ID: <20120718115700.GB6233@somewhere.redhat.com>
+References: <20120706101653.7515.23309.stgit@localhost.localdomain>
+ <20120718103046.7512.8326.stgit@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120718103046.7512.8326.stgit@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Mar 2012 14:02:35 +0530
-"Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com> wrote:
-
-> On 03/13/2012 01:37 PM, Michal Hocko wrote:
+On Wed, Jul 18, 2012 at 04:00:46PM +0530, Naveen N. Rao wrote:
+> Please find v2 of the patch from Prasad, based on Peter Zijlstra's
+> feedback. This applies on top of v3.5-rc7. This has been tested and
+> found to work fine by Edjunior.
 > 
-> > OK, so the updated version of the patch looks like this. I am sorry but
-> > I had time to only compile test this...
-> > ---
-> > From d12247f14c5f8b00ae97a87442f62e49227a759b Mon Sep 17 00:00:00 2001
-> > From: Michal Hocko <mhocko@suse.cz>
-> > Date: Mon, 12 Mar 2012 13:11:38 +0100
-> > Subject: [PATCH] nohz: fix idle ticks in cpu summary line of /proc/stat
-> > 
-> > Git commit 09a1d34f8535ecf9 "nohz: Make idle/iowait counter update
-> > conditional" introduced a bug in regard to cpu hotplug. The effect is
-> > that the number of idle ticks in the cpu summary line in /proc/stat is
-> > still counting ticks for offline cpus.
-> > 
-> > Reproduction is easy, just start a workload that keeps all cpus busy,
-> > switch off one or more cpus and then watch the idle field in top.
-> > On a dual-core with one cpu 100% busy and one offline cpu you will get
-> > something like this:
-> > 
-> > %Cpu(s): 48.7 us,  1.3 sy,  0.0 ni, 50.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
-> > 
-> > The problem is that an offline cpu still has ts->idle_active == 1.
-> > To fix this we should make sure that the cpu is online when calling
-> > get_cpu_idle_time_us and get_cpu_iowait_time_us.
-> > 
-> > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-> > Reported-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
-> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> > ---
-> >  fs/proc/stat.c |   14 ++++++++++----
-> >  1 files changed, 10 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/fs/proc/stat.c b/fs/proc/stat.c
-> > index 121f77c..62bda24 100644
-> > --- a/fs/proc/stat.c
-> > +++ b/fs/proc/stat.c
-> > @@ -24,10 +24,13 @@
-> > 
-> >  static u64 get_idle_time(int cpu)
-> >  {
-> > -	u64 idle, idle_time = get_cpu_idle_time_us(cpu, NULL);
-> > +	u64 idle, idle_time = -1ULL;
-> > +
-> > +	if (cpu_online(cpu))
-> > +		idle_time = get_cpu_idle_time_us(cpu, NULL);
-> > 
-> >  	if (idle_time == -1ULL) {
-> > -		/* !NO_HZ so we can rely on cpustat.idle */
-> > +		/* !NO_HZ or cpu offline so we can rely on cpustat.idle */
-> >  		idle = kcpustat_cpu(cpu).cpustat[CPUTIME_IDLE];
-> >  		idle += arch_idle_time(cpu);
-> >  	} else
-> > @@ -38,10 +41,13 @@ static u64 get_idle_time(int cpu)
-> > 
-> >  static u64 get_iowait_time(int cpu)
-> >  {
-> > -	u64 iowait, iowait_time = get_cpu_iowait_time_us(cpu, NULL);
-> > +	u64 iowait, iowait_time = -1ULL;
-> > +
-> > +	if (cpu_online(cpu))
-> > +		iowait_time = get_cpu_iowait_time_us(cpu, NULL);
-> > 
-> >  	if (iowait_time == -1ULL)
-> > -		/* !NO_HZ so we can rely on cpustat.iowait */
-> > +		/* !NO_HZ or cpu offline so we can rely on cpustat.iowait */
-> >  		iowait = kcpustat_cpu(cpu).cpustat[CPUTIME_IOWAIT];
-> >  	else
-> >  		iowait = usecs_to_cputime64(iowait_time);
+> Regards,
+> Naveen
+> ______
 > 
+> From: K.Prasad <Prasad.Krishnan@gmail.com>
 > 
+> While debugging a warning message on PowerPC while using hardware
+> breakpoints, it was discovered that when perf_event_disable is invoked
+> through hw_breakpoint_handler function with interrupts disabled, a
+> subsequent IPI in the code path would trigger a WARN_ON_ONCE message in
+> smp_call_function_single function.
 > 
-> Yeah, this looks much better..
+> This patch calls __perf_event_disable() when interrupts are already
+> disabled, instead of perf_event_disable().
 > 
-> Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> Reported-by: Edjunior Barbosa Machado <emachado@linux.vnet.ibm.com>
+> Signed-off-by: K.Prasad <Prasad.Krishnan@gmail.com>
+> Signed-off-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
+> ---
+>  include/linux/perf_event.h    |    2 ++
+>  kernel/events/core.c          |    2 +-
+>  kernel/events/hw_breakpoint.c |   10 +++++++++-
+>  3 files changed, 12 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+> index 45db49f..c289ba0 100644
+> --- a/include/linux/perf_event.h
+> +++ b/include/linux/perf_event.h
+> @@ -1292,6 +1292,7 @@ extern int perf_swevent_get_recursion_context(void);
+>  extern void perf_swevent_put_recursion_context(int rctx);
+>  extern void perf_event_enable(struct perf_event *event);
+>  extern void perf_event_disable(struct perf_event *event);
+> +extern int __perf_event_disable(void *info);
+>  extern void perf_event_task_tick(void);
+>  #else
+>  static inline void
+> @@ -1330,6 +1331,7 @@ static inline int  perf_swevent_get_recursion_context(void)		{ return -1; }
+>  static inline void perf_swevent_put_recursion_context(int rctx)		{ }
+>  static inline void perf_event_enable(struct perf_event *event)		{ }
+>  static inline void perf_event_disable(struct perf_event *event)		{ }
+> +static inline int __perf_event_disable(void *info)			{ }
+>  static inline void perf_event_task_tick(void)				{ }
+>  #endif
+>  
+> diff --git a/kernel/events/core.c b/kernel/events/core.c
+> index d7d71d6..0ad0fc9 100644
+> --- a/kernel/events/core.c
+> +++ b/kernel/events/core.c
+> @@ -1253,7 +1253,7 @@ retry:
+>  /*
+>   * Cross CPU call to disable a performance event
+>   */
+> -static int __perf_event_disable(void *info)
+> +int __perf_event_disable(void *info)
+>  {
+>  	struct perf_event *event = info;
+>  	struct perf_event_context *ctx = event->ctx;
+> diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
+> index bb38c4d..483f14a 100644
+> --- a/kernel/events/hw_breakpoint.c
+> +++ b/kernel/events/hw_breakpoint.c
+> @@ -453,7 +453,15 @@ int modify_user_hw_breakpoint(struct perf_event *bp, struct perf_event_attr *att
+>  	int old_type = bp->attr.bp_type;
+>  	int err = 0;
+>  
+> -	perf_event_disable(bp);
+> +	/*
+> +	 * modify_user_hw_breakpoint can be invoked with IRQs disabled and hence it
+> +	 * will not be possible to raise IPIs that invoke __perf_event_disable.
+> +	 * So call the function directly.
+> +	 */
+> +	if (irqs_disabled())
+> +		__perf_event_disable(bp);
+> +	else
+> +		perf_event_disable(bp);
 
-What happened to this patch? The fix for s390 (git commit cb85a6ed67e979c59
-"proc: stats: Use arch_idle_time for idle and iowait times if available"
-is upstream but the fix for non-s390 systems is missing, no?
+This only works if we are sure the bp is on the current CPU. Do we
+have that guarantee?
 
--- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
-
+>  
+>  	bp->attr.bp_addr = attr->bp_addr;
+>  	bp->attr.bp_type = attr->bp_type;
+> 
