@@ -1,37 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754744Ab2GROeN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 10:34:13 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:38796 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754692Ab2GROeJ convert rfc822-to-8bit (ORCPT
+	id S1754768Ab2GROeh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 10:34:37 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:37405 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753179Ab2GROee convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 10:34:09 -0400
+	Wed, 18 Jul 2012 10:34:34 -0400
 From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
 CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "sameo@linux.intel.com" <sameo@linux.intel.com>,
         "Girdwood, Liam" <lrg@ti.com>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
         "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "a.zummo@towertech.it" <a.zummo@towertech.it>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Richard Purdie <rpurdie@rpsys.net>, Bryan Wu <bryan.wu@canonical.com>
-Subject: [PATCH 3/6] power_supply: add new lp8788 charger driver
-Thread-Topic: [PATCH 3/6] power_supply: add new lp8788 charger driver
-Thread-Index: Ac1k8j1YCAHIIHxxRHatCbpyySKAXg==
-Date: Wed, 18 Jul 2012 14:33:20 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998FD7BF@DQHE02.ent.ti.com>
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>, Bryan Wu <bryan.wu@canonical.com>,
+        "a.zummo@towertech.it" <a.zummo@towertech.it>
+Subject: [PATCH 5/6] backlight: add new lp8788 backlight driver
+Thread-Topic: [PATCH 5/6] backlight: add new lp8788 backlight driver
+Thread-Index: Ac1k8lbIp3eYrA7FR6KQONfoZDv2YQ==
+Date: Wed, 18 Jul 2012 14:33:47 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998FD7D6@DQHE02.ent.ti.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-cr-hashedpuzzle: UPI= P0vq YkZc alPL b54D iZSx kTtS mEvo zAlJ 4F98 4OlM
- ABzZJQ== ACPGNg== ADvBCQ== AEixkw==
- AHgvqA==;9;YQAuAHoAdQBtAG0AbwBAAHQAbwB3AGUAcgB0AGUAYwBoAC4AaQB0ADsAYQBrAHAAbQBAAGwAaQBuAHUAeAAtAGYAbwB1AG4AZABhAHQAaQBvAG4ALgBvAHIAZwA7AGIAcgBvAG8AbgBpAGUAQABvAHAAZQBuAHMAbwB1AHIAYwBlAC4AdwBvAGwAZgBzAG8AbgBtAGkAYwByAG8ALgBjAG8AbQA7AGIAcgB5AGEAbgAuAHcAdQBAAGMAYQBuAG8AbgBpAGMAYQBsAC4AYwBvAG0AOwBjAGIAbwB1AGEAdABtAGEAaQBsAHIAdQBAAGcAbQBhAGkAbAAuAGMAbwBtADsAZAB3AG0AdwAyAEAAaQBuAGYAcgBhAGQAZQBhAGQALgBvAHIAZwA7AGwAaQBuAHUAeAAtAGsAZQByAG4AZQBsAEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcAOwByAHAAdQByAGQAaQBlAEAAcgBwAHMAeQBzAC4AbgBlAHQAOwBzAGEAbQBlAG8AQABsAGkAbgB1AHgALgBpAG4AdABlAGwALgBjAG8AbQA=;Sosha1_v1;7;{89FC3CE3-FD7C-471A-A607-EC01D95C66EB};bQBpAGwAbwAuAGsAaQBtAEAAdABpAC4AYwBvAG0A;Wed,
- 18 Jul 2012 14:33:03
- GMT;WwBQAEEAVABDAEgAIAAzAC8ANgBdACAAcABvAHcAZQByAF8AcwB1AHAAcABsAHkAOgAgAGEAZABkACAAbgBlAHcAIABsAHAAOAA3ADgAOAAgAGMAaABhAHIAZwBlAHIAIABkAHIAaQB2AGUAcgA=
-x-cr-puzzleid: {89FC3CE3-FD7C-471A-A607-EC01D95C66EB}
 x-originating-ip: [157.87.177.86]
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
@@ -40,57 +34,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-TI LP8788 PMU has the battery charger function.
-Configurable charging parameters can be defined in the platform data.
-And charging parameters can be read via the sysfs.
-Charging interrupts are passed from lp8788 irq thread and
-each interrupt can be handled in the charger driver.
+TI LP8788 PMU has the backlight driver.
+The brightness can be controlled by the PWM or the I2C commands.
+Configurable parameters can be defined in the platform data.
 
 Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
 ---
- drivers/power/Kconfig          |    6 +
- drivers/power/Makefile         |    1 +
- drivers/power/lp8788-charger.c |  719 ++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 726 insertions(+), 0 deletions(-)
- create mode 100644 drivers/power/lp8788-charger.c
+ drivers/video/backlight/Kconfig     |    6 +
+ drivers/video/backlight/Makefile    |    1 +
+ drivers/video/backlight/lp8788_bl.c |  325 +++++++++++++++++++++++++++++++++++
+ 3 files changed, 332 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/video/backlight/lp8788_bl.c
 
-diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
-index c1892f3..effbb72 100644
---- a/drivers/power/Kconfig
-+++ b/drivers/power/Kconfig
-@@ -255,6 +255,12 @@ config CHARGER_LP8727
- 	help
- 	  Say Y here to enable support for LP8727 Charger Driver.
+diff --git a/drivers/video/backlight/Kconfig b/drivers/video/backlight/Kconfig
+index cf28276..6fe0231 100644
+--- a/drivers/video/backlight/Kconfig
++++ b/drivers/video/backlight/Kconfig
+@@ -359,6 +359,12 @@ config BACKLIGHT_LP855X
+ 	  This supports TI LP8550, LP8551, LP8552, LP8553 and LP8556
+ 	  backlight driver.
  
-+config CHARGER_LP8788
-+	tristate "TI LP8788 charger driver"
-+	depends on MFD_LP8788
++config BACKLIGHT_LP8788
++	tristate "Backlight driver for TI LP8788 MFD"
++	depends on BACKLIGHT_CLASS_DEVICE && MFD_LP8788
 +	help
-+	  Say Y to enable support for the LP8788 linear charger.
++	  This supports TI LP8788 backlight driver.
 +
- config CHARGER_GPIO
- 	tristate "GPIO charger"
- 	depends on GPIOLIB
-diff --git a/drivers/power/Makefile b/drivers/power/Makefile
-index ee58afb..587c5f1 100644
---- a/drivers/power/Makefile
-+++ b/drivers/power/Makefile
-@@ -39,6 +39,7 @@ obj-$(CONFIG_CHARGER_ISP1704)	+= isp1704_charger.o
- obj-$(CONFIG_CHARGER_MAX8903)	+= max8903_charger.o
- obj-$(CONFIG_CHARGER_TWL4030)	+= twl4030_charger.o
- obj-$(CONFIG_CHARGER_LP8727)	+= lp8727_charger.o
-+obj-$(CONFIG_CHARGER_LP8788)	+= lp8788-charger.o
- obj-$(CONFIG_CHARGER_GPIO)	+= gpio-charger.o
- obj-$(CONFIG_CHARGER_MANAGER)	+= charger-manager.o
- obj-$(CONFIG_CHARGER_MAX8997)	+= max8997_charger.o
-diff --git a/drivers/power/lp8788-charger.c b/drivers/power/lp8788-charger.c
+ config BACKLIGHT_OT200
+ 	tristate "Backlight driver for ot200 visualisation device"
+ 	depends on BACKLIGHT_CLASS_DEVICE && CS5535_MFGPT && GPIO_CS5535
+diff --git a/drivers/video/backlight/Makefile b/drivers/video/backlight/Makefile
+index a2ac9cf..f8cc7cb 100644
+--- a/drivers/video/backlight/Makefile
++++ b/drivers/video/backlight/Makefile
+@@ -24,6 +24,7 @@ obj-$(CONFIG_BACKLIGHT_HP680)	+= hp680_bl.o
+ obj-$(CONFIG_BACKLIGHT_LM3533)	+= lm3533_bl.o
+ obj-$(CONFIG_BACKLIGHT_LOCOMO)	+= locomolcd.o
+ obj-$(CONFIG_BACKLIGHT_LP855X)	+= lp855x_bl.o
++obj-$(CONFIG_BACKLIGHT_LP8788)	+= lp8788_bl.o
+ obj-$(CONFIG_BACKLIGHT_OMAP1)	+= omap1_bl.o
+ obj-$(CONFIG_BACKLIGHT_PANDORA)	+= pandora_bl.o
+ obj-$(CONFIG_BACKLIGHT_PROGEAR) += progear_bl.o
+diff --git a/drivers/video/backlight/lp8788_bl.c b/drivers/video/backlight/lp8788_bl.c
 new file mode 100644
-index 0000000..e1a76cd
+index 0000000..1c803ad
 --- /dev/null
-+++ b/drivers/power/lp8788-charger.c
-@@ -0,0 +1,719 @@
++++ b/drivers/video/backlight/lp8788_bl.c
+@@ -0,0 +1,325 @@
 +/*
-+ * TI LP8788 MFD - battery charger driver
++ * TI LP8788 MFD - backlight driver
 + *
 + * Copyright 2012 Texas Instruments
 + *
@@ -105,709 +97,315 @@ index 0000000..e1a76cd
 +#include <linux/module.h>
 +#include <linux/slab.h>
 +#include <linux/err.h>
-+#include <linux/interrupt.h>
 +#include <linux/platform_device.h>
-+#include <linux/workqueue.h>
-+#include <linux/power_supply.h>
++#include <linux/backlight.h>
 +#include <linux/mfd/lp8788.h>
 +
 +/* register address */
-+#define LP8788_CHG_STATUS		0x07
-+#define LP8788_CHG_IDCIN		0x13
-+#define LP8788_CHG_IBATT		0x14
-+#define LP8788_CHG_VTERM		0x15
-+#define LP8788_CHG_EOC			0x16
++#define LP8788_BL_CONFIG		0x96
++#define LP8788_BL_BRIGHTNESS		0x97
++#define LP8788_BL_RAMP			0x98
 +
 +/* mask/shift bits */
-+#define LP8788_CHG_INPUT_STATE_M	0x03	/* Addr 07h */
-+#define LP8788_CHG_STATE_M		0x3C
-+#define LP8788_CHG_STATE_S		2
-+#define LP8788_NO_BATT_M		BIT(6)
-+#define LP8788_BAD_BATT_M		BIT(7)
-+#define LP8788_CHG_IBATT_M		0x1F	/* Addr 14h */
-+#define LP8788_CHG_VTERM_M		0x0F	/* Addr 15h */
-+#define LP8788_CHG_EOC_LEVEL_M		0x30	/* Addr 16h */
-+#define LP8788_CHG_EOC_LEVEL_S		4
-+#define LP8788_CHG_EOC_TIME_M		0x0E
-+#define LP8788_CHG_EOC_TIME_S		1
-+#define LP8788_CHG_EOC_MODE_M		BIT(0)
++#define LP8788_BL_I2C_EN		BIT(0)	/* Addr 96h */
++#define LP8788_BL_PWM_EN		BIT(5)
++#define LP8788_BL_FULLSCALE_S		2
++#define LP8788_BL_DIM_MODE_S		1
++#define LP8788_BL_PWM_POLARITY_S	6
++#define LP8788_BL_RAMP_RISE_S		4	/* Addr 98h */
 +
-+#define CHARGER_NAME			"charger"
-+#define BATTERY_NAME			"main_batt"
++#define BUF_SIZE			20
++#define MAX_BRIGHTNESS			127
++#define DEFAULT_BL_NAME			"lcd-backlight"
 +
-+#define LP8788_CHG_START		0x11
-+#define LP8788_CHG_END			0x1C
-+
-+#define BUF_SIZE			40
-+#define MAX_BATT_CAPACITY		100
-+#define LP8788_ISEL_MAX			23
-+#define LP8788_ISEL_STEP		50
-+#define LP8788_VTERM_MIN		4100
-+#define LP8788_VTERM_STEP		25
-+
-+/* CHG_STATE */
-+enum lp8788_charging_state {
-+	OFF,
-+	WARM_UP,
-+	LOW_INPUT = 0x3,
-+	PRECHARGE,
-+	CC,
-+	CV,
-+	MAINTENANCE,
-+	BATTERY_FAULT,
-+	SYSTEM_SUPPORT = 0xC,
-+	HIGH_CURRENT = 0xF,
-+	MAX_CHG_STATE,
++struct lp8788_bl_config {
++	enum lp8788_bl_ctrl_mode bl_mode;
++	enum lp8788_bl_dim_mode dim_mode;
++	enum lp8788_bl_full_scale_current full_scale;
++	enum lp8788_bl_ramp_step rise_time;
++	enum lp8788_bl_ramp_step fall_time;
++	enum lp8788_bl_pwm_polarity pwm_pol;
 +};
 +
-+/* CHG_INPUT_STATE */
-+enum lp8788_charger_input_state {
-+	SYSTEM_SUPPLY = 1,
-+	FULL_FUNCTION,
-+};
-+
-+struct lp8788_charger {
++struct lp8788_bl {
 +	struct lp8788 *lp;
-+	struct power_supply charger;
-+	struct power_supply battery;
-+	struct work_struct charger_work;
++	struct backlight_device *bl_dev;
++	struct lp8788_backlight_platform_data *pdata;
++	enum lp8788_bl_ctrl_mode mode;
 +};
 +
-+static char *battery_supplied_to[] = {
-+	BATTERY_NAME,
++struct lp8788_bl_config default_bl_config = {
++	.bl_mode    = LP8788_BL_REGISTER_ONLY,
++	.dim_mode   = LP8788_DIM_EXPONENTIAL,
++	.full_scale = LP8788_FULLSCALE_1900uA,
++	.rise_time  = LP8788_RAMP_8192us,
++	.fall_time  = LP8788_RAMP_8192us,
++	.pwm_pol    = LP8788_PWM_ACTIVE_HIGH,
 +};
 +
-+static enum power_supply_property lp8788_charger_prop[] = {
-+	POWER_SUPPLY_PROP_ONLINE,
-+};
-+
-+static enum power_supply_property lp8788_battery_prop[] = {
-+	POWER_SUPPLY_PROP_STATUS,
-+	POWER_SUPPLY_PROP_HEALTH,
-+	POWER_SUPPLY_PROP_PRESENT,
-+	POWER_SUPPLY_PROP_VOLTAGE_NOW,
-+	POWER_SUPPLY_PROP_CAPACITY,
-+	POWER_SUPPLY_PROP_TEMP,
-+};
-+
-+static bool lp8788_is_charger_detected(struct lp8788 *lp)
++static inline bool is_brightness_ctrl_by_pwm(enum lp8788_bl_ctrl_mode mode)
 +{
-+	u8 data;
-+
-+	lp8788_read_byte(lp, LP8788_CHG_STATUS, &data);
-+	data &= LP8788_CHG_INPUT_STATE_M;
-+
-+	return (data == SYSTEM_SUPPLY || data == FULL_FUNCTION);
++	return (mode == LP8788_BL_COMB_PWM_BASED);
 +}
 +
-+static int lp8788_charger_get_property(struct power_supply *psy,
-+					enum power_supply_property psp,
-+					union power_supply_propval *val)
++static inline bool is_brightness_ctrl_by_register(enum lp8788_bl_ctrl_mode mode)
 +{
-+	struct lp8788_charger *pchg = dev_get_drvdata(psy->dev->parent);
-+	struct lp8788 *lp = pchg->lp;
-+
-+	if (psp != POWER_SUPPLY_PROP_ONLINE)
-+		return -EINVAL;
-+
-+	val->intval = lp8788_is_charger_detected(lp);
-+	return 0;
++	return (mode == LP8788_BL_REGISTER_ONLY ||
++		mode == LP8788_BL_COMB_REGISTER_BASED);
 +}
 +
-+static int lp8788_get_battery_status(struct lp8788 *lp,
-+				union power_supply_propval *val)
++static int lp8788_backlight_init_device(struct lp8788_bl *bl)
 +{
-+	enum lp8788_charging_state state;
-+	u8 data;
++	struct lp8788_backlight_platform_data *pdata = bl->pdata;
++	struct lp8788_bl_config *cfg = &default_bl_config;
 +	int ret;
++	u8 val;
 +
-+	ret = lp8788_read_byte(lp, LP8788_CHG_STATUS, &data);
++	/* update if platform data exists */
++	if (pdata) {
++		cfg->bl_mode    = pdata->bl_mode;
++		cfg->dim_mode   = pdata->dim_mode;
++		cfg->full_scale = pdata->full_scale;
++		cfg->rise_time  = pdata->rise_time;
++		cfg->fall_time  = pdata->fall_time;
++		cfg->pwm_pol    = pdata->pwm_pol;
++	}
++
++	val = (cfg->rise_time << LP8788_BL_RAMP_RISE_S) | cfg->fall_time;
++	ret = lp8788_write_byte(bl->lp, LP8788_BL_RAMP, val);
 +	if (ret)
 +		return ret;
 +
-+	state = (data & LP8788_CHG_STATE_M) >> LP8788_CHG_STATE_S;
-+	switch (state) {
-+	case OFF:
-+		val->intval = POWER_SUPPLY_STATUS_DISCHARGING;
++	val = (cfg->full_scale << LP8788_BL_FULLSCALE_S) |
++		(cfg->dim_mode << LP8788_BL_DIM_MODE_S);
++
++	switch (cfg->bl_mode) {
++	case LP8788_BL_REGISTER_ONLY:
++		val |= LP8788_BL_I2C_EN;
 +		break;
-+	case PRECHARGE:
-+	case CC:
-+	case CV:
-+	case HIGH_CURRENT:
-+		val->intval = POWER_SUPPLY_STATUS_CHARGING;
-+		break;
-+	case MAINTENANCE:
-+		val->intval = POWER_SUPPLY_STATUS_FULL;
++	case LP8788_BL_COMB_PWM_BASED:
++	case LP8788_BL_COMB_REGISTER_BASED:
++		val |= LP8788_BL_I2C_EN;
++		val |= LP8788_BL_PWM_EN;
++		val |= cfg->pwm_pol << LP8788_BL_PWM_POLARITY_S;
 +		break;
 +	default:
-+		val->intval = POWER_SUPPLY_STATUS_NOT_CHARGING;
-+		break;
++		dev_err(bl->lp->dev, "invalid mode: %d\n", cfg->bl_mode);
++		return -EINVAL;
++	}
++
++	bl->mode = cfg->bl_mode;
++
++	return lp8788_write_byte(bl->lp, LP8788_BL_CONFIG, val);
++}
++
++static int lp8788_bl_update_status(struct backlight_device *bl_dev)
++{
++	struct lp8788_bl *bl = bl_get_data(bl_dev);
++	enum lp8788_bl_ctrl_mode mode = bl->mode;
++
++	if (bl_dev->props.state & BL_CORE_SUSPENDED)
++		bl_dev->props.brightness = 0;
++
++	if (is_brightness_ctrl_by_pwm(mode)) {
++		struct lp8788_bl_pwm_data *pd;
++		int brt = bl_dev->props.brightness;
++		int max = bl_dev->props.max_brightness;
++
++		pd = bl->pdata ? &bl->pdata->pwm_data : NULL;
++		if (pd && pd->pwm_set_intensity)
++			pd->pwm_set_intensity(brt, max);
++	} else if (is_brightness_ctrl_by_register(mode)) {
++		u8 brt = bl_dev->props.brightness;
++
++		lp8788_write_byte(bl->lp, LP8788_BL_BRIGHTNESS, brt);
 +	}
 +
 +	return 0;
 +}
 +
-+static int lp8788_get_battery_health(struct lp8788 *lp,
-+				union power_supply_propval *val)
++static int lp8788_bl_get_brightness(struct backlight_device *bl_dev)
 +{
-+	u8 data;
-+	int ret;
++	struct lp8788_bl *bl = bl_get_data(bl_dev);
++	enum lp8788_bl_ctrl_mode mode = bl->mode;
 +
-+	ret = lp8788_read_byte(lp, LP8788_CHG_STATUS, &data);
-+	if (ret)
-+		return ret;
++	if (is_brightness_ctrl_by_pwm(mode)) {
++		struct lp8788_bl_pwm_data *pd;
++		int max = bl_dev->props.max_brightness;
 +
-+	if (data & LP8788_NO_BATT_M)
-+		val->intval = POWER_SUPPLY_HEALTH_UNSPEC_FAILURE;
-+	else if (data & LP8788_BAD_BATT_M)
-+		val->intval = POWER_SUPPLY_HEALTH_DEAD;
++		pd = bl->pdata ? &bl->pdata->pwm_data : NULL;
++		if (pd && pd->pwm_get_intensity)
++			bl_dev->props.brightness = pd->pwm_get_intensity(max);
++	} else if (is_brightness_ctrl_by_register(mode)) {
++		u8 val = 0;
++
++		lp8788_read_byte(bl->lp, LP8788_BL_BRIGHTNESS, &val);
++		bl_dev->props.brightness = val;
++	}
++
++	return bl_dev->props.brightness;
++}
++
++static const struct backlight_ops lp8788_bl_ops = {
++	.options = BL_CORE_SUSPENDRESUME,
++	.update_status = lp8788_bl_update_status,
++	.get_brightness = lp8788_bl_get_brightness,
++};
++
++static int lp8788_backlight_register(struct lp8788_bl *bl)
++{
++	struct backlight_device *bl_dev;
++	struct backlight_properties props;
++	struct lp8788_backlight_platform_data *pdata = bl->pdata;
++	int init_brt = pdata ? pdata->initial_brightness : 0;
++	char *name;
++
++	props.type = BACKLIGHT_PLATFORM;
++	props.max_brightness = MAX_BRIGHTNESS;
++
++	if (init_brt > props.max_brightness)
++		init_brt = props.max_brightness;
++
++	props.brightness = init_brt;
++
++	if (!pdata || !pdata->name)
++		name = DEFAULT_BL_NAME;
 +	else
-+		val->intval = POWER_SUPPLY_HEALTH_GOOD;
++		name = pdata->name;
++
++	bl_dev = backlight_device_register(name, bl->lp->dev, bl,
++				       &lp8788_bl_ops, &props);
++	if (IS_ERR(bl_dev))
++		return PTR_ERR(bl_dev);
++
++	bl->bl_dev = bl_dev;
 +
 +	return 0;
 +}
 +
-+static int lp8788_get_battery_present(struct lp8788 *lp,
-+				union power_supply_propval *val)
++static void lp8788_backlight_unregister(struct lp8788_bl *bl)
 +{
-+	u8 data;
-+	int ret;
++	struct backlight_device *bl_dev = bl->bl_dev;
 +
-+	ret = lp8788_read_byte(lp, LP8788_CHG_STATUS, &data);
-+	if (ret)
-+		return ret;
-+
-+	val->intval = !(data & LP8788_NO_BATT_M);
-+	return 0;
++	if (bl_dev)
++		backlight_device_unregister(bl_dev);
 +}
 +
-+static int lp8788_get_vbatt_adc(struct lp8788 *lp, unsigned int *result)
++static ssize_t lp8788_get_bl_ctl_mode(struct device *dev,
++				     struct device_attribute *attr, char *buf)
 +{
-+	struct lp8788_charger_platform_data *pdata;
-+	enum lp8788_adc_id id;
++	struct lp8788_bl *bl = dev_get_drvdata(dev);
++	enum lp8788_bl_ctrl_mode mode = bl->mode;
++	char *strmode = NULL;
 +
-+	if (!lp->pdata || !lp->pdata->chg_pdata)
-+		return -EINVAL;
-+
-+	pdata = lp->pdata->chg_pdata;
-+
-+	id = pdata->vbatt_adc;
-+	switch (id) {
-+	case LPADC_VBATT_5P5:
-+	case LPADC_VBATT_6P0:
-+	case LPADC_VBATT_5P0:
-+		*result = lp8788_get_adc(lp, id, LP8788_ADC_12BIT_RES);
-+		*result /= 1000; /* unit: mV */
++	switch (mode) {
++	case LP8788_BL_COMB_PWM_BASED:
++		strmode = "pwm based";
++		break;
++	case LP8788_BL_REGISTER_ONLY:
++	case LP8788_BL_COMB_REGISTER_BASED:
++		strmode = "register based";
 +		break;
 +	default:
-+		dev_err(lp->dev, "invalid ADC id: %d\n", id);
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
-+static int lp8788_get_battery_voltage(struct lp8788 *lp,
-+				union power_supply_propval *val)
-+{
-+	return lp8788_get_vbatt_adc(lp, &val->intval);
-+}
-+
-+static int lp8788_get_battery_capacity(struct lp8788 *lp,
-+				union power_supply_propval *val)
-+{
-+	unsigned int max_vbatt, vbatt;
-+	enum lp8788_charging_state state;
-+	struct lp8788_charger_platform_data *pdata;
-+	u8 data;
-+	int ret;
-+
-+	if (!lp->pdata || !lp->pdata->chg_pdata)
-+		return -EINVAL;
-+
-+	pdata =  lp->pdata->chg_pdata;
-+
-+	max_vbatt = pdata->max_vbatt_mv;
-+	if (max_vbatt == 0)
-+		return -EINVAL;
-+
-+	ret = lp8788_read_byte(lp, LP8788_CHG_STATUS, &data);
-+	if (ret)
-+		return ret;
-+
-+	state = (data & LP8788_CHG_STATE_M) >> LP8788_CHG_STATE_S;
-+
-+	if (state == MAINTENANCE) {
-+		val->intval = MAX_BATT_CAPACITY;
-+	} else {
-+		ret = lp8788_get_vbatt_adc(lp, &vbatt);
-+		if (ret)
-+			return ret;
-+
-+		val->intval = (vbatt * MAX_BATT_CAPACITY) / max_vbatt;
-+		val->intval = min(val->intval, MAX_BATT_CAPACITY);
-+	}
-+
-+	return 0;
-+}
-+
-+static int lp8788_get_battery_temperature(struct lp8788 *lp,
-+				union power_supply_propval *val)
-+{
-+	struct lp8788_charger_platform_data *pdata;
-+	enum lp8788_adc_id id;
-+
-+	if (!lp->pdata || !lp->pdata->chg_pdata)
-+		return -EINVAL;
-+
-+	pdata =  lp->pdata->chg_pdata;
-+
-+	id = pdata->batt_temp_adc;
-+	switch (id) {
-+	case LPADC_ADC1:
-+	case LPADC_ADC2:
-+	case LPADC_ADC3:
-+	case LPADC_ADC4:
-+		val->intval = lp8788_get_adc(lp, id, LP8788_ADC_12BIT_RES);
-+		val->intval /= 100; /* unit: 0.1 'C */
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
-+static int lp8788_battery_get_property(struct power_supply *psy,
-+					enum power_supply_property psp,
-+					union power_supply_propval *val)
-+{
-+	struct lp8788_charger *pchg = dev_get_drvdata(psy->dev->parent);
-+	struct lp8788 *lp = pchg->lp;
-+
-+	switch (psp) {
-+	case POWER_SUPPLY_PROP_STATUS:
-+		return lp8788_get_battery_status(lp, val);
-+	case POWER_SUPPLY_PROP_HEALTH:
-+		return lp8788_get_battery_health(lp, val);
-+	case POWER_SUPPLY_PROP_PRESENT:
-+		return lp8788_get_battery_present(lp, val);
-+	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
-+		return lp8788_get_battery_voltage(lp, val);
-+	case POWER_SUPPLY_PROP_CAPACITY:
-+		return lp8788_get_battery_capacity(lp, val);
-+	case POWER_SUPPLY_PROP_TEMP:
-+		return lp8788_get_battery_temperature(lp, val);
-+	default:
-+		return -EINVAL;
-+	}
-+}
-+
-+static inline bool lp8788_is_valid_charger_register(u8 addr)
-+{
-+	return (addr >= LP8788_CHG_START && addr <= LP8788_CHG_END);
-+}
-+
-+static int lp8788_update_charger_params(struct lp8788_charger *pchg)
-+{
-+	struct lp8788 *lp = pchg->lp;
-+	struct lp8788_charger_platform_data *pdata;
-+	struct lp8788_chg_param *param;
-+	int i, ret;
-+
-+	if (!lp->pdata || !lp->pdata->chg_pdata ||
-+		!lp->pdata->chg_pdata->chg_params) {
-+		dev_info(lp->dev, "skip updating charger parameters\n");
-+		return 0;
-+	}
-+
-+	pdata = lp->pdata->chg_pdata;
-+
-+	/* settting charging parameters */
-+	for (i = 0 ; i < pdata->num_chg_params ; i++) {
-+		param = pdata->chg_params + i;
-+
-+		if (!param)
-+			continue;
-+
-+		if (lp8788_is_valid_charger_register(param->addr)) {
-+			ret = lp8788_write_byte(lp, param->addr, param->val);
-+			if (ret)
-+				return ret;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+static int lp8788_psy_register(struct platform_device *pdev,
-+				struct lp8788_charger *pchg)
-+{
-+	pchg->charger.name = CHARGER_NAME;
-+	pchg->charger.type = POWER_SUPPLY_TYPE_MAINS;
-+	pchg->charger.properties = lp8788_charger_prop;
-+	pchg->charger.num_properties = ARRAY_SIZE(lp8788_charger_prop);
-+	pchg->charger.get_property = lp8788_charger_get_property;
-+	pchg->charger.supplied_to = battery_supplied_to;
-+	pchg->charger.num_supplicants = ARRAY_SIZE(battery_supplied_to);
-+
-+	if (power_supply_register(&pdev->dev, &pchg->charger))
-+		return -EPERM;
-+
-+	pchg->battery.name = BATTERY_NAME;
-+	pchg->battery.type = POWER_SUPPLY_TYPE_BATTERY;
-+	pchg->battery.properties = lp8788_battery_prop;
-+	pchg->battery.num_properties = ARRAY_SIZE(lp8788_battery_prop);
-+	pchg->battery.get_property = lp8788_battery_get_property;
-+
-+	if (power_supply_register(&pdev->dev, &pchg->battery))
-+		return -EPERM;
-+
-+	return 0;
-+}
-+
-+static void lp8788_unregister_psy(struct lp8788_charger *pchg)
-+{
-+	power_supply_unregister(&pchg->battery);
-+	power_supply_unregister(&pchg->charger);
-+}
-+
-+static void lp8788_charger_event(struct work_struct *work)
-+{
-+	struct lp8788_charger *pchg =
-+		container_of(work, struct lp8788_charger, charger_work);
-+	struct lp8788 *lp = pchg->lp;
-+	struct lp8788_charger_platform_data *pdata = lp->pdata->chg_pdata;
-+	enum lp8788_charger_event event = lp8788_is_charger_detected(lp);
-+
-+	pdata->charger_event(lp, event);
-+}
-+
-+static irqreturn_t lp8788_charger_irq_thread(int irq, void *ptr)
-+{
-+	struct lp8788_charger *pchg = ptr;
-+	struct lp8788 *lp = pchg->lp;
-+	struct lp8788_charger_platform_data *pdata;
-+	enum lp8788_int_id id;
-+
-+	if (!lp->pdata || !lp->pdata->chg_pdata)
-+		goto irq_handled;
-+
-+	pdata = lp->pdata->chg_pdata;
-+	id = irq - lp->pdata->irq_base;
-+
-+	switch (id) {
-+	case LP8788_INT_CHG_INPUT_STATE:
-+	case LP8788_INT_CHG_STATE:
-+	case LP8788_INT_EOC:
-+	case LP8788_INT_BATT_LOW:
-+	case LP8788_INT_NO_BATT:
-+		power_supply_changed(&pchg->charger);
-+		power_supply_changed(&pchg->battery);
-+		break;
-+	default:
++		strmode = "invalid mode";
 +		break;
 +	}
 +
-+	/* report charger dectection event if used */
-+	if (pdata && pdata->charger_event)
-+		if (id == LP8788_INT_CHG_INPUT_STATE)
-+			schedule_work(&pchg->charger_work);
-+
-+irq_handled:
-+	return IRQ_HANDLED;
++	return scnprintf(buf, BUF_SIZE, "%s\n", strmode);
 +}
 +
-+static int lp8788_set_irqs(struct platform_device *pdev,
-+			struct lp8788_charger *pchg, const char *name)
-+{
-+	int irq_start, irq_end, ret, i;
-+	struct resource *r;
++static DEVICE_ATTR(bl_ctl_mode, S_IRUGO, lp8788_get_bl_ctl_mode, NULL);
 +
-+	/* no error even if no irq resource */
-+	r = platform_get_resource_byname(pdev, IORESOURCE_IRQ, name);
-+	if (!r)
-+		return 0;
-+
-+	irq_start = r->start;
-+	irq_end = r->end;
-+
-+	for (i = irq_start ; i <= irq_end ; i++) {
-+		ret = request_threaded_irq(i, NULL, lp8788_charger_irq_thread,
-+					0, name, pchg);
-+		if (ret)
-+			break;
-+	}
-+
-+	if (i <= irq_end)
-+		goto err_free_irq;
-+
-+	return 0;
-+
-+err_free_irq:
-+	while (--i >= irq_start)
-+		free_irq(i, pchg);
-+	return ret;
-+}
-+
-+static void lp8788_free_irqs(struct platform_device *pdev,
-+				struct lp8788_charger *pchg,
-+				const char *name)
-+{
-+	int irq_start, irq_end, i;
-+	struct resource *r;
-+
-+	r = platform_get_resource_byname(pdev, IORESOURCE_IRQ, name);
-+	if (!r)
-+		return;
-+
-+	irq_start = r->start;
-+	irq_end = r->end;
-+
-+	for (i = irq_start ; i <= irq_end ; i++)
-+		free_irq(i, pchg);
-+}
-+
-+static int lp8788_irq_register(struct platform_device *pdev,
-+				struct lp8788_charger *pchg)
-+{
-+	int ret, i;
-+	struct lp8788 *lp = pchg->lp;
-+	const char *name[] = {
-+		LP8788_CHG_IRQ, LP8788_PRSW_IRQ, LP8788_BATT_IRQ
-+	};
-+
-+	if (!lp->pdata) {
-+		dev_warn(lp->dev, "no platform data for charger irq\n");
-+		return 0;
-+	}
-+
-+	INIT_WORK(&pchg->charger_work, lp8788_charger_event);
-+
-+	for (i = 0 ; i < ARRAY_SIZE(name) ; i++) {
-+		ret = lp8788_set_irqs(pdev, pchg, name[i]);
-+		if (ret)
-+			break;
-+	}
-+
-+	return ret;
-+}
-+
-+static void lp8788_irq_unregister(struct platform_device *pdev,
-+				struct lp8788_charger *pchg)
-+{
-+	int i;
-+	struct lp8788 *lp = pchg->lp;
-+	const char *name[] = {
-+		LP8788_CHG_IRQ, LP8788_PRSW_IRQ, LP8788_BATT_IRQ
-+	};
-+
-+	if (!lp->pdata)
-+		return;
-+
-+	for (i = 0 ; i < ARRAY_SIZE(name) ; i++)
-+		lp8788_free_irqs(pdev, pchg, name[i]);
-+}
-+
-+static ssize_t lp8788_show_charger_status(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	struct lp8788_charger *pchg = dev_get_drvdata(dev);
-+	enum lp8788_charging_state state;
-+	char *desc[MAX_CHG_STATE] = {
-+		[OFF] = "CHARGER OFF",
-+		[WARM_UP] = "WARM UP",
-+		[LOW_INPUT] = "LOW INPUT STATE",
-+		[PRECHARGE] = "CHARGING - PRECHARGE",
-+		[CC] = "CHARGING - CC",
-+		[CV] = "CHARGING - CV",
-+		[MAINTENANCE] = "NO CHARGING - MAINTENANCE",
-+		[BATTERY_FAULT] = "BATTERY FAULT",
-+		[SYSTEM_SUPPORT] = "SYSTEM SUPPORT",
-+		[HIGH_CURRENT] = "HIGH CURRENT",
-+	};
-+	u8 data;
-+
-+	lp8788_read_byte(pchg->lp, LP8788_CHG_STATUS, &data);
-+	state = (data & LP8788_CHG_STATE_M) >> LP8788_CHG_STATE_S;
-+
-+	return scnprintf(buf, BUF_SIZE, "%s\n", desc[state]);
-+}
-+
-+static ssize_t lp8788_show_idcin(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	struct lp8788_charger *pchg = dev_get_drvdata(dev);
-+	int isel;
-+	u8 val;
-+
-+	lp8788_read_byte(pchg->lp, LP8788_CHG_IDCIN, &val);
-+	isel = LP8788_ISEL_STEP * (min_t(int, val, LP8788_ISEL_MAX) + 1);
-+
-+	return scnprintf(buf, BUF_SIZE,
-+			"Charger Input Current Limit: %dmA\n", isel);
-+}
-+
-+static ssize_t lp8788_show_ibatt(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	struct lp8788_charger *pchg = dev_get_drvdata(dev);
-+	int isel;
-+	u8 val;
-+
-+	lp8788_read_byte(pchg->lp, LP8788_CHG_IBATT, &val);
-+	val &= LP8788_CHG_IBATT_M;
-+	isel = LP8788_ISEL_STEP * (min_t(int, val, LP8788_ISEL_MAX) + 1);
-+
-+	return scnprintf(buf, BUF_SIZE,
-+			"Battery Charging Current: %dmA\n", isel);
-+}
-+
-+static ssize_t lp8788_show_vterm(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	struct lp8788_charger *pchg = dev_get_drvdata(dev);
-+	int vsel;
-+	u8 val;
-+
-+	lp8788_read_byte(pchg->lp, LP8788_CHG_VTERM, &val);
-+	val &= LP8788_CHG_VTERM_M;
-+	vsel = LP8788_VTERM_MIN + LP8788_VTERM_STEP * val;
-+
-+	return scnprintf(buf, BUF_SIZE,
-+			"Charger Termination Voltage: %dmV\n", vsel);
-+}
-+
-+static ssize_t lp8788_show_eoc_time(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	struct lp8788_charger *pchg = dev_get_drvdata(dev);
-+	char *stime[] = { "400ms", "5min", "10min", "15min",
-+			"20min", "25min", "30min" "No timeout" };
-+	u8 val;
-+
-+	lp8788_read_byte(pchg->lp, LP8788_CHG_EOC, &val);
-+	val = (val & LP8788_CHG_EOC_TIME_M) >> LP8788_CHG_EOC_TIME_S;
-+
-+	return scnprintf(buf, BUF_SIZE, "End Of Charge Time: %s\n", stime[val]);
-+}
-+
-+static ssize_t lp8788_show_eoc_level(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	struct lp8788_charger *pchg = dev_get_drvdata(dev);
-+	char *abs_level[] = { "25mA", "49mA", "75mA", "98mA" };
-+	char *relative_level[] = { "5%", "10%", "15%", "20%" };
-+	char *level;
-+	u8 val, mode;
-+
-+	lp8788_read_byte(pchg->lp, LP8788_CHG_EOC, &val);
-+
-+	mode = val & LP8788_CHG_EOC_MODE_M;
-+	val = (val & LP8788_CHG_EOC_LEVEL_M) >> LP8788_CHG_EOC_LEVEL_S;
-+	level = mode ? abs_level[val] : relative_level[val];
-+
-+	return scnprintf(buf, BUF_SIZE, "End Of Charge Level: %s\n", level);
-+}
-+
-+static DEVICE_ATTR(charger_status, S_IRUSR, lp8788_show_charger_status, NULL);
-+static DEVICE_ATTR(idcin, S_IRUSR, lp8788_show_idcin, NULL);
-+static DEVICE_ATTR(ibatt, S_IRUSR, lp8788_show_ibatt, NULL);
-+static DEVICE_ATTR(vterm, S_IRUSR, lp8788_show_vterm, NULL);
-+static DEVICE_ATTR(eoc_time, S_IRUSR, lp8788_show_eoc_time, NULL);
-+static DEVICE_ATTR(eoc_level, S_IRUSR, lp8788_show_eoc_level, NULL);
-+
-+static struct attribute *lp8788_charger_attr[] = {
-+	&dev_attr_charger_status.attr,
-+	&dev_attr_idcin.attr,
-+	&dev_attr_ibatt.attr,
-+	&dev_attr_vterm.attr,
-+	&dev_attr_eoc_time.attr,
-+	&dev_attr_eoc_level.attr,
++static struct attribute *lp8788_attributes[] = {
++	&dev_attr_bl_ctl_mode.attr,
 +	NULL,
 +};
 +
 +static const struct attribute_group lp8788_attr_group = {
-+	.attrs = lp8788_charger_attr,
++	.attrs = lp8788_attributes,
 +};
 +
-+static __devinit int lp8788_charger_probe(struct platform_device *pdev)
++static __devinit int lp8788_backlight_probe(struct platform_device *pdev)
 +{
 +	struct lp8788 *lp = dev_get_drvdata(pdev->dev.parent);
-+	struct lp8788_charger *pchg;
++	struct lp8788_bl *bl;
 +	int ret;
 +
-+	pchg = devm_kzalloc(lp->dev, sizeof(struct lp8788_charger), GFP_KERNEL);
-+	if (!pchg)
++	bl = devm_kzalloc(lp->dev, sizeof(struct lp8788_bl), GFP_KERNEL);
++	if (!bl)
 +		return -ENOMEM;
 +
-+	pchg->lp = lp;
-+	platform_set_drvdata(pdev, pchg);
++	bl->lp = lp;
++	bl->pdata = lp->pdata ? lp->pdata->bl_pdata : NULL;
++	platform_set_drvdata(pdev, bl);
 +
-+	ret = lp8788_update_charger_params(pchg);
-+	if (ret)
-+		return ret;
++	ret = lp8788_backlight_init_device(bl);
++	if (ret) {
++		dev_err(lp->dev, "backlight init device err: %d\n", ret);
++		if (is_brightness_ctrl_by_register(bl->mode))
++			goto err_dev;
++	}
 +
-+	ret = lp8788_psy_register(pdev, pchg);
-+	if (ret)
-+		return ret;
-+
-+	ret = lp8788_irq_register(pdev, pchg);
-+	if (ret)
-+		dev_warn(lp->dev, "failed to register charger irq: %d\n", ret);
++	ret = lp8788_backlight_register(bl);
++	if (ret) {
++		dev_err(lp->dev, "register backlight err: %d\n", ret);
++		goto err_dev;
++	}
 +
 +	ret = sysfs_create_group(&pdev->dev.kobj, &lp8788_attr_group);
-+	if (ret)
-+		goto err_unregister_psy;
++	if (ret) {
++		dev_err(lp->dev, "register sysfs err: %d\n", ret);
++		goto err_sysfs;
++	}
 +
++	backlight_update_status(bl->bl_dev);
 +	return 0;
 +
-+err_unregister_psy:
-+	lp8788_unregister_psy(pchg);
++err_sysfs:
++	lp8788_backlight_unregister(bl);
++err_dev:
 +	return ret;
 +}
 +
-+static int __devexit lp8788_charger_remove(struct platform_device *pdev)
++static int __devexit lp8788_backlight_remove(struct platform_device *pdev)
 +{
-+	struct lp8788_charger *pchg = platform_get_drvdata(pdev);
++	struct lp8788_bl *bl = platform_get_drvdata(pdev);
++	struct backlight_device *bl_dev = bl->bl_dev;
 +
++	bl_dev->props.brightness = 0;
++	backlight_update_status(bl_dev);
 +	sysfs_remove_group(&pdev->dev.kobj, &lp8788_attr_group);
-+	lp8788_irq_unregister(pdev, pchg);
-+
-+	if (pchg->charger_work.func)
-+		cancel_work_sync(&pchg->charger_work);
-+
-+	lp8788_unregister_psy(pchg);
++	lp8788_backlight_unregister(bl);
 +	platform_set_drvdata(pdev, NULL);
 +
 +	return 0;
 +}
 +
-+static struct platform_driver lp8788_charger_driver = {
-+	.probe = lp8788_charger_probe,
-+	.remove = __devexit_p(lp8788_charger_remove),
++static struct platform_driver lp8788_bl_driver = {
++	.probe = lp8788_backlight_probe,
++	.remove = __devexit_p(lp8788_backlight_remove),
 +	.driver = {
-+		.name = LP8788_DEV_CHARGER,
++		.name = LP8788_DEV_BACKLIGHT,
 +		.owner = THIS_MODULE,
 +	},
 +};
 +
-+static int __init lp8788_charger_init(void)
++static int __init lp8788_backlight_init(void)
 +{
-+	return platform_driver_register(&lp8788_charger_driver);
++	return platform_driver_register(&lp8788_bl_driver);
 +}
-+module_init(lp8788_charger_init);
++module_init(lp8788_backlight_init);
 +
-+static void __exit lp8788_charger_exit(void)
++static void __exit lp8788_backlight_exit(void)
 +{
-+	platform_driver_unregister(&lp8788_charger_driver);
++	platform_driver_unregister(&lp8788_bl_driver);
 +}
-+module_exit(lp8788_charger_exit);
++module_exit(lp8788_backlight_exit);
 +
-+MODULE_DESCRIPTION("TI LP8788 Charger Driver");
++MODULE_DESCRIPTION("Texas Instruments LP8788 Backlight Driver");
 +MODULE_AUTHOR("Milo Kim");
 +MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:lp8788-charger");
++MODULE_ALIAS("platform:lp8788-backlight");
 -- 
 1.7.2.5
 
