@@ -1,73 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752064Ab2GRGzo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 02:55:44 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:61444 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751852Ab2GRGzi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 02:55:38 -0400
-Message-ID: <1342594206.31927.7.camel@brekeke>
-Subject: Re: [PATCH 3/4] UBI: use the whole MTD device size to get
- bad_peb_limit
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Richard Genoud <richard.genoud@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 18 Jul 2012 09:50:06 +0300
-In-Reply-To: <1341937423-16516-4-git-send-email-richard.genoud@gmail.com>
-References: <1341937423-16516-1-git-send-email-richard.genoud@gmail.com>
-	 <1341937423-16516-4-git-send-email-richard.genoud@gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-EPpaMrZmTaruFoRElDs/"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1752212Ab2GRG5j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 02:57:39 -0400
+Received: from softlayer.compulab.co.il ([50.23.254.55]:38888 "EHLO
+	compulab.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751152Ab2GRG5d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 02:57:33 -0400
+Message-ID: <50065E5A.2040103@compulab.co.il>
+Date: Wed, 18 Jul 2012 09:57:30 +0300
+From: Denis Turischev <denis@compulab.co.il>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+CC: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] xhci: EHCI/xHCI ports switching on Intense-PC.
+References: <5004454E.9030903@compulab.co.il> <20120717045416.GJ7599@xanatos>
+In-Reply-To: <20120717045416.GJ7599@xanatos>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - compulab.co.il
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/17/2012 07:54 AM, Sarah Sharp wrote:
+> On Mon, Jul 16, 2012 at 07:46:06PM +0300, Denis Turischev wrote:
+>> Intense-PC is Compulab's mini-desktop with Intel Panther Point
+>> chipset.
+>>
+>> Unconditional ports switching provided by function
+>> usb_enable_xhci_ports() leads to surprising results, after shutdown
+>> system powered-on again after a few seconds. On Windows power
+>> related problems were not observed.
+> 
+> Do you have wake on lan enabled in the BIOS?  I have heard reports from
+> other users that this is a BIOS bug triggered by WOL.
 
---=-EPpaMrZmTaruFoRElDs/
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Bug appears with WOL disabled too, moreover, it appears with PCH LAN
+disabled at all in the BIOS.
 
-On Tue, 2012-07-10 at 18:23 +0200, Richard Genoud wrote:
->=20
-> The Kconfig option is in per1024 blocks, thus it can have a default
-> value of 20 which is *very* common for NAND devices.=20
+> 
+>> The patch avoids ports switching for Intense-PC.
+>>
+>> Signed-off-by: Denis Turischev <denis@compulab.co.il>
+>> ---
+>>  drivers/usb/host/pci-quirks.c |    7 +++++++
+>>  1 file changed, 7 insertions(+)
+>>
+>> diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
+>> index df0828c..6f72593 100644
+>> --- a/drivers/usb/host/pci-quirks.c
+>> +++ b/drivers/usb/host/pci-quirks.c
+>> @@ -759,6 +759,13 @@ void usb_enable_xhci_ports(struct pci_dev *xhci_pdev)
+>>  {
+>>  	u32		ports_available;
+>>
+>> +	const char *brd_name;
+>> +	brd_name = dmi_get_system_info(DMI_BOARD_NAME);
+>> +
+>> +	/* quirk for Compulab's Intense-PC board */
+>> +	if (brd_name && strstr(brd_name, "Intense-PC"))
+>> +		return;
+>> +
+> 
+> No, this fix is not acceptable.  You won't get USB 3.0 speeds if the
+> ports are not switched over.  Now, we can add a quirk to the xHCI
+> shutdown function to switch the ports back to EHCI on shutdown.  That
+> might not trigger the BIOS bug.
 
-Why do you prefer per1024? I'd make it centi-percent instead, wouldn't
-that be more human-friendly. It is just %*100. If I am a user, it is
-easy for me to calculate % and multiply that by 100. This per1024 thing
-would make me scratch my head...
+Yes, switching back to EHCI in xhci_shutdown() solves the problem.
 
---=20
-Best Regards,
-Artem Bityutskiy
+I suppose to do something like this in xhci_shutdown:
+	pdev = to_pci_dev(hcd->self.controller);
 
---=-EPpaMrZmTaruFoRElDs/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+	if (usb_is_intel_switchable_xhci(pdev)){
+		brd_name = dmi_get_system_info(DMI_BOARD_NAME);
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+		/* quirk for Compulab's Intense-PC board */
+		if (brd_name && strstr(brd_name, "Intense-PC"))
+			usb_disable_xhci_ports(pdev);
+	}
 
-iQIcBAABAgAGBQJQBlyeAAoJECmIfjd9wqK0SvoP/3NpxZvF6XRyRrYHiBRDj6pJ
-eIHIPvXdXvLKPYVcAUq0lmMJWe9oXTpjbhUxBB1D5ZGVpCsn4ZuGpDWhFlWyZ/21
-RalW3AVP0sQUZngxcmQvFJQs+j5CWErlY67NUzsLmsJVfAisN9ZQ/kLUyTNpqzT0
-iG8iLTZiprcONvRkd4vA4VNJtE47fT5rp4HaqjYFrJLijFCGldeLUvrABuUHcqSL
-F1FGmVizADOd9XBeoybwe52F20J4h8qxp0M2bUu1+rpCsIgtFde00zT8e0XbWodJ
-ClzRBgN9sDJkMxmuasJYrmRSiK3WBJyD1BhzH4inmhoKyZYf2Oefw+56m8UMpDir
-EX+FLkJZrfL4NbooY+55BkX3AOQMTRA3rwH3ormsrxVfVZmHZivJZdNAiSWx9SVX
-sKK8eBSlyeal+0ntO6JNzxhgOpU1skr8PH26a9bHLp3UBKfqPQlKQw2whasgkhNX
-SB/40Z2UDqNZPySku8L3KBvQqVuG/znw9Io/nRD4wpOLbIwxFFaTLeN6PyAB0b75
-fvHqPhOdXjPmJ8MEdXVel6Ep4wqzS+OrA52URpnP0KZMWt5nW/2OYP3kWvLNxr53
-RI4A5TowBQI5CdhyqR/tcVA7bvOt8qT2AjF0ihv126EMwjZrBOKq4Q8yFl/w5hid
-ko9TNlEetKuI4qLYLDBb
-=4RZe
------END PGP SIGNATURE-----
+Is it ok?
 
---=-EPpaMrZmTaruFoRElDs/--
+May be it worth to disable xhci ports for all intel switchable
+devices, not only for Intense-PC?
 
