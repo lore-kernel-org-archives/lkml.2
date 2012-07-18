@@ -1,49 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752641Ab2GRFmN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 01:42:13 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:15713 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751019Ab2GRFmD (ORCPT
+	id S1752697Ab2GRFnH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 01:43:07 -0400
+Received: from na3sys009aog119.obsmtp.com ([74.125.149.246]:51343 "EHLO
+	na3sys009aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751677Ab2GRFnB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 01:42:03 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 17 Jul 2012 22:37:54 -0700
-Message-ID: <50064AA7.3020508@nvidia.com>
-Date: Wed, 18 Jul 2012 11:03:27 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Wed, 18 Jul 2012 01:43:01 -0400
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH V2 1/6] mfd: tps6586x:use devm managed resources
-References: <1342421510-10638-1-git-send-email-ldewangan@nvidia.com> <1342421510-10638-2-git-send-email-ldewangan@nvidia.com> <20120716200110.GD10774@opensource.wolfsonmicro.com> <5004ED3F.4080601@nvidia.com> <20120717165346.GH4477@opensource.wolfsonmicro.com>
-In-Reply-To: <20120717165346.GH4477@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <50055C38.3000309@mvista.com>
+References: <1342448023-14438-1-git-send-email-kishon@ti.com>
+	<1342448023-14438-3-git-send-email-kishon@ti.com>
+	<50055C38.3000309@mvista.com>
+Date: Wed, 18 Jul 2012 11:13:00 +0530
+Message-ID: <CAAe_U6KGPnTefBVzYises6-+o40MZTr8j+zLRB504TDOfmsf9A@mail.gmail.com>
+Subject: Re: [PATCH 2/2] arm/dts: omap4: Add ocp2scp data
+From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
+        linux@arm.linux.org.uk, b-cousson@ti.com, rnayak@ti.com,
+        tony@atomide.com, gregkh@linuxfoundation.org, ohad@wizery.com,
+        linus.walleij@linaro.org, myungjoo.ham@samsung.com,
+        rusty@rustcorp.com.au, swarren@nvidia.com,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        balbi@ti.com, linux-omap@vger.kernel.org, linux-usb@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 17 July 2012 10:23 PM, Mark Brown wrote:
-> * PGP Signed by an unknown key
->
-> On Tue, Jul 17, 2012 at 10:12:39AM +0530, Laxman Dewangan wrote:
->> On Tuesday 17 July 2012 01:31 AM, Mark Brown wrote:
->>> On Mon, Jul 16, 2012 at 12:21:45PM +0530, Laxman Dewangan wrote:
->
->> I think device_remove will get called before the managed resource
->> get freed.
->> So do we need to call disable_irq() in remove() to avoid any interrupts?
-> That would be very rude if the IRQ happened to get shared, though that's
-> not possible at the moment.  In general it's pretty hard to use devm_
-> IRQs safely, it's normally safest to avoid them due to the issues with
-> ensuring that the interrupt handler is safe to be called even while the
-> device is being torn down.
+Hi,
 
-OK, then I will revert this specific change if it is not safe. I will 
-send the another patch (part of series v3 1/6) for this change only.
+On Tue, Jul 17, 2012 at 6:06 PM, Sergei Shtylyov <sshtylyov@mvista.com> wrote:
+> Hello.
+>
+>
+> On 16-07-2012 18:13, Kishon Vijay Abraham I wrote:
+>
+>> Add ocp2scp data node in omap4 device tree file.
+>
+>
+>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>> ---
+>>   arch/arm/boot/dts/omap4.dtsi |    8 ++++++++
+>>   1 files changed, 8 insertions(+), 0 deletions(-)
+>
+>
+>> diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
+>> index 359c497..bda5df3 100644
+>> --- a/arch/arm/boot/dts/omap4.dtsi
+>> +++ b/arch/arm/boot/dts/omap4.dtsi
+>> @@ -272,5 +272,13 @@
+>>                         ti,hwmods = "mmc5";
+>>                         ti,needs-special-reset;
+>>                 };
+>> +
+>> +               ocp2scp@4a0ad000  {
+>
+>
+>    "reg" property is absent, so why do you give the node name an address
+> postfix?
+When I was initially developing, I had "reg" property populated. Those
+info is now obtained from *ti,hwmods*. I'll resend the patch removing
+it.
+
+Thanks
+Kishon
