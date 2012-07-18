@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757514Ab2GRAEp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 20:04:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48754 "EHLO
+	id S1757530Ab2GRAE7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 20:04:59 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37684 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757468Ab2GRAEG (ORCPT
+	with ESMTP id S1757471Ab2GRAEK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 20:04:06 -0400
+	Tue, 17 Jul 2012 20:04:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 14/37] rt2x00usb: fix indexes ordering on RX queue kick
-Date: Tue, 17 Jul 2012 17:02:51 -0700
-Message-Id: <20120717232432.510891073@linuxfoundation.org>
+        Dean Nelson <dnelson@redhat.com>,
+        Tushar Dave <tushar.n.dave@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Jeff Pieper <jeffrey.e.pieper@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: [ 15/37] e1000e: Correct link check logic for 82571 serdes
+Date: Tue, 17 Jul 2012 17:02:52 -0700
+Message-Id: <20120717232432.591624178@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120717232431.399005532@linuxfoundation.org>
 References: <20120717232455.GA5994@kroah.com>
@@ -31,49 +34,37 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Tushar Dave <tushar.n.dave@intel.com>
 
-commit efd821182cec8c92babef6e00a95066d3252fda4 upstream.
+commit d0efa8f23a644f7cb7d1f8e78dd9a223efa412a3 upstream.
 
-On rt2x00_dmastart() we increase index specified by Q_INDEX and on
-rt2x00_dmadone() we increase index specified by Q_INDEX_DONE. So entries
-between Q_INDEX_DONE and Q_INDEX are those we currently process in the
-hardware. Entries between Q_INDEX and Q_INDEX_DONE are those we can
-submit to the hardware.
+SYNCH bit and IV bit of RXCW register are sticky. Before examining these bits,
+RXCW should be read twice to filter out one-time false events and have correct
+values for these bits. Incorrect values of these bits in link check logic can
+cause weird link stability issues if auto-negotiation fails.
 
-According to that fix rt2x00usb_kick_queue(), as we need to submit RX
-entries that are not processed by the hardware. It worked before only
-for empty queue, otherwise was broken.
-
-Note that for TX queues indexes ordering are ok. We need to kick entries
-that have filled skb, but was not submitted to the hardware, i.e.
-started from Q_INDEX_DONE and have ENTRY_DATA_PENDING bit set.
-
->From practical standpoint this fixes RX queue stall, usually reproducible
-in AP mode, like for example reported here:
-https://bugzilla.redhat.com/show_bug.cgi?id=828824
-
-Reported-and-tested-by: Franco Miceli <fmiceli@plan.ceibal.edu.uy>
-Reported-and-tested-by: Tom Horsley <horsley1953@gmail.com>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reported-by: Dean Nelson <dnelson@redhat.com>
+Signed-off-by: Tushar Dave <tushar.n.dave@intel.com>
+Reviewed-by: Bruce Allan <bruce.w.allan@intel.com>
+Tested-by: Jeff Pieper <jeffrey.e.pieper@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rt2x00/rt2x00usb.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/ethernet/intel/e1000e/82571.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/net/wireless/rt2x00/rt2x00usb.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00usb.c
-@@ -436,8 +436,8 @@ void rt2x00usb_kick_queue(struct data_qu
- 	case QID_RX:
- 		if (!rt2x00queue_full(queue))
- 			rt2x00queue_for_each_entry(queue,
--						   Q_INDEX_DONE,
- 						   Q_INDEX,
-+						   Q_INDEX_DONE,
- 						   NULL,
- 						   rt2x00usb_kick_rx_entry);
- 		break;
+--- a/drivers/net/ethernet/intel/e1000e/82571.c
++++ b/drivers/net/ethernet/intel/e1000e/82571.c
+@@ -1553,6 +1553,9 @@ static s32 e1000_check_for_serdes_link_8
+ 	ctrl = er32(CTRL);
+ 	status = er32(STATUS);
+ 	rxcw = er32(RXCW);
++	/* SYNCH bit and IV bit are sticky */
++	udelay(10);
++	rxcw = er32(RXCW);
+ 
+ 	if ((rxcw & E1000_RXCW_SYNCH) && !(rxcw & E1000_RXCW_IV)) {
+ 
 
 
