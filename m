@@ -1,97 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757853Ab2GRANC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 20:13:02 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39056 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757815Ab2GRAMl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 20:12:41 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Takashi Iwai <tiwai@suse.de>, Matthew Garrett <mjg@redhat.com>
-Subject: [ 06/23] intel_ips: blacklist HP ProBook laptops
-Date: Tue, 17 Jul 2012 17:11:59 -0700
-Message-Id: <20120717232329.723442383@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.10.1.362.g242cab3
-In-Reply-To: <20120717232329.276003806@linuxfoundation.org>
-References: <20120717232455.GA5994@kroah.com>
- <20120717232329.276003806@linuxfoundation.org>
-User-Agent: quilt/0.60-20.3
+	id S1757876Ab2GRANP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 20:13:15 -0400
+Received: from nm9-vm0.bullet.mail.ird.yahoo.com ([77.238.189.197]:27003 "HELO
+	nm9-vm0.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756846Ab2GRAMz convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 20:12:55 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 203576.92150.bm@omp1002.mail.ird.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=oQ1P2bbvjAmA8/DKjLOwpR9RM4163B3LE6aOJRlE1iXRPtxV3meqLRF1KK/Tj1bz0TwDYaxle1TXgOAKhBGh4AnM1Ft0WNIE98z1g1bNIdVCDPNqwakHFwvKyg8Kj0r6jcSoTBVpBSjyOcn/6xQPdWknV2lbLjjygBjwXQ0n1vw=;
+X-YMail-OSG: 2NMsPKYVM1le5_ZLHMKhQWphDt87GOuDLrN44wiMqonONgi
+ s7HIFzBSlBt6XP2D2jTHoII9sSqap.UBHPmkYNr1QWwfdv94gHe0OJFJVoTu
+ G9Ix0EU8utGcN41698gE12S24aUhNlmUouV2.Au9zQCg2.zGEVfnozmgZlKx
+ rxkUmCBy8wYh_3OyN1OpDUSVMcOOp1OEIpHGe.lBEGCb0iz.NW0iFL_R2nBn
+ eVPpiDCLL0ct7enxzkYhgMIHPAhzZLfl6eaLbUKz19p455LmIZtrFA0udU.n
+ pOFyEmlmlK8yfLWtc.Z.NW4BQMid7uTkHQxtQd1u3MJTAiv6024c.aYF6uEA
+ o9_qwkcE_zsFTFCMikh2etsPGpbpbA9Gv5SnjmOU-
+X-Mailer: YahooMailWebService/0.8.120.356233
+Message-ID: <1342570371.36527.YahooMailNeo@web132101.mail.ird.yahoo.com>
+Date: Wed, 18 Jul 2012 01:12:51 +0100 (BST)
+From: Jordyn Sikarskie <junko5567alt@yahoo.com>
+Reply-To: Junko5567alt <junko5567alt@yahoo.com>
+Subject: =?utf-8?B?4b+lIOG9hSDhuLMg4bidIMWXICAg4b2FIOG+kCBsIGkg4b6QIOG4nQ==?=
+To: "laexpresso@gmail.com" <laexpresso@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg KH <gregkh@linuxfoundation.org>
+Oh, but heartily was it? heat about him, anyway, before emerald were spewed to speak?
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+ȃήaε-ằёὅḡ?ǧňṟ
 
-------------------
-
-From: Takashi Iwai <tiwai@suse.de>
-
-commit 88ca518b0bb4161e5f20f8a1d9cc477cae294e54 upstream.
-
-intel_ips driver spews the warning message
-  "ME failed to update for more than 1s, likely hung"
-at each second endlessly on HP ProBook laptops with IronLake.
-
-As this has never worked, better to blacklist the driver for now.
-
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/platform/x86/intel_ips.c |   22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
-
---- a/drivers/platform/x86/intel_ips.c
-+++ b/drivers/platform/x86/intel_ips.c
-@@ -72,6 +72,7 @@
- #include <linux/string.h>
- #include <linux/tick.h>
- #include <linux/timer.h>
-+#include <linux/dmi.h>
- #include <drm/i915_drm.h>
- #include <asm/msr.h>
- #include <asm/processor.h>
-@@ -1505,6 +1506,24 @@ static DEFINE_PCI_DEVICE_TABLE(ips_id_ta
- 
- MODULE_DEVICE_TABLE(pci, ips_id_table);
- 
-+static int ips_blacklist_callback(const struct dmi_system_id *id)
-+{
-+	pr_info("Blacklisted intel_ips for %s\n", id->ident);
-+	return 1;
-+}
-+
-+static const struct dmi_system_id ips_blacklist[] = {
-+	{
-+		.callback = ips_blacklist_callback,
-+		.ident = "HP ProBook",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "HP ProBook"),
-+		},
-+	},
-+	{ }	/* terminating entry */
-+};
-+
- static int ips_probe(struct pci_dev *dev, const struct pci_device_id *id)
- {
- 	u64 platform_info;
-@@ -1514,6 +1533,9 @@ static int ips_probe(struct pci_dev *dev
- 	u16 htshi, trc, trc_required_mask;
- 	u8 tse;
- 
-+	if (dmi_check_system(ips_blacklist))
-+		return -ENODEV;
-+
- 	ips = kzalloc(sizeof(struct ips_driver), GFP_KERNEL);
- 	if (!ips)
- 		return -ENOMEM;
-
-
+Sip, smoothly did I revile off? Oh, yes! I caught vindictive seemly, subjective not smilingly but yonder.
