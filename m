@@ -1,41 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752566Ab2GRFfv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 01:35:51 -0400
-Received: from edison.jonmasters.org ([173.255.233.168]:45225 "EHLO
-	edison.jonmasters.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751019Ab2GRFfp (ORCPT
+	id S1751576Ab2GRFky (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 01:40:54 -0400
+Received: from na3sys009aog127.obsmtp.com ([74.125.149.107]:60700 "EHLO
+	na3sys009aog127.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751677Ab2GRFkr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 01:35:45 -0400
-Message-ID: <50064B2C.4070207@jonmasters.org>
-Date: Wed, 18 Jul 2012 01:35:40 -0400
-From: Jon Masters <jonathan@jonmasters.org>
-Organization: World Organi{s,z}ation of Broken Dreams
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Wed, 18 Jul 2012 01:40:47 -0400
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
-In-Reply-To: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 74.92.29.237
-X-SA-Exim-Mail-From: jonathan@jonmasters.org
-Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Nov 2009 07:31:22 +0000)
-X-SA-Exim-Scanned: Yes (on edison.jonmasters.org)
+In-Reply-To: <50055A21.5010206@mvista.com>
+References: <1342512611-20529-1-git-send-email-kishon@ti.com>
+	<1342512611-20529-3-git-send-email-kishon@ti.com>
+	<50055A21.5010206@mvista.com>
+Date: Wed, 18 Jul 2012 11:10:44 +0530
+Message-ID: <CAAe_U6K1rXN3+YsbMo01kUUh-p=j7OBeMz-Kg_qADXjTbV2_Hg@mail.gmail.com>
+Subject: Re: [PATCH v2 02/11] arm/dts: omap: Add omap-usb2 dt data
+From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
+        linux@arm.linux.org.uk, gregkh@linuxfoundation.org, b-cousson@ti.com,
+        rnayak@ti.com, tony@atomide.com, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, balbi@ti.com,
+        linux-omap@vger.kernel.org, linux-usb@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/06/2012 05:05 PM, Catalin Marinas wrote:
+Hi,
 
-> These patches are also available on this branch:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-aarch64.git upstream
+On Tue, Jul 17, 2012 at 5:57 PM, Sergei Shtylyov <sshtylyov@mvista.com> wrote:
+> Hello.
+>
+>
+> On 17-07-2012 12:10, Kishon Vijay Abraham I wrote:
+>
+>> Add omap-usb2 data node in omap4 device tree file.
+>
+>
+>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>> ---
+>>   arch/arm/boot/dts/omap4.dtsi |    5 +++++
+>>   1 files changed, 5 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
+>> index bda5df3..4d2dcc1 100644
+>> --- a/arch/arm/boot/dts/omap4.dtsi
+>> +++ b/arch/arm/boot/dts/omap4.dtsi
+>> @@ -279,6 +279,11 @@
+>>                         #size-cells = <1>;
+>>                         ranges;
+>>                         ti,hwmods = "ocp2scp_usb_phy";
+>> +                       usb2phy@0x4a0ad080 {
+>
+>
+>    There should be no "0x" prefix here.
 
-Catalin,
+Ok. Will fix it.
 
-What's your general plan for tracking development with this branch?
-
-Jon.
+Thanks
+Kishon
