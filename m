@@ -1,122 +1,279 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753472Ab2GRKeV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 06:34:21 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:38130 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752493Ab2GRKeS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 06:34:18 -0400
-Message-ID: <1342607317.7530.9.camel@brekeke>
-Subject: Re: [PATCH 2/5] ubi: Limit amount of reserved eraseblocks for bad
- PEB handling
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Shmulik Ladkani <shmulik.ladkani@gmail.com>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>,
-        Richard Genoud <richard.genoud@gmail.com>
-Date: Wed, 18 Jul 2012 13:28:37 +0300
-In-Reply-To: <1341389164-24409-3-git-send-email-shmulik.ladkani@gmail.com>
-References: <1341389164-24409-1-git-send-email-shmulik.ladkani@gmail.com>
-	 <1341389164-24409-3-git-send-email-shmulik.ladkani@gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-j6wGsMTPxMqubVCHVU4E"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1753557Ab2GRKgV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 06:36:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44996 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752555Ab2GRKgM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 06:36:12 -0400
+From: Thomas Renninger <trenn@suse.de>
+To: linux-kernel@vger.kernel.org, hpa@zytor.com, lenb@kernel.org
+Cc: linux-acpi@vger.kernel.org, initramfs@vger.kernel.org,
+        bigeasy@linutronix.de, Thomas Renninger <trenn@suse.de>
+Subject: [PATCH 1/2] init: Introduce early initrd files through uncompressed cpio passing
+Date: Wed, 18 Jul 2012 12:36:03 +0200
+Message-Id: <1342607764-66747-2-git-send-email-trenn@suse.de>
+X-Mailer: git-send-email 1.7.6.1
+In-Reply-To: <1342607764-66747-1-git-send-email-trenn@suse.de>
+References: <1342607764-66747-1-git-send-email-trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+cpio parsing code comes from  H. Peter Anvin.
+The CONFIG_EARLY_INITRD feature is architecture independent, but
+for now only enabled/called for X86.
+The problem is that initrd_start must be valid, but there is no
+architecture independent reserve_initrd() call in init/main.c or
+similiar.
 
---=-j6wGsMTPxMqubVCHVU4E
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Thomas Renninger <trenn@suse.de>
+CC: hpa@zytor.com
+---
+ Documentation/initrd.txt |   22 ++++++++
+ arch/x86/kernel/setup.c  |    2 +
+ include/linux/initrd.h   |   12 ++++
+ init/Makefile            |    1 +
+ init/initrd_early.c      |  131 ++++++++++++++++++++++++++++++++++++++++++++++
+ usr/Kconfig              |   12 ++++
+ 6 files changed, 180 insertions(+), 0 deletions(-)
+ create mode 100644 init/initrd_early.c
 
-On Wed, 2012-07-04 at 11:06 +0300, Shmulik Ladkani wrote:
-> @@ -1045,20 +1046,14 @@ static int erase_worker(struct ubi_device *ubi, s=
-truct ubi_work *wl_wrk,
->  	}
-> =20
->  	spin_lock(&ubi->volumes_lock);
-> -	need =3D ubi->beb_rsvd_level - ubi->beb_rsvd_pebs + 1;
-> -	if (need > 0) {
-> -		need =3D ubi->avail_pebs >=3D need ? need : ubi->avail_pebs;
-> -		ubi->avail_pebs -=3D need;
-> -		ubi->rsvd_pebs +=3D need;
-> -		ubi->beb_rsvd_pebs +=3D need;
-> -		if (need > 0)
-> -			ubi_msg("reserve more %d PEBs", need);
-> -	}
-> -
->  	if (ubi->beb_rsvd_pebs =3D=3D 0) {
-> -		spin_unlock(&ubi->volumes_lock);
-> -		ubi_err("no reserved physical eraseblocks");
-> -		goto out_ro;
-> +		if (ubi->avail_pebs =3D=3D 0) {
-> +			spin_unlock(&ubi->volumes_lock);
-> +			ubi_err("no reserved/available physical eraseblocks");
-> +			goto out_ro;
-> +		}
-> +		ubi->avail_pebs -=3D 1;
-> +		available_consumed =3D 1;
->  	}
->  	spin_unlock(&ubi->volumes_lock);
-
-The whole thing will become simpler if we first mark the PEB as bad
-unconditionally (because it _is_ bad), then grab the lock and do all the
-re-calculations.
-
-> =20
-> @@ -1068,11 +1063,23 @@ static int erase_worker(struct ubi_device *ubi, s=
-truct ubi_work *wl_wrk,
->  		goto out_ro;
-> =20
->  	spin_lock(&ubi->volumes_lock);
-> -	ubi->beb_rsvd_pebs -=3D 1;
-> +	if (ubi->beb_rsvd_pebs > 0) {
-> +		if (available_consumed) {
-> +			/*
-> +			 * Some PEBs were added to the reserved pool since we
-> +			 * last checked. Use a PEB from the reserved pool.
-> +			 */
-> +			ubi->avail_pebs +=3D 1;
-> +			available_consumed =3D 0;
-> +		}
-> +		ubi->beb_rsvd_pebs -=3D 1;
-> +	}
->  	ubi->bad_peb_count +=3D 1;
->  	ubi->good_peb_count -=3D 1;
->  	ubi_calculate_reserved(ubi);
-
-We do not need to call this function from here, right?
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-j6wGsMTPxMqubVCHVU4E
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJQBo/VAAoJECmIfjd9wqK0B0wQAJJUPGzIx/eTiqD9tVB1gN8T
-dylzQHURoPb6p1phSHzEJYZYuGYEWyP5x86oW3JQ4T7jN5gbrnLJ76bsRUR5Lrs7
-YV54giVyBXvyyoecaHKsGcf3mxQKV+0DuBjGXEL0+IwUGmCfxmzFehZ5ko1gA41C
-JAb0ziu7pRMI2kntBDnk9iaxZpdEhxzjCXvrjNUhaDoxSzmnXvfOI1iVgmsa09+k
-EKxB0KxK4/Hcesaaa8nBNF3lhozrdmN/K9H5Y1fdlciyzwFfXreMbydwR5Ay7cwP
-mZG9zu5gtRu8WZGYhe+Km9kaLEIhVeBzK8lvwmvqadppysx+0ybpy+BwfMWJAdiM
-Hwb7wgjQYv/wr0TGFEl8d8P8iXapB3aMbbtO1fjcBqmPa84El9UdCTkd8TmOOulY
-mAS8zzkgHgMcPjYdzYQhseV1YbM6RAJqkifCqa06+3+lhOcoEfu0Xzot7gp5MCDm
-iu64MXPbYX8pxQp6Xls9qrmxcZZphldV8WBWfy6xXbr9CMeAVZl6CDE/PpAr0u9P
-yx8QMDnikGLjccPhTPBQxP8nY0lQRvCjO6SjIXJvtqG3dIaI4weC0kveBVByfycc
-d7uFhlBfieYRM7mGJkiJFG0A31VU/2chYcd6hojA0mxK7P2miUh2bYwJUcNzcD01
-oaluoDd2+nBa5w8NI4aP
-=uu8C
------END PGP SIGNATURE-----
-
---=-j6wGsMTPxMqubVCHVU4E--
+diff --git a/Documentation/initrd.txt b/Documentation/initrd.txt
+index 4e1839c..e515e83 100644
+--- a/Documentation/initrd.txt
++++ b/Documentation/initrd.txt
+@@ -93,6 +93,28 @@ mkdir /tmp/imagefile
+ cd /tmp/imagefile
+ gzip -cd /boot/imagefile.img | cpio -imd --quiet
+ 
++
++Multiple cpio images glued together
++-----------------------------------
++
++Several cpio images, compressed or uncompressed can be concatenated.
++There is especially one use-case for this: see kernel accessing
++initrd data early section below.
++
++
++Accessing initrd data early
++---------------------------
++
++There is a mechanism to access data passed from the initrd much earlier.
++This only works if the data needed early is encapsulated in an uncompressed
++cpio image is passed. It must be the first cpio archive if multiple
++cpio archives are concatenated and passed as initrd.
++Typically if you want to pass data which is supposed to be consumed by
++the kernel really early, one would pass two cpio images glued together:
++   - One compressed, holding the big data which is needed by userspace
++   - One uncompressed cpio image holding files for early kernel initialization
++For further details look out for the CONFIG_EARLY_INITRD option in the sources.
++
+ Installation
+ ------------
+ 
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 16be6dc..9e039f6 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -941,6 +941,8 @@ void __init setup_arch(char **cmdline_p)
+ 
+ 	reserve_initrd();
+ 
++	early_initrd_find_cpio_data((void *)initrd_start, initrd_end - initrd_start);
++
+ 	reserve_crashkernel();
+ 
+ 	vsmp_init();
+diff --git a/include/linux/initrd.h b/include/linux/initrd.h
+index 55289d2..3fe262e 100644
+--- a/include/linux/initrd.h
++++ b/include/linux/initrd.h
+@@ -18,3 +18,15 @@ extern unsigned long initrd_start, initrd_end;
+ extern void free_initrd_mem(unsigned long, unsigned long);
+ 
+ extern unsigned int real_root_dev;
++
++
++#define MAX_EARLY_INITRD_CB 16
++
++#ifdef CONFIG_EARLY_INITRD
++extern int early_initrd_find_cpio_data(const char *data, size_t len);
++#else
++static int early_initrd_find_cpio_data(const char *data, size_t len)
++{
++	return 0;
++}
++#endif
+diff --git a/init/Makefile b/init/Makefile
+index 7bc47ee..c8408ec 100644
+--- a/init/Makefile
++++ b/init/Makefile
+@@ -9,6 +9,7 @@ else
+ obj-$(CONFIG_BLK_DEV_INITRD)   += initramfs.o
+ endif
+ obj-$(CONFIG_GENERIC_CALIBRATE_DELAY) += calibrate.o
++obj-$(CONFIG_EARLY_INITRD)     += initrd_early.o
+ 
+ ifneq ($(CONFIG_ARCH_INIT_TASK),y)
+ obj-y                          += init_task.o
+diff --git a/init/initrd_early.c b/init/initrd_early.c
+new file mode 100644
+index 0000000..c657a4b
+--- /dev/null
++++ b/init/initrd_early.c
+@@ -0,0 +1,131 @@
++#include <linux/kernel.h>
++#include <linux/string.h>
++#include <linux/initrd.h>
++
++struct initrd_early_data {
++	/* Path where relevant files can be found in uncompressed cpio */
++ 	char *namesp;
++	/* Callback called for each found file in above path */
++	int (*cb)(void *data, int size, const char *name);
++	/* Finalize callback: Called if file scanning finished and above
++	   callback has been called one or more times successfully */
++	void (*final)(void);
++};
++
++/*
++ * Add here new callback functions and the path relevant files show up in an
++ * uncompressed cpio
++ */
++static __initdata struct initrd_early_data initrd_early_callbacks[] =
++{
++	{
++		.namesp = NULL,
++	}
++};
++
++enum cpio_fields {
++	C_MAGIC,
++	C_INO,
++	C_MODE,
++	C_UID,
++	C_GID,
++	C_NLINK,
++	C_MTIME,
++	C_FILESIZE,
++	C_MAJ,
++	C_MIN,
++	C_RMAJ,
++	C_RMIN,
++	C_NAMESIZE,
++	C_CHKSUM,
++	C_NFIELDS
++};
++
++#define ALIGN4(p) ((void *)(((size_t)p + 3) & ~3))
++
++void __init early_initrd_find_cpio_data(const char *data, size_t len)
++{
++	const size_t cpio_header_len = 8*C_NFIELDS - 2;
++	const char *p, *dptr, *nptr;
++	unsigned int ch[C_NFIELDS], *chp, v;
++	unsigned char c, x;
++	int i, j;
++	struct initrd_early_data *ied;
++	int str_len[MAX_EARLY_INITRD_CB];
++	int match[MAX_EARLY_INITRD_CB];
++
++	for(i = 0, ied = initrd_early_callbacks; ied->namesp; ied++, i++) {
++		str_len[i] = strlen(ied->namesp);
++		match[i] = 0;
++	}
++
++	p = data;
++
++	while (len > cpio_header_len) {
++		if (!*p) {
++			/* All cpio headers need to be 4-byte aligned */
++			p += 4;
++			len -= 4;
++			continue;
++		}
++
++		j = 6;		/* The magic field is only 6 characters */
++		chp = ch;
++		for (i = C_NFIELDS; i; i--) {
++			v = 0;
++			while (j--) {
++				v <<= 4;
++				c = *p++;
++
++				x = c - '0';
++				if (x < 10) {
++					v += x;
++					continue;
++				}
++
++				x = (c | 0x20) - 'a';
++				if (x < 6) {
++					v += x + 10;
++					continue;
++				}
++
++				goto quit; /* Invalid hexadecimal */
++			}
++			*chp++ = v;
++			j = 8;	/* All other fields are 8 characters */
++		}
++
++		if ((ch[C_MAGIC] - 0x070701) > 1)
++			goto quit; /* Invalid magic */
++
++		len -= cpio_header_len;
++
++		dptr = ALIGN4(p + ch[C_NAMESIZE]);
++		nptr = ALIGN4(dptr + ch[C_FILESIZE]);
++
++		if (nptr > p + len || dptr < p || nptr < dptr)
++			goto quit; /* Buffer overrun */
++
++		if ((ch[C_MODE] & 0170000) == 0100000) {
++			for(i = 0, ied = initrd_early_callbacks; ied->namesp;
++			    ied++, i++) {
++				int min_len = (str_len[i] < ch[C_NAMESIZE])
++					? str_len[i] : ch[C_NAMESIZE];
++				if (!memcmp(p, ied->namesp, min_len)) {
++					if (!ied->cb((void *)dptr,
++					     ch[C_FILESIZE], p + min_len))
++						match[i]++;
++				}
++			}
++		}
++
++		len -= (nptr - p);
++		p = nptr;
++	}
++
++quit:
++	for(i = 0, ied = initrd_early_callbacks; ied->namesp; ied++, i++) {
++		if (match[i])
++			ied->final();
++	}
++}
+diff --git a/usr/Kconfig b/usr/Kconfig
+index 085872b..3b832ed 100644
+--- a/usr/Kconfig
++++ b/usr/Kconfig
+@@ -166,3 +166,15 @@ config INITRAMFS_COMPRESSION_LZO
+ 	  (both compression and decompression) is the fastest.
+ 
+ endchoice
++
++config EARLY_INITRD
++	bool "Ability to pass data to the kernel which is needed really early"
++	default y
++	depends on BLK_DEV_INITRD && X86
++	help
++	 CPU microcode updates could be loaded before CPU initialization.
++	 BIOS data can be overridden via initrd for debugging purposes.
++	 If you are unsure whether your Hardware or kernel makes use of this,
++	 it is safe to say yes here. As long as no data is passed through an
++	 uncompressed cpio via initrd the kernel could make use of, nothing
++	 will happen.
+-- 
+1.7.6.1
 
