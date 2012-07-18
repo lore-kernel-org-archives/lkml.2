@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752552Ab2GREre (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 00:47:34 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:44734 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751488Ab2GREr3 (ORCPT
+	id S1752559Ab2GRE6S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 00:58:18 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64697 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751488Ab2GRE6L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 00:47:29 -0400
-Message-ID: <50063FAA.9060302@linux.vnet.ibm.com>
-Date: Wed, 18 Jul 2012 12:46:34 +0800
-From: don <haodong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Wed, 18 Jul 2012 00:58:11 -0400
+Date: Tue, 17 Jul 2012 21:56:09 -0700
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: "Theodore Ts'o" <tytso@mit.edu>,
+        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH 04/17] pda_power: remove IRQF_SAMPLE_RANDOM which is now
+ a no-op
+Message-ID: <20120718045609.GA29357@lizard>
+References: <1342560756-18737-1-git-send-email-tytso@mit.edu>
+ <1342560756-18737-5-git-send-email-tytso@mit.edu>
+ <20120718040008.GA22599@lizard>
+ <20120718041820.GA21747@thunk.org>
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Simplify the kobject_init function.
-References: <1342073375-27181-1-git-send-email-haodong@linux.vnet.ibm.com> <20120717164024.GA7225@kroah.com>
-In-Reply-To: <20120717164024.GA7225@kroah.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-x-cbid: 12071718-5490-0000-0000-000001CBFA08
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20120718041820.GA21747@thunk.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2012年07月18日 00:40, Greg KH 写道:
-> On Thu, Jul 12, 2012 at 02:09:35PM +0800, Dong Hao wrote:
->> The printk() function at the end of function kobject_init() already had '\n',
->> so remove it.
->>
->> While the kobject has been initialized, assign error string and
->> jump to error case directly.
->>
->> Signed-off-by: Dong Hao<haodong@linux.vnet.ibm.com>
->> ---
->>   lib/kobject.c |    9 ++++-----
->>   1 files changed, 4 insertions(+), 5 deletions(-)
->>
->> diff --git a/lib/kobject.c b/lib/kobject.c
->> index 05de4dc..7b8a09c 100644
->> --- a/lib/kobject.c
->> +++ b/lib/kobject.c
->> @@ -278,14 +278,13 @@ void kobject_init(struct kobject *kobj, struct kobj_type *ktype)
->>   		goto error;
->>   	}
->>   	if (!ktype) {
->> -		err_str = "must have a ktype to be initialized properly!\n";
->> +		err_str = "must have a ktype to be initialized properly!";
->>   		goto error;
->>   	}
->>   	if (kobj->state_initialized) {
->> -		/* do not error out as sometimes we can recover */
->> -		printk(KERN_ERR "kobject (%p): tried to init an initialized "
->> -		       "object, something is seriously wrong.\n", kobj);
->> -		dump_stack();
->> +		err_str = "tried to init an initialized "
->> +			"object, something is seriously wrong.";
->> +		goto error;
-> You were already told why this patch is incorrect, why are you resending
-> it two more times?  That's a bit annoying and rude, don't you think?
->
-> Sorry, I can't take this, please read the code you are modifying.
->
-> greg k-h
->
-Greg, sorry for the noise caused by wrong configuration of email client.
-Let me change it according to the given suggestion and come up with a
-new version against the patch if you agree.
+On Wed, Jul 18, 2012 at 12:18:20AM -0400, Theodore Ts'o wrote:
+> On Tue, Jul 17, 2012 at 09:00:09PM -0700, Anton Vorontsov wrote:
+> > On Tue, Jul 17, 2012 at 05:32:23PM -0400, Theodore Ts'o wrote:
+> > > With the changes in the random tree, IRQF_SAMPLE_RANDOM is now a
+> > > no-op; interrupt randomness is now collected unconditionally in a very
+> > > low-overhead fashion; see commit 775f4b297b.  The IRQF_SAMPLE_RANDOM
+> > > flag was scheduled to be removed in 2009 on the
+> > > feature-removal-schedule, so this patch is preparation for the final
+> > > removal of this flag.
+> > > 
+> > > Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+> > > Cc: Anton Vorontsov <cbou@mail.ru>
+> > > Cc: David Woodhouse <dwmw2@infradead.org>
+> > > ---
+> > 
+> > Applied, thanks!
+> 
+> My original plan was to carry the patch in the random.git tree, so
+> that it only gets applied after the new random interrupt sampling
+> commit has gone in.  If you carry it in your tree, then the
+> /dev/random seeding for your platform will be worse until the
+> random.git tree is merged in.....
 
+Oh, I see. OK, dropped.
 
+Thanks,
+
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
