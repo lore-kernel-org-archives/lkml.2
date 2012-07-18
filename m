@@ -1,61 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753859Ab2GRVXk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 17:23:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28499 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750978Ab2GRVXi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 17:23:38 -0400
-Date: Wed, 18 Jul 2012 18:23:34 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        avi@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jan.kiszka@siemens.com
-Subject: Re: [PATCH v5 1/4] kvm: Extend irqfd to support level interrupts
-Message-ID: <20120718212334.GA20327@amt.cnet>
-References: <20120718114844.GH26120@redhat.com>
- <20120718120705.GB5184@redhat.com>
- <1342622843.2229.200.camel@bling.home>
- <20120718153822.GC1777@redhat.com>
- <1342626481.2229.205.camel@bling.home>
- <20120718155823.GG1777@redhat.com>
- <20120718184209.GA14053@amt.cnet>
- <1342638437.2229.213.camel@bling.home>
- <1342638786.2229.216.camel@bling.home>
- <1342643314.2229.217.camel@bling.home>
+	id S1753899Ab2GRVZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 17:25:28 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:43445 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750978Ab2GRVZY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 17:25:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1342643314.2229.217.camel@bling.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120718212044.GU31729@ZenIV.linux.org.uk>
+References: <5006491D.8070004@t-online.de> <CA+55aFzv5mntf6y9e_r5=v+beG19xBv67EpA=dP0-Zw1CQrGGg@mail.gmail.com>
+ <20120718212044.GU31729@ZenIV.linux.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 18 Jul 2012 14:25:02 -0700
+X-Google-Sender-Auth: eGwqjnQrmLFIr53RVEUNR1v0Njg
+Message-ID: <CA+55aFyHpgbJ9Pn5xn_ALkvzjQBOWog2qLbwwtrKbPHSGpa6pA@mail.gmail.com>
+Subject: Re: [Bug 3.4.5] reiserfs: mutex_destroy called with locked mutex
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Knut Petersen <Knut_Petersen@t-online.de>, linux-kernel@vger.kernel.org,
+        reiserfs-devel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 18, 2012 at 02:28:34PM -0600, Alex Williamson wrote:
-> > turn on lockdep to remember why I couldn't sleep there.
-> 
-> switching to a mutex results in:
-> 
-> BUG: sleeping function called from invalid context at kernel/mutex.c:269
-> in_atomic(): 1, irqs_disabled(): 0, pid: 30025, name: qemu-system-x86
-> INFO: lockdep is turned off.
-> Pid: 30025, comm: qemu-system-x86 Not tainted 3.5.0-rc4+ #109
-> Call Trace:
->  [<ffffffff81088425>] __might_sleep+0xf5/0x130
->  [<ffffffff81564c6f>] mutex_lock_nested+0x2f/0x60
->  [<ffffffffa07db7d5>] eoifd_event+0x25/0x70 [kvm]
->  [<ffffffffa07daea4>] kvm_notify_acked_irq+0xa4/0x140 [kvm]
->  [<ffffffffa07dae2a>] ? kvm_notify_acked_irq+0x2a/0x140 [kvm]
->  [<ffffffffa07d9bb4>] kvm_ioapic_update_eoi+0x84/0xf0 [kvm]
->  [<ffffffffa0806c43>] apic_set_eoi+0x123/0x130 [kvm]
->  [<ffffffffa0806fd8>] apic_reg_write+0x388/0x670 [kvm]
->  [<ffffffffa07eb03c>] ? vcpu_enter_guest+0x32c/0x740 [kvm]
->  [<ffffffffa0807481>] kvm_lapic_set_eoi+0x21/0x30 [kvm]
->  [<ffffffffa04ba3f9>] handle_apic_access+0x69/0x80 [kvm_intel]
->  [<ffffffffa04ba02a>] vmx_handle_exit+0xaa/0x260 [kvm_intel]
+On Wed, Jul 18, 2012 at 2:20 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Wed, Jul 18, 2012 at 09:26:57AM -0700, Linus Torvalds wrote:
+>>
+>> So I don't think the freeing code could trigger, but a concurrent
+>> lookup then trying to look up the new directory (and taking the new
+>> directory i_semaphore lock) could happen, afaik.
+>
+> Umm...  The thing is, we'd get WARN_ON() in iput_final() triggering in
+> that scenario before lockdep could complain.
 
-Its RCU from ack notifiers, OK. 
+Not for the "look up directory in the dcache, and then lock that
+inode" case, afaik. You'd get the lock before iput_final(), no?
 
+So then "unlock_new_inode()" would run with the inode mutex held,
+which could explain the lockdep warning, no?
 
+             Linus
