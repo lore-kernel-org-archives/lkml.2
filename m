@@ -1,105 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754879Ab2GRP10 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 11:27:26 -0400
-Received: from mail.ausil.us ([74.119.218.133]:56014 "EHLO mail.ausil.us"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751387Ab2GRP1X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 11:27:23 -0400
-Date: Wed, 18 Jul 2012 10:27:12 -0500
-From: Dennis Gilmore <dennis@ausil.us>
-To: Jon Masters <jonathan@jonmasters.org>
-Cc: Joe Perches <joe@perches.com>, Catalin Marinas <catalin.marinas@arm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        =?UTF-8?B?TcOlbnMgUnVsbGfDpXJk?= <mans@mansr.com>,
-        Ingo Molnar <mingo@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
-Message-ID: <20120718102712.46b8d7ff@adria.ausil.us>
-In-Reply-To: <5006207D.1010708@jonmasters.org>
-References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
-	<CAOesGMiCexiqA3L5GdNgyHhSD-5Bpqbb02YJrZPr8yMYa0afjA@mail.gmail.com>
-	<201207071927.13135.arnd@arndb.de>
-	<20120710071023.GA10456@gmail.com>
-	<20120710101018.GE15120@arm.com>
-	<yw1x8vekd309.fsf@unicorn.mansr.com>
-	<CA+55aFxL6uEre-c=JrhPfts=7BGmhb2Js1c2ZGkTH8F=+rEWDg@mail.gmail.com>
-	<20120717221839.GA4856@arm.com>
-	<1342564536.1898.1.camel@joe2Laptop>
-	<5006207D.1010708@jonmasters.org>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	id S1753484Ab2GRPaP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 11:30:15 -0400
+Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:20639 "HELO
+	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751162Ab2GRPaK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 11:30:10 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: W8U.2.AVM1lCCByp_hBIWXn6VTcyFiG7lS7zm9qyM5SEZ32
+ gwGGH.7S.pS_svu1KIMJpU3TP6KaGlQP7BSg9sM6WyndMbLnvWXj1qsNrM3V
+ cTlfFT1YZsfa_e3VdvtQrZ0BAtSpJkOLKlgTI34ucVcbHrP_x5861h3VUSEM
+ XUXEMLfNnXw3a_ZexyoVOIAWuM3CzYKYSUee50V2owxATtrK5ildGV.HjI6C
+ 7bO36HkYvnamVX.WnprvjySJ8jRccCFuCfsgxUBwu3molbAOyug3CFqzPsSu
+ FAZLs4_fHoorzKMMgn9dLrv12MfPYvnD0Cc5ZMEmDtbM_TsheKiBBEm4sgAx
+ NFaGd_ZOU6v7qOmz8cBwKMWA1rYUwUudLsuY1Dkuk8HNQf5yjD5Ey1_FRrYS
+ yZ.QUodgF8UvGxEXB6ScdGpP2F.G_LPMN5Qb1
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Wed, 18 Jul 2012 10:30:05 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: "Luck, Tony" <tony.luck@intel.com>
+cc: Jiang Liu <liuj97@gmail.com>, Pekka Enberg <penberg@kernel.org>,
+        Matt Mackall <mpm@selenic.com>, Mel Gorman <mgorman@suse.de>,
+        Jianguo Wu <wujianguo@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
+        Keping Chen <chenkeping@huawei.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] mm/slub: fix a BUG_ON() when offlining a memory node
+ and CONFIG_SLUB_DEBUG is on
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F1936AB66@ORSMSX104.amr.corp.intel.com>
+Message-ID: <alpine.DEB.2.00.1207181029480.22907@router.home>
+References: <1342543816-10853-1-git-send-email-jiang.liu@huawei.com> <alpine.DEB.2.00.1207171237320.15177@router.home> <3908561D78D1C84285E8C5FCA982C28F1936AB66@ORSMSX104.amr.corp.intel.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q6IFRWX0010879
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+On Tue, 17 Jul 2012, Luck, Tony wrote:
 
-El Tue, 17 Jul 2012 22:33:33 -0400
-Jon Masters <jonathan@jonmasters.org> escribi√≥:
-> On 07/17/2012 06:35 PM, Joe Perches wrote:
-> > On Tue, 2012-07-17 at 23:18 +0100, Catalin Marinas wrote:
-> > 
-> >> The uname will still report
-> >> "aarch64" to match the compiler triplet and also avoid confusion of
-> >> existing 32-bit ARM scripts that simply check for "arm*" in the
-> >> machine name.
+> > This suggests that a call to early_kmem_cache_node_alloc was not needed
+> > because the per node structure already existed. Lets fix that instead.
+>
+> Perhaps by just having one API for users to call? It seems odd to force users
+> to figure out whether they are called before some magic time during boot
+> and use the "early...()" call. Shouldn't we hide this sort of detail from them?
 
-that means that the yum base arch will need to be aarch64 and the arch
-used in rpm will be aarch64 also. its throwing something weird and
-confusing right in the face of users. I urge you to change it all to
-arm64 just changing the directory in the kernel is pointless as it still
-exposes all the weirdness of the name to users and will result in a
-large amount of education and a constant stream of the same question
-"Where do i find the arm64 bits?" until such time as the users learn
-that arm64 is aarch64. All the tooling uses "uname -m" to determine the
-package architecture.
-
-The triplet that fedora will use will be preferred
-arm64-redhat-linux-gnu or aarch64-redhat-linux-gnu
-
-but again aarch64 will propogate to a lot of highly visible places
-where it will just cause undue confusion.  adding a extra check for
-arm64* before arm* if that is what people are using will not be hard to
-do.
-
-> > The compiler triplet seems trivial to change.
-> > 
-> > The other bit is a relatively weak argument as the 32bit arm
-> > scripts can be changed or fixed likely just as easily.
-> 
-> There's a surprising amount of assumption out there around what arm*
-> means (or doing wildcard matches liberally). I'm glad (from the point
-> of view of a distribution bootstrap) that we don't have to worry
-> about that aspect of getting AArch64 support up and running. The
-> directory name is just that - a name - and unimportant. I like
-> aarch64 from the point of view of distinguishing "this is not ARM,
-> no, it's not just an extension, and no it's not just two numbers
-> different or wider regs", but it seems fairly inevitable that it's
-> going to be arch/arm64. The main thing is that we understand this
-> isn't like i686->x86_64.
-
-autoconf etc checks for " arm-*  | armbe-* | armle-* | armeb-* |
-armv*-* "  arm64-* will not match the existing regexs in common
-use. configure scripts will need rebuilding regardless of if its
-aarch64 or arm64 to me the argument that  arm64 will catch existing
-scripts is extremely weak. especially when the first target is really
-almost completely new for arm in the server market.
-
-Dennis
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iEYEARECAAYFAlAG1dMACgkQkSxm47BaWfdzRQCfUdBHeLoDDC2yJTOxdMP0k0ej
-GcMAoKoRXG6d7xOvhPDbh3p4J8lKHYpb
-=KXum
------END PGP SIGNATURE-----
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+The early_ calls are internal to the allocator and not exposed to the
+user.
