@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752527Ab2GRGbi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 02:31:38 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:54906 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751817Ab2GRGbZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 02:31:25 -0400
+	id S1752459Ab2GRGba (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 02:31:30 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:56908 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751681Ab2GRGbY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 02:31:24 -0400
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
         <linux@arm.linux.org.uk>, <kishon@ti.com>, <b-cousson@ti.com>,
@@ -16,43 +17,54 @@ To: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
         <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <balbi@ti.com>,
         <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>
-Subject: [PATCH v2 2/2] arm/dts: omap4: Add ocp2scp data
-Date: Wed, 18 Jul 2012 12:00:39 +0530
-Message-ID: <1342593039-7728-3-git-send-email-kishon@ti.com>
+Subject: [PATCH v2 0/2] omap: add ocp2scp as a bus driver
+Date: Wed, 18 Jul 2012 12:00:37 +0530
+Message-ID: <1342593039-7728-1-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1342593039-7728-1-git-send-email-kishon@ti.com>
-References: <1342593039-7728-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add ocp2scp data node in omap4 device tree file.
+This patch series is done as a preparatory step for adding phy drivers
+for dwc3 and musb.
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- arch/arm/boot/dts/omap4.dtsi |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
+This series adds a new driver for ocp2scp (only dt) to which phy
+drivers are connected.
 
-diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
-index 359c497..29c6243 100644
---- a/arch/arm/boot/dts/omap4.dtsi
-+++ b/arch/arm/boot/dts/omap4.dtsi
-@@ -272,5 +272,13 @@
- 			ti,hwmods = "mmc5";
- 			ti,needs-special-reset;
- 		};
-+
-+		ocp2scp {
-+			compatible = "ti,omap-ocp2scp";
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+			ranges;
-+			ti,hwmods = "ocp2scp_usb_phy";
-+		};
- 	};
- };
+Since currently there is no generic way to create a child device along
+with doing a pm_runtime_enable (the exact requirement for ocp2scp), I'm
+creating a separate driver for ocp2scp.
+
+Changes from v1:
+Fixed Sergei's comments to remove the address in the node name of ocp2scp
+since the ocp2scp node doesn't have a reg property.
+
+Changes from [RFC PATCH v2 0/2] omap: add ocp2scp as a misc driver:
+Created a new folder drivers/bus and moved ocp2scp driver from misc to
+drivers/bus.
+
+This patch was developed and tested on
+git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git
+
+Kishon Vijay Abraham I (2):
+  drivers: bus: add a new driver for omap-ocp2scp
+  arm/dts: omap4: Add ocp2scp data
+
+ .../devicetree/bindings/bus/omap-ocp2scp.txt       |   10 ++
+ arch/arm/boot/dts/omap4.dtsi                       |    8 ++
+ drivers/Kconfig                                    |    2 +
+ drivers/Makefile                                   |    2 +
+ drivers/bus/Kconfig                                |   15 +++
+ drivers/bus/Makefile                               |    5 +
+ drivers/bus/omap-ocp2scp.c                         |   98 ++++++++++++++++++++
+ 7 files changed, 140 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/bus/omap-ocp2scp.txt
+ create mode 100644 drivers/bus/Kconfig
+ create mode 100644 drivers/bus/Makefile
+ create mode 100644 drivers/bus/omap-ocp2scp.c
+
 -- 
 1.7.5.4
 
