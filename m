@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757580Ab2GRAFz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 20:05:55 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49131 "EHLO
+	id S1757562Ab2GRAGJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 20:06:09 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48276 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755460Ab2GRAEU (ORCPT
+	with ESMTP id S1757183Ab2GRAEX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 20:04:20 -0400
+	Tue, 17 Jul 2012 20:04:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eliad Peller <eliad@wizery.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 19/37] mac80211: destroy assoc_data correctly if assoc fails
-Date: Tue, 17 Jul 2012 17:02:56 -0700
-Message-Id: <20120717232432.929942695@linuxfoundation.org>
+        Deepak Sikri <deepak.sikri@st.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 20/37] stmmac: Fix for nfs hang on multiple reboot
+Date: Tue, 17 Jul 2012 17:02:57 -0700
+Message-Id: <20120717232433.014403911@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120717232431.399005532@linuxfoundation.org>
 References: <20120717232455.GA5994@kroah.com>
@@ -32,48 +31,54 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Eliad Peller <eliad@wizery.com>
+From: Deepak Sikri <deepak.sikri@st.com>
 
-commit 10a9109f2705fdc3caa94d768b2559587a9a050c upstream.
+commit 8e83989106562326bfd6aaf92174fe138efd026b upstream.
 
-If association failed due to internal error (e.g. no
-supported rates IE), we call ieee80211_destroy_assoc_data()
-with assoc=true, while we actually reject the association.
+It was observed that during multiple reboots nfs hangs. The status of
+receive descriptors shows that all the descriptors were in control of
+CPU, and none were assigned to DMA.
+Also the DMA status register confirmed that the Rx buffer is
+unavailable.
 
-This results in the BSSID not being zeroed out.
+This patch adds the fix for the same by adding the memory barriers to
+ascertain that the all instructions before enabling the Rx or Tx DMA are
+completed which involves the proper setting of the ownership bit in DMA
+descriptors.
 
-After passing assoc=false, we no longer have to call
-sta_info_destroy_addr() explicitly. While on it, move
-the "associated" message after the assoc_success check.
-
-Signed-off-by: Eliad Peller <eliad@wizery.com>
-Reviewed-by: Johannes Berg <johannes@sipsolutions.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Deepak Sikri <deepak.sikri@st.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/mlme.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/stmicro/stmmac/stmmac_main.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/net/mac80211/mlme.c
-+++ b/net/mac80211/mlme.c
-@@ -2183,15 +2183,13 @@ ieee80211_rx_mgmt_assoc_resp(struct ieee
- 		       sdata->name, mgmt->sa, status_code);
- 		ieee80211_destroy_assoc_data(sdata, false);
- 	} else {
--		printk(KERN_DEBUG "%s: associated\n", sdata->name);
--
- 		if (!ieee80211_assoc_success(sdata, *bss, mgmt, len)) {
- 			/* oops -- internal error -- send timeout for now */
--			ieee80211_destroy_assoc_data(sdata, true);
--			sta_info_destroy_addr(sdata, mgmt->bssid);
-+			ieee80211_destroy_assoc_data(sdata, false);
- 			cfg80211_put_bss(*bss);
- 			return RX_MGMT_CFG80211_ASSOC_TIMEOUT;
- 		}
-+		printk(KERN_DEBUG "%s: associated\n", sdata->name);
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+@@ -1158,6 +1158,7 @@ static netdev_tx_t stmmac_xmit(struct sk
+ 		priv->hw->desc->prepare_tx_desc(desc, 0, len, csum_insertion);
+ 		wmb();
+ 		priv->hw->desc->set_tx_owner(desc);
++		wmb();
+ 	}
  
- 		/*
- 		 * destroy assoc_data afterwards, as otherwise an idle
+ 	/* Interrupt on completition only for the latest segment */
+@@ -1173,6 +1174,7 @@ static netdev_tx_t stmmac_xmit(struct sk
+ 
+ 	/* To avoid raise condition */
+ 	priv->hw->desc->set_tx_owner(first);
++	wmb();
+ 
+ 	priv->cur_tx++;
+ 
+@@ -1236,6 +1238,7 @@ static inline void stmmac_rx_refill(stru
+ 		}
+ 		wmb();
+ 		priv->hw->desc->set_rx_owner(p + entry);
++		wmb();
+ 	}
+ }
+ 
 
 
