@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757707Ab2GRAHB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 20:07:01 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48276 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757534Ab2GRAFA (ORCPT
+	id S1755358Ab2GRAHI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 20:07:08 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:56808 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757550Ab2GRAFH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 20:05:00 -0400
+	Tue, 17 Jul 2012 20:05:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        John Stultz <johnstul@us.ibm.com>, Jan Engelhardt <jengelh@inai.de>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 31/37] timekeeping: Fix leapsecond triggered load spike issue
-Date: Tue, 17 Jul 2012 17:03:08 -0700
-Message-Id: <20120717232433.995025566@linuxfoundation.org>
+        Ilia Katsnelson <k0009000@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [ 25/37] Input: xpad - add signature for Razer Onza Tournament Edition
+Date: Tue, 17 Jul 2012 17:03:02 -0700
+Message-Id: <20120717232433.447176628@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120717232431.399005532@linuxfoundation.org>
 References: <20120717232455.GA5994@kroah.com>
@@ -34,61 +31,37 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: John Stultz <johnstul@us.ibm.com>
+From: Ilia Katsnelson <k0009000@gmail.com>
 
-This is a backport of 4873fa070ae84a4115f0b3c9dfabc224f1bc7c51
+commit cc71a7e899cc6b2ff41e1be48756782ed004d802 upstream.
 
-The timekeeping code misses an update of the hrtimer subsystem after a
-leap second happened. Due to that timers based on CLOCK_REALTIME are
-either expiring a second early or late depending on whether a leap
-second has been inserted or deleted until an operation is initiated
-which causes that update. Unless the update happens by some other
-means this discrepancy between the timekeeping and the hrtimer data
-stays forever and timers are expired either early or late.
-
-The reported immediate workaround - $ data -s "`date`" - is causing a
-call to clock_was_set() which updates the hrtimer data structures.
-See: http://www.sheeri.com/content/mysql-and-leap-second-high-cpu-and-fix
-
-Add the missing clock_was_set() call to update_wall_time() in case of
-a leap second event. The actual update is deferred to softirq context
-as the necessary smp function call cannot be invoked from hard
-interrupt context.
-
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
-Reported-by: Jan Engelhardt <jengelh@inai.de>
-Reviewed-by: Ingo Molnar <mingo@kernel.org>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Prarit Bhargava <prarit@redhat.com>
-Link: http://lkml.kernel.org/r/1341960205-56738-3-git-send-email-johnstul@us.ibm.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Signed-off-by: Ilia Katsnelson <k0009000@gmail.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- kernel/time/timekeeping.c |    4 ++++
- 1 file changed, 4 insertions(+)
 
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -965,6 +965,8 @@ static cycle_t logarithmic_accumulation(
- 		leap = second_overflow(timekeeper.xtime.tv_sec);
- 		timekeeper.xtime.tv_sec += leap;
- 		timekeeper.wall_to_monotonic.tv_sec -= leap;
-+		if (leap)
-+			clock_was_set_delayed();
- 	}
+---
+ drivers/input/joystick/xpad.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+--- a/drivers/input/joystick/xpad.c
++++ b/drivers/input/joystick/xpad.c
+@@ -164,6 +164,7 @@ static const struct xpad_device {
+ 	{ 0x1bad, 0x0003, "Harmonix Rock Band Drumkit", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX360 },
+ 	{ 0x0f0d, 0x0016, "Hori Real Arcade Pro.EX", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
+ 	{ 0x0f0d, 0x000d, "Hori Fighting Stick EX2", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
++	{ 0x1689, 0xfd00, "Razer Onza Tournament Edition", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX360 },
+ 	{ 0xffff, 0xffff, "Chinese-made Xbox Controller", 0, XTYPE_XBOX },
+ 	{ 0x0000, 0x0000, "Generic X-Box pad", 0, XTYPE_UNKNOWN }
+ };
+@@ -244,7 +245,8 @@ static struct usb_device_id xpad_table [
+ 	XPAD_XBOX360_VENDOR(0x1430),		/* RedOctane X-Box 360 controllers */
+ 	XPAD_XBOX360_VENDOR(0x146b),		/* BigBen Interactive Controllers */
+ 	XPAD_XBOX360_VENDOR(0x1bad),		/* Harminix Rock Band Guitar and Drums */
+-	XPAD_XBOX360_VENDOR(0x0f0d),            /* Hori Controllers */
++	XPAD_XBOX360_VENDOR(0x0f0d),		/* Hori Controllers */
++	XPAD_XBOX360_VENDOR(0x1689),		/* Razer Onza */
+ 	{ }
+ };
  
- 	/* Accumulate raw time */
-@@ -1081,6 +1083,8 @@ static void update_wall_time(void)
- 		leap = second_overflow(timekeeper.xtime.tv_sec);
- 		timekeeper.xtime.tv_sec += leap;
- 		timekeeper.wall_to_monotonic.tv_sec -= leap;
-+		if (leap)
-+			clock_was_set_delayed();
- 	}
- 
- 	timekeeping_update(false);
 
 
