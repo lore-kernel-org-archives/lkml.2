@@ -1,44 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755252Ab2GRQmU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 12:42:20 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:32163 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755137Ab2GRQll (ORCPT
+	id S1755230Ab2GRQmS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 12:42:18 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52417 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755072Ab2GRQmP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 12:41:41 -0400
-Message-ID: <201207181641.q6IGfexY007231@lab-41.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Wed, 18 Jul 2012 12:23:06 -0400
-Subject: [PATCH 3/3] tilegx net: use eth_hw_addr_random(), not random_ether_addr()
-To: "David S. Miller" <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-In-Reply-To: <201207181640.q6IGet7P007227@lab-41.internal.tilera.com>
-References: <201207181640.q6IGet7P007227@lab-41.internal.tilera.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 18 Jul 2012 12:42:15 -0400
+From: Devendra Naga <devendra.aaru@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org
+Cc: Devendra Naga <devendra.aaru@gmail.com>
+Subject: [PATCH 2/3] rtc/rtc-88pm80x: remove unneed devm_kfree
+Date: Wed, 18 Jul 2012 22:12:08 +0530
+Message-Id: <1342629728-12944-1-git-send-email-devendra.aaru@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
----
- drivers/net/ethernet/tile/tilegx.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+devm_kzalloc doesn't need a matching devm_kfree, the freeing mechanism will trigger
+when driver unloads.
 
-diff --git a/drivers/net/ethernet/tile/tilegx.c b/drivers/net/ethernet/tile/tilegx.c
-index f78effc..4e2a162 100644
---- a/drivers/net/ethernet/tile/tilegx.c
-+++ b/drivers/net/ethernet/tile/tilegx.c
-@@ -1851,7 +1851,7 @@ static void tile_net_dev_init(const char *name, const uint8_t *mac)
- 		memcpy(dev->dev_addr, mac, 6);
- 		dev->addr_len = 6;
- 	} else {
--		random_ether_addr(dev->dev_addr);
-+		eth_hw_addr_random(dev);
- 	}
+Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+---
+ drivers/rtc/rtc-88pm80x.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/rtc/rtc-88pm80x.c b/drivers/rtc/rtc-88pm80x.c
+index 7e050b4..6367984 100644
+--- a/drivers/rtc/rtc-88pm80x.c
++++ b/drivers/rtc/rtc-88pm80x.c
+@@ -339,7 +339,6 @@ static int __devinit pm80x_rtc_probe(struct platform_device *pdev)
+ out_rtc:
+ 	pm80x_free_irq(chip, info->irq, info);
+ out:
+-	devm_kfree(&pdev->dev, info);
+ 	return ret;
+ }
  
- 	/* Register the network device. */
+@@ -349,7 +348,6 @@ static int __devexit pm80x_rtc_remove(struct platform_device *pdev)
+ 	platform_set_drvdata(pdev, NULL);
+ 	rtc_device_unregister(info->rtc_dev);
+ 	pm80x_free_irq(info->chip, info->irq, info);
+-	devm_kfree(&pdev->dev, info);
+ 	return 0;
+ }
+ 
 -- 
-1.7.10.3
+1.7.0.4
 
