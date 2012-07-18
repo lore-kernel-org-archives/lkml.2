@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757747Ab2GRAH3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 20:07:29 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:58885 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757590Ab2GRAFa (ORCPT
+	id S1757763Ab2GRAHj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 20:07:39 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37684 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757572Ab2GRAFV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 20:05:30 -0400
+	Tue, 17 Jul 2012 20:05:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Prarit Bhargava <prarit@redhat.com>, John Stultz <johnstul@us.ibm.com>
-Subject: [ 33/37] hrtimers: Move lock held region in hrtimer_interrupt()
-Date: Tue, 17 Jul 2012 17:03:10 -0700
-Message-Id: <20120717232434.162827297@linuxfoundation.org>
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 37/37] NFC: Export nfc.h to userland
+Date: Tue, 17 Jul 2012 17:03:14 -0700
+Message-Id: <20120717232434.529756095@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120717232431.399005532@linuxfoundation.org>
 References: <20120717232455.GA5994@kroah.com>
@@ -32,61 +31,30 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
+From: Samuel Ortiz <sameo@linux.intel.com>
 
-From: Thomas Gleixner <tglx@linutronix.de>
+commit dbd4fcaf8d664fab4163b1f8682e41ad8bff3444 upstream.
 
-This is a backport of 196951e91262fccda81147d2bcf7fdab08668b40
+The netlink commands and attributes, along with the socket structure
+definitions need to be exported.
 
-We need to update the base offsets from this code and we need to do
-that under base->lock. Move the lock held region around the
-ktime_get() calls. The ktime_get() calls are going to be replaced with
-a function which gets the time and the offsets atomically.
-
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Reviewed-by: Ingo Molnar <mingo@kernel.org>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Prarit Bhargava <prarit@redhat.com>
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
-Link: http://lkml.kernel.org/r/1341960205-56738-6-git-send-email-johnstul@us.ibm.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- kernel/hrtimer.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -1263,11 +1263,10 @@ void hrtimer_interrupt(struct clock_even
- 	cpu_base->nr_events++;
- 	dev->next_event.tv64 = KTIME_MAX;
- 
-+	raw_spin_lock(&cpu_base->lock);
- 	entry_time = now = ktime_get();
- retry:
- 	expires_next.tv64 = KTIME_MAX;
--
--	raw_spin_lock(&cpu_base->lock);
- 	/*
- 	 * We set expires_next to KTIME_MAX here with cpu_base->lock
- 	 * held to prevent that a timer is enqueued in our queue via
-@@ -1344,6 +1343,7 @@ retry:
- 	 * interrupt routine. We give it 3 attempts to avoid
- 	 * overreacting on some spurious event.
- 	 */
-+	raw_spin_lock(&cpu_base->lock);
- 	now = ktime_get();
- 	cpu_base->nr_retries++;
- 	if (++retries < 3)
-@@ -1356,6 +1356,7 @@ retry:
- 	 */
- 	cpu_base->nr_hangs++;
- 	cpu_base->hang_detected = 1;
-+	raw_spin_unlock(&cpu_base->lock);
- 	delta = ktime_sub(now, entry_time);
- 	if (delta.tv64 > cpu_base->max_hang_time.tv64)
- 		cpu_base->max_hang_time = delta;
+---
+ include/linux/Kbuild |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/include/linux/Kbuild
++++ b/include/linux/Kbuild
+@@ -272,6 +272,7 @@ header-y += netfilter_ipv4.h
+ header-y += netfilter_ipv6.h
+ header-y += netlink.h
+ header-y += netrom.h
++header-y += nfc.h
+ header-y += nfs.h
+ header-y += nfs2.h
+ header-y += nfs3.h
 
 
