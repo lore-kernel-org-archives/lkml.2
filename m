@@ -1,62 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754683Ab2GRObd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 10:31:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30140 "EHLO mx1.redhat.com"
+	id S1754686Ab2GROdL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 10:33:11 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:42453 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754601Ab2GROba (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 10:31:30 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Asias He <asias@redhat.com>
-Cc: linux-kernel@vger.kernel.org, "Michael S. Tsirkin" <mst@redhat.com>,
-        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH RESEND 5/5] vhost-blk: Add vhost-blk support
-References: <1342169711-12386-1-git-send-email-asias@redhat.com>
-	<1342169711-12386-6-git-send-email-asias@redhat.com>
-	<x49mx2yyzi5.fsf@segfault.boston.devel.redhat.com>
-	<50060FE8.4040607@redhat.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Wed, 18 Jul 2012 10:31:28 -0400
-In-Reply-To: <50060FE8.4040607@redhat.com> (Asias He's message of "Wed, 18 Jul
-	2012 09:22:48 +0800")
-Message-ID: <x49fw8pb0ov.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1753179Ab2GROdK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 10:33:10 -0400
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: "sameo@linux.intel.com" <sameo@linux.intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Girdwood, Liam" <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "a.zummo@towertech.it" <a.zummo@towertech.it>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Richard Purdie <rpurdie@rpsys.net>, Bryan Wu <bryan.wu@canonical.com>
+Subject: [PATCH 0/6] mfd: add lp8788 mfd driver
+Thread-Topic: [PATCH 0/6] mfd: add lp8788 mfd driver
+Thread-Index: Ac1k8iYT2zkSOEAGQdq/traKe2cR6g==
+Date: Wed, 18 Jul 2012 14:32:26 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998FD793@DQHE02.ent.ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.87.177.86]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Asias He <asias@redhat.com> writes:
+Device driver for TI LP8788 Power Management Unit
 
-> On 07/18/2012 03:10 AM, Jeff Moyer wrote:
->> Asias He <asias@redhat.com> writes:
->>
->>> vhost-blk is a in kernel virito-blk device accelerator.
->>>
->>> This patch is based on Liu Yuan's implementation with various
->>> improvements and bug fixes. Notably, this patch makes guest notify and
->>> host completion processing in parallel which gives about 60% performance
->>> improvement compared to Liu Yuan's implementation.
->>
->> So, first off, some basic questions.  Is it correct to assume that you
->> tested this with buffered I/O (files opened *without* O_DIRECT)?
->>  I'm pretty sure that if you used O_DIRECT, you'd run into problems (which
->> are solved by the patch set posted by Shaggy, based on Zach Brown's work
->> of many moons ago).  Note that, with buffered I/O, the submission path
->> is NOT asynchronous.  So, any speedups you've reported are extremely
->> suspect.  ;-)
->
-> I always used O_DIRECT to test this patchset. And I mostly used raw
-> block device as guest image. Is this the reason why I did not hit the
-> problem you mentioned. Btw, I do have run this patchset on image based
-> file. I still do not see problems like IO hangs.
+(Description)
+The LP8788 has multiple functions.
 
-Hmm, so do the iovec's passed in point to buffers in userspace?  I
-thought they were kernel buffers, which would have blown up in
-get_user_pages_fast.
+(a) The I2C Interface
+  Access registers through the I2C
 
-Cheers,
-Jeff
+(b) Regulator Driver
+  4 BUCKs, 12 Digital LDOs and 10 Analog LDOs
+
+(c) Battery Charger
+  Configurable charging parameters
+
+(d) Real Time Clock with programmable alarm
+  Time counting and calendar for years 2000 - 2099
+
+(e) Backlight Driver
+  Brightness can be controlled by the pwm input or the i2c command
+
+(f) Current Sinks
+  3 current sinks are provided.
+  Each current sink can be used for keyboard LED or vibrator.
+
+(g) A/D Converter
+  ADC results from registers
+  (e.g. measuring battery voltage, temperature and so on)
+
+
+(Driver architecture)
+
+                 / regulator drivers   : ldos/bucks
+                /  power supply driver : charger
+  i2c    - mfd -   rtc driver          : rtc and alarm
+(regmap)        \  backlight driver    : brightness
+                 \ led                 : keyboard led
+
+
+(Interrupt handling)
+24 interrupts are used for the lp8788.
+If the interrupt occurs, then each IRQ is handled in the irq threads.
+Charger and RTC IRQs are passed from the main IRQ thread.
+
+* Why don't use the regmap-irq interface
+Rather than using the regmap-irq interface, LP8788 irq domain is allocated and
+irq threads are created when lp8788_irq_init() is called.
+
+(a) Interrupt enable registers vs Interrupt mask registers
+
+  LP8788 has interrupt enable registers - not masked registers.
+  If the bit is 1, then the IRQ can be generated by LP8788.
+  Otherwise, the IRQ is ignored (masked)
+  The bit operation of lp8788 is different from regmap-irq.
+
+  For example, to enable bit0 interrupt, the mask and value are set as following.
+    <lp8788>      bit mask = 0xfe, value = 0x01
+    <regmap-irq>  bit mask = 0xfe, value = 0xfe
+
+  So regmap-irq is not appropriate in lp8788 irq enable scheme.
+
+(b) Debounce time
+
+  To guarantee latest updated interrupt information, debounce timer is required.
+  In the lp8788 driver, work queue is used for the delayed processing.
+  There is no option in the reqmap-irq.
+
+Best Regards,
+Milo
+
