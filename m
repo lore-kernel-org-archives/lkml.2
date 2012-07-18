@@ -1,51 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755829Ab2GRTgc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 15:36:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54276 "EHLO mx1.redhat.com"
+	id S1755839Ab2GRTl7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 15:41:59 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:46786 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755737Ab2GRTg3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 15:36:29 -0400
-Message-ID: <50071014.6040301@redhat.com>
-Date: Wed, 18 Jul 2012 15:35:48 -0400
-From: Jon Masters <jcm@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1753290Ab2GRTlz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 15:41:55 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Todd Poynor <toddpoynor@google.com>
+Subject: Re: [PATCH] PM / Sleep: Print name of wakeup source that aborts suspend
+Date: Wed, 18 Jul 2012 21:47:34 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org, arve@android.com
+References: <1342637519-22355-1-git-send-email-toddpoynor@google.com>
+In-Reply-To: <1342637519-22355-1-git-send-email-toddpoynor@google.com>
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: Dennis Gilmore <dennis@ausil.us>, Joe Perches <joe@perches.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        =?ISO-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>,
-        Ingo Molnar <mingo@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
-References: <CAOesGMiCexiqA3L5GdNgyHhSD-5Bpqbb02YJrZPr8yMYa0afjA@mail.gmail.com> <201207071927.13135.arnd@arndb.de> <20120710071023.GA10456@gmail.com> <20120710101018.GE15120@arm.com> <yw1x8vekd309.fsf@unicorn.mansr.com> <CA+55aFxL6uEre-c=JrhPfts=7BGmhb2Js1c2ZGkTH8F=+rEWDg@mail.gmail.com> <20120717221839.GA4856@arm.com> <1342564536.1898.1.camel@joe2Laptop> <5006207D.1010708@jonmasters.org> <20120718102712.46b8d7ff@adria.ausil.us> <20120718171426.GA4240@arm.com>
-In-Reply-To: <20120718171426.GA4240@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201207182147.34750.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2012 01:14 PM, Catalin Marinas wrote:
+On Wednesday, July 18, 2012, Todd Poynor wrote:
+> Print active wakeup sources, or the most recently active wakeup
+> source, when a PM transition is aborted due to wakeup source
+> events.
+> 
+> Signed-off-by: Todd Poynor <toddpoynor@google.com>
+> ---
+>  drivers/base/power/wakeup.c |   29 +++++++++++++++++++++++++++++
+>  1 files changed, 29 insertions(+), 0 deletions(-)
+> 
+> A driver or app may repeatedly request a wakeup source while the system
+> is attempting to enter suspend, which may indicate a bug or at least
+> point out a highly active system component that is responsible for
+> decreased battery life on a mobile device.  Even when the incidence
+> of suspend abort is not severe, identifying wakeup sources that
+> frequently abort suspend can be a useful clue for power management
+> analysis.
+> 
+> In some cases the existing stats can point out the offender where there is
+> an unexpectedly high activation count that stands out from the others, but
+> in other cases the wakeup source frequently taken just after the rest of
+> the system thinks its time to suspend might not stand out in the overall
+> stats.
+> 
+> It is also often useful to have information about what's been happening
+> recently, rather than totals of all activity for the system boot.
+> 
+> It's suggested to (optionally?) dump a line about which wakeup source
+> aborted suspend to aid analysis of these situations.
+> 
+> diff --git a/drivers/base/power/wakeup.c b/drivers/base/power/wakeup.c
+> index cbb463b..c079ffe 100644
+> --- a/drivers/base/power/wakeup.c
+> +++ b/drivers/base/power/wakeup.c
+> @@ -649,6 +649,31 @@ void pm_wakeup_event(struct device *dev, unsigned int msec)
+>  }
+>  EXPORT_SYMBOL_GPL(pm_wakeup_event);
+>  
+> +static void print_active_wakeup_sources(void)
+> +{
+> +	struct wakeup_source *ws;
+> +	int active = 0;
+> +	struct wakeup_source *last_activity_ws = NULL;
+> +
+> +	rcu_read_lock();
+> +	list_for_each_entry_rcu(ws, &wakeup_sources, entry) {
+> +		if (ws->active) {
+> +			pr_info("active wakeup source: %s\n", ws->name);
+> +			active = 1;
 
-> Debian has different names for the architecture and compiler triplet:
-> amd64 with x86_64-linux-gnu, similar for x32. None of these match the
-> arch/x86/ Linux directory. Even if there is some confusion initially, it
-> will go away in a relatively short time (if not ARM can sponsor a water
-> drinking event ;).
+Can we do a break here?  Or do we want to get all of them?
 
-Sign me up for the water drinking. I'll also take ARM branded Kool-Aid,
-though it's been argued that I've already found a good dose of that.
+> +		} else if (!active &&
+> +			   (!last_activity_ws ||
+> +			    ws->last_time.tv64 >
+> +			    last_activity_ws->last_time.tv64)) {
 
-You make a good point, Catalin. Aside from arguing over the name, we
-should bear in mind that ARM management have made some decisions around
-AArch64 and I suspect as it starts to appear in more use, there will be
-less confusion. It's early now. There is no silicon out there for us to
-use at this point in the process, etc. etc. So we should think with a
-mindset of 2-3 years from now rather than where we were yesterday.
+ktime_to_ns() anyone?
 
-Jon.
+> +			last_activity_ws = ws;
+> +		}
+> +	}
+> +
+> +	if (!active && last_activity_ws)
+> +		pr_info("last active wakeup source: %s\n",
+> +			last_activity_ws->name);
+> +	rcu_read_unlock();
+> +}
+> +
+>  /**
+>   * pm_wakeup_pending - Check if power transition in progress should be aborted.
+>   *
+> @@ -671,6 +696,10 @@ bool pm_wakeup_pending(void)
+>  		events_check_enabled = !ret;
+>  	}
+>  	spin_unlock_irqrestore(&events_lock, flags);
+> +
+> +	if (ret)
+> +		print_active_wakeup_sources();
+> +
+>  	return ret;
+>  }
+
+There is no way this or equivalent can go into v3.6.  It may go into v3.7,
+but there's a plenty of time for that.
+
+Thanks,
+Rafael
