@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754817Ab2GRXUo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 19:20:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43631 "EHLO mx1.redhat.com"
+	id S1754884Ab2GRXWp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 19:22:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37129 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751492Ab2GRXUl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 19:20:41 -0400
-Message-ID: <1342653640.2229.234.camel@bling.home>
+	id S1753105Ab2GRXWo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 19:22:44 -0400
+Message-ID: <1342653762.2229.236.camel@bling.home>
 Subject: Re: [PATCH] kvm: fix race with level interrupts
 From: Alex Williamson <alex.williamson@redhat.com>
 To: "Michael S. Tsirkin" <mst@redhat.com>
 Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
         gleb@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 18 Jul 2012 17:20:40 -0600
-In-Reply-To: <20120718224948.GB14101@redhat.com>
+Date: Wed, 18 Jul 2012 17:22:42 -0600
+In-Reply-To: <20120718224459.GA14101@redhat.com>
 References: <20120718215228.GA13905@redhat.com>
-	 <1342650401.2229.224.camel@bling.home> <20120718224948.GB14101@redhat.com>
+	 <1342649774.2229.223.camel@bling.home> <20120718224459.GA14101@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
@@ -23,8 +23,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-07-19 at 01:49 +0300, Michael S. Tsirkin wrote:
-> On Wed, Jul 18, 2012 at 04:26:41PM -0600, Alex Williamson wrote:
+On Thu, 2012-07-19 at 01:44 +0300, Michael S. Tsirkin wrote:
+> On Wed, Jul 18, 2012 at 04:16:14PM -0600, Alex Williamson wrote:
 > > On Thu, 2012-07-19 at 00:52 +0300, Michael S. Tsirkin wrote:
 > > > When more than 1 source id is in use for the same GSI, we have the
 > > > following race related to handling irq_states:
@@ -71,24 +71,6 @@ On Thu, 2012-07-19 at 01:49 +0300, Michael S. Tsirkin wrote:
 > > > -int kvm_pic_set_irq(void *opaque, int irq, int level);
 > > > +static inline int kvm_irq_line_state(unsigned long *irq_state,
 > > > +				     int irq_source_id, int level)
-> > 
-> > This should probably be __kvm_irq_line_state given the calling
-> > restrictions.
-> 
-> It's such a trivial helper, do we need to split hairs about this?
-> 
-> Look it's not a good time for minor coding style nits.
-> 3.5 is imminent, it's about 1am here and I really don't have time to retest
-> today, so we'll release another kernel with a bug.
-> 
-> Could you focus on reviewing the functionality and correctness, and
-> leave ideas for better variable naming aside until 3.6?
-
-Please get off your high horse, this bug has existed for a long time and
-nobody has noticed.  __ indicates locking and makes people think twice
-about arbitrarily calling it.  Correct naming prevents future bugs,
-which is something you've been riding me on in other areas...
-
 > > > +{
 > > > +	/* Logical OR for level trig interrupt */
 > > > +	if (level)
@@ -114,10 +96,39 @@ which is something you've been riding me on in other areas...
 > > >  
 > > > -int kvm_pic_set_irq(void *opaque, int irq, int level)
 > > > +int kvm_pic_set_irq(struct kvm_pic *s, int irq, int src_id, int l)
+> > 
+> > Please use "irq_source_id" and keep "level".  I hate reviewing code
+> > where I have to differentiate 'l' vs '1'.
+> 
+> l is an illegal variable name?  Switch to a different font.
+
+WTF
+
+> >  Same below, mixing src_id and
+> > irq_source_id in various places.
+> 
+> irq_source_id is too long, coding style says variable names
+> should be short:
+> 	LOCAL variable names should be short, and to the point.
+
+irq_source_id is used all over the code, so either convert them all of
+be consistent.
+
 > > >  {
 > > > -	struct kvm_pic *s = opaque;
 > > >  	int ret = -1;
 > > > +	int level;
+> > 
+> > And you'd avoid this variable
+> 
+> by giving a different meaning to the same variable in
+> different parts of a function? Now *that* is a bad idea.
+> 
+> l is level for a specific source, level is the resulting irq value.
+
+
+Then maybe 'l' isn't a meaningful variable name.
+
 > > >  
 > > >  	pic_lock(s);
 > > >  	if (irq >= 0 && irq < PIC_NUM_PINS) {
@@ -269,6 +280,10 @@ which is something you've been riding me on in other areas...
 > > >  }
 > > 
 > > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
 
 
