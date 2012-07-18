@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752068Ab2GRJFA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 05:05:00 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:12157 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750939Ab2GRJEw (ORCPT
+	id S1752118Ab2GRJGw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 05:06:52 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:43538 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750939Ab2GRJGo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 05:04:52 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 18 Jul 2012 02:00:44 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>
-CC: <linux-kernel@vger.kernel.org>, <swarren@nvidia.com>,
-        <linux-tegra@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH] dma: tegra: enable/disable dma clock
-Date: Wed, 18 Jul 2012 14:26:09 +0530
-Message-ID: <1342601769-13852-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	Wed, 18 Jul 2012 05:06:44 -0400
+Date: Wed, 18 Jul 2012 10:06:26 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Will Deacon <Will.Deacon@arm.com>
+Subject: Re: [PATCH 01/36] atomic64_test: Simplify the #ifdef for
+ atomic64_dec_if_positive() test
+Message-ID: <20120718090626.GA23190@arm.com>
+References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
+ <1341608777-12982-2-git-send-email-catalin.marinas@arm.com>
+ <1342586037.3669.16.camel@pasglop>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1342586037.3669.16.camel@pasglop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable the DMA clock when registering DMA driver and
-disable clock when removing the DMA driver.
+On Wed, Jul 18, 2012 at 05:33:57AM +0100, Benjamin Herrenschmidt wrote:
+> On Fri, 2012-07-06 at 22:05 +0100, Catalin Marinas wrote:
+> > This patch introduces ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE and uses this
+> > instead of the multitude of #if defined() checks in atomic64_test.c
+> > 
+> > Signed-off-by: Will Deacon <will.deacon@arm.com>
+> > Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+> 
+> I'll let other paint the bike shed as to whether ARCH_HAS_* is the right
+> thing here, but as far as the powerpc change is concerned:
+> 
+> Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-The failure was observed on Tegra20 based system by
-Stephen Warren. However, it is working fine on tegra30
-based system and probably becasue uboot enable the clock
-on Tegra30.
+Thanks Ben. I followed Andrew's feedback to some other patches that Will
+posted and moved the #define to Kconfig:
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-Reported-by: Stephen Warren <swarren@wwwdotorg.org>
----
- drivers/dma/tegra20-apb-dma.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+https://lkml.org/lkml/2012/7/17/382
 
-diff --git a/drivers/dma/tegra20-apb-dma.c b/drivers/dma/tegra20-apb-dma.c
-index d52dbc6..ccfdaf4 100644
---- a/drivers/dma/tegra20-apb-dma.c
-+++ b/drivers/dma/tegra20-apb-dma.c
-@@ -1255,6 +1255,12 @@ static int __devinit tegra_dma_probe(struct platform_device *pdev)
- 		}
- 	}
- 
-+	ret = clk_prepare_enable(tdma->dma_clk);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "clk_prepare_enable failed: %d\n", ret);
-+		goto err_pm_disable;
-+	}
-+
- 	/* Reset DMA controller */
- 	tegra_periph_reset_assert(tdma->dma_clk);
- 	udelay(2);
-@@ -1363,6 +1369,7 @@ static int __devexit tegra_dma_remove(struct platform_device *pdev)
- 	if (!pm_runtime_status_suspended(&pdev->dev))
- 		tegra_dma_runtime_suspend(&pdev->dev);
- 
-+	clk_disable_unprepare(tdma->dma_clk);
- 	return 0;
- }
- 
+I don't have any strong preference.
+
 -- 
-1.7.1.1
-
+Catalin
