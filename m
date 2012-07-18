@@ -1,137 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753918Ab2GRKnt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 06:43:49 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:47696 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753628Ab2GRKkK (ORCPT
+	id S1753932Ab2GRKnx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 06:43:53 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:47893 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753921Ab2GRKnt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 06:40:10 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <kishon@ti.com>, <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
-        <rob@landley.net>, <linux@arm.linux.org.uk>,
-        <gregkh@linuxfoundation.org>, <b-cousson@ti.com>, <rnayak@ti.com>,
-        <tony@atomide.com>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <balbi@ti.com>,
-        <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>
-Subject: [PATCH v4 10/11] arm/dts: omap: Add usb_otg and glue data
-Date: Wed, 18 Jul 2012 16:08:41 +0530
-Message-ID: <1342607922-11554-11-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1342607922-11554-1-git-send-email-kishon@ti.com>
-References: <1342607922-11554-1-git-send-email-kishon@ti.com>
+	Wed, 18 Jul 2012 06:43:49 -0400
+Message-ID: <50069361.1080509@linaro.org>
+Date: Wed, 18 Jul 2012 11:43:45 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Shawn Guo <shawn.guo@freescale.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        devicetree-discuss@lists.ozlabs.org,
+        Wolfram Sang <w.sang@pengutronix.de>, linux-kernel@vger.kernel.org,
+        Deepak Saxena <dsaxena@linaro.org>, linux-next@vger.kernel.org,
+        Alessandro Rubini <rubini@gnudd.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: linux-next: manual merge of the arm-soc tree with the i2c-embedded
+ tree
+References: <20120717130650.GB27595@sirena.org.uk> <500568D9.10805@linaro.org> <20120717133550.GC4477@opensource.wolfsonmicro.com> <50057058.2060002@linaro.org> <20120717142222.GE4477@opensource.wolfsonmicro.com> <50057C1A.80606@linaro.org> <20120717152001.GF4477@opensource.wolfsonmicro.com> <20120718053341.GA4009@S2100-06.ap.freescale.net> <20120718095937.GB22739@opensource.wolfsonmicro.com> <50069006.8050301@linaro.org> <20120718103311.GG22739@opensource.wolfsonmicro.com>
+In-Reply-To: <20120718103311.GG22739@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add usb otg data node in omap4/omap3 device tree file. Also update
-the node with board specific setting in omapx-<board>.dts file.
+On 18/07/12 11:33, Mark Brown wrote:
+> On Wed, Jul 18, 2012 at 11:29:26AM +0100, Lee Jones wrote:
+>> On 18/07/12 10:59, Mark Brown wrote:
+>
+>>> It's not the using device tree bit that creates concern for me here,
+>>> it's the fact that the board and silicon aren't being separated.
+>
+>> What's the difference?
+>
+>>> +- db8500.dtsi       // silicon
+>>> \	
+>>> +-- snowball.dts    // board
+>
+> I have glanced at some of this stuff in the past, thanks.  Now think how
+> that's working for people when they put the configuration for the
+> silicon in the same DT node as the configuration for the board...
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- arch/arm/boot/dts/omap3-beagle.dts |    6 ++++++
- arch/arm/boot/dts/omap3-evm.dts    |    6 ++++++
- arch/arm/boot/dts/omap3.dtsi       |    8 ++++++++
- arch/arm/boot/dts/omap4-panda.dts  |    6 ++++++
- arch/arm/boot/dts/omap4-sdp.dts    |    6 ++++++
- arch/arm/boot/dts/omap4.dtsi       |    8 ++++++++
- 6 files changed, 40 insertions(+), 0 deletions(-)
+Granted, ideally the configuration and silicon description should be 
+separated. I don't know that is the case for us yet however. That is 
+something I'll enforce when we have a new dts file, which will be coming 
+very soon.
 
-diff --git a/arch/arm/boot/dts/omap3-beagle.dts b/arch/arm/boot/dts/omap3-beagle.dts
-index 5b4506c..f3d7076 100644
---- a/arch/arm/boot/dts/omap3-beagle.dts
-+++ b/arch/arm/boot/dts/omap3-beagle.dts
-@@ -67,3 +67,9 @@
- &mmc3 {
- 	status = "disable";
- };
-+
-+&usb_otg_hs {
-+	interface_type = <0>;
-+	mode = <3>;
-+	power = <50>;
-+};
-diff --git a/arch/arm/boot/dts/omap3-evm.dts b/arch/arm/boot/dts/omap3-evm.dts
-index 2eee16e..8963b3d 100644
---- a/arch/arm/boot/dts/omap3-evm.dts
-+++ b/arch/arm/boot/dts/omap3-evm.dts
-@@ -18,3 +18,9 @@
- 		reg = <0x80000000 0x10000000>; /* 256 MB */
- 	};
- };
-+
-+&usb_otg_hs {
-+	interface_type = <0>;
-+	mode = <3>;
-+	power = <50>;
-+};
-diff --git a/arch/arm/boot/dts/omap3.dtsi b/arch/arm/boot/dts/omap3.dtsi
-index 99474fa..f2694c9 100644
---- a/arch/arm/boot/dts/omap3.dtsi
-+++ b/arch/arm/boot/dts/omap3.dtsi
-@@ -215,5 +215,13 @@
- 			compatible = "ti,omap3-hsmmc";
- 			ti,hwmods = "mmc3";
- 		};
-+
-+		usb_otg_hs: usb_otg_hs {
-+			compatible = "ti,omap3-musb";
-+			ti,hwmods = "usb_otg_hs";
-+			multipoint = <1>;
-+			num_eps = <16>;
-+			ram_bits = <12>;
-+		};
- 	};
- };
-diff --git a/arch/arm/boot/dts/omap4-panda.dts b/arch/arm/boot/dts/omap4-panda.dts
-index 7052422..dd19370 100644
---- a/arch/arm/boot/dts/omap4-panda.dts
-+++ b/arch/arm/boot/dts/omap4-panda.dts
-@@ -93,3 +93,9 @@
- &twlusb {
- 	usb-supply = <&vusb>;
- };
-+
-+&usb_otg_hs {
-+	interface_type = <1>;
-+	mode = <3>;
-+	power = <50>;
-+};
-diff --git a/arch/arm/boot/dts/omap4-sdp.dts b/arch/arm/boot/dts/omap4-sdp.dts
-index 6326d7c..0fc10d4 100644
---- a/arch/arm/boot/dts/omap4-sdp.dts
-+++ b/arch/arm/boot/dts/omap4-sdp.dts
-@@ -162,3 +162,9 @@
- &twlusb {
- 	usb-supply = <&vusb>;
- };
-+
-+&usb_otg_hs {
-+	interface_type = <1>;
-+	mode = <3>;
-+	power = <50>;
-+};
-diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
-index 15f1890..3a6c3fa 100644
---- a/arch/arm/boot/dts/omap4.dtsi
-+++ b/arch/arm/boot/dts/omap4.dtsi
-@@ -285,5 +285,13 @@
- 				      <0x4a002300 0x1>;
- 			};
- 		};
-+
-+		usb_otg_hs: usb_otg_hs {
-+			compatible = "ti,omap4-musb";
-+			ti,hwmods = "usb_otg_hs";
-+			multipoint = <1>;
-+			num_eps = <16>;
-+			ram_bits = <12>;
-+		};
- 	};
- };
 -- 
-1.7.5.4
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+M: +44 77 88 633 515
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
+
 
