@@ -1,94 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755901Ab2GRUJE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 16:09:04 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48714 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755833Ab2GRUJA (ORCPT
+	id S1755936Ab2GRUOI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 16:14:08 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:6034 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753204Ab2GRUOF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 16:09:00 -0400
+	Wed, 18 Jul 2012 16:14:05 -0400
+Message-ID: <50071834.2030408@tilera.com>
+Date: Wed, 18 Jul 2012 16:10:28 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <CABqD9hZSRTF3nZu2J0mahrPQpB+7KMDFy=iv5=J2B+vswpLpVg@mail.gmail.com>
-References: <cover.1342566495.git.luto@amacapital.net> <912c85ae09ccb083110ae451d4f59260ae65296f.1342566495.git.luto@amacapital.net>
- <CABqD9hbKws1FRQBh3ctCCcYd5Jd=J5pW2a+ApFKso5s5ajqqFw@mail.gmail.com> <CABqD9hZSRTF3nZu2J0mahrPQpB+7KMDFy=iv5=J2B+vswpLpVg@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 18 Jul 2012 13:08:39 -0700
-Message-ID: <CALCETrUt7kgC4oGxdi2QghaqLWQ-pDV1f3wmt-WLbo2xgd1Mrw@mail.gmail.com>
-Subject: Re: [PATCH 3.5 2/2] seccomp: Future-proof against silly tracers
-To: Will Drewry <wad@chromium.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH 3/3] tile pci: enable IOMMU to support DMA for legacy
+ devices
+References: <201206162036.q5GKacEK017774@lab-41.internal.tilera.com> <201206162037.q5GKbFg0017781@lab-41.internal.tilera.com> <CAErSpo6Sws6AeZiW=-OW-6_wUO0LuJ1FMxU=yuu-7srN0+TL3g@mail.gmail.com> <5000442B.7090208@tilera.com> <20120713172508.GA18587@google.com> <5006E133.5090100@tilera.com> <CAErSpo6XEwQcVFUBHAZO6R2wZvCSmG3w1G6va7FRcnrbc=nAfg@mail.gmail.com>
+In-Reply-To: <CAErSpo6XEwQcVFUBHAZO6R2wZvCSmG3w1G6va7FRcnrbc=nAfg@mail.gmail.com>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 18, 2012 at 11:35 AM, Will Drewry <wad@chromium.org> wrote:
-> On Tue, Jul 17, 2012 at 9:13 PM, Will Drewry <wad@chromium.org> wrote:
->> On Tue, Jul 17, 2012 at 6:19 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>> Currently, if a tracer changes a syscall nr to __NR_future_enosys,
->>> behavior will differ between kernels that know about
->>> __NR_future_enosys (and return -ENOSYS) and older kernels (which
->>> return the value from pt_regs).  This is silly; we should just
->>> return -ENOSYS.
+On 7/18/2012 12:50 PM, Bjorn Helgaas wrote:
+> On Wed, Jul 18, 2012 at 10:15 AM, Chris Metcalf <cmetcalf@tilera.com> wrote:
+>> On 7/13/2012 1:25 PM, Bjorn Helgaas wrote:
+>>> On Fri, Jul 13, 2012 at 11:52:11AM -0400, Chris Metcalf wrote:
+>>>> We use the same pci_iomem_resource for different domains or host
+>>>> bridges, but the MMIO apertures for each bridge do not overlap because
+>>>> non-overlapping resource ranges are allocated for each domains.
+>>> You should not use the same pci_iomem_resource for different host bridges
+>>> because that tells the PCI core that everything in pci_iomem_resource is
+>>> available for devices under every host bridge, which I doubt is the case.
 >>>
->>> This is unlikely to ever happen on x86 because the return value in
->>> pt_regs starts out as -ENOSYS, but a silly tracer can change that.
->>>
->>> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
->>> Cc: Will Drewry <wad@chromium.org>
->>> ---
->>>  arch/x86/include/asm/syscall.h |   11 +++++++++++
->>>  kernel/seccomp.c               |   15 +++++++++++++++
->>>  2 files changed, 26 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/arch/x86/include/asm/syscall.h b/arch/x86/include/asm/syscall.h
->>> index 1ace47b..8191e057 100644
->>> --- a/arch/x86/include/asm/syscall.h
->>> +++ b/arch/x86/include/asm/syscall.h
->>
->> Since this is used in an arch-wide location, the prototype and comment
->> should be in asm-generic/syscall.h too.
->>
->>> @@ -70,6 +70,17 @@ static inline void syscall_set_return_value(struct task_struct *task,
->>>         regs->ax = (long) error ?: val;
->>>  }
->>>
->>> +static inline bool syscall_is_nr_future(struct task_struct *task,
->>> +                                       struct pt_regs *regs)
->>> +{
->>> +#ifdef CONFIG_IA32_EMULATION
->>> +       if (task_thread_info(task)->status & TS_COMPAT)
->>> +               return syscall_get_nr(task, regs) > __NR_ia32_syscall_max;
->>> +#endif
->>> +
->>> +       return syscall_get_nr(task, regs) > __NR_syscall_max;
->>
->> I'm not sure how easy this will be to implement on some of the arches
->> where this data isn't bubbled up.  It'd be good if some non-x86 arch
->> maintainers chimed in (since x86 is easy and already works as expected
->> :).
->>
->
-> Since x86 always returns -ENOSYS with an invalid syscall and only x86
-> supports seccomp filter in 3.5, I'd propose pushing this off for 3.6+
-> to get more feedback from the relevant parties.  Not doing it now
-> doesn't expose any users of 3.5 to any sort of changing ABI.
+>>> The fact that your firmware assigns non-overlapping resources is good and
+>>> works now, but if the kernel ever needs to allocate resources itself,
+>> Actually, we were not using any firmware. It was indeed the kernel which
+>> allocates resources from the shared pci_iomem_resource.
+> Wow.  I wonder how that managed to work.  Is there some information
+> that would have helped the PCI core do the right allocations?  Or
+> maybe the host bridges forward everything they receive to PCI,
+> regardless of address, and any given MMIO address is only routed to
+> one of the host bridges because of the routing info in the page
+> tables?
 
-It's (barely) visible.  See VSYS.trace_changenr_high here:
+Since each host bridge contains non-overlapping ranges in its bridge config
+header, ioremap() locates the right host bridge for the target PCI resource
+address and programs the host bridge info into the MMIO mapping. The end
+result is the MMIO address is routed to the right host bridge. On Tile
+processors, different host bridges are like separate IO devices, in
+completely separate domains.
 
-https://github.com/amluto/seccomp
+> I guess in that case, the "apertures" would basically be
+> defined by the page tables, not by the host bridges.  But that still
+> doesn't explain how we would assign non-overlapping ranges to each
+> domain.
 
->
-> (Otherwise, it seems fine but may make adding new arches slightly more
-> onerous, but I suspect ftrace needs this sort of info too as it
-> spreads to other arches!)
+Since all domains share the single resource, allocate_resource() "allocate
+empty slot in the resource tree", giving non-overlapping ranges to each
+devices.
 
-Are there any arches for which the return value isn't its own
-register?  If so, this is necessary.
-
-Agreed, though: let's wait for 3.6.
+Just to confirm, I'm assuming I'll ask Linus to pull this code out of my
+tile tree when the merge window opens, right?  Would you like me to add
+your name to the commit as acked or reviewed?  Thanks!
 
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
