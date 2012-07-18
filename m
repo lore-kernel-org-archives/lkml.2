@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757966Ab2GRAOf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 20:14:35 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52583 "EHLO
+	id S1757974Ab2GRAOv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 20:14:51 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34979 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757888Ab2GRANW (ORCPT
+	with ESMTP id S1757908Ab2GRANh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 20:13:22 -0400
+	Tue, 17 Jul 2012 20:13:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Yuri Khan <yurivkhan@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [ 10/23] Input: xpad - add Andamiro Pump It Up pad
-Date: Tue, 17 Jul 2012 17:12:03 -0700
-Message-Id: <20120717232330.055563279@linuxfoundation.org>
+        John Stultz <johnstul@us.ibm.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 22/23] hrtimer: Update hrtimer base offsets each hrtimer_interrupt
+Date: Tue, 17 Jul 2012 17:12:15 -0700
+Message-Id: <20120717232331.136475970@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120717232329.276003806@linuxfoundation.org>
 References: <20120717232455.GA5994@kroah.com>
@@ -31,31 +33,124 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Yuri Khan <yurivkhan@gmail.com>
+From: John Stultz <johnstul@us.ibm.com>
 
-commit e76b8ee25e034ab601b525abb95cea14aa167ed3 upstream.
+This is a backport of 5baefd6d84163443215f4a99f6a20f054ef11236
 
-I couldn't find the vendor ID in any of the online databases, but this
-mat has a Pump It Up logo on the top side of the controller compartment,
-and a disclaimer stating that Andamiro will not be liable on the bottom.
+The update of the hrtimer base offsets on all cpus cannot be made
+atomically from the timekeeper.lock held and interrupt disabled region
+as smp function calls are not allowed there.
 
-Signed-off-by: Yuri Khan <yurivkhan@gmail.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+clock_was_set(), which enforces the update on all cpus, is called
+either from preemptible process context in case of do_settimeofday()
+or from the softirq context when the offset modification happened in
+the timer interrupt itself due to a leap second.
+
+In both cases there is a race window for an hrtimer interrupt between
+dropping timekeeper lock, enabling interrupts and clock_was_set()
+issuing the updates. Any interrupt which arrives in that window will
+see the new time but operate on stale offsets.
+
+So we need to make sure that an hrtimer interrupt always sees a
+consistent state of time and offsets.
+
+ktime_get_update_offsets() allows us to get the current monotonic time
+and update the per cpu hrtimer base offsets from hrtimer_interrupt()
+to capture a consistent state of monotonic time and the offsets. The
+function replaces the existing ktime_get() calls in hrtimer_interrupt().
+
+The overhead of the new function vs. ktime_get() is minimal as it just
+adds two store operations.
+
+This ensures that any changes to realtime or boottime offsets are
+noticed and stored into the per-cpu hrtimer base structures, prior to
+any hrtimer expiration and guarantees that timers are not expired early.
+
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Reviewed-by: Ingo Molnar <mingo@kernel.org>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Prarit Bhargava <prarit@redhat.com>
+Link: http://lkml.kernel.org/r/1341960205-56738-8-git-send-email-johnstul@us.ibm.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/input/joystick/xpad.c |    1 +
- 1 file changed, 1 insertion(+)
+ kernel/hrtimer.c |   28 ++++++++++++++--------------
+ 1 file changed, 14 insertions(+), 14 deletions(-)
 
---- a/drivers/input/joystick/xpad.c
-+++ b/drivers/input/joystick/xpad.c
-@@ -142,6 +142,7 @@ static const struct xpad_device {
- 	{ 0x0c12, 0x880a, "Pelican Eclipse PL-2023", 0, XTYPE_XBOX },
- 	{ 0x0c12, 0x8810, "Zeroplus Xbox Controller", 0, XTYPE_XBOX },
- 	{ 0x0c12, 0x9902, "HAMA VibraX - *FAULTY HARDWARE*", 0, XTYPE_XBOX },
-+	{ 0x0d2f, 0x0002, "Andamiro Pump It Up pad", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX },
- 	{ 0x0e4c, 0x1097, "Radica Gamester Controller", 0, XTYPE_XBOX },
- 	{ 0x0e4c, 0x2390, "Radica Games Jtech Controller", 0, XTYPE_XBOX },
- 	{ 0x0e6f, 0x0003, "Logic3 Freebird wireless Controller", 0, XTYPE_XBOX },
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -657,6 +657,14 @@ static inline int hrtimer_enqueue_reprog
+ 	return 0;
+ }
+ 
++static inline ktime_t hrtimer_update_base(struct hrtimer_cpu_base *base)
++{
++	ktime_t *offs_real = &base->clock_base[HRTIMER_BASE_REALTIME].offset;
++	ktime_t *offs_boot = &base->clock_base[HRTIMER_BASE_BOOTTIME].offset;
++
++	return ktime_get_update_offsets(offs_real, offs_boot);
++}
++
+ /*
+  * Retrigger next event is called after clock was set
+  *
+@@ -665,22 +673,12 @@ static inline int hrtimer_enqueue_reprog
+ static void retrigger_next_event(void *arg)
+ {
+ 	struct hrtimer_cpu_base *base = &__get_cpu_var(hrtimer_bases);
+-	struct timespec realtime_offset, xtim, wtm, sleep;
+ 
+ 	if (!hrtimer_hres_active())
+ 		return;
+ 
+-	/* Optimized out for !HIGH_RES */
+-	get_xtime_and_monotonic_and_sleep_offset(&xtim, &wtm, &sleep);
+-	set_normalized_timespec(&realtime_offset, -wtm.tv_sec, -wtm.tv_nsec);
+-
+-	/* Adjust CLOCK_REALTIME offset */
+ 	raw_spin_lock(&base->lock);
+-	base->clock_base[HRTIMER_BASE_REALTIME].offset =
+-		timespec_to_ktime(realtime_offset);
+-	base->clock_base[HRTIMER_BASE_BOOTTIME].offset =
+-		timespec_to_ktime(sleep);
+-
++	hrtimer_update_base(base);
+ 	hrtimer_force_reprogram(base, 0);
+ 	raw_spin_unlock(&base->lock);
+ }
+@@ -710,7 +708,6 @@ static int hrtimer_switch_to_hres(void)
+ 		base->clock_base[i].resolution = KTIME_HIGH_RES;
+ 
+ 	tick_setup_sched_timer();
+-
+ 	/* "Retrigger" the interrupt to get things going */
+ 	retrigger_next_event(NULL);
+ 	local_irq_restore(flags);
+@@ -1264,7 +1261,7 @@ void hrtimer_interrupt(struct clock_even
+ 	dev->next_event.tv64 = KTIME_MAX;
+ 
+ 	raw_spin_lock(&cpu_base->lock);
+-	entry_time = now = ktime_get();
++	entry_time = now = hrtimer_update_base(cpu_base);
+ retry:
+ 	expires_next.tv64 = KTIME_MAX;
+ 	/*
+@@ -1342,9 +1339,12 @@ retry:
+ 	 * We need to prevent that we loop forever in the hrtimer
+ 	 * interrupt routine. We give it 3 attempts to avoid
+ 	 * overreacting on some spurious event.
++	 *
++	 * Acquire base lock for updating the offsets and retrieving
++	 * the current time.
+ 	 */
+ 	raw_spin_lock(&cpu_base->lock);
+-	now = ktime_get();
++	now = hrtimer_update_base(cpu_base);
+ 	cpu_base->nr_retries++;
+ 	if (++retries < 3)
+ 		goto retry;
 
 
