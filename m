@@ -1,94 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755954Ab2GRU2l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 16:28:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35515 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751813Ab2GRU2h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 16:28:37 -0400
-Message-ID: <1342643314.2229.217.camel@bling.home>
-Subject: Re: [PATCH v5 1/4] kvm: Extend irqfd to support level interrupts
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        avi@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jan.kiszka@siemens.com
-Date: Wed, 18 Jul 2012 14:28:34 -0600
-In-Reply-To: <1342638786.2229.216.camel@bling.home>
-References: <20120718105311.GH4700@redhat.com>
-	 <20120718105530.GG26120@redhat.com> <20120718112219.GJ4700@redhat.com>
-	 <20120718113910.GA5135@redhat.com> <20120718114844.GH26120@redhat.com>
-	 <20120718120705.GB5184@redhat.com> <1342622843.2229.200.camel@bling.home>
-	 <20120718153822.GC1777@redhat.com> <1342626481.2229.205.camel@bling.home>
-	 <20120718155823.GG1777@redhat.com> <20120718184209.GA14053@amt.cnet>
-	 <1342638437.2229.213.camel@bling.home>
-	 <1342638786.2229.216.camel@bling.home>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755961Ab2GRUaa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 16:30:30 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:54294 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751813Ab2GRUa2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 16:30:28 -0400
+MIME-Version: 1.0
+In-Reply-To: <50071834.2030408@tilera.com>
+References: <201206162036.q5GKacEK017774@lab-41.internal.tilera.com>
+ <201206162037.q5GKbFg0017781@lab-41.internal.tilera.com> <CAErSpo6Sws6AeZiW=-OW-6_wUO0LuJ1FMxU=yuu-7srN0+TL3g@mail.gmail.com>
+ <5000442B.7090208@tilera.com> <20120713172508.GA18587@google.com>
+ <5006E133.5090100@tilera.com> <CAErSpo6XEwQcVFUBHAZO6R2wZvCSmG3w1G6va7FRcnrbc=nAfg@mail.gmail.com>
+ <50071834.2030408@tilera.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 18 Jul 2012 14:30:03 -0600
+Message-ID: <CAErSpo7Vegj0MnTw=cjUXNWPZOFTXVSzH1V=4+-Qs80=1at5nA@mail.gmail.com>
+Subject: Re: [PATCH 3/3] tile pci: enable IOMMU to support DMA for legacy devices
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-18 at 13:13 -0600, Alex Williamson wrote:
-> On Wed, 2012-07-18 at 13:07 -0600, Alex Williamson wrote:
-> > On Wed, 2012-07-18 at 15:42 -0300, Marcelo Tosatti wrote:
-> > > On Wed, Jul 18, 2012 at 06:58:24PM +0300, Michael S. Tsirkin wrote:
-> > > > > > > > > Back to original point though current
-> > > > > > > > > situation is that calling kvm_set_irq() under spinlock is not worse for
-> > > > > > > > > scalability than calling it not under one.
-> > > > > > > > 
-> > > > > > > > Yes. Still the specific use can just use an atomic flag,
-> > > > > > > > lock+bool is not needed, and we won't need to undo it later.
-> > > > > > > 
-> > > > > > > 
-> > > > > > > Actually, no, replacing it with an atomic is racy.
-> > > > > > > 
-> > > > > > > CPU0 (inject)                       CPU1 (EOI)
-> > > > > > > atomic_cmpxchg(&asserted, 0, 1)
-> > > > > > >                                     atomic_cmpxchg(&asserted, 1, 0)
-> > > > > > >                                     kvm_set_irq(0)
-> > > > > > > kvm_set_irq(1)
-> > > > > > >                                     eventfd_signal
-> > > > > > > 
-> > > > > > > The interrupt is now stuck on until another interrupt is injected.
-> > > > > > > 
-> > > > > > 
-> > > > > > Well EOI somehow happened here before interrupt so it's a bug somewhere
-> > > > > > else?
-> > > > > 
-> > > > > Interrupts can be shared.  We also can't guarantee that the guest won't
-> > > > > write a bogus EOI to the ioapic.  The irq ack notifier doesn't filter on
-> > > > > irq source id... I'm not sure it can.
-> > > > 
-> > > > I guess if Avi OKs adding another kvm_set_irq under spinlock that's
-> > > > the best we can do for now.
-> > > 
-> > > Why can't a mutex be used instead of a spinlock again?
-> > 
-> > eventfd_signal calls the inject function from atomic context.
-> 
-> Actually, that's called from a workq.  I'll have to switch it back and
-> turn on lockdep to remember why I couldn't sleep there.
+On Wed, Jul 18, 2012 at 2:10 PM, Chris Metcalf <cmetcalf@tilera.com> wrote:
+> On 7/18/2012 12:50 PM, Bjorn Helgaas wrote:
+>> On Wed, Jul 18, 2012 at 10:15 AM, Chris Metcalf <cmetcalf@tilera.com> wrote:
+>>> On 7/13/2012 1:25 PM, Bjorn Helgaas wrote:
+>>>> On Fri, Jul 13, 2012 at 11:52:11AM -0400, Chris Metcalf wrote:
+>>>>> We use the same pci_iomem_resource for different domains or host
+>>>>> bridges, but the MMIO apertures for each bridge do not overlap because
+>>>>> non-overlapping resource ranges are allocated for each domains.
+>>>> You should not use the same pci_iomem_resource for different host bridges
+>>>> because that tells the PCI core that everything in pci_iomem_resource is
+>>>> available for devices under every host bridge, which I doubt is the case.
+>>>>
+>>>> The fact that your firmware assigns non-overlapping resources is good and
+>>>> works now, but if the kernel ever needs to allocate resources itself,
+>>> Actually, we were not using any firmware. It was indeed the kernel which
+>>> allocates resources from the shared pci_iomem_resource.
+>> Wow.  I wonder how that managed to work.  Is there some information
+>> that would have helped the PCI core do the right allocations?  Or
+>> maybe the host bridges forward everything they receive to PCI,
+>> regardless of address, and any given MMIO address is only routed to
+>> one of the host bridges because of the routing info in the page
+>> tables?
+>
+> Since each host bridge contains non-overlapping ranges in its bridge config
+> header, ioremap() locates the right host bridge for the target PCI resource
+> address and programs the host bridge info into the MMIO mapping. The end
+> result is the MMIO address is routed to the right host bridge. On Tile
+> processors, different host bridges are like separate IO devices, in
+> completely separate domains.
+>
+>> I guess in that case, the "apertures" would basically be
+>> defined by the page tables, not by the host bridges.  But that still
+>> doesn't explain how we would assign non-overlapping ranges to each
+>> domain.
+>
+> Since all domains share the single resource, allocate_resource() "allocate
+> empty slot in the resource tree", giving non-overlapping ranges to each
+> devices.
+>
+> Just to confirm, I'm assuming I'll ask Linus to pull this code out of my
+> tile tree when the merge window opens, right?  Would you like me to add
+> your name to the commit as acked or reviewed?  Thanks!
 
-switching to a mutex results in:
+Yep, just ask Linus to pull it; I don't think there's any need to
+coordinate with my PCI tree since you're not using any interfaces we
+changed in this cycle.
 
-BUG: sleeping function called from invalid context at kernel/mutex.c:269
-in_atomic(): 1, irqs_disabled(): 0, pid: 30025, name: qemu-system-x86
-INFO: lockdep is turned off.
-Pid: 30025, comm: qemu-system-x86 Not tainted 3.5.0-rc4+ #109
-Call Trace:
- [<ffffffff81088425>] __might_sleep+0xf5/0x130
- [<ffffffff81564c6f>] mutex_lock_nested+0x2f/0x60
- [<ffffffffa07db7d5>] eoifd_event+0x25/0x70 [kvm]
- [<ffffffffa07daea4>] kvm_notify_acked_irq+0xa4/0x140 [kvm]
- [<ffffffffa07dae2a>] ? kvm_notify_acked_irq+0x2a/0x140 [kvm]
- [<ffffffffa07d9bb4>] kvm_ioapic_update_eoi+0x84/0xf0 [kvm]
- [<ffffffffa0806c43>] apic_set_eoi+0x123/0x130 [kvm]
- [<ffffffffa0806fd8>] apic_reg_write+0x388/0x670 [kvm]
- [<ffffffffa07eb03c>] ? vcpu_enter_guest+0x32c/0x740 [kvm]
- [<ffffffffa0807481>] kvm_lapic_set_eoi+0x21/0x30 [kvm]
- [<ffffffffa04ba3f9>] handle_apic_access+0x69/0x80 [kvm_intel]
- [<ffffffffa04ba02a>] vmx_handle_exit+0xaa/0x260 [kvm_intel]
-
-
+Reviewed-by: Bjorn Helgaas <bhelgaas@google.com>
