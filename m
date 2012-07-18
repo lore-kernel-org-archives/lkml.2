@@ -1,136 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750852Ab2GRGip (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 02:38:45 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:55210 "EHLO comal.ext.ti.com"
+	id S1751601Ab2GRGmF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 02:42:05 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:55729 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752556Ab2GRGfb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 02:35:31 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <kishon@ti.com>, <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
-        <rob@landley.net>, <linux@arm.linux.org.uk>,
-        <gregkh@linuxfoundation.org>, <b-cousson@ti.com>, <rnayak@ti.com>,
-        <tony@atomide.com>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <balbi@ti.com>,
-        <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>
-Subject: [PATCH v3 10/11] arm/dts: omap: Add usb_otg and glue data
-Date: Wed, 18 Jul 2012 12:04:47 +0530
-Message-ID: <1342593288-7872-11-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1342593288-7872-1-git-send-email-kishon@ti.com>
-References: <1342593288-7872-1-git-send-email-kishon@ti.com>
+	id S1750850Ab2GRGl4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 02:41:56 -0400
+From: AnilKumar Ch <anilkumar@ti.com>
+To: <rdunlap@xenotime.net>
+CC: <sfr@canb.auug.org.au>, <sameo@linux.intel.com>,
+        <broonie@opensource.wolfsonmicro.com>, <linux-next@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        AnilKumar Ch <anilkumar@ti.com>
+Subject: [PATCH] regulator: tps65217: fix build error if REGULATOR is not enabled
+Date: Wed, 18 Jul 2012 12:11:03 +0530
+Message-ID: <1342593663-23938-1-git-send-email-anilkumar@ti.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add usb otg data node in omap4/omap3 device tree file. Also update
-the node with board specific setting in omapx-<board>.dts file.
+Fixes below build error if CONFIG_REGULATOR is not enabled.
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+drivers/built-in.o: In function `tps65217_probe':
+tps65217.c:(.devinit.text+0x13e37): undefined reference to `of_regulator_match'
+
+Signed-off-by: AnilKumar Ch <anilkumar@ti.com>
 ---
- arch/arm/boot/dts/omap3-beagle.dts |    6 ++++++
- arch/arm/boot/dts/omap3-evm.dts    |    6 ++++++
- arch/arm/boot/dts/omap3.dtsi       |    8 ++++++++
- arch/arm/boot/dts/omap4-panda.dts  |    6 ++++++
- arch/arm/boot/dts/omap4-sdp.dts    |    6 ++++++
- arch/arm/boot/dts/omap4.dtsi       |    8 ++++++++
- 6 files changed, 40 insertions(+), 0 deletions(-)
+ drivers/mfd/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/arm/boot/dts/omap3-beagle.dts b/arch/arm/boot/dts/omap3-beagle.dts
-index 5b4506c..f3d7076 100644
---- a/arch/arm/boot/dts/omap3-beagle.dts
-+++ b/arch/arm/boot/dts/omap3-beagle.dts
-@@ -67,3 +67,9 @@
- &mmc3 {
- 	status = "disable";
- };
-+
-+&usb_otg_hs {
-+	interface_type = <0>;
-+	mode = <3>;
-+	power = <50>;
-+};
-diff --git a/arch/arm/boot/dts/omap3-evm.dts b/arch/arm/boot/dts/omap3-evm.dts
-index 2eee16e..8963b3d 100644
---- a/arch/arm/boot/dts/omap3-evm.dts
-+++ b/arch/arm/boot/dts/omap3-evm.dts
-@@ -18,3 +18,9 @@
- 		reg = <0x80000000 0x10000000>; /* 256 MB */
- 	};
- };
-+
-+&usb_otg_hs {
-+	interface_type = <0>;
-+	mode = <3>;
-+	power = <50>;
-+};
-diff --git a/arch/arm/boot/dts/omap3.dtsi b/arch/arm/boot/dts/omap3.dtsi
-index 99474fa..f2694c9 100644
---- a/arch/arm/boot/dts/omap3.dtsi
-+++ b/arch/arm/boot/dts/omap3.dtsi
-@@ -215,5 +215,13 @@
- 			compatible = "ti,omap3-hsmmc";
- 			ti,hwmods = "mmc3";
- 		};
-+
-+		usb_otg_hs: usb_otg_hs@4a0ab000 {
-+			compatible = "ti,omap3-musb";
-+			ti,hwmods = "usb_otg_hs";
-+			multipoint = <1>;
-+			num_eps = <16>;
-+			ram_bits = <12>;
-+		};
- 	};
- };
-diff --git a/arch/arm/boot/dts/omap4-panda.dts b/arch/arm/boot/dts/omap4-panda.dts
-index 7052422..dd19370 100644
---- a/arch/arm/boot/dts/omap4-panda.dts
-+++ b/arch/arm/boot/dts/omap4-panda.dts
-@@ -93,3 +93,9 @@
- &twlusb {
- 	usb-supply = <&vusb>;
- };
-+
-+&usb_otg_hs {
-+	interface_type = <1>;
-+	mode = <3>;
-+	power = <50>;
-+};
-diff --git a/arch/arm/boot/dts/omap4-sdp.dts b/arch/arm/boot/dts/omap4-sdp.dts
-index 6326d7c..0fc10d4 100644
---- a/arch/arm/boot/dts/omap4-sdp.dts
-+++ b/arch/arm/boot/dts/omap4-sdp.dts
-@@ -162,3 +162,9 @@
- &twlusb {
- 	usb-supply = <&vusb>;
- };
-+
-+&usb_otg_hs {
-+	interface_type = <1>;
-+	mode = <3>;
-+	power = <50>;
-+};
-diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
-index 15f1890..3a6c3fa 100644
---- a/arch/arm/boot/dts/omap4.dtsi
-+++ b/arch/arm/boot/dts/omap4.dtsi
-@@ -285,5 +285,13 @@
- 				      <0x4a002300 0x1>;
- 			};
- 		};
-+
-+		usb_otg_hs: usb_otg_hs@4a0ab000 {
-+			compatible = "ti,omap4-musb";
-+			ti,hwmods = "usb_otg_hs";
-+			multipoint = <1>;
-+			num_eps = <16>;
-+			ram_bits = <12>;
-+		};
- 	};
- };
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index e129c82..01c929a 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -159,6 +159,7 @@ config TPS6507X
+ config MFD_TPS65217
+ 	tristate "TPS65217 Power Management / White LED chips"
+ 	depends on I2C
++	depends on REGULATOR
+ 	select MFD_CORE
+ 	select REGMAP_I2C
+ 	help
 -- 
-1.7.5.4
+1.7.9.5
 
