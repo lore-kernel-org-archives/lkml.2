@@ -1,34 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753150Ab2GRJ1F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 05:27:05 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:42403 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752849Ab2GRJ1D (ORCPT
+	id S1753127Ab2GRJdZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 05:33:25 -0400
+Received: from mail.lippert-at.com ([62.80.22.186]:34885 "EHLO
+	domex.lippertembedded.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752555Ab2GRJdV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 05:27:03 -0400
+	Wed, 18 Jul 2012 05:33:21 -0400
+Message-ID: <500682E0.5070306@LiPPERTEmbedded.de>
+Date: Wed, 18 Jul 2012 11:33:20 +0200
+From: Jens Rottmann <JRottmann@LiPPERTEmbedded.de>
+User-Agent: Thunderbird 1.5.0.14 (Windows/20071210)
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20120717154153.b10774cb005add05e4c4e5f6@canb.auug.org.au>
-References: <20120717154153.b10774cb005add05e4c4e5f6@canb.auug.org.au>
-Date: Wed, 18 Jul 2012 11:27:01 +0200
-Message-ID: <CA+icZUV_TC8CTJZH8f0=UYhHZUaEVLOZWDi3eZPMsvJLJHXvVg@mail.gmail.com>
-Subject: Re: linux-next: Tree for July 17
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: John Stultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH resend] cs5535-clockevt: typo, it's MFGPT, not MFPGT
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 18 Jul 2012 09:33:18.0886 (UTC) FILETIME=[5D853460:01CD64C8]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 17, 2012 at 7:41 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi all,
->
-> Changes since 20120716:
->
+cs5535-clockevt: typo, it's MFGPT, not MFPGT
 
-Out of curiosity (and normally you are giving a reason why there
-is...) no new Tree for July 18?
+Had me fooled for a while, "dmesg|grep -i mfgpt" wouldn't show anything.
 
-- Sedat -
+Signed-off-by: Jens Rottmann <JRottmann@LiPPERTEmbedded.de>
+---
+
+Hi Thomas,
+
+I know this is not the most important fix in the world, but the nice
+thing about open source is that you can scatch your itches ...
+
+Got no response, therefore rescratching.  :-)
+
+Thanks,
+Jens
+
+--- linux-3.4/drivers/clocksource/cs5535-clockevt.c
++++ mfgpt_typo/drivers/clocksource/cs5535-clockevt.c
+@@ -53,7 +53,7 @@
+ #define MFGPT_PERIODIC (MFGPT_HZ / HZ)
+ 
+ /*
+- * The MFPGT timers on the CS5536 provide us with suitable timers to use
++ * The MFGPT timers on the CS5536 provide us with suitable timers to use
+  * as clock event sources - not as good as a HPET or APIC, but certainly
+  * better than the PIT.  This isn't a general purpose MFGPT driver, but
+  * a simplified one designed specifically to act as a clock event source.
+@@ -144,7 +144,7 @@
+ 
+ 	timer = cs5535_mfgpt_alloc_timer(MFGPT_TIMER_ANY, MFGPT_DOMAIN_WORKING);
+ 	if (!timer) {
+-		printk(KERN_ERR DRV_NAME ": Could not allocate MFPGT timer\n");
++		printk(KERN_ERR DRV_NAME ": Could not allocate MFGPT timer\n");
+ 		return -ENODEV;
+ 	}
+ 	cs5535_event_clock = timer;
+_
+
