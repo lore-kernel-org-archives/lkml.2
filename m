@@ -1,64 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753727Ab2GRLbm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 07:31:42 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64129 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752547Ab2GRLbj (ORCPT
+	id S1753905Ab2GRLdB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 07:33:01 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:59109 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753348Ab2GRLdA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 07:31:39 -0400
-Date: Wed, 18 Jul 2012 04:31:35 -0700
-From: Michel Lespinasse <walken@google.com>
-To: aarcange@redhat.com, dwmw2@infradead.org, riel@redhat.com,
-        peterz@infradead.org, daniel.santos@pobox.com, axboe@kernel.dk,
-        ebiederm@xmission.com, akpm@linux-foundation.org
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org
-Subject: [PATCH] rbtree: fix jffs2 build issue due to renamed
- __rb_parent_color field
-Message-ID: <20120718113135.GB32698@google.com>
+	Wed, 18 Jul 2012 07:33:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1342574175.2012.12.camel@joe2Laptop>
+References: <1342442513-10488-1-git-send-email-yamanetoshi@gmail.com>
+	<1342573366-8167-1-git-send-email-yamanetoshi@gmail.com>
+	<1342574175.2012.12.camel@joe2Laptop>
+Date: Wed, 18 Jul 2012 20:32:58 +0900
+Message-ID: <CAOTypNSvKEfYVLZ=0sN-U+2xiXBO4So4QkvYyKniEFeqvkqVBg@mail.gmail.com>
+Subject: Re: [PATCH] staging/et131x: fix checkpatch warnings
+From: Toshiaki Yamane <yamanetoshi@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Einon <mark.einon@gmail.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When renaming rb_parent_color into __rb_parent_color to highlight the
-fact that people aren't expected to directly manipulate this, I broke
-the jffs2 build which was doing such direct manipulation in
-fs/jffs2/readinode.c . Fix this and add a comment explaining why
-this direct use is safe here.
+Thanks for you reply.
 
-Signed-off-by: Michel Lespinasse <walken@google.com>
----
- fs/jffs2/readinode.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+I will fix netdev_info only, because I don't know if I should use "%p".
 
-diff --git a/fs/jffs2/readinode.c b/fs/jffs2/readinode.c
-index dc0437e..b00fc50 100644
---- a/fs/jffs2/readinode.c
-+++ b/fs/jffs2/readinode.c
-@@ -395,7 +395,9 @@ static int jffs2_add_tn_to_tree(struct jffs2_sb_info *c,
- 
- /* Trivial function to remove the last node in the tree. Which by definition
-    has no right-hand -- so can be removed just by making its only child (if
--   any) take its place under its parent. */
-+   any) take its place under its parent. Note that we don't maintain the
-+   usual rbtree invariants as there won't be further insert or erase
-+   operations on the tree.*/
- static void eat_last(struct rb_root *root, struct rb_node *node)
- {
- 	struct rb_node *parent = rb_parent(node);
-@@ -414,7 +416,7 @@ static void eat_last(struct rb_root *root, struct rb_node *node)
- 	*link = node->rb_left;
- 	/* Colour doesn't matter now. Only the parent pointer. */
- 	if (node->rb_left)
--		node->rb_left->rb_parent_color = node->rb_parent_color;
-+		node->rb_left->__rb_parent_color = node->__rb_parent_color;
- }
- 
- /* We put this in reverse order, so we can just use eat_last */
+On Wed, Jul 18, 2012 at 10:16 AM, Joe Perches <joe@perches.com> wrote:
+> On Wed, 2012-07-18 at 10:02 +0900, Toshiaki Yamane wrote:
+>> Signed-off-by: Toshiaki Yamane <yamanetoshi@gmail.com>
+>
+> Hello.  Just some trivial notes:
+>
+>> diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
+> []
+>> @@ -2553,8 +2555,8 @@ static int et131x_rx_dma_memory_alloc(struct et131x_adapter *adapter)
+> []
+>> -     printk(KERN_INFO "Packet Status Ring %lx\n",
+>> -         (unsigned long) rx_ring->ps_ring_physaddr);
+>> +     pr_info("Packet Status Ring %lx\n",
+>> +             (unsigned long) rx_ring->ps_ring_physaddr);
+>> @@ -2574,7 +2576,7 @@ static int et131x_rx_dma_memory_alloc(struct et131x_adapter *adapter)
+> []
+>> -     printk(KERN_INFO "PRS %lx\n", (unsigned long)rx_ring->rx_status_bus);
+>> +     pr_info("PRS %lx\n", (unsigned long)rx_ring->rx_status_bus);
+>
+> These might as well use %p without a cast to unsigned long
+>         pr_info("Packet Status Ring: %p\n", rx_ring->ps_ring_phydaddr);
+> []
+>         pr_info("PRS: %p\n", rx_ring->rx_status_bus);
+>
+> []
+>> @@ -5186,8 +5188,8 @@ static int et131x_set_mac_addr(struct net_device *netdev, void *new_mac)
+> []
+>> -     printk(KERN_INFO "%s: Setting MAC address to %pM\n",
+>> -                     netdev->name, netdev->dev_addr);
+>> +     pr_info("%s: Setting MAC address to %pM\n",
+>> +             netdev->name, netdev->dev_addr);
+>
+> Please use netdev_<level> when there is a
+> struct net_device * available.
+>
+>         netdev_info(netdev, "Setting MAC address to %pM\n", netdev->dev_addr);
+>
+>
+
+
+
 -- 
-1.7.7.3
+
+Regards,
+
+
+ .
+  .
+...
+
+Yamane Toshiaki
+
+yamanetoshi@gmail.com
