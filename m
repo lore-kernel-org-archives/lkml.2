@@ -1,107 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752499Ab2GREe0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 00:34:26 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54081 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752289Ab2GREeO (ORCPT
+	id S1752289Ab2GREkn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 00:40:43 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:45219 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750912Ab2GREkf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 00:34:14 -0400
-Message-ID: <1342586048.28942.8.camel@phoenix>
-Subject: [RFT][PATCH v2 5/5] regulator: palmas: Convert palmas_ops_ldo to
- [get|set]_voltage_sel_regmap
-From: Axel Lin <axel.lin@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, Graeme Gregory <gg@slimlogic.co.uk>,
-        Liam Girdwood <lrg@ti.com>
-Date: Wed, 18 Jul 2012 12:34:08 +0800
-In-Reply-To: <1342585811.28942.3.camel@phoenix>
-References: <1342585811.28942.3.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 18 Jul 2012 00:40:35 -0400
+Message-ID: <50063E4B.8090601@oracle.com>
+Date: Wed, 18 Jul 2012 12:40:43 +0800
+From: "zhenzhong.duan" <zhenzhong.duan@oracle.com>
+Reply-To: zhenzhong.duan@oracle.com
+Organization: oracle
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: zhenzhong.duan@oracle.com
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>, jeremy@goop.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        xen-devel@lists.xensource.com, x86@kernel.org,
+        Feng Jin <joe.jin@oracle.com>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [Xen-devel] [PATCH-v2] xen: populate correct number of pages
+ when across mem boundary
+References: <4FF3E781.5040603@oracle.com> <4FFEE552.4070201@citrix.com> <4FFFDCD9.7030305@oracle.com> <20120717144540.GC12374@phenom.dumpdata.com> <500628A1.3060609@oracle.com>
+In-Reply-To: <500628A1.3060609@oracle.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/palmas-regulator.c |   45 ++++------------------------------
- 1 file changed, 5 insertions(+), 40 deletions(-)
+Sorry, pls ignore it. Tab still be translated to space.
 
-diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
-index 46c7e88..2ba7502 100644
---- a/drivers/regulator/palmas-regulator.c
-+++ b/drivers/regulator/palmas-regulator.c
-@@ -443,44 +443,6 @@ static int palmas_list_voltage_ldo(struct regulator_dev *dev,
- 	return  850000 + (selector * 50000);
- }
- 
--static int palmas_get_voltage_ldo_sel(struct regulator_dev *dev)
--{
--	struct palmas_pmic *pmic = rdev_get_drvdata(dev);
--	int id = rdev_get_id(dev);
--	int selector;
--	unsigned int reg;
--	unsigned int addr;
--
--	addr = palmas_regs_info[id].vsel_addr;
--
--	palmas_ldo_read(pmic->palmas, addr, &reg);
--
--	selector = reg & PALMAS_LDO1_VOLTAGE_VSEL_MASK;
--
--	/* Adjust selector to match list_voltage ranges */
--	if (selector > 49)
--		selector = 49;
--
--	return selector;
--}
--
--static int palmas_set_voltage_ldo_sel(struct regulator_dev *dev,
--		unsigned selector)
--{
--	struct palmas_pmic *pmic = rdev_get_drvdata(dev);
--	int id = rdev_get_id(dev);
--	unsigned int reg = 0;
--	unsigned int addr;
--
--	addr = palmas_regs_info[id].vsel_addr;
--
--	reg = selector;
--
--	palmas_ldo_write(pmic->palmas, addr, reg);
--
--	return 0;
--}
--
- static int palmas_map_voltage_ldo(struct regulator_dev *rdev,
- 		int min_uV, int max_uV)
- {
-@@ -505,8 +467,8 @@ static struct regulator_ops palmas_ops_ldo = {
- 	.is_enabled		= palmas_is_enabled_ldo,
- 	.enable			= regulator_enable_regmap,
- 	.disable		= regulator_disable_regmap,
--	.get_voltage_sel	= palmas_get_voltage_ldo_sel,
--	.set_voltage_sel	= palmas_set_voltage_ldo_sel,
-+	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
-+	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
- 	.list_voltage		= palmas_list_voltage_ldo,
- 	.map_voltage		= palmas_map_voltage_ldo,
- };
-@@ -757,6 +719,9 @@ static __devinit int palmas_probe(struct platform_device *pdev)
- 
- 		pmic->desc[id].type = REGULATOR_VOLTAGE;
- 		pmic->desc[id].owner = THIS_MODULE;
-+		pmic->desc[id].vsel_reg = PALMAS_BASE_TO_REG(PALMAS_LDO_BASE,
-+						palmas_regs_info[id].vsel_addr);
-+		pmic->desc[id].vsel_mask = PALMAS_LDO1_VOLTAGE_VSEL_MASK;
- 		pmic->desc[id].enable_reg = PALMAS_BASE_TO_REG(PALMAS_LDO_BASE,
- 						palmas_regs_info[id].ctrl_addr);
- 		pmic->desc[id].enable_mask = PALMAS_LDO1_CTRL_MODE_ACTIVE;
--- 
-1.7.9.5
-
-
-
+于 2012-07-18 11:08, zhenzhong.duan 写道:
+> From c40ea05842fec8f6caa053b2d58f54608ed0835f Mon Sep 17 00:00:00 2001
+> From: Zhenzhong Duan<zhenzhong.duan@oracle.com>
+> Date: Wed, 4 Jul 2012 14:08:10 +0800
+> Subject: [PATCH] xen: populate right count of pages when across mem 
+> boundary
+>
+> When populate pages across a mem boundary at bootup, the page count
+> populated isn't correct. This is due to mem populated to non-mem
+> region and ignored.
+>
+> Pfn range is also wrongly aligned when mem boundary isn't page aligned.
+>
+> -v2: If xen_do_chunk fail(populate), abort this chunk and any others.
+> Suggested by David, thanks.
+>
+> For a dom0 booted with dom_mem=3368952K(0xcd9ff000-4k) dmesg diff is:
+> [ 0.000000] Freeing 9e-100 pfn range: 98 pages freed
+> [ 0.000000] 1-1 mapping on 9e->100
+> [ 0.000000] 1-1 mapping on cd9ff->100000
+> [ 0.000000] Released 98 pages of unused memory
+> [ 0.000000] Set 206435 page(s) to 1-1 mapping
+> -[ 0.000000] Populating cd9fe-cda00 pfn range: 1 pages added
+> +[ 0.000000] Populating cd9fe-cd9ff pfn range: 1 pages added
+> +[ 0.000000] Populating 100000-100061 pfn range: 97 pages added
+> [ 0.000000] BIOS-provided physical RAM map:
+> [ 0.000000] Xen: 0000000000000000 - 000000000009e000 (usable)
+> [ 0.000000] Xen: 00000000000a0000 - 0000000000100000 (reserved)
+> [ 0.000000] Xen: 0000000000100000 - 00000000cd9ff000 (usable)
+> [ 0.000000] Xen: 00000000cd9ffc00 - 00000000cda53c00 (ACPI NVS)
+> ...
+> [ 0.000000] Xen: 0000000100000000 - 0000000100061000 (usable)
+> [ 0.000000] Xen: 0000000100061000 - 000000012c000000 (unusable)
+> ...
+> [ 0.000000] MEMBLOCK configuration:
+> ...
+> -[ 0.000000] reserved[0x4] [0x000000cd9ff000-0x000000cd9ffbff], 0xc00 
+> bytes
+> -[ 0.000000] reserved[0x5] [0x00000100000000-0x00000100060fff], 
+> 0x61000 bytes
+>
+> Related xen memory layout:
+> (XEN) Xen-e820 RAM map:
+> (XEN) 0000000000000000 - 000000000009ec00 (usable)
+> (XEN) 00000000000f0000 - 0000000000100000 (reserved)
+> (XEN) 0000000000100000 - 00000000cd9ffc00 (usable)
+>
+> Signed-off-by: Zhenzhong Duan<zhenzhong.duan@oracle.com>
+> ---
+> diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+> index a4790bf..ead8557 100644
+> --- a/arch/x86/xen/setup.c
+> +++ b/arch/x86/xen/setup.c
+> @@ -157,25 +157,24 @@ static unsigned long __init xen_populate_chunk(
+> unsigned long dest_pfn;
+>
+> for (i = 0, entry = list; i< map_size; i++, entry++) {
+> - unsigned long credits = credits_left;
+> unsigned long s_pfn;
+> unsigned long e_pfn;
+> unsigned long pfns;
+> long capacity;
+>
+> - if (credits<= 0)
+> + if (credits_left<= 0)
+> break;
+>
+> if (entry->type != E820_RAM)
+> continue;
+>
+> - e_pfn = PFN_UP(entry->addr + entry->size);
+> + e_pfn = PFN_DOWN(entry->addr + entry->size);
+>
+> /* We only care about E820 after the xen_start_info->nr_pages */
+> if (e_pfn<= max_pfn)
+> continue;
+>
+> - s_pfn = PFN_DOWN(entry->addr);
+> + s_pfn = PFN_UP(entry->addr);
+> /* If the E820 falls within the nr_pages, we want to start
+> * at the nr_pages PFN.
+> * If that would mean going past the E820 entry, skip it
+> @@ -184,23 +183,19 @@ static unsigned long __init xen_populate_chunk(
+> capacity = e_pfn - max_pfn;
+> dest_pfn = max_pfn;
+> } else {
+> - /* last_pfn MUST be within E820_RAM regions */
+> - if (*last_pfn&& e_pfn>= *last_pfn)
+> - s_pfn = *last_pfn;
+> capacity = e_pfn - s_pfn;
+> dest_pfn = s_pfn;
+> }
+> - /* If we had filled this E820_RAM entry, go to the next one. */
+> - if (capacity<= 0)
+> - continue;
+>
+> - if (credits> capacity)
+> - credits = capacity;
+> + if (credits_left< capacity)
+> + capacity = credits_left;
+>
+> - pfns = xen_do_chunk(dest_pfn, dest_pfn + credits, false);
+> + pfns = xen_do_chunk(dest_pfn, dest_pfn + capacity, false);
+> done += pfns;
+> - credits_left -= pfns;
+> *last_pfn = (dest_pfn + pfns);
+> + if (pfns< capacity)
+> + break;
+> + credits_left -= pfns;
+> }
+> return done;
+> }
