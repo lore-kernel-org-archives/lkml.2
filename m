@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757500Ab2GRAEh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 20:04:37 -0400
+	id S1757514Ab2GRAEp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 20:04:45 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:48754 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757374Ab2GRADu (ORCPT
+	with ESMTP id S1757468Ab2GRAEG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 20:03:50 -0400
+	Tue, 17 Jul 2012 20:04:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Thomas Renninger <trenn@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [ 10/37] cpufreq / ACPI: Fix not loading acpi-cpufreq driver regression
-Date: Tue, 17 Jul 2012 17:02:47 -0700
-Message-Id: <20120717232432.163237917@linuxfoundation.org>
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 14/37] rt2x00usb: fix indexes ordering on RX queue kick
+Date: Tue, 17 Jul 2012 17:02:51 -0700
+Message-Id: <20120717232432.510891073@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120717232431.399005532@linuxfoundation.org>
 References: <20120717232455.GA5994@kroah.com>
@@ -30,50 +31,49 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Thomas Renninger <trenn@suse.de>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit c4686c71a9183f76e3ef59098da5c098748672f6 upstream.
+commit efd821182cec8c92babef6e00a95066d3252fda4 upstream.
 
-Commit d640113fe80e45ebd4a5b420b introduced a regression on SMP
-systems where the processor core with ACPI id zero is disabled
-(typically should be the case because of hyperthreading).
-The regression got spread through stable kernels.
-On 3.0.X it got introduced via 3.0.18.
+On rt2x00_dmastart() we increase index specified by Q_INDEX and on
+rt2x00_dmadone() we increase index specified by Q_INDEX_DONE. So entries
+between Q_INDEX_DONE and Q_INDEX are those we currently process in the
+hardware. Entries between Q_INDEX and Q_INDEX_DONE are those we can
+submit to the hardware.
 
-Such platforms may be rare, but do exist.
-Look out for a disabled processor with acpi_id 0 in dmesg:
-ACPI: LAPIC (acpi_id[0x00] lapic_id[0x10] disabled)
+According to that fix rt2x00usb_kick_queue(), as we need to submit RX
+entries that are not processed by the hardware. It worked before only
+for empty queue, otherwise was broken.
 
-This problem has been observed on a:
-HP Proliant BL280c G6 blade
+Note that for TX queues indexes ordering are ok. We need to kick entries
+that have filled skb, but was not submitted to the hardware, i.e.
+started from Q_INDEX_DONE and have ENTRY_DATA_PENDING bit set.
 
-This patch restricts the introduced workaround to platforms
-with nr_cpu_ids <= 1.
+>From practical standpoint this fixes RX queue stall, usually reproducible
+in AP mode, like for example reported here:
+https://bugzilla.redhat.com/show_bug.cgi?id=828824
 
-Signed-off-by: Thomas Renninger <trenn@suse.de>
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Reported-and-tested-by: Franco Miceli <fmiceli@plan.ceibal.edu.uy>
+Reported-and-tested-by: Tom Horsley <horsley1953@gmail.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/processor_core.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/net/wireless/rt2x00/rt2x00usb.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/acpi/processor_core.c
-+++ b/drivers/acpi/processor_core.c
-@@ -189,10 +189,12 @@ int acpi_get_cpuid(acpi_handle handle, i
- 		 *     Processor (CPU3, 0x03, 0x00000410, 0x06) {}
- 		 * }
- 		 *
--		 * Ignores apic_id and always return 0 for CPU0's handle.
-+		 * Ignores apic_id and always returns 0 for the processor
-+		 * handle with acpi id 0 if nr_cpu_ids is 1.
-+		 * This should be the case if SMP tables are not found.
- 		 * Return -1 for other CPU's handle.
- 		 */
--		if (acpi_id == 0)
-+		if (nr_cpu_ids <= 1 && acpi_id == 0)
- 			return acpi_id;
- 		else
- 			return apic_id;
+--- a/drivers/net/wireless/rt2x00/rt2x00usb.c
++++ b/drivers/net/wireless/rt2x00/rt2x00usb.c
+@@ -436,8 +436,8 @@ void rt2x00usb_kick_queue(struct data_qu
+ 	case QID_RX:
+ 		if (!rt2x00queue_full(queue))
+ 			rt2x00queue_for_each_entry(queue,
+-						   Q_INDEX_DONE,
+ 						   Q_INDEX,
++						   Q_INDEX_DONE,
+ 						   NULL,
+ 						   rt2x00usb_kick_rx_entry);
+ 		break;
 
 
