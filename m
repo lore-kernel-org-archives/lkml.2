@@ -1,49 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755189Ab2GRQlu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 12:41:50 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:34529 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755084Ab2GRQlq (ORCPT
+	id S1755252Ab2GRQmU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 12:42:20 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:32163 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755137Ab2GRQll (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 12:41:46 -0400
-From: Devendra Naga <devendra.aaru@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org
-Cc: Devendra Naga <devendra.aaru@gmail.com>
-Subject: [PATCH 1/3] rtc/rtc-88pm80x: assign ret only when rtc_register_driver fails
-Date: Wed, 18 Jul 2012 22:10:36 +0530
-Message-Id: <1342629636-12745-1-git-send-email-devendra.aaru@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	Wed, 18 Jul 2012 12:41:41 -0400
+Message-ID: <201207181641.q6IGfexY007231@lab-41.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Wed, 18 Jul 2012 12:23:06 -0400
+Subject: [PATCH 3/3] tilegx net: use eth_hw_addr_random(), not random_ether_addr()
+To: "David S. Miller" <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+In-Reply-To: <201207181640.q6IGet7P007227@lab-41.internal.tilera.com>
+References: <201207181640.q6IGet7P007227@lab-41.internal.tilera.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At the probe we are assigning ret to return value of PTR_ERR right
-after the rtc_register_driver, as we would have done it in the
-if (IS_ERR(ptr)) check, since the function fails and goes inside
-that case
-
-Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 ---
- drivers/rtc/rtc-88pm80x.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/net/ethernet/tile/tilegx.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/rtc/rtc-88pm80x.c b/drivers/rtc/rtc-88pm80x.c
-index a2f956d..7e050b4 100644
---- a/drivers/rtc/rtc-88pm80x.c
-+++ b/drivers/rtc/rtc-88pm80x.c
-@@ -314,8 +314,8 @@ static int __devinit pm80x_rtc_probe(struct platform_device *pdev)
- 
- 	info->rtc_dev = rtc_device_register("88pm80x-rtc", &pdev->dev,
- 					    &pm80x_rtc_ops, THIS_MODULE);
--	ret = PTR_ERR(info->rtc_dev);
- 	if (IS_ERR(info->rtc_dev)) {
-+		ret = PTR_ERR(info->rtc_dev);
- 		dev_err(&pdev->dev, "Failed to register RTC device: %d\n", ret);
- 		goto out_rtc;
+diff --git a/drivers/net/ethernet/tile/tilegx.c b/drivers/net/ethernet/tile/tilegx.c
+index f78effc..4e2a162 100644
+--- a/drivers/net/ethernet/tile/tilegx.c
++++ b/drivers/net/ethernet/tile/tilegx.c
+@@ -1851,7 +1851,7 @@ static void tile_net_dev_init(const char *name, const uint8_t *mac)
+ 		memcpy(dev->dev_addr, mac, 6);
+ 		dev->addr_len = 6;
+ 	} else {
+-		random_ether_addr(dev->dev_addr);
++		eth_hw_addr_random(dev);
  	}
+ 
+ 	/* Register the network device. */
 -- 
-1.7.0.4
+1.7.10.3
 
