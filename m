@@ -1,57 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752622Ab2GRF1H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 01:27:07 -0400
-Received: from mailout05.t-online.de ([194.25.134.82]:41987 "EHLO
-	mailout05.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751826Ab2GRF1A (ORCPT
+	id S1752634Ab2GRF34 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 01:29:56 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:42329 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752582Ab2GRF3s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 01:27:00 -0400
-Message-ID: <5006491D.8070004@t-online.de>
-Date: Wed, 18 Jul 2012 07:26:53 +0200
-From: Knut Petersen <Knut_Petersen@t-online.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120601 Thunderbird/13.0
+	Wed, 18 Jul 2012 01:29:48 -0400
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: reiserfs-devel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [Bug 3.4.5] reiserfs: mutex_destroy called with locked mutex
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
-X-ID: VrqQQiZp8h2ZPj-oEuHRj-MRYUsc1do-lh+1kgDpnWaKkp21JSoegZ560-aHSBig51
-X-TOI-MSGID: 89cca4b2-2f88-4d55-b73a-7ab99dbb66d9
+In-Reply-To: <20120718035606.GA31662@bbox>
+References: <1342508505-23492-1-git-send-email-minchan@kernel.org>
+	<1342508505-23492-4-git-send-email-minchan@kernel.org>
+	<CAA_GA1dh0RYT5wfOB=t8-XoeHOzRJCmQJifnUTGLZfjNwx2a5w@mail.gmail.com>
+	<20120717234003.GA26937@bbox>
+	<CAA_GA1dWBZ+cj5LW6Q=XsP_GGvAh8Za2scaGS8nQcgfc9JTGQw@mail.gmail.com>
+	<20120718024157.GA31180@bbox>
+	<CAA_GA1dF9Zw1rDt9j5wJ6EpwQQMGptEndQaXWnTmQL=u8DAq7Q@mail.gmail.com>
+	<20120718035606.GA31662@bbox>
+Date: Wed, 18 Jul 2012 13:29:47 +0800
+Message-ID: <CAA_GA1cxkuyPiiwcSnZE=U4G54DViWxSSV=44KYVTt8+nG_Chg@mail.gmail.com>
+Subject: Re: [RFC 3/3] memory-hotplug: bug fix race between isolation and allocation
+From: Bob Liu <lliubbo@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I hit the following problem during a heavy compile job on kernel 3.4.5:
+On Wed, Jul 18, 2012 at 11:56 AM, Minchan Kim <minchan@kernel.org> wrote:
+> On Wed, Jul 18, 2012 at 11:12:27AM +0800, Bob Liu wrote:
+>> On Wed, Jul 18, 2012 at 10:41 AM, Minchan Kim <minchan@kernel.org> wrote:
+>> > On Wed, Jul 18, 2012 at 10:12:57AM +0800, Bob Liu wrote:
+>> >> On Wed, Jul 18, 2012 at 7:40 AM, Minchan Kim <minchan@kernel.org> wrote:
+>> >> > Hi Bob,
+>> >> >
+>> >> > On Tue, Jul 17, 2012 at 06:13:17PM +0800, Bob Liu wrote:
+>> >> >> Hi Minchan,
+>> >> >>
+>> >> >> On Tue, Jul 17, 2012 at 3:01 PM, Minchan Kim <minchan@kernel.org> wrote:
+>> >> >> > Like below, memory-hotplug makes race between page-isolation
+>> >> >> > and page-allocation so it can hit BUG_ON in __offline_isolated_pages.
+>> >> >> >
+>> >> >> >         CPU A                                   CPU B
+>> >> >> >
+>> >> >> > start_isolate_page_range
+>> >> >> > set_migratetype_isolate
+>> >> >> > spin_lock_irqsave(zone->lock)
+>> >> >> >
+>> >> >> >                                 free_hot_cold_page(Page A)
+>> >> >> >                                 /* without zone->lock */
+>> >> >> >                                 migratetype = get_pageblock_migratetype(Page A);
+>> >> >> >                                 /*
+>> >> >> >                                  * Page could be moved into MIGRATE_MOVABLE
+>> >> >> >                                  * of per_cpu_pages
+>> >> >> >                                  */
+>> >> >> >                                 list_add_tail(&page->lru, &pcp->lists[migratetype]);
+>> >> >> >
+>> >> >> > set_pageblock_isolate
+>> >> >> > move_freepages_block
+>> >> >> > drain_all_pages
+>> >> >> >
+>> >> >> >                                 /* Page A could be in MIGRATE_MOVABLE of free_list. */
+>> >> >> >
+>> >> >> > check_pages_isolated
+>> >> >> > __test_page_isolated_in_pageblock
+>> >> >> > /*
+>> >> >> >  * We can't catch freed page which
+>> >> >> >  * is free_list[MIGRATE_MOVABLE]
+>> >> >> >  */
+>> >> >> > if (PageBuddy(page A))
+>> >> >> >         pfn += 1 << page_order(page A);
+>> >> >> >
+>> >> >> >                                 /* So, Page A could be allocated */
+>> >> >> >
+>> >> >> > __offline_isolated_pages
+>> >> >> > /*
+>> >> >> >  * BUG_ON hit or offline page
+>> >> >> >  * which is used by someone
+>> >> >> >  */
+>> >> >> > BUG_ON(!PageBuddy(page A));
+>> >> >> >
+>> >> >> > Signed-off-by: Minchan Kim <minchan@kernel.org>
+>> >> >> > ---
+>> >> >> > I found this problem during code review so please confirm it.
+>> >> >> > Kame?
+>> >> >> >
+>> >> >> >  mm/page_isolation.c |    5 ++++-
+>> >> >> >  1 file changed, 4 insertions(+), 1 deletion(-)
+>> >> >> >
+>> >> >> > diff --git a/mm/page_isolation.c b/mm/page_isolation.c
+>> >> >> > index acf65a7..4699d1f 100644
+>> >> >> > --- a/mm/page_isolation.c
+>> >> >> > +++ b/mm/page_isolation.c
+>> >> >> > @@ -196,8 +196,11 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn)
+>> >> >> >                         continue;
+>> >> >> >                 }
+>> >> >> >                 page = pfn_to_page(pfn);
+>> >> >> > -               if (PageBuddy(page))
+>> >> >> > +               if (PageBuddy(page)) {
+>> >> >> >                         pfn += 1 << page_order(page);
+>> >> >> > +                       if (get_page_migratetype(page) != MIGRATE_ISOLATE)
+>> >> >> > +                               break;
+>> >> >> > +               }
+>> >> >>
+>> >> >> test_page_isolated() already have check
+>> >> >> get_pageblock_migratetype(page) != MIGRATE_ISOLATE.
+>> >> >>
+>> >> >
+>> >> > That's why I send a patch.
+>> >> > As I describe in description, pageblock migration type of get_page_migratetype(page)
+>> >> > is inconsistent with free_list[migrationtype].
+>> >> > I mean get_pageblock_migratetype(page) will return MIGRATE_ISOLATE but the page would be
+>> >> > in free_list[MIGRATE_MOVABLE] so it could be allocated for someone if that race happens.
+>> >> >
+>> >>
+>> >> Sorry, I'm still not get the situation how this race happens.
+>> >>
+>> >> set_pageblock_isolate
+>> >> move_freepages_block
+>> >> drain_all_pages
+>> >>
+>> >>                                 /* Page A could be in MIGRATE_MOVABLE
+>> >> of free_list. */
+>> >>
+>> >> I think move_freepages_block() will call list_move() to move Page A to
+>> >> free_list[MIGRATE_ISOLATE], so this case can't happen?
+>> >
+>> > move_freepages_block handles only pages in free_list but Page A is on pcp, not free_list.
+>> >
+>>
+>> Got it, then why not just drain pcp pages before move_freepages_block() ?
+>
+>         CPU A                   CPU B
+>
+> drain_all_pages
+> lock(zone->lock);
+>                                 free_hot_cold_page
+>                                 MIGRATE_MOVABLE = get_pageblock_migratetype(page);
+>                                 list_add(&page->lru, &pcp->lists[migratetype])
+> set_pageblock_isolate
+> move_free_pages_block
+> unlock(zone->lock);
+>
+> We can't make it atomic.
+>
+>>
+>> And I didn't see the effect by adding the check if
+>> (get_page_migratetype(page) != MIGRATE_ISOLATE) for this race.
+>> Since set_pageblock_isolate() have been called by CPU A, this check
+>> will always false which cause CPU A still consider Page A isolated,
+>> then PAGE A still can be allocated by CPU B from pcp.
+>
+> Please don't confuse get_page_migratetype and get_pageblock_migratetype.
+> get_page_migratetype returns migratetype inforamtion of *page* which is
+> in free_list while get_pageblock_migratetype returns *pageblock*'s migratetype.
+>
 
-Jul 17 20:29:59 golem kernel: [27408.140718] ------------[ cut here ]------------
-Jul 17 20:29:59 golem kernel: [27408.140739] WARNING: at kernel/mutex-debug.c:106 mutex_destroy+0x35/0x3f()
-Jul 17 20:29:59 golem kernel: [27408.140748] Hardware name:
-Jul 17 20:29:59 golem kernel: [27408.140753] Modules linked in: ipt_MASQUERADE xt_pkttype xt_TCPMSS xt_tcpudp xt_LOG xt_limit iptable_nat nf_nat pppoe pppox af_packet ppp_generic s
-lhc ir_kbd_i2c snd_pcm_oss snd_mixer_oss snd_seq snd_seq_device ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_raw xt_NOTRACK ipt_REJECT iptable_raw iptable_filter ip6table_
-mangle nf_conntrack_netbios_ns nf_conntrack_broadcast nf_conntrack_ipv4 nf_defrag_ipv4 ip_tables xt_conntrack nf_conntrack ip6table_filter ip6_tables x_tables ipv6 isl6421 ir_lirc_
-codec cx24116 lirc_dev ir_mce_kbd_decoder ir_sanyo_decoder cx88_dvb ir_sony_decoder ir_jvc_decoder ir_rc6_decoder videobuf_dvb snd_hda_codec_realtek dvb_core ir_rc5_decoder ir_nec_
-decoder snd_hda_intel rc_hauppauge snd_hda_codec tuner snd_rme96 snd_hwdep snd_pcm cx8800 cx8802 cx88xx snd_timer snd rc_core tveeprom v4l2_common soundcore videodev btcx_risc vide
-obuf_dma_sg videobuf_core snd_page_alloc
-Jul 17 20:29:59 golem kernel: [27408.140933] Pid: 17424, comm: mkdir Not tainted 3.4.5-main #49
-Jul 17 20:29:59 golem kernel: [27408.140940] Call Trace:
-Jul 17 20:29:59 golem kernel: [27408.140950]  [<c01218bb>] ? console_unlock+0x1bc/0x1e2
-Jul 17 20:29:59 golem kernel: [27408.140960]  [<c0120dfc>] warn_slowpath_common+0x68/0x7d
-Jul 17 20:29:59 golem kernel: [27408.140969]  [<c01505a5>] ? mutex_destroy+0x35/0x3f
-Jul 17 20:29:59 golem kernel: [27408.140978]  [<c0120e25>] warn_slowpath_null+0x14/0x18
-Jul 17 20:29:59 golem kernel: [27408.140987]  [<c01505a5>] mutex_destroy+0x35/0x3f
-Jul 17 20:29:59 golem kernel: [27408.140998]  [<c01cad96>] lockdep_annotate_inode_mutex_key+0x3a/0x69
-Jul 17 20:29:59 golem kernel: [27408.141008]  [<c01cadd6>] unlock_new_inode+0x11/0x55
-Jul 17 20:29:59 golem kernel: [27408.141018]  [<c020914c>] reiserfs_mkdir+0x274/0x29b
-Jul 17 20:29:59 golem kernel: [27408.141030]  [<c01c153c>] vfs_mkdir+0x8f/0xdd
-Jul 17 20:29:59 golem kernel: [27408.141039]  [<c029a9a2>] ? apparmor_path_mkdir+0x1b/0x1d
-Jul 17 20:29:59 golem kernel: [27408.141049]  [<c01c388b>] sys_mkdirat+0x76/0xa9
-Jul 17 20:29:59 golem kernel: [27408.141058]  [<c01c38d5>] sys_mkdir+0x17/0x19
-Jul 17 20:29:59 golem kernel: [27408.141069]  [<c049f1dd>] syscall_call+0x7/0xb
-Jul 17 20:29:59 golem kernel: [27408.141077] ---[ end trace ea73962172137cb3 ]---
+Oh, yes i mixed them up.
 
-cu,
-  Knut
+Last question, it's better to break only before add pfn.
+like:
 
+-               if (PageBuddy(page))
++               if (PageBuddy(page)) {
++                       if (get_page_migratetype(page) != MIGRATE_ISOLATE)
++                               break;
+                          pfn += 1 << page_order(page);
++               }
+
+-- 
+Regards,
+--Bob
