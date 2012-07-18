@@ -1,161 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753587Ab2GRLPl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 07:15:41 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53737 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752417Ab2GRLPi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 07:15:38 -0400
-Message-ID: <1342610133.25411.78.camel@shinybook.infradead.org>
-Subject: Re: linux-next: Trees and MAINTAINERS of random drivers?
-From: David Woodhouse <dwmw2@infradead.org>
-To: sedat.dilek@gmail.com
-Cc: "Theodore Ts'o" <tytso@mit.edu>, linux-next <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Matt Mackall <mpm@selenic.com>
-Date: Wed, 18 Jul 2012 12:15:33 +0100
-In-Reply-To: <CA+icZUVPS=xkm0+=6JZPGmT9BRJgbGav3AHCgpYuvt-71+xhmg@mail.gmail.com>
-References: <CA+icZUVPS=xkm0+=6JZPGmT9BRJgbGav3AHCgpYuvt-71+xhmg@mail.gmail.com>
-Content-Type: multipart/signed; micalg="sha1"; protocol="application/x-pkcs7-signature";
-	boundary="=-SH2gX3ENivLE0k3XP6Xy"
-X-Mailer: Evolution 3.4.3 (3.4.3-1.fc17) 
-Mime-Version: 1.0
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1753606Ab2GRLVv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 07:21:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16465 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751619Ab2GRLVs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 07:21:48 -0400
+Date: Wed, 18 Jul 2012 14:22:19 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>, avi@redhat.com,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jan.kiszka@siemens.com
+Subject: Re: [PATCH v5 1/4] kvm: Extend irqfd to support level interrupts
+Message-ID: <20120718112219.GJ4700@redhat.com>
+References: <20120716202711.1752.71007.stgit@bling.home>
+ <20120716203344.1752.14606.stgit@bling.home>
+ <20120718104114.GC4700@redhat.com>
+ <20120718104429.GD26120@redhat.com>
+ <20120718104844.GF4700@redhat.com>
+ <20120718104906.GE26120@redhat.com>
+ <20120718105311.GH4700@redhat.com>
+ <20120718105530.GG26120@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120718105530.GG26120@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jul 18, 2012 at 01:55:30PM +0300, Gleb Natapov wrote:
+> On Wed, Jul 18, 2012 at 01:53:11PM +0300, Michael S. Tsirkin wrote:
+> > On Wed, Jul 18, 2012 at 01:49:06PM +0300, Gleb Natapov wrote:
+> > > On Wed, Jul 18, 2012 at 01:48:44PM +0300, Michael S. Tsirkin wrote:
+> > > > On Wed, Jul 18, 2012 at 01:44:29PM +0300, Gleb Natapov wrote:
+> > > > > On Wed, Jul 18, 2012 at 01:41:14PM +0300, Michael S. Tsirkin wrote:
+> > > > > > On Mon, Jul 16, 2012 at 02:33:47PM -0600, Alex Williamson wrote:
+> > > > > > > In order to inject a level interrupt from an external source using an
+> > > > > > > irqfd, we need to allocate a new irq_source_id.  This allows us to
+> > > > > > > assert and (later) de-assert an interrupt line independently from
+> > > > > > > users of KVM_IRQ_LINE and avoid lost interrupts.
+> > > > > > > 
+> > > > > > > We also add what may appear like a bit of excessive infrastructure
+> > > > > > > around an object for storing this irq_source_id.  However, notice
+> > > > > > > that we only provide a way to assert the interrupt here.  A follow-on
+> > > > > > > interface will make use of the same irq_source_id to allow de-assert.
+> > > > > > > 
+> > > > > > > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> > > > > > > ---
+> > > > > > > 
+> > > > > > >  Documentation/virtual/kvm/api.txt |    6 ++
+> > > > > > >  arch/x86/kvm/x86.c                |    1 
+> > > > > > >  include/linux/kvm.h               |    3 +
+> > > > > > >  virt/kvm/eventfd.c                |  114 ++++++++++++++++++++++++++++++++++++-
+> > > > > > >  4 files changed, 120 insertions(+), 4 deletions(-)
+> > > > > > > 
+> > > > > > > diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
+> > > > > > > index 100acde..c7267d5 100644
+> > > > > > > --- a/Documentation/virtual/kvm/api.txt
+> > > > > > > +++ b/Documentation/virtual/kvm/api.txt
+> > > > > > > @@ -1981,6 +1981,12 @@ the guest using the specified gsi pin.  The irqfd is removed using
+> > > > > > >  the KVM_IRQFD_FLAG_DEASSIGN flag, specifying both kvm_irqfd.fd
+> > > > > > >  and kvm_irqfd.gsi.
+> > > > > > >  
+> > > > > > > +The KVM_IRQFD_FLAG_LEVEL flag indicates the gsi input is for a level
+> > > > > > > +triggered interrupt.  In this case a new irqchip input is allocated
+> > > > > > > +which is logically OR'd with other inputs allowing multiple sources
+> > > > > > > +to independently assert level interrupts.  The KVM_IRQFD_FLAG_LEVEL
+> > > > > > > +is only necessary on setup, teardown is identical to that above.
+> > > > > > > +KVM_IRQFD_FLAG_LEVEL support is indicated by KVM_CAP_IRQFD_LEVEL.
+> > > > > > >  
+> > > > > > >  5. The kvm_run structure
+> > > > > > >  ------------------------
+> > > > > > > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> > > > > > > index a01a424..80bed07 100644
+> > > > > > > --- a/arch/x86/kvm/x86.c
+> > > > > > > +++ b/arch/x86/kvm/x86.c
+> > > > > > > @@ -2148,6 +2148,7 @@ int kvm_dev_ioctl_check_extension(long ext)
+> > > > > > >  	case KVM_CAP_GET_TSC_KHZ:
+> > > > > > >  	case KVM_CAP_PCI_2_3:
+> > > > > > >  	case KVM_CAP_KVMCLOCK_CTRL:
+> > > > > > > +	case KVM_CAP_IRQFD_LEVEL:
+> > > > > > >  		r = 1;
+> > > > > > >  		break;
+> > > > > > >  	case KVM_CAP_COALESCED_MMIO:
+> > > > > > > diff --git a/include/linux/kvm.h b/include/linux/kvm.h
+> > > > > > > index 2ce09aa..b2e6e4f 100644
+> > > > > > > --- a/include/linux/kvm.h
+> > > > > > > +++ b/include/linux/kvm.h
+> > > > > > > @@ -618,6 +618,7 @@ struct kvm_ppc_smmu_info {
+> > > > > > >  #define KVM_CAP_PPC_GET_SMMU_INFO 78
+> > > > > > >  #define KVM_CAP_S390_COW 79
+> > > > > > >  #define KVM_CAP_PPC_ALLOC_HTAB 80
+> > > > > > > +#define KVM_CAP_IRQFD_LEVEL 81
+> > > > > > >  
+> > > > > > >  #ifdef KVM_CAP_IRQ_ROUTING
+> > > > > > >  
+> > > > > > > @@ -683,6 +684,8 @@ struct kvm_xen_hvm_config {
+> > > > > > >  #endif
+> > > > > > >  
+> > > > > > >  #define KVM_IRQFD_FLAG_DEASSIGN (1 << 0)
+> > > > > > > +/* Available with KVM_CAP_IRQFD_LEVEL */
+> > > > > > > +#define KVM_IRQFD_FLAG_LEVEL (1 << 1)
+> > > > > > >  
+> > > > > > >  struct kvm_irqfd {
+> > > > > > >  	__u32 fd;
+> > > > > > > diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
+> > > > > > > index 7d7e2aa..ecdbfea 100644
+> > > > > > > --- a/virt/kvm/eventfd.c
+> > > > > > > +++ b/virt/kvm/eventfd.c
+> > > > > > > @@ -36,6 +36,68 @@
+> > > > > > >  #include "iodev.h"
+> > > > > > >  
+> > > > > > >  /*
+> > > > > > > + * An irq_source_id can be created from KVM_IRQFD for level interrupt
+> > > > > > > + * injections and shared with other interfaces for EOI or de-assert.
+> > > > > > > + * Create an object with reference counting to make it easy to use.
+> > > > > > > + */
+> > > > > > > +struct _irq_source {
+> > > > > > > +	int id; /* the IRQ source ID */
+> > > > > > > +	bool level_asserted; /* Track assertion state and protect with lock */
+> > > > > > > +	spinlock_t lock;     /* to avoid unnecessary re-assert/spurious eoi. */
+> > > > > > > +	struct kvm *kvm;
+> > > > > > > +	struct kref kref;
+> > > > > > > +};
+> > > > > > > +
+> > > > > > > +static void _irq_source_release(struct kref *kref)
+> > > > > > > +{
+> > > > > > > +	struct _irq_source *source;
+> > > > > > > +
+> > > > > > > +	source = container_of(kref, struct _irq_source, kref);
+> > > > > > > +
+> > > > > > > +	/* This also de-asserts */
+> > > > > > > +	kvm_free_irq_source_id(source->kvm, source->id);
+> > > > > > > +	kfree(source);
+> > > > > > > +}
+> > > > > > > +
+> > > > > > > +static void _irq_source_put(struct _irq_source *source)
+> > > > > > > +{
+> > > > > > > +	if (source)
+> > > > > > > +		kref_put(&source->kref, _irq_source_release);
+> > > > > > > +}
+> > > > > > > +
+> > > > > > > +static struct _irq_source *__attribute__ ((used)) /* white lie for now */
+> > > > > > > +_irq_source_get(struct _irq_source *source)
+> > > > > > > +{
+> > > > > > > +	if (source)
+> > > > > > > +		kref_get(&source->kref);
+> > > > > > > +
+> > > > > > > +	return source;
+> > > > > > > +}
+> > > > > > > +
+> > > > > > > +static struct _irq_source *_irq_source_alloc(struct kvm *kvm)
+> > > > > > > +{
+> > > > > > > +	struct _irq_source *source;
+> > > > > > > +	int id;
+> > > > > > > +
+> > > > > > > +	source = kzalloc(sizeof(*source), GFP_KERNEL);
+> > > > > > > +	if (!source)
+> > > > > > > +		return ERR_PTR(-ENOMEM);
+> > > > > > > +
+> > > > > > > +	id = kvm_request_irq_source_id(kvm);
+> > > > > > > +	if (id < 0) {
+> > > > > > > +		kfree(source);
+> > > > > > > +		return ERR_PTR(id);
+> > > > > > > +	}
+> > > > > > > +
+> > > > > > > +	kref_init(&source->kref);
+> > > > > > > +	spin_lock_init(&source->lock);
+> > > > > > > +	source->kvm = kvm;
+> > > > > > > +	source->id = id;
+> > > > > > > +
+> > > > > > > +	return source;
+> > > > > > > +}
+> > > > > > > +
+> > > > > > > +/*
+> > > > > > >   * --------------------------------------------------------------------
+> > > > > > >   * irqfd: Allows an fd to be used to inject an interrupt to the guest
+> > > > > > >   *
+> > > > > > > @@ -52,6 +114,8 @@ struct _irqfd {
+> > > > > > >  	/* Used for level IRQ fast-path */
+> > > > > > >  	int gsi;
+> > > > > > >  	struct work_struct inject;
+> > > > > > > +	/* IRQ source ID for level triggered irqfds */
+> > > > > > > +	struct _irq_source *source;
+> > > > > > >  	/* Used for setup/shutdown */
+> > > > > > >  	struct eventfd_ctx *eventfd;
+> > > > > > >  	struct list_head list;
+> > > > > > > @@ -62,7 +126,7 @@ struct _irqfd {
+> > > > > > >  static struct workqueue_struct *irqfd_cleanup_wq;
+> > > > > > >  
+> > > > > > >  static void
+> > > > > > > -irqfd_inject(struct work_struct *work)
+> > > > > > > +irqfd_inject_edge(struct work_struct *work)
+> > > > > > >  {
+> > > > > > >  	struct _irqfd *irqfd = container_of(work, struct _irqfd, inject);
+> > > > > > >  	struct kvm *kvm = irqfd->kvm;
+> > > > > > > @@ -71,6 +135,29 @@ irqfd_inject(struct work_struct *work)
+> > > > > > >  	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
+> > > > > > >  }
+> > > > > > >  
+> > > > > > > +static void
+> > > > > > > +irqfd_inject_level(struct work_struct *work)
+> > > > > > > +{
+> > > > > > > +	struct _irqfd *irqfd = container_of(work, struct _irqfd, inject);
+> > > > > > > +
+> > > > > > > +	/*
+> > > > > > > +	 * Inject an interrupt only if not already asserted.
+> > > > > > > +	 *
+> > > > > > > +	 * We can safely ignore the kvm_set_irq return value here.  If
+> > > > > > > +	 * masked, the irr bit is still set and will eventually be serviced.
+> > > > > > > +	 * This interface does not guarantee immediate injection.  If
+> > > > > > > +	 * coalesced, an eoi will be coming where we can de-assert and
+> > > > > > > +	 * re-inject if necessary.  NB, if you need to know if an interrupt
+> > > > > > > +	 * was coalesced, this interface is not for you.
+> > > > > > > +	 */
+> > > > > > > +	spin_lock(&irqfd->source->lock);
+> > > > > > > +	if (!irqfd->source->level_asserted) {
+> > > > > > > +		kvm_set_irq(irqfd->kvm, irqfd->source->id, irqfd->gsi, 1);
+> > > > > > > +		irqfd->source->level_asserted = true;
+> > > > > > > +	}
+> > > > > > > +	spin_unlock(&irqfd->source->lock);
+> > > > > > > +}
+> > > > > > > +
+> > > > > > 
+> > > > > > So as was discussed kvm_set_irq under spinlock is bad for scalability
+> > > > > > with multiple VCPUs.  Why do we need a spinlock simply to protect
+> > > > > > level_asserted?  Let's use an atomic test and set/test and clear and the
+> > > > > > problem goes away.
+> > > > > > 
+> > > > > That sad reality is that for level interrupt we already scan all vcpus
+> > > > > under spinlock.
+> > > > 
+> > > > Where?
+> > > > 
+> > > ioapic
+> > 
+> > $ grep kvm_for_each_vcpu virt/kvm/ioapic.c
+> > $
+> > 
+> > ?
+> > 
+> 
+> Come on Michael. You can do better than grep and actually look at what
+> code does. The code that loops over all vcpus while delivering an irq is
+> in kvm_irq_delivery_to_apic(). Now grep for that.
 
---=-SH2gX3ENivLE0k3XP6Xy
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Hmm, I see, it's actually done for edge if injected from ioapic too,
+right?
 
-On Wed, 2012-07-18 at 13:09 +0200, Sedat Dilek wrote:
-> 26 dwmw2           git
-> git://git.infradead.org/users/dwmw2/random-2.6.git#master
+So set_irq does a linear scan, and for each matching CPU it calls
+kvm_irq_delivery_to_apic which is another scan?
+So it's actually N^2 worst case for a broadcast?
 
-I'm misusing the word 'random' to mean 'miscellaneous' there; it's not
-for things related to entropy.
-
---=20
-dwmw2
-
---=-SH2gX3ENivLE0k3XP6Xy
-Content-Type: application/x-pkcs7-signature; name="smime.p7s"
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Transfer-Encoding: base64
-
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIUbjCCBjQw
-ggQcoAMCAQICAR4wDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0
-Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxKTAn
-BgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3MTAyNDIxMDE1NVoX
-DTE3MTAyNDIxMDE1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSsw
-KQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFy
-dENvbSBDbGFzcyAxIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTCCASIwDQYJKoZIhvcN
-AQEBBQADggEPADCCAQoCggEBAMcJg8zOLdgasSmkLhOrlr6KMoOMpohBllVHrdRvEg/q6r8jR+EK
-75xCGhR8ToREoqe7zM9/UnC6TS2y9UKTpT1v7RSMzR0t6ndl0TWBuUr/UXBhPk+Kmy7bI4yW4urC
-+y7P3/1/X7U8ocb8VpH/Clt+4iq7nirMcNh6qJR+xjOhV+VHzQMALuGYn5KZmc1NbJQYclsGkDxD
-z2UbFqE2+6vIZoL+jb9x4Pa5gNf1TwSDkOkikZB1xtB4ZqtXThaABSONdfmv/Z1pua3FYxnCFmdr
-/+N2JLKutIxMYqQOJebr/f/h5t95m4JgrM3Y/w7YX9d7YAL9jvN4SydHsU6n65cCAwEAAaOCAa0w
-ggGpMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBRTcu2SnODaywFc
-fH6WNU7y1LhRgjAfBgNVHSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRa
-MFgwJwYIKwYBBQUHMAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYh
-aHR0cDovL3d3dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6
-Ly93d3cuc3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5j
-b20vc2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
-dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93d3cu
-c3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBAAqDCH14qywG
-XLhjjF6uHLkjd02hcdh9hrw+VUsv+q1eeQWB21jWj3kJ96AUlPCoEGZ/ynJNScWy6QMVQjbbMXlt
-UfO4n4bGGdKo3awPWp61tjAFgraLJgDk+DsSvUD6EowjMTNx25GQgyYJ5RPIzKKR9tQW8gGK+2+R
-HxkUCTbYFnL6kl8Ch507rUdPPipJ9CgJFws3kDS3gOS5WFMxcjO5DwKfKSETEPrHh7p5shuuNktv
-sv6hxHTLhiMKX893gxdT3XLS9OKmCv87vkINQcNEcIIoFWbP9HORz9v3vQwR4e3ksLc2JZOAFK+s
-sS5XMEoznzpihEP0PLc4dCBYjbvSD7kxgDwZ+Aj8Q9PkbvE9sIPP7ON0fz095HdThKjiVJe6vofq
-+n6b1NBc8XdrQvBmunwxD5nvtTW4vtN6VY7mUCmxsCieuoBJ9OlqmsVWQvifIYf40dJPZkk9YgGT
-zWLpXDSfLSplbY2LL9C9U0ptvjcDjefLTvqSFc7tw1sEhF0n/qpA2r0GpvkLRDmcSwVyPvmjFBGq
-Up/pNy8ZuPGQmHwFi2/14+xeSUDG2bwnsYJQG2EdJCB6luQ57GEnTA/yKZSTKI8dDQa8Sd3zfXb1
-9mOgSF0bBdXbuKhEpuP9wirslFe6fQ1t5j5R0xi72MZ8ikMu1RQZKCyDbMwazlHiMIIHFzCCBf+g
-AwIBAgIDBCZ6MA0GCSqGSIb3DQEBBQUAMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRD
-b20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYG
-A1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0EwHhcN
-MTIwNTAxMTI1ODI3WhcNMTMwNTAzMTEzNzIwWjBdMRkwFwYDVQQNExA4Y1VOSzUzMTc0ODRYRjk3
-MRwwGgYDVQQDDBNkd213MkBpbmZyYWRlYWQub3JnMSIwIAYJKoZIhvcNAQkBFhNkd213MkBpbmZy
-YWRlYWQub3JnMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyYe7wo6MrtrB4uIGGbrY
-4IifY/Xsq22pSv605yganL0+uyUdd8rCjrYlH6Q/ra5TVJCQFTgzaepkuqPQc79DC/Cxmzm6Qo+s
-wLZy868oFsccsVokL2bPAWIPaRXfNPJKkYR1FTWQfZpWJVQmT+sPf1XFUullVBAK+d9RztopyacI
-xWoZ/W/Cmv7mseQbttYTtGKJa0btX73nsQRWl6SgErWXo59zg9friCLTy1GXMXJYB8H+PtnuwX0w
-MrAvWDdX1ABgIlA17W3FraCn0eW15ZM46eyu0/amGzJZNtemCWF73P7BAijzeV1jNmiJFXdZ0DT0
-w+hmtMO9PxdDUyt78QIDAQABo4IDrjCCA6owCQYDVR0TBAIwADALBgNVHQ8EBAMCBLAwHQYDVR0l
-BBYwFAYIKwYBBQUHAwIGCCsGAQUFBwMEMB0GA1UdDgQWBBTkfe5UOr3PcirsjApibyyUEfsyRzAf
-BgNVHSMEGDAWgBRTcu2SnODaywFcfH6WNU7y1LhRgjAeBgNVHREEFzAVgRNkd213MkBpbmZyYWRl
-YWQub3JnMIICIQYDVR0gBIICGDCCAhQwggIQBgsrBgEEAYG1NwECAjCCAf8wLgYIKwYBBQUHAgEW
-Imh0dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
-d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwgfcGCCsGAQUFBwICMIHqMCcWIFN0YXJ0
-Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQEagb5UaGlzIGNlcnRpZmljYXRlIHdhcyBp
-c3N1ZWQgYWNjb3JkaW5nIHRvIHRoZSBDbGFzcyAxIFZhbGlkYXRpb24gcmVxdWlyZW1lbnRzIG9m
-IHRoZSBTdGFydENvbSBDQSBwb2xpY3ksIHJlbGlhbmNlIG9ubHkgZm9yIHRoZSBpbnRlbmRlZCBw
-dXJwb3NlIGluIGNvbXBsaWFuY2Ugb2YgdGhlIHJlbHlpbmcgcGFydHkgb2JsaWdhdGlvbnMuMIGc
-BggrBgEFBQcCAjCBjzAnFiBTdGFydENvbSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgECGmRM
-aWFiaWxpdHkgYW5kIHdhcnJhbnRpZXMgYXJlIGxpbWl0ZWQhIFNlZSBzZWN0aW9uICJMZWdhbCBh
-bmQgTGltaXRhdGlvbnMiIG9mIHRoZSBTdGFydENvbSBDQSBwb2xpY3kuMDYGA1UdHwQvMC0wK6Ap
-oCeGJWh0dHA6Ly9jcmwuc3RhcnRzc2wuY29tL2NydHUxLWNybC5jcmwwgY4GCCsGAQUFBwEBBIGB
-MH8wOQYIKwYBBQUHMAGGLWh0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9zdWIvY2xhc3MxL2NsaWVu
-dC9jYTBCBggrBgEFBQcwAoY2aHR0cDovL2FpYS5zdGFydHNzbC5jb20vY2VydHMvc3ViLmNsYXNz
-MS5jbGllbnQuY2EuY3J0MCMGA1UdEgQcMBqGGGh0dHA6Ly93d3cuc3RhcnRzc2wuY29tLzANBgkq
-hkiG9w0BAQUFAAOCAQEAqDU1FKifNtCFJbLnvOi1BLRfk7mut55PMtPSZLJ4/AnG7AjmJnbBI4U5
-DELwvVq3mIpwUpGqZUkqkZMEfBPIbfq517UZB3h4iANtqif+ULfTLhg5XgcK5eF8/T6EtX2c3epq
-ylARdleCbj/0FwiUDvPlTsA6PIN4SCekjRLgjKERrL3heFz+Hteq1rtMAvMkNuyL0/0ijyyg2y45
-NASAl2Afl9SLes/fnoh9nBwzfNQfb6qDYUFpnglfpGrq/0b1NtaOUb2z1SR+H1tKlb8bVJJIdvpu
-mEi27kSRIhzk3h30uTfKkKetgy++ouyldxZ7KZ0PuoLQrBy465EoQLosETCCBxcwggX/oAMCAQIC
-AwQmejANBgkqhkiG9w0BAQUFADCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0
-ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMT
-L1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBMB4XDTEyMDUw
-MTEyNTgyN1oXDTEzMDUwMzExMzcyMFowXTEZMBcGA1UEDRMQOGNVTks1MzE3NDg0WEY5NzEcMBoG
-A1UEAwwTZHdtdzJAaW5mcmFkZWFkLm9yZzEiMCAGCSqGSIb3DQEJARYTZHdtdzJAaW5mcmFkZWFk
-Lm9yZzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMmHu8KOjK7aweLiBhm62OCIn2P1
-7KttqUr+tOcoGpy9PrslHXfKwo62JR+kP62uU1SQkBU4M2nqZLqj0HO/QwvwsZs5ukKPrMC2cvOv
-KBbHHLFaJC9mzwFiD2kV3zTySpGEdRU1kH2aViVUJk/rD39VxVLpZVQQCvnfUc7aKcmnCMVqGf1v
-wpr+5rHkG7bWE7RiiWtG7V+957EEVpekoBK1l6Ofc4PX64gi08tRlzFyWAfB/j7Z7sF9MDKwL1g3
-V9QAYCJQNe1txa2gp9HlteWTOOnsrtP2phsyWTbXpglhe9z+wQIo83ldYzZoiRV3WdA09MPoZrTD
-vT8XQ1Mre/ECAwEAAaOCA64wggOqMAkGA1UdEwQCMAAwCwYDVR0PBAQDAgSwMB0GA1UdJQQWMBQG
-CCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQU5H3uVDq9z3Iq7IwKYm8slBH7MkcwHwYDVR0j
-BBgwFoAUU3Ltkpzg2ssBXHx+ljVO8tS4UYIwHgYDVR0RBBcwFYETZHdtdzJAaW5mcmFkZWFkLm9y
-ZzCCAiEGA1UdIASCAhgwggIUMIICEAYLKwYBBAGBtTcBAgIwggH/MC4GCCsGAQUFBwIBFiJodHRw
-Oi8vd3d3LnN0YXJ0c3NsLmNvbS9wb2xpY3kucGRmMDQGCCsGAQUFBwIBFihodHRwOi8vd3d3LnN0
-YXJ0c3NsLmNvbS9pbnRlcm1lZGlhdGUucGRmMIH3BggrBgEFBQcCAjCB6jAnFiBTdGFydENvbSBD
-ZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgEBGoG+VGhpcyBjZXJ0aWZpY2F0ZSB3YXMgaXNzdWVk
-IGFjY29yZGluZyB0byB0aGUgQ2xhc3MgMSBWYWxpZGF0aW9uIHJlcXVpcmVtZW50cyBvZiB0aGUg
-U3RhcnRDb20gQ0EgcG9saWN5LCByZWxpYW5jZSBvbmx5IGZvciB0aGUgaW50ZW5kZWQgcHVycG9z
-ZSBpbiBjb21wbGlhbmNlIG9mIHRoZSByZWx5aW5nIHBhcnR5IG9ibGlnYXRpb25zLjCBnAYIKwYB
-BQUHAgIwgY8wJxYgU3RhcnRDb20gQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkwAwIBAhpkTGlhYmls
-aXR5IGFuZCB3YXJyYW50aWVzIGFyZSBsaW1pdGVkISBTZWUgc2VjdGlvbiAiTGVnYWwgYW5kIExp
-bWl0YXRpb25zIiBvZiB0aGUgU3RhcnRDb20gQ0EgcG9saWN5LjA2BgNVHR8ELzAtMCugKaAnhiVo
-dHRwOi8vY3JsLnN0YXJ0c3NsLmNvbS9jcnR1MS1jcmwuY3JsMIGOBggrBgEFBQcBAQSBgTB/MDkG
-CCsGAQUFBzABhi1odHRwOi8vb2NzcC5zdGFydHNzbC5jb20vc3ViL2NsYXNzMS9jbGllbnQvY2Ew
-QgYIKwYBBQUHMAKGNmh0dHA6Ly9haWEuc3RhcnRzc2wuY29tL2NlcnRzL3N1Yi5jbGFzczEuY2xp
-ZW50LmNhLmNydDAjBgNVHRIEHDAahhhodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS8wDQYJKoZIhvcN
-AQEFBQADggEBAKg1NRSonzbQhSWy57zotQS0X5O5rreeTzLT0mSyePwJxuwI5iZ2wSOFOQxC8L1a
-t5iKcFKRqmVJKpGTBHwTyG36ude1GQd4eIgDbaon/lC30y4YOV4HCuXhfP0+hLV9nN3qaspQEXZX
-gm4/9BcIlA7z5U7AOjyDeEgnpI0S4IyhEay94Xhc/h7Xqta7TALzJDbsi9P9Io8soNsuOTQEgJdg
-H5fUi3rP356IfZwcM3zUH2+qg2FBaZ4JX6Rq6v9G9TbWjlG9s9Ukfh9bSpW/G1SSSHb6bphItu5E
-kSIc5N4d9Lk3ypCnrYMvvqLspXcWeymdD7qC0KwcuOuRKEC6LBExggNvMIIDawIBATCBlDCBjDEL
-MAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdp
-dGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFy
-eSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgMEJnowCQYFKw4DAhoFAKCCAa8wGAYJKoZIhvcNAQkD
-MQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTIwNzE4MTExNTMzWjAjBgkqhkiG9w0BCQQx
-FgQUV7BnhfWgBukXADHEEMKximMKzIAwgaUGCSsGAQQBgjcQBDGBlzCBlDCBjDELMAkGA1UEBhMC
-SUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRp
-ZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1l
-ZGlhdGUgQ2xpZW50IENBAgMEJnowgacGCyqGSIb3DQEJEAILMYGXoIGUMIGMMQswCQYDVQQGEwJJ
-TDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlm
-aWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVk
-aWF0ZSBDbGllbnQgQ0ECAwQmejANBgkqhkiG9w0BAQEFAASCAQDDjYH4veaVTbaw9YMPhhsU0Bos
-+BxzMTExQybBnfMCeIhcyUQ0NR/kbi3d9btRj7zmYre6YTGoORiCPWq+98zNdRsuTaU86JzxDw7j
-S5RRarK+WK2CriNVxm+ssLrBV6BdWtKswVfhaT/IGgjEy4jxZWWukXFxClJ1mqzWBevFC/GNmdsI
-iUb7bjjg3e5F2TwLkTPQqhNKrOPeeDJqmMk+WVhoKqweUDyGUd4d0e2xFFXw3ipfD6Nj/MyiGmLa
-ltav9f3ZVRbZCj9nmWH1y5ON/QXvviJzkvpw4TP8o5I2WLfBu38isEFYvUXcV2347G1uVAJWFBp9
-ZrVoF2pmc98KAAAAAAAA
-
-
---=-SH2gX3ENivLE0k3XP6Xy--
-
+> --
+> 			Gleb.
