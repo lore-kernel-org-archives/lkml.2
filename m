@@ -1,83 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751590Ab2GRBDU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 21:03:20 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:44407 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751152Ab2GRBC6 (ORCPT
+	id S1751583Ab2GRBJT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 21:09:19 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23234 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750789Ab2GRBJM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 21:02:58 -0400
-From: Toshiaki Yamane <yamanetoshi@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Einon <mark.einon@gmail.com>, linux-kernel@vger.kernel.org
-Cc: Toshiaki Yamane <yamanetoshi@gmail.com>
-Subject: [PATCH] staging/et131x: fix checkpatch warnings
-Date: Wed, 18 Jul 2012 10:02:46 +0900
-Message-Id: <1342573366-8167-1-git-send-email-yamanetoshi@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1342442513-10488-1-git-send-email-yamanetoshi@gmail.com>
-References: <1342442513-10488-1-git-send-email-yamanetoshi@gmail.com>
+	Tue, 17 Jul 2012 21:09:12 -0400
+X-Authority-Analysis: v=2.0 cv=StQSGYy0 c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=VwQbUJbxAAAA:8 a=ojTbKXh3QNJasgt1aJsA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-ID: <1342573750.14939.1.camel@gandalf.stny.rr.com>
+Subject: [ANNOUNCE] 3.2.23-rt36
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Date: Tue, 17 Jul 2012 21:09:10 -0400
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The below checkpatch warns was fixed,
 
-drivers/staging/et131x/et131x.c:2556: WARNING: Prefer pr_info(... to printk(KERN_INFO, ...
-drivers/staging/et131x/et131x.c:2577: WARNING: Prefer pr_info(... to printk(KERN_INFO, ...
-drivers/staging/et131x/et131x.c:5189: WARNING: Prefer pr_info(... to printk(KERN_INFO, ...
+Dear RT Folks,
 
-And added pr_fmt.
+I'm pleased to announce the 3.2.23-rt36 stable release.
 
-Signed-off-by: Toshiaki Yamane <yamanetoshi@gmail.com>
----
- drivers/staging/et131x/et131x.c |   12 +++++++-----
- 1 files changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
-index ac6897b..f188453 100644
---- a/drivers/staging/et131x/et131x.c
-+++ b/drivers/staging/et131x/et131x.c
-@@ -53,6 +53,8 @@
-  *
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/pci.h>
- #include <linux/init.h>
- #include <linux/module.h>
-@@ -2553,8 +2555,8 @@ static int et131x_rx_dma_memory_alloc(struct et131x_adapter *adapter)
- 			  "Cannot alloc memory for Packet Status Ring\n");
- 		return -ENOMEM;
- 	}
--	printk(KERN_INFO "Packet Status Ring %lx\n",
--	    (unsigned long) rx_ring->ps_ring_physaddr);
-+	pr_info("Packet Status Ring %lx\n",
-+		(unsigned long) rx_ring->ps_ring_physaddr);
- 
- 	/*
- 	 * NOTE : dma_alloc_coherent(), used above to alloc DMA regions,
-@@ -2574,7 +2576,7 @@ static int et131x_rx_dma_memory_alloc(struct et131x_adapter *adapter)
- 		return -ENOMEM;
- 	}
- 	rx_ring->num_rfd = NIC_DEFAULT_NUM_RFD;
--	printk(KERN_INFO "PRS %lx\n", (unsigned long)rx_ring->rx_status_bus);
-+	pr_info("PRS %lx\n", (unsigned long)rx_ring->rx_status_bus);
- 
- 	/* Recv
- 	 * kmem_cache_create initializes a lookaside list. After successful
-@@ -5186,8 +5188,8 @@ static int et131x_set_mac_addr(struct net_device *netdev, void *new_mac)
- 
- 	memcpy(netdev->dev_addr, address->sa_data, netdev->addr_len);
- 
--	printk(KERN_INFO "%s: Setting MAC address to %pM\n",
--			netdev->name, netdev->dev_addr);
-+	pr_info("%s: Setting MAC address to %pM\n",
-+		netdev->name, netdev->dev_addr);
- 
- 	/* Free Rx DMA memory */
- 	et131x_adapter_memory_free(adapter);
--- 
-1.7.5.4
+This release is just an update to the new stable 3.2.23 version
+and no RT specific changes have been made.
+
+
+You can get this release via the git tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+
+  Head SHA1: e3ed9a9fcd5ec946f248118f3d3e7dec80d2256a
+
+
+Or to build 3.2.23-rt36 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.2.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.2.23.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/patch-3.2.23-rt36.patch.xz
+
+
+
+Enjoy,
+
+-- Steve
+
+
 
