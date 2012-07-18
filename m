@@ -1,56 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752144Ab2GRChC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 22:37:02 -0400
-Received: from edison.jonmasters.org ([173.255.233.168]:56891 "EHLO
-	edison.jonmasters.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751231Ab2GRCg4 (ORCPT
+	id S1752159Ab2GRCld (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 22:41:33 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:58909 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751231Ab2GRCl0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 22:36:56 -0400
-Message-ID: <5006213E.5050007@jonmasters.org>
-Date: Tue, 17 Jul 2012 22:36:46 -0400
-From: Jon Masters <jonathan@jonmasters.org>
-Organization: World Organi{s,z}ation of Broken Dreams
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Tue, 17 Jul 2012 22:41:26 -0400
+X-AuditID: 9c930197-b7b66ae000006a2c-52-50062254e3f7
+Date: Wed, 18 Jul 2012 11:41:57 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Bob Liu <lliubbo@gmail.com>
+Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>
+Subject: Re: [RFC 3/3] memory-hotplug: bug fix race between isolation and
+ allocation
+Message-ID: <20120718024157.GA31180@bbox>
+References: <1342508505-23492-1-git-send-email-minchan@kernel.org>
+ <1342508505-23492-4-git-send-email-minchan@kernel.org>
+ <CAA_GA1dh0RYT5wfOB=t8-XoeHOzRJCmQJifnUTGLZfjNwx2a5w@mail.gmail.com>
+ <20120717234003.GA26937@bbox>
+ <CAA_GA1dWBZ+cj5LW6Q=XsP_GGvAh8Za2scaGS8nQcgfc9JTGQw@mail.gmail.com>
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Arnd Bergmann <arnd@arndb.de>, Pavel Machek <pavel@ucw.cz>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Ingo Molnar <mingo@kernel.org>, Olof Johansson <olof@lixom.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com> <20120716121651.GA18859@elf.ucw.cz> <50050ECE.8020100@jonmasters.org> <201207170802.56434.arnd@arndb.de> <20120717105016.3ade44d3@pyramind.ukuu.org.uk>
-In-Reply-To: <20120717105016.3ade44d3@pyramind.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 74.92.29.237
-X-SA-Exim-Mail-From: jonathan@jonmasters.org
-Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Nov 2009 07:31:22 +0000)
-X-SA-Exim-Scanned: Yes (on edison.jonmasters.org)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAA_GA1dWBZ+cj5LW6Q=XsP_GGvAh8Za2scaGS8nQcgfc9JTGQw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2012 05:50 AM, Alan Cox wrote:
->> Right, I would say that with any CPU core more powerful than this one
->> or with more than a few of these, you will also have trouble coming
->> up with workloads that really require the CPU performance but don't
->> also require a 64 bit virtual address space in either user space
->> or kernel.
+On Wed, Jul 18, 2012 at 10:12:57AM +0800, Bob Liu wrote:
+> On Wed, Jul 18, 2012 at 7:40 AM, Minchan Kim <minchan@kernel.org> wrote:
+> > Hi Bob,
+> >
+> > On Tue, Jul 17, 2012 at 06:13:17PM +0800, Bob Liu wrote:
+> >> Hi Minchan,
+> >>
+> >> On Tue, Jul 17, 2012 at 3:01 PM, Minchan Kim <minchan@kernel.org> wrote:
+> >> > Like below, memory-hotplug makes race between page-isolation
+> >> > and page-allocation so it can hit BUG_ON in __offline_isolated_pages.
+> >> >
+> >> >         CPU A                                   CPU B
+> >> >
+> >> > start_isolate_page_range
+> >> > set_migratetype_isolate
+> >> > spin_lock_irqsave(zone->lock)
+> >> >
+> >> >                                 free_hot_cold_page(Page A)
+> >> >                                 /* without zone->lock */
+> >> >                                 migratetype = get_pageblock_migratetype(Page A);
+> >> >                                 /*
+> >> >                                  * Page could be moved into MIGRATE_MOVABLE
+> >> >                                  * of per_cpu_pages
+> >> >                                  */
+> >> >                                 list_add_tail(&page->lru, &pcp->lists[migratetype]);
+> >> >
+> >> > set_pageblock_isolate
+> >> > move_freepages_block
+> >> > drain_all_pages
+> >> >
+> >> >                                 /* Page A could be in MIGRATE_MOVABLE of free_list. */
+> >> >
+> >> > check_pages_isolated
+> >> > __test_page_isolated_in_pageblock
+> >> > /*
+> >> >  * We can't catch freed page which
+> >> >  * is free_list[MIGRATE_MOVABLE]
+> >> >  */
+> >> > if (PageBuddy(page A))
+> >> >         pfn += 1 << page_order(page A);
+> >> >
+> >> >                                 /* So, Page A could be allocated */
+> >> >
+> >> > __offline_isolated_pages
+> >> > /*
+> >> >  * BUG_ON hit or offline page
+> >> >  * which is used by someone
+> >> >  */
+> >> > BUG_ON(!PageBuddy(page A));
+> >> >
+> >> > Signed-off-by: Minchan Kim <minchan@kernel.org>
+> >> > ---
+> >> > I found this problem during code review so please confirm it.
+> >> > Kame?
+> >> >
+> >> >  mm/page_isolation.c |    5 ++++-
+> >> >  1 file changed, 4 insertions(+), 1 deletion(-)
+> >> >
+> >> > diff --git a/mm/page_isolation.c b/mm/page_isolation.c
+> >> > index acf65a7..4699d1f 100644
+> >> > --- a/mm/page_isolation.c
+> >> > +++ b/mm/page_isolation.c
+> >> > @@ -196,8 +196,11 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn)
+> >> >                         continue;
+> >> >                 }
+> >> >                 page = pfn_to_page(pfn);
+> >> > -               if (PageBuddy(page))
+> >> > +               if (PageBuddy(page)) {
+> >> >                         pfn += 1 << page_order(page);
+> >> > +                       if (get_page_migratetype(page) != MIGRATE_ISOLATE)
+> >> > +                               break;
+> >> > +               }
+> >>
+> >> test_page_isolated() already have check
+> >> get_pageblock_migratetype(page) != MIGRATE_ISOLATE.
+> >>
+> >
+> > That's why I send a patch.
+> > As I describe in description, pageblock migration type of get_page_migratetype(page)
+> > is inconsistent with free_list[migrationtype].
+> > I mean get_pageblock_migratetype(page) will return MIGRATE_ISOLATE but the page would be
+> > in free_list[MIGRATE_MOVABLE] so it could be allocated for someone if that race happens.
+> >
 > 
-> There are lots of them - soft radio for example can burn near infinite
-> CPU resource depending upon the amount you are fishing out, but its pure
-> throughput.
+> Sorry, I'm still not get the situation how this race happens.
+> 
+> set_pageblock_isolate
+> move_freepages_block
+> drain_all_pages
+> 
+>                                 /* Page A could be in MIGRATE_MOVABLE
+> of free_list. */
+> 
+> I think move_freepages_block() will call list_move() to move Page A to
+> free_list[MIGRATE_ISOLATE], so this case can't happen?
 
-I think A15 is likely to be a good 32-bit story there. Performance wise,
-it's awesome. The reason for 64-bit is both emotional ("real servers
-must be 64-bit! <pound the table and yell>"), and as an opportunity to
-clean up lots of assumptions and have a standard base, but it's not the
-end of the 32-bit story. I believe ARM have said many times that they're
-not giving up on AArch32, and in fact, if you read the public ISA docs
-you'll see additional 32-bit instructions in v8.
+move_freepages_block handles only pages in free_list but Page A is on pcp, not free_list.
 
-Jon.
+> 
+> -- 
+> Thanks,
+> --Bob
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
