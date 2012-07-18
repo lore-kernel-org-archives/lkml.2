@@ -1,117 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754592Ab2GRPpU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 11:45:20 -0400
-Received: from mail.stepping-stone.ch ([194.176.109.206]:52371 "EHLO
-	mail.stepping-stone.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753703Ab2GRPpT (ORCPT
+	id S1754353Ab2GRPqS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 11:46:18 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:52056 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754189Ab2GRPqM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 11:45:19 -0400
-X-Greylist: delayed 490 seconds by postgrey-1.27 at vger.kernel.org; Wed, 18 Jul 2012 11:45:18 EDT
-Message-ID: <5006D810.8090408@stepping-stone.ch>
-Date: Wed, 18 Jul 2012 17:36:48 +0200
-From: stepping stone GmbH <support@stepping-stone.ch>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Wed, 18 Jul 2012 11:46:12 -0400
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Kernel crash with lspci -vv and SAS Controller LSI Logic / Symbios
- Logic MegaRAID SAS 9240
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [2001:470:8656:0:7184:e4bc:3df8:f1e4]
+Date: Wed, 18 Jul 2012 08:46:11 -0700
+Message-ID: <CAOesGMhKG00w90iddbDDvtfuQw13o6acRs9baoXmicK4pv4-Ug@mail.gmail.com>
+Subject: [GIT PULL] ARM: SoC fixes for 3.5
+From: Olof Johansson <olof@lixom.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        arm@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi folks
+Hi Linus,
 
-While trying to list Informations about the PCI Devices using lspci -vv 
-the Output stops at the SAS Controller (LSI Logic / Symbios Logic 
-MegaRAID SAS 9240 rev03) (probably just before the "Kernel driver in 
-use" Line) and the system completly freezes. Listing the PCI Devices 
-with only lspci -v works though.
+As mentioned below, these are quite late by this time due to a chance
+in submaintainers and their ramp-up time. But they are all valid and
+well-contained fixes. Line count is high since it involved renaming
+clocks, the net negative delta is due to a handful of long lines are
+no longer needed to be wrapped when clock names were shortened.
 
-Vanilla Kernel: Linux version 3.4.4 (gcc version 4.5.3 (Gentoo 4.5.3-r1 
-p1.0, pie-0.4.5) ) #1 SMP Mon Jul 16 13:13:04 CEST 2012
-
-ASUS RS700-E6-ERS4 rev. 1.xxG with ASUS Mainboard Z8PS-D12-1U with two 
-Xeon E5645 2.40GHz and 12 x 8GB DIMM
-
-AMI BIOS Version: 1201
+In addition to this we did have one branch of at91 fixes pending, but
+it needs more work/review and will have to wait for 3.6+stable at this
+point.
 
 
-Informations about the Controller
-
-  ~# MegaCli -AdpAllInfo -aALL
-  
-Adapter#0
-  
-==============================================================================
-                     Versions
-                 ================
-Product Name    : LSI MegaRAID ROMB
-Serial No       :
-FW Package Build:20.9.1-0011
-  
-                     Mfg. Data
-                 ================
-Mfg. Date       :00/00/00
-Rework Date     :00/00/00
-Revision No     :
-Battery FRU     : N/A
-  
-                 Image Versionsin  Flash:
-                 ================
-BIOS Version       :4.18.00_4.09.05.00_0x0416A000
-Preboot CLI Version:03.02-012:#%00008
-WebBIOS Version    :4.0-42-e_30-Rel
-NVDATA Version     :3.08.03-0006
-FW Version         :2.110.04-0967
-Boot Block Version :2.01.00.00-0019
-  
-                 Pending Imagesin  Flash
-                 ================
-None
-  
-                 PCI Info
-                 ================
-Vendor Id       :1000
-Device Id       :0073
-SubVendorId     :1043
-SubDeviceId     : 843b
-  
-Host Interface  : PCIE
-  
-Number of Frontend Port:0  
-Device Interface  : PCIE
-  
-Number of Backend Port:8  
-Port  :  Address
-0         5000c50042e37119
-1         5000c50042e31e5d
-2         4433221102000000  
-3         4433221103000000  
-4         0000000000000000  
-5         0000000000000000  
-6         0000000000000000  
-7         0000000000000000  
-
-a tail of lspci -vv http://pastebin.com/kjh8ig9q
-
-continued at http://pastebin.com/fWv2uX5p
-
-/proc/cpuinfo /proc/ioports and /proc/iomem at http://pastebin.com/pdRi2BJD
+Please pull, or if you think it's too much churn too late in the cycle
+just let us know and we'll queue it for 3.6+stable instead.
 
 
-Greetings
+Thanks!
 
-David Vollmer
 
--- 
-stepping stone GmbH
-Neufeldstrasse 9
-CH-3012 Bern
+-Olof
 
-Telefon: +41 31 332 53 63
-www.stepping-stone.ch
-support@stepping-stone.ch
 
+The following changes since commit 84a1caf1453c3d44050bd22db958af4a7f99315c:
+
+  Linux 3.5-rc7 (2012-07-14 15:40:28 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git fixes
+
+for you to fetch changes up to bae7641ba0c4a0026c2f7e67a0436c890fe16ce3:
+
+  Merge branch 'for-3.5-spear-fixes' of
+http://git.stlinux.com/spear/linux-2.6 into fixes (2012-07-17 22:43:53
+-0700)
+
+----------------------------------------------------------------
+
+ARM: SoC fixes for SPEAr
+
+These are arriving very late in the release cycle, but there has been
+a change of maintainers on the SPEAr platform and they have needed a
+while to get going.
+
+The patch count is higher than I would like at this point, but they're
+all relevant fixes and well-contained in their own platform code. I still
+think it's suitable 3.5 material and I don't think it should increase
+the need for a -rc8 since they are so contained.
+
+----------------------------------------------------------------
+Olof Johansson (1):
+      Merge branch 'for-3.5-spear-fixes' of
+http://git.stlinux.com/spear/linux-2.6 into fixes
+
+Stefan Roese (1):
+      ARM: SPEAr600: Fix timer interrupt definition in spear600.dtsi
+
+Vipul Kumar Samar (9):
+      clk:spear1340:Fix: Rename clk ids within predefined limit
+      clk:spear1310:Fix: Rename clk ids within predefined limit
+      Clk:spear3xx:Fix: Rename clk ids within predefined limit
+      Clk:spear6xx:Fix: Rename clk ids within predefined limit
+      ARM: SPEAr13xx: Fix Interrupt bindings
+      clk: SPEAr1340: Fix clk enable register for uart1 and i2c1.
+      Clk: SPEAr1340: Update sys clock parent array
+      ARM: dts: SPEAr320: Fix compatible string
+      ARM: dts: SPEAr320: Boot the board in EXTENDED_MODE
+
+ arch/arm/boot/dts/spear13xx.dtsi    |  11 +-
+ arch/arm/boot/dts/spear320-evb.dts  |   6 +-
+ arch/arm/boot/dts/spear600.dtsi     |   1 +
+ arch/arm/mach-spear3xx/spear3xx.c   |   2 +-
+ arch/arm/mach-spear6xx/spear6xx.c   |   2 +-
+ drivers/clk/spear/spear1310_clock.c | 312 ++++++++++++++++++------------------
+ drivers/clk/spear/spear1340_clock.c | 279 ++++++++++++++++----------------
+ drivers/clk/spear/spear3xx_clock.c  | 180 ++++++++++-----------
+ drivers/clk/spear/spear6xx_clock.c  | 122 +++++++-------
+ 9 files changed, 451 insertions(+), 464 deletions(-)
