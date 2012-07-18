@@ -1,127 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754698Ab2GRPsG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 11:48:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25043 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752049Ab2GRPsD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 11:48:03 -0400
-Message-ID: <1342626481.2229.205.camel@bling.home>
-Subject: Re: [PATCH v5 1/4] kvm: Extend irqfd to support level interrupts
-From: Alex Williamson <alex.williamson@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Gleb Natapov <gleb@redhat.com>, avi@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Date: Wed, 18 Jul 2012 09:48:01 -0600
-In-Reply-To: <20120718153822.GC1777@redhat.com>
-References: <20120718104429.GD26120@redhat.com>
-	 <20120718104844.GF4700@redhat.com> <20120718104906.GE26120@redhat.com>
-	 <20120718105311.GH4700@redhat.com> <20120718105530.GG26120@redhat.com>
-	 <20120718112219.GJ4700@redhat.com> <20120718113910.GA5135@redhat.com>
-	 <20120718114844.GH26120@redhat.com> <20120718120705.GB5184@redhat.com>
-	 <1342622843.2229.200.camel@bling.home> <20120718153822.GC1777@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754070Ab2GRP50 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 11:57:26 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:31309 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751849Ab2GRP5Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 11:57:24 -0400
+Date: Wed, 18 Jul 2012 18:55:33 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: potential NULL dereference in futex_wait_requeue_pi()
+Message-ID: <20120718155533.GF16348@mwanda>
+References: <20120718142514.GA18850@elgon.mountain>
+ <20120718153123.GA24408@redhat.com>
+ <5006D932.1060407@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5006D932.1060407@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-18 at 18:38 +0300, Michael S. Tsirkin wrote:
-> On Wed, Jul 18, 2012 at 08:47:23AM -0600, Alex Williamson wrote:
-> > On Wed, 2012-07-18 at 15:07 +0300, Michael S. Tsirkin wrote:
-> > > On Wed, Jul 18, 2012 at 02:48:44PM +0300, Gleb Natapov wrote:
-> > > > On Wed, Jul 18, 2012 at 02:39:10PM +0300, Michael S. Tsirkin wrote:
-> > > > > On Wed, Jul 18, 2012 at 02:22:19PM +0300, Michael S. Tsirkin wrote:
-> > > > > > > > > > > > So as was discussed kvm_set_irq under spinlock is bad for scalability
-> > > > > > > > > > > > with multiple VCPUs.  Why do we need a spinlock simply to protect
-> > > > > > > > > > > > level_asserted?  Let's use an atomic test and set/test and clear and the
-> > > > > > > > > > > > problem goes away.
-> > > > > > > > > > > > 
-> > > > > > > > > > > That sad reality is that for level interrupt we already scan all vcpus
-> > > > > > > > > > > under spinlock.
-> > > > > > > > > > 
-> > > > > > > > > > Where?
-> > > > > > > > > > 
-> > > > > > > > > ioapic
-> > > > > > > > 
-> > > > > > > > $ grep kvm_for_each_vcpu virt/kvm/ioapic.c
-> > > > > > > > $
-> > > > > > > > 
-> > > > > > > > ?
-> > > > > > > > 
-> > > > > > > 
-> > > > > > > Come on Michael. You can do better than grep and actually look at what
-> > > > > > > code does. The code that loops over all vcpus while delivering an irq is
-> > > > > > > in kvm_irq_delivery_to_apic(). Now grep for that.
-> > > > > > 
-> > > > > > Hmm, I see, it's actually done for edge if injected from ioapic too,
-> > > > > > right?
-> > > > > > 
-> > > > > > So set_irq does a linear scan, and for each matching CPU it calls
-> > > > > > kvm_irq_delivery_to_apic which is another scan?
-> > > > > > So it's actually N^2 worst case for a broadcast?
-> > > > > 
-> > > > > No it isn't, I misread the code.
-> > > > > 
-> > > > > 
-> > > > > Anyway, maybe not trivially but this looks fixable to me: we could drop
-> > > > > the ioapic lock before calling kvm_irq_delivery_to_apic.
-> > > > > 
-> > > > May be, may be not. Just saying "lets drop lock whenever we don't feel
-> > > > like holding one" does not cut it.
-> > > 
-> > > One thing we do is set remote_irr if interrupt was injected.
-> > > I agree these things are tricky.
-> > > 
-> > > One other question:
-> > > 
-> > > static int ioapic_service(struct kvm_ioapic *ioapic, unsigned int idx)
-> > > {
-> > >         union kvm_ioapic_redirect_entry *pent;
-> > >         int injected = -1;
-> > > 
-> > >         pent = &ioapic->redirtbl[idx];
-> > > 
-> > >         if (!pent->fields.mask) {
-> > >                 injected = ioapic_deliver(ioapic, idx);
-> > >                 if (injected && pent->fields.trig_mode == IOAPIC_LEVEL_TRIG)
-> > >                         pent->fields.remote_irr = 1;
-> > >         }
-> > > 
-> > >         return injected;
-> > > }
-> > > 
-> > > 
-> > > This if (injected) looks a bit strange since ioapic_deliver returns
-> > > -1 if no matching destinations. Should be if (injected > 0)?
-> > > 
-> > > 
-> > > 
-> > > > Back to original point though current
-> > > > situation is that calling kvm_set_irq() under spinlock is not worse for
-> > > > scalability than calling it not under one.
-> > > 
-> > > Yes. Still the specific use can just use an atomic flag,
-> > > lock+bool is not needed, and we won't need to undo it later.
-> > 
-> > 
-> > Actually, no, replacing it with an atomic is racy.
-> > 
-> > CPU0 (inject)                       CPU1 (EOI)
-> > atomic_cmpxchg(&asserted, 0, 1)
-> >                                     atomic_cmpxchg(&asserted, 1, 0)
-> >                                     kvm_set_irq(0)
-> > kvm_set_irq(1)
-> >                                     eventfd_signal
-> > 
-> > The interrupt is now stuck on until another interrupt is injected.
-> > 
+On Wed, Jul 18, 2012 at 08:41:38AM -0700, Darren Hart wrote:
 > 
-> Well EOI somehow happened here before interrupt so it's a bug somewhere
-> else?
+> 
+> On 07/18/2012 08:31 AM, Dave Jones wrote:
+> > On Wed, Jul 18, 2012 at 05:25:14PM +0300, Dan Carpenter wrote:
+> >  > Hi Darren,
+> >  > 
+> >  > The patch 52400ba94675: "futex: add requeue_pi functionality" from
+> >  > Apr 3, 2009, leads to the following warning:
+> >  > kernel/futex.c:2373 futex_wait_requeue_pi()
+> >  > 	 error: potential NULL dereference 'pi_mutex'.
+> > 
+> > This sounds like the oops I saw that I reported at https://lkml.org/lkml/2012/7/13/328
+> 
+> I'm looking into the report Dave sent today (delayed from piles of
+> urgent issues after returning from vacation, my apologies).
+> 
+> Dan, under which workload are you seeing this?
+> 
 
-Interrupts can be shared.  We also can't guarantee that the guest won't
-write a bogus EOI to the ioapic.  The irq ack notifier doesn't filter on
-irq source id... I'm not sure it can.
+This was a static checker warning.  It was Dave who saw the oops
+from syscall fuzzing with trinity.
+
+regards,
+dan carpenter
 
