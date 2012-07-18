@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757537Ab2GRASJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 20:18:09 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:42955 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757799Ab2GRAMi (ORCPT
+	id S1757804Ab2GRAet (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 20:34:49 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:54802 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754324Ab2GRAeh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 20:12:38 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Todd Poynor <toddpoynor@google.com>, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: [ 05/23] ARM: SAMSUNG: fix race in s3c_adc_start for ADC
-Date: Tue, 17 Jul 2012 17:11:58 -0700
-Message-Id: <20120717232329.640308232@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.10.1.362.g242cab3
-In-Reply-To: <20120717232329.276003806@linuxfoundation.org>
-References: <20120717232455.GA5994@kroah.com>
- <20120717232329.276003806@linuxfoundation.org>
-User-Agent: quilt/0.60-20.3
+	Tue, 17 Jul 2012 20:34:37 -0400
+Message-ID: <50060496.2090909@us.ibm.com>
+Date: Tue, 17 Jul 2012 17:34:30 -0700
+From: John Stultz <johnstul@us.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: John Stultz <johnstul@us.ibm.com>
+CC: stable@vger.kernel.org, Prarit Bhargava <prarit@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/11] 2.6.32-stable: Fix for leapsecond deadlock & hrtimer/futex
+ issue
+References: <1342562735-55870-1-git-send-email-johnstul@us.ibm.com>
+In-Reply-To: <1342562735-55870-1-git-send-email-johnstul@us.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12071800-7282-0000-0000-00000B05B5AC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg KH <gregkh@linuxfoundation.org>
+On 07/17/2012 03:05 PM, John Stultz wrote:
+> This is the last backport I have ready at this time. I realize there's
+> still the 2.6.27 tree, but if I recall correctly I had some trouble
+> getting that booted in my test environment. I can take a swing at
+> backporting it, but I may need a hand with testing.
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+And if anyone is interested in helping test, I've got a first pass 
+(builds & mostly boots) of the 2.6.27-stable backports here:
+git://git.linaro.org/people/jstultz/linux.git leapfix/2.6.27.62
 
-------------------
+http://git.linaro.org/gitweb?p=people/jstultz/linux.git;a=shortlog;h=refs/heads/leapfix/2.6.27.62
 
-From: Todd Poynor <toddpoynor@google.com>
+Unfortunately I run into udev issues trying to boot this on my more 
+recent test environment.
 
-commit 8265981bb439f3ecc5356fb877a6c2a6636ac88a upstream.
-
-Checking for adc->ts_pend already claimed should be done with the
-lock held.
-
-Signed-off-by: Todd Poynor <toddpoynor@google.com>
-Acked-by: Ben Dooks <ben-linux@fluff.org>
-Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/arm/plat-samsung/adc.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
-
---- a/arch/arm/plat-samsung/adc.c
-+++ b/arch/arm/plat-samsung/adc.c
-@@ -143,11 +143,13 @@ int s3c_adc_start(struct s3c_adc_client
- 		return -EINVAL;
- 	}
- 
--	if (client->is_ts && adc->ts_pend)
--		return -EAGAIN;
--
- 	spin_lock_irqsave(&adc->lock, flags);
- 
-+	if (client->is_ts && adc->ts_pend) {
-+		spin_unlock_irqrestore(&adc->lock, flags);
-+		return -EAGAIN;
-+	}
-+
- 	client->channel = channel;
- 	client->nr_samples = nr_samples;
- 
-
+thanks
+-john
 
