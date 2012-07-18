@@ -1,57 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753286Ab2GRKLW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 06:11:22 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:33379 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752713Ab2GRKLU (ORCPT
+	id S1753299Ab2GRKMb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 06:12:31 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:54241 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753126Ab2GRKM2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 06:11:20 -0400
-Date: Wed, 18 Jul 2012 20:11:18 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: no tree for July 18
-Message-Id: <20120718201118.d96a4c09702a94c46b709703@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__18_Jul_2012_20_11_18_+1000_YoqrYsCctNNwAGgY"
+	Wed, 18 Jul 2012 06:12:28 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <50068BF4.1080603@jp.fujitsu.com>
+Date: Wed, 18 Jul 2012 19:12:04 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>
+CC: <rientjes@google.com>, <liuj97@gmail.com>, <len.brown@intel.com>,
+        <benh@kernel.crashing.org>, <paulus@samba.org>, <cl@linux.com>,
+        <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
+        <kosaki.motohiro@jp.fujitsu.com>, <wency@cn.fujitsu.com>
+Subject: [RFC PATCH v4 7/13] memory-hotplug : remove_memory calls __remove_pages
+References: <50068974.1070409@jp.fujitsu.com>
+In-Reply-To: <50068974.1070409@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__18_Jul_2012_20_11_18_+1000_YoqrYsCctNNwAGgY
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The patch adds __remove_pages() to remove_memory(). Then the range of
+phys_start_pfn argument and nr_pages argument in __remove_pagse() may
+have different zone. So zone argument is removed from __remove_pages()
+and __remove_pages() caluculates zone in each section.
 
-sorry about that, expect a new tree tomorrow.
+When CONFIG_SPARSEMEM_VMEMMAP is defined, there is no way to remove a memmap.
+So __remove_section only calls unregister_memory_section().
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+CC: David Rientjes <rientjes@google.com>
+CC: Jiang Liu <liuj97@gmail.com>
+CC: Len Brown <len.brown@intel.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Paul Mackerras <paulus@samba.org> 
+CC: Christoph Lameter <cl@linux.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> 
+CC: Wen Congyang <wency@cn.fujitsu.com>
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
---Signature=_Wed__18_Jul_2012_20_11_18_+1000_YoqrYsCctNNwAGgY
-Content-Type: application/pgp-signature
+---
+ arch/powerpc/platforms/pseries/hotplug-memory.c |    5 +----
+ include/linux/memory_hotplug.h                  |    3 +--
+ mm/memory_hotplug.c                             |   19 ++++++++++++-------
+ 3 files changed, 14 insertions(+), 13 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Index: linux-3.5-rc6/mm/memory_hotplug.c
+===================================================================
+--- linux-3.5-rc6.orig/mm/memory_hotplug.c	2012-07-18 18:00:27.440145432 +0900
++++ linux-3.5-rc6/mm/memory_hotplug.c	2012-07-18 18:01:02.070712487 +0900
+@@ -275,11 +275,14 @@ static int __meminit __add_section(int n
+ #ifdef CONFIG_SPARSEMEM_VMEMMAP
+ static int __remove_section(struct zone *zone, struct mem_section *ms)
+ {
+-	/*
+-	 * XXX: Freeing memmap with vmemmap is not implement yet.
+-	 *      This should be removed later.
+-	 */
+-	return -EBUSY;
++	int ret = -EINVAL;
++
++	if (!valid_section(ms))
++		return ret;
++
++	ret = unregister_memory_section(ms);
++
++	return ret;
+ }
+ #else
+ static int __remove_section(struct zone *zone, struct mem_section *ms)
+@@ -346,11 +349,11 @@ EXPORT_SYMBOL_GPL(__add_pages);
+  * sure that pages are marked reserved and zones are adjust properly by
+  * calling offline_pages().
+  */
+-int __remove_pages(struct zone *zone, unsigned long phys_start_pfn,
+-		 unsigned long nr_pages)
++int __remove_pages(unsigned long phys_start_pfn, unsigned long nr_pages)
+ {
+ 	unsigned long i, ret = 0;
+ 	int sections_to_remove;
++	struct zone *zone;
+ 
+ 	/*
+ 	 * We can only remove entire sections
+@@ -363,6 +366,7 @@ int __remove_pages(struct zone *zone, un
+ 	sections_to_remove = nr_pages / PAGES_PER_SECTION;
+ 	for (i = 0; i < sections_to_remove; i++) {
+ 		unsigned long pfn = phys_start_pfn + i*PAGES_PER_SECTION;
++		zone = page_zone(pfn_to_page(pfn));
+ 		ret = __remove_section(zone, __pfn_to_section(pfn));
+ 		if (ret)
+ 			break;
+@@ -1031,6 +1035,7 @@ int __ref remove_memory(int nid, u64 sta
+ 	/* remove memmap entry */
+ 	firmware_map_remove(start, start + size, "System RAM");
+ 
++	__remove_pages(start >> PAGE_SHIFT, size >> PAGE_SHIFT);
+ out:
+ 	unlock_memory_hotplug();
+ 	return ret;
+Index: linux-3.5-rc6/include/linux/memory_hotplug.h
+===================================================================
+--- linux-3.5-rc6.orig/include/linux/memory_hotplug.h	2012-07-18 18:00:27.445145371 +0900
++++ linux-3.5-rc6/include/linux/memory_hotplug.h	2012-07-18 18:00:40.461982690 +0900
+@@ -89,8 +89,7 @@ extern bool is_pageblock_removable_noloc
+ /* reasonably generic interface to expand the physical pages in a zone  */
+ extern int __add_pages(int nid, struct zone *zone, unsigned long start_pfn,
+ 	unsigned long nr_pages);
+-extern int __remove_pages(struct zone *zone, unsigned long start_pfn,
+-	unsigned long nr_pages);
++extern int __remove_pages(unsigned long start_pfn, unsigned long nr_pages);
+ 
+ #ifdef CONFIG_NUMA
+ extern int memory_add_physaddr_to_nid(u64 start);
+Index: linux-3.5-rc6/arch/powerpc/platforms/pseries/hotplug-memory.c
+===================================================================
+--- linux-3.5-rc6.orig/arch/powerpc/platforms/pseries/hotplug-memory.c	2012-07-18 18:00:27.442145407 +0900
++++ linux-3.5-rc6/arch/powerpc/platforms/pseries/hotplug-memory.c	2012-07-18 18:00:40.470982578 +0900
+@@ -76,7 +76,6 @@ unsigned long memory_block_size_bytes(vo
+ static int pseries_remove_memblock(unsigned long base, unsigned int memblock_size)
+ {
+ 	unsigned long start, start_pfn;
+-	struct zone *zone;
+ 	int i, ret;
+ 	int sections_to_remove;
+ 
+@@ -87,8 +86,6 @@ static int pseries_remove_memblock(unsig
+ 		return 0;
+ 	}
+ 
+-	zone = page_zone(pfn_to_page(start_pfn));
+-
+ 	/*
+ 	 * Remove section mappings and sysfs entries for the
+ 	 * section of the memory we are removing.
+@@ -101,7 +98,7 @@ static int pseries_remove_memblock(unsig
+ 	sections_to_remove = (memblock_size >> PAGE_SHIFT) / PAGES_PER_SECTION;
+ 	for (i = 0; i < sections_to_remove; i++) {
+ 		unsigned long pfn = start_pfn + i * PAGES_PER_SECTION;
+-		ret = __remove_pages(zone, start_pfn,  PAGES_PER_SECTION);
++		ret = __remove_pages(start_pfn,  PAGES_PER_SECTION);
+ 		if (ret)
+ 			return ret;
+ 	}
 
-iQIcBAEBCAAGBQJQBovGAAoJEECxmPOUX5FEBr4QAIAlwfClB1JBeCv+B3BYN2lC
-k49Exxe62tTlGLV4VFCykvvu3GT8fIdklkWsTRHTPe4oABwmzkJEpF586eoOv+8G
-heNNdeifT+wHN5YF/z6SHbAfaZV97hSms8WJ7CTu+lxYgiCsv9WrsuTzmchKnZXM
-WESSME2X2i+hE5kS8dpJEI4kwXzg4Vgkb34aoxZ+CZm3kvZhpul9BabjERGAARxw
-mQFOES/8eUob5ocAUE3/85f0FVNEagmAV8zVw9XU+Hdbp0+enbulFTfCPz8WBq9d
-AffDKHjbIfPSMzlb7ZoOZml4EmkwWK2SFXqCoOMNhQat7obUs2/GORUqw7aPykAq
-8SMdWgUCjt5COLvAkGERxJaWF0IDktK80NBDC+hPjXb0A/L7yzljgw56JlXrKE0w
-r4zTsupguswewvwTNkI4HRW7jVDgXA0FZ8QfdsCV1Q17ncSPgMKPoxwaUf8lRcCT
-33dDRs3Al+tkMovQbWqHkOne7FZhdkRZQsbcACtZiFn030CAFQCjHpaTlle45xjj
-qMYSg7V8qeP9kGr1fNyuhf0pqZR0IK0lvuLRQZ+VvHz5/RukIRSW5H9sh3qj7zVl
-RBbP0Yw8RhZMWFAdzmVNfV9ge0PMJDi2B5spcPfnRgyZLbSneaX0KCwkZxeZrIpl
-CeccuIdx/XRqP69geJ3o
-=xsa4
------END PGP SIGNATURE-----
-
---Signature=_Wed__18_Jul_2012_20_11_18_+1000_YoqrYsCctNNwAGgY--
