@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754668Ab2GRPH3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 11:07:29 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:37334 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752628Ab2GRPH1 (ORCPT
+	id S1754025Ab2GRPJL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 11:09:11 -0400
+Received: from ams-iport-4.cisco.com ([144.254.224.147]:16809 "EHLO
+	ams-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754842Ab2GRPJG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 11:07:27 -0400
-From: Borislav Petkov <bp@amd64.org>
-To: cpufreq@vger.kernel.org
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH] powernow-k8: Fixup missing _PSS objects message
-Date: Wed, 18 Jul 2012 17:07:23 +0200
-Message-Id: <1342624043-29763-1-git-send-email-bp@amd64.org>
-X-Mailer: git-send-email 1.7.11.rc1
+	Wed, 18 Jul 2012 11:09:06 -0400
+X-Greylist: delayed 587 seconds by postgrey-1.27 at vger.kernel.org; Wed, 18 Jul 2012 11:09:06 EDT
+X-IronPort-AV: E=Sophos;i="4.77,610,1336348800"; 
+   d="scan'208";a="6731127"
+From: Hans Verkuil <hansverk@cisco.com>
+Organization: Cisco Systems Norway
+To: Duan Jiong <djduanjiong@gmail.com>
+Subject: Re: [PATCH] pms.c: remove duplicated include
+Date: Wed, 18 Jul 2012 16:58:53 +0200
+User-Agent: KMail/1.13.7 (Linux/3.3-0.slh.4-aptosid-amd64; KDE/4.7.4; x86_64; ; )
+Cc: mchehab@infradead.org, hans.verkuil@cisco.com, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <5006CB2B.3060905@gmail.com>
+In-Reply-To: <5006CB2B.3060905@gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="gb18030"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201207181658.53914.hansverk@cisco.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+On Wed 18 July 2012 16:41:47 Duan Jiong wrote:
+> 
+> Signed-off-by: Duan Jiong <djduanjiong@gmail.com>
 
-_PSS objects can also be missing if Cool'N'Quiet is disabled in the
-BIOS. Add that to the FW_BUG message for the user to try before updating
-her BIOS. Fix formatting while at it.
+Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
 
-Acked-by: Mark Langsdorf <mark.langsdorf@amd.com>
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- drivers/cpufreq/powernow-k8.c | 11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+Thanks,
 
-diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
-index c0e816468e30..33f17c4a1342 100644
---- a/drivers/cpufreq/powernow-k8.c
-+++ b/drivers/cpufreq/powernow-k8.c
-@@ -1265,12 +1265,15 @@ static void __cpuinit powernowk8_cpu_init_on_cpu(void *_init_on_cpu)
- 	init_on_cpu->rc = 0;
- }
- 
-+static const char missing_pss_msg[] =
-+	KERN_ERR
-+	FW_BUG PFX "No compatible ACPI _PSS objects found.\n"
-+	FW_BUG PFX "First, make sure Cool'N'Quiet is enabled in the BIOS.\n"
-+	FW_BUG PFX "If that doesn't help, try upgrading your BIOS.\n";
-+
- /* per CPU init entry point to the driver */
- static int __cpuinit powernowk8_cpu_init(struct cpufreq_policy *pol)
- {
--	static const char ACPI_PSS_BIOS_BUG_MSG[] =
--		KERN_ERR FW_BUG PFX "No compatible ACPI _PSS objects found.\n"
--		FW_BUG PFX "Try again with latest BIOS.\n";
- 	struct powernow_k8_data *data;
- 	struct init_on_cpu init_on_cpu;
- 	int rc;
-@@ -1298,7 +1301,7 @@ static int __cpuinit powernowk8_cpu_init(struct cpufreq_policy *pol)
- 		 * an UP version, and is deprecated by AMD.
- 		 */
- 		if (num_online_cpus() != 1) {
--			printk_once(ACPI_PSS_BIOS_BUG_MSG);
-+			printk_once(missing_pss_msg);
- 			goto err_out;
- 		}
- 		if (pol->cpu != 0) {
--- 
-1.7.11.rc1
+	Hans
 
+> ---
+>  drivers/media/video/pms.c |    1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/drivers/media/video/pms.c b/drivers/media/video/pms.c
+> index b4c679b..77f9c92 100644
+> --- a/drivers/media/video/pms.c
+> +++ b/drivers/media/video/pms.c
+> @@ -30,7 +30,6 @@
+>  #include <linux/ioport.h>
+>  #include <linux/init.h>
+>  #include <linux/mutex.h>
+> -#include <linux/slab.h>
+>  #include <linux/uaccess.h>
+>  #include <linux/isa.h>
+>  #include <asm/io.h>
+> 
