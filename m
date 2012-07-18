@@ -1,36 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752868Ab2GRH6v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 03:58:51 -0400
-Received: from mga03.intel.com ([143.182.124.21]:38180 "EHLO mga03.intel.com"
+	id S1752927Ab2GRH7A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 03:59:00 -0400
+Received: from mga09.intel.com ([134.134.136.24]:22584 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750906Ab2GRH6o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 03:58:44 -0400
+	id S1752891Ab2GRH6w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 03:58:52 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="169743162"
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="173576553"
 From: Chen Gong <gong.chen@linux.intel.com>
 To: tglx@linutronix.de
 Cc: tony.luck@intel.com, bp@amd64.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [V2] x86: mce: Bugfixes, cleanups and a new CMCI poll version
-Date: Wed, 18 Jul 2012 15:59:29 -0400
-Message-Id: <1342641574-32126-1-git-send-email-gong.chen@linux.intel.com>
+        linux-kernel@vger.kernel.org, Chen Gong <gong.chen@linux.intel.com>
+Subject: [PATCH 2/5] x86: mce: Serialize mce injection
+Date: Wed, 18 Jul 2012 15:59:31 -0400
+Message-Id: <1342641574-32126-3-git-send-email-gong.chen@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1342641574-32126-1-git-send-email-gong.chen@linux.intel.com>
+References: <1342641574-32126-1-git-send-email-gong.chen@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[PATCH 1/5] x86: mce: Disable preemption when calling raise_local()
-[PATCH 2/5] x86: mce: Serialize mce injection
-[PATCH 3/5] x86: mce: Split timer init
-[PATCH 4/5] x86: mce: Remove the frozen cases in the hotplug code
-[PATCH 5/5] x86: mce: Add cmci poll mode
+raise_mce() fiddles with global state, but lacks any kind of
+serialization.
 
-The following series fixes a few interesting bugs (found by review in
-context of the CMCI poll effort) and a cleanup to the timer/hotplug
-code followed by a consolidated version of the CMCI poll
-implementation. This series is based on Linus' tree.
+Add a mutex around the raise_mce() call, so concurrent writers do not
+stomp on each other toes.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/x86/kernel/cpu/mcheck/mce-inject.c |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/x86/kernel/cpu/mcheck/mce-inject.c b/arch/x86/kernel/cpu/mcheck/mce-inject.c
+index 753746f..ddc72f8 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce-inject.c
++++ b/arch/x86/kernel/cpu/mcheck/mce-inject.c
+@@ -78,6 +78,7 @@ static void raise_exception(struct mce *m, struct pt_regs *pregs)
+ }
+ 
+ static cpumask_var_t mce_inject_cpumask;
++static DEFINE_MUTEX(mce_inject_mutex);
+ 
+ static int mce_raise_notify(unsigned int cmd, struct pt_regs *regs)
+ {
+@@ -229,7 +230,10 @@ static ssize_t mce_write(struct file *filp, const char __user *ubuf,
+ 	 * so do it a jiffie or two later everywhere.
+ 	 */
+ 	schedule_timeout(2);
++
++	mutex_lock(&mce_inject_mutex);
+ 	raise_mce(&m);
++	mutex_unlock(&mce_inject_mutex);
+ 	return usize;
+ }
+ 
+-- 
+1.7.10.4
 
