@@ -1,62 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751963Ab2GRCLE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 22:11:04 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:48897 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750879Ab2GRCK4 (ORCPT
+	id S1751975Ab2GRCNE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 22:13:04 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:60714 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750989Ab2GRCM7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 22:10:56 -0400
+	Tue, 17 Jul 2012 22:12:59 -0400
 MIME-Version: 1.0
-In-Reply-To: <cover.1342566495.git.luto@amacapital.net>
-References: <cover.1342566495.git.luto@amacapital.net>
-Date: Tue, 17 Jul 2012 21:10:55 -0500
-Message-ID: <CABqD9hYJAck0Y2nmL1H5eWx=C3kJvDQbmXit=hk7zjMUe_O7EQ@mail.gmail.com>
-Subject: Re: [PATCH 3.5 0/2] seccomp and vsyscall fixes
-From: Will Drewry <wad@chromium.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20120717234003.GA26937@bbox>
+References: <1342508505-23492-1-git-send-email-minchan@kernel.org>
+	<1342508505-23492-4-git-send-email-minchan@kernel.org>
+	<CAA_GA1dh0RYT5wfOB=t8-XoeHOzRJCmQJifnUTGLZfjNwx2a5w@mail.gmail.com>
+	<20120717234003.GA26937@bbox>
+Date: Wed, 18 Jul 2012 10:12:57 +0800
+Message-ID: <CAA_GA1dWBZ+cj5LW6Q=XsP_GGvAh8Za2scaGS8nQcgfc9JTGQw@mail.gmail.com>
+Subject: Re: [RFC 3/3] memory-hotplug: bug fix race between isolation and allocation
+From: Bob Liu <lliubbo@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 17, 2012 at 6:19 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> Apologies for the lateness of this stuff.  I was at a conference last
-> week when the Chrome issue was discovered and I couldn't do this
-> properly until I got back.
+On Wed, Jul 18, 2012 at 7:40 AM, Minchan Kim <minchan@kernel.org> wrote:
+> Hi Bob,
 >
-> Will, can you confirm that this version is okay and passes your tests?
-> It passes mine.
+> On Tue, Jul 17, 2012 at 06:13:17PM +0800, Bob Liu wrote:
+>> Hi Minchan,
+>>
+>> On Tue, Jul 17, 2012 at 3:01 PM, Minchan Kim <minchan@kernel.org> wrote:
+>> > Like below, memory-hotplug makes race between page-isolation
+>> > and page-allocation so it can hit BUG_ON in __offline_isolated_pages.
+>> >
+>> >         CPU A                                   CPU B
+>> >
+>> > start_isolate_page_range
+>> > set_migratetype_isolate
+>> > spin_lock_irqsave(zone->lock)
+>> >
+>> >                                 free_hot_cold_page(Page A)
+>> >                                 /* without zone->lock */
+>> >                                 migratetype = get_pageblock_migratetype(Page A);
+>> >                                 /*
+>> >                                  * Page could be moved into MIGRATE_MOVABLE
+>> >                                  * of per_cpu_pages
+>> >                                  */
+>> >                                 list_add_tail(&page->lru, &pcp->lists[migratetype]);
+>> >
+>> > set_pageblock_isolate
+>> > move_freepages_block
+>> > drain_all_pages
+>> >
+>> >                                 /* Page A could be in MIGRATE_MOVABLE of free_list. */
+>> >
+>> > check_pages_isolated
+>> > __test_page_isolated_in_pageblock
+>> > /*
+>> >  * We can't catch freed page which
+>> >  * is free_list[MIGRATE_MOVABLE]
+>> >  */
+>> > if (PageBuddy(page A))
+>> >         pfn += 1 << page_order(page A);
+>> >
+>> >                                 /* So, Page A could be allocated */
+>> >
+>> > __offline_isolated_pages
+>> > /*
+>> >  * BUG_ON hit or offline page
+>> >  * which is used by someone
+>> >  */
+>> > BUG_ON(!PageBuddy(page A));
+>> >
+>> > Signed-off-by: Minchan Kim <minchan@kernel.org>
+>> > ---
+>> > I found this problem during code review so please confirm it.
+>> > Kame?
+>> >
+>> >  mm/page_isolation.c |    5 ++++-
+>> >  1 file changed, 4 insertions(+), 1 deletion(-)
+>> >
+>> > diff --git a/mm/page_isolation.c b/mm/page_isolation.c
+>> > index acf65a7..4699d1f 100644
+>> > --- a/mm/page_isolation.c
+>> > +++ b/mm/page_isolation.c
+>> > @@ -196,8 +196,11 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn)
+>> >                         continue;
+>> >                 }
+>> >                 page = pfn_to_page(pfn);
+>> > -               if (PageBuddy(page))
+>> > +               if (PageBuddy(page)) {
+>> >                         pfn += 1 << page_order(page);
+>> > +                       if (get_page_migratetype(page) != MIGRATE_ISOLATE)
+>> > +                               break;
+>> > +               }
+>>
+>> test_page_isolated() already have check
+>> get_pageblock_migratetype(page) != MIGRATE_ISOLATE.
+>>
+>
+> That's why I send a patch.
+> As I describe in description, pageblock migration type of get_page_migratetype(page)
+> is inconsistent with free_list[migrationtype].
+> I mean get_pageblock_migratetype(page) will return MIGRATE_ISOLATE but the page would be
+> in free_list[MIGRATE_MOVABLE] so it could be allocated for someone if that race happens.
+>
 
-I'll pull it and test it!
+Sorry, I'm still not get the situation how this race happens.
 
-> While there are no known seccomp users that will have trouble,
-> SECCOMP_RET_TRAP and SECCOMP_RET_TRACE currently interact oddly with
-> emulated vsyscalls.  This might lead to ABI issues down the road (if
-> something starts to rely on current behavior) or unexpected malfunctions
-> (if something tries to change, say, sys_gettimeofday, into a different
-> syscall and gets completely bogus results on a vsyscall-using distro.
->
-> It's unlikely that fixing this later will cause issues, but it would be
-> nice to nail down and document the vsyscall quirks for the first
-> released kernel with seccomp mode 2 support.
->
-> (Patch 2/2 is very much optional.  It fixes a strange corner case.  It
->  ought to be fine for 3.6, since I very much doubt that any real code
->  will hit that corner case and cause ABI problems.)
->
-> Andy Lutomirski (2):
->   seccomp: Make syscall skipping and nr changes more consistent
->   seccomp: Future-proof against silly tracers
->
->  Documentation/prctl/seccomp_filter.txt |   74 ++++++++++++++++++++--
->  arch/x86/include/asm/syscall.h         |   11 +++
->  arch/x86/kernel/vsyscall_64.c          |  110 +++++++++++++++++---------------
->  kernel/seccomp.c                       |   28 +++++++-
->  4 files changed, 163 insertions(+), 60 deletions(-)
->
-> --
-> 1.7.7.6
->
+set_pageblock_isolate
+move_freepages_block
+drain_all_pages
+
+                                /* Page A could be in MIGRATE_MOVABLE
+of free_list. */
+
+I think move_freepages_block() will call list_move() to move Page A to
+free_list[MIGRATE_ISOLATE], so this case can't happen?
+
+-- 
+Thanks,
+--Bob
