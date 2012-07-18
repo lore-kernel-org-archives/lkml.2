@@ -1,86 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754093Ab2GRLpJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 07:45:09 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:63221 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751954Ab2GRLpH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 07:45:07 -0400
-From: Toshiaki Yamane <yamanetoshi@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Einon <mark.einon@gmail.com>, Joe Perches <joe@perches.com>,
-        linux-kernel@vger.kernel.org
-Cc: Toshiaki Yamane <yamanetoshi@gmail.com>
-Subject: [PATCH] staging/et131x: fix checkpatch warnings
-Date: Wed, 18 Jul 2012 20:44:58 +0900
-Message-Id: <1342611898-7951-1-git-send-email-yamanetoshi@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1342442513-10488-1-git-send-email-yamanetoshi@gmail.com>
-References: <1342442513-10488-1-git-send-email-yamanetoshi@gmail.com>
+	id S1754111Ab2GRLpe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 07:45:34 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:44511 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751954Ab2GRLpb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 07:45:31 -0400
+Date: Wed, 18 Jul 2012 17:15:22 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Jovi Zhang <bookjovi@gmail.com>
+Cc: Fr?d?ric Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: uprobe: checking probe event include directory
+Message-ID: <20120718114522.GF5006@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <CACV3sbLu81jrkfSXQxJ+_XtZHVTA6YfwJO3hjRxYsaDwbbLi6A@mail.gmail.com>
+ <20120717105936.GC28744@somewhere>
+ <20120717172736.GA6854@linux.vnet.ibm.com>
+ <CACV3sbKBsj288s=2FKKM+zuoga7Jy9QOxgzciTwREFVHLgR=Lw@mail.gmail.com>
+ <20120718110731.GE5006@linux.vnet.ibm.com>
+ <CACV3sb+1=qaNu6ozHS+iRnKntoJw46zyamRPzcu-hWY34-qO8Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <CACV3sb+1=qaNu6ozHS+iRnKntoJw46zyamRPzcu-hWY34-qO8Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12071811-8974-0000-0000-00000B4601ED
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The below checkpatch warns was fixed,
+* Jovi Zhang <bookjovi@gmail.com> [2012-07-18 19:38:27]:
 
-drivers/staging/et131x/et131x.c:2556: WARNING: Prefer pr_info(... to printk(KERN_INFO, ...
-drivers/staging/et131x/et131x.c:2577: WARNING: Prefer pr_info(... to printk(KERN_INFO, ...
-drivers/staging/et131x/et131x.c:5189: WARNING: Prefer pr_info(... to printk(KERN_INFO, ...
+> On Wed, Jul 18, 2012 at 7:07 PM, Srikar Dronamraju
+> <srikar@linux.vnet.ibm.com> wrote:
+> > The patch looks good,
+> >
+> > Can you modify the description a bit. However you are free to ignore
+> > these comments. After knowing your response,  I will ack the patch.
+> >
+> > I would probably put this as:
+> >
+> > The subject could be
+> > tracing: Verify target file before registering a uprobe event
+> >
+> > Description:
+> > Without this patch, we can register a uprobe event for a directory.
+> > Enabling such a uprobe event would anyway fail.
+> >
+> > Example:
+> >
+> > $ echo 'p /bin:0x4245c0' > /sys/kernel/debug/tracing/uprobe_events
+> >
+> > However directories cannot be valid targets for uprobe.
+> > Hence verify if the target is a regular file during the probe
+> > registration.
+> 
+> Thanks srikar, your description is more clear than mine.
+> 
+> 
+> From fd5077196038cc271e2116e1fca359a0011e1669 Mon Sep 17 00:00:00 2001
+> From: Jovi Zhang <bookjovi@gmail.com>
+> Date: Wed, 18 Jul 2012 18:16:44 +0800
+> Subject: [PATCH] tracing: Verify target file before registering a uprobe
+>  event
+> 
+> Without this patch, we can register a uprobe event for a directory.
+> Enabling such a uprobe event would anyway fail.
+> 
+> Example:
+> $ echo 'p /bin:0x4245c0' > /sys/kernel/debug/tracing/uprobe_events
+> 
+> However dirctories cannot be valid targets for uprobe.
+> Hence verify if the target is a regular file during the probe
+> registration.
+> 
+> Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
+> Reviewed-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> ---
+>  kernel/trace/trace_uprobe.c |    6 +++++-
+>  1 file changed, 5 insertions(+), 1 deletion(-)
+> 
+> diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+> index 85158fa..3b5f646 100644
+> --- a/kernel/trace/trace_uprobe.c
+> +++ b/kernel/trace/trace_uprobe.c
+> @@ -259,6 +259,10 @@ static int create_trace_uprobe(int argc, char **argv)
+>  		goto fail_address_parse;
+> 
+>  	inode = igrab(path.dentry->d_inode);
+> +	 if (!S_ISREG(inode->i_mode) || S_ISDIR(inode->i_mode)) {
+> +		ret = -EINVAL;
+> +		goto fail_address_parse;
+> +	}
+> 
+>  	argc -= 2;
+>  	argv += 2;
+> @@ -358,7 +362,7 @@ fail_address_parse:
+>  	if (inode)
+>  		iput(inode);
+> 
+> -	pr_info("Failed to parse address.\n");
+> +	pr_info("Failed to parse address or file.\n");
+> 
+>  	return ret;
+>  }
 
-And fixed below,
--converted printk to netdev_info
--added pr_fmt
+Looks good.
 
-Signed-off-by: Toshiaki Yamane <yamanetoshi@gmail.com>
----
- drivers/staging/et131x/et131x.c |   12 +++++++-----
- 1 files changed, 7 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
-index ac6897b..8ed822f 100644
---- a/drivers/staging/et131x/et131x.c
-+++ b/drivers/staging/et131x/et131x.c
-@@ -53,6 +53,8 @@
-  *
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/pci.h>
- #include <linux/init.h>
- #include <linux/module.h>
-@@ -2553,8 +2555,8 @@ static int et131x_rx_dma_memory_alloc(struct et131x_adapter *adapter)
- 			  "Cannot alloc memory for Packet Status Ring\n");
- 		return -ENOMEM;
- 	}
--	printk(KERN_INFO "Packet Status Ring %lx\n",
--	    (unsigned long) rx_ring->ps_ring_physaddr);
-+	pr_info("Packet Status Ring %lx\n",
-+		(unsigned long) rx_ring->ps_ring_physaddr);
- 
- 	/*
- 	 * NOTE : dma_alloc_coherent(), used above to alloc DMA regions,
-@@ -2574,7 +2576,7 @@ static int et131x_rx_dma_memory_alloc(struct et131x_adapter *adapter)
- 		return -ENOMEM;
- 	}
- 	rx_ring->num_rfd = NIC_DEFAULT_NUM_RFD;
--	printk(KERN_INFO "PRS %lx\n", (unsigned long)rx_ring->rx_status_bus);
-+	pr_info("PRS %lx\n", (unsigned long)rx_ring->rx_status_bus);
- 
- 	/* Recv
- 	 * kmem_cache_create initializes a lookaside list. After successful
-@@ -5186,8 +5188,8 @@ static int et131x_set_mac_addr(struct net_device *netdev, void *new_mac)
- 
- 	memcpy(netdev->dev_addr, address->sa_data, netdev->addr_len);
- 
--	printk(KERN_INFO "%s: Setting MAC address to %pM\n",
--			netdev->name, netdev->dev_addr);
-+	netdev_info(netdev, "Setting MAC address to %pM\n",
-+		    netdev->dev_addr);
- 
- 	/* Free Rx DMA memory */
- 	et131x_adapter_memory_free(adapter);
--- 
-1.7.5.4
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
