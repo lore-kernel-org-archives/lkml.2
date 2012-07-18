@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754261Ab2GRPm0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 11:42:26 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:60039 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752384Ab2GRPmY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 11:42:24 -0400
+	id S1754543Ab2GRPnS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 11:43:18 -0400
+Received: from mga01.intel.com ([192.55.52.88]:17386 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754153Ab2GRPnP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 11:43:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="179712063"
+Message-ID: <5006D932.1060407@linux.intel.com>
+Date: Wed, 18 Jul 2012 08:41:38 -0700
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <CAFLxGvzOzNj5ab82RDV=kn_a6Bb16sKT=GfK3igVM3pk7CkC4Q@mail.gmail.com>
-References: <CAMUfR_vogZUgJB5QBr-QrYqFEM71J_pyvc=cFRV6apvb=pVJuQ@mail.gmail.com>
-	<CAFLxGvzOzNj5ab82RDV=kn_a6Bb16sKT=GfK3igVM3pk7CkC4Q@mail.gmail.com>
-Date: Wed, 18 Jul 2012 11:42:23 -0400
-Message-ID: <CAMUfR_to9bD2PE8+6Y4we0YG-ULkAVxASByK4_mn7WTmyS9g5Q@mail.gmail.com>
-Subject: Re: QUESTION: Why might Linux suddenly stop replying to pings for no
- apparent reason?
-From: Terry Phelps <tgphelps50@gmail.com>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: linux-kernel@vger.kernel.org
+To: Dave Jones <davej@redhat.com>, Dan Carpenter <dan.carpenter@oracle.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: potential NULL dereference in futex_wait_requeue_pi()
+References: <20120718142514.GA18850@elgon.mountain> <20120718153123.GA24408@redhat.com>
+In-Reply-To: <20120718153123.GA24408@redhat.com>
+X-Enigmail-Version: 1.4.2
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 18, 2012 at 11:06 AM, richard -rw- weinberger
-<richard.weinberger@gmail.com> wrote:
-> On Wed, Jul 18, 2012 at 4:42 PM, Terry Phelps <tgphelps50@gmail.com> wrote:
->> I have this strange recurring problem with SEVERAL machines, all
->> running the Oracle "Unbreakable Enterprise Kernel", which is based on
->> the 3.0.16 kernel.
->
-> Ask Oracle.
 
-Is there some way to "ask Oracle", in which my question will get to
-someone who can possibly help me? I've tried contacting "Oracle Linux
-support". They're hopeless. I've posted my question to Oracle forums,
-and even general Linux forums, but all I get is boilerplate networking
-advice (check ifconfig, check your routes, check your switches, check
-autonegotiation, etc.) that doesn't address the specific symptoms I'm
-seeing.
 
-If I should be posting my question to somewhere other than the
-linux-kernel mailing list, please advise me where that might be. It
-sure looks like something in the kernel isn't working properly
-somewhere.
+On 07/18/2012 08:31 AM, Dave Jones wrote:
+> On Wed, Jul 18, 2012 at 05:25:14PM +0300, Dan Carpenter wrote:
+>  > Hi Darren,
+>  > 
+>  > The patch 52400ba94675: "futex: add requeue_pi functionality" from
+>  > Apr 3, 2009, leads to the following warning:
+>  > kernel/futex.c:2373 futex_wait_requeue_pi()
+>  > 	 error: potential NULL dereference 'pi_mutex'.
+> 
+> This sounds like the oops I saw that I reported at https://lkml.org/lkml/2012/7/13/328
+
+I'm looking into the report Dave sent today (delayed from piles of
+urgent issues after returning from vacation, my apologies).
+
+Dan, under which workload are you seeing this?
+
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
+
+
