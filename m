@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757651Ab2GRAG3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 20:06:29 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48276 "EHLO
+	id S1757665Ab2GRAGe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 20:06:34 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48754 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757497Ab2GRAEg (ORCPT
+	with ESMTP id S1757166Ab2GRAEr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 20:04:36 -0400
+	Tue, 17 Jul 2012 20:04:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Yuri Khan <yurivkhan@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Ryan Bourgeois <bluedragonx@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [ 24/37] Input: xpad - handle all variations of Mad Catz Beat Pad
-Date: Tue, 17 Jul 2012 17:03:01 -0700
-Message-Id: <20120717232433.360625635@linuxfoundation.org>
+Subject: [ 27/37] HID: add support for 2012 MacBook Pro Retina
+Date: Tue, 17 Jul 2012 17:03:04 -0700
+Message-Id: <20120717232433.631017068@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120717232431.399005532@linuxfoundation.org>
 References: <20120717232455.GA5994@kroah.com>
@@ -31,54 +32,79 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Yuri Khan <yurivkhan@gmail.com>
+From: Ryan Bourgeois <bluedragonx@gmail.com>
 
-commit 3ffb62cb9ac2430c2504c6ff9727d0f2476ef0bd upstream.
+commit b2e6ad7dfe26aac5bf136962d0b11d180b820d44 upstream.
 
-The device should be handled by xpad driver instead of generic HID driver.
+Add support for the 15'' MacBook Pro Retina. The keyboard is
+the same as recent models.
 
-Signed-off-by: Yuri Khan <yurivkhan@gmail.com>
+The patch needs to be synchronized with the bcm5974 patch for
+the trackpad - as usual.
+
+Patch originally written by clipcarl (forums.opensuse.org).
+
+[rydberg@euromail.se: Amended mouse ignore lines]
+Signed-off-by: Ryan Bourgeois <bluedragonx@gmail.com>
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
 Acked-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-core.c        |    1 +
- drivers/hid/hid-ids.h         |    3 +++
- drivers/input/joystick/xpad.c |    1 +
- 3 files changed, 5 insertions(+)
+ drivers/hid/hid-apple.c |    6 ++++++
+ drivers/hid/hid-core.c  |    6 ++++++
+ drivers/hid/hid-ids.h   |    3 +++
+ 3 files changed, 15 insertions(+)
 
+--- a/drivers/hid/hid-apple.c
++++ b/drivers/hid/hid-apple.c
+@@ -514,6 +514,12 @@ static const struct hid_device_id apple_
+ 		.driver_data = APPLE_HAS_FN | APPLE_ISO_KEYBOARD },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING5A_JIS),
+ 		.driver_data = APPLE_HAS_FN | APPLE_RDESC_JIS },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7_ANSI),
++		.driver_data = APPLE_HAS_FN },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7_ISO),
++		.driver_data = APPLE_HAS_FN | APPLE_ISO_KEYBOARD },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7_JIS),
++		.driver_data = APPLE_HAS_FN | APPLE_RDESC_JIS },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ANSI),
+ 		.driver_data = APPLE_NUMLOCK_EMULATION | APPLE_HAS_FN },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ISO),
 --- a/drivers/hid/hid-core.c
 +++ b/drivers/hid/hid-core.c
-@@ -1914,6 +1914,7 @@ static const struct hid_device_id hid_ig
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LD, USB_DEVICE_ID_LD_MCT) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LD, USB_DEVICE_ID_LD_HYBRID) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LD, USB_DEVICE_ID_LD_HEATCONTROL) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_MADCATZ, USB_DEVICE_ID_MADCATZ_BEATPAD) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_MCC, USB_DEVICE_ID_MCC_PMD1024LS) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_MCC, USB_DEVICE_ID_MCC_PMD1208LS) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROCHIP, USB_DEVICE_ID_PICKIT1) },
+@@ -1379,6 +1379,9 @@ static const struct hid_device_id hid_ha
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING6A_ANSI) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING6A_ISO) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING6A_JIS) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7_ANSI) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7_ISO) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7_JIS) },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ANSI) },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ISO) },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_JIS) },
+@@ -2009,6 +2012,9 @@ static const struct hid_device_id hid_mo
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING6A_ANSI) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING6A_ISO) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING6A_JIS) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7_ANSI) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7_ISO) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7_JIS) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_FOUNTAIN_TP_ONLY) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_GEYSER1_TP_ONLY) },
+ 	{ }
 --- a/drivers/hid/hid-ids.h
 +++ b/drivers/hid/hid-ids.h
-@@ -509,6 +509,9 @@
- #define USB_DEVICE_ID_CRYSTALTOUCH	0x0006
- #define USB_DEVICE_ID_CRYSTALTOUCH_DUAL	0x0007
- 
-+#define USB_VENDOR_ID_MADCATZ		0x0738
-+#define USB_DEVICE_ID_MADCATZ_BEATPAD	0x4540
-+
- #define USB_VENDOR_ID_MCC		0x09db
- #define USB_DEVICE_ID_MCC_PMD1024LS	0x0076
- #define USB_DEVICE_ID_MCC_PMD1208LS	0x007a
---- a/drivers/input/joystick/xpad.c
-+++ b/drivers/input/joystick/xpad.c
-@@ -238,6 +238,7 @@ static struct usb_device_id xpad_table [
- 	XPAD_XBOX360_VENDOR(0x045e),		/* Microsoft X-Box 360 controllers */
- 	XPAD_XBOX360_VENDOR(0x046d),		/* Logitech X-Box 360 style controllers */
- 	XPAD_XBOX360_VENDOR(0x0738),		/* Mad Catz X-Box 360 controllers */
-+	{ USB_DEVICE(0x0738, 0x4540) },		/* Mad Catz Beat Pad */
- 	XPAD_XBOX360_VENDOR(0x0e6f),		/* 0x0e6f X-Box 360 controllers */
- 	XPAD_XBOX360_VENDOR(0x12ab),		/* X-Box 360 dance pads */
- 	XPAD_XBOX360_VENDOR(0x1430),		/* RedOctane X-Box 360 controllers */
+@@ -125,6 +125,9 @@
+ #define USB_DEVICE_ID_APPLE_WELLSPRING6_ANSI	0x024c
+ #define USB_DEVICE_ID_APPLE_WELLSPRING6_ISO	0x024d
+ #define USB_DEVICE_ID_APPLE_WELLSPRING6_JIS	0x024e
++#define USB_DEVICE_ID_APPLE_WELLSPRING7_ANSI	0x0262
++#define USB_DEVICE_ID_APPLE_WELLSPRING7_ISO	0x0263
++#define USB_DEVICE_ID_APPLE_WELLSPRING7_JIS	0x0264
+ #define USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ANSI  0x0239
+ #define USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ISO   0x023a
+ #define USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_JIS   0x023b
 
 
