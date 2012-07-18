@@ -1,57 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751648Ab2GRCDV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 22:03:21 -0400
-Received: from ozlabs.org ([203.10.76.45]:54697 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751012Ab2GRCDM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 22:03:12 -0400
-Message-ID: <1342576992.25827.3.camel@concordia>
-Subject: Re: [RFC/PATCH] Use kernel supplied MMU info for kvm tool
-From: Michael Ellerman <michael@ellerman.id.au>
-To: Matt Evans <matt@ozlabs.org>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, penberg@kernel.org,
-        kvm-ppc@vger.kernel.org, prerna@linux.vnet.ibm.com,
-        David Gibson <david@gibson.dropbear.id.au>
-Date: Wed, 18 Jul 2012 12:03:12 +1000
-In-Reply-To: <3e2231e9bf466549d1f9b12359f2f8f6@ozlabs.org>
-References: <1342501220-10209-1-git-send-email-michael@ellerman.id.au>
-	 <3e2231e9bf466549d1f9b12359f2f8f6@ozlabs.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1751844Ab2GRCFR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 22:05:17 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16448 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750932Ab2GRCFL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Jul 2012 22:05:11 -0400
+X-Authority-Analysis: v=2.0 cv=StQSGYy0 c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=1PS5Knfacm0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=VwQbUJbxAAAA:8 a=ankguWfssnWlHO32Y0EA:9 a=U62fhAwekXMA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-Id: <20120718020427.338763317@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Tue, 17 Jul 2012 22:04:27 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Subject: [PATCH RT 0/5] [ANNOUNCE] 3.2.23-rt37-rc1 stable review
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-07-17 at 10:33 +0100, Matt Evans wrote:
-> Hi Michael,
-> 
-> On 2012-07-17 06:00, Michael Ellerman wrote:
-> 
-> > This is a series for kvmtool that uses a newish kernel API to get
-> > MMU info, which is then fed to the guest.
-> >
-> > Currently we just make a good guess based on the PVR, but that is
-> > potentially flakey in a few ways. The most notable is that if you 
-> > don't
-> > specify hugepages we don't boot - because the guest is told we 
-> > support
-> > 16M pages, but we don't really (on HV).
-> 
-> Just had a look, all good.  Thanks for tidying some old FIXMEs, 
-> especially the page/segment DT props encoding grot -- and the designated 
-> inits in the cpuinfo struct, whew, I heard the scream on IRC.  Sorry. 
-> ;-)
 
-Thanks Matt, no worries about the grot, there was no better way when you
-wrote the original code.
+Dear RT Folks,
 
-The lack of designated inits did bite me quite well, while bisecting I
-accidentally dropped the hunk that updated the struct definition but
-kept the hunk that changed the initialisation - leading to a VM with a
-slb size of 512000000 (tb_freq) etc. :)
+This is the RT stable review cycle of patch 3.2.23-rt37-rc1.
 
-cheers
+Please scream at me if I messed something up. Please test the patches too.
 
+The -rc release will be uploaded to kernel.org and will be deleted when
+the final release is out. This is just a review release (or release candidate).
+
+The pre-releases will not be pushed to the git repository, only the
+final release is.
+
+If all goes well, this patch will be converted to the next main release
+on 7/19/2012.
+
+Enjoy,
+
+-- Steve
+
+
+To build 3.2.23-rt37-rc1 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.2.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.2.23.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/patch-3.2.23-rt37-rc1.patch.xz
+
+You can also build from 3.2.23-rt36 by applying the incremental patch:
+
+http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/incr/patch-3.2.23-rt36-rt37-rc1.patch.xz
+
+
+Changes from 3.2.23-rt36:
+
+---
+
+
+Steven Rostedt (5):
+      cpu/rt: Rework cpu down for PREEMPT_RT
+      cpu/rt: Fix cpu_hotplug variable initialization
+      workqueue: Revert workqueue: Fix PF_THREAD_BOUND abuse
+      workqueue: Revert workqueue: Fix cpuhotplug trainwreck
+      Linux 3.2.23-rt37-rc1
+
+----
+ include/linux/cpu.h       |    6 +-
+ include/linux/sched.h     |    7 +
+ include/linux/workqueue.h |    5 +-
+ kernel/cpu.c              |  240 +++++++++++++++----
+ kernel/sched.c            |   82 ++++++-
+ kernel/workqueue.c        |  578 ++++++++++++++++++++++++++++++++-------------
+ localversion-rt           |    2 +-
+ 7 files changed, 704 insertions(+), 216 deletions(-)
