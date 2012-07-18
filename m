@@ -1,117 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754138Ab2GRL5L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 07:57:11 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:48852 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751853Ab2GRL5J (ORCPT
+	id S1754164Ab2GRL6X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 07:58:23 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:60299 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754118Ab2GRL6U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 07:57:09 -0400
-Date: Wed, 18 Jul 2012 13:57:03 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-Cc: paulus@samba.org, a.p.zijlstra@chello.nl, linux-kernel@vger.kernel.org,
-        mingo@redhat.com, emachado@linux.vnet.ibm.com, acme@ghostprotocols.net,
-        prasad.krishnan@gmail.com
-Subject: Re: [PATCH v2 RESEND] Hardware breakpoints: Invoke
- __perf_event_disable() if interrupts are already disabled
-Message-ID: <20120718115700.GB6233@somewhere.redhat.com>
-References: <20120706101653.7515.23309.stgit@localhost.localdomain>
- <20120718103046.7512.8326.stgit@localhost.localdomain>
+	Wed, 18 Jul 2012 07:58:20 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH] Revert "KVM: Export asm-generic/kvm_para.h"
+Date: Wed, 18 Jul 2012 11:58:06 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+References: <1342607393-32254-1-git-send-email-will.deacon@arm.com>
+In-Reply-To: <1342607393-32254-1-git-send-email-will.deacon@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120718103046.7512.8326.stgit@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201207181158.07236.arnd@arndb.de>
+X-Provags-ID: V02:K0:S3v5n7hAWOsSnbfHcxl4QlxhYdkU7WF2hQO46aANmgk
+ ZIanygYcBoTWIGm+8Ff9YZQtvFg88VzmzlVB8zFkOytNiQxksy
+ rrS/oYoIjcOOqao70FDM+nql2crlAI+CiEVTfjzl35nJlNJS5/
+ 1p8trfG+QgioywZkq1hAZM4v08hQ2aXLu8S2jNcpnCAKfJGY2S
+ pqVKxQ/itofVSkmMngivXhcKyRjNODxKaHb3Hk8laB/9ohSJkA
+ TI6fWmJl4etYPaC015/6u3tGmOPJXKJt8579yTAepSAW4Phv5P
+ LkSqzQp7inPrJ6+lbHBaD1gWbdtTj8wLtqTBxKOBBg0wE4zA8p
+ jLFy+BWdGI7pf2fIQY20=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 18, 2012 at 04:00:46PM +0530, Naveen N. Rao wrote:
-> Please find v2 of the patch from Prasad, based on Peter Zijlstra's
-> feedback. This applies on top of v3.5-rc7. This has been tested and
-> found to work fine by Edjunior.
+On Wednesday 18 July 2012, Will Deacon wrote:
+> This reverts commit 56457f38f212344fb38b250cfa7e7311c065022f.
 > 
-> Regards,
-> Naveen
-> ______
-> 
-> From: K.Prasad <Prasad.Krishnan@gmail.com>
-> 
-> While debugging a warning message on PowerPC while using hardware
-> breakpoints, it was discovered that when perf_event_disable is invoked
-> through hw_breakpoint_handler function with interrupts disabled, a
-> subsequent IPI in the code path would trigger a WARN_ON_ONCE message in
-> smp_call_function_single function.
-> 
-> This patch calls __perf_event_disable() when interrupts are already
-> disabled, instead of perf_event_disable().
-> 
-> Reported-by: Edjunior Barbosa Machado <emachado@linux.vnet.ibm.com>
-> Signed-off-by: K.Prasad <Prasad.Krishnan@gmail.com>
-> Signed-off-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
-> ---
->  include/linux/perf_event.h    |    2 ++
->  kernel/events/core.c          |    2 +-
->  kernel/events/hw_breakpoint.c |   10 +++++++++-
->  3 files changed, 12 insertions(+), 2 deletions(-)
-> 
-> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-> index 45db49f..c289ba0 100644
-> --- a/include/linux/perf_event.h
-> +++ b/include/linux/perf_event.h
-> @@ -1292,6 +1292,7 @@ extern int perf_swevent_get_recursion_context(void);
->  extern void perf_swevent_put_recursion_context(int rctx);
->  extern void perf_event_enable(struct perf_event *event);
->  extern void perf_event_disable(struct perf_event *event);
-> +extern int __perf_event_disable(void *info);
->  extern void perf_event_task_tick(void);
->  #else
->  static inline void
-> @@ -1330,6 +1331,7 @@ static inline int  perf_swevent_get_recursion_context(void)		{ return -1; }
->  static inline void perf_swevent_put_recursion_context(int rctx)		{ }
->  static inline void perf_event_enable(struct perf_event *event)		{ }
->  static inline void perf_event_disable(struct perf_event *event)		{ }
-> +static inline int __perf_event_disable(void *info)			{ }
->  static inline void perf_event_task_tick(void)				{ }
->  #endif
->  
-> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index d7d71d6..0ad0fc9 100644
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -1253,7 +1253,7 @@ retry:
->  /*
->   * Cross CPU call to disable a performance event
->   */
-> -static int __perf_event_disable(void *info)
-> +int __perf_event_disable(void *info)
->  {
->  	struct perf_event *event = info;
->  	struct perf_event_context *ctx = event->ctx;
-> diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
-> index bb38c4d..483f14a 100644
-> --- a/kernel/events/hw_breakpoint.c
-> +++ b/kernel/events/hw_breakpoint.c
-> @@ -453,7 +453,15 @@ int modify_user_hw_breakpoint(struct perf_event *bp, struct perf_event_attr *att
->  	int old_type = bp->attr.bp_type;
->  	int err = 0;
->  
-> -	perf_event_disable(bp);
-> +	/*
-> +	 * modify_user_hw_breakpoint can be invoked with IRQs disabled and hence it
-> +	 * will not be possible to raise IPIs that invoke __perf_event_disable.
-> +	 * So call the function directly.
-> +	 */
-> +	if (irqs_disabled())
-> +		__perf_event_disable(bp);
-> +	else
-> +		perf_event_disable(bp);
+> For architectures without asm/kvm_para.h, asm-generic/Kbuild
+> unconditionally tries to export the non-existent header file, resulting
+> in failure to build the user headers. Since the logic in
+> asm-generic/Kbuild.asm will only export the file if it exists (which in
+> turn causes linux/kvm_para.h to be exported), we can just remove the
+> unconditional header export.
 
-This only works if we are sure the bp is on the current CPU. Do we
-have that guarantee?
+This doesn't look right.
 
->  
->  	bp->attr.bp_addr = attr->bp_addr;
->  	bp->attr.bp_type = attr->bp_type;
+> I'm not sure what specific problem the original commit was fixing, so we
+> may need to solve this another way if there's something I've missed.
 > 
+>  include/asm-generic/Kbuild |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/asm-generic/Kbuild b/include/asm-generic/Kbuild
+> index 2c85a0f..53f91b1 100644
+> --- a/include/asm-generic/Kbuild
+> +++ b/include/asm-generic/Kbuild
+> @@ -8,7 +8,6 @@ header-y += int-ll64.h
+>  header-y += ioctl.h
+>  header-y += ioctls.h
+>  header-y += ipcbuf.h
+> -header-y += kvm_para.h
+>  header-y += mman-common.h
+>  header-y += mman.h
+>  header-y += msgbuf.h
+
+include/asm-generic/Kbuild lists the header files in the asm-generic
+directory, and the asm-generic/kvm_para.h always exists, it's
+not architecture specific.
+
+arch/arm/include/asm/kvm_para.h also always exists, it was added
+in 3b5d56b93 "kvmclock: Add functions to check if the host has
+stopped the vm", although it should have added that to the generated
+header files listed in arch/arm/include/asm/Kbuild.
+
+I'm still not sure what you are actually trying to fix here.
+
+	Arnd
