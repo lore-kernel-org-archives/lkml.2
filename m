@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752338Ab2GRJIG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 05:08:06 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:10424 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750939Ab2GRJH6 (ORCPT
+	id S1752389Ab2GRJKl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 05:10:41 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:53596 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750939Ab2GRJKd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 05:07:58 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 18 Jul 2012 02:07:56 -0700
-Message-ID: <50067AE7.5090501@nvidia.com>
-Date: Wed, 18 Jul 2012 14:29:19 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Stephen Warren <swarren@wwwdotorg.org>, "tiwai@suse.de" <tiwai@suse.de>,
-        "perex@perex.cz" <perex@perex.cz>, Stephen Warren <swarren@nvidia.com>,
-        "lrg@ti.com" <lrg@ti.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH] ASoC: tegra: use dmaengine based dma driver
-References: <1340969673-7776-1-git-send-email-ldewangan@nvidia.com> <1340969673-7776-2-git-send-email-ldewangan@nvidia.com> <4FEDDF89.1050907@wwwdotorg.org> <4FEF166D.2010705@nvidia.com> <4FF15B16.9020903@nvidia.com> <4FF1D00D.6040402@wwwdotorg.org> <20120702164717.GH25093@opensource.wolfsonmicro.com>
-In-Reply-To: <20120702164717.GH25093@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 18 Jul 2012 05:10:33 -0400
+From: Claudiu Ghioc <claudiughioc@gmail.com>
+To: netdev@vger.kernel.org
+Cc: davem@davemloft.net, netfilter-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, wensong@linux-vs.org, horms@verge.net.au,
+        ja@ssi.bg, pablo@netfilter.org, kaber@trash.net,
+        claudiu.ghioc@gmail.com, daniel.baluta@gmail.com
+Subject: [PATCH v2] ipvs: fixed sparse warning
+Date: Wed, 18 Jul 2012 12:10:22 +0300
+Message-Id: <1342602622-2728-1-git-send-email-claudiu.ghioc@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 02 July 2012 10:17 PM, Mark Brown wrote:
-> * PGP Signed by an unknown key
->
-> On Mon, Jul 02, 2012 at 10:45:01AM -0600, Stephen Warren wrote:
->
->> to work. No audio is heard, and aplay eventually exits with the
->> following error message:
-> For values of eventually that will be about 10s by default.
->
->> aplay: pcm_write:1603: write error: Input/output error
->> I believe this means that the DMA simply isn't operating.
-> Yes, normally.
+Removed the following sparse warnings, wether CONFIG_SYSCTL
+is defined or not:
+*       warning: symbol 'ip_vs_control_net_init_sysctl' was not
+	declared. Should it be static?
+*       warning: symbol 'ip_vs_control_net_cleanup_sysctl' was
+	not declared. Should it be static?
 
-Just for record and update on this mail, the issue was in dma driver 
-where it was not enabling the dma clock.
-By luck, it was working on Tegra30 because it was getting enabled in 
-somewhere may be in uboot or default power-on ON.
-Fixed the issue with patch
-[PATCH] dma: tegra: enable/disable dma clock
+Signed-off-by: Claudiu Ghioc <claudiu.ghioc@gmail.com>
+---
+ net/netfilter/ipvs/ip_vs_ctl.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/net/netfilter/ipvs/ip_vs_ctl.c b/net/netfilter/ipvs/ip_vs_ctl.c
+index d43e3c1..044e845 100644
+--- a/net/netfilter/ipvs/ip_vs_ctl.c
++++ b/net/netfilter/ipvs/ip_vs_ctl.c
+@@ -3674,7 +3674,7 @@ static void ip_vs_genl_unregister(void)
+  * per netns intit/exit func.
+  */
+ #ifdef CONFIG_SYSCTL
+-int __net_init ip_vs_control_net_init_sysctl(struct net *net)
++static int __net_init ip_vs_control_net_init_sysctl(struct net *net)
+ {
+ 	int idx;
+ 	struct netns_ipvs *ipvs = net_ipvs(net);
+@@ -3742,7 +3742,7 @@ int __net_init ip_vs_control_net_init_sysctl(struct net *net)
+ 	return 0;
+ }
+ 
+-void __net_exit ip_vs_control_net_cleanup_sysctl(struct net *net)
++static void __net_exit ip_vs_control_net_cleanup_sysctl(struct net *net)
+ {
+ 	struct netns_ipvs *ipvs = net_ipvs(net);
+ 
+@@ -3753,8 +3753,8 @@ void __net_exit ip_vs_control_net_cleanup_sysctl(struct net *net)
+ 
+ #else
+ 
+-int __net_init ip_vs_control_net_init_sysctl(struct net *net) { return 0; }
+-void __net_exit ip_vs_control_net_cleanup_sysctl(struct net *net) { }
++static int __net_init ip_vs_control_net_init_sysctl(struct net *net) { return 0; }
++static void __net_exit ip_vs_control_net_cleanup_sysctl(struct net *net) { }
+ 
+ #endif
+ 
+-- 
+1.7.4.4
 
