@@ -1,74 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755072Ab2GRWfh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 18:35:37 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27416 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754403Ab2GRWfc (ORCPT
+	id S1754565Ab2GRWiP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 18:38:15 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:47093 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751347Ab2GRWiO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 18:35:32 -0400
-X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=l329ejTtuJUA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=n8i27M1mAAAA:8 a=o8eAoyqBWrPcO1qUJOIA:9 a=PUjeQqilurYA:10 a=rXZLD9m7qZoA:10 a=jeBq3FmKZ4MA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 72.230.195.127
-Message-ID: <1342650928.11900.20.camel@gandalf.stny.rr.com>
-Subject: [PATCH] powerpc/ftrace: Trace function graph entry before updating
- index
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Colin Cross <ccross@android.com>
-Date: Wed, 18 Jul 2012 18:35:28 -0400
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 18 Jul 2012 18:38:14 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120718213355.GV31729@ZenIV.linux.org.uk>
+References: <5006491D.8070004@t-online.de> <CA+55aFzv5mntf6y9e_r5=v+beG19xBv67EpA=dP0-Zw1CQrGGg@mail.gmail.com>
+ <20120718212044.GU31729@ZenIV.linux.org.uk> <CA+55aFyHpgbJ9Pn5xn_ALkvzjQBOWog2qLbwwtrKbPHSGpa6pA@mail.gmail.com>
+ <20120718213355.GV31729@ZenIV.linux.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 18 Jul 2012 15:37:52 -0700
+X-Google-Sender-Auth: gLmIIFM7EMYJEnXpvMKQjVWwoS4
+Message-ID: <CA+55aFx_soQ2sKAcY0yhSFOchkjH55Kvu=jTUW0PJLNxRk9rGQ@mail.gmail.com>
+Subject: Re: [Bug 3.4.5] reiserfs: mutex_destroy called with locked mutex
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Knut Petersen <Knut_Petersen@t-online.de>, linux-kernel@vger.kernel.org,
+        reiserfs-devel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As Colin Cross ported my x86 change to ARM, he also pointed out that
-powerpc is also behind in this fix.
-
-The commit 722b3c746953 "ftrace/graph: Trace function entry before
-updating index" fixes an issue with function graph tracing for x86,
-where if the called entry function decides not to trace interrupts, it
-can fail the check if an interrupt comes in just after the
-curr_ret_stack is updated.
-
-The solution is to call the entry function first, then update the
-curr_ret_stack if the entry function wants to be traced.
-
-Cc: Colin Cross <ccross@android.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/arch/powerpc/kernel/ftrace.c b/arch/powerpc/kernel/ftrace.c
-index 91b46b7..1fb7856 100644
---- a/arch/powerpc/kernel/ftrace.c
-+++ b/arch/powerpc/kernel/ftrace.c
-@@ -630,18 +630,17 @@ void prepare_ftrace_return(unsigned long *parent, unsigned long self_addr)
- 		return;
- 	}
- 
--	if (ftrace_push_return_trace(old, self_addr, &trace.depth, 0) == -EBUSY) {
--		*parent = old;
--		return;
--	}
--
- 	trace.func = self_addr;
-+	trace.depth = current->curr_ret_stack + 1;
- 
- 	/* Only trace if the calling function expects to */
- 	if (!ftrace_graph_entry(&trace)) {
--		current->curr_ret_stack--;
- 		*parent = old;
-+		return;
- 	}
-+
-+	if (ftrace_push_return_trace(old, self_addr, &trace.depth, 0) == -EBUSY)
-+		*parent = old;
- }
- #endif /* CONFIG_FUNCTION_GRAPH_TRACER */
- 
+On Wed, Jul 18, 2012 at 2:33 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+>  The only questions
+> are "is this the WARN_ON() Knut had stepped on" (and I agree with your
+> scenario now) and "is it critical enough to shove it into the tree
+> less than a week before -final".  Up to you...
 
 
+I agree that it isn't critical. Even the lockdep thing is just a
+warning, and is apparently quite hard to trigger.
+
+Will you hold on to the patch in your VFS tree, and we can just merge
+it for 3.6?
+
+                    Linus
