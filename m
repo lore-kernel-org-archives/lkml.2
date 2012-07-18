@@ -1,101 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754415Ab2GRWM6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 18:12:58 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:18717 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752043Ab2GRWM4 (ORCPT
+	id S1755603Ab2GRWNV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 18:13:21 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59261 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754342Ab2GRWNS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 18:12:56 -0400
-Message-ID: <1342649293.3010.49.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 1/4] ACPI: Add acpi_pr_<level>() interfaces
-From: Toshi Kani <toshi.kani@hp.com>
-To: Joe Perches <joe@perches.com>, ming.m.lin@intel.com
-Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bhelgaas@google.com, isimatu.yasuaki@jp.fujitsu.com, liuj97@gmail.com,
-        srivatsa.bhat@linux.vnet.ibm.com, prarit@redhat.com,
-        imammedo@redhat.com, vijaymohan.pandarathil@hp.com
-Date: Wed, 18 Jul 2012 16:08:13 -0600
-In-Reply-To: <1342648452.2215.12.camel@joe2Laptop>
-References: <1342644027-19559-1-git-send-email-toshi.kani@hp.com>
-	 <1342644027-19559-2-git-send-email-toshi.kani@hp.com>
-	 <1342646502.2215.2.camel@joe2Laptop>
-	 <1342647682.3010.38.camel@misato.fc.hp.com>
-	 <1342648452.2215.12.camel@joe2Laptop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 18 Jul 2012 18:13:18 -0400
+Date: Wed, 18 Jul 2012 15:13:01 -0700
+From: Mandeep Singh Baines <msb@chromium.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Mandeep Singh Baines <msb@chromium.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, Shaohua Li <shaohua.li@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Christoph Lameter <cl@gentwo.org>, Olof Johansson <olofj@chromium.org>
+Subject: Re: [PATCH v2] x86, mm: only wait for flushes from online cpus
+Message-ID: <20120718221301.GG3465@google.com>
+References: <1340402778-28939-1-git-send-email-msb@chromium.org>
+ <500727F1.4000609@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <500727F1.4000609@linux.vnet.ibm.com>
+X-Operating-System: Linux/2.6.38.8-gg868 (x86_64)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-18 at 14:54 -0700, Joe Perches wrote:
-> On Wed, 2012-07-18 at 15:41 -0600, Toshi Kani wrote:
-> > On Wed, 2012-07-18 at 14:21 -0700, Joe Perches wrote:
-> > > On Wed, 2012-07-18 at 14:40 -0600, Toshi Kani wrote:
-> > > > This patch introduces acpi_pr_<level>(), where <level> is a message
-> > > > level such as err/warn/info, to support improved logging messages
-> > > > for ACPI, esp. in hotplug operations.  acpi_pr_<level>() appends
-> > > > "ACPI" prefix and ACPI object path to the messages.  This improves
-> > > > diagnostics in hotplug operations since it identifies an object that
-> > > > caused an issue in a log file.
-> []
-> > > I'd be tempted to instead make the calls more like
-> > > other <subsystem>_<level> uses and rename these to
-> > > acpi_<level> and change the existing acpi_info to
-> > > another name.
-> []
-> > I agree with you.  Unfortunately, the ACPI CA (ACPI FW interpreter)
-> > already uses them for its internal-use as follows, so I needed to come
-> > up with some other name...  Hence, acpi_pr_<level>.
+Srivatsa S. Bhat (srivatsa.bhat@linux.vnet.ibm.com) wrote:
+> On 06/23/2012 03:36 AM, Mandeep Singh Baines wrote:
+> > A cpu in the mm_cpumask could go offline before we send the invalidate
+> > IPI causing us to wait forever. Avoid this by only waiting for online
+> > cpus.
 > > 
-> > /*
-> >  * Error reporting. Callers module and line number are inserted by AE_INFO,
-> >  * the plist contains a set of parens to allow variable-length lists.
-> >  * These macros are used for both the debug and non-debug versions of the code.
-> >  */
-> > #define ACPI_INFO(plist)                acpi_info plist
-> > #define ACPI_WARNING(plist)             acpi_warning plist
-> > #define ACPI_EXCEPTION(plist)           acpi_exception plist
-> > #define ACPI_ERROR(plist)               acpi_error plist
-> > #define ACPI_DEBUG_OBJECT(obj,l,i)      acpi_ex_do_debug_object(obj,l,i)
+> > We are seeing a softlockup reporting during shutdown. The stack
+> > trace shows us that we are inside default_send_IPI_mask_logical:
+> > 
+> [...]
+> > Changes in V2:
+> >   * bitmap_and is not atomic so use a temporary bitmask
+> > 
 > 
-> I wouldn't have a problem renaming a few of those to
-> something like:
+> Looks like I posted my reply to v1. So I'll repeat the same suggestions in
+> this thread as well.
 > 
-> #define ACPI_INFO(plist)	acpi_old_info plist
-> #define ACPI_WARNING(plist)	acpi_old_warning plist
-> #define ACPI_ERROR(plist)	acpi_old_error plist
+> > ---
+> >  arch/x86/mm/tlb.c |    9 ++++++++-
+> >  1 files changed, 8 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
+> > index d6c0418..231a0b9 100644
+> > --- a/arch/x86/mm/tlb.c
+> > +++ b/arch/x86/mm/tlb.c
+> > @@ -185,6 +185,8 @@ static void flush_tlb_others_ipi(const struct cpumask *cpumask,
+> >  	f->flush_mm = mm;
+> >  	f->flush_va = va;
+> >  	if (cpumask_andnot(to_cpumask(f->flush_cpumask), cpumask, cpumask_of(smp_processor_id()))) {
+> > +		DECLARE_BITMAP(tmp_cpumask, NR_CPUS);
+> > +
+> >  		/*
+> >  		 * We have to send the IPI only to
+> >  		 * CPUs affected.
+> > @@ -192,8 +194,13 @@ static void flush_tlb_others_ipi(const struct cpumask *cpumask,
+> >  		apic->send_IPI_mask(to_cpumask(f->flush_cpumask),
+> >  			      INVALIDATE_TLB_VECTOR_START + sender);
+> > 
 > 
-> The acpi folk might though.
-
-Hi Joe,
-
-ACPI CA is being developed by Intel as OS-neutral code, and is used by
-multiple OSes including Linux.  So, I am not sure how easy to make such
-changes.  I am copying to Lin Ming.
-
-
-> > > Other than that, seems fine to me.
-> > Great!  Can I consider it as Ack? :)
-> 
-> Fix the kfree first.
-
-Please see my other email.  Do you think the check should be added
-despite of the warning message?
-
-
-> I rarely ack stuff as other people generally have to
-> pick up the changes and I think acks are overrated.
-
-That's fair enough.
-
-Thanks!
--Toshi
-
-
-> cheers, Joe
+> This function is always called with preempt_disabled() right?
+> In that case, _while_ this function is running, a CPU cannot go offline
+> because of stop_machine(). (I understand that it might go offline in between
+> calculating that cpumask and calling preempt_disable() - which is the race
+> you are trying to handle).
 > 
 
+Ah. Good point. A cpu cannot be remove from the cpu_online_mask while
+preemption is disabled because stop_machine() can't run until
+preemption is enabled.
 
+./kernel/cpu.c: err = __stop_machine(take_cpu_down, &tcd_param, cpumask_of(cpu));
+
+> So, why not take the offline cpus out of the way even before sending that IPI?
+> That way, we need not modify the while loop below.
+> 
+
+Acked-off-by: Mandeep Singh Baines <msb@chromium.org>
+
+Do you mind re-sending you're patch with a proper sign-off.
+
+Thanks and regards,
+Mandeep
+
+> > -		while (!cpumask_empty(to_cpumask(f->flush_cpumask)))
+> > +		/* Only wait for online cpus */
+> > +		do {
+> > +			cpumask_and(to_cpumask(tmp_cpumask),
+> > +				    to_cpumask(f->flush_cpumask),
+> > +				    cpu_online_mask);
+> >  			cpu_relax();
+> > +		} while (!cpumask_empty(to_cpumask(tmp_cpumask)));
+> >  	}
+> > 
+> >  	f->flush_mm = NULL;
+> > 
+> 
+> That is, how about something like this:
+> 
+> diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
+> index 5e57e11..9d387a9 100644
+> --- a/arch/x86/mm/tlb.c
+> +++ b/arch/x86/mm/tlb.c
+> @@ -186,7 +186,11 @@ static void flush_tlb_others_ipi(const struct cpumask *cpumask,
+>  
+>         f->flush_mm = mm;
+>         f->flush_va = va;
+> -       if (cpumask_andnot(to_cpumask(f->flush_cpumask), cpumask, cpumask_of(smp_processor_id()))) {
+> +
+> +       cpumask_and(to_cpumask(f->flush_cpumask), cpumask, cpu_online_mask);
+> +       cpumask_clear_cpu(smp_processor_id(), to_cpumask(f->flush_cpumask));
+> +
+> +       if (!cpumask_empty(to_cpumask(f->flush_cpumask))) {
+>                 /*
+>                  * We have to send the IPI only to
+>                  * CPUs affected.
+> 
+> 
+> Regards,
+> Srivatsa S. Bhat
+> IBM Linux Technology Center
+> 
