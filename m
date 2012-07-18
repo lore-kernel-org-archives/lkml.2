@@ -1,85 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752477Ab2GRHFH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 03:05:07 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:40814 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751471Ab2GRHFE (ORCPT
+	id S1752678Ab2GRHO4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 03:14:56 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:60366 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752059Ab2GRHOv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 03:05:04 -0400
-Date: Wed, 18 Jul 2012 09:04:58 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: david@lang.hm
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Borislav Petkov <bp@amd64.org>, Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Dave Jones <davej@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
-        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
-        Debian Kernel Team <debian-kernel@lists.debian.org>,
-        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Sasha Levin <levinsasha928@gmail.com>,
-        Asias He <asias.hejun@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: [opensuse-kernel] Re: [RFC] Simplifying kernel configuration for
- distro issues
-Message-ID: <20120718070458.GA10357@gmail.com>
-References: <CAOJsxLGBCQ6C-3M0ZdTfVPqnmOKqUE9+78Mhf+67TksmVojuuQ@mail.gmail.com>
- <20120715211848.GA21167@aftab.osrc.amd.com>
- <20120715214819.GA1990@moon>
- <alpine.DEB.2.02.1207151459480.20176@asgard.lang.hm>
- <20120716082418.GC24327@aftab.osrc.amd.com>
- <alpine.DEB.2.02.1207160937330.20176@asgard.lang.hm>
- <CA+55aFwwmMbFr4HXTFxF_MeM_n8bfiXfPPgCALTOc1HvidVt1Q@mail.gmail.com>
- <alpine.DEB.2.02.1207161222380.32545@asgard.lang.hm>
- <CA+55aFw7zdyPpDEdpDbYWc-Z++v_kDQHD3Z+-QwPszh+9bU+tQ@mail.gmail.com>
- <alpine.DEB.2.02.1207161451020.32545@asgard.lang.hm>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1207161451020.32545@asgard.lang.hm>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 18 Jul 2012 03:14:51 -0400
+Message-ID: <1342595359.31927.11.camel@brekeke>
+Subject: Re: [PATCH 1/5] ubi: introduce ubi->bad_peb_limit
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+Cc: Andrew Victor <linux@maxim.org.za>, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-mtd@lists.infradead.org, Richard Weinberger <richard@nod.at>,
+        Richard Genoud <richard.genoud@gmail.com>
+Date: Wed, 18 Jul 2012 10:09:19 +0300
+In-Reply-To: <1341389164-24409-2-git-send-email-shmulik.ladkani@gmail.com>
+References: <1341389164-24409-1-git-send-email-shmulik.ladkani@gmail.com>
+	 <1341389164-24409-2-git-send-email-shmulik.ladkani@gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-WpSzEhbJN1ZrP15UtFd3"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* david@lang.hm <david@lang.hm> wrote:
+--=-WpSzEhbJN1ZrP15UtFd3
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> > Anybody who says "I want to run Fedora without SELINUX 
-> > because I do my own security development" is by *definition* 
-> > not relevant to the whole feature.
-> 
-> Don't mistake the example for the feature. the SELINUX thing 
-> is just an example. As Alan Cox commented, taking a distro 
-> config and disabling one thing is a common troubleshooting 
-> request from kernel developers.
+On Wed, 2012-07-04 at 11:06 +0300, Shmulik Ladkani wrote:
+> Introduce 'ubi->bad_peb_limit', which specifies an upper limit of PEBs
+> ubi expects to go bad.
+> Currently, it is initialized to a fixed percentage of total PEBs in the
+> ubi device (configurable via CONFIG_MTD_UBI_BEB_LIMIT).
+>=20
+> The 'bad_peb_limit' is intended to be used for calculating the amount of
+> PEBs ubi needs to reserve for bad eraseblock handling.
+>=20
+> Signed-off-by: Shmulik Ladkani <shmulik.ladkani@gmail.com>
 
-It's still irrelevant:
+Created branch "beb" and pushed this patch there with minor amendments
+(see diff below). Let's use this branch in UBI tree for this work and
+merge it as soon as it is ready.
 
- - if a user chooses a distro config it means that he is using 
-   that distro. Disabling an essential component of the distro 
-   config, even if a kernel developer asks for it, will likely 
-   break that distro and is thus a dumb thing to do. (the
-   typical user will also be unlikely to be *able* to edit a 
-   .config and make sure it works.)
+diff --git a/drivers/mtd/ubi/build.c b/drivers/mtd/ubi/build.c
+index c33e25b..dee90b7 100644
+--- a/drivers/mtd/ubi/build.c
++++ b/drivers/mtd/ubi/build.c
+@@ -668,13 +668,12 @@ static int io_init(struct ubi_device *ubi)
+                ubi->bad_allowed =3D 1;
+                if (CONFIG_MTD_UBI_BEB_LIMIT > 0) {
+                        int percent =3D CONFIG_MTD_UBI_BEB_LIMIT;
+-                       int beb_limit;
++                       int limit =3D mult_frac(ubi->peb_count, percent, 10=
+0);
+=20
+-                       beb_limit =3D mult_frac(ubi->peb_count, percent, 10=
+0);
+-                       /* round it up */
+-                       if (mult_frac(beb_limit, 100, percent) < ubi->peb_c=
+ount)
+-                               beb_limit++;
+-                       ubi->bad_peb_limit =3D beb_limit;
++                       /* Round it up */
++                       if (mult_frac(limit, 100, percent) < ubi->peb_count=
+)
++                               limit +=3D 1;
++                       ubi->bad_peb_limit =3D limit;
+                }
+        }
 
- - Furthermore, there's *already* over ten thousand select's in 
-   our Kconfig's, and it's already hard at times to disable 
-   dependent options.
+--=20
+Best Regards,
+Artem Bityutskiy
 
- - I've been using what Linus suggested for many years via 
-   private patches to do bootable randconfig testing and the 
-   concept works just fine - enabling a distro specific 
-   minconfig is absolutely useful, I'm glad it's being pursued 
-   upstream as well...
+--=-WpSzEhbJN1ZrP15UtFd3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-So what you are arguing about is IMO irrelevant, it is 
-immaterial to the problem at hand and the concept works just 
-fine in practice.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Thanks,
+iQIcBAABAgAGBQJQBmEfAAoJECmIfjd9wqK0L8oP/2ZFc7DJ6B0tNy1WK+SCIqb6
+OfiBMepSM1g2hxohgovjIQPw+xWJF7vno+zwFbDobha0NBf8r/8/glQS3LCluONa
+nz8I3zPakamDE9zYQrlPsI+hZv8DWxiRFbfeNy0c304S9sinfhnAyACGfEQwmJia
+yqdNp4XZgcDch5Cswu57f6Gtzk8s2PjIpWzpwO6Iquq6fKQ1hNrZ06qcFbnNbuGP
+M9/iM7N6j3QxTJYGy8fOvCKIOA0LzfBP0erj1YbVlKcuvMiFU8Xdk3x1yfGZ9iPN
+ErAdFhcmZHk6AvzxucMfvp+cE5VieFox1Qx3rPvlUl8S9RO5AYUUfpLNLR/JKOeB
+YgybHkqqRQIMcOOi4V63mlXuDvJOey76BEfmW//oIVaLnYawsBEKnaI4TFZ+WGl6
+/VnoS7YjYFC0kS8BqS9FqtWen0RJDW6cRNxX+b0OPQYoXfmozPD7Ys2hqix9Wj7S
+Qm3LhixiJeJC4yGIs8Vv3QG3vRNpw/mkiW6H5BtIgXm+mo5yWhGZhZFLjm7HzX0R
+YRBJEfflX0UraSL9I04WGVX3v7DphQl1JhgniUsiR5cSjGWb8qDjDkRB9TjlCmGY
+Lo0yzR4kHmS8kf4Q72BGSb8rIXM0IZcCQ9yK/YAwf+mgxE7WzfY8vmZ+AgPDvg4u
+9pmbK0sAWqbaz0wHKCWQ
+=yXbr
+-----END PGP SIGNATURE-----
 
-	Ingo
+--=-WpSzEhbJN1ZrP15UtFd3--
+
