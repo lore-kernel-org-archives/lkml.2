@@ -1,83 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753991Ab2GRKxS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 06:53:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46180 "EHLO mx2.suse.de"
+	id S1754013Ab2GRKxU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 06:53:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34556 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753707Ab2GRKxP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 06:53:15 -0400
-Date: Wed, 18 Jul 2012 20:53:16 +1000
-From: NeilBrown <neilb@suse.de>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: ksummit-2012-discuss@lists.linux-foundation.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Current Status of Kernel Summit Core Day 1 Invitations
-Message-ID: <20120718205316.013ec792@notabene.brown>
-In-Reply-To: <1342607987.3022.69.camel@dabdike.int.hansenpartnership.com>
-References: <1342607987.3022.69.camel@dabdike.int.hansenpartnership.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/cyGFZmZdLoT_66gsF7JV53+"; protocol="application/pgp-signature"
+	id S1753990Ab2GRKxS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 06:53:18 -0400
+Date: Wed, 18 Jul 2012 13:53:15 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>, avi@redhat.com,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jan.kiszka@siemens.com
+Subject: Re: [PATCH v5 3/4] kvm: Create kvm_clear_irq()
+Message-ID: <20120718105315.GF26120@redhat.com>
+References: <1342540301.2229.117.camel@bling.home>
+ <20120717155701.GB12001@redhat.com>
+ <1342541301.2229.125.camel@bling.home>
+ <20120717161452.GA12114@redhat.com>
+ <20120718062742.GH6479@redhat.com>
+ <20120718102029.GA4650@redhat.com>
+ <20120718102739.GB26120@redhat.com>
+ <20120718103335.GB4700@redhat.com>
+ <20120718103608.GC26120@redhat.com>
+ <20120718105105.GG4700@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120718105105.GG4700@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/cyGFZmZdLoT_66gsF7JV53+
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Wed, Jul 18, 2012 at 01:51:05PM +0300, Michael S. Tsirkin wrote:
+> On Wed, Jul 18, 2012 at 01:36:08PM +0300, Gleb Natapov wrote:
+> > On Wed, Jul 18, 2012 at 01:33:35PM +0300, Michael S. Tsirkin wrote:
+> > > On Wed, Jul 18, 2012 at 01:27:39PM +0300, Gleb Natapov wrote:
+> > > > On Wed, Jul 18, 2012 at 01:20:29PM +0300, Michael S. Tsirkin wrote:
+> > > > > On Wed, Jul 18, 2012 at 09:27:42AM +0300, Gleb Natapov wrote:
+> > > > > > On Tue, Jul 17, 2012 at 07:14:52PM +0300, Michael S. Tsirkin wrote:
+> > > > > > > > _Seems_ racy, or _is_ racy?  Please identify the race.
+> > > > > > > 
+> > > > > > > Look at this:
+> > > > > > > 
+> > > > > > > static inline int kvm_irq_line_state(unsigned long *irq_state,
+> > > > > > >                                      int irq_source_id, int level)
+> > > > > > > {
+> > > > > > >         /* Logical OR for level trig interrupt */
+> > > > > > >         if (level)
+> > > > > > >                 set_bit(irq_source_id, irq_state);
+> > > > > > >         else
+> > > > > > >                 clear_bit(irq_source_id, irq_state);
+> > > > > > > 
+> > > > > > >         return !!(*irq_state);
+> > > > > > > }
+> > > > > > > 
+> > > > > > > 
+> > > > > > > Now:
+> > > > > > > If other CPU changes some other bit after the atomic change,
+> > > > > > > it looks like !!(*irq_state) might return a stale value.
+> > > > > > > 
+> > > > > > > CPU 0 clears bit 0. CPU 1 sets bit 1. CPU 1 sets level to 1.
+> > > > > > > If CPU 0 sees a stale value now it will return 0 here
+> > > > > > > and interrupt will get cleared.
+> > > > > > > 
+> > > > > > This will hardly happen on x86 especially since bit is set with
+> > > > > > serialized instruction.
+> > > > > 
+> > > > > Probably. But it does make me a bit uneasy.  Why don't we pass
+> > > > > irq_source_id to kvm_pic_set_irq/kvm_ioapic_set_irq, and move
+> > > > > kvm_irq_line_state to under pic_lock/ioapic_lock?  We can then use
+> > > > > __set_bit/__clear_bit in kvm_irq_line_state, making the ordering simpler
+> > > > > and saving an atomic op in the process.
+> > > > > 
+> > > > With my patch I do not see why we can't change them to unlocked variant
+> > > > without moving them anywhere. The only requirement is to not use RMW
+> > > > sequence to set/clear bits. The ordering of setting does not matter. The
+> > > > ordering of reading is.
+> > > 
+> > > You want to use __set_bit/__clear_bit on the same word
+> > > from multiple CPUs, without locking?
+> > > Why won't this lose information?
+> > Because it is not RMW. If it is then yes, you can't do that.
+> 
+> You are saying __set_bit does not do RMW on x86? Interesting.
+I think it doesn't.
 
-On Wed, 18 Jul 2012 11:39:47 +0100 James Bottomley
-<James.Bottomley@HansenPartnership.com> wrote:
+> It's probably not a good idea to rely on this I think.
+> 
+The code is no in arch/x86 so probably no. Although it is used only on
+x86 (and ia64 which has broken kvm anyway).
 
-> The current state is that we've invited 74 people.  The list is here:
->=20
-> https://docs.google.com/spreadsheet/ccc?key=3D0ArpHfE64ikfsdHVrYkw0Yk0tQW=
-JzWUJzc3k2NmU4VGc#gid=3D0
->=20
+> > > 
+> > > In any case, it seems simpler and safer to do accesses under lock
+> > > than rely on specific use.
+> > > 
+> > > > --
+> > > > 			Gleb.
+> > 
+> > --
+> > 			Gleb.
 
-"You need permission to access this item."
-
-Could you not just copy/paste ?? it is much nicer to read text inline than =
-go
-over to a browser and use some new interface.
-
-NeilBrown
-
-> We still have a few more places to add (probably 15-20), mainly for
-> topic based invitations as we begin to put together the agenda for the
-> Core Day of Kernel Summit.
->=20
-> James
->=20
->=20
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
---Sig_/cyGFZmZdLoT_66gsF7JV53+
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBUAaVnDnsnt1WYoG5AQK5tQ/8CuLZGookTLJuAAS+x8gMOPNiBvUd970s
-NtvOJxEovruSGTzShgCDPxsnFgEuO8aB+NvwTmvr991F7MQnUwPmbeZzRujDUm81
-5DmgyhrQrXGKQwtI6g1d85258o7/QI/z3JSHJibPC6ffIOQcXbG4xdZYxwe1GcT7
-MMptQvZz6xZIteTlIGYMTd/8ZlOBdbzSDfJgDzfbr8+1YOZow/AkP/mrH9I5ede1
-Zb36HyBJMXvdtvtxUa/qR1z1hCsceXIJxfJ9+2xsjkmsWSPcYbF0Tp/GF+aiFaGv
-nvg06lz3jbAwLxchWkWiVRqPqCna11FbzOJ7CVsnt84QNeZgsY842Gsll496MBCD
-QRV88Y0cWqz72oX2K3xIm+rKRvvZX4ZSfSB0mfGv75KrCsmZHelEz8hxbTxXoZ5x
-YEsRF07nGhXtX8OH5QobGQuZjur+vh1eZmkYrFmHEQXSNnOYVGmrx+XTIOItA9Hk
-0AlrT4Ul1WH9jIG6M9B2ylNlWjJSF7HtX2ESJtPp7aFtgiRft6q+gG7iFUZiDrXK
-1OjkDyIhE81jRdo0SB39wGscvL9rSJs+9FwMD+mnOztsi80bIRXDVMw7z3xjFNgu
-nIhFyweBTx2txUZJvD641SfSoH7VIgbK9nqV3Dl+r0Rbj4KQBnbaEGOb4DaSDJB6
-8Pw9FKt2jM8=
-=nQJ4
------END PGP SIGNATURE-----
-
---Sig_/cyGFZmZdLoT_66gsF7JV53+--
+--
+			Gleb.
