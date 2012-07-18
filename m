@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752404Ab2GRG76 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 02:59:58 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:40298 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751880Ab2GRG7w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 02:59:52 -0400
-Message-ID: <1342594461.31927.9.camel@brekeke>
-Subject: Re: [PATCH 0/5] ubi: Fix bad PEBs reserve caclulation
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Shmulik Ladkani <shmulik.ladkani@gmail.com>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>,
-        Richard Genoud <richard.genoud@gmail.com>
-Date: Wed, 18 Jul 2012 09:54:21 +0300
-In-Reply-To: <20120717102333.26cb10fb@pixies.home.jungo.com>
-References: <1341389164-24409-1-git-send-email-shmulik.ladkani@gmail.com>
-	 <1342452837.7270.15.camel@brekeke>
-	 <20120717102333.26cb10fb@pixies.home.jungo.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-gCT1bM7wyGyKRD97ohmA"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+	id S1752532Ab2GRHCS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 03:02:18 -0400
+Received: from gate.crashing.org ([63.228.1.57]:48775 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751287Ab2GRHCL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 03:02:11 -0400
+Message-ID: <1342594888.3669.65.camel@pasglop>
+Subject: Re: [PATCH] mm: setup pageblock_order before it's used by sparse
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Jiang Liu <jiang.liu@huawei.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Xishi Qiu <qiuxishi@huawei.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
+        Keping Chen <chenkeping@huawei.com>, linux-mm@kvack.org,
+        stable@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiang Liu <liuj97@gmail.com>
+Date: Wed, 18 Jul 2012 17:01:28 +1000
+In-Reply-To: <500530E3.3020404@huawei.com>
+References: <1341047274-5616-1-git-send-email-jiang.liu@huawei.com>
+	 <20120703140705.af23d4d3.akpm@linux-foundation.org>
+	 <4FF39F0E.4070300@huawei.com> <20120704092006.GH14154@suse.de>
+	 <CAE9FiQXAuqj5V_ZrZPs3qr93XQS1tCO=qOBP7mCsDCqXQQ5PoQ@mail.gmail.com>
+	 <1341537867.6330.46.camel@pasglop> <500530E3.3020404@huawei.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2012-07-17 at 17:31 +0800, Jiang Liu wrote:
+> Hi Ben,
+> 	Any update about this topic?
+> 	Thanks!
+> 	Gerry
 
---=-gCT1bM7wyGyKRD97ohmA
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+I should have said "long week-end" :-) I'm just back, will look into it
+now.
 
-On Tue, 2012-07-17 at 10:23 +0300, Shmulik Ladkani wrote:
-> But it would only make sense after accepting Richard's patchset as well,
-> which suggests configuring per-ubi-device beb limit via the attach ioctl.
+Cheers,
+Ben.
 
-Yes, sure, you are right.
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-gCT1bM7wyGyKRD97ohmA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJQBl2dAAoJECmIfjd9wqK00lMP/00D5rELb3GzXlhij1zpWkFV
-WjbPs/JjdiBl+ilM8ZzkLWc8wyJy6ebtXrvGhRNErkHjecW3+9o3l/3xu7wlPX+k
-0w3sP0Vq5/MQprI53besEkb4QI0lQLIdfbZzz9T1sOhu7tozM39nm6s6kwVkH0Q/
-B6Uyg1s/J2SxFj4f2tP0ZVli4mX+lSb0+pcyDihIZLJU2EGuc+9XjM/tssvBjLZh
-qTLfEhOIExZl2nqn8M5nI70MFKyJvfn0d7wR+4PxnmjDHhguG65Ozhyqs37ie3vx
-OeV1wJndxry6fyOGv6PFtMrpgcNJSsfh3VstlhSD1jEpf5E4ISi5krxSauh6p/1P
-nNxUOVAg/l43O6aSzV/4DZxiZnzH1D8ECIzHfww34RvPUZtd2ppM1xOTbh4+0WtO
-aAm5CTe4Ge+HaVxjYq4AKCXy574XDDrjX5kF2mNa76jy1egarovmHXikbXjQayVq
-P3YSDFpFD7XBVH+rvQHmfqsJmOPC/PEti3P8wyK89zBXvYBZfPAiv7v5KB4YqDsJ
-rvFj0Tr6Bu2ym00WpoxLIkskp+/rPJc6gWNw9lwqdIM9IywTIC6FkLkt449htQ2P
-Er/oNH7bgyUvS9jCZCu5ffOzW/GCbGMd9/FPL1ZIDvTtUSkg/R0EUqAjtJDXlAh9
-2OzIjvZ9cw4C20dXx0M/
-=R+25
------END PGP SIGNATURE-----
-
---=-gCT1bM7wyGyKRD97ohmA--
+> 
+> On 2012-7-6 9:24, Benjamin Herrenschmidt wrote:
+> > On Thu, 2012-07-05 at 18:00 -0700, Yinghai Lu wrote:
+> >> cma, dma_continugous_reserve is referring pageblock_order very early
+> >> too.
+> >> just after init_memory_mapping() for x86's setup_arch.
+> >>
+> >> so set pageblock_order early looks like my -v2 patch is right way.
+> >>
+> >> current question: need to powerpc guys to check who to set that early.
+> > 
+> > I missed the beginning of that discussion, I'll try to dig a bit,
+> > might take me til next week though as I'm about to be off for
+> > the week-end.
+> > 
 
