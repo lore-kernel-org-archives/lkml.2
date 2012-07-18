@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757543Ab2GRAJi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 20:09:38 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:40308 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757537Ab2GRAFE (ORCPT
+	id S1757656Ab2GRAJv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 20:09:51 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48276 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755465Ab2GRAEu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 20:05:04 -0400
+	Tue, 17 Jul 2012 20:04:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <johnstul@us.ibm.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Prarit Bhargava <prarit@redhat.com>
-Subject: [ 32/37] timekeeping: Maintain ktime_t based offsets for hrtimers
-Date: Tue, 17 Jul 2012 17:03:09 -0700
-Message-Id: <20120717232434.082007420@linuxfoundation.org>
+        Pawel Moll <pawel.moll@arm.com>,
+        Mike Turquette <mturquette@linaro.org>
+Subject: [ 28/37] clk: Check parent for NULL in clk_change_rate
+Date: Tue, 17 Jul 2012 17:03:05 -0700
+Message-Id: <20120717232433.716856099@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120717232431.399005532@linuxfoundation.org>
 References: <20120717232455.GA5994@kroah.com>
@@ -33,101 +31,51 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
+From: Pawel Moll <pawel.moll@arm.com>
 
-From: Thomas Gleixner <tglx@linutronix.de>
+commit bf47b4fd8f9f81cd5ce40e1945c6334d088226d1 upstream.
 
-This is a backport of 5b9fe759a678e05be4937ddf03d50e950207c1c0
+clk_change_rate() is accessing parent's rate without checking
+if the parent exists at all. In case of root clocks this will
+cause NULL pointer dereference.
 
-We need to update the hrtimer clock offsets from the hrtimer interrupt
-context. To avoid conversions from timespec to ktime_t maintain a
-ktime_t based representation of those offsets in the timekeeper. This
-puts the conversion overhead into the code which updates the
-underlying offsets and provides fast accessible values in the hrtimer
-interrupt.
+This patch follows what clk_calc_new_rates() does in such
+situation.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
-Reviewed-by: Ingo Molnar <mingo@kernel.org>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Prarit Bhargava <prarit@redhat.com>
-Link: http://lkml.kernel.org/r/1341960205-56738-4-git-send-email-johnstul@us.ibm.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+Signed-off-by: Mike Turquette <mturquette@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- kernel/time/timekeeping.c |   25 +++++++++++++++++++++++--
- 1 file changed, 23 insertions(+), 2 deletions(-)
 
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -70,6 +70,12 @@ struct timekeeper {
- 	/* The raw monotonic time for the CLOCK_MONOTONIC_RAW posix clock. */
- 	struct timespec raw_time;
- 
-+	/* Offset clock monotonic -> clock realtime */
-+	ktime_t offs_real;
-+
-+	/* Offset clock monotonic -> clock boottime */
-+	ktime_t offs_boot;
-+
- 	/* Seqlock for all timekeeper values */
- 	seqlock_t lock;
- };
-@@ -172,6 +178,14 @@ static inline s64 timekeeping_get_ns_raw
- 	return clocksource_cyc2ns(cycle_delta, clock->mult, clock->shift);
- }
- 
-+static void update_rt_offset(void)
-+{
-+	struct timespec tmp, *wtm = &timekeeper.wall_to_monotonic;
-+
-+	set_normalized_timespec(&tmp, -wtm->tv_sec, -wtm->tv_nsec);
-+	timekeeper.offs_real = timespec_to_ktime(tmp);
-+}
-+
- /* must hold write on timekeeper.lock */
- static void timekeeping_update(bool clearntp)
+---
+ drivers/clk/clk.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -834,18 +834,21 @@ static void clk_change_rate(struct clk *
  {
-@@ -179,6 +193,7 @@ static void timekeeping_update(bool clea
- 		timekeeper.ntp_error = 0;
- 		ntp_clear();
- 	}
-+	update_rt_offset();
- 	update_vsyscall(&timekeeper.xtime, &timekeeper.wall_to_monotonic,
- 			 timekeeper.clock, timekeeper.mult);
- }
-@@ -606,6 +621,7 @@ void __init timekeeping_init(void)
- 	}
- 	set_normalized_timespec(&timekeeper.wall_to_monotonic,
- 				-boot.tv_sec, -boot.tv_nsec);
-+	update_rt_offset();
- 	timekeeper.total_sleep_time.tv_sec = 0;
- 	timekeeper.total_sleep_time.tv_nsec = 0;
- 	write_sequnlock_irqrestore(&timekeeper.lock, flags);
-@@ -614,6 +630,12 @@ void __init timekeeping_init(void)
- /* time in seconds when suspend began */
- static struct timespec timekeeping_suspend_time;
+ 	struct clk *child;
+ 	unsigned long old_rate;
++	unsigned long best_parent_rate = 0;
+ 	struct hlist_node *tmp;
  
-+static void update_sleep_time(struct timespec t)
-+{
-+	timekeeper.total_sleep_time = t;
-+	timekeeper.offs_boot = timespec_to_ktime(t);
-+}
+ 	old_rate = clk->rate;
+ 
++	if (clk->parent)
++		best_parent_rate = clk->parent->rate;
 +
- /**
-  * __timekeeping_inject_sleeptime - Internal function to add sleep interval
-  * @delta: pointer to a timespec delta value
-@@ -632,8 +654,7 @@ static void __timekeeping_inject_sleepti
- 	timekeeper.xtime = timespec_add(timekeeper.xtime, *delta);
- 	timekeeper.wall_to_monotonic =
- 			timespec_sub(timekeeper.wall_to_monotonic, *delta);
--	timekeeper.total_sleep_time = timespec_add(
--					timekeeper.total_sleep_time, *delta);
-+	update_sleep_time(timespec_add(timekeeper.total_sleep_time, *delta));
- }
+ 	if (clk->ops->set_rate)
+ 		clk->ops->set_rate(clk->hw, clk->new_rate);
  
+ 	if (clk->ops->recalc_rate)
+-		clk->rate = clk->ops->recalc_rate(clk->hw,
+-				clk->parent->rate);
++		clk->rate = clk->ops->recalc_rate(clk->hw, best_parent_rate);
+ 	else
+-		clk->rate = clk->parent->rate;
++		clk->rate = best_parent_rate;
  
+ 	if (clk->notifier_count && old_rate != clk->rate)
+ 		__clk_notify(clk, POST_RATE_CHANGE, old_rate, clk->rate);
 
 
