@@ -1,86 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754026Ab2GRLDa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 07:03:30 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60340 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753267Ab2GRLD1 (ORCPT
+	id S1754022Ab2GRLGs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 07:06:48 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:34909 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751800Ab2GRLGq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 07:03:27 -0400
-Date: Wed, 18 Jul 2012 04:03:20 -0700
-From: Michel Lespinasse <walken@google.com>
-To: aarcange@redhat.com, dwmw2@infradead.org, riel@redhat.com,
-        peterz@infradead.org, daniel.santos@pobox.com, axboe@kernel.dk,
-        ebiederm@xmission.com, akpm@linux-foundation.org
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org
-Subject: [PATCH] ipc/mqueue: remove unnecessary rb_init_node calls
-Message-ID: <20120718110320.GA32698@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 18 Jul 2012 07:06:46 -0400
+Message-ID: <1342609272.7530.14.camel@brekeke>
+Subject: Re: [PATCH 2/5] ubi: Limit amount of reserved eraseblocks for bad
+ PEB handling
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Richard Weinberger <richard@nod.at>,
+        Richard Genoud <richard.genoud@gmail.com>
+Date: Wed, 18 Jul 2012 14:01:12 +0300
+In-Reply-To: <1342607317.7530.9.camel@brekeke>
+References: <1341389164-24409-1-git-send-email-shmulik.ladkani@gmail.com>
+	 <1341389164-24409-3-git-send-email-shmulik.ladkani@gmail.com>
+	 <1342607317.7530.9.camel@brekeke>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-1QRPEq3gGp2nYrI/8Hy4"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I previously sent out my rbtree patches against v3.4, however in private
-email Andrew notified me that they broke some builds due to some new
-rb_init_node calls that have been introduced after v3.4. No big deal
-and it's an easy fix, but I forgot to CC the usual lists and now some
-people need the fix in order to try out the patches. So here it is :)
 
------ Forwarded message from Michel Lespinasse <walken@google.com> -----
+--=-1QRPEq3gGp2nYrI/8Hy4
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Date: Tue, 17 Jul 2012 17:30:35 -0700
-From: Michel Lespinasse <walken@google.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Doug Ledford <dledford@redhat.com>
-Subject: [PATCH] ipc/mqueue: remove unnecessary rb_init_node calls
+On Wed, 2012-07-18 at 13:28 +0300, Artem Bityutskiy wrote:
+> >       ubi->bad_peb_count +=3D 1;
+> >       ubi->good_peb_count -=3D 1;
+> >       ubi_calculate_reserved(ubi);
+> We do not need to call this function from here, right?
 
-Commits d6629859 and ce2d52cc introduced an rbtree of message
-priorities, and usage of rb_init_node() to initialize the corresponding
-nodes. As it turns out, rb_init_node() is unnecessary here, as the
-nodes are fully initialized on insertion by rb_link_node() and the
-code doesn't access nodes that aren't inserted on the rbtree.
+Err, sorry, it _is_ needed!
 
-Removing the rb_init_node() calls as I removed that function during
-rbtree API cleanups (the only other use of it was in a place that similarly
-didn't require it).
+--=20
+Best Regards,
+Artem Bityutskiy
 
-Signed-off-by: Michel Lespinasse <walken@google.com>
-Acked-by: Doug Ledford <dledford@redhat.com>
----
- ipc/mqueue.c |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+--=-1QRPEq3gGp2nYrI/8Hy4
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-diff --git a/ipc/mqueue.c b/ipc/mqueue.c
-index 8ce5769..4439c69 100644
---- a/ipc/mqueue.c
-+++ b/ipc/mqueue.c
-@@ -142,7 +142,6 @@ static int msg_insert(struct msg_msg *msg, struct mqueue_inode_info *info)
- 		leaf = kmalloc(sizeof(*leaf), GFP_ATOMIC);
- 		if (!leaf)
- 			return -ENOMEM;
--		rb_init_node(&leaf->rb_node);
- 		INIT_LIST_HEAD(&leaf->msg_list);
- 		info->qsize += sizeof(*leaf);
- 	}
-@@ -1041,7 +1040,6 @@ SYSCALL_DEFINE5(mq_timedsend, mqd_t, mqdes, const char __user *, u_msg_ptr,
- 
- 	if (!info->node_cache && new_leaf) {
- 		/* Save our speculative allocation into the cache */
--		rb_init_node(&new_leaf->rb_node);
- 		INIT_LIST_HEAD(&new_leaf->msg_list);
- 		info->node_cache = new_leaf;
- 		info->qsize += sizeof(*new_leaf);
-@@ -1149,7 +1147,6 @@ SYSCALL_DEFINE5(mq_timedreceive, mqd_t, mqdes, char __user *, u_msg_ptr,
- 
- 	if (!info->node_cache && new_leaf) {
- 		/* Save our speculative allocation into the cache */
--		rb_init_node(&new_leaf->rb_node);
- 		INIT_LIST_HEAD(&new_leaf->msg_list);
- 		info->node_cache = new_leaf;
- 		info->qsize += sizeof(*new_leaf);
--- 
-1.7.7.3
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJQBpd4AAoJECmIfjd9wqK0UosQAKuV33VSodFvel02zwb/5T89
+VgeulBO/S1jVAkYzSQKYKqVRdUMdIZHrxXgyq4BxfRoT6ZPvUgrVJqkExBg4fDSb
+OtM6odLuvWa/GEGzQCkjc3siRHkT1mF8TM4YLScBdPZzvT7zpdO0bqLi6zhRnr9Q
+XMs/Zsdp3X6GdbtTZCf5MlascD0Ituk7GerWs6mZP6Bj3+Noi5zfa4HJ5M8rIxNZ
+LU/72W8omGgj25MVVOK6I9JPwLxhXjRJAi1cu2BfIAuoCTiBgFYy04qB8k4h0m7s
+FmFqmBKBrgy9An2eQHX2MmP8w4o+vRtxtL4Oe0N0r9CHlASK51NP8DW9E7RKtip/
+lL1l2AQSmqyiScapjuS7dUE1fLq0OdBCj0yHHFfzER4ReHGOJ2pxdCTTtYrP+/VY
+83sLHo32cPz1WU0epjCb/PY2qnUQywSm5xRTidYQ3ZQyvl6snqln3dNq11NdOQS5
+Elw3tPRLBaxJkad/czwSwWHVa49LVLlHjhxyRkOt2dGpqoRAMw0m8jEDHABHFZ0E
+hmxW/gQb2ZcH1xDC+krZjYBo0py2IOCHeu6o3+5IW+IBhyj86hGKKS6pfB+2ssRk
+BP1dPk/aCiwAMquc3RdGgv/KbI6wDriFN85PspZZFiNYOqHl7cOcqH9l4OL4fMxD
+Os+CcOkn2EQs93TQlY3r
+=x/f5
+-----END PGP SIGNATURE-----
+
+--=-1QRPEq3gGp2nYrI/8Hy4--
+
