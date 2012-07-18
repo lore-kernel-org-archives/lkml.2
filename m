@@ -1,82 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755866Ab2GRUCn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 16:02:43 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:34244 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753351Ab2GRUCk (ORCPT
+	id S1755909Ab2GRUHh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 16:07:37 -0400
+Received: from longford.logfs.org ([213.229.74.203]:53934 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753352Ab2GRUHd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 16:02:40 -0400
-Date: Wed, 18 Jul 2012 13:02:03 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Tejun Heo <tj@kernel.org>
-cc: Aristeu Rozanski <aris@redhat.com>, linux-kernel@vger.kernel.org,
-        Li Zefan <lizefan@huawei.com>, Hillf Danton <dhillf@gmail.com>
-Subject: Re: [PATCH v3 0/3] cgroup: add xattr support
-In-Reply-To: <20120717204126.GE24336@google.com>
-Message-ID: <alpine.LSU.2.00.1207181237010.2160@eggly.anvils>
-References: <20120702142925.795007114@napanee.usersys.redhat.com> <20120717204126.GE24336@google.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Wed, 18 Jul 2012 16:07:33 -0400
+Date: Wed, 18 Jul 2012 14:53:35 -0400
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Jeff Moyer <jmoyer@redhat.com>, Steve Hodgson <steve@purestorage.com>
+Subject: Re: [PATCH] add blockconsole version 1.1
+Message-ID: <20120718185335.GA1771@logfs.org>
+References: <20120424205946.GH20610@logfs.org>
+ <x49zka0j5bk.fsf@segfault.boston.devel.redhat.com>
+ <20120425132513.GA23492@logfs.org>
+ <x49vcknkdvn.fsf@segfault.boston.devel.redhat.com>
+ <20120712174633.GA7248@logfs.org>
+ <20120713130336.GC10298@x1.osrc.amd.com>
+ <20120713162009.GA10268@logfs.org>
+ <20120716124614.GA19497@x1.osrc.amd.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120716124614.GA19497@x1.osrc.amd.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Jul 2012, Tejun Heo wrote:
-> On Mon, Jul 02, 2012 at 10:29:25AM -0400, Aristeu Rozanski wrote:
-> > This series are a refreshed version of a patchset submitted by Li Zefan back
-> > in march:
-> > 	https://lkml.org/lkml/2012/3/1/13
-> > 
-> > With Li's permission, I refreshed the patches to apply over the latest upstream
-> > and added the modifications suggested by others in the thread:
-> > - using a mount option instead of config option to enable the xattr support
-> > - reinitialize the list in kmem_xattrs_free()
-> > - renamed functions to simple_xattr_*()
-> > 
-> > Signed-off-by: Li Zefan <lizefan@huawei.com>
-> > Signed-off-by: Aristeu Rozanski <aris@redhat.com>
+On Mon, 16 July 2012 14:46:15 +0200, Borislav Petkov wrote:
+> On Fri, Jul 13, 2012 at 12:20:09PM -0400, Jörn Engel wrote:
 > 
-> I raised this point before but I'm worried about directly exposing
-> kernel memory through xattr interface to userland.
+> > +CANDIDATES=`lsscsi |sed 's|.*/dev|/dev|'`
+> 
+> You probably want to check lsscsi presence on the system, wasn't
+> installed by default on my debian testing image, for example. See diff
+> at the end of this mail.
 
-Quite rightly.
+Ack.
 
-> Maybe it's okay as long as !root users are kept from creating them.
+> > +	echo "Usage: mkblockconsole <dev>"
+> 
+> 	echo "Usage: $0 <dev>"
+> 
+> in case the name of the script changes.
 
-That's how I see it with tmpfs.
+Ack.
 
-> I don't know.  I
-> really hope it used anonymous page cache instead of kmem tho.  Hugh,
-> would something like that be difficult?
+> > +#define BLOCKCONSOLE_MAGIC_OLD	"\nLinux blockconsole version 1.0\n"
+> 
+> blockconsole is not yet upstream, you probably want to get rid of the
+> _OLD handling completely?
 
-Yes, it would be difficult.
+Agreed.
 
-You don't use the word "swappable", but I take that to be implicit
-when you say "anonymous ... instead of kmem": it might as well be
-kmem if it cannot be swapped.
+> > +	struct kref kref;
+> 
+> Another build failure missing
+> 
+> #include <linux/kref.h>
 
-So you're wondering whether to introduce a new category of swappable
-memory: not the original anon pages mapped into userspace, not shmem
-use of swappable pages, but xattrs in the cgroup filesystem?
+Ack.
 
-I think it would be foolish to add that dimension of complication
-just for cgroupfs xattrs - the shmem/tmpfs case gives enough surprises
-as it is.
+> With the include added, it builds fine. Then I took an usb stick and I
+> did:
+> 
+> $ ./mkblockconsole /dev/sdc
+> 
+> <reboot>
 
-If we were going to consider swappable kernel memory, we'd be choosing
-easier targets (page tables and stacks), than something that at present
-is being served by slab objects.
+You can also run hdparm -z <dev> instead.  Or replug the device.  Main
+danger of hdparm is that running the command twice will cause two
+instances of blockconsole to use the same device.  Not sure how to
+solve that problem - or if.
 
-Or am I misunderstanding, or looking at this from the wrong angle?
+> So why is that first megabyte full of zeros there?
 
-If there's not a reasonable upper bound on what gets stored here
-(did I see the word "icon" earlier in the thread?  which made me
-think people would be loading their photo albums into these xattrs),
-maybe the problem does need turning around.
+It gives you some scratch space to store information in.  How useful
+that actually is may be a matter of opinion.  But independent of that,
+you will find large amounts of zeroes all over.  Every time you
+reboot, the new blockconsole will start writing at a megabyte-aligned
+offset and whatever remains of the last megabyte should be zero-filled
+as well.  Vim treats this as a single line, which makes it only mildly
+annoying to me.
 
-Let userspace manage a tmpfs hierarchy parallel to the cgroupfs one?
+> Other than that, it works like a charm and I like the idea that no
+> kernel cmdline args are needed.
+> 
+> Also, you might want to add a step-by-step fast howto to the docs with
+> concrete steps like the above so that people can try this out faster.
 
-Hugh
+I will try to find a quiet moment for that.  If you happened to beat
+me to it, you certainly won't hear any complaints.
+
+> --
+> diff --git a/Documentation/block/blockconsole/bcon_tail b/Documentation/block/blockconsole/bcon_tail
+> index 950bfd1..e415b6f 100755
+> --- a/Documentation/block/blockconsole/bcon_tail
+> +++ b/Documentation/block/blockconsole/bcon_tail
+> @@ -4,6 +4,12 @@ TAIL_LEN=16
+>  TEMPLATE=/tmp/bcon_template
+>  BUF=/tmp/bcon_buf
+>  
+> +if [ -z "$(which lsscsi)" ];
+> +then
+> +	echo "You need to install the lsscsi package on your distro."
+> +	exit 1
+> +fi
+> +
+>  end_of_log() {
+>  	DEV=$1
+>  	UUID=`head -c40 $DEV|tail -c8`
+> diff --git a/Documentation/block/blockconsole/mkblockconsole b/Documentation/block/blockconsole/mkblockconsole
+> index d9514e7..05c4ad8 100755
+> --- a/Documentation/block/blockconsole/mkblockconsole
+> +++ b/Documentation/block/blockconsole/mkblockconsole
+> @@ -1,7 +1,7 @@
+>  #!/bin/sh
+>  
+>  if [ ! $# -eq 1 ]; then
+> -	echo "Usage: mkblockconsole <dev>"
+> +	echo "Usage: $0 <dev>"
+>  	exit 1
+>  elif mount|fgrep -q $1; then
+>  	echo Device appears to be mounted - aborting
+> diff --git a/drivers/block/blockconsole.c b/drivers/block/blockconsole.c
+> index d13203f..b4e995d 100644
+> --- a/drivers/block/blockconsole.c
+> +++ b/drivers/block/blockconsole.c
+> @@ -9,6 +9,7 @@
+>  #include <linux/slab.h>
+>  #include <linux/string.h>
+>  #include <linux/workqueue.h>
+> +#include <linux/kref.h>
+>  
+>  #define BLOCKCONSOLE_MAGIC_OLD	"\nLinux blockconsole version 1.0\n"
+>  #define BLOCKCONSOLE_MAGIC	"\nLinux blockconsole version 1.1\n"
+
+Acked-by: Joern Engel <joern@logfs.org>
+
+Thanks for the testing and the patch!  I will fold it in and resend
+when I deal with the other two details.
+
+Jörn
+
+--
+It does not matter how slowly you go, so long as you do not stop.
+-- Confucius
