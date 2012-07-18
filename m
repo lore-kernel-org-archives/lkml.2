@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757901Ab2GRANd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 20:13:33 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52583 "EHLO
+	id S1757917Ab2GRANp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 20:13:45 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51439 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757851Ab2GRANC (ORCPT
+	with ESMTP id S1757792Ab2GRAMy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 20:13:02 -0400
+	Tue, 17 Jul 2012 20:12:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Michal Kazior <michal.kazior@tieto.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [ 12/23] cfg80211: check iface combinations only when iface is running
-Date: Tue, 17 Jul 2012 17:12:05 -0700
-Message-Id: <20120717232330.217606383@linuxfoundation.org>
+        Jeff Moyer <jmoyer@redhat.com>,
+        "Richard W.M. Jones" <rjones@redhat.com>,
+        Josh Boyer <jwboyer@redhat.com>
+Subject: [ 02/23] block: fix infinite loop in __getblk_slow
+Date: Tue, 17 Jul 2012 17:11:55 -0700
+Message-Id: <20120717232329.367951932@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120717232329.276003806@linuxfoundation.org>
 References: <20120717232455.GA5994@kroah.com>
@@ -32,38 +32,112 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Michal Kazior <michal.kazior@tieto.com>
+From: Jeff Moyer <jmoyer@redhat.com>
 
-commit f8cdddb8d61d16a156229f0910f7ecfc7a82c003 upstream.
+commit 91f68c89d8f35fe98ea04159b9a3b42d0149478f upstream.
 
-Don't validate interface combinations on a stopped
-interface. Otherwise we might end up being able to
-create a new interface with a certain type, but
-won't be able to change an existing interface
-into that type.
+Commit 080399aaaf35 ("block: don't mark buffers beyond end of disk as
+mapped") exposed a bug in __getblk_slow that causes mount to hang as it
+loops infinitely waiting for a buffer that lies beyond the end of the
+disk to become uptodate.
 
-This also skips some other functions when
-interface is stopped and changing interface type.
+The problem was initially reported by Torsten Hilbrich here:
 
-Signed-off-by: Michal Kazior <michal.kazior@tieto.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-[Fixes regression introduced by cherry pick of 463454b5dbd8]
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+    https://lkml.org/lkml/2012/6/18/54
+
+and also reported independently here:
+
+    http://www.sysresccd.org/forums/viewtopic.php?f=13&t=4511
+
+and then Richard W.M.  Jones and Marcos Mello noted a few separate
+bugzillas also associated with the same issue.  This patch has been
+confirmed to fix:
+
+    https://bugzilla.redhat.com/show_bug.cgi?id=835019
+
+The main problem is here, in __getblk_slow:
+
+        for (;;) {
+                struct buffer_head * bh;
+                int ret;
+
+                bh = __find_get_block(bdev, block, size);
+                if (bh)
+                        return bh;
+
+                ret = grow_buffers(bdev, block, size);
+                if (ret < 0)
+                        return NULL;
+                if (ret == 0)
+                        free_more_memory();
+        }
+
+__find_get_block does not find the block, since it will not be marked as
+mapped, and so grow_buffers is called to fill in the buffers for the
+associated page.  I believe the for (;;) loop is there primarily to
+retry in the case of memory pressure keeping grow_buffers from
+succeeding.  However, we also continue to loop for other cases, like the
+block lying beond the end of the disk.  So, the fix I came up with is to
+only loop when grow_buffers fails due to memory allocation issues
+(return value of 0).
+
+The attached patch was tested by myself, Torsten, and Rich, and was
+found to resolve the problem in call cases.
+
+Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+Reported-and-Tested-by: Torsten Hilbrich <torsten.hilbrich@secunet.com>
+Tested-by: Richard W.M. Jones <rjones@redhat.com>
+Reviewed-by: Josh Boyer <jwboyer@redhat.com>
+[ Jens is on vacation, taking this directly  - Linus ]
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/wireless/util.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/buffer.c |   22 +++++++++++++---------
+ 1 file changed, 13 insertions(+), 9 deletions(-)
 
---- a/net/wireless/util.c
-+++ b/net/wireless/util.c
-@@ -807,7 +807,7 @@ int cfg80211_change_iface(struct cfg8021
- 	     ntype == NL80211_IFTYPE_P2P_CLIENT))
- 		return -EBUSY;
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -1084,6 +1084,9 @@ grow_buffers(struct block_device *bdev,
+ static struct buffer_head *
+ __getblk_slow(struct block_device *bdev, sector_t block, int size)
+ {
++	int ret;
++	struct buffer_head *bh;
++
+ 	/* Size must be multiple of hard sectorsize */
+ 	if (unlikely(size & (bdev_logical_block_size(bdev)-1) ||
+ 			(size < 512 || size > PAGE_SIZE))) {
+@@ -1096,20 +1099,21 @@ __getblk_slow(struct block_device *bdev,
+ 		return NULL;
+ 	}
  
--	if (ntype != otype) {
-+	if (ntype != otype && netif_running(dev)) {
- 		err = cfg80211_can_change_interface(rdev, dev->ieee80211_ptr,
- 						    ntype);
- 		if (err)
+-	for (;;) {
+-		struct buffer_head * bh;
+-		int ret;
++retry:
++	bh = __find_get_block(bdev, block, size);
++	if (bh)
++		return bh;
+ 
++	ret = grow_buffers(bdev, block, size);
++	if (ret == 0) {
++		free_more_memory();
++		goto retry;
++	} else if (ret > 0) {
+ 		bh = __find_get_block(bdev, block, size);
+ 		if (bh)
+ 			return bh;
+-
+-		ret = grow_buffers(bdev, block, size);
+-		if (ret < 0)
+-			return NULL;
+-		if (ret == 0)
+-			free_more_memory();
+ 	}
++	return NULL;
+ }
+ 
+ /*
 
 
