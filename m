@@ -1,55 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754302Ab2GRMef (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 08:34:35 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:38288 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753421Ab2GRMec (ORCPT
+	id S1754349Ab2GRMib (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 08:38:31 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51901 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753466Ab2GRMi3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 08:34:32 -0400
+	Wed, 18 Jul 2012 08:38:29 -0400
+Date: Wed, 18 Jul 2012 13:38:20 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>, Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [PATCH] Revert "KVM: Export asm-generic/kvm_para.h"
+Message-ID: <20120718123820.GF25929@mudshark.cambridge.arm.com>
+References: <1342607393-32254-1-git-send-email-will.deacon@arm.com>
+ <201207181158.07236.arnd@arndb.de>
 MIME-Version: 1.0
-In-Reply-To: <20120718102152.GA2587@krava.redhat.com>
-References: <1340960907-3725-1-git-send-email-jolsa@redhat.com>
- <87fw9blyhj.fsf@sejong.aot.lge.com> <20120702101518.GC967@krava.redhat.com>
- <1341234662.1476.13.camel@leonhard> <20120702133341.GD967@krava.redhat.com>
- <CABPqkBTKNuwJXY7jRa+Zt8rmFftZUeJiYKEsKJeRiLdoHN3KWQ@mail.gmail.com>
- <CAOPLpQfWtyRHYT1ZfcdmshYoapBgF=FO7yFacYe8pyL0MBeebA@mail.gmail.com>
- <CABPqkBTTZaCVTtwJZbjXGwAihKAW_PMFK0+TZUTvbOn4pnfzvA@mail.gmail.com>
- <20120709110528.GA965@krava.redhat.com> <CABPqkBTGOvSuCfOUt=gnpfViVn8Whg0Mf7_3dUUim-iXA+8gjA@mail.gmail.com>
- <20120718102152.GA2587@krava.redhat.com>
-From: Ulrich Drepper <drepper@gmail.com>
-Date: Wed, 18 Jul 2012 08:34:10 -0400
-Message-ID: <CAOPLpQcYiHP7oppUOQx8S5kmy15rKxA-bS=oO-3Ms-KYu3D9Bg@mail.gmail.com>
-Subject: Re: [PATCHv3 0/3] perf tool: Add new event group management
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Stephane Eranian <eranian@google.com>, Namhyung Kim <namhyung@gmail.com>,
-        acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu,
-        paulus@samba.org, cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, andi@firstfloor.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201207181158.07236.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 18, 2012 at 6:21 AM, Jiri Olsa <jolsa@redhat.com> wrote:
-> Well, I personally like the '{}' syntax more than '--group-events or --group-reads
-> option in front', it feels more user friendly.. anyway, we can easily have both ways.
+Hi Arnd,
 
-I like the actual visual grouping better, too.
+On Wed, Jul 18, 2012 at 12:58:06PM +0100, Arnd Bergmann wrote:
+> On Wednesday 18 July 2012, Will Deacon wrote:
+> > This reverts commit 56457f38f212344fb38b250cfa7e7311c065022f.
+> > 
+> > For architectures without asm/kvm_para.h, asm-generic/Kbuild
+> > unconditionally tries to export the non-existent header file, resulting
+> > in failure to build the user headers. Since the logic in
+> > asm-generic/Kbuild.asm will only export the file if it exists (which in
+> > turn causes linux/kvm_para.h to be exported), we can just remove the
+> > unconditional header export.
+> 
+> This doesn't look right.
 
-Also, it doesn't require us to define what
+Ok, something's still amiss with my headers though (see below).
 
-   -e E1,E2 --group-events -e E3,E4
+> > I'm not sure what specific problem the original commit was fixing, so we
+> > may need to solve this another way if there's something I've missed.
+> > 
+> >  include/asm-generic/Kbuild |    1 -
+> >  1 files changed, 0 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/include/asm-generic/Kbuild b/include/asm-generic/Kbuild
+> > index 2c85a0f..53f91b1 100644
+> > --- a/include/asm-generic/Kbuild
+> > +++ b/include/asm-generic/Kbuild
+> > @@ -8,7 +8,6 @@ header-y += int-ll64.h
+> >  header-y += ioctl.h
+> >  header-y += ioctls.h
+> >  header-y += ipcbuf.h
+> > -header-y += kvm_para.h
+> >  header-y += mman-common.h
+> >  header-y += mman.h
+> >  header-y += msgbuf.h
+> 
+> include/asm-generic/Kbuild lists the header files in the asm-generic
+> directory, and the asm-generic/kvm_para.h always exists, it's
+> not architecture specific.
 
-means.  Does --group-events also apply to the first parameter?
+Right. Why do we have a conditional export of kvm_para.h in
+include/linux/Kbuild if the asm-generic version always exists? Is it
+permitted for an architecture to neither have it's own copy or use the
+generic version?
 
+> arch/arm/include/asm/kvm_para.h also always exists, it was added
+> in 3b5d56b93 "kvmclock: Add functions to check if the host has
+> stopped the vm", although it should have added that to the generated
+> header files listed in arch/arm/include/asm/Kbuild.
 
-> As for the group attributes and group leader sampling, I don't mind omitting
-> them at this point and get back to that if we find it useful in future.
+Why does that have to be added to the list of generated files?
+include/asm-generic/Kbuild.asm exports the header if it exists.
 
-Just define the first event the leader.  What reason is there which
-prevents this?
+> I'm still not sure what you are actually trying to fix here.
 
+Sorry, should've mentioned: this is for AArch64 as opposed to ARM. Trying
+to build the headers_check target results in:
 
-I can only second what Andi wrote: just get it done quickly.  This is
-functionality that is desperately needed.
+  linux/usr/include/linux/kvm_para.h:26: included file 'asm-aarch64/kvm_para.h' is not exported
+
+because the presence of asm-generic/kvm_para.h causes linux/kvm_para.h to
+be exported. Ideally, we wouldn't need the header (if that's possible) but
+if we have to have it, a generic-y += kvm_para.h would be better than
+having a file just containing the line: #include <asm-generic/kvm_para.h>
+
+Thanks,
+
+Will
