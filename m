@@ -1,607 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753818Ab2GRKsF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 06:48:05 -0400
-Received: from mail-1.atlantis.sk ([80.94.52.57]:35413 "EHLO mail.atlantis.sk"
+	id S1753973Ab2GRKsQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 06:48:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38796 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751939Ab2GRKsB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 06:48:01 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: Takashi Iwai <tiwai@suse.de>
-Subject: Re: [alsa-devel] [RFC PATCH] introduce snd-cmi8328: C-Media =?iso-8859-1?q?CMI8328=09driver?=
-Date: Wed, 18 Jul 2012 12:47:35 +0200
-User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
-Cc: alsa-devel@alsa-project.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
-References: <201207112348.19804.linux@rainbow-software.org> <s5h1uk9jslf.wl%tiwai@suse.de>
-In-Reply-To: <s5h1uk9jslf.wl%tiwai@suse.de>
-X-KMail-QuotePrefix: > 
+	id S1753929Ab2GRKsN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 06:48:13 -0400
+Date: Wed, 18 Jul 2012 13:48:44 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>, avi@redhat.com,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jan.kiszka@siemens.com
+Subject: Re: [PATCH v5 1/4] kvm: Extend irqfd to support level interrupts
+Message-ID: <20120718104844.GF4700@redhat.com>
+References: <20120716202711.1752.71007.stgit@bling.home>
+ <20120716203344.1752.14606.stgit@bling.home>
+ <20120718104114.GC4700@redhat.com>
+ <20120718104429.GD26120@redhat.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201207181247.35548.linux@rainbow-software.org>
+In-Reply-To: <20120718104429.GD26120@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 18 July 2012, Takashi Iwai wrote:
-> At Wed, 11 Jul 2012 23:48:17 +0200,
->
-> Ondrej Zary wrote:
-> > Hello,
-> > this patch introduces snd-cmi8328 driver for C-Media CMI8328-based sound
-> > cards, such as AudioExcel AV500.
-> >
-> > It supports PCM playback and capture (full-duplex) through wss_lib,
-> > gameport, OPL3 and MPU401. The AV500 card has onboard Dream wavetable
-> > synth connected to the MPU401 port and Aux 1 input internally which works
-> > too.
-> > The CDROM interface is not supported (as the drivers for these CDROMs
-> > were removed from the kernel some time ago).
-> >
-> > snd_legacy_find_free_ioport() function is present in a couple of ISA
-> > sound drivers so perhaps it should be moved to sound/initval.h
->
-> I wonder whether this can be integrated into snd-cmi8330 driver?
-> Or is it too different from this model?
+On Wed, Jul 18, 2012 at 01:44:29PM +0300, Gleb Natapov wrote:
+> On Wed, Jul 18, 2012 at 01:41:14PM +0300, Michael S. Tsirkin wrote:
+> > On Mon, Jul 16, 2012 at 02:33:47PM -0600, Alex Williamson wrote:
+> > > In order to inject a level interrupt from an external source using an
+> > > irqfd, we need to allocate a new irq_source_id.  This allows us to
+> > > assert and (later) de-assert an interrupt line independently from
+> > > users of KVM_IRQ_LINE and avoid lost interrupts.
+> > > 
+> > > We also add what may appear like a bit of excessive infrastructure
+> > > around an object for storing this irq_source_id.  However, notice
+> > > that we only provide a way to assert the interrupt here.  A follow-on
+> > > interface will make use of the same irq_source_id to allow de-assert.
+> > > 
+> > > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> > > ---
+> > > 
+> > >  Documentation/virtual/kvm/api.txt |    6 ++
+> > >  arch/x86/kvm/x86.c                |    1 
+> > >  include/linux/kvm.h               |    3 +
+> > >  virt/kvm/eventfd.c                |  114 ++++++++++++++++++++++++++++++++++++-
+> > >  4 files changed, 120 insertions(+), 4 deletions(-)
+> > > 
+> > > diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
+> > > index 100acde..c7267d5 100644
+> > > --- a/Documentation/virtual/kvm/api.txt
+> > > +++ b/Documentation/virtual/kvm/api.txt
+> > > @@ -1981,6 +1981,12 @@ the guest using the specified gsi pin.  The irqfd is removed using
+> > >  the KVM_IRQFD_FLAG_DEASSIGN flag, specifying both kvm_irqfd.fd
+> > >  and kvm_irqfd.gsi.
+> > >  
+> > > +The KVM_IRQFD_FLAG_LEVEL flag indicates the gsi input is for a level
+> > > +triggered interrupt.  In this case a new irqchip input is allocated
+> > > +which is logically OR'd with other inputs allowing multiple sources
+> > > +to independently assert level interrupts.  The KVM_IRQFD_FLAG_LEVEL
+> > > +is only necessary on setup, teardown is identical to that above.
+> > > +KVM_IRQFD_FLAG_LEVEL support is indicated by KVM_CAP_IRQFD_LEVEL.
+> > >  
+> > >  5. The kvm_run structure
+> > >  ------------------------
+> > > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> > > index a01a424..80bed07 100644
+> > > --- a/arch/x86/kvm/x86.c
+> > > +++ b/arch/x86/kvm/x86.c
+> > > @@ -2148,6 +2148,7 @@ int kvm_dev_ioctl_check_extension(long ext)
+> > >  	case KVM_CAP_GET_TSC_KHZ:
+> > >  	case KVM_CAP_PCI_2_3:
+> > >  	case KVM_CAP_KVMCLOCK_CTRL:
+> > > +	case KVM_CAP_IRQFD_LEVEL:
+> > >  		r = 1;
+> > >  		break;
+> > >  	case KVM_CAP_COALESCED_MMIO:
+> > > diff --git a/include/linux/kvm.h b/include/linux/kvm.h
+> > > index 2ce09aa..b2e6e4f 100644
+> > > --- a/include/linux/kvm.h
+> > > +++ b/include/linux/kvm.h
+> > > @@ -618,6 +618,7 @@ struct kvm_ppc_smmu_info {
+> > >  #define KVM_CAP_PPC_GET_SMMU_INFO 78
+> > >  #define KVM_CAP_S390_COW 79
+> > >  #define KVM_CAP_PPC_ALLOC_HTAB 80
+> > > +#define KVM_CAP_IRQFD_LEVEL 81
+> > >  
+> > >  #ifdef KVM_CAP_IRQ_ROUTING
+> > >  
+> > > @@ -683,6 +684,8 @@ struct kvm_xen_hvm_config {
+> > >  #endif
+> > >  
+> > >  #define KVM_IRQFD_FLAG_DEASSIGN (1 << 0)
+> > > +/* Available with KVM_CAP_IRQFD_LEVEL */
+> > > +#define KVM_IRQFD_FLAG_LEVEL (1 << 1)
+> > >  
+> > >  struct kvm_irqfd {
+> > >  	__u32 fd;
+> > > diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
+> > > index 7d7e2aa..ecdbfea 100644
+> > > --- a/virt/kvm/eventfd.c
+> > > +++ b/virt/kvm/eventfd.c
+> > > @@ -36,6 +36,68 @@
+> > >  #include "iodev.h"
+> > >  
+> > >  /*
+> > > + * An irq_source_id can be created from KVM_IRQFD for level interrupt
+> > > + * injections and shared with other interfaces for EOI or de-assert.
+> > > + * Create an object with reference counting to make it easy to use.
+> > > + */
+> > > +struct _irq_source {
+> > > +	int id; /* the IRQ source ID */
+> > > +	bool level_asserted; /* Track assertion state and protect with lock */
+> > > +	spinlock_t lock;     /* to avoid unnecessary re-assert/spurious eoi. */
+> > > +	struct kvm *kvm;
+> > > +	struct kref kref;
+> > > +};
+> > > +
+> > > +static void _irq_source_release(struct kref *kref)
+> > > +{
+> > > +	struct _irq_source *source;
+> > > +
+> > > +	source = container_of(kref, struct _irq_source, kref);
+> > > +
+> > > +	/* This also de-asserts */
+> > > +	kvm_free_irq_source_id(source->kvm, source->id);
+> > > +	kfree(source);
+> > > +}
+> > > +
+> > > +static void _irq_source_put(struct _irq_source *source)
+> > > +{
+> > > +	if (source)
+> > > +		kref_put(&source->kref, _irq_source_release);
+> > > +}
+> > > +
+> > > +static struct _irq_source *__attribute__ ((used)) /* white lie for now */
+> > > +_irq_source_get(struct _irq_source *source)
+> > > +{
+> > > +	if (source)
+> > > +		kref_get(&source->kref);
+> > > +
+> > > +	return source;
+> > > +}
+> > > +
+> > > +static struct _irq_source *_irq_source_alloc(struct kvm *kvm)
+> > > +{
+> > > +	struct _irq_source *source;
+> > > +	int id;
+> > > +
+> > > +	source = kzalloc(sizeof(*source), GFP_KERNEL);
+> > > +	if (!source)
+> > > +		return ERR_PTR(-ENOMEM);
+> > > +
+> > > +	id = kvm_request_irq_source_id(kvm);
+> > > +	if (id < 0) {
+> > > +		kfree(source);
+> > > +		return ERR_PTR(id);
+> > > +	}
+> > > +
+> > > +	kref_init(&source->kref);
+> > > +	spin_lock_init(&source->lock);
+> > > +	source->kvm = kvm;
+> > > +	source->id = id;
+> > > +
+> > > +	return source;
+> > > +}
+> > > +
+> > > +/*
+> > >   * --------------------------------------------------------------------
+> > >   * irqfd: Allows an fd to be used to inject an interrupt to the guest
+> > >   *
+> > > @@ -52,6 +114,8 @@ struct _irqfd {
+> > >  	/* Used for level IRQ fast-path */
+> > >  	int gsi;
+> > >  	struct work_struct inject;
+> > > +	/* IRQ source ID for level triggered irqfds */
+> > > +	struct _irq_source *source;
+> > >  	/* Used for setup/shutdown */
+> > >  	struct eventfd_ctx *eventfd;
+> > >  	struct list_head list;
+> > > @@ -62,7 +126,7 @@ struct _irqfd {
+> > >  static struct workqueue_struct *irqfd_cleanup_wq;
+> > >  
+> > >  static void
+> > > -irqfd_inject(struct work_struct *work)
+> > > +irqfd_inject_edge(struct work_struct *work)
+> > >  {
+> > >  	struct _irqfd *irqfd = container_of(work, struct _irqfd, inject);
+> > >  	struct kvm *kvm = irqfd->kvm;
+> > > @@ -71,6 +135,29 @@ irqfd_inject(struct work_struct *work)
+> > >  	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
+> > >  }
+> > >  
+> > > +static void
+> > > +irqfd_inject_level(struct work_struct *work)
+> > > +{
+> > > +	struct _irqfd *irqfd = container_of(work, struct _irqfd, inject);
+> > > +
+> > > +	/*
+> > > +	 * Inject an interrupt only if not already asserted.
+> > > +	 *
+> > > +	 * We can safely ignore the kvm_set_irq return value here.  If
+> > > +	 * masked, the irr bit is still set and will eventually be serviced.
+> > > +	 * This interface does not guarantee immediate injection.  If
+> > > +	 * coalesced, an eoi will be coming where we can de-assert and
+> > > +	 * re-inject if necessary.  NB, if you need to know if an interrupt
+> > > +	 * was coalesced, this interface is not for you.
+> > > +	 */
+> > > +	spin_lock(&irqfd->source->lock);
+> > > +	if (!irqfd->source->level_asserted) {
+> > > +		kvm_set_irq(irqfd->kvm, irqfd->source->id, irqfd->gsi, 1);
+> > > +		irqfd->source->level_asserted = true;
+> > > +	}
+> > > +	spin_unlock(&irqfd->source->lock);
+> > > +}
+> > > +
+> > 
+> > So as was discussed kvm_set_irq under spinlock is bad for scalability
+> > with multiple VCPUs.  Why do we need a spinlock simply to protect
+> > level_asserted?  Let's use an atomic test and set/test and clear and the
+> > problem goes away.
+> > 
+> That sad reality is that for level interrupt we already scan all vcpus
+> under spinlock.
 
-I've thought about that (snd-cmi8330 also works with CMI8329) but CMI8328 is 
-completely different chip. It's configured by magic registers (there's no 
-PnP). Sound is provided by a real WSS codec (CS4231A) and the SB part is just 
-a SB Pro emulation (for DOS games, useless for Linux).
+Where?
 
-When SB is enabled, the CMI8328 chip disables access to the WSS codec, 
-emulates SoundBlaster on one side and outputs sound data to the codec - so SB 
-and WSS can't work together with this card. The WSS codec can do full duplex 
-by itself so there's no need for crazy things like snd-cmi8330 does 
-(combining SB and WSS parts into one driver).
-
-> Takashi
->
-> > diff --git a/sound/isa/Kconfig b/sound/isa/Kconfig
-> > index 52064cf..a38d964 100644
-> > --- a/sound/isa/Kconfig
-> > +++ b/sound/isa/Kconfig
-> > @@ -117,6 +117,18 @@ config SND_AZT2320
-> >  	  To compile this driver as a module, choose M here: the module
-> >  	  will be called snd-azt2320.
-> >
-> > +config SND_CMI8328
-> > +	tristate "C-Media CMI8328"
-> > +	select SND_WSS_LIB
-> > +	select SND_OPL3_LIB
-> > +	select SND_MPU401_UART
-> > +	help
-> > +	  Say Y here to include support for soundcards based on the
-> > +	  C-Media CMI8328 chip.
-> > +
-> > +	  To compile this driver as a module, choose M here: the module
-> > +	  will be called snd-cmi8328.
-> > +
-> >  config SND_CMI8330
-> >  	tristate "C-Media CMI8330"
-> >  	select SND_WSS_LIB
-> > diff --git a/sound/isa/Makefile b/sound/isa/Makefile
-> > index 8d781e4..9a15f14 100644
-> > --- a/sound/isa/Makefile
-> > +++ b/sound/isa/Makefile
-> > @@ -6,6 +6,7 @@
-> >  snd-adlib-objs := adlib.o
-> >  snd-als100-objs := als100.o
-> >  snd-azt2320-objs := azt2320.o
-> > +snd-cmi8328-objs := cmi8328.o
-> >  snd-cmi8330-objs := cmi8330.o
-> >  snd-es18xx-objs := es18xx.o
-> >  snd-opl3sa2-objs := opl3sa2.o
-> > @@ -16,6 +17,7 @@ snd-sscape-objs := sscape.o
-> >  obj-$(CONFIG_SND_ADLIB) += snd-adlib.o
-> >  obj-$(CONFIG_SND_ALS100) += snd-als100.o
-> >  obj-$(CONFIG_SND_AZT2320) += snd-azt2320.o
-> > +obj-$(CONFIG_SND_CMI8328) += snd-cmi8328.o
-> >  obj-$(CONFIG_SND_CMI8330) += snd-cmi8330.o
-> >  obj-$(CONFIG_SND_ES18XX) += snd-es18xx.o
-> >  obj-$(CONFIG_SND_OPL3SA2) += snd-opl3sa2.o
-> > diff --git a/sound/isa/cmi8328.c b/sound/isa/cmi8328.c
-> > new file mode 100644
-> > index 0000000..2691116
-> > --- /dev/null
-> > +++ b/sound/isa/cmi8328.c
-> > @@ -0,0 +1,482 @@
-> > +/*
-> > + * Driver for C-Media CMI8328-based soundcards, such as AudioExcel AV500
-> > + * Copyright (c) 2012 Ondrej Zary
-> > + *
-> > + * AudioExcel AV500 card consists of:
-> > + *  - CMI8328 - main chip (SB Pro emulation, gameport, OPL3, MPU401,
-> > CD-ROM) + *  - CS4231A - WSS codec
-> > + *  - Dream SAM9233+GMS950400+RAM+ROM: Wavetable MIDI, connected to
-> > MPU401 + */
-> > +
-> > +#include <linux/init.h>
-> > +#include <linux/isa.h>
-> > +#include <linux/module.h>
-> > +#include <linux/gameport.h>
-> > +#include <asm/dma.h>
-> > +#include <sound/core.h>
-> > +#include <sound/wss.h>
-> > +#include <sound/opl3.h>
-> > +#include <sound/mpu401.h>
-> > +#define SNDRV_LEGACY_FIND_FREE_IRQ
-> > +#define SNDRV_LEGACY_FIND_FREE_DMA
-> > +#include <sound/initval.h>
-> > +
-> > +MODULE_AUTHOR("Ondrej Zary <linux@rainbow-software.org>");
-> > +MODULE_DESCRIPTION("C-Media CMI8328");
-> > +MODULE_LICENSE("GPL");
-> > +
-> > +#if defined(CONFIG_GAMEPORT) || defined(CONFIG_GAMEPORT_MODULE)
-> > +#define SUPPORT_JOYSTICK 1
-> > +#endif
-> > +
-> > +/* I/O port is configured by jumpers on the card to one of these */
-> > +static int cmi8328_ports[] = { 0x530, 0xe80, 0xf40, 0x604 };
-> > +#define CMI8328_MAX	ARRAY_SIZE(cmi8328_ports)
-> > +
-> > +static int index[CMI8328_MAX] =     {[0 ... (CMI8328_MAX-1)] = -1};
-> > +static char *id[CMI8328_MAX] =      {[0 ... (CMI8328_MAX-1)] = NULL};
-> > +static long port[CMI8328_MAX] =     {[0 ... (CMI8328_MAX-1)] =
-> > SNDRV_AUTO_PORT}; +static int irq[CMI8328_MAX] =       {[0 ...
-> > (CMI8328_MAX-1)] = SNDRV_AUTO_IRQ}; +static int dma1[CMI8328_MAX] =     
-> > {[0 ... (CMI8328_MAX-1)] = SNDRV_AUTO_DMA}; +static int dma2[CMI8328_MAX]
-> > =      {[0 ... (CMI8328_MAX-1)] = SNDRV_AUTO_DMA}; +static long
-> > mpuport[CMI8328_MAX] =  {[0 ... (CMI8328_MAX-1)] = SNDRV_AUTO_PORT};
-> > +static int mpuirq[CMI8328_MAX] =    {[0 ... (CMI8328_MAX-1)] =
-> > SNDRV_AUTO_IRQ}; +#ifdef SUPPORT_JOYSTICK
-> > +static bool gameport[CMI8328_MAX] = {[0 ... (CMI8328_MAX-1)] = true};
-> > +#endif
-> > +
-> > +module_param_array(index, int, NULL, 0444);
-> > +MODULE_PARM_DESC(index, "Index value for CMI8328 soundcard.");
-> > +module_param_array(id, charp, NULL, 0444);
-> > +MODULE_PARM_DESC(id, "ID string for CMI8328 soundcard.");
-> > +
-> > +module_param_array(port, long, NULL, 0444);
-> > +MODULE_PARM_DESC(port, "Port # for CMI8328 driver.");
-> > +module_param_array(irq, int, NULL, 0444);
-> > +MODULE_PARM_DESC(irq, "IRQ # for CMI8328 driver.");
-> > +module_param_array(dma1, int, NULL, 0444);
-> > +MODULE_PARM_DESC(dma1, "DMA1 for CMI8328 driver.");
-> > +module_param_array(dma2, int, NULL, 0444);
-> > +MODULE_PARM_DESC(dma2, "DMA2 for CMI8328 driver.");
-> > +
-> > +module_param_array(mpuport, long, NULL, 0444);
-> > +MODULE_PARM_DESC(mpuport, "MPU-401 port # for CMI8328 driver.");
-> > +module_param_array(mpuirq, int, NULL, 0444);
-> > +MODULE_PARM_DESC(mpuirq, "IRQ # for CMI8328 MPU-401 port.");
-> > +#ifdef SUPPORT_JOYSTICK
-> > +module_param_array(gameport, bool, NULL, 0444);
-> > +MODULE_PARM_DESC(gameport, "Enable gameport.");
-> > +#endif
-> > +
-> > +struct snd_cmi8328 {
-> > +	u16 port;
-> > +	u8 cfg[3];
-> > +	u8 wss_cfg;
-> > +	struct snd_card *card;
-> > +	struct snd_wss *wss;
-> > +#ifdef SUPPORT_JOYSTICK
-> > +	struct gameport *gameport;
-> > +#endif
-> > +};
-> > +
-> > +static int __devinit snd_legacy_find_free_ioport(int *port_table, int
-> > size) +{
-> > +	while (*port_table != -1) {
-> > +		if (request_region(*port_table, size, "ALSA test")) {
-> > +			release_region(*port_table, size);
-> > +			return *port_table;
-> > +		}
-> > +		port_table++;
-> > +	}
-> > +	return -1;
-> > +}
-> > +
-> > +/* CMI8328 configuration registers */
-> > +#define CFG1 0x61
-> > +#define CFG1_SB_DISABLE	(1 << 0)
-> > +#define CFG1_GAMEPORT	(1 << 1)
-> > +/*
-> > + * bit 0:    SB: 0=enabled, 1=disabled
-> > + * bit 1:    gameport: 0=disabled, 1=enabled
-> > + * bits 2-4: SB IRQ: 001=3, 010=5, 011=7, 100=9, 101=10, 110=11
-> > + * bits 5-6: SB DMA: 00=disabled (when SB disabled), 01=DMA0, 10=DMA1,
-> > 11=DMA3 + * bit 7:    SB port: 0=0x220, 1=0x240
-> > + */
-> > +#define CFG2 0x62
-> > +#define CFG2_MPU_ENABLE (1 << 2)
-> > +/*
-> > + * bits 0-1: CD-ROM mode: 00=disabled, 01=Panasonic,
-> > 10=Sony/Mitsumi/Wearnes, +			  11=IDE
-> > + * bit 2:    MPU401: 0=disabled, 1=enabled
-> > + * bits 3-4: MPU401 IRQ: 00=3, 01=5, 10=7, 11=9,
-> > + * bits 5-7: MPU401 port: 000=0x300, 001=0x310, 010=0x320, 011=0x330,
-> > 100=0x332, +			  101=0x334, 110=0x336
-> > + */
-> > +#define CFG3 0x63
-> > +/*
-> > + * bits 0-2: CD-ROM IRQ: 000=disabled, 001=3, 010=5, 011=7, 100=9,
-> > 101=10, +			 110=11
-> > + * bits 3-4: CD-ROM DMA: 00=disabled, 01=DMA0, 10=DMA1, 11=DMA3
-> > + * bits 5-7: CD-ROM port: 000=0x300, 001=0x310, 010=0x320, 011=0x330,
-> > 100=0x340, +			  101=0x350, 110=0x360, 111=0x370
-> > + */
-> > +
-> > +static u8 snd_cmi8328_cfg_read(u16 port, u8 reg)
-> > +{
-> > +	outb(0x43, port + 3);
-> > +	outb(0x21, port + 3);
-> > +	outb(reg, port + 3);
-> > +	return inb(port);
-> > +}
-> > +
-> > +static void snd_cmi8328_cfg_write(u16 port, u8 reg, u8 val)
-> > +{
-> > +	outb(0x43, port + 3);
-> > +	outb(0x21, port + 3);
-> > +	outb(reg, port + 3);
-> > +	outb(val, port + 3);	/* yes, value goes to the same port as index */
-> > +}
-> > +
-> > +static void snd_cmi8328_cfg_save(u16 port, u8 cfg[])
-> > +{
-> > +	cfg[0] = snd_cmi8328_cfg_read(port, CFG1);
-> > +	cfg[1] = snd_cmi8328_cfg_read(port, CFG2);
-> > +	cfg[2] = snd_cmi8328_cfg_read(port, CFG3);
-> > +}
-> > +
-> > +static void snd_cmi8328_cfg_restore(u16 port, u8 cfg[])
-> > +{
-> > +	snd_cmi8328_cfg_write(port, CFG1, cfg[0]);
-> > +	snd_cmi8328_cfg_write(port, CFG2, cfg[1]);
-> > +	snd_cmi8328_cfg_write(port, CFG3, cfg[2]);
-> > +}
-> > +
-> > +static int __devinit snd_cmi8328_mixer(struct snd_wss *chip)
-> > +{
-> > +	struct snd_card *card;
-> > +	struct snd_ctl_elem_id id1, id2;
-> > +	int err;
-> > +
-> > +	card = chip->card;
-> > +
-> > +	memset(&id1, 0, sizeof(id1));
-> > +	memset(&id2, 0, sizeof(id2));
-> > +	id1.iface = id2.iface = SNDRV_CTL_ELEM_IFACE_MIXER;
-> > +	/* rename AUX0 switch to CD */
-> > +	strcpy(id1.name, "Aux Playback Switch");
-> > +	strcpy(id2.name, "CD Playback Switch");
-> > +	err = snd_ctl_rename_id(card, &id1, &id2);
-> > +	if (err < 0) {
-> > +		snd_printk(KERN_ERR "error renaming control\n");
-> > +		return err;
-> > +	}
-> > +	/* rename AUX0 volume to CD */
-> > +	strcpy(id1.name, "Aux Playback Volume");
-> > +	strcpy(id2.name, "CD Playback Volume");
-> > +	err = snd_ctl_rename_id(card, &id1, &id2);
-> > +	if (err < 0) {
-> > +		snd_printk(KERN_ERR "error renaming control\n");
-> > +		return err;
-> > +	}
-> > +	/* rename AUX1 switch to Synth */
-> > +	strcpy(id1.name, "Aux Playback Switch");
-> > +	id1.index = 1;
-> > +	strcpy(id2.name, "Synth Playback Switch");
-> > +	err = snd_ctl_rename_id(card, &id1, &id2);
-> > +	if (err < 0) {
-> > +		snd_printk(KERN_ERR "error renaming control\n");
-> > +		return err;
-> > +	}
-> > +	/* rename AUX1 volume to Synth */
-> > +	strcpy(id1.name, "Aux Playback Volume");
-> > +	id1.index = 1;
-> > +	strcpy(id2.name, "Synth Playback Volume");
-> > +	err = snd_ctl_rename_id(card, &id1, &id2);
-> > +	if (err < 0) {
-> > +		snd_printk(KERN_ERR "error renaming control\n");
-> > +		return err;
-> > +	}
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +/* find index of an item in "-1"-ended array */
-> > +int array_find(int array[], int item)
-> > +{
-> > +	int i;
-> > +
-> > +	for (i = 0; array[i] != -1; i++)
-> > +		if (array[i] == item)
-> > +			return i;
-> > +
-> > +	return -1;
-> > +}
-> > +
-> > +static int __devinit snd_cmi8328_probe(struct device *pdev, unsigned int
-> > ndev) +{
-> > +	struct snd_card *card;
-> > +	struct snd_opl3 *opl3;
-> > +	struct snd_cmi8328 *cmi;
-> > +#ifdef SUPPORT_JOYSTICK
-> > +	struct resource *res;
-> > +#endif
-> > +	int err, pos;
-> > +	static int mpu_ports[] = { 0x330, 0x300, 0x310, 0x320, 0x332, 0x334,
-> > +				   0x336, -1 };
-> > +	static u8 mpu_port_bits[] = { 3, 0, 1, 2, 4, 5, 6 };
-> > +	static int mpu_irqs[] = { 9, 7, 5, 3, -1 };
-> > +	static u8 mpu_irq_bits[] = { 3, 2, 1, 0 };
-> > +	static int irqs[] = { 9, 10, 11, 7, -1 };
-> > +	static u8 irq_bits[] = { 2, 3, 4, 1 };
-> > +	static int dma1s[] = { 3, 1, 0, -1 };
-> > +	static u8 dma_bits[] = { 3, 2, 1 };
-> > +	static int dma2s[][2] = { {1, -1}, {0, -1}, {-1, -1}, {0, -1} };
-> > +	u16 port = cmi8328_ports[ndev];
-> > +	u8 val;
-> > +
-> > +	/* 0xff is invalid configuration (but settable - hope it isn't set) */
-> > +	if (snd_cmi8328_cfg_read(port, CFG1) == 0xff)
-> > +		return -ENODEV;
-> > +	/* the SB disable bit must NEVER EVER be cleared or the WSS dies */
-> > +	snd_cmi8328_cfg_write(port, CFG1, CFG1_SB_DISABLE);
-> > +	if (snd_cmi8328_cfg_read(port, CFG1) != CFG1_SB_DISABLE)
-> > +		return -ENODEV;
-> > +	/* disable everything first */
-> > +	snd_cmi8328_cfg_write(port, CFG2, 0);	/* disable CDROM and MPU401 */
-> > +	snd_cmi8328_cfg_write(port, CFG3, 0);	/* disable CDROM IRQ and DMA */
-> > +
-> > +	if (irq[ndev] == SNDRV_AUTO_IRQ) {
-> > +		irq[ndev] = snd_legacy_find_free_irq(irqs);
-> > +		if (irq[ndev] < 0) {
-> > +			snd_printk(KERN_ERR "unable to find a free IRQ\n");
-> > +			return -EBUSY;
-> > +		}
-> > +	}
-> > +	if (dma1[ndev] == SNDRV_AUTO_DMA) {
-> > +		dma1[ndev] = snd_legacy_find_free_dma(dma1s);
-> > +		if (dma1[ndev] < 0) {
-> > +			snd_printk(KERN_ERR "unable to find a free DMA1\n");
-> > +			return -EBUSY;
-> > +		}
-> > +	}
-> > +	if (dma2[ndev] == SNDRV_AUTO_DMA) {
-> > +		dma2[ndev] = snd_legacy_find_free_dma(dma2s[dma1[ndev] % 4]);
-> > +		if (dma2[ndev] < 0) {
-> > +			snd_printk(KERN_WARNING "unable to find a free DMA2, full-duplex will
-> > not work\n"); +			dma2[ndev] = -1;
-> > +		}
-> > +	}
-> > +	/* configure WSS IRQ... */
-> > +	pos = array_find(irqs, irq[ndev]);
-> > +	if (pos < 0) {
-> > +		snd_printk(KERN_ERR "invalid IRQ %d\n", irq[ndev]);
-> > +		return -EINVAL;
-> > +	}
-> > +	val = irq_bits[pos] << 3;
-> > +	/* ...and DMA... */
-> > +	pos = array_find(dma1s, dma1[ndev]);
-> > +	if (pos < 0) {
-> > +		snd_printk(KERN_ERR "invalid DMA1 %d\n", dma1[ndev]);
-> > +		return -EINVAL;
-> > +	}
-> > +	val |= dma_bits[pos];
-> > +	/* ...and DMA2 */
-> > +	if (dma2[ndev] >= 0 && dma1[ndev] != dma2[ndev]) {
-> > +		pos = array_find(dma2s[dma1[ndev]], dma2[ndev]);
-> > +		if (pos < 0) {
-> > +			snd_printk(KERN_ERR "invalid DMA2 %d\n", dma2[ndev]);
-> > +			return -EINVAL;
-> > +		}
-> > +		val |= 0x04; /* enable separate capture DMA */
-> > +	}
-> > +	outb(val, port);
-> > +
-> > +	err = snd_card_create(index[ndev], id[ndev], THIS_MODULE,
-> > +				sizeof(struct snd_cmi8328), &card);
-> > +	if (err < 0)
-> > +		return err;
-> > +	cmi = card->private_data;
-> > +	cmi->card = card;
-> > +	cmi->port = port;
-> > +	cmi->wss_cfg = val;
-> > +	snd_card_set_dev(card, pdev);
-> > +
-> > +	err = snd_wss_create(card, port + 4, -1, irq[ndev], dma1[ndev],
-> > +			dma2[ndev], WSS_HW_DETECT, 0, &cmi->wss);
-> > +	if (err < 0)
-> > +		goto error;
-> > +
-> > +	err = snd_wss_pcm(cmi->wss, 0, NULL);
-> > +	if (err < 0)
-> > +		goto error;
-> > +
-> > +	err = snd_wss_mixer(cmi->wss);
-> > +	if (err < 0)
-> > +		goto error;
-> > +	err = snd_cmi8328_mixer(cmi->wss);
-> > +	if (err < 0)
-> > +		goto error;
-> > +
-> > +	if (snd_wss_timer(cmi->wss, 0, NULL) < 0)
-> > +		snd_printk(KERN_WARNING "error initializing WSS timer\n");
-> > +
-> > +	if (mpuport[ndev] == SNDRV_AUTO_PORT) {
-> > +		mpuport[ndev] = snd_legacy_find_free_ioport(mpu_ports, 2);
-> > +		if (mpuport[ndev] < 0)
-> > +			snd_printk(KERN_ERR "unable to find a free MPU401 port\n");
-> > +	}
-> > +	if (mpuirq[ndev] == SNDRV_AUTO_IRQ) {
-> > +		mpuirq[ndev] = snd_legacy_find_free_irq(mpu_irqs);
-> > +		if (mpuirq[ndev] < 0)
-> > +			snd_printk(KERN_ERR "unable to find a free MPU401 IRQ\n");
-> > +	}
-> > +	/* enable and configure MPU401 */
-> > +	if (mpuport[ndev] > 0 && mpuirq[ndev] > 0) {
-> > +		val = CFG2_MPU_ENABLE;
-> > +		pos = array_find(mpu_ports, mpuport[ndev]);
-> > +		if (pos < 0)
-> > +			snd_printk(KERN_WARNING "invalid MPU401 port 0x%lx\n",
-> > +								mpuport[ndev]);
-> > +		else {
-> > +			val |= mpu_port_bits[pos] << 5;
-> > +			pos = array_find(mpu_irqs, mpuirq[ndev]);
-> > +			if (pos < 0)
-> > +				snd_printk(KERN_WARNING "invalid MPU401 IRQ %d\n",
-> > +								mpuirq[ndev]);
-> > +			else {
-> > +				val |= mpu_irq_bits[pos] << 3;
-> > +				snd_cmi8328_cfg_write(port, CFG2, val);
-> > +				if (snd_mpu401_uart_new(card, 0,
-> > +						MPU401_HW_MPU401, mpuport[ndev],
-> > +						0, mpuirq[ndev], NULL) < 0)
-> > +					snd_printk(KERN_ERR "error initializing MPU401\n");
-> > +			}
-> > +		}
-> > +	}
-> > +	/* OPL3 is hardwired to 0x388 and cannot be disabled */
-> > +	if (snd_opl3_create(card, 0x388, 0x38a, OPL3_HW_AUTO, 0, &opl3) < 0)
-> > +		snd_printk(KERN_ERR "error initializing OPL3\n");
-> > +	else
-> > +		if (snd_opl3_hwdep_new(opl3, 0, 1, NULL) < 0)
-> > +			snd_printk(KERN_WARNING "error initializing OPL3 hwdep\n");
-> > +
-> > +	strcpy(card->driver, "CMI8328");
-> > +	strcpy(card->shortname, "C-Media CMI8328");
-> > +	sprintf(card->longname, "%s at 0x%lx, irq %d, dma %d,%d",
-> > +		card->shortname, cmi->wss->port, irq[ndev], dma1[ndev],
-> > +		(dma2[ndev] >= 0) ? dma2[ndev] : dma1[ndev]);
-> > +
-> > +	dev_set_drvdata(pdev, card);
-> > +	err = snd_card_register(card);
-> > +	if (err < 0)
-> > +		goto error;
-> > +#ifdef SUPPORT_JOYSTICK
-> > +	if (!gameport[ndev])
-> > +		return 0;
-> > +	/* gameport is hardwired to 0x200 */
-> > +	res = request_region(0x200, 8, "CMI8328 gameport");
-> > +	if (!res)
-> > +		snd_printk(KERN_WARNING "unable to allocate gameport I/O port\n");
-> > +	else {
-> > +		struct gameport *gp = cmi->gameport = gameport_allocate_port();
-> > +		if (!cmi->gameport)
-> > +			release_and_free_resource(res);
-> > +		else {
-> > +			gameport_set_name(gp, "CMI8328 Gameport");
-> > +			gameport_set_phys(gp, "%s/gameport0", dev_name(pdev));
-> > +			gameport_set_dev_parent(gp, pdev);
-> > +			gp->io = 0x200;
-> > +			gameport_set_port_data(gp, res);
-> > +			/* Enable gameport */
-> > +			snd_cmi8328_cfg_write(port, CFG1,
-> > +					CFG1_SB_DISABLE | CFG1_GAMEPORT);
-> > +			gameport_register_port(gp);
-> > +		}
-> > +	}
-> > +#endif
-> > +	return 0;
-> > +error:
-> > +	snd_card_free(card);
-> > +
-> > +	return err;
-> > +}
-> > +
-> > +static int __devexit snd_cmi8328_remove(struct device *pdev, unsigned
-> > int dev) +{
-> > +	struct snd_card *card = dev_get_drvdata(pdev);
-> > +#ifdef SUPPORT_JOYSTICK
-> > +	struct snd_cmi8328 *cmi = card->private_data;
-> > +	if (cmi->gameport) {
-> > +		struct resource *res = gameport_get_port_data(cmi->gameport);
-> > +		gameport_unregister_port(cmi->gameport);
-> > +		release_and_free_resource(res);
-> > +	}
-> > +#endif
-> > +	/* disable everything */
-> > +	snd_cmi8328_cfg_write(cmi->port, CFG1, CFG1_SB_DISABLE);
-> > +	snd_cmi8328_cfg_write(cmi->port, CFG2, 0);
-> > +	snd_cmi8328_cfg_write(cmi->port, CFG3, 0);
-> > +	snd_card_free(card);
-> > +	dev_set_drvdata(pdev, NULL);
-> > +	return 0;
-> > +}
-> > +
-> > +#ifdef CONFIG_PM
-> > +static int snd_cmi8328_suspend(struct device *pdev, unsigned int n,
-> > +				pm_message_t state)
-> > +{
-> > +	struct snd_card *card = dev_get_drvdata(pdev);
-> > +	struct snd_cmi8328 *cmi;
-> > +
-> > +	if (!card)	/* ignore absent devices */
-> > +		return 0;
-> > +	cmi = card->private_data;
-> > +	snd_cmi8328_cfg_save(cmi->port, cmi->cfg);
-> > +	snd_power_change_state(card, SNDRV_CTL_POWER_D3hot);
-> > +	snd_pcm_suspend_all(cmi->wss->pcm);
-> > +	cmi->wss->suspend(cmi->wss);
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +static int snd_cmi8328_resume(struct device *pdev, unsigned int n)
-> > +{
-> > +	struct snd_card *card = dev_get_drvdata(pdev);
-> > +	struct snd_cmi8328 *cmi;
-> > +
-> > +	if (!card)	/* ignore absent devices */
-> > +		return 0;
-> > +	cmi = card->private_data;
-> > +	snd_cmi8328_cfg_restore(cmi->port, cmi->cfg);
-> > +	outb(cmi->wss_cfg, cmi->port);
-> > +	cmi->wss->resume(cmi->wss);
-> > +	snd_power_change_state(card, SNDRV_CTL_POWER_D0);
-> > +
-> > +	return 0;
-> > +}
-> > +#endif
-> > +
-> > +static struct isa_driver snd_cmi8328_driver = {
-> > +	.probe		= snd_cmi8328_probe,
-> > +	.remove		= __devexit_p(snd_cmi8328_remove),
-> > +#ifdef CONFIG_PM
-> > +	.suspend	= snd_cmi8328_suspend,
-> > +	.resume		= snd_cmi8328_resume,
-> > +#endif
-> > +	.driver		= {
-> > +		.name	= "cmi8328"
-> > +	},
-> > +};
-> > +
-> > +static int __init alsa_card_cmi8328_init(void)
-> > +{
-> > +	return isa_register_driver(&snd_cmi8328_driver, CMI8328_MAX);
-> > +}
-> > +
-> > +static void __exit alsa_card_cmi8328_exit(void)
-> > +{
-> > +	isa_unregister_driver(&snd_cmi8328_driver);
-> > +}
-> > +
-> > +module_init(alsa_card_cmi8328_init)
-> > +module_exit(alsa_card_cmi8328_exit)
-> >
-> >
-> > --
-> > Ondrej Zary
-> > _______________________________________________
-> > Alsa-devel mailing list
-> > Alsa-devel@alsa-project.org
-> > http://mailman.alsa-project.org/mailman/listinfo/alsa-devel
-
-
-
--- 
-Ondrej Zary
+> --
+> 			Gleb.
