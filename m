@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757912Ab2GRAOH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 20:14:07 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39263 "EHLO
+	id S1757951Ab2GRAOQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 20:14:16 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39056 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757862Ab2GRANI (ORCPT
+	with ESMTP id S1757834Ab2GRAMv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 20:13:08 -0400
+	Tue, 17 Jul 2012 20:12:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [ 14/23] ntp: Correct TAI offset during leap second
-Date: Tue, 17 Jul 2012 17:12:07 -0700
-Message-Id: <20120717232330.388270313@linuxfoundation.org>
+        Dean Nelson <dnelson@redhat.com>,
+        Tushar Dave <tushar.n.dave@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Jeff Pieper <jeffrey.e.pieper@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: [ 09/23] e1000e: Correct link check logic for 82571 serdes
+Date: Tue, 17 Jul 2012 17:12:02 -0700
+Message-Id: <20120717232329.973132421@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120717232329.276003806@linuxfoundation.org>
 References: <20120717232455.GA5994@kroah.com>
@@ -33,42 +34,37 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
+From: Tushar Dave <tushar.n.dave@intel.com>
 
-From: Richard Cochran <richardcochran@gmail.com>
+commit d0efa8f23a644f7cb7d1f8e78dd9a223efa412a3 upstream.
 
-This is a backport of dd48d708ff3e917f6d6b6c2b696c3f18c019feed
+SYNCH bit and IV bit of RXCW register are sticky. Before examining these bits,
+RXCW should be read twice to filter out one-time false events and have correct
+values for these bits. Incorrect values of these bits in link check logic can
+cause weird link stability issues if auto-negotiation fails.
 
-When repeating a UTC time value during a leap second (when the UTC
-time should be 23:59:60), the TAI timescale should not stop. The kernel
-NTP code increments the TAI offset one second too late. This patch fixes
-the issue by incrementing the offset during the leap second itself.
-
-Signed-off-by: Richard Cochran <richardcochran@gmail.com>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Reported-by: Dean Nelson <dnelson@redhat.com>
+Signed-off-by: Tushar Dave <tushar.n.dave@intel.com>
+Reviewed-by: Bruce Allan <bruce.w.allan@intel.com>
+Tested-by: Jeff Pieper <jeffrey.e.pieper@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- kernel/time/ntp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/time/ntp.c
-+++ b/kernel/time/ntp.c
-@@ -378,6 +378,7 @@ int second_overflow(unsigned long secs)
- 		if (secs % 86400 == 0) {
- 			leap = -1;
- 			time_state = TIME_OOP;
-+			time_tai++;
- 			printk(KERN_NOTICE
- 				"Clock: inserting leap second 23:59:60 UTC\n");
- 		}
-@@ -392,7 +393,6 @@ int second_overflow(unsigned long secs)
- 		}
- 		break;
- 	case TIME_OOP:
--		time_tai++;
- 		time_state = TIME_WAIT;
- 		break;
+---
+ drivers/net/e1000e/82571.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+--- a/drivers/net/e1000e/82571.c
++++ b/drivers/net/e1000e/82571.c
+@@ -1573,6 +1573,9 @@ static s32 e1000_check_for_serdes_link_8
+ 	ctrl = er32(CTRL);
+ 	status = er32(STATUS);
+ 	rxcw = er32(RXCW);
++	/* SYNCH bit and IV bit are sticky */
++	udelay(10);
++	rxcw = er32(RXCW);
+ 
+ 	if ((rxcw & E1000_RXCW_SYNCH) && !(rxcw & E1000_RXCW_IV)) {
  
 
 
