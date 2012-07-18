@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757726Ab2GRAKm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 20:10:42 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49131 "EHLO
+	id S1757774Ab2GRAKw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 20:10:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48276 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757494Ab2GRAEd (ORCPT
+	with ESMTP id S1757490Ab2GRAEa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 20:04:33 -0400
+	Tue, 17 Jul 2012 20:04:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [ 23/37] Input: bcm5974 - Add support for 2012 MacBook Pro Retina
-Date: Tue, 17 Jul 2012 17:03:00 -0700
-Message-Id: <20120717232433.274191629@linuxfoundation.org>
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 22/37] bonding: Manage /proc/net/bonding/ entries from the netdev events
+Date: Tue, 17 Jul 2012 17:02:59 -0700
+Message-Id: <20120717232433.190705969@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120717232431.399005532@linuxfoundation.org>
 References: <20120717232455.GA5994@kroah.com>
@@ -31,64 +31,58 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Henrik Rydberg <rydberg@euromail.se>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit 3dde22a98e94eb18527f0ff0068fb2fb945e58d4 upstream.
+commit a64d49c3dd504b685f9742a2f3dcb11fb8e4345f upstream.
 
-Add support for the 15'' MacBook Pro Retina model (MacBookPro10,1).
+It was recently reported that moving a bonding device between network
+namespaces causes warnings from /proc.  It turns out after the move we
+were trying to add and to remove the /proc/net/bonding entries from the
+wrong network namespace.
 
-Patch originally written by clipcarl (forums.opensuse.org).
+Move the bonding /proc registration code into the NETDEV_REGISTER and
+NETDEV_UNREGISTER events where the proc registration and unregistration
+will always happen at the right time.
 
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/mouse/bcm5974.c |   20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ drivers/net/bonding/bond_main.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/drivers/input/mouse/bcm5974.c
-+++ b/drivers/input/mouse/bcm5974.c
-@@ -79,6 +79,10 @@
- #define USB_DEVICE_ID_APPLE_WELLSPRING5A_ANSI	0x0252
- #define USB_DEVICE_ID_APPLE_WELLSPRING5A_ISO	0x0253
- #define USB_DEVICE_ID_APPLE_WELLSPRING5A_JIS	0x0254
-+/* MacbookPro10,1 (unibody, June 2012) */
-+#define USB_DEVICE_ID_APPLE_WELLSPRING7_ANSI	0x0262
-+#define USB_DEVICE_ID_APPLE_WELLSPRING7_ISO	0x0263
-+#define USB_DEVICE_ID_APPLE_WELLSPRING7_JIS	0x0264
+--- a/drivers/net/bonding/bond_main.c
++++ b/drivers/net/bonding/bond_main.c
+@@ -3218,6 +3218,12 @@ static int bond_master_netdev_event(unsi
+ 	switch (event) {
+ 	case NETDEV_CHANGENAME:
+ 		return bond_event_changename(event_bond);
++	case NETDEV_UNREGISTER:
++		bond_remove_proc_entry(event_bond);
++		break;
++	case NETDEV_REGISTER:
++		bond_create_proc_entry(event_bond);
++		break;
+ 	default:
+ 		break;
+ 	}
+@@ -4402,8 +4408,6 @@ static void bond_uninit(struct net_devic
  
- #define BCM5974_DEVICE(prod) {					\
- 	.match_flags = (USB_DEVICE_ID_MATCH_DEVICE |		\
-@@ -128,6 +132,10 @@ static const struct usb_device_id bcm597
- 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING5A_ANSI),
- 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING5A_ISO),
- 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING5A_JIS),
-+	/* MacbookPro10,1 */
-+	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING7_ANSI),
-+	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING7_ISO),
-+	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING7_JIS),
- 	/* Terminating entry */
- 	{}
- };
-@@ -354,6 +362,18 @@ static const struct bcm5974_config bcm59
- 		{ DIM_X, DIM_X / SN_COORD, -4620, 5140 },
- 		{ DIM_Y, DIM_Y / SN_COORD, -150, 6600 }
- 	},
-+	{
-+		USB_DEVICE_ID_APPLE_WELLSPRING7_ANSI,
-+		USB_DEVICE_ID_APPLE_WELLSPRING7_ISO,
-+		USB_DEVICE_ID_APPLE_WELLSPRING7_JIS,
-+		HAS_INTEGRATED_BUTTON,
-+		0x84, sizeof(struct bt_data),
-+		0x81, TYPE2, FINGER_TYPE2, FINGER_TYPE2 + SIZEOF_ALL_FINGERS,
-+		{ DIM_PRESSURE, DIM_PRESSURE / SN_PRESSURE, 0, 300 },
-+		{ DIM_WIDTH, DIM_WIDTH / SN_WIDTH, 0, 2048 },
-+		{ DIM_X, DIM_X / SN_COORD, -4750, 5280 },
-+		{ DIM_Y, DIM_Y / SN_COORD, -150, 6730 }
-+	},
- 	{}
- };
+ 	bond_work_cancel_all(bond);
  
+-	bond_remove_proc_entry(bond);
+-
+ 	bond_debug_unregister(bond);
+ 
+ 	__hw_addr_flush(&bond->mc_list);
+@@ -4805,7 +4809,6 @@ static int bond_init(struct net_device *
+ 
+ 	bond_set_lockdep_class(bond_dev);
+ 
+-	bond_create_proc_entry(bond);
+ 	list_add_tail(&bond->bond_list, &bn->dev_list);
+ 
+ 	bond_prepare_sysfs_group(bond);
 
 
