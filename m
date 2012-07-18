@@ -1,85 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753140Ab2GRIpm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 04:45:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33023 "EHLO mx1.redhat.com"
+	id S1752675Ab2GRItC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 04:49:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4179 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752521Ab2GRIpg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 04:45:36 -0400
-Message-ID: <5006781F.1060900@redhat.com>
-Date: Wed, 18 Jul 2012 16:47:27 +0800
-From: Asias He <asias@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>
-CC: "Michael S. Tsirkin" <mst@redhat.com>,
-        Stefan Hajnoczi <stefanha@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-aio@kvack.org, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Benjamin LaHaise <bcrl@kvack.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 0/5] Add vhost-blk support
-References: <1342107302-28116-1-git-send-email-asias@redhat.com> <CAJSP0QWgmXns89se+xdGgM6i1_hsfVWPQ8caHua9d-dDA4CTDQ@mail.gmail.com> <50052276.2080906@redhat.com> <500527BA.9000001@redhat.com> <50052E7E.6020100@redhat.com> <CAJSP0QW0tPV3WASGOBRE4hL=8zzSFQ6T=bHbEwMAzmHR9wnwJg@mail.gmail.com> <20120717112645.GA9363@redhat.com> <CAJSP0QXPkrVvgA+1fhhwsB5J8oApOObK8D3fk_Lm0Bt3T+Wfuw@mail.gmail.com> <20120717115450.GA9796@redhat.com> <CAJSP0QXwGuUaD9piktOptJasdpci_fA90d=vV4m0SuORMvc2=Q@mail.gmail.com> <20120717124859.GA9883@redhat.com> <50056275.6000407@redhat.com>
-In-Reply-To: <50056275.6000407@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751764Ab2GRIsz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 04:48:55 -0400
+From: Avi Kivity <avi@redhat.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] x86, hyper: fix build with !CONFIG_KVM_GUEST
+Date: Wed, 18 Jul 2012 11:48:50 +0300
+Message-Id: <1342601330-11044-1-git-send-email-avi@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2012 09:02 PM, Paolo Bonzini wrote:
-> Il 17/07/2012 14:48, Michael S. Tsirkin ha scritto:
->> On Tue, Jul 17, 2012 at 01:03:39PM +0100, Stefan Hajnoczi wrote:
->>> On Tue, Jul 17, 2012 at 12:54 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
->>>>> Knowing the answer to that is important before anyone can say whether
->>>>> this approach is good or not.
->>>>>
->>>>> Stefan
->>>>
->>>> Why is it?
->>>
->>> Because there might be a fix to kvmtool which closes the gap.  It
->>> would be embarassing if vhost-blk was pushed just because no one
->>> looked into what is actually going on.
->>
->> Embarrasing to whom? Is someone working on an optimization that
->> makes the work in question redundant, with posting just around
->> the corner? Then maybe the thing to do is just wait a bit.
->
-> Of course there is work going on to make QEMU perform better.  Not sure
-> about lkvm.
+Signed-off-by: Avi Kivity <avi@redhat.com>
+---
+ arch/x86/kernel/cpu/hypervisor.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-Of course for lkvm also.
-
->>> And on the flipside, hard evidence of an overhead that cannot be
->>> resolved could be good reason to do more vhost devices in the future.
->>
->> How can one have hard evidence of an overhead that cannot be resolved?
->
-> Since we do have two completely independent userspaces (lkvm and
-> data-plane QEMU), you can build up some compelling evidence of an
-> overhead that cannot be resolved in user space.
-
-This does not build the hard evidence either. How can one prove that 
-userspace lkvm and data-plane QEMU can not be improved further? The same 
-for vhost-blk.
-
->>> Either way, it's useful to do this before going further.
->>
->> I think each work should be discussed on its own merits.  Maybe
->> vhost-blk is just well written. So? What is your conclusion?
->
-> If it's just that vhost-blk is written well, my conclusion is that lkvm
-> people should look into improving their virtio-blk userspace.  We take
-> hints from each other all the time, for example virtio-scsi will have
-> unlocked kick in 3.6.
->
-> Why can't vhost-* just get into staging, and we call it a day?
-
-OK. I'm fine with staging.
-
+diff --git a/arch/x86/kernel/cpu/hypervisor.c b/arch/x86/kernel/cpu/hypervisor.c
+index 6d6dd7a..a8f8fa9 100644
+--- a/arch/x86/kernel/cpu/hypervisor.c
++++ b/arch/x86/kernel/cpu/hypervisor.c
+@@ -37,7 +37,9 @@
+ #endif
+ 	&x86_hyper_vmware,
+ 	&x86_hyper_ms_hyperv,
++#ifdef CONFIG_KVM_GUEST
+ 	&x86_hyper_kvm,
++#endif
+ };
+ 
+ const struct hypervisor_x86 *x86_hyper;
 -- 
-Asias
-
+1.7.11.2
 
