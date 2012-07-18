@@ -1,74 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754128Ab2GRLpy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 07:45:54 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:61312 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751954Ab2GRLpx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 07:45:53 -0400
-Message-ID: <1342611620.7530.18.camel@brekeke>
-Subject: Re: [PATCH 2/5] ubi: Limit amount of reserved eraseblocks for bad
- PEB handling
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Shmulik Ladkani <shmulik.ladkani@gmail.com>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>,
-        Richard Genoud <richard.genoud@gmail.com>
-Date: Wed, 18 Jul 2012 14:40:20 +0300
-In-Reply-To: <1341389164-24409-3-git-send-email-shmulik.ladkani@gmail.com>
-References: <1341389164-24409-1-git-send-email-shmulik.ladkani@gmail.com>
-	 <1341389164-24409-3-git-send-email-shmulik.ladkani@gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-Ef4bKrX3RLb+LvNvgDBK"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1754101Ab2GRLsx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 07:48:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9505 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751853Ab2GRLst (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 07:48:49 -0400
+Date: Wed, 18 Jul 2012 14:48:44 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>, avi@redhat.com,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jan.kiszka@siemens.com
+Subject: Re: [PATCH v5 1/4] kvm: Extend irqfd to support level interrupts
+Message-ID: <20120718114844.GH26120@redhat.com>
+References: <20120716202711.1752.71007.stgit@bling.home>
+ <20120716203344.1752.14606.stgit@bling.home>
+ <20120718104114.GC4700@redhat.com>
+ <20120718104429.GD26120@redhat.com>
+ <20120718104844.GF4700@redhat.com>
+ <20120718104906.GE26120@redhat.com>
+ <20120718105311.GH4700@redhat.com>
+ <20120718105530.GG26120@redhat.com>
+ <20120718112219.GJ4700@redhat.com>
+ <20120718113910.GA5135@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120718113910.GA5135@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jul 18, 2012 at 02:39:10PM +0300, Michael S. Tsirkin wrote:
+> On Wed, Jul 18, 2012 at 02:22:19PM +0300, Michael S. Tsirkin wrote:
+> > > > > > > > So as was discussed kvm_set_irq under spinlock is bad for scalability
+> > > > > > > > with multiple VCPUs.  Why do we need a spinlock simply to protect
+> > > > > > > > level_asserted?  Let's use an atomic test and set/test and clear and the
+> > > > > > > > problem goes away.
+> > > > > > > > 
+> > > > > > > That sad reality is that for level interrupt we already scan all vcpus
+> > > > > > > under spinlock.
+> > > > > > 
+> > > > > > Where?
+> > > > > > 
+> > > > > ioapic
+> > > > 
+> > > > $ grep kvm_for_each_vcpu virt/kvm/ioapic.c
+> > > > $
+> > > > 
+> > > > ?
+> > > > 
+> > > 
+> > > Come on Michael. You can do better than grep and actually look at what
+> > > code does. The code that loops over all vcpus while delivering an irq is
+> > > in kvm_irq_delivery_to_apic(). Now grep for that.
+> > 
+> > Hmm, I see, it's actually done for edge if injected from ioapic too,
+> > right?
+> > 
+> > So set_irq does a linear scan, and for each matching CPU it calls
+> > kvm_irq_delivery_to_apic which is another scan?
+> > So it's actually N^2 worst case for a broadcast?
+> 
+> No it isn't, I misread the code.
+> 
+> 
+> Anyway, maybe not trivially but this looks fixable to me: we could drop
+> the ioapic lock before calling kvm_irq_delivery_to_apic.
+> 
+May be, may be not. Just saying "lets drop lock whenever we don't feel
+like holding one" does not cut it. Back to original point though current
+situation is that calling kvm_set_irq() under spinlock is not worse for
+scalability than calling it not under one.
 
---=-Ef4bKrX3RLb+LvNvgDBK
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-
-On Wed, 2012-07-04 at 11:06 +0300, Shmulik Ladkani wrote:
-> The existing mechanism of reserving PEBs for bad PEB handling has two
-> flaws:
-> - It is calculated as a percentage of good PEBs instead of total PEBs.
-> - There's no limit on the amount of PEBs UBI reserves for future bad
->   eraseblock handling.
-
-OK, I've modified this patch a lot, did not test, and sent what I have
-in the beb branch to you - please, take a look.
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-Ef4bKrX3RLb+LvNvgDBK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJQBqCkAAoJECmIfjd9wqK01JMQAL4PchrlyOyNvCjPCSQuSLbf
-6dr2XpFQ97yqdhmGlIkddOonYs7fvva17saJIvCh/ihkYaS/y7L29JODXTWikELr
-Uv2nxKe2mLWWzcsj1MD+WHUkfn0MJ7qzoJOwES2Nrr4HtNWwp3gxClHiSB8g8PbY
-Q9mRjBudQzNTCo+M6K+OhI09U8UoyNJKhRZjw7zIU8HUyOqWqzEL/E2Vz+17ufgj
-2nZXsATMid5F4B27pOye9U8hnA5iYDMzOVtutIG3lT8FRchfngcCiNGQBogK6PiX
-1HRKDLluLKOh7nvGakvGK+UQrteY2s+6eIo/tvJZUZpyDWRS3M7PefRjdibUHIKQ
-qNa+O5u87Yn1Z5roKYaDoj+h8wWfYRRr0lfLbxB6lZCeJ4aM0lGrd8t1WleiV8TS
-AU9X7OALEZK1UmSkWqTLYiEC7ooopBXSJD69JVup5R9tKx+c7HbgzbChaKeDacXR
-m6IrEOBpCcY3k4k4D8EC5u2eRCbOzMHyGHfsu5s+Hcc9F8uh7TiOMXEWm2oZ7ubc
-nPtep+rUCjPoNMqIm/1byvApiIHI4a+Z2b25x2BTh/6bZVLro3ISqoeX2DR2YPcn
-BQCQX/r3kOkoKs0ETudMwUwnGImQEE7l4CzNC6JsFzvSLlihEx82QCx2spZ9Jk7X
-G4CoFeUTWEMKSl+wN17t
-=Gxsj
------END PGP SIGNATURE-----
-
---=-Ef4bKrX3RLb+LvNvgDBK--
-
+--
+			Gleb.
