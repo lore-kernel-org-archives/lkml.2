@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754837Ab2GRP7o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 11:59:44 -0400
-Received: from tharradin.pu-pm.univ-fcomte.fr ([194.57.85.210]:39480 "EHLO
-	tharradin.pu-pm.univ-fcomte.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751688Ab2GRP7l (ORCPT
+	id S1754867Ab2GRQAB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 12:00:01 -0400
+Received: from casper.infradead.org ([85.118.1.10]:57910 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751688Ab2GRP77 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 11:59:41 -0400
-Message-ID: <5006DD6B.3030300@pu-pm.univ-fcomte.fr>
-Date: Wed, 18 Jul 2012 17:59:39 +0200
-From: Eugen Dedu <Eugen.Dedu@pu-pm.univ-fcomte.fr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+	Wed, 18 Jul 2012 11:59:59 -0400
+Message-ID: <5006DD42.5030707@infradead.org>
+Date: Wed, 18 Jul 2012 08:58:58 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Re: getsockopt/setsockopt with SO_RCVBUF and SO_SNDBUF "non-standard"
- behaviour
-References: <50052FFE.2060109@pu-pm.univ-fcomte.fr>
-In-Reply-To: <50052FFE.2060109@pu-pm.univ-fcomte.fr>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: NeilBrown <neilb@suse.de>
+CC: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        ksummit-2012-discuss@lists.linux-foundation.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [Ksummit-2012-discuss] Current Status of Kernel Summit Core Day
+ 1 Invitations
+References: <1342607987.3022.69.camel@dabdike.int.hansenpartnership.com> <20120718205316.013ec792@notabene.brown>
+In-Reply-To: <20120718205316.013ec792@notabene.brown>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Any idea?
+On 07/18/2012 03:53 AM, NeilBrown wrote:
 
-On 17/07/12 11:27, Eugen Dedu wrote:
-> Hi all,
->
-> I looked on Internet and at the old thread
-> http://lkml.indiana.edu/hypermail/linux/kernel/0108.0/0275.html, but the
-> issue is still not settled as far as I see.
->
-> I need to have the highest memory available for snd/rcv buffer and I
-> need to know/confirm how much it allocated for my process (how much I
-> can use).
->
-> So with Linux we need to do something like:
-> setsockopt (..., SO_RCVBUF, 256000, ...)
-> getsockopt (..., SO_RCVBUF, &i, ...)
-> i /= 2;
->
-> where i is the size I am looking for.
->
-> Now, to make this code work for other OSes it should be changed to:
-> setsockopt (..., SO_RCVBUF, 256000, ...)
-> getsockopt (..., SO_RCVBUF, &i, ...)
-> #ifdef LINUX
-> i /= 2;
-> #endif
->
-> First question, is this code correct? If not, what code gives the amount
-> of memory useable for my process?
->
-> Second, it seems to me that linux is definitely "non-standard" here.
-> Saying that linux uses twice as memory has nothing to do with that,
-> since getsockopt should return what the application can count on, not
-> what is the internal use. It is like a hypothetical malloc (10) would
-> return not 10, but 20 (including meta-information). Is that right?
->
-> Cheers,
+> On Wed, 18 Jul 2012 11:39:47 +0100 James Bottomley
+> <James.Bottomley@HansenPartnership.com> wrote:
+> 
+>> The current state is that we've invited 74 people.  The list is here:
+>>
+>> https://docs.google.com/spreadsheet/ccc?key=0ArpHfE64ikfsdHVrYkw0Yk0tQWJzWUJzc3k2NmU4VGc#gid=0
+>>
+> 
+> "You need permission to access this item."
+
+same here.
+
+> Could you not just copy/paste ?? it is much nicer to read text inline than go
+> over to a browser and use some new interface.
+> 
+> NeilBrown
+> 
+>> We still have a few more places to add (probably 15-20), mainly for
+>> topic based invitations as we begin to put together the agenda for the
+>> Core Day of Kernel Summit.
+>>
+>> James
+
+
+-- 
+~Randy
