@@ -1,83 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753905Ab2GRLdB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 07:33:01 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:59109 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753348Ab2GRLdA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 07:33:00 -0400
-MIME-Version: 1.0
-In-Reply-To: <1342574175.2012.12.camel@joe2Laptop>
-References: <1342442513-10488-1-git-send-email-yamanetoshi@gmail.com>
-	<1342573366-8167-1-git-send-email-yamanetoshi@gmail.com>
-	<1342574175.2012.12.camel@joe2Laptop>
-Date: Wed, 18 Jul 2012 20:32:58 +0900
-Message-ID: <CAOTypNSvKEfYVLZ=0sN-U+2xiXBO4So4QkvYyKniEFeqvkqVBg@mail.gmail.com>
-Subject: Re: [PATCH] staging/et131x: fix checkpatch warnings
-From: Toshiaki Yamane <yamanetoshi@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Einon <mark.einon@gmail.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753908Ab2GRLei (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 07:34:38 -0400
+Received: from mga02.intel.com ([134.134.136.20]:46885 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751954Ab2GRLef (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 07:34:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="167900487"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
+        linux-kernel@vger.kernel.org
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH] dmaengine: printk(KERN_ERR ...) -> pr_err
+Date: Wed, 18 Jul 2012 14:34:10 +0300
+Message-Id: <1342611251-16935-1-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for you reply.
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+---
+ drivers/dma/dmaengine.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I will fix netdev_info only, because I don't know if I should use "%p".
-
-On Wed, Jul 18, 2012 at 10:16 AM, Joe Perches <joe@perches.com> wrote:
-> On Wed, 2012-07-18 at 10:02 +0900, Toshiaki Yamane wrote:
->> Signed-off-by: Toshiaki Yamane <yamanetoshi@gmail.com>
->
-> Hello.  Just some trivial notes:
->
->> diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
-> []
->> @@ -2553,8 +2555,8 @@ static int et131x_rx_dma_memory_alloc(struct et131x_adapter *adapter)
-> []
->> -     printk(KERN_INFO "Packet Status Ring %lx\n",
->> -         (unsigned long) rx_ring->ps_ring_physaddr);
->> +     pr_info("Packet Status Ring %lx\n",
->> +             (unsigned long) rx_ring->ps_ring_physaddr);
->> @@ -2574,7 +2576,7 @@ static int et131x_rx_dma_memory_alloc(struct et131x_adapter *adapter)
-> []
->> -     printk(KERN_INFO "PRS %lx\n", (unsigned long)rx_ring->rx_status_bus);
->> +     pr_info("PRS %lx\n", (unsigned long)rx_ring->rx_status_bus);
->
-> These might as well use %p without a cast to unsigned long
->         pr_info("Packet Status Ring: %p\n", rx_ring->ps_ring_phydaddr);
-> []
->         pr_info("PRS: %p\n", rx_ring->rx_status_bus);
->
-> []
->> @@ -5186,8 +5188,8 @@ static int et131x_set_mac_addr(struct net_device *netdev, void *new_mac)
-> []
->> -     printk(KERN_INFO "%s: Setting MAC address to %pM\n",
->> -                     netdev->name, netdev->dev_addr);
->> +     pr_info("%s: Setting MAC address to %pM\n",
->> +             netdev->name, netdev->dev_addr);
->
-> Please use netdev_<level> when there is a
-> struct net_device * available.
->
->         netdev_info(netdev, "Setting MAC address to %pM\n", netdev->dev_addr);
->
->
-
-
-
+diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
+index 26ac0f8..071bd73 100644
+--- a/drivers/dma/dmaengine.c
++++ b/drivers/dma/dmaengine.c
+@@ -262,7 +262,7 @@ enum dma_status dma_sync_wait(struct dma_chan *chan, dma_cookie_t cookie)
+ 	do {
+ 		status = dma_async_is_tx_complete(chan, cookie, NULL, NULL);
+ 		if (time_after_eq(jiffies, dma_sync_wait_timeout)) {
+-			printk(KERN_ERR "dma_sync_wait_timeout!\n");
++			pr_err("dma_sync_wait_timeout!\n");
+ 			return DMA_ERROR;
+ 		}
+ 	} while (status == DMA_IN_PROGRESS);
 -- 
+1.7.10.4
 
-Regards,
-
-
- .
-  .
-...
-
-Yamane Toshiaki
-
-yamanetoshi@gmail.com
