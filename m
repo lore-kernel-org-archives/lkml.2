@@ -1,128 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753943Ab2GRKpL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 06:45:11 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:46151 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753580Ab2GRKkE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 06:40:04 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <kishon@ti.com>, <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
-        <rob@landley.net>, <linux@arm.linux.org.uk>,
-        <gregkh@linuxfoundation.org>, <b-cousson@ti.com>, <rnayak@ti.com>,
-        <tony@atomide.com>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <balbi@ti.com>,
-        <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>
-Subject: [PATCH v4 07/11] drivers: usb: twl4030: Add device tree support for twl4030 usb
-Date: Wed, 18 Jul 2012 16:08:38 +0530
-Message-ID: <1342607922-11554-8-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1342607922-11554-1-git-send-email-kishon@ti.com>
-References: <1342607922-11554-1-git-send-email-kishon@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1753655Ab2GRKq3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 06:46:29 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:56080 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751939Ab2GRKq1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 06:46:27 -0400
+Message-ID: <1342608053.7530.11.camel@brekeke>
+Subject: Re: [PATCH 1/5] ubi: introduce ubi->bad_peb_limit
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+Cc: Andrew Victor <linux@maxim.org.za>, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-mtd@lists.infradead.org, Richard Weinberger <richard@nod.at>,
+        Richard Genoud <richard.genoud@gmail.com>
+Date: Wed, 18 Jul 2012 13:40:53 +0300
+In-Reply-To: <1341389164-24409-2-git-send-email-shmulik.ladkani@gmail.com>
+References: <1341389164-24409-1-git-send-email-shmulik.ladkani@gmail.com>
+	 <1341389164-24409-2-git-send-email-shmulik.ladkani@gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-TOSrJujwFlCm3CHIuXcR"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add device tree support for twl4030 usb driver.
-Update the Documentation with device tree binding information.
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- .../devicetree/bindings/usb/twlxxxx-usb.txt        |   19 ++++++++++++++
- drivers/usb/otg/twl4030-usb.c                      |   26 +++++++++++++++----
- 2 files changed, 39 insertions(+), 6 deletions(-)
+--=-TOSrJujwFlCm3CHIuXcR
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/Documentation/devicetree/bindings/usb/twlxxxx-usb.txt b/Documentation/devicetree/bindings/usb/twlxxxx-usb.txt
-index e3f6d73..bdf1dd4 100644
---- a/Documentation/devicetree/bindings/usb/twlxxxx-usb.txt
-+++ b/Documentation/devicetree/bindings/usb/twlxxxx-usb.txt
-@@ -20,3 +20,22 @@ Board specific device node entry
- &twl6030-usb {
- 	usb-supply = <&vusb>;
- };
-+
-+TWL4030 USB PHY AND COMPARATOR
-+ - compatible : Should be "ti,twl4030-usb"
-+ - interrupts : The interrupt numbers to the cpu should be specified. First
-+   interrupt number is the otg interrupt number that raises ID interrupts
-+   and VBUS interrupts. The second interrupt number is optional.
-+ - <supply-name>-supply : phandle to the regulator device tree node.
-+   <supply-name> should be vusb1v5, vusb1v8 and vusb3v1
-+ - usb_mode : The mode used by the phy to connect to the controller. "1"
-+   specifies "ULPI" mode and "2" specifies "CEA2011_3PIN" mode.
-+
-+twl4030-usb {
-+	compatible = "ti,twl4030-usb";
-+	interrupts = < 10 4 >;
-+	usb1v5-supply = <&vusb1v5>;
-+	usb1v8-supply = <&vusb1v8>;
-+	usb3v1-supply = <&vusb3v1>;
-+	usb_mode = <1>;
-+};
-diff --git a/drivers/usb/otg/twl4030-usb.c b/drivers/usb/otg/twl4030-usb.c
-index 523cad5..f0d2e75 100644
---- a/drivers/usb/otg/twl4030-usb.c
-+++ b/drivers/usb/otg/twl4030-usb.c
-@@ -585,23 +585,28 @@ static int __devinit twl4030_usb_probe(struct platform_device *pdev)
- 	struct twl4030_usb	*twl;
- 	int			status, err;
- 	struct usb_otg		*otg;
--
--	if (!pdata) {
--		dev_dbg(&pdev->dev, "platform_data not available\n");
--		return -EINVAL;
--	}
-+	struct device_node	*np = pdev->dev.of_node;
- 
- 	twl = devm_kzalloc(&pdev->dev, sizeof *twl, GFP_KERNEL);
- 	if (!twl)
- 		return -ENOMEM;
- 
-+	if (np)
-+		of_property_read_u32(np, "usb_mode",
-+				(enum twl4030_usb_mode *)&twl->usb_mode);
-+	else if (pdata)
-+		twl->usb_mode = pdata->usb_mode;
-+	else {
-+		dev_err(&pdev->dev, "twl4030 initialized without pdata\n");
-+		return -EINVAL;
-+	}
-+
- 	otg = devm_kzalloc(&pdev->dev, sizeof *otg, GFP_KERNEL);
- 	if (!otg)
- 		return -ENOMEM;
- 
- 	twl->dev		= &pdev->dev;
- 	twl->irq		= platform_get_irq(pdev, 0);
--	twl->usb_mode		= pdata->usb_mode;
- 	twl->vbus_supplied	= false;
- 	twl->asleep		= 1;
- 	twl->linkstat		= OMAP_MUSB_UNKNOWN;
-@@ -690,12 +695,21 @@ static int __exit twl4030_usb_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
-+#ifdef CONFIG_OF
-+static const struct of_device_id twl4030_usb_id_table[] = {
-+	{ .compatible = "ti,twl4030-usb" },
-+	{}
-+};
-+MODULE_DEVICE_TABLE(of, twl4030_usb_id_table);
-+#endif
-+
- static struct platform_driver twl4030_usb_driver = {
- 	.probe		= twl4030_usb_probe,
- 	.remove		= __exit_p(twl4030_usb_remove),
- 	.driver		= {
- 		.name	= "twl4030_usb",
- 		.owner	= THIS_MODULE,
-+		.of_match_table = of_match_ptr(twl4030_usb_id_table),
- 	},
- };
- 
--- 
-1.7.5.4
+On Wed, 2012-07-04 at 11:06 +0300, Shmulik Ladkani wrote:
+> Introduce 'ubi->bad_peb_limit', which specifies an upper limit of PEBs
+> ubi expects to go bad.
+> Currently, it is initialized to a fixed percentage of total PEBs in the
+> ubi device (configurable via CONFIG_MTD_UBI_BEB_LIMIT).
+>=20
+> The 'bad_peb_limit' is intended to be used for calculating the amount of
+> PEBs ubi needs to reserve for bad eraseblock handling.
+>=20
+> Signed-off-by: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+> ---
+>  arch/arm/configs/sam9_l9260_defconfig |    1 +
+
+I've also amended the Kconfig text a tiny bit and dropped the defconfig
+changes - let's have them separately as a single patch at the end of the
+series.
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-TOSrJujwFlCm3CHIuXcR
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJQBpK1AAoJECmIfjd9wqK0K2sP/3YP432g7PTQLuoJptLICRtj
+ZXJEFqp6CwNSeCoSpjOnUhETGGuU1sUlMsmld1IhTLCEE7wu9zt41gTtdZ+6vvgX
+lPY2E3Vfw5dMHEkle/iEW7dpWGFIxmoR4r1CUZpZiLzBmuOMy4ZfQhcKz5bmKKnb
+1g0Ii0x6Tfs2o1D1fWM7ULCxnG/+deTDC7cceHgDfXV4OkRRdVN/+gdPADdGsQjF
+6EkyoKRWKCD38ciTUPiK1gOeIXiq4B0JEAmlTVmKy/4KhgeacgvR0WHZO1WjycgH
+KDBuKq80sAhS+AeBhhk8VUUZStT8L8ABwitLA8aU0hzU7KzN8G+nBCUYtfaJxcCV
+b0mYWBZurCw/NQigzkOxFzVd/+A3yuEEt8dxf/MJe5gJ0X4RkFG1QhIi+bLRTKEc
+jwKQPuMJrKiwMVHEUzJ4OD2WX2G/00HKSi/V39jREeZcqX8c7hDeaRPXBq/VQIdq
+wo9yl6FD1osDHRHhxJeIni0Vsa7h9FJH0DA2tjzviATVqwlf/dYaPPHDNKilRUqd
+ECtywwXcJ3zubddGZFGB+oXHzht0suAXGR4/N4HsHQ1fYaRFGgQ/gF6Bc4BIt3pz
+O4eSx1IePYOMTLmpFBw6M6aNQMvXLmLVW5TbXw0yyzW08TThewvD73eiPTA2dF5n
+5ZOaTAkBumVKxaXRng7Q
+=6JqX
+-----END PGP SIGNATURE-----
+
+--=-TOSrJujwFlCm3CHIuXcR--
 
