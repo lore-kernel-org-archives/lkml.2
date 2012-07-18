@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753299Ab2GRKMb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 06:12:31 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:54241 "EHLO
+	id S1753350Ab2GRKMo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 06:12:44 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:54283 "EHLO
 	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753126Ab2GRKM2 (ORCPT
+	with ESMTP id S1753256Ab2GRKMl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 06:12:28 -0400
+	Wed, 18 Jul 2012 06:12:41 -0400
 X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <50068BF4.1080603@jp.fujitsu.com>
-Date: Wed, 18 Jul 2012 19:12:04 +0900
+Message-ID: <50068BC2.3040303@jp.fujitsu.com>
+Date: Wed, 18 Jul 2012 19:11:14 +0900
 From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
@@ -19,7 +19,7 @@ CC: <rientjes@google.com>, <liuj97@gmail.com>, <len.brown@intel.com>,
         <benh@kernel.crashing.org>, <paulus@samba.org>, <cl@linux.com>,
         <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
         <kosaki.motohiro@jp.fujitsu.com>, <wency@cn.fujitsu.com>
-Subject: [RFC PATCH v4 7/13] memory-hotplug : remove_memory calls __remove_pages
+Subject: [RFC PATCH v4 6/13] memory-hotplug : add memory_block_release
 References: <50068974.1070409@jp.fujitsu.com>
 In-Reply-To: <50068974.1070409@jp.fujitsu.com>
 Content-Type: text/plain; charset="ISO-2022-JP"
@@ -28,13 +28,14 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch adds __remove_pages() to remove_memory(). Then the range of
-phys_start_pfn argument and nr_pages argument in __remove_pagse() may
-have different zone. So zone argument is removed from __remove_pages()
-and __remove_pages() caluculates zone in each section.
+When calling remove_memory_block(), the function shows following message at
+device_release().
 
-When CONFIG_SPARSEMEM_VMEMMAP is defined, there is no way to remove a memmap.
-So __remove_section only calls unregister_memory_section().
+Device 'memory528' does not have a release() function, it is broken and must
+be fixed.
+
+remove_memory_block() calls kfree(mem). I think it shouled be called from
+device_release(). So the patch implements memory_block_release()
 
 CC: David Rientjes <rientjes@google.com>
 CC: Jiang Liu <liuj97@gmail.com>
@@ -49,107 +50,43 @@ CC: Wen Congyang <wency@cn.fujitsu.com>
 Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
 ---
- arch/powerpc/platforms/pseries/hotplug-memory.c |    5 +----
- include/linux/memory_hotplug.h                  |    3 +--
- mm/memory_hotplug.c                             |   19 ++++++++++++-------
- 3 files changed, 14 insertions(+), 13 deletions(-)
+ drivers/base/memory.c |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
-Index: linux-3.5-rc6/mm/memory_hotplug.c
+Index: linux-3.5-rc6/drivers/base/memory.c
 ===================================================================
---- linux-3.5-rc6.orig/mm/memory_hotplug.c	2012-07-18 18:00:27.440145432 +0900
-+++ linux-3.5-rc6/mm/memory_hotplug.c	2012-07-18 18:01:02.070712487 +0900
-@@ -275,11 +275,14 @@ static int __meminit __add_section(int n
- #ifdef CONFIG_SPARSEMEM_VMEMMAP
- static int __remove_section(struct zone *zone, struct mem_section *ms)
- {
--	/*
--	 * XXX: Freeing memmap with vmemmap is not implement yet.
--	 *      This should be removed later.
--	 */
--	return -EBUSY;
-+	int ret = -EINVAL;
-+
-+	if (!valid_section(ms))
-+		return ret;
-+
-+	ret = unregister_memory_section(ms);
-+
-+	return ret;
+--- linux-3.5-rc6.orig/drivers/base/memory.c	2012-07-18 17:50:49.659368740 +0900
++++ linux-3.5-rc6/drivers/base/memory.c	2012-07-18 17:51:28.655881214 +0900
+@@ -109,6 +109,15 @@ bool is_memblk_offline(unsigned long sta
  }
- #else
- static int __remove_section(struct zone *zone, struct mem_section *ms)
-@@ -346,11 +349,11 @@ EXPORT_SYMBOL_GPL(__add_pages);
-  * sure that pages are marked reserved and zones are adjust properly by
-  * calling offline_pages().
+ EXPORT_SYMBOL(is_memblk_offline);
+ 
++#define to_memory_block(device) container_of(device, struct memory_block, dev)
++
++static void release_memory_block(struct device *dev)
++{
++	struct memory_block *mem = to_memory_block(dev);
++
++	kfree(mem);
++}
++
+ /*
+  * register_memory - Setup a sysfs device for a memory block
   */
--int __remove_pages(struct zone *zone, unsigned long phys_start_pfn,
--		 unsigned long nr_pages)
-+int __remove_pages(unsigned long phys_start_pfn, unsigned long nr_pages)
- {
- 	unsigned long i, ret = 0;
- 	int sections_to_remove;
-+	struct zone *zone;
+@@ -119,6 +128,7 @@ int register_memory(struct memory_block 
  
- 	/*
- 	 * We can only remove entire sections
-@@ -363,6 +366,7 @@ int __remove_pages(struct zone *zone, un
- 	sections_to_remove = nr_pages / PAGES_PER_SECTION;
- 	for (i = 0; i < sections_to_remove; i++) {
- 		unsigned long pfn = phys_start_pfn + i*PAGES_PER_SECTION;
-+		zone = page_zone(pfn_to_page(pfn));
- 		ret = __remove_section(zone, __pfn_to_section(pfn));
- 		if (ret)
- 			break;
-@@ -1031,6 +1035,7 @@ int __ref remove_memory(int nid, u64 sta
- 	/* remove memmap entry */
- 	firmware_map_remove(start, start + size, "System RAM");
+ 	memory->dev.bus = &memory_subsys;
+ 	memory->dev.id = memory->start_section_nr / sections_per_block;
++	memory->dev.release = release_memory_block;
  
-+	__remove_pages(start >> PAGE_SHIFT, size >> PAGE_SHIFT);
- out:
- 	unlock_memory_hotplug();
- 	return ret;
-Index: linux-3.5-rc6/include/linux/memory_hotplug.h
-===================================================================
---- linux-3.5-rc6.orig/include/linux/memory_hotplug.h	2012-07-18 18:00:27.445145371 +0900
-+++ linux-3.5-rc6/include/linux/memory_hotplug.h	2012-07-18 18:00:40.461982690 +0900
-@@ -89,8 +89,7 @@ extern bool is_pageblock_removable_noloc
- /* reasonably generic interface to expand the physical pages in a zone  */
- extern int __add_pages(int nid, struct zone *zone, unsigned long start_pfn,
- 	unsigned long nr_pages);
--extern int __remove_pages(struct zone *zone, unsigned long start_pfn,
--	unsigned long nr_pages);
-+extern int __remove_pages(unsigned long start_pfn, unsigned long nr_pages);
+ 	error = device_register(&memory->dev);
+ 	return error;
+@@ -669,7 +679,6 @@ int remove_memory_block(unsigned long no
+ 		mem_remove_simple_file(mem, phys_device);
+ 		mem_remove_simple_file(mem, removable);
+ 		unregister_memory(mem);
+-		kfree(mem);
+ 	} else
+ 		kobject_put(&mem->dev.kobj);
  
- #ifdef CONFIG_NUMA
- extern int memory_add_physaddr_to_nid(u64 start);
-Index: linux-3.5-rc6/arch/powerpc/platforms/pseries/hotplug-memory.c
-===================================================================
---- linux-3.5-rc6.orig/arch/powerpc/platforms/pseries/hotplug-memory.c	2012-07-18 18:00:27.442145407 +0900
-+++ linux-3.5-rc6/arch/powerpc/platforms/pseries/hotplug-memory.c	2012-07-18 18:00:40.470982578 +0900
-@@ -76,7 +76,6 @@ unsigned long memory_block_size_bytes(vo
- static int pseries_remove_memblock(unsigned long base, unsigned int memblock_size)
- {
- 	unsigned long start, start_pfn;
--	struct zone *zone;
- 	int i, ret;
- 	int sections_to_remove;
- 
-@@ -87,8 +86,6 @@ static int pseries_remove_memblock(unsig
- 		return 0;
- 	}
- 
--	zone = page_zone(pfn_to_page(start_pfn));
--
- 	/*
- 	 * Remove section mappings and sysfs entries for the
- 	 * section of the memory we are removing.
-@@ -101,7 +98,7 @@ static int pseries_remove_memblock(unsig
- 	sections_to_remove = (memblock_size >> PAGE_SHIFT) / PAGES_PER_SECTION;
- 	for (i = 0; i < sections_to_remove; i++) {
- 		unsigned long pfn = start_pfn + i * PAGES_PER_SECTION;
--		ret = __remove_pages(zone, start_pfn,  PAGES_PER_SECTION);
-+		ret = __remove_pages(start_pfn,  PAGES_PER_SECTION);
- 		if (ret)
- 			return ret;
- 	}
 
