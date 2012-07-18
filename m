@@ -1,48 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757804Ab2GRAet (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 20:34:49 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:54802 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754324Ab2GRAeh (ORCPT
+	id S1751618Ab2GRAs1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 20:48:27 -0400
+Received: from sting.hengli.com.au ([178.18.18.71]:48215 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750978Ab2GRAsX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 20:34:37 -0400
-Message-ID: <50060496.2090909@us.ibm.com>
-Date: Tue, 17 Jul 2012 17:34:30 -0700
-From: John Stultz <johnstul@us.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Tue, 17 Jul 2012 20:48:23 -0400
+Date: Wed, 18 Jul 2012 08:48:19 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Linux Kernel Developers List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 05/17] n2_crypto: remove IRQF_SAMPLE_RANDOM which is
+ now a no-op
+Message-ID: <20120718004819.GA27984@gondor.apana.org.au>
+References: <1342560756-18737-1-git-send-email-tytso@mit.edu>
+ <1342560756-18737-6-git-send-email-tytso@mit.edu>
 MIME-Version: 1.0
-To: John Stultz <johnstul@us.ibm.com>
-CC: stable@vger.kernel.org, Prarit Bhargava <prarit@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/11] 2.6.32-stable: Fix for leapsecond deadlock & hrtimer/futex
- issue
-References: <1342562735-55870-1-git-send-email-johnstul@us.ibm.com>
-In-Reply-To: <1342562735-55870-1-git-send-email-johnstul@us.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12071800-7282-0000-0000-00000B05B5AC
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1342560756-18737-6-git-send-email-tytso@mit.edu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/17/2012 03:05 PM, John Stultz wrote:
-> This is the last backport I have ready at this time. I realize there's
-> still the 2.6.27 tree, but if I recall correctly I had some trouble
-> getting that booted in my test environment. I can take a swing at
-> backporting it, but I may need a hand with testing.
+On Tue, Jul 17, 2012 at 05:32:24PM -0400, Theodore Ts'o wrote:
+> With the changes in the random tree, IRQF_SAMPLE_RANDOM is now a
+> no-op; interrupt randomness is now collected unconditionally in a very
+> low-overhead fashion; see commit 775f4b297b.  The IRQF_SAMPLE_RANDOM
+> flag was scheduled to be removed in 2009 on the
+> feature-removal-schedule, so this patch is preparation for the final
+> removal of this flag.
+> 
+> Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+> Cc: Herbert Xu <herbert@gondor.apana.org.au>
 
-And if anyone is interested in helping test, I've got a first pass 
-(builds & mostly boots) of the 2.6.27-stable backports here:
-git://git.linaro.org/people/jstultz/linux.git leapfix/2.6.27.62
+Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
 
-http://git.linaro.org/gitweb?p=people/jstultz/linux.git;a=shortlog;h=refs/heads/leapfix/2.6.27.62
-
-Unfortunately I run into udev issues trying to boot this on my more 
-recent test environment.
-
-thanks
--john
-
+Cheers,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
