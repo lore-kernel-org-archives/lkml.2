@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757363Ab2GRADq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 20:03:46 -0400
+	id S1757116Ab2GRADk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 20:03:40 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:49131 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756047Ab2GRADa (ORCPT
+	with ESMTP id S1755267Ab2GRAD0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 20:03:30 -0400
+	Tue, 17 Jul 2012 20:03:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stevie Trujillo <stevie.trujillo@gmail.com>,
-        Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>
-Subject: [ 03/37] hwmon: (it87) Preserve configuration register bits on init
-Date: Tue, 17 Jul 2012 17:02:40 -0700
-Message-Id: <20120717232431.572709571@linuxfoundation.org>
+        David Dillow <dave@thedillows.org>,
+        Sri Deevi <srinivasa.deevi@conexant.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [ 02/37] media: cx231xx: dont DMA to random addresses
+Date: Tue, 17 Jul 2012 17:02:39 -0700
+Message-Id: <20120717232431.491143399@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120717232431.399005532@linuxfoundation.org>
 References: <20120717232455.GA5994@kroah.com>
@@ -31,34 +32,59 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Jean Delvare <khali@linux-fr.org>
+From: David Dillow <dave@thedillows.org>
 
-commit 41002f8dd5938d5ad1d008ce5bfdbfe47fa7b4e8 upstream.
+commit a7deca6fa79d5c65575532e780f3c93f6bf8ddad upstream.
 
-We were accidentally losing one bit in the configuration register on
-device initialization. It was reported to freeze one specific system
-right away. Properly preserve all bits we don't explicitly want to
-change in order to prevent that.
+Commit 7a6f6c29d264cdd2fe0eb3d923217eed5f0ad134 (cx231xx: use
+URB_NO_TRANSFER_DMA_MAP) was intended to avoid mapping the DMA buffer
+for URB twice. This works for the URBs allocated with usb_alloc_urb(),
+as those are allocated from cohernent DMA pools, but the flag was also
+added for the VBI and audio URBs, which have a manually allocated area.
+This leaves the random trash in the structure after allocation as the
+DMA address, corrupting memory and preventing VBI and audio from
+working. Letting the USB core map the buffers solves the problem.
 
-Reported-by: Stevie Trujillo <stevie.trujillo@gmail.com>
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: David Dillow <dave@thedillows.org>
+Cc: Sri Deevi <srinivasa.deevi@conexant.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/it87.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/media/video/cx231xx/cx231xx-audio.c |    4 ++--
+ drivers/media/video/cx231xx/cx231xx-vbi.c   |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/hwmon/it87.c
-+++ b/drivers/hwmon/it87.c
-@@ -2157,7 +2157,7 @@ static void __devinit it87_init_device(s
+--- a/drivers/media/video/cx231xx/cx231xx-audio.c
++++ b/drivers/media/video/cx231xx/cx231xx-audio.c
+@@ -307,7 +307,7 @@ static int cx231xx_init_audio_isoc(struc
+ 		urb->context = dev;
+ 		urb->pipe = usb_rcvisocpipe(dev->udev,
+ 						dev->adev.end_point_addr);
+-		urb->transfer_flags = URB_ISO_ASAP | URB_NO_TRANSFER_DMA_MAP;
++		urb->transfer_flags = URB_ISO_ASAP;
+ 		urb->transfer_buffer = dev->adev.transfer_buffer[i];
+ 		urb->interval = 1;
+ 		urb->complete = cx231xx_audio_isocirq;
+@@ -368,7 +368,7 @@ static int cx231xx_init_audio_bulk(struc
+ 		urb->context = dev;
+ 		urb->pipe = usb_rcvbulkpipe(dev->udev,
+ 						dev->adev.end_point_addr);
+-		urb->transfer_flags = URB_NO_TRANSFER_DMA_MAP;
++		urb->transfer_flags = 0;
+ 		urb->transfer_buffer = dev->adev.transfer_buffer[i];
+ 		urb->complete = cx231xx_audio_bulkirq;
+ 		urb->transfer_buffer_length = sb_size;
+--- a/drivers/media/video/cx231xx/cx231xx-vbi.c
++++ b/drivers/media/video/cx231xx/cx231xx-vbi.c
+@@ -452,7 +452,7 @@ int cx231xx_init_vbi_isoc(struct cx231xx
+ 			return -ENOMEM;
+ 		}
+ 		dev->vbi_mode.bulk_ctl.urb[i] = urb;
+-		urb->transfer_flags = URB_NO_TRANSFER_DMA_MAP;
++		urb->transfer_flags = 0;
  
- 	/* Start monitoring */
- 	it87_write_value(data, IT87_REG_CONFIG,
--			 (it87_read_value(data, IT87_REG_CONFIG) & 0x36)
-+			 (it87_read_value(data, IT87_REG_CONFIG) & 0x3e)
- 			 | (update_vbat ? 0x41 : 0x01));
- }
- 
+ 		dev->vbi_mode.bulk_ctl.transfer_buffer[i] =
+ 		    kzalloc(sb_size, GFP_KERNEL);
 
 
