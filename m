@@ -1,90 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752842Ab2GRH2Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 03:28:25 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57533 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752713Ab2GRH2N (ORCPT
+	id S1752800Ab2GRHf2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 03:35:28 -0400
+Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:30213 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751948Ab2GRHfU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 03:28:13 -0400
-Date: Wed, 18 Jul 2012 00:26:08 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
-        Tony Luck <tony.luck@intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        John Stultz <john.stultz@linaro.org>, Shuah Khan <shuahkhan@gmail.com>,
-        arve@android.com, Rebecca Schultz Zavin <rebecca@android.com>,
-        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: Re: [PATCH] pstore/ftrace: Convert to its own enable/disable debugfs
- knob
-Message-ID: <20120718072608.GA17026@lizard>
-References: <20120710001004.GA22744@lizard>
- <1341879046-5197-3-git-send-email-anton.vorontsov@linaro.org>
- <1342553898.10332.9.camel@gandalf.stny.rr.com>
- <20120717200130.GA31678@lizard>
- <1342561102.10332.18.camel@gandalf.stny.rr.com>
- <20120718034722.GA18081@lizard>
+	Wed, 18 Jul 2012 03:35:20 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+rzZBLmLeBfg6x54w+Qlfu
+Date: Wed, 18 Jul 2012 00:35:08 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>, balbi@ti.com,
+        Greg KH <gregkh@linuxfoundation.org>, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, rob@landley.net, linux@arm.linux.org.uk,
+        b-cousson@ti.com, rnayak@ti.com, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH v2 1/2] drivers: misc: omap: add a new driver for
+ ocp2scp
+Message-ID: <20120718073507.GL6522@atomide.com>
+References: <1340370942-23201-1-git-send-email-kishon@ti.com>
+ <20120716081204.GI7955@arwen.pp.htv.fi>
+ <CAAe_U6JMGP3jEkkd=vqpR5KTeOnY51AOcb65zqKRRa8MtnWjzQ@mail.gmail.com>
+ <201207161947.01751.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120718034722.GA18081@lizard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201207161947.01751.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 17, 2012 at 08:47:22PM -0700, Anton Vorontsov wrote:
-[...]
-> -void notrace pstore_ftrace_call(unsigned long ip, unsigned long parent_ip)
-> +static void notrace pstore_ftrace_call(unsigned long ip,
-> +				       unsigned long parent_ip)
->  {
-> +	unsigned long flags;
->  	struct pstore_ftrace_record rec = {};
->  
-> +	if (unlikely(!ftrace_enabled))
-> +		return;
->  	if (unlikely(oops_in_progress))
->  		return;
->  
-> +	local_irq_save(flags);
-> +
->  	rec.ip = ip;
->  	rec.parent_ip = parent_ip;
->  	pstore_ftrace_encode_cpu(&rec, raw_smp_processor_id());
->  	psinfo->write_buf(PSTORE_TYPE_FTRACE, 0, NULL, 0, (void *)&rec,
->  			  sizeof(rec), psinfo);
+* Arnd Bergmann <arnd@arndb.de> [120716 12:51]:
+> On Monday 16 July 2012, ABRAHAM, KISHON VIJAY wrote:
+> > >>
+> > >> I think we should reconsider the idea of drivers/bus/ with a file per
+> > >> bus in there at least for new buses, but doing a new drivers/scp/
+> > >> would be ok for me if there is enough opposition against the idea
+> > >> of drivers/bus aggregating different buses.
+> > >
+> > > I don't mind either way. The fact is that this ocp-to-scp bridge is
+> > > really a TI/OMAP thing. Not sure it deserves a directory of its own.
+> > 
+> > Ok. Then I'll have a file in drivers/bus/ for ocp2scp driver.
+> 
+> Sounds good to me. I don't care if it's the only file in that directory.
+> We can point the next person to a bus with a single file to that directory
+> and let them add theirs.
 
-Btw, here we might be running w/o recurse protection, and that helped
-to find a bug in the persistent ram module.
+Yes great. Sounds like that's where the omap GPMC bus driver should
+end up going eventually.
 
-The bug was quite subtle: it only happened if pstore tracing was
-enabled before any other tracers. And it magically disappeared
-otherwise.
+Regards,
 
-This is because ftrace_ops_list_func() does its own recurse protection,
-but ftrace_ops_list_func() is only used when there are more than
-one 'struct ops' registered, otherwise ->func is called directly.
-
-Of course, if I specify FL_GLOBAL/FL_CONTROL flag for the tracer,
-then it will not try to call the func directly. But then there is
-a question: do we really want to set these flags if we yet don't
-want removable modules?
-
-Or, setting at least FL_CONTROL would be a good idea anyway, since
-it will then react to ftrace_function_local_{enable,disable}()?
-
-Thanks,
-
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+Tony
