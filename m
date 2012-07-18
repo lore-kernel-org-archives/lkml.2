@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754550Ab2GRXLN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 19:11:13 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:45130 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751510Ab2GRXLL (ORCPT
+	id S1754538Ab2GRXMn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 19:12:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44972 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752114Ab2GRXMl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 19:11:11 -0400
-Message-ID: <50074287.3080802@linaro.org>
-Date: Wed, 18 Jul 2012 16:11:03 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Catalin Marinas <catalin.marinas@arm.com>, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH] Allow CLOCK_TICK_RATE to be undefined
-References: <1342543300-23460-1-git-send-email-catalin.marinas@arm.com> <20120718155141.232ae14c.akpm@linux-foundation.org>
-In-Reply-To: <20120718155141.232ae14c.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Wed, 18 Jul 2012 19:12:41 -0400
+Date: Wed, 18 Jul 2012 16:12:39 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Rafael Aquini <aquini@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Minchan Kim <minchan@kernel.org>, Rafael Aquini <aquini@linux.com>
+Subject: Re: [PATCH v4 1/3] mm: introduce compaction and migration for
+ virtio ballooned pages
+Message-Id: <20120718161239.9449e6b5.akpm@linux-foundation.org>
+In-Reply-To: <20120718230706.GB2313@t510.redhat.com>
+References: <cover.1342485774.git.aquini@redhat.com>
+	<49f828a9331c9b729fcf77226006921ec5bc52fa.1342485774.git.aquini@redhat.com>
+	<20120718154605.cb0591bc.akpm@linux-foundation.org>
+	<20120718230706.GB2313@t510.redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12071823-7606-0000-0000-0000021BD027
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2012 03:51 PM, Andrew Morton wrote:
-> On Tue, 17 Jul 2012 17:41:40 +0100
-> Catalin Marinas <catalin.marinas@arm.com> wrote:
->
->> This patch allows an architecture to not define CLOCK_TICK_RATE, in
->> which case ACTHZ defaults to (HZ << 8).
-> No reason was given for this change.
->
-> So those people who are wondering "why don't you just define
-> CLOCK_TICK_RATE" are made all sad.
+On Wed, 18 Jul 2012 20:07:07 -0300
+Rafael Aquini <aquini@redhat.com> wrote:
 
-I just queued this patch with a revised commit message:
+> > 
+> > > +}
+> > > +#else
+> > > +static inline bool is_balloon_page(struct page *page)       { return false; }
+> > > +static inline bool isolate_balloon_page(struct page *page)  { return false; }
+> > > +static inline bool putback_balloon_page(struct page *page)  { return false; }
+> > > +#endif /* (VIRTIO_BALLOON || VIRTIO_BALLOON_MODULE) && COMPACTION */
+> > 
+> > This means that if CONFIG_VIRTIO_BALLOON=y and CONFIG_COMPACTION=n,
+> > is_balloon_page() will always return NULL.  IOW, no pages are balloon
+> > pages!  This is wrong.
+> > 
+> I believe it's right, actually, as we can see CONFIG_COMPACTION=n associated with
+> CONFIG_MIGRATION=y (and  CONFIG_VIRTIO_BALLOON=y).
+> For such config case we cannot perform the is_balloon_page() test branches
+> placed on mm/migration.c
 
-     jiffies: Allow CLOCK_TICK_RATE to be undefined
+No, it isn't right.  Look at the name: "is_balloon_page".  If a caller
+runs is_balloon_page() against a balloon page with CONFIG_COMPACTION=n
+then they will get "false", which is incorrect.
 
-     CLOCK_TICK_RATE is a legacy constant that defines the timer
-     device's granularity. On hardware with particularly coarse
-     granularity, this constant is used to reduce accumulated
-     time error when using jiffies as a clocksource, by calculating
-     the hardware's actual tick length rather then just assuming
-     it is 1sec/HZ.
+So the function needs a better name - one which communicates that it is
+a balloon page *for the purposes of processing by the compaction code*. 
+Making the function private to compaction.c would help with that, if
+feasible.
 
-     However, for the most part this is unnecessary, as most modern
-     systems don't use jiffies for their clocksource, and their
-     tick device is sufficiently fine grained to avoid major error.
-
-     Thus, this patch allows an architecture to not define
-     CLOCK_TICK_RATE, in which case ACTHZ defaults to (HZ << 8).
-
-
-Let me know if you'd like to see further improvements.
-
-thanks
--john
 
