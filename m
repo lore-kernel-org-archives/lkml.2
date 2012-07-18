@@ -1,80 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754462Ab2GRWTt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 18:19:49 -0400
-Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:48208 "EHLO
-	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751440Ab2GRWTr (ORCPT
+	id S1754480Ab2GRWWO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 18:22:14 -0400
+Received: from longford.logfs.org ([213.229.74.203]:43552 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751583Ab2GRWWM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 18:19:47 -0400
-From: Greg Pearson <greg.pearson@hp.com>
-To: khalid.aziz@hp.com
-Cc: linux-kernel@vger.kernel.org, greg.pearson@hp.com
-Subject: [PATCH] PCDP: use early_ioremap/early_iounmap to access pcdp table
-Date: Wed, 18 Jul 2012 16:19:34 -0600
-Message-Id: <1342649974-6860-1-git-send-email-greg.pearson@hp.com>
-X-Mailer: git-send-email 1.7.5.4
+	Wed, 18 Jul 2012 18:22:12 -0400
+Date: Wed, 18 Jul 2012 17:08:15 -0400
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Jeff Moyer <jmoyer@redhat.com>, Steve Hodgson <steve@purestorage.com>
+Subject: Re: [PATCH] add blockconsole version 1.1
+Message-ID: <20120718210814.GA1871@logfs.org>
+References: <20120424205946.GH20610@logfs.org>
+ <x49zka0j5bk.fsf@segfault.boston.devel.redhat.com>
+ <20120425132513.GA23492@logfs.org>
+ <x49vcknkdvn.fsf@segfault.boston.devel.redhat.com>
+ <20120712174633.GA7248@logfs.org>
+ <20120713130336.GC10298@x1.osrc.amd.com>
+ <20120713162009.GA10268@logfs.org>
+ <20120716124614.GA19497@x1.osrc.amd.com>
+ <20120718185335.GA1771@logfs.org>
+ <20120718214520.GA14067@liondog.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120718214520.GA14067@liondog.tnic>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The efi_setup_pcdp_console routine is called during boot to
-parse the HCDP/PCDP EFI system table and setup an early console
-for printk output. The routine uses ioremap/iounmap to setup
-access to the HCDP/PCDP table information. The call to ioremap
-is happening early in the boot process which leads to a panic
-on x86_64 systems:
+On Wed, 18 July 2012 23:45:21 +0200, Borislav Petkov wrote:
+> 
+> > > So why is that first megabyte full of zeros there?
+> > 
+> > It gives you some scratch space to store information in.
+> 
+> How? By me writing something in that empty line in vim? Or something
+> else storing stuff there?
 
-    0xffffffff815ffbd4 panic+0x01ca
-    0xffffffff810535ec do_exit+0x043c
-    0xffffffff81603847 oops_end+0x00a7
-    0xffffffff81042859 no_context+0x0119
-    0xffffffff81042a68 __bad_area_nosemaphore+0x0138
-    0xffffffff81042b5e bad_area_nosemaphore+0x000e
-    0xffffffff81606411 do_page_fault+0x0321
-    0xffffffff81602cb0 page_fault+0x0020
-    0xffffffff81045fc1 reserve_memtype+0x02a1
-    0xffffffff810430a3 __ioremap_caller+0x0123
-    0xffffffff81043402 ioremap_nocache+0x0012
-    0xffffffff81d53e70 efi_setup_pcdp_console+0x002b
-    0xffffffff81d1fcc5 setup_arch+0x03a9
-    0xffffffff81d19b44 start_kernel+0x00d4
-    0xffffffff81d19341 x86_64_start_reservations+0x012c
-    0xffffffff81d19449 x86_64_start_kernel+0x00fe
+Assuming you want to do it in an automated fashion - by patching or
+replacing mkblockconsole.  Again, I have no opinion on whether this
+actually makes sense.  It is possible, it does not really hurt the
+primary function and people have explicitly asked me for it.  Good
+enough for me.
 
-This patch replaces the calls to ioremap/iounmap in
-efi_setup_pcdp_console with calls to early_ioremap/early_iounmap
-which can be called during early boot.
+> > How useful that actually is may be a matter of opinion. But
+> > independent of that, you will find large amounts of zeroes all over.
+> > Every time you reboot, the new blockconsole will start writing at a
+> > megabyte-aligned offset and whatever remains of the last megabyte
+> > should be zero-filled as well.
+> 
+> Ah, those are the tiles you're talking about in the docs, right?
 
-This patch was tested on an x86_64 prototype system which uses
-the HCDP/PCDP table for early console setup.
+Yes.
 
-Signed-off-by: Greg Pearson <greg.pearson@hp.com>
----
- drivers/firmware/pcdp.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+> Oh, I didn't mean anything involved but rather a quick steps write-up
+> (steps can always be expanded and made more verbose later):
+> 
+> Blocksonsole in three easy steps
+> ================================
+> 
+> 1. Find an unused USB stick and prepare it for blockconsole by writing
+> the blockconsole signature to it:
+> 
+> $ ./mkblockconsole /dev/sdc
+> 
+>   [ Assuming /dev/sdc is the device node of the USB stick you just mounted. ]
+> 
+> 2. USB stick is ready for use, replug it so that the kernel can start
+> logging to it.
+> 
+> 3. After you've done logging, read out the logs from it like this:
+> 
+> $ ./bcon_tail
+> 
+>   [ This creates a file called /var/log/bcon.<random number> which
+>   contains the logs. Open it with a sane editor like vim which can
+>   display zeroed gaps as a single line and start staring at the logs. ]
 
-diff --git a/drivers/firmware/pcdp.c b/drivers/firmware/pcdp.c
-index 51e0e2d..a330492 100644
---- a/drivers/firmware/pcdp.c
-+++ b/drivers/firmware/pcdp.c
-@@ -95,7 +95,7 @@ efi_setup_pcdp_console(char *cmdline)
- 	if (efi.hcdp == EFI_INVALID_TABLE_ADDR)
- 		return -ENODEV;
- 
--	pcdp = ioremap(efi.hcdp, 4096);
-+	pcdp = early_ioremap(efi.hcdp, 4096);
- 	printk(KERN_INFO "PCDP: v%d at 0x%lx\n", pcdp->rev, efi.hcdp);
- 
- 	if (strstr(cmdline, "console=hcdp")) {
-@@ -131,6 +131,6 @@ efi_setup_pcdp_console(char *cmdline)
- 	}
- 
- out:
--	iounmap(pcdp);
-+	early_iounmap(pcdp, 4096);
- 	return rc;
- }
--- 
-1.7.5.4
+Or show off your geekiness by using back ticks:
+$ vi `./bcon_tail`
 
+> Something like the above, just slap it at the beginning of
+> Documentation/block/blockconsole.txt for impatient people like me and
+> that's it :-).
+
+Will do.
+
+Jörn
+
+--
+There's nothing better for promoting creativity in a medium than
+making an audience feel "Hmm ­ I could do better than that!"
+-- Douglas Adams in a slashdot interview
