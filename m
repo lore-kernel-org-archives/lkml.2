@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753222Ab2GRJpA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 05:45:00 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37644 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751010Ab2GRJow (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 05:44:52 -0400
-Date: Wed, 18 Jul 2012 10:44:49 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: AnilKumar Ch <anilkumar@ti.com>
-Cc: rdunlap@xenotime.net, sfr@canb.auug.org.au, sameo@linux.intel.com,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org
-Subject: Re: [PATCH] regulator: tps65217: fix build error if REGULATOR is not
- enabled
-Message-ID: <20120718094449.GA22739@opensource.wolfsonmicro.com>
-References: <1342593663-23938-1-git-send-email-anilkumar@ti.com>
+	id S1753237Ab2GRJqX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 05:46:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11301 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752964Ab2GRJqN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 05:46:13 -0400
+Message-ID: <500685DA.2090402@redhat.com>
+Date: Wed, 18 Jul 2012 12:46:02 +0300
+From: Ronen Hod <rhod@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="IJpNTDwzlM2Ie8A6"
-Content-Disposition: inline
-In-Reply-To: <1342593663-23938-1-git-send-email-anilkumar@ti.com>
-X-Cookie: You will forget that you ever knew me.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Asias He <asias@redhat.com>
+CC: Paolo Bonzini <pbonzini@redhat.com>, Stefan Hajnoczi <stefanha@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-aio@kvack.org, kvm@vger.kernel.org,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        virtualization@lists.linux-foundation.org,
+        Benjamin LaHaise <bcrl@kvack.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 0/5] Add vhost-blk support
+References: <1342107302-28116-1-git-send-email-asias@redhat.com> <CAJSP0QWgmXns89se+xdGgM6i1_hsfVWPQ8caHua9d-dDA4CTDQ@mail.gmail.com> <50052276.2080906@redhat.com> <500527BA.9000001@redhat.com> <50052E7E.6020100@redhat.com>
+In-Reply-To: <50052E7E.6020100@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/17/2012 12:21 PM, Asias He wrote:
+> On 07/17/2012 04:52 PM, Paolo Bonzini wrote:
+>> Il 17/07/2012 10:29, Asias He ha scritto:
+>>> So, vhost-blk at least saves ~6 syscalls for us in each request.
+>>
+>> Are they really 6?  If I/O is coalesced by a factor of 3, for example
+>> (i.e. each exit processes 3 requests), it's really 2 syscalls per request.
+>
+> Well. I am counting the number of syscalls in one notify and response process. Sure the IO can be coalesced.
 
---IJpNTDwzlM2Ie8A6
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Note that Asias is using very fast "disks" (FusionIO & Ramdisk).
+- This might affect the level of coalescing both ways, depending on the scenario and algorithm.
+- This also means that the 5%-15% gain will probably be lower in real life.
+Ronen.
 
-On Wed, Jul 18, 2012 at 12:11:03PM +0530, AnilKumar Ch wrote:
-> Fixes below build error if CONFIG_REGULATOR is not enabled.
->=20
-> drivers/built-in.o: In function `tps65217_probe':
-> tps65217.c:(.devinit.text+0x13e37): undefined reference to `of_regulator_=
-match'
+>
+>> Also, is there anything we can improve? Perhaps we can modify epoll and
+>> ask it to clear the eventfd for us (would save 2 reads)?  Or
+>> io_getevents (would save 1)?
+>>
+>>> I guess you mean qemu here. Yes, in theory, qemu's block layer can be
+>>> improved to achieve similar performance as vhost-blk or kvm tool's
+>>> userspace virito-blk has. But I think it makes no sense to prevent one
+>>> solution becase there is another in theory solution called: we can do
+>>> similar in qemu.
+>>
+>> It depends.  Like vhost-scsi, vhost-blk has the problem of a crippled
+>> feature set: no support for block device formats, non-raw protocols,
+>> etc.  This makes it different from vhost-net.
+>
+> Data-plane qemu also has this cripppled feature set problem, no? Does user always choose to use block devices format like qcow2? What if they prefer raw image or raw block device?
+>
+>>
+>> So it begs the question, is it going to be used in production, or just a
+>> useful reference tool?
+>
+> This should be decided by user, I can not speak for them. What is wrong with adding one option for user which they can decide?
+>
 
-This isn't a patch to the regulator driver, this is a patch to the MFD.
-Normally this would be fixed by making the MFD driver not depend on the
-regulator API - why is the MFD driver using the regulator API?
 
---IJpNTDwzlM2Ie8A6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQBoV8AAoJEBus8iNuMP3dVXwP/1pxnlpS8W3n3KZbkYvTAQDb
-1yDP1EbGKF2CaEUrhop4tAQrEnnVW9YDTa7c4sjq2978q2Y1AcUeJeiZquHonhjR
-MvIlgO2WpAm+waRpk7CV5C3kGVdDxe8N6E7+rUrV2ghlrAGf9oLJWqudsWWbmRfS
-qls9qgnaQXY1HYH9yUZYgqF9//OSEIsCxdEG6G/AKxBj4Fka7FxfqtgewdSBbFxk
-AtoG0s/ywGDjw4A8iOKP9TevzIJ9XL7Rf9qFvE/JQ1Eywh12qyFy6qVgq4+tAMgm
-oHno1unLROEkc93nlNYQKWgKO90bbM5Hgo4NVId+JuEdZcQ73ZfB5h9B0dE28yVu
-4haPIPaiev+5B0ERF29W/uEJRV6gY0IHoJGfbsBdEHG5oqG7hKlYEBeW8DnOtxAZ
-IG0tGZKzVUi3Z/QydGBUtAuwTC4OOStVPRjVTQd7hvsAIrDX4rE1x7XveAOIiS7D
-WbggLKZH93pI232997o+gb8bcodT4AwwBzO5BQLEWTW3LWBb49UEWqq5ZIH3ZVN+
-rdtvYCocBdxINZtmF5psSKffAQOBNZQp9Qgm8hVq2BV/qLUj1WCae3cSnWQGpYoA
-LtH3W39Bb9pGxbE+F6Dh1xbBV4g4aaFvtbscq7BRNex88i7ehvCEhxX56kp1amIO
-Qgx2uEfvQyySjXmDwcrU
-=9gaP
------END PGP SIGNATURE-----
-
---IJpNTDwzlM2Ie8A6--
