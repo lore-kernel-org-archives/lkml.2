@@ -1,100 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754480Ab2GRWWO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 18:22:14 -0400
-Received: from longford.logfs.org ([213.229.74.203]:43552 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751583Ab2GRWWM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 18:22:12 -0400
-Date: Wed, 18 Jul 2012 17:08:15 -0400
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Jeff Moyer <jmoyer@redhat.com>, Steve Hodgson <steve@purestorage.com>
-Subject: Re: [PATCH] add blockconsole version 1.1
-Message-ID: <20120718210814.GA1871@logfs.org>
-References: <20120424205946.GH20610@logfs.org>
- <x49zka0j5bk.fsf@segfault.boston.devel.redhat.com>
- <20120425132513.GA23492@logfs.org>
- <x49vcknkdvn.fsf@segfault.boston.devel.redhat.com>
- <20120712174633.GA7248@logfs.org>
- <20120713130336.GC10298@x1.osrc.amd.com>
- <20120713162009.GA10268@logfs.org>
- <20120716124614.GA19497@x1.osrc.amd.com>
- <20120718185335.GA1771@logfs.org>
- <20120718214520.GA14067@liondog.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120718214520.GA14067@liondog.tnic>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753871Ab2GRW0p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 18:26:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22968 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751844Ab2GRW0n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 18:26:43 -0400
+Message-ID: <1342650401.2229.224.camel@bling.home>
+Subject: Re: [PATCH] kvm: fix race with level interrupts
+From: Alex Williamson <alex.williamson@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        gleb@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 18 Jul 2012 16:26:41 -0600
+In-Reply-To: <20120718215228.GA13905@redhat.com>
+References: <20120718215228.GA13905@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 July 2012 23:45:21 +0200, Borislav Petkov wrote:
+On Thu, 2012-07-19 at 00:52 +0300, Michael S. Tsirkin wrote:
+> When more than 1 source id is in use for the same GSI, we have the
+> following race related to handling irq_states:
 > 
-> > > So why is that first megabyte full of zeros there?
-> > 
-> > It gives you some scratch space to store information in.
+> CPU 0 clears bit in irq_states. CPU 0 reads irq_state as 0.
+> CPU 1 sets bit in irq_states.  CPU 1 calls kvm_ioapic_set_irq(1). CPU 0
+> calls kvm_ioapic_set_irq(0).
 > 
-> How? By me writing something in that empty line in vim? Or something
-> else storing stuff there?
+> Now ioapic thinks the level is 0 but irq_state is not 0.
+> 
+> Note that above is valid behaviour if CPU0 and CPU1 are using different
+> source ids.
+> 
+> Fix by performing all irq_states bitmap handling under pic/ioapic lock.
+> This also removes the need for atomics with irq_states handling.
+> 
+> Reported-by: Gleb Natapov <gleb@redhat.com>
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+> 
+> This survives stress testing for me (though I only tried virtio, not
+> device assignment).
+> Avi, Marcelo, though we have not observed this in the field,
+> it's a bugfix so probably 3.5 material?
+> I assume yes so the patch is against 3.5-rc7.
+> Also stable? It's a very old bug.
+> 
+> 
+>  arch/x86/include/asm/kvm_host.h | 15 ++++++++++++++-
+>  arch/x86/kvm/i8259.c            | 14 ++++++++++++--
+>  virt/kvm/ioapic.c               | 13 ++++++++++++-
+>  virt/kvm/ioapic.h               |  4 +++-
+>  virt/kvm/irq_comm.c             | 31 ++++---------------------------
+>  5 files changed, 45 insertions(+), 32 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> index db7c1f2..fe6e9f1 100644
+> --- a/arch/x86/include/asm/kvm_host.h
+> +++ b/arch/x86/include/asm/kvm_host.h
+> @@ -802,7 +802,20 @@ int kvm_read_guest_page_mmu(struct kvm_vcpu *vcpu, struct kvm_mmu *mmu,
+>  void kvm_propagate_fault(struct kvm_vcpu *vcpu, struct x86_exception *fault);
+>  bool kvm_require_cpl(struct kvm_vcpu *vcpu, int required_cpl);
+>  
+> -int kvm_pic_set_irq(void *opaque, int irq, int level);
+> +static inline int kvm_irq_line_state(unsigned long *irq_state,
+> +				     int irq_source_id, int level)
 
-Assuming you want to do it in an automated fashion - by patching or
-replacing mkblockconsole.  Again, I have no opinion on whether this
-actually makes sense.  It is possible, it does not really hurt the
-primary function and people have explicitly asked me for it.  Good
-enough for me.
+This should probably be __kvm_irq_line_state given the calling
+restrictions.
 
-> > How useful that actually is may be a matter of opinion. But
-> > independent of that, you will find large amounts of zeroes all over.
-> > Every time you reboot, the new blockconsole will start writing at a
-> > megabyte-aligned offset and whatever remains of the last megabyte
-> > should be zero-filled as well.
-> 
-> Ah, those are the tiles you're talking about in the docs, right?
+> +{
+> +	/* Logical OR for level trig interrupt */
+> +	if (level)
+> +		__set_bit(irq_source_id, irq_state);
+> +	else
+> +		__clear_bit(irq_source_id, irq_state);
+> +
+> +	return !!(*irq_state);
+> +}
+> +
+> +int kvm_pic_set_irq(struct kvm_pic *pic, int irq, int irq_source_id, int level);
+> +void kvm_pic_clear_all(struct kvm_pic *pic, int irq_source_id);
+>  
+>  void kvm_inject_nmi(struct kvm_vcpu *vcpu);
+>  
+> diff --git a/arch/x86/kvm/i8259.c b/arch/x86/kvm/i8259.c
+> index 81cf4fa..95b504b 100644
+> --- a/arch/x86/kvm/i8259.c
+> +++ b/arch/x86/kvm/i8259.c
+> @@ -188,13 +188,14 @@ void kvm_pic_update_irq(struct kvm_pic *s)
+>  	pic_unlock(s);
+>  }
+>  
+> -int kvm_pic_set_irq(void *opaque, int irq, int level)
+> +int kvm_pic_set_irq(struct kvm_pic *s, int irq, int src_id, int l)
+>  {
+> -	struct kvm_pic *s = opaque;
+>  	int ret = -1;
+> +	int level;
+>  
+>  	pic_lock(s);
+>  	if (irq >= 0 && irq < PIC_NUM_PINS) {
+> +		level = kvm_irq_line_state(&s->irq_states[irq], src_id, l);
+>  		ret = pic_set_irq1(&s->pics[irq >> 3], irq & 7, level);
+>  		pic_update_irq(s);
+>  		trace_kvm_pic_set_irq(irq >> 3, irq & 7, s->pics[irq >> 3].elcr,
+> @@ -205,6 +206,15 @@ int kvm_pic_set_irq(void *opaque, int irq, int level)
+>  	return ret;
+>  }
+>  
+> +void kvm_pic_clear_all(struct kvm_pic *s, int src_id)
+> +{
+> +	int i;
+> +	pic_lock(s);
+> +	for (i = 0; i < PIC_NUM_PINS; i++)
+> +		__clear_bit(src_id, &s->irq_states[i]);
+> +	pic_unlock(s);
+> +}
+> +
+>  /*
+>   * acknowledge interrupt 'irq'
+>   */
+> diff --git a/virt/kvm/ioapic.c b/virt/kvm/ioapic.c
+> index 26fd54d..268b332 100644
+> --- a/virt/kvm/ioapic.c
+> +++ b/virt/kvm/ioapic.c
+> @@ -191,17 +191,19 @@ static int ioapic_deliver(struct kvm_ioapic *ioapic, int irq)
+>  	return kvm_irq_delivery_to_apic(ioapic->kvm, NULL, &irqe);
+>  }
+>  
+> -int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int level)
+> +int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int src_id, int l)
+>  {
+>  	u32 old_irr;
+>  	u32 mask = 1 << irq;
+>  	union kvm_ioapic_redirect_entry entry;
+>  	int ret = 1;
+> +	int level;
+>  
+>  	spin_lock(&ioapic->lock);
+>  	old_irr = ioapic->irr;
+>  	if (irq >= 0 && irq < IOAPIC_NUM_PINS) {
+>  		entry = ioapic->redirtbl[irq];
+> +		level = kvm_irq_line_state(&ioapic->irq_states[irq], src_id, l);
+>  		level ^= entry.fields.polarity;
+>  		if (!level)
+>  			ioapic->irr &= ~mask;
+> @@ -221,6 +223,15 @@ int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int level)
+>  	return ret;
+>  }
+>  
+> +void kvm_ioapic_clear_all(struct kvm_ioapic *ioapic, int src_id)
+> +{
+> +	int i;
+> +	spin_lock(&ioapic->lock);
+> +	for (i = 0; i < KVM_IOAPIC_NUM_PINS; i++)
+> +		__clear_bit(src_id, &ioapic->irq_states[i]);
+> +	spin_unlock(&ioapic->lock);
+> +}
+> +
+>  static void __kvm_ioapic_update_eoi(struct kvm_ioapic *ioapic, int vector,
+>  				     int trigger_mode)
+>  {
+> diff --git a/virt/kvm/ioapic.h b/virt/kvm/ioapic.h
+> index 32872a0..a30abfe 100644
+> --- a/virt/kvm/ioapic.h
+> +++ b/virt/kvm/ioapic.h
+> @@ -74,7 +74,9 @@ void kvm_ioapic_update_eoi(struct kvm *kvm, int vector, int trigger_mode);
+>  bool kvm_ioapic_handles_vector(struct kvm *kvm, int vector);
+>  int kvm_ioapic_init(struct kvm *kvm);
+>  void kvm_ioapic_destroy(struct kvm *kvm);
+> -int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int level);
+> +int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int irq_source_id,
+> +		       int level);
+> +void kvm_ioapic_clear_all(struct kvm_ioapic *ioapic, int irq_source_id);
+>  void kvm_ioapic_reset(struct kvm_ioapic *ioapic);
+>  int kvm_irq_delivery_to_apic(struct kvm *kvm, struct kvm_lapic *src,
+>  		struct kvm_lapic_irq *irq);
+> diff --git a/virt/kvm/irq_comm.c b/virt/kvm/irq_comm.c
+> index 5afb431..83402d7 100644
+> --- a/virt/kvm/irq_comm.c
+> +++ b/virt/kvm/irq_comm.c
+> @@ -33,26 +33,12 @@
+>  
+>  #include "ioapic.h"
+>  
+> -static inline int kvm_irq_line_state(unsigned long *irq_state,
+> -				     int irq_source_id, int level)
+> -{
+> -	/* Logical OR for level trig interrupt */
+> -	if (level)
+> -		set_bit(irq_source_id, irq_state);
+> -	else
+> -		clear_bit(irq_source_id, irq_state);
+> -
+> -	return !!(*irq_state);
+> -}
+> -
+>  static int kvm_set_pic_irq(struct kvm_kernel_irq_routing_entry *e,
+>  			   struct kvm *kvm, int irq_source_id, int level)
+>  {
+>  #ifdef CONFIG_X86
+>  	struct kvm_pic *pic = pic_irqchip(kvm);
+> -	level = kvm_irq_line_state(&pic->irq_states[e->irqchip.pin],
+> -				   irq_source_id, level);
+> -	return kvm_pic_set_irq(pic, e->irqchip.pin, level);
+> +	return kvm_pic_set_irq(pic, e->irqchip.pin, irq_source_id, level);
+>  #else
+>  	return -1;
+>  #endif
+> @@ -62,10 +48,7 @@ static int kvm_set_ioapic_irq(struct kvm_kernel_irq_routing_entry *e,
+>  			      struct kvm *kvm, int irq_source_id, int level)
+>  {
+>  	struct kvm_ioapic *ioapic = kvm->arch.vioapic;
+> -	level = kvm_irq_line_state(&ioapic->irq_states[e->irqchip.pin],
+> -				   irq_source_id, level);
+> -
+> -	return kvm_ioapic_set_irq(ioapic, e->irqchip.pin, level);
+> +	return kvm_ioapic_set_irq(ioapic, e->irqchip.pin, irq_source_id, level);
+>  }
+>  
+>  inline static bool kvm_is_dm_lowest_prio(struct kvm_lapic_irq *irq)
+> @@ -249,8 +232,6 @@ unlock:
+>  
+>  void kvm_free_irq_source_id(struct kvm *kvm, int irq_source_id)
+>  {
+> -	int i;
+> -
+>  	ASSERT(irq_source_id != KVM_USERSPACE_IRQ_SOURCE_ID);
+>  
+>  	mutex_lock(&kvm->irq_lock);
+> @@ -263,14 +244,10 @@ void kvm_free_irq_source_id(struct kvm *kvm, int irq_source_id)
+>  	if (!irqchip_in_kernel(kvm))
+>  		goto unlock;
+>  
+> -	for (i = 0; i < KVM_IOAPIC_NUM_PINS; i++) {
+> -		clear_bit(irq_source_id, &kvm->arch.vioapic->irq_states[i]);
+> -		if (i >= 16)
+> -			continue;
+> +	kvm_ioapic_clear_all(kvm->arch.vioapic, irq_source_id);
+>  #ifdef CONFIG_X86
+> -		clear_bit(irq_source_id, &pic_irqchip(kvm)->irq_states[i]);
+> +	kvm_pic_clear_all(pic_irqchip(kvm), irq_source_id);
+>  #endif
+> -	}
+>  unlock:
+>  	mutex_unlock(&kvm->irq_lock);
+>  }
 
-Yes.
 
-> Oh, I didn't mean anything involved but rather a quick steps write-up
-> (steps can always be expanded and made more verbose later):
-> 
-> Blocksonsole in three easy steps
-> ================================
-> 
-> 1. Find an unused USB stick and prepare it for blockconsole by writing
-> the blockconsole signature to it:
-> 
-> $ ./mkblockconsole /dev/sdc
-> 
->   [ Assuming /dev/sdc is the device node of the USB stick you just mounted. ]
-> 
-> 2. USB stick is ready for use, replug it so that the kernel can start
-> logging to it.
-> 
-> 3. After you've done logging, read out the logs from it like this:
-> 
-> $ ./bcon_tail
-> 
->   [ This creates a file called /var/log/bcon.<random number> which
->   contains the logs. Open it with a sane editor like vim which can
->   display zeroed gaps as a single line and start staring at the logs. ]
 
-Or show off your geekiness by using back ticks:
-$ vi `./bcon_tail`
-
-> Something like the above, just slap it at the beginning of
-> Documentation/block/blockconsole.txt for impatient people like me and
-> that's it :-).
-
-Will do.
-
-Jörn
-
---
-There's nothing better for promoting creativity in a medium than
-making an audience feel "Hmm ­ I could do better than that!"
--- Douglas Adams in a slashdot interview
