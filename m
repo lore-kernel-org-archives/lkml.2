@@ -1,67 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755680Ab2GRSx1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 14:53:27 -0400
-Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:39804 "HELO
-	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755592Ab2GRSxW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 14:53:22 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: Rny8aJ8VM1nhcBPGR4JjwiYWJXJb.a6fVCh5aB1jGgk9xrF
- xdDOt6xIcBmC9pa.wJxId7BOArgvhlF0Jr4ZSlIS2ASN5RBS8QlUJqpQFXis
- 4_SX6qQrnZMEpk7Mr0oY.18sWp.YvlJr.P2QvV9OETkwTjuizw4GNkPAVEzi
- 6q8QW63DazrwchKpHYEXCXZ0E7S62h35ed6e.zX0sNY8rvscBIwnAVe40cZJ
- 8k1xOcnF24yCgT.MrW7w7EoPL6Ewlgd_9V_OybNs5vunNruMi9oM1ebCck4i
- KK0mG3i_dU4rsINAi1e5hjnUDI_q5qVRrjlkbTO23ULIC.7C_.VYBUWZ_59w
- yen02xPF.3yJvVUAlxBx8kU92gg2UBDzxtBqEic3DNTvvA3SmuzONBR0Lstf
- mMEmgF.EolXvHNms5RKUrdHd2M8bA6fyfym.k
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Wed, 18 Jul 2012 13:53:15 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Jiang Liu <liuj97@gmail.com>
-cc: Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Mel Gorman <mgorman@suse.de>, Jianguo Wu <wujianguo@huawei.com>,
-        Jiang Liu <jiang.liu@huawei.com>, Tony Luck <tony.luck@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
-        Keping Chen <chenkeping@huawei.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm/slub: fix a BUG_ON() when offlining a memory node
- and CONFIG_SLUB_DEBUG is on
-In-Reply-To: <5006E9E6.2030004@gmail.com>
-Message-ID: <alpine.DEB.2.00.1207181349370.22907@router.home>
-References: <1342543816-10853-1-git-send-email-jiang.liu@huawei.com> <alpine.DEB.2.00.1207171237320.15177@router.home> <5006E9E6.2030004@gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1755578Ab2GRS44 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 14:56:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41951 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753246Ab2GRS4y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 14:56:54 -0400
+Date: Wed, 18 Jul 2012 15:42:09 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>,
+        Gleb Natapov <gleb@redhat.com>, avi@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
+Subject: Re: [PATCH v5 1/4] kvm: Extend irqfd to support level interrupts
+Message-ID: <20120718184209.GA14053@amt.cnet>
+References: <20120718105311.GH4700@redhat.com>
+ <20120718105530.GG26120@redhat.com>
+ <20120718112219.GJ4700@redhat.com>
+ <20120718113910.GA5135@redhat.com>
+ <20120718114844.GH26120@redhat.com>
+ <20120718120705.GB5184@redhat.com>
+ <1342622843.2229.200.camel@bling.home>
+ <20120718153822.GC1777@redhat.com>
+ <1342626481.2229.205.camel@bling.home>
+ <20120718155823.GG1777@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120718155823.GG1777@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 Jul 2012, Jiang Liu wrote:
+On Wed, Jul 18, 2012 at 06:58:24PM +0300, Michael S. Tsirkin wrote:
+> > > > > > Back to original point though current
+> > > > > > situation is that calling kvm_set_irq() under spinlock is not worse for
+> > > > > > scalability than calling it not under one.
+> > > > > 
+> > > > > Yes. Still the specific use can just use an atomic flag,
+> > > > > lock+bool is not needed, and we won't need to undo it later.
+> > > > 
+> > > > 
+> > > > Actually, no, replacing it with an atomic is racy.
+> > > > 
+> > > > CPU0 (inject)                       CPU1 (EOI)
+> > > > atomic_cmpxchg(&asserted, 0, 1)
+> > > >                                     atomic_cmpxchg(&asserted, 1, 0)
+> > > >                                     kvm_set_irq(0)
+> > > > kvm_set_irq(1)
+> > > >                                     eventfd_signal
+> > > > 
+> > > > The interrupt is now stuck on until another interrupt is injected.
+> > > > 
+> > > 
+> > > Well EOI somehow happened here before interrupt so it's a bug somewhere
+> > > else?
+> > 
+> > Interrupts can be shared.  We also can't guarantee that the guest won't
+> > write a bogus EOI to the ioapic.  The irq ack notifier doesn't filter on
+> > irq source id... I'm not sure it can.
+> 
+> I guess if Avi OKs adding another kvm_set_irq under spinlock that's
+> the best we can do for now.
 
-> 	I found the previous analysis of the BUG_ON() issue is incorrect after
-> another round of code review.
-> 	The really issue is that function early_kmem_cache_node_alloc() calls
-> inc_slabs_node(kmem_cache_node, node, page->objects) to increase the object
-> count on local node no matter whether page is allocated from local or remote
-> node. With current implementation it's OK because every memory node has normal
-> memory so page is allocated from local node. Now we are working on a patch set
-> to improve memory hotplug. The basic idea is to to let some memory nodes only
-> host ZONE_MOVABLE zone, so we could easily remove the whole memory node when
-> needed. That means some memory nodes have no ZONE_NORMAL/ZONE_DMA, and the page
-> will be allocated from remote node in function early_kmem_cache_node_alloc().
-> But early_kmem_cache_node_alloc() still increases object count on local node,
-> which triggers the BUG_ON eventually when removing the affected memory node.
-
-That does not work. If the node does only have ZONE_MOVABLE then no slab
-object can be allocated from the zone. You need to modify the slab
-allocators to not allocate a per node structure for those zones and forbit
-all allocations from such a node. Actually that should already work
-because only ZONE_NORMAL nodes should get a per node structure because
-slab objects can only be allocated from ZONE_NORMAL.
+Why can't a mutex be used instead of a spinlock again?
 
 
