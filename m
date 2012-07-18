@@ -1,63 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751576Ab2GRFky (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 01:40:54 -0400
-Received: from na3sys009aog127.obsmtp.com ([74.125.149.107]:60700 "EHLO
-	na3sys009aog127.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751677Ab2GRFkr (ORCPT
+	id S1752641Ab2GRFmN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 01:42:13 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:15713 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751019Ab2GRFmD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 01:40:47 -0400
+	Wed, 18 Jul 2012 01:42:03 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 17 Jul 2012 22:37:54 -0700
+Message-ID: <50064AA7.3020508@nvidia.com>
+Date: Wed, 18 Jul 2012 11:03:27 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <50055A21.5010206@mvista.com>
-References: <1342512611-20529-1-git-send-email-kishon@ti.com>
-	<1342512611-20529-3-git-send-email-kishon@ti.com>
-	<50055A21.5010206@mvista.com>
-Date: Wed, 18 Jul 2012 11:10:44 +0530
-Message-ID: <CAAe_U6K1rXN3+YsbMo01kUUh-p=j7OBeMz-Kg_qADXjTbV2_Hg@mail.gmail.com>
-Subject: Re: [PATCH v2 02/11] arm/dts: omap: Add omap-usb2 dt data
-From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
-        linux@arm.linux.org.uk, gregkh@linuxfoundation.org, b-cousson@ti.com,
-        rnayak@ti.com, tony@atomide.com, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, balbi@ti.com,
-        linux-omap@vger.kernel.org, linux-usb@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH V2 1/6] mfd: tps6586x:use devm managed resources
+References: <1342421510-10638-1-git-send-email-ldewangan@nvidia.com> <1342421510-10638-2-git-send-email-ldewangan@nvidia.com> <20120716200110.GD10774@opensource.wolfsonmicro.com> <5004ED3F.4080601@nvidia.com> <20120717165346.GH4477@opensource.wolfsonmicro.com>
+In-Reply-To: <20120717165346.GH4477@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tuesday 17 July 2012 10:23 PM, Mark Brown wrote:
+> * PGP Signed by an unknown key
+>
+> On Tue, Jul 17, 2012 at 10:12:39AM +0530, Laxman Dewangan wrote:
+>> On Tuesday 17 July 2012 01:31 AM, Mark Brown wrote:
+>>> On Mon, Jul 16, 2012 at 12:21:45PM +0530, Laxman Dewangan wrote:
+>
+>> I think device_remove will get called before the managed resource
+>> get freed.
+>> So do we need to call disable_irq() in remove() to avoid any interrupts?
+> That would be very rude if the IRQ happened to get shared, though that's
+> not possible at the moment.  In general it's pretty hard to use devm_
+> IRQs safely, it's normally safest to avoid them due to the issues with
+> ensuring that the interrupt handler is safe to be called even while the
+> device is being torn down.
 
-On Tue, Jul 17, 2012 at 5:57 PM, Sergei Shtylyov <sshtylyov@mvista.com> wrote:
-> Hello.
->
->
-> On 17-07-2012 12:10, Kishon Vijay Abraham I wrote:
->
->> Add omap-usb2 data node in omap4 device tree file.
->
->
->> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->> ---
->>   arch/arm/boot/dts/omap4.dtsi |    5 +++++
->>   1 files changed, 5 insertions(+), 0 deletions(-)
->>
->> diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
->> index bda5df3..4d2dcc1 100644
->> --- a/arch/arm/boot/dts/omap4.dtsi
->> +++ b/arch/arm/boot/dts/omap4.dtsi
->> @@ -279,6 +279,11 @@
->>                         #size-cells = <1>;
->>                         ranges;
->>                         ti,hwmods = "ocp2scp_usb_phy";
->> +                       usb2phy@0x4a0ad080 {
->
->
->    There should be no "0x" prefix here.
-
-Ok. Will fix it.
-
-Thanks
-Kishon
+OK, then I will revert this specific change if it is not safe. I will 
+send the another patch (part of series v3 1/6) for this change only.
