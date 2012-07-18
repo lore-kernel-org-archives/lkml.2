@@ -1,90 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753498Ab2GRKdS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 06:33:18 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60235 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752458Ab2GRKdP (ORCPT
+	id S1753472Ab2GRKeV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 06:34:21 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:38130 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752493Ab2GRKeS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 06:33:15 -0400
-Date: Wed, 18 Jul 2012 11:33:12 +0100
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Shawn Guo <shawn.guo@freescale.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        devicetree-discuss@lists.ozlabs.org,
-        Wolfram Sang <w.sang@pengutronix.de>, linux-kernel@vger.kernel.org,
-        Deepak Saxena <dsaxena@linaro.org>, linux-next@vger.kernel.org,
-        Alessandro Rubini <rubini@gnudd.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: linux-next: manual merge of the arm-soc tree with the
- i2c-embedded tree
-Message-ID: <20120718103311.GG22739@opensource.wolfsonmicro.com>
-References: <20120717130650.GB27595@sirena.org.uk>
- <500568D9.10805@linaro.org>
- <20120717133550.GC4477@opensource.wolfsonmicro.com>
- <50057058.2060002@linaro.org>
- <20120717142222.GE4477@opensource.wolfsonmicro.com>
- <50057C1A.80606@linaro.org>
- <20120717152001.GF4477@opensource.wolfsonmicro.com>
- <20120718053341.GA4009@S2100-06.ap.freescale.net>
- <20120718095937.GB22739@opensource.wolfsonmicro.com>
- <50069006.8050301@linaro.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="oXNgvKVxGWJ0RPMJ"
-Content-Disposition: inline
-In-Reply-To: <50069006.8050301@linaro.org>
-Grom: Mark Brown <broonie@opensource.wolfsonmicro.com>
-X-Cookie: You will forget that you ever knew me.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+	Wed, 18 Jul 2012 06:34:18 -0400
+Message-ID: <1342607317.7530.9.camel@brekeke>
+Subject: Re: [PATCH 2/5] ubi: Limit amount of reserved eraseblocks for bad
+ PEB handling
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Richard Weinberger <richard@nod.at>,
+        Richard Genoud <richard.genoud@gmail.com>
+Date: Wed, 18 Jul 2012 13:28:37 +0300
+In-Reply-To: <1341389164-24409-3-git-send-email-shmulik.ladkani@gmail.com>
+References: <1341389164-24409-1-git-send-email-shmulik.ladkani@gmail.com>
+	 <1341389164-24409-3-git-send-email-shmulik.ladkani@gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-j6wGsMTPxMqubVCHVU4E"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---oXNgvKVxGWJ0RPMJ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+--=-j6wGsMTPxMqubVCHVU4E
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, Jul 18, 2012 at 11:29:26AM +0100, Lee Jones wrote:
-> On 18/07/12 10:59, Mark Brown wrote:
+On Wed, 2012-07-04 at 11:06 +0300, Shmulik Ladkani wrote:
+> @@ -1045,20 +1046,14 @@ static int erase_worker(struct ubi_device *ubi, s=
+truct ubi_work *wl_wrk,
+>  	}
+> =20
+>  	spin_lock(&ubi->volumes_lock);
+> -	need =3D ubi->beb_rsvd_level - ubi->beb_rsvd_pebs + 1;
+> -	if (need > 0) {
+> -		need =3D ubi->avail_pebs >=3D need ? need : ubi->avail_pebs;
+> -		ubi->avail_pebs -=3D need;
+> -		ubi->rsvd_pebs +=3D need;
+> -		ubi->beb_rsvd_pebs +=3D need;
+> -		if (need > 0)
+> -			ubi_msg("reserve more %d PEBs", need);
+> -	}
+> -
+>  	if (ubi->beb_rsvd_pebs =3D=3D 0) {
+> -		spin_unlock(&ubi->volumes_lock);
+> -		ubi_err("no reserved physical eraseblocks");
+> -		goto out_ro;
+> +		if (ubi->avail_pebs =3D=3D 0) {
+> +			spin_unlock(&ubi->volumes_lock);
+> +			ubi_err("no reserved/available physical eraseblocks");
+> +			goto out_ro;
+> +		}
+> +		ubi->avail_pebs -=3D 1;
+> +		available_consumed =3D 1;
+>  	}
+>  	spin_unlock(&ubi->volumes_lock);
 
-> >It's not the using device tree bit that creates concern for me here,
-> >it's the fact that the board and silicon aren't being separated.
+The whole thing will become simpler if we first mark the PEB as bad
+unconditionally (because it _is_ bad), then grab the lock and do all the
+re-calculations.
 
-> What's the difference?
+> =20
+> @@ -1068,11 +1063,23 @@ static int erase_worker(struct ubi_device *ubi, s=
+truct ubi_work *wl_wrk,
+>  		goto out_ro;
+> =20
+>  	spin_lock(&ubi->volumes_lock);
+> -	ubi->beb_rsvd_pebs -=3D 1;
+> +	if (ubi->beb_rsvd_pebs > 0) {
+> +		if (available_consumed) {
+> +			/*
+> +			 * Some PEBs were added to the reserved pool since we
+> +			 * last checked. Use a PEB from the reserved pool.
+> +			 */
+> +			ubi->avail_pebs +=3D 1;
+> +			available_consumed =3D 0;
+> +		}
+> +		ubi->beb_rsvd_pebs -=3D 1;
+> +	}
+>  	ubi->bad_peb_count +=3D 1;
+>  	ubi->good_peb_count -=3D 1;
+>  	ubi_calculate_reserved(ubi);
 
-> >+- db8500.dtsi       // silicon
-> >\=09
-> > +-- snowball.dts    // board
+We do not need to call this function from here, right?
 
-I have glanced at some of this stuff in the past, thanks.  Now think how
-that's working for people when they put the configuration for the
-silicon in the same DT node as the configuration for the board...
+--=20
+Best Regards,
+Artem Bityutskiy
 
---oXNgvKVxGWJ0RPMJ
+--=-j6wGsMTPxMqubVCHVU4E
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQBpDhAAoJEBus8iNuMP3dFEIP/jEMNzs0CKNauFphjis+a6QJ
-TpT4kfXjyIR0U2mnM9iQNRcHf7ivaPOm2pAKR+eDxe2lQmT2MFZ8WzTsEfE1qMhZ
-AYVaIN67XOg/c20wJAl0sIaTbx4zT00v7XgkynxLlnA98/kkQ0UfBYyHkPFHpD9b
-YWTS7dx4QFIDBvn8wl1ZxbplakjUV4WP0qGZKlg7egCv/me7GwBc0fhWrgLYX8KO
-aTol+6tvUIrwriqOE15/xifPeBFNZ4UIuRlnNBi94G/JfYcZ9d0XGj6FBQvZmT0W
-bSfAuuGoBw4BY0DpgyxhF5r+d/yQcQv4LuhPQ/k33Rc9WRwda1Mk3VZgnbqP9ofI
-2OIEidLi5ViMuXtkvnxrIVIhinbpuRq86S40PlD7Do2tvGbFGFaLFzqIW5JMTB/B
-9klM0JZzzBb/vPpyuSjVL4KZlkeLHQ7cpMgGeIaK/+W0oPYDonsJlBknvlRcnuv0
-1Ham37TsX+uJ2XM4MENj46Dkyt8ceUxNCPQ5WH8DPZNaDWS8Mwpgq6sOdsbmQg9T
-17WTyJcAo/eCbK5QpVoW4X42ZVwwQhq4pmnqn8rLLHH/OR+wGMgwZTQEgOlUA/Z3
-YmxL+ZPUCt6JQ08yDFl0HmbhIbuomRr0A7IgmK6w5R+ZJF6dXcIQ4OdePQKr66HU
-ye4N0Xg/rtVereMyb5+9
-=AqvO
+iQIcBAABAgAGBQJQBo/VAAoJECmIfjd9wqK0B0wQAJJUPGzIx/eTiqD9tVB1gN8T
+dylzQHURoPb6p1phSHzEJYZYuGYEWyP5x86oW3JQ4T7jN5gbrnLJ76bsRUR5Lrs7
+YV54giVyBXvyyoecaHKsGcf3mxQKV+0DuBjGXEL0+IwUGmCfxmzFehZ5ko1gA41C
+JAb0ziu7pRMI2kntBDnk9iaxZpdEhxzjCXvrjNUhaDoxSzmnXvfOI1iVgmsa09+k
+EKxB0KxK4/Hcesaaa8nBNF3lhozrdmN/K9H5Y1fdlciyzwFfXreMbydwR5Ay7cwP
+mZG9zu5gtRu8WZGYhe+Km9kaLEIhVeBzK8lvwmvqadppysx+0ybpy+BwfMWJAdiM
+Hwb7wgjQYv/wr0TGFEl8d8P8iXapB3aMbbtO1fjcBqmPa84El9UdCTkd8TmOOulY
+mAS8zzkgHgMcPjYdzYQhseV1YbM6RAJqkifCqa06+3+lhOcoEfu0Xzot7gp5MCDm
+iu64MXPbYX8pxQp6Xls9qrmxcZZphldV8WBWfy6xXbr9CMeAVZl6CDE/PpAr0u9P
+yx8QMDnikGLjccPhTPBQxP8nY0lQRvCjO6SjIXJvtqG3dIaI4weC0kveBVByfycc
+d7uFhlBfieYRM7mGJkiJFG0A31VU/2chYcd6hojA0mxK7P2miUh2bYwJUcNzcD01
+oaluoDd2+nBa5w8NI4aP
+=uu8C
 -----END PGP SIGNATURE-----
 
---oXNgvKVxGWJ0RPMJ--
+--=-j6wGsMTPxMqubVCHVU4E--
+
