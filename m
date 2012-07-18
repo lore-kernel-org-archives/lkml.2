@@ -1,119 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752909Ab2GRKF7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 06:05:59 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:59272 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751807Ab2GRKFz (ORCPT
+	id S1753245Ab2GRKGV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 06:06:21 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39050 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752564Ab2GRKGR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 06:05:55 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <50068A6E.5050904@jp.fujitsu.com>
-Date: Wed, 18 Jul 2012 19:05:34 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Wed, 18 Jul 2012 06:06:17 -0400
+Date: Wed, 18 Jul 2012 11:06:15 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Graeme Gregory <gg@slimlogic.co.uk>
+Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH] regulator: palmas: Fix calculating selector in
+ palmas_map_voltage_ldo
+Message-ID: <20120718100615.GD22739@opensource.wolfsonmicro.com>
+References: <1342582211.12515.2.camel@phoenix>
+ <50066BF2.7050507@slimlogic.co.uk>
 MIME-Version: 1.0
-To: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>
-CC: <rientjes@google.com>, <liuj97@gmail.com>, <len.brown@intel.com>,
-        <benh@kernel.crashing.org>, <paulus@samba.org>, <cl@linux.com>,
-        <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
-        <kosaki.motohiro@jp.fujitsu.com>, <wency@cn.fujitsu.com>
-Subject: [RFC PATCH v4 1/13] memory-hotplug : rename remove_memory to offline_memory
-References: <50068974.1070409@jp.fujitsu.com>
-In-Reply-To: <50068974.1070409@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="VMt1DrMGOVs3KQwf"
+Content-Disposition: inline
+In-Reply-To: <50066BF2.7050507@slimlogic.co.uk>
+X-Cookie: You will forget that you ever knew me.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-remove_memory() does not remove memory but just offlines memory. The patch
-changes name of it to offline_memory().
 
-CC: David Rientjes <rientjes@google.com>
-CC: Jiang Liu <liuj97@gmail.com>
-CC: Len Brown <len.brown@intel.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Paul Mackerras <paulus@samba.org> 
-CC: Christoph Lameter <cl@linux.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> 
-CC: Wen Congyang <wency@cn.fujitsu.com>
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+--VMt1DrMGOVs3KQwf
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
----
- drivers/acpi/acpi_memhotplug.c |    2 +-
- drivers/base/memory.c          |    4 ++--
- include/linux/memory_hotplug.h |    2 +-
- mm/memory_hotplug.c            |    6 +++---
- 4 files changed, 7 insertions(+), 7 deletions(-)
+On Wed, Jul 18, 2012 at 08:55:30AM +0100, Graeme Gregory wrote:
+> On 18/07/12 04:30, Axel Lin wrote:
+> > This patch fixes below issues when choosing selector:
 
-Index: linux-3.5-rc4/drivers/acpi/acpi_memhotplug.c
-===================================================================
---- linux-3.5-rc4.orig/drivers/acpi/acpi_memhotplug.c	2012-07-03 14:21:46.102416917 +0900
-+++ linux-3.5-rc4/drivers/acpi/acpi_memhotplug.c	2012-07-03 14:21:49.458374960 +0900
-@@ -318,7 +318,7 @@ static int acpi_memory_disable_device(st
- 	 */
- 	list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
- 		if (info->enabled) {
--			result = remove_memory(info->start_addr, info->length);
-+			result = offline_memory(info->start_addr, info->length);
- 			if (result)
- 				return result;
- 		}
-Index: linux-3.5-rc4/drivers/base/memory.c
-===================================================================
---- linux-3.5-rc4.orig/drivers/base/memory.c	2012-07-03 14:21:46.095417003 +0900
-+++ linux-3.5-rc4/drivers/base/memory.c	2012-07-03 14:21:49.459374948 +0900
-@@ -266,8 +266,8 @@ memory_block_action(unsigned long phys_i
- 			break;
- 		case MEM_OFFLINE:
- 			start_paddr = page_to_pfn(first_page) << PAGE_SHIFT;
--			ret = remove_memory(start_paddr,
--					    nr_pages << PAGE_SHIFT);
-+			ret = offline_memory(start_paddr,
-+					     nr_pages << PAGE_SHIFT);
- 			break;
- 		default:
- 			WARN(1, KERN_WARNING "%s(%ld, %ld) unknown action: "
-Index: linux-3.5-rc4/mm/memory_hotplug.c
-===================================================================
---- linux-3.5-rc4.orig/mm/memory_hotplug.c	2012-07-03 14:21:46.102416917 +0900
-+++ linux-3.5-rc4/mm/memory_hotplug.c	2012-07-03 14:21:49.466374860 +0900
-@@ -990,7 +990,7 @@ out:
- 	return ret;
- }
- 
--int remove_memory(u64 start, u64 size)
-+int offline_memory(u64 start, u64 size)
- {
- 	unsigned long start_pfn, end_pfn;
- 
-@@ -999,9 +999,9 @@ int remove_memory(u64 start, u64 size)
- 	return offline_pages(start_pfn, end_pfn, 120 * HZ);
- }
- #else
--int remove_memory(u64 start, u64 size)
-+int offline_memory(u64 start, u64 size)
- {
- 	return -EINVAL;
- }
- #endif /* CONFIG_MEMORY_HOTREMOVE */
--EXPORT_SYMBOL_GPL(remove_memory);
-+EXPORT_SYMBOL_GPL(offline_memory);
-Index: linux-3.5-rc4/include/linux/memory_hotplug.h
-===================================================================
---- linux-3.5-rc4.orig/include/linux/memory_hotplug.h	2012-07-03 14:21:46.102416917 +0900
-+++ linux-3.5-rc4/include/linux/memory_hotplug.h	2012-07-03 14:21:49.471374796 +0900
-@@ -233,7 +233,7 @@ static inline int is_mem_section_removab
- extern int mem_online_node(int nid);
- extern int add_memory(int nid, u64 start, u64 size);
- extern int arch_add_memory(int nid, u64 start, u64 size);
--extern int remove_memory(u64 start, u64 size);
-+extern int offline_memory(u64 start, u64 size);
- extern int sparse_add_one_section(struct zone *zone, unsigned long start_pfn,
- 								int nr_pages);
- extern void sparse_remove_one_section(struct zone *zone, struct mem_section *ms);
+> > 1. Current code returns negative selector if min_uV < 900000 which is wrong.
+> >    For example, it is possible to satisfy the request with selector = 1 if
+> >    the requested min_uV is 850000.
 
+> Isnt this defending against bugs in the regulator core? I am normally
+> against repeating the same checks at multiple levels in a stack.
+
+This isn't a bug in the core, a negative selector is an error code (and
+in general whatever selector is returned by the driver ought to agree
+with selectors the driver actually supports).  It's probably at least a
+questionable decision in the machine constraints to allow a request for
+less than the regulator can deliver to get through though.
+
+--VMt1DrMGOVs3KQwf
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQBoqBAAoJEBus8iNuMP3dJ3kP/2pNr2mQJcM7BqElsC/XP/2S
+GrjFpxPl3xZUYR37cpD4DblIUjcu3mkHr4vjL/qjA+5UZhdfBfnXYcIa9iy+2l5h
+0GITAINoVDnj+4Duy0S0xlyVQNU/KLwiePjeifE9zElfte18m8R9U+9oYh+oxvZa
+ezWuIyXNRlDDFPkO6KZIXjzro+KshwGrYBMswd5PtMd6rGLDOEGXLkUbyrsJzxl+
+sKMNP5iILkvCx7/yulUGsSZ2ebri+M9pPGLWqhWnUjr7G5keESXEwo/U8PxgbnkO
+Ury6MObibcccvGQaxUuj3LOtBNebQ23SoAdyzISo8R7VNRAWp99vOyiAu7KxZe9J
+mwMvTCxu/dAVNbDYlOujE1/vWLcU1r/ns23EGNgmU6WZnPdPKkZktWq8tTAG1z4K
+lUrKaSCCWZI4Ae7Ur3N2kac5VArg8/zQpqbdvcP2mq5eHSSBG23NXAoFkno6z+So
+VRPQ2hQqP1u4IToDt958+ebSfQ4I0/DErkNP2nCW/ZNTJjqKUmj9L6WnGu8A3z65
+cNDHARxYUMfQ3c6/7ZFrWcIPaLXD0I3YQjNk/yuR7o9UXG4TnRnoAu6Y6Qk4K8s/
+raQMcXSZ84bxEumM8lrXCCaF9dLo1v0UXVbVwNdpy4xXcIdEwXI4k0si6kM8uqel
+U93RcyZokclcW4rnMdOM
+=PPSu
+-----END PGP SIGNATURE-----
+
+--VMt1DrMGOVs3KQwf--
