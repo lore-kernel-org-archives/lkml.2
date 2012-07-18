@@ -1,35 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932141Ab2GRUqO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 16:46:14 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:37913 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932070Ab2GRUpw (ORCPT
+	id S1751758Ab2GRUzU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 16:55:20 -0400
+Received: from smtp.mail.umich.edu ([141.211.12.86]:38774 "EHLO
+	tombraider.mr.itd.umich.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750764Ab2GRUzS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 16:45:52 -0400
+	Wed, 18 Jul 2012 16:55:18 -0400
+Date: Wed, 18 Jul 2012 16:55:10 -0400
+From: Jim Rees <rees@umich.edu>
+To: Dave Jones <davej@redhat.com>, "J. Bruce Fields" <bfields@fieldses.org>,
+        Sasha Levin <levinsasha928@gmail.com>, Trond.Myklebust@netapp.com,
+        davem@davemloft.net, linux-nfs@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] SUNRPC: Prevent kernel stack corruption on long values
+ of flush
+Message-ID: <20120718205510.GA18374@umich.edu>
+References: <1342476086-21638-1-git-send-email-levinsasha928@gmail.com>
+ <20120718173913.GA1298@fieldses.org>
+ <20120718200049.GA17964@umich.edu>
+ <20120718203304.GA18540@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LRH.2.02.1207161158290.22772@tundra.namei.org>
-References: <alpine.LRH.2.02.1207161158290.22772@tundra.namei.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 18 Jul 2012 13:45:31 -0700
-X-Google-Sender-Auth: JJ3tLkL9Q7SO0g_pN8Shrp6soFo
-Message-ID: <CA+55aFxEw40XvV9wTS3vTVZynSHSvwwg3ywd-+m=xgbZGyVfhQ@mail.gmail.com>
-Subject: Re: [GIT] Fix SELinux regression
-To: James Morris <jmorris@namei.org>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Smalley <sds@tycho.nsa.gov>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120718203304.GA18540@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 15, 2012 at 6:59 PM, James Morris <jmorris@namei.org> wrote:
-> Now with the correct patches and signoffs.
+Dave Jones wrote:
 
-Ok. I changed the SELinux capability name string to match the renamed
-capability (it's CAP_BLOCK_SUSPEND these days, not CAP_EPOLLWAKEUP).
+  On Wed, Jul 18, 2012 at 04:00:49PM -0400, Jim Rees wrote:
+  
+   > You could use something like:
+   > 
+   >     char tbuf[sizeof (unsigned long) * 24 / 10 + 1 + 2]; /* + 2 for final "\n\0" */
+   > 
+   > since there are roughly 10 bits for every 3 decimal digits.
+   > 
+   > But I'm obviously confused, because I don't understand why tbuf needs to be
+   > any more than 10 + 2.
+  
+  Unsigned long isn't necessarily 32 bits.
+  On 64-bit systems %lu can be up to 18446744073709551615
 
-Please double-check.
-
-             Linus
+Thanks.  You caught me thinking "Intel."  How embarrassing.
