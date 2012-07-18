@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755358Ab2GRAHI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 20:07:08 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:56808 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757550Ab2GRAFH (ORCPT
+	id S1757605Ab2GRAHR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 20:07:17 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49131 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757554Ab2GRAFK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 20:05:07 -0400
+	Tue, 17 Jul 2012 20:05:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ilia Katsnelson <k0009000@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [ 25/37] Input: xpad - add signature for Razer Onza Tournament Edition
-Date: Tue, 17 Jul 2012 17:03:02 -0700
-Message-Id: <20120717232433.447176628@linuxfoundation.org>
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Prarit Bhargava <prarit@redhat.com>, John Stultz <johnstul@us.ibm.com>
+Subject: [ 34/37] timekeeping: Provide hrtimer update function
+Date: Tue, 17 Jul 2012 17:03:11 -0700
+Message-Id: <20120717232434.254592477@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120717232431.399005532@linuxfoundation.org>
 References: <20120717232455.GA5994@kroah.com>
@@ -31,37 +32,88 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Ilia Katsnelson <k0009000@gmail.com>
 
-commit cc71a7e899cc6b2ff41e1be48756782ed004d802 upstream.
+From: Thomas Gleixner <tglx@linutronix.de>
 
-Signed-off-by: Ilia Katsnelson <k0009000@gmail.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+This is a backport of f6c06abfb3972ad4914cef57d8348fcb2932bc3b
+
+To finally fix the infamous leap second issue and other race windows
+caused by functions which change the offsets between the various time
+bases (CLOCK_MONOTONIC, CLOCK_REALTIME and CLOCK_BOOTTIME) we need a
+function which atomically gets the current monotonic time and updates
+the offsets of CLOCK_REALTIME and CLOCK_BOOTTIME with minimalistic
+overhead. The previous patch which provides ktime_t offsets allows us
+to make this function almost as cheap as ktime_get() which is going to
+be replaced in hrtimer_interrupt().
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reviewed-by: Ingo Molnar <mingo@kernel.org>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Prarit Bhargava <prarit@redhat.com>
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Link: http://lkml.kernel.org/r/1341960205-56738-7-git-send-email-johnstul@us.ibm.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/input/joystick/xpad.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ include/linux/hrtimer.h   |    1 +
+ kernel/time/timekeeping.c |   34 ++++++++++++++++++++++++++++++++++
+ 2 files changed, 35 insertions(+)
 
---- a/drivers/input/joystick/xpad.c
-+++ b/drivers/input/joystick/xpad.c
-@@ -164,6 +164,7 @@ static const struct xpad_device {
- 	{ 0x1bad, 0x0003, "Harmonix Rock Band Drumkit", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX360 },
- 	{ 0x0f0d, 0x0016, "Hori Real Arcade Pro.EX", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
- 	{ 0x0f0d, 0x000d, "Hori Fighting Stick EX2", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
-+	{ 0x1689, 0xfd00, "Razer Onza Tournament Edition", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX360 },
- 	{ 0xffff, 0xffff, "Chinese-made Xbox Controller", 0, XTYPE_XBOX },
- 	{ 0x0000, 0x0000, "Generic X-Box pad", 0, XTYPE_UNKNOWN }
- };
-@@ -244,7 +245,8 @@ static struct usb_device_id xpad_table [
- 	XPAD_XBOX360_VENDOR(0x1430),		/* RedOctane X-Box 360 controllers */
- 	XPAD_XBOX360_VENDOR(0x146b),		/* BigBen Interactive Controllers */
- 	XPAD_XBOX360_VENDOR(0x1bad),		/* Harminix Rock Band Guitar and Drums */
--	XPAD_XBOX360_VENDOR(0x0f0d),            /* Hori Controllers */
-+	XPAD_XBOX360_VENDOR(0x0f0d),		/* Hori Controllers */
-+	XPAD_XBOX360_VENDOR(0x1689),		/* Razer Onza */
- 	{ }
- };
+--- a/include/linux/hrtimer.h
++++ b/include/linux/hrtimer.h
+@@ -327,6 +327,7 @@ extern ktime_t ktime_get(void);
+ extern ktime_t ktime_get_real(void);
+ extern ktime_t ktime_get_boottime(void);
+ extern ktime_t ktime_get_monotonic_offset(void);
++extern ktime_t ktime_get_update_offsets(ktime_t *offs_real, ktime_t *offs_boot);
  
+ DECLARE_PER_CPU(struct tick_device, tick_cpu_device);
+ 
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -1273,6 +1273,40 @@ void get_xtime_and_monotonic_and_sleep_o
+ 	} while (read_seqretry(&timekeeper.lock, seq));
+ }
+ 
++#ifdef CONFIG_HIGH_RES_TIMERS
++/**
++ * ktime_get_update_offsets - hrtimer helper
++ * @offs_real:	pointer to storage for monotonic -> realtime offset
++ * @offs_boot:	pointer to storage for monotonic -> boottime offset
++ *
++ * Returns current monotonic time and updates the offsets
++ * Called from hrtimer_interupt() or retrigger_next_event()
++ */
++ktime_t ktime_get_update_offsets(ktime_t *offs_real, ktime_t *offs_boot)
++{
++	ktime_t now;
++	unsigned int seq;
++	u64 secs, nsecs;
++
++	do {
++		seq = read_seqbegin(&timekeeper.lock);
++
++		secs = timekeeper.xtime.tv_sec;
++		nsecs = timekeeper.xtime.tv_nsec;
++		nsecs += timekeeping_get_ns();
++		/* If arch requires, add in gettimeoffset() */
++		nsecs += arch_gettimeoffset();
++
++		*offs_real = timekeeper.offs_real;
++		*offs_boot = timekeeper.offs_boot;
++	} while (read_seqretry(&timekeeper.lock, seq));
++
++	now = ktime_add_ns(ktime_set(secs, 0), nsecs);
++	now = ktime_sub(now, *offs_real);
++	return now;
++}
++#endif
++
+ /**
+  * ktime_get_monotonic_offset() - get wall_to_monotonic in ktime_t format
+  */
 
 
