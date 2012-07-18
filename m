@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756483Ab2GRADw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Jul 2012 20:03:52 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48754 "EHLO
+	id S1756735Ab2GRAEH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Jul 2012 20:04:07 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48276 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756325Ab2GRADd (ORCPT
+	with ESMTP id S1756794Ab2GRADh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Jul 2012 20:03:33 -0400
+	Tue, 17 Jul 2012 20:03:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jeff Moyer <jmoyer@redhat.com>,
-        "Richard W.M. Jones" <rjones@redhat.com>,
-        Josh Boyer <jwboyer@redhat.com>
-Subject: [ 04/37] block: fix infinite loop in __getblk_slow
-Date: Tue, 17 Jul 2012 17:02:41 -0700
-Message-Id: <20120717232431.657196338@linuxfoundation.org>
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
+        Nicolas Pitre <nico@linaro.org>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        David Woodhouse <David.Woodhouse@intel.com>
+Subject: [ 06/37] mtd: nandsim: dont open code a do_div helper
+Date: Tue, 17 Jul 2012 17:02:43 -0700
+Message-Id: <20120717232431.828636344@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.1.362.g242cab3
 In-Reply-To: <20120717232431.399005532@linuxfoundation.org>
 References: <20120717232455.GA5994@kroah.com>
@@ -32,112 +33,92 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Jeff Moyer <jmoyer@redhat.com>
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 
-commit 91f68c89d8f35fe98ea04159b9a3b42d0149478f upstream.
+commit 596fd46268634082314b3af1ded4612e1b7f3f03 upstream.
 
-Commit 080399aaaf35 ("block: don't mark buffers beyond end of disk as
-mapped") exposed a bug in __getblk_slow that causes mount to hang as it
-loops infinitely waiting for a buffer that lies beyond the end of the
-disk to become uptodate.
+We don't need to open code the divide function, just use div_u64 that
+already exists and do the same job. While this is a straightforward
+clean up, there is more to that, the real motivation for this.
 
-The problem was initially reported by Torsten Hilbrich here:
+While building on a cross compiling environment in armel, using gcc
+4.6.3 (Ubuntu/Linaro 4.6.3-1ubuntu5), I was getting the following build
+error:
 
-    https://lkml.org/lkml/2012/6/18/54
+ERROR: "__aeabi_uldivmod" [drivers/mtd/nand/nandsim.ko] undefined!
 
-and also reported independently here:
+After investigating with objdump and hand built assembly version
+generated with the compiler, I narrowed __aeabi_uldivmod as being
+generated from the divide function. When nandsim.c is built with
+-fno-inline-functions-called-once, that happens when
+CONFIG_DEBUG_SECTION_MISMATCH is enabled, the do_div optimization in
+arch/arm/include/asm/div64.h doesn't work as expected with the open
+coded divide function: even if the do_div we are using doesn't have a
+constant divisor, the compiler still includes the else parts of the
+optimized do_div macro, and translates the divisions there to use
+__aeabi_uldivmod, instead of only calling __do_div_asm -> __do_div64 and
+optimizing/removing everything else out.
 
-    http://www.sysresccd.org/forums/viewtopic.php?f=13&t=4511
+So to reproduce, gcc 4.6 plus CONFIG_DEBUG_SECTION_MISMATCH=y and
+CONFIG_MTD_NAND_NANDSIM=m should do it, building on armel.
 
-and then Richard W.M.  Jones and Marcos Mello noted a few separate
-bugzillas also associated with the same issue.  This patch has been
-confirmed to fix:
+After this change, the compiler does the intended thing even with
+-fno-inline-functions-called-once, and optimizes out as expected the
+constant handling in the optimized do_div on arm. As this also avoids a
+build issue, I'm marking for Stable, as I think is applicable for this
+case.
 
-    https://bugzilla.redhat.com/show_bug.cgi?id=835019
-
-The main problem is here, in __getblk_slow:
-
-        for (;;) {
-                struct buffer_head * bh;
-                int ret;
-
-                bh = __find_get_block(bdev, block, size);
-                if (bh)
-                        return bh;
-
-                ret = grow_buffers(bdev, block, size);
-                if (ret < 0)
-                        return NULL;
-                if (ret == 0)
-                        free_more_memory();
-        }
-
-__find_get_block does not find the block, since it will not be marked as
-mapped, and so grow_buffers is called to fill in the buffers for the
-associated page.  I believe the for (;;) loop is there primarily to
-retry in the case of memory pressure keeping grow_buffers from
-succeeding.  However, we also continue to loop for other cases, like the
-block lying beond the end of the disk.  So, the fix I came up with is to
-only loop when grow_buffers fails due to memory allocation issues
-(return value of 0).
-
-The attached patch was tested by myself, Torsten, and Rich, and was
-found to resolve the problem in call cases.
-
-Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
-Reported-and-Tested-by: Torsten Hilbrich <torsten.hilbrich@secunet.com>
-Tested-by: Richard W.M. Jones <rjones@redhat.com>
-Reviewed-by: Josh Boyer <jwboyer@redhat.com>
-[ Jens is on vacation, taking this directly  - Linus ]
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Acked-by: Nicolas Pitre <nico@linaro.org>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/buffer.c |   22 +++++++++++++---------
- 1 file changed, 13 insertions(+), 9 deletions(-)
+ drivers/mtd/nand/nandsim.c |   12 +++---------
+ 1 file changed, 3 insertions(+), 9 deletions(-)
 
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -1036,6 +1036,9 @@ grow_buffers(struct block_device *bdev,
- static struct buffer_head *
- __getblk_slow(struct block_device *bdev, sector_t block, int size)
- {
-+	int ret;
-+	struct buffer_head *bh;
-+
- 	/* Size must be multiple of hard sectorsize */
- 	if (unlikely(size & (bdev_logical_block_size(bdev)-1) ||
- 			(size < 512 || size > PAGE_SIZE))) {
-@@ -1048,20 +1051,21 @@ __getblk_slow(struct block_device *bdev,
- 		return NULL;
- 	}
- 
--	for (;;) {
--		struct buffer_head * bh;
--		int ret;
-+retry:
-+	bh = __find_get_block(bdev, block, size);
-+	if (bh)
-+		return bh;
- 
-+	ret = grow_buffers(bdev, block, size);
-+	if (ret == 0) {
-+		free_more_memory();
-+		goto retry;
-+	} else if (ret > 0) {
- 		bh = __find_get_block(bdev, block, size);
- 		if (bh)
- 			return bh;
--
--		ret = grow_buffers(bdev, block, size);
--		if (ret < 0)
--			return NULL;
--		if (ret == 0)
--			free_more_memory();
- 	}
-+	return NULL;
+--- a/drivers/mtd/nand/nandsim.c
++++ b/drivers/mtd/nand/nandsim.c
+@@ -28,7 +28,7 @@
+ #include <linux/module.h>
+ #include <linux/moduleparam.h>
+ #include <linux/vmalloc.h>
+-#include <asm/div64.h>
++#include <linux/math64.h>
+ #include <linux/slab.h>
+ #include <linux/errno.h>
+ #include <linux/string.h>
+@@ -547,12 +547,6 @@ static char *get_partition_name(int i)
+ 	return kstrdup(buf, GFP_KERNEL);
  }
  
+-static uint64_t divide(uint64_t n, uint32_t d)
+-{
+-	do_div(n, d);
+-	return n;
+-}
+-
  /*
+  * Initialize the nandsim structure.
+  *
+@@ -581,7 +575,7 @@ static int init_nandsim(struct mtd_info
+ 	ns->geom.oobsz    = mtd->oobsize;
+ 	ns->geom.secsz    = mtd->erasesize;
+ 	ns->geom.pgszoob  = ns->geom.pgsz + ns->geom.oobsz;
+-	ns->geom.pgnum    = divide(ns->geom.totsz, ns->geom.pgsz);
++	ns->geom.pgnum    = div_u64(ns->geom.totsz, ns->geom.pgsz);
+ 	ns->geom.totszoob = ns->geom.totsz + (uint64_t)ns->geom.pgnum * ns->geom.oobsz;
+ 	ns->geom.secshift = ffs(ns->geom.secsz) - 1;
+ 	ns->geom.pgshift  = chip->page_shift;
+@@ -924,7 +918,7 @@ static int setup_wear_reporting(struct m
+ 
+ 	if (!rptwear)
+ 		return 0;
+-	wear_eb_count = divide(mtd->size, mtd->erasesize);
++	wear_eb_count = div_u64(mtd->size, mtd->erasesize);
+ 	mem = wear_eb_count * sizeof(unsigned long);
+ 	if (mem / sizeof(unsigned long) != wear_eb_count) {
+ 		NS_ERR("Too many erase blocks for wear reporting\n");
 
 
