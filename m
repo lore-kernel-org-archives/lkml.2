@@ -1,85 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753374Ab2GRKQU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 06:16:20 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36528 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752128Ab2GRKQP (ORCPT
+	id S1753358Ab2GRKRG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 06:17:06 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:56981 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752111Ab2GRKRD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 06:16:15 -0400
-Date: Wed, 18 Jul 2012 11:16:13 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Paul Mundt <lethal@linux-sh.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: Re: Boot breaks in -next from LEGACY to LINEAR conversion
-Message-ID: <20120718101612.GE22739@opensource.wolfsonmicro.com>
-References: <20120717185749.GJ4477@opensource.wolfsonmicro.com>
- <20120718005230.GA15680@linux-sh.org>
+	Wed, 18 Jul 2012 06:17:03 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <50068D09.1050704@jp.fujitsu.com>
+Date: Wed, 18 Jul 2012 19:16:41 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="k3qmt+ucFURmlhDS"
-Content-Disposition: inline
-In-Reply-To: <20120718005230.GA15680@linux-sh.org>
-X-Cookie: You will forget that you ever knew me.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>
+CC: <rientjes@google.com>, <liuj97@gmail.com>, <len.brown@intel.com>,
+        <benh@kernel.crashing.org>, <paulus@samba.org>, <cl@linux.com>,
+        <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
+        <kosaki.motohiro@jp.fujitsu.com>, <wency@cn.fujitsu.com>
+Subject: [RFC PATCH v4 11/13] memory-hotplug : free memmap of sparse-vmemmap
+References: <50068974.1070409@jp.fujitsu.com>
+In-Reply-To: <50068974.1070409@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+All pages of virtual mapping in removed memory cannot be freed, since some pages
+used as PGD/PUD includes not only removed memory but also other memory. So the
+patch checks whether page can be freed or not.
 
---k3qmt+ucFURmlhDS
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+How to check whether page can be freed or not?
+ 1. When removing memory, the page structs of the revmoved memory are filled
+    with 0FD.
+ 2. All page structs are filled with 0xFD on PT/PMD, PT/PMD can be cleared.
+    In this case, the page used as PT/PMD can be freed.
 
-On Wed, Jul 18, 2012 at 09:52:30AM +0900, Paul Mundt wrote:
-> On Tue, Jul 17, 2012 at 07:57:49PM +0100, Mark Brown wrote:
+Applying patch, __remove_section() of CONFIG_SPARSEMEM_VMEMMAP is integrated
+into one. So __remove_section() of CONFIG_SPARSEMEM_VMEMMAP is deleted.
 
-> > -next fails to boot for me today on my s3c64xx based systems.  Walking
-> > back to the last time I tried and bisecting likely branches I find that
-> > commit 910139 (irqdomain: Replace LEGACY mapping with LINEAR) is the one
-> > that introduces the build break.  Unfortunately the boot fails before I
-> > get a console which makes diagnosis somewhat more tricky than would be
-> > ideal.  Any ideas?
+CC: David Rientjes <rientjes@google.com>
+CC: Jiang Liu <liuj97@gmail.com>
+CC: Len Brown <len.brown@intel.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Paul Mackerras <paulus@samba.org> 
+CC: Christoph Lameter <cl@linux.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> 
+CC: Wen Congyang <wency@cn.fujitsu.com>
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-> Does http://www.spinics.net/lists/linux-sh/msg11995.html fix it for you?
+---
+ arch/x86/mm/init_64.c |  121 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/mm.h    |    2 
+ mm/memory_hotplug.c   |   19 -------
+ mm/sparse.c           |    5 +-
+ 4 files changed, 128 insertions(+), 19 deletions(-)
 
-> I did Cc you on the legacy -> linear thread, but perhaps you missed it.
+Index: linux-3.5-rc6/include/linux/mm.h
+===================================================================
+--- linux-3.5-rc6.orig/include/linux/mm.h	2012-07-18 18:01:28.000000000 +0900
++++ linux-3.5-rc6/include/linux/mm.h	2012-07-18 18:03:05.551168773 +0900
+@@ -1588,6 +1588,8 @@ int vmemmap_populate(struct page *start_
+ void vmemmap_populate_print_last(void);
+ void register_page_bootmem_memmap(unsigned long section_nr, struct page *map,
+ 				  unsigned long size);
++void vmemmap_kfree(struct page *memmpa, unsigned long nr_pages);
++void vmemmap_free_bootmem(struct page *memmpa, unsigned long nr_pages);
+ 
+ enum mf_flags {
+ 	MF_COUNT_INCREASED = 1 << 0,
+Index: linux-3.5-rc6/mm/sparse.c
+===================================================================
+--- linux-3.5-rc6.orig/mm/sparse.c	2012-07-18 17:59:25.000000000 +0900
++++ linux-3.5-rc6/mm/sparse.c	2012-07-18 18:03:05.553168749 +0900
+@@ -614,12 +614,13 @@ static inline struct page *kmalloc_secti
+ 	/* This will make the necessary allocations eventually. */
+ 	return sparse_mem_map_populate(pnum, nid);
+ }
+-static void __kfree_section_memmap(struct page *memmap, unsigned long nr_pages)
++static void __kfree_section_memmap(struct page *page, unsigned long nr_pages)
+ {
+-	return; /* XXX: Not implemented yet */
++	vmemmap_kfree(page, nr_pages);
+ }
+ static void free_map_bootmem(struct page *page, unsigned long nr_pages)
+ {
++	vmemmap_free_bootmem(page, nr_pages);
+ }
+ #else
+ static struct page *__kmalloc_section_memmap(unsigned long nr_pages)
+Index: linux-3.5-rc6/arch/x86/mm/init_64.c
+===================================================================
+--- linux-3.5-rc6.orig/arch/x86/mm/init_64.c	2012-07-18 18:01:28.000000000 +0900
++++ linux-3.5-rc6/arch/x86/mm/init_64.c	2012-07-18 18:03:05.564168611 +0900
+@@ -978,6 +978,127 @@ vmemmap_populate(struct page *start_page
+ 	return 0;
+ }
+ 
++#define PAGE_INUSE 0xFD
++
++unsigned long find_and_clear_pte_page(unsigned long addr, unsigned long end,
++			    struct page **pp, int *page_size)
++{
++	pgd_t *pgd;
++	pud_t *pud;
++	pmd_t *pmd;
++	pte_t *pte;
++	void *page_addr;
++	unsigned long next;
++
++	*pp = NULL;
++
++	pgd = pgd_offset_k(addr);
++	if (pgd_none(*pgd))
++		return pgd_addr_end(addr, end);
++
++	pud = pud_offset(pgd, addr);
++	if (pud_none(*pud))
++		return pud_addr_end(addr,end);
++
++	if (!cpu_has_pse) {
++		next = (addr + PAGE_SIZE) & PAGE_MASK;
++		pmd = pmd_offset(pud, addr);
++		if (pmd_none(*pmd))
++			return next;
++
++		pte = pte_offset_kernel(pmd, addr);
++		if (pte_none(*pte))
++			return next;
++
++		*page_size = PAGE_SIZE;
++		*pp = pte_page(*pte);
++	} else {
++		next = pmd_addr_end(addr, end);
++
++		pmd = pmd_offset(pud, addr);
++		if (pmd_none(*pmd))
++			return next;
++
++		*page_size = PMD_SIZE;
++		*pp = pmd_page(*pmd);
++	}
++
++	/*
++	 * Removed page structs are filled with 0xFD.
++	 */
++	memset((void *)addr, PAGE_INUSE, next - addr);
++
++	page_addr = page_address(*pp);
++
++	/*
++	 * Check the page is filled with 0xFD or not.
++	 * memchr_inv() returns the address. In this case, we cannot
++	 * clear PTE/PUD entry, since the page is used by other.
++	 * So we cannot also free the page.
++	 *
++	 * memchr_inv() returns NULL. In this case, we can clear
++	 * PTE/PUD entry, since the page is not used by other.
++	 * So we can also free the page.
++	 */
++	if (memchr_inv(page_addr, PAGE_INUSE, *page_size)) {
++		*pp = NULL;
++		return next;
++	}
++
++	if (!cpu_has_pse)
++		pte_clear(&init_mm, addr, pte);
++	else
++		pmd_clear(pmd);
++
++	return next;
++}
++
++void vmemmap_kfree(struct page *memmap, unsigned long nr_pages)
++{
++	unsigned long addr = (unsigned long)memmap;
++	unsigned long end = (unsigned long)(memmap + nr_pages);
++	unsigned long next;
++	struct page *page;
++	int page_size;
++
++	for (; addr < end; addr = next) {
++		page = NULL;
++		page_size = 0;
++		next = find_and_clear_pte_page(addr, end, &page, &page_size);
++		if (!page)
++			continue;
++
++		free_pages((unsigned long)page_address(page),
++			    get_order(page_size));
++		__flush_tlb_one((unsigned long)page_address(page));
++	}
++
++}
++
++void vmemmap_free_bootmem(struct page *memmap, unsigned long nr_pages)
++{
++	unsigned long addr = (unsigned long)memmap;
++	unsigned long end = (unsigned long)(memmap + nr_pages);
++	unsigned long next;
++	struct page *page;
++	int page_size;
++	unsigned long magic;
++
++	for (; addr < end; addr = next) {
++		page = NULL;
++		page_size = 0;
++		next = find_and_clear_pte_page(addr, end, &page, &page_size);
++		if (!page)
++			continue;
++
++		magic = (unsigned long) page->lru.next;
++		if (magic == SECTION_INFO)
++			put_page_bootmem(page);
++		flush_tlb_kernel_range(addr, end);
++	}
++
++}
++
+ void register_page_bootmem_memmap(unsigned long section_nr,
+ 				  struct page *start_page, unsigned long size)
+ {
+Index: linux-3.5-rc6/mm/memory_hotplug.c
+===================================================================
+--- linux-3.5-rc6.orig/mm/memory_hotplug.c	2012-07-18 18:01:28.000000000 +0900
++++ linux-3.5-rc6/mm/memory_hotplug.c	2012-07-18 18:25:11.036597977 +0900
+@@ -300,7 +300,6 @@ static int __meminit __add_section(int n
+ 	return register_new_memory(nid, __pfn_to_section(phys_start_pfn));
+ }
+ 
+-#ifdef CONFIG_SPARSEMEM_VMEMMAP
+ static int __remove_section(struct zone *zone, struct mem_section *ms)
+ {
+ 	int ret = -EINVAL;
+@@ -309,29 +308,15 @@ static int __remove_section(struct zone 
+ 		return ret;
+ 
+ 	ret = unregister_memory_section(ms);
+-
+-	return ret;
+-}
+-#else
+-static int __remove_section(struct zone *zone, struct mem_section *ms)
+-{
+-	unsigned long flags;
+-	struct pglist_data *pgdat = zone->zone_pgdat;
+-	int ret = -EINVAL;
+-
+-	if (!valid_section(ms))
+-		return ret;
+-
+-	ret = unregister_memory_section(ms);
+ 	if (ret)
+ 		return ret;
+ 
+ 	pgdat_resize_lock(pgdat, &flags);
+ 	sparse_remove_one_section(zone, ms);
+ 	pgdat_resize_unlock(pgdat, &flags);
+-	return 0;
++
++	return ret;
+ }
+-#endif
+ 
+ /*
+  * Reasonably generic function for adding memory.  It is
 
-I do remember seeing it, it's a big part of how I isolated that this
-patch series was the issue.  To be honest I hadn't got terribly far with
-the diagnosis of what the actual breakage is, it took a while to isolate
-as it had been a little while since I'd rebased through onto -next and
-there's no diagnostics at all from the system when it fails.
-
-I tried applying the patch but the underlying code has changed a lot so
-patch gets upset, I'll try to find time to resolve them but can't
-guarantee when as things are especially hectic right now.
-
---k3qmt+ucFURmlhDS
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQBozmAAoJEBus8iNuMP3dtFwP+QGwzapAnTYtXnYR8jpWh1QQ
-yn+anNkgN46xZfUz4gRC+4S1Nvx7k8pOAVGzhQgt1ugk8QViwfHB5MeGJxk7+xim
-poo/mXy6I5LRdjNXJ++Lw2OwMqslvj5ehro1h3DiBFeJspf88UFGwHA+no0QKhZc
-lSs3P7dwtB0tv5IarxjIZnU5nptnANCDfxg/5JnRjKilPoJ3Tt6H0GhaRQa/y0fa
-3A2Grm6YLlU1Qzt7SmdE5R0z0uRHEqXyfQL+kNBHHCCP625Ek8AAo/GsTrDeewf1
-n+H+UjJPqmvSUpflBxZ3193nCvvaFXlGIK56nGTNbA6Smt0t845cx/Uqfjj+niXy
-WTJZjIk4ttwq8DSmnT45pY2J6sI3yMKco0/L3HR/LQ8OyRTPblDEgrojcrS0XlaF
-U4nBga+gwu9BW5/1bN78ChIBcvwLEoaT1qYuEC4fY6JJJ00HKhkWtayH6dcNf42N
-I7lnqZbVRj8Ir6HGYH6C9mF9YODYGKOWwKlJODxNZZ9adCv+IFjIZ/Bp73jptUAi
-s3qL8VVhP8JeD0UBtmbvifk+EcNBYHvCOqoRoa2VrgiGotZDGmK799PP6LJXixfH
-YBpSuUY8uzYfWo0OtCRnBT2yeGcwDNSGQTSYRE/ZoKanpsp8AUhLfWi4QpBK+9PW
-g0a62bhrXzwTdR3t+qUV
-=fUhP
------END PGP SIGNATURE-----
-
---k3qmt+ucFURmlhDS--
