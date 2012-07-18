@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753920Ab2GRV0c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 17:26:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43705 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750966Ab2GRV03 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 17:26:29 -0400
-Date: Wed, 18 Jul 2012 14:26:28 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, mhocko@suse.cz,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hugetlb/cgroup: Simplify pre_destroy callback
-Message-Id: <20120718142628.76bf78b3.akpm@linux-foundation.org>
-In-Reply-To: <1342589649-15066-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-References: <1342589649-15066-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753992Ab2GRV17 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 17:27:59 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:46833 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753394Ab2GRV16 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 17:27:58 -0400
+Message-ID: <1342646876.2215.6.camel@joe2Laptop>
+Subject: Re: [PATCH 1/4] ACPI: Add acpi_pr_<level>() interfaces
+From: Joe Perches <joe@perches.com>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bhelgaas@google.com, isimatu.yasuaki@jp.fujitsu.com, liuj97@gmail.com,
+        srivatsa.bhat@linux.vnet.ibm.com, prarit@redhat.com,
+        imammedo@redhat.com, vijaymohan.pandarathil@hp.com
+Date: Wed, 18 Jul 2012 14:27:56 -0700
+In-Reply-To: <1342644027-19559-2-git-send-email-toshi.kani@hp.com>
+References: <1342644027-19559-1-git-send-email-toshi.kani@hp.com>
+	 <1342644027-19559-2-git-send-email-toshi.kani@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Jul 2012 11:04:09 +0530
-"Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
+On Wed, 2012-07-18 at 14:40 -0600, Toshi Kani wrote:
+> This patch introduces acpi_pr_<level>(), where <level> is a message
+> level such as err/warn/info, to support improved logging messages
+> for ACPI, esp. in hotplug operations.
 
-> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-> 
-> Since we cannot fail in hugetlb_cgroup_move_parent, we don't really
-> need to check whether cgroup have any change left after that. Also skip
-> those hstates for which we don't have any charge in this cgroup.
-> 
-> ...
->
-> +	for_each_hstate(h) {
-> +		/*
-> +		 * if we don't have any charge, skip this hstate
-> +		 */
-> +		idx = hstate_index(h);
-> +		if (res_counter_read_u64(&h_cg->hugepage[idx], RES_USAGE) == 0)
-> +			continue;
-> +		spin_lock(&hugetlb_lock);
-> +		list_for_each_entry(page, &h->hugepage_activelist, lru)
-> +			hugetlb_cgroup_move_parent(idx, cgroup, page);
-> +		spin_unlock(&hugetlb_lock);
-> +		VM_BUG_ON(res_counter_read_u64(&h_cg->hugepage[idx], RES_USAGE));
-> +	}
->  out:
->  	return ret;
->  }
+One more note:
 
-This looks fishy.
+> diff --git a/drivers/acpi/utils.c b/drivers/acpi/utils.c
+[]
+> @@ -454,3 +454,35 @@ acpi_evaluate_hotplug_ost(acpi_handle handle, u32 source_event,
+[]
+> +void
+> +acpi_printk(const char *level, acpi_handle handle, const char *fmt, ...)
+[]
+> +	struct acpi_buffer buffer = {ACPI_ALLOCATE_BUFFER};
+[]
+> +	ret = acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
+[]
+> +	kfree(buffer.pointer);
 
-We test RES_USAGE before taking hugetlb_lock.  What prevents some other
-thread from increasing RES_USAGE after that test?
+There's a failure mode here because buffer.pointer
+isn't guaranteed to be initialized or set to NULL.
 
-After walking the list we test RES_USAGE after dropping hugetlb_lock. 
-What prevents another thread from incrementing RES_USAGE before that
-test, triggering the BUG?
 
