@@ -1,111 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755114Ab2GRQwn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 12:52:43 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:11794 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751459Ab2GRQwl (ORCPT
+	id S1755291Ab2GRQxJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 12:53:09 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:51990 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751816Ab2GRQxH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 12:52:41 -0400
-X-IronPort-AV: E=Sophos;i="4.77,610,1336348800"; 
-   d="scan'208";a="13593768"
-Date: Wed, 18 Jul 2012 17:51:55 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>, "Tim (Xen.org)" <tim@xen.org>
-Subject: Re: [PATCH WIP 6/6] xen/arm: enable evtchn irqs
-In-Reply-To: <20120716145709.GB552@phenom.dumpdata.com>
-Message-ID: <alpine.DEB.2.02.1207181750500.23783@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1206221644370.27860@kaball.uk.xensource.com> <1340381685-22529-1-git-send-email-stefano.stabellini@eu.citrix.com> <1340381685-22529-6-git-send-email-stefano.stabellini@eu.citrix.com> <20120709144005.GA12102@phenom.dumpdata.com>
- <alpine.DEB.2.02.1207131749470.23783@kaball.uk.xensource.com> <20120716145709.GB552@phenom.dumpdata.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 18 Jul 2012 12:53:07 -0400
+Message-ID: <5006E9E6.2030004@gmail.com>
+Date: Thu, 19 Jul 2012 00:52:54 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: Christoph Lameter <cl@linux.com>
+CC: Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Mel Gorman <mgorman@suse.de>, Jianguo Wu <wujianguo@huawei.com>,
+        Jiang Liu <jiang.liu@huawei.com>, Tony Luck <tony.luck@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
+        Keping Chen <chenkeping@huawei.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm/slub: fix a BUG_ON() when offlining a memory node
+ and CONFIG_SLUB_DEBUG is on
+References: <1342543816-10853-1-git-send-email-jiang.liu@huawei.com> <alpine.DEB.2.00.1207171237320.15177@router.home>
+In-Reply-To: <alpine.DEB.2.00.1207171237320.15177@router.home>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Jul 2012, Konrad Rzeszutek Wilk wrote:
-> On Fri, Jul 13, 2012 at 06:14:33PM +0100, Stefano Stabellini wrote:
-> > On Mon, 9 Jul 2012, Konrad Rzeszutek Wilk wrote:
-> > > On Fri, Jun 22, 2012 at 05:14:45PM +0100, Stefano Stabellini wrote:
-> > > > On ARM irqs are not enabled by default:
-> > > 
-> > > Which IRQs? Xen IRQs? Linux IRQs?
-> > 
-> > Linux IRQs
-> > 
-> > 
-> > > > - call enable_percpu_irq for IRQ_EVTCHN_CALLBACK;
-> > > 
-> > > Why do we want to do that?
-> >  
-> > drivers are supposed to call enable_irq after request_irq, however on
-> > x86 we could get away without it because Linux irqs are enabled by
-> > default (see below)
-> > 
-> > 
-> > > > - set the IRQF_VALID flag for the other irqs bound to evtchns. It causes
-> > > > IRQ_NOAUTOEN to be set and as a consequence irq_unmask is going to be
-> > > > called when a xenbus driver calls request_irq.
-> > > 
-> > > Can you explain in more details why we need that?
-> > 
-> > If _IRQ_NOAUTOEN is set, irq_settings_can_autoenable returns false and
-> > __setup_irq doesn't call irq_startup.
-> > 
-> > IRQ_NOAUTOEN is set by default by set_irq_flags on ARM, but not on x86.
+Hi Chris,
+	I found the previous analysis of the BUG_ON() issue is incorrect after
+another round of code review. 
+	The really issue is that function early_kmem_cache_node_alloc() calls
+inc_slabs_node(kmem_cache_node, node, page->objects) to increase the object 
+count on local node no matter whether page is allocated from local or remote
+node. With current implementation it's OK because every memory node has normal
+memory so page is allocated from local node. Now we are working on a patch set
+to improve memory hotplug. The basic idea is to to let some memory nodes only
+host ZONE_MOVABLE zone, so we could easily remove the whole memory node when 
+needed. That means some memory nodes have no ZONE_NORMAL/ZONE_DMA, and the page
+will be allocated from remote node in function early_kmem_cache_node_alloc().
+But early_kmem_cache_node_alloc() still increases object count on local node,
+which triggers the BUG_ON eventually when removing the affected memory node.
+	I will try to work out another version for it.
+	Thanks!
+	Gerry
+
+On 07/18/2012 01:39 AM, Christoph Lameter wrote:
+> On Wed, 18 Jul 2012, Jiang Liu wrote:
 > 
-> OK, please include those questions/answers in the git commit and
-> repost.
+>> From: Jianguo Wu <wujianguo@huawei.com>
+>>
+>> From: Jianguo Wu <wujianguo@huawei.com>
+>>
+>> SLUB allocator may cause a BUG_ON() when offlining a memory node if
+>> CONFIG_SLUB_DEBUG is on. The scenario is:
+>>
+>> 1) when creating kmem_cache_node slab, it cause inc_slabs_node() twice.
+>> early_kmem_cache_node_alloc
+>> 	->new_slab
+>> 		->inc_slabs_node
+>> 	->inc_slabs_node
+> 
+> New slab will not be able to increment the slab counter. It will
+> check that there is no per node structure yet and then skip the inc slabs
+> node.
+> 
+> This suggests that a call to early_kmem_cache_node_alloc was not needed
+> because the per node structure already existed. Lets fix that instead.
+> 
 
----
 
-xen/arm: enable evtchn irqs
-
-On ARM Linux irqs are not enabled by default:
-
-- call enable_percpu_irq for IRQ_EVTCHN_CALLBACK (drivers are supposed
-to call enable_irq after request_irq);
-
-- set the IRQF_VALID flag for the other irqs bound to evtchns. It causes
-IRQ_NOAUTOEN to be set and as a consequence irq_unmask is going to be
-called when a xenbus driver calls request_irq.
-This is needed because IRQ_NOAUTOEN is set by set_irq_flags on ARM.
-If IRQ_NOAUTOEN is set __setup_irq doesn't call irq_startup that is
-responsible for calling irq_unmask at startup time.
-
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-
-diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index eae0d0b..ca92755 100644
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -53,6 +53,7 @@
- #include <xen/interface/hvm/params.h>
- #include <xen/interface/physdev.h>
- #include <xen/interface/sched.h>
-+#include <asm/hw_irq.h>
- 
- /*
-  * This lock protects updates to the following mapping and reference-count
-@@ -824,6 +828,7 @@ int bind_evtchn_to_irq(unsigned int evtchn)
- 
- 		xen_irq_info_evtchn_init(irq, evtchn);
- 	}
-+	set_irq_flags(irq, IRQF_VALID);
- 
- out:
- 	mutex_unlock(&irq_mapping_update_lock);
-@@ -1748,6 +1753,7 @@ int __init xen_init_IRQ_arm(void)
- 	if (rc) {
- 		printk(KERN_ERR "Error requesting IRQ %d\n", IRQ_EVTCHN_CALLBACK);
- 	}
-+	enable_percpu_irq(IRQ_EVTCHN_CALLBACK, 0);
- 	return rc;
- }
- core_initcall(xen_init_IRQ_arm);
