@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754106Ab2GRLmQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 07:42:16 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:58546 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752594Ab2GRLmM (ORCPT
+	id S1754069Ab2GRLnb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 07:43:31 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:36314 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751954Ab2GRLn3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 07:42:12 -0400
+	Wed, 18 Jul 2012 07:43:29 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120717150928.GB11587@redhat.com>
-References: <1342169711-12386-1-git-send-email-asias@redhat.com>
-	<20120717150928.GB11587@redhat.com>
-Date: Wed, 18 Jul 2012 12:42:09 +0100
-Message-ID: <CAJSP0QWKtsRDYB9uPPg7K8k2HHvgrQKBP9+biDwfyCmN=WmJqQ@mail.gmail.com>
-Subject: Re: [PATCH RESEND 0/5] Add vhost-blk support
-From: Stefan Hajnoczi <stefanha@gmail.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Asias He <asias@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        linux-aio@kvack.org, target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        lf-virt <virtualization@lists.linux-foundation.org>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Anthony Liguori <aliguori@linux.vnet.ibm.com>,
-        Jeff Moyer <jmoyer@redhat.com>, Benjamin LaHaise <bcrl@kvack.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
-        Zhi Yong Wu <wuzhy@cn.ibm.com>, Christoph Hellwig <hch@lst.de>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20120718092252.GD5006@linux.vnet.ibm.com>
+References: <CACV3sbL2gRjoFi8yyUW6Bu2ZZ4PW+ytZsfx_65KA8s_5DEB+ZQ@mail.gmail.com>
+	<20120718092252.GD5006@linux.vnet.ibm.com>
+Date: Wed, 18 Jul 2012 19:43:29 +0800
+Message-ID: <CACV3sbKNmeKqvroYp4C=gna7ht4dvYmrCNA7q9Sa0GfVjx7F_A@mail.gmail.com>
+Subject: Re: [PATCH] uprobe: fix misleading log entry
+From: Jovi Zhang <bookjovi@gmail.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 17, 2012 at 4:09 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
-> On Fri, Jul 13, 2012 at 04:55:06PM +0800, Asias He wrote:
+On Wed, Jul 18, 2012 at 5:22 PM, Srikar Dronamraju
+<srikar@linux.vnet.ibm.com> wrote:
+> * Jovi Zhang <bookjovi@gmail.com> [2012-07-18 11:08:42]:
+>
+>> From 68232ef2decae95b807f2f3763e8ea99c1a3b2ae Mon Sep 17 00:00:00 2001
+>> From: Jovi Zhang <bookjovi@gmail.com>
+>> Date: Wed, 18 Jul 2012 17:51:26 +0800
+>> Subject: [PATCH] uprobe: fix misleading log entry
 >>
->> Hi folks,
+>> There don't have any 'r' prefix in uprobe event naming, remove it.
 >>
->> [I am resending to fix the broken thread in the previous one.]
+>> Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
+>> ---
+>>  kernel/trace/trace_uprobe.c |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
 >>
->> This patchset adds vhost-blk support. vhost-blk is a in kernel virito-blk
->> device accelerator. Compared to userspace virtio-blk implementation, vhost-blk
->> gives about 5% to 15% performance improvement.
+>> diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+>> index cf382de..852a584 100644
+>> --- a/kernel/trace/trace_uprobe.c
+>> +++ b/kernel/trace/trace_uprobe.c
+>> @@ -191,7 +191,7 @@ static int create_trace_uprobe(int argc, char **argv)
+>>       if (argv[0][0] == '-')
+>>               is_delete = true;
+>>       else if (argv[0][0] != 'p') {
+>> -             pr_info("Probe definition must be started with 'p', 'r' or" " '-'.\n");
+>> +             pr_info("Probe definition must be started with 'p' or '-'.\n");
+>>               return -EINVAL;
+>>       }
+>>
 >
-> Same thing as tcm_host comment:
->
->         It seems not 100% clear whether this driver will have major
->         userspace using it. And if not, it would be very hard to support a
->         driver when recent userspace does not use it in the end.
->
->         I think a good idea for 3.6 would be to make it depend on
->         CONFIG_STAGING.  Then we don't commit to an ABI.  For this, you can add
->         a separate Kconfig and source it from drivers/staging/Kconfig.  Maybe it
->         needs to be in a separate directory drivers/vhost/staging/Kconfig.
->
-> I Cc'd the list of tcm_host in the hope that you can cooperate on this.
->
+> Yes, uprobes doesnt support return probes. So we should not have
+> mentioned about r.
+Hmm, Does this have specific reason? or just not implemented?
 
-Adding it to staging allows more people to try it out, so that's a
-good thing.  If I get a moment to play with it I'll let you know the
-results.
-
-Stefan
+>
+> Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+>
