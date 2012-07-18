@@ -1,119 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754757Ab2GROr3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 10:47:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59227 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754607Ab2GROr0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 10:47:26 -0400
-Message-ID: <1342622843.2229.200.camel@bling.home>
-Subject: Re: [PATCH v5 1/4] kvm: Extend irqfd to support level interrupts
-From: Alex Williamson <alex.williamson@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Gleb Natapov <gleb@redhat.com>, avi@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Date: Wed, 18 Jul 2012 08:47:23 -0600
-In-Reply-To: <20120718120705.GB5184@redhat.com>
-References: <20120716203344.1752.14606.stgit@bling.home>
-	 <20120718104114.GC4700@redhat.com> <20120718104429.GD26120@redhat.com>
-	 <20120718104844.GF4700@redhat.com> <20120718104906.GE26120@redhat.com>
-	 <20120718105311.GH4700@redhat.com> <20120718105530.GG26120@redhat.com>
-	 <20120718112219.GJ4700@redhat.com> <20120718113910.GA5135@redhat.com>
-	 <20120718114844.GH26120@redhat.com> <20120718120705.GB5184@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754771Ab2GROuh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 10:50:37 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47756 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752008Ab2GROuf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 10:50:35 -0400
+Date: Wed, 18 Jul 2012 15:50:32 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: "Kim, Milo" <Milo.Kim@ti.com>
+Cc: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Girdwood, Liam" <lrg@ti.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "a.zummo@towertech.it" <a.zummo@towertech.it>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Richard Purdie <rpurdie@rpsys.net>, Bryan Wu <bryan.wu@canonical.com>
+Subject: Re: [PATCH 1/6] mfd: add lp8788 mfd driver
+Message-ID: <20120718145032.GB4495@opensource.wolfsonmicro.com>
+References: <A874F61F95741C4A9BA573A70FE3998FD79B@DQHE02.ent.ti.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="kORqDWCi7qDJ0mEj"
+Content-Disposition: inline
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998FD79B@DQHE02.ent.ti.com>
+X-Cookie: Beware of low-flying butterflies.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-18 at 15:07 +0300, Michael S. Tsirkin wrote:
-> On Wed, Jul 18, 2012 at 02:48:44PM +0300, Gleb Natapov wrote:
-> > On Wed, Jul 18, 2012 at 02:39:10PM +0300, Michael S. Tsirkin wrote:
-> > > On Wed, Jul 18, 2012 at 02:22:19PM +0300, Michael S. Tsirkin wrote:
-> > > > > > > > > > So as was discussed kvm_set_irq under spinlock is bad for scalability
-> > > > > > > > > > with multiple VCPUs.  Why do we need a spinlock simply to protect
-> > > > > > > > > > level_asserted?  Let's use an atomic test and set/test and clear and the
-> > > > > > > > > > problem goes away.
-> > > > > > > > > > 
-> > > > > > > > > That sad reality is that for level interrupt we already scan all vcpus
-> > > > > > > > > under spinlock.
-> > > > > > > > 
-> > > > > > > > Where?
-> > > > > > > > 
-> > > > > > > ioapic
-> > > > > > 
-> > > > > > $ grep kvm_for_each_vcpu virt/kvm/ioapic.c
-> > > > > > $
-> > > > > > 
-> > > > > > ?
-> > > > > > 
-> > > > > 
-> > > > > Come on Michael. You can do better than grep and actually look at what
-> > > > > code does. The code that loops over all vcpus while delivering an irq is
-> > > > > in kvm_irq_delivery_to_apic(). Now grep for that.
-> > > > 
-> > > > Hmm, I see, it's actually done for edge if injected from ioapic too,
-> > > > right?
-> > > > 
-> > > > So set_irq does a linear scan, and for each matching CPU it calls
-> > > > kvm_irq_delivery_to_apic which is another scan?
-> > > > So it's actually N^2 worst case for a broadcast?
-> > > 
-> > > No it isn't, I misread the code.
-> > > 
-> > > 
-> > > Anyway, maybe not trivially but this looks fixable to me: we could drop
-> > > the ioapic lock before calling kvm_irq_delivery_to_apic.
-> > > 
-> > May be, may be not. Just saying "lets drop lock whenever we don't feel
-> > like holding one" does not cut it.
-> 
-> One thing we do is set remote_irr if interrupt was injected.
-> I agree these things are tricky.
-> 
-> One other question:
-> 
-> static int ioapic_service(struct kvm_ioapic *ioapic, unsigned int idx)
-> {
->         union kvm_ioapic_redirect_entry *pent;
->         int injected = -1;
-> 
->         pent = &ioapic->redirtbl[idx];
-> 
->         if (!pent->fields.mask) {
->                 injected = ioapic_deliver(ioapic, idx);
->                 if (injected && pent->fields.trig_mode == IOAPIC_LEVEL_TRIG)
->                         pent->fields.remote_irr = 1;
->         }
-> 
->         return injected;
-> }
-> 
-> 
-> This if (injected) looks a bit strange since ioapic_deliver returns
-> -1 if no matching destinations. Should be if (injected > 0)?
-> 
-> 
-> 
-> > Back to original point though current
-> > situation is that calling kvm_set_irq() under spinlock is not worse for
-> > scalability than calling it not under one.
-> 
-> Yes. Still the specific use can just use an atomic flag,
-> lock+bool is not needed, and we won't need to undo it later.
 
+--kORqDWCi7qDJ0mEj
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Actually, no, replacing it with an atomic is racy.
+On Wed, Jul 18, 2012 at 02:32:40PM +0000, Kim, Milo wrote:
 
-CPU0 (inject)                       CPU1 (EOI)
-atomic_cmpxchg(&asserted, 0, 1)
-                                    atomic_cmpxchg(&asserted, 1, 0)
-                                    kvm_set_irq(0)
-kvm_set_irq(1)
-                                    eventfd_signal
+> +struct lp8788_irq_data {
+> +	struct lp8788 *lp;
+> +	struct irq_domain *irqdm;
+> +	struct mutex irq_lock;
+> +	struct delayed_work work;
+> +	struct workqueue_struct *thread;
+> +	int enabled[LP8788_INT_MAX];
+> +	int irq;
+> +	int irq_base;
+> +};
 
-The interrupt is now stuck on until another interrupt is injected.
+Can you use regmap-irq?  If not can we fix things so that's possible?
 
+> +static irqreturn_t lp8788_irq_handler(int irq, void *ptr)
+> +{
+> +	struct lp8788_irq_data *irqd = ptr;
+> +	unsigned long delay = msecs_to_jiffies(DEBOUNCE_MSEC);
+> +
+> +	queue_delayed_work(irqd->thread, &irqd->work, delay);
+> +
+> +	return IRQ_HANDLED;
+> +}
 
+Why a delayed work?  That's *very* unusual.
 
+> +	if (!lp->pdata) {
+> +		dev_warn(lp->dev, "no platform data for irq\n");
+> +		goto no_err;
+> +	}
+
+Given that you're using irq domains why does the device need platform
+data?
+
+> +	if (irq_base) {
+> +		irq_base = irq_alloc_descs(irq_base, 0, LP8788_INT_MAX, 0);
+> +		if (irq_base < 0) {
+> +			dev_warn(lp->dev, "no allocated irq: %d\n", irq_base);
+> +			goto no_err;
+> +		}
+> +	}
+
+This shouldn't be needed with irq domains.
+
+> +EXPORT_SYMBOL(lp8788_read_byte);
+
+You're reexporting regmap functionality with looser licensing
+requirements...
+
+> +unsigned int lp8788_get_adc(struct lp8788 *lp, enum lp8788_adc_id id,
+> +			enum lp8788_adc_resolution res)
+
+For new drivers the ADC should probably be integrated into IIO.
+
+> +static int lp8788_add_devices(struct lp8788 *lp)
+> +{
+> +	int ret;
+> +	int irq_base = lp->pdata ? lp->pdata->irq_base : 0;
+> +
+> +	ret = mfd_add_devices(lp->dev, -1, lp8788_devs, ARRAY_SIZE(lp8788_devs),
+> +			NULL, irq_base);
+
+Since you're using an irq domains you shouldn't need an irq base
+specifying in order to use interrupts.
+
+> +	if (!i2c_check_functionality(cl->adapter, I2C_FUNC_SMBUS_I2C_BLOCK))
+> +		return -EIO;
+
+I'd expect that's going to give some false negatives...
+
+--kORqDWCi7qDJ0mEj
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQBs0xAAoJEBus8iNuMP3dyYsQAIZpjSfUh3SPj+wszoyZubt1
+HaAXn19AYEIkTD7KhpLWKBfuUcAEzVrH25TpXhgsEyhTJ2wq9MUWatf4PGU7Nvn+
+aVN6WNe2vUmlOhFXnaU03dq3p8B9Wajp1f97xcLf9TgPcXchMo19XECaw+2ZLJwS
+J3PH4wFZA3i/lZsv4PFORnOoCd86dsu17PGdDVQ3yCKmNc53Ktd8TnjlaEmsM8zB
+C+ILB2shjNyH9esMnAArVAmglMpPGe/K/m7apkq0uVin1GHA3o3RoFQXFSULQC0K
+tniUrDiYWdEaQ23+h6kVUb8V3yH5f3dkJZOFcuolui07xHgr+L4RC6q0oOz+wBQW
+K1XtgRxsIi/k0AlA9upNqz42npgE2BlMi6mv7WiSfLxjeY9zv1l0hYMPYSzG0lpX
+Ql28VNPdQlaFAez0577e6bu8u1tEhwvsDZ6eprJM+qhkp9mZJAkH33cHxgAuJtjZ
+jlDLv1HAKpBrNIY9t8KRnoONRJx7N8eI8NYc5AXQxmsouhaFj2g6Mjs96BkLLIWQ
+71DID3BrxRYGiTo1f8z2lLMXC+5lHvSLKPwx6dyXBGdfjgLO7CmzpS5EqAECvWFk
+hR1jTGCapgNRn5RyhPzdu4z8Whyr1SjYCyUYY14u/+hqeFRAACeoGjtLudjbzrv7
+tHyMdfY3rVDBV7I6wGf6
+=PtLg
+-----END PGP SIGNATURE-----
+
+--kORqDWCi7qDJ0mEj--
