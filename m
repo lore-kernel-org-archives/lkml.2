@@ -1,113 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755839Ab2GRTl7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 15:41:59 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:46786 "EHLO ogre.sisk.pl"
+	id S1755845Ab2GRTpP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 15:45:15 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:46795 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753290Ab2GRTlz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 15:41:55 -0400
+	id S1753290Ab2GRTpM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 15:45:12 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Todd Poynor <toddpoynor@google.com>
-Subject: Re: [PATCH] PM / Sleep: Print name of wakeup source that aborts suspend
-Date: Wed, 18 Jul 2012 21:47:34 +0200
+To: Borislav Petkov <bp@amd64.org>
+Subject: Re: [PATCH] powernow-k8: Fixup missing _PSS objects message
+Date: Wed, 18 Jul 2012 21:50:51 +0200
 User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org, arve@android.com
-References: <1342637519-22355-1-git-send-email-toddpoynor@google.com>
-In-Reply-To: <1342637519-22355-1-git-send-email-toddpoynor@google.com>
+Cc: cpufreq@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+References: <1342624043-29763-1-git-send-email-bp@amd64.org>
+In-Reply-To: <1342624043-29763-1-git-send-email-bp@amd64.org>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201207182147.34750.rjw@sisk.pl>
+Message-Id: <201207182150.51441.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, July 18, 2012, Todd Poynor wrote:
-> Print active wakeup sources, or the most recently active wakeup
-> source, when a PM transition is aborted due to wakeup source
-> events.
+On Wednesday, July 18, 2012, Borislav Petkov wrote:
+> From: Borislav Petkov <borislav.petkov@amd.com>
 > 
-> Signed-off-by: Todd Poynor <toddpoynor@google.com>
-> ---
->  drivers/base/power/wakeup.c |   29 +++++++++++++++++++++++++++++
->  1 files changed, 29 insertions(+), 0 deletions(-)
+> _PSS objects can also be missing if Cool'N'Quiet is disabled in the
+> BIOS. Add that to the FW_BUG message for the user to try before updating
+> her BIOS. Fix formatting while at it.
 > 
-> A driver or app may repeatedly request a wakeup source while the system
-> is attempting to enter suspend, which may indicate a bug or at least
-> point out a highly active system component that is responsible for
-> decreased battery life on a mobile device.  Even when the incidence
-> of suspend abort is not severe, identifying wakeup sources that
-> frequently abort suspend can be a useful clue for power management
-> analysis.
-> 
-> In some cases the existing stats can point out the offender where there is
-> an unexpectedly high activation count that stands out from the others, but
-> in other cases the wakeup source frequently taken just after the rest of
-> the system thinks its time to suspend might not stand out in the overall
-> stats.
-> 
-> It is also often useful to have information about what's been happening
-> recently, rather than totals of all activity for the system boot.
-> 
-> It's suggested to (optionally?) dump a line about which wakeup source
-> aborted suspend to aid analysis of these situations.
-> 
-> diff --git a/drivers/base/power/wakeup.c b/drivers/base/power/wakeup.c
-> index cbb463b..c079ffe 100644
-> --- a/drivers/base/power/wakeup.c
-> +++ b/drivers/base/power/wakeup.c
-> @@ -649,6 +649,31 @@ void pm_wakeup_event(struct device *dev, unsigned int msec)
->  }
->  EXPORT_SYMBOL_GPL(pm_wakeup_event);
->  
-> +static void print_active_wakeup_sources(void)
-> +{
-> +	struct wakeup_source *ws;
-> +	int active = 0;
-> +	struct wakeup_source *last_activity_ws = NULL;
-> +
-> +	rcu_read_lock();
-> +	list_for_each_entry_rcu(ws, &wakeup_sources, entry) {
-> +		if (ws->active) {
-> +			pr_info("active wakeup source: %s\n", ws->name);
-> +			active = 1;
+> Acked-by: Mark Langsdorf <mark.langsdorf@amd.com>
+> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 
-Can we do a break here?  Or do we want to get all of them?
-
-> +		} else if (!active &&
-> +			   (!last_activity_ws ||
-> +			    ws->last_time.tv64 >
-> +			    last_activity_ws->last_time.tv64)) {
-
-ktime_to_ns() anyone?
-
-> +			last_activity_ws = ws;
-> +		}
-> +	}
-> +
-> +	if (!active && last_activity_ws)
-> +		pr_info("last active wakeup source: %s\n",
-> +			last_activity_ws->name);
-> +	rcu_read_unlock();
-> +}
-> +
->  /**
->   * pm_wakeup_pending - Check if power transition in progress should be aborted.
->   *
-> @@ -671,6 +696,10 @@ bool pm_wakeup_pending(void)
->  		events_check_enabled = !ret;
->  	}
->  	spin_unlock_irqrestore(&events_lock, flags);
-> +
-> +	if (ret)
-> +		print_active_wakeup_sources();
-> +
->  	return ret;
->  }
-
-There is no way this or equivalent can go into v3.6.  It may go into v3.7,
-but there's a plenty of time for that.
+I will take this, but it's kind of too late for v3.6.
 
 Thanks,
 Rafael
+
+
+> ---
+>  drivers/cpufreq/powernow-k8.c | 11 +++++++----
+>  1 file changed, 7 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
+> index c0e816468e30..33f17c4a1342 100644
+> --- a/drivers/cpufreq/powernow-k8.c
+> +++ b/drivers/cpufreq/powernow-k8.c
+> @@ -1265,12 +1265,15 @@ static void __cpuinit powernowk8_cpu_init_on_cpu(void *_init_on_cpu)
+>  	init_on_cpu->rc = 0;
+>  }
+>  
+> +static const char missing_pss_msg[] =
+> +	KERN_ERR
+> +	FW_BUG PFX "No compatible ACPI _PSS objects found.\n"
+> +	FW_BUG PFX "First, make sure Cool'N'Quiet is enabled in the BIOS.\n"
+> +	FW_BUG PFX "If that doesn't help, try upgrading your BIOS.\n";
+> +
+>  /* per CPU init entry point to the driver */
+>  static int __cpuinit powernowk8_cpu_init(struct cpufreq_policy *pol)
+>  {
+> -	static const char ACPI_PSS_BIOS_BUG_MSG[] =
+> -		KERN_ERR FW_BUG PFX "No compatible ACPI _PSS objects found.\n"
+> -		FW_BUG PFX "Try again with latest BIOS.\n";
+>  	struct powernow_k8_data *data;
+>  	struct init_on_cpu init_on_cpu;
+>  	int rc;
+> @@ -1298,7 +1301,7 @@ static int __cpuinit powernowk8_cpu_init(struct cpufreq_policy *pol)
+>  		 * an UP version, and is deprecated by AMD.
+>  		 */
+>  		if (num_online_cpus() != 1) {
+> -			printk_once(ACPI_PSS_BIOS_BUG_MSG);
+> +			printk_once(missing_pss_msg);
+>  			goto err_out;
+>  		}
+>  		if (pol->cpu != 0) {
+> 
+
