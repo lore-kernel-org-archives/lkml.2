@@ -1,82 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754549Ab2GRNxy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 09:53:54 -0400
-Received: from smtp3.mundo-r.com ([212.51.32.191]:62398 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751276Ab2GRNxw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 09:53:52 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AnAIACm/BlBbdWOb/2dsb2JhbABFhWqrEiKIHIEHgiABAQQBIw8BBR0jAQULCxgCAgUWCwICCQMCAQIBRQYNAQUCAQEXh2wKB6sBkwCBIIoghT2BEgOVRJAJgmGBXQ
-X-IronPort-AV: E=Sophos;i="4.77,610,1336341600"; 
-   d="scan'208";a="545346047"
-Message-ID: <5006BFEC.1010407@igalia.com>
-Date: Wed, 18 Jul 2012 15:53:48 +0200
-From: =?UTF-8?B?TWlndWVsIEfDs21leg==?= <magomez@igalia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1754373Ab2GROKW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 10:10:22 -0400
+Received: from mga14.intel.com ([143.182.124.37]:27222 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750863Ab2GROKU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 10:10:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="123882498"
+Message-ID: <5006C3CA.3010007@intel.com>
+Date: Wed, 18 Jul 2012 07:10:18 -0700
+From: John Fastabend <john.r.fastabend@intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
-CC: don@syst.com.br, mjg@redhat.com, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1 v2] classmate-laptop: Add support for Classmate V4
- accelerometer.
-References: <cover.1340976795.git.magomez@igalia.com> <39ac42c709e498fbef4f0f0f24edc5331e5f4473.1340976795.git.magomez@igalia.com> <20120717224749.GA20813@nautilus.holoscopio.com>
-In-Reply-To: <20120717224749.GA20813@nautilus.holoscopio.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Neil Horman <nhorman@tuxdriver.com>
+CC: Gao feng <gaofeng@cn.fujitsu.com>, eric.dumazet@gmail.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        davem@davemloft.net, Eric Dumazet <edumazet@google.com>,
+        "Rustad, Mark D" <mark.d.rustad@intel.com>
+Subject: Re: [PATCH v4] net: cgroup: fix access the unallocated memory in
+ netprio cgroup
+References: <1342079415-9631-1-git-send-email-gaofeng@cn.fujitsu.com> <5005CF5D.9070905@intel.com> <20120718122106.GB25563@hmsreliant.think-freely.org>
+In-Reply-To: <20120718122106.GB25563@hmsreliant.think-freely.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Fri, Jun 29, 2012 at 03:39:48PM +0200, Miguel Gómez wrote:
->> Classmate V4 laptop includes a new accelerometer that can't be handled by
->> previous driver. This patch adds a new driver to handle it.
+On 7/18/2012 5:21 AM, Neil Horman wrote:
+> On Tue, Jul 17, 2012 at 01:47:25PM -0700, John Fastabend wrote:
+>> On 7/12/2012 12:50 AM, Gao feng wrote:
+>>> there are some out of bound accesses in netprio cgroup.
+>>>
+>>> now before accessing the dev->priomap.priomap array,we only check
+>>> if the dev->priomap exist.and because we don't want to see
+>>> additional bound checkings in fast path, so we should make sure
+>>> that dev->priomap is null or array size of dev->priomap.priomap
+>>> is equal to max_prioidx + 1;
+>>>
+>>> so in write_priomap logic,we should call extend_netdev_table when
+>>> dev->priomap is null and dev->priomap.priomap_len < max_len.
+>>> and in cgrp_create->update_netdev_tables logic,we should call
+>>> extend_netdev_table only when dev->priomap exist and
+>>> dev->priomap.priomap_len < max_len.
+>>>
+>>> and it's not needed to call update_netdev_tables in write_priomap,
+>>> we can only allocate the net device's priomap which we change through
+>>> net_prio.ifpriomap.
+>>>
+>>> this patch also add a return value for update_netdev_tables &
+>>> extend_netdev_table, so when new_priomap is allocated failed,
+>>> write_priomap will stop to access the priomap,and return -ENOMEM
+>>> back to the userspace to tell the user what happend.
+>>>
+>>> Change From v3:
+>>> 1. add rtnl protect when reading max_prioidx in write_priomap.
+>>>
+>>> 2. only call extend_netdev_table when map->priomap_len < max_len,
+>>>     this will make sure array size of dev->map->priomap always
+>>>     bigger than any prioidx.
+>>>
+>>> 3. add a function write_update_netdev_table to make codes clear.
+>>>
+>>> Change From v2:
+>>> 1. protect extend_netdev_table by RTNL.
+>>> 2. when extend_netdev_table failed,call dev_put to reduce device's refcount.
+>>>
+>>> Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+>>> Cc: Neil Horman <nhorman@tuxdriver.com>
+>>> Cc: Eric Dumazet <edumazet@google.com>
+>>> ---
+>>>   net/core/netprio_cgroup.c |   71 ++++++++++++++++++++++++++++++++++-----------
+>>>   1 files changed, 54 insertions(+), 17 deletions(-)
+>>>
 >>
->> Signed-off-by: Miguel Gómez <magomez@igalia.com>
+>> [...]
+>>
+>>> +
+>>> +static int update_netdev_tables(void)
+>>> +{
+>>> +	int ret = 0;
+>>>   	struct net_device *dev;
+>>> -	u32 max_len = atomic_read(&max_prioidx) + 1;
+>>> +	u32 max_len;
+>>>   	struct netprio_map *map;
+>>
+>>
+>> need to check if net subsystem is initialized before we try
+>> to use it here...
+>>
+>> 	if (some_check)     -> need to lookup what this check is
+>> 		return ret;
+>>
+>>>
+>>>   	rtnl_lock();
+>>> +	max_len = atomic_read(&max_prioidx) + 1;
+>>>   	for_each_netdev(&init_net, dev) {
+>>>   		map = rtnl_dereference(dev->priomap);
+>>> -		if ((!map) ||
+>>> -		    (map->priomap_len < max_len))
+>>> -			extend_netdev_table(dev, max_len);
+>>> +		/*
+>>> +		 * don't allocate priomap if we didn't
+>>> +		 * change net_prio.ifpriomap (map == NULL),
+>>> +		 * this will speed up skb_update_prio.
+>>> +		 */
+>>> +		if (map && map->priomap_len < max_len) {
+>>> +			ret = extend_netdev_table(dev, max_len);
+>>> +			if (ret < 0)
+>>> +				break;
+>>> +		}
+>>>   	}
+>>>   	rtnl_unlock();
+>>> +	return ret;
+>>>   }
+>>>
+>>>   static struct cgroup_subsys_state *cgrp_create(struct cgroup *cgrp)
+>>>   {
+>>>   	struct cgroup_netprio_state *cs;
+>>> -	int ret;
+>>> +	int ret = -EINVAL;
+>>>
+>>>   	cs = kzalloc(sizeof(*cs), GFP_KERNEL);
+>>>   	if (!cs)
+>>>   		return ERR_PTR(-ENOMEM);
+>>>
+>>> -	if (cgrp->parent && cgrp_netprio_state(cgrp->parent)->prioidx) {
+>>> -		kfree(cs);
+>>> -		return ERR_PTR(-EINVAL);
+>>> -	}
+>>> +	if (cgrp->parent && cgrp_netprio_state(cgrp->parent)->prioidx)
+>>> +		goto out;
+>>>
+>>>   	ret = get_prioidx(&cs->prioidx);
+>>> -	if (ret != 0) {
+>>> +	if (ret < 0) {
+>>>   		pr_warn("No space in priority index array\n");
+>>> -		kfree(cs);
+>>> -		return ERR_PTR(ret);
+>>> +		goto out;
+>>> +	}
+>>> +
+>>> +	ret = update_netdev_tables();
+>>> +	if (ret < 0) {
+>>> +		put_prioidx(cs->prioidx);
+>>> +		goto out;
+>>>   	}
+>>
+>> Gao,
+>>
+>> This introduces a null ptr dereference when netprio_cgroup is built
+>> into the kernel because update_netdev_tables() depends on init_net.
+>> However cgrp_create is being called by cgroup_init before
+>> do_initcalls() is called and before net_dev_init().
+>>
+>> .John
+>>
+> Not sure I follow here John.  Shouldn't init_net be initialized prior to any
+> network devices getting registered?  In other words, shouldn't for_each_netdev
+> just result in zero iterations through the loop?
+> Neil
 >
-> Hi, Miguel.
->
-> This seems OK to me. Thanks for this work. Do you have the other
-> functionality of the driver working? I am interested to know if you have
-> the function buttons working.
 
-Hi Thadeu
+init_net _is_ initialized prior to any network devices getting
+registered but not before cgrp_create called via cgroup_init.
 
-I've been giving a look to the buttons code. Currently they are not 
-working because the hardware id reported by the device (FNBT0000) is not 
-the same as the one defined by the driver (FnBT0000), as you an one of 
-my colleagues commented in this thread:
+#define for_each_netdev(net, d)         \
+                 list_for_each_entry(d, &(net)->dev_base_head, dev_list)
 
-https://lkml.org/lkml/2011/6/21/341
+but dev_base_head is zeroed at this time. In netdev_init we have,
 
-I've replaced the id in the driver to FNBT0000 and it made the buttons 
-work like a charm (enabling control of the backlight and LAN as well). 
-To ensure compatibility with older versions of the kernel, a new id can 
-be added (FNBT0000) besides the existent one (FnBT0000), and that works 
-as well (as proposed in the thread).
+         INIT_LIST_HEAD(&net->dev_base_head);
 
-It seems that this problem got a bit forgotten in the lists. Quoting 
-yourself from the last email in the thread:
+but we haven't got that far yet because cgroup_init is called
+before do_initcalls().
 
-> I am copying the acpi list and Len Brown to see if they can tell us
-> which one should be the right solution:
->
-> 1) reverting the patch in acpica that puts all names in uppercase
-> 2) using a case-insensitive match in acpi bus driver
-> 3) using uppercase name in classmate-laptop driver
 
-I think the easiest and less risky way to fix this is by adding a new 
-hardware id (as proposed in the thread's patch), as it doesn't add any 
-side effects (that the other solutions might add), and it doesn't break 
-the behaviour of the old code.
-
-What do you think?
-
-Regards!
-
--- 
-Miguel Gómez
-Igalia - http://www.igalia.com
 
 
