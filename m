@@ -1,66 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751529Ab2GSTUF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 15:20:05 -0400
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:5866 "EHLO
-	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750806Ab2GSTUC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 15:20:02 -0400
-From: Lance Ortiz <lance.ortiz@hp.com>
-To: bhelgaas@google.com, ying.huang@intel.com, jbarnes@virtuousgeek.org,
-        rusty@rustcorp.com.au, mchehab@redhat.com
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        lance.ortiz@hp.com
-Subject: [PATCH] aerdrv: Enable AER completion notice
-Date: Thu, 19 Jul 2012 13:19:12 -0600
-Message-Id: <1342725552-14407-1-git-send-email-lance.ortiz@hp.com>
-X-Mailer: git-send-email 1.7.7.6
+	id S1751439Ab2GSTYm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 15:24:42 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:48541 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751065Ab2GSTYl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 15:24:41 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Carsten Emde <C.Emde@osadl.org>
+Subject: Re: [PATCH 1/1 v2] Honor state disabling in the cpuidle ladder governor
+Date: Thu, 19 Jul 2012 21:30:20 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        Len Brown <len.brown@intel.com>, Kevin Hilman <khilman@ti.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>
+References: <201207192042.57935.rjw@sisk.pl> <20120719185212.184458166@osadl.org> <20120719190740.215034590@osadl.org>
+In-Reply-To: <20120719190740.215034590@osadl.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201207192130.20520.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When an AER event occurs not all of the print notifications are at the
-same log level.  This can cause an incomplete AER log from the users
-point of view when monitoring the console output.
+On Thursday, July 19, 2012, Carsten Emde wrote:
+> There are two cpuidle governors ladder and menu. While the ladder
+> governor is always available, if CONFIG_CPU_IDLE is selected, the
+> menu governor additionally requires CONFIG_NO_HZ.
+> 
+> A particular C state can be disabled by writing to the sysfs file
+> /sys/devices/system/cpu/cpuN/cpuidle/stateN/disable, but this mechanism
+> is only implemented in the menu governor. Thus, in a system where
+> CONFIG_NO_HZ is not selected, the ladder governor becomes default and
+> always will walk through all sleep states - irrespective of whether the
+> C state was disabled via sysfs or not. The only way to select a specific
+> C state was to write the related latency to /dev/cpu_dma_latency and
+> keep the file open as long as this setting was required - not very
+> practical and not suitable for setting a single core in an SMP system.
+> 
+> With this patch, the ladder governor only will promote to the next
+> C state, if it has not been disabled, and it will demote, if the
+> current C state was disabled.
+> 
+> Note that the patch does not make the setting of the sysfs variable
+> "disable" coherent, i.e. if one is disabling a light state, then all
+> deeper states are disabled as well, but the "disable" variable does not
+> reflect it. Likewise, if one enables a deep state but a lighter state
+> still is disabled, then this has no effect. A related section has been
+> added to the documentation.
+> 
+> Signed-off-by: Carsten Emde <C.Emde@osadl.org>
 
-The completion message in do_recovery() is currently set to KERN_DEBUG
-(log level 7) while the starting message in aer_port_info() uses
-KERN_INFO(log level 6). The completion message should be set to
-KERN_INFO so it is consistent with the starting message in the log.
+Your patch doesn't seem to take this linux-next commit:
 
-The message has also been re-worded to make it more clear.  This patch 
-will enable the AER log on the console output to be book-ended by a
-clear and consistent starting and completion message.
+http://git.kernel.org/?p=linux/kernel/git/rafael/linux-pm.git;a=commit;h=dc7fd275ae60ef8edf952aff2a62462f5d892fd4
 
-Signed-off-by: Lance Ortiz <lance.ortiz@hp.com>
----
- drivers/pci/pcie/aer/aerdrv_core.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+into account, does it?
 
-diff --git a/drivers/pci/pcie/aer/aerdrv_core.c b/drivers/pci/pcie/aer/aerdrv_core.c
-index 0ca0535..164bab5 100644
---- a/drivers/pci/pcie/aer/aerdrv_core.c
-+++ b/drivers/pci/pcie/aer/aerdrv_core.c
-@@ -540,14 +540,14 @@ static void do_recovery(struct pci_dev *dev, int severity)
- 				"resume",
- 				report_resume);
- 
--	dev_printk(KERN_DEBUG, &dev->dev,
--		"AER driver successfully recovered\n");
-+	dev_printk(KERN_INFO, &dev->dev,
-+		"AER: Device recovery successful\n");
- 	return;
- 
- failed:
- 	/* TODO: Should kernel panic here? */
--	dev_printk(KERN_DEBUG, &dev->dev,
--		"AER driver didn't recover\n");
-+	dev_printk(KERN_INFO, &dev->dev,
-+		"AER: Device recovery failed\n");
- }
- 
- /**
--- 
-1.7.7.6
+Rafael
+
+
+> ---
+>  Documentation/cpuidle/sysfs.txt    |   10 +++++++++-
+>  drivers/cpuidle/governors/ladder.c |    4 +++-
+>  2 files changed, 12 insertions(+), 2 deletions(-)
+> 
+> Index: linux-3.4.4-rt14-rc2-64/Documentation/cpuidle/sysfs.txt
+> ===================================================================
+> --- linux-3.4.4-rt14-rc2-64.orig/Documentation/cpuidle/sysfs.txt
+> +++ linux-3.4.4-rt14-rc2-64/Documentation/cpuidle/sysfs.txt
+> @@ -76,9 +76,17 @@ total 0
+>  
+>  
+>  * desc : Small description about the idle state (string)
+> -* disable : Option to disable this idle state (bool)
+> +* disable : Option to disable this idle state (bool) -> see note below
+>  * latency : Latency to exit out of this idle state (in microseconds)
+>  * name : Name of the idle state (string)
+>  * power : Power consumed while in this idle state (in milliwatts)
+>  * time : Total time spent in this idle state (in microseconds)
+>  * usage : Number of times this state was entered (count)
+> +
+> +Note:
+> +The behavior and the effect of the disable variable depends on the
+> +implementation of a particular governor. In the ladder governor, for
+> +example, it is not coherent, i.e. if one is disabling a light state,
+> +then all deeper states are disabled as well, but the disable variable
+> +does not reflect it. Likewise, if one enables a deep state but a lighter
+> +state still is disabled, then this has no effect.
+> Index: linux-3.4.4-rt14-rc2-64/drivers/cpuidle/governors/ladder.c
+> ===================================================================
+> --- linux-3.4.4-rt14-rc2-64.orig/drivers/cpuidle/governors/ladder.c
+> +++ linux-3.4.4-rt14-rc2-64/drivers/cpuidle/governors/ladder.c
+> @@ -88,6 +88,7 @@ static int ladder_select_state(struct cp
+>  
+>  	/* consider promotion */
+>  	if (last_idx < drv->state_count - 1 &&
+> +	    !drv->states[last_idx + 1].disable &&
+>  	    last_residency > last_state->threshold.promotion_time &&
+>  	    drv->states[last_idx + 1].exit_latency <= latency_req) {
+>  		last_state->stats.promotion_count++;
+> @@ -100,7 +101,8 @@ static int ladder_select_state(struct cp
+>  
+>  	/* consider demotion */
+>  	if (last_idx > CPUIDLE_DRIVER_STATE_START &&
+> -	    drv->states[last_idx].exit_latency > latency_req) {
+> +	    (drv->states[last_idx].disable ||
+> +	    drv->states[last_idx].exit_latency > latency_req)) {
+>  		int i;
+>  
+>  		for (i = last_idx - 1; i > CPUIDLE_DRIVER_STATE_START; i--) {
+> 
+> 
+> 
 
