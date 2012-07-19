@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756118Ab2GSB7o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 21:59:44 -0400
-Received: from mail132.messagelabs.com ([216.82.242.115]:36948 "EHLO
-	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753175Ab2GSB7m (ORCPT
+	id S1755532Ab2GSCAO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 22:00:14 -0400
+Received: from mail160.messagelabs.com ([216.82.253.99]:18533 "EHLO
+	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751566Ab2GSCAL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 21:59:42 -0400
+	Wed, 18 Jul 2012 22:00:11 -0400
 X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-4.tower-132.messagelabs.com!1342663181!14779586!1
-X-Originating-IP: [216.166.12.32]
+X-Msg-Ref: server-4.tower-160.messagelabs.com!1342663209!9187664!2
+X-Originating-IP: [216.166.12.98]
 X-StarScan-Version: 6.5.10; banners=-,-,-
 X-VirusChecked: Checked
 From: H Hartley Sweeten <hartleys@visionengravers.com>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 71/90] staging: comedi: dyna_pci10xx: remove the 'start_stop_sem' mutex
-Date: Wed, 18 Jul 2012 18:59:35 -0700
+Subject: [PATCH 72/90] staging: comedi: dyna_pci10xx: remove 'valid' from the private data
+Date: Wed, 18 Jul 2012 19:00:04 -0700
 User-Agent: KMail/1.9.9
 CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
         <gregkh@linuxfoundation.org>
@@ -23,84 +23,42 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Message-ID: <201207181859.36031.hartleys@visionengravers.com>
+Message-ID: <201207181900.04934.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The comedi core already has a mutex protecting the attach/detach
-of the comedi drivers.
+This variable is set at the end of the attach but never used
+in the driver. Remove it.
 
 Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 Cc: Ian Abbott <abbotti@mev.co.uk>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/staging/comedi/drivers/dyna_pci10xx.c | 15 ++-------------
- 1 file changed, 2 insertions(+), 13 deletions(-)
+ drivers/staging/comedi/drivers/dyna_pci10xx.c | 3 ---
+ 1 file changed, 3 deletions(-)
 
 diff --git a/drivers/staging/comedi/drivers/dyna_pci10xx.c b/drivers/staging/comedi/drivers/dyna_pci10xx.c
-index bd804f1..82002c4 100644
+index 82002c4..24c5cd2 100644
 --- a/drivers/staging/comedi/drivers/dyna_pci10xx.c
 +++ b/drivers/staging/comedi/drivers/dyna_pci10xx.c
-@@ -45,8 +45,6 @@
+@@ -101,7 +101,6 @@ static const struct boardtype boardtypes[] = {
  
- #define READ_TIMEOUT 50
+ struct dyna_pci10xx_private {
+ 	struct pci_dev *pci_dev;	/*  ptr to PCI device */
+-	char valid;			/*  card is usable */
+ 	struct mutex mutex;
  
--static DEFINE_MUTEX(start_stop_sem);
--
- static const struct comedi_lrange range_pci1050_ai = { 3, {
- 							  BIP_RANGE(10),
- 							  BIP_RANGE(5),
-@@ -267,20 +265,15 @@ static int dyna_pci10xx_attach(struct comedi_device *dev,
- 	struct comedi_subdevice *s;
- 	int ret;
- 
--	mutex_lock(&start_stop_sem);
--
- 	if (alloc_private(dev, sizeof(struct dyna_pci10xx_private)) < 0) {
- 		printk(KERN_ERR "comedi: dyna_pci10xx: "
- 			"failed to allocate memory!\n");
--		mutex_unlock(&start_stop_sem);
- 		return -ENOMEM;
- 	}
- 
- 	pcidev = dyna_pci10xx_find_pci_dev(dev, it);
--	if (!pcidev) {
--		mutex_unlock(&start_stop_sem);
-+	if (!pcidev)
- 		return -EIO;
--	}
- 	devpriv->pci_dev = pcidev;
- 
- 	dev->board_name = thisboard->name;
-@@ -289,7 +282,6 @@ static int dyna_pci10xx_attach(struct comedi_device *dev,
- 	if (comedi_pci_enable(pcidev, DRV_NAME)) {
- 		printk(KERN_ERR "comedi: dyna_pci10xx: "
- 			"failed to enable PCI device and request regions!");
--		mutex_unlock(&start_stop_sem);
- 		return -EIO;
- 	}
- 
-@@ -306,10 +298,8 @@ static int dyna_pci10xx_attach(struct comedi_device *dev,
- 	devpriv->BADR5 = pci_resource_start(pcidev, 5);
- 
- 	ret = comedi_alloc_subdevices(dev, 4);
--	if (ret) {
--		mutex_unlock(&start_stop_sem);
-+	if (ret)
- 		return ret;
--	}
- 
- 	/* analog input */
- 	s = dev->subdevices + 0;
-@@ -353,7 +343,6 @@ static int dyna_pci10xx_attach(struct comedi_device *dev,
+ 	/* device base address registers */
+@@ -342,8 +341,6 @@ static int dyna_pci10xx_attach(struct comedi_device *dev,
+ 	s->state = 0;
  	s->insn_bits = dyna_pci10xx_do_insn_bits;
  
- 	devpriv->valid = 1;
--	mutex_unlock(&start_stop_sem);
- 
+-	devpriv->valid = 1;
+-
  	printk(KERN_INFO "comedi: dyna_pci10xx: %s - device setup completed!\n",
  		thisboard->name);
+ 
 -- 
 1.7.11
 
