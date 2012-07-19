@@ -1,38 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751144Ab2GSEEi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 00:04:38 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:56907 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1749667Ab2GSEEg (ORCPT
+	id S1751424Ab2GSEJj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 00:09:39 -0400
+Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:60596 "EHLO
+	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750728Ab2GSEJe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 00:04:36 -0400
-Message-ID: <5007874F.6090707@pobox.com>
-Date: Thu, 19 Jul 2012 00:04:31 -0400
-From: Jeff Garzik <jgarzik@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Thu, 19 Jul 2012 00:09:34 -0400
+Date: Thu, 19 Jul 2012 06:09:33 +0200
+From: Andreas Mohr <andi@lisas.de>
+To: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: USB enumeration post-resume NOT persistent yet "persist" --> swapped
+ devices nodes --> root partition reference broken
+Message-ID: <20120719040933.GA18760@rhlx01.hs-esslingen.de>
 MIME-Version: 1.0
-To: "K. Y. Srinivasan" <kys@microsoft.com>, gregkh@linuxfoundation.org
-CC: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, olaf@aepfle.de, apw@canonical.com
-Subject: Re: [PATCH 1/1] Drivers: hv: Change the hex constant to a decimal
- constant
-References: <1342652245-931-1-git-send-email-kys@microsoft.com>
-In-Reply-To: <1342652245-931-1-git-send-email-kys@microsoft.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Priority: none
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2012 06:57 PM, K. Y. Srinivasan wrote:
-> The hex constant chosen for HV_LINUX_GUEST_ID_HI was offensive, update 
-> to use
-> the decimal equivalent instead.
->
-> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+Hi,
 
-Acked-by: Jeff Garzik <jgarzik@redhat.com>
+Yesterday I was surprised to see that with *another* external USB disk
+happening to be connected before boot,
+the system booted with root partition device sdb1 assigned rather than sda1.
+Not thinking much, I then proceeded putting the system into suspend,
+only to be even more surprised to then end up with swapped device nodes
+post-resume and the system killed
+(I *know* that device nodes ended up jumbled since the root device contains
+"root" plus "swap" partition device node, whereas the "other" USB device
+contains one partition only,
+and the set of partition device nodes as still successfully looked up via
+ls -l /dev/sd*
+ended up exactly reversed after system resume).
+I attempted to get dmesg off this system, however not even plain sector writing
+of my /tmp/dmesg.log to a new USB device worked since "dd" segfaulted.
+Also, no network access of course.
+
+http://lists.linux-foundation.org/pipermail/linux-pm/2009-November/023101.html
+talks about this case, and mentions Documentation/usb/persist.txt
+as the most authoritative document.
+
+The thing is, /sys persist nodes *are* all set to 1 for any affected
+device (at least as observed after the subsequent fresh boot).
+
+The plausibility of the previous killed boot having had "persist"
+attribute set as well for all devices is VERY high
+(there were no changes/updates in system software configuration done,
+thus settings should have been identical).
+
+Thus I'm highly puzzled as to why with USB persistence *activated*
+it still decided to jumble device nodes on this system resume.
+Content of the pathological dmesg log didn't contain any mentioning
+of any "persistence" mechanism activity, BTW, AFAIR.
+
+Device identification *is* as unique as it gets:
+
+# lsusb 
+Bus 001 Device 005: ID 174c:55aa ASMedia Technology Inc. 
+Bus 001 Device 002: ID 152d:0601 JMicron Technology Corp. / JMicron USA Technology Corp. 
+Bus 001 Device 004: ID 064e:d101 Suyin Corp. Acer CrystalEye Webcam
+Bus 003 Device 002: ID 0a12:0001 Cambridge Silicon Radio, Ltd Bluetooth Dongle (HCI mode)
+Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+Bus 002 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
+Bus 003 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
+Bus 004 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
+Bus 005 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
+
+andinet sys # find . -name "*persist*"
+./devices/pci0000:00/0000:00:1c.2/0000:03:00.0/ieee80211/phy0/rfkill1/persistent
+./devices/pci0000:00/0000:00:1d.1/usb3/3-2/3-2:1.0/bluetooth/hci0/rfkill0/persistent
+./devices/pci0000:00/0000:00:1d.1/usb3/3-2/power/persist
+./devices/pci0000:00/0000:00:1d.7/usb1/1-1/power/persist
+./devices/pci0000:00/0000:00:1d.7/usb1/1-2/power/persist
+./devices/pci0000:00/0000:00:1d.7/usb1/1-5/power/persist
+andinet sys # cat ./devices/pci0000:00/0000:00:1d.7/usb1/1-2/product
+TS32GSSD18M-M
+andinet sys # cat ./devices/pci0000:00/0000:00:1d.7/usb1/1-2/power/persist
+1
+andinet sys # cat ./devices/pci0000:00/0000:00:1d.7/usb1/1-5/product
+Acer Crystal Eye webcam
+andinet sys # cat ./devices/pci0000:00/0000:00:1d.7/usb1/1-5/power/persist
+1
+andinet sys # cat ./devices/pci0000:00/0000:00:1d.7/usb1/1-1/product
+MEDION HDDrive-n-GO
+andinet sys # cat ./devices/pci0000:00/0000:00:1d.7/usb1/1-1/power/persist
+1
+
+(TS32GSSD18M-M is USB-connected root partition SSD)
 
 
+Netbook Acer Aspire One A110L.
+Running 3.5.0-rc7+ here (yes ma'am, bleeding edge tester :).
+Was the first time to attempt resume with an additional device remaining
+connected, IIRC - that -rc7 thing likely doesn't play much of a role here.
+A bit hesitant to (dis-)prove the bug's "regression flag" with another version
+since random possibly succeeding I/O accesses to incompatible devices
+are not necessarily my thing (or is this safe to attempt again? Any more
+specific session info one would need?).
+
+So, again, possibly USB persistence is bug-broken?
+
+Posted to linux-usb (discussion) and lkml (kernel bug?).
+
+Thanks,
+
+Andreas Mohr
