@@ -1,248 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753500Ab2GSKos (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 06:44:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36420 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752106Ab2GSKop (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 06:44:45 -0400
-Date: Thu, 19 Jul 2012 13:45:20 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        gleb@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCHv2] kvm: fix race with level interrupts
-Message-ID: <20120719104520.GA14748@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+	id S1753629Ab2GSKqh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 06:46:37 -0400
+Received: from mail-vc0-f202.google.com ([209.85.220.202]:51364 "EHLO
+	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751822Ab2GSKqf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 06:46:35 -0400
+From: Chung-yih Wang <cywang@chromium.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Henrik Rydberg <rydberg@euromail.se>, Daniel Kurtz <djkurtz@chromium.org>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        JJ Ding <dgdunix@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Chung-yih Wang <cywang@chromium.org>
+Subject: [PATCH v3] Input: synaptics - use firmware data for Cr-48
+Date: Thu, 19 Jul 2012 18:46:26 +0800
+Message-Id: <1342694786-7931-1-git-send-email-cywang@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When more than 1 source id is in use for the same GSI, we have the
-following race related to handling irq_states race:
+The profile sensor clickpad in a Cr-48 Chromebook does a reasonable job of
+tracking individual fingers. This tracking isn't perfect, but, experiments
+show that it works better than just passing "semi-mt" data to userspace,
+and making userspace try to deduce where the fingers are given a bounding box.
 
-CPU 0 clears bit 0. CPU 0 read irq_state as 0. CPU 1 sets level to 1.
-CPU 1 calls kvm_ioapic_set_irq(1). CPU 0 calls kvm_ioapic_set_irq(0).
-Now ioapic thinks the level is 0 but irq_state is not 0.
+This patch tries to report two-finger positions directly from firmware's sgm
+and agm packets instead of the {(min_x, min_y), (max_x, max_y)} for profile
+sensor clickpads on Cr-48 chromebooks. Note that this device's firmware always
+reports the higher (smaller y) finger in the "sgm" packet, and the lower
+(larger y) finger in the "agm" packet for the state transition from one finger
+to two finger. Then the firmware keeps tracking of fingers with the same agm
+or sgm packets individually. Thus, when a new finger arrives on the pad, the
+kernel driver uses a simple Euclidean distance measure to deduce which of the
+two new fingers should keep the tracking ID of the previous single finger.
+Similarly, when one finger is removed, the same measure is used to determine
+which finger remained on the pad.
 
-Fix by performing all irq_states bitmap handling under pic/ioapic lock.
-This also removes the need for atomics with irq_states handling.
-
-Reported-by: Gleb Natapov <gleb@redhat.com>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Chung-yih Wang <cywang@chromium.org>
 ---
+ drivers/input/mouse/synaptics.c |   95 +++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 95 insertions(+), 0 deletions(-)
 
-Changes from v1:
-	Address comments by Gleb and Alex:
-		renamed some variables for clarify
-		renamed kvm_irq_line_state ->  __kvm_irq_line_state
-
-Any chance we can put this in 3.5? I know level IRQs are not widely
-used, which is likely why this went unnoticed for so long, but still ...
-
- arch/x86/include/asm/kvm_host.h | 15 ++++++++++++++-
- arch/x86/kvm/i8259.c            | 17 ++++++++++++++---
- virt/kvm/ioapic.c               | 19 ++++++++++++++++---
- virt/kvm/ioapic.h               |  4 +++-
- virt/kvm/irq_comm.c             | 31 ++++---------------------------
- 5 files changed, 51 insertions(+), 35 deletions(-)
-
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index db7c1f2..d4b241d 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -802,7 +802,20 @@ int kvm_read_guest_page_mmu(struct kvm_vcpu *vcpu, struct kvm_mmu *mmu,
- void kvm_propagate_fault(struct kvm_vcpu *vcpu, struct x86_exception *fault);
- bool kvm_require_cpl(struct kvm_vcpu *vcpu, int required_cpl);
+diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+index d5b390f..df74ba4 100644
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -45,6 +45,7 @@
+ #define YMIN_NOMINAL 1408
+ #define YMAX_NOMINAL 4448
  
--int kvm_pic_set_irq(void *opaque, int irq, int level);
-+static inline int __kvm_irq_line_state(unsigned long *irq_state,
-+				       int irq_source_id, int level)
++static bool cr48_profile_sensor;
+ 
+ /*****************************************************************************
+  *	Stuff we need even when we do not want native Synaptics support
+@@ -1003,6 +1004,77 @@ static void synaptics_image_sensor_process(struct psmouse *psmouse,
+ 	priv->agm_pending = false;
+ }
+ 
++static int synaptics_distsq(const struct input_mt_slot *slot,
++			    const struct synaptics_hw_state *hw)
 +{
-+	/* Logical OR for level trig interrupt */
-+	if (level)
-+		__set_bit(irq_source_id, irq_state);
-+	else
-+		__clear_bit(irq_source_id, irq_state);
-+
-+	return !!(*irq_state);
++	int slot_x = input_mt_get_value(slot, ABS_MT_POSITION_X);
++	int slot_y = input_mt_get_value(slot, ABS_MT_POSITION_Y);
++	int dx = hw->x - slot_x;
++	int dy = synaptics_invert_y(hw->y) - slot_y;
++	return dx * dx + dy * dy;
 +}
 +
-+int kvm_pic_set_irq(struct kvm_pic *pic, int irq, int irq_source_id, int level);
-+void kvm_pic_clear_all(struct kvm_pic *pic, int irq_source_id);
- 
- void kvm_inject_nmi(struct kvm_vcpu *vcpu);
- 
-diff --git a/arch/x86/kvm/i8259.c b/arch/x86/kvm/i8259.c
-index 81cf4fa..1df8fb9 100644
---- a/arch/x86/kvm/i8259.c
-+++ b/arch/x86/kvm/i8259.c
-@@ -188,14 +188,15 @@ void kvm_pic_update_irq(struct kvm_pic *s)
- 	pic_unlock(s);
- }
- 
--int kvm_pic_set_irq(void *opaque, int irq, int level)
-+int kvm_pic_set_irq(struct kvm_pic *s, int irq, int irq_source_id, int level)
- {
--	struct kvm_pic *s = opaque;
- 	int ret = -1;
- 
- 	pic_lock(s);
- 	if (irq >= 0 && irq < PIC_NUM_PINS) {
--		ret = pic_set_irq1(&s->pics[irq >> 3], irq & 7, level);
-+		int irq_level = __kvm_irq_line_state(&s->irq_states[irq],
-+						     irq_source_id, level);
-+		ret = pic_set_irq1(&s->pics[irq >> 3], irq & 7, irq_level);
- 		pic_update_irq(s);
- 		trace_kvm_pic_set_irq(irq >> 3, irq & 7, s->pics[irq >> 3].elcr,
- 				      s->pics[irq >> 3].imr, ret == 0);
-@@ -205,6 +206,16 @@ int kvm_pic_set_irq(void *opaque, int irq, int level)
- 	return ret;
- }
- 
-+void kvm_pic_clear_all(struct kvm_pic *s, int irq_source_id)
++static bool synaptics_is_sgm_slot(const struct input_mt_slot *slot,
++				  const struct synaptics_hw_state *sgm,
++				  const struct synaptics_hw_state *agm)
 +{
-+	int i;
++	return (synaptics_distsq(slot, sgm) < synaptics_distsq(slot, agm));
++}
 +
-+	pic_lock(s);
-+	for (i = 0; i < PIC_NUM_PINS; i++)
-+		__clear_bit(irq_source_id, &s->irq_states[i]);
-+	pic_unlock(s);
++static int synaptics_get_sgm_slot(const struct input_mt_slot *slots,
++				  const struct synaptics_hw_state *sgm)
++{
++	int distsq_slot0 = synaptics_distsq(&slots[0], sgm);
++	int distsq_slot1 = synaptics_distsq(&slots[1], sgm);
++	return (distsq_slot0 < distsq_slot1 ? 0 : 1);
++}
++
++static void synaptics_profile_sensor_process(struct psmouse *psmouse,
++					     struct synaptics_hw_state *sgm,
++					     int num_fingers)
++{
++	struct input_dev *dev = psmouse->dev;
++	struct synaptics_data *priv = psmouse->private;
++	struct synaptics_hw_state *agm = &priv->agm;
++	struct synaptics_mt_state mt_state;
++
++	/* Initialize using current mt_state (as updated by last agm) */
++	mt_state = agm->mt_state;
++
++	if (num_fingers >= 2) {
++		/* Get previous sgm slot if exists */
++		int sgm_slot = (mt_state.count != 0) ? mt_state.sgm : 0;
++		if (mt_state.count == 1) {
++			const struct input_mt_slot *mt = &dev->mt[sgm_slot];
++			if (!synaptics_is_sgm_slot(mt, sgm, agm))
++				sgm_slot = 1 - sgm_slot;
++		}
++		synaptics_report_slot(dev, sgm_slot, sgm);
++		synaptics_report_slot(dev, 1 - sgm_slot, agm);
++		synaptics_mt_state_set(&mt_state, num_fingers,
++				       sgm_slot, 1 - sgm_slot);
++	} else if (num_fingers == 1) {
++		int sgm_slot = (mt_state.count != 0) ? mt_state.sgm : 0;
++		if (mt_state.count >= 2)
++			sgm_slot = synaptics_get_sgm_slot(dev->mt, sgm);
++		synaptics_report_slot(dev, sgm_slot, sgm);
++		synaptics_report_slot(dev, 1 - sgm_slot, NULL);
++		synaptics_mt_state_set(&mt_state, 1, sgm_slot, -1);
++	} else {
++		synaptics_report_slot(dev, 0, NULL);
++		synaptics_report_slot(dev, 1, NULL);
++		synaptics_mt_state_set(&mt_state, 0, -1, -1);
++	}
++	/* Store updated mt_state */
++	priv->mt_state = agm->mt_state = mt_state;
++
++	input_mt_report_pointer_emulation(dev, false);
++	/* Send the number of fingers reported by touchpad itself. */
++	input_mt_report_finger_count(dev, mt_state.count);
++	synaptics_report_buttons(psmouse, sgm);
++	input_sync(dev);
 +}
 +
  /*
-  * acknowledge interrupt 'irq'
+  *  called for each full received packet from the touchpad
   */
-diff --git a/virt/kvm/ioapic.c b/virt/kvm/ioapic.c
-index 26fd54d..ef61d52 100644
---- a/virt/kvm/ioapic.c
-+++ b/virt/kvm/ioapic.c
-@@ -191,7 +191,8 @@ static int ioapic_deliver(struct kvm_ioapic *ioapic, int irq)
- 	return kvm_irq_delivery_to_apic(ioapic->kvm, NULL, &irqe);
- }
+@@ -1066,6 +1138,12 @@ static void synaptics_process_packet(struct psmouse *psmouse)
+ 		finger_width = 0;
+ 	}
  
--int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int level)
-+int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int irq_source_id,
-+		       int level)
- {
- 	u32 old_irr;
- 	u32 mask = 1 << irq;
-@@ -201,9 +202,11 @@ int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int level)
- 	spin_lock(&ioapic->lock);
- 	old_irr = ioapic->irr;
- 	if (irq >= 0 && irq < IOAPIC_NUM_PINS) {
-+		int irq_level = __kvm_irq_line_state(&ioapic->irq_states[irq],
-+						     irq_source_id, level);
- 		entry = ioapic->redirtbl[irq];
--		level ^= entry.fields.polarity;
--		if (!level)
-+		irq_level ^= entry.fields.polarity;
-+		if (!irq_level)
- 			ioapic->irr &= ~mask;
- 		else {
- 			int edge = (entry.fields.trig_mode == IOAPIC_EDGE_TRIG);
-@@ -221,6 +224,16 @@ int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int level)
- 	return ret;
- }
- 
-+void kvm_ioapic_clear_all(struct kvm_ioapic *ioapic, int irq_source_id)
-+{
-+	int i;
++	if (cr48_profile_sensor) {
++		synaptics_profile_sensor_process(psmouse, &hw, num_fingers);
++		return;
++	}
 +
-+	spin_lock(&ioapic->lock);
-+	for (i = 0; i < KVM_IOAPIC_NUM_PINS; i++)
-+		__clear_bit(irq_source_id, &ioapic->irq_states[i]);
-+	spin_unlock(&ioapic->lock);
-+}
 +
- static void __kvm_ioapic_update_eoi(struct kvm_ioapic *ioapic, int vector,
- 				     int trigger_mode)
- {
-diff --git a/virt/kvm/ioapic.h b/virt/kvm/ioapic.h
-index 32872a0..a30abfe 100644
---- a/virt/kvm/ioapic.h
-+++ b/virt/kvm/ioapic.h
-@@ -74,7 +74,9 @@ void kvm_ioapic_update_eoi(struct kvm *kvm, int vector, int trigger_mode);
- bool kvm_ioapic_handles_vector(struct kvm *kvm, int vector);
- int kvm_ioapic_init(struct kvm *kvm);
- void kvm_ioapic_destroy(struct kvm *kvm);
--int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int level);
-+int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int irq_source_id,
-+		       int level);
-+void kvm_ioapic_clear_all(struct kvm_ioapic *ioapic, int irq_source_id);
- void kvm_ioapic_reset(struct kvm_ioapic *ioapic);
- int kvm_irq_delivery_to_apic(struct kvm *kvm, struct kvm_lapic *src,
- 		struct kvm_lapic_irq *irq);
-diff --git a/virt/kvm/irq_comm.c b/virt/kvm/irq_comm.c
-index 5afb431..83402d7 100644
---- a/virt/kvm/irq_comm.c
-+++ b/virt/kvm/irq_comm.c
-@@ -33,26 +33,12 @@
+ 	if (SYN_CAP_ADV_GESTURE(priv->ext_cap_0c))
+ 		synaptics_report_semi_mt_data(dev, &hw, &priv->agm,
+ 					      num_fingers);
+@@ -1227,6 +1305,9 @@ static void set_input_params(struct input_dev *dev, struct synaptics_data *priv)
+ 					ABS_MT_POSITION_Y);
+ 	}
  
- #include "ioapic.h"
++	if (cr48_profile_sensor)
++		input_set_abs_params(dev, ABS_MT_PRESSURE, 0, 255, 0, 0);
++
+ 	if (SYN_CAP_PALMDETECT(priv->capabilities))
+ 		input_set_abs_params(dev, ABS_TOOL_WIDTH, 0, 15, 0, 0);
  
--static inline int kvm_irq_line_state(unsigned long *irq_state,
--				     int irq_source_id, int level)
--{
--	/* Logical OR for level trig interrupt */
--	if (level)
--		set_bit(irq_source_id, irq_state);
--	else
--		clear_bit(irq_source_id, irq_state);
--
--	return !!(*irq_state);
--}
--
- static int kvm_set_pic_irq(struct kvm_kernel_irq_routing_entry *e,
- 			   struct kvm *kvm, int irq_source_id, int level)
+@@ -1422,10 +1503,24 @@ static const struct dmi_system_id __initconst olpc_dmi_table[] = {
+ 	{ }
+ };
+ 
++static const struct dmi_system_id __initconst cr48_dmi_table[] = {
++#if defined(CONFIG_DMI) && defined(CONFIG_X86)
++	{
++		/* Cr-48 Chromebook (Codename Mario) */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "IEC"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Mario"),
++		},
++	},
++#endif
++	{ }
++};
++
+ void __init synaptics_module_init(void)
  {
- #ifdef CONFIG_X86
- 	struct kvm_pic *pic = pic_irqchip(kvm);
--	level = kvm_irq_line_state(&pic->irq_states[e->irqchip.pin],
--				   irq_source_id, level);
--	return kvm_pic_set_irq(pic, e->irqchip.pin, level);
-+	return kvm_pic_set_irq(pic, e->irqchip.pin, irq_source_id, level);
- #else
- 	return -1;
- #endif
-@@ -62,10 +48,7 @@ static int kvm_set_ioapic_irq(struct kvm_kernel_irq_routing_entry *e,
- 			      struct kvm *kvm, int irq_source_id, int level)
- {
- 	struct kvm_ioapic *ioapic = kvm->arch.vioapic;
--	level = kvm_irq_line_state(&ioapic->irq_states[e->irqchip.pin],
--				   irq_source_id, level);
--
--	return kvm_ioapic_set_irq(ioapic, e->irqchip.pin, level);
-+	return kvm_ioapic_set_irq(ioapic, e->irqchip.pin, irq_source_id, level);
+ 	impaired_toshiba_kbc = dmi_check_system(toshiba_dmi_table);
+ 	broken_olpc_ec = dmi_check_system(olpc_dmi_table);
++	cr48_profile_sensor = dmi_check_system(cr48_dmi_table);
  }
  
- inline static bool kvm_is_dm_lowest_prio(struct kvm_lapic_irq *irq)
-@@ -249,8 +232,6 @@ unlock:
- 
- void kvm_free_irq_source_id(struct kvm *kvm, int irq_source_id)
- {
--	int i;
--
- 	ASSERT(irq_source_id != KVM_USERSPACE_IRQ_SOURCE_ID);
- 
- 	mutex_lock(&kvm->irq_lock);
-@@ -263,14 +244,10 @@ void kvm_free_irq_source_id(struct kvm *kvm, int irq_source_id)
- 	if (!irqchip_in_kernel(kvm))
- 		goto unlock;
- 
--	for (i = 0; i < KVM_IOAPIC_NUM_PINS; i++) {
--		clear_bit(irq_source_id, &kvm->arch.vioapic->irq_states[i]);
--		if (i >= 16)
--			continue;
-+	kvm_ioapic_clear_all(kvm->arch.vioapic, irq_source_id);
- #ifdef CONFIG_X86
--		clear_bit(irq_source_id, &pic_irqchip(kvm)->irq_states[i]);
-+	kvm_pic_clear_all(pic_irqchip(kvm), irq_source_id);
- #endif
--	}
- unlock:
- 	mutex_unlock(&kvm->irq_lock);
- }
+ static int __synaptics_init(struct psmouse *psmouse, bool absolute_mode)
 -- 
-MST
+1.7.7.3
+
