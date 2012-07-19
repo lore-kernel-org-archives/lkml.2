@@ -1,69 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752545Ab2GSXwY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 19:52:24 -0400
-Received: from mga02.intel.com ([134.134.136.20]:59862 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751580Ab2GSXwU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 19:52:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="174516482"
-Message-ID: <50089DC2.5040508@intel.com>
-Date: Fri, 20 Jul 2012 07:52:34 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+	id S1752591Ab2GSXxj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 19:53:39 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38994 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751596Ab2GSXxh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 19:53:37 -0400
+Date: Thu, 19 Jul 2012 16:53:21 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, devel@driverdev.osuosl.org,
+        abbotti@mev.co.uk
+Subject: Re: [PATCH 00/90] staging: comedi: cleanup the pci_dev usage
+Message-ID: <20120719235321.GA13482@kroah.com>
+References: <201207181823.21230.hartleys@visionengravers.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, arnd@arndb.de,
-        rostedt@goodmis.org, fweisbec@gmail.com, jeremy@goop.org, luto@mit.edu,
-        yinghai@kernel.org, riel@redhat.com, avi@redhat.com,
-        len.brown@intel.com, tj@kernel.org, akpm@linux-foundation.org,
-        cl@gentwo.org, borislav.petkov@amd.com, ak@linux.intel.com,
-        jbeulich@suse.com, eric.dumazet@gmail.com, akinobu.mita@gmail.com,
-        vapier@gentoo.org, cpw@sgi.com, steiner@sgi.com,
-        viro@zeniv.linux.org.uk, kamezawa.hiroyu@jp.fujitsu.com,
-        rientjes@google.com, aarcange@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v10 7/9] x86/tlb: enable tlb flush range support for x86
-References: <1340845344-27557-1-git-send-email-alex.shi@intel.com> <1340845344-27557-8-git-send-email-alex.shi@intel.com> <20120719122057.GA21666@aftab.osrc.amd.com>
-In-Reply-To: <20120719122057.GA21666@aftab.osrc.amd.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201207181823.21230.hartleys@visionengravers.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
->> +static inline void flush_tlb_mm_range(struct vm_area_struct *vma,
->> +	   unsigned long start, unsigned long end, unsigned long vmflag)
->> +{
->> +	if (vma->vm_mm == current->active_mm)
->> +		__flush_tlb();
->> +}
+On Wed, Jul 18, 2012 at 06:23:20PM -0700, H Hartley Sweeten wrote:
+> All the comedi pci drivers currently store a pointer to the pci_dev
+> in their private data. We can use the 'struct device *hw_dev' variable
+> in the comedi_device struct instead and introduce a wrapper for
+> to_pci_dev() to allow the drivers to easily get the pci_dev.
 > 
-> There's a problem with this in one of my randconfig tests. It has
-> !CONFIG_SMP and the warning is:
+> This patchset does just that. It also removes the private data from
+> the drivers that no longer needed it.
 > 
-> mm/memory.c: In function ‘tlb_flush_mmu’:
-> mm/memory.c:230:2: warning: passing argument 1 of ‘flush_tlb_mm_range’ from incompatible pointer type
-> /usr/src/linux-2.6/arch/x86/include/asm/tlbflush.h:108:20: note: expected ‘struct vm_area_struct *’ but argument is of type ‘struct mm_struct *’
-> mm/memory.c:230:2: warning: passing argument 1 of ‘flush_tlb_mm_range’ from incompatible pointer type
-> /usr/src/linux-2.6/arch/x86/include/asm/tlbflush.h:108:20: note: expected ‘struct vm_area_struct *’ but argument is of type ‘struct mm_struct *’
+> Some of the drivers required a bit of cleanup to their "find pci device"
+> code or the private data in order to make the conversion cleaner.
 > 
-> 
-> Due to the fact that the macro flush_tlb actually resolves to
-> flush_tlb_mm_range and this function has a different signature based on
-> CONFIG_SMP. On !SMP expects struct vm_area_struct * as a first argument
-> but on SMP its first argument is struct mm_struct *.
-> 
-> So two different function signatures based on a config option? Now
-> that's a first. What is going on?
+> There are still a couple drivers, specifically the ni and addi ones,
+> that need additional work before they can be converted cleanly.
 
+I've applied all of these (with the updated 01/90 patch).  Can you
+please send follow-on patches to resolve the issues that Ian pointed
+out?
 
-Sure, it is a bug, the fix had sent:
-https://lkml.org/lkml/2012/7/6/350
+thanks,
 
-> 
-
-
+greg k-h
