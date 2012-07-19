@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755617Ab2GSCFH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 22:05:07 -0400
-Received: from mail132.messagelabs.com ([216.82.242.115]:4464 "EHLO
-	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752808Ab2GSCFC (ORCPT
+	id S1756169Ab2GSCFW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 22:05:22 -0400
+Received: from mail160.messagelabs.com ([216.82.253.99]:37212 "EHLO
+	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755748Ab2GSCFU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 22:05:02 -0400
+	Wed, 18 Jul 2012 22:05:20 -0400
 X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-6.tower-132.messagelabs.com!1342663499!13416722!2
-X-Originating-IP: [216.166.12.69]
+X-Msg-Ref: server-6.tower-160.messagelabs.com!1342663517!10093253!6
+X-Originating-IP: [216.166.12.178]
 X-StarScan-Version: 6.5.10; banners=-,-,-
 X-VirusChecked: Checked
 From: H Hartley Sweeten <hartleys@visionengravers.com>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 87/90] staging: comedi: rtd520: remove the '#if 0' code in the attach
-Date: Wed, 18 Jul 2012 19:04:56 -0700
+Subject: [PATCH 88/90] staging: comedi: rtd520: store the pci_dev in the comedi_device
+Date: Wed, 18 Jul 2012 19:05:13 -0700
 User-Agent: KMail/1.9.9
 CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
         <gregkh@linuxfoundation.org>
@@ -23,81 +23,175 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Message-ID: <201207181904.57308.hartleys@visionengravers.com>
+Message-ID: <201207181905.13723.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver has code #if 0'ed out that would allow cleaning up
-the attach if there was an error. The comedi core currently
-calls the detach function to do this if the attach fails.
-
-Remove the #if 0'ed out code.
+Use the hw_dev pointer in the comedi_device struct to hold the
+pci_dev instead of carrying it in the private data.
 
 Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 Cc: Ian Abbott <abbotti@mev.co.uk>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/staging/comedi/drivers/rtd520.c | 46 ---------------------------------
- 1 file changed, 46 deletions(-)
+ drivers/staging/comedi/drivers/rtd520.c | 48 ++++++++++++++++-----------------
+ 1 file changed, 24 insertions(+), 24 deletions(-)
 
 diff --git a/drivers/staging/comedi/drivers/rtd520.c b/drivers/staging/comedi/drivers/rtd520.c
-index aeccae9..d1753e2 100644
+index d1753e2..112fdc3 100644
 --- a/drivers/staging/comedi/drivers/rtd520.c
 +++ b/drivers/staging/comedi/drivers/rtd520.c
-@@ -1886,52 +1886,6 @@ static int rtd_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	printk("\ncomedi%d: rtd520 driver attached.\n", dev->minor);
+@@ -310,9 +310,6 @@ struct rtdPrivate {
+ 	int transCount;		/* # to transfer data. 0->1/2FIFO */
+ 	int flags;		/* flag event modes */
  
- 	return 1;
+-	/* PCI device info */
+-	struct pci_dev *pci_dev;
 -
--#if 0
--	/* hit an error, clean up memory and return ret */
--/* rtd_attach_die_error: */
--#ifdef USE_DMA
--	for (index = 0; index < DMA_CHAIN_COUNT; index++) {
--		if (NULL != devpriv->dma0Buff[index]) {	/* free buffer memory */
+ 	/* channel list info */
+ 	/* chanBipolar tracks whether a channel is bipolar (and needs +2048) */
+ 	unsigned char chanBipolar[RTD_MAX_CHANLIST / 8];	/* bit array */
+@@ -1620,6 +1617,7 @@ static int rtd_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ {				/* board name and options flags */
+ 	const struct rtdBoard *thisboard;
+ 	struct rtdPrivate *devpriv;
++	struct pci_dev *pcidev;
+ 	struct comedi_subdevice *s;
+ 	int ret;
+ 	resource_size_t physLas1;	/* data area */
+@@ -1644,14 +1642,15 @@ static int rtd_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 		return -ENOMEM;
+ 	devpriv = dev->private;
+ 
+-	devpriv->pci_dev = rtd_find_pci(dev, it);
+-	if (!devpriv->pci_dev)
++	pcidev = rtd_find_pci(dev, it);
++	if (!pcidev)
+ 		return -EIO;
++	comedi_set_hw_dev(dev, &pcidev->dev);
+ 	thisboard = comedi_board(dev);
+ 
+ 	dev->board_name = thisboard->name;
+ 
+-	ret = comedi_pci_enable(devpriv->pci_dev, DRV_NAME);
++	ret = comedi_pci_enable(pcidev, DRV_NAME);
+ 	if (ret < 0) {
+ 		printk(KERN_INFO "Failed to enable PCI device and request regions.\n");
+ 		return ret;
+@@ -1661,9 +1660,9 @@ static int rtd_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	 * Initialize base addresses
+ 	 */
+ 	/* Get the physical address from PCI config */
+-	dev->iobase = pci_resource_start(devpriv->pci_dev, LAS0_PCIINDEX);
+-	physLas1 = pci_resource_start(devpriv->pci_dev, LAS1_PCIINDEX);
+-	physLcfg = pci_resource_start(devpriv->pci_dev, LCFG_PCIINDEX);
++	dev->iobase = pci_resource_start(pcidev, LAS0_PCIINDEX);
++	physLas1 = pci_resource_start(pcidev, LAS1_PCIINDEX);
++	physLcfg = pci_resource_start(pcidev, LCFG_PCIINDEX);
+ 	/* Now have the kernel map this into memory */
+ 	/* ASSUME page aligned */
+ 	devpriv->las0 = ioremap_nocache(dev->iobase, LAS0_PCISIZE);
+@@ -1678,16 +1677,16 @@ static int rtd_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 		u16 revision;
+ 		/*uint32_t epld_version; */
+ 
+-		pci_read_config_word(devpriv->pci_dev, PCI_REVISION_ID,
++		pci_read_config_word(pcidev, PCI_REVISION_ID,
+ 				     &revision);
+ 		DPRINTK("%s: PCI revision %d.\n", dev->board_name, revision);
+ 
+-		pci_read_config_byte(devpriv->pci_dev,
++		pci_read_config_byte(pcidev,
+ 				     PCI_LATENCY_TIMER, &pci_latency);
+ 		if (pci_latency < 32) {
+ 			printk(KERN_INFO "%s: PCI latency changed from %d to %d\n",
+ 			       dev->board_name, pci_latency, 32);
+-			pci_write_config_byte(devpriv->pci_dev,
++			pci_write_config_byte(pcidev,
+ 					      PCI_LATENCY_TIMER, 32);
+ 		} else {
+ 			DPRINTK("rtd520: PCI latency = %d\n", pci_latency);
+@@ -1790,15 +1789,15 @@ static int rtd_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	/* TODO: set user out source ??? */
+ 
+ 	/* check if our interrupt is available and get it */
+-	ret = request_irq(devpriv->pci_dev->irq, rtd_interrupt,
++	ret = request_irq(pcidev->irq, rtd_interrupt,
+ 			  IRQF_SHARED, DRV_NAME, dev);
+ 
+ 	if (ret < 0) {
+ 		printk("Could not get interrupt! (%u)\n",
+-		       devpriv->pci_dev->irq);
++		       pcidev->irq);
+ 		return ret;
+ 	}
+-	dev->irq = devpriv->pci_dev->irq;
++	dev->irq = pcidev->irq;
+ 	printk(KERN_INFO "( irq=%u )", dev->irq);
+ 
+ 	ret = rtd520_probe_fifo_depth(dev);
+@@ -1820,7 +1819,7 @@ static int rtd_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 
+ 		for (index = 0; index < DMA_CHAIN_COUNT; index++) {
+ 			devpriv->dma0Buff[index] =
+-			    pci_alloc_consistent(devpriv->pci_dev,
++			    pci_alloc_consistent(pcidev,
+ 						 sizeof(u16) *
+ 						 devpriv->fifoLen / 2,
+ 						 &devpriv->
+@@ -1840,7 +1839,7 @@ static int rtd_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 		 * ordering?)
+ 		 */
+ 		devpriv->dma0Chain =
+-		    pci_alloc_consistent(devpriv->pci_dev,
++		    pci_alloc_consistent(pcidev,
+ 					 sizeof(struct plx_dma_desc) *
+ 					 DMA_CHAIN_COUNT,
+ 					 &devpriv->dma0ChainPhysAddr);
+@@ -1891,6 +1890,7 @@ static int rtd_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ static void rtd_detach(struct comedi_device *dev)
+ {
+ 	struct rtdPrivate *devpriv = dev->private;
++	struct pci_dev *pcidev = comedi_to_pci_dev(dev);
+ #ifdef USE_DMA
+ 	int index;
+ #endif
+@@ -1921,7 +1921,7 @@ static void rtd_detach(struct comedi_device *dev)
+ 		/* release DMA */
+ 		for (index = 0; index < DMA_CHAIN_COUNT; index++) {
+ 			if (NULL != devpriv->dma0Buff[index]) {
+-				pci_free_consistent(devpriv->pci_dev,
++				pci_free_consistent(pcidev,
+ 						    sizeof(u16) *
+ 						    devpriv->fifoLen / 2,
+ 						    devpriv->dma0Buff[index],
+@@ -1931,7 +1931,7 @@ static void rtd_detach(struct comedi_device *dev)
+ 			}
+ 		}
+ 		if (NULL != devpriv->dma0Chain) {
 -			pci_free_consistent(devpriv->pci_dev,
--					    sizeof(u16) * devpriv->fifoLen / 2,
--					    devpriv->dma0Buff[index],
--					    devpriv->dma0BuffPhysAddr[index]);
--			devpriv->dma0Buff[index] = NULL;
++			pci_free_consistent(pcidev,
+ 					    sizeof(struct plx_dma_desc) *
+ 					    DMA_CHAIN_COUNT, devpriv->dma0Chain,
+ 					    devpriv->dma0ChainPhysAddr);
+@@ -1950,11 +1950,11 @@ static void rtd_detach(struct comedi_device *dev)
+ 			iounmap(devpriv->las1);
+ 		if (devpriv->lcfg)
+ 			iounmap(devpriv->lcfg);
+-		if (devpriv->pci_dev) {
+-			if (dev->iobase)
+-				comedi_pci_disable(devpriv->pci_dev);
+-			pci_dev_put(devpriv->pci_dev);
 -		}
--	}
--	if (NULL != devpriv->dma0Chain) {
--		pci_free_consistent(devpriv->pci_dev,
--				    sizeof(struct plx_dma_desc)
--				    * DMA_CHAIN_COUNT,
--				    devpriv->dma0Chain,
--				    devpriv->dma0ChainPhysAddr);
--		devpriv->dma0Chain = NULL;
--	}
--#endif /* USE_DMA */
--	/* subdevices and priv are freed by the core */
--	if (dev->irq) {
--		writel(readl(devpriv->lcfg + LCFG_ITCSR) &
--			~(ICS_PLIE | ICS_DMA0_E | ICS_DMA1_E),
--			devpriv->lcfg + LCFG_ITCSR);
--		free_irq(dev->irq, dev);
--	}
--
--	/* release all regions that were allocated */
--	if (devpriv->las0)
--		iounmap(devpriv->las0);
--
--	if (devpriv->las1)
--		iounmap(devpriv->las1);
--
--	if (devpriv->lcfg)
--		iounmap(devpriv->lcfg);
--
--	if (devpriv->pci_dev)
--		pci_dev_put(devpriv->pci_dev);
--
--	return ret;
--#endif
++	}
++	if (pcidev) {
++		if (dev->iobase)
++			comedi_pci_disable(pcidev);
++		pci_dev_put(pcidev);
+ 	}
  }
  
- static void rtd_detach(struct comedi_device *dev)
 -- 
 1.7.11
 
