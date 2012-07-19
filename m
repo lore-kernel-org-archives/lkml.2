@@ -1,73 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752476Ab2GSWt7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 18:49:59 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7744 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751966Ab2GSWt5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 18:49:57 -0400
-X-Authority-Analysis: v=2.0 cv=AtpsLZBP c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=BHldU6QlfDUA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=YuVrg9c0s9-Kg-Cz8WgA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 72.230.195.127
-Message-ID: <1342738194.12353.80.camel@gandalf.stny.rr.com>
-Subject: Re: [RFC] Simplifying kernel configuration for distro issues
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: david@lang.hm, Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
-        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
-        Debian Kernel Team <debian-kernel@lists.debian.org>,
-        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Fedora Kernel Team <kernel-team@fedoraproject.org>
-Date: Thu, 19 Jul 2012 18:49:54 -0400
-In-Reply-To: <20120719223519.GI8469@zod.bos.redhat.com>
-References: <CA+55aFz_Vv899eXz6F0jtFH=hT4QpB0_2XuS8HySPjHC6s+L7Q@mail.gmail.com>
-	 <20120719152618.GD16873@home.goodmis.org>
-	 <20120719154521.GC8469@zod.bos.redhat.com>
-	 <1342714088.12353.33.camel@gandalf.stny.rr.com>
-	 <20120719171918.GD8469@zod.bos.redhat.com>
-	 <1342719222.12353.58.camel@gandalf.stny.rr.com>
-	 <20120719175649.GF8469@zod.bos.redhat.com>
-	 <1342721620.12353.75.camel@gandalf.stny.rr.com>
-	 <20120719183645.GH8469@zod.bos.redhat.com>
-	 <alpine.DEB.2.02.1207191357360.20176@asgard.lang.hm>
-	 <20120719223519.GI8469@zod.bos.redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
+	id S1752511Ab2GSWxl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 18:53:41 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43400 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752384Ab2GSWxj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 18:53:39 -0400
+Message-ID: <50088FD4.4060401@zytor.com>
+Date: Thu, 19 Jul 2012 15:53:08 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: [RFC][PATCH 2/4 v4] ftrace/x86: Add save_regs for i386 function
+ calls
+References: <20120711195048.885039013@goodmis.org>  <20120711195745.379060003@goodmis.org> <4FFEC58E.5070202@hitachi.com>  <1342205273.30075.19.camel@gandalf.stny.rr.com>  <1342627145.11900.7.camel@gandalf.stny.rr.com>  <50076ED9.3000100@hitachi.com>  <1342702344.12353.16.camel@gandalf.stny.rr.com> <1342702682.12353.20.camel@gandalf.stny.rr.com>
+In-Reply-To: <1342702682.12353.20.camel@gandalf.stny.rr.com>
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-07-19 at 18:35 -0400, Josh Boyer wrote:
-
-> > >2... yeah.  I don't really know if that is going to pan out, but I am
-> > >ever hopeful.  I'd be mostly concerned with people that are coding
-> > >userspace applications using every whiz-bang kernel feature.  Or not
-> > >paying attention at all to the kernel after the initial file creation
-> > >and the options going stale (don't follow renames, etc).
-> > 
-> > it would be determined by the distro maintainers who maintain the
-> > kernel config for that distro.
+On 07/19/2012 05:58 AM, Steven Rostedt wrote:
+>>
+>> also, because lea is faster than add (and doesn't even modify flags), I
+>> changed the last part to use lea instead of addl.
 > 
-> Erm... not in Steven's scheme.  At least I don't think distro kernel
-> maintainers are going to willingly crawl through every application
-> package that might depend on a kernel feature being enabled and maintain
-> those files across X number of packages.
+> Now I'm told that this is not always the case (at least not for Atom),
+> so I reverted this part and put back the addl. But can you still give
+> you reviewed by for the first part?
+> 
 
-Correct. If we keep the selects in the kernel proper, then it would be
-the kernel maintainer to make sure it works for the necessary
-applications.
+lea is not typically faster than add, but in the case of Atom, it is
+done in an earlier pipeline stage (AGU instead of ALU) which means lea
+is faster if its inputs are already available as address expressions and
+is consumed by address expressions; the goal is to avoid the ALU->AGU
+forwarding latency.
 
-If we have a directory called /usr/share/Linux/Kconfig.d/ then the
-individual packages could add their needed selects. Now this wouldn't be
-for the average package. We don't need emacs developers adding any
-configs here. It's just for those packages that are already tightly
-coupled with the kernel (systemd, iptables, SELinux tools, etc).
-
--- Steve
+	-hpa
 
 
