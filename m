@@ -1,428 +1,311 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754168Ab2GSJzk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 05:55:40 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:48870 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752727Ab2GSJzd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 05:55:33 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID q6J9tIUl009748, This message is released by code: ctaloc0852
-From: <wei_wang@realsil.com.cn>
-To: <gregkh@linuxfoundation.org>, <devel@linuxdriverproject.org>,
-        <linux-kernel@vger.kernel.org>
-CC: Wei WANG <wei_wang@realsil.com.cn>
-Subject: [PATCH 3/3] drivers/mmc/host: Add realtek sdmmc interface driver
-Date: Thu, 19 Jul 2012 17:55:18 +0800
-Message-ID: <1342691718-23199-1-git-send-email-wei_wang@realsil.com.cn>
-X-Mailer: git-send-email 1.7.9.5
+	id S1753564Ab2GSKAN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 06:00:13 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:36606 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751480Ab2GSKAJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 06:00:09 -0400
+X-IronPort-AV: E=Sophos;i="4.77,615,1336320000"; 
+   d="scan'208";a="5437106"
+Message-ID: <5007DB0C.6080106@cn.fujitsu.com>
+Date: Thu, 19 Jul 2012 18:01:48 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
+        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
+        minchan.kim@gmail.com, akpm@linux-foundation.org,
+        kosaki.motohiro@jp.fujitsu.com
+Subject: Re: [RFC PATCH v4 11/13] memory-hotplug : free memmap of sparse-vmemmap
+References: <50068974.1070409@jp.fujitsu.com> <50068D09.1050704@jp.fujitsu.com> <5007D722.1030807@cn.fujitsu.com>
+In-Reply-To: <5007D722.1030807@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/19 17:56:39,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/19 17:56:46,
+	Serialize complete at 2012/07/19 17:56:46
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-2022-JP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei WANG <wei_wang@realsil.com.cn>
+At 07/19/2012 05:45 PM, Wen Congyang Wrote:
+> At 07/18/2012 06:16 PM, Yasuaki Ishimatsu Wrote:
+>> All pages of virtual mapping in removed memory cannot be freed, since some pages
+>> used as PGD/PUD includes not only removed memory but also other memory. So the
+>> patch checks whether page can be freed or not.
+>>
+>> How to check whether page can be freed or not?
+>>  1. When removing memory, the page structs of the revmoved memory are filled
+>>     with 0FD.
+>>  2. All page structs are filled with 0xFD on PT/PMD, PT/PMD can be cleared.
+>>     In this case, the page used as PT/PMD can be freed.
+>>
+>> Applying patch, __remove_section() of CONFIG_SPARSEMEM_VMEMMAP is integrated
+>> into one. So __remove_section() of CONFIG_SPARSEMEM_VMEMMAP is deleted.
+>>
+>> CC: David Rientjes <rientjes@google.com>
+>> CC: Jiang Liu <liuj97@gmail.com>
+>> CC: Len Brown <len.brown@intel.com>
+>> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+>> CC: Paul Mackerras <paulus@samba.org> 
+>> CC: Christoph Lameter <cl@linux.com>
+>> Cc: Minchan Kim <minchan.kim@gmail.com>
+>> CC: Andrew Morton <akpm@linux-foundation.org>
+>> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> 
+>> CC: Wen Congyang <wency@cn.fujitsu.com>
+>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>>
+>> ---
+>>  arch/x86/mm/init_64.c |  121 ++++++++++++++++++++++++++++++++++++++++++++++++++
+>>  include/linux/mm.h    |    2 
+>>  mm/memory_hotplug.c   |   19 -------
+>>  mm/sparse.c           |    5 +-
+>>  4 files changed, 128 insertions(+), 19 deletions(-)
+>>
+>> Index: linux-3.5-rc6/include/linux/mm.h
+>> ===================================================================
+>> --- linux-3.5-rc6.orig/include/linux/mm.h	2012-07-18 18:01:28.000000000 +0900
+>> +++ linux-3.5-rc6/include/linux/mm.h	2012-07-18 18:03:05.551168773 +0900
+>> @@ -1588,6 +1588,8 @@ int vmemmap_populate(struct page *start_
+>>  void vmemmap_populate_print_last(void);
+>>  void register_page_bootmem_memmap(unsigned long section_nr, struct page *map,
+>>  				  unsigned long size);
+>> +void vmemmap_kfree(struct page *memmpa, unsigned long nr_pages);
+>> +void vmemmap_free_bootmem(struct page *memmpa, unsigned long nr_pages);
+>>  
+>>  enum mf_flags {
+>>  	MF_COUNT_INCREASED = 1 << 0,
+>> Index: linux-3.5-rc6/mm/sparse.c
+>> ===================================================================
+>> --- linux-3.5-rc6.orig/mm/sparse.c	2012-07-18 17:59:25.000000000 +0900
+>> +++ linux-3.5-rc6/mm/sparse.c	2012-07-18 18:03:05.553168749 +0900
+>> @@ -614,12 +614,13 @@ static inline struct page *kmalloc_secti
+>>  	/* This will make the necessary allocations eventually. */
+>>  	return sparse_mem_map_populate(pnum, nid);
+>>  }
+>> -static void __kfree_section_memmap(struct page *memmap, unsigned long nr_pages)
+>> +static void __kfree_section_memmap(struct page *page, unsigned long nr_pages)
+>>  {
+>> -	return; /* XXX: Not implemented yet */
+>> +	vmemmap_kfree(page, nr_pages);
+>>  }
+>>  static void free_map_bootmem(struct page *page, unsigned long nr_pages)
+>>  {
+>> +	vmemmap_free_bootmem(page, nr_pages);
+>>  }
+>>  #else
+>>  static struct page *__kmalloc_section_memmap(unsigned long nr_pages)
+>> Index: linux-3.5-rc6/arch/x86/mm/init_64.c
+>> ===================================================================
+>> --- linux-3.5-rc6.orig/arch/x86/mm/init_64.c	2012-07-18 18:01:28.000000000 +0900
+>> +++ linux-3.5-rc6/arch/x86/mm/init_64.c	2012-07-18 18:03:05.564168611 +0900
+>> @@ -978,6 +978,127 @@ vmemmap_populate(struct page *start_page
+>>  	return 0;
+>>  }
+>>  
+>> +#define PAGE_INUSE 0xFD
+>> +
+>> +unsigned long find_and_clear_pte_page(unsigned long addr, unsigned long end,
+>> +			    struct page **pp, int *page_size)
+>> +{
+>> +	pgd_t *pgd;
+>> +	pud_t *pud;
+>> +	pmd_t *pmd;
+>> +	pte_t *pte;
+>> +	void *page_addr;
+>> +	unsigned long next;
+>> +
+>> +	*pp = NULL;
+>> +
+>> +	pgd = pgd_offset_k(addr);
+>> +	if (pgd_none(*pgd))
+>> +		return pgd_addr_end(addr, end);
+>> +
+>> +	pud = pud_offset(pgd, addr);
+>> +	if (pud_none(*pud))
+>> +		return pud_addr_end(addr,end);
+>> +
+>> +	if (!cpu_has_pse) {
+>> +		next = (addr + PAGE_SIZE) & PAGE_MASK;
+>> +		pmd = pmd_offset(pud, addr);
+>> +		if (pmd_none(*pmd))
+>> +			return next;
+>> +
+>> +		pte = pte_offset_kernel(pmd, addr);
+>> +		if (pte_none(*pte))
+>> +			return next;
+>> +
+>> +		*page_size = PAGE_SIZE;
+>> +		*pp = pte_page(*pte);
+>> +	} else {
+>> +		next = pmd_addr_end(addr, end);
+>> +
+>> +		pmd = pmd_offset(pud, addr);
+>> +		if (pmd_none(*pmd))
+>> +			return next;
+>> +
+>> +		*page_size = PMD_SIZE;
+>> +		*pp = pmd_page(*pmd);
+>> +	}
+>> +
+>> +	/*
+>> +	 * Removed page structs are filled with 0xFD.
+>> +	 */
+>> +	memset((void *)addr, PAGE_INUSE, next - addr);
+>> +
+>> +	page_addr = page_address(*pp);
+>> +
+>> +	/*
+>> +	 * Check the page is filled with 0xFD or not.
+>> +	 * memchr_inv() returns the address. In this case, we cannot
+>> +	 * clear PTE/PUD entry, since the page is used by other.
+>> +	 * So we cannot also free the page.
+>> +	 *
+>> +	 * memchr_inv() returns NULL. In this case, we can clear
+>> +	 * PTE/PUD entry, since the page is not used by other.
+>> +	 * So we can also free the page.
+>> +	 */
+>> +	if (memchr_inv(page_addr, PAGE_INUSE, *page_size)) {
+>> +		*pp = NULL;
+>> +		return next;
+>> +	}
+>> +
+>> +	if (!cpu_has_pse)
+>> +		pte_clear(&init_mm, addr, pte);
+>> +	else
+>> +		pmd_clear(pmd);
+>> +
+>> +	return next;
+>> +}
+>> +
+>> +void vmemmap_kfree(struct page *memmap, unsigned long nr_pages)
+>> +{
+>> +	unsigned long addr = (unsigned long)memmap;
+>> +	unsigned long end = (unsigned long)(memmap + nr_pages);
+>> +	unsigned long next;
+>> +	struct page *page;
+>> +	int page_size;
+>> +
+>> +	for (; addr < end; addr = next) {
+>> +		page = NULL;
+>> +		page_size = 0;
+>> +		next = find_and_clear_pte_page(addr, end, &page, &page_size);
+>> +		if (!page)
+>> +			continue;
+>> +
+>> +		free_pages((unsigned long)page_address(page),
+>> +			    get_order(page_size));
+>> +		__flush_tlb_one((unsigned long)page_address(page));
+> 
+> I think you want to free the memory to store struct page.
+> So why you free page_address(page)?
 
-Realtek SD/MMC card interface driver is used to access
-SD/MMC card, with the help of Realtek card reader adapter driver.
+I understand it now. page is for the memory to store struct page.
 
-Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
----
- drivers/mmc/host/Kconfig      |    7 +
- drivers/mmc/host/Makefile     |    2 +
- drivers/mmc/host/rtsx_sdmmc.c |  354 +++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 363 insertions(+)
- create mode 100644 drivers/mmc/host/rtsx_sdmmc.c
+You clear page table's entry for the addr, not page_address(page).
+And the entry for page_address(page) is still valid now.
+So I think you want this:
+__flush_tlb_one(addr);
 
-diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
-index aa131b3..d9942e6 100644
---- a/drivers/mmc/host/Kconfig
-+++ b/drivers/mmc/host/Kconfig
-@@ -612,3 +612,10 @@ config MMC_USHC
- 
- 	  Note: These controllers only support SDIO cards and do not
- 	  support MMC or SD memory cards.
-+
-+config MMC_REALTEK
-+	tristate "Realtek SD/MMC Card Interface Driver"
-+	depends on REALTEK_CR_CORE
-+	help
-+	  Say Y here to include driver code to support the Realtek
-+	  SD/MMC card interface.
-diff --git a/drivers/mmc/host/Makefile b/drivers/mmc/host/Makefile
-index 8922b06..a4cd15a 100644
---- a/drivers/mmc/host/Makefile
-+++ b/drivers/mmc/host/Makefile
-@@ -45,6 +45,8 @@ obj-$(CONFIG_MMC_JZ4740)	+= jz4740_mmc.o
- obj-$(CONFIG_MMC_VUB300)	+= vub300.o
- obj-$(CONFIG_MMC_USHC)		+= ushc.o
- 
-+obj-$(CONFIG_MMC_REALTEK)	+= rtsx_sdmmc.o
-+
- obj-$(CONFIG_MMC_SDHCI_PLTFM)		+= sdhci-pltfm.o
- obj-$(CONFIG_MMC_SDHCI_CNS3XXX)		+= sdhci-cns3xxx.o
- obj-$(CONFIG_MMC_SDHCI_ESDHC_IMX)	+= sdhci-esdhc-imx.o
-diff --git a/drivers/mmc/host/rtsx_sdmmc.c b/drivers/mmc/host/rtsx_sdmmc.c
-new file mode 100644
-index 0000000..031e527
---- /dev/null
-+++ b/drivers/mmc/host/rtsx_sdmmc.c
-@@ -0,0 +1,354 @@
-+/* Realtek SD/MMC Card Interface driver
-+ *
-+ * Copyright(c) 2009 Realtek Semiconductor Corp. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the
-+ * Free Software Foundation; either version 2, or (at your option) any
-+ * later version.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program; if not, see <http://www.gnu.org/licenses/>.
-+ *
-+ * Author:
-+ *   Wei WANG <wei_wang@realsil.com.cn>
-+ *   No. 450, Shenhu Road, Suzhou Industry Park, Suzhou, China
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/highmem.h>
-+#include <linux/delay.h>
-+
-+#include <linux/mmc/host.h>
-+#include <linux/mmc/mmc.h>
-+#include <linux/mmc/sd.h>
-+#include <linux/mmc/card.h>
-+
-+#include <linux/rtsx_core.h>
-+
-+#define DRV_NAME	"rtsx_sdmmc"
-+
-+#define MAX_RW_REG_CNT			1024
-+
-+#define RTSX_MAX_BLOCK_COUNT		65536
-+#define RTSX_MAX_BLOCK_LENGTH		2048
-+
-+struct realtek_sdmmc {
-+	struct rtsx_dev		*dev;
-+	struct mmc_host		*mmc;
-+	struct mmc_request	*mrq;
-+
-+	struct mutex		host_mutex;
-+
-+	int			eject;
-+};
-+
-+static struct rtsx_device_id realtek_sdmmc_ids[] = {
-+	{RTSX_TYPE_SD},
-+	{}
-+};
-+
-+MODULE_DEVICE_TABLE(rtsx, realtek_sdmmc_ids);
-+
-+static void sd_send_cmd_get_rsp(struct realtek_sdmmc *host,
-+		struct mmc_command *cmd)
-+{
-+	cmd->error = rtsx_sdmmc_send_cmd_get_rsp(host->dev, (u8)cmd->opcode,
-+			cmd->arg, mmc_resp_type(cmd), cmd->resp);
-+}
-+
-+static int sd_rw_multi(struct realtek_sdmmc *host, struct mmc_request *mrq)
-+{
-+	struct mmc_host *mmc = host->mmc;
-+	struct mmc_card *card = mmc->card;
-+	struct mmc_data *data = mrq->data;
-+	int uhs = mmc_sd_card_uhs(card);
-+	int read = (data->flags & MMC_DATA_READ) ? 1 : 0;
-+
-+	return rtsx_sdmmc_rw_multi(host->dev, data->sg, data->blksz,
-+			data->blocks, data->sg_len, read, uhs);
-+}
-+
-+static void sd_normal_rw(struct realtek_sdmmc *host, struct mmc_request *mrq)
-+{
-+	struct mmc_command *cmd = mrq->cmd;
-+	struct mmc_data *data = mrq->data;
-+	u8 _cmd[5], *buf;
-+
-+	_cmd[0] = 0x40 | (u8)cmd->opcode;
-+	_cmd[1] = (u8)(cmd->arg >> 24);
-+	_cmd[2] = (u8)(cmd->arg >> 16);
-+	_cmd[3] = (u8)(cmd->arg >> 8);
-+	_cmd[4] = (u8)cmd->arg;
-+
-+	buf = kzalloc(data->blksz, GFP_KERNEL);
-+
-+	if (data->flags & MMC_DATA_READ) {
-+		cmd->error = rtsx_sdmmc_read_data(host->dev, _cmd,
-+				(u16)data->blksz, buf, data->blksz, 200);
-+		sg_copy_from_buffer(data->sg, data->sg_len, buf, data->blksz);
-+	} else {
-+		sg_copy_to_buffer(data->sg, data->sg_len, buf, data->blksz);
-+		cmd->error = rtsx_sdmmc_write_data(host->dev, _cmd,
-+				(u16)data->blksz, buf, data->blksz, 200);
-+	}
-+
-+	kfree(buf);
-+}
-+
-+static void sdmmc_request(struct mmc_host *mmc, struct mmc_request *mrq)
-+{
-+	struct realtek_sdmmc *host = mmc_priv(mmc);
-+	struct mmc_command *cmd = mrq->cmd;
-+	struct mmc_data *data = mrq->data;
-+	unsigned int data_size = 0;
-+
-+	if (host->eject) {
-+		cmd->error = -ENOMEDIUM;
-+		goto finish;
-+	}
-+
-+	mutex_lock(&host->host_mutex);
-+	host->mrq = mrq;
-+	mutex_unlock(&host->host_mutex);
-+
-+	if (mrq->data)
-+		data_size = data->blocks * data->blksz;
-+
-+	if (!data_size || mmc_op_multi(cmd->opcode) ||
-+			(cmd->opcode == MMC_READ_SINGLE_BLOCK) ||
-+			(cmd->opcode == MMC_WRITE_BLOCK)) {
-+		sd_send_cmd_get_rsp(host, cmd);
-+
-+		if (!cmd->error && data_size) {
-+			sd_rw_multi(host, mrq);
-+
-+			if (mmc_op_multi(cmd->opcode) && mrq->stop)
-+				sd_send_cmd_get_rsp(host, mrq->stop);
-+		}
-+	} else {
-+		sd_normal_rw(host, mrq);
-+	}
-+
-+	if (mrq->data) {
-+		if (cmd->error || data->error)
-+			data->bytes_xfered = 0;
-+		else
-+			data->bytes_xfered = data->blocks * data->blksz;
-+	}
-+
-+finish:
-+	if (cmd->error)
-+		pr_debug("cmd->error = %d\n", cmd->error);
-+
-+	mutex_lock(&host->host_mutex);
-+	host->mrq = NULL;
-+	mutex_unlock(&host->host_mutex);
-+
-+	mmc_request_done(mmc, mrq);
-+}
-+
-+static void sdmmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
-+{
-+	struct realtek_sdmmc *host = mmc_priv(mmc);
-+	int vpclk = 0, double_clk = 1;
-+	u8 ssc_depth;
-+
-+	rtsx_sdmmc_set_bus_width(host->dev, ios->bus_width);
-+	rtsx_sdmmc_set_power_mode(host->dev, ios->power_mode);
-+	rtsx_sdmmc_set_timing(host->dev, ios->timing);
-+
-+	switch (ios->timing) {
-+	case MMC_TIMING_UHS_SDR104:
-+	case MMC_TIMING_UHS_SDR50:
-+		ssc_depth = RTSX_SSC_DEPTH_2M;
-+		vpclk = 1;
-+		double_clk = 0;
-+		break;
-+
-+	case MMC_TIMING_UHS_DDR50:
-+	case MMC_TIMING_UHS_SDR25:
-+/*	case MMC_TIMING_MMC_HS200: */
-+		ssc_depth = RTSX_SSC_DEPTH_1M;
-+		break;
-+
-+	default:
-+		ssc_depth = RTSX_SSC_DEPTH_500K;
-+		break;
-+	}
-+
-+	rtsx_switch_clock(host->dev,
-+			ios->clock, ssc_depth, double_clk, vpclk);
-+}
-+
-+static int sdmmc_get_ro(struct mmc_host *mmc)
-+{
-+	struct realtek_sdmmc *host = mmc_priv(mmc);
-+
-+	return rtsx_sdmmc_get_ro(host->dev);
-+}
-+
-+static int sdmmc_get_cd(struct mmc_host *mmc)
-+{
-+	struct realtek_sdmmc *host = mmc_priv(mmc);
-+
-+	return rtsx_sdmmc_get_cd(host->dev);
-+}
-+
-+static int sdmmc_switch_voltage(struct mmc_host *mmc, struct mmc_ios *ios)
-+{
-+	struct realtek_sdmmc *host = mmc_priv(mmc);
-+
-+	return rtsx_sdmmc_switch_voltage(host->dev, ios->signal_voltage);
-+}
-+
-+static int sdmmc_execute_tuning(struct mmc_host *mmc, u32 opcode)
-+{
-+	struct realtek_sdmmc *host = mmc_priv(mmc);
-+
-+	return rtsx_sdmmc_execute_tuning(host->dev);
-+}
-+
-+static const struct mmc_host_ops realtek_sdmmc_ops = {
-+	.request = sdmmc_request,
-+	.set_ios = sdmmc_set_ios,
-+	.get_ro = sdmmc_get_ro,
-+	.get_cd = sdmmc_get_cd,
-+	.start_signal_voltage_switch = sdmmc_switch_voltage,
-+	.execute_tuning = sdmmc_execute_tuning,
-+};
-+
-+static void init_extra_caps(struct realtek_sdmmc *host)
-+{
-+	struct mmc_host *mmc = host->mmc;
-+	struct rtsx_dev *sock = host->dev;
-+	struct rtsx_adapter *adapter = sock_to_adapter(sock);
-+
-+	pr_debug("adapter->extra_caps = 0x%x\n", adapter->extra_caps);
-+
-+	if (adapter->extra_caps & EXTRA_CAPS_SD_SDR50)
-+		mmc->caps |= MMC_CAP_UHS_SDR50;
-+	if (adapter->extra_caps & EXTRA_CAPS_SD_SDR104)
-+		mmc->caps |= MMC_CAP_UHS_SDR104;
-+	if (adapter->extra_caps & EXTRA_CAPS_SD_DDR50)
-+		mmc->caps |= MMC_CAP_UHS_DDR50;
-+	if (adapter->extra_caps & EXTRA_CAPS_MMC_HSDDR)
-+		mmc->caps |= MMC_CAP_1_8V_DDR;
-+	if (adapter->extra_caps & EXTRA_CAPS_MMC_8BIT)
-+		mmc->caps |= MMC_CAP_8_BIT_DATA;
-+/*
-+	if (adapter->extra_caps & EXTRA_CAPS_MMC_HS200)
-+		mmc->caps2 |= MMC_CAP2_HS200;
-+*/
-+}
-+
-+static void realtek_init_host(struct realtek_sdmmc *host)
-+{
-+	struct mmc_host *mmc = host->mmc;
-+
-+	mmc->f_min = 250000;
-+	mmc->f_max = 208000000;
-+	mmc->ocr_avail = MMC_VDD_32_33 | MMC_VDD_33_34 | MMC_VDD_165_195;
-+	mmc->caps = MMC_CAP_4_BIT_DATA | MMC_CAP_SD_HIGHSPEED |
-+		MMC_CAP_MMC_HIGHSPEED | MMC_CAP_BUS_WIDTH_TEST |
-+		MMC_CAP_UHS_SDR12 | MMC_CAP_UHS_SDR25 |
-+		MMC_CAP_MAX_CURRENT_200 | MMC_CAP_MAX_CURRENT_400 |
-+		MMC_CAP_MAX_CURRENT_600 | MMC_CAP_MAX_CURRENT_800;
-+	mmc->ops = &realtek_sdmmc_ops;
-+
-+	init_extra_caps(host);
-+
-+	mmc->max_segs = 256;
-+	mmc->max_blk_size = RTSX_MAX_BLOCK_LENGTH;
-+	mmc->max_blk_count = RTSX_MAX_BLOCK_COUNT;
-+	mmc->max_seg_size = mmc->max_blk_size * mmc->max_blk_count;
-+	mmc->max_req_size = mmc->max_seg_size;
-+}
-+
-+static int realtek_sdmmc_probe(struct rtsx_dev *sock)
-+{
-+	struct mmc_host *mmc;
-+	struct realtek_sdmmc *host;
-+
-+	pr_info(DRV_NAME ": Realtek SDMMC controller found\n");
-+
-+	mmc = mmc_alloc_host(sizeof(struct realtek_sdmmc), &sock->dev);
-+	if (!mmc)
-+		return -ENOMEM;
-+
-+	host = mmc_priv(mmc);
-+	rtsx_set_drvdata(sock, mmc);
-+	host->dev = sock;
-+	host->mmc = mmc;
-+
-+	mutex_init(&host->host_mutex);
-+
-+	realtek_init_host(host);
-+
-+	mmc_add_host(mmc);
-+
-+	return 0;
-+}
-+
-+static void __devexit realtek_sdmmc_remove(struct rtsx_dev *sock)
-+{
-+	struct mmc_host *mmc = rtsx_get_drvdata(sock);
-+	struct realtek_sdmmc *host;
-+
-+	host = mmc_priv(mmc);
-+	host->eject = 1;
-+
-+	mutex_lock(&host->host_mutex);
-+	if (host->mrq) {
-+		pr_debug("%s: Controller removed during transfer\n",
-+				mmc_hostname(mmc));
-+
-+		rtsx_complete_unfinished_transfer(sock);
-+
-+		host->mrq->cmd->error = -ENOMEDIUM;
-+		if (host->mrq->stop)
-+			host->mrq->stop->error = -ENOMEDIUM;
-+		mmc_request_done(mmc, host->mrq);
-+	}
-+	mutex_unlock(&host->host_mutex);
-+
-+	mmc_remove_host(mmc);
-+	mmc_free_host(mmc);
-+
-+	pr_info(DRV_NAME
-+		": Realtek SDMMC controller has been removed\n");
-+}
-+
-+static struct rtsx_driver realtek_sdmmc_driver = {
-+	.driver = {
-+		.name = DRV_NAME,
-+		.owner = THIS_MODULE,
-+	},
-+	.id_table = realtek_sdmmc_ids,
-+	.probe = realtek_sdmmc_probe,
-+	.remove = realtek_sdmmc_remove,
-+};
-+
-+static int __init realtek_sdmmc_drv_init(void)
-+{
-+	pr_info(DRV_NAME ": Realtek SD/MMC Card Reader driver\n");
-+
-+	return rtsx_register_driver(&realtek_sdmmc_driver);
-+}
-+
-+static void __exit realtek_sdmmc_drv_exit(void)
-+{
-+	rtsx_unregister_driver(&realtek_sdmmc_driver);
-+}
-+
-+module_init(realtek_sdmmc_drv_init);
-+module_exit(realtek_sdmmc_drv_exit);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Realtek Corp.");
-+MODULE_DESCRIPTION("Realtek SD/MMC Card Interface Driver");
--- 
-1.7.9.5
+Thanks
+Wen Congyang
+
+> 
+> Thanks
+> Wen Congyang
+> 
+>> +	}
+>> +
+>> +}
+>> +
+>> +void vmemmap_free_bootmem(struct page *memmap, unsigned long nr_pages)
+>> +{
+>> +	unsigned long addr = (unsigned long)memmap;
+>> +	unsigned long end = (unsigned long)(memmap + nr_pages);
+>> +	unsigned long next;
+>> +	struct page *page;
+>> +	int page_size;
+>> +	unsigned long magic;
+>> +
+>> +	for (; addr < end; addr = next) {
+>> +		page = NULL;
+>> +		page_size = 0;
+>> +		next = find_and_clear_pte_page(addr, end, &page, &page_size);
+>> +		if (!page)
+>> +			continue;
+>> +
+>> +		magic = (unsigned long) page->lru.next;
+>> +		if (magic == SECTION_INFO)
+>> +			put_page_bootmem(page);
+>> +		flush_tlb_kernel_range(addr, end);
+>> +	}
+>> +
+>> +}
+>> +
+>>  void register_page_bootmem_memmap(unsigned long section_nr,
+>>  				  struct page *start_page, unsigned long size)
+>>  {
+>> Index: linux-3.5-rc6/mm/memory_hotplug.c
+>> ===================================================================
+>> --- linux-3.5-rc6.orig/mm/memory_hotplug.c	2012-07-18 18:01:28.000000000 +0900
+>> +++ linux-3.5-rc6/mm/memory_hotplug.c	2012-07-18 18:25:11.036597977 +0900
+>> @@ -300,7 +300,6 @@ static int __meminit __add_section(int n
+>>  	return register_new_memory(nid, __pfn_to_section(phys_start_pfn));
+>>  }
+>>  
+>> -#ifdef CONFIG_SPARSEMEM_VMEMMAP
+>>  static int __remove_section(struct zone *zone, struct mem_section *ms)
+>>  {
+>>  	int ret = -EINVAL;
+>> @@ -309,29 +308,15 @@ static int __remove_section(struct zone 
+>>  		return ret;
+>>  
+>>  	ret = unregister_memory_section(ms);
+>> -
+>> -	return ret;
+>> -}
+>> -#else
+>> -static int __remove_section(struct zone *zone, struct mem_section *ms)
+>> -{
+>> -	unsigned long flags;
+>> -	struct pglist_data *pgdat = zone->zone_pgdat;
+>> -	int ret = -EINVAL;
+>> -
+>> -	if (!valid_section(ms))
+>> -		return ret;
+>> -
+>> -	ret = unregister_memory_section(ms);
+>>  	if (ret)
+>>  		return ret;
+>>  
+>>  	pgdat_resize_lock(pgdat, &flags);
+>>  	sparse_remove_one_section(zone, ms);
+>>  	pgdat_resize_unlock(pgdat, &flags);
+>> -	return 0;
+>> +
+>> +	return ret;
+>>  }
+>> -#endif
+>>  
+>>  /*
+>>   * Reasonably generic function for adding memory.  It is
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
