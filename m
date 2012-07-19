@@ -1,44 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754155Ab2GSICz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 04:02:55 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:20895 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752041Ab2GSICt (ORCPT
+	id S1753577Ab2GSIT6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 04:19:58 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:54675 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752041Ab2GSITs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 04:02:49 -0400
-Date: Thu, 19 Jul 2012 11:02:28 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Anton Altaparmakov <anton@tuxera.com>
-Cc: linux-ntfs-dev@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [patch] ntfs: remove an unneeded NULL check
-Message-ID: <20120719080228.GA13792@elgon.mountain>
+	Thu, 19 Jul 2012 04:19:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <50068A6E.5050904@jp.fujitsu.com>
+References: <50068974.1070409@jp.fujitsu.com>
+	<50068A6E.5050904@jp.fujitsu.com>
+Date: Thu, 19 Jul 2012 16:19:38 +0800
+Message-ID: <CAA_GA1fayhA1A3vT5BcDCoL_JVd6pZJn2_=NXK0bjJNRXo=7LA@mail.gmail.com>
+Subject: Re: [RFC PATCH v4 1/13] memory-hotplug : rename remove_memory to offline_memory
+From: Bob Liu <lliubbo@gmail.com>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
+        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
+        minchan.kim@gmail.com, akpm@linux-foundation.org,
+        kosaki.motohiro@jp.fujitsu.com, wency@cn.fujitsu.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The "ctx" variable can never be NULL here and also we dereference it
-on the previous line.
+Hi Yasuaki,
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+On Wed, Jul 18, 2012 at 6:05 PM, Yasuaki Ishimatsu
+<isimatu.yasuaki@jp.fujitsu.com> wrote:
+> remove_memory() does not remove memory but just offlines memory. The patch
+> changes name of it to offline_memory().
 
-diff --git a/fs/ntfs/file.c b/fs/ntfs/file.c
-index 7389d2d..4db19f7 100644
---- a/fs/ntfs/file.c
-+++ b/fs/ntfs/file.c
-@@ -309,8 +309,7 @@ do_non_resident_extend:
- done:
- 	flush_dcache_mft_record_page(ctx->ntfs_ino);
- 	mark_mft_record_dirty(ctx->ntfs_ino);
--	if (ctx)
--		ntfs_attr_put_search_ctx(ctx);
-+	ntfs_attr_put_search_ctx(ctx);
- 	if (m)
- 		unmap_mft_record(base_ni);
- 	ntfs_debug("Done, initialized_size 0x%llx, i_size 0x%llx.",
+Since offline_memory() just align the start/end pfn and there is no
+matched online_memory() function,
+i think it's better to remove this function and add the alignment into
+offline_pages().
+
+>
+> CC: David Rientjes <rientjes@google.com>
+> CC: Jiang Liu <liuj97@gmail.com>
+> CC: Len Brown <len.brown@intel.com>
+> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> CC: Paul Mackerras <paulus@samba.org>
+> CC: Christoph Lameter <cl@linux.com>
+> Cc: Minchan Kim <minchan.kim@gmail.com>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> CC: Wen Congyang <wency@cn.fujitsu.com>
+> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>
+> ---
+>  drivers/acpi/acpi_memhotplug.c |    2 +-
+>  drivers/base/memory.c          |    4 ++--
+>  include/linux/memory_hotplug.h |    2 +-
+>  mm/memory_hotplug.c            |    6 +++---
+>  4 files changed, 7 insertions(+), 7 deletions(-)
+>
+> Index: linux-3.5-rc4/drivers/acpi/acpi_memhotplug.c
+> ===================================================================
+> --- linux-3.5-rc4.orig/drivers/acpi/acpi_memhotplug.c   2012-07-03 14:21:46.102416917 +0900
+> +++ linux-3.5-rc4/drivers/acpi/acpi_memhotplug.c        2012-07-03 14:21:49.458374960 +0900
+> @@ -318,7 +318,7 @@ static int acpi_memory_disable_device(st
+>          */
+>         list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
+>                 if (info->enabled) {
+> -                       result = remove_memory(info->start_addr, info->length);
+> +                       result = offline_memory(info->start_addr, info->length);
+>                         if (result)
+>                                 return result;
+>                 }
+> Index: linux-3.5-rc4/drivers/base/memory.c
+> ===================================================================
+> --- linux-3.5-rc4.orig/drivers/base/memory.c    2012-07-03 14:21:46.095417003 +0900
+> +++ linux-3.5-rc4/drivers/base/memory.c 2012-07-03 14:21:49.459374948 +0900
+> @@ -266,8 +266,8 @@ memory_block_action(unsigned long phys_i
+>                         break;
+>                 case MEM_OFFLINE:
+>                         start_paddr = page_to_pfn(first_page) << PAGE_SHIFT;
+> -                       ret = remove_memory(start_paddr,
+> -                                           nr_pages << PAGE_SHIFT);
+> +                       ret = offline_memory(start_paddr,
+> +                                            nr_pages << PAGE_SHIFT);
+>                         break;
+>                 default:
+>                         WARN(1, KERN_WARNING "%s(%ld, %ld) unknown action: "
+> Index: linux-3.5-rc4/mm/memory_hotplug.c
+> ===================================================================
+> --- linux-3.5-rc4.orig/mm/memory_hotplug.c      2012-07-03 14:21:46.102416917 +0900
+> +++ linux-3.5-rc4/mm/memory_hotplug.c   2012-07-03 14:21:49.466374860 +0900
+> @@ -990,7 +990,7 @@ out:
+>         return ret;
+>  }
+>
+> -int remove_memory(u64 start, u64 size)
+> +int offline_memory(u64 start, u64 size)
+>  {
+>         unsigned long start_pfn, end_pfn;
+>
+> @@ -999,9 +999,9 @@ int remove_memory(u64 start, u64 size)
+>         return offline_pages(start_pfn, end_pfn, 120 * HZ);
+>  }
+>  #else
+> -int remove_memory(u64 start, u64 size)
+> +int offline_memory(u64 start, u64 size)
+>  {
+>         return -EINVAL;
+>  }
+>  #endif /* CONFIG_MEMORY_HOTREMOVE */
+> -EXPORT_SYMBOL_GPL(remove_memory);
+> +EXPORT_SYMBOL_GPL(offline_memory);
+> Index: linux-3.5-rc4/include/linux/memory_hotplug.h
+> ===================================================================
+> --- linux-3.5-rc4.orig/include/linux/memory_hotplug.h   2012-07-03 14:21:46.102416917 +0900
+> +++ linux-3.5-rc4/include/linux/memory_hotplug.h        2012-07-03 14:21:49.471374796 +0900
+> @@ -233,7 +233,7 @@ static inline int is_mem_section_removab
+>  extern int mem_online_node(int nid);
+>  extern int add_memory(int nid, u64 start, u64 size);
+>  extern int arch_add_memory(int nid, u64 start, u64 size);
+> -extern int remove_memory(u64 start, u64 size);
+> +extern int offline_memory(u64 start, u64 size);
+>  extern int sparse_add_one_section(struct zone *zone, unsigned long start_pfn,
+>                                                                 int nr_pages);
+>  extern void sparse_remove_one_section(struct zone *zone, struct mem_section *ms);
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+
+-- 
+Regards,
+--Bob
