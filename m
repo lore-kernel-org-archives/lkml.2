@@ -1,213 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751549Ab2GSNVp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 09:21:45 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:58427 "EHLO arroyo.ext.ti.com"
+	id S1751512Ab2GSNce (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 09:32:34 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:44263 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750991Ab2GSNVn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 09:21:43 -0400
-From: "Gupta, Ajay Kumar" <ajay.gupta@ti.com>
-To: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "Cousson, Benoit" <b-cousson@ti.com>,
-        "Nayak, Rajendra" <rnayak@ti.com>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Balbi, Felipe" <balbi@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Subject: RE: [PATCH v4 09/11] drivers: usb: musb: Add device tree support
- for omap musb glue
-Thread-Topic: [PATCH v4 09/11] drivers: usb: musb: Add device tree support
- for omap musb glue
-Thread-Index: AQHNZNJnbvWBgnigMUa6eJ0iyXL7N5cwmHFQ
-Date: Thu, 19 Jul 2012 13:21:12 +0000
-Message-ID: <47CEF8C4B26E8C44B22B028A650E0EA93EADE11A@DBDE01.ent.ti.com>
-References: <1342607922-11554-1-git-send-email-kishon@ti.com>
- <1342607922-11554-10-git-send-email-kishon@ti.com>
-In-Reply-To: <1342607922-11554-10-git-send-email-kishon@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.133.227]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751064Ab2GSNca (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 09:32:30 -0400
+Date: Thu, 19 Jul 2012 15:32:29 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: msb@chromium.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
+        shaohua.li@intel.com, yinghai@kernel.org, tglx@linutronix.de,
+        hpa@zytor.com, x86@kernel.org, tj@kernel.org,
+        akpm@linux-foundation.org, sfr@canb.auug.org.au, cl@gentwo.org,
+        olofj@chromium.org, paulmck@linux.vnet.ibm.com,
+        Alex Shi <alex.shi@intel.com>, Conny Seidel <conny.seidel@amd.com>
+Subject: Re: [PATCH] x86, mm: Send tlb flush IPIs to online cpus only
+Message-ID: <20120719133229.GB10073@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+	msb@chromium.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
+	shaohua.li@intel.com, yinghai@kernel.org, tglx@linutronix.de,
+	hpa@zytor.com, x86@kernel.org, tj@kernel.org,
+	akpm@linux-foundation.org, sfr@canb.auug.org.au, cl@gentwo.org,
+	olofj@chromium.org, paulmck@linux.vnet.ibm.com,
+	Alex Shi <alex.shi@intel.com>, Conny Seidel <conny.seidel@amd.com>
+References: <20120719125643.30033.58913.stgit@srivatsabhat.in.ibm.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120719125643.30033.58913.stgit@srivatsabhat.in.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+On Thu, Jul 19, 2012 at 06:27:33PM +0530, Srivatsa S. Bhat wrote:
+
+[ … ]
+ 
+> So we are sending an IPI to a cpu which is now offline. Once a cpu is offline,
+> it will no longer respond to IPIs. This explains the softlockup.
+> 
+> A cpu in the mm_cpumask could go offline before we send the invalidate
+> IPI causing us to wait forever. Avoid this by sending the IPI to only the
+> online cpus.
+> 
+> [Since flush_tlb_others_ipi() is always called with preempt disabled, it is
+> not possible for a CPU to go offline once we enter this function, because
+> CPU offline goes through the stop_machine() stuff (which cannot proceed until
+> all preempt disabled sections are exited). So we don't have to worry about
+> any race between CPU offline and the target cpumask calculation in
+> flush_tlb_others_ipi().]
+> 
+> Addresses http://crosbug.com/31737
+> 
+> Reported-and-debugged-by: Mandeep Singh Baines <msb@chromium.org>
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> Acked-by: Mandeep Singh Baines <msb@chromium.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> Cc: x86@kernel.org
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+> Cc: Christoph Lameter <cl@gentwo.org>
+> Cc: Olof Johansson <olofj@chromium.org>
 > ---
->  Documentation/devicetree/bindings/usb/omap-usb.txt |   34 ++++++++++++-
->  drivers/usb/musb/omap2430.c                        |   55
-> ++++++++++++++++++++
->  2 files changed, 88 insertions(+), 1 deletions(-)
 > 
-> diff --git a/Documentation/devicetree/bindings/usb/omap-usb.txt
-> b/Documentation/devicetree/bindings/usb/omap-usb.txt
-> index 80a28c9..39cdffb 100644
-> --- a/Documentation/devicetree/bindings/usb/omap-usb.txt
-> +++ b/Documentation/devicetree/bindings/usb/omap-usb.txt
-> @@ -1,4 +1,4 @@
-> -OMAP USB PHY
-> +OMAP USB PHY AND GLUE
+>  arch/x86/mm/tlb.c |    6 +++++-
+>  1 files changed, 5 insertions(+), 1 deletions(-)
 > 
->  OMAP USB2 PHY
-> 
-> @@ -14,3 +14,35 @@ usb2phy@0x4a0ad080 {
->  	compatible = "ti,omap-usb2";
->  	reg = <0x4a0ad080 0x58>;
->  };
+> diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
+> index 5e57e11..9d387a9 100644
+> --- a/arch/x86/mm/tlb.c
+> +++ b/arch/x86/mm/tlb.c
+> @@ -186,7 +186,11 @@ static void flush_tlb_others_ipi(const struct cpumask *cpumask,
+>  
+>  	f->flush_mm = mm;
+>  	f->flush_va = va;
+> -	if (cpumask_andnot(to_cpumask(f->flush_cpumask), cpumask, cpumask_of(smp_processor_id()))) {
 > +
-> +OMAP MUSB GLUE
-> + - compatible : Should be "ti,musb-omap2430"
-> + - ti,hwmods : must be "usb_otg_hs"
-> + - multipoint : Should be "1" indicating the musb controller supports
-> +   multipoint. This is a MUSB configuration-specific setting.
-> + - num_eps : Specifies the number of endpoints. This is also a
-> +   MUSB configuration-specific setting. Should be set to "16"
-> + - ram_bits : Specifies the ram address size. Should be set to "12"
-> + - interface_type : This is a board specific setting to describe the type
-> of
-> +   interface between the controller and the phy. It should be "0" or "1"
-> +   specifying ULPI and UTMI respectively.
-> + - mode : Should be "3" to represent OTG. "1" signifies HOST and "2"
-> +   represents PERIPHERAL.
-> + - power : Should be "50". This signifies the controller can supply upto
-> +   100mA when operating in host mode.
+> +	cpumask_and(to_cpumask(f->flush_cpumask), cpumask, cpu_online_mask);
+> +	cpumask_clear_cpu(smp_processor_id(), to_cpumask(f->flush_cpumask));
 > +
-> +SOC specific device node entry
-> +usb_otg_hs: usb_otg_hs@4a0ab000 {
-> +	compatible = "ti,musb-omap2430";
-> +	ti,hwmods = "usb_otg_hs";
-> +	multipoint = <1>;
-> +	num_eps = <16>;
-> +	ram_bits = <12>;
-> +};
-> +
-> +Board specific device node entry
-> +&usb_otg_hs {
-> +	interface_type = <1>;
-> +	mode = <3>;
-> +	power = <50>;
-> +};
-> diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
-> index addbebf..331e477 100644
-> --- a/drivers/usb/musb/omap2430.c
-> +++ b/drivers/usb/musb/omap2430.c
-> @@ -30,6 +30,7 @@
->  #include <linux/init.h>
->  #include <linux/list.h>
->  #include <linux/io.h>
-> +#include <linux/of.h>
->  #include <linux/platform_device.h>
->  #include <linux/dma-mapping.h>
->  #include <linux/pm_runtime.h>
-> @@ -469,8 +470,11 @@ static u64 omap2430_dmamask = DMA_BIT_MASK(32);
->  static int __devinit omap2430_probe(struct platform_device *pdev)
->  {
->  	struct musb_hdrc_platform_data	*pdata = pdev->dev.platform_data;
-> +	struct omap_musb_board_data	*data;
->  	struct platform_device		*musb;
->  	struct omap2430_glue		*glue;
-> +	struct device_node		*np = pdev->dev.of_node;
-> +	struct musb_hdrc_config		*config;
->  	struct resource			*res;
->  	int				ret = -ENOMEM;
-> 
-> @@ -500,6 +504,43 @@ static int __devinit omap2430_probe(struct
-> platform_device *pdev)
->  	if (glue->control_otghs == NULL)
->  		dev_dbg(&pdev->dev, "Failed to obtain control memory\n");
-> 
-> +	if (np) {
-> +		pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
-> +		if (!pdata) {
-> +			dev_err(&pdev->dev,
-> +				"failed to allocate musb platfrom data\n");
-> +			ret = -ENOMEM;
-> +			goto err1;
-> +		}
-> +
-> +		data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
-> +		if (!data) {
-> +			dev_err(&pdev->dev,
-> +					"failed to allocate musb board data\n");
-> +			ret = -ENOMEM;
-> +			goto err1;
-> +		}
-> +
-> +		config = devm_kzalloc(&pdev->dev, sizeof(*config), GFP_KERNEL);
-> +		if (!data) {
-> +			dev_err(&pdev->dev,
-> +				"failed to allocate musb hdrc config\n");
-> +			goto err1;
-> +		}
-> +
-> +		of_property_read_u32(np, "mode", (u32 *)&pdata->mode);
-> +		of_property_read_u32(np, "interface_type",
-> +						(u32 *)&data->interface_type);
-> +		of_property_read_u32(np, "num_eps", (u32 *)&config->num_eps);
-> +		of_property_read_u32(np, "ram_bits", (u32 *)&config->ram_bits);
-> +		of_property_read_u32(np, "mode", (u32 *)&pdata->mode);
+> +	if (!cpumask_empty(to_cpumask(f->flush_cpumask))) {
 
-pdata->mode is already read so above should be removed.
+FWIW, there's code in tip/x86/mm which reworks all that and
+flush_tlb_others_ipi along with the 32 TLB flush vectors are being
+removed in favor of a smp_call_function_many thing. And it should be
+hotplug-safe since it must be called with preemption disabled anyway.
 
-Ajay
-> +		of_property_read_u32(np, "power", (u32 *)&pdata->power);
-> +		config->multipoint = of_property_read_bool(np, "multipoint");
-> +
-> +		pdata->board_data	= data;
-> +		pdata->config		= config;
-> +	}
-> +
->  	pdata->platform_ops		= &omap2430_ops;
-> 
->  	platform_set_drvdata(pdev, glue);
-> @@ -597,12 +638,26 @@ static struct dev_pm_ops omap2430_pm_ops = {
->  #define DEV_PM_OPS	NULL
->  #endif
-> 
-> +#ifdef CONFIG_OF
-> +static const struct of_device_id omap2430_id_table[] = {
-> +	{
-> +		.compatible = "ti,omap4-musb"
-> +	},
-> +	{
-> +		.compatible = "ti,omap3-musb"
-> +	},
-> +	{},
-> +};
-> +MODULE_DEVICE_TABLE(of, omap2430_id_table);
-> +#endif
-> +
->  static struct platform_driver omap2430_driver = {
->  	.probe		= omap2430_probe,
->  	.remove		= __devexit_p(omap2430_remove),
->  	.driver		= {
->  		.name	= "musb-omap2430",
->  		.pm	= DEV_PM_OPS,
-> +		.of_match_table = of_match_ptr(omap2430_id_table),
->  	},
->  };
-> 
-> --
-> 1.7.5.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+Regards/Gruss,
+Boris.
