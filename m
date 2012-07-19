@@ -1,99 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705Ab2GSRpU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 13:45:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37499 "EHLO mx1.redhat.com"
+	id S1752752Ab2GSRrz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 13:47:55 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:59760 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752204Ab2GSRpS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 13:45:18 -0400
-Date: Thu, 19 Jul 2012 20:45:50 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Subject: Re: [PATCH v5 0/4] kvm: level irqfd and new eoifd
-Message-ID: <20120719174550.GA17762@redhat.com>
-References: <20120716202711.1752.71007.stgit@bling.home>
- <20120719165944.GB17213@redhat.com>
- <1342718978.3142.26.camel@ul30vt>
+	id S1752571Ab2GSRrv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 13:47:51 -0400
+From: Shubhrajyoti D <shubhrajyoti@ti.com>
+To: <spi-devel-general@lists.sourceforge.net>
+CC: <broonie@sirena.org.uk>, <linux-kernel@vger.kernel.org>,
+        Shubhrajyoti D <shubhrajyoti@ti.com>
+Subject: [PATCH] spi: omap2-mcspi: Fix the below warning
+Date: Thu, 19 Jul 2012 23:16:52 +0530
+Message-ID: <1342720012-3709-1-git-send-email-shubhrajyoti@ti.com>
+X-Mailer: git-send-email 1.7.5.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1342718978.3142.26.camel@ul30vt>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 19, 2012 at 11:29:38AM -0600, Alex Williamson wrote:
-> On Thu, 2012-07-19 at 19:59 +0300, Michael S. Tsirkin wrote:
-> > On Mon, Jul 16, 2012 at 02:33:38PM -0600, Alex Williamson wrote:
-> > > v5:
-> > >  - irqfds now have a one-to-one mapping with eoifds to prevent users
-> > >    from consuming all of kernel memory by repeatedly creating eoifds
-> > >    from a single irqfd.
-> > >  - implement a kvm_clear_irq() which does a test_and_clear_bit of
-> > >    the irq_state, only updating the pic/ioapic if changes and allowing
-> > >    the caller to know if anything was done.  I added this onto the end
-> > >    as it's essentially an optimization on the previous design.  It's
-> > >    hard to tell if there's an actual performance benefit to this.
-> > >  - dropped eoifd gsi support patch as it was only an FYI.
-> > > 
-> > > Thanks,
-> > > 
-> > > Alex
-> > 
-> > 
-> > So 3/4, 4/4 are racy and I think you convinced me it's best to drop it for
-> > now. I hope that fact that we already scan all vcpus under spinlock for
-> > level interrupts is enough to justify adding a lock here.
-> > 
-> > To summarize issues still outstanding with 1/2, 2/2:
-> (a)
-> > - source id lingering after irqfd was destroyed/deassigned
-> >   prevents assigning a new irqfd
-> (b)
-> > - if same irqfd is deassigned and re-assigned, this
-> >   seems to succeed but does not give any more EOIs
-> (c)
-> > - document that user needs to re-inject interrupts
-> >   injected by level IRQFD after migration as they are cleared
-> > 
-> > Hope this helps!
-> 
-> Thanks, I'm refining and testing a re-write.  One thing I also noticed
-> is that we don't do anything when the eoifd is closed.  We'll cleanup
-> when kvm is closed, but that can leave a lot of stray eoifds, and
-> therefore used irq_source_ids tied up.  So, I think I need to pull in a
-> lot of the irqfd code just to be able to catch the POLLHUP and do
-> cleanup.
+The dma_map and dma_unmap should have same parameter
+passed otherwise we get the below warn.
 
-I don't think it's worth it. With ioeventfd we have the same issue
-and we don't care: userspace should just DEASSIGN before close.
-With irqfd we committed to support cleanup by close but
-it happens kind of naturally since we poll irqfd anyway.
+ks8851 spi1.0: DMA-API: device driver tries to free DMA memory it has not allocated [device address=0x000000009f22]
 
-It's there for irqfd for historical reasons.
+[    2.066925] Modules linked in:
+[    2.070312]
+[    2.071929] [<c001c250>] (unwind_backtrace+0x0/0x130) from [<c0043d84>] (warn_slowpath_common+0x4c/0x64)
+[    2.081909] [<c0043d84>] (warn_slowpath_common+0x4c/0x64) from [<c0043e30>] (warn_slowpath_fmt+0x30/0x40)
+[    2.091949] [<c0043e30>] (warn_slowpath_fmt+0x30/0x40) from [<c0293824>] (check_unmap+0x6d0/0x7b0)
+[    2.101348] [<c0293824>] (check_unmap+0x6d0/0x7b0) from [<c02939cc>] (debug_dma_unmap_page+0x64/0x70)
+[    2.111053] [<c02939cc>] (debug_dma_unmap_page+0x64/0x70) from [<c03519a4>] (omap2_mcspi_txrx_dma+0x2d8/0x4fc)
+[    2.121582] [<c03519a4>] (omap2_mcspi_txrx_dma+0x2d8/0x4fc) from [<c03524d8>] (omap2_mcspi_work.clone.4+0xf0/0x290)
+[    2.132537] [<c03524d8>] (omap2_mcspi_work.clone.4+0xf0/0x290) from [<c0352900>] (omap2_mcspi_transfer_one_message+0x288/0x438)
+[    2.144592] [<c0352900>] (omap2_mcspi_transfer_one_message+0x288/0x438) from [<c03503bc>] (spi_pump_messages+0x100/0x160)
+[    2.156127] [<c03503bc>] (spi_pump_messages+0x100/0x160) from [<c006635c>] (kthread_worker_fn+0xac/0x180)
+[    2.166168] [<c006635c>] (kthread_worker_fn+0xac/0x180) from [<c0066578>] (kthread+0x90/0x9c)
+[    2.175140] [<c0066578>] (kthread+0x90/0x9c) from [<c00157fc>] (kernel_thread_exit+0x0/0x8)
+[    2.183898] ---[ end trace d1830ce6e44292f2 ]---
 
-> Fixing (a) is a simple flush, so I already added that.  To
-> solve (b), I think that saving the irqfd eventfd ctx was a bad idea.
+Fix the warn by changing the unmap parameter.
 
-I actually think we should just fix it. Scan eoifds when closing/opening
-irqfds and bind/unbind source id.
+Reported-by: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
+---
+ drivers/spi/spi-omap2-mcspi.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
-> The new api I will propose to solve it is that kvm_irqfd returns a token
-> (or key) when used as a level irqfd (actually the irq source id, but the
-> user shouldn't care what it is).  We pass that into eoifd instead of the
-> irqfd.  That means that if the irqfd is closed and re-configured, the
-> user will get a new key and should have no expectation that it's tied to
-> the previous eoifd.  I'll add a comment for (c).  Thanks,
-> 
-> Alex
-
-Hmm, another API rewrite, when I felt it is finally stabilizing. Maybe
-it's the right thing to do but it does feel like we change userspace ABI
-just because we have run into an implementation difficulty.
-
-Pls note I'm offline next week so won't have time to review soon.
-
+diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
+index 0c73dd4..37ccdb7 100644
+--- a/drivers/spi/spi-omap2-mcspi.c
++++ b/drivers/spi/spi-omap2-mcspi.c
+@@ -388,7 +388,8 @@ omap2_mcspi_txrx_dma(struct spi_device *spi, struct spi_transfer *xfer)
+ 
+ 	if (tx != NULL) {
+ 		wait_for_completion(&mcspi_dma->dma_tx_completion);
+-		dma_unmap_single(&spi->dev, xfer->tx_dma, count, DMA_TO_DEVICE);
++		dma_unmap_single(mcspi->dev, xfer->tx_dma, count,
++				 DMA_TO_DEVICE);
+ 
+ 		/* for TX_ONLY mode, be sure all words have shifted out */
+ 		if (rx == NULL) {
+@@ -403,7 +404,8 @@ omap2_mcspi_txrx_dma(struct spi_device *spi, struct spi_transfer *xfer)
+ 
+ 	if (rx != NULL) {
+ 		wait_for_completion(&mcspi_dma->dma_rx_completion);
+-		dma_unmap_single(&spi->dev, xfer->rx_dma, count, DMA_FROM_DEVICE);
++		dma_unmap_single(mcspi->dev, xfer->rx_dma, count,
++				 DMA_FROM_DEVICE);
+ 		omap2_mcspi_set_enable(spi, 0);
+ 
+ 		if (l & OMAP2_MCSPI_CHCONF_TURBO) {
 -- 
-MST
+1.7.5.4
+
