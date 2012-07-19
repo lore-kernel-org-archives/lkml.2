@@ -1,288 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753826Ab2GSHvz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 03:51:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29523 "EHLO mx1.redhat.com"
+	id S1752621Ab2GSHwK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 03:52:10 -0400
+Received: from mga01.intel.com ([192.55.52.88]:51996 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751745Ab2GSHvv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 03:51:51 -0400
-Date: Thu, 19 Jul 2012 10:51:49 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kvm: fix race with level interrupts
-Message-ID: <20120719075149.GP26120@redhat.com>
-References: <20120718215228.GA13905@redhat.com>
- <1342649774.2229.223.camel@bling.home>
- <20120718224459.GA14101@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120718224459.GA14101@redhat.com>
+	id S1753893Ab2GSHwI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 03:52:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="180303838"
+Date: Thu, 19 Jul 2012 15:47:27 +0800
+From: Feng Tang <feng.tang@intel.com>
+To: Len Brown <len.brown@intel.com>, <linux-kernel@vger.kernel.org>
+Cc: <x86@kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Donald Dutile <ddutile@redhat.com>,
+        Alexander Gordeev <agordeev@redhat.com>,
+        Bob Moore <robert.moore@intel.com>, Lin Ming <ming.m.lin@intel.com>
+Subject: Re: [PATCH 2/2] ACPI: remove acpi_get_table_with_size() fucntion
+Message-ID: <20120719154727.3306bfe4@feng-i7>
+In-Reply-To: <1342683564-2245-2-git-send-email-feng.tang@intel.com>
+References: <1342683564-2245-1-git-send-email-feng.tang@intel.com>
+	<1342683564-2245-2-git-send-email-feng.tang@intel.com>
+Organization: intel
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 19, 2012 at 01:44:59AM +0300, Michael S. Tsirkin wrote:
-> On Wed, Jul 18, 2012 at 04:16:14PM -0600, Alex Williamson wrote:
-> > On Thu, 2012-07-19 at 00:52 +0300, Michael S. Tsirkin wrote:
-> > > When more than 1 source id is in use for the same GSI, we have the
-> > > following race related to handling irq_states:
-> > > 
-> > > CPU 0 clears bit in irq_states. CPU 0 reads irq_state as 0.
-> > > CPU 1 sets bit in irq_states.  CPU 1 calls kvm_ioapic_set_irq(1). CPU 0
-> > > calls kvm_ioapic_set_irq(0).
-> > > 
-> > > Now ioapic thinks the level is 0 but irq_state is not 0.
-> > > 
-> > > Note that above is valid behaviour if CPU0 and CPU1 are using different
-> > > source ids.
-> > > 
-> > > Fix by performing all irq_states bitmap handling under pic/ioapic lock.
-> > > This also removes the need for atomics with irq_states handling.
-> > > 
-> > > Reported-by: Gleb Natapov <gleb@redhat.com>
-> > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > > ---
-> > > 
-> > > This survives stress testing for me (though I only tried virtio, not
-> > > device assignment).
-> > > Avi, Marcelo, though we have not observed this in the field,
-> > > it's a bugfix so probably 3.5 material?
-> > > I assume yes so the patch is against 3.5-rc7.
-> > > Also stable? It's a very old bug.
-> > > 
-> > > 
-> > >  arch/x86/include/asm/kvm_host.h | 15 ++++++++++++++-
-> > >  arch/x86/kvm/i8259.c            | 14 ++++++++++++--
-> > >  virt/kvm/ioapic.c               | 13 ++++++++++++-
-> > >  virt/kvm/ioapic.h               |  4 +++-
-> > >  virt/kvm/irq_comm.c             | 31 ++++---------------------------
-> > >  5 files changed, 45 insertions(+), 32 deletions(-)
-> > > 
-> > > diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> > > index db7c1f2..fe6e9f1 100644
-> > > --- a/arch/x86/include/asm/kvm_host.h
-> > > +++ b/arch/x86/include/asm/kvm_host.h
-> > > @@ -802,7 +802,20 @@ int kvm_read_guest_page_mmu(struct kvm_vcpu *vcpu, struct kvm_mmu *mmu,
-> > >  void kvm_propagate_fault(struct kvm_vcpu *vcpu, struct x86_exception *fault);
-> > >  bool kvm_require_cpl(struct kvm_vcpu *vcpu, int required_cpl);
-> > >  
-> > > -int kvm_pic_set_irq(void *opaque, int irq, int level);
-> > > +static inline int kvm_irq_line_state(unsigned long *irq_state,
-> > > +				     int irq_source_id, int level)
-> > > +{
-> > > +	/* Logical OR for level trig interrupt */
-> > > +	if (level)
-> > > +		__set_bit(irq_source_id, irq_state);
-> > > +	else
-> > > +		__clear_bit(irq_source_id, irq_state);
-> > > +
-> > > +	return !!(*irq_state);
-> > > +}
-> > > +
-> > > +int kvm_pic_set_irq(struct kvm_pic *pic, int irq, int irq_source_id, int level);
-> > > +void kvm_pic_clear_all(struct kvm_pic *pic, int irq_source_id);
-> > >  
-> > >  void kvm_inject_nmi(struct kvm_vcpu *vcpu);
-> > >  
-> > > diff --git a/arch/x86/kvm/i8259.c b/arch/x86/kvm/i8259.c
-> > > index 81cf4fa..95b504b 100644
-> > > --- a/arch/x86/kvm/i8259.c
-> > > +++ b/arch/x86/kvm/i8259.c
-> > > @@ -188,13 +188,14 @@ void kvm_pic_update_irq(struct kvm_pic *s)
-> > >  	pic_unlock(s);
-> > >  }
-> > >  
-> > > -int kvm_pic_set_irq(void *opaque, int irq, int level)
-> > > +int kvm_pic_set_irq(struct kvm_pic *s, int irq, int src_id, int l)
-> > 
-> > Please use "irq_source_id" and keep "level".  I hate reviewing code
-> > where I have to differentiate 'l' vs '1'.
-> 
-> l is an illegal variable name?  Switch to a different font.
-> 
-No, but it does not make it good variable name. I agree with Alex here.
 
-> >  Same below, mixing src_id and
-> > irq_source_id in various places.
-> 
-> irq_source_id is too long, coding style says variable names
-> should be short:
-> 	LOCAL variable names should be short, and to the point.
-Again I agree with Alex about consistency.
+Update the commit log.
 
-> 
-> > >  {
-> > > -	struct kvm_pic *s = opaque;
-> > >  	int ret = -1;
-> > > +	int level;
-> > 
-> > And you'd avoid this variable
-> 
-> by giving a different meaning to the same variable in
-> different parts of a function? Now *that* is a bad idea.
-> 
-> l is level for a specific source, level is the resulting irq value.
-> 
-You can call it shared_level if you wish,  but what's wrong with doing:
-ret = pic_set_irq1(&s->pics[irq >> 3], irq & 7,
-       kvm_irq_line_state(&s->irq_states[irq], src_id, l));
+Thanks,
+Feng
 
 
-> > >  
-> > >  	pic_lock(s);
-> > >  	if (irq >= 0 && irq < PIC_NUM_PINS) {
-> > > +		level = kvm_irq_line_state(&s->irq_states[irq], src_id, l);
-> > >  		ret = pic_set_irq1(&s->pics[irq >> 3], irq & 7, level);
-> > >  		pic_update_irq(s);
-> > >  		trace_kvm_pic_set_irq(irq >> 3, irq & 7, s->pics[irq >> 3].elcr,
-> > > @@ -205,6 +206,15 @@ int kvm_pic_set_irq(void *opaque, int irq, int level)
-> > >  	return ret;
-> > >  }
-> > >  
-> > > +void kvm_pic_clear_all(struct kvm_pic *s, int src_id)
-> > > +{
-> > > +	int i;
-> > > +	pic_lock(s);
-> > > +	for (i = 0; i < PIC_NUM_PINS; i++)
-> > > +		__clear_bit(src_id, &s->irq_states[i]);
-> > > +	pic_unlock(s);
-> > > +}
-> > > +
-> > >  /*
-> > >   * acknowledge interrupt 'irq'
-> > >   */
-> > > diff --git a/virt/kvm/ioapic.c b/virt/kvm/ioapic.c
-> > > index 26fd54d..268b332 100644
-> > > --- a/virt/kvm/ioapic.c
-> > > +++ b/virt/kvm/ioapic.c
-> > > @@ -191,17 +191,19 @@ static int ioapic_deliver(struct kvm_ioapic *ioapic, int irq)
-> > >  	return kvm_irq_delivery_to_apic(ioapic->kvm, NULL, &irqe);
-> > >  }
-> > >  
-> > > -int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int level)
-> > > +int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int src_id, int l)
-> > >  {
-> > >  	u32 old_irr;
-> > >  	u32 mask = 1 << irq;
-> > >  	union kvm_ioapic_redirect_entry entry;
-> > >  	int ret = 1;
-> > > +	int level;
-> > >  
-> > >  	spin_lock(&ioapic->lock);
-> > >  	old_irr = ioapic->irr;
-> > >  	if (irq >= 0 && irq < IOAPIC_NUM_PINS) {
-> > >  		entry = ioapic->redirtbl[irq];
-> > > +		level = kvm_irq_line_state(&ioapic->irq_states[irq], src_id, l);
-> > >  		level ^= entry.fields.polarity;
-> > >  		if (!level)
-> > >  			ioapic->irr &= ~mask;
-> > > @@ -221,6 +223,15 @@ int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int level)
-> > >  	return ret;
-> > >  }
-> > >  
-> > > +void kvm_ioapic_clear_all(struct kvm_ioapic *ioapic, int src_id)
-> > > +{
-> > > +	int i;
-> > > +	spin_lock(&ioapic->lock);
-> > > +	for (i = 0; i < KVM_IOAPIC_NUM_PINS; i++)
-> > > +		__clear_bit(src_id, &ioapic->irq_states[i]);
-> > > +	spin_unlock(&ioapic->lock);
-> > > +}
-> > > +
-> > >  static void __kvm_ioapic_update_eoi(struct kvm_ioapic *ioapic, int vector,
-> > >  				     int trigger_mode)
-> > >  {
-> > > diff --git a/virt/kvm/ioapic.h b/virt/kvm/ioapic.h
-> > > index 32872a0..a30abfe 100644
-> > > --- a/virt/kvm/ioapic.h
-> > > +++ b/virt/kvm/ioapic.h
-> > > @@ -74,7 +74,9 @@ void kvm_ioapic_update_eoi(struct kvm *kvm, int vector, int trigger_mode);
-> > >  bool kvm_ioapic_handles_vector(struct kvm *kvm, int vector);
-> > >  int kvm_ioapic_init(struct kvm *kvm);
-> > >  void kvm_ioapic_destroy(struct kvm *kvm);
-> > > -int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int level);
-> > > +int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int irq_source_id,
-> > > +		       int level);
-> > > +void kvm_ioapic_clear_all(struct kvm_ioapic *ioapic, int irq_source_id);
-> > >  void kvm_ioapic_reset(struct kvm_ioapic *ioapic);
-> > >  int kvm_irq_delivery_to_apic(struct kvm *kvm, struct kvm_lapic *src,
-> > >  		struct kvm_lapic_irq *irq);
-> > > diff --git a/virt/kvm/irq_comm.c b/virt/kvm/irq_comm.c
-> > > index 5afb431..83402d7 100644
-> > > --- a/virt/kvm/irq_comm.c
-> > > +++ b/virt/kvm/irq_comm.c
-> > > @@ -33,26 +33,12 @@
-> > >  
-> > >  #include "ioapic.h"
-> > >  
-> > > -static inline int kvm_irq_line_state(unsigned long *irq_state,
-> > > -				     int irq_source_id, int level)
-> > > -{
-> > > -	/* Logical OR for level trig interrupt */
-> > > -	if (level)
-> > > -		set_bit(irq_source_id, irq_state);
-> > > -	else
-> > > -		clear_bit(irq_source_id, irq_state);
-> > > -
-> > > -	return !!(*irq_state);
-> > > -}
-> > > -
-> > >  static int kvm_set_pic_irq(struct kvm_kernel_irq_routing_entry *e,
-> > >  			   struct kvm *kvm, int irq_source_id, int level)
-> > >  {
-> > >  #ifdef CONFIG_X86
-> > >  	struct kvm_pic *pic = pic_irqchip(kvm);
-> > > -	level = kvm_irq_line_state(&pic->irq_states[e->irqchip.pin],
-> > > -				   irq_source_id, level);
-> > > -	return kvm_pic_set_irq(pic, e->irqchip.pin, level);
-> > > +	return kvm_pic_set_irq(pic, e->irqchip.pin, irq_source_id, level);
-> > >  #else
-> > >  	return -1;
-> > >  #endif
-> > > @@ -62,10 +48,7 @@ static int kvm_set_ioapic_irq(struct kvm_kernel_irq_routing_entry *e,
-> > >  			      struct kvm *kvm, int irq_source_id, int level)
-> > >  {
-> > >  	struct kvm_ioapic *ioapic = kvm->arch.vioapic;
-> > > -	level = kvm_irq_line_state(&ioapic->irq_states[e->irqchip.pin],
-> > > -				   irq_source_id, level);
-> > > -
-> > > -	return kvm_ioapic_set_irq(ioapic, e->irqchip.pin, level);
-> > > +	return kvm_ioapic_set_irq(ioapic, e->irqchip.pin, irq_source_id, level);
-> > >  }
-> > >  
-> > >  inline static bool kvm_is_dm_lowest_prio(struct kvm_lapic_irq *irq)
-> > > @@ -249,8 +232,6 @@ unlock:
-> > >  
-> > >  void kvm_free_irq_source_id(struct kvm *kvm, int irq_source_id)
-> > >  {
-> > > -	int i;
-> > > -
-> > >  	ASSERT(irq_source_id != KVM_USERSPACE_IRQ_SOURCE_ID);
-> > >  
-> > >  	mutex_lock(&kvm->irq_lock);
-> > > @@ -263,14 +244,10 @@ void kvm_free_irq_source_id(struct kvm *kvm, int irq_source_id)
-> > >  	if (!irqchip_in_kernel(kvm))
-> > >  		goto unlock;
-> > >  
-> > > -	for (i = 0; i < KVM_IOAPIC_NUM_PINS; i++) {
-> > > -		clear_bit(irq_source_id, &kvm->arch.vioapic->irq_states[i]);
-> > > -		if (i >= 16)
-> > > -			continue;
-> > > +	kvm_ioapic_clear_all(kvm->arch.vioapic, irq_source_id);
-> > >  #ifdef CONFIG_X86
-> > > -		clear_bit(irq_source_id, &pic_irqchip(kvm)->irq_states[i]);
-> > > +	kvm_pic_clear_all(pic_irqchip(kvm), irq_source_id);
-> > >  #endif
-> > > -	}
-> > >  unlock:
-> > >  	mutex_unlock(&kvm->irq_lock);
-> > >  }
-> > 
-> > 
+>From 61e3349625843bd9e4c353598ec50a2333409986 Mon Sep 17 00:00:00 2001
+From: Feng Tang <feng.tang@intel.com>
+Date: Wed, 18 Jul 2012 15:01:18 +0800
+Subject: [PATCH 2/2] ACPI: Remove acpi_get_table_with_size() fucntion
 
---
-			Gleb.
+Remove the unnecessary acpi_get_table_with_size(), as it could
+be well covered by acpi_get_table().
+
+Signed-off-by: Feng Tang <feng.tang@intel.com>
+---
+ drivers/acpi/acpica/tbxface.c |   18 +++---------------
+ include/acpi/acpixf.h         |    4 ----
+ 2 files changed, 3 insertions(+), 19 deletions(-)
+
+diff --git a/drivers/acpi/acpica/tbxface.c b/drivers/acpi/acpica/tbxface.c
+index abcc641..3daf93d 100644
+--- a/drivers/acpi/acpica/tbxface.c
++++ b/drivers/acpi/acpica/tbxface.c
+@@ -380,7 +380,7 @@ ACPI_EXPORT_SYMBOL(acpi_unload_table_id)
+ 
+ /*******************************************************************************
+  *
+- * FUNCTION:    acpi_get_table_with_size
++ * FUNCTION:    acpi_get_table
+  *
+  * PARAMETERS:  Signature           - ACPI signature of needed table
+  *              Instance            - Which instance (for SSDTs)
+@@ -392,9 +392,8 @@ ACPI_EXPORT_SYMBOL(acpi_unload_table_id)
+  *
+  ******************************************************************************/
+ acpi_status
+-acpi_get_table_with_size(char *signature,
+-	       u32 instance, struct acpi_table_header **out_table,
+-	       acpi_size *tbl_size)
++acpi_get_table(char *signature,
++	       u32 instance, struct acpi_table_header **out_table)
+ {
+        u32 i;
+        u32 j;
+@@ -424,7 +423,6 @@ acpi_get_table_with_size(char *signature,
+ 		    acpi_tb_verify_table(&acpi_gbl_root_table_list.tables[i]);
+ 		if (ACPI_SUCCESS(status)) {
+ 			*out_table = acpi_gbl_root_table_list.tables[i].pointer;
+-			*tbl_size = acpi_gbl_root_table_list.tables[i].length;
+ 		}
+ 
+ 		if (!acpi_gbl_permanent_mmap) {
+@@ -436,16 +434,6 @@ acpi_get_table_with_size(char *signature,
+ 
+ 	return (AE_NOT_FOUND);
+ }
+-
+-acpi_status
+-acpi_get_table(char *signature,
+-	       u32 instance, struct acpi_table_header **out_table)
+-{
+-	acpi_size tbl_size;
+-
+-	return acpi_get_table_with_size(signature,
+-		       instance, out_table, &tbl_size);
+-}
+ ACPI_EXPORT_SYMBOL(acpi_get_table)
+ 
+ /*******************************************************************************
+diff --git a/include/acpi/acpixf.h b/include/acpi/acpixf.h
+index 18f023a..63a4b26 100644
+--- a/include/acpi/acpixf.h
++++ b/include/acpi/acpixf.h
+@@ -172,10 +172,6 @@ acpi_get_table_header(acpi_string signature,
+ 		      struct acpi_table_header *out_table_header);
+ 
+ acpi_status
+-acpi_get_table_with_size(acpi_string signature,
+-	       u32 instance, struct acpi_table_header **out_table,
+-	       acpi_size *tbl_size);
+-acpi_status
+ acpi_get_table(acpi_string signature,
+ 	       u32 instance, struct acpi_table_header **out_table);
+ 
+-- 
+1.7.1
