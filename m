@@ -1,63 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752134Ab2GSVoM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 17:44:12 -0400
-Received: from usindpps03.hds.com ([207.126.252.16]:49979 "EHLO
-	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751014Ab2GSVoK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 17:44:10 -0400
-X-Greylist: delayed 1860 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Jul 2012 17:44:09 EDT
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: "Luck, Tony" <tony.luck@intel.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mikew@google.com" <mikew@google.com>,
-        "dzickus@redhat.com" <dzickus@redhat.com>,
-        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>
-CC: "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: RE: [RFC][PATCH v2 2/3] Hold multiple logs
-Thread-Topic: [RFC][PATCH v2 2/3] Hold multiple logs
-Thread-Index: Ac1l82ceH7I0t1QCT1GombsnNxviZAAAK4PgAABTBVA=
-Date: Thu, 19 Jul 2012 21:43:51 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D40FB28056@USINDEM103.corp.hds.com>
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D40FB27FDC@USINDEM103.corp.hds.com>
- <3908561D78D1C84285E8C5FCA982C28F1936EA5F@ORSMSX104.amr.corp.intel.com>
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F1936EA5F@ORSMSX104.amr.corp.intel.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.43.113]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752046Ab2GSVt4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 17:49:56 -0400
+Received: from mail.eladian.com ([64.140.252.105]:14024 "EHLO mail.eladian.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751466Ab2GSVty (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 17:49:54 -0400
+X-Amavis-Modified: Mail body modified (using disclaimer) - mail.eladian.com
+Date: Thu, 19 Jul 2012 17:49:53 -0400 (EDT)
+From: Daniel Wisehart <daniel.wisehart@eladian.com>
+To: linux-kernel@vger.kernel.org
+Cc: alan@redhat.com
+Subject: [PATCH] scripts/patch-kernel fix
+Message-ID: <9b2de540-7ff6-4853-8331-5b9f0d28051c@mail.eladian.com>
+In-Reply-To: <cf445a75-137c-4689-aa34-6c89cbd92b7b@mail.eladian.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.260,0.0.0000
- definitions=2012-07-19_06:2012-07-19,2012-07-19,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
- definitions=main-1207190259
+X-Mailer: Zimbra 7.1.3_GA_3374 (ZimbraWebClient - GC19 (Linux)/7.1.3_GA_3346)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> How big a value for efi_pstore_log_num have you tried? Did you see any problems with EFI running out of space? Do you get some
-> helpful error message if you pick a number that is too big?
+Takes care of errors when running something like:
 
-Please calm down... This is RFC patch.
-
-If users specify a number of that is too big, the message will be meaningless.
-I just couldn't decide the appropriate number by myself.
-Then, I make it tunable.
-
-So, I would like to hear about your opinion.
-
-Do you agree with an idea holding multiple logs?
-If so, which number is appropriate? 
-
-Seiji
+$ ./scripts/patch-kernel . .. 3.5
+Current kernel version is 3.5.0-rc7 ( Saber-toothed Squirrel)
+./scripts/patch-kernel: line 229: [: -lt: unary operator expected
+./scripts/patch-kernel: line 252: [: -gt: unary operator expected
 
 
+diff --git a/scripts/patch-kernel b/scripts/patch-kernel
+index d000ea3..a7672eb 100755
+--- a/scripts/patch-kernel
++++ b/scripts/patch-kernel
+@@ -226,7 +226,7 @@ fi
+ 
+ # This all assumes a 2.6.x[.y] kernel tree.
+ # Don't allow backwards/reverse patching.
+-if [ $STOPSUBLEVEL -lt $SUBLEVEL ]; then
++if [ "$STOPSUBLEVEL"0 -lt "$SUBLEVEL"0 ]; then
+        backwards
+ fi
+ 
+@@ -249,7 +249,7 @@ fi
+ # If not ending sublevel is specified, it is incremented until
+ # no further sublevels are found.
+ 
+-if [ $STOPSUBLEVEL -gt $SUBLEVEL ]; then
++if [ "$STOPSUBLEVEL"0 -gt "$SUBLEVEL"0 ]; then
+ while :                                # incrementing SUBLEVEL (s in v.p.s)
+ do
+     CURRENTFULLVERSION="$VERSION.$PATCHLEVEL.$SUBLEVEL"
+
+
+
+This communication is restricted - please see http://www.eladian.com for further information.
