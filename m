@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751868Ab2GSTrR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 15:47:17 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:54567 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751273Ab2GSTqq (ORCPT
+	id S1751681Ab2GSTrL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 15:47:11 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:55931 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751477Ab2GSTqu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 15:46:46 -0400
+	Thu, 19 Jul 2012 15:46:50 -0400
 From: Jim Cromie <jim.cromie@gmail.com>
 To: jbaron@redhat.com, linux-kernel@vger.kernel.org
 Cc: kay@vrfy.com, joe@perches.com, greg@kroah.com,
         Jim Cromie <jim.cromie@gmail.com>
-Subject: [PATCH 1/3] drivers-core: make structured logging play nice with dynamic-debug
-Date: Thu, 19 Jul 2012 13:46:20 -0600
-Message-Id: <1342727183-4520-2-git-send-email-jim.cromie@gmail.com>
+Subject: [PATCH 2/3] dyndbg: in dynamic_emit_prefix, change inter-field separator
+Date: Thu, 19 Jul 2012 13:46:22 -0600
+Message-Id: <1342727183-4520-4-git-send-email-jim.cromie@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1342727183-4520-1-git-send-email-jim.cromie@gmail.com>
 References: <1342727183-4520-1-git-send-email-jim.cromie@gmail.com>
@@ -21,50 +21,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit c4e00daaa96d3a0786f1f4fe6456281c60ef9a16 changed __dev_printk
-in a way that broke dynamic-debug's ability to control the dynamic
-prefix of dev_dbg(dev,..), but not dev_dbg(NULL,..) or pr_debug(..),
-which is why it wasnt noticed sooner.
+dynamic_emit_prefix() currently separates modname, funcname, lineno
+with ':'.  This is complicates use of cut -d: <logfile>, since the
+field positions can change per callsite with dynamic-debug.  So change
+inter-field separator to '.' and keep the ':' prefix terminator.
 
-When dev==NULL, __dev_printk() just calls printk(), which just works.
-But otherwise, it assumed that level was always a string like "<L>"
-and just plucked out the 'L', ignoring the rest.  However,
-dynamic_emit_prefix() adds "[tid] module:func:line:" to the string,
-those additions all got lost.
+This improves the situation, but doesnt solve it entirely; if
+dyndbg==p is used, the callsite is enabled but no prefix is added, so
+theres one less ':' in the message.  Changing the terminator to ','
+would fix this, and might be warranted.
+
+pr_fmt(fmt) KBUILD_MODNAME ": " fmt, also adds another ':'.
 
 Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
 ---
- drivers/base/core.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ lib/dynamic_debug.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index 346be8b..ebdb7c5 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -1848,6 +1848,7 @@ int __dev_printk(const char *level, const struct device *dev,
- 		 struct va_format *vaf)
- {
- 	char dict[128];
-+	const char *level_extra = "";
- 	size_t dictlen = 0;
- 	const char *subsys;
- 
-@@ -1894,10 +1895,14 @@ int __dev_printk(const char *level, const struct device *dev,
- 				    "DEVICE=+%s:%s", subsys, dev_name(dev));
+diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+index 7ca29a0..6bc34aa 100644
+--- a/lib/dynamic_debug.c
++++ b/lib/dynamic_debug.c
+@@ -532,16 +532,18 @@ static char *dynamic_emit_prefix(const struct _ddebug *desc, char *buf)
  	}
- skip:
-+	if (level[3])
-+		level_extra = &level[3]; /* skip past "<L>" */
-+
- 	return printk_emit(0, level[1] - '0',
- 			   dictlen ? dict : NULL, dictlen,
--			   "%s %s: %pV",
--			   dev_driver_string(dev), dev_name(dev), vaf);
-+			   "%s %s: %s%pV", 
-+			   dev_driver_string(dev), dev_name(dev),
-+			   level_extra, vaf);
- }
- EXPORT_SYMBOL(__dev_printk);
+ 	pos_after_tid = pos;
+ 	if (desc->flags & _DPRINTK_FLAGS_INCL_MODNAME)
+-		pos += snprintf(buf + pos, remaining(pos), "%s:",
++		pos += snprintf(buf + pos, remaining(pos), "%s.",
+ 					desc->modname);
+ 	if (desc->flags & _DPRINTK_FLAGS_INCL_FUNCNAME)
+-		pos += snprintf(buf + pos, remaining(pos), "%s:",
++		pos += snprintf(buf + pos, remaining(pos), "%s.",
+ 					desc->function);
+ 	if (desc->flags & _DPRINTK_FLAGS_INCL_LINENO)
+-		pos += snprintf(buf + pos, remaining(pos), "%d:",
++		pos += snprintf(buf + pos, remaining(pos), "%d.",
+ 					desc->lineno);
+-	if (pos - pos_after_tid)
+-		pos += snprintf(buf + pos, remaining(pos), " ");
++	if (pos - pos_after_tid) {
++		pos--;
++		pos += snprintf(buf + pos, remaining(pos), ": ");
++	}
+ 	if (pos >= PREFIX_SIZE)
+ 		buf[PREFIX_SIZE - 1] = '\0';
  
 -- 
 1.7.10.4
