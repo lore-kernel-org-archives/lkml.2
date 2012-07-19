@@ -1,78 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752529Ab2GSXIi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 19:08:38 -0400
-Received: from usindpps06.hds.com ([207.126.252.19]:39057 "EHLO
-	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751956Ab2GSXIf convert rfc822-to-8bit (ORCPT
+	id S1752488Ab2GSXR3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 19:17:29 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:61021 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752019Ab2GSXR1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 19:08:35 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: "Luck, Tony" <tony.luck@intel.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mikew@google.com" <mikew@google.com>,
-        "dzickus@redhat.com" <dzickus@redhat.com>,
-        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>
-CC: "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: RE: [RFC][PATCH v2 2/3] Hold multiple logs
-Thread-Topic: [RFC][PATCH v2 2/3] Hold multiple logs
-Thread-Index: Ac1l82ceH7I0t1QCT1GombsnNxviZAAAK4PgAABTBVAAAP4IQAAA0SRA
-Date: Thu, 19 Jul 2012 23:08:22 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D40FB2813D@USINDEM103.corp.hds.com>
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D40FB27FDC@USINDEM103.corp.hds.com>
- <3908561D78D1C84285E8C5FCA982C28F1936EA5F@ORSMSX104.amr.corp.intel.com>
- <A5ED84D3BB3A384992CBB9C77DEDA4D40FB28056@USINDEM103.corp.hds.com>
- <3908561D78D1C84285E8C5FCA982C28F1936EA97@ORSMSX104.amr.corp.intel.com>
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F1936EA97@ORSMSX104.amr.corp.intel.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.43.113]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 19 Jul 2012 19:17:27 -0400
+Date: Thu, 19 Jul 2012 16:17:23 -0700
+From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Ian Abbott <ian.abbott@mev.co.uk>
+Subject: Re: [PATCH 15/90] staging: comedi: adv_pci1723: move
+ comedi_pci_enable() into the attach
+Message-ID: <20120719231723.GA23010@kroah.com>
+References: <201207181830.48668.hartleys@visionengravers.com>
+ <5007D568.2050401@mev.co.uk>
+ <ADE657CA350FB648AAC2C43247A983F00206AA916472@AUSP01VMBX24.collaborationhost.net>
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.260,0.0.0000
- definitions=2012-07-19_06:2012-07-19,2012-07-19,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
- definitions=main-1207190285
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <ADE657CA350FB648AAC2C43247A983F00206AA916472@AUSP01VMBX24.collaborationhost.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->
-> I think that 3 or 4 logs should be plenty to cover almost all situations. E.g.
-> with 3 logs you could capture 2 OOPS (and perhaps miss some other OOPS) and then get the final panic that kills the system.  Messier
-> crashes are of course possible ... but that would give lots of clues on where the problems lie.
->
+On Thu, Jul 19, 2012 at 12:12:02PM -0500, H Hartley Sweeten wrote:
+> On Thursday, July 19, 2012 2:38 AM, Ian Abbott wrote:
+> > On 2012-07-19 02:30, H Hartley Sweeten wrote:
+> >> Use pci_is_enabled() in the "find pci device" function to determine if
+> >> the found pci device is not in use and move the comedi_pci_enable() call
+> >> into the attach.
+> >>
+> >> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+> >> Cc: Ian Abbott <abbotti@mev.co.uk>
+> >> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> >> ---
+> >>   drivers/staging/comedi/drivers/adv_pci1723.c | 10 +++++-----
+> >>   1 file changed, 5 insertions(+), 5 deletions(-)
+> >>
+> >> diff --git a/drivers/staging/comedi/drivers/adv_pci1723.c b/drivers/staging/comedi/drivers/adv_pci1723.c
+> >> index f561a2a..e971fa6 100644
+> >> --- a/drivers/staging/comedi/drivers/adv_pci1723.c
+> >> +++ b/drivers/staging/comedi/drivers/adv_pci1723.c
+> >> @@ -302,11 +302,7 @@ static struct pci_dev *pci1723_find_pci_dev(struct comedi_device *dev,
+> >>   		}
+> >>   		if (pcidev->vendor != PCI_VENDOR_ID_ADVANTECH)
+> >>   			continue;
+> >> -		/*
+> >> -		 * Look for device that isn't in use.
+> >> -		 * Enable PCI device and request regions.
+> >> -		 */
+> >> -		if (comedi_pci_enable(pcidev, "adv_pci1723"))
+> >> +		if (pci_is_enabled(pcidev))
+> >>   			continue;
+> >>   		return pcidev;
+> >>   	}
+> >
+> > Just because the device is enabled doesn't mean that it is in use, so 
+> > this change could skip over a perfectly good unused device.
+> 
+> Are you sure? According to Documentation/PCI/pci.txt, the first thing
+> a driver "should" do when taking ownership of a PCI device is enable
+> the device. The last thing it "should" do when being unloaded is
+> disable the device.
+> 
+> It would seem that checking pci_is_enabled() would let us know that
+> the pci_dev in question is being used.
+> 
+> > If you want to move the comedi_pci_enable() call, this is a change in 
+> > behaviour for this particular driver, but is consistent with most of the 
+> > other Comedi PCI drivers (and the bus/slot options can be used to select 
+> > a particular device).  This is probably a good thing, but you should 
+> > take out the pci_is_enabled test.
+> 
+> I was curious about this.
+> 
+> In the original driver, doing an 'attach' with bus/slot both = 0 would result
+> in the pci bus being walked to find the first device that could be enabled
+> (i.e. a "free" device) and using that device. This allows doing the 'attach'
+> with more than one card installed and being able to attach to each one
+> by simply:
+> 
+> comedi_config /dev/comedi0 adv_pci1723
+> comedi_config /dev/comedi1 adv_pci1723
+> etc.
+> 
+> The "normal" operation for the comedi pci drivers appears to require
+> the bus/slot information when multiple devices are used. Or implement
+> the 'attach_pci' callback in the comedi_driver and allow the core to
+> simply pass the pci_dev directly to the driver.
+> 
+> What would you prefer?
+> 
+> I was planning on making a comedi_find_pci_dev() function that the
+> drivers could call with a "match" callback. This would allow a common
+> function for most of the boilerplate code and just require the drivers
+> to check the the match against the boardinfo dev/id, etc. as required.
+> Something like:
+> 
+> struct pci_dev *comedi_find_pci_dev(struct comedi_device *dev,
+> 	struct comedi_devconfig *it,
+> 	const void *(*match)(struct comedi_device *,
+> 				struct pci_dev *))
+> {
+> 	struct pci_dev *pcidev = NULL;
+> 	int bus = it->options[0];
+> 	int slot = it->options[1];
+> 
+> 	for_each_pci_dev(pcidev) {
+> 		/* pci_is_enabled() test? */
+> 		if ((bus && bus != pcidev->bus->number) ||
+> 		    (slot && slot != PCI_SLOT(pcidev->devfn)))
+> 			continue;
+> 		dev->board_ptr = match(dev, pcidev);
+> 		if (dev->board_ptr) {
+> 			comedi_set_hw_dev(dev, &pcidev->dev);
+> 			return pcidev;
+> 		}
+> 	}
+> 	return NULL;
+> }
+> 
+> The "match" function for a driver would then just be something like:
+> 
+> const void *match_pci(struct comedi_device *dev, struct pci_dev *pcidev)
+> {
+> 	const struct boardinfo *board;
+> 	int i;
+> 
+> 	for (i = 0; i < ARRAY_SIZE(boardinfo); i++) {
+> 		board = &boardinfo[i];
+> 		if (pcidev->vendor != board->ven_id ||
+> 		    pcidev->device != board->dev_id)
+> 			continue;
+> 		return board;
+> 	}
+> 	return NULL;
+> }
+> 
+> This would require adding a dummy boardinfo to some of the drivers but
+> I think it's cleaner.
+> 
+> Comments?
 
-Thank you for letting my know your idea.
+Ick.  What ever happened to converting these drivers to use the PCI api
+correctly and not to search the PCI space for the device, but have the
+PCI core call them if the device is found?
 
-Let me explain my opinion.
-If you are concerned about multiple OOPS case, I think an user app which logs from /dev/pstore to /var/log should be developed.
-Once it is developed, we don't need to care about multiple oops case and the appropriate number is two.
+It looks like most of these drivers have already been converted to that
+style, so these checks for "do we find a device" can all be removed
+entirely now, right?  There's no way the functions would be called if
+the device wasn't found in the first place.
 
-- In case where system is workable after oops.
-The user app will erase an entry in NVRAM.
-And we can get the message via /var/log.
+Or am I missing something here?
 
-- In case where system hangs up or panics due to the oops.
-Oops is the critical message and we don't need care about subsequent events.
- 
-What do you think?
+thanks,
 
-> If you don't know what is the appropriate number ... then how will users decide? We should really give them some guidance ...
-> especially if there are odd problems[1] if they pick a number that is too big.
-
-You are right.
-There is no user app above right now. So, I was in stuck...
-But I understand I shouldn't have introduce efi_pstore_log_num.
-
-Seiji
-
-
+greg k-h
