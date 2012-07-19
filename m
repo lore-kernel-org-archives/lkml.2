@@ -1,64 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752948Ab2GSF7I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 01:59:08 -0400
-Received: from mga02.intel.com ([134.134.136.20]:40789 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751152Ab2GSF7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 01:59:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="168319257"
-From: Chen Gong <gong.chen@linux.intel.com>
-To: tglx@linutronix.de
-Cc: tony.luck@intel.com, bp@amd64.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/5] x86: mce: Serialize mce injection
-Date: Thu, 19 Jul 2012 13:59:38 -0400
-Message-Id: <1342720781-4729-3-git-send-email-gong.chen@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1342720781-4729-1-git-send-email-gong.chen@linux.intel.com>
-References: <1342720781-4729-1-git-send-email-gong.chen@linux.intel.com>
+	id S1754993Ab2GSF7X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 01:59:23 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:46029 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753218Ab2GSF7T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 01:59:19 -0400
+Date: Thu, 19 Jul 2012 15:59:10 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: linux-next: manual merge of the random tree with the mfd tree
+Message-Id: <20120719155910.d2730d9bbcabadd945d7c585@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__19_Jul_2012_15_59_10_+1000_jWVvQHPcEnyY/WeL"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+--Signature=_Thu__19_Jul_2012_15_59_10_+1000_jWVvQHPcEnyY/WeL
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-raise_mce() fiddles with global state, but lacks any kind of
-serialization.
+Hi Theodore,
 
-Add a mutex around the raise_mce() call, so concurrent writers do not
-stomp on each other toes.
+Today's linux-next merge of the random tree got a conflict in
+drivers/mfd/ab3100-core.c between commit 7f0f07ce25b6 ("mfd: Use devm
+allocation for ab3100-core") from the mfd tree and commit 627574db8b21
+("random: remove rand_initialize_irq()") from the random tree.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- arch/x86/kernel/cpu/mcheck/mce-inject.c |    4 ++++
- 1 file changed, 4 insertions(+)
+I fixed it up (see below) and can carry the fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce-inject.c b/arch/x86/kernel/cpu/mcheck/mce-inject.c
-index 753746f..ddc72f8 100644
---- a/arch/x86/kernel/cpu/mcheck/mce-inject.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce-inject.c
-@@ -78,6 +78,7 @@ static void raise_exception(struct mce *m, struct pt_regs *pregs)
- }
- 
- static cpumask_var_t mce_inject_cpumask;
-+static DEFINE_MUTEX(mce_inject_mutex);
- 
- static int mce_raise_notify(unsigned int cmd, struct pt_regs *regs)
- {
-@@ -229,7 +230,10 @@ static ssize_t mce_write(struct file *filp, const char __user *ubuf,
- 	 * so do it a jiffie or two later everywhere.
- 	 */
- 	schedule_timeout(2);
-+
-+	mutex_lock(&mce_inject_mutex);
- 	raise_mce(&m);
-+	mutex_unlock(&mce_inject_mutex);
- 	return usize;
- }
- 
--- 
-1.7.10.4
+diff --cc drivers/mfd/ab3100-core.c
+index 4276aab,1287645..0000000
+--- a/drivers/mfd/ab3100-core.c
++++ b/drivers/mfd/ab3100-core.c
+@@@ -931,13 -929,10 +929,11 @@@ static int __devinit ab3100_probe(struc
+  	if (err)
+  		goto exit_no_setup;
+ =20
+ -	err =3D request_threaded_irq(client->irq, NULL, ab3100_irq_handler,
+ -				IRQF_ONESHOT, "ab3100-core", ab3100);
+ +	err =3D devm_request_threaded_irq(&client->dev,
+ +					client->irq, NULL, ab3100_irq_handler,
+ +					IRQF_ONESHOT, "ab3100-core", ab3100);
+  	if (err)
+  		goto exit_no_irq;
+- 	/* This real unpredictable IRQ is of course sampled for entropy */
+- 	rand_initialize_irq(client->irq);
+ =20
+  	err =3D abx500_register_ops(&client->dev, &ab3100_ops);
+  	if (err)
 
+--Signature=_Thu__19_Jul_2012_15_59_10_+1000_jWVvQHPcEnyY/WeL
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQB6IuAAoJEECxmPOUX5FECUUP/iDZH0Re3cXTEXx6C87/gfFz
+hzeSZjuLJGPVLpXDOrNeXRpTFyx4jGJOg2wHXyZCi/1nepH/OyLzOkGgXOeeF76c
+7nCWBp4Ec/KXyJKPnZ/JZBVeikCx2uQfdonY7nnb1esAFyqqsVT104oRbwWVvc76
+3EIwhDMpGdPKMAJaip9OvVTglKV75iTPVRkbyJU06N8PR0JCPgP5FNYfg2SCuqLo
+EvFIoPcfEiuxVKn8wWV3+XJgpkr6AfYZDuGtSAQIfnhuRLat3Qo2DdU551VkbR3V
+giEMQ6/zHN4i4Y/wyKLxhzDw5IsRQtgduaiu6blVFHpXx26x/QZYnDTtXylslqdW
+itM5QIKhm5J7xpgvHamEnNEbiWWVATy6Pqwnrk9koPYQm2TaAzmPN9DIf+UOE9tu
+v7yw1UR5pTRmhYlf8wUSbiPC1cpKlgBVB4B32aokzk5orfvyxJJ5/wousnTgA98D
+XPTg9vUlIlY6CZR6mCGkdHv4sp7mXm2ck8Idy0jfJnQm3YudcNKfyXT6qMjCwZoH
+5blKFXN4L7e4k53dVhjT3l8QUeQcGGLvBTZv8XVbi+TujckROw5/zXG33w3mMTCj
+S76EhHmU8EVk6gsGHzoEra0mO1xL/WS9Un+RWHIswRjxC96KK0fo4AXOEV4Mqkfl
+Ps69RvYCt4pDBIyTq1d3
+=6sv1
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__19_Jul_2012_15_59_10_+1000_jWVvQHPcEnyY/WeL--
