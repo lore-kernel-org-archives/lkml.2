@@ -1,61 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751664Ab2GSQBY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 12:01:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45663 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750748Ab2GSQBW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 12:01:22 -0400
-Message-ID: <50082F44.7070500@suse.cz>
-Date: Thu, 19 Jul 2012 18:01:08 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, david@lang.hm,
-        Borislav Petkov <bp@amd64.org>, Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+	id S1751641Ab2GSQIL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 12:08:11 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33287 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750806Ab2GSQIJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 12:08:09 -0400
+X-Authority-Analysis: v=2.0 cv=StQSGYy0 c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=BHldU6QlfDUA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=lmvw-GIOEkBx2I_6zBoA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-ID: <1342714088.12353.33.camel@gandalf.stny.rr.com>
+Subject: Re: [RFC] Simplifying kernel configuration for distro issues
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Dave Jones <davej@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
         Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
         Debian Kernel Team <debian-kernel@lists.debian.org>,
         OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Sasha Levin <levinsasha928@gmail.com>,
-        Asias He <asias.hejun@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: [opensuse-kernel] Re: [RFC] Simplifying kernel configuration
- for distro issues
-References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com> <1342212885.25704.4.camel@lade.trondhjem.org> <CAFLxGvxxWodD97=78218wc+tuigAFsNK_PdroDfb4BWTZoxxUw@mail.gmail.com> <20120714103716.GD26559@liondog.tnic> <CAOJsxLGHQuuXqDD-1SNhL7Ly1-heCYFLzqj3SLh4xzmP9NR5GQ@mail.gmail.com> <20120715101434.GA18144@aftab.osrc.amd.com> <CAOJsxLGBCQ6C-3M0ZdTfVPqnmOKqUE9+78Mhf+67TksmVojuuQ@mail.gmail.com> <20120715211848.GA21167@aftab.osrc.amd.com> <20120715214819.GA1990@moon> <alpine.DEB.2.02.1207151459480.20176@asgard.lang.hm> <20120716082418.GC24327@aftab.osrc.amd.com> <alpine.DEB.2.02.1207160937330.20176@asgard.lang.hm> <CA+55aFwwmMbFr4HXTFxF_MeM_n8bfiXfPPgCALTOc1HvidVt1Q@mail.gmail.com> <alpine.DEB.2.02.1207161222380.32545@asgard.lang.hm> <CA+55aFw7zdyPpDEdpDbYWc-Z++v_kDQHD3Z+-QwPszh+9bU+tQ@mail.gmail.com> <CAMuHMdWopF1MjHjNT_CAnu=pTU8X8oxyW4M+y2-XHEHfF2XHhg@mail.gmail.com>
-In-Reply-To: <CAMuHMdWopF1MjHjNT_CAnu=pTU8X8oxyW4M+y2-XHEHfF2XHhg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+        Fedora Kernel Team <kernel-team@fedoraproject.org>
+Date: Thu, 19 Jul 2012 12:08:08 -0400
+In-Reply-To: <20120719154521.GC8469@zod.bos.redhat.com>
+References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com>
+	 <20120713210240.GG1707@redhat.com>
+	 <CA+55aFz_Vv899eXz6F0jtFH=hT4QpB0_2XuS8HySPjHC6s+L7Q@mail.gmail.com>
+	 <20120719152618.GD16873@home.goodmis.org>
+	 <20120719154521.GC8469@zod.bos.redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17.7.2012 10:03, Geert Uytterhoeven wrote:
-> On Mon, Jul 16, 2012 at 10:56 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->> On Mon, Jul 16, 2012 at 12:26 PM,  <david@lang.hm> wrote:
->>> Some of the proposed ways to implement the minimum distro kernel would not
->>> allow you to override the distro defaults because they would be implemented
->>> by setting dependancies, not by selecting options that you as the user could
->>> then unselect.
->>
->> The sanest thing to do is just a list of "select" statements. And in
->> any case it would have to depend on the "distro config" entry, so EVEN
->> THEN you could just create the Kconfig file, then edit out the distro
->> config thing, and then do whatever you want.
+On Thu, 2012-07-19 at 11:45 -0400, Josh Boyer wrote:
+> Of course the kbuild system would need to verify that the selects exist,
+> > and perhaps warn if they do not. But the nice thing about this is that
+> > you would get the minconfig for the system you are running. When the
+> > system is updated to a new version, the minconfig would be updated too.
+> > The list of selects would not have to live in the kernel, nor would the
+> > kernel need to maintain the list for N+1 different distributions.
 > 
-> Except that "select" is one of the ugliest things in Kconfig, as it
-> blindly sets a symbol
-> without checking if its dependencies are fulfilled.
+> Is there a reason you don't want distro maintainers to maintain these
+> files in the upstream git tree?  (You said "the kernel need to
+> maintain", but I would expect the distro maintainers to be doing that
+> work.)
+> 
+> I think it would actually be beneficial to maintain them upstream
+> instead of in distro kernel packaging.  You'd be able to track the
+> history of changes with git.  You would see for a given kernel
+> version what options are set for each distro (e.g. F17 can support
+> NEW_FOO_THING but F16 userspace can't so it doesn't select that).
+> Perhaps most importantly, it provides a consolidated view of what
+> options various distros are setting and allows the distro maintainers to
+> easily do comparisons.
 
-But for the few options Linus proposed (TMPFS, TMPFS_POSIX_*,
-DEVTMPFS(_MOUNT)), the amount of additional dependencies is reasonable.
-For something more advanced like 'build me a kernel for a laptop with
-$VENDOR hardware', we would need a better dependency solver, indeed.
+Then we'll have a list of options in each kernel:
 
-Michal
+ Fedora 16
+ Fedora 17
+ Fedora 18
+ [...]
+ Debian x
+ Debian x+1
+ Debian x+2
+ [...]
+ Ubuntu y
+ Ubuntu y+1
+ [...]
+
+What about older kernels? Say you installed Fedora 18 with an older
+kernel that doesn't know what to select? Having the distro tell the
+kernel what it needs seems to me the easiest for the 99% case.
+
+Also, if something isn't supported by the older kernel, it would warn
+the user about it. That way the user can be told that their older kernel
+won't work with this version of the distro. And there wont be as many
+surprises. If the user is told "your init wont work with this kernel"
+before they compile it, then they shouldn't complain if they decide to
+install this older kernel and their box doesn't boot.
+
+-- Steve
+
+
