@@ -1,210 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751392Ab2GSPpC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 11:45:02 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33560 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752444Ab2GSPoG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 11:44:06 -0400
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 4/5] perf ui/browser: Use hist_period_print functions
-Date: Fri, 20 Jul 2012 00:42:37 +0900
-Message-Id: <1342712558-8185-5-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1342712558-8185-1-git-send-email-namhyung@kernel.org>
-References: <1342712558-8185-1-git-send-email-namhyung@kernel.org>
+	id S1751515Ab2GSPpv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 11:45:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5532 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750852Ab2GSPps (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 11:45:48 -0400
+Date: Thu, 19 Jul 2012 11:45:21 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
+        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
+        Debian Kernel Team <debian-kernel@lists.debian.org>,
+        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Fedora Kernel Team <kernel-team@fedoraproject.org>
+Subject: Re: [RFC] Simplifying kernel configuration for distro issues
+Message-ID: <20120719154521.GC8469@zod.bos.redhat.com>
+References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com>
+ <20120713210240.GG1707@redhat.com>
+ <CA+55aFz_Vv899eXz6F0jtFH=hT4QpB0_2XuS8HySPjHC6s+L7Q@mail.gmail.com>
+ <20120719152618.GD16873@home.goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120719152618.GD16873@home.goodmis.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/ui/browsers/hists.c |  100 +++++++++++++++++++++++++++++++---------
- tools/perf/ui/hist.c           |   22 ++++-----
- 2 files changed, 86 insertions(+), 36 deletions(-)
+On Thu, Jul 19, 2012 at 11:26:18AM -0400, Steven Rostedt wrote:
+> On Fri, Jul 13, 2012 at 02:17:30PM -0700, Linus Torvalds wrote:
+> > 
+> > The *two* requirements (and they're really the same theme) I
+> > personally think we should have for this are
+> > 
+> >  -  I think every single "select" for these things should come with a
+> > comment about what it is about and why the distro needs it (to show
+> > there was some thought involved and not just a blind "took it from the
+> > distro config")
+> 
+> What about expanding on Alan's idea. I'm guessing that 99% of the users
+> build the kernel for the box that they are running. If this is the case,
+> perhaps we can get the distros to add a:
+> 
+>   /usr/share/Linux/Kconfig
+> 
+> And this Kconfig would have something like:
+> 
+> bool "Distro X config"
+>  select A
+>  select B
+>  select C
+>  [...]
+> 
+> Perhaps with a comment for each select. Or have the comments in the help
+> section.
+> 
+> Then have the kernel kbuild system check if this file exists and include
+> it.
+> 
+> Of course the kbuild system would need to verify that the selects exist,
+> and perhaps warn if they do not. But the nice thing about this is that
+> you would get the minconfig for the system you are running. When the
+> system is updated to a new version, the minconfig would be updated too.
+> The list of selects would not have to live in the kernel, nor would the
+> kernel need to maintain the list for N+1 different distributions.
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index c58f9bb15038..b3c0da410cb5 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -553,14 +553,53 @@ static int hist_browser__show_callchain(struct hist_browser *browser,
- 	return row - first_row;
- }
- 
-+#define HPP_COLOR_FN(_name, _field)						\
-+static int hist_browser__hpp_color_ ## _name(struct hist_print_context *ctx,	\
-+					     struct hist_entry *he)		\
-+{										\
-+	double percent = 100.0 * he->_field / ctx->total_period;		\
-+	*(double *)ctx->ptr = percent;						\
-+	return scnprintf(ctx->s, ctx->size, "%5.2f%%", percent);		\
-+}
-+
-+HPP_COLOR_FN(overhead, period)
-+HPP_COLOR_FN(overhead_sys, period_sys)
-+HPP_COLOR_FN(overhead_us, period_us)
-+HPP_COLOR_FN(overhead_guest_sys, period_guest_sys)
-+HPP_COLOR_FN(overhead_guest_us, period_guest_us)
-+
-+#undef HPP_COLOR_FN
-+
-+static void hist_browser__init_hpp_functions(void)
-+{
-+	static bool init_done = false;
-+
-+	if (init_done)
-+		return;
-+
-+	init_hpp_functions(NULL, false);
-+
-+	hpp_functions[PERF_HPP__OVERHEAD].color =
-+				hist_browser__hpp_color_overhead;
-+	hpp_functions[PERF_HPP__OVERHEAD_SYS].color =
-+				hist_browser__hpp_color_overhead_sys;
-+	hpp_functions[PERF_HPP__OVERHEAD_US].color =
-+				hist_browser__hpp_color_overhead_us;
-+	hpp_functions[PERF_HPP__OVERHEAD_GUEST_SYS].color =
-+				hist_browser__hpp_color_overhead_guest_sys;
-+	hpp_functions[PERF_HPP__OVERHEAD_GUEST_US].color =
-+				hist_browser__hpp_color_overhead_guest_us;
-+	init_done = true;
-+}
-+
- static int hist_browser__show_entry(struct hist_browser *browser,
- 				    struct hist_entry *entry,
- 				    unsigned short row)
- {
- 	char s[256];
- 	double percent;
--	int printed = 0;
--	int width = browser->b.width - 6; /* The percentage */
-+	int i, printed = 0;
-+	int width = browser->b.width;
- 	char folded_sign = ' ';
- 	bool current_entry = ui_browser__is_current_entry(&browser->b, row);
- 	off_t row_offset = entry->row_offset;
-@@ -576,35 +615,50 @@ static int hist_browser__show_entry(struct hist_browser *browser,
- 	}
- 
- 	if (row_offset == 0) {
--		hist_entry__sort_snprintf(entry, s, sizeof(s), browser->hists);
--		percent = (entry->period * 100.0) / browser->hists->stats.total_period;
-+		struct hist_print_context ctx = {
-+			.s		= s,
-+			.size		= sizeof(s),
-+			.total_period	= browser->hists->stats.total_period,
-+		};
- 
--		ui_browser__set_percent_color(&browser->b, percent, current_entry);
- 		ui_browser__gotorc(&browser->b, row, 0);
--		if (symbol_conf.use_callchain) {
--			slsmg_printf("%c ", folded_sign);
--			width -= 2;
--		}
- 
--		slsmg_printf(" %5.2f%%", percent);
-+		for (i = 0; i < PERF_HPP__MAX_INDEX; i++) {
-+			if (!hpp_functions[i].cond)
-+				continue;
- 
--		/* The scroll bar isn't being used */
--		if (!browser->b.navkeypressed)
--			width += 1;
-+			if (i) {
-+				slsmg_printf("  ");
-+				width -= 2;
-+			}
- 
--		if (!current_entry || !browser->b.navkeypressed)
--			ui_browser__set_color(&browser->b, HE_COLORSET_NORMAL);
-+			if (hpp_functions[i].color) {
-+				ctx.ptr = &percent;
-+				/* It will set percent for us. See HPP_COLOR_FN above. */
-+				width -= hpp_functions[i].color(&ctx, entry);
- 
--		if (symbol_conf.show_nr_samples) {
--			slsmg_printf(" %11u", entry->nr_events);
--			width -= 12;
--		}
-+				ui_browser__set_percent_color(&browser->b, percent, current_entry);
- 
--		if (symbol_conf.show_total_period) {
--			slsmg_printf(" %12" PRIu64, entry->period);
--			width -= 13;
-+				if (i == 0 && symbol_conf.use_callchain) {
-+					slsmg_printf("%c ", folded_sign);
-+					width -= 2;
-+				}
-+
-+				slsmg_printf("%s", s);
-+
-+				if (!current_entry || !browser->b.navkeypressed)
-+					ui_browser__set_color(&browser->b, HE_COLORSET_NORMAL);
-+			} else {
-+				width -= hpp_functions[i].entry(&ctx, entry);
-+				slsmg_printf("%s", s);
-+			}
- 		}
- 
-+		/* The scroll bar isn't being used */
-+		if (!browser->b.navkeypressed)
-+			width += 1;
-+
-+		hist_entry__sort_snprintf(entry, s, sizeof(s), browser->hists);
- 		slsmg_write_nstring(s, width);
- 		++row;
- 		++printed;
-@@ -1088,6 +1142,8 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
- 
- 	ui_helpline__push(helpline);
- 
-+	hist_browser__init_hpp_functions();
-+
- 	memset(options, 0, sizeof(options));
- 
- 	while (1) {
-diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index 1e7ea7e684e3..7c8aab3619eb 100644
---- a/tools/perf/ui/hist.c
-+++ b/tools/perf/ui/hist.c
-@@ -798,22 +798,16 @@ out:
- unsigned int hists__sort_list_width(struct hists *hists)
- {
- 	struct sort_entry *se;
--	int ret = 9; /* total % */
-+	int i, ret = 0;
- 
--	if (symbol_conf.show_cpu_utilization) {
--		ret += 7; /* count_sys % */
--		ret += 6; /* count_us % */
--		if (perf_guest) {
--			ret += 13; /* count_guest_sys % */
--			ret += 12; /* count_guest_us % */
--		}
--	}
--
--	if (symbol_conf.show_nr_samples)
--		ret += 11;
-+	for (i = 0; i < PERF_HPP__MAX_INDEX; i++) {
-+		if (!hpp_functions[i].cond)
-+			continue;
-+		if (i)
-+			ret += 2;
- 
--	if (symbol_conf.show_total_period)
--		ret += 13;
-+		ret += hpp_functions[i].width(NULL);
-+	}
- 
- 	list_for_each_entry(se, &hist_entry__sort_list, list)
- 		if (!se->elide)
--- 
-1.7.9.2
+Is there a reason you don't want distro maintainers to maintain these
+files in the upstream git tree?  (You said "the kernel need to
+maintain", but I would expect the distro maintainers to be doing that
+work.)
 
+I think it would actually be beneficial to maintain them upstream
+instead of in distro kernel packaging.  You'd be able to track the
+history of changes with git.  You would see for a given kernel
+version what options are set for each distro (e.g. F17 can support
+NEW_FOO_THING but F16 userspace can't so it doesn't select that).
+Perhaps most importantly, it provides a consolidated view of what
+options various distros are setting and allows the distro maintainers to
+easily do comparisons.
+
+josh
