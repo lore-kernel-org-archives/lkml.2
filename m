@@ -1,94 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752480Ab2GSRbB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 13:31:01 -0400
-Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:39464 "EHLO
-	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752303Ab2GSRa6 (ORCPT
+	id S1752421Ab2GSRbN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 13:31:13 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:1608 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752492Ab2GSRbK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 13:30:58 -0400
-Date: Thu, 19 Jul 2012 19:30:57 +0200
-From: Andreas Mohr <andi@lisas.de>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Andreas Mohr <andi@lisas.de>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: USB enumeration post-resume NOT persistent yet "persist" -->
- swapped devices nodes --> root partition reference broken
-Message-ID: <20120719173057.GA1031@rhlx01.hs-esslingen.de>
-References: <20120719040933.GA18760@rhlx01.hs-esslingen.de>
- <Pine.LNX.4.44L0.1207191100520.1764-100000@iolanthe.rowland.org>
+	Thu, 19 Jul 2012 13:31:10 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6777"; a="210048475"
+Message-ID: <5008445B.2010109@codeaurora.org>
+Date: Thu, 19 Jul 2012 13:31:07 -0400
+From: Christopher Covington <cov@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1207191100520.1764-100000@iolanthe.rowland.org>
-X-Priority: none
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jon Masters <jonathan@jonmasters.org>
+CC: Catalin Marinas <catalin.marinas@arm.com>, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH 08/36] AArch64: Kernel booting and initialisation
+References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com> <1341608777-12982-9-git-send-email-catalin.marinas@arm.com> <50065E6B.3060602@jonmasters.org>
+In-Reply-To: <50065E6B.3060602@jonmasters.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Thu, Jul 19, 2012 at 11:11:50AM -0400, Alan Stern wrote:
-> On Thu, 19 Jul 2012, Andreas Mohr wrote:
+On 07/18/2012 02:57 AM, Jon Masters wrote:
+> On 07/06/2012 05:05 PM, Catalin Marinas wrote:
 > 
-> > Hi,
-> > 
-> > Yesterday I was surprised to see that with *another* external USB disk
-> > happening to be connected before boot,
-> > the system booted with root partition device sdb1 assigned rather than sda1.
-> > Not thinking much, I then proceeded putting the system into suspend,
-> 
-> Do you mean "suspend" or "hibernate"?
+>> +- CPU mode
+>> +  All forms of interrupts must be masked in PSTATE.DAIF (Debug, SError,
+>> +  IRQ and FIQ).
+>> +  The CPU must be in either EL2 (RECOMMENDED) or non-secure EL1.
 
-Doh - S2R. I don't do persistent hibernate here (writing some 1GB of data
-to flash-based storage each time possibly isn't all too healthy anyway).
+Why not secure EL1?
 
-> Can you reproduce the problem?
+> Even though this stuff is likely to be replaced with the result of some
+> of the other standardization, I'd like it if you'd strongly consider
+> removing the "or non-secure EL1". If you give an inch, someone will take
+> a mile and build a system that enters other than in EL2. Or, something
+> to the effect of "the highest non-secure exception level implemented"
+> would be my preference if you don't want to specify.
 
-Will retry soonish.
+I think it would be best to list the technical limitations, from the
+kernel's perspective, of the unsupported exception levels and the
+advantages of the supported exception levels here. If you want to guide
+system builders towards EL2, I think it'd be more convincing to document
+the relevant technical aspects (perhaps KVM needs facilities only
+available in EL2) than just providing an unexplained requirement.
 
-> > http://lists.linux-foundation.org/pipermail/linux-pm/2009-November/023101.html
-> > Netbook Acer Aspire One A110L.
-> > Running 3.5.0-rc7+ here (yes ma'am, bleeding edge tester :).
-> > Was the first time to attempt resume with an additional device remaining
-> > connected, IIRC - that -rc7 thing likely doesn't play much of a role here.
-> > A bit hesitant to (dis-)prove the bug's "regression flag" with another version
-> > since random possibly succeeding I/O accesses to incompatible devices
-> > are not necessarily my thing (or is this safe to attempt again? Any more
-> > specific session info one would need?).
-> 
-> Well, the dmesg log would help.  If you still think the USB layer is at 
-> fault then you should enable CONFIG_USB_DEBUG.
+Christopher
 
-Maybe I can get this successfully off the machine next time,
-by pre-caching required binaries prior to initiating a non-working resume.
-
-> > So, again, possibly USB persistence is bug-broken?
-> 
-> You don't have any good evidence to suggest that.  None of the
-> information you provided indicates that any USB device nodes (such as
-> /dev/bus/usb/001/002) got mixed up.  All you know is that the
-> block-layer device nodes (such as /dev/sda2) got changed.
-
-OK - so you're trying in vain to tell dense me that I'm supposed to
-take note of the *non-changing* (i.e., correctly "persistent")
-USB device ID scheme rather than the roguely changing device nodes.
-To which I say that unfortunately I don't have a pre/post comparison
-at this moment yet.
-
-> Furthermore, if USB persist were broken then the symptoms would be 
-> different.  Instead of starting with a root partition at sdb1 and then 
-> finding it at sda1, you would have found it gone completely and there 
-> would be _new_ devices labelled sdc and sdd.
-
-Ah, yeah - I tend to know *this* other effect, too...
-
-> Alan Stern
-
-Thanks a ton for your reply!
-Now I know that there's a tendency to better look on the other side
-(block device layer etc.) and analyze things there,
-once it's established that USB topology ID numbering in fact did persist.
-
-Andreas Mohr
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
