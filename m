@@ -1,71 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751421Ab2GSN6D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 09:58:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34976 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750748Ab2GSN6A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 09:58:00 -0400
-Date: Thu, 19 Jul 2012 09:57:37 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Kay Sievers <kay@vrfy.org>
-Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Kexec Mailing List <kexec@lists.infradead.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartmann <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] printk: Export struct log size and member offsets
- through vmcoreinfo
-Message-ID: <20120719135736.GC2761@redhat.com>
-References: <20120718171812.GC21746@redhat.com>
- <CAPXgP12PioibfQhtAB0fCzL1MXmZvfvQqOGu_ZM0D8Sx4Vq7+w@mail.gmail.com>
- <20120718175625.GD21746@redhat.com>
- <CAPXgP12YasX6mBVOamO8Tk1mcFJ04XWh5CjuTRxhRShncgVCtA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPXgP12YasX6mBVOamO8Tk1mcFJ04XWh5CjuTRxhRShncgVCtA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751497Ab2GSOCQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 10:02:16 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6032 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750748Ab2GSOCM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 10:02:12 -0400
+X-Authority-Analysis: v=2.0 cv=StQSGYy0 c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=mMwgJEC8K9oA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=3guiIfFIgiLVpK0rtvgA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-ID: <1342706530.12353.27.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH RT 00/12] [ANNOUNCE] 3.0.36-rt58-rc1 stable review
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mike Galbraith <efault@gmx.de>
+Cc: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Date: Thu, 19 Jul 2012 10:02:10 -0400
+In-Reply-To: <1342705899.7342.42.camel@marge.simpson.net>
+References: <20120718223910.898476857@goodmis.org>
+	 <1342670426.7342.8.camel@marge.simpson.net>
+	 <1342703141.12353.24.camel@gandalf.stny.rr.com>
+	 <1342705899.7342.42.camel@marge.simpson.net>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 19, 2012 at 11:38:57AM +0200, Kay Sievers wrote:
-> On Wed, Jul 18, 2012 at 7:56 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> > On Wed, Jul 18, 2012 at 07:27:08PM +0200, Kay Sievers wrote:
-> >> On Wed, Jul 18, 2012 at 7:18 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> >>
-> >> > Currently I am not exporting log "level" info as that is a bitfield and
-> >> > offsetof() bitfields can't be calculated.
-> >>
-> >> We could make the level the lower 3 bits of the byte, export the byte,
-> >> and define that only 3 bits of the byte are valid? Would that help?
-> >
-> > Yes, that should work. Here is the prototype patch which stores 5 bits
-> > of flag and 3 bits of level in a byte. I have not tested it yet, but
-> > if you like the approach, I will test it.
-> 
-> > -       u8 flags:5;             /* internal record flags */
-> > -       u8 level:3;             /* syslog level */
-> > +       u8 flags_level;         /* 5 bit internal record flags, 3 bits syslog
-> 
-> Looks ok.
-> 
-> If we would swap the 5 + 3 bit field byte declaration, and add
-> __packed, we can still not rely on the level to be consistently the
-> lower 3 bits of the byte, right?
+On Thu, 2012-07-19 at 15:51 +0200, Mike Galbraith wrote:
 
-Current code assumes that level bits are least significant bits in
-flags_level. I could export another field say "log_level_bit_offset=0" to
-represent the offset of level bits and that way you will retain the
-flexibilty of changing the position of level bits. I am not sure if it
-is worth. Down the line if numeber of flags outgrow 5bits, one can 
-just move flags to a separate field and possibly use those 5bits for
-something else.
+> Every kernel I've fed you script to has died sooner or later, so I wish
+> him fair sailing.  Here there be sea monsters ;-)
 
-I guess I will change the patch to also level bit offset and remove
-the assumption that level bits are always starting at offset 0. Will test
-changes and repost the V2 of patches.
+I'm curious. Can my script bring down a non-rt kernel?
 
-Thanks
-Vivek
+-- Steve
+
+
