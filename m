@@ -1,82 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753017Ab2GSML1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 08:11:27 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:33314 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752363Ab2GSMLU (ORCPT
+	id S1752917Ab2GSMM2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 08:12:28 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:37617 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751810Ab2GSMMZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 08:11:20 -0400
-Message-ID: <5007F8FA.7000203@linux.vnet.ibm.com>
-Date: Thu, 19 Jul 2012 17:39:30 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	Thu, 19 Jul 2012 08:12:25 -0400
 MIME-Version: 1.0
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: WARNING: at kernel/rcutree.c:1550 __rcu_process_callbacks+0x46f/0x4b0()
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12071912-2674-0000-0000-0000054E206C
+In-Reply-To: <76F764B079F92A4E843589C893D0A022C3811BFD@SERVER.prisktech.co.nz>
+References: <76F764B079F92A4E843589C893D0A022C380F1D4@SERVER.prisktech.co.nz>
+	<CABjd4Yyk6XR6RizgcpjCdi2N_+Z2EzTtezbkN9V7r4bAXXjhqA@mail.gmail.com>
+	<76F764B079F92A4E843589C893D0A022C381059B@SERVER.prisktech.co.nz>
+	<201207191116.27273.arnd@arndb.de>
+	<76F764B079F92A4E843589C893D0A022C3811BFD@SERVER.prisktech.co.nz>
+Date: Thu, 19 Jul 2012 14:12:23 +0200
+Message-ID: <CABjd4YyV6mrdRBXyixz_+ZDi1szNPJMSUNuT80FPySp+43FrTA@mail.gmail.com>
+Subject: Re: [PATCH 1/1] Add Wondermedia Technologies (wmt) to docs/devicetree/vendor-bindings.txt
+From: Alexey Charkov <alchark@gmail.com>
+To: Tony Prisk <linux@prisktech.co.nz>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        "vt8500-wm8505-linux-kernel@googlegroups.com" 
+	<vt8500-wm8505-linux-kernel@googlegroups.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+2012/7/19 Tony Prisk <linux@prisktech.co.nz>:
+> From: Arnd Bergmann [arnd@arndb.de]
+> Sent: 19 July 2012 23:16
+> To: vt8500-wm8505-linux-kernel@googlegroups.com
+> Cc: Tony Prisk; Alexey Charkov; devicetree-discuss@lists.ozlabs.org; Russell King; linux-kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org
+> Subject: Re: [PATCH 1/1] Add Wondermedia Technologies (wmt) to docs/devicetree/vendor-bindings.txt
+>
+> On Thursday 19 July 2012, Tony Prisk wrote:
+>> Given that there have been no replies to this thread, and the restart patch has
+>> now been accepted using 'wmt' as the vendor namespace - would it be safe to
+>> assume we should formalize this in the vendor-bindings.txt?
+>>
+>> I'd like to try and have basic device tree support added for the next merge
+>> window (or this one if it all goes well :) ), but it relies on the vendor binding being
+>> formalized.
+>
+> What about devices that come from via though? Anything that first showed up
+> in vt8500 or earlier should probably get a prefix identifying VIA rather
+> than WonderMedia.
+>
+>         Arnd
+>
+>
+> I have no issue with that.
+>
+> I am mainly concerned with the Wondermedia products at the moment.
+>
+> Adding device tree support for WM8505 (and WM8650) is my main goal as the WM8650
+> currently isn't supported and trying to get another board file added seems unlikely with
+> everything moving to device tree. The VT8500 requires additional/different patches and
+> as I don't have a vt8500 I can't test them.
 
-While running a CPU hotplug stress test on v3.5-rc7+
-(mainline commit 8a7298b7805ab) I hit this warning.
-I haven't tried to debug this yet...
+I believe that Arnd's point was about the hardware that WonderMedia
+chips have inherited from their VIA ancestors, like NAND, SD/MMC,
+graphics engine, USB EHCI glue, PWM, PS/2 controller, parts of PMC
+etc. Those would be more appropriately named with something
+VIA-specific rather than WMT as the vendor prefix (this would apply
+for the PWM and the raster engine, which are unchanged between VT8500
+and WM8505, to my knowledge).
 
-Line number 1550 maps to:
+On the other hand, all of these parts might well be some kind of
+licensed third-party design anyway, which makes this whole VIA vs. WMT
+a bikeshed discussion mostly. I would personally not feel too guilty
+about calling some device that first appeared in a VT8xxx chip 'wmt'
+until there's technical reason for different 'compatible' strings
+matching different chip versions (VIA age vs. WMT age). So far, we
+don't have that need.
 
-WARN_ON_ONCE(cpu_is_offline(smp_processor_id()));
-
-inside rcu_do_batch().
-
-Regards,
-Srivatsa S. Bhat
-
-
-[ 1206.095436] CPU 3 is now offline
-[ 1206.097086] CPU 3 offline: Remove Rx thread
-[ 1206.099133] CPU 2 MCA banks CMCI:0 CMCI:1 CMCI:3
-[ 1206.103750] ------------[ cut here ]------------
-[ 1206.103758] WARNING: at kernel/rcutree.c:1550 __rcu_process_callbacks+0x46f/0x4b0()
-[ 1206.103759] Hardware name: 4180F59
-[ 1206.103759] Modules linked in: tcp_lp lp ebtable_nat ebtables ipt_MASQUERADE iptable_nat nf_nat xt_CHECKSUM iptable_mangle bridge stp llc ppdev parport_pc parport fuse be2iscsi iscsi_boot_sysfs bnx2i cnic uio cxgb4i cxgb4 cxgb3i libcxgbi cxgb3 mdio ib_iser ip6t_ipv6header rdma_cm ib_cm iw_cm ib_sa lockd ip6t_REJECT ib_mad ib_core nf_conntrack_ipv6 nf_defrag_ipv6 xt_limit ib_addr iscsi_tcp nf_conntrack_ipv4 libiscsi_tcp libiscsi nf_defrag_ipv4 xt_state nf_conntrack scsi_transport_iscsi ip6table_filter ip6_tables snd_hda_codec_conexant snd_hda_intel snd_hda_codec snd_hwdep arc4 iwlwifi snd_seq snd_seq_device snd_pcm mac80211 snd_timer thinkpad_acpi snd sunrpc vhost_net macvtap uvcvideo macvlan tun videobuf2_core kvm_intel cfg80211 videodev media videobuf2_vmalloc tpm_tis kvm i2c_i801 e1000e joydev tpm videobuf2_memops soundcore snd_page_alloc rfkill lpc_ich mfd_core tpm_bios microcode binfmt_misc uinput sdhci_pci sdhci mmc_core nouveau i915 ttm drm_kms_helper drm mxm_wmi i2!
- c_algo_bit
- i2c_core video wmi
-[ 1206.103829]  [last unloaded: scsi_wait_scan]
-[ 1206.103832] Pid: 6217, comm: migration/1 Not tainted 3.5.0-rc7-mandeep #1
-[ 1206.103833] Call Trace:
-[ 1206.103834]  <IRQ>  [<ffffffff8106036f>] warn_slowpath_common+0x7f/0xc0
-[ 1206.103840]  [<ffffffff810603ca>] warn_slowpath_null+0x1a/0x20
-[ 1206.103843]  [<ffffffff81110d5f>] __rcu_process_callbacks+0x46f/0x4b0
-[ 1206.103845]  [<ffffffff8108f894>] ? __run_hrtimer+0x84/0x3a0
-[ 1206.103848]  [<ffffffff81697f47>] ? _raw_spin_unlock_irqrestore+0x77/0x80
-[ 1206.103852]  [<ffffffff810998dd>] ? account_system_vtime+0xdd/0xf0
-[ 1206.103855]  [<ffffffff81110dd3>] rcu_process_callbacks+0x33/0x290
-[ 1206.103857]  [<ffffffff8106a638>] __do_softirq+0xc8/0x3e0
-[ 1206.103860]  [<ffffffff8103bc2d>] ? lapic_next_event+0x1d/0x30
-[ 1206.103863]  [<ffffffff816a26ec>] call_softirq+0x1c/0x30
-[ 1206.103866]  [<ffffffff8101c365>] do_softirq+0xa5/0xe0
-[ 1206.103870]  [<ffffffff8106acae>] irq_exit+0xbe/0xf0
-[ 1206.103872]  [<ffffffff816a306e>] smp_apic_timer_interrupt+0x6e/0x99
-[ 1206.103875]  [<ffffffff816a1cef>] apic_timer_interrupt+0x6f/0x80
-[ 1206.103878]  <EOI>  [<ffffffff810ee2e3>] ? stop_machine_cpu_stop+0xc3/0x110
-[ 1206.103883]  [<ffffffff810edf19>] cpu_stopper_thread+0xd9/0x1b0
-[ 1206.103884]  [<ffffffff810ee220>] ? queue_stop_cpus_work+0xf0/0xf0
-[ 1206.103893]  [<ffffffff816960b1>] ? __schedule+0x431/0xa20
-[ 1206.103896]  [<ffffffff810cd21d>] ? trace_hardirqs_on_caller+0x11d/0x1b0
-[ 1206.103900]  [<ffffffff810ede40>] ? cpu_stop_signal_done+0x40/0x40
-[ 1206.103902]  [<ffffffff8108a86e>] kthread+0xae/0xc0
-[ 1206.103905]  [<ffffffff810cd2bd>] ? trace_hardirqs_on+0xd/0x10
-[ 1206.103908]  [<ffffffff816a25f4>] kernel_thread_helper+0x4/0x10
-[ 1206.103911]  [<ffffffff816986f0>] ? retint_restore_args+0x13/0x13
-[ 1206.103913]  [<ffffffff8108a7c0>] ? __init_kthread_worker+0x70/0x70
-[ 1206.103916]  [<ffffffff816a25f0>] ? gs_change+0x13/0x13
-[ 1206.103918] ---[ end trace cbc247c5c233d6e7 ]---
-[ 1206.104125] CPU 1 is now offline
-
+Best,
+Alexey
