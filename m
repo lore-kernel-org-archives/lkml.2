@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752609Ab2GSDHn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 23:07:43 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:62739 "EHLO
+	id S1752787Ab2GSDI2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 23:08:28 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:33427 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751583Ab2GSDHm (ORCPT
+	with ESMTP id S1752046Ab2GSDI0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 23:07:42 -0400
+	Wed, 18 Jul 2012 23:08:26 -0400
 MIME-Version: 1.0
-In-Reply-To: <1342560756-18737-12-git-send-email-tytso@mit.edu>
+In-Reply-To: <1342560756-18737-15-git-send-email-tytso@mit.edu>
 References: <1342560756-18737-1-git-send-email-tytso@mit.edu>
-	<1342560756-18737-12-git-send-email-tytso@mit.edu>
-Date: Thu, 19 Jul 2012 11:07:40 +0800
-Message-ID: <CAN1soZweV6MPKH39h7VA4TDeSxsFq=zwN-FARN8K_iO0Yq1jbQ@mail.gmail.com>
-Subject: Re: [PATCH 11/17] pxa25x_udc: remove IRQF_SAMPLE_RANDOM which is now
- a no-op
+	<1342560756-18737-15-git-send-email-tytso@mit.edu>
+Date: Thu, 19 Jul 2012 11:08:24 +0800
+Message-ID: <CAN1soZxGUpZQHpt4eg36AKKwAOsryoWkL8keo7kvc_sj+Dz4EA@mail.gmail.com>
+Subject: Re: [PATCH 14/17] [ARM] pxa: remove IRQF_SAMPLE_RANDOM which is now a no-op
 From: Haojian Zhuang <haojian.zhuang@gmail.com>
 To: "Theodore Ts'o" <tytso@mit.edu>
 Cc: Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
@@ -38,7 +37,5 @@ On Wed, Jul 18, 2012 at 5:32 AM, Theodore Ts'o <tytso@mit.edu> wrote:
 > Cc: Russell King <linux@arm.linux.org.uk>
 > Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
 > ---
->  drivers/usb/gadget/pxa25x_udc.c | 12 ++++--------
->  1 file changed, 4 insertions(+), 8 deletions(-)
->
+
 Acked-by: Haojian Zhuang <haojian.zhuang@gmail.com>
