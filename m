@@ -1,95 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751949Ab2GSQ2i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 12:28:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35907 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751559Ab2GSQ2d (ORCPT
+	id S1752072Ab2GSQ2w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 12:28:52 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:46071 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751717Ab2GSQ2u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 12:28:33 -0400
-Message-ID: <500835AB.1090103@canonical.com>
-Date: Thu, 19 Jul 2012 09:28:27 -0700
-From: Stefan Bader <stefan.bader@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Thu, 19 Jul 2012 12:28:50 -0400
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH] net,
+ cgroup: Fix boot failure due to iteration of uninitialized list
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        gaofeng@cn.fujitsu.com, eric.dumazet@gmail.com, nhorman@tuxdriver.com,
+        davem@davemloft.net
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        mark.d.rustad@intel.com, john.r.fastabend@intel.com,
+        lizefan@huawei.com
+Date: Thu, 19 Jul 2012 21:57:37 +0530
+Message-ID: <20120719162532.23505.85946.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>
-CC: WANG Cong <xiyou.wangcong@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: x86/mm: Limit 2/4M size calculation to x86_32
-References: <5000259D.9020303@canonical.com>
-In-Reply-To: <5000259D.9020303@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+x-cbid: 12071906-1396-0000-0000-000001946CBB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/13/2012 06:41 AM, Stefan Bader wrote:
-> I was bisecting a problem on 64bit where any attempt to cause a crash kernel to
-> boot would hang. The bisect ended up on commit 722bc6b (x86/mm: Fix the size
-> calculation of mapping tables) and somehow, looking at the calling function and
-> the ranges printed on boot, I think the calculations should only be done in the
-> 32bit case.
->
-> On 64bit:
-> [    0.000000] init_memory_mapping: [mem 0x00000000-0x77e87fff]
-> [    0.000000]  [mem 0x00000000-0x77dfffff] page 2M
-> [    0.000000]  [mem 0x77e00000-0x77e87fff] page 4k
->
-> Attached patch would fix this if you agree with it. Thanks.
->
+After commit ef209f15 (net: cgroup: fix access the unallocated memory in
+netprio cgroup), boot fails with the following NULL pointer dereference:
 
-Any news on this one? I thought it would be quite simple to check for sanity and 
-not wasting memory sounds like a good thing to do. Even though there is plenty 
-of it around most of the time. ;)
+Initializing cgroup subsys devices
+Initializing cgroup subsys freezer
+Initializing cgroup subsys net_cls
+Initializing cgroup subsys blkio
+Initializing cgroup subsys perf_event
+Initializing cgroup subsys net_prio
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000698
+IP: [<ffffffff8145e8d6>] cgrp_create+0xf6/0x190
+PGD 0
+Oops: 0000 [#1] SMP
+CPU 0
+Modules linked in:
 
--Stefan
+Pid: 0, comm: swapper/0 Not tainted 3.5.0-rc7-mandeep #1 IBM IBM System x -[7870C4Q]-/68Y8033
+RIP: 0010:[<ffffffff8145e8d6>]  [<ffffffff8145e8d6>] cgrp_create+0xf6/0x190
+RSP: 0000:ffffffff81a01ea8  EFLAGS: 00010213
+RAX: 0000000000000000 RBX: ffffffffffffff10 RCX: 0000000000000000
+RDX: 0000000000000000 RSI: 0000000000000246 RDI: ffffffff81aa70a0
+RBP: ffffffff81a01ed8 R08: 0000000000000000 R09: 0000000000000000
+R10: ffff8808ff8641c0 R11: 6e697a696c616974 R12: 0000000000000001
+R13: ffff8808ff8641c0 R14: 0000000000000000 R15: 0000000000093970
+FS:  0000000000000000(0000) GS:ffff8808ffc00000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 0000000000000698 CR3: 0000000001a0b000 CR4: 00000000000006b0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process swapper/0 (pid: 0, threadinfo ffffffff81a00000, task ffffffff81a13420)
+Stack:
+ ffffffff81a01eb8 ffffffff818060ff ffffffff81d75ec8 ffffffff81aa8960
+ ffffffff81aa8960 ffffffff81b4c2c0 ffffffff81a01ef8 ffffffff81b1cb78
+ 0000000000000018 0000000000000048 ffffffff81a01f18 ffffffff81b1ce13
+Call Trace:
+ [<ffffffff81b1cb78>] cgroup_init_subsys+0x83/0x169
+ [<ffffffff81b1ce13>] cgroup_init+0x36/0x119
+ [<ffffffff81affef7>] start_kernel+0x3ba/0x3ef
+ [<ffffffff81aff95b>] ? kernel_init+0x27b/0x27b
+ [<ffffffff81aff356>] x86_64_start_reservations+0x131/0x136
+ [<ffffffff81aff45e>] x86_64_start_kernel+0x103/0x112
+Code: 01 48 3d f8 e1 ec 81 48 8d 98 10 ff ff ff 75 1b eb 73 0f 1f 00 48 8b 83 f0 00 00 00 48 3d f8 e1 ec 81 48 8d 98 10 ff ff ff 74 5a <48> 8b 83 88 07 00 00 48 85 c0 74 de 44 3b 60 10 76 d8 44 89 e6
+RIP  [<ffffffff8145e8d6>] cgrp_create+0xf6/0x190
+ RSP <ffffffff81a01ea8>
+CR2: 0000000000000698
+---[ end trace a7919e7f17c0a725 ]---
+Kernel panic - not syncing: Attempted to kill the idle task!
 
-> -Stefan
->
->
->  From 6b679d1af20656929c0e829f29eed60b0a86a74f Mon Sep 17 00:00:00 2001
-> From: Stefan Bader <stefan.bader@canonical.com>
-> Date: Fri, 13 Jul 2012 15:16:33 +0200
-> Subject: [PATCH] x86/mm: Limit 2/4M size calculation to x86_32
->
-> commit 722bc6b (x86/mm: Fix the size calculation of mapping tables)
-> did modify the extra space calculation for mapping tables in order
-> to make up for the first 2/4M memory range using 4K pages.
-> However this setup is only used when compiling for 32bit. On 64bit
-> there is only the trailing area of 4K pages (which is already added).
->
-> The code was already adapted once for things went wrong on a 8TB
-> machine (bd2753b x86/mm: Only add extra pages count for the first memory
-> range during pre-allocation early page table space), but it looks a bit
-> like it currently would overdo things for 64bit.
-> I only noticed while bisecting for the reason I could not make a crash
-> kernel boot (which ended up on this patch).
->
-> Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
-> Cc: WANG Cong <xiyou.wangcong@gmail.com>
-> Cc: Yinghai Lu <yinghai@kernel.org>
-> Cc: Tejun Heo <tj@kernel.org>
-> ---
-> diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-> index bc4e9d8..636bbfd 100644
-> --- a/arch/x86/mm/init.c
-> +++ b/arch/x86/mm/init.c
-> @@ -60,10 +60,11 @@ static void __init find_early_table_space(struct map_range
-> *mr, unsigned long en
->                  extra = end - ((end>>PMD_SHIFT) << PMD_SHIFT);
->   #ifdef CONFIG_X86_32
->                  extra += PMD_SIZE;
-> -#endif
-> +
->                  /* The first 2/4M doesn't use large pages. */
->                  if (mr->start < PMD_SIZE)
->                          extra += mr->end - mr->start;
-> +#endif
->
->                  ptes = (extra + PAGE_SIZE - 1) >> PAGE_SHIFT;
->          } else
->
+The code corresponds to:
 
+update_netdev_tables():
+        for_each_netdev(&init_net, dev) {
+                map = rtnl_dereference(dev->priomap);  <---- HERE
+
+
+The list head is initialized in netdev_init(), which is called much
+later than cgrp_create(). So the problem is that we are calling
+update_netdev_tables() way too early (in cgrp_create()), which will
+end up traversing the not-yet-circular linked list. So at some point,
+the dev pointer will become NULL and hence dev->priomap becomes an
+invalid access.
+
+To fix this, just remove the update_netdev_tables() function entirely,
+since it appears that write_update_netdev_table() will handle things
+just fine.
+
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
+
+Requesting a thorough review of this patch, since I am not sure whether
+removing update_netdev_tables() is perfectly OK and whether that is the
+right thing to do.
+
+ net/core/netprio_cgroup.c |   32 --------------------------------
+ 1 files changed, 0 insertions(+), 32 deletions(-)
+
+diff --git a/net/core/netprio_cgroup.c b/net/core/netprio_cgroup.c
+index b2e9caa..68fe239 100644
+--- a/net/core/netprio_cgroup.c
++++ b/net/core/netprio_cgroup.c
+@@ -109,32 +109,6 @@ static int write_update_netdev_table(struct net_device *dev)
+ 	return ret;
+ }
+ 
+-static int update_netdev_tables(void)
+-{
+-	int ret = 0;
+-	struct net_device *dev;
+-	u32 max_len;
+-	struct netprio_map *map;
+-
+-	rtnl_lock();
+-	max_len = atomic_read(&max_prioidx) + 1;
+-	for_each_netdev(&init_net, dev) {
+-		map = rtnl_dereference(dev->priomap);
+-		/*
+-		 * don't allocate priomap if we didn't
+-		 * change net_prio.ifpriomap (map == NULL),
+-		 * this will speed up skb_update_prio.
+-		 */
+-		if (map && map->priomap_len < max_len) {
+-			ret = extend_netdev_table(dev, max_len);
+-			if (ret < 0)
+-				break;
+-		}
+-	}
+-	rtnl_unlock();
+-	return ret;
+-}
+-
+ static struct cgroup_subsys_state *cgrp_create(struct cgroup *cgrp)
+ {
+ 	struct cgroup_netprio_state *cs;
+@@ -153,12 +127,6 @@ static struct cgroup_subsys_state *cgrp_create(struct cgroup *cgrp)
+ 		goto out;
+ 	}
+ 
+-	ret = update_netdev_tables();
+-	if (ret < 0) {
+-		put_prioidx(cs->prioidx);
+-		goto out;
+-	}
+-
+ 	return &cs->css;
+ out:
+ 	kfree(cs);
 
