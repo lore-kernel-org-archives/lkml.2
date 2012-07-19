@@ -1,57 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752617Ab2GSRgL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 13:36:11 -0400
-Received: from mail.opencsw.org ([82.220.5.51]:37417 "EHLO mail.opencsw.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752054Ab2GSRgJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 13:36:09 -0400
-X-Greylist: delayed 470 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Jul 2012 13:36:09 EDT
-Date: Thu, 19 Jul 2012 19:28:14 +0200
-From: Attila Kinali <attila@kinali.ch>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Paul Mundt <lethal@linux-sh.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        Linux ARM kernel <linux-arm-kernel@lists.infradead.org>
-Subject: commit 91013923c712e1c: 
- "irqdomain: Replace LEGACY mapping with LINEAR" breaks console on ARM
- i.mx23
-Message-Id: <20120719192814.75ea8beb784bdf8bb32c510c@kinali.ch>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752639Ab2GSRhO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 13:37:14 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:18221 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751718Ab2GSRhK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 13:37:10 -0400
+From: Betty Dall <betty.dall@hp.com>
+To: trivial@kernel.org, linux-kernel@vger.kernel.org,
+        linux-rdma@vger.kernel.org
+Cc: infinipath@qlogic.com, roland@kernel.org, sean.hefty@intel.com,
+        hal.rosenstock@gmail.com, Betty Dall <betty.dall@hp.com>
+Subject: [PATCH] [Trivial] qib: fix an incorrect message
+Date: Thu, 19 Jul 2012 13:34:19 -0600
+Message-Id: <1342726459-2199-1-git-send-email-betty.dall@hp.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+There is a cut and paste typo in the function qib_pci_slot_reset() where
+it prints that the "link_reset" function is called rather than the
+"slot_reset" function. This makes the message misleading.
 
-I'm working on an embedded system based on a Freescale ARM9 processor i.mx23.
+Signed-off-by: Betty Dall <betty.dall@hp.com>
+---
+ drivers/infiniband/hw/qib/qib_pcie.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-While trying linux-next i stumpled over my login prompt getting broken.
-What exactly happens is that the kernel boots normally, but when my
-login prompt should appear it suddenly stops. I bisected it back to 
-the commit 91013923c712e1c4b9b343f0ee4a86ce72b1b630
-irqdomain: Replace LEGACY mapping with LINEAR
-
-Reverting this and the three commits that directly depend on it (see below)
-everything seems to work fine again
-
-commit 91013923c712e1c4b9b343f0ee4a86ce72b1b630
-    irqdomain: Replace LEGACY mapping with LINEAR
-commit 79f3a92c6f1dcbd9aef748252962ec28dab130b8
-    irqdomain: Reserve IRQs for legacy domain
-commit 1fa5b2108e41a2c6be8f22c4d453fa97e1509f07
-    irqdomain: merge linear and tree reverse mappings.
-
-
-				Attila Kinali
-
+diff --git a/drivers/infiniband/hw/qib/qib_pcie.c b/drivers/infiniband/hw/qib/qib_pcie.c
+index 790646e..4f9d918 100644
+--- a/drivers/infiniband/hw/qib/qib_pcie.c
++++ b/drivers/infiniband/hw/qib/qib_pcie.c
+@@ -725,7 +725,7 @@ qib_pci_mmio_enabled(struct pci_dev *pdev)
+ static pci_ers_result_t
+ qib_pci_slot_reset(struct pci_dev *pdev)
+ {
+-	qib_devinfo(pdev, "QIB link_reset function called, ignored\n");
++	qib_devinfo(pdev, "QIB slot_reset function called, ignored\n");
+ 	return PCI_ERS_RESULT_CAN_RECOVER;
+ }
+ 
 -- 
-It is upon moral qualities that a society is ultimately founded. All 
-the prosperity and technological sophistication in the world is of no 
-use without that foundation.
-                 -- Miss Matheson, The Diamond Age, Neil Stephenson
+1.7.7
+
