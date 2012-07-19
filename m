@@ -1,180 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752234Ab2GSVQg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 17:16:36 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50155 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751525Ab2GSVQd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 17:16:33 -0400
-Date: Thu, 19 Jul 2012 14:16:29 -0700
-From: Tejun Heo <tj@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        kvm@vger.kernel.org, Andy Walls <awalls@md.metrocast.net>,
-        ivtv-devel@ivtvdriver.org, linux-media@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        spi-devel-general@lists.sourceforge.net,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 2/2] kthread_worker: reimplement flush_kthread_work() to
- allow freeing the work item being executed
-Message-ID: <20120719211629.GC32763@google.com>
-References: <20120719211510.GA32763@google.com>
+	id S1752021Ab2GSVXK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 17:23:10 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:29462
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751466Ab2GSVXG convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 17:23:06 -0400
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC107.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+X-SpamScore: -10
+X-BigFish: VS-10(zzbb2dI98dI9371I148cI542M1432Izz1202hzz8275dhz2fh2a8h683h839h944hd25hf0ah107ah)
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT003.namprd03.prod.outlook.com;R:internal;EFV:INT
+From: KY Srinivasan <kys@microsoft.com>
+To: "Greg KH (gregkh@linuxfoundation.org)" <gregkh@linuxfoundation.org>
+CC: Paolo Bonzini <pbonzini@redhat.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: RE: 0xB16B00B5? Really? (was Re: Move hyperv out of the
+ drivers/staging/ directory)
+Thread-Topic: 0xB16B00B5? Really? (was Re: Move hyperv out of the
+ drivers/staging/ directory)
+Thread-Index: AQHNYOGVQIU8WaEGMU+rzjsXSQqoHZcv427wgAE/uYCAAABWIA==
+Date: Thu, 19 Jul 2012 21:22:53 +0000
+Message-ID: <426367E2313C2449837CD2DE46E7EAF9235475EE@SN2PRD0310MB382.namprd03.prod.outlook.com>
+References: <1316708240-25048-1-git-send-email-kys@microsoft.com>
+ <20110922170450.GA4490@suse.de>
+ <6E21E5352C11B742B20C142EB499E048081E935D@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <20110922173618.GA5624@suse.de>
+ <6E21E5352C11B742B20C142EB499E048081EB789@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <20111004170415.GA1320@suse.de>
+ <6E21E5352C11B742B20C142EB499E048081EB86F@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <20111004193414.GA15672@suse.de> <4FFFF711.8040003@redhat.com>
+ <426367E2313C2449837CD2DE46E7EAF923547292@SN2PRD0310MB382.namprd03.prod.outlook.com>
+ <20120719210709.GA32031@kroah.com>
+In-Reply-To: <20120719210709.GA32031@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [108.24.39.100]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120719211510.GA32763@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OrganizationHeadersPreserved: SN2PRD0310HT003.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LISTS.OSDL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14HUBC107.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14HUBC107.redmond.corp.microsoft.com
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 06f9a06f4aeecdb9d07014713ab41b548ae219b5 Mon Sep 17 00:00:00 2001
-From: Tejun Heo <tj@kernel.org>
-Date: Thu, 19 Jul 2012 13:52:53 -0700
 
-kthread_worker provides minimalistic workqueue-like interface for
-users which need a dedicated worker thread (e.g. for realtime
-priority).  It has basic queue, flush_work, flush_worker operations
-which mostly match the workqueue counterparts; however, due to the way
-flush_work() is implemented, it has a noticeable difference of not
-allowing work items to be freed while being executed.
 
-While the current users of kthread_worker are okay with the current
-behavior, the restriction does impede some valid use cases.  Also,
-removing this difference isn't difficult and actually makes the code
-easier to understand.
+> -----Original Message-----
+> From: Greg KH (gregkh@linuxfoundation.org)
+> [mailto:gregkh@linuxfoundation.org]
+> Sent: Thursday, July 19, 2012 5:07 PM
+> To: KY Srinivasan
+> Cc: Paolo Bonzini; devel@linuxdriverproject.org; linux-kernel@vger.kernel.org;
+> virtualization@lists.osdl.org
+> Subject: Re: 0xB16B00B5? Really? (was Re: Move hyperv out of the
+> drivers/staging/ directory)
+> 
+> On Thu, Jul 19, 2012 at 02:11:47AM +0000, KY Srinivasan wrote:
+> >
+> >
+> > > -----Original Message-----
+> > > From: Paolo Bonzini [mailto:paolo.bonzini@gmail.com] On Behalf Of Paolo
+> > > Bonzini
+> > > Sent: Friday, July 13, 2012 6:23 AM
+> > > To: KY Srinivasan
+> > > Cc: Greg KH; devel@linuxdriverproject.org; linux-kernel@vger.kernel.org;
+> > > virtualization@lists.osdl.org
+> > > Subject: 0xB16B00B5? Really? (was Re: Move hyperv out of the
+> drivers/staging/
+> > > directory)
+> > >
+> > > Il 04/10/2011 21:34, Greg KH ha scritto:
+> > > > diff --git a/drivers/staging/hv/hyperv_vmbus.h
+> b/drivers/hv/hyperv_vmbus.h
+> > > > similarity index 99%
+> > > > rename from drivers/staging/hv/hyperv_vmbus.h
+> > > > rename to drivers/hv/hyperv_vmbus.h
+> > > > index 3d2d836..8261cb6 100644
+> > > > --- a/drivers/staging/hv/hyperv_vmbus.h
+> > > > +++ b/drivers/hv/hyperv_vmbus.h
+> > > > @@ -28,8 +28,7 @@
+> > > >  #include <linux/list.h>
+> > > >  #include <asm/sync_bitops.h>
+> > > >  #include <linux/atomic.h>
+> > > > -
+> > > > -#include "hyperv.h"
+> > > > +#include <linux/hyperv.h>
+> > > >
+> > > >  /*
+> > > >   * The below CPUID leaves are present if
+> > > VersionAndFeatures.HypervisorPresent
+> > >
+> > > git's rename detection snips away this gem:
+> > >
+> > > +#define HV_LINUX_GUEST_ID_LO		0x00000000
+> > > +#define HV_LINUX_GUEST_ID_HI		0xB16B00B5
+> > > +#define HV_LINUX_GUEST_ID		(((u64)HV_LINUX_GUEST_ID_HI
+> > > << 32) | \
+> > > +					   HV_LINUX_GUEST_ID_LO)
+> > >
+> > > Somone was trying to be funny, I guess.
+> > >
+> > > KY, I suppose you have access to Hyper-V code or can ask someone who
+> does.
+> > > Is this signature actually used in the Hyper-V host code?
+> >
+> > Paolo,
+> >
+> > As I noted earlier, this is just a guest ID that needs to be registered with the
+> > hypervisor.  Thanks  for reporting this issue and on behalf of Microsoft, I would
+> > like to  apologize for this offensive string. I have submitted a patch to fix this
+> issue.
+> 
+> You only changed it to be in decimal, you did not change the id at all.
+> Is there some reason why you can not change it?  You said there was a
+> reserved range of ids that could be used, perhaps just pick another one?
+> What is the valid range that can be used here?
 
-This patch reimplements flush_kthread_work() such that it uses a
-flush_work item instead of queue/done sequence numbers.
+Greg,
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- include/linux/kthread.h |    8 +-----
- kernel/kthread.c        |   48 ++++++++++++++++++++++++++--------------------
- 2 files changed, 29 insertions(+), 27 deletions(-)
+As you know, this ID has been in use for a long time now. While the hypervisor
+does not interpret the guest ID that is registered, I am not sure what dependencies
+there might be on this value. That is the reason I am reluctant to change the value.
+Since the hex representation of this constant was what was offensive, changing it to
+a decimal number would not break anything while simultaneously addressing the issue
+Paolo brought up. 
 
-diff --git a/include/linux/kthread.h b/include/linux/kthread.h
-index 0714b24..22ccf9d 100644
---- a/include/linux/kthread.h
-+++ b/include/linux/kthread.h
-@@ -49,8 +49,6 @@ extern int tsk_fork_get_node(struct task_struct *tsk);
-  * can be queued and flushed using queue/flush_kthread_work()
-  * respectively.  Queued kthread_works are processed by a kthread
-  * running kthread_worker_fn().
-- *
-- * A kthread_work can't be freed while it is executing.
-  */
- struct kthread_work;
- typedef void (*kthread_work_func_t)(struct kthread_work *work);
-@@ -59,15 +57,14 @@ struct kthread_worker {
- 	spinlock_t		lock;
- 	struct list_head	work_list;
- 	struct task_struct	*task;
-+	struct kthread_work	*current_work;
- };
- 
- struct kthread_work {
- 	struct list_head	node;
- 	kthread_work_func_t	func;
- 	wait_queue_head_t	done;
--	atomic_t		flushing;
--	int			queue_seq;
--	int			done_seq;
-+	struct kthread_worker	*worker;
- };
- 
- #define KTHREAD_WORKER_INIT(worker)	{				\
-@@ -79,7 +76,6 @@ struct kthread_work {
- 	.node = LIST_HEAD_INIT((work).node),				\
- 	.func = (fn),							\
- 	.done = __WAIT_QUEUE_HEAD_INITIALIZER((work).done),		\
--	.flushing = ATOMIC_INIT(0),					\
- 	}
- 
- #define DEFINE_KTHREAD_WORKER(worker)					\
-diff --git a/kernel/kthread.c b/kernel/kthread.c
-index 7b8a678..4034b2b 100644
---- a/kernel/kthread.c
-+++ b/kernel/kthread.c
-@@ -360,16 +360,12 @@ repeat:
- 					struct kthread_work, node);
- 		list_del_init(&work->node);
- 	}
-+	worker->current_work = work;
- 	spin_unlock_irq(&worker->lock);
- 
- 	if (work) {
- 		__set_current_state(TASK_RUNNING);
- 		work->func(work);
--		smp_wmb();	/* wmb worker-b0 paired with flush-b1 */
--		work->done_seq = work->queue_seq;
--		smp_mb();	/* mb worker-b1 paired with flush-b0 */
--		if (atomic_read(&work->flushing))
--			wake_up_all(&work->done);
- 	} else if (!freezing(current))
- 		schedule();
- 
-@@ -384,7 +380,7 @@ static void insert_kthread_work(struct kthread_worker *worker,
- 			       struct list_head *pos)
- {
- 	list_add_tail(&work->node, pos);
--	work->queue_seq++;
-+	work->worker = worker;
- 	if (likely(worker->task))
- 		wake_up_process(worker->task);
- }
-@@ -434,25 +430,35 @@ static void kthread_flush_work_fn(struct kthread_work *work)
-  */
- void flush_kthread_work(struct kthread_work *work)
- {
--	int seq = work->queue_seq;
-+	struct kthread_flush_work fwork = {
-+		KTHREAD_WORK_INIT(fwork.work, kthread_flush_work_fn),
-+		COMPLETION_INITIALIZER_ONSTACK(fwork.done),
-+	};
-+	struct kthread_worker *worker;
-+	bool noop = false;
-+
-+retry:
-+	worker = work->worker;
-+	if (!worker)
-+		return;
- 
--	atomic_inc(&work->flushing);
-+	spin_lock_irq(&worker->lock);
-+	if (work->worker != worker) {
-+		spin_unlock_irq(&worker->lock);
-+		goto retry;
-+	}
- 
--	/*
--	 * mb flush-b0 paired with worker-b1, to make sure either
--	 * worker sees the above increment or we see done_seq update.
--	 */
--	smp_mb__after_atomic_inc();
-+	if (!list_empty(&work->node))
-+		insert_kthread_work(worker, &fwork.work, work->node.next);
-+	else if (worker->current_work == work)
-+		insert_kthread_work(worker, &fwork.work, worker->work_list.next);
-+	else
-+		noop = true;
- 
--	/* A - B <= 0 tests whether B is in front of A regardless of overflow */
--	wait_event(work->done, seq - work->done_seq <= 0);
--	atomic_dec(&work->flushing);
-+	spin_unlock_irq(&worker->lock);
- 
--	/*
--	 * rmb flush-b1 paired with worker-b0, to make sure our caller
--	 * sees every change made by work->func().
--	 */
--	smp_mb__after_atomic_dec();
-+	if (!noop)
-+		wait_for_completion(&fwork.done);
- }
- EXPORT_SYMBOL_GPL(flush_kthread_work);
- 
--- 
-1.7.7.3
+
+Regards,
+
+K. Y 
+
+
 
