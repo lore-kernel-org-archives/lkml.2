@@ -1,41 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751594Ab2GSU6u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 16:58:50 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:64118 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751014Ab2GSU6t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 16:58:49 -0400
+	id S1751859Ab2GSVB2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 17:01:28 -0400
+Received: from mail.eladian.com ([64.140.252.105]:48353 "EHLO mail.eladian.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751287Ab2GSVB0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 17:01:26 -0400
+X-Greylist: delayed 480 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Jul 2012 17:01:26 EDT
+X-Amavis-Modified: Mail body modified (using disclaimer) - mail.eladian.com
+Date: Thu, 19 Jul 2012 16:53:26 -0400 (EDT)
+From: Daniel Wisehart <daniel.wisehart@eladian.com>
+To: linux-kernel@vger.kernel.org
+Cc: dm-devel@redhat.com
+Subject: [Bcache v14 PATCH] fix compiler error
+Message-ID: <0d1ae163-7cde-4a78-852a-04fba827249f@mail.eladian.com>
+In-Reply-To: <1abe2159-2201-46c4-9c60-afc4f358ff6a@mail.eladian.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-In-Reply-To: <50045DD4.3090305@oberhumer.com>
-References: <1326414530-10789-1-git-send-email-andi@firstfloor.org>
-	<4F16DFB0.2060404@oberhumer.com>
-	<50045DD4.3090305@oberhumer.com>
-Date: Thu, 19 Jul 2012 22:58:47 +0200
-Message-ID: <CAFLxGvwZJF1r30h26sJxu_dHF05LRjR5WSDPxFL3YBg9oR+o6A@mail.gmail.com>
-Subject: Re: ANNOUNCE: linux-kernel-lzo-20120716 - update LZO
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: "Markus F.X.J. Oberhumer" <markus@oberhumer.com>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        chris.mason@oracle.com, linux-btrfs@vger.kernel.org,
-        Nitin Gupta <ngupta@vflare.org>,
-        Richard Purdie <rpurdie@openedhand.com>
-Content-Type: text/plain; charset=ISO-8859-1
+X-Mailer: Zimbra 7.1.3_GA_3374 (ZimbraWebClient - GC19 (Linux)/7.1.3_GA_3346)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Hello Kent, 
 
-On Mon, Jul 16, 2012 at 8:30 PM, Markus F.X.J. Oberhumer
-<markus@oberhumer.com> wrote:
-> I encourage all compression users to test and benchmark this new version,
-> and I also would ask some official LZO maintainer to convert the updated
-> source files into a GIT commit and possibly push it to Linus or linux-next.
+This patch keeps gcc 4.7.0 happy.  The static function dump_bset() could be moved, but that would have made a bigger patch.  :-)
 
-You could also send a patch yourself. :-)
-
--- 
 Thanks,
-//richard
+Daniel
+
+
+
+diff --git a/drivers/md/bcache/debug.c b/drivers/md/bcache/debug.c
+index 3c9c24d..4dc0ba5 100644
+--- a/drivers/md/bcache/debug.c
++++ b/drivers/md/bcache/debug.c
+@@ -83,6 +83,8 @@ struct keyprint_hack bch_pbtree(const struct btree *b)
+ 
+ #ifdef CONFIG_BCACHE_DEBUG
+ 
++static void dump_bset(struct btree *b, struct bset *i);
++
+ void bch_btree_verify(struct btree *b, struct bset *new)
+ {
+        struct btree *v = b->c->verify_data;
+
+
+This communication is restricted - please see http://www.eladian.com for further information.
