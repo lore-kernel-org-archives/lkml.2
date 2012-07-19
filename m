@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755530Ab2GSB5m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 21:57:42 -0400
-Received: from mail132.messagelabs.com ([216.82.242.115]:54598 "EHLO
-	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751566Ab2GSB5k (ORCPT
+	id S1755649Ab2GSB57 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 21:57:59 -0400
+Received: from mail131.messagelabs.com ([216.82.242.99]:18044 "EHLO
+	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751566Ab2GSB54 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 21:57:40 -0400
+	Wed, 18 Jul 2012 21:57:56 -0400
 X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-11.tower-132.messagelabs.com!1342663058!14781437!2
-X-Originating-IP: [216.166.12.99]
+X-Msg-Ref: server-15.tower-131.messagelabs.com!1342663075!25531478!1
+X-Originating-IP: [216.166.12.178]
 X-StarScan-Version: 6.5.10; banners=-,-,-
 X-VirusChecked: Checked
 From: H Hartley Sweeten <hartleys@visionengravers.com>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 64/90] staging: comedi: daqboard2000: void *plx should be a void __iomem *
-Date: Wed, 18 Jul 2012 18:57:28 -0700
+Subject: [PATCH 65/90] staging: comedi: dt3000: cleanup "find pci device" code
+Date: Wed, 18 Jul 2012 18:57:49 -0700
 User-Agent: KMail/1.9.9
 CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
         <gregkh@linuxfoundation.org>
@@ -23,35 +23,156 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Message-ID: <201207181857.28697.hartleys@visionengravers.com>
+Message-ID: <201207181857.50208.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The private data variable 'plx' is an ioremap'ed pci resource and
-should be a void __iomem *. This quiets a number of sparse warnings
-about "different address spaces".
+The "find pci device" code for this driver was split between
+two functions which could cause the driver to walk the pci
+bus multiple times while looking for a match.
+
+Consolidate the functions into the format that is more
+standard for the comedi pci drivers.
 
 Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 Cc: Ian Abbott <abbotti@mev.co.uk>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/staging/comedi/drivers/daqboard2000.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/comedi/drivers/dt3000.c | 85 ++++++++++++---------------------
+ 1 file changed, 31 insertions(+), 54 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/daqboard2000.c b/drivers/staging/comedi/drivers/daqboard2000.c
-index ba61e32..ef28385 100644
---- a/drivers/staging/comedi/drivers/daqboard2000.c
-+++ b/drivers/staging/comedi/drivers/daqboard2000.c
-@@ -318,7 +318,7 @@ struct daqboard2000_private {
- 		card_daqboard_2000
- 	} card;
- 	void *daq;
--	void *plx;
-+	void __iomem *plx;
- 	unsigned int ao_readback[2];
+diff --git a/drivers/staging/comedi/drivers/dt3000.c b/drivers/staging/comedi/drivers/dt3000.c
+index d1d99a3..10b43a2 100644
+--- a/drivers/staging/comedi/drivers/dt3000.c
++++ b/drivers/staging/comedi/drivers/dt3000.c
+@@ -159,7 +159,6 @@ static const struct dt3k_boardtype dt3k_boardtypes[] = {
+ 	 },
  };
  
+-#define n_dt3k_boards sizeof(dt3k_boardtypes)/sizeof(struct dt3k_boardtype)
+ #define this_board ((const struct dt3k_boardtype *)dev->board_ptr)
+ 
+ #define DT3000_SIZE		(4*0x1000)
+@@ -797,87 +796,65 @@ static int setup_pci(struct comedi_device *dev)
+ 	return 0;
+ }
+ 
+-static struct pci_dev *dt_pci_find_device(struct pci_dev *from, int *board)
++static struct pci_dev *dt3000_find_pci_dev(struct comedi_device *dev,
++					   struct comedi_devconfig *it)
+ {
++	struct pci_dev *pcidev = NULL;
++	int bus = it->options[0];
++	int slot = it->options[1];
+ 	int i;
+ 
+-	for (from = pci_get_device(PCI_VENDOR_ID_DT, PCI_ANY_ID, from);
+-	     from != NULL;
+-	     from = pci_get_device(PCI_VENDOR_ID_DT, PCI_ANY_ID, from)) {
+-		for (i = 0; i < n_dt3k_boards; i++) {
+-			if (from->device == dt3k_boardtypes[i].device_id) {
+-				*board = i;
+-				return from;
+-			}
++	for_each_pci_dev(pcidev) {
++		if (bus || slot) {
++			if (bus != pcidev->bus->number ||
++			    slot != PCI_SLOT(pcidev->devfn))
++				continue;
+ 		}
+-		printk
+-		    ("unknown Data Translation PCI device found with device_id=0x%04x\n",
+-		     from->device);
+-	}
+-	*board = -1;
+-	return from;
+-}
+-
+-static int dt_pci_probe(struct comedi_device *dev, int bus, int slot)
+-{
+-	int board;
+-	int ret;
+-	struct pci_dev *pcidev;
+-
+-	pcidev = NULL;
+-	while ((pcidev = dt_pci_find_device(pcidev, &board)) != NULL) {
+-		if ((bus == 0 && slot == 0) ||
+-		    (pcidev->bus->number == bus &&
+-		     PCI_SLOT(pcidev->devfn) == slot)) {
+-			break;
++		if (pcidev->vendor != PCI_VENDOR_ID_DT)
++			continue;
++		for (i = 0; i < ARRAY_SIZE(dt3k_boardtypes); i++) {
++			if (dt3k_boardtypes[i].device_id != pcidev->device)
++				continue;
++			dev->board_ptr = dt3k_boardtypes + i;
++			return pcidev;
+ 		}
+ 	}
+-	devpriv->pci_dev = pcidev;
+-
+-	if (board >= 0)
+-		dev->board_ptr = dt3k_boardtypes + board;
+-
+-	if (!devpriv->pci_dev)
+-		return 0;
+-
+-	ret = setup_pci(dev);
+-	if (ret < 0)
+-		return ret;
+-
+-	return 1;
++	dev_err(dev->class_dev,
++		"No supported board found! (req. bus %d, slot %d)\n",
++		bus, slot);
++	return NULL;
+ }
+ 
+ static int dt3000_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ {
++	struct pci_dev *pcidev;
+ 	struct comedi_subdevice *s;
+-	int bus, slot;
+ 	int ret = 0;
+ 
+ 	dev_dbg(dev->class_dev, "dt3000:\n");
+-	bus = it->options[0];
+-	slot = it->options[1];
+ 
+ 	ret = alloc_private(dev, sizeof(struct dt3k_private));
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	ret = dt_pci_probe(dev, bus, slot);
++	pcidev = dt3000_find_pci_dev(dev, it);
++	if (!pcidev)
++		return -EIO;
++	devpriv->pci_dev = pcidev;
++
++	ret = setup_pci(dev);
+ 	if (ret < 0)
+ 		return ret;
+-	if (ret == 0) {
+-		dev_warn(dev->class_dev, "no DT board found\n");
+-		return -ENODEV;
+-	}
+ 
+ 	dev->board_name = this_board->name;
+ 
+-	if (request_irq(devpriv->pci_dev->irq, dt3k_interrupt, IRQF_SHARED,
++	if (request_irq(pcidev->irq, dt3k_interrupt, IRQF_SHARED,
+ 			"dt3000", dev)) {
+ 		dev_err(dev->class_dev, "unable to allocate IRQ %u\n",
+-			devpriv->pci_dev->irq);
++			pcidev->irq);
+ 		return -EINVAL;
+ 	}
+-	dev->irq = devpriv->pci_dev->irq;
++	dev->irq = pcidev->irq;
+ 
+ 	ret = comedi_alloc_subdevices(dev, 4);
+ 	if (ret)
 -- 
 1.7.11
 
