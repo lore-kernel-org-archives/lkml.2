@@ -1,159 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751844Ab2GSAnE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 20:43:04 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:38698 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751031Ab2GSAm7 (ORCPT
+	id S1752222Ab2GSBAI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 21:00:08 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:44103 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751558Ab2GSBAE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 20:42:59 -0400
-Message-ID: <1342658296.3010.136.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 1/4] ACPI: Add acpi_pr_<level>() interfaces
-From: Toshi Kani <toshi.kani@hp.com>
-To: shuah.khan@hp.com
-Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bhelgaas@google.com, isimatu.yasuaki@jp.fujitsu.com, liuj97@gmail.com,
-        srivatsa.bhat@linux.vnet.ibm.com, prarit@redhat.com,
-        imammedo@redhat.com, vijaymohan.pandarathil@hp.com,
-        shuahkhan@gmail.com
-Date: Wed, 18 Jul 2012 18:38:16 -0600
-In-Reply-To: <1342653482.5138.56.camel@lorien2>
-References: <1342644027-19559-1-git-send-email-toshi.kani@hp.com>
-	 <1342644027-19559-2-git-send-email-toshi.kani@hp.com>
-	 <1342648771.5138.37.camel@lorien2>
-	 <1342650386.3010.55.camel@misato.fc.hp.com>
-	 <1342651257.5138.44.camel@lorien2>
-	 <1342651966.3010.66.camel@misato.fc.hp.com>
-	 <1342653482.5138.56.camel@lorien2>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
+	Wed, 18 Jul 2012 21:00:04 -0400
+Message-ID: <1342659596.11373.58.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH firmware] rtl_nic: update firmware for RTL8168G
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Hayes Wang <hayeswang@realtek.com>
+Cc: dwmw2@infradead.org, romieu@fr.zoreil.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 19 Jul 2012 01:59:56 +0100
+In-Reply-To: <1342008603-1279-1-git-send-email-hayeswang@realtek.com>
+References: <1341878937.25597.309.camel@deadeye.wl.decadent.org.uk>
+	 <1342008603-1279-1-git-send-email-hayeswang@realtek.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-TU07qcM3HsgQ8Rb64PB0"
+X-Mailer: Evolution 3.4.3-1 
 Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.2.109
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-18 at 17:18 -0600, Shuah Khan wrote:
-> On Wed, 2012-07-18 at 16:52 -0600, Toshi Kani wrote:
-> > On Wed, 2012-07-18 at 16:40 -0600, Shuah Khan wrote:
-> > > On Wed, 2012-07-18 at 16:26 -0600, Toshi Kani wrote:
-> > > > On Wed, 2012-07-18 at 15:59 -0600, Shuah Khan wrote:
-> > > > > On Wed, 2012-07-18 at 14:40 -0600, Toshi Kani wrote:
-> > > > > > This patch introduces acpi_pr_<level>(), where <level> is a message
-> > > > > > level such as err/warn/info, to support improved logging messages
-> > > > > > for ACPI, esp. in hotplug operations.  acpi_pr_<level>() appends
-> > > > > > "ACPI" prefix and ACPI object path to the messages.  This improves
-> > > > > > diagnostics in hotplug operations since it identifies an object that
-> > > > > > caused an issue in a log file.
-> > > > > > 
-> > > > > > acpi_pr_<level>() takes acpi_handle as an argument, which is passed
-> > > > > > to ACPI hotplug notify handlers from the ACPI CA.  Therefore, it is
-> > > > > > always available unlike other kernel objects, such as device.
-> > > > > > 
-> > > > > > For example, the statement below
-> > > > > >   acpi_pr_err(handle, "Device don't exist, dropping EJECT\n");
-> > > > > > logs an error message like this:
-> > > > > >   ACPI: \_SB_.SCK4.CPU4: Device don't exist, dropping EJECT
-> > > > > > 
-> > > > > > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-> > > > > > ---
-> > > > > >  drivers/acpi/utils.c    |   32 ++++++++++++++++++++++++++++++++
-> > > > > >  include/acpi/acpi_bus.h |   18 ++++++++++++++++++
-> > > > > >  2 files changed, 50 insertions(+), 0 deletions(-)
-> > > > > > 
-> > > > > > diff --git a/drivers/acpi/utils.c b/drivers/acpi/utils.c
-> > > > > > index 3e87c9c..4097266 100644
-> > > > > > --- a/drivers/acpi/utils.c
-> > > > > > +++ b/drivers/acpi/utils.c
-> > > > > > @@ -454,3 +454,35 @@ acpi_evaluate_hotplug_ost(acpi_handle handle, u32 source_event,
-> > > > > >  #endif
-> > > > > >  }
-> > > > > >  EXPORT_SYMBOL(acpi_evaluate_hotplug_ost);
-> > > > > > +
-> > > > > > +/**
-> > > > > > + * acpi_printk: Print messages with ACPI prefix and object path
-> > > > > > + *
-> > > > > > + * This function is intended to be called through acpi_pr_<level> macros.
-> > > > > > + */
-> > > > > > +void
-> > > > > > +acpi_printk(const char *level, acpi_handle handle, const char *fmt, ...)
-> > > > > > +{
-> > > > > > +	struct va_format vaf;
-> > > > > > +	va_list args;
-> > > > > > +	struct acpi_buffer buffer = {ACPI_ALLOCATE_BUFFER};
-> > > > > > +	char *path;
-> > > > > > +	acpi_status ret;
-> > > > > > +
-> > > > > > +	va_start(args, fmt);
-> > > > > > +
-> > > > > > +	vaf.fmt = fmt;
-> > > > > > +	vaf.va = &args;
-> > > > > > +
-> > > > > > +	ret = acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
-> > > > > 
-> > > > > One big problem I see with this approach is now each acpi_printk() will
-> > > > > result in a call to acpi_get_name() which will invoke several ACPI
-> > > > > calls, including a call to acpi_ut_initialize_buffer() which allocates
-> > > > > buffer. Is this really warranted? What is the performance impact of this
-> > > > > change?
-> > > > 
-> > > > Hi Shuah,
-> > > > 
-> > > > This interface is intended to be used by acpi_pr_<level>(), which is
-> > > > used for error, warning, debugging, etc.  It is not intended to be used
-> > > > in any performance path.
-> > > > 
-> > > 
-> > > How does one enable this interface to see errors, warns, debugging? Is
-> > > there a special mode kernel needs to run in? I am trying to understand
-> > > what you mean by "not intended to be used in any performance path". Does
-> > > one build a special kernel similar to CONFIG_VM_DEBUG (just happen to
-> > > the one I could think off) ?
-> > 
-> > acpi_pr_<level>() calls printk() with a corresponding message level,
-> > such as KERN_ERR, KERN_WARNING and KERN_DEBUG, which is by definition
-> > used for error, warning and debugging messages.  Let me know if the
-> > change log was not clear about this.  Anyway, I think one should not use
-> > a printk() in performance path in the first place...
-> 
-> KERN_ERR, KERN_WARNING, and KERN_DEBUG are used at run-time. What
-> happens when these new interfaces start getting used widely during
-> run-time. In the case of a serious error, shouldn't the kernel do the
-> minimum to print the message out and not call several acpi routines?
 
-acpi_pr_<level>() does not replace pr_<level>().  When the kernel needs
-the minimum to print the message out, it can continue to use the regular
-pr_<level>() interface.
+--=-TU07qcM3HsgQ8Rb64PB0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> This type of feature definitely makes sense for debug, but not for other
-> cases KERN_ERR, KERN_WARNING case.
+On Wed, 2012-07-11 at 20:10 +0800, Hayes Wang wrote:
+> File: rtl_nic/rtl8168g-1.fw
+> Version: 0.0.2
+>=20
+> Change the ocp_base of linux driver to OCP_STD_PHY_BASE after setting
+> firmware. The firmware would modify the ocp_base, and that results the
+> driver uses the wrong ocp_base to access standard phy after setting
+> firmware.
+>=20
+> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+[...]
 
-Can you elaborate why you think this interface does not make sense for
-KERN_ERR and KERN_WARNING?  As described in the change log, we need to
-know which object caused an error in order to diagnose an issue.  This
-is a critical piece of the information to start analyzing.
+Applied, thanks.
 
-Without this interface, error paths in the hotplug handlers would have
-to call acpi_get_name() by itself in order to log the same information.
-This is much more complicated and is not saving any time.
+Ben.
 
-> My concern is all the extra work that is done whenever one of these
-> interfaces is called. Can we limit this to special debug cases only.
+--=20
+Ben Hutchings
+DNRC Motto:  I can please only one person per day.
+Today is not your day.  Tomorrow isn't looking good either.
 
-This interface is defined in acpi/acpi_bus.h, which is intended for ACPI
-drivers which make many ACPI calls to proceed when they are called at
-run-time today.  This interface does not change that, and I believe
-acpi_get_name() is much faster compared to ACPI method calls these ACPI
-drivers make in their normal code path.  The extra work to call
-acpi_get_name() is simply a noise in this case (if you try to measure),
-and the use of this interface is limited in error paths of such ACPI
-drivers.
+--=-TU07qcM3HsgQ8Rb64PB0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-Thanks,
--Toshi
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIVAwUAUAdcDOe/yOyVhhEJAQoEnA//QcOSqIJfivn8ImOt0qfbSav4PXFvmDBE
+ujQuSZaFwdDQkz56OLyUei56EvS/N4LSNoqEcUKZTGNun7Lgq8mBOZ6TfVu8Wt6P
+Bk8lUSbtEQ/CiAiALFwbzp+KRM/tMRh+VOpVp8t+7umbR3TZ4gn0cpWukRdWv/um
+dTC6k78egzwp4DhSwz+70ZOAMuHvHGZlc1dZMNjzlzYoK8C5y4ym2j6wE1Gwyg6N
+fGCI6P+mLrfuaN1TqIIcnH/QDrUu8nQ0ao/lxe9ZIJrwxE8mUbyBmp6F3n16sJt5
+RydqaY678IJNi+gSHF7AgOf68+yEYS9sK9IpBr69J72Dcg0X4N+Ivf0J2Myn70zA
+Qvtk/jciUXlWONt/8isrI10sgFCV6b2P28owCBmn05vYQfnrubmLB5FO6lDMvuIl
+RgkQsRkUTwHYU6k9EfM8C+TZoUEEzQweArHx0x0e98QIr1FA1JSBVvPuxaT5DD6/
++qrPC9z/GWvoycJlRWOInO6fVSvM5l4DxgE4DXZYLBMjOYOzdu2+l8do4lDhLkbR
+agJjgLmtWDrKmQMfrkV4s842XwCaFDjWzErppfj/JoFmvBG36/MptPC3OUnXM63f
+xeDQh4IfJ10/wvs9XwbWWdSsphBk4EVUhO7vpvyCXyEWQ6jWcG4L2atQv8aduvDU
+MBkRk+IMyaY=
+=JDZl
+-----END PGP SIGNATURE-----
 
-> -- Shuah
-> 
-
-
+--=-TU07qcM3HsgQ8Rb64PB0--
