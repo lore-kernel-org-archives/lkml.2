@@ -1,46 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753873Ab2GSKKr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 06:10:47 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:44295 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750782Ab2GSKKp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 06:10:45 -0400
-Message-ID: <5007DD1F.4040703@mev.co.uk>
-Date: Thu, 19 Jul 2012 11:10:39 +0100
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120616 Thunderbird/13.0
+	id S1753925Ab2GSKLh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 06:11:37 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36372 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750782Ab2GSKLf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 06:11:35 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <5007DCBF.7070804@jp.fujitsu.com>
+Date: Thu, 19 Jul 2012 19:09:03 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Ian Abbott <ian.abbott@mev.co.uk>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 30/90] staging: comedi: amplc_dio200: store the pci_dev
- in the comedi_device
-References: <201207181837.50650.hartleys@visionengravers.com>
-In-Reply-To: <201207181837.50650.hartleys@visionengravers.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Minchan Kim <minchan@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Mel Gorman <mgorman@suse.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Aaditya Kumar <aaditya.kumar@ap.sony.com>
+Subject: Re: [PATCH 3/3 v3] memory-hotplug: fix kswapd looping forever problem
+References: <1342061449-29590-1-git-send-email-minchan@kernel.org> <1342061449-29590-3-git-send-email-minchan@kernel.org> <20120712140154.72766586.akpm@linux-foundation.org>
+In-Reply-To: <20120712140154.72766586.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-07-19 02:37, H Hartley Sweeten wrote:
-> Use the hw_dev pointer in the comedi_device struct to hold the
-> pci_dev instead of carrying it in the private data.
+
+> From: Andrew Morton <akpm@linux-foundation.org>
+> Subject: memory-hotplug-fix-kswapd-looping-forever-problem-fix
 >
-> Since the pci_dev is no longer held in the provate data, we can
-> also cleanup the detach a bit. Remove the IS_ENABLED() tests in
-> the detach. If the pci_dev is non NULL it's a PCI device otherwise
-> it's an ISA device. Using IS_ENABLED() to omit the code paths
-> makes the code a bit confusing and doesn't save much.
+> simplify nr_zone_isolate_freepages(), rework zone_watermark_ok_safe() comment, simplify set_pageblock_isolate() and restore_pageblock_isolate().
+>
+> Cc: Aaditya Kumar <aaditya.kumar.30@gmail.com>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Cc: Minchan Kim <minchan@kernel.org>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 
-No, you really need to check thisboard->bustype in the detach() because 
-hw_dev might be NULL for a PCI board if the attach() failed.
-
--- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
-
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
