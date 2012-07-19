@@ -1,76 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753793Ab2GSJE0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 05:04:26 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:47711 "EHLO ogre.sisk.pl"
+	id S1753918Ab2GSJEs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 05:04:48 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:39550 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751939Ab2GSJEW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 05:04:22 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Colin Cross <ccross@android.com>
-Subject: Re: [PATCH] PM / Sleep: call early resume handlers when suspend_noirq fails
-Date: Thu, 19 Jul 2012 11:10:01 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1342663694-3645-1-git-send-email-ccross@android.com>
-In-Reply-To: <1342663694-3645-1-git-send-email-ccross@android.com>
+	id S1751939Ab2GSJEq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 05:04:46 -0400
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/2] regmap-irq: use mask and val rather than using
+ mask_buf_def
+Thread-Topic: [PATCH 1/2] regmap-irq: use mask and val rather than using
+ mask_buf_def
+Thread-Index: Ac1ljYQFicWxq94xTEeL04V0LuZRag==
+Date: Thu, 19 Jul 2012 09:04:39 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998FD99F@DQHE02.ent.ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-cr-hashedpuzzle: AfDE A03h BNGg Bg3K B1CC Cc70 DDNL FDNd H8lX KS7O MUgO
+ MbNy PwMA UAWD Ue62
+ VKuF;2;YgByAG8AbwBuAGkAZQBAAG8AcABlAG4AcwBvAHUAcgBjAGUALgB3AG8AbABmAHMAbwBuAG0AaQBjAHIAbwAuAGMAbwBtADsAbABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA=;Sosha1_v1;7;{1924FBFA-BB3C-4DD4-885C-C384C78FC893};bQBpAGwAbwAuAGsAaQBtAEAAdABpAC4AYwBvAG0A;Thu,
+ 19 Jul 2012 09:04:34
+ GMT;WwBQAEEAVABDAEgAIAAxAC8AMgBdACAAcgBlAGcAbQBhAHAALQBpAHIAcQA6ACAAdQBzAGUAIABtAGEAcwBrACAAYQBuAGQAIAB2AGEAbAAgAHIAYQB0AGgAZQByACAAdABoAGEAbgAgAHUAcwBpAG4AZwAgAG0AYQBzAGsAXwBiAHUAZgBfAGQAZQBmAA==
+x-cr-puzzleid: {1924FBFA-BB3C-4DD4-885C-C384C78FC893}
+x-originating-ip: [157.87.177.86]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207191110.01193.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, July 19, 2012, Colin Cross wrote:
-> Commit cf579dfb82550e34de7ccf3ef090d8b834ccd3a9 (PM / Sleep: Introduce
-> "late suspend" and "early resume" of devices) introduced a bug where
-> suspend_late handlers would be called, but if dpm_suspend_noirq returned
-> an error the early_resume handlers would never be called.  All devices
-> would end up on the dpm_late_early_list, and would never be resumed
-> again.
-> 
-> Fix it by calling dpm_resume_early when dpm_suspend_noirq returns
-> an error.
-> 
-> Signed-off-by: Colin Cross <ccross@android.com>
+Default mask value is used when updating irq registers.
+Rather than using mask_buf_def[], use mask and value explicitly.
 
-Nice catch, thanks!
+(a) remove default mask buffer : mask_buf_def[]
 
-Applied, with a CC to -stable.
+(b) add 'val_buf' for storing value of registers
+  : val_buf is updated only when the irq is enabled or disabled
 
-Thanks,
-Rafael
+(c) In irq_sync_unlock, use 'mask_buf' and 'val_buf'
+    on updating interrupt registers
+
+Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+---
+ drivers/base/regmap/regmap-irq.c |   19 +++++++++----------
+ 1 files changed, 9 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/base/regmap/regmap-irq.c b/drivers/base/regmap/regmap-irq.c
+index a897346..ed36ea2 100644
+--- a/drivers/base/regmap/regmap-irq.c
++++ b/drivers/base/regmap/regmap-irq.c
+@@ -34,7 +34,7 @@ struct regmap_irq_chip_data {
+ 
+ 	unsigned int *status_buf;
+ 	unsigned int *mask_buf;
+-	unsigned int *mask_buf_def;
++	unsigned int *val_buf;
+ 	unsigned int *wake_buf;
+ 
+ 	unsigned int irq_reg_stride;
+@@ -69,7 +69,7 @@ static void regmap_irq_sync_unlock(struct irq_data *data)
+ 		ret = regmap_update_bits(d->map, d->chip->mask_base +
+ 						(i * map->reg_stride *
+ 						d->irq_reg_stride),
+-					 d->mask_buf_def[i], d->mask_buf[i]);
++					 d->mask_buf[i], d->val_buf[i]);
+ 		if (ret != 0)
+ 			dev_err(d->map->dev, "Failed to sync masks in %x\n",
+ 				d->chip->mask_base + (i * map->reg_stride));
+@@ -94,7 +94,7 @@ static void regmap_irq_enable(struct irq_data *data)
+ 	struct regmap *map = d->map;
+ 	const struct regmap_irq *irq_data = irq_to_regmap_irq(d, data->hwirq);
+ 
+-	d->mask_buf[irq_data->reg_offset / map->reg_stride] &= ~irq_data->mask;
++	d->val_buf[irq_data->reg_offset / map->reg_stride] &= ~irq_data->mask;
+ }
+ 
+ static void regmap_irq_disable(struct irq_data *data)
+@@ -103,7 +103,7 @@ static void regmap_irq_disable(struct irq_data *data)
+ 	struct regmap *map = d->map;
+ 	const struct regmap_irq *irq_data = irq_to_regmap_irq(d, data->hwirq);
+ 
+-	d->mask_buf[irq_data->reg_offset / map->reg_stride] |= irq_data->mask;
++	d->val_buf[irq_data->reg_offset / map->reg_stride] |= irq_data->mask;
+ }
+ 
+ static int regmap_irq_set_wake(struct irq_data *data, unsigned int on)
+@@ -272,9 +272,9 @@ int regmap_add_irq_chip(struct regmap *map, int irq, int irq_flags,
+ 	if (!d->mask_buf)
+ 		goto err_alloc;
+ 
+-	d->mask_buf_def = kzalloc(sizeof(unsigned int) * chip->num_regs,
++	d->val_buf = kzalloc(sizeof(unsigned int) * chip->num_regs,
+ 				  GFP_KERNEL);
+-	if (!d->mask_buf_def)
++	if (!d->val_buf)
+ 		goto err_alloc;
+ 
+ 	if (chip->wake_base) {
+@@ -297,12 +297,11 @@ int regmap_add_irq_chip(struct regmap *map, int irq, int irq_flags,
+ 	mutex_init(&d->lock);
+ 
+ 	for (i = 0; i < chip->num_irqs; i++)
+-		d->mask_buf_def[chip->irqs[i].reg_offset / map->reg_stride]
++		d->mask_buf[chip->irqs[i].reg_offset / map->reg_stride]
+ 			|= chip->irqs[i].mask;
+ 
+ 	/* Mask all the interrupts by default */
+ 	for (i = 0; i < chip->num_regs; i++) {
+-		d->mask_buf[i] = d->mask_buf_def[i];
+ 		ret = regmap_write(map, chip->mask_base + (i * map->reg_stride
+ 				   * d->irq_reg_stride),
+ 				   d->mask_buf[i]);
+@@ -340,7 +339,7 @@ err_domain:
+ 	/* Should really dispose of the domain but... */
+ err_alloc:
+ 	kfree(d->wake_buf);
+-	kfree(d->mask_buf_def);
++	kfree(d->val_buf);
+ 	kfree(d->mask_buf);
+ 	kfree(d->status_buf);
+ 	kfree(d);
+@@ -362,7 +361,7 @@ void regmap_del_irq_chip(int irq, struct regmap_irq_chip_data *d)
+ 	free_irq(irq, d);
+ 	/* We should unmap the domain but... */
+ 	kfree(d->wake_buf);
+-	kfree(d->mask_buf_def);
++	kfree(d->val_buf);
+ 	kfree(d->mask_buf);
+ 	kfree(d->status_buf);
+ 	kfree(d);
+-- 
+1.7.2.5
 
 
-> ---
->  drivers/base/power/main.c |   10 +++++++++-
->  1 files changed, 9 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
-> index 9cb845e..742fcbe 100644
-> --- a/drivers/base/power/main.c
-> +++ b/drivers/base/power/main.c
-> @@ -989,8 +989,16 @@ static int dpm_suspend_late(pm_message_t state)
->  int dpm_suspend_end(pm_message_t state)
->  {
->  	int error = dpm_suspend_late(state);
-> +	if (error)
-> +		return error;
->  
-> -	return error ? : dpm_suspend_noirq(state);
-> +	error = dpm_suspend_noirq(state);
-> +	if (error) {
-> +		dpm_resume_early(state);
-> +		return error;
-> +	}
-> +
-> +	return 0;
->  }
->  EXPORT_SYMBOL_GPL(dpm_suspend_end);
->  
-> 
+Best Regards,
+Milo
 
