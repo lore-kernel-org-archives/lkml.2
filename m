@@ -1,78 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754072Ab2GSIBY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 04:01:24 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:46312 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752068Ab2GSIBW (ORCPT
+	id S1754155Ab2GSICz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 04:02:55 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:20895 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752041Ab2GSICt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 04:01:22 -0400
-Message-ID: <5007BEB2.5060405@in.ibm.com>
-Date: Thu, 19 Jul 2012 13:30:50 +0530
-From: "Suzuki K. Poulose" <suzuki@in.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	Thu, 19 Jul 2012 04:02:49 -0400
+Date: Thu, 19 Jul 2012 11:02:28 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Anton Altaparmakov <anton@tuxera.com>
+Cc: linux-ntfs-dev@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [patch] ntfs: remove an unneeded NULL check
+Message-ID: <20120719080228.GA13792@elgon.mountain>
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        mahesh@linux.vnet.ibm.com, hbabu@us.ibm.com
-Subject: Re: [PATCH] [powerpc] Export memory limit via device tree
-References: <20120702114855.22333.95335.stgit@suzukikp.in.ibm.com> <1341985013.18850.29.camel@pasglop>
-In-Reply-To: <1341985013.18850.29.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 12071821-1396-0000-0000-000001940677
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11/2012 11:06 AM, Benjamin Herrenschmidt wrote:
->> diff --git a/arch/powerpc/kernel/machine_kexec.c b/arch/powerpc/kernel/machine_kexec.c
->> index c957b12..0c9695d 100644
->> --- a/arch/powerpc/kernel/machine_kexec.c
->> +++ b/arch/powerpc/kernel/machine_kexec.c
->> @@ -207,6 +207,12 @@ static struct property crashk_size_prop = {
->>   	.value = &crashk_size,
->>   };
->>
->> +static struct property memory_limit_prop = {
->> +	.name = "linux,memory-limit",
->> +	.length = sizeof(phys_addr_t),
->> +	.value = &memory_limit,
->> +};
->> +
->
-> AFAIK. phys_addr_t can change size, so instead make it point to a known
-> fixes size quantity (a u64).
-Ben,
+The "ctx" variable can never be NULL here and also we dereference it
+on the previous line.
 
-Sorry for the delay in the response.
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-Some of the other properties are also of phys_addr_t, (e.g 
-linux,crashkernel-base, linux,kernel-end ). Should we fix them as well ?
-
-Or
-
-Should we leave this also a phys_addr_t and let the userspace handle it ?
-
->
->> +
->> +	/* memory-limit is needed for constructing the crash regions */
->> +	prop = of_find_property(node, memory_limit_prop.name, NULL);
->> +	if (prop)
->> +		prom_remove_property(node, prop);
->> +
->> +	if (memory_limit)
->> +		prom_add_property(node, &memory_limit_prop);
->> +
->
-> There's a patch floating around making prom_update_property properly
-> handle both pre-existing and non-pre-existing props, you should probably
-> base yourself on top of it. I'm about to stick that patch in powerpc
-> -next
->
-OK. I am testing the new patch based on the above commit. I will wait
-for the clarification on the issue of the type, before I post it here.
-
-Thanks
-Suzuki
-
+diff --git a/fs/ntfs/file.c b/fs/ntfs/file.c
+index 7389d2d..4db19f7 100644
+--- a/fs/ntfs/file.c
++++ b/fs/ntfs/file.c
+@@ -309,8 +309,7 @@ do_non_resident_extend:
+ done:
+ 	flush_dcache_mft_record_page(ctx->ntfs_ino);
+ 	mark_mft_record_dirty(ctx->ntfs_ino);
+-	if (ctx)
+-		ntfs_attr_put_search_ctx(ctx);
++	ntfs_attr_put_search_ctx(ctx);
+ 	if (m)
+ 		unmap_mft_record(base_ni);
+ 	ntfs_debug("Done, initialized_size 0x%llx, i_size 0x%llx.",
