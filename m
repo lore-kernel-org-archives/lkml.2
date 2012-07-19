@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752153Ab2GSOhn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 10:37:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40405 "EHLO mx2.suse.de"
+	id S1752133Ab2GSOhh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 10:37:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40415 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751712Ab2GSOgu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 10:36:50 -0400
+	id S1751789Ab2GSOgx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 10:36:53 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Stable <stable@vger.kernel.org>
 Cc: "Linux-MM <linux-mm"@kvack.org, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 06/34] vmscan: add shrink_slab tracepoints
-Date: Thu, 19 Jul 2012 15:36:16 +0100
-Message-Id: <1342708604-26540-7-git-send-email-mgorman@suse.de>
+Subject: [PATCH 11/34] mm: compaction: trivial clean up in acct_isolated()
+Date: Thu, 19 Jul 2012 15:36:21 +0100
+Message-Id: <1342708604-26540-12-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1342708604-26540-1-git-send-email-mgorman@suse.de>
 References: <1342708604-26540-1-git-send-email-mgorman@suse.de>
@@ -20,150 +20,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dave Chinner <dchinner@redhat.com>
+From: Minchan Kim <minchan.kim@gmail.com>
 
-commit 095760730c1047c69159ce88021a7fa3833502c8 upstream.
+commit b9e84ac1536d35aee03b2601f19694949f0bd506 upstream.
 
-Stable note: Not tracked in Bugzilla. This is a diagnostic patch that
-	was part of a series addressing excessive slab shrinking after
-	GFP_NOFS failures. There is detailed information on the series'
-	motivation at https://lkml.org/lkml/2011/6/2/42 .
+Stable note: Not tracked in Bugzilla. This patch makes later patches
+	easier to apply but has no other impact.
 
-It is impossible to understand what the shrinkers are actually doing
-without instrumenting the code, so add a some tracepoints to allow
-insight to be gained.
+acct_isolated of compaction uses page_lru_base_type which returns
+only base type of LRU list so it never returns LRU_ACTIVE_ANON or
+LRU_ACTIVE_FILE.  In addition, cc->nr_[anon|file] is used in only
+acct_isolated so it doesn't have fields in compact_control.
 
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+This patch removes fields from compact_control and makes clear function of
+acct_issolated which counts the number of anon|file pages isolated.
+
+Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Rik van Riel <riel@redhat.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/trace/events/vmscan.h |   77 +++++++++++++++++++++++++++++++++++++++++
- mm/vmscan.c                   |    8 ++++-
- 2 files changed, 84 insertions(+), 1 deletion(-)
+ mm/compaction.c |   18 +++++-------------
+ 1 file changed, 5 insertions(+), 13 deletions(-)
 
-diff --git a/include/trace/events/vmscan.h b/include/trace/events/vmscan.h
-index b2c33bd..36851f7 100644
---- a/include/trace/events/vmscan.h
-+++ b/include/trace/events/vmscan.h
-@@ -179,6 +179,83 @@ DEFINE_EVENT(mm_vmscan_direct_reclaim_end_template, mm_vmscan_memcg_softlimit_re
- 	TP_ARGS(nr_reclaimed)
- );
+diff --git a/mm/compaction.c b/mm/compaction.c
+index c4bc5ac..d8c023e 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -35,10 +35,6 @@ struct compact_control {
+ 	unsigned long migrate_pfn;	/* isolate_migratepages search base */
+ 	bool sync;			/* Synchronous migration */
  
-+TRACE_EVENT(mm_shrink_slab_start,
-+	TP_PROTO(struct shrinker *shr, struct shrink_control *sc,
-+		long nr_objects_to_shrink, unsigned long pgs_scanned,
-+		unsigned long lru_pgs, unsigned long cache_items,
-+		unsigned long long delta, unsigned long total_scan),
-+
-+	TP_ARGS(shr, sc, nr_objects_to_shrink, pgs_scanned, lru_pgs,
-+		cache_items, delta, total_scan),
-+
-+	TP_STRUCT__entry(
-+		__field(struct shrinker *, shr)
-+		__field(void *, shrink)
-+		__field(long, nr_objects_to_shrink)
-+		__field(gfp_t, gfp_flags)
-+		__field(unsigned long, pgs_scanned)
-+		__field(unsigned long, lru_pgs)
-+		__field(unsigned long, cache_items)
-+		__field(unsigned long long, delta)
-+		__field(unsigned long, total_scan)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->shr = shr;
-+		__entry->shrink = shr->shrink;
-+		__entry->nr_objects_to_shrink = nr_objects_to_shrink;
-+		__entry->gfp_flags = sc->gfp_mask;
-+		__entry->pgs_scanned = pgs_scanned;
-+		__entry->lru_pgs = lru_pgs;
-+		__entry->cache_items = cache_items;
-+		__entry->delta = delta;
-+		__entry->total_scan = total_scan;
-+	),
-+
-+	TP_printk("%pF %p: objects to shrink %ld gfp_flags %s pgs_scanned %ld lru_pgs %ld cache items %ld delta %lld total_scan %ld",
-+		__entry->shrink,
-+		__entry->shr,
-+		__entry->nr_objects_to_shrink,
-+		show_gfp_flags(__entry->gfp_flags),
-+		__entry->pgs_scanned,
-+		__entry->lru_pgs,
-+		__entry->cache_items,
-+		__entry->delta,
-+		__entry->total_scan)
-+);
-+
-+TRACE_EVENT(mm_shrink_slab_end,
-+	TP_PROTO(struct shrinker *shr, int shrinker_retval,
-+		long unused_scan_cnt, long new_scan_cnt),
-+
-+	TP_ARGS(shr, shrinker_retval, unused_scan_cnt, new_scan_cnt),
-+
-+	TP_STRUCT__entry(
-+		__field(struct shrinker *, shr)
-+		__field(void *, shrink)
-+		__field(long, unused_scan)
-+		__field(long, new_scan)
-+		__field(int, retval)
-+		__field(long, total_scan)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->shr = shr;
-+		__entry->shrink = shr->shrink;
-+		__entry->unused_scan = unused_scan_cnt;
-+		__entry->new_scan = new_scan_cnt;
-+		__entry->retval = shrinker_retval;
-+		__entry->total_scan = new_scan_cnt - unused_scan_cnt;
-+	),
-+
-+	TP_printk("%pF %p: unused scan count %ld new scan count %ld total_scan %ld last shrinker return val %d",
-+		__entry->shrink,
-+		__entry->shr,
-+		__entry->unused_scan,
-+		__entry->new_scan,
-+		__entry->total_scan,
-+		__entry->retval)
-+);
+-	/* Account for isolated anon and file pages */
+-	unsigned long nr_anon;
+-	unsigned long nr_file;
+-
+ 	unsigned int order;		/* order a direct compactor needs */
+ 	int migratetype;		/* MOVABLE, RECLAIMABLE etc */
+ 	struct zone *zone;
+@@ -223,17 +219,13 @@ static void isolate_freepages(struct zone *zone,
+ static void acct_isolated(struct zone *zone, struct compact_control *cc)
+ {
+ 	struct page *page;
+-	unsigned int count[NR_LRU_LISTS] = { 0, };
++	unsigned int count[2] = { 0, };
  
- DECLARE_EVENT_CLASS(mm_vmscan_lru_isolate_template,
+-	list_for_each_entry(page, &cc->migratepages, lru) {
+-		int lru = page_lru_base_type(page);
+-		count[lru]++;
+-	}
++	list_for_each_entry(page, &cc->migratepages, lru)
++		count[!!page_is_file_cache(page)]++;
  
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 72340b84..d875058 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -250,6 +250,7 @@ unsigned long shrink_slab(struct shrink_control *shrink,
- 		unsigned long long delta;
- 		unsigned long total_scan;
- 		unsigned long max_pass;
-+		int shrink_ret = 0;
+-	cc->nr_anon = count[LRU_ACTIVE_ANON] + count[LRU_INACTIVE_ANON];
+-	cc->nr_file = count[LRU_ACTIVE_FILE] + count[LRU_INACTIVE_FILE];
+-	__mod_zone_page_state(zone, NR_ISOLATED_ANON, cc->nr_anon);
+-	__mod_zone_page_state(zone, NR_ISOLATED_FILE, cc->nr_file);
++	__mod_zone_page_state(zone, NR_ISOLATED_ANON, count[0]);
++	__mod_zone_page_state(zone, NR_ISOLATED_FILE, count[1]);
+ }
  
- 		max_pass = do_shrinker_shrink(shrinker, shrink, 0);
- 		delta = (4 * nr_pages_scanned) / shrinker->seeks;
-@@ -274,9 +275,12 @@ unsigned long shrink_slab(struct shrink_control *shrink,
- 		total_scan = shrinker->nr;
- 		shrinker->nr = 0;
- 
-+		trace_mm_shrink_slab_start(shrinker, shrink, total_scan,
-+					nr_pages_scanned, lru_pages,
-+					max_pass, delta, total_scan);
-+
- 		while (total_scan >= SHRINK_BATCH) {
- 			long this_scan = SHRINK_BATCH;
--			int shrink_ret;
- 			int nr_before;
- 
- 			nr_before = do_shrinker_shrink(shrinker, shrink, 0);
-@@ -293,6 +297,8 @@ unsigned long shrink_slab(struct shrink_control *shrink,
- 		}
- 
- 		shrinker->nr += total_scan;
-+		trace_mm_shrink_slab_end(shrinker, shrink_ret, total_scan,
-+					 shrinker->nr);
- 	}
- 	up_read(&shrinker_rwsem);
- out:
+ /* Similar to reclaim, but different enough that they don't share logic */
 -- 
 1.7.9.2
 
