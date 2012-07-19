@@ -1,100 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752895Ab2GSFhj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 01:37:39 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:61360 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751111Ab2GSFhg (ORCPT
+	id S1753148Ab2GSFu4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 01:50:56 -0400
+Received: from mail.windriver.com ([147.11.1.11]:63234 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751855Ab2GSFuy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 01:37:36 -0400
+	Thu, 19 Jul 2012 01:50:54 -0400
+From: <xufengzhang.main@gmail.com>
+To: <vyasevich@gmail.com>, <sri@us.ibm.com>, <davem@davemloft.net>
+CC: <linux-sctp@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] sctp: Make "Invalid Stream Identifier" ERROR follows SACK when bundling
+Date: Thu, 19 Jul 2012 13:57:30 +0800
+Message-ID: <1342677450-21810-1-git-send-email-xufengzhang.main@gmail.com>
+X-Mailer: git-send-email 1.7.0.2
 MIME-Version: 1.0
-In-Reply-To: <D958900912E20642BCBC71664EFECE3E6DDB1D6B26@BGMAIL02.nvidia.com>
-References: <CAPLVkLshQjOne9BtZYkth0uZ6ABjYHZ85M2ETKd-D0TRkt+QQw@mail.gmail.com>
-	<D958900912E20642BCBC71664EFECE3E6DDB1D6B26@BGMAIL02.nvidia.com>
-Date: Thu, 19 Jul 2012 14:37:35 +0900
-Message-ID: <CAPLVkLuL9u5NbNrhxNag+D6dLBK3pbpPe4jkg6OETCLm2wt4Kg@mail.gmail.com>
-Subject: Re: Question about tps65090 mfd driver
-From: Joonyoung Shim <dofmind@gmail.com>
-To: Venu Byravarasu <vbyravarasu@nvidia.com>
-Cc: "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Venu.
+When "Invalid Stream Identifier" ERROR happens after process the
+received DATA chunks, this ERROR chunk is enqueued into outqueue
+before SACK chunk, so when bundling ERROR chunk with SACK chunk,
+the ERROR chunk is always placed first in the packet because of
+the chunk's position in the outqueue.
+This violates sctp specification:
+    RFC 4960 6.5. Stream Identifier and Stream Sequence Number
+    ...The endpoint may bundle the ERROR chunk in the same
+    packet as the SACK as long as the ERROR follows the SACK.
+So we must place SACK first when bundling "Invalid Stream Identifier"
+ERROR and SACK in one packet.
+Although we can do that by enqueue SACK chunk into outqueue before
+ERROR chunk, it will violate the side-effect interpreter processing.
+It's easy to do this job when dequeue chunks from the outqueue,
+by this way, we introduce a flag 'has_isi_err' which indicate
+whether or not the "Invalid Stream Identifier" ERROR happens.
 
-2012/7/18 Venu Byravarasu <vbyravarasu@nvidia.com>:
-> Yes, you are right.
-> it was a mistake.
-> Will send a patch soon.
+Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
+---
+ include/net/sctp/structs.h |    2 ++
+ net/sctp/output.c          |   26 ++++++++++++++++++++++++++
+ 2 files changed, 28 insertions(+), 0 deletions(-)
 
-I saw your patch about this from https://lkml.org/lkml/2012/7/18/232
-because i doesn't subcribe linux-kernel ML yet.
-
-The tps65090 mfd driver has two mfd_cells for "tps65090-pmic" and
-"tps65090-regulator". I can find tps65090-regulator driver but cannot find
-tps65090-pmic driver.
-
-Is there any reason to exist two mfd_cells?
-
-And one more question.
-
-struct tps65090_platform_data {
-        int irq_base;
-        int num_subdevs;
-        struct tps65090_subdev_info *subdevs;
-}
-
-This is  platform data struct for tps65090 mfd driver, but num_subdevs
-and subdevs are not used in the mfd driver. How do you handle platform
-data of tps65090 mfd driver and regulator driver?
-
-Thanks.
-
->
-> Thanks,
-> Venu
->
->
->> -----Original Message-----
->> From: Joonyoung Shim [mailto:dofmind@gmail.com]
->> Sent: Wednesday, July 18, 2012 6:14 PM
->> To: Venu Byravarasu
->> Cc: sameo@linux.intel.com; linux-kernel@vger.kernel.org
->> Subject: Question about tps65090 mfd driver
->>
->> Hi,
->>
->> I have one question about tps65090 mfd driver.
->> There are following codes in the drivers/mfd/tps65090.c
->>
->> ...
->> static struct mfd_cell tps65090s[] = {
->>       {
->>               .name = "tps65910-pmic",
->>       },
->>       {
->>               .name = "tps65910-regulator",
->>       },
->> };
->> ...
->>
->> I know tps65090 and tps65910 have each different regulator driver.
->>
->> drivers/regulator/tps65090-regulator.c
->> drivers/regulator/tps65910-regulator.c
->>
->> So, i wonder whether it is right that tps65090 mfd driver has tps65910-xxx.
->>
->> Thanks.
->>
->> --
->> - Joonyoung Shim
-
-
-
+diff --git a/include/net/sctp/structs.h b/include/net/sctp/structs.h
+index 88949a9..5adf4de 100644
+--- a/include/net/sctp/structs.h
++++ b/include/net/sctp/structs.h
+@@ -842,6 +842,8 @@ struct sctp_packet {
+ 	    has_sack:1,		/* This packet contains a SACK chunk. */
+ 	    has_auth:1,		/* This packet contains an AUTH chunk */
+ 	    has_data:1,		/* This packet contains at least 1 DATA chunk */
++	    has_isi_err:1,	/* This packet contains a "Invalid Stream
++				 * Identifier" ERROR chunk */
+ 	    ipfragok:1,		/* So let ip fragment this packet */
+ 	    malloced:1;		/* Is it malloced? */
+ };
+diff --git a/net/sctp/output.c b/net/sctp/output.c
+index 817174e..77fb1ae 100644
+--- a/net/sctp/output.c
++++ b/net/sctp/output.c
+@@ -79,6 +79,7 @@ static void sctp_packet_reset(struct sctp_packet *packet)
+ 	packet->has_sack = 0;
+ 	packet->has_data = 0;
+ 	packet->has_auth = 0;
++	packet->has_isi_err = 0;
+ 	packet->ipfragok = 0;
+ 	packet->auth = NULL;
+ }
+@@ -267,6 +268,7 @@ static sctp_xmit_t sctp_packet_bundle_sack(struct sctp_packet *pkt,
+ sctp_xmit_t sctp_packet_append_chunk(struct sctp_packet *packet,
+ 				     struct sctp_chunk *chunk)
+ {
++	struct sctp_chunk *lchunk;
+ 	sctp_xmit_t retval = SCTP_XMIT_OK;
+ 	__u16 chunk_len = WORD_ROUND(ntohs(chunk->chunk_hdr->length));
+ 
+@@ -316,7 +318,31 @@ sctp_xmit_t sctp_packet_append_chunk(struct sctp_packet *packet,
+ 		packet->has_cookie_echo = 1;
+ 		break;
+ 
++	    case SCTP_CID_ERROR:
++		if (chunk->subh.err_hdr->cause & SCTP_ERROR_INV_STRM)
++			packet->has_isi_err = 1;
++		break;
++
+ 	    case SCTP_CID_SACK:
++		/* RFC 4960
++		 * 6.5 Stream Identifier and Stream Sequence Number
++		 * The endpoint may bundle the ERROR chunk in the same
++		 * packet as the SACK as long as the ERROR follows the SACK.
++		 */
++		if (packet->has_isi_err) {
++			if (list_is_singular(&packet->chunk_list))
++				list_add(&chunk->list, &packet->chunk_list);
++			else {
++				lchunk = list_first_entry(&packet->chunk_list,
++						struct sctp_chunk, list);
++				list_add(&chunk->list, &lchunk->list);
++			}
++			packet->size += chunk_len;
++			chunk->transport = packet->transport;
++			packet->has_sack = 1;
++			goto finish;
++		}
++
+ 		packet->has_sack = 1;
+ 		break;
+ 
 -- 
-- Joonyoung Shim
+1.7.0.2
+
