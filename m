@@ -1,166 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753068Ab2GSE1L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 00:27:11 -0400
-Received: from lunge.queued.net ([173.255.254.236]:50117 "EHLO
-	lunge.queued.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752137Ab2GSE1E (ORCPT
+	id S1751677Ab2GSE22 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 00:28:28 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:54687 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750906Ab2GSE20 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 00:27:04 -0400
-Date: Wed, 18 Jul 2012 21:26:46 -0700
-From: Andres Salomon <dilinger@queued.net>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Paul Fox <pgf@laptop.org>, Daniel Drake <dsd@laptop.org>,
-        "Richard A. Smith" <richard@laptop.org>, linux-kernel@vger.kernel.org,
-        libertas-dev@lists.infradead.org, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, platform-driver-x86@vger.kernel.org,
-        devel@driverdev.osuosl.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Dan Williams <dcbw@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Matthew Garrett <mjg@redhat.com>, Anton Vorontsov <cbou@mail.ru>,
-        David Woodhouse <dwmw2@infradead.org>, Chris Ball <cjb@laptop.org>,
-        Jon Nettleton <jon.nettleton@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 2/9] drivers: OLPC: update various drivers to include
- olpc-ec.h
-Message-ID: <20120718212646.702a4236@dev.queued.net>
-In-Reply-To: <20120718182144.2d7b0b50@dev.queued.net>
-References: <20120718182144.2d7b0b50@dev.queued.net>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 19 Jul 2012 00:28:26 -0400
+Date: Thu, 19 Jul 2012 05:28:24 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Knut Petersen <Knut_Petersen@t-online.de>, linux-kernel@vger.kernel.org,
+        reiserfs-devel@vger.kernel.org
+Subject: Re: [Bug 3.4.5] reiserfs: mutex_destroy called with locked mutex
+Message-ID: <20120719042824.GW31729@ZenIV.linux.org.uk>
+References: <5006491D.8070004@t-online.de>
+ <CA+55aFzv5mntf6y9e_r5=v+beG19xBv67EpA=dP0-Zw1CQrGGg@mail.gmail.com>
+ <20120718212044.GU31729@ZenIV.linux.org.uk>
+ <CA+55aFyHpgbJ9Pn5xn_ALkvzjQBOWog2qLbwwtrKbPHSGpa6pA@mail.gmail.com>
+ <20120718213355.GV31729@ZenIV.linux.org.uk>
+ <CA+55aFx_soQ2sKAcY0yhSFOchkjH55Kvu=jTUW0PJLNxRk9rGQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFx_soQ2sKAcY0yhSFOchkjH55Kvu=jTUW0PJLNxRk9rGQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch over to using olpc-ec.h in multiple steps, so as not to break
-builds. This covers every driver that calls olpc_ec_cmd().
+On Wed, Jul 18, 2012 at 03:37:52PM -0700, Linus Torvalds wrote:
+> On Wed, Jul 18, 2012 at 2:33 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> >
+> >  The only questions
+> > are "is this the WARN_ON() Knut had stepped on" (and I agree with your
+> > scenario now) and "is it critical enough to shove it into the tree
+> > less than a week before -final".  Up to you...
+> 
+> 
+> I agree that it isn't critical. Even the lockdep thing is just a
+> warning, and is apparently quite hard to trigger.
+> 
+> Will you hold on to the patch in your VFS tree, and we can just merge
+> it for 3.6?
 
-Signed-off-by: Andres Salomon <dilinger@queued.net>
----
- arch/x86/include/asm/olpc.h            |    1 -
- arch/x86/platform/olpc/olpc-xo1-pm.c   |    1 +
- arch/x86/platform/olpc/olpc-xo1-sci.c  |    1 +
- arch/x86/platform/olpc/olpc-xo15-sci.c |    1 +
- arch/x86/platform/olpc/olpc.c          |    1 +
- drivers/net/wireless/libertas/if_usb.c |    1 +
- drivers/platform/x86/xo1-rfkill.c      |    3 +--
- drivers/power/olpc_battery.c           |    1 +
- drivers/staging/olpc_dcon/olpc_dcon.c  |    1 +
- 9 files changed, 8 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/include/asm/olpc.h b/arch/x86/include/asm/olpc.h
-index 513e999..5b28f3e 100644
---- a/arch/x86/include/asm/olpc.h
-+++ b/arch/x86/include/asm/olpc.h
-@@ -4,7 +4,6 @@
- #define _ASM_X86_OLPC_H
- 
- #include <asm/geode.h>
--#include <linux/olpc-ec.h>
- 
- struct olpc_platform_t {
- 	int flags;
-diff --git a/arch/x86/platform/olpc/olpc-xo1-pm.c
-b/arch/x86/platform/olpc/olpc-xo1-pm.c index 0ce8616c..8054b64 100644
---- a/arch/x86/platform/olpc/olpc-xo1-pm.c
-+++ b/arch/x86/platform/olpc/olpc-xo1-pm.c
-@@ -18,6 +18,7 @@
- #include <linux/pm.h>
- #include <linux/mfd/core.h>
- #include <linux/suspend.h>
-+#include <linux/olpc-ec.h>
- 
- #include <asm/io.h>
- #include <asm/olpc.h>
-diff --git a/arch/x86/platform/olpc/olpc-xo1-sci.c
-b/arch/x86/platform/olpc/olpc-xo1-sci.c index 04b8c73..63d4aa4 100644
---- a/arch/x86/platform/olpc/olpc-xo1-sci.c
-+++ b/arch/x86/platform/olpc/olpc-xo1-sci.c
-@@ -23,6 +23,7 @@
- #include <linux/power_supply.h>
- #include <linux/suspend.h>
- #include <linux/workqueue.h>
-+#include <linux/olpc-ec.h>
- 
- #include <asm/io.h>
- #include <asm/msr.h>
-diff --git a/arch/x86/platform/olpc/olpc-xo15-sci.c
-b/arch/x86/platform/olpc/olpc-xo15-sci.c index 23e5b9d..9899fef 100644
---- a/arch/x86/platform/olpc/olpc-xo15-sci.c
-+++ b/arch/x86/platform/olpc/olpc-xo15-sci.c
-@@ -13,6 +13,7 @@
- #include <linux/slab.h>
- #include <linux/workqueue.h>
- #include <linux/power_supply.h>
-+#include <linux/olpc-ec.h>
- 
- #include <acpi/acpi_bus.h>
- #include <acpi/acpi_drivers.h>
-diff --git a/arch/x86/platform/olpc/olpc.c
-b/arch/x86/platform/olpc/olpc.c index 796e199..a3fa180 100644
---- a/arch/x86/platform/olpc/olpc.c
-+++ b/arch/x86/platform/olpc/olpc.c
-@@ -22,6 +22,7 @@
- #include <linux/syscore_ops.h>
- #include <linux/debugfs.h>
- #include <linux/mutex.h>
-+#include <linux/olpc-ec.h>
- 
- #include <asm/geode.h>
- #include <asm/setup.h>
-diff --git a/drivers/net/wireless/libertas/if_usb.c
-b/drivers/net/wireless/libertas/if_usb.c index cd3b0d4..a9828b1 100644
---- a/drivers/net/wireless/libertas/if_usb.c
-+++ b/drivers/net/wireless/libertas/if_usb.c
-@@ -10,6 +10,7 @@
- #include <linux/netdevice.h>
- #include <linux/slab.h>
- #include <linux/usb.h>
-+#include <linux/olpc-ec.h>
- 
- #ifdef CONFIG_OLPC
- #include <asm/olpc.h>
-diff --git a/drivers/platform/x86/xo1-rfkill.c
-b/drivers/platform/x86/xo1-rfkill.c index b57ad86..1da13ed 100644
---- a/drivers/platform/x86/xo1-rfkill.c
-+++ b/drivers/platform/x86/xo1-rfkill.c
-@@ -12,8 +12,7 @@
- #include <linux/module.h>
- #include <linux/platform_device.h>
- #include <linux/rfkill.h>
--
--#include <asm/olpc.h>
-+#include <linux/olpc-ec.h>
- 
- static bool card_blocked;
- 
-diff --git a/drivers/power/olpc_battery.c b/drivers/power/olpc_battery.c
-index 7385092..eaf917d 100644
---- a/drivers/power/olpc_battery.c
-+++ b/drivers/power/olpc_battery.c
-@@ -17,6 +17,7 @@
- #include <linux/power_supply.h>
- #include <linux/jiffies.h>
- #include <linux/sched.h>
-+#include <linux/olpc-ec.h>
- #include <asm/olpc.h>
- 
- 
-diff --git a/drivers/staging/olpc_dcon/olpc_dcon.c
-b/drivers/staging/olpc_dcon/olpc_dcon.c index 992275c..2c4bd74 100644
---- a/drivers/staging/olpc_dcon/olpc_dcon.c
-+++ b/drivers/staging/olpc_dcon/olpc_dcon.c
-@@ -27,6 +27,7 @@
- #include <linux/uaccess.h>
- #include <linux/ctype.h>
- #include <linux/reboot.h>
-+#include <linux/olpc-ec.h>
- #include <asm/tsc.h>
- #include <asm/olpc.h>
- 
--- 
-1.7.2.5
-
+Sure, no problem...
