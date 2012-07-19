@@ -1,118 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752125Ab2GSVm3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 17:42:29 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:48770 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751014Ab2GSVmZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 17:42:25 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Carsten Emde <C.Emde@osadl.org>
-Subject: Re: [PATCH 1/1 v3] Honor state disabling in the cpuidle ladder governor
-Date: Thu, 19 Jul 2012 23:48:05 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
-        Len Brown <len.brown@intel.com>, Kevin Hilman <khilman@ti.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-References: <201207192130.20520.rjw@sisk.pl> <20120719203409.398114351@osadl.org> <20120719204338.905308004@osadl.org>
-In-Reply-To: <20120719204338.905308004@osadl.org>
+	id S1752134Ab2GSVoM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 17:44:12 -0400
+Received: from usindpps03.hds.com ([207.126.252.16]:49979 "EHLO
+	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751014Ab2GSVoK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 17:44:10 -0400
+X-Greylist: delayed 1860 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Jul 2012 17:44:09 EDT
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: "Luck, Tony" <tony.luck@intel.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mikew@google.com" <mikew@google.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>
+CC: "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: RE: [RFC][PATCH v2 2/3] Hold multiple logs
+Thread-Topic: [RFC][PATCH v2 2/3] Hold multiple logs
+Thread-Index: Ac1l82ceH7I0t1QCT1GombsnNxviZAAAK4PgAABTBVA=
+Date: Thu, 19 Jul 2012 21:43:51 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D40FB28056@USINDEM103.corp.hds.com>
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D40FB27FDC@USINDEM103.corp.hds.com>
+ <3908561D78D1C84285E8C5FCA982C28F1936EA5F@ORSMSX104.amr.corp.intel.com>
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F1936EA5F@ORSMSX104.amr.corp.intel.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.43.113]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207192348.06045.rjw@sisk.pl>
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.260,0.0.0000
+ definitions=2012-07-19_06:2012-07-19,2012-07-19,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
+ definitions=main-1207190259
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, July 19, 2012, Carsten Emde wrote:
-> There are two cpuidle governors ladder and menu. While the ladder
-> governor is always available, if CONFIG_CPU_IDLE is selected, the
-> menu governor additionally requires CONFIG_NO_HZ.
-> 
-> A particular C state can be disabled by writing to the sysfs file
-> /sys/devices/system/cpu/cpuN/cpuidle/stateN/disable, but this mechanism
-> is only implemented in the menu governor. Thus, in a system where
-> CONFIG_NO_HZ is not selected, the ladder governor becomes default and
-> always will walk through all sleep states - irrespective of whether the
-> C state was disabled via sysfs or not. The only way to select a specific
-> C state was to write the related latency to /dev/cpu_dma_latency and
-> keep the file open as long as this setting was required - not very
-> practical and not suitable for setting a single core in an SMP system.
-> 
-> With this patch, the ladder governor only will promote to the next
-> C state, if it has not been disabled, and it will demote, if the
-> current C state was disabled.
-> 
-> Note that the patch does not make the setting of the sysfs variable
-> "disable" coherent, i.e. if one is disabling a light state, then all
-> deeper states are disabled as well, but the "disable" variable does not
-> reflect it. Likewise, if one enables a deep state but a lighter state
-> still is disabled, then this has no effect. A related section has been
-> added to the documentation.
-> 
-> Signed-off-by: Carsten Emde <C.Emde@osadl.org>
+> How big a value for efi_pstore_log_num have you tried? Did you see any problems with EFI running out of space? Do you get some
+> helpful error message if you pick a number that is too big?
 
-This looks fine to me, but it's too late for v3.6.  I can queue it up
-for v3.7, though.
+Please calm down... This is RFC patch.
 
-Thanks,
-Rafael
+If users specify a number of that is too big, the message will be meaningless.
+I just couldn't decide the appropriate number by myself.
+Then, I make it tunable.
 
+So, I would like to hear about your opinion.
 
-> ---
->  Documentation/cpuidle/sysfs.txt    |   10 +++++++++-
->  drivers/cpuidle/governors/ladder.c |    4 +++-
->  2 files changed, 12 insertions(+), 2 deletions(-)
-> 
-> Index: linux-3.4.4-rt14-rc2-64/Documentation/cpuidle/sysfs.txt
-> ===================================================================
-> --- linux-3.4.4-rt14-rc2-64.orig/Documentation/cpuidle/sysfs.txt
-> +++ linux-3.4.4-rt14-rc2-64/Documentation/cpuidle/sysfs.txt
-> @@ -76,9 +76,17 @@ total 0
->  
->  
->  * desc : Small description about the idle state (string)
-> -* disable : Option to disable this idle state (bool)
-> +* disable : Option to disable this idle state (bool) -> see note below
->  * latency : Latency to exit out of this idle state (in microseconds)
->  * name : Name of the idle state (string)
->  * power : Power consumed while in this idle state (in milliwatts)
->  * time : Total time spent in this idle state (in microseconds)
->  * usage : Number of times this state was entered (count)
-> +
-> +Note:
-> +The behavior and the effect of the disable variable depends on the
-> +implementation of a particular governor. In the ladder governor, for
-> +example, it is not coherent, i.e. if one is disabling a light state,
-> +then all deeper states are disabled as well, but the disable variable
-> +does not reflect it. Likewise, if one enables a deep state but a lighter
-> +state still is disabled, then this has no effect.
-> Index: linux-3.4.4-rt14-rc2-64/drivers/cpuidle/governors/ladder.c
-> ===================================================================
-> --- linux-3.4.4-rt14-rc2-64.orig/drivers/cpuidle/governors/ladder.c
-> +++ linux-3.4.4-rt14-rc2-64/drivers/cpuidle/governors/ladder.c
-> @@ -88,6 +88,7 @@ static int ladder_select_state(struct cp
->  
->  	/* consider promotion */
->  	if (last_idx < drv->state_count - 1 &&
-> +	    !dev->states_usage[last_idx + 1].disable &&
->  	    last_residency > last_state->threshold.promotion_time &&
->  	    drv->states[last_idx + 1].exit_latency <= latency_req) {
->  		last_state->stats.promotion_count++;
-> @@ -100,7 +101,8 @@ static int ladder_select_state(struct cp
->  
->  	/* consider demotion */
->  	if (last_idx > CPUIDLE_DRIVER_STATE_START &&
-> -	    drv->states[last_idx].exit_latency > latency_req) {
-> +	    (dev->states_usage[last_idx].disable ||
-> +	    drv->states[last_idx].exit_latency > latency_req)) {
->  		int i;
->  
->  		for (i = last_idx - 1; i > CPUIDLE_DRIVER_STATE_START; i--) {
-> 
-> 
-> 
+Do you agree with an idea holding multiple logs?
+If so, which number is appropriate? 
+
+Seiji
+
 
