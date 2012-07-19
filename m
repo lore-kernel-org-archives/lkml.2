@@ -1,57 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752192Ab2GSEV7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 00:21:59 -0400
-Received: from lunge.queued.net ([173.255.254.236]:59907 "EHLO
-	lunge.queued.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750778Ab2GSEV5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 00:21:57 -0400
-Date: Wed, 18 Jul 2012 21:21:40 -0700
-From: Andres Salomon <dilinger@queued.net>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Paul Fox <pgf@laptop.org>, Daniel Drake <dsd@laptop.org>,
-        "Richard A. Smith" <richard@laptop.org>, linux-kernel@vger.kernel.org,
-        libertas-dev@lists.infradead.org, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, platform-driver-x86@vger.kernel.org,
-        devel@driverdev.osuosl.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Dan Williams <dcbw@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Matthew Garrett <mjg@redhat.com>, Anton Vorontsov <cbou@mail.ru>,
-        David Woodhouse <dwmw2@infradead.org>, Chris Ball <cjb@laptop.org>,
-        Jon Nettleton <jon.nettleton@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 0/9] OLPC: create a generic OLPC EC driver
-Message-ID: <20120718212140.2e538301@dev.queued.net>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752510Ab2GSEX3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 00:23:29 -0400
+Received: from mga01.intel.com ([192.55.52.88]:54195 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751114Ab2GSEX0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 00:23:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="180187607"
+Message-ID: <50078B5B.8040104@linux.intel.com>
+Date: Wed, 18 Jul 2012 21:21:47 -0700
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Dave Jones <davej@redhat.com>, Dan Carpenter <dan.carpenter@oracle.com>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: potential NULL dereference in futex_wait_requeue_pi()
+References: <20120718142514.GA18850@elgon.mountain> <5006DE4A.4020905@linux.intel.com> <20120718180119.GA1458@redhat.com>
+In-Reply-To: <20120718180119.GA1458@redhat.com>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The OLPC EC (Embedded Controller) code that is currently upstream is
-x86-only, originally written for the XO-1.  Since then, we've had the
-XO-1.5 (also x86), and XO-1.75 (arm-based) enter mass production.  The
-1.75 uses a vastly different EC protocol, and future hardware revisions
-are likely to change it even further.
 
-However, the drivers do share quite a bit of code, so it makes sense to
-have a platform-agnostic driver that calls into platform-specific hooks
-for each XO's EC driver.  This is the first stab and creating such a
-beast (with further patches pending).  Aside from the lack of code
-duplication, this is helpful for fixing bugs in one place (for example,
-we fixed an EC suspend/resume bug in 1.75 that I've just seen happen on
-1.5 without these patches.  With these patches, the problem goes away).
 
-These patches are against Linus's current HEAD; let me know if they
-don't apply somewhere, and I'll happily redo them against the -next
-tree.  I'm assuming that these changes (which touch places like x86,
-wireless, and staging) should go through either the x86 tree, or
-through akpm's tree.
+On 07/18/2012 11:01 AM, Dave Jones wrote:
+> On Wed, Jul 18, 2012 at 09:03:22AM -0700, Darren Hart wrote:
+>  
+>  > > This will oops if pi_mutex is NULL.
+>  > > 
+>  > >   2374                          rt_mutex_unlock(pi_mutex);
+>  > >   2375          } else if (ret == -EINTR) {
+>  > 
+>  > Nice Dan, thanks for taking a closer look. This appears to be a simple fix, can
+>  > you try the following:
+>  > 
+>  > 
+>  > futex: Test for pi_mutex on fault in futex_wait_requeue_pi
+>  > 
+>  > If fixup_pi_state_owner() faults, pi_mutex may be NULL. Test
+>  > for pi_mutex != NULL before testing the owner against current
+>  > and possibly unlocking it.
+>  > 
+>  > Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+>  > CC: Dave Jones <davej@redhat.com>
+>  > CC: Dan Carpenter <dan.carpenter@oracle.com>
+>  > CC: Thomas Gleixner <tglx@linutronix.de>
+>  > 
+>  > diff --git a/kernel/futex.c b/kernel/futex.c
+>  > index e2b0fb9..05018bf 100644
+>  > --- a/kernel/futex.c
+>  > +++ b/kernel/futex.c
+>  > @@ -2370,7 +2370,7 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
+>  >  	 * fault, unlock the rt_mutex and return the fault to userspace.
+>  >  	 */
+>  >  	if (ret == -EFAULT) {
+>  > -		if (rt_mutex_owner(pi_mutex) == current)
+>  > +		if (pi_mutex && rt_mutex_owner(pi_mutex) == current)
+>  >  			rt_mutex_unlock(pi_mutex);
+>  >  	} else if (ret == -EINTR) {
+>  >  		/*
+> 
+> Doesn't fix the oops for me unfortunatly.  It looks like it happens further up,
+> so this might be a spearate bug after all.
+> 
+> I added this..
+> 
+> @@ -2344,7 +2351,13 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
+>                  * the pi_state.
+>                  */
+>                 WARN_ON(!&q.pi_state);
+> +
+>                 pi_mutex = &q.pi_state->pi_mutex;
+> +               if (pi_mutex == NULL) {
+> +                       ret = -EINVAL;
+> +                       goto out;
+> +               }
+> +
+>                 ret = rt_mutex_finish_proxy_lock(pi_mutex, to, &rt_waiter, 1);
+> 
+> 
+> But that didn't seem to fix it either.  Somehow we still do this ..
+> 
+> 
+> BUG: unable to handle kernel NULL pointer dereference at 0000000000000028
 
-Alternatively, if the reviews are positive and I can get SOBs from the
-relevant maintainers, I can set up a platform-olpc tree somewhere and
-request a pull from Linus.
+I was hunting for a lock->owner-> dereference in that path, as I think
+owner can be at 0x28, but it doesn't work with your trace below.
+
+> IP: [<ffffffff810d68be>] __lock_acquire+0x5e/0x1ae0
+> 
+> 	lock_acquire+0xad/0x220
+> 	_raw_spin_lock+0x46/0x80
+> 	rt_mutex_finish_proxy_lock+0x34/0xe0
+> 	futex_wait_requeue_pi.constprop.20+0x2e5/0x400
+> 	do_futex+0xea/0xa20
+> 	sys_futex+0x107/0x1a0
+> 	system_call_fastpath+0x1a/0x1f
+> 
+> Ah, could it somehow be that we have a pi_mutex here, but it hasn't been initialised ?
+> 
+> The code: line fingers this as the failure in kernel/lockdep.c
+> 
+>         if (lock->key == &__lockdep_no_validate__)
+>     3f9e:       49 8b 07                mov    (%r15),%rax
+> 
+> r15 (lock) is somehow '0x28' here, which is why the NULL check I added didn't trigger.
+
+OK, so for debug a < 0xc0000000 check might be useful.
+
+> 
+> This isn't helped by the fact that there seems to be another unrelated bug in futexes
+> that trinity triggers.  If you want to try this, running it with "-c futex" will reproduce
+> it very quickly.
+
+Gave it a shot on the laptop (stock Fedora 17 kernel)... first it killed
+my external display and reverted to the internal screen (nice trick
+that) then it just locked up hard. Took about 2 seconds for the first, a
+few more for the second. All unprivileged... nasty test case you have
+here. I was considering adding fuzz testing to futextest, but I believe
+you have it covered rather nicely here :-)
+
+I'll start in on some instrumentation and further analysis after the
+morning meetings (ugh).
+
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
+
+
