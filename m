@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756172Ab2GSCGH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 22:06:07 -0400
-Received: from mail209.messagelabs.com ([216.82.255.3]:54586 "EHLO
-	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754311Ab2GSCGE (ORCPT
+	id S1755561Ab2GSCIV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 22:08:21 -0400
+Received: from mail-wi0-f202.google.com ([209.85.212.202]:37389 "EHLO
+	mail-wi0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751776Ab2GSCIT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 22:06:04 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-3.tower-209.messagelabs.com!1342663553!8636487!10
-X-Originating-IP: [216.166.12.32]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 90/90] staging: comedi: s526: remove unused variables in the private data
-Date: Wed, 18 Jul 2012 19:05:55 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <gregkh@linuxfoundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201207181905.55981.hartleys@visionengravers.com>
+	Wed, 18 Jul 2012 22:08:19 -0400
+From: Colin Cross <ccross@android.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Colin Cross <ccross@android.com>, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] PM / Sleep: call early resume handlers when suspend_noirq fails
+Date: Wed, 18 Jul 2012 19:08:14 -0700
+Message-Id: <1342663694-3645-1-git-send-email-ccross@android.com>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 'data' and 'pci_dev' variables in the private data are not used.
-They appear to be cut-and-paste from the skel driver. Remove them.
+Commit cf579dfb82550e34de7ccf3ef090d8b834ccd3a9 (PM / Sleep: Introduce
+"late suspend" and "early resume" of devices) introduced a bug where
+suspend_late handlers would be called, but if dpm_suspend_noirq returned
+an error the early_resume handlers would never be called.  All devices
+would end up on the dpm_late_early_list, and would never be resumed
+again.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Fix it by calling dpm_resume_early when dpm_suspend_noirq returns
+an error.
+
+Signed-off-by: Colin Cross <ccross@android.com>
 ---
- drivers/staging/comedi/drivers/s526.c | 8 --------
- 1 file changed, 8 deletions(-)
+ drivers/base/power/main.c |   10 +++++++++-
+ 1 files changed, 9 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/s526.c b/drivers/staging/comedi/drivers/s526.c
-index 358380f..737a194 100644
---- a/drivers/staging/comedi/drivers/s526.c
-+++ b/drivers/staging/comedi/drivers/s526.c
-@@ -206,15 +206,7 @@ static const struct s526_board s526_boards[] = {
-    struct.
- */
- struct s526_private {
--
--	int data;
--
--	/* would be useful for a PCI device */
--	struct pci_dev *pci_dev;
--
--	/* Used for AO readback */
- 	unsigned int ao_readback[2];
--
- 	struct s526GPCTConfig s526_gpct_config[4];
- 	unsigned short s526_ai_config;
- };
+diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
+index 9cb845e..742fcbe 100644
+--- a/drivers/base/power/main.c
++++ b/drivers/base/power/main.c
+@@ -989,8 +989,16 @@ static int dpm_suspend_late(pm_message_t state)
+ int dpm_suspend_end(pm_message_t state)
+ {
+ 	int error = dpm_suspend_late(state);
++	if (error)
++		return error;
+ 
+-	return error ? : dpm_suspend_noirq(state);
++	error = dpm_suspend_noirq(state);
++	if (error) {
++		dpm_resume_early(state);
++		return error;
++	}
++
++	return 0;
+ }
+ EXPORT_SYMBOL_GPL(dpm_suspend_end);
+ 
 -- 
-1.7.11
+1.7.7.3
 
