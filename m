@@ -1,110 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752558Ab2GSGbq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 02:31:46 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:60829 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752410Ab2GSGbl (ORCPT
+	id S1752258Ab2GSGfc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 02:35:32 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:54487 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751114Ab2GSGf3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 02:31:41 -0400
-Message-ID: <5007A967.1040402@linux.vnet.ibm.com>
-Date: Thu, 19 Jul 2012 11:59:59 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	Thu, 19 Jul 2012 02:35:29 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <5007AA21.3050707@jp.fujitsu.com>
+Date: Thu, 19 Jul 2012 15:33:05 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Mandeep Singh Baines <msb@chromium.org>
-CC: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Shaohua Li <shaohua.li@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Christoph Lameter <cl@gentwo.org>, Olof Johansson <olofj@chromium.org>
-Subject: Re: [PATCH v2] x86, mm: only wait for flushes from online cpus
-References: <1340402778-28939-1-git-send-email-msb@chromium.org> <500727F1.4000609@linux.vnet.ibm.com> <20120718221301.GG3465@google.com>
-In-Reply-To: <20120718221301.GG3465@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Sha Zhengju <handai.szj@gmail.com>
+CC: Greg Thelen <gthelen@google.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, yinghan@google.com, akpm@linux-foundation.org,
+        mhocko@suse.cz, linux-kernel@vger.kernel.org,
+        Sha Zhengju <handai.szj@taobao.com>
+Subject: Re: [PATCH 5/7] memcg: add per cgroup dirty pages accounting
+References: <1340880885-5427-1-git-send-email-handai.szj@taobao.com>	<1340881486-5770-1-git-send-email-handai.szj@taobao.com> <xr937guc1wdp.fsf@gthelen.mtv.corp.google.com> <4FFD4822.4020300@gmail.com>
+In-Reply-To: <4FFD4822.4020300@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-x-cbid: 12071906-3864-0000-0000-000003D4E5BF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/19/2012 03:43 AM, Mandeep Singh Baines wrote:
-> Srivatsa S. Bhat (srivatsa.bhat@linux.vnet.ibm.com) wrote:
->> On 06/23/2012 03:36 AM, Mandeep Singh Baines wrote:
->>> A cpu in the mm_cpumask could go offline before we send the invalidate
->>> IPI causing us to wait forever. Avoid this by only waiting for online
->>> cpus.
+(2012/07/11 18:32), Sha Zhengju wrote:
+> On 07/10/2012 05:02 AM, Greg Thelen wrote:
+>> On Thu, Jun 28 2012, Sha Zhengju wrote:
+>>
+>>> From: Sha Zhengju<handai.szj@taobao.com>
 >>>
-[...]
->> This function is always called with preempt_disabled() right?
->> In that case, _while_ this function is running, a CPU cannot go offline
->> because of stop_machine(). (I understand that it might go offline in between
->> calculating that cpumask and calling preempt_disable() - which is the race
->> you are trying to handle).
+>>> This patch adds memcg routines to count dirty pages, which allows memory controller
+>>> to maintain an accurate view of the amount of its dirty memory and can provide some
+>>> info for users while group's direct reclaim is working.
+>>>
+>>> After Kame's commit 89c06bd5(memcg: use new logic for page stat accounting), we can
+>>> use 'struct page' flag to test page state instead of per page_cgroup flag. But memcg
+>>> has a feature to move a page from a cgroup to another one and may have race between
+>>> "move" and "page stat accounting". So in order to avoid the race we have designed a
+>>> bigger lock:
+>>>
+>>>           mem_cgroup_begin_update_page_stat()
+>>>           modify page information    -->(a)
+>>>           mem_cgroup_update_page_stat()  -->(b)
+>>>           mem_cgroup_end_update_page_stat()
+>>>
+>>> It requires (a) and (b)(dirty pages accounting) can stay close enough.
+>>>
+>>> In the previous two prepare patches, we have reworked the vfs set page dirty routines
+>>> and now the interfaces are more explicit:
+>>>     incrementing (2):
+>>>         __set_page_dirty
+>>>         __set_page_dirty_nobuffers
+>>>     decrementing (2):
+>>>         clear_page_dirty_for_io
+>>>         cancel_dirty_page
+>>>
+>>>
+>>> Signed-off-by: Sha Zhengju<handai.szj@taobao.com>
+>>> ---
+>>>   fs/buffer.c                |   17 ++++++++++++++---
+>>>   include/linux/memcontrol.h |    1 +
+>>>   mm/filemap.c               |    5 +++++
+>>>   mm/memcontrol.c            |   28 +++++++++++++++++++++-------
+>>>   mm/page-writeback.c        |   30 ++++++++++++++++++++++++------
+>>>   mm/truncate.c              |    6 ++++++
+>>>   6 files changed, 71 insertions(+), 16 deletions(-)
+>>>
+>>> diff --git a/fs/buffer.c b/fs/buffer.c
+>>> index 55522dd..d3714cc 100644
+>>> --- a/fs/buffer.c
+>>> +++ b/fs/buffer.c
+>>> @@ -613,11 +613,19 @@ EXPORT_SYMBOL(mark_buffer_dirty_inode);
+>>>   int __set_page_dirty(struct page *page,
+>>>           struct address_space *mapping, int warn)
+>>>   {
+>>> +    bool locked;
+>>> +    unsigned long flags;
+>>> +    int ret = 0;
+>> '= 0' and 'ret = 0' change (below) are redundant.  My vote is to remove
+>> '= 0' here.
 >>
-> 
-> Ah. Good point. A cpu cannot be remove from the cpu_online_mask while
-> preemption is disabled because stop_machine() can't run until
-> preemption is enabled.
-> 
-> ./kernel/cpu.c: err = __stop_machine(take_cpu_down, &tcd_param, cpumask_of(cpu));
-> 
->> So, why not take the offline cpus out of the way even before sending that IPI?
->> That way, we need not modify the while loop below.
->>
-> 
-> Acked-off-by: Mandeep Singh Baines <msb@chromium.org>
-> 
-> Do you mind re-sending you're patch with a proper sign-off.
 >
-
-Sure, will do. I'll post it in a separate thread.
-
-Thanks!
-
-Regards,
-Srivatsa S. Bhat
-
-> 
->>> -		while (!cpumask_empty(to_cpumask(f->flush_cpumask)))
->>> +		/* Only wait for online cpus */
->>> +		do {
->>> +			cpumask_and(to_cpumask(tmp_cpumask),
->>> +				    to_cpumask(f->flush_cpumask),
->>> +				    cpu_online_mask);
->>>  			cpu_relax();
->>> +		} while (!cpumask_empty(to_cpumask(tmp_cpumask)));
->>>  	}
+> Nice catch. :-)
+>
+>>> +
+>>>       if (unlikely(!mapping))
+>>>           return !TestSetPageDirty(page);
 >>>
->>>  	f->flush_mm = NULL;
+>>> -    if (TestSetPageDirty(page))
+>>> -        return 0;
+>>> +    mem_cgroup_begin_update_page_stat(page,&locked,&flags);
+>>> +
+>>> +    if (TestSetPageDirty(page)) {
+>>> +        ret = 0;
+>>> +        goto out;
+>>> +    }
 >>>
+>>>       spin_lock_irq(&mapping->tree_lock);
+>>>       if (page->mapping) {    /* Race with truncate? */
+>>> @@ -629,7 +637,10 @@ int __set_page_dirty(struct page *page,
+>>>       spin_unlock_irq(&mapping->tree_lock);
+>>>       __mark_inode_dirty(mapping->host, I_DIRTY_PAGES);
+>>>
+>>> -    return 1;
+>>> +    ret = 1;
+>>> +out:
+>>> +    mem_cgroup_end_update_page_stat(page,&locked,&flags);
+>>> +    return ret;
+>>>   }
+>>>
+>>>   /*
+>>> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+>>> index 20b0f2d..ad37b59 100644
+>>> --- a/include/linux/memcontrol.h
+>>> +++ b/include/linux/memcontrol.h
+>>> @@ -38,6 +38,7 @@ enum mem_cgroup_stat_index {
+>>>       MEM_CGROUP_STAT_RSS,       /* # of pages charged as anon rss */
+>>>       MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
+>>>       MEM_CGROUP_STAT_SWAP, /* # of pages, swapped out */
+>>> +    MEM_CGROUP_STAT_FILE_DIRTY,  /* # of dirty pages in page cache */
+>>>       MEM_CGROUP_STAT_NSTATS,
+>>>   };
+>>>
+>>> diff --git a/mm/filemap.c b/mm/filemap.c
+>>> index 1f19ec3..5159a49 100644
+>>> --- a/mm/filemap.c
+>>> +++ b/mm/filemap.c
+>>> @@ -140,6 +140,11 @@ void __delete_from_page_cache(struct page *page)
+>>>        * having removed the page entirely.
+>>>        */
+>>>       if (PageDirty(page)&&  mapping_cap_account_dirty(mapping)) {
+>>> +        /*
+>>> +         * Do not change page state, so no need to use mem_cgroup_
+>>> +         * {begin, end}_update_page_stat to get lock.
+>>> +         */
+>>> +        mem_cgroup_dec_page_stat(page, MEM_CGROUP_STAT_FILE_DIRTY);
+>> I do not understand this comment.  What serializes this function and
+>> mem_cgroup_move_account()?
 >>
->> That is, how about something like this:
->>
->> diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
->> index 5e57e11..9d387a9 100644
->> --- a/arch/x86/mm/tlb.c
->> +++ b/arch/x86/mm/tlb.c
->> @@ -186,7 +186,11 @@ static void flush_tlb_others_ipi(const struct cpumask *cpumask,
->>  
->>         f->flush_mm = mm;
->>         f->flush_va = va;
->> -       if (cpumask_andnot(to_cpumask(f->flush_cpumask), cpumask, cpumask_of(smp_processor_id()))) {
->> +
->> +       cpumask_and(to_cpumask(f->flush_cpumask), cpumask, cpu_online_mask);
->> +       cpumask_clear_cpu(smp_processor_id(), to_cpumask(f->flush_cpumask));
->> +
->> +       if (!cpumask_empty(to_cpumask(f->flush_cpumask))) {
->>                 /*
->>                  * We have to send the IPI only to
->>                  * CPUs affected.
->>
->>
->> Regards,
->> Srivatsa S. Bhat
->> IBM Linux Technology Center
->>
-> 
+>
+> The race is exist just because the two competitors share one
+> public variable and one reads it and the other writes it.
+> I thought if both sides(accounting and cgroup_move) do not
+> change page flag, then risks like doule-counting(see below)
+> will not happen.
+>
+>               CPU-A                                   CPU-B
+>          Set PG_dirty
+>          (delay)                                move_lock_mem_cgroup()
+>                                                     if (PageDirty(page))
+> new_memcg->nr_dirty++
+>                                                     pc->mem_cgroup = new_memcg;
+>                                                     move_unlock_mem_cgroup()
+>          move_lock_mem_cgroup()
+>          memcg = pc->mem_cgroup
+>          new_memcg->nr_dirty++
+>
+>
+> But after second thoughts, it does have problem if without lock:
+>
+>               CPU-A                                   CPU-B
+>          if (PageDirty(page)) {
+>                                                     move_lock_mem_cgroup()
+> TestClearPageDirty(page))
+>                                                              memcg = pc->mem_cgroup
+> new_memcg->nr_dirty --
+>                                                     move_unlock_mem_cgroup()
+>
+>          memcg = pc->mem_cgroup
+>          new_memcg->nr_dirty--
+>          }
+>
+>
+> It may occur race between clear_page_dirty() operation.
+> So this time I think we need the lock again...
+>
+> Kame, what about your opinion...
+>
+I think Dirty bit is cleared implicitly here...So, having lock will be good.
+  
+Thanks,
+-Kame
+
+
 
