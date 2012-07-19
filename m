@@ -1,100 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751822Ab2GSV1v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 17:27:51 -0400
-Received: from jacques.telenet-ops.be ([195.130.132.50]:59740 "EHLO
-	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751585Ab2GSV1u (ORCPT
+	id S1751924Ab2GSVaH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 17:30:07 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:36106 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751014Ab2GSVaC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 17:27:50 -0400
+	Thu, 19 Jul 2012 17:30:02 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120719182235.GG8469@zod.bos.redhat.com>
+References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com>
+	<20120713210240.GG1707@redhat.com>
+	<CA+55aFz_Vv899eXz6F0jtFH=hT4QpB0_2XuS8HySPjHC6s+L7Q@mail.gmail.com>
+	<20120719152618.GD16873@home.goodmis.org>
+	<20120719154521.GC8469@zod.bos.redhat.com>
+	<1342714088.12353.33.camel@gandalf.stny.rr.com>
+	<20120719171918.GD8469@zod.bos.redhat.com>
+	<1342722036.26179.40.camel@x61.thuisdomein>
+	<20120719182235.GG8469@zod.bos.redhat.com>
+Date: Thu, 19 Jul 2012 23:30:01 +0200
+X-Google-Sender-Auth: BVrhgYYKWbiuld1hO5km928sYpw
+Message-ID: <CAMuHMdViB6eCLzX12pH8kQT6AeTrXmmma1kb-BSdf2qMtXkMgA@mail.gmail.com>
+Subject: Re: [RFC] Simplifying kernel configuration for distro issues
 From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: Fabio Estevam <fabio.estevam@freescale.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] arm,unicore32: Remove obsolete "select MISC_DEVICES"
-Date: Thu, 19 Jul 2012 23:27:40 +0200
-Message-Id: <1342733260-10737-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.0.4
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: Paul Bolle <pebolle@tiscali.nl>, Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
+        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
+        Debian Kernel Team <debian-kernel@lists.debian.org>,
+        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Fedora Kernel Team <kernel-team@fedoraproject.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Obsoleted since commit 7c5763b8453a94871d356f20df30f350f8631e8b ("drivers:
-misc: Remove MISC_DEVICES config option")
+On Thu, Jul 19, 2012 at 8:22 PM, Josh Boyer <jwboyer@redhat.com> wrote:
+> On Thu, Jul 19, 2012 at 08:20:36PM +0200, Paul Bolle wrote:
+>> On Thu, 2012-07-19 at 13:19 -0400, Josh Boyer wrote:
+>> > kconfig already spits out warnings for symbols being selected that
+>> > don't exist.
+>>
+>> Does it? Since when does it do that? Or do you mean select in a more
+>> general way (not just meaning Kconfig's "select" statement)?
+>
+> I believe Alan was more correct than me when he said it was 'make
+> oldconfig' that produced the warnings.
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- arch/arm/mach-davinci/Kconfig |    6 ------
- arch/unicore32/Kconfig        |    1 -
- 2 files changed, 0 insertions(+), 7 deletions(-)
+Indeed, no warnings for all these remaining "select MISC_DEVICES"
+(patch sent to remove these).
 
-diff --git a/arch/arm/mach-davinci/Kconfig b/arch/arm/mach-davinci/Kconfig
-index 32d837d..0e5f0a1 100644
---- a/arch/arm/mach-davinci/Kconfig
-+++ b/arch/arm/mach-davinci/Kconfig
-@@ -61,7 +61,6 @@ config MACH_DAVINCI_EVM
- 	bool "TI DM644x EVM"
- 	default ARCH_DAVINCI_DM644x
- 	depends on ARCH_DAVINCI_DM644x
--	select MISC_DEVICES
- 	select EEPROM_AT24
- 	select I2C
- 	help
-@@ -71,7 +70,6 @@ config MACH_DAVINCI_EVM
- config MACH_SFFSDR
- 	bool "Lyrtech SFFSDR"
- 	depends on ARCH_DAVINCI_DM644x
--	select MISC_DEVICES
- 	select EEPROM_AT24
- 	select I2C
- 	help
-@@ -105,7 +103,6 @@ config MACH_DAVINCI_DM6467_EVM
- 	default ARCH_DAVINCI_DM646x
- 	depends on ARCH_DAVINCI_DM646x
- 	select MACH_DAVINCI_DM6467TEVM
--	select MISC_DEVICES
- 	select EEPROM_AT24
- 	select I2C
- 	help
-@@ -119,7 +116,6 @@ config MACH_DAVINCI_DM365_EVM
- 	bool "TI DM365 EVM"
- 	default ARCH_DAVINCI_DM365
- 	depends on ARCH_DAVINCI_DM365
--	select MISC_DEVICES
- 	select EEPROM_AT24
- 	select I2C
- 	help
-@@ -131,7 +127,6 @@ config MACH_DAVINCI_DA830_EVM
- 	default ARCH_DAVINCI_DA830
- 	depends on ARCH_DAVINCI_DA830
- 	select GPIO_PCF857X
--	select MISC_DEVICES
- 	select EEPROM_AT24
- 	select I2C
- 	help
-@@ -218,7 +213,6 @@ config MACH_TNETV107X
- config MACH_MITYOMAPL138
- 	bool "Critical Link MityDSP-L138/MityARM-1808 SoM"
- 	depends on ARCH_DAVINCI_DA850
--	select MISC_DEVICES
- 	select EEPROM_AT24
- 	select I2C
- 	help
-diff --git a/arch/unicore32/Kconfig b/arch/unicore32/Kconfig
-index 03c9ff8..b0a4743 100644
---- a/arch/unicore32/Kconfig
-+++ b/arch/unicore32/Kconfig
-@@ -238,7 +238,6 @@ config I2C_BATTERY_BQ27200
- config I2C_EEPROM_AT24
- 	tristate "I2C EEPROMs AT24 support"
- 	select I2C_PUV3
--	select MISC_DEVICES
- 	select EEPROM_AT24
- 
- config LCD_BACKLIGHT
--- 
-1.7.0.4
+Gr{oetje,eeting}s,
 
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
