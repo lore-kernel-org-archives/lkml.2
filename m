@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752703Ab2GSOig (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 10:38:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40473 "EHLO mx2.suse.de"
+	id S1752463Ab2GSOiI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 10:38:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40453 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751947Ab2GSOhH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 10:37:07 -0400
+	id S1751908Ab2GSOhB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 10:37:01 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Stable <stable@vger.kernel.org>
 Cc: "Linux-MM <linux-mm"@kvack.org, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 32/34] cpusets: stall when updating mems_allowed for mempolicy or disjoint nodemask
-Date: Thu, 19 Jul 2012 15:36:42 +0100
-Message-Id: <1342708604-26540-33-git-send-email-mgorman@suse.de>
+Subject: [PATCH 24/34] mm: vmscan: Do not OOM if aborting reclaim to start compaction
+Date: Thu, 19 Jul 2012 15:36:34 +0100
+Message-Id: <1342708604-26540-25-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1342708604-26540-1-git-send-email-mgorman@suse.de>
 References: <1342708604-26540-1-git-send-email-mgorman@suse.de>
@@ -20,114 +20,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Rientjes <rientjes@google.com>
+commit 7335084d446b83cbcb15da80497d03f0c1dc9e21 upstream.
 
-commit b246272ecc5ac68c743b15c9e41a2275f7ce70e2 upstream.
+Stable note: Not tracked in Bugzilla. This patch makes later patches
+	easier to apply but otherwise has little to justify it. The
+	problem it fixes was never observed but the source of the
+	theoretical problem did not exist for very long.
 
-Stable note: Not tracked in Bugzilla. [get|put]_mems_allowed() is extremely
-	expensive and severely impacted page allocator performance. This is
-	part of a series of patches that reduce page allocator overhead.
+When direct reclaim is entered is is possible that reclaim will be
+aborted so that compaction can be attempted to satisfy a high-order
+allocation.  If this decision is made before any pages are reclaimed,
+it is possible for 0 to be returned to the page allocator potentially
+triggering an OOM. This has not been observed but it is a possibility
+so this patch addresses it.
 
-Kernels where MAX_NUMNODES > BITS_PER_LONG may temporarily see an empty
-nodemask in a tsk's mempolicy if its previous nodemask is remapped onto a
-new set of allowed cpuset nodes where the two nodemasks, as a result of
-the remap, are now disjoint.
-
-c0ff7453bb5c ("cpuset,mm: fix no node to alloc memory when changing
-cpuset's mems") adds get_mems_allowed() to prevent the set of allowed
-nodes from changing for a thread.  This causes any update to a set of
-allowed nodes to stall until put_mems_allowed() is called.
-
-This stall is unncessary, however, if at least one node remains unchanged
-in the update to the set of allowed nodes.  This was addressed by
-89e8a244b97e ("cpusets: avoid looping when storing to mems_allowed if one
-node remains set"), but it's still possible that an empty nodemask may be
-read from a mempolicy because the old nodemask may be remapped to the new
-nodemask during rebind.  To prevent this, only avoid the stall if there is
-no mempolicy for the thread being changed.
-
-This is a temporary solution until all reads from mempolicy nodemasks can
-be guaranteed to not be empty without the get_mems_allowed()
-synchronization.
-
-Also moves the check for nodemask intersection inside task_lock() so that
-tsk->mems_allowed cannot change.  This ensures that nothing can set this
-tsk's mems_allowed out from under us and also protects tsk->mempolicy.
-
-Reported-by: Miao Xie <miaox@cn.fujitsu.com>
-Signed-off-by: David Rientjes <rientjes@google.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Paul Menage <paul@paulmenage.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- kernel/cpuset.c |   29 ++++++++++++++++++++++++-----
- 1 file changed, 24 insertions(+), 5 deletions(-)
+ mm/vmscan.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index a995893..28d0bbd 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -123,6 +123,19 @@ static inline struct cpuset *task_cs(struct task_struct *task)
- 			    struct cpuset, css);
- }
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index e85abfd..f109f2d 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2240,6 +2240,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+ 	struct zoneref *z;
+ 	struct zone *zone;
+ 	unsigned long writeback_threshold;
++	bool should_abort_reclaim;
  
-+#ifdef CONFIG_NUMA
-+static inline bool task_has_mempolicy(struct task_struct *task)
-+{
-+	return task->mempolicy;
-+}
-+#else
-+static inline bool task_has_mempolicy(struct task_struct *task)
-+{
-+	return false;
-+}
-+#endif
+ 	get_mems_allowed();
+ 	delayacct_freepages_start();
+@@ -2251,7 +2252,8 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+ 		sc->nr_scanned = 0;
+ 		if (!priority)
+ 			disable_swap_token(sc->mem_cgroup);
+-		if (shrink_zones(priority, zonelist, sc))
++		should_abort_reclaim = shrink_zones(priority, zonelist, sc);
++		if (should_abort_reclaim)
+ 			break;
+ 
+ 		/*
+@@ -2318,6 +2320,10 @@ out:
+ 	if (oom_killer_disabled)
+ 		return 0;
+ 
++	/* Aborting reclaim to try compaction? don't OOM, then */
++	if (should_abort_reclaim)
++		return 1;
 +
-+
- /* bits in struct cpuset flags field */
- typedef enum {
- 	CS_CPU_EXCLUSIVE,
-@@ -949,7 +962,7 @@ static void cpuset_migrate_mm(struct mm_struct *mm, const nodemask_t *from,
- static void cpuset_change_task_nodemask(struct task_struct *tsk,
- 					nodemask_t *newmems)
- {
--	bool masks_disjoint = !nodes_intersects(*newmems, tsk->mems_allowed);
-+	bool need_loop;
- 
- repeat:
- 	/*
-@@ -962,6 +975,14 @@ repeat:
- 		return;
- 
- 	task_lock(tsk);
-+	/*
-+	 * Determine if a loop is necessary if another thread is doing
-+	 * get_mems_allowed().  If at least one node remains unchanged and
-+	 * tsk does not have a mempolicy, then an empty nodemask will not be
-+	 * possible when mems_allowed is larger than a word.
-+	 */
-+	need_loop = task_has_mempolicy(tsk) ||
-+			!nodes_intersects(*newmems, tsk->mems_allowed);
- 	nodes_or(tsk->mems_allowed, tsk->mems_allowed, *newmems);
- 	mpol_rebind_task(tsk, newmems, MPOL_REBIND_STEP1);
- 
-@@ -981,11 +1002,9 @@ repeat:
- 
- 	/*
- 	 * Allocation of memory is very fast, we needn't sleep when waiting
--	 * for the read-side.  No wait is necessary, however, if at least one
--	 * node remains unchanged.
-+	 * for the read-side.
- 	 */
--	while (masks_disjoint &&
--			ACCESS_ONCE(tsk->mems_allowed_change_disable)) {
-+	while (need_loop && ACCESS_ONCE(tsk->mems_allowed_change_disable)) {
- 		task_unlock(tsk);
- 		if (!task_curr(tsk))
- 			yield();
+ 	/* top priority shrink_zones still had more to do? don't OOM, then */
+ 	if (scanning_global_lru(sc) && !all_unreclaimable(zonelist, sc))
+ 		return 1;
 -- 
 1.7.9.2
 
