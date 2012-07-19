@@ -1,48 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756174Ab2GSEs7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 00:48:59 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:63582 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751322Ab2GSEsz (ORCPT
+	id S1756210Ab2GSExN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 00:53:13 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:54682 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752341Ab2GSExJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 00:48:55 -0400
-Message-ID: <500791B2.9010601@kernel.org>
-Date: Thu, 19 Jul 2012 00:48:50 -0400
-From: Len Brown <lenb@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: Colin Cross <ccross@android.com>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Kevin Hilman <khilman@ti.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: PM: Summary of changes for v3.6
-References: <201207162246.03660.rjw@sisk.pl> <87mx2zcq62.fsf@ti.com> <201207172252.06093.rjw@sisk.pl> <CAMbhsRQHMu-zzkhJxYLvszQ2+=OVEJwKrCTbGCjpYGtnP-tttg@mail.gmail.com>
-In-Reply-To: <CAMbhsRQHMu-zzkhJxYLvszQ2+=OVEJwKrCTbGCjpYGtnP-tttg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 19 Jul 2012 00:53:09 -0400
+Date: Thu, 19 Jul 2012 14:53:01 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: linux-next: manual merge of the staging tree with the target-merge
+ tree
+Message-Id: <20120719145301.b8992aa986b47d7c44651710@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__19_Jul_2012_14_53_01_+1000_l.Lq/clWLO.lwVcv"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Thu__19_Jul_2012_14_53_01_+1000_l.Lq/clWLO.lwVcv
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> The disappeared from Len's tree for a little while after the 3.5 merge
-> window, which is why they started appearing other places.  Now that
-> they have returned to Len's tree, hopefully to stay, they should be
-> considered the official version.
+Hi Greg,
 
-Yes, they are staged for 3.6 in my tree.
+Today's linux-next merge of the staging tree got a conflict in
+drivers/staging/Kconfig between commit d0146d396bfa ("tcm_vhost: Initial
+merge for vhost level target fabric driver") from the target-merge tree
+and commit 15a4bc17b7f4 ("Staging: add CSR Wifi "os helper" module") from
+the staging tree.
 
-The intent was to push them for 3.5, but some unrelated patches
-exploded and stopped that push.  I then had to re-merge my tree
-to push only the bug-fixes to 3.5, which is why the feature
-patches went away for a bit.
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-thanks,
--Len
+diff --cc drivers/staging/Kconfig
+index 67ec9fe,e3402d5..0000000
+--- a/drivers/staging/Kconfig
++++ b/drivers/staging/Kconfig
+@@@ -132,6 -132,8 +132,10 @@@ source "drivers/staging/ipack/Kconfig
+ =20
+  source "drivers/staging/gdm72xx/Kconfig"
+ =20
++ source "drivers/staging/csr/Kconfig"
++=20
++ source "drivers/staging/omap-thermal/Kconfig"
++=20
+ +source "drivers/vhost/Kconfig.tcm"
+ +
+  endif # STAGING
 
+--Signature=_Thu__19_Jul_2012_14_53_01_+1000_l.Lq/clWLO.lwVcv
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBCAAGBQJQB5KtAAoJEECxmPOUX5FEXi0P/1zHn13N/HQSRLIQvAdNrGDz
+gkkajRttwpHwa5PRbiVPWeuZzwlIYZGLKAoVTzrZsWnJVWJ3zdGWtcs6DMJfFAo3
+6K3cMm3xOjHnyho+dZVEsQAZAO2hSnu/9sqNHmeNN/thb3E3hRljqZ3SM49EewvY
+AhE4yKYbLWsCp2UR0jfIdclMVyV3UfV1mNLaXIG3qjf6QAenIFk0kuVJLpx4/ak1
+biPhp4xD9DskEnYnjp7xswjy23xicZLBAlYK2y3KUeL6MAvwQBv1q8+/y/pHBhL5
+fr8hRuQz8+u2wva4X2lQRzPfXGBvVK5AHXL9yLLyXZWGGjT8pSfJFbu8uc3NUHaX
+GMYC6TI+WlMaHGJW5YPpO3Qx68RP5LAsP4oEA0W3yqGYNc+QuhphQIyYxub/Qvz4
+F3tjK2Q2Ix1Wew4RBuekocnAUNjfbFK5dNi/VSBBNgm43KglwFQ6UAQO7BZcST9s
+HRAYyeE6b7/K4oB/xS28IZH5krPfHi8C/AOlw9hbGR17POKZWVj8OW9TY+EcIsYJ
+KNS70qCMVB2yL1W0HnlDjr6JKGqgvnMAqqajpzuIJft1/tpOH96G2/w51xNgY+Hf
+/8Qdcltcfb+AVXlthKzFuywhC7KLb2WZrue/hNxibz6janBkjEpNOFGyz9uU8jsN
+NzCzl9kf224uNdYuzeFo
+=UFoH
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__19_Jul_2012_14_53_01_+1000_l.Lq/clWLO.lwVcv--
