@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752458Ab2GSR12 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 13:27:28 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:40763 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751281Ab2GSR1Y (ORCPT
+	id S1752486Ab2GSR1y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 13:27:54 -0400
+Received: from mail127.messagelabs.com ([216.82.250.115]:64382 "EHLO
+	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751281Ab2GSR1w convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 13:27:24 -0400
-Date: Thu, 19 Jul 2012 18:30:47 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
-        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
-        Debian Kernel Team <debian-kernel@lists.debian.org>,
-        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Fedora Kernel Team <kernel-team@fedoraproject.org>
-Subject: Re: [RFC] Simplifying kernel configuration for distro issues
-Message-ID: <20120719183047.69de3e19@pyramind.ukuu.org.uk>
-In-Reply-To: <20120719171918.GD8469@zod.bos.redhat.com>
-References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com>
-	<20120713210240.GG1707@redhat.com>
-	<CA+55aFz_Vv899eXz6F0jtFH=hT4QpB0_2XuS8HySPjHC6s+L7Q@mail.gmail.com>
-	<20120719152618.GD16873@home.goodmis.org>
-	<20120719154521.GC8469@zod.bos.redhat.com>
-	<1342714088.12353.33.camel@gandalf.stny.rr.com>
-	<20120719171918.GD8469@zod.bos.redhat.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 19 Jul 2012 13:27:52 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-6.tower-127.messagelabs.com!1342718866!9071887!14
+X-Originating-IP: [216.166.12.99]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: Ian Abbott <abbotti@mev.co.uk>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        Ian Abbott <ian.abbott@mev.co.uk>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Date: Thu, 19 Jul 2012 12:27:45 -0500
+Subject: RE: [PATCH 01/90] staging: comedi: comedidev.h: introduce
+ comedi_to_pci_dev() helper
+Thread-Topic: [PATCH 01/90] staging: comedi: comedidev.h: introduce
+ comedi_to_pci_dev() helper
+Thread-Index: Ac1lzBo1zFeYA3LbRZeRlZvcN4fDYgAB3yZg
+Message-ID: <ADE657CA350FB648AAC2C43247A983F00206AA916486@AUSP01VMBX24.collaborationhost.net>
+References: <201207181824.15722.hartleys@visionengravers.com>
+ <5007D1E0.4050503@mev.co.uk>
+ <ADE657CA350FB648AAC2C43247A983F00206AA91644B@AUSP01VMBX24.collaborationhost.net>
+ <20120719163211.GD16291@mwanda>
+In-Reply-To: <20120719163211.GD16291@mwanda>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thursday, July 19, 2012 9:32 AM, Dan Carpenter wrote:
+> On Thu, Jul 19, 2012 at 11:20:52AM -0500, H Hartley Sweeten wrote:
+>> On Thursday, July 19, 2012 2:23 AM, Ian Abbott wrote:
+>>> That needs to be something like:
+>>>
+>>>	return dev->hw_dev ? to_pci_dev(dev->hw_dev) : NULL;
+>> 
+>> Hmm.. I'm not really sure.
+>> 
+>> I assumed that the container_of() macro would return NULL if the ptr passed to
+>> it was NULL. But, I'm not sure how this actually unwinds for that case.
+>> 
+>> Greg, do you know if the NULL check is needed? It's is possible that the dev->hw_dev
+>> pointer could be NULL.
+>> 
+>
+> container_of() just does pointer math with the offset.  Since
+> ->hw_dev is not the first member of the pci_dev struct then
+> to_pci_dev() never returns NULL.  If you give it a NULL pointer it
+> returns a bogus pointer back.
 
-> Well, yes.  I was thinking it would be more like:
-> 
-> distro/Kconfig.fedora
-> 	menuconfig FEDORA
-> 	if FEDORA
-> 	config FEDORA_16
-> 	   select WHATEVER
-> 	config FEDORA_17
+Thanks for the information.
 
-Nope you need
+I'll update PATCH 01/90 and repost it as v2.
 
-distro/everyarchtheyship/everykernelvarianttkeyship(smp,largemem,arm
-boards)/Kconfig
+Thanks,
+Hartley
 
-which for some distros is over 20 per release and the end user wouldn't
-have a cat in hells chance of knowing which to pick.
-
-For the end user case you need the distro to plonk the right file in the
-right place and be done with it, once they do that the rest is
-bikeshedding a ten line Makefile rule.
-
-Alan
