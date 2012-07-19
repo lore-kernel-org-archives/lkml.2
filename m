@@ -1,87 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752431Ab2GSR0h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 13:26:37 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:40095 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751281Ab2GSR0f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 13:26:35 -0400
-Date: Thu, 19 Jul 2012 10:15:51 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: WARNING: at kernel/rcutree.c:1550
- __rcu_process_callbacks+0x46f/0x4b0()
-Message-ID: <20120719171550.GL2507@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <5007F8FA.7000203@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5007F8FA.7000203@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12071917-7182-0000-0000-0000020820FF
+	id S1752458Ab2GSR12 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 13:27:28 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:40763 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751281Ab2GSR1Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 13:27:24 -0400
+Date: Thu, 19 Jul 2012 18:30:47 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
+        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
+        Debian Kernel Team <debian-kernel@lists.debian.org>,
+        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Fedora Kernel Team <kernel-team@fedoraproject.org>
+Subject: Re: [RFC] Simplifying kernel configuration for distro issues
+Message-ID: <20120719183047.69de3e19@pyramind.ukuu.org.uk>
+In-Reply-To: <20120719171918.GD8469@zod.bos.redhat.com>
+References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com>
+	<20120713210240.GG1707@redhat.com>
+	<CA+55aFz_Vv899eXz6F0jtFH=hT4QpB0_2XuS8HySPjHC6s+L7Q@mail.gmail.com>
+	<20120719152618.GD16873@home.goodmis.org>
+	<20120719154521.GC8469@zod.bos.redhat.com>
+	<1342714088.12353.33.camel@gandalf.stny.rr.com>
+	<20120719171918.GD8469@zod.bos.redhat.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 19, 2012 at 05:39:30PM +0530, Srivatsa S. Bhat wrote:
-> Hi Paul,
+
+> Well, yes.  I was thinking it would be more like:
 > 
-> While running a CPU hotplug stress test on v3.5-rc7+
-> (mainline commit 8a7298b7805ab) I hit this warning.
-> I haven't tried to debug this yet...
-> 
-> Line number 1550 maps to:
-> 
-> WARN_ON_ONCE(cpu_is_offline(smp_processor_id()));
-> 
-> inside rcu_do_batch().
+> distro/Kconfig.fedora
+> 	menuconfig FEDORA
+> 	if FEDORA
+> 	config FEDORA_16
+> 	   select WHATEVER
+> 	config FEDORA_17
 
-Hello, Srivatsa,
+Nope you need
 
-I believe that you need commit a16b7a69 (Prevent __call_rcu() from
-invoking RCU core on offline CPUs), which is currently in -tip, queued
-for 3.6.  Please see below for the patch.
+distro/everyarchtheyship/everykernelvarianttkeyship(smp,largemem,arm
+boards)/Kconfig
 
-Does this help?
+which for some distros is over 20 per release and the end user wouldn't
+have a cat in hells chance of knowing which to pick.
 
-							Thanx, Paul
+For the end user case you need the distro to plonk the right file in the
+right place and be done with it, once they do that the rest is
+bikeshedding a ten line Makefile rule.
 
-------------------------------------------------------------------------
-
-rcu: Prevent __call_rcu() from invoking RCU core on offline CPUs
-
-The __call_rcu() function will invoke the RCU core, for example, if
-it detects that the current CPU has too many callbacks.  However, this
-can happen on an offline CPU that is on its way to the idle loop, in
-which case it is an error to invoke the RCU core, and the excess callbacks
-will be adopted in any case.  This commit therefore adds checks to
-__call_rcu() for running on an offline CPU, refraining from invoking
-the RCU core in this case.
-
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index a4a9c91..ceaa959 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -1904,11 +1904,11 @@ __call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
- 	 * If called from an extended quiescent state, invoke the RCU
- 	 * core in order to force a re-evaluation of RCU's idleness.
- 	 */
--	if (rcu_is_cpu_idle())
-+	if (rcu_is_cpu_idle() && cpu_online(smp_processor_id()))
- 		invoke_rcu_core();
- 
--	/* If interrupts were disabled, don't dive into RCU core. */
--	if (irqs_disabled_flags(flags)) {
-+	/* If interrupts were disabled or CPU offline, don't invoke RCU core. */
-+	if (irqs_disabled_flags(flags) || cpu_is_offline(smp_processor_id())) {
- 		local_irq_restore(flags);
- 		return;
- 	}
-
+Alan
