@@ -1,87 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755064Ab2GSBem (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 21:34:42 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:41345 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754079Ab2GSBek (ORCPT
+	id S1755171Ab2GSBfG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 21:35:06 -0400
+Received: from mail132.messagelabs.com ([216.82.242.115]:41614 "EHLO
+	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751772Ab2GSBfB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 21:34:40 -0400
-From: Toshiaki Yamane <yamanetoshi@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Einon <mark.einon@gmail.com>, Joe Perches <joe@perches.com>,
-        linux-kernel@vger.kernel.org
-Cc: Toshiaki Yamane <yamanetoshi@gmail.com>
-Subject: [PATCH] staging/et131x: fix checkpatch warnings
-Date: Thu, 19 Jul 2012 10:34:32 +0900
-Message-Id: <1342661672-8562-1-git-send-email-yamanetoshi@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1342442513-10488-1-git-send-email-yamanetoshi@gmail.com>
-References: <1342442513-10488-1-git-send-email-yamanetoshi@gmail.com>
+	Wed, 18 Jul 2012 21:35:01 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-3.tower-132.messagelabs.com!1342661700!14753972!1
+X-Originating-IP: [216.166.12.32]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 23/90] staging: comedi: adv_pci_dio: cleanup "find pci device" code
+Date: Wed, 18 Jul 2012 18:34:51 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <gregkh@linuxfoundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201207181834.52069.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The below checkpatch warns was fixed,
+Add a couple local variables to make the tests more concise.
+Reorder the tests to make the for() loop checking for a
+matching boardtype quicker.
 
-drivers/staging/et131x/et131x.c:2556: WARNING: Prefer pr_info(... to printk(KERN_INFO, ...
-drivers/staging/et131x/et131x.c:2577: WARNING: Prefer pr_info(... to printk(KERN_INFO, ...
-drivers/staging/et131x/et131x.c:5189: WARNING: Prefer pr_info(... to printk(KERN_INFO, ...
+Drop the dev_dbg message for a match. It's just add noise.
 
-And fixed below,
--added pr_fmt
--fixed printk formats for dma_addr_t
--converted printk to netdev_info
-
-Signed-off-by: Toshiaki Yamane <yamanetoshi@gmail.com>
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/staging/et131x/et131x.c |   12 +++++++-----
- 1 files changed, 7 insertions(+), 5 deletions(-)
+ drivers/staging/comedi/drivers/adv_pci_dio.c | 40 ++++++++++------------------
+ 1 file changed, 14 insertions(+), 26 deletions(-)
 
-diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
-index ac6897b..ceaf24f 100644
---- a/drivers/staging/et131x/et131x.c
-+++ b/drivers/staging/et131x/et131x.c
-@@ -53,6 +53,8 @@
-  *
-  */
+diff --git a/drivers/staging/comedi/drivers/adv_pci_dio.c b/drivers/staging/comedi/drivers/adv_pci_dio.c
+index ab92169..c805208 100644
+--- a/drivers/staging/comedi/drivers/adv_pci_dio.c
++++ b/drivers/staging/comedi/drivers/adv_pci_dio.c
+@@ -1055,43 +1055,31 @@ static struct pci_dev *pci_dio_find_pci_dev(struct comedi_device *dev,
+ 					    struct comedi_devconfig *it)
+ {
+ 	struct pci_dev *pcidev = NULL;
+-	unsigned long iobase;
++	int bus = it->options[0];
++	int slot = it->options[1];
+ 	int i;
  
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/pci.h>
- #include <linux/init.h>
- #include <linux/module.h>
-@@ -2553,8 +2555,8 @@ static int et131x_rx_dma_memory_alloc(struct et131x_adapter *adapter)
- 			  "Cannot alloc memory for Packet Status Ring\n");
- 		return -ENOMEM;
+ 	for_each_pci_dev(pcidev) {
+-		/*  loop through cards supported by this driver */
++		if (bus || slot) {
++			if (bus != pcidev->bus->number ||
++			    slot != PCI_SLOT(pcidev->devfn))
++				continue;
++		}
++		if (pci_is_enabled(pcidev))
++			continue;
+ 		for (i = 0; i < ARRAY_SIZE(boardtypes); ++i) {
+ 			if (boardtypes[i].vendor_id != pcidev->vendor)
+ 				continue;
+ 			if (boardtypes[i].device_id != pcidev->device)
+ 				continue;
+-			/*  was a particular bus/slot requested? */
+-			if (it->options[0] || it->options[1]) {
+-				/*  are we on the wrong bus/slot? */
+-				if (pcidev->bus->number != it->options[0] ||
+-				    PCI_SLOT(pcidev->devfn) != it->options[1]) {
+-					continue;
+-				}
+-			}
+-			if (pci_is_enabled(pcidev))
+-				continue;
+ 			dev->board_ptr = boardtypes + i;
+-			break;
++			return pcidev;
+ 		}
+-		if (dev->board_ptr)
+-			break;
+-	}
+-
+-	if (!dev->board_ptr) {
+-		dev_err(dev->class_dev,
+-			"Error: Requested type of the card was not found!\n");
+-		return NULL;
  	}
--	printk(KERN_INFO "Packet Status Ring %lx\n",
--	    (unsigned long) rx_ring->ps_ring_physaddr);
-+	pr_info("Packet Status Ring %llx\n",
-+		(unsigned long long) rx_ring->ps_ring_physaddr);
+-	iobase = pci_resource_start(devpriv->pcidev, this_board->main_pci_region);
+-	dev_dbg(dev->class_dev, "b:s:f=%d:%d:%d, io=0x%4lx\n",
+-		pcidev->bus->number, PCI_SLOT(pcidev->devfn),
+-		PCI_FUNC(pcidev->devfn), iobase);
+-	return pcidev;
++	dev_err(dev->class_dev,
++		"No supported board found! (req. bus %d, slot %d)\n",
++		bus, slot);
++	return NULL;
+ }
  
- 	/*
- 	 * NOTE : dma_alloc_coherent(), used above to alloc DMA regions,
-@@ -2574,7 +2576,7 @@ static int et131x_rx_dma_memory_alloc(struct et131x_adapter *adapter)
- 		return -ENOMEM;
- 	}
- 	rx_ring->num_rfd = NIC_DEFAULT_NUM_RFD;
--	printk(KERN_INFO "PRS %lx\n", (unsigned long)rx_ring->rx_status_bus);
-+	pr_info("PRS %llx\n", (unsigned long long)rx_ring->rx_status_bus);
- 
- 	/* Recv
- 	 * kmem_cache_create initializes a lookaside list. After successful
-@@ -5186,8 +5188,8 @@ static int et131x_set_mac_addr(struct net_device *netdev, void *new_mac)
- 
- 	memcpy(netdev->dev_addr, address->sa_data, netdev->addr_len);
- 
--	printk(KERN_INFO "%s: Setting MAC address to %pM\n",
--			netdev->name, netdev->dev_addr);
-+	netdev_info(netdev, "Setting MAC address to %pM\n",
-+		    netdev->dev_addr);
- 
- 	/* Free Rx DMA memory */
- 	et131x_adapter_memory_free(adapter);
+ static int pci_dio_attach(struct comedi_device *dev,
 -- 
-1.7.5.4
+1.7.11
 
