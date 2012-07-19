@@ -1,97 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752324Ab2GSMm1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 08:42:27 -0400
-Received: from 115-188-14-127.jetstream.xtra.co.nz ([115.188.14.127]:62872
-	"EHLO SERVER.prisktech.co.nz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751090Ab2GSMmS convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 08:42:18 -0400
-From: Tony Prisk <linux@prisktech.co.nz>
-To: Arnd Bergmann <arnd@arndb.de>
-CC: "vt8500-wm8505-linux-kernel@googlegroups.com" 
-	<vt8500-wm8505-linux-kernel@googlegroups.com>,
-        Alexey Charkov <alchark@gmail.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH 1/1] Add Wondermedia Technologies (wmt) to
- docs/devicetree/vendor-bindings.txt
-Thread-Topic: [PATCH 1/1] Add Wondermedia Technologies (wmt) to
- docs/devicetree/vendor-bindings.txt
-Thread-Index: AQKYMMxC+/7sfLVv24SJcXAAzrg8wAJQSbLQAtZSvySVcT8RUP//oSgAgADM587//0dRAIAAydF7
-Date: Thu, 19 Jul 2012 12:39:51 +0000
-Message-ID: <76F764B079F92A4E843589C893D0A022C3812054@SERVER.prisktech.co.nz>
-References: <76F764B079F92A4E843589C893D0A022C380F1D4@SERVER.prisktech.co.nz>
- <201207191116.27273.arnd@arndb.de>
- <76F764B079F92A4E843589C893D0A022C3811BFD@SERVER.prisktech.co.nz>,<201207191228.48809.arnd@arndb.de>
-In-Reply-To: <201207191228.48809.arnd@arndb.de>
-Accept-Language: en-GB, en-NZ, en-US
-Content-Language: en-GB
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752437Ab2GSMmf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 08:42:35 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:37267 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752362Ab2GSMma (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 08:42:30 -0400
+X-AuditID: b753bd60-9ea82ba000000655-a5-500800b3b688
+X-AuditID: b753bd60-9ea82ba000000655-a5-500800b3b688
+From: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
+Subject: [PATCH -v2 3/6] fuse: remove cache for fuse request allocation
+To: Miklos Szeredi <miklos@szeredi.hu>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Muthukumar R <muthur@gmail.com>
+Cc: fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-doc@vger.kernel.org,
+        yrl.pp-manager.tt@hitachi.com,
+        Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>,
+        Miklos Szeredi <miklos@szeredi.hu>, Nikolaus Rath <Nikolaus@rath.org>,
+        Liu Yuan <namei.unix@gmail.com>, Has-Wen Nienhuys <hanwen@xs4all.nl>
+Date: Thu, 19 Jul 2012 21:49:34 +0900
+Message-ID: <20120719124934.6250.47335.stgit@ltc137.sdl.hitachi.co.jp>
+In-Reply-To: <20120719124851.6250.43316.stgit@ltc137.sdl.hitachi.co.jp>
+References: <20120719124851.6250.43316.stgit@ltc137.sdl.hitachi.co.jp>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-_______________________________________
-From: Arnd Bergmann [arnd@arndb.de]
-Sent: 20 July 2012 00:28
-To: Tony Prisk
-Cc: vt8500-wm8505-linux-kernel@googlegroups.com; Alexey Charkov; devicetree-discuss@lists.ozlabs.org; Russell King; linux-kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/1] Add Wondermedia Technologies (wmt) to docs/devicetree/vendor-bindings.txt
+Remove fuse_req_cachep, which was used for fuse request buffer.
+It is no longer used since the buffer is allocated dynamically
+due to the tunable maximum read/write request size.
 
-On Thursday 19 July 2012, Tony Prisk wrote:
-> I have no issue with that.
->
-> I am mainly concerned with the Wondermedia products at the moment.
->
-> Adding device tree support for WM8505 (and WM8650) is my main goal as the WM8650
-> currently isn't supported and trying to get another board file added seems unlikely with
-> everything moving to device tree. The VT8500 requires additional/different patches and
-> as I don't have a vt8500 I can't test them.
->
-> It does raise the question of applying 'wmt, prizm-pmc' to the vt8500 though. While it's
-> fine for the restart patch I submitted, the vt8500 registers are the same but the bit-fields
-> are different and therefore not entirely compatible with 'prizm-pmc'.
-> When it comes to other PMC-related features, in particular the clocks, the VT8500 is quite
-> different in its bit-fields.
->
-> The vt8500 isn't technically in the Prizm family, as that is Wondermedia's name for the SoC's.
->
+Signed-off-by: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
+Cc: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Nikolaus Rath <Nikolaus@rath.org>
+Cc: Liu Yuan <namei.unix@gmail.com>
+Cc: Has-Wen Nienhuys <hanwen@xs4all.nl>
+---
 
-My point is that for each peripheral, we should decide separately what the
-most descriptive name for it is. If the pmc is common for all wmt prizm
-chips, then using the "wmt,prizm-pmc" string makes sense, and vt8500
-can use "via,vt8500-pmc" or something like that.
+ fs/fuse/dev.c |   21 +--------------------
+ 1 files changed, 1 insertions(+), 20 deletions(-)
 
-However for stuff like the rtc that appears to be unchanged between them,
-I would use the compatible string of the oldest known chip using it,
-so even a wmt8650 should just claim compatibility with vt8500 there and
-list both "wmt,wm8650-rtc" and "via,vt8500-rtc" there.
+diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
+index 511560b..4087ff4 100644
+--- a/fs/fuse/dev.c
++++ b/fs/fuse/dev.c
+@@ -23,8 +23,6 @@
+ MODULE_ALIAS_MISCDEV(FUSE_MINOR);
+ MODULE_ALIAS("devname:fuse");
+ 
+-static struct kmem_cache *fuse_req_cachep;
+-
+ static struct fuse_conn *fuse_get_conn(struct file *file)
+ {
+ 	/*
+@@ -2075,27 +2073,10 @@ static struct miscdevice fuse_miscdevice = {
+ 
+ int __init fuse_dev_init(void)
+ {
+-	int err = -ENOMEM;
+-	fuse_req_cachep = kmem_cache_create("fuse_request",
+-					    sizeof(struct fuse_req),
+-					    0, 0, NULL);
+-	if (!fuse_req_cachep)
+-		goto out;
+-
+-	err = misc_register(&fuse_miscdevice);
+-	if (err)
+-		goto out_cache_clean;
+-
+-	return 0;
+-
+- out_cache_clean:
+-	kmem_cache_destroy(fuse_req_cachep);
+- out:
+-	return err;
++	return misc_register(&fuse_miscdevice);
+ }
+ 
+ void fuse_dev_cleanup(void)
+ {
+ 	misc_deregister(&fuse_miscdevice);
+-	kmem_cache_destroy(fuse_req_cachep);
+ }
 
-        Arnd
-
------
-
-Sounds reasonable. If device tree had been done when VT8500 came out, then the WM8xxx
-products would have used the vt8500 compatibilities, so it makes sense to use the same logic
-now.
-
-Which brings us back to the original question (and raises another one) - can we assume yet that
-'wmt' will be the vendor-binding for Wondermedia? Also, what are we going to use for VIA-based
-SoC's given that VIA is the ticker for VIACOM. 
-
-I did do a bit of a search on some stock tickers - 'WM' is Waste Management Inc. on the NYSE.
-Presumably this would be as safe, or safer, than WMT (Walmart).
-VIACOM, being a media content company, seems unlikely to produce any hardware but its possible
-they will rebrand others hardware.
-
-Regards,
-Tony P
