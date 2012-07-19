@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752133Ab2GSOhh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 10:37:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40415 "EHLO mx2.suse.de"
+	id S1751856Ab2GSOhd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 10:37:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40413 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751789Ab2GSOgx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751779Ab2GSOgx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 19 Jul 2012 10:36:53 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Stable <stable@vger.kernel.org>
 Cc: "Linux-MM <linux-mm"@kvack.org, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 11/34] mm: compaction: trivial clean up in acct_isolated()
-Date: Thu, 19 Jul 2012 15:36:21 +0100
-Message-Id: <1342708604-26540-12-git-send-email-mgorman@suse.de>
+Subject: [PATCH 10/34] mm: Abort reclaim/compaction if compaction can proceed
+Date: Thu, 19 Jul 2012 15:36:20 +0100
+Message-Id: <1342708604-26540-11-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1342708604-26540-1-git-send-email-mgorman@suse.de>
 References: <1342708604-26540-1-git-send-email-mgorman@suse.de>
@@ -20,73 +20,104 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Minchan Kim <minchan.kim@gmail.com>
+commit e0c23279c9f800c403f37511484d9014ac83adec upstream.
 
-commit b9e84ac1536d35aee03b2601f19694949f0bd506 upstream.
+Stable note: Not tracked on Bugzilla. THP and compaction was found to
+	aggressively reclaim pages and stall systems under different
+	situations that was addressed piecemeal over time.
 
-Stable note: Not tracked in Bugzilla. This patch makes later patches
-	easier to apply but has no other impact.
+If compaction can proceed, shrink_zones() stops doing any work but its
+callers still call shrink_slab() which raises the priority and potentially
+sleeps.  This is unnecessary and wasteful so this patch aborts direct
+reclaim/compaction entirely if compaction can proceed.
 
-acct_isolated of compaction uses page_lru_base_type which returns
-only base type of LRU list so it never returns LRU_ACTIVE_ANON or
-LRU_ACTIVE_FILE.  In addition, cc->nr_[anon|file] is used in only
-acct_isolated so it doesn't have fields in compact_control.
-
-This patch removes fields from compact_control and makes clear function of
-acct_issolated which counts the number of anon|file pages isolated.
-
-Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Acked-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 Acked-by: Rik van Riel <riel@redhat.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Acked-by: Johannes Weiner <jweiner@redhat.com>
+Cc: Josh Boyer <jwboyer@redhat.com>
 Cc: Andrea Arcangeli <aarcange@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 ---
- mm/compaction.c |   18 +++++-------------
- 1 file changed, 5 insertions(+), 13 deletions(-)
+ mm/vmscan.c |   32 +++++++++++++++++++++-----------
+ 1 file changed, 21 insertions(+), 11 deletions(-)
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index c4bc5ac..d8c023e 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -35,10 +35,6 @@ struct compact_control {
- 	unsigned long migrate_pfn;	/* isolate_migratepages search base */
- 	bool sync;			/* Synchronous migration */
- 
--	/* Account for isolated anon and file pages */
--	unsigned long nr_anon;
--	unsigned long nr_file;
--
- 	unsigned int order;		/* order a direct compactor needs */
- 	int migratetype;		/* MOVABLE, RECLAIMABLE etc */
- 	struct zone *zone;
-@@ -223,17 +219,13 @@ static void isolate_freepages(struct zone *zone,
- static void acct_isolated(struct zone *zone, struct compact_control *cc)
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index d11b6c4..65388ac 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2037,14 +2037,19 @@ restart:
+  *
+  * If a zone is deemed to be full of pinned pages then just give it a light
+  * scan then give up on it.
++ *
++ * This function returns true if a zone is being reclaimed for a costly
++ * high-order allocation and compaction is either ready to begin or deferred.
++ * This indicates to the caller that it should retry the allocation or fail.
+  */
+-static void shrink_zones(int priority, struct zonelist *zonelist,
++static bool shrink_zones(int priority, struct zonelist *zonelist,
+ 					struct scan_control *sc)
  {
- 	struct page *page;
--	unsigned int count[NR_LRU_LISTS] = { 0, };
-+	unsigned int count[2] = { 0, };
+ 	struct zoneref *z;
+ 	struct zone *zone;
+ 	unsigned long nr_soft_reclaimed;
+ 	unsigned long nr_soft_scanned;
++	bool should_abort_reclaim = false;
  
--	list_for_each_entry(page, &cc->migratepages, lru) {
--		int lru = page_lru_base_type(page);
--		count[lru]++;
--	}
-+	list_for_each_entry(page, &cc->migratepages, lru)
-+		count[!!page_is_file_cache(page)]++;
+ 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
+ 					gfp_zone(sc->gfp_mask), sc->nodemask) {
+@@ -2061,19 +2066,20 @@ static void shrink_zones(int priority, struct zonelist *zonelist,
+ 				continue;	/* Let kswapd poll it */
+ 			if (COMPACTION_BUILD) {
+ 				/*
+-				 * If we already have plenty of memory
+-				 * free for compaction, don't free any
+-				 * more.  Even though compaction is
+-				 * invoked for any non-zero order,
+-				 * only frequent costly order
+-				 * reclamation is disruptive enough to
+-				 * become a noticable problem, like
+-				 * transparent huge page allocations.
++				 * If we already have plenty of memory free for
++				 * compaction in this zone, don't free any more.
++				 * Even though compaction is invoked for any
++				 * non-zero order, only frequent costly order
++				 * reclamation is disruptive enough to become a
++				 * noticable problem, like transparent huge page
++				 * allocations.
+ 				 */
+ 				if (sc->order > PAGE_ALLOC_COSTLY_ORDER &&
+ 					(compaction_suitable(zone, sc->order) ||
+-					 compaction_deferred(zone)))
++					 compaction_deferred(zone))) {
++					should_abort_reclaim = true;
+ 					continue;
++				}
+ 			}
+ 			/*
+ 			 * This steals pages from memory cgroups over softlimit
+@@ -2092,6 +2098,8 @@ static void shrink_zones(int priority, struct zonelist *zonelist,
  
--	cc->nr_anon = count[LRU_ACTIVE_ANON] + count[LRU_INACTIVE_ANON];
--	cc->nr_file = count[LRU_ACTIVE_FILE] + count[LRU_INACTIVE_FILE];
--	__mod_zone_page_state(zone, NR_ISOLATED_ANON, cc->nr_anon);
--	__mod_zone_page_state(zone, NR_ISOLATED_FILE, cc->nr_file);
-+	__mod_zone_page_state(zone, NR_ISOLATED_ANON, count[0]);
-+	__mod_zone_page_state(zone, NR_ISOLATED_FILE, count[1]);
+ 		shrink_zone(priority, zone, sc);
+ 	}
++
++	return should_abort_reclaim;
  }
  
- /* Similar to reclaim, but different enough that they don't share logic */
+ static bool zone_reclaimable(struct zone *zone)
+@@ -2156,7 +2164,9 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+ 		sc->nr_scanned = 0;
+ 		if (!priority)
+ 			disable_swap_token(sc->mem_cgroup);
+-		shrink_zones(priority, zonelist, sc);
++		if (shrink_zones(priority, zonelist, sc))
++			break;
++
+ 		/*
+ 		 * Don't shrink slabs when reclaiming memory from
+ 		 * over limit cgroups
 -- 
 1.7.9.2
 
