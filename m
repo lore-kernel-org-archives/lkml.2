@@ -1,73 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754218Ab2GSL3a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 07:29:30 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:47153 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753336Ab2GSL31 (ORCPT
+	id S1754238Ab2GSLa7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 07:30:59 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:36740 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752677Ab2GSLaz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 07:29:27 -0400
+	Thu, 19 Jul 2012 07:30:55 -0400
+Date: Thu, 19 Jul 2012 13:30:59 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Rob Clark <rob.clark@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linaro-mm-sig@lists.linaro.org
+Subject: Re: [Linaro-mm-sig] [PATCH] device: add dma_params->max_segment_count
+Message-ID: <20120719113059.GB5262@phenom.ffwll.local>
+Mail-Followup-To: Rob Clark <rob.clark@linaro.org>,
+	linux-kernel@vger.kernel.org, linaro-mm-sig@lists.linaro.org
+References: <1342115056-27419-1-git-send-email-rob.clark@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <201207161622.24063.arnd@arndb.de>
-References: <1342188465-20239-1-git-send-email-vinholikatti@gmail.com>
-	<201207131545.28877.arnd@arndb.de>
-	<1342447217.3176.22.camel@dabdike.int.hansenpartnership.com>
-	<201207161622.24063.arnd@arndb.de>
-Date: Thu, 19 Jul 2012 16:59:26 +0530
-Message-ID: <CAKVbJB8HF2EdLxaEL7PMcU5ZAM70TCA0Y-AbDRz4g_TuXSRgBw@mail.gmail.com>
-Subject: Re: [PATCH V2 0/4] [SCSI] ufs: Adds glue drivers to ufshcd
-From: vinayak holikatti <vinholikatti@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        patches@linaro.org, linux-samsung-soc@vger.kernel.org,
-        santoshsy@gmail.com, arnd@linaro.org, girish.shivananjappa@linaro.org,
-        saugata.das@linaro.org, vishak.g@samsung.com, venkat@linaro.org,
-        k.rajesh@samsung.com, dsaxena@linaro.org, ilho215.lee@samsung.com,
-        nala.la@samsung.com, sreekumar.c@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1342115056-27419-1-git-send-email-rob.clark@linaro.org>
+X-Operating-System: Linux phenom 3.4.0-rc3+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 16, 2012 at 9:52 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Monday 16 July 2012, James Bottomley wrote:
->> On Fri, 2012-07-13 at 15:45 +0000, Arnd Bergmann wrote:
->> > On Friday 13 July 2012, Vinayak Holikatti wrote:
->> > > This patch set adds following features
->> > >  - Seprates PCI specific code from ufshcd.c to make it as core
->> > >  - Adds PCI glue driver ufshcd-pci.c
->> > >  - Adds Platform glue driver ufshcd-pltfrm.c
->> > >  - Update correct transfer size in Command UPIU
->> >
->> > Acked-by: Arnd Bergmann <arnd@arndb.de>
->>
->> I need a maintainer ack for this to go upstream.
->>
->> Also, looking at this, I think this patch series isn't bisectable:
->> Patch 1 removes PCI support and patch 2 adds it back in a different
->> form.  However, any PCI based UFS system would stop working if the
->> bisect landed at patch 1.  I think you can fix this just by combining
->> patches 1 and 2.
->
-> I suggested to split the patch in two in a private review that we
-> did on the linaro mailing list. I gave my Ack because the split
-> was done, but I failed to notice that it was done differently
-> from what I suggested in
->
-> On Monday 02 July 2012, Arnd Bergmann wrote:
->> I would recommend that you split this patch into two separate
->> changesets, where you do all the changes to existing code in the
->> first patch, and only move but don't change code in the second one
->> that creates the new file.
->
-> I agree that breaking bisectibility by ripping out the PCI code
-> first is not good. The version 2 is not actually easier to review
-> at all than the first version, it just splits the changes by
-> file, which is pointless.
-I will roll out another patch series which will address the current issue.
-Firstly will modify existing code with PCI code and then in the second
-move the code to new file ufshcd-pci.c
->
->         Arnd
->
+On Thu, Jul 12, 2012 at 12:44:16PM -0500, Rob Clark wrote:
+> From: Rob Clark <rob@ti.com>
+> 
+> For devices which have constraints about maximum number of segments
+> in an sglist.  For example, a device which could only deal with
+> contiguous buffers would set max_segment_count to 1.
+> 
+> The initial motivation is for devices sharing buffers via dma-buf,
+> to allow the buffer exporter to know the constraints of other
+> devices which have attached to the buffer.  The dma_mask and fields
+> in 'struct device_dma_parameters' tell the exporter everything else
+> that is needed, except whether the importer has constraints about
+> maximum number of segments.
+> 
+> Signed-off-by: Rob Clark <rob@ti.com>
+
+I like this and I guess it's an easy way to solve most of our sharing
+issues with funnier hw. Exporters can then fall back to large allocations,
+CMA, special-purpose remappes (like the omap tiler) or platform-specific
+carveout areas (stolen mem for drm/i915). One little thing though:
+
+Could you add a little helper (maybe in a second patch) to dma_buf that
+walks all currently attached buffers and ORs together all masks and takes
+the minimum of all other limits for all attached buffers?
+
+Yours, Daniel
+
+> ---
+>  include/linux/device.h      |    1 +
+>  include/linux/dma-mapping.h |   16 ++++++++++++++++
+>  2 files changed, 17 insertions(+)
+> 
+> diff --git a/include/linux/device.h b/include/linux/device.h
+> index 161d962..3813735 100644
+> --- a/include/linux/device.h
+> +++ b/include/linux/device.h
+> @@ -568,6 +568,7 @@ struct device_dma_parameters {
+>  	 * sg limitations.
+>  	 */
+>  	unsigned int max_segment_size;
+> +	unsigned int max_segment_count;    /* zero for unlimited */
+>  	unsigned long segment_boundary_mask;
+>  };
+>  
+> diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
+> index dfc099e..f380f79 100644
+> --- a/include/linux/dma-mapping.h
+> +++ b/include/linux/dma-mapping.h
+> @@ -111,6 +111,22 @@ static inline unsigned int dma_set_max_seg_size(struct device *dev,
+>  		return -EIO;
+>  }
+>  
+> +static inline unsigned int dma_get_max_seg_count(struct device *dev)
+> +{
+> +	return dev->dma_parms ? dev->dma_parms->max_segment_count : 0;
+> +}
+> +
+> +static inline int dma_set_max_seg_count(struct device *dev,
+> +						unsigned int count)
+> +{
+> +	if (dev->dma_parms) {
+> +		dev->dma_parms->max_segment_count = count;
+> +		return 0;
+> +	} else
+> +		return -EIO;
+> +}
+> +
+> +
+>  static inline unsigned long dma_get_seg_boundary(struct device *dev)
+>  {
+>  	return dev->dma_parms ?
+> -- 
+> 1.7.9.5
+> 
+> 
+> _______________________________________________
+> Linaro-mm-sig mailing list
+> Linaro-mm-sig@lists.linaro.org
+> http://lists.linaro.org/mailman/listinfo/linaro-mm-sig
+
+-- 
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
