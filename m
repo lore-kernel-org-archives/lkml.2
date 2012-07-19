@@ -1,221 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755748Ab2GSCUS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 22:20:18 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:57045 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751368Ab2GSCUP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 22:20:15 -0400
-X-AuditID: b753bd60-9f483ba000000655-99-50076edc1585
-X-AuditID: b753bd60-9f483ba000000655-99-50076edc1585
-Message-ID: <50076ED9.3000100@hitachi.com>
-Date: Thu, 19 Jul 2012 11:20:09 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1756182Ab2GSC1d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 22:27:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55449 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752072Ab2GSC1a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 22:27:30 -0400
+Date: Wed, 18 Jul 2012 22:27:13 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file.rdu.redhat.com
+To: Jeff Moyer <jmoyer@redhat.com>
+cc: Jan Kara <jack@suse.cz>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jens Axboe <axboe@kernel.dk>, "Alasdair G. Kergon" <agk@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        dm-devel@redhat.com, lwoodman@redhat.com,
+        Andrea Arcangeli <aarcange@redhat.com>, kosaki.motohiro@jp.fujitsu.com
+Subject: Re: Crash when IO is being submitted and block size is changed
+In-Reply-To: <x49ipdmyz4q.fsf@segfault.boston.devel.redhat.com>
+Message-ID: <Pine.LNX.4.64.1207181512530.10923@file.rdu.redhat.com>
+References: <Pine.LNX.4.64.1206272226050.22857@file.rdu.redhat.com>
+ <20120628111541.GB17515@quack.suse.cz> <Pine.LNX.4.64.1207152051490.4240@file.rdu.redhat.com>
+ <x49ipdmyz4q.fsf@segfault.boston.devel.redhat.com>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, yrl.pp-manager.tt@hitachi.com
-Subject: Re: Re: [RFC][PATCH 2/4 v4] ftrace/x86: Add save_regs for i386
- function calls
-References: <20120711195048.885039013@goodmis.org>  <20120711195745.379060003@goodmis.org> <4FFEC58E.5070202@hitachi.com>  <1342205273.30075.19.camel@gandalf.stny.rr.com> <1342627145.11900.7.camel@gandalf.stny.rr.com>
-In-Reply-To: <1342627145.11900.7.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/07/19 0:59), Steven Rostedt wrote:
-> On Fri, 2012-07-13 at 14:47 -0400, Steven Rostedt wrote:
+
+
+On Tue, 17 Jul 2012, Jeff Moyer wrote:
+
+> Mikulas Patocka <mpatocka@redhat.com> writes:
 > 
-> Masami, can you give your Reviewed-by tag for this version? Or is there
-> something else needing to be fixed?
-
-No, that is OK for me. I've just missed that...
-
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-
-Thank you!
-
+> > On Thu, 28 Jun 2012, Jan Kara wrote:
+> >
+> >> On Wed 27-06-12 23:04:09, Mikulas Patocka wrote:
+> >> > The kernel crashes when IO is being submitted to a block device and block 
+> >> > size of that device is changed simultaneously.
+> >>   Nasty ;-)
+> >> 
+> >> > To reproduce the crash, apply this patch:
+> >> > 
+> >> > --- linux-3.4.3-fast.orig/fs/block_dev.c 2012-06-27 20:24:07.000000000 +0200
+> >> > +++ linux-3.4.3-fast/fs/block_dev.c 2012-06-27 20:28:34.000000000 +0200
+> >> > @@ -28,6 +28,7 @@
+> >> >  #include <linux/log2.h>
+> >> >  #include <linux/cleancache.h>
+> >> >  #include <asm/uaccess.h> 
+> >> > +#include <linux/delay.h>
+> >> >  #include "internal.h"
+> >> >  struct bdev_inode {
+> >> > @@ -203,6 +204,7 @@ blkdev_get_blocks(struct inode *inode, s
+> >> >  
+> >> >  	bh->b_bdev = I_BDEV(inode);
+> >> >  	bh->b_blocknr = iblock;
+> >> > +	msleep(1000);
+> >> >  	bh->b_size = max_blocks << inode->i_blkbits;
+> >> >  	if (max_blocks)
+> >> >  		set_buffer_mapped(bh);
+> >> > 
+> >> > Use some device with 4k blocksize, for example a ramdisk.
+> >> > Run "dd if=/dev/ram0 of=/dev/null bs=4k count=1 iflag=direct"
+> >> > While it is sleeping in the msleep function, run "blockdev --setbsz 2048 
+> >> > /dev/ram0" on the other console.
+> >> > You get a BUG at fs/direct-io.c:1013 - BUG_ON(this_chunk_bytes == 0);
+> >> > 
+> >> > 
+> >> > One may ask "why would anyone do this - submit I/O and change block size 
+> >> > simultaneously?" - the problem is that udev and lvm can scan and read all 
+> >> > block devices anytime - so anytime you change block device size, there may 
+> >> > be some i/o to that device in flight and the crash may happen. That BUG 
+> >> > actually happened in production environment because of lvm scanning block 
+> >> > devices and some other software changing block size at the same time.
+> >> > 
+> >>   Yeah, it's nasty and neither solution looks particularly appealing. One
+> >> idea that came to my mind is: I'm trying to solve some races between direct
+> >> IO, buffered IO, hole punching etc. by a new mapping interval lock. I'm not
+> >> sure if it will go anywhere yet but if it does, we can fix the above race
+> >> by taking the mapping lock for the whole block device around setting block
+> >> size thus effectivelly disallowing any IO to it.
+> >> 
+> >> 								Honza
+> >> -- 
+> >> Jan Kara <jack@suse.cz>
+> >> SUSE Labs, CR
+> >> 
+> >
+> > Hi
+> >
+> > This is the patch that fixes this crash: it takes a rw-semaphore around 
+> > all direct-IO path.
+> >
+> > (note that if someone is concerned about performance, the rw-semaphore 
+> > could be made per-cpu --- take it for read on the current CPU and take it 
+> > for write on all CPUs).
 > 
-> Thanks!
+> Here we go again.  :-)  I believe we had at one point tried taking a rw
+> semaphore around GUP inside of the direct I/O code path to fix the fork
+> vs. GUP race (that still exists today).  When testing that, the overhead
+> of the semaphore was *way* too high to be considered an acceptable
+> solution.  I've CC'd Larry Woodman, Andrea, and Kosaki Motohiro who all
+> worked on that particular bug.  Hopefully they can give better
+> quantification of the slowdown than my poor memory.
 > 
-> -- Steve
-> 
->> From: Steven Rostedt <srostedt@redhat.com>
->> Date: Tue, 5 Jun 2012 20:00:11 -0400
->> Subject: [PATCH] ftrace/x86: Add save_regs for i386 function calls
->>
->> Add saving full regs for function tracing on i386.
->> The saving of regs was influenced by patches sent out by
->> Masami Hiramatsu.
->>
->> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
->> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
->> ---
->>  arch/x86/include/asm/ftrace.h |    2 -
->>  arch/x86/kernel/entry_32.S    |   68 +++++++++++++++++++++++++++++++++++++++++
->>  arch/x86/kernel/ftrace.c      |    4 --
->>  3 files changed, 68 insertions(+), 6 deletions(-)
->>
->> diff --git a/arch/x86/include/asm/ftrace.h b/arch/x86/include/asm/ftrace.h
->> index a847501..a6cae0c 100644
->> --- a/arch/x86/include/asm/ftrace.h
->> +++ b/arch/x86/include/asm/ftrace.h
->> @@ -40,10 +40,8 @@
->>  
->>  #ifdef CONFIG_DYNAMIC_FTRACE
->>  #define ARCH_SUPPORTS_FTRACE_OPS 1
->> -#ifdef CONFIG_X86_64
->>  #define ARCH_SUPPORTS_FTRACE_SAVE_REGS
->>  #endif
->> -#endif
->>  
->>  #ifndef __ASSEMBLY__
->>  extern void mcount(void);
->> diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
->> index 5da11d1..46caa56 100644
->> --- a/arch/x86/kernel/entry_32.S
->> +++ b/arch/x86/kernel/entry_32.S
->> @@ -1123,6 +1123,7 @@ ftrace_call:
->>  	popl %edx
->>  	popl %ecx
->>  	popl %eax
->> +ftrace_ret:
->>  #ifdef CONFIG_FUNCTION_GRAPH_TRACER
->>  .globl ftrace_graph_call
->>  ftrace_graph_call:
->> @@ -1134,6 +1135,73 @@ ftrace_stub:
->>  	ret
->>  END(ftrace_caller)
->>  
->> +ENTRY(ftrace_regs_caller)
->> +	pushf	/* push flags before compare (in cs location) */
->> +	cmpl $0, function_trace_stop
->> +	jne ftrace_restore_flags
->> +
->> +	/*
->> +	 * i386 does not save SS and ESP when coming from kernel.
->> +	 * Instead, to get sp, &regs->sp is used (see ptrace.h).
->> +	 * Unfortunately, that means eflags must be at the same location
->> +	 * as the current return ip is. We move the return ip into the
->> +	 * ip location, and move flags into the return ip location.
->> +	 */
->> +	pushl 4(%esp)	/* save return ip into ip slot */
->> +	subl $MCOUNT_INSN_SIZE, (%esp)	/* Adjust ip */
->> +
->> +	pushl $0	/* Load 0 into orig_ax */
->> +	pushl %gs
->> +	pushl %fs
->> +	pushl %es
->> +	pushl %ds
->> +	pushl %eax
->> +	pushl %ebp
->> +	pushl %edi
->> +	pushl %esi
->> +	pushl %edx
->> +	pushl %ecx
->> +	pushl %ebx
->> +
->> +	movl 13*4(%esp), %eax	/* Get the saved flags */
->> +	movl %eax, 14*4(%esp)	/* Move saved flags into regs->flags location */
->> +				/* clobbering return ip */
->> +	movl $__KERNEL_CS,13*4(%esp)
->> +
->> +	movl 12*4(%esp), %eax	/* Load ip (1st parameter) */
->> +	movl 0x4(%ebp), %edx	/* Load parent ip (2cd parameter) */
->> +	lea  (%esp), %ecx
->> +	pushl %ecx		/* Save pt_regs as 4th parameter */
->> +	leal function_trace_op, %ecx /* Save ftrace_pos in 3rd parameter */
->> +
->> +GLOBAL(ftrace_regs_call)
->> +	call ftrace_stub
->> +
->> +	addl $4, %esp		/* Skip pt_regs */
->> +	movl 14*4(%esp), %eax	/* Move flags back into cs */
->> +	movl %eax, 13*4(%esp)	/* Needed to keep addl from modifying flags */
->> +	movl 12*4(%esp), %eax	/* Get return ip from regs->ip */
->> +	addl $MCOUNT_INSN_SIZE, %eax
->> +	movl %eax, 14*4(%esp)	/* Put return ip back for ret */
->> +
->> +	popl %ebx
->> +	popl %ecx
->> +	popl %edx
->> +	popl %esi
->> +	popl %edi
->> +	popl %ebp
->> +	popl %eax
->> +	popl %ds
->> +	popl %es
->> +	popl %fs
->> +	popl %gs
->> +	addl $8, %esp		/* Skip orig_ax and ip */
->> +	popf			/* Pop flags at end (no addl to corrupt flags) */
->> +	jmp ftrace_ret
->> +
->> +ftrace_restore_flags:
->> +	popf
->> +	jmp  ftrace_stub
->>  #else /* ! CONFIG_DYNAMIC_FTRACE */
->>  
->>  ENTRY(mcount)
->> diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
->> index b90eb1a..1d41402 100644
->> --- a/arch/x86/kernel/ftrace.c
->> +++ b/arch/x86/kernel/ftrace.c
->> @@ -206,7 +206,6 @@ static int
->>  ftrace_modify_code(unsigned long ip, unsigned const char *old_code,
->>  		   unsigned const char *new_code);
->>  
->> -#ifdef ARCH_SUPPORTS_FTRACE_SAVE_REGS
->>  /*
->>   * Should never be called:
->>   *  As it is only called by __ftrace_replace_code() which is called by
->> @@ -221,7 +220,6 @@ int ftrace_modify_call(struct dyn_ftrace *rec, unsigned long old_addr,
->>  	WARN_ON(1);
->>  	return -EINVAL;
->>  }
->> -#endif
->>  
->>  int ftrace_update_ftrace_func(ftrace_func_t func)
->>  {
->> @@ -237,7 +235,6 @@ int ftrace_update_ftrace_func(ftrace_func_t func)
->>  
->>  	ret = ftrace_modify_code(ip, old, new);
->>  
->> -#ifdef ARCH_SUPPORTS_FTRACE_SAVE_REGS
->>  	/* Also update the regs callback function */
->>  	if (!ret) {
->>  		ip = (unsigned long)(&ftrace_regs_call);
->> @@ -245,7 +242,6 @@ int ftrace_update_ftrace_func(ftrace_func_t func)
->>  		new = ftrace_call_replace(ip, (unsigned long)func);
->>  		ret = ftrace_modify_code(ip, old, new);
->>  	}
->> -#endif
->>  
->>  	atomic_dec(&modifying_ftrace_code);
->>  
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+> Cheers,
+> Jeff
 
+Both down_read and up_read together take 82 ticks on Core2, 69 ticks on 
+AMD K10, 62 ticks on UltraSparc2 if the target is in L1 cache. So, if 
+percpu rw_semaphores were used, it would slow down only by this amount.
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+I hope that Linux developers are not so obsessed with performance that 
+they want a fast crashing kernel rather than a slow reliable kernel. Note 
+that anything that changes a device block size (for example mounting a 
+filesystem with non-default block size) may trigger a crash if lvm or udev 
+reads the device simultaneously; the crash really happened in business 
+environment).
 
-
+Mikulas
