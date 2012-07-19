@@ -1,101 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754337Ab2GSB2B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 21:28:01 -0400
-Received: from mail132.messagelabs.com ([216.82.242.115]:57673 "EHLO
-	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750806Ab2GSB2A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 21:28:00 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-8.tower-132.messagelabs.com!1342661279!11912424!1
-X-Originating-IP: [216.166.12.72]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 09/90] staging: comedi: adl_pci8164: store the pci_dev in the comedi_device
-Date: Wed, 18 Jul 2012 18:27:53 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <gregkh@linuxfoundation.org>
+	id S1754226Ab2GSB2W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 21:28:22 -0400
+Received: from twin.jikos.cz ([89.185.236.188]:35971 "EHLO twin.jikos.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754063Ab2GSB2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 21:28:19 -0400
+Date: Thu, 19 Jul 2012 03:28:05 +0200
+From: David Sterba <dave@jikos.cz>
+To: Mitch Harder <mitch.harder@sabayonlinux.org>
+Cc: dave@jikos.cz, Arnd Hannemann <arnd@arndnet.de>, chris.mason@fusionio.com,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ierdnah@gmail.com
+Subject: Re: [PATCH v2] Btrfs: allow mount -o remount,compress=no
+Message-ID: <20120719012805.GD17430@twin.jikos.cz>
+Reply-To: dave@jikos.cz
+Mail-Followup-To: Mitch Harder <mitch.harder@sabayonlinux.org>,
+	dave@jikos.cz, Arnd Hannemann <arnd@arndnet.de>,
+	chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
+	linux-kernel@vger.kernel.org, ierdnah@gmail.com
+References: <20120406102232.GH14256@twin.jikos.cz>
+ <1334582871-3670-1-git-send-email-arnd@arndnet.de>
+ <20120416144233.GC20982@twin.jikos.cz>
+ <4FE95B45.8030909@arndnet.de>
+ <20120628154037.GA28144@twin.jikos.cz>
+ <CAKcLGm_cMiEBinmSxkWpY9jm8tW1qbBALcNS-u7DNQhHRF+NFg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-ID: <201207181827.53699.hartleys@visionengravers.com>
+In-Reply-To: <CAKcLGm_cMiEBinmSxkWpY9jm8tW1qbBALcNS-u7DNQhHRF+NFg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the hw_dev pointer in the comedi_device struct to hold the
-pci_dev instead of carrying it in the private data.
+On Fri, Jul 13, 2012 at 10:19:14AM -0500, Mitch Harder wrote:
+> I was testing the lz4(hc) patches, and I found the the compression
+> INCOMPAT flags are not being updated using the method in this patch.
+> 
+> The compression INCOMPAT flags are generally checked and updated in
+> the open_ctree() function.
+> 
+> But, on remount, open_ctree() is not called.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/staging/comedi/drivers/adl_pci8164.c | 19 +++++++++++--------
- 1 file changed, 11 insertions(+), 8 deletions(-)
+This currently happens with lzo as well, right?
 
-diff --git a/drivers/staging/comedi/drivers/adl_pci8164.c b/drivers/staging/comedi/drivers/adl_pci8164.c
-index 1811375..94230d6 100644
---- a/drivers/staging/comedi/drivers/adl_pci8164.c
-+++ b/drivers/staging/comedi/drivers/adl_pci8164.c
-@@ -57,7 +57,6 @@ Configuration Options:
- 
- struct adl_pci8164_private {
- 	int data;
--	struct pci_dev *pci_dev;
- };
- 
- #define devpriv ((struct adl_pci8164_private *)dev->private)
-@@ -251,6 +250,7 @@ static struct pci_dev *adl_pci8164_find_pci(struct comedi_device *dev,
- static int adl_pci8164_attach(struct comedi_device *dev,
- 			      struct comedi_devconfig *it)
- {
-+	struct pci_dev *pcidev;
- 	struct comedi_subdevice *s;
- 	int ret;
- 
-@@ -266,16 +266,17 @@ static int adl_pci8164_attach(struct comedi_device *dev,
- 	if (ret)
- 		return ret;
- 
--	devpriv->pci_dev = adl_pci8164_find_pci(dev, it);
--	if (!devpriv->pci_dev)
-+	pcidev = adl_pci8164_find_pci(dev, it);
-+	if (!pcidev)
- 		return -EIO;
-+	comedi_set_hw_dev(dev, &pcidev->dev);
- 
--	if (comedi_pci_enable(devpriv->pci_dev, "adl_pci8164") < 0) {
-+	if (comedi_pci_enable(pcidev, "adl_pci8164") < 0) {
- 		printk(KERN_ERR "comedi%d: Failed to enable "
- 		"PCI device and request regions\n", dev->minor);
- 		return -EIO;
- 	}
--	dev->iobase = pci_resource_start(devpriv->pci_dev, 2);
-+	dev->iobase = pci_resource_start(pcidev, 2);
- 	printk(KERN_DEBUG "comedi: base addr %4lx\n", dev->iobase);
- 
- 	s = dev->subdevices + 0;
-@@ -324,10 +325,12 @@ static int adl_pci8164_attach(struct comedi_device *dev,
- 
- static void adl_pci8164_detach(struct comedi_device *dev)
- {
--	if (devpriv && devpriv->pci_dev) {
-+	struct pci_dev *pcidev = comedi_to_pci_dev(dev);
-+
-+	if (pcidev) {
- 		if (dev->iobase)
--			comedi_pci_disable(devpriv->pci_dev);
--		pci_dev_put(devpriv->pci_dev);
-+			comedi_pci_disable(pcidev);
-+		pci_dev_put(pcidev);
- 	}
- }
- 
--- 
-1.7.11
+* mount without any compression
+* remount -o compress=lzo
+* write data
+* umount
+* => filesystem has lzo data without incompat bit set
 
+> I was going to test a patch to update the INCOMPAT flags similar to
+> the way lzo INCOMPAT is updated when specifying the compress method in
+> defragmentation.
+> 
+> http://kerneltrap.org/mailarchive/linux-btrfs/2010/11/18/6886194
+
+This is clear that the incompatibility should be set, because the user
+wants it so and the lz4 patches should do the same. I see that the hc
+incompatibility does not though, that has to be fixed.
+
+> But, let me know if it is preferred to just return -EINVAL when trying
+> to remount with a compression method that has an INCOMPAT not yet seen
+> by that volume.
+
+Let's say it returns EINVAL upon remount, then I need to do umount/mount
+with the desired option. Remount is usually not done by accident, so
+similar to the defrag, I'd expect the operation to succeed, but I as a
+user may not know that it brings a backward incompatibility. Getting rid
+of an incompat is not straightfoward at all, so I understand the
+caution.
+
+My preference is to let remount succeed and set the incompat bit,
+possibly with a KERN_INFO message to syslog in case the bit is yet
+unseen by the volume.
+
+
+david
