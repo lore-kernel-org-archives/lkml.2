@@ -1,108 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752118Ab2GSMdE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 08:33:04 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:44603 "EHLO mail.mev.co.uk"
+	id S1752083Ab2GSMfo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 08:35:44 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:54591 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751853Ab2GSMc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 08:32:59 -0400
-Message-ID: <5007FE73.9050804@mev.co.uk>
-Date: Thu, 19 Jul 2012 13:32:51 +0100
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120616 Thunderbird/13.0
+	id S1750894Ab2GSMfm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 08:35:42 -0400
+From: "AnilKumar, Chimata" <anilkumar@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
+        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Subject: RE: [PATCH] regulator: tps65217: fix build error if REGULATOR is
+ not enabled
+Thread-Topic: [PATCH] regulator: tps65217: fix build error if REGULATOR is
+ not enabled
+Thread-Index: AQHNZLBltySQ8gWfykuGTjdobYDAi5cubl2AgABcyGD//6eFgIABnOoQ
+Date: Thu, 19 Jul 2012 12:35:24 +0000
+Message-ID: <331ABD5ECB02734CA317220B2BBEABC13E9F98DB@DBDE01.ent.ti.com>
+References: <1342593663-23938-1-git-send-email-anilkumar@ti.com>
+ <20120718094449.GA22739@opensource.wolfsonmicro.com>
+ <331ABD5ECB02734CA317220B2BBEABC13E9F8BD7@DBDE01.ent.ti.com>
+ <20120718100013.GC22739@opensource.wolfsonmicro.com>
+In-Reply-To: <20120718100013.GC22739@opensource.wolfsonmicro.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.133.24]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Ian Abbott <ian.abbott@mev.co.uk>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 86/90] staging: comedi: rtd520: remove 'got_regions' from
- private data
-References: <201207181904.37725.hartleys@visionengravers.com>
-In-Reply-To: <201207181904.37725.hartleys@visionengravers.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-07-19 03:04, H Hartley Sweeten wrote:
-> The 'got_regions' variable in the private data is used as a flag
-> for the detach to know if the pci device has been enabled.
->
-> Typically the dev->iobase variable is used to indicate this in
-> all the other comedi drivers. Do the same here for consistancy.
+Hi Mark,
 
-As I mentioned for dt3000, dev->iobase isn't ideal for holding PCI 
-memory addresses and is even less ideal to hold a PCI memory address 
-that is passed to ioremap().
+On Wed, Jul 18, 2012 at 15:30:13, Mark Brown wrote:
+> On Wed, Jul 18, 2012 at 09:55:57AM +0000, AnilKumar, Chimata wrote:
+> 
+> > Regulators platform data is added to platform device in MFD driver, which we
+> > need for regulator driver, of_regulator_match() is used to check the regulator
+> > consumers if we pass DT data. If we do not enable CONFIG_REGULATOR then
+> > of_regulator_match() is not exported, so we see this error.
+> 
+> Why are you doing that in the MFD driver?
+> 
 
->
-> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-> Cc: Ian Abbott <abbotti@mev.co.uk>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> ---
->   drivers/staging/comedi/drivers/rtd520.c | 9 +++------
->   1 file changed, 3 insertions(+), 6 deletions(-)
->
-> diff --git a/drivers/staging/comedi/drivers/rtd520.c b/drivers/staging/comedi/drivers/rtd520.c
-> index 02be4dd..aeccae9 100644
-> --- a/drivers/staging/comedi/drivers/rtd520.c
-> +++ b/drivers/staging/comedi/drivers/rtd520.c
-> @@ -312,7 +312,6 @@ struct rtdPrivate {
->
->   	/* PCI device info */
->   	struct pci_dev *pci_dev;
-> -	int got_regions;	/* non-zero if PCI regions owned */
->
->   	/* channel list info */
->   	/* chanBipolar tracks whether a channel is bipolar (and needs +2048) */
-> @@ -1623,7 +1622,6 @@ static int rtd_attach(struct comedi_device *dev, struct comedi_devconfig *it)
->   	struct rtdPrivate *devpriv;
->   	struct comedi_subdevice *s;
->   	int ret;
-> -	resource_size_t physLas0;	/* configuration */
->   	resource_size_t physLas1;	/* data area */
->   	resource_size_t physLcfg;	/* PLX9080 */
->   #ifdef USE_DMA
-> @@ -1658,18 +1656,17 @@ static int rtd_attach(struct comedi_device *dev, struct comedi_devconfig *it)
->   		printk(KERN_INFO "Failed to enable PCI device and request regions.\n");
->   		return ret;
->   	}
-> -	devpriv->got_regions = 1;
->
->   	/*
->   	 * Initialize base addresses
->   	 */
->   	/* Get the physical address from PCI config */
-> -	physLas0 = pci_resource_start(devpriv->pci_dev, LAS0_PCIINDEX);
-> +	dev->iobase = pci_resource_start(devpriv->pci_dev, LAS0_PCIINDEX);
->   	physLas1 = pci_resource_start(devpriv->pci_dev, LAS1_PCIINDEX);
->   	physLcfg = pci_resource_start(devpriv->pci_dev, LCFG_PCIINDEX);
->   	/* Now have the kernel map this into memory */
->   	/* ASSUME page aligned */
-> -	devpriv->las0 = ioremap_nocache(physLas0, LAS0_PCISIZE);
-> +	devpriv->las0 = ioremap_nocache(dev->iobase, LAS0_PCISIZE);
+I got your point, I referred tps6586x driver while developing the initial driver.
+Based on tps6586x MFD driver I added REGULATOR flag. I think tps6586x MFD driver
+need to be cleaned up.
 
-I suggest keeping the physLas0 variable for passing to ioremap_nocache() 
-and just putting some dummy non-zero value in dev->iobase.
+I will submit a patch to make tps65217 MFD driver independent of REGULATOR
+framework.
 
->   	devpriv->las1 = ioremap_nocache(physLas1, LAS1_PCISIZE);
->   	devpriv->lcfg = ioremap_nocache(physLcfg, LCFG_PCISIZE);
->
-> @@ -2000,7 +1997,7 @@ static void rtd_detach(struct comedi_device *dev)
->   		if (devpriv->lcfg)
->   			iounmap(devpriv->lcfg);
->   		if (devpriv->pci_dev) {
-> -			if (devpriv->got_regions)
-> +			if (dev->iobase)
->   				comedi_pci_disable(devpriv->pci_dev);
->   			pci_dev_put(devpriv->pci_dev);
->   		}
->
-
--- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
-
-
+Thanks
+AnilKumar
