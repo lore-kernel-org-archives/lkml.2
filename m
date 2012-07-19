@@ -1,134 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752019Ab2GSOh0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 10:37:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40406 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751751Ab2GSOgv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 10:36:51 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Stable <stable@vger.kernel.org>
-Cc: "Linux-MM <linux-mm"@kvack.org, LKML <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 07/34] vmscan: shrinker->nr updates race and go wrong
-Date: Thu, 19 Jul 2012 15:36:17 +0100
-Message-Id: <1342708604-26540-8-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1342708604-26540-1-git-send-email-mgorman@suse.de>
-References: <1342708604-26540-1-git-send-email-mgorman@suse.de>
+	id S1752004Ab2GSOsc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 10:48:32 -0400
+Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:56919 "EHLO
+	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751239Ab2GSOs3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 10:48:29 -0400
+MIME-Version: 1.0
+In-Reply-To: <47CEF8C4B26E8C44B22B028A650E0EA93EADE11A@DBDE01.ent.ti.com>
+References: <1342607922-11554-1-git-send-email-kishon@ti.com>
+	<1342607922-11554-10-git-send-email-kishon@ti.com>
+	<47CEF8C4B26E8C44B22B028A650E0EA93EADE11A@DBDE01.ent.ti.com>
+Date: Thu, 19 Jul 2012 20:18:27 +0530
+Message-ID: <CAAe_U6+_-0HC-_TEDnOT2jPCRtH=6FHjZdTmmomTSmJOEk7kGA@mail.gmail.com>
+Subject: Re: [PATCH v4 09/11] drivers: usb: musb: Add device tree support for
+ omap musb glue
+From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
+To: "Gupta, Ajay Kumar" <ajay.gupta@ti.com>
+Cc: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "Cousson, Benoit" <b-cousson@ti.com>,
+        "Nayak, Rajendra" <rnayak@ti.com>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Balbi, Felipe" <balbi@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dave Chinner <dchinner@redhat.com>
+Hi,
 
-commit acf92b485cccf028177f46918e045c0c4e80ee10 upstream.
+On Thu, Jul 19, 2012 at 6:51 PM, Gupta, Ajay Kumar <ajay.gupta@ti.com> wrote:
+> Hi,
+>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>> ---
+>>  Documentation/devicetree/bindings/usb/omap-usb.txt |   34 ++++++++++++-
+>>  drivers/usb/musb/omap2430.c                        |   55
+>> ++++++++++++++++++++
+>>  2 files changed, 88 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/Documentation/devicetree/bindings/usb/omap-usb.txt
+>> b/Documentation/devicetree/bindings/usb/omap-usb.txt
+>> index 80a28c9..39cdffb 100644
+>> --- a/Documentation/devicetree/bindings/usb/omap-usb.txt
+>> +++ b/Documentation/devicetree/bindings/usb/omap-usb.txt
+>> @@ -1,4 +1,4 @@
+>> -OMAP USB PHY
+>> +OMAP USB PHY AND GLUE
+>>
+>>  OMAP USB2 PHY
+>>
+>> @@ -14,3 +14,35 @@ usb2phy@0x4a0ad080 {
+>>       compatible = "ti,omap-usb2";
+>>       reg = <0x4a0ad080 0x58>;
+>>  };
+>> +
+>> +OMAP MUSB GLUE
+>> + - compatible : Should be "ti,musb-omap2430"
+>> + - ti,hwmods : must be "usb_otg_hs"
+>> + - multipoint : Should be "1" indicating the musb controller supports
+>> +   multipoint. This is a MUSB configuration-specific setting.
+>> + - num_eps : Specifies the number of endpoints. This is also a
+>> +   MUSB configuration-specific setting. Should be set to "16"
+>> + - ram_bits : Specifies the ram address size. Should be set to "12"
+>> + - interface_type : This is a board specific setting to describe the type
+>> of
+>> +   interface between the controller and the phy. It should be "0" or "1"
+>> +   specifying ULPI and UTMI respectively.
+>> + - mode : Should be "3" to represent OTG. "1" signifies HOST and "2"
+>> +   represents PERIPHERAL.
+>> + - power : Should be "50". This signifies the controller can supply upto
+>> +   100mA when operating in host mode.
+>> +
+>> +SOC specific device node entry
+>> +usb_otg_hs: usb_otg_hs@4a0ab000 {
+>> +     compatible = "ti,musb-omap2430";
+>> +     ti,hwmods = "usb_otg_hs";
+>> +     multipoint = <1>;
+>> +     num_eps = <16>;
+>> +     ram_bits = <12>;
+>> +};
+>> +
+>> +Board specific device node entry
+>> +&usb_otg_hs {
+>> +     interface_type = <1>;
+>> +     mode = <3>;
+>> +     power = <50>;
+>> +};
+>> diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
+>> index addbebf..331e477 100644
+>> --- a/drivers/usb/musb/omap2430.c
+>> +++ b/drivers/usb/musb/omap2430.c
+>> @@ -30,6 +30,7 @@
+>>  #include <linux/init.h>
+>>  #include <linux/list.h>
+>>  #include <linux/io.h>
+>> +#include <linux/of.h>
+>>  #include <linux/platform_device.h>
+>>  #include <linux/dma-mapping.h>
+>>  #include <linux/pm_runtime.h>
+>> @@ -469,8 +470,11 @@ static u64 omap2430_dmamask = DMA_BIT_MASK(32);
+>>  static int __devinit omap2430_probe(struct platform_device *pdev)
+>>  {
+>>       struct musb_hdrc_platform_data  *pdata = pdev->dev.platform_data;
+>> +     struct omap_musb_board_data     *data;
+>>       struct platform_device          *musb;
+>>       struct omap2430_glue            *glue;
+>> +     struct device_node              *np = pdev->dev.of_node;
+>> +     struct musb_hdrc_config         *config;
+>>       struct resource                 *res;
+>>       int                             ret = -ENOMEM;
+>>
+>> @@ -500,6 +504,43 @@ static int __devinit omap2430_probe(struct
+>> platform_device *pdev)
+>>       if (glue->control_otghs == NULL)
+>>               dev_dbg(&pdev->dev, "Failed to obtain control memory\n");
+>>
+>> +     if (np) {
+>> +             pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
+>> +             if (!pdata) {
+>> +                     dev_err(&pdev->dev,
+>> +                             "failed to allocate musb platfrom data\n");
+>> +                     ret = -ENOMEM;
+>> +                     goto err1;
+>> +             }
+>> +
+>> +             data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
+>> +             if (!data) {
+>> +                     dev_err(&pdev->dev,
+>> +                                     "failed to allocate musb board data\n");
+>> +                     ret = -ENOMEM;
+>> +                     goto err1;
+>> +             }
+>> +
+>> +             config = devm_kzalloc(&pdev->dev, sizeof(*config), GFP_KERNEL);
+>> +             if (!data) {
+>> +                     dev_err(&pdev->dev,
+>> +                             "failed to allocate musb hdrc config\n");
+>> +                     goto err1;
+>> +             }
+>> +
+>> +             of_property_read_u32(np, "mode", (u32 *)&pdata->mode);
+>> +             of_property_read_u32(np, "interface_type",
+>> +                                             (u32 *)&data->interface_type);
+>> +             of_property_read_u32(np, "num_eps", (u32 *)&config->num_eps);
+>> +             of_property_read_u32(np, "ram_bits", (u32 *)&config->ram_bits);
+>> +             of_property_read_u32(np, "mode", (u32 *)&pdata->mode);
+>
+> pdata->mode is already read so above should be removed.
 
-Stable note: Not tracked in Bugzilla. This patch reduces excessive
-	reclaim of slab objects reducing the amount of information
-	that has to be brought back in from disk.
+Ok.
 
-shrink_slab() allows shrinkers to be called in parallel so the
-struct shrinker can be updated concurrently. It does not provide any
-exclusion for such updates, so we can get the shrinker->nr value
-increasing or decreasing incorrectly.
-
-As a result, when a shrinker repeatedly returns a value of -1 (e.g.
-a VFS shrinker called w/ GFP_NOFS), the shrinker->nr goes haywire,
-sometimes updating with the scan count that wasn't used, sometimes
-losing it altogether. Worse is when a shrinker does work and that
-update is lost due to racy updates, which means the shrinker will do
-the work again!
-
-Fix this by making the total_scan calculations independent of
-shrinker->nr, and making the shrinker->nr updates atomic w.r.t. to
-other updates via cmpxchg loops.
-
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- mm/vmscan.c |   45 ++++++++++++++++++++++++++++++++-------------
- 1 file changed, 32 insertions(+), 13 deletions(-)
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index d875058..31b551e 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -251,17 +251,29 @@ unsigned long shrink_slab(struct shrink_control *shrink,
- 		unsigned long total_scan;
- 		unsigned long max_pass;
- 		int shrink_ret = 0;
-+		long nr;
-+		long new_nr;
- 
-+		/*
-+		 * copy the current shrinker scan count into a local variable
-+		 * and zero it so that other concurrent shrinker invocations
-+		 * don't also do this scanning work.
-+		 */
-+		do {
-+			nr = shrinker->nr;
-+		} while (cmpxchg(&shrinker->nr, nr, 0) != nr);
-+
-+		total_scan = nr;
- 		max_pass = do_shrinker_shrink(shrinker, shrink, 0);
- 		delta = (4 * nr_pages_scanned) / shrinker->seeks;
- 		delta *= max_pass;
- 		do_div(delta, lru_pages + 1);
--		shrinker->nr += delta;
--		if (shrinker->nr < 0) {
-+		total_scan += delta;
-+		if (total_scan < 0) {
- 			printk(KERN_ERR "shrink_slab: %pF negative objects to "
- 			       "delete nr=%ld\n",
--			       shrinker->shrink, shrinker->nr);
--			shrinker->nr = max_pass;
-+			       shrinker->shrink, total_scan);
-+			total_scan = max_pass;
- 		}
- 
- 		/*
-@@ -269,13 +281,10 @@ unsigned long shrink_slab(struct shrink_control *shrink,
- 		 * never try to free more than twice the estimate number of
- 		 * freeable entries.
- 		 */
--		if (shrinker->nr > max_pass * 2)
--			shrinker->nr = max_pass * 2;
--
--		total_scan = shrinker->nr;
--		shrinker->nr = 0;
-+		if (total_scan > max_pass * 2)
-+			total_scan = max_pass * 2;
- 
--		trace_mm_shrink_slab_start(shrinker, shrink, total_scan,
-+		trace_mm_shrink_slab_start(shrinker, shrink, nr,
- 					nr_pages_scanned, lru_pages,
- 					max_pass, delta, total_scan);
- 
-@@ -296,9 +305,19 @@ unsigned long shrink_slab(struct shrink_control *shrink,
- 			cond_resched();
- 		}
- 
--		shrinker->nr += total_scan;
--		trace_mm_shrink_slab_end(shrinker, shrink_ret, total_scan,
--					 shrinker->nr);
-+		/*
-+		 * move the unused scan count back into the shrinker in a
-+		 * manner that handles concurrent updates. If we exhausted the
-+		 * scan, there is no need to do an update.
-+		 */
-+		do {
-+			nr = shrinker->nr;
-+			new_nr = total_scan + nr;
-+			if (total_scan <= 0)
-+				break;
-+		} while (cmpxchg(&shrinker->nr, nr, new_nr) != nr);
-+
-+		trace_mm_shrink_slab_end(shrinker, shrink_ret, nr, new_nr);
- 	}
- 	up_read(&shrinker_rwsem);
- out:
--- 
-1.7.9.2
-
+Thanks
+Kishon
