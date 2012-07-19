@@ -1,79 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753495Ab2GSLpu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 07:45:50 -0400
-Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:14685
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751701Ab2GSLpt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 07:45:49 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bh8275dhz2dh668h839hd24he5bhf0ah)
-X-WSS-ID: 0M7EOO8-02-770-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: <iommu@lists.linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>,
-        <stable@vger.kernel.org>
-Subject: [PATCH 2/2] iommu/amd: Fix hotplug with iommu=pt
-Date: Thu, 19 Jul 2012 13:45:21 +0200
-Message-ID: <1342698321-21720-2-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1342698321-21720-1-git-send-email-joerg.roedel@amd.com>
-References: <1342698321-21720-1-git-send-email-joerg.roedel@amd.com>
+	id S1754332Ab2GSLqu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 07:46:50 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:44522 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753977Ab2GSLqp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 07:46:45 -0400
+Message-ID: <5007F39F.1020601@mev.co.uk>
+Date: Thu, 19 Jul 2012 12:46:39 +0100
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120616 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Ian Abbott <ian.abbott@mev.co.uk>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 65/90] staging: comedi: dt3000: cleanup "find pci device"
+ code
+References: <201207181857.50208.hartleys@visionengravers.com>
+In-Reply-To: <201207181857.50208.hartleys@visionengravers.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This did not work because devices are not put into the
-pt_domain. Fix this.
+On 2012-07-19 02:57, H Hartley Sweeten wrote:
+> The "find pci device" code for this driver was split between
+> two functions which could cause the driver to walk the pci
+> bus multiple times while looking for a match.
 
-Cc: stable@vger.kernel.org
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
----
- drivers/iommu/amd_iommu.c |   17 +++++++++++++----
- 1 file changed, 13 insertions(+), 4 deletions(-)
+Actually the original version only walks through the PCI devices once 
+(due to the `from` parameter in dt_pci_find_device()), but your version 
+is cleaner.
 
-diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-index 6256263..3f365ab 100644
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -2254,6 +2254,18 @@ static int device_change_notifier(struct notifier_block *nb,
- 
- 		iommu_init_device(dev);
- 
-+		/*
-+		 * dev_data is still NULL and
-+		 * got initialized in iommu_init_device
-+		 */
-+		dev_data = get_dev_data(dev);
-+
-+		if (iommu_pass_through || dev_data->iommu_v2) {
-+			dev_data->passthrough = true;
-+			attach_device(dev, pt_domain);
-+			break;
-+		}
-+
- 		domain = domain_for_device(dev);
- 
- 		/* allocate a protection domain if a device is added */
-@@ -2271,10 +2283,7 @@ static int device_change_notifier(struct notifier_block *nb,
- 
- 		dev_data = get_dev_data(dev);
- 
--		if (!dev_data->passthrough)
--			dev->archdata.dma_ops = &amd_iommu_dma_ops;
--		else
--			dev->archdata.dma_ops = &nommu_dma_ops;
-+		dev->archdata.dma_ops = &amd_iommu_dma_ops;
- 
- 		break;
- 	case BUS_NOTIFY_DEL_DEVICE:
 -- 
-1.7.9.5
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
 
 
