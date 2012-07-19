@@ -1,64 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752221Ab2GSWJB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 18:09:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36125 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751739Ab2GSWI6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 18:08:58 -0400
-Date: Thu, 19 Jul 2012 23:08:55 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Jonathan Nieder <jrnieder@gmail.com>
-Cc: Stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 30/34] mm: vmscan: Do not force kswapd to scan small
- targets
-Message-ID: <20120719220855.GA9222@suse.de>
-References: <1342708604-26540-1-git-send-email-mgorman@suse.de>
- <1342708604-26540-31-git-send-email-mgorman@suse.de>
- <20120719203743.GD19392@burratino>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20120719203743.GD19392@burratino>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752326Ab2GSWL2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 18:11:28 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:33668 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751856Ab2GSWL0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 18:11:26 -0400
+Message-ID: <1342735885.17350.3.camel@joe2Laptop>
+Subject: [PATCH] checkpatch: Add checks for do {} while (0) macro misuses
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
+Date: Thu, 19 Jul 2012 15:11:25 -0700
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 19, 2012 at 03:37:43PM -0500, Jonathan Nieder wrote:
-> Mel Gorman wrote:
-> 
-> > commit ad2b8e601099a23dffffb53f91c18d874fe98854 upstream - WARNING: partial backport only
-> >
-> > Stable note: Not tracked in Bugzilla. This patch is very controversial for
-> > 	-stable. The upstream patch is addressing a completely different
-> > 	issue but accidentally contained an important fix. The workload
-> > 	in question was running memcached and then started IO in the
-> > 	background. memcached should stay resident but without this patch
-> > 	it gets swapped. Sometimes this manifests as a drop in throughput
-> > 	but mostly it was observed through /proc/vmstat.
-> 
-> I had thought partial backports like this were pretty normal and ok,
-> actually, as long as they are well explained. 
+These types of macros should not be used for either a
+single statement nor should the macro end with a semi-colon.
 
-I was not aware of that and it's not something I had noticed for any other
-MM backports to -stable. I wanted to call it out instead of seeing if
-reviewers happened to spot the upstream commit did not resemble this patch :)
+Add tests for these conditions.
 
-> Otherwise there would
-> be no way to fix bugs in stable in the above situation.
-> 
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ scripts/checkpatch.pl |   39 +++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 39 insertions(+), 0 deletions(-)
 
-If there is no problem with this then the note can change slightly
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index a743622..da8232b 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -2988,6 +2988,45 @@ sub process {
+ 			}
+ 		}
+ 
++# do {} while (0) macro tests:
++# single-statement macros do not need to be enclosed in do while (0) loop,
++# macro should not end with a semicolon
++		if ($^V && $^V ge 5.10.0 &&
++		    $realfile !~ m@/vmlinux.lds.h$@ &&
++		    $line =~ /^.\s*\#\s*define\s+$Ident(\()?/) {
++			my $ln = $linenr;
++			my $cnt = $realcnt;
++			my ($off, $dstat, $dcond, $rest);
++			my $ctx = '';
++			($dstat, $dcond, $ln, $cnt, $off) =
++				ctx_statement_block($linenr, $realcnt, 0);
++			$ctx = $dstat;
++
++			$dstat =~ s/\\\n.//g;
++
++			if ($dstat =~ /^\+\s*#\s*define\s+$Ident\s*${balanced_parens}\s*do\s*{(.*)\s*}\s*while\s*\(\s*0\s*\)\s*([;\s]*)\s*$/) {
++				my $stmts = $2;
++				my $semis = $3;
++
++				$ctx =~ s/\n*$//;
++				my $cnt = statement_rawlines($ctx);
++				my $herectx = $here . "\n";
++
++				for (my $n = 0; $n < $cnt; $n++) {
++					$herectx .= raw_line($linenr, $n) . "\n";
++				}
++
++				if (($stmts =~ tr/;/;/) == 1) {
++					WARN("SINGLE_STATEMENT_DO_WHILE_MACRO",
++					     "Single statement macros should not use a do {} while (0) loop\n" . "$herectx");
++				}
++				if (defined $semis && $semis ne "") {
++					WARN("DO_WHILE_MACRO_WITH_TRAILING_SEMICOLON",
++					     "do {} while (0) macros should not be semicolon terminated\n" . "$herectx");
++				}
++			}
++		}
++
+ # make sure symbols are always wrapped with VMLINUX_SYMBOL() ...
+ # all assignments may have only one of the following with an assignment:
+ #	.
 
-Stable note: Not tracked in Bugzilla. This is a partial backport of an
-	upstream commit addressing a completely different issue
-	that accidentally contained an important fix. The workload
-	this patch helps was memcached when IO is started in the
-	background. memcached should stay resident but without this patch
-	it gets swapped. Sometimes this manifests as a drop in throughput
-	but mostly it was observed through /proc/vmstat.
 
--- 
-Mel Gorman
-SUSE Labs
