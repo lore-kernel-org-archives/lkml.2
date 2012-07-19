@@ -1,50 +1,653 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751467Ab2GSPo1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 11:44:27 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:58254 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750854Ab2GSPoV (ORCPT
+	id S1752547Ab2GSPoH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 11:44:07 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33560 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752367Ab2GSPoC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 11:44:21 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120719152618.GD16873@home.goodmis.org>
-References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com>
- <20120713210240.GG1707@redhat.com> <CA+55aFz_Vv899eXz6F0jtFH=hT4QpB0_2XuS8HySPjHC6s+L7Q@mail.gmail.com>
- <20120719152618.GD16873@home.goodmis.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 19 Jul 2012 08:43:58 -0700
-X-Google-Sender-Auth: hTKFHifvr5KM7J1BHPs7IJAgF-0
-Message-ID: <CA+55aFzTq2CNxPa3X+N=biFgifrmWbeWQJZLVFAFdySWXQCKXg@mail.gmail.com>
-Subject: Re: [RFC] Simplifying kernel configuration for distro issues
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Dave Jones <davej@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
-        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
-        Debian Kernel Team <debian-kernel@lists.debian.org>,
-        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Fedora Kernel Team <kernel-team@fedoraproject.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 19 Jul 2012 11:44:02 -0400
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: [PATCH 3/5] perf tools: Introduce hist_period_print functions
+Date: Fri, 20 Jul 2012 00:42:36 +0900
+Message-Id: <1342712558-8185-4-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1342712558-8185-1-git-send-email-namhyung@kernel.org>
+References: <1342712558-8185-1-git-send-email-namhyung@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 19, 2012 at 8:26 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
->
-> Side note, and this is for the 1%. If you want a true minconfig for your
-> system, ktest can do that for you.
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Try it, it's actually much harder than it seems. Like allmodconfig, it
-handles the minimum hardware well, but it tends to handle the subtle
-issues really badly.
+Current hist print functions are messy. Refactor them using the hpp
+callbacks. This will make it easy to add new features.
 
-Many config options cause *very* subtle failures that are almost
-impossible to see. Like firewalls not loading correctly (and leaving
-the machine completely open), or just stuff that you didn't happen to
-test (USB sticks, printers, certain programs) not working. Not having
-the right audit options will make things still "work", but you'll get
-warnings at bootup, and who knows what that causes etc etc.
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/ui/hist.c   |  492 ++++++++++++++++++++++++++++++++----------------
+ tools/perf/util/hist.h |   35 ++++
+ 2 files changed, 365 insertions(+), 162 deletions(-)
 
-These kinds of things are exactly why I'd like to have a distro config.
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index c0649f5dc9b4..1e7ea7e684e3 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -5,6 +5,273 @@
+ #include "../util/hist.h"
+ #include "../util/sort.h"
+ 
++static int hpp_header_overhead(struct hist_print_context *ctx)
++{
++	if (ctx->ptr)
++		return scnprintf(ctx->s, ctx->size, "Baseline");
++	else
++		return scnprintf(ctx->s, ctx->size, "Overhead");
++}
++
++static int hpp_width_overhead(struct hist_print_context *ctx __used)
++{
++	return 8;
++}
++
++static int hpp_color_overhead(struct hist_print_context *ctx,
++			      struct hist_entry *he)
++{
++	double percent = 100.0 * he->period / ctx->total_period;
++	return percent_color_snprintf(ctx->s, ctx->size, "  %5.2f%%", percent);
++}
++
++static int hpp_entry_overhead(struct hist_print_context *ctx,
++			      struct hist_entry *he)
++{
++	double percent = 100.0 * he->period / ctx->total_period;
++	return scnprintf(ctx->s, ctx->size, "  %5.2f%%", percent);
++}
++
++static int hpp_header_overhead_sys(struct hist_print_context *ctx)
++{
++	return scnprintf(ctx->s, ctx->size, " sys  ");
++}
++
++static int hpp_width_overhead_sys(struct hist_print_context *ctx __used)
++{
++	return 6;
++}
++
++static int hpp_color_overhead_sys(struct hist_print_context *ctx,
++				  struct hist_entry *he)
++{
++	double percent = 100.0 * he->period_sys / ctx->total_period;
++	return percent_color_snprintf(ctx->s, ctx->size, "%5.2f%%", percent);
++}
++
++static int hpp_entry_overhead_sys(struct hist_print_context *ctx,
++				  struct hist_entry *he)
++{
++	double percent = 100.0 * he->period_sys / ctx->total_period;
++	return scnprintf(ctx->s, ctx->size, "%5.2f%%", percent);
++}
++
++static int hpp_header_overhead_us(struct hist_print_context *ctx)
++{
++	return scnprintf(ctx->s, ctx->size, " user ");
++}
++
++static int hpp_width_overhead_us(struct hist_print_context *ctx __used)
++{
++	return 6;
++}
++
++static int hpp_color_overhead_us(struct hist_print_context *ctx,
++				 struct hist_entry *he)
++{
++	double percent = 100.0 * he->period_us / ctx->total_period;
++	return percent_color_snprintf(ctx->s, ctx->size, "%5.2f%%", percent);
++}
++
++static int hpp_entry_overhead_us(struct hist_print_context *ctx,
++				 struct hist_entry *he)
++{
++	double percent = 100.0 * he->period_us / ctx->total_period;
++	return scnprintf(ctx->s, ctx->size, "%5.2f%%", percent);
++}
++
++static int hpp_header_overhead_guest_sys(struct hist_print_context *ctx)
++{
++	return scnprintf(ctx->s, ctx->size, "guest sys");
++}
++
++static int hpp_width_overhead_guest_sys(struct hist_print_context *ctx __used)
++{
++	return 9;
++}
++
++static int hpp_color_overhead_guest_sys(struct hist_print_context *ctx,
++					struct hist_entry *he)
++{
++	double percent = 100.0 * he->period_guest_sys / ctx->total_period;
++	return percent_color_snprintf(ctx->s, ctx->size, "  %5.2f%% ", percent);
++}
++
++static int hpp_entry_overhead_guest_sys(struct hist_print_context *ctx,
++					struct hist_entry *he)
++{
++	double percent = 100.0 * he->period_guest_sys / ctx->total_period;
++	return scnprintf(ctx->s, ctx->size, "  %5.2f%% ", percent);
++}
++
++static int hpp_header_overhead_guest_us(struct hist_print_context *ctx)
++{
++	return scnprintf(ctx->s, ctx->size, "guest usr");
++}
++
++static int hpp_width_overhead_guest_us(struct hist_print_context *ctx __used)
++{
++	return 9;
++}
++
++static int hpp_color_overhead_guest_us(struct hist_print_context *ctx,
++				       struct hist_entry *he)
++{
++	double percent = 100.0 * he->period_guest_us / ctx->total_period;
++	return percent_color_snprintf(ctx->s, ctx->size, "  %5.2f%% ", percent);
++}
++
++static int hpp_entry_overhead_guest_us(struct hist_print_context *ctx,
++				       struct hist_entry *he)
++{
++	double percent = 100.0 * he->period_guest_us / ctx->total_period;
++	return scnprintf(ctx->s, ctx->size, "  %5.2f%% ", percent);
++}
++
++static int hpp_header_samples(struct hist_print_context *ctx)
++{
++	return scnprintf(ctx->s, ctx->size, "  Samples  ");
++}
++
++static int hpp_width_samples(struct hist_print_context *ctx __used)
++{
++	return 11;
++}
++
++static int hpp_entry_samples(struct hist_print_context *ctx,
++			     struct hist_entry *he)
++{
++	return scnprintf(ctx->s, ctx->size, "%11" PRIu64, he->nr_events);
++}
++
++static int hpp_header_period(struct hist_print_context *ctx)
++{
++	return scnprintf(ctx->s, ctx->size, "   Period   ");
++}
++
++static int hpp_width_period(struct hist_print_context *ctx __used)
++{
++	return 12;
++}
++
++static int hpp_entry_period(struct hist_print_context *ctx,
++			    struct hist_entry *he)
++{
++	return scnprintf(ctx->s, ctx->size, "%12" PRIu64, he->period);
++}
++
++static int hpp_header_delta(struct hist_print_context *ctx)
++{
++	return scnprintf(ctx->s, ctx->size, " Delta ");
++}
++
++static int hpp_width_delta(struct hist_print_context *ctx __used)
++{
++	return 7;
++}
++
++static int hpp_entry_delta(struct hist_print_context *ctx,
++			   struct hist_entry *he)
++{
++	struct hists *pair_hists = ctx->ptr;
++	u64 old_total, new_total;
++	double old_percent = 0, new_percent = 0;
++	double diff;
++
++	old_total = pair_hists->stats.total_period;
++	if (old_total > 0)
++		old_percent = 100.0 * he->pair->period / old_total;
++
++	new_total = ctx->total_period;
++	if (new_total > 0)
++		new_percent = 100.0 * he->period / new_total;
++
++	diff = new_percent - old_percent;
++	if (fabs(diff) < 0.01)
++		return scnprintf(ctx->s, ctx->size, "       ");
++
++	return scnprintf(ctx->s, ctx->size, "%+5.2f%%", diff);
++}
++
++static int hpp_header_displ(struct hist_print_context *ctx)
++{
++	return scnprintf(ctx->s, ctx->size, "Displ");
++}
++
++static int hpp_width_displ(struct hist_print_context *ctx __used)
++{
++	return 5;
++}
++
++static int hpp_entry_displ(struct hist_print_context *ctx,
++			   struct hist_entry *he __used)
++{
++	if (ctx->displacement)
++		return scnprintf(ctx->s, ctx->size, "%+4ld", ctx->displacement);
++	else
++		return scnprintf(ctx->s, ctx->size, "     ");
++}
++
++#define HPP_COLOR_PRINT_FNS(_name)		\
++	.header	= hpp_header_ ## _name,		\
++	.width	= hpp_width_ ## _name,		\
++	.color	= hpp_color_ ## _name,		\
++	.entry	= hpp_entry_ ## _name
++
++#define HPP_PRINT_FNS(_name)			\
++	.header	= hpp_header_ ## _name,		\
++	.width	= hpp_width_ ## _name,		\
++	.entry	= hpp_entry_ ## _name
++
++struct hist_period_print hpp_functions[] = {
++	{ .cond = true,  HPP_COLOR_PRINT_FNS(overhead) },
++	{ .cond = false, HPP_COLOR_PRINT_FNS(overhead_sys) },
++	{ .cond = false, HPP_COLOR_PRINT_FNS(overhead_us) },
++	{ .cond = false, HPP_COLOR_PRINT_FNS(overhead_guest_sys) },
++	{ .cond = false, HPP_COLOR_PRINT_FNS(overhead_guest_us) },
++	{ .cond = false, HPP_PRINT_FNS(samples) },
++	{ .cond = false, HPP_PRINT_FNS(period) },
++	{ .cond = false, HPP_PRINT_FNS(delta) },
++	{ .cond = false, HPP_PRINT_FNS(displ) }
++};
++
++#undef HPP_COLOR_PRINT_FNS
++#undef HPP_PRINT_FNS
++
++void init_hpp_functions(struct hists *pair_hists, bool show_displacement)
++{
++	static bool init_done = false;
++
++	if (init_done)
++		return;
++
++	if (symbol_conf.show_cpu_utilization) {
++		hpp_functions[PERF_HPP__OVERHEAD_SYS].cond = true;
++		hpp_functions[PERF_HPP__OVERHEAD_US].cond = true;
++
++		if (perf_guest) {
++			hpp_functions[PERF_HPP__OVERHEAD_GUEST_SYS].cond = true;
++			hpp_functions[PERF_HPP__OVERHEAD_GUEST_US].cond = true;
++		}
++	}
++
++	if (symbol_conf.show_nr_samples)
++		hpp_functions[PERF_HPP__SAMPLES].cond = true;
++
++	if (symbol_conf.show_total_period)
++		hpp_functions[PERF_HPP__PERIOD].cond = true;
++
++	if (pair_hists) {
++		hpp_functions[PERF_HPP__DELTA].cond = true;
++
++		if (show_displacement)
++			hpp_functions[PERF_HPP__DISPL].cond = true;
++	}
++
++	init_done = true;
++}
++
++/* callchain print functions */
+ static size_t callchain__fprintf_left_margin(FILE *fp, int left_margin)
+ {
+ 	int i;
+@@ -287,117 +554,40 @@ static size_t callchain__fprintf(struct hist_entry *he,
+ 	return 0;
+ }
+ 
+-static int hist_entry__period_snprintf(struct hist_entry *he, char *s,
+-				       size_t size, struct hists *pair_hists,
+-				       bool show_displacement, long displacement,
+-				       bool color, u64 total_period)
++static inline void advance_hp_context(struct hist_print_context *ctx, int inc)
++{
++	ctx->s += inc;
++	ctx->size -= inc;
++}
++
++static int hist_entry__period_snprintf(struct hist_print_context *ctx,
++				       struct hist_entry *he, bool color)
+ {
+-	u64 period, total, period_sys, period_us, period_guest_sys, period_guest_us;
+-	u64 nr_events;
+ 	const char *sep = symbol_conf.field_sep;
+-	int ret;
++	char *start_s = ctx->s;
++	int i, ret;
+ 
+ 	if (symbol_conf.exclude_other && !he->parent)
+ 		return 0;
+ 
+-	if (pair_hists) {
+-		period = he->pair ? he->pair->period : 0;
+-		nr_events = he->pair ? he->pair->nr_events : 0;
+-		total = pair_hists->stats.total_period;
+-		period_sys = he->pair ? he->pair->period_sys : 0;
+-		period_us = he->pair ? he->pair->period_us : 0;
+-		period_guest_sys = he->pair ? he->pair->period_guest_sys : 0;
+-		period_guest_us = he->pair ? he->pair->period_guest_us : 0;
+-	} else {
+-		period = he->period;
+-		nr_events = he->nr_events;
+-		total = total_period;
+-		period_sys = he->period_sys;
+-		period_us = he->period_us;
+-		period_guest_sys = he->period_guest_sys;
+-		period_guest_us = he->period_guest_us;
+-	}
++	for (i = 0; i < PERF_HPP__MAX_INDEX; i++) {
++		if (!hpp_functions[i].cond)
++			continue;
+ 
+-	if (total) {
+-		if (color)
+-			ret = percent_color_snprintf(s, size,
+-						     sep ? "%.2f" : "   %6.2f%%",
+-						     (period * 100.0) / total);
+-		else
+-			ret = scnprintf(s, size, sep ? "%.2f" : "   %6.2f%%",
+-				       (period * 100.0) / total);
+-		if (symbol_conf.show_cpu_utilization) {
+-			ret += percent_color_snprintf(s + ret, size - ret,
+-					sep ? "%.2f" : "   %6.2f%%",
+-					(period_sys * 100.0) / total);
+-			ret += percent_color_snprintf(s + ret, size - ret,
+-					sep ? "%.2f" : "   %6.2f%%",
+-					(period_us * 100.0) / total);
+-			if (perf_guest) {
+-				ret += percent_color_snprintf(s + ret,
+-						size - ret,
+-						sep ? "%.2f" : "   %6.2f%%",
+-						(period_guest_sys * 100.0) /
+-								total);
+-				ret += percent_color_snprintf(s + ret,
+-						size - ret,
+-						sep ? "%.2f" : "   %6.2f%%",
+-						(period_guest_us * 100.0) /
+-								total);
+-			}
++		if (!sep || i > 0) {
++			ret = scnprintf(ctx->s, ctx->size, "%s", sep ?: "  ");
++			advance_hp_context(ctx, ret);
+ 		}
+-	} else
+-		ret = scnprintf(s, size, sep ? "%" PRIu64 : "%12" PRIu64 " ", period);
+ 
+-	if (symbol_conf.show_nr_samples) {
+-		if (sep)
+-			ret += scnprintf(s + ret, size - ret, "%c%" PRIu64, *sep, nr_events);
++		if (color && hpp_functions[i].color)
++			ret = hpp_functions[i].color(ctx, he);
+ 		else
+-			ret += scnprintf(s + ret, size - ret, "%11" PRIu64, nr_events);
+-	}
++			ret = hpp_functions[i].entry(ctx, he);
+ 
+-	if (symbol_conf.show_total_period) {
+-		if (sep)
+-			ret += scnprintf(s + ret, size - ret, "%c%" PRIu64, *sep, period);
+-		else
+-			ret += scnprintf(s + ret, size - ret, " %12" PRIu64, period);
++		advance_hp_context(ctx, ret);
+ 	}
+ 
+-	if (pair_hists) {
+-		char bf[32];
+-		double old_percent = 0, new_percent = 0, diff;
+-
+-		if (total > 0)
+-			old_percent = (period * 100.0) / total;
+-		if (total_period > 0)
+-			new_percent = (he->period * 100.0) / total_period;
+-
+-		diff = new_percent - old_percent;
+-
+-		if (fabs(diff) >= 0.01)
+-			scnprintf(bf, sizeof(bf), "%+4.2F%%", diff);
+-		else
+-			scnprintf(bf, sizeof(bf), " ");
+-
+-		if (sep)
+-			ret += scnprintf(s + ret, size - ret, "%c%s", *sep, bf);
+-		else
+-			ret += scnprintf(s + ret, size - ret, "%11.11s", bf);
+-
+-		if (show_displacement) {
+-			if (displacement)
+-				scnprintf(bf, sizeof(bf), "%+4ld", displacement);
+-			else
+-				scnprintf(bf, sizeof(bf), " ");
+-
+-			if (sep)
+-				ret += scnprintf(s + ret, size - ret, "%c%s", *sep, bf);
+-			else
+-				ret += scnprintf(s + ret, size - ret, "%6.6s", bf);
+-		}
+-	}
+-
+-	return ret;
++	return ctx->s - start_s;
+ }
+ 
+ int hist_entry__sort_snprintf(struct hist_entry *he, char *s, size_t size,
+@@ -437,18 +627,22 @@ static size_t hist_entry__callchain_fprintf(struct hist_entry *he,
+ 
+ static int hist_entry__fprintf(struct hist_entry *he, size_t size,
+ 			       struct hists *hists, struct hists *pair_hists,
+-			       bool show_displacement, long displacement,
+-			       u64 total_period, FILE *fp)
++			       long displacement, u64 total_period, FILE *fp)
+ {
+ 	char bf[512];
+ 	int ret;
++	struct hist_print_context ctx = {
++		.s		= bf,
++		.size		= size,
++		.total_period	= total_period,
++		.displacement	= displacement,
++		.ptr		= pair_hists,
++	};
+ 
+ 	if (size == 0 || size > sizeof(bf))
+-		size = sizeof(bf);
++		size = ctx.size = sizeof(bf);
+ 
+-	ret = hist_entry__period_snprintf(he, bf, size, pair_hists,
+-					  show_displacement, displacement,
+-					  true, total_period);
++	ret = hist_entry__period_snprintf(&ctx, he, true);
+ 	hist_entry__sort_snprintf(he, bf + ret, size - ret, hists);
+ 	ret = fprintf(fp, "%s\n", bf);
+ 
+@@ -471,59 +665,30 @@ size_t hists__fprintf(struct hists *hists, struct hists *pair,
+ 	unsigned int width;
+ 	const char *sep = symbol_conf.field_sep;
+ 	const char *col_width = symbol_conf.col_width_list_str;
+-	int nr_rows = 0;
++	int idx, nr_rows = 0;
++	char bf[64];
++	struct hist_print_context dummy_ctx = {
++		.s	= bf,
++		.size	= sizeof(bf),
++		.ptr	= pair,
++	};
+ 
+ 	init_rem_hits();
++	init_hpp_functions(pair, show_displacement);
+ 
+ 	if (!show_header)
+ 		goto print_entries;
+ 
+-	fprintf(fp, "# %s", pair ? "Baseline" : "Overhead");
+-
+-	if (symbol_conf.show_cpu_utilization) {
+-		if (sep) {
+-			ret += fprintf(fp, "%csys", *sep);
+-			ret += fprintf(fp, "%cus", *sep);
+-			if (perf_guest) {
+-				ret += fprintf(fp, "%cguest sys", *sep);
+-				ret += fprintf(fp, "%cguest us", *sep);
+-			}
+-		} else {
+-			ret += fprintf(fp, "     sys  ");
+-			ret += fprintf(fp, "      us  ");
+-			if (perf_guest) {
+-				ret += fprintf(fp, "  guest sys  ");
+-				ret += fprintf(fp, "  guest us  ");
+-			}
+-		}
+-	}
+-
+-	if (symbol_conf.show_nr_samples) {
+-		if (sep)
+-			fprintf(fp, "%cSamples", *sep);
+-		else
+-			fputs("  Samples  ", fp);
+-	}
+-
+-	if (symbol_conf.show_total_period) {
+-		if (sep)
+-			ret += fprintf(fp, "%cPeriod", *sep);
+-		else
+-			ret += fprintf(fp, "   Period    ");
+-	}
++	fprintf(fp, "# ");
++	for (idx = 0; idx < PERF_HPP__MAX_INDEX; idx++) {
++		if (!hpp_functions[idx].cond)
++			continue;
+ 
+-	if (pair) {
+-		if (sep)
+-			ret += fprintf(fp, "%cDelta", *sep);
+-		else
+-			ret += fprintf(fp, "  Delta    ");
++		if (idx)
++			fprintf(fp, "%s", sep ?: "  ");
+ 
+-		if (show_displacement) {
+-			if (sep)
+-				ret += fprintf(fp, "%cDisplacement", *sep);
+-			else
+-				ret += fprintf(fp, " Displ");
+-		}
++		hpp_functions[idx].header(&dummy_ctx);
++		fprintf(fp, "%s", bf);
+ 	}
+ 
+ 	list_for_each_entry(se, &hist_entry__sort_list, list) {
+@@ -555,18 +720,21 @@ size_t hists__fprintf(struct hists *hists, struct hists *pair,
+ 	if (sep)
+ 		goto print_entries;
+ 
+-	fprintf(fp, "# ........");
+-	if (symbol_conf.show_cpu_utilization)
+-		fprintf(fp, "   .......   .......");
+-	if (symbol_conf.show_nr_samples)
+-		fprintf(fp, " ..........");
+-	if (symbol_conf.show_total_period)
+-		fprintf(fp, " ............");
+-	if (pair) {
+-		fprintf(fp, " ..........");
+-		if (show_displacement)
+-			fprintf(fp, " .....");
++	fprintf(fp, "# ");
++	for (idx = 0; idx < PERF_HPP__MAX_INDEX; idx++) {
++		unsigned int i;
++
++		if (!hpp_functions[idx].cond)
++			continue;
++
++		if (idx)
++			fprintf(fp, "%s", sep ?: "  ");
++
++		width = hpp_functions[idx].width(&dummy_ctx);
++		for (i = 0; i < width; i++)
++			fprintf(fp, ".");
+ 	}
++
+ 	list_for_each_entry(se, &hist_entry__sort_list, list) {
+ 		unsigned int i;
+ 
+@@ -606,8 +774,8 @@ print_entries:
+ 				displacement = 0;
+ 			++position;
+ 		}
+-		ret += hist_entry__fprintf(h, max_cols, hists, pair, show_displacement,
+-					   displacement, total_period, fp);
++		ret += hist_entry__fprintf(h, max_cols, hists, pair, displacement,
++					   total_period, fp);
+ 
+ 		if (max_rows && ++nr_rows >= max_rows)
+ 			goto out;
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 2e650ffb7d23..d8946573b5ad 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -115,6 +115,41 @@ bool hists__new_col_len(struct hists *self, enum hist_column col, u16 len);
+ void hists__reset_col_len(struct hists *hists);
+ void hists__calc_col_len(struct hists *hists, struct hist_entry *he);
+ 
++struct hist_print_context {
++	char *s;
++	size_t size;
++	u64 total_period;
++	const char *sep;
++	long displacement;
++	void *ptr;
++};
++
++struct hist_period_print {
++	bool cond;
++	int (*header)(struct hist_print_context *ctx);
++	int (*width)(struct hist_print_context *ctx);
++	int (*color)(struct hist_print_context *ctx, struct hist_entry *he);
++	int (*entry)(struct hist_print_context *ctx, struct hist_entry *he);
++};
++
++extern struct hist_period_print hpp_functions[];
++
++enum {
++	PERF_HPP__OVERHEAD,
++	PERF_HPP__OVERHEAD_SYS,
++	PERF_HPP__OVERHEAD_US,
++	PERF_HPP__OVERHEAD_GUEST_SYS,
++	PERF_HPP__OVERHEAD_GUEST_US,
++	PERF_HPP__SAMPLES,
++	PERF_HPP__PERIOD,
++	PERF_HPP__DELTA,
++	PERF_HPP__DISPL,
++
++	PERF_HPP__MAX_INDEX
++};
++
++void init_hpp_functions(struct hists *pair_hists, bool show_displacement);
++
+ struct perf_evlist;
+ 
+ #ifdef NO_NEWT_SUPPORT
+-- 
+1.7.9.2
 
-               Linus
