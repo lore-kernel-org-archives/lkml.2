@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751715Ab2GSUuV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 16:50:21 -0400
-Received: from toro.web-alm.net ([62.245.132.31]:58312 "EHLO toro.web-alm.net"
+	id S1751885Ab2GSUuX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 16:50:23 -0400
+Received: from toro.web-alm.net ([62.245.132.31]:58313 "EHLO toro.web-alm.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751134Ab2GSUuT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 16:50:19 -0400
-Message-Id: <20120719203409.398114351@osadl.org>
+	id S1751479Ab2GSUuU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 16:50:20 -0400
+Message-Id: <20120719204338.905308004@osadl.org>
 User-Agent: quilt/0.51-1
-Date: Thu, 19 Jul 2012 22:34:09 +0200
+Date: Thu, 19 Jul 2012 22:34:10 +0200
 From: Carsten Emde <C.Emde@osadl.org>
 To: Rafael Wysocki <rjw@sisk.pl>
 Cc: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
@@ -17,27 +17,89 @@ Cc: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
         LKML <linux-kernel@vger.kernel.org>,
         Linux PM mailing list <linux-pm@vger.kernel.org>,
         Carsten Emde <C.Emde@osadl.org>
-Subject: [PATCH 0/1 v3] cpuidle: allow to disable C states of the ladder governor 
+Subject: [PATCH 1/1 v3] Honor state disabling in the cpuidle ladder governor
 References: <201207192130.20520.rjw@sisk.pl> <201207192042.57935.rjw@sisk.pl> <20120719185212.184458166@osadl.org> <20120719190740.215034590@osadl.org>
+ <20120719203409.398114351@osadl.org>
+Content-Disposition: inline; filename=drivers-cpuidle-ladder-honor-disabling-with-doc.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rafael,
+There are two cpuidle governors ladder and menu. While the ladder
+governor is always available, if CONFIG_CPU_IDLE is selected, the
+menu governor additionally requires CONFIG_NO_HZ.
 
-> Your patch doesn't seem to take this linux-next commit:
+A particular C state can be disabled by writing to the sysfs file
+/sys/devices/system/cpu/cpuN/cpuidle/stateN/disable, but this mechanism
+is only implemented in the menu governor. Thus, in a system where
+CONFIG_NO_HZ is not selected, the ladder governor becomes default and
+always will walk through all sleep states - irrespective of whether the
+C state was disabled via sysfs or not. The only way to select a specific
+C state was to write the related latency to /dev/cpu_dma_latency and
+keep the file open as long as this setting was required - not very
+practical and not suitable for setting a single core in an SMP system.
 
-> http://git.kernel.org/?p=linux/kernel/git/rafael/linux-pm.git;a=commit;h=dc7fd275ae60ef8edf952aff2a62462f5d892fd4
+With this patch, the ladder governor only will promote to the next
+C state, if it has not been disabled, and it will demote, if the
+current C state was disabled.
 
-> into account, does it?
-Hmm, oops, you're right. This one came in after I checked it last time.
+Note that the patch does not make the setting of the sysfs variable
+"disable" coherent, i.e. if one is disabling a light state, then all
+deeper states are disabled as well, but the "disable" variable does not
+reflect it. Likewise, if one enables a deep state but a lighter state
+still is disabled, then this has no effect. A related section has been
+added to the documentation.
 
-Changes in v2: A note in the documentation explains why the sysfs
-variable "disable" may not always reflect the current situation
-and why modifying it may not always work as expected.
+Signed-off-by: Carsten Emde <C.Emde@osadl.org>
 
-Changes in v3: The patch now applies to the current linux-next and
-uses the per-cpu "disable" field.
+---
+ Documentation/cpuidle/sysfs.txt    |   10 +++++++++-
+ drivers/cpuidle/governors/ladder.c |    4 +++-
+ 2 files changed, 12 insertions(+), 2 deletions(-)
 
-	-Carsten.
+Index: linux-3.4.4-rt14-rc2-64/Documentation/cpuidle/sysfs.txt
+===================================================================
+--- linux-3.4.4-rt14-rc2-64.orig/Documentation/cpuidle/sysfs.txt
++++ linux-3.4.4-rt14-rc2-64/Documentation/cpuidle/sysfs.txt
+@@ -76,9 +76,17 @@ total 0
+ 
+ 
+ * desc : Small description about the idle state (string)
+-* disable : Option to disable this idle state (bool)
++* disable : Option to disable this idle state (bool) -> see note below
+ * latency : Latency to exit out of this idle state (in microseconds)
+ * name : Name of the idle state (string)
+ * power : Power consumed while in this idle state (in milliwatts)
+ * time : Total time spent in this idle state (in microseconds)
+ * usage : Number of times this state was entered (count)
++
++Note:
++The behavior and the effect of the disable variable depends on the
++implementation of a particular governor. In the ladder governor, for
++example, it is not coherent, i.e. if one is disabling a light state,
++then all deeper states are disabled as well, but the disable variable
++does not reflect it. Likewise, if one enables a deep state but a lighter
++state still is disabled, then this has no effect.
+Index: linux-3.4.4-rt14-rc2-64/drivers/cpuidle/governors/ladder.c
+===================================================================
+--- linux-3.4.4-rt14-rc2-64.orig/drivers/cpuidle/governors/ladder.c
++++ linux-3.4.4-rt14-rc2-64/drivers/cpuidle/governors/ladder.c
+@@ -88,6 +88,7 @@ static int ladder_select_state(struct cp
+ 
+ 	/* consider promotion */
+ 	if (last_idx < drv->state_count - 1 &&
++	    !dev->states_usage[last_idx + 1].disable &&
+ 	    last_residency > last_state->threshold.promotion_time &&
+ 	    drv->states[last_idx + 1].exit_latency <= latency_req) {
+ 		last_state->stats.promotion_count++;
+@@ -100,7 +101,8 @@ static int ladder_select_state(struct cp
+ 
+ 	/* consider demotion */
+ 	if (last_idx > CPUIDLE_DRIVER_STATE_START &&
+-	    drv->states[last_idx].exit_latency > latency_req) {
++	    (dev->states_usage[last_idx].disable ||
++	    drv->states[last_idx].exit_latency > latency_req)) {
+ 		int i;
+ 
+ 		for (i = last_idx - 1; i > CPUIDLE_DRIVER_STATE_START; i--) {
 
