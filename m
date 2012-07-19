@@ -1,91 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753708Ab2GSHz6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 03:55:58 -0400
-Received: from ims-m11.mx.aol.com ([64.12.207.144]:46605 "EHLO
-	ims-m11.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751748Ab2GSHzw (ORCPT
+	id S1754141Ab2GSH6g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 03:58:36 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:34935 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753209Ab2GSH6b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 03:55:52 -0400
-Message-Id: <201207190753.q6J7r6fO022301@ims-m11.mx.aol.com>
-Content-Type: multipart/mixed; boundary="===============0417118318=="
+	Thu, 19 Jul 2012 03:58:31 -0400
 MIME-Version: 1.0
-Subject: UNITED NATIONS OFFICE
-To: Recipients <crussell5941@aol.com>
-From: "Carman Lapointe" <crussell5941@aol.com>
-Date: Thu, 19 Jul 2012 09:50:29 +0200
-Reply-To: ms.carmanlapointey1@yahoo.es
-x-aol-global-disposition: S
-X-SPAM-FLAG: YES
-X-AOL-VSS-INFO: 5400.1158/82344
-X-AOL-VSS-CODE: clean
-X-AOL-SCOLL-SCORE: 0:2:205811328:93952408  
-X-AOL-SCOLL-URL_COUNT: 0  
-X-AOL-REROUTE: YES 
-x-aol-sid: 3039ac1d29455007bc6a649c
-X-AOL-IP: 85.214.32.122
+In-Reply-To: <1341481532-1700-3-git-send-email-jiang.liu@huawei.com>
+References: <1341481532-1700-1-git-send-email-jiang.liu@huawei.com>
+	<1341481532-1700-3-git-send-email-jiang.liu@huawei.com>
+Date: Thu, 19 Jul 2012 15:58:29 +0800
+Message-ID: <CAA_GA1eePmUsYWrSg2k6TTER+ejciWg2bvGc+1zaAKS8kLNRKw@mail.gmail.com>
+Subject: Re: [PATCH 3/4] mm/hotplug: free zone->pageset when a zone becomes empty
+From: Bob Liu <lliubbo@gmail.com>
+To: Jiang Liu <jiang.liu@huawei.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>, Minchan Kim <minchan@kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, Yinghai Lu <yinghai@kernel.org>,
+        Tony Luck <tony.luck@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Keping Chen <chenkeping@huawei.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Jiang Liu <liuj97@gmail.com>,
+        Wei Wang <Bessel.Wang@huawei.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You will not see this in a MIME-aware mail reader.
---===============0417118318==
-Content-Type: text/plain; charset="iso-8859-1"
-MIME-Version: 1.0
-Content-Transfer-Encoding: quoted-printable
-Content-Description: Mail message body
+On Thu, Jul 5, 2012 at 5:45 PM, Jiang Liu <jiang.liu@huawei.com> wrote:
+> When a zone becomes empty after memory offlining, free zone->pageset.
+> Otherwise it will cause memory leak when adding memory to the empty
+> zone again because build_all_zonelists() will allocate zone->pageset
+> for an empty zone.
+>
 
-OPEN AND READ THE ATTACHMENT FOR MORE DETAILS ABOUT YOUR APPROVED FUND
---===============0417118318==
-Content-Type: application/octet-stream
-MIME-Version: 1.0
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="Young.rtf"
+What about other area allocated to the zone?  eg. wait_table?
 
-e1xydGYxXGFuc2lcYW5zaWNwZzEyNTJcZGVmZjBcZGVmbGFuZzEwMzF7XGZvbnR0Ymx7XGYwXGZz
-d2lzc1xmY2hhcnNldDIwNHtcKlxmbmFtZSBBcmlhbDt9QXJpYWwgQ1lSO319DQp7XCpcZ2VuZXJh
-dG9yIE1zZnRlZGl0IDUuNDEuMjEuMjUwOTt9XHZpZXdraW5kNFx1YzFccGFyZFxmMFxmczIwIFVO
-SVRFRCBOQVRJT05TIEhFQURRVUFSVEVSU1xwYXINCk9GRklDRSBPRiBJTlRFUk5BTCBPVkVSU0lH
-SFQgU0VSVklDRVMoT0lPUylccGFyDQpJbnRlcm5hbCBBdWRpdCwgTW9uaXRvcmluZywgQ29uc3Vs
-dGluZyBhbmQgIEludmVzdGlnYXRpb25zIERpdmlzaW9uXHBhcg0KXHBhcg0KRnJvbTogTXMuIENh
-cm1hbiBMLiBMYXBvaW50ZVxwYXINClVOIFVuZGVyLVNlY3JldGFyeS1HZW5lcmFsIGZvciBJbnRl
-cm5hbCBPdmVyc2lnaHQgIFNlcnZpY2VzXHBhcg0KIFxwYXINClRoaXMgaXMgdG8gaW5mb3JtIHlv
-dSB0aGF0IEkgY2FtZSB0byBOaWdlcmlhIHllc3RlcmRheSAgYWZ0ZXIgc2VyaWVzIG9mIGNvbXBs
-YWlucyBmcm9tIHRoZSBGQkkgYW5kIG90aGVyICBTZWN1cml0eSBhZ2VuY2llcyBmcm9tIEFzaWEs
-IEV1cm9wZSwgT2NlYW5pYSwgIEFudGFyY3RpY2EsU291dGggQW1lcmljYSBhbmQgdGhlIFVuaXRl
-ZCBTdGF0ZXMgb2YgIEFtZXJpY2EgcmVzcGVjdGl2ZWx5LCBhZ2FpbnN0IHRoZSBGZWRlcmFsIEdv
-dmVybm1lbnQgb2YgIE5pZ2VyaWEgYW5kIHRoZSBCcml0aXNoIEdvdmVybm1lbnQgZm9yIHRoZSBy
-YXRlIG9mIHNjYW0gIGFjdGl2aXRpZXMgZ29pbmcgb24gaW4gdGhlc2UgdHdvIG5hdGlvbnMuIFxw
-YXINCiBccGFyDQpJIGhhdmUgbWV0IHdpdGggUHJlc2lkZW50IERyIEdvb2RsdWNrIEpvbmF0aGFu
-IG9mICBOaWdlcmlhIGFuZCBzb21lIG90aGVyIHRvcCBjb25jZXJuZWQgYmFua3Mgb2ZmaWNpYWxz
-ICBoZXJlIGluIE5pZ2VyaWEgd2hvIGNsYWltZWQgdGhhdCB0aGV5IGhhdmUgYmVlbiB0cnlpbmcg
-IHRoZWlyIGJlc3QgdG8gbWFrZSBzdXJlIHlvdSByZWNlaXZlIHlvdXIgZnVuZCBpbiB5b3VyICBh
-Y2NvdW50LiBccGFyDQogXHBhcg0KUmlnaHQgbm93LGFzIGRpcmVjdGVkIGJ5IG91ciBzZWNyZXRh
-cnkgZ2VuZXJhbCBNci5CYW4gIEtpLU1vb24sV2UgYXJlIHdvcmtpbmcgaW4gY29sbGFib3JhdGlv
-bnMgd2l0aCB0aGUgIE5pZ2VyaWFuIEVjb25vbWljIGFuZCBGaW5hbmNpYWwgQ3JpbWUgQ29tbWlz
-c2lvbiAoRUZDQykgIGFuZCBpdCB3YXMgcmVzb2x2ZWQgdG8gd2FpdmUgYXdheSBhbGwgeW91ciBj
-bGVhcmFuY2UgIGZlZXMvQ2hhcmdlcyBhbmQgYXV0aG9yaXplIHRoZSBHb3Zlcm5tZW50IG9mIE5p
-Z2VyaWEgdG8gIGVmZmVjdCB5b3VyIGFwcHJvdmVkIHBheW1lbnQgb2YgICQxMC41MDAsMDAwLDAw
-KSBidXQgdGhlICBvbmx5IGZlZSB5b3Ugd2lsbCBwYXkgdG8gY29uZmlybSB5b3VyIGZ1bmQgaXMg
-eW91ciAgTm90YXJpemF0aW9uIG9ibGlnYXRvcnkgZmVlcyB0byB0aGUgVW5pdGVkIE5hdGlvbiBI
-ZWFkICBPZmZpY2UgaW4gIEFidWphIE5pZ2VyaWEsIFRoaXMgcGF5bWVudCB3YXMgYXBwcm92ZWQg
-YnkgIGJvdGggdGhlIEJyaXRpc2ggIGdvdmVybm1lbnQgYW5kIHRoZSBVTiBpbiB5b3VyIGZhdm9y
-ICBlaXRoZXIgYnkgd2lyZSB0cmFuc2Zlci9DaGVjayBwYXltZW50L0FUTSBjYXJkIE1ldGhvZCAg
-d2l0aG91dCBhbnkgbW9yZSBkZWxheS5ccGFyDQpccGFyDQpTaW5jZXJlbHkseW91IGFyZSBhIGx1
-Y2t5IHBlcnNvbiBiZWNhdXNlIEkgaGF2ZSBqdXN0ICBkaXNjb3ZlcmVkIHRoYXQgc29tZSB0b3Ag
-TmlnZXJpYW4gYW5kIEJyaXRpc2ggR292ZXJubWVudCAgT2ZmaWNpYWxzIGFyZSBpbnRlcmVzdGVk
-IGluIHlvdXIgZnVuZCBhbmQgdGhleSBhcmUgIHdvcmtpbmcgaW4gY29sbGFib3JhdGlvbiB3aXRo
-IE9uZSBNci5SaWNoYXJkIEdyYXZlcyBmcm9tICBVU0EgdG8gZnJ1c3RyYXRlIHlvdSBhbmQgdGhl
-cmVhZnRlciBkaXZlcnQgeW91ciBmdW5kICBpbnRvIHRoZWlyIHBlcnNvbmFsIGFjY291bnQuIFxw
-YXINCiBccGFyDQpTaW5jZSBteSBzdGF5IGhlcmUgaW4gTmlnZXJpYSwgaSBoYXZlIGJlZW4gaG9s
-ZGluZyAgc2VyaWVzIG9mIG1lZXRpbmdzIHdpdGggdGhlIE5pZ2VyaWEgYW5kIHlvdSBjYW4gY2Fs
-bCBtZSAgb24gdGhlIG51bWJlciB3aGljaCBJIGp1c3QgYWNxdWlyZWQgaW4gTmlnZXJpYSB0b2Rh
-eTogICsyMzQtODAyNjExMzE4MlxwYXINCiBccGFyDQpJIGhhdmUgYSB2ZXJ5IGxpbWl0ZWQgdGlt
-ZSB0byBzdGF5IGluIE5pZ2VyaWEgaGVyZSBzbyBJICB3b3VsZCBsaWtlIHlvdSB0byB1cmdlbnRs
-eSByZXNwb25kIHRvIHRoaXMgbWVzc2FnZSBzbyAgdGhhdCBJIGNhbiBhZHZpc2UgeW91IG9uIGhv
-dyBiZXN0IHRvIGNvbmZpcm0geW91ciBmdW5kICBpbiB5b3VyIGFjY291bnQgd2l0aGluIHRoZSBu
-ZXh0IDcyIGhvdXJzLnJlcGx5IG1lICBpbmZvcnVuaXRlZG5hdGlvbkB6aW5nLnZuXHBhcg0KXHBh
-cg0KTXMuIENhcm1hbiBMYXBvaW50ZS1Zb3VuZy5ccGFyDQpVbml0ZWQgTmF0aW9ucyBVbmRlci1T
-ZWNyZXRhcnktXHBhcg0KR2VuZXJhbCBmb3IgSW50ZXJuYWwgT3ZlcnNpZ2h0LlxwYXINCkNlbGwg
-UGhvbmU6KzIzNC04MDI2MTEzMTgyXHBhcg0KfQ0KAA==
---===============0417118318==--
+> Signed-off-by: Jiang Liu <liuj97@gmail.com>
+> Signed-off-by: Wei Wang <Bessel.Wang@huawei.com>
+> ---
+>  include/linux/mm.h  |    1 +
+>  mm/memory_hotplug.c |    3 +++
+>  mm/page_alloc.c     |   13 +++++++++++++
+>  3 files changed, 17 insertions(+), 0 deletions(-)
+>
+> diff --git a/include/linux/mm.h b/include/linux/mm.h
+> index b36d08c..f8b62f2 100644
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -1331,6 +1331,7 @@ void warn_alloc_failed(gfp_t gfp_mask, int order, const char *fmt, ...);
+>  extern void setup_per_cpu_pageset(void);
+>
+>  extern void zone_pcp_update(struct zone *zone);
+> +extern void zone_pcp_reset(struct zone *zone);
+>
+>  /* nommu.c */
+>  extern atomic_long_t mmap_pages_allocated;
+> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+> index bce80c7..998b792 100644
+> --- a/mm/memory_hotplug.c
+> +++ b/mm/memory_hotplug.c
+> @@ -966,6 +966,9 @@ repeat:
+>
+>         init_per_zone_wmark_min();
+>
+> +       if (!populated_zone(zone))
+> +               zone_pcp_reset(zone);
+> +
+>         if (!node_present_pages(node)) {
+>                 node_clear_state(node, N_HIGH_MEMORY);
+>                 kswapd_stop(node);
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index ebf319d..5964b7a 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -5872,6 +5872,19 @@ void free_contig_range(unsigned long pfn, unsigned nr_pages)
+>  #endif
+>
+>  #ifdef CONFIG_MEMORY_HOTREMOVE
+> +void zone_pcp_reset(struct zone *zone)
+> +{
+> +       unsigned long flags;
+> +
+> +       /* avoid races with drain_pages()  */
+> +       local_irq_save(flags);
+> +       if (zone->pageset != &boot_pageset) {
+> +               free_percpu(zone->pageset);
+> +               zone->pageset = &boot_pageset;
+> +       }
+> +       local_irq_restore(flags);
+> +}
+> +
+>  /*
+>   * All pages in the range must be isolated before calling this.
+>   */
+> --
+> 1.7.1
+>
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+
+
+-- 
+Regards,
+--Bob
