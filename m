@@ -1,150 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755327Ab2GSBie (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 21:38:34 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:44923 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751652Ab2GSBib (ORCPT
+	id S1755290Ab2GSBjK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 21:39:10 -0400
+Received: from mail131.messagelabs.com ([216.82.242.99]:62434 "EHLO
+	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751596Ab2GSBjI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 21:38:31 -0400
-Date: Thu, 19 Jul 2012 11:38:20 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Airlie <airlied@linux.ie>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>,
-        =?UTF-8?B?IkNocmlzdGlhbiBLw7ZuaWci?= <deathsimple@vodafone.de>
-Subject: linux-next: manual merge of the drm tree with Linus' tree
-Message-Id: <20120719113820.c15d1572d38d93b4581ecade@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__19_Jul_2012_11_38_20_+1000_83sQYXXa1cRfAK.h"
+	Wed, 18 Jul 2012 21:39:08 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-16.tower-131.messagelabs.com!1342661947!25510464!1
+X-Originating-IP: [216.166.12.178]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 31/90] staging: comedi: amplc_pc236: cleanup "find pci device" code
+Date: Wed, 18 Jul 2012 18:39:03 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <gregkh@linuxfoundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201207181839.03847.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__19_Jul_2012_11_38_20_+1000_83sQYXXa1cRfAK.h
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+For aesthetic reasons, rename the function and pass the
+comedi_devconfig struct instead of pre-parsing out the bus/slot
+information.
 
-Hi Dave,
+Use for_each_pci_dev() instead of open-coding the loop using
+pci_get_device().
 
-Today's linux-next merge of the drm tree got a conflict in
-drivers/gpu/drm/radeon/radeon_gart.c between commit c21b328ea8c7
-("drm/radeon: fix VM page table setup on SI") from Linus' tree and commit
-c6105f249a63 ("drm/radeon: remove vm_manager start/suspend") from the drm
-tree.
+Consolidate the dev_err messages when a pci device is not found.
 
-I fixed it up (I think - see below) and can carry the fix as necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/staging/comedi/drivers/amplc_pc236.c | 43 +++++++++++-----------------
+ 1 file changed, 17 insertions(+), 26 deletions(-)
 
-diff --cc drivers/gpu/drm/radeon/radeon_gart.c
-index 84b648a,56752da..0000000
---- a/drivers/gpu/drm/radeon/radeon_gart.c
-+++ b/drivers/gpu/drm/radeon/radeon_gart.c
-@@@ -282,31 -282,61 +282,62 @@@ void radeon_gart_fini(struct radeon_dev
-   *
-   * TODO bind a default page at vm initialization for default address
-   */
-+=20
-  int radeon_vm_manager_init(struct radeon_device *rdev)
-  {
-+ 	struct radeon_vm *vm;
-+ 	struct radeon_bo_va *bo_va;
-  	int r;
- =20
-- 	rdev->vm_manager.enabled =3D false;
-+ 	if (!rdev->vm_manager.enabled) {
-+ 		/* mark first vm as always in use, it's the system one */
-++		/* allocate enough for 2 full VM pts */
-+ 		r =3D radeon_sa_bo_manager_init(rdev, &rdev->vm_manager.sa_manager,
- -					      rdev->vm_manager.max_pfn * 8,
-++					      rdev->vm_manager.max_pfn * 8 * 2,
-+ 					      RADEON_GEM_DOMAIN_VRAM);
-+ 		if (r) {
-+ 			dev_err(rdev->dev, "failed to allocate vm bo (%dKB)\n",
-+ 				(rdev->vm_manager.max_pfn * 8) >> 10);
-+ 			return r;
-+ 		}
- =20
-- 	/* mark first vm as always in use, it's the system one */
-- 	/* allocate enough for 2 full VM pts */
-- 	r =3D radeon_sa_bo_manager_init(rdev, &rdev->vm_manager.sa_manager,
-- 				      rdev->vm_manager.max_pfn * 8 * 2,
-- 				      RADEON_GEM_DOMAIN_VRAM);
-- 	if (r) {
-- 		dev_err(rdev->dev, "failed to allocate vm bo (%dKB)\n",
-- 			(rdev->vm_manager.max_pfn * 8) >> 10);
-- 		return r;
-+ 		r =3D rdev->vm_manager.funcs->init(rdev);
-+ 		if (r)
-+ 			return r;
-+ =09
-+ 		rdev->vm_manager.enabled =3D true;
-+=20
-+ 		r =3D radeon_sa_bo_manager_start(rdev, &rdev->vm_manager.sa_manager);
-+ 		if (r)
-+ 			return r;
-  	}
- =20
-- 	r =3D rdev->vm_manager.funcs->init(rdev);
-- 	if (r =3D=3D 0)
-- 		rdev->vm_manager.enabled =3D true;
-+ 	/* restore page table */
-+ 	list_for_each_entry(vm, &rdev->vm_manager.lru_vm, list) {
-+ 		if (vm->id =3D=3D -1)
-+ 			continue;
- =20
-- 	return r;
-+ 		list_for_each_entry(bo_va, &vm->va, vm_list) {
-+ 			struct ttm_mem_reg *mem =3D NULL;
-+ 			if (bo_va->valid)
-+ 				mem =3D &bo_va->bo->tbo.mem;
-+=20
-+ 			bo_va->valid =3D false;
-+ 			r =3D radeon_vm_bo_update_pte(rdev, vm, bo_va->bo, mem);
-+ 			if (r) {
-+ 				DRM_ERROR("Failed to update pte for vm %d!\n", vm->id);
-+ 			}
-+ 		}
-+=20
-+ 		r =3D rdev->vm_manager.funcs->bind(rdev, vm, vm->id);
-+ 		if (r) {
-+ 			DRM_ERROR("Failed to bind vm %d!\n", vm->id);
-+ 		}
-+ 	}
-+ 	return 0;
-  }
- =20
-- /* cs mutex must be lock */
-+ /* global mutex must be lock */
-  static void radeon_vm_unbind_locked(struct radeon_device *rdev,
-  				    struct radeon_vm *vm)
-  {
+diff --git a/drivers/staging/comedi/drivers/amplc_pc236.c b/drivers/staging/comedi/drivers/amplc_pc236.c
+index 77dae8e..3eee7f3 100644
+--- a/drivers/staging/comedi/drivers/amplc_pc236.c
++++ b/drivers/staging/comedi/drivers/amplc_pc236.c
+@@ -155,49 +155,42 @@ static const struct pc236_board *pc236_find_pci_board(struct pci_dev *pci_dev)
+  * This function looks for a PCI device matching the requested board name,
+  * bus and slot.
+  */
+-static struct pci_dev *
+-pc236_find_pci(struct comedi_device *dev, int bus, int slot)
++static struct pci_dev *pc236_find_pci_dev(struct comedi_device *dev,
++					  struct comedi_devconfig *it)
+ {
+ 	const struct pc236_board *thisboard = comedi_board(dev);
+ 	struct pci_dev *pci_dev = NULL;
++	int bus = it->options[0];
++	int slot = it->options[1];
+ 
+-	/* Look for matching PCI device. */
+-	for (pci_dev = pci_get_device(PCI_VENDOR_ID_AMPLICON, PCI_ANY_ID, NULL);
+-	     pci_dev != NULL;
+-	     pci_dev = pci_get_device(PCI_VENDOR_ID_AMPLICON,
+-				      PCI_ANY_ID, pci_dev)) {
+-		/* If bus/slot specified, check them. */
++	for_each_pci_dev(pci_dev) {
+ 		if (bus || slot) {
+-			if (bus != pci_dev->bus->number
+-			    || slot != PCI_SLOT(pci_dev->devfn))
++			if (bus != pci_dev->bus->number ||
++			    slot != PCI_SLOT(pci_dev->devfn))
+ 				continue;
+ 		}
++		if (pci_dev->vendor != PCI_VENDOR_ID_AMPLICON)
++			continue;
++
+ 		if (thisboard->model == anypci_model) {
+ 			/* Wildcard board matches any supported PCI board. */
+ 			const struct pc236_board *foundboard;
++
+ 			foundboard = pc236_find_pci_board(pci_dev);
+ 			if (foundboard == NULL)
+ 				continue;
+ 			/* Replace wildcard board_ptr. */
+-			dev->board_ptr = thisboard = foundboard;
++			dev->board_ptr = foundboard;
+ 		} else {
+ 			/* Match specific model name. */
+ 			if (pci_dev->device != thisboard->devid)
+ 				continue;
+ 		}
+-
+-		/* Found a match. */
+ 		return pci_dev;
+ 	}
+-	/* No match found. */
+-	if (bus || slot) {
+-		dev_err(dev->class_dev,
+-			"error! no %s found at pci %02x:%02x!\n",
+-			thisboard->name, bus, slot);
+-	} else {
+-		dev_err(dev->class_dev, "error! no %s found!\n",
+-			thisboard->name);
+-	}
++	dev_err(dev->class_dev,
++		"No supported board found! (req. bus %d, slot %d)\n",
++		bus, slot);
+ 	return NULL;
+ }
+ 
+@@ -536,12 +529,10 @@ static int pc236_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 		return pc236_common_attach(dev, iobase, irq, 0);
+ 	} else if (IS_ENABLED(CONFIG_COMEDI_AMPLC_PC236_PCI) &&
+ 		   thisboard->bustype == pci_bustype) {
+-		int bus = it->options[0];
+-		int slot = it->options[1];
+ 		struct pci_dev *pci_dev;
+ 
+-		pci_dev = pc236_find_pci(dev, bus, slot);
+-		if (pci_dev == NULL)
++		pci_dev = pc236_find_pci_dev(dev, it);
++		if (!pci_dev)
+ 			return -EIO;
+ 		return pc236_pci_common_attach(dev, pci_dev);
+ 	} else {
+-- 
+1.7.11
 
---Signature=_Thu__19_Jul_2012_11_38_20_+1000_83sQYXXa1cRfAK.h
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQB2UMAAoJEECxmPOUX5FEuCEQAJogmtOCfsTgo909Mp2gFyh3
-sZLgsPCK+bsj9iQ1gUDm8mhNPCrv6mKHFQN6F5HMbiHBnVgFwYHqyPnJLRmM+M+3
-Lwwza4R/9xWb8bUu8azBBdDh30fHxnMeW2NiQ2XQCbmigxuddtVcU/FxRoYE0A+h
-m+c0dliwjIDlCYvzsHWNGugUkudwEljNadMzR3n6siwhbXCDHO8gxCvhRBFxLEz+
-9ahuY9YGjRwqAcpYY9WYTtKxJks0A3rDxKCLrP8EraxcLWaMSSi1aQk8t9PrSoNV
-3MJLHcvdMz8dSUtIc6tFx09CZAHS3j+5rhwmIAEVjh50zKUAonMo4JRJ797EaAEB
-jFx03djqPsU8EBW0GOcLJawe7WELcpoRqFrj2sAdkISCPDJkz/TEvuFLKEvKZnG7
-UxhQJPAw47jk6A8eGnbaxiMmooOTqYV9Cpxxywzd+eM58GvLhuW4f8eRNIRTfP5P
-IxA6iFytoQ8B0rD+JbijRzMNjQhqcSrlYHi1p86DU/c3bSz7Ht0nG0/1504MSeo+
-APXRRk/TuFwF7ESvpEYJyvyfrkj4iCVqZYxlMFcPNKbr0mXP47/o5dyKGk0JFSUe
-C5dAxRK09EkaPSyeERZmmo/DTpesU2GtEerVEW8qZofa19a5EEFm35IqdvqrLmHT
-mI9U1Mg5Dg/0w80IanAw
-=RaZx
------END PGP SIGNATURE-----
-
---Signature=_Thu__19_Jul_2012_11_38_20_+1000_83sQYXXa1cRfAK.h--
