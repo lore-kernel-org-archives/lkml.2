@@ -1,53 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753444Ab2GSKlt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 06:41:49 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:44396 "EHLO mail.mev.co.uk"
+	id S1753500Ab2GSKos (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 06:44:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36420 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751026Ab2GSKlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 06:41:46 -0400
-Message-ID: <5007E454.8020302@mev.co.uk>
-Date: Thu, 19 Jul 2012 11:41:24 +0100
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120616 Thunderbird/13.0
+	id S1752106Ab2GSKop (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 06:44:45 -0400
+Date: Thu, 19 Jul 2012 13:45:20 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        gleb@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCHv2] kvm: fix race with level interrupts
+Message-ID: <20120719104520.GA14748@redhat.com>
 MIME-Version: 1.0
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Ian Abbott <ian.abbott@mev.co.uk>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 34/90] staging: comedi: amplc_pc263: store the pci_dev
- in the comedi_device
-References: <201207181840.01906.hartleys@visionengravers.com>
-In-Reply-To: <201207181840.01906.hartleys@visionengravers.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-07-19 02:40, H Hartley Sweeten wrote:
-> Use the hw_dev pointer in the comedi_device struct to hold the
-> pci_dev instead of carrying it in the private data.
->
-> Since the pci_dev is no longer held in the provate data, we can
-> also cleanup the detach a bit. Remove the IS_ENABLED() tests in
-> the detach. If the pci_dev is non NULL it's a PCI device otherwise
-> it's an ISA device. Using IS_ENABLED() to omit the code paths
-> makes the code a bit confusing and doesn't save much.
->
-> Since the pci_dev was the only thing in the private data, remove
-> the struct, and it's allocation.
+When more than 1 source id is in use for the same GSI, we have the
+following race related to handling irq_states race:
 
-As mentioned for amplc_dio200 and amplc_pc236, the detach() routine 
-ought to check thisboard->bustype although the original code and the 
-patched version should work fine as dev->iobase will be 0 on failure.
+CPU 0 clears bit 0. CPU 0 read irq_state as 0. CPU 1 sets level to 1.
+CPU 1 calls kvm_ioapic_set_irq(1). CPU 0 calls kvm_ioapic_set_irq(0).
+Now ioapic thinks the level is 0 but irq_state is not 0.
 
-I'll submit a patch later to check thisboard->bustype in the detach() 
-routine for robustness.
+Fix by performing all irq_states bitmap handling under pic/ioapic lock.
+This also removes the need for atomics with irq_states handling.
 
+Reported-by: Gleb Natapov <gleb@redhat.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+
+Changes from v1:
+	Address comments by Gleb and Alex:
+		renamed some variables for clarify
+		renamed kvm_irq_line_state ->  __kvm_irq_line_state
+
+Any chance we can put this in 3.5? I know level IRQs are not widely
+used, which is likely why this went unnoticed for so long, but still ...
+
+ arch/x86/include/asm/kvm_host.h | 15 ++++++++++++++-
+ arch/x86/kvm/i8259.c            | 17 ++++++++++++++---
+ virt/kvm/ioapic.c               | 19 ++++++++++++++++---
+ virt/kvm/ioapic.h               |  4 +++-
+ virt/kvm/irq_comm.c             | 31 ++++---------------------------
+ 5 files changed, 51 insertions(+), 35 deletions(-)
+
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index db7c1f2..d4b241d 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -802,7 +802,20 @@ int kvm_read_guest_page_mmu(struct kvm_vcpu *vcpu, struct kvm_mmu *mmu,
+ void kvm_propagate_fault(struct kvm_vcpu *vcpu, struct x86_exception *fault);
+ bool kvm_require_cpl(struct kvm_vcpu *vcpu, int required_cpl);
+ 
+-int kvm_pic_set_irq(void *opaque, int irq, int level);
++static inline int __kvm_irq_line_state(unsigned long *irq_state,
++				       int irq_source_id, int level)
++{
++	/* Logical OR for level trig interrupt */
++	if (level)
++		__set_bit(irq_source_id, irq_state);
++	else
++		__clear_bit(irq_source_id, irq_state);
++
++	return !!(*irq_state);
++}
++
++int kvm_pic_set_irq(struct kvm_pic *pic, int irq, int irq_source_id, int level);
++void kvm_pic_clear_all(struct kvm_pic *pic, int irq_source_id);
+ 
+ void kvm_inject_nmi(struct kvm_vcpu *vcpu);
+ 
+diff --git a/arch/x86/kvm/i8259.c b/arch/x86/kvm/i8259.c
+index 81cf4fa..1df8fb9 100644
+--- a/arch/x86/kvm/i8259.c
++++ b/arch/x86/kvm/i8259.c
+@@ -188,14 +188,15 @@ void kvm_pic_update_irq(struct kvm_pic *s)
+ 	pic_unlock(s);
+ }
+ 
+-int kvm_pic_set_irq(void *opaque, int irq, int level)
++int kvm_pic_set_irq(struct kvm_pic *s, int irq, int irq_source_id, int level)
+ {
+-	struct kvm_pic *s = opaque;
+ 	int ret = -1;
+ 
+ 	pic_lock(s);
+ 	if (irq >= 0 && irq < PIC_NUM_PINS) {
+-		ret = pic_set_irq1(&s->pics[irq >> 3], irq & 7, level);
++		int irq_level = __kvm_irq_line_state(&s->irq_states[irq],
++						     irq_source_id, level);
++		ret = pic_set_irq1(&s->pics[irq >> 3], irq & 7, irq_level);
+ 		pic_update_irq(s);
+ 		trace_kvm_pic_set_irq(irq >> 3, irq & 7, s->pics[irq >> 3].elcr,
+ 				      s->pics[irq >> 3].imr, ret == 0);
+@@ -205,6 +206,16 @@ int kvm_pic_set_irq(void *opaque, int irq, int level)
+ 	return ret;
+ }
+ 
++void kvm_pic_clear_all(struct kvm_pic *s, int irq_source_id)
++{
++	int i;
++
++	pic_lock(s);
++	for (i = 0; i < PIC_NUM_PINS; i++)
++		__clear_bit(irq_source_id, &s->irq_states[i]);
++	pic_unlock(s);
++}
++
+ /*
+  * acknowledge interrupt 'irq'
+  */
+diff --git a/virt/kvm/ioapic.c b/virt/kvm/ioapic.c
+index 26fd54d..ef61d52 100644
+--- a/virt/kvm/ioapic.c
++++ b/virt/kvm/ioapic.c
+@@ -191,7 +191,8 @@ static int ioapic_deliver(struct kvm_ioapic *ioapic, int irq)
+ 	return kvm_irq_delivery_to_apic(ioapic->kvm, NULL, &irqe);
+ }
+ 
+-int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int level)
++int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int irq_source_id,
++		       int level)
+ {
+ 	u32 old_irr;
+ 	u32 mask = 1 << irq;
+@@ -201,9 +202,11 @@ int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int level)
+ 	spin_lock(&ioapic->lock);
+ 	old_irr = ioapic->irr;
+ 	if (irq >= 0 && irq < IOAPIC_NUM_PINS) {
++		int irq_level = __kvm_irq_line_state(&ioapic->irq_states[irq],
++						     irq_source_id, level);
+ 		entry = ioapic->redirtbl[irq];
+-		level ^= entry.fields.polarity;
+-		if (!level)
++		irq_level ^= entry.fields.polarity;
++		if (!irq_level)
+ 			ioapic->irr &= ~mask;
+ 		else {
+ 			int edge = (entry.fields.trig_mode == IOAPIC_EDGE_TRIG);
+@@ -221,6 +224,16 @@ int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int level)
+ 	return ret;
+ }
+ 
++void kvm_ioapic_clear_all(struct kvm_ioapic *ioapic, int irq_source_id)
++{
++	int i;
++
++	spin_lock(&ioapic->lock);
++	for (i = 0; i < KVM_IOAPIC_NUM_PINS; i++)
++		__clear_bit(irq_source_id, &ioapic->irq_states[i]);
++	spin_unlock(&ioapic->lock);
++}
++
+ static void __kvm_ioapic_update_eoi(struct kvm_ioapic *ioapic, int vector,
+ 				     int trigger_mode)
+ {
+diff --git a/virt/kvm/ioapic.h b/virt/kvm/ioapic.h
+index 32872a0..a30abfe 100644
+--- a/virt/kvm/ioapic.h
++++ b/virt/kvm/ioapic.h
+@@ -74,7 +74,9 @@ void kvm_ioapic_update_eoi(struct kvm *kvm, int vector, int trigger_mode);
+ bool kvm_ioapic_handles_vector(struct kvm *kvm, int vector);
+ int kvm_ioapic_init(struct kvm *kvm);
+ void kvm_ioapic_destroy(struct kvm *kvm);
+-int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int level);
++int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int irq_source_id,
++		       int level);
++void kvm_ioapic_clear_all(struct kvm_ioapic *ioapic, int irq_source_id);
+ void kvm_ioapic_reset(struct kvm_ioapic *ioapic);
+ int kvm_irq_delivery_to_apic(struct kvm *kvm, struct kvm_lapic *src,
+ 		struct kvm_lapic_irq *irq);
+diff --git a/virt/kvm/irq_comm.c b/virt/kvm/irq_comm.c
+index 5afb431..83402d7 100644
+--- a/virt/kvm/irq_comm.c
++++ b/virt/kvm/irq_comm.c
+@@ -33,26 +33,12 @@
+ 
+ #include "ioapic.h"
+ 
+-static inline int kvm_irq_line_state(unsigned long *irq_state,
+-				     int irq_source_id, int level)
+-{
+-	/* Logical OR for level trig interrupt */
+-	if (level)
+-		set_bit(irq_source_id, irq_state);
+-	else
+-		clear_bit(irq_source_id, irq_state);
+-
+-	return !!(*irq_state);
+-}
+-
+ static int kvm_set_pic_irq(struct kvm_kernel_irq_routing_entry *e,
+ 			   struct kvm *kvm, int irq_source_id, int level)
+ {
+ #ifdef CONFIG_X86
+ 	struct kvm_pic *pic = pic_irqchip(kvm);
+-	level = kvm_irq_line_state(&pic->irq_states[e->irqchip.pin],
+-				   irq_source_id, level);
+-	return kvm_pic_set_irq(pic, e->irqchip.pin, level);
++	return kvm_pic_set_irq(pic, e->irqchip.pin, irq_source_id, level);
+ #else
+ 	return -1;
+ #endif
+@@ -62,10 +48,7 @@ static int kvm_set_ioapic_irq(struct kvm_kernel_irq_routing_entry *e,
+ 			      struct kvm *kvm, int irq_source_id, int level)
+ {
+ 	struct kvm_ioapic *ioapic = kvm->arch.vioapic;
+-	level = kvm_irq_line_state(&ioapic->irq_states[e->irqchip.pin],
+-				   irq_source_id, level);
+-
+-	return kvm_ioapic_set_irq(ioapic, e->irqchip.pin, level);
++	return kvm_ioapic_set_irq(ioapic, e->irqchip.pin, irq_source_id, level);
+ }
+ 
+ inline static bool kvm_is_dm_lowest_prio(struct kvm_lapic_irq *irq)
+@@ -249,8 +232,6 @@ unlock:
+ 
+ void kvm_free_irq_source_id(struct kvm *kvm, int irq_source_id)
+ {
+-	int i;
+-
+ 	ASSERT(irq_source_id != KVM_USERSPACE_IRQ_SOURCE_ID);
+ 
+ 	mutex_lock(&kvm->irq_lock);
+@@ -263,14 +244,10 @@ void kvm_free_irq_source_id(struct kvm *kvm, int irq_source_id)
+ 	if (!irqchip_in_kernel(kvm))
+ 		goto unlock;
+ 
+-	for (i = 0; i < KVM_IOAPIC_NUM_PINS; i++) {
+-		clear_bit(irq_source_id, &kvm->arch.vioapic->irq_states[i]);
+-		if (i >= 16)
+-			continue;
++	kvm_ioapic_clear_all(kvm->arch.vioapic, irq_source_id);
+ #ifdef CONFIG_X86
+-		clear_bit(irq_source_id, &pic_irqchip(kvm)->irq_states[i]);
++	kvm_pic_clear_all(pic_irqchip(kvm), irq_source_id);
+ #endif
+-	}
+ unlock:
+ 	mutex_unlock(&kvm->irq_lock);
+ }
 -- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
-
-
+MST
