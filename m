@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752375Ab2GSWME (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 18:12:04 -0400
-Received: from mga01.intel.com ([192.55.52.88]:15519 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751907Ab2GSWMC convert rfc822-to-8bit (ORCPT
+	id S1752403Ab2GSWO2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 18:14:28 -0400
+Received: from nm31-vm2.bullet.mail.bf1.yahoo.com ([72.30.239.10]:38703 "HELO
+	nm31-vm2.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751971Ab2GSWOZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 18:12:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="195253887"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Seiji Aguchi <seiji.aguchi@hds.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mikew@google.com" <mikew@google.com>,
-        "dzickus@redhat.com" <dzickus@redhat.com>,
-        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>
-CC: "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: RE: [RFC][PATCH v2 2/3] Hold multiple logs
-Thread-Topic: [RFC][PATCH v2 2/3] Hold multiple logs
-Thread-Index: Ac1l82ceH7I0t1QCT1GombsnNxviZAAAK4PgAABTBVAAAP4IQA==
-Date: Thu, 19 Jul 2012 22:10:52 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F1936EA97@ORSMSX104.amr.corp.intel.com>
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D40FB27FDC@USINDEM103.corp.hds.com>
- <3908561D78D1C84285E8C5FCA982C28F1936EA5F@ORSMSX104.amr.corp.intel.com>
- <A5ED84D3BB3A384992CBB9C77DEDA4D40FB28056@USINDEM103.corp.hds.com>
-In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D40FB28056@USINDEM103.corp.hds.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 19 Jul 2012 18:14:25 -0400
+X-Greylist: delayed 341 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Jul 2012 18:14:25 EDT
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 327304.90017.bm@omp1015.mail.bf1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type;
+  b=gXL5CKKfNi2jooDCRgfdcz9gLQX20uEb2TwwJjLZznpmmVBdfhyJ758GUcvebwtS9GHYbK2uc784yWCIU2JHOR0bQzd1fKvxFfCUOhp/cdf172md+D2y+tZ9NPK5Do9mgClmCiA5/IH/znjb0qTdRxxh0u8Qat2JqzBN0X4cyaE=;
+X-YMail-OSG: 9MlUgqAVM1mIcG_9s6ZfHNNNHfY1OhwFqb1IorMAkqsyi0o
+ hDqHo7zq547R0Fb7xrCvk2DK.YX_G8we6K57St0V9eHcjnmKHnU0Kdatl8AF
+ CIRF1XC.Duo5MZFRCvlx5DzXEAfh5pg58hFgd9atQt6KF94jg2sE4RAnN7C3
+ edYOL1EQu6bC9GsXTdHYjvtHikjs5lEQx5IFV2VfpuEqUuRytU7tvDUXM7GE
+ LgoMCWsIkSjHGXyMOQjOxegTctWbH1sSujbWszUO.fGtBIMUwiN.vgcpRWQF
+ d5R_.V.HQxzI3PDnDH.CYjzx5KCnWozXAEFldwmta3SUJ3XxU3jTFO.nEPQ9
+ adzoqk49CGR_yWBXFOyKzmBSzsrsXhI1cqULNlksNmlDeItiuu6AYQEbtAch
+ tJPpEPa6c3ImQfDNzeUHoeuJzagKTTsuXLO6RwhGy_iP1yB_FNmALvrGTFrG
+ lzz7XaTZlVRLF5bbgKJjWvZamuTYGTnw-
+X-Mailer: YahooMailWebService/0.8.120.356233
+Message-ID: <1342735724.60460.YahooMailNeo@web160604.mail.bf1.yahoo.com>
+Date: Thu, 19 Jul 2012 15:08:44 -0700 (PDT)
+From: joe shmoe <joeshmoeypeter@yahoo.com>
+Reply-To: joe shmoe <joeshmoeypeter@yahoo.com>
+Subject: kdump/kexec vmcore size doubles each time
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> If users specify a number of that is too big, the message will be meaningless.
-> I just couldn't decide the appropriate number by myself.
-> Then, I make it tunable.
+Hi,
+I am trying to configure kexec/kdump on 2.6.35-14. 
 
-I think that 3 or 4 logs should be plenty to cover almost all situations. E.g.
-with 3 logs you could capture 2 OOPS (and perhaps miss some other OOPS)
-and then get the final panic that kills the system.  Messier crashes are of
-course possible ... but that would give lots of clues on where the problems
-lie.
 
-I was just wondering whether you had successfully stored 2, or 3, or
-more logs - and if you'd seen any problems doing so.  Matthew seemed
-very worried about the amount of available space for EFI.
+$> kexec --version
+kexec-tools-testing 20080330 released 30th March 2007
 
-If you don't know what is the appropriate number ... then how will
-users decide? We should really give them some guidance ... especially
-if there are odd problems[1] if they pick a number that is too big.
 
--Tony
+I did manage to configure kdump to use raw device (/dev/sda7) for saving the dump from within the initrd.
 
-[1] I don't know if there will be problems ... I don't know what else
-EFI will store here, and what would happen if it ran out of space.
+When the production kernel boots, it copies core from /dev/sda7 to /var/crash/ path.
+I see that the size of data copied over from /dev/sda7 to /var/crash almost doubles with every crash (370MB to 620MB to 1.2 GB to 2.1GB). 
 
+
+The size returns back to normal, should there be a "normal" reboot cycle anytime. After that every subsequent crash again doubles the size. This is very baffling. 
+
+On a related note, I wanted to understand if there are any known issues with having swap device as a dump location. Does kdump start 
+early enough to ensure that vmcore can be safely copied off swap 
+/dev/sda7 and THEN mkswap/swapon commands set up the swap space?
+
+
+Thanks much.
