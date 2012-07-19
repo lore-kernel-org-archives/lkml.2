@@ -1,125 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752451Ab2GSK3M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 06:29:12 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:35085 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750854Ab2GSK3K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 06:29:10 -0400
-Date: Thu, 19 Jul 2012 06:28:39 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Li Zefan <lizefan@huawei.com>
-Cc: John Fastabend <john.r.fastabend@intel.com>,
-        Gao feng <gaofeng@cn.fujitsu.com>, eric.dumazet@gmail.com,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        davem@davemloft.net, Eric Dumazet <edumazet@google.com>,
-        "Rustad, Mark D" <mark.d.rustad@intel.com>
-Subject: Re: [PATCH v4] net: cgroup: fix access the unallocated memory in
- netprio cgroup
-Message-ID: <20120719102839.GA2070@hmsreliant.think-freely.org>
-References: <1342079415-9631-1-git-send-email-gaofeng@cn.fujitsu.com>
- <5005CF5D.9070905@intel.com>
- <20120718122106.GB25563@hmsreliant.think-freely.org>
- <5006C3CA.3010007@intel.com>
- <20120718142632.GF25563@hmsreliant.think-freely.org>
- <50075C43.7000706@huawei.com>
+	id S1752603Ab2GSKam (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 06:30:42 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:44366 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751026Ab2GSKak (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 06:30:40 -0400
+Message-ID: <5007E1C9.1040509@mev.co.uk>
+Date: Thu, 19 Jul 2012 11:30:33 +0100
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120616 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50075C43.7000706@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Ian Abbott <ian.abbott@mev.co.uk>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 32/90] staging: comedi: amplc_pc236: store the pci_dev
+ in the comedi_device
+References: <201207181839.24686.hartleys@visionengravers.com>
+In-Reply-To: <201207181839.24686.hartleys@visionengravers.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 19, 2012 at 09:00:51AM +0800, Li Zefan wrote:
-> >>>>>  static struct cgroup_subsys_state *cgrp_create(struct cgroup *cgrp)
-> 
-> >>>>>  {
-> >>>>>  	struct cgroup_netprio_state *cs;
-> >>>>> -	int ret;
-> >>>>> +	int ret = -EINVAL;
-> >>>>>
-> >>>>>  	cs = kzalloc(sizeof(*cs), GFP_KERNEL);
-> >>>>>  	if (!cs)
-> >>>>>  		return ERR_PTR(-ENOMEM);
-> >>>>>
-> >>>>> -	if (cgrp->parent && cgrp_netprio_state(cgrp->parent)->prioidx) {
-> >>>>> -		kfree(cs);
-> >>>>> -		return ERR_PTR(-EINVAL);
-> >>>>> -	}
-> >>>>> +	if (cgrp->parent && cgrp_netprio_state(cgrp->parent)->prioidx)
-> >>>>> +		goto out;
-> >>>>>
-> >>>>>  	ret = get_prioidx(&cs->prioidx);
-> >>>>> -	if (ret != 0) {
-> >>>>> +	if (ret < 0) {
-> >>>>>  		pr_warn("No space in priority index array\n");
-> >>>>> -		kfree(cs);
-> >>>>> -		return ERR_PTR(ret);
-> >>>>> +		goto out;
-> >>>>> +	}
-> >>>>> +
-> >>>>> +	ret = update_netdev_tables();
-> >>>>> +	if (ret < 0) {
-> >>>>> +		put_prioidx(cs->prioidx);
-> >>>>> +		goto out;
-> >>>>>  	}
-> >>>>
-> >>>> Gao,
-> >>>>
-> >>>> This introduces a null ptr dereference when netprio_cgroup is built
-> >>>> into the kernel because update_netdev_tables() depends on init_net.
-> >>>> However cgrp_create is being called by cgroup_init before
-> >>>> do_initcalls() is called and before net_dev_init().
-> >>>>
-> >>>> .John
-> >>>>
-> >>> Not sure I follow here John.  Shouldn't init_net be initialized prior to any
-> >>> network devices getting registered?  In other words, shouldn't for_each_netdev
-> >>> just result in zero iterations through the loop?
-> >>> Neil
-> >>>
-> >>
-> >> init_net _is_ initialized prior to any network devices getting
-> >> registered but not before cgrp_create called via cgroup_init.
-> >>
-> >> #define for_each_netdev(net, d)         \
-> >>                 list_for_each_entry(d, &(net)->dev_base_head, dev_list)
-> >>
-> >> but dev_base_head is zeroed at this time. In netdev_init we have,
-> >>
-> >>         INIT_LIST_HEAD(&net->dev_base_head);
-> >>
-> >> but we haven't got that far yet because cgroup_init is called
-> >> before do_initcalls().
-> >>
-> > ok, I see that, and it makes sense, but at this point I'm more concerned with
-> > cgroups getting initalized twice.  The early_init flag is clear in the
-> > cgroup_subsystem for netprio, so we really shouldn't be getting initalized from
-> > cgroup_init. We should be getting initalized from the module_init() call that
-> 
-> > we register
-> 
-> If the early_init flag is set, a cgroup subsys will be initialized from
-> cgroup_early_init(), otherwise cgroup_init().
-> 
-> If netprio is built as a module, the subsys will be initailized from module_init(),
-> otherwise cgroup_init() (in this case cgroup_load_subsys() called in module_init()
-> is a no-op).
-> 
-> So it won't get initialized twice.
-> 
-> 
-Yeah, we already figured that out :).
+On 2012-07-19 02:39, H Hartley Sweeten wrote:
+> Use the hw_dev pointer in the comedi_device struct to hold the
+> pci_dev instead of carrying it in the private data.
+>
+> Since the pci_dev is no longer held in the provate data, we can
+> also cleanup the detach a bit. Remove the IS_ENABLED() tests in
+> the detach. If the pci_dev is non NULL it's a PCI device otherwise
+> it's an ISA device. Using IS_ENABLED() to omit the code paths
+> makes the code a bit confusing and doesn't save much.
 
-Still its not a sane interface.  If you create a module_init function for a bit
-of code, you expect that function to be called before the rest of your code ever
-gets executed.  The way cgroup_init works, ss->cgroup_create gets called before
-the module_init routine does when the module is built monolithically.  So no, no
-double initalization, but definately some behavior that is going to be prone to
-mistakes.
-Neil
+The detach() routine should really check thisboard->bustype for 
+robustness, as NULL hw_dev doesn't necessarily mean its a PCI device. 
+The original code should have checked thisboard->bustype too although it 
+works by accident because dev->iobase is 0.
 
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
