@@ -1,86 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753773Ab2GSJhv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 05:37:51 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:44212 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752665Ab2GSJht (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 05:37:49 -0400
-Message-ID: <5007D568.2050401@mev.co.uk>
-Date: Thu, 19 Jul 2012 10:37:44 +0100
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120616 Thunderbird/13.0
+	id S1753955Ab2GSJh4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 05:37:56 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:33430 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753723Ab2GSJhw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 05:37:52 -0400
+Date: Thu, 19 Jul 2012 10:37:38 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>
+Subject: Re: [PATCH] Revert "KVM: Export asm-generic/kvm_para.h"
+Message-ID: <20120719093738.GA29153@mudshark.cambridge.arm.com>
+References: <1342607393-32254-1-git-send-email-will.deacon@arm.com>
+ <201207181158.07236.arnd@arndb.de>
+ <CAMuHMdXiWdtrH74BBkw402W=M5jjeu+uQAkHUitWJD06f1tZdQ@mail.gmail.com>
 MIME-Version: 1.0
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Ian Abbott <ian.abbott@mev.co.uk>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 15/90] staging: comedi: adv_pci1723: move comedi_pci_enable()
- into the attach
-References: <201207181830.48668.hartleys@visionengravers.com>
-In-Reply-To: <201207181830.48668.hartleys@visionengravers.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdXiWdtrH74BBkw402W=M5jjeu+uQAkHUitWJD06f1tZdQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-07-19 02:30, H Hartley Sweeten wrote:
-> Use pci_is_enabled() in the "find pci device" function to determine if
-> the found pci device is not in use and move the comedi_pci_enable() call
-> into the attach.
->
-> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-> Cc: Ian Abbott <abbotti@mev.co.uk>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> ---
->   drivers/staging/comedi/drivers/adv_pci1723.c | 10 +++++-----
->   1 file changed, 5 insertions(+), 5 deletions(-)
->
-> diff --git a/drivers/staging/comedi/drivers/adv_pci1723.c b/drivers/staging/comedi/drivers/adv_pci1723.c
-> index f561a2a..e971fa6 100644
-> --- a/drivers/staging/comedi/drivers/adv_pci1723.c
-> +++ b/drivers/staging/comedi/drivers/adv_pci1723.c
-> @@ -302,11 +302,7 @@ static struct pci_dev *pci1723_find_pci_dev(struct comedi_device *dev,
->   		}
->   		if (pcidev->vendor != PCI_VENDOR_ID_ADVANTECH)
->   			continue;
-> -		/*
-> -		 * Look for device that isn't in use.
-> -		 * Enable PCI device and request regions.
-> -		 */
-> -		if (comedi_pci_enable(pcidev, "adv_pci1723"))
-> +		if (pci_is_enabled(pcidev))
->   			continue;
->   		return pcidev;
->   	}
+Hi Geert,
 
-Just because the device is enabled doesn't mean that it is in use, so 
-this change could skip over a perfectly good unused device.
+On Wed, Jul 18, 2012 at 01:33:01PM +0100, Geert Uytterhoeven wrote:
+> > On Wednesday 18 July 2012, Will Deacon wrote:
+> >
+> >> I'm not sure what specific problem the original commit was fixing, so we
+> >> may need to solve this another way if there's something I've missed.
+> 
+> See below.
 
-If you want to move the comedi_pci_enable() call, this is a change in 
-behaviour for this particular driver, but is consistent with most of the 
-other Comedi PCI drivers (and the bus/slot options can be used to select 
-a particular device).  This is probably a good thing, but you should 
-take out the pci_is_enabled test.
+[...]
 
-> @@ -335,6 +331,10 @@ static int pci1723_attach(struct comedi_device *dev,
->   	if (!devpriv->pcidev)
->   		return -EIO;
->
-> +	ret = comedi_pci_enable(devpriv->pcidev, "adv_pci1723");
-> +	if (ret)
-> +		return ret;
-> +
->   	dev->iobase = pci_resource_start(devpriv->pcidev, 2);
->
->   	dev->board_name = this_board->name;
->
+> make[4]: *** No rule to make target
+> `/scratch/kisskb/build/linux-next_m68k-allmodconfig_m68k/usr/include/linux/kvm_para.h',
+> needed by `/scratch/kisskb/build/linux-next_m68k-allmodconfig_m68k/usr/include/linux/.check'.
+> make[3]: *** [linux] Error 2
+> make[2]: *** [headers_check] Error 2
 
+[...]
 
--- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+> So far the former case is limited to sh (mainline) and m68k (next), but I expect
+> more architectures to start using the "generic-y += ..." idiom.
+> 
+> The latter is limited to cris and m32r.
+> 
+> Hence just reverting 56457f38f212344fb38b250cfa7e7311c065022f is not the
+> right fix, as it will cause more breakage.
 
+Thanks for the explanation. Given that we have the asm-generic version of
+kvm_para.h, I don't see why we can't just export linux/kvm_para.h
+unconditionally and fix the few remaining architectures by adding generic-y
+lines to their Kbuild files.
 
+Something like below (I also removed what look like dead references to
+asm-$(SRCARCH) in the srctree)...
+
+Will
+
+---8<---
+
+diff --git a/arch/cris/include/asm/Kbuild b/arch/cris/include/asm/Kbuild
+index 04d02a5..2fde49c 100644
+--- a/arch/cris/include/asm/Kbuild
++++ b/arch/cris/include/asm/Kbuild
+@@ -7,3 +7,5 @@ header-y += ethernet.h
+ header-y += etraxgpio.h
+ header-y += rs485.h
+ header-y += sync_serial.h
++
++generic-y += kvm_para.h
+diff --git a/arch/m32r/include/asm/Kbuild b/arch/m32r/include/asm/Kbuild
+index c68e168..78c505e 100644
+--- a/arch/m32r/include/asm/Kbuild
++++ b/arch/m32r/include/asm/Kbuild
+@@ -1 +1,3 @@
+ include include/asm-generic/Kbuild.asm
++
++generic-y += kvm_para.h
+diff --git a/include/asm-generic/Kbuild.asm b/include/asm-generic/Kbuild.asm
+index c5d2e5d..f180c99 100644
+--- a/include/asm-generic/Kbuild.asm
++++ b/include/asm-generic/Kbuild.asm
+@@ -1,15 +1,8 @@
+-ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/kvm.h \
+-		  $(srctree)/include/asm-$(SRCARCH)/kvm.h),)
++ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/kvm.h),)
+ header-y  += kvm.h
+ endif
+ 
+-ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/kvm_para.h \
+-		  $(srctree)/include/asm-$(SRCARCH)/kvm_para.h),)
+-header-y  += kvm_para.h
+-endif
+-
+-ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/a.out.h \
+-		  $(srctree)/include/asm-$(SRCARCH)/a.out.h),)
++ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/a.out.h),)
+ header-y += a.out.h
+ endif
+ 
+@@ -21,6 +14,7 @@ header-y += fcntl.h
+ header-y += ioctl.h
+ header-y += ioctls.h
+ header-y += ipcbuf.h
++header-y += kvm_para.h
+ header-y += mman.h
+ header-y += msgbuf.h
+ header-y += param.h
+diff --git a/include/linux/Kbuild b/include/linux/Kbuild
+index 8760be3..048abc6 100644
+--- a/include/linux/Kbuild
++++ b/include/linux/Kbuild
+@@ -23,20 +23,13 @@ header-y += wimax/
+ objhdr-y += version.h
+ 
+ ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/a.out.h \
+-		  $(srctree)/include/asm-$(SRCARCH)/a.out.h \
+ 		  $(INSTALL_HDR_PATH)/include/asm-*/a.out.h),)
+ header-y += a.out.h
+ endif
+ ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/kvm.h \
+-		  $(srctree)/include/asm-$(SRCARCH)/kvm.h \
+ 		  $(INSTALL_HDR_PATH)/include/asm-*/kvm.h),)
+ header-y += kvm.h
+ endif
+-ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/kvm_para.h \
+-		  $(srctree)/include/asm-$(SRCARCH)/kvm_para.h \
+-		  $(INSTALL_HDR_PATH)/include/asm-*/kvm_para.h),)
+-header-y += kvm_para.h
+-endif
+ 
+ header-y += acct.h
+ header-y += adb.h
+@@ -229,6 +222,7 @@ header-y += kernel-page-flags.h
+ header-y += kexec.h
+ header-y += keyboard.h
+ header-y += keyctl.h
++header-y += kvm_para.h
+ header-y += l2tp.h
+ header-y += limits.h
+ header-y += llc.h
