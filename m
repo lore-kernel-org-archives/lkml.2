@@ -1,183 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752706Ab2GSMmv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 08:42:51 -0400
-Received: from sh.osrg.net ([192.16.179.4]:52950 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752506Ab2GSMmq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 08:42:46 -0400
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-nilfs <linux-nilfs@vger.kernel.org>,
-        Vyacheslav Dubeyko <slava@dubeyko.com>,
-        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Subject: [PATCH 1/2] NILFS2: add omitted comments for structures in nilfs2_fs.h
-Date: Thu, 19 Jul 2012 21:34:18 +0900
-Message-Id: <1342701259-32314-2-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
-X-Mailer: git-send-email 1.7.9.3
-In-Reply-To: <1342701259-32314-1-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
-References: <1342701259-32314-1-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
-X-Dispatcher: imput version 20070423(IM149)
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.3.7 (sh.osrg.net [192.16.179.4]); Thu, 19 Jul 2012 21:42:32 +0900 (JST)
+	id S1753145Ab2GSMnr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 08:43:47 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:37492 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752600Ab2GSMmt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 08:42:49 -0400
+X-AuditID: b753bd60-a3089ba000000655-e1-500800c7eaaa
+X-AuditID: b753bd60-a3089ba000000655-e1-500800c7eaaa
+From: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
+Subject: [PATCH -v2 5/6] fuse: set default global limit considering tunable
+ request size
+To: Miklos Szeredi <miklos@szeredi.hu>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Muthukumar R <muthur@gmail.com>
+Cc: fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-doc@vger.kernel.org,
+        yrl.pp-manager.tt@hitachi.com,
+        Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>,
+        Miklos Szeredi <miklos@szeredi.hu>, Nikolaus Rath <Nikolaus@rath.org>,
+        Liu Yuan <namei.unix@gmail.com>, Has-Wen Nienhuys <hanwen@xs4all.nl>
+Date: Thu, 19 Jul 2012 21:49:58 +0900
+Message-ID: <20120719124958.6250.26758.stgit@ltc137.sdl.hitachi.co.jp>
+In-Reply-To: <20120719124851.6250.43316.stgit@ltc137.sdl.hitachi.co.jp>
+References: <20120719124851.6250.43316.stgit@ltc137.sdl.hitachi.co.jp>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vyacheslav Dubeyko <slava@dubeyko.com>
+Set default global limits for backgrounded requests and congestion
+threshold considering the tunable maximum request size.
 
-This patch adds omitted comments for structures in nilfs2_fs.h.
+They are calculated using size of fuse_req structure, which is
+variable due to it. This patch sets them according to the current
+request size unless they are set via mod_param by the system
+administrator.
 
-Signed-off-by: Vyacheslav Dubeyko <slava@dubeyko.com>
-Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Signed-off-by: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
+Cc: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Nikolaus Rath <Nikolaus@rath.org>
+Cc: Liu Yuan <namei.unix@gmail.com>
+Cc: Has-Wen Nienhuys <hanwen@xs4all.nl>
 ---
- include/linux/nilfs2_fs.h |   63 ++++++++++++++++++++++++++++-----------------
- 1 file changed, 39 insertions(+), 24 deletions(-)
 
-diff --git a/include/linux/nilfs2_fs.h b/include/linux/nilfs2_fs.h
-index 89bd4a4..9875576 100644
---- a/include/linux/nilfs2_fs.h
-+++ b/include/linux/nilfs2_fs.h
-@@ -293,7 +293,7 @@ struct nilfs_dir_entry {
- 	__le64	inode;			/* Inode number */
- 	__le16	rec_len;		/* Directory entry length */
- 	__u8	name_len;		/* Name length */
--	__u8	file_type;
-+	__u8	file_type;		/* Dir entry type (file, dir, etc) */
- 	char	name[NILFS_NAME_LEN];	/* File name */
- 	char    pad;
- };
-@@ -395,7 +395,7 @@ union nilfs_binfo {
- };
+ fs/fuse/fuse_i.h |    4 +++
+ fs/fuse/inode.c  |   62 ++++++++++++++++++++++++++++++++++++++++++++----------
+ 2 files changed, 55 insertions(+), 11 deletions(-)
+
+diff --git a/fs/fuse/fuse_i.h b/fs/fuse/fuse_i.h
+index 46df615..2dda6eb 100644
+--- a/fs/fuse/fuse_i.h
++++ b/fs/fuse/fuse_i.h
+@@ -27,6 +27,10 @@
+ /** Default number of pages that can be used in a single read/write request */
+ #define FUSE_DEFAULT_MAX_PAGES_PER_REQ 32
+ 
++/** Maximum size of struct fuse_req */
++#define FUSE_CURRENT_REQ_SIZE (sizeof(struct fuse_req) +\
++			       sysfs_max_req_pages * sizeof(struct page *))
++
+ /** Bias for fi->writectr, meaning new writepages must not be sent */
+ #define FUSE_NOWRITE INT_MIN
+ 
+diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
+index 5f84a40..dc0302f 100644
+--- a/fs/fuse/inode.c
++++ b/fs/fuse/inode.c
+@@ -29,25 +29,36 @@ static struct kmem_cache *fuse_inode_cachep;
+ struct list_head fuse_conn_list;
+ DEFINE_MUTEX(fuse_mutex);
+ 
+-static int set_global_limit(const char *val, struct kernel_param *kp);
++static int set_global_limit_bgreq(const char *val, struct kernel_param *kp);
++static int set_global_limit_thresh(const char *val, struct kernel_param *kp);
+ 
+ unsigned max_user_bgreq;
+-module_param_call(max_user_bgreq, set_global_limit, param_get_uint,
+-		  &max_user_bgreq, 0644);
++module_param_call(max_user_bgreq, set_global_limit_bgreq,
++		  param_get_uint, &max_user_bgreq, 0644);
+ __MODULE_PARM_TYPE(max_user_bgreq, "uint");
+ MODULE_PARM_DESC(max_user_bgreq,
+  "Global limit for the maximum number of backgrounded requests an "
+  "unprivileged user can set");
+ 
+ unsigned max_user_congthresh;
+-module_param_call(max_user_congthresh, set_global_limit, param_get_uint,
+-		  &max_user_congthresh, 0644);
++module_param_call(max_user_congthresh, set_global_limit_thresh,
++		  param_get_uint, &max_user_congthresh, 0644);
+ __MODULE_PARM_TYPE(max_user_congthresh, "uint");
+ MODULE_PARM_DESC(max_user_congthresh,
+  "Global limit for the maximum congestion threshold an "
+  "unprivileged user can set");
  
  /**
-- * struct nilfs_segment_summary - segment summary
-+ * struct nilfs_segment_summary - segment summary header
-  * @ss_datasum: checksum of data
-  * @ss_sumsum: checksum of segment summary
-  * @ss_magic: magic number
-@@ -683,9 +683,9 @@ struct nilfs_sufile_header {
++ * The flags below are used in order to distinguish how to set
++ * max_user_bgreq and max_user_congthresh, respectively. They
++ * should be used if they are set via mod_param. If not, we should
++ * check their current limitation using check_global_limit() any
++ * time due to the tunable read/write request size.
++ */
++static bool mod_param_set_flg_bgreq;
++static bool mod_param_set_flg_thresh;
++
++/**
+  * Maximum number of pages allocated for struct fuse_req.
+  * It can be changed via sysfs to arbitrary number between
+  * FUSE_DEFAULT_MAX_PAGES_PER_REQ and nr_pages equivalent
+@@ -766,13 +777,39 @@ static void sanitize_global_limit(unsigned *limit)
+ {
+ 	if (*limit == 0)
+ 		*limit = ((num_physpages << PAGE_SHIFT) >> 13) /
+-			 sizeof(struct fuse_req);
++			 FUSE_CURRENT_REQ_SIZE;
  
- /**
-  * nilfs_suinfo - segment usage information
-- * @sui_lastmod:
-- * @sui_nblocks:
-- * @sui_flags:
-+ * @sui_lastmod: timestamp of last modification
-+ * @sui_nblocks: number of written blocks in segment
-+ * @sui_flags: segment usage flags
-  */
- struct nilfs_suinfo {
- 	__u64 sui_lastmod;
-@@ -716,9 +716,10 @@ enum {
- };
+ 	if (*limit >= 1 << 16)
+ 		*limit = (1 << 16) - 1;
+ }
  
- /**
-- * struct nilfs_cpmode -
-- * @cc_cno:
-- * @cc_mode:
-+ * struct nilfs_cpmode - change checkpoint mode structure
-+ * @cm_cno: checkpoint number
-+ * @cm_mode: mode of checkpoint
-+ * @cm_pad: padding
-  */
- struct nilfs_cpmode {
- 	__u64 cm_cno;
-@@ -728,11 +729,11 @@ struct nilfs_cpmode {
+-static int set_global_limit(const char *val, struct kernel_param *kp)
++static void check_global_limit(unsigned *limit, bool mod_param_flg)
++{
++	if (!mod_param_flg) {
++		unsigned cur_global_limit = 0;
++
++		sanitize_global_limit(&cur_global_limit);
++		*limit = cur_global_limit;
++	}
++}
++
++static int set_global_limit_bgreq(const char *val, struct kernel_param *kp)
++{
++	int rv;
++
++	rv = param_set_uint(val, kp);
++	if (rv)
++		return rv;
++
++	sanitize_global_limit((unsigned *)kp->arg);
++
++	/* max_user_bgreq is set via mod_param */
++	mod_param_set_flg_bgreq = true;
++
++	return 0;
++}
++
++static int set_global_limit_thresh(const char *val, struct kernel_param *kp)
+ {
+ 	int rv;
  
- /**
-  * struct nilfs_argv - argument vector
-- * @v_base:
-- * @v_nmembs:
-- * @v_size:
-- * @v_flags:
-- * @v_index:
-+ * @v_base: pointer on data array from userspace
-+ * @v_nmembs: number of members in data array
-+ * @v_size: size of data array in bytes
-+ * @v_flags: flags
-+ * @v_index: start number of target data items
-  */
- struct nilfs_argv {
- 	__u64 v_base;
-@@ -743,9 +744,9 @@ struct nilfs_argv {
- };
+@@ -782,6 +819,9 @@ static int set_global_limit(const char *val, struct kernel_param *kp)
  
- /**
-- * struct nilfs_period -
-- * @p_start:
-- * @p_end:
-+ * struct nilfs_period - period of checkpoint numbers
-+ * @p_start: start checkpoint number (inclusive)
-+ * @p_end: end checkpoint number (exclusive)
-  */
- struct nilfs_period {
- 	__u64 p_start;
-@@ -753,7 +754,7 @@ struct nilfs_period {
- };
+ 	sanitize_global_limit((unsigned *)kp->arg);
  
- /**
-- * struct nilfs_cpstat -
-+ * struct nilfs_cpstat - checkpoint statistics
-  * @cs_cno: checkpoint number
-  * @cs_ncps: number of checkpoints
-  * @cs_nsss: number of snapshots
-@@ -765,7 +766,7 @@ struct nilfs_cpstat {
- };
++	/* max_user_congthresh is set via mod_param */
++	mod_param_set_flg_thresh = true;
++
+ 	return 0;
+ }
  
- /**
-- * struct nilfs_sustat -
-+ * struct nilfs_sustat - segment usage statistics
-  * @ss_nsegs: number of segments
-  * @ss_ncleansegs: number of clean segments
-  * @ss_ndirtysegs: number of dirty segments
-@@ -784,10 +785,10 @@ struct nilfs_sustat {
+@@ -801,8 +841,8 @@ static void process_init_limits(struct fuse_conn *fc, struct fuse_init_out *arg)
+ 	if (arg->minor < 13)
+ 		return;
  
- /**
-  * struct nilfs_vinfo - virtual block number information
-- * @vi_vblocknr:
-- * @vi_start:
-- * @vi_end:
-- * @vi_blocknr:
-+ * @vi_vblocknr: virtual block number
-+ * @vi_start: start checkpoint number (inclusive)
-+ * @vi_end: end checkpoint number (exclusive)
-+ * @vi_blocknr: disk block number
-  */
- struct nilfs_vinfo {
- 	__u64 vi_vblocknr;
-@@ -797,7 +798,15 @@ struct nilfs_vinfo {
- };
+-	sanitize_global_limit(&max_user_bgreq);
+-	sanitize_global_limit(&max_user_congthresh);
++	check_global_limit(&max_user_bgreq, mod_param_set_flg_bgreq);
++	check_global_limit(&max_user_congthresh, mod_param_set_flg_thresh);
  
- /**
-- * struct nilfs_vdesc -
-+ * struct nilfs_vdesc - descriptor of virtual block number
-+ * @vd_ino: inode number
-+ * @vd_cno: checkpoint number
-+ * @vd_vblocknr: virtual block number
-+ * @vd_period: period of checkpoint numbers
-+ * @vd_blocknr: disk block number
-+ * @vd_offset: logical block offset inside a file
-+ * @vd_flags: flags (data or node block)
-+ * @vd_pad: padding
-  */
- struct nilfs_vdesc {
- 	__u64 vd_ino;
-@@ -811,7 +820,13 @@ struct nilfs_vdesc {
- };
+ 	if (arg->max_background) {
+ 		fc->max_background = arg->max_background;
+@@ -1309,8 +1349,8 @@ static int __init fuse_init(void)
+ 	if (res)
+ 		goto err_sysfs_cleanup;
  
- /**
-- * struct nilfs_bdesc -
-+ * struct nilfs_bdesc - descriptor of disk block number
-+ * @bd_ino: inode number
-+ * @bd_oblocknr: disk block address (for skipping dead blocks)
-+ * @bd_blocknr: disk block address
-+ * @bd_offset: logical block offset inside a file
-+ * @bd_level: level in the b-tree organization
-+ * @bd_pad: padding
-  */
- struct nilfs_bdesc {
- 	__u64 bd_ino;
--- 
-1.7.9.3
+-	sanitize_global_limit(&max_user_bgreq);
+-	sanitize_global_limit(&max_user_congthresh);
++	check_global_limit(&max_user_bgreq, mod_param_set_flg_bgreq);
++	check_global_limit(&max_user_congthresh, mod_param_set_flg_thresh);
+ 
+ 	return 0;
+ 
 
