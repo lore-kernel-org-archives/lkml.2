@@ -1,278 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752869Ab2GSOoq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 10:44:46 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:35755 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752619Ab2GSOng (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 10:43:36 -0400
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kent Yoder <key@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-crypto@vger.kernel.org
-Subject: [PATCH 4/4] powerpc/crypto: add 842 crypto driver
-Date: Thu, 19 Jul 2012 09:42:41 -0500
-Message-Id: <1342708961-28587-5-git-send-email-sjenning@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1342708961-28587-1-git-send-email-sjenning@linux.vnet.ibm.com>
-References: <1342708961-28587-1-git-send-email-sjenning@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12071914-4242-0000-0000-000002606B4E
+	id S1752492Ab2GSOiK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 10:38:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40455 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751909Ab2GSOhC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 10:37:02 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Stable <stable@vger.kernel.org>
+Cc: "Linux-MM <linux-mm"@kvack.org, LKML <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 25/34] mm: vmscan: Check if reclaim should really abort even if compaction_ready() is true for one zone
+Date: Thu, 19 Jul 2012 15:36:35 +0100
+Message-Id: <1342708604-26540-26-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1342708604-26540-1-git-send-email-mgorman@suse.de>
+References: <1342708604-26540-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add the 842 cryptographic API driver that
-submits compression requests to the 842 hardware compression
-accelerator driver (nx-compress).
+commit 0cee34fd72c582b4f8ad8ce00645b75fb4168199 upstream.
 
-If the hardware accelerator goes offline for any reason
-(dynamic disable, migration, etc...), this driver will use LZO
-as a software failover for all future compression requests.
-For decompression requests, the 842 hardware driver contains
-a software implementation of the 842 decompressor to support
-the decompression of data that was compressed before the accelerator
-went offline.
+Stable note: Not tracked on Bugzilla. THP and compaction was found to
+	aggressively reclaim pages and stall systems under different
+	situations that was addressed piecemeal over time.
 
-Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
-Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+If compaction can proceed for a given zone, shrink_zones() does not
+reclaim any more pages from it. After commit [e0c2327: vmscan: abort
+reclaim/compaction if compaction can proceed], do_try_to_free_pages()
+tries to finish as soon as possible once one zone can compact.
+
+This was intended to prevent slabs being shrunk unnecessarily but
+there are side-effects. One is that a small zone that is ready for
+compaction will abort reclaim even if the chances of successfully
+allocating a THP from that zone is small. It also means that reclaim
+can return too early even though sc->nr_to_reclaim pages were not
+reclaimed.
+
+This partially reverts the commit until it is proven that slabs are
+really being shrunk unnecessarily but preserves the check to return
+1 to avoid OOM if reclaim was aborted prematurely.
+
+[aarcange@redhat.com: This patch replaces a revert from Andrea]
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Jan Kara <jack@suse.cz>
+Cc: Andy Isaacson <adi@hexapodia.org>
+Cc: Nai Xia <nai.xia@gmail.com>
+Cc: Johannes Weiner <jweiner@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- crypto/842.c    |  183 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
- crypto/Kconfig  |    9 +++
- crypto/Makefile |    1 +
- 3 files changed, 193 insertions(+)
- create mode 100644 crypto/842.c
+ mm/vmscan.c |   19 +++++++++----------
+ 1 file changed, 9 insertions(+), 10 deletions(-)
 
-diff --git a/crypto/842.c b/crypto/842.c
-new file mode 100644
-index 0000000..144767d
---- /dev/null
-+++ b/crypto/842.c
-@@ -0,0 +1,183 @@
-+/*
-+ * Cryptographic API for the 842 compression algorithm.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-+ *
-+ * Copyright (C) IBM Corporation, 2011
-+ *
-+ * Authors: Robert Jennings <rcj@linux.vnet.ibm.com>
-+ *          Seth Jennings <sjenning@linux.vnet.ibm.com>
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/crypto.h>
-+#include <linux/vmalloc.h>
-+#include <linux/nx842.h>
-+#include <linux/lzo.h>
-+#include <linux/timer.h>
-+
-+static int nx842_uselzo;
-+
-+struct nx842_ctx {
-+	void *nx842_wmem; /* working memory for 842/lzo */
-+};
-+
-+enum nx842_crypto_type {
-+	NX842_CRYPTO_TYPE_842,
-+	NX842_CRYPTO_TYPE_LZO
-+};
-+
-+#define NX842_SENTINEL 0xdeadbeef
-+
-+struct nx842_crypto_header {
-+	unsigned int sentinel; /* debug */
-+	enum nx842_crypto_type type;
-+};
-+
-+static int nx842_init(struct crypto_tfm *tfm)
-+{
-+	struct nx842_ctx *ctx = crypto_tfm_ctx(tfm);
-+	int wmemsize;
-+
-+	wmemsize = max_t(int, nx842_get_workmem_size(), LZO1X_MEM_COMPRESS);
-+	ctx->nx842_wmem = kmalloc(wmemsize, GFP_NOFS);
-+	if (!ctx->nx842_wmem)
-+		return -ENOMEM;
-+
-+	return 0;
-+}
-+
-+static void nx842_exit(struct crypto_tfm *tfm)
-+{
-+	struct nx842_ctx *ctx = crypto_tfm_ctx(tfm);
-+
-+	kfree(ctx->nx842_wmem);
-+}
-+
-+static void nx842_reset_uselzo(unsigned long data)
-+{
-+	nx842_uselzo = 0;
-+}
-+
-+static DEFINE_TIMER(failover_timer, nx842_reset_uselzo, 0, 0);
-+
-+static int nx842_crypto_compress(struct crypto_tfm *tfm, const u8 *src,
-+			    unsigned int slen, u8 *dst, unsigned int *dlen)
-+{
-+	struct nx842_ctx *ctx = crypto_tfm_ctx(tfm);
-+	struct nx842_crypto_header *hdr;
-+	unsigned int tmp_len = *dlen;
-+	size_t lzodlen; /* needed for lzo */
-+	int err;
-+
-+	*dlen = 0;
-+	hdr = (struct nx842_crypto_header *)dst;
-+	hdr->sentinel = NX842_SENTINEL; /* debug */
-+	dst += sizeof(struct nx842_crypto_header);
-+	tmp_len -= sizeof(struct nx842_crypto_header);
-+	lzodlen = tmp_len;
-+
-+	if (likely(!nx842_uselzo)) {
-+		err = nx842_compress(src, slen, dst, &tmp_len, ctx->nx842_wmem);
-+
-+		if (likely(!err)) {
-+			hdr->type = NX842_CRYPTO_TYPE_842;
-+			*dlen = tmp_len + sizeof(struct nx842_crypto_header);
-+			return 0;
-+		}
-+
-+		/* hardware failed */
-+		nx842_uselzo = 1;
-+
-+		/* set timer to check for hardware again in 1 second */
-+		mod_timer(&failover_timer, jiffies + msecs_to_jiffies(1000));
-+	}
-+
-+	/* no hardware, use lzo */
-+	err = lzo1x_1_compress(src, slen, dst, &lzodlen, ctx->nx842_wmem);
-+	if (err != LZO_E_OK)
-+		return -EINVAL;
-+
-+	hdr->type = NX842_CRYPTO_TYPE_LZO;
-+	*dlen = lzodlen + sizeof(struct nx842_crypto_header);
-+	return 0;
-+}
-+
-+static int nx842_crypto_decompress(struct crypto_tfm *tfm, const u8 *src,
-+			      unsigned int slen, u8 *dst, unsigned int *dlen)
-+{
-+	struct nx842_ctx *ctx = crypto_tfm_ctx(tfm);
-+	struct nx842_crypto_header *hdr;
-+	unsigned int tmp_len = *dlen;
-+	size_t lzodlen; /* needed for lzo */
-+	int err;
-+
-+	*dlen = 0;
-+	hdr = (struct nx842_crypto_header *)src;
-+
-+	if (unlikely(hdr->sentinel != NX842_SENTINEL))
-+		return -EINVAL;
-+
-+	src += sizeof(struct nx842_crypto_header);
-+	slen -= sizeof(struct nx842_crypto_header);
-+
-+	if (likely(hdr->type == NX842_CRYPTO_TYPE_842)) {
-+		err = nx842_decompress(src, slen, dst, &tmp_len,
-+			ctx->nx842_wmem);
-+		if (err)
-+			return -EINVAL;
-+		*dlen = tmp_len;
-+	} else if (hdr->type == NX842_CRYPTO_TYPE_LZO) {
-+		lzodlen = tmp_len;
-+		err = lzo1x_decompress_safe(src, slen, dst, &lzodlen);
-+		if (err != LZO_E_OK)
-+			return -EINVAL;
-+		*dlen = lzodlen;
-+	} else
-+		return -EINVAL;
-+
-+	return 0;
-+}
-+
-+static struct crypto_alg alg = {
-+	.cra_name		= "842",
-+	.cra_flags		= CRYPTO_ALG_TYPE_COMPRESS,
-+	.cra_ctxsize		= sizeof(struct nx842_ctx),
-+	.cra_module		= THIS_MODULE,
-+	.cra_list		= LIST_HEAD_INIT(alg.cra_list),
-+	.cra_init		= nx842_init,
-+	.cra_exit		= nx842_exit,
-+	.cra_u			= { .compress = {
-+	.coa_compress		= nx842_crypto_compress,
-+	.coa_decompress		= nx842_crypto_decompress } }
-+};
-+
-+static int __init nx842_mod_init(void)
-+{
-+	del_timer(&failover_timer);
-+	return crypto_register_alg(&alg);
-+}
-+
-+static void __exit nx842_mod_exit(void)
-+{
-+	crypto_unregister_alg(&alg);
-+}
-+
-+module_init(nx842_mod_init);
-+module_exit(nx842_mod_exit);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("842 Compression Algorithm");
-diff --git a/crypto/Kconfig b/crypto/Kconfig
-index a323805..7876358 100644
---- a/crypto/Kconfig
-+++ b/crypto/Kconfig
-@@ -1008,6 +1008,15 @@ config CRYPTO_LZO
- 	help
- 	  This is the LZO algorithm.
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index f109f2d..bc31f32 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2129,7 +2129,8 @@ static inline bool compaction_ready(struct zone *zone, struct scan_control *sc)
+  *
+  * This function returns true if a zone is being reclaimed for a costly
+  * allocation and compaction is ready to begin. This indicates to the caller
+- * that it should retry the allocation or fail.
++ * that it should consider retrying the allocation instead of
++ * further reclaim.
+  */
+ static bool shrink_zones(int priority, struct zonelist *zonelist,
+ 					struct scan_control *sc)
+@@ -2138,7 +2139,7 @@ static bool shrink_zones(int priority, struct zonelist *zonelist,
+ 	struct zone *zone;
+ 	unsigned long nr_soft_reclaimed;
+ 	unsigned long nr_soft_scanned;
+-	bool should_abort_reclaim = false;
++	bool aborted_reclaim = false;
  
-+config CRYPTO_842
-+	tristate "842 compression algorithm"
-+	depends on CRYPTO_DEV_NX_COMPRESS
-+	# 842 uses lzo if the hardware becomes unavailable
-+	select LZO_COMPRESS
-+	select LZO_DECOMPRESS
-+	help
-+	  This is the 842 algorithm.
-+
- comment "Random Number Generation"
+ 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
+ 					gfp_zone(sc->gfp_mask), sc->nodemask) {
+@@ -2164,7 +2165,7 @@ static bool shrink_zones(int priority, struct zonelist *zonelist,
+ 				 * allocations.
+ 				 */
+ 				if (compaction_ready(zone, sc)) {
+-					should_abort_reclaim = true;
++					aborted_reclaim = true;
+ 					continue;
+ 				}
+ 			}
+@@ -2186,7 +2187,7 @@ static bool shrink_zones(int priority, struct zonelist *zonelist,
+ 		shrink_zone(priority, zone, sc);
+ 	}
  
- config CRYPTO_ANSI_CPRNG
-diff --git a/crypto/Makefile b/crypto/Makefile
-index 30f33d6..5d5675c 100644
---- a/crypto/Makefile
-+++ b/crypto/Makefile
-@@ -82,6 +82,7 @@ obj-$(CONFIG_CRYPTO_MICHAEL_MIC) += michael_mic.o
- obj-$(CONFIG_CRYPTO_CRC32C) += crc32c.o
- obj-$(CONFIG_CRYPTO_AUTHENC) += authenc.o authencesn.o
- obj-$(CONFIG_CRYPTO_LZO) += lzo.o
-+obj-$(CONFIG_CRYPTO_842) += 842.o
- obj-$(CONFIG_CRYPTO_RNG2) += rng.o
- obj-$(CONFIG_CRYPTO_RNG2) += krng.o
- obj-$(CONFIG_CRYPTO_ANSI_CPRNG) += ansi_cprng.o
+-	return should_abort_reclaim;
++	return aborted_reclaim;
+ }
+ 
+ static bool zone_reclaimable(struct zone *zone)
+@@ -2240,7 +2241,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+ 	struct zoneref *z;
+ 	struct zone *zone;
+ 	unsigned long writeback_threshold;
+-	bool should_abort_reclaim;
++	bool aborted_reclaim;
+ 
+ 	get_mems_allowed();
+ 	delayacct_freepages_start();
+@@ -2252,9 +2253,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+ 		sc->nr_scanned = 0;
+ 		if (!priority)
+ 			disable_swap_token(sc->mem_cgroup);
+-		should_abort_reclaim = shrink_zones(priority, zonelist, sc);
+-		if (should_abort_reclaim)
+-			break;
++		aborted_reclaim = shrink_zones(priority, zonelist, sc);
+ 
+ 		/*
+ 		 * Don't shrink slabs when reclaiming memory from
+@@ -2320,8 +2319,8 @@ out:
+ 	if (oom_killer_disabled)
+ 		return 0;
+ 
+-	/* Aborting reclaim to try compaction? don't OOM, then */
+-	if (should_abort_reclaim)
++	/* Aborted reclaim to try compaction? don't OOM, then */
++	if (aborted_reclaim)
+ 		return 1;
+ 
+ 	/* top priority shrink_zones still had more to do? don't OOM, then */
 -- 
-1.7.9.5
+1.7.9.2
 
