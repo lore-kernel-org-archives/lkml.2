@@ -1,152 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752127Ab2GSQZE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 12:25:04 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:65413 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750894Ab2GSQY7 (ORCPT
+	id S1751949Ab2GSQ2i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 12:28:38 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35907 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751559Ab2GSQ2d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 12:24:59 -0400
-From: Rob Clark <rob.clark@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
-        dri-devel@lists.freedesktop.org, linux-media@vger.kernel.org
-Cc: patches@linaro.org, linux@arm.linux.org.uk, arnd@arndb.de,
-        jesse.barker@linaro.org, m.szyprowski@samsung.com, daniel@ffwll.ch,
-        t.stanislaws@samsung.com, sumit.semwal@ti.com,
-        maarten.lankhorst@canonical.com, Rob Clark <rob@ti.com>
-Subject: [PATCH 2/2] dma-buf: add helpers for attacher dma-parms
-Date: Thu, 19 Jul 2012 11:23:34 -0500
-Message-Id: <1342715014-5316-3-git-send-email-rob.clark@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1342715014-5316-1-git-send-email-rob.clark@linaro.org>
-References: <1342715014-5316-1-git-send-email-rob.clark@linaro.org>
+	Thu, 19 Jul 2012 12:28:33 -0400
+Message-ID: <500835AB.1090103@canonical.com>
+Date: Thu, 19 Jul 2012 09:28:27 -0700
+From: Stefan Bader <stefan.bader@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>
+CC: WANG Cong <xiyou.wangcong@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: x86/mm: Limit 2/4M size calculation to x86_32
+References: <5000259D.9020303@canonical.com>
+In-Reply-To: <5000259D.9020303@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Clark <rob@ti.com>
+On 07/13/2012 06:41 AM, Stefan Bader wrote:
+> I was bisecting a problem on 64bit where any attempt to cause a crash kernel to
+> boot would hang. The bisect ended up on commit 722bc6b (x86/mm: Fix the size
+> calculation of mapping tables) and somehow, looking at the calling function and
+> the ranges printed on boot, I think the calculations should only be done in the
+> 32bit case.
+>
+> On 64bit:
+> [    0.000000] init_memory_mapping: [mem 0x00000000-0x77e87fff]
+> [    0.000000]  [mem 0x00000000-0x77dfffff] page 2M
+> [    0.000000]  [mem 0x77e00000-0x77e87fff] page 4k
+>
+> Attached patch would fix this if you agree with it. Thanks.
+>
 
-Add some helpers to iterate through all attachers and get the most
-restrictive segment size/count/boundary.
+Any news on this one? I thought it would be quite simple to check for sanity and 
+not wasting memory sounds like a good thing to do. Even though there is plenty 
+of it around most of the time. ;)
 
-Signed-off-by: Rob Clark <rob@ti.com>
----
- drivers/base/dma-buf.c  |   63 +++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/dma-buf.h |   19 ++++++++++++++
- 2 files changed, 82 insertions(+)
+-Stefan
 
-diff --git a/drivers/base/dma-buf.c b/drivers/base/dma-buf.c
-index 24e88fe..757ee20 100644
---- a/drivers/base/dma-buf.c
-+++ b/drivers/base/dma-buf.c
-@@ -192,6 +192,69 @@ void dma_buf_put(struct dma_buf *dmabuf)
- EXPORT_SYMBOL_GPL(dma_buf_put);
- 
- /**
-+ * dma_buf_max_seg_size - helper for exporters to get the minimum of
-+ * all attached device's max segment size
-+ */
-+unsigned int dma_buf_max_seg_size(struct dma_buf *dmabuf)
-+{
-+	struct dma_buf_attachment *attach;
-+	unsigned int max = (unsigned int)-1;
-+
-+	if (WARN_ON(!dmabuf))
-+		return 0;
-+
-+	mutex_lock(&dmabuf->lock);
-+	list_for_each_entry(attach, &dmabuf->attachments, node)
-+		max = min(max, dma_get_max_seg_size(attach->dev));
-+	mutex_unlock(&dmabuf->lock);
-+
-+	return max;
-+}
-+EXPORT_SYMBOL_GPL(dma_buf_max_seg_size);
-+
-+/**
-+ * dma_buf_max_seg_count - helper for exporters to get the minimum of
-+ * all attached device's max segment count
-+ */
-+unsigned int dma_buf_max_seg_count(struct dma_buf *dmabuf)
-+{
-+	struct dma_buf_attachment *attach;
-+	unsigned int max = (unsigned int)-1;
-+
-+	if (WARN_ON(!dmabuf))
-+		return 0;
-+
-+	mutex_lock(&dmabuf->lock);
-+	list_for_each_entry(attach, &dmabuf->attachments, node)
-+		max = min(max, dma_get_max_seg_count(attach->dev));
-+	mutex_unlock(&dmabuf->lock);
-+
-+	return max;
-+}
-+EXPORT_SYMBOL_GPL(dma_buf_max_seg_count);
-+
-+/**
-+ * dma_buf_get_seg_boundary - helper for exporters to get the most
-+ * restrictive segment alignment of all the attached devices
-+ */
-+unsigned int dma_buf_get_seg_boundary(struct dma_buf *dmabuf)
-+{
-+	struct dma_buf_attachment *attach;
-+	unsigned int mask = (unsigned int)-1;
-+
-+	if (WARN_ON(!dmabuf))
-+		return 0;
-+
-+	mutex_lock(&dmabuf->lock);
-+	list_for_each_entry(attach, &dmabuf->attachments, node)
-+		mask &= dma_get_seg_boundary(attach->dev);
-+	mutex_unlock(&dmabuf->lock);
-+
-+	return mask;
-+}
-+EXPORT_SYMBOL_GPL(dma_buf_get_seg_boundary);
-+
-+/**
-  * dma_buf_attach - Add the device to dma_buf's attachments list; optionally,
-  * calls attach() of dma_buf_ops to allow device-specific attach functionality
-  * @dmabuf:	[in]	buffer to attach device to.
-diff --git a/include/linux/dma-buf.h b/include/linux/dma-buf.h
-index eb48f38..9533b9b 100644
---- a/include/linux/dma-buf.h
-+++ b/include/linux/dma-buf.h
-@@ -167,6 +167,10 @@ int dma_buf_fd(struct dma_buf *dmabuf, int flags);
- struct dma_buf *dma_buf_get(int fd);
- void dma_buf_put(struct dma_buf *dmabuf);
- 
-+unsigned int dma_buf_max_seg_size(struct dma_buf *dmabuf);
-+unsigned int dma_buf_max_seg_count(struct dma_buf *dmabuf);
-+unsigned int dma_buf_get_seg_boundary(struct dma_buf *dmabuf);
-+
- struct sg_table *dma_buf_map_attachment(struct dma_buf_attachment *,
- 					enum dma_data_direction);
- void dma_buf_unmap_attachment(struct dma_buf_attachment *, struct sg_table *,
-@@ -220,6 +224,21 @@ static inline void dma_buf_put(struct dma_buf *dmabuf)
- 	return;
- }
- 
-+static inline unsigned int dma_buf_max_seg_size(struct dma_buf *dmabuf)
-+{
-+	return 0;
-+}
-+
-+static inline unsigned int dma_buf_max_seg_count(struct dma_buf *dmabuf)
-+{
-+	return 0;
-+}
-+
-+static inline unsigned int dma_buf_get_seg_boundary(struct dma_buf *dmabuf)
-+{
-+	return 0;
-+}
-+
- static inline struct sg_table *dma_buf_map_attachment(
- 	struct dma_buf_attachment *attach, enum dma_data_direction write)
- {
--- 
-1.7.9.5
+> -Stefan
+>
+>
+>  From 6b679d1af20656929c0e829f29eed60b0a86a74f Mon Sep 17 00:00:00 2001
+> From: Stefan Bader <stefan.bader@canonical.com>
+> Date: Fri, 13 Jul 2012 15:16:33 +0200
+> Subject: [PATCH] x86/mm: Limit 2/4M size calculation to x86_32
+>
+> commit 722bc6b (x86/mm: Fix the size calculation of mapping tables)
+> did modify the extra space calculation for mapping tables in order
+> to make up for the first 2/4M memory range using 4K pages.
+> However this setup is only used when compiling for 32bit. On 64bit
+> there is only the trailing area of 4K pages (which is already added).
+>
+> The code was already adapted once for things went wrong on a 8TB
+> machine (bd2753b x86/mm: Only add extra pages count for the first memory
+> range during pre-allocation early page table space), but it looks a bit
+> like it currently would overdo things for 64bit.
+> I only noticed while bisecting for the reason I could not make a crash
+> kernel boot (which ended up on this patch).
+>
+> Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+> Cc: WANG Cong <xiyou.wangcong@gmail.com>
+> Cc: Yinghai Lu <yinghai@kernel.org>
+> Cc: Tejun Heo <tj@kernel.org>
+> ---
+> diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+> index bc4e9d8..636bbfd 100644
+> --- a/arch/x86/mm/init.c
+> +++ b/arch/x86/mm/init.c
+> @@ -60,10 +60,11 @@ static void __init find_early_table_space(struct map_range
+> *mr, unsigned long en
+>                  extra = end - ((end>>PMD_SHIFT) << PMD_SHIFT);
+>   #ifdef CONFIG_X86_32
+>                  extra += PMD_SIZE;
+> -#endif
+> +
+>                  /* The first 2/4M doesn't use large pages. */
+>                  if (mr->start < PMD_SIZE)
+>                          extra += mr->end - mr->start;
+> +#endif
+>
+>                  ptes = (extra + PAGE_SIZE - 1) >> PAGE_SHIFT;
+>          } else
+>
+
 
