@@ -1,72 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752522Ab2GSX2h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 19:28:37 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52984 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751844Ab2GSX2f (ORCPT
+	id S1752570Ab2GSXb3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 19:31:29 -0400
+Received: from mail127.messagelabs.com ([216.82.250.115]:24026 "EHLO
+	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752166Ab2GSXb0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 19:28:35 -0400
-Date: Thu, 19 Jul 2012 16:28:32 -0700
-From: "Greg KH (gregkh@linuxfoundation.org)" <gregkh@linuxfoundation.org>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: Re: 0xB16B00B5? Really? (was Re: Move hyperv out of the
- drivers/staging/ directory)
-Message-ID: <20120719232832.GA6317@kroah.com>
-References: <6E21E5352C11B742B20C142EB499E048081EB789@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <20111004170415.GA1320@suse.de>
- <6E21E5352C11B742B20C142EB499E048081EB86F@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <20111004193414.GA15672@suse.de>
- <4FFFF711.8040003@redhat.com>
- <426367E2313C2449837CD2DE46E7EAF923547292@SN2PRD0310MB382.namprd03.prod.outlook.com>
- <20120719210709.GA32031@kroah.com>
- <426367E2313C2449837CD2DE46E7EAF9235475EE@SN2PRD0310MB382.namprd03.prod.outlook.com>
- <20120719220142.GA1513@kroah.com>
- <426367E2313C2449837CD2DE46E7EAF923547620@SN2PRD0310MB382.namprd03.prod.outlook.com>
+	Thu, 19 Jul 2012 19:31:26 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-8.tower-127.messagelabs.com!1342740685!4550513!2
+X-Originating-IP: [216.166.12.180]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: Ian Abbott <abbotti@mev.co.uk>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Ian Abbott <ian.abbott@mev.co.uk>
+Date: Thu, 19 Jul 2012 18:31:23 -0500
+Subject: RE: [PATCH 15/90] staging: comedi: adv_pci1723: move
+ comedi_pci_enable() into the attach
+Thread-Topic: [PATCH 15/90] staging: comedi: adv_pci1723: move
+ comedi_pci_enable() into the attach
+Thread-Index: Ac1mBKs9LGzQnqpiSamyjWys0EpmVQAACMVQ
+Message-ID: <ADE657CA350FB648AAC2C43247A983F00206AA9165BC@AUSP01VMBX24.collaborationhost.net>
+References: <201207181830.48668.hartleys@visionengravers.com>
+ <5007D568.2050401@mev.co.uk>
+ <ADE657CA350FB648AAC2C43247A983F00206AA916472@AUSP01VMBX24.collaborationhost.net>
+ <20120719231723.GA23010@kroah.com>
+In-Reply-To: <20120719231723.GA23010@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <426367E2313C2449837CD2DE46E7EAF923547620@SN2PRD0310MB382.namprd03.prod.outlook.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 19, 2012 at 10:30:38PM +0000, KY Srinivasan wrote:
-> > > As you know, this ID has been in use for a long time now. While the hypervisor
-> > > does not interpret the guest ID that is registered, I am not sure what
-> > dependencies
-> > > there might be on this value.
-> > 
-> > Could you please go find out the answer to this?
+On Thursday, July 19, 2012 4:17 PM, gregkh wrote:
+> On Thu, Jul 19, 2012 at 12:12:02PM -0500, H Hartley Sweeten wrote:
+>> I was planning on making a comedi_find_pci_dev() function that the
+>> drivers could call with a "match" callback. This would allow a common
+>> function for most of the boilerplate code and just require the drivers
+>> to check the the match against the boardinfo dev/id, etc. as required.
+>> Something like:
+>> 
+>> struct pci_dev *comedi_find_pci_dev(struct comedi_device *dev,
+>> 	struct comedi_devconfig *it,
+>> 	const void *(*match)(struct comedi_device *,
+>> 				struct pci_dev *))
+>> {
+>> 	struct pci_dev *pcidev = NULL;
+>> 	int bus = it->options[0];
+>> 	int slot = it->options[1];
+>> 
+>> 	for_each_pci_dev(pcidev) {
+>> 		/* pci_is_enabled() test? */
+>> 		if ((bus && bus != pcidev->bus->number) ||
+>> 		    (slot && slot != PCI_SLOT(pcidev->devfn)))
+>> 			continue;
+>> 		dev->board_ptr = match(dev, pcidev);
+>> 		if (dev->board_ptr) {
+>> 			comedi_set_hw_dev(dev, &pcidev->dev);
+>> 			return pcidev;
+>> 		}
+>> 	}
+>> 	return NULL;
+>> }
+>> 
+>> The "match" function for a driver would then just be something like:
+>> 
+>> const void *match_pci(struct comedi_device *dev, struct pci_dev *pcidev)
+>> {
+>> 	const struct boardinfo *board;
+>> 	int i;
+>> 
+>> 	for (i = 0; i < ARRAY_SIZE(boardinfo); i++) {
+>> 		board = &boardinfo[i];
+>> 		if (pcidev->vendor != board->ven_id ||
+>> 		    pcidev->device != board->dev_id)
+>> 			continue;
+>> 		return board;
+>> 	}
+>> 	return NULL;
+>> }
+>> 
+>> This would require adding a dummy boardinfo to some of the drivers but
+>> I think it's cleaner.
+>> 
+>> Comments?
+>
+> Ick.  What ever happened to converting these drivers to use the PCI api
+> correctly and not to search the PCI space for the device, but have the
+> PCI core call them if the device is found?
+>
+> It looks like most of these drivers have already been converted to that
+> style, so these checks for "do we find a device" can all be removed
+> entirely now, right?  There's no way the functions would be called if
+> the device wasn't found in the first place.
 > 
-> That is easier said than done. I have sent emails out asking this very question and I have
-> not received a definitive answer yet. Not knowing if and when I can get a definitive
-> answer here, I chose the least risky approach in my patch. 
+> Or am I missing something here?
 
-What happens if you test with different values?
+If the comedi pci drivers have the "attach_pci" callback defined, the
+PCI api does correctly probe the driver. The comedi_pci_auto_config()
+then passes the pci_dev directly to the driver and the search of the
+PCI space for the device is not required.
 
-> > If, as you originally stated, there is a range of values we can use,
-> > then we should probably use another one, right?
-> 
-> On the Windows side this ID namespace is managed well.
+If the "attach_pci" callback is not defined, the comedi_pci_auto_config()
+then falls back to passing the bus/slot information to the driver and uses
+the "attach" callback. In this case we could probably fast-track the search
+by using pci_get_slot() instead of doing the for_each_pci_dev() loop.
 
-It is?  How is this managed?  What does this tell the hypervisor?  What
-changes with the different values?
+I think the problem is the COMEDI_DEVCONFIG ioctl. The userspace
+utility 'comedi_config' uses that ioctl to link a device node to a
+comedi driver. That utility allows passing the bus/slot information
+but it's not required. This means we have to search the PCI space
+for the pci_dev that matches the driver.
 
-> However on the Linux side, we have really had this current ID in use
-> for almost five years now. I am not aware of any pool of IDs available
-> for Linux usage except that Linux IDs be distinct from the guest IDs
-> in use by MSFT operating systems. If I were to change the guest ID, I
-> would probably want to comply with the MSFT guidance on constructing
-> these IDs (although not all fields may be relevant for Linux).
+Not sure what to do here...
 
-What are those rules?
+Regards,
+Hartley
 
-thanks,
-
-greg k-h
