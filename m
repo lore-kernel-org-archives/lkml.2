@@ -1,86 +1,313 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752137Ab2GSVOP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 17:14:15 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52283 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751575Ab2GSVOM (ORCPT
+	id S1752144Ab2GSVOz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 17:14:55 -0400
+Received: from usindpps06.hds.com ([207.126.252.19]:49777 "EHLO
+	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751575Ab2GSVOw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 17:14:12 -0400
-Date: Thu, 19 Jul 2012 22:13:57 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Josh Boyer <jwboyer@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
-        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
-        Debian Kernel Team <debian-kernel@lists.debian.org>,
-        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Fedora Kernel Team <kernel-team@fedoraproject.org>
-Message-ID: <20120719211357.GZ1894@decadent.org.uk>
-References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com>
- <20120713210240.GG1707@redhat.com>
- <CA+55aFz_Vv899eXz6F0jtFH=hT4QpB0_2XuS8HySPjHC6s+L7Q@mail.gmail.com>
- <20120719152618.GD16873@home.goodmis.org>
- <20120719154521.GC8469@zod.bos.redhat.com>
- <1342714088.12353.33.camel@gandalf.stny.rr.com>
- <20120719171918.GD8469@zod.bos.redhat.com>
- <20120719183047.69de3e19@pyramind.ukuu.org.uk>
+	Thu, 19 Jul 2012 17:14:52 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
+        "mikew@google.com" <mikew@google.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>
+CC: "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: [RFC][PATCH v2 3/3] Check if existing entry is erasable
+Thread-Topic: [RFC][PATCH v2 3/3] Check if existing entry is erasable
+Thread-Index: Ac1l83cA5qk/FVMZTE+IJQVG8ZvnZQ==
+Date: Thu, 19 Jul 2012 21:14:40 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D40FB27FEF@USINDEM103.corp.hds.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.43.113]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120719183047.69de3e19@pyramind.ukuu.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [RFC] Simplifying kernel configuration for distro issues
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.260,0.0.0000
+ definitions=2012-07-19_06:2012-07-19,2012-07-19,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
+ definitions=main-1207190253
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 19, 2012 at 06:30:47PM +0100, Alan Cox wrote:
-> 
-> > Well, yes.  I was thinking it would be more like:
-> > 
-> > distro/Kconfig.fedora
-> > 	menuconfig FEDORA
-> > 	if FEDORA
-> > 	config FEDORA_16
-> > 	   select WHATEVER
-> > 	config FEDORA_17
-> 
-> Nope you need
-> 
-> distro/everyarchtheyship/everykernelvarianttkeyship(smp,largemem,arm
-> boards)/Kconfig
-> 
-> which for some distros is over 20 per release and the end user wouldn't
-> have a cat in hells chance of knowing which to pick.
+[Problem]
+ When efi_pstore holds just one log and it doesn't overwrite an exisiting entry,
+ we lose a critical message if kernel panics while system is rebooting.
 
-20?  Debian's kernel package currently lists 17 architectures (11
-source architectures) and 44 variants (excluding PREEMPT_RT and s390
-install tape).  (But 'only' 31 will be in the next release, as even
-Debian is capable of letting go of an architecture.)
+ [Solution]
+  If users decide that NVRAM size is not big enough to hold multiple logs, 
+  efi_pstore has to handle just one log and avoid a critical messages by 
+  overwriting existing entry.
 
-But, assuming a native build (a whole weekend's worth of fun on m68k!)
-we already know the target architecture and most of the other
-variations can be chosen automatically similarly to localmodconfig.
-We already do something like that (choosing between the pre-built
-variants) at distribution install time, after all.
+This patch adds some logic checking if an existing entry is erasable in case of
+holding just one log.
 
-> For the end user case you need the distro to plonk the right file in the
-> right place and be done with it, once they do that the rest is
-> bikeshedding a ten line Makefile rule.
+The rule is as follows.
+
+     - In case where an existing entry is panic or emergency
+      -  It is not erasable because if panic/emergency event is lost, we have no way
+         to detect the root cause. We shouldn't overwrite them for any reason.
+
+    - In case where an existing entry is oops/shutdown/halt/poweroff
+      -  It is erasable if an error ,panic, emergency or oops, happens in new event
+         because we will probably get messages of multiple events by erasing 
+         an existing entry.
+
+
+ex)
+Even though reboot message is overwritten by panic one, we will probably save both
+final part of reboot message and panic message as follows.
+
+Example of kmsg in NVRAM
+	<snip>
+	Panic#1							 <- header supplied by pstore
+	<6>kvm: exiting hardware virtualization
+	<5>sd 0:0:0:0: [sda] Synchronizing SCSI cache
+	 <0>Restarting system.						<- reboot message
+	<0>BUG: soft lockup - CPU#0 stuck for 22s! [swapper/0:0]
+	<0> Kernel panic - not syncing: softlockup: hung tasks		<- panic message
+	<0>Pid: 0, comm: swapper/0 Not tainted 3.3.8 #4 Call Trace:
+  	<0><IRQ>  [<ffffffff8136bdd5>] panic+0xb8/0x1c4
+  	<0>[<ffffffff81071f37>] watchdog_timer_fn+0x139/0x15d
+  	<0>[<ffffffff81071dfe>] ? __touch_watchdog+0x1f/0x1f
+	<snip>
+
+Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+---
+ drivers/firmware/Makefile  |    2 +
+ drivers/firmware/efivars.c |  111 ++++++++++++++++++++++++++++++++++++++++++-
+ fs/pstore/platform.c       |    4 +-
+ include/linux/kmsg_dump.h  |    8 ++--
+ include/linux/pstore.h     |    5 ++
+ 5 files changed, 121 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/firmware/Makefile b/drivers/firmware/Makefile
+index 5a7e273..8f7724c 100644
+--- a/drivers/firmware/Makefile
++++ b/drivers/firmware/Makefile
+@@ -14,3 +14,5 @@ obj-$(CONFIG_ISCSI_IBFT)	+= iscsi_ibft.o
+ obj-$(CONFIG_FIRMWARE_MEMMAP)	+= memmap.o
  
-This might work well for future releases; is there not a need to
-make this work for past releases too?
+ obj-$(CONFIG_GOOGLE_FIRMWARE)	+= google/
++
++CFLAGS_efivars.o		+= -Wswitch-enum
+diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
+index 55188d7..29628a2 100644
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -730,6 +730,85 @@ static unsigned long get_current_log_num(efi_char16_t *efi_name,
+ 	return current_log_num;
+ }
+ 
++static bool can_erase_entry(struct efivar_entry *entry, enum kmsg_dump_reason
++			   new_reason)
++{
++	enum kmsg_dump_reason prev_reason = 0;
++	const char *prev_why;
++	bool is_erasable = 0;
++
++	/* Get a reason of previous message */
++	while (prev_reason < INT_MAX) {
++		prev_why =  pstore_get_reason_str(prev_reason);
++		if (!strncmp(entry->var.Data, prev_why, strlen(prev_why)))
++			break;
++		prev_reason++;
++	}
++
++	/* check if existing message is erasable */
++
++	switch (prev_reason) {
++	case KMSG_DUMP_PANIC:
++	case KMSG_DUMP_EMERG:
++		/* Never erase panic or emergency message */
++		break;
++	case KMSG_DUMP_OOPS:
++	case KMSG_DUMP_RESTART:
++	case KMSG_DUMP_HALT:
++	case KMSG_DUMP_POWEROFF:
++		/* Can erase if new one is error message */
++		if (new_reason <= KMSG_DUMP_EMERG)
++			is_erasable = 1;
++		break;
++	/*
++	 * Default is not specified to complain if a new KMSG_DUMP enum
++	 * value is added without considering this logic.
++	 */
++	}
++
++	return is_erasable;
++}
++
++static int clean_up_existing_entry(efi_char16_t *efi_name, ssize_t size,
++				   enum kmsg_dump_reason reason,
++				   struct pstore_info *psi,
++				   struct efivar_entry **found)
++{
++	efi_guid_t vendor = LINUX_EFI_CRASH_GUID;
++	struct efivars *efivars = psi->data;
++	struct efivar_entry *entry;
++	int ret = -EEXIST;
++
++	list_for_each_entry(entry, &efivars->list, list) {
++		get_var_data_locked(efivars, &entry->var);
++
++		if (efi_guidcmp(entry->var.VendorGuid, vendor))
++			continue;
++		if (utf16_strncmp(entry->var.VariableName, efi_name,
++				  utf16_strlen(efi_name)))
++			continue;
++		/* Needs to be a prefix */
++		if (entry->var.VariableName[utf16_strlen(efi_name)] == 0)
++			continue;
++
++		if (!can_erase_entry(entry, reason))
++			break;
++		/* Erasable entry is found */
++		*found = entry;
++		efivars->ops->set_variable(entry->var.VariableName,
++					   &entry->var.VendorGuid,
++					   PSTORE_EFI_ATTRIBUTES,
++					   0, NULL);
++		ret = 0;
++		break;
++	}
++
++	if (*found)
++		list_del(&(*found)->list);
++
++	return ret;
++}
++
+ static int efi_pstore_write(enum pstore_type_id type,
+ 		enum kmsg_dump_reason reason, u64 *id,
+ 		unsigned int part, size_t size, struct pstore_info *psi)
+@@ -739,6 +818,7 @@ static int efi_pstore_write(enum pstore_type_id type,
+ 	efi_char16_t efi_name[DUMP_NAME_LEN];
+ 	efi_guid_t vendor = LINUX_EFI_CRASH_GUID;
+ 	struct efivars *efivars = psi->data;
++	struct efivar_entry *found = NULL;
+ 	int i, ret = 0;
+ 	unsigned long current_log_num;
+ 
+@@ -753,9 +833,31 @@ static int efi_pstore_write(enum pstore_type_id type,
+ 	current_log_num = get_current_log_num(efi_name, efivars);
+ 
+ 	if (current_log_num >= efi_pstore_log_num) {
+-		spin_unlock(&efivars->lock);
+-		*id = part;
+-		return -EEXIST;
++		switch (efi_pstore_log_num) {
++		case 1:
++		/*
++		 *  In case where efi_pstore handles just one log,
++		 *  it tries to overwrite an existing entry to avoid losing
++		 *  panic message.
++		 */
++			ret = clean_up_existing_entry(efi_name, size, reason,
++						      psi, &found);
++			if (ret) {
++				/* Can't clean up existing entry  */
++				spin_unlock(&efivars->lock);
++				*id = part;
++				return ret;
++			}
++			break;
++		default:
++		/*
++		 *  In case where efi_pstore handles multiple logs,
++		 *  it doesn't erase any existing entries.
++		 */
++			spin_unlock(&efivars->lock);
++			*id = part;
++			return -EEXIST;
++		}
+ 	}
+ 
+ 	for (i = 0; i < DUMP_NAME_LEN; i++)
+@@ -766,6 +868,9 @@ static int efi_pstore_write(enum pstore_type_id type,
+ 
+ 	spin_unlock(&efivars->lock);
+ 
++	if (found)
++		efivar_unregister(found);
++
+ 	if (size)
+ 		ret = efivar_create_sysfs_entry(efivars,
+ 					  utf16_strsize(efi_name,
+diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
+index 03ce7a9..32715eb 100644
+--- a/fs/pstore/platform.c
++++ b/fs/pstore/platform.c
+@@ -68,7 +68,7 @@ void pstore_set_kmsg_bytes(int bytes)
+ /* Tag each group of saved records with a sequence number */
+ static int	oopscount;
+ 
+-static const char *get_reason_str(enum kmsg_dump_reason reason)
++const char *pstore_get_reason_str(enum kmsg_dump_reason reason)
+ {
+ 	switch (reason) {
+ 	case KMSG_DUMP_PANIC:
+@@ -104,7 +104,7 @@ static void pstore_dump(struct kmsg_dumper *dumper,
+ 	int		is_locked = 0;
+ 	int		ret;
+ 
+-	why = get_reason_str(reason);
++	why = pstore_get_reason_str(reason);
+ 
+ 	if (in_nmi()) {
+ 		is_locked = spin_trylock(&psinfo->buf_lock);
+diff --git a/include/linux/kmsg_dump.h b/include/linux/kmsg_dump.h
+index d6bd501..c578812 100644
+--- a/include/linux/kmsg_dump.h
++++ b/include/linux/kmsg_dump.h
+@@ -16,12 +16,12 @@
+ #include <linux/list.h>
+ 
+ /*
+- * Keep this list arranged in rough order of priority. Anything listed after
+- * KMSG_DUMP_OOPS will not be logged by default unless printk.always_kmsg_dump
+- * is passed to the kernel.
++ * Keep this list arranged in rough order of priority.
++ * - Anything listed after KMSG_DUMP_OOPS will not be logged by default unless
++ *   printk.always_kmsg_dump is passed to the kernel.
++ * - In EFI driver, KMSG_DUMP_EMERG and up may overwrite existing entries.
+  */
+ enum kmsg_dump_reason {
+-	KMSG_DUMP_UNDEF,
+ 	KMSG_DUMP_PANIC,
+ 	KMSG_DUMP_OOPS,
+ 	KMSG_DUMP_EMERG,
+diff --git a/include/linux/pstore.h b/include/linux/pstore.h
+index 92cb90e..af7b90a 100644
+--- a/include/linux/pstore.h
++++ b/include/linux/pstore.h
+@@ -54,12 +54,17 @@ struct pstore_info {
+ 
+ #ifdef CONFIG_PSTORE
+ extern int pstore_register(struct pstore_info *);
++extern const char *pstore_get_reason_str(enum kmsg_dump_reason reason);
+ #else
+ static inline int
+ pstore_register(struct pstore_info *psi)
+ {
+ 	return -ENODEV;
+ }
++static const char *pstore_get_reason_str(enum kmsg_dump_reason reason)
++{
++	return NULL;
++}
+ #endif
+ 
+ #endif /*_LINUX_PSTORE_H*/
+-- 1.7.1 
 
-Ben.
-
--- 
-Ben Hutchings
-We get into the habit of living before acquiring the habit of thinking.
-                                                              - Albert Camus
