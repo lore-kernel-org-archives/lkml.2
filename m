@@ -1,80 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752457Ab2GSWrh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 18:47:37 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:10091 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751951Ab2GSWrf (ORCPT
+	id S1752476Ab2GSWt7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 18:49:59 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7744 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751966Ab2GSWt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 18:47:35 -0400
-X-AuditID: cbfee61b-b7f566d000005c8a-b9-50088e86aadb
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Thomas Abraham'" <thomas.abraham@linaro.org>,
-        "'Jaehoon Chung'" <jh80.chung@samsung.com>
-Cc: linux-mmc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        cjb@laptop.org, grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        linux-samsung-soc@vger.kernel.org, patches@linaro.org
-References: <1342097668-25243-1-git-send-email-thomas.abraham@linaro.org>
- <5008279B.4000001@samsung.com>
- <CAJuYYwQBgpJ1wiS3fSDS2cMi6kanuO47rc8SmniAqjRPuBGJHg@mail.gmail.com>
-In-reply-to: <CAJuYYwQBgpJ1wiS3fSDS2cMi6kanuO47rc8SmniAqjRPuBGJHg@mail.gmail.com>
-Subject: RE: [PATCH v3 0/6] mmc: dw_mmc: add support for device tree based
- instantiation
-Date: Fri, 20 Jul 2012 07:47:34 +0900
-Message-id: <195201cd6600$7cb089f0$76119dd0$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac1l4JYplAZUycenT5KG5q6TdoSKEgAH21yw
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBLMWRmVeSWpSXmKPExsVy+t9jQd22Po4Ag8b3AhaXd81hszjyv5/R
-	Ysb5fUwOzB6fN8kFMEZx2aSk5mSWpRbp2yVwZXzsXM9WcJqjYuGr/UwNjK/Yuhg5OSQETCRm
-	TrzFCGGLSVy4tx4ozsUhJDCdUeLc6/lMEM5fRomvJyczg1SxCWhIHH7/jB3EFhGIkbjQ18wK
-	UsQs0M4kcWvWO6j2jYwSl76uZgKp4hQIlni/dDpLFyMHh7BAlMT+vfIgYRYBVYnP6xeDlfAK
-	2Er8WXGGGcIWlPgx+R4LiM0soCWxfudxJghbXmLzmrfMIGMkBNQlHv3VhbjBSGLm6pWMECUi
-	EvtevGOcwCg0C8mkWUgmzUIyaRaSlgWMLKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxgsP7
-	mfQOxlUNFocYBTgYlXh4JyZxBAixJpYVV+YeYpTgYFYS4f1SBRTiTUmsrEotyo8vKs1JLT7E
-	KM3BoiTOa+L91V9IID2xJDU7NbUgtQgmy8TBKdXAuHFC4LnND9xkcgy1X28I+NdlOH3GPsvI
-	E0kTj2s67D5/a3Lz3h3nnzTPiQo1Ptveeplj7rdYvUzjHQbTXPjO1c0Ns8mKE8i8Hn6Qx6Xw
-	y89Pn14tqYj5w/nAsN5g4tbtLP8Zkmet3BjaxHZSKbjvZ7vIjr1h2r+q+880931xTd7Z8+3S
-	ijc7BZVYijMSDbWYi4oTAdwQmVprAgAA
-X-TM-AS-MML: No
+	Thu, 19 Jul 2012 18:49:57 -0400
+X-Authority-Analysis: v=2.0 cv=AtpsLZBP c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=BHldU6QlfDUA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=YuVrg9c0s9-Kg-Cz8WgA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-ID: <1342738194.12353.80.camel@gandalf.stny.rr.com>
+Subject: Re: [RFC] Simplifying kernel configuration for distro issues
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: david@lang.hm, Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
+        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
+        Debian Kernel Team <debian-kernel@lists.debian.org>,
+        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Fedora Kernel Team <kernel-team@fedoraproject.org>
+Date: Thu, 19 Jul 2012 18:49:54 -0400
+In-Reply-To: <20120719223519.GI8469@zod.bos.redhat.com>
+References: <CA+55aFz_Vv899eXz6F0jtFH=hT4QpB0_2XuS8HySPjHC6s+L7Q@mail.gmail.com>
+	 <20120719152618.GD16873@home.goodmis.org>
+	 <20120719154521.GC8469@zod.bos.redhat.com>
+	 <1342714088.12353.33.camel@gandalf.stny.rr.com>
+	 <20120719171918.GD8469@zod.bos.redhat.com>
+	 <1342719222.12353.58.camel@gandalf.stny.rr.com>
+	 <20120719175649.GF8469@zod.bos.redhat.com>
+	 <1342721620.12353.75.camel@gandalf.stny.rr.com>
+	 <20120719183645.GH8469@zod.bos.redhat.com>
+	 <alpine.DEB.2.02.1207191357360.20176@asgard.lang.hm>
+	 <20120719223519.GI8469@zod.bos.redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas Abraham wrote:
-> 
-> On 19 July 2012 20:58, Jaehoon Chung <jh80.chung@samsung.com> wrote:
-> > Hi Thomas,
-> >
-> > I think not good that added the samsung specific code into dw_mmc-
-> pltfm.c
-> > How about separating to dw-mmc-exynos.c?
-> 
-> I am not sure of this. The only samsung specific code in
-> dw_mmc-pltfm.c file is the data for of_device_id instances. The clock
-> lookup added into this file in the 3rd patch does not cause any harm
-> on non-samsung SoC's which might not define those clocks (on clock
-> lookup failure, there are only warning printed, the driver's probe
-> does not fail.
-> 
-I agree with Thomas' opinion, in addition, the dw_mmc-pltfm.c file can
-support that, so adding dw-mmc-exynos.c is not needed now.
+On Thu, 2012-07-19 at 18:35 -0400, Josh Boyer wrote:
 
-> I would prefer not to add separate file for Exynos SoC's for now.
-> Splitting into different files will need to defined new callbacks
-> which I fell is not really required.
+> > >2... yeah.  I don't really know if that is going to pan out, but I am
+> > >ever hopeful.  I'd be mostly concerned with people that are coding
+> > >userspace applications using every whiz-bang kernel feature.  Or not
+> > >paying attention at all to the kernel after the initial file creation
+> > >and the options going stale (don't follow renames, etc).
+> > 
+> > it would be determined by the distro maintainers who maintain the
+> > kernel config for that distro.
 > 
-Yes.
+> Erm... not in Steven's scheme.  At least I don't think distro kernel
+> maintainers are going to willingly crawl through every application
+> package that might depend on a kernel feature being enabled and maintain
+> those files across X number of packages.
 
-Thanks.
+Correct. If we keep the selects in the kernel proper, then it would be
+the kernel maintainer to make sure it works for the necessary
+applications.
 
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
+If we have a directory called /usr/share/Linux/Kconfig.d/ then the
+individual packages could add their needed selects. Now this wouldn't be
+for the average package. We don't need emacs developers adding any
+configs here. It's just for those packages that are already tightly
+coupled with the kernel (systemd, iptables, SELinux tools, etc).
+
+-- Steve
+
 
