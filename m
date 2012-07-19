@@ -1,71 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752596Ab2GSSOq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 14:14:46 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:60113 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751571Ab2GSSOo (ORCPT
+	id S1752548Ab2GSSUL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 14:20:11 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39747 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751596Ab2GSSUJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 14:14:44 -0400
-X-Authenticated: #815327
-X-Provags-ID: V01U2FsdGVkX1/gs2smGe3gs8MW2bomZFwqPca+P/JmB11TbzTxFK
-	l2iA7FCDoSRbz1
-Message-ID: <50084E8B.3070508@gmx.de>
-Date: Thu, 19 Jul 2012 20:14:35 +0200
-From: =?ISO-8859-1?Q?Malte_Schr=F6der?= <maltesch@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120418 Icedove/11.0
+	Thu, 19 Jul 2012 14:20:09 -0400
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+In-Reply-To: <20120719192814.75ea8beb784bdf8bb32c510c@kinali.ch>
+References: <20120719192814.75ea8beb784bdf8bb32c510c@kinali.ch>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 19 Jul 2012 12:19:48 -0600
+X-Google-Sender-Auth: P_s1kD1Ezcm4Xwzh5JgpWVLKZOU
+Message-ID: <CACxGe6tUOAtRgV9NHgfLchFAmQH99g0jNh0ANxyKPasbkHn2Kg@mail.gmail.com>
+Subject: Re: commit 91013923c712e1c: "irqdomain: Replace LEGACY mapping with
+ LINEAR" breaks console on ARM i.mx23
+To: Attila Kinali <attila@kinali.ch>
+Cc: Paul Mundt <lethal@linux-sh.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Galen Seitz <galens@seitzassoc.com>
-Subject: Re: PCI ACPI/IRQ-routing broken on H77 chipset + Ivy Bridge (kernel
- 3.5-rc7 and earlier)
-References: <5002BC55.3050107@gmx.de> <201207152225.49154.rjw@sisk.pl> <CAErSpo6Ka6XBakVZH7ge-==XY86FrOHP_dqGoa+zAFNgnnnFTA@mail.gmail.com>
-In-Reply-To: <CAErSpo6Ka6XBakVZH7ge-==XY86FrOHP_dqGoa+zAFNgnnnFTA@mail.gmail.com>
-X-Enigmail-Version: 1.4.1
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        Linux ARM kernel <linux-arm-kernel@lists.infradead.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16.07.2012 18:14, Bjorn Helgaas wrote:
+On Thu, Jul 19, 2012 at 11:28 AM, Attila Kinali <attila@kinali.ch> wrote:
+> Hi,
+>
+> I'm working on an embedded system based on a Freescale ARM9 processor i.mx23.
+>
+> While trying linux-next i stumpled over my login prompt getting broken.
+> What exactly happens is that the kernel boots normally, but when my
+> login prompt should appear it suddenly stops. I bisected it back to
+> the commit 91013923c712e1c4b9b343f0ee4a86ce72b1b630
+> irqdomain: Replace LEGACY mapping with LINEAR
+>
+> Reverting this and the three commits that directly depend on it (see below)
+> everything seems to work fine again
 
-> [CC +tglx]
-> 
-> On Sun, Jul 15, 2012 at 2:25 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> CC-ing linux-pci and Bjorn.
->>
->> On Sunday, July 15, 2012, Malte Schröder wrote:
->>> Hello,
->>> this is yet another try to get someone to look at this ;)
->>>
->>> I can't get PCI-devices to work on my DH77KC mainboard. I tested this
->>> using an AVM B1 ISDN card, a Fritz!PCI card and an old 3Com 905c NIC.
->>> I attached some dumps in case it helps. The CPU is a Core i7 3770.
->>>
->>> PCI hardware is detected by the kernel, but it gives IRQ errors. Using
->>> irqpoll allows the PCI card to somewhat work, but it is unreliable.
->>>
->>> There are some reports in Intel's support forums that also report
->>> PCI-problems with this mainboard, but Intel doesn't seem to be
->>> interested. So I hope this is something that is fixable on the kernel side.
->>>
->>> If there is more information needed, please let me know.
->>>
+Mark Brown also noticed this and pointed this out. I'm working on it.
+I've pulled those three patches out of my -next branch while I'm
+working on the fix.
 
-
-I was pointed to https://bugzilla.kernel.org/show_bug.cgi?id=43238.
-I tried the modifications to the DSDT that where proposed there and
-voilà, the 3c905c started to work :)
-So it seems Intel messed up their ACPI-stuff really bad for this
-mainboard. I plan to do more testing during the weekend.
-
--- 
-Gruß
-Malte Schröder
----------------------------------------------------------------------
-MalteSch@gmx.de
+g.
