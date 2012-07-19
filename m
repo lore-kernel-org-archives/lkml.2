@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755032Ab2GSBbk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 21:31:40 -0400
-Received: from mail209.messagelabs.com ([216.82.255.3]:63142 "EHLO
-	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754445Ab2GSBbh (ORCPT
+	id S1755116Ab2GSBcK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 21:32:10 -0400
+Received: from mail127.messagelabs.com ([216.82.250.115]:38914 "EHLO
+	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753775Ab2GSBcI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 21:31:37 -0400
+	Wed, 18 Jul 2012 21:32:08 -0400
 X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-9.tower-209.messagelabs.com!1342661496!9074561!1
-X-Originating-IP: [216.166.12.32]
+X-Msg-Ref: server-10.tower-127.messagelabs.com!1342661487!9013103!10
+X-Originating-IP: [216.166.12.180]
 X-StarScan-Version: 6.5.10; banners=-,-,-
 X-VirusChecked: Checked
 From: H Hartley Sweeten <hartleys@visionengravers.com>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 17/90] staging: comedi: adv_pci1710: factor out the "find pci device" code
-Date: Wed, 18 Jul 2012 18:31:26 -0700
+Subject: [PATCH 18/90] staging: comedi: adv_pci1710: cleanup "find pci device" code
+Date: Wed, 18 Jul 2012 18:31:43 -0700
 User-Agent: KMail/1.9.9
 CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
         <gregkh@linuxfoundation.org>
@@ -23,100 +23,117 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Message-ID: <201207181831.26341.hartleys@visionengravers.com>
+Message-ID: <201207181831.44092.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Factor the "find pci device" code out of the attach function.
+Use for_each_pci_dev() instead of open-coding the loop using
+pci_get_device().
+
+Drop the printk error messages. They just add noise.
 
 Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 Cc: Ian Abbott <abbotti@mev.co.uk>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/staging/comedi/drivers/adv_pci1710.c | 42 ++++++++++++++++++----------
- 1 file changed, 27 insertions(+), 15 deletions(-)
+ drivers/staging/comedi/drivers/adv_pci1710.c | 63 ++++++++--------------------
+ 1 file changed, 17 insertions(+), 46 deletions(-)
 
 diff --git a/drivers/staging/comedi/drivers/adv_pci1710.c b/drivers/staging/comedi/drivers/adv_pci1710.c
-index 0ed1ff9..0823a36 100644
+index 0823a36..5eecf6b 100644
 --- a/drivers/staging/comedi/drivers/adv_pci1710.c
 +++ b/drivers/staging/comedi/drivers/adv_pci1710.c
-@@ -1333,29 +1333,21 @@ static int pci1710_reset(struct comedi_device *dev)
- 	DPRINTK("adv_pci1710 EDBG: END: pci1710_reset(...)\n");
- }
- 
--static int pci1710_attach(struct comedi_device *dev,
--			  struct comedi_devconfig *it)
-+static struct pci_dev *pci1710_find_pci_dev(struct comedi_device *dev,
-+					    struct comedi_devconfig *it)
+@@ -1336,24 +1336,21 @@ static int pci1710_reset(struct comedi_device *dev)
+ static struct pci_dev *pci1710_find_pci_dev(struct comedi_device *dev,
+ 					    struct comedi_devconfig *it)
  {
--	struct comedi_subdevice *s;
--	int ret, subdev, n_subdevices;
+-	struct pci_dev *pcidev;
+-	int opt_bus, opt_slot;
+-	const char *errstr;
+-	unsigned char pci_bus, pci_slot, pci_func;
++	struct pci_dev *pcidev = NULL;
++	int bus = it->options[0];
++	int slot = it->options[1];
++	int board_index = this_board - boardtypes;
+ 	int i;
+-	int board_index;
 -	unsigned int irq;
 -	unsigned long iobase;
- 	struct pci_dev *pcidev;
- 	int opt_bus, opt_slot;
- 	const char *errstr;
- 	unsigned char pci_bus, pci_slot, pci_func;
- 	int i;
- 	int board_index;
--
--	dev_info(dev->class_dev, DRV_NAME ": attach\n");
-+	unsigned int irq;
-+	unsigned long iobase;
  
- 	opt_bus = it->options[0];
- 	opt_slot = it->options[1];
+-	opt_bus = it->options[0];
+-	opt_slot = it->options[1];
++	for_each_pci_dev(pcidev) {
++		if (bus || slot) {
++			if (bus != pcidev->bus->number ||
++			    slot != PCI_SLOT(pcidev->devfn))
++				continue;
++		}
++		if (pcidev->vendor != PCI_VENDOR_ID_ADVANTECH)
++			continue;
  
--	ret = alloc_private(dev, sizeof(struct pci1710_private));
--	if (ret < 0)
--		return -ENOMEM;
--
- 	/* Look for matching PCI device */
- 	errstr = "not found!";
- 	pcidev = NULL;
-@@ -1404,7 +1396,7 @@ static int pci1710_attach(struct comedi_device *dev,
- 		} else {
- 			dev_err(dev->class_dev, "- Card %s\n", errstr);
+-	/* Look for matching PCI device */
+-	errstr = "not found!";
+-	pcidev = NULL;
+-	board_index = this_board - boardtypes;
+-	while (NULL != (pcidev = pci_get_device(PCI_VENDOR_ID_ADVANTECH,
+-						PCI_ANY_ID, pcidev))) {
+ 		if (strcmp(this_board->name, DRV_NAME) == 0) {
+ 			for (i = 0; i < ARRAY_SIZE(boardtypes); ++i) {
+ 				if (pcidev->device == boardtypes[i].device_id) {
+@@ -1368,47 +1365,21 @@ static struct pci_dev *pci1710_find_pci_dev(struct comedi_device *dev,
+ 				continue;
  		}
--		return -EIO;
-+		return NULL;
+ 
+-		/* Found matching vendor/device. */
+-		if (opt_bus || opt_slot) {
+-			/* Check bus/slot. */
+-			if (opt_bus != pcidev->bus->number
+-			    || opt_slot != PCI_SLOT(pcidev->devfn))
+-				continue;	/* no match */
+-		}
+ 		/*
+ 		 * Look for device that isn't in use.
+ 		 * Enable PCI device and request regions.
+ 		 */
+ 		if (comedi_pci_enable(pcidev, DRV_NAME)) {
+-			errstr =
+-			    "failed to enable PCI device and request regions!";
+ 			continue;
+ 		}
+ 		/*  fixup board_ptr in case we were using the dummy entry with the driver name */
+ 		dev->board_ptr = &boardtypes[board_index];
+-		break;
++		return pcidev;
  	}
+-
+-	if (!pcidev) {
+-		if (opt_bus || opt_slot) {
+-			dev_err(dev->class_dev, "- Card at b:s %d:%d %s\n",
+-				opt_bus, opt_slot, errstr);
+-		} else {
+-			dev_err(dev->class_dev, "- Card %s\n", errstr);
+-		}
+-		return NULL;
+-	}
+-
+-	pci_bus = pcidev->bus->number;
+-	pci_slot = PCI_SLOT(pcidev->devfn);
+-	pci_func = PCI_FUNC(pcidev->devfn);
+-	irq = pcidev->irq;
+-	iobase = pci_resource_start(pcidev, 2);
+-
+-	dev_dbg(dev->class_dev, "b:s:f=%d:%d:%d, io=0x%4lx\n",
+-		pci_bus, pci_slot, pci_func, iobase);
+-
+-	return pcidev;
++	dev_err(dev->class_dev,
++		"No supported board found! (req. bus %d, slot %d)\n",
++		bus, slot);
++	return NULL;
+ }
  
- 	pci_bus = pcidev->bus->number;
-@@ -1416,10 +1408,30 @@ static int pci1710_attach(struct comedi_device *dev,
- 	dev_dbg(dev->class_dev, "b:s:f=%d:%d:%d, io=0x%4lx\n",
- 		pci_bus, pci_slot, pci_func, iobase);
- 
--	dev->iobase = iobase;
-+	return pcidev;
-+}
-+
-+static int pci1710_attach(struct comedi_device *dev,
-+			  struct comedi_devconfig *it)
-+{
-+	struct comedi_subdevice *s;
-+	int ret, subdev, n_subdevices;
-+	unsigned int irq;
-+
-+	dev_info(dev->class_dev, DRV_NAME ": attach\n");
-+
-+	ret = alloc_private(dev, sizeof(struct pci1710_private));
-+	if (ret < 0)
-+		return -ENOMEM;
-+
-+	devpriv->pcidev = pci1710_find_pci_dev(dev, it);
-+	if (!devpriv->pcidev)
-+		return -EIO;
-+
-+	dev->iobase = pci_resource_start(devpriv->pcidev, 2);
-+	irq = devpriv->pcidev->irq;
- 
- 	dev->board_name = this_board->name;
--	devpriv->pcidev = pcidev;
- 
- 	n_subdevices = 0;
- 	if (this_board->n_aichan)
+ static int pci1710_attach(struct comedi_device *dev,
 -- 
 1.7.11
 
