@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752764Ab2GSOio (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 10:38:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40477 "EHLO mx2.suse.de"
+	id S1752858Ab2GSOi5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 10:38:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40425 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751951Ab2GSOhH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 10:37:07 -0400
+	id S1751821Ab2GSOg4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 10:36:56 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Stable <stable@vger.kernel.org>
 Cc: "Linux-MM <linux-mm"@kvack.org, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 34/34] mm/hugetlb: fix warning in alloc_huge_page/dequeue_huge_page_vma
-Date: Thu, 19 Jul 2012 15:36:44 +0100
-Message-Id: <1342708604-26540-35-git-send-email-mgorman@suse.de>
+Subject: [PATCH 15/34] mm: migration: clean up unmap_and_move()
+Date: Thu, 19 Jul 2012 15:36:25 +0100
+Message-Id: <1342708604-26540-16-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1342708604-26540-1-git-send-email-mgorman@suse.de>
 References: <1342708604-26540-1-git-send-email-mgorman@suse.de>
@@ -20,46 +20,120 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+commit 0dabec93de633a87adfbbe1d800a4c56cd19d73b upstream.
 
-Stable note: Not tracked in Bugzilla. [get|put]_mems_allowed() is extremely
-	expensive and severely impacted page allocator performance. This
-	is part of a series of patches that reduce page allocator overhead.
+Stable note: Not tracked in Bugzilla. This patch makes later patches
+	easier to apply but has no other impact.
 
-Fix a gcc warning (and bug?) introduced in cc9a6c877 ("cpuset: mm: reduce
-large amounts of memory barrier related damage v3")
+unmap_and_move() is one a big messy function.  Clean it up.
 
-Local variable "page" can be uninitialized if the nodemask from vma policy
-does not intersects with nodemask from cpuset.  Even if it doesn't happens
-it is better to initialize this variable explicitly than to introduce
-a kernel oops in a weird corner case.
-
-mm/hugetlb.c: In function `alloc_huge_page':
-mm/hugetlb.c:1135:5: warning: `page' may be used uninitialized in this function
-
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/hugetlb.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/migrate.c |   59 ++++++++++++++++++++++++++++++++--------------------------
+ 1 file changed, 33 insertions(+), 26 deletions(-)
 
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 64f2b7a..ae60a53 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -454,7 +454,7 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
- 				struct vm_area_struct *vma,
- 				unsigned long address, int avoid_reserve)
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 14d0a6a..e58ab66 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -621,38 +621,18 @@ static int move_to_new_page(struct page *newpage, struct page *page,
+ 	return rc;
+ }
+ 
+-/*
+- * Obtain the lock on page, remove all ptes and migrate the page
+- * to the newly allocated page in newpage.
+- */
+-static int unmap_and_move(new_page_t get_new_page, unsigned long private,
+-			struct page *page, int force, bool offlining, bool sync)
++static int __unmap_and_move(struct page *page, struct page *newpage,
++				int force, bool offlining, bool sync)
  {
--	struct page *page;
-+	struct page *page = NULL;
- 	struct mempolicy *mpol;
- 	nodemask_t *nodemask;
- 	struct zonelist *zonelist;
+-	int rc = 0;
+-	int *result = NULL;
+-	struct page *newpage = get_new_page(page, private, &result);
++	int rc = -EAGAIN;
+ 	int remap_swapcache = 1;
+ 	int charge = 0;
+ 	struct mem_cgroup *mem;
+ 	struct anon_vma *anon_vma = NULL;
+ 
+-	if (!newpage)
+-		return -ENOMEM;
+-
+-	if (page_count(page) == 1) {
+-		/* page was freed from under us. So we are done. */
+-		goto move_newpage;
+-	}
+-	if (unlikely(PageTransHuge(page)))
+-		if (unlikely(split_huge_page(page)))
+-			goto move_newpage;
+-
+-	/* prepare cgroup just returns 0 or -ENOMEM */
+-	rc = -EAGAIN;
+-
+ 	if (!trylock_page(page)) {
+ 		if (!force || !sync)
+-			goto move_newpage;
++			goto out;
+ 
+ 		/*
+ 		 * It's not safe for direct compaction to call lock_page.
+@@ -668,7 +648,7 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
+ 		 * altogether.
+ 		 */
+ 		if (current->flags & PF_MEMALLOC)
+-			goto move_newpage;
++			goto out;
+ 
+ 		lock_page(page);
+ 	}
+@@ -785,8 +765,35 @@ uncharge:
+ 		mem_cgroup_end_migration(mem, page, newpage, rc == 0);
+ unlock:
+ 	unlock_page(page);
++out:
++	return rc;
++}
+ 
+-move_newpage:
++/*
++ * Obtain the lock on page, remove all ptes and migrate the page
++ * to the newly allocated page in newpage.
++ */
++static int unmap_and_move(new_page_t get_new_page, unsigned long private,
++			struct page *page, int force, bool offlining, bool sync)
++{
++	int rc = 0;
++	int *result = NULL;
++	struct page *newpage = get_new_page(page, private, &result);
++
++	if (!newpage)
++		return -ENOMEM;
++
++	if (page_count(page) == 1) {
++		/* page was freed from under us. So we are done. */
++		goto out;
++	}
++
++	if (unlikely(PageTransHuge(page)))
++		if (unlikely(split_huge_page(page)))
++			goto out;
++
++	rc = __unmap_and_move(page, newpage, force, offlining, sync);
++out:
+ 	if (rc != -EAGAIN) {
+  		/*
+  		 * A page that has been migrated has all references
 -- 
 1.7.9.2
 
