@@ -1,83 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753325Ab2GSHAd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 03:00:33 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:62921 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751178Ab2GSHAa (ORCPT
+	id S1753296Ab2GSHIk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 03:08:40 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:50072 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751210Ab2GSHIi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 03:00:30 -0400
-Message-ID: <5007B034.4030909@huawei.com>
-Date: Thu, 19 Jul 2012 14:59:00 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120312 Thunderbird/11.0
-MIME-Version: 1.0
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, <linux-mm@kvack.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, <mhocko@suse.cz>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] hugetlb/cgroup: Simplify pre_destroy callback
-References: <1342589649-15066-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20120718142628.76bf78b3.akpm@linux-foundation.org> <87hat4794l.fsf@skywalker.in.ibm.com>
-In-Reply-To: <87hat4794l.fsf@skywalker.in.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.166.88.115]
-X-CFilter-Loop: Reflected
+	Thu, 19 Jul 2012 03:08:38 -0400
+Date: Thu, 19 Jul 2012 17:08:27 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Javier M. Mellid" <jmunhoz@igalia.com>
+Subject: linux-next: build failure after merge of the final tree
+Message-Id: <20120719170827.32067d18457dc0e6c3b644f5@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__19_Jul_2012_17_08_27_+1000_dbBnw_bv.6jeF+5u"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-on 2012/7/19 10:55, Aneesh Kumar K.V wrote:
+--Signature=_Thu__19_Jul_2012_17_08_27_+1000_dbBnw_bv.6jeF+5u
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Andrew Morton <akpm@linux-foundation.org> writes:
-> 
->> On Wed, 18 Jul 2012 11:04:09 +0530
->> "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
->>
->>> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
->>>
->>> Since we cannot fail in hugetlb_cgroup_move_parent, we don't really
->>> need to check whether cgroup have any change left after that. Also skip
->>> those hstates for which we don't have any charge in this cgroup.
->>>
->>> ...
->>>
->>> +	for_each_hstate(h) {
->>> +		/*
->>> +		 * if we don't have any charge, skip this hstate
->>> +		 */
->>> +		idx = hstate_index(h);
->>> +		if (res_counter_read_u64(&h_cg->hugepage[idx], RES_USAGE) == 0)
->>> +			continue;
->>> +		spin_lock(&hugetlb_lock);
->>> +		list_for_each_entry(page, &h->hugepage_activelist, lru)
->>> +			hugetlb_cgroup_move_parent(idx, cgroup, page);
->>> +		spin_unlock(&hugetlb_lock);
->>> +		VM_BUG_ON(res_counter_read_u64(&h_cg->hugepage[idx], RES_USAGE));
->>> +	}
->>>  out:
->>>  	return ret;
->>>  }
->>
->> This looks fishy.
->>
->> We test RES_USAGE before taking hugetlb_lock.  What prevents some other
->> thread from increasing RES_USAGE after that test?
->>
->> After walking the list we test RES_USAGE after dropping hugetlb_lock. 
->> What prevents another thread from incrementing RES_USAGE before that
->> test, triggering the BUG?
-> 
-> IIUC core cgroup will prevent a new task getting added to the cgroup
-> when we are in pre_destroy. Since we already check that the cgroup doesn't
-> have any task, the RES_USAGE cannot increase in pre_destroy.
-> 
+Hi all,
 
+After merging the final tree, today's linux-next build (powerpc allyesconfi=
+g)
+failed like this:
 
-You're wrong here. We release cgroup_lock before calling pre_destroy and retrieve
-the lock after that, so a task can be attached to the cgroup in this interval.
+drivers/staging/sm7xxfb/sm7xxfb.c: In function 'smtcfb_pci_probe':
+drivers/staging/sm7xxfb/sm7xxfb.c:829:33: error: 'smtc_screen_info' undecla=
+red (first use in this function)
 
-See 3fa59dfbc3b223f02c26593be69ce6fc9a940405 ("cgroup: fix potential deadlock in pre_destroy")
+Caused by commit 013db67415d1 ("staging: sm7xxfb: rename smtc_screen_info
+to smtc_scr_info").  Grep is your friend.
 
-But I think the memcg->pre_destroy has been reworked and now we can safely hold
-cgroup_lock when calling the callback, and this can make the code a bit simpler.
+I have added the following patch for today.
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Thu, 19 Jul 2012 17:04:39 +1000
+Subject: [PATCH] staging: sm7xxfb: fix for "rename smtc_screen_info to smtc=
+_scr_info"
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/staging/sm7xxfb/sm7xxfb.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/staging/sm7xxfb/sm7xxfb.c b/drivers/staging/sm7xxfb/sm=
+7xxfb.c
+index 90c90db..1c1780c 100644
+--- a/drivers/staging/sm7xxfb/sm7xxfb.c
++++ b/drivers/staging/sm7xxfb/sm7xxfb.c
+@@ -826,7 +826,7 @@ static int __devinit smtcfb_pci_probe(struct pci_dev *p=
+dev,
+=20
+ #ifdef __BIG_ENDIAN
+ 	if (sfb->fb.var.bits_per_pixel =3D=3D 24)
+-		sfb->fb.var.bits_per_pixel =3D (smtc_screen_info.lfb_depth =3D 32);
++		sfb->fb.var.bits_per_pixel =3D (smtc_scr_info.lfb_depth =3D 32);
+ #endif
+ 	/* Map address and memory detection */
+ 	pFramebufferPhysical =3D pci_resource_start(pdev, 0);
+--=20
+1.7.10.280.gaa39
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__19_Jul_2012_17_08_27_+1000_dbBnw_bv.6jeF+5u
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQB7JrAAoJEECxmPOUX5FE7tcP/3W6zNTFzzrV6EsuWnJlNih2
+ozZCBH7L7K0IuTJ78seAUanAiUWzOQwN6FgGjxKW654huPkUZ5WWpsPXKcNdUyB1
+mQ5FkQyXkZb6zpG0ogMRGuu82IqXU6TOftF/5ytN5r/FfDZcZ8vVXs0+1iHth4eH
+yRUktutDpOyrxmaARVkGjZlOh9jdlXM7pxRcb0BAMV11goWg5RSuC9Dm/88QBayv
+fPGeEkh6zkXciCQIgpCVrg03M/MZc0aLJ2PRpIhIoZb69v0GgAwyB0Hdy7myeKZX
+ZP1lX3zt42Fptymih3JSuJeyY1P9oqCcfQa61H/GMaviV4bLmgXir0d+W9xgmph0
+bb8bgAaTE420f0z1soIkggfzy3mooOdrfyA3pl8O3NiPKKOTWHAHwmHjNvpt2biw
+vrRUaXo+D1/O86bKobgbSc0oW5yWofN7YHDD/JBPJ4NABA0Bn8v75zdrg5LgMt6p
+3dvvt7L0DVNIyTFrRWorruItkZ9Q31IPEQwZyJAEhC8WwtMDTpcHwSlSrjrDk9zd
+rNiN1dRefQoPfgLdfwp/Vqdbh815+H+JwmleD0B+SExH084mmcAPIcJ0IasQ8nTU
+SV4yzC4JF7uGb/tb07FUgc0bgvgu/LQZGCoG/fUBMnsiLXaotW51ystbRRQJZtFa
+b2REG7CB6ImSiGC6sEDA
+=aghW
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__19_Jul_2012_17_08_27_+1000_dbBnw_bv.6jeF+5u--
