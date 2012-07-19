@@ -1,46 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751985Ab2GSVKy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 17:10:54 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:41964 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751907Ab2GSVKx (ORCPT
+	id S1752016Ab2GSVL7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 17:11:59 -0400
+Received: from usindpps06.hds.com ([207.126.252.19]:49308 "EHLO
+	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751036Ab2GSVL6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 17:10:53 -0400
-From: jan.bannister@gmail.com
-To: viro@zeniv.linux.org.uk, schwidefsky@de.ibm.com,
-        linux-kernel@vger.kernel.org
-Cc: Jan Bannister <jan.bannister@gmail.com>
-Subject: [PATCH] kernel: acct.c:  spaces required around that '<'
-Date: Thu, 19 Jul 2012 22:10:27 +0100
-Message-Id: <1342732227-13972-1-git-send-email-jan.bannister@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+	Thu, 19 Jul 2012 17:11:58 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
+        "mikew@google.com" <mikew@google.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>
+CC: "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: [RFC][PATCH v2 0/3] efi_pstore: avoid losing critical message
+Thread-Topic: [RFC][PATCH v2 0/3] efi_pstore: avoid losing critical message
+Thread-Index: Ac1l8gso5nfBWiKiQnGNAysgHrmtYA==
+Date: Thu, 19 Jul 2012 21:11:44 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D40FB27FAA@USINDEM103.corp.hds.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.43.113]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.260,0.0.0000
+ definitions=2012-07-19_06:2012-07-19,2012-07-19,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
+ definitions=main-1207190250
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Bannister <jan.bannister@gmail.com>
+This patchset avoids losing a critical message like panic in NVRAM.
 
-Fixed a coding style issue
+[Problem]
+    Currently, efi_pstore driver simply overwrites existing panic messages in NVRAM.
+    So, in the following scenario, we will lose 1st panic messages.
 
-Signed-off-by: Jan Bannister <jan.bannister@gmail.com>
----
- kernel/acct.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+    1. kernel panics.
+    2. efi_pstore is kicked and write panic messages to NVRAM.
+    3. system reboots.
+    4. kernel panics again before a user checks the 1st panic messages in NVRAM.
 
-diff --git a/kernel/acct.c b/kernel/acct.c
-index 02e6167..725d3a9 100644
---- a/kernel/acct.c
-+++ b/kernel/acct.c
-@@ -134,7 +134,7 @@ static int check_free_space(struct bsd_acct_struct *acct, struct file *file)
- 	spin_lock(&acct_lock);
- 	if (file != acct->file) {
- 		if (act)
--			res = act>0;
-+			res = act > 0;
- 		goto out;
- 	}
- 
--- 
-1.7.4.4
+[Solution]
+   To avoid losing a critical message, this patchset is based on a following concept.
+     - A basic policy is _not_ to overwrite existing entries.
+
+     - However, if kernel panics while a system is rebooting, a critical message 
+       can't be saved by the policy above. 
+       (In this case, panic message is critical.)
+
+     - So, two approaches are taken by this patchset.
+       - First one is holding multiple logs.
+       - Second one is introducing some logic overwriting entries 
+         for holding just one log.
+
+[Patch Descriptions]
+ Patch 1/3 and 2/3 take fist approach, _not_ overwriting entries.
+
+ Patch 3/3 takes second approach, adding some logic overwriting entries.
+
+ 1/3: Avoid overwriting existing entry
+  This patch just avoid overwriting entries to save the 1st critical message 
+  without being influenced by subsequent events.
+
+ 2/3: Hold multiple logs
+  With this patch, efi_pstore can hold multiple logs.
+  We can simply avoid losing a critical message in case mutiple events happen.
+
+ 3/3: Check if existing entry is erasable
+  This patch adds some logic checking if an existing entry is erasable for 
+  holding just one log.
+
+  If users decide that NVRAM size is not big enough to hold multiple logs, 
+  efi_pstore have to handle just one log and avoid a critical messages by 
+  overwriting existing entry.
+
+  NVRAM size may vary among different boxes, and the appropriate log size depends
+  on each user's system. efi_pstore should be flexible in preparation for various 
+  user's choice.
+
+
+Change v1 -> v2
+
+1/3
+  - Freshly created to avoid overwriting entries.
+
+2/3
+  - Freshly created to handle multiple logs.
+  - Add an additional change passing ctime to arguments of erase_callback.
+
+3/3
+  - This is based on previous 2/2 patch
+  - Add comments to kernel/printk.h in preparation for future change 
+    without considering this patch.
+  - Remove infinite loop to avoid potential hang up.
+  - Add CFLAGS, -Wswitch-enum and remove default case from switch sentence 
+    in preparation for future change without considering this patch.
+  - Change a return value to -EEXIST when an erasable entry is not found. 
+  - Remove KMSG_DUMP_UNDEF from kmsg_dump_reason because no one uses it.
+
+
+ Documentation/kernel-parameters.txt |    6 +
+ drivers/acpi/apei/erst.c            |    4 +-
+ drivers/firmware/Makefile           |    2 +
+ drivers/firmware/efivars.c          |  212 +++++++++++++++++++++++++++++++----
+ fs/pstore/inode.c                   |    2 +-
+ fs/pstore/platform.c                |    4 +-
+ fs/pstore/ram.c                     |    2 +-
+ include/linux/kmsg_dump.h           |    8 +-
+ include/linux/pstore.h              |    7 +-
+ 9 files changed, 214 insertions(+), 33 deletions(-)
 
