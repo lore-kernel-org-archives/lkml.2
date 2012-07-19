@@ -1,86 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752599Ab2GSXjj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 19:39:39 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:21160 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752461Ab2GSXjf (ORCPT
+	id S1752145Ab2GSXmd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 19:42:33 -0400
+Received: from mga11.intel.com ([192.55.52.93]:40578 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751287Ab2GSXm2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 19:39:35 -0400
-Date: Thu, 19 Jul 2012 19:30:45 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>, "Tim (Xen.org)" <tim@xen.org>
-Subject: Re: [PATCH WIP 6/6] xen/arm: enable evtchn irqs
-Message-ID: <20120719233045.GA944@phenom.dumpdata.com>
-References: <alpine.DEB.2.02.1206221644370.27860@kaball.uk.xensource.com>
- <1340381685-22529-1-git-send-email-stefano.stabellini@eu.citrix.com>
- <1340381685-22529-6-git-send-email-stefano.stabellini@eu.citrix.com>
- <20120709144005.GA12102@phenom.dumpdata.com>
- <alpine.DEB.2.02.1207131749470.23783@kaball.uk.xensource.com>
- <20120716145709.GB552@phenom.dumpdata.com>
- <alpine.DEB.2.02.1207181750500.23783@kaball.uk.xensource.com>
+	Thu, 19 Jul 2012 19:42:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="195287955"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Seiji Aguchi <seiji.aguchi@hds.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mikew@google.com" <mikew@google.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>
+CC: "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: RE: [RFC][PATCH v2 2/3] Hold multiple logs
+Thread-Topic: [RFC][PATCH v2 2/3] Hold multiple logs
+Thread-Index: Ac1l82ceH7I0t1QCT1GombsnNxviZAAAK4PgAABTBVAAAP4IQAAA0SRAAAJWEXA=
+Date: Thu, 19 Jul 2012 23:42:26 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F1936EADE@ORSMSX104.amr.corp.intel.com>
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D40FB27FDC@USINDEM103.corp.hds.com>
+ <3908561D78D1C84285E8C5FCA982C28F1936EA5F@ORSMSX104.amr.corp.intel.com>
+ <A5ED84D3BB3A384992CBB9C77DEDA4D40FB28056@USINDEM103.corp.hds.com>
+ <3908561D78D1C84285E8C5FCA982C28F1936EA97@ORSMSX104.amr.corp.intel.com>
+ <A5ED84D3BB3A384992CBB9C77DEDA4D40FB2813D@USINDEM103.corp.hds.com>
+In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D40FB2813D@USINDEM103.corp.hds.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1207181750500.23783@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > OK, please include those questions/answers in the git commit and
-> > repost.
+> If you are concerned about multiple OOPS case, I think an user app which logs from /dev/pstore to /var/log should be developed.
 
-I seem to be missing the rest of the patches. I see the drivers/xen/events also
-has the  xen_init_IRQ_arm... is there a git tree with the base patches?
-> 
-> ---
-> 
-> xen/arm: enable evtchn irqs
-> 
-> On ARM Linux irqs are not enabled by default:
-> 
-> - call enable_percpu_irq for IRQ_EVTCHN_CALLBACK (drivers are supposed
-> to call enable_irq after request_irq);
-> 
-> - set the IRQF_VALID flag for the other irqs bound to evtchns. It causes
-> IRQ_NOAUTOEN to be set and as a consequence irq_unmask is going to be
-> called when a xenbus driver calls request_irq.
-> This is needed because IRQ_NOAUTOEN is set by set_irq_flags on ARM.
-> If IRQ_NOAUTOEN is set __setup_irq doesn't call irq_startup that is
-> responsible for calling irq_unmask at startup time.
-> 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> 
-> diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-> index eae0d0b..ca92755 100644
-> --- a/drivers/xen/events.c
-> +++ b/drivers/xen/events.c
-> @@ -53,6 +53,7 @@
->  #include <xen/interface/hvm/params.h>
->  #include <xen/interface/physdev.h>
->  #include <xen/interface/sched.h>
-> +#include <asm/hw_irq.h>
->  
->  /*
->   * This lock protects updates to the following mapping and reference-count
-> @@ -824,6 +828,7 @@ int bind_evtchn_to_irq(unsigned int evtchn)
->  
->  		xen_irq_info_evtchn_init(irq, evtchn);
->  	}
-> +	set_irq_flags(irq, IRQF_VALID);
->  
->  out:
->  	mutex_unlock(&irq_mapping_update_lock);
-> @@ -1748,6 +1753,7 @@ int __init xen_init_IRQ_arm(void)
->  	if (rc) {
->  		printk(KERN_ERR "Error requesting IRQ %d\n", IRQ_EVTCHN_CALLBACK);
->  	}
-> +	enable_percpu_irq(IRQ_EVTCHN_CALLBACK, 0);
->  	return rc;
->  }
->  core_initcall(xen_init_IRQ_arm);
+Agreed - we need an app/daemon to do this.
+
+> Once it is developed, we don't need to care about multiple oops case and the appropriate number is two.
+
+Only if you can guarantee that the app/daemon will run and save the first OOPS before the next
+occurs. Even if the system were running normally this might be difficult to achieve ... but in this
+case we know the system isn't running normally (it just OOPSed twice!).
+
+However - there is progressively less value in collecting additional consecutive OOPS. Perhaps
+one is enough 90% or even 99% of the time. I'm naturally paranoid so having two or three
+would make me feel happy that most of the remaining 10% or 1% of the cases were covered.
+
+> - In case where system is workable after oops.
+> The user app will erase an entry in NVRAM.
+> And we can get the message via /var/log.
+
+Yes - the system can keep running after many types of OOPs - so the OOPS will be logged in /var/log (or by the app/daemon
+copying from pstore, or both).
+
+> - In case where system hangs up or panics due to the oops.
+> Oops is the critical message and we don't need care about subsequent events.
+
+Yes - if the OOPs is instrumental in the path leading to the hang/panic - then the OOPS is the
+first place to look for the root cause of the problem. But it will be a case by case analysis.
+Sometimes the OOPS might be unconnected. If possible we'd like to log more information
+to allow detective work to decide whether there is a connection. But as I mentioned above
+there are severe limits to how much better things are by storing more information.
+
+-Tony
