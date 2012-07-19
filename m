@@ -1,71 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752425Ab2GSCzW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 22:55:22 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:55322 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751537Ab2GSCzT (ORCPT
+	id S1752609Ab2GSDHn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 23:07:43 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:62739 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751583Ab2GSDHm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 22:55:19 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, mhocko@suse.cz,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hugetlb/cgroup: Simplify pre_destroy callback
-In-Reply-To: <20120718142628.76bf78b3.akpm@linux-foundation.org>
-References: <1342589649-15066-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20120718142628.76bf78b3.akpm@linux-foundation.org>
-User-Agent: Notmuch/0.13.2+63~g548a9bf (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Thu, 19 Jul 2012 08:25:06 +0530
-Message-ID: <87hat4794l.fsf@skywalker.in.ibm.com>
+	Wed, 18 Jul 2012 23:07:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-x-cbid: 12071816-7014-0000-0000-0000019419EA
+In-Reply-To: <1342560756-18737-12-git-send-email-tytso@mit.edu>
+References: <1342560756-18737-1-git-send-email-tytso@mit.edu>
+	<1342560756-18737-12-git-send-email-tytso@mit.edu>
+Date: Thu, 19 Jul 2012 11:07:40 +0800
+Message-ID: <CAN1soZweV6MPKH39h7VA4TDeSxsFq=zwN-FARN8K_iO0Yq1jbQ@mail.gmail.com>
+Subject: Re: [PATCH 11/17] pxa25x_udc: remove IRQF_SAMPLE_RANDOM which is now
+ a no-op
+From: Haojian Zhuang <haojian.zhuang@gmail.com>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton <akpm@linux-foundation.org> writes:
-
-> On Wed, 18 Jul 2012 11:04:09 +0530
-> "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
+On Wed, Jul 18, 2012 at 5:32 AM, Theodore Ts'o <tytso@mit.edu> wrote:
+> With the changes in the random tree, IRQF_SAMPLE_RANDOM is now a
+> no-op; interrupt randomness is now collected unconditionally in a very
+> low-overhead fashion; see commit 775f4b297b.  The IRQF_SAMPLE_RANDOM
+> flag was scheduled to be removed in 2009 on the
+> feature-removal-schedule, so this patch is preparation for the final
+> removal of this flag.
 >
->> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
->> 
->> Since we cannot fail in hugetlb_cgroup_move_parent, we don't really
->> need to check whether cgroup have any change left after that. Also skip
->> those hstates for which we don't have any charge in this cgroup.
->> 
->> ...
->>
->> +	for_each_hstate(h) {
->> +		/*
->> +		 * if we don't have any charge, skip this hstate
->> +		 */
->> +		idx = hstate_index(h);
->> +		if (res_counter_read_u64(&h_cg->hugepage[idx], RES_USAGE) == 0)
->> +			continue;
->> +		spin_lock(&hugetlb_lock);
->> +		list_for_each_entry(page, &h->hugepage_activelist, lru)
->> +			hugetlb_cgroup_move_parent(idx, cgroup, page);
->> +		spin_unlock(&hugetlb_lock);
->> +		VM_BUG_ON(res_counter_read_u64(&h_cg->hugepage[idx], RES_USAGE));
->> +	}
->>  out:
->>  	return ret;
->>  }
+> Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+> Cc: Eric Miao <eric.y.miao@gmail.com>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
+> ---
+>  drivers/usb/gadget/pxa25x_udc.c | 12 ++++--------
+>  1 file changed, 4 insertions(+), 8 deletions(-)
 >
-> This looks fishy.
->
-> We test RES_USAGE before taking hugetlb_lock.  What prevents some other
-> thread from increasing RES_USAGE after that test?
->
-> After walking the list we test RES_USAGE after dropping hugetlb_lock. 
-> What prevents another thread from incrementing RES_USAGE before that
-> test, triggering the BUG?
-
-IIUC core cgroup will prevent a new task getting added to the cgroup
-when we are in pre_destroy. Since we already check that the cgroup doesn't
-have any task, the RES_USAGE cannot increase in pre_destroy.
-
--aneesh
-
+Acked-by: Haojian Zhuang <haojian.zhuang@gmail.com>
