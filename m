@@ -1,35 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751890Ab2GSNJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 09:09:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42285 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751353Ab2GSNJY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 09:09:24 -0400
-Date: Thu, 19 Jul 2012 16:09:57 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Anthony Liguori <anthony@codemonkey.ws>
-Cc: Asias He <asias@redhat.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH RESEND 5/5] vhost-blk: Add vhost-blk support
-Message-ID: <20120719130957.GD9303@redhat.com>
-References: <1342169711-12386-1-git-send-email-asias@redhat.com>
- <1342169711-12386-6-git-send-email-asias@redhat.com>
- <87mx2vrjdl.fsf@codemonkey.ws>
+	id S1751934Ab2GSNKF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 09:10:05 -0400
+Received: from smtp-out002.kontent.com ([81.88.40.216]:39859 "EHLO
+	smtp-out002.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750851Ab2GSNKD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 09:10:03 -0400
+X-Greylist: delayed 681 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Jul 2012 09:10:03 EDT
+From: Oliver Neukum <oliver@neukum.org>
+To: wei_wang@realsil.com.cn
+Cc: gregkh@linuxfoundation.org, devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] drivers/misc: Add realtek pci card reader driver
+Date: Thu, 19 Jul 2012 14:57:55 +0200
+Message-ID: <1416801.Uc45iJreQi@linux-lqwf.site>
+User-Agent: KMail/4.8.4 (Linux/3.5.0-rc6-117-g918227b-1-vanilla; KDE/4.8.4; x86_64; ; )
+In-Reply-To: <1342691710-23164-1-git-send-email-wei_wang@realsil.com.cn>
+References: <1342691710-23164-1-git-send-email-wei_wang@realsil.com.cn>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87mx2vrjdl.fsf@codemonkey.ws>
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 19, 2012 at 08:05:42AM -0500, Anthony Liguori wrote:
-> Of course, the million dollar question is why would using AIO in the
-> kernel be faster than using AIO in userspace?
+On Thursday 19 July 2012 17:55:10 wei_wang@realsil.com.cn wrote:
 
-Actually for me a more important question is how does it compare
-with virtio-blk dataplane?
+> +static int rtsx_pci_transfer_sglist_adma(struct rtsx_pdev *pdev,
+> +		struct scatterlist *sg, int num_sg, int read, int timeout)
+> +{
+> +	struct completion trans_done;
+> +	u8 dir;
+> +	int buf_cnt, i;
+> +	int err = 0;
+> +	long timeleft;
+> +	unsigned long flags;
+> +	struct scatterlist *sg_ptr;
+> +	enum dma_data_direction dma_dir;
+> +
+> +	if ((sg == NULL) || (num_sg <= 0))
+> +		return -EINVAL;
+> +
+> +	if (read) {
+> +		dir = DEVICE_TO_HOST;
+> +		dma_dir = DMA_FROM_DEVICE;
+> +	} else {
+> +		dir = HOST_TO_DEVICE;
+> +		dma_dir = DMA_TO_DEVICE;
+> +	}
+> +
+> +	spin_lock_irqsave(&pdev->lock, flags);
+> +
+> +	/* set up data structures for the wakeup system */
+> +	pdev->done = &trans_done;
+> +	pdev->trans_state = STATE_TRANS_SG;
+> +	pdev->trans_result = TRANS_NOT_READY;
+> +
+> +	spin_unlock_irqrestore(&pdev->lock, flags);
+> +
+> +	buf_cnt = dma_map_sg(&(pdev->pci->dev), sg, num_sg, dma_dir);
+> +
+> +	sg_ptr = sg;
+> +	for (i = 0; i <= buf_cnt / (HOST_SG_TBL_BUF_LEN / 8); i++) {
+> +		u32 val = TRIG_DMA;
+> +		int sg_cnt, j;
+> +
+> +		if (i == buf_cnt / (HOST_SG_TBL_BUF_LEN / 8))
+> +			sg_cnt = buf_cnt % (HOST_SG_TBL_BUF_LEN / 8);
+> +		else
+> +			sg_cnt = (HOST_SG_TBL_BUF_LEN / 8);
+> +
+> +		pdev->sgi = 0;
+> +		for (j = 0; j < sg_cnt; j++) {
+> +			dma_addr_t addr = sg_dma_address(sg_ptr);
+> +			unsigned int len = sg_dma_len(sg_ptr);
+> +			u8 option;
+> +
+> +			pr_debug("DMA addr: 0x%x, Len: 0x%x\n",
+> +					(unsigned int)addr, len);
+> +
+> +			if (j == (sg_cnt - 1))
+> +				option = SG_VALID | SG_END | SG_TRANS_DATA;
+> +			else
+> +				option = SG_VALID | SG_TRANS_DATA;
+> +
+> +			rtsx_pci_add_sg_tbl(pdev, (u32)addr, (u32)len, option);
+> +			sg_ptr = sg_next(sg_ptr);
+> +		}
+> +
+> +		pr_debug("SG table count = %d\n", pdev->sgi);
+> +
+> +		val |= (u32)(dir & 0x01) << 29;
+> +		val |= ADMA_MODE;
+> +
+> +		spin_lock_irqsave(&pdev->lock, flags);
+> +
+> +		init_completion(&trans_done);
+> +
+> +		rtsx_pci_writel(pdev, RTSX_HDBAR, pdev->host_sg_tbl_addr);
+> +		rtsx_pci_writel(pdev, RTSX_HDBCTLR, val);
+> +
+> +		spin_unlock_irqrestore(&pdev->lock, flags);
+> +
+> +		timeleft = wait_for_completion_interruptible_timeout(
+> +				&trans_done, msecs_to_jiffies(timeout));
+> +		if (timeleft <= 0) {
+> +			pr_debug("Timeout (%s %d)\n", __func__, __LINE__);
+> +			pr_debug("pdev->int_reg = 0x%x\n", pdev->int_reg);
+> +			err = -ETIMEDOUT;
+> +			goto out;
+> +		}
+> +
+> +		spin_lock_irqsave(&pdev->lock, flags);
+> +		if (pdev->trans_result == TRANS_RESULT_FAIL) {
+> +			err = -EINVAL;
+> +			spin_unlock_irqrestore(&pdev->lock, flags);
+> +			goto out;
+> +		} else if (pdev->trans_result == TRANS_NO_DEVICE) {
+> +			err = -ENODEV;
+> +			spin_unlock_irqrestore(&pdev->lock, flags);
+> +			goto out;
+> +		}
+> +		spin_unlock_irqrestore(&pdev->lock, flags);
+> +
+> +		sg_ptr += sg_cnt;
+> +	}
+> +
+> +	/* Wait for TRANS_OK_INT */
+> +	spin_lock_irqsave(&pdev->lock, flags);
+> +	if (pdev->trans_result == TRANS_NOT_READY) {
+> +		init_completion(&trans_done);
+> +		spin_unlock_irqrestore(&pdev->lock, flags);
+> +		timeleft = wait_for_completion_interruptible_timeout(
+> +				&trans_done, msecs_to_jiffies(timeout));
+> +		if (timeleft <= 0) {
+> +			pr_debug("Timeout (%s %d)\n", __func__, __LINE__);
+> +			pr_debug("pdev->int_reg = 0x%x\n", pdev->int_reg);
+> +			err = -ETIMEDOUT;
+> +			goto out;
+> +		}
+> +	} else {
+> +		spin_unlock_irqrestore(&pdev->lock, flags);
+> +	}
+> +
+> +	spin_lock_irqsave(&pdev->lock, flags);
 
--- 
-MST
+So why drop the lock?
+
+> +	if (pdev->trans_result == TRANS_RESULT_FAIL)
+> +		err = -EINVAL;
+> +	else if (pdev->trans_result == TRANS_RESULT_OK)
+> +		err = 0;
+> +	else if (pdev->trans_result == TRANS_NO_DEVICE)
+> +		err = -ENODEV;
+> +	spin_unlock_irqrestore(&pdev->lock, flags);
+> +
+> +out:
+> +	spin_lock_irqsave(&pdev->lock, flags);
+> +	pdev->done = NULL;
+> +	pdev->trans_state = STATE_TRANS_NONE;
+> +	spin_unlock_irqrestore(&pdev->lock, flags);
+> +
+> +	dma_unmap_sg(&(pdev->pci->dev), sg, num_sg, dma_dir);
+
+You must not unmap before you stop the hardware
+
+> +	if ((err < 0) && (err != -ENODEV))
+> +		rtsx_pci_stop_cmd(pdev);
+> +
+> +	if (pdev->finish_me)
+> +		complete(pdev->finish_me);
+> +
+> +	return err;
+> +}
+> +
+> +/**
+> + * rtsx_pci_transfer_buf - transfer data in linear buffer.
+> + * @pdev: Realtek's card reader pdev
+> + * @card: this command is relevant to card or not
+> + * @buf: data buffer
+> + * @len: buffer length
+> + * @dma_dir: transfer direction (DMA_FROM_DEVICE or DMA_TO_DEVICE)
+> + * @timeout: time out in millisecond
+
+	Regards
+		Oliver
+
