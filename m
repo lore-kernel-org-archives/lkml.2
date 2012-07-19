@@ -1,72 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751669Ab2GSM3N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 08:29:13 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:51643 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750748Ab2GSM3K (ORCPT
+	id S1751663Ab2GSMaQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 08:30:16 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:43421 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750832Ab2GSMaN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 08:29:10 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Tony Prisk <linux@prisktech.co.nz>
-Subject: Re: [PATCH 1/1] Add Wondermedia Technologies (wmt) to docs/devicetree/vendor-bindings.txt
-Date: Thu, 19 Jul 2012 12:28:48 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: "vt8500-wm8505-linux-kernel@googlegroups.com" 
-	<vt8500-wm8505-linux-kernel@googlegroups.com>,
-        Alexey Charkov <alchark@gmail.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-References: <76F764B079F92A4E843589C893D0A022C380F1D4@SERVER.prisktech.co.nz> <201207191116.27273.arnd@arndb.de> <76F764B079F92A4E843589C893D0A022C3811BFD@SERVER.prisktech.co.nz>
-In-Reply-To: <76F764B079F92A4E843589C893D0A022C3811BFD@SERVER.prisktech.co.nz>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207191228.48809.arnd@arndb.de>
-X-Provags-ID: V02:K0:uBirEi6jsG5912mmgtg3kBFf5KTe1Mecs7GO0LHDqVy
- NOpsvTPsUjP8EjE4+l2UkqfLk9NndKW9K2bkTYF1aMo1j9++sy
- +lUdKVrLTWLI5NA+Pg+cuqmkWB8PlMgfDNDrUpWDG17PEanTIK
- LDlRRJZRW5rLW59YcMzj9wmSDOnyNE3bZ6yRaI9NQ2SNA8w65i
- u9NzJcPcGqMsrDRsZoMXvG9ARPxjS/OE5sCrPT+2/qFbAX/W4B
- 11yam0nSVweOeloYABULyE/4wFC9KYXdxaREPSj0Xf/eQLeEod
- 5qvT3kWx2EQeEyWVqwgMLyzWPay2IL/Jz8pAJjpQ3CNL40p3kF
- C2BKiDJ7A0VPhdEupxSI=
+	Thu, 19 Jul 2012 08:30:13 -0400
+From: Devendra Naga <devendra.aaru@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Devendra Naga <devendra.aaru@gmail.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Cc: Devendra Naga <devendra.aaru@gmail.com>
+Subject: [PATCH] staging/sbe-2t3e3: error path cleanup in t3e3_init_channel
+Date: Thu, 19 Jul 2012 18:00:01 +0530
+Message-Id: <1342701001-5424-1-git-send-email-devendra.aaru@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 19 July 2012, Tony Prisk wrote:
-> I have no issue with that.
-> 
-> I am mainly concerned with the Wondermedia products at the moment.
-> 
-> Adding device tree support for WM8505 (and WM8650) is my main goal as the WM8650
-> currently isn't supported and trying to get another board file added seems unlikely with
-> everything moving to device tree. The VT8500 requires additional/different patches and
-> as I don't have a vt8500 I can't test them.
-> 
-> It does raise the question of applying 'wmt, prizm-pmc' to the vt8500 though. While it's
-> fine for the restart patch I submitted, the vt8500 registers are the same but the bit-fields
-> are different and therefore not entirely compatible with 'prizm-pmc'.
-> When it comes to other PMC-related features, in particular the clocks, the VT8500 is quite
-> different in its bit-fields.
-> 
-> The vt8500 isn't technically in the Prizm family, as that is Wondermedia's name for the SoC's.
-> 
+    a) if alloc_hdlcdev fails, we are going into the free_regions,
+and returning out the err (which is 0 by the prev call),
+       return -ENOMEM if this function fail.
 
-My point is that for each peripheral, we should decide separately what the
-most descriptive name for it is. If the pmc is common for all wmt prizm
-chips, then using the "wmt,prizm-pmc" string makes sense, and vt8500
-can use "via,vt8500-pmc" or something like that.
+    b) setup_device also can fail, as it calls around the register_hdlc_dev which
+is again a macro of the register_netdev.
 
-However for stuff like the rtc that appears to be unchanged between them,
-I would use the compatible string of the oldest known chip using it,
-so even a wmt8650 should just claim compatibility with vt8500 there and
-list both "wmt,wm8650-rtc" and "via,vt8500-rtc" there.
+       take the error from the setup_device and return it out in error condition
 
-	Arnd
+    c) request_irq when fails, we are freeing requested mem regions and disabling
+the pci device(?) and returning err which is agian 0 here.
+
+      take the error from request_irq and err path will take care of returning it.
+
+as if we return 0 , at the init function, t3e3_init_card, we have a success case
+and if there are two channels we call this function again, having the result of
+it completely unknown.
+
+This result in having the probe return 0, unloading the driver may (not) cause
+ambigous result.
+
+Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+---
+ drivers/staging/sbe-2t3e3/module.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/staging/sbe-2t3e3/module.c b/drivers/staging/sbe-2t3e3/module.c
+index cd778b3..1a1a9be 100644
+--- a/drivers/staging/sbe-2t3e3/module.c
++++ b/drivers/staging/sbe-2t3e3/module.c
+@@ -66,6 +66,7 @@ static int __devinit t3e3_init_channel(struct channel *channel, struct pci_dev *
+ 
+ 	dev = alloc_hdlcdev(channel);
+ 	if (!dev) {
++		err = -ENOMEM;
+ 		printk(KERN_ERR "SBE 2T3E3" ": Out of memory\n");
+ 		goto free_regions;
+ 	}
+@@ -82,7 +83,8 @@ static int __devinit t3e3_init_channel(struct channel *channel, struct pci_dev *
+ 	else
+ 		channel->h.slot = 0;
+ 
+-	if (setup_device(dev, channel))
++	err = setup_device(dev, channel);
++	if (err)
+ 		goto free_regions;
+ 
+ 	pci_read_config_dword(channel->pdev, 0x40, &val); /* mask sleep mode */
+@@ -92,7 +94,8 @@ static int __devinit t3e3_init_channel(struct channel *channel, struct pci_dev *
+ 	pci_read_config_dword(channel->pdev, PCI_COMMAND, &channel->h.command);
+ 	t3e3_init(channel);
+ 
+-	if (request_irq(dev->irq, &t3e3_intr, IRQF_SHARED, dev->name, dev)) {
++	err = request_irq(dev->irq, &t3e3_intr, IRQF_SHARED, dev->name, dev);
++	if (err) {
+ 		printk(KERN_WARNING "%s: could not get irq: %d\n", dev->name, dev->irq);
+ 		goto free_regions;
+ 	}
+-- 
+1.7.0.4
+
