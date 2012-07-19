@@ -1,85 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752917Ab2GSMM2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 08:12:28 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:37617 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751810Ab2GSMMZ (ORCPT
+	id S1753081Ab2GSMQf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 08:16:35 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:33217 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751813Ab2GSMQd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 08:12:25 -0400
+	Thu, 19 Jul 2012 08:16:33 -0400
 MIME-Version: 1.0
-In-Reply-To: <76F764B079F92A4E843589C893D0A022C3811BFD@SERVER.prisktech.co.nz>
-References: <76F764B079F92A4E843589C893D0A022C380F1D4@SERVER.prisktech.co.nz>
-	<CABjd4Yyk6XR6RizgcpjCdi2N_+Z2EzTtezbkN9V7r4bAXXjhqA@mail.gmail.com>
-	<76F764B079F92A4E843589C893D0A022C381059B@SERVER.prisktech.co.nz>
-	<201207191116.27273.arnd@arndb.de>
-	<76F764B079F92A4E843589C893D0A022C3811BFD@SERVER.prisktech.co.nz>
-Date: Thu, 19 Jul 2012 14:12:23 +0200
-Message-ID: <CABjd4YyV6mrdRBXyixz_+ZDi1szNPJMSUNuT80FPySp+43FrTA@mail.gmail.com>
-Subject: Re: [PATCH 1/1] Add Wondermedia Technologies (wmt) to docs/devicetree/vendor-bindings.txt
-From: Alexey Charkov <alchark@gmail.com>
-To: Tony Prisk <linux@prisktech.co.nz>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        "vt8500-wm8505-linux-kernel@googlegroups.com" 
-	<vt8500-wm8505-linux-kernel@googlegroups.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <CAKVbJB8PGZqOUOjDk-2uckx4MUkgKEb-EZ_TYt6C5fGjP2k85g@mail.gmail.com>
+References: <1342189698-20393-1-git-send-email-vinholikatti@gmail.com>
+	<1342189698-20393-2-git-send-email-vinholikatti@gmail.com>
+	<CAKYAXd9cPuN-HfifDmz4M==QfjEW7CX6BF=rumSBSwRtO38_PQ@mail.gmail.com>
+	<CAKVbJB8PGZqOUOjDk-2uckx4MUkgKEb-EZ_TYt6C5fGjP2k85g@mail.gmail.com>
+Date: Thu, 19 Jul 2012 21:16:32 +0900
+Message-ID: <CAKYAXd92fTRPpHHeNkH1bSZD1hAaU-Xm8wxjCUMHO21wX21vQA@mail.gmail.com>
+Subject: Re: [PATCH V2 3/4] [SCSI] ufs: Add Platform glue driver for ufshcd
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: vinayak holikatti <vinholikatti@gmail.com>
+Cc: James.Bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, patches@linaro.org,
+        linux-samsung-soc@vger.kernel.org, santoshsy@gmail.com,
+        arnd@linaro.org, girish.shivananjappa@linaro.org,
+        saugata.das@linaro.org, vishak.g@samsung.com, venkat@linaro.org,
+        k.rajesh@samsung.com, dsaxena@linaro.org, ilho215.lee@samsung.com,
+        nala.la@samsung.com, sreekumar.c@samsung.com
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/7/19 Tony Prisk <linux@prisktech.co.nz>:
-> From: Arnd Bergmann [arnd@arndb.de]
-> Sent: 19 July 2012 23:16
-> To: vt8500-wm8505-linux-kernel@googlegroups.com
-> Cc: Tony Prisk; Alexey Charkov; devicetree-discuss@lists.ozlabs.org; Russell King; linux-kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org
-> Subject: Re: [PATCH 1/1] Add Wondermedia Technologies (wmt) to docs/devicetree/vendor-bindings.txt
->
-> On Thursday 19 July 2012, Tony Prisk wrote:
->> Given that there have been no replies to this thread, and the restart patch has
->> now been accepted using 'wmt' as the vendor namespace - would it be safe to
->> assume we should formalize this in the vendor-bindings.txt?
->>
->> I'd like to try and have basic device tree support added for the next merge
->> window (or this one if it all goes well :) ), but it relies on the vendor binding being
->> formalized.
->
-> What about devices that come from via though? Anything that first showed up
-> in vt8500 or earlier should probably get a prefix identifying VIA rather
-> than WonderMedia.
->
->         Arnd
->
->
-> I have no issue with that.
->
-> I am mainly concerned with the Wondermedia products at the moment.
->
-> Adding device tree support for WM8505 (and WM8650) is my main goal as the WM8650
-> currently isn't supported and trying to get another board file added seems unlikely with
-> everything moving to device tree. The VT8500 requires additional/different patches and
-> as I don't have a vt8500 I can't test them.
+2012/7/17 vinayak holikatti <vinholikatti@gmail.com>:
+> On Mon, Jul 16, 2012 at 7:19 PM, Namjae Jeon <linkinjeon@gmail.com> wrote:
+>> Hi Vinayak.
+>>> + * ufshcd_pltfrm_remove - remove platform driver routine
+>>> + * @pdev: pointer to platform device handle
+>>> + *
+>>> + * Returns 0 on success, non-zero value on failure
+>>> + */
+>>> +static int __devexit ufshcd_pltfrm_remove(struct platform_device *pdev)
+>>> +{
+>>> +     struct resource *mem_res;
+>>> +     struct resource *irq_res;
+>>> +     resource_size_t mem_size;
+>>> +     struct ufs_hba *hba =  platform_get_drvdata(pdev);
+>>> +
+>>> +     ufshcd_remove(hba);
+>>> +     irq_res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+>>> +     if (!irq_res)
+>>> +             dev_err(&pdev->dev, "ufshcd: IRQ resource not available\n");
+>>> +     free_irq(irq_res->start, hba);
+>> Is there no possibility of null pointer dereferencing error ?(irq_res->start)
+>> I think that free_irq should be not called if irq_res is NULL.
+> I agree, I have overlooked at this logic, the free_irq should have
+> been in the else
+> part of this section. I will make the modification in the next version
+> of patches.
+Okay.
+You can add my
+Reviewed-by: Namjae Jeon <linkinjeon@gmail.com>
+in these patchset
 
-I believe that Arnd's point was about the hardware that WonderMedia
-chips have inherited from their VIA ancestors, like NAND, SD/MMC,
-graphics engine, USB EHCI glue, PWM, PS/2 controller, parts of PMC
-etc. Those would be more appropriately named with something
-VIA-specific rather than WMT as the vendor prefix (this would apply
-for the PWM and the raster engine, which are unchanged between VT8500
-and WM8505, to my knowledge).
-
-On the other hand, all of these parts might well be some kind of
-licensed third-party design anyway, which makes this whole VIA vs. WMT
-a bikeshed discussion mostly. I would personally not feel too guilty
-about calling some device that first appeared in a VT8xxx chip 'wmt'
-until there's technical reason for different 'compatible' strings
-matching different chip versions (VIA age vs. WMT age). So far, we
-don't have that need.
-
-Best,
-Alexey
+Thanks.
+>>> +     mem_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>> Looks mem_res is also same with upper case.
+>> Thanks.
+>>> +     mem_size = resource_size(mem_res);
+>>> +     release_mem_region(mem_res->start, mem_size);
+>>> +     platform_set_drvdata(pdev, NULL);
+>>> +     return 0;
+>>> +}
+>>> +
