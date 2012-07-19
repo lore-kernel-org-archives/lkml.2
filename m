@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755786Ab2GSCDh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 22:03:37 -0400
-Received: from mail127.messagelabs.com ([216.82.250.115]:9314 "EHLO
-	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753243Ab2GSCDc (ORCPT
+	id S1756115Ab2GSCD6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 22:03:58 -0400
+Received: from mail132.messagelabs.com ([216.82.242.115]:16182 "EHLO
+	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751566Ab2GSCDy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 22:03:32 -0400
+	Wed, 18 Jul 2012 22:03:54 -0400
 X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-9.tower-127.messagelabs.com!1342663409!9010027!4
-X-Originating-IP: [216.166.12.69]
+X-Msg-Ref: server-13.tower-132.messagelabs.com!1342663432!13776924!2
+X-Originating-IP: [216.166.12.72]
 X-StarScan-Version: 6.5.10; banners=-,-,-
 X-VirusChecked: Checked
 From: H Hartley Sweeten <hartleys@visionengravers.com>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 82/90] staging: comedi: me_daq: factor out the "find pci device" code
-Date: Wed, 18 Jul 2012 19:03:25 -0700
+Subject: [PATCH 83/90] staging: comedi: me_daq: cleanup "find pci device" code
+Date: Wed, 18 Jul 2012 19:03:43 -0700
 User-Agent: KMail/1.9.9
 CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
         <gregkh@linuxfoundation.org>
@@ -23,101 +23,107 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Message-ID: <201207181903.25999.hartleys@visionengravers.com>
+Message-ID: <201207181903.43415.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Factor the "find pci device" code out of the attach function.
+Cleanup the "find pci device" code so that it follows the style
+of the other comedi pci drivers.
 
 Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 Cc: Ian Abbott <abbotti@mev.co.uk>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/staging/comedi/drivers/me_daq.c | 49 ++++++++++++++++++++-------------
- 1 file changed, 30 insertions(+), 19 deletions(-)
+ drivers/staging/comedi/drivers/me_daq.c | 63 ++++++++++++---------------------
+ 1 file changed, 23 insertions(+), 40 deletions(-)
 
 diff --git a/drivers/staging/comedi/drivers/me_daq.c b/drivers/staging/comedi/drivers/me_daq.c
-index 1803d66..dc0fbbd 100644
+index dc0fbbd..cd66af9 100644
 --- a/drivers/staging/comedi/drivers/me_daq.c
 +++ b/drivers/staging/comedi/drivers/me_daq.c
-@@ -610,23 +610,11 @@ static int me_reset(struct comedi_device *dev)
- 	return 0;
+@@ -231,8 +231,6 @@ static const struct me_board me_boards[] = {
+ 	 }
+ };
+ 
+-#define me_board_nbr (sizeof(me_boards)/sizeof(struct me_board))
+-
+ /* Private data structure */
+ struct me_private_data {
+ 	struct pci_dev *pci_device;
+@@ -613,49 +611,34 @@ static int me_reset(struct comedi_device *dev)
+ static struct pci_dev *me_find_pci_dev(struct comedi_device *dev,
+ 				       struct comedi_devconfig *it)
+ {
+-	struct pci_dev *pci_device = NULL;
++	const struct me_board *board;
++	struct pci_dev *pcidev = NULL;
++	int bus = it->options[0];
++	int slot = it->options[1];
+ 	int i;
+ 
+-	/* Probe the device to determine what device in the series it is. */
+-	for_each_pci_dev(pci_device) {
+-		if (pci_device->vendor == PCI_VENDOR_ID_MEILHAUS) {
+-			for (i = 0; i < me_board_nbr; i++) {
+-				if (me_boards[i].device_id ==
+-				    pci_device->device) {
+-					/*
+-					 * was a particular bus/slot requested?
+-					 */
+-					if ((it->options[0] != 0)
+-					    || (it->options[1] != 0)) {
+-						/*
+-						 * are we on the wrong bus/slot?
+-						 */
+-						if (pci_device->bus->number !=
+-						    it->options[0]
+-						    ||
+-						    PCI_SLOT(pci_device->devfn)
+-						    != it->options[1]) {
+-							continue;
+-						}
+-					}
+-
+-					dev->board_ptr = me_boards + i;
+-					goto found;
+-				}
+-			}
++	for_each_pci_dev(pcidev) {
++		if (bus || slot) {
++			if (pcidev->bus->number != bus ||
++			    PCI_SLOT(pcidev->devfn) != slot)
++				continue;
+ 		}
+-	}
++		if (pcidev->vendor != PCI_VENDOR_ID_MEILHAUS)
++			continue;
+ 
+-	printk(KERN_ERR
+-	       "comedi%d: no supported board found! (req. bus/slot : %d/%d)\n",
+-	       dev->minor, it->options[0], it->options[1]);
+-	return NULL;
++		for (i = 0; i < ARRAY_SIZE(me_boards); i++) {
++			board = &me_boards[i];
++			if (board->device_id != pcidev->device)
++				continue;
+ 
+-found:
+-	printk(KERN_INFO "comedi%d: found %s at PCI bus %d, slot %d\n",
+-	       dev->minor, me_boards[i].name,
+-	       pci_device->bus->number, PCI_SLOT(pci_device->devfn));
+-	return pci_device;
++			dev->board_ptr = board;
++			return pcidev;
++		}
++	}
++	dev_err(dev->class_dev,
++		"No supported board found! (req. bus %d, slot %d)\n",
++		bus, slot);
++	return NULL;
  }
  
--static int me_attach(struct comedi_device *dev, struct comedi_devconfig *it)
-+static struct pci_dev *me_find_pci_dev(struct comedi_device *dev,
-+				       struct comedi_devconfig *it)
- {
- 	struct pci_dev *pci_device = NULL;
--	struct comedi_subdevice *subdevice;
--	struct me_board *board;
--	resource_size_t plx_regbase_tmp;
--	unsigned long plx_regbase_size_tmp;
--	resource_size_t me_regbase_tmp;
--	unsigned long me_regbase_size_tmp;
--	resource_size_t swap_regbase_tmp;
--	unsigned long swap_regbase_size_tmp;
--	resource_size_t regbase_tmp;
--	int result, error, i;
--
--	/* Allocate private memory */
--	if (alloc_private(dev, sizeof(struct me_private_data)) < 0)
--		return -ENOMEM;
-+	int i;
- 
- 	/* Probe the device to determine what device in the series it is. */
- 	for_each_pci_dev(pci_device) {
-@@ -652,9 +640,6 @@ static int me_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 					}
- 
- 					dev->board_ptr = me_boards + i;
--					board =
--					    (struct me_board *)dev->board_ptr;
--					dev_private->pci_device = pci_device;
- 					goto found;
- 				}
- 			}
-@@ -664,12 +649,38 @@ static int me_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	printk(KERN_ERR
- 	       "comedi%d: no supported board found! (req. bus/slot : %d/%d)\n",
- 	       dev->minor, it->options[0], it->options[1]);
--	return -EIO;
-+	return NULL;
- 
- found:
- 	printk(KERN_INFO "comedi%d: found %s at PCI bus %d, slot %d\n",
- 	       dev->minor, me_boards[i].name,
- 	       pci_device->bus->number, PCI_SLOT(pci_device->devfn));
-+	return pci_device;
-+}
-+
-+static int me_attach(struct comedi_device *dev, struct comedi_devconfig *it)
-+{
-+	struct pci_dev *pci_device;
-+	struct comedi_subdevice *subdevice;
-+	struct me_board *board;
-+	resource_size_t plx_regbase_tmp;
-+	unsigned long plx_regbase_size_tmp;
-+	resource_size_t me_regbase_tmp;
-+	unsigned long me_regbase_size_tmp;
-+	resource_size_t swap_regbase_tmp;
-+	unsigned long swap_regbase_size_tmp;
-+	resource_size_t regbase_tmp;
-+	int result, error;
-+
-+	/* Allocate private memory */
-+	if (alloc_private(dev, sizeof(struct me_private_data)) < 0)
-+		return -ENOMEM;
-+
-+	pci_device = me_find_pci_dev(dev, it);
-+	if (!pci_device)
-+		return -EIO;
-+	dev_private->pci_device = pci_device;
-+	board = (struct me_board *)dev->board_ptr;
- 
- 	/* Enable PCI device and request PCI regions */
- 	if (comedi_pci_enable(pci_device, ME_DRIVER_NAME) < 0) {
+ static int me_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 -- 
 1.7.11
 
