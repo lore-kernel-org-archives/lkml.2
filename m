@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754343Ab2GSBaG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 21:30:06 -0400
-Received: from mail160.messagelabs.com ([216.82.253.99]:5172 "EHLO
-	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751791Ab2GSBaB (ORCPT
+	id S1754866Ab2GSBa1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 21:30:27 -0400
+Received: from mail131.messagelabs.com ([216.82.242.99]:26667 "EHLO
+	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752007Ab2GSBaX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 21:30:01 -0400
+	Wed, 18 Jul 2012 21:30:23 -0400
 X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-9.tower-160.messagelabs.com!1342661400!10003346!2
-X-Originating-IP: [216.166.12.98]
+X-Msg-Ref: server-8.tower-131.messagelabs.com!1342661421!7942780!2
+X-Originating-IP: [216.166.12.180]
 X-StarScan-Version: 6.5.10; banners=-,-,-
 X-VirusChecked: Checked
 From: H Hartley Sweeten <hartleys@visionengravers.com>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 13/90] staging: comedi: adv_pci1723: factor out the "find pci device" code
-Date: Wed, 18 Jul 2012 18:29:54 -0700
+Subject: [PATCH 14/90] staging: comedi: adv_pci1723: cleanup "find pci device" code
+Date: Wed, 18 Jul 2012 18:30:15 -0700
 User-Agent: KMail/1.9.9
 CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
         <gregkh@linuxfoundation.org>
@@ -23,99 +23,104 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Message-ID: <201207181829.54661.hartleys@visionengravers.com>
+Message-ID: <201207181830.15424.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Factor the "find pci device" code out of the attach function.
+Use for_each_pci_dev() instead of open-coding the loop using
+pci_get_device().
+
+Drop the printk error messages. They just add noise.
 
 Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 Cc: Ian Abbott <abbotti@mev.co.uk>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/staging/comedi/drivers/adv_pci1723.c | 42 +++++++++++++++++-----------
- 1 file changed, 26 insertions(+), 16 deletions(-)
+ drivers/staging/comedi/drivers/adv_pci1723.c | 63 ++++++++--------------------
+ 1 file changed, 17 insertions(+), 46 deletions(-)
 
 diff --git a/drivers/staging/comedi/drivers/adv_pci1723.c b/drivers/staging/comedi/drivers/adv_pci1723.c
-index 5c99c74..4803a8c 100644
+index 4803a8c..f561a2a 100644
 --- a/drivers/staging/comedi/drivers/adv_pci1723.c
 +++ b/drivers/staging/comedi/drivers/adv_pci1723.c
-@@ -287,29 +287,18 @@ static int pci1723_dio_insn_bits(struct comedi_device *dev,
- 	return insn->n;
- }
- 
--static int pci1723_attach(struct comedi_device *dev,
--			  struct comedi_devconfig *it)
-+static struct pci_dev *pci1723_find_pci_dev(struct comedi_device *dev,
-+					    struct comedi_devconfig *it)
+@@ -290,59 +290,30 @@ static int pci1723_dio_insn_bits(struct comedi_device *dev,
+ static struct pci_dev *pci1723_find_pci_dev(struct comedi_device *dev,
+ 					    struct comedi_devconfig *it)
  {
--	struct comedi_subdevice *s;
--	int ret, subdev, n_subdevices;
- 	struct pci_dev *pcidev;
- 	unsigned int iobase;
- 	unsigned char pci_bus, pci_slot, pci_func;
- 	int opt_bus, opt_slot;
- 	const char *errstr;
- 
--	printk(KERN_ERR "comedi%d: adv_pci1723: board=%s",
--						dev->minor, this_board->name);
+-	struct pci_dev *pcidev;
+-	unsigned int iobase;
+-	unsigned char pci_bus, pci_slot, pci_func;
+-	int opt_bus, opt_slot;
+-	const char *errstr;
 -
- 	opt_bus = it->options[0];
- 	opt_slot = it->options[1];
- 
--	ret = alloc_private(dev, sizeof(struct pci1723_private));
--	if (ret < 0) {
--		printk(" - Allocation failed!\n");
--		return -ENOMEM;
+-	opt_bus = it->options[0];
+-	opt_slot = it->options[1];
+-
+-	/* Look for matching PCI device */
+-	errstr = "not found!";
+-	pcidev = NULL;
+-	while (NULL != (pcidev =
+-			pci_get_device(PCI_VENDOR_ID_ADVANTECH,
+-				       this_board->device_id, pcidev))) {
+-		/* Found matching vendor/device. */
+-		if (opt_bus || opt_slot) {
+-			/* Check bus/slot. */
+-			if (opt_bus != pcidev->bus->number
+-			    || opt_slot != PCI_SLOT(pcidev->devfn))
+-				continue;	/* no match */
++	struct pci_dev *pcidev = NULL;
++	int bus = it->options[0];
++	int slot = it->options[1];
++
++	for_each_pci_dev(pcidev) {
++		if (bus || slot) {
++			if (bus != pcidev->bus->number ||
++			    slot != PCI_SLOT(pcidev->devfn))
++				continue;
+ 		}
++		if (pcidev->vendor != PCI_VENDOR_ID_ADVANTECH)
++			continue;
+ 		/*
+ 		 * Look for device that isn't in use.
+ 		 * Enable PCI device and request regions.
+ 		 */
+-		if (comedi_pci_enable(pcidev, "adv_pci1723")) {
+-			errstr =
+-			    "failed to enable PCI device and request regions!";
++		if (comedi_pci_enable(pcidev, "adv_pci1723"))
+ 			continue;
+-		}
+-		break;
 -	}
 -
- 	/* Look for matching PCI device */
- 	errstr = "not found!";
- 	pcidev = NULL;
-@@ -342,7 +331,7 @@ static int pci1723_attach(struct comedi_device *dev,
- 		} else {
- 			printk(KERN_ERR " - Card %s\n", errstr);
- 		}
--		return -EIO;
-+		return NULL;
+-	if (!pcidev) {
+-		if (opt_bus || opt_slot) {
+-			printk(KERN_ERR " - Card at b:s %d:%d %s\n",
+-						     opt_bus, opt_slot, errstr);
+-		} else {
+-			printk(KERN_ERR " - Card %s\n", errstr);
+-		}
+-		return NULL;
++		return pcidev;
  	}
+-
+-	pci_bus = pcidev->bus->number;
+-	pci_slot = PCI_SLOT(pcidev->devfn);
+-	pci_func = PCI_FUNC(pcidev->devfn);
+-	iobase = pci_resource_start(pcidev, 2);
+-
+-	printk(KERN_ERR ", b:s:f=%d:%d:%d, io=0x%4x",
+-					   pci_bus, pci_slot, pci_func, iobase);
+-
+-	return pcidev;
++	dev_err(dev->class_dev,
++		"No supported board found! (req. bus %d, slot %d)\n",
++		bus, slot);
++	return NULL;
+ }
  
- 	pci_bus = pcidev->bus->number;
-@@ -353,10 +342,31 @@ static int pci1723_attach(struct comedi_device *dev,
- 	printk(KERN_ERR ", b:s:f=%d:%d:%d, io=0x%4x",
- 					   pci_bus, pci_slot, pci_func, iobase);
- 
--	dev->iobase = iobase;
-+	return pcidev;
-+}
-+
-+static int pci1723_attach(struct comedi_device *dev,
-+			  struct comedi_devconfig *it)
-+{
-+	struct comedi_subdevice *s;
-+	int ret, subdev, n_subdevices;
-+
-+	printk(KERN_ERR "comedi%d: adv_pci1723: board=%s",
-+						dev->minor, this_board->name);
-+
-+	ret = alloc_private(dev, sizeof(struct pci1723_private));
-+	if (ret < 0) {
-+		printk(" - Allocation failed!\n");
-+		return -ENOMEM;
-+	}
-+
-+	devpriv->pcidev = pci1723_find_pci_dev(dev, it);
-+	if (!devpriv->pcidev)
-+		return -EIO;
-+
-+	dev->iobase = pci_resource_start(devpriv->pcidev, 2);
- 
- 	dev->board_name = this_board->name;
--	devpriv->pcidev = pcidev;
- 
- 	n_subdevices = 0;
- 
+ static int pci1723_attach(struct comedi_device *dev,
 -- 
 1.7.11
 
