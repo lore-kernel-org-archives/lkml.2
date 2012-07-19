@@ -1,73 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752486Ab2GSR1y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 13:27:54 -0400
-Received: from mail127.messagelabs.com ([216.82.250.115]:64382 "EHLO
-	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751281Ab2GSR1w convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 13:27:52 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-6.tower-127.messagelabs.com!1342718866!9071887!14
-X-Originating-IP: [216.166.12.99]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: Ian Abbott <abbotti@mev.co.uk>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        Ian Abbott <ian.abbott@mev.co.uk>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Date: Thu, 19 Jul 2012 12:27:45 -0500
-Subject: RE: [PATCH 01/90] staging: comedi: comedidev.h: introduce
- comedi_to_pci_dev() helper
-Thread-Topic: [PATCH 01/90] staging: comedi: comedidev.h: introduce
- comedi_to_pci_dev() helper
-Thread-Index: Ac1lzBo1zFeYA3LbRZeRlZvcN4fDYgAB3yZg
-Message-ID: <ADE657CA350FB648AAC2C43247A983F00206AA916486@AUSP01VMBX24.collaborationhost.net>
-References: <201207181824.15722.hartleys@visionengravers.com>
- <5007D1E0.4050503@mev.co.uk>
- <ADE657CA350FB648AAC2C43247A983F00206AA91644B@AUSP01VMBX24.collaborationhost.net>
- <20120719163211.GD16291@mwanda>
-In-Reply-To: <20120719163211.GD16291@mwanda>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1752408Ab2GSR3n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 13:29:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46681 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751281Ab2GSR3l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 13:29:41 -0400
+Message-ID: <1342718978.3142.26.camel@ul30vt>
+Subject: Re: [PATCH v5 0/4] kvm: level irqfd and new eoifd
+From: Alex Williamson <alex.williamson@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
+Date: Thu, 19 Jul 2012 11:29:38 -0600
+In-Reply-To: <20120719165944.GB17213@redhat.com>
+References: <20120716202711.1752.71007.stgit@bling.home>
+	 <20120719165944.GB17213@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, July 19, 2012 9:32 AM, Dan Carpenter wrote:
-> On Thu, Jul 19, 2012 at 11:20:52AM -0500, H Hartley Sweeten wrote:
->> On Thursday, July 19, 2012 2:23 AM, Ian Abbott wrote:
->>> That needs to be something like:
->>>
->>>	return dev->hw_dev ? to_pci_dev(dev->hw_dev) : NULL;
->> 
->> Hmm.. I'm not really sure.
->> 
->> I assumed that the container_of() macro would return NULL if the ptr passed to
->> it was NULL. But, I'm not sure how this actually unwinds for that case.
->> 
->> Greg, do you know if the NULL check is needed? It's is possible that the dev->hw_dev
->> pointer could be NULL.
->> 
->
-> container_of() just does pointer math with the offset.  Since
-> ->hw_dev is not the first member of the pci_dev struct then
-> to_pci_dev() never returns NULL.  If you give it a NULL pointer it
-> returns a bogus pointer back.
+On Thu, 2012-07-19 at 19:59 +0300, Michael S. Tsirkin wrote:
+> On Mon, Jul 16, 2012 at 02:33:38PM -0600, Alex Williamson wrote:
+> > v5:
+> >  - irqfds now have a one-to-one mapping with eoifds to prevent users
+> >    from consuming all of kernel memory by repeatedly creating eoifds
+> >    from a single irqfd.
+> >  - implement a kvm_clear_irq() which does a test_and_clear_bit of
+> >    the irq_state, only updating the pic/ioapic if changes and allowing
+> >    the caller to know if anything was done.  I added this onto the end
+> >    as it's essentially an optimization on the previous design.  It's
+> >    hard to tell if there's an actual performance benefit to this.
+> >  - dropped eoifd gsi support patch as it was only an FYI.
+> > 
+> > Thanks,
+> > 
+> > Alex
+> 
+> 
+> So 3/4, 4/4 are racy and I think you convinced me it's best to drop it for
+> now. I hope that fact that we already scan all vcpus under spinlock for
+> level interrupts is enough to justify adding a lock here.
+> 
+> To summarize issues still outstanding with 1/2, 2/2:
+(a)
+> - source id lingering after irqfd was destroyed/deassigned
+>   prevents assigning a new irqfd
+(b)
+> - if same irqfd is deassigned and re-assigned, this
+>   seems to succeed but does not give any more EOIs
+(c)
+> - document that user needs to re-inject interrupts
+>   injected by level IRQFD after migration as they are cleared
+> 
+> Hope this helps!
 
-Thanks for the information.
+Thanks, I'm refining and testing a re-write.  One thing I also noticed
+is that we don't do anything when the eoifd is closed.  We'll cleanup
+when kvm is closed, but that can leave a lot of stray eoifds, and
+therefore used irq_source_ids tied up.  So, I think I need to pull in a
+lot of the irqfd code just to be able to catch the POLLHUP and do
+cleanup.  Fixing (a) is a simple flush, so I already added that.  To
+solve (b), I think that saving the irqfd eventfd ctx was a bad idea.
+The new api I will propose to solve it is that kvm_irqfd returns a token
+(or key) when used as a level irqfd (actually the irq source id, but the
+user shouldn't care what it is).  We pass that into eoifd instead of the
+irqfd.  That means that if the irqfd is closed and re-configured, the
+user will get a new key and should have no expectation that it's tied to
+the previous eoifd.  I'll add a comment for (c).  Thanks,
 
-I'll update PATCH 01/90 and repost it as v2.
-
-Thanks,
-Hartley
+Alex
 
