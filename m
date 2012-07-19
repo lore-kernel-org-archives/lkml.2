@@ -1,115 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756113Ab2GSCMj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 22:12:39 -0400
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:37325
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752934Ab2GSCMf convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 22:12:35 -0400
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC104.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-X-SpamScore: -9
-X-BigFish: VS-9(zzbb2dI9371I148cI542M1432Izz1202hzz8275dhz2fh2a8h683h839h944hd25hf0ah107ah)
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT002.namprd03.prod.outlook.com;R:internal;EFV:INT
-From: KY Srinivasan <kys@microsoft.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-CC: "Greg KH (gregkh@linuxfoundation.org)" <gregkh@linuxfoundation.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: RE: 0xB16B00B5? Really? (was Re: Move hyperv out of the
- drivers/staging/ directory)
-Thread-Topic: 0xB16B00B5? Really? (was Re: Move hyperv out of the
- drivers/staging/ directory)
-Thread-Index: AQHNYOGVQIU8WaEGMU+rzjsXSQqoHZcv427w
-Date: Thu, 19 Jul 2012 02:11:47 +0000
-Message-ID: <426367E2313C2449837CD2DE46E7EAF923547292@SN2PRD0310MB382.namprd03.prod.outlook.com>
-References: <1316708240-25048-1-git-send-email-kys@microsoft.com>
- <20110922170450.GA4490@suse.de>
- <6E21E5352C11B742B20C142EB499E048081E935D@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <20110922173618.GA5624@suse.de>
- <6E21E5352C11B742B20C142EB499E048081EB789@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <20111004170415.GA1320@suse.de>
- <6E21E5352C11B742B20C142EB499E048081EB86F@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <20111004193414.GA15672@suse.de> <4FFFF711.8040003@redhat.com>
-In-Reply-To: <4FFFF711.8040003@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [108.24.39.100]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755748Ab2GSCUS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 22:20:18 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:57045 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751368Ab2GSCUP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 22:20:15 -0400
+X-AuditID: b753bd60-9f483ba000000655-99-50076edc1585
+X-AuditID: b753bd60-9f483ba000000655-99-50076edc1585
+Message-ID: <50076ED9.3000100@hitachi.com>
+Date: Thu, 19 Jul 2012 11:20:09 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PRD0310HT002.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LISTS.OSDL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14MLTC104.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14MLTC104.redmond.corp.microsoft.com
-X-OriginatorOrg: microsoft.com
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, yrl.pp-manager.tt@hitachi.com
+Subject: Re: Re: [RFC][PATCH 2/4 v4] ftrace/x86: Add save_regs for i386
+ function calls
+References: <20120711195048.885039013@goodmis.org>  <20120711195745.379060003@goodmis.org> <4FFEC58E.5070202@hitachi.com>  <1342205273.30075.19.camel@gandalf.stny.rr.com> <1342627145.11900.7.camel@gandalf.stny.rr.com>
+In-Reply-To: <1342627145.11900.7.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Paolo Bonzini [mailto:paolo.bonzini@gmail.com] On Behalf Of Paolo
-> Bonzini
-> Sent: Friday, July 13, 2012 6:23 AM
-> To: KY Srinivasan
-> Cc: Greg KH; devel@linuxdriverproject.org; linux-kernel@vger.kernel.org;
-> virtualization@lists.osdl.org
-> Subject: 0xB16B00B5? Really? (was Re: Move hyperv out of the drivers/staging/
-> directory)
+(2012/07/19 0:59), Steven Rostedt wrote:
+> On Fri, 2012-07-13 at 14:47 -0400, Steven Rostedt wrote:
 > 
-> Il 04/10/2011 21:34, Greg KH ha scritto:
-> > diff --git a/drivers/staging/hv/hyperv_vmbus.h b/drivers/hv/hyperv_vmbus.h
-> > similarity index 99%
-> > rename from drivers/staging/hv/hyperv_vmbus.h
-> > rename to drivers/hv/hyperv_vmbus.h
-> > index 3d2d836..8261cb6 100644
-> > --- a/drivers/staging/hv/hyperv_vmbus.h
-> > +++ b/drivers/hv/hyperv_vmbus.h
-> > @@ -28,8 +28,7 @@
-> >  #include <linux/list.h>
-> >  #include <asm/sync_bitops.h>
-> >  #include <linux/atomic.h>
-> > -
-> > -#include "hyperv.h"
-> > +#include <linux/hyperv.h>
-> >
-> >  /*
-> >   * The below CPUID leaves are present if
-> VersionAndFeatures.HypervisorPresent
+> Masami, can you give your Reviewed-by tag for this version? Or is there
+> something else needing to be fixed?
+
+No, that is OK for me. I've just missed that...
+
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+
+Thank you!
+
 > 
-> git's rename detection snips away this gem:
+> Thanks!
 > 
-> +#define HV_LINUX_GUEST_ID_LO		0x00000000
-> +#define HV_LINUX_GUEST_ID_HI		0xB16B00B5
-> +#define HV_LINUX_GUEST_ID		(((u64)HV_LINUX_GUEST_ID_HI
-> << 32) | \
-> +					   HV_LINUX_GUEST_ID_LO)
+> -- Steve
 > 
-> Somone was trying to be funny, I guess.
+>> From: Steven Rostedt <srostedt@redhat.com>
+>> Date: Tue, 5 Jun 2012 20:00:11 -0400
+>> Subject: [PATCH] ftrace/x86: Add save_regs for i386 function calls
+>>
+>> Add saving full regs for function tracing on i386.
+>> The saving of regs was influenced by patches sent out by
+>> Masami Hiramatsu.
+>>
+>> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+>> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+>> ---
+>>  arch/x86/include/asm/ftrace.h |    2 -
+>>  arch/x86/kernel/entry_32.S    |   68 +++++++++++++++++++++++++++++++++++++++++
+>>  arch/x86/kernel/ftrace.c      |    4 --
+>>  3 files changed, 68 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/arch/x86/include/asm/ftrace.h b/arch/x86/include/asm/ftrace.h
+>> index a847501..a6cae0c 100644
+>> --- a/arch/x86/include/asm/ftrace.h
+>> +++ b/arch/x86/include/asm/ftrace.h
+>> @@ -40,10 +40,8 @@
+>>  
+>>  #ifdef CONFIG_DYNAMIC_FTRACE
+>>  #define ARCH_SUPPORTS_FTRACE_OPS 1
+>> -#ifdef CONFIG_X86_64
+>>  #define ARCH_SUPPORTS_FTRACE_SAVE_REGS
+>>  #endif
+>> -#endif
+>>  
+>>  #ifndef __ASSEMBLY__
+>>  extern void mcount(void);
+>> diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+>> index 5da11d1..46caa56 100644
+>> --- a/arch/x86/kernel/entry_32.S
+>> +++ b/arch/x86/kernel/entry_32.S
+>> @@ -1123,6 +1123,7 @@ ftrace_call:
+>>  	popl %edx
+>>  	popl %ecx
+>>  	popl %eax
+>> +ftrace_ret:
+>>  #ifdef CONFIG_FUNCTION_GRAPH_TRACER
+>>  .globl ftrace_graph_call
+>>  ftrace_graph_call:
+>> @@ -1134,6 +1135,73 @@ ftrace_stub:
+>>  	ret
+>>  END(ftrace_caller)
+>>  
+>> +ENTRY(ftrace_regs_caller)
+>> +	pushf	/* push flags before compare (in cs location) */
+>> +	cmpl $0, function_trace_stop
+>> +	jne ftrace_restore_flags
+>> +
+>> +	/*
+>> +	 * i386 does not save SS and ESP when coming from kernel.
+>> +	 * Instead, to get sp, &regs->sp is used (see ptrace.h).
+>> +	 * Unfortunately, that means eflags must be at the same location
+>> +	 * as the current return ip is. We move the return ip into the
+>> +	 * ip location, and move flags into the return ip location.
+>> +	 */
+>> +	pushl 4(%esp)	/* save return ip into ip slot */
+>> +	subl $MCOUNT_INSN_SIZE, (%esp)	/* Adjust ip */
+>> +
+>> +	pushl $0	/* Load 0 into orig_ax */
+>> +	pushl %gs
+>> +	pushl %fs
+>> +	pushl %es
+>> +	pushl %ds
+>> +	pushl %eax
+>> +	pushl %ebp
+>> +	pushl %edi
+>> +	pushl %esi
+>> +	pushl %edx
+>> +	pushl %ecx
+>> +	pushl %ebx
+>> +
+>> +	movl 13*4(%esp), %eax	/* Get the saved flags */
+>> +	movl %eax, 14*4(%esp)	/* Move saved flags into regs->flags location */
+>> +				/* clobbering return ip */
+>> +	movl $__KERNEL_CS,13*4(%esp)
+>> +
+>> +	movl 12*4(%esp), %eax	/* Load ip (1st parameter) */
+>> +	movl 0x4(%ebp), %edx	/* Load parent ip (2cd parameter) */
+>> +	lea  (%esp), %ecx
+>> +	pushl %ecx		/* Save pt_regs as 4th parameter */
+>> +	leal function_trace_op, %ecx /* Save ftrace_pos in 3rd parameter */
+>> +
+>> +GLOBAL(ftrace_regs_call)
+>> +	call ftrace_stub
+>> +
+>> +	addl $4, %esp		/* Skip pt_regs */
+>> +	movl 14*4(%esp), %eax	/* Move flags back into cs */
+>> +	movl %eax, 13*4(%esp)	/* Needed to keep addl from modifying flags */
+>> +	movl 12*4(%esp), %eax	/* Get return ip from regs->ip */
+>> +	addl $MCOUNT_INSN_SIZE, %eax
+>> +	movl %eax, 14*4(%esp)	/* Put return ip back for ret */
+>> +
+>> +	popl %ebx
+>> +	popl %ecx
+>> +	popl %edx
+>> +	popl %esi
+>> +	popl %edi
+>> +	popl %ebp
+>> +	popl %eax
+>> +	popl %ds
+>> +	popl %es
+>> +	popl %fs
+>> +	popl %gs
+>> +	addl $8, %esp		/* Skip orig_ax and ip */
+>> +	popf			/* Pop flags at end (no addl to corrupt flags) */
+>> +	jmp ftrace_ret
+>> +
+>> +ftrace_restore_flags:
+>> +	popf
+>> +	jmp  ftrace_stub
+>>  #else /* ! CONFIG_DYNAMIC_FTRACE */
+>>  
+>>  ENTRY(mcount)
+>> diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
+>> index b90eb1a..1d41402 100644
+>> --- a/arch/x86/kernel/ftrace.c
+>> +++ b/arch/x86/kernel/ftrace.c
+>> @@ -206,7 +206,6 @@ static int
+>>  ftrace_modify_code(unsigned long ip, unsigned const char *old_code,
+>>  		   unsigned const char *new_code);
+>>  
+>> -#ifdef ARCH_SUPPORTS_FTRACE_SAVE_REGS
+>>  /*
+>>   * Should never be called:
+>>   *  As it is only called by __ftrace_replace_code() which is called by
+>> @@ -221,7 +220,6 @@ int ftrace_modify_call(struct dyn_ftrace *rec, unsigned long old_addr,
+>>  	WARN_ON(1);
+>>  	return -EINVAL;
+>>  }
+>> -#endif
+>>  
+>>  int ftrace_update_ftrace_func(ftrace_func_t func)
+>>  {
+>> @@ -237,7 +235,6 @@ int ftrace_update_ftrace_func(ftrace_func_t func)
+>>  
+>>  	ret = ftrace_modify_code(ip, old, new);
+>>  
+>> -#ifdef ARCH_SUPPORTS_FTRACE_SAVE_REGS
+>>  	/* Also update the regs callback function */
+>>  	if (!ret) {
+>>  		ip = (unsigned long)(&ftrace_regs_call);
+>> @@ -245,7 +242,6 @@ int ftrace_update_ftrace_func(ftrace_func_t func)
+>>  		new = ftrace_call_replace(ip, (unsigned long)func);
+>>  		ret = ftrace_modify_code(ip, old, new);
+>>  	}
+>> -#endif
+>>  
+>>  	atomic_dec(&modifying_ftrace_code);
+>>  
 > 
-> KY, I suppose you have access to Hyper-V code or can ask someone who does.
-> Is this signature actually used in the Hyper-V host code?
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-Paolo,
 
-As I noted earlier, this is just a guest ID that needs to be registered with the
-hypervisor.  Thanks  for reporting this issue and on behalf of Microsoft, I would
-like to  apologize for this offensive string. I have submitted a patch to fix this issue. 
-
-Regards,
-
-K. Y  
- 
-
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
 
