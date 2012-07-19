@@ -1,72 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751617Ab2GSND7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 09:03:59 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:39585 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750964Ab2GSND5 (ORCPT
+	id S1751738Ab2GSNFp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 09:05:45 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21143 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751114Ab2GSNFn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 09:03:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120719125038.GC16291@mwanda>
-References: <1342701001-5424-1-git-send-email-devendra.aaru@gmail.com>
-	<20120719125038.GC16291@mwanda>
-Date: Thu, 19 Jul 2012 18:33:56 +0530
-Message-ID: <CAHdPZaPJKrm2MUjfk7Eo+fXfF6JJT7w++DAkMOPirz9bzZHD6w@mail.gmail.com>
-Subject: Re: [PATCH] staging/sbe-2t3e3: error path cleanup in t3e3_init_channel
-From: "devendra.aaru" <devendra.aaru@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 19 Jul 2012 09:05:43 -0400
+X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=mMwgJEC8K9oA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=xiBM9GFvRCpO1eyLGvoA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-ID: <1342703141.12353.24.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH RT 00/12] [ANNOUNCE] 3.0.36-rt58-rc1 stable review
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mike Galbraith <efault@gmx.de>
+Cc: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Date: Thu, 19 Jul 2012 09:05:41 -0400
+In-Reply-To: <1342670426.7342.8.camel@marge.simpson.net>
+References: <20120718223910.898476857@goodmis.org>
+	 <1342670426.7342.8.camel@marge.simpson.net>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dan,
+On Thu, 2012-07-19 at 06:00 +0200, Mike Galbraith wrote:
+> On Wed, 2012-07-18 at 18:39 -0400, Steven Rostedt wrote:
+> 
+> > Please test the patches too.
+> 
+> Your hotplug stress test script made x3550 M3 box fall over.  It took a
+> bit, but down she went.  64 core test box fell over quickly, but that's
+> very far from virgin source.. seems to be the same though.
 
-On Thu, Jul 19, 2012 at 6:20 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> Cleanup means there are no behavior changes.  This is a bug fix.
->
-Thanks Dan, i will put a proper subject line in commit.
-> On Thu, Jul 19, 2012 at 06:00:01PM +0530, Devendra Naga wrote:
->>     a) if alloc_hdlcdev fails, we are going into the free_regions,
->> and returning out the err (which is 0 by the prev call),
->>        return -ENOMEM if this function fail.
->>
->>     b) setup_device also can fail, as it calls around the register_hdlc_dev which
->> is again a macro of the register_netdev.
->>
->>        take the error from the setup_device and return it out in error condition
->>
->>     c) request_irq when fails, we are freeing requested mem regions and disabling
->> the pci device(?) and returning err which is agian 0 here.
->>
->>       take the error from request_irq and err path will take care of returning it.
->>
->> as if we return 0 , at the init function, t3e3_init_card, we have a success case
->> and if there are two channels we call this function again, having the result of
->> it completely unknown.
->>
->> This result in having the probe return 0, unloading the driver may (not) cause
->> ambigous result.
->
-> These bugs were there before your patch, but we should also be doing
-> an unregister_hdlc_device() and a free_netdev().
->
-t3e3_remove_channel is called when channel init of channel2 fails, and
-i think this cause the double
-call to pci_release_region and pci_disable_device,
+Thanks for the report. I know a few areas in the hotplug code that can
+still deadlock (but are hard to hit). But there's no easy fix for them.
+Basically, the only thing we can do is redesign cpu hotplug (I think
+someone is already trying to do that ;-).
 
-so i think its better to follow your approach and remove the call to
-t3e3_remove_channel and clean all
-the things we allocated at the init path itself, rather cleaning them
-up when call and a subsequent call to the
-t3e3_init_channel fails?
+But these patches do fix the main issues of cpu hotplug (albeit, making
+the code even uglier).
 
-> regards,
-> dan carpenter
->
+The panic below isn't telling much. We really need to know what the
+other CPUs were up to. This call trace is just telling us that one of
+the CPUs is waiting for other CPUs to stop or to finish something up.
 
-Thanks,
-Devendra
+-- Steve
+
+
+> 
+> [  255.016043] CPU 1 MCA<0>Kernel panic - not syncing: Watchdog detected hard LOCKUP on cpu 7
+> Pid: 9914, comm: migration/7 Not tainted 3.0.36-rt57 #49
+> Call Trace:
+>  <NMI>  [<ffffffff814a0f7b>] panic+0x9b/0x1b0
+>  [<ffffffff810b0627>] watchdog_overflow_callback+0xd7/0xe0
+>  [<ffffffff810c3dad>] __perf_event_overflow+0x9d/0x240
+>  [<ffffffff810c066b>] ? perf_event_update_userpage+0x9b/0xe0
+>  [<ffffffff810c41a4>] perf_event_overflow+0x14/0x20
+>  [<ffffffff81015707>] intel_pmu_handle_irq+0x177/0x230
+>  [<ffffffff814a5549>] perf_event_nmi_handler+0x39/0xc0
+>  [<ffffffff814a727d>] notifier_call_chain+0x4d/0x70
+>  [<ffffffff814a72e3>] __atomic_notifier_call_chain+0x43/0x60
+>  [<ffffffff814a7311>] atomic_notifier_call_chain+0x11/0x20
+>  [<ffffffff814a734e>] notify_die+0x2e/0x30
+>  [<ffffffff814a4699>] default_do_nmi+0x39/0x200
+>  [<ffffffff814a4a48>] do_nmi+0x78/0x80
+>  [<ffffffff814a44d0>] nmi+0x20/0x30
+>  [<ffffffff810a461a>] ? stop_machine_cpu_stop+0x6a/0xe0
+>  <<EOE>>  [<ffffffff810a47f4>] cpu_stopper_thread+0xf4/0x1d0
+>  [<ffffffff810a45b0>] ? wait_for_stop_done+0xa0/0xa0
+>  [<ffffffff814a1397>] ? __schedule+0x2c7/0x630
+>  [<ffffffff810a4700>] ? cpu_stop_queue_work+0x70/0x70
+>  [<ffffffff810a4700>] ? cpu_stop_queue_work+0x70/0x70
+>  [<ffffffff810702c6>] kthread+0xa6/0xb0
+>  [<ffffffff81056328>] ? do_exit+0x278/0x450
+>  [<ffffffff810016b2>] ? __switch_to+0xf2/0x370
+>  [<ffffffff81040f15>] ? finish_task_switch+0x55/0xd0
+>  [<ffffffff814aa6e4>] kernel_thread_helper+0x4/0x10
+>  [<ffffffff81070220>] ? __init_kthread_worker+0x50/0x50
+>  [<ffffffff814aa6e0>] ? gs_change+0x13/0x13
+> 
+
+
