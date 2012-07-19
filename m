@@ -1,303 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756233Ab2GSF7z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 01:59:55 -0400
-Received: from mga11.intel.com ([192.55.52.93]:37058 "EHLO mga11.intel.com"
+	id S1753393Ab2GSGBW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 02:01:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45045 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752418Ab2GSF65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 01:58:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="194848146"
-From: Chen Gong <gong.chen@linux.intel.com>
-To: tglx@linutronix.de
-Cc: tony.luck@intel.com, bp@amd64.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Chen Gong <gong.chen@linux.intel.com>
-Subject: [PATCH 5/5] x86: mce: Add cmci poll mode
-Date: Thu, 19 Jul 2012 13:59:41 -0400
-Message-Id: <1342720781-4729-6-git-send-email-gong.chen@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1342720781-4729-1-git-send-email-gong.chen@linux.intel.com>
-References: <1342720781-4729-1-git-send-email-gong.chen@linux.intel.com>
+	id S1751910Ab2GSGBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 02:01:20 -0400
+Date: Thu, 19 Jul 2012 16:01:23 +1000
+From: NeilBrown <neilb@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Alexander Lyakas <alex.bolshoy@gmail.com>,
+        majianpeng <majianpeng@gmail.com>, Brian Downing <bdowning@lavos.net>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux RAID <linux-raid@vger.kernel.org>
+Subject: [PULL REQUEST] 3 more md bugfixes .. they just keep coming...
+Message-ID: <20120719160123.76076070@notabene.brown>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/s_I5gAXleNbgD++nNssl4_J"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When CMCI is too many to handle, it should be disabled
-to avoid hanging the whole system. In the meanwhile, CMCI poll
-timer can be employed to receive CMCI periodically. When no
-more CMCI happens CMCI handler can be switched from poll mode
-to interrupt mode again.
+--Sig_/s_I5gAXleNbgD++nNssl4_J
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-By now, every CPU core owns one poll timer, but in fact, maybe
-it should be enough that every package (or socket) owning one
-poll timer. It is because CMCI gets broadcast to all threads on
-the same socket. So if one cpu has a problem, all the cpus on
-the same socket have a problem.
 
-Signed-off-by: Chen Gong <gong.chen@linux.intel.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Tested-by: Chen Gong <gong.chen@linux.intel.com>
----
- arch/x86/kernel/cpu/mcheck/mce-internal.h |   12 ++++
- arch/x86/kernel/cpu/mcheck/mce.c          |   47 ++++++++++++--
- arch/x86/kernel/cpu/mcheck/mce_intel.c    |   99 ++++++++++++++++++++++++++++-
- 3 files changed, 151 insertions(+), 7 deletions(-)
+Thanks,
+NeilBrown
 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce-internal.h b/arch/x86/kernel/cpu/mcheck/mce-internal.h
-index ed44c8a..6a05c1d 100644
---- a/arch/x86/kernel/cpu/mcheck/mce-internal.h
-+++ b/arch/x86/kernel/cpu/mcheck/mce-internal.h
-@@ -28,6 +28,18 @@ extern int mce_ser;
- 
- extern struct mce_bank *mce_banks;
- 
-+#ifdef CONFIG_X86_MCE_INTEL
-+unsigned long mce_intel_adjust_timer(unsigned long interval);
-+void mce_intel_cmci_poll(void);
-+void mce_intel_hcpu_update(unsigned long cpu);
-+#else
-+# define mce_intel_adjust_timer mce_adjust_timer_default
-+static inline void mce_intel_cmci_poll(void) { }
-+static inline void mce_intel_hcpu_update(unsigned long cpu) { }
-+#endif
-+
-+void mce_timer_kick(unsigned long interval);
-+
- #ifdef CONFIG_ACPI_APEI
- int apei_write_mce(struct mce *m);
- ssize_t apei_read_mce(struct mce *m, u64 *record_id);
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index eff73e7..95738db0 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -1256,6 +1256,14 @@ static unsigned long check_interval = 5 * 60; /* 5 minutes */
- static DEFINE_PER_CPU(unsigned long, mce_next_interval); /* in jiffies */
- static DEFINE_PER_CPU(struct timer_list, mce_timer);
- 
-+static unsigned long mce_adjust_timer_default(unsigned long interval)
-+{
-+	return interval;
-+}
-+
-+static unsigned long (*mce_adjust_timer)(unsigned long interval) =
-+	mce_adjust_timer_default;
-+
- static void mce_timer_fn(unsigned long data)
- {
- 	struct timer_list *t = &__get_cpu_var(mce_timer);
-@@ -1266,6 +1274,7 @@ static void mce_timer_fn(unsigned long data)
- 	if (mce_available(__this_cpu_ptr(&cpu_info))) {
- 		machine_check_poll(MCP_TIMESTAMP,
- 				&__get_cpu_var(mce_poll_banks));
-+		mce_intel_cmci_poll();
- 	}
- 
- 	/*
-@@ -1273,14 +1282,38 @@ static void mce_timer_fn(unsigned long data)
- 	 * polling interval, otherwise increase the polling interval.
- 	 */
- 	iv = __this_cpu_read(mce_next_interval);
--	if (mce_notify_irq())
-+	if (mce_notify_irq()) {
- 		iv = max(iv / 2, (unsigned long) HZ/100);
--	else
-+	} else {
- 		iv = min(iv * 2, round_jiffies_relative(check_interval * HZ));
-+		iv = mce_adjust_timer(iv);
-+	}
- 	__this_cpu_write(mce_next_interval, iv);
-+	/* Might have become 0 after CMCI storm subsided */
-+	if (iv) {
-+		t->expires = jiffies + iv;
-+		add_timer_on(t, smp_processor_id());
-+	}
-+}
- 
--	t->expires = jiffies + iv;
--	add_timer_on(t, smp_processor_id());
-+/*
-+ * Ensure that the timer is firing in @interval from now.
-+ */
-+void mce_timer_kick(unsigned long interval)
-+{
-+	struct timer_list *t = &__get_cpu_var(mce_timer);
-+	unsigned long when = jiffies + interval;
-+	unsigned long iv = __this_cpu_read(mce_next_interval);
-+
-+	if (timer_pending(t)) {
-+		if (time_before(when, t->expires))
-+			mod_timer_pinned(t, when);
-+	} else {
-+		t->expires = round_jiffies(when);
-+		add_timer_on(t, smp_processor_id());
-+	}
-+	if (interval < iv)
-+		__this_cpu_write(mce_next_interval, interval);
- }
- 
- /* Must not be called in IRQ context where del_timer_sync() can deadlock */
-@@ -1545,6 +1578,7 @@ static void __mcheck_cpu_init_vendor(struct cpuinfo_x86 *c)
- 	switch (c->x86_vendor) {
- 	case X86_VENDOR_INTEL:
- 		mce_intel_feature_init(c);
-+		mce_adjust_timer = mce_intel_adjust_timer;
- 		break;
- 	case X86_VENDOR_AMD:
- 		mce_amd_feature_init(c);
-@@ -1556,7 +1590,7 @@ static void __mcheck_cpu_init_vendor(struct cpuinfo_x86 *c)
- 
- static void mce_start_timer(unsigned int cpu, struct timer_list *t)
- {
--	unsigned long iv = check_interval * HZ;
-+	unsigned long iv = mce_adjust_timer(check_interval * HZ);
- 
- 	__this_cpu_write(mce_next_interval, iv);
- 
-@@ -2270,10 +2304,11 @@ mce_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
- 		if (threshold_cpu_callback)
- 			threshold_cpu_callback(action, cpu);
- 		mce_device_remove(cpu);
-+		mce_intel_hcpu_update(cpu);
- 		break;
- 	case CPU_DOWN_PREPARE:
--		del_timer_sync(t);
- 		smp_call_function_single(cpu, mce_disable_cpu, &action, 1);
-+		del_timer_sync(t);
- 		break;
- 	case CPU_DOWN_FAILED:
- 		smp_call_function_single(cpu, mce_reenable_cpu, &action, 1);
-diff --git a/arch/x86/kernel/cpu/mcheck/mce_intel.c b/arch/x86/kernel/cpu/mcheck/mce_intel.c
-index 38e49bc..693bc7d 100644
---- a/arch/x86/kernel/cpu/mcheck/mce_intel.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce_intel.c
-@@ -15,6 +15,8 @@
- #include <asm/msr.h>
- #include <asm/mce.h>
- 
-+#include "mce-internal.h"
-+
- /*
-  * Support for Intel Correct Machine Check Interrupts. This allows
-  * the CPU to raise an interrupt when a corrected machine check happened.
-@@ -30,7 +32,22 @@ static DEFINE_PER_CPU(mce_banks_t, mce_banks_owned);
-  */
- static DEFINE_RAW_SPINLOCK(cmci_discover_lock);
- 
--#define CMCI_THRESHOLD 1
-+#define CMCI_THRESHOLD		1
-+#define CMCI_POLL_INTERVAL	(30 * HZ)
-+#define CMCI_STORM_INTERVAL	(1 * HZ)
-+#define CMCI_STORM_TRESHOLD	5
-+
-+static DEFINE_PER_CPU(unsigned long, cmci_time_stamp);
-+static DEFINE_PER_CPU(unsigned int, cmci_storm_cnt);
-+static DEFINE_PER_CPU(unsigned int, cmci_storm_state);
-+
-+enum {
-+	CMCI_STORM_NONE,
-+	CMCI_STORM_ACTIVE,
-+	CMCI_STORM_SUBSIDED,
-+};
-+
-+static atomic_t cmci_storm_on_cpus;
- 
- static int cmci_supported(int *banks)
- {
-@@ -53,6 +70,84 @@ static int cmci_supported(int *banks)
- 	return !!(cap & MCG_CMCI_P);
- }
- 
-+void mce_intel_cmci_poll(void)
-+{
-+	if (__this_cpu_read(cmci_storm_state) == CMCI_STORM_NONE)
-+		return;
-+	machine_check_poll(MCP_TIMESTAMP, &__get_cpu_var(mce_banks_owned));
-+}
-+
-+void mce_intel_hcpu_update(unsigned long cpu)
-+{
-+	if (per_cpu(cmci_storm_state, cpu) == CMCI_STORM_ACTIVE)
-+		atomic_dec(&cmci_storm_on_cpus);
-+
-+	per_cpu(cmci_storm_state, cpu) = CMCI_STORM_NONE;
-+}
-+
-+unsigned long mce_intel_adjust_timer(unsigned long interval)
-+{
-+	if (interval < CMCI_POLL_INTERVAL)
-+		return interval;
-+
-+	switch (__this_cpu_read(cmci_storm_state)) {
-+	case CMCI_STORM_ACTIVE:
-+		/*
-+		 * We switch back to interrupt mode once the poll timer has
-+		 * silenced itself. That means no events recorded and the
-+		 * timer interval is back to our poll interval.
-+		 */
-+		__this_cpu_write(cmci_storm_state, CMCI_STORM_SUBSIDED);
-+		atomic_dec(&cmci_storm_on_cpus);
-+
-+	case CMCI_STORM_SUBSIDED:
-+		/*
-+		 * We wait for all cpus to go back to SUBSIDED
-+		 * state. When that happens we switch back to
-+		 * interrupt mode.
-+		 */
-+		if (!atomic_read(&cmci_storm_on_cpus)) {
-+			__this_cpu_write(cmci_storm_state, CMCI_STORM_NONE);
-+			cmci_reenable();
-+			cmci_recheck();
-+		}
-+		return CMCI_POLL_INTERVAL;
-+	default:
-+		/*
-+		 * We have shiny wheather, let the poll do whatever it
-+		 * thinks.
-+		 */
-+		return interval;
-+	}
-+}
-+
-+static bool cmci_storm_detect(void)
-+{
-+	unsigned int cnt = __this_cpu_read(cmci_storm_cnt);
-+	unsigned long ts = __this_cpu_read(cmci_time_stamp);
-+	unsigned long now = jiffies;
-+
-+	if (__this_cpu_read(cmci_storm_state) != CMCI_STORM_NONE)
-+		return true;
-+
-+	if (time_before_eq(now, ts + CMCI_STORM_INTERVAL)) {
-+		cnt++;
-+	} else {
-+		cnt = 1;
-+		__this_cpu_write(cmci_time_stamp, now);
-+	}
-+	__this_cpu_write(cmci_storm_cnt, cnt);
-+
-+	if (cnt <= CMCI_STORM_TRESHOLD)
-+		return false;
-+
-+	cmci_clear();
-+	__this_cpu_write(cmci_storm_state, CMCI_STORM_ACTIVE);
-+	atomic_inc(&cmci_storm_on_cpus);
-+	mce_timer_kick(CMCI_POLL_INTERVAL);
-+	return true;
-+}
-+
- /*
-  * The interrupt handler. This is called on every event.
-  * Just call the poller directly to log any events.
-@@ -61,6 +156,8 @@ static int cmci_supported(int *banks)
-  */
- static void intel_threshold_interrupt(void)
- {
-+	if (cmci_storm_detect())
-+		return;
- 	machine_check_poll(MCP_TIMESTAMP, &__get_cpu_var(mce_banks_owned));
- 	mce_notify_irq();
- }
--- 
-1.7.10.4
 
+The following changes since commit 84a1caf1453c3d44050bd22db958af4a7f99315c:
+
+  Linux 3.5-rc7 (2012-07-14 15:40:28 -0700)
+
+are available in the git repository at:
+
+  git://neil.brown.name/md/ tags/md-3.5-fixes
+
+for you to fetch changes up to 58e94ae18478c08229626daece2fc108a4a23261:
+
+  md/raid1: close some possible races on write errors during resync (2012-0=
+7-19 15:59:18 +1000)
+
+----------------------------------------------------------------
+md: 3 bugfixes for 3.5-rc
+
+One of the bugs was introduced in 3.5-rc1.  Others have
+been there for longer.
+
+----------------------------------------------------------------
+NeilBrown (3):
+      md: fix bug in handling of new_data_offset
+      md: avoid crash when stopping md array races with closing other open =
+fds.
+      md/raid1: close some possible races on write errors during resync
+
+ drivers/md/md.c    |   37 ++++++++++++++++++++++++-------------
+ drivers/md/raid1.c |   10 ++++++++--
+ 2 files changed, 32 insertions(+), 15 deletions(-)
+
+--Sig_/s_I5gAXleNbgD++nNssl4_J
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIVAwUBUAeisznsnt1WYoG5AQJN+RAAnSS0rhPzaVk9hFVfuBSfKBSmOmJxoGmV
+SrHkzraOfYfN8U6h79cDXHTdiSoiHEREiPy/bw8PtisbtVbKMovsYZ8+VcM+3vdf
+pas92gc0exoRaU10orYxAes8ZNswH1ajRJVccrBfL8m/w9dYaqCDuEZCzVUD7Dqh
+sanrBolNwha53PJomLAeYhNTpyDqd5tchcX5eDc6efXT1OtbchStUctX6Q/hj2QC
+lGBBmUqk7VkK4RsDPKUrC7R2hmhOYfT+2k2kyBHdhHgz1Px1kG0W9/1PDPSzAZam
+ZfEIdy8sPAutPK/cJjh2DNN6cX1BvyN/AD0yAZ3U0sKh5Fwglzl/94jcTnRvIkOO
+CXsH+YrrwUXEMIxDj1LaCFRkIVKu2ABtq3/EI7wFvcrCmltpWxCUgM1KRAhU2tLQ
+rHn5cfytxnHM2dmRij7geLnfpyW1YXPConwfoMxHJcjZk6QkOURZ1LNVURmOQ9Hp
+bfXRD1tka7BthFNz1dONnG4U+INeht7bzGtmzust7plIATIryNcsNyANyuNL8ziK
+lDpwb521g7luaf2hI9zLu/cmhlFMhgal7Q7X+ltJuzWRgzhVGHrvaDn0MT8gfgkW
+aGB3+5MtBytreQQCY8hMjE5ysv1xW0AbfirjmQsvovNvqJXkUufQb7UsMbWLNzBl
+49PXMHPWNGE=
+=6sUH
+-----END PGP SIGNATURE-----
+
+--Sig_/s_I5gAXleNbgD++nNssl4_J--
