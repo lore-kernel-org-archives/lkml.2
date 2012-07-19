@@ -1,67 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752646Ab2GSXz2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 19:55:28 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:46562 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752022Ab2GSXzZ (ORCPT
+	id S1752630Ab2GSX6p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 19:58:45 -0400
+Received: from mail127.messagelabs.com ([216.82.250.115]:64515 "EHLO
+	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751867Ab2GSX6l convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 19:55:25 -0400
-X-Sasl-enc: DlRFfvgoIMLtZV3hx4xrJbmueRG7Ltm8qRt85HE2Obat 1342742124
-Date: Thu, 19 Jul 2012 16:55:23 -0700
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: Re: linux-next: manual merge of the staging tree with the
- target-merge tree
-Message-ID: <20120719235523.GA13623@kroah.com>
-References: <20120719145301.b8992aa986b47d7c44651710@canb.auug.org.au>
+	Thu, 19 Jul 2012 19:58:41 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-3.tower-127.messagelabs.com!1342742312!9104585!6
+X-Originating-IP: [216.166.12.180]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: Ian Abbott <abbotti@mev.co.uk>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Ian Abbott <ian.abbott@mev.co.uk>
+Date: Thu, 19 Jul 2012 18:58:38 -0500
+Subject: RE: [PATCH 15/90] staging: comedi: adv_pci1723: move
+ comedi_pci_enable() into the attach
+Thread-Topic: [PATCH 15/90] staging: comedi: adv_pci1723: move
+ comedi_pci_enable() into the attach
+Thread-Index: Ac1mByTE73cmmPXsSbi+qGN3b8iHKgAAklsw
+Message-ID: <ADE657CA350FB648AAC2C43247A983F00206AA9165C1@AUSP01VMBX24.collaborationhost.net>
+References: <201207181830.48668.hartleys@visionengravers.com>
+ <5007D568.2050401@mev.co.uk>
+ <ADE657CA350FB648AAC2C43247A983F00206AA916472@AUSP01VMBX24.collaborationhost.net>
+ <20120719231723.GA23010@kroah.com>
+ <ADE657CA350FB648AAC2C43247A983F00206AA9165BC@AUSP01VMBX24.collaborationhost.net>
+ <20120719233506.GA12858@kroah.com>
+In-Reply-To: <20120719233506.GA12858@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120719145301.b8992aa986b47d7c44651710@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 19, 2012 at 02:53:01PM +1000, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> Today's linux-next merge of the staging tree got a conflict in
-> drivers/staging/Kconfig between commit d0146d396bfa ("tcm_vhost: Initial
-> merge for vhost level target fabric driver") from the target-merge tree
-> and commit 15a4bc17b7f4 ("Staging: add CSR Wifi "os helper" module") from
-> the staging tree.
-> 
-> Just context changes.  I fixed it up (see below) and can carry the fix as
-> necessary.
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> 
-> diff --cc drivers/staging/Kconfig
-> index 67ec9fe,e3402d5..0000000
-> --- a/drivers/staging/Kconfig
-> +++ b/drivers/staging/Kconfig
-> @@@ -132,6 -132,8 +132,10 @@@ source "drivers/staging/ipack/Kconfig
->   
->   source "drivers/staging/gdm72xx/Kconfig"
->   
-> + source "drivers/staging/csr/Kconfig"
-> + 
-> + source "drivers/staging/omap-thermal/Kconfig"
-> + 
->  +source "drivers/vhost/Kconfig.tcm"
+On Thursday, July 19, 2012 4:35 PM, gregkh wrote:
+> On Thu, Jul 19, 2012 at 06:31:23PM -0500, H Hartley Sweeten wrote:
+>> If the comedi pci drivers have the "attach_pci" callback defined, the
+>> PCI api does correctly probe the driver. The comedi_pci_auto_config()
+>> then passes the pci_dev directly to the driver and the search of the
+>> PCI space for the device is not required.
+>> 
+>> If the "attach_pci" callback is not defined, the comedi_pci_auto_config()
+>> then falls back to passing the bus/slot information to the driver and uses
+>> the "attach" callback. In this case we could probably fast-track the search
+>> by using pci_get_slot() instead of doing the for_each_pci_dev() loop.
+>> 
+>> I think the problem is the COMEDI_DEVCONFIG ioctl. The userspace
+>> utility 'comedi_config' uses that ioctl to link a device node to a
+>> comedi driver. That utility allows passing the bus/slot information
+>> but it's not required. This means we have to search the PCI space
+>> for the pci_dev that matches the driver.
+>
+> The ioctl shouldn't be needed anymore for PCI or USB devices, as the
+> kernel handles the matching of the driver to the device.  Even if it
+> didn't, there are other more "standard" ways that you can bind devices
+> to drivers (through sysfs.)
 
-Why is someone putting a non drivers/staging/ Kconfig file here in
-drivers/staging/Kconfig?  That's not ok at all.
+I think it's still needed for some of the devices that require external
+firmware. The comedi_config utility allows the user to remove the
+driver binding and then reattach to it while passing the firmware blob
+into the driver.
 
-Target people, please just depend on CONFIG_STAGING if you want to do
-that, but don't mess with files in the drivers/staging/ directory for no
-good reason at all.
+Not saying any of this is valid... And yes, there probably is a more
+"standard" way to do this. I just need a hint of what that is... ;-)
 
-thanks,
+> So, I'd really recommend ripping all of this logic out for PCI drivers
+> as odds are, it's not used, and probably doesn't really work.
 
-greg k-h
+Ian Abbott is probably the best source to answer that.
+
+> For old ISA cards, it makes sense, but the odds that anyone uses any ISA
+> devices is pretty slim.
+
+I lot of the ISA drivers actually work for PC/104 variations of the boards. I
+think they are still used somewhat. But yes, the pure ISA cards probably
+are not very common. It's almost impossible to actually find a PC that has
+ISA slots.
+
+Regards,
+Hartley
+
