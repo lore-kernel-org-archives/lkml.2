@@ -1,122 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752901Ab2GSR5b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 13:57:31 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14342 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752424Ab2GSR52 (ORCPT
+	id S1752343Ab2GSSCU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 14:02:20 -0400
+Received: from mail132.messagelabs.com ([216.82.242.115]:10577 "EHLO
+	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751065Ab2GSSCR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 13:57:28 -0400
-X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=CmeNAOXY6qYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=xrkf4O4LVMmuy3B7DlIA:9 a=PUjeQqilurYA:10 a=7WfCv5DEreyoLpKm:21 a=UVaUvgB1uOKqeu_7:21 a=s5Htg7xnQOKvHEu9STBOug==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 72.230.195.127
-Message-ID: <1342720646.12353.67.camel@gandalf.stny.rr.com>
-Subject: Re: [opensuse-kernel] Re: [RFC] Simplifying kernel configuration
- for distro issues
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>, Pekka Enberg <penberg@kernel.org>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
-        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
-        Debian Kernel Team <debian-kernel@lists.debian.org>,
-        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Sasha Levin <levinsasha928@gmail.com>,
-        Asias He <asias.hejun@gmail.com>
-Date: Thu, 19 Jul 2012 13:57:26 -0400
-In-Reply-To: <20120719173415.GE23393@aftab.osrc.amd.com>
-References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com>
-	 <1342212885.25704.4.camel@lade.trondhjem.org>
-	 <CAFLxGvxxWodD97=78218wc+tuigAFsNK_PdroDfb4BWTZoxxUw@mail.gmail.com>
-	 <20120714103716.GD26559@liondog.tnic>
-	 <CAOJsxLGHQuuXqDD-1SNhL7Ly1-heCYFLzqj3SLh4xzmP9NR5GQ@mail.gmail.com>
-	 <20120714124332.GA4093@moon> <20120714174827.GA13319@aftab.osrc.amd.com>
-	 <20120719144217.GC16873@home.goodmis.org>
-	 <20120719164807.GD23393@aftab.osrc.amd.com>
-	 <1342717366.12353.48.camel@gandalf.stny.rr.com>
-	 <20120719173415.GE23393@aftab.osrc.amd.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 19 Jul 2012 14:02:17 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-13.tower-132.messagelabs.com!1342720931!13847221!9
+X-Originating-IP: [216.166.12.69]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Ian Abbott <abbotti@mev.co.uk>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Ian Abbott <ian.abbott@mev.co.uk>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Date: Thu, 19 Jul 2012 13:01:55 -0500
+Subject: RE: [PATCH 88/90] staging: comedi: rtd520: store the pci_dev in the
+ comedi_device
+Thread-Topic: [PATCH 88/90] staging: comedi: rtd520: store the pci_dev in
+ the comedi_device
+Thread-Index: Ac1lq9sbTUQuEQD6QzePIdA2CB5jEQAK2LfA
+Message-ID: <ADE657CA350FB648AAC2C43247A983F00206AA9164A8@AUSP01VMBX24.collaborationhost.net>
+References: <201207181905.13723.hartleys@visionengravers.com>
+ <50080083.6050204@mev.co.uk>
+In-Reply-To: <50080083.6050204@mev.co.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q6JI2QfH019338
 
-On Thu, 2012-07-19 at 19:34 +0200, Borislav Petkov wrote:
+On Thursday, July 19, 2012 5:42 AM, Ian Abbott wrote:
+> On 2012-07-19 03:05, H Hartley Sweeten wrote:
+>> Use the hw_dev pointer in the comedi_device struct to hold the
+>> pci_dev instead of carrying it in the private data.
+>
+> My reply to patch 86 has a knock-on effect for this patch...
+>
+>>   	/* Get the physical address from PCI config */
+>> -	dev->iobase = pci_resource_start(devpriv->pci_dev, LAS0_PCIINDEX);
+>> -	physLas1 = pci_resource_start(devpriv->pci_dev, LAS1_PCIINDEX);
+>> -	physLcfg = pci_resource_start(devpriv->pci_dev, LCFG_PCIINDEX);
+>> +	dev->iobase = pci_resource_start(pcidev, LAS0_PCIINDEX);
+>> +	physLas1 = pci_resource_start(pcidev, LAS1_PCIINDEX);
+>> +	physLcfg = pci_resource_start(pcidev, LCFG_PCIINDEX);
+>
+> ...in the use of dev->iobase to hold a PCI memory address.
 
-> > I can pass the above to a allnoconfig, and the box will boot and allow
-> > ssh. Note, the reason for the serial config, is that this ktest run uses
-> > a serial port to see if the box booted. If the serial isn't there, then
-> > it thinks it failed.
-> 
-> I agree with all this and you've explained this to me live already so
-> you're preaching to the choir.
+90 patches, 12 issues... not bad... ;-)
 
-Yes, I know you know this already, as we discussed it in a pub over a
-beer (choir practice). But this is a public forum on LKML (the church),
-where I now have an audience of heathens. Convert! Convert! You are all
-sinners!
+I already posted a v2 of PATCH 01/90 to fix calling to_pci_dev() with
+a NULL pointer.
 
-> 
-> But it would be a lot faster/easier if users can select, let's call'em
-> "profiles" which are not mutually exclusive and can speed up the
-> configuration process. They can either be distro-specific or generic,
-> selecting certain features you need.
-> 
-> So configuring your kernel would be like shopping without paying too
-> much attention to details. Let's look into the head of a person doing a
-> config like that and read some of her thoughts :):
-> 
-> "Hm, ok, this new configurator is cool, a lot faster I gotta say... So,
-> what do I need, ah, yes, it is an AMD laptop so from vendors I select
-> AMD, then I probably need ext4, then I'd like to do packet filtering
-> so I should enable iptables.. Oh, I'd like to do tracing too so let's
-> enable tracing and trust Steven with the options he's added by default,
-> then I need ahci, I'd also like to do encrypted partitions so I'll
-> enable device mapper with crypto... "
-> 
-> So all those things could be selectable from that profiles menu without
-> having to go through the gazillion of little suboptions and having to
-> read help (which is sometimes completely helpless) and figure out do I
-> need it or not.
-> 
-> And this would simplify configuration a lot. IMHO, anyway.
-> 
+Patches 15, 19, 22, and 23 all deal with the pci_is_enabled(). I think
+that call basically keeps the existing functionality of the drivers.
+If you feel they should be removed, would it be ok to do that in
+a separate patchset?
 
-I totally agree with this. It would be nice to have a profile list where
-you can pick and chose what you have installed:
+Patches 30, 32, and 34 deal with the 'bustype'. You already mentioned
+that you would submit a patch to fix this.
 
-	network
-	nfs
-	ext3
-	serial
-	xen
-	kvm
-etc etc
+Patch 61 needs the subsystem_device check. I can fix this and repost
+If you feel it's necessary.
 
-Where you can pick and choose what general features you want and it
-selects all the core infrastructure to get those features usable. It
-wouldn't select the device modules needed, you will still need to select
-what hardware you have. But it gets most of the work done for you.
+Patches 67, 86, and 88 all deal with saving the pci base address in dev->iobase.
+I think these are all 32-bit PCI cards so it shouldn't "break" anything. But,
+the base address should probably be fetched into a resource_size_t for
+passing into the ioremap() call. We can still use dev->iobase to allow the
+detach to know that the pci device has been enabled. How about setting it
+to something like -EINVAL?
 
-But this still doesn't solve Linus's initial request. That would be a
-single option that makes your distro boot, and work well. Again, that
-option wont have the drivers needed, but it will enable all the core
-infrastructure that you need.
-
-Going with my /usr/share/Linux/Kconfig, this could use the profile
-options as well. And just select those that are required. But then
-again, Linus did want a minimum selection of stuff.
-
-Side note (again), IIRC, "select" has a bug. If you have Config X
-selecting config Y but Y depends on Z, if you enable X, it will enable Y
-without enabling Z. I think there were some patches to address this, but
-I don't remember.
-
--- Steve
-
-
+Regards,
+Hartley
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
