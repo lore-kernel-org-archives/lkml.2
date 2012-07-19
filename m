@@ -1,49 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752548Ab2GSSUL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 14:20:11 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39747 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751596Ab2GSSUJ (ORCPT
+	id S1752736Ab2GSSUl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 14:20:41 -0400
+Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:1892 "EHLO
+	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751482Ab2GSSUi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 14:20:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120719192814.75ea8beb784bdf8bb32c510c@kinali.ch>
-References: <20120719192814.75ea8beb784bdf8bb32c510c@kinali.ch>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 19 Jul 2012 12:19:48 -0600
-X-Google-Sender-Auth: P_s1kD1Ezcm4Xwzh5JgpWVLKZOU
-Message-ID: <CACxGe6tUOAtRgV9NHgfLchFAmQH99g0jNh0ANxyKPasbkHn2Kg@mail.gmail.com>
-Subject: Re: commit 91013923c712e1c: "irqdomain: Replace LEGACY mapping with
- LINEAR" breaks console on ARM i.mx23
-To: Attila Kinali <attila@kinali.ch>
-Cc: Paul Mundt <lethal@linux-sh.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        Linux ARM kernel <linux-arm-kernel@lists.infradead.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 19 Jul 2012 14:20:38 -0400
+Message-ID: <1342722036.26179.40.camel@x61.thuisdomein>
+Subject: Re: [RFC] Simplifying kernel configuration for distro issues
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
+        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
+        Debian Kernel Team <debian-kernel@lists.debian.org>,
+        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Fedora Kernel Team <kernel-team@fedoraproject.org>
+Date: Thu, 19 Jul 2012 20:20:36 +0200
+In-Reply-To: <20120719171918.GD8469@zod.bos.redhat.com>
+References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com>
+	 <20120713210240.GG1707@redhat.com>
+	 <CA+55aFz_Vv899eXz6F0jtFH=hT4QpB0_2XuS8HySPjHC6s+L7Q@mail.gmail.com>
+	 <20120719152618.GD16873@home.goodmis.org>
+	 <20120719154521.GC8469@zod.bos.redhat.com>
+	 <1342714088.12353.33.camel@gandalf.stny.rr.com>
+	 <20120719171918.GD8469@zod.bos.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-OriginalArrivalTime: 19 Jul 2012 18:20:36.0789 (UTC) FILETIME=[3197D650:01CD65DB]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 19, 2012 at 11:28 AM, Attila Kinali <attila@kinali.ch> wrote:
-> Hi,
->
-> I'm working on an embedded system based on a Freescale ARM9 processor i.mx23.
->
-> While trying linux-next i stumpled over my login prompt getting broken.
-> What exactly happens is that the kernel boots normally, but when my
-> login prompt should appear it suddenly stops. I bisected it back to
-> the commit 91013923c712e1c4b9b343f0ee4a86ce72b1b630
-> irqdomain: Replace LEGACY mapping with LINEAR
->
-> Reverting this and the three commits that directly depend on it (see below)
-> everything seems to work fine again
+On Thu, 2012-07-19 at 13:19 -0400, Josh Boyer wrote:
+> kconfig already spits out warnings for symbols being selected that
+> don't exist.
 
-Mark Brown also noticed this and pointed this out. I'm working on it.
-I've pulled those three patches out of my -next branch while I'm
-working on the fix.
+Does it? Since when does it do that? Or do you mean select in a more
+general way (not just meaning Kconfig's "select" statement)?
 
-g.
+
+Paul Bolle
+
