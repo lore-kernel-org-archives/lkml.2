@@ -1,169 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752055Ab2GSVMY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 17:12:24 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:61084 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751552Ab2GSVMU (ORCPT
+	id S1752036Ab2GSVNL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 17:13:11 -0400
+Received: from usindpps03.hds.com ([207.126.252.16]:36607 "EHLO
+	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751575Ab2GSVNJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 17:12:20 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120719093738.GA29153@mudshark.cambridge.arm.com>
-References: <1342607393-32254-1-git-send-email-will.deacon@arm.com>
-	<201207181158.07236.arnd@arndb.de>
-	<CAMuHMdXiWdtrH74BBkw402W=M5jjeu+uQAkHUitWJD06f1tZdQ@mail.gmail.com>
-	<20120719093738.GA29153@mudshark.cambridge.arm.com>
-Date: Thu, 19 Jul 2012 23:12:19 +0200
-X-Google-Sender-Auth: sqgPShlKvAmIsOrn11yyVCCKLXg
-Message-ID: <CAMuHMdVP=XgVNwv4BGFup8w7KynWtJq_BHNX6dzb1NM-79zWPQ@mail.gmail.com>
-Subject: Re: [PATCH] Revert "KVM: Export asm-generic/kvm_para.h"
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
+	Thu, 19 Jul 2012 17:13:09 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
+        "mikew@google.com" <mikew@google.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>
+CC: "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: [RFC][PATCH v2 1/3] Avoid overwriting existing entry
+Thread-Topic: [RFC][PATCH v2 1/3] Avoid overwriting existing entry
+Thread-Index: Ac1l8ziceLtw2nPrTa6+aYK+rjGozw==
+Date: Thu, 19 Jul 2012 21:12:57 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D40FB27FBF@USINDEM103.corp.hds.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.43.113]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.260,0.0.0000
+ definitions=2012-07-19_06:2012-07-19,2012-07-19,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
+ definitions=main-1207190250
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Will,
+[Problem]
+ Currently, efi_pstore driver simply overwrites existing panic messages in NVRAM.
+ So, in the following scenario, we will lose 1st panic messages.
 
-On Thu, Jul 19, 2012 at 11:37 AM, Will Deacon <will.deacon@arm.com> wrote:
-> On Wed, Jul 18, 2012 at 01:33:01PM +0100, Geert Uytterhoeven wrote:
->> > On Wednesday 18 July 2012, Will Deacon wrote:
->> >
->> >> I'm not sure what specific problem the original commit was fixing, so we
->> >> may need to solve this another way if there's something I've missed.
->>
->> See below.
->
-> [...]
->
->> make[4]: *** No rule to make target
->> `/scratch/kisskb/build/linux-next_m68k-allmodconfig_m68k/usr/include/linux/kvm_para.h',
->> needed by `/scratch/kisskb/build/linux-next_m68k-allmodconfig_m68k/usr/include/linux/.check'.
->> make[3]: *** [linux] Error 2
->> make[2]: *** [headers_check] Error 2
->
-> [...]
->
->> So far the former case is limited to sh (mainline) and m68k (next), but I expect
->> more architectures to start using the "generic-y += ..." idiom.
->>
->> The latter is limited to cris and m32r.
->>
->> Hence just reverting 56457f38f212344fb38b250cfa7e7311c065022f is not the
->> right fix, as it will cause more breakage.
->
-> Thanks for the explanation. Given that we have the asm-generic version of
-> kvm_para.h, I don't see why we can't just export linux/kvm_para.h
-> unconditionally and fix the few remaining architectures by adding generic-y
-> lines to their Kbuild files.
->
-> Something like below (I also removed what look like dead references to
-> asm-$(SRCARCH) in the srctree)...
+ 1. kernel panics.
+ 2. efi_pstore is kicked and write panic messages to NVRAM.
+ 3. system reboots.
+ 4. kernel panics again before a user checks the 1st panic messages in NVRAM.
 
-I applied your patch on next-20120719 and ran "make ARCH=xxx headers_check"
-for all architectures (this doesn't require any cross-compilers to be
-installed).
+[Solution]
+This patch remove a logic erasing existing entries from write callback to
+avoid losing an existing critical message.
 
-It fixes the issue for m32r, m68k, and sh. Cris still fails for another reason.
-It did not introduce any regressions for other architectures, so
+[Patch Description]
+ - Remove a logic erasing existing entries from write callback
+ - Add the logic above to erase callback.
 
-Tested-by: Geert Uytterhoeven <geert@linux-m68k.org>
+ Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
 
-> ---8<---
->
-> diff --git a/arch/cris/include/asm/Kbuild b/arch/cris/include/asm/Kbuild
-> index 04d02a5..2fde49c 100644
-> --- a/arch/cris/include/asm/Kbuild
-> +++ b/arch/cris/include/asm/Kbuild
-> @@ -7,3 +7,5 @@ header-y += ethernet.h
->  header-y += etraxgpio.h
->  header-y += rs485.h
->  header-y += sync_serial.h
-> +
-> +generic-y += kvm_para.h
-> diff --git a/arch/m32r/include/asm/Kbuild b/arch/m32r/include/asm/Kbuild
-> index c68e168..78c505e 100644
-> --- a/arch/m32r/include/asm/Kbuild
-> +++ b/arch/m32r/include/asm/Kbuild
-> @@ -1 +1,3 @@
->  include include/asm-generic/Kbuild.asm
-> +
-> +generic-y += kvm_para.h
-> diff --git a/include/asm-generic/Kbuild.asm b/include/asm-generic/Kbuild.asm
-> index c5d2e5d..f180c99 100644
-> --- a/include/asm-generic/Kbuild.asm
-> +++ b/include/asm-generic/Kbuild.asm
-> @@ -1,15 +1,8 @@
-> -ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/kvm.h \
-> -                 $(srctree)/include/asm-$(SRCARCH)/kvm.h),)
-> +ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/kvm.h),)
->  header-y  += kvm.h
->  endif
->
-> -ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/kvm_para.h \
-> -                 $(srctree)/include/asm-$(SRCARCH)/kvm_para.h),)
-> -header-y  += kvm_para.h
-> -endif
-> -
-> -ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/a.out.h \
-> -                 $(srctree)/include/asm-$(SRCARCH)/a.out.h),)
-> +ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/a.out.h),)
->  header-y += a.out.h
->  endif
->
-> @@ -21,6 +14,7 @@ header-y += fcntl.h
->  header-y += ioctl.h
->  header-y += ioctls.h
->  header-y += ipcbuf.h
-> +header-y += kvm_para.h
->  header-y += mman.h
->  header-y += msgbuf.h
->  header-y += param.h
-> diff --git a/include/linux/Kbuild b/include/linux/Kbuild
-> index 8760be3..048abc6 100644
-> --- a/include/linux/Kbuild
-> +++ b/include/linux/Kbuild
-> @@ -23,20 +23,13 @@ header-y += wimax/
->  objhdr-y += version.h
->
->  ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/a.out.h \
-> -                 $(srctree)/include/asm-$(SRCARCH)/a.out.h \
->                   $(INSTALL_HDR_PATH)/include/asm-*/a.out.h),)
->  header-y += a.out.h
->  endif
->  ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/kvm.h \
-> -                 $(srctree)/include/asm-$(SRCARCH)/kvm.h \
->                   $(INSTALL_HDR_PATH)/include/asm-*/kvm.h),)
->  header-y += kvm.h
->  endif
-> -ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/kvm_para.h \
-> -                 $(srctree)/include/asm-$(SRCARCH)/kvm_para.h \
-> -                 $(INSTALL_HDR_PATH)/include/asm-*/kvm_para.h),)
-> -header-y += kvm_para.h
-> -endif
->
->  header-y += acct.h
->  header-y += adb.h
-> @@ -229,6 +222,7 @@ header-y += kernel-page-flags.h
->  header-y += kexec.h
->  header-y += keyboard.h
->  header-y += keyctl.h
-> +header-y += kvm_para.h
->  header-y += l2tp.h
->  header-y += limits.h
->  header-y += llc.h
+---
+ drivers/firmware/efivars.c |   92 +++++++++++++++++++++++++++++++++-----------
+ 1 files changed, 69 insertions(+), 23 deletions(-)
 
-Gr{oetje,eeting}s,
+diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
+index 47408e8..75a7c82 100644
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -685,6 +685,30 @@ static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
+ 	return 0;
+ }
+ 
++static unsigned long get_current_log_num(efi_char16_t *efi_name,
++					 struct efivars *efivars)
++{
++	efi_guid_t vendor = LINUX_EFI_CRASH_GUID;
++	struct efivar_entry *entry;
++	unsigned long current_log_num = 0;
++
++	list_for_each_entry(entry, &efivars->list, list) {
++		get_var_data_locked(efivars, &entry->var);
++
++		if (efi_guidcmp(entry->var.VendorGuid, vendor))
++			continue;
++		if (utf16_strncmp(entry->var.VariableName, efi_name,
++				  utf16_strlen(efi_name)))
++			continue;
++		/* Needs to be a prefix */
++		if (entry->var.VariableName[utf16_strlen(efi_name)] == 0)
++			continue;
++		current_log_num++;
++	}
++
++	return current_log_num;
++}
++
+ static int efi_pstore_write(enum pstore_type_id type,
+ 		enum kmsg_dump_reason reason, u64 *id,
+ 		unsigned int part, size_t size, struct pstore_info *psi)
+@@ -694,8 +718,8 @@ static int efi_pstore_write(enum pstore_type_id type,
+ 	efi_char16_t efi_name[DUMP_NAME_LEN];
+ 	efi_guid_t vendor = LINUX_EFI_CRASH_GUID;
+ 	struct efivars *efivars = psi->data;
+-	struct efivar_entry *entry, *found = NULL;
+ 	int i, ret = 0;
++	unsigned long current_log_num;
+ 
+ 	sprintf(stub_name, "dump-type%u-%u-", type, part);
+ 	sprintf(name, "%s%lu", stub_name, get_seconds());
+@@ -705,6 +729,48 @@ static int efi_pstore_write(enum pstore_type_id type,
+ 	for (i = 0; i < DUMP_NAME_LEN; i++)
+ 		efi_name[i] = stub_name[i];
+ 
++	current_log_num = get_current_log_num(efi_name, efivars);
++
++	if (current_log_num >= 1) {
++		spin_unlock(&efivars->lock);
++		*id = part;
++		return -EEXIST;
++	}
++
++	for (i = 0; i < DUMP_NAME_LEN; i++)
++		efi_name[i] = name[i];
++
++	efivars->ops->set_variable(efi_name, &vendor, PSTORE_EFI_ATTRIBUTES,
++				   size, psi->buf);
++
++	spin_unlock(&efivars->lock);
++
++	if (size)
++		ret = efivar_create_sysfs_entry(efivars,
++					  utf16_strsize(efi_name,
++							DUMP_NAME_LEN * 2),
++					  efi_name, &vendor);
++
++	*id = part;
++	return ret;
++};
++
++static int efi_pstore_erase(enum pstore_type_id type, u64 id,
++			    struct pstore_info *psi)
++{
++	char stub_name[DUMP_NAME_LEN];
++	efi_char16_t efi_name[DUMP_NAME_LEN];
++	efi_guid_t vendor = LINUX_EFI_CRASH_GUID;
++	struct efivars *efivars = psi->data;
++	struct efivar_entry *entry, *found = NULL;
++	int i;
++
++	sprintf(stub_name, "dump-type%u-%llu-", type, id);
++
++	spin_lock(&efivars->lock);
++
++	for (i = 0; i < DUMP_NAME_LEN; i++)
++		efi_name[i] = stub_name[i];
+ 	/*
+ 	 * Clean up any entries with the same name
+ 	 */
+@@ -718,7 +784,8 @@ static int efi_pstore_write(enum pstore_type_id type,
+ 				  utf16_strlen(efi_name)))
+ 			continue;
+ 		/* Needs to be a prefix */
+-		if (entry->var.VariableName[utf16_strlen(efi_name)] == 0)
++		if (entry->var.VariableName[utf16_strlen(efi_name)]
++		    == 0)
+ 			continue;
+ 
+ 		/* found */
+@@ -732,32 +799,11 @@ static int efi_pstore_write(enum pstore_type_id type,
+ 	if (found)
+ 		list_del(&found->list);
+ 
+-	for (i = 0; i < DUMP_NAME_LEN; i++)
+-		efi_name[i] = name[i];
+-
+-	efivars->ops->set_variable(efi_name, &vendor, PSTORE_EFI_ATTRIBUTES,
+-				   size, psi->buf);
+-
+ 	spin_unlock(&efivars->lock);
+ 
+ 	if (found)
+ 		efivar_unregister(found);
+ 
+-	if (size)
+-		ret = efivar_create_sysfs_entry(efivars,
+-					  utf16_strsize(efi_name,
+-							DUMP_NAME_LEN * 2),
+-					  efi_name, &vendor);
+-
+-	*id = part;
+-	return ret;
+-};
+-
+-static int efi_pstore_erase(enum pstore_type_id type, u64 id,
+-			    struct pstore_info *psi)
+-{
+-	efi_pstore_write(type, 0, &id, (unsigned int)id, 0, psi);
+-
+ 	return 0;
+ }
+ #else
+-- 1.7.1 
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
