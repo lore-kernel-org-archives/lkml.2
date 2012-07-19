@@ -1,89 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752551Ab2GSJpO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 05:45:14 -0400
-Received: from shutemov.name ([176.9.204.213]:44167 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751447Ab2GSJpL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 05:45:11 -0400
-Date: Thu, 19 Jul 2012 12:45:54 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Gavin Shan <shangw@linux.vnet.ibm.com>
-Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWAHiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+	id S1752407Ab2GSJrq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 05:47:46 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:52503 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750948Ab2GSJrl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 05:47:41 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: viro@ZenIV.linux.org.uk
+Subject: [PATCH 1/2] audit: don't free_chunk() after fsnotify_add_mark()
+CC: eparis@redhat.com, torvalds@linux-foundation.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm/memcg: wrap mem_cgroup_from_css function
-Message-ID: <20120719094554.GA2701@shutemov.name>
-References: <a>
- <1342580730-25703-1-git-send-email-liwanp@linux.vnet.ibm.com>
- <20120719091420.GA2549@shutemov.name>
- <20120719092309.GA12409@kernel>
- <20120719093835.GA3776@shangw.(null)>
+Date: Thu, 19 Jul 2012 11:47:35 +0200
+Message-ID: <87eho8rsjs.fsf@tucsk.pomaz.szeredi.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120719093835.GA3776@shangw.(null)>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 19, 2012 at 05:38:35PM +0800, Gavin Shan wrote:
-> On Thu, Jul 19, 2012 at 05:23:09PM +0800, Wanpeng Li wrote:
-> >On Thu, Jul 19, 2012 at 12:14:20PM +0300, Kirill A. Shutemov wrote:
-> >>On Wed, Jul 18, 2012 at 11:05:30AM +0800, Wanpeng Li wrote:
-> >>> wrap mem_cgroup_from_css function to clarify get mem cgroup
-> >>> from cgroup_subsys_state.
-> >>> 
-> >>> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-> >>> Cc: Michal Hocko <mhocko@suse.cz>
-> >>> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> >>> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> >>> Cc: Andrew Morton <akpm@linux-foundation.org>
-> >>> Cc: Gavin Shan <shangw@linux.vnet.ibm.com>
-> >>> Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-> >>> Cc: linux-kernel@vger.kernel.org
-> >>> ---
-> >>>  mm/memcontrol.c |   14 ++++++++++----
-> >>>  1 files changed, 10 insertions(+), 4 deletions(-)
-> >>> 
-> >>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> >>> index 58a08fc..20f6a15 100644
-> >>> --- a/mm/memcontrol.c
-> >>> +++ b/mm/memcontrol.c
-> >>> @@ -396,6 +396,12 @@ static void mem_cgroup_put(struct mem_cgroup *memcg);
-> >>>  #include <net/sock.h>
-> >>>  #include <net/ip.h>
-> >>>  
-> >>> +static inline
-> >>> +struct mem_cgroup *mem_cgroup_from_css(struct cgroup_subsys_state *s)
-> >>> +{
-> >>> +	return container_of(s, struct mem_cgroup, css);
-> >>> +}
-> >>> +
-> >>>  static bool mem_cgroup_is_root(struct mem_cgroup *memcg);
-> >>>  void sock_update_memcg(struct sock *sk)
-> >>>  {
-> >>> @@ -820,7 +826,7 @@ static void memcg_check_events(struct mem_cgroup *memcg, struct page *page)
-> >>>  
-> >>>  struct mem_cgroup *mem_cgroup_from_cont(struct cgroup *cont)
-> >>>  {
-> >>> -	return container_of(cgroup_subsys_state(cont,
-> >>> +	return mem_cgroup_from_css(cgroup_subsys_state(cont,
-> >>>  				mem_cgroup_subsys_id), struct mem_cgroup,
-> >>>  				css);
-> >>
-> >>Hm?.. Here and below too many args to mem_cgroup_from_css().
-> >>Have you tested the code?
-> >
-> >Hi, what's the meaning of "two many"?
-> >
-> 
-> It might be the typo for "two" here.
+Al, your are the co-maintainer of audit, right?  Can you please apply
+these patches as Eric is on vaction.
 
-Oops.. You're right.
+Thanks,
+Miklos
+----
 
--- 
- Kirill A. Shutemov
+From: Miklos Szeredi <mszeredi@suse.cz>
+
+Don't do free_chunk() after fsnotify_add_mark().  That one does a delayed unref
+via the destroy list and this results in use-after-free.
+
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Acked-by: Eric Paris <eparis@redhat.com>
+CC: stable@vger.kernel.org
+---
+ kernel/audit_tree.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+Index: linux-2.6/kernel/audit_tree.c
+===================================================================
+--- linux-2.6.orig/kernel/audit_tree.c	2011-10-26 14:26:24.000000000 +0200
++++ linux-2.6/kernel/audit_tree.c	2012-05-30 16:56:04.000000000 +0200
+@@ -259,7 +259,7 @@ static void untag_chunk(struct node *p)
+ 
+ 	fsnotify_duplicate_mark(&new->mark, entry);
+ 	if (fsnotify_add_mark(&new->mark, new->mark.group, new->mark.i.inode, NULL, 1)) {
+-		free_chunk(new);
++		fsnotify_put_mark(&new->mark);
+ 		goto Fallback;
+ 	}
+ 
+@@ -322,7 +322,7 @@ static int create_chunk(struct inode *in
+ 
+ 	entry = &chunk->mark;
+ 	if (fsnotify_add_mark(entry, audit_tree_group, inode, NULL, 0)) {
+-		free_chunk(chunk);
++		fsnotify_put_mark(entry);
+ 		return -ENOSPC;
+ 	}
+ 
+@@ -396,7 +396,7 @@ static int tag_chunk(struct inode *inode
+ 	fsnotify_duplicate_mark(chunk_entry, old_entry);
+ 	if (fsnotify_add_mark(chunk_entry, chunk_entry->group, chunk_entry->i.inode, NULL, 1)) {
+ 		spin_unlock(&old_entry->lock);
+-		free_chunk(chunk);
++		fsnotify_put_mark(chunk_entry);
+ 		fsnotify_put_mark(old_entry);
+ 		return -ENOSPC;
+ 	}
+
+
