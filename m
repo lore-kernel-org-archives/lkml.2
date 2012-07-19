@@ -1,45 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751628Ab2GSOG1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 10:06:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43307 "EHLO mx1.redhat.com"
+	id S1751466Ab2GSOIj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 10:08:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20042 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750832Ab2GSOGW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 10:06:22 -0400
-Date: Thu, 19 Jul 2012 10:06:10 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        John Stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, lwoodman@redhat.com,
-        jbaron@redhat.com
-Subject: Re: [PATCH] tty, add kref to sysrq handlers
-Message-ID: <20120719140609.GA15158@redhat.com>
-References: <1339514522-1742-1-git-send-email-prarit@redhat.com>
+	id S1751020Ab2GSOIh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 10:08:37 -0400
+Date: Thu, 19 Jul 2012 10:08:26 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Kay Sievers <kay@vrfy.org>
+Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Kexec Mailing List <kexec@lists.infradead.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartmann <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] printk: Export struct log size and member offsets
+ through vmcoreinfo
+Message-ID: <20120719140826.GD2761@redhat.com>
+References: <20120718171812.GC21746@redhat.com>
+ <CAPXgP12PioibfQhtAB0fCzL1MXmZvfvQqOGu_ZM0D8Sx4Vq7+w@mail.gmail.com>
+ <20120718175625.GD21746@redhat.com>
+ <CAPXgP12YasX6mBVOamO8Tk1mcFJ04XWh5CjuTRxhRShncgVCtA@mail.gmail.com>
+ <20120719135736.GC2761@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1339514522-1742-1-git-send-email-prarit@redhat.com>
+In-Reply-To: <20120719135736.GC2761@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 12, 2012 at 11:22:02AM -0400, Prarit Bhargava wrote:
-> [This seems to have been missed ... sending again]
+On Thu, Jul 19, 2012 at 09:57:36AM -0400, Vivek Goyal wrote:
+> On Thu, Jul 19, 2012 at 11:38:57AM +0200, Kay Sievers wrote:
+> > On Wed, Jul 18, 2012 at 7:56 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> > > On Wed, Jul 18, 2012 at 07:27:08PM +0200, Kay Sievers wrote:
+> > >> On Wed, Jul 18, 2012 at 7:18 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> > >>
+> > >> > Currently I am not exporting log "level" info as that is a bitfield and
+> > >> > offsetof() bitfields can't be calculated.
+> > >>
+> > >> We could make the level the lower 3 bits of the byte, export the byte,
+> > >> and define that only 3 bits of the byte are valid? Would that help?
+> > >
+> > > Yes, that should work. Here is the prototype patch which stores 5 bits
+> > > of flag and 3 bits of level in a byte. I have not tested it yet, but
+> > > if you like the approach, I will test it.
+> > 
+> > > -       u8 flags:5;             /* internal record flags */
+> > > -       u8 level:3;             /* syslog level */
+> > > +       u8 flags_level;         /* 5 bit internal record flags, 3 bits syslog
+> > 
+> > Looks ok.
+> > 
+> > If we would swap the 5 + 3 bit field byte declaration, and add
+> > __packed, we can still not rely on the level to be consistently the
+> > lower 3 bits of the byte, right?
 > 
-> On a large system with a large number of tasks, the output of
-> 
-> echo t > /proc/sysrq-trigger
-> 
-> can take a long period of time.  If this period is greater than the period
-> of the current clocksource, the clocksource watchdog will mark the
-> clocksource as unstable and fail the clocksource over.
 
-A lot of our customers are running into this issue (especially the big
-boxes).  This is patch solves their problem nicely.
+I think I missed your point in last response. Are you saying that retain
+bit fields  for flags and level, and add __packed() and that will make sure
+level bits are always lowest 3bits? I am really not sure how that is going
+to work. Also if you want to add more fields to struct log down the line,
+it will be a problem to determine the offset of byte where level bits are
+stored. 
 
-The approach is a little heavier than the current approach, but it allows
-a useful feature like sysrq-t to work reliably.
-
-Acked-by: Don Zickus <dzickus@redhat.com>
+Thanks
+Vivek
