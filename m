@@ -1,80 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752330Ab2GSRUi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 13:20:38 -0400
-Received: from mail132.messagelabs.com ([216.82.242.115]:55446 "EHLO
-	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751863Ab2GSRUg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 13:20:36 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-7.tower-132.messagelabs.com!1342718386!13245387!87
-X-Originating-IP: [216.166.12.72]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Ian Abbott <abbotti@mev.co.uk>, Ian Abbott <ian.abbott@mev.co.uk>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Date: Thu, 19 Jul 2012 12:20:27 -0500
-Subject: RE: [PATCH 30/90] staging: comedi: amplc_dio200: store the pci_dev
- in the comedi_device
-Thread-Topic: [PATCH 30/90] staging: comedi: amplc_dio200: store the pci_dev
- in the comedi_device
-Thread-Index: Ac1lmRjTX32zotmYTdu00AedjrbbEwAOTYSQ
-Message-ID: <ADE657CA350FB648AAC2C43247A983F00206AA91647C@AUSP01VMBX24.collaborationhost.net>
-References: <201207181837.50650.hartleys@visionengravers.com>
- <5007DD1F.4040703@mev.co.uk> <5007E0FE.4030602@mev.co.uk>
-In-Reply-To: <5007E0FE.4030602@mev.co.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	id S1752431Ab2GSR0h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 13:26:37 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:40095 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751281Ab2GSR0f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 13:26:35 -0400
+Date: Thu, 19 Jul 2012 10:15:51 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: WARNING: at kernel/rcutree.c:1550
+ __rcu_process_callbacks+0x46f/0x4b0()
+Message-ID: <20120719171550.GL2507@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <5007F8FA.7000203@linux.vnet.ibm.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5007F8FA.7000203@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12071917-7182-0000-0000-0000020820FF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q6JHKecA019049
 
-On Thursday, July 19, 2012 3:27 AM, Ian Abbott wrote:
-> On 2012-07-19 11:10, Ian Abbott wrote:
->> On 2012-07-19 02:37, H Hartley Sweeten wrote:
->>> Use the hw_dev pointer in the comedi_device struct to hold the
->>> pci_dev instead of carrying it in the private data.
->>>
->>> Since the pci_dev is no longer held in the provate data, we can
->>> also cleanup the detach a bit. Remove the IS_ENABLED() tests in
->>> the detach. If the pci_dev is non NULL it's a PCI device otherwise
->>> it's an ISA device. Using IS_ENABLED() to omit the code paths
->>> makes the code a bit confusing and doesn't save much.
->>
->> No, you really need to check thisboard->bustype in the detach() because
->> hw_dev might be NULL for a PCI board if the attach() failed.
->
-> Actually, your patch wouldn't do any harm as dev->iobase would be 0.  It 
-> would just go through the "failed ISA device" path instead of the 
-> "failed PCI device" path.  It would be more robust to check 
-> thisboard->bustype though.
+On Thu, Jul 19, 2012 at 05:39:30PM +0530, Srivatsa S. Bhat wrote:
+> Hi Paul,
+> 
+> While running a CPU hotplug stress test on v3.5-rc7+
+> (mainline commit 8a7298b7805ab) I hit this warning.
+> I haven't tried to debug this yet...
+> 
+> Line number 1550 maps to:
+> 
+> WARN_ON_ONCE(cpu_is_offline(smp_processor_id()));
+> 
+> inside rcu_do_batch().
 
-Would this be cleaner:
+Hello, Srivatsa,
 
-	If (dev->iobase) {
-		If (pcidev)
-			comedi_pci_disable(pcidev);
-		else
-			release_region(dev->iobase, DIO200_IO_SIZE);
-	}
-	If (pcidev)
-		pci_dev_put(pcidev);
+I believe that you need commit a16b7a69 (Prevent __call_rcu() from
+invoking RCU core on offline CPUs), which is currently in -tip, queued
+for 3.6.  Please see below for the patch.
 
-Same number of lines but the i/o disable/release and the put of the pcidev
-would then be distinctly separate.
+Does this help?
 
-Regards,
-Hartley
+							Thanx, Paul
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+------------------------------------------------------------------------
+
+rcu: Prevent __call_rcu() from invoking RCU core on offline CPUs
+
+The __call_rcu() function will invoke the RCU core, for example, if
+it detects that the current CPU has too many callbacks.  However, this
+can happen on an offline CPU that is on its way to the idle loop, in
+which case it is an error to invoke the RCU core, and the excess callbacks
+will be adopted in any case.  This commit therefore adds checks to
+__call_rcu() for running on an offline CPU, refraining from invoking
+the RCU core in this case.
+
+Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index a4a9c91..ceaa959 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -1904,11 +1904,11 @@ __call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
+ 	 * If called from an extended quiescent state, invoke the RCU
+ 	 * core in order to force a re-evaluation of RCU's idleness.
+ 	 */
+-	if (rcu_is_cpu_idle())
++	if (rcu_is_cpu_idle() && cpu_online(smp_processor_id()))
+ 		invoke_rcu_core();
+ 
+-	/* If interrupts were disabled, don't dive into RCU core. */
+-	if (irqs_disabled_flags(flags)) {
++	/* If interrupts were disabled or CPU offline, don't invoke RCU core. */
++	if (irqs_disabled_flags(flags) || cpu_is_offline(smp_processor_id())) {
+ 		local_irq_restore(flags);
+ 		return;
+ 	}
+
