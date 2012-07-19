@@ -1,71 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751592Ab2GSTrJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 15:47:09 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:60039 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751466Ab2GSTqs (ORCPT
+	id S1751558Ab2GSTxg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 15:53:36 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:32671 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751036Ab2GSTxd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 15:46:48 -0400
-From: Jim Cromie <jim.cromie@gmail.com>
-To: jbaron@redhat.com, linux-kernel@vger.kernel.org
-Cc: kay@vrfy.com, joe@perches.com, greg@kroah.com,
-        Jim Cromie <jim.cromie@gmail.com>
-Subject: [PATCH 1/3] drivers-core: make structured logging play nice with dynamic-debug
-Date: Thu, 19 Jul 2012 13:46:21 -0600
-Message-Id: <1342727183-4520-3-git-send-email-jim.cromie@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1342727183-4520-1-git-send-email-jim.cromie@gmail.com>
-References: <1342727183-4520-1-git-send-email-jim.cromie@gmail.com>
+	Thu, 19 Jul 2012 15:53:33 -0400
+Date: Thu, 19 Jul 2012 15:44:46 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>
+Subject: Re: [PATCH 06/17] xen-blkfront: remove IRQF_SAMPLE_RANDOM which is
+ now a no-op
+Message-ID: <20120719194446.GA17097@phenom.dumpdata.com>
+References: <1342560756-18737-1-git-send-email-tytso@mit.edu>
+ <1342560756-18737-7-git-send-email-tytso@mit.edu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1342560756-18737-7-git-send-email-tytso@mit.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit c4e00daaa96d3a0786f1f4fe6456281c60ef9a16 changed __dev_printk
-in a way that broke dynamic-debug's ability to control the dynamic
-prefix of dev_dbg(dev,..), but not dev_dbg(NULL,..) or pr_debug(..),
-which is why it wasnt noticed sooner.
+On Tue, Jul 17, 2012 at 05:32:25PM -0400, Theodore Ts'o wrote:
+> With the changes in the random tree, IRQF_SAMPLE_RANDOM is now a
+> no-op; interrupt randomness is now collected unconditionally in a very
+> low-overhead fashion; see commit 775f4b297b.  The IRQF_SAMPLE_RANDOM
+> flag was scheduled to be removed in 2009 on the
+> feature-removal-schedule, so this patch is preparation for the final
+> removal of this flag.
+> 
+> Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-When dev==NULL, __dev_printk() just calls printk(), which just works.
-But otherwise, it assumed that level was always a string like "<L>"
-and just plucked out the 'L', ignoring the rest.  However,
-dynamic_emit_prefix() adds "[tid] module:func:line:" to the string,
-those additions all got lost.
-
-Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
----
- drivers/base/core.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index 346be8b..ebdb7c5 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -1848,6 +1848,7 @@ int __dev_printk(const char *level, const struct device *dev,
- 		 struct va_format *vaf)
- {
- 	char dict[128];
-+	const char *level_extra = "";
- 	size_t dictlen = 0;
- 	const char *subsys;
- 
-@@ -1894,10 +1895,14 @@ int __dev_printk(const char *level, const struct device *dev,
- 				    "DEVICE=+%s:%s", subsys, dev_name(dev));
- 	}
- skip:
-+	if (level[3])
-+		level_extra = &level[3]; /* skip past "<L>" */
-+
- 	return printk_emit(0, level[1] - '0',
- 			   dictlen ? dict : NULL, dictlen,
--			   "%s %s: %pV",
--			   dev_driver_string(dev), dev_name(dev), vaf);
-+			   "%s %s: %s%pV", 
-+			   dev_driver_string(dev), dev_name(dev),
-+			   level_extra, vaf);
- }
- EXPORT_SYMBOL(__dev_printk);
- 
--- 
-1.7.10.4
-
+Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+> ---
+>  drivers/block/xen-blkfront.c | 5 ++---
+>  1 file changed, 2 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
+> index 60eed4b..8f7a071 100644
+> --- a/drivers/block/xen-blkfront.c
+> +++ b/drivers/block/xen-blkfront.c
+> @@ -854,9 +854,8 @@ static int setup_blkring(struct xenbus_device *dev,
+>  	if (err)
+>  		goto fail;
+>  
+> -	err = bind_evtchn_to_irqhandler(info->evtchn,
+> -					blkif_interrupt,
+> -					IRQF_SAMPLE_RANDOM, "blkif", info);
+> +	err = bind_evtchn_to_irqhandler(info->evtchn, blkif_interrupt, 0,
+> +					"blkif", info);
+>  	if (err <= 0) {
+>  		xenbus_dev_fatal(dev, err,
+>  				 "bind_evtchn_to_irqhandler failed");
+> -- 
+> 1.7.11.1.108.gb129051
