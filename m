@@ -1,67 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753620Ab2GRXyL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 19:54:11 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:40175 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751450Ab2GRXyJ (ORCPT
+	id S1752455Ab2GSAFP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 20:05:15 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:42020 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750854Ab2GSAFM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 19:54:09 -0400
-Date: Wed, 18 Jul 2012 16:54:02 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [Patch 0/7] Per cpu thread hotplug infrastructure - V3
-Message-ID: <20120718235402.GP2435@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120716103749.122800930@linutronix.de>
- <20120716152224.GF2403@linux.vnet.ibm.com>
- <5006F434.9010707@linux.vnet.ibm.com>
+	Wed, 18 Jul 2012 20:05:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5006F434.9010707@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12071823-7282-0000-0000-00000B11F429
+In-Reply-To: <1342633985.9551.36.camel@joe2Laptop>
+References: <1342442513-10488-1-git-send-email-yamanetoshi@gmail.com>
+	<1342573366-8167-1-git-send-email-yamanetoshi@gmail.com>
+	<1342574175.2012.12.camel@joe2Laptop>
+	<CAOTypNSvKEfYVLZ=0sN-U+2xiXBO4So4QkvYyKniEFeqvkqVBg@mail.gmail.com>
+	<1342633985.9551.36.camel@joe2Laptop>
+Date: Thu, 19 Jul 2012 09:05:10 +0900
+Message-ID: <CAOTypNQDWUNNFP6aEQ3ZjTi6u-UH7oRMR5eg5-n2PHjEaTxmhw@mail.gmail.com>
+Subject: Re: [PATCH] staging/et131x: fix checkpatch warnings
+From: Toshiaki Yamane <yamanetoshi@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Einon <mark.einon@gmail.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 18, 2012 at 11:06:52PM +0530, Srivatsa S. Bhat wrote:
-> On 07/16/2012 08:52 PM, Paul E. McKenney wrote:
-> > On Mon, Jul 16, 2012 at 10:42:34AM -0000, Thomas Gleixner wrote:
-> >> The following series implements the infrastructure for parking and
-> >> unparking kernel threads to avoid the full teardown and fork on cpu
-> >> hotplug operations along with management infrastructure for hotplug
-> >> and users.
-> >>
-> >> Changes vs. V2:
-> >>
-> >>  Use callbacks for all functionality. Thanks to Rusty for pointing
-> >>  that out. It makes the use sites nice and simple and keeps all the
-> >>  code which would be duplicated otherwise on the core.
-> > 
-> > Hello, Thomas,
-> > 
-> > What version should I apply this patchset to?  I tried v3.5-rc7, but
-> > got lots of warnings (one shown below) and the watchdog patch did not
-> > apply.
-> > 
-> 
-> Hi Paul,
-> 
-> This patchset applies cleanly on Thomas' smp/hotplug branch in the -tip
-> tree.
+On Thu, Jul 19, 2012 at 2:53 AM, Joe Perches <joe@perches.com> wrote:
+> On Wed, 2012-07-18 at 20:32 +0900, Toshiaki Yamane wrote:
+>> Thanks for you reply.
+>>
+>> I will fix netdev_info only, because I don't know if I should use "%p".
+>
+> OK, fyi: it turns out ps_ring_physaddr and rx_status_bus
+> are both dma_addr_t so both should be emitted with %ull
+> and cast to (unsigned long long) or (u64).
+>
 
-Thank you, Srivatsa, works much better.  Still get "scheduling while
-atomic", looking into that.
+Thanks for your reply.
 
-I suppose I should have been able to guess where it was based...
-Ah, well...
+%ullx ?
 
-							Thanx, Paul
-
+ pr_info("Packet Status Ring: %ullx\n", (unsigned long
+long)rx_ring->ps_ring_phydaddr);
