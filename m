@@ -1,98 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751800Ab2GSVHS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 17:07:18 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:61194 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751466Ab2GSVHO (ORCPT
+	id S1751985Ab2GSVKy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 17:10:54 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:41964 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751907Ab2GSVKx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 17:07:14 -0400
-Date: Thu, 19 Jul 2012 14:07:09 -0700
-From: "Greg KH (gregkh@linuxfoundation.org)" <gregkh@linuxfoundation.org>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: Re: 0xB16B00B5? Really? (was Re: Move hyperv out of the
- drivers/staging/ directory)
-Message-ID: <20120719210709.GA32031@kroah.com>
-References: <1316708240-25048-1-git-send-email-kys@microsoft.com>
- <20110922170450.GA4490@suse.de>
- <6E21E5352C11B742B20C142EB499E048081E935D@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <20110922173618.GA5624@suse.de>
- <6E21E5352C11B742B20C142EB499E048081EB789@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <20111004170415.GA1320@suse.de>
- <6E21E5352C11B742B20C142EB499E048081EB86F@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <20111004193414.GA15672@suse.de>
- <4FFFF711.8040003@redhat.com>
- <426367E2313C2449837CD2DE46E7EAF923547292@SN2PRD0310MB382.namprd03.prod.outlook.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <426367E2313C2449837CD2DE46E7EAF923547292@SN2PRD0310MB382.namprd03.prod.outlook.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 19 Jul 2012 17:10:53 -0400
+From: jan.bannister@gmail.com
+To: viro@zeniv.linux.org.uk, schwidefsky@de.ibm.com,
+        linux-kernel@vger.kernel.org
+Cc: Jan Bannister <jan.bannister@gmail.com>
+Subject: [PATCH] kernel: acct.c:  spaces required around that '<'
+Date: Thu, 19 Jul 2012 22:10:27 +0100
+Message-Id: <1342732227-13972-1-git-send-email-jan.bannister@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 19, 2012 at 02:11:47AM +0000, KY Srinivasan wrote:
-> 
-> 
-> > -----Original Message-----
-> > From: Paolo Bonzini [mailto:paolo.bonzini@gmail.com] On Behalf Of Paolo
-> > Bonzini
-> > Sent: Friday, July 13, 2012 6:23 AM
-> > To: KY Srinivasan
-> > Cc: Greg KH; devel@linuxdriverproject.org; linux-kernel@vger.kernel.org;
-> > virtualization@lists.osdl.org
-> > Subject: 0xB16B00B5? Really? (was Re: Move hyperv out of the drivers/staging/
-> > directory)
-> > 
-> > Il 04/10/2011 21:34, Greg KH ha scritto:
-> > > diff --git a/drivers/staging/hv/hyperv_vmbus.h b/drivers/hv/hyperv_vmbus.h
-> > > similarity index 99%
-> > > rename from drivers/staging/hv/hyperv_vmbus.h
-> > > rename to drivers/hv/hyperv_vmbus.h
-> > > index 3d2d836..8261cb6 100644
-> > > --- a/drivers/staging/hv/hyperv_vmbus.h
-> > > +++ b/drivers/hv/hyperv_vmbus.h
-> > > @@ -28,8 +28,7 @@
-> > >  #include <linux/list.h>
-> > >  #include <asm/sync_bitops.h>
-> > >  #include <linux/atomic.h>
-> > > -
-> > > -#include "hyperv.h"
-> > > +#include <linux/hyperv.h>
-> > >
-> > >  /*
-> > >   * The below CPUID leaves are present if
-> > VersionAndFeatures.HypervisorPresent
-> > 
-> > git's rename detection snips away this gem:
-> > 
-> > +#define HV_LINUX_GUEST_ID_LO		0x00000000
-> > +#define HV_LINUX_GUEST_ID_HI		0xB16B00B5
-> > +#define HV_LINUX_GUEST_ID		(((u64)HV_LINUX_GUEST_ID_HI
-> > << 32) | \
-> > +					   HV_LINUX_GUEST_ID_LO)
-> > 
-> > Somone was trying to be funny, I guess.
-> > 
-> > KY, I suppose you have access to Hyper-V code or can ask someone who does.
-> > Is this signature actually used in the Hyper-V host code?
-> 
-> Paolo,
-> 
-> As I noted earlier, this is just a guest ID that needs to be registered with the
-> hypervisor.  Thanks  for reporting this issue and on behalf of Microsoft, I would
-> like to  apologize for this offensive string. I have submitted a patch to fix this issue. 
+From: Jan Bannister <jan.bannister@gmail.com>
 
-You only changed it to be in decimal, you did not change the id at all.
-Is there some reason why you can not change it?  You said there was a
-reserved range of ids that could be used, perhaps just pick another one?
-What is the valid range that can be used here?
+Fixed a coding style issue
 
-thanks,
+Signed-off-by: Jan Bannister <jan.bannister@gmail.com>
+---
+ kernel/acct.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-greg k-h
+diff --git a/kernel/acct.c b/kernel/acct.c
+index 02e6167..725d3a9 100644
+--- a/kernel/acct.c
++++ b/kernel/acct.c
+@@ -134,7 +134,7 @@ static int check_free_space(struct bsd_acct_struct *acct, struct file *file)
+ 	spin_lock(&acct_lock);
+ 	if (file != acct->file) {
+ 		if (act)
+-			res = act>0;
++			res = act > 0;
+ 		goto out;
+ 	}
+ 
+-- 
+1.7.4.4
+
