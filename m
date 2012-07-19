@@ -1,220 +1,288 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753755Ab2GSHuo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 03:50:44 -0400
-Received: from mga14.intel.com ([143.182.124.37]:29542 "EHLO mga14.intel.com"
+	id S1753826Ab2GSHvz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 03:51:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29523 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753668Ab2GSHuk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 03:50:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="170258155"
-Date: Thu, 19 Jul 2012 15:45:58 +0800
-From: Feng Tang <feng.tang@intel.com>
-To: Len Brown <len.brown@intel.com>, <linux-kernel@vger.kernel.org>
-Cc: <x86@kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Donald Dutile <ddutile@redhat.com>,
-        Alexander Gordeev <agordeev@redhat.com>,
-        Bob Moore <robert.moore@intel.com>, Lin Ming <ming.m.lin@intel.com>
-Subject: Re: [PATCH 1/2] ACPI: replace all acpi_get_table_with_size with
- acpi_get_table
-Message-ID: <20120719154558.7ba49f50@feng-i7>
-In-Reply-To: <1342683564-2245-1-git-send-email-feng.tang@intel.com>
-References: <1342683564-2245-1-git-send-email-feng.tang@intel.com>
-Organization: intel
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1751745Ab2GSHvv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 03:51:51 -0400
+Date: Thu, 19 Jul 2012 10:51:49 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kvm: fix race with level interrupts
+Message-ID: <20120719075149.GP26120@redhat.com>
+References: <20120718215228.GA13905@redhat.com>
+ <1342649774.2229.223.camel@bling.home>
+ <20120718224459.GA14101@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120718224459.GA14101@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jul 19, 2012 at 01:44:59AM +0300, Michael S. Tsirkin wrote:
+> On Wed, Jul 18, 2012 at 04:16:14PM -0600, Alex Williamson wrote:
+> > On Thu, 2012-07-19 at 00:52 +0300, Michael S. Tsirkin wrote:
+> > > When more than 1 source id is in use for the same GSI, we have the
+> > > following race related to handling irq_states:
+> > > 
+> > > CPU 0 clears bit in irq_states. CPU 0 reads irq_state as 0.
+> > > CPU 1 sets bit in irq_states.  CPU 1 calls kvm_ioapic_set_irq(1). CPU 0
+> > > calls kvm_ioapic_set_irq(0).
+> > > 
+> > > Now ioapic thinks the level is 0 but irq_state is not 0.
+> > > 
+> > > Note that above is valid behaviour if CPU0 and CPU1 are using different
+> > > source ids.
+> > > 
+> > > Fix by performing all irq_states bitmap handling under pic/ioapic lock.
+> > > This also removes the need for atomics with irq_states handling.
+> > > 
+> > > Reported-by: Gleb Natapov <gleb@redhat.com>
+> > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > > ---
+> > > 
+> > > This survives stress testing for me (though I only tried virtio, not
+> > > device assignment).
+> > > Avi, Marcelo, though we have not observed this in the field,
+> > > it's a bugfix so probably 3.5 material?
+> > > I assume yes so the patch is against 3.5-rc7.
+> > > Also stable? It's a very old bug.
+> > > 
+> > > 
+> > >  arch/x86/include/asm/kvm_host.h | 15 ++++++++++++++-
+> > >  arch/x86/kvm/i8259.c            | 14 ++++++++++++--
+> > >  virt/kvm/ioapic.c               | 13 ++++++++++++-
+> > >  virt/kvm/ioapic.h               |  4 +++-
+> > >  virt/kvm/irq_comm.c             | 31 ++++---------------------------
+> > >  5 files changed, 45 insertions(+), 32 deletions(-)
+> > > 
+> > > diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> > > index db7c1f2..fe6e9f1 100644
+> > > --- a/arch/x86/include/asm/kvm_host.h
+> > > +++ b/arch/x86/include/asm/kvm_host.h
+> > > @@ -802,7 +802,20 @@ int kvm_read_guest_page_mmu(struct kvm_vcpu *vcpu, struct kvm_mmu *mmu,
+> > >  void kvm_propagate_fault(struct kvm_vcpu *vcpu, struct x86_exception *fault);
+> > >  bool kvm_require_cpl(struct kvm_vcpu *vcpu, int required_cpl);
+> > >  
+> > > -int kvm_pic_set_irq(void *opaque, int irq, int level);
+> > > +static inline int kvm_irq_line_state(unsigned long *irq_state,
+> > > +				     int irq_source_id, int level)
+> > > +{
+> > > +	/* Logical OR for level trig interrupt */
+> > > +	if (level)
+> > > +		__set_bit(irq_source_id, irq_state);
+> > > +	else
+> > > +		__clear_bit(irq_source_id, irq_state);
+> > > +
+> > > +	return !!(*irq_state);
+> > > +}
+> > > +
+> > > +int kvm_pic_set_irq(struct kvm_pic *pic, int irq, int irq_source_id, int level);
+> > > +void kvm_pic_clear_all(struct kvm_pic *pic, int irq_source_id);
+> > >  
+> > >  void kvm_inject_nmi(struct kvm_vcpu *vcpu);
+> > >  
+> > > diff --git a/arch/x86/kvm/i8259.c b/arch/x86/kvm/i8259.c
+> > > index 81cf4fa..95b504b 100644
+> > > --- a/arch/x86/kvm/i8259.c
+> > > +++ b/arch/x86/kvm/i8259.c
+> > > @@ -188,13 +188,14 @@ void kvm_pic_update_irq(struct kvm_pic *s)
+> > >  	pic_unlock(s);
+> > >  }
+> > >  
+> > > -int kvm_pic_set_irq(void *opaque, int irq, int level)
+> > > +int kvm_pic_set_irq(struct kvm_pic *s, int irq, int src_id, int l)
+> > 
+> > Please use "irq_source_id" and keep "level".  I hate reviewing code
+> > where I have to differentiate 'l' vs '1'.
+> 
+> l is an illegal variable name?  Switch to a different font.
+> 
+No, but it does not make it good variable name. I agree with Alex here.
 
-Update the commit log.
+> >  Same below, mixing src_id and
+> > irq_source_id in various places.
+> 
+> irq_source_id is too long, coding style says variable names
+> should be short:
+> 	LOCAL variable names should be short, and to the point.
+Again I agree with Alex about consistency.
 
-Thanks,
-Feng
+> 
+> > >  {
+> > > -	struct kvm_pic *s = opaque;
+> > >  	int ret = -1;
+> > > +	int level;
+> > 
+> > And you'd avoid this variable
+> 
+> by giving a different meaning to the same variable in
+> different parts of a function? Now *that* is a bad idea.
+> 
+> l is level for a specific source, level is the resulting irq value.
+> 
+You can call it shared_level if you wish,  but what's wrong with doing:
+ret = pic_set_irq1(&s->pics[irq >> 3], irq & 7,
+       kvm_irq_line_state(&s->irq_states[irq], src_id, l));
 
->From 633ba8625e9ae1999b94edac514a11ddbc4176ef Mon Sep 17 00:00:00 2001
-From: Feng Tang <feng.tang@intel.com>
-Date: Thu, 19 Jul 2012 15:10:02 +0800
-Subject: [PATCH 1/2] ACPI: Replace acpi_get_table_with_size() with acpi_get_table()
 
-This is a preparation for removing the acpi_get_table_with_size(), as this
-function could be well covered by acpi_get_table(), and there is no need
-to have both of them to exist.
+> > >  
+> > >  	pic_lock(s);
+> > >  	if (irq >= 0 && irq < PIC_NUM_PINS) {
+> > > +		level = kvm_irq_line_state(&s->irq_states[irq], src_id, l);
+> > >  		ret = pic_set_irq1(&s->pics[irq >> 3], irq & 7, level);
+> > >  		pic_update_irq(s);
+> > >  		trace_kvm_pic_set_irq(irq >> 3, irq & 7, s->pics[irq >> 3].elcr,
+> > > @@ -205,6 +206,15 @@ int kvm_pic_set_irq(void *opaque, int irq, int level)
+> > >  	return ret;
+> > >  }
+> > >  
+> > > +void kvm_pic_clear_all(struct kvm_pic *s, int src_id)
+> > > +{
+> > > +	int i;
+> > > +	pic_lock(s);
+> > > +	for (i = 0; i < PIC_NUM_PINS; i++)
+> > > +		__clear_bit(src_id, &s->irq_states[i]);
+> > > +	pic_unlock(s);
+> > > +}
+> > > +
+> > >  /*
+> > >   * acknowledge interrupt 'irq'
+> > >   */
+> > > diff --git a/virt/kvm/ioapic.c b/virt/kvm/ioapic.c
+> > > index 26fd54d..268b332 100644
+> > > --- a/virt/kvm/ioapic.c
+> > > +++ b/virt/kvm/ioapic.c
+> > > @@ -191,17 +191,19 @@ static int ioapic_deliver(struct kvm_ioapic *ioapic, int irq)
+> > >  	return kvm_irq_delivery_to_apic(ioapic->kvm, NULL, &irqe);
+> > >  }
+> > >  
+> > > -int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int level)
+> > > +int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int src_id, int l)
+> > >  {
+> > >  	u32 old_irr;
+> > >  	u32 mask = 1 << irq;
+> > >  	union kvm_ioapic_redirect_entry entry;
+> > >  	int ret = 1;
+> > > +	int level;
+> > >  
+> > >  	spin_lock(&ioapic->lock);
+> > >  	old_irr = ioapic->irr;
+> > >  	if (irq >= 0 && irq < IOAPIC_NUM_PINS) {
+> > >  		entry = ioapic->redirtbl[irq];
+> > > +		level = kvm_irq_line_state(&ioapic->irq_states[irq], src_id, l);
+> > >  		level ^= entry.fields.polarity;
+> > >  		if (!level)
+> > >  			ioapic->irr &= ~mask;
+> > > @@ -221,6 +223,15 @@ int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int level)
+> > >  	return ret;
+> > >  }
+> > >  
+> > > +void kvm_ioapic_clear_all(struct kvm_ioapic *ioapic, int src_id)
+> > > +{
+> > > +	int i;
+> > > +	spin_lock(&ioapic->lock);
+> > > +	for (i = 0; i < KVM_IOAPIC_NUM_PINS; i++)
+> > > +		__clear_bit(src_id, &ioapic->irq_states[i]);
+> > > +	spin_unlock(&ioapic->lock);
+> > > +}
+> > > +
+> > >  static void __kvm_ioapic_update_eoi(struct kvm_ioapic *ioapic, int vector,
+> > >  				     int trigger_mode)
+> > >  {
+> > > diff --git a/virt/kvm/ioapic.h b/virt/kvm/ioapic.h
+> > > index 32872a0..a30abfe 100644
+> > > --- a/virt/kvm/ioapic.h
+> > > +++ b/virt/kvm/ioapic.h
+> > > @@ -74,7 +74,9 @@ void kvm_ioapic_update_eoi(struct kvm *kvm, int vector, int trigger_mode);
+> > >  bool kvm_ioapic_handles_vector(struct kvm *kvm, int vector);
+> > >  int kvm_ioapic_init(struct kvm *kvm);
+> > >  void kvm_ioapic_destroy(struct kvm *kvm);
+> > > -int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int level);
+> > > +int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int irq_source_id,
+> > > +		       int level);
+> > > +void kvm_ioapic_clear_all(struct kvm_ioapic *ioapic, int irq_source_id);
+> > >  void kvm_ioapic_reset(struct kvm_ioapic *ioapic);
+> > >  int kvm_irq_delivery_to_apic(struct kvm *kvm, struct kvm_lapic *src,
+> > >  		struct kvm_lapic_irq *irq);
+> > > diff --git a/virt/kvm/irq_comm.c b/virt/kvm/irq_comm.c
+> > > index 5afb431..83402d7 100644
+> > > --- a/virt/kvm/irq_comm.c
+> > > +++ b/virt/kvm/irq_comm.c
+> > > @@ -33,26 +33,12 @@
+> > >  
+> > >  #include "ioapic.h"
+> > >  
+> > > -static inline int kvm_irq_line_state(unsigned long *irq_state,
+> > > -				     int irq_source_id, int level)
+> > > -{
+> > > -	/* Logical OR for level trig interrupt */
+> > > -	if (level)
+> > > -		set_bit(irq_source_id, irq_state);
+> > > -	else
+> > > -		clear_bit(irq_source_id, irq_state);
+> > > -
+> > > -	return !!(*irq_state);
+> > > -}
+> > > -
+> > >  static int kvm_set_pic_irq(struct kvm_kernel_irq_routing_entry *e,
+> > >  			   struct kvm *kvm, int irq_source_id, int level)
+> > >  {
+> > >  #ifdef CONFIG_X86
+> > >  	struct kvm_pic *pic = pic_irqchip(kvm);
+> > > -	level = kvm_irq_line_state(&pic->irq_states[e->irqchip.pin],
+> > > -				   irq_source_id, level);
+> > > -	return kvm_pic_set_irq(pic, e->irqchip.pin, level);
+> > > +	return kvm_pic_set_irq(pic, e->irqchip.pin, irq_source_id, level);
+> > >  #else
+> > >  	return -1;
+> > >  #endif
+> > > @@ -62,10 +48,7 @@ static int kvm_set_ioapic_irq(struct kvm_kernel_irq_routing_entry *e,
+> > >  			      struct kvm *kvm, int irq_source_id, int level)
+> > >  {
+> > >  	struct kvm_ioapic *ioapic = kvm->arch.vioapic;
+> > > -	level = kvm_irq_line_state(&ioapic->irq_states[e->irqchip.pin],
+> > > -				   irq_source_id, level);
+> > > -
+> > > -	return kvm_ioapic_set_irq(ioapic, e->irqchip.pin, level);
+> > > +	return kvm_ioapic_set_irq(ioapic, e->irqchip.pin, irq_source_id, level);
+> > >  }
+> > >  
+> > >  inline static bool kvm_is_dm_lowest_prio(struct kvm_lapic_irq *irq)
+> > > @@ -249,8 +232,6 @@ unlock:
+> > >  
+> > >  void kvm_free_irq_source_id(struct kvm *kvm, int irq_source_id)
+> > >  {
+> > > -	int i;
+> > > -
+> > >  	ASSERT(irq_source_id != KVM_USERSPACE_IRQ_SOURCE_ID);
+> > >  
+> > >  	mutex_lock(&kvm->irq_lock);
+> > > @@ -263,14 +244,10 @@ void kvm_free_irq_source_id(struct kvm *kvm, int irq_source_id)
+> > >  	if (!irqchip_in_kernel(kvm))
+> > >  		goto unlock;
+> > >  
+> > > -	for (i = 0; i < KVM_IOAPIC_NUM_PINS; i++) {
+> > > -		clear_bit(irq_source_id, &kvm->arch.vioapic->irq_states[i]);
+> > > -		if (i >= 16)
+> > > -			continue;
+> > > +	kvm_ioapic_clear_all(kvm->arch.vioapic, irq_source_id);
+> > >  #ifdef CONFIG_X86
+> > > -		clear_bit(irq_source_id, &pic_irqchip(kvm)->irq_states[i]);
+> > > +	kvm_pic_clear_all(pic_irqchip(kvm), irq_source_id);
+> > >  #endif
+> > > -	}
+> > >  unlock:
+> > >  	mutex_unlock(&kvm->irq_lock);
+> > >  }
+> > 
+> > 
 
-Signed-off-by: Feng Tang <feng.tang@intel.com>
-Cc: x86@kernel.org
----
- arch/x86/kernel/apic/es7000_32.c |    7 +++----
- drivers/acpi/tables.c            |   21 +++++++++------------
- drivers/iommu/dmar.c             |   14 +++++++-------
- 3 files changed, 19 insertions(+), 23 deletions(-)
-
-diff --git a/arch/x86/kernel/apic/es7000_32.c b/arch/x86/kernel/apic/es7000_32.c
-index 0874799..ae30b39 100644
---- a/arch/x86/kernel/apic/es7000_32.c
-+++ b/arch/x86/kernel/apic/es7000_32.c
-@@ -242,19 +242,18 @@ static int __init find_unisys_acpi_oem_table(unsigned long *oem_addr)
- {
- 	struct acpi_table_header *header = NULL;
- 	struct es7000_oem_table *table;
--	acpi_size tbl_size;
- 	acpi_status ret;
- 	int i = 0;
- 
- 	for (;;) {
--		ret = acpi_get_table_with_size("OEM1", i++, &header, &tbl_size);
-+		ret = acpi_get_table("OEM1", i++, &header);
- 		if (!ACPI_SUCCESS(ret))
- 			return -1;
- 
- 		if (!memcmp((char *) &header->oem_id, "UNISYS", 6))
- 			break;
- 
--		early_acpi_os_unmap_memory(header, tbl_size);
-+		early_acpi_os_unmap_memory(header, header->length);
- 	}
- 
- 	table = (void *)header;
-@@ -262,7 +261,7 @@ static int __init find_unisys_acpi_oem_table(unsigned long *oem_addr)
- 	oem_addrX	= table->OEMTableAddr;
- 	oem_size	= table->OEMTableSize;
- 
--	early_acpi_os_unmap_memory(header, tbl_size);
-+	early_acpi_os_unmap_memory(header, header->length);
- 
- 	*oem_addr	= (unsigned long)__acpi_map_table(oem_addrX, oem_size);
- 
-diff --git a/drivers/acpi/tables.c b/drivers/acpi/tables.c
-index f336bca..5b8b7e0 100644
---- a/drivers/acpi/tables.c
-+++ b/drivers/acpi/tables.c
-@@ -211,7 +211,6 @@ acpi_table_parse_entries(char *id,
- 	struct acpi_subtable_header *entry;
- 	unsigned int count = 0;
- 	unsigned long table_end;
--	acpi_size tbl_size;
- 
- 	if (acpi_disabled)
- 		return -ENODEV;
-@@ -220,9 +219,9 @@ acpi_table_parse_entries(char *id,
- 		return -EINVAL;
- 
- 	if (strncmp(id, ACPI_SIG_MADT, 4) == 0)
--		acpi_get_table_with_size(id, acpi_apic_instance, &table_header, &tbl_size);
-+		acpi_get_table(id, acpi_apic_instance, &table_header);
- 	else
--		acpi_get_table_with_size(id, 0, &table_header, &tbl_size);
-+		acpi_get_table(id, 0, &table_header);
- 
- 	if (!table_header) {
- 		printk(KERN_WARNING PREFIX "%4.4s not present\n", id);
-@@ -241,7 +240,7 @@ acpi_table_parse_entries(char *id,
- 		if (entry->type == entry_id
- 		    && (!max_entries || count++ < max_entries))
- 			if (handler(entry, table_end)) {
--				early_acpi_os_unmap_memory((char *)table_header, tbl_size);
-+				early_acpi_os_unmap_memory((char *)table_header, table_header->length);
- 				return -EINVAL;
- 			}
- 
-@@ -253,7 +252,7 @@ acpi_table_parse_entries(char *id,
- 		       "%i found\n", id, entry_id, count - max_entries, count);
- 	}
- 
--	early_acpi_os_unmap_memory((char *)table_header, tbl_size);
-+	early_acpi_os_unmap_memory((char *)table_header, table_header->length);
- 	return count;
- }
- 
-@@ -278,7 +277,6 @@ acpi_table_parse_madt(enum acpi_madt_type id,
- int __init acpi_table_parse(char *id, acpi_table_handler handler)
- {
- 	struct acpi_table_header *table = NULL;
--	acpi_size tbl_size;
- 
- 	if (acpi_disabled)
- 		return -ENODEV;
-@@ -287,13 +285,13 @@ int __init acpi_table_parse(char *id, acpi_table_handler handler)
- 		return -EINVAL;
- 
- 	if (strncmp(id, ACPI_SIG_MADT, 4) == 0)
--		acpi_get_table_with_size(id, acpi_apic_instance, &table, &tbl_size);
-+		acpi_get_table(id, acpi_apic_instance, &table);
- 	else
--		acpi_get_table_with_size(id, 0, &table, &tbl_size);
-+		acpi_get_table(id, 0, &table);
- 
- 	if (table) {
- 		handler(table);
--		early_acpi_os_unmap_memory(table, tbl_size);
-+		early_acpi_os_unmap_memory(table, table->length);
- 		return 0;
- 	} else
- 		return 1;
-@@ -307,9 +305,8 @@ int __init acpi_table_parse(char *id, acpi_table_handler handler)
- static void __init check_multiple_madt(void)
- {
- 	struct acpi_table_header *table = NULL;
--	acpi_size tbl_size;
- 
--	acpi_get_table_with_size(ACPI_SIG_MADT, 2, &table, &tbl_size);
-+	acpi_get_table(ACPI_SIG_MADT, 2, &table);
- 	if (table) {
- 		printk(KERN_WARNING PREFIX
- 		       "BIOS bug: multiple APIC/MADT found,"
-@@ -318,7 +315,7 @@ static void __init check_multiple_madt(void)
- 		       "If \"acpi_apic_instance=%d\" works better, "
- 		       "notify linux-acpi@vger.kernel.org\n",
- 		       acpi_apic_instance ? 0 : 2);
--		early_acpi_os_unmap_memory(table, tbl_size);
-+		early_acpi_os_unmap_memory(table, table->length);
- 
- 	} else
- 		acpi_apic_instance = 0;
-diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
-index 86e2f4a..aa65b6f 100644
---- a/drivers/iommu/dmar.c
-+++ b/drivers/iommu/dmar.c
-@@ -48,7 +48,6 @@
- LIST_HEAD(dmar_drhd_units);
- 
- struct acpi_table_header * __initdata dmar_tbl;
--static acpi_size dmar_tbl_size;
- 
- static void __init dmar_register_drhd_unit(struct dmar_drhd_unit *drhd)
- {
-@@ -285,10 +284,8 @@ static int __init dmar_table_detect(void)
- 	acpi_status status = AE_OK;
- 
- 	/* if we could find DMAR table, then there are DMAR devices */
--	status = acpi_get_table_with_size(ACPI_SIG_DMAR, 0,
--				(struct acpi_table_header **)&dmar_tbl,
--				&dmar_tbl_size);
--
-+	status = acpi_get_table(ACPI_SIG_DMAR, 0,
-+				(struct acpi_table_header **)&dmar_tbl);
- 	if (ACPI_SUCCESS(status) && !dmar_tbl) {
- 		pr_warn("Unable to map DMAR\n");
- 		status = AE_NOT_FOUND;
-@@ -558,8 +555,11 @@ int __init detect_intel_iommu(void)
- 			x86_init.iommu.iommu_init = intel_iommu_init;
- #endif
- 	}
--	early_acpi_os_unmap_memory(dmar_tbl, dmar_tbl_size);
--	dmar_tbl = NULL;
-+
-+	if (dmar_tbl) {
-+		early_acpi_os_unmap_memory(dmar_tbl, dmar_tbl->length);
-+		dmar_tbl = NULL;
-+	}
- 
- 	return ret ? 1 : -ENODEV;
- }
--- 
-1.7.1
+--
+			Gleb.
