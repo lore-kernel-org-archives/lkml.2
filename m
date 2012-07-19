@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754754Ab2GSB4z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 21:56:55 -0400
-Received: from mail127.messagelabs.com ([216.82.250.115]:49466 "EHLO
-	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751721Ab2GSB4x (ORCPT
+	id S1755254Ab2GSB5U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 21:57:20 -0400
+Received: from mail132.messagelabs.com ([216.82.242.115]:50845 "EHLO
+	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751012Ab2GSB5R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 21:56:53 -0400
+	Wed, 18 Jul 2012 21:57:17 -0400
 X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-12.tower-127.messagelabs.com!1342663012!9010628!1
-X-Originating-IP: [216.166.12.32]
+X-Msg-Ref: server-5.tower-132.messagelabs.com!1342663036!14774506!1
+X-Originating-IP: [216.166.12.72]
 X-StarScan-Version: 6.5.10; banners=-,-,-
 X-VirusChecked: Checked
 From: H Hartley Sweeten <hartleys@visionengravers.com>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 62/90] staging: comedi: daqboard2000: remove 'got_regions' from private data
-Date: Wed, 18 Jul 2012 18:56:49 -0700
+Subject: [PATCH 63/90] staging: comedi: daqboard2000: store the pci_dev in the comedi_device
+Date: Wed, 18 Jul 2012 18:57:08 -0700
 User-Agent: KMail/1.9.9
 CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
         <gregkh@linuxfoundation.org>
@@ -23,60 +23,68 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Message-ID: <201207181856.49363.hartleys@visionengravers.com>
+Message-ID: <201207181857.08402.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 'got_regions' variable in the private data is used as a flag
-for the detach to know if the pci device has been enabled.
-
-Typically the dev->iobase variable is used to indicate this in
-all the other comedi drivers. Do the same here for consistancy.
+Use the hw_dev pointer in the comedi_device struct to hold the
+pci_dev instead of carrying it in the private data.
 
 Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 Cc: Ian Abbott <abbotti@mev.co.uk>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/staging/comedi/drivers/daqboard2000.c | 9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+ drivers/staging/comedi/drivers/daqboard2000.c | 15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/staging/comedi/drivers/daqboard2000.c b/drivers/staging/comedi/drivers/daqboard2000.c
-index eb07466..1d94b58 100644
+index 1d94b58..ba61e32 100644
 --- a/drivers/staging/comedi/drivers/daqboard2000.c
 +++ b/drivers/staging/comedi/drivers/daqboard2000.c
-@@ -320,7 +320,6 @@ struct daqboard2000_private {
- 	struct pci_dev *pci_dev;
+@@ -317,7 +317,6 @@ struct daqboard2000_private {
+ 	enum {
+ 		card_daqboard_2000
+ 	} card;
+-	struct pci_dev *pci_dev;
  	void *daq;
  	void *plx;
--	int got_regions;
  	unsigned int ao_readback[2];
- };
- 
-@@ -760,11 +759,11 @@ static int daqboard2000_attach(struct comedi_device *dev,
- 			"failed to enable PCI device and request regions\n");
+@@ -751,7 +750,7 @@ static int daqboard2000_attach(struct comedi_device *dev,
+ 	pcidev = daqboard2000_find_pci_dev(dev, it);
+ 	if (!pcidev)
  		return -EIO;
- 	}
--	devpriv->got_regions = 1;
-+	dev->iobase = pci_resource_start(pcidev, 2);
-+
- 	devpriv->plx =
- 	    ioremap(pci_resource_start(pcidev, 0), DAQBOARD2000_PLX_SIZE);
--	devpriv->daq =
--	    ioremap(pci_resource_start(pcidev, 2), DAQBOARD2000_DAQ_SIZE);
-+	devpriv->daq = ioremap(dev->iobase, DAQBOARD2000_DAQ_SIZE);
- 	if (!devpriv->plx || !devpriv->daq)
- 		return -ENOMEM;
+-	devpriv->pci_dev = pcidev;
++	comedi_set_hw_dev(dev, &pcidev->dev);
  
-@@ -844,7 +843,7 @@ static void daqboard2000_detach(struct comedi_device *dev)
+ 	result = comedi_pci_enable(pcidev, "daqboard2000");
+ 	if (result < 0) {
+@@ -833,6 +832,8 @@ out:
+ 
+ static void daqboard2000_detach(struct comedi_device *dev)
+ {
++	struct pci_dev *pcidev = comedi_to_pci_dev(dev);
++
+ 	if (dev->subdevices)
+ 		subdev_8255_cleanup(dev, dev->subdevices + 2);
+ 	if (dev->irq)
+@@ -842,11 +843,11 @@ static void daqboard2000_detach(struct comedi_device *dev)
+ 			iounmap(devpriv->daq);
  		if (devpriv->plx)
  			iounmap(devpriv->plx);
- 		if (devpriv->pci_dev) {
--			if (devpriv->got_regions)
-+			if (dev->iobase)
- 				comedi_pci_disable(devpriv->pci_dev);
- 			pci_dev_put(devpriv->pci_dev);
- 		}
+-		if (devpriv->pci_dev) {
+-			if (dev->iobase)
+-				comedi_pci_disable(devpriv->pci_dev);
+-			pci_dev_put(devpriv->pci_dev);
+-		}
++	}
++	if (pcidev) {
++		if (dev->iobase)
++			comedi_pci_disable(pcidev);
++		pci_dev_put(pcidev);
+ 	}
+ }
+ 
 -- 
 1.7.11
 
