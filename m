@@ -1,58 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752046Ab2GSVt4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 17:49:56 -0400
-Received: from mail.eladian.com ([64.140.252.105]:14024 "EHLO mail.eladian.com"
+	id S1752070Ab2GSVxe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 17:53:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35832 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751466Ab2GSVty (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 17:49:54 -0400
-X-Amavis-Modified: Mail body modified (using disclaimer) - mail.eladian.com
-Date: Thu, 19 Jul 2012 17:49:53 -0400 (EDT)
-From: Daniel Wisehart <daniel.wisehart@eladian.com>
-To: linux-kernel@vger.kernel.org
-Cc: alan@redhat.com
-Subject: [PATCH] scripts/patch-kernel fix
-Message-ID: <9b2de540-7ff6-4853-8331-5b9f0d28051c@mail.eladian.com>
-In-Reply-To: <cf445a75-137c-4689-aa34-6c89cbd92b7b@mail.eladian.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	id S1751466Ab2GSVxc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 17:53:32 -0400
+Date: Thu, 19 Jul 2012 22:53:28 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Jonathan Nieder <jrnieder@gmail.com>
+Cc: Stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 34/34] mm/hugetlb: fix warning in
+ alloc_huge_page/dequeue_huge_page_vma
+Message-ID: <20120719215328.GY9222@suse.de>
+References: <1342708604-26540-1-git-send-email-mgorman@suse.de>
+ <1342708604-26540-35-git-send-email-mgorman@suse.de>
+ <20120719202544.GB19392@burratino>
 MIME-Version: 1.0
-X-Mailer: Zimbra 7.1.3_GA_3374 (ZimbraWebClient - GC19 (Linux)/7.1.3_GA_3346)
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20120719202544.GB19392@burratino>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Takes care of errors when running something like:
+On Thu, Jul 19, 2012 at 03:25:44PM -0500, Jonathan Nieder wrote:
+> Hi,
+> 
+> Mel Gorman wrote:
+> 
+> > From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+> >
+> > Stable note: Not tracked in Bugzilla. [get|put]_mems_allowed() is extremely
+> > 	expensive and severely impacted page allocator performance. This
+> > 	is part of a series of patches that reduce page allocator overhead.
+> >
+> > Fix a gcc warning (and bug?) introduced in cc9a6c877 ("cpuset: mm: reduce
+> > large amounts of memory barrier related damage v3")
+> 
+> I know the corresponding upstream commit was alluded to in the cover
+> letter, but please also mention it by name in the patch description.
 
-$ ./scripts/patch-kernel . .. 3.5
-Current kernel version is 3.5.0-rc7 ( Saber-toothed Squirrel)
-./scripts/patch-kernel: line 229: [: -lt: unary operator expected
-./scripts/patch-kernel: line 252: [: -gt: unary operator expected
+Whoops, yes of course. Most of the patches were imported by a script and
+I added notes afterwards. This was one of the few ones I manally
+imported and managed to mess it up. Here is a revised version with the
+upstream commit included.
 
+---8<---
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Date: Wed, 25 Apr 2012 16:01:46 -0700
+Subject: [PATCH 34/34] mm/hugetlb: fix warning in alloc_huge_page/dequeue_huge_page_vma
 
-diff --git a/scripts/patch-kernel b/scripts/patch-kernel
-index d000ea3..a7672eb 100755
---- a/scripts/patch-kernel
-+++ b/scripts/patch-kernel
-@@ -226,7 +226,7 @@ fi
- 
- # This all assumes a 2.6.x[.y] kernel tree.
- # Don't allow backwards/reverse patching.
--if [ $STOPSUBLEVEL -lt $SUBLEVEL ]; then
-+if [ "$STOPSUBLEVEL"0 -lt "$SUBLEVEL"0 ]; then
-        backwards
- fi
- 
-@@ -249,7 +249,7 @@ fi
- # If not ending sublevel is specified, it is incremented until
- # no further sublevels are found.
- 
--if [ $STOPSUBLEVEL -gt $SUBLEVEL ]; then
-+if [ "$STOPSUBLEVEL"0 -gt "$SUBLEVEL"0 ]; then
- while :                                # incrementing SUBLEVEL (s in v.p.s)
- do
-     CURRENTFULLVERSION="$VERSION.$PATCHLEVEL.$SUBLEVEL"
+commit b1c12cbcd0a02527c180a862e8971e249d3b347d upstream.
 
+Stable note: Not tracked in Bugzilla. [get|put]_mems_allowed() is extremely
+	expensive and severely impacted page allocator performance. This
+	is part of a series of patches that reduce page allocator overhead.
 
+Fix a gcc warning (and bug?) introduced in cc9a6c877 ("cpuset: mm: reduce
+large amounts of memory barrier related damage v3")
 
-This communication is restricted - please see http://www.eladian.com for further information.
+Local variable "page" can be uninitialized if the nodemask from vma policy
+does not intersects with nodemask from cpuset.  Even if it doesn't happens
+it is better to initialize this variable explicitly than to introduce
+a kernel oops in a weird corner case.
+
+mm/hugetlb.c: In function `alloc_huge_page':
+mm/hugetlb.c:1135:5: warning: `page' may be used uninitialized in this function
+
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ mm/hugetlb.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 64f2b7a..ae60a53 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -454,7 +454,7 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
+ 				struct vm_area_struct *vma,
+ 				unsigned long address, int avoid_reserve)
+ {
+-	struct page *page;
++	struct page *page = NULL;
+ 	struct mempolicy *mpol;
+ 	nodemask_t *nodemask;
+ 	struct zonelist *zonelist;
+-- 
+1.7.9.2
+
