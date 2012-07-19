@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752904Ab2GSOjB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 10:39:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40397 "EHLO mx2.suse.de"
+	id S1752831Ab2GSOiz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 10:38:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40423 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751258Ab2GSOgs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 10:36:48 -0400
+	id S1751801Ab2GSOgz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 10:36:55 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Stable <stable@vger.kernel.org>
 Cc: "Linux-MM <linux-mm"@kvack.org, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 02/34] mm: memory hotplug: Check if pages are correctly reserved on a per-section basis
-Date: Thu, 19 Jul 2012 15:36:12 +0100
-Message-Id: <1342708604-26540-3-git-send-email-mgorman@suse.de>
+Subject: [PATCH 14/34] mm: zone_reclaim: make isolate_lru_page() filter-aware
+Date: Thu, 19 Jul 2012 15:36:24 +0100
+Message-Id: <1342708604-26540-15-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1342708604-26540-1-git-send-email-mgorman@suse.de>
 References: <1342708604-26540-1-git-send-email-mgorman@suse.de>
@@ -20,117 +20,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 2bbcb8788311a40714b585fc11b51da6ffa2ab92 upstream.
+From: Minchan Kim <minchan.kim@gmail.com>
 
-Stable note: Fixes https://bugzilla.novell.com/show_bug.cgi?id=721039 .
-	Without the patch, memory hot-add can fail for kernel configurations
-	that do not set CONFIG_SPARSEMEM_VMEMMAP.
+commit f80c0673610e36ae29d63e3297175e22f70dde5f upstream.
 
-It is expected that memory being brought online is PageReserved
-similar to what happens when the page allocator is being brought up.
-Memory is onlined in "memory blocks" which consist of one or more
-sections. Unfortunately, the code that verifies PageReserved is
-currently assuming that the memmap backing all these pages is virtually
-contiguous which is only the case when CONFIG_SPARSEMEM_VMEMMAP is set.
+Stable note: Not tracked in Bugzilla. THP and compaction disrupt the LRU list
+	leading to poor reclaim decisions which has a variable performance
+	impact.
 
-This patch updates the PageReserved check to lookup struct page once per
-section to guarantee the correct struct page is being checked.
+In __zone_reclaim case, we don't want to shrink mapped page.  Nonetheless,
+we have isolated mapped page and re-add it into LRU's head.  It's
+unnecessary CPU overhead and makes LRU churning.
 
-[Check pages within sections properly: rientjes@google.com]
-[original patch by: nfont@linux.vnet.ibm.com]
+Of course, when we isolate the page, the page might be mapped but when we
+try to migrate the page, the page would be not mapped.  So it could be
+migrated.  But race is rare and although it happens, it's no big deal.
+
+Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Tested-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/base/memory.c |   58 ++++++++++++++++++++++++++++++++++---------------
- 1 file changed, 40 insertions(+), 18 deletions(-)
+ include/linux/mmzone.h |    2 ++
+ mm/vmscan.c            |   20 ++++++++++++++++++--
+ 2 files changed, 20 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/base/memory.c b/drivers/base/memory.c
-index 45d7c8f..5fb6aae 100644
---- a/drivers/base/memory.c
-+++ b/drivers/base/memory.c
-@@ -224,13 +224,48 @@ int memory_isolate_notify(unsigned long val, void *v)
- }
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 632107e..951ed81 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -164,6 +164,8 @@ static inline int is_unevictable_lru(enum lru_list l)
+ #define ISOLATE_ACTIVE		((__force isolate_mode_t)0x2)
+ /* Isolate clean file */
+ #define ISOLATE_CLEAN		((__force isolate_mode_t)0x4)
++/* Isolate unmapped file */
++#define ISOLATE_UNMAPPED	((__force isolate_mode_t)0x8)
  
- /*
-+ * The probe routines leave the pages reserved, just as the bootmem code does.
-+ * Make sure they're still that way.
-+ */
-+static bool pages_correctly_reserved(unsigned long start_pfn,
-+					unsigned long nr_pages)
-+{
-+	int i, j;
-+	struct page *page;
-+	unsigned long pfn = start_pfn;
-+
-+	/*
-+	 * memmap between sections is not contiguous except with
-+	 * SPARSEMEM_VMEMMAP. We lookup the page once per section
-+	 * and assume memmap is contiguous within each section
-+	 */
-+	for (i = 0; i < sections_per_block; i++, pfn += PAGES_PER_SECTION) {
-+		if (WARN_ON_ONCE(!pfn_valid(pfn)))
-+			return false;
-+		page = pfn_to_page(pfn);
-+
-+		for (j = 0; j < PAGES_PER_SECTION; j++) {
-+			if (PageReserved(page + j))
-+				continue;
-+
-+			printk(KERN_WARNING "section number %ld page number %d "
-+				"not reserved, was it already online?\n",
-+				pfn_to_section_nr(pfn), j);
-+
-+			return false;
-+		}
-+	}
-+
-+	return true;
-+}
-+
-+/*
-  * MEMORY_HOTPLUG depends on SPARSEMEM in mm/Kconfig, so it is
-  * OK to have direct references to sparsemem variables in here.
-  */
- static int
- memory_block_action(unsigned long phys_index, unsigned long action)
- {
--	int i;
- 	unsigned long start_pfn, start_paddr;
- 	unsigned long nr_pages = PAGES_PER_SECTION * sections_per_block;
- 	struct page *first_page;
-@@ -238,26 +273,13 @@ memory_block_action(unsigned long phys_index, unsigned long action)
+ /* LRU Isolation modes. */
+ typedef unsigned __bitwise__ isolate_mode_t;
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 032f35e..9aa75e9 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1048,6 +1048,9 @@ int __isolate_lru_page(struct page *page, isolate_mode_t mode, int file)
+ 	if ((mode & ISOLATE_CLEAN) && (PageDirty(page) || PageWriteback(page)))
+ 		return ret;
  
- 	first_page = pfn_to_page(phys_index << PFN_SECTION_SHIFT);
++	if ((mode & ISOLATE_UNMAPPED) && page_mapped(page))
++		return ret;
++
+ 	if (likely(get_page_unless_zero(page))) {
+ 		/*
+ 		 * Be careful not to clear PageLRU until after we're
+@@ -1471,6 +1474,12 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
+ 		reclaim_mode |= ISOLATE_ACTIVE;
  
--	/*
--	 * The probe routines leave the pages reserved, just
--	 * as the bootmem code does.  Make sure they're still
--	 * that way.
--	 */
--	if (action == MEM_ONLINE) {
--		for (i = 0; i < nr_pages; i++) {
--			if (PageReserved(first_page+i))
--				continue;
--
--			printk(KERN_WARNING "section number %ld page number %d "
--				"not reserved, was it already online?\n",
--				phys_index, i);
--			return -EBUSY;
--		}
--	}
--
- 	switch (action) {
- 		case MEM_ONLINE:
- 			start_pfn = page_to_pfn(first_page);
+ 	lru_add_drain();
 +
-+			if (!pages_correctly_reserved(start_pfn, nr_pages))
-+				return -EBUSY;
++	if (!sc->may_unmap)
++		reclaim_mode |= ISOLATE_UNMAPPED;
++	if (!sc->may_writepage)
++		reclaim_mode |= ISOLATE_CLEAN;
 +
- 			ret = online_pages(start_pfn, nr_pages);
- 			break;
- 		case MEM_OFFLINE:
+ 	spin_lock_irq(&zone->lru_lock);
+ 
+ 	if (scanning_global_lru(sc)) {
+@@ -1588,19 +1597,26 @@ static void shrink_active_list(unsigned long nr_pages, struct zone *zone,
+ 	struct page *page;
+ 	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
+ 	unsigned long nr_rotated = 0;
++	isolate_mode_t reclaim_mode = ISOLATE_ACTIVE;
+ 
+ 	lru_add_drain();
++
++	if (!sc->may_unmap)
++		reclaim_mode |= ISOLATE_UNMAPPED;
++	if (!sc->may_writepage)
++		reclaim_mode |= ISOLATE_CLEAN;
++
+ 	spin_lock_irq(&zone->lru_lock);
+ 	if (scanning_global_lru(sc)) {
+ 		nr_taken = isolate_pages_global(nr_pages, &l_hold,
+ 						&pgscanned, sc->order,
+-						ISOLATE_ACTIVE, zone,
++						reclaim_mode, zone,
+ 						1, file);
+ 		zone->pages_scanned += pgscanned;
+ 	} else {
+ 		nr_taken = mem_cgroup_isolate_pages(nr_pages, &l_hold,
+ 						&pgscanned, sc->order,
+-						ISOLATE_ACTIVE, zone,
++						reclaim_mode, zone,
+ 						sc->mem_cgroup, 1, file);
+ 		/*
+ 		 * mem_cgroup_isolate_pages() keeps track of
 -- 
 1.7.9.2
 
