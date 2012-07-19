@@ -1,56 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752421Ab2GSRbN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 13:31:13 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:1608 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752492Ab2GSRbK (ORCPT
+	id S1752525Ab2GSRdI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 13:33:08 -0400
+Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:30764 "EHLO
+	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752200Ab2GSRdG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 13:31:10 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6777"; a="210048475"
-Message-ID: <5008445B.2010109@codeaurora.org>
-Date: Thu, 19 Jul 2012 13:31:07 -0400
-From: Christopher Covington <cov@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Jon Masters <jonathan@jonmasters.org>
-CC: Catalin Marinas <catalin.marinas@arm.com>, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Will Deacon <will.deacon@arm.com>
-Subject: Re: [PATCH 08/36] AArch64: Kernel booting and initialisation
-References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com> <1341608777-12982-9-git-send-email-catalin.marinas@arm.com> <50065E6B.3060602@jonmasters.org>
-In-Reply-To: <50065E6B.3060602@jonmasters.org>
-Content-Type: text/plain; charset=windows-1252
+	Thu, 19 Jul 2012 13:33:06 -0400
+Message-ID: <1342718897.3010.188.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 1/4] ACPI: Add acpi_pr_<level>() interfaces
+From: Toshi Kani <toshi.kani@hp.com>
+To: shuah.khan@hp.com
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bhelgaas@google.com, isimatu.yasuaki@jp.fujitsu.com, liuj97@gmail.com,
+        srivatsa.bhat@linux.vnet.ibm.com, prarit@redhat.com,
+        imammedo@redhat.com, vijaymohan.pandarathil@hp.com,
+        shuahkhan@gmail.com
+Date: Thu, 19 Jul 2012 11:28:17 -0600
+In-Reply-To: <1342714515.3100.27.camel@lorien2>
+References: <1342644027-19559-1-git-send-email-toshi.kani@hp.com>
+	 <1342644027-19559-2-git-send-email-toshi.kani@hp.com>
+	 <1342648771.5138.37.camel@lorien2>
+	 <1342650386.3010.55.camel@misato.fc.hp.com>
+	 <1342651257.5138.44.camel@lorien2>
+	 <1342651966.3010.66.camel@misato.fc.hp.com>
+	 <1342653482.5138.56.camel@lorien2>
+	 <1342658296.3010.136.camel@misato.fc.hp.com>
+	 <1342714515.3100.27.camel@lorien2>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2012 02:57 AM, Jon Masters wrote:
-> On 07/06/2012 05:05 PM, Catalin Marinas wrote:
+On Thu, 2012-07-19 at 10:15 -0600, Shuah Khan wrote:
+> On Wed, 2012-07-18 at 18:38 -0600, Toshi Kani wrote:
 > 
->> +- CPU mode
->> +  All forms of interrupts must be masked in PSTATE.DAIF (Debug, SError,
->> +  IRQ and FIQ).
->> +  The CPU must be in either EL2 (RECOMMENDED) or non-secure EL1.
+> > 
+> > This interface is defined in acpi/acpi_bus.h, which is intended for ACPI
+> > drivers which make many ACPI calls to proceed when they are called at
+> > run-time today.  This interface does not change that, and I believe
+> > acpi_get_name() is much faster compared to ACPI method calls these ACPI
+> > drivers make in their normal code path.  The extra work to call
+> > acpi_get_name() is simply a noise in this case (if you try to measure),
+> > and the use of this interface is limited in error paths of such ACPI
+> > drivers.
+> 
+> I understand the scope of the usage of this new interface. I don't think
+> I am able to explain the problem I see with this interface as it gets
+> used more and more from acpi drivers. Let me try another way.
+> 
+> If understand the this patch set, if and when acpi drivers that
+> currently use pr_* interfaces switch to using acpi_pr_*, the execution
+> path goes from a what printk() does to the following:
+> 
+> acpi_pr_*
+> - setup static buffer
+> - calls acpi_get_name()
+> - acpi_get_name() calls acpi_ut_validate_buffer() and then calls
+>   acpi_ns_handle_to_pathname()
+> - acpi_ns_handle_to_pathname() calls acpi_ns_validate_handle() followed
+>   by acpi_ns_get_pathname_length() and so on.
+> 
+> I think this should give you a good idea of my concern. I think
+> acpi_pr_* full functionality should be enabled under special cases such
+> as some acpi_debug level setting or some other way, and not for default
+> case. I propose the following:
+> 
+> Make acpi_pr_* versions execute the full path to do acpi_get_name()
+> conditionally and not as a default case.
+> 
+> To illustrate my point further, I currently see the following ACPI
+> messages in my dmesg buffer on my laptop. I haven't taken the time to
+> evaluate how many of them originate from acpi drivers, however I would
+> not want to see all of these becoming acpi_pr_* versions that do more
+> than what pr_* does today. I hope this explains my concern clearly.
 
-Why not secure EL1?
+I agree that there are many ACPI messages at boot, and I understand that
+you concerned with them, but that is a different issue.  It requires a
+different project to address them.  Changing my patchset won't make any
+difference.
 
-> Even though this stuff is likely to be replaced with the result of some
-> of the other standardization, I'd like it if you'd strongly consider
-> removing the "or non-secure EL1". If you give an inch, someone will take
-> a mile and build a system that enters other than in EL2. Or, something
-> to the effect of "the highest non-secure exception level implemented"
-> would be my preference if you don't want to specify.
+The issue I am trying to solve is well summarized in Bjorn's comment in
+my earlier patch as follows: 
+=== <quote> ===
+>                result = acpi_processor_device_add(handle, &device);
+>                if (result) {
+>                        printk(KERN_ERR PREFIX "Unable to add the
+device\n");
 
-I think it would be best to list the technical limitations, from the
-kernel's perspective, of the unsupported exception levels and the
-advantages of the supported exception levels here. If you want to guide
-system builders towards EL2, I think it'd be more convincing to document
-the relevant technical aspects (perhaps KVM needs facilities only
-available in EL2) than just providing an unexplained requirement.
+You didn't add this problem, but since you're touching the code, I'll
+point it out.  This message will look to the user like:
 
-Christopher
+    ACPI: Unable to add the device
 
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+which is useless.  The user has no idea what device we're talking
+about or why we can't add it, so he can't *do* anything with the
+message.
+=== </quote> ===
+
+This is very true.  And this issue is even worse when support teams need
+to solve such customer issue from log files.  The current error messages
+in ACPI hotplug handlers do not provide any information to identify a
+device that cause an issue.
+
+To address this issue, the ACPI drivers have to obtain an ACPI object
+path information in their error handling code with acpi_get_name().
+
+A possible alternative to acpi_pr_<level>() is to create a driver's
+local printk function, just like acpi_print_osc_error().  However, I do
+not think we should create such local functions in all ACPI drivers.
+
+Performance is not an issue since the use of the interfaces is limited
+to the error paths.  The boot messages you concerned with do not need to
+any more extra-info to append ACPI device path, and therefore no need to
+use acpi_pr_<level>().  dev_<level>() may be a good example of how this
+type of interfaces is used in error paths today.
+
+
+Thanks,
+-Toshi
+
+
+
+
+
+  
+
+
+
+
+
