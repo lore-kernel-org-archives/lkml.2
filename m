@@ -1,110 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752286Ab2GSGbL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 02:31:11 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:60421 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751415Ab2GSGbI (ORCPT
+	id S1752558Ab2GSGbq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 02:31:46 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:60829 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752410Ab2GSGbl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 02:31:08 -0400
-Date: Thu, 19 Jul 2012 14:30:52 +0800
-From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH RFC] mm/memcg: calculate max hierarchy limit number
- instead of min
-Message-ID: <20120719063051.GA18422@kernel>
-Reply-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-References: <a>
- <1342013081-4096-1-git-send-email-liwp.linux@gmail.com>
- <5007A418.10801@jp.fujitsu.com>
+	Thu, 19 Jul 2012 02:31:41 -0400
+Message-ID: <5007A967.1040402@linux.vnet.ibm.com>
+Date: Thu, 19 Jul 2012 11:59:59 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5007A418.10801@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12071906-9574-0000-0000-000003A1E76D
+To: Mandeep Singh Baines <msb@chromium.org>
+CC: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Shaohua Li <shaohua.li@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Christoph Lameter <cl@gentwo.org>, Olof Johansson <olofj@chromium.org>
+Subject: Re: [PATCH v2] x86, mm: only wait for flushes from online cpus
+References: <1340402778-28939-1-git-send-email-msb@chromium.org> <500727F1.4000609@linux.vnet.ibm.com> <20120718221301.GG3465@google.com>
+In-Reply-To: <20120718221301.GG3465@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12071906-3864-0000-0000-000003D4E5BF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 19, 2012 at 03:07:20PM +0900, Kamezawa Hiroyuki wrote:
->(2012/07/11 22:24), Wanpeng Li wrote:
->> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
->> 
->> Since hierachical_memory_limit shows "of bytes of memory limit with
->> regard to hierarchy under which the memory cgroup is", the count should
->> calculate max hierarchy limit when use_hierarchy in order to show hierarchy
->> subtree limit. hierachical_memsw_limit is the same case.
->> 
->> Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
+On 07/19/2012 03:43 AM, Mandeep Singh Baines wrote:
+> Srivatsa S. Bhat (srivatsa.bhat@linux.vnet.ibm.com) wrote:
+>> On 06/23/2012 03:36 AM, Mandeep Singh Baines wrote:
+>>> A cpu in the mm_cpumask could go offline before we send the invalidate
+>>> IPI causing us to wait forever. Avoid this by only waiting for online
+>>> cpus.
+>>>
+[...]
+>> This function is always called with preempt_disabled() right?
+>> In that case, _while_ this function is running, a CPU cannot go offline
+>> because of stop_machine(). (I understand that it might go offline in between
+>> calculating that cpumask and calling preempt_disable() - which is the race
+>> you are trying to handle).
+>>
+> 
+> Ah. Good point. A cpu cannot be remove from the cpu_online_mask while
+> preemption is disabled because stop_machine() can't run until
+> preemption is enabled.
+> 
+> ./kernel/cpu.c: err = __stop_machine(take_cpu_down, &tcd_param, cpumask_of(cpu));
+> 
+>> So, why not take the offline cpus out of the way even before sending that IPI?
+>> That way, we need not modify the while loop below.
+>>
+> 
+> Acked-off-by: Mandeep Singh Baines <msb@chromium.org>
+> 
+> Do you mind re-sending you're patch with a proper sign-off.
 >
->Hm ? What is the hierarchical limit for 'C' in following tree ?
->
->A  ---  limit=1G 
-> \
->  B --  limit=500M
->   \
->    C - unlimtied
->
-Hmm, thank you Kame. :-)
+
+Sure, will do. I'll post it in a separate thread.
+
+Thanks!
 
 Regards,
-Wanpeng Li 
+Srivatsa S. Bhat
 
->Thanks,
->-Kame
->
->
->> ---
->>   mm/memcontrol.c |   14 +++++++-------
->>   1 files changed, 7 insertions(+), 7 deletions(-)
->> 
->> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->> index 69a7d45..6392c0a 100644
->> --- a/mm/memcontrol.c
->> +++ b/mm/memcontrol.c
->> @@ -3929,10 +3929,10 @@ static void memcg_get_hierarchical_limit(struct mem_cgroup *memcg,
->>   		unsigned long long *mem_limit, unsigned long long *memsw_limit)
->>   {
->>   	struct cgroup *cgroup;
->> -	unsigned long long min_limit, min_memsw_limit, tmp;
->> +	unsigned long long max_limit, max_memsw_limit, tmp;
->>   
->> -	min_limit = res_counter_read_u64(&memcg->res, RES_LIMIT);
->> -	min_memsw_limit = res_counter_read_u64(&memcg->memsw, RES_LIMIT);
->> +	max_limit = res_counter_read_u64(&memcg->res, RES_LIMIT);
->> +	max_memsw_limit = res_counter_read_u64(&memcg->memsw, RES_LIMIT);
->>   	cgroup = memcg->css.cgroup;
->>   	if (!memcg->use_hierarchy)
->>   		goto out;
->> @@ -3943,13 +3943,13 @@ static void memcg_get_hierarchical_limit(struct mem_cgroup *memcg,
->>   		if (!memcg->use_hierarchy)
->>   			break;
->>   		tmp = res_counter_read_u64(&memcg->res, RES_LIMIT);
->> -		min_limit = min(min_limit, tmp);
->> +		max_limit = max(max_limit, tmp);
->>   		tmp = res_counter_read_u64(&memcg->memsw, RES_LIMIT);
->> -		min_memsw_limit = min(min_memsw_limit, tmp);
->> +		max_memsw_limit = max(max_memsw_limit, tmp);
->>   	}
->>   out:
->> -	*mem_limit = min_limit;
->> -	*memsw_limit = min_memsw_limit;
->> +	*mem_limit = max_limit;
->> +	*memsw_limit = max_memsw_limit;
->>   }
->>   
->>   static int mem_cgroup_reset(struct cgroup *cont, unsigned int event)
->> 
->
->
->
->--
->To unsubscribe, send a message with 'unsubscribe linux-mm' in
->the body to majordomo@kvack.org.  For more info on Linux MM,
->see: http://www.linux-mm.org/ .
->Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+>>> -		while (!cpumask_empty(to_cpumask(f->flush_cpumask)))
+>>> +		/* Only wait for online cpus */
+>>> +		do {
+>>> +			cpumask_and(to_cpumask(tmp_cpumask),
+>>> +				    to_cpumask(f->flush_cpumask),
+>>> +				    cpu_online_mask);
+>>>  			cpu_relax();
+>>> +		} while (!cpumask_empty(to_cpumask(tmp_cpumask)));
+>>>  	}
+>>>
+>>>  	f->flush_mm = NULL;
+>>>
+>>
+>> That is, how about something like this:
+>>
+>> diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
+>> index 5e57e11..9d387a9 100644
+>> --- a/arch/x86/mm/tlb.c
+>> +++ b/arch/x86/mm/tlb.c
+>> @@ -186,7 +186,11 @@ static void flush_tlb_others_ipi(const struct cpumask *cpumask,
+>>  
+>>         f->flush_mm = mm;
+>>         f->flush_va = va;
+>> -       if (cpumask_andnot(to_cpumask(f->flush_cpumask), cpumask, cpumask_of(smp_processor_id()))) {
+>> +
+>> +       cpumask_and(to_cpumask(f->flush_cpumask), cpumask, cpu_online_mask);
+>> +       cpumask_clear_cpu(smp_processor_id(), to_cpumask(f->flush_cpumask));
+>> +
+>> +       if (!cpumask_empty(to_cpumask(f->flush_cpumask))) {
+>>                 /*
+>>                  * We have to send the IPI only to
+>>                  * CPUs affected.
+>>
+>>
+>> Regards,
+>> Srivatsa S. Bhat
+>> IBM Linux Technology Center
+>>
+> 
 
