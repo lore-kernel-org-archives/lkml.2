@@ -1,74 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754978Ab2GSBbi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 21:31:38 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:56677 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753944Ab2GSBbg (ORCPT
+	id S1755032Ab2GSBbk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 21:31:40 -0400
+Received: from mail209.messagelabs.com ([216.82.255.3]:63142 "EHLO
+	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754445Ab2GSBbh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 21:31:36 -0400
-Date: Thu, 19 Jul 2012 09:31:29 +0800
-From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Gavin Shan <shangw@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm/memcg: wrap mem_cgroup_from_css function
-Message-ID: <20120719013129.GC4306@kernel>
-Reply-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-References: <a>
- <1342580730-25703-1-git-send-email-liwanp@linux.vnet.ibm.com>
- <20120718143612.e34dd3f3.akpm@linux-foundation.org>
+	Wed, 18 Jul 2012 21:31:37 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-9.tower-209.messagelabs.com!1342661496!9074561!1
+X-Originating-IP: [216.166.12.32]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 17/90] staging: comedi: adv_pci1710: factor out the "find pci device" code
+Date: Wed, 18 Jul 2012 18:31:26 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <gregkh@linuxfoundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <20120718143612.e34dd3f3.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12071901-4790-0000-0000-000003C04886
+Message-ID: <201207181831.26341.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 18, 2012 at 02:36:12PM -0700, Andrew Morton wrote:
->On Wed, 18 Jul 2012 11:05:30 +0800
->Wanpeng Li <liwanp@linux.vnet.ibm.com> wrote:
->
->> wrap mem_cgroup_from_css function to clarify get mem cgroup
->> from cgroup_subsys_state.
->
->This certainly adds clarity.
->
->But it also adds a little more type-safety - these container_of() calls
->can be invoked against *any* struct which has a field called "css". 
->With your patch, we add a check that the code is indeed using a
->cgroup_subsys_state*.  A small thing, but it's all good.
->
->
->I changed the patch title to the more idiomatic "memcg: add
->mem_cgroup_from_css() helper" and rewrote the changelog to
->
->: Add a mem_cgroup_from_css() helper to replace open-coded invokations of
->: container_of().  To clarify the code and to add a little more type safety.
->
->> --- a/mm/memcontrol.c
->> +++ b/mm/memcontrol.c
->> @@ -396,6 +396,12 @@ static void mem_cgroup_put(struct mem_cgroup *memcg);
->>  #include <net/sock.h>
->>  #include <net/ip.h>
->>  
->> +static inline
->> +struct mem_cgroup *mem_cgroup_from_css(struct cgroup_subsys_state *s)
->> +{
->> +	return container_of(s, struct mem_cgroup, css);
->> +}
->
->And with great self-control, I avoided renaming this to
->memcg_from_css().  Sigh.  I guess all that extra typing has cardio
->benefits.
+Factor the "find pci device" code out of the attach function.
 
-Thank you for your time, Andrew. :-)
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/staging/comedi/drivers/adv_pci1710.c | 42 ++++++++++++++++++----------
+ 1 file changed, 27 insertions(+), 15 deletions(-)
 
-Thanks & Best Regards,
-Wanpeng Li
+diff --git a/drivers/staging/comedi/drivers/adv_pci1710.c b/drivers/staging/comedi/drivers/adv_pci1710.c
+index 0ed1ff9..0823a36 100644
+--- a/drivers/staging/comedi/drivers/adv_pci1710.c
++++ b/drivers/staging/comedi/drivers/adv_pci1710.c
+@@ -1333,29 +1333,21 @@ static int pci1710_reset(struct comedi_device *dev)
+ 	DPRINTK("adv_pci1710 EDBG: END: pci1710_reset(...)\n");
+ }
+ 
+-static int pci1710_attach(struct comedi_device *dev,
+-			  struct comedi_devconfig *it)
++static struct pci_dev *pci1710_find_pci_dev(struct comedi_device *dev,
++					    struct comedi_devconfig *it)
+ {
+-	struct comedi_subdevice *s;
+-	int ret, subdev, n_subdevices;
+-	unsigned int irq;
+-	unsigned long iobase;
+ 	struct pci_dev *pcidev;
+ 	int opt_bus, opt_slot;
+ 	const char *errstr;
+ 	unsigned char pci_bus, pci_slot, pci_func;
+ 	int i;
+ 	int board_index;
+-
+-	dev_info(dev->class_dev, DRV_NAME ": attach\n");
++	unsigned int irq;
++	unsigned long iobase;
+ 
+ 	opt_bus = it->options[0];
+ 	opt_slot = it->options[1];
+ 
+-	ret = alloc_private(dev, sizeof(struct pci1710_private));
+-	if (ret < 0)
+-		return -ENOMEM;
+-
+ 	/* Look for matching PCI device */
+ 	errstr = "not found!";
+ 	pcidev = NULL;
+@@ -1404,7 +1396,7 @@ static int pci1710_attach(struct comedi_device *dev,
+ 		} else {
+ 			dev_err(dev->class_dev, "- Card %s\n", errstr);
+ 		}
+-		return -EIO;
++		return NULL;
+ 	}
+ 
+ 	pci_bus = pcidev->bus->number;
+@@ -1416,10 +1408,30 @@ static int pci1710_attach(struct comedi_device *dev,
+ 	dev_dbg(dev->class_dev, "b:s:f=%d:%d:%d, io=0x%4lx\n",
+ 		pci_bus, pci_slot, pci_func, iobase);
+ 
+-	dev->iobase = iobase;
++	return pcidev;
++}
++
++static int pci1710_attach(struct comedi_device *dev,
++			  struct comedi_devconfig *it)
++{
++	struct comedi_subdevice *s;
++	int ret, subdev, n_subdevices;
++	unsigned int irq;
++
++	dev_info(dev->class_dev, DRV_NAME ": attach\n");
++
++	ret = alloc_private(dev, sizeof(struct pci1710_private));
++	if (ret < 0)
++		return -ENOMEM;
++
++	devpriv->pcidev = pci1710_find_pci_dev(dev, it);
++	if (!devpriv->pcidev)
++		return -EIO;
++
++	dev->iobase = pci_resource_start(devpriv->pcidev, 2);
++	irq = devpriv->pcidev->irq;
+ 
+ 	dev->board_name = this_board->name;
+-	devpriv->pcidev = pcidev;
+ 
+ 	n_subdevices = 0;
+ 	if (this_board->n_aichan)
+-- 
+1.7.11
 
