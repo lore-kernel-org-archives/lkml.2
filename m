@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751740Ab2GSUZy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 16:25:54 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:53390 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751014Ab2GSUZw (ORCPT
+	id S1751751Ab2GSU3U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 16:29:20 -0400
+Received: from georges.telenet-ops.be ([195.130.137.68]:35715 "EHLO
+	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751014Ab2GSU3S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 16:25:52 -0400
-Date: Thu, 19 Jul 2012 15:25:44 -0500
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 34/34] mm/hugetlb: fix warning in
- alloc_huge_page/dequeue_huge_page_vma
-Message-ID: <20120719202544.GB19392@burratino>
-References: <1342708604-26540-1-git-send-email-mgorman@suse.de>
- <1342708604-26540-35-git-send-email-mgorman@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1342708604-26540-35-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 19 Jul 2012 16:29:18 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: x86@kernel.org, linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] trivial: spelling s/postition/position/g
+Date: Thu, 19 Jul 2012 22:29:11 +0200
+Message-Id: <1342729751-17947-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ arch/m68k/kernel/module.c |    4 ++--
+ arch/x86/kernel/module.c  |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-Mel Gorman wrote:
+diff --git a/arch/m68k/kernel/module.c b/arch/m68k/kernel/module.c
+index 34849c4..eb46fd6 100644
+--- a/arch/m68k/kernel/module.c
++++ b/arch/m68k/kernel/module.c
+@@ -47,7 +47,7 @@ int apply_relocate(Elf32_Shdr *sechdrs,
+ 			*location += sym->st_value;
+ 			break;
+ 		case R_68K_PC32:
+-			/* Add the value, subtract its postition */
++			/* Add the value, subtract its position */
+ 			*location += sym->st_value - (uint32_t)location;
+ 			break;
+ 		default:
+@@ -87,7 +87,7 @@ int apply_relocate_add(Elf32_Shdr *sechdrs,
+ 			*location = rel[i].r_addend + sym->st_value;
+ 			break;
+ 		case R_68K_PC32:
+-			/* Add the value, subtract its postition */
++			/* Add the value, subtract its position */
+ 			*location = rel[i].r_addend + sym->st_value - (uint32_t)location;
+ 			break;
+ 		default:
+diff --git a/arch/x86/kernel/module.c b/arch/x86/kernel/module.c
+index f21fd94..772e7ad 100644
+--- a/arch/x86/kernel/module.c
++++ b/arch/x86/kernel/module.c
+@@ -73,7 +73,7 @@ int apply_relocate(Elf32_Shdr *sechdrs,
+ 			*location += sym->st_value;
+ 			break;
+ 		case R_386_PC32:
+-			/* Add the value, subtract its postition */
++			/* Add the value, subtract its position */
+ 			*location += sym->st_value - (uint32_t)location;
+ 			break;
+ 		default:
+-- 
+1.7.0.4
 
-> From: Konstantin Khlebnikov <khlebnikov@openvz.org>
->
-> Stable note: Not tracked in Bugzilla. [get|put]_mems_allowed() is extremely
-> 	expensive and severely impacted page allocator performance. This
-> 	is part of a series of patches that reduce page allocator overhead.
->
-> Fix a gcc warning (and bug?) introduced in cc9a6c877 ("cpuset: mm: reduce
-> large amounts of memory barrier related damage v3")
-
-I know the corresponding upstream commit was alluded to in the cover
-letter, but please also mention it by name in the patch description.
-Otherwise people reading the changelog will have no idea what's going
-on.
-
-Thanks and hope that helps,
-Jonathan
