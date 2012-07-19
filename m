@@ -1,105 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751520Ab2GST0B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 15:26:01 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:37881 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750917Ab2GSTZ4 (ORCPT
+	id S1751570Ab2GSTb3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 15:31:29 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:51084 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751091Ab2GSTb2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 15:25:56 -0400
-Message-ID: <1342725950.5599.7.camel@lorien2>
-Subject: Re: [PATCH 1/4] ACPI: Add acpi_pr_<level>() interfaces
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bhelgaas@google.com, isimatu.yasuaki@jp.fujitsu.com, liuj97@gmail.com,
-        srivatsa.bhat@linux.vnet.ibm.com, prarit@redhat.com,
-        imammedo@redhat.com, vijaymohan.pandarathil@hp.com,
-        shuahkhan@gmail.com
-Date: Thu, 19 Jul 2012 13:25:50 -0600
-In-Reply-To: <1342718897.3010.188.camel@misato.fc.hp.com>
-References: <1342644027-19559-1-git-send-email-toshi.kani@hp.com>
-	 <1342644027-19559-2-git-send-email-toshi.kani@hp.com>
-	 <1342648771.5138.37.camel@lorien2>
-	 <1342650386.3010.55.camel@misato.fc.hp.com>
-	 <1342651257.5138.44.camel@lorien2>
-	 <1342651966.3010.66.camel@misato.fc.hp.com>
-	 <1342653482.5138.56.camel@lorien2>
-	 <1342658296.3010.136.camel@misato.fc.hp.com>
-	 <1342714515.3100.27.camel@lorien2>
-	 <1342718897.3010.188.camel@misato.fc.hp.com>
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 19 Jul 2012 15:31:28 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120719012805.GD17430@twin.jikos.cz>
+References: <20120406102232.GH14256@twin.jikos.cz>
+	<1334582871-3670-1-git-send-email-arnd@arndnet.de>
+	<20120416144233.GC20982@twin.jikos.cz>
+	<4FE95B45.8030909@arndnet.de>
+	<20120628154037.GA28144@twin.jikos.cz>
+	<CAKcLGm_cMiEBinmSxkWpY9jm8tW1qbBALcNS-u7DNQhHRF+NFg@mail.gmail.com>
+	<20120719012805.GD17430@twin.jikos.cz>
+Date: Thu, 19 Jul 2012 14:31:27 -0500
+Message-ID: <CAKcLGm-UYXYM2nP=iW1o5gdFYh4mi_XGFPGKfd054xvvGfAc=w@mail.gmail.com>
+Subject: Re: [PATCH v2] Btrfs: allow mount -o remount,compress=no
+From: Mitch Harder <mitch.harder@sabayonlinux.org>
+To: dave@jikos.cz, Mitch Harder <mitch.harder@sabayonlinux.org>,
+        Arnd Hannemann <arnd@arndnet.de>, chris.mason@fusionio.com,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ierdnah@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-07-19 at 11:28 -0600, Toshi Kani wrote:
-> On Thu, 2012-07-19 at 10:15 -0600, Shuah Khan wrote:
-> > On Wed, 2012-07-18 at 18:38 -0600, Toshi Kani wrote:
-> > 
-> > > 
-> > > This interface is defined in acpi/acpi_bus.h, which is intended for ACPI
-> > > drivers which make many ACPI calls to proceed when they are called at
-> > > run-time today.  This interface does not change that, and I believe
-> > > acpi_get_name() is much faster compared to ACPI method calls these ACPI
-> > > drivers make in their normal code path.  The extra work to call
-> > > acpi_get_name() is simply a noise in this case (if you try to measure),
-> > > and the use of this interface is limited in error paths of such ACPI
-> > > drivers.
-> > 
-> > I understand the scope of the usage of this new interface. I don't think
-> > I am able to explain the problem I see with this interface as it gets
-> > used more and more from acpi drivers. Let me try another way.
-> > 
-> > If understand the this patch set, if and when acpi drivers that
-> > currently use pr_* interfaces switch to using acpi_pr_*, the execution
-> > path goes from a what printk() does to the following:
-> > 
-> > acpi_pr_*
-> > - setup static buffer
-> > - calls acpi_get_name()
-> > - acpi_get_name() calls acpi_ut_validate_buffer() and then calls
-> >   acpi_ns_handle_to_pathname()
-> > - acpi_ns_handle_to_pathname() calls acpi_ns_validate_handle() followed
-> >   by acpi_ns_get_pathname_length() and so on.
-> > 
-> > I think this should give you a good idea of my concern. I think
-> > acpi_pr_* full functionality should be enabled under special cases such
-> > as some acpi_debug level setting or some other way, and not for default
-> > case. I propose the following:
-> > 
-> > Make acpi_pr_* versions execute the full path to do acpi_get_name()
-> > conditionally and not as a default case.
-> > 
-> > To illustrate my point further, I currently see the following ACPI
-> > messages in my dmesg buffer on my laptop. I haven't taken the time to
-> > evaluate how many of them originate from acpi drivers, however I would
-> > not want to see all of these becoming acpi_pr_* versions that do more
-> > than what pr_* does today. I hope this explains my concern clearly.
-> 
-> I agree that there are many ACPI messages at boot, and I understand that
-> you concerned with them, but that is a different issue.  It requires a
-> different project to address them.  Changing my patchset won't make any
-> difference.
+On Wed, Jul 18, 2012 at 8:28 PM, David Sterba <dave@jikos.cz> wrote:
+> On Fri, Jul 13, 2012 at 10:19:14AM -0500, Mitch Harder wrote:
+>> I was testing the lz4(hc) patches, and I found the the compression
+>> INCOMPAT flags are not being updated using the method in this patch.
+>>
+>> The compression INCOMPAT flags are generally checked and updated in
+>> the open_ctree() function.
+>>
+>> But, on remount, open_ctree() is not called.
+>
+> This currently happens with lzo as well, right?
+>
 
-On the contrary, your patch set could make the existing problems worse
-by introducing lot of complexity (makes the execution path very long for
-each and every one these messages) in the path that prints messages. As
-more and more acpi code paths start using the new interfaces, it will
-keep getting worse.
+Yes, this will happen with lzo as implemented in the patch at the head
+of this thread.
 
-I am not questioning the usefulness of the additional information, I am
-questioning the complexity your patch set adds. The added complexity
-isn't desirable.
+>
+> My preference is to let remount succeed and set the incompat bit,
+> possibly with a KERN_INFO message to syslog in case the bit is yet
+> unseen by the volume.
+>
 
-The design in this patch set needs refinement so it doesn't add to the
-execution path.
+Great.
 
--- Shuah
+I've put together a patch that does just that, and I've been testing
+it to make sure it works as intended.
 
+I'll finish it up and send it to the list tomorrow.
 
+This patch will only address the lzo INCOMPAT from the remount
+capabilities provided by the patch at the head of the thread.
+
+A similar modification will be needed for lz4 patches that allow for remount.
