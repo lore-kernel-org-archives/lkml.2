@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752354Ab2GSOh5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 10:37:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40450 "EHLO mx2.suse.de"
+	id S1752397Ab2GSOh7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 10:37:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40459 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751907Ab2GSOhB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 10:37:01 -0400
+	id S1751917Ab2GSOhD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 10:37:03 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Stable <stable@vger.kernel.org>
 Cc: "Linux-MM <linux-mm"@kvack.org, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 23/34] mm: vmscan: When reclaiming for compaction, ensure there are sufficient free pages available
-Date: Thu, 19 Jul 2012 15:36:33 +0100
-Message-Id: <1342708604-26540-24-git-send-email-mgorman@suse.de>
+Subject: [PATCH 26/34] vmscan: promote shared file mapped pages
+Date: Thu, 19 Jul 2012 15:36:36 +0100
+Message-Id: <1342708604-26540-27-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1342708604-26540-1-git-send-email-mgorman@suse.de>
 References: <1342708604-26540-1-git-send-email-mgorman@suse.de>
@@ -20,118 +20,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit fe4b1b244bdb96136855f2c694071cb09d140766 upstream.
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
 
-Stable note: Not tracked on Bugzilla. THP and compaction was found to
-	aggressively reclaim pages and stall systems under different
-	situations that was addressed piecemeal over time. This patch
-	addresses a problem where the fix regressed THP allocation
-	success rates.
+commit 34dbc67a644f11ab3475d822d72e25409911e760 upstream.
 
-In commit [e0887c19: vmscan: limit direct reclaim for higher order
-allocations], Rik noted that reclaim was too aggressive when THP was
-enabled. In his initial patch he used the number of free pages to
-decide if reclaim should abort for compaction. My feedback was that
-reclaim and compaction should be using the same logic when deciding if
-reclaim should be aborted.
+Stable note: Not tracked in Bugzilla. There were reports of shared
+	mapped pages being unfairly reclaimed in comparison to older kernels.
+	This is being addressed over time. The specific workload being
+	addressed here in described in paragraph four and while paragraph
+	five says it did not help performance as such, it made a difference
+	to major page faults. I'm aware of at least one bug for a large
+	vendor that was due to increased major faults.
 
-Unfortunately, this had the effect of reducing THP success rates when
-the workload included something like streaming reads that continually
-allocated pages. The window during which compaction could run and return
-a THP was too small.
+Commit 645747462435 ("vmscan: detect mapped file pages used only once")
+greatly decreases lifetime of single-used mapped file pages.
+Unfortunately it also decreases life time of all shared mapped file
+pages.  Because after commit bf3f3bc5e7347 ("mm: don't mark_page_accessed
+in fault path") page-fault handler does not mark page active or even
+referenced.
 
-This patch combines Rik's two patches together. compaction_suitable()
-is still used to decide if reclaim should be aborted to allow
-compaction is used. However, it will also ensure that there is a
-reasonable buffer of free pages available. This improves upon the
-THP allocation success rates but bounds the number of pages that are
-freed for compaction.
+Thus page_check_references() activates file page only if it was used twice
+while it stays in inactive list, meanwhile it activates anon pages after
+first access.  Inactive list can be small enough, this way reclaimer can
+accidentally throw away any widely used page if it wasn't used twice in
+short period.
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel<riel@redhat.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-Cc: Dave Jones <davej@redhat.com>
-Cc: Jan Kara <jack@suse.cz>
-Cc: Andy Isaacson <adi@hexapodia.org>
-Cc: Nai Xia <nai.xia@gmail.com>
-Cc: Johannes Weiner <jweiner@redhat.com>
+After this patch page_check_references() also activate file mapped page at
+first inactive list scan if this page is already used multiple times via
+several ptes.
+
+I found this while trying to fix degragation in rhel6 (~2.6.32) from rhel5
+(~2.6.18).  There a complete mess with >100 web/mail/spam/ftp containers,
+they share all their files but there a lot of anonymous pages: ~500mb
+shared file mapped memory and 15-20Gb non-shared anonymous memory.  In
+this situation major-pagefaults are very costly, because all containers
+share the same page.  In my load kernel created a disproportionate
+pressure on the file memory, compared with the anonymous, they equaled
+only if I raise swappiness up to 150 =)
+
+These patches actually wasn't helped a lot in my problem, but I saw
+noticable (10-20 times) reduce in count and average time of
+major-pagefault in file-mapped areas.
+
+Actually both patches are fixes for commit v2.6.33-5448-g6457474, because
+it was aimed at one scenario (singly used pages), but it breaks the logic
+in other scenarios (shared and/or executable pages)
+
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Acked-by: Pekka Enberg <penberg@kernel.org>
+Acked-by: Minchan Kim <minchan.kim@gmail.com>
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Nick Piggin <npiggin@kernel.dk>
+Cc: Shaohua Li <shaohua.li@intel.com>
+Cc: Rik van Riel <riel@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/vmscan.c |   44 +++++++++++++++++++++++++++++++++++++++-----
- 1 file changed, 39 insertions(+), 5 deletions(-)
+ mm/vmscan.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index b8c1fc0..e85abfd 100644
+index bc31f32..7edaaac 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -2075,6 +2075,42 @@ restart:
- 	throttle_vm_writeout(sc->gfp_mask);
- }
+@@ -723,7 +723,7 @@ static enum page_references page_check_references(struct page *page,
+ 		 */
+ 		SetPageReferenced(page);
  
-+/* Returns true if compaction should go ahead for a high-order request */
-+static inline bool compaction_ready(struct zone *zone, struct scan_control *sc)
-+{
-+	unsigned long balance_gap, watermark;
-+	bool watermark_ok;
-+
-+	/* Do not consider compaction for orders reclaim is meant to satisfy */
-+	if (sc->order <= PAGE_ALLOC_COSTLY_ORDER)
-+		return false;
-+
-+	/*
-+	 * Compaction takes time to run and there are potentially other
-+	 * callers using the pages just freed. Continue reclaiming until
-+	 * there is a buffer of free pages available to give compaction
-+	 * a reasonable chance of completing and allocating the page
-+	 */
-+	balance_gap = min(low_wmark_pages(zone),
-+		(zone->present_pages + KSWAPD_ZONE_BALANCE_GAP_RATIO-1) /
-+			KSWAPD_ZONE_BALANCE_GAP_RATIO);
-+	watermark = high_wmark_pages(zone) + balance_gap + (2UL << sc->order);
-+	watermark_ok = zone_watermark_ok_safe(zone, 0, watermark, 0, 0);
-+
-+	/*
-+	 * If compaction is deferred, reclaim up to a point where
-+	 * compaction will have a chance of success when re-enabled
-+	 */
-+	if (compaction_deferred(zone))
-+		return watermark_ok;
-+
-+	/* If compaction is not ready to start, keep reclaiming */
-+	if (!compaction_suitable(zone, sc->order))
-+		return false;
-+
-+	return watermark_ok;
-+}
-+
- /*
-  * This is the direct reclaim path, for page-allocating processes.  We only
-  * try to reclaim pages from zones which will satisfy the caller's allocation
-@@ -2092,8 +2128,8 @@ restart:
-  * scan then give up on it.
-  *
-  * This function returns true if a zone is being reclaimed for a costly
-- * high-order allocation and compaction is either ready to begin or deferred.
-- * This indicates to the caller that it should retry the allocation or fail.
-+ * allocation and compaction is ready to begin. This indicates to the caller
-+ * that it should retry the allocation or fail.
-  */
- static bool shrink_zones(int priority, struct zonelist *zonelist,
- 					struct scan_control *sc)
-@@ -2127,9 +2163,7 @@ static bool shrink_zones(int priority, struct zonelist *zonelist,
- 				 * noticable problem, like transparent huge page
- 				 * allocations.
- 				 */
--				if (sc->order > PAGE_ALLOC_COSTLY_ORDER &&
--					(compaction_suitable(zone, sc->order) ||
--					 compaction_deferred(zone))) {
-+				if (compaction_ready(zone, sc)) {
- 					should_abort_reclaim = true;
- 					continue;
- 				}
+-		if (referenced_page)
++		if (referenced_page || referenced_ptes > 1)
+ 			return PAGEREF_ACTIVATE;
+ 
+ 		return PAGEREF_KEEP;
 -- 
 1.7.9.2
 
