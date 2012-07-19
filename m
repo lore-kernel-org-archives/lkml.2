@@ -1,85 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754370Ab2GSLs3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 07:48:29 -0400
-Received: from 115-188-14-127.jetstream.xtra.co.nz ([115.188.14.127]:58211
-	"EHLO SERVER.prisktech.co.nz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753179Ab2GSLs1 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 07:48:27 -0400
-From: Tony Prisk <linux@prisktech.co.nz>
-To: Arnd Bergmann <arnd@arndb.de>,
-        "vt8500-wm8505-linux-kernel@googlegroups.com" 
-	<vt8500-wm8505-linux-kernel@googlegroups.com>
-CC: Alexey Charkov <alchark@gmail.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH 1/1] Add Wondermedia Technologies (wmt) to
- docs/devicetree/vendor-bindings.txt
-Thread-Topic: [PATCH 1/1] Add Wondermedia Technologies (wmt) to
- docs/devicetree/vendor-bindings.txt
-Thread-Index: AQKYMMxC+/7sfLVv24SJcXAAzrg8wAJQSbLQAtZSvySVcT8RUP//oSgAgADM584=
-Date: Thu, 19 Jul 2012 11:45:59 +0000
-Message-ID: <76F764B079F92A4E843589C893D0A022C3811BFD@SERVER.prisktech.co.nz>
-References: <76F764B079F92A4E843589C893D0A022C380F1D4@SERVER.prisktech.co.nz>
- <CABjd4Yyk6XR6RizgcpjCdi2N_+Z2EzTtezbkN9V7r4bAXXjhqA@mail.gmail.com>
- <76F764B079F92A4E843589C893D0A022C381059B@SERVER.prisktech.co.nz>,<201207191116.27273.arnd@arndb.de>
-In-Reply-To: <201207191116.27273.arnd@arndb.de>
-Accept-Language: en-GB, en-NZ, en-US
-Content-Language: en-GB
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752212Ab2GSMDH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 08:03:07 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:50622 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750761Ab2GSMDG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 08:03:06 -0400
 MIME-Version: 1.0
+Date: Thu, 19 Jul 2012 14:03:04 +0200
+Message-ID: <CAPkRUj8ix-NyuPHLOinX7MneFg+CpAyBinevOLD9-h=p08D6Lw@mail.gmail.com>
+Subject: PROBLEM: Kernel Driver CAN for AT91SAM9263EK
+From: Romain RODRIGUEZ <romain.rdgz@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnd Bergmann [arnd@arndb.de]
-Sent: 19 July 2012 23:16
-To: vt8500-wm8505-linux-kernel@googlegroups.com
-Cc: Tony Prisk; Alexey Charkov; devicetree-discuss@lists.ozlabs.org; Russell King; linux-kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/1] Add Wondermedia Technologies (wmt) to docs/devicetree/vendor-bindings.txt
+Hello,
 
-On Thursday 19 July 2012, Tony Prisk wrote:
-> Given that there have been no replies to this thread, and the restart patch has
-> now been accepted using 'wmt' as the vendor namespace - would it be safe to
-> assume we should formalize this in the vendor-bindings.txt?
->
-> I'd like to try and have basic device tree support added for the next merge
-> window (or this one if it all goes well :) ), but it relies on the vendor binding being
-> formalized.
+My name is Romain Rodriguez, french software engeener, and i'm working
+on a at91sam9263ek board, which contains embedded Linux (3.4.4
+versions)
 
-What about devices that come from via though? Anything that first showed up
-in vt8500 or earlier should probably get a prefix identifying VIA rather
-than WonderMedia.
+I found a bug on the CAN driver.
 
-        Arnd
+the mailbox configured in Transmit can transmit only one message,
+because the flag MSR_MRDY is never reached after the write.
 
+According to the AT91sam9263EK datasheet :
 
-I have no issue with that.
+• MRDY: Mailbox Ready
+An interrupt is triggered when MRDY is set.
+0 = Mailbox data registers can not be read/written by the software
+application. CAN_MDx are locked by the CAN_MDx.
+1 = Mailbox data registers can be read/written by the software application.
 
-I am mainly concerned with the Wondermedia products at the moment.
+This flag is cleared by writing to CAN_MCRx register. (when we
+transmit a message)
 
-Adding device tree support for WM8505 (and WM8650) is my main goal as the WM8650
-currently isn't supported and trying to get another board file added seems unlikely with
-everything moving to device tree. The VT8500 requires additional/different patches and
-as I don't have a vt8500 I can't test them.
+Mailbox Object Type Description
+Receive :
+At least one message has been received since the last mailbox transfer
+order. Data from the first frame
+received can be read in the CAN_MDxx registers.
+After setting the MOT field in the CAN_MMR, MRDY is reset to 0.
 
-It does raise the question of applying 'wmt, prizm-pmc' to the vt8500 though. While it's
-fine for the restart patch I submitted, the vt8500 registers are the same but the bit-fields
-are different and therefore not entirely compatible with 'prizm-pmc'.
-When it comes to other PMC-related features, in particular the clocks, the VT8500 is quite
-different in its bit-fields.
-
-The vt8500 isn't technically in the Prizm family, as that is Wondermedia's name for the SoC's.
+Transmit :
+Mailbox data have been transmitted.
+After setting the MOT field in the CAN_MMR, MRDY is reset to 1.
 
 
-Regard
+In the CAN driver, the MOT field in the CAN_MMR register is never set
+after a transmit.
 
-Tony P
+I wrote a little soft who send frame (size : 6 B) on can0 in an infinity loop ,
+I see 4 messages transmitted (1 per mailbox, because 4 mailbox
+configured in transmit) , and after, nothing more.
+
+can0      Link encap:UNSPEC  HWaddr
+00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00
+          UP RUNNING NOARP  MTU:16  Metric:1
+          RX packets:29658 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:4 errors:29656 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:10
+          RX bytes:237264 (231.7 KiB)  TX bytes:24 (24.0 B)
+          Interrupt:12
+
+We can see, TX bytes is blocked to 24 B. (6 B * 4 mailbox)
+
+I did that in the file drivers/net/can/at91_can.c :
+
+line 381 (in function netdev_tx_t at91_start_xmit), I added :
+
+reg_msr = at91_read(priv, AT91_MSR(mb));
+if(!(reg_msr & AT91_MSR_MRDY))
+{
+set_mb_mode_prio(priv, mb, AT91_MB_MODE_TX, 0);
+}
+
+after my modification :
+
+can0      Link encap:UNSPEC  HWaddr
+00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00
+          UP RUNNING NOARP  MTU:16  Metric:1
+          RX packets:159588 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:88 errors:159584 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:10
+          RX bytes:1276704 (1.2 MiB)  TX bytes:528 (528.0 B)
+          Interrupt:12
+
+
+I hope this time you receive this mail.
+
+Best Regards
