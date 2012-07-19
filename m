@@ -1,100 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754159Ab2GSBZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 21:25:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45819 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751791Ab2GSBZZ (ORCPT
+	id S1754257Ab2GSBZn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 21:25:43 -0400
+Received: from mail131.messagelabs.com ([216.82.242.99]:10046 "EHLO
+	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753831Ab2GSBZk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 21:25:25 -0400
-Date: Wed, 18 Jul 2012 18:29:44 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Rafael Aquini <aquini@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>, Rafael Aquini <aquini@linux.com>
-Subject: Re: [PATCH v4 1/3] mm: introduce compaction and migration for
- virtio ballooned pages
-Message-Id: <20120718182944.24f59012.akpm@linux-foundation.org>
-In-Reply-To: <20120719010047.GD2313@t510.redhat.com>
-References: <cover.1342485774.git.aquini@redhat.com>
-	<49f828a9331c9b729fcf77226006921ec5bc52fa.1342485774.git.aquini@redhat.com>
-	<20120718154605.cb0591bc.akpm@linux-foundation.org>
-	<20120718230706.GB2313@t510.redhat.com>
-	<20120718161239.9449e6b5.akpm@linux-foundation.org>
-	<20120719010047.GD2313@t510.redhat.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 18 Jul 2012 21:25:40 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-12.tower-131.messagelabs.com!1342661138!23127282!1
+X-Originating-IP: [216.166.12.31]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 04/90] staging: comedi: adl_pci7230: remove the private data
+Date: Wed, 18 Jul 2012 18:25:29 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <gregkh@linuxfoundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201207181825.29465.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Jul 2012 22:00:48 -0300 Rafael Aquini <aquini@redhat.com> wrote:
+The private data is no longer needed by this driver. Remove the
+struct, devpriv macro, and the allocation.
 
-> > So the function needs a better name - one which communicates that it is
-> > a balloon page *for the purposes of processing by the compaction code*. 
-> > Making the function private to compaction.c would help with that, if
-> > feasible.
-> > 
-> 
-> How about this (adjusted) approach:
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/staging/comedi/drivers/adl_pci7230.c | 9 ---------
+ 1 file changed, 9 deletions(-)
 
-it fails checkpatch ;)
+diff --git a/drivers/staging/comedi/drivers/adl_pci7230.c b/drivers/staging/comedi/drivers/adl_pci7230.c
+index cdf3949..7df4c96 100644
+--- a/drivers/staging/comedi/drivers/adl_pci7230.c
++++ b/drivers/staging/comedi/drivers/adl_pci7230.c
+@@ -42,12 +42,6 @@ Configuration Options:
+ 
+ #define PCI_DEVICE_ID_PCI7230 0x7230
+ 
+-struct adl_pci7230_private {
+-	int data;
+-};
+-
+-#define devpriv ((struct adl_pci7230_private *)dev->private)
+-
+ static int adl_pci7230_do_insn_bits(struct comedi_device *dev,
+ 	struct comedi_subdevice *s,
+ 	struct comedi_insn *insn,
+@@ -108,9 +102,6 @@ static int adl_pci7230_attach(struct comedi_device *dev,
+ 
+ 	dev->board_name = "pci7230";
+ 
+-	if (alloc_private(dev, sizeof(struct adl_pci7230_private)) < 0)
+-		return -ENOMEM;
+-
+ 	ret = comedi_alloc_subdevices(dev, 2);
+ 	if (ret)
+ 		return ret;
+-- 
+1.7.11
 
-> --- a/include/linux/mm.h
-> +++ b/include/linux/mm.h
-> @@ -1629,8 +1629,7 @@ static inline unsigned int debug_guardpage_minorder(void)
-> { return 0; }
->  static inline bool page_is_guard(struct page *page) { return false; }
->  #endif /* CONFIG_DEBUG_PAGEALLOC */
->  
-> -#if (defined(CONFIG_VIRTIO_BALLOON) || \
-> -	defined(CONFIG_VIRTIO_BALLOON_MODULE)) && defined(CONFIG_COMPACTION)
-> +#if (defined(CONFIG_VIRTIO_BALLOON) ||defined(CONFIG_VIRTIO_BALLOON_MODULE))
->  extern bool putback_balloon_page(struct page *);
->  extern struct address_space *balloon_mapping;
->  
-> @@ -1638,11 +1637,13 @@ static inline bool is_balloon_page(struct page *page)
->  {
->  	return (page->mapping && page->mapping == balloon_mapping);
->  }
-> +#if defined(CONFIG_COMPACTION)
-> +static inline bool balloon_compaction_enabled(void) { return true; }
->  #else
-> -static inline bool is_balloon_page(struct page *page)       { return false; }
-> -static inline bool isolate_balloon_page(struct page *page)  { return false; }
-> -static inline bool putback_balloon_page(struct page *page)  { return false; }
-> -#endif /* (VIRTIO_BALLOON || VIRTIO_BALLOON_MODULE) && COMPACTION */
-> +static inline bool putback_balloon_page(struct page *page) { return false; }
-> +static inline bool balloon_compaction_enabled(void) { return false; }
-> +#endif /* CONFIG_COMPACTION */
-> +#endif /* (CONFIG_VIRTIO_BALLOON || CONFIG_VIRTIO_BALLOON_MODULE) */
->  
->  #endif /* __KERNEL__ */
->  #endif /* _LINUX_MM_H */
-> diff --git a/mm/migrate.c b/mm/migrate.c
-> index 59c7bc5..f5f6a7d 100644
-> --- a/mm/migrate.c
-> +++ b/mm/migrate.c
-> @@ -78,7 +78,8 @@ void putback_lru_pages(struct list_head *l)
->  		list_del(&page->lru);
->  		dec_zone_page_state(page, NR_ISOLATED_ANON +
->  				page_is_file_cache(page));
-> -		if (unlikely(is_balloon_page(page)))
-> +		if (unlikely(is_balloon_page(page)) &&
-> +		    balloon_compaction_enabled())
-
-well, that helps readability.  But what does is_balloon_page() return
-when invoked on a balloon page when CONFIG_COMPACTION=n?  False,
-methinks.
-
-I think the code as you previously had it was OK, but the
-is_balloon_page() name is misleading.  It really wants to be called
-is_potentially_compactible_balloon_page() :( Maybe rename it to
-compactible_balloon_page()?
