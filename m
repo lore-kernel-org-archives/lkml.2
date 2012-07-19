@@ -1,73 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754202Ab2GSJP0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 05:15:26 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38912 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753597Ab2GSJPX (ORCPT
+	id S1754265Ab2GSJRx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 05:17:53 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:40287 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754000Ab2GSJRu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 05:15:23 -0400
-Date: Thu, 19 Jul 2012 10:15:21 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: "Kim, Milo" <Milo.Kim@ti.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] regmap-irq: support different type of irq register
-Message-ID: <20120719091520.GJ4495@opensource.wolfsonmicro.com>
-References: <A874F61F95741C4A9BA573A70FE3998FD9A7@DQHE02.ent.ti.com>
+	Thu, 19 Jul 2012 05:17:50 -0400
+Date: Thu, 19 Jul 2012 14:45:31 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+To: Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Avi Kivity <avi@redhat.com>, Rik van Riel <riel@redhat.com>,
+        KVM <kvm@vger.kernel.org>
+Cc: S390 <linux-s390@vger.kernel.org>, Carsten Otte <cotte@de.ibm.com>,
+        chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: [RESEND PATCH RFC V3 0/3] kvm: Improving directed yield in PLE
+ handler
+Message-ID: <20120719091531.GA29888@linux.vnet.ibm.com>
+Reply-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+References: <20120712191712.30440.68944.sendpatchset@codeblue>
+ <4FFF2440.40807@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="1ou9v+QBCNysIXaH"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <A874F61F95741C4A9BA573A70FE3998FD9A7@DQHE02.ent.ti.com>
-X-Cookie: Beware of low-flying butterflies.
+In-Reply-To: <4FFF2440.40807@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12071909-4242-0000-0000-0000025FF645
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 
---1ou9v+QBCNysIXaH
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Currently, on a large vcpu guests, there is a high probability of
+yielding to the same vcpu who had recently done a pause-loop exit or
+cpu relax intercepted. Such a yield can lead to the vcpu spinning
+again and hence degrade the performance.
 
-On Thu, Jul 19, 2012 at 09:04:44AM +0000, Kim, Milo wrote:
+The patchset keeps track of the pause loop exit/cpu relax interception
+and gives chance to a vcpu which:
+ (a) Has not done pause loop exit or cpu relax intercepted at all
+     (probably he is preempted lock-holder)
+ (b) Was skipped in last iteration because it did pause loop exit or
+     cpu relax intercepted, and probably has become eligible now
+     (next eligible lock holder)
 
-> + * @irq_type:    Interrupt register type. masked or enabled
->   */
->  struct regmap_irq_chip {
->  	const char *name;
-> @@ -304,6 +311,8 @@ struct regmap_irq_chip {
-> =20
->  	const struct regmap_irq *irqs;
->  	int num_irqs;
-> +
-> +	enum regirq_type irq_type;
+Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+---
+V2 was:
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
-This naming is very unclear - it's not about the interrupt itself, it's
-about the mask for the interrupt.  This would more normally be covered
-by marking the masks as being inverted rather than something like this.
+Changelog: Added comment on locking as suggested by Avi
 
---1ou9v+QBCNysIXaH
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+ include/linux/kvm_host.h |    5 +++++
+ virt/kvm/kvm_main.c      |   42 ++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 47 insertions(+), 0 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index 34ce296..952427d 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -923,6 +923,11 @@ static inline void kvm_vcpu_set_dy_eligible(struct kvm_vcpu *vcpu, bool val)
+ {
+ }
+ 
++static inline bool kvm_vcpu_eligible_for_directed_yield(struct kvm_vcpu *vcpu)
++{
++	return true;
++}
++
+ #endif /* CONFIG_HAVE_KVM_CPU_RELAX_INTERCEPT */
+ #endif
+ 
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index 3d6ffc8..8fda756 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -1571,6 +1571,43 @@ bool kvm_vcpu_yield_to(struct kvm_vcpu *target)
+ }
+ EXPORT_SYMBOL_GPL(kvm_vcpu_yield_to);
+ 
++#ifdef CONFIG_HAVE_KVM_CPU_RELAX_INTERCEPT
++/*
++ * Helper that checks whether a VCPU is eligible for directed yield.
++ * Most eligible candidate to yield is decided by following heuristics:
++ *
++ *  (a) VCPU which has not done pl-exit or cpu relax intercepted recently
++ *  (preempted lock holder), indicated by @in_spin_loop.
++ *  Set at the beiginning and cleared at the end of interception/PLE handler.
++ *
++ *  (b) VCPU which has done pl-exit/ cpu relax intercepted but did not get
++ *  chance last time (mostly it has become eligible now since we have probably
++ *  yielded to lockholder in last iteration. This is done by toggling
++ *  @dy_eligible each time a VCPU checked for eligibility.)
++ *
++ *  Yielding to a recently pl-exited/cpu relax intercepted VCPU before yielding
++ *  to preempted lock-holder could result in wrong VCPU selection and CPU
++ *  burning. Giving priority for a potential lock-holder increases lock
++ *  progress.
++ *
++ *  Since algorithm is based on heuristics, accessing another VCPU data without
++ *  locking does not harm. It may result in trying to yield to same VCPU, fail
++ *  and continue with next VCPU and so on.
++ */
++bool kvm_vcpu_eligible_for_directed_yield(struct kvm_vcpu *vcpu)
++{
++	bool eligible;
++
++	eligible = !vcpu->spin_loop.in_spin_loop ||
++			(vcpu->spin_loop.in_spin_loop &&
++			 vcpu->spin_loop.dy_eligible);
++
++	if (vcpu->spin_loop.in_spin_loop)
++		kvm_vcpu_set_dy_eligible(vcpu, !vcpu->spin_loop.dy_eligible);
++
++	return eligible;
++}
++#endif
+ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
+ {
+ 	struct kvm *kvm = me->kvm;
+@@ -1599,6 +1636,8 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
+ 				continue;
+ 			if (waitqueue_active(&vcpu->wq))
+ 				continue;
++			if (!kvm_vcpu_eligible_for_directed_yield(vcpu))
++				continue;
+ 			if (kvm_vcpu_yield_to(vcpu)) {
+ 				kvm->last_boosted_vcpu = i;
+ 				yielded = 1;
+@@ -1607,6 +1646,9 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
+ 		}
+ 	}
+ 	kvm_vcpu_set_in_spin_loop(me, false);
++
++	/* Ensure vcpu is not eligible during next spinloop */
++	kvm_vcpu_set_dy_eligible(me, false);
+ }
+ EXPORT_SYMBOL_GPL(kvm_vcpu_on_spin);
+ 
 
-iQIcBAEBAgAGBQJQB9AiAAoJEBus8iNuMP3d6XkP/2SXCGSBvc2DjBw39sVf9AVl
-edAnXHzVRhopZaD5AW5IbDguAhrknFZP8xIOGH0K+a/JL/qhZwKyOJBPI+MnRDh+
-6VeRwrUpNpSfyHg1mabOu0Jrvvph4n5sqABOj1qieOViFOmnU+XWCqE4bCvutlnV
-MEM3YNb0XZOLyqVssB5HRB5xlgJM8RBvacE3apLAuyZCCTHE6Dm+1XpZE2IhDboz
-IQXvmMnT65m5KEX5dZ7TuXiQM2oDU9MEaJy+92a53E6jOQDOi9Vin21GG0OYJDAa
-MjHYALZ3PQbeV/NDLEQVAjUNhJJv+yIcxzXQTILW3IXOYdUzPakAhHW9fXvjvgYT
-Gcqm4iCjlbt/3N1cYS/Rw82iWeVr2mkTRfj02gaw+mhmve83xrfMBfF8myhMS01R
-KbJinzMMbo1e65Lo+pPx6YmTxCN+8FbVPcIRyOQ95AJkgCJm4nR7atPWEpzo0Yw3
-BOotnq4YNa0gYiupkIgiiBNWrAHqWs8ukoYsUBTqYqgaFaDi0zFS5fekwoubvycP
-oC7ZagPmDHSVRSaUDrvlWSik0ENe9r7TQc66tc3gdIbjobZN9Y6frvPeYmNuOGqr
-4UcwbVa4YfCrCw0KLjQFEICgcZA4LpktKBES6HTPhaJ968F/f8IOXRujuC3RnfJa
-GkemHPFrzDIOX2RTeKIl
-=K9D1
------END PGP SIGNATURE-----
-
---1ou9v+QBCNysIXaH--
