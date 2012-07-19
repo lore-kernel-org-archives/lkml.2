@@ -1,190 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752258Ab2GSGfc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 02:35:32 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:54487 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751114Ab2GSGf3 (ORCPT
+	id S1753188Ab2GSGmS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 02:42:18 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42356 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751450Ab2GSGmP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 02:35:29 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <5007AA21.3050707@jp.fujitsu.com>
-Date: Thu, 19 Jul 2012 15:33:05 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Thu, 19 Jul 2012 02:42:15 -0400
+Date: Wed, 18 Jul 2012 23:42:09 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Chung-Yih Wang =?utf-8?B?KOeOi+W0h+aHvyk=?= <cywang@google.com>
+Cc: Chase Douglas <chase.douglas@canonical.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Daniel Kurtz <djkurtz@chromium.org>, JJ Ding <dgdunix@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] Input: synaptics - use firmware data for Cr-48
+Message-ID: <20120719064209.GB3300@core.coreip.homeip.net>
+References: <1342606923-9997-1-git-send-email-cywang@chromium.org>
+ <5006D86C.7030208@canonical.com>
+ <CAM2ehZbftDja6CBGjhL3Jp+30DtYJj+8_4e=_wWcj3pCDGD7AA@mail.gmail.com>
 MIME-Version: 1.0
-To: Sha Zhengju <handai.szj@gmail.com>
-CC: Greg Thelen <gthelen@google.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, yinghan@google.com, akpm@linux-foundation.org,
-        mhocko@suse.cz, linux-kernel@vger.kernel.org,
-        Sha Zhengju <handai.szj@taobao.com>
-Subject: Re: [PATCH 5/7] memcg: add per cgroup dirty pages accounting
-References: <1340880885-5427-1-git-send-email-handai.szj@taobao.com>	<1340881486-5770-1-git-send-email-handai.szj@taobao.com> <xr937guc1wdp.fsf@gthelen.mtv.corp.google.com> <4FFD4822.4020300@gmail.com>
-In-Reply-To: <4FFD4822.4020300@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAM2ehZbftDja6CBGjhL3Jp+30DtYJj+8_4e=_wWcj3pCDGD7AA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/07/11 18:32), Sha Zhengju wrote:
-> On 07/10/2012 05:02 AM, Greg Thelen wrote:
->> On Thu, Jun 28 2012, Sha Zhengju wrote:
->>
->>> From: Sha Zhengju<handai.szj@taobao.com>
->>>
->>> This patch adds memcg routines to count dirty pages, which allows memory controller
->>> to maintain an accurate view of the amount of its dirty memory and can provide some
->>> info for users while group's direct reclaim is working.
->>>
->>> After Kame's commit 89c06bd5(memcg: use new logic for page stat accounting), we can
->>> use 'struct page' flag to test page state instead of per page_cgroup flag. But memcg
->>> has a feature to move a page from a cgroup to another one and may have race between
->>> "move" and "page stat accounting". So in order to avoid the race we have designed a
->>> bigger lock:
->>>
->>>           mem_cgroup_begin_update_page_stat()
->>>           modify page information    -->(a)
->>>           mem_cgroup_update_page_stat()  -->(b)
->>>           mem_cgroup_end_update_page_stat()
->>>
->>> It requires (a) and (b)(dirty pages accounting) can stay close enough.
->>>
->>> In the previous two prepare patches, we have reworked the vfs set page dirty routines
->>> and now the interfaces are more explicit:
->>>     incrementing (2):
->>>         __set_page_dirty
->>>         __set_page_dirty_nobuffers
->>>     decrementing (2):
->>>         clear_page_dirty_for_io
->>>         cancel_dirty_page
->>>
->>>
->>> Signed-off-by: Sha Zhengju<handai.szj@taobao.com>
->>> ---
->>>   fs/buffer.c                |   17 ++++++++++++++---
->>>   include/linux/memcontrol.h |    1 +
->>>   mm/filemap.c               |    5 +++++
->>>   mm/memcontrol.c            |   28 +++++++++++++++++++++-------
->>>   mm/page-writeback.c        |   30 ++++++++++++++++++++++++------
->>>   mm/truncate.c              |    6 ++++++
->>>   6 files changed, 71 insertions(+), 16 deletions(-)
->>>
->>> diff --git a/fs/buffer.c b/fs/buffer.c
->>> index 55522dd..d3714cc 100644
->>> --- a/fs/buffer.c
->>> +++ b/fs/buffer.c
->>> @@ -613,11 +613,19 @@ EXPORT_SYMBOL(mark_buffer_dirty_inode);
->>>   int __set_page_dirty(struct page *page,
->>>           struct address_space *mapping, int warn)
->>>   {
->>> +    bool locked;
->>> +    unsigned long flags;
->>> +    int ret = 0;
->> '= 0' and 'ret = 0' change (below) are redundant.  My vote is to remove
->> '= 0' here.
->>
->
-> Nice catch. :-)
->
->>> +
->>>       if (unlikely(!mapping))
->>>           return !TestSetPageDirty(page);
->>>
->>> -    if (TestSetPageDirty(page))
->>> -        return 0;
->>> +    mem_cgroup_begin_update_page_stat(page,&locked,&flags);
->>> +
->>> +    if (TestSetPageDirty(page)) {
->>> +        ret = 0;
->>> +        goto out;
->>> +    }
->>>
->>>       spin_lock_irq(&mapping->tree_lock);
->>>       if (page->mapping) {    /* Race with truncate? */
->>> @@ -629,7 +637,10 @@ int __set_page_dirty(struct page *page,
->>>       spin_unlock_irq(&mapping->tree_lock);
->>>       __mark_inode_dirty(mapping->host, I_DIRTY_PAGES);
->>>
->>> -    return 1;
->>> +    ret = 1;
->>> +out:
->>> +    mem_cgroup_end_update_page_stat(page,&locked,&flags);
->>> +    return ret;
->>>   }
->>>
->>>   /*
->>> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
->>> index 20b0f2d..ad37b59 100644
->>> --- a/include/linux/memcontrol.h
->>> +++ b/include/linux/memcontrol.h
->>> @@ -38,6 +38,7 @@ enum mem_cgroup_stat_index {
->>>       MEM_CGROUP_STAT_RSS,       /* # of pages charged as anon rss */
->>>       MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
->>>       MEM_CGROUP_STAT_SWAP, /* # of pages, swapped out */
->>> +    MEM_CGROUP_STAT_FILE_DIRTY,  /* # of dirty pages in page cache */
->>>       MEM_CGROUP_STAT_NSTATS,
->>>   };
->>>
->>> diff --git a/mm/filemap.c b/mm/filemap.c
->>> index 1f19ec3..5159a49 100644
->>> --- a/mm/filemap.c
->>> +++ b/mm/filemap.c
->>> @@ -140,6 +140,11 @@ void __delete_from_page_cache(struct page *page)
->>>        * having removed the page entirely.
->>>        */
->>>       if (PageDirty(page)&&  mapping_cap_account_dirty(mapping)) {
->>> +        /*
->>> +         * Do not change page state, so no need to use mem_cgroup_
->>> +         * {begin, end}_update_page_stat to get lock.
->>> +         */
->>> +        mem_cgroup_dec_page_stat(page, MEM_CGROUP_STAT_FILE_DIRTY);
->> I do not understand this comment.  What serializes this function and
->> mem_cgroup_move_account()?
->>
->
-> The race is exist just because the two competitors share one
-> public variable and one reads it and the other writes it.
-> I thought if both sides(accounting and cgroup_move) do not
-> change page flag, then risks like doule-counting(see below)
-> will not happen.
->
->               CPU-A                                   CPU-B
->          Set PG_dirty
->          (delay)                                move_lock_mem_cgroup()
->                                                     if (PageDirty(page))
-> new_memcg->nr_dirty++
->                                                     pc->mem_cgroup = new_memcg;
->                                                     move_unlock_mem_cgroup()
->          move_lock_mem_cgroup()
->          memcg = pc->mem_cgroup
->          new_memcg->nr_dirty++
->
->
-> But after second thoughts, it does have problem if without lock:
->
->               CPU-A                                   CPU-B
->          if (PageDirty(page)) {
->                                                     move_lock_mem_cgroup()
-> TestClearPageDirty(page))
->                                                              memcg = pc->mem_cgroup
-> new_memcg->nr_dirty --
->                                                     move_unlock_mem_cgroup()
->
->          memcg = pc->mem_cgroup
->          new_memcg->nr_dirty--
->          }
->
->
-> It may occur race between clear_page_dirty() operation.
-> So this time I think we need the lock again...
->
-> Kame, what about your opinion...
->
-I think Dirty bit is cleared implicitly here...So, having lock will be good.
-  
-Thanks,
--Kame
+Hi Chung-Yih,
 
+On Thu, Jul 19, 2012 at 11:02:23AM +0800, Chung-Yih Wang (王崇懿) wrote:
+> Hi Chase,
+> 
+>    Thanks for your great comments. You are right, it is impossible to get
+>  correct finger tracking if both fingers are moving. However, we think it
+> still worth to have the firmware tracking of the fingers as they could
+> perform well for most one-stationary-one-moving cases. This will be good
+> enough for the one-stationary-one-moving gestures we want to provide on
+> Cr-48. And that's why we want to make the patch specific to Cr-48.
+> 
 
+First of all if the patch makes sense for Cr-48 then other boxes using
+the same touchpad with the same sensor would also benefit from it.
+However it is still not clear to me what coordinates are being reported
+by the device? You say that it always reports finger with smaller Y in
+SGM packet, but what about X coordinate? Could it be that the most
+benefit from your patch is because it reports proper slot from 2->1
+finger transitions?
 
+BTW, you seem to have butchered single-touch protocol reporting for your
+device.
+
+Thanks.
+
+-- 
+Dmitry
