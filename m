@@ -1,120 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751439Ab2GSTYm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 15:24:42 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:48541 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751065Ab2GSTYl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 15:24:41 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Carsten Emde <C.Emde@osadl.org>
-Subject: Re: [PATCH 1/1 v2] Honor state disabling in the cpuidle ladder governor
-Date: Thu, 19 Jul 2012 21:30:20 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
-        Len Brown <len.brown@intel.com>, Kevin Hilman <khilman@ti.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-References: <201207192042.57935.rjw@sisk.pl> <20120719185212.184458166@osadl.org> <20120719190740.215034590@osadl.org>
-In-Reply-To: <20120719190740.215034590@osadl.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
+	id S1751520Ab2GST0B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 15:26:01 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:37881 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750917Ab2GSTZ4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 15:25:56 -0400
+Message-ID: <1342725950.5599.7.camel@lorien2>
+Subject: Re: [PATCH 1/4] ACPI: Add acpi_pr_<level>() interfaces
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bhelgaas@google.com, isimatu.yasuaki@jp.fujitsu.com, liuj97@gmail.com,
+        srivatsa.bhat@linux.vnet.ibm.com, prarit@redhat.com,
+        imammedo@redhat.com, vijaymohan.pandarathil@hp.com,
+        shuahkhan@gmail.com
+Date: Thu, 19 Jul 2012 13:25:50 -0600
+In-Reply-To: <1342718897.3010.188.camel@misato.fc.hp.com>
+References: <1342644027-19559-1-git-send-email-toshi.kani@hp.com>
+	 <1342644027-19559-2-git-send-email-toshi.kani@hp.com>
+	 <1342648771.5138.37.camel@lorien2>
+	 <1342650386.3010.55.camel@misato.fc.hp.com>
+	 <1342651257.5138.44.camel@lorien2>
+	 <1342651966.3010.66.camel@misato.fc.hp.com>
+	 <1342653482.5138.56.camel@lorien2>
+	 <1342658296.3010.136.camel@misato.fc.hp.com>
+	 <1342714515.3100.27.camel@lorien2>
+	 <1342718897.3010.188.camel@misato.fc.hp.com>
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201207192130.20520.rjw@sisk.pl>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, July 19, 2012, Carsten Emde wrote:
-> There are two cpuidle governors ladder and menu. While the ladder
-> governor is always available, if CONFIG_CPU_IDLE is selected, the
-> menu governor additionally requires CONFIG_NO_HZ.
+On Thu, 2012-07-19 at 11:28 -0600, Toshi Kani wrote:
+> On Thu, 2012-07-19 at 10:15 -0600, Shuah Khan wrote:
+> > On Wed, 2012-07-18 at 18:38 -0600, Toshi Kani wrote:
+> > 
+> > > 
+> > > This interface is defined in acpi/acpi_bus.h, which is intended for ACPI
+> > > drivers which make many ACPI calls to proceed when they are called at
+> > > run-time today.  This interface does not change that, and I believe
+> > > acpi_get_name() is much faster compared to ACPI method calls these ACPI
+> > > drivers make in their normal code path.  The extra work to call
+> > > acpi_get_name() is simply a noise in this case (if you try to measure),
+> > > and the use of this interface is limited in error paths of such ACPI
+> > > drivers.
+> > 
+> > I understand the scope of the usage of this new interface. I don't think
+> > I am able to explain the problem I see with this interface as it gets
+> > used more and more from acpi drivers. Let me try another way.
+> > 
+> > If understand the this patch set, if and when acpi drivers that
+> > currently use pr_* interfaces switch to using acpi_pr_*, the execution
+> > path goes from a what printk() does to the following:
+> > 
+> > acpi_pr_*
+> > - setup static buffer
+> > - calls acpi_get_name()
+> > - acpi_get_name() calls acpi_ut_validate_buffer() and then calls
+> >   acpi_ns_handle_to_pathname()
+> > - acpi_ns_handle_to_pathname() calls acpi_ns_validate_handle() followed
+> >   by acpi_ns_get_pathname_length() and so on.
+> > 
+> > I think this should give you a good idea of my concern. I think
+> > acpi_pr_* full functionality should be enabled under special cases such
+> > as some acpi_debug level setting or some other way, and not for default
+> > case. I propose the following:
+> > 
+> > Make acpi_pr_* versions execute the full path to do acpi_get_name()
+> > conditionally and not as a default case.
+> > 
+> > To illustrate my point further, I currently see the following ACPI
+> > messages in my dmesg buffer on my laptop. I haven't taken the time to
+> > evaluate how many of them originate from acpi drivers, however I would
+> > not want to see all of these becoming acpi_pr_* versions that do more
+> > than what pr_* does today. I hope this explains my concern clearly.
 > 
-> A particular C state can be disabled by writing to the sysfs file
-> /sys/devices/system/cpu/cpuN/cpuidle/stateN/disable, but this mechanism
-> is only implemented in the menu governor. Thus, in a system where
-> CONFIG_NO_HZ is not selected, the ladder governor becomes default and
-> always will walk through all sleep states - irrespective of whether the
-> C state was disabled via sysfs or not. The only way to select a specific
-> C state was to write the related latency to /dev/cpu_dma_latency and
-> keep the file open as long as this setting was required - not very
-> practical and not suitable for setting a single core in an SMP system.
-> 
-> With this patch, the ladder governor only will promote to the next
-> C state, if it has not been disabled, and it will demote, if the
-> current C state was disabled.
-> 
-> Note that the patch does not make the setting of the sysfs variable
-> "disable" coherent, i.e. if one is disabling a light state, then all
-> deeper states are disabled as well, but the "disable" variable does not
-> reflect it. Likewise, if one enables a deep state but a lighter state
-> still is disabled, then this has no effect. A related section has been
-> added to the documentation.
-> 
-> Signed-off-by: Carsten Emde <C.Emde@osadl.org>
+> I agree that there are many ACPI messages at boot, and I understand that
+> you concerned with them, but that is a different issue.  It requires a
+> different project to address them.  Changing my patchset won't make any
+> difference.
 
-Your patch doesn't seem to take this linux-next commit:
+On the contrary, your patch set could make the existing problems worse
+by introducing lot of complexity (makes the execution path very long for
+each and every one these messages) in the path that prints messages. As
+more and more acpi code paths start using the new interfaces, it will
+keep getting worse.
 
-http://git.kernel.org/?p=linux/kernel/git/rafael/linux-pm.git;a=commit;h=dc7fd275ae60ef8edf952aff2a62462f5d892fd4
+I am not questioning the usefulness of the additional information, I am
+questioning the complexity your patch set adds. The added complexity
+isn't desirable.
 
-into account, does it?
+The design in this patch set needs refinement so it doesn't add to the
+execution path.
 
-Rafael
+-- Shuah
 
-
-> ---
->  Documentation/cpuidle/sysfs.txt    |   10 +++++++++-
->  drivers/cpuidle/governors/ladder.c |    4 +++-
->  2 files changed, 12 insertions(+), 2 deletions(-)
-> 
-> Index: linux-3.4.4-rt14-rc2-64/Documentation/cpuidle/sysfs.txt
-> ===================================================================
-> --- linux-3.4.4-rt14-rc2-64.orig/Documentation/cpuidle/sysfs.txt
-> +++ linux-3.4.4-rt14-rc2-64/Documentation/cpuidle/sysfs.txt
-> @@ -76,9 +76,17 @@ total 0
->  
->  
->  * desc : Small description about the idle state (string)
-> -* disable : Option to disable this idle state (bool)
-> +* disable : Option to disable this idle state (bool) -> see note below
->  * latency : Latency to exit out of this idle state (in microseconds)
->  * name : Name of the idle state (string)
->  * power : Power consumed while in this idle state (in milliwatts)
->  * time : Total time spent in this idle state (in microseconds)
->  * usage : Number of times this state was entered (count)
-> +
-> +Note:
-> +The behavior and the effect of the disable variable depends on the
-> +implementation of a particular governor. In the ladder governor, for
-> +example, it is not coherent, i.e. if one is disabling a light state,
-> +then all deeper states are disabled as well, but the disable variable
-> +does not reflect it. Likewise, if one enables a deep state but a lighter
-> +state still is disabled, then this has no effect.
-> Index: linux-3.4.4-rt14-rc2-64/drivers/cpuidle/governors/ladder.c
-> ===================================================================
-> --- linux-3.4.4-rt14-rc2-64.orig/drivers/cpuidle/governors/ladder.c
-> +++ linux-3.4.4-rt14-rc2-64/drivers/cpuidle/governors/ladder.c
-> @@ -88,6 +88,7 @@ static int ladder_select_state(struct cp
->  
->  	/* consider promotion */
->  	if (last_idx < drv->state_count - 1 &&
-> +	    !drv->states[last_idx + 1].disable &&
->  	    last_residency > last_state->threshold.promotion_time &&
->  	    drv->states[last_idx + 1].exit_latency <= latency_req) {
->  		last_state->stats.promotion_count++;
-> @@ -100,7 +101,8 @@ static int ladder_select_state(struct cp
->  
->  	/* consider demotion */
->  	if (last_idx > CPUIDLE_DRIVER_STATE_START &&
-> -	    drv->states[last_idx].exit_latency > latency_req) {
-> +	    (drv->states[last_idx].disable ||
-> +	    drv->states[last_idx].exit_latency > latency_req)) {
->  		int i;
->  
->  		for (i = last_idx - 1; i > CPUIDLE_DRIVER_STATE_START; i--) {
-> 
-> 
-> 
 
