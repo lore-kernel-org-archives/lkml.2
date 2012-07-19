@@ -1,91 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752671Ab2GSOmT (ORCPT <rfc822;w@1wt.eu>);
+	id S1752716Ab2GSOmY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 10:42:24 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27981 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752498Ab2GSOmT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 19 Jul 2012 10:42:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40703 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752498Ab2GSOmP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 10:42:15 -0400
-Date: Thu, 19 Jul 2012 16:42:13 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, Hugh Dickins <hughd@google.com>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Kenneth W Chen <kenneth.w.chen@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH] mm: hugetlbfs: Close race during teardown of
- hugetlbfs shared page tables
-Message-ID: <20120719144213.GJ2864@tiehlicka.suse.cz>
-References: <20120718104220.GR9222@suse.de>
+X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=wom5GMh1gUkA:10 a=0wpEoyeJZggA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=nhfWb_NetKUeJCV5-g0A:9 a=CjuIK1q_8ugA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Date: Thu, 19 Jul 2012 10:42:17 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>, Pekka Enberg <penberg@kernel.org>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
+        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
+        Debian Kernel Team <debian-kernel@lists.debian.org>,
+        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Sasha Levin <levinsasha928@gmail.com>,
+        Asias He <asias.hejun@gmail.com>
+Subject: Re: [opensuse-kernel] Re: [RFC] Simplifying kernel configuration for
+ distro issues
+Message-ID: <20120719144217.GC16873@home.goodmis.org>
+References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com>
+ <1342212885.25704.4.camel@lade.trondhjem.org>
+ <CAFLxGvxxWodD97=78218wc+tuigAFsNK_PdroDfb4BWTZoxxUw@mail.gmail.com>
+ <20120714103716.GD26559@liondog.tnic>
+ <CAOJsxLGHQuuXqDD-1SNhL7Ly1-heCYFLzqj3SLh4xzmP9NR5GQ@mail.gmail.com>
+ <20120714124332.GA4093@moon>
+ <20120714174827.GA13319@aftab.osrc.amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120718104220.GR9222@suse.de>
+In-Reply-To: <20120714174827.GA13319@aftab.osrc.amd.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[/me puts the patch destroyer glasses on]
+On Sat, Jul 14, 2012 at 07:48:27PM +0200, Borislav Petkov wrote:
+> 
+> Let's have an example: when I have to build upstream on a distro here,
+> I take the distro config and use it despite that it takes a long time
+> to build since everything is module - it is still better for me to
+> wait that one time instead of doing a dozen of trial and errors after
+> forgetting a config option each time.
 
-On Wed 18-07-12 11:43:09, Mel Gorman wrote:
-[...]
-> diff --git a/arch/x86/mm/hugetlbpage.c b/arch/x86/mm/hugetlbpage.c
-> index f6679a7..0524556 100644
-> --- a/arch/x86/mm/hugetlbpage.c
-> +++ b/arch/x86/mm/hugetlbpage.c
-> @@ -68,14 +68,37 @@ static void huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
->  	struct vm_area_struct *svma;
->  	unsigned long saddr;
->  	pte_t *spte = NULL;
-> +	spinlock_t *spage_table_lock = NULL;
-> +	struct rw_semaphore *smmap_sem = NULL;
->  
->  	if (!vma_shareable(vma, addr))
->  		return;
->  
-> +retry:
->  	mutex_lock(&mapping->i_mmap_mutex);
->  	vma_prio_tree_foreach(svma, &iter, &mapping->i_mmap, idx, idx) {
->  		if (svma == vma)
->  			continue;
-> +		if (svma->vm_mm == vma->vm_mm)
-> +			continue;
-> +
-> +		/*
-> +		 * The target mm could be in the process of tearing down
-> +		 * its page tables and the i_mmap_mutex on its own is
-> +		 * not sufficient. To prevent races against teardown and
-> +		 * pagetable updates, we acquire the mmap_sem and pagetable
-> +		 * lock of the remote address space. down_read_trylock()
-> +		 * is necessary as the other process could also be trying
-> +		 * to share pagetables with the current mm.
-> +		 */
-> +		if (!down_read_trylock(&svma->vm_mm->mmap_sem)) {
-> +			mutex_unlock(&mapping->i_mmap_mutex);
-> +			goto retry;
-> +		}
-> +
+This is where 'make localmodconfig' does help. It can remove a lot of
+modules for you. And I just recently fixed a bug in the tool that it now
+removes even more modules (The fix is in linux-next).
 
-I am afraid this can easily cause a dead lock. Consider
-fork
-  dup_mmap
-    down_write(&oldmm->mmap_sem)
-    copy_page_range
-      copy_hugetlb_page_range
-        huge_pte_alloc
+Also, if you are building on another box than what the kernel is for,
+you can go to that box and run 'lsmod > /tmp/lsmod'. Copy that file to
+the build machine (into /tmp/lsmod), and then run
+'make LSMOD=/tmp/lsmod localmodconfig', and this will remove the modules
+not used by the target box.
 
-svma could belong to oldmm and then we would loop for ever. 
-svma->vm_mm == vma->vm_mm doesn't help because vma is child's one and mm
-differ in that case. I am wondering you didn't hit this while testing.
-It would suggest that the ptes are not populated yet because we didn't
-let parent play and then other children could place its vma in the list
-before parent?
+-- Steve
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
