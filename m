@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752036Ab2GSVNL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 17:13:11 -0400
-Received: from usindpps03.hds.com ([207.126.252.16]:36607 "EHLO
+	id S1752076Ab2GSVOL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 17:14:11 -0400
+Received: from usindpps03.hds.com ([207.126.252.16]:37413 "EHLO
 	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751575Ab2GSVNJ convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751575Ab2GSVOI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 17:13:09 -0400
+	Thu, 19 Jul 2012 17:14:08 -0400
 From: Seiji Aguchi <seiji.aguchi@hds.com>
 To: "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
@@ -17,11 +17,11 @@ To: "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
 CC: "dle-develop@lists.sourceforge.net" 
 	<dle-develop@lists.sourceforge.net>,
         Satoru Moriya <satoru.moriya@hds.com>
-Subject: [RFC][PATCH v2 1/3] Avoid overwriting existing entry
-Thread-Topic: [RFC][PATCH v2 1/3] Avoid overwriting existing entry
-Thread-Index: Ac1l8ziceLtw2nPrTa6+aYK+rjGozw==
-Date: Thu, 19 Jul 2012 21:12:57 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D40FB27FBF@USINDEM103.corp.hds.com>
+Subject: [RFC][PATCH v2 2/3] Hold multiple logs
+Thread-Topic: [RFC][PATCH v2 2/3] Hold multiple logs
+Thread-Index: Ac1l82ceH7I0t1QCT1GombsnNxviZA==
+Date: Thu, 19 Jul 2012 21:13:55 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D40FB27FDC@USINDEM103.corp.hds.com>
 Accept-Language: ja-JP, en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -41,164 +41,185 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 [Problem]
- Currently, efi_pstore driver simply overwrites existing panic messages in NVRAM.
- So, in the following scenario, we will lose 1st panic messages.
+ When efi_pstore holds just one log and it doesn't overwrite an exisiting entry,
+ we lose a critical message if kernel panics while system is rebooting.
 
- 1. kernel panics.
- 2. efi_pstore is kicked and write panic messages to NVRAM.
- 3. system reboots.
- 4. kernel panics again before a user checks the 1st panic messages in NVRAM.
-
-[Solution]
-This patch remove a logic erasing existing entries from write callback to
-avoid losing an existing critical message.
+ [Solution]
+  With this patch, efi_pstore can hold multiple logs with a new kernel parameter, efi_pstore_log_num.
+  We can simply avoid losing a critical message in case mutiple events happen.
 
 [Patch Description]
- - Remove a logic erasing existing entries from write callback
- - Add the logic above to erase callback.
+ - Introduce a new kernel parameter specifying the number of logs efi_pstore holds.
+ - Pass ctime to an argument of erase callback.
+    - Current variable name consists of type, id and ctime. So, when handling mutiple logs,
+      pstore should pass ctime to erase callback to avoid erasing invisible entries via /dev/pstore.
 
- Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
-
+Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
 ---
- drivers/firmware/efivars.c |   92 +++++++++++++++++++++++++++++++++-----------
- 1 files changed, 69 insertions(+), 23 deletions(-)
+ Documentation/kernel-parameters.txt |    6 ++++++
+ drivers/acpi/apei/erst.c            |    4 ++--
+ drivers/firmware/efivars.c          |   33 +++++++++++++++++++++++++--------
+ fs/pstore/inode.c                   |    2 +-
+ fs/pstore/ram.c                     |    2 +-
+ include/linux/pstore.h              |    2 +-
+ 6 files changed, 36 insertions(+), 13 deletions(-)
 
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index a92c5eb..9d38561 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -786,6 +786,12 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 	edd=		[EDD]
+ 			Format: {"off" | "on" | "skip[mbr]"}
+ 
++	efivars.efi_pstore_log_num=
++			Set the maximum number of logs efi_pstore saves into
++			NVRAM. n >= 1 limits the number of logs. n <= 0 is
++			invalid.
++			default: 1
++
+ 	eisa_irq_edge=	[PARISC,HW]
+ 			See header of drivers/parisc/eisa.c.
+ 
+diff --git a/drivers/acpi/apei/erst.c b/drivers/acpi/apei/erst.c
+index e4d9d24..0bd6ae4 100644
+--- a/drivers/acpi/apei/erst.c
++++ b/drivers/acpi/apei/erst.c
+@@ -938,7 +938,7 @@ static int erst_writer(enum pstore_type_id type, enum kmsg_dump_reason reason,
+ 		       u64 *id, unsigned int part,
+ 		       size_t size, struct pstore_info *psi);
+ static int erst_clearer(enum pstore_type_id type, u64 id,
+-			struct pstore_info *psi);
++			struct timespec time, struct pstore_info *psi);
+ 
+ static struct pstore_info erst_info = {
+ 	.owner		= THIS_MODULE,
+@@ -1102,7 +1102,7 @@ static int erst_writer(enum pstore_type_id type, enum kmsg_dump_reason reason,
+ }
+ 
+ static int erst_clearer(enum pstore_type_id type, u64 id,
+-			struct pstore_info *psi)
++			struct timespec time, struct pstore_info *psi)
+ {
+ 	return erst_clear(id);
+ }
 diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-index 47408e8..75a7c82 100644
+index 75a7c82..55188d7 100644
 --- a/drivers/firmware/efivars.c
 +++ b/drivers/firmware/efivars.c
-@@ -685,6 +685,30 @@ static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
- 	return 0;
- }
+@@ -628,6 +628,27 @@ efivar_unregister(struct efivar_entry *var)
  
-+static unsigned long get_current_log_num(efi_char16_t *efi_name,
-+					 struct efivars *efivars)
+ #ifdef CONFIG_PSTORE
+ 
++static unsigned long efi_pstore_log_num = 1;
++static int param_set_efi_pstore_log_num(const char *val,
++					struct kernel_param *kp)
 +{
-+	efi_guid_t vendor = LINUX_EFI_CRASH_GUID;
-+	struct efivar_entry *entry;
-+	unsigned long current_log_num = 0;
++	int ret;
++	unsigned long l;
 +
-+	list_for_each_entry(entry, &efivars->list, list) {
-+		get_var_data_locked(efivars, &entry->var);
++	ret = kstrtoul(val, 0, &l);
++	if (ret || l == 0)
++		return -EINVAL;
 +
-+		if (efi_guidcmp(entry->var.VendorGuid, vendor))
-+			continue;
-+		if (utf16_strncmp(entry->var.VariableName, efi_name,
-+				  utf16_strlen(efi_name)))
-+			continue;
-+		/* Needs to be a prefix */
-+		if (entry->var.VariableName[utf16_strlen(efi_name)] == 0)
-+			continue;
-+		current_log_num++;
-+	}
++	ret = param_set_ulong(val, kp);
++	if (ret)
++		return -EINVAL;
 +
-+	return current_log_num;
++	return 0;
 +}
 +
- static int efi_pstore_write(enum pstore_type_id type,
- 		enum kmsg_dump_reason reason, u64 *id,
- 		unsigned int part, size_t size, struct pstore_info *psi)
-@@ -694,8 +718,8 @@ static int efi_pstore_write(enum pstore_type_id type,
- 	efi_char16_t efi_name[DUMP_NAME_LEN];
- 	efi_guid_t vendor = LINUX_EFI_CRASH_GUID;
++module_param_call(efi_pstore_log_num, param_set_efi_pstore_log_num,
++		  param_get_ulong, &efi_pstore_log_num, S_IRUGO | S_IWUSR);
++
+ static int efi_pstore_open(struct pstore_info *psi)
+ {
  	struct efivars *efivars = psi->data;
--	struct efivar_entry *entry, *found = NULL;
- 	int i, ret = 0;
-+	unsigned long current_log_num;
+@@ -731,7 +752,7 @@ static int efi_pstore_write(enum pstore_type_id type,
  
- 	sprintf(stub_name, "dump-type%u-%u-", type, part);
- 	sprintf(name, "%s%lu", stub_name, get_seconds());
-@@ -705,6 +729,48 @@ static int efi_pstore_write(enum pstore_type_id type,
- 	for (i = 0; i < DUMP_NAME_LEN; i++)
- 		efi_name[i] = stub_name[i];
+ 	current_log_num = get_current_log_num(efi_name, efivars);
  
-+	current_log_num = get_current_log_num(efi_name, efivars);
-+
-+	if (current_log_num >= 1) {
-+		spin_unlock(&efivars->lock);
-+		*id = part;
-+		return -EEXIST;
-+	}
-+
-+	for (i = 0; i < DUMP_NAME_LEN; i++)
-+		efi_name[i] = name[i];
-+
-+	efivars->ops->set_variable(efi_name, &vendor, PSTORE_EFI_ATTRIBUTES,
-+				   size, psi->buf);
-+
-+	spin_unlock(&efivars->lock);
-+
-+	if (size)
-+		ret = efivar_create_sysfs_entry(efivars,
-+					  utf16_strsize(efi_name,
-+							DUMP_NAME_LEN * 2),
-+					  efi_name, &vendor);
-+
-+	*id = part;
-+	return ret;
-+};
-+
-+static int efi_pstore_erase(enum pstore_type_id type, u64 id,
-+			    struct pstore_info *psi)
-+{
-+	char stub_name[DUMP_NAME_LEN];
-+	efi_char16_t efi_name[DUMP_NAME_LEN];
-+	efi_guid_t vendor = LINUX_EFI_CRASH_GUID;
-+	struct efivars *efivars = psi->data;
-+	struct efivar_entry *entry, *found = NULL;
-+	int i;
-+
-+	sprintf(stub_name, "dump-type%u-%llu-", type, id);
-+
-+	spin_lock(&efivars->lock);
-+
-+	for (i = 0; i < DUMP_NAME_LEN; i++)
-+		efi_name[i] = stub_name[i];
- 	/*
- 	 * Clean up any entries with the same name
- 	 */
-@@ -718,7 +784,8 @@ static int efi_pstore_write(enum pstore_type_id type,
+-	if (current_log_num >= 1) {
++	if (current_log_num >= efi_pstore_log_num) {
+ 		spin_unlock(&efivars->lock);
+ 		*id = part;
+ 		return -EEXIST;
+@@ -756,7 +777,7 @@ static int efi_pstore_write(enum pstore_type_id type,
+ };
+ 
+ static int efi_pstore_erase(enum pstore_type_id type, u64 id,
+-			    struct pstore_info *psi)
++			    struct timespec time, struct pstore_info *psi)
+ {
+ 	char stub_name[DUMP_NAME_LEN];
+ 	efi_char16_t efi_name[DUMP_NAME_LEN];
+@@ -765,7 +786,7 @@ static int efi_pstore_erase(enum pstore_type_id type, u64 id,
+ 	struct efivar_entry *entry, *found = NULL;
+ 	int i;
+ 
+-	sprintf(stub_name, "dump-type%u-%llu-", type, id);
++	sprintf(stub_name, "dump-type%u-%llu-%lu", type, id, time.tv_sec);
+ 
+ 	spin_lock(&efivars->lock);
+ 
+@@ -783,10 +804,6 @@ static int efi_pstore_erase(enum pstore_type_id type, u64 id,
+ 		if (utf16_strncmp(entry->var.VariableName, efi_name,
  				  utf16_strlen(efi_name)))
  			continue;
- 		/* Needs to be a prefix */
--		if (entry->var.VariableName[utf16_strlen(efi_name)] == 0)
-+		if (entry->var.VariableName[utf16_strlen(efi_name)]
-+		    == 0)
- 			continue;
+-		/* Needs to be a prefix */
+-		if (entry->var.VariableName[utf16_strlen(efi_name)]
+-		    == 0)
+-			continue;
  
  		/* found */
-@@ -732,32 +799,11 @@ static int efi_pstore_write(enum pstore_type_id type,
- 	if (found)
- 		list_del(&found->list);
+ 		found = entry;
+@@ -832,7 +849,7 @@ static int efi_pstore_write(enum pstore_type_id type,
+ }
  
--	for (i = 0; i < DUMP_NAME_LEN; i++)
--		efi_name[i] = name[i];
--
--	efivars->ops->set_variable(efi_name, &vendor, PSTORE_EFI_ATTRIBUTES,
--				   size, psi->buf);
--
- 	spin_unlock(&efivars->lock);
- 
- 	if (found)
- 		efivar_unregister(found);
- 
--	if (size)
--		ret = efivar_create_sysfs_entry(efivars,
--					  utf16_strsize(efi_name,
--							DUMP_NAME_LEN * 2),
--					  efi_name, &vendor);
--
--	*id = part;
--	return ret;
--};
--
--static int efi_pstore_erase(enum pstore_type_id type, u64 id,
+ static int efi_pstore_erase(enum pstore_type_id type, u64 id,
 -			    struct pstore_info *psi)
--{
--	efi_pstore_write(type, 0, &id, (unsigned int)id, 0, psi);
--
++			    struct timespec time, struct pstore_info *psi)
+ {
  	return 0;
  }
- #else
+diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
+index 11a2aa2..9acd703 100644
+--- a/fs/pstore/inode.c
++++ b/fs/pstore/inode.c
+@@ -75,7 +75,7 @@ static int pstore_unlink(struct inode *dir, struct dentry *dentry)
+ 	struct pstore_private *p = dentry->d_inode->i_private;
+ 
+ 	if (p->psi->erase)
+-		p->psi->erase(p->type, p->id, p->psi);
++		p->psi->erase(p->type, p->id, dentry->d_inode->i_ctime, p->psi);
+ 
+ 	return simple_unlink(dir, dentry);
+ }
+diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
+index 453030f..06357c9 100644
+--- a/fs/pstore/ram.c
++++ b/fs/pstore/ram.c
+@@ -178,7 +178,7 @@ static int ramoops_pstore_write(enum pstore_type_id type,
+ }
+ 
+ static int ramoops_pstore_erase(enum pstore_type_id type, u64 id,
+-				struct pstore_info *psi)
++				timespec time, struct pstore_info *psi)
+ {
+ 	struct ramoops_context *cxt = psi->data;
+ 
+diff --git a/include/linux/pstore.h b/include/linux/pstore.h
+index e1461e1..92cb90e 100644
+--- a/include/linux/pstore.h
++++ b/include/linux/pstore.h
+@@ -48,7 +48,7 @@ struct pstore_info {
+ 			enum kmsg_dump_reason reason, u64 *id,
+ 			unsigned int part, size_t size, struct pstore_info *psi);
+ 	int		(*erase)(enum pstore_type_id type, u64 id,
+-			struct pstore_info *psi);
++			struct timespec time, struct pstore_info *psi);
+ 	void		*data;
+ };
+ 
 -- 1.7.1 
 
