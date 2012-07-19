@@ -1,156 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751958Ab2GSMVM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 08:21:12 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:39265 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751239Ab2GSMVC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 08:21:02 -0400
-Date: Thu, 19 Jul 2012 14:20:58 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Alex Shi <alex.shi@intel.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, arnd@arndb.de,
-        rostedt@goodmis.org, fweisbec@gmail.com, jeremy@goop.org, luto@mit.edu,
-        yinghai@kernel.org, riel@redhat.com, avi@redhat.com,
-        len.brown@intel.com, tj@kernel.org, akpm@linux-foundation.org,
-        cl@gentwo.org, borislav.petkov@amd.com, ak@linux.intel.com,
-        jbeulich@suse.com, eric.dumazet@gmail.com, akinobu.mita@gmail.com,
-        vapier@gentoo.org, cpw@sgi.com, steiner@sgi.com,
-        viro@zeniv.linux.org.uk, kamezawa.hiroyu@jp.fujitsu.com,
-        rientjes@google.com, aarcange@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v10 7/9] x86/tlb: enable tlb flush range support for x86
-Message-ID: <20120719122057.GA21666@aftab.osrc.amd.com>
-References: <1340845344-27557-1-git-send-email-alex.shi@intel.com>
- <1340845344-27557-8-git-send-email-alex.shi@intel.com>
+	id S1752104Ab2GSMV5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 08:21:57 -0400
+Received: from 115-188-14-127.jetstream.xtra.co.nz ([115.188.14.127]:62599
+	"EHLO SERVER.prisktech.co.nz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751171Ab2GSMVz convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 08:21:55 -0400
+From: Tony Prisk <linux@prisktech.co.nz>
+To: Alexey Charkov <alchark@gmail.com>
+CC: Arnd Bergmann <arnd@arndb.de>,
+        "vt8500-wm8505-linux-kernel@googlegroups.com" 
+	<vt8500-wm8505-linux-kernel@googlegroups.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCH 1/1] Add Wondermedia Technologies (wmt) to
+ docs/devicetree/vendor-bindings.txt
+Thread-Topic: [PATCH 1/1] Add Wondermedia Technologies (wmt) to
+ docs/devicetree/vendor-bindings.txt
+Thread-Index: AQKYMMxC+/7sfLVv24SJcXAAzrg8wAJQSbLQAtZSvySVcT8RUP//oSgAgADM587//0K6gIAAybKN
+Date: Thu, 19 Jul 2012 12:19:28 +0000
+Message-ID: <76F764B079F92A4E843589C893D0A022C381202D@SERVER.prisktech.co.nz>
+References: <76F764B079F92A4E843589C893D0A022C380F1D4@SERVER.prisktech.co.nz>
+	<CABjd4Yyk6XR6RizgcpjCdi2N_+Z2EzTtezbkN9V7r4bAXXjhqA@mail.gmail.com>
+	<76F764B079F92A4E843589C893D0A022C381059B@SERVER.prisktech.co.nz>
+	<201207191116.27273.arnd@arndb.de>
+	<76F764B079F92A4E843589C893D0A022C3811BFD@SERVER.prisktech.co.nz>,<CABjd4YyV6mrdRBXyixz_+ZDi1szNPJMSUNuT80FPySp+43FrTA@mail.gmail.com>
+In-Reply-To: <CABjd4YyV6mrdRBXyixz_+ZDi1szNPJMSUNuT80FPySp+43FrTA@mail.gmail.com>
+Accept-Language: en-GB, en-NZ, en-US
+Content-Language: en-GB
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1340845344-27557-8-git-send-email-alex.shi@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 28, 2012 at 09:02:22AM +0800, Alex Shi wrote:
-> Not every tlb_flush execution moment is really need to evacuate all
-> TLB entries, like in munmap, just few 'invlpg' is better for whole
-> process performance, since it leaves most of TLB entries for later
-> accessing.
-> 
-> This patch also rewrite flush_tlb_range for 2 purposes:
-> 1, split it out to get flush_blt_mm_range function.
-> 2, clean up to reduce line breaking, thanks for Borislav's input.
-> 
-> My micro benchmark 'mummap' http://lkml.org/lkml/2012/5/17/59
-> show that the random memory access on other CPU has 0~50% speed up
-> on a 2P * 4cores * HT NHM EP while do 'munmap'.
-> 
-> Thanks Yongjie's testing on this patch:
-> -------------
-> I used Linux 3.4-RC6 w/ and w/o his patches as Xen dom0 and guest
-> kernel.
-> After running two benchmarks in Xen HVM guest, I found his patches
-> brought about 1%~3% performance gain in 'kernel build' and 'netperf'
-> testing, though the performance gain was not very stable in 'kernel
-> build' testing.
-> 
-> Some detailed testing results are below.
-> 
-> Testing Environment:
-> 	Hardware: Romley-EP platform
-> 	Xen version: latest upstream
-> 	Linux kernel: 3.4-RC6
-> 	Guest vCPU number: 8
-> 	NIC: Intel 82599 (10GB bandwidth)
-> 
-> In 'kernel build' testing in guest:
-> 	Command line  |  performance gain
->     make -j 4      |    3.81%
->     make -j 8      |    0.37%
->     make -j 16     |    -0.52%
-> 
-> In 'netperf' testing, we tested TCP_STREAM with default socket size
-> 16384 byte as large packet and 64 byte as small packet.
-> I used several clients to add networking pressure, then 'netperf' server
-> automatically generated several threads to response them.
-> I also used large-size packet and small-size packet in the testing.
-> 	Packet size  |  Thread number | performance gain
-> 	16384 bytes  |      4       |   0.02%
-> 	16384 bytes  |      8       |   2.21%
-> 	16384 bytes  |      16      |   2.04%
-> 	64 bytes     |      4       |   1.07%
-> 	64 bytes     |      8       |   3.31%
-> 	64 bytes     |      16      |   0.71%
-> 
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> Tested-by: Ren, Yongjie <yongjie.ren@intel.com>
-> ---
->  arch/x86/include/asm/tlb.h      |    9 +++-
->  arch/x86/include/asm/tlbflush.h |   17 +++++-
->  arch/x86/mm/tlb.c               |  112 ++++++++++++++++-----------------------
->  3 files changed, 68 insertions(+), 70 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/tlb.h b/arch/x86/include/asm/tlb.h
-> index 829215f..4fef207 100644
-> --- a/arch/x86/include/asm/tlb.h
-> +++ b/arch/x86/include/asm/tlb.h
-> @@ -4,7 +4,14 @@
->  #define tlb_start_vma(tlb, vma) do { } while (0)
->  #define tlb_end_vma(tlb, vma) do { } while (0)
->  #define __tlb_remove_tlb_entry(tlb, ptep, address) do { } while (0)
-> -#define tlb_flush(tlb) flush_tlb_mm((tlb)->mm)
-> +
-> +#define tlb_flush(tlb)							\
-> +{									\
-> +	if (tlb->fullmm == 0)						\
-> +		flush_tlb_mm_range(tlb->mm, tlb->start, tlb->end, 0UL);	\
-> +	else								\
-> +		flush_tlb_mm_range(tlb->mm, 0UL, TLB_FLUSH_ALL, 0UL);	\
-> +}
->  
->  #include <asm-generic/tlb.h>
->  
-> diff --git a/arch/x86/include/asm/tlbflush.h b/arch/x86/include/asm/tlbflush.h
-> index 33608d9..621b959 100644
-> --- a/arch/x86/include/asm/tlbflush.h
-> +++ b/arch/x86/include/asm/tlbflush.h
-> @@ -105,6 +105,13 @@ static inline void flush_tlb_range(struct vm_area_struct *vma,
->  		__flush_tlb();
->  }
->  
-> +static inline void flush_tlb_mm_range(struct vm_area_struct *vma,
-> +	   unsigned long start, unsigned long end, unsigned long vmflag)
-> +{
-> +	if (vma->vm_mm == current->active_mm)
-> +		__flush_tlb();
-> +}
+From: Alexey Charkov [alchark@gmail.com]
+Sent: 20 July 2012 00:12
+To: Tony Prisk
+Cc: Arnd Bergmann; vt8500-wm8505-linux-kernel@googlegroups.com; devicetree-discuss@lists.ozlabs.org; Russell King; linux-kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/1] Add Wondermedia Technologies (wmt) to docs/devicetree/vendor-bindings.txt
 
-There's a problem with this in one of my randconfig tests. It has
-!CONFIG_SMP and the warning is:
+2012/7/19 Tony Prisk <linux@prisktech.co.nz>:
+> From: Arnd Bergmann [arnd@arndb.de]
+> Sent: 19 July 2012 23:16
+> To: vt8500-wm8505-linux-kernel@googlegroups.com
+> Cc: Tony Prisk; Alexey Charkov; devicetree-discuss@lists.ozlabs.org; Russell King; linux-kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org
+> Subject: Re: [PATCH 1/1] Add Wondermedia Technologies (wmt) to docs/devicetree/vendor-bindings.txt
+>
+> On Thursday 19 July 2012, Tony Prisk wrote:
+>> Given that there have been no replies to this thread, and the restart patch has
+>> now been accepted using 'wmt' as the vendor namespace - would it be safe to
+>> assume we should formalize this in the vendor-bindings.txt?
+>>
+>> I'd like to try and have basic device tree support added for the next merge
+>> window (or this one if it all goes well :) ), but it relies on the vendor binding being
+>> formalized.
+>
+> What about devices that come from via though? Anything that first showed up
+> in vt8500 or earlier should probably get a prefix identifying VIA rather
+> than WonderMedia.
+>
+>         Arnd
+>
+>
+> I have no issue with that.
+>
+> I am mainly concerned with the Wondermedia products at the moment.
+>
+> Adding device tree support for WM8505 (and WM8650) is my main goal as the WM8650
+> currently isn't supported and trying to get another board file added seems unlikely with
+> everything moving to device tree. The VT8500 requires additional/different patches and
+> as I don't have a vt8500 I can't test them.
 
-mm/memory.c: In function ‘tlb_flush_mmu’:
-mm/memory.c:230:2: warning: passing argument 1 of ‘flush_tlb_mm_range’ from incompatible pointer type
-/usr/src/linux-2.6/arch/x86/include/asm/tlbflush.h:108:20: note: expected ‘struct vm_area_struct *’ but argument is of type ‘struct mm_struct *’
-mm/memory.c:230:2: warning: passing argument 1 of ‘flush_tlb_mm_range’ from incompatible pointer type
-/usr/src/linux-2.6/arch/x86/include/asm/tlbflush.h:108:20: note: expected ‘struct vm_area_struct *’ but argument is of type ‘struct mm_struct *’
+I believe that Arnd's point was about the hardware that WonderMedia
+chips have inherited from their VIA ancestors, like NAND, SD/MMC,
+graphics engine, USB EHCI glue, PWM, PS/2 controller, parts of PMC
+etc. Those would be more appropriately named with something
+VIA-specific rather than WMT as the vendor prefix (this would apply
+for the PWM and the raster engine, which are unchanged between VT8500
+and WM8505, to my knowledge).
 
+On the other hand, all of these parts might well be some kind of
+licensed third-party design anyway, which makes this whole VIA vs. WMT
+a bikeshed discussion mostly. I would personally not feel too guilty
+about calling some device that first appeared in a VT8xxx chip 'wmt'
+until there's technical reason for different 'compatible' strings
+matching different chip versions (VIA age vs. WMT age). So far, we
+don't have that need.
 
-Due to the fact that the macro flush_tlb actually resolves to
-flush_tlb_mm_range and this function has a different signature based on
-CONFIG_SMP. On !SMP expects struct vm_area_struct * as a first argument
-but on SMP its first argument is struct mm_struct *.
+Best,
+Alexey
 
-So two different function signatures based on a config option? Now
-that's a first. What is going on?
+-----
 
--- 
-Regards/Gruss,
-Boris.
+The problem is that we do have that need now - as I pointed out the PMC
+on the VT8500 should not use the 'wmt,prizm-pmc' compatibility as it isn't
+actually compatible. Any time you wanted to modify a bit-field you would
+need to check whether you had a VT8500 or WM8xxx.
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+I appreciate that a lot of the devices are identical, but we do still need to
+sort out those devices that aren't and what we're going to do with them.
+
+The framebuffer is a good example - we have two separate drivers, one
+for VT8500 and one for WM8xxx.
+
+Regards,
+Tony
