@@ -1,173 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752804Ab2GSOlU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 10:41:20 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:20940 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751186Ab2GSOlQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 10:41:16 -0400
-Message-ID: <1342708592.3010.143.camel@misato.fc.hp.com>
-Subject: RE: [PATCH 1/4] ACPI: Add acpi_pr_<level>() interfaces
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Moore, Robert" <robert.moore@intel.com>
-Cc: Joe Perches <joe@perches.com>, "Lin, Ming M" <ming.m.lin@intel.com>,
-        "Tang, Feng" <feng.tang@intel.com>,
-        "lenb@kernel.org" <lenb@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "isimatu.yasuaki@jp.fujitsu.com" <isimatu.yasuaki@jp.fujitsu.com>,
-        "liuj97@gmail.com" <liuj97@gmail.com>,
-        "srivatsa.bhat@linux.vnet.ibm.com" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "prarit@redhat.com" <prarit@redhat.com>,
-        "imammedo@redhat.com" <imammedo@redhat.com>,
-        "vijaymohan.pandarathil@hp.com" <vijaymohan.pandarathil@hp.com>
-Date: Thu, 19 Jul 2012 08:36:32 -0600
-In-Reply-To: <94F2FBAB4432B54E8AACC7DFDE6C92E346B2FD73@ORSMSX101.amr.corp.intel.com>
-References: <1342644027-19559-1-git-send-email-toshi.kani@hp.com>
-	 <1342644027-19559-2-git-send-email-toshi.kani@hp.com>
-	 <1342646502.2215.2.camel@joe2Laptop>
-	 <1342647682.3010.38.camel@misato.fc.hp.com>
-	 <1342648452.2215.12.camel@joe2Laptop>
-	 <1342649293.3010.49.camel@misato.fc.hp.com>
-	 <94F2FBAB4432B54E8AACC7DFDE6C92E346B2FD73@ORSMSX101.amr.corp.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752679Ab2GSOic (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 10:38:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40471 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751945Ab2GSOhG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 10:37:06 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Stable <stable@vger.kernel.org>
+Cc: "Linux-MM <linux-mm"@kvack.org, LKML <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 31/34] cpusets: avoid looping when storing to mems_allowed if one node remains set
+Date: Thu, 19 Jul 2012 15:36:41 +0100
+Message-Id: <1342708604-26540-32-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1342708604-26540-1-git-send-email-mgorman@suse.de>
+References: <1342708604-26540-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-07-19 at 05:35 +0000, Moore, Robert wrote:
-> >> I wouldn't have a problem renaming a few of those to
-> >> something like:
-> >>
-> >> #define ACPI_INFO(plist)	acpi_old_info plist
-> >> #define ACPI_WARNING(plist)	acpi_old_warning plist
-> >> #define ACPI_ERROR(plist)	acpi_old_error plist
-> >>
-> >> The acpi folk might though.
-> >
-> >Hi Joe,
-> >
-> >ACPI CA is being developed by Intel as OS-neutral code, and is used by
-> >multiple OSes including Linux.  So, I am not sure how easy to make such
-> >changes.  I am copying to Lin Ming.
-> 
-> 
-> Please don't even consider doing something like this. As we continue to
-> develop and maintain the ACPICA code, these kinds of OS-specific divergences
-> from the base ACPICA code cause us all kinds of grief, including the accidental
-> creation of new bugs as it becomes more and more difficult to integrate the base
-> ACPICA code back into Linux.
+From: David Rientjes <rientjes@google.com>
 
-Hi Bob,
+commit 89e8a244b97e48f1f30e898b6f32acca477f2a13 upstream.
 
-Thanks for the clarification!  I agree with you.
+Stable note: Not tracked in Bugzilla. [get|put]_mems_allowed() is
+	extremely expensive and severely impacted page allocator performance.
+	This is part of a series of patches that reduce page allocator
+	overhead.
 
-> In fact, we have a major project this year (and probably far into next year) to
-> continue to minimize (i.e., fix) this type of Linux/ACPICA divergence -- of which
-> many have crept in over the years that ACPICA has been present in the Linux kernel.
+{get,put}_mems_allowed() exist so that general kernel code may locklessly
+access a task's set of allowable nodes without having the chance that a
+concurrent write will cause the nodemask to be empty on configurations
+where MAX_NUMNODES > BITS_PER_LONG.
 
-Cool!  I think that's very good improvement.
+This could incur a significant delay, however, especially in low memory
+conditions because the page allocator is blocking and reclaim requires
+get_mems_allowed() itself.  It is not atypical to see writes to
+cpuset.mems take over 2 seconds to complete, for example.  In low memory
+conditions, this is problematic because it's one of the most imporant
+times to change cpuset.mems in the first place!
 
-Thanks again,
--Toshi
+The only way a task's set of allowable nodes may change is through cpusets
+by writing to cpuset.mems and when attaching a task to a generic code is
+not reading the nodemask with get_mems_allowed() at the same time, and
+then clearing all the old nodes.  This prevents the possibility that a
+reader will see an empty nodemask at the same time the writer is storing a
+new nodemask.
 
+If at least one node remains unchanged, though, it's possible to simply
+set all new nodes and then clear all the old nodes.  Changing a task's
+nodemask is protected by cgroup_mutex so it's guaranteed that two threads
+are not changing the same task's nodemask at the same time, so the
+nodemask is guaranteed to be stored before another thread changes it and
+determines whether a node remains set or not.
 
-> Bob
-> 
->
-> >-----Original Message-----
-> >From: linux-acpi-owner@vger.kernel.org [mailto:linux-acpi-
-> >owner@vger.kernel.org] On Behalf Of Toshi Kani
-> >Sent: Wednesday, July 18, 2012 3:08 PM
-> >To: Joe Perches; Lin, Ming M
-> >Cc: lenb@kernel.org; linux-acpi@vger.kernel.org; linux-
-> >kernel@vger.kernel.org; bhelgaas@google.com;
-> >isimatu.yasuaki@jp.fujitsu.com; liuj97@gmail.com;
-> >srivatsa.bhat@linux.vnet.ibm.com; prarit@redhat.com; imammedo@redhat.com;
-> >vijaymohan.pandarathil@hp.com
-> >Subject: Re: [PATCH 1/4] ACPI: Add acpi_pr_<level>() interfaces
-> >
-> >On Wed, 2012-07-18 at 14:54 -0700, Joe Perches wrote:
-> >> On Wed, 2012-07-18 at 15:41 -0600, Toshi Kani wrote:
-> >> > On Wed, 2012-07-18 at 14:21 -0700, Joe Perches wrote:
-> >> > > On Wed, 2012-07-18 at 14:40 -0600, Toshi Kani wrote:
-> >> > > > This patch introduces acpi_pr_<level>(), where <level> is a message
-> >> > > > level such as err/warn/info, to support improved logging messages
-> >> > > > for ACPI, esp. in hotplug operations.  acpi_pr_<level>() appends
-> >> > > > "ACPI" prefix and ACPI object path to the messages.  This improves
-> >> > > > diagnostics in hotplug operations since it identifies an object
-> >that
-> >> > > > caused an issue in a log file.
-> >> []
-> >> > > I'd be tempted to instead make the calls more like
-> >> > > other <subsystem>_<level> uses and rename these to
-> >> > > acpi_<level> and change the existing acpi_info to
-> >> > > another name.
-> >> []
-> >> > I agree with you.  Unfortunately, the ACPI CA (ACPI FW interpreter)
-> >> > already uses them for its internal-use as follows, so I needed to come
-> >> > up with some other name...  Hence, acpi_pr_<level>.
-> >> >
-> >> > /*
-> >> >  * Error reporting. Callers module and line number are inserted by
-> >AE_INFO,
-> >> >  * the plist contains a set of parens to allow variable-length lists.
-> >> >  * These macros are used for both the debug and non-debug versions of
-> >the code.
-> >> >  */
-> >> > #define ACPI_INFO(plist)                acpi_info plist
-> >> > #define ACPI_WARNING(plist)             acpi_warning plist
-> >> > #define ACPI_EXCEPTION(plist)           acpi_exception plist
-> >> > #define ACPI_ERROR(plist)               acpi_error plist
-> >> > #define ACPI_DEBUG_OBJECT(obj,l,i)
-> >acpi_ex_do_debug_object(obj,l,i)
-> >>
-> >> I wouldn't have a problem renaming a few of those to
-> >> something like:
-> >>
-> >> #define ACPI_INFO(plist)	acpi_old_info plist
-> >> #define ACPI_WARNING(plist)	acpi_old_warning plist
-> >> #define ACPI_ERROR(plist)	acpi_old_error plist
-> >>
-> >> The acpi folk might though.
-> >
-> >Hi Joe,
-> >
-> >ACPI CA is being developed by Intel as OS-neutral code, and is used by
-> >multiple OSes including Linux.  So, I am not sure how easy to make such
-> >changes.  I am copying to Lin Ming.
-> >
-> >
-> >> > > Other than that, seems fine to me.
-> >> > Great!  Can I consider it as Ack? :)
-> >>
-> >> Fix the kfree first.
-> >
-> >Please see my other email.  Do you think the check should be added
-> >despite of the warning message?
-> >
-> >
-> >> I rarely ack stuff as other people generally have to
-> >> pick up the changes and I think acks are overrated.
-> >
-> >That's fair enough.
-> >
-> >Thanks!
-> >-Toshi
-> >
-> >
-> >> cheers, Joe
-> >>
-> >
-> >
-> >--
-> >To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> >the body of a message to majordomo@vger.kernel.org
-> >More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Signed-off-by: David Rientjes <rientjes@google.com>
+Cc: Miao Xie <miaox@cn.fujitsu.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Nick Piggin <npiggin@kernel.dk>
+Cc: Paul Menage <paul@paulmenage.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ kernel/cpuset.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index 9c9b754..a995893 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -949,6 +949,8 @@ static void cpuset_migrate_mm(struct mm_struct *mm, const nodemask_t *from,
+ static void cpuset_change_task_nodemask(struct task_struct *tsk,
+ 					nodemask_t *newmems)
+ {
++	bool masks_disjoint = !nodes_intersects(*newmems, tsk->mems_allowed);
++
+ repeat:
+ 	/*
+ 	 * Allow tasks that have access to memory reserves because they have
+@@ -963,7 +965,6 @@ repeat:
+ 	nodes_or(tsk->mems_allowed, tsk->mems_allowed, *newmems);
+ 	mpol_rebind_task(tsk, newmems, MPOL_REBIND_STEP1);
+ 
+-
+ 	/*
+ 	 * ensure checking ->mems_allowed_change_disable after setting all new
+ 	 * allowed nodes.
+@@ -980,9 +981,11 @@ repeat:
+ 
+ 	/*
+ 	 * Allocation of memory is very fast, we needn't sleep when waiting
+-	 * for the read-side.
++	 * for the read-side.  No wait is necessary, however, if at least one
++	 * node remains unchanged.
+ 	 */
+-	while (ACCESS_ONCE(tsk->mems_allowed_change_disable)) {
++	while (masks_disjoint &&
++			ACCESS_ONCE(tsk->mems_allowed_change_disable)) {
+ 		task_unlock(tsk);
+ 		if (!task_curr(tsk))
+ 			yield();
+-- 
+1.7.9.2
 
