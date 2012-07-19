@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753302Ab2GSKjr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 06:39:47 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:44390 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752172Ab2GSKjp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 06:39:45 -0400
-Message-ID: <5007E3E6.3030409@mev.co.uk>
-Date: Thu, 19 Jul 2012 11:39:34 +0100
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120616 Thunderbird/13.0
+	id S1753334Ab2GSKlJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 06:41:09 -0400
+Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:51631 "EHLO
+	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751026Ab2GSKlH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 06:41:07 -0400
+X-Greylist: delayed 607 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Jul 2012 06:41:07 EDT
+Date: Thu, 19 Jul 2012 13:30:55 +0300
+From: Sakari Ailus <sakari.ailus@iki.fi>
+To: Duan Jiong <djduanjiong@gmail.com>
+Cc: mchehab@infradead.org, sakari.ailus@maxwell.research.nokia.com,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] smiapp-core.c: remove duplicated include
+Message-ID: <20120719103055.GD22859@valkosipuli.retiisi.org.uk>
+References: <5006CA58.8080301@gmail.com>
 MIME-Version: 1.0
-To: Ian Abbott <ian.abbott@mev.co.uk>
-CC: H Hartley Sweeten <hartleys@visionengravers.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 32/90] staging: comedi: amplc_pc236: store the pci_dev
- in the comedi_device
-References: <201207181839.24686.hartleys@visionengravers.com> <5007E1C9.1040509@mev.co.uk>
-In-Reply-To: <5007E1C9.1040509@mev.co.uk>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5006CA58.8080301@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-07-19 11:30, Ian Abbott wrote:
-> On 2012-07-19 02:39, H Hartley Sweeten wrote:
->> Use the hw_dev pointer in the comedi_device struct to hold the
->> pci_dev instead of carrying it in the private data.
->>
->> Since the pci_dev is no longer held in the provate data, we can
->> also cleanup the detach a bit. Remove the IS_ENABLED() tests in
->> the detach. If the pci_dev is non NULL it's a PCI device otherwise
->> it's an ISA device. Using IS_ENABLED() to omit the code paths
->> makes the code a bit confusing and doesn't save much.
->
-> The detach() routine should really check thisboard->bustype for
-> robustness, as NULL hw_dev doesn't necessarily mean its a PCI device.
-> The original code should have checked thisboard->bustype too although it
-> works by accident because dev->iobase is 0.
+Hi Duan,
 
-I can submit a patch to add thisboard->bustype checks in the detach 
-routine after your patch is applied.
+On Wed, Jul 18, 2012 at 10:38:16PM +0800, Duan Jiong wrote:
+> 
+> Signed-off-by: Duan Jiong <djduanjiong@gmail.com>
+> ---
+>  drivers/media/video/smiapp/smiapp-core.c |    1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/drivers/media/video/smiapp/smiapp-core.c b/drivers/media/video/smiapp/smiapp-core.c
+> index 9cf5bda..297acaf 100644
+> --- a/drivers/media/video/smiapp/smiapp-core.c
+> +++ b/drivers/media/video/smiapp/smiapp-core.c
+> @@ -33,7 +33,6 @@
+>  #include <linux/module.h>
+>  #include <linux/slab.h>
+>  #include <linux/regulator/consumer.h>
+> -#include <linux/slab.h>
+>  #include <linux/v4l2-mediabus.h>
+>  #include <media/v4l2-device.h>
+
+Thanks for the patch.
+
+I'll apply it into my tree, with the change that the other slab.h is removed
+--- that keeps the include files in alphabetical order.
+
+Kind regards,
 
 -- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
-
-
+Sakari Ailus
+e-mail: sakari.ailus@iki.fi	jabber/XMPP/Gmail: sailus@retiisi.org.uk
