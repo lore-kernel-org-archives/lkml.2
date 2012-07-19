@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751701Ab2GSO3H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 10:29:07 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:44852 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750832Ab2GSO3F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 10:29:05 -0400
-Date: Thu, 19 Jul 2012 17:28:56 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: anton.vorontsov@linaro.org
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: re: pstore/ram: Add ftrace messages handling
-Message-ID: <20120719142856.GA25184@elgon.mountain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	id S1751758Ab2GSOgv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 10:36:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40394 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751239Ab2GSOgr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 10:36:47 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Stable <stable@vger.kernel.org>
+Cc: "Linux-MM <linux-mm"@kvack.org, LKML <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 01/34] mm: vmstat: cache align vm_stat
+Date: Thu, 19 Jul 2012 15:36:11 +0100
+Message-Id: <1342708604-26540-2-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1342708604-26540-1-git-send-email-mgorman@suse.de>
+References: <1342708604-26540-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Anton Vorontsov,
+From: Dimitri Sivanich <sivanich@sgi.com>
 
-This is a semi-automatic email about new static checker warnings.
+commit a1cb2c60ddc98ff4e5246f410558805401ceee67 upstream.
 
-The patch a694d1b5916a: "pstore/ram: Add ftrace messages handling" 
-from Jul 9, 2012, leads to the following Smatch complaint:
+Stable note: Not tracked on Bugzilla. This patch is known to make a big
+	difference to tmpfs performance on larger machines.
 
-fs/pstore/ram.c:423 ramoops_probe()
-	 error: we previously assumed 'cxt->cprz' could be null (see line 408)
+Avoid false sharing of the vm_stat array. This was found to adversely
+affect tmpfs I/O performance.
 
-fs/pstore/ram.c
-   407	
-   408		if (!cxt->przs && !cxt->cprz && !cxt->fprz) {
-                                  ^^^^^^^^^^
+Tests run on a 640 cpu UV system.
 
-Checked here.
+With 120 threads doing parallel writes, each to different tmpfs mounts:
+No patch:		~300 MB/sec
+With vm_stat alignment:	~430 MB/sec
 
-   409			pr_err("memory size too small, minimum is %lu\n",
-   410				cxt->console_size + cxt->record_size +
-   411				cxt->ftrace_size);
-   412			goto fail_cnt;
-   413		}
-   414	
-   415		cxt->pstore.data = cxt;
-   416		/*
-   417		 * Console can handle any buffer size, so prefer dumps buffer
-   418		 * size since usually it is smaller.
-   419		 */
-   420		if (cxt->przs)
-   421			cxt->pstore.bufsize = cxt->przs[0]->buffer_size;
-   422		else
-   423			cxt->pstore.bufsize = cxt->cprz->buffer_size;
-                                              ^^^^^^^^^
-Dereferenced here.  What about if only "cxt->fprz" is non-NULL?
+Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
+Acked-by: Christoph Lameter <cl@gentwo.org>
+Acked-by: Mel Gorman <mel@csn.ul.ie>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ mm/vmstat.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Also these are crap variable names, "przs" and "cprz" look so similar.
-It makes my head hurt to keep them appart.
-
-   424		cxt->pstore.buf = kmalloc(cxt->pstore.bufsize, GFP_KERNEL);
-   425		spin_lock_init(&cxt->pstore.buf_lock);
-
-regards,
-dan carpenter
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index 20c18b7..6559013 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -78,7 +78,7 @@ void vm_events_fold_cpu(int cpu)
+  *
+  * vm_stat contains the global counters
+  */
+-atomic_long_t vm_stat[NR_VM_ZONE_STAT_ITEMS];
++atomic_long_t vm_stat[NR_VM_ZONE_STAT_ITEMS] __cacheline_aligned_in_smp;
+ EXPORT_SYMBOL(vm_stat);
+ 
+ #ifdef CONFIG_SMP
+-- 
+1.7.9.2
 
