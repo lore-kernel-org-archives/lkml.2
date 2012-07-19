@@ -1,45 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751824Ab2GSUhx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 16:37:53 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:50689 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751114Ab2GSUhu (ORCPT
+	id S1751879Ab2GSUkC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 16:40:02 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:47891 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751036Ab2GSUj7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 16:37:50 -0400
-Date: Thu, 19 Jul 2012 15:37:43 -0500
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 30/34] mm: vmscan: Do not force kswapd to scan small
- targets
-Message-ID: <20120719203743.GD19392@burratino>
-References: <1342708604-26540-1-git-send-email-mgorman@suse.de>
- <1342708604-26540-31-git-send-email-mgorman@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1342708604-26540-31-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 19 Jul 2012 16:39:59 -0400
+Date: Thu, 19 Jul 2012 13:39:57 -0700 (PDT)
+Message-Id: <20120719.133957.1840226993713773484.davem@davemloft.net>
+To: cmetcalf@tilera.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3 v2] net: various tilegx networking fixes
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <50070CE4.7040704@tilera.com>
+References: <201207181650.q6IGodZ7007565@lab-41.internal.tilera.com>
+	<20120718.113623.984635805289135415.davem@davemloft.net>
+	<50070CE4.7040704@tilera.com>
+X-Mailer: Mew version 6.5 on Emacs 24.0.97 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mel Gorman wrote:
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Wed, 18 Jul 2012 15:22:12 -0400
 
-> commit ad2b8e601099a23dffffb53f91c18d874fe98854 upstream - WARNING: partial backport only
->
-> Stable note: Not tracked in Bugzilla. This patch is very controversial for
-> 	-stable. The upstream patch is addressing a completely different
-> 	issue but accidentally contained an important fix. The workload
-> 	in question was running memcached and then started IO in the
-> 	background. memcached should stay resident but without this patch
-> 	it gets swapped. Sometimes this manifests as a drop in throughput
-> 	but mostly it was observed through /proc/vmstat.
+> On 7/18/2012 2:36 PM, David Miller wrote:
+>> From: Chris Metcalf <cmetcalf@tilera.com>
+>> Date: Sun, 1 Jul 2012 14:43:47 -0400
+>>
+>>> The tree is at:
+>>>
+>>>   git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile.git net
+>>>
+>>> Chris Metcalf (3):
+>>>       net: tilegx driver bugfix (be explicit about percpu queue number)
+>>>       tilegx net driver: handle payload data not in frags
+>>>       tilegx net: use eth_hw_addr_random(), not random_ether_addr()
+>> These changes look fine, but when I pull from your tree I get tons of
+>> totally unrelated stuff and a merge conflict in this driver.
+>>
+>> Can you put together a clean pull against net-next?
+> 
+> The merge conflict was against Joe Perches' bombing of random_ether_addr()
+> to eth_random_addr().  I left in my change to convert that again to be
+> eth_hw_addr_random(), which naively seems like a better API, and sets
+> NET_ADDR_RANDOM, which is presumably a good thing.
+> 
+> I recreated the tree to be branched off of net-next. ( I had originally
+> created it off of Linus's tree, which in retrospect doesn't make much
+> sense.)  Please try to pull again - thanks!
 
-I had thought partial backports like this were pretty normal and ok,
-actually, as long as they are well explained.  Otherwise there would
-be no way to fix bugs in stable in the above situation.
-
-Thanks,
-Jonathan
+Pulled, thanks a lot Chris.
