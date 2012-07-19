@@ -1,116 +1,301 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752104Ab2GSMV5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 08:21:57 -0400
-Received: from 115-188-14-127.jetstream.xtra.co.nz ([115.188.14.127]:62599
-	"EHLO SERVER.prisktech.co.nz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751171Ab2GSMVz convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 08:21:55 -0400
-From: Tony Prisk <linux@prisktech.co.nz>
-To: Alexey Charkov <alchark@gmail.com>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        "vt8500-wm8505-linux-kernel@googlegroups.com" 
-	<vt8500-wm8505-linux-kernel@googlegroups.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH 1/1] Add Wondermedia Technologies (wmt) to
- docs/devicetree/vendor-bindings.txt
-Thread-Topic: [PATCH 1/1] Add Wondermedia Technologies (wmt) to
- docs/devicetree/vendor-bindings.txt
-Thread-Index: AQKYMMxC+/7sfLVv24SJcXAAzrg8wAJQSbLQAtZSvySVcT8RUP//oSgAgADM587//0K6gIAAybKN
-Date: Thu, 19 Jul 2012 12:19:28 +0000
-Message-ID: <76F764B079F92A4E843589C893D0A022C381202D@SERVER.prisktech.co.nz>
-References: <76F764B079F92A4E843589C893D0A022C380F1D4@SERVER.prisktech.co.nz>
-	<CABjd4Yyk6XR6RizgcpjCdi2N_+Z2EzTtezbkN9V7r4bAXXjhqA@mail.gmail.com>
-	<76F764B079F92A4E843589C893D0A022C381059B@SERVER.prisktech.co.nz>
-	<201207191116.27273.arnd@arndb.de>
-	<76F764B079F92A4E843589C893D0A022C3811BFD@SERVER.prisktech.co.nz>,<CABjd4YyV6mrdRBXyixz_+ZDi1szNPJMSUNuT80FPySp+43FrTA@mail.gmail.com>
-In-Reply-To: <CABjd4YyV6mrdRBXyixz_+ZDi1szNPJMSUNuT80FPySp+43FrTA@mail.gmail.com>
-Accept-Language: en-GB, en-NZ, en-US
-Content-Language: en-GB
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752401Ab2GSMYY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 08:24:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58331 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751299Ab2GSMYW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 08:24:22 -0400
+Date: Thu, 19 Jul 2012 15:24:56 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        gleb@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kvm: fix race with level interrupts
+Message-ID: <20120719122456.GB9303@redhat.com>
+References: <20120718215228.GA13905@redhat.com>
+ <1342650401.2229.224.camel@bling.home>
+ <20120718224948.GB14101@redhat.com>
+ <1342653640.2229.234.camel@bling.home>
+ <20120719090730.GA20120@redhat.com>
+ <1342699875.3229.51.camel@ul30vt>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1342699875.3229.51.camel@ul30vt>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexey Charkov [alchark@gmail.com]
-Sent: 20 July 2012 00:12
-To: Tony Prisk
-Cc: Arnd Bergmann; vt8500-wm8505-linux-kernel@googlegroups.com; devicetree-discuss@lists.ozlabs.org; Russell King; linux-kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/1] Add Wondermedia Technologies (wmt) to docs/devicetree/vendor-bindings.txt
+On Thu, Jul 19, 2012 at 06:11:15AM -0600, Alex Williamson wrote:
+> On Thu, 2012-07-19 at 12:07 +0300, Michael S. Tsirkin wrote:
+> > On Wed, Jul 18, 2012 at 05:20:40PM -0600, Alex Williamson wrote:
+> > > On Thu, 2012-07-19 at 01:49 +0300, Michael S. Tsirkin wrote:
+> > > > On Wed, Jul 18, 2012 at 04:26:41PM -0600, Alex Williamson wrote:
+> > > > > On Thu, 2012-07-19 at 00:52 +0300, Michael S. Tsirkin wrote:
+> > > > > > When more than 1 source id is in use for the same GSI, we have the
+> > > > > > following race related to handling irq_states:
+> > > > > > 
+> > > > > > CPU 0 clears bit in irq_states. CPU 0 reads irq_state as 0.
+> > > > > > CPU 1 sets bit in irq_states.  CPU 1 calls kvm_ioapic_set_irq(1). CPU 0
+> > > > > > calls kvm_ioapic_set_irq(0).
+> > > > > > 
+> > > > > > Now ioapic thinks the level is 0 but irq_state is not 0.
+> > > > > > 
+> > > > > > Note that above is valid behaviour if CPU0 and CPU1 are using different
+> > > > > > source ids.
+> > > > > > 
+> > > > > > Fix by performing all irq_states bitmap handling under pic/ioapic lock.
+> > > > > > This also removes the need for atomics with irq_states handling.
+> > > > > > 
+> > > > > > Reported-by: Gleb Natapov <gleb@redhat.com>
+> > > > > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > > > > > ---
+> > > > > > 
+> > > > > > This survives stress testing for me (though I only tried virtio, not
+> > > > > > device assignment).
+> > > > > > Avi, Marcelo, though we have not observed this in the field,
+> > > > > > it's a bugfix so probably 3.5 material?
+> > > > > > I assume yes so the patch is against 3.5-rc7.
+> > > > > > Also stable? It's a very old bug.
+> > > > > > 
+> > > > > > 
+> > > > > >  arch/x86/include/asm/kvm_host.h | 15 ++++++++++++++-
+> > > > > >  arch/x86/kvm/i8259.c            | 14 ++++++++++++--
+> > > > > >  virt/kvm/ioapic.c               | 13 ++++++++++++-
+> > > > > >  virt/kvm/ioapic.h               |  4 +++-
+> > > > > >  virt/kvm/irq_comm.c             | 31 ++++---------------------------
+> > > > > >  5 files changed, 45 insertions(+), 32 deletions(-)
+> > > > > > 
+> > > > > > diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> > > > > > index db7c1f2..fe6e9f1 100644
+> > > > > > --- a/arch/x86/include/asm/kvm_host.h
+> > > > > > +++ b/arch/x86/include/asm/kvm_host.h
+> > > > > > @@ -802,7 +802,20 @@ int kvm_read_guest_page_mmu(struct kvm_vcpu *vcpu, struct kvm_mmu *mmu,
+> > > > > >  void kvm_propagate_fault(struct kvm_vcpu *vcpu, struct x86_exception *fault);
+> > > > > >  bool kvm_require_cpl(struct kvm_vcpu *vcpu, int required_cpl);
+> > > > > >  
+> > > > > > -int kvm_pic_set_irq(void *opaque, int irq, int level);
+> > > > > > +static inline int kvm_irq_line_state(unsigned long *irq_state,
+> > > > > > +				     int irq_source_id, int level)
+> > > > > 
+> > > > > This should probably be __kvm_irq_line_state given the calling
+> > > > > restrictions.
+> > > > 
+> > > > It's such a trivial helper, do we need to split hairs about this?
+> > > > 
+> > > > Look it's not a good time for minor coding style nits.
+> > > > 3.5 is imminent, it's about 1am here and I really don't have time to retest
+> > > > today, so we'll release another kernel with a bug.
+> > > > 
+> > > > Could you focus on reviewing the functionality and correctness, and
+> > > > leave ideas for better variable naming aside until 3.6?
+> > > 
+> > > Please get off your high horse, this bug has existed for a long time and
+> > > nobody has noticed.  __ indicates locking and makes people think twice
+> > > about arbitrarily calling it.  Correct naming prevents future bugs,
+> > > which is something you've been riding me on in other areas...
+> > 
+> > It's all fine but you already sent two messages about improving coding
+> > style in the same patch. What I really hoped for is a thorough review
+> > that looks at all issues at once, including the functional side as well.
+> > Or maybe style comments is all there is ... we'll see.
+> 
+> So you're accusing me of an superfluous review because I noted coding
+> style errors?
 
-2012/7/19 Tony Prisk <linux@prisktech.co.nz>:
-> From: Arnd Bergmann [arnd@arndb.de]
-> Sent: 19 July 2012 23:16
-> To: vt8500-wm8505-linux-kernel@googlegroups.com
-> Cc: Tony Prisk; Alexey Charkov; devicetree-discuss@lists.ozlabs.org; Russell King; linux-kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org
-> Subject: Re: [PATCH 1/1] Add Wondermedia Technologies (wmt) to docs/devicetree/vendor-bindings.txt
->
-> On Thursday 19 July 2012, Tony Prisk wrote:
->> Given that there have been no replies to this thread, and the restart patch has
->> now been accepted using 'wmt' as the vendor namespace - would it be safe to
->> assume we should formalize this in the vendor-bindings.txt?
->>
->> I'd like to try and have basic device tree support added for the next merge
->> window (or this one if it all goes well :) ), but it relies on the vendor binding being
->> formalized.
->
-> What about devices that come from via though? Anything that first showed up
-> in vt8500 or earlier should probably get a prefix identifying VIA rather
-> than WonderMedia.
->
->         Arnd
->
->
-> I have no issue with that.
->
-> I am mainly concerned with the Wondermedia products at the moment.
->
-> Adding device tree support for WM8505 (and WM8650) is my main goal as the WM8650
-> currently isn't supported and trying to get another board file added seems unlikely with
-> everything moving to device tree. The VT8500 requires additional/different patches and
-> as I don't have a vt8500 I can't test them.
+No, what I mean is that you sent multiple messages on different parts of
+the same patch which is confusing.  It seems reasonable to ask for a single
+mail that looks at all issues at once with a small patch like this.
 
-I believe that Arnd's point was about the hardware that WonderMedia
-chips have inherited from their VIA ancestors, like NAND, SD/MMC,
-graphics engine, USB EHCI glue, PWM, PS/2 controller, parts of PMC
-etc. Those would be more appropriately named with something
-VIA-specific rather than WMT as the vendor prefix (this would apply
-for the PWM and the raster engine, which are unchanged between VT8500
-and WM8505, to my knowledge).
+> Very professional.  My comments on your rfc should
+> validate the review was thorough.
 
-On the other hand, all of these parts might well be some kind of
-licensed third-party design anyway, which makes this whole VIA vs. WMT
-a bikeshed discussion mostly. I would personally not feel too guilty
-about calling some device that first appeared in a VT8xxx chip 'wmt'
-until there's technical reason for different 'compatible' strings
-matching different chip versions (VIA age vs. WMT age). So far, we
-don't have that need.
+But you gave me no indication whether you have completed the review or
+only looked at style and more comments are forthcoming.
 
-Best,
-Alexey
-
------
-
-The problem is that we do have that need now - as I pointed out the PMC
-on the VT8500 should not use the 'wmt,prizm-pmc' compatibility as it isn't
-actually compatible. Any time you wanted to modify a bit-field you would
-need to check whether you had a VT8500 or WM8xxx.
-
-I appreciate that a lot of the devices are identical, but we do still need to
-sort out those devices that aren't and what we're going to do with them.
-
-The framebuffer is a good example - we have two separate drivers, one
-for VT8500 and one for WM8xxx.
-
-Regards,
-Tony
+> 
+> > > > > > +{
+> > > > > > +	/* Logical OR for level trig interrupt */
+> > > > > > +	if (level)
+> > > > > > +		__set_bit(irq_source_id, irq_state);
+> > > > > > +	else
+> > > > > > +		__clear_bit(irq_source_id, irq_state);
+> > > > > > +
+> > > > > > +	return !!(*irq_state);
+> > > > > > +}
+> > > > > > +
+> > > > > > +int kvm_pic_set_irq(struct kvm_pic *pic, int irq, int irq_source_id, int level);
+> > > > > > +void kvm_pic_clear_all(struct kvm_pic *pic, int irq_source_id);
+> > > > > >  
+> > > > > >  void kvm_inject_nmi(struct kvm_vcpu *vcpu);
+> > > > > >  
+> > > > > > diff --git a/arch/x86/kvm/i8259.c b/arch/x86/kvm/i8259.c
+> > > > > > index 81cf4fa..95b504b 100644
+> > > > > > --- a/arch/x86/kvm/i8259.c
+> > > > > > +++ b/arch/x86/kvm/i8259.c
+> > > > > > @@ -188,13 +188,14 @@ void kvm_pic_update_irq(struct kvm_pic *s)
+> > > > > >  	pic_unlock(s);
+> > > > > >  }
+> > > > > >  
+> > > > > > -int kvm_pic_set_irq(void *opaque, int irq, int level)
+> > > > > > +int kvm_pic_set_irq(struct kvm_pic *s, int irq, int src_id, int l)
+> > > > > >  {
+> > > > > > -	struct kvm_pic *s = opaque;
+> > > > > >  	int ret = -1;
+> > > > > > +	int level;
+> > > > > >  
+> > > > > >  	pic_lock(s);
+> > > > > >  	if (irq >= 0 && irq < PIC_NUM_PINS) {
+> > > > > > +		level = kvm_irq_line_state(&s->irq_states[irq], src_id, l);
+> > > > > >  		ret = pic_set_irq1(&s->pics[irq >> 3], irq & 7, level);
+> > > > > >  		pic_update_irq(s);
+> > > > > >  		trace_kvm_pic_set_irq(irq >> 3, irq & 7, s->pics[irq >> 3].elcr,
+> > > > > > @@ -205,6 +206,15 @@ int kvm_pic_set_irq(void *opaque, int irq, int level)
+> > > > > >  	return ret;
+> > > > > >  }
+> > > > > >  
+> > > > > > +void kvm_pic_clear_all(struct kvm_pic *s, int src_id)
+> > > > > > +{
+> > > > > > +	int i;
+> > > > > > +	pic_lock(s);
+> > > > > > +	for (i = 0; i < PIC_NUM_PINS; i++)
+> > > > > > +		__clear_bit(src_id, &s->irq_states[i]);
+> > > > > > +	pic_unlock(s);
+> > > > > > +}
+> > > > > > +
+> > > > > >  /*
+> > > > > >   * acknowledge interrupt 'irq'
+> > > > > >   */
+> > > > > > diff --git a/virt/kvm/ioapic.c b/virt/kvm/ioapic.c
+> > > > > > index 26fd54d..268b332 100644
+> > > > > > --- a/virt/kvm/ioapic.c
+> > > > > > +++ b/virt/kvm/ioapic.c
+> > > > > > @@ -191,17 +191,19 @@ static int ioapic_deliver(struct kvm_ioapic *ioapic, int irq)
+> > > > > >  	return kvm_irq_delivery_to_apic(ioapic->kvm, NULL, &irqe);
+> > > > > >  }
+> > > > > >  
+> > > > > > -int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int level)
+> > > > > > +int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int src_id, int l)
+> > > > > >  {
+> > > > > >  	u32 old_irr;
+> > > > > >  	u32 mask = 1 << irq;
+> > > > > >  	union kvm_ioapic_redirect_entry entry;
+> > > > > >  	int ret = 1;
+> > > > > > +	int level;
+> > > > > >  
+> > > > > >  	spin_lock(&ioapic->lock);
+> > > > > >  	old_irr = ioapic->irr;
+> > > > > >  	if (irq >= 0 && irq < IOAPIC_NUM_PINS) {
+> > > > > >  		entry = ioapic->redirtbl[irq];
+> > > > > > +		level = kvm_irq_line_state(&ioapic->irq_states[irq], src_id, l);
+> > > > > >  		level ^= entry.fields.polarity;
+> > > > > >  		if (!level)
+> > > > > >  			ioapic->irr &= ~mask;
+> > > > > > @@ -221,6 +223,15 @@ int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int level)
+> > > > > >  	return ret;
+> > > > > >  }
+> > > > > >  
+> > > > > > +void kvm_ioapic_clear_all(struct kvm_ioapic *ioapic, int src_id)
+> > > > > > +{
+> > > > > > +	int i;
+> > > > > > +	spin_lock(&ioapic->lock);
+> > > > > > +	for (i = 0; i < KVM_IOAPIC_NUM_PINS; i++)
+> > > > > > +		__clear_bit(src_id, &ioapic->irq_states[i]);
+> > > > > > +	spin_unlock(&ioapic->lock);
+> > > > > > +}
+> > > > > > +
+> > > > > >  static void __kvm_ioapic_update_eoi(struct kvm_ioapic *ioapic, int vector,
+> > > > > >  				     int trigger_mode)
+> > > > > >  {
+> > > > > > diff --git a/virt/kvm/ioapic.h b/virt/kvm/ioapic.h
+> > > > > > index 32872a0..a30abfe 100644
+> > > > > > --- a/virt/kvm/ioapic.h
+> > > > > > +++ b/virt/kvm/ioapic.h
+> > > > > > @@ -74,7 +74,9 @@ void kvm_ioapic_update_eoi(struct kvm *kvm, int vector, int trigger_mode);
+> > > > > >  bool kvm_ioapic_handles_vector(struct kvm *kvm, int vector);
+> > > > > >  int kvm_ioapic_init(struct kvm *kvm);
+> > > > > >  void kvm_ioapic_destroy(struct kvm *kvm);
+> > > > > > -int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int level);
+> > > > > > +int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int irq_source_id,
+> > > > > > +		       int level);
+> > > > > > +void kvm_ioapic_clear_all(struct kvm_ioapic *ioapic, int irq_source_id);
+> > > > > >  void kvm_ioapic_reset(struct kvm_ioapic *ioapic);
+> > > > > >  int kvm_irq_delivery_to_apic(struct kvm *kvm, struct kvm_lapic *src,
+> > > > > >  		struct kvm_lapic_irq *irq);
+> > > > > > diff --git a/virt/kvm/irq_comm.c b/virt/kvm/irq_comm.c
+> > > > > > index 5afb431..83402d7 100644
+> > > > > > --- a/virt/kvm/irq_comm.c
+> > > > > > +++ b/virt/kvm/irq_comm.c
+> > > > > > @@ -33,26 +33,12 @@
+> > > > > >  
+> > > > > >  #include "ioapic.h"
+> > > > > >  
+> > > > > > -static inline int kvm_irq_line_state(unsigned long *irq_state,
+> > > > > > -				     int irq_source_id, int level)
+> > > > > > -{
+> > > > > > -	/* Logical OR for level trig interrupt */
+> > > > > > -	if (level)
+> > > > > > -		set_bit(irq_source_id, irq_state);
+> > > > > > -	else
+> > > > > > -		clear_bit(irq_source_id, irq_state);
+> > > > > > -
+> > > > > > -	return !!(*irq_state);
+> > > > > > -}
+> > > > > > -
+> > > > > >  static int kvm_set_pic_irq(struct kvm_kernel_irq_routing_entry *e,
+> > > > > >  			   struct kvm *kvm, int irq_source_id, int level)
+> > > > > >  {
+> > > > > >  #ifdef CONFIG_X86
+> > > > > >  	struct kvm_pic *pic = pic_irqchip(kvm);
+> > > > > > -	level = kvm_irq_line_state(&pic->irq_states[e->irqchip.pin],
+> > > > > > -				   irq_source_id, level);
+> > > > > > -	return kvm_pic_set_irq(pic, e->irqchip.pin, level);
+> > > > > > +	return kvm_pic_set_irq(pic, e->irqchip.pin, irq_source_id, level);
+> > > > > >  #else
+> > > > > >  	return -1;
+> > > > > >  #endif
+> > > > > > @@ -62,10 +48,7 @@ static int kvm_set_ioapic_irq(struct kvm_kernel_irq_routing_entry *e,
+> > > > > >  			      struct kvm *kvm, int irq_source_id, int level)
+> > > > > >  {
+> > > > > >  	struct kvm_ioapic *ioapic = kvm->arch.vioapic;
+> > > > > > -	level = kvm_irq_line_state(&ioapic->irq_states[e->irqchip.pin],
+> > > > > > -				   irq_source_id, level);
+> > > > > > -
+> > > > > > -	return kvm_ioapic_set_irq(ioapic, e->irqchip.pin, level);
+> > > > > > +	return kvm_ioapic_set_irq(ioapic, e->irqchip.pin, irq_source_id, level);
+> > > > > >  }
+> > > > > >  
+> > > > > >  inline static bool kvm_is_dm_lowest_prio(struct kvm_lapic_irq *irq)
+> > > > > > @@ -249,8 +232,6 @@ unlock:
+> > > > > >  
+> > > > > >  void kvm_free_irq_source_id(struct kvm *kvm, int irq_source_id)
+> > > > > >  {
+> > > > > > -	int i;
+> > > > > > -
+> > > > > >  	ASSERT(irq_source_id != KVM_USERSPACE_IRQ_SOURCE_ID);
+> > > > > >  
+> > > > > >  	mutex_lock(&kvm->irq_lock);
+> > > > > > @@ -263,14 +244,10 @@ void kvm_free_irq_source_id(struct kvm *kvm, int irq_source_id)
+> > > > > >  	if (!irqchip_in_kernel(kvm))
+> > > > > >  		goto unlock;
+> > > > > >  
+> > > > > > -	for (i = 0; i < KVM_IOAPIC_NUM_PINS; i++) {
+> > > > > > -		clear_bit(irq_source_id, &kvm->arch.vioapic->irq_states[i]);
+> > > > > > -		if (i >= 16)
+> > > > > > -			continue;
+> > > > > > +	kvm_ioapic_clear_all(kvm->arch.vioapic, irq_source_id);
+> > > > > >  #ifdef CONFIG_X86
+> > > > > > -		clear_bit(irq_source_id, &pic_irqchip(kvm)->irq_states[i]);
+> > > > > > +	kvm_pic_clear_all(pic_irqchip(kvm), irq_source_id);
+> > > > > >  #endif
+> > > > > > -	}
+> > > > > >  unlock:
+> > > > > >  	mutex_unlock(&kvm->irq_lock);
+> > > > > >  }
+> > > > > 
+> > > > > 
+> > > 
+> > > 
+> 
+> 
