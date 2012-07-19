@@ -1,90 +1,398 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751738Ab2GSNFp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 09:05:45 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21143 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751114Ab2GSNFn (ORCPT
+	id S1751910Ab2GSNFu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 09:05:50 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:35252 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751401Ab2GSNFp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 09:05:43 -0400
-X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=mMwgJEC8K9oA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=xiBM9GFvRCpO1eyLGvoA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 72.230.195.127
-Message-ID: <1342703141.12353.24.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH RT 00/12] [ANNOUNCE] 3.0.36-rt58-rc1 stable review
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mike Galbraith <efault@gmx.de>
-Cc: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Date: Thu, 19 Jul 2012 09:05:41 -0400
-In-Reply-To: <1342670426.7342.8.camel@marge.simpson.net>
-References: <20120718223910.898476857@goodmis.org>
-	 <1342670426.7342.8.camel@marge.simpson.net>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 19 Jul 2012 09:05:45 -0400
+From: Anthony Liguori <anthony@codemonkey.ws>
+To: Asias He <asias@redhat.com>, linux-kernel@vger.kernel.org
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH RESEND 5/5] vhost-blk: Add vhost-blk support
+In-Reply-To: <1342169711-12386-6-git-send-email-asias@redhat.com>
+References: <1342169711-12386-1-git-send-email-asias@redhat.com> <1342169711-12386-6-git-send-email-asias@redhat.com>
+User-Agent: Notmuch/0.13.2+60~g7ecf77d (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Thu, 19 Jul 2012 08:05:42 -0500
+Message-ID: <87mx2vrjdl.fsf@codemonkey.ws>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-07-19 at 06:00 +0200, Mike Galbraith wrote:
-> On Wed, 2012-07-18 at 18:39 -0400, Steven Rostedt wrote:
-> 
-> > Please test the patches too.
-> 
-> Your hotplug stress test script made x3550 M3 box fall over.  It took a
-> bit, but down she went.  64 core test box fell over quickly, but that's
-> very far from virgin source.. seems to be the same though.
+Asias He <asias@redhat.com> writes:
 
-Thanks for the report. I know a few areas in the hotplug code that can
-still deadlock (but are hard to hit). But there's no easy fix for them.
-Basically, the only thing we can do is redesign cpu hotplug (I think
-someone is already trying to do that ;-).
+> vhost-blk is a in kernel virito-blk device accelerator.
+>
+> This patch is based on Liu Yuan's implementation with various
+> improvements and bug fixes. Notably, this patch makes guest notify and
+> host completion processing in parallel which gives about 60% performance
+> improvement compared to Liu Yuan's implementation.
+>
+> Performance evaluation:
+> -----------------------------
+> The comparison is between kvm tool with usersapce implementation and kvm
+> tool with vhost-blk.
+>
+> 1) Fio with libaio ioengine on Fusion IO device
+> With bio-based IO path, sequential read/write, random read/write
+> IOPS boost         : 8.4%, 15.3%, 10.4%, 14.6%
+> Latency improvement: 8.5%, 15.4%, 10.4%, 15.1%
+>
+> 2) Fio with vsync ioengine on Fusion IO device
+> With bio-based IO path, sequential read/write, random read/write
+> IOPS boost         : 10.5%, 4.8%, 5.2%, 5.6%
+> Latency improvement: 11.4%, 5.0%, 5.2%, 5.8%
+>
+> Cc: Michael S. Tsirkin <mst@redhat.com>
+> Cc: linux-kernel@vger.kernel.org
+> Cc: kvm@vger.kernel.org
+> Cc: virtualization@lists.linux-foundation.org
+> Signed-off-by: Asias He <asias@redhat.com>
+> ---
+>  drivers/vhost/Kconfig  |   10 +
+>  drivers/vhost/Makefile |    2 +
+>  drivers/vhost/blk.c    |  600 ++++++++++++++++++++++++++++++++++++++++++++++++
+>  drivers/vhost/vhost.h  |    5 +
+>  include/linux/vhost.h  |    3 +
+>  5 files changed, 620 insertions(+)
+>  create mode 100644 drivers/vhost/blk.c
+>
+> diff --git a/drivers/vhost/Kconfig b/drivers/vhost/Kconfig
+> index c387067..fa071a8 100644
+> --- a/drivers/vhost/Kconfig
+> +++ b/drivers/vhost/Kconfig
+> @@ -16,4 +16,14 @@ config VHOST_NET
+>  
+>  	  To compile this driver as a module, choose M here: the module will
+>  	  be called vhost_net.
+> +config VHOST_BLK
+> +	tristate "Host kernel accelerator for virtio blk (EXPERIMENTAL)"
+> +	depends on VHOST && BLOCK && AIO && EVENTFD && EXPERIMENTAL
+> +	---help---
+> +	  This kernel module can be loaded in host kernel to accelerate
+> +	  guest block with virtio_blk. Not to be confused with virtio_blk
+> +	  module itself which needs to be loaded in guest kernel.
+> +
+> +	  To compile this driver as a module, choose M here: the module will
+> +	  be called vhost_blk.
+>  
+> diff --git a/drivers/vhost/Makefile b/drivers/vhost/Makefile
+> index cd36885..aa461d5 100644
+> --- a/drivers/vhost/Makefile
+> +++ b/drivers/vhost/Makefile
+> @@ -1,4 +1,6 @@
+>  obj-$(CONFIG_VHOST)	+= vhost.o
+>  obj-$(CONFIG_VHOST_NET) += vhost_net.o
+> +obj-$(CONFIG_VHOST_BLK) += vhost_blk.o
+>  
+>  vhost_net-y		:= net.o
+> +vhost_blk-y		:= blk.o
+> diff --git a/drivers/vhost/blk.c b/drivers/vhost/blk.c
+> new file mode 100644
+> index 0000000..6a94894
+> --- /dev/null
+> +++ b/drivers/vhost/blk.c
+> @@ -0,0 +1,600 @@
+> +/*
+> + * Copyright (C) 2011 Taobao, Inc.
+> + * Author: Liu Yuan <tailai.ly@taobao.com>
+> + *
+> + * Copyright (C) 2012 Red Hat, Inc.
+> + * Author: Asias He <asias@redhat.com>
+> + *
+> + * This work is licensed under the terms of the GNU GPL, version 2.
+> + *
+> + * virtio-blk server in host kernel.
+> + */
+> +
+> +#include <linux/miscdevice.h>
+> +#include <linux/module.h>
+> +#include <linux/vhost.h>
+> +#include <linux/virtio_blk.h>
+> +#include <linux/eventfd.h>
+> +#include <linux/mutex.h>
+> +#include <linux/file.h>
+> +#include <linux/mmu_context.h>
+> +#include <linux/anon_inodes.h>
+> +#include <linux/kthread.h>
+> +#include <linux/blkdev.h>
+> +
+> +#include "vhost.h"
+> +
+> +#define BLK_HDR	0
+> +
+> +enum {
+> +	VHOST_BLK_VQ_REQ = 0,
+> +	VHOST_BLK_VQ_MAX = 1,
+> +};
+> +
+> +struct vhost_blk_req {
+> +	u16 head;
+> +	u8 *status;
+> +};
+> +
+> +struct vhost_blk {
+> +	struct task_struct *worker_host_kick;
+> +	struct task_struct *worker;
+> +	struct vhost_blk_req *reqs;
+> +	struct vhost_virtqueue vq;
+> +	struct eventfd_ctx *ectx;
+> +	struct io_event *ioevent;
+> +	struct kioctx *ioctx;
+> +	struct vhost_dev dev;
+> +	struct file *efile;
+> +	u64 ioevent_nr;
+> +	bool stop;
+> +};
+> +
+> +static inline int vhost_blk_read_events(struct vhost_blk *blk, long nr)
+> +{
+> +	mm_segment_t old_fs = get_fs();
+> +	int ret;
+> +
+> +	set_fs(KERNEL_DS);
+> +	ret = read_events(blk->ioctx, nr, nr, blk->ioevent, NULL);
+> +	set_fs(old_fs);
+> +
+> +	return ret;
+> +}
+> +
+> +static int vhost_blk_setup(struct vhost_blk *blk)
+> +{
+> +	struct kioctx *ctx;
+> +
+> +	if (blk->ioctx)
+> +		return 0;
+> +
+> +	blk->ioevent_nr = blk->vq.num;
+> +	ctx = ioctx_alloc(blk->ioevent_nr);
+> +	if (IS_ERR(ctx)) {
+> +		pr_err("Failed to ioctx_alloc");
+> +		return PTR_ERR(ctx);
+> +	}
 
-But these patches do fix the main issues of cpu hotplug (albeit, making
-the code even uglier).
+Not that it's very likely that ioctx_alloc will fail in practice.
+There's a fixed number of events that can be allocated that's currently
+0x10000.  If you have a ring queue size of 1024 (which is normal) then
+that limits you to 64 vhost-blk devices.
 
-The panic below isn't telling much. We really need to know what the
-other CPUs were up to. This call trace is just telling us that one of
-the CPUs is waiting for other CPUs to stop or to finish something up.
+Realistically, I don't think you can only do aio with vhost-blk because
+of this (and many other) limitations.  It's necessary to be able to fall
+back to a thread pool because AIO cannot be relied upon.
 
--- Steve
+> +	put_ioctx(ctx);
+> +	blk->ioctx = ctx;
+> +
+> +	blk->ioevent = kmalloc(sizeof(struct io_event) * blk->ioevent_nr,
+> +			       GFP_KERNEL);
+> +	if (!blk->ioevent) {
+> +		pr_err("Failed to allocate memory for io_events");
+> +		return -ENOMEM;
+> +	}
+> +
+> +	blk->reqs = kmalloc(sizeof(struct vhost_blk_req) * blk->ioevent_nr,
+> +			    GFP_KERNEL);
+> +	if (!blk->reqs) {
+> +		pr_err("Failed to allocate memory for vhost_blk_req");
+> +		return -ENOMEM;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static inline int vhost_blk_set_status(struct vhost_blk *blk, u8 *statusp,
+> +				       u8 status)
+> +{
+> +	if (copy_to_user(statusp, &status, sizeof(status))) {
+> +		vq_err(&blk->vq, "Failed to write status\n");
+> +		vhost_discard_vq_desc(&blk->vq, 1);
+> +		return -EFAULT;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static void vhost_blk_enable_vq(struct vhost_blk *blk,
+> +				struct vhost_virtqueue *vq)
+> +{
+> +	wake_up_process(blk->worker_host_kick);
+> +}
+> +
+> +static int vhost_blk_io_submit(struct vhost_blk *blk, struct file *file,
+> +			       struct vhost_blk_req *req,
+> +			       struct iovec *iov, u64 nr_vecs, loff_t offset,
+> +			       int opcode)
+> +{
+> +	struct kioctx *ioctx = blk->ioctx;
+> +	mm_segment_t oldfs = get_fs();
+> +	struct kiocb_batch batch;
+> +	struct blk_plug plug;
+> +	struct kiocb *iocb;
+> +	int ret;
+> +
+> +	if (!try_get_ioctx(ioctx)) {
+> +		pr_info("Failed to get ioctx");
+> +		return -EAGAIN;
+> +	}
+> +
+> +	atomic_long_inc_not_zero(&file->f_count);
+> +	eventfd_ctx_get(blk->ectx);
+> +
+> +	/* TODO: batch to 1 is not good! */
+> +	kiocb_batch_init(&batch, 1);
+> +	blk_start_plug(&plug);
+> +
+> +	iocb = aio_get_req(ioctx, &batch);
+> +	if (unlikely(!iocb)) {
+> +		ret = -EAGAIN;
+> +		goto out;
+> +	}
+> +
+> +	iocb->ki_filp	= file;
+> +	iocb->ki_pos	= offset;
+> +	iocb->ki_buf	= (void *)iov;
+> +	iocb->ki_left	= nr_vecs;
+> +	iocb->ki_nbytes	= nr_vecs;
+> +	iocb->ki_opcode	= opcode;
+> +	iocb->ki_obj.user = req;
+> +	iocb->ki_eventfd  = blk->ectx;
+> +
+> +	set_fs(KERNEL_DS);
+> +	ret = aio_setup_iocb(iocb, false);
+> +	set_fs(oldfs);
+> +	if (unlikely(ret))
+> +		goto out_put_iocb;
+> +
+> +	spin_lock_irq(&ioctx->ctx_lock);
+> +	if (unlikely(ioctx->dead)) {
+> +		spin_unlock_irq(&ioctx->ctx_lock);
+> +		ret = -EINVAL;
+> +		goto out_put_iocb;
+> +	}
+> +	aio_run_iocb(iocb);
+> +	spin_unlock_irq(&ioctx->ctx_lock);
+> +
+> +	aio_put_req(iocb);
+> +
+> +	blk_finish_plug(&plug);
+> +	kiocb_batch_free(ioctx, &batch);
+> +	put_ioctx(ioctx);
+> +
+> +	return ret;
+> +out_put_iocb:
+> +	aio_put_req(iocb); /* Drop extra ref to req */
+> +	aio_put_req(iocb); /* Drop I/O ref to req */
+> +out:
+> +	put_ioctx(ioctx);
+> +	return ret;
+> +}
+> +
+> +static void vhost_blk_flush(struct vhost_blk *blk)
+> +{
+> +	vhost_poll_flush(&blk->vq.poll);
+> +}
+> +
+> +static struct file *vhost_blk_stop_vq(struct vhost_blk *blk,
+> +				      struct vhost_virtqueue *vq)
+> +{
+> +	struct file *file;
+> +
+> +	mutex_lock(&vq->mutex);
+> +	file = rcu_dereference_protected(vq->private_data,
+> +			lockdep_is_held(&vq->mutex));
+> +	rcu_assign_pointer(vq->private_data, NULL);
+> +	mutex_unlock(&vq->mutex);
+> +
+> +	return file;
+> +
+> +}
+> +
+> +static inline void vhost_blk_stop(struct vhost_blk *blk, struct file **file)
+> +{
+> +
+> +	*file = vhost_blk_stop_vq(blk, &blk->vq);
+> +}
+> +
+> +/* Handle guest request */
+> +static int vhost_blk_do_req(struct vhost_virtqueue *vq,
+> +			    struct virtio_blk_outhdr *hdr,
+> +			    u16 head, u16 out, u16 in,
+> +			    struct file *file)
+> +{
+> +	struct vhost_blk *blk = container_of(vq->dev, struct vhost_blk, dev);
+> +	struct iovec *iov = &vq->iov[BLK_HDR + 1];
+> +	loff_t offset = hdr->sector << 9;
+> +	struct vhost_blk_req *req;
+> +	u64 nr_vecs;
+> +	int ret = 0;
+> +	u8 status;
+> +
+> +	if (hdr->type == VIRTIO_BLK_T_IN || hdr->type == VIRTIO_BLK_T_GET_ID)
+> +		nr_vecs = in - 1;
+> +	else
+> +		nr_vecs = out - 1;
+> +
+> +	req		= &blk->reqs[head];
+> +	req->head	= head;
+> +	req->status	= blk->vq.iov[nr_vecs + 1].iov_base;
+> +
+> +	switch (hdr->type) {
+> +	case VIRTIO_BLK_T_OUT:
+> +		ret = vhost_blk_io_submit(blk, file, req, iov, nr_vecs, offset,
+> +					  IOCB_CMD_PWRITEV);
+> +		break;
+> +	case VIRTIO_BLK_T_IN:
+> +		ret = vhost_blk_io_submit(blk, file, req, iov, nr_vecs, offset,
+> +					  IOCB_CMD_PREADV);
+> +		break;
+> +	case VIRTIO_BLK_T_FLUSH:
+> +		ret = vfs_fsync(file, 1);
+> +		status = ret < 0 ? VIRTIO_BLK_S_IOERR : VIRTIO_BLK_S_OK;
+> +		ret = vhost_blk_set_status(blk, req->status, status);
+> +		if (!ret)
+> +			vhost_add_used_and_signal(&blk->dev, vq, head, ret);
+> +		break;
+> +	case VIRTIO_BLK_T_GET_ID:
+> +		/* TODO: need a real ID string */
+> +		ret = snprintf(vq->iov[BLK_HDR + 1].iov_base,
+> +			       VIRTIO_BLK_ID_BYTES, "VHOST-BLK-DISK");
+> +		status = ret < 0 ? VIRTIO_BLK_S_IOERR : VIRTIO_BLK_S_OK;
+> +		ret = vhost_blk_set_status(blk, req->status, status);
+> +		if (!ret)
+> +			vhost_add_used_and_signal(&blk->dev, vq, head,
+> +						  VIRTIO_BLK_ID_BYTES);
+> +		break;
+> +	default:
+> +		pr_warn("Unsupported request type %d\n", hdr->type);
+> +		vhost_discard_vq_desc(vq, 1);
+> +		ret = -EFAULT;
+> +		break;
+> +	}
 
+There doesn't appear to be any error handling in the event that
+vhost_blk_io_submit fails.  It would appear that you leak the ring queue
+entry since you never push anything onto the used queue.
 
-> 
-> [  255.016043] CPU 1 MCA<0>Kernel panic - not syncing: Watchdog detected hard LOCKUP on cpu 7
-> Pid: 9914, comm: migration/7 Not tainted 3.0.36-rt57 #49
-> Call Trace:
->  <NMI>  [<ffffffff814a0f7b>] panic+0x9b/0x1b0
->  [<ffffffff810b0627>] watchdog_overflow_callback+0xd7/0xe0
->  [<ffffffff810c3dad>] __perf_event_overflow+0x9d/0x240
->  [<ffffffff810c066b>] ? perf_event_update_userpage+0x9b/0xe0
->  [<ffffffff810c41a4>] perf_event_overflow+0x14/0x20
->  [<ffffffff81015707>] intel_pmu_handle_irq+0x177/0x230
->  [<ffffffff814a5549>] perf_event_nmi_handler+0x39/0xc0
->  [<ffffffff814a727d>] notifier_call_chain+0x4d/0x70
->  [<ffffffff814a72e3>] __atomic_notifier_call_chain+0x43/0x60
->  [<ffffffff814a7311>] atomic_notifier_call_chain+0x11/0x20
->  [<ffffffff814a734e>] notify_die+0x2e/0x30
->  [<ffffffff814a4699>] default_do_nmi+0x39/0x200
->  [<ffffffff814a4a48>] do_nmi+0x78/0x80
->  [<ffffffff814a44d0>] nmi+0x20/0x30
->  [<ffffffff810a461a>] ? stop_machine_cpu_stop+0x6a/0xe0
->  <<EOE>>  [<ffffffff810a47f4>] cpu_stopper_thread+0xf4/0x1d0
->  [<ffffffff810a45b0>] ? wait_for_stop_done+0xa0/0xa0
->  [<ffffffff814a1397>] ? __schedule+0x2c7/0x630
->  [<ffffffff810a4700>] ? cpu_stop_queue_work+0x70/0x70
->  [<ffffffff810a4700>] ? cpu_stop_queue_work+0x70/0x70
->  [<ffffffff810702c6>] kthread+0xa6/0xb0
->  [<ffffffff81056328>] ? do_exit+0x278/0x450
->  [<ffffffff810016b2>] ? __switch_to+0xf2/0x370
->  [<ffffffff81040f15>] ? finish_task_switch+0x55/0xd0
->  [<ffffffff814aa6e4>] kernel_thread_helper+0x4/0x10
->  [<ffffffff81070220>] ? __init_kthread_worker+0x50/0x50
->  [<ffffffff814aa6e0>] ? gs_change+0x13/0x13
-> 
+I think you need to handle io_submit() failing too with EAGAIN.  Relying
+on min nr_events == queue_size seems like a dangerous assumption to me
+particularly since queue_size tends to be very large and max_nr_events
+is a fixed size global pool.
 
+To properly handle EAGAIN, you effectively need to implement flow
+control and back off reading the virtqueue until you can submit requests again.
 
+Of course, the million dollar question is why would using AIO in the
+kernel be faster than using AIO in userspace?
+
+When using eventfd, there is no heavy weight exit on the notify path.
+It should just be the difference between scheduling a kernel thread vs
+scheduling a userspace thread.  There's simply no way that that's a 60%
+difference in performance.
+
+Regards,
+
+Anthony Liguori
