@@ -1,164 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752488Ab2GSXR3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 19:17:29 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:61021 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752019Ab2GSXR1 (ORCPT
+	id S1752577Ab2GSXSL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 19:18:11 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:61291 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752019Ab2GSXSH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 19:17:27 -0400
-Date: Thu, 19 Jul 2012 16:17:23 -0700
-From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Ian Abbott <ian.abbott@mev.co.uk>
-Subject: Re: [PATCH 15/90] staging: comedi: adv_pci1723: move
- comedi_pci_enable() into the attach
-Message-ID: <20120719231723.GA23010@kroah.com>
-References: <201207181830.48668.hartleys@visionengravers.com>
- <5007D568.2050401@mev.co.uk>
- <ADE657CA350FB648AAC2C43247A983F00206AA916472@AUSP01VMBX24.collaborationhost.net>
+	Thu, 19 Jul 2012 19:18:07 -0400
+Message-ID: <500895AC.7020303@codemonkey.ws>
+Date: Thu, 19 Jul 2012 18:18:04 -0500
+From: Anthony Liguori <anthony@codemonkey.ws>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <ADE657CA350FB648AAC2C43247A983F00206AA916472@AUSP01VMBX24.collaborationhost.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: KY Srinivasan <kys@microsoft.com>
+CC: "Greg KH (gregkh@linuxfoundation.org)" <gregkh@linuxfoundation.org>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: Re: 0xB16B00B5? Really? (was Re: Move hyperv out of the drivers/staging/
+ directory)
+References: <6E21E5352C11B742B20C142EB499E048081E935D@TK5EX14MBXC124.redmond.corp.microsoft.com> <20110922173618.GA5624@suse.de> <6E21E5352C11B742B20C142EB499E048081EB789@TK5EX14MBXC124.redmond.corp.microsoft.com> <20111004170415.GA1320@suse.de> <6E21E5352C11B742B20C142EB499E048081EB86F@TK5EX14MBXC124.redmond.corp.microsoft.com> <20111004193414.GA15672@suse.de> <4FFFF711.8040003@redhat.com> <426367E2313C2449837CD2DE46E7EAF923547292@SN2PRD0310MB382.namprd03.prod.outlook.com> <20120719210709.GA32031@kroah.com> <426367E2313C2449837CD2DE46E7EAF9235475EE@SN2PRD0310MB382.namprd03.prod.outlook.com> <20120719220142.GA1513@kroah.com> <426367E2313C2449837CD2DE46E7EAF923547620@SN2PRD0310MB382.namprd03.prod.outlook.com>
+In-Reply-To: <426367E2313C2449837CD2DE46E7EAF923547620@SN2PRD0310MB382.namprd03.prod.outlook.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 19, 2012 at 12:12:02PM -0500, H Hartley Sweeten wrote:
-> On Thursday, July 19, 2012 2:38 AM, Ian Abbott wrote:
-> > On 2012-07-19 02:30, H Hartley Sweeten wrote:
-> >> Use pci_is_enabled() in the "find pci device" function to determine if
-> >> the found pci device is not in use and move the comedi_pci_enable() call
-> >> into the attach.
-> >>
-> >> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-> >> Cc: Ian Abbott <abbotti@mev.co.uk>
-> >> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> >> ---
-> >>   drivers/staging/comedi/drivers/adv_pci1723.c | 10 +++++-----
-> >>   1 file changed, 5 insertions(+), 5 deletions(-)
-> >>
-> >> diff --git a/drivers/staging/comedi/drivers/adv_pci1723.c b/drivers/staging/comedi/drivers/adv_pci1723.c
-> >> index f561a2a..e971fa6 100644
-> >> --- a/drivers/staging/comedi/drivers/adv_pci1723.c
-> >> +++ b/drivers/staging/comedi/drivers/adv_pci1723.c
-> >> @@ -302,11 +302,7 @@ static struct pci_dev *pci1723_find_pci_dev(struct comedi_device *dev,
-> >>   		}
-> >>   		if (pcidev->vendor != PCI_VENDOR_ID_ADVANTECH)
-> >>   			continue;
-> >> -		/*
-> >> -		 * Look for device that isn't in use.
-> >> -		 * Enable PCI device and request regions.
-> >> -		 */
-> >> -		if (comedi_pci_enable(pcidev, "adv_pci1723"))
-> >> +		if (pci_is_enabled(pcidev))
-> >>   			continue;
-> >>   		return pcidev;
-> >>   	}
-> >
-> > Just because the device is enabled doesn't mean that it is in use, so 
-> > this change could skip over a perfectly good unused device.
-> 
-> Are you sure? According to Documentation/PCI/pci.txt, the first thing
-> a driver "should" do when taking ownership of a PCI device is enable
-> the device. The last thing it "should" do when being unloaded is
-> disable the device.
-> 
-> It would seem that checking pci_is_enabled() would let us know that
-> the pci_dev in question is being used.
-> 
-> > If you want to move the comedi_pci_enable() call, this is a change in 
-> > behaviour for this particular driver, but is consistent with most of the 
-> > other Comedi PCI drivers (and the bus/slot options can be used to select 
-> > a particular device).  This is probably a good thing, but you should 
-> > take out the pci_is_enabled test.
-> 
-> I was curious about this.
-> 
-> In the original driver, doing an 'attach' with bus/slot both = 0 would result
-> in the pci bus being walked to find the first device that could be enabled
-> (i.e. a "free" device) and using that device. This allows doing the 'attach'
-> with more than one card installed and being able to attach to each one
-> by simply:
-> 
-> comedi_config /dev/comedi0 adv_pci1723
-> comedi_config /dev/comedi1 adv_pci1723
-> etc.
-> 
-> The "normal" operation for the comedi pci drivers appears to require
-> the bus/slot information when multiple devices are used. Or implement
-> the 'attach_pci' callback in the comedi_driver and allow the core to
-> simply pass the pci_dev directly to the driver.
-> 
-> What would you prefer?
-> 
-> I was planning on making a comedi_find_pci_dev() function that the
-> drivers could call with a "match" callback. This would allow a common
-> function for most of the boilerplate code and just require the drivers
-> to check the the match against the boardinfo dev/id, etc. as required.
-> Something like:
-> 
-> struct pci_dev *comedi_find_pci_dev(struct comedi_device *dev,
-> 	struct comedi_devconfig *it,
-> 	const void *(*match)(struct comedi_device *,
-> 				struct pci_dev *))
-> {
-> 	struct pci_dev *pcidev = NULL;
-> 	int bus = it->options[0];
-> 	int slot = it->options[1];
-> 
-> 	for_each_pci_dev(pcidev) {
-> 		/* pci_is_enabled() test? */
-> 		if ((bus && bus != pcidev->bus->number) ||
-> 		    (slot && slot != PCI_SLOT(pcidev->devfn)))
-> 			continue;
-> 		dev->board_ptr = match(dev, pcidev);
-> 		if (dev->board_ptr) {
-> 			comedi_set_hw_dev(dev, &pcidev->dev);
-> 			return pcidev;
-> 		}
-> 	}
-> 	return NULL;
-> }
-> 
-> The "match" function for a driver would then just be something like:
-> 
-> const void *match_pci(struct comedi_device *dev, struct pci_dev *pcidev)
-> {
-> 	const struct boardinfo *board;
-> 	int i;
-> 
-> 	for (i = 0; i < ARRAY_SIZE(boardinfo); i++) {
-> 		board = &boardinfo[i];
-> 		if (pcidev->vendor != board->ven_id ||
-> 		    pcidev->device != board->dev_id)
-> 			continue;
-> 		return board;
-> 	}
-> 	return NULL;
-> }
-> 
-> This would require adding a dummy boardinfo to some of the drivers but
-> I think it's cleaner.
-> 
-> Comments?
+On 07/19/2012 05:30 PM, KY Srinivasan wrote:
+>
+>
+>> -----Original Message-----
+>> From: Greg KH (gregkh@linuxfoundation.org)
+>> [mailto:gregkh@linuxfoundation.org]
+>> Sent: Thursday, July 19, 2012 6:02 PM
+>> To: KY Srinivasan
+>> Cc: Paolo Bonzini; devel@linuxdriverproject.org; linux-kernel@vger.kernel.org;
+>> virtualization@lists.osdl.org
+>> Subject: Re: 0xB16B00B5? Really? (was Re: Move hyperv out of the
+>> drivers/staging/ directory)
+>>
+>> On Thu, Jul 19, 2012 at 09:22:53PM +0000, KY Srinivasan wrote:
+>>>
+>>>
+>>>> -----Original Message-----
+>>>> From: Greg KH (gregkh@linuxfoundation.org)
+>>>> [mailto:gregkh@linuxfoundation.org]
+>>>> Sent: Thursday, July 19, 2012 5:07 PM
+>>>> To: KY Srinivasan
+>>>> Cc: Paolo Bonzini; devel@linuxdriverproject.org; linux-
+>> kernel@vger.kernel.org;
+>>>> virtualization@lists.osdl.org
+>>>> Subject: Re: 0xB16B00B5? Really? (was Re: Move hyperv out of the
+>>>> drivers/staging/ directory)
+>>>>
+>>>> On Thu, Jul 19, 2012 at 02:11:47AM +0000, KY Srinivasan wrote:
+>>>>>
+>>>>>
+>>>>>> -----Original Message-----
+>>>>>> From: Paolo Bonzini [mailto:paolo.bonzini@gmail.com] On Behalf Of Paolo
+>>>>>> Bonzini
+>>>>>> Sent: Friday, July 13, 2012 6:23 AM
+>>>>>> To: KY Srinivasan
+>>>>>> Cc: Greg KH; devel@linuxdriverproject.org; linux-kernel@vger.kernel.org;
+>>>>>> virtualization@lists.osdl.org
+>>>>>> Subject: 0xB16B00B5? Really? (was Re: Move hyperv out of the
+>>>> drivers/staging/
+>>>>>> directory)
+>>>>>>
+>>>>>> Il 04/10/2011 21:34, Greg KH ha scritto:
+>>>>>>> diff --git a/drivers/staging/hv/hyperv_vmbus.h
+>>>> b/drivers/hv/hyperv_vmbus.h
+>>>>>>> similarity index 99%
+>>>>>>> rename from drivers/staging/hv/hyperv_vmbus.h
+>>>>>>> rename to drivers/hv/hyperv_vmbus.h
+>>>>>>> index 3d2d836..8261cb6 100644
+>>>>>>> --- a/drivers/staging/hv/hyperv_vmbus.h
+>>>>>>> +++ b/drivers/hv/hyperv_vmbus.h
+>>>>>>> @@ -28,8 +28,7 @@
+>>>>>>>   #include<linux/list.h>
+>>>>>>>   #include<asm/sync_bitops.h>
+>>>>>>>   #include<linux/atomic.h>
+>>>>>>> -
+>>>>>>> -#include "hyperv.h"
+>>>>>>> +#include<linux/hyperv.h>
+>>>>>>>
+>>>>>>>   /*
+>>>>>>>    * The below CPUID leaves are present if
+>>>>>> VersionAndFeatures.HypervisorPresent
+>>>>>>
+>>>>>> git's rename detection snips away this gem:
+>>>>>>
+>>>>>> +#define HV_LINUX_GUEST_ID_LO		0x00000000
+>>>>>> +#define HV_LINUX_GUEST_ID_HI		0xB16B00B5
+>>>>>> +#define HV_LINUX_GUEST_ID		(((u64)HV_LINUX_GUEST_ID_HI
+>>>>>> <<  32) | \
+>>>>>> +					   HV_LINUX_GUEST_ID_LO)
+>>>>>>
+>>>>>> Somone was trying to be funny, I guess.
+>>>>>>
+>>>>>> KY, I suppose you have access to Hyper-V code or can ask someone who
+>>>> does.
+>>>>>> Is this signature actually used in the Hyper-V host code?
+>>>>>
+>>>>> Paolo,
+>>>>>
+>>>>> As I noted earlier, this is just a guest ID that needs to be registered with the
+>>>>> hypervisor.  Thanks  for reporting this issue and on behalf of Microsoft, I
+>> would
+>>>>> like to  apologize for this offensive string. I have submitted a patch to fix this
+>>>> issue.
+>>>>
+>>>> You only changed it to be in decimal, you did not change the id at all.
+>>>> Is there some reason why you can not change it?  You said there was a
+>>>> reserved range of ids that could be used, perhaps just pick another one?
+>>>> What is the valid range that can be used here?
+>>>
+>>> Greg,
+>>>
+>>> As you know, this ID has been in use for a long time now. While the hypervisor
+>>> does not interpret the guest ID that is registered, I am not sure what
+>> dependencies
+>>> there might be on this value.
+>>
+>> Could you please go find out the answer to this?
+>
+> That is easier said than done. I have sent emails out asking this very question and I have
+> not received a definitive answer yet. Not knowing if and when I can get a definitive
+> answer here, I chose the least risky approach in my patch.
+>>
+>> If, as you originally stated, there is a range of values we can use,
+>> then we should probably use another one, right?
+>
+> On the Windows side this ID namespace is managed well. However on the Linux
+> side, we have really had this current ID in use for almost five years now. I am not
+> aware of any pool of IDs available for Linux usage except that Linux IDs be distinct from
+> the guest IDs in use by MSFT operating systems. If I were to change the guest ID, I would
+> probably want to comply with the MSFT guidance on constructing these IDs (although not
+> all fields may be relevant for Linux).
 
-Ick.  What ever happened to converting these drivers to use the PCI api
-correctly and not to search the PCI space for the device, but have the
-PCI core call them if the device is found?
+Presumably, Hyper-V can deal with unexpected values here, no?  Otherwise, it 
+wouldn't be future proof against new types of guests.
 
-It looks like most of these drivers have already been converted to that
-style, so these checks for "do we find a device" can all be removed
-entirely now, right?  There's no way the functions would be called if
-the device wasn't found in the first place.
+So worst case scenario, Hyper-V disables optimizations on Linux guests that 
+report then new ID until they patch Hyper-V to know about the new ID.
 
-Or am I missing something here?
+That seems like a reasonable trade off to me.  I'm sure there's sufficient 
+incentive to patch Hyper-V for this at Microsoft...
 
-thanks,
+Regards,
 
-greg k-h
+Anthony Liguori
+
+>
+> Regards,
+>
+> K. Y
+>
+>
+>
+
