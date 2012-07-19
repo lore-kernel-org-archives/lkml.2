@@ -1,41 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753754Ab2GSKBL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 06:01:11 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44249 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751480Ab2GSKBJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 06:01:09 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <5007DA01.5060903@jp.fujitsu.com>
-Date: Thu, 19 Jul 2012 18:57:21 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1753873Ab2GSKKr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 06:10:47 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:44295 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750782Ab2GSKKp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 06:10:45 -0400
+Message-ID: <5007DD1F.4040703@mev.co.uk>
+Date: Thu, 19 Jul 2012 11:10:39 +0100
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120616 Thunderbird/13.0
 MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        Hugh Dickins <hughd@google.com>, David Rientjes <rientjes@google.com>,
-        Wanpeng Li <liwp.linux@gmail.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 03/10] mm: memcg: push down PageSwapCache check into uncharge
- entry functions
-References: <1342026142-7284-1-git-send-email-hannes@cmpxchg.org> <1342026142-7284-4-git-send-email-hannes@cmpxchg.org>
-In-Reply-To: <1342026142-7284-4-git-send-email-hannes@cmpxchg.org>
-Content-Type: text/plain; charset=ISO-2022-JP
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Ian Abbott <ian.abbott@mev.co.uk>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 30/90] staging: comedi: amplc_dio200: store the pci_dev
+ in the comedi_device
+References: <201207181837.50650.hartleys@visionengravers.com>
+In-Reply-To: <201207181837.50650.hartleys@visionengravers.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/07/12 2:02), Johannes Weiner wrote:
-> Not all uncharge paths need to check if the page is swapcache, some of
-> them can know for sure.
-> 
-> Push down the check into all callsites of uncharge_common() so that
-> the patch that removes some of them is more obvious.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> Acked-by: Michal Hocko <mhocko@suse.cz>
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+On 2012-07-19 02:37, H Hartley Sweeten wrote:
+> Use the hw_dev pointer in the comedi_device struct to hold the
+> pci_dev instead of carrying it in the private data.
+>
+> Since the pci_dev is no longer held in the provate data, we can
+> also cleanup the detach a bit. Remove the IS_ENABLED() tests in
+> the detach. If the pci_dev is non NULL it's a PCI device otherwise
+> it's an ISA device. Using IS_ENABLED() to omit the code paths
+> makes the code a bit confusing and doesn't save much.
+
+No, you really need to check thisboard->bustype in the detach() because 
+hw_dev might be NULL for a PCI board if the attach() failed.
+
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+
 
