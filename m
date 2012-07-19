@@ -1,292 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753402Ab2GSH2C (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 03:28:02 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:40274 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751014Ab2GSH16 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 03:27:58 -0400
-Date: Thu, 19 Jul 2012 00:27:51 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Tobias Klauser <tklauser@distanz.ch>, David Jander <david@protonic.nl>,
-        JJ Ding <dgdunix@gmail.com>, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: Re: [PATCH RESEND V2] input: gpio_keys_polled: convert to dt
-Message-ID: <20120719072751.GC3300@core.coreip.homeip.net>
-References: <1341858707-1771-1-git-send-email-aletes.xgr@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1341858707-1771-1-git-send-email-aletes.xgr@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753483Ab2GSHoH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 03:44:07 -0400
+Received: from mga02.intel.com ([134.134.136.20]:32317 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752159Ab2GSHoF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 03:44:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="174129881"
+From: Feng Tang <feng.tang@intel.com>
+To: Len Brown <len.brown@intel.com>, linux-kernel@vger.kernel.org
+Cc: x86@kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Donald Dutile <ddutile@redhat.com>,
+        Alexander Gordeev <agordeev@redhat.com>,
+        Bob Moore <robert.moore@intel.com>, Lin Ming <ming.m.lin@intel.com>,
+        Feng Tang <feng.tang@intel.com>
+Subject: [PATCH 1/2] ACPI: replace all acpi_get_table_with_size with acpi_get_table
+Date: Thu, 19 Jul 2012 15:39:23 +0800
+Message-Id: <1342683564-2245-1-git-send-email-feng.tang@intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexandre,
-
-On Mon, Jul 09, 2012 at 03:31:43PM -0300, Alexandre Pereira da Silva wrote:
-> @@ -38,7 +40,7 @@ struct gpio_keys_button_data {
->  struct gpio_keys_polled_dev {
->  	struct input_polled_dev *poll_dev;
->  	struct device *dev;
-> -	struct gpio_keys_platform_data *pdata;
-> +	struct gpio_keys_platform_data pdata;
->  	struct gpio_keys_button_data data[0];
->  };
-
-Instead of using a copy of pdata how about the patch below?
-
-Thanks.
-
--- 
-Dmitry
-
-
-Input: gpio_keys_polled - convert to dt
-
-From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-
-Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 ---
+ arch/x86/kernel/apic/es7000_32.c |    7 +++----
+ drivers/acpi/tables.c            |   21 +++++++++------------
+ drivers/iommu/dmar.c             |   14 +++++++-------
+ 3 files changed, 19 insertions(+), 23 deletions(-)
 
- .../devicetree/bindings/input/gpio-keys-polled.txt |   38 ++++++
- drivers/input/keyboard/gpio_keys_polled.c          |  124 +++++++++++++++++++-
- 2 files changed, 157 insertions(+), 5 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/input/gpio-keys-polled.txt
-
-
-diff --git a/Documentation/devicetree/bindings/input/gpio-keys-polled.txt b/Documentation/devicetree/bindings/input/gpio-keys-polled.txt
-new file mode 100644
-index 0000000..313abef
---- /dev/null
-+++ b/Documentation/devicetree/bindings/input/gpio-keys-polled.txt
-@@ -0,0 +1,38 @@
-+Device-Tree bindings for input/gpio_keys_polled.c keyboard driver
-+
-+Required properties:
-+	- compatible = "gpio-keys-polled";
-+	- poll-interval: Poll interval time in milliseconds
-+
-+Optional properties:
-+	- autorepeat: Boolean, Enable auto repeat feature of Linux input
-+	  subsystem.
-+
-+Each button (key) is represented as a sub-node of "gpio-keys-polled":
-+Subnode properties:
-+
-+	- gpios: OF device-tree gpio specification.
-+	- label: Descriptive name of the key.
-+	- linux,code: Keycode to emit.
-+
-+Optional subnode-properties:
-+	- linux,input-type: Specify event type this button/key generates.
-+	  If not specified defaults to <1> == EV_KEY.
-+	- debounce-interval: Debouncing interval time in milliseconds.
-+	  If not specified defaults to 5.
-+	- gpio-key,wakeup: Boolean, button can wake-up the system.
-+
-+Example nodes:
-+
-+	gpio_keys_polled {
-+			compatible = "gpio-keys-polled";
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			poll-interval = <100>;
-+			autorepeat;
-+			button@21 {
-+				label = "GPIO Key UP";
-+				linux,code = <103>;
-+				gpios = <&gpio1 0 1>;
-+			};
-+			...
-diff --git a/drivers/input/keyboard/gpio_keys_polled.c b/drivers/input/keyboard/gpio_keys_polled.c
-index 2619297..5a8856e6 100644
---- a/drivers/input/keyboard/gpio_keys_polled.c
-+++ b/drivers/input/keyboard/gpio_keys_polled.c
-@@ -25,6 +25,8 @@
- #include <linux/platform_device.h>
- #include <linux/gpio.h>
- #include <linux/gpio_keys.h>
-+#include <linux/of_platform.h>
-+#include <linux/of_gpio.h>
- 
- #define DRV_NAME	"gpio-keys-polled"
- 
-@@ -100,6 +102,96 @@ static void gpio_keys_polled_close(struct input_polled_dev *dev)
- 		pdata->disable(bdev->dev);
- }
- 
-+#ifdef CONFIG_OF
-+static struct gpio_keys_platform_data * __devinit
-+gpio_keys_polled_get_devtree_pdata(struct device *dev)
-+{
-+	struct device_node *node, *pp;
-+	struct gpio_keys_platform_data *pdata;
-+	struct gpio_keys_button *button;
-+	int error;
-+	int nbuttons;
-+	int i;
-+
-+	node = dev->of_node;
-+	if (!node) {
-+		error = -ENODEV;
-+		goto err_out;
-+	}
-+
-+	nbuttons = of_get_child_count(node);
-+	if (nbuttons == 0) {
-+		error = -ENODEV;
-+		goto err_out;
-+	}
-+
-+	pdata = kzalloc(sizeof(*pdata) + nbuttons * (sizeof *button),
-+			GFP_KERNEL);
-+	if (!pdata) {
-+		error = -ENOMEM;
-+		goto err_out;
-+	}
-+
-+	pdata->rep = !!of_get_property(node, "autorepeat", NULL);
-+	of_property_read_u32(node, "poll-interval", &pdata->poll_interval);
-+
-+	i = 0;
-+	for_each_child_of_node(node, pp) {
-+		enum of_gpio_flags flags;
-+
-+		if (!of_find_property(pp, "gpios", NULL)) {
-+			pdata->nbuttons--;
-+			dev_warn(dev, "Found button without gpios\n");
-+			continue;
-+		}
-+
-+		button = &pdata->buttons[i++];
-+
-+		button->gpio = of_get_gpio_flags(pp, 0, &flags);
-+		button->active_low = flags & OF_GPIO_ACTIVE_LOW;
-+
-+		if (of_property_read_u32(pp, "linux,code", &button->code)) {
-+			dev_err(dev, "Button without keycode: 0x%x\n",
-+				button->gpio);
-+			error = -EINVAL;
-+			goto err_free_pdata;
-+		}
-+
-+		button->desc = of_get_property(pp, "label", NULL);
-+
-+		if (of_property_read_u32(pp, "linux,input-type", &button->type))
-+			button->type = EV_KEY;
-+
-+		button->wakeup = !!of_get_property(pp, "gpio-key,wakeup", NULL);
-+
-+		if (of_property_read_u32(pp, "debounce-interval",
-+					 &button->debounce_interval))
-+			button->debounce_interval = 5;
-+	}
-+
-+	return pdata;
-+
-+err_free_pdata:
-+	kfree(pdata);
-+err_out:
-+	return ERR_PTR(error);
-+}
-+
-+static struct of_device_id gpio_keys_polled_of_match[] = {
-+	{ .compatible = "gpio-keys-polled", },
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(of, gpio_keys_polled_of_match);
-+
-+#else
-+
-+static inline struct gpio_keys_platform_data *
-+gpio_keys_polled_get_devtree_pdata(struct device *dev)
-+{
-+	return ERR_PTR(-ENODEV);
-+}
-+#endif
-+
- static int __devinit gpio_keys_polled_probe(struct platform_device *pdev)
+diff --git a/arch/x86/kernel/apic/es7000_32.c b/arch/x86/kernel/apic/es7000_32.c
+index db4ab1b..63f92ef 100644
+--- a/arch/x86/kernel/apic/es7000_32.c
++++ b/arch/x86/kernel/apic/es7000_32.c
+@@ -242,19 +242,18 @@ static int __init find_unisys_acpi_oem_table(unsigned long *oem_addr)
  {
- 	struct device *dev = &pdev->dev;
-@@ -110,15 +202,24 @@ static int __devinit gpio_keys_polled_probe(struct platform_device *pdev)
- 	int error;
- 	int i;
+ 	struct acpi_table_header *header = NULL;
+ 	struct es7000_oem_table *table;
+-	acpi_size tbl_size;
+ 	acpi_status ret;
+ 	int i = 0;
  
--	if (!pdata || !pdata->poll_interval)
--		return -EINVAL;
-+	if (!pdata) {
-+		pdata = gpio_keys_polled_get_devtree_pdata(dev);
-+		if (IS_ERR(pdata))
-+			return PTR_ERR(pdata);
-+	}
-+
-+	if (!pdata->poll_interval) {
-+		error = -EINVAL;
-+		goto err_free_pdata;
-+	}
+ 	for (;;) {
+-		ret = acpi_get_table_with_size("OEM1", i++, &header, &tbl_size);
++		ret = acpi_get_table("OEM1", i++, &header);
+ 		if (!ACPI_SUCCESS(ret))
+ 			return -1;
  
- 	bdev = kzalloc(sizeof(struct gpio_keys_polled_dev) +
- 		       pdata->nbuttons * sizeof(struct gpio_keys_button_data),
- 		       GFP_KERNEL);
- 	if (!bdev) {
- 		dev_err(dev, "no memory for private data\n");
--		return -ENOMEM;
-+		error = -ENOMEM;
-+		goto err_free_pdata;
+ 		if (!memcmp((char *) &header->oem_id, "UNISYS", 6))
+ 			break;
+ 
+-		early_acpi_os_unmap_memory(header, tbl_size);
++		early_acpi_os_unmap_memory(header, header->length);
  	}
  
- 	poll_dev = input_allocate_polled_device();
-@@ -197,7 +298,7 @@ static int __devinit gpio_keys_polled_probe(struct platform_device *pdev)
- 	/* report initial state of the buttons */
- 	for (i = 0; i < pdata->nbuttons; i++)
- 		gpio_keys_polled_check_state(input, &pdata->buttons[i],
--					 &bdev->data[i]);
-+					     &bdev->data[i]);
+ 	table = (void *)header;
+@@ -262,7 +261,7 @@ static int __init find_unisys_acpi_oem_table(unsigned long *oem_addr)
+ 	oem_addrX	= table->OEMTableAddr;
+ 	oem_size	= table->OEMTableSize;
  
- 	return 0;
+-	early_acpi_os_unmap_memory(header, tbl_size);
++	early_acpi_os_unmap_memory(header, header->length);
  
-@@ -209,8 +310,13 @@ err_free_gpio:
+ 	*oem_addr	= (unsigned long)__acpi_map_table(oem_addrX, oem_size);
  
- err_free_bdev:
- 	kfree(bdev);
--
- 	platform_set_drvdata(pdev, NULL);
-+
-+err_free_pdata:
-+	/* If we have no platform_data, we allocated pdata dynamically.  */
-+	if (!dev_get_platdata(&pdev->dev))
-+		kfree(pdata);
-+
- 	return error;
+diff --git a/drivers/acpi/tables.c b/drivers/acpi/tables.c
+index f336bca..5b8b7e0 100644
+--- a/drivers/acpi/tables.c
++++ b/drivers/acpi/tables.c
+@@ -211,7 +211,6 @@ acpi_table_parse_entries(char *id,
+ 	struct acpi_subtable_header *entry;
+ 	unsigned int count = 0;
+ 	unsigned long table_end;
+-	acpi_size tbl_size;
+ 
+ 	if (acpi_disabled)
+ 		return -ENODEV;
+@@ -220,9 +219,9 @@ acpi_table_parse_entries(char *id,
+ 		return -EINVAL;
+ 
+ 	if (strncmp(id, ACPI_SIG_MADT, 4) == 0)
+-		acpi_get_table_with_size(id, acpi_apic_instance, &table_header, &tbl_size);
++		acpi_get_table(id, acpi_apic_instance, &table_header);
+ 	else
+-		acpi_get_table_with_size(id, 0, &table_header, &tbl_size);
++		acpi_get_table(id, 0, &table_header);
+ 
+ 	if (!table_header) {
+ 		printk(KERN_WARNING PREFIX "%4.4s not present\n", id);
+@@ -241,7 +240,7 @@ acpi_table_parse_entries(char *id,
+ 		if (entry->type == entry_id
+ 		    && (!max_entries || count++ < max_entries))
+ 			if (handler(entry, table_end)) {
+-				early_acpi_os_unmap_memory((char *)table_header, tbl_size);
++				early_acpi_os_unmap_memory((char *)table_header, table_header->length);
+ 				return -EINVAL;
+ 			}
+ 
+@@ -253,7 +252,7 @@ acpi_table_parse_entries(char *id,
+ 		       "%i found\n", id, entry_id, count - max_entries, count);
+ 	}
+ 
+-	early_acpi_os_unmap_memory((char *)table_header, tbl_size);
++	early_acpi_os_unmap_memory((char *)table_header, table_header->length);
+ 	return count;
  }
  
-@@ -227,6 +333,13 @@ static int __devexit gpio_keys_polled_remove(struct platform_device *pdev)
+@@ -278,7 +277,6 @@ acpi_table_parse_madt(enum acpi_madt_type id,
+ int __init acpi_table_parse(char *id, acpi_table_handler handler)
+ {
+ 	struct acpi_table_header *table = NULL;
+-	acpi_size tbl_size;
  
- 	input_free_polled_device(bdev->poll_dev);
+ 	if (acpi_disabled)
+ 		return -ENODEV;
+@@ -287,13 +285,13 @@ int __init acpi_table_parse(char *id, acpi_table_handler handler)
+ 		return -EINVAL;
  
-+	/*
-+	 * If we had no platform_data, we allocated pdata dynamically and
-+	 * must free it here.
-+	 */
-+	if (!dev_get_platdata(&pdev->dev))
-+		kfree(pdata);
+ 	if (strncmp(id, ACPI_SIG_MADT, 4) == 0)
+-		acpi_get_table_with_size(id, acpi_apic_instance, &table, &tbl_size);
++		acpi_get_table(id, acpi_apic_instance, &table);
+ 	else
+-		acpi_get_table_with_size(id, 0, &table, &tbl_size);
++		acpi_get_table(id, 0, &table);
+ 
+ 	if (table) {
+ 		handler(table);
+-		early_acpi_os_unmap_memory(table, tbl_size);
++		early_acpi_os_unmap_memory(table, table->length);
+ 		return 0;
+ 	} else
+ 		return 1;
+@@ -307,9 +305,8 @@ int __init acpi_table_parse(char *id, acpi_table_handler handler)
+ static void __init check_multiple_madt(void)
+ {
+ 	struct acpi_table_header *table = NULL;
+-	acpi_size tbl_size;
+ 
+-	acpi_get_table_with_size(ACPI_SIG_MADT, 2, &table, &tbl_size);
++	acpi_get_table(ACPI_SIG_MADT, 2, &table);
+ 	if (table) {
+ 		printk(KERN_WARNING PREFIX
+ 		       "BIOS bug: multiple APIC/MADT found,"
+@@ -318,7 +315,7 @@ static void __init check_multiple_madt(void)
+ 		       "If \"acpi_apic_instance=%d\" works better, "
+ 		       "notify linux-acpi@vger.kernel.org\n",
+ 		       acpi_apic_instance ? 0 : 2);
+-		early_acpi_os_unmap_memory(table, tbl_size);
++		early_acpi_os_unmap_memory(table, table->length);
+ 
+ 	} else
+ 		acpi_apic_instance = 0;
+diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
+index 3a74e44..e0f4dbf 100644
+--- a/drivers/iommu/dmar.c
++++ b/drivers/iommu/dmar.c
+@@ -48,7 +48,6 @@
+ LIST_HEAD(dmar_drhd_units);
+ 
+ struct acpi_table_header * __initdata dmar_tbl;
+-static acpi_size dmar_tbl_size;
+ 
+ static void __init dmar_register_drhd_unit(struct dmar_drhd_unit *drhd)
+ {
+@@ -294,10 +293,8 @@ static int __init dmar_table_detect(void)
+ 	acpi_status status = AE_OK;
+ 
+ 	/* if we could find DMAR table, then there are DMAR devices */
+-	status = acpi_get_table_with_size(ACPI_SIG_DMAR, 0,
+-				(struct acpi_table_header **)&dmar_tbl,
+-				&dmar_tbl_size);
+-
++	status = acpi_get_table(ACPI_SIG_DMAR, 0,
++				(struct acpi_table_header **)&dmar_tbl);
+ 	if (ACPI_SUCCESS(status) && !dmar_tbl) {
+ 		printk (KERN_WARNING PREFIX "Unable to map DMAR\n");
+ 		status = AE_NOT_FOUND;
+@@ -572,8 +569,11 @@ int __init detect_intel_iommu(void)
+ 			x86_init.iommu.iommu_init = intel_iommu_init;
+ #endif
+ 	}
+-	early_acpi_os_unmap_memory(dmar_tbl, dmar_tbl_size);
+-	dmar_tbl = NULL;
 +
- 	kfree(bdev);
- 	platform_set_drvdata(pdev, NULL);
++	if (dmar_tbl) {
++		early_acpi_os_unmap_memory(dmar_tbl, dmar_tbl->length);
++		dmar_tbl = NULL;
++	}
  
-@@ -239,6 +352,7 @@ static struct platform_driver gpio_keys_polled_driver = {
- 	.driver	= {
- 		.name	= DRV_NAME,
- 		.owner	= THIS_MODULE,
-+		.of_match_table = of_match_ptr(gpio_keys_polled_of_match),
- 	},
- };
- module_platform_driver(gpio_keys_polled_driver);
+ 	return ret ? 1 : -ENODEV;
+ }
+-- 
+1.7.1
+
