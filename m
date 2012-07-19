@@ -1,288 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752843Ab2GSMLV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 08:11:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10187 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751810Ab2GSMLQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 08:11:16 -0400
-Message-ID: <1342699875.3229.51.camel@ul30vt>
-Subject: Re: [PATCH] kvm: fix race with level interrupts
-From: Alex Williamson <alex.williamson@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        gleb@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 19 Jul 2012 06:11:15 -0600
-In-Reply-To: <20120719090730.GA20120@redhat.com>
-References: <20120718215228.GA13905@redhat.com>
-	 <1342650401.2229.224.camel@bling.home> <20120718224948.GB14101@redhat.com>
-	 <1342653640.2229.234.camel@bling.home> <20120719090730.GA20120@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
+	id S1753017Ab2GSML1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 08:11:27 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:33314 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752363Ab2GSMLU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 08:11:20 -0400
+Message-ID: <5007F8FA.7000203@linux.vnet.ibm.com>
+Date: Thu, 19 Jul 2012 17:39:30 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+MIME-Version: 1.0
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: WARNING: at kernel/rcutree.c:1550 __rcu_process_callbacks+0x46f/0x4b0()
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+x-cbid: 12071912-2674-0000-0000-0000054E206C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-07-19 at 12:07 +0300, Michael S. Tsirkin wrote:
-> On Wed, Jul 18, 2012 at 05:20:40PM -0600, Alex Williamson wrote:
-> > On Thu, 2012-07-19 at 01:49 +0300, Michael S. Tsirkin wrote:
-> > > On Wed, Jul 18, 2012 at 04:26:41PM -0600, Alex Williamson wrote:
-> > > > On Thu, 2012-07-19 at 00:52 +0300, Michael S. Tsirkin wrote:
-> > > > > When more than 1 source id is in use for the same GSI, we have the
-> > > > > following race related to handling irq_states:
-> > > > > 
-> > > > > CPU 0 clears bit in irq_states. CPU 0 reads irq_state as 0.
-> > > > > CPU 1 sets bit in irq_states.  CPU 1 calls kvm_ioapic_set_irq(1). CPU 0
-> > > > > calls kvm_ioapic_set_irq(0).
-> > > > > 
-> > > > > Now ioapic thinks the level is 0 but irq_state is not 0.
-> > > > > 
-> > > > > Note that above is valid behaviour if CPU0 and CPU1 are using different
-> > > > > source ids.
-> > > > > 
-> > > > > Fix by performing all irq_states bitmap handling under pic/ioapic lock.
-> > > > > This also removes the need for atomics with irq_states handling.
-> > > > > 
-> > > > > Reported-by: Gleb Natapov <gleb@redhat.com>
-> > > > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > > > > ---
-> > > > > 
-> > > > > This survives stress testing for me (though I only tried virtio, not
-> > > > > device assignment).
-> > > > > Avi, Marcelo, though we have not observed this in the field,
-> > > > > it's a bugfix so probably 3.5 material?
-> > > > > I assume yes so the patch is against 3.5-rc7.
-> > > > > Also stable? It's a very old bug.
-> > > > > 
-> > > > > 
-> > > > >  arch/x86/include/asm/kvm_host.h | 15 ++++++++++++++-
-> > > > >  arch/x86/kvm/i8259.c            | 14 ++++++++++++--
-> > > > >  virt/kvm/ioapic.c               | 13 ++++++++++++-
-> > > > >  virt/kvm/ioapic.h               |  4 +++-
-> > > > >  virt/kvm/irq_comm.c             | 31 ++++---------------------------
-> > > > >  5 files changed, 45 insertions(+), 32 deletions(-)
-> > > > > 
-> > > > > diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> > > > > index db7c1f2..fe6e9f1 100644
-> > > > > --- a/arch/x86/include/asm/kvm_host.h
-> > > > > +++ b/arch/x86/include/asm/kvm_host.h
-> > > > > @@ -802,7 +802,20 @@ int kvm_read_guest_page_mmu(struct kvm_vcpu *vcpu, struct kvm_mmu *mmu,
-> > > > >  void kvm_propagate_fault(struct kvm_vcpu *vcpu, struct x86_exception *fault);
-> > > > >  bool kvm_require_cpl(struct kvm_vcpu *vcpu, int required_cpl);
-> > > > >  
-> > > > > -int kvm_pic_set_irq(void *opaque, int irq, int level);
-> > > > > +static inline int kvm_irq_line_state(unsigned long *irq_state,
-> > > > > +				     int irq_source_id, int level)
-> > > > 
-> > > > This should probably be __kvm_irq_line_state given the calling
-> > > > restrictions.
-> > > 
-> > > It's such a trivial helper, do we need to split hairs about this?
-> > > 
-> > > Look it's not a good time for minor coding style nits.
-> > > 3.5 is imminent, it's about 1am here and I really don't have time to retest
-> > > today, so we'll release another kernel with a bug.
-> > > 
-> > > Could you focus on reviewing the functionality and correctness, and
-> > > leave ideas for better variable naming aside until 3.6?
-> > 
-> > Please get off your high horse, this bug has existed for a long time and
-> > nobody has noticed.  __ indicates locking and makes people think twice
-> > about arbitrarily calling it.  Correct naming prevents future bugs,
-> > which is something you've been riding me on in other areas...
-> 
-> It's all fine but you already sent two messages about improving coding
-> style in the same patch. What I really hoped for is a thorough review
-> that looks at all issues at once, including the functional side as well.
-> Or maybe style comments is all there is ... we'll see.
+Hi Paul,
 
-So you're accusing me of an superfluous review because I noted coding
-style errors?  Very professional.  My comments on your rfc should
-validate the review was thorough.
+While running a CPU hotplug stress test on v3.5-rc7+
+(mainline commit 8a7298b7805ab) I hit this warning.
+I haven't tried to debug this yet...
 
-> > > > > +{
-> > > > > +	/* Logical OR for level trig interrupt */
-> > > > > +	if (level)
-> > > > > +		__set_bit(irq_source_id, irq_state);
-> > > > > +	else
-> > > > > +		__clear_bit(irq_source_id, irq_state);
-> > > > > +
-> > > > > +	return !!(*irq_state);
-> > > > > +}
-> > > > > +
-> > > > > +int kvm_pic_set_irq(struct kvm_pic *pic, int irq, int irq_source_id, int level);
-> > > > > +void kvm_pic_clear_all(struct kvm_pic *pic, int irq_source_id);
-> > > > >  
-> > > > >  void kvm_inject_nmi(struct kvm_vcpu *vcpu);
-> > > > >  
-> > > > > diff --git a/arch/x86/kvm/i8259.c b/arch/x86/kvm/i8259.c
-> > > > > index 81cf4fa..95b504b 100644
-> > > > > --- a/arch/x86/kvm/i8259.c
-> > > > > +++ b/arch/x86/kvm/i8259.c
-> > > > > @@ -188,13 +188,14 @@ void kvm_pic_update_irq(struct kvm_pic *s)
-> > > > >  	pic_unlock(s);
-> > > > >  }
-> > > > >  
-> > > > > -int kvm_pic_set_irq(void *opaque, int irq, int level)
-> > > > > +int kvm_pic_set_irq(struct kvm_pic *s, int irq, int src_id, int l)
-> > > > >  {
-> > > > > -	struct kvm_pic *s = opaque;
-> > > > >  	int ret = -1;
-> > > > > +	int level;
-> > > > >  
-> > > > >  	pic_lock(s);
-> > > > >  	if (irq >= 0 && irq < PIC_NUM_PINS) {
-> > > > > +		level = kvm_irq_line_state(&s->irq_states[irq], src_id, l);
-> > > > >  		ret = pic_set_irq1(&s->pics[irq >> 3], irq & 7, level);
-> > > > >  		pic_update_irq(s);
-> > > > >  		trace_kvm_pic_set_irq(irq >> 3, irq & 7, s->pics[irq >> 3].elcr,
-> > > > > @@ -205,6 +206,15 @@ int kvm_pic_set_irq(void *opaque, int irq, int level)
-> > > > >  	return ret;
-> > > > >  }
-> > > > >  
-> > > > > +void kvm_pic_clear_all(struct kvm_pic *s, int src_id)
-> > > > > +{
-> > > > > +	int i;
-> > > > > +	pic_lock(s);
-> > > > > +	for (i = 0; i < PIC_NUM_PINS; i++)
-> > > > > +		__clear_bit(src_id, &s->irq_states[i]);
-> > > > > +	pic_unlock(s);
-> > > > > +}
-> > > > > +
-> > > > >  /*
-> > > > >   * acknowledge interrupt 'irq'
-> > > > >   */
-> > > > > diff --git a/virt/kvm/ioapic.c b/virt/kvm/ioapic.c
-> > > > > index 26fd54d..268b332 100644
-> > > > > --- a/virt/kvm/ioapic.c
-> > > > > +++ b/virt/kvm/ioapic.c
-> > > > > @@ -191,17 +191,19 @@ static int ioapic_deliver(struct kvm_ioapic *ioapic, int irq)
-> > > > >  	return kvm_irq_delivery_to_apic(ioapic->kvm, NULL, &irqe);
-> > > > >  }
-> > > > >  
-> > > > > -int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int level)
-> > > > > +int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int src_id, int l)
-> > > > >  {
-> > > > >  	u32 old_irr;
-> > > > >  	u32 mask = 1 << irq;
-> > > > >  	union kvm_ioapic_redirect_entry entry;
-> > > > >  	int ret = 1;
-> > > > > +	int level;
-> > > > >  
-> > > > >  	spin_lock(&ioapic->lock);
-> > > > >  	old_irr = ioapic->irr;
-> > > > >  	if (irq >= 0 && irq < IOAPIC_NUM_PINS) {
-> > > > >  		entry = ioapic->redirtbl[irq];
-> > > > > +		level = kvm_irq_line_state(&ioapic->irq_states[irq], src_id, l);
-> > > > >  		level ^= entry.fields.polarity;
-> > > > >  		if (!level)
-> > > > >  			ioapic->irr &= ~mask;
-> > > > > @@ -221,6 +223,15 @@ int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int level)
-> > > > >  	return ret;
-> > > > >  }
-> > > > >  
-> > > > > +void kvm_ioapic_clear_all(struct kvm_ioapic *ioapic, int src_id)
-> > > > > +{
-> > > > > +	int i;
-> > > > > +	spin_lock(&ioapic->lock);
-> > > > > +	for (i = 0; i < KVM_IOAPIC_NUM_PINS; i++)
-> > > > > +		__clear_bit(src_id, &ioapic->irq_states[i]);
-> > > > > +	spin_unlock(&ioapic->lock);
-> > > > > +}
-> > > > > +
-> > > > >  static void __kvm_ioapic_update_eoi(struct kvm_ioapic *ioapic, int vector,
-> > > > >  				     int trigger_mode)
-> > > > >  {
-> > > > > diff --git a/virt/kvm/ioapic.h b/virt/kvm/ioapic.h
-> > > > > index 32872a0..a30abfe 100644
-> > > > > --- a/virt/kvm/ioapic.h
-> > > > > +++ b/virt/kvm/ioapic.h
-> > > > > @@ -74,7 +74,9 @@ void kvm_ioapic_update_eoi(struct kvm *kvm, int vector, int trigger_mode);
-> > > > >  bool kvm_ioapic_handles_vector(struct kvm *kvm, int vector);
-> > > > >  int kvm_ioapic_init(struct kvm *kvm);
-> > > > >  void kvm_ioapic_destroy(struct kvm *kvm);
-> > > > > -int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int level);
-> > > > > +int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int irq_source_id,
-> > > > > +		       int level);
-> > > > > +void kvm_ioapic_clear_all(struct kvm_ioapic *ioapic, int irq_source_id);
-> > > > >  void kvm_ioapic_reset(struct kvm_ioapic *ioapic);
-> > > > >  int kvm_irq_delivery_to_apic(struct kvm *kvm, struct kvm_lapic *src,
-> > > > >  		struct kvm_lapic_irq *irq);
-> > > > > diff --git a/virt/kvm/irq_comm.c b/virt/kvm/irq_comm.c
-> > > > > index 5afb431..83402d7 100644
-> > > > > --- a/virt/kvm/irq_comm.c
-> > > > > +++ b/virt/kvm/irq_comm.c
-> > > > > @@ -33,26 +33,12 @@
-> > > > >  
-> > > > >  #include "ioapic.h"
-> > > > >  
-> > > > > -static inline int kvm_irq_line_state(unsigned long *irq_state,
-> > > > > -				     int irq_source_id, int level)
-> > > > > -{
-> > > > > -	/* Logical OR for level trig interrupt */
-> > > > > -	if (level)
-> > > > > -		set_bit(irq_source_id, irq_state);
-> > > > > -	else
-> > > > > -		clear_bit(irq_source_id, irq_state);
-> > > > > -
-> > > > > -	return !!(*irq_state);
-> > > > > -}
-> > > > > -
-> > > > >  static int kvm_set_pic_irq(struct kvm_kernel_irq_routing_entry *e,
-> > > > >  			   struct kvm *kvm, int irq_source_id, int level)
-> > > > >  {
-> > > > >  #ifdef CONFIG_X86
-> > > > >  	struct kvm_pic *pic = pic_irqchip(kvm);
-> > > > > -	level = kvm_irq_line_state(&pic->irq_states[e->irqchip.pin],
-> > > > > -				   irq_source_id, level);
-> > > > > -	return kvm_pic_set_irq(pic, e->irqchip.pin, level);
-> > > > > +	return kvm_pic_set_irq(pic, e->irqchip.pin, irq_source_id, level);
-> > > > >  #else
-> > > > >  	return -1;
-> > > > >  #endif
-> > > > > @@ -62,10 +48,7 @@ static int kvm_set_ioapic_irq(struct kvm_kernel_irq_routing_entry *e,
-> > > > >  			      struct kvm *kvm, int irq_source_id, int level)
-> > > > >  {
-> > > > >  	struct kvm_ioapic *ioapic = kvm->arch.vioapic;
-> > > > > -	level = kvm_irq_line_state(&ioapic->irq_states[e->irqchip.pin],
-> > > > > -				   irq_source_id, level);
-> > > > > -
-> > > > > -	return kvm_ioapic_set_irq(ioapic, e->irqchip.pin, level);
-> > > > > +	return kvm_ioapic_set_irq(ioapic, e->irqchip.pin, irq_source_id, level);
-> > > > >  }
-> > > > >  
-> > > > >  inline static bool kvm_is_dm_lowest_prio(struct kvm_lapic_irq *irq)
-> > > > > @@ -249,8 +232,6 @@ unlock:
-> > > > >  
-> > > > >  void kvm_free_irq_source_id(struct kvm *kvm, int irq_source_id)
-> > > > >  {
-> > > > > -	int i;
-> > > > > -
-> > > > >  	ASSERT(irq_source_id != KVM_USERSPACE_IRQ_SOURCE_ID);
-> > > > >  
-> > > > >  	mutex_lock(&kvm->irq_lock);
-> > > > > @@ -263,14 +244,10 @@ void kvm_free_irq_source_id(struct kvm *kvm, int irq_source_id)
-> > > > >  	if (!irqchip_in_kernel(kvm))
-> > > > >  		goto unlock;
-> > > > >  
-> > > > > -	for (i = 0; i < KVM_IOAPIC_NUM_PINS; i++) {
-> > > > > -		clear_bit(irq_source_id, &kvm->arch.vioapic->irq_states[i]);
-> > > > > -		if (i >= 16)
-> > > > > -			continue;
-> > > > > +	kvm_ioapic_clear_all(kvm->arch.vioapic, irq_source_id);
-> > > > >  #ifdef CONFIG_X86
-> > > > > -		clear_bit(irq_source_id, &pic_irqchip(kvm)->irq_states[i]);
-> > > > > +	kvm_pic_clear_all(pic_irqchip(kvm), irq_source_id);
-> > > > >  #endif
-> > > > > -	}
-> > > > >  unlock:
-> > > > >  	mutex_unlock(&kvm->irq_lock);
-> > > > >  }
-> > > > 
-> > > > 
-> > 
-> > 
+Line number 1550 maps to:
+
+WARN_ON_ONCE(cpu_is_offline(smp_processor_id()));
+
+inside rcu_do_batch().
+
+Regards,
+Srivatsa S. Bhat
 
 
+[ 1206.095436] CPU 3 is now offline
+[ 1206.097086] CPU 3 offline: Remove Rx thread
+[ 1206.099133] CPU 2 MCA banks CMCI:0 CMCI:1 CMCI:3
+[ 1206.103750] ------------[ cut here ]------------
+[ 1206.103758] WARNING: at kernel/rcutree.c:1550 __rcu_process_callbacks+0x46f/0x4b0()
+[ 1206.103759] Hardware name: 4180F59
+[ 1206.103759] Modules linked in: tcp_lp lp ebtable_nat ebtables ipt_MASQUERADE iptable_nat nf_nat xt_CHECKSUM iptable_mangle bridge stp llc ppdev parport_pc parport fuse be2iscsi iscsi_boot_sysfs bnx2i cnic uio cxgb4i cxgb4 cxgb3i libcxgbi cxgb3 mdio ib_iser ip6t_ipv6header rdma_cm ib_cm iw_cm ib_sa lockd ip6t_REJECT ib_mad ib_core nf_conntrack_ipv6 nf_defrag_ipv6 xt_limit ib_addr iscsi_tcp nf_conntrack_ipv4 libiscsi_tcp libiscsi nf_defrag_ipv4 xt_state nf_conntrack scsi_transport_iscsi ip6table_filter ip6_tables snd_hda_codec_conexant snd_hda_intel snd_hda_codec snd_hwdep arc4 iwlwifi snd_seq snd_seq_device snd_pcm mac80211 snd_timer thinkpad_acpi snd sunrpc vhost_net macvtap uvcvideo macvlan tun videobuf2_core kvm_intel cfg80211 videodev media videobuf2_vmalloc tpm_tis kvm i2c_i801 e1000e joydev tpm videobuf2_memops soundcore snd_page_alloc rfkill lpc_ich mfd_core tpm_bios microcode binfmt_misc uinput sdhci_pci sdhci mmc_core nouveau i915 ttm drm_kms_helper drm mxm_wmi i2!
+ c_algo_bit
+ i2c_core video wmi
+[ 1206.103829]  [last unloaded: scsi_wait_scan]
+[ 1206.103832] Pid: 6217, comm: migration/1 Not tainted 3.5.0-rc7-mandeep #1
+[ 1206.103833] Call Trace:
+[ 1206.103834]  <IRQ>  [<ffffffff8106036f>] warn_slowpath_common+0x7f/0xc0
+[ 1206.103840]  [<ffffffff810603ca>] warn_slowpath_null+0x1a/0x20
+[ 1206.103843]  [<ffffffff81110d5f>] __rcu_process_callbacks+0x46f/0x4b0
+[ 1206.103845]  [<ffffffff8108f894>] ? __run_hrtimer+0x84/0x3a0
+[ 1206.103848]  [<ffffffff81697f47>] ? _raw_spin_unlock_irqrestore+0x77/0x80
+[ 1206.103852]  [<ffffffff810998dd>] ? account_system_vtime+0xdd/0xf0
+[ 1206.103855]  [<ffffffff81110dd3>] rcu_process_callbacks+0x33/0x290
+[ 1206.103857]  [<ffffffff8106a638>] __do_softirq+0xc8/0x3e0
+[ 1206.103860]  [<ffffffff8103bc2d>] ? lapic_next_event+0x1d/0x30
+[ 1206.103863]  [<ffffffff816a26ec>] call_softirq+0x1c/0x30
+[ 1206.103866]  [<ffffffff8101c365>] do_softirq+0xa5/0xe0
+[ 1206.103870]  [<ffffffff8106acae>] irq_exit+0xbe/0xf0
+[ 1206.103872]  [<ffffffff816a306e>] smp_apic_timer_interrupt+0x6e/0x99
+[ 1206.103875]  [<ffffffff816a1cef>] apic_timer_interrupt+0x6f/0x80
+[ 1206.103878]  <EOI>  [<ffffffff810ee2e3>] ? stop_machine_cpu_stop+0xc3/0x110
+[ 1206.103883]  [<ffffffff810edf19>] cpu_stopper_thread+0xd9/0x1b0
+[ 1206.103884]  [<ffffffff810ee220>] ? queue_stop_cpus_work+0xf0/0xf0
+[ 1206.103893]  [<ffffffff816960b1>] ? __schedule+0x431/0xa20
+[ 1206.103896]  [<ffffffff810cd21d>] ? trace_hardirqs_on_caller+0x11d/0x1b0
+[ 1206.103900]  [<ffffffff810ede40>] ? cpu_stop_signal_done+0x40/0x40
+[ 1206.103902]  [<ffffffff8108a86e>] kthread+0xae/0xc0
+[ 1206.103905]  [<ffffffff810cd2bd>] ? trace_hardirqs_on+0xd/0x10
+[ 1206.103908]  [<ffffffff816a25f4>] kernel_thread_helper+0x4/0x10
+[ 1206.103911]  [<ffffffff816986f0>] ? retint_restore_args+0x13/0x13
+[ 1206.103913]  [<ffffffff8108a7c0>] ? __init_kthread_worker+0x70/0x70
+[ 1206.103916]  [<ffffffff816a25f0>] ? gs_change+0x13/0x13
+[ 1206.103918] ---[ end trace cbc247c5c233d6e7 ]---
+[ 1206.104125] CPU 1 is now offline
 
