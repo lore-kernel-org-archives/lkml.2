@@ -1,65 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751751Ab2GSU3U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 16:29:20 -0400
-Received: from georges.telenet-ops.be ([195.130.137.68]:35715 "EHLO
-	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751014Ab2GSU3S (ORCPT
+	id S1751841Ab2GSUaa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 16:30:30 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:57533 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751134Ab2GSUa0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 16:29:18 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: x86@kernel.org, linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] trivial: spelling s/postition/position/g
-Date: Thu, 19 Jul 2012 22:29:11 +0200
-Message-Id: <1342729751-17947-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.0.4
+	Thu, 19 Jul 2012 16:30:26 -0400
+Date: Thu, 19 Jul 2012 15:30:17 -0500
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 06/34] vmscan: add shrink_slab tracepoints
+Message-ID: <20120719203017.GC19392@burratino>
+References: <1342708604-26540-1-git-send-email-mgorman@suse.de>
+ <1342708604-26540-7-git-send-email-mgorman@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1342708604-26540-7-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- arch/m68k/kernel/module.c |    4 ++--
- arch/x86/kernel/module.c  |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+Mel Gorman wrote:
 
-diff --git a/arch/m68k/kernel/module.c b/arch/m68k/kernel/module.c
-index 34849c4..eb46fd6 100644
---- a/arch/m68k/kernel/module.c
-+++ b/arch/m68k/kernel/module.c
-@@ -47,7 +47,7 @@ int apply_relocate(Elf32_Shdr *sechdrs,
- 			*location += sym->st_value;
- 			break;
- 		case R_68K_PC32:
--			/* Add the value, subtract its postition */
-+			/* Add the value, subtract its position */
- 			*location += sym->st_value - (uint32_t)location;
- 			break;
- 		default:
-@@ -87,7 +87,7 @@ int apply_relocate_add(Elf32_Shdr *sechdrs,
- 			*location = rel[i].r_addend + sym->st_value;
- 			break;
- 		case R_68K_PC32:
--			/* Add the value, subtract its postition */
-+			/* Add the value, subtract its position */
- 			*location = rel[i].r_addend + sym->st_value - (uint32_t)location;
- 			break;
- 		default:
-diff --git a/arch/x86/kernel/module.c b/arch/x86/kernel/module.c
-index f21fd94..772e7ad 100644
---- a/arch/x86/kernel/module.c
-+++ b/arch/x86/kernel/module.c
-@@ -73,7 +73,7 @@ int apply_relocate(Elf32_Shdr *sechdrs,
- 			*location += sym->st_value;
- 			break;
- 		case R_386_PC32:
--			/* Add the value, subtract its postition */
-+			/* Add the value, subtract its position */
- 			*location += sym->st_value - (uint32_t)location;
- 			break;
- 		default:
--- 
-1.7.0.4
+> From: Dave Chinner <dchinner@redhat.com>
+>
+> commit 095760730c1047c69159ce88021a7fa3833502c8 upstream.
+>
+> Stable note: Not tracked in Bugzilla. This is a diagnostic patch that
+> 	was part of a series addressing excessive slab shrinking after
+> 	GFP_NOFS failures. There is detailed information on the series'
+> 	motivation at https://lkml.org/lkml/2011/6/2/42 .
 
+Thanks.  Why would we want this particular patch in stable@?  It
+doesn't sound like it fixes a serious issue.
+
+Curious,
+Jonathan
