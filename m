@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755134Ab2GSBcV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 21:32:21 -0400
-Received: from mail209.messagelabs.com ([216.82.255.3]:63938 "EHLO
-	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753975Ab2GSBcN (ORCPT
+	id S1754840Ab2GSBdR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 21:33:17 -0400
+Received: from mail131.messagelabs.com ([216.82.242.99]:38870 "EHLO
+	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751772Ab2GSBdP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 21:32:13 -0400
+	Wed, 18 Jul 2012 21:33:15 -0400
 X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-10.tower-209.messagelabs.com!1342661532!9100135!1
-X-Originating-IP: [216.166.12.31]
+X-Msg-Ref: server-5.tower-131.messagelabs.com!1342661591!25480785!3
+X-Originating-IP: [216.166.12.178]
 X-StarScan-Version: 6.5.10; banners=-,-,-
 X-VirusChecked: Checked
 From: H Hartley Sweeten <hartleys@visionengravers.com>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 19/90] staging: comedi: adv_pci1710: move comedi_pci_enable() into the attach
-Date: Wed, 18 Jul 2012 18:32:01 -0700
+Subject: [PATCH 20/90] staging: comedi: adv_pci1710: store the pci_dev in the comedi_device
+Date: Wed, 18 Jul 2012 18:33:06 -0700
 User-Agent: KMail/1.9.9
 CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
         <gregkh@linuxfoundation.org>
@@ -23,61 +23,87 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Message-ID: <201207181832.02040.hartleys@visionengravers.com>
+Message-ID: <201207181833.06750.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use pci_is_enabled() in the "find pci device" function to determine if
-the found pci device is not in use and move the comedi_pci_enable() call
-into the attach.
+Use the hw_dev pointer in the comedi_device struct to hold the
+pci_dev instead of carrying it in the private data.
 
 Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 Cc: Ian Abbott <abbotti@mev.co.uk>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/staging/comedi/drivers/adv_pci1710.c | 15 ++++++---------
- 1 file changed, 6 insertions(+), 9 deletions(-)
+ drivers/staging/comedi/drivers/adv_pci1710.c | 25 ++++++++++++++-----------
+ 1 file changed, 14 insertions(+), 11 deletions(-)
 
 diff --git a/drivers/staging/comedi/drivers/adv_pci1710.c b/drivers/staging/comedi/drivers/adv_pci1710.c
-index 5eecf6b..33dd1db 100644
+index 33dd1db..3198660 100644
 --- a/drivers/staging/comedi/drivers/adv_pci1710.c
 +++ b/drivers/staging/comedi/drivers/adv_pci1710.c
-@@ -1350,6 +1350,8 @@ static struct pci_dev *pci1710_find_pci_dev(struct comedi_device *dev,
- 		}
- 		if (pcidev->vendor != PCI_VENDOR_ID_ADVANTECH)
- 			continue;
-+		if (pci_is_enabled(pcidev))
-+			continue;
+@@ -248,7 +248,6 @@ static const struct boardtype boardtypes[] = {
+ };
  
- 		if (strcmp(this_board->name, DRV_NAME) == 0) {
- 			for (i = 0; i < ARRAY_SIZE(boardtypes); ++i) {
-@@ -1364,15 +1366,6 @@ static struct pci_dev *pci1710_find_pci_dev(struct comedi_device *dev,
- 			if (pcidev->device != boardtypes[board_index].device_id)
- 				continue;
- 		}
--
--		/*
--		 * Look for device that isn't in use.
--		 * Enable PCI device and request regions.
--		 */
--		if (comedi_pci_enable(pcidev, DRV_NAME)) {
--			continue;
--		}
--		/*  fixup board_ptr in case we were using the dummy entry with the driver name */
- 		dev->board_ptr = &boardtypes[board_index];
- 		return pcidev;
- 	}
-@@ -1399,6 +1392,10 @@ static int pci1710_attach(struct comedi_device *dev,
- 	if (!devpriv->pcidev)
+ struct pci1710_private {
+-	struct pci_dev *pcidev;	/*  ptr to PCI device */
+ 	char valid;		/*  card is usable */
+ 	char neverending_ai;	/*  we do unlimited AI */
+ 	unsigned int CntrlReg;	/*  Control register */
+@@ -1378,6 +1377,7 @@ static struct pci_dev *pci1710_find_pci_dev(struct comedi_device *dev,
+ static int pci1710_attach(struct comedi_device *dev,
+ 			  struct comedi_devconfig *it)
+ {
++	struct pci_dev *pcidev;
+ 	struct comedi_subdevice *s;
+ 	int ret, subdev, n_subdevices;
+ 	unsigned int irq;
+@@ -1388,16 +1388,17 @@ static int pci1710_attach(struct comedi_device *dev,
+ 	if (ret < 0)
+ 		return -ENOMEM;
+ 
+-	devpriv->pcidev = pci1710_find_pci_dev(dev, it);
+-	if (!devpriv->pcidev)
++	pcidev = pci1710_find_pci_dev(dev, it);
++	if (!pcidev)
  		return -EIO;
++	comedi_set_hw_dev(dev, &pcidev->dev);
  
-+	ret = comedi_pci_enable(devpriv->pcidev, DRV_NAME);
-+	if (ret)
-+		return ret;
+-	ret = comedi_pci_enable(devpriv->pcidev, DRV_NAME);
++	ret = comedi_pci_enable(pcidev, DRV_NAME);
+ 	if (ret)
+ 		return ret;
+ 
+-	dev->iobase = pci_resource_start(devpriv->pcidev, 2);
+-	irq = devpriv->pcidev->irq;
++	dev->iobase = pci_resource_start(pcidev, 2);
++	irq = pcidev->irq;
+ 
+ 	dev->board_name = this_board->name;
+ 
+@@ -1532,16 +1533,18 @@ static int pci1710_attach(struct comedi_device *dev,
+ 
+ static void pci1710_detach(struct comedi_device *dev)
+ {
++	struct pci_dev *pcidev = comedi_to_pci_dev(dev);
 +
- 	dev->iobase = pci_resource_start(devpriv->pcidev, 2);
- 	irq = devpriv->pcidev->irq;
+ 	if (dev->private) {
+ 		if (devpriv->valid)
+ 			pci1710_reset(dev);
+ 		if (dev->irq)
+ 			free_irq(dev->irq, dev);
+-		if (devpriv->pcidev) {
+-			if (dev->iobase)
+-				comedi_pci_disable(devpriv->pcidev);
+-			pci_dev_put(devpriv->pcidev);
+-		}
++	}
++	if (pcidev) {
++		if (dev->iobase)
++			comedi_pci_disable(pcidev);
++		pci_dev_put(pcidev);
+ 	}
+ }
  
 -- 
 1.7.11
