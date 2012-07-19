@@ -1,98 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751512Ab2GSNce (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 09:32:34 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:44263 "EHLO mail.skyhub.de"
+	id S1751539Ab2GSNdu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 09:33:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55697 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751064Ab2GSNca (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 09:32:30 -0400
-Date: Thu, 19 Jul 2012 15:32:29 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: msb@chromium.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
-        shaohua.li@intel.com, yinghai@kernel.org, tglx@linutronix.de,
-        hpa@zytor.com, x86@kernel.org, tj@kernel.org,
-        akpm@linux-foundation.org, sfr@canb.auug.org.au, cl@gentwo.org,
-        olofj@chromium.org, paulmck@linux.vnet.ibm.com,
-        Alex Shi <alex.shi@intel.com>, Conny Seidel <conny.seidel@amd.com>
-Subject: Re: [PATCH] x86, mm: Send tlb flush IPIs to online cpus only
-Message-ID: <20120719133229.GB10073@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	"Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-	msb@chromium.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
-	shaohua.li@intel.com, yinghai@kernel.org, tglx@linutronix.de,
-	hpa@zytor.com, x86@kernel.org, tj@kernel.org,
-	akpm@linux-foundation.org, sfr@canb.auug.org.au, cl@gentwo.org,
-	olofj@chromium.org, paulmck@linux.vnet.ibm.com,
-	Alex Shi <alex.shi@intel.com>, Conny Seidel <conny.seidel@amd.com>
-References: <20120719125643.30033.58913.stgit@srivatsabhat.in.ibm.com>
+	id S1750852Ab2GSNdr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 09:33:47 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Jan Kara <jack@suse.cz>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jens Axboe <axboe@kernel.dk>, "Alasdair G. Kergon" <agk@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        dm-devel@redhat.com, lwoodman@redhat.com,
+        Andrea Arcangeli <aarcange@redhat.com>, kosaki.motohiro@jp.fujitsu.com
+Subject: Re: Crash when IO is being submitted and block size is changed
+References: <Pine.LNX.4.64.1206272226050.22857@file.rdu.redhat.com>
+	<20120628111541.GB17515@quack.suse.cz>
+	<Pine.LNX.4.64.1207152051490.4240@file.rdu.redhat.com>
+	<x49ipdmyz4q.fsf@segfault.boston.devel.redhat.com>
+	<Pine.LNX.4.64.1207181512530.10923@file.rdu.redhat.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Thu, 19 Jul 2012 09:33:11 -0400
+In-Reply-To: <Pine.LNX.4.64.1207181512530.10923@file.rdu.redhat.com> (Mikulas
+	Patocka's message of "Wed, 18 Jul 2012 22:27:13 -0400 (EDT)")
+Message-ID: <x49k3xzq3jc.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120719125643.30033.58913.stgit@srivatsabhat.in.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 19, 2012 at 06:27:33PM +0530, Srivatsa S. Bhat wrote:
+Mikulas Patocka <mpatocka@redhat.com> writes:
 
-[ … ]
- 
-> So we are sending an IPI to a cpu which is now offline. Once a cpu is offline,
-> it will no longer respond to IPIs. This explains the softlockup.
-> 
-> A cpu in the mm_cpumask could go offline before we send the invalidate
-> IPI causing us to wait forever. Avoid this by sending the IPI to only the
-> online cpus.
-> 
-> [Since flush_tlb_others_ipi() is always called with preempt disabled, it is
-> not possible for a CPU to go offline once we enter this function, because
-> CPU offline goes through the stop_machine() stuff (which cannot proceed until
-> all preempt disabled sections are exited). So we don't have to worry about
-> any race between CPU offline and the target cpumask calculation in
-> flush_tlb_others_ipi().]
-> 
-> Addresses http://crosbug.com/31737
-> 
-> Reported-and-debugged-by: Mandeep Singh Baines <msb@chromium.org>
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> Acked-by: Mandeep Singh Baines <msb@chromium.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> Cc: x86@kernel.org
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-> Cc: Christoph Lameter <cl@gentwo.org>
-> Cc: Olof Johansson <olofj@chromium.org>
-> ---
-> 
->  arch/x86/mm/tlb.c |    6 +++++-
->  1 files changed, 5 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
-> index 5e57e11..9d387a9 100644
-> --- a/arch/x86/mm/tlb.c
-> +++ b/arch/x86/mm/tlb.c
-> @@ -186,7 +186,11 @@ static void flush_tlb_others_ipi(const struct cpumask *cpumask,
->  
->  	f->flush_mm = mm;
->  	f->flush_va = va;
-> -	if (cpumask_andnot(to_cpumask(f->flush_cpumask), cpumask, cpumask_of(smp_processor_id()))) {
-> +
-> +	cpumask_and(to_cpumask(f->flush_cpumask), cpumask, cpu_online_mask);
-> +	cpumask_clear_cpu(smp_processor_id(), to_cpumask(f->flush_cpumask));
-> +
-> +	if (!cpumask_empty(to_cpumask(f->flush_cpumask))) {
+> On Tue, 17 Jul 2012, Jeff Moyer wrote:
+>
 
-FWIW, there's code in tip/x86/mm which reworks all that and
-flush_tlb_others_ipi along with the 32 TLB flush vectors are being
-removed in favor of a smp_call_function_many thing. And it should be
-hotplug-safe since it must be called with preemption disabled anyway.
+>> > This is the patch that fixes this crash: it takes a rw-semaphore around 
+>> > all direct-IO path.
+>> >
+>> > (note that if someone is concerned about performance, the rw-semaphore 
+>> > could be made per-cpu --- take it for read on the current CPU and take it 
+>> > for write on all CPUs).
+>> 
+>> Here we go again.  :-)  I believe we had at one point tried taking a rw
+>> semaphore around GUP inside of the direct I/O code path to fix the fork
+>> vs. GUP race (that still exists today).  When testing that, the overhead
+>> of the semaphore was *way* too high to be considered an acceptable
+>> solution.  I've CC'd Larry Woodman, Andrea, and Kosaki Motohiro who all
+>> worked on that particular bug.  Hopefully they can give better
+>> quantification of the slowdown than my poor memory.
+>> 
+>> Cheers,
+>> Jeff
+>
+> Both down_read and up_read together take 82 ticks on Core2, 69 ticks on 
+> AMD K10, 62 ticks on UltraSparc2 if the target is in L1 cache. So, if 
+> percpu rw_semaphores were used, it would slow down only by this amount.
 
--- 
-Regards/Gruss,
-Boris.
+Sorry, I'm not familiar with per-cpu rw semaphores.  Where are they
+implemented?
+
+> I hope that Linux developers are not so obsessed with performance that
+> they want a fast crashing kernel rather than a slow reliable kernel.
+> Note that anything that changes a device block size (for example
+> mounting a filesystem with non-default block size) may trigger a crash
+> if lvm or udev reads the device simultaneously; the crash really
+> happened in business environment).
+
+I wasn't suggesting that we leave the problem unfixed (though I can see
+how you might have gotten that idea, sorry for not being more clear).  I
+was merely suggesting that we should try to fix the problem in a way
+that does not kill performance.
+
+Cheers,
+Jeff
