@@ -1,59 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752224Ab2GSOxV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 10:53:21 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:50725 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751859Ab2GSOxT (ORCPT
+	id S1752020Ab2GSPDX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 11:03:23 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:54226 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751751Ab2GSPDV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 10:53:19 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Grant Likely <grant.likely@secretlab.ca>
-Subject: spi/omap2: mark omap2_mcspi_master_setup as __devinit
-Date: Thu, 19 Jul 2012 14:52:56 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Shubhrajyoti D <shubhrajyoti@ti.com>
+	Thu, 19 Jul 2012 11:03:21 -0400
+Date: Thu, 19 Jul 2012 19:03:16 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Matthew Helsley <matt.helsley@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>
+Subject: Re: [rfc 5/7] fs, epoll: Add procfs fdinfo helper
+Message-ID: <20120719150316.GN10382@moon>
+References: <20120627110116.201735815@openvz.org>
+ <20120627110512.734751587@openvz.org>
+ <CA+RrjuUDR1ZFFQq3tT2K0W0u_KDufOn2rfepndWYVqH6Zqz3bg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207191452.56549.arnd@arndb.de>
-X-Provags-ID: V02:K0:UPZGfjRZKYox7jjxRzo+8/hbr/JpCFweXnCC9nnelkY
- zCIJkWMzvYkwJS1ftEDZoWKVcGTILKDq/RFZvRwpi4uvyJW3WV
- kBXo3nymzU0mcwoKt8DIZiQEqf3Vmf0UE2+mYdn8csaa3m0+0B
- K96S7vyFuL227rxHcFcM2jxwrh1z6jcQ6MKYTldbWkhrlHiQ3T
- d3lJjB5e1evSr5E5U0+TLTqsJVsNDYe2BdWjuMCCc4r3PlFibT
- UULQUrB67GVHXav9CHrypY+81K7wwexBdQD1VRKKh894J0Debz
- nwDvHbmfGdhFQFn7lpfJ+hBMP4YObzKBmNSXEflQ4Y1a71VoiX
- v/1v9JGd4aQ6gFksn4rI=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+RrjuUDR1ZFFQq3tT2K0W0u_KDufOn2rfepndWYVqH6Zqz3bg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This warning recently appeared with omap2plus_defconfig:
+On Thu, Jul 19, 2012 at 07:52:41AM -0700, Matthew Helsley wrote:
+> On Wed, Jun 27, 2012 at 4:01 AM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+> > This allow us to print out eventpoll target file descriptor,
+> > events and data, the /proc/pid/fdinfo/fd consists of
+> >
+> >  | pos: 0
+> >  | flags:       02
+> >  | tfd:        5 events:       1d data: ffffffffffffffff
+> >
+> > +#if defined(CONFIG_PROC_FS) && defined(CONFIG_CHECKPOINT_RESTORE)
+> > +
+> > +struct epitem_fdinfo {
+> > +       struct epoll_event      ev;
+> > +       int                     fd;
+> > +};
+> > +
+> > +static struct epitem_fdinfo *
+> > +seq_lookup_fdinfo(struct proc_fdinfo_extra *extra, struct eventpoll *ep, loff_t num)
+> > +{
+> > +       struct epitem_fdinfo *fdinfo = extra->priv;
+> > +       struct epitem *epi = NULL;
+> > +       struct rb_node *rbp;
+> > +
+> > +       mutex_lock(&ep->mtx);
+> > +       for (rbp = rb_first(&ep->rbr); rbp; rbp = rb_next(rbp)) {
+> > +               if (num-- == 0) {
+> > +                       epi = rb_entry(rbp, struct epitem, rbn);
+> > +                       fdinfo->fd = epi->ffd.fd;
+> > +                       fdinfo->ev = epi->event;
+> > +                       break;
+> 
+> This will be incredibly slow. epoll was designed to scale to tens of
+> thousands of file descriptors. This algorithm is O(N^2) because each
+> time we show a new epoll item we walk through the whole rb tree again
+> (we're not doing a search so it isn't O(NlogN)).
 
-WARNING: drivers/spi/built-in.o(.devinit.text+0x3c4): Section mismatch in reference from the function omap2_mcspi_probe() to the function .init.text:omap2_mcspi_master_setup()
-The function __devinit omap2_mcspi_probe() references
-a function __init omap2_mcspi_master_setup().
-If omap2_mcspi_master_setup is only used by omap2_mcspi_probe then
-annotate omap2_mcspi_master_setup with a matching annotation.
+Yeah, I know, it's quadratic. I'll be reworking this series to use
+immediate seq-printf and print out the whole tree once the appropriate
+fdinfo file get read.
 
-The fix is obviously to mark the omap2_mcspi_master_setup function as
-__devinit, rather than __init.
+> Also, we could miss one or more later items if one of the earlier
+> items is removed from the epoll set in between "seq_lookup_fdinfo"
+> calls. This isn't a problem for checkpoint because we assume the task
+> (and everything with this eventpoll file in its fd table) is frozen.
+> However it means the file will be worse than useless for almost any
+> other purpose because they are unlikely to realize they need to freeze
+> all the task(s) to get consistent data.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Well, a bunch of data read from proc is consistent only at moment of
+reading.
 
-diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
-index 0c73dd4..dc02f2f 100644
---- a/drivers/spi/spi-omap2-mcspi.c
-+++ b/drivers/spi/spi-omap2-mcspi.c
-@@ -1032,7 +1032,7 @@ static int omap2_mcspi_transfer_one_message(struct spi_master *master,
- 	return 0;
- }
- 
--static int __init omap2_mcspi_master_setup(struct omap2_mcspi *mcspi)
-+static int __devinit omap2_mcspi_master_setup(struct omap2_mcspi *mcspi)
- {
- 	struct spi_master	*master = mcspi->master;
- 	struct omap2_mcspi_regs	*ctx = &mcspi->ctx;
+	Cyrill
