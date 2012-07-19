@@ -1,135 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752525Ab2GSRdI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 13:33:08 -0400
-Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:30764 "EHLO
-	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752200Ab2GSRdG (ORCPT
+	id S1752563Ab2GSRdq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 13:33:46 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26665 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752303Ab2GSRdp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 13:33:06 -0400
-Message-ID: <1342718897.3010.188.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 1/4] ACPI: Add acpi_pr_<level>() interfaces
-From: Toshi Kani <toshi.kani@hp.com>
-To: shuah.khan@hp.com
-Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bhelgaas@google.com, isimatu.yasuaki@jp.fujitsu.com, liuj97@gmail.com,
-        srivatsa.bhat@linux.vnet.ibm.com, prarit@redhat.com,
-        imammedo@redhat.com, vijaymohan.pandarathil@hp.com,
-        shuahkhan@gmail.com
-Date: Thu, 19 Jul 2012 11:28:17 -0600
-In-Reply-To: <1342714515.3100.27.camel@lorien2>
-References: <1342644027-19559-1-git-send-email-toshi.kani@hp.com>
-	 <1342644027-19559-2-git-send-email-toshi.kani@hp.com>
-	 <1342648771.5138.37.camel@lorien2>
-	 <1342650386.3010.55.camel@misato.fc.hp.com>
-	 <1342651257.5138.44.camel@lorien2>
-	 <1342651966.3010.66.camel@misato.fc.hp.com>
-	 <1342653482.5138.56.camel@lorien2>
-	 <1342658296.3010.136.camel@misato.fc.hp.com>
-	 <1342714515.3100.27.camel@lorien2>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
+	Thu, 19 Jul 2012 13:33:45 -0400
+X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=BHldU6QlfDUA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=Fhk7czc5GNVHS_vXrysA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-ID: <1342719222.12353.58.camel@gandalf.stny.rr.com>
+Subject: Re: [RFC] Simplifying kernel configuration for distro issues
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
+        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
+        Debian Kernel Team <debian-kernel@lists.debian.org>,
+        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Fedora Kernel Team <kernel-team@fedoraproject.org>
+Date: Thu, 19 Jul 2012 13:33:42 -0400
+In-Reply-To: <20120719171918.GD8469@zod.bos.redhat.com>
+References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com>
+	 <20120713210240.GG1707@redhat.com>
+	 <CA+55aFz_Vv899eXz6F0jtFH=hT4QpB0_2XuS8HySPjHC6s+L7Q@mail.gmail.com>
+	 <20120719152618.GD16873@home.goodmis.org>
+	 <20120719154521.GC8469@zod.bos.redhat.com>
+	 <1342714088.12353.33.camel@gandalf.stny.rr.com>
+	 <20120719171918.GD8469@zod.bos.redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
 Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-07-19 at 10:15 -0600, Shuah Khan wrote:
-> On Wed, 2012-07-18 at 18:38 -0600, Toshi Kani wrote:
+On Thu, 2012-07-19 at 13:19 -0400, Josh Boyer wrote:
+
+> > What about older kernels? Say you installed Fedora 18 with an older
+> > kernel that doesn't know what to select? Having the distro tell the
+> > kernel what it needs seems to me the easiest for the 99% case.
 > 
-> > 
-> > This interface is defined in acpi/acpi_bus.h, which is intended for ACPI
-> > drivers which make many ACPI calls to proceed when they are called at
-> > run-time today.  This interface does not change that, and I believe
-> > acpi_get_name() is much faster compared to ACPI method calls these ACPI
-> > drivers make in their normal code path.  The extra work to call
-> > acpi_get_name() is simply a noise in this case (if you try to measure),
-> > and the use of this interface is limited in error paths of such ACPI
-> > drivers.
+> How is the above not telling the kernel what it needs?  I'm confused how
+> the location of such a file makes it's functionality and usefulness
+> differ...  Quite possible I missed what you meant originally, but it
+> sounds like we're talking about the same thing?
+
+The point is, the user wont have to think "What distro am I running? and
+what version am I running?". I don't even know what version of the disto
+I'm currently running (Debian testing).
+
+The point is, the current running distro supplies what is needed from
+the kernel in order to work properly. The user does not need to 'select'
+it. They would only have to select a 'add my distro min configs'.
+
+A developer working with a user could just say, "select disto config"
+without needing to know what distro the user has.
+
+What happens if someone does a yum update, and the kernel requirement
+changes slightly. The yum update should update
+this /usr/share/Linux/Kconfig. But it's still set at Fedora X. The
+kernel can not be updated for these slight changes.
+
 > 
-> I understand the scope of the usage of this new interface. I don't think
-> I am able to explain the problem I see with this interface as it gets
-> used more and more from acpi drivers. Let me try another way.
+> Also, I'm not very convinced the 99% are going to be wanting to install
+> shiny new versions of a distro with a kernel older than what the distro
+> ships with.  I could be very wrong, but it seems like in-general the
+> whole premise of this RFC was geared towards using new kernels on
+> distros.
+
+There are times when the update breaks something. A user may backport to
+an older kernel where their Gizmo worked. I've done this to get webcams
+working. I know I'm not the 99%, but the rational for my operation was a
+99% thing to do: Crap, I upgraded my kernel and now my webcam doesn't
+work. Oh well, download an older version and boot that one.
+
 > 
-> If understand the this patch set, if and when acpi drivers that
-> currently use pr_* interfaces switch to using acpi_pr_*, the execution
-> path goes from a what printk() does to the following:
+> > Also, if something isn't supported by the older kernel, it would warn
+> > the user about it. That way the user can be told that their older kernel
+> > won't work with this version of the distro. And there wont be as many
+> > surprises. If the user is told "your init wont work with this kernel"
+> > before they compile it, then they shouldn't complain if they decide to
+> > install this older kernel and their box doesn't boot.
 > 
-> acpi_pr_*
-> - setup static buffer
-> - calls acpi_get_name()
-> - acpi_get_name() calls acpi_ut_validate_buffer() and then calls
->   acpi_ns_handle_to_pathname()
-> - acpi_ns_handle_to_pathname() calls acpi_ns_validate_handle() followed
->   by acpi_ns_get_pathname_length() and so on.
-> 
-> I think this should give you a good idea of my concern. I think
-> acpi_pr_* full functionality should be enabled under special cases such
-> as some acpi_debug level setting or some other way, and not for default
-> case. I propose the following:
-> 
-> Make acpi_pr_* versions execute the full path to do acpi_get_name()
-> conditionally and not as a default case.
-> 
-> To illustrate my point further, I currently see the following ACPI
-> messages in my dmesg buffer on my laptop. I haven't taken the time to
-> evaluate how many of them originate from acpi drivers, however I would
-> not want to see all of these becoming acpi_pr_* versions that do more
-> than what pr_* does today. I hope this explains my concern clearly.
+> kconfig already spits out warnings for symbols being selected that
+> don't exist.
 
-I agree that there are many ACPI messages at boot, and I understand that
-you concerned with them, but that is a different issue.  It requires a
-different project to address them.  Changing my patchset won't make any
-difference.
+We can make these even bigger :-)   Add lots of stars (*) around them!
 
-The issue I am trying to solve is well summarized in Bjorn's comment in
-my earlier patch as follows: 
-=== <quote> ===
->                result = acpi_processor_device_add(handle, &device);
->                if (result) {
->                        printk(KERN_ERR PREFIX "Unable to add the
-device\n");
-
-You didn't add this problem, but since you're touching the code, I'll
-point it out.  This message will look to the user like:
-
-    ACPI: Unable to add the device
-
-which is useless.  The user has no idea what device we're talking
-about or why we can't add it, so he can't *do* anything with the
-message.
-=== </quote> ===
-
-This is very true.  And this issue is even worse when support teams need
-to solve such customer issue from log files.  The current error messages
-in ACPI hotplug handlers do not provide any information to identify a
-device that cause an issue.
-
-To address this issue, the ACPI drivers have to obtain an ACPI object
-path information in their error handling code with acpi_get_name().
-
-A possible alternative to acpi_pr_<level>() is to create a driver's
-local printk function, just like acpi_print_osc_error().  However, I do
-not think we should create such local functions in all ACPI drivers.
-
-Performance is not an issue since the use of the interfaces is limited
-to the error paths.  The boot messages you concerned with do not need to
-any more extra-info to append ACPI device path, and therefore no need to
-use acpi_pr_<level>().  dev_<level>() may be a good example of how this
-type of interfaces is used in error paths today.
-
-
-Thanks,
--Toshi
-
-
-
-
-
-  
-
-
-
+-- Steve
 
 
