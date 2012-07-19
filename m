@@ -1,17 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753145Ab2GSMnr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 08:43:47 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:37492 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752600Ab2GSMmt (ORCPT
+	id S1752218Ab2GSMmY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 08:42:24 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:42977 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751379Ab2GSMmQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 08:42:49 -0400
-X-AuditID: b753bd60-a3089ba000000655-e1-500800c7eaaa
-X-AuditID: b753bd60-a3089ba000000655-e1-500800c7eaaa
+	Thu, 19 Jul 2012 08:42:16 -0400
+X-AuditID: b753bd60-a1c87ba000000655-87-500800a527fe
+X-AuditID: b753bd60-a1c87ba000000655-87-500800a527fe
 From: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
-Subject: [PATCH -v2 5/6] fuse: set default global limit considering tunable
- request size
+Subject: [PATCH -v2 2/6] fuse: make the maximum read/write request size tunable
 To: Miklos Szeredi <miklos@szeredi.hu>,
         Alexander Viro <viro@zeniv.linux.org.uk>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -22,8 +21,8 @@ Cc: fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
         Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>,
         Miklos Szeredi <miklos@szeredi.hu>, Nikolaus Rath <Nikolaus@rath.org>,
         Liu Yuan <namei.unix@gmail.com>, Has-Wen Nienhuys <hanwen@xs4all.nl>
-Date: Thu, 19 Jul 2012 21:49:58 +0900
-Message-ID: <20120719124958.6250.26758.stgit@ltc137.sdl.hitachi.co.jp>
+Date: Thu, 19 Jul 2012 21:49:22 +0900
+Message-ID: <20120719124922.6250.9190.stgit@ltc137.sdl.hitachi.co.jp>
 In-Reply-To: <20120719124851.6250.43316.stgit@ltc137.sdl.hitachi.co.jp>
 References: <20120719124851.6250.43316.stgit@ltc137.sdl.hitachi.co.jp>
 User-Agent: StGIT/0.14.3
@@ -35,13 +34,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Set default global limits for backgrounded requests and congestion
-threshold considering the tunable maximum request size.
+Make the maximum read/write request size tunable between
+32 pages and the number of pages equivalent to pipe_max_size.
+The max_read/max_write mount options affect the size. The
+32 pages are used by default without these options.
 
-They are calculated using size of fuse_req structure, which is
-variable due to it. This patch sets them according to the current
-request size unless they are set via mod_param by the system
-administrator.
+Currently, the maximum read/write request size is limited to
+FUSE_MAX_PAGES_PER_REQ which is equal to 32 pages. It is
+required to change it in order to maximize the throughput
+since the optimized value depends on various factors such as
+type and version of local filesystems used and hardware specs,
+etc.
+
+In addition, recently FUSE is widely used as a gateway to
+connect cloud storage services and distributed filesystems.
+Larger data might be stored in them over networking via FUSE
+and the overhead might affect the read/write throughput.
+
+So, a tunable functionality of read/write request size is
+useful.
 
 Signed-off-by: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
 Cc: Miklos Szeredi <miklos@szeredi.hu>
@@ -50,143 +61,382 @@ Cc: Liu Yuan <namei.unix@gmail.com>
 Cc: Has-Wen Nienhuys <hanwen@xs4all.nl>
 ---
 
- fs/fuse/fuse_i.h |    4 +++
- fs/fuse/inode.c  |   62 ++++++++++++++++++++++++++++++++++++++++++++----------
- 2 files changed, 55 insertions(+), 11 deletions(-)
+ fs/fuse/dev.c    |   27 ++++++++++++++-------------
+ fs/fuse/file.c   |   32 +++++++++++++++++---------------
+ fs/fuse/fuse_i.h |   27 +++++++++++++++++----------
+ fs/fuse/inode.c  |   42 +++++++++++++++++++++++++++++++++++-------
+ 4 files changed, 83 insertions(+), 45 deletions(-)
 
-diff --git a/fs/fuse/fuse_i.h b/fs/fuse/fuse_i.h
-index 46df615..2dda6eb 100644
---- a/fs/fuse/fuse_i.h
-+++ b/fs/fuse/fuse_i.h
-@@ -27,6 +27,10 @@
- /** Default number of pages that can be used in a single read/write request */
- #define FUSE_DEFAULT_MAX_PAGES_PER_REQ 32
- 
-+/** Maximum size of struct fuse_req */
-+#define FUSE_CURRENT_REQ_SIZE (sizeof(struct fuse_req) +\
-+			       sysfs_max_req_pages * sizeof(struct page *))
-+
- /** Bias for fi->writectr, meaning new writepages must not be sent */
- #define FUSE_NOWRITE INT_MIN
- 
-diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
-index 5f84a40..dc0302f 100644
---- a/fs/fuse/inode.c
-+++ b/fs/fuse/inode.c
-@@ -29,25 +29,36 @@ static struct kmem_cache *fuse_inode_cachep;
- struct list_head fuse_conn_list;
- DEFINE_MUTEX(fuse_mutex);
- 
--static int set_global_limit(const char *val, struct kernel_param *kp);
-+static int set_global_limit_bgreq(const char *val, struct kernel_param *kp);
-+static int set_global_limit_thresh(const char *val, struct kernel_param *kp);
- 
- unsigned max_user_bgreq;
--module_param_call(max_user_bgreq, set_global_limit, param_get_uint,
--		  &max_user_bgreq, 0644);
-+module_param_call(max_user_bgreq, set_global_limit_bgreq,
-+		  param_get_uint, &max_user_bgreq, 0644);
- __MODULE_PARM_TYPE(max_user_bgreq, "uint");
- MODULE_PARM_DESC(max_user_bgreq,
-  "Global limit for the maximum number of backgrounded requests an "
-  "unprivileged user can set");
- 
- unsigned max_user_congthresh;
--module_param_call(max_user_congthresh, set_global_limit, param_get_uint,
--		  &max_user_congthresh, 0644);
-+module_param_call(max_user_congthresh, set_global_limit_thresh,
-+		  param_get_uint, &max_user_congthresh, 0644);
- __MODULE_PARM_TYPE(max_user_congthresh, "uint");
- MODULE_PARM_DESC(max_user_congthresh,
-  "Global limit for the maximum congestion threshold an "
-  "unprivileged user can set");
- 
- /**
-+ * The flags below are used in order to distinguish how to set
-+ * max_user_bgreq and max_user_congthresh, respectively. They
-+ * should be used if they are set via mod_param. If not, we should
-+ * check their current limitation using check_global_limit() any
-+ * time due to the tunable read/write request size.
-+ */
-+static bool mod_param_set_flg_bgreq;
-+static bool mod_param_set_flg_thresh;
-+
-+/**
-  * Maximum number of pages allocated for struct fuse_req.
-  * It can be changed via sysfs to arbitrary number between
-  * FUSE_DEFAULT_MAX_PAGES_PER_REQ and nr_pages equivalent
-@@ -766,13 +777,39 @@ static void sanitize_global_limit(unsigned *limit)
- {
- 	if (*limit == 0)
- 		*limit = ((num_physpages << PAGE_SHIFT) >> 13) /
--			 sizeof(struct fuse_req);
-+			 FUSE_CURRENT_REQ_SIZE;
- 
- 	if (*limit >= 1 << 16)
- 		*limit = (1 << 16) - 1;
+diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
+index 7df2b5e..511560b 100644
+--- a/fs/fuse/dev.c
++++ b/fs/fuse/dev.c
+@@ -34,35 +34,36 @@ static struct fuse_conn *fuse_get_conn(struct file *file)
+ 	return file->private_data;
  }
  
--static int set_global_limit(const char *val, struct kernel_param *kp)
-+static void check_global_limit(unsigned *limit, bool mod_param_flg)
-+{
-+	if (!mod_param_flg) {
-+		unsigned cur_global_limit = 0;
+-static void fuse_request_init(struct fuse_req *req)
++static void fuse_request_init(struct fuse_conn *fc, struct fuse_req *req)
+ {
+-	memset(req, 0, sizeof(*req));
++	memset(req, 0, fc->fuse_req_size);
+ 	INIT_LIST_HEAD(&req->list);
+ 	INIT_LIST_HEAD(&req->intr_entry);
+ 	init_waitqueue_head(&req->waitq);
+ 	atomic_set(&req->count, 1);
+ }
+ 
+-struct fuse_req *fuse_request_alloc(void)
++struct fuse_req *fuse_request_alloc(struct fuse_conn *fc)
+ {
+-	struct fuse_req *req = kmem_cache_alloc(fuse_req_cachep, GFP_KERNEL);
++	struct fuse_req *req = kmalloc(fc->fuse_req_size, GFP_KERNEL);
 +
-+		sanitize_global_limit(&cur_global_limit);
-+		*limit = cur_global_limit;
+ 	if (req)
+-		fuse_request_init(req);
++		fuse_request_init(fc, req);
+ 	return req;
+ }
+ EXPORT_SYMBOL_GPL(fuse_request_alloc);
+ 
+-struct fuse_req *fuse_request_alloc_nofs(void)
++struct fuse_req *fuse_request_alloc_nofs(struct fuse_conn *fc)
+ {
+-	struct fuse_req *req = kmem_cache_alloc(fuse_req_cachep, GFP_NOFS);
++	struct fuse_req *req = kmalloc(fc->fuse_req_size, GFP_NOFS);
+ 	if (req)
+-		fuse_request_init(req);
++		fuse_request_init(fc, req);
+ 	return req;
+ }
+ 
+ void fuse_request_free(struct fuse_req *req)
+ {
+-	kmem_cache_free(fuse_req_cachep, req);
++	kfree(req);
+ }
+ 
+ static void block_sigs(sigset_t *oldset)
+@@ -116,7 +117,7 @@ struct fuse_req *fuse_get_req(struct fuse_conn *fc)
+ 	if (!fc->connected)
+ 		goto out;
+ 
+-	req = fuse_request_alloc();
++	req = fuse_request_alloc(fc);
+ 	err = -ENOMEM;
+ 	if (!req)
+ 		goto out;
+@@ -166,7 +167,7 @@ static void put_reserved_req(struct fuse_conn *fc, struct fuse_req *req)
+ 	struct fuse_file *ff = file->private_data;
+ 
+ 	spin_lock(&fc->lock);
+-	fuse_request_init(req);
++	fuse_request_init(fc, req);
+ 	BUG_ON(ff->reserved_req);
+ 	ff->reserved_req = req;
+ 	wake_up_all(&fc->reserved_req_waitq);
+@@ -193,7 +194,7 @@ struct fuse_req *fuse_get_req_nofail(struct fuse_conn *fc, struct file *file)
+ 
+ 	atomic_inc(&fc->num_waiting);
+ 	wait_event(fc->blocked_waitq, !fc->blocked);
+-	req = fuse_request_alloc();
++	req = fuse_request_alloc(fc);
+ 	if (!req)
+ 		req = get_reserved_req(fc, file);
+ 
+@@ -1564,7 +1565,7 @@ static int fuse_retrieve(struct fuse_conn *fc, struct inode *inode,
+ 	else if (outarg->offset + num > file_size)
+ 		num = file_size - outarg->offset;
+ 
+-	while (num && req->num_pages < FUSE_MAX_PAGES_PER_REQ) {
++	while (num && req->num_pages < fc->max_pages) {
+ 		struct page *page;
+ 		unsigned int this_num;
+ 
+diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+index b321a68..7b96b00 100644
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -57,7 +57,7 @@ struct fuse_file *fuse_file_alloc(struct fuse_conn *fc)
+ 		return NULL;
+ 
+ 	ff->fc = fc;
+-	ff->reserved_req = fuse_request_alloc();
++	ff->reserved_req = fuse_request_alloc(fc);
+ 	if (unlikely(!ff->reserved_req)) {
+ 		kfree(ff);
+ 		return NULL;
+@@ -653,7 +653,7 @@ static int fuse_readpages_fill(void *_data, struct page *page)
+ 	fuse_wait_on_page_writeback(inode, page->index);
+ 
+ 	if (req->num_pages &&
+-	    (req->num_pages == FUSE_MAX_PAGES_PER_REQ ||
++	    (req->num_pages == fc->max_pages ||
+ 	     (req->num_pages + 1) * PAGE_CACHE_SIZE > fc->max_read ||
+ 	     req->pages[req->num_pages - 1]->index + 1 != page->index)) {
+ 		fuse_send_readpages(req, data->file);
+@@ -866,7 +866,7 @@ static ssize_t fuse_fill_write_pages(struct fuse_req *req,
+ 		if (!fc->big_writes)
+ 			break;
+ 	} while (iov_iter_count(ii) && count < fc->max_write &&
+-		 req->num_pages < FUSE_MAX_PAGES_PER_REQ && offset == 0);
++		 req->num_pages < fc->max_pages && offset == 0);
+ 
+ 	return count > 0 ? count : err;
+ }
+@@ -1020,8 +1020,9 @@ static void fuse_release_user_pages(struct fuse_req *req, int write)
+ 	}
+ }
+ 
+-static int fuse_get_user_pages(struct fuse_req *req, const char __user *buf,
+-			       size_t *nbytesp, int write)
++static int fuse_get_user_pages(struct fuse_conn *fc, struct fuse_req *req,
++			       const char __user *buf, size_t *nbytesp,
++			       int write)
+ {
+ 	size_t nbytes = *nbytesp;
+ 	unsigned long user_addr = (unsigned long) buf;
+@@ -1038,9 +1039,9 @@ static int fuse_get_user_pages(struct fuse_req *req, const char __user *buf,
+ 		return 0;
+ 	}
+ 
+-	nbytes = min_t(size_t, nbytes, FUSE_MAX_PAGES_PER_REQ << PAGE_SHIFT);
++	nbytes = min_t(size_t, nbytes, fc->max_pages << PAGE_SHIFT);
+ 	npages = (nbytes + offset + PAGE_SIZE - 1) >> PAGE_SHIFT;
+-	npages = clamp(npages, 1, FUSE_MAX_PAGES_PER_REQ);
++	npages = clamp(npages, 1, (int)fc->max_pages);
+ 	npages = get_user_pages_fast(user_addr, npages, !write, req->pages);
+ 	if (npages < 0)
+ 		return npages;
+@@ -1077,7 +1078,7 @@ ssize_t fuse_direct_io(struct file *file, const char __user *buf,
+ 		size_t nres;
+ 		fl_owner_t owner = current->files;
+ 		size_t nbytes = min(count, nmax);
+-		int err = fuse_get_user_pages(req, buf, &nbytes, write);
++		int err = fuse_get_user_pages(fc, req, buf, &nbytes, write);
+ 		if (err) {
+ 			res = err;
+ 			break;
+@@ -1269,7 +1270,7 @@ static int fuse_writepage_locked(struct page *page)
+ 
+ 	set_page_writeback(page);
+ 
+-	req = fuse_request_alloc_nofs();
++	req = fuse_request_alloc_nofs(fc);
+ 	if (!req)
+ 		goto err;
+ 
+@@ -1695,10 +1696,11 @@ static int fuse_copy_ioctl_iovec_old(struct iovec *dst, void *src,
+ }
+ 
+ /* Make sure iov_length() won't overflow */
+-static int fuse_verify_ioctl_iov(struct iovec *iov, size_t count)
++static int fuse_verify_ioctl_iov(struct fuse_conn *fc, struct iovec *iov,
++				 size_t count)
+ {
+ 	size_t n;
+-	u32 max = FUSE_MAX_PAGES_PER_REQ << PAGE_SHIFT;
++	u32 max = fc->max_pages << PAGE_SHIFT;
+ 
+ 	for (n = 0; n < count; n++) {
+ 		if (iov->iov_len > (size_t) max)
+@@ -1821,7 +1823,7 @@ long fuse_do_ioctl(struct file *file, unsigned int cmd, unsigned long arg,
+ 	BUILD_BUG_ON(sizeof(struct fuse_ioctl_iovec) * FUSE_IOCTL_MAX_IOV > PAGE_SIZE);
+ 
+ 	err = -ENOMEM;
+-	pages = kcalloc(FUSE_MAX_PAGES_PER_REQ, sizeof(pages[0]), GFP_KERNEL);
++	pages = kcalloc(fc->max_pages, sizeof(pages[0]), GFP_KERNEL);
+ 	iov_page = (struct iovec *) __get_free_page(GFP_KERNEL);
+ 	if (!pages || !iov_page)
+ 		goto out;
+@@ -1860,7 +1862,7 @@ long fuse_do_ioctl(struct file *file, unsigned int cmd, unsigned long arg,
+ 
+ 	/* make sure there are enough buffer pages and init request with them */
+ 	err = -ENOMEM;
+-	if (max_pages > FUSE_MAX_PAGES_PER_REQ)
++	if (max_pages > fc->max_pages)
+ 		goto out;
+ 	while (num_pages < max_pages) {
+ 		pages[num_pages] = alloc_page(GFP_KERNEL | __GFP_HIGHMEM);
+@@ -1943,11 +1945,11 @@ long fuse_do_ioctl(struct file *file, unsigned int cmd, unsigned long arg,
+ 		in_iov = iov_page;
+ 		out_iov = in_iov + in_iovs;
+ 
+-		err = fuse_verify_ioctl_iov(in_iov, in_iovs);
++		err = fuse_verify_ioctl_iov(fc, in_iov, in_iovs);
+ 		if (err)
+ 			goto out;
+ 
+-		err = fuse_verify_ioctl_iov(out_iov, out_iovs);
++		err = fuse_verify_ioctl_iov(fc, out_iov, out_iovs);
+ 		if (err)
+ 			goto out;
+ 
+diff --git a/fs/fuse/fuse_i.h b/fs/fuse/fuse_i.h
+index 771fb63..46df615 100644
+--- a/fs/fuse/fuse_i.h
++++ b/fs/fuse/fuse_i.h
+@@ -22,9 +22,10 @@
+ #include <linux/rbtree.h>
+ #include <linux/poll.h>
+ #include <linux/workqueue.h>
++#include <linux/pipe_fs_i.h>
+ 
+-/** Max number of pages that can be used in a single read request */
+-#define FUSE_MAX_PAGES_PER_REQ 32
++/** Default number of pages that can be used in a single read/write request */
++#define FUSE_DEFAULT_MAX_PAGES_PER_REQ 32
+ 
+ /** Bias for fi->writectr, meaning new writepages must not be sent */
+ #define FUSE_NOWRITE INT_MIN
+@@ -290,12 +291,6 @@ struct fuse_req {
+ 		struct fuse_lk_in lk_in;
+ 	} misc;
+ 
+-	/** page vector */
+-	struct page *pages[FUSE_MAX_PAGES_PER_REQ];
+-
+-	/** number of pages in vector */
+-	unsigned num_pages;
+-
+ 	/** offset of data on first page */
+ 	unsigned page_offset;
+ 
+@@ -313,6 +308,12 @@ struct fuse_req {
+ 
+ 	/** Request is stolen from fuse_file->reserved_req */
+ 	struct file *stolen_file;
++
++	/** number of pages in vector */
++	unsigned num_pages;
++
++	/** page vector */
++	struct page *pages[0];
+ };
+ 
+ /**
+@@ -347,6 +348,12 @@ struct fuse_conn {
+ 	/** Maximum write size */
+ 	unsigned max_write;
+ 
++	/** Maximum number of pages per req */
++	unsigned max_pages;
++
++	/** fuse_req size per connection */
++	unsigned fuse_req_size;
++
+ 	/** Readers of the connection are waiting on this */
+ 	wait_queue_head_t waitq;
+ 
+@@ -655,9 +662,9 @@ void fuse_ctl_cleanup(void);
+ /**
+  * Allocate a request
+  */
+-struct fuse_req *fuse_request_alloc(void);
++struct fuse_req *fuse_request_alloc(struct fuse_conn *fc);
+ 
+-struct fuse_req *fuse_request_alloc_nofs(void);
++struct fuse_req *fuse_request_alloc_nofs(struct fuse_conn *fc);
+ 
+ /**
+  * Free a request
+diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
+index 1cd6165..f7f3c5d 100644
+--- a/fs/fuse/inode.c
++++ b/fs/fuse/inode.c
+@@ -550,6 +550,9 @@ void fuse_conn_init(struct fuse_conn *fc)
+ 	atomic_set(&fc->num_waiting, 0);
+ 	fc->max_background = FUSE_DEFAULT_MAX_BACKGROUND;
+ 	fc->congestion_threshold = FUSE_DEFAULT_CONGESTION_THRESHOLD;
++	fc->max_pages = FUSE_DEFAULT_MAX_PAGES_PER_REQ;
++	fc->fuse_req_size = sizeof(struct fuse_req) +
++			    fc->max_pages * sizeof(struct page *);
+ 	fc->khctr = 0;
+ 	fc->polled_files = RB_ROOT;
+ 	fc->reqctr = 0;
+@@ -774,6 +777,18 @@ static int set_global_limit(const char *val, struct kernel_param *kp)
+ 	return 0;
+ }
+ 
++static void set_conn_max_pages(struct fuse_conn *fc, unsigned max_pages)
++{
++	unsigned pipe_max_size = pipe_get_max_size();
++	unsigned pipe_max_pages = DIV_ROUND_UP(pipe_max_size, PAGE_SIZE);
++
++	if (max_pages > fc->max_pages) {
++		fc->max_pages = min_t(unsigned, pipe_max_pages, max_pages);
++		fc->fuse_req_size = sizeof(struct fuse_req) +
++				    fc->max_pages * sizeof(struct page *);
 +	}
 +}
 +
-+static int set_global_limit_bgreq(const char *val, struct kernel_param *kp)
-+{
-+	int rv;
-+
-+	rv = param_set_uint(val, kp);
-+	if (rv)
-+		return rv;
-+
-+	sanitize_global_limit((unsigned *)kp->arg);
-+
-+	/* max_user_bgreq is set via mod_param */
-+	mod_param_set_flg_bgreq = true;
-+
-+	return 0;
-+}
-+
-+static int set_global_limit_thresh(const char *val, struct kernel_param *kp)
+ static void process_init_limits(struct fuse_conn *fc, struct fuse_init_out *arg)
  {
- 	int rv;
+ 	int cap_sys_admin = capable(CAP_SYS_ADMIN);
+@@ -807,6 +822,7 @@ static void process_init_reply(struct fuse_conn *fc, struct fuse_req *req)
+ 		fc->conn_error = 1;
+ 	else {
+ 		unsigned long ra_pages;
++		unsigned max_pages;
  
-@@ -782,6 +819,9 @@ static int set_global_limit(const char *val, struct kernel_param *kp)
+ 		process_init_limits(fc, arg);
  
- 	sanitize_global_limit((unsigned *)kp->arg);
- 
-+	/* max_user_congthresh is set via mod_param */
-+	mod_param_set_flg_thresh = true;
-+
- 	return 0;
+@@ -844,6 +860,8 @@ static void process_init_reply(struct fuse_conn *fc, struct fuse_req *req)
+ 		fc->minor = arg->minor;
+ 		fc->max_write = arg->minor < 5 ? 4096 : arg->max_write;
+ 		fc->max_write = max_t(unsigned, 4096, fc->max_write);
++		max_pages = DIV_ROUND_UP(fc->max_write, PAGE_SIZE);
++		set_conn_max_pages(fc, max_pages);
+ 		fc->conn_init = 1;
+ 	}
+ 	fc->blocked = 0;
+@@ -880,6 +898,20 @@ static void fuse_free_conn(struct fuse_conn *fc)
+ 	kfree(fc);
  }
  
-@@ -801,8 +841,8 @@ static void process_init_limits(struct fuse_conn *fc, struct fuse_init_out *arg)
- 	if (arg->minor < 13)
- 		return;
++static void fuse_conn_setup(struct fuse_conn *fc,
++			    struct fuse_mount_data *d)
++{
++	unsigned max_pages;
++
++	fc->release = fuse_free_conn;
++	fc->flags = d->flags;
++	fc->user_id = d->user_id;
++	fc->group_id = d->group_id;
++	fc->max_read = max_t(unsigned, 4096, d->max_read);
++	max_pages = DIV_ROUND_UP(fc->max_read, PAGE_SIZE);
++	set_conn_max_pages(fc, max_pages);
++}
++
+ static int fuse_bdi_init(struct fuse_conn *fc, struct super_block *sb)
+ {
+ 	int err;
+@@ -986,11 +1018,7 @@ static int fuse_fill_super(struct super_block *sb, void *data, int silent)
+ 		fc->dont_mask = 1;
+ 	sb->s_flags |= MS_POSIXACL;
  
--	sanitize_global_limit(&max_user_bgreq);
--	sanitize_global_limit(&max_user_congthresh);
-+	check_global_limit(&max_user_bgreq, mod_param_set_flg_bgreq);
-+	check_global_limit(&max_user_congthresh, mod_param_set_flg_thresh);
+-	fc->release = fuse_free_conn;
+-	fc->flags = d.flags;
+-	fc->user_id = d.user_id;
+-	fc->group_id = d.group_id;
+-	fc->max_read = max_t(unsigned, 4096, d.max_read);
++	fuse_conn_setup(fc, &d);
  
- 	if (arg->max_background) {
- 		fc->max_background = arg->max_background;
-@@ -1309,8 +1349,8 @@ static int __init fuse_init(void)
- 	if (res)
- 		goto err_sysfs_cleanup;
+ 	/* Used by get_root_inode() */
+ 	sb->s_fs_info = fc;
+@@ -1003,12 +1031,12 @@ static int fuse_fill_super(struct super_block *sb, void *data, int silent)
+ 	/* only now - we want root dentry with NULL ->d_op */
+ 	sb->s_d_op = &fuse_dentry_operations;
  
--	sanitize_global_limit(&max_user_bgreq);
--	sanitize_global_limit(&max_user_congthresh);
-+	check_global_limit(&max_user_bgreq, mod_param_set_flg_bgreq);
-+	check_global_limit(&max_user_congthresh, mod_param_set_flg_thresh);
+-	init_req = fuse_request_alloc();
++	init_req = fuse_request_alloc(fc);
+ 	if (!init_req)
+ 		goto err_put_root;
  
- 	return 0;
- 
+ 	if (is_bdev) {
+-		fc->destroy_req = fuse_request_alloc();
++		fc->destroy_req = fuse_request_alloc(fc);
+ 		if (!fc->destroy_req)
+ 			goto err_free_init_req;
+ 	}
 
