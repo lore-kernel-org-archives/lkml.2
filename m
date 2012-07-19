@@ -1,84 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752571Ab2GSSJU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 14:09:20 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:39928 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751908Ab2GSSJR (ORCPT
+	id S1752417Ab2GSSNo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 14:13:44 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32471 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751143Ab2GSSNm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 14:09:17 -0400
-Date: Thu, 19 Jul 2012 20:09:14 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>, Pekka Enberg <penberg@kernel.org>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+	Thu, 19 Jul 2012 14:13:42 -0400
+X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=BHldU6QlfDUA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=Goo5scKxAdzUFsmDMooA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-ID: <1342721620.12353.75.camel@gandalf.stny.rr.com>
+Subject: Re: [RFC] Simplifying kernel configuration for distro issues
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Dave Jones <davej@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
         Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
         Debian Kernel Team <debian-kernel@lists.debian.org>,
         OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Sasha Levin <levinsasha928@gmail.com>,
-        Asias He <asias.hejun@gmail.com>
-Subject: Re: [opensuse-kernel] Re: [RFC] Simplifying kernel configuration for
- distro issues
-Message-ID: <20120719180914.GG23393@aftab.osrc.amd.com>
-References: <CAFLxGvxxWodD97=78218wc+tuigAFsNK_PdroDfb4BWTZoxxUw@mail.gmail.com>
- <20120714103716.GD26559@liondog.tnic>
- <CAOJsxLGHQuuXqDD-1SNhL7Ly1-heCYFLzqj3SLh4xzmP9NR5GQ@mail.gmail.com>
- <20120714124332.GA4093@moon>
- <20120714174827.GA13319@aftab.osrc.amd.com>
- <20120719144217.GC16873@home.goodmis.org>
- <20120719164807.GD23393@aftab.osrc.amd.com>
- <1342717366.12353.48.camel@gandalf.stny.rr.com>
- <20120719173415.GE23393@aftab.osrc.amd.com>
- <1342720646.12353.67.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1342720646.12353.67.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Fedora Kernel Team <kernel-team@fedoraproject.org>
+Date: Thu, 19 Jul 2012 14:13:40 -0400
+In-Reply-To: <20120719175649.GF8469@zod.bos.redhat.com>
+References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com>
+	 <20120713210240.GG1707@redhat.com>
+	 <CA+55aFz_Vv899eXz6F0jtFH=hT4QpB0_2XuS8HySPjHC6s+L7Q@mail.gmail.com>
+	 <20120719152618.GD16873@home.goodmis.org>
+	 <20120719154521.GC8469@zod.bos.redhat.com>
+	 <1342714088.12353.33.camel@gandalf.stny.rr.com>
+	 <20120719171918.GD8469@zod.bos.redhat.com>
+	 <1342719222.12353.58.camel@gandalf.stny.rr.com>
+	 <20120719175649.GF8469@zod.bos.redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 19, 2012 at 01:57:26PM -0400, Steven Rostedt wrote:
-> Yes, I know you know this already, as we discussed it in a pub over a
-> beer (choir practice). But this is a public forum on LKML (the church),
-> where I now have an audience of heathens. Convert! Convert! You are all
-> sinners!
+On Thu, 2012-07-19 at 13:56 -0400, Josh Boyer wrote:
 
-Ah, gotcha.
+> Distros aren't stationary things.
 
-[ … ]
+Exactly my point.
 
-> But this still doesn't solve Linus's initial request. That would be a
-> single option that makes your distro boot, and work well. Again, that
-> option wont have the drivers needed, but it will enable all the core
-> infrastructure that you need.
+>   I mean, some of them certainly aim
+> for that goal, but userspace and kernels get upgraded all the time.  So
+> if this distro-Kconfig file is provided by some package _other_ than the
+> kernel the distros are going to have a bit of a hassle keeping track of
+> it.
 
-Oh I'm being additive here. You'll have feature profiles for the stuff
-we talk above and distro profiles which solve Linus' issue. Basically
-one coarse-grained config option will either select a feature which has
-a lot of small subfeatures of which some are sane and want to be enabled
-by default when selecting the topfeature.
+How about a directory called /usr/share/Linux/Kconfig.d/
 
-Or a distro-specific feature which could itself select other
-topfeatures.
+Then have anything installed that needs to work correctly put in its
+minimum (must have) requirement configs of the kernel.
 
-I haven't tried this in reality to actually be able to say that a
-tree-like configure approach would actually make sense and work. It
-sounds like a nice idea though, especially having the hierarchical
-structure. :)
+Say you are running Debian, and decide to try out systemd. If you set up
+your system to run that it would add a file called:
 
--- 
-Regards/Gruss,
-Boris.
+/usr/share/Linux/Kconfig.d/systemd.conf
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+or something, and this would select things like CGROUPS and the like. We
+could make the kernel build select all, or individual files in this
+directory. All for the 'make my distro work' or individual for a 'I want
+part of my distro to work' option.
+
+
+
+> Upgraded the kernel within the confines of that distro, right?  So you
+> go back to what was already installed and working.  You don't go back
+> arbitrarily far just to see what happens.  I would think a reasonably
+> crafted distro config would work in those scenarios.
+
+A reasonable one, but still not the minimum.
+
+One issue with Linus's proposal is that he's asking us to focus on the
+99%. But the 99% of who? Because 99% of Linux users do not compile their
+own kernels, so he must be asking about the 99% of Linux users that
+compile their own kernels. This 99% does not just simply compile their
+kernels, but only want to compile the absolutely necessary stuff. That
+is, they want their kernels not to include anything they are not using.
+
+A reasonable config would probably need to include a lot that's not
+used.
+
+-- Steve
+
+
