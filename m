@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752930Ab2GSOjF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 10:39:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40399 "EHLO mx2.suse.de"
+	id S1752764Ab2GSOio (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 10:38:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40477 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751396Ab2GSOgs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 10:36:48 -0400
+	id S1751951Ab2GSOhH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 10:37:07 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Stable <stable@vger.kernel.org>
 Cc: "Linux-MM <linux-mm"@kvack.org, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 03/34] mm: Reduce the amount of work done when updating min_free_kbytes
-Date: Thu, 19 Jul 2012 15:36:13 +0100
-Message-Id: <1342708604-26540-4-git-send-email-mgorman@suse.de>
+Subject: [PATCH 34/34] mm/hugetlb: fix warning in alloc_huge_page/dequeue_huge_page_vma
+Date: Thu, 19 Jul 2012 15:36:44 +0100
+Message-Id: <1342708604-26540-35-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1342708604-26540-1-git-send-email-mgorman@suse.de>
 References: <1342708604-26540-1-git-send-email-mgorman@suse.de>
@@ -20,81 +20,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 938929f14cb595f43cd1a4e63e22d36cab1e4a1f upstream.
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
 
-Stable note: Fixes https://bugzilla.novell.com/show_bug.cgi?id=726210 .
-	Large machines with 1TB or more of RAM take a long time to boot
-	without this patch and may spew out soft lockup warnings.
+Stable note: Not tracked in Bugzilla. [get|put]_mems_allowed() is extremely
+	expensive and severely impacted page allocator performance. This
+	is part of a series of patches that reduce page allocator overhead.
 
-When min_free_kbytes is updated blocks marked MIGRATE_RESERVE are
-updated. Ordinarily, this work is unnoticable as it happens early
-in boot. However, on large machines with 1TB of memory, this can take
-a considerable time when NUMA distances are taken into account. The bulk
-of the work is done by pageblock_is_reserved() which examines the
-metadata for almost every page in the system. Currently, we are doing
-this far more than necessary as it is only required while there are
-still blocks to be marked MIGRATE_RESERVE. This patch significantly
-reduces the amount of work done by setup_zone_migrate_reserve()
-improving boot times on 1TB machines.
+Fix a gcc warning (and bug?) introduced in cc9a6c877 ("cpuset: mm: reduce
+large amounts of memory barrier related damage v3")
 
-[akpm@linux-foundation.org: coding-style fixes]
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+Local variable "page" can be uninitialized if the nodemask from vma policy
+does not intersects with nodemask from cpuset.  Even if it doesn't happens
+it is better to initialize this variable explicitly than to introduce
+a kernel oops in a weird corner case.
+
+mm/hugetlb.c: In function `alloc_huge_page':
+mm/hugetlb.c:1135:5: warning: `page' may be used uninitialized in this function
+
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Acked-by: David Rientjes <rientjes@google.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/page_alloc.c |   35 +++++++++++++++++++----------------
- 1 file changed, 19 insertions(+), 16 deletions(-)
+ mm/hugetlb.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 947a7e9..e568b80 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -3418,25 +3418,28 @@ static void setup_zone_migrate_reserve(struct zone *zone)
- 		if (page_to_nid(page) != zone_to_nid(zone))
- 			continue;
- 
--		/* Blocks with reserved pages will never free, skip them. */
--		block_end_pfn = min(pfn + pageblock_nr_pages, end_pfn);
--		if (pageblock_is_reserved(pfn, block_end_pfn))
--			continue;
--
- 		block_migratetype = get_pageblock_migratetype(page);
- 
--		/* If this block is reserved, account for it */
--		if (reserve > 0 && block_migratetype == MIGRATE_RESERVE) {
--			reserve--;
--			continue;
--		}
-+		/* Only test what is necessary when the reserves are not met */
-+		if (reserve > 0) {
-+			/* Blocks with reserved pages will never free, skip them. */
-+			block_end_pfn = min(pfn + pageblock_nr_pages, end_pfn);
-+			if (pageblock_is_reserved(pfn, block_end_pfn))
-+				continue;
- 
--		/* Suitable for reserving if this block is movable */
--		if (reserve > 0 && block_migratetype == MIGRATE_MOVABLE) {
--			set_pageblock_migratetype(page, MIGRATE_RESERVE);
--			move_freepages_block(zone, page, MIGRATE_RESERVE);
--			reserve--;
--			continue;
-+			/* If this block is reserved, account for it */
-+			if (block_migratetype == MIGRATE_RESERVE) {
-+				reserve--;
-+				continue;
-+			}
-+
-+			/* Suitable for reserving if this block is movable */
-+			if (block_migratetype == MIGRATE_MOVABLE) {
-+				set_pageblock_migratetype(page, MIGRATE_RESERVE);
-+				move_freepages_block(zone, page, MIGRATE_RESERVE);
-+				reserve--;
-+				continue;
-+			}
- 		}
- 
- 		/*
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 64f2b7a..ae60a53 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -454,7 +454,7 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
+ 				struct vm_area_struct *vma,
+ 				unsigned long address, int avoid_reserve)
+ {
+-	struct page *page;
++	struct page *page = NULL;
+ 	struct mempolicy *mpol;
+ 	nodemask_t *nodemask;
+ 	struct zonelist *zonelist;
 -- 
 1.7.9.2
 
