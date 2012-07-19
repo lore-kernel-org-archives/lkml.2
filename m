@@ -1,91 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752834Ab2GSR5J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 13:57:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49314 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751143Ab2GSR5H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 13:57:07 -0400
-Date: Thu, 19 Jul 2012 13:56:50 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+	id S1752901Ab2GSR5b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 13:57:31 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14342 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752424Ab2GSR52 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 13:57:28 -0400
+X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=CmeNAOXY6qYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=xrkf4O4LVMmuy3B7DlIA:9 a=PUjeQqilurYA:10 a=7WfCv5DEreyoLpKm:21 a=UVaUvgB1uOKqeu_7:21 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-ID: <1342720646.12353.67.camel@gandalf.stny.rr.com>
+Subject: Re: [opensuse-kernel] Re: [RFC] Simplifying kernel configuration
+ for distro issues
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>, Pekka Enberg <penberg@kernel.org>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Dave Jones <davej@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
         Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
         Debian Kernel Team <debian-kernel@lists.debian.org>,
         OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Fedora Kernel Team <kernel-team@fedoraproject.org>
-Subject: Re: [RFC] Simplifying kernel configuration for distro issues
-Message-ID: <20120719175649.GF8469@zod.bos.redhat.com>
+        Ingo Molnar <mingo@elte.hu>, Sasha Levin <levinsasha928@gmail.com>,
+        Asias He <asias.hejun@gmail.com>
+Date: Thu, 19 Jul 2012 13:57:26 -0400
+In-Reply-To: <20120719173415.GE23393@aftab.osrc.amd.com>
 References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com>
- <20120713210240.GG1707@redhat.com>
- <CA+55aFz_Vv899eXz6F0jtFH=hT4QpB0_2XuS8HySPjHC6s+L7Q@mail.gmail.com>
- <20120719152618.GD16873@home.goodmis.org>
- <20120719154521.GC8469@zod.bos.redhat.com>
- <1342714088.12353.33.camel@gandalf.stny.rr.com>
- <20120719171918.GD8469@zod.bos.redhat.com>
- <1342719222.12353.58.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1342719222.12353.58.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	 <1342212885.25704.4.camel@lade.trondhjem.org>
+	 <CAFLxGvxxWodD97=78218wc+tuigAFsNK_PdroDfb4BWTZoxxUw@mail.gmail.com>
+	 <20120714103716.GD26559@liondog.tnic>
+	 <CAOJsxLGHQuuXqDD-1SNhL7Ly1-heCYFLzqj3SLh4xzmP9NR5GQ@mail.gmail.com>
+	 <20120714124332.GA4093@moon> <20120714174827.GA13319@aftab.osrc.amd.com>
+	 <20120719144217.GC16873@home.goodmis.org>
+	 <20120719164807.GD23393@aftab.osrc.amd.com>
+	 <1342717366.12353.48.camel@gandalf.stny.rr.com>
+	 <20120719173415.GE23393@aftab.osrc.amd.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 19, 2012 at 01:33:42PM -0400, Steven Rostedt wrote:
-> On Thu, 2012-07-19 at 13:19 -0400, Josh Boyer wrote:
+On Thu, 2012-07-19 at 19:34 +0200, Borislav Petkov wrote:
+
+> > I can pass the above to a allnoconfig, and the box will boot and allow
+> > ssh. Note, the reason for the serial config, is that this ktest run uses
+> > a serial port to see if the box booted. If the serial isn't there, then
+> > it thinks it failed.
 > 
-> > > What about older kernels? Say you installed Fedora 18 with an older
-> > > kernel that doesn't know what to select? Having the distro tell the
-> > > kernel what it needs seems to me the easiest for the 99% case.
-> > 
-> > How is the above not telling the kernel what it needs?  I'm confused how
-> > the location of such a file makes it's functionality and usefulness
-> > differ...  Quite possible I missed what you meant originally, but it
-> > sounds like we're talking about the same thing?
+> I agree with all this and you've explained this to me live already so
+> you're preaching to the choir.
+
+Yes, I know you know this already, as we discussed it in a pub over a
+beer (choir practice). But this is a public forum on LKML (the church),
+where I now have an audience of heathens. Convert! Convert! You are all
+sinners!
+
 > 
-> The point is, the user wont have to think "What distro am I running? and
-> what version am I running?". I don't even know what version of the disto
-> I'm currently running (Debian testing).
->
-> The point is, the current running distro supplies what is needed from
-> the kernel in order to work properly. The user does not need to 'select'
-> it. They would only have to select a 'add my distro min configs'.
-
-Distros aren't stationary things.  I mean, some of them certainly aim
-for that goal, but userspace and kernels get upgraded all the time.  So
-if this distro-Kconfig file is provided by some package _other_ than the
-kernel the distros are going to have a bit of a hassle keeping track of
-it.
-
-> A developer working with a user could just say, "select disto config"
-> without needing to know what distro the user has.
+> But it would be a lot faster/easier if users can select, let's call'em
+> "profiles" which are not mutually exclusive and can speed up the
+> configuration process. They can either be distro-specific or generic,
+> selecting certain features you need.
 > 
-> What happens if someone does a yum update, and the kernel requirement
-> changes slightly. The yum update should update
-> this /usr/share/Linux/Kconfig. But it's still set at Fedora X. The
-> kernel can not be updated for these slight changes.
-
-I'm not quite following what you mean in the yum update case, sorry.
-
-> > Also, I'm not very convinced the 99% are going to be wanting to install
-> > shiny new versions of a distro with a kernel older than what the distro
-> > ships with.  I could be very wrong, but it seems like in-general the
-> > whole premise of this RFC was geared towards using new kernels on
-> > distros.
+> So configuring your kernel would be like shopping without paying too
+> much attention to details. Let's look into the head of a person doing a
+> config like that and read some of her thoughts :):
 > 
-> There are times when the update breaks something. A user may backport to
-> an older kernel where their Gizmo worked. I've done this to get webcams
-> working. I know I'm not the 99%, but the rational for my operation was a
-> 99% thing to do: Crap, I upgraded my kernel and now my webcam doesn't
-> work. Oh well, download an older version and boot that one.
+> "Hm, ok, this new configurator is cool, a lot faster I gotta say... So,
+> what do I need, ah, yes, it is an AMD laptop so from vendors I select
+> AMD, then I probably need ext4, then I'd like to do packet filtering
+> so I should enable iptables.. Oh, I'd like to do tracing too so let's
+> enable tracing and trust Steven with the options he's added by default,
+> then I need ahci, I'd also like to do encrypted partitions so I'll
+> enable device mapper with crypto... "
+> 
+> So all those things could be selectable from that profiles menu without
+> having to go through the gazillion of little suboptions and having to
+> read help (which is sometimes completely helpless) and figure out do I
+> need it or not.
+> 
+> And this would simplify configuration a lot. IMHO, anyway.
+> 
 
-Upgraded the kernel within the confines of that distro, right?  So you
-go back to what was already installed and working.  You don't go back
-arbitrarily far just to see what happens.  I would think a reasonably
-crafted distro config would work in those scenarios.
+I totally agree with this. It would be nice to have a profile list where
+you can pick and chose what you have installed:
 
-josh
+	network
+	nfs
+	ext3
+	serial
+	xen
+	kvm
+etc etc
+
+Where you can pick and choose what general features you want and it
+selects all the core infrastructure to get those features usable. It
+wouldn't select the device modules needed, you will still need to select
+what hardware you have. But it gets most of the work done for you.
+
+But this still doesn't solve Linus's initial request. That would be a
+single option that makes your distro boot, and work well. Again, that
+option wont have the drivers needed, but it will enable all the core
+infrastructure that you need.
+
+Going with my /usr/share/Linux/Kconfig, this could use the profile
+options as well. And just select those that are required. But then
+again, Linus did want a minimum selection of stuff.
+
+Side note (again), IIRC, "select" has a bug. If you have Config X
+selecting config Y but Y depends on Z, if you enable X, it will enable Y
+without enabling Z. I think there were some patches to address this, but
+I don't remember.
+
+-- Steve
+
+
