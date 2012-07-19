@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755179Ab2GSBhP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 21:37:15 -0400
-Received: from mail209.messagelabs.com ([216.82.255.3]:11077 "EHLO
-	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753243Ab2GSBhM (ORCPT
+	id S1755306Ab2GSBhk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 21:37:40 -0400
+Received: from mail132.messagelabs.com ([216.82.242.115]:49003 "EHLO
+	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755136Ab2GSBhg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 21:37:12 -0400
+	Wed, 18 Jul 2012 21:37:36 -0400
 X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-15.tower-209.messagelabs.com!1342661831!9080887!1
-X-Originating-IP: [216.166.12.98]
+X-Msg-Ref: server-8.tower-132.messagelabs.com!1342661855!11912771!1
+X-Originating-IP: [216.166.12.31]
 X-StarScan-Version: 6.5.10; banners=-,-,-
 X-VirusChecked: Checked
 From: H Hartley Sweeten <hartleys@visionengravers.com>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 28/90] staging: comedi: cb_pcidio: store the pci_dev in the comedi_device
-Date: Wed, 18 Jul 2012 18:37:05 -0700
+Subject: [PATCH 29/90] staging: comedi: amplc_dio200: cleanup "find pci device" code
+Date: Wed, 18 Jul 2012 18:37:31 -0700
 User-Agent: KMail/1.9.9
 CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
         <gregkh@linuxfoundation.org>
@@ -23,90 +23,109 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Message-ID: <201207181837.06140.hartleys@visionengravers.com>
+Message-ID: <201207181837.32033.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the hw_dev pointer in the comedi_device struct to hold the
-pci_dev instead of carrying it in the private data.
+For aesthetic reasons, rename the function and pass the
+comedi_devconfig struct instead of pre-parsing out the bus/slot
+information.
+
+Use for_each_pci_dev() instead of open-coding the loop using
+pci_get_device().
+
+Consolidate the dev_err messages when a pci device is not found.
 
 Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 Cc: Ian Abbott <abbotti@mev.co.uk>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/staging/comedi/drivers/cb_pcidio.c | 25 ++++++++++++-------------
- 1 file changed, 12 insertions(+), 13 deletions(-)
+ drivers/staging/comedi/drivers/amplc_dio200.c | 42 ++++++++++-----------------
+ 1 file changed, 15 insertions(+), 27 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/cb_pcidio.c b/drivers/staging/comedi/drivers/cb_pcidio.c
-index 5527b4b..11c7502 100644
---- a/drivers/staging/comedi/drivers/cb_pcidio.c
-+++ b/drivers/staging/comedi/drivers/cb_pcidio.c
-@@ -96,9 +96,6 @@ static const struct pcidio_board pcidio_boards[] = {
- struct pcidio_private {
- 	int data;		/*  currently unused */
- 
--	/* would be useful for a PCI device */
--	struct pci_dev *pci_dev;
--
- 	/* used for DO readback, currently unused */
- 	unsigned int do_readback[4];	/* up to 4 unsigned int suffice to hold 96 bits for PCI-DIO96 */
- 
-@@ -143,6 +140,7 @@ static struct pci_dev *pcidio_find_pci_dev(struct comedi_device *dev,
- 
- static int pcidio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- {
-+	struct pci_dev *pcidev;
- 	int i;
- 	int ret;
- 
-@@ -153,9 +151,10 @@ static int pcidio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	if (alloc_private(dev, sizeof(struct pcidio_private)) < 0)
- 		return -ENOMEM;
- 
--	devpriv->pci_dev = pcidio_find_pci_dev(dev, it);
--	if (!devpriv->pci_dev)
-+	pcidev = pcidio_find_pci_dev(dev, it);
-+	if (!pcidev)
- 		return -EIO;
-+	comedi_set_hw_dev(dev, &pcidev->dev);
- 
- /*
-  * Initialize dev->board_name.  Note that we can use the "thisboard"
-@@ -163,12 +162,12 @@ static int pcidio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+diff --git a/drivers/staging/comedi/drivers/amplc_dio200.c b/drivers/staging/comedi/drivers/amplc_dio200.c
+index 55f3050..ca9d4f2 100644
+--- a/drivers/staging/comedi/drivers/amplc_dio200.c
++++ b/drivers/staging/comedi/drivers/amplc_dio200.c
+@@ -469,23 +469,23 @@ dio200_find_pci_board(struct pci_dev *pci_dev)
+  * This function looks for a PCI device matching the requested board name,
+  * bus and slot.
   */
- 	dev->board_name = thisboard->name;
- 
--	if (comedi_pci_enable(devpriv->pci_dev, thisboard->name))
-+	if (comedi_pci_enable(pcidev, thisboard->name))
- 		return -EIO;
- 
- 	devpriv->dio_reg_base
- 	    =
--	    pci_resource_start(devpriv->pci_dev, thisboard->dioregs_badrindex);
-+	    pci_resource_start(pcidev, thisboard->dioregs_badrindex);
- 
- 	ret = comedi_alloc_subdevices(dev, thisboard->n_8255);
- 	if (ret)
-@@ -186,12 +185,12 @@ static int pcidio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 
- static void pcidio_detach(struct comedi_device *dev)
+-static struct pci_dev *
+-dio200_find_pci(struct comedi_device *dev, int bus, int slot)
++static struct pci_dev *dio200_find_pci_dev(struct comedi_device *dev,
++					   struct comedi_devconfig *it)
  {
--	if (devpriv) {
--		if (devpriv->pci_dev) {
--			if (devpriv->dio_reg_base)
--				comedi_pci_disable(devpriv->pci_dev);
--			pci_dev_put(devpriv->pci_dev);
--		}
-+	struct pci_dev *pcidev = comedi_to_pci_dev(dev);
+ 	const struct dio200_board *thisboard = comedi_board(dev);
+ 	struct pci_dev *pci_dev = NULL;
++	int bus = it->options[0];
++	int slot = it->options[1];
+ 
+-	/* Look for matching PCI device. */
+-	for (pci_dev = pci_get_device(PCI_VENDOR_ID_AMPLICON, PCI_ANY_ID, NULL);
+-	     pci_dev != NULL;
+-	     pci_dev = pci_get_device(PCI_VENDOR_ID_AMPLICON,
+-				      PCI_ANY_ID, pci_dev)) {
+-		/* If bus/slot specified, check them. */
++	for_each_pci_dev(pci_dev) {
+ 		if (bus || slot) {
+-			if (bus != pci_dev->bus->number
+-			    || slot != PCI_SLOT(pci_dev->devfn))
++			if (bus != pci_dev->bus->number ||
++			    slot != PCI_SLOT(pci_dev->devfn))
+ 				continue;
+ 		}
++		if (pci_dev->vendor != PCI_VENDOR_ID_AMPLICON)
++			continue;
 +
-+	if (pcidev) {
-+		if (devpriv->dio_reg_base)
-+			comedi_pci_disable(pcidev);
-+		pci_dev_put(pcidev);
+ 		if (thisboard->model == anypci_model) {
+ 			/* Wildcard board matches any supported PCI board. */
+ 			const struct dio200_board *foundboard;
+@@ -495,25 +495,16 @@ dio200_find_pci(struct comedi_device *dev, int bus, int slot)
+ 				continue;
+ 			/* Replace wildcard board_ptr. */
+ 			dev->board_ptr = foundboard;
+-			thisboard = comedi_board(dev);
+ 		} else {
+ 			/* Match specific model name. */
+ 			if (pci_dev->device != thisboard->devid)
+ 				continue;
+ 		}
+-
+-		/* Found a match. */
+ 		return pci_dev;
  	}
- 	if (dev->subdevices) {
- 		int i;
+-	/* No match found. */
+-	if (bus || slot) {
+-		dev_err(dev->class_dev,
+-			"error! no %s found at pci %02x:%02x!\n",
+-			thisboard->name, bus, slot);
+-	} else {
+-		dev_err(dev->class_dev, "error! no %s found!\n",
+-			thisboard->name);
+-	}
++	dev_err(dev->class_dev,
++		"No supported board found! (req. bus %d, slot %d)\n",
++		bus, slot);
+ 	return NULL;
+ }
+ 
+@@ -1385,12 +1376,9 @@ static int dio200_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	} else if (IS_ENABLED(CONFIG_COMEDI_AMPLC_DIO200_PCI) &&
+ 		   thisboard->bustype == pci_bustype) {
+ 		struct pci_dev *pci_dev;
+-		int bus, slot;
+ 
+-		bus = it->options[0];
+-		slot = it->options[1];
+-		pci_dev = dio200_find_pci(dev, bus, slot);
+-		if (pci_dev == NULL)
++		pci_dev = dio200_find_pci_dev(dev, it);
++		if (!pci_dev)
+ 			return -EIO;
+ 		return dio200_pci_common_attach(dev, pci_dev);
+ 	} else {
 -- 
 1.7.11
 
