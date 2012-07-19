@@ -1,131 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752206Ab2GSTCW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 15:02:22 -0400
-Received: from mga14.intel.com ([143.182.124.37]:56118 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751152Ab2GSTCU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 15:02:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="170511334"
-Message-Id: <180a06f3f357cf9f78259ae443a082b14a29535b.1342723082.git.tony.luck@intel.com>
-In-Reply-To: <cover.1342723082.git.tony.luck@intel.com>
-References: <cover.1342723082.git.tony.luck@intel.com>
-From: Tony Luck <tony.luck@intel.com>
-Date: Thu, 19 Jul 2012 11:28:46 -0700
-Subject: [PATCH 2/2] x86/mce: Add quirk for instruction recovery on Sandy
- Bridge processors
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@amd64.org>,
-        Chen Gong <gong.chen@linux.intel.com>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+	id S1751801Ab2GSTED (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 15:04:03 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:44191 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751170Ab2GSTEA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 15:04:00 -0400
+Date: Thu, 19 Jul 2012 15:03:59 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Andreas Mohr <andi@lisas.de>
+cc: linux-kernel@vger.kernel.org, <linux-usb@vger.kernel.org>
+Subject: Re: USB enumeration post-resume NOT persistent yet "persist" -->
+ swapped devices nodes --> root partition reference broken
+In-Reply-To: <20120719173057.GA1031@rhlx01.hs-esslingen.de>
+Message-ID: <Pine.LNX.4.44L0.1207191454140.1764-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sandy Bridge processors follow the SDM (Vol 3B, Table 15-20) and set
-both the RIPV and EIPV bits in the MCG_STATUS register to zero for
-machine checks during instruction fetch. This is more than a little
-counter-intuitive and means that Linux cannot recover from these
-errors. Rather than insert special case code at several places in mce.c
-and mce-severity.c, we pretend the EIPV bit was set for just this case
-early in processing the machine check.
+On Thu, 19 Jul 2012, Andreas Mohr wrote:
 
-Signed-off-by: Tony Luck <tony.luck@intel.com>
----
- arch/x86/kernel/cpu/mcheck/mce.c | 43 +++++++++++++++++++++++++++++++++++++---
- 1 file changed, 40 insertions(+), 3 deletions(-)
+> Hi,
+> 
+> On Thu, Jul 19, 2012 at 11:11:50AM -0400, Alan Stern wrote:
+> > On Thu, 19 Jul 2012, Andreas Mohr wrote:
+> > 
+> > > Hi,
+> > > 
+> > > Yesterday I was surprised to see that with *another* external USB disk
+> > > happening to be connected before boot,
+> > > the system booted with root partition device sdb1 assigned rather than sda1.
+> > > Not thinking much, I then proceeded putting the system into suspend,
+> > 
+> > Do you mean "suspend" or "hibernate"?
+> 
+> Doh - S2R. I don't do persistent hibernate here (writing some 1GB of data
+> to flash-based storage each time possibly isn't all too healthy anyway).
+> 
+> > Can you reproduce the problem?
+> 
+> Will retry soonish.
 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index da27c5d..e65e738 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -102,6 +102,8 @@ DEFINE_PER_CPU(mce_banks_t, mce_poll_banks) = {
- 
- static DEFINE_PER_CPU(struct work_struct, mce_work);
- 
-+static void (*quirk_no_way_out)(int bank, struct mce *m, struct pt_regs *regs);
-+
- /*
-  * CPU/chipset specific EDAC code can register a notifier call here to print
-  * MCE errors in a human-readable form.
-@@ -649,14 +651,18 @@ EXPORT_SYMBOL_GPL(machine_check_poll);
-  * Do a quick check if any of the events requires a panic.
-  * This decides if we keep the events around or clear them.
-  */
--static int mce_no_way_out(struct mce *m, char **msg, unsigned long *validp)
-+static int mce_no_way_out(struct mce *m, char **msg, unsigned long *validp,
-+			  struct pt_regs *regs)
- {
- 	int i, ret = 0;
- 
- 	for (i = 0; i < banks; i++) {
- 		m->status = mce_rdmsrl(MSR_IA32_MCx_STATUS(i));
--		if (m->status & MCI_STATUS_VAL)
-+		if (m->status & MCI_STATUS_VAL) {
- 			__set_bit(i, validp);
-+			if (quirk_no_way_out)
-+				quirk_no_way_out(i, m, regs);
-+		}
- 		if (mce_severity(m, tolerant, msg) >= MCE_PANIC_SEVERITY)
- 			ret = 1;
- 	}
-@@ -1039,7 +1045,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
- 	*final = m;
- 
- 	memset(valid_banks, 0, sizeof(valid_banks));
--	no_way_out = mce_no_way_out(&m, &msg, valid_banks);
-+	no_way_out = mce_no_way_out(&m, &msg, valid_banks, regs);
- 
- 	barrier();
- 
-@@ -1415,6 +1421,34 @@ static void __mcheck_cpu_init_generic(void)
- 	}
- }
- 
-+/*
-+ * During IFU recovery Sandy Bridge -EP4S processors set the RIPV and
-+ * EIPV bits in MCG_STATUS to zero on the affected logical processor (SDM
-+ * Vol 3B Table 15-20). But this confuses both the code that determines
-+ * whether the machine check occurred in kernel or user mode, and also
-+ * the severity assessment code. Pretend that EIPV was set, and take the
-+ * ip/cs values from the pt_regs that mce_gather_info() ignored earlier.
-+ */
-+static void quirk_sandybridge_ifu(int bank, struct mce *m, struct pt_regs *regs)
-+{
-+	if (bank != 0)
-+		return;
-+	if ((m->mcgstatus & (MCG_STATUS_EIPV|MCG_STATUS_RIPV)) != 0)
-+		return;
-+	if ((m->status & (MCI_STATUS_OVER|MCI_STATUS_UC|
-+		          MCI_STATUS_EN|MCI_STATUS_MISCV|MCI_STATUS_ADDRV|
-+			  MCI_STATUS_PCC|MCI_STATUS_S|MCI_STATUS_AR|
-+			  MCACOD)) !=
-+			 (MCI_STATUS_UC|MCI_STATUS_EN|
-+			  MCI_STATUS_MISCV|MCI_STATUS_ADDRV|MCI_STATUS_S|
-+			  MCI_STATUS_AR|MCACOD_INSTR))
-+		return;
-+
-+	m->mcgstatus |= MCG_STATUS_EIPV;
-+	m->ip = regs->ip;
-+	m->cs = regs->cs;
-+}
-+
- /* Add per CPU specific workarounds here */
- static int __cpuinit __mcheck_cpu_apply_quirks(struct cpuinfo_x86 *c)
- {
-@@ -1512,6 +1546,9 @@ static int __cpuinit __mcheck_cpu_apply_quirks(struct cpuinfo_x86 *c)
- 		 */
- 		if (c->x86 == 6 && c->x86_model <= 13 && mce_bootlog < 0)
- 			mce_bootlog = 0;
-+
-+		if (c->x86 == 6 && c->x86_model == 45)
-+			quirk_no_way_out = quirk_sandybridge_ifu;
- 	}
- 	if (monarch_timeout < 0)
- 		monarch_timeout = 0;
--- 
-1.7.10.2.552.gaa3bb87
+It's understandable that you might not want to risk corrupting an
+important filesystem.  Some systems allow you to run with a read-only
+root and no swap; you could try that.  Or run entirely from within an
+initramfs image, the way a Rescue CD does.
+
+> > > http://lists.linux-foundation.org/pipermail/linux-pm/2009-November/023101.html
+> > > Netbook Acer Aspire One A110L.
+> > > Running 3.5.0-rc7+ here (yes ma'am, bleeding edge tester :).
+> > > Was the first time to attempt resume with an additional device remaining
+> > > connected, IIRC - that -rc7 thing likely doesn't play much of a role here.
+> > > A bit hesitant to (dis-)prove the bug's "regression flag" with another version
+> > > since random possibly succeeding I/O accesses to incompatible devices
+> > > are not necessarily my thing (or is this safe to attempt again? Any more
+> > > specific session info one would need?).
+> > 
+> > Well, the dmesg log would help.  If you still think the USB layer is at 
+> > fault then you should enable CONFIG_USB_DEBUG.
+> 
+> Maybe I can get this successfully off the machine next time,
+> by pre-caching required binaries prior to initiating a non-working resume.
+
+Running within an initramfs image would probably avoid this problem.
+
+> > > So, again, possibly USB persistence is bug-broken?
+> > 
+> > You don't have any good evidence to suggest that.  None of the
+> > information you provided indicates that any USB device nodes (such as
+> > /dev/bus/usb/001/002) got mixed up.  All you know is that the
+> > block-layer device nodes (such as /dev/sda2) got changed.
+> 
+> OK - so you're trying in vain to tell dense me that I'm supposed to
+> take note of the *non-changing* (i.e., correctly "persistent")
+> USB device ID scheme rather than the roguely changing device nodes.
+> To which I say that unfortunately I don't have a pre/post comparison
+> at this moment yet.
+
+That's one of the reasons why reproducing the problem is important.
+
+> > Furthermore, if USB persist were broken then the symptoms would be 
+> > different.  Instead of starting with a root partition at sdb1 and then 
+> > finding it at sda1, you would have found it gone completely and there 
+> > would be _new_ devices labelled sdc and sdd.
+> 
+> Ah, yeah - I tend to know *this* other effect, too...
+
+Not recently, I hope!
+
+> > Alan Stern
+> 
+> Thanks a ton for your reply!
+> Now I know that there's a tendency to better look on the other side
+> (block device layer etc.) and analyze things there,
+> once it's established that USB topology ID numbering in fact did persist.
+
+What you described does sound very weird.  The relation between block 
+devices and the underlying physical devices is determined entirely by 
+software data structures, which should not change over the course of a 
+suspend.  I don't understand how it could have happened.
+
+Alan Stern
 
