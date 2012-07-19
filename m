@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754226Ab2GSB2W (ORCPT <rfc822;w@1wt.eu>);
+	id S1754780Ab2GSB2Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 21:28:25 -0400
+Received: from mail209.messagelabs.com ([216.82.255.3]:54758 "EHLO
+	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754528Ab2GSB2W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 18 Jul 2012 21:28:22 -0400
-Received: from twin.jikos.cz ([89.185.236.188]:35971 "EHLO twin.jikos.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754063Ab2GSB2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 21:28:19 -0400
-Date: Thu, 19 Jul 2012 03:28:05 +0200
-From: David Sterba <dave@jikos.cz>
-To: Mitch Harder <mitch.harder@sabayonlinux.org>
-Cc: dave@jikos.cz, Arnd Hannemann <arnd@arndnet.de>, chris.mason@fusionio.com,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ierdnah@gmail.com
-Subject: Re: [PATCH v2] Btrfs: allow mount -o remount,compress=no
-Message-ID: <20120719012805.GD17430@twin.jikos.cz>
-Reply-To: dave@jikos.cz
-Mail-Followup-To: Mitch Harder <mitch.harder@sabayonlinux.org>,
-	dave@jikos.cz, Arnd Hannemann <arnd@arndnet.de>,
-	chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
-	linux-kernel@vger.kernel.org, ierdnah@gmail.com
-References: <20120406102232.GH14256@twin.jikos.cz>
- <1334582871-3670-1-git-send-email-arnd@arndnet.de>
- <20120416144233.GC20982@twin.jikos.cz>
- <4FE95B45.8030909@arndnet.de>
- <20120628154037.GA28144@twin.jikos.cz>
- <CAKcLGm_cMiEBinmSxkWpY9jm8tW1qbBALcNS-u7DNQhHRF+NFg@mail.gmail.com>
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-5.tower-209.messagelabs.com!1342661301!9067698!1
+X-Originating-IP: [216.166.12.98]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 10/90] staging: comedi: adl_pci8164: remove the private data
+Date: Wed, 18 Jul 2012 18:28:13 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <gregkh@linuxfoundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <CAKcLGm_cMiEBinmSxkWpY9jm8tW1qbBALcNS-u7DNQhHRF+NFg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2011-07-01)
+Message-ID: <201207181828.13341.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 13, 2012 at 10:19:14AM -0500, Mitch Harder wrote:
-> I was testing the lz4(hc) patches, and I found the the compression
-> INCOMPAT flags are not being updated using the method in this patch.
-> 
-> The compression INCOMPAT flags are generally checked and updated in
-> the open_ctree() function.
-> 
-> But, on remount, open_ctree() is not called.
+The private data is no longer needed by this driver. Remove the
+struct, devpriv macro, and the allocation.
 
-This currently happens with lzo as well, right?
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/staging/comedi/drivers/adl_pci8164.c | 9 ---------
+ 1 file changed, 9 deletions(-)
 
-* mount without any compression
-* remount -o compress=lzo
-* write data
-* umount
-* => filesystem has lzo data without incompat bit set
+diff --git a/drivers/staging/comedi/drivers/adl_pci8164.c b/drivers/staging/comedi/drivers/adl_pci8164.c
+index 94230d6..247ef00 100644
+--- a/drivers/staging/comedi/drivers/adl_pci8164.c
++++ b/drivers/staging/comedi/drivers/adl_pci8164.c
+@@ -55,12 +55,6 @@ Configuration Options:
+ 
+ #define PCI_DEVICE_ID_PCI8164 0x8164
+ 
+-struct adl_pci8164_private {
+-	int data;
+-};
+-
+-#define devpriv ((struct adl_pci8164_private *)dev->private)
+-
+ /*
+  all the read commands are the same except for the addition a constant
+  * const to the data for inw()
+@@ -259,9 +253,6 @@ static int adl_pci8164_attach(struct comedi_device *dev,
+ 
+ 	dev->board_name = "pci8164";
+ 
+-	if (alloc_private(dev, sizeof(struct adl_pci8164_private)) < 0)
+-		return -ENOMEM;
+-
+ 	ret = comedi_alloc_subdevices(dev, 4);
+ 	if (ret)
+ 		return ret;
+-- 
+1.7.11
 
-> I was going to test a patch to update the INCOMPAT flags similar to
-> the way lzo INCOMPAT is updated when specifying the compress method in
-> defragmentation.
-> 
-> http://kerneltrap.org/mailarchive/linux-btrfs/2010/11/18/6886194
-
-This is clear that the incompatibility should be set, because the user
-wants it so and the lz4 patches should do the same. I see that the hc
-incompatibility does not though, that has to be fixed.
-
-> But, let me know if it is preferred to just return -EINVAL when trying
-> to remount with a compression method that has an INCOMPAT not yet seen
-> by that volume.
-
-Let's say it returns EINVAL upon remount, then I need to do umount/mount
-with the desired option. Remount is usually not done by accident, so
-similar to the defrag, I'd expect the operation to succeed, but I as a
-user may not know that it brings a backward incompatibility. Getting rid
-of an incompat is not straightfoward at all, so I understand the
-caution.
-
-My preference is to let remount succeed and set the incompat bit,
-possibly with a KERN_INFO message to syslog in case the bit is yet
-unseen by the volume.
-
-
-david
