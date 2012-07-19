@@ -1,133 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752525Ab2GSOiN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 10:38:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40436 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751880Ab2GSOg7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 10:36:59 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Stable <stable@vger.kernel.org>
-Cc: "Linux-MM <linux-mm"@kvack.org, LKML <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 19/34] mm: compaction: make isolate_lru_page() filter-aware again
-Date: Thu, 19 Jul 2012 15:36:29 +0100
-Message-Id: <1342708604-26540-20-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1342708604-26540-1-git-send-email-mgorman@suse.de>
-References: <1342708604-26540-1-git-send-email-mgorman@suse.de>
+	id S1752610Ab2GSOnd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 10:43:33 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:41054 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752277Ab2GSOn3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 10:43:29 -0400
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kent Yoder <key@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-crypto@vger.kernel.org
+Subject: [PATCH 0/4] powerpc/crypto: IBM Power7+ in-Nest compression support
+Date: Thu, 19 Jul 2012 09:42:37 -0500
+Message-Id: <1342708961-28587-1-git-send-email-sjenning@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12071914-2356-0000-0000-0000007E084F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit c82449352854ff09e43062246af86bdeb628f0c3 upstream.
+This is a continuation of support for the Power7+ in-Nest
+hardware accelerator.
 
-Stable note: Not tracked in Bugzilla. A fix aimed at preserving page aging
-	information by reducing LRU list churning had the side-effect of
-	reducing THP allocation success rates. This was part of a series
-	to restore the success rates while preserving the reclaim fix.
+https://lkml.org/lkml/2012/4/12/223
 
-Commit [39deaf85: mm: compaction: make isolate_lru_page() filter-aware]
-noted that compaction does not migrate dirty or writeback pages and
-that is was meaningless to pick the page and re-add it to the LRU list.
-This had to be partially reverted because some dirty pages can be
-migrated by compaction without blocking.
+This patchset adds the hardware driver and the cryptographic
+driver for hardware accelerated compression, which uses a
+hardware-optimized algorithm named 842.
 
-This patch updates "mm: compaction: make isolate_lru_page" by skipping
-over pages that migration has no possibility of migrating to minimise
-LRU disruption.
+The hardware driver has limits on generic compression and is
+geared toward compressing units that are of PAGE_SIZE for
+in-kernel memory compression.
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel<riel@redhat.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Reviewed-by: Minchan Kim <minchan@kernel.org>
-Cc: Dave Jones <davej@redhat.com>
-Cc: Jan Kara <jack@suse.cz>
-Cc: Andy Isaacson <adi@hexapodia.org>
-Cc: Nai Xia <nai.xia@gmail.com>
-Cc: Johannes Weiner <jweiner@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- include/linux/mmzone.h |    2 ++
- mm/compaction.c        |    3 +++
- mm/vmscan.c            |   35 +++++++++++++++++++++++++++++++++--
- 3 files changed, 38 insertions(+), 2 deletions(-)
+Based on linux-next (20120717)
 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 951ed81..80caa71 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -166,6 +166,8 @@ static inline int is_unevictable_lru(enum lru_list l)
- #define ISOLATE_CLEAN		((__force isolate_mode_t)0x4)
- /* Isolate unmapped file */
- #define ISOLATE_UNMAPPED	((__force isolate_mode_t)0x8)
-+/* Isolate for asynchronous migration */
-+#define ISOLATE_ASYNC_MIGRATE	((__force isolate_mode_t)0x10)
- 
- /* LRU Isolation modes. */
- typedef unsigned __bitwise__ isolate_mode_t;
-diff --git a/mm/compaction.c b/mm/compaction.c
-index afdc416..76bdd65 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -371,6 +371,9 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
- 			continue;
- 		}
- 
-+		if (!cc->sync)
-+			mode |= ISOLATE_ASYNC_MIGRATE;
-+
- 		/* Try isolate the page */
- 		if (__isolate_lru_page(page, mode, 0) != 0)
- 			continue;
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 9aa75e9..aa75861 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1045,8 +1045,39 @@ int __isolate_lru_page(struct page *page, isolate_mode_t mode, int file)
- 
- 	ret = -EBUSY;
- 
--	if ((mode & ISOLATE_CLEAN) && (PageDirty(page) || PageWriteback(page)))
--		return ret;
-+	/*
-+	 * To minimise LRU disruption, the caller can indicate that it only
-+	 * wants to isolate pages it will be able to operate on without
-+	 * blocking - clean pages for the most part.
-+	 *
-+	 * ISOLATE_CLEAN means that only clean pages should be isolated. This
-+	 * is used by reclaim when it is cannot write to backing storage
-+	 *
-+	 * ISOLATE_ASYNC_MIGRATE is used to indicate that it only wants to pages
-+	 * that it is possible to migrate without blocking
-+	 */
-+	if (mode & (ISOLATE_CLEAN|ISOLATE_ASYNC_MIGRATE)) {
-+		/* All the caller can do on PageWriteback is block */
-+		if (PageWriteback(page))
-+			return ret;
-+
-+		if (PageDirty(page)) {
-+			struct address_space *mapping;
-+
-+			/* ISOLATE_CLEAN means only clean pages */
-+			if (mode & ISOLATE_CLEAN)
-+				return ret;
-+
-+			/*
-+			 * Only pages without mappings or that have a
-+			 * ->migratepage callback are possible to migrate
-+			 * without blocking
-+			 */
-+			mapping = page_mapping(page);
-+			if (mapping && !mapping->a_ops->migratepage)
-+				return ret;
-+		}
-+	}
- 
- 	if ((mode & ISOLATE_UNMAPPED) && page_mapped(page))
- 		return ret;
+Seth Jennings (4):
+  powerpc: nx: rework Kconfig
+  powerpc: nx: add compression support to arch vec
+  powerpc: nx: add 842 hardware compression driver
+  crypto: add 842 crypto driver
+
+ MAINTAINERS                     |    6 +
+ arch/powerpc/kernel/prom_init.c |    4 +-
+ crypto/842.c                    |  183 +++++
+ crypto/Kconfig                  |    9 +
+ crypto/Makefile                 |    1 +
+ drivers/crypto/Kconfig          |   20 +-
+ drivers/crypto/nx/Kconfig       |   26 +
+ drivers/crypto/nx/Makefile      |    5 +-
+ drivers/crypto/nx/nx-842.c      | 1615 +++++++++++++++++++++++++++++++++++++++
+ include/linux/nx842.h           |   11 +
+ 10 files changed, 1864 insertions(+), 16 deletions(-)
+ create mode 100644 crypto/842.c
+ create mode 100644 drivers/crypto/nx/Kconfig
+ create mode 100644 drivers/crypto/nx/nx-842.c
+ create mode 100644 include/linux/nx842.h
+
 -- 
-1.7.9.2
+1.7.9.5
 
