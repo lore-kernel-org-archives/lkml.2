@@ -1,52 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752096Ab2GSTMR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 15:12:17 -0400
-Received: from toro.web-alm.net ([62.245.132.31]:58168 "EHLO toro.web-alm.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750838Ab2GSTMO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 15:12:14 -0400
-Message-Id: <20120719185212.184458166@osadl.org>
-User-Agent: quilt/0.51-1
-Date: Thu, 19 Jul 2012 20:52:12 +0200
-From: Carsten Emde <C.Emde@osadl.org>
-To: Rafael Wysocki <rjw@sisk.pl>
-Cc: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
-        Len Brown <len.brown@intel.com>, Kevin Hilman <khilman@ti.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        Carsten Emde <C.Emde@osadl.org>
-Subject: [PATCH 0/1 v2] cpuidle: allow to disable C states of the ladder governor
-References: <201207192042.57935.rjw@sisk.pl> <20120717185914.063547728@osadl.org> <5007EC10.1060508@linux.vnet.ibm.com> <5007F1F3.9090706@osadl.org>
+	id S1751529Ab2GSTUF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 15:20:05 -0400
+Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:5866 "EHLO
+	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750806Ab2GSTUC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 15:20:02 -0400
+From: Lance Ortiz <lance.ortiz@hp.com>
+To: bhelgaas@google.com, ying.huang@intel.com, jbarnes@virtuousgeek.org,
+        rusty@rustcorp.com.au, mchehab@redhat.com
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        lance.ortiz@hp.com
+Subject: [PATCH] aerdrv: Enable AER completion notice
+Date: Thu, 19 Jul 2012 13:19:12 -0600
+Message-Id: <1342725552-14407-1-git-send-email-lance.ortiz@hp.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rafael,
+When an AER event occurs not all of the print notifications are at the
+same log level.  This can cause an incomplete AER log from the users
+point of view when monitoring the console output.
 
->>>>>> [..]
->>>>>> I could implement a sanitize mechanism of the ladder governor that
->>>>>> takes care the "disable" variables of all deeper states are set to 1,
->>>>>> if a state is disabled, and those of all lighter states are set to 0,
->>>>>> if a state is enabled. Do you wish me to do that?
->>>>> No, I dont think thats necessary, current code suffices it.
->>>>> The disable flag is knob we are giving to the user . So may be just
->>>>> document  the  intended use of disable flag working
->>>>> alongside design of ladder governor.
->>>> It's not necessary - but maybe better. Here comes v3 with a sanitizer.
->>>> Is this too ugly?
->>> The v2, with the documentation in place seems sufficient.
->>> Yup, this adds unnecessary fields which are not much use
->>> coz the same can be achieved with just disable flag check.
->> ok, let's take v2.
-> Can you please resend the version regarded as the current one?
+The completion message in do_recovery() is currently set to KERN_DEBUG
+(log level 7) while the starting message in aer_port_info() uses
+KERN_INFO(log level 6). The completion message should be set to
+KERN_INFO so it is consistent with the starting message in the log.
 
-This is the version that was regarded as the current one (v2).
+The message has also been re-worded to make it more clear.  This patch 
+will enable the AER log on the console output to be book-ended by a
+clear and consistent starting and completion message.
 
-Changes in v2: A note in the documentation explains why the sysfs
-variable "disable" may not always reflect the current situation
-and why modifying it may not always work as expected.
+Signed-off-by: Lance Ortiz <lance.ortiz@hp.com>
+---
+ drivers/pci/pcie/aer/aerdrv_core.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-	-Carsten.
+diff --git a/drivers/pci/pcie/aer/aerdrv_core.c b/drivers/pci/pcie/aer/aerdrv_core.c
+index 0ca0535..164bab5 100644
+--- a/drivers/pci/pcie/aer/aerdrv_core.c
++++ b/drivers/pci/pcie/aer/aerdrv_core.c
+@@ -540,14 +540,14 @@ static void do_recovery(struct pci_dev *dev, int severity)
+ 				"resume",
+ 				report_resume);
+ 
+-	dev_printk(KERN_DEBUG, &dev->dev,
+-		"AER driver successfully recovered\n");
++	dev_printk(KERN_INFO, &dev->dev,
++		"AER: Device recovery successful\n");
+ 	return;
+ 
+ failed:
+ 	/* TODO: Should kernel panic here? */
+-	dev_printk(KERN_DEBUG, &dev->dev,
+-		"AER driver didn't recover\n");
++	dev_printk(KERN_INFO, &dev->dev,
++		"AER: Device recovery failed\n");
+ }
+ 
+ /**
+-- 
+1.7.7.6
 
