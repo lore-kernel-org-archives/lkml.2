@@ -1,86 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754993Ab2GSF7X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 01:59:23 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:46029 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753218Ab2GSF7T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 01:59:19 -0400
-Date: Thu, 19 Jul 2012 15:59:10 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: linux-next: manual merge of the random tree with the mfd tree
-Message-Id: <20120719155910.d2730d9bbcabadd945d7c585@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__19_Jul_2012_15_59_10_+1000_jWVvQHPcEnyY/WeL"
+	id S1755942Ab2GSF7j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 01:59:39 -0400
+Received: from mga02.intel.com ([134.134.136.20]:40789 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751126Ab2GSF7G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 01:59:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="174095410"
+From: Chen Gong <gong.chen@linux.intel.com>
+To: tglx@linutronix.de
+Cc: tony.luck@intel.com, bp@amd64.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 3/5] x86: mce: Split timer init
+Date: Thu, 19 Jul 2012 13:59:39 -0400
+Message-Id: <1342720781-4729-4-git-send-email-gong.chen@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1342720781-4729-1-git-send-email-gong.chen@linux.intel.com>
+References: <1342720781-4729-1-git-send-email-gong.chen@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__19_Jul_2012_15_59_10_+1000_jWVvQHPcEnyY/WeL
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Thomas Gleixner <tglx@linutronix.de>
 
-Hi Theodore,
+Split timer init function into the init and the start part, so the
+start part can replace the open coded version in CPU_DOWN_FAILED.
 
-Today's linux-next merge of the random tree got a conflict in
-drivers/mfd/ab3100-core.c between commit 7f0f07ce25b6 ("mfd: Use devm
-allocation for ab3100-core") from the mfd tree and commit 627574db8b21
-("random: remove rand_initialize_irq()") from the random tree.
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Acked-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ arch/x86/kernel/cpu/mcheck/mce.c |   25 +++++++++++++------------
+ 1 file changed, 13 insertions(+), 12 deletions(-)
 
-I fixed it up (see below) and can carry the fix as necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index da27c5d..9bc425f 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -1554,23 +1554,28 @@ static void __mcheck_cpu_init_vendor(struct cpuinfo_x86 *c)
+ 	}
+ }
+ 
+-static void __mcheck_cpu_init_timer(void)
++static void mce_start_timer(unsigned int cpu, struct timer_list *t)
+ {
+-	struct timer_list *t = &__get_cpu_var(mce_timer);
+ 	unsigned long iv = check_interval * HZ;
+ 
+-	setup_timer(t, mce_timer_fn, smp_processor_id());
++	__this_cpu_write(mce_next_interval, iv);
+ 
+-	if (mce_ignore_ce)
++	if (mce_ignore_ce || !iv)
+ 		return;
+ 
+-	__this_cpu_write(mce_next_interval, iv);
+-	if (!iv)
+-		return;
+ 	t->expires = round_jiffies(jiffies + iv);
+ 	add_timer_on(t, smp_processor_id());
+ }
+ 
++static void __mcheck_cpu_init_timer(void)
++{
++	struct timer_list *t = &__get_cpu_var(mce_timer);
++	unsigned int cpu = smp_processor_id();
++
++	setup_timer(t, mce_timer_fn, cpu);
++	mce_start_timer(cpu, t);
++}
++
+ /* Handle unconfigured int18 (should never happen) */
+ static void unexpected_machine_check(struct pt_regs *regs, long error_code)
+ {
+@@ -2275,12 +2280,8 @@ mce_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
+ 		break;
+ 	case CPU_DOWN_FAILED:
+ 	case CPU_DOWN_FAILED_FROZEN:
+-		if (!mce_ignore_ce && check_interval) {
+-			t->expires = round_jiffies(jiffies +
+-					per_cpu(mce_next_interval, cpu));
+-			add_timer_on(t, cpu);
+-		}
+ 		smp_call_function_single(cpu, mce_reenable_cpu, &action, 1);
++		mce_start_timer(cpu, t);
+ 		break;
+ 	case CPU_POST_DEAD:
+ 		/* intentionally ignoring frozen here */
+-- 
+1.7.10.4
 
-diff --cc drivers/mfd/ab3100-core.c
-index 4276aab,1287645..0000000
---- a/drivers/mfd/ab3100-core.c
-+++ b/drivers/mfd/ab3100-core.c
-@@@ -931,13 -929,10 +929,11 @@@ static int __devinit ab3100_probe(struc
-  	if (err)
-  		goto exit_no_setup;
- =20
- -	err =3D request_threaded_irq(client->irq, NULL, ab3100_irq_handler,
- -				IRQF_ONESHOT, "ab3100-core", ab3100);
- +	err =3D devm_request_threaded_irq(&client->dev,
- +					client->irq, NULL, ab3100_irq_handler,
- +					IRQF_ONESHOT, "ab3100-core", ab3100);
-  	if (err)
-  		goto exit_no_irq;
-- 	/* This real unpredictable IRQ is of course sampled for entropy */
-- 	rand_initialize_irq(client->irq);
- =20
-  	err =3D abx500_register_ops(&client->dev, &ab3100_ops);
-  	if (err)
-
---Signature=_Thu__19_Jul_2012_15_59_10_+1000_jWVvQHPcEnyY/WeL
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQB6IuAAoJEECxmPOUX5FECUUP/iDZH0Re3cXTEXx6C87/gfFz
-hzeSZjuLJGPVLpXDOrNeXRpTFyx4jGJOg2wHXyZCi/1nepH/OyLzOkGgXOeeF76c
-7nCWBp4Ec/KXyJKPnZ/JZBVeikCx2uQfdonY7nnb1esAFyqqsVT104oRbwWVvc76
-3EIwhDMpGdPKMAJaip9OvVTglKV75iTPVRkbyJU06N8PR0JCPgP5FNYfg2SCuqLo
-EvFIoPcfEiuxVKn8wWV3+XJgpkr6AfYZDuGtSAQIfnhuRLat3Qo2DdU551VkbR3V
-giEMQ6/zHN4i4Y/wyKLxhzDw5IsRQtgduaiu6blVFHpXx26x/QZYnDTtXylslqdW
-itM5QIKhm5J7xpgvHamEnNEbiWWVATy6Pqwnrk9koPYQm2TaAzmPN9DIf+UOE9tu
-v7yw1UR5pTRmhYlf8wUSbiPC1cpKlgBVB4B32aokzk5orfvyxJJ5/wousnTgA98D
-XPTg9vUlIlY6CZR6mCGkdHv4sp7mXm2ck8Idy0jfJnQm3YudcNKfyXT6qMjCwZoH
-5blKFXN4L7e4k53dVhjT3l8QUeQcGGLvBTZv8XVbi+TujckROw5/zXG33w3mMTCj
-S76EhHmU8EVk6gsGHzoEra0mO1xL/WS9Un+RWHIswRjxC96KK0fo4AXOEV4Mqkfl
-Ps69RvYCt4pDBIyTq1d3
-=6sv1
------END PGP SIGNATURE-----
-
---Signature=_Thu__19_Jul_2012_15_59_10_+1000_jWVvQHPcEnyY/WeL--
