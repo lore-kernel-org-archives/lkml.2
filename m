@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752949Ab2GWV4T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 23 Jul 2012 17:56:19 -0400
-Received: from mga02.intel.com ([134.134.136.20]:29998 "EHLO mga02.intel.com"
+	id S1753953Ab2GWV5Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 23 Jul 2012 17:57:24 -0400
+Received: from mga09.intel.com ([134.134.136.24]:51442 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751693Ab2GWV4S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 23 Jul 2012 17:56:18 -0400
+	id S1752685Ab2GWV5X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 23 Jul 2012 17:57:23 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="176263596"
-Message-Id: <0ccfb1af5fe35e537b7cd8e4d448bf7d851dbfb9.1343078495.git.tony.luck@intel.com>
+   d="scan'208";a="176263964"
+Message-Id: <180a06f3f357cf9f78259ae443a082b14a29535b.1343078495.git.tony.luck@intel.com>
 In-Reply-To: <cover.1343078495.git.tony.luck@intel.com>
 References: <cover.1343078495.git.tony.luck@intel.com>
 From: Tony Luck <tony.luck@intel.com>
-Date: Thu, 19 Jul 2012 11:21:53 -0700
-Subject: [PATCH 1/2] x86/mce: Move MCACOD defines from mce-severity.c to
- <asm/mce.h>
+Date: Thu, 19 Jul 2012 11:28:46 -0700
+Subject: [PATCH 2/2] x86/mce: Add quirk for instruction recovery on Sandy
+ Bridge processors
 To: Ingo Molnar <mingo@elte.hu>
 Cc: linux-kernel@vger.kernel.org, Borislav Petkov <bp@amd64.org>,
         Chen Gong <gong.chen@linux.intel.com>,
@@ -25,53 +25,108 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We will need some of these values in mce.c. Move them to the
-appropriate header file so they are available.
+Sandy Bridge processors follow the SDM (Vol 3B, Table 15-20) and set
+both the RIPV and EIPV bits in the MCG_STATUS register to zero for
+machine checks during instruction fetch. This is more than a little
+counter-intuitive and means that Linux cannot recover from these
+errors. Rather than insert special case code at several places in mce.c
+and mce-severity.c, we pretend the EIPV bit was set for just this case
+early in processing the machine check.
 
 Acked-by: Borislav Petkov <bp@amd64.org>
 Signed-off-by: Tony Luck <tony.luck@intel.com>
 ---
- arch/x86/include/asm/mce.h                | 8 ++++++++
- arch/x86/kernel/cpu/mcheck/mce-severity.c | 7 -------
- 2 files changed, 8 insertions(+), 7 deletions(-)
+ arch/x86/kernel/cpu/mcheck/mce.c | 43 +++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 40 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
-index 441520e..a3ac52b 100644
---- a/arch/x86/include/asm/mce.h
-+++ b/arch/x86/include/asm/mce.h
-@@ -33,6 +33,14 @@
- #define MCI_STATUS_PCC   (1ULL<<57)  /* processor context corrupt */
- #define MCI_STATUS_S	 (1ULL<<56)  /* Signaled machine check */
- #define MCI_STATUS_AR	 (1ULL<<55)  /* Action required */
-+#define MCACOD		  0xffff     /* MCA Error Code */
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index da27c5d..e65e738 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -102,6 +102,8 @@ DEFINE_PER_CPU(mce_banks_t, mce_poll_banks) = {
+ 
+ static DEFINE_PER_CPU(struct work_struct, mce_work);
+ 
++static void (*quirk_no_way_out)(int bank, struct mce *m, struct pt_regs *regs);
 +
-+/* Architecturally defined codes from SDM Vol. 3B Chapter 15 */
-+#define MCACOD_SCRUB	0x00C0	/* 0xC0-0xCF Memory Scrubbing */
-+#define MCACOD_SCRUBMSK	0xfff0
-+#define MCACOD_L3WB	0x017A	/* L3 Explicit Writeback */
-+#define MCACOD_DATA	0x0134	/* Data Load */
-+#define MCACOD_INSTR	0x0150	/* Instruction Fetch */
+ /*
+  * CPU/chipset specific EDAC code can register a notifier call here to print
+  * MCE errors in a human-readable form.
+@@ -649,14 +651,18 @@ EXPORT_SYMBOL_GPL(machine_check_poll);
+  * Do a quick check if any of the events requires a panic.
+  * This decides if we keep the events around or clear them.
+  */
+-static int mce_no_way_out(struct mce *m, char **msg, unsigned long *validp)
++static int mce_no_way_out(struct mce *m, char **msg, unsigned long *validp,
++			  struct pt_regs *regs)
+ {
+ 	int i, ret = 0;
  
- /* MCi_MISC register defines */
- #define MCI_MISC_ADDR_LSB(m)	((m) & 0x3f)
-diff --git a/arch/x86/kernel/cpu/mcheck/mce-severity.c b/arch/x86/kernel/cpu/mcheck/mce-severity.c
-index 413c2ce..1301762 100644
---- a/arch/x86/kernel/cpu/mcheck/mce-severity.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce-severity.c
-@@ -55,13 +55,6 @@ static struct severity {
- #define MCI_UC_S (MCI_STATUS_UC|MCI_STATUS_S)
- #define MCI_UC_SAR (MCI_STATUS_UC|MCI_STATUS_S|MCI_STATUS_AR)
- #define	MCI_ADDR (MCI_STATUS_ADDRV|MCI_STATUS_MISCV)
--#define MCACOD 0xffff
--/* Architecturally defined codes from SDM Vol. 3B Chapter 15 */
--#define MCACOD_SCRUB	0x00C0	/* 0xC0-0xCF Memory Scrubbing */
--#define MCACOD_SCRUBMSK	0xfff0
--#define MCACOD_L3WB	0x017A	/* L3 Explicit Writeback */
--#define MCACOD_DATA	0x0134	/* Data Load */
--#define MCACOD_INSTR	0x0150	/* Instruction Fetch */
+ 	for (i = 0; i < banks; i++) {
+ 		m->status = mce_rdmsrl(MSR_IA32_MCx_STATUS(i));
+-		if (m->status & MCI_STATUS_VAL)
++		if (m->status & MCI_STATUS_VAL) {
+ 			__set_bit(i, validp);
++			if (quirk_no_way_out)
++				quirk_no_way_out(i, m, regs);
++		}
+ 		if (mce_severity(m, tolerant, msg) >= MCE_PANIC_SEVERITY)
+ 			ret = 1;
+ 	}
+@@ -1039,7 +1045,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
+ 	*final = m;
  
- 	MCESEV(
- 		NO, "Invalid",
+ 	memset(valid_banks, 0, sizeof(valid_banks));
+-	no_way_out = mce_no_way_out(&m, &msg, valid_banks);
++	no_way_out = mce_no_way_out(&m, &msg, valid_banks, regs);
+ 
+ 	barrier();
+ 
+@@ -1415,6 +1421,34 @@ static void __mcheck_cpu_init_generic(void)
+ 	}
+ }
+ 
++/*
++ * During IFU recovery Sandy Bridge -EP4S processors set the RIPV and
++ * EIPV bits in MCG_STATUS to zero on the affected logical processor (SDM
++ * Vol 3B Table 15-20). But this confuses both the code that determines
++ * whether the machine check occurred in kernel or user mode, and also
++ * the severity assessment code. Pretend that EIPV was set, and take the
++ * ip/cs values from the pt_regs that mce_gather_info() ignored earlier.
++ */
++static void quirk_sandybridge_ifu(int bank, struct mce *m, struct pt_regs *regs)
++{
++	if (bank != 0)
++		return;
++	if ((m->mcgstatus & (MCG_STATUS_EIPV|MCG_STATUS_RIPV)) != 0)
++		return;
++	if ((m->status & (MCI_STATUS_OVER|MCI_STATUS_UC|
++		          MCI_STATUS_EN|MCI_STATUS_MISCV|MCI_STATUS_ADDRV|
++			  MCI_STATUS_PCC|MCI_STATUS_S|MCI_STATUS_AR|
++			  MCACOD)) !=
++			 (MCI_STATUS_UC|MCI_STATUS_EN|
++			  MCI_STATUS_MISCV|MCI_STATUS_ADDRV|MCI_STATUS_S|
++			  MCI_STATUS_AR|MCACOD_INSTR))
++		return;
++
++	m->mcgstatus |= MCG_STATUS_EIPV;
++	m->ip = regs->ip;
++	m->cs = regs->cs;
++}
++
+ /* Add per CPU specific workarounds here */
+ static int __cpuinit __mcheck_cpu_apply_quirks(struct cpuinfo_x86 *c)
+ {
+@@ -1512,6 +1546,9 @@ static int __cpuinit __mcheck_cpu_apply_quirks(struct cpuinfo_x86 *c)
+ 		 */
+ 		if (c->x86 == 6 && c->x86_model <= 13 && mce_bootlog < 0)
+ 			mce_bootlog = 0;
++
++		if (c->x86 == 6 && c->x86_model == 45)
++			quirk_no_way_out = quirk_sandybridge_ifu;
+ 	}
+ 	if (monarch_timeout < 0)
+ 		monarch_timeout = 0;
 -- 
 1.7.10.2.552.gaa3bb87
 
