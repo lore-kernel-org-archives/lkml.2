@@ -1,229 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752731Ab2GSEgT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 00:36:19 -0400
-Received: from lunge.queued.net ([173.255.254.236]:60560 "EHLO
-	lunge.queued.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751088Ab2GSEgR (ORCPT
+	id S1753006Ab2GSEgk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 00:36:40 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:58051 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752529Ab2GSEgh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 00:36:17 -0400
-Date: Wed, 18 Jul 2012 21:36:05 -0700
-From: Andres Salomon <dilinger@queued.net>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Paul Fox <pgf@laptop.org>, Daniel Drake <dsd@laptop.org>,
-        "Richard A. Smith" <richard@laptop.org>, linux-kernel@vger.kernel.org,
-        libertas-dev@lists.infradead.org, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, platform-driver-x86@vger.kernel.org,
-        devel@driverdev.osuosl.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Dan Williams <dcbw@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Matthew Garrett <mjg@redhat.com>, Anton Vorontsov <cbou@mail.ru>,
-        David Woodhouse <dwmw2@infradead.org>, Chris Ball <cjb@laptop.org>,
-        Jon Nettleton <jon.nettleton@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 6/9] x86: OLPC: switch over to using new EC driver on
- x86
-Message-ID: <20120718213605.1605ba91@dev.queued.net>
-In-Reply-To: <20120718212827.2080b28b@dev.queued.net>
-References: <20120718182144.2d7b0b50@dev.queued.net>
-	<20120718212827.2080b28b@dev.queued.net>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	Thu, 19 Jul 2012 00:36:37 -0400
+Date: Thu, 19 Jul 2012 14:36:27 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@linux.intel.com>
+Subject: linux-next: build failure after merge of the tty tree
+Message-Id: <20120719143627.adc9d5e5333449d6c8588a99@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__19_Jul_2012_14_36_27_+1000_S2nEvJqwS=ePn2/D"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Damnit, my mailer mangled the resend.  Okay, 3rd time's a charm..
-(sorry for the noise!)
+--Signature=_Thu__19_Jul_2012_14_36_27_+1000_S2nEvJqwS=ePn2/D
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Wed, 18 Jul 2012 21:28:27 -0700
-Andres Salomon <dilinger@queued.net> wrote:
+Hi Greg,
 
-> This uses the new EC driver framework in drivers/platform/olpc.  The
-> XO-1 and XO-1.5-specific code is still in arch/x86, but the generic
-> stuff (including a new workqueue; no more running EC commands with
-> IRQs disabled!) can be shared with other architectures.
-> 
-> Signed-off-by: Andres Salomon <dilinger@queued.net>
-> ---
->  arch/x86/include/asm/olpc.h     |    5 ---
->  arch/x86/platform/olpc/olpc.c   |   53
-> ++++++++++++++++++++-------------------
-> drivers/platform/olpc/olpc-ec.c |    5 --- 3 files changed, 27
-> insertions(+), 36 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/olpc.h b/arch/x86/include/asm/olpc.h
-> index 5b28f3e..72f9adf6 100644
-> --- a/arch/x86/include/asm/olpc.h
-> +++ b/arch/x86/include/asm/olpc.h
-> @@ -100,11 +100,6 @@ extern void olpc_xo1_pm_wakeup_clear(u16 value);
->  
->  extern int pci_olpc_init(void);
->  
-> -/* EC related functions */
-> -
-> -extern int olpc_ec_cmd_x86(unsigned char cmd, unsigned char *inbuf,
-> -		size_t inlen, unsigned char *outbuf, size_t outlen);
-> -
->  /* SCI source values */
->  
->  #define EC_SCI_SRC_EMPTY	0x00
-> diff --git a/arch/x86/platform/olpc/olpc.c
-> b/arch/x86/platform/olpc/olpc.c index a3fa180..4590096 100644
-> --- a/arch/x86/platform/olpc/olpc.c
-> +++ b/arch/x86/platform/olpc/olpc.c
-> @@ -14,7 +14,6 @@
->  #include <linux/init.h>
->  #include <linux/module.h>
->  #include <linux/delay.h>
-> -#include <linux/spinlock.h>
->  #include <linux/io.h>
->  #include <linux/string.h>
->  #include <linux/platform_device.h>
-> @@ -32,8 +31,6 @@
->  struct olpc_platform_t olpc_platform_info;
->  EXPORT_SYMBOL_GPL(olpc_platform_info);
->  
-> -static DEFINE_SPINLOCK(ec_lock);
-> -
->  /* debugfs interface to EC commands */
->  #define EC_MAX_CMD_ARGS (5 + 1)	/* cmd byte + 5 args */
->  #define EC_MAX_CMD_REPLY (8)
-> @@ -126,16 +123,13 @@ static int __wait_on_obf(unsigned int line,
-> unsigned int port, int desired)
->   * <http://wiki.laptop.org/go/Ec_specification>.  Unfortunately,
-> while
->   * OpenFirmware's source is available, the EC's is not.
->   */
-> -int olpc_ec_cmd_x86(unsigned char cmd, unsigned char *inbuf, size_t
-> inlen,
-> -		unsigned char *outbuf,  size_t outlen)
-> +static int olpc_xo1_ec_cmd(u8 cmd, u8 *inbuf, size_t inlen, u8
-> *outbuf,
-> +		size_t outlen, void *arg)
->  {
-> -	unsigned long flags;
->  	int ret = -EIO;
->  	int i;
->  	int restarts = 0;
->  
-> -	spin_lock_irqsave(&ec_lock, flags);
-> -
->  	/* Clear OBF */
->  	for (i = 0; i < 10 && (obf_status(0x6c) == 1); i++)
->  		inb(0x68);
-> @@ -199,10 +193,8 @@ restart:
->  
->  	ret = 0;
->  err:
-> -	spin_unlock_irqrestore(&ec_lock, flags);
->  	return ret;
->  }
-> -EXPORT_SYMBOL_GPL(olpc_ec_cmd_x86);
->  
->  void olpc_ec_wakeup_set(u16 value)
->  {
-> @@ -366,7 +358,7 @@ static void setup_debugfs(void)
->  			    &ec_debugfs_genops);
->  }
->  
-> -static int olpc_ec_suspend(void)
-> +static int olpc_ec_suspend(struct platform_device *pdev)
->  {
->  	return olpc_ec_mask_write(ec_wakeup_mask);
->  }
-> @@ -425,8 +417,28 @@ static int __init add_xo1_platform_devices(void)
->  	return 0;
->  }
->  
-> -static struct syscore_ops olpc_syscore_ops = {
-> +static int olpc_xo1_ec_probe(struct platform_device *pdev)
-> +{
-> +	/* get the EC revision */
-> +	olpc_ec_cmd(EC_FIRMWARE_REV, NULL, 0,
-> +			(unsigned char *) &olpc_platform_info.ecver,
-> 1); +
-> +	/* EC version 0x5f adds support for wide SCI mask */
-> +	if (olpc_platform_info.ecver >= 0x5f)
-> +		olpc_platform_info.flags |= OLPC_F_EC_WIDE_SCI;
-> +
-> +	pr_info("OLPC board revision %s%X (EC=%x)\n",
-> +			((olpc_platform_info.boardrev & 0xf) < 8) ?
-> "pre" : "",
-> +			olpc_platform_info.boardrev >> 4,
-> +			olpc_platform_info.ecver);
-> +
-> +	return 0;
-> +}
-> +
-> +static struct olpc_ec_driver ec_xo1_driver = {
->  	.suspend = olpc_ec_suspend,
-> +	.probe = olpc_xo1_ec_probe,
-> +	.ec_cmd = olpc_xo1_ec_cmd,
->  };
->  
->  static int __init olpc_init(void)
-> @@ -436,16 +448,14 @@ static int __init olpc_init(void)
->  	if (!olpc_ofw_present() || !platform_detect())
->  		return 0;
->  
-> -	spin_lock_init(&ec_lock);
-> +	/* register the XO-1 and 1.5-specific EC handler */
-> +	olpc_ec_driver_register(&ec_xo1_driver, NULL);
-> +	platform_device_register_simple("olpc-ec", -1, NULL, 0);
->  
->  	/* assume B1 and above models always have a DCON */
->  	if (olpc_board_at_least(olpc_board(0xb1)))
->  		olpc_platform_info.flags |= OLPC_F_DCON;
->  
-> -	/* get the EC revision */
-> -	olpc_ec_cmd(EC_FIRMWARE_REV, NULL, 0,
-> -			(unsigned char *) &olpc_platform_info.ecver,
-> 1); -
->  #ifdef CONFIG_PCI_OLPC
->  	/* If the VSA exists let it emulate PCI, if not emulate in
-> kernel.
->  	 * XO-1 only. */
-> @@ -453,14 +463,6 @@ static int __init olpc_init(void)
->  			!cs5535_has_vsa2())
->  		x86_init.pci.arch_init = pci_olpc_init;
->  #endif
-> -	/* EC version 0x5f adds support for wide SCI mask */
-> -	if (olpc_platform_info.ecver >= 0x5f)
-> -		olpc_platform_info.flags |= OLPC_F_EC_WIDE_SCI;
-> -
-> -	printk(KERN_INFO "OLPC board revision %s%X (EC=%x)\n",
-> -			((olpc_platform_info.boardrev & 0xf) < 8) ?
-> "pre" : "",
-> -			olpc_platform_info.boardrev >> 4,
-> -			olpc_platform_info.ecver);
->  
->  	if (olpc_platform_info.boardrev < olpc_board_pre(0xd0)) { /*
-> XO-1 */ r = add_xo1_platform_devices();
-> @@ -468,7 +470,6 @@ static int __init olpc_init(void)
->  			return r;
->  	}
->  
-> -	register_syscore_ops(&olpc_syscore_ops);
->  	setup_debugfs();
->  
->  	return 0;
-> diff --git a/drivers/platform/olpc/olpc-ec.c
-> b/drivers/platform/olpc/olpc-ec.c index cfba41f..a3d32c2 100644
-> --- a/drivers/platform/olpc/olpc-ec.c
-> +++ b/drivers/platform/olpc/olpc-ec.c
-> @@ -113,11 +113,6 @@ int olpc_ec_cmd(u8 cmd, u8 *inbuf, size_t inlen,
-> u8 *outbuf, size_t outlen) struct olpc_ec_priv *ec = ec_priv;
->  	struct ec_cmd_desc desc;
->  
-> -	/* XXX: this will be removed in later patches */
-> -	/* Are we using old-style callers? */
-> -	if (!ec_driver || !ec_driver->ec_cmd)
-> -		return olpc_ec_cmd_x86(cmd, inbuf, inlen, outbuf,
-> outlen); -
->  	/* Ensure a driver and ec hook have been registered */
->  	if (WARN_ON(!ec_driver || !ec_driver->ec_cmd))
->  		return -ENODEV;
+After merging the tty tree, today's linux-next build (x86_64 allmodconfig)
+failed like this:
+
+drivers/char/pcmcia/synclink_cs.c: In function 'shutdown':
+drivers/char/pcmcia/synclink_cs.c:1347:27: error: invalid type argument of =
+'->' (have 'struct ktermios')
+drivers/char/pcmcia/synclink_cs.c: In function 'mgslpc_program_hw':
+drivers/char/pcmcia/synclink_cs.c:1388:45: error: invalid type argument of =
+'->' (have 'struct ktermios')
+drivers/char/pcmcia/synclink_cs.c: In function 'mgslpc_change_params':
+drivers/char/pcmcia/synclink_cs.c:1401:14: error: wrong type argument to un=
+ary exclamation mark
+drivers/char/pcmcia/synclink_cs.c:1408:22: error: invalid type argument of =
+'->' (have 'struct ktermios')
+drivers/char/pcmcia/synclink_cs.c: In function 'mgslpc_throttle':
+drivers/char/pcmcia/synclink_cs.c:1731:19: error: invalid type argument of =
+'->' (have 'struct ktermios')
+drivers/char/pcmcia/synclink_cs.c: In function 'mgslpc_unthrottle':
+drivers/char/pcmcia/synclink_cs.c:1760:19: error: invalid type argument of =
+'->' (have 'struct ktermios')
+drivers/char/pcmcia/synclink_cs.c: In function 'mgslpc_set_termios':
+drivers/char/pcmcia/synclink_cs.c:2296:19: error: invalid type argument of =
+'->' (have 'struct ktermios')
+drivers/char/pcmcia/synclink_cs.c:2297:10: error: invalid type argument of =
+'->' (have 'struct ktermios')
+drivers/char/pcmcia/synclink_cs.c:2305:20: error: invalid type argument of =
+'->' (have 'struct ktermios')
+drivers/char/pcmcia/synclink_cs.c:2314:18: error: invalid type argument of =
+'->' (have 'struct ktermios')
+drivers/char/pcmcia/synclink_cs.c:2316:22: error: invalid type argument of =
+'->' (have 'struct ktermios')
+drivers/char/pcmcia/synclink_cs.c:2327:20: error: invalid type argument of =
+'->' (have 'struct ktermios')
+
+Caused by commit adc8d746caa6 ("tty: move the termios object into the
+tty").  Grep and build testing are your friends ...
+
+I have used the tty tree from next-20120712 again for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__19_Jul_2012_14_36_27_+1000_S2nEvJqwS=ePn2/D
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQB47LAAoJEECxmPOUX5FEQCoP/2y5eAvx3O84sDZaSV1BS30q
+79xYK5T4ax2YDKn+cdayCmu0q2B72XShEPZ9eSO2VnVRPV3KcJyV4+gnLU0Mk1/X
+bK3rZGqyvYFZBBaSr4M6YwG2S8Fml5jIFJlawBMsogTEzVdna2vAfYwGcZjdnv+K
+FM28IsyU7WEl18Um6Y4yA/m6OB8QrD2q63D8hMq6jtpe8pXMRzd9LomshWcJxZTm
+6nxBqc5+F+//UyJmxwnzSZ1ZFHZGSkfe99U0xUR93FuBVrcg6Aeff49O2NMcIWPx
+jQm82kgzXLXRPocq1S6CHXN9j+FSL3ZC/OcT97fZjraVVVDhX9XcGCvTdLCIntSr
+m5opUuWRAx+thyFdWbNAcejFzmOu+SYdMtEjNvNpvErTRrHQjXnAN/e1B1lfBhvX
++AZd2vwpQAuNI9jJrdVZFpciZaQVUvinI3Z0FEwjQY6C0hir9J+u6Frlt2PIaHte
+mtS2wEE0VN6q4CBmspywNA4DTCaayuCdkLd56/qgzwLzvQEo5fGKkeVxX1BkD3bi
+DOwx0c2PbVXl462+yTsUBssrM0GDuMwdpMtrhfXTm9tv8vHer9rk6XzE4k3LBsSV
+G8FYcEspbcJ5MNGrE+pb/uUoDFPjwMU/4eeHjx8+N6VUuS9ep10XkjaFwllfXmL2
+sxB8UGJtDFcZZ0jpaXXT
+=h345
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__19_Jul_2012_14_36_27_+1000_S2nEvJqwS=ePn2/D--
