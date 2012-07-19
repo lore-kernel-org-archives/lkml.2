@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754757Ab2GSAOq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 20:14:46 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:40164 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751493Ab2GSAOm (ORCPT
+	id S1752585Ab2GSAdN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 20:33:13 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:42109 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751123Ab2GSAdK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 20:14:42 -0400
+	Wed, 18 Jul 2012 20:33:10 -0400
 MIME-Version: 1.0
-In-Reply-To: <1342656617.2215.40.camel@joe2Laptop>
-References: <1342442513-10488-1-git-send-email-yamanetoshi@gmail.com>
-	<1342573366-8167-1-git-send-email-yamanetoshi@gmail.com>
-	<1342574175.2012.12.camel@joe2Laptop>
-	<CAOTypNSvKEfYVLZ=0sN-U+2xiXBO4So4QkvYyKniEFeqvkqVBg@mail.gmail.com>
-	<1342633985.9551.36.camel@joe2Laptop>
-	<CAOTypNQDWUNNFP6aEQ3ZjTi6u-UH7oRMR5eg5-n2PHjEaTxmhw@mail.gmail.com>
-	<1342656617.2215.40.camel@joe2Laptop>
-Date: Thu, 19 Jul 2012 09:14:41 +0900
-Message-ID: <CAOTypNSWbQW8H8X-W=iXyFsPFn5ODn1G-f6nsfpgusJg7Ej=tQ@mail.gmail.com>
-Subject: Re: [PATCH] staging/et131x: fix checkpatch warnings
-From: Toshiaki Yamane <yamanetoshi@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Einon <mark.einon@gmail.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <87pq7ungsw.fsf@octavius.laptop.org>
+References: <1338576911-17089-1-git-send-email-merez@codeaurora.org>
+	<1338576911-17089-2-git-send-email-merez@codeaurora.org>
+	<CAFR8uefCD_WXDM6m+-XwG10+W0UXqOtK7_sxWD3uVckh3pnR-Q@mail.gmail.com>
+	<CAFR8uee7hWLC-h_abZOCEuqeUeuhDuJp74x3R-3n+c61xyfaPQ@mail.gmail.com>
+	<fb2303ea3a3a5470e76d1faa2abd471b.squirrel@www.codeaurora.org>
+	<CAFR8ueecGqw=JzAGVHV61-SqOnn_C-ryT54KCQCbKkJpXUGY9w@mail.gmail.com>
+	<87629qkvgp.fsf@octavius.laptop.org>
+	<CAFR8uedwb1_gB-j6=riUuiJcEPY13rNJCLv1bxXc6aebnhonYw@mail.gmail.com>
+	<87pq7wjudy.fsf@octavius.laptop.org>
+	<CAFR8uefP0VV2fbBLv27y2KnMPRFPbGssm6EUdaqhZXXyQ2+k2Q@mail.gmail.com>
+	<87pq7ungsw.fsf@octavius.laptop.org>
+Date: Wed, 18 Jul 2012 17:33:09 -0700
+Message-ID: <CAFR8uecN49S4Lmc-HtcUJomDNcmy9xmW5CcXbOYXZaaB3na81A@mail.gmail.com>
+Subject: Re: [PATCH v2 1/1] mmc: block: Add write packing control
+From: Muthu Kumar <muthu.lkml@gmail.com>
+To: Chris Ball <cjb@laptop.org>
+Cc: Jens Axboe <axboe@kernel.dk>, merez@codeaurora.org,
+        linux-mmc@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        DOCUMENTATION <linux-doc@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 19, 2012 at 9:10 AM, Joe Perches <joe@perches.com> wrote:
-> On Thu, 2012-07-19 at 09:05 +0900, Toshiaki Yamane wrote:
->> On Thu, Jul 19, 2012 at 2:53 AM, Joe Perches <joe@perches.com> wrote:
->> > OK, fyi: it turns out ps_ring_physaddr and rx_status_bus
->> > are both dma_addr_t so both should be emitted with %ull
->> > and cast to (unsigned long long) or (u64).
->> Thanks for your reply.
->> %ullx ?
 >
-> My fault, dunno what I was thinking, just %llx
+> I'd be willing to explore something like Venkat's idea if the block
+> layer maintainers insist, though.
+
+
+Yeah... I guess it's upto Jens.
+
+
 >
-> cheers, Joe
->
-
-Thanks!
-I will try to fix it.
-
--- 
-
-Regards,
-
-
- .
-  .
-...
-
-Yamane Toshiaki
-
-yamanetoshi@gmail.com
+> - Chris.
+> --
+> Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+> One Laptop Per Child
