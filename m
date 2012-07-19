@@ -1,18 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751765Ab2GSTBo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 15:01:44 -0400
-Received: from mga11.intel.com ([192.55.52.93]:44056 "EHLO mga11.intel.com"
+	id S1752178Ab2GSTCF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 15:02:05 -0400
+Received: from mga11.intel.com ([192.55.52.93]:56729 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751091Ab2GSTBl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 15:01:41 -0400
+	id S1751426Ab2GSTCC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 15:02:02 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="195181867"
-Message-Id: <cover.1342723082.git.tony.luck@intel.com>
+   d="scan'208";a="180719166"
+Message-Id: <0ccfb1af5fe35e537b7cd8e4d448bf7d851dbfb9.1342723082.git.tony.luck@intel.com>
+In-Reply-To: <cover.1342723082.git.tony.luck@intel.com>
+References: <cover.1342723082.git.tony.luck@intel.com>
 From: Tony Luck <tony.luck@intel.com>
-Date: Thu, 19 Jul 2012 11:38:02 -0700
-Subject: [PATCH 0/2] Fix machine check recovery for instruction fault on Sandy Bridge
+Date: Thu, 19 Jul 2012 11:21:53 -0700
+Subject: [PATCH 1/2] x86/mce: Move MCACOD defines from mce-severity.c to
+ <asm/mce.h>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@amd64.org>,
         Chen Gong <gong.chen@linux.intel.com>,
@@ -22,29 +25,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series adds a workaround for some strange
-asymmetry between how machine checks are reported for
-data and instruction fetches. For instruction fetch
-error the processor does not set the EIPV bit in the
-MCG_STATUS register on the affected processor, leading
-us to believe that the cs/ip values saved on the stack
-are not associated with the machine check ... which in
-turn makes us unable to determine whether the machine
-check was taken in kernel or user mode. The workaround
-is to fake the presence of the EIPV bit for this error
-on this processor model. Not pretty, but avoids having
-to make special cases later in the code.
+We will need some of these values in mce.c. Move them to the
+appropriate header file so they are available.
 
-Tony Luck (2):
-  x86/mce: Move MCACOD defines from mce-severity.c to <asm/mce.h>
-  x86/mce: Add quirk for instruction recovery on Sandy Bridge
-    processors
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+---
+ arch/x86/include/asm/mce.h                | 8 ++++++++
+ arch/x86/kernel/cpu/mcheck/mce-severity.c | 7 -------
+ 2 files changed, 8 insertions(+), 7 deletions(-)
 
- arch/x86/include/asm/mce.h                |  8 ++++++
- arch/x86/kernel/cpu/mcheck/mce-severity.c |  7 -----
- arch/x86/kernel/cpu/mcheck/mce.c          | 43 ++++++++++++++++++++++++++++---
- 3 files changed, 48 insertions(+), 10 deletions(-)
-
+diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
+index 441520e..a3ac52b 100644
+--- a/arch/x86/include/asm/mce.h
++++ b/arch/x86/include/asm/mce.h
+@@ -33,6 +33,14 @@
+ #define MCI_STATUS_PCC   (1ULL<<57)  /* processor context corrupt */
+ #define MCI_STATUS_S	 (1ULL<<56)  /* Signaled machine check */
+ #define MCI_STATUS_AR	 (1ULL<<55)  /* Action required */
++#define MCACOD		  0xffff     /* MCA Error Code */
++
++/* Architecturally defined codes from SDM Vol. 3B Chapter 15 */
++#define MCACOD_SCRUB	0x00C0	/* 0xC0-0xCF Memory Scrubbing */
++#define MCACOD_SCRUBMSK	0xfff0
++#define MCACOD_L3WB	0x017A	/* L3 Explicit Writeback */
++#define MCACOD_DATA	0x0134	/* Data Load */
++#define MCACOD_INSTR	0x0150	/* Instruction Fetch */
+ 
+ /* MCi_MISC register defines */
+ #define MCI_MISC_ADDR_LSB(m)	((m) & 0x3f)
+diff --git a/arch/x86/kernel/cpu/mcheck/mce-severity.c b/arch/x86/kernel/cpu/mcheck/mce-severity.c
+index 413c2ce..1301762 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce-severity.c
++++ b/arch/x86/kernel/cpu/mcheck/mce-severity.c
+@@ -55,13 +55,6 @@ static struct severity {
+ #define MCI_UC_S (MCI_STATUS_UC|MCI_STATUS_S)
+ #define MCI_UC_SAR (MCI_STATUS_UC|MCI_STATUS_S|MCI_STATUS_AR)
+ #define	MCI_ADDR (MCI_STATUS_ADDRV|MCI_STATUS_MISCV)
+-#define MCACOD 0xffff
+-/* Architecturally defined codes from SDM Vol. 3B Chapter 15 */
+-#define MCACOD_SCRUB	0x00C0	/* 0xC0-0xCF Memory Scrubbing */
+-#define MCACOD_SCRUBMSK	0xfff0
+-#define MCACOD_L3WB	0x017A	/* L3 Explicit Writeback */
+-#define MCACOD_DATA	0x0134	/* Data Load */
+-#define MCACOD_INSTR	0x0150	/* Instruction Fetch */
+ 
+ 	MCESEV(
+ 		NO, "Invalid",
 -- 
 1.7.10.2.552.gaa3bb87
 
