@@ -1,927 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751886Ab2GSUQX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 16:16:23 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:61105 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751728Ab2GSUQF (ORCPT
+	id S1751938Ab2GSUQr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 16:16:47 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41477 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751014Ab2GSUQo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 16:16:05 -0400
-Date: Thu, 19 Jul 2012 13:16:00 -0700
+	Thu, 19 Jul 2012 16:16:44 -0400
+Date: Thu, 19 Jul 2012 13:16:41 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@vger.kernel.org
 Cc: lwn@lwn.net
-Subject: Re: Linux 3.0.38
-Message-ID: <20120719201600.GB2089@kroah.com>
-References: <20120719201553.GA2089@kroah.com>
+Subject: Linux 3.4.6
+Message-ID: <20120719201641.GA2151@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="5mCyUwZo2JvN/JJP"
 Content-Disposition: inline
-In-Reply-To: <20120719201553.GA2089@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-diff --git a/Makefile b/Makefile
-index 009160e..5fdfaa8 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,6 +1,6 @@
- VERSION = 3
- PATCHLEVEL = 0
--SUBLEVEL = 37
-+SUBLEVEL = 38
- EXTRAVERSION =
- NAME = Sneaky Weasel
- 
-diff --git a/arch/arm/plat-samsung/adc.c b/arch/arm/plat-samsung/adc.c
-index e8f2be2..df14954 100644
---- a/arch/arm/plat-samsung/adc.c
-+++ b/arch/arm/plat-samsung/adc.c
-@@ -143,11 +143,13 @@ int s3c_adc_start(struct s3c_adc_client *client,
- 		return -EINVAL;
- 	}
- 
--	if (client->is_ts && adc->ts_pend)
--		return -EAGAIN;
--
- 	spin_lock_irqsave(&adc->lock, flags);
- 
-+	if (client->is_ts && adc->ts_pend) {
-+		spin_unlock_irqrestore(&adc->lock, flags);
-+		return -EAGAIN;
-+	}
-+
- 	client->channel = channel;
- 	client->nr_samples = nr_samples;
- 
-diff --git a/drivers/hwmon/it87.c b/drivers/hwmon/it87.c
-index 5f52477..b358c87 100644
---- a/drivers/hwmon/it87.c
-+++ b/drivers/hwmon/it87.c
-@@ -2057,7 +2057,7 @@ static void __devinit it87_init_device(struct platform_device *pdev)
- 
- 	/* Start monitoring */
- 	it87_write_value(data, IT87_REG_CONFIG,
--			 (it87_read_value(data, IT87_REG_CONFIG) & 0x36)
-+			 (it87_read_value(data, IT87_REG_CONFIG) & 0x3e)
- 			 | (update_vbat ? 0x41 : 0x01));
- }
- 
-diff --git a/drivers/input/joystick/xpad.c b/drivers/input/joystick/xpad.c
-index 56abf3d..92c7be1 100644
---- a/drivers/input/joystick/xpad.c
-+++ b/drivers/input/joystick/xpad.c
-@@ -142,6 +142,7 @@ static const struct xpad_device {
- 	{ 0x0c12, 0x880a, "Pelican Eclipse PL-2023", 0, XTYPE_XBOX },
- 	{ 0x0c12, 0x8810, "Zeroplus Xbox Controller", 0, XTYPE_XBOX },
- 	{ 0x0c12, 0x9902, "HAMA VibraX - *FAULTY HARDWARE*", 0, XTYPE_XBOX },
-+	{ 0x0d2f, 0x0002, "Andamiro Pump It Up pad", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX },
- 	{ 0x0e4c, 0x1097, "Radica Gamester Controller", 0, XTYPE_XBOX },
- 	{ 0x0e4c, 0x2390, "Radica Games Jtech Controller", 0, XTYPE_XBOX },
- 	{ 0x0e6f, 0x0003, "Logic3 Freebird wireless Controller", 0, XTYPE_XBOX },
-diff --git a/drivers/media/dvb/dvb-core/dvbdev.c b/drivers/media/dvb/dvb-core/dvbdev.c
-index f732877..d5cda35 100644
---- a/drivers/media/dvb/dvb-core/dvbdev.c
-+++ b/drivers/media/dvb/dvb-core/dvbdev.c
-@@ -243,6 +243,7 @@ int dvb_register_device(struct dvb_adapter *adap, struct dvb_device **pdvbdev,
- 	if (minor == MAX_DVB_MINORS) {
- 		kfree(dvbdevfops);
- 		kfree(dvbdev);
-+		up_write(&minor_rwsem);
- 		mutex_unlock(&dvbdev_register_lock);
- 		return -EINVAL;
- 	}
-diff --git a/drivers/mtd/nand/nandsim.c b/drivers/mtd/nand/nandsim.c
-index 357e8c5..63c8048 100644
---- a/drivers/mtd/nand/nandsim.c
-+++ b/drivers/mtd/nand/nandsim.c
-@@ -28,7 +28,7 @@
- #include <linux/module.h>
- #include <linux/moduleparam.h>
- #include <linux/vmalloc.h>
--#include <asm/div64.h>
-+#include <linux/math64.h>
- #include <linux/slab.h>
- #include <linux/errno.h>
- #include <linux/string.h>
-@@ -547,12 +547,6 @@ static char *get_partition_name(int i)
- 	return kstrdup(buf, GFP_KERNEL);
- }
- 
--static uint64_t divide(uint64_t n, uint32_t d)
--{
--	do_div(n, d);
--	return n;
--}
--
- /*
-  * Initialize the nandsim structure.
-  *
-@@ -581,7 +575,7 @@ static int init_nandsim(struct mtd_info *mtd)
- 	ns->geom.oobsz    = mtd->oobsize;
- 	ns->geom.secsz    = mtd->erasesize;
- 	ns->geom.pgszoob  = ns->geom.pgsz + ns->geom.oobsz;
--	ns->geom.pgnum    = divide(ns->geom.totsz, ns->geom.pgsz);
-+	ns->geom.pgnum    = div_u64(ns->geom.totsz, ns->geom.pgsz);
- 	ns->geom.totszoob = ns->geom.totsz + (uint64_t)ns->geom.pgnum * ns->geom.oobsz;
- 	ns->geom.secshift = ffs(ns->geom.secsz) - 1;
- 	ns->geom.pgshift  = chip->page_shift;
-@@ -924,7 +918,7 @@ static int setup_wear_reporting(struct mtd_info *mtd)
- 
- 	if (!rptwear)
- 		return 0;
--	wear_eb_count = divide(mtd->size, mtd->erasesize);
-+	wear_eb_count = div_u64(mtd->size, mtd->erasesize);
- 	mem = wear_eb_count * sizeof(unsigned long);
- 	if (mem / sizeof(unsigned long) != wear_eb_count) {
- 		NS_ERR("Too many erase blocks for wear reporting\n");
-diff --git a/drivers/net/e1000e/82571.c b/drivers/net/e1000e/82571.c
-index 8295f21..5278e84 100644
---- a/drivers/net/e1000e/82571.c
-+++ b/drivers/net/e1000e/82571.c
-@@ -1573,6 +1573,9 @@ static s32 e1000_check_for_serdes_link_82571(struct e1000_hw *hw)
- 	ctrl = er32(CTRL);
- 	status = er32(STATUS);
- 	rxcw = er32(RXCW);
-+	/* SYNCH bit and IV bit are sticky */
-+	udelay(10);
-+	rxcw = er32(RXCW);
- 
- 	if ((rxcw & E1000_RXCW_SYNCH) && !(rxcw & E1000_RXCW_IV)) {
- 
-diff --git a/drivers/net/wireless/rt2x00/rt2x00usb.c b/drivers/net/wireless/rt2x00/rt2x00usb.c
-index 54f0b13..99fa416 100644
---- a/drivers/net/wireless/rt2x00/rt2x00usb.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00usb.c
-@@ -426,8 +426,8 @@ void rt2x00usb_kick_queue(struct data_queue *queue)
- 	case QID_RX:
- 		if (!rt2x00queue_full(queue))
- 			rt2x00queue_for_each_entry(queue,
--						   Q_INDEX_DONE,
- 						   Q_INDEX,
-+						   Q_INDEX_DONE,
- 						   NULL,
- 						   rt2x00usb_kick_rx_entry);
- 		break;
-diff --git a/drivers/platform/x86/intel_ips.c b/drivers/platform/x86/intel_ips.c
-index 5ffe7c3..e66bbba 100644
---- a/drivers/platform/x86/intel_ips.c
-+++ b/drivers/platform/x86/intel_ips.c
-@@ -72,6 +72,7 @@
- #include <linux/string.h>
- #include <linux/tick.h>
- #include <linux/timer.h>
-+#include <linux/dmi.h>
- #include <drm/i915_drm.h>
- #include <asm/msr.h>
- #include <asm/processor.h>
-@@ -1505,6 +1506,24 @@ static DEFINE_PCI_DEVICE_TABLE(ips_id_table) = {
- 
- MODULE_DEVICE_TABLE(pci, ips_id_table);
- 
-+static int ips_blacklist_callback(const struct dmi_system_id *id)
-+{
-+	pr_info("Blacklisted intel_ips for %s\n", id->ident);
-+	return 1;
-+}
-+
-+static const struct dmi_system_id ips_blacklist[] = {
-+	{
-+		.callback = ips_blacklist_callback,
-+		.ident = "HP ProBook",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "HP ProBook"),
-+		},
-+	},
-+	{ }	/* terminating entry */
-+};
-+
- static int ips_probe(struct pci_dev *dev, const struct pci_device_id *id)
- {
- 	u64 platform_info;
-@@ -1514,6 +1533,9 @@ static int ips_probe(struct pci_dev *dev, const struct pci_device_id *id)
- 	u16 htshi, trc, trc_required_mask;
- 	u8 tse;
- 
-+	if (dmi_check_system(ips_blacklist))
-+		return -ENODEV;
-+
- 	ips = kzalloc(sizeof(struct ips_driver), GFP_KERNEL);
- 	if (!ips)
- 		return -ENOMEM;
-diff --git a/fs/buffer.c b/fs/buffer.c
-index 330cbce..d421626 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -1084,6 +1084,9 @@ grow_buffers(struct block_device *bdev, sector_t block, int size)
- static struct buffer_head *
- __getblk_slow(struct block_device *bdev, sector_t block, int size)
- {
-+	int ret;
-+	struct buffer_head *bh;
-+
- 	/* Size must be multiple of hard sectorsize */
- 	if (unlikely(size & (bdev_logical_block_size(bdev)-1) ||
- 			(size < 512 || size > PAGE_SIZE))) {
-@@ -1096,20 +1099,21 @@ __getblk_slow(struct block_device *bdev, sector_t block, int size)
- 		return NULL;
- 	}
- 
--	for (;;) {
--		struct buffer_head * bh;
--		int ret;
-+retry:
-+	bh = __find_get_block(bdev, block, size);
-+	if (bh)
-+		return bh;
- 
-+	ret = grow_buffers(bdev, block, size);
-+	if (ret == 0) {
-+		free_more_memory();
-+		goto retry;
-+	} else if (ret > 0) {
- 		bh = __find_get_block(bdev, block, size);
- 		if (bh)
- 			return bh;
--
--		ret = grow_buffers(bdev, block, size);
--		if (ret < 0)
--			return NULL;
--		if (ret == 0)
--			free_more_memory();
- 	}
-+	return NULL;
- }
- 
- /*
-diff --git a/fs/fifo.c b/fs/fifo.c
-index b1a524d..cf6f434 100644
---- a/fs/fifo.c
-+++ b/fs/fifo.c
-@@ -14,7 +14,7 @@
- #include <linux/sched.h>
- #include <linux/pipe_fs_i.h>
- 
--static void wait_for_partner(struct inode* inode, unsigned int *cnt)
-+static int wait_for_partner(struct inode* inode, unsigned int *cnt)
- {
- 	int cur = *cnt;	
- 
-@@ -23,6 +23,7 @@ static void wait_for_partner(struct inode* inode, unsigned int *cnt)
- 		if (signal_pending(current))
- 			break;
- 	}
-+	return cur == *cnt ? -ERESTARTSYS : 0;
- }
- 
- static void wake_up_partner(struct inode* inode)
-@@ -67,8 +68,7 @@ static int fifo_open(struct inode *inode, struct file *filp)
- 				 * seen a writer */
- 				filp->f_version = pipe->w_counter;
- 			} else {
--				wait_for_partner(inode, &pipe->w_counter);
--				if(signal_pending(current))
-+				if (wait_for_partner(inode, &pipe->w_counter))
- 					goto err_rd;
- 			}
- 		}
-@@ -90,8 +90,7 @@ static int fifo_open(struct inode *inode, struct file *filp)
- 			wake_up_partner(inode);
- 
- 		if (!pipe->readers) {
--			wait_for_partner(inode, &pipe->r_counter);
--			if (signal_pending(current))
-+			if (wait_for_partner(inode, &pipe->r_counter))
- 				goto err_wr;
- 		}
- 		break;
-diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
-index fd0dc30..cc07d27 100644
---- a/include/linux/hrtimer.h
-+++ b/include/linux/hrtimer.h
-@@ -165,6 +165,7 @@ enum  hrtimer_base_type {
-  * @lock:		lock protecting the base and associated clock bases
-  *			and timers
-  * @active_bases:	Bitfield to mark bases with active timers
-+ * @clock_was_set:	Indicates that clock was set from irq context.
-  * @expires_next:	absolute time of the next event which was scheduled
-  *			via clock_set_next_event()
-  * @hres_active:	State of high resolution mode
-@@ -177,7 +178,8 @@ enum  hrtimer_base_type {
-  */
- struct hrtimer_cpu_base {
- 	raw_spinlock_t			lock;
--	unsigned long			active_bases;
-+	unsigned int			active_bases;
-+	unsigned int			clock_was_set;
- #ifdef CONFIG_HIGH_RES_TIMERS
- 	ktime_t				expires_next;
- 	int				hres_active;
-@@ -286,6 +288,8 @@ extern void hrtimer_peek_ahead_timers(void);
- # define MONOTONIC_RES_NSEC	HIGH_RES_NSEC
- # define KTIME_MONOTONIC_RES	KTIME_HIGH_RES
- 
-+extern void clock_was_set_delayed(void);
-+
- #else
- 
- # define MONOTONIC_RES_NSEC	LOW_RES_NSEC
-@@ -306,6 +310,9 @@ static inline int hrtimer_is_hres_active(struct hrtimer *timer)
- {
- 	return 0;
- }
-+
-+static inline void clock_was_set_delayed(void) { }
-+
- #endif
- 
- extern void clock_was_set(void);
-@@ -320,6 +327,7 @@ extern ktime_t ktime_get(void);
- extern ktime_t ktime_get_real(void);
- extern ktime_t ktime_get_boottime(void);
- extern ktime_t ktime_get_monotonic_offset(void);
-+extern ktime_t ktime_get_update_offsets(ktime_t *offs_real, ktime_t *offs_boot);
- 
- DECLARE_PER_CPU(struct tick_device, tick_cpu_device);
- 
-diff --git a/include/linux/timex.h b/include/linux/timex.h
-index aa60fe7..08e90fb 100644
---- a/include/linux/timex.h
-+++ b/include/linux/timex.h
-@@ -266,7 +266,7 @@ static inline int ntp_synced(void)
- /* Returns how long ticks are at present, in ns / 2^NTP_SCALE_SHIFT. */
- extern u64 tick_length;
- 
--extern void second_overflow(void);
-+extern int second_overflow(unsigned long secs);
- extern void update_ntp_one_tick(void);
- extern int do_adjtimex(struct timex *);
- extern void hardpps(const struct timespec *, const struct timespec *);
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 2043c08..957869f 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -657,6 +657,14 @@ static inline int hrtimer_enqueue_reprogram(struct hrtimer *timer,
- 	return 0;
- }
- 
-+static inline ktime_t hrtimer_update_base(struct hrtimer_cpu_base *base)
-+{
-+	ktime_t *offs_real = &base->clock_base[HRTIMER_BASE_REALTIME].offset;
-+	ktime_t *offs_boot = &base->clock_base[HRTIMER_BASE_BOOTTIME].offset;
-+
-+	return ktime_get_update_offsets(offs_real, offs_boot);
-+}
-+
- /*
-  * Retrigger next event is called after clock was set
-  *
-@@ -665,22 +673,12 @@ static inline int hrtimer_enqueue_reprogram(struct hrtimer *timer,
- static void retrigger_next_event(void *arg)
- {
- 	struct hrtimer_cpu_base *base = &__get_cpu_var(hrtimer_bases);
--	struct timespec realtime_offset, xtim, wtm, sleep;
- 
- 	if (!hrtimer_hres_active())
- 		return;
- 
--	/* Optimized out for !HIGH_RES */
--	get_xtime_and_monotonic_and_sleep_offset(&xtim, &wtm, &sleep);
--	set_normalized_timespec(&realtime_offset, -wtm.tv_sec, -wtm.tv_nsec);
--
--	/* Adjust CLOCK_REALTIME offset */
- 	raw_spin_lock(&base->lock);
--	base->clock_base[HRTIMER_BASE_REALTIME].offset =
--		timespec_to_ktime(realtime_offset);
--	base->clock_base[HRTIMER_BASE_BOOTTIME].offset =
--		timespec_to_ktime(sleep);
--
-+	hrtimer_update_base(base);
- 	hrtimer_force_reprogram(base, 0);
- 	raw_spin_unlock(&base->lock);
- }
-@@ -710,13 +708,25 @@ static int hrtimer_switch_to_hres(void)
- 		base->clock_base[i].resolution = KTIME_HIGH_RES;
- 
- 	tick_setup_sched_timer();
--
- 	/* "Retrigger" the interrupt to get things going */
- 	retrigger_next_event(NULL);
- 	local_irq_restore(flags);
- 	return 1;
- }
- 
-+/*
-+ * Called from timekeeping code to reprogramm the hrtimer interrupt
-+ * device. If called from the timer interrupt context we defer it to
-+ * softirq context.
-+ */
-+void clock_was_set_delayed(void)
-+{
-+	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
-+
-+	cpu_base->clock_was_set = 1;
-+	__raise_softirq_irqoff(HRTIMER_SOFTIRQ);
-+}
-+
- #else
- 
- static inline int hrtimer_hres_active(void) { return 0; }
-@@ -1250,11 +1260,10 @@ void hrtimer_interrupt(struct clock_event_device *dev)
- 	cpu_base->nr_events++;
- 	dev->next_event.tv64 = KTIME_MAX;
- 
--	entry_time = now = ktime_get();
-+	raw_spin_lock(&cpu_base->lock);
-+	entry_time = now = hrtimer_update_base(cpu_base);
- retry:
- 	expires_next.tv64 = KTIME_MAX;
--
--	raw_spin_lock(&cpu_base->lock);
- 	/*
- 	 * We set expires_next to KTIME_MAX here with cpu_base->lock
- 	 * held to prevent that a timer is enqueued in our queue via
-@@ -1330,8 +1339,12 @@ retry:
- 	 * We need to prevent that we loop forever in the hrtimer
- 	 * interrupt routine. We give it 3 attempts to avoid
- 	 * overreacting on some spurious event.
-+	 *
-+	 * Acquire base lock for updating the offsets and retrieving
-+	 * the current time.
- 	 */
--	now = ktime_get();
-+	raw_spin_lock(&cpu_base->lock);
-+	now = hrtimer_update_base(cpu_base);
- 	cpu_base->nr_retries++;
- 	if (++retries < 3)
- 		goto retry;
-@@ -1343,6 +1356,7 @@ retry:
- 	 */
- 	cpu_base->nr_hangs++;
- 	cpu_base->hang_detected = 1;
-+	raw_spin_unlock(&cpu_base->lock);
- 	delta = ktime_sub(now, entry_time);
- 	if (delta.tv64 > cpu_base->max_hang_time.tv64)
- 		cpu_base->max_hang_time = delta;
-@@ -1395,6 +1409,13 @@ void hrtimer_peek_ahead_timers(void)
- 
- static void run_hrtimer_softirq(struct softirq_action *h)
- {
-+	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
-+
-+	if (cpu_base->clock_was_set) {
-+		cpu_base->clock_was_set = 0;
-+		clock_was_set();
-+	}
-+
- 	hrtimer_peek_ahead_timers();
- }
- 
-diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
-index 4b85a7a..f1eb182 100644
---- a/kernel/time/ntp.c
-+++ b/kernel/time/ntp.c
-@@ -31,8 +31,6 @@ unsigned long			tick_nsec;
- u64				tick_length;
- static u64			tick_length_base;
- 
--static struct hrtimer		leap_timer;
--
- #define MAX_TICKADJ		500LL		/* usecs */
- #define MAX_TICKADJ_SCALED \
- 	(((MAX_TICKADJ * NSEC_PER_USEC) << NTP_SCALE_SHIFT) / NTP_INTERVAL_FREQ)
-@@ -350,60 +348,60 @@ void ntp_clear(void)
- }
- 
- /*
-- * Leap second processing. If in leap-insert state at the end of the
-- * day, the system clock is set back one second; if in leap-delete
-- * state, the system clock is set ahead one second.
-+ * this routine handles the overflow of the microsecond field
-+ *
-+ * The tricky bits of code to handle the accurate clock support
-+ * were provided by Dave Mills (Mills@UDEL.EDU) of NTP fame.
-+ * They were originally developed for SUN and DEC kernels.
-+ * All the kudos should go to Dave for this stuff.
-+ *
-+ * Also handles leap second processing, and returns leap offset
-  */
--static enum hrtimer_restart ntp_leap_second(struct hrtimer *timer)
-+int second_overflow(unsigned long secs)
- {
--	enum hrtimer_restart res = HRTIMER_NORESTART;
--
--	write_seqlock(&xtime_lock);
-+	int leap = 0;
-+	s64 delta;
- 
-+	/*
-+	 * Leap second processing. If in leap-insert state at the end of the
-+	 * day, the system clock is set back one second; if in leap-delete
-+	 * state, the system clock is set ahead one second.
-+	 */
- 	switch (time_state) {
- 	case TIME_OK:
-+		if (time_status & STA_INS)
-+			time_state = TIME_INS;
-+		else if (time_status & STA_DEL)
-+			time_state = TIME_DEL;
- 		break;
- 	case TIME_INS:
--		timekeeping_leap_insert(-1);
--		time_state = TIME_OOP;
--		printk(KERN_NOTICE
--			"Clock: inserting leap second 23:59:60 UTC\n");
--		hrtimer_add_expires_ns(&leap_timer, NSEC_PER_SEC);
--		res = HRTIMER_RESTART;
-+		if (secs % 86400 == 0) {
-+			leap = -1;
-+			time_state = TIME_OOP;
-+			time_tai++;
-+			printk(KERN_NOTICE
-+				"Clock: inserting leap second 23:59:60 UTC\n");
-+		}
- 		break;
- 	case TIME_DEL:
--		timekeeping_leap_insert(1);
--		time_tai--;
--		time_state = TIME_WAIT;
--		printk(KERN_NOTICE
--			"Clock: deleting leap second 23:59:59 UTC\n");
-+		if ((secs + 1) % 86400 == 0) {
-+			leap = 1;
-+			time_tai--;
-+			time_state = TIME_WAIT;
-+			printk(KERN_NOTICE
-+				"Clock: deleting leap second 23:59:59 UTC\n");
-+		}
- 		break;
- 	case TIME_OOP:
--		time_tai++;
- 		time_state = TIME_WAIT;
--		/* fall through */
-+		break;
-+
- 	case TIME_WAIT:
- 		if (!(time_status & (STA_INS | STA_DEL)))
- 			time_state = TIME_OK;
- 		break;
- 	}
- 
--	write_sequnlock(&xtime_lock);
--
--	return res;
--}
--
--/*
-- * this routine handles the overflow of the microsecond field
-- *
-- * The tricky bits of code to handle the accurate clock support
-- * were provided by Dave Mills (Mills@UDEL.EDU) of NTP fame.
-- * They were originally developed for SUN and DEC kernels.
-- * All the kudos should go to Dave for this stuff.
-- */
--void second_overflow(void)
--{
--	s64 delta;
- 
- 	/* Bump the maxerror field */
- 	time_maxerror += MAXFREQ / NSEC_PER_USEC;
-@@ -423,23 +421,25 @@ void second_overflow(void)
- 	pps_dec_valid();
- 
- 	if (!time_adjust)
--		return;
-+		goto out;
- 
- 	if (time_adjust > MAX_TICKADJ) {
- 		time_adjust -= MAX_TICKADJ;
- 		tick_length += MAX_TICKADJ_SCALED;
--		return;
-+		goto out;
- 	}
- 
- 	if (time_adjust < -MAX_TICKADJ) {
- 		time_adjust += MAX_TICKADJ;
- 		tick_length -= MAX_TICKADJ_SCALED;
--		return;
-+		goto out;
- 	}
- 
- 	tick_length += (s64)(time_adjust * NSEC_PER_USEC / NTP_INTERVAL_FREQ)
- 							 << NTP_SCALE_SHIFT;
- 	time_adjust = 0;
-+out:
-+	return leap;
- }
- 
- #ifdef CONFIG_GENERIC_CMOS_UPDATE
-@@ -501,27 +501,6 @@ static void notify_cmos_timer(void)
- static inline void notify_cmos_timer(void) { }
- #endif
- 
--/*
-- * Start the leap seconds timer:
-- */
--static inline void ntp_start_leap_timer(struct timespec *ts)
--{
--	long now = ts->tv_sec;
--
--	if (time_status & STA_INS) {
--		time_state = TIME_INS;
--		now += 86400 - now % 86400;
--		hrtimer_start(&leap_timer, ktime_set(now, 0), HRTIMER_MODE_ABS);
--
--		return;
--	}
--
--	if (time_status & STA_DEL) {
--		time_state = TIME_DEL;
--		now += 86400 - (now + 1) % 86400;
--		hrtimer_start(&leap_timer, ktime_set(now, 0), HRTIMER_MODE_ABS);
--	}
--}
- 
- /*
-  * Propagate a new txc->status value into the NTP state:
-@@ -546,22 +525,6 @@ static inline void process_adj_status(struct timex *txc, struct timespec *ts)
- 	time_status &= STA_RONLY;
- 	time_status |= txc->status & ~STA_RONLY;
- 
--	switch (time_state) {
--	case TIME_OK:
--		ntp_start_leap_timer(ts);
--		break;
--	case TIME_INS:
--	case TIME_DEL:
--		time_state = TIME_OK;
--		ntp_start_leap_timer(ts);
--	case TIME_WAIT:
--		if (!(time_status & (STA_INS | STA_DEL)))
--			time_state = TIME_OK;
--		break;
--	case TIME_OOP:
--		hrtimer_restart(&leap_timer);
--		break;
--	}
- }
- /*
-  * Called with the xtime lock held, so we can access and modify
-@@ -643,9 +606,6 @@ int do_adjtimex(struct timex *txc)
- 		    (txc->tick <  900000/USER_HZ ||
- 		     txc->tick > 1100000/USER_HZ))
- 			return -EINVAL;
--
--		if (txc->modes & ADJ_STATUS && time_state != TIME_OK)
--			hrtimer_cancel(&leap_timer);
- 	}
- 
- 	if (txc->modes & ADJ_SETOFFSET) {
-@@ -967,6 +927,4 @@ __setup("ntp_tick_adj=", ntp_tick_adj_setup);
- void __init ntp_init(void)
- {
- 	ntp_clear();
--	hrtimer_init(&leap_timer, CLOCK_REALTIME, HRTIMER_MODE_ABS);
--	leap_timer.function = ntp_leap_second;
- }
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 5f45831..678ae31 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -161,23 +161,43 @@ static struct timespec xtime __attribute__ ((aligned (16)));
- static struct timespec wall_to_monotonic __attribute__ ((aligned (16)));
- static struct timespec total_sleep_time;
- 
-+/* Offset clock monotonic -> clock realtime */
-+static ktime_t offs_real;
-+
-+/* Offset clock monotonic -> clock boottime */
-+static ktime_t offs_boot;
-+
- /*
-  * The raw monotonic time for the CLOCK_MONOTONIC_RAW posix clock.
-  */
- static struct timespec raw_time;
- 
--/* flag for if timekeeping is suspended */
--int __read_mostly timekeeping_suspended;
-+/* must hold write on xtime_lock */
-+static void update_rt_offset(void)
-+{
-+	struct timespec tmp, *wtm = &wall_to_monotonic;
- 
--/* must hold xtime_lock */
--void timekeeping_leap_insert(int leapsecond)
-+	set_normalized_timespec(&tmp, -wtm->tv_sec, -wtm->tv_nsec);
-+	offs_real = timespec_to_ktime(tmp);
-+}
-+
-+/* must hold write on xtime_lock */
-+static void timekeeping_update(bool clearntp)
- {
--	xtime.tv_sec += leapsecond;
--	wall_to_monotonic.tv_sec -= leapsecond;
--	update_vsyscall(&xtime, &wall_to_monotonic, timekeeper.clock,
--			timekeeper.mult);
-+	if (clearntp) {
-+		timekeeper.ntp_error = 0;
-+		ntp_clear();
-+	}
-+	update_rt_offset();
-+	update_vsyscall(&xtime, &wall_to_monotonic,
-+			 timekeeper.clock, timekeeper.mult);
- }
- 
-+
-+
-+/* flag for if timekeeping is suspended */
-+int __read_mostly timekeeping_suspended;
-+
- /**
-  * timekeeping_forward_now - update clock to the current time
-  *
-@@ -375,11 +395,7 @@ int do_settimeofday(const struct timespec *tv)
- 
- 	xtime = *tv;
- 
--	timekeeper.ntp_error = 0;
--	ntp_clear();
--
--	update_vsyscall(&xtime, &wall_to_monotonic, timekeeper.clock,
--				timekeeper.mult);
-+	timekeeping_update(true);
- 
- 	write_sequnlock_irqrestore(&xtime_lock, flags);
- 
-@@ -412,11 +428,7 @@ int timekeeping_inject_offset(struct timespec *ts)
- 	xtime = timespec_add(xtime, *ts);
- 	wall_to_monotonic = timespec_sub(wall_to_monotonic, *ts);
- 
--	timekeeper.ntp_error = 0;
--	ntp_clear();
--
--	update_vsyscall(&xtime, &wall_to_monotonic, timekeeper.clock,
--				timekeeper.mult);
-+	timekeeping_update(true);
- 
- 	write_sequnlock_irqrestore(&xtime_lock, flags);
- 
-@@ -591,6 +603,7 @@ void __init timekeeping_init(void)
- 	}
- 	set_normalized_timespec(&wall_to_monotonic,
- 				-boot.tv_sec, -boot.tv_nsec);
-+	update_rt_offset();
- 	total_sleep_time.tv_sec = 0;
- 	total_sleep_time.tv_nsec = 0;
- 	write_sequnlock_irqrestore(&xtime_lock, flags);
-@@ -599,6 +612,12 @@ void __init timekeeping_init(void)
- /* time in seconds when suspend began */
- static struct timespec timekeeping_suspend_time;
- 
-+static void update_sleep_time(struct timespec t)
-+{
-+	total_sleep_time = t;
-+	offs_boot = timespec_to_ktime(t);
-+}
-+
- /**
-  * __timekeeping_inject_sleeptime - Internal function to add sleep interval
-  * @delta: pointer to a timespec delta value
-@@ -610,7 +629,7 @@ static void __timekeeping_inject_sleeptime(struct timespec *delta)
- {
- 	xtime = timespec_add(xtime, *delta);
- 	wall_to_monotonic = timespec_sub(wall_to_monotonic, *delta);
--	total_sleep_time = timespec_add(total_sleep_time, *delta);
-+	update_sleep_time(timespec_add(total_sleep_time, *delta));
- }
- 
- 
-@@ -639,10 +658,7 @@ void timekeeping_inject_sleeptime(struct timespec *delta)
- 
- 	__timekeeping_inject_sleeptime(delta);
- 
--	timekeeper.ntp_error = 0;
--	ntp_clear();
--	update_vsyscall(&xtime, &wall_to_monotonic, timekeeper.clock,
--				timekeeper.mult);
-+	timekeeping_update(true);
- 
- 	write_sequnlock_irqrestore(&xtime_lock, flags);
- 
-@@ -677,6 +693,7 @@ static void timekeeping_resume(void)
- 	timekeeper.clock->cycle_last = timekeeper.clock->read(timekeeper.clock);
- 	timekeeper.ntp_error = 0;
- 	timekeeping_suspended = 0;
-+	timekeeping_update(false);
- 	write_sequnlock_irqrestore(&xtime_lock, flags);
- 
- 	touch_softlockup_watchdog();
-@@ -828,9 +845,14 @@ static cycle_t logarithmic_accumulation(cycle_t offset, int shift)
- 
- 	timekeeper.xtime_nsec += timekeeper.xtime_interval << shift;
- 	while (timekeeper.xtime_nsec >= nsecps) {
-+		int leap;
- 		timekeeper.xtime_nsec -= nsecps;
- 		xtime.tv_sec++;
--		second_overflow();
-+		leap = second_overflow(xtime.tv_sec);
-+		xtime.tv_sec += leap;
-+		wall_to_monotonic.tv_sec -= leap;
-+		if (leap)
-+			clock_was_set_delayed();
- 	}
- 
- 	/* Accumulate raw time */
-@@ -936,14 +958,17 @@ static void update_wall_time(void)
- 	 * xtime.tv_nsec isn't larger then NSEC_PER_SEC
- 	 */
- 	if (unlikely(xtime.tv_nsec >= NSEC_PER_SEC)) {
-+		int leap;
- 		xtime.tv_nsec -= NSEC_PER_SEC;
- 		xtime.tv_sec++;
--		second_overflow();
-+		leap = second_overflow(xtime.tv_sec);
-+		xtime.tv_sec += leap;
-+		wall_to_monotonic.tv_sec -= leap;
-+		if (leap)
-+			clock_was_set_delayed();
- 	}
- 
--	/* check to see if there is a new clocksource to use */
--	update_vsyscall(&xtime, &wall_to_monotonic, timekeeper.clock,
--				timekeeper.mult);
-+	timekeeping_update(false);
- }
- 
- /**
-@@ -1102,6 +1127,40 @@ void get_xtime_and_monotonic_and_sleep_offset(struct timespec *xtim,
- 	} while (read_seqretry(&xtime_lock, seq));
- }
- 
-+#ifdef CONFIG_HIGH_RES_TIMERS
-+/**
-+ * ktime_get_update_offsets - hrtimer helper
-+ * @real:	pointer to storage for monotonic -> realtime offset
-+ * @_boot:	pointer to storage for monotonic -> boottime offset
-+ *
-+ * Returns current monotonic time and updates the offsets
-+ * Called from hrtimer_interupt() or retrigger_next_event()
-+ */
-+ktime_t ktime_get_update_offsets(ktime_t *real, ktime_t *boot)
-+{
-+	ktime_t now;
-+	unsigned int seq;
-+	u64 secs, nsecs;
-+
-+	do {
-+		seq = read_seqbegin(&xtime_lock);
-+
-+		secs = xtime.tv_sec;
-+		nsecs = xtime.tv_nsec;
-+		nsecs += timekeeping_get_ns();
-+		/* If arch requires, add in gettimeoffset() */
-+		nsecs += arch_gettimeoffset();
-+
-+		*real = offs_real;
-+		*boot = offs_boot;
-+	} while (read_seqretry(&xtime_lock, seq));
-+
-+	now = ktime_add_ns(ktime_set(secs, 0), nsecs);
-+	now = ktime_sub(now, *real);
-+	return now;
-+}
-+#endif
-+
- /**
-  * ktime_get_monotonic_offset() - get wall_to_monotonic in ktime_t format
-  */
-diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
-index 7410a8c..6e33b79c 100644
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -5761,6 +5761,8 @@ int tcp_rcv_state_process(struct sock *sk, struct sk_buff *skb,
- 			goto discard;
- 
- 		if (th->syn) {
-+			if (th->fin)
-+				goto discard;
- 			if (icsk->icsk_af_ops->conn_request(sk, skb) < 0)
- 				return 1;
- 
-diff --git a/net/wireless/util.c b/net/wireless/util.c
-index 30f68dc..bbcb58e 100644
---- a/net/wireless/util.c
-+++ b/net/wireless/util.c
-@@ -807,7 +807,7 @@ int cfg80211_change_iface(struct cfg80211_registered_device *rdev,
- 	     ntype == NL80211_IFTYPE_P2P_CLIENT))
- 		return -EBUSY;
- 
--	if (ntype != otype) {
-+	if (ntype != otype && netif_running(dev)) {
- 		err = cfg80211_can_change_interface(rdev, dev->ieee80211_ptr,
- 						    ntype);
- 		if (err)
+
+--5mCyUwZo2JvN/JJP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+I'm announcing the release of the 3.4.6 kernel.
+
+All users of the 3.4 kernel series must upgrade.
+
+The updated 3.4.y git tree can be found at:
+        git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.g=
+it linux-3.4.y
+and can be browsed at the normal kernel.org git web browser:
+        http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git=
+;a=3Dsummary
+
+thanks,
+
+greg k-h
+
+------------
+
+ Makefile                                          |    2=20
+ arch/arm/plat-samsung/adc.c                       |    8=20
+ drivers/acpi/acpica/nspredef.c                    |    2=20
+ drivers/acpi/processor_core.c                     |    6=20
+ drivers/clk/clk.c                                 |    9=20
+ drivers/hid/hid-apple.c                           |    6=20
+ drivers/hid/hid-core.c                            |    7=20
+ drivers/hid/hid-ids.h                             |    6=20
+ drivers/hwmon/it87.c                              |    2=20
+ drivers/input/joystick/xpad.c                     |    6=20
+ drivers/input/mouse/bcm5974.c                     |   20 +
+ drivers/md/raid1.c                                |    3=20
+ drivers/media/dvb/dvb-core/dvbdev.c               |    1=20
+ drivers/media/video/cx231xx/cx231xx-audio.c       |    4=20
+ drivers/media/video/cx231xx/cx231xx-vbi.c         |    2=20
+ drivers/mtd/nand/nandsim.c                        |   12=20
+ drivers/net/bonding/bond_debugfs.c                |    2=20
+ drivers/net/bonding/bond_main.c                   |    9=20
+ drivers/net/ethernet/intel/e1000e/82571.c         |    3=20
+ drivers/net/ethernet/stmicro/stmmac/stmmac_main.c |    3=20
+ drivers/net/wireless/iwlegacy/4965-mac.c          |    4=20
+ drivers/net/wireless/iwlegacy/common.c            |   14 -
+ drivers/net/wireless/rt2x00/rt2x00usb.c           |    2=20
+ drivers/platform/x86/intel_ips.c                  |   22 +
+ drivers/rpmsg/virtio_rpmsg_bus.c                  |    2=20
+ fs/buffer.c                                       |   22 +
+ fs/fifo.c                                         |    9=20
+ fs/locks.c                                        |    2=20
+ include/linux/Kbuild                              |    1=20
+ include/linux/hrtimer.h                           |   10=20
+ include/linux/sched.h                             |    8=20
+ kernel/hrtimer.c                                  |   53 ++--
+ kernel/sched/core.c                               |  275 ++++++++++++++++-=
+-----
+ kernel/sched/idle_task.c                          |    1=20
+ kernel/sched/sched.h                              |    2=20
+ kernel/time/tick-sched.c                          |    2=20
+ kernel/time/timekeeping.c                         |   64 ++++-
+ net/mac80211/mlme.c                               |    6=20
+ net/wireless/util.c                               |    2=20
+ 39 files changed, 459 insertions(+), 155 deletions(-)
+
+Anders Kaseorg (1):
+      fifo: Do not restart open() if it already found a partner
+
+Bob Moore (1):
+      ACPICA: Fix possible fault in return package object repair code
+
+Dave Jones (1):
+      Remove easily user-triggerable BUG from generic_setlease
+
+David Dillow (1):
+      media: cx231xx: don't DMA to random addresses
+
+Deepak Sikri (1):
+      stmmac: Fix for nfs hang on multiple reboot
+
+Eliad Peller (1):
+      mac80211: destroy assoc_data correctly if assoc fails
+
+Emmanuel Grumbach (1):
+      iwlegacy: don't mess up the SCD when removing a key
+
+Eric W. Biederman (2):
+      bonding: debugfs and network namespaces are incompatible
+      bonding: Manage /proc/net/bonding/ entries from the netdev events
+
+Federico Fuga (1):
+      rpmsg: fix dependency on initialization order
+
+Greg Kroah-Hartman (1):
+      Linux 3.4.6
+
+Henrik Rydberg (1):
+      Input: bcm5974 - Add support for 2012 MacBook Pro Retina
+
+Herton Ronaldo Krzesinski (1):
+      mtd: nandsim: don't open code a do_div helper
+
+Ilia Katsnelson (1):
+      Input: xpad - add signature for Razer Onza Tournament Edition
+
+Jean Delvare (1):
+      hwmon: (it87) Preserve configuration register bits on init
+
+Jeff Moyer (1):
+      block: fix infinite loop in __getblk_slow
+
+John Stultz (3):
+      hrtimer: Provide clock_was_set_delayed()
+      timekeeping: Fix leapsecond triggered load spike issue
+      hrtimer: Update hrtimer base offsets each hrtimer_interrupt
+
+Michal Kazior (1):
+      cfg80211: check iface combinations only when iface is running
+
+NeilBrown (1):
+      md/raid1: fix use-after-free bug in RAID1 data-check code.
+
+Pawel Moll (1):
+      clk: Check parent for NULL in clk_change_rate
+
+Peter Zijlstra (1):
+      sched/nohz: Rewrite and fix load-avg computation -- again
+
+Ryan Bourgeois (1):
+      HID: add support for 2012 MacBook Pro Retina
+
+Samuel Ortiz (1):
+      NFC: Export nfc.h to userland
+
+Santosh Nayak (1):
+      media: dvb-core: Release semaphore on error path dvb_register_device()
+
+Stanislaw Gruszka (2):
+      rt2x00usb: fix indexes ordering on RX queue kick
+      iwlegacy: always monitor for stuck queues
+
+Takashi Iwai (1):
+      intel_ips: blacklist HP ProBook laptops
+
+Thomas Gleixner (4):
+      timekeeping: Maintain ktime_t based offsets for hrtimers
+      hrtimers: Move lock held region in hrtimer_interrupt()
+      timekeeping: Provide hrtimer update function
+      timekeeping: Add missing update call in timekeeping_resume()
+
+Thomas Renninger (1):
+      cpufreq / ACPI: Fix not loading acpi-cpufreq driver regression
+
+Todd Poynor (1):
+      ARM: SAMSUNG: fix race in s3c_adc_start for ADC
+
+Tushar Dave (1):
+      e1000e: Correct link check logic for 82571 serdes
+
+Yuri Khan (2):
+      Input: xpad - handle all variations of Mad Catz Beat Pad
+      Input: xpad - add Andamiro Pump It Up pad
+
+
+--5mCyUwZo2JvN/JJP
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQCGspAAoJEDjbvchgkmk+/DQQAL+Bo2piyCAaOOrdGfep7vYl
+KyTeYCkqC0mMArpuT1C4JRdGLEJgRy/zMk3FCHH5w4B4QQPYGkb8OgS7NI3R95Pv
+Otmnd7JIm+XP3NJjtEJSFMnfharWwZ3tG2z7ePi9N41wBDqTKWNd6drb0w5uQ2HM
+w2RhzdfOeVLXf8fPGlLz8HvC3k1xj7udWhYxg/fvO+W1tMgLt9ef2izcFmpQduUH
+pJKfJa6OkzQJBdEAXVtaaQbUpq/FTFxD4NRQMJah20vrt+pexQbz8je+BvOLTmwz
+OLYLQkofqhEj54yq+2Rnr1FIBLaxdKTCIXfpNONa93i6yGeBRiq1RYO4cxV2KXUK
+frdoNHFF07AMZnjaRSGFv29RSTWfrhc4EQO4MpfM42pUioDINwLa1dvb0+aujSNQ
+qpyCmpjqayer+LN+nFI15JfgngldA5KfclBaqHyaYgs7/QJGIkau8QMDbuY+2j6O
+sMRhKwVR9/E7ovC4qpx5q4PWIIE0ldmhRq12EreiddIWIlYISaqdmZVV0PPwYSkF
+U6vpy7w9Sib5IBBxx+nj9OVlM8eyeDiCooor7OisF/A+501p51XFWhtlEPgUhKKn
++H/8S7TYX9IbUZXyyKolyxUFmF3cWIeCCtdH4XCUDeTZm+6OZQbaJ6/k9S7IzVJe
+gyuP7wrFelglTjVQo09m
+=kE0I
+-----END PGP SIGNATURE-----
+
+--5mCyUwZo2JvN/JJP--
