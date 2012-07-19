@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752888Ab2GSKim (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 06:38:42 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:44382 "EHLO mail.mev.co.uk"
+	id S1753302Ab2GSKjr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 06:39:47 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:44390 "EHLO mail.mev.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750782Ab2GSKil (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 06:38:41 -0400
-Message-ID: <5007E3A1.2030108@mev.co.uk>
-Date: Thu, 19 Jul 2012 11:38:25 +0100
+	id S1752172Ab2GSKjp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 06:39:45 -0400
+Message-ID: <5007E3E6.3030409@mev.co.uk>
+Date: Thu, 19 Jul 2012 11:39:34 +0100
 From: Ian Abbott <abbotti@mev.co.uk>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120616 Thunderbird/13.0
 MIME-Version: 1.0
@@ -16,38 +16,34 @@ CC: H Hartley Sweeten <hartleys@visionengravers.com>,
         Linux Kernel <linux-kernel@vger.kernel.org>,
         "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
         "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 30/90] staging: comedi: amplc_dio200: store the pci_dev
+Subject: Re: [PATCH 32/90] staging: comedi: amplc_pc236: store the pci_dev
  in the comedi_device
-References: <201207181837.50650.hartleys@visionengravers.com> <5007DD1F.4040703@mev.co.uk> <5007E0FE.4030602@mev.co.uk>
-In-Reply-To: <5007E0FE.4030602@mev.co.uk>
+References: <201207181839.24686.hartleys@visionengravers.com> <5007E1C9.1040509@mev.co.uk>
+In-Reply-To: <5007E1C9.1040509@mev.co.uk>
 Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-07-19 11:27, Ian Abbott wrote:
-> On 2012-07-19 11:10, Ian Abbott wrote:
->> On 2012-07-19 02:37, H Hartley Sweeten wrote:
->>> Use the hw_dev pointer in the comedi_device struct to hold the
->>> pci_dev instead of carrying it in the private data.
->>>
->>> Since the pci_dev is no longer held in the provate data, we can
->>> also cleanup the detach a bit. Remove the IS_ENABLED() tests in
->>> the detach. If the pci_dev is non NULL it's a PCI device otherwise
->>> it's an ISA device. Using IS_ENABLED() to omit the code paths
->>> makes the code a bit confusing and doesn't save much.
+On 2012-07-19 11:30, Ian Abbott wrote:
+> On 2012-07-19 02:39, H Hartley Sweeten wrote:
+>> Use the hw_dev pointer in the comedi_device struct to hold the
+>> pci_dev instead of carrying it in the private data.
 >>
->> No, you really need to check thisboard->bustype in the detach() because
->> hw_dev might be NULL for a PCI board if the attach() failed.
+>> Since the pci_dev is no longer held in the provate data, we can
+>> also cleanup the detach a bit. Remove the IS_ENABLED() tests in
+>> the detach. If the pci_dev is non NULL it's a PCI device otherwise
+>> it's an ISA device. Using IS_ENABLED() to omit the code paths
+>> makes the code a bit confusing and doesn't save much.
 >
-> Actually, your patch wouldn't do any harm as dev->iobase would be 0.  It
-> would just go through the "failed ISA device" path instead of the
-> "failed PCI device" path.  It would be more robust to check
-> thisboard->bustype though.
+> The detach() routine should really check thisboard->bustype for
+> robustness, as NULL hw_dev doesn't necessarily mean its a PCI device.
+> The original code should have checked thisboard->bustype too although it
+> works by accident because dev->iobase is 0.
 
-I don't mind if your original patch is applied as it does no harm.  If 
-so, I'll submit a patch afterwards to check the bus type in the detach().
+I can submit a patch to add thisboard->bustype checks in the detach 
+routine after your patch is applied.
 
 -- 
 -=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
