@@ -1,57 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751879Ab2GSUkC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 16:40:02 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:47891 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751036Ab2GSUj7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 16:39:59 -0400
-Date: Thu, 19 Jul 2012 13:39:57 -0700 (PDT)
-Message-Id: <20120719.133957.1840226993713773484.davem@davemloft.net>
-To: cmetcalf@tilera.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3 v2] net: various tilegx networking fixes
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <50070CE4.7040704@tilera.com>
-References: <201207181650.q6IGodZ7007565@lab-41.internal.tilera.com>
-	<20120718.113623.984635805289135415.davem@davemloft.net>
-	<50070CE4.7040704@tilera.com>
-X-Mailer: Mew version 6.5 on Emacs 24.0.97 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1751715Ab2GSUuV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 16:50:21 -0400
+Received: from toro.web-alm.net ([62.245.132.31]:58312 "EHLO toro.web-alm.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751134Ab2GSUuT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 16:50:19 -0400
+Message-Id: <20120719203409.398114351@osadl.org>
+User-Agent: quilt/0.51-1
+Date: Thu, 19 Jul 2012 22:34:09 +0200
+From: Carsten Emde <C.Emde@osadl.org>
+To: Rafael Wysocki <rjw@sisk.pl>
+Cc: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        Len Brown <len.brown@intel.com>, Kevin Hilman <khilman@ti.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        Carsten Emde <C.Emde@osadl.org>
+Subject: [PATCH 0/1 v3] cpuidle: allow to disable C states of the ladder governor 
+References: <201207192130.20520.rjw@sisk.pl> <201207192042.57935.rjw@sisk.pl> <20120719185212.184458166@osadl.org> <20120719190740.215034590@osadl.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Wed, 18 Jul 2012 15:22:12 -0400
+Rafael,
 
-> On 7/18/2012 2:36 PM, David Miller wrote:
->> From: Chris Metcalf <cmetcalf@tilera.com>
->> Date: Sun, 1 Jul 2012 14:43:47 -0400
->>
->>> The tree is at:
->>>
->>>   git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile.git net
->>>
->>> Chris Metcalf (3):
->>>       net: tilegx driver bugfix (be explicit about percpu queue number)
->>>       tilegx net driver: handle payload data not in frags
->>>       tilegx net: use eth_hw_addr_random(), not random_ether_addr()
->> These changes look fine, but when I pull from your tree I get tons of
->> totally unrelated stuff and a merge conflict in this driver.
->>
->> Can you put together a clean pull against net-next?
-> 
-> The merge conflict was against Joe Perches' bombing of random_ether_addr()
-> to eth_random_addr().  I left in my change to convert that again to be
-> eth_hw_addr_random(), which naively seems like a better API, and sets
-> NET_ADDR_RANDOM, which is presumably a good thing.
-> 
-> I recreated the tree to be branched off of net-next. ( I had originally
-> created it off of Linus's tree, which in retrospect doesn't make much
-> sense.)  Please try to pull again - thanks!
+> Your patch doesn't seem to take this linux-next commit:
 
-Pulled, thanks a lot Chris.
+> http://git.kernel.org/?p=linux/kernel/git/rafael/linux-pm.git;a=commit;h=dc7fd275ae60ef8edf952aff2a62462f5d892fd4
+
+> into account, does it?
+Hmm, oops, you're right. This one came in after I checked it last time.
+
+Changes in v2: A note in the documentation explains why the sysfs
+variable "disable" may not always reflect the current situation
+and why modifying it may not always work as expected.
+
+Changes in v3: The patch now applies to the current linux-next and
+uses the per-cpu "disable" field.
+
+	-Carsten.
+
