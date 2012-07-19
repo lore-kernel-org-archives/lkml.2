@@ -1,84 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752778Ab2GSSY5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 14:24:57 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25052 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752595Ab2GSSYy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 14:24:54 -0400
-X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=XNQpylE1qVEA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=3nbZYyFuAAAA:8 a=xaCACC6C0WTWiW9GShAA:9 a=PUjeQqilurYA:10 a=EvKJbDF4Ut8A:10 a=s5Htg7xnQOKvHEu9STBOug==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 72.230.195.127
-Message-ID: <1342722292.12353.77.camel@gandalf.stny.rr.com>
-Subject: Re: Re: [RFC][PATCH 2/4 v4] ftrace/x86: Add save_regs for i386
- function calls
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Uros Bizjak <ubizjak@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, yrl.pp-manager.tt@hitachi.com
-Date: Thu, 19 Jul 2012 14:24:52 -0400
-In-Reply-To: <1342702344.12353.16.camel@gandalf.stny.rr.com>
-References: <20120711195048.885039013@goodmis.org>
-	 <20120711195745.379060003@goodmis.org> <4FFEC58E.5070202@hitachi.com>
-	 <1342205273.30075.19.camel@gandalf.stny.rr.com>
-	 <1342627145.11900.7.camel@gandalf.stny.rr.com>
-	 <50076ED9.3000100@hitachi.com>
-	 <1342702344.12353.16.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752162Ab2GSShG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 14:37:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34478 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750882Ab2GSShE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 14:37:04 -0400
+Date: Thu, 19 Jul 2012 14:36:46 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
+        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
+        Debian Kernel Team <debian-kernel@lists.debian.org>,
+        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Fedora Kernel Team <kernel-team@fedoraproject.org>
+Subject: Re: [RFC] Simplifying kernel configuration for distro issues
+Message-ID: <20120719183645.GH8469@zod.bos.redhat.com>
+References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com>
+ <20120713210240.GG1707@redhat.com>
+ <CA+55aFz_Vv899eXz6F0jtFH=hT4QpB0_2XuS8HySPjHC6s+L7Q@mail.gmail.com>
+ <20120719152618.GD16873@home.goodmis.org>
+ <20120719154521.GC8469@zod.bos.redhat.com>
+ <1342714088.12353.33.camel@gandalf.stny.rr.com>
+ <20120719171918.GD8469@zod.bos.redhat.com>
+ <1342719222.12353.58.camel@gandalf.stny.rr.com>
+ <20120719175649.GF8469@zod.bos.redhat.com>
+ <1342721620.12353.75.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1342721620.12353.75.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-07-19 at 08:52 -0400, Steven Rostedt wrote:
-> On Thu, 2012-07-19 at 11:20 +0900, Masami Hiramatsu wrote:
-> > (2012/07/19 0:59), Steven Rostedt wrote:
-> > > On Fri, 2012-07-13 at 14:47 -0400, Steven Rostedt wrote:
-> > > 
-> > > Masami, can you give your Reviewed-by tag for this version? Or is there
-> > > something else needing to be fixed?
-> > 
-> > No, that is OK for me. I've just missed that...
-> > 
-> > Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> > 
-> > Thank you!
-> > 
+On Thu, Jul 19, 2012 at 02:13:40PM -0400, Steven Rostedt wrote:
+> On Thu, 2012-07-19 at 13:56 -0400, Josh Boyer wrote:
 > 
-> Thanks! Except I have one more version. Someone offlist gave me some
-> ideas.
+> > Distros aren't stationary things.
 > 
-> Here's the diff from the previous patch.
+> Exactly my point.
 > 
-> diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-> index 46caa56..ca5a146 100644
-> --- a/arch/x86/kernel/entry_32.S
-> +++ b/arch/x86/kernel/entry_32.S
-> @@ -1169,10 +1169,9 @@ ENTRY(ftrace_regs_caller)
->  	movl $__KERNEL_CS,13*4(%esp)
->  
->  	movl 12*4(%esp), %eax	/* Load ip (1st parameter) */
-> -	movl 0x4(%ebp), %edx	/* Load parent ip (2cd parameter) */
-> -	lea  (%esp), %ecx
-> -	pushl %ecx		/* Save pt_regs as 4th parameter */
-> +	movl 0x4(%ebp), %edx	/* Load parent ip (2nd parameter) */
->  	leal function_trace_op, %ecx /* Save ftrace_pos in 3rd parameter */
-> +	pushl %esp		/* Save pt_regs as 4th parameter */
->  
->  GLOBAL(ftrace_regs_call)
+> >   I mean, some of them certainly aim
+> > for that goal, but userspace and kernels get upgraded all the time.  So
+> > if this distro-Kconfig file is provided by some package _other_ than the
+> > kernel the distros are going to have a bit of a hassle keeping track of
+> > it.
+> 
+> How about a directory called /usr/share/Linux/Kconfig.d/
+> 
+> Then have anything installed that needs to work correctly put in its
+> minimum (must have) requirement configs of the kernel.
+> 
+> Say you are running Debian, and decide to try out systemd. If you set up
+> your system to run that it would add a file called:
+> 
+> /usr/share/Linux/Kconfig.d/systemd.conf
+> 
+> or something, and this would select things like CGROUPS and the like. We
+> could make the kernel build select all, or individual files in this
+> directory. All for the 'make my distro work' or individual for a 'I want
+> part of my distro to work' option.
 
-I'm adding this as a separate patch under Uros's name.
+That sounds like a pretty good idea, aside from the fact that now your
+config is determined by 1) what is currently installed on your system
+and 2) people that don't maintain the kernel.
 
-I'll be posting the full series for pulling either tonight or tomorrow,
-depending on how it handles all my stress tests.
+1 is obviously a great thing once you have a stable working set of
+packages you use daily, but wouldn't it kind of suck to have to rebuild
+the kernel just to install some new package?  I mean... say you wanted
+to now use an NFS mount, but you didn't have nfs-utils previously
+installed.  So you install it, and it plops the kconfig file in
+/usr/share but oops, you have to rebuild the kernel and reboot because
+that module isn't built.  Of course I'm extrapolating possibly the worst
+usage case here, but it will still happen.
 
--- Steve
+2... yeah.  I don't really know if that is going to pan out, but I am
+ever hopeful.  I'd be mostly concerned with people that are coding
+userspace applications using every whiz-bang kernel feature.  Or not
+paying attention at all to the kernel after the initial file creation
+and the options going stale (don't follow renames, etc).
 
 
+> > Upgraded the kernel within the confines of that distro, right?  So you
+> > go back to what was already installed and working.  You don't go back
+> > arbitrarily far just to see what happens.  I would think a reasonably
+> > crafted distro config would work in those scenarios.
+> 
+> A reasonable one, but still not the minimum.
+
+The definition of minimum seems to be what we're disagreeing on.  I'm
+approaching it from "minimum for a default install of the distro
+release".  OK, that and maybe a few common case usages (like NFS, CIFS,
+etc).  You seem to be approaching it from literally bare minimum.
+
+> One issue with Linus's proposal is that he's asking us to focus on the
+> 99%. But the 99% of who? Because 99% of Linux users do not compile their
+> own kernels, so he must be asking about the 99% of Linux users that
+> compile their own kernels. This 99% does not just simply compile their
+> kernels, but only want to compile the absolutely necessary stuff. That
+> is, they want their kernels not to include anything they are not using.
+> 
+> A reasonable config would probably need to include a lot that's not
+> used.
+
+Perhaps.  I thought getting it reasonable would benefit more people,
+even at the cost of some smaller bloat than bare minimum.  I don't think
+either of us are really wrong, it's more a matter of who is really going
+to use this and why I guess.
+
+josh
