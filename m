@@ -1,164 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752362Ab2GSMmq (ORCPT <rfc822;w@1wt.eu>);
+	id S1753070Ab2GSMm4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 08:42:56 -0400
+Received: from sh.osrg.net ([192.16.179.4]:52951 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752527Ab2GSMmq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 19 Jul 2012 08:42:46 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:43029 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752066Ab2GSMmk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 08:42:40 -0400
-X-AuditID: b753bd60-932c5ba0000047ca-6a-500800be7951
-X-AuditID: b753bd60-932c5ba0000047ca-6a-500800be7951
-From: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
-Subject: [PATCH -v2 4/6] fuse: add a sysfs parameter to control the maximum
- request size
-To: Miklos Szeredi <miklos@szeredi.hu>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Muthukumar R <muthur@gmail.com>
-Cc: fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-doc@vger.kernel.org,
-        yrl.pp-manager.tt@hitachi.com,
-        Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>,
-        Miklos Szeredi <miklos@szeredi.hu>, Nikolaus Rath <Nikolaus@rath.org>,
-        Liu Yuan <namei.unix@gmail.com>, Has-Wen Nienhuys <hanwen@xs4all.nl>
-Date: Thu, 19 Jul 2012 21:49:48 +0900
-Message-ID: <20120719124948.6250.8088.stgit@ltc137.sdl.hitachi.co.jp>
-In-Reply-To: <20120719124851.6250.43316.stgit@ltc137.sdl.hitachi.co.jp>
-References: <20120719124851.6250.43316.stgit@ltc137.sdl.hitachi.co.jp>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-nilfs <linux-nilfs@vger.kernel.org>,
+        Vyacheslav Dubeyko <slava@dubeyko.com>,
+        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Subject: [PATCH 2/2] NILFS2: add omitted comments for different structures in driver implementation
+Date: Thu, 19 Jul 2012 21:34:19 +0900
+Message-Id: <1342701259-32314-3-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
+X-Mailer: git-send-email 1.7.9.3
+In-Reply-To: <1342701259-32314-1-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
+References: <1342701259-32314-1-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
+X-Dispatcher: imput version 20070423(IM149)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.3.7 (sh.osrg.net [192.16.179.4]); Thu, 19 Jul 2012 21:42:32 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a max_pages_per_req sysfs paramater to limit the maximum
-read/write request size. It can be changed to arbitrary number
-between 32 and the nr_pages equivalent to pipe_max_size, and the
-32 pages are set by default.
+From: Vyacheslav Dubeyko <slava@dubeyko.com>
 
-The sysfs parameter control is required, as follows.
+This patch adds omitted comments for different structures in driver
+implementation.
 
-* The libfuse should change the current MIN_BUFSIZE limitation
-  according to the current maximum request size in FUSE. If not,
-  the libfuse must always set MIN_BUFSIZE to the maximum request
-  limit (= [nr_pages (equivalent to pipe_max_size) * 4KB + 0x1000]),
-  which leads to waste of memory.
+[modified so as to comply with kernel-doc data structure comment]
 
-* It is easy to find and set the paramter to the optimized value
-  in order to improve the read/write throughput, since the
-  maximum request limit does not always provides the highest
-  throughput.
-
-So, it is necessary to get and set the maximum size from userspace.
-
-Existing FUSE mounts must be remounted for this change to take
-effect.
-
-Signed-off-by: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Nikolaus Rath <Nikolaus@rath.org>
-Cc: Liu Yuan <namei.unix@gmail.com>
-Cc: Has-Wen Nienhuys <hanwen@xs4all.nl>
+Signed-off-by: Vyacheslav Dubeyko <slava@dubeyko.com>
+Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
 ---
+ fs/nilfs2/alloc.h     |   14 +++++++++++---
+ fs/nilfs2/bmap.h      |    7 +++++++
+ fs/nilfs2/btnode.h    |    8 +++++++-
+ fs/nilfs2/dat.c       |    6 ++++++
+ fs/nilfs2/export.h    |    8 ++++++++
+ fs/nilfs2/ifile.c     |    6 +++++-
+ fs/nilfs2/inode.c     |    7 +++++++
+ fs/nilfs2/mdt.h       |    7 +++++++
+ fs/nilfs2/nilfs.h     |   17 +++++++++++++++--
+ fs/nilfs2/sufile.c    |    8 +++++++-
+ fs/nilfs2/the_nilfs.h |    3 +--
+ 11 files changed, 81 insertions(+), 10 deletions(-)
 
- fs/fuse/inode.c |   58 +++++++++++++++++++++++++++++++++++++++++++++++++++----
- 1 files changed, 54 insertions(+), 4 deletions(-)
-
-diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
-index f7f3c5d..5f84a40 100644
---- a/fs/fuse/inode.c
-+++ b/fs/fuse/inode.c
-@@ -47,6 +47,14 @@ MODULE_PARM_DESC(max_user_congthresh,
-  "Global limit for the maximum congestion threshold an "
-  "unprivileged user can set");
+diff --git a/fs/nilfs2/alloc.h b/fs/nilfs2/alloc.h
+index f5fde36..fb72381 100644
+--- a/fs/nilfs2/alloc.h
++++ b/fs/nilfs2/alloc.h
+@@ -76,15 +76,23 @@ int nilfs_palloc_freev(struct inode *, __u64 *, size_t);
+ #define nilfs_clear_bit_atomic		ext2_clear_bit_atomic
+ #define nilfs_find_next_zero_bit	find_next_zero_bit_le
+ 
+-/*
+- * persistent object allocator cache
++/**
++ * struct nilfs_bh_assoc - block offset and buffer head association
++ * @blkoff: block offset
++ * @bh: buffer head
+  */
+-
+ struct nilfs_bh_assoc {
+ 	unsigned long blkoff;
+ 	struct buffer_head *bh;
+ };
  
 +/**
-+ * Maximum number of pages allocated for struct fuse_req.
-+ * It can be changed via sysfs to arbitrary number between
-+ * FUSE_DEFAULT_MAX_PAGES_PER_REQ and nr_pages equivalent
-+ * to pipe_max_size.
++ * struct nilfs_palloc_cache - persistent object allocator cache
++ * @lock: cache protecting lock
++ * @prev_desc: blockgroup descriptors cache
++ * @prev_bitmap: blockgroup bitmap cache
++ * @prev_entry: translation entries cache
 + */
-+static unsigned sysfs_max_req_pages = FUSE_DEFAULT_MAX_PAGES_PER_REQ;
-+
- #define FUSE_SUPER_MAGIC 0x65735546
+ struct nilfs_palloc_cache {
+ 	spinlock_t lock;
+ 	struct nilfs_bh_assoc prev_desc;
+diff --git a/fs/nilfs2/bmap.h b/fs/nilfs2/bmap.h
+index 40d9f45..b89e680 100644
+--- a/fs/nilfs2/bmap.h
++++ b/fs/nilfs2/bmap.h
+@@ -135,6 +135,13 @@ struct nilfs_bmap {
+ /* state */
+ #define NILFS_BMAP_DIRTY	0x00000001
  
- #define FUSE_DEFAULT_BLKSIZE 512
-@@ -779,11 +787,8 @@ static int set_global_limit(const char *val, struct kernel_param *kp)
++/**
++ * struct nilfs_bmap_store - shadow copy of bmap state
++ * @data: cached raw block mapping of on-disk inode
++ * @last_allocated_key: cached value of last allocated key for data block
++ * @last_allocated_ptr: cached value of last allocated ptr for data block
++ * @state: cached value of state field of bmap structure
++ */
+ struct nilfs_bmap_store {
+ 	__le64 data[NILFS_BMAP_SIZE / sizeof(__le64)];
+ 	__u64 last_allocated_key;
+diff --git a/fs/nilfs2/btnode.h b/fs/nilfs2/btnode.h
+index 3a4dd2d..d876b56 100644
+--- a/fs/nilfs2/btnode.h
++++ b/fs/nilfs2/btnode.h
+@@ -29,7 +29,13 @@
+ #include <linux/fs.h>
+ #include <linux/backing-dev.h>
  
- static void set_conn_max_pages(struct fuse_conn *fc, unsigned max_pages)
- {
--	unsigned pipe_max_size = pipe_get_max_size();
--	unsigned pipe_max_pages = DIV_ROUND_UP(pipe_max_size, PAGE_SIZE);
 -
- 	if (max_pages > fc->max_pages) {
--		fc->max_pages = min_t(unsigned, pipe_max_pages, max_pages);
-+		fc->max_pages = min_t(unsigned, sysfs_max_req_pages, max_pages);
- 		fc->fuse_req_size = sizeof(struct fuse_req) +
- 				    fc->max_pages * sizeof(struct page *);
- 	}
-@@ -1205,6 +1210,45 @@ static void fuse_fs_cleanup(void)
- static struct kobject *fuse_kobj;
- static struct kobject *connections_kobj;
++/**
++ * struct nilfs_btnode_chkey_ctxt - change key context
++ * @oldkey: old key of block's moving content
++ * @newkey: new key for block's content
++ * @bh: buffer head of old buffer
++ * @newbh: buffer head of new buffer
++ */
+ struct nilfs_btnode_chkey_ctxt {
+ 	__u64 oldkey;
+ 	__u64 newkey;
+diff --git a/fs/nilfs2/dat.c b/fs/nilfs2/dat.c
+index b5c13f3..fa0f803 100644
+--- a/fs/nilfs2/dat.c
++++ b/fs/nilfs2/dat.c
+@@ -33,6 +33,12 @@
+ #define NILFS_CNO_MIN	((__u64)1)
+ #define NILFS_CNO_MAX	(~(__u64)0)
  
-+static ssize_t max_req_pages_show(struct kobject *kobj,
-+				  struct kobj_attribute *attr, char *buf)
-+{
-+	return sprintf(buf, "%u\n", sysfs_max_req_pages);
-+}
-+
-+static ssize_t max_req_pages_store(struct kobject *kobj,
-+				   struct kobj_attribute *attr,
-+				   const char *buf, size_t count)
-+{
-+	int err;
-+	unsigned long t;
-+	unsigned pipe_max_size = pipe_get_max_size();
-+	unsigned pipe_max_pages = DIV_ROUND_UP(pipe_max_size, PAGE_SIZE);
-+
-+	err = kstrtoul(skip_spaces(buf), 0, &t);
-+	if (err)
-+		return err;
-+
-+	t = max_t(unsigned long, t, FUSE_DEFAULT_MAX_PAGES_PER_REQ);
-+	t = min_t(unsigned long, t, pipe_max_pages);
-+
-+	sysfs_max_req_pages = t;
-+	return count;
-+}
-+
-+static struct kobj_attribute max_req_pages_attr =
-+	__ATTR(max_pages_per_req, 0644, max_req_pages_show,
-+	       max_req_pages_store);
-+
-+static struct attribute *fuse_attrs[] = {
-+	&max_req_pages_attr.attr,
-+	NULL,
-+};
-+
-+static struct attribute_group fuse_attr_grp = {
-+	.attrs = fuse_attrs,
-+};
-+
- static int fuse_sysfs_init(void)
- {
- 	int err;
-@@ -1221,8 +1265,14 @@ static int fuse_sysfs_init(void)
- 		goto out_fuse_unregister;
- 	}
++/**
++ * struct nilfs_dat_info - on-memory private data of DAT file
++ * @mi: on-memory private data of metadata file
++ * @palloc_cache: persistent object allocator cache of DAT file
++ * @shadow: shadow map of DAT file
++ */
+ struct nilfs_dat_info {
+ 	struct nilfs_mdt_info mi;
+ 	struct nilfs_palloc_cache palloc_cache;
+diff --git a/fs/nilfs2/export.h b/fs/nilfs2/export.h
+index a71cc41..19ccbf9 100644
+--- a/fs/nilfs2/export.h
++++ b/fs/nilfs2/export.h
+@@ -5,6 +5,14 @@
  
-+	err = sysfs_create_group(fuse_kobj, &fuse_attr_grp);
-+	if (err)
-+		goto out_conn_unregister;
-+
- 	return 0;
+ extern const struct export_operations nilfs_export_ops;
  
-+ out_conn_unregister:
-+	kobject_put(connections_kobj);
-  out_fuse_unregister:
- 	kobject_put(fuse_kobj);
-  out_err:
++/**
++ * struct nilfs_fid - NILFS file id type
++ * @cno: checkpoint number
++ * @ino: inode number
++ * @gen: file generation (version) for NFS
++ * @parent_gen: parent generation (version) for NFS
++ * @parent_ino: parent inode number
++ */
+ struct nilfs_fid {
+ 	u64 cno;
+ 	u64 ino;
+diff --git a/fs/nilfs2/ifile.c b/fs/nilfs2/ifile.c
+index 5a48df7..d8e65bd 100644
+--- a/fs/nilfs2/ifile.c
++++ b/fs/nilfs2/ifile.c
+@@ -29,7 +29,11 @@
+ #include "alloc.h"
+ #include "ifile.h"
+ 
+-
++/**
++ * struct nilfs_ifile_info - on-memory private data of ifile
++ * @mi: on-memory private data of metadata file
++ * @palloc_cache: persistent object allocator cache of ifile
++ */
+ struct nilfs_ifile_info {
+ 	struct nilfs_mdt_info mi;
+ 	struct nilfs_palloc_cache palloc_cache;
+diff --git a/fs/nilfs2/inode.c b/fs/nilfs2/inode.c
+index 7cc6446..6e2c3db 100644
+--- a/fs/nilfs2/inode.c
++++ b/fs/nilfs2/inode.c
+@@ -34,6 +34,13 @@
+ #include "cpfile.h"
+ #include "ifile.h"
+ 
++/**
++ * struct nilfs_iget_args - arguments used during comparison between inodes
++ * @ino: inode number
++ * @cno: checkpoint number
++ * @root: pointer on NILFS root object (mounted checkpoint)
++ * @for_gc: inode for GC flag
++ */
+ struct nilfs_iget_args {
+ 	u64 ino;
+ 	__u64 cno;
+diff --git a/fs/nilfs2/mdt.h b/fs/nilfs2/mdt.h
+index ab20a4b..ab172e8 100644
+--- a/fs/nilfs2/mdt.h
++++ b/fs/nilfs2/mdt.h
+@@ -28,6 +28,13 @@
+ #include "nilfs.h"
+ #include "page.h"
+ 
++/**
++ * struct nilfs_shadow_map - shadow mapping of meta data file
++ * @bmap_store: shadow copy of bmap state
++ * @frozen_data: shadowed dirty data pages
++ * @frozen_btnodes: shadowed dirty b-tree nodes' pages
++ * @frozen_buffers: list of frozen buffers
++ */
+ struct nilfs_shadow_map {
+ 	struct nilfs_bmap_store bmap_store;
+ 	struct address_space frozen_data;
+diff --git a/fs/nilfs2/nilfs.h b/fs/nilfs2/nilfs.h
+index 250add8..74cece8 100644
+--- a/fs/nilfs2/nilfs.h
++++ b/fs/nilfs2/nilfs.h
+@@ -32,8 +32,21 @@
+ #include "the_nilfs.h"
+ #include "bmap.h"
+ 
+-/*
+- * nilfs inode data in memory
++/**
++ * struct nilfs_inode_info - nilfs inode data in memory
++ * @i_flags: inode flags
++ * @i_state: dynamic state flags
++ * @i_bmap: pointer on i_bmap_data
++ * @i_bmap_data: raw block mapping
++ * @i_xattr: <TODO>
++ * @i_dir_start_lookup: page index of last successful search
++ * @i_cno: checkpoint number for GC inode
++ * @i_btnode_cache: cached pages of b-tree nodes
++ * @i_dirty: list for connecting dirty files
++ * @xattr_sem: semaphore for extended attributes processing
++ * @i_bh: buffer contains disk inode
++ * @i_root: root object of the current filesystem tree
++ * @vfs_inode: VFS inode object
+  */
+ struct nilfs_inode_info {
+ 	__u32 i_flags;
+diff --git a/fs/nilfs2/sufile.c b/fs/nilfs2/sufile.c
+index c5b7653..3127e9f 100644
+--- a/fs/nilfs2/sufile.c
++++ b/fs/nilfs2/sufile.c
+@@ -30,7 +30,13 @@
+ #include "mdt.h"
+ #include "sufile.h"
+ 
+-
++/**
++ * struct nilfs_sufile_info - on-memory private data of sufile
++ * @mi: on-memory private data of metadata file
++ * @ncleansegs: number of clean segments
++ * @allocmin: lower limit of allocatable segment range
++ * @allocmax: upper limit of allocatable segment range
++ */
+ struct nilfs_sufile_info {
+ 	struct nilfs_mdt_info mi;
+ 	unsigned long ncleansegs;/* number of clean segments */
+diff --git a/fs/nilfs2/the_nilfs.h b/fs/nilfs2/the_nilfs.h
+index 2558f32..6eee417 100644
+--- a/fs/nilfs2/the_nilfs.h
++++ b/fs/nilfs2/the_nilfs.h
+@@ -232,9 +232,8 @@ THE_NILFS_FNS(SB_DIRTY, sb_dirty)
+  * @count: refcount of this structure
+  * @nilfs: nilfs object
+  * @ifile: inode file
+- * @root: root inode
+  * @inodes_count: number of inodes
+- * @blocks_count: number of blocks (Reserved)
++ * @blocks_count: number of blocks
+  */
+ struct nilfs_root {
+ 	__u64 cno;
+-- 
+1.7.9.3
 
