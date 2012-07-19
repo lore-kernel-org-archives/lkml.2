@@ -1,138 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752630Ab2GSBBg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 21:01:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7265 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751558Ab2GSBBe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 21:01:34 -0400
-Date: Wed, 18 Jul 2012 22:00:48 -0300
-From: Rafael Aquini <aquini@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>, Rafael Aquini <aquini@linux.com>
-Subject: Re: [PATCH v4 1/3] mm: introduce compaction and migration for virtio
- ballooned pages
-Message-ID: <20120719010047.GD2313@t510.redhat.com>
-References: <cover.1342485774.git.aquini@redhat.com>
- <49f828a9331c9b729fcf77226006921ec5bc52fa.1342485774.git.aquini@redhat.com>
- <20120718154605.cb0591bc.akpm@linux-foundation.org>
- <20120718230706.GB2313@t510.redhat.com>
- <20120718161239.9449e6b5.akpm@linux-foundation.org>
+	id S1752497Ab2GSBDN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 21:03:13 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:43933 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751558Ab2GSBDK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Jul 2012 21:03:10 -0400
+Message-ID: <50075C43.7000706@huawei.com>
+Date: Thu, 19 Jul 2012 09:00:51 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120312 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120718161239.9449e6b5.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Neil Horman <nhorman@tuxdriver.com>
+CC: John Fastabend <john.r.fastabend@intel.com>,
+        Gao feng <gaofeng@cn.fujitsu.com>, <eric.dumazet@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <davem@davemloft.net>, Eric Dumazet <edumazet@google.com>,
+        "Rustad, Mark D" <mark.d.rustad@intel.com>
+Subject: Re: [PATCH v4] net: cgroup: fix access the unallocated memory in
+ netprio cgroup
+References: <1342079415-9631-1-git-send-email-gaofeng@cn.fujitsu.com> <5005CF5D.9070905@intel.com> <20120718122106.GB25563@hmsreliant.think-freely.org> <5006C3CA.3010007@intel.com> <20120718142632.GF25563@hmsreliant.think-freely.org>
+In-Reply-To: <20120718142632.GF25563@hmsreliant.think-freely.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.166.88.115]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 18, 2012 at 04:12:39PM -0700, Andrew Morton wrote:
-> On Wed, 18 Jul 2012 20:07:07 -0300
-> Rafael Aquini <aquini@redhat.com> wrote:
-> 
-> > > 
-> > > > +}
-> > > > +#else
-> > > > +static inline bool is_balloon_page(struct page *page)       { return false; }
-> > > > +static inline bool isolate_balloon_page(struct page *page)  { return false; }
-> > > > +static inline bool putback_balloon_page(struct page *page)  { return false; }
-> > > > +#endif /* (VIRTIO_BALLOON || VIRTIO_BALLOON_MODULE) && COMPACTION */
-> > > 
-> > > This means that if CONFIG_VIRTIO_BALLOON=y and CONFIG_COMPACTION=n,
-> > > is_balloon_page() will always return NULL.  IOW, no pages are balloon
-> > > pages!  This is wrong.
-> > > 
-> > I believe it's right, actually, as we can see CONFIG_COMPACTION=n associated with
-> > CONFIG_MIGRATION=y (and  CONFIG_VIRTIO_BALLOON=y).
-> > For such config case we cannot perform the is_balloon_page() test branches
-> > placed on mm/migration.c
-> 
-> No, it isn't right.  Look at the name: "is_balloon_page".  If a caller
-> runs is_balloon_page() against a balloon page with CONFIG_COMPACTION=n
-> then they will get "false", which is incorrect.
->
-You're right, I got your point. 
- 
-> So the function needs a better name - one which communicates that it is
-> a balloon page *for the purposes of processing by the compaction code*. 
-> Making the function private to compaction.c would help with that, if
-> feasible.
-> 
+>>>>>  static struct cgroup_subsys_state *cgrp_create(struct cgroup *cgrp)
 
-How about this (adjusted) approach:
+>>>>>  {
+>>>>>  	struct cgroup_netprio_state *cs;
+>>>>> -	int ret;
+>>>>> +	int ret = -EINVAL;
+>>>>>
+>>>>>  	cs = kzalloc(sizeof(*cs), GFP_KERNEL);
+>>>>>  	if (!cs)
+>>>>>  		return ERR_PTR(-ENOMEM);
+>>>>>
+>>>>> -	if (cgrp->parent && cgrp_netprio_state(cgrp->parent)->prioidx) {
+>>>>> -		kfree(cs);
+>>>>> -		return ERR_PTR(-EINVAL);
+>>>>> -	}
+>>>>> +	if (cgrp->parent && cgrp_netprio_state(cgrp->parent)->prioidx)
+>>>>> +		goto out;
+>>>>>
+>>>>>  	ret = get_prioidx(&cs->prioidx);
+>>>>> -	if (ret != 0) {
+>>>>> +	if (ret < 0) {
+>>>>>  		pr_warn("No space in priority index array\n");
+>>>>> -		kfree(cs);
+>>>>> -		return ERR_PTR(ret);
+>>>>> +		goto out;
+>>>>> +	}
+>>>>> +
+>>>>> +	ret = update_netdev_tables();
+>>>>> +	if (ret < 0) {
+>>>>> +		put_prioidx(cs->prioidx);
+>>>>> +		goto out;
+>>>>>  	}
+>>>>
+>>>> Gao,
+>>>>
+>>>> This introduces a null ptr dereference when netprio_cgroup is built
+>>>> into the kernel because update_netdev_tables() depends on init_net.
+>>>> However cgrp_create is being called by cgroup_init before
+>>>> do_initcalls() is called and before net_dev_init().
+>>>>
+>>>> .John
+>>>>
+>>> Not sure I follow here John.  Shouldn't init_net be initialized prior to any
+>>> network devices getting registered?  In other words, shouldn't for_each_netdev
+>>> just result in zero iterations through the loop?
+>>> Neil
+>>>
+>>
+>> init_net _is_ initialized prior to any network devices getting
+>> registered but not before cgrp_create called via cgroup_init.
+>>
+>> #define for_each_netdev(net, d)         \
+>>                 list_for_each_entry(d, &(net)->dev_base_head, dev_list)
+>>
+>> but dev_base_head is zeroed at this time. In netdev_init we have,
+>>
+>>         INIT_LIST_HEAD(&net->dev_base_head);
+>>
+>> but we haven't got that far yet because cgroup_init is called
+>> before do_initcalls().
+>>
+> ok, I see that, and it makes sense, but at this point I'm more concerned with
+> cgroups getting initalized twice.  The early_init flag is clear in the
+> cgroup_subsystem for netprio, so we really shouldn't be getting initalized from
+> cgroup_init. We should be getting initalized from the module_init() call that
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index b94f17a..02a8f80 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1629,8 +1629,7 @@ static inline unsigned int debug_guardpage_minorder(void)
-{ return 0; }
- static inline bool page_is_guard(struct page *page) { return false; }
- #endif /* CONFIG_DEBUG_PAGEALLOC */
- 
--#if (defined(CONFIG_VIRTIO_BALLOON) || \
--	defined(CONFIG_VIRTIO_BALLOON_MODULE)) && defined(CONFIG_COMPACTION)
-+#if (defined(CONFIG_VIRTIO_BALLOON) ||defined(CONFIG_VIRTIO_BALLOON_MODULE))
- extern bool putback_balloon_page(struct page *);
- extern struct address_space *balloon_mapping;
- 
-@@ -1638,11 +1637,13 @@ static inline bool is_balloon_page(struct page *page)
- {
- 	return (page->mapping && page->mapping == balloon_mapping);
- }
-+#if defined(CONFIG_COMPACTION)
-+static inline bool balloon_compaction_enabled(void) { return true; }
- #else
--static inline bool is_balloon_page(struct page *page)       { return false; }
--static inline bool isolate_balloon_page(struct page *page)  { return false; }
--static inline bool putback_balloon_page(struct page *page)  { return false; }
--#endif /* (VIRTIO_BALLOON || VIRTIO_BALLOON_MODULE) && COMPACTION */
-+static inline bool putback_balloon_page(struct page *page) { return false; }
-+static inline bool balloon_compaction_enabled(void) { return false; }
-+#endif /* CONFIG_COMPACTION */
-+#endif /* (CONFIG_VIRTIO_BALLOON || CONFIG_VIRTIO_BALLOON_MODULE) */
- 
- #endif /* __KERNEL__ */
- #endif /* _LINUX_MM_H */
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 59c7bc5..f5f6a7d 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -78,7 +78,8 @@ void putback_lru_pages(struct list_head *l)
- 		list_del(&page->lru);
- 		dec_zone_page_state(page, NR_ISOLATED_ANON +
- 				page_is_file_cache(page));
--		if (unlikely(is_balloon_page(page)))
-+		if (unlikely(is_balloon_page(page)) &&
-+		    balloon_compaction_enabled())
- 			WARN_ON(!putback_balloon_page(page));
- 		else
- 			putback_lru_page(page);
-@@ -786,7 +787,7 @@ static int __unmap_and_move(struct page *page, struct page
-*newpage,
- 		}
- 	}
- 
--	if (is_balloon_page(page)) {
-+	if (is_balloon_page(page) && balloon_compaction_enabled()) {
- 		/*
- 		 * A ballooned page does not need any special attention from
- 		 * physical to virtual reverse mapping procedures.
-@@ -867,7 +868,7 @@ static int unmap_and_move(new_page_t get_new_page, unsigned
-long private,
- 
- 	rc = __unmap_and_move(page, newpage, force, offlining, mode);
- 
--	if (is_balloon_page(newpage)) {
-+	if (is_balloon_page(newpage) && balloon_compaction_enabled()) {
- 		/*
- 		 * A ballooned page has been migrated already. Now, it is the
- 		 * time to wrap-up counters, handle the old page back to Buddy
- 
+> we register
+
+If the early_init flag is set, a cgroup subsys will be initialized from
+cgroup_early_init(), otherwise cgroup_init().
+
+If netprio is built as a module, the subsys will be initailized from module_init(),
+otherwise cgroup_init() (in this case cgroup_load_subsys() called in module_init()
+is a no-op).
+
+So it won't get initialized twice.
+
