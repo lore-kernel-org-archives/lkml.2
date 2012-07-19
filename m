@@ -1,195 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751185Ab2GSPoS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 11:44:18 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:57117 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750862Ab2GSPoL (ORCPT
+	id S1751467Ab2GSPo1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 11:44:27 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:58254 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750854Ab2GSPoV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 11:44:11 -0400
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 5/5] perf gtk/browser: Use hist_period_print functions
-Date: Fri, 20 Jul 2012 00:42:38 +0900
-Message-Id: <1342712558-8185-6-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1342712558-8185-1-git-send-email-namhyung@kernel.org>
-References: <1342712558-8185-1-git-send-email-namhyung@kernel.org>
+	Thu, 19 Jul 2012 11:44:21 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120719152618.GD16873@home.goodmis.org>
+References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com>
+ <20120713210240.GG1707@redhat.com> <CA+55aFz_Vv899eXz6F0jtFH=hT4QpB0_2XuS8HySPjHC6s+L7Q@mail.gmail.com>
+ <20120719152618.GD16873@home.goodmis.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 19 Jul 2012 08:43:58 -0700
+X-Google-Sender-Auth: hTKFHifvr5KM7J1BHPs7IJAgF-0
+Message-ID: <CA+55aFzTq2CNxPa3X+N=biFgifrmWbeWQJZLVFAFdySWXQCKXg@mail.gmail.com>
+Subject: Re: [RFC] Simplifying kernel configuration for distro issues
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Dave Jones <davej@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
+        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
+        Debian Kernel Team <debian-kernel@lists.debian.org>,
+        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Fedora Kernel Team <kernel-team@fedoraproject.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now we can support color using pango markup with this change.
+On Thu, Jul 19, 2012 at 8:26 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+>
+> Side note, and this is for the 1%. If you want a true minconfig for your
+> system, ktest can do that for you.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/ui/gtk/browser.c |  103 ++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 87 insertions(+), 16 deletions(-)
+Try it, it's actually much harder than it seems. Like allmodconfig, it
+handles the minimum hardware well, but it tends to handle the subtle
+issues really badly.
 
-diff --git a/tools/perf/ui/gtk/browser.c b/tools/perf/ui/gtk/browser.c
-index ec12e0b4ded6..653b3f5d1307 100644
---- a/tools/perf/ui/gtk/browser.c
-+++ b/tools/perf/ui/gtk/browser.c
-@@ -35,6 +35,57 @@ static void perf_gtk__resize_window(GtkWidget *window)
- 	gtk_window_resize(GTK_WINDOW(window), width, height);
- }
- 
-+static const char *perf_gtk__get_percent_color(double percent)
-+{
-+	if (percent >= MIN_RED)
-+		return "<span fgcolor='red'>";
-+	if (percent >= MIN_GREEN)
-+		return "<span fgcolor='dark green'>";
-+	return NULL;
-+}
-+
-+#define HPP_COLOR_FN(_name, _field)						\
-+static int perf_gtk__hpp_color_ ## _name(struct hist_print_context *ctx,	\
-+					 struct hist_entry *he)			\
-+{										\
-+	double percent = 100.0 * he->_field / ctx->total_period;		\
-+	const char *markup;							\
-+	int ret = 0;								\
-+										\
-+	markup = perf_gtk__get_percent_color(percent);				\
-+	if (markup)								\
-+		ret += scnprintf(ctx->s, ctx->size, "%s", markup);		\
-+	ret += scnprintf(ctx->s + ret, ctx->size - ret, "%5.2f%%", percent); 	\
-+	if (markup)								\
-+		ret += scnprintf(ctx->s + ret, ctx->size - ret, "</span>"); 	\
-+										\
-+	return ret;								\
-+}
-+
-+HPP_COLOR_FN(overhead, period)
-+HPP_COLOR_FN(overhead_sys, period_sys)
-+HPP_COLOR_FN(overhead_us, period_us)
-+HPP_COLOR_FN(overhead_guest_sys, period_guest_sys)
-+HPP_COLOR_FN(overhead_guest_us, period_guest_us)
-+
-+#undef HPP_COLOR_FN
-+
-+static void perf_gtk__init_hpp_functions(void)
-+{
-+	init_hpp_functions(NULL, false);
-+
-+	hpp_functions[PERF_HPP__OVERHEAD].color =
-+				perf_gtk__hpp_color_overhead;
-+	hpp_functions[PERF_HPP__OVERHEAD_SYS].color =
-+				perf_gtk__hpp_color_overhead_sys;
-+	hpp_functions[PERF_HPP__OVERHEAD_US].color =
-+				perf_gtk__hpp_color_overhead_us;
-+	hpp_functions[PERF_HPP__OVERHEAD_GUEST_SYS].color =
-+				perf_gtk__hpp_color_overhead_guest_sys;
-+	hpp_functions[PERF_HPP__OVERHEAD_GUEST_US].color =
-+				perf_gtk__hpp_color_overhead_guest_us;
-+}
-+
- static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists)
- {
- 	GType col_types[MAX_COLUMNS];
-@@ -42,15 +93,25 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists)
- 	struct sort_entry *se;
- 	GtkListStore *store;
- 	struct rb_node *nd;
--	u64 total_period;
- 	GtkWidget *view;
--	int col_idx;
-+	int i, col_idx;
- 	int nr_cols;
-+	char s[512];
-+
-+	struct hist_print_context ctx = {
-+		.s		= s,
-+		.size		= sizeof(s),
-+		.total_period	= hists->stats.total_period,
-+	};
- 
- 	nr_cols = 0;
- 
--	/* The percentage column */
--	col_types[nr_cols++] = G_TYPE_STRING;
-+	for (i = 0; i < PERF_HPP__MAX_INDEX; i++) {
-+		if (!hpp_functions[i].cond)
-+			continue;
-+
-+		col_types[nr_cols++] = G_TYPE_STRING;
-+	}
- 
- 	list_for_each_entry(se, &hist_entry__sort_list, list) {
- 		if (se->elide)
-@@ -67,11 +128,17 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists)
- 
- 	col_idx = 0;
- 
--	/* The percentage column */
--	gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(view),
--						    -1, "Overhead (%)",
--						    renderer, "text",
--						    col_idx++, NULL);
-+	for (i = 0; i < PERF_HPP__MAX_INDEX; i++) {
-+		if (!hpp_functions[i].cond)
-+			continue;
-+
-+		hpp_functions[i].header(&ctx);
-+
-+		gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(view),
-+							    -1, s,
-+							    renderer, "markup",
-+							    col_idx++, NULL);
-+	}
- 
- 	list_for_each_entry(se, &hist_entry__sort_list, list) {
- 		if (se->elide)
-@@ -87,13 +154,9 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists)
- 
- 	g_object_unref(GTK_TREE_MODEL(store));
- 
--	total_period = hists->stats.total_period;
--
- 	for (nd = rb_first(&hists->entries); nd; nd = rb_next(nd)) {
- 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
- 		GtkTreeIter iter;
--		double percent;
--		char s[512];
- 
- 		if (h->filtered)
- 			continue;
-@@ -102,11 +165,17 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists)
- 
- 		col_idx = 0;
- 
--		percent = (h->period * 100.0) / total_period;
-+		for (i = 0; i < PERF_HPP__MAX_INDEX; i++) {
-+			if (!hpp_functions[i].cond)
-+				continue;
- 
--		snprintf(s, ARRAY_SIZE(s), "%.2f", percent);
-+			if (hpp_functions[i].color)
-+				hpp_functions[i].color(&ctx, h);
-+			else
-+				hpp_functions[i].entry(&ctx, h);
- 
--		gtk_list_store_set(store, &iter, col_idx++, s, -1);
-+			gtk_list_store_set(store, &iter, col_idx++, s, -1);
-+		}
- 
- 		list_for_each_entry(se, &hist_entry__sort_list, list) {
- 			if (se->elide)
-@@ -193,6 +262,8 @@ int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist,
- 	if (!pgctx)
- 		return -1;
- 
-+	perf_gtk__init_hpp_functions();
-+
- 	vbox = gtk_vbox_new(FALSE, 0);
- 
- 	notebook = gtk_notebook_new();
--- 
-1.7.9.2
+Many config options cause *very* subtle failures that are almost
+impossible to see. Like firewalls not loading correctly (and leaving
+the machine completely open), or just stuff that you didn't happen to
+test (USB sticks, printers, certain programs) not working. Not having
+the right audit options will make things still "work", but you'll get
+warnings at bootup, and who knows what that causes etc etc.
 
+These kinds of things are exactly why I'd like to have a distro config.
+
+               Linus
