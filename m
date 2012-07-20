@@ -1,221 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752995Ab2GTPQQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 11:16:16 -0400
-Received: from mga03.intel.com ([143.182.124.21]:35833 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751936Ab2GTPQP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 11:16:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="170841840"
-From: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Ramakrishna Pallala <ramakrishna.pallala@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH] smb347_charger: fix battery status reporting logic for charger faults
-Date: Fri, 20 Jul 2012 19:22:48 +0530
-Message-Id: <1342792368-8346-1-git-send-email-ramakrishna.pallala@intel.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1752930Ab2GTPRX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 11:17:23 -0400
+Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:52125
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751912Ab2GTPRV convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 11:17:21 -0400
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC101.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+X-SpamScore: -10
+X-BigFish: VS-10(zz98dI9371Ic89bhbd9aJ542M1432Izz1202hzz8275bh8275dhz2fh2a8h683h839hd25hf0ah107ah)
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT002.namprd03.prod.outlook.com;R:internal;EFV:INT
+From: KY Srinivasan <kys@microsoft.com>
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+CC: =?iso-8859-1?Q?Bj=F8rn_Mork?= <bjorn@mork.no>,
+        "Greg KH (gregkh@linuxfoundation.org)" <gregkh@linuxfoundation.org>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: RE: 0xB16B00B5? Really? (was Re: Move hyperv out of the
+ drivers/staging/ directory)
+Thread-Topic: 0xB16B00B5? Really? (was Re: Move hyperv out of the
+ drivers/staging/ directory)
+Thread-Index: AQHNZk2FQIU8WaEGMU+rzjsXSQqoHZcyMq+QgAASfYCAAAMJUA==
+Date: Fri, 20 Jul 2012 15:16:53 +0000
+Message-ID: <426367E2313C2449837CD2DE46E7EAF9235477F6@SN2PRD0310MB382.namprd03.prod.outlook.com>
+References: <6E21E5352C11B742B20C142EB499E048081EB789@TK5EX14MBXC124.redmond.corp.microsoft.com>
+	<20111004170415.GA1320@suse.de>
+	<6E21E5352C11B742B20C142EB499E048081EB86F@TK5EX14MBXC124.redmond.corp.microsoft.com>
+	<20111004193414.GA15672@suse.de>	<4FFFF711.8040003@redhat.com>
+	<426367E2313C2449837CD2DE46E7EAF923547292@SN2PRD0310MB382.namprd03.prod.outlook.com>
+	<20120719210709.GA32031@kroah.com>
+	<426367E2313C2449837CD2DE46E7EAF9235475EE@SN2PRD0310MB382.namprd03.prod.outlook.com>
+	<20120719220142.GA1513@kroah.com>
+	<426367E2313C2449837CD2DE46E7EAF923547620@SN2PRD0310MB382.namprd03.prod.outlook.com>
+	<20120719232832.GA6317@kroah.com>
+	<426367E2313C2449837CD2DE46E7EAF9235476BC@SN2PRD0310MB382.namprd03.prod.outlook.com>
+	<87fw8mlv7e.fsf@nemi.mork.no>
+	<426367E2313C2449837CD2DE46E7EAF923547782@SN2PRD0310MB382.namprd03.prod.outlook.com>
+ <CAFLxGvwqKLhPWNfUJYm1KDXWEX1DNhPBGGApYFqMM0BsB87iig@mail.gmail.com>
+In-Reply-To: <CAFLxGvwqKLhPWNfUJYm1KDXWEX1DNhPBGGApYFqMM0BsB87iig@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [108.24.39.100]
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OrganizationHeadersPreserved: SN2PRD0310HT002.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%GMAIL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%MORK.NO$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LISTS.OSDL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14MLTC101.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14MLTC101.redmond.corp.microsoft.com
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch checks for charger status register for determining the
-battery charging status and reports Discharing/Charging/Not Charging/Full
-accordingly.
 
-This patch also adds the interrupt support for Safety Timer Expiration.
-This interrupt is helpful in debugging the cause for charger fault.
 
-Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
----
- drivers/power/smb347-charger.c |   96 +++++++++++++++++++++++++++++++++------
- 1 files changed, 81 insertions(+), 15 deletions(-)
+> -----Original Message-----
+> From: richard -rw- weinberger [mailto:richard.weinberger@gmail.com]
+> Sent: Friday, July 20, 2012 11:04 AM
+> To: KY Srinivasan
+> Cc: Bjørn Mork; Greg KH (gregkh@linuxfoundation.org); Paolo Bonzini;
+> devel@linuxdriverproject.org; linux-kernel@vger.kernel.org;
+> virtualization@lists.osdl.org
+> Subject: Re: 0xB16B00B5? Really? (was Re: Move hyperv out of the
+> drivers/staging/ directory)
+> 
+> On Fri, Jul 20, 2012 at 4:00 PM, KY Srinivasan <kys@microsoft.com> wrote:
+> > Thank you for your interest in fixing this problem. When we decide to change
+> this
+> > ID, we will conform to the MSFT guidelines on constructing this guest ID.
+> >
+> 
+> I'm wondering why it hasn't been conform to the MSFT guidelines from
+> the very beginning on?
 
-diff --git a/drivers/power/smb347-charger.c b/drivers/power/smb347-charger.c
-index 332dd01..b6a8c59 100644
---- a/drivers/power/smb347-charger.c
-+++ b/drivers/power/smb347-charger.c
-@@ -80,6 +80,7 @@
- #define CFG_FAULT_IRQ_DCIN_UV			BIT(2)
- #define CFG_STATUS_IRQ				0x0d
- #define CFG_STATUS_IRQ_TERMINATION_OR_TAPER	BIT(4)
-+#define CFG_STATUS_IRQ_CHARGE_TIMEOUT		BIT(7)
- #define CFG_ADDRESS				0x0e
+Great question; this was before my time in MSFT and so I cannot answer that.
+
+Regards,
+
  
- /* Command registers */
-@@ -96,6 +97,9 @@
- #define IRQSTAT_C_TERMINATION_STAT		BIT(0)
- #define IRQSTAT_C_TERMINATION_IRQ		BIT(1)
- #define IRQSTAT_C_TAPER_IRQ			BIT(3)
-+#define IRQSTAT_D				0x38
-+#define IRQSTAT_D_CHARGE_TIMEOUT_STAT		BIT(2)
-+#define IRQSTAT_D_CHARGE_TIMEOUT_IRQ		BIT(3)
- #define IRQSTAT_E				0x39
- #define IRQSTAT_E_USBIN_UV_STAT			BIT(0)
- #define IRQSTAT_E_USBIN_UV_IRQ			BIT(1)
-@@ -109,8 +113,10 @@
- #define STAT_B					0x3c
- #define STAT_C					0x3d
- #define STAT_C_CHG_ENABLED			BIT(0)
-+#define STAT_C_HOLDOFF_STAT			BIT(3)
- #define STAT_C_CHG_MASK				0x06
- #define STAT_C_CHG_SHIFT			1
-+#define STAT_C_CHG_TERM				BIT(5)
- #define STAT_C_CHARGER_ERROR			BIT(6)
- #define STAT_E					0x3f
- 
-@@ -701,7 +707,7 @@ fail:
- static irqreturn_t smb347_interrupt(int irq, void *data)
- {
- 	struct smb347_charger *smb = data;
--	unsigned int stat_c, irqstat_e, irqstat_c;
-+	unsigned int stat_c, irqstat_c, irqstat_d, irqstat_e;
- 	bool handled = false;
- 	int ret;
- 
-@@ -717,6 +723,12 @@ static irqreturn_t smb347_interrupt(int irq, void *data)
- 		return IRQ_NONE;
- 	}
- 
-+	ret = regmap_read(smb->regmap, IRQSTAT_D, &irqstat_d);
-+	if (ret < 0) {
-+		dev_warn(smb->dev, "reading IRQSTAT_D failed\n");
-+		return IRQ_NONE;
-+	}
-+
- 	ret = regmap_read(smb->regmap, IRQSTAT_E, &irqstat_e);
- 	if (ret < 0) {
- 		dev_warn(smb->dev, "reading IRQSTAT_E failed\n");
-@@ -724,13 +736,11 @@ static irqreturn_t smb347_interrupt(int irq, void *data)
- 	}
- 
- 	/*
--	 * If we get charger error we report the error back to user and
--	 * disable charging.
-+	 * If we get charger error we report the error back to user.
-+	 * If the error is recovered charging will resume again.
- 	 */
- 	if (stat_c & STAT_C_CHARGER_ERROR) {
--		dev_err(smb->dev, "error in charger, disabling charging\n");
--
--		smb347_charging_disable(smb);
-+		dev_err(smb->dev, "charging stopped due to charger error\n");
- 		power_supply_changed(&smb->battery);
- 		handled = true;
- 	}
-@@ -743,6 +753,20 @@ static irqreturn_t smb347_interrupt(int irq, void *data)
- 	if (irqstat_c & (IRQSTAT_C_TERMINATION_IRQ | IRQSTAT_C_TAPER_IRQ)) {
- 		if (irqstat_c & IRQSTAT_C_TERMINATION_STAT)
- 			power_supply_changed(&smb->battery);
-+		dev_dbg(smb->dev, "going to HW maintenance mode\n");
-+		handled = true;
-+	}
-+
-+	/*
-+	 * If we got a charger timeout INT that means the charge
-+	 * full is not detected with in charge timeout value.
-+	 */
-+	if (irqstat_d & IRQSTAT_D_CHARGE_TIMEOUT_IRQ) {
-+		dev_dbg(smb->dev, "total Charge Timeout INT recieved\n");
-+
-+		if (irqstat_d & IRQSTAT_D_CHARGE_TIMEOUT_STAT)
-+			dev_warn(smb->dev, "charging stopped due to timeout\n");
-+		power_supply_changed(&smb->battery);
- 		handled = true;
- 	}
- 
-@@ -776,6 +800,7 @@ static int smb347_irq_set(struct smb347_charger *smb, bool enable)
- 	 * Enable/disable interrupts for:
- 	 *	- under voltage
- 	 *	- termination current reached
-+	 *	- charger timeout
- 	 *	- charger error
- 	 */
- 	ret = regmap_update_bits(smb->regmap, CFG_FAULT_IRQ, 0xff,
-@@ -784,7 +809,8 @@ static int smb347_irq_set(struct smb347_charger *smb, bool enable)
- 		goto fail;
- 
- 	ret = regmap_update_bits(smb->regmap, CFG_STATUS_IRQ, 0xff,
--			enable ? CFG_STATUS_IRQ_TERMINATION_OR_TAPER : 0);
-+			enable ? (CFG_STATUS_IRQ_TERMINATION_OR_TAPER |
-+					CFG_STATUS_IRQ_CHARGE_TIMEOUT) : 0);
- 	if (ret < 0)
- 		goto fail;
- 
-@@ -988,6 +1014,50 @@ static enum power_supply_property smb347_usb_properties[] = {
- 	POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE,
- };
- 
-+static int smb347_get_charging_status(struct smb347_charger *smb)
-+{
-+	int ret, status;
-+	unsigned int val;
-+
-+	if (!smb)
-+		return -ENODEV;
-+
-+	if (!smb347_is_ps_online(smb))
-+		return POWER_SUPPLY_STATUS_DISCHARGING;
-+
-+	ret = regmap_read(smb->regmap, STAT_C, &val);
-+	if (ret < 0)
-+		return ret;
-+
-+	if ((val & STAT_C_CHARGER_ERROR) ||
-+		(val & STAT_C_HOLDOFF_STAT)) {
-+		/* set to NOT CHARGING upon charger error
-+		 * or charging has stopped.
-+		 */
-+		status = POWER_SUPPLY_STATUS_NOT_CHARGING;
-+	} else {
-+		if ((val & STAT_C_CHG_MASK) >> STAT_C_CHG_SHIFT) {
-+			/* set to charging if battery is in pre-charge,
-+			 * fast charge or taper charging mode.
-+			 */
-+			status = POWER_SUPPLY_STATUS_CHARGING;
-+		} else if (val & STAT_C_CHG_TERM) {
-+			/* set the status to FULL if battery is not in pre
-+			 * charge, fast charge or taper charging mode AND
-+			 * charging is terminated at least once.
-+			 */
-+			status = POWER_SUPPLY_STATUS_FULL;
-+		} else {
-+			/* in this case no charger error or termination
-+			 * occured but charging is not in progress!!!
-+			 */
-+			status = POWER_SUPPLY_STATUS_NOT_CHARGING;
-+		}
-+	}
-+
-+	return status;
-+}
-+
- static int smb347_battery_get_property(struct power_supply *psy,
- 				       enum power_supply_property prop,
- 				       union power_supply_propval *val)
-@@ -1003,14 +1073,10 @@ static int smb347_battery_get_property(struct power_supply *psy,
- 
- 	switch (prop) {
- 	case POWER_SUPPLY_PROP_STATUS:
--		if (!smb347_is_ps_online(smb)) {
--			val->intval = POWER_SUPPLY_STATUS_DISCHARGING;
--			break;
--		}
--		if (smb347_charging_status(smb))
--			val->intval = POWER_SUPPLY_STATUS_CHARGING;
--		else
--			val->intval = POWER_SUPPLY_STATUS_FULL;
-+		ret = smb347_get_charging_status(smb);
-+		if (ret < 0)
-+			return ret;
-+		val->intval = ret;
- 		break;
- 
- 	case POWER_SUPPLY_PROP_CHARGE_TYPE:
--- 
-1.7.0.4
+
+
 
