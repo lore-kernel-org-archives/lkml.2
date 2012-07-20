@@ -1,60 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752824Ab2GTNnI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 09:43:08 -0400
-Received: from usindpps03.hds.com ([207.126.252.16]:35563 "EHLO
-	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751624Ab2GTNnG convert rfc822-to-8bit (ORCPT
+	id S1752784Ab2GTNnj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 09:43:39 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:52869 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751624Ab2GTNnh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 09:43:06 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Seiji Aguchi <seiji.aguchi@hds.com>, Don Zickus <dzickus@redhat.com>
-CC: "Luck, Tony" <tony.luck@intel.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mikew@google.com" <mikew@google.com>,
-        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: RE: [RFC][PATCH v2 2/3] Hold multiple logs
-Thread-Topic: [RFC][PATCH v2 2/3] Hold multiple logs
-Thread-Index: Ac1l82ceH7I0t1QCT1GombsnNxviZAAAK4PgAABTBVAAAP4IQAAA0SRAAAJWEXAAAc9d8AAOI+0AAA0ln5AAAMNP0A==
-Date: Fri, 20 Jul 2012 13:42:46 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D40FB2875D@USINDEM103.corp.hds.com>
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D40FB27FDC@USINDEM103.corp.hds.com>
- <3908561D78D1C84285E8C5FCA982C28F1936EA5F@ORSMSX104.amr.corp.intel.com>
- <A5ED84D3BB3A384992CBB9C77DEDA4D40FB28056@USINDEM103.corp.hds.com>
- <3908561D78D1C84285E8C5FCA982C28F1936EA97@ORSMSX104.amr.corp.intel.com>
- <A5ED84D3BB3A384992CBB9C77DEDA4D40FB2813D@USINDEM103.corp.hds.com>
- <3908561D78D1C84285E8C5FCA982C28F1936EADE@ORSMSX104.amr.corp.intel.com>
- <A5ED84D3BB3A384992CBB9C77DEDA4D40FB28206@USINDEM103.corp.hds.com>
- <20120720030328.GC5637@redhat.com>
- <A5ED84D3BB3A384992CBB9C77DEDA4D40FB286FB@USINDEM103.corp.hds.com>
-In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D40FB286FB@USINDEM103.corp.hds.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.43.113]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 20 Jul 2012 09:43:37 -0400
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.260,0.0.0000
- definitions=2012-07-20_03:2012-07-19,2012-07-20,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
- definitions=main-1207200111
+In-Reply-To: <1342712558-8185-6-git-send-email-namhyung@kernel.org>
+References: <1342712558-8185-1-git-send-email-namhyung@kernel.org>
+	<1342712558-8185-6-git-send-email-namhyung@kernel.org>
+Date: Fri, 20 Jul 2012 16:43:36 +0300
+X-Google-Sender-Auth: fO2dULCw5ZrrLOVNflDKafpXExo
+Message-ID: <CAOJsxLGFE8QSS06Wj+nhOS8XCpGoMH4bOqwvPi736uBrgJa3uQ@mail.gmail.com>
+Subject: Re: [PATCH 5/5] perf gtk/browser: Use hist_period_print functions
+From: Pekka Enberg <penberg@kernel.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@redhat.com>, David Ahern <dsahern@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > The hope would be a daemon would clear the old logs out and you never run out of space.
-> 
-> In most case
-> But as Tony mentioned, NVRAM may be filled with multiple oops even if we have the daemon.
+On Thu, Jul 19, 2012 at 6:42 PM, Namhyung Kim <namhyung@kernel.org> wrote:
+> Now we can support color using pango markup with this change.
+>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 
-Oops...
-I meant that in most case, the daemon can erase entries.
-But  as Tony mentioned, NVRAM may be filled with multiple oops even if we have the daemon.
+Can you please CC me on perf GTK patches?
+
+[snip]
+
+> +#define HPP_COLOR_FN(_name, _field)                                            \
+
+Where does this "hpp" naming convention come from? What does it stand for?
