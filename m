@@ -1,99 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753092Ab2GTQ5U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 12:57:20 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:50156 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752591Ab2GTQ5T convert rfc822-to-8bit (ORCPT
+	id S1753141Ab2GTQ7L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 12:59:11 -0400
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:1971 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752846Ab2GTQ7J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 12:57:19 -0400
-Message-ID: <1342803425.2583.25.camel@twins>
-Subject: Re: CFS vs. cpufreq/cstates vs. latency
-From: Peter Zijlstra <peterz@infradead.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Linux kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Avi Kivity <avi@redhat.com>,
-        Gleb Natapov <gleb@redhat.com>, "Michael S. Tsirkin" <mst@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>
-Date: Fri, 20 Jul 2012 18:57:05 +0200
-In-Reply-To: <50057565.7030405@redhat.com>
-References: <50057565.7030405@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Fri, 20 Jul 2012 12:59:09 -0400
+From: Toshi Kani <toshi.kani@hp.com>
+To: lenb@kernel.org, linux-acpi@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, joe@perches.com, bhelgaas@google.com,
+        isimatu.yasuaki@jp.fujitsu.com, liuj97@gmail.com,
+        srivatsa.bhat@linux.vnet.ibm.com, prarit@redhat.com,
+        imammedo@redhat.com, vijaymohan.pandarathil@hp.com,
+        Toshi Kani <toshi.kani@hp.com>
+Subject: [PATCH v2 0/4] ACPI: hotplug messages improvement
+Date: Fri, 20 Jul 2012 10:54:12 -0600
+Message-Id: <1342803256-17514-1-git-send-email-toshi.kani@hp.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-07-17 at 10:23 -0400, Rik van Riel wrote:
-> While tracking down a latency issue with communication between
-> KVM guests, we ran into a very interesting issue, an interplay
-> of CFS and power saving code.
-> 
-> About 3/4 of the 230us latency came from CPUs waking up out of
-> C-states. Disabling C states reduced the latency to 60us...
-> 
-> The issue? The communication is between various threads and
-> processes, each of which last ran on a CPU that is now in a
-> deeper C state. The total latency from that is "CPU wakeup
-> latency * NR CPUs woken".
-> 
-> This problem could be common to many different multi-threaded
-> or multi-process applications. It looks like something that
-> would be fixable at the scheduler + cpufreq level.
+This patchset improves logging messages for ACPI CPU, Memory, and
+Container hotplug notify handlers.  The patchset introduces a set of
+new macro interfaces, acpi_pr_<level>(), and updates the notify
+handlers to use them.  acpi_pr_<level>() appends "ACPI" prefix and
+ACPI object path to the messages.  This improves diagnostics in
+hotplug operations since it identifies an object that caused an
+issue in a log file.
 
-There's tons to be fixed there... we should pull most if not all cpufreq
-load accounting into the scheduler, it already does most of it anyway.
+v2:
+ - Set buffer.pointer to NULL in acpi_printk().
+ - Added acpi_pr_debug().
 
-Also, you want to do per-task policy tracking, something which isn't
-possible with the current per-cpu cpufreq setup.
+---
+This patchset applies on top of the patch below.
 
-Sadly some hardware makes this very difficult indeed because it needs a
-schedulable context to change the cpu freq/volt etc..
+[PATCH] ACPI: Add ACPI CPU hot-remove support
+http://marc.info/?l=linux-acpi&m=134098193327362&w=2
 
-> Specifically, waking up some process requires that the CPU
-> which is running the wakeup is already in C0 state. If the
-> CPU on which the to-be-woken task ran last is in a deep C
-> state, it may make sense to simply run the woken up task
-> on the local CPU, not the CPU where it was originally.
+---
+Toshi Kani (4):
+ ACPI: Add acpi_pr_<level>() interfaces
+ ACPI: Update CPU hotplug messages
+ ACPI: Update Memory hotplug messages
+ ACPI: Update Container hotplug messages
 
-That's cpuidle, not cpufreq :-) Yay for more players, but yes, I know
-I've talked about this very issue to a number of people.
-
-Same as for cpufreq, the accounting crap should move into the scheduler,
-we want to use the idle-time guestimator for different things as well.
-
-> I seem to remember some scheduling code that (for power
-> saving reasons) tried running all the tasks on one CPU,
-> until that CPU got busy, and then spilled over onto other
-> CPUs.
-> 
-> I do not seem to be able to find that code in recent kernels,
-> but I have the feeling that a policy like that (related to
-> WAKE_AFFINE scheduling?) could improve this issue.
-> 
-> As an additional benefit, it has the possibility of further
-> improving power saving.
-
-What power saving? I recently ripped all that stuff out because it was
-terminally broken and the fixes I got were beyond ugly.
-
-There were some people interested in writing a new power aware balancer
-infrastructure, but nothing has been forthcoming as yet. Although it
-could be they're waiting for PJT's load tracking patches to hit
-mainline.
-
-Anyway, you're conflating issues.. you don't want a power aware
-balancer, you just don't want it to be unaware of C-states irrespective
-of whatever balance policy we're using.
-
-> What do the scheduler and cpufreq people think about this
-> problem?
-> 
-> Any preferred ways to solve the "N * cpu wakeup latency"
-> problem that is plaguing multi-process and multi-threaded
-> workloads?
-
-Yeah, unify all the various load tracking and guestimator logic in the
-scheduler and go from there ;-)
+---
+ drivers/acpi/acpi_memhotplug.c  |   24 ++++++++++++------------
+ drivers/acpi/container.c        |    6 +++---
+ drivers/acpi/processor_driver.c |   36 +++++++++++++++++++++---------------
+ drivers/acpi/utils.c            |   34 ++++++++++++++++++++++++++++++++++
+ include/acpi/acpi_bus.h         |   20 ++++++++++++++++++++
+ 5 files changed, 90 insertions(+), 30 deletions(-)
