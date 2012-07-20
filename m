@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753142Ab2GTFis (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 01:38:48 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:50492 "EHLO arroyo.ext.ti.com"
+	id S1753091Ab2GTFin (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 01:38:43 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:57155 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752744Ab2GTFij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 01:38:39 -0400
+	id S1752145Ab2GTFih (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 01:38:37 -0400
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <kishon@ti.com>, <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
         <rob@landley.net>, <linux@arm.linux.org.uk>,
@@ -14,110 +14,66 @@ To: <kishon@ti.com>, <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
         <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <balbi@ti.com>,
         <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>
-Subject: [PATCH v5 00/11] omap: musb: Add device tree support
-Date: Fri, 20 Jul 2012 11:07:20 +0530
-Message-ID: <1342762651-17094-1-git-send-email-kishon@ti.com>
+Subject: [PATCH v5 06/11] arm/dts: Add twl6030-usb data
+Date: Fri, 20 Jul 2012 11:07:26 +0530
+Message-ID: <1342762651-17094-7-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1342762651-17094-1-git-send-email-kishon@ti.com>
+References: <1342762651-17094-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series adds device tree support for MUSB and device
-tree support for all the related modules to get MUSB working in
-OMAP platform.
+Add twl6030-usb data node in twl6030 device tree file
 
-A new omap-usb2 phy driver has been added (with only dt suppport)
-to perform phy configurations. Previously this configuration was
-performed by twl6030, using pdata function pointers.
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ arch/arm/boot/dts/omap4-panda.dts |    4 ++++
+ arch/arm/boot/dts/omap4-sdp.dts   |    4 ++++
+ arch/arm/boot/dts/twl6030.dtsi    |    6 ++++++
+ 3 files changed, 14 insertions(+)
 
-With the addition of omap-usb2 to perform phy configurations,
-twl6030 is made as a comparator driver to detect VBUS and ID events
-and notify it to the glue layer.
-
-musb core is _NOT_ yet converted to support device tree support as it
-would need lot of driver re-design because of its enormous use of
-function pointers. That will be in _TO DO_ list.
-
-Changes from v4:
-duplicate getting of 'mode' property is removed in omap-musb glue.
-
-Changes from v3:
-remove the address in the node name of usb_otg_hs since the usb_otg_hs
-node doesn't have a reg property. Thanks Ajay Gupta for finding this.
-
-Changes from v2:
-Fixed Sergei's comment to remove *0x* prefix in usb2phy@0x4a0ad080
-
-Changes from v1:
-* Fixed Rajendra Nayak comments (regulator naming, compatible naming of
-musb and other minor cleanups.)
-* It's agreed to have ocp2scp in drivers/bus and usb2 phy is a child of
-ocp2scp, the documentation is updated accordingly.
-
-Changes from RFC:
-Removed the dependency on [RFC PATCH 00/11] OMAP System Control Module.
-Writing to control module register is now handled in otg driver itself.
-Once the system control module driver get upstreamed, I'll send a patch
-to make use of API's in control module driver to write to control
-module register.
-
-This series was developed on
-git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git xceiv
-
-This patch series depends on
-[PATCH 0/2] omap: add ocp2scp as a bus driver
-
-Performed MUSB device mode testing on OMAP4 panda, OMAP4 SDP
-and OMAP3 beagle.
-
-Kishon Vijay Abraham I (11):
-  drivers: usb: otg: add a new driver for omap usb2 phy
-  arm/dts: omap: Add omap-usb2 dt data
-  drivers: usb: otg: make twl6030_usb as a comparator driver to
-    omap_usb2
-  arm: omap: hwmod: add a new addr space in otg for writing to control
-    module
-  drivers: usb: twl6030: Add dt support for twl6030 usb
-  arm/dts: Add twl6030-usb data
-  drivers: usb: twl4030: Add device tree support for twl4030 usb
-  arm/dts: Add twl4030-usb data
-  drivers: usb: musb: Add device tree support for omap musb glue
-  arm/dts: omap: Add usb_otg and glue data
-  arm: omap: phy: remove unused functions from omap-phy-internal.c
-
- .../devicetree/bindings/bus/omap-ocp2scp.txt       |    3 +
- Documentation/devicetree/bindings/usb/omap-usb.txt |   48 ++++
- .../devicetree/bindings/usb/twlxxxx-usb.txt        |   41 +++
- arch/arm/boot/dts/omap3-beagle.dts                 |    6 +
- arch/arm/boot/dts/omap3-evm.dts                    |    6 +
- arch/arm/boot/dts/omap3.dtsi                       |    8 +
- arch/arm/boot/dts/omap4-panda.dts                  |   10 +
- arch/arm/boot/dts/omap4-sdp.dts                    |   10 +
- arch/arm/boot/dts/omap4.dtsi                       |   13 +
- arch/arm/boot/dts/twl4030.dtsi                     |   21 ++
- arch/arm/boot/dts/twl6030.dtsi                     |    6 +
- arch/arm/mach-omap2/omap_hwmod_44xx_data.c         |    5 +
- arch/arm/mach-omap2/omap_phy_internal.c            |  138 ----------
- arch/arm/mach-omap2/twl-common.c                   |    5 -
- arch/arm/mach-omap2/usb-musb.c                     |    3 -
- drivers/usb/musb/omap2430.c                        |  106 +++++++-
- drivers/usb/musb/omap2430.h                        |    9 +
- drivers/usb/otg/Kconfig                            |   10 +
- drivers/usb/otg/Makefile                           |    1 +
- drivers/usb/otg/omap-usb2.c                        |  271 ++++++++++++++++++++
- drivers/usb/otg/twl4030-usb.c                      |   26 +-
- drivers/usb/otg/twl6030-usb.c                      |  153 +++--------
- include/linux/usb/omap_usb.h                       |   45 ++++
- include/linux/usb/phy_companion.h                  |   34 +++
- 24 files changed, 705 insertions(+), 273 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/usb/omap-usb.txt
- create mode 100644 Documentation/devicetree/bindings/usb/twlxxxx-usb.txt
- create mode 100644 drivers/usb/otg/omap-usb2.c
- create mode 100644 include/linux/usb/omap_usb.h
- create mode 100644 include/linux/usb/phy_companion.h
-
+diff --git a/arch/arm/boot/dts/omap4-panda.dts b/arch/arm/boot/dts/omap4-panda.dts
+index 1efe0c5..7052422 100644
+--- a/arch/arm/boot/dts/omap4-panda.dts
++++ b/arch/arm/boot/dts/omap4-panda.dts
+@@ -89,3 +89,7 @@
+ 	ti,non-removable;
+ 	bus-width = <4>;
+ };
++
++&twlusb {
++	usb-supply = <&vusb>;
++};
+diff --git a/arch/arm/boot/dts/omap4-sdp.dts b/arch/arm/boot/dts/omap4-sdp.dts
+index d08c4d1..6326d7c 100644
+--- a/arch/arm/boot/dts/omap4-sdp.dts
++++ b/arch/arm/boot/dts/omap4-sdp.dts
+@@ -158,3 +158,7 @@
+ 	bus-width = <4>;
+ 	ti,non-removable;
+ };
++
++&twlusb {
++	usb-supply = <&vusb>;
++};
+diff --git a/arch/arm/boot/dts/twl6030.dtsi b/arch/arm/boot/dts/twl6030.dtsi
+index 3b2f351..5efd6d3 100644
+--- a/arch/arm/boot/dts/twl6030.dtsi
++++ b/arch/arm/boot/dts/twl6030.dtsi
+@@ -83,4 +83,10 @@
+ 	clk32kg: regulator@12 {
+ 		compatible = "ti,twl6030-clk32kg";
+ 	};
++
++	twlusb: twl6030-usb {
++		compatible = "ti,twl6030-usb";
++		interrupts = < 4 10 >;
++		regulator = "vusb";
++	};
+ };
 -- 
 1.7.9.5
 
