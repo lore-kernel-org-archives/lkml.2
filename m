@@ -1,114 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752648Ab2GTT26 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 15:28:58 -0400
-Received: from 1010ds2-suoe.0.fullrate.dk ([90.184.90.115]:25882 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751768Ab2GTT25 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 15:28:57 -0400
-Date: Fri, 20 Jul 2012 21:28:55 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Dave Chinner <david@fromorbit.com>
-cc: xfs@oss.sgi.com, xfs-masters@oss.sgi.com, linux-kernel@vger.kernel.org,
-        Ben Myers <bpm@sgi.com>, Alex Elder <elder@kernel.org>,
-        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>
-Subject: Re: [PATCH][RFC] XFS: Fix mem leak and possible NULL deref in
- xfs_setattr_nonsize()
-In-Reply-To: <alpine.LNX.2.00.1202062132410.20117@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1207202127450.23164@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1202052220390.32529@swampdragon.chaosbits.net> <20120206062319.GB12836@dastard> <alpine.LNX.2.00.1202062132410.20117@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753189Ab2GTTaS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 15:30:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52659 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751768Ab2GTTaP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 15:30:15 -0400
+Date: Fri, 20 Jul 2012 22:30:35 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Asias He <asias@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Benjamin LaHaise <bcrl@kvack.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Jeff Moyer <jmoyer@redhat.com>, kvm@vger.kernel.org,
+        linux-aio@kvack.org, linux-fsdevel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, gregkh@linuxfoundation.org
+Subject: Re: [PATCH RESEND 0/5] Add vhost-blk support
+Message-ID: <20120720193035.GA20031@redhat.com>
+References: <1342169711-12386-1-git-send-email-asias@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1342169711-12386-1-git-send-email-asias@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping ?
+On Fri, Jul 13, 2012 at 04:55:06PM +0800, Asias He wrote:
+> 
+> Hi folks,
+> 
+> [I am resending to fix the broken thread in the previous one.]
+> 
+> This patchset adds vhost-blk support. vhost-blk is a in kernel virito-blk
+> device accelerator. Compared to userspace virtio-blk implementation, vhost-blk
+> gives about 5% to 15% performance improvement.
+> 
+> Asias He (5):
+>   aio: Export symbols and struct kiocb_batch for in kernel aio usage
+>   eventfd: Export symbol eventfd_file_create()
+>   vhost: Make vhost a separate module
+>   vhost-net: Use VHOST_NET_FEATURES for vhost-net
+>   vhost-blk: Add vhost-blk support
 
-This issue seems to still be present. Any chance we could merge the patch 
-below?
 
-/Jesper
-
-On Mon, 6 Feb 2012, Jesper Juhl wrote:
-
-> On Mon, 6 Feb 2012, Dave Chinner wrote:
-> 
-> > On Sun, Feb 05, 2012 at 10:23:44PM +0100, Jesper Juhl wrote:
-> > > In xfs_setattr_nonsize(), xfs_trans_alloc() gets its memory from
-> > > _xfs_trans_alloc() which gets it from kmem_zone_zalloc() which may
-> > > fail and return NULL. So this:
-> > > 
-> > > 	tp = xfs_trans_alloc(mp, XFS_TRANS_SETATTR_NOT_SIZE);
-> > > 
-> > > may result in a NULL 'tp'.
-> > > If it does, then the call:
-> > > 
-> > > 	error = xfs_trans_reserve(tp, 0, XFS_ICHANGE_LOG_RES(mp), 0, 0, 0);
-> > > 
-> > > with a NULL 'tp' will explode, since xfs_trans_reserve() dereferences
-> > > its first argument unconditionally.
-> > 
-> > xfs_trans_alloc() can't fail. It will sleep forever until the memory
-> > allocation succeeds.
-> > 
-> > There's 35 other places in XFS where this xfs_trans_alloc/
-> > xfs_trans_reserve pattern occurs - none of them check whether tp is
-> > null, either.
-> > 
-> > > And if the memory allocation for 'tp' goes well (and thus
-> > > xfs_trans_reserve() does not explode) then we may leak the memory
-> > > allocated to 'tp' if xfs_trans_reserve() returns error.
-> > 
-> > yes, that's a problem, though will only happen if a filesystem
-> > shutdown occurs between the start of the function and that check.
-> > 
-> > > 
-> > > I believe this patch should fix both issues, but I'm not intimate with
-> > > the XFS code at all, so there can easily be something I overlooked or
-> > > something that should be done differently than what I did.
-> > 
-> > Only need to fix the leak of tp.
-> > 
-> Ok.
-> Thank you for the detailed explanation.
-> I believe the patch below should do the trick.
-> 
-> 
-> From: Jesper Juhl <jj@chaosbits.net>
-> Date: Sun, 5 Feb 2012 22:11:30 +0100
-> Subject: [PATCH] XFS: Fix mem leak in xfs_setattr_nonsize()
-> 
-> If the memory allocation for 'tp' goes well then we will leak the
-> memory allocated to 'tp' if xfs_trans_reserve() returns error.
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> ---
->  fs/xfs/xfs_iops.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/xfs/xfs_iops.c b/fs/xfs/xfs_iops.c
-> index ab30253..2fc1600 100644
-> --- a/fs/xfs/xfs_iops.c
-> +++ b/fs/xfs/xfs_iops.c
-> @@ -576,8 +576,10 @@ xfs_setattr_nonsize(
->  
->  	tp = xfs_trans_alloc(mp, XFS_TRANS_SETATTR_NOT_SIZE);
->  	error = xfs_trans_reserve(tp, 0, XFS_ICHANGE_LOG_RES(mp), 0, 0, 0);
-> -	if (error)
-> +	if (error) {
-> +		xfs_trans_cancel(tp, 0);
->  		goto out_dqrele;
-> +	}
->  
->  	xfs_ilock(ip, XFS_ILOCK_EXCL);
->  
-> 
+OK so given the state it's in, and assuming you think it is helpful
+to let it mature in tree and not out of tree, I think it's
+reasonable to try to do it like tcm_vhost is going to do it:
+- send me changes to vhost core ASAP (and keep it minimal, e.g.
+  use your own header file to export to userspace)
+- for other stuff - put in drivers/staging, and ask Greg to merge
 
 -- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+MST
