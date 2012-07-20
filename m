@@ -1,148 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752326Ab2GTUIK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 16:08:10 -0400
-Received: from imr-ma06.mx.aol.com ([64.12.78.142]:47562 "EHLO
-	imr-ma06.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751567Ab2GTUII (ORCPT
+	id S1752720Ab2GTURB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 16:17:01 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:51373 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752111Ab2GTUQ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 16:08:08 -0400
-Message-Id: <201207202005.q6KK5Egu005527@imr-ma06.mx.aol.com>
-Content-Type: multipart/mixed; boundary="===============1327266249=="
-MIME-Version: 1.0
-Subject: Attention:Beneficiary,
-To: Recipients <charlesk139@aol.com>
-From: "Mr.Banki M" <charlesk139@aol.com>
-Date: Fri, 20 Jul 2012 21:03:45 +0100
-Reply-To: unofficemailsmailbox@rediffmail.com
-X-AOL-VSS-INFO: 5400.1158/82386
-X-AOL-VSS-CODE: clean
-X-AOL-SCOLL-SCORE: 0:2:378623936:93952408  
-X-AOL-SCOLL-URL_COUNT: 0  
-x-aol-global-disposition: G
-X-AOL-VSS-INFO: 5400.1158/82386
-X-AOL-VSS-CODE: clean
-X-AOL-SCOLL-SCORE: 0:2:408462432:93952408  
-X-AOL-SCOLL-URL_COUNT: 0  
-x-aol-sid: 3039ac1d33825009b9f8283d
+	Fri, 20 Jul 2012 16:16:59 -0400
+Subject: Re: [RFC] net: further seperate dst_entry.__refcnt from cache
+ contention
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Nathan Zimmer <nzimmer@sgi.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, Robin.Holt@sgi.com,
+        "David S. Miller" <davem@davemloft.net>
+In-Reply-To: <1342813587-31601-1-git-send-email-nzimmer@sgi.com>
+References: <1342813587-31601-1-git-send-email-nzimmer@sgi.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 20 Jul 2012 22:16:51 +0200
+Message-ID: <1342815411.2626.7936.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You will not see this in a MIME-aware mail reader.
---===============1327266249==
-Content-Type: text/plain; charset="iso-8859-1"
-MIME-Version: 1.0
-Content-Transfer-Encoding: quoted-printable
-Content-Description: Mail message body
+On Fri, 2012-07-20 at 14:46 -0500, Nathan Zimmer wrote:
+> After some investigation on large machines I found that
+> dst_entry.__refcnt particpates in false cache sharing issues that show
+> when scaling past 12 threads who communicate via tcp with loopback addresses.
+> I adjusted refcnt to be on its own cache line and that helped quite a bit.
+> But perhaps a bit of a waste of space?  Is there some better way?
+> 
+> Here is some preliminary data I had gathered.  It shows nicely improved scaling.
+> 
+> Threads baseline   afterchange
+> 2       1328.03    1340.67
+> 4       2430.31    2282.09
+> 6       3087.65    3258.12
+> 8       3560.34    4165.88
+> 10      3900.34    4962.28
+> 12      3933.38    5613.76
+> 14      3876.98    6113.85
+> 16      3706.01    6338.00
+> 18      3742.48    6634.77
+> 20      3670.15    6641.25
+> 22      3660.98    6799.55
+> 24      3503.13    6613.45
+> 26      3525.73    6702.67
+> 28      3440.16    6801.27
+> 30      3497.59    6911.52
+> 32      3498.25    6540.06
+> 
+> I should say something about this test.  It is a dead simple test in which a
+> pair of threads simply pass data to each other.  They were placed in the same
+> socket to avoid cross node overhead.
+> 
+> CC: "David S. Miller" <davem@davemloft.net> 
+> Signed-off-by: Nathan Zimmer <nzimmer@sgi.com>
+> 
+> ---
+>  include/net/dst.h |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/net/dst.h b/include/net/dst.h
+> index 8197ead..3898643 100644
+> --- a/include/net/dst.h
+> +++ b/include/net/dst.h
+> @@ -84,7 +84,7 @@ struct dst_entry {
+>  	 * input/output/ops or performance tanks badly
+>  	 */
+>  	atomic_t		__refcnt;	/* client references	*/
+> -	int			__use;
+> +	int			__use	____cacheline_aligned;
+>  	unsigned long		lastuse;
+>  	union {
+>  		struct dst_entry	*next;
 
-View above attached mail for full update.
---===============1327266249==
-Content-Type: application/octet-stream
-MIME-Version: 1.0
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="UNITED NATIONS.rtf"
+Its a known problem, and we are waiting IP cache removal to address it.
 
-e1xydGYxXGFuc2lcYW5zaWNwZzEyNTJcZGVmZjBcZGVmbGFuZzEwMzN7XGZvbnR0Ymx7XGYwXGZz
-Y3JpcHRcZnBycTJcZmNoYXJzZXQwIENvbWljIFNhbnMgTVM7fX0NCntcKlxnZW5lcmF0b3IgTXNm
-dGVkaXQgNS40MS4yMS4yNTAwO31cdmlld2tpbmQ0XHVjMVxwYXJkXGYwXGZzMThccGFyDQpccGFy
-DQo8SFRNTD48SEVBRD48VElUTEU+PC9USVRMRT5ccGFyDQo8L0hFQUQ+XHBhcg0KPEJPRFkgYmdj
-b2xvcj0jRkZGRkZGIGxlZnRtYXJnaW49NSB0b3BtYXJnaW49NSByaWdodG1hcmdpbj01IGJvdHRv
-bW1hcmdpbj01PlxwYXINCjxGT05UIHNpemU9MiBjb2xvcj0jMDAwMDAwIGZhY2U9IkFyaWFsIj5c
-cGFyDQo8RElWPlxwYXINCk91ciBSZWY6IFdCL05GL1VOL1hYMDI4IFVOSVRFRCBOQVRJT05TLiA8
-L0RJVj5ccGFyDQo8RElWPlxwYXINCklOVEVSQ09OVElORU5UQUwgQkFOSyBOSUdFUklBIFBMQyBD
-T01QRU5TQVRJT04gVU5JVCwgPC9ESVY+XHBhcg0KPERJVj5ccGFyDQpJTiBBRkZJTElBVElPTiBX
-SVRIIFRIRSBVTklURUQgTkFUSU9OLjwvRElWPlxwYXINCjxESVY+XHBhcg0KXHBhcg0KXHBhcg0K
-Jm5ic3A7PC9ESVY+XHBhcg0KPERJVj5ccGFyDQombmJzcDs8L0RJVj5ccGFyDQo8RElWPlxwYXIN
-CkF0dG46IEJlbmVmaWNpYXJ5LCA8L0RJVj5ccGFyDQo8RElWPlxwYXINCiZuYnNwOzwvRElWPlxw
-YXINCjxESVY+XHBhcg0KJm5ic3A7PC9ESVY+XHBhcg0KPERJVj5ccGFyDQpJUlJFVk9DQUJMRSBQ
-QVlNRU5UIE9SREVSIFZJQSBBVE0gQ0FSRC4gPC9ESVY+XHBhcg0KPERJVj5ccGFyDQpccGFyDQpc
-cGFyDQombmJzcDs8L0RJVj5ccGFyDQo8RElWPlxwYXINCiZuYnNwOzwvRElWPlxwYXINCjxESVY+
-XHBhcg0KRHVlIHRvIHRoZSBwZXRpdGlvbnMgcmVjZWl2ZWQgYnkgdGhlIFVOLCBJIFNlY3JldGFy
-eS1HZW5lcmFsIEJhbiBraS1tb29uIGZyb20gYWxsIG92ZXIgdGhlIGNvbnRpbmVudCBpbiByZWdh
-cmRzIHRvIHRoZSBmcmF1ZHVsZW50IGFjdGl2aXRpZXMgZ29pbmcgb24gaW4gdGhlIFdlc3QgQWZy
-aWNhIHN1Yi1yZWdpb24gd2l0aCBzZWN1cml0eSdzIGFnZW50IGFuZCBkaXBsb21hdHMgd2hvIGhh
-cyBiZWVuIGRlbGF5aW5nIHBlb3BsZSdzIGZ1bmRzLCBjb25zaWdubWVudCBhbmQgdmFsdWFibGVz
-IGluIHRoZWlyIGN1c3RvZHkgYW5kIGRlbWFuZCBvdXRyYWdlb3VzIGZlZXMgdG8gZ2V0IHRoZWly
-IGNvbnNpZ25tZW50IHJlbGVhc2VkIHRvIHRoZW0uPC9ESVY+XHBhcg0KPERJVj5ccGFyDQpccGFy
-DQombmJzcDs8L0RJVj5ccGFyDQo8RElWPlxwYXINCiZuYnNwOzwvRElWPlxwYXINCjxESVY+XHBh
-cg0KV2UgaGF2ZSBiZWVuIGhhdmluZyZuYnNwOyBtZWV0aW5ncyBmb3IgdGhlIHBhc3NlZCA3IG1v
-bnRocyB3aGljaCBlbmRlZCAyIGRheXMgYWdvIHdpdGggdGhlIGZvcm1lciBTZWNyZXRhcnktR2Vu
-ZXJhbCAoSG9uLktvZmkgQW5uYW4pIHRvIHRoZSBVTklURUQgTkFUSU9OUy4gSG93ZXZlciwgV2Ug
-d2VudCB0byB0aGUgQWZyaWNhbiBoZWFkIHF1YXJ0ZXJzIGluIE5JR0VSSUEgb24gdGhlIDE1VEgg
-SlVMWSAyMDEwIGFzIHdlbGwgYXMgb3RoZXIgYWZmaWxpYXRlIG9mZmljZXMgYW5kIHNldCB1cCB0
-aGlzIGNvbW1pdHRlZSB3aXRoIHNvbGUgYWltIG9mIHNldHRsaW5nIGFsbCB0aGVzZSBhYm5vcm1h
-bGlsc2VzIGFuZCBkdWUgdG8gdGhhdCAsIHdlIGFyZSBjb250YWN0aW5nIHlvdSB0b2RheSBpbiB0
-aGF0IHJlZ2FyZHMuPC9ESVY+XHBhcg0KPERJVj5ccGFyDQpccGFyDQpccGFyDQombmJzcDs8L0RJ
-Vj5ccGFyDQo8RElWPlxwYXINCiZuYnNwOzwvRElWPlxwYXINCjxESVY+XHBhcg0KVGhpcyBlbWFp
-bCBpcyB0byBhbGwgcGVvcGxlIHRoYXQgaGF2ZSBiZWVuIHNjYW1tZWQgaW4gYW55IHBhcnQgb2Yg
-dGhlIHdvcmxkLCB0aGUgVU5JVEVEIE5BVElPTlMgaGF2ZSBhZ3JlZWQgdG8gY29tcGVuc2F0ZSB0
-aGVtIHdpdGggdGhlIHN1bSBvZiBVU0Q1MCwwMDAgVGhpcyBpbmNsdWRlcyBldmVyeSBmb3JlaWdu
-IGNvbnRyYWN0b3JzIHRoYXQgbWF5IGhhdmUgbm90IHJlY2VpdmVkIHRoZWlyIGNvbnRyYWN0IHN1
-bSwgYW5kIHBlb3BsZSB0aGF0IGhhdmUgaGFkIGFuIHVuZmluaXNoZWQgdHJhbnNhY3Rpb24gb3Ig
-aW50ZXJuYXRpb25hbCBidXNpbmVzc2VzIHRoYXQgZmFpbGVkIGR1ZSB0byBHb3Zlcm5tZW50IHBy
-b2JsZW1zIGV0Yy48L0RJVj5ccGFyDQo8RElWPlxwYXINClxwYXINClxwYXINCiZuYnNwOzwvRElW
-PlxwYXINCjxESVY+XHBhcg0KJm5ic3A7PC9ESVY+XHBhcg0KPERJVj5ccGFyDQpXZSBmb3VuZCB5
-b3VyIG5hbWUgaW4gb3VyIGxpc3QgYW5kIHRoYXQgaXMgd2h5IHdlIGFyZSBjb250YWN0aW5nIHlv
-dSwgdGhlc2UgaGF2ZSBiZWVuIGFncmVlZCB1cG9uIGFuZCBoYXZlIGJlZW4gZHVseSBzaWduZWQu
-PC9ESVY+XHBhcg0KPERJVj5ccGFyDQpccGFyDQpccGFyDQombmJzcDs8L0RJVj5ccGFyDQo8RElW
-PlxwYXINCiZuYnNwOzwvRElWPlxwYXINCjxESVY+XHBhcg0KVGhlcmVmb3JlLCB3ZSBhcmUgaGFw
-cHkgdG8gaW5mb3JtIHlvdSB0aGF0IGFuIGFycmFuZ2VtZW50IGhhcyBwZXJmZWN0bHkgYmVlbiBj
-b25jbHVkZWQgdG8gZWZmZWN0IHlvdXIgcGF5bWVudCBhcyBzb29uIGFzIHBvc3NpYmxlIGluIG91
-ciBiaWQgdG8gYmUgdmVyeSB0cmFuc3BhcmVudC48L0RJVj5ccGFyDQpccGFyDQpccGFyDQo8RElW
-PlxwYXINCiZuYnNwOzwvRElWPlxwYXINCjxESVY+XHBhcg0KJm5ic3A7PC9ESVY+XHBhcg0KPERJ
-Vj5ccGFyDQpIb3dldmVyLCBpdCBpcyBvdXIgcGxlYXN1cmUgdG8gaW5mb3JtIHlvdSB0aGF0IHlv
-dXIgQVRNIENhcmQgTnVtYmVyOyA1MjI5IDc1MTcgMTEzMiA5OTI3IGhhcyBiZWVuIGFwcHJvdmVk
-IGFuZCB1cGdyYWRlZCBpbiB5b3VyIGZhdm9yLjwvRElWPlxwYXINCjxESVY+XHBhcg0KXHBhcg0K
-XHBhcg0KJm5ic3A7PC9ESVY+XHBhcg0KPERJVj5ccGFyDQombmJzcDs8L0RJVj5ccGFyDQo8RElW
-PlxwYXINCk1lYW53aGlsZSwgeW91ciBTZWNyZXQgUGluIE51bWJlciB3aWxsIGJlIGF2YWlsYWJs
-ZSBhcyBzb29uIGFzIHlvdSBjb25maXJtIHRvIHVzIHRoZSByZWNlaXB0IG9mIHlvdXIgQVRNIENB
-UkQuPC9ESVY+XHBhcg0KPERJVj5ccGFyDQpccGFyDQpccGFyDQombmJzcDs8L0RJVj5ccGFyDQo8
-RElWPlxwYXINCiZuYnNwOzwvRElWPlxwYXINCjxESVY+XHBhcg0KVGhlIEFUTSBDYXJkIFZhbHVl
-IGlzIFVTRDUwLDAwMCZuYnNwOyBPbmx5LiBZb3UgYXJlIGFkdmlzZWQgdGhhdCBhIG1heGltdW0g
-d2l0aGRyYXdhbCB2YWx1ZSBvZiBVU0Q1LDAwMC4wMCBpcyBwZXJtaXR0ZWQgZGFpbHkuPC9ESVY+
-XHBhcg0KPERJVj5ccGFyDQpccGFyDQpccGFyDQombmJzcDs8L0RJVj5ccGFyDQo8RElWPlxwYXIN
-CiZuYnNwOzwvRElWPlxwYXINCjxESVY+XHBhcg0KQW5kIGl0cyBpcyBkdWx5IGludGVyLXN3aXRj
-aGVkIGFuZCB5b3UgY2FuIG1ha2Ugd2l0aGRyYXdhbCBpbiBhbnkgbG9jYXRpb24gb2YgdGhlIEFU
-TSBDZW50ZXIgb2YgeW91ciBjaG9pY2UvbmVhcmVzdCB0byB5b3UgYW55IHdoZXJlIGluIHRoZSB3
-b3JsZC4gV2UgaGF2ZSBhbHNvIGNvbmNsdWRlZCBkZWxpdmVyeSBhcnJhbmdlbWVudCB3aXRoIG91
-ciBhY2NyZWRpdGVkIGNvdXJpZXIgc2VydmljZSBDb21wYW5pZXMgdG8gb3ZlcnNlZSB0aGUgZGVs
-aXZlcnkgb2YgdGhlIEFUTSBDYXJkIHRvIHlvdSB3aXRob3V0IGFueSBmdXJ0aGVyIGRlbGF5LiBZ
-b3VyIEF0bSBtYXN0ZXIgY2FyZCB3b3VsZCBiZSBzZW50IHRvIHlvdSB2aWEgQ09OVElORU5UQUwg
-Q09VUklFUiBCZWNhdXNlIHdlIGhhdmUgc2lnbmVkIGEgY29udHJhY3Qgd2l0aCB0aGUgY291cmll
-ciBjb21wYW5pZXMgYWJvdmUuPC9ESVY+XHBhcg0KPERJVj5ccGFyDQombmJzcDs8L0RJVj5ccGFy
-DQo8RElWPlxwYXINCiZuYnNwOzwvRElWPlxwYXINCjxESVY+XHBhcg0KXHBhcg0KXHBhcg0KQmUg
-aW5mb3JtZWQgdGhhdCB5b3VyIHJlc3BvbnNlIHdvdWxkIGJlIGJ5IHRlbGVwaG9uZSBvciB0aHJv
-dWdoIGVtYWlsIE9ubHkuIEFueSBmdXJ0aGVyIGRlbGF5IHdpbGwgYmUgdGhlIHBsZWFzdXJlIG9m
-IHRoZSBVTlJDIHRvIHVzZSB5b3VyIGZ1bmQgdG8gaGVscCB0aGUgcGVvcGxlIHdobyBoYXZlIGJl
-ZW4gZGlzcGxhY2VkIGluIERhcmZ1ciwgU3VkYW4gQWZyaWNhIHdoaWNoIHlvdSBjYW4gc2VlIGl0
-IGluIHRoaXMgc2l0ZSB3d3cuc2F2ZWRhcmZ1ci5vcmcgYW5kIHRoZSBUc3VuYW1pJ3MgdmljdGlt
-cyBpbiBBc2lhLiBTbyB5b3UgYXJlIGhlcmVieSBhZHZpY2UgdG8gZm9yd2FyZCB0byB0aGlzIG9m
-ZmljZSBEaXJlY3RvciBBVE0gU1dJRlQgQ0FSRCBEZXBhcnRtZW50IFRoZXJlZm9yZSwgeW91IHNo
-b3VsZCBzZW5kIGhpbSB5b3VyIGZ1bGwgTmFtZSBhbmQgdGVsZXBob25lIG51bWJlci95b3VyIGNv
-cnJlY3QgbWFpbGluZyBhZGRyZXNzIHdoZXJlIHlvdSB3YW50IHlvdXIgZGVsaXZlcnkgb2YgeW91
-ciBBVE0gTWFzdGVyIENhcmQuPC9ESVY+XHBhcg0KPERJVj5ccGFyDQombmJzcDs8L0RJVj5ccGFy
-DQo8RElWPlxwYXINClBlcnNvbiB0byBDb250YWN0OiBSRVYuUmljaGFyZCBNb29yZTwvRElWPlxw
-YXINCjxESVY+XHBhcg0KXHBhcg0KXHBhcg0KQ2VsbCBwaG9uZSArMjM0LTgwODY3MDA5Mjc8L0RJ
-Vj5ccGFyDQo8RElWPlxwYXINCkVtYWlsczogcmV2cmljaGFyZG1vb3JlQG92aS5jb208L0RJVj5c
-cGFyDQo8RElWPlxwYXINCiZuYnNwOzwvRElWPlxwYXINCjxESVY+XHBhcg0KJm5ic3A7PC9ESVY+
-XHBhcg0KPERJVj5ccGFyDQpXZSBhcmUgd29ya2luZyBhY2NvcmRpbmcgdG8gdGhlIGNvbnN0aXR1
-dGlvbiBiaW5kaW5nIHRoaXMgY29tbWl0dGVlIGFzIHdlbGwgYXMgaGVscGluZyB0aGUgbGVzcyBw
-cml2aWxlZ2UgdGhyb3VnaCB0aGlzIG1lYW5zLiBZb3Ugd2lsbCBiZSByZXF1aXJlZCB0byBjb250
-YWN0IHRoZSBhYm92ZSBtZW50aW9uZWQgaW5zdGl0dXRpb24gdmlhIHRlbGVwaG9uZSBvciBlbWFp
-bC4gSG9waW5nIHRvIGhlYXIgZnJvbSB5b3UgYXMgc29vbiBhcyB5b3UgcmVjZWl2ZSB5b3VyIEFU
-TS48L0RJVj5ccGFyDQo8RElWPlxwYXINClxwYXINClxwYXINCiZuYnNwOzwvRElWPlxwYXINCjxE
-SVY+XHBhcg0KJm5ic3A7PC9ESVY+XHBhcg0KPERJVj5ccGFyDQpNYWtpbmcgdGhlIHdvcmxkIGEg
-YmV0dGVyIHBsYWNlPC9ESVY+XHBhcg0KPERJVj5ccGFyDQombmJzcDs8L0RJVj5ccGFyDQo8RElW
-PlxwYXINCiZuYnNwOzwvRElWPlxwYXINCjxESVY+XHBhcg0KXHBhcg0KXHBhcg0KUmVnYXJkcyw8
-L0RJVj5ccGFyDQo8RElWPlxwYXINCk1yLiBCYW4gS2ktbW9vbjwvRElWPlxwYXINCjxESVY+XHBh
-cg0KU2VjcmV0YXJ5LUdlbmVyYWwgVU5JVEVEIE5BVElPTlMpLjwvRElWPlxwYXINCjxESVY+XHBh
-cg0KaHR0cDovL3d3dy51bi5vcmcvc2cvYmlvZ3JhcGh5LnNodG1sPC9ESVY+XHBhcg0KPERJVj5c
-cGFyDQpccGFyDQpccGFyDQpccGFyDQombmJzcDs8L0RJVj5ccGFyDQo8RElWPlxwYXINCiZuYnNw
-OzwvRElWPlxwYXINCjxESVY+XHBhcg0KSWYgeW91IGhhdmUgcmVjZWl2ZWQgdGhpcyBlbWFpbCBp
-biBlcnJvci4gWW91IGFyZSBhZHZpc2UgdG8gZGVsZXRlIHRoaXMgZW1haWwgb3IgZGVzdHJveSB0
-aGUgY29udGVudCBvZiB0aGlzIGVtYWlsLiBEbyBub3QgcmVwbHkgdGhpcyBlbWFpbCwgQ29udGFj
-dCB0aGUgcGVyc29uIEFCT1ZFIGRpcmVjdGx5IGZvciBBVE0gU1dJRlQgQ0FSRC48L0RJVj5ccGFy
-DQo8L0ZPTlQ+XHBhcg0KPC9CT0RZPjwvSFRNTD5ccGFyDQpccGFyDQpccGFyDQpccGFyDQpccGFy
-DQp9DQoA
---===============1327266249==--
+Before the cache removal, a machine can have million of dst
+
+Another idea concerning very hot dst would be to clone them on demand.
+
+
+
