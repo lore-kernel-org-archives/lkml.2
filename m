@@ -1,78 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753403Ab2GTRTg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 13:19:36 -0400
-Received: from casper.infradead.org ([85.118.1.10]:35362 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752793Ab2GTRTd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 13:19:33 -0400
-Message-ID: <1342804767.2583.40.camel@twins>
-Subject: Re: [PATCHSET] workqueue: reimplement CPU hotplug to keep idle
- workers
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        tglx@linutronix.de, linux-pm@vger.kernel.org
-Date: Fri, 20 Jul 2012 19:19:27 +0200
-In-Reply-To: <20120720170802.GF32763@google.com>
-References: <1342545149-3515-1-git-send-email-tj@kernel.org>
-	 <1342802391.2583.11.camel@twins> <20120720165213.GD32763@google.com>
-	 <1342803700.2583.29.camel@twins> <20120720170802.GF32763@google.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1753377Ab2GTRUx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 13:20:53 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50725 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753030Ab2GTRUw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 13:20:52 -0400
+Message-ID: <50099361.6050300@zytor.com>
+Date: Fri, 20 Jul 2012 10:20:33 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+MIME-Version: 1.0
+To: Vladimir Davydov <vdavydov@parallels.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Borislav Petkov <borislav.petkov@amd.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] cpu: intel, amd: mask cleared cpuid features
+References: <73e09fb43e37de851acda10dc64bc495a5b68357.1342801662.git.vdavydov@parallels.com> <dd185bfa60b6478e7eb1bce455c9d082ec884abe.1342801662.git.vdavydov@parallels.com>
+In-Reply-To: <dd185bfa60b6478e7eb1bce455c9d082ec884abe.1342801662.git.vdavydov@parallels.com>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-07-20 at 10:08 -0700, Tejun Heo wrote:
-> Hello, Peter.
+On 07/20/2012 09:37 AM, Vladimir Davydov wrote:
+> If 'clearcpuid=N' is specified in boot options, CPU feature #N won't be
+> reported in /proc/cpuinfo and used by the kernel. However, if a
+> userpsace process checks CPU features directly using the cpuid
+> instruction, it will be reported about all features supported by the CPU
+> irrespective of what features are cleared.
 > 
-> On Fri, Jul 20, 2012 at 07:01:40PM +0200, Peter Zijlstra wrote:
-> > On Fri, 2012-07-20 at 09:52 -0700, Tejun Heo wrote:
-> > > Ooh, yeah, I agree.  That's next on the wq to-do list.  The problem is
-> > > that queue_work() is implemented in terms of queue_work_on().  
-> > 
-> > But that's trivial to fix, both could use __queue_work() without too
-> > much bother, right?
+> The patch makes the clearcpuid boot option not only clear CPU features
+> in kernel but also mask them in hardware for Intel and AMD CPUs that
+> support it so that the features cleared won't be reported even by the
+> cpuid instruction.
 > 
-> Hmmm?  Not really.  We need to keep count of the ones which reqested
-> fixed binding - ie. the ones which explicitly used queue_work_on() -
-> and then flush on wq CPU_DOWN.  Then, we need to audit the current
-> users which are using queue_work{_on}() + explicit FLUSH on CPU_DOWN
-> and convert them.
-
-No, that's the wrong way about. Just add another WQ_flag, so you can
-tell which work-queues want sane semantics and those mucking about for
-laughs, say WQ_NON_AFFINE.
-
-Then those with sane semantics (!WQ_NON_AFFINE) get an explicit flush on
-DOWN and don't need to muck about with detaching and re-attaching etc..
-
-> > > The assumption was that they should flush during CPU_DOWN but it
-> > > probably will be much better to require users which need CPU affinity
-> > > to always use queue_work_on() - instead of implicit local affinity
-> > > from queue_work() - and flush them automatically from wq callback.
-> > 
-> > Right, and when you create this new mode, which you need to know to
-> > flush on DOWN, you can simply put a BUG_ON in queue_work_on() when this
-> > mode is set.
+> This can be useful for migration of virtual machines managed by
+> hypervisors that do not support/use Intel VT/AMD-V hardware-assisted
+> virtualization technology.
 > 
-> BUG_ON() on queue_work_on()?  Do you mean if the target CPU is down?
-> If so, yeah, I'd probably go with WARN_ON_ONCE() but we should whine
-> on it.
+> If CPUID masking is supported, this will be reported in
+> /proc/cpuinfo:flags as 'cpuidmask'.
 
-No, when you're trying to enqueue something to a specific cpu but don't
-provide strict per-cpu semantics.
+I am a bit concerned about this patch:
 
-int queue_work_on(int cpu, struct workqueue_struct *wq, 
-		  struct work_struct *work)
-{
-  WARN_ON(wq->flags & WQ_NON_AFFINE);
+1. it silently changes existing behavior.
+2. even on enabled hardware, only some of the bits are maskable.
 
-  ....
-}
+	-hpa
 
 
