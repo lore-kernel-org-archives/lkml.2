@@ -1,124 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752551Ab2GTQEN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 12:04:13 -0400
-Received: from db3ehsobe004.messaging.microsoft.com ([213.199.154.142]:47321
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751805Ab2GTQEL convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 12:04:11 -0400
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC103.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-X-SpamScore: -8
-X-BigFish: VS-8(zz98dI9371Ic89bh542M1432Izz1202hzz8275dhz2fh2a8h683h839hd25hf0ah107ah)
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT002.namprd03.prod.outlook.com;R:internal;EFV:INT
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <gregkh@linuxfoundation.org>,
-        =?iso-8859-1?Q?Bj=F8rn_Mork?= <bjorn@mork.no>
-CC: Paolo Bonzini <pbonzini@redhat.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: RE: [PATCH] drivers: hv: use Linux version in guest ID
-Thread-Topic: [PATCH] drivers: hv: use Linux version in guest ID
-Thread-Index: AQHNZk4sz22otdtLA02vi0WZ/MgtdpcyS40AgAADHNA=
-Date: Fri, 20 Jul 2012 16:02:44 +0000
-Message-ID: <426367E2313C2449837CD2DE46E7EAF923547836@SN2PRD0310MB382.namprd03.prod.outlook.com>
-References: <87fw8mlv7e.fsf@nemi.mork.no>
- <1342771388-24389-1-git-send-email-bjorn@mork.no>
- <20120720152650.GA5201@kroah.com>
-In-Reply-To: <20120720152650.GA5201@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [108.24.39.100]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PRD0310HT002.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%MORK.NO$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LISTS.OSDL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14MLTC103.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14MLTC103.redmond.corp.microsoft.com
-X-OriginatorOrg: microsoft.com
+	id S1752425Ab2GTQHj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 12:07:39 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51031 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751297Ab2GTQHi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 12:07:38 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] extcon: arizona: Implement button detection support
+Date: Fri, 20 Jul 2012 17:07:29 +0100
+Message-Id: <1342800449-10328-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+As well as identifying accessories the accessory detection hardware on
+Arizona class devices can also detect a number of buttons which we should
+report via the input API.
 
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/extcon/extcon-arizona.c |   72 +++++++++++++++++++++++++++++++++++----
+ 1 file changed, 65 insertions(+), 7 deletions(-)
 
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> Sent: Friday, July 20, 2012 11:27 AM
-> To: Bjørn Mork
-> Cc: KY Srinivasan; Paolo Bonzini; devel@linuxdriverproject.org; linux-
-> kernel@vger.kernel.org; virtualization@lists.osdl.org
-> Subject: Re: [PATCH] drivers: hv: use Linux version in guest ID
-> 
-> On Fri, Jul 20, 2012 at 10:03:08AM +0200, Bjørn Mork wrote:
-> > Use OS version number in the guest ID as recommended by Microsoft
-> >
-> > Signed-off-by: Bjørn Mork <bjorn@mork.no>
-> > ---
-> > So how about something like this?  Yes, I know including
-> > linux/version.h often is unwanted, but the spec does
-> > recommend using the actual OS version in the guest ID
-> >
-> > Yes, this will be offensive again when Linux is at
-> > version 181.0, but we might have found a better solution by
-> > then :-)
-> >
-> >
-> >  drivers/hv/hyperv_vmbus.h |   20 ++++++++++++++++----
-> >  1 file changed, 16 insertions(+), 4 deletions(-)
-> >
-> > diff --git a/drivers/hv/hyperv_vmbus.h b/drivers/hv/hyperv_vmbus.h
-> > index b9426a6..cc0c3f0 100644
-> > --- a/drivers/hv/hyperv_vmbus.h
-> > +++ b/drivers/hv/hyperv_vmbus.h
-> > @@ -29,6 +29,7 @@
-> >  #include <asm/sync_bitops.h>
-> >  #include <linux/atomic.h>
-> >  #include <linux/hyperv.h>
-> > +#include <linux/version.h>
-> >
-> >  /*
-> >   * The below CPUID leaves are present if
-> VersionAndFeatures.HypervisorPresent
-> > @@ -410,10 +411,21 @@ enum {
-> >
-> >  #define HV_PRESENT_BIT			0x80000000
-> >
-> > -#define HV_LINUX_GUEST_ID_LO		0x00000000
-> > -#define HV_LINUX_GUEST_ID_HI		0xB16B00B5
-> > -#define HV_LINUX_GUEST_ID		(((u64)HV_LINUX_GUEST_ID_HI
-> << 32) | \
-> > -					   HV_LINUX_GUEST_ID_LO)
-> > +/* Linux vendor ID allocated by Microsoft */
-> > +#define HV_LINUX_GUEST_ID_VENDOR	0xB16B
-> > +
-> > +/* Creating a guest ID conforming to the encoding recommended by
-> > + * Microsoft, with variant and build fixed to 0
-> 
-> We could use the kernel build number here as well, if we really wanted
-> it, right?
-> 
-> Otherwise, I like this patch, KY, any objection to me taking it?
-
-Greg,
-
-If it is ok with you can we wait a couple of days. I am pushing to get information
-back from folks within MSFT. I am hoping  we can fix this issue soon.
-
-Regards,
-
-K. Y
+diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
+index 427a289..fa2114f 100644
+--- a/drivers/extcon/extcon-arizona.c
++++ b/drivers/extcon/extcon-arizona.c
+@@ -21,6 +21,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/err.h>
+ #include <linux/gpio.h>
++#include <linux/input.h>
+ #include <linux/platform_device.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/regulator/consumer.h>
+@@ -30,11 +31,14 @@
+ #include <linux/mfd/arizona/pdata.h>
+ #include <linux/mfd/arizona/registers.h>
  
-
-
++#define ARIZONA_NUM_BUTTONS 6
++
+ struct arizona_extcon_info {
+ 	struct device *dev;
+ 	struct arizona *arizona;
+ 	struct mutex lock;
+ 	struct regulator *micvdd;
++	struct input_dev *input;
+ 
+ 	int micd_mode;
+ 	const struct arizona_micd_config *micd_modes;
+@@ -54,6 +58,18 @@ static const struct arizona_micd_config micd_default_modes[] = {
+ 	{ 0,                  2 << ARIZONA_MICD_BIAS_SRC_SHIFT, 1 },
+ };
+ 
++static struct {
++	u16 status;
++	int report;
++} arizona_lvl_to_key[ARIZONA_NUM_BUTTONS] = {
++	{  0x1, BTN_0 },
++	{  0x2, BTN_1 },
++	{  0x4, BTN_2 },
++	{  0x8, BTN_3 },
++	{ 0x10, BTN_4 },
++	{ 0x20, BTN_5 },
++};
++
+ #define ARIZONA_CABLE_MECHANICAL 0
+ #define ARIZONA_CABLE_MICROPHONE 1
+ #define ARIZONA_CABLE_HEADPHONE  2
+@@ -133,6 +149,7 @@ static void arizona_stop_mic(struct arizona_extcon_info *info)
+ 
+ 	if (change) {
+ 		regulator_disable(info->micvdd);
++		pm_runtime_mark_last_busy(info->dev);
+ 		pm_runtime_put_autosuspend(info->dev);
+ 	}
+ }
+@@ -141,8 +158,8 @@ static irqreturn_t arizona_micdet(int irq, void *data)
+ {
+ 	struct arizona_extcon_info *info = data;
+ 	struct arizona *arizona = info->arizona;
+-	unsigned int val;
+-	int ret;
++	unsigned int val, lvl;
++	int ret, i;
+ 
+ 	mutex_lock(&info->lock);
+ 
+@@ -219,13 +236,22 @@ static irqreturn_t arizona_micdet(int irq, void *data)
+ 
+ 	/*
+ 	 * If we're still detecting and we detect a short then we've
+-	 * got a headphone.  Otherwise it's a button press, the
+-	 * button reporting is stubbed out for now.
++	 * got a headphone.  Otherwise it's a button press.
+ 	 */
+ 	if (val & 0x3fc) {
+ 		if (info->mic) {
+ 			dev_dbg(arizona->dev, "Mic button detected\n");
+ 
++			lvl = val & ARIZONA_MICD_LVL_MASK;
++			lvl >>= ARIZONA_MICD_LVL_SHIFT;
++
++			for (i = 0; i < ARIZONA_NUM_BUTTONS; i++)
++				if (lvl & arizona_lvl_to_key[i].status)
++					input_report_key(info->input,
++							 arizona_lvl_to_key[i].report,
++							 1);
++			input_sync(info->input);
++
+ 		} else if (info->detecting) {
+ 			dev_dbg(arizona->dev, "Headphone detected\n");
+ 			info->detecting = false;
+@@ -244,6 +270,10 @@ static irqreturn_t arizona_micdet(int irq, void *data)
+ 		}
+ 	} else {
+ 		dev_dbg(arizona->dev, "Mic button released\n");
++		for (i = 0; i < ARIZONA_NUM_BUTTONS; i++)
++			input_report_key(info->input,
++					 arizona_lvl_to_key[i].report, 0);
++		input_sync(info->input);
+ 	}
+ 
+ handled:
+@@ -258,7 +288,7 @@ static irqreturn_t arizona_jackdet(int irq, void *data)
+ 	struct arizona_extcon_info *info = data;
+ 	struct arizona *arizona = info->arizona;
+ 	unsigned int val;
+-	int ret;
++	int ret, i;
+ 
+ 	pm_runtime_get_sync(info->dev);
+ 
+@@ -288,6 +318,11 @@ static irqreturn_t arizona_jackdet(int irq, void *data)
+ 
+ 		arizona_stop_mic(info);
+ 
++		for (i = 0; i < ARIZONA_NUM_BUTTONS; i++)
++			input_report_key(info->input,
++					 arizona_lvl_to_key[i].report, 0);
++		input_sync(info->input);
++
+ 		ret = extcon_update_state(&info->edev, 0xffffffff, 0);
+ 		if (ret != 0)
+ 			dev_err(arizona->dev, "Removal report failed: %d\n",
+@@ -307,7 +342,7 @@ static int __devinit arizona_extcon_probe(struct platform_device *pdev)
+ 	struct arizona *arizona = dev_get_drvdata(pdev->dev.parent);
+ 	struct arizona_pdata *pdata;
+ 	struct arizona_extcon_info *info;
+-	int ret, mode;
++	int ret, mode, i;
+ 
+ 	pdata = dev_get_platdata(arizona->dev);
+ 
+@@ -382,6 +417,20 @@ static int __devinit arizona_extcon_probe(struct platform_device *pdev)
+ 
+ 	arizona_extcon_set_mode(info, 0);
+ 
++	info->input = input_allocate_device();
++	if (!info->input) {
++		dev_err(arizona->dev, "Can't allocate input dev\n");
++		ret = -ENOMEM;
++		goto err_register;
++	}
++
++	for (i = 0; i < ARIZONA_NUM_BUTTONS; i++)
++		input_set_capability(info->input, EV_KEY,
++				     arizona_lvl_to_key[i].report);
++	info->input->name = "Headset";
++	info->input->phys = "arizona/extcon";
++	info->input->dev.parent = &pdev->dev;
++
+ 	pm_runtime_enable(&pdev->dev);
+ 	pm_runtime_idle(&pdev->dev);
+ 	pm_runtime_get_sync(&pdev->dev);
+@@ -391,7 +440,7 @@ static int __devinit arizona_extcon_probe(struct platform_device *pdev)
+ 	if (ret != 0) {
+ 		dev_err(&pdev->dev, "Failed to get JACKDET rise IRQ: %d\n",
+ 			ret);
+-		goto err_register;
++		goto err_input;
+ 	}
+ 
+ 	ret = arizona_set_irq_wake(arizona, ARIZONA_IRQ_JD_RISE, 1);
+@@ -436,6 +485,12 @@ static int __devinit arizona_extcon_probe(struct platform_device *pdev)
+ 
+ 	pm_runtime_put(&pdev->dev);
+ 
++	ret = input_register_device(info->input);
++	if (ret) {
++		dev_err(&pdev->dev, "Can't register input device: %d\n", ret);
++		goto err_fall_wake;
++	}
++
+ 	return 0;
+ 
+ err_fall_wake:
+@@ -446,6 +501,8 @@ err_rise_wake:
+ 	arizona_set_irq_wake(arizona, ARIZONA_IRQ_JD_RISE, 0);
+ err_rise:
+ 	arizona_free_irq(arizona, ARIZONA_IRQ_JD_RISE, info);
++err_input:
++	input_free_device(info->input);
+ err_register:
+ 	pm_runtime_disable(&pdev->dev);
+ 	extcon_dev_unregister(&info->edev);
+@@ -468,6 +525,7 @@ static int __devexit arizona_extcon_remove(struct platform_device *pdev)
+ 	regmap_update_bits(arizona->regmap, ARIZONA_JACK_DETECT_ANALOGUE,
+ 			   ARIZONA_JD1_ENA, 0);
+ 	arizona_clk32k_disable(arizona);
++	input_unregister_device(info->input);
+ 	extcon_dev_unregister(&info->edev);
+ 
+ 	return 0;
+-- 
+1.7.10.4
 
