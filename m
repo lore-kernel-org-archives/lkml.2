@@ -1,118 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752763Ab2GTAjq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 20:39:46 -0400
-Received: from usindpps06.hds.com ([207.126.252.19]:52036 "EHLO
-	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752350Ab2GTAjo convert rfc822-to-8bit (ORCPT
+	id S1752733Ab2GTAlY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 20:41:24 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:37685 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752320Ab2GTAlW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 20:39:44 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: "Luck, Tony" <tony.luck@intel.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mikew@google.com" <mikew@google.com>,
-        "dzickus@redhat.com" <dzickus@redhat.com>,
-        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>
-CC: "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: RE: [RFC][PATCH v2 2/3] Hold multiple logs
-Thread-Topic: [RFC][PATCH v2 2/3] Hold multiple logs
-Thread-Index: Ac1l82ceH7I0t1QCT1GombsnNxviZAAAK4PgAABTBVAAAP4IQAAA0SRAAAJWEXAAAc9d8A==
-Date: Fri, 20 Jul 2012 00:39:24 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D40FB28206@USINDEM103.corp.hds.com>
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D40FB27FDC@USINDEM103.corp.hds.com>
- <3908561D78D1C84285E8C5FCA982C28F1936EA5F@ORSMSX104.amr.corp.intel.com>
- <A5ED84D3BB3A384992CBB9C77DEDA4D40FB28056@USINDEM103.corp.hds.com>
- <3908561D78D1C84285E8C5FCA982C28F1936EA97@ORSMSX104.amr.corp.intel.com>
- <A5ED84D3BB3A384992CBB9C77DEDA4D40FB2813D@USINDEM103.corp.hds.com>
- <3908561D78D1C84285E8C5FCA982C28F1936EADE@ORSMSX104.amr.corp.intel.com>
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F1936EADE@ORSMSX104.amr.corp.intel.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.43.113]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.260,0.0.0000
- definitions=2012-07-19_07:2012-07-19,2012-07-19,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
- definitions=main-1207190317
+	Thu, 19 Jul 2012 20:41:22 -0400
+Date: Fri, 20 Jul 2012 10:41:18 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dan Williams <dan.j.williams@intel.com>,
+        Linus <torvalds@linux-foundation.org>
+Subject: linux-next: build failure after merge of the scsi tree
+Message-Id: <20120720104118.217d9adf6d7fd5253746c73a@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__20_Jul_2012_10_41_18_+1000_jvUm9dFJXSPR+g+/"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Fri__20_Jul_2012_10_41_18_+1000_jvUm9dFJXSPR+g+/
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thank you for describing this in detail.
+Hi James,
 
-> Yes - if the OOPs is instrumental in the path leading to the hang/panic - then the OOPS is the first place to look for the root cause of
-> the problem. But it will be a case by case analysis.
-> Sometimes the OOPS might be unconnected. If possible we'd like to log more information to allow detective work to decide whether
-> there is a connection. But as I mentioned above there are severe limits to how much better things are by storing more information.
+After merging the scsi tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-I understand the reason why you think 3 or 4 logs are reasonable.
-There are some cases  2nd or 3rd oops is critical....
+drivers/base/dd.c:27:28: fatal error: scsi/scsi_scan.h: No such file or dir=
+ectory
 
-I have some enterprise customers who are sensitive for a software failure  and specify panic_on_oops=1.
-In this case, they don't need 3,4 logs. 2 logs  are enough.
+Caused by commit eea03c20ae38 ("Make wait_for_device_probe() also do
+scsi_complete_async_scans()") from Linus' tree interacting with commit
+758da9dc2be8 ("[SCSI] cleanup usages of scsi_complete_async_scans") from
+the scsi tree.
 
-So, kernel parameter should be as follows.
+I have reverted commit 758da9dc2be8 for today (which may not be the best
+thing to do).
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Log_num =1
-  - For users who want to hold just one log.
+--Signature=_Fri__20_Jul_2012_10_41_18_+1000_jvUm9dFJXSPR+g+/
+Content-Type: application/pgp-signature
 
-Log_num=2
-  - For users who can handle multiple logs and 1st oops is concerned. (by specifying panic_on_oops=1)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Log_num=3,4
- -  for users who care about 2nd or 3rd oops.
+iQIcBAEBCAAGBQJQCKkuAAoJEECxmPOUX5FEnOkP/AkafMUZnOd90JjvacWEHPox
+78kzeIeTVsG6CCHkc6x/5+7SFbullM5uqcNi+X2DpO0LVd905oCoqer6mzOjbdhN
+dhDNsV+bR/AfwklqutIgkXlNYwaI4iOTfgr1umuWoFEnRzUaNxD0lFpHsr6H2H/k
+LLJHKGYNySCnL8dAVnZdpsTGbvW+N1Gh7mPSXz19zU57xlb7cVBUhzV9ILxiCrIi
+mGnzNgkZoxTRwGdXysbsayPbQclrEl5Hlw1AW0ogF6qiARfw9phIzLaOylUPxDnE
+Bu/BAhLpZaKf3/8bnsmDl6ZR6SvvQoI2L36qTrlVtZ9DuYCC5ha9IBqoDnV6hEaP
+UE2U/wKHCzQanFqrfPlvAGk9+RUZI7p9P4ZFRTJlXJL88mQL4ivA+d+pk6AAOjG8
+nNhkUC0Gh+McMz2gKkflfgK7NjrKCrU3iZuQ6WVGz08lFk7GLspJPk3f3nWsTFyP
+FHTeyfFUqrq3uhIeC6WmDcaeRH+L71nfhiXv9p0IM9LGGT1WbCgDBqecuuirXvyB
+I5ijL4hq14PPEcigwMQ3ZpKAywMActVR8POB9CKcYEtGlgikp00AhGDOZ3DtY5cf
+N9WhTerjldiR5v2UKbfWi2sJr6UVhlPjph+ULOw6oj/oHYa54Rc2CRdt/Pu5Jrt1
+S3Qp9Y2M2NbCzyDCqBHI
+=0tha
+-----END PGP SIGNATURE-----
 
-Log_num=5 or more
-Invalid value.
-
-If there is misunderstanding, please let me know.
-
-Seiji
-
-> -----Original Message-----
-> From: Luck, Tony [mailto:tony.luck@intel.com]
-> Sent: Thursday, July 19, 2012 7:42 PM
-> To: Seiji Aguchi; linux-doc@vger.kernel.org; linux-kernel@vger.kernel.org; mikew@google.com; dzickus@redhat.com; Matthew
-> Garrett (mjg@redhat.com)
-> Cc: dle-develop@lists.sourceforge.net; Satoru Moriya
-> Subject: RE: [RFC][PATCH v2 2/3] Hold multiple logs
-> 
-> > If you are concerned about multiple OOPS case, I think an user app which logs from /dev/pstore to /var/log should be developed.
-> 
-> Agreed - we need an app/daemon to do this.
-> 
-> > Once it is developed, we don't need to care about multiple oops case and the appropriate number is two.
-> 
-> Only if you can guarantee that the app/daemon will run and save the first OOPS before the next occurs. Even if the system were
-> running normally this might be difficult to achieve.. but in this case we know the system isn't running normally (it just OOPSed twice!).
-> 
-> However - there is progressively less value in collecting additional consecutive OOPS. Perhaps one is enough 90% or even 99% of the
-> time. I'm naturally paranoid so having two or three would make me feel happy that most of the remaining 10% or 1% of the cases
-> were covered.
-> 
-> > - In case where system is workable after oops.
-> > The user app will erase an entry in NVRAM.
-> > And we can get the message via /var/log.
-> 
-> Yes - the system can keep running after many types of OOPs - so the OOPS will be logged in /var/log (or by the app/daemon copying
-> from pstore, or both).
-> 
-> > - In case where system hangs up or panics due to the oops.
-> > Oops is the critical message and we don't need care about subsequent events.
-> 
-> Yes - if the OOPs is instrumental in the path leading to the hang/panic - then the OOPS is the first place to look for the root cause of
-> the problem. But it will be a case by case analysis.
-> Sometimes the OOPS might be unconnected. If possible we'd like to log more information to allow detective work to decide whether
-> there is a connection. But as I mentioned above there are severe limits to how much better things are by storing more information.
-> 
-> -Tony
+--Signature=_Fri__20_Jul_2012_10_41_18_+1000_jvUm9dFJXSPR+g+/--
