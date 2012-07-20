@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753417Ab2GTVLd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 17:11:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60705 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752268Ab2GTVLc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 17:11:32 -0400
-Date: Fri, 20 Jul 2012 23:11:20 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: Rob Landley <rob@landley.net>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, linux-media@vger.kernel.org
-Subject: Re: [PATCH][Trivial][resend] Documentation: Add newline at end-of-file
- to files lacking one 
-In-Reply-To: <alpine.LNX.2.00.1207202232240.23164@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1207202310390.21929@pobox.suse.cz>
-References: <alpine.LNX.2.00.1207202232240.23164@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753164Ab2GTV2H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 17:28:07 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:11761 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752111Ab2GTV2F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 17:28:05 -0400
+Message-ID: <1342819679.5434.50.camel@lorien2>
+Subject: [PATCH RFT] net: Fix Neptune ethernet driver to check dma mapping
+ error
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: davem@davemloft.net, mcarlson@broadcom.com, bhutchings@solarflare.com,
+        eric.dumazet@gmail.com, mchan@broadcom.com
+Cc: netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        shuahkhan@gmail.com, stable@vger.kernel.org
+Date: Fri, 20 Jul 2012 15:27:59 -0600
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Jul 2012, Jesper Juhl wrote:
+Request for testing, since I don't have the hardware to test.
 
-> This patch simply adds a newline character at end-of-file to those
-> files in Documentation/ that currently lack one.
-> 
-> This is done for a few different reasons:
-> 
-> A) It's rather annoying when you do "cat some_file.txt" that your
->    prompt/cursor ends up at the end of the last line of output rather
->    than on a new line.
-> 
-> B) Some tools that process files line-by-line may get confused by the
->    lack of a newline on the last line.
-> 
-> C) The "\ No newline at end of file" line in diffs annoys me for some
->    reason.
-> 
-> So, let's just add the missing newline once and for all.
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+--------------------------------------------------------------------
 
-Queued for 3.6, thanks Jesper.
+Fix Neptune ethernet driver to check dma mapping error after map_page()
+interface returns.
 
+Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+Cc: <stable@vger.kernel.org>
+---
+ drivers/net/ethernet/sun/niu.c |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/net/ethernet/sun/niu.c b/drivers/net/ethernet/sun/niu.c
+index 8c726b7..60d5c03 100644
+--- a/drivers/net/ethernet/sun/niu.c
++++ b/drivers/net/ethernet/sun/niu.c
+@@ -3335,6 +3335,10 @@ static int niu_rbr_add_page(struct niu *np, struct rx_ring_info *rp,
+ 
+ 	addr = np->ops->map_page(np->device, page, 0,
+ 				 PAGE_SIZE, DMA_FROM_DEVICE);
++	if (!addr) {
++		__free_page(page);
++		return -ENOMEM;
++	}
+ 
+ 	niu_hash_page(rp, page, addr);
+ 	if (rp->rbr_blocks_per_page > 1)
 -- 
-Jiri Kosina
-SUSE Labs
+1.7.9.5
+
+
+
