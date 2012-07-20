@@ -1,42 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752784Ab2GTNnj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 09:43:39 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:52869 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751624Ab2GTNnh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 09:43:37 -0400
+	id S1752883Ab2GTNnu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 09:43:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41992 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751874Ab2GTNns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 09:43:48 -0400
+Date: Fri, 20 Jul 2012 14:43:44 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Cong Wang <xiyou.wangcong@gmail.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] mm: hugetlbfs: Close race during teardown of
+ hugetlbfs shared page tables
+Message-ID: <20120720134344.GF9222@suse.de>
+References: <20120718104220.GR9222@suse.de>
+ <ju8iqh$vvl$1@dough.gmane.org>
 MIME-Version: 1.0
-In-Reply-To: <1342712558-8185-6-git-send-email-namhyung@kernel.org>
-References: <1342712558-8185-1-git-send-email-namhyung@kernel.org>
-	<1342712558-8185-6-git-send-email-namhyung@kernel.org>
-Date: Fri, 20 Jul 2012 16:43:36 +0300
-X-Google-Sender-Auth: fO2dULCw5ZrrLOVNflDKafpXExo
-Message-ID: <CAOJsxLGFE8QSS06Wj+nhOS8XCpGoMH4bOqwvPi736uBrgJa3uQ@mail.gmail.com>
-Subject: Re: [PATCH 5/5] perf gtk/browser: Use hist_period_print functions
-From: Pekka Enberg <penberg@kernel.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>, David Ahern <dsahern@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <ju8iqh$vvl$1@dough.gmane.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 19, 2012 at 6:42 PM, Namhyung Kim <namhyung@kernel.org> wrote:
-> Now we can support color using pango markup with this change.
->
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+On Thu, Jul 19, 2012 at 09:08:34AM +0000, Cong Wang wrote:
+> On Wed, 18 Jul 2012 at 10:43 GMT, Mel Gorman <mgorman@suse.de> wrote:
+> > +		if (!down_read_trylock(&svma->vm_mm->mmap_sem)) {
+> > +			mutex_unlock(&mapping->i_mmap_mutex);
+> > +			goto retry;
+> > +		}
+> > +
+> > +		smmap_sem = &svma->vm_mm->mmap_sem;
+> > +		spage_table_lock = &svma->vm_mm->page_table_lock;
+> > +		spin_lock_nested(spage_table_lock, SINGLE_DEPTH_NESTING);
+> >  
+> >  		saddr = page_table_shareable(svma, vma, addr, idx);
+> >  		if (saddr) {
+> > @@ -85,6 +108,10 @@ static void huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
+> >  				break;
+> >  			}
+> >  		}
+> > +		up_read(smmap_sem);
+> > +		spin_unlock(spage_table_lock);
+> 
+> Looks like we should do spin_unlock() before up_read(),
+> in the reverse order of how they get accquired.
+> 
 
-Can you please CC me on perf GTK patches?
+Will fix, thanks for pointing this out.
 
-[snip]
+As an aside, I would prefer if you did not drop people from the CC list. I
+would have missed this mail for a long time if it hadn't been pointed out
+to me privately.
 
-> +#define HPP_COLOR_FN(_name, _field)                                            \
-
-Where does this "hpp" naming convention come from? What does it stand for?
+-- 
+Mel Gorman
+SUSE Labs
