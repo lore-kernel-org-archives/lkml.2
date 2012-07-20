@@ -1,182 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752913Ab2GTQhw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 12:37:52 -0400
-Received: from relay.parallels.com ([195.214.232.42]:37878 "EHLO
+	id S1752701Ab2GTQhv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 12:37:51 -0400
+Received: from relay.parallels.com ([195.214.232.42]:37877 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751912Ab2GTQhu (ORCPT
+	with ESMTP id S1752145Ab2GTQht (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 12:37:50 -0400
+	Fri, 20 Jul 2012 12:37:49 -0400
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>
 CC: Andi Kleen <ak@linux.intel.com>, Borislav Petkov <borislav.petkov@amd.com>,
         Vladimir Davydov <vdavydov@parallels.com>, <x86@kernel.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] cpu: intel, amd: mask cleared cpuid features
-Date: Fri, 20 Jul 2012 20:37:33 +0400
-Message-ID: <dd185bfa60b6478e7eb1bce455c9d082ec884abe.1342801662.git.vdavydov@parallels.com>
+Subject: [PATCH 1/2] cpu: common: make clearcpuid option take bits list
+Date: Fri, 20 Jul 2012 20:37:32 +0400
+Message-ID: <73e09fb43e37de851acda10dc64bc495a5b68357.1342801662.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <73e09fb43e37de851acda10dc64bc495a5b68357.1342801662.git.vdavydov@parallels.com>
-References: <73e09fb43e37de851acda10dc64bc495a5b68357.1342801662.git.vdavydov@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If 'clearcpuid=N' is specified in boot options, CPU feature #N won't be
-reported in /proc/cpuinfo and used by the kernel. However, if a
-userpsace process checks CPU features directly using the cpuid
-instruction, it will be reported about all features supported by the CPU
-irrespective of what features are cleared.
-
-The patch makes the clearcpuid boot option not only clear CPU features
-in kernel but also mask them in hardware for Intel and AMD CPUs that
-support it so that the features cleared won't be reported even by the
-cpuid instruction.
-
-This can be useful for migration of virtual machines managed by
-hypervisors that do not support/use Intel VT/AMD-V hardware-assisted
-virtualization technology.
-
-If CPUID masking is supported, this will be reported in
-/proc/cpuinfo:flags as 'cpuidmask'.
+It is more convenient to write 'clearcpuid=147,148,...' than
+'clearcpuid=147 clearcpuid=148 ...'
 ---
- arch/x86/include/asm/cpufeature.h |    1 +
- arch/x86/kernel/cpu/amd.c         |   22 ++++++++++++++
- arch/x86/kernel/cpu/intel.c       |   59 +++++++++++++++++++++++++++++++++++++
- 3 files changed, 82 insertions(+), 0 deletions(-)
+ arch/x86/kernel/cpu/common.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index f91e80f..6f061ea 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -97,6 +97,7 @@
- #define X86_FEATURE_EXTD_APICID	(3*32+26) /* has extended APICID (8 bits) */
- #define X86_FEATURE_AMD_DCM     (3*32+27) /* multi-node processor */
- #define X86_FEATURE_APERFMPERF	(3*32+28) /* APERFMPERF */
-+#define X86_FEATURE_CPUIDMASK	(3*32+29) /* CPUID feature masking */
- 
- /* Intel-defined CPU features, CPUID level 0x00000001 (ecx), word 4 */
- #define X86_FEATURE_XMM3	(4*32+ 0) /* "pni" SSE-3 */
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index 146bb62..ddc8ea2 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -482,6 +482,26 @@ static void __cpuinit early_init_amd(struct cpuinfo_x86 *c)
- #endif
- }
- 
-+#define MSR_AMD_CPUID_FEATURES_OVERRIDE		0xc0011004
-+#define MSR_AMD_EXT_CPUID_FEATURES_OVERRIDE	0xc0011005
-+
-+static void __cpuinit amd_mask_cpu_caps(struct cpuinfo_x86 *c)
-+{
-+	u64 val;
-+
-+	if (c->x86 >= 0x0f) {
-+		set_cpu_cap(c, X86_FEATURE_CPUIDMASK);
-+
-+		rdmsrl_amd_safe(MSR_AMD_CPUID_FEATURES_OVERRIDE, &val);
-+		val &= ~((u64)cpu_caps_cleared[4] << 32 | cpu_caps_cleared[0]);
-+		wrmsrl_amd_safe(MSR_AMD_CPUID_FEATURES_OVERRIDE, val);
-+
-+		rdmsrl_amd_safe(MSR_AMD_EXT_CPUID_FEATURES_OVERRIDE, &val);
-+		val &= ~((u64)cpu_caps_cleared[6] << 32 | cpu_caps_cleared[1]);
-+		wrmsrl_amd_safe(MSR_AMD_EXT_CPUID_FEATURES_OVERRIDE, val);
-+	}
-+}
-+
- static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index 6b9333b..8ffe1b9 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -1012,10 +1012,10 @@ static __init int setup_disablecpuid(char *arg)
  {
- 	u32 dummy;
-@@ -684,6 +704,8 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
- 	}
+ 	int bit;
  
- 	rdmsr_safe(MSR_AMD64_PATCH_LEVEL, &c->microcode, &dummy);
-+
-+	amd_mask_cpu_caps(c);
- }
- 
- #ifdef CONFIG_X86_32
-diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-index 3e6ff6c..1df1da5 100644
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -358,6 +358,63 @@ static void __cpuinit detect_vmx_virtcap(struct cpuinfo_x86 *c)
- 	}
- }
- 
-+static unsigned int __cpuinit intel_cpuid_mask_msr(struct cpuinfo_x86 *c,
-+					unsigned int *msr_ext_cpuid_mask)
-+{
-+	unsigned int msr, msr_ext;
-+
-+	msr = msr_ext = 0;
-+
-+	switch (c->x86_model) {
-+	case 0x17:
-+	case 0x1D:
-+		msr = 0x478;
-+		break;
-+	case 0x1A:
-+	case 0x1E:
-+	case 0x1F:
-+	case 0x25:
-+	case 0x2C:
-+	case 0x2E:
-+	case 0x2F:
-+		msr = 0x130;
-+		msr_ext = 0x131;
-+		break;
-+	case 0x2A:
-+		msr = 0x132;
-+		msr_ext = 0x133;
-+		break;
+-	if (get_option(&arg, &bit) && bit < NCAPINTS*32)
+-		setup_clear_cpu_cap(bit);
+-	else
+-		return 0;
++	while (get_option(&arg, &bit)) {
++		if (bit >= 0 && bit < NCAPINTS*32)
++			setup_clear_cpu_cap(bit);
 +	}
-+
-+	if (msr_ext_cpuid_mask)
-+		*msr_ext_cpuid_mask = msr_ext;
-+
-+	return msr;
-+}
-+
-+static void __cpuinit intel_mask_cpu_caps(struct cpuinfo_x86 *c)
-+{
-+	u32 low, high;
-+	unsigned int msr_cpuid_mask, msr_ext_cpuid_mask;
-+
-+	msr_cpuid_mask = intel_cpuid_mask_msr(c, &msr_ext_cpuid_mask);
-+	if (msr_cpuid_mask) {
-+		set_cpu_cap(c, X86_FEATURE_CPUIDMASK);
-+
-+		rdmsr(msr_cpuid_mask, low, high);
-+		low &= ~cpu_caps_cleared[4];
-+		high &= ~cpu_caps_cleared[0];
-+		wrmsr(msr_cpuid_mask, low, high);
-+
-+		if (msr_ext_cpuid_mask != 0) {
-+			rdmsr(msr_ext_cpuid_mask, low, high);
-+			low &= ~cpu_caps_cleared[6];
-+			high &= ~cpu_caps_cleared[1];
-+			wrmsr(msr_ext_cpuid_mask, low, high);
-+		}
-+	}
-+}
-+
- static void __cpuinit init_intel(struct cpuinfo_x86 *c)
- {
- 	unsigned int l2 = 0;
-@@ -474,6 +531,8 @@ static void __cpuinit init_intel(struct cpuinfo_x86 *c)
- 			wrmsrl(MSR_IA32_ENERGY_PERF_BIAS, epb);
- 		}
- 	}
-+
-+	intel_mask_cpu_caps(c);
- }
  
- #ifdef CONFIG_X86_32
+ 	return 1;
+ }
 -- 
 1.7.1
 
