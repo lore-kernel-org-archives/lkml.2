@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753286Ab2GTPxF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 11:53:05 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:52191 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752855Ab2GTPxE (ORCPT
+	id S1753352Ab2GTPya (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 11:54:30 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:48870 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753174Ab2GTPy3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 11:53:04 -0400
+	Fri, 20 Jul 2012 11:54:29 -0400
+Date: Fri, 20 Jul 2012 10:54:17 -0500
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 06/34] vmscan: add shrink_slab tracepoints
+Message-ID: <20120720155417.GA2885@burratino>
+References: <1342708604-26540-1-git-send-email-mgorman@suse.de>
+ <1342708604-26540-7-git-send-email-mgorman@suse.de>
+ <20120719203017.GC19392@burratino>
+ <20120719220411.GZ9222@suse.de>
+ <20120719220721.GE19392@burratino>
+ <20120720100623.GE9222@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <4071247.4LoKycnIHi@linux-lqwf.site>
-References: <CACVXFVNWOcrR9tYhU1wVUSJ_DJ8x+SCk993Sn9dYDe2kzJBDuQ@mail.gmail.com>
-	<4071247.4LoKycnIHi@linux-lqwf.site>
-Date: Fri, 20 Jul 2012 23:53:02 +0800
-Message-ID: <CACVXFVOarPfL0-PyZciwx7n4QTy+pji2VKFrCp6B3niU2M_X2w@mail.gmail.com>
-Subject: Re: [RFC] firmware load: defer request_firmware during early boot and resume
-From: Ming Lei <tom.leiming@gmail.com>
-To: Oliver Neukum <oneukum@suse.de>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-usb <linux-usb@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120720100623.GE9222@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 20, 2012 at 9:54 PM, Oliver Neukum <oneukum@suse.de> wrote:
+Mel Gorman wrote:
+> On Thu, Jul 19, 2012 at 05:07:21PM -0500, Jonathan Nieder wrote:
 
+>> Some of the other patches of this type made sense, but I'd personally
+>> prefer if this one was dropped, yes.  Though I am just a nobody that
+>> reads patches rather than one of the relevant people. ;-)
 >
-> The approach seems to me to be less comprehensive than
-> it ought to be. If you defer, why not the whole probe()?
+> It's a valid point but I'm going to leave it in for now and see what the
+> general opinion is.
 
-Because for other failures, we don't know when the conditions
-for them can be satisfied. For example, we don't know when the
-memory allocation can be met for one previous allocation failure.
+Ok.  To be more precise, this patch has two properties that other patches
+of the "make later patches easier to apply" class tend not to:
 
-IMO, at least the approach provides one simple way to solve the
-firmware loading problem during. early boot or resume
+ * it introduces a significant functional change (adding tracepoints)
+ * it would have been very easy to skip
 
-> Deferring only the upoad of the firmware complicates
-> error handling.
+Have fun, and sorry for not explaining my reasoning before.
 
-Looks there is no special requirement for the error handling of
-request_firmware, just like other failures' handling, undo things
-which has been done, isn't there?
-
-Thanks,
--- 
-Ming Lei
+Ciao,
+Jonathan
