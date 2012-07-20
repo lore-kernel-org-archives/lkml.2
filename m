@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753808Ab2GTV7T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 17:59:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35495 "EHLO mx1.redhat.com"
+	id S1753697Ab2GTV6q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 17:58:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62652 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753634Ab2GTV7O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 17:59:14 -0400
+	id S1753678Ab2GTV6l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 17:58:41 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 13/13] UAPI: Plumb the UAPI Kbuilds into the user header
- installation and checking
+Subject: [PATCH 10/13] UAPI: Move linux/version.h
 To: linux-arch@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, tglx@linutronix.de,
         mingo@kernel.org, davej@redhat.com
-Date: Fri, 20 Jul 2012 22:59:04 +0100
-Message-ID: <20120720215904.14854.6969.stgit@warthog.procyon.org.uk>
+Date: Fri, 20 Jul 2012 22:58:32 +0100
+Message-ID: <20120720215832.14854.80740.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20120720215636.14854.41208.stgit@warthog.procyon.org.uk>
 References: <20120720215636.14854.41208.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -28,294 +27,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Plumb the UAPI Kbuilds into the user header installation and checking system.
-As the headers are split the entries will be transferred across from the old
-Kbuild files to the UAPI Kbuild files.
+Move include/linux/version.h to the include/generated/ header directory.
+A later patch will move it to include/uapi/generated/.
 
-The changes made in this commit are:
-
- (1) Exported generated files (of which there are currently four) are moved to
-     uapi/ directories under the appropriate generated/ directory, thus we
-     get:
-
-	include/generated/uapi/linux/version.h
-	arch/x86/include/generated/uapi/asm/unistd_32.h
-	arch/x86/include/generated/uapi/asm/unistd_64.h
-	arch/x86/include/generated/uapi/asm/unistd_x32.h
-
-     These paths were added to the build as -I flags in a previous patch.
-
- (2) scripts/Makefile.headersinst is now given the UAPI path to install from
-     rather than the old path.
-
-     It then determines the old path from that and includes that Kbuild also
-     if it exists, thus permitting the headers to exist in either directory
-     during the changeover.
-
-     I also renamed the "install" variable to "installdir" as it refers to a
-     directory not the install program.
-
- (3) scripts/headers_install.pl is altered to take a list of source file paths
-     instead of just their names so that the makefile can tell it exactly
-     where to find each file.
-
-     For the moment, files can be obtained from one of four places for each
-     output directory:
-
-	.../include/uapi/foo/
-	.../include/generated/uapi/foo/
-	.../include/foo/
-	.../include/generated/foo/
-
-     The non-UAPI paths will be dropped later.
+This allows us to get rid of the objhdr-y list.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- Makefile                            |   14 +++++------
- arch/x86/include/asm/Kbuild         |    4 ---
- arch/x86/syscalls/Makefile          |    2 +-
- include/linux/Kbuild                |    2 --
- include/uapi/asm-generic/Kbuild.asm |    4 ++-
- include/uapi/linux/Kbuild           |    2 ++
- scripts/Makefile.headersinst        |   45 ++++++++++++++++++++++++-----------
- scripts/headers_install.pl          |   14 ++++++-----
- 8 files changed, 51 insertions(+), 36 deletions(-)
+ Makefile             |   13 +++++++------
+ include/linux/Kbuild |    2 +-
+ 2 files changed, 8 insertions(+), 7 deletions(-)
 
 diff --git a/Makefile b/Makefile
-index bd0763f..08d4a06 100644
+index d6f09dd..bd0763f 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -447,7 +447,7 @@ asm-generic:
+@@ -447,9 +447,11 @@ asm-generic:
  # Detect when mixed targets is specified, and make a second invocation
  # of make so .config is not included in this case either (for *config).
  
--version_h := include/generated/linux/version.h
-+version_h := include/generated/uapi/linux/version.h
- 
++version_h := include/generated/linux/version.h
++
  no-dot-config-targets := clean mrproper distclean \
  			 cscope gtags TAGS tags help %docs check% coccicheck \
-@@ -904,10 +904,10 @@ headers_install_all:
+-			 include/linux/version.h headers_% archheaders archscripts \
++			 $(version_h) headers_% archheaders archscripts \
+ 			 kernelversion %src-pkg
  
- PHONY += headers_install
- headers_install: __headers
--	$(if $(wildcard $(srctree)/arch/$(hdr-arch)/include/asm/Kbuild),, \
--	$(error Headers not exportable for the $(SRCARCH) architecture))
--	$(Q)$(MAKE) $(hdr-inst)=include
--	$(Q)$(MAKE) $(hdr-inst)=arch/$(hdr-arch)/include/asm $(hdr-dst)
-+	$(if $(wildcard $(srctree)/arch/$(hdr-arch)/include/uapi/asm/Kbuild),, \
-+	  $(error Headers not exportable for the $(SRCARCH) architecture))
-+	$(Q)$(MAKE) $(hdr-inst)=include/uapi
-+	$(Q)$(MAKE) $(hdr-inst)=arch/$(hdr-arch)/include/uapi/asm $(hdr-dst)
+ config-targets := 0
+@@ -815,7 +817,7 @@ endif
+ # prepare2 creates a makefile if using a separate output directory
+ prepare2: prepare3 outputmakefile asm-generic
  
- PHONY += headers_check_all
- headers_check_all: headers_install_all
-@@ -915,8 +915,8 @@ headers_check_all: headers_install_all
+-prepare1: prepare2 include/linux/version.h include/generated/utsrelease.h \
++prepare1: prepare2 $(version_h) include/generated/utsrelease.h \
+                    include/config/auto.conf
+ 	$(cmd_crmodverdir)
  
- PHONY += headers_check
- headers_check: headers_install
--	$(Q)$(MAKE) $(hdr-inst)=include HDRCHECK=1
--	$(Q)$(MAKE) $(hdr-inst)=arch/$(hdr-arch)/include/asm $(hdr-dst) HDRCHECK=1
-+	$(Q)$(MAKE) $(hdr-inst)=include/uapi HDRCHECK=1
-+	$(Q)$(MAKE) $(hdr-inst)=arch/$(hdr-arch)/include/uapi/asm $(hdr-dst) HDRCHECK=1
+@@ -848,7 +850,7 @@ define filechk_version.h
+ 	echo '#define KERNEL_VERSION(a,b,c) (((a) << 16) + ((b) << 8) + (c))';)
+ endef
  
- # ---------------------------------------------------------------------------
- # Modules
-diff --git a/arch/x86/include/asm/Kbuild b/arch/x86/include/asm/Kbuild
-index f9c0d3b..1595d68 100644
---- a/arch/x86/include/asm/Kbuild
-+++ b/arch/x86/include/asm/Kbuild
-@@ -22,7 +22,3 @@ header-y += sigcontext32.h
- header-y += ucontext.h
- header-y += vm86.h
- header-y += vsyscall.h
--
--genhdr-y += unistd_32.h
--genhdr-y += unistd_64.h
--genhdr-y += unistd_x32.h
-diff --git a/arch/x86/syscalls/Makefile b/arch/x86/syscalls/Makefile
-index 174b032..f325af2 100644
---- a/arch/x86/syscalls/Makefile
-+++ b/arch/x86/syscalls/Makefile
-@@ -1,5 +1,5 @@
- out := $(obj)/../include/generated/asm
--uapi := $(obj)/../include/generated/asm
-+uapi := $(obj)/../include/generated/uapi/asm
+-include/linux/version.h: $(srctree)/Makefile FORCE
++$(version_h): $(srctree)/Makefile FORCE
+ 	$(call filechk,version.h)
  
- # Create output directory if not already present
- _dummy := $(shell [ -d '$(out)' ] || mkdir -p '$(out)') \
+ include/generated/utsrelease.h: include/config/kernel.release FORCE
+@@ -893,7 +895,7 @@ PHONY += archscripts
+ archscripts:
+ 
+ PHONY += __headers
+-__headers: include/linux/version.h scripts_basic asm-generic archheaders archscripts FORCE
++__headers: $(version_h) scripts_basic asm-generic archheaders archscripts FORCE
+ 	$(Q)$(MAKE) $(build)=scripts build_unifdef
+ 
+ PHONY += headers_install_all
+@@ -1003,8 +1005,7 @@ CLEAN_DIRS  += $(MODVERDIR)
+ # Directories & files removed with 'make mrproper'
+ MRPROPER_DIRS  += include/config usr/include include/generated          \
+                   arch/*/include/generated
+-MRPROPER_FILES += .config .config.old .version .old_version             \
+-                  include/linux/version.h                               \
++MRPROPER_FILES += .config .config.old .version .old_version $(version_h) \
+ 		  Module.symvers tags TAGS cscope* GPATH GTAGS GRTAGS GSYMS
+ 
+ # clean - Delete most, but leave enough to build external modules
 diff --git a/include/linux/Kbuild b/include/linux/Kbuild
-index ecd8820d..e3481f7 100644
+index 8760be3..ecd8820d 100644
 --- a/include/linux/Kbuild
 +++ b/include/linux/Kbuild
-@@ -20,8 +20,6 @@ header-y += netfilter_ipv6/
+@@ -20,7 +20,7 @@ header-y += netfilter_ipv6/
  header-y += usb/
  header-y += wimax/
  
--genhdr-y += version.h
--
+-objhdr-y += version.h
++genhdr-y += version.h
+ 
  ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/a.out.h \
  		  $(srctree)/include/asm-$(SRCARCH)/a.out.h \
- 		  $(INSTALL_HDR_PATH)/include/asm-*/a.out.h),)
-diff --git a/include/uapi/asm-generic/Kbuild.asm b/include/uapi/asm-generic/Kbuild.asm
-index 9a8464d..fcd50b7 100644
---- a/include/uapi/asm-generic/Kbuild.asm
-+++ b/include/uapi/asm-generic/Kbuild.asm
-@@ -42,8 +42,8 @@ header-y += unistd.h
- header-y += $(foreach hdr,$(opt-header), \
- 	      $(if \
- 		$(wildcard \
--			arch/$(SRCARCH)/include/uapi/asm/$(hdr) \
--			arch/$(SRCARCH)/include/asm/$(hdr) \
-+			$(srctree)/arch/$(SRCARCH)/include/uapi/asm/$(hdr) \
-+			$(srctree)/arch/$(SRCARCH)/include/asm/$(hdr) \
- 		), \
- 		$(hdr) \
- 		))
-diff --git a/include/uapi/linux/Kbuild b/include/uapi/linux/Kbuild
-index 13a9cf4..b0fd4d0 100644
---- a/include/uapi/linux/Kbuild
-+++ b/include/uapi/linux/Kbuild
-@@ -20,3 +20,5 @@ header-y += netfilter_ipv4/
- header-y += netfilter_ipv6/
- header-y += usb/
- header-y += wimax/
-+
-+genhdr-y += version.h
-diff --git a/scripts/Makefile.headersinst b/scripts/Makefile.headersinst
-index 463b95a..06ba4a7 100644
---- a/scripts/Makefile.headersinst
-+++ b/scripts/Makefile.headersinst
-@@ -8,7 +8,7 @@
- # ==========================================================================
- 
- # called may set destination dir (when installing to asm/)
--_dst := $(if $(dst),$(dst),$(obj))
-+_dst := $(or $(destination-y),$(dst),$(obj))
- 
- # generated header directory
- gen := $(if $(gen),$(gen),$(subst include/,include/generated/,$(obj)))
-@@ -16,47 +16,64 @@ gen := $(if $(gen),$(gen),$(subst include/,include/generated/,$(obj)))
- kbuild-file := $(srctree)/$(obj)/Kbuild
- include $(kbuild-file)
- 
--_dst := $(if $(destination-y),$(destination-y),$(_dst))
-+old-kbuild-file := $(srctree)/$(subst uapi/,,$(obj))/Kbuild
-+ifneq ($(wildcard $(old-kbuild-file)),)
-+include $(old-kbuild-file)
-+endif
- 
- include scripts/Kbuild.include
- 
--install       := $(INSTALL_HDR_PATH)/$(_dst)
-+installdir    := $(INSTALL_HDR_PATH)/$(subst uapi/,,$(_dst))
- 
- header-y      := $(sort $(header-y))
- subdirs       := $(patsubst %/,%,$(filter %/, $(header-y)))
- header-y      := $(filter-out %/, $(header-y))
- 
- # files used to track state of install/check
--install-file  := $(install)/.install
--check-file    := $(install)/.check
-+install-file  := $(installdir)/.install
-+check-file    := $(installdir)/.check
- 
- # generic-y list all files an architecture uses from asm-generic
- # Use this to build a list of headers which require a wrapper
- wrapper-files := $(filter $(header-y), $(generic-y))
- 
-+srcdir        := $(srctree)/$(obj)
-+gendir        := $(objtree)/$(gen)
-+
-+oldsrcdir     := $(srctree)/$(subst /uapi,,$(obj))
-+
- # all headers files for this dir
- header-y      := $(filter-out $(generic-y), $(header-y))
- all-files     := $(header-y) $(genhdr-y) $(wrapper-files)
--input-files   := $(addprefix $(srctree)/$(obj)/,$(header-y)) \
--                 $(addprefix $(objtree)/$(gen)/,$(genhdr-y))
--output-files  := $(addprefix $(install)/, $(all-files))
-+output-files  := $(addprefix $(installdir)/, $(all-files))
-+
-+input-files   := $(foreach hdr, $(header-y), \
-+		   $(or \
-+			$(wildcard $(srcdir)/$(hdr)), \
-+			$(wildcard $(oldsrcdir)/$(hdr)), \
-+			$(error Missing UAPI file $(srcdir)/$(hdr)) \
-+		   )) \
-+		 $(foreach hdr, $(genhdr-y), \
-+		   $(or \
-+			$(wildcard $(gendir)/$(hdr)), \
-+			$(error Missing generated UAPI file $(gendir)/$(hdr)) \
-+		   ))
- 
- # Work out what needs to be removed
--oldheaders    := $(patsubst $(install)/%,%,$(wildcard $(install)/*.h))
-+oldheaders    := $(patsubst $(installdir)/%,%,$(wildcard $(installdir)/*.h))
- unwanted      := $(filter-out $(all-files),$(oldheaders))
- 
- # Prefix unwanted with full paths to $(INSTALL_HDR_PATH)
--unwanted-file := $(addprefix $(install)/, $(unwanted))
-+unwanted-file := $(addprefix $(installdir)/, $(unwanted))
- 
- printdir = $(patsubst $(INSTALL_HDR_PATH)/%/,%,$(dir $@))
- 
- quiet_cmd_install = INSTALL $(printdir) ($(words $(all-files))\
-                             file$(if $(word 2, $(all-files)),s))
-       cmd_install = \
--        $(PERL) $< $(srctree)/$(obj) $(install) $(SRCARCH) $(header-y); \
--        $(PERL) $< $(objtree)/$(gen) $(install) $(SRCARCH) $(genhdr-y); \
-+        $(PERL) $< $(installdir) $(SRCARCH) $(input-files); \
-         for F in $(wrapper-files); do                                   \
--                echo "\#include <asm-generic/$$F>" > $(install)/$$F;    \
-+                echo "\#include <asm-generic/$$F>" > $(installdir)/$$F;    \
-         done;                                                           \
-         touch $@
- 
-@@ -67,7 +84,7 @@ quiet_cmd_check = CHECK   $(printdir) ($(words $(all-files)) files)
- # Headers list can be pretty long, xargs helps to avoid
- # the "Argument list too long" error.
-       cmd_check = for f in $(all-files); do                          \
--                  echo "$(install)/$${f}"; done                      \
-+                  echo "$(installdir)/$${f}"; done                      \
-                   | xargs                                            \
-                   $(PERL) $< $(INSTALL_HDR_PATH)/include $(SRCARCH); \
- 	          touch $@
-diff --git a/scripts/headers_install.pl b/scripts/headers_install.pl
-index 48462be..239d22d 100644
---- a/scripts/headers_install.pl
-+++ b/scripts/headers_install.pl
-@@ -4,8 +4,7 @@
- # user space and copy the files to their destination.
- #
- # Usage: headers_install.pl readdir installdir arch [files...]
--# readdir:    dir to open files
--# installdir: dir to install the files
-+# installdir: dir to install the files to
- # arch:       current architecture
- #             arch is used to force a reinstallation when the arch
- #             changes because kbuild then detect a command line change.
-@@ -18,15 +17,18 @@
- 
- use strict;
- 
--my ($readdir, $installdir, $arch, @files) = @ARGV;
-+my ($installdir, $arch, @files) = @ARGV;
- 
- my $unifdef = "scripts/unifdef -U__KERNEL__ -D__EXPORTED_HEADERS__";
- 
--foreach my $file (@files) {
-+foreach my $filename (@files) {
-+	my $file = $filename;
-+	$file =~ s!^.*/!!;
-+
- 	my $tmpfile = "$installdir/$file.tmp";
- 
--	open(my $in, '<', "$readdir/$file")
--	    or die "$readdir/$file: $!\n";
-+	open(my $in, '<', $filename)
-+	    or die "$filename: $!\n";
- 	open(my $out, '>', $tmpfile)
- 	    or die "$tmpfile: $!\n";
- 	while (my $line = <$in>) {
 
