@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752574Ab2GTGNZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 02:13:25 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:17064 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750752Ab2GTGNT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 02:13:19 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Thu, 19 Jul 2012 23:13:19 -0700
-Message-ID: <5008F4D8.9070108@nvidia.com>
-Date: Fri, 20 Jul 2012 11:34:08 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Vinod Koul <vinod.koul@linux.intel.com>
-CC: "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH] dma: tegra: enable/disable dma clock
-References: <1342601769-13852-1-git-send-email-ldewangan@nvidia.com> <1342764141.1726.199.camel@vkoul-udesk3>
-In-Reply-To: <1342764141.1726.199.camel@vkoul-udesk3>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752614Ab2GTGTf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 02:19:35 -0400
+Received: from mga03.intel.com ([143.182.124.21]:25852 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750752Ab2GTGTd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 02:19:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="124666982"
+From: Alex Shi <alex.shi@intel.com>
+To: a.p.zijlstra@chello.nl
+Cc: tj@kernel.org, alex.shi@intel.com, mingo@kernel.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] sched/numa: recovered SD_PERFER_SIBLING on CPU domain
+Date: Fri, 20 Jul 2012 14:19:50 +0800
+Message-Id: <1342765190-21540-1-git-send-email-alex.shi@intel.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 20 July 2012 11:32 AM, Vinod Koul wrote:
-> On Wed, 2012-07-18 at 14:26 +0530, Laxman Dewangan wrote:
->> Enable the DMA clock when registering DMA driver and
->> disable clock when removing the DMA driver.
->>
->> The failure was observed on Tegra20 based system by
->> Stephen Warren. However, it is working fine on tegra30
->> based system and probably becasue uboot enable the clock
->> on Tegra30.
-> Don't know much about the clock subsystem, but shouldn't the clocks be
-> enabled runtime..... when you actually start using the controller??
+commit 8e7fbcbc22c(sched: Remove stale power aware scheduling remnants
+and dysfunctional knobs) removed SD_PERFER_SIBLING on CPU domain
+On numa machine, that causes load_balance didn't perfer LCPU in same
+physical CPU package.
 
-Yes, this is the plan and I am going to implement dynamic clock 
-management but it will take some time to complete and have testing 
-throughly. some of the issue which I am seeing and analyzing on this 
-approach is that
-  - clock disable can be called from isr context or not?
-  - how much complexity will be added in dma driver to implement this?
-  - What power benefit we will get on this.
-  - Is there any user which generally use dma and always keep dma on 
-requested state like UART RX always ready etc.
+It causes some regression on our numa machines from core2 to NHM and SNB.
+Recover this domain flag can recover the performance drop.
 
-So keeping that in mind, it will take some time to complete this and 
-meanwhile, I want to make it work for Tegra20 based system which is not 
-working on current driver.
-and hence this is the change.
+This recovery doesn't has any bad impact on my all benchmarks specjbb,
+kbuild, fio, hackbench .. etc, on all my machines.
+Since it is a recovery, I assume it also has no bad impact for other
+platforms.
 
-Thanks,
-Laxman
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+---
+ include/linux/topology.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/topology.h b/include/linux/topology.h
+index e91cd43..fec12d6 100644
+--- a/include/linux/topology.h
++++ b/include/linux/topology.h
+@@ -164,6 +164,7 @@ int arch_update_cpu_topology(void);
+ 				| 0*SD_SHARE_CPUPOWER			\
+ 				| 0*SD_SHARE_PKG_RESOURCES		\
+ 				| 0*SD_SERIALIZE			\
++				| 1*SD_PREFER_SIBLING			\
+ 				,					\
+ 	.last_balance		= jiffies,				\
+ 	.balance_interval	= 1,					\
+-- 
+1.7.5.4
 
