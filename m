@@ -1,116 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752300Ab2GTSmB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 14:42:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53304 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751680Ab2GTSl7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 14:41:59 -0400
-Date: Fri, 20 Jul 2012 21:42:28 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Greg KH <greg@kroah.com>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the staging tree with the
- target-merge tree
-Message-ID: <20120720184228.GA19243@redhat.com>
-References: <20120719145301.b8992aa986b47d7c44651710@canb.auug.org.au>
- <20120719235523.GA13623@kroah.com>
- <1342806778.25472.1.camel@haakon2.linux-iscsi.org>
- <20120720180358.GA9134@kroah.com>
+	id S1752463Ab2GTSnC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 14:43:02 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:44882 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751975Ab2GTSnA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 14:43:00 -0400
+Message-ID: <5009A6D5.1030907@gmail.com>
+Date: Fri, 20 Jul 2012 20:43:33 +0200
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120713 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120720180358.GA9134@kroah.com>
+To: pablo@netfilter.org, kaber@trash.net, davem@davemloft.net
+CC: netfilter-devel@vger.kernel.org, netdev@vger.kernel.org,
+        coreteam@netfilter.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: netfilter,rcu: hang in nf_conntrack_net_exit
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 20, 2012 at 11:03:58AM -0700, Greg KH wrote:
-> On Fri, Jul 20, 2012 at 10:52:58AM -0700, Nicholas A. Bellinger wrote:
-> > Hi Greg,
-> > 
-> > On Thu, 2012-07-19 at 16:55 -0700, Greg KH wrote:
-> > > On Thu, Jul 19, 2012 at 02:53:01PM +1000, Stephen Rothwell wrote:
-> > > > Hi Greg,
-> > > > 
-> > > > Today's linux-next merge of the staging tree got a conflict in
-> > > > drivers/staging/Kconfig between commit d0146d396bfa ("tcm_vhost: Initial
-> > > > merge for vhost level target fabric driver") from the target-merge tree
-> > > > and commit 15a4bc17b7f4 ("Staging: add CSR Wifi "os helper" module") from
-> > > > the staging tree.
-> > > > 
-> > > > Just context changes.  I fixed it up (see below) and can carry the fix as
-> > > > necessary.
-> > > > -- 
-> > > > Cheers,
-> > > > Stephen Rothwell                    sfr@canb.auug.org.au
-> > > > 
-> > > > diff --cc drivers/staging/Kconfig
-> > > > index 67ec9fe,e3402d5..0000000
-> > > > --- a/drivers/staging/Kconfig
-> > > > +++ b/drivers/staging/Kconfig
-> > > > @@@ -132,6 -132,8 +132,10 @@@ source "drivers/staging/ipack/Kconfig
-> > > >   
-> > > >   source "drivers/staging/gdm72xx/Kconfig"
-> > > >   
-> > > > + source "drivers/staging/csr/Kconfig"
-> > > > + 
-> > > > + source "drivers/staging/omap-thermal/Kconfig"
-> > > > + 
-> > > >  +source "drivers/vhost/Kconfig.tcm"
-> > > 
-> > > Why is someone putting a non drivers/staging/ Kconfig file here in
-> > > drivers/staging/Kconfig?  That's not ok at all.
-> > > 
-> > > Target people, please just depend on CONFIG_STAGING if you want to do
-> > > that, but don't mess with files in the drivers/staging/ directory for no
-> > > good reason at all.
-> > > 
-> > 
-> > This was a request from MST (CC'ed) in order to have TCM_VHOST show up
-> > under the staging configuration options..
-> 
-> If you really want it to show up there, then send me a patch adding the
-> code to drivers/staging/.  Otherwise it really makes no sense.
-> 
-> > If that's really not what should be done, I'm happy to drop this part
-> > and just use CONFIG_STAGING again.
-> 
-> Why are you wanting to depend on CONFIG_STAGING in the first place?
-> What is wrong with the code that it can't be merged "properly" now?
-> Don't use CONFIG_STAGING as a "crutch" unless you really need it.
-> 
-> thanks,
-> 
-> greg k-h
+Hi all,
 
-It's very similar to how it was with nouveau: we are not sure
-we can commit to the userspace ABI yet.
+I've stumbled on the following while fuzzing with trinity inside a KVM tools guest, using the latest -next kernel.
 
-Most importantly, it still seems not 100% clear whether this driver will
-have major userspace using it. And if not, it would be very hard to
-support a driver when recent userspace does not use it in the end.
-
-At the moment arguments on upstream mailing list seem to be
-a bit circular: there's no module in upstream kernel so
-userspace does not want to accept the patches.
-
-If we put enabling this driver in staging, then it works out in one of
-two ways
-- userspace starts using it then this effectively freezes the ABI and
-  we move it out of staging next release
-- no userspace uses it and we drop it completely or rework ABI
-
-On the other hand, it is marginally better to not want code in staging
-for two reasons:
-- there are dependencies between this code and other code in
-  drivers/vhost which are easier for me to handle if it's all
-  in one place
-- a bit easier to track history if we do not move code
-
-What do you think?
-
--- 
-MST
+[  483.990135] INFO: task kworker/u:0:6 blocked for more than 120 seconds.
+[  483.991328] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+[  483.992500] kworker/u:0     D ffff88000adfa4c8  3160     6      2 0x00000000
+[  483.993527]  ffff88000d655a60 0000000000000086 ffff880035bd7640 00000000001d7640
+[  483.994667]  ffff88000d655fd8 ffff88000d655fd8 ffff88000d655fd8 ffff88000d655fd8
+[  483.995945]  ffff880008448000 ffff88000d65b000 ffff88000d655a50 ffff88000d655c18
+[  483.997202] Call Trace:
+[  483.997653]  [<ffffffff83788d25>] schedule+0x55/0x60
+[  483.998449]  [<ffffffff83786d7a>] schedule_timeout+0x3a/0x370
+[  483.999461]  [<ffffffff8115d4a9>] ? mark_held_locks+0xf9/0x130
+[  484.000016]  [<ffffffff83789443>] ? wait_for_common+0xf3/0x170
+[  484.000016]  [<ffffffff8378a44b>] ? _raw_spin_unlock_irq+0x2b/0x80
+[  484.000016]  [<ffffffff8115d758>] ? trace_hardirqs_on_caller+0x118/0x140
+[  484.000016]  [<ffffffff8378944b>] wait_for_common+0xfb/0x170
+[  484.000016]  [<ffffffff8112fd90>] ? try_to_wake_up+0x290/0x290
+[  484.000016]  [<ffffffff811a7960>] ? __call_rcu+0x390/0x390
+[  484.000016]  [<ffffffff83789568>] wait_for_completion+0x18/0x20
+[  484.000016]  [<ffffffff8111548f>] wait_rcu_gp+0x6f/0xa0
+[  484.000016]  [<ffffffff811130f0>] ? perf_trace_rcu_utilization+0xd0/0xd0
+[  484.000016]  [<ffffffff83789394>] ? wait_for_common+0x44/0x170
+[  484.000016]  [<ffffffff811aa126>] synchronize_rcu+0x86/0x90
+[  484.000016]  [<ffffffff83131455>] synchronize_net+0x35/0x40
+[  484.000016]  [<ffffffff83194125>] nf_conntrack_cleanup+0x55/0x70
+[  484.000016]  [<ffffffff831948a2>] nf_conntrack_net_exit+0x72/0x80
+[  484.000016]  [<ffffffff83125285>] ops_exit_list.isra.0+0x35/0x70
+[  484.000016]  [<ffffffff83125c70>] cleanup_net+0x100/0x1a0
+[  484.000016]  [<ffffffff8110c926>] process_one_work+0x3e6/0x790
+[  484.000016]  [<ffffffff8110c7e0>] ? process_one_work+0x2a0/0x790
+[  484.000016]  [<ffffffff83125b70>] ? net_drop_ns+0x40/0x40
+[  484.000016]  [<ffffffff8110d568>] ? worker_thread+0x48/0x380
+[  484.000016]  [<ffffffff8110d719>] worker_thread+0x1f9/0x380
+[  484.000016]  [<ffffffff8110d520>] ? manage_workers.isra.8+0x110/0x110
+[  484.000016]  [<ffffffff8111823d>] kthread+0xad/0xc0
+[  484.000016]  [<ffffffff8378d134>] kernel_thread_helper+0x4/0x10
+[  484.000016]  [<ffffffff8378b234>] ? retint_restore_args+0x13/0x13
+[  484.000016]  [<ffffffff81118190>] ? insert_kthread_work+0x40/0x40
+[  484.000016]  [<ffffffff8378d130>] ? gs_change+0x13/0x13
+[  484.000016] 3 locks held by kworker/u:0/6:
+[  484.000016]  #0:  (netns){.+.+.+}, at: [<ffffffff8110c7e0>] process_one_work+0x2a0/0x790
+[  484.000016]  #1:  (net_cleanup_work){+.+.+.}, at: [<ffffffff8110c7e0>] process_one_work+0x2a0/0x790
+[  484.000016]  #2:  (net_mutex){+.+.+.}, at: [<ffffffff83125bf0>] cleanup_net+0x80/0x1a0
