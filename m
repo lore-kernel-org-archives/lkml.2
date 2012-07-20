@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753534Ab2GTX15 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 19:27:57 -0400
+	id S1753080Ab2GTX2R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 19:28:17 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:36363 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752845Ab2GTX0W (ORCPT
+	with ESMTP id S1752807Ab2GTX0U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 19:26:22 -0400
+	Fri, 20 Jul 2012 19:26:20 -0400
 From: David Ahern <dsahern@gmail.com>
 To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
 Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
         Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 07/11] perf tools: dump exclude_{guest,host}, precise_ip header info too
-Date: Fri, 20 Jul 2012 17:25:52 -0600
-Message-Id: <1342826756-64663-8-git-send-email-dsahern@gmail.com>
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH 06/11] perf kvm: limit repetitive guestmount message to once per directory
+Date: Fri, 20 Jul 2012 17:25:51 -0600
+Message-Id: <1342826756-64663-7-git-send-email-dsahern@gmail.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1342826756-64663-1-git-send-email-dsahern@gmail.com>
 References: <1342826756-64663-1-git-send-email-dsahern@gmail.com>
@@ -24,14 +23,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds the attributes to the event line in the header dump.
-From:
- event : name = cycles, type = 0, config = 0x0, config1 = 0x0,
-      config2 = 0x0, excl_usr = 0, excl_kern = 0, ...
-to
-  event : name = cycles, type = 0, config = 0x0, config1 = 0x0,
-      config2 = 0x0, excl_usr = 0, excl_kern = 0, excl_host = 0,
-      excl_guest = 0, precise_ip = 0, ...
+After 7ed97ad use of the guestmount option without a subdir for *each*
+VM generates an error message for each sample related to that VM. Once
+per VM is enough.
 
 Signed-off-by: David Ahern <dsahern@gmail.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -40,28 +34,39 @@ Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/util/header.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ tools/perf/util/map.c |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 5a47aba..3a6d204 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -1212,6 +1212,12 @@ static void print_event_desc(struct perf_header *ph, int fd, FILE *fp)
- 				attr.exclude_user,
- 				attr.exclude_kernel);
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index 16d783d..cc33486 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -8,6 +8,7 @@
+ #include <unistd.h>
+ #include "map.h"
+ #include "thread.h"
++#include "strlist.h"
  
-+		fprintf(fp, ", excl_host = %d, excl_guest = %d",
-+				attr.exclude_host,
-+				attr.exclude_guest);
+ const char *map_type__name[MAP__NR_TYPES] = {
+ 	[MAP__FUNCTION] = "Functions",
+@@ -695,7 +696,15 @@ struct machine *machines__findnew(struct rb_root *self, pid_t pid)
+ 	    (symbol_conf.guestmount)) {
+ 		sprintf(path, "%s/%d", symbol_conf.guestmount, pid);
+ 		if (access(path, R_OK)) {
+-			pr_err("Can't access file %s\n", path);
++			static struct strlist *seen;
 +
-+		fprintf(fp, ", precise_ip = %d", attr.precise_ip);
++			if (!seen)
++				seen = strlist__new(true, NULL);
 +
- 		if (nr)
- 			fprintf(fp, ", id = {");
- 
++			if (!strlist__has_entry(seen, path)) {
++				pr_err("Can't access file %s\n", path);
++				strlist__add(seen, path);
++			}
+ 			machine = NULL;
+ 			goto out;
+ 		}
 -- 
 1.7.10.1
 
