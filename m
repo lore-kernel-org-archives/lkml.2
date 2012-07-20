@@ -1,120 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753454Ab2GTMdd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 08:33:33 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55638 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751297Ab2GTMbd (ORCPT
+	id S1753501Ab2GTMdi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 08:33:38 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:50517 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753460Ab2GTMdd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 08:31:33 -0400
-From: Michel Lespinasse <walken@google.com>
-To: riel@redhat.com, peterz@infradead.org, daniel.santos@pobox.com,
-        aarcange@redhat.com, dwmw2@infradead.org, akpm@linux-foundation.org
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/6] rbtree: optimize fetching of sibling node
-Date: Fri, 20 Jul 2012 05:31:03 -0700
-Message-Id: <1342787467-5493-3-git-send-email-walken@google.com>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1342787467-5493-1-git-send-email-walken@google.com>
-References: <1342787467-5493-1-git-send-email-walken@google.com>
+	Fri, 20 Jul 2012 08:33:33 -0400
+MIME-Version: 1.0
+Date: Fri, 20 Jul 2012 20:33:32 +0800
+Message-ID: <CACVXFVNWOcrR9tYhU1wVUSJ_DJ8x+SCk993Sn9dYDe2kzJBDuQ@mail.gmail.com>
+Subject: [RFC] firmware load: defer request_firmware during early boot and resume
+From: Ming Lei <tom.leiming@gmail.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-usb <linux-usb@vger.kernel.org>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Oliver Neukum <oneukum@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When looking to fetch a node's sibling, we went through a sequence of:
-- check if node is the parent's left child
-- if it is, then fetch the parent's right child
+The RFC patch is just for discussing if the idea of deferring
+request_firmware is doable for addressing the issue of
+request_firmware in resume path, which is caused by driver
+unbind/rebind during resume.
 
-This can be replaced with:
-- fetch the parent's right child as an assumed sibling
-- check that node is NOT the fetched child
+At least usb bus is involved in such things, one driver may be
+unbound and rebound in resume path at several situations, and
+request_firmware is often called inside probe().
 
-This avoids fetching the parent's left child when node is actually
-that child. Saves a bit on code size, though it doesn't seem to make
-a large difference in speed.
+Also the idea should be helpful for other hotplug buses too,
+at least there was the similar problem report on pcmcia bus.
 
-Signed-off-by: Michel Lespinasse <walken@google.com>
----
- lib/rbtree.c |   21 +++++++++++++--------
- 1 files changed, 13 insertions(+), 8 deletions(-)
+diff --git a/drivers/base/dd.c b/drivers/base/dd.c
+index 6cd2c6c..fb02eff 100644
+--- a/drivers/base/dd.c
++++ b/drivers/base/dd.c
+@@ -123,7 +123,7 @@ static bool driver_deferred_probe_enable = false;
+  * list and schedules the deferred probe workqueue to process them.  It
+  * should be called anytime a driver is successfully bound to a device.
+  */
+-static void driver_deferred_probe_trigger(void)
++void driver_deferred_probe_trigger(void)
+ {
+ 	if (!driver_deferred_probe_enable)
+ 		return;
+@@ -144,6 +144,7 @@ static void driver_deferred_probe_trigger(void)
+ 	 */
+ 	queue_work(deferred_wq, &deferred_probe_work);
+ }
++EXPORT_SYMBOL_GPL(driver_deferred_probe_trigger);
 
-diff --git a/lib/rbtree.c b/lib/rbtree.c
-index 3b6ec98..8b111cc 100644
---- a/lib/rbtree.c
-+++ b/lib/rbtree.c
-@@ -108,8 +108,8 @@ void rb_insert_color(struct rb_node *node, struct rb_root *root)
- 
- 		gparent = rb_red_parent(parent);
- 
--		if (parent == gparent->rb_left) {
--			tmp = gparent->rb_right;
-+		tmp = gparent->rb_right;
-+		if (parent != tmp) {	/* parent == gparent->rb_left */
- 			if (tmp && rb_is_red(tmp)) {
- 				/*
- 				 * Case 1 - color flips
-@@ -132,7 +132,8 @@ void rb_insert_color(struct rb_node *node, struct rb_root *root)
- 				continue;
- 			}
- 
--			if (parent->rb_right == node) {
-+			tmp = parent->rb_right;
-+			if (node == tmp) {
- 				/*
- 				 * Case 2 - left rotate at parent
- 				 *
-@@ -152,6 +153,7 @@ void rb_insert_color(struct rb_node *node, struct rb_root *root)
- 							    RB_BLACK);
- 				rb_set_parent_color(parent, node, RB_RED);
- 				parent = node;
-+				tmp = node->rb_right;
- 			}
- 
- 			/*
-@@ -163,7 +165,7 @@ void rb_insert_color(struct rb_node *node, struct rb_root *root)
- 			 *     /                 \
- 			 *    n                   U
- 			 */
--			gparent->rb_left = tmp = parent->rb_right;
-+			gparent->rb_left = tmp;  /* == parent->rb_right */
- 			parent->rb_right = gparent;
- 			if (tmp)
- 				rb_set_parent_color(tmp, gparent, RB_BLACK);
-@@ -181,7 +183,8 @@ void rb_insert_color(struct rb_node *node, struct rb_root *root)
- 				continue;
- 			}
- 
--			if (parent->rb_left == node) {
-+			tmp = parent->rb_left;
-+			if (node == tmp) {
- 				/* Case 2 - right rotate at parent */
- 				parent->rb_left = tmp = node->rb_right;
- 				node->rb_right = parent;
-@@ -190,10 +193,11 @@ void rb_insert_color(struct rb_node *node, struct rb_root *root)
- 							    RB_BLACK);
- 				rb_set_parent_color(parent, node, RB_RED);
- 				parent = node;
-+				tmp = node->rb_left;
- 			}
- 
- 			/* Case 3 - left rotate at gparent */
--			gparent->rb_right = tmp = parent->rb_left;
-+			gparent->rb_right = tmp;  /* == parent->rb_left */
- 			parent->rb_left = gparent;
- 			if (tmp)
- 				rb_set_parent_color(tmp, gparent, RB_BLACK);
-@@ -224,8 +228,9 @@ static void __rb_erase_color(struct rb_node *node, struct rb_node *parent,
- 			break;
- 		} else if (!parent) {
- 			break;
--		} else if (parent->rb_left == node) {
--			sibling = parent->rb_right;
-+		}
-+		sibling = parent->rb_right;
-+		if (node != sibling) {	/* node == parent->rb_left */
- 			if (rb_is_red(sibling)) {
- 				/*
- 				 * Case 1 - left rotate at parent
+ /**
+  * deferred_probe_initcall() - Enable probing of deferred devices
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index 5401814..4fe742f 100644
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -593,6 +593,9 @@ request_firmware(const struct firmware
+**firmware_p, const char *name,
+ 	if (IS_ERR_OR_NULL(fw_priv))
+ 		return PTR_RET(fw_priv);
+
++	if (system_state != SYSTEM_RUNNING)
++		return -EPROBE_DEFER;
++
+ 	ret = usermodehelper_read_trylock();
+ 	if (WARN_ON(ret)) {
+ 		dev_err(device, "firmware: %s will not be loaded\n", name);
+diff --git a/include/linux/device.h b/include/linux/device.h
+index d0e4d99..a63d3171 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -244,7 +244,7 @@ extern struct device_driver *driver_find(const char *name,
+ 					 struct bus_type *bus);
+ extern int driver_probe_done(void);
+ extern void wait_for_device_probe(void);
+-
++extern void driver_deferred_probe_trigger(void);
+
+ /* sysfs interface for exporting driver attributes */
+
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index e07f5e0..c8d74c6 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -378,6 +378,7 @@ extern enum system_states {
+ 	SYSTEM_POWER_OFF,
+ 	SYSTEM_RESTART,
+ 	SYSTEM_SUSPEND_DISK,
++	SYSTEM_SUSPEND,
+ } system_state;
+
+ #define TAINT_PROPRIETARY_MODULE	0
+diff --git a/init/main.c b/init/main.c
+index e60679d..237eae1 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -809,6 +809,8 @@ static noinline int init_post(void)
+ 	current->signal->flags |= SIGNAL_UNKILLABLE;
+ 	flush_delayed_fput();
+
++	driver_deferred_probe_trigger();
++
+ 	if (ramdisk_execute_command) {
+ 		run_init_process(ramdisk_execute_command);
+ 		printk(KERN_WARNING "Failed to execute %s\n",
+diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
+index 1da39ea..dbf6ffb 100644
+--- a/kernel/power/suspend.c
++++ b/kernel/power/suspend.c
+@@ -224,6 +224,9 @@ int suspend_devices_and_enter(suspend_state_t state)
+ 		goto Recover_platform;
+ 	}
+ 	suspend_test_finish("suspend devices");
++
++	system_state = SYSTEM_SUSPEND;
++
+ 	if (suspend_test(TEST_DEVICES))
+ 		goto Recover_platform;
+
+@@ -301,6 +304,10 @@ static int enter_state(suspend_state_t state)
+  Finish:
+ 	pr_debug("PM: Finishing wakeup.\n");
+ 	suspend_finish();
++
++	system_state = SYSTEM_RUNNING;
++	driver_deferred_probe_trigger();
++
+  Unlock:
+ 	mutex_unlock(&pm_mutex);
+ 	return error;
+
+
+Thanks,
 -- 
-1.7.7.3
-
+Ming Lei
