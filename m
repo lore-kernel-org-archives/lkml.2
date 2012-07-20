@@ -1,74 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751489Ab2GTKxP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 06:53:15 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55625 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751057Ab2GTKxN (ORCPT
+	id S1751916Ab2GTLAn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 07:00:43 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:48172 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751159Ab2GTLAm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 06:53:13 -0400
-Date: Fri, 20 Jul 2012 11:52:48 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Jon Masters <jonathan@jonmasters.org>,
-        Christopher Covington <cov@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>
-Subject: Re: [PATCH 08/36] AArch64: Kernel booting and initialisation
-Message-ID: <20120720105248.GA2692@arm.com>
-References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
- <5008445B.2010109@codeaurora.org>
- <5009044E.9060908@jonmasters.org>
- <201207200828.13128.arnd@arndb.de>
+	Fri, 20 Jul 2012 07:00:42 -0400
+Date: Fri, 20 Jul 2012 07:00:16 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: gaofeng@cn.fujitsu.com, eric.dumazet@gmail.com, davem@davemloft.net,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        mark.d.rustad@intel.com, john.r.fastabend@intel.com,
+        lizefan@huawei.com
+Subject: Re: [PATCH] net, cgroup: Fix boot failure due to iteration of
+ uninitialized list
+Message-ID: <20120720110016.GA22367@hmsreliant.think-freely.org>
+References: <20120719162532.23505.85946.stgit@srivatsabhat.in.ibm.com>
+ <20120719164407.GA2963@neilslaptop.think-freely.org>
+ <50092D3F.5020108@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201207200828.13128.arnd@arndb.de>
-Thread-Topic: [PATCH 08/36] AArch64: Kernel booting and initialisation
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <50092D3F.5020108@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 20, 2012 at 09:28:12AM +0100, Arnd Bergmann wrote:
-> On Friday 20 July 2012, Jon Masters wrote:
-> > > I think it would be best to list the technical limitations, from the
-> > > kernel's perspective, of the unsupported exception levels and the
-> > > advantages of the supported exception levels here. If you want to guide
-> > > system builders towards EL2, I think it'd be more convincing to document
-> > > the relevant technical aspects (perhaps KVM needs facilities only
-> > > available in EL2) than just providing an unexplained requirement.
-> > 
-> > Unless you enter at EL2 you can never install a hypervisor. That's the
-> > reason for the requirement for generally entering at EL2 when possible.
+On Fri, Jul 20, 2012 at 03:34:47PM +0530, Srivatsa S. Bhat wrote:
+> On 07/19/2012 10:14 PM, Neil Horman wrote:
+> > On Thu, Jul 19, 2012 at 09:57:37PM +0530, Srivatsa S. Bhat wrote:
+> >> After commit ef209f15 (net: cgroup: fix access the unallocated memory in
+> >> netprio cgroup), boot fails with the following NULL pointer dereference:
+> >>
+> >> Initializing cgroup subsys devices
+> >> Initializing cgroup subsys freezer
+> >> Initializing cgroup subsys net_cls
+> >> Initializing cgroup subsys blkio
+> >> Initializing cgroup subsys perf_event
+> >> Initializing cgroup subsys net_prio
+> >> BUG: unable to handle kernel NULL pointer dereference at 0000000000000698
+> >> IP: [<ffffffff8145e8d6>] cgrp_create+0xf6/0x190
+> >> PGD 0
+> >> Oops: 0000 [#1] SMP
+> >> CPU 0
+> >> Modules linked in:
+> >>
+> >> Pid: 0, comm: swapper/0 Not tainted 3.5.0-rc7-mandeep #1 IBM IBM System x -[7870C4Q]-/68Y8033
+> >> RIP: 0010:[<ffffffff8145e8d6>]  [<ffffffff8145e8d6>] cgrp_create+0xf6/0x190
+> >> RSP: 0000:ffffffff81a01ea8  EFLAGS: 00010213
+> >> RAX: 0000000000000000 RBX: ffffffffffffff10 RCX: 0000000000000000
+> >> RDX: 0000000000000000 RSI: 0000000000000246 RDI: ffffffff81aa70a0
+> >> RBP: ffffffff81a01ed8 R08: 0000000000000000 R09: 0000000000000000
+> >> R10: ffff8808ff8641c0 R11: 6e697a696c616974 R12: 0000000000000001
+> >> R13: ffff8808ff8641c0 R14: 0000000000000000 R15: 0000000000093970
+> >> FS:  0000000000000000(0000) GS:ffff8808ffc00000(0000) knlGS:0000000000000000
+> >> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> >> CR2: 0000000000000698 CR3: 0000000001a0b000 CR4: 00000000000006b0
+> >> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> >> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> >> Process swapper/0 (pid: 0, threadinfo ffffffff81a00000, task ffffffff81a13420)
+> >> Stack:
+> >>  ffffffff81a01eb8 ffffffff818060ff ffffffff81d75ec8 ffffffff81aa8960
+> >>  ffffffff81aa8960 ffffffff81b4c2c0 ffffffff81a01ef8 ffffffff81b1cb78
+> >>  0000000000000018 0000000000000048 ffffffff81a01f18 ffffffff81b1ce13
+> >> Call Trace:
+> >>  [<ffffffff81b1cb78>] cgroup_init_subsys+0x83/0x169
+> >>  [<ffffffff81b1ce13>] cgroup_init+0x36/0x119
+> >>  [<ffffffff81affef7>] start_kernel+0x3ba/0x3ef
+> >>  [<ffffffff81aff95b>] ? kernel_init+0x27b/0x27b
+> >>  [<ffffffff81aff356>] x86_64_start_reservations+0x131/0x136
+> >>  [<ffffffff81aff45e>] x86_64_start_kernel+0x103/0x112
+> >> Code: 01 48 3d f8 e1 ec 81 48 8d 98 10 ff ff ff 75 1b eb 73 0f 1f 00 48 8b 83 f0 00 00 00 48 3d f8 e1 ec 81 48 8d 98 10 ff ff ff 74 5a <48> 8b 83 88 07 00 00 48 85 c0 74 de 44 3b 60 10 76 d8 44 89 e6
+> >> RIP  [<ffffffff8145e8d6>] cgrp_create+0xf6/0x190
+> >>  RSP <ffffffff81a01ea8>
+> >> CR2: 0000000000000698
+> >> ---[ end trace a7919e7f17c0a725 ]---
+> >> Kernel panic - not syncing: Attempted to kill the idle task!
+> >>
+> >> The code corresponds to:
+> >>
+> >> update_netdev_tables():
+> >>         for_each_netdev(&init_net, dev) {
+> >>                 map = rtnl_dereference(dev->priomap);  <---- HERE
+> >>
+> >>
+> >> The list head is initialized in netdev_init(), which is called much
+> >> later than cgrp_create(). So the problem is that we are calling
+> >> update_netdev_tables() way too early (in cgrp_create()), which will
+> >> end up traversing the not-yet-circular linked list. So at some point,
+> >> the dev pointer will become NULL and hence dev->priomap becomes an
+> >> invalid access.
+> >>
+> >> To fix this, just remove the update_netdev_tables() function entirely,
+> >> since it appears that write_update_netdev_table() will handle things
+> >> just fine.
+> >>
+> >> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> >> ---
+> >>
+> >> Requesting a thorough review of this patch, since I am not sure whether
+> >> removing update_netdev_tables() is perfectly OK and whether that is the
+> >> right thing to do.
+> >>
+> > We could do this I suppose, but this has already been fixed by
+> > 734b65417b24d6eea3e3d7457e1f11493890ee1d
 > 
-> How do nested hypervisors work in this scenario? Does the first-level
-> hypervisor (counting from most priviledged) provide a guest that starts
-> in an emulated EL2 state, or is this done differently?
+> Oh good! But don't you think that my patch looks cleaner than that fix?
+> (Of course, provided that my patch is correct!)
+> 
+> Anyway, I'm happy to see that the boot failure is fixed. But if anyone feels
+> that the approach of removing the update_netdev_tables() function is correct
+> and better, I'll be happy to provide a patch on top of the boot-fix that
+> went upstream.
+> 
+We're almost at the end of a release.  The fix that went in has been tesetd and
+fixes the specific problem that was reported, with almost zero likelyhood of
+causing other regressions. While this fix looks like it might be preferable,
+this isn't a time to go doing something like this without alot more testing, as
+it may cause unforseen problems.
 
-Your favourite topic :). Self virtualisation is not easily possible, at
-least not with how KVM on ARM is being implemented. The hardware does
-not allow code running at EL1 to be told that it is at EL2 (or code
-running at EL2 to be trapped at EL2). So for normal virtualisation,
-guest OSes start at EL1 and they benefit of all the hardware
-acceleration. If a guest OS wants to run KVM again, it won't have access
-to the virtualisation extensions (EL2 system register access would cause
-an undefined trap). The best it can do is run the nested guest OS in EL0
-and trap accesses to system registers (no that different from Qemu).
+Theres also a larger issue of initalization order that I'll be looking at in the
+next few weeks.  Based on the outcome of that I may roll this change in.
 
-If such feature is needed, the best approach is for all kernels, host or
-guest, to always enter at (non-secure) EL1. The EL2 would have a clearly
-defined HVC API for nested page tables, virtual interrupts, context
-switching etc. This way, the host OS can inform the hypervisor that
-guest OSes are allowed to use this API for their own nested guests. But
-getting such hypervisor API right is a bit tricky and the feedback from
-the KVM guys so far is that they need the flexibility of running their
-own code at EL2. I guess another benefit is that both KVM and Xen could
-use the same API.
+Thanks!
+Neil
 
-But is this feature really needed?
-
--- 
-Catalin
+> Regards,
+> Srivatsa S. Bhat
+> 
+> 
