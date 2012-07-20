@@ -1,54 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753309Ab2GTSA0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 14:00:26 -0400
-Received: from lobo.ruivo.org ([173.14.175.98]:36533 "EHLO lobo.ruivo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753030Ab2GTSAS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 14:00:18 -0400
-Date: Fri, 20 Jul 2012 13:59:59 -0400
-From: Aristeu Rozanski <aris@ruivo.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Tejun Heo <tj@kernel.org>, Aristeu Rozanski <aris@redhat.com>,
-        linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
-        Hillf Danton <dhillf@gmail.com>
-Subject: Re: [PATCH v3 0/3] cgroup: add xattr support
-Message-ID: <20120720175959.GA32741@cathedrallabs.org>
-References: <20120702142925.795007114@napanee.usersys.redhat.com>
- <20120717204126.GE24336@google.com>
- <alpine.LSU.2.00.1207181237010.2160@eggly.anvils>
- <20120718221044.GJ24336@google.com>
- <alpine.LSU.2.00.1207181736020.3323@eggly.anvils>
+	id S1753464Ab2GTSBU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 14:01:20 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51294 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752909Ab2GTSBR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 14:01:17 -0400
+Date: Fri, 20 Jul 2012 11:01:13 -0700
+From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 15/90] staging: comedi: adv_pci1723: move
+ comedi_pci_enable() into the attach
+Message-ID: <20120720180113.GB8530@kroah.com>
+References: <201207181830.48668.hartleys@visionengravers.com>
+ <5007D568.2050401@mev.co.uk>
+ <ADE657CA350FB648AAC2C43247A983F00206AA916472@AUSP01VMBX24.collaborationhost.net>
+ <20120719231723.GA23010@kroah.com>
+ <ADE657CA350FB648AAC2C43247A983F00206AA9165BC@AUSP01VMBX24.collaborationhost.net>
+ <20120719233506.GA12858@kroah.com>
+ <ADE657CA350FB648AAC2C43247A983F00206AABE0E10@AUSP01VMBX24.collaborationhost.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1207181736020.3323@eggly.anvils>
+In-Reply-To: <ADE657CA350FB648AAC2C43247A983F00206AABE0E10@AUSP01VMBX24.collaborationhost.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hugh,
-On Wed, Jul 18, 2012 at 06:11:32PM -0700, Hugh Dickins wrote:
-> > But why do we need something completely new?  Can't we hijack some
-> > inodes used by tmpfs and use them for xattr storage?  ie. Would it be
-> > difficult to use tmpfs as backend storage for on-memory xattr?  With
-> > that, we would already have the mechanism and interface(!) for
-> > limiting the size.
-> 
-> That sounds just like what I was suggesting in my last sentence:
-> let userspace manage a tmpfs hierarchy parallel to the cgroupfs one.
-> 
-> Except, perhaps, where I assume "userspace" should be doing the hard work.
+On Fri, Jul 20, 2012 at 11:33:27AM -0500, H Hartley Sweeten wrote:
+> I think there are a couple pci drivers that would still need the old "attach"
+> in order to load firmware using comedi_config. We can address those
+> later and possibly figure out a more "standard" way to load the firmware.
 
-hm, not sure that's what Tejun meant. tmpfs uses anonymous memory for the file
-contents, so reuse that infrastructure to allocate space for the extended
-attributes the same way, instead of using kmem.
+That "standard" way is to use the kernel's firmware layer for this :)
 
-First thing I can think of is to use whole pages for it to prevent further
-complexity. Shouldn't make much difference considering the usecases we have
-now (systemd and containers), right?
+thanks,
 
---
-Aristeu
-
+greg k-h
