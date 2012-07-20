@@ -1,95 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752902Ab2GTByO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 21:54:14 -0400
-Received: from mga02.intel.com ([134.134.136.20]:51275 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752589Ab2GTByN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 21:54:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="168738933"
-Message-ID: <5008BA43.3050301@intel.com>
-Date: Fri, 20 Jul 2012 09:54:11 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
-MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: kosaki.motohiro@jp.fujitsu.com, akpm@linux-foundation.org,
-        paul.gortmaker@windriver.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] cpumask: cpumask_scnprintf() comments correction
-References: <1342406154-24001-1-git-send-email-alex.shi@intel.com> <87ehocxig6.fsf@rustcorp.com.au> <5003D0E4.2060300@intel.com>
-In-Reply-To: <5003D0E4.2060300@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752916Ab2GTB5S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 21:57:18 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:14682 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752532Ab2GTB5Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 21:57:16 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6777"; a="212559080"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: "Rafael J . Wysocki" <rjw@sisk.pl>
+Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: [PATCH] cpufreq: Fix sysfs deadlock with concurrent hotplug/frequency switch
+Date: Thu, 19 Jul 2012 18:57:13 -0700
+Message-Id: <1342749433-17676-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.11.2.249.g31c7954
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2012 04:29 PM, Alex Shi wrote:
+Running one program that continuously hotplugs and replugs a cpu
+concurrently with another program that continuously writes to the
+scaling_setspeed node eventually deadlocks with:
 
-> On 07/16/2012 03:40 PM, Rusty Russell wrote:
-> 
->> On Mon, 16 Jul 2012 10:35:54 +0800, Alex Shi <alex.shi@intel.com> wrote:
->>> The function has no parameter @len now, so need to remove it from
->>> comments to avoid kernel-doc warning:
->>
->> But it still does in my tree.
->>
->> Please push this patch via whoever changed it?
->>
->> Acked-by: Rusty Russell <rusty@rustcorp.com.au>
->>
-> 
-> Sorry, my fault, the commit log used a wrong function name, it is cpulist_parse()
-> not cpumask_scnprntf. and find a new error in the comments: used a incorrect 
-> function name: cpulist_parse_user(), the correct one is cpulist_parse().
-> Fix it in updated patch.
-> 
-> Both errors appear in Rusty's commit 29c0177e6a4.
+=============================================
+[ INFO: possible recursive locking detected ]
+3.4.0 #37 Tainted: G        W
+---------------------------------------------
+filemonkey/122 is trying to acquire lock:
+ (s_active#13){++++.+}, at: [<c01a3d28>] sysfs_remove_dir+0x9c/0xb4
 
+but task is already holding lock:
+ (s_active#13){++++.+}, at: [<c01a22f0>] sysfs_write_file+0xe8/0x140
 
-Rusty. The error still exist on upstream tree. Would you like to pick
-this fix?
+other info that might help us debug this:
+ Possible unsafe locking scenario:
 
-> 
-> ===
-> 
-> From db20433a0b321f7b4edfc57f66e816d7bec81b14 Mon Sep 17 00:00:00 2001
-> From: Alex Shi <alex.shi@intel.com>
-> Date: Mon, 16 Jul 2012 10:25:06 +0800
-> Subject: [PATCH] cpumask: cpulist_parse() comments correction
-> 
-> The function has no parameter @len, so need to remove it from
-> comments to avoid kernel-doc warning:
-> 
-> alexs@debian:~/linux-next$ scripts/kernel-doc -man
-> include/linux/cpumask.h | split-man.pl /tmp/man
-> ....
-> Warning(include/linux/cpumask.h:602): Excess function parameter 'len'
-> description in 'cpulist_parse'
-> 
-> and correct the function name in comments to cpulist_parse.
-> 
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> ---
->  include/linux/cpumask.h |    3 +--
->  1 files changed, 1 insertions(+), 2 deletions(-)
-> 
-> diff --git a/include/linux/cpumask.h b/include/linux/cpumask.h
-> index 8bf1c27..0325602 100644
-> --- a/include/linux/cpumask.h
-> +++ b/include/linux/cpumask.h
-> @@ -591,9 +591,8 @@ static inline int cpulist_scnprintf(char *buf, int len,
->  }
->  
->  /**
-> - * cpulist_parse_user - extract a cpumask from a user string of ranges
-> + * cpulist_parse - extract a cpumask from a user string of ranges
->   * @buf: the buffer to extract from
-> - * @len: the length of the buffer
->   * @dstp: the cpumask to set.
->   *
->   * Returns -errno, or 0 for success.
+       CPU0
+       ----
+  lock(s_active#13);
+  lock(s_active#13);
 
+ *** DEADLOCK ***
+
+ May be due to missing lock nesting notation
+
+2 locks held by filemonkey/122:
+ #0:  (&buffer->mutex){+.+.+.}, at: [<c01a2230>] sysfs_write_file+0x28/0x140
+ #1:  (s_active#13){++++.+}, at: [<c01a22f0>] sysfs_write_file+0xe8/0x140
+
+stack backtrace:
+[<c0014fcc>] (unwind_backtrace+0x0/0x120) from [<c00ca600>] (validate_chain+0x6f8/0x1054)
+[<c00ca600>] (validate_chain+0x6f8/0x1054) from [<c00cb778>] (__lock_acquire+0x81c/0x8d8)
+[<c00cb778>] (__lock_acquire+0x81c/0x8d8) from [<c00cb9c0>] (lock_acquire+0x18c/0x1e8)
+[<c00cb9c0>] (lock_acquire+0x18c/0x1e8) from [<c01a3ba8>] (sysfs_addrm_finish+0xd0/0x180)
+[<c01a3ba8>] (sysfs_addrm_finish+0xd0/0x180) from [<c01a3d28>] (sysfs_remove_dir+0x9c/0xb4)
+[<c01a3d28>] (sysfs_remove_dir+0x9c/0xb4) from [<c02d0e5c>] (kobject_del+0x10/0x38)
+[<c02d0e5c>] (kobject_del+0x10/0x38) from [<c02d0f74>] (kobject_release+0xf0/0x194)
+[<c02d0f74>] (kobject_release+0xf0/0x194) from [<c0565a98>] (cpufreq_cpu_put+0xc/0x24)
+[<c0565a98>] (cpufreq_cpu_put+0xc/0x24) from [<c05683f0>] (store+0x6c/0x74)
+[<c05683f0>] (store+0x6c/0x74) from [<c01a2314>] (sysfs_write_file+0x10c/0x140)
+[<c01a2314>] (sysfs_write_file+0x10c/0x140) from [<c014af44>] (vfs_write+0xb0/0x128)
+[<c014af44>] (vfs_write+0xb0/0x128) from [<c014b06c>] (sys_write+0x3c/0x68)
+[<c014b06c>] (sys_write+0x3c/0x68) from [<c000e0e0>] (ret_fast_syscall+0x0/0x3c)
+
+This is because store() in cpufreq.c indirectly calls
+kobject_get() via cpufreq_cpu_get() and is the last one to call
+kobject_put() via cpufreq_cpu_put(). Sysfs code should not call
+kobject_get() or kobject_put() directly (see the comment around
+sysfs_schedule_callback() for more information).
+
+Fix this deadlock by introducing two new functions:
+
+	struct cpufreq_policy *cpufreq_cpu_get_sysfs(unsigned int cpu)
+	void cpufreq_cpu_put_sysfs(struct cpufreq_policy *data)
+
+which do the same thing as cpufreq_cpu_{get,put}() but don't call
+kobject functions.
+
+To easily trigger this deadlock you can apply a one line patch to
+the store() function in cpufreq.c
+
+ diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+ index a290771..62af12d 100644
+ --- a/drivers/cpufreq/cpufreq.c
+ +++ b/drivers/cpufreq/cpufreq.c
+ @@ -675,6 +675,7 @@ static ssize_t store(struct kobject *kobj
+
+         unlock_policy_rwsem_write(policy->cpu);
+  fail:
+ +       msleep(10000);
+         cpufreq_cpu_put_sysfs(policy);
+  no_policy:
+         return ret;
+
+and then write scaling_setspeed in one task and offline the cpu
+in another. The first task will hang and be detected by the hung
+task detector.
+
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+
+Before you ask, I've seen the comment above cpufreq_add_dev() about
+concurrent hotplug/cpufreq.
+
+ drivers/cpufreq/cpufreq.c | 35 +++++++++++++++++++++++++++--------
+ 1 file changed, 27 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 7f2f149..a290771 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -138,7 +138,7 @@ void disable_cpufreq(void)
+ static LIST_HEAD(cpufreq_governor_list);
+ static DEFINE_MUTEX(cpufreq_governor_mutex);
+ 
+-struct cpufreq_policy *cpufreq_cpu_get(unsigned int cpu)
++static struct cpufreq_policy *__cpufreq_cpu_get(unsigned int cpu, int sysfs)
+ {
+ 	struct cpufreq_policy *data;
+ 	unsigned long flags;
+@@ -162,7 +162,7 @@ struct cpufreq_policy *cpufreq_cpu_get(unsigned int cpu)
+ 	if (!data)
+ 		goto err_out_put_module;
+ 
+-	if (!kobject_get(&data->kobj))
++	if (!sysfs && !kobject_get(&data->kobj))
+ 		goto err_out_put_module;
+ 
+ 	spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
+@@ -175,16 +175,35 @@ err_out_unlock:
+ err_out:
+ 	return NULL;
+ }
++
++struct cpufreq_policy *cpufreq_cpu_get(unsigned int cpu)
++{
++	return __cpufreq_cpu_get(cpu, 0);
++}
+ EXPORT_SYMBOL_GPL(cpufreq_cpu_get);
+ 
++static struct cpufreq_policy *cpufreq_cpu_get_sysfs(unsigned int cpu)
++{
++	return __cpufreq_cpu_get(cpu, 1);
++}
+ 
+-void cpufreq_cpu_put(struct cpufreq_policy *data)
++static void __cpufreq_cpu_put(struct cpufreq_policy *data, int sysfs)
+ {
+-	kobject_put(&data->kobj);
++	if (!sysfs)
++		kobject_put(&data->kobj);
+ 	module_put(cpufreq_driver->owner);
+ }
++
++void cpufreq_cpu_put(struct cpufreq_policy *data)
++{
++	__cpufreq_cpu_put(data, 0);
++}
+ EXPORT_SYMBOL_GPL(cpufreq_cpu_put);
+ 
++static void cpufreq_cpu_put_sysfs(struct cpufreq_policy *data)
++{
++	__cpufreq_cpu_put(data, 1);
++}
+ 
+ /*********************************************************************
+  *            EXTERNALLY AFFECTING FREQUENCY CHANGES                 *
+@@ -617,7 +636,7 @@ static ssize_t show(struct kobject *kobj, struct attribute *attr, char *buf)
+ 	struct cpufreq_policy *policy = to_policy(kobj);
+ 	struct freq_attr *fattr = to_attr(attr);
+ 	ssize_t ret = -EINVAL;
+-	policy = cpufreq_cpu_get(policy->cpu);
++	policy = cpufreq_cpu_get_sysfs(policy->cpu);
+ 	if (!policy)
+ 		goto no_policy;
+ 
+@@ -631,7 +650,7 @@ static ssize_t show(struct kobject *kobj, struct attribute *attr, char *buf)
+ 
+ 	unlock_policy_rwsem_read(policy->cpu);
+ fail:
+-	cpufreq_cpu_put(policy);
++	cpufreq_cpu_put_sysfs(policy);
+ no_policy:
+ 	return ret;
+ }
+@@ -642,7 +661,7 @@ static ssize_t store(struct kobject *kobj, struct attribute *attr,
+ 	struct cpufreq_policy *policy = to_policy(kobj);
+ 	struct freq_attr *fattr = to_attr(attr);
+ 	ssize_t ret = -EINVAL;
+-	policy = cpufreq_cpu_get(policy->cpu);
++	policy = cpufreq_cpu_get_sysfs(policy->cpu);
+ 	if (!policy)
+ 		goto no_policy;
+ 
+@@ -656,7 +675,7 @@ static ssize_t store(struct kobject *kobj, struct attribute *attr,
+ 
+ 	unlock_policy_rwsem_write(policy->cpu);
+ fail:
+-	cpufreq_cpu_put(policy);
++	cpufreq_cpu_put_sysfs(policy);
+ no_policy:
+ 	return ret;
+ }
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
