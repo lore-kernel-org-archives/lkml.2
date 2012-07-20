@@ -1,53 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753414Ab2GTKkK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 06:40:10 -0400
-Received: from smtp.syd.comcen.com.au ([203.23.236.77]:3477 "EHLO
-	smtp.syd.comcen.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750727Ab2GTKkH (ORCPT
+	id S1751420Ab2GTKmN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 06:42:13 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:50929 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750724Ab2GTKmK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 06:40:07 -0400
-Message-ID: <5009353A.3090300@spin.net.au>
-Date: Fri, 20 Jul 2012 20:38:50 +1000
-From: Chris Jones <chrisjones@spin.net.au>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120604 Firefox/13.0 SeaMonkey/2.10
+	Fri, 20 Jul 2012 06:42:10 -0400
+Message-ID: <500935BC.4040405@linux.vnet.ibm.com>
+Date: Fri, 20 Jul 2012 16:11:00 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-To: Nate Lawson <nate@root.org>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Andre Hedrick (anhedric) has died
-References: <B4DFDCAD-9D5E-4AE9-83FF-041D4D521CFF@root.org>
-In-Reply-To: <B4DFDCAD-9D5E-4AE9-83FF-041D4D521CFF@root.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: paulmck@linux.vnet.ibm.com
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: WARNING: at kernel/rcutree.c:1550 __rcu_process_callbacks+0x46f/0x4b0()
+References: <5007F8FA.7000203@linux.vnet.ibm.com> <20120719171550.GL2507@linux.vnet.ibm.com>
+In-Reply-To: <20120719171550.GL2507@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-comcen-MailScanner-Information: Please contact the ISP for more information
-X-comcen-MailScanner: Found to be clean
-X-comcen-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
-	score=-2.243, required 4, AWL 0.26, BAYES_00 -2.60, RDNS_NONE 0.10)
-X-comcen-MailScanner-From: chrisjones@spin.net.au
+x-cbid: 12072010-8256-0000-0000-00000362CD3C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-That's very sad news Tate. And I'm very sorry for the loss. You have not 
-only lost a friend, but we've all lost a fellow Linux developer and 
-hacker. And that's very sad to hear.
+On 07/19/2012 10:45 PM, Paul E. McKenney wrote:
+> On Thu, Jul 19, 2012 at 05:39:30PM +0530, Srivatsa S. Bhat wrote:
+>> Hi Paul,
+>>
+>> While running a CPU hotplug stress test on v3.5-rc7+
+>> (mainline commit 8a7298b7805ab) I hit this warning.
+>> I haven't tried to debug this yet...
+>>
+>> Line number 1550 maps to:
+>>
+>> WARN_ON_ONCE(cpu_is_offline(smp_processor_id()));
+>>
+>> inside rcu_do_batch().
+> 
+> Hello, Srivatsa,
+> 
+> I believe that you need commit a16b7a69 (Prevent __call_rcu() from
+> invoking RCU core on offline CPUs), which is currently in -tip, queued
+> for 3.6.  Please see below for the patch.
+> 
+> Does this help?
 
-My thoughts to everyone in Andre's circle.
+Yes, that fixed it, thanks! :-)
+Sorry for the noise...
 
+Regards,
+Srivatsa S. Bhat
 
-Regards
-
--- 
-		Chris Jones @ kernel.devproject@gmail.com
-also on oracle.kerneldev@gmail.com and netbsd.kerneldev@gmail.com
-
-OpenSUSE 12.1 (Primary)|TinyCore|Slitaz|Parabola|OpenIndiana|NetBSD (PC)
-Android 4.0.3 (Smartphone)|Windows 7 (Laptop)|Windows XP (Gaming)
-Linux kernel developer|Solaris kernel developer|BSD kernel developer
-Lead Developer of SDL|Lead Developer of Nest Linux|Gamer and Emulator nut|Web Services|Digital Imaging Services
-Controllers: Rapier V2 Gaming mouse|Logitech Precision|PS3 controller|XB360 controller|Logitech Attack 3 j/stick
-Emulators: Fusion|Gens|ZSNES|Project64|PCSX-R|Stella|WinVICE|WinUAE|DOSBox
-
-PGP Fingerprint: 4E38 0776 B380 63C8 F64F
-A7D6 736C CF56 42A4 FB35
+> 
+> ------------------------------------------------------------------------
+> 
+> rcu: Prevent __call_rcu() from invoking RCU core on offline CPUs
+> 
+> The __call_rcu() function will invoke the RCU core, for example, if
+> it detects that the current CPU has too many callbacks.  However, this
+> can happen on an offline CPU that is on its way to the idle loop, in
+> which case it is an error to invoke the RCU core, and the excess callbacks
+> will be adopted in any case.  This commit therefore adds checks to
+> __call_rcu() for running on an offline CPU, refraining from invoking
+> the RCU core in this case.
+> 
+> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> 
+> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> index a4a9c91..ceaa959 100644
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+> @@ -1904,11 +1904,11 @@ __call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
+>  	 * If called from an extended quiescent state, invoke the RCU
+>  	 * core in order to force a re-evaluation of RCU's idleness.
+>  	 */
+> -	if (rcu_is_cpu_idle())
+> +	if (rcu_is_cpu_idle() && cpu_online(smp_processor_id()))
+>  		invoke_rcu_core();
+> 
+> -	/* If interrupts were disabled, don't dive into RCU core. */
+> -	if (irqs_disabled_flags(flags)) {
+> +	/* If interrupts were disabled or CPU offline, don't invoke RCU core. */
+> +	if (irqs_disabled_flags(flags) || cpu_is_offline(smp_processor_id())) {
+>  		local_irq_restore(flags);
+>  		return;
+>  	}
+> 
 
