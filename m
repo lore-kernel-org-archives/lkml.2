@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753472Ab2GTMbx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 08:31:53 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55638 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752612Ab2GTMbn (ORCPT
+	id S1753419Ab2GTMbz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 08:31:55 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:33561 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752645Ab2GTMbt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 08:31:43 -0400
+	Fri, 20 Jul 2012 08:31:49 -0400
 From: Michel Lespinasse <walken@google.com>
 To: riel@redhat.com, peterz@infradead.org, daniel.santos@pobox.com,
         aarcange@redhat.com, dwmw2@infradead.org, akpm@linux-foundation.org
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/6] rbtree: faster augmented insert
-Date: Fri, 20 Jul 2012 05:31:05 -0700
-Message-Id: <1342787467-5493-5-git-send-email-walken@google.com>
+Subject: [PATCH 6/6] rbtree: remove prior augmented rbtree implementation
+Date: Fri, 20 Jul 2012 05:31:07 -0700
+Message-Id: <1342787467-5493-7-git-send-email-walken@google.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1342787467-5493-1-git-send-email-walken@google.com>
 References: <1342787467-5493-1-git-send-email-walken@google.com>
@@ -21,149 +21,241 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce rb_insert_augmented(), which is a version of rb_insert_color()
-with an added callback on tree rotations. This can be used for insertion
-into an augmented tree: the handcoded search phase must be updated to
-maintain the augmented information on insertion, and then the rbtree
-coloring/rebalancing algorithms keep it up to date.
+convert arch/x86/mm/pat_rbtree.c to the proposed augmented rbtree api
+and remove the old augmented rbtree implementation.
 
-rb_insert_color() is now a special case of rb_insert_augmented() with
-a do-nothing callback. I used inlining to optimize out the callback,
-with the intent that this would generate the same code as previously
-for rb_insert_augmented(). This didn't fully work, as my compiler output
-is now *smaller* than before for that function. Speed wise, they seem
-comparable though.
+timings:
+lpa36 ~168 / 282 cycles
+lph71 ~168 / 271 cycles
+lpk18 ~ 72 / 122 cycles
+
+   text    data     bss     dec     hex filename
+   2969       0       0    2969     b99 lib/rbtree.o
+
+0000000000000450 l     F .text  0000000000000006 dummy_rotate
+00000000000001d0 g     F .text  0000000000000272 __rb_erase_color
+0000000000000480 g     F .text  000000000000001e rb_last
+0000000000000510 g     F .text  0000000000000047 rb_next
+0000000000000000 g     F .text  00000000000001cd rb_insert_augmented
+00000000000005b0 g     F .text  0000000000000165 rb_insert_color
+0000000000000560 g     F .text  0000000000000047 rb_prev
+0000000000000720 g     F .text  0000000000000332 rb_erase
+0000000000000460 g     F .text  000000000000001e rb_first
+00000000000004a0 g     F .text  000000000000006e rb_replace_node
 
 Signed-off-by: Michel Lespinasse <walken@google.com>
 ---
- include/linux/rbtree.h |    5 +++++
- lib/rbtree.c           |   14 +++++++++++++-
- lib/rbtree_test.c      |   31 +++++++++++++++++++++++--------
- 3 files changed, 41 insertions(+), 9 deletions(-)
+ arch/x86/mm/pat_rbtree.c |   52 +++++++++++++++++++++------------
+ include/linux/rbtree.h   |    8 -----
+ lib/rbtree.c             |   71 ----------------------------------------------
+ 3 files changed, 33 insertions(+), 98 deletions(-)
 
+diff --git a/arch/x86/mm/pat_rbtree.c b/arch/x86/mm/pat_rbtree.c
+index 8acaddd..fad1d58 100644
+--- a/arch/x86/mm/pat_rbtree.c
++++ b/arch/x86/mm/pat_rbtree.c
+@@ -13,6 +13,7 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/rbtree.h>
++#include <linux/rbtree_internal.h>
+ #include <linux/sched.h>
+ #include <linux/gfp.h>
+ 
+@@ -54,27 +55,40 @@ static u64 get_subtree_max_end(struct rb_node *node)
+ 	return ret;
+ }
+ 
+-/* Update 'subtree_max_end' for a node, based on node and its children */
+-static void memtype_rb_augment_cb(struct rb_node *node, void *__unused)
++static u64 compute_subtree_max_end(struct memtype *data)
+ {
+-	struct memtype *data;
+-	u64 max_end, child_max_end;
+-
+-	if (!node)
+-		return;
++	u64 max_end = data->end, child_max_end;
+ 
+-	data = container_of(node, struct memtype, rb);
+-	max_end = data->end;
+-
+-	child_max_end = get_subtree_max_end(node->rb_right);
++	child_max_end = get_subtree_max_end(data->rb.rb_right);
+ 	if (child_max_end > max_end)
+ 		max_end = child_max_end;
+ 
+-	child_max_end = get_subtree_max_end(node->rb_left);
++	child_max_end = get_subtree_max_end(data->rb.rb_left);
+ 	if (child_max_end > max_end)
+ 		max_end = child_max_end;
+ 
+-	data->subtree_max_end = max_end;
++	return max_end;
++}
++
++/* Update 'subtree_max_end' after tree rotation. old and new are the
++ * former and current subtree roots */
++static void memtype_rb_rotate_cb(struct rb_node *old, struct rb_node *new)
++{
++	struct memtype *old_data = container_of(old, struct memtype, rb);
++	struct memtype *new_data = container_of(new, struct memtype, rb);
++
++	new_data->subtree_max_end = old_data->subtree_max_end;
++	old_data->subtree_max_end = compute_subtree_max_end(old_data);
++}
++
++/* Update 'subtree_max_end' for node and its parents */
++static void memtype_rb_propagate_cb(struct rb_node *node)
++{
++	while (node) {
++		struct memtype *data = container_of(node, struct memtype, rb);
++		data->subtree_max_end = compute_subtree_max_end(data);
++		node = rb_parent(&data->rb);
++	}
+ }
+ 
+ /* Find the first (lowest start addr) overlapping range from rb tree */
+@@ -179,15 +193,17 @@ static void memtype_rb_insert(struct rb_root *root, struct memtype *newdata)
+ 		struct memtype *data = container_of(*node, struct memtype, rb);
+ 
+ 		parent = *node;
++		if (data->subtree_max_end < newdata->end)
++			data->subtree_max_end = newdata->end;
+ 		if (newdata->start <= data->start)
+ 			node = &((*node)->rb_left);
+ 		else if (newdata->start > data->start)
+ 			node = &((*node)->rb_right);
+ 	}
+ 
++	newdata->subtree_max_end = newdata->end;
+ 	rb_link_node(&newdata->rb, parent, node);
+-	rb_insert_color(&newdata->rb, root);
+-	rb_augment_insert(&newdata->rb, memtype_rb_augment_cb, NULL);
++	rb_insert_augmented(&newdata->rb, root, memtype_rb_rotate_cb);
+ }
+ 
+ int rbt_memtype_check_insert(struct memtype *new, unsigned long *ret_type)
+@@ -209,16 +225,14 @@ int rbt_memtype_check_insert(struct memtype *new, unsigned long *ret_type)
+ 
+ struct memtype *rbt_memtype_erase(u64 start, u64 end)
+ {
+-	struct rb_node *deepest;
+ 	struct memtype *data;
+ 
+ 	data = memtype_rb_exact_match(&memtype_rbroot, start, end);
+ 	if (!data)
+ 		goto out;
+ 
+-	deepest = rb_augment_erase_begin(&data->rb);
+-	rb_erase(&data->rb, &memtype_rbroot);
+-	rb_augment_erase_end(deepest, memtype_rb_augment_cb, NULL);
++	rb_erase_augmented(&data->rb, &memtype_rbroot,
++			   memtype_rb_propagate_cb, memtype_rb_rotate_cb);
+ out:
+ 	return data;
+ }
 diff --git a/include/linux/rbtree.h b/include/linux/rbtree.h
-index bf836a2..1364b81 100644
+index bf836a2..487f00b 100644
 --- a/include/linux/rbtree.h
 +++ b/include/linux/rbtree.h
-@@ -61,6 +61,11 @@ struct rb_root {
+@@ -61,14 +61,6 @@ struct rb_root {
  extern void rb_insert_color(struct rb_node *, struct rb_root *);
  extern void rb_erase(struct rb_node *, struct rb_root *);
  
-+typedef void rb_augment_rotate(struct rb_node *old, struct rb_node *new);
-+
-+extern void rb_insert_augmented(struct rb_node *node, struct rb_root *root,
-+				rb_augment_rotate *augment);
-+
- typedef void (*rb_augment_f)(struct rb_node *node, void *data);
- 
- extern void rb_augment_insert(struct rb_node *node,
+-typedef void (*rb_augment_f)(struct rb_node *node, void *data);
+-
+-extern void rb_augment_insert(struct rb_node *node,
+-			      rb_augment_f func, void *data);
+-extern struct rb_node *rb_augment_erase_begin(struct rb_node *node);
+-extern void rb_augment_erase_end(struct rb_node *node,
+-				 rb_augment_f func, void *data);
+-
+ /* Find logical next and previous nodes in a tree */
+ extern struct rb_node *rb_next(const struct rb_node *);
+ extern struct rb_node *rb_prev(const struct rb_node *);
 diff --git a/lib/rbtree.c b/lib/rbtree.c
-index 8b111cc..a6ae4c5 100644
+index 7ea3e4c..8f40f9d 100644
 --- a/lib/rbtree.c
 +++ b/lib/rbtree.c
-@@ -88,7 +88,8 @@ __rb_rotate_set_parents(struct rb_node *old, struct rb_node *new,
- 		root->rb_node = new;
+@@ -364,77 +364,6 @@ void rb_erase(struct rb_node *node, struct rb_root *root)
  }
+ EXPORT_SYMBOL(rb_erase);
  
--void rb_insert_color(struct rb_node *node, struct rb_root *root)
-+inline void rb_insert_augmented(struct rb_node *node, struct rb_root *root,
-+				rb_augment_rotate *augment)
- {
- 	struct rb_node *parent = rb_red_parent(node), *gparent, *tmp;
- 
-@@ -152,6 +153,7 @@ void rb_insert_color(struct rb_node *node, struct rb_root *root)
- 					rb_set_parent_color(tmp, parent,
- 							    RB_BLACK);
- 				rb_set_parent_color(parent, node, RB_RED);
-+				augment(parent, node);
- 				parent = node;
- 				tmp = node->rb_right;
- 			}
-@@ -170,6 +172,7 @@ void rb_insert_color(struct rb_node *node, struct rb_root *root)
- 			if (tmp)
- 				rb_set_parent_color(tmp, gparent, RB_BLACK);
- 			__rb_rotate_set_parents(gparent, parent, root, RB_RED);
-+			augment(gparent, parent);
- 			break;
- 		} else {
- 			tmp = gparent->rb_left;
-@@ -192,6 +195,7 @@ void rb_insert_color(struct rb_node *node, struct rb_root *root)
- 					rb_set_parent_color(tmp, parent,
- 							    RB_BLACK);
- 				rb_set_parent_color(parent, node, RB_RED);
-+				augment(parent, node);
- 				parent = node;
- 				tmp = node->rb_left;
- 			}
-@@ -202,10 +206,18 @@ void rb_insert_color(struct rb_node *node, struct rb_root *root)
- 			if (tmp)
- 				rb_set_parent_color(tmp, gparent, RB_BLACK);
- 			__rb_rotate_set_parents(gparent, parent, root, RB_RED);
-+			augment(gparent, parent);
- 			break;
- 		}
- 	}
- }
-+EXPORT_SYMBOL(rb_insert_augmented);
-+
-+static inline void dummy(struct rb_node *old, struct rb_node *new) {}
-+
-+void rb_insert_color(struct rb_node *node, struct rb_root *root) {
-+	rb_insert_augmented(node, root, dummy);
-+}
- EXPORT_SYMBOL(rb_insert_color);
- 
- static void __rb_erase_color(struct rb_node *node, struct rb_node *parent,
-diff --git a/lib/rbtree_test.c b/lib/rbtree_test.c
-index 2dfafe4..5ace332 100644
---- a/lib/rbtree_test.c
-+++ b/lib/rbtree_test.c
-@@ -67,22 +67,37 @@ static void augment_callback(struct rb_node *rb, void *unused)
- 	node->augmented = augment_recompute(node);
- }
- 
-+static void augment_rotate(struct rb_node *rb_old, struct rb_node *rb_new)
-+{
-+	struct test_node *old = rb_entry(rb_old, struct test_node, rb);
-+	struct test_node *new = rb_entry(rb_new, struct test_node, rb);
-+
-+	/* Rotation doesn't change subtree's augmented value */
-+	new->augmented = old->augmented;
-+	old->augmented = augment_recompute(old);
-+}
-+
- static void insert_augmented(struct test_node *node, struct rb_root *root)
- {
--	struct rb_node **new = &root->rb_node, *parent = NULL;
-+	struct rb_node **new = &root->rb_node, *rb_parent = NULL;
- 	u32 key = node->key;
-+	u32 val = node->val;
-+	struct test_node *parent;
- 
- 	while (*new) {
--		parent = *new;
--		if (key < rb_entry(parent, struct test_node, rb)->key)
--			new = &parent->rb_left;
-+		rb_parent = *new;
-+		parent = rb_entry(rb_parent, struct test_node, rb);
-+		if (parent->augmented < val)
-+			parent->augmented = val;
-+		if (key < parent->key)
-+			new = &parent->rb.rb_left;
- 		else
--			new = &parent->rb_right;
-+			new = &parent->rb.rb_right;
- 	}
- 
--	rb_link_node(&node->rb, parent, new);
--	rb_insert_color(&node->rb, root);
--	rb_augment_insert(&node->rb, augment_callback, NULL);
-+	node->augmented = val;
-+	rb_link_node(&node->rb, rb_parent, new);
-+	rb_insert_augmented(&node->rb, root, augment_rotate);
- }
- 
- static void erase_augmented(struct test_node *node, struct rb_root *root)
+-static void rb_augment_path(struct rb_node *node, rb_augment_f func, void *data)
+-{
+-	struct rb_node *parent;
+-
+-up:
+-	func(node, data);
+-	parent = rb_parent(node);
+-	if (!parent)
+-		return;
+-
+-	if (node == parent->rb_left && parent->rb_right)
+-		func(parent->rb_right, data);
+-	else if (parent->rb_left)
+-		func(parent->rb_left, data);
+-
+-	node = parent;
+-	goto up;
+-}
+-
+-/*
+- * after inserting @node into the tree, update the tree to account for
+- * both the new entry and any damage done by rebalance
+- */
+-void rb_augment_insert(struct rb_node *node, rb_augment_f func, void *data)
+-{
+-	if (node->rb_left)
+-		node = node->rb_left;
+-	else if (node->rb_right)
+-		node = node->rb_right;
+-
+-	rb_augment_path(node, func, data);
+-}
+-EXPORT_SYMBOL(rb_augment_insert);
+-
+-/*
+- * before removing the node, find the deepest node on the rebalance path
+- * that will still be there after @node gets removed
+- */
+-struct rb_node *rb_augment_erase_begin(struct rb_node *node)
+-{
+-	struct rb_node *deepest;
+-
+-	if (!node->rb_right && !node->rb_left)
+-		deepest = rb_parent(node);
+-	else if (!node->rb_right)
+-		deepest = node->rb_left;
+-	else if (!node->rb_left)
+-		deepest = node->rb_right;
+-	else {
+-		deepest = rb_next(node);
+-		if (deepest->rb_right)
+-			deepest = deepest->rb_right;
+-		else if (rb_parent(deepest) != node)
+-			deepest = rb_parent(deepest);
+-	}
+-
+-	return deepest;
+-}
+-EXPORT_SYMBOL(rb_augment_erase_begin);
+-
+-/*
+- * after removal, update the tree to account for the removed entry
+- * and any rebalance damage.
+- */
+-void rb_augment_erase_end(struct rb_node *node, rb_augment_f func, void *data)
+-{
+-	if (node)
+-		rb_augment_path(node, func, data);
+-}
+-EXPORT_SYMBOL(rb_augment_erase_end);
+-
+ /*
+  * This function returns the first node (in sort order) of the tree.
+  */
 -- 
 1.7.7.3
 
