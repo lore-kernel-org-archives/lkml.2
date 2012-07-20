@@ -1,75 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753018Ab2GTPTK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 11:19:10 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:31876 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752107Ab2GTPTJ (ORCPT
+	id S1753033Ab2GTPU7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 11:20:59 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:34555 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752367Ab2GTPU5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 11:19:09 -0400
-Date: Fri, 20 Jul 2012 18:18:46 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, kernel-janitors@vger.kernel.org
-Subject: Re: [patch] driver-core: dev_to_node() should handle NULL pointers
-Message-ID: <20120720151846.GQ16348@mwanda>
-References: <20120720065622.GA11710@elgon.mountain>
- <20120720150042.GA1996@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120720150042.GA1996@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Fri, 20 Jul 2012 11:20:57 -0400
+Date: Fri, 20 Jul 2012 17:20:44 +0200
+From: Anisse Astier <anisse@astier.eu>
+To: Alan Cox <alan@linux.intel.com>
+Cc: Josh Boyer <jwboyer@redhat.com>, kernel-team@fedoraproject.org,
+        Dave Airlie <airlied@redhat.com>, dkline@redhat.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: gma500 opregion/power init order backtrace
+Message-ID: <20120720172044.5ad38413@destiny.ordissimo>
+In-Reply-To: <20120720163247.19578db4@destiny.ordissimo>
+References: <20120717192614.GB18229@zod.bos.redhat.com>
+	<20120717221242.315f8dfe@bob.linux.org.uk>
+	<20120720163247.19578db4@destiny.ordissimo>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 20, 2012 at 08:00:42AM -0700, Greg Kroah-Hartman wrote:
-> On Fri, Jul 20, 2012 at 09:56:23AM +0300, Dan Carpenter wrote:
-> > What prompted this patch is that in dma_pool_create() we call
-> > dev_to_node() before checking whether "dev" is NULL.  It looks like
-> > there are places which call dma_pool_create() with a NULL pointer.  An
-> > example is in drivers/usb/gadget/amd5536udc.c.
-> > 
-> > Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-> > ---
-> > Static checker fix.
-> > 
-> > diff --git a/include/linux/device.h b/include/linux/device.h
-> > index aa7b3b4..c80e7a8d 100644
-> > --- a/include/linux/device.h
-> > +++ b/include/linux/device.h
-> > @@ -714,7 +714,9 @@ int dev_set_name(struct device *dev, const char *name, ...);
-> >  #ifdef CONFIG_NUMA
-> >  static inline int dev_to_node(struct device *dev)
-> >  {
-> > -	return dev->numa_node;
-> > +	if (dev)
-> > +		return dev->numa_node;
-> > +	return -1;
+On Fri, 20 Jul 2012 16:32:47 +0200, Anisse Astier <anisse@astier.eu> wrote :
+
+> On Tue, 17 Jul 2012 22:12:42 +0100, Alan Cox <alan@linux.intel.com> wrote :
 > 
-> What happens if this function returns -1?  Can the callers properly
-> handle this?
+> > > I'm wondering if the gma_power_init call can be moved up before
+> > > chip_setup is called.  Seems so, but I thought I would ping you to see
+> > > if you've seen this already.
+> > 
+> > Fixed in the patches that went to Linus.
+> Thanks for this ! I was having this 100 scale brightness issue on anther
+> hardware.
 > 
+> > 
+> > I don't have the ACPI backlight working on a lot of systems and don't
+> > know why to be honest but the native backlight should work. Of course if
+> > the acpi keys are plumbed into the ACPI backlight it's less useful 8)
+> 
+> Can't we just "wire" this to psb-bl in the driver ? There are a few
+> drivers in drivers/platform/x86 already sending KEY_BRIGHTNESS{UP,DOWN}
+> keycodes.
 
-Gar.  Now I'm not sure any more.
+What I meant is: although these keycodes are already sent by acpi driver
+code, is it up to userspace to figure out which backlight driver to use,
+or should the kernel modify brightness in psb-bl directly ?
 
--1 means no affinity and it's what the dev_to_node() returns if NUMA
-is disabled.  But now I think probably it's important to get the
-NUMA node correct in dma_pool_create() so this isn't the right
-answer.
-
-dma_pool_create() is not correct.  It has code to handle a NULL
-"dev" pointer, but the dev_to_node() dereference will cause an oops
-before we reach it.  I'm think this is a real issue that affects a
-couple drivers.  Maybe those people compile without NUMA?
-
-I'm not sure the right fix now.
-
-regards,
-dan carpenter
-
+Anisse
