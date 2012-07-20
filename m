@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752966Ab2GTCuM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 22:50:12 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:57616 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752592Ab2GTCuK (ORCPT
+	id S1753019Ab2GTCvs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 22:51:48 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:44801 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752556Ab2GTCvr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 22:50:10 -0400
-From: Cody Schafer <cody@linux.vnet.ibm.com>
+	Thu, 19 Jul 2012 22:51:47 -0400
+Message-ID: <5008C7BC.3030405@linux.vnet.ibm.com>
+Date: Thu, 19 Jul 2012 19:51:40 -0700
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
+MIME-Version: 1.0
 To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Cody Schafer <cody@linux.vnet.ibm.com>
-Subject: [PATCH v2] perf: prevent overflow in size calculation
-Date: Thu, 19 Jul 2012 19:49:12 -0700
-Message-Id: <1342752552-3065-1-git-send-email-cody@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.9.5
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] perf: prevent overflow in size calculation
+References: <1342743215-26979-1-git-send-email-cody@linux.vnet.ibm.com> <87a9yv2r5q.fsf@sejong.aot.lge.com>
 In-Reply-To: <87a9yv2r5q.fsf@sejong.aot.lge.com>
-References: <87a9yv2r5q.fsf@sejong.aot.lge.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12072002-2398-0000-0000-000008A3F83E
+x-cbid: 12072002-2356-0000-0000-00000082733F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A large enough symbol size causes an overflow in the size parameter to the
-histogram allocation, leading to a segfault in symbol__inc_addr_samples later
-on when this histogram is accessed.
+>> +	/* Check for overflow when calculating sizeof_sym_hist */
+>> +	if (size > (SIZE_MAX / sizeof(u64)))
+>> +		return -1;
+>
+> How does it guarantee that the end result which used in zalloc below
+> would not overflow?
+>
+>> +
+>> +	sizeof_sym_hist = (sizeof(struct sym_hist) + size * sizeof(u64));
+>>   	notes->src = zalloc(sizeof(*notes->src) + symbol_conf.nr_events * sizeof_sym_hist);
+>>   	if (notes->src == NULL)
+>>   		return -1;
 
-In the case of being called via perf-report, this returns back and
-gracefully ignores the sample, eventually ignoring the chained return
-value of perf_session_deliver_event in flush_sample_queue.
+Whoops. Thanks for pointing that out.
+I've sent a fixed up patch (the check for sizeof_sym_hist wasn't even 
+complete)
 
-Signed-off-by: Cody Schafer <cody@linux.vnet.ibm.com>
----
- tools/perf/util/annotate.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+--
+Cody
 
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index 8069dfb..73a1919 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -426,7 +426,18 @@ int symbol__alloc_hist(struct symbol *sym)
- {
- 	struct annotation *notes = symbol__annotation(sym);
- 	const size_t size = symbol__size(sym);
--	size_t sizeof_sym_hist = (sizeof(struct sym_hist) + size * sizeof(u64));
-+	size_t sizeof_sym_hist;
-+
-+	/* Check for overflow when calculating sizeof_sym_hist */
-+	if (size > (SIZE_MAX / sizeof(u64) - sizeof(struct sym_hist)))
-+		return -1;
-+
-+	sizeof_sym_hist = (sizeof(struct sym_hist) + size * sizeof(u64));
-+
-+	/* Check for overflow in zalloc argument */
-+	if (sizeof_sym_hist > (SIZE_MAX / symbol_conf.nr_events
-+				- sizeof(*notes->src)))
-+		return -1;
- 
- 	notes->src = zalloc(sizeof(*notes->src) + symbol_conf.nr_events * sizeof_sym_hist);
- 	if (notes->src == NULL)
--- 
-1.7.9.5
 
