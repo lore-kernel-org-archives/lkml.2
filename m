@@ -1,103 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753054Ab2GTHgI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 03:36:08 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:35430 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751912Ab2GTHgE (ORCPT
+	id S1753128Ab2GTHi4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 03:38:56 -0400
+Received: from smtp3.mundo-r.com ([212.51.32.191]:50567 "EHLO
+	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752127Ab2GTHiy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 03:36:04 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <50090A4F.3050504@jp.fujitsu.com>
-Date: Fri, 20 Jul 2012 16:35:43 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Fri, 20 Jul 2012 03:38:54 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AioJAAIKCVBbdWOb/2dsb2JhbABFhDCBAESzSoEHgkoECwFGNQImAl8TiBGsB5MDgSCKNYVFgRIDlUSQCYJhgVQ
+X-IronPort-AV: E=Sophos;i="4.77,621,1336341600"; 
+   d="scan'208";a="546394750"
+From: =?UTF-8?q?Samuel=20Iglesias=20Gons=C3=A1lvez?= 
+	<siglesias@igalia.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: =?UTF-8?q?Samuel=20Iglesias=20Gons=C3=A1lvez?= 
+	<siglesias@igalia.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        industrypack-devel@lists.sourceforge.net
+Subject: [PATCH 1/3] Staging: ipack/bridges/tpci200: avoid kernel bug when uninstalling a device
+Date: Fri, 20 Jul 2012 09:39:03 +0200
+Message-Id: <1342769945-6999-1-git-send-email-siglesias@igalia.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-To: Wen Congyang <wency@cn.fujitsu.com>
-CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>,
-        <rientjes@google.com>, <liuj97@gmail.com>, <len.brown@intel.com>,
-        <benh@kernel.crashing.org>, <paulus@samba.org>, <cl@linux.com>,
-        <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
-        <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [RFC PATCH 1/8] memory-hotplug: store the node id in acpi_memory_device
-References: <5009038A.4090001@cn.fujitsu.com> <5009041D.3060909@cn.fujitsu.com>
-In-Reply-To: <5009041D.3060909@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wen,
+Signed-off-by: Samuel Iglesias Gonsálvez <siglesias@igalia.com>
+---
+ drivers/staging/ipack/bridges/tpci200.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-2012/07/20 16:09, Wen Congyang wrote:
-> The memory device has only one node id. Store the node id when
-> enabling the memory device, and we can reuse it when removing the
-> memory device.
->
-> CC: David Rientjes <rientjes@google.com>
-> CC: Jiang Liu <liuj97@gmail.com>
-> CC: Len Brown <len.brown@intel.com>
-> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> CC: Paul Mackerras <paulus@samba.org>
-> CC: Christoph Lameter <cl@linux.com>
-> Cc: Minchan Kim <minchan.kim@gmail.com>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-> ---
-
-It looks to me.
-Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-
-Thanks,
-Yasuaki Ishimatsu
-
->   drivers/acpi/acpi_memhotplug.c |    8 +++++---
->   1 files changed, 5 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
-> index 5cafd6b..db8de39 100644
-> --- a/drivers/acpi/acpi_memhotplug.c
-> +++ b/drivers/acpi/acpi_memhotplug.c
-> @@ -84,6 +84,7 @@ struct acpi_memory_info {
->   struct acpi_memory_device {
->   	struct acpi_device * device;
->   	unsigned int state;	/* State of the memory device */
-> +	int nid;
->   	struct list_head res_list;
->   };
->
-> @@ -257,6 +258,9 @@ static int acpi_memory_enable_device(struct acpi_memory_device *mem_device)
->   		info->enabled = 1;
->   		num_enabled++;
->   	}
-> +
-> +	mem_device->nid = node;
-> +
->   	if (!num_enabled) {
->   		printk(KERN_ERR PREFIX "add_memory failed\n");
->   		mem_device->state = MEMORY_INVALID_STATE;
-> @@ -463,7 +467,7 @@ static int acpi_memory_device_remove(struct acpi_device *device, int type)
->
->   	mem_device = acpi_driver_data(device);
->
-> -	node = acpi_get_node(mem_device->device->handle);
-> +	node = mem_device->nid;
->   	list_for_each_entry_safe(info, tmp, &mem_device->res_list, list) {
->   		if (!info->enabled)
->   			continue;
-> @@ -473,8 +477,6 @@ static int acpi_memory_device_remove(struct acpi_device *device, int type)
->   			if (result)
->   				return result;
->   		}
-> -		if (node < 0)
-> -			node = memory_add_physaddr_to_nid(info->start_addr);
->
->   		result = remove_memory(node, info->start_addr, info->length);
->   		if (result)
->
-
+diff --git a/drivers/staging/ipack/bridges/tpci200.c b/drivers/staging/ipack/bridges/tpci200.c
+index 2b83fa8..a7fb2cf 100644
+--- a/drivers/staging/ipack/bridges/tpci200.c
++++ b/drivers/staging/ipack/bridges/tpci200.c
+@@ -604,8 +604,8 @@ static int tpci200_slot_unregister(struct ipack_device *dev)
+ 	if (mutex_lock_interruptible(&tpci200->mutex))
+ 		return -ERESTARTSYS;
+ 
+-	ipack_device_unregister(dev);
+ 	tpci200->slots[dev->slot].dev = NULL;
++	ipack_device_unregister(dev);
+ 	mutex_unlock(&tpci200->mutex);
+ 
+ 	return 0;
+-- 
+1.7.10.4
 
