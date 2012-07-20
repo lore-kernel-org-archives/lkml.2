@@ -1,53 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753046Ab2GTXey (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 19:34:54 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44091 "EHLO
+	id S1753185Ab2GTXfo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 19:35:44 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48487 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752708Ab2GTXex (ORCPT
+	with ESMTP id S1752508Ab2GTXfm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 19:34:53 -0400
-Message-ID: <5009EB16.1070809@gmail.com>
-Date: Fri, 20 Jul 2012 17:34:46 -0600
+	Fri, 20 Jul 2012 19:35:42 -0400
+Message-ID: <5009EB4B.5030107@gmail.com>
+Date: Fri, 20 Jul 2012 17:35:39 -0600
 From: David Ahern <dsahern@gmail.com>
 User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>,
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Avi Kivity <avi@redhat.com>, Gleb Natapov <gleb@redhat.com>,
         LKML <linux-kernel@vger.kernel.org>
 Subject: Re: perf with precise attribute kills all KVM based VMs
-References: <4FFAE6D8.5050609@gmail.com> <20120709141904.GC7298@redhat.com> <1341843844.3462.75.camel@twins> <4FFAED16.7050204@redhat.com> <4FFAEF13.7010108@gmail.com> <1341845396.3462.81.camel@twins> <4FFAEFF1.9000706@redhat.com> <1341845999.3462.86.camel@twins> <4FFCBD00.1030109@gmail.com> <20120711071006.GF23898@redhat.com>
-In-Reply-To: <20120711071006.GF23898@redhat.com>
+References: <4FFAE6D8.5050609@gmail.com> <20120709141904.GC7298@redhat.com>  <1341843844.3462.75.camel@twins> <4FFAED16.7050204@redhat.com> <1341845268.3462.80.camel@twins>
+In-Reply-To: <1341845268.3462.80.camel@twins>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/11/12 1:10 AM, Gleb Natapov wrote:
-> Looks like Avi is right about the overshoot. Can you test something like this?
+On 7/9/12 8:47 AM, Peter Zijlstra wrote:
+> On Mon, 2012-07-09 at 17:39 +0300, Avi Kivity wrote:
+>>> Disabling PEBS events for guests isn't pretty though..
+>>
+>> We already have atomic MSR switching at guest entry/exit time.  So it's
+>> not pretty in terms of not getting full profiling, but the code won't be
+>> too hard.  Basically we just have to exclude_guest any pebs event.
 >
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-> index 166546e..5fb371a 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-> @@ -1374,8 +1374,11 @@ static struct perf_guest_switch_msr *intel_guest_get_msrs(int *nr)
->   	arr[0].msr = MSR_CORE_PERF_GLOBAL_CTRL;
->   	arr[0].host = x86_pmu.intel_ctrl & ~cpuc->intel_ctrl_guest_mask;
->   	arr[0].guest = x86_pmu.intel_ctrl & ~cpuc->intel_ctrl_host_mask;
-> +	arr[1].msr = MSR_IA32_PEBS_ENABLE;
-> +	arr[1].host = cpuc->pebs_enabled;
-> +	arr[1].guest = 0;
-> +	*nr = 2;
+> OK, so ideally we'd do something like the below, except of course that
+> that isn't backwards compatible and will break the world :/
 >
-> -	*nr = 1;
->   	return arr;
->   }
-
+> bugger that
+>
+> ---
+> --- a/arch/x86/kernel/cpu/perf_event.c
+> +++ b/arch/x86/kernel/cpu/perf_event.c
+> @@ -336,6 +338,9 @@ int x86_setup_perfctr(struct perf_event *event)
+>                  /* BTS is currently only allowed for user-mode. */
+>                  if (!attr->exclude_kernel)
+>                          return -EOPNOTSUPP;
+> +
+> +               if (!attr->exclude_guest)
+> +                       return -EOPNOTSUPP;
+>          }
+>
+>          hwc->config |= config;
+> @@ -378,6 +383,9 @@ int x86_pmu_hw_config(struct perf_event *event)
+>          if (event->attr.precise_ip) {
+>                  int precise = 0;
+>
+> +               if (!event->attr.exclude_guest)
+> +                       return -EOPNOTSUPP;
+> +
+>                  /* Support for constant skid */
+>                  if (x86_pmu.pebs_active && !x86_pmu.pebs_broken) {
+>                          precise++;
+>
 
 Tested-by: David Ahern <dsahern@gmail.com>
 
-Peter's patch is required as well. It's the combination that fixes the 
-problem.
+Gleb's patch is required as well. It takes both to fix the problem. And 
+my userspace patch keeps compatibility for users who currently use -e 
+cycles:pp (they won't be forced to add 'H'). (lkml is slow to show it so 
+I can't pull a link for reference, but it's in your email ahead of this 
+one).
 
-David
+Be nice to get this set into stable releases as well.
