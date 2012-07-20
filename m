@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752463Ab2GTSnC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 14:43:02 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:44882 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751975Ab2GTSnA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 14:43:00 -0400
-Message-ID: <5009A6D5.1030907@gmail.com>
-Date: Fri, 20 Jul 2012 20:43:33 +0200
-From: Sasha Levin <levinsasha928@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120713 Thunderbird/13.0
-MIME-Version: 1.0
-To: pablo@netfilter.org, kaber@trash.net, davem@davemloft.net
-CC: netfilter-devel@vger.kernel.org, netdev@vger.kernel.org,
-        coreteam@netfilter.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: netfilter,rcu: hang in nf_conntrack_net_exit
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752599Ab2GTSnk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 14:43:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52093 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752096Ab2GTSni (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 14:43:38 -0400
+Subject: Re: linux-next: Tree for July 20 (gfs2)
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, cluster-devel@redhat.com
+In-Reply-To: <5009823B.2010700@xenotime.net>
+References: <20120720151322.d952c13390b3078b2a5505bd@canb.auug.org.au>
+	 <5009823B.2010700@xenotime.net>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Fri, 20 Jul 2012 19:42:09 +0100
+Message-ID: <1342809729.2742.18.camel@menhir>
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Hi,
 
-I've stumbled on the following while fuzzing with trinity inside a KVM tools guest, using the latest -next kernel.
+On Fri, 2012-07-20 at 09:07 -0700, Randy Dunlap wrote:
+> On 07/19/2012 10:13 PM, Stephen Rothwell wrote:
+> 
+> > Hi all,
+> > 
+> > Changes since 20120719:
+> > 
+> 
+> 
+> 
+> 
+> on i386 (modular):
+> 
+> ERROR: "__divdi3" [fs/gfs2/gfs2.ko] undefined!
+> 
+> or builtin:
+> 
+> fs/built-in.o: In function `gfs2_fallocate':
+> file.c:(.text+0x232086): undefined reference to `__divdi3'
+> 
 
-[  483.990135] INFO: task kworker/u:0:6 blocked for more than 120 seconds.
-[  483.991328] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[  483.992500] kworker/u:0     D ffff88000adfa4c8  3160     6      2 0x00000000
-[  483.993527]  ffff88000d655a60 0000000000000086 ffff880035bd7640 00000000001d7640
-[  483.994667]  ffff88000d655fd8 ffff88000d655fd8 ffff88000d655fd8 ffff88000d655fd8
-[  483.995945]  ffff880008448000 ffff88000d65b000 ffff88000d655a50 ffff88000d655c18
-[  483.997202] Call Trace:
-[  483.997653]  [<ffffffff83788d25>] schedule+0x55/0x60
-[  483.998449]  [<ffffffff83786d7a>] schedule_timeout+0x3a/0x370
-[  483.999461]  [<ffffffff8115d4a9>] ? mark_held_locks+0xf9/0x130
-[  484.000016]  [<ffffffff83789443>] ? wait_for_common+0xf3/0x170
-[  484.000016]  [<ffffffff8378a44b>] ? _raw_spin_unlock_irq+0x2b/0x80
-[  484.000016]  [<ffffffff8115d758>] ? trace_hardirqs_on_caller+0x118/0x140
-[  484.000016]  [<ffffffff8378944b>] wait_for_common+0xfb/0x170
-[  484.000016]  [<ffffffff8112fd90>] ? try_to_wake_up+0x290/0x290
-[  484.000016]  [<ffffffff811a7960>] ? __call_rcu+0x390/0x390
-[  484.000016]  [<ffffffff83789568>] wait_for_completion+0x18/0x20
-[  484.000016]  [<ffffffff8111548f>] wait_rcu_gp+0x6f/0xa0
-[  484.000016]  [<ffffffff811130f0>] ? perf_trace_rcu_utilization+0xd0/0xd0
-[  484.000016]  [<ffffffff83789394>] ? wait_for_common+0x44/0x170
-[  484.000016]  [<ffffffff811aa126>] synchronize_rcu+0x86/0x90
-[  484.000016]  [<ffffffff83131455>] synchronize_net+0x35/0x40
-[  484.000016]  [<ffffffff83194125>] nf_conntrack_cleanup+0x55/0x70
-[  484.000016]  [<ffffffff831948a2>] nf_conntrack_net_exit+0x72/0x80
-[  484.000016]  [<ffffffff83125285>] ops_exit_list.isra.0+0x35/0x70
-[  484.000016]  [<ffffffff83125c70>] cleanup_net+0x100/0x1a0
-[  484.000016]  [<ffffffff8110c926>] process_one_work+0x3e6/0x790
-[  484.000016]  [<ffffffff8110c7e0>] ? process_one_work+0x2a0/0x790
-[  484.000016]  [<ffffffff83125b70>] ? net_drop_ns+0x40/0x40
-[  484.000016]  [<ffffffff8110d568>] ? worker_thread+0x48/0x380
-[  484.000016]  [<ffffffff8110d719>] worker_thread+0x1f9/0x380
-[  484.000016]  [<ffffffff8110d520>] ? manage_workers.isra.8+0x110/0x110
-[  484.000016]  [<ffffffff8111823d>] kthread+0xad/0xc0
-[  484.000016]  [<ffffffff8378d134>] kernel_thread_helper+0x4/0x10
-[  484.000016]  [<ffffffff8378b234>] ? retint_restore_args+0x13/0x13
-[  484.000016]  [<ffffffff81118190>] ? insert_kthread_work+0x40/0x40
-[  484.000016]  [<ffffffff8378d130>] ? gs_change+0x13/0x13
-[  484.000016] 3 locks held by kworker/u:0/6:
-[  484.000016]  #0:  (netns){.+.+.+}, at: [<ffffffff8110c7e0>] process_one_work+0x2a0/0x790
-[  484.000016]  #1:  (net_cleanup_work){+.+.+.}, at: [<ffffffff8110c7e0>] process_one_work+0x2a0/0x790
-[  484.000016]  #2:  (net_mutex){+.+.+.}, at: [<ffffffff83125bf0>] cleanup_net+0x80/0x1a0
+Bob has sent me a patch to fix this, and I've just pushed it to the GFS2
+-nmw git tree. Thanks for letting us know,
+
+Steve.
+
+
+
