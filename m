@@ -1,195 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752531Ab2GTWwL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 18:52:11 -0400
-Received: from justitmail.at ([83.175.122.136]:43706 "EHLO justitmail.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751768Ab2GTWwJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 18:52:09 -0400
-X-Greylist: delayed 421 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Jul 2012 18:52:09 EDT
+	id S1752586Ab2GTW7O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 18:59:14 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:40964 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751768Ab2GTW7N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 18:59:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Sat, 21 Jul 2012 00:44:55 +0200
-From: Simon Roscic <simon@segfault.info>
-To: <linux-kernel@vger.kernel.org>
-Subject: gateway icmp redirect handling problem (3.0.36-3.0.23)
-Message-ID: <e7c3421bfc919c64cc6268c575429640@segfault.info>
-User-Agent: Roundcube Webmail/0.7.2
+In-Reply-To: <20120720210606.GC15677@oc1711230544.ibm.com>
+References: <CADdae-i2FWspdm_BPQAeO3HUUyOWj8rDui0cTGR6fkRv7yr2zw@mail.gmail.com>
+	<20120720132153.GA26110@redhat.com>
+	<20120720202155.GB15677@oc1711230544.ibm.com>
+	<CADdae-hyq7RALEg6fOTQZc_cDoi8PnovBZ2xNdsZRNTqfJnORA@mail.gmail.com>
+	<20120720210606.GC15677@oc1711230544.ibm.com>
+Date: Sat, 21 Jul 2012 00:59:12 +0200
+X-Google-Sender-Auth: WtON5Cf-fWLtibK9nO0XU35WCBg
+Message-ID: <CADdae-iQAoA_n3_azKWOR7HAe9_tOWybN_bGVG-C_P3Pa8Y1WA@mail.gmail.com>
+Subject: Re: oops in kernel ( 3.4.x -> 3.5rc )
+From: nicolas prochazka <prochazka.nicolas@gmail.com>
+To: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+Cc: Dave Jones <davej@redhat.com>, linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Well done
+1fd36adcd98c14d2fd97f545293c488775cb2823  :  the bug occurs   ( cf dump )
+1dce27c5aa6770e9d195f2bb7db1db3d4dde5591 :  the bug not occurs
 
-I'm experiencing the following problem with kernel versions 3.0.36 
-(down to 3.0.23):
+Regards,
+Nicolas Prochazka.
 
-on our network we all have one default gateway, it's 10.1.1.254, but 
-there are some networks for which we have another gateway and for this 
-networks the default gateway sends an icmp redirect.
+dump  / 1fd36adcd98c14d2fd97f545293c488775cb2823
+lloc_fd: slot 71 not NULL!
+alloc_fd: slot 71 not NULL!
+alloc_fd: slot 71 not NULL!
+alloc_fd: slot 71 not NULL!
+alloc_fd: slot 71 not NULL!
+VMtap: no IPv6 routers present
+alloc_fd: slot 71 not NULL!
+alloc_fd: slot 71 not NULL!
+alloc_fd: slot 71 not NULL!
+alloc_fd: slot 71 not NULL!
+alloc_fd: slot 71 not NULL!
+alloc_fd: slot 71 not NULL!
+alloc_fd: slot 71 not NULL!
+alloc_fd: slot 71 not NULL!
+alloc_fd: slot 71 not NULL!
+alloc_fd: slot 71 not NULL!
+alloc_fd: slot 71 not NULL!
+alloc_fd: slot 71 not NULL!
+alloc_fd: slot 71 not NULL!
+alloc_fd: slot 71 not NULL!
+alloc_fd: slot 71 not NULL!
+alloc_fd: slot 71 not NULL!
+alloc_fd: slot 71 not NULL!
+alloc_fd: slot 71 not NULL!
+alloc_fd: slot 71 not NULL!
+alloc_fd: slot 71 not NULL!
+alloc_fd: slot 71 not NULL!
+alloc_fd: slot 71 not NULL!
+alloc_fd: slot 71 not NULL!
+alloc_fd: slot 71 not NULL!
+alloc_fd: slot 71 not NULL!
+alloc_fd: slot 121 not NULL!
+alloc_fd: slot 96 not NULL!
+alloc_fd: slot 100 not NULL!
+alloc_fd: slot 110 not NULL!
+alloc_fd: slot 121 not NULL!
+alloc_fd: slot 142 not NULL!
+alloc_fd: slot 142 not NULL!
+alloc_fd: slot 142 not NULL!
+alloc_fd: slot 142 not NULL!
+alloc_fd: slot 142 not NULL!
+alloc_fd: slot 142 not NULL!
+alloc_fd: slot 142 not NULL!
+alloc_fd: slot 142 not NULL!
+alloc_fd: slot 142 not NULL!
+alloc_fd: slot 142 not NULL!
+alloc_fd: slot 142 not NULL!
+alloc_fd: slot 142 not NULL!
+alloc_fd: slot 142 not NULL!
+alloc_fd: slot 142 not NULL!
+alloc_fd: slot 142 not NULL!
+alloc_fd: slot 142 not NULL!
+alloc_fd: slot 142 not NULL!
+alloc_fd: slot 142 not NULL!
+alloc_fd: slot 142 not NULL!
+alloc_fd: slot 142 not NULL!
+alloc_fd: slot 142 not NULL!
+alloc_fd: slot 142 not NULL!
+brE: no IPv6 routers present
+alloc_fd: slot 142 not NULL!
+alloc_fd: slot 142 not NULL!
+alloc_fd: slot 142 not NULL!
+alloc_fd: slot 142 not NULL!
+alloc_fd: slot 142 not NULL!
+alloc_fd: slot 142 not NULL!
+alloc_fd: slot 142 not NULL!
+alloc_fd: slot 142 not NULL!
+alloc_fd: slot 142 not NULL!
+alloc_fd: slot 121 not NULL!
+alloc_fd: slot 142 not NULL!
+alloc_fd: slot 153 not NULL!
+alloc_fd: slot 153 not NULL!
+alloc_fd: slot 153 not NULL!
+alloc_fd: slot 68 not NULL!
+alloc_fd: slot 70 not NULL!
+alloc_fd: slot 100 not NULL!
+alloc_fd: slot 102 not NULL!
+alloc_fd: slot 36 not NULL!
+alloc_fd: slot 36 not NULL!
+alloc_fd: slot 36 not NULL!
+alloc_fd: slot 36 not NULL!
+alloc_fd: slot 36 not NULL!
+alloc_fd: slot 106 not NULL!
+alloc_fd: slot 68 not NULL!
+alloc_fd: slot 100 not NULL!
+alloc_fd: slot 100 not NULL!
+alloc_fd: slot 100 not NULL!
+alloc_fd: slot 100 not NULL!
+alloc_fd: slot 68 not NULL!
+alloc_fd: slot 68 not NULL!
+alloc_fd: slot 68 not NULL!
+alloc_fd: slot 68 not NULL!
+alloc_fd: slot 36 not NULL!
+alloc_fd: slot 68 not NULL!
+alloc_fd: slot 68 not NULL!
+alloc_fd: slot 68 not NULL!
+alloc_fd: slot 106 not NULL!
+alloc_fd: slot 68 not NULL!
+alloc_fd: slot 68 not NULL!
+alloc_fd: slot 36 not NULL!
+alloc_fd: slot 100 not NULL!
+alloc_fd: slot 36 not NULL!
+alloc_fd: slot 36 not NULL!
+alloc_fd: slot 36 not NULL!
+alloc_fd: slot 68 not NULL!
+alloc_fd: slot 68 not NULL!
+alloc_fd: slot 68 not NULL!
+alloc_fd: slot 68 not NULL!
+alloc_fd: slot 36 not NULL!
+alloc_fd: slot 36 not NULL!
+alloc_fd: slot 36 not NULL!
+alloc_fd: slot 36 not NULL!
+alloc_fd: slot 36 not NULL!
+alloc_fd: slot 36 not NULL!
+alloc_fd: slot 36 not NULL!
+alloc_fd: slot 68 not NULL!
+alloc_fd: slot 100 not NULL!
+alloc_fd: slot 100 not NULL!
+alloc_fd: slot 100 not NULL!
+alloc_fd: slot 100 not NULL!
+alloc_fd: slot 100 not NULL!
+alloc_fd: slot 100 not NULL!
+alloc_fd: slot 100 not NULL!
+alloc_fd: slot 68 not NULL!
+alloc_fd: slot 68 not NULL!
+alloc_fd: slot 68 not NULL!
+alloc_fd: slot 68 not NULL!
+alloc_fd: slot 68 not NULL!
+alloc_fd: slot 68 not NULL!
+alloc_fd: slot 68 not NULL!
+alloc_fd: slot 68 not NULL!
+alloc_fd: slot 100 not NULL!
+alloc_fd: slot 68 not NULL!
+alloc_fd: slot 68 not NULL!
+alloc_fd: slot 68 not NULL!
+alloc_fd: slot 68 not NULL!
+alloc_fd: slot 68 not NULL!
+alloc_fd: slot 100 not NULL!
+alloc_fd: slot 100 not NULL!
+------------[ cut here ]------------
+kernel BUG at fs/open.c:873!
+invalid opcode: 0000 [#1] SMP
+CPU 0
+Modules linked in: kvm_intel kvm
 
-lets assume my test machine has ip 10.1.20.79 netmask is 255.255.0.0 
-and my default gateway is 10.1.1.254, i now ping the following ip: 
-10.109.98.11, my default gateway (10.1.1.254) now sends me an icmp 
-redirect to another gateway (10.1.1.1) ... and now everything works as 
-expected, i get the replies from 10.109.98.11 but not for long, after 
-approx. 60 (or so) seconds i only get "ping: sendmsg: Network is down".
-(exact same problem with all other tcp/udp protocols, but i used ping 
-for the tests because it also prints the redirect messages to the 
-console)
+then BUG paging request as usual
 
-so let's have a closer look:
 
-not ok - kernel versions 3.0.36 down to 3.0.23:
------------------------------------------------
-
-test-simon:~ # ping 10.109.98.10
-...
-64 bytes from 10.109.98.11: icmp_seq=62 ttl=60 time=12.1 ms
-64 bytes from 10.109.98.11: icmp_seq=63 ttl=60 time=11.6 ms
-ping: sendmsg: Network is down
-ping: sendmsg: Network is down
-
-when looking at "ip neigh" the "ping: sendmsg: Network is down" message 
-appears in the exact moment when the arp entry for the default gateway 
-(10.1.1.254) gets removed from the arp cache:
-
-ping "OK"
-test-simon:~ # ip neigh
-10.1.1.1 dev eth0 lladdr 00:00:0c:9f:f0:64 REACHABLE
-10.1.1.254 dev eth0 lladdr 00:1a:64:8f:23:64 STALE
-
-ping "dead"
-test-simon:~ # ip neigh
-10.1.1.1 dev eth0 lladdr 00:00:0c:9f:f0:64 REACHABLE
-
-so it seems that when the default gateway is removed from the arp cache 
-something goes wrong in the kernel route handling. i don't know the 
-internals of the linux route handling, now i need your help, any ideas 
-what's going wrong?
-
-i did a lot of tests, the problem i described first happens with kernel 
-version 3.0.23, i found in the changelog of 3.0.23 the following two 
-commits:
-(http://www.kernel.org/pub/linux/kernel/v3.0/ChangeLog-3.0.23)
-
-commit 42ab5316ddcaa0de23e88e8a3d363c767b9ab0b3
-Author: Eric Dumazet <eric.dumazet@gmail.com>
-Date:   Fri Nov 18 15:24:32 2011 -0500
-ipv4: fix redirect handling
-
-commit bebee22bcbf0026f92141990972bd5863ef9b69c
-Author: Flavio Leitner <fbl@redhat.com>
-Date:   Mon Oct 24 02:56:38 2011 -0400
-route: fix ICMP redirect validation
-
-i then took the net/ipv4/route.c file from kernel 3.0.22 and replaced 
-the version in 3.0.23 with it, this reverts the two mentioned patches 
-above (if i havent overlooked something) after that the problem 
-disappears.
-so those two patches surely fixed some problem but for kernel versions 
-3.0.23-3.0.36 they broke the gateway icmp redirect handling as described 
-by me here.
-
-i did some further tests with different kernel versions:
-3.5-rc6: OK
-3.4.4: OK
-3.2.22: OK
-3.0.1 - 3.0.22: OK
-3.0.23 - 3.0.36: not OK
-2.6.35.13: OK
-
-now lets have a closer look at a kernel version which works:
-------------------------------------------------------------
-
-this is from 3.5-rc6, but 3.4.4, 3.2.2 and 2.6.35.13 also behave 
-exactly this way, 3.0.1-3.0.22 behave slightly different, see note 
-below.
-
-test-simon:~ # ping 10.109.98.11
-PING 10.109.98.10 (10.109.98.11) 56(84) bytes of data.
-64 bytes from 10.109.98.11: icmp_seq=1 ttl=60 time=15.2 ms
- From 10.1.1.254: icmp_seq=2 Redirect Host(New nexthop: 10.1.1.1)
-...
-
-test-simon:~ # ip neigh
-10.1.1.1 dev eth0 lladdr 00:00:0c:9f:f0:64 REACHABLE
-10.1.1.254 dev eth0 lladdr 00:1a:64:8f:23:64 STALE
-
-and after approx 60 or so seconds:
-
-test-simon:~ # ip neigh
-10.1.1.1 dev eth0 lladdr 00:00:0c:9f:f0:64 REACHABLE
-
-and ping (and everything else) is as expected still working.
-
-note:
------
-
-on 3.0.1-3.0.22:
-
-i see lots of icmp redirects sent from the default gateway (10.1.1.254) 
-to my test machine, while running tcpdump on the default gateway 
-(10.1.1.254) i see every ping packet also arriving there and also some 
-icmp redirect messages going out to my test machine.
-but everything works so i think my test machine is correctly talking to 
-the destination using the other gateway (10.1.1.1).
-i also sniffed a windows 7 client pc, it looks the same there, so 
-possibly no problem, but i mention this because kernel versions 3.5-rc6, 
-3.4.4, 3.2.22 and 2.6.35.13 act differently (see below).
-
-on 3.0.23-3.0.36:
-
-i see lots of icmp redirects sent from the default gateway (10.1.1.254) 
-to my test machine, while running tcpdump on the default gateway 
-(10.1.1.254) i see up to 20 ping packets arriving there and also up to 
-17 icmp redirect messages going out to my test machine, after the 20th 
-ping packet i dont see further ping packets arriving at the default 
-gateway. so my test machine is then only talking to the other gateway 
-(10.1.1.1) i think.
-...
-17:48:41.643952 IP 10.1.1.254 > 10.1.20.79: ICMP redirect 10.109.98.11 
-to host 10.1.1.1, length 92
-...
-17:48:44.649008 IP 10.1.20.79 > 10.109.98.11: ICMP echo request, id 
-30733, seq 20, length 64
-17:48:44.649018 IP 10.1.20.79 > 10.109.98.11: ICMP echo request, id 
-30733, seq 20, length 64
-
-on 3.5-rc6, 3.4.4, 3.2.22 and 2.6.35.13:
-
-here it looks different, and for me this is the expected behavior, or 
-at least the behavior i have seen from lots of linux machines on my 
-network. i see 1-2 icmp redirects sent from the default gateway 
-(10.1.1.254) to my test machine, while running tcpdump on the default 
-gateway (10.1.1.254) i only see up to 2 ping packets arriving then 
-nothing, so then my test machine seems to only talk to the other gateway 
-(10.1.1.1).
-
-17:50:58.995894 IP 10.1.20.79 > 10.109.98.11: ICMP echo request, id 
-10766, seq 1, length 64
-17:50:58.995914 IP 10.1.20.79 > 10.109.98.11: ICMP echo request, id 
-10766, seq 1, length 64
-17:50:59.997260 IP 10.1.20.79 > 10.109.98.11: ICMP echo request, id 
-10766, seq 2, length 64
-17:50:59.997277 IP 10.1.1.254 > 10.1.20.79: ICMP redirect 10.109.98.11 
-to host 10.1.1.1, length 92
-17:50:59.997287 IP 10.1.20.79 > 10.109.98.11: ICMP echo request, id 
-10766, seq 2, length 64
-
-...
-
-(before someone asks why i "must" use kernel 3.0.x ... because this are 
-SLES 11 SP2 VMs and they currently ship kernel 3.0.34)
-
-i hope i described the problem in a way so that the kernel network 
-stack maintainers can understand the problem, please conact me if you 
-have further questions, and please CC me as i am not subscribed to 
-linux-kernel. this message is already on linux-netdev, if you wish you 
-can CC your answer also there.
-
-kind regards,
-Simon Roscic.
-
+2012/7/20 Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>:
+> On Fri, Jul 20, 2012 at 10:52:40PM +0200, nicolas prochazka wrote:
+>> Hello
+>> the problem is occured with  :
+>> - linux kernel 3.4.5    i do not test with 3.4.0 / 1 / 2 / 3 / 4    ,
+>> but i can if you want
+>> - linux kernel 3.5rc6 rc7  / do not test with other rc.
+>>
+>> the problem is not occured with :
+>> linux kernel 3.3.4 / 3.3.8
+>>
+>> These servers are used for :
+>> - starting a lot of virtual machine with qemu-kvm ( ~ 40 )   ( lot of
+>> select i think)
+>> - do a lot of network tests with openvswitch
+>>
+>> I can test a kernel 3.4.x before and after a commit id (?) to find a regression.
+>>
+>> Regards,
+>> Nicolas.
+>>
+>
+> Can you try this commit 1fd36adcd98c14d2fd97f545293c488775cb2823? And
+> the commit before it?
+>
+>>
+>> 2012/7/20 Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>:
+>> > On Fri, Jul 20, 2012 at 09:21:53AM -0400, Dave Jones wrote:
+>> >> On Fri, Jul 20, 2012 at 11:56:06AM +0200, nicolas prochazka wrote:
+>> >>
+>> >>  > [ 2384.900061] BUG: unable to handle kernel paging request at 000000010000002f
+>> >>
+>> >> That '1' looks like a random bit flip. Try running memtest86.
+>> >>
+>> >
+>> > Looks more a 32-bit value of 1 followed by a 32-bit value of 0x2f. Most
+>> > likely a pointer to some other piece of a struct. However, taking a look
+>> > at fs/files.c code, nothing seems suspicious.
+>> >
+>> > Nicolas, it wasn't clear to me if you had problems with 3.4 too. There
+>> > has been some changes in fs/files.c on 3.4-rc1 in the piece of code
+>> > where you hit the problem.
+>> >
+>> > What does your system exercise? Any chance you are using a lot of
+>> > select, which has also been changed in those same patches to fs/files.c?
+>> >
+>> > Regards.
+>> > Cascardo.
+>> >
+>> >
+>> >>  > [ 2384.910010] Pid: 23838, comm: queue.sh Tainted: G      D W
+>> >>
+>> >> This wasn't the first problem either.
+>> >>
+>> >>  > [ 2397.885344] BUG: unable to handle kernel paging request at 000000010000003b
+>> >>
+>> >> Looks like the same flipped bit.
+>> >>
+>> >>       Dave
+>> >>
+>> >> --
+>> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> >> the body of a message to majordomo@vger.kernel.org
+>> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> >> Please read the FAQ at  http://www.tux.org/lkml/
+>> >>
+>> >
+>>
+>
