@@ -1,54 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752631Ab2GTTlV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 15:41:21 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:39872 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751570Ab2GTTlT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 15:41:19 -0400
-Date: Fri, 20 Jul 2012 12:41:14 -0700
-From: Tejun Heo <tj@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, tglx@linutronix.de,
+	id S1753576Ab2GTTqM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 15:46:12 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:50187 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752810Ab2GTTqK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 15:46:10 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCHv2] cpufreq: Fix sysfs deadlock with concurrent hotplug/frequency switch
+Date: Fri, 20 Jul 2012 21:51:49 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
         linux-pm@vger.kernel.org
-Subject: Re: [PATCHSET] workqueue: reimplement CPU hotplug to keep idle
- workers
-Message-ID: <20120720194114.GA21218@google.com>
-References: <1342545149-3515-1-git-send-email-tj@kernel.org>
- <1342808550.2583.48.camel@twins>
- <20120720183400.GL32763@google.com>
- <201207202144.05154.rjw@sisk.pl>
+References: <1342808078-5317-1-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <1342808078-5317-1-git-send-email-sboyd@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201207202144.05154.rjw@sisk.pl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201207202151.49537.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Rafael.
-
-On Fri, Jul 20, 2012 at 09:44:04PM +0200, Rafael J. Wysocki wrote:
-> Well, there are use cases I'm not really familiar with.
+On Friday, July 20, 2012, Stephen Boyd wrote:
+> Running one program that continuously hotplugs and replugs a cpu
+> concurrently with another program that continuously writes to the
+> scaling_setspeed node eventually deadlocks with:
 > 
-> Pretty much the only use case I'm sufficiently familiar with is
-> suspend/hibernate where we unplug all of the nonboot CPUs at one point.
+> =============================================
+> [ INFO: possible recursive locking detected ]
+> 3.4.0 #37 Tainted: G        W
+> ---------------------------------------------
+> filemonkey/122 is trying to acquire lock:
+>  (s_active#13){++++.+}, at: [<c01a3d28>] sysfs_remove_dir+0x9c/0xb4
 > 
-> The other use cases, which I don't really think are entirely valid,
-> are on some ARM platforms where CPUs are unplugged instead of being put into
-> C-states or equivalent (because we don't have a good mechanism for handling
-> multiprocessor C-states; there's a set of patches for that waiting for
-> the merge window in the Len's tree).  I'm hoping to get rid of those
-> use cases in future entirely.
+> but task is already holding lock:
+>  (s_active#13){++++.+}, at: [<c01a22f0>] sysfs_write_file+0xe8/0x140
+> 
+> other info that might help us debug this:
+>  Possible unsafe locking scenario:
+> 
+>        CPU0
+>        ----
+>   lock(s_active#13);
+>   lock(s_active#13);
+> 
+>  *** DEADLOCK ***
+> 
+>  May be due to missing lock nesting notation
+> 
+> 2 locks held by filemonkey/122:
+>  #0:  (&buffer->mutex){+.+.+.}, at: [<c01a2230>] sysfs_write_file+0x28/0x140
+>  #1:  (s_active#13){++++.+}, at: [<c01a22f0>] sysfs_write_file+0xe8/0x140
+> 
+> stack backtrace:
+> [<c0014fcc>] (unwind_backtrace+0x0/0x120) from [<c00ca600>] (validate_chain+0x6f8/0x1054)
+> [<c00ca600>] (validate_chain+0x6f8/0x1054) from [<c00cb778>] (__lock_acquire+0x81c/0x8d8)
+> [<c00cb778>] (__lock_acquire+0x81c/0x8d8) from [<c00cb9c0>] (lock_acquire+0x18c/0x1e8)
+> [<c00cb9c0>] (lock_acquire+0x18c/0x1e8) from [<c01a3ba8>] (sysfs_addrm_finish+0xd0/0x180)
+> [<c01a3ba8>] (sysfs_addrm_finish+0xd0/0x180) from [<c01a3d28>] (sysfs_remove_dir+0x9c/0xb4)
+> [<c01a3d28>] (sysfs_remove_dir+0x9c/0xb4) from [<c02d0e5c>] (kobject_del+0x10/0x38)
+> [<c02d0e5c>] (kobject_del+0x10/0x38) from [<c02d0f74>] (kobject_release+0xf0/0x194)
+> [<c02d0f74>] (kobject_release+0xf0/0x194) from [<c0565a98>] (cpufreq_cpu_put+0xc/0x24)
+> [<c0565a98>] (cpufreq_cpu_put+0xc/0x24) from [<c05683f0>] (store+0x6c/0x74)
+> [<c05683f0>] (store+0x6c/0x74) from [<c01a2314>] (sysfs_write_file+0x10c/0x140)
+> [<c01a2314>] (sysfs_write_file+0x10c/0x140) from [<c014af44>] (vfs_write+0xb0/0x128)
+> [<c014af44>] (vfs_write+0xb0/0x128) from [<c014b06c>] (sys_write+0x3c/0x68)
+> [<c014b06c>] (sys_write+0x3c/0x68) from [<c000e0e0>] (ret_fast_syscall+0x0/0x3c)
+> 
+> This is because store() in cpufreq.c indirectly calls
+> kobject_get() via cpufreq_cpu_get() and is the last one to call
+> kobject_put() via cpufreq_cpu_put(). Sysfs code should not call
+> kobject_get() or kobject_put() directly (see the comment around
+> sysfs_schedule_callback() for more information).
+> 
+> Fix this deadlock by introducing two new functions:
+> 
+> 	struct cpufreq_policy *cpufreq_cpu_get_sysfs(unsigned int cpu)
+> 	void cpufreq_cpu_put_sysfs(struct cpufreq_policy *data)
+> 
+> which do the same thing as cpufreq_cpu_{get,put}() but don't call
+> kobject functions.
+> 
+> To easily trigger this deadlock you can insert an msleep() with a
+> reasonably large value right after the fail label at the bottom
+> of the store() function in cpufreq.c and then write
+> scaling_setspeed in one task and offline the cpu in another. The
+> first task will hang and be detected by the hung task detector.
+> 
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 
-I see, so the highest frequency user would most likely be
-suspend/resume - especially with opportunistic approach like the one
-used in androids.
+Thanks, applied to the pm-cpufreq branch of the linux-pm.git tree, will be
+pushed for v3.6.
 
-Thanks for the explanation.
+Thanks,
+Rafael
 
--- 
-tejun
+
+> ---
+> 
+> Changes from v1:
+>  - switch sysfs arg to bool
+>  - remove patch from commit text
+> 
+>  drivers/cpufreq/cpufreq.c | 35 +++++++++++++++++++++++++++--------
+>  1 file changed, 27 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index 7f2f149..fb8a527 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -138,7 +138,7 @@ void disable_cpufreq(void)
+>  static LIST_HEAD(cpufreq_governor_list);
+>  static DEFINE_MUTEX(cpufreq_governor_mutex);
+>  
+> -struct cpufreq_policy *cpufreq_cpu_get(unsigned int cpu)
+> +static struct cpufreq_policy *__cpufreq_cpu_get(unsigned int cpu, bool sysfs)
+>  {
+>  	struct cpufreq_policy *data;
+>  	unsigned long flags;
+> @@ -162,7 +162,7 @@ struct cpufreq_policy *cpufreq_cpu_get(unsigned int cpu)
+>  	if (!data)
+>  		goto err_out_put_module;
+>  
+> -	if (!kobject_get(&data->kobj))
+> +	if (!sysfs && !kobject_get(&data->kobj))
+>  		goto err_out_put_module;
+>  
+>  	spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
+> @@ -175,16 +175,35 @@ err_out_unlock:
+>  err_out:
+>  	return NULL;
+>  }
+> +
+> +struct cpufreq_policy *cpufreq_cpu_get(unsigned int cpu)
+> +{
+> +	return __cpufreq_cpu_get(cpu, false);
+> +}
+>  EXPORT_SYMBOL_GPL(cpufreq_cpu_get);
+>  
+> +static struct cpufreq_policy *cpufreq_cpu_get_sysfs(unsigned int cpu)
+> +{
+> +	return __cpufreq_cpu_get(cpu, true);
+> +}
+>  
+> -void cpufreq_cpu_put(struct cpufreq_policy *data)
+> +static void __cpufreq_cpu_put(struct cpufreq_policy *data, bool sysfs)
+>  {
+> -	kobject_put(&data->kobj);
+> +	if (!sysfs)
+> +		kobject_put(&data->kobj);
+>  	module_put(cpufreq_driver->owner);
+>  }
+> +
+> +void cpufreq_cpu_put(struct cpufreq_policy *data)
+> +{
+> +	__cpufreq_cpu_put(data, false);
+> +}
+>  EXPORT_SYMBOL_GPL(cpufreq_cpu_put);
+>  
+> +static void cpufreq_cpu_put_sysfs(struct cpufreq_policy *data)
+> +{
+> +	__cpufreq_cpu_put(data, true);
+> +}
+>  
+>  /*********************************************************************
+>   *            EXTERNALLY AFFECTING FREQUENCY CHANGES                 *
+> @@ -617,7 +636,7 @@ static ssize_t show(struct kobject *kobj, struct attribute *attr, char *buf)
+>  	struct cpufreq_policy *policy = to_policy(kobj);
+>  	struct freq_attr *fattr = to_attr(attr);
+>  	ssize_t ret = -EINVAL;
+> -	policy = cpufreq_cpu_get(policy->cpu);
+> +	policy = cpufreq_cpu_get_sysfs(policy->cpu);
+>  	if (!policy)
+>  		goto no_policy;
+>  
+> @@ -631,7 +650,7 @@ static ssize_t show(struct kobject *kobj, struct attribute *attr, char *buf)
+>  
+>  	unlock_policy_rwsem_read(policy->cpu);
+>  fail:
+> -	cpufreq_cpu_put(policy);
+> +	cpufreq_cpu_put_sysfs(policy);
+>  no_policy:
+>  	return ret;
+>  }
+> @@ -642,7 +661,7 @@ static ssize_t store(struct kobject *kobj, struct attribute *attr,
+>  	struct cpufreq_policy *policy = to_policy(kobj);
+>  	struct freq_attr *fattr = to_attr(attr);
+>  	ssize_t ret = -EINVAL;
+> -	policy = cpufreq_cpu_get(policy->cpu);
+> +	policy = cpufreq_cpu_get_sysfs(policy->cpu);
+>  	if (!policy)
+>  		goto no_policy;
+>  
+> @@ -656,7 +675,7 @@ static ssize_t store(struct kobject *kobj, struct attribute *attr,
+>  
+>  	unlock_policy_rwsem_write(policy->cpu);
+>  fail:
+> -	cpufreq_cpu_put(policy);
+> +	cpufreq_cpu_put_sysfs(policy);
+>  no_policy:
+>  	return ret;
+>  }
+> 
+
