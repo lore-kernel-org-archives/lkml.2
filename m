@@ -1,130 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752686Ab2GTHB7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 03:01:59 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48482 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751449Ab2GTHBv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 03:01:51 -0400
-From: Jon Mason <jdmason@kudzu.us>
-To: trivial@kernel.org
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        John Ronciak <john.ronciak@intel.com>
-Subject: [trivial PATCH resend 1/2] ixgb: use PCI_VENDOR_ID_INTEL
-Date: Fri, 20 Jul 2012 00:02:08 -0700
-Message-Id: <1342767729-17788-2-git-send-email-jdmason@kudzu.us>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1342767729-17788-1-git-send-email-jdmason@kudzu.us>
-References: <1342767729-17788-1-git-send-email-jdmason@kudzu.us>
+	id S1752477Ab2GTHDr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 03:03:47 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:26065 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750971Ab2GTHDo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 03:03:44 -0400
+X-IronPort-AV: E=Sophos;i="4.77,621,1336320000"; 
+   d="scan'208";a="5444838"
+Message-ID: <500903EF.70200@cn.fujitsu.com>
+Date: Fri, 20 Jul 2012 15:08:31 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org
+CC: rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
+        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
+        minchan.kim@gmail.com, akpm@linux-foundation.org,
+        kosaki.motohiro@jp.fujitsu.com,
+        Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>
+Subject: [PATCH 0/8] remove memory info from list before freeing it
+References: <5009038A.4090001@cn.fujitsu.com>
+In-Reply-To: <5009038A.4090001@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/20 15:04:20,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/20 15:04:23,
+	Serialize complete at 2012/07/20 15:04:23
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use PCI_VENDOR_ID_INTEL from pci_ids.h instead of creating its own
-vendor ID #define.
+We free info, but we forget to remove it from the list. It will cause
+unexpected problem when we access the list next time.
 
-Signed-off-by: Jon Mason <jdmason@kudzu.us>
-Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Cc: Jesse Brandeburg <jesse.brandeburg@intel.com>
-Cc: Bruce Allan <bruce.w.allan@intel.com>
-Cc: Carolyn Wyborny <carolyn.wyborny@intel.com>
-Cc: Don Skidmore <donald.c.skidmore@intel.com>
-Cc: Greg Rose <gregory.v.rose@intel.com>
-Cc: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-Cc: Alex Duyck <alexander.h.duyck@intel.com>
-Cc: John Ronciak <john.ronciak@intel.com>
+Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
 ---
- drivers/net/ethernet/intel/ixgb/ixgb_hw.c   |    5 +++--
- drivers/net/ethernet/intel/ixgb/ixgb_ids.h  |    5 -----
- drivers/net/ethernet/intel/ixgb/ixgb_main.c |   10 +++++-----
- 3 files changed, 8 insertions(+), 12 deletions(-)
+ drivers/acpi/acpi_memhotplug.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/net/ethernet/intel/ixgb/ixgb_hw.c b/drivers/net/ethernet/intel/ixgb/ixgb_hw.c
-index 99b69ad..bf9a220 100644
---- a/drivers/net/ethernet/intel/ixgb/ixgb_hw.c
-+++ b/drivers/net/ethernet/intel/ixgb/ixgb_hw.c
-@@ -32,6 +32,7 @@
- 
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
- 
-+#include <linux/pci_ids.h>
- #include "ixgb_hw.h"
- #include "ixgb_ids.h"
- 
-@@ -96,7 +97,7 @@ static u32 ixgb_mac_reset(struct ixgb_hw *hw)
- 	ASSERT(!(ctrl_reg & IXGB_CTRL0_RST));
- #endif
- 
--	if (hw->subsystem_vendor_id == SUN_SUBVENDOR_ID) {
-+	if (hw->subsystem_vendor_id == PCI_VENDOR_ID_SUN) {
- 		ctrl_reg =  /* Enable interrupt from XFP and SerDes */
- 			   IXGB_CTRL1_GPI0_EN |
- 			   IXGB_CTRL1_SDP6_DIR |
-@@ -271,7 +272,7 @@ ixgb_identify_phy(struct ixgb_hw *hw)
+diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
+index 8fe0e02..5cafd6b 100644
+--- a/drivers/acpi/acpi_memhotplug.c
++++ b/drivers/acpi/acpi_memhotplug.c
+@@ -323,6 +323,7 @@ static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
+ 			if (result)
+ 				return result;
+ 		}
++		list_del(&info->list);
+ 		kfree(info);
  	}
  
- 	/* update phy type for sun specific board */
--	if (hw->subsystem_vendor_id == SUN_SUBVENDOR_ID)
-+	if (hw->subsystem_vendor_id == PCI_VENDOR_ID_SUN)
- 		phy_type = ixgb_phy_type_bcm;
- 
- 	return phy_type;
-diff --git a/drivers/net/ethernet/intel/ixgb/ixgb_ids.h b/drivers/net/ethernet/intel/ixgb/ixgb_ids.h
-index 2a58847..32c1b30 100644
---- a/drivers/net/ethernet/intel/ixgb/ixgb_ids.h
-+++ b/drivers/net/ethernet/intel/ixgb/ixgb_ids.h
-@@ -33,11 +33,6 @@
- ** The Device and Vendor IDs for 10 Gigabit MACs
- **********************************************************************/
- 
--#define INTEL_VENDOR_ID             0x8086
--#define INTEL_SUBVENDOR_ID          0x8086
--#define SUN_VENDOR_ID               0x108E
--#define SUN_SUBVENDOR_ID            0x108E
--
- #define IXGB_DEVICE_ID_82597EX      0x1048
- #define IXGB_DEVICE_ID_82597EX_SR   0x1A48
- #define IXGB_DEVICE_ID_82597EX_LR   0x1B48
-diff --git a/drivers/net/ethernet/intel/ixgb/ixgb_main.c b/drivers/net/ethernet/intel/ixgb/ixgb_main.c
-index 5fce363..4e5a060 100644
---- a/drivers/net/ethernet/intel/ixgb/ixgb_main.c
-+++ b/drivers/net/ethernet/intel/ixgb/ixgb_main.c
-@@ -54,13 +54,13 @@ MODULE_PARM_DESC(copybreak,
-  *   Class, Class Mask, private data (not used) }
-  */
- static DEFINE_PCI_DEVICE_TABLE(ixgb_pci_tbl) = {
--	{INTEL_VENDOR_ID, IXGB_DEVICE_ID_82597EX,
-+	{PCI_VENDOR_ID_INTEL, IXGB_DEVICE_ID_82597EX,
- 	 PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
--	{INTEL_VENDOR_ID, IXGB_DEVICE_ID_82597EX_CX4,
-+	{PCI_VENDOR_ID_INTEL, IXGB_DEVICE_ID_82597EX_CX4,
- 	 PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
--	{INTEL_VENDOR_ID, IXGB_DEVICE_ID_82597EX_SR,
-+	{PCI_VENDOR_ID_INTEL, IXGB_DEVICE_ID_82597EX_SR,
- 	 PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
--	{INTEL_VENDOR_ID, IXGB_DEVICE_ID_82597EX_LR,
-+	{PCI_VENDOR_ID_INTEL, IXGB_DEVICE_ID_82597EX_LR,
- 	 PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
- 
- 	/* required last entry */
-@@ -195,7 +195,7 @@ ixgb_irq_enable(struct ixgb_adapter *adapter)
- {
- 	u32 val = IXGB_INT_RXT0 | IXGB_INT_RXDMT0 |
- 		  IXGB_INT_TXDW | IXGB_INT_LSC;
--	if (adapter->hw.subsystem_vendor_id == SUN_SUBVENDOR_ID)
-+	if (adapter->hw.subsystem_vendor_id == PCI_VENDOR_ID_SUN)
- 		val |= IXGB_INT_GPI0;
- 	IXGB_WRITE_REG(&adapter->hw, IMS, val);
- 	IXGB_WRITE_FLUSH(&adapter->hw);
 -- 
-1.7.9.5
+1.7.1
 
