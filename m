@@ -1,589 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752249Ab2GTT4x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 15:56:53 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:54139 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751619Ab2GTT4w (ORCPT
+	id S1752326Ab2GTUIK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 16:08:10 -0400
+Received: from imr-ma06.mx.aol.com ([64.12.78.142]:47562 "EHLO
+	imr-ma06.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751567Ab2GTUII (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 15:56:52 -0400
-X-Forefront-Antispam-Report: CIP:160.36.179.112;KIP:(null);UIP:(null);IPV:NLI;H:kedge2.utk.tennessee.edu;RD:kedge2.utk.tennessee.edu;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(zzzz1202hzzz2dh87h2a8h668h839h8e2h8e3h944he96h107ahbe9i)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Fri, 20 Jul 2012 15:56:46 -0400
-From: Vince Weaver <vweaver1@eecs.utk.edu>
-X-X-Sender: vweaver1@cl320.icl.utk.edu
-To: <linux-kernel@vger.kernel.org>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Stephane Eranian <eranian@gmail.com>
-Subject: rdpmc read performance issue
-Message-ID: <alpine.DEB.2.00.1207201551250.27782@cl320.icl.utk.edu>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 20 Jul 2012 16:08:08 -0400
+Message-Id: <201207202005.q6KK5Egu005527@imr-ma06.mx.aol.com>
+Content-Type: multipart/mixed; boundary="===============1327266249=="
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Subject: Attention:Beneficiary,
+To: Recipients <charlesk139@aol.com>
+From: "Mr.Banki M" <charlesk139@aol.com>
+Date: Fri, 20 Jul 2012 21:03:45 +0100
+Reply-To: unofficemailsmailbox@rediffmail.com
+X-AOL-VSS-INFO: 5400.1158/82386
+X-AOL-VSS-CODE: clean
+X-AOL-SCOLL-SCORE: 0:2:378623936:93952408  
+X-AOL-SCOLL-URL_COUNT: 0  
+x-aol-global-disposition: G
+X-AOL-VSS-INFO: 5400.1158/82386
+X-AOL-VSS-CODE: clean
+X-AOL-SCOLL-SCORE: 0:2:408462432:93952408  
+X-AOL-SCOLL-URL_COUNT: 0  
+x-aol-sid: 3039ac1d33825009b9f8283d
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
-
-I was testing out the newish "rdpmc from userspace" patches that made it 
-into 3.4.  (I was considering adding support to PAPI).  However I've found 
-that using rdpmc is *slower* than just using regular read.
-
-Am I doing something wrong?  At least on this core2 system it's never 
-faster to use rdpmc, and it gets worse as you add more than one event.
-
-Core2 Average Read Overhead (Cycles)
-
-Events	rdpmc	read
-1	2935	2104
-2	4934	2902
-3	7088	3751
-4	9158	4597
-
-
-Vince
-
-
-Below is the test code.  You have to specify one of the architectures 
-supported (core2, nehalem, atom, amd0fh) to get usable events.
-
-
-
-
-/* by Vince Weaver, vweaver1@eecs.utk.edu                        */
-/* Compile with gcc -O2 -o rdpmc_overhead rdpmc_overhead.c       */
-/* You need at least a 3.4 kernel for this to run.               */
-/* Ideally you'll turn off NMI watchdog too.                     */
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-
-#include <sys/utsname.h>
-
-#include <time.h>
-
-#include "perf_event.h"
-#include <unistd.h>
-#include <asm/unistd.h>
-
-#include <sys/ioctl.h>
-#include <errno.h>
-
-#include <sys/mman.h>
-
-#ifndef __NR_perf_event_open
-
-#if defined(__i386__)
-#define __NR_perf_event_open    336
-#elif defined(__x86_64__) 
-#define __NR_perf_event_open    298
-#elif defined __powerpc__
-#define __NR_perf_event_open    319
-#elif defined __arm__
-#define __NR_perf_event_open    364
-#endif
-#endif
-
-
-int perf_event_open(struct perf_event_attr *hw_event_uptr,
-                    pid_t pid, int cpu, int group_fd, unsigned long flags) {
-   
-  return syscall(__NR_perf_event_open,hw_event_uptr, pid, cpu,
-                 group_fd, flags);
-}
-
-#define MAX_EVENTS 16
-
-int core2_events[MAX_EVENTS]={
-  0x53003c, //"UNHALTED_CORE_CYCLES",         /* PAPI_TOT_CYC */
-  0x5300c0, //"INSTRUCTIONS_RETIRED",         /* PAPI_TOT_INS */
-  0x5300c4, //"BRANCH_INSTRUCTIONS_RETIRED",  /* PAPI_BR_INS  */
-  0x5300c5, //"MISPREDICTED_BRANCH_RETIRED",  /* PAPI_BR_MSP  */
-  0x531282, //"ITLB:MISSES",                  /* PAPI_TLB_IM  */
-  0x530108, //"DTLB_MISSES:ANY",              /* PAPI_TLB_DM  */
-  0x530080, //"L1I_READS",                    /* PAPI_L1_ICA  */
-  0x530081, //"L1I_MISSES",                   /* PAPI_L1_ICM  */
-  0x530143, //"L1D_ALL_REF",                  /* PAPI_L1_DCA  */
-  0x530f45, //"L1D_REPL",                     /* PAPI_L1_DCM  */
-  0x5300c8, //"HW_INT_RCV",                   /* PAPI_HW_INT  */
-  0x530010, //"FP_COMP_OPS_EXE",              /* PAPI_FP_OPS  */
-  0x5301c0, //"INST_RETIRED:LOADS",           /* PAPI_LD_INS  */
-  0x5302c0, //"INST_RETIRED:STORES",          /* PAPI_SR_INS  */
-  0x537f2e, //"L2_RQSTS:SELF:ANY:MESI",       /* PAPI_L2_TCA  */
-  0x537024, //"L2_LINES_IN:SELF:ANY",         /* PAPI_L2_TCM  */
-};
-
-int atom_events[MAX_EVENTS]={
-  0x53003c, //"UNHALTED_CORE_CYCLES",         /* PAPI_TOT_CYC */
-  0x5300c0, // "INSTRUCTIONS_RETIRED",         /* PAPI_TOT_INS */
-  0x5300c4, // "BRANCH_INSTRUCTIONS_RETIRED",  /* PAPI_BR_INS  */
-  0x5300c5, // "MISPREDICTED_BRANCH_RETIRED",  /* PAPI_BR_MSP  */
-  0x530282, // "ITLB:MISSES",                  /* PAPI_TLB_IM  */
-  0x530708, // "DATA_TLB_MISSES:DTLB_MISS",    /* PAPI_TLB_DM  */
-  0x530380, //"ICACHE:ACCESSES",              /* PAPI_L1_ICA  */
-  0x530280, // "ICACHE:MISSES",                /* PAPI_L1_ICM  */
-  0x532140, // "L1D_CACHE:LD",                 /* PAPI_L1_DCA  */
-  0x537f2e, // "L2_RQSTS:SELF",                /* PAPI_L1_DCM  */
-  0x5301c8, //"HW_INT_RCV",                   /* PAPI_HW_INT  */
-  0x531fc7, // "SIMD_INST_RETIRED:ANY",        /* PAPI_FP_OPS  */
-  0x537f29, //"L2_LD:SELF:ANY:MESI",          /* PAPI_LD_INS  */
-  0x534f2a, //"L2_ST:SELF:MESI",              /* PAPI_SR_INS  */
-  0x537f29, //"L2_LD:SELF:ANY:MESI",          /* PAPI_L2_TCA  */
-  0x537024, //"L2_LINES_IN:SELF:ANY",         /* PAPI_L2_TCM  */
-};
-
-int amd10h_events[MAX_EVENTS]={
-  0x530076, // "CPU_CLK_UNHALTED",                         /* PAPI_TOT_CYC */
-  0x5300c0, // "RETIRED_INSTRUCTIONS",                     /* PAPI_TOT_INS */
-  0x5300c2, // "RETIRED_BRANCH_INSTRUCTIONS",              /* PAPI_BR_INS  */
-  0x5300c3, // "RETIRED_MISPREDICTED_BRANCH_INSTRUCTIONS", /* PAPI_BR_MSP  */
-  0x530385, // "L1_ITLB_MISS_AND_L2_ITLB_MISS:ALL",        /* PAPI_TLB_IM  */
-  0x530746, // "L1_DTLB_AND_L2_DTLB_MISS",                 /* PAPI_TLB_DM  */
-  0x530080, // "INSTRUCTION_CACHE_FETCHES",                /* PAPI_L1_ICA  */
-  0x530081, // "INSTRUCTION_CACHE_MISSES",                 /* PAPI_L1_ICM  */
-  0x530040, // "DATA_CACHE_ACCESSES",                      /* PAPI_L1_DCA  */
-  0x530041, // "DATA_CACHE_MISSES",                        /* PAPI_L1_DCM  */
-  0x5300cf, // "INTERRUPTS_TAKEN",                         /* PAPI_HW_INT  */
-  0x530300, // "DISPATCHED_FPU:OPS_MULTIPLY:OPS_ADD",      /* PAPI_FP_OPS  */
-  0x5300d0, // "DECODER_EMPTY",                            /* PAPI_LD_INS  */ /* nope */
-  0x5300d1, // "DISPATCH_STALLS",                          /* PAPI_SR_INS  */ /* nope */
-  0x533f7d, // "REQUESTS_TO_L2:ALL",                       /* PAPI_L2_TCA  */
-  0x53037e, // "L2_CACHE_MISS:INSTRUCTIONS:DATA",          /* PAPI_L2_TCM  */
-};
-
-int nehalem_events[MAX_EVENTS]={
-  0x53003c, // "UNHALTED_CORE_CYCLES",         /* PAPI_TOT_CYC */
-  0x5300c0, // "INSTRUCTIONS_RETIRED",         /* PAPI_TOT_INS */
-  0x537f88, // "BR_INST_EXEC:ANY",             /* PAPI_BR_INS  */
-  0x537f89, // "BR_MISP_EXEC:ANY",             /* PAPI_BR_MSP  */
-  0x530185, // "ITLB_MISSES:ANY",              /* PAPI_TLB_IM  */
-  0x530149, // "DTLB_MISSES:ANY",              /* PAPI_TLB_DM  */
-  0x530380, // "L1I:READS",                    /* PAPI_L1_ICA  */
-  0x530280, // "L1I:MISSES",                   /* PAPI_L1_ICM  */
-  0x530143, // "L1D_ALL_REF:ANY",              /* PAPI_L1_DCA  */
-  0x530151, // "L1D:REPL",                     /* PAPI_L1_DCM  */
-  0x53011d, // "HW_INT:RCV",                   /* PAPI_HW_INT  */
-  0x530410, // "FP_COMP_OPS_EXE:SSE_FP",       /* PAPI_FP_OPS  */
-  0x53010b, // "MEM_INST_RETIRED:LOADS",       /* PAPI_LD_INS  */
-  0x53020b, // "MEM_INST_RETIRED:STORES",      /* PAPI_SR_INS  */
-  0x53ff24, // "L2_RQSTS:REFERENCES",          /* PAPI_L2_TCA  */
-  0x53c024, // "L2_RQSTS:PREFETCHES",          /* PAPI_L2_TCM  */
-};
-
-
-int events[MAX_EVENTS];
-
-static unsigned long long rdtsc(void) {
-  unsigned a,d;
-
-  __asm__ volatile("rdtsc" : "=a" (a), "=d" (d));
-
-  return ((unsigned long long)a) | (((unsigned long long)d) << 32);
-}
-
-static unsigned long long rdpmc(unsigned int counter) {
-  unsigned int low, high;
-
-  __asm__ volatile("rdpmc" : "=a" (low), "=d" (high) : "c" (counter));
-
-  return (unsigned long long)low | ((unsigned long long)high) <<32;
-}
-
-#define barrier() __asm__ volatile("" ::: "memory")
-
-
-/* Ingo's code for using rdpmc */
-static inline unsigned long long mmap_read_self(void *addr) {
-  
-    struct perf_event_mmap_page *pc = addr;
-    unsigned int seq,idx;
-
-    unsigned long long count;
-
-    do {
-      seq=pc->lock;
-      barrier();
-
-      idx=pc->index;
-      count=pc->offset;
-
-      if (idx) {
-	count+=rdpmc(pc->index-1);
-      }
-      barrier();
-    } while (pc->lock != seq);
-  
-
-  return count;
-}
-
-
-int test_rdpmc(int count) {
-
-   int i;
-   static long page_size=4096;
-   
-   long long before,after;
-   long long start_before,start_after;
-   long long stop_before,stop_after;
-   long long read_before,read_after;
-
-   long long init_ns=0,eventset_ns=0;
-   void *addr[MAX_EVENTS];
-
-   struct perf_event_attr pe;
-   int fd[MAX_EVENTS],ret1,ret2;
-
-   unsigned long long now[MAX_EVENTS],stamp[MAX_EVENTS];
-
-   /************************/
-   /* measure init latency */
-   /************************/
-
-   before=rdtsc();
-
-   after=rdtsc();
-
-   init_ns=after-before;
-
-   /*****************************/
-   /* measure eventset creation */
-   /*****************************/
-
-   before=rdtsc();
-
-   memset(&pe,0,sizeof(struct perf_event_attr));
-
-   pe.type=PERF_TYPE_RAW;
-   pe.size=sizeof(struct perf_event_attr);
-   pe.read_format=PERF_FORMAT_GROUP|PERF_FORMAT_ID;
-
-   fd[0]=-1;
-
-   for(i=0;i<count;i++) {
-     pe.config=events[i];
-
-     if (i==0) {
-        pe.disabled=1;
-        pe.pinned=1;
-     }
-     else {
-        pe.disabled=0;
-        pe.pinned=0;
-     }
-
-     fd[i]=perf_event_open(&pe,0,-1,fd[0],0);
-     if (fd[i]<0) {
-        printf("error perf_event_opening\n");
-	exit(1);
-      }
-   
-      addr[i]=mmap(NULL,page_size, PROT_READ, MAP_SHARED,fd[i],0);
-      if (addr[i] == (void *)(-1)) {
-        printf("Error mmaping!\n");
-        exit(1);
-      }
-   }
-
-   after=rdtsc();
-
-   eventset_ns=after-before;
-
-   /*********/
-   /* start */
-   /*********/
-   start_before=rdtsc();
-
-   ret1=ioctl(fd[0], PERF_EVENT_IOC_ENABLE,0);
-
-   start_after=rdtsc();
-
-   /********/
-   /* read */
-   /********/
-
-   /* read before values */
-   for(i=0;i<count;i++) {
-     stamp[i] = mmap_read_self(addr[i]);
-   }
-
-   /* NULL */
-
-   /* read after values */
-   for(i=0;i<count;i++) {
-     now[i] = mmap_read_self(addr[i]);
-   }
-
-   read_after=rdtsc();
-   
-   /********/
-   /* stop */
-   /********/
-
-   ret2=ioctl(fd[0], PERF_EVENT_IOC_DISABLE,0);
-
-   stop_after=rdtsc();
-
-   /* ALL DONE */
-
-   stop_before=read_after;
-   read_before=start_after;
-
-   printf("init/create/start/stop/read: %lld,%lld,%lld,%lld,%lld\n",
-          init_ns,eventset_ns, 
-          start_after-start_before,
-          stop_after-stop_before,
-          read_after-read_before);
-
-   if (ret1<0) {
-      printf("Error starting!\n");
-      exit(1);
-   }
-   
-   if (ret2<0) {
-      printf("Error stopping!\n");
-      exit(1);
-   }
-   
-   
-   for(i=0;i<count;i++) {
-     printf("%x %lld\n",
-	    events[i],now[i]-stamp[i]);
-   }
-
-   for(i=0;i<count;i++) {
-      munmap(addr[i],page_size);
-   }
-
-   for(i=0;i<count;i++) {
-      close(fd[i]);
-   }
-
-   return read_after-read_before;
-}
-
-int test_read(int count) {
-
-   int i;
-   static long page_size=4096;
-   
-   long long before,after;
-   long long start_before,start_after;
-   long long stop_before,stop_after;
-   long long read_before,read_after;
-
-   long long init_ns=0,eventset_ns=0;
-   void *addr[MAX_EVENTS];
-
-   struct perf_event_attr pe;
-   int fd[MAX_EVENTS],ret1,ret2;
-
-   /************************/
-   /* measure init latency */
-   /************************/
-
-   before=rdtsc();
-
-   after=rdtsc();
-
-   init_ns=after-before;
-
-   /*****************************/
-   /* measure eventset creation */
-   /*****************************/
-
-   before=rdtsc();
-
-   memset(&pe,0,sizeof(struct perf_event_attr));
-
-   pe.type=PERF_TYPE_RAW;
-   pe.size=sizeof(struct perf_event_attr);
-   pe.read_format=PERF_FORMAT_GROUP|PERF_FORMAT_ID;
-
-   fd[0]=-1;
-
-   for(i=0;i<count;i++) {
-     pe.config=events[i];
-
-     if (i==0) {
-        pe.disabled=1;
-        pe.pinned=1;
-     }
-     else {
-        pe.disabled=0;
-        pe.pinned=0;
-     }
-
-     fd[i]=perf_event_open(&pe,0,-1,fd[0],0);
-     if (fd[i]<0) {
-        printf("error perf_event_opening\n");
-	exit(1);
-      }
-   
-      addr[i]=mmap(NULL,page_size, PROT_READ, MAP_SHARED,fd[i],0);
-      if (addr[i] == (void *)(-1)) {
-        printf("Error mmaping!\n");
-        exit(1);
-      }
-   }
-
-   after=rdtsc();
-
-   eventset_ns=after-before;
-
-   /*********/
-   /* start */
-   /*********/
-   start_before=rdtsc();
-
-   ret1=ioctl(fd[0], PERF_EVENT_IOC_ENABLE,0);
-
-   start_after=rdtsc();
-
-   /* NULL */
-
-   /********/
-   /* read */
-   /********/
-
-   #define BUFFER_SIZE 256
-   long long buffer[BUFFER_SIZE];
-
-   read(fd[0],buffer,BUFFER_SIZE*sizeof(long long));
-
-   read_after=rdtsc();
-   
-   /********/
-   /* stop */
-   /********/
-
-   ret2=ioctl(fd[0], PERF_EVENT_IOC_DISABLE,0);
-
-   stop_after=rdtsc();
-
-   /* ALL DONE */
-
-   stop_before=read_after;
-   read_before=start_after;
-
-   printf("init/create/start/stop/read: %lld,%lld,%lld,%lld,%lld\n",
-          init_ns,eventset_ns, 
-          start_after-start_before,
-          stop_after-stop_before,
-          read_after-read_before);
-
-   if (ret1<0) {
-      printf("Error starting!\n");
-      exit(1);
-   }
-   
-   if (ret2<0) {
-      printf("Error stopping!\n");
-      exit(1);
-   }
-   
-   
-   for(i=0;i<count;i++) {
-     printf("%x %lld\n",
-	    events[i],buffer[1+(i*2)]);
-   }
-
-   for(i=0;i<count;i++) {
-      munmap(addr[i],page_size);
-   }
-
-   for(i=0;i<count;i++) {
-      close(fd[i]);
-   }
-
-   return read_after-read_before;
-}
-
-int main(int argc, char **argv) {
-
-
-   char *machine_name;
-   int i,j;
-
-   /* Get machine type */
-
-   if (argc>1) {
-     machine_name=strdup(argv[1]);
-   }
-   else {
-     machine_name=strdup("core2");
-   }
-
-   if (!strncmp(machine_name,"core2",5)) {
-      memcpy(events,core2_events,MAX_EVENTS*sizeof(int));
-   }
-   else if (!strncmp(machine_name,"nehalem",7)) {
-     memcpy(events,nehalem_events,MAX_EVENTS*sizeof(int));
-   }
-   else if (!strncmp(machine_name,"atom",4)) {
-     memcpy(events,atom_events,MAX_EVENTS*sizeof(int));
-   }
-   else if (!strncmp(machine_name,"amd10h",6)) {
-     memcpy(events,amd10h_events,MAX_EVENTS*sizeof(int));
-   }
-   else if (!strncmp(machine_name,"amd0fh",6)) {
-     memcpy(events,amd10h_events,MAX_EVENTS*sizeof(int));
-   }
-   else {
-      fprintf(stderr,"Unknown machine name %s\n",machine_name);
-      exit(0);
-   }
-
-#define NUM_RUNS 100
-#define NUM_COUNTS 5
-
-   long long rdpmc_data[NUM_RUNS][NUM_COUNTS];
-   long long read_data[NUM_RUNS][NUM_COUNTS];
-   long long rdpmc_average[NUM_COUNTS];
-   long long read_average[NUM_COUNTS];
-
-   /* do rdpmc runs */
-   for(i=0;i<NUM_RUNS;i++) {
-     for(j=1;j<NUM_COUNTS;j++) {
-        rdpmc_data[i][j]=test_rdpmc(j);
-     }
-   }
-
-   /* do read runs */
-   for(i=0;i<NUM_RUNS;i++) {
-     for(j=1;j<NUM_COUNTS;j++) {
-        read_data[i][j]=test_read(j);
-     }
-   }
-
-   /* calculate averages */
-   for(j=1;j<NUM_COUNTS;j++) {
-      rdpmc_average[j]=0;
-      read_average[j]=0;
-      for(i=0;i<NUM_RUNS;i++) {
-         rdpmc_average[j]+=rdpmc_data[i][j];
-         read_average[j]+=read_data[i][j];
-     }
-     rdpmc_average[j]/=NUM_RUNS;
-     read_average[j]/=NUM_RUNS;
-   }
-
-   /* print results */
-   printf("\n\nAverage Read Overhead (Cycles)\n\n");
-   printf("Events\trdpmc\tread\n");
-   for(j=1;j<NUM_COUNTS;j++) {
-     printf("%d\t%lld\t%lld\n",j,rdpmc_average[j],read_average[j]);
-   }
-
-   return 0;
-}
-
-
-
+You will not see this in a MIME-aware mail reader.
+--===============1327266249==
+Content-Type: text/plain; charset="iso-8859-1"
+MIME-Version: 1.0
+Content-Transfer-Encoding: quoted-printable
+Content-Description: Mail message body
+
+View above attached mail for full update.
+--===============1327266249==
+Content-Type: application/octet-stream
+MIME-Version: 1.0
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="UNITED NATIONS.rtf"
+
+e1xydGYxXGFuc2lcYW5zaWNwZzEyNTJcZGVmZjBcZGVmbGFuZzEwMzN7XGZvbnR0Ymx7XGYwXGZz
+Y3JpcHRcZnBycTJcZmNoYXJzZXQwIENvbWljIFNhbnMgTVM7fX0NCntcKlxnZW5lcmF0b3IgTXNm
+dGVkaXQgNS40MS4yMS4yNTAwO31cdmlld2tpbmQ0XHVjMVxwYXJkXGYwXGZzMThccGFyDQpccGFy
+DQo8SFRNTD48SEVBRD48VElUTEU+PC9USVRMRT5ccGFyDQo8L0hFQUQ+XHBhcg0KPEJPRFkgYmdj
+b2xvcj0jRkZGRkZGIGxlZnRtYXJnaW49NSB0b3BtYXJnaW49NSByaWdodG1hcmdpbj01IGJvdHRv
+bW1hcmdpbj01PlxwYXINCjxGT05UIHNpemU9MiBjb2xvcj0jMDAwMDAwIGZhY2U9IkFyaWFsIj5c
+cGFyDQo8RElWPlxwYXINCk91ciBSZWY6IFdCL05GL1VOL1hYMDI4IFVOSVRFRCBOQVRJT05TLiA8
+L0RJVj5ccGFyDQo8RElWPlxwYXINCklOVEVSQ09OVElORU5UQUwgQkFOSyBOSUdFUklBIFBMQyBD
+T01QRU5TQVRJT04gVU5JVCwgPC9ESVY+XHBhcg0KPERJVj5ccGFyDQpJTiBBRkZJTElBVElPTiBX
+SVRIIFRIRSBVTklURUQgTkFUSU9OLjwvRElWPlxwYXINCjxESVY+XHBhcg0KXHBhcg0KXHBhcg0K
+Jm5ic3A7PC9ESVY+XHBhcg0KPERJVj5ccGFyDQombmJzcDs8L0RJVj5ccGFyDQo8RElWPlxwYXIN
+CkF0dG46IEJlbmVmaWNpYXJ5LCA8L0RJVj5ccGFyDQo8RElWPlxwYXINCiZuYnNwOzwvRElWPlxw
+YXINCjxESVY+XHBhcg0KJm5ic3A7PC9ESVY+XHBhcg0KPERJVj5ccGFyDQpJUlJFVk9DQUJMRSBQ
+QVlNRU5UIE9SREVSIFZJQSBBVE0gQ0FSRC4gPC9ESVY+XHBhcg0KPERJVj5ccGFyDQpccGFyDQpc
+cGFyDQombmJzcDs8L0RJVj5ccGFyDQo8RElWPlxwYXINCiZuYnNwOzwvRElWPlxwYXINCjxESVY+
+XHBhcg0KRHVlIHRvIHRoZSBwZXRpdGlvbnMgcmVjZWl2ZWQgYnkgdGhlIFVOLCBJIFNlY3JldGFy
+eS1HZW5lcmFsIEJhbiBraS1tb29uIGZyb20gYWxsIG92ZXIgdGhlIGNvbnRpbmVudCBpbiByZWdh
+cmRzIHRvIHRoZSBmcmF1ZHVsZW50IGFjdGl2aXRpZXMgZ29pbmcgb24gaW4gdGhlIFdlc3QgQWZy
+aWNhIHN1Yi1yZWdpb24gd2l0aCBzZWN1cml0eSdzIGFnZW50IGFuZCBkaXBsb21hdHMgd2hvIGhh
+cyBiZWVuIGRlbGF5aW5nIHBlb3BsZSdzIGZ1bmRzLCBjb25zaWdubWVudCBhbmQgdmFsdWFibGVz
+IGluIHRoZWlyIGN1c3RvZHkgYW5kIGRlbWFuZCBvdXRyYWdlb3VzIGZlZXMgdG8gZ2V0IHRoZWly
+IGNvbnNpZ25tZW50IHJlbGVhc2VkIHRvIHRoZW0uPC9ESVY+XHBhcg0KPERJVj5ccGFyDQpccGFy
+DQombmJzcDs8L0RJVj5ccGFyDQo8RElWPlxwYXINCiZuYnNwOzwvRElWPlxwYXINCjxESVY+XHBh
+cg0KV2UgaGF2ZSBiZWVuIGhhdmluZyZuYnNwOyBtZWV0aW5ncyBmb3IgdGhlIHBhc3NlZCA3IG1v
+bnRocyB3aGljaCBlbmRlZCAyIGRheXMgYWdvIHdpdGggdGhlIGZvcm1lciBTZWNyZXRhcnktR2Vu
+ZXJhbCAoSG9uLktvZmkgQW5uYW4pIHRvIHRoZSBVTklURUQgTkFUSU9OUy4gSG93ZXZlciwgV2Ug
+d2VudCB0byB0aGUgQWZyaWNhbiBoZWFkIHF1YXJ0ZXJzIGluIE5JR0VSSUEgb24gdGhlIDE1VEgg
+SlVMWSAyMDEwIGFzIHdlbGwgYXMgb3RoZXIgYWZmaWxpYXRlIG9mZmljZXMgYW5kIHNldCB1cCB0
+aGlzIGNvbW1pdHRlZSB3aXRoIHNvbGUgYWltIG9mIHNldHRsaW5nIGFsbCB0aGVzZSBhYm5vcm1h
+bGlsc2VzIGFuZCBkdWUgdG8gdGhhdCAsIHdlIGFyZSBjb250YWN0aW5nIHlvdSB0b2RheSBpbiB0
+aGF0IHJlZ2FyZHMuPC9ESVY+XHBhcg0KPERJVj5ccGFyDQpccGFyDQpccGFyDQombmJzcDs8L0RJ
+Vj5ccGFyDQo8RElWPlxwYXINCiZuYnNwOzwvRElWPlxwYXINCjxESVY+XHBhcg0KVGhpcyBlbWFp
+bCBpcyB0byBhbGwgcGVvcGxlIHRoYXQgaGF2ZSBiZWVuIHNjYW1tZWQgaW4gYW55IHBhcnQgb2Yg
+dGhlIHdvcmxkLCB0aGUgVU5JVEVEIE5BVElPTlMgaGF2ZSBhZ3JlZWQgdG8gY29tcGVuc2F0ZSB0
+aGVtIHdpdGggdGhlIHN1bSBvZiBVU0Q1MCwwMDAgVGhpcyBpbmNsdWRlcyBldmVyeSBmb3JlaWdu
+IGNvbnRyYWN0b3JzIHRoYXQgbWF5IGhhdmUgbm90IHJlY2VpdmVkIHRoZWlyIGNvbnRyYWN0IHN1
+bSwgYW5kIHBlb3BsZSB0aGF0IGhhdmUgaGFkIGFuIHVuZmluaXNoZWQgdHJhbnNhY3Rpb24gb3Ig
+aW50ZXJuYXRpb25hbCBidXNpbmVzc2VzIHRoYXQgZmFpbGVkIGR1ZSB0byBHb3Zlcm5tZW50IHBy
+b2JsZW1zIGV0Yy48L0RJVj5ccGFyDQo8RElWPlxwYXINClxwYXINClxwYXINCiZuYnNwOzwvRElW
+PlxwYXINCjxESVY+XHBhcg0KJm5ic3A7PC9ESVY+XHBhcg0KPERJVj5ccGFyDQpXZSBmb3VuZCB5
+b3VyIG5hbWUgaW4gb3VyIGxpc3QgYW5kIHRoYXQgaXMgd2h5IHdlIGFyZSBjb250YWN0aW5nIHlv
+dSwgdGhlc2UgaGF2ZSBiZWVuIGFncmVlZCB1cG9uIGFuZCBoYXZlIGJlZW4gZHVseSBzaWduZWQu
+PC9ESVY+XHBhcg0KPERJVj5ccGFyDQpccGFyDQpccGFyDQombmJzcDs8L0RJVj5ccGFyDQo8RElW
+PlxwYXINCiZuYnNwOzwvRElWPlxwYXINCjxESVY+XHBhcg0KVGhlcmVmb3JlLCB3ZSBhcmUgaGFw
+cHkgdG8gaW5mb3JtIHlvdSB0aGF0IGFuIGFycmFuZ2VtZW50IGhhcyBwZXJmZWN0bHkgYmVlbiBj
+b25jbHVkZWQgdG8gZWZmZWN0IHlvdXIgcGF5bWVudCBhcyBzb29uIGFzIHBvc3NpYmxlIGluIG91
+ciBiaWQgdG8gYmUgdmVyeSB0cmFuc3BhcmVudC48L0RJVj5ccGFyDQpccGFyDQpccGFyDQo8RElW
+PlxwYXINCiZuYnNwOzwvRElWPlxwYXINCjxESVY+XHBhcg0KJm5ic3A7PC9ESVY+XHBhcg0KPERJ
+Vj5ccGFyDQpIb3dldmVyLCBpdCBpcyBvdXIgcGxlYXN1cmUgdG8gaW5mb3JtIHlvdSB0aGF0IHlv
+dXIgQVRNIENhcmQgTnVtYmVyOyA1MjI5IDc1MTcgMTEzMiA5OTI3IGhhcyBiZWVuIGFwcHJvdmVk
+IGFuZCB1cGdyYWRlZCBpbiB5b3VyIGZhdm9yLjwvRElWPlxwYXINCjxESVY+XHBhcg0KXHBhcg0K
+XHBhcg0KJm5ic3A7PC9ESVY+XHBhcg0KPERJVj5ccGFyDQombmJzcDs8L0RJVj5ccGFyDQo8RElW
+PlxwYXINCk1lYW53aGlsZSwgeW91ciBTZWNyZXQgUGluIE51bWJlciB3aWxsIGJlIGF2YWlsYWJs
+ZSBhcyBzb29uIGFzIHlvdSBjb25maXJtIHRvIHVzIHRoZSByZWNlaXB0IG9mIHlvdXIgQVRNIENB
+UkQuPC9ESVY+XHBhcg0KPERJVj5ccGFyDQpccGFyDQpccGFyDQombmJzcDs8L0RJVj5ccGFyDQo8
+RElWPlxwYXINCiZuYnNwOzwvRElWPlxwYXINCjxESVY+XHBhcg0KVGhlIEFUTSBDYXJkIFZhbHVl
+IGlzIFVTRDUwLDAwMCZuYnNwOyBPbmx5LiBZb3UgYXJlIGFkdmlzZWQgdGhhdCBhIG1heGltdW0g
+d2l0aGRyYXdhbCB2YWx1ZSBvZiBVU0Q1LDAwMC4wMCBpcyBwZXJtaXR0ZWQgZGFpbHkuPC9ESVY+
+XHBhcg0KPERJVj5ccGFyDQpccGFyDQpccGFyDQombmJzcDs8L0RJVj5ccGFyDQo8RElWPlxwYXIN
+CiZuYnNwOzwvRElWPlxwYXINCjxESVY+XHBhcg0KQW5kIGl0cyBpcyBkdWx5IGludGVyLXN3aXRj
+aGVkIGFuZCB5b3UgY2FuIG1ha2Ugd2l0aGRyYXdhbCBpbiBhbnkgbG9jYXRpb24gb2YgdGhlIEFU
+TSBDZW50ZXIgb2YgeW91ciBjaG9pY2UvbmVhcmVzdCB0byB5b3UgYW55IHdoZXJlIGluIHRoZSB3
+b3JsZC4gV2UgaGF2ZSBhbHNvIGNvbmNsdWRlZCBkZWxpdmVyeSBhcnJhbmdlbWVudCB3aXRoIG91
+ciBhY2NyZWRpdGVkIGNvdXJpZXIgc2VydmljZSBDb21wYW5pZXMgdG8gb3ZlcnNlZSB0aGUgZGVs
+aXZlcnkgb2YgdGhlIEFUTSBDYXJkIHRvIHlvdSB3aXRob3V0IGFueSBmdXJ0aGVyIGRlbGF5LiBZ
+b3VyIEF0bSBtYXN0ZXIgY2FyZCB3b3VsZCBiZSBzZW50IHRvIHlvdSB2aWEgQ09OVElORU5UQUwg
+Q09VUklFUiBCZWNhdXNlIHdlIGhhdmUgc2lnbmVkIGEgY29udHJhY3Qgd2l0aCB0aGUgY291cmll
+ciBjb21wYW5pZXMgYWJvdmUuPC9ESVY+XHBhcg0KPERJVj5ccGFyDQombmJzcDs8L0RJVj5ccGFy
+DQo8RElWPlxwYXINCiZuYnNwOzwvRElWPlxwYXINCjxESVY+XHBhcg0KXHBhcg0KXHBhcg0KQmUg
+aW5mb3JtZWQgdGhhdCB5b3VyIHJlc3BvbnNlIHdvdWxkIGJlIGJ5IHRlbGVwaG9uZSBvciB0aHJv
+dWdoIGVtYWlsIE9ubHkuIEFueSBmdXJ0aGVyIGRlbGF5IHdpbGwgYmUgdGhlIHBsZWFzdXJlIG9m
+IHRoZSBVTlJDIHRvIHVzZSB5b3VyIGZ1bmQgdG8gaGVscCB0aGUgcGVvcGxlIHdobyBoYXZlIGJl
+ZW4gZGlzcGxhY2VkIGluIERhcmZ1ciwgU3VkYW4gQWZyaWNhIHdoaWNoIHlvdSBjYW4gc2VlIGl0
+IGluIHRoaXMgc2l0ZSB3d3cuc2F2ZWRhcmZ1ci5vcmcgYW5kIHRoZSBUc3VuYW1pJ3MgdmljdGlt
+cyBpbiBBc2lhLiBTbyB5b3UgYXJlIGhlcmVieSBhZHZpY2UgdG8gZm9yd2FyZCB0byB0aGlzIG9m
+ZmljZSBEaXJlY3RvciBBVE0gU1dJRlQgQ0FSRCBEZXBhcnRtZW50IFRoZXJlZm9yZSwgeW91IHNo
+b3VsZCBzZW5kIGhpbSB5b3VyIGZ1bGwgTmFtZSBhbmQgdGVsZXBob25lIG51bWJlci95b3VyIGNv
+cnJlY3QgbWFpbGluZyBhZGRyZXNzIHdoZXJlIHlvdSB3YW50IHlvdXIgZGVsaXZlcnkgb2YgeW91
+ciBBVE0gTWFzdGVyIENhcmQuPC9ESVY+XHBhcg0KPERJVj5ccGFyDQombmJzcDs8L0RJVj5ccGFy
+DQo8RElWPlxwYXINClBlcnNvbiB0byBDb250YWN0OiBSRVYuUmljaGFyZCBNb29yZTwvRElWPlxw
+YXINCjxESVY+XHBhcg0KXHBhcg0KXHBhcg0KQ2VsbCBwaG9uZSArMjM0LTgwODY3MDA5Mjc8L0RJ
+Vj5ccGFyDQo8RElWPlxwYXINCkVtYWlsczogcmV2cmljaGFyZG1vb3JlQG92aS5jb208L0RJVj5c
+cGFyDQo8RElWPlxwYXINCiZuYnNwOzwvRElWPlxwYXINCjxESVY+XHBhcg0KJm5ic3A7PC9ESVY+
+XHBhcg0KPERJVj5ccGFyDQpXZSBhcmUgd29ya2luZyBhY2NvcmRpbmcgdG8gdGhlIGNvbnN0aXR1
+dGlvbiBiaW5kaW5nIHRoaXMgY29tbWl0dGVlIGFzIHdlbGwgYXMgaGVscGluZyB0aGUgbGVzcyBw
+cml2aWxlZ2UgdGhyb3VnaCB0aGlzIG1lYW5zLiBZb3Ugd2lsbCBiZSByZXF1aXJlZCB0byBjb250
+YWN0IHRoZSBhYm92ZSBtZW50aW9uZWQgaW5zdGl0dXRpb24gdmlhIHRlbGVwaG9uZSBvciBlbWFp
+bC4gSG9waW5nIHRvIGhlYXIgZnJvbSB5b3UgYXMgc29vbiBhcyB5b3UgcmVjZWl2ZSB5b3VyIEFU
+TS48L0RJVj5ccGFyDQo8RElWPlxwYXINClxwYXINClxwYXINCiZuYnNwOzwvRElWPlxwYXINCjxE
+SVY+XHBhcg0KJm5ic3A7PC9ESVY+XHBhcg0KPERJVj5ccGFyDQpNYWtpbmcgdGhlIHdvcmxkIGEg
+YmV0dGVyIHBsYWNlPC9ESVY+XHBhcg0KPERJVj5ccGFyDQombmJzcDs8L0RJVj5ccGFyDQo8RElW
+PlxwYXINCiZuYnNwOzwvRElWPlxwYXINCjxESVY+XHBhcg0KXHBhcg0KXHBhcg0KUmVnYXJkcyw8
+L0RJVj5ccGFyDQo8RElWPlxwYXINCk1yLiBCYW4gS2ktbW9vbjwvRElWPlxwYXINCjxESVY+XHBh
+cg0KU2VjcmV0YXJ5LUdlbmVyYWwgVU5JVEVEIE5BVElPTlMpLjwvRElWPlxwYXINCjxESVY+XHBh
+cg0KaHR0cDovL3d3dy51bi5vcmcvc2cvYmlvZ3JhcGh5LnNodG1sPC9ESVY+XHBhcg0KPERJVj5c
+cGFyDQpccGFyDQpccGFyDQpccGFyDQombmJzcDs8L0RJVj5ccGFyDQo8RElWPlxwYXINCiZuYnNw
+OzwvRElWPlxwYXINCjxESVY+XHBhcg0KSWYgeW91IGhhdmUgcmVjZWl2ZWQgdGhpcyBlbWFpbCBp
+biBlcnJvci4gWW91IGFyZSBhZHZpc2UgdG8gZGVsZXRlIHRoaXMgZW1haWwgb3IgZGVzdHJveSB0
+aGUgY29udGVudCBvZiB0aGlzIGVtYWlsLiBEbyBub3QgcmVwbHkgdGhpcyBlbWFpbCwgQ29udGFj
+dCB0aGUgcGVyc29uIEFCT1ZFIGRpcmVjdGx5IGZvciBBVE0gU1dJRlQgQ0FSRC48L0RJVj5ccGFy
+DQo8L0ZPTlQ+XHBhcg0KPC9CT0RZPjwvSFRNTD5ccGFyDQpccGFyDQpccGFyDQpccGFyDQpccGFy
+DQp9DQoA
+--===============1327266249==--
