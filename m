@@ -1,50 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753352Ab2GTPya (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 11:54:30 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:48870 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753174Ab2GTPy3 (ORCPT
+	id S1752649Ab2GTP5N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 11:57:13 -0400
+Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:6215 "EHLO
+	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751901Ab2GTP5M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 11:54:29 -0400
-Date: Fri, 20 Jul 2012 10:54:17 -0500
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 06/34] vmscan: add shrink_slab tracepoints
-Message-ID: <20120720155417.GA2885@burratino>
-References: <1342708604-26540-1-git-send-email-mgorman@suse.de>
- <1342708604-26540-7-git-send-email-mgorman@suse.de>
- <20120719203017.GC19392@burratino>
- <20120719220411.GZ9222@suse.de>
- <20120719220721.GE19392@burratino>
- <20120720100623.GE9222@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120720100623.GE9222@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 20 Jul 2012 11:57:12 -0400
+Message-ID: <1342799546.3010.296.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 1/4] ACPI: Add acpi_pr_<level>() interfaces
+From: Toshi Kani <toshi.kani@hp.com>
+To: Joe Perches <joe@perches.com>
+Cc: shuah.khan@hp.com, "Moore, Robert" <robert.moore@intel.com>,
+        lenb@kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, bhelgaas@google.com,
+        isimatu.yasuaki@jp.fujitsu.com, liuj97@gmail.com,
+        srivatsa.bhat@linux.vnet.ibm.com, prarit@redhat.com,
+        imammedo@redhat.com, vijaymohan.pandarathil@hp.com,
+        shuahkhan@gmail.com
+Date: Fri, 20 Jul 2012 09:52:26 -0600
+In-Reply-To: <1342715687.1988.16.camel@joe2Laptop>
+References: <1342644027-19559-1-git-send-email-toshi.kani@hp.com>
+	 <1342644027-19559-2-git-send-email-toshi.kani@hp.com>
+	 <1342648771.5138.37.camel@lorien2>
+	 <1342650386.3010.55.camel@misato.fc.hp.com>
+	 <1342651257.5138.44.camel@lorien2>
+	 <1342651966.3010.66.camel@misato.fc.hp.com>
+	 <1342653482.5138.56.camel@lorien2>
+	 <1342658296.3010.136.camel@misato.fc.hp.com>
+	 <1342714515.3100.27.camel@lorien2> <1342715687.1988.16.camel@joe2Laptop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mel Gorman wrote:
-> On Thu, Jul 19, 2012 at 05:07:21PM -0500, Jonathan Nieder wrote:
+On Thu, 2012-07-19 at 09:34 -0700, Joe Perches wrote:
+> On Thu, 2012-07-19 at 10:15 -0600, Shuah Khan wrote:
+> > On Wed, 2012-07-18 at 18:38 -0600, Toshi Kani wrote:
+> > 
+> > > 
+> > > This interface is defined in acpi/acpi_bus.h, which is intended for ACPI
+> > > drivers which make many ACPI calls to proceed when they are called at
+> > > run-time today.  This interface does not change that, and I believe
+> > > acpi_get_name() is much faster compared to ACPI method calls these ACPI
+> > > drivers make in their normal code path.  The extra work to call
+> > > acpi_get_name() is simply a noise in this case (if you try to measure),
+> > > and the use of this interface is limited in error paths of such ACPI
+> > > drivers.
+> > 
+> > I understand the scope of the usage of this new interface. I don't think
+> > I am able to explain the problem I see with this interface as it gets
+> > used more and more from acpi drivers. Let me try another way.
+> > 
+> > If understand the this patch set, if and when acpi drivers that
+> > currently use pr_* interfaces switch to using acpi_pr_*, the execution
+> > path goes from a what printk() does to the following:
+> > 
+> > acpi_pr_*
+> > - setup static buffer
+> > - calls acpi_get_name()
+> > - acpi_get_name() calls acpi_ut_validate_buffer() and then calls
+> >   acpi_ns_handle_to_pathname()
+> > - acpi_ns_handle_to_pathname() calls acpi_ns_validate_handle() followed
+> >   by acpi_ns_get_pathname_length() and so on.
+> > 
+> > I think this should give you a good idea of my concern. I think
+> > acpi_pr_* full functionality should be enabled under special cases such
+> > as some acpi_debug level setting or some other way, and not for default
+> > case. I propose the following:
+> > 
+> > Make acpi_pr_* versions execute the full path to do acpi_get_name()
+> > conditionally and not as a default case.
+> 
+> or maybe cache one or two.
 
->> Some of the other patches of this type made sense, but I'd personally
->> prefer if this one was dropped, yes.  Though I am just a nobody that
->> reads patches rather than one of the relevant people. ;-)
+Hi Joe,
+
+Sorry, I had overlooked this email yesterday...
+
+I agree that caching one or two is a good idea when we expect to see
+repeated calls to a same object.  I think there may be a few repeated
+calls, such that callee fails and calls acpi_pr_<level>() with its error
+message, and then caller sees this error return and calls
+acpi_pr_<level>() with its own message.  That said, considering
+additional complexity of locking cache data, etc., I'd prefer keeping
+the code simple for now since I do not expect this interface be called
+very often.
+
+> > To illustrate my point further, I currently see the following ACPI
+> > messages in my dmesg buffer on my laptop. I haven't taken the time to
+> > evaluate how many of them originate from acpi drivers, however I would
+> > not want to see all of these becoming acpi_pr_* versions that do more
+> > than what pr_* does today. I hope this explains my concern clearly.
+> > 
+> > [    0.000000] ACPI: RSDP 00000000000fc600 00024 (v02 HPQOEM)
+> > [    0.000000] ACPI: XSDT 00000000bb7fe120 00084 (v01 HPQOEM SLIC-MPC
+> > 0000000F      01000013)
+> 
+> [120+ lines of ACPI stuff]
+> 
+> > [    0.739844] ACPI: ACPI bus type pnp unregistered
+> 
+> I think ACPI is the noisiest subsystem.
+
+I agree for the boot time messages.  The use of ACPI is limited at
+run-time, such as hotplug operations, though.
+
+> I'd rather see this logging made quieter by conversion to
+> KERN_DEBUG or another selective mechanism.
 >
-> It's a valid point but I'm going to leave it in for now and see what the
-> general opinion is.
+> There just aren't many ACPI_INFO calls around and that why
+> I thought it reasonable to convert the macro to call a
+> different named function.
 
-Ok.  To be more precise, this patch has two properties that other patches
-of the "make later patches easier to apply" class tend not to:
+I looked at the first two major cases as follows.  Looks like there are
+some considerations to minimize them.
 
- * it introduces a significant functional change (adding tracepoints)
- * it would have been very easy to skip
+ACPI_INFO is suppressed when ACPI_NO_ERROR_MESSAGES is defined.
 
-Have fun, and sorry for not explaining my reasoning before.
+    ACPI_INFO((AE_INFO, "RSDP %p %05X (v%.2d %6.6s)",
+           ACPI_CAST_PTR (void, address),
+           (ACPI_CAST_PTR(struct acpi_table_rsdp, header)->
+           revision >
+           0) ? ACPI_CAST_PTR(struct acpi_table_rsdp,
+                              header)->length : 20,
+           ACPI_CAST_PTR(struct acpi_table_rsdp,
+                         header)->revision,
+                         local_header.oem_id));
 
-Ciao,
-Jonathan
+LAPIC info is printed at KERN_INFO.
+
+     printk(KERN_INFO PREFIX
+          "LAPIC (acpi_id[0x%02x] lapic_id[0x%02x] %s)\n",
+           p->processor_id, p->id,
+           (p->lapic_flags & ACPI_MADT_ENABLED) ? "enabled"
+
+Thanks,
+-Toshi
+
+
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
