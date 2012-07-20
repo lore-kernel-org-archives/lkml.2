@@ -1,151 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752493Ab2GTLPg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 07:15:36 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:56661 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751189Ab2GTLPd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 07:15:33 -0400
-Message-ID: <50093DED.7090706@gmail.com>
-Date: Fri, 20 Jul 2012 13:15:57 +0200
-From: Sasha Levin <levinsasha928@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120713 Thunderbird/13.0
+	id S1752535Ab2GTLSE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 07:18:04 -0400
+Received: from mga02.intel.com ([134.134.136.20]:4779 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751189Ab2GTLSC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 07:18:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="asc'?scan'208";a="168884335"
+Date: Fri, 20 Jul 2012 14:19:47 +0300
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Minchan Kim <minchan@kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
+        "andi.kleen" <andi.kleen@intel.com>, linux-mm <linux-mm@kvack.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Cgroup: Fix memory accounting scalability in
+ shrink_page_list
+Message-ID: <20120720111947.GA8035@otc-wbsnb-06>
+References: <1342740866.13492.50.camel@schen9-DESK>
 MIME-Version: 1.0
-To: tglx@linutronix.de
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: hrtimer: Lockups with latest -next kernel
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="17pEHd4RhPHOinZp"
+Content-Disposition: inline
+In-Reply-To: <1342740866.13492.50.camel@schen9-DESK>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
 
-While fuzzing with trinity inside a KVM tools guest on the latest -next kernel, I've started seeing
-hangs straight away after the guest has started fuzzing.
+--17pEHd4RhPHOinZp
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I've annotated the hang spots with [HANG]. When those happen everything is pretty much locked up.
+On Thu, Jul 19, 2012 at 04:34:26PM -0700, Tim Chen wrote:
+> Hi,
+>=20
+> I noticed in a multi-process parallel files reading benchmark I ran on a
+> 8 socket machine,  throughput slowed down by a factor of 8 when I ran
+> the benchmark within a cgroup container.  I traced the problem to the
+> following code path (see below) when we are trying to reclaim memory
+> from file cache.  The res_counter_uncharge function is called on every
+> page that's reclaimed and created heavy lock contention.  The patch
+> below allows the reclaimed pages to be uncharged from the resource
+> counter in batch and recovered the regression.=20
+>=20
+> Tim
+>=20
+>      40.67%           usemem  [kernel.kallsyms]                   [k] _ra=
+w_spin_lock
+>                       |
+>                       --- _raw_spin_lock
+>                          |
+>                          |--92.61%-- res_counter_uncharge
+>                          |          |
+>                          |          |--100.00%-- __mem_cgroup_uncharge_co=
+mmon
+>                          |          |          |
+>                          |          |          |--100.00%-- mem_cgroup_un=
+charge_cache_page
+>                          |          |          |          __remove_mapping
+>                          |          |          |          shrink_page_list
+>                          |          |          |          shrink_inactive=
+_list
+>                          |          |          |          shrink_mem_cgro=
+up_zone
+>                          |          |          |          shrink_zone
+>                          |          |          |          do_try_to_free_=
+pages
+>                          |          |          |          try_to_free_pag=
+es
+>                          |          |          |          __alloc_pages_n=
+odemask
+>                          |          |          |          alloc_pages_cur=
+rent
+>=20
+>=20
+> ---
+> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
 
+Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 
-[   39.030023] hrtimer: interrupt took 3064 ns
-[   39.030025] hrtimer: interrupt took 2769 ns
+--=20
+ Kirill A. Shutemov
 
-[HANG]
+--17pEHd4RhPHOinZp
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-[   78.052011] ------------[ cut here ]------------
-[   78.052012] ------------[ cut here ]------------
-[   78.052038] WARNING: at kernel/time/clockevents.c:209 clockevents_program_event+0x48/0xf0()
-[   78.052041] Pid: 0, comm: swapper/2 Tainted: G        W    3.5.0-rc7-next-20120720-sasha-00001-g0bb3f48-dirty #227
-[   78.052041] Call Trace:
-[   78.052058]  <IRQ>  [<ffffffff811554b8>] ? clockevents_program_event+0x48/0xf0
-[   78.052082]  [<ffffffff810e93d7>] warn_slowpath_common+0x87/0xb0
-[   78.052086]  [<ffffffff810e94c5>] warn_slowpath_null+0x15/0x20
-[   78.052086]  [<ffffffff811554b8>] clockevents_program_event+0x48/0xf0
-[   78.052103]  [<ffffffff8115717f>] tick_program_event+0x1f/0x30
-[   78.052121]  [<ffffffff8111e62a>] hrtimer_interrupt+0x1ea/0x220
-[   78.052132]  [<ffffffff81092035>] smp_apic_timer_interrupt+0x85/0xa0
-[   78.052132]  [<ffffffff8378c82f>] apic_timer_interrupt+0x6f/0x80
-[   78.052150]  <EOI>  [<ffffffff8378b234>] ? retint_restore_args+0x13/0x13
-[   78.052169]  [<ffffffff8109e036>] ? native_safe_halt+0x6/0x10
-[   78.052179]  [<ffffffff8115d78d>] ? trace_hardirqs_on+0xd/0x10
-[   78.052179]  [<ffffffff81074a65>] default_idle+0x235/0x5c0
-[   78.052196]  [<ffffffff81076648>] cpu_idle+0x118/0x160
-[   78.052212]  [<ffffffff836c100e>] start_secondary+0xd0/0xd7
-[   78.052218] ---[ end trace 2b1961b84676e158 ]---
-[   78.061989] WARNING: at kernel/time/clockevents.c:209 clockevents_program_event+0x48/0xf0()
-[   78.061989] Pid: 0, comm: swapper/3 Tainted: G        W    3.5.0-rc7-next-20120720-sasha-00001-g0bb3f48-dirty #227
-[   78.061989] Call Trace:
-[   78.061989]  <IRQ>  [<ffffffff811554b8>] ? clockevents_program_event+0x48/0xf0
-[   78.061989]  [<ffffffff810e93d7>] warn_slowpath_common+0x87/0xb0
-[   78.061989]  [<ffffffff810e94c5>] warn_slowpath_null+0x15/0x20
-[   78.061989]  [<ffffffff811554b8>] clockevents_program_event+0x48/0xf0
-[   78.061989]  [<ffffffff8115717f>] tick_program_event+0x1f/0x30
-[   78.061989]  [<ffffffff8111e62a>] hrtimer_interrupt+0x1ea/0x220
-[   78.061989]  [<ffffffff81092035>] smp_apic_timer_interrupt+0x85/0xa0
-[   78.061989]  [<ffffffff8378c82f>] apic_timer_interrupt+0x6f/0x80
-[   78.061989]  <EOI>  [<ffffffff8378b234>] ? retint_restore_args+0x13/0x13
-[   78.061989]  [<ffffffff8109e036>] ? native_safe_halt+0x6/0x10
-[   78.061989]  [<ffffffff8115d78d>] ? trace_hardirqs_on+0xd/0x10
-[   78.061989]  [<ffffffff81074a65>] default_idle+0x235/0x5c0
-[   78.061989]  [<ffffffff81076648>] cpu_idle+0x118/0x160
-[   78.061989]  [<ffffffff836c100e>] start_secondary+0xd0/0xd7
-[   78.061989] ---[ end trace 2b1961b84676e159 ]---
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-[HANG]
+iQIcBAEBAgAGBQJQCT7TAAoJEAd+omnVudOMAScP/AjkMoJgxfipxvTEKFcMdEM4
+Bb1iqr1KcfjeeHI8c1FSGKuE2q9BLBP6GXogodLSXxJtjcMMDrXoPtt7KzA/cuZZ
+IbUbtP+Go4y5LPbPsnByXpize+DtebuOhCnnhLA3YMr6z/wsxZMLvGfHvA3sP0YB
+wmHi3vd3GkHC280+1PBP0odRlMb9UylfPjW7lDawLtRrTxoDJ0N1DTnDR44myXUs
+C1MOz466kvjWe4RKDfJwNex7KD2wufGeY7XRv/RMdh43A5fMOjpKSJC6Oq9DbjT7
+tjXo/xsz4sn9LoTD/x3Sq/AfpQMmj2I3VXZO1ELANKpJkCrOUHPNPA7FupcSe9Pl
+CU4EhZxy4NGNfDr9G8ChPLxWvBpDOVpOHkknVltJtSgl+84M2C8UMf/HKoWkYld+
+FxNZBMSywWMRrCNVNpLVt3VvLTiKunaI54U++uL7GblETzEIlPb1FX4R1Iz9t55A
+VKRi/n3rHp4ZKrOa7gysD3hULfbwMNcv0MBd55LzF1X95M0f8Jd0TRLR5rUigwt3
+b9b2EJ2YjhTC4ncKy2koxamoAtuSpJO0dtfjj/dVk2qgI6IpLabyL6eeCD448F1Q
+pY2H9mZZTnnBKw9Quk7qdX6jb3rl4DIb0WKZFoReqckjuhAkClJbyUyVrP/Gjwzy
+qjbnOxaRJ3LMygyeQchX
+=UrYg
+-----END PGP SIGNATURE-----
 
-[  234.121718] BUG: soft lockup - CPU#0 stuck for 34s! [trinity-child41:6057]
-[  234.121718] irq event stamp: 31065397
-[  234.121718] hardirqs last  enabled at (31065396): [<ffffffff8378b234>] restore_args+0x0/0x30
-[  234.121718] hardirqs last disabled at (31065397): [<ffffffff8378c82a>] apic_timer_interrupt+0x6a/0x80
-[  234.121718] softirqs last  enabled at (344302): [<ffffffff8311a114>] release_sock+0x94/0xa0
-[  234.121718] softirqs last disabled at (7204061): [<ffffffff8378d22c>] call_softirq+0x1c/0x30
-[  234.121718] CPU 0
-[  234.121718] Pid: 6057, comm: trinity-child41 Tainted: G        W    3.5.0-rc7-next-20120720-sasha-00001-g0bb3f48-dirty #227
-[  234.121718] RIP: 0010:[<ffffffff810f3604>]  [<ffffffff810f3604>] __do_softirq+0x94/0x450
-[  234.121718] RSP: 0018:ffff88000d803ec0  EFLAGS: 00000282
-[  234.121718] RAX: 0000000000000086 RBX: ffffffff8378b234 RCX: 0000000000000000
-[  234.121718] RDX: ffff88000bad0000 RSI: 0000000000000000 RDI: ffff88000bad0000
-[  234.121718] RBP: ffff88000d803f30 R08: 0000000000000000 R09: 0000000000000000
-[  234.121718] R10: 0000000000000001 R11: 0000000000000000 R12: ffff88000d803e38
-[  234.121718] R13: ffffffff8378c82f R14: ffff88000d803f30 R15: 0000000000000282
-[  234.121718] FS:  00007f8ca2ccb700(0000) GS:ffff88000d800000(0000) knlGS:0000000000000000
-[  234.121718] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  234.121718] CR2: 0000000000000000 CR3: 000000000bab3000 CR4: 00000000000406f0
-[  234.121718] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[  234.121718] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[  234.121718] Process trinity-child41 (pid: 6057, threadinfo ffff88000baca000, task ffff88000bad0000)
-[  234.121718] Stack:
-[  234.121718]  ffff88000d9d7640 ffff88000bacbfd8 ffff88000bacbfd8 ffff88000000000a
-[  234.121718]  ffff88000bacbfd8 000000000d803f18 ffff88000bacbfd8 0000000000005678
-[  234.121718]  0000000000000000 0000000000000086 ffff88000bacbfd8 0000000000000001
-[  234.121718] Call Trace:
-[  234.121718]  <IRQ>
-[  234.121718]  [<ffffffff8378d22c>] call_softirq+0x1c/0x30
-[  234.121718]  [<ffffffff8106d41d>] do_softirq+0x7d/0x100
-[  234.121718]  [<ffffffff810f3cec>] irq_exit+0x5c/0xd0
-[  234.121718]  [<ffffffff8109203a>] smp_apic_timer_interrupt+0x8a/0xa0
-[  234.121718]  [<ffffffff8378c82f>] apic_timer_interrupt+0x6f/0x80
-[  234.121718]  <EOI>
-[  234.121718]  [<ffffffff8378b234>] ? retint_restore_args+0x13/0x13
-[  234.121718]  [<ffffffff8378a3ed>] ? _raw_spin_unlock_irqrestore+0x6d/0xa0
-[  234.121718]  [<ffffffff8111e012>] hrtimer_try_to_cancel+0x182/0x1f0
-[  234.121718]  [<ffffffff8111e098>] hrtimer_cancel+0x18/0x30
-[  234.121718]  [<ffffffff83787e54>] do_nanosleep+0x84/0xd0
-[  234.121718]  [<ffffffff8111ea47>] hrtimer_nanosleep+0xd7/0x180
-[  234.121718]  [<ffffffff8111cce0>] ? update_rmtp+0x70/0x70
-[  234.121718]  [<ffffffff81116a1e>] common_nsleep+0x1e/0x20
-[  234.121718]  [<ffffffff8111805c>] sys_clock_nanosleep+0xcc/0x110
-[  234.121718]  [<ffffffff8378bafd>] system_call_fastpath+0x1a/0x1f
-[  234.121718] Code: 1f 84 00 00 00 00 00 65 c7 04 25 c0 46 1d 00 00 00 00 00 e8 8f a1 06 00 48 83 3d df 70 75 03 00 75 05 0f 0b 0f 1f 00 fb 66 66 90 <66> 66 90 48 c7 c3 00 60 80 84 66 90 41 f6 c4 01 0f 84 76 02 00
-[  234.121718] Kernel panic - not syncing: softlockup: hung tasks
-[  234.121718] Pid: 6057, comm: trinity-child41 Tainted: G        W    3.5.0-rc7-next-20120720-sasha-00001-g0bb3f48-dirty #227
-[  234.121718] Call Trace:
-[  234.121718]  <IRQ>  [<ffffffff836cf8e2>] panic+0xcd/0x1f4
-[  234.121718]  [<ffffffff810f3618>] ? __do_softirq+0xa8/0x450
-[  234.121718]  [<ffffffff81195b5e>] watchdog_timer_fn+0x15e/0x190
-[  234.121718]  [<ffffffff8111d51e>] __run_hrtimer+0x27e/0x4d0
-[  234.121718]  [<ffffffff8109dda9>] ? kvm_clock_get_cycles+0x9/0x10
-[  234.121718]  [<ffffffff81195a00>] ? __touch_watchdog+0x20/0x20
-[  234.121718]  [<ffffffff811508cc>] ? ktime_get_update_offsets+0x4c/0xd0
-[  234.121718]  [<ffffffff8111e559>] hrtimer_interrupt+0x119/0x220
-[  234.121718]  [<ffffffff81092035>] smp_apic_timer_interrupt+0x85/0xa0
-[  234.121718]  [<ffffffff8378c82f>] apic_timer_interrupt+0x6f/0x80
-[  234.121718]  [<ffffffff8378b234>] ? retint_restore_args+0x13/0x13
-[  234.121718]  [<ffffffff810f3604>] ? __do_softirq+0x94/0x450
-[  234.121718]  [<ffffffff8378d22c>] call_softirq+0x1c/0x30
-[  234.121718]  [<ffffffff8106d41d>] do_softirq+0x7d/0x100
-[  234.121718]  [<ffffffff810f3cec>] irq_exit+0x5c/0xd0
-[  234.121718]  [<ffffffff8109203a>] smp_apic_timer_interrupt+0x8a/0xa0
-[  234.121718]  [<ffffffff8378c82f>] apic_timer_interrupt+0x6f/0x80
-[  234.121718]  <EOI>  [<ffffffff8378b234>] ? retint_restore_args+0x13/0x13
-[  234.121718]  [<ffffffff8378a3ed>] ? _raw_spin_unlock_irqrestore+0x6d/0xa0
-[  234.121718]  [<ffffffff8111e012>] hrtimer_try_to_cancel+0x182/0x1f0
-[  234.121718]  [<ffffffff8111e098>] hrtimer_cancel+0x18/0x30
-[  234.121718]  [<ffffffff83787e54>] do_nanosleep+0x84/0xd0
-[  234.121718]  [<ffffffff8111ea47>] hrtimer_nanosleep+0xd7/0x180
-[  234.121718]  [<ffffffff8111cce0>] ? update_rmtp+0x70/0x70
-[  234.121718]  [<ffffffff81116a1e>] common_nsleep+0x1e/0x20
-[  234.121718]  [<ffffffff8111805c>] sys_clock_nanosleep+0xcc/0x110
-[  234.121718]  [<ffffffff8378bafd>] system_call_fastpath+0x1a/0x1f
+--17pEHd4RhPHOinZp--
