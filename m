@@ -1,48 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752354Ab2GTT0P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 15:26:15 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:55467 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751908Ab2GTT0O (ORCPT
+	id S1752648Ab2GTT26 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 15:28:58 -0400
+Received: from 1010ds2-suoe.0.fullrate.dk ([90.184.90.115]:25882 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751768Ab2GTT25 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 15:26:14 -0400
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH] preempt/hardirq.h: Fix comment about PREEMPT_ACTIVE bit
- location
-To: rostedt@goodmis.org, tglx@linutronix.de
-Cc: mingo@kernel.org, paulmck@linux.vnet.ibm.com, josh@joshtriplett.org,
-        linux-kernel@vger.kernel.org
-Date: Sat, 21 Jul 2012 00:54:59 +0530
-Message-ID: <20120720192459.6149.14821.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
+	Fri, 20 Jul 2012 15:28:57 -0400
+Date: Fri, 20 Jul 2012 21:28:55 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Dave Chinner <david@fromorbit.com>
+cc: xfs@oss.sgi.com, xfs-masters@oss.sgi.com, linux-kernel@vger.kernel.org,
+        Ben Myers <bpm@sgi.com>, Alex Elder <elder@kernel.org>,
+        Raghavendra D Prabhu <raghu.prabhu13@gmail.com>
+Subject: Re: [PATCH][RFC] XFS: Fix mem leak and possible NULL deref in
+ xfs_setattr_nonsize()
+In-Reply-To: <alpine.LNX.2.00.1202062132410.20117@swampdragon.chaosbits.net>
+Message-ID: <alpine.LNX.2.00.1207202127450.23164@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1202052220390.32529@swampdragon.chaosbits.net> <20120206062319.GB12836@dastard> <alpine.LNX.2.00.1202062132410.20117@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-x-cbid: 12072019-9264-0000-0000-000001F2944B
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PREEMPT_ACTIVE flag is bit 27, not 28. Fix the comment.
+Ping ?
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
+This issue seems to still be present. Any chance we could merge the patch 
+below?
 
- include/linux/hardirq.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+/Jesper
 
-diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
-index bb7f309..305f23c 100644
---- a/include/linux/hardirq.h
-+++ b/include/linux/hardirq.h
-@@ -22,7 +22,7 @@
-  *
-  * - bits 16-25 are the hardirq count (max # of nested hardirqs: 1024)
-  * - bit 26 is the NMI_MASK
-- * - bit 28 is the PREEMPT_ACTIVE flag
-+ * - bit 27 is the PREEMPT_ACTIVE flag
-  *
-  * PREEMPT_MASK: 0x000000ff
-  * SOFTIRQ_MASK: 0x0000ff00
+On Mon, 6 Feb 2012, Jesper Juhl wrote:
+
+> On Mon, 6 Feb 2012, Dave Chinner wrote:
+> 
+> > On Sun, Feb 05, 2012 at 10:23:44PM +0100, Jesper Juhl wrote:
+> > > In xfs_setattr_nonsize(), xfs_trans_alloc() gets its memory from
+> > > _xfs_trans_alloc() which gets it from kmem_zone_zalloc() which may
+> > > fail and return NULL. So this:
+> > > 
+> > > 	tp = xfs_trans_alloc(mp, XFS_TRANS_SETATTR_NOT_SIZE);
+> > > 
+> > > may result in a NULL 'tp'.
+> > > If it does, then the call:
+> > > 
+> > > 	error = xfs_trans_reserve(tp, 0, XFS_ICHANGE_LOG_RES(mp), 0, 0, 0);
+> > > 
+> > > with a NULL 'tp' will explode, since xfs_trans_reserve() dereferences
+> > > its first argument unconditionally.
+> > 
+> > xfs_trans_alloc() can't fail. It will sleep forever until the memory
+> > allocation succeeds.
+> > 
+> > There's 35 other places in XFS where this xfs_trans_alloc/
+> > xfs_trans_reserve pattern occurs - none of them check whether tp is
+> > null, either.
+> > 
+> > > And if the memory allocation for 'tp' goes well (and thus
+> > > xfs_trans_reserve() does not explode) then we may leak the memory
+> > > allocated to 'tp' if xfs_trans_reserve() returns error.
+> > 
+> > yes, that's a problem, though will only happen if a filesystem
+> > shutdown occurs between the start of the function and that check.
+> > 
+> > > 
+> > > I believe this patch should fix both issues, but I'm not intimate with
+> > > the XFS code at all, so there can easily be something I overlooked or
+> > > something that should be done differently than what I did.
+> > 
+> > Only need to fix the leak of tp.
+> > 
+> Ok.
+> Thank you for the detailed explanation.
+> I believe the patch below should do the trick.
+> 
+> 
+> From: Jesper Juhl <jj@chaosbits.net>
+> Date: Sun, 5 Feb 2012 22:11:30 +0100
+> Subject: [PATCH] XFS: Fix mem leak in xfs_setattr_nonsize()
+> 
+> If the memory allocation for 'tp' goes well then we will leak the
+> memory allocated to 'tp' if xfs_trans_reserve() returns error.
+> 
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> ---
+>  fs/xfs/xfs_iops.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
+> 
+> diff --git a/fs/xfs/xfs_iops.c b/fs/xfs/xfs_iops.c
+> index ab30253..2fc1600 100644
+> --- a/fs/xfs/xfs_iops.c
+> +++ b/fs/xfs/xfs_iops.c
+> @@ -576,8 +576,10 @@ xfs_setattr_nonsize(
+>  
+>  	tp = xfs_trans_alloc(mp, XFS_TRANS_SETATTR_NOT_SIZE);
+>  	error = xfs_trans_reserve(tp, 0, XFS_ICHANGE_LOG_RES(mp), 0, 0, 0);
+> -	if (error)
+> +	if (error) {
+> +		xfs_trans_cancel(tp, 0);
+>  		goto out_dqrele;
+> +	}
+>  
+>  	xfs_ilock(ip, XFS_ILOCK_EXCL);
+>  
+> 
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
