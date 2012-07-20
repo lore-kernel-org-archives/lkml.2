@@ -1,66 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753558Ab2GTTW5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 15:22:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54918 "EHLO mx1.redhat.com"
+	id S1753635Ab2GTTXj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 15:23:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44719 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753337Ab2GTTWy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 15:22:54 -0400
-Date: Fri, 20 Jul 2012 16:04:54 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
+	id S1753417Ab2GTTWt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 15:22:49 -0400
+Date: Fri, 20 Jul 2012 22:23:23 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
 To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, gleb@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2] kvm: fix race with level interrupts
-Message-ID: <20120720190454.GA24024@amt.cnet>
-References: <20120719104520.GA14748@redhat.com>
+Cc: Jason Wang <jasowang@redhat.com>, eric.dumazet@gmail.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ebiederm@xmission.com, davem@davemloft.net
+Subject: [PATCHv3 6/6] tun: experimental zero copy tx support
+Message-ID: <6341ade68be4d66706b77bf29e2f7cfc20fcb45a.1342812067.git.mst@redhat.com>
+References: <cover.1342812067.git.mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120719104520.GA14748@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <cover.1342812067.git.mst@redhat.com>
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 19, 2012 at 01:45:20PM +0300, Michael S. Tsirkin wrote:
-> When more than 1 source id is in use for the same GSI, we have the
-> following race related to handling irq_states race:
-> 
-> CPU 0 clears bit 0. CPU 0 read irq_state as 0. CPU 1 sets level to 1.
-> CPU 1 calls kvm_ioapic_set_irq(1). CPU 0 calls kvm_ioapic_set_irq(0).
-> Now ioapic thinks the level is 0 but irq_state is not 0.
-> 
-> Fix by performing all irq_states bitmap handling under pic/ioapic lock.
-> This also removes the need for atomics with irq_states handling.
-> 
-> Reported-by: Gleb Natapov <gleb@redhat.com>
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
+Let vhost-net utilize zero copy tx when used with tun.
 
-Applied, thanks.
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ drivers/net/tun.c | 146 +++++++++++++++++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 134 insertions(+), 12 deletions(-)
 
-> Changes from v1:
-> 	Address comments by Gleb and Alex:
-> 		renamed some variables for clarify
-> 		renamed kvm_irq_line_state ->  __kvm_irq_line_state
-> 
-> Any chance we can put this in 3.5? I know level IRQs are not widely
-> used, which is likely why this went unnoticed for so long, but still ...
-
-http://yarchive.net/comp/linux/merge_window.html
-
-"From: Linus Torvalds <torvalds@linux-foundation.org>
-
-The thing is, I don't take bug fixes late in the -rc just because they
-are bug fixes.
-
-And I really shouldn't.
-
-If it's an old bug, and doesn't cause an oops or a security issue, it
-had damn well better wait for the next merge window. There is absolutely
-_no_ reason to just blindly "fix bugs" at the end of the rc stage,
-because quite frankly, the risks coming from fixing a bug is often
-bigger than the advantage.
-"
-
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index b95a7f4..c62163e 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -100,6 +100,8 @@ do {								\
+ } while (0)
+ #endif
+ 
++#define GOODCOPY_LEN 128
++
+ #define FLT_EXACT_COUNT 8
+ struct tap_filter {
+ 	unsigned int    count;    /* Number of addrs. Zero means disabled */
+@@ -604,19 +606,100 @@ static struct sk_buff *tun_alloc_skb(struct tun_struct *tun,
+ 	return skb;
+ }
+ 
++/* set skb frags from iovec, this can move to core network code for reuse */
++static int zerocopy_sg_from_iovec(struct sk_buff *skb, const struct iovec *from,
++				  int offset, size_t count)
++{
++	int len = iov_length(from, count) - offset;
++	int copy = skb_headlen(skb);
++	int size, offset1 = 0;
++	int i = 0;
++
++	/* Skip over from offset */
++	while (count && (offset >= from->iov_len)) {
++		offset -= from->iov_len;
++		++from;
++		--count;
++	}
++
++	/* copy up to skb headlen */
++	while (count && (copy > 0)) {
++		size = min_t(unsigned int, copy, from->iov_len - offset);
++		if (copy_from_user(skb->data + offset1, from->iov_base + offset,
++				   size))
++			return -EFAULT;
++		if (copy > size) {
++			++from;
++			--count;
++			offset = 0;
++		} else
++			offset += size;
++		copy -= size;
++		offset1 += size;
++	}
++
++	if (len == offset1)
++		return 0;
++
++	while (count--) {
++		struct page *page[MAX_SKB_FRAGS];
++		int num_pages;
++		unsigned long base;
++		unsigned long truesize;
++
++		len = from->iov_len - offset;
++		if (!len) {
++			offset = 0;
++			++from;
++			continue;
++		}
++		base = (unsigned long)from->iov_base + offset;
++		size = ((base & ~PAGE_MASK) + len + ~PAGE_MASK) >> PAGE_SHIFT;
++		if (i + size > MAX_SKB_FRAGS)
++			return -EMSGSIZE;
++		num_pages = get_user_pages_fast(base, size, 0, &page[i]);
++		if (num_pages != size) {
++			for (i = 0; i < num_pages; i++)
++				put_page(page[i]);
++			return -EFAULT;
++		}
++		truesize = size * PAGE_SIZE;
++		skb->data_len += len;
++		skb->len += len;
++		skb->truesize += truesize;
++		atomic_add(truesize, &skb->sk->sk_wmem_alloc);
++		while (len) {
++			int off = base & ~PAGE_MASK;
++			int size = min_t(int, len, PAGE_SIZE - off);
++			__skb_fill_page_desc(skb, i, page[i], off, size);
++			skb_shinfo(skb)->nr_frags++;
++			/* increase sk_wmem_alloc */
++			base += size;
++			len -= size;
++			i++;
++		}
++		offset = 0;
++		++from;
++	}
++	return 0;
++}
++
+ /* Get packet from user space buffer */
+-static ssize_t tun_get_user(struct tun_struct *tun,
+-			    const struct iovec *iv, size_t count,
+-			    int noblock)
++static ssize_t tun_get_user(struct tun_struct *tun, void *msg_control,
++			    const struct iovec *iv, size_t total_len,
++			    size_t count, int noblock)
+ {
+ 	struct tun_pi pi = { 0, cpu_to_be16(ETH_P_IP) };
+ 	struct sk_buff *skb;
+-	size_t len = count, align = NET_SKB_PAD;
++	size_t len = total_len, align = NET_SKB_PAD;
+ 	struct virtio_net_hdr gso = { 0 };
+ 	int offset = 0;
++	int copylen;
++	bool zerocopy = false;
++	int err;
+ 
+ 	if (!(tun->flags & TUN_NO_PI)) {
+-		if ((len -= sizeof(pi)) > count)
++		if ((len -= sizeof(pi)) > total_len)
+ 			return -EINVAL;
+ 
+ 		if (memcpy_fromiovecend((void *)&pi, iv, 0, sizeof(pi)))
+@@ -625,7 +708,7 @@ static ssize_t tun_get_user(struct tun_struct *tun,
+ 	}
+ 
+ 	if (tun->flags & TUN_VNET_HDR) {
+-		if ((len -= tun->vnet_hdr_sz) > count)
++		if ((len -= tun->vnet_hdr_sz) > total_len)
+ 			return -EINVAL;
+ 
+ 		if (memcpy_fromiovecend((void *)&gso, iv, offset, sizeof(gso)))
+@@ -647,14 +730,46 @@ static ssize_t tun_get_user(struct tun_struct *tun,
+ 			return -EINVAL;
+ 	}
+ 
+-	skb = tun_alloc_skb(tun, align, len, gso.hdr_len, noblock);
++	if (msg_control)
++		zerocopy = true;
++
++	if (zerocopy) {
++		/* Userspace may produce vectors with count greater than
++		 * MAX_SKB_FRAGS, so we need to linearize parts of the skb
++		 * to let the rest of data to be fit in the frags.
++		 */
++		if (count > MAX_SKB_FRAGS) {
++			copylen = iov_length(iv, count - MAX_SKB_FRAGS);
++			if (copylen < offset)
++				copylen = 0;
++			else
++				copylen -= offset;
++		} else
++				copylen = 0;
++		/* There are 256 bytes to be copied in skb, so there is enough
++		 * room for skb expand head in case it is used.
++		 * The rest of the buffer is mapped from userspace.
++		 */
++		if (copylen < gso.hdr_len)
++			copylen = gso.hdr_len;
++		if (!copylen)
++			copylen = GOODCOPY_LEN;
++	} else
++		copylen = len;
++
++	skb = tun_alloc_skb(tun, align, copylen, gso.hdr_len, noblock);
+ 	if (IS_ERR(skb)) {
+ 		if (PTR_ERR(skb) != -EAGAIN)
+ 			tun->dev->stats.rx_dropped++;
+ 		return PTR_ERR(skb);
+ 	}
+ 
+-	if (skb_copy_datagram_from_iovec(skb, 0, iv, offset, len)) {
++	if (zerocopy)
++		err = zerocopy_sg_from_iovec(skb, iv, offset, count);
++	else
++		err = skb_copy_datagram_from_iovec(skb, 0, iv, offset, len);
++
++	if (err) {
+ 		tun->dev->stats.rx_dropped++;
+ 		kfree_skb(skb);
+ 		return -EFAULT;
+@@ -728,12 +843,18 @@ static ssize_t tun_get_user(struct tun_struct *tun,
+ 		skb_shinfo(skb)->gso_segs = 0;
+ 	}
+ 
++	/* copy skb_ubuf_info for callback when skb has no error */
++	if (zerocopy) {
++		skb_shinfo(skb)->destructor_arg = msg_control;
++		skb_shinfo(skb)->tx_flags |= SKBTX_DEV_ZEROCOPY;
++	}
++
+ 	netif_rx_ni(skb);
+ 
+ 	tun->dev->stats.rx_packets++;
+ 	tun->dev->stats.rx_bytes += len;
+ 
+-	return count;
++	return total_len;
+ }
+ 
+ static ssize_t tun_chr_aio_write(struct kiocb *iocb, const struct iovec *iv,
+@@ -748,7 +869,7 @@ static ssize_t tun_chr_aio_write(struct kiocb *iocb, const struct iovec *iv,
+ 
+ 	tun_debug(KERN_INFO, tun, "tun_chr_write %ld\n", count);
+ 
+-	result = tun_get_user(tun, iv, iov_length(iv, count),
++	result = tun_get_user(tun, NULL, iv, iov_length(iv, count), count,
+ 			      file->f_flags & O_NONBLOCK);
+ 
+ 	tun_put(tun);
+@@ -962,8 +1083,8 @@ static int tun_sendmsg(struct kiocb *iocb, struct socket *sock,
+ 		       struct msghdr *m, size_t total_len)
+ {
+ 	struct tun_struct *tun = container_of(sock, struct tun_struct, socket);
+-	return tun_get_user(tun, m->msg_iov, total_len,
+-			    m->msg_flags & MSG_DONTWAIT);
++	return tun_get_user(tun, m->msg_control, m->msg_iov, total_len,
++			    m->msg_iovlen, m->msg_flags & MSG_DONTWAIT);
+ }
+ 
+ static int tun_recvmsg(struct kiocb *iocb, struct socket *sock,
+@@ -1133,6 +1254,7 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
+ 		sock_init_data(&tun->socket, sk);
+ 		sk->sk_write_space = tun_sock_write_space;
+ 		sk->sk_sndbuf = INT_MAX;
++		sock_set_flag(sk, SOCK_ZEROCOPY);
+ 
+ 		tun_sk(sk)->tun = tun;
+ 
+-- 
+MST
