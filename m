@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751979Ab2GTQXX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 12:23:23 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:63754 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750925Ab2GTQXW (ORCPT
+	id S1752510Ab2GTQaR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 12:30:17 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62274 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750969Ab2GTQaO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 12:23:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <A874F61F95741C4A9BA573A70FE3998FDA9E@DQHE02.ent.ti.com>
-References: <A874F61F95741C4A9BA573A70FE3998FDA9E@DQHE02.ent.ti.com>
-Date: Fri, 20 Jul 2012 22:08:21 +0545
-Message-ID: <CAHdPZaPBocAybfr8cnxWh4cP7pC6=1r+65Nt_+Ajxz7G9J9x1Q@mail.gmail.com>
-Subject: Re: [PATCH v2] leds: add new lp8788 led driver
-From: "devendra.aaru" <devendra.aaru@gmail.com>
-To: "Kim, Milo" <Milo.Kim@ti.com>
-Cc: Bryan Wu <bryan.wu@canonical.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 20 Jul 2012 12:30:14 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: axboe@kernel.dk, linux-scsi@vger.kernel.org
+Subject: [PATCH] sg_io: allow UNMAP and WRITE SAME without CAP_SYS_RAWIO
+Date: Fri, 20 Jul 2012 18:30:01 +0200
+Message-Id: <1342801801-15617-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+These commands cannot be issued right now without giving CAP_SYS_RAWIO to
+the process who wishes to send them.  These commands can be useful also to
+non-privileged programs who have access to the block devices.  For example
+a virtual machine monitor needs them to forward trim/discard to host disks.
 
-I think a mutex_unlock is missed out,
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+---
+ block/scsi_ioctl.c |    3 ++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-On Fri, Jul 20, 2012 at 2:28 PM, Kim, Milo <Milo.Kim@ti.com> wrote:
-> +
-> +static void lp8788_led_work(struct work_struct *work)
-> +{
-> +       struct lp8788_led *led = container_of(work, struct lp8788_led, work);
-> +       enum lp8788_isink_number num = led->isink_num;
-> +       int enable;
-> +       u8 val = led->brightness;
-> +
-> +       mutex_lock(&led->lock);
-> +
-> +       switch (num) {
-> +       case LP8788_ISINK_1:
-> +       case LP8788_ISINK_2:
-> +       case LP8788_ISINK_3:
-> +               lp8788_write_byte(led->lp, lp8788_pwm_addr[num], val);
-> +               break;
-> +       default:
-                    missed mutex_unlock
-> +               return;
-> +       }
-> +
-> +       enable = (val > 0) ? 1 : 0;
-> +       if (enable != led->on)
-> +               lp8788_led_enable(led, num, enable);
-> +
-> +       mutex_unlock(&led->lock);
-> +}
-> +
-
-Thanks,
-Devendra
+diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
+index 260fa80..dd71f18 100644
+--- a/block/scsi_ioctl.c
++++ b/block/scsi_ioctl.c
+@@ -168,13 +168,16 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
+ 	/* Basic writing commands */
+ 	__set_bit(WRITE_6, filter->write_ok);
+ 	__set_bit(WRITE_10, filter->write_ok);
++	__set_bit(WRITE_SAME, filter->write_ok);
+ 	__set_bit(WRITE_VERIFY, filter->write_ok);
+ 	__set_bit(WRITE_12, filter->write_ok);
+ 	__set_bit(WRITE_VERIFY_12, filter->write_ok);
+ 	__set_bit(WRITE_16, filter->write_ok);
++	__set_bit(WRITE_SAME_16, filter->write_ok);
+ 	__set_bit(WRITE_LONG, filter->write_ok);
+ 	__set_bit(WRITE_LONG_2, filter->write_ok);
+ 	__set_bit(ERASE, filter->write_ok);
++	__set_bit(UNMAP, filter->write_ok);
+ 	__set_bit(GPCMD_MODE_SELECT_10, filter->write_ok);
+ 	__set_bit(MODE_SELECT, filter->write_ok);
+ 	__set_bit(LOG_SELECT, filter->write_ok);
