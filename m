@@ -1,70 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752739Ab2GTOkq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 10:40:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44559 "EHLO mx2.suse.de"
+	id S1752873Ab2GTOli (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 10:41:38 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44592 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752249Ab2GTOkp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 10:40:45 -0400
-Date: Fri, 20 Jul 2012 16:40:42 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, Hugh Dickins <hughd@google.com>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Ken Chen <kenchen@google.com>, Cong Wang <xiyou.wangcong@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: hugetlbfs: Close race during teardown of hugetlbfs
- shared page tables V2 (resend)
-Message-ID: <20120720144041.GG12434@tiehlicka.suse.cz>
-References: <20120720134937.GG9222@suse.de>
- <20120720141108.GH9222@suse.de>
- <20120720142920.GD12434@tiehlicka.suse.cz>
- <20120720143753.GI9222@suse.de>
+	id S1752256Ab2GTOlg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 10:41:36 -0400
+Message-ID: <50096E1E.60709@suse.de>
+Date: Fri, 20 Jul 2012 16:41:34 +0200
+From: Hannes Reinecke <hare@suse.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120601 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120720143753.GI9222@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [patch] [SCSI] aic79xx: NULL dereference in debug code
+References: <20120720113057.GC22245@elgon.mountain>
+In-Reply-To: <20120720113057.GC22245@elgon.mountain>
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 20-07-12 15:37:53, Mel Gorman wrote:
-> On Fri, Jul 20, 2012 at 04:29:20PM +0200, Michal Hocko wrote:
-> > > <SNIP>
-> > > 
-> > > Signed-off-by: Mel Gorman <mgorman@suse.de>
-> > 
-> > Yes this looks correct. mmap_sem will make sure that unmap_vmas and
-> > free_pgtables are executed atomicaly wrt. huge_pmd_share so it doesn't
-> > see non-NULL spte on the way out.
+On 07/20/2012 01:30 PM, Dan Carpenter wrote:
+> "ahd" can be NULL here and it gets dereferenced inside the call to
+> ahd_name().
 > 
-> Yes.
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 > 
-> > I am just wondering whether we need
-> > the page_table_lock as well. It is not harmful but I guess we can drop
-> > it because both exit_mmap and shmdt are not taking it and mmap_sem is
-> > sufficient for them.
-> 
-> While it is true that we don't *really* need page_table_lock here, we are
-> still updating page tables and it's in line with the the ordinary locking
-> rules.  There are other cases in hugetlb.c where we do pte_same() checks even
-> though we are protected from the related races by the instantiation_mutex.
-> 
-> page_table_lock is actually a bit useless for shared page tables. If shared
-> page tables were every to be a general thing then I think we'd have to
-> revisit how PTE update locking is done but I doubt anyone wants to dive
-> down that rat-hole.
-> 
-> For now, I'm going to keep taking it even if strictly speaking it's not
-> necessary.
+Acked-by: Hannes Reinecke <hare@suse.de>
 
-Fair enough
+Cheers,
 
+Hannes
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Dr. Hannes Reinecke		      zSeries & Storage
+hare@suse.de			      +49 911 74053 688
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
+GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
+
+
