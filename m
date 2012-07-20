@@ -1,74 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752816Ab2GTAx4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 20:53:56 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:55986 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752066Ab2GTAxv (ORCPT
+	id S1752812Ab2GTBAW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 21:00:22 -0400
+Received: from mail-vc0-f202.google.com ([209.85.220.202]:50754 "EHLO
+	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752066Ab2GTBAV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 20:53:51 -0400
-X-AuditID: 9c93016f-b7b08ae00000790d-1d-5008ac1c67e0
-From: Namhyung Kim <namhyung@kernel.org>
-To: Cody Schafer <cody@linux.vnet.ibm.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] perf: prevent overflow in size calculation
-References: <1342743215-26979-1-git-send-email-cody@linux.vnet.ibm.com>
-Date: Fri, 20 Jul 2012 09:49:05 +0900
-In-Reply-To: <1342743215-26979-1-git-send-email-cody@linux.vnet.ibm.com> (Cody
-	Schafer's message of "Thu, 19 Jul 2012 17:13:35 -0700")
-Message-ID: <87a9yv2r5q.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
+	Thu, 19 Jul 2012 21:00:21 -0400
+Date: Thu, 19 Jul 2012 18:00:19 -0700
+From: Todd Poynor <toddpoynor@google.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org, arve@android.com
+Subject: Re: [PATCH] PM / Sleep: Print name of wakeup source that aborts
+ suspend
+Message-ID: <20120720010019.GA15701@google.com>
+References: <1342637519-22355-1-git-send-email-toddpoynor@google.com>
+ <201207182147.34750.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201207182147.34750.rjw@sisk.pl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Cody
+On Wed, Jul 18, 2012 at 09:47:34PM +0200, Rafael J. Wysocki wrote:
+> On Wednesday, July 18, 2012, Todd Poynor wrote:
+...
+> > +{
+> > +	struct wakeup_source *ws;
+> > +	int active = 0;
+> > +	struct wakeup_source *last_activity_ws = NULL;
+> > +
+> > +	rcu_read_lock();
+> > +	list_for_each_entry_rcu(ws, &wakeup_sources, entry) {
+> > +		if (ws->active) {
+> > +			pr_info("active wakeup source: %s\n", ws->name);
+> > +			active = 1;
+> 
+> Can we do a break here?  Or do we want to get all of them?
 
-On Thu, 19 Jul 2012 17:13:35 -0700, Cody Schafer wrote:
-> A large enough symbol size causes an overflow in the size parameter to the
-> histogram allocation, leading to a segfault in symbol__inc_addr_samples later
-> on when this histogram is accessed.
->
-> In the case of being called via perf-report, this returns back and
-> gracefully ignores the sample, eventually ignoring the chained return
-> value of perf_session_deliver_event in flush_sample_queue.
->
-> Signed-off-by: Cody Schafer <cody@linux.vnet.ibm.com>
-> ---
->  tools/perf/util/annotate.c |    7 ++++++-
->  1 file changed, 6 insertions(+), 1 deletion(-)
->
-> diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-> index 8069dfb..6f78f20 100644
-> --- a/tools/perf/util/annotate.c
-> +++ b/tools/perf/util/annotate.c
-> @@ -426,8 +426,13 @@ int symbol__alloc_hist(struct symbol *sym)
->  {
->  	struct annotation *notes = symbol__annotation(sym);
->  	const size_t size = symbol__size(sym);
-> -	size_t sizeof_sym_hist = (sizeof(struct sym_hist) + size * sizeof(u64));
-> +	size_t sizeof_sym_hist;
->  
-> +	/* Check for overflow when calculating sizeof_sym_hist */
-> +	if (size > (SIZE_MAX / sizeof(u64)))
-> +		return -1;
+I haven't seen more than 3 activated during suspend entry at a time, but
+could just list one.  I haven't made that change yet but will if it's
+preferred.
 
-How does it guarantee that the end result which used in zalloc below
-would not overflow?
+> 
+> > +		} else if (!active &&
+> > +			   (!last_activity_ws ||
+> > +			    ws->last_time.tv64 >
+> > +			    last_activity_ws->last_time.tv64)) {
+> 
+> ktime_to_ns() anyone?
 
-Thanks,
-Namhyung
+Sure, I avoided it because some configs do math on each of these, but
+perhaps most implementations implement it as a NOP.
 
+> 
+> > +			last_activity_ws = ws;
+> > +		}
+> > +	}
+> > +
+> > +	if (!active && last_activity_ws)
+> > +		pr_info("last active wakeup source: %s\n",
+> > +			last_activity_ws->name);
+> > +	rcu_read_unlock();
+> > +}
+> > +
+> >  /**
+> >   * pm_wakeup_pending - Check if power transition in progress should be aborted.
+> >   *
+> > @@ -671,6 +696,10 @@ bool pm_wakeup_pending(void)
+> >  		events_check_enabled = !ret;
+> >  	}
+> >  	spin_unlock_irqrestore(&events_lock, flags);
+> > +
+> > +	if (ret)
+> > +		print_active_wakeup_sources();
+> > +
+> >  	return ret;
+> >  }
+> 
+> There is no way this or equivalent can go into v3.6.  It may go into v3.7,
+> but there's a plenty of time for that.
 
-> +
-> +	sizeof_sym_hist = (sizeof(struct sym_hist) + size * sizeof(u64));
->  	notes->src = zalloc(sizeof(*notes->src) + symbol_conf.nr_events * sizeof_sym_hist);
->  	if (notes->src == NULL)
->  		return -1;
+Sounds fine, thanks.
+
+> 
+> Thanks,
+> Rafael
+
+Todd
+
