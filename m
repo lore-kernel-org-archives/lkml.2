@@ -1,198 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753479Ab2GTSOm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 14:14:42 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:11666 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752591Ab2GTSOk (ORCPT
+	id S1751611Ab2GTSTM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 14:19:12 -0400
+Received: from alfa.cardwellit.com ([178.79.145.246]:36566 "EHLO
+	alfa.cardwellit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750806Ab2GTSTK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 14:14:40 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6778"; a="212825183"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: "Rafael J . Wysocki" <rjw@sisk.pl>
-Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: [PATCHv2] cpufreq: Fix sysfs deadlock with concurrent hotplug/frequency switch
-Date: Fri, 20 Jul 2012 11:14:38 -0700
-Message-Id: <1342808078-5317-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.7.11.2.249.g31c7954
-In-Reply-To: <201207201205.36635.rjw@sisk.pl>
+	Fri, 20 Jul 2012 14:19:10 -0400
+X-Greylist: delayed 421 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Jul 2012 14:19:10 EDT
+Message-ID: <50099F72.8020901@lists.grepular.com>
+Date: Fri, 20 Jul 2012 19:12:02 +0100
+From: Mike Cardwell <linux-kernel@lists.grepular.com>
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: Procfs race condition bug
+OpenPGP: url=https://grepular.com/0018461F.pub.asc
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="------------enig563AD453FDE3E003390B0019"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Running one program that continuously hotplugs and replugs a cpu
-concurrently with another program that continuously writes to the
-scaling_setspeed node eventually deadlocks with:
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig563AD453FDE3E003390B0019
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-=============================================
-[ INFO: possible recursive locking detected ]
-3.4.0 #37 Tainted: G        W
----------------------------------------------
-filemonkey/122 is trying to acquire lock:
- (s_active#13){++++.+}, at: [<c01a3d28>] sysfs_remove_dir+0x9c/0xb4
+I *think* I've uncovered a race condition bug in procfs. If I attempt to
+open a file in /proc/net, eg "/proc/net/tcp" it works fine, but if I
+spawn a POSIX thread and attempt to do it from there, it *usually* fails
+with a "No such file or directory", but some times succeeds. If I do a
+system call inside the thread to look up the thread ID and then open
+"/proc/THREADID/net/tcp" instead, it works fine.
 
-but task is already holding lock:
- (s_active#13){++++.+}, at: [<c01a22f0>] sysfs_write_file+0xe8/0x140
+There are more details and  some example code so you can replicate the
+problem on a stack overflow question I asked earlier today here:
+http://stackoverflow.com/questions/11580020/opening-proc-net-tcp-in-c-fro=
+m-a-posix-thread-fails-most-of-the-time
 
-other info that might help us debug this:
- Possible unsafe locking scenario:
+This is the first time I have attempted to report a (suspected) Linux
+kernel bug, so I apologise if I have made any mistakes. I am not
+subscribed to the list, so please Cc me in on any responses.
 
-       CPU0
-       ----
-  lock(s_active#13);
-  lock(s_active#13);
+Regards,
 
- *** DEADLOCK ***
+--=20
+Mike Cardwell  https://grepular.com/     http://cardwellit.com/
+OpenPGP Key    35BC AF1D 3AA2 1F84 3DC3  B0CF 70A5 F512 0018 461F
+XMPP OTR Key   8924 B06A 7917 AAF3 DBB1  BF1B 295C 3C78 3EF1 46B4
 
- May be due to missing lock nesting notation
 
-2 locks held by filemonkey/122:
- #0:  (&buffer->mutex){+.+.+.}, at: [<c01a2230>] sysfs_write_file+0x28/0x140
- #1:  (s_active#13){++++.+}, at: [<c01a22f0>] sysfs_write_file+0xe8/0x140
+--------------enig563AD453FDE3E003390B0019
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-stack backtrace:
-[<c0014fcc>] (unwind_backtrace+0x0/0x120) from [<c00ca600>] (validate_chain+0x6f8/0x1054)
-[<c00ca600>] (validate_chain+0x6f8/0x1054) from [<c00cb778>] (__lock_acquire+0x81c/0x8d8)
-[<c00cb778>] (__lock_acquire+0x81c/0x8d8) from [<c00cb9c0>] (lock_acquire+0x18c/0x1e8)
-[<c00cb9c0>] (lock_acquire+0x18c/0x1e8) from [<c01a3ba8>] (sysfs_addrm_finish+0xd0/0x180)
-[<c01a3ba8>] (sysfs_addrm_finish+0xd0/0x180) from [<c01a3d28>] (sysfs_remove_dir+0x9c/0xb4)
-[<c01a3d28>] (sysfs_remove_dir+0x9c/0xb4) from [<c02d0e5c>] (kobject_del+0x10/0x38)
-[<c02d0e5c>] (kobject_del+0x10/0x38) from [<c02d0f74>] (kobject_release+0xf0/0x194)
-[<c02d0f74>] (kobject_release+0xf0/0x194) from [<c0565a98>] (cpufreq_cpu_put+0xc/0x24)
-[<c0565a98>] (cpufreq_cpu_put+0xc/0x24) from [<c05683f0>] (store+0x6c/0x74)
-[<c05683f0>] (store+0x6c/0x74) from [<c01a2314>] (sysfs_write_file+0x10c/0x140)
-[<c01a2314>] (sysfs_write_file+0x10c/0x140) from [<c014af44>] (vfs_write+0xb0/0x128)
-[<c014af44>] (vfs_write+0xb0/0x128) from [<c014b06c>] (sys_write+0x3c/0x68)
-[<c014b06c>] (sys_write+0x3c/0x68) from [<c000e0e0>] (ret_fast_syscall+0x0/0x3c)
+-----BEGIN PGP SIGNATURE-----
 
-This is because store() in cpufreq.c indirectly calls
-kobject_get() via cpufreq_cpu_get() and is the last one to call
-kobject_put() via cpufreq_cpu_put(). Sysfs code should not call
-kobject_get() or kobject_put() directly (see the comment around
-sysfs_schedule_callback() for more information).
+iQGGBAEBCgBwBQJQCZ90MBSAAAAAACAAB3ByZWZlcnJlZC1lbWFpbC1lbmNvZGlu
+Z0BwZ3AuY29tcGdwbWltZTgUgAAAAAAVABpwa2EtYWRkcmVzc0BnbnVwZy5vcmdt
+aWtlLmNhcmR3ZWxsQGdyZXB1bGFyLmNvbQAKCRCdJiMBwdHnBGJiB/9E6gpgbGgb
+iYrKjUOLIKx2uzvZvJJn+Ls7TQuT3G/sKqXdttlRE1cOQ6yEnLF7+qqldxGjWLkj
+MLEWsYB7JwBiFRZn3Cz7gPPNcZTPJTifq+tJaT16XqZj21jG6JEEfwF+Wsff/nQc
+qGWBprDzcuUwe/sYHnGwuwzHEhdS43nPMg8XxvIFOjUQYgBJLFc1PGUjgr4oCmZJ
+Fu1rsKXrumuYvaeCJ4h+hd8gDp3FVRNiTFANm0j75LiItc4nfyzsmA7IS+E608Mt
+OevxRF4iwvZVVg7sc5OZb7Go4Shoue1gIMh8s+Kn4lZBHeplrVmAR+NH0BYGzZWU
+QIqbwlZ49Dwe
+=eeaa
+-----END PGP SIGNATURE-----
 
-Fix this deadlock by introducing two new functions:
-
-	struct cpufreq_policy *cpufreq_cpu_get_sysfs(unsigned int cpu)
-	void cpufreq_cpu_put_sysfs(struct cpufreq_policy *data)
-
-which do the same thing as cpufreq_cpu_{get,put}() but don't call
-kobject functions.
-
-To easily trigger this deadlock you can insert an msleep() with a
-reasonably large value right after the fail label at the bottom
-of the store() function in cpufreq.c and then write
-scaling_setspeed in one task and offline the cpu in another. The
-first task will hang and be detected by the hung task detector.
-
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
-
-Changes from v1:
- - switch sysfs arg to bool
- - remove patch from commit text
-
- drivers/cpufreq/cpufreq.c | 35 +++++++++++++++++++++++++++--------
- 1 file changed, 27 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 7f2f149..fb8a527 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -138,7 +138,7 @@ void disable_cpufreq(void)
- static LIST_HEAD(cpufreq_governor_list);
- static DEFINE_MUTEX(cpufreq_governor_mutex);
- 
--struct cpufreq_policy *cpufreq_cpu_get(unsigned int cpu)
-+static struct cpufreq_policy *__cpufreq_cpu_get(unsigned int cpu, bool sysfs)
- {
- 	struct cpufreq_policy *data;
- 	unsigned long flags;
-@@ -162,7 +162,7 @@ struct cpufreq_policy *cpufreq_cpu_get(unsigned int cpu)
- 	if (!data)
- 		goto err_out_put_module;
- 
--	if (!kobject_get(&data->kobj))
-+	if (!sysfs && !kobject_get(&data->kobj))
- 		goto err_out_put_module;
- 
- 	spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
-@@ -175,16 +175,35 @@ err_out_unlock:
- err_out:
- 	return NULL;
- }
-+
-+struct cpufreq_policy *cpufreq_cpu_get(unsigned int cpu)
-+{
-+	return __cpufreq_cpu_get(cpu, false);
-+}
- EXPORT_SYMBOL_GPL(cpufreq_cpu_get);
- 
-+static struct cpufreq_policy *cpufreq_cpu_get_sysfs(unsigned int cpu)
-+{
-+	return __cpufreq_cpu_get(cpu, true);
-+}
- 
--void cpufreq_cpu_put(struct cpufreq_policy *data)
-+static void __cpufreq_cpu_put(struct cpufreq_policy *data, bool sysfs)
- {
--	kobject_put(&data->kobj);
-+	if (!sysfs)
-+		kobject_put(&data->kobj);
- 	module_put(cpufreq_driver->owner);
- }
-+
-+void cpufreq_cpu_put(struct cpufreq_policy *data)
-+{
-+	__cpufreq_cpu_put(data, false);
-+}
- EXPORT_SYMBOL_GPL(cpufreq_cpu_put);
- 
-+static void cpufreq_cpu_put_sysfs(struct cpufreq_policy *data)
-+{
-+	__cpufreq_cpu_put(data, true);
-+}
- 
- /*********************************************************************
-  *            EXTERNALLY AFFECTING FREQUENCY CHANGES                 *
-@@ -617,7 +636,7 @@ static ssize_t show(struct kobject *kobj, struct attribute *attr, char *buf)
- 	struct cpufreq_policy *policy = to_policy(kobj);
- 	struct freq_attr *fattr = to_attr(attr);
- 	ssize_t ret = -EINVAL;
--	policy = cpufreq_cpu_get(policy->cpu);
-+	policy = cpufreq_cpu_get_sysfs(policy->cpu);
- 	if (!policy)
- 		goto no_policy;
- 
-@@ -631,7 +650,7 @@ static ssize_t show(struct kobject *kobj, struct attribute *attr, char *buf)
- 
- 	unlock_policy_rwsem_read(policy->cpu);
- fail:
--	cpufreq_cpu_put(policy);
-+	cpufreq_cpu_put_sysfs(policy);
- no_policy:
- 	return ret;
- }
-@@ -642,7 +661,7 @@ static ssize_t store(struct kobject *kobj, struct attribute *attr,
- 	struct cpufreq_policy *policy = to_policy(kobj);
- 	struct freq_attr *fattr = to_attr(attr);
- 	ssize_t ret = -EINVAL;
--	policy = cpufreq_cpu_get(policy->cpu);
-+	policy = cpufreq_cpu_get_sysfs(policy->cpu);
- 	if (!policy)
- 		goto no_policy;
- 
-@@ -656,7 +675,7 @@ static ssize_t store(struct kobject *kobj, struct attribute *attr,
- 
- 	unlock_policy_rwsem_write(policy->cpu);
- fail:
--	cpufreq_cpu_put(policy);
-+	cpufreq_cpu_put_sysfs(policy);
- no_policy:
- 	return ret;
- }
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+--------------enig563AD453FDE3E003390B0019--
