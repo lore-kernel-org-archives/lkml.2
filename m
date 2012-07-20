@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753341Ab2GTPt7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 11:49:59 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:44111 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753179Ab2GTPt6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 11:49:58 -0400
-Message-ID: <1342799397.21447.35.camel@joe2Laptop>
-Subject: Re: [PATCH] checkpatch: Add checks for do {} while (0) macro misuses
-From: Joe Perches <joe@perches.com>
-To: Betty Dall <betty.dall@hp.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Andy Whitcroft <apw@canonical.com>
-Date: Fri, 20 Jul 2012 08:49:57 -0700
-In-Reply-To: <loom.20120720T160308-562@post.gmane.org>
-References: <1342735885.17350.3.camel@joe2Laptop>
-	 <loom.20120720T160308-562@post.gmane.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753286Ab2GTPxF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 11:53:05 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:52191 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752855Ab2GTPxE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 11:53:04 -0400
+MIME-Version: 1.0
+In-Reply-To: <4071247.4LoKycnIHi@linux-lqwf.site>
+References: <CACVXFVNWOcrR9tYhU1wVUSJ_DJ8x+SCk993Sn9dYDe2kzJBDuQ@mail.gmail.com>
+	<4071247.4LoKycnIHi@linux-lqwf.site>
+Date: Fri, 20 Jul 2012 23:53:02 +0800
+Message-ID: <CACVXFVOarPfL0-PyZciwx7n4QTy+pji2VKFrCp6B3niU2M_X2w@mail.gmail.com>
+Subject: Re: [RFC] firmware load: defer request_firmware during early boot and resume
+From: Ming Lei <tom.leiming@gmail.com>
+To: Oliver Neukum <oneukum@suse.de>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-usb <linux-usb@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-07-20 at 14:40 +0000, Betty Dall wrote:
+On Fri, Jul 20, 2012 at 9:54 PM, Oliver Neukum <oneukum@suse.de> wrote:
 
-> I reviewed this and tested it out on the qib.h file we were looking at yesterday 
-> and it worked well. I was worried about a nested do {} while(0), because it will 
-> match with the first while. Here is a test case:
-> #define qib_devinfo(pcidev, fmt, ...) \
->         do { \
->                 do { \
->                         dev_info(&(pcidev)->dev, fmt, ##__VA_ARGS__); \
->                 } while (0); \
->         } while (0)
-> 
-> Checkpatch.pl didn't complain about that one. Granted, it is a contrived test 
-> case. Your change will catch the real problems.
+>
+> The approach seems to me to be less comprehensive than
+> it ought to be. If you defer, why not the whole probe()?
 
-Hi Betty.
+Because for other failures, we don't know when the conditions
+for them can be satisfied. For example, we don't know when the
+memory allocation can be met for one previous allocation failure.
 
-Wow, you're thorough.  Thanks for testing.
+IMO, at least the approach provides one simple way to solve the
+firmware loading problem during. early boot or resume
 
-I don't mind that it doesn't work in all cases.
-I suppose this would fail for loops too.
+> Deferring only the upoad of the firmware complicates
+> error handling.
 
-checkpatch is a pretty limited tool as it depends on
-the code being compilable and doesn't really understand
-c syntax.  It is just a convenience tool and lots of
-its logic is incomplete and some of its output can be
-happily ignored.
+Looks there is no special requirement for the error handling of
+request_firmware, just like other failures' handling, undo things
+which has been done, isn't there?
 
-cheers, Joe
-
+Thanks,
+-- 
+Ming Lei
