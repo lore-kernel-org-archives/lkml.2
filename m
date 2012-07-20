@@ -1,53 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753450Ab2GTStf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 14:49:35 -0400
-Received: from mga09.intel.com ([134.134.136.24]:17115 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752016Ab2GTSst (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 14:48:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="169050355"
-From: Darren Hart <dvhart@linux.intel.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/3] futex: Test for pi_mutex on fault in futex_wait_requeue_pi
-Date: Fri, 20 Jul 2012 11:46:29 -0700
-Message-Id: <dc59890338fc413606f04e5c5b131530734dae3d.1342809673.git.dvhart@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1342809673.git.dvhart@linux.intel.com>
-References: <cover.1342809673.git.dvhart@linux.intel.com>
-In-Reply-To: <cover.1342809673.git.dvhart@linux.intel.com>
-References: <cover.1342809673.git.dvhart@linux.intel.com>
+	id S1753494Ab2GTStj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 14:49:39 -0400
+Received: from usindpps03.hds.com ([207.126.252.16]:48575 "EHLO
+	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752016Ab2GTStg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 14:49:36 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: "Luck, Tony" <tony.luck@intel.com>, Don Zickus <dzickus@redhat.com>
+CC: "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mikew@google.com" <mikew@google.com>,
+        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: RE: [RFC][PATCH v2 2/3] Hold multiple logs
+Thread-Topic: [RFC][PATCH v2 2/3] Hold multiple logs
+Thread-Index: Ac1l82ceH7I0t1QCT1GombsnNxviZAAAK4PgAABTBVAAAP4IQAAA0SRAAAJWEXAAAc9d8AAOI+0AAA0ln5AACtCXAAAFHYQAAASlbVA=
+Date: Fri, 20 Jul 2012 18:49:11 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D40FB28BBE@USINDEM103.corp.hds.com>
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D40FB27FDC@USINDEM103.corp.hds.com>
+ <3908561D78D1C84285E8C5FCA982C28F1936EA5F@ORSMSX104.amr.corp.intel.com>
+ <A5ED84D3BB3A384992CBB9C77DEDA4D40FB28056@USINDEM103.corp.hds.com>
+ <3908561D78D1C84285E8C5FCA982C28F1936EA97@ORSMSX104.amr.corp.intel.com>
+ <A5ED84D3BB3A384992CBB9C77DEDA4D40FB2813D@USINDEM103.corp.hds.com>
+ <3908561D78D1C84285E8C5FCA982C28F1936EADE@ORSMSX104.amr.corp.intel.com>
+ <A5ED84D3BB3A384992CBB9C77DEDA4D40FB28206@USINDEM103.corp.hds.com>
+ <20120720030328.GC5637@redhat.com>
+ <A5ED84D3BB3A384992CBB9C77DEDA4D40FB286FB@USINDEM103.corp.hds.com>
+ <20120720142934.GF5637@redhat.com>
+ <3908561D78D1C84285E8C5FCA982C28F1936ECD8@ORSMSX104.amr.corp.intel.com>
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F1936ECD8@ORSMSX104.amr.corp.intel.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.43.113]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.260,0.0.0000
+ definitions=2012-07-20_03:2012-07-19,2012-07-20,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
+ definitions=main-1207200190
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If fixup_pi_state_owner() faults, pi_mutex may be NULL. Test
-for pi_mutex != NULL before testing the owner against current
-and possibly unlocking it.
+Tony,
 
-Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-CC: Dave Jones <davej@redhat.com>
-CC: Dan Carpenter <dan.carpenter@oracle.com>
-CC: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/futex.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> The big question is what happens when EFI runs out of space.
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index e2b0fb9..05018bf 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -2370,7 +2370,7 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
- 	 * fault, unlock the rt_mutex and return the fault to userspace.
- 	 */
- 	if (ret == -EFAULT) {
--		if (rt_mutex_owner(pi_mutex) == current)
-+		if (pi_mutex && rt_mutex_owner(pi_mutex) == current)
- 			rt_mutex_unlock(pi_mutex);
- 	} else if (ret == -EINTR) {
- 		/*
--- 
-1.7.10.4
+According to EFI specification, set_variable service returns EFI_OUT_OF_RESOURCES.
+If it doesn't work, the firmware should be fixed.
 
+>Matthew avoided the question by implementing the "just one record" policy.
+
+I think we need to ask Matthew the reason why he introduced "just one record" policy 
+rather than guessing it by reading his original source code.
+
+Seiji
+
+> -----Original Message-----
+> From: Luck, Tony [mailto:tony.luck@intel.com]
+> Sent: Friday, July 20, 2012 12:56 PM
+> To: Don Zickus; Seiji Aguchi
+> Cc: linux-doc@vger.kernel.org; linux-kernel@vger.kernel.org; mikew@google.com; Matthew Garrett (mjg@redhat.com); dle-
+> develop@lists.sourceforge.net; Satoru Moriya
+> Subject: RE: [RFC][PATCH v2 2/3] Hold multiple logs
+> 
+> > > What is the harm of not using this and just letting the number be
+> > > infinite (or until EFI runs out of space)?  Is it a big deal if extra failures are logged?
+> 
+> The big question is what happens when EFI runs out of space. Matthew avoided the question by implementing the "just one record"
+> policy. Was this because he has some specific knowledge about what happens, or does he just have an irrational[1] fear that the EFI
+> implementation will handle this poorly?
+> 
+> Without some tests on at least a couple of different platforms that show that EFI handles out of space conditions gracefully, I continue
+> to have concerns.
+> 
+> -Tony
+> 
+> [1] Perhaps his fears are rational given how many other places he has found EFI not doing what we'd expect or want.
