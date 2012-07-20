@@ -1,208 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753576Ab2GTTqM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 15:46:12 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:50187 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752810Ab2GTTqK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 15:46:10 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCHv2] cpufreq: Fix sysfs deadlock with concurrent hotplug/frequency switch
-Date: Fri, 20 Jul 2012 21:51:49 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org
-References: <1342808078-5317-1-git-send-email-sboyd@codeaurora.org>
-In-Reply-To: <1342808078-5317-1-git-send-email-sboyd@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207202151.49537.rjw@sisk.pl>
+	id S1752427Ab2GTTqb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 15:46:31 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:43143 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751680Ab2GTTq3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 15:46:29 -0400
+From: Nathan Zimmer <nzimmer@sgi.com>
+To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Cc: Robin.Holt@sgi.com, Nathan Zimmer <nzimmer@sgi.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [RFC] net: further seperate dst_entry.__refcnt from cache contention
+Date: Fri, 20 Jul 2012 14:46:27 -0500
+Message-Id: <1342813587-31601-1-git-send-email-nzimmer@sgi.com>
+X-Mailer: git-send-email 1.6.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, July 20, 2012, Stephen Boyd wrote:
-> Running one program that continuously hotplugs and replugs a cpu
-> concurrently with another program that continuously writes to the
-> scaling_setspeed node eventually deadlocks with:
-> 
-> =============================================
-> [ INFO: possible recursive locking detected ]
-> 3.4.0 #37 Tainted: G        W
-> ---------------------------------------------
-> filemonkey/122 is trying to acquire lock:
->  (s_active#13){++++.+}, at: [<c01a3d28>] sysfs_remove_dir+0x9c/0xb4
-> 
-> but task is already holding lock:
->  (s_active#13){++++.+}, at: [<c01a22f0>] sysfs_write_file+0xe8/0x140
-> 
-> other info that might help us debug this:
->  Possible unsafe locking scenario:
-> 
->        CPU0
->        ----
->   lock(s_active#13);
->   lock(s_active#13);
-> 
->  *** DEADLOCK ***
-> 
->  May be due to missing lock nesting notation
-> 
-> 2 locks held by filemonkey/122:
->  #0:  (&buffer->mutex){+.+.+.}, at: [<c01a2230>] sysfs_write_file+0x28/0x140
->  #1:  (s_active#13){++++.+}, at: [<c01a22f0>] sysfs_write_file+0xe8/0x140
-> 
-> stack backtrace:
-> [<c0014fcc>] (unwind_backtrace+0x0/0x120) from [<c00ca600>] (validate_chain+0x6f8/0x1054)
-> [<c00ca600>] (validate_chain+0x6f8/0x1054) from [<c00cb778>] (__lock_acquire+0x81c/0x8d8)
-> [<c00cb778>] (__lock_acquire+0x81c/0x8d8) from [<c00cb9c0>] (lock_acquire+0x18c/0x1e8)
-> [<c00cb9c0>] (lock_acquire+0x18c/0x1e8) from [<c01a3ba8>] (sysfs_addrm_finish+0xd0/0x180)
-> [<c01a3ba8>] (sysfs_addrm_finish+0xd0/0x180) from [<c01a3d28>] (sysfs_remove_dir+0x9c/0xb4)
-> [<c01a3d28>] (sysfs_remove_dir+0x9c/0xb4) from [<c02d0e5c>] (kobject_del+0x10/0x38)
-> [<c02d0e5c>] (kobject_del+0x10/0x38) from [<c02d0f74>] (kobject_release+0xf0/0x194)
-> [<c02d0f74>] (kobject_release+0xf0/0x194) from [<c0565a98>] (cpufreq_cpu_put+0xc/0x24)
-> [<c0565a98>] (cpufreq_cpu_put+0xc/0x24) from [<c05683f0>] (store+0x6c/0x74)
-> [<c05683f0>] (store+0x6c/0x74) from [<c01a2314>] (sysfs_write_file+0x10c/0x140)
-> [<c01a2314>] (sysfs_write_file+0x10c/0x140) from [<c014af44>] (vfs_write+0xb0/0x128)
-> [<c014af44>] (vfs_write+0xb0/0x128) from [<c014b06c>] (sys_write+0x3c/0x68)
-> [<c014b06c>] (sys_write+0x3c/0x68) from [<c000e0e0>] (ret_fast_syscall+0x0/0x3c)
-> 
-> This is because store() in cpufreq.c indirectly calls
-> kobject_get() via cpufreq_cpu_get() and is the last one to call
-> kobject_put() via cpufreq_cpu_put(). Sysfs code should not call
-> kobject_get() or kobject_put() directly (see the comment around
-> sysfs_schedule_callback() for more information).
-> 
-> Fix this deadlock by introducing two new functions:
-> 
-> 	struct cpufreq_policy *cpufreq_cpu_get_sysfs(unsigned int cpu)
-> 	void cpufreq_cpu_put_sysfs(struct cpufreq_policy *data)
-> 
-> which do the same thing as cpufreq_cpu_{get,put}() but don't call
-> kobject functions.
-> 
-> To easily trigger this deadlock you can insert an msleep() with a
-> reasonably large value right after the fail label at the bottom
-> of the store() function in cpufreq.c and then write
-> scaling_setspeed in one task and offline the cpu in another. The
-> first task will hang and be detected by the hung task detector.
-> 
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+After some investigation on large machines I found that
+dst_entry.__refcnt particpates in false cache sharing issues that show
+when scaling past 12 threads who communicate via tcp with loopback addresses.
+I adjusted refcnt to be on its own cache line and that helped quite a bit.
+But perhaps a bit of a waste of space?  Is there some better way?
 
-Thanks, applied to the pm-cpufreq branch of the linux-pm.git tree, will be
-pushed for v3.6.
+Here is some preliminary data I had gathered.  It shows nicely improved scaling.
 
-Thanks,
-Rafael
+Threads baseline   afterchange
+2       1328.03    1340.67
+4       2430.31    2282.09
+6       3087.65    3258.12
+8       3560.34    4165.88
+10      3900.34    4962.28
+12      3933.38    5613.76
+14      3876.98    6113.85
+16      3706.01    6338.00
+18      3742.48    6634.77
+20      3670.15    6641.25
+22      3660.98    6799.55
+24      3503.13    6613.45
+26      3525.73    6702.67
+28      3440.16    6801.27
+30      3497.59    6911.52
+32      3498.25    6540.06
 
+I should say something about this test.  It is a dead simple test in which a
+pair of threads simply pass data to each other.  They were placed in the same
+socket to avoid cross node overhead.
 
-> ---
-> 
-> Changes from v1:
->  - switch sysfs arg to bool
->  - remove patch from commit text
-> 
->  drivers/cpufreq/cpufreq.c | 35 +++++++++++++++++++++++++++--------
->  1 file changed, 27 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index 7f2f149..fb8a527 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -138,7 +138,7 @@ void disable_cpufreq(void)
->  static LIST_HEAD(cpufreq_governor_list);
->  static DEFINE_MUTEX(cpufreq_governor_mutex);
->  
-> -struct cpufreq_policy *cpufreq_cpu_get(unsigned int cpu)
-> +static struct cpufreq_policy *__cpufreq_cpu_get(unsigned int cpu, bool sysfs)
->  {
->  	struct cpufreq_policy *data;
->  	unsigned long flags;
-> @@ -162,7 +162,7 @@ struct cpufreq_policy *cpufreq_cpu_get(unsigned int cpu)
->  	if (!data)
->  		goto err_out_put_module;
->  
-> -	if (!kobject_get(&data->kobj))
-> +	if (!sysfs && !kobject_get(&data->kobj))
->  		goto err_out_put_module;
->  
->  	spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
-> @@ -175,16 +175,35 @@ err_out_unlock:
->  err_out:
->  	return NULL;
->  }
-> +
-> +struct cpufreq_policy *cpufreq_cpu_get(unsigned int cpu)
-> +{
-> +	return __cpufreq_cpu_get(cpu, false);
-> +}
->  EXPORT_SYMBOL_GPL(cpufreq_cpu_get);
->  
-> +static struct cpufreq_policy *cpufreq_cpu_get_sysfs(unsigned int cpu)
-> +{
-> +	return __cpufreq_cpu_get(cpu, true);
-> +}
->  
-> -void cpufreq_cpu_put(struct cpufreq_policy *data)
-> +static void __cpufreq_cpu_put(struct cpufreq_policy *data, bool sysfs)
->  {
-> -	kobject_put(&data->kobj);
-> +	if (!sysfs)
-> +		kobject_put(&data->kobj);
->  	module_put(cpufreq_driver->owner);
->  }
-> +
-> +void cpufreq_cpu_put(struct cpufreq_policy *data)
-> +{
-> +	__cpufreq_cpu_put(data, false);
-> +}
->  EXPORT_SYMBOL_GPL(cpufreq_cpu_put);
->  
-> +static void cpufreq_cpu_put_sysfs(struct cpufreq_policy *data)
-> +{
-> +	__cpufreq_cpu_put(data, true);
-> +}
->  
->  /*********************************************************************
->   *            EXTERNALLY AFFECTING FREQUENCY CHANGES                 *
-> @@ -617,7 +636,7 @@ static ssize_t show(struct kobject *kobj, struct attribute *attr, char *buf)
->  	struct cpufreq_policy *policy = to_policy(kobj);
->  	struct freq_attr *fattr = to_attr(attr);
->  	ssize_t ret = -EINVAL;
-> -	policy = cpufreq_cpu_get(policy->cpu);
-> +	policy = cpufreq_cpu_get_sysfs(policy->cpu);
->  	if (!policy)
->  		goto no_policy;
->  
-> @@ -631,7 +650,7 @@ static ssize_t show(struct kobject *kobj, struct attribute *attr, char *buf)
->  
->  	unlock_policy_rwsem_read(policy->cpu);
->  fail:
-> -	cpufreq_cpu_put(policy);
-> +	cpufreq_cpu_put_sysfs(policy);
->  no_policy:
->  	return ret;
->  }
-> @@ -642,7 +661,7 @@ static ssize_t store(struct kobject *kobj, struct attribute *attr,
->  	struct cpufreq_policy *policy = to_policy(kobj);
->  	struct freq_attr *fattr = to_attr(attr);
->  	ssize_t ret = -EINVAL;
-> -	policy = cpufreq_cpu_get(policy->cpu);
-> +	policy = cpufreq_cpu_get_sysfs(policy->cpu);
->  	if (!policy)
->  		goto no_policy;
->  
-> @@ -656,7 +675,7 @@ static ssize_t store(struct kobject *kobj, struct attribute *attr,
->  
->  	unlock_policy_rwsem_write(policy->cpu);
->  fail:
-> -	cpufreq_cpu_put(policy);
-> +	cpufreq_cpu_put_sysfs(policy);
->  no_policy:
->  	return ret;
->  }
-> 
+CC: "David S. Miller" <davem@davemloft.net> 
+Signed-off-by: Nathan Zimmer <nzimmer@sgi.com>
+
+---
+ include/net/dst.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/include/net/dst.h b/include/net/dst.h
+index 8197ead..3898643 100644
+--- a/include/net/dst.h
++++ b/include/net/dst.h
+@@ -84,7 +84,7 @@ struct dst_entry {
+ 	 * input/output/ops or performance tanks badly
+ 	 */
+ 	atomic_t		__refcnt;	/* client references	*/
+-	int			__use;
++	int			__use	____cacheline_aligned;
+ 	unsigned long		lastuse;
+ 	union {
+ 		struct dst_entry	*next;
+-- 
+1.6.0.2
 
