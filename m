@@ -1,52 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752997Ab2GTU4Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 16:56:24 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42128 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750939Ab2GTU4X (ORCPT
+	id S1753062Ab2GTU6M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 16:58:12 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:37722 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751780Ab2GTU6K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 16:56:23 -0400
-From: Anthony Liguori <anthony@codemonkey.ws>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Asias He <asias@redhat.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH RESEND 5/5] vhost-blk: Add vhost-blk support
-In-Reply-To: <20120719130957.GD9303@redhat.com>
-References: <1342169711-12386-1-git-send-email-asias@redhat.com> <1342169711-12386-6-git-send-email-asias@redhat.com> <87mx2vrjdl.fsf@codemonkey.ws> <20120719130957.GD9303@redhat.com>
-User-Agent: Notmuch/0.13.2+60~g7ecf77d (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Fri, 20 Jul 2012 15:56:19 -0500
-Message-ID: <87obnaup70.fsf@codemonkey.ws>
+	Fri, 20 Jul 2012 16:58:10 -0400
+X-Sasl-enc: PGvIWBEDfQuCh8BJNArVI/PkSkeTVtChn3htlRJmbSz5 1342817889
+Date: Fri, 20 Jul 2012 13:58:07 -0700
+From: Greg KH <greg@kroah.com>
+To: Jason Baron <jbaron@redhat.com>
+Cc: Jim Cromie <jim.cromie@gmail.com>, kay@vrfy.com,
+        linux-kernel@vger.kernel.org, joe@perches.com
+Subject: Re: [PATCH 0/3] dyndbg: dev_dbg bugfix + 2 trivials
+Message-ID: <20120720205807.GA23849@kroah.com>
+References: <1342727183-4520-1-git-send-email-jim.cromie@gmail.com>
+ <20120720203857.GD13835@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120720203857.GD13835@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Michael S. Tsirkin" <mst@redhat.com> writes:
+On Fri, Jul 20, 2012 at 04:38:58PM -0400, Jason Baron wrote:
+> On Thu, Jul 19, 2012 at 01:46:19PM -0600, Jim Cromie wrote:
+> > 3 patches here, 1st is bugfix, others are trivial.
+> > 
+> > 1- fix __dev_printk, which broke dev_dbg() prefix under CONFIG_DYNAMIC_DEBUG.
+> > 
+> 
+> Patch looks good, and would be really nice to get into 3.5. Kay, are you
+> ok with this patch? 
 
-> On Thu, Jul 19, 2012 at 08:05:42AM -0500, Anthony Liguori wrote:
->> Of course, the million dollar question is why would using AIO in the
->> kernel be faster than using AIO in userspace?
->
-> Actually for me a more important question is how does it compare
-> with virtio-blk dataplane?
+It's too late for 3.5, but I can take it for 3.6-rc1 and backport it to
+3.5.1 if needed.
 
-I'm not even asking for a benchmark comparision.  It's the same API
-being called from a kernel thread vs. a userspace thread.  Why would
-there be a 60% performance difference between the two?  That doesn't
-make any sense.
+I just need you ack :)
 
-There's got to be a better justification for putting this in the kernel
-than just that we can.
+> > 2- change dyndbg prefix interfield separator from ':' to '.'
+> > 
+> > for example (output from test-code, not submitted):
+> > r8169 0000:02:00.0: r8169.rtl_init_one: set-drvdata pdev:ffff880223041000 dev:ffff880220d6a000
+> > hwmon hwmon1: k10temp.k10temp_probe.180: set-drvdata pdev:ffff88022303d000 dev:ffff8801dfd2a000
+> > 
+> > This improves usability of cut -d: <logfile> for pr_debug() messages,
+> > as field position is less volatile with various uses of dyndbg flags.
+> > Its not perfect:
+> > - dev_dbg on net-devices adds several more colons,
+> >   but this doesnt vary with dyndbg flags. 
+> > - dyndbg=+pfmlt still adds a field vs dyndbg==p (ie no prefix)
+> > - pr_fmt() commonly adds another colon (unchanged with this patch)
+> 
+> As you suggest in the patch, changing the delimiter to a non-colon
+> character such as ',' would resolve these cases? 
+> 
+> >   
+> > 3- trivial var name change in lib/dynamic_debug.c
+> > 
+> > 
+> > Please drop or apply 2,3 as you prefer.
+> 
+> 2,3 are nice, but as you suggest I think we want to separate them from
+> patch 1, which is a bugfix for 3.5.
 
-I completely understand why Christoph's suggestion of submitting BIOs
-directly would be faster.  There's no way to do that in userspace.
+I agree.
 
-Regards,
+thanks,
 
-Anthony Liguori
-
->
-> -- 
-> MST
+greg k-h
