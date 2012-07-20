@@ -1,244 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753078Ab2GTPVG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 11:21:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35063 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752386Ab2GTPVB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 11:21:01 -0400
-Message-ID: <50097758.3040803@redhat.com>
-Date: Fri, 20 Jul 2012 10:20:56 -0500
-From: Eric Sandeen <sandeen@redhat.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1753051Ab2GTPX4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 11:23:56 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:27163 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752386Ab2GTPXz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 11:23:55 -0400
+X-IronPort-AV: E=Sophos;i="4.77,623,1336348800"; 
+   d="scan'208";a="13629740"
+Date: Fri, 20 Jul 2012 16:23:07 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "Tim (Xen.org)" <tim@xen.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH WIP 6/6] xen/arm: enable evtchn irqs
+In-Reply-To: <20120720143609.GA21870@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.02.1207201608100.26163@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1206221644370.27860@kaball.uk.xensource.com> <1340381685-22529-1-git-send-email-stefano.stabellini@eu.citrix.com> <1340381685-22529-6-git-send-email-stefano.stabellini@eu.citrix.com> <20120709144005.GA12102@phenom.dumpdata.com>
+ <alpine.DEB.2.02.1207131749470.23783@kaball.uk.xensource.com> <20120716145709.GB552@phenom.dumpdata.com> <alpine.DEB.2.02.1207181750500.23783@kaball.uk.xensource.com> <20120719233045.GA944@phenom.dumpdata.com> <alpine.DEB.2.02.1207201208230.23783@kaball.uk.xensource.com>
+ <20120720143609.GA21870@phenom.dumpdata.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Jeff Moyer <jmoyer@redhat.com>
-CC: kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: Stack overrun in 3.5.0-rc7 w/ cfq
-References: <5008C388.2020803@redhat.com> <x49vchimsp1.fsf@segfault.boston.devel.redhat.com>
-In-Reply-To: <x49vchimsp1.fsf@segfault.boston.devel.redhat.com>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/20/12 9:07 AM, Jeff Moyer wrote:
-> Eric Sandeen <sandeen@redhat.com> writes:
+On Fri, 20 Jul 2012, Konrad Rzeszutek Wilk wrote:
+> On Fri, Jul 20, 2012 at 12:09:56PM +0100, Stefano Stabellini wrote:
+> > On Fri, 20 Jul 2012, Konrad Rzeszutek Wilk wrote:
+> > > > > OK, please include those questions/answers in the git commit and
+> > > > > repost.
+> > > 
+> > > I seem to be missing the rest of the patches. I see the drivers/xen/events also
+> > > has the  xen_init_IRQ_arm... is there a git tree with the base patches?
+> > 
+> > Yes, the latest git tree, based on
+> > 55b02d2f4445ad625213817a1736bf2884d32547, is available here:
+> > 
+> > git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git xenarmv7-3
 > 
->> I got this oops & stack overrun warning while running mkfs.ext4 on a sparse 4T file hosted on xfs.
->>
->> Should CFQ be issuing IO here?
-> 
-> Yes.  The on-stack plugging gets flushed when a process is scheduled
-> out.  Seriously, Eric, all of that xfs stuff in the stack trace, and you
-> want to pick on cfq!?!  For shame!
+> Uh there is a bit of stuff there.
 
-;) I had to get your attention ;)  And Dave put me up to it.
+Actually, aside from many backports and hacks, there are just three
+interesting patch series from my point of view:
 
-> Am I reading that wrong, or is there no separate IRQ stack?  Or did
-> taking the IRQ cause the stack overrun?
+http://marc.info/?l=xen-devel&m=133001901013674&w=2 xen/arm: receive Xen events and initialize xenbus
+http://marc.info/?l=xen-devel&m=134038186610813&w=2 xen/arm: PV console support
+http://marc.info/?l=xen-devel&m=134140081408627&w=2 xen/arm: grant_table, blkfront and blkback
 
-Um, I'm not sure.  I think Dave's point was whether it should be issuing IO
-from the schedule, related to this?
-
-/*
- * If 'from_schedule' is true, then postpone the dispatch of requests
- * until a safe kblockd context. We due this to avoid accidental big
- * additional stack usage in driver dispatch, in places where the originally
- * plugger did not intend it.
- */
-static void queue_unplugged(struct request_queue *q, unsigned int depth,
-                            bool from_schedule)
+The last two are recent and I have received feedback from you on the second
+one.
 
 
-FWIW, here's a better trace of how deep XFS itself went on that callchain, about 5k:
+> Can you just repost those you want me to
+> review and Ack that touch common code?
 
-[root@inode ~]# cat /sys/kernel/debug/tracing/stack_trace
-        Depth    Size   Location    (56 entries)
-        -----    ----   --------
-  0)     6920      16   rcu_read_lock_held+0x9/0x50
-  1)     6904      64   __module_address+0x105/0x110
-  2)     6840      32   __module_text_address+0x16/0x70
-  3)     6808      32   is_module_text_address+0x27/0x40
-  4)     6776      32   __kernel_text_address+0x58/0x80
-  5)     6744     112   print_context_stack+0x81/0x140
-  6)     6632     144   dump_trace+0x17f/0x300
-  7)     6488      32   save_stack_trace+0x2f/0x50
-  8)     6456      64   set_track+0x67/0x100
-  9)     6392      48   alloc_debug_processing+0x170/0x180
- 10)     6344     240   __slab_alloc+0x153/0x6f0
- 11)     6104      80   kmem_cache_alloc+0x212/0x220
- 12)     6024      16   mempool_alloc_slab+0x15/0x20
- 13)     6008     144   mempool_alloc+0x60/0x180
- 14)     5864     128   get_request+0x251/0x660
- 15)     5736     192   get_request_wait+0x2c/0x330
- 16)     5544      96   blk_queue_bio+0x105/0x430
- 17)     5448      48   generic_make_request+0xca/0x100
- 18)     5400     112   submit_bio+0x85/0x110
- 19)     5288     112   _xfs_buf_ioapply+0x170/0x1e0 [xfs]
- 20)     5176      48   xfs_buf_iorequest+0x4d/0x110 [xfs]
- 21)     5128      32   _xfs_buf_read+0x31/0x50 [xfs]
- 22)     5096      48   xfs_buf_read+0x113/0x170 [xfs]
- 23)     5048      96   xfs_trans_read_buf+0x325/0x610 [xfs]
- 24)     4952      96   xfs_btree_read_buf_block+0x5e/0xd0 [xfs]
- 25)     4856      96   xfs_btree_lookup_get_block+0x81/0xf0 [xfs]
- 26)     4760     176   xfs_btree_lookup+0xbf/0x470 [xfs]
- 27)     4584      16   xfs_alloc_lookup_ge+0x1c/0x20 [xfs]
- 28)     4568     240   xfs_alloc_ag_vextent_near+0x98/0xe10 [xfs]
- 29)     4328      32   xfs_alloc_ag_vextent+0xd5/0x100 [xfs]
- 30)     4296     112   __xfs_alloc_vextent+0x57a/0x7b0 [xfs]
- 31)     4184     272   xfs_alloc_vextent+0x198/0x1a0 [xfs]
- 32)     3912     256   xfs_bmbt_alloc_block+0xdb/0x210 [xfs]
- 33)     3656     240   xfs_btree_split+0xbd/0x710 [xfs]
- 34)     3416      96   xfs_btree_make_block_unfull+0x12d/0x190 [xfs]
- 35)     3320     224   xfs_btree_insrec+0x3ef/0x5a0 [xfs]
- 36)     3096     144   xfs_btree_insert+0x6d/0x190 [xfs]
- 37)     2952     256   xfs_bmap_add_extent_delay_real+0xf56/0x1cf0 [xfs]
- 38)     2696      80   xfs_bmapi_allocate+0x238/0x2d0 [xfs]
- 39)     2616     336   xfs_bmapi_write+0x521/0x790 [xfs]
- 40)     2280     192   xfs_iomap_write_allocate+0x13d/0x370 [xfs]
- 41)     2088     112   xfs_map_blocks+0x299/0x310 [xfs]
- 42)     1976     208   xfs_vm_writepage+0x197/0x5c0 [xfs]
- 43)     1768      32   __writepage+0x1a/0x50
- 44)     1736     336   write_cache_pages+0x206/0x5f0
- 45)     1400      96   generic_writepages+0x54/0x80
- 46)     1304      48   xfs_vm_writepages+0x5c/0x80 [xfs]
- 47)     1256      16   do_writepages+0x23/0x40
- 48)     1240      80   __writeback_single_inode+0x46/0x1e0
- 49)     1160     192   writeback_sb_inodes+0x27d/0x500
- 50)      968      80   __writeback_inodes_wb+0x9e/0xd0
- 51)      888     192   wb_writeback+0x2db/0x5c0
- 52)      696     176   wb_do_writeback+0x130/0x300
- 53)      520     160   bdi_writeback_thread+0xc3/0x410
- 54)      360     176   kthread+0xc6/0xd0
- 55)      184     184   kernel_thread_helper+0x4/0x10
+Good idea, but fortunately there aren't that many of them.
+In fact if we exclude the ones that just add more #include, these are the ones
+that remains:
+
+d122a6b075e582af17dd2b3ddd8ee4ded3f85300 xen/arm: receive xen events on arm
+1902bd5574447c03c1e6081cce98d8bf6e1f35e7 xen/arm: compile and run xenbus
+5bbda4a165284aceee19b54954f10344b724b506 xen/arm: enable evtchn irqs
+d4fda31cf5411e8ada3f1163c68595b7474d7c1d xen/arm: initialize grant_table on ARM
+
+it would be nice if you could take a look at them and tell me what you think.
 
 
-> Cheers,
-> Jeff
-> 
->>
->> -Eric
->>
->> [10821.639839] BUG: unable to handle kernel paging request at fffffffb900148a0
->> [10821.640820] IP: [<ffffffff810a0a04>] cpuacct_charge+0xb4/0x210
->> [10821.640820] PGD 1c0d067 PUD 0 
->> [10821.640820] Thread overran stack, or stack corrupted
->> [10821.640820] Oops: 0000 [#1] SMP 
->> [10821.640820] CPU 1 
->> [10821.640820] Modules linked in:[10821.640820]  xfs sunrpc ip6table_filter ip6_tables binfmt_misc vhost_net macvtap macvlan tun iTCO_wdt iTCO_vendor_support dcdbas microcode i2c_i801 lpc_ich mfd_core tg3 shpchp i3000_edac edac_core ext3 jbd mbcache ata_generic pata_acpi pata_sil680 radeon ttm drm_kms_helper drm i2c_algo_bit i2c_core [last unloaded: scsi_wait_scan]
->>
->> [10821.640820] Pid: 2914, comm: flush-8:16 Not tainted 3.5.0-rc7+ #65 Dell Computer Corporation PowerEdge 860/0RH817
->> [10821.640820] RIP: 0010:[<ffffffff810a0a04>]  [<ffffffff810a0a04>] cpuacct_charge+0xb4/0x210
->> [10821.640820] RSP: 0018:ffff88007d003d58  EFLAGS: 00010082
->> [10821.640820] RAX: 00000000001d6fe8 RBX: 00000000000b67c5 RCX: 0000000000000003
->> [10821.640820] RDX: 0000000000000001 RSI: ffffffff81c2fae0 RDI: 0000000000000046
->> [10821.640820] RBP: ffff88007d003d88 R08: 0000000000000003 R09: 0000000000000001
->> [10821.640820] R10: 0000000000000001 R11: 0000000000000004 R12: ffff88007b8d0000
->> [10821.640820] R13: ffffffff81c60ee0 R14: ffffffff820f7d40 R15: 00000153b050614b
->> [10821.640820] FS:  0000000000000000(0000) GS:ffff88007d000000(0000) knlGS:0000000000000000
->> [10821.640820] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
->> [10821.640820] CR2: fffffffb900148a0 CR3: 000000007a3ab000 CR4: 00000000000007e0
->> [10821.640820] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
->> [10821.640820] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
->> [10821.640820] Process flush-8:16 (pid: 2914, threadinfo ffff88007981a000, task ffff88007b8d0000)
->> [10821.640820] Stack:
->> [10821.640820]  ffffffff810a0978 000000001dcd6500 ffff88007d1d42b8 00000000000b67c5
->> [10821.640820]  ffff88007b8d0048 ffff88007b8d0000 ffff88007d003dc8 ffffffff810a82ef
->> [10821.640820]  ffffffff81810920 ffff88007d1d42b8 ffff88007b8d0048 0000000000000000
->> [10821.640820] Call Trace:
->> [10821.640820]  <IRQ> 
->> [10821.640820]  [<ffffffff810a0978>] ? cpuacct_charge+0x28/0x210
->> [10821.640820]  [<ffffffff810a82ef>] update_curr+0x13f/0x220
->> [10821.640820]  [<ffffffff810a86cd>] task_tick_fair+0xbd/0x140
->> [10821.640820]  [<ffffffff8109d0ae>] scheduler_tick+0xde/0x150
->> [10821.640820]  [<ffffffff8107477e>] update_process_times+0x6e/0x90
->> [10821.640820]  [<ffffffff810c8606>] tick_sched_timer+0x66/0xc0
->> [10821.640820]  [<ffffffff81092a83>] __run_hrtimer+0x83/0x320
->> [10821.640820]  [<ffffffff810c85a0>] ? tick_nohz_handler+0x100/0x100
->> [10821.640820]  [<ffffffff81092fc6>] hrtimer_interrupt+0x106/0x280
->> [10821.640820]  [<ffffffff810a67e5>] ? sched_clock_local+0x25/0x90
->> [10821.640820]  [<ffffffff81652129>] smp_apic_timer_interrupt+0x69/0x99
->> [10821.640820]  [<ffffffff81650daf>] apic_timer_interrupt+0x6f/0x80
->> [10821.640820]  <EOI> 
->> [10821.640820]  [<ffffffff81647274>] ? _raw_spin_unlock_irq+0x34/0x50
->> [10821.640820]  [<ffffffff813e5f78>] scsi_request_fn+0xc8/0x5b0
->> [10821.640820]  [<ffffffff812a69ae>] __blk_run_queue+0x1e/0x20
->> [10821.640820]  [<ffffffff812cb798>] cfq_insert_request+0x398/0x720
->> [10821.640820]  [<ffffffff812cb44c>] ? cfq_insert_request+0x4c/0x720
->> [10821.640820]  [<ffffffff812b2dc1>] ? attempt_merge+0x21/0x520
->> [10821.640820]  [<ffffffff81650016>] ? ftrace_call+0x5/0x2b
->> [10821.640820]  [<ffffffff812a6130>] __elv_add_request+0x220/0x2e0
->> [10821.640820]  [<ffffffff812ad914>] blk_flush_plug_list+0x1a4/0x260
->> [10821.640820]  [<ffffffff816456a0>] schedule+0x50/0x70
->> [10821.640820]  [<ffffffff81643325>] schedule_timeout+0x315/0x410
->> [10821.640820]  [<ffffffff810cefcd>] ? mark_held_locks+0x8d/0x140
->> [10821.640820]  [<ffffffff81647270>] ? _raw_spin_unlock_irq+0x30/0x50
->> [10821.640820]  [<ffffffff810cf335>] ? trace_hardirqs_on_caller+0x105/0x190
->> [10821.640820]  [<ffffffff8164551b>] wait_for_common+0x12b/0x180
->> [10821.640820]  [<ffffffff810a6070>] ? try_to_wake_up+0x2e0/0x2e0
->> [10821.640820]  [<ffffffff81650016>] ? ftrace_call+0x5/0x2b
->> [10821.640820]  [<ffffffffa02e8561>] ? _xfs_buf_read+0x41/0x50 [xfs]
->> [10821.640820]  [<ffffffffa034d1d5>] ? xfs_trans_read_buf+0x325/0x610 [xfs]
->> [10821.640820]  [<ffffffff8164564d>] wait_for_completion+0x1d/0x20
->> [10821.640820]  [<ffffffffa02e63e5>] xfs_buf_iowait+0xc5/0x1b0 [xfs]
->> [10821.640820]  [<ffffffffa02e8561>] _xfs_buf_read+0x41/0x50 [xfs]
->> [10821.640820]  [<ffffffffa02e8683>] xfs_buf_read+0x113/0x170 [xfs]
->> [10821.640820]  [<ffffffffa034d1d5>] xfs_trans_read_buf+0x325/0x610 [xfs]
->> [10821.640820]  [<ffffffffa031d3be>] xfs_btree_read_buf_block+0x5e/0xd0 [xfs]
->> [10821.640820]  [<ffffffff81650016>] ? ftrace_call+0x5/0x2b
->> [10821.640820]  [<ffffffffa031dac1>] xfs_btree_lookup_get_block+0x81/0xf0 [xfs]
->> [10821.640820]  [<ffffffffa031b72c>] ? xfs_btree_ptr_offset+0x4c/0x90 [xfs]
->> [10821.640820]  [<ffffffffa031e14f>] xfs_btree_lookup+0xbf/0x470 [xfs]
->> [10821.640820]  [<ffffffff81650016>] ? ftrace_call+0x5/0x2b
->> [10821.640820]  [<ffffffffa0301cd9>] xfs_alloc_lookup_eq+0x19/0x20 [xfs]
->> [10821.640820]  [<ffffffffa0301fb9>] xfs_alloc_fixup_trees+0x269/0x340 [xfs]
->> [10821.640820]  [<ffffffffa0304152>] xfs_alloc_ag_vextent_near+0x852/0xe10 [xfs]
->> [10821.640820]  [<ffffffffa0305345>] xfs_alloc_ag_vextent+0xd5/0x100 [xfs]
->> [10821.640820]  [<ffffffffa0305eda>] __xfs_alloc_vextent+0x57a/0x7b0 [xfs]
->> [10821.640820]  [<ffffffff810cc7b9>] ? lockdep_init_map+0x59/0x150
->> [10821.640820]  [<ffffffffa03062a8>] xfs_alloc_vextent+0x198/0x1a0 [xfs]
->> [10821.640820]  [<ffffffffa031b29b>] xfs_bmbt_alloc_block+0xdb/0x210 [xfs]
->> [10821.640820]  [<ffffffffa032033d>] xfs_btree_split+0xbd/0x710 [xfs]
->> [10821.640820]  [<ffffffff81650016>] ? ftrace_call+0x5/0x2b
->> [10821.640820]  [<ffffffffa0320ebd>] xfs_btree_make_block_unfull+0x12d/0x190 [xfs]
->> [10821.640820]  [<ffffffffa032130f>] xfs_btree_insrec+0x3ef/0x5a0 [xfs]
->> [10821.640820]  [<ffffffff81650016>] ? ftrace_call+0x5/0x2b
->> [10821.640820]  [<ffffffffa032152d>] xfs_btree_insert+0x6d/0x190 [xfs]
->> [10821.640820]  [<ffffffffa03166db>] xfs_bmap_add_extent_delay_real+0x72b/0x1cf0 [xfs]
->> [10821.640820]  [<ffffffff811a85c3>] ? kmem_cache_alloc+0x113/0x220
->> [10821.640820]  [<ffffffffa0317ed8>] xfs_bmapi_allocate+0x238/0x2d0 [xfs]
->> [10821.640820]  [<ffffffff81650016>] ? ftrace_call+0x5/0x2b
->> [10821.640820]  [<ffffffffa031a801>] xfs_bmapi_write+0x521/0x790 [xfs]
->> [10821.640820]  [<ffffffffa02f390d>] xfs_iomap_write_allocate+0x13d/0x370 [xfs]
->> [10821.640820]  [<ffffffffa02e48d9>] xfs_map_blocks+0x299/0x310 [xfs]
->> [10821.640820]  [<ffffffffa02e5277>] xfs_vm_writepage+0x197/0x5c0 [xfs]
->> [10821.640820]  [<ffffffff8115da0a>] __writepage+0x1a/0x50
->> [10821.640820]  [<ffffffff8115fc46>] write_cache_pages+0x206/0x5f0
->> [10821.640820]  [<ffffffff8115d9f0>] ? bdi_position_ratio+0x130/0x130
->> [10821.640820]  [<ffffffff81160084>] generic_writepages+0x54/0x80
->> [10821.640820]  [<ffffffffa02e45fc>] xfs_vm_writepages+0x5c/0x80 [xfs]
->> [10821.640820]  [<ffffffff811600d3>] do_writepages+0x23/0x40
->> [10821.640820]  [<ffffffff811ecd16>] __writeback_single_inode+0x46/0x1e0
->> [10821.640820]  [<ffffffff811ef82d>] writeback_sb_inodes+0x27d/0x500
->> [10821.640820]  [<ffffffff8164733b>] ? _raw_spin_unlock+0x2b/0x50
->> [10821.640820]  [<ffffffff811efb4e>] __writeback_inodes_wb+0x9e/0xd0
->> [10821.640820]  [<ffffffff811efefb>] wb_writeback+0x2db/0x5c0
->> [10821.640820]  [<ffffffff81650016>] ? ftrace_call+0x5/0x2b
->> [10821.640820]  [<ffffffff811f0310>] wb_do_writeback+0x130/0x300
->> [10821.640820]  [<ffffffff811f05a3>] bdi_writeback_thread+0xc3/0x410
->> [10821.640820]  [<ffffffff811f04e0>] ? wb_do_writeback+0x300/0x300
->> [10821.640820]  [<ffffffff811f04e0>] ? wb_do_writeback+0x300/0x300
->> [10821.640820]  [<ffffffff8108d496>] kthread+0xc6/0xd0
->> [10821.640820]  [<ffffffff816516b4>] kernel_thread_helper+0x4/0x10
->> [10821.640820]  [<ffffffff81647570>] ? retint_restore_args+0x13/0x13
->> [10821.640820]  [<ffffffff8108d3d0>] ? __init_kthread_worker+0x70/0x70
->> [10821.640820]  [<ffffffff816516b0>] ? gs_change+0x13/0x13
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+> Or are you posting them to collect feedback/Acks and then want to post them
+> as a bigger set?
 
-
+Yes, the idea is to post them in a single set.
+Now that I have support for the basic functionalities (guests booting, PV
+console, disk and network), I can start working on a single patch
+series for a recent kernel.
