@@ -1,140 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753315Ab2GTJ4L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 05:56:11 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:48109 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751490Ab2GTJ4H (ORCPT
+	id S1753361Ab2GTJ4b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 05:56:31 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33859 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751490Ab2GTJ43 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 05:56:07 -0400
+	Fri, 20 Jul 2012 05:56:29 -0400
+Date: Fri, 20 Jul 2012 10:56:27 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: "Kim, Milo" <Milo.Kim@ti.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] regmap-irq: use mask and val rather than using
+ mask_buf_def
+Message-ID: <20120720095627.GO4495@opensource.wolfsonmicro.com>
+References: <A874F61F95741C4A9BA573A70FE3998FD99F@DQHE02.ent.ti.com>
+ <20120719091011.GI4495@opensource.wolfsonmicro.com>
+ <A874F61F95741C4A9BA573A70FE3998FDA8C@DQHE02.ent.ti.com>
 MIME-Version: 1.0
-Date: Fri, 20 Jul 2012 11:56:06 +0200
-X-Google-Sender-Auth: 7tIlKEQeuaiCd11PcI1Gu96KYw8
-Message-ID: <CADdae-i2FWspdm_BPQAeO3HUUyOWj8rDui0cTGR6fkRv7yr2zw@mail.gmail.com>
-Subject: oops in kernel ( 3.4.x -> 3.5rc )
-From: nicolas prochazka <prochazka.nicolas@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="AQYPrgrEUc/1pSX1"
+Content-Disposition: inline
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998FDA8C@DQHE02.ent.ti.com>
+X-Cookie: Beware of low-flying butterflies.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-Since i 've updated our server from linux kernel 3.3.8 to linux kernel
-3.4.6 or linux kernel 3.5rc7,
-we can observe a lot of oops and big load  on system.
 
-Example : Linux positronic836 3.5.0-rc7 #4 SMP Fri Jul 20 11:47:12 UTC
-2012 x86_64 Intel(R) Xeon(R) CPU E5345 @ 2.33GHz GenuineIntel
-GNU/Linux
+--AQYPrgrEUc/1pSX1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Regards,
-Nicolas Prochazka.
+On Fri, Jul 20, 2012 at 07:08:15AM +0000, Kim, Milo wrote:
 
-[ 2384.900061] BUG: unable to handle kernel paging request at 000000010000002f
-[ 2384.900307] IP: [<ffffffff8115a250>] dup_fd+0x160/0x2e0
-[ 2384.905492] PGD 4e9bab067 PUD 0
-[ 2384.910010] Oops: 0002 [#4] SMP
-[ 2384.910010] CPU 6
-[ 2384.910010] Modules linked in: kvm_intel kvm
-[ 2384.910010]
-[ 2384.910010] Pid: 23838, comm: queue.sh Tainted: G      D W
-3.5.0-rc7 #4 Dell Inc. PowerEdge M600/0MY736
-[ 2384.910010] RIP: 0010:[<ffffffff8115a250>]  [<ffffffff8115a250>]
-dup_fd+0x160/0x2e0
-[ 2384.910010] RSP: 0018:ffff88049fef1d90  EFLAGS: 00010206
-[ 2384.910010] RAX: 0000000000000038 RBX: ffff8806a0ac4580 RCX: 0000000000000007
-[ 2384.910010] RDX: 00000000ffffffff RSI: 0000000000000800 RDI: ffff880658a85400
-[ 2384.910010] RBP: ffff88049fef1df0 R08: 0000000000000020 R09: ffffffff81159fe4
-[ 2384.910010] R10: ffffea0020495fd8 R11: 0000000000000000 R12: ffff8807f1eaa000
-[ 2384.970401] R13: ffff880658a85380 R14: 0000000000000100 R15: ffff8807d8820000
-[ 2384.970401] FS:  00007f169ffdb700(0000) GS:ffff88083fd80000(0000)
-knlGS:0000000000000000
-[ 2384.970401] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[ 2384.970401] CR2: 000000010000002f CR3: 000000059a96e000 CR4: 00000000000027e0
-[ 2384.970401] DR0: 0000000000000001 DR1: 0000000000000002 DR2: 0000000000000001
-[ 2384.970401] DR3: 000000000000000a DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[ 2384.970401] Process queue.sh (pid: 23838, threadinfo
-ffff88049fef0000, task ffff8805d707a000)
-[ 2384.970401] Stack:
-[ 2384.970401]  ffff88049fef1da0 000000018102db49 0000000000000020
-ffff88045da607c0
-[ 2384.970401]  ffff8805321a7c88 ffff8805321a7d00 00007f169ffdb9d0
-ffff8804cd075000
-[ 2384.970401]  0000000000000000 0000000001200011 00007f169ffdb9d0
-0000000000000000
-[ 2384.970401] Call Trace:
-[ 2384.970401]  [<ffffffff8104056c>] copy_process+0x93c/0x13d0
-[ 2384.970401]  [<ffffffff81041154>] do_fork+0x54/0x360
-[ 2384.970401]  [<ffffffff81ae8eae>] ? _raw_spin_lock+0xe/0x20
-[ 2384.970401]  [<ffffffff81055c67>] ? __set_task_blocked+0x37/0x80
-[ 2384.970401]  [<ffffffff8100c1b8>] sys_clone+0x28/0x30
-[ 2384.970401]  [<ffffffff81ae9eb3>] stub_clone+0x13/0x20
-[ 2384.970401]  [<ffffffff81ae9c29>] ? system_call_fastpath+0x16/0x1b
-[ 2384.970401] Code: 8b 45 b0 49 8b 7d 10 48 8b 71 10 4c 89 c2 e8 a8
-9c 23 00 45 85 f6 74 54 41 8d 46 ff 31 c9 48 8d 34 c5 08 00 00 00 31
-c0 eb 15 90 <f0> 48 ff 42 30 49 89 14 04 ff c1 48 83 c0 08 48 39 f0 74
-24 49
-[ 2384.970401] RIP  [<ffffffff8115a250>] dup_fd+0x160/0x2e0
-[ 2384.970401]  RSP <ffff88049fef1d90>
-[ 2384.970401] CR2: 000000010000002f
-[ 2385.131572] ---[ end trace 12628ad63724505e ]---
-[ 2385.550858] device vmEtap18 left promiscuous mode
-[ 2385.953882] device vmEtap19 left promiscuous mode
-[ 2386.318553] device vmEtap20 left promiscuous mode
-[ 2386.714127] device vmEtap21 left promiscuous mode
-[ 2387.131308] device vmEtap22 left promiscuous mode
-[ 2387.498609] device vmEtap23 left promiscuous mode
-[ 2397.885344] BUG: unable to handle kernel paging request at 000000010000003b
-[ 2397.885596] IP: [<ffffffff811a3654>] tid_fd_revalidate+0x84/0x1a0
-[ 2397.885804] PGD 4ce59d067 PUD 0
-[ 2397.885950] Oops: 0000 [#5] SMP
-[ 2397.886097] CPU 3
-[ 2397.886163] Modules linked in: kvm_intel kvm
-[ 2397.886408]
-[ 2397.886425] Pid: 25760, comm: netstat Tainted: G      D W
-3.5.0-rc7 #4 Dell Inc. PowerEdge M600/0MY736
-[ 2397.886747] RIP: 0010:[<ffffffff811a3654>]  [<ffffffff811a3654>]
-tid_fd_revalidate+0x84/0x1a0
-[ 2397.887019] RSP: 0018:ffff88040ca4bd78  EFLAGS: 00010206
-[ 2397.887187] RAX: ffff8807f1f26ec0 RBX: ffff8807d918e928 RCX: 000000000000007d
-[ 2397.887392] RDX: 00000000ffffffff RSI: 0000000000000000 RDI: ffff8807f1f26ec0
-[ 2397.887596] RBP: ffff88040ca4bd98 R08: ffff88083fcd6b30 R09: ffffffff8119fef0
-[ 2397.887801] R10: 0000000000000000 R11: 0000000000000202 R12: ffff8807d93cd3c0
-[ 2397.891771] R13: ffff8807c1366000 R14: ffff8807cf615038 R15: ffff88040ca4be08
-[ 2397.891771] FS:  00007f029b1b5700(0000) GS:ffff88083fcc0000(0000)
-knlGS:0000000000000000
-[ 2397.891771] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[ 2397.891771] CR2: 000000010000003b CR3: 00000004d0fd9000 CR4: 00000000000007e0
-[ 2397.891771] DR0: 0000000000000001 DR1: 0000000000000002 DR2: 0000000000000001
-[ 2397.891771] DR3: 000000000000000a DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[ 2397.891771] Process netstat (pid: 25760, threadinfo
-ffff88040ca4a000, task ffff88065897f000)
-[ 2397.891771] Stack:
-[ 2397.891771]  ffff8807d93cd3c0 0000000000000007 ffff8807d918e928
-ffff8807db8db240
-[ 2397.891771]  ffff88040ca4bdc8 ffffffff811a3880 ffffffffff0a0210
-0000000000000001
-[ 2397.963460]  ffff88040ca4be98 ffff8807d6dcb600 ffff88040ca4be48
-ffffffff811a4cd6
-[ 2397.963460] Call Trace:
-[ 2397.963460]  [<ffffffff811a3880>] proc_fd_instantiate+0x80/0xa0
-[ 2397.963460]  [<ffffffff811a4cd6>] proc_fill_cache+0x126/0x150
-[ 2397.963460]  [<ffffffff811a3800>] ? proc_fdinfo_instantiate+0x90/0x90
-[ 2397.963460]  [<ffffffff811505a0>] ? filldir64+0xe0/0xe0
-[ 2397.963460]  [<ffffffff811a5006>] proc_readfd_common+0xf6/0x1c0
-[ 2397.963460]  [<ffffffff811a3800>] ? proc_fdinfo_instantiate+0x90/0x90
-[ 2397.963460]  [<ffffffff811505a0>] ? filldir64+0xe0/0xe0
-[ 2397.963460]  [<ffffffff811a5105>] proc_readfd+0x15/0x20
-[ 2397.963460]  [<ffffffff811507c0>] vfs_readdir+0xa0/0xc0
-[ 2397.963460]  [<ffffffff811505a0>] ? filldir64+0xe0/0xe0
-[ 2397.963460]  [<ffffffff8115096d>] sys_getdents+0x8d/0x100
-[ 2397.963460]  [<ffffffff81ae9c29>] system_call_fastpath+0x16/0x1b
-[ 2397.963460] Code: b8 00 00 00 48 8b 50 08 44 3b 32 0f 83 9e 00 00
-00 45 89 f6 49 c1 e6 03 4c 03 72 08 49 8b 16 48 85 d2 0f 84 87 00 00
-00 48 89 c7 <44> 8b 62 3c e8 13 29 ea ff 4c 89 ef e8 4b df ff ff 85 c0
-0f 84
-[ 2397.963460] RIP  [<ffffffff811a3654>] tid_fd_revalidate+0x84/0x1a0
-[ 2397.963460]  RSP <ffff88040ca4bd78>
-[ 2397.963460] CR2: 000000010000003b
-[ 2397.970166] ---[ end trace 12628ad63724505f ]---
+Fix your mailer to word wrap within paragraphs, I have reformatted your
+mail for legibility.
+
+> Which is better understandable terminology ? 'mask and value' or
+> 'default mask and updated mask' I think 'mask & value' is more clear.
+
+But you need to say which value we're talking about - there's multiple
+values we're working with here, the interrupt mask is only one of them.
+We also have the wake masks and the actual interrupt status values for
+example.
+
+> (b) supporting interrupt-unmasked device
+> There is different interrupt concept from interrupt-masked device.
+> To enable the IRQ, the register bit should be 1.
+> To update this value, the bit of IRQ value should be separated from the mask bit.
+
+The variable you're changing isn't the interrupt value, it's the virtual
+copy of the mask registers.  The interrupt status value is managed
+separately.
+
+--AQYPrgrEUc/1pSX1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQCSsYAAoJEBus8iNuMP3dAB0P/RvdFN3yO303zdq59tjE/f6O
+4E80baClxXDTaLnb5bB06w+EKJWHafXES0i/3c0Yf0Wj96isMCItWiMc7zxDVLHz
+13wk7onQ7skV35UBFFyvZLipB8RZFgTbXwgtHqbFN1Hkmb1TPboPKvHNvjnRfpWj
+Rub5wI6LZosuX/Ytxv2l5WYq6Xb/bT2xEKd14UelTQxpBhPlxzoPhkJK+zvAy/Hp
+fQVS8u/u+WWlBJSQdUe7+1IdXZ56ses8uArvt0QDSuz9ZO5S7mqiIIRgTW6psrH9
+vdwyAllKOylL3hCLtVo6dUALJ9NOKv4t+/2Yb0ngdW2mtI2hu7PBblf4u0aEayzQ
+KZa7mnSblOfAY0Fffv3NRMezB4xBZVqbTa8cXD+ElBOcX8j/XFv2xxsJMztHboSo
+c8AgVxMdT3KfPUlDd09e99YHFGVpRseZOONwex9hz0FTyxljBmBE/DlmyYZDZacw
+d71Bv+ILc0uYOQ96yP94uSbNv9FB81KgJQ9A4uVPxpBqXbcgXfADkO9agNf9fTbp
+uHDEcvINzLFThw2YUmwuRX3nvar7crbnjXPZGB+sfNvTF0gsOET5VkmiQt6NtsKS
+mpqi5hw5dpL6K7ZVT/XVrqMKS1TXdSLe33BUxyXgHMJcXqHk9Nx+ThEhfnIoNQ3O
+LWu3Z7bg3QTelZ9msWoW
+=HVhQ
+-----END PGP SIGNATURE-----
+
+--AQYPrgrEUc/1pSX1--
