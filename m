@@ -1,84 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753229Ab2GTIym (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 04:54:42 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:40895 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752018Ab2GTIyj (ORCPT
+	id S1753282Ab2GTI6o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 04:58:44 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:37672 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753188Ab2GTI6m convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 04:54:39 -0400
-Date: Fri, 20 Jul 2012 10:54:36 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Alex Shi <alex.shi@intel.com>
-Cc: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com, tj@kernel.org,
-        akpm@linux-foundation.org, sfr@canb.auug.org.au,
-        linux-kernel@vger.kernel.org, bp@amd64.org,
-        penguin-kernel@I-love.SAKURA.ne.jp
-Subject: Re: [PATCH] x86/tlb: fix allnoconfig building warning
-Message-ID: <20120720085436.GC28767@aftab.osrc.amd.com>
-References: <1342747103-19765-1-git-send-email-alex.shi@intel.com>
+	Fri, 20 Jul 2012 04:58:42 -0400
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Bryan Wu <bryan.wu@canonical.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "Girdwood, Liam" <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "a.zummo@towertech.it" <a.zummo@towertech.it>
+Subject: RE: [PATCH 6/6] leds: add new lp8788 led driver
+Thread-Topic: [PATCH 6/6] leds: add new lp8788 led driver
+Thread-Index: Ac1k8l8Zs2t3B0LiRYys7+2pd2SMsAA1mRSAACLEJ/A=
+Date: Fri, 20 Jul 2012 08:57:26 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998FDAAF@DQHE02.ent.ti.com>
+References: <A874F61F95741C4A9BA573A70FE3998FD7DE@DQHE02.ent.ti.com>
+ <CAK5ve-LQ5wL+LDk0NBtqDM5bA7tA8geFUZ34SfWUzs2ZTrQguw@mail.gmail.com>
+In-Reply-To: <CAK5ve-LQ5wL+LDk0NBtqDM5bA7tA8geFUZ34SfWUzs2ZTrQguw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.87.177.86]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1342747103-19765-1-git-send-email-alex.shi@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 20, 2012 at 09:18:23AM +0800, Alex Shi wrote:
-> The incompatible parameter of flush_tlb_mm_range cause build warning.
-> Fix it by correct parameter.
-> 
-> Reported-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
+> From: cooloney@gmail.com [mailto:cooloney@gmail.com] On Behalf Of Bryan
+> Wu
+> Sent: Friday, July 20, 2012 9:09 AM
+> To: Kim, Milo
+> Cc: linux-kernel@vger.kernel.org; sameo@linux.intel.com; Girdwood, Liam;
+> Mark Brown; dwmw2@infradead.org; Anton Vorontsov; Richard Purdie;
+> Andrew Morton; a.zummo@towertech.it
+> Subject: Re: [PATCH 6/6] leds: add new lp8788 led driver
 
-Thanks for this.
+Thanks for your review !
+All code have been updated and sent as 'PATCH v2'.
 
-Btw, the patch Subject should say: 
+Title : [PATCH v2] leds: add new lp8788 led driver
 
-"[PATCH] x86, tlb: Fix flush_tlb_mm_range signature"
-
-or
-
-"[PATCH] x86, tlb: Fix non-SMP build warning"
-
-or similar. Having "allnoconfig" in the name is a bit misleading as it
-is only one of the reasons why we build a !CONFIG_SMP kernel - this can
-happen with a randbuild too. And the hunk below touches the "#ifndef
-CONFIG_SMP" part of tlbflush.h...
-
-So, long story short, hpa, can pls you correct this when applying?
-
-> ---
->  arch/x86/include/asm/tlbflush.h |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/tlbflush.h b/arch/x86/include/asm/tlbflush.h
-> index 621b959..4fc8faf 100644
-> --- a/arch/x86/include/asm/tlbflush.h
-> +++ b/arch/x86/include/asm/tlbflush.h
-> @@ -105,10 +105,10 @@ static inline void flush_tlb_range(struct vm_area_struct *vma,
->  		__flush_tlb();
->  }
->  
-> -static inline void flush_tlb_mm_range(struct vm_area_struct *vma,
-> +static inline void flush_tlb_mm_range(struct mm_struct *mm,
->  	   unsigned long start, unsigned long end, unsigned long vmflag)
->  {
-> -	if (vma->vm_mm == current->active_mm)
-> +	if (mm == current->active_mm)
->  		__flush_tlb();
->  }
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Best Regards,
+Milo
