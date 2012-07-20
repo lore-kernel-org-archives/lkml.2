@@ -1,68 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753429Ab2GTQ7j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 12:59:39 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:39211 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753294Ab2GTQ7g (ORCPT
+	id S1753308Ab2GTRCK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 13:02:10 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:50197 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753122Ab2GTRCI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 12:59:36 -0400
-From: Toshi Kani <toshi.kani@hp.com>
-To: lenb@kernel.org, linux-acpi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, joe@perches.com, bhelgaas@google.com,
-        isimatu.yasuaki@jp.fujitsu.com, liuj97@gmail.com,
-        srivatsa.bhat@linux.vnet.ibm.com, prarit@redhat.com,
-        imammedo@redhat.com, vijaymohan.pandarathil@hp.com,
-        Toshi Kani <toshi.kani@hp.com>
-Subject: [PATCH v2 4/4] ACPI: Update Container hotplug messages
-Date: Fri, 20 Jul 2012 10:54:16 -0600
-Message-Id: <1342803256-17514-5-git-send-email-toshi.kani@hp.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1342803256-17514-1-git-send-email-toshi.kani@hp.com>
-References: <1342803256-17514-1-git-send-email-toshi.kani@hp.com>
+	Fri, 20 Jul 2012 13:02:08 -0400
+Message-ID: <1342803700.2583.29.camel@twins>
+Subject: Re: [PATCHSET] workqueue: reimplement CPU hotplug to keep idle
+ workers
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        tglx@linutronix.de, linux-pm@vger.kernel.org
+Date: Fri, 20 Jul 2012 19:01:40 +0200
+In-Reply-To: <20120720165213.GD32763@google.com>
+References: <1342545149-3515-1-git-send-email-tj@kernel.org>
+	 <1342802391.2583.11.camel@twins> <20120720165213.GD32763@google.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Updated Container hotplug log messages with acpi_pr_<level>()
-and pr_<level>().
+On Fri, 2012-07-20 at 09:52 -0700, Tejun Heo wrote:
+> Ooh, yeah, I agree.  That's next on the wq to-do list.  The problem is
+> that queue_work() is implemented in terms of queue_work_on().  
 
-Signed-off-by: Toshi Kani <toshi.kani@hp.com>
----
- drivers/acpi/container.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+But that's trivial to fix, both could use __queue_work() without too
+much bother, right?
 
-diff --git a/drivers/acpi/container.c b/drivers/acpi/container.c
-index 01a986d..643e962 100644
---- a/drivers/acpi/container.c
-+++ b/drivers/acpi/container.c
-@@ -99,7 +99,7 @@ static int acpi_container_add(struct acpi_device *device)
- 
- 
- 	if (!device) {
--		printk(KERN_ERR PREFIX "device is NULL\n");
-+		pr_err(PREFIX "device is NULL\n");
- 		return -EINVAL;
- 	}
- 
-@@ -164,7 +164,7 @@ static void container_notify_cb(acpi_handle handle, u32 type, void *context)
- 	case ACPI_NOTIFY_BUS_CHECK:
- 		/* Fall through */
- 	case ACPI_NOTIFY_DEVICE_CHECK:
--		printk(KERN_WARNING "Container driver received %s event\n",
-+		pr_warn("Container driver received %s event\n",
- 		       (type == ACPI_NOTIFY_BUS_CHECK) ?
- 		       "ACPI_NOTIFY_BUS_CHECK" : "ACPI_NOTIFY_DEVICE_CHECK");
- 
-@@ -185,7 +185,7 @@ static void container_notify_cb(acpi_handle handle, u32 type, void *context)
- 
- 		result = container_device_add(&device, handle);
- 		if (result) {
--			pr_warn("Failed to add container\n");
-+			acpi_pr_warn(handle, "Failed to add container\n");
- 			break;
- 		}
- 
--- 
-1.7.7.6
+> In most
+> cases, the local binding serves as locality optimization than anything
+> else.  There are use cases where affinity is required for correctness.
+
+> The assumption was that they should flush during CPU_DOWN but it
+> probably will be much better to require users which need CPU affinity
+> to always use queue_work_on() - instead of implicit local affinity
+> from queue_work() - and flush them automatically from wq callback.
+> 
+
+Right, and when you create this new mode, which you need to know to
+flush on DOWN, you can simply put a BUG_ON in queue_work_on() when this
+mode is set.
+
 
