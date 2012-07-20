@@ -1,326 +1,302 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752698Ab2GTAGX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 20:06:23 -0400
-Received: from mga14.intel.com ([143.182.124.37]:23444 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752303Ab2GTAGT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 20:06:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="124575370"
-Message-ID: <5008A108.7070602@intel.com>
-Date: Fri, 20 Jul 2012 08:06:32 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+	id S1752707Ab2GTAJG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 20:09:06 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:41644 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752303Ab2GTAJC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 20:09:02 -0400
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Borislav Petkov <bp@amd64.org>, tglx@linutronix.de, mingo@redhat.com,
-        arnd@arndb.de, rostedt@goodmis.org, fweisbec@gmail.com,
-        jeremy@goop.org, luto@mit.edu, yinghai@kernel.org, riel@redhat.com,
-        avi@redhat.com, len.brown@intel.com, tj@kernel.org,
-        akpm@linux-foundation.org, cl@gentwo.org, borislav.petkov@amd.com,
-        ak@linux.intel.com, jbeulich@suse.com, eric.dumazet@gmail.com,
-        akinobu.mita@gmail.com, vapier@gentoo.org, cpw@sgi.com,
-        steiner@sgi.com, viro@zeniv.linux.org.uk,
-        kamezawa.hiroyu@jp.fujitsu.com, rientjes@google.com,
-        aarcange@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v10 7/9] x86/tlb: enable tlb flush range support for x86
-References: <1340845344-27557-1-git-send-email-alex.shi@intel.com> <1340845344-27557-8-git-send-email-alex.shi@intel.com> <20120719122057.GA21666@aftab.osrc.amd.com> <50089DC2.5040508@intel.com> <50089EB9.2090109@zytor.com>
-In-Reply-To: <50089EB9.2090109@zytor.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998FD7DE@DQHE02.ent.ti.com>
+References: <A874F61F95741C4A9BA573A70FE3998FD7DE@DQHE02.ent.ti.com>
+From: Bryan Wu <bryan.wu@canonical.com>
+Date: Fri, 20 Jul 2012 08:08:41 +0800
+X-Google-Sender-Auth: ECXeVAtSs4ZY0SH5sqvTkOCnnjk
+Message-ID: <CAK5ve-LQ5wL+LDk0NBtqDM5bA7tA8geFUZ34SfWUzs2ZTrQguw@mail.gmail.com>
+Subject: Re: [PATCH 6/6] leds: add new lp8788 led driver
+To: "Kim, Milo" <Milo.Kim@ti.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "Girdwood, Liam" <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "a.zummo@towertech.it" <a.zummo@towertech.it>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/20/2012 07:56 AM, H. Peter Anvin wrote:
+On Wed, Jul 18, 2012 at 10:34 PM, Kim, Milo <Milo.Kim@ti.com> wrote:
+> TI LP8788 PMU has the current sink as the keyboard led driver.
+> The brightness is controlled by the i2c commands.
+> Configurable parameters can be defined in the platform side.
+>
+> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+> ---
+>  drivers/leds/Kconfig       |    7 ++
+>  drivers/leds/Makefile      |    1 +
+>  drivers/leds/leds-lp8788.c |  178 ++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 186 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/leds/leds-lp8788.c
+>
+> diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
+> index f028f03..a498deb 100644
+> --- a/drivers/leds/Kconfig
+> +++ b/drivers/leds/Kconfig
+> @@ -200,6 +200,13 @@ config LEDS_LP5523
+>           Driver provides direct control via LED class and interface for
+>           programming the engines.
+>
+> +config LEDS_LP8788
+> +       tristate "LED support for the TI LP8788 PMIC"
+> +       depends on LEDS_CLASS
+> +       depends on MFD_LP8788
+> +       help
+> +         This option enables support for the Keyboard LEDs on the LP8788 PMIC.
+> +
+>  config LEDS_CLEVO_MAIL
+>         tristate "Mail LED on Clevo notebook"
+>         depends on LEDS_CLASS
+> diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
+> index 5eebd7b..f156193 100644
+> --- a/drivers/leds/Makefile
+> +++ b/drivers/leds/Makefile
+> @@ -24,6 +24,7 @@ obj-$(CONFIG_LEDS_GPIO)                       += leds-gpio.o
+>  obj-$(CONFIG_LEDS_LP3944)              += leds-lp3944.o
+>  obj-$(CONFIG_LEDS_LP5521)              += leds-lp5521.o
+>  obj-$(CONFIG_LEDS_LP5523)              += leds-lp5523.o
+> +obj-$(CONFIG_LEDS_LP8788)              += leds-lp8788.o
+>  obj-$(CONFIG_LEDS_TCA6507)             += leds-tca6507.o
+>  obj-$(CONFIG_LEDS_CLEVO_MAIL)          += leds-clevo-mail.o
+>  obj-$(CONFIG_LEDS_HP6XX)               += leds-hp6xx.o
+> diff --git a/drivers/leds/leds-lp8788.c b/drivers/leds/leds-lp8788.c
+> new file mode 100644
+> index 0000000..d92625e
+> --- /dev/null
+> +++ b/drivers/leds/leds-lp8788.c
+> @@ -0,0 +1,178 @@
+> +/*
+> + * TI LP8788 MFD - keyled driver
+> + *
+> + * Copyright 2012 Texas Instruments
+> + *
+> + * Author: Milo(Woogyom) Kim <milo.kim@ti.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/slab.h>
+> +#include <linux/err.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/leds.h>
+> +#include <linux/mfd/lp8788.h>
+> +#include <linux/mfd/lp8788-isink.h>
+> +
+> +#define MAX_BRIGHTNESS                 LP8788_ISINK_MAX_PWM
+> +#define DEFAULT_LED_NAME               "keyboard-backlight"
+> +#define DEFAULT_ISINK_SCALE            LP8788_ISINK_SCALE_100mA
+> +#define DEFAULT_ISINK_NUM              LP8788_ISINK_3
+> +#define DEFAULT_ISINK_OUT              0
+> +
+> +struct lp8788_led {
+> +       struct lp8788 *lp;
+> +       struct led_classdev led_dev;
+> +       enum lp8788_isink_number isink_num;
+> +       int on;
+> +};
+> +
+> +static int lp8788_led_init_device(struct lp8788_led *led,
+> +                               struct lp8788_led_platform_data *pdata)
+> +{
+> +       enum lp8788_isink_scale scale = DEFAULT_ISINK_SCALE;
+> +       enum lp8788_isink_number num = DEFAULT_ISINK_NUM;
+> +       int ret, iout = DEFAULT_ISINK_OUT;
+> +       u8 addr, mask, val;
+> +
+> +       if (pdata) {
+> +               scale = pdata->scale;
+> +               num = pdata->num;
+> +               iout = pdata->iout_code;
+> +       }
+> +
+> +       led->isink_num = num;
+> +
+> +       /* scale configuration */
+> +       addr = LP8788_ISINK_CTRL;
+> +       mask = 1 << (num + LP8788_ISINK_SCALE_OFFSET);
+> +       val = scale << num;
+> +       ret = lp8788_update_bits(led->lp, addr, mask, val);
+> +       if (ret)
+> +               return ret;
+> +
+> +       /* current configuration */
+> +       addr = lp8788_iout_addr[num];
+> +       mask = lp8788_iout_mask[num];
+> +       val = iout;
+> +
+> +       return lp8788_update_bits(led->lp, addr, mask, val);
+> +}
+> +
+> +static void lp8788_led_enable(struct lp8788_led *led,
+> +                       enum lp8788_isink_number num, int on)
+> +{
+> +       u8 mask = 1 << num;
+> +       u8 val = on << num;
+> +
+> +       if (lp8788_update_bits(led->lp, LP8788_ISINK_CTRL, mask, val))
+> +               return;
+> +
+> +       led->on = on;
+> +}
+> +
+> +static void lp8788_brightness_set(struct led_classdev *led_cdev,
+> +                               enum led_brightness brt_val)
 
-> On 07/19/2012 04:52 PM, Alex Shi wrote:
->>
->> Sure, it is a bug, the fix had sent:
->> https://lkml.org/lkml/2012/7/6/350
->>
-> 
-> Could you please re-send that as a clean patch?
-> 
-> 	-hpa
-> 
+    /* Must not sleep, use a workqueue if needed */
+        void            (*brightness_set)(struct led_classdev *led_cdev,
+                                          enum led_brightness brightness);
+
+so you need to use workqueue here I believe, since this function will
+call some i2c operations which might be sleep.
+
+> +{
+> +       struct lp8788_led *led =
+> +                       container_of(led_cdev, struct lp8788_led, led_dev);
+> +       enum lp8788_isink_number num = led->isink_num;
+> +       int enable;
+> +
+> +       switch (num) {
+> +       case LP8788_ISINK_1:
+> +       case LP8788_ISINK_2:
+> +       case LP8788_ISINK_3:
+> +               lp8788_write_byte(led->lp, lp8788_pwm_addr[num], brt_val);
+> +               break;
+> +       default:
+> +               return;
+> +       }
+> +
+> +       enable = (brt_val > 0) ? 1 : 0;
+> +
+> +       if (enable != led->on)
+> +               lp8788_led_enable(led, num, enable);
+
+I think we need lock here to protect this kind of flag and low level
+resource access. Please add mutex_lock()/mutex_unloc() here.
+
+> +}
+> +
+> +static __devinit int lp8788_led_probe(struct platform_device *pdev)
+> +{
+> +       struct lp8788 *lp = dev_get_drvdata(pdev->dev.parent);
+> +       struct lp8788_led_platform_data *led_pdata;
+> +       struct lp8788_led *led;
+> +       int ret;
+> +
+> +       led = devm_kzalloc(lp->dev, sizeof(struct lp8788_led), GFP_KERNEL);
+> +       if (!led)
+> +               return -ENOMEM;
+> +
+> +       led->lp = lp;
+> +       led->led_dev.max_brightness = MAX_BRIGHTNESS;
+> +       led->led_dev.brightness_set = lp8788_brightness_set;
+> +
+> +       led_pdata = lp->pdata ? lp->pdata->led_pdata : NULL;
+> +
+> +       if (!led_pdata || !led_pdata->name)
+> +               led->led_dev.name = DEFAULT_LED_NAME;
+> +       else
+> +               led->led_dev.name = led_pdata->name;
+> +
+> +       platform_set_drvdata(pdev, led);
+> +
+> +       ret = lp8788_led_init_device(led, led_pdata);
+> +       if (ret) {
+> +               dev_err(lp->dev, "led init device err: %d\n", ret);
+> +               goto err_dev;
+
+you can just return ret here;
+
+> +       }
+> +
+> +       ret = led_classdev_register(lp->dev, &led->led_dev);
+> +       if (ret) {
+> +               dev_err(lp->dev, "led register err: %d\n", ret);
+> +               goto err_dev;
+
+ditto
+
+> +       }
+> +
+> +       return 0;
+> +
+> +err_dev:
+> +       return ret;
+
+Then we don't need this here.
+> +}
+> +
+> +static int __devexit lp8788_led_remove(struct platform_device *pdev)
+> +{
+> +       struct lp8788_led *led = platform_get_drvdata(pdev);
+> +
+> +       led_classdev_unregister(&led->led_dev);
+> +       platform_set_drvdata(pdev, NULL);
+
+Actually this line is unnecessary here.
+
+> +       return 0;
+> +}
+> +
+> +static struct platform_driver lp8788_led_driver = {
+> +       .probe = lp8788_led_probe,
+> +       .remove = __devexit_p(lp8788_led_remove),
+> +       .driver = {
+> +               .name = LP8788_DEV_KEYLED,
+> +               .owner = THIS_MODULE,
+> +       },
+> +};
+> +
+> +static int __init lp8788_led_init(void)
+> +{
+> +       return platform_driver_register(&lp8788_led_driver);
+> +}
+> +module_init(lp8788_led_init);
+> +
+> +static void __exit lp8788_led_exit(void)
+> +{
+> +       platform_driver_unregister(&lp8788_led_driver);
+> +}
+> +module_exit(lp8788_led_exit);
+> +
+
+use module_platform_driver(), please
 
 
+> +MODULE_DESCRIPTION("Texas Instruments LP8788 Keyboard LED Driver");
+> +MODULE_AUTHOR("Milo Kim");
+> +MODULE_LICENSE("GPL");
+> +MODULE_ALIAS("platform:lp8788-keyled");
+> --
+> 1.7.2.5
+>
+>
+> Best Regards,
+> Milo
+>
+>
 
 
-Since, it has not impact for the serial left patches, and linux-next has not merge this patchset. I folded this patch into original. 
-Is that ok, or need a separated one?
-
-===
->From 2e6117dfda5b323261e959bb5faf778cbe4b3c64 Mon Sep 17 00:00:00 2001
-From: Alex Shi <alex.shi@intel.com>
-Date: Mon, 25 Jun 2012 11:06:46 +0800
-Subject: [PATCH 7/9] x86/tlb: enable tlb flush range support for x86
-
-Not every tlb_flush execution moment is really need to evacuate all
-TLB entries, like in munmap, just few 'invlpg' is better for whole
-process performance, since it leaves most of TLB entries for later
-accessing.
-
-This patch also rewrite flush_tlb_range for 2 purposes:
-1, split it out to get flush_blt_mm_range function.
-2, clean up to reduce line breaking, thanks for Borislav's input.
-
-My micro benchmark 'mummap' http://lkml.org/lkml/2012/5/17/59
-show that the random memory access on other CPU has 0~50% speed up
-on a 2P * 4cores * HT NHM EP while do 'munmap'.
-
-Thanks Yongjie's testing on this patch:
--------------
-I used Linux 3.4-RC6 w/ and w/o his patches as Xen dom0 and guest
-kernel.
-After running two benchmarks in Xen HVM guest, I found his patches
-brought about 1%~3% performance gain in 'kernel build' and 'netperf'
-testing, though the performance gain was not very stable in 'kernel
-build' testing.
-
-Some detailed testing results are below.
-
-Testing Environment:
-	Hardware: Romley-EP platform
-	Xen version: latest upstream
-	Linux kernel: 3.4-RC6
-	Guest vCPU number: 8
-	NIC: Intel 82599 (10GB bandwidth)
-
-In 'kernel build' testing in guest:
-	Command line  |  performance gain
-    make -j 4      |    3.81%
-    make -j 8      |    0.37%
-    make -j 16     |    -0.52%
-
-In 'netperf' testing, we tested TCP_STREAM with default socket size
-16384 byte as large packet and 64 byte as small packet.
-I used several clients to add networking pressure, then 'netperf' server
-automatically generated several threads to response them.
-I also used large-size packet and small-size packet in the testing.
-	Packet size  |  Thread number | performance gain
-	16384 bytes  |      4       |   0.02%
-	16384 bytes  |      8       |   2.21%
-	16384 bytes  |      16      |   2.04%
-	64 bytes     |      4       |   1.07%
-	64 bytes     |      8       |   3.31%
-	64 bytes     |      16      |   0.71%
-
-This patch also fold a flush_tlb_mm_range() fixing in 'make allnoconfig'
-, that reported by Tetsuo Handa. Thanks!
-
-Signed-off-by: Alex Shi <alex.shi@intel.com>
-Tested-by: Ren, Yongjie <yongjie.ren@intel.com>
----
- arch/x86/include/asm/tlb.h      |    9 +++-
- arch/x86/include/asm/tlbflush.h |   17 +++++-
- arch/x86/mm/tlb.c               |  112 ++++++++++++++++-----------------------
- 3 files changed, 68 insertions(+), 70 deletions(-)
-
-diff --git a/arch/x86/include/asm/tlb.h b/arch/x86/include/asm/tlb.h
-index 829215f..4fef207 100644
---- a/arch/x86/include/asm/tlb.h
-+++ b/arch/x86/include/asm/tlb.h
-@@ -4,7 +4,14 @@
- #define tlb_start_vma(tlb, vma) do { } while (0)
- #define tlb_end_vma(tlb, vma) do { } while (0)
- #define __tlb_remove_tlb_entry(tlb, ptep, address) do { } while (0)
--#define tlb_flush(tlb) flush_tlb_mm((tlb)->mm)
-+
-+#define tlb_flush(tlb)							\
-+{									\
-+	if (tlb->fullmm == 0)						\
-+		flush_tlb_mm_range(tlb->mm, tlb->start, tlb->end, 0UL);	\
-+	else								\
-+		flush_tlb_mm_range(tlb->mm, 0UL, TLB_FLUSH_ALL, 0UL);	\
-+}
- 
- #include <asm-generic/tlb.h>
- 
-diff --git a/arch/x86/include/asm/tlbflush.h b/arch/x86/include/asm/tlbflush.h
-index 33608d9..4fc8faf 100644
---- a/arch/x86/include/asm/tlbflush.h
-+++ b/arch/x86/include/asm/tlbflush.h
-@@ -105,6 +105,13 @@ static inline void flush_tlb_range(struct vm_area_struct *vma,
- 		__flush_tlb();
- }
- 
-+static inline void flush_tlb_mm_range(struct mm_struct *mm,
-+	   unsigned long start, unsigned long end, unsigned long vmflag)
-+{
-+	if (mm == current->active_mm)
-+		__flush_tlb();
-+}
-+
- static inline void native_flush_tlb_others(const struct cpumask *cpumask,
- 					   struct mm_struct *mm,
- 					   unsigned long start,
-@@ -122,12 +129,16 @@ static inline void reset_lazy_tlbstate(void)
- 
- #define local_flush_tlb() __flush_tlb()
- 
-+#define flush_tlb_mm(mm)	flush_tlb_mm_range(mm, 0UL, TLB_FLUSH_ALL, 0UL)
-+
-+#define flush_tlb_range(vma, start, end)	\
-+		flush_tlb_mm_range(vma->vm_mm, start, end, vma->vm_flags)
-+
- extern void flush_tlb_all(void);
- extern void flush_tlb_current_task(void);
--extern void flush_tlb_mm(struct mm_struct *);
- extern void flush_tlb_page(struct vm_area_struct *, unsigned long);
--extern void flush_tlb_range(struct vm_area_struct *vma,
--				   unsigned long start, unsigned long end);
-+extern void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
-+				unsigned long end, unsigned long vmflag);
- 
- #define flush_tlb()	flush_tlb_current_task()
- 
-diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
-index 5911f61..481737d 100644
---- a/arch/x86/mm/tlb.c
-+++ b/arch/x86/mm/tlb.c
-@@ -301,23 +301,10 @@ void flush_tlb_current_task(void)
- 	preempt_enable();
- }
- 
--void flush_tlb_mm(struct mm_struct *mm)
--{
--	preempt_disable();
--
--	if (current->active_mm == mm) {
--		if (current->mm)
--			local_flush_tlb();
--		else
--			leave_mm(smp_processor_id());
--	}
--	if (cpumask_any_but(mm_cpumask(mm), smp_processor_id()) < nr_cpu_ids)
--		flush_tlb_others(mm_cpumask(mm), mm, 0UL, TLB_FLUSH_ALL);
--
--	preempt_enable();
--}
--
--#ifdef CONFIG_TRANSPARENT_HUGEPAGE
-+/*
-+ * It can find out the THP large page, or
-+ * HUGETLB page in tlb_flush when THP disabled
-+ */
- static inline unsigned long has_large_page(struct mm_struct *mm,
- 				 unsigned long start, unsigned long end)
- {
-@@ -339,68 +326,61 @@ static inline unsigned long has_large_page(struct mm_struct *mm,
- 	}
- 	return 0;
- }
--#else
--static inline unsigned long has_large_page(struct mm_struct *mm,
--				 unsigned long start, unsigned long end)
--{
--	return 0;
--}
--#endif
--void flush_tlb_range(struct vm_area_struct *vma,
--				   unsigned long start, unsigned long end)
--{
--	struct mm_struct *mm;
- 
--	if (vma->vm_flags & VM_HUGETLB || tlb_flushall_shift == -1) {
--flush_all:
--		flush_tlb_mm(vma->vm_mm);
--		return;
--	}
-+void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
-+				unsigned long end, unsigned long vmflag)
-+{
-+	unsigned long addr;
-+	unsigned act_entries, tlb_entries = 0;
- 
- 	preempt_disable();
--	mm = vma->vm_mm;
--	if (current->active_mm == mm) {
--		if (current->mm) {
--			unsigned long addr, vmflag = vma->vm_flags;
--			unsigned act_entries, tlb_entries = 0;
-+	if (current->active_mm != mm)
-+		goto flush_all;
- 
--			if (vmflag & VM_EXEC)
--				tlb_entries = tlb_lli_4k[ENTRIES];
--			else
--				tlb_entries = tlb_lld_4k[ENTRIES];
--
--			act_entries = tlb_entries > mm->total_vm ?
--					mm->total_vm : tlb_entries;
-+	if (!current->mm) {
-+		leave_mm(smp_processor_id());
-+		goto flush_all;
-+	}
- 
--			if ((end - start) >> PAGE_SHIFT >
--					act_entries >> tlb_flushall_shift)
--				local_flush_tlb();
--			else {
--				if (has_large_page(mm, start, end)) {
--					preempt_enable();
--					goto flush_all;
--				}
--				for (addr = start; addr < end;
--						addr += PAGE_SIZE)
--					__flush_tlb_single(addr);
-+	if (end == TLB_FLUSH_ALL || tlb_flushall_shift == -1
-+					|| vmflag == VM_HUGETLB) {
-+		local_flush_tlb();
-+		goto flush_all;
-+	}
- 
--				if (cpumask_any_but(mm_cpumask(mm),
--					smp_processor_id()) < nr_cpu_ids)
--					flush_tlb_others(mm_cpumask(mm), mm,
--								start, end);
--				preempt_enable();
--				return;
--			}
--		} else {
--			leave_mm(smp_processor_id());
-+	/* In modern CPU, last level tlb used for both data/ins */
-+	if (vmflag & VM_EXEC)
-+		tlb_entries = tlb_lli_4k[ENTRIES];
-+	else
-+		tlb_entries = tlb_lld_4k[ENTRIES];
-+	/* Assume all of TLB entries was occupied by this task */
-+	act_entries = mm->total_vm > tlb_entries ? tlb_entries : mm->total_vm;
-+
-+	/* tlb_flushall_shift is on balance point, details in commit log */
-+	if ((end - start) >> PAGE_SHIFT > act_entries >> tlb_flushall_shift)
-+		local_flush_tlb();
-+	else {
-+		if (has_large_page(mm, start, end)) {
-+			local_flush_tlb();
-+			goto flush_all;
- 		}
-+		/* flush range by one by one 'invlpg' */
-+		for (addr = start; addr < end;	addr += PAGE_SIZE)
-+			__flush_tlb_single(addr);
-+
-+		if (cpumask_any_but(mm_cpumask(mm),
-+				smp_processor_id()) < nr_cpu_ids)
-+			flush_tlb_others(mm_cpumask(mm), mm, start, end);
-+		preempt_enable();
-+		return;
- 	}
-+
-+flush_all:
- 	if (cpumask_any_but(mm_cpumask(mm), smp_processor_id()) < nr_cpu_ids)
- 		flush_tlb_others(mm_cpumask(mm), mm, 0UL, TLB_FLUSH_ALL);
- 	preempt_enable();
- }
- 
--
- void flush_tlb_page(struct vm_area_struct *vma, unsigned long start)
- {
- 	struct mm_struct *mm = vma->vm_mm;
+Thanks,
 -- 
-1.7.5.4
-
+Bryan Wu <bryan.wu@canonical.com>
+Kernel Developer    +86.186-168-78255 Mobile
+Canonical Ltd.      www.canonical.com
+Ubuntu - Linux for human beings | www.ubuntu.com
