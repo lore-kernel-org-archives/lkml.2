@@ -1,54 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752764Ab2GTQJQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 12:09:16 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51044 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752508Ab2GTQJO (ORCPT
+	id S1752791Ab2GTQJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 12:09:59 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:55055 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751768Ab2GTQJ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 12:09:14 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@liniux.intel.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] mfd: arizona: Add debug trace on entering and leaving runtime suspend
-Date: Fri, 20 Jul 2012 17:09:12 +0100
-Message-Id: <1342800552-10436-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 20 Jul 2012 12:09:58 -0400
+Date: Fri, 20 Jul 2012 09:09:53 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers: hv: use Linux version in guest ID
+Message-ID: <20120720160953.GA5802@kroah.com>
+References: <87fw8mlv7e.fsf@nemi.mork.no>
+ <1342771388-24389-1-git-send-email-bjorn@mork.no>
+ <20120720152650.GA5201@kroah.com>
+ <426367E2313C2449837CD2DE46E7EAF923547836@SN2PRD0310MB382.namprd03.prod.outlook.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <426367E2313C2449837CD2DE46E7EAF923547836@SN2PRD0310MB382.namprd03.prod.outlook.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There doesn't appear to be any useful diagnostic information from the
-core.
+On Fri, Jul 20, 2012 at 04:02:44PM +0000, KY Srinivasan wrote:
+> > On Fri, Jul 20, 2012 at 10:03:08AM +0200, Bjørn Mork wrote:
+> > > Use OS version number in the guest ID as recommended by Microsoft
+> > >
+> > > Signed-off-by: Bjørn Mork <bjorn@mork.no>
+> > > ---
+> > > So how about something like this?  Yes, I know including
+> > > linux/version.h often is unwanted, but the spec does
+> > > recommend using the actual OS version in the guest ID
+> > >
+> > > Yes, this will be offensive again when Linux is at
+> > > version 181.0, but we might have found a better solution by
+> > > then :-)
+> > >
+> > >
+> > >  drivers/hv/hyperv_vmbus.h |   20 ++++++++++++++++----
+> > >  1 file changed, 16 insertions(+), 4 deletions(-)
+> > >
+> > > diff --git a/drivers/hv/hyperv_vmbus.h b/drivers/hv/hyperv_vmbus.h
+> > > index b9426a6..cc0c3f0 100644
+> > > --- a/drivers/hv/hyperv_vmbus.h
+> > > +++ b/drivers/hv/hyperv_vmbus.h
+> > > @@ -29,6 +29,7 @@
+> > >  #include <asm/sync_bitops.h>
+> > >  #include <linux/atomic.h>
+> > >  #include <linux/hyperv.h>
+> > > +#include <linux/version.h>
+> > >
+> > >  /*
+> > >   * The below CPUID leaves are present if
+> > VersionAndFeatures.HypervisorPresent
+> > > @@ -410,10 +411,21 @@ enum {
+> > >
+> > >  #define HV_PRESENT_BIT			0x80000000
+> > >
+> > > -#define HV_LINUX_GUEST_ID_LO		0x00000000
+> > > -#define HV_LINUX_GUEST_ID_HI		0xB16B00B5
+> > > -#define HV_LINUX_GUEST_ID		(((u64)HV_LINUX_GUEST_ID_HI
+> > << 32) | \
+> > > -					   HV_LINUX_GUEST_ID_LO)
+> > > +/* Linux vendor ID allocated by Microsoft */
+> > > +#define HV_LINUX_GUEST_ID_VENDOR	0xB16B
+> > > +
+> > > +/* Creating a guest ID conforming to the encoding recommended by
+> > > + * Microsoft, with variant and build fixed to 0
+> > 
+> > We could use the kernel build number here as well, if we really wanted
+> > it, right?
+> > 
+> > Otherwise, I like this patch, KY, any objection to me taking it?
+> 
+> Greg,
+> 
+> If it is ok with you can we wait a couple of days. I am pushing to get information
+> back from folks within MSFT. I am hoping  we can fix this issue soon.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/mfd/arizona-core.c |    4 ++++
- 1 file changed, 4 insertions(+)
+Ok, I'll hold on to it for a week or so.
 
-diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
-index 6e70d3d..c7983e8 100644
---- a/drivers/mfd/arizona-core.c
-+++ b/drivers/mfd/arizona-core.c
-@@ -223,6 +223,8 @@ static int arizona_runtime_resume(struct device *dev)
- 	struct arizona *arizona = dev_get_drvdata(dev);
- 	int ret;
- 
-+	dev_dbg(arizona->dev, "Leaving AoD mode\n");
-+
- 	ret = regulator_enable(arizona->dcvdd);
- 	if (ret != 0) {
- 		dev_err(arizona->dev, "Failed to enable DCVDD: %d\n", ret);
-@@ -246,6 +248,8 @@ static int arizona_runtime_suspend(struct device *dev)
- {
- 	struct arizona *arizona = dev_get_drvdata(dev);
- 
-+	dev_dbg(arizona->dev, "Entering AoD mode\n");
-+
- 	regulator_disable(arizona->dcvdd);
- 	regcache_cache_only(arizona->regmap, true);
- 	regcache_mark_dirty(arizona->regmap);
--- 
-1.7.10.4
+thanks,
 
+greg k-h
