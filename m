@@ -1,54 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753340Ab2GTMIr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 08:08:47 -0400
-Received: from antcom.de ([188.40.178.216]:49422 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752560Ab2GTMIn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 08:08:43 -0400
-Message-ID: <50094A4A.8090303@antcom.de>
-Date: Fri, 20 Jul 2012 14:08:42 +0200
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+	id S1752753Ab2GTMSx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 08:18:53 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:41352 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751188Ab2GTMSw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 08:18:52 -0400
+Date: Fri, 20 Jul 2012 14:18:48 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Tony Luck <tony.luck@intel.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Chen Gong <gong.chen@linux.intel.com>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Subject: Re: [PATCH 2/2] x86/mce: Add quirk for instruction recovery on Sandy
+ Bridge processors
+Message-ID: <20120720121848.GA29183@aftab.osrc.amd.com>
+References: <cover.1342723082.git.tony.luck@intel.com>
+ <180a06f3f357cf9f78259ae443a082b14a29535b.1342723082.git.tony.luck@intel.com>
 MIME-Version: 1.0
-To: arm@kernel.org
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-Subject: [GIT PULL] ARM: LPC32xx: DTS file updates
-X-Enigmail-Version: 1.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <180a06f3f357cf9f78259ae443a082b14a29535b.1342723082.git.tony.luck@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd and Olof,
+On Thu, Jul 19, 2012 at 11:28:46AM -0700, Tony Luck wrote:
+> Sandy Bridge processors follow the SDM (Vol 3B, Table 15-20) and set
+> both the RIPV and EIPV bits in the MCG_STATUS register to zero for
+> machine checks during instruction fetch. This is more than a little
+> counter-intuitive and means that Linux cannot recover from these
+> errors. Rather than insert special case code at several places in mce.c
+> and mce-severity.c, we pretend the EIPV bit was set for just this case
+> early in processing the machine check.
+> 
+> Signed-off-by: Tony Luck <tony.luck@intel.com>
 
-this is a late addition to LPC32xx DTS files for v3.6. Branch lpc32xx/dts2,
-building upon previously posted lpc32xx/dts.
+Looks ok, just minor nitpick below.
 
-Thanks,
+> ---
+>  arch/x86/kernel/cpu/mcheck/mce.c | 43 +++++++++++++++++++++++++++++++++++++---
+>  1 file changed, 40 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+> index da27c5d..e65e738 100644
+> --- a/arch/x86/kernel/cpu/mcheck/mce.c
+> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
+> @@ -102,6 +102,8 @@ DEFINE_PER_CPU(mce_banks_t, mce_poll_banks) = {
+>  
+>  static DEFINE_PER_CPU(struct work_struct, mce_work);
+>  
+> +static void (*quirk_no_way_out)(int bank, struct mce *m, struct pt_regs *regs);
+> +
+>  /*
+>   * CPU/chipset specific EDAC code can register a notifier call here to print
+>   * MCE errors in a human-readable form.
+> @@ -649,14 +651,18 @@ EXPORT_SYMBOL_GPL(machine_check_poll);
+>   * Do a quick check if any of the events requires a panic.
+>   * This decides if we keep the events around or clear them.
+>   */
+> -static int mce_no_way_out(struct mce *m, char **msg, unsigned long *validp)
+> +static int mce_no_way_out(struct mce *m, char **msg, unsigned long *validp,
+> +			  struct pt_regs *regs)
+>  {
+>  	int i, ret = 0;
+>  
+>  	for (i = 0; i < banks; i++) {
+>  		m->status = mce_rdmsrl(MSR_IA32_MCx_STATUS(i));
+> -		if (m->status & MCI_STATUS_VAL)
+> +		if (m->status & MCI_STATUS_VAL) {
+>  			__set_bit(i, validp);
+> +			if (quirk_no_way_out)
+> +				quirk_no_way_out(i, m, regs);
 
-Roland
+Maybe define a default empty quirk_no_way_out() on the remaining
+families/vendors so that the compiler can optimize it away and we save
+ourselves the if-test?
 
+-- 
+Regards/Gruss,
+Boris.
 
-The following changes since commit 7bb71a6c3241b8e20b54fe9978cc9af5eddfd428:
-
-  ARM: LPC32xx: Update DTS file for EA3250 board (2012-07-01 21:04:17 +0200)
-
-are available in the git repository at:
-
-  git://git.antcom.de/linux-2.6.git lpc32xx/dts2
-
-for you to fetch changes up to de639854441af37fc88a72daab5842045d518944:
-
-  ARM: LPC32xx: Add PWM to base dts file (2012-07-20 13:33:09 +0200)
-
-----------------------------------------------------------------
-Alexandre Pereira da Silva (1):
-      ARM: LPC32xx: Add PWM to base dts file
-
- arch/arm/boot/dts/lpc32xx.dtsi |    5 +++++
- 1 file changed, 5 insertions(+)
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
