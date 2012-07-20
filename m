@@ -1,92 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751420Ab2GTKmN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 06:42:13 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:50929 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750724Ab2GTKmK (ORCPT
+	id S1751489Ab2GTKxP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 06:53:15 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55625 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751057Ab2GTKxN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 06:42:10 -0400
-Message-ID: <500935BC.4040405@linux.vnet.ibm.com>
-Date: Fri, 20 Jul 2012 16:11:00 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	Fri, 20 Jul 2012 06:53:13 -0400
+Date: Fri, 20 Jul 2012 11:52:48 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Jon Masters <jonathan@jonmasters.org>,
+        Christopher Covington <cov@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>
+Subject: Re: [PATCH 08/36] AArch64: Kernel booting and initialisation
+Message-ID: <20120720105248.GA2692@arm.com>
+References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
+ <5008445B.2010109@codeaurora.org>
+ <5009044E.9060908@jonmasters.org>
+ <201207200828.13128.arnd@arndb.de>
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: WARNING: at kernel/rcutree.c:1550 __rcu_process_callbacks+0x46f/0x4b0()
-References: <5007F8FA.7000203@linux.vnet.ibm.com> <20120719171550.GL2507@linux.vnet.ibm.com>
-In-Reply-To: <20120719171550.GL2507@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12072010-8256-0000-0000-00000362CD3C
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201207200828.13128.arnd@arndb.de>
+Thread-Topic: [PATCH 08/36] AArch64: Kernel booting and initialisation
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/19/2012 10:45 PM, Paul E. McKenney wrote:
-> On Thu, Jul 19, 2012 at 05:39:30PM +0530, Srivatsa S. Bhat wrote:
->> Hi Paul,
->>
->> While running a CPU hotplug stress test on v3.5-rc7+
->> (mainline commit 8a7298b7805ab) I hit this warning.
->> I haven't tried to debug this yet...
->>
->> Line number 1550 maps to:
->>
->> WARN_ON_ONCE(cpu_is_offline(smp_processor_id()));
->>
->> inside rcu_do_batch().
+On Fri, Jul 20, 2012 at 09:28:12AM +0100, Arnd Bergmann wrote:
+> On Friday 20 July 2012, Jon Masters wrote:
+> > > I think it would be best to list the technical limitations, from the
+> > > kernel's perspective, of the unsupported exception levels and the
+> > > advantages of the supported exception levels here. If you want to guide
+> > > system builders towards EL2, I think it'd be more convincing to document
+> > > the relevant technical aspects (perhaps KVM needs facilities only
+> > > available in EL2) than just providing an unexplained requirement.
+> > 
+> > Unless you enter at EL2 you can never install a hypervisor. That's the
+> > reason for the requirement for generally entering at EL2 when possible.
 > 
-> Hello, Srivatsa,
-> 
-> I believe that you need commit a16b7a69 (Prevent __call_rcu() from
-> invoking RCU core on offline CPUs), which is currently in -tip, queued
-> for 3.6.  Please see below for the patch.
-> 
-> Does this help?
+> How do nested hypervisors work in this scenario? Does the first-level
+> hypervisor (counting from most priviledged) provide a guest that starts
+> in an emulated EL2 state, or is this done differently?
 
-Yes, that fixed it, thanks! :-)
-Sorry for the noise...
+Your favourite topic :). Self virtualisation is not easily possible, at
+least not with how KVM on ARM is being implemented. The hardware does
+not allow code running at EL1 to be told that it is at EL2 (or code
+running at EL2 to be trapped at EL2). So for normal virtualisation,
+guest OSes start at EL1 and they benefit of all the hardware
+acceleration. If a guest OS wants to run KVM again, it won't have access
+to the virtualisation extensions (EL2 system register access would cause
+an undefined trap). The best it can do is run the nested guest OS in EL0
+and trap accesses to system registers (no that different from Qemu).
 
-Regards,
-Srivatsa S. Bhat
+If such feature is needed, the best approach is for all kernels, host or
+guest, to always enter at (non-secure) EL1. The EL2 would have a clearly
+defined HVC API for nested page tables, virtual interrupts, context
+switching etc. This way, the host OS can inform the hypervisor that
+guest OSes are allowed to use this API for their own nested guests. But
+getting such hypervisor API right is a bit tricky and the feedback from
+the KVM guys so far is that they need the flexibility of running their
+own code at EL2. I guess another benefit is that both KVM and Xen could
+use the same API.
 
-> 
-> ------------------------------------------------------------------------
-> 
-> rcu: Prevent __call_rcu() from invoking RCU core on offline CPUs
-> 
-> The __call_rcu() function will invoke the RCU core, for example, if
-> it detects that the current CPU has too many callbacks.  However, this
-> can happen on an offline CPU that is on its way to the idle loop, in
-> which case it is an error to invoke the RCU core, and the excess callbacks
-> will be adopted in any case.  This commit therefore adds checks to
-> __call_rcu() for running on an offline CPU, refraining from invoking
-> the RCU core in this case.
-> 
-> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> 
-> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> index a4a9c91..ceaa959 100644
-> --- a/kernel/rcutree.c
-> +++ b/kernel/rcutree.c
-> @@ -1904,11 +1904,11 @@ __call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
->  	 * If called from an extended quiescent state, invoke the RCU
->  	 * core in order to force a re-evaluation of RCU's idleness.
->  	 */
-> -	if (rcu_is_cpu_idle())
-> +	if (rcu_is_cpu_idle() && cpu_online(smp_processor_id()))
->  		invoke_rcu_core();
-> 
-> -	/* If interrupts were disabled, don't dive into RCU core. */
-> -	if (irqs_disabled_flags(flags)) {
-> +	/* If interrupts were disabled or CPU offline, don't invoke RCU core. */
-> +	if (irqs_disabled_flags(flags) || cpu_is_offline(smp_processor_id())) {
->  		local_irq_restore(flags);
->  		return;
->  	}
-> 
+But is this feature really needed?
 
+-- 
+Catalin
