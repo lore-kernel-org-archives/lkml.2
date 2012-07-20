@@ -1,24 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753432Ab2GTKKG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 06:10:06 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47688 "EHLO
+	id S1753382Ab2GTKM4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 06:12:56 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56747 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753350Ab2GTKKC (ORCPT
+	by vger.kernel.org with ESMTP id S1751490Ab2GTKMy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 06:10:02 -0400
-Date: Fri, 20 Jul 2012 11:10:00 +0100
+	Fri, 20 Jul 2012 06:12:54 -0400
+Date: Fri, 20 Jul 2012 11:12:52 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Shubhrajyoti D <shubhrajyoti@ti.com>
-Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] spi: omap2-mcspi: Fix the below warning
-Message-ID: <20120720100959.GS4495@opensource.wolfsonmicro.com>
-References: <1342720012-3709-1-git-send-email-shubhrajyoti@ti.com>
+To: "Kim, Milo" <Milo.Kim@ti.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "Girdwood, Liam" <lrg@ti.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "a.zummo@towertech.it" <a.zummo@towertech.it>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Richard Purdie <rpurdie@rpsys.net>, Bryan Wu <bryan.wu@canonical.com>
+Subject: Re: [PATCH 2/6] regulator: add new lp8788 regulator driver
+Message-ID: <20120720101252.GU4495@opensource.wolfsonmicro.com>
+References: <A874F61F95741C4A9BA573A70FE3998FD7A3@DQHE02.ent.ti.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="63aIh6YiuHX+oBFP"
+	protocol="application/pgp-signature"; boundary="A3RWl4qWgABmkY4K"
 Content-Disposition: inline
-In-Reply-To: <1342720012-3709-1-git-send-email-shubhrajyoti@ti.com>
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998FD7A3@DQHE02.ent.ti.com>
 X-Cookie: Beware of low-flying butterflies.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -26,36 +33,38 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---63aIh6YiuHX+oBFP
+--A3RWl4qWgABmkY4K
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Thu, Jul 19, 2012 at 11:16:52PM +0530, Shubhrajyoti D wrote:
-> The dma_map and dma_unmap should have same parameter
-> passed otherwise we get the below warn.
+On Wed, Jul 18, 2012 at 02:32:57PM +0000, Kim, Milo wrote:
+> TI LP8788 PMU has 4 BUCKS and 22 LDOs.
+> The voltage of BUCK1 and BUCK2 can be controlled by external gpios.
+> And some LDOs also can be enabled by external gpios.
+> The regmap interface is used for regulator operations.
 
 Applied, thanks.
 
---63aIh6YiuHX+oBFP
+--A3RWl4qWgABmkY4K
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQCS44AAoJEBus8iNuMP3dgKkP+wdqtS2yCzPgOuoBIlgpHqjA
-/4NAv7apXnBADUZVdfB7UNU0iV18tlUVQJ6Wp1hlljQfRysMxH0f6l6yotTFFgjR
-NdBtz0nsDW5WnIfl5ha7ZbCatWw7nW8aRjazeQWn+5a1hriKTKIo+WUwrHjUOxUV
-b+RddhClREfp/rw8mKlVJyqRoII5HgiUlzPaO9k7tPDlOB0CS3H1gn/fk2m2W/67
-jryqhwB0fcdK1zcu706bh41A/8fBdamMPRvz8PNKJGgDOSot4uWRJdBkOQ0Qjv0G
-X2PAN8ySLMl35dxxeweGUTqcppHudKPg17/7nOoaks+zkBU8p2u2epDHpd40pqL3
-nw6RjcNcghmDcVkiGySqHHL90/fmfEIuUgmX2Hn7WN1Cp87bPYxVfY8kB7EeNshx
-w1DYfKh4l+1eswJzbI68Ky+QEuroThNu4ugr/EPeh+aG++xiXv5LNrJ36O7mSktQ
-v4Hby2rGMqivgogV7TMFLNH8J5jPtp3AxnXxMjN4UNcp5iNLqwjA2GY1M5TqD3iX
-VBeTjCk2HVDTOjxRwjXbDyJD+PtTnjKyOQQOTwQmvpumyQsT35MAB1Ru0vobyZTt
-tp54cWatfnraYqU+ncC5/pzgBODjqidR718CD8UPsimgktxwsePWbP5TnTjap3SZ
-gSqp1Xf3Mdzhn300P8X+
-=kgJk
+iQIcBAEBAgAGBQJQCS8FAAoJEBus8iNuMP3dRlYP/j9TtDZ2VI3NBcVlvWlVkRF/
+YgYYHCbC/9bk6+YOBqkLyl8g/2v89j+i0jLxK7EdN7p7PYvBDMDpoCv462hZzUVj
+MXnux6vQaot6hKV3ICqQkZTnCFVeFGYI+0euZrMa/hWhHdqCrKH1AJTvpTHfU3rh
+66Dg3qoYY5YIBXOSfEiRxpC7KfVN/ijDJ+ESE2rSb5VUTGtgu8rLgn/blk+k8HAs
+9ZbCsiz8WDcdAe2dbdUC64ekkYrVu3J097X4uPbJHK/diPX2Mel1IaeI4dn5sh8N
+wuUq1kEj+4niFzWLbFELt0PX2W212OOaoY22pQo8ohJq3mzKyiVCMkRzSoLA34QU
+4kc9aST7+A0e8u9OUV2Cltv3jMfsezAaVhEd0pobMCG0qZ6ttG07+Nuu5hNQZeg6
+YbJTS/xgErRGl4M3co4XVRPOwzzVPKziXIHcUVHBX9xW4DsmmDtw/9mZQ2q2gfeq
+ScBhIC3phrnmmbQxpW4aEWyKFzcvhWiOsYpOsERqbFVRnQu86uIhA+FvdaQ00wEa
+BdVHShs6hwuXfq+oyRHM5OVB9NruFDQmczy/pYbPIgCYXWNvuupcVqRNmBFjVtsZ
+b6V6dTWeCgxuFReCZnRZaEbb6uOaAwErAuTJTZFqfEXR76Gd2XCF908hhqFZeNh0
+I39B/RVZAcQL6hPUN/xp
+=2ymo
 -----END PGP SIGNATURE-----
 
---63aIh6YiuHX+oBFP--
+--A3RWl4qWgABmkY4K--
