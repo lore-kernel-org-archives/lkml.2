@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753037Ab2GTHbs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 03:31:48 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:47858 "EHLO
+	id S1753054Ab2GTHgI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 03:36:08 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:35430 "EHLO
 	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752127Ab2GTHbq (ORCPT
+	with ESMTP id S1751912Ab2GTHgE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 03:31:46 -0400
+	Fri, 20 Jul 2012 03:36:04 -0400
 X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <5009094B.3090506@jp.fujitsu.com>
-Date: Fri, 20 Jul 2012 16:31:23 +0900
+Message-ID: <50090A4F.3050504@jp.fujitsu.com>
+Date: Fri, 20 Jul 2012 16:35:43 +0900
 From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
@@ -20,69 +20,84 @@ CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
         <benh@kernel.crashing.org>, <paulus@samba.org>, <cl@linux.com>,
         <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
         <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [RFC PATCH 0/8] memory-hotplug : hot-remove physical memory(clear
- page table)
-References: <5009038A.4090001@cn.fujitsu.com>
-In-Reply-To: <5009038A.4090001@cn.fujitsu.com>
+Subject: Re: [RFC PATCH 1/8] memory-hotplug: store the node id in acpi_memory_device
+References: <5009038A.4090001@cn.fujitsu.com> <5009041D.3060909@cn.fujitsu.com>
+In-Reply-To: <5009041D.3060909@cn.fujitsu.com>
 Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Hi Wen,
+Hi Wen,
 
-Good news!! I was waiting for this patch to come.
-Applying the patches, can we hot-remove physical memory completely?
+2012/07/20 16:09, Wen Congyang wrote:
+> The memory device has only one node id. Store the node id when
+> enabling the memory device, and we can reuse it when removing the
+> memory device.
+>
+> CC: David Rientjes <rientjes@google.com>
+> CC: Jiang Liu <liuj97@gmail.com>
+> CC: Len Brown <len.brown@intel.com>
+> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> CC: Paul Mackerras <paulus@samba.org>
+> CC: Christoph Lameter <cl@linux.com>
+> Cc: Minchan Kim <minchan.kim@gmail.com>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+> ---
+
+It looks to me.
+Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
 Thanks,
 Yasuaki Ishimatsu
 
-2012/07/20 16:06, Wen Congyang wrote:
-> This patch series aims to support physical memory hot-remove(clear page table).
+>   drivers/acpi/acpi_memhotplug.c |    8 +++++---
+>   1 files changed, 5 insertions(+), 3 deletions(-)
 >
-> This patch series base on ishimatsu's patch series. You can get it here:
-> http://www.spinics.net/lists/linux-acpi/msg36804.html
+> diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
+> index 5cafd6b..db8de39 100644
+> --- a/drivers/acpi/acpi_memhotplug.c
+> +++ b/drivers/acpi/acpi_memhotplug.c
+> @@ -84,6 +84,7 @@ struct acpi_memory_info {
+>   struct acpi_memory_device {
+>   	struct acpi_device * device;
+>   	unsigned int state;	/* State of the memory device */
+> +	int nid;
+>   	struct list_head res_list;
+>   };
 >
-> The patches can remove following things:
->    - page table of removed memory
+> @@ -257,6 +258,9 @@ static int acpi_memory_enable_device(struct acpi_memory_device *mem_device)
+>   		info->enabled = 1;
+>   		num_enabled++;
+>   	}
+> +
+> +	mem_device->nid = node;
+> +
+>   	if (!num_enabled) {
+>   		printk(KERN_ERR PREFIX "add_memory failed\n");
+>   		mem_device->state = MEMORY_INVALID_STATE;
+> @@ -463,7 +467,7 @@ static int acpi_memory_device_remove(struct acpi_device *device, int type)
 >
-> If you find lack of function for physical memory hot-remove, please let me
-> know.
+>   	mem_device = acpi_driver_data(device);
 >
-> Note:
-> * The patch "remove memory info from list before freeing it" is being disccussed
->    in other thread. But for testing the patch series, the patch is needed.
->    So I added the patch as [PATCH 0/8].
-> * You need to apply ishimatsu's patch series first before applying this patch
->    series.
+> -	node = acpi_get_node(mem_device->device->handle);
+> +	node = mem_device->nid;
+>   	list_for_each_entry_safe(info, tmp, &mem_device->res_list, list) {
+>   		if (!info->enabled)
+>   			continue;
+> @@ -473,8 +477,6 @@ static int acpi_memory_device_remove(struct acpi_device *device, int type)
+>   			if (result)
+>   				return result;
+>   		}
+> -		if (node < 0)
+> -			node = memory_add_physaddr_to_nid(info->start_addr);
 >
-> Wen Congyang (8):
->    memory-hotplug: store the node id in acpi_memory_device
->    memory-hotplug: offline memory only when it is onlined
->    memory-hotplug: call remove_memory() to cleanup when removing memory
->      device
->    memory-hotplug: export the function acpi_bus_remove()
->    memory-hotplug: call acpi_bus_remove() to remove memory device
->    memory-hotplug: introduce new function arch_remove_memory()
->    x86: make __split_large_page() generally avialable
->    memory-hotplug: implement arch_remove_memory()
->
->   arch/ia64/mm/init.c                  |   16 ++++
->   arch/powerpc/mm/mem.c                |   14 +++
->   arch/s390/mm/init.c                  |    8 ++
->   arch/sh/mm/init.c                    |   15 +++
->   arch/tile/mm/init.c                  |    8 ++
->   arch/x86/include/asm/pgtable_types.h |    1 +
->   arch/x86/mm/init_32.c                |   10 ++
->   arch/x86/mm/init_64.c                |  160 ++++++++++++++++++++++++++++++++++
->   arch/x86/mm/pageattr.c               |   47 +++++-----
->   drivers/acpi/acpi_memhotplug.c       |   24 ++++--
->   drivers/acpi/scan.c                  |    3 +-
->   include/acpi/acpi_bus.h              |    1 +
->   include/linux/memory_hotplug.h       |    1 +
->   mm/memory_hotplug.c                  |    2 +-
->   14 files changed, 280 insertions(+), 30 deletions(-)
+>   		result = remove_memory(node, info->start_addr, info->length);
+>   		if (result)
 >
 
 
