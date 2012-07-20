@@ -1,83 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752854Ab2GTBwl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 21:52:41 -0400
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:57958 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752589Ab2GTBwk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 21:52:40 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AmsKACG5CFB5LBuu/2dsb2JhbABFhQ6zAAOBKoEIgiABAQQBOhwjBQsIAw4GAQMuFCUDIROIBwW+eBSLOIE3hSkDlUOBFIgWhmCCcQ
-Date: Fri, 20 Jul 2012 11:52:26 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Paulo Alcantara <pcacjr@zytor.com>
-Cc: hch@infradead.org, baozich@gmail.com, bpm@sgi.com,
-        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: [PATCH] xfs: fix comment typo of struct xfs_da_blkinfo.
-Message-ID: <20120720015226.GJ23387@dastard>
-References: <20120716151038.GI29979@sgi.com>
- <5292013E-6FF3-47F6-BE9F-FD7BA2BB2AA9@gmail.com>
- <20120717070643.GA4958@infradead.org>
- <20120717.224021.707783566146599004.pcacjr@zytor.com>
+	id S1752902Ab2GTByO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 21:54:14 -0400
+Received: from mga02.intel.com ([134.134.136.20]:51275 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752589Ab2GTByN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 21:54:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="168738933"
+Message-ID: <5008BA43.3050301@intel.com>
+Date: Fri, 20 Jul 2012 09:54:11 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120717.224021.707783566146599004.pcacjr@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: kosaki.motohiro@jp.fujitsu.com, akpm@linux-foundation.org,
+        paul.gortmaker@windriver.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] cpumask: cpumask_scnprintf() comments correction
+References: <1342406154-24001-1-git-send-email-alex.shi@intel.com> <87ehocxig6.fsf@rustcorp.com.au> <5003D0E4.2060300@intel.com>
+In-Reply-To: <5003D0E4.2060300@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 17, 2012 at 10:40:21PM -0300, Paulo Alcantara wrote:
-> From: Christoph Hellwig <hch@infradead.org>
-> Date: Tue, 17 Jul 2012 03:06:43 -0400
-> 
-> > Btw, if you need more reviers for the syslinus support feel free to pass
-> > it by me (or the list).
-> 
-> This is the branch I'm maintaing for the XFS readonly driver:
-> 
-> git://zytor.com/users/pcacjr/syslinux.git (branch: xfs)
-> 
-> The current status is:
-> 
->     - We are able to find the root inode by reading rootino field from
->       superblock (xfs_iget_root() function).
->     - We are able to find inodes that have core's format set to "local" only at
->       the moment, which is by reading leaf entries from inode btrees. The
->       function that looks up for an inode is the xfs_iget() one. We're looking
->       forward to implement the handling of keys in inode btrees (extents) also.
-> 
-> Baoszi is currently working on the inode btree's key part (extents), and I'm
-> working on the data part of the file inode, which is the xfs_next_extent()
-> function.
-> 
-> The xfs_next_extent() function must be able to read the inode (cast to the data
-> fork) and populate a structure that stores physical starting number sector and
-> number of consecutive sectors that contain the inode's data so that Syslinux
-> will know where to read from.
+On 07/16/2012 04:29 PM, Alex Shi wrote:
 
-As we discussed on #xfs, I'm still not convinced that parsing the
-filesystem metadata in the bootloader is the way to go. Far better,
-IMO, is simply to supply the bootloader with a list of extents for
-the blocks it needs to read to get the files it needs. You can get
-them via fiemap(), and it'll work for XFS, btrfs, ext3, ext4, etc
-without needing to write code to parse the on-disk format of every
-filesystem.
+> On 07/16/2012 03:40 PM, Rusty Russell wrote:
+> 
+>> On Mon, 16 Jul 2012 10:35:54 +0800, Alex Shi <alex.shi@intel.com> wrote:
+>>> The function has no parameter @len now, so need to remove it from
+>>> comments to avoid kernel-doc warning:
+>>
+>> But it still does in my tree.
+>>
+>> Please push this patch via whoever changed it?
+>>
+>> Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+>>
+> 
+> Sorry, my fault, the commit log used a wrong function name, it is cpulist_parse()
+> not cpumask_scnprntf. and find a new error in the comments: used a incorrect 
+> function name: cpulist_parse_user(), the correct one is cpulist_parse().
+> Fix it in updated patch.
+> 
+> Both errors appear in Rusty's commit 29c0177e6a4.
 
-Especially as we are in the process of making major changes to the
-XFS on-disk format, which means you'll have to make significant
-changes to support a second XFS disk format in the not-to-distant
-future...
 
-> Thanks for the interest in helping us!
+Rusty. The error still exist on upstream tree. Would you like to pick
+this fix?
 
-We want it to work! ;)
+> 
+> ===
+> 
+> From db20433a0b321f7b4edfc57f66e816d7bec81b14 Mon Sep 17 00:00:00 2001
+> From: Alex Shi <alex.shi@intel.com>
+> Date: Mon, 16 Jul 2012 10:25:06 +0800
+> Subject: [PATCH] cpumask: cpulist_parse() comments correction
+> 
+> The function has no parameter @len, so need to remove it from
+> comments to avoid kernel-doc warning:
+> 
+> alexs@debian:~/linux-next$ scripts/kernel-doc -man
+> include/linux/cpumask.h | split-man.pl /tmp/man
+> ....
+> Warning(include/linux/cpumask.h:602): Excess function parameter 'len'
+> description in 'cpulist_parse'
+> 
+> and correct the function name in comments to cpulist_parse.
+> 
+> Signed-off-by: Alex Shi <alex.shi@intel.com>
+> ---
+>  include/linux/cpumask.h |    3 +--
+>  1 files changed, 1 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/cpumask.h b/include/linux/cpumask.h
+> index 8bf1c27..0325602 100644
+> --- a/include/linux/cpumask.h
+> +++ b/include/linux/cpumask.h
+> @@ -591,9 +591,8 @@ static inline int cpulist_scnprintf(char *buf, int len,
+>  }
+>  
+>  /**
+> - * cpulist_parse_user - extract a cpumask from a user string of ranges
+> + * cpulist_parse - extract a cpumask from a user string of ranges
+>   * @buf: the buffer to extract from
+> - * @len: the length of the buffer
+>   * @dstp: the cpumask to set.
+>   *
+>   * Returns -errno, or 0 for success.
 
-Cheers,
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
