@@ -1,67 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753749Ab2GTNY4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 09:24:56 -0400
-Received: from usindpps06.hds.com ([207.126.252.19]:56694 "EHLO
-	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753666Ab2GTNYy convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 09:24:54 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Don Zickus <dzickus@redhat.com>
-CC: "Luck, Tony" <tony.luck@intel.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mikew@google.com" <mikew@google.com>,
-        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: RE: [RFC][PATCH v2 2/3] Hold multiple logs
-Thread-Topic: [RFC][PATCH v2 2/3] Hold multiple logs
-Thread-Index: Ac1l82ceH7I0t1QCT1GombsnNxviZAAAK4PgAABTBVAAAP4IQAAA0SRAAAJWEXAAAc9d8AAOI+0AAA0ln5A=
-Date: Fri, 20 Jul 2012 13:24:38 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D40FB286FB@USINDEM103.corp.hds.com>
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D40FB27FDC@USINDEM103.corp.hds.com>
- <3908561D78D1C84285E8C5FCA982C28F1936EA5F@ORSMSX104.amr.corp.intel.com>
- <A5ED84D3BB3A384992CBB9C77DEDA4D40FB28056@USINDEM103.corp.hds.com>
- <3908561D78D1C84285E8C5FCA982C28F1936EA97@ORSMSX104.amr.corp.intel.com>
- <A5ED84D3BB3A384992CBB9C77DEDA4D40FB2813D@USINDEM103.corp.hds.com>
- <3908561D78D1C84285E8C5FCA982C28F1936EADE@ORSMSX104.amr.corp.intel.com>
- <A5ED84D3BB3A384992CBB9C77DEDA4D40FB28206@USINDEM103.corp.hds.com>
- <20120720030328.GC5637@redhat.com>
-In-Reply-To: <20120720030328.GC5637@redhat.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.43.113]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753779Ab2GTN0q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 09:26:46 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:57769 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753758Ab2GTN0p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 09:26:45 -0400
+Message-ID: <50095C6F.2020106@ti.com>
+Date: Fri, 20 Jul 2012 18:56:07 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.260,0.0.0000
- definitions=2012-07-20_03:2012-07-19,2012-07-20,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
- definitions=main-1207200107
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Mike Turquette <mturquette@linaro.org>, Kevin Hilman <khilman@ti.com>,
+        <linux-kernel@vger.kernel.org>, <shawn.guo@linaro.org>,
+        <rob.herring@calxeda.com>, <pdeschrijver@nvidia.com>,
+        <pgaikwad@nvidia.com>, <viresh.kumar@linaro.org>, <rnayak@ti.com>,
+        <paul@pwsan.com>, <broonie@opensource.wolfsonmicro.com>,
+        <tglx@linutronix.de>, <ccross@android.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        "Karicheri, Muralidharan" <m-karicheri2@ti.com>
+Subject: Re: [PATCH 2/2] [RFC] cpufreq: omap: scale regulator from clk notifier
+References: <1342225001-22962-1-git-send-email-mturquette@linaro.org> <1342225001-22962-3-git-send-email-mturquette@linaro.org> <CACRpkda7g2qMErwf-nebKSOW=044=YadEzEoKWM1dT=29yueeA@mail.gmail.com>
+In-Reply-To: <CACRpkda7g2qMErwf-nebKSOW=044=YadEzEoKWM1dT=29yueeA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus,
 
-> What is the harm of not using this and just letting the number be infinite (or until EFI runs out of space)?  Is it a big deal if extra failures
-> are logged?
+On 7/17/2012 3:58 AM, Linus Walleij wrote:
+> On Sat, Jul 14, 2012 at 2:16 AM, Mike Turquette <mturquette@linaro.org> wrote:
+> '
+>> This patch moves direct control of the MPU voltage regulator out of the
+>> cpufreq driver .target callback and instead puts that logic into a clock
+>> rate change notifier callback.
+> 
+> That's heavy stuff.
+> 
+> I was hoping that the first example of using clk notifiers would be
+> something like mach-davinci replacing it's legacy clock framework
+> with drivers/clk and then go in and change the horrid cpufreq hack
+> that is currently in drivers/mmc/host/davinci_mmc.c to use a
+> clock notifier instead of cpufreq.
+> 
+> Sekhar/Kevin, any chance to have DaVinci converted to Mikes new
+> clock framework? It doesn't look super-complex and would be a
+> good example for others I think.
 
+Murali (CCed) from TI is planning to work on it and should be posting
+patches in 3rd/4th week of August. Once he is done, will work on
+migrating the drivers to clock notifiers.
 
-There may be someone using NVRAM for other purposes.
-Actually, we have the user interface, /sys/firmware/efi/vars/new_vars, del_vars.
-
-In this case, they want to avoid filling with unneeded logs. 
-
-> The hope would be a daemon would clear the old logs out and you never run out of space.
-
-In most case
-But as Tony mentioned, NVRAM may be filled with multiple oops even if we have the daemon.
-
-Seiji
+Thanks,
+Sekhar
