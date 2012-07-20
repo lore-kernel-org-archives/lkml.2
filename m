@@ -1,80 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361Ab2GTJ4b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 05:56:31 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33859 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751490Ab2GTJ43 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 05:56:29 -0400
-Date: Fri, 20 Jul 2012 10:56:27 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: "Kim, Milo" <Milo.Kim@ti.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] regmap-irq: use mask and val rather than using
- mask_buf_def
-Message-ID: <20120720095627.GO4495@opensource.wolfsonmicro.com>
-References: <A874F61F95741C4A9BA573A70FE3998FD99F@DQHE02.ent.ti.com>
- <20120719091011.GI4495@opensource.wolfsonmicro.com>
- <A874F61F95741C4A9BA573A70FE3998FDA8C@DQHE02.ent.ti.com>
+	id S1753325Ab2GTJ77 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 05:59:59 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:49443 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751490Ab2GTJ74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 05:59:56 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH] cpufreq: Fix sysfs deadlock with concurrent hotplug/frequency switch
+Date: Fri, 20 Jul 2012 12:05:36 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org
+References: <1342749433-17676-1-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <1342749433-17676-1-git-send-email-sboyd@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="AQYPrgrEUc/1pSX1"
-Content-Disposition: inline
-In-Reply-To: <A874F61F95741C4A9BA573A70FE3998FDA8C@DQHE02.ent.ti.com>
-X-Cookie: Beware of low-flying butterflies.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201207201205.36635.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Friday, July 20, 2012, Stephen Boyd wrote:
+> Running one program that continuously hotplugs and replugs a cpu
+> concurrently with another program that continuously writes to the
+> scaling_setspeed node eventually deadlocks with:
+> 
+> =============================================
+> [ INFO: possible recursive locking detected ]
+> 3.4.0 #37 Tainted: G        W
+> ---------------------------------------------
+> filemonkey/122 is trying to acquire lock:
+>  (s_active#13){++++.+}, at: [<c01a3d28>] sysfs_remove_dir+0x9c/0xb4
+> 
+> but task is already holding lock:
+>  (s_active#13){++++.+}, at: [<c01a22f0>] sysfs_write_file+0xe8/0x140
+> 
+> other info that might help us debug this:
+>  Possible unsafe locking scenario:
+> 
+>        CPU0
+>        ----
+>   lock(s_active#13);
+>   lock(s_active#13);
+> 
+>  *** DEADLOCK ***
+> 
+>  May be due to missing lock nesting notation
+> 
+> 2 locks held by filemonkey/122:
+>  #0:  (&buffer->mutex){+.+.+.}, at: [<c01a2230>] sysfs_write_file+0x28/0x140
+>  #1:  (s_active#13){++++.+}, at: [<c01a22f0>] sysfs_write_file+0xe8/0x140
+> 
+> stack backtrace:
+> [<c0014fcc>] (unwind_backtrace+0x0/0x120) from [<c00ca600>] (validate_chain+0x6f8/0x1054)
+> [<c00ca600>] (validate_chain+0x6f8/0x1054) from [<c00cb778>] (__lock_acquire+0x81c/0x8d8)
+> [<c00cb778>] (__lock_acquire+0x81c/0x8d8) from [<c00cb9c0>] (lock_acquire+0x18c/0x1e8)
+> [<c00cb9c0>] (lock_acquire+0x18c/0x1e8) from [<c01a3ba8>] (sysfs_addrm_finish+0xd0/0x180)
+> [<c01a3ba8>] (sysfs_addrm_finish+0xd0/0x180) from [<c01a3d28>] (sysfs_remove_dir+0x9c/0xb4)
+> [<c01a3d28>] (sysfs_remove_dir+0x9c/0xb4) from [<c02d0e5c>] (kobject_del+0x10/0x38)
+> [<c02d0e5c>] (kobject_del+0x10/0x38) from [<c02d0f74>] (kobject_release+0xf0/0x194)
+> [<c02d0f74>] (kobject_release+0xf0/0x194) from [<c0565a98>] (cpufreq_cpu_put+0xc/0x24)
+> [<c0565a98>] (cpufreq_cpu_put+0xc/0x24) from [<c05683f0>] (store+0x6c/0x74)
+> [<c05683f0>] (store+0x6c/0x74) from [<c01a2314>] (sysfs_write_file+0x10c/0x140)
+> [<c01a2314>] (sysfs_write_file+0x10c/0x140) from [<c014af44>] (vfs_write+0xb0/0x128)
+> [<c014af44>] (vfs_write+0xb0/0x128) from [<c014b06c>] (sys_write+0x3c/0x68)
+> [<c014b06c>] (sys_write+0x3c/0x68) from [<c000e0e0>] (ret_fast_syscall+0x0/0x3c)
+> 
+> This is because store() in cpufreq.c indirectly calls
+> kobject_get() via cpufreq_cpu_get() and is the last one to call
+> kobject_put() via cpufreq_cpu_put(). Sysfs code should not call
+> kobject_get() or kobject_put() directly (see the comment around
+> sysfs_schedule_callback() for more information).
+> 
+> Fix this deadlock by introducing two new functions:
+> 
+> 	struct cpufreq_policy *cpufreq_cpu_get_sysfs(unsigned int cpu)
+> 	void cpufreq_cpu_put_sysfs(struct cpufreq_policy *data)
+> 
+> which do the same thing as cpufreq_cpu_{get,put}() but don't call
+> kobject functions.
+> 
+> To easily trigger this deadlock you can apply a one line patch to
+> the store() function in cpufreq.c
 
---AQYPrgrEUc/1pSX1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The following part of your changelog has confused Patchwork.  I guess it
+will also confuse other tools, so care to describe what to do instead?
 
-On Fri, Jul 20, 2012 at 07:08:15AM +0000, Kim, Milo wrote:
+>  diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+>  index a290771..62af12d 100644
+>  --- a/drivers/cpufreq/cpufreq.c
+>  +++ b/drivers/cpufreq/cpufreq.c
+>  @@ -675,6 +675,7 @@ static ssize_t store(struct kobject *kobj
+> 
+>          unlock_policy_rwsem_write(policy->cpu);
+>   fail:
+>  +       msleep(10000);
+>          cpufreq_cpu_put_sysfs(policy);
+>   no_policy:
+>          return ret;
+> 
+> and then write scaling_setspeed in one task and offline the cpu
+> in another. The first task will hang and be detected by the hung
+> task detector.
+> 
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+> 
+> Before you ask, I've seen the comment above cpufreq_add_dev() about
+> concurrent hotplug/cpufreq.
+> 
+>  drivers/cpufreq/cpufreq.c | 35 +++++++++++++++++++++++++++--------
+>  1 file changed, 27 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index 7f2f149..a290771 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -138,7 +138,7 @@ void disable_cpufreq(void)
+>  static LIST_HEAD(cpufreq_governor_list);
+>  static DEFINE_MUTEX(cpufreq_governor_mutex);
+>  
+> -struct cpufreq_policy *cpufreq_cpu_get(unsigned int cpu)
+> +static struct cpufreq_policy *__cpufreq_cpu_get(unsigned int cpu, int sysfs)
 
-Fix your mailer to word wrap within paragraphs, I have reformatted your
-mail for legibility.
+I'd prefer the sysfs arg to be a bool.
 
-> Which is better understandable terminology ? 'mask and value' or
-> 'default mask and updated mask' I think 'mask & value' is more clear.
+>  {
+>  	struct cpufreq_policy *data;
+>  	unsigned long flags;
+> @@ -162,7 +162,7 @@ struct cpufreq_policy *cpufreq_cpu_get(unsigned int cpu)
+>  	if (!data)
+>  		goto err_out_put_module;
+>  
+> -	if (!kobject_get(&data->kobj))
+> +	if (!sysfs && !kobject_get(&data->kobj))
+>  		goto err_out_put_module;
+>  
+>  	spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
+> @@ -175,16 +175,35 @@ err_out_unlock:
+>  err_out:
+>  	return NULL;
+>  }
+> +
+> +struct cpufreq_policy *cpufreq_cpu_get(unsigned int cpu)
+> +{
+> +	return __cpufreq_cpu_get(cpu, 0);
+> +}
+>  EXPORT_SYMBOL_GPL(cpufreq_cpu_get);
+>  
+> +static struct cpufreq_policy *cpufreq_cpu_get_sysfs(unsigned int cpu)
+> +{
+> +	return __cpufreq_cpu_get(cpu, 1);
+> +}
+>  
+> -void cpufreq_cpu_put(struct cpufreq_policy *data)
+> +static void __cpufreq_cpu_put(struct cpufreq_policy *data, int sysfs)
+>  {
+> -	kobject_put(&data->kobj);
+> +	if (!sysfs)
+> +		kobject_put(&data->kobj);
+>  	module_put(cpufreq_driver->owner);
+>  }
+> +
+> +void cpufreq_cpu_put(struct cpufreq_policy *data)
+> +{
+> +	__cpufreq_cpu_put(data, 0);
+> +}
+>  EXPORT_SYMBOL_GPL(cpufreq_cpu_put);
+>  
+> +static void cpufreq_cpu_put_sysfs(struct cpufreq_policy *data)
+> +{
+> +	__cpufreq_cpu_put(data, 1);
+> +}
+>  
+>  /*********************************************************************
+>   *            EXTERNALLY AFFECTING FREQUENCY CHANGES                 *
+> @@ -617,7 +636,7 @@ static ssize_t show(struct kobject *kobj, struct attribute *attr, char *buf)
+>  	struct cpufreq_policy *policy = to_policy(kobj);
+>  	struct freq_attr *fattr = to_attr(attr);
+>  	ssize_t ret = -EINVAL;
+> -	policy = cpufreq_cpu_get(policy->cpu);
+> +	policy = cpufreq_cpu_get_sysfs(policy->cpu);
+>  	if (!policy)
+>  		goto no_policy;
+>  
+> @@ -631,7 +650,7 @@ static ssize_t show(struct kobject *kobj, struct attribute *attr, char *buf)
+>  
+>  	unlock_policy_rwsem_read(policy->cpu);
+>  fail:
+> -	cpufreq_cpu_put(policy);
+> +	cpufreq_cpu_put_sysfs(policy);
+>  no_policy:
+>  	return ret;
+>  }
+> @@ -642,7 +661,7 @@ static ssize_t store(struct kobject *kobj, struct attribute *attr,
+>  	struct cpufreq_policy *policy = to_policy(kobj);
+>  	struct freq_attr *fattr = to_attr(attr);
+>  	ssize_t ret = -EINVAL;
+> -	policy = cpufreq_cpu_get(policy->cpu);
+> +	policy = cpufreq_cpu_get_sysfs(policy->cpu);
+>  	if (!policy)
+>  		goto no_policy;
+>  
+> @@ -656,7 +675,7 @@ static ssize_t store(struct kobject *kobj, struct attribute *attr,
+>  
+>  	unlock_policy_rwsem_write(policy->cpu);
+>  fail:
+> -	cpufreq_cpu_put(policy);
+> +	cpufreq_cpu_put_sysfs(policy);
+>  no_policy:
+>  	return ret;
+>  }
+> 
 
-But you need to say which value we're talking about - there's multiple
-values we're working with here, the interrupt mask is only one of them.
-We also have the wake masks and the actual interrupt status values for
-example.
-
-> (b) supporting interrupt-unmasked device
-> There is different interrupt concept from interrupt-masked device.
-> To enable the IRQ, the register bit should be 1.
-> To update this value, the bit of IRQ value should be separated from the mask bit.
-
-The variable you're changing isn't the interrupt value, it's the virtual
-copy of the mask registers.  The interrupt status value is managed
-separately.
-
---AQYPrgrEUc/1pSX1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQCSsYAAoJEBus8iNuMP3dAB0P/RvdFN3yO303zdq59tjE/f6O
-4E80baClxXDTaLnb5bB06w+EKJWHafXES0i/3c0Yf0Wj96isMCItWiMc7zxDVLHz
-13wk7onQ7skV35UBFFyvZLipB8RZFgTbXwgtHqbFN1Hkmb1TPboPKvHNvjnRfpWj
-Rub5wI6LZosuX/Ytxv2l5WYq6Xb/bT2xEKd14UelTQxpBhPlxzoPhkJK+zvAy/Hp
-fQVS8u/u+WWlBJSQdUe7+1IdXZ56ses8uArvt0QDSuz9ZO5S7mqiIIRgTW6psrH9
-vdwyAllKOylL3hCLtVo6dUALJ9NOKv4t+/2Yb0ngdW2mtI2hu7PBblf4u0aEayzQ
-KZa7mnSblOfAY0Fffv3NRMezB4xBZVqbTa8cXD+ElBOcX8j/XFv2xxsJMztHboSo
-c8AgVxMdT3KfPUlDd09e99YHFGVpRseZOONwex9hz0FTyxljBmBE/DlmyYZDZacw
-d71Bv+ILc0uYOQ96yP94uSbNv9FB81KgJQ9A4uVPxpBqXbcgXfADkO9agNf9fTbp
-uHDEcvINzLFThw2YUmwuRX3nvar7crbnjXPZGB+sfNvTF0gsOET5VkmiQt6NtsKS
-mpqi5hw5dpL6K7ZVT/XVrqMKS1TXdSLe33BUxyXgHMJcXqHk9Nx+ThEhfnIoNQ3O
-LWu3Z7bg3QTelZ9msWoW
-=HVhQ
------END PGP SIGNATURE-----
-
---AQYPrgrEUc/1pSX1--
+Thanks,
+Rafael
