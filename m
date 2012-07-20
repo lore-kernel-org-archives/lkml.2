@@ -1,378 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752162Ab2GTTtv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 15:49:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28363 "EHLO mx1.redhat.com"
+	id S1752221Ab2GTTwM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 15:52:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34812 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751592Ab2GTTtt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 15:49:49 -0400
-Date: Fri, 20 Jul 2012 16:48:59 -0300
-From: Rafael Aquini <aquini@redhat.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Rafael Aquini <aquini@linux.com>
-Subject: Re: [PATCH v4 1/3] mm: introduce compaction and migration for virtio
- ballooned pages
-Message-ID: <20120720194858.GA16249@t510.redhat.com>
-References: <cover.1342485774.git.aquini@redhat.com>
- <49f828a9331c9b729fcf77226006921ec5bc52fa.1342485774.git.aquini@redhat.com>
- <20120718054824.GA32341@bbox>
+	id S1751573Ab2GTTwK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 15:52:10 -0400
+Date: Fri, 20 Jul 2012 16:52:03 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 2/9] KVM: x86: simplify read_emulated
+Message-ID: <20120720195203.GA25355@amt.cnet>
+References: <50056DB8.7080702@linux.vnet.ibm.com>
+ <50056DE6.6020801@linux.vnet.ibm.com>
+ <20120719235828.GA7121@amt.cnet>
+ <5008BFC0.4070703@linux.vnet.ibm.com>
+ <20120720105840.GA16859@amt.cnet>
+ <50095A00.7010606@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120718054824.GA32341@bbox>
+In-Reply-To: <50095A00.7010606@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Howdy Minchan,
-
-Once again, thanks for raising such valuable feedback over here.
-
-On Wed, Jul 18, 2012 at 02:48:24PM +0900, Minchan Kim wrote:
-> > +/* __isolate_lru_page() counterpart for a ballooned page */
-> > +static bool isolate_balloon_page(struct page *page)
-> > +{
-> > +	if (WARN_ON(!is_balloon_page(page)))
-> > +		return false;
+On Fri, Jul 20, 2012 at 09:15:44PM +0800, Xiao Guangrong wrote:
+> On 07/20/2012 06:58 PM, Marcelo Tosatti wrote:
+> > On Fri, Jul 20, 2012 at 10:17:36AM +0800, Xiao Guangrong wrote:
+> >> On 07/20/2012 07:58 AM, Marcelo Tosatti wrote:
+> >>
+> >>>> -	}
+> >>>> +	rc = ctxt->ops->read_emulated(ctxt, addr, mc->data + mc->end, size,
+> >>>> +				      &ctxt->exception);
+> >>>> +	if (rc != X86EMUL_CONTINUE)
+> >>>> +		return rc;
+> >>>> +
+> >>>> +	mc->end += size;
+> >>>> +
+> >>>> +read_cached:
+> >>>> +	memcpy(dest, mc->data + mc->pos, size);
+> >>>
+> >>> What prevents read_emulated(size > 8) call, with
+> >>> mc->pos == (mc->end - 8) now?
+> >>
+> >> Marcelo,
+> >>
+> >> The splitting has been done in emulator_read_write_onepage:
+> >>
+> >> 	while (bytes) {
+> >> 		unsigned now = min(bytes, 8U);
+> >>
+> >> 		frag = &vcpu->mmio_fragments[vcpu->mmio_nr_fragments++];
+> >> 		frag->gpa = gpa;
+> >> 		frag->data = val;
+> >> 		frag->len = now;
+> >> 		frag->write_readonly_mem = (ret == -EPERM);
+> >>
+> >> 		gpa += now;
+> >> 		val += now;
+> >> 		bytes -= now;
+> >> 	}
+> >>
+> >> So i think it is safe to remove the splitting in read_emulated.
+> > 
+> > Yes, it is fine to remove it.
+> > 
+> > But splitting in emulate.c prevented the case of _cache read_ with size
+> >> 8 beyond end of mc->data. Must handle that case in read_emulated.
+> > 
+> > "What prevents read_emulated(size > 8) call, with mc->pos == (mc->end - 8) now?"
 > 
-> I am not sure we need this because you alreay check it before calling
-> isolate_balloon_page. If you really need it, it would be better to
-> add likely in isolate_balloon_page, too.
+> You mean the mmio region is partly cached?
 > 
+> I think it can not happen. Now, we pass the whole size to emulator_read_write_onepage(),
+> after it is finished, it saves the whole data into mc->data[], so, the cache-read
+> can always get the whole data from mc->data[].
 
-This check point was set in place because isolate_balloon_page() was a publicly
-visible function and while our current usage looks correct it would not hurt to
-have something like that done -- think of it as an insurance policy, in case
-someone else, in the future, attempts to use it on any other place outside this
-specifc context. 
-Despite not seeing it as a dealbreaker for the patch as is, I do agree, however,
-this snippet can _potentially_ be removed from isolate_balloon_page(), since
-this function has become static to compaction.c.
+I mean that nothing prevents a caller from reading beyond the end of
+mc->data array (but then again this was the previous behavior).
 
-
-> > +
-> > +	if (likely(get_page_unless_zero(page))) {
-> > +		/*
-> > +		 * We can race against move_to_new_page() & __unmap_and_move().
-> > +		 * If we stumble across a locked balloon page and succeed on
-> > +		 * isolating it, the result tends to be disastrous.
-> > +		 */
-> > +		if (likely(trylock_page(page))) {
-> 
-> Hmm, I can't understand your comment.
-> What does this lock protect? Could you elaborate it with code sequence?
-> 
-
-As we are coping with a corner case -- balloon pages are not on LRU lists --
-compaction concurrency can lead to a disastrous race which results in
-isolate_balloon_page() re-isolating already isolated balloon pages, or isolating
-a 'newpage' recently promoted to 'balloon page', while these pages are still
-under migration. The only way we have to prevent that from happening is
-attempting to grab the page lock, as pages under migration are already locked.
-I had that comment rephrased to what follows (please, tell me how it sounds to
-you now)
-  	if (likely(get_page_unless_zero(page))) {
- 		/*
--		 * We can race against move_to_new_page() & __unmap_and_move().
--		 * If we stumble across a locked balloon page and succeed on
--		 * isolating it, the result tends to be disastrous.
-+		 * As balloon pages are not isolated from LRU lists, several
-+		 * concurrent compaction threads will potentially race against
-+		 * page migration at move_to_new_page() & __unmap_and_move().
-+		 * In order to avoid having an already isolated balloon page
-+		 * being (wrongly) re-isolated while it is under migration,
-+		 * lets be sure we have the page lock before proceeding with
-+		 * the balloon page isolation steps.
- 		 */
- 		if (likely(trylock_page(page))) {
- 			/*
-
-
-> > +/* putback_lru_page() counterpart for a ballooned page */
-> > +bool putback_balloon_page(struct page *page)
-> > +{
-> > +	if (WARN_ON(!is_balloon_page(page)))
-> > +		return false;
-> 
-> You already check WARN_ON in putback_lru_pages so we don't need it in here.
-> And you can add likely in here, too.
->
-
-This check point is in place by the same reason why it is for
-isolate_balloon_page(). However, I don't think we should drop it here because
-putback_balloon_page() is still a publicly visible symbol. Besides, the check
-that is performed at putback_lru_pages() level has a different meaning, which is
-to warn us when we fail on re-inserting an isolated (but not migrated) page back
-to the balloon page list, thus it does not superceeds nor it's superceeded by
-this checkpoint here.
-
- 
-> > +		} else if (is_balloon_page(page)) {
-> 
-> unlikely?
-
-This can be done, for sure. Also, it reminds me that I had a
-'likely(PageLRU(page))' set in place for this vary same patch, on v2 submission.
-Do you recollect you've asked me to get rid of it?. Wouldn't it be better having
-that suggestion of yours reverted, since PageLRU(page) is the likelihood case
-here anyway? What about this?
-
-   " if (likely(PageLRU(page))) { 
-       ... 
-     } else if (unlikely(is_balloon_page(page))) {
-       ...
-     } else
-	continue;
-   "
-
-> 
-> > @@ -78,7 +78,10 @@ void putback_lru_pages(struct list_head *l)
-> >  		list_del(&page->lru);
-> >  		dec_zone_page_state(page, NR_ISOLATED_ANON +
-> >  				page_is_file_cache(page));
-> > -		putback_lru_page(page);
-> > +		if (unlikely(is_balloon_page(page)))
-> > +			WARN_ON(!putback_balloon_page(page));
-> > +		else
-> > +			putback_lru_page(page);
-> 
-> Hmm, I don't like this.
-> The function name says we putback *lru* pages, but balloon page isn't.
-> How about this?
-> 
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> index aad0a16..b07cd67 100644
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -298,6 +298,8 @@ static bool too_many_isolated(struct zone *zone)
->   * Apart from cc->migratepages and cc->nr_migratetypes this function
->   * does not modify any cc's fields, in particular it does not modify
->   * (or read for that matter) cc->migrate_pfn.
-> + * 
-> + * For returning page, you should use putback_pages instead of putback_lru_pages
->   */
->  unsigned long
->  isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
-> @@ -827,7 +829,7 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
->  
->                 /* Release LRU pages not migrated */
->                 if (err) {
-> -                       putback_lru_pages(&cc->migratepages);
-> +                       putback_pages(&cc->migratepages);
->                         cc->nr_migratepages = 0;
->                         if (err == -ENOMEM) {
->                                 ret = COMPACT_PARTIAL;
-> diff --git a/mm/migrate.c b/mm/migrate.c
-> index 9705e70..a96b840 100644
-> --- a/mm/migrate.c
-> +++ b/mm/migrate.c
-> @@ -86,6 +86,22 @@ void putback_lru_pages(struct list_head *l)
->         }
->  }
-> 
-> + /* blah blah .... */ 
-> +void putback_pages(struct list_head *l)
-> +{
-> +       struct page *page;
-> +       struct page *page2;
-> +
-> +       list_for_each_entry_safe(page, page2, l, lru) {
-> +               list_del(&page->lru);
-> +               dec_zone_page_state(page, NR_ISOLATED_ANON +
-> +                               page_is_file_cache(page));
-> +               if (unlikely(is_balloon_page(page)))
-> +                       WARN_ON(!putback_balloon_page(page));
-> +               else
-> +                       putback_lru_page(page);
-> +       }
-> +}
-> +
->  /*
->   * Restore a potential migration pte to a working pte entry
->   */
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 32985dd..decb82a 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -5655,7 +5655,7 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
->                                     0, false, MIGRATE_SYNC);
->         }
->  
-> -       putback_lru_pages(&cc.migratepages);
-> +       putback_pages(&cc.migratepages);
->         return ret > 0 ? 0 : ret;
->  }
-> 
-
-Despite being a very nice cleanup, this code refactoring has nothing to do with
-this particular patch purpose. For the sake of this implementation, think about
-the balloon page list acting as a particular LRU, so although ballooned pages
-are not enlisted on real LRUs, per se, this doesn't mean we cannot have them
-dealt as a corner case amongst putback_lru_pages() code for the sake of
-simplicity and maintainability ease. OTOH, I do agree with your nice suggestion,
-thus I can submit it as a separate clean-up patch attached to this series (if
-you don't mind).
-
-
-> >  
-> > +	if (is_balloon_page(page)) {
-> 
-> unlikely?
->
-
-Yeah, why not? Will do it.
- 
-> > +	if (is_balloon_page(newpage)) {
-> 
-> unlikely?
-> 
-
-ditto.
-
-> > +		/*
-> > +		 * A ballooned page has been migrated already. Now, it is the
-> > +		 * time to wrap-up counters, handle the old page back to Buddy
-> > +		 * and return.
-> > +		 */
-> > +		list_del(&page->lru);
-> > +		dec_zone_page_state(page, NR_ISOLATED_ANON +
-> > +				    page_is_file_cache(page));
-> > +		put_page(page);
-> > +		__free_page(page);
-> 
-> Why do you use __free_page instead of put_page?
-> 
-
-Do you mean perform an extra put_page() and let putback_lru_page() do the rest?
-Besides looking odd at code level, what other improvement we can potentially gain here?
-
-
-> The feeling I look at your code in detail is that it makes compaction/migration
-> code rather complicated because compaction/migration assumes source/target would
-> be LRU pages. 
-> 
-> How often memory ballooning happens? Does it make sense to hook it in generic
-> functions if it's very rare?
-> 
-> Couldn't you implement it like huge page?
-> It doesn't make current code complicated and doesn't affect performance
-> 
-> In compaction,
-> #ifdef CONFIG_VIRTIO_BALLOON
-> static int compact_zone(struct zone *zone, struct compact_control *cc, bool balloon)
-> {
->         if (balloon) {
->                 isolate_balloonpages
-> 
->                 migrate_balloon_pages
->                         unmap_and_move_balloon_page
-> 
->                 putback_balloonpages
->         }
-> }
-> #endif
-> 
-> I'm not sure memory ballooning so it might be dumb question.
-> Can we trigger it once only when ballooning happens?
-
-I strongly believe, this is the simplest and easiest way to get this task
-accomplished, mostly becasue:
-  i. It does not require any code duplication at all;
- ii. It requires very few code insertion/surgery to be fully operative;
-iii. It is embeded on already well established and maintained code;
- iv. The approach makes easier to other balloon drivers leverage compaction
-code;
-  v. It shows no significative impact to the entangled code paths;
-
-
-It took me a little longer to address all your good questions because I
-collected some data on this series impact for the ordinary average use case
-(bare-metal boxes with no balloon at all). Here are some very simple numbers,
-for the sake of comparison:
-
-* Benchmark: "echo 1 > /proc/sys/vm/compact_memory" after a fresh reboot.
-* Results represent the average of 4 sampling rounds for each test subject.
-
-=== 3.5.0-rc7 (clean) ===
-Measured overhead (perf record):
-Events: 304  cycles                                                             
-
-  4.44%  test.sh  [kernel.kallsyms]  [k] isolate_migratepages_range
-  1.69%  test.sh  [kernel.kallsyms]  [k] migrate_pages
-
-
- Performance counter stats for './test.sh':
-
-        314.794120 task-clock                #    0.913 CPUs utilized          
-                34 context-switches          #    0.110 K/sec                  
-                 1 CPU-migrations            #    0.004 K/sec                  
-               354 page-faults               #    0.001 M/sec                  
-       678,772,513 cycles                    #    2.173 GHz		[49.92%]
-   <not supported> stalled-cycles-frontend 
-   <not supported> stalled-cycles-backend  
-       402,180,271 instructions              #    0.59  insns per cycle	[74.85%]
-        72,746,956 branches                  #  231.328 M/sec		[75.05%]
-           455,274 branch-misses             #    0.62% of all branches	[75.13%]
-
-       0.344474338 seconds time elapsed
-
-Compaction/Migration observed throughput:
------------------------------------------
-compact_blocks_moved 2988
-compact_pages_moved 42219
-compact_pagemigrate_failed 5996
-compact_stall 0
-compact_fail 0
-compact_success 0
-========================================
-
-=== 3.5.0-rc7 (patch) ===
-Measured overhead (perf record):
-Events: 336  cycles                                                             
-
-  4.73%  test.sh  [kernel.kallsyms]  [k] isolate_migratepages_range
-  1.77%  test.sh  [kernel.kallsyms]  [k] migrate_pages
- 
- Performance counter stats for './test.sh':
-
-        369.363248 task-clock                #    0.913 CPUs utilized          
-                40 context-switches          #    0.110 K/sec                  
-                 1 CPU-migrations            #    0.004 K/sec                  
-               354 page-faults               #    0.001 K/sec                  
-       790,381,297 cycles                    #    2.173 GHz		[49.94%]
-   <not supported> stalled-cycles-frontend 
-   <not supported> stalled-cycles-backend  
-       451,900,192 instructions              #    0.59  insns per cycle	[74.95%]
-        81,679,252 branches                  #  222.352 M/sec		[74.99%]
-           531,265 branch-misses             #    0.65% of all branches	[75.12%]
-
-       0.404462151 seconds time elapsed
-
-Compaction/Migration observed throughput:
------------------------------------------
-compact_blocks_moved 3287
-compact_pages_moved 51794
-compact_pagemigrate_failed 5971
-compact_stall 0
-compact_fail 0
-compact_success 0
-========================================
-
-
-Despite the patched case apparently showing some low overhead, the numbers, in
-proportion, are virtually the same, as one may notice.
-In fact, I believe that applying your suggestions on better hinting the compiler
-about the branch predictability can potentially turn this change into a win-win
-deal.
-
-Best regards!
--- Rafael
+ACK
 
