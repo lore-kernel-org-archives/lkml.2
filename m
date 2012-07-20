@@ -1,102 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753683Ab2GTNRF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 09:17:05 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:60726 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753493Ab2GTNRD (ORCPT
+	id S1753694Ab2GTNSq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 09:18:46 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:43997 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753493Ab2GTNSp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 09:17:03 -0400
-Date: Fri, 20 Jul 2012 14:16:35 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, Jon Masters <jonathan@jonmasters.org>,
-        Christopher Covington <cov@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>
-Subject: Re: [PATCH 08/36] AArch64: Kernel booting and initialisation
-Message-ID: <20120720131635.GA6947@arm.com>
-References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
- <5008445B.2010109@codeaurora.org>
- <5009044E.9060908@jonmasters.org>
- <201207200828.13128.arnd@arndb.de>
- <20120720105248.GA2692@arm.com>
- <CAMuHMdU24_7AScHyS+-xD+6rw-pw_6sP19TME4ZOpNxC+MLe_g@mail.gmail.com>
+	Fri, 20 Jul 2012 09:18:45 -0400
+Message-ID: <50095A6A.4080404@linux.vnet.ibm.com>
+Date: Fri, 20 Jul 2012 18:47:30 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMuHMdU24_7AScHyS+-xD+6rw-pw_6sP19TME4ZOpNxC+MLe_g@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: paulmck@linux.vnet.ibm.com
+CC: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [Patch 0/7] Per cpu thread hotplug infrastructure - V3
+References: <20120716103749.122800930@linutronix.de> <20120716152224.GF2403@linux.vnet.ibm.com> <5006F434.9010707@linux.vnet.ibm.com> <20120718235402.GP2435@linux.vnet.ibm.com>
+In-Reply-To: <20120718235402.GP2435@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12072013-6102-0000-0000-000001E864C1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 20, 2012 at 01:32:39PM +0100, Geert Uytterhoeven wrote:
-> On Fri, Jul 20, 2012 at 12:52 PM, Catalin Marinas
-> <catalin.marinas@arm.com> wrote:
-> > On Fri, Jul 20, 2012 at 09:28:12AM +0100, Arnd Bergmann wrote:
-> >> On Friday 20 July 2012, Jon Masters wrote:
-> >> > > I think it would be best to list the technical limitations, from the
-> >> > > kernel's perspective, of the unsupported exception levels and the
-> >> > > advantages of the supported exception levels here. If you want to guide
-> >> > > system builders towards EL2, I think it'd be more convincing to document
-> >> > > the relevant technical aspects (perhaps KVM needs facilities only
-> >> > > available in EL2) than just providing an unexplained requirement.
-> >> >
-> >> > Unless you enter at EL2 you can never install a hypervisor. That's the
-> >> > reason for the requirement for generally entering at EL2 when possible.
-> >>
-> >> How do nested hypervisors work in this scenario? Does the first-level
-> >> hypervisor (counting from most priviledged) provide a guest that starts
-> >> in an emulated EL2 state, or is this done differently?
-> >
-> > Your favourite topic :). Self virtualisation is not easily possible, at
-> > least not with how KVM on ARM is being implemented. The hardware does
-> > not allow code running at EL1 to be told that it is at EL2 (or code
-> > running at EL2 to be trapped at EL2). So for normal virtualisation,
-> > guest OSes start at EL1 and they benefit of all the hardware
-> > acceleration. If a guest OS wants to run KVM again, it won't have access
-> > to the virtualisation extensions (EL2 system register access would cause
-> > an undefined trap). The best it can do is run the nested guest OS in EL0
-> > and trap accesses to system registers (no that different from Qemu).
-> >
-> > If such feature is needed, the best approach is for all kernels, host or
-> > guest, to always enter at (non-secure) EL1. The EL2 would have a clearly
-> > defined HVC API for nested page tables, virtual interrupts, context
-> > switching etc. This way, the host OS can inform the hypervisor that
-> > guest OSes are allowed to use this API for their own nested guests. But
-> > getting such hypervisor API right is a bit tricky and the feedback from
-> > the KVM guys so far is that they need the flexibility of running their
-> > own code at EL2. I guess another benefit is that both KVM and Xen could
-> > use the same API.
-> >
-> > But is this feature really needed?
+On 07/19/2012 05:24 AM, Paul E. McKenney wrote:
+> On Wed, Jul 18, 2012 at 11:06:52PM +0530, Srivatsa S. Bhat wrote:
+>> On 07/16/2012 08:52 PM, Paul E. McKenney wrote:
+>>> On Mon, Jul 16, 2012 at 10:42:34AM -0000, Thomas Gleixner wrote:
+>>>> The following series implements the infrastructure for parking and
+>>>> unparking kernel threads to avoid the full teardown and fork on cpu
+>>>> hotplug operations along with management infrastructure for hotplug
+>>>> and users.
+>>>>
+>>>> Changes vs. V2:
+>>>>
+>>>>  Use callbacks for all functionality. Thanks to Rusty for pointing
+>>>>  that out. It makes the use sites nice and simple and keeps all the
+>>>>  code which would be duplicated otherwise on the core.
+>>>
+>>> Hello, Thomas,
+>>>
+>>> What version should I apply this patchset to?  I tried v3.5-rc7, but
+>>> got lots of warnings (one shown below) and the watchdog patch did not
+>>> apply.
+>>>
+>>
+>> Hi Paul,
+>>
+>> This patchset applies cleanly on Thomas' smp/hotplug branch in the -tip
+>> tree.
 > 
-> Sure :-)
+> Thank you, Srivatsa, works much better.  Still get "scheduling while
+> atomic", looking into that.
 > 
-> A sysadmin can prevent me from running my own virtualization layer and
-> managing my own virtual machines (that's why UserModeLinux is so interesting).
-> 
-> Can software detect if it's running in EL1 or EL2 (and e.g. refuse to run)?
 
-Yes, if it's running at EL1 on higher. It can read the CurrentEL
-register which is not virtualised. If it's running at EL0, CurrentEL
-access can be trapped into the kernel at EL1 and return something else.
-But when you run a guest in EL0 you don't benefit from the
-virtualisation extensions, so UML may actually be faster.
+Got a chance to run this patchset now.. Even I am getting "scheduling while
+atomic" messages like shown below..  Hmmm...
 
-For the second solution I mentioned above, the real host kernel still
-starts in EL2 and installs the hypervisor code that is later used by the
-the same host kernel running at EL1 (via HVC calls; that's already the
-case with KVM on ARM). Other guests could use the same HVC calls to
-create/switch nested page tables, deliver virtual interrupts, handle
-faults etc. The hypervisor code needs to be aware of the multiple
-nesting (and host-guest relation between the running OSes) as the
-hardware only supports two stages of translation tables.
+Regards,
+Srivatsa S. Bhat
 
-The advantage of the standardised API (and with open source code in the
-kernel tree) is that other virtualisation solutions (e.g. vmware) could
-use it as well.
+-----------------
 
--- 
-Catalin
+BUG: sleeping function called from invalid context at kernel/softirq.c:748
+in_atomic(): 1, irqs_disabled(): 0, pid: 3, name: ksoftirqd/0
+INFO: lockdep is turned off.
+Pid: 3, comm: ksoftirqd/0 Tainted: G        W    3.5.0-rc1-threadhotplugv3-debug #2
+Call Trace:
+ [<ffffffff8108e7ac>] __might_sleep+0x18c/0x250
+ [<ffffffff8105ea4f>] run_ksoftirqd+0x4f/0x70
+ [<ffffffff810c8b97>] smpboot_thread_fn+0x157/0x1f0
+ [<ffffffff810c8a40>] ? smpboot_create_threads+0x80/0x80
+ [<ffffffff8107e7ee>] kthread+0xee/0x100
+ [<ffffffff8158eb74>] kernel_thread_helper+0x4/0x10
+ [<ffffffff815844f0>] ? retint_restore_args+0x13/0x13
+ [<ffffffff8107e700>] ? __init_kthread_worker+0x70/0x70
+ [<ffffffff8158eb70>] ? gs_change+0x13/0x13
+BUG: scheduling while atomic: ksoftirqd/0/3/0x1000000b
+INFO: lockdep is turned off.
+Modules linked in: ext3 jbd mbcache sd_mod crc_t10dif qla2xxx scsi_transport_fc scsi_tgt mptsas mptscsih mptbase scsi_transport_sas [last unloaded: scsi_wait_scan]
+Pid: 3, comm: ksoftirqd/0 Tainted: G        W    3.5.0-rc1-threadhotplugv3-debug #2
+Call Trace:
+ [<ffffffff8108d1cc>] __schedule_bug+0x6c/0x90
+ [<ffffffff81582818>] __schedule+0x7c8/0x880
+ [<ffffffff81092cea>] __cond_resched+0x2a/0x40
+ [<ffffffff81582960>] _cond_resched+0x30/0x40
+SELinux: 2048 avtab hash slots, 250818 rules.
+ [<ffffffff8105ea54>] run_ksoftirqd+0x54/0x70
+ [<ffffffff810c8b97>] smpboot_thread_fn+0x157/0x1f0
+ [<ffffffff810c8a40>] ? smpboot_create_threads+0x80/0x80
+ [<ffffffff8107e7ee>] kthread+0xee/0x100
+ [<ffffffff8158eb74>] kernel_thread_helper+0x4/0x10
+ [<ffffffff815844f0>] ? retint_restore_args+0x13/0x13
+ [<ffffffff8107e700>] ? __init_kthread_worker+0x70/0x70
+ [<ffffffff8158eb70>] ? gs_change+0x13/0x13
+
+[...]
+
+BUG: sleeping function called from invalid context at kernel/softirq.c:748
+in_atomic(): 1, irqs_disabled(): 0, pid: 37, name: ksoftirqd/8
+INFO: lockdep is turned off.
+Pid: 37, comm: ksoftirqd/8 Tainted: G        W    3.5.0-rc1-threadhotplugv3-debug #2
+Call Trace:
+ [<ffffffff8108e7ac>] __might_sleep+0x18c/0x250
+ [<ffffffff8105ea4f>] run_ksoftirqd+0x4f/0x70
+ [<ffffffff810c8b97>] smpboot_thread_fn+0x157/0x1f0
+		Welcome to  [<ffffffff810c8a40>] ? smpboot_create_threads+0x80/0x80
+ [<ffffffff8107e7ee>] kthread+0xee/0x100
+Red Hat [<ffffffff8158eb74>] kernel_thread_helper+0x4/0x10
+ [<ffffffff815844f0>] ? retint_restore_args+0x13/0x13
+ [<ffffffff8107e700>] ? __init_kthread_worker+0x70/0x70
+ [<ffffffff8158eb70>] ? gs_change+0x13/0x13
+BUG: scheduling while atomic: ksoftirqd/8/37/0x10000004
+INFO: lockdep is turned off.
+Modules linked in: ext3 jbd mbcache sd_mod crc_t10dif qla2xxx scsi_transport_fc scsi_tgt mptsas mptscsih mptbase scsi_transport_sas [last unloaded: scsi_wait_scan]
+Pid: 37, comm: ksoftirqd/8 Tainted: G        W    3.5.0-rc1-threadhotplugv3-debug #2
+Call Trace:
+ Enterprise Linu [<ffffffff8108d1cc>] __schedule_bug+0x6c/0x90
+x Server
+ [<ffffffff81582818>] __schedule+0x7c8/0x880
+ [<ffffffff81092cea>] __cond_resched+0x2a/0x40
+ [<ffffffff81582960>] _cond_resched+0x30/0x40
+ [<ffffffff8105ea54>] run_ksoftirqd+0x54/0x70
+ [<ffffffff810c8b97>] smpboot_thread_fn+0x157/0x1f0
+ [<ffffffff810c8a40>] ? smpboot_create_threads+0x80/0x80
+ [<ffffffff8107e7ee>] kthread+0xee/0x100
+ [<ffffffff8158eb74>] kernel_thread_helper+0x4/0x10
+ [<ffffffff815844f0>] ? retint_restore_args+0x13/0x13
+ [<ffffffff8107e700>] ? __init_kthread_worker+0x70/0x70
+ [<ffffffff8158eb70>] ? gs_change+0x13/0x13
+
+[...]
+
+BUG: scheduling while atomic: watchdog/15/64/0x0000009b
+INFO: lockdep is turned off.
+Modules linked in: ebtable_nat ebtables ipt_MASQUERADE iptable_nat nf_nat xt_CHECKSUM iptable_mangle bridge stp llc autofs4 cpufreq_powersave sunrpc cpufreq_ondemand acpi_cpufreq freq_table mperf ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables ipv6 dm_mirror dm_region_hash dm_log dm_round_robin scsi_dh_rdac dm_multipath vhost_net macvtap macvlan tun uinput cdc_ether usbnet mii serio_raw kvm_intel kvm microcode i2c_i801 i2c_core lpc_ich mfd_core shpchp ioatdma dca i7core_edac edac_core bnx2 dm_mod sg ext3 jbd mbcache sd_mod crc_t10dif qla2xxx scsi_transport_fc scsi_tgt mptsas mptscsih mptbase scsi_transport_sas [last unloaded: scsi_wait_scan]
+Pid: 64, comm: watchdog/15 Tainted: G        W    3.5.0-rc1-threadhotplugv3-debug #2
+Call Trace:
+ [<ffffffff8108d1cc>] __schedule_bug+0x6c/0x90
+ [<ffffffff81582818>] __schedule+0x7c8/0x880
+ [<ffffffff81582bf9>] schedule+0x29/0x70
+ [<ffffffff81582f77>] schedule_preempt_disabled+0x27/0x40
+ [<ffffffff810c8b33>] smpboot_thread_fn+0xf3/0x1f0
+ [<ffffffff810c8a40>] ? smpboot_create_threads+0x80/0x80
+ [<ffffffff8107e7ee>] kthread+0xee/0x100
+ [<ffffffff8158eb74>] kernel_thread_helper+0x4/0x10
+ [<ffffffff815844f0>] ? retint_restore_args+0x13/0x13
+ [<ffffffff8107e700>] ? __init_kthread_worker+0x70/0x70
+ [<ffffffff8158eb70>] ? gs_change+0x13/0x13
+
