@@ -1,82 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753051Ab2GTPX4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 11:23:56 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:27163 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752386Ab2GTPXz (ORCPT
+	id S1753131Ab2GTP05 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 11:26:57 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:62903 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753029Ab2GTP0z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 11:23:55 -0400
-X-IronPort-AV: E=Sophos;i="4.77,623,1336348800"; 
-   d="scan'208";a="13629740"
-Date: Fri, 20 Jul 2012 16:23:07 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "Tim (Xen.org)" <tim@xen.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH WIP 6/6] xen/arm: enable evtchn irqs
-In-Reply-To: <20120720143609.GA21870@phenom.dumpdata.com>
-Message-ID: <alpine.DEB.2.02.1207201608100.26163@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1206221644370.27860@kaball.uk.xensource.com> <1340381685-22529-1-git-send-email-stefano.stabellini@eu.citrix.com> <1340381685-22529-6-git-send-email-stefano.stabellini@eu.citrix.com> <20120709144005.GA12102@phenom.dumpdata.com>
- <alpine.DEB.2.02.1207131749470.23783@kaball.uk.xensource.com> <20120716145709.GB552@phenom.dumpdata.com> <alpine.DEB.2.02.1207181750500.23783@kaball.uk.xensource.com> <20120719233045.GA944@phenom.dumpdata.com> <alpine.DEB.2.02.1207201208230.23783@kaball.uk.xensource.com>
- <20120720143609.GA21870@phenom.dumpdata.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 20 Jul 2012 11:26:55 -0400
+Date: Fri, 20 Jul 2012 08:26:50 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>
+Cc: KY Srinivasan <kys@microsoft.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.osdl.org
+Subject: Re: [PATCH] drivers: hv: use Linux version in guest ID
+Message-ID: <20120720152650.GA5201@kroah.com>
+References: <87fw8mlv7e.fsf@nemi.mork.no>
+ <1342771388-24389-1-git-send-email-bjorn@mork.no>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1342771388-24389-1-git-send-email-bjorn@mork.no>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Jul 2012, Konrad Rzeszutek Wilk wrote:
-> On Fri, Jul 20, 2012 at 12:09:56PM +0100, Stefano Stabellini wrote:
-> > On Fri, 20 Jul 2012, Konrad Rzeszutek Wilk wrote:
-> > > > > OK, please include those questions/answers in the git commit and
-> > > > > repost.
-> > > 
-> > > I seem to be missing the rest of the patches. I see the drivers/xen/events also
-> > > has the  xen_init_IRQ_arm... is there a git tree with the base patches?
-> > 
-> > Yes, the latest git tree, based on
-> > 55b02d2f4445ad625213817a1736bf2884d32547, is available here:
-> > 
-> > git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git xenarmv7-3
+On Fri, Jul 20, 2012 at 10:03:08AM +0200, Bjørn Mork wrote:
+> Use OS version number in the guest ID as recommended by Microsoft
 > 
-> Uh there is a bit of stuff there.
+> Signed-off-by: Bjørn Mork <bjorn@mork.no>
+> ---
+> So how about something like this?  Yes, I know including
+> linux/version.h often is unwanted, but the spec does
+> recommend using the actual OS version in the guest ID
+> 
+> Yes, this will be offensive again when Linux is at 
+> version 181.0, but we might have found a better solution by
+> then :-)
+> 
+> 
+>  drivers/hv/hyperv_vmbus.h |   20 ++++++++++++++++----
+>  1 file changed, 16 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/hv/hyperv_vmbus.h b/drivers/hv/hyperv_vmbus.h
+> index b9426a6..cc0c3f0 100644
+> --- a/drivers/hv/hyperv_vmbus.h
+> +++ b/drivers/hv/hyperv_vmbus.h
+> @@ -29,6 +29,7 @@
+>  #include <asm/sync_bitops.h>
+>  #include <linux/atomic.h>
+>  #include <linux/hyperv.h>
+> +#include <linux/version.h>
+>  
+>  /*
+>   * The below CPUID leaves are present if VersionAndFeatures.HypervisorPresent
+> @@ -410,10 +411,21 @@ enum {
+>  
+>  #define HV_PRESENT_BIT			0x80000000
+>  
+> -#define HV_LINUX_GUEST_ID_LO		0x00000000
+> -#define HV_LINUX_GUEST_ID_HI		0xB16B00B5
+> -#define HV_LINUX_GUEST_ID		(((u64)HV_LINUX_GUEST_ID_HI << 32) | \
+> -					   HV_LINUX_GUEST_ID_LO)
+> +/* Linux vendor ID allocated by Microsoft */
+> +#define HV_LINUX_GUEST_ID_VENDOR	0xB16B
+> +
+> +/* Creating a guest ID conforming to the encoding recommended by
+> + * Microsoft, with variant and build fixed to 0
 
-Actually, aside from many backports and hacks, there are just three
-interesting patch series from my point of view:
+We could use the kernel build number here as well, if we really wanted
+it, right?
 
-http://marc.info/?l=xen-devel&m=133001901013674&w=2 xen/arm: receive Xen events and initialize xenbus
-http://marc.info/?l=xen-devel&m=134038186610813&w=2 xen/arm: PV console support
-http://marc.info/?l=xen-devel&m=134140081408627&w=2 xen/arm: grant_table, blkfront and blkback
+Otherwise, I like this patch, KY, any objection to me taking it?
 
-The last two are recent and I have received feedback from you on the second
-one.
+thanks,
 
-
-> Can you just repost those you want me to
-> review and Ack that touch common code?
-
-Good idea, but fortunately there aren't that many of them.
-In fact if we exclude the ones that just add more #include, these are the ones
-that remains:
-
-d122a6b075e582af17dd2b3ddd8ee4ded3f85300 xen/arm: receive xen events on arm
-1902bd5574447c03c1e6081cce98d8bf6e1f35e7 xen/arm: compile and run xenbus
-5bbda4a165284aceee19b54954f10344b724b506 xen/arm: enable evtchn irqs
-d4fda31cf5411e8ada3f1163c68595b7474d7c1d xen/arm: initialize grant_table on ARM
-
-it would be nice if you could take a look at them and tell me what you think.
-
-
-> Or are you posting them to collect feedback/Acks and then want to post them
-> as a bigger set?
-
-Yes, the idea is to post them in a single set.
-Now that I have support for the basic functionalities (guests booting, PV
-console, disk and network), I can start working on a single patch
-series for a recent kernel.
+greg k-h
