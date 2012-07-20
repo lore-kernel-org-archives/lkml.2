@@ -1,68 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753222Ab2GTIxr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 04:53:47 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:36181 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752018Ab2GTIxq (ORCPT
+	id S1753229Ab2GTIym (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 04:54:42 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:40895 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752018Ab2GTIyj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 04:53:46 -0400
-Message-ID: <50091C75.9030601@linux.vnet.ibm.com>
-Date: Fri, 20 Jul 2012 16:53:09 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Fri, 20 Jul 2012 04:54:39 -0400
+Date: Fri, 20 Jul 2012 10:54:36 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Alex Shi <alex.shi@intel.com>
+Cc: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com, tj@kernel.org,
+        akpm@linux-foundation.org, sfr@canb.auug.org.au,
+        linux-kernel@vger.kernel.org, bp@amd64.org,
+        penguin-kernel@I-love.SAKURA.ne.jp
+Subject: Re: [PATCH] x86/tlb: fix allnoconfig building warning
+Message-ID: <20120720085436.GC28767@aftab.osrc.amd.com>
+References: <1342747103-19765-1-git-send-email-alex.shi@intel.com>
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        mgalbraith@novell.com, mmokrejs@fold.natur.cuni.cz
-Subject: Re: [QUESTION ON BUG] the rcu stall issue could not be reproduced
-References: <5008CBD4.6070907@linux.vnet.ibm.com> <20120720064156.GI16348@mwanda> <500915B9.2030104@linux.vnet.ibm.com> <20120720083619.GM16348@mwanda>
-In-Reply-To: <20120720083619.GM16348@mwanda>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12072008-1396-0000-0000-000001953B23
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1342747103-19765-1-git-send-email-alex.shi@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/20/2012 04:36 PM, Dan Carpenter wrote:
-> On Fri, Jul 20, 2012 at 04:24:25PM +0800, Michael Wang wrote:
->> On 07/20/2012 02:41 PM, Dan Carpenter wrote:
->>> My bug was fixed in March.  There was an email thread about it when
->>> the merge window opened but I can't find it...
->> Hi, Dan
->>
->> Thanks for your reply.
->>
->> Currently this issue won't appear because the
->> CONFIG_RCU_CPU_STALL_TIMEOUT=60, which is big enough to avoid the
->> warning info.
->>
->> So is this the fix you mentioned? or someone has find out the true
->> reason and fixed it?
+On Fri, Jul 20, 2012 at 09:18:23AM +0800, Alex Shi wrote:
+> The incompatible parameter of flush_tlb_mm_range cause build warning.
+> Fix it by correct parameter.
 > 
-> I don't think there was an email thread on the RCU stall issue after
-> all.  I'm not sure what how it was fixed.
+> Reported-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> Signed-off-by: Alex Shi <alex.shi@intel.com>
+
+Thanks for this.
+
+Btw, the patch Subject should say: 
+
+"[PATCH] x86, tlb: Fix flush_tlb_mm_range signature"
+
+or
+
+"[PATCH] x86, tlb: Fix non-SMP build warning"
+
+or similar. Having "allnoconfig" in the name is a bit misleading as it
+is only one of the reasons why we build a !CONFIG_SMP kernel - this can
+happen with a randbuild too. And the hunk below touches the "#ifndef
+CONFIG_SMP" part of tlbflush.h...
+
+So, long story short, hpa, can pls you correct this when applying?
+
+> ---
+>  arch/x86/include/asm/tlbflush.h |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
 > 
-> The 60 second time out would have still triggered with my bug.  It
-> was a complete system hang, the RCU stall message was just a
-> debugging hint.  I was hitting the bug every couple days reliably on
-> all my systems.
+> diff --git a/arch/x86/include/asm/tlbflush.h b/arch/x86/include/asm/tlbflush.h
+> index 621b959..4fc8faf 100644
+> --- a/arch/x86/include/asm/tlbflush.h
+> +++ b/arch/x86/include/asm/tlbflush.h
+> @@ -105,10 +105,10 @@ static inline void flush_tlb_range(struct vm_area_struct *vma,
+>  		__flush_tlb();
+>  }
+>  
+> -static inline void flush_tlb_mm_range(struct vm_area_struct *vma,
+> +static inline void flush_tlb_mm_range(struct mm_struct *mm,
+>  	   unsigned long start, unsigned long end, unsigned long vmflag)
+>  {
+> -	if (vma->vm_mm == current->active_mm)
+> +	if (mm == current->active_mm)
+>  		__flush_tlb();
+>  }
 
-I see, looks like the stall info in your case is caused by a different
-reason which should already be handled.
+Thanks.
 
-I do think that this warning won't appear with a normal machine working
-normally without any buggie driver or wrong deployment...
+-- 
+Regards/Gruss,
+Boris.
 
-Let's see what I can get from other reporters ;-)
-
-Regards,
-Michael Wang
-> 
-> regards,
-> dan carpenter
-> 
-
-
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
