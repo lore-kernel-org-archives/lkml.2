@@ -1,153 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753134Ab2GTH3j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 03:29:39 -0400
-Received: from mail.opencsw.org ([82.220.5.51]:52905 "EHLO mail.opencsw.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753007Ab2GTH3e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 03:29:34 -0400
-Date: Fri, 20 Jul 2012 09:29:14 +0200
-From: Attila Kinali <attila@kinali.ch>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Paul Mundt <lethal@linux-sh.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        Linux ARM kernel <linux-arm-kernel@lists.infradead.org>
-Subject: Re: commit 91013923c712e1c:
- "irqdomain: Replace LEGACY mapping with LINEAR" breaks console on ARM
- i.mx23
-Message-Id: <20120720092914.6d34d25a0a7cab6905317580@kinali.ch>
-In-Reply-To: <CACxGe6uLJqimjFg+E82+FZMDMmQrdfzzRqYvQWikej2sM=R_ig@mail.gmail.com>
-References: <20120719192814.75ea8beb784bdf8bb32c510c@kinali.ch>
-	<CACxGe6uLJqimjFg+E82+FZMDMmQrdfzzRqYvQWikej2sM=R_ig@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753037Ab2GTHbs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 03:31:48 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:47858 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752127Ab2GTHbq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 03:31:46 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <5009094B.3090506@jp.fujitsu.com>
+Date: Fri, 20 Jul 2012 16:31:23 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+MIME-Version: 1.0
+To: Wen Congyang <wency@cn.fujitsu.com>
+CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>,
+        <rientjes@google.com>, <liuj97@gmail.com>, <len.brown@intel.com>,
+        <benh@kernel.crashing.org>, <paulus@samba.org>, <cl@linux.com>,
+        <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
+        <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [RFC PATCH 0/8] memory-hotplug : hot-remove physical memory(clear
+ page table)
+References: <5009038A.4090001@cn.fujitsu.com>
+In-Reply-To: <5009038A.4090001@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moin,
+[Hi Wen,
 
-On Thu, 19 Jul 2012 22:47:54 -0600
-Grant Likely <grant.likely@secretlab.ca> wrote:
+Good news!! I was waiting for this patch to come.
+Applying the patches, can we hot-remove physical memory completely?
 
-> Can you please send me your boot log /after/ removing these three patches?
+Thanks,
+Yasuaki Ishimatsu
 
----schnipp---
-Uncompressing Linux... done, booting the kernel.
-[    0.000000] Booting Linux on physical CPU 0
-[    0.000000] Linux version 3.5.0-rc7-next-20120719 (attila@shumira) (gcc version 4.4.6 (Buildroot 2011.08-svn13645-dirty) ) #2 Thu Jul 19 19:57:40 CEST 2012
-[    0.000000] CPU: ARM926EJ-S [41069265] revision 5 (ARMv5TEJ), cr=00053177
-[    0.000000] CPU: VIVT data cache, VIVT instruction cache
-[    0.000000] Machine: Freescale i.MX23 (Device Tree), model: Freescale i.MX23
-[    0.000000] INITRD: 0x40400000+0x00400000 overlaps in-use memory region - disabling initrd
-[    0.000000] Memory policy: ECC disabled, Data cache writeback
-[    0.000000] Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 16256
-[    0.000000] Kernel command line: console=ttyAMA0,115200 root=/dev/mmcblk0p3 rw rootwait
-[    0.000000] PID hash table entries: 256 (order: -2, 1024 bytes)
-[    0.000000] Dentry cache hash table entries: 8192 (order: 3, 32768 bytes)
-[    0.000000] Inode-cache hash table entries: 4096 (order: 2, 16384 bytes)
-[    0.000000] Memory: 64MB = 64MB total
-[    0.000000] Memory: 53024k/53024k available, 12512k reserved, 0K highmem
-[    0.000000] Virtual kernel memory layout:
-[    0.000000]     vector  : 0xffff0000 - 0xffff1000   (   4 kB)
-[    0.000000]     fixmap  : 0xfff00000 - 0xfffe0000   ( 896 kB)
-[    0.000000]     vmalloc : 0xc4800000 - 0xff000000   ( 936 MB)
-[    0.000000]     lowmem  : 0xc0000000 - 0xc4000000   (  64 MB)
-[    0.000000]     modules : 0xbf000000 - 0xc0000000   (  16 MB)
-[    0.000000]       .text : 0xc0008000 - 0xc0420020   (4193 kB)
-[    0.000000]       .init : 0xc0421000 - 0xc061003c   (1981 kB)
-[    0.000000]       .data : 0xc0612000 - 0xc064dff0   ( 240 kB)
-[    0.000000]        .bss : 0xc064e014 - 0xc0b9a038   (5425 kB)
-[    0.000000] SLUB: Genslabs=13, HWalign=32, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
-[    0.000000] NR_IRQS:304
-[    0.000000] sched_clock: 32 bits at 100 Hz, resolution 10000000ns, wraps every 4294967286ms
-[    0.000000] Console: colour dummy device 80x30
-[    0.000000] Lock dependency validator: Copyright (c) 2006 Red Hat, Inc., Ingo Molnar
-[    0.000000] ... MAX_LOCKDEP_SUBCLASSES:  8
-[    0.000000] ... MAX_LOCK_DEPTH:          48
-[    0.000000] ... MAX_LOCKDEP_KEYS:        8191
-[    0.000000] ... CLASSHASH_SIZE:          4096
-[    0.000000] ... MAX_LOCKDEP_ENTRIES:     16384
-[    0.000000] ... MAX_LOCKDEP_CHAINS:      32768
-[    0.000000] ... CHAINHASH_SIZE:          16384
-[    0.000000]  memory used by lock dependency info: 3695 kB
-[    0.000000]  per task-struct memory footprint: 1152 bytes
-[    0.070000] Calibrating delay loop... 226.09 BogoMIPS (lpj=1130496)
-[    0.070000] pid_max: default: 32768 minimum: 301
-[    0.070000] Mount-cache hash table entries: 512
-[    0.080000] CPU: Testing write buffer coherency: ok
-[    0.080000] Setting up static identity map for 0x402fd7a0 - 0x402fd7f8
-[    0.090000] devtmpfs: initialized
-[    0.110000] pinctrl core: initialized pinctrl subsystem
-[    0.110000] dummy: 
-[    0.120000] NET: Registered protocol family 16
-[    0.120000] DMA: preallocated 256 KiB pool for atomic coherent allocations
-[    0.150000] Serial: AMBA PL011 UART driver
-[    0.150000] 80070000.serial: ttyAMA0 at MMIO 0x80070000 (irq = 0) is a PL011 rev2
-[    0.340000] console [ttyAMA0] enabled
-[    0.370000] bio: create slab <bio-0> at 0
-[    0.380000] mxs-dma 80004000.dma-apbh: initialized
-[    0.390000] mxs-dma 80024000.dma-apbx: initialized
-[    0.400000] Advanced Linux Sound Architecture Driver Version 1.0.25.
-[    0.410000] Switching to clocksource mxs_timer
-[    0.620000] NET: Registered protocol family 2
-[    0.630000] IP route cache hash table entries: 1024 (order: 0, 4096 bytes)
-[    0.640000] TCP established hash table entries: 2048 (order: 2, 16384 bytes)
-[    0.650000] TCP bind hash table entries: 2048 (order: 4, 73728 bytes)
-[    0.660000] TCP: Hash tables configured (established 2048 bind 2048)
-[    0.660000] TCP: reno registered
-[    0.670000] UDP hash table entries: 256 (order: 2, 20480 bytes)
-[    0.670000] UDP-Lite hash table entries: 256 (order: 2, 20480 bytes)
-[    0.680000] NET: Registered protocol family 1
-[    0.690000] RPC: Registered named UNIX socket transport module.
-[    0.700000] RPC: Registered udp transport module.
-[    0.700000] RPC: Registered tcp transport module.
-[    0.710000] RPC: Registered tcp NFSv4.1 backchannel transport module.
-[    1.650000] NetWinder Floating Point Emulator V0.97 (double precision)
-[    1.730000] NFS: Registering the id_resolver key type
-[    1.740000] Key type id_resolver registered
-[    1.750000] msgmni has been set to 103
-[    1.750000] Block layer SCSI generic (bsg) driver version 0.4 loaded (major 253)
-[    1.760000] io scheduler noop registered (default)
-[    1.760000] uart-pl011 80070000.serial: no DMA platform data
-[    1.770000] mousedev: PS/2 mouse device common for all mice
-[    1.780000] i2c /dev entries driver
-[    1.790000] TCP: cubic registered
-[    1.800000] NET: Registered protocol family 17
-[    1.800000] Key type dns_resolver registered
-[    1.810000] registered taskstats version 1
-[    1.820000] drivers/rtc/hctosys.c: unable to open rtc device (rtc0)
-[    1.830000] ALSA device list:
-[    1.830000]   No soundcards found.
-[    1.830000] Warning: unable to open an initial console.
-[    1.850000] Freeing init memory: 1980K
-Starting logging: OK
-Populating  using udev: done
-[    2.310000] udevd[38]: starting version 173
-Initializing random number generator... done.
-Starting network...
-
-Welcome to Buildroot
-buildroot login: 
----schnapp---
+2012/07/20 16:06, Wen Congyang wrote:
+> This patch series aims to support physical memory hot-remove(clear page table).
+>
+> This patch series base on ishimatsu's patch series. You can get it here:
+> http://www.spinics.net/lists/linux-acpi/msg36804.html
+>
+> The patches can remove following things:
+>    - page table of removed memory
+>
+> If you find lack of function for physical memory hot-remove, please let me
+> know.
+>
+> Note:
+> * The patch "remove memory info from list before freeing it" is being disccussed
+>    in other thread. But for testing the patch series, the patch is needed.
+>    So I added the patch as [PATCH 0/8].
+> * You need to apply ishimatsu's patch series first before applying this patch
+>    series.
+>
+> Wen Congyang (8):
+>    memory-hotplug: store the node id in acpi_memory_device
+>    memory-hotplug: offline memory only when it is onlined
+>    memory-hotplug: call remove_memory() to cleanup when removing memory
+>      device
+>    memory-hotplug: export the function acpi_bus_remove()
+>    memory-hotplug: call acpi_bus_remove() to remove memory device
+>    memory-hotplug: introduce new function arch_remove_memory()
+>    x86: make __split_large_page() generally avialable
+>    memory-hotplug: implement arch_remove_memory()
+>
+>   arch/ia64/mm/init.c                  |   16 ++++
+>   arch/powerpc/mm/mem.c                |   14 +++
+>   arch/s390/mm/init.c                  |    8 ++
+>   arch/sh/mm/init.c                    |   15 +++
+>   arch/tile/mm/init.c                  |    8 ++
+>   arch/x86/include/asm/pgtable_types.h |    1 +
+>   arch/x86/mm/init_32.c                |   10 ++
+>   arch/x86/mm/init_64.c                |  160 ++++++++++++++++++++++++++++++++++
+>   arch/x86/mm/pageattr.c               |   47 +++++-----
+>   drivers/acpi/acpi_memhotplug.c       |   24 ++++--
+>   drivers/acpi/scan.c                  |    3 +-
+>   include/acpi/acpi_bus.h              |    1 +
+>   include/linux/memory_hotplug.h       |    1 +
+>   mm/memory_hotplug.c                  |    2 +-
+>   14 files changed, 280 insertions(+), 30 deletions(-)
+>
 
 
-This is from linux-next-2012-07-19 plus two patches from Shawn Guo:
-[PATCH v2 1/2] clk: fix clk_get on of_clk_get_by_name return check
-[PATCH v2 2/2] clk: fix compile for OF && !COMMON_CLK
-
-Especialy the second one is needed to get the system booting.
-
-Config is more or less mxs_defconfig, with a few additional drivers
-enabled.
-
-			Attila Kinali
--- 
-It is upon moral qualities that a society is ultimately founded. All 
-the prosperity and technological sophistication in the world is of no 
-use without that foundation.
-                 -- Miss Matheson, The Diamond Age, Neil Stephenson
