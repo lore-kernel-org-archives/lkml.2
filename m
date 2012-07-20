@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753111Ab2GTHOJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 03:14:09 -0400
-Received: from mga09.intel.com ([134.134.136.24]:24993 "EHLO mga09.intel.com"
+	id S1752908Ab2GTHRN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 03:17:13 -0400
+Received: from mga02.intel.com ([134.134.136.20]:30507 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751930Ab2GTHOH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 03:14:07 -0400
+	id S1751353Ab2GTHRL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 03:17:11 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="asc'?scan'208";a="174644222"
-Message-ID: <1342768444.2616.25.camel@jtkirshe-mobl>
+   d="asc'?scan'208";a="174645281"
+Message-ID: <1342768629.2616.27.camel@jtkirshe-mobl>
 Subject: Re: [trivial PATCH resend 2/2] ixgbe: use PCI_VENDOR_ID_INTEL
 From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Reply-To: jeffrey.t.kirsher@intel.com
@@ -23,13 +23,13 @@ Cc: trivial@kernel.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
         Alex Duyck <alexander.h.duyck@intel.com>,
         John Ronciak <john.ronciak@intel.com>
-Date: Fri, 20 Jul 2012 00:14:04 -0700
+Date: Fri, 20 Jul 2012 00:17:09 -0700
 In-Reply-To: <1342767729-17788-3-git-send-email-jdmason@kudzu.us>
 References: <1342767729-17788-1-git-send-email-jdmason@kudzu.us>
 	 <1342767729-17788-3-git-send-email-jdmason@kudzu.us>
 Organization: Intel Corporation
 Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-9u46Gw8iKLhPDsJuy8zl"
+	protocol="application/pgp-signature"; boundary="=-ZckCw4wa40WjLMLN+Jbo"
 X-Mailer: Evolution 3.4.3 (3.4.3-2.fc17) 
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
@@ -37,7 +37,7 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-9u46Gw8iKLhPDsJuy8zl
+--=-ZckCw4wa40WjLMLN+Jbo
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
@@ -61,15 +61,11 @@ On Fri, 2012-07-20 at 00:02 -0700, Jon Mason wrote:
 >  drivers/net/ethernet/intel/ixgbe/ixgbe_type.h  |    3 ---
 >  3 files changed, 6 insertions(+), 9 deletions(-)=20
 
-Same goes for this patch as well (not being trivial).
+This applies cleanly against my current net-next tree and looks fine.
 
-I already have several patches submitted for Dave against ixgbe
-currently and I am not sure if there would be any issues with this patch
-applying on top of the currently submitted patches.  I will verify this
-applies cleanly with no issue to my current net-next tree before I send
-my ACK.
+Acked-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 
---=-9u46Gw8iKLhPDsJuy8zl
+--=-ZckCw4wa40WjLMLN+Jbo
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: This is a digitally signed message part
 Content-Transfer-Encoding: 7bit
@@ -77,20 +73,20 @@ Content-Transfer-Encoding: 7bit
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABCgAGBQJQCQU8AAoJEOVv75VaS+3OYXAP/Asm544fY0W1VrVAjixS0Efn
-RgUNq7y5v+ytiTwT2Wy6OMpdpLU/kgwXx/2F9cjPZhRhmcAN+0UTEtAg7EsqHE2d
-BxnG+gg0Qx6mkxr+L9385caY6TrXj5a0T9Ch4QhlaTSCP7CF8pxhxXQ5ZS1PoXvb
-KLuKezeLF3OrvR1109Uu6jiAD8hxzEOPgYU6XUDLbXKHXIrCHT7Ck/G/FKfi2fbI
-AnP8TapgjYhpGx2+dwcT/g45nWTeKg9qnnQqZrQmp7L9SkwIdPo4FL3RYvPny5XX
-5Fwk1OH2OOxpmbszF25/Vf3y6KFH/fsMvBlrLfPNDy0Th4KvGemH1n0WvdxPMRxT
-BW6OAGtownoXhpgKN6bTZOVzNUdjvGRnv5Z7MhyMGimRvmTC+v+V6GlHKnk6uoZG
-f6PwXs65jfWbNXxa5OFS1BN4pd/DR5vQVPG6g87OrkCR5P8eq7p2LvqfVtDpoyfO
-7E+fvlFPdIeGfD/shQTNAFIEh+nuU91GKrfsg4/3ZBPXBYtgcyR93CvxhAksXZIt
-rzKi4J8aZSJMm1dVGk7FyaEuFjcTmsDFZ7rSEq1fmggs4RJYptUAhS1j9dTHUgGp
-toZQRfdmZJaiWdqRWLcI7oi9jhcQmQOm2SYq1/qEN22QapKRD263+jglt/aNyrvB
-ObiSy8Q1X7b/JI2NLtQQ
-=AZPZ
+iQIcBAABCgAGBQJQCQX1AAoJEOVv75VaS+3O0gwP/2xO+VT6fZUmeTNMCsm2KE0I
+XfjnBF/D6tbgaaAFjcBbSAzvh+XZxw4uTYtPAqXE4ugZpTC3+/HXoCRTs9L40fyZ
+sbo3sQibzUwa3FFKrDEQWFLAKGOOQo1wELEK5aTlYHn4mcjhLEX+HsKApgu+q2Vl
+RUDBQQ8rUIqKHrG+ZOhojDM9Vw6pTG9VlfTXnkDbDr87q6ku1g5QgagLO8qaiO0t
+t/k8zQKlYRetusXTNrwpYTVCVEahfG7hJuMmsaWCCogLT4qbvGZ1Aiw/ygZM9/l6
+Dff+ysvFxeRol6PS4AHh2cuQ5tavKG0BfFgvTr4oN1OCKS/PTXD6jj5brMCN8Lvt
+XP0EgxeaUPYYdrS+qXgUtAw/hWlGRAMp5rJmVu55Dpn2K3EHdWrWCKg5l94egi2u
+Bl9nFoeXjgPbkSMhrJ1zcO+X+5H/zNnmxtAgKkIEB72AM1LJijllKT8QIdXMBqMe
+H6vjTKBEJAWcWEoGyoicyqdF7YLSgX4NiELSUPbGUkNDgauE/WWqHkjBmj0tsl8g
+Vin2D3+ghpHObm3MP6M0P7QlCl5HxElcvYhnNxKBec2OV+UvrQLovCykxYqp3tXl
+w+4xQG4BLxfj0bLBcGsY1On1M8IgG7KngcVuFJYnbp9cNj+lwdk0UvkoWKTHTOWf
+OkXOQ7dK5gE+5/K0lN/E
+=qbc7
 -----END PGP SIGNATURE-----
 
---=-9u46Gw8iKLhPDsJuy8zl--
+--=-ZckCw4wa40WjLMLN+Jbo--
 
