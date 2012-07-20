@@ -1,108 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752222Ab2GTDWG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 23:22:06 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44778 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750789Ab2GTDWB (ORCPT
+	id S1752177Ab2GTD2v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 23:28:51 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:60542 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750789Ab2GTD2t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 23:22:01 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <5008CE38.2020300@jp.fujitsu.com>
-Date: Fri, 20 Jul 2012 12:19:20 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Tim Chen <tim.c.chen@linux.intel.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan@kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        "andi.kleen" <andi.kleen@intel.com>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Cgroup: Fix memory accounting scalability in shrink_page_list
-References: <1342740866.13492.50.camel@schen9-DESK>
-In-Reply-To: <1342740866.13492.50.camel@schen9-DESK>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 19 Jul 2012 23:28:49 -0400
+Date: Fri, 20 Jul 2012 13:28:40 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@linux.intel.com>
+Subject: linux-next: build failure after merge of the tty tree
+Message-Id: <20120720132840.f8269e2c3658daa010904dca@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__20_Jul_2012_13_28_40_+1000_ZFQaNyPUeWwyG6mT"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/07/20 8:34), Tim Chen wrote:
-> Hi,
->
-> I noticed in a multi-process parallel files reading benchmark I ran on a
-> 8 socket machine,  throughput slowed down by a factor of 8 when I ran
-> the benchmark within a cgroup container.  I traced the problem to the
-> following code path (see below) when we are trying to reclaim memory
-> from file cache.  The res_counter_uncharge function is called on every
-> page that's reclaimed and created heavy lock contention.  The patch
-> below allows the reclaimed pages to be uncharged from the resource
-> counter in batch and recovered the regression.
->
-> Tim
->
->       40.67%           usemem  [kernel.kallsyms]                   [k] _raw_spin_lock
->                        |
->                        --- _raw_spin_lock
->                           |
->                           |--92.61%-- res_counter_uncharge
->                           |          |
->                           |          |--100.00%-- __mem_cgroup_uncharge_common
->                           |          |          |
->                           |          |          |--100.00%-- mem_cgroup_uncharge_cache_page
->                           |          |          |          __remove_mapping
->                           |          |          |          shrink_page_list
->                           |          |          |          shrink_inactive_list
->                           |          |          |          shrink_mem_cgroup_zone
->                           |          |          |          shrink_zone
->                           |          |          |          do_try_to_free_pages
->                           |          |          |          try_to_free_pages
->                           |          |          |          __alloc_pages_nodemask
->                           |          |          |          alloc_pages_current
->
->
+--Signature=_Fri__20_Jul_2012_13_28_40_+1000_ZFQaNyPUeWwyG6mT
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thank you very much !!
+Hi Greg,
 
-When I added batching, I didn't touch page-reclaim path because it delays
-res_counter_uncharge() and make more threads run into page reclaim.
-But, from above score, bactching seems required.
+After merging the tty tree, today's linux-next build (x86_64 allmodconfig)
+failed like this:
 
-And because of current design of per-zone-per-memcg-LRU, batching
-works very very well....all lru pages shrink_page_list() scans are on
-the same memcg.
+drivers/staging/ipack/devices/ipoctal.c: In function 'ipoctal_set_termios':
+drivers/staging/ipack/devices/ipoctal.c:614:22: error: invalid type argumen=
+t of '->' (have 'struct ktermios')
+drivers/staging/ipack/devices/ipoctal.c:640:15: error: invalid type argumen=
+t of '->' (have 'struct ktermios')
+drivers/staging/ipack/devices/ipoctal.c:654:14: error: invalid type argumen=
+t of '->' (have 'struct ktermios')
+drivers/staging/ipack/devices/ipoctal.c:691:2: error: incompatible type for=
+ argument 1 of 'tty_termios_encode_baud_rate'
+include/linux/tty.h:449:13: note: expected 'struct ktermios *' but argument=
+ is of type 'struct ktermios'
+drivers/staging/ipack/devices/ipoctal.c:694:22: error: invalid type argumen=
+t of '->' (have 'struct ktermios')
+drivers/staging/ipack/devices/ipoctal.c:735:3: error: incompatible type for=
+ argument 1 of 'tty_termios_encode_baud_rate'
+include/linux/tty.h:449:13: note: expected 'struct ktermios *' but argument=
+ is of type 'struct ktermios'
 
-BTW, it's better to show 'how much improved' in patch description..
+Presumably caused by commit adc8d746caa6 ("tty: move the termios object
+into the tty").
 
+Under previous instructions about staging drivers, I have added the
+following patch for today:
 
-> ---
-> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 33dc256..aac5672 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -779,6 +779,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
->
->   	cond_resched();
->
-> +	mem_cgroup_uncharge_start();
->   	while (!list_empty(page_list)) {
->   		enum page_references references;
->   		struct address_space *mapping;
-> @@ -1026,6 +1027,7 @@ keep_lumpy:
->
->   	list_splice(&ret_pages, page_list);
->   	count_vm_events(PGACTIVATE, pgactivate);
-> +	mem_cgroup_uncharge_end();
+=46rom c4bc70a8fc9cc687690aaf51865561ffcd6190f9 Mon Sep 17 00:00:00 2001
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Fri, 20 Jul 2012 13:25:12 +1000
+Subject: [PATCH] disable SERIAL_IPOCTAL broken by tty updates
 
-I guess placing mem_cgroup_uncharge_end() just after the loop may be better looking.
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/staging/ipack/devices/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-Anyway,
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+diff --git a/drivers/staging/ipack/devices/Kconfig b/drivers/staging/ipack/=
+devices/Kconfig
+index 39f7188..8d69ce3 100644
+--- a/drivers/staging/ipack/devices/Kconfig
++++ b/drivers/staging/ipack/devices/Kconfig
+@@ -1,6 +1,7 @@
+ config SERIAL_IPOCTAL
+ 	tristate "IndustryPack IP-OCTAL uart support"
+ 	depends on IPACK_BUS
++	depends on BROKEN
+ 	help
+ 	  This driver supports the IPOCTAL serial port device for the IndustryPac=
+k bus.
+ 	default n
+--=20
+1.7.10.280.gaa39
 
-But please show 'how much improved' in patch description.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Thanks,
--Kame
+--Signature=_Fri__20_Jul_2012_13_28_40_+1000_ZFQaNyPUeWwyG6mT
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQCNBoAAoJEECxmPOUX5FET2gP/R2RiO6lO5un70X4pkiGJgzO
+xR9mLIsicmoXdWNP9h4QtFQ9P1jc/crZg9AY0kSnfGSunT/iQ1QkrlP6nIuVtLj/
+8nxNKN3k1ExzCU3yc9QSUJ2y40027WyVGqD8SnF+2+A7S1d5CfD64J3BgphzFecC
+hibUYpHHgZBSKZMVE3SA+gQuQL4kmFAQQsb6NSH8eIeKs/aFn1MBIo/qxKvrYptJ
+g7TiGVD59NWb8PJBkj8ZSC9aa5qgNr7SYZiTeSZM11+VDQY4f8k37P3l9+fVLOVi
+Mhkbt5g3f93vKcSCHl1eqvfuCQ6nX/WbGyNlCVojpUVDkwaL4blQf7WVROZaUMeV
+4GbgPY87Oxuzq2PXPU7P9eM43zavXuHmTEEARtqfnaiWptF03pep8yWO9GjBdpsE
+cSz6G5v4zKYbKDEqOrjPULv6OVPi7ABjEe1ilvfRF8nG3Cs9LcLSvXiAuuqTFG06
+cxVvJq5GuMqgHpOG9OFrdUxxdmggj7u52rB1bvEi+IOgH9GxpcbcxUXXfmZzvIvA
+0fBoHlnhHiOVpk/qdKws6N4N+U3jzkJXdYsE3eIiIRnWv0UmclE+mRBAcsd+AqYQ
+ATQXJvj1dLXh8tT6YccH3NlGnkdfkz4SneOY1ej1MGE8v4DgWBy/uDTaqrCJxrZG
+LyuZMxAF+g1dj77S7feq
+=1/UZ
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__20_Jul_2012_13_28_40_+1000_ZFQaNyPUeWwyG6mT--
