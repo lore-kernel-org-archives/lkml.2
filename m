@@ -1,69 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752891Ab2GTDBj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 23:01:39 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:48411 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751981Ab2GTDBf (ORCPT
+	id S1753064Ab2GTDCK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 23:02:10 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:43252 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751353Ab2GTDCH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 23:01:35 -0400
-Message-ID: <5008CA08.6040804@linux.vnet.ibm.com>
-Date: Fri, 20 Jul 2012 11:01:28 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Thu, 19 Jul 2012 23:02:07 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6777"; a="210258193"
+X-IronPort-AV: E=Sophos;i="4.77,619,1336374000"; 
+   d="scan'208";a="121801045"
+From: <cjren@qca.qualcomm.com>
+To: <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: <qca-linux-team@qualcomm.com>, <nic-devel@qualcomm.com>
+Subject: [PATCH] atl1c: fix issue of io access mode for AR8152 v2.1
+Date: Fri, 20 Jul 2012 11:01:58 +0800
+Message-ID: <1342753318-4507-1-git-send-email-cjren@qca.qualcomm.com>
+X-Mailer: git-send-email 1.7.7
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 08/10] KVM: introduce readonly_bad_hva
-References: <5005791B.8040807@linux.vnet.ibm.com> <50057A73.40005@linux.vnet.ibm.com> <5007DE72.6030300@redhat.com>
-In-Reply-To: <5007DE72.6030300@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12072003-5816-0000-0000-000003A93283
+Content-Type: text/plain
+X-Originating-IP: [172.30.48.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/19/2012 06:16 PM, Avi Kivity wrote:
-> On 07/17/2012 05:45 PM, Xiao Guangrong wrote:
->> In the later patch, it indicates failure when we try to get a writable
->> hva from the readonly slot
->>
->> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
->> ---
->>  virt/kvm/kvm_main.c |   12 +++++++++++-
->>  1 files changed, 11 insertions(+), 1 deletions(-)
->>
->> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
->> index b70f1a4..c056736 100644
->> --- a/virt/kvm/kvm_main.c
->> +++ b/virt/kvm/kvm_main.c
->> @@ -994,9 +994,19 @@ static inline unsigned long bad_hva(void)
->>  	return PAGE_OFFSET;
->>  }
->>
->> +static inline unsigned long readonly_bad_hva(void)
->> +{
->> +	return PAGE_OFFSET + PAGE_SIZE;
->> +}
->> +
->> +static int kvm_is_readonly_bad_hva(unsigned long addr)
->> +{
->> +	return addr == readonly_bad_hva();
->> +}
->> +
->>  int kvm_is_error_hva(unsigned long addr)
->>  {
->> -	return addr == bad_hva();
->> +	return addr == bad_hva() || kvm_is_readonly_bad_hva(addr);
->>  }
-> 
-> addr >= PAGE_OFFSET.  Or change it to use -E*.
+When io access mode is enabled by BOOTROM or BIOS for AR8152 v2.1,
+the register can't be read/write by memory access mode.
+Clearing Bit 8  of Register 0x21c could fixed the issue.
 
-I prefer to the first one, addr >= PAGE_OFFSET, all virtual addresses
-between 0 and (~0ULL) are valid, Using PAGE_OFFSET is more readable.
+Signed-off-by: Cloud Ren <cjren@qca.qualcomm.com>
+Cc: stable <stable@vger.kernel.org>
+Signed-off-by: xiong <xiong@qca.qualcomm.com>
+---
+ drivers/net/ethernet/atheros/atl1c/atl1c_hw.h   |    5 +++++
+ drivers/net/ethernet/atheros/atl1c/atl1c_main.c |   16 +++++++++++++++-
+ 2 files changed, 20 insertions(+), 1 deletions(-)
 
-[ is_error_pfn is suitable to use -err because the the range of physical
-  address is always limited, for example,  0 ~ 64G on x86.]
+diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c_hw.h b/drivers/net/ethernet/atheros/atl1c/atl1c_hw.h
+index 17d935b..21d8c4d 100644
+--- a/drivers/net/ethernet/atheros/atl1c/atl1c_hw.h
++++ b/drivers/net/ethernet/atheros/atl1c/atl1c_hw.h
+@@ -74,6 +74,8 @@ void atl1c_post_phy_linkchg(struct atl1c_hw *hw, u16 link_speed);
+ #define PCI_DEVICE_ID_ATHEROS_L1D_2_0	0x1083 /* AR8151 v2.0 Gigabit 1000 */
+ #define L2CB_V10			0xc0
+ #define L2CB_V11			0xc1
++#define L2CB_V20			0xc0
++#define L2CB_V21			0xc1
+ 
+ /* register definition */
+ #define REG_DEVICE_CAP              	0x5C
+@@ -87,6 +89,9 @@ void atl1c_post_phy_linkchg(struct atl1c_hw *hw, u16 link_speed);
+ #define LINK_CTRL_L1_EN			0x02
+ #define LINK_CTRL_EXT_SYNC		0x80
+ 
++#define REG_PCIE_IND_ACC_ADDR		0x80
++#define REG_PCIE_IND_ACC_DATA		0x84
++
+ #define REG_DEV_SERIALNUM_CTRL		0x200
+ #define REG_DEV_MAC_SEL_MASK		0x0 /* 0:EUI; 1:MAC */
+ #define REG_DEV_MAC_SEL_SHIFT		0
+diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
+index 36d3783..1bf5bbf 100644
+--- a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
++++ b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
+@@ -727,6 +727,8 @@ static const struct atl1c_platform_patch plats[] __devinitdata = {
+ 
+ static void __devinit atl1c_patch_assign(struct atl1c_hw *hw)
+ {
++	struct pci_dev	*pdev = hw->adapter->pdev;
++	u32 misc_ctrl;
+ 	int i = 0;
+ 
+ 	hw->msi_lnkpatch = false;
+@@ -741,6 +743,18 @@ static void __devinit atl1c_patch_assign(struct atl1c_hw *hw)
+ 		}
+ 		i++;
+ 	}
++
++	if (hw->device_id == PCI_DEVICE_ID_ATHEROS_L2C_B2 &&
++	    hw->revision_id == L2CB_V21) {
++		/* config acess mode */
++		pci_write_config_dword(pdev, REG_PCIE_IND_ACC_ADDR,
++				       REG_PCIE_DEV_MISC_CTRL);
++		pci_read_config_dword(pdev, REG_PCIE_IND_ACC_DATA, &misc_ctrl);
++		misc_ctrl &= ~0x100;
++		pci_write_config_dword(pdev, REG_PCIE_IND_ACC_ADDR,
++				       REG_PCIE_DEV_MISC_CTRL);
++		pci_write_config_dword(pdev, REG_PCIE_IND_ACC_DATA, misc_ctrl);
++	}
+ }
+ /**
+  * atl1c_sw_init - Initialize general software structures (struct atl1c_adapter)
+@@ -768,7 +782,7 @@ static int __devinit atl1c_sw_init(struct atl1c_adapter *adapter)
+ 	hw->device_id = pdev->device;
+ 	hw->subsystem_vendor_id = pdev->subsystem_vendor;
+ 	hw->subsystem_id = pdev->subsystem_device;
+-	AT_READ_REG(hw, PCI_CLASS_REVISION, &revision);
++	pci_read_config_dword(pdev, PCI_CLASS_REVISION, &revision);
+ 	hw->revision_id = revision & 0xFF;
+ 	/* before link up, we assume hibernate is true */
+ 	hw->hibernate = true;
+-- 
+1.5.4.5
 
