@@ -1,394 +1,435 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753631Ab2GTM5O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 08:57:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34081 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753450Ab2GTM5J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 08:57:09 -0400
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] MPILIB: Provide count_leading/trailing_zeros() based on arch
- functions
-To: linux-security-module@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Date: Fri, 20 Jul 2012 13:56:57 +0100
-Message-ID: <20120720125657.15422.12922.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1753617Ab2GTM6Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 08:58:24 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:55218 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753394Ab2GTM6W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 08:58:22 -0400
+From: Johannes Winkelmann <johannes.winkelmann@gmail.com>
+To: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Cc: Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>,
+        Johannes Winkelmann <johannes.winkelmann@sensirion.com>
+Subject: [RFC][PATCH] hwmon: add support for Sensirion C1 sensor
+Date: Fri, 20 Jul 2012 14:57:22 +0200
+Message-Id: <1342789042-13433-1-git-send-email-johannes.winkelmann@sensirion.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide count_leading/trailing_zeros() macros based on extant arch bit scanning
-functions rather than reimplementing from scratch in MPILIB.
+this is an initial version of the driver for the upcoming Sensirion
+SHT C1 humidity and temperature sensor. First hardware samples are
+being tested by our key customers, and we'd therefore appreciate to
+get feedback on the driver.
 
-Whilst we're at it, turn count_foo_zeros(n, x) into n = count_foo_zeros(x).
+Datasheet URLs will be set as soon as there's a final version available.
 
-Also move the definition to asm-generic as other people may be interested in
-using it.
-
-Signed-off-by: David Howells <dhowells@redhat.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Johannes Winkelmann <johannes.winkelmann@sensirion.com>
 ---
+ Documentation/hwmon/shtc1           |   34 +++++
+ drivers/hwmon/Kconfig               |   10 ++
+ drivers/hwmon/Makefile              |    1 +
+ drivers/hwmon/shtc1.c               |  282 +++++++++++++++++++++++++++++++++++
+ include/linux/platform_data/shtc1.h |   24 +++
+ 5 files changed, 351 insertions(+)
+ create mode 100644 Documentation/hwmon/shtc1
+ create mode 100644 drivers/hwmon/shtc1.c
+ create mode 100644 include/linux/platform_data/shtc1.h
 
- include/asm-generic/bitops/count_zeros.h |   57 ++++++++++++
- lib/mpi/longlong.h                       |  142 +-----------------------------
- lib/mpi/mpi-bit.c                        |    2 
- lib/mpi/mpi-pow.c                        |    4 -
- 4 files changed, 64 insertions(+), 141 deletions(-)
- create mode 100644 include/asm-generic/bitops/count_zeros.h
-
-diff --git a/include/asm-generic/bitops/count_zeros.h b/include/asm-generic/bitops/count_zeros.h
+diff --git a/Documentation/hwmon/shtc1 b/Documentation/hwmon/shtc1
 new file mode 100644
-index 0000000..7f8e1d0
+index 0000000..ada89f5
 --- /dev/null
-+++ b/include/asm-generic/bitops/count_zeros.h
-@@ -0,0 +1,57 @@
-+/* Count leading and trailing zeros functions
++++ b/Documentation/hwmon/shtc1
+@@ -0,0 +1,34 @@
++Kernel driver shtc1
++===================
++
++Supported chips:
++  * Sensirion SHTC1
++    Prefix: 'shtc1'
++    Addresses scanned: none
++    Datasheet: To be announced
++
++Author:
++  Johannes Winkelmann <johannes.winkelmann@sensirion.com>
++
++Description
++-----------
++
++This driver implements support for the Sensirion  SHTC1 chip, a humidity and
++temperature sensor. Temperature is measured in degrees celsius, relative
++humidity is expressed as a percentage.
++
++The device communicates with the I2C protocol. All sensors are set to the same
++I2C address 0x70, so an entry with I2C_BOARD_INFO("shtc1", 0x70) can be used
++in the board setup code.
++
++Furthermore, there are two configuration options by means of platform_data:
++1. blocking (pull the I2C clock line down while performing the measurement) or
++   non-blocking, mode. Blocking mode will guarantee the fastest result, but
++   the I2C bus will be busy during that time
++2. high or low accuracy. Using high accuracy is always recommended.
++
++sysfs-Interface
++---------------
++
++temp1_input - temperature input
++humidity1_input - humidity input
+\ No newline at end of file
+diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
+index 6f1d167..cd5dced 100644
+--- a/drivers/hwmon/Kconfig
++++ b/drivers/hwmon/Kconfig
+@@ -902,6 +902,16 @@ config SENSORS_SHT21
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called sht21.
+ 
++config SENSORS_SHTC1
++	tristate "Sensiron SHTC1 humidity and temperature sensor."
++	depends on I2C
++	help
++	  If you say yes here you get support for the Sensiron SHTC1
++	  humidity and temperature sensor.
++
++	  This driver can also be built as a module.  If so, the module
++	  will be called shtc1.
++
+ config SENSORS_S3C
+ 	tristate "Samsung built-in ADC"
+ 	depends on S3C_ADC
+diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
+index e1eeac1..d6d11d4 100644
+--- a/drivers/hwmon/Makefile
++++ b/drivers/hwmon/Makefile
+@@ -107,6 +107,7 @@ obj-$(CONFIG_SENSORS_SCH5627)	+= sch5627.o
+ obj-$(CONFIG_SENSORS_SCH5636)	+= sch5636.o
+ obj-$(CONFIG_SENSORS_SHT15)	+= sht15.o
+ obj-$(CONFIG_SENSORS_SHT21)	+= sht21.o
++obj-$(CONFIG_SENSORS_SHTC1)	+= shtc1.o
+ obj-$(CONFIG_SENSORS_SIS5595)	+= sis5595.o
+ obj-$(CONFIG_SENSORS_SMM665)	+= smm665.o
+ obj-$(CONFIG_SENSORS_SMSC47B397)+= smsc47b397.o
+diff --git a/drivers/hwmon/shtc1.c b/drivers/hwmon/shtc1.c
+new file mode 100644
+index 0000000..b91d9ba
+--- /dev/null
++++ b/drivers/hwmon/shtc1.c
+@@ -0,0 +1,282 @@
++/* Sensirion SHTC1 humidity and temperature sensor driver
 + *
-+ * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
++ * Copyright (C) 2012 Sensirion AG, Switzerland
++ * Author: Johannes Winkelmann <johannes.winkelmann@sensirion.com>
 + *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public Licence
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the Licence, or (at your option) any later version.
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA
++ *
++ * Data sheet available soon
++ *  TODO: add link
 + */
 +
-+#ifndef _ASM_GENERIC_BITOPS_COUNT_ZEROS_H_
-+#define _ASM_GENERIC_BITOPS_COUNT_ZEROS_H_
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/slab.h>
++#include <linux/i2c.h>
++#include <linux/hwmon.h>
++#include <linux/hwmon-sysfs.h>
++#include <linux/err.h>
++#include <linux/delay.h>
++#include <linux/platform_data/shtc1.h>
 +
-+#include <linux/bitops.h>
++/* commands (high precision mode) */
++static const char shtc1_cmd_measure_blocking_hpm[]    = { 0x7C, 0xA2 };
++static const char shtc1_cmd_measure_nonblocking_hpm[] = { 0x78, 0x66 };
 +
-+/**
-+ * count_leading_zeros - Count the number of zeros from the MSB back
-+ * @x: The value
-+ *
-+ * Count the number of leading zeros from the MSB going towards the LSB in @x.
-+ *
-+ * If the MSB of @x is set, the result is 0.
-+ * If only the LSB of @x is set, then the result is BITS_PER_LONG-1.
-+ * If @x is 0 then the result is COUNT_LEADING_ZEROS_0.
-+ */
-+static inline int count_leading_zeros(unsigned long x)
++/* commands (low precision mode) */
++static const char shtc1_cmd_measure_blocking_lpm[]    = { 0x64, 0x58 };
++static const char shtc1_cmd_measure_nonblocking_lpm[] = { 0x60, 0x9c };
++
++/* delays for non-blocking i2c commands */
++/* TODO: use max timings */
++static const int shtc1_nonblocking_wait_time_hpm = 10;
++static const int shtc1_nonblocking_wait_time_lpm =  1;
++
++
++#define SHTC1_CMD_LENGTH 2
++#define SHTC1_RESPONSE_LENGTH 6
++
++struct shtc1_data {
++	struct device *hwmon_dev;
++	struct mutex update_lock;
++	unsigned int valid:1;
++	unsigned long last_updated; /* In jiffies */
++
++	const char *command;
++	unsigned int nonblocking_wait_time;
++
++	struct shtc1_pdata setup;
++
++	int temperature;
++	int humidity;
++};
++
++static void shtc1_select_command(struct shtc1_data *data)
 +{
-+	if (sizeof(x) == 4)
-+		return BITS_PER_LONG - fls(x);
-+	else
-+		return BITS_PER_LONG - fls64(x);
++	if (data->setup.high_precision) {
++		data->command = data->setup.blocking_io ?
++				shtc1_cmd_measure_blocking_hpm :
++				shtc1_cmd_measure_nonblocking_hpm;
++		data->nonblocking_wait_time = shtc1_nonblocking_wait_time_hpm;
++
++	} else {
++		data->command = data->setup.blocking_io ?
++				shtc1_cmd_measure_blocking_lpm :
++				shtc1_cmd_measure_nonblocking_lpm;
++		data->nonblocking_wait_time = shtc1_nonblocking_wait_time_lpm;
++	}
 +}
 +
-+#define COUNT_LEADING_ZEROS_0 BITS_PER_LONG
-+
-+/**
-+ * count_trailing_zeros - Count the number of zeros from the LSB forwards
-+ * @x: The value
-+ *
-+ * Count the number of trailing zeros from the LSB going towards the MSB in @x.
-+ *
-+ * If the LSB of @x is set, the result is 0.
-+ * If only the MSB of @x is set, then the result is BITS_PER_LONG-1.
-+ * If @x is 0 then the result is COUNT_TRAILING_ZEROS_0.
-+ */
-+static inline int count_trailing_zeros(unsigned long x)
++static int shtc1_update_values(struct i2c_client *client,
++			       struct shtc1_data *data,
++			       char *buf,
++			       int bufsize)
 +{
-+#define COUNT_TRAILING_ZEROS_0 (-1)
++	int ret = i2c_master_send(client, data->command, SHTC1_CMD_LENGTH);
++	if (ret < 0) {
++		dev_err(&client->dev, "failed to send command");
++		return -1;
++	}
 +
-+	if (sizeof(x) == 4)
-+		return ffs(x);
-+	else
-+		return (x != 0) ? __ffs(x) : COUNT_TRAILING_ZEROS_0;
++	/*
++	 * in blocking mode (clock stretching mode) the I2C bus
++	 * is blocked for other traffic, thus the call to i2c_master_recv()
++	 * will wait until the data is ready. for non blocking mode, we
++	 * have to wait ourselves, thus the msleep()
++	 */
++	if (!data->setup.blocking_io)
++		msleep(data->nonblocking_wait_time);
++
++	ret = i2c_master_recv(client, buf, bufsize);
++	if (ret != bufsize) {
++		dev_err(&client->dev, "failed to read values: %d", ret);
++		return -1;
++	}
++
++	return 0;
 +}
 +
-+#endif /* _ASM_GENERIC_BITOPS_COUNT_ZEROS_H_ */
-diff --git a/lib/mpi/longlong.h b/lib/mpi/longlong.h
-index 29f9862..18b528f 100644
---- a/lib/mpi/longlong.h
-+++ b/lib/mpi/longlong.h
-@@ -19,6 +19,8 @@
-  * the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-  * MA 02111-1307, USA. */
- 
-+#include <asm-generic/bitops/count_zeros.h>
++/* sysfs attributes */
++static struct shtc1_data *shtc1_update_client(struct device *dev)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	struct shtc1_data *data = i2c_get_clientdata(client);
 +
- /* You have to define the following before including this file:
-  *
-  * UWtype -- An unsigned type, default type for operations (typically a "word")
-@@ -64,12 +66,12 @@
-  * denominator).  Like udiv_qrnnd but the numbers are signed.  The quotient
-  * is rounded towards 0.
-  *
-- * 5) count_leading_zeros(count, x) counts the number of zero-bits from the
-+ * 5) count = count_leading_zeros(x) counts the number of zero-bits from the
-  * msb to the first non-zero bit in the UWtype X.  This is the number of
-  * steps X needs to be shifted left to set the msb.  Undefined for X == 0,
-  * unless the symbol COUNT_LEADING_ZEROS_0 is defined to some value.
-  *
-- * 6) count_trailing_zeros(count, x) like count_leading_zeros, but counts
-+ * 6) count = count_trailing_zeros(x) like count_leading_zeros, but counts
-  * from the least significant end.
-  *
-  * 7) add_ssaaaa(high_sum, low_sum, high_addend_1, low_addend_1,
-@@ -146,12 +148,6 @@ do { \
- 	: "1" ((USItype)(n1)), \
- 		"r" ((USItype)(n0)), \
- 		"r" ((USItype)(d)))
--
--#define count_leading_zeros(count, x) \
--	__asm__ ("clz %0,%1" \
--	: "=r" ((USItype)(count)) \
--	: "r" ((USItype)(x)))
--#define COUNT_LEADING_ZEROS_0 32
- #endif /* __a29k__ */
- 
- #if defined(__alpha) && W_TYPE_SIZE == 64
-@@ -298,11 +294,6 @@ extern UDItype __udiv_qrnnd();
- 	: "1" ((USItype)(nh)), \
- 		"0" ((USItype)(nl)), \
- 		"g" ((USItype)(d)))
--#define count_leading_zeros(count, x) \
--	__asm__ ("bsch/1 %1,%0" \
--	: "=g" (count) \
--	: "g" ((USItype)(x)), \
--	     "0" ((USItype)0))
- #endif
- 
- /***************************************
-@@ -354,27 +345,6 @@ do { USItype __r; \
- } while (0)
- extern USItype __udiv_qrnnd();
- #endif /* LONGLONG_STANDALONE */
--#define count_leading_zeros(count, x) \
--do { \
--	USItype __tmp; \
--	__asm__ ( \
--	"ldi             1,%0\n" \
--	"extru,=	%1,15,16,%%r0  ; Bits 31..16 zero?\n" \
--	"extru,tr	%1,15,16,%1    ; No.  Shift down, skip add.\n" \
--	"ldo		16(%0),%0      ; Yes.	Perform add.\n" \
--	"extru,=	%1,23,8,%%r0   ; Bits 15..8 zero?\n" \
--	"extru,tr	%1,23,8,%1     ; No.  Shift down, skip add.\n" \
--	"ldo		8(%0),%0       ; Yes.	Perform add.\n" \
--	"extru,=	%1,27,4,%%r0   ; Bits 7..4 zero?\n" \
--	"extru,tr	%1,27,4,%1     ; No.  Shift down, skip add.\n" \
--	"ldo		4(%0),%0       ; Yes.	Perform add.\n" \
--	"extru,=	%1,29,2,%%r0   ; Bits 3..2 zero?\n" \
--	"extru,tr	%1,29,2,%1     ; No.  Shift down, skip add.\n" \
--	"ldo		2(%0),%0       ; Yes.	Perform add.\n" \
--	"extru		%1,30,1,%1     ; Extract bit 1.\n" \
--	"sub		%0,%1,%0       ; Subtract it.              " \
--	: "=r" (count), "=r" (__tmp) : "1" (x)); \
--} while (0)
- #endif /* hppa */
- 
- /***************************************
-@@ -457,15 +427,6 @@ do { \
- 	: "0" ((USItype)(n0)), \
- 	     "1" ((USItype)(n1)), \
- 	     "rm" ((USItype)(d)))
--#define count_leading_zeros(count, x) \
--do { \
--	USItype __cbtmp; \
--	__asm__ ("bsrl %1,%0" \
--	: "=r" (__cbtmp) : "rm" ((USItype)(x))); \
--	(count) = __cbtmp ^ 31; \
--} while (0)
--#define count_trailing_zeros(count, x) \
--	__asm__ ("bsfl %1,%0" : "=r" (count) : "rm" ((USItype)(x)))
- #ifndef UMUL_TIME
- #define UMUL_TIME 40
- #endif
-@@ -536,15 +497,6 @@ do { \
- 	     "dI" ((USItype)(d))); \
- 	(r) = __rq.__i.__l; (q) = __rq.__i.__h; \
- } while (0)
--#define count_leading_zeros(count, x) \
--do { \
--	USItype __cbtmp; \
--	__asm__ ("scanbit %1,%0" \
--	: "=r" (__cbtmp) \
--	: "r" ((USItype)(x))); \
--	(count) = __cbtmp ^ 31; \
--} while (0)
--#define COUNT_LEADING_ZEROS_0 (-32)	/* sic */
- #if defined(__i960mx)		/* what is the proper symbol to test??? */
- #define rshift_rhlc(r, h, l, c) \
- do { \
-@@ -603,11 +555,6 @@ do { \
- 	: "0" ((USItype)(n0)), \
- 	     "1" ((USItype)(n1)), \
- 	     "dmi" ((USItype)(d)))
--#define count_leading_zeros(count, x) \
--	__asm__ ("bfffo %1{%b2:%b2},%0" \
--	: "=d" ((USItype)(count)) \
--	: "od" ((USItype)(x)), "n" (0))
--#define COUNT_LEADING_ZEROS_0 32
- #else /* not mc68020 */
- #define umul_ppmm(xh, xl, a, b) \
- do { USItype __umul_tmp1, __umul_tmp2; \
-@@ -664,15 +611,6 @@ do { USItype __umul_tmp1, __umul_tmp2; \
- 	     "rJ" ((USItype)(bh)), \
- 	     "rJ" ((USItype)(al)), \
- 	     "rJ" ((USItype)(bl)))
--#define count_leading_zeros(count, x) \
--do { \
--	USItype __cbtmp; \
--	__asm__ ("ff1 %0,%1" \
--	: "=r" (__cbtmp) \
--	: "r" ((USItype)(x))); \
--	(count) = __cbtmp ^ 31; \
--} while (0)
--#define COUNT_LEADING_ZEROS_0 63	/* sic */
- #if defined(__m88110__)
- #define umul_ppmm(wh, wl, u, v) \
- do { \
-@@ -779,12 +717,6 @@ do { \
- 	: "0" (__xx.__ll), \
- 	     "g" ((USItype)(d))); \
- 	(r) = __xx.__i.__l; (q) = __xx.__i.__h; })
--#define count_trailing_zeros(count, x) \
--do { \
--	__asm__("ffsd      %2,%0" \
--	: "=r"((USItype) (count)) \
--	: "0"((USItype) 0), "r"((USItype) (x))); \
--	} while (0)
- #endif /* __ns32000__ */
- 
- /***************************************
-@@ -855,11 +787,6 @@ do { \
- 		"rI" ((USItype)(al)), \
- 		"r" ((USItype)(bl))); \
- } while (0)
--#define count_leading_zeros(count, x) \
--	__asm__ ("{cntlz|cntlzw} %0,%1" \
--	: "=r" ((USItype)(count)) \
--	: "r" ((USItype)(x)))
--#define COUNT_LEADING_ZEROS_0 32
- #if defined(_ARCH_PPC)
- #define umul_ppmm(ph, pl, m0, m1) \
- do { \
-@@ -1001,19 +928,6 @@ do { \
- } while (0)
- #define UMUL_TIME 20
- #define UDIV_TIME 200
--#define count_leading_zeros(count, x) \
--do { \
--	if ((x) >= 0x10000) \
--		__asm__ ("clz     %0,%1" \
--		: "=r" ((USItype)(count)) \
--		: "r" ((USItype)(x) >> 16)); \
--	else { \
--		__asm__ ("clz   %0,%1" \
--		: "=r" ((USItype)(count)) \
--		: "r" ((USItype)(x))); \
--		(count) += 16; \
--	} \
--} while (0)
- #endif /* RT/ROMP */
- 
- /***************************************
-@@ -1142,13 +1056,6 @@ do { \
- 	"rI" ((USItype)(d)) \
- 	: "%g1" __AND_CLOBBER_CC)
- #define UDIV_TIME 37
--#define count_leading_zeros(count, x) \
--	__asm__ ("scan %1,0,%0" \
--	: "=r" ((USItype)(x)) \
--	: "r" ((USItype)(count)))
--/* Early sparclites return 63 for an argument of 0, but they warn that future
--	implementations might change this.  Therefore, leave COUNT_LEADING_ZEROS_0
--	undefined.  */
- #endif /* __sparclite__ */
- #endif /* __sparc_v8__ */
- 	/* Default to sparc v7 versions of umul_ppmm and udiv_qrnnd.  */
-@@ -1454,47 +1361,6 @@ do { \
- #define udiv_qrnnd __udiv_qrnnd_c
- #endif
- 
--#undef count_leading_zeros
--#if !defined(count_leading_zeros)
--	extern
--#ifdef __STDC__
--			const
--#endif
--			unsigned char __clz_tab[];
--#define count_leading_zeros(count, x) \
--do { \
--	UWtype __xr = (x); \
--	UWtype __a; \
--	\
--	if (W_TYPE_SIZE <= 32) { \
--		__a = __xr < ((UWtype) 1 << 2*__BITS4) \
--		? (__xr < ((UWtype) 1 << __BITS4) ? 0 : __BITS4) \
--		: (__xr < ((UWtype) 1 << 3*__BITS4) ?  2*__BITS4 : 3*__BITS4); \
--	} \
--	else { \
--		for (__a = W_TYPE_SIZE - 8; __a > 0; __a -= 8) \
--			if (((__xr >> __a) & 0xff) != 0) \
--				break; \
--	} \
--	\
--	(count) = W_TYPE_SIZE - (__clz_tab[__xr >> __a] + __a); \
--} while (0)
--	/* This version gives a well-defined value for zero. */
--#define COUNT_LEADING_ZEROS_0 W_TYPE_SIZE
--#endif
--
--#if !defined(count_trailing_zeros)
--/* Define count_trailing_zeros using count_leading_zeros.  The latter might be
--	defined in asm, but if it is not, the C version above is good enough.  */
--#define count_trailing_zeros(count, x) \
--do { \
--	UWtype __ctz_x = (x); \
--	UWtype __ctz_c; \
--	count_leading_zeros(__ctz_c, __ctz_x & -__ctz_x); \
--	(count) = W_TYPE_SIZE - 1 - __ctz_c; \
--} while (0)
--#endif
--
- #ifndef UDIV_NEEDS_NORMALIZATION
- #define UDIV_NEEDS_NORMALIZATION 0
- #endif
-diff --git a/lib/mpi/mpi-bit.c b/lib/mpi/mpi-bit.c
-index 5687248..503537e 100644
---- a/lib/mpi/mpi-bit.c
-+++ b/lib/mpi/mpi-bit.c
-@@ -45,7 +45,7 @@ unsigned mpi_get_nbits(MPI a)
- 	if (a->nlimbs) {
- 		mpi_limb_t alimb = a->d[a->nlimbs - 1];
- 		if (alimb)
--			count_leading_zeros(n, alimb);
-+			n = count_leading_zeros(alimb);
- 		else
- 			n = BITS_PER_MPI_LIMB;
- 		n = BITS_PER_MPI_LIMB - n + (a->nlimbs - 1) * BITS_PER_MPI_LIMB;
-diff --git a/lib/mpi/mpi-pow.c b/lib/mpi/mpi-pow.c
-index 67f3e79..5464c87 100644
---- a/lib/mpi/mpi-pow.c
-+++ b/lib/mpi/mpi-pow.c
-@@ -77,7 +77,7 @@ int mpi_powm(MPI res, MPI base, MPI exp, MPI mod)
- 	mp = mp_marker = mpi_alloc_limb_space(msize);
- 	if (!mp)
- 		goto enomem;
--	count_leading_zeros(mod_shift_cnt, mod->d[msize - 1]);
-+	mod_shift_cnt = count_leading_zeros(mod->d[msize - 1]);
- 	if (mod_shift_cnt)
- 		mpihelp_lshift(mp, mod->d, msize, mod_shift_cnt);
- 	else
-@@ -169,7 +169,7 @@ int mpi_powm(MPI res, MPI base, MPI exp, MPI mod)
- 
- 		i = esize - 1;
- 		e = ep[i];
--		count_leading_zeros(c, e);
-+		c = count_leading_zeros(e);
- 		e = (e << c) << 1;	/* shift the exp bits to the left, lose msb */
- 		c = BITS_PER_MPI_LIMB - 1 - c;
- 
++	char buf[SHTC1_RESPONSE_LENGTH];
++	int val;
++	int ret;
++
++	mutex_lock(&data->update_lock);
++
++	/*
++	 * initialize 'ret' in case we had a valid result before, but
++	 * read too quickly in which case we return the last values
++	 */
++	ret = !data->valid;
++
++	if (time_after(jiffies, data->last_updated + HZ / 10)
++	    || !data->valid) {
++		ret = shtc1_update_values(client, data, buf, sizeof(buf));
++
++		if (ret)
++			goto out;
++
++		/*
++		 * From datasheet:
++		 *   T = -45 + 175 * ST / 2^16
++		 *   RH = -10 + 120 * SRH / 2^16
++		 *
++		 * Adapted for integer fixed point (3 digit) arithmetic
++		 */
++		val = (buf[0] << 8) | buf[1];
++		data->temperature = ((21875 * val) >> 13) - 45000;
++		val = (buf[3] << 8) | buf[4];
++		data->humidity = ((15000 * val) >> 13) - 10000;
++
++		data->last_updated = jiffies;
++		data->valid = 1;
++	}
++
++out:
++	mutex_unlock(&data->update_lock);
++
++	return ret == 0 ? data : NULL;
++}
++
++static ssize_t shtc1_show_temperature(struct device *dev,
++				      struct device_attribute *attr,
++				      char *buf)
++{
++	struct shtc1_data *data = shtc1_update_client(dev);
++	if (!data)
++		return -ENODEV;
++
++	return sprintf(buf, "%d\n", data->temperature);
++}
++
++static ssize_t shtc1_show_humidity(struct device *dev,
++				   struct device_attribute *attr,
++				   char *buf)
++{
++	struct shtc1_data *data = shtc1_update_client(dev);
++	if (!data)
++		return -ENODEV;
++
++	return sprintf(buf, "%d\n", data->humidity);
++}
++
++static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO,
++			  shtc1_show_temperature, NULL, 0);
++static SENSOR_DEVICE_ATTR(humidity1_input, S_IRUGO,
++			  shtc1_show_humidity, NULL, 0);
++
++static struct attribute *shtc1_attributes[] = {
++	&sensor_dev_attr_temp1_input.dev_attr.attr,
++	&sensor_dev_attr_humidity1_input.dev_attr.attr,
++	NULL
++};
++
++static const struct attribute_group shtc1_attr_group = {
++	.attrs = shtc1_attributes,
++};
++
++
++
++static int __devinit shtc1_probe(struct i2c_client *client,
++				 const struct i2c_device_id *id)
++{
++	struct shtc1_data *data;
++	int err;
++
++	if (!i2c_check_functionality(client->adapter,
++				     I2C_FUNC_SMBUS_WORD_DATA)) {
++		dev_err(&client->dev,
++			"adapter does not support SMBus word transactions\n");
++		return -ENODEV;
++	}
++
++	data = devm_kzalloc(&client->dev, sizeof(struct shtc1_data),
++			    GFP_KERNEL);
++	if (!data)
++		return -ENOMEM;
++
++	/* defaults: blocking, high precision mode */
++	data->setup.blocking_io = 1;
++	data->setup.high_precision = 1;
++
++	if (client->dev.platform_data)
++		data->setup = *(struct shtc1_pdata *)client->dev.platform_data;
++	shtc1_select_command(data);
++
++	i2c_set_clientdata(client, data);
++	mutex_init(&data->update_lock);
++
++	err = sysfs_create_group(&client->dev.kobj, &shtc1_attr_group);
++	if (err) {
++		dev_dbg(&client->dev, "could not create sysfs files\n");
++		return err;
++	}
++	data->hwmon_dev = hwmon_device_register(&client->dev);
++	if (IS_ERR(data->hwmon_dev)) {
++		dev_dbg(&client->dev, "unable to register hwmon device\n");
++		err = PTR_ERR(data->hwmon_dev);
++		goto fail_remove_sysfs;
++	}
++
++
++	dev_info(&client->dev, "initialized\n");
++
++	return 0;
++
++fail_remove_sysfs:
++	sysfs_remove_group(&client->dev.kobj, &shtc1_attr_group);
++
++	return err;
++}
++
++
++/**
++ * shtc1_remove() - remove device
++ * @client: I2C client device
++ */
++static int __devexit shtc1_remove(struct i2c_client *client)
++{
++	struct shtc1_data *data = i2c_get_clientdata(client);
++
++	hwmon_device_unregister(data->hwmon_dev);
++	sysfs_remove_group(&client->dev.kobj, &shtc1_attr_group);
++
++	return 0;
++}
++
++/* Device ID table */
++static const struct i2c_device_id shtc1_id[] = {
++	{ "shtc1", 0 },
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, c1_id);
++
++static struct i2c_driver shtc1_driver = {
++	.driver.name = "shtc1",
++	.probe       = shtc1_probe,
++	.remove      = __devexit_p(shtc1_remove),
++	.id_table    = shtc1_id,
++};
++
++module_i2c_driver(shtc1_driver);
++
++MODULE_AUTHOR("Johannes Winkelmann <johannes.winkelmann@sensirion.com>");
++MODULE_DESCRIPTION("Sensirion SHTC1 humidity and temperature sensor driver");
++MODULE_LICENSE("GPL");
+diff --git a/include/linux/platform_data/shtc1.h b/include/linux/platform_data/shtc1.h
+new file mode 100644
+index 0000000..3f83dce
+--- /dev/null
++++ b/include/linux/platform_data/shtc1.h
+@@ -0,0 +1,24 @@
++/*
++ * Copyright (C) 2012 Sensirion AG, Switzerland
++ * Author: Johannes Winkelmann <johannes.winkelmann@sensirion.com>
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#ifndef __SHTC1_H_
++#define __SHTC1_H_
++
++struct shtc1_pdata {
++	unsigned int blocking_io:1;
++	unsigned int high_precision:1;
++};
++
++#endif
+-- 
+1.7.9.5
 
