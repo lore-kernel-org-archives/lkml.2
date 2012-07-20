@@ -1,64 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752792Ab2GTOOG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 10:14:06 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:42175 "EHLO e8.ny.us.ibm.com"
+	id S1752830Ab2GTOQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 10:16:56 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:54434 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752041Ab2GTOOD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 10:14:03 -0400
-Message-ID: <500964A7.1020702@linux.vnet.ibm.com>
-Date: Fri, 20 Jul 2012 09:01:11 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1752473Ab2GTOQz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 10:16:55 -0400
+Date: Fri, 20 Jul 2012 16:16:25 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Tim Chen <tim.c.chen@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Minchan Kim <minchan@kernel.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        "andi.kleen" <andi.kleen@intel.com>, linux-mm <linux-mm@kvack.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Cgroup: Fix memory accounting scalability in
+ shrink_page_list
+Message-ID: <20120720141625.GA1426@cmpxchg.org>
+References: <1342740866.13492.50.camel@schen9-DESK>
+ <20120720135329.GA12440@tiehlicka.suse.cz>
 MIME-Version: 1.0
-To: Michael Ellerman <michael@ellerman.id.au>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Kent Yoder <key@linux.vnet.ibm.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        linuxppc-dev@lists.ozlabs.org, "David S. Miller" <davem@davemloft.net>,
-        linux-crypto@vger.kernel.org
-Subject: Re: [PATCH 3/4] powerpc/crypto: add 842 hardware compression driver
-References: <1342708961-28587-1-git-send-email-sjenning@linux.vnet.ibm.com> <1342708961-28587-4-git-send-email-sjenning@linux.vnet.ibm.com> <1342762410.15356.7.camel@concordia>
-In-Reply-To: <1342762410.15356.7.camel@concordia>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12072014-9360-0000-0000-000008962C94
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120720135329.GA12440@tiehlicka.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/20/2012 12:33 AM, Michael Ellerman wrote:
-> On Thu, 2012-07-19 at 09:42 -0500, Seth Jennings wrote:
->> This patch adds the driver for interacting with the 842
->> compression accelerator on IBM Power7+ systems.
+On Fri, Jul 20, 2012 at 03:53:29PM +0200, Michal Hocko wrote:
+> On Thu 19-07-12 16:34:26, Tim Chen wrote:
+> [...]
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index 33dc256..aac5672 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -779,6 +779,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+> >  
+> >  	cond_resched();
+> >  
+> > +	mem_cgroup_uncharge_start();
+> >  	while (!list_empty(page_list)) {
+> >  		enum page_references references;
+> >  		struct address_space *mapping;
 > 
-> ...
-> 
->> +struct nx842_slentry {
->> +	unsigned long ptr; /* Absolute address (use virt_to_abs()) */
->> /+	unsigned long len;
->> +};
-> 
-> These days virt_to_abs() is just __pa() - ie. convert to a real address.
+> Is this safe? We have a scheduling point few lines below. What prevents
+> from task move while we are in the middle of the batch?
 
-Thanks, I'll make that change.
-
-Is it a blocker to the code being pulled in though? I'm
-hoping to get this in ASAP for the 3.6 merge window.  As
-this isn't a functional defect (I assume __pa() and
-virt_to_abs() still achieve the same result), can I get an
-OK from you that this isn't a blocker to the code being
-accepted?
-
-I'll submit a patch later to make this change.
-
-Thanks again!
-
-Seth
-
+The batch is accounted in task_struct, so moving a batching task to
+another CPU shouldn't be a problem.
