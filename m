@@ -1,64 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753029Ab2GTQ4g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 12:56:36 -0400
-Received: from mga01.intel.com ([192.55.52.88]:60805 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752494Ab2GTQ4e convert rfc822-to-8bit (ORCPT
+	id S1753092Ab2GTQ5U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 12:57:20 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:50156 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752591Ab2GTQ5T convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 12:56:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="181482736"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Don Zickus <dzickus@redhat.com>, Seiji Aguchi <seiji.aguchi@hds.com>
-CC: "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mikew@google.com" <mikew@google.com>,
-        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: RE: [RFC][PATCH v2 2/3] Hold multiple logs
-Thread-Topic: [RFC][PATCH v2 2/3] Hold multiple logs
-Thread-Index: Ac1l82ceH7I0t1QCT1GombsnNxviZAAAK4PgAABTBVAAAP4IQAAA0SRAAAJWEXAAAc9d8AAUbUAAABWxqgAAAkSNAAAJzEsw
-Date: Fri, 20 Jul 2012 16:56:02 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F1936ECD8@ORSMSX104.amr.corp.intel.com>
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D40FB27FDC@USINDEM103.corp.hds.com>
- <3908561D78D1C84285E8C5FCA982C28F1936EA5F@ORSMSX104.amr.corp.intel.com>
- <A5ED84D3BB3A384992CBB9C77DEDA4D40FB28056@USINDEM103.corp.hds.com>
- <3908561D78D1C84285E8C5FCA982C28F1936EA97@ORSMSX104.amr.corp.intel.com>
- <A5ED84D3BB3A384992CBB9C77DEDA4D40FB2813D@USINDEM103.corp.hds.com>
- <3908561D78D1C84285E8C5FCA982C28F1936EADE@ORSMSX104.amr.corp.intel.com>
- <A5ED84D3BB3A384992CBB9C77DEDA4D40FB28206@USINDEM103.corp.hds.com>
- <20120720030328.GC5637@redhat.com>
- <A5ED84D3BB3A384992CBB9C77DEDA4D40FB286FB@USINDEM103.corp.hds.com>
- <20120720142934.GF5637@redhat.com>
-In-Reply-To: <20120720142934.GF5637@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Fri, 20 Jul 2012 12:57:19 -0400
+Message-ID: <1342803425.2583.25.camel@twins>
+Subject: Re: CFS vs. cpufreq/cstates vs. latency
+From: Peter Zijlstra <peterz@infradead.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: Linux kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Avi Kivity <avi@redhat.com>,
+        Gleb Natapov <gleb@redhat.com>, "Michael S. Tsirkin" <mst@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>
+Date: Fri, 20 Jul 2012 18:57:05 +0200
+In-Reply-To: <50057565.7030405@redhat.com>
+References: <50057565.7030405@redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > What is the harm of not using this and just letting the number be infinite (or until EFI runs out of space)?  Is it a big deal if extra failures
-> > are logged?
+On Tue, 2012-07-17 at 10:23 -0400, Rik van Riel wrote:
+> While tracking down a latency issue with communication between
+> KVM guests, we ran into a very interesting issue, an interplay
+> of CFS and power saving code.
+> 
+> About 3/4 of the 230us latency came from CPUs waking up out of
+> C-states. Disabling C states reduced the latency to 60us...
+> 
+> The issue? The communication is between various threads and
+> processes, each of which last ran on a CPU that is now in a
+> deeper C state. The total latency from that is "CPU wakeup
+> latency * NR CPUs woken".
+> 
+> This problem could be common to many different multi-threaded
+> or multi-process applications. It looks like something that
+> would be fixable at the scheduler + cpufreq level.
 
-The big question is what happens when EFI runs out of space. Matthew avoided
-the question by implementing the "just one record" policy. Was this because he
-has some specific knowledge about what happens, or does he just have an
-irrational[1] fear that the EFI implementation will handle this poorly?
+There's tons to be fixed there... we should pull most if not all cpufreq
+load accounting into the scheduler, it already does most of it anyway.
 
-Without some tests on at least a couple of different platforms that show that
-EFI handles out of space conditions gracefully, I continue to have concerns.
+Also, you want to do per-task policy tracking, something which isn't
+possible with the current per-cpu cpufreq setup.
 
--Tony
+Sadly some hardware makes this very difficult indeed because it needs a
+schedulable context to change the cpu freq/volt etc..
 
-[1] Perhaps his fears are rational given how many other places he has found
-EFI not doing what we'd expect or want.
+> Specifically, waking up some process requires that the CPU
+> which is running the wakeup is already in C0 state. If the
+> CPU on which the to-be-woken task ran last is in a deep C
+> state, it may make sense to simply run the woken up task
+> on the local CPU, not the CPU where it was originally.
+
+That's cpuidle, not cpufreq :-) Yay for more players, but yes, I know
+I've talked about this very issue to a number of people.
+
+Same as for cpufreq, the accounting crap should move into the scheduler,
+we want to use the idle-time guestimator for different things as well.
+
+> I seem to remember some scheduling code that (for power
+> saving reasons) tried running all the tasks on one CPU,
+> until that CPU got busy, and then spilled over onto other
+> CPUs.
+> 
+> I do not seem to be able to find that code in recent kernels,
+> but I have the feeling that a policy like that (related to
+> WAKE_AFFINE scheduling?) could improve this issue.
+> 
+> As an additional benefit, it has the possibility of further
+> improving power saving.
+
+What power saving? I recently ripped all that stuff out because it was
+terminally broken and the fixes I got were beyond ugly.
+
+There were some people interested in writing a new power aware balancer
+infrastructure, but nothing has been forthcoming as yet. Although it
+could be they're waiting for PJT's load tracking patches to hit
+mainline.
+
+Anyway, you're conflating issues.. you don't want a power aware
+balancer, you just don't want it to be unaware of C-states irrespective
+of whatever balance policy we're using.
+
+> What do the scheduler and cpufreq people think about this
+> problem?
+> 
+> Any preferred ways to solve the "N * cpu wakeup latency"
+> problem that is plaguing multi-process and multi-threaded
+> workloads?
+
+Yeah, unify all the various load tracking and guestimator logic in the
+scheduler and go from there ;-)
