@@ -1,49 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751794Ab2GTEsR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 00:48:17 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38172 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750858Ab2GTEsP (ORCPT
+	id S1751995Ab2GTExv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 00:53:51 -0400
+Received: from TYO200.gate.nec.co.jp ([202.32.8.215]:41897 "EHLO
+	tyo200.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933Ab2GTExu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 00:48:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120719192814.75ea8beb784bdf8bb32c510c@kinali.ch>
-References: <20120719192814.75ea8beb784bdf8bb32c510c@kinali.ch>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 19 Jul 2012 22:47:54 -0600
-X-Google-Sender-Auth: 21UJmAv9RXpvAcdJEZaQbOpopgo
-Message-ID: <CACxGe6uLJqimjFg+E82+FZMDMmQrdfzzRqYvQWikej2sM=R_ig@mail.gmail.com>
-Subject: Re: commit 91013923c712e1c: "irqdomain: Replace LEGACY mapping with
- LINEAR" breaks console on ARM i.mx23
-To: Attila Kinali <attila@kinali.ch>
-Cc: Paul Mundt <lethal@linux-sh.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        Linux ARM kernel <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 20 Jul 2012 00:53:50 -0400
+X-Greylist: delayed 362 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Jul 2012 00:53:50 EDT
+Date: Fri, 20 Jul 2012 13:44:11 +0900
+From: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
+To: vgoyal@redhat.com
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        ebiederm@xmission.com
+Subject: Re: [PATCH] kdump: Append newline to the last lien of vmcoreinfo
+ note
+Message-Id: <20120720134411.85fd3f731063e43e52092e1a@mxc.nes.nec.co.jp>
+In-Reply-To: <20120719134920.GA2761@redhat.com>
+References: <20120717173655.GC11031@redhat.com>
+	<20120718150439.48360f16.akpm@linux-foundation.org>
+	<20120719134920.GA2761@redhat.com>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 19, 2012 at 11:28 AM, Attila Kinali <attila@kinali.ch> wrote:
-> Hi,
->
-> I'm working on an embedded system based on a Freescale ARM9 processor i.mx23.
->
-> While trying linux-next i stumpled over my login prompt getting broken.
-> What exactly happens is that the kernel boots normally, but when my
-> login prompt should appear it suddenly stops. I bisected it back to
-> the commit 91013923c712e1c4b9b343f0ee4a86ce72b1b630
-> irqdomain: Replace LEGACY mapping with LINEAR
->
-> Reverting this and the three commits that directly depend on it (see below)
-> everything seems to work fine again
+Hello Vivek,
 
-Hi Attila,
+On Thu, 19 Jul 2012 09:49:21 -0400
+Vivek Goyal <vgoyal@redhat.com> wrote:
 
-Can you please send me your boot log /after/ removing these three patches?
+> On Wed, Jul 18, 2012 at 03:04:39PM -0700, Andrew Morton wrote:
+> > On Tue, 17 Jul 2012 13:36:55 -0400
+> > Vivek Goyal <vgoyal@redhat.com> wrote:
+> > 
+> > > Last line of vmcoreinfo note does not end with \n. Parsing all the lines
+> > > in note becomes easier if all lines end with \n instead of trying to special
+> > > case the last line.
+> > > 
+> > > I know atleast one tool, vmcore-dmesg in kexec-tools tree which made the
+> > > assumption that all lines end with \n. I think it is a good idea to
+> > > fix it.
+> > > 
+> > > Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+> > > ---
+> > >  kernel/kexec.c |    2 +-
+> > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > > 
+> > > Index: linux-2.6/kernel/kexec.c
+> > > ===================================================================
+> > > --- linux-2.6.orig/kernel/kexec.c	2012-07-17 19:26:38.844033784 -0400
+> > > +++ linux-2.6/kernel/kexec.c	2012-07-17 23:51:33.311701781 -0400
+> > > @@ -1424,7 +1424,7 @@ static void update_vmcoreinfo_note(void)
+> > >  
+> > >  void crash_save_vmcoreinfo(void)
+> > >  {
+> > > -	vmcoreinfo_append_str("CRASHTIME=%ld", get_seconds());
+> > > +	vmcoreinfo_append_str("CRASHTIME=%ld\n", get_seconds());
+> > >  	update_vmcoreinfo_note();
+> > >  }
+> > 
+> > huh, that was a screwup.  And now we have to make what must be
+> > viewed as a non-back-compatible ABI change.
+> > 
+> > Ho hum, presumably there isn't a lot of code out there which is
+> > dependent upon a non-newline-terminated CRASHTIME record.
+> 
+> I think so. AFAIK, makedumpfile (vmcore filtering utility) is only
+> user of CRASHTIME=.
+> 
+> > 
+> > Why did this work at all, anyway?  Is CRASHTIME always the last-emitted
+> > record?
+> 
+> Yes, CRASHTIME= is always the last emitted line in vmcoreinfo note.
+> 
+> I had a quick look at makedumpfile code and looks like they read the whole
+> note, dump it to a file and then do fgets() on the file in a loop. As it is
+> last line in the file, fgets encounters EOF and reads the CRASHTIME= line
+> successfully. So even after this change makedumpfile should remain
+> unaffected. 
+> 
+> CCing makedumpfile maintainer, Atsushi Kumagai.
 
-Thanks,
-g.
+As you said, makedumpfile reads VMCOREINFO line by line with fgets().
+So, it's OK that the end of the last line is whether \n or EOF.
+
+Therefore, this change doesn't affect makedumpfile. 
+
+
+Thanks
+Atsushi Kumagai
