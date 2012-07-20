@@ -1,248 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752982Ab2GTHHl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 03:07:41 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:15814 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752298Ab2GTHHi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 03:07:38 -0400
-X-IronPort-AV: E=Sophos;i="4.77,621,1336320000"; 
-   d="scan'208";a="5444883"
-Message-ID: <500904D6.3030109@cn.fujitsu.com>
-Date: Fri, 20 Jul 2012 15:12:22 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1752815Ab2GTHIY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 03:08:24 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:59077 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751449Ab2GTHIW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 03:08:22 -0400
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 1/2] regmap-irq: use mask and val rather than using
+ mask_buf_def
+Thread-Topic: [PATCH 1/2] regmap-irq: use mask and val rather than using
+ mask_buf_def
+Thread-Index: Ac1ljYQFicWxq94xTEeL04V0LuZRav//e3YA//5pgNA=
+Date: Fri, 20 Jul 2012 07:08:15 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998FDA8C@DQHE02.ent.ti.com>
+References: <A874F61F95741C4A9BA573A70FE3998FD99F@DQHE02.ent.ti.com>
+ <20120719091011.GI4495@opensource.wolfsonmicro.com>
+In-Reply-To: <20120719091011.GI4495@opensource.wolfsonmicro.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.16.34.32]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org
-CC: rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
-        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
-        minchan.kim@gmail.com, akpm@linux-foundation.org,
-        kosaki.motohiro@jp.fujitsu.com,
-        Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>
-Subject: [RFC PATCH 6/8] memory-hotplug: introduce new function arch_remove_memory()
-References: <5009038A.4090001@cn.fujitsu.com>
-In-Reply-To: <5009038A.4090001@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/20 15:08:11,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/20 15:08:16,
-	Serialize complete at 2012/07/20 15:08:16
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't call __add_pages() directly in the function add_memory()
-because some other architecture related thins needs to be done
-before or after calling __add_pages(). So we should not call
-__remove_pages() directly in the function remove_memory.
-Introduce new function arch_remove_memory() to revert the things done
-in arch_add_memory().
+> On Thu, Jul 19, 2012 at 09:04:39AM +0000, Kim, Milo wrote:
+> > Default mask value is used when updating irq registers.
+> > Rather than using mask_buf_def[], use mask and value explicitly.
+> 
+> Why?  What is the problem you are seeing and what is the intended
+> effect
+> of this change?
 
-Note: the function for x86_64 will be implemented later. And I don't
-know how to implement it for s390.
+There are two reasons for this patch.
+One is for better understanding about masking and updated bits.
+The other is related with supporting interrupt-unmasked device.
 
-CC: David Rientjes <rientjes@google.com>
-CC: Jiang Liu <liuj97@gmail.com>
-CC: Len Brown <len.brown@intel.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Paul Mackerras <paulus@samba.org>
-CC: Christoph Lameter <cl@linux.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
----
- arch/ia64/mm/init.c            |   16 ++++++++++++++++
- arch/powerpc/mm/mem.c          |   14 ++++++++++++++
- arch/s390/mm/init.c            |    8 ++++++++
- arch/sh/mm/init.c              |   15 +++++++++++++++
- arch/tile/mm/init.c            |    8 ++++++++
- arch/x86/mm/init_32.c          |   10 ++++++++++
- arch/x86/mm/init_64.c          |    7 +++++++
- include/linux/memory_hotplug.h |    1 +
- mm/memory_hotplug.c            |    2 +-
- 9 files changed, 80 insertions(+), 1 deletions(-)
+(a) 'mask_buf & val_buf' VS 'mask_buf_def & mask_buf'
+In my opinion, the mask_buf_def[] is 'masking bit' and the mask_buf[] is the 'value' to be updated when the IRQ is enabled/disabled.
+The mask_buf_def[] means which bit is updated - that is exactly *mask bit*.
+The value of mask_buf_def[] is copied from mask_buf[] when regmap_add_irq_chip() is called.
+And then mask_buf_def[] is fixed value.
+On the other hand, the mask_buf[] is variable. The value is updated whenever the IRQ is enabled/disabled.
+Which is better understandable terminology ? 'mask and value' or 'default mask and updated mask'
+I think 'mask & value' is more clear.
 
-diff --git a/arch/ia64/mm/init.c b/arch/ia64/mm/init.c
-index 0eab454..1e345ed 100644
---- a/arch/ia64/mm/init.c
-+++ b/arch/ia64/mm/init.c
-@@ -688,6 +688,22 @@ int arch_add_memory(int nid, u64 start, u64 size)
- 
- 	return ret;
- }
-+
-+#ifdef CONFIG_MEMORY_HOTREMOVE
-+int arch_remove_memory(u64 start, u64 size)
-+{
-+	unsigned long start_pfn = start >> PAGE_SHIFT;
-+	unsigned long nr_pages = size >> PAGE_SHIFT;
-+	int ret;
-+
-+	ret = __remove_pages(start_pfn, nr_pages);
-+	if (ret)
-+		pr_warn("%s: Problem encountered in __remove_pages() as"
-+			" ret=%d\n", __func__,  ret);
-+
-+	return ret;
-+}
-+#endif
- #endif
- 
- /*
-diff --git a/arch/powerpc/mm/mem.c b/arch/powerpc/mm/mem.c
-index baaafde..249cef4 100644
---- a/arch/powerpc/mm/mem.c
-+++ b/arch/powerpc/mm/mem.c
-@@ -133,6 +133,20 @@ int arch_add_memory(int nid, u64 start, u64 size)
- 
- 	return __add_pages(nid, zone, start_pfn, nr_pages);
- }
-+
-+#ifdef CONFIG_MEMORY_HOTREMOVE
-+int arch_remove_memory(u64 start, u64 size)
-+{
-+	unsigned long start_pfn = start >> PAGE_SHIFT;
-+	unsigned long nr_pages = size >> PAGE_SHIFT;
-+
-+	start = (unsigned long)__va(start);
-+	if (remove_section_mapping(start, start + size))
-+		return -EINVAL;
-+
-+	return __remove_pages(start_pfn, nr_pages);
-+}
-+#endif
- #endif /* CONFIG_MEMORY_HOTPLUG */
- 
- /*
-diff --git a/arch/s390/mm/init.c b/arch/s390/mm/init.c
-index 2bea060..3de0d5b 100644
---- a/arch/s390/mm/init.c
-+++ b/arch/s390/mm/init.c
-@@ -259,4 +259,12 @@ int arch_add_memory(int nid, u64 start, u64 size)
- 		vmem_remove_mapping(start, size);
- 	return rc;
- }
-+
-+#ifdef CONFIG_MEMORY_HOTREMOVE
-+int arch_remove_memory(u64 start, u64 size)
-+{
-+	/* TODO */
-+	return -EBUSY;
-+}
-+#endif
- #endif /* CONFIG_MEMORY_HOTPLUG */
-diff --git a/arch/sh/mm/init.c b/arch/sh/mm/init.c
-index 82cc576..fc84491 100644
---- a/arch/sh/mm/init.c
-+++ b/arch/sh/mm/init.c
-@@ -558,4 +558,19 @@ int memory_add_physaddr_to_nid(u64 addr)
- EXPORT_SYMBOL_GPL(memory_add_physaddr_to_nid);
- #endif
- 
-+#ifdef CONFIG_MEMORY_HOTREMOVE
-+int arch_remove_memory(u64 start, u64 size)
-+{
-+	unsigned long start_pfn = start >> PAGE_SHIFT;
-+	unsigned long nr_pages = size >> PAGE_SHIFT;
-+	int ret;
-+
-+	ret = __remove_pages(start_pfn, nr_pages);
-+	if (unlikely(ret))
-+		pr_warn("%s: Failed, __remove_pages() == %d\n", __func__,
-+			ret);
-+
-+	return ret;
-+}
-+#endif
- #endif /* CONFIG_MEMORY_HOTPLUG */
-diff --git a/arch/tile/mm/init.c b/arch/tile/mm/init.c
-index 630dd2c..bdd8a99 100644
---- a/arch/tile/mm/init.c
-+++ b/arch/tile/mm/init.c
-@@ -947,6 +947,14 @@ int remove_memory(u64 start, u64 size)
- {
- 	return -EINVAL;
- }
-+
-+#ifdef CONFIG_MEMORY_HOTREMOVE
-+int arch_remove_memory(u64 start, u64 size)
-+{
-+	/* TODO */
-+	return -EBUSY;
-+}
-+#endif
- #endif
- 
- struct kmem_cache *pgd_cache;
-diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
-index 575d86f..a690153 100644
---- a/arch/x86/mm/init_32.c
-+++ b/arch/x86/mm/init_32.c
-@@ -842,6 +842,16 @@ int arch_add_memory(int nid, u64 start, u64 size)
- 
- 	return __add_pages(nid, zone, start_pfn, nr_pages);
- }
-+
-+#ifdef CONFIG_MEMORY_HOTREMOVE
-+int arch_remove_memory(unsigned long start, unsigned long size)
-+{
-+	unsigned long start_pfn = start >> PAGE_SHIFT;
-+	unsigned long nr_pages = size >> PAGE_SHIFT;
-+
-+	return __remove_pages(start_pfn, nr_pages);
-+}
-+#endif
- #endif
- 
- /*
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 9e635b3..78b94bc 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -675,6 +675,13 @@ int arch_add_memory(int nid, u64 start, u64 size)
- }
- EXPORT_SYMBOL_GPL(arch_add_memory);
- 
-+#ifdef CONFIG_MEMORY_HOTREMOVE
-+int arch_remove_memory(unsigned long start, unsigned long size)
-+{
-+	/* TODO */
-+	return -EBUSY;
-+}
-+#endif
- #endif /* CONFIG_MEMORY_HOTPLUG */
- 
- static struct kcore_list kcore_vsyscall;
-diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
-index 2ba0a1a..8639799 100644
---- a/include/linux/memory_hotplug.h
-+++ b/include/linux/memory_hotplug.h
-@@ -84,6 +84,7 @@ extern void __online_page_free(struct page *page);
- 
- #ifdef CONFIG_MEMORY_HOTREMOVE
- extern bool is_pageblock_removable_nolock(struct page *page);
-+extern int arch_remove_memory(unsigned long start, unsigned long size);
- #endif /* CONFIG_MEMORY_HOTREMOVE */
- 
- /* reasonably generic interface to expand the physical pages in a zone  */
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index dccdf71..cc2c8b9 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -1055,7 +1055,7 @@ int __ref remove_memory(int nid, u64 start, u64 size)
- 		unregister_one_node(nid);
- 	}
- 
--	__remove_pages(start >> PAGE_SHIFT, size >> PAGE_SHIFT);
-+	arch_remove_memory(start, size);
- out:
- 	unlock_memory_hotplug();
- 	return ret;
--- 
-1.7.1
+(b) supporting interrupt-unmasked device
+There is different interrupt concept from interrupt-masked device.
+To enable the IRQ, the register bit should be 1.
+To update this value, the bit of IRQ value should be separated from the mask bit.
 
+< Example >
+Let me assume that enabling the IRQ0 and IRQ1 ... (8 bits register based)
+
+(Interrupt mask device)
+IRQ7 | IRQ6 | IRQ5 | IRQ4 | IRQ3 | IRQ2 | IRQ1 | IRQ0
+ 1      1      1      1      1      1      0      0
+Mask  = 0xFC
+Value = 0xFC (same as mask bit)
+
+(Interrupt unmask device)
+IRQ7 | IRQ6 | IRQ5 | IRQ4 | IRQ3 | IRQ2 | IRQ1 | IRQ0
+ 0      0      0      0      0      0      1      1
+Mask  = 0xFC
+Value = 0x03 (different from mask bit)
+
+Let's move to regmap_irq data structure with two types.
+
+(Interrupt mask device)
+static struct regmap_irq foo_irqs[] = {
+	[FOO_IRQ0] = {
+		.reg_offset =  0;
+		.mask = BIT(0), /* 0x01 */
+	},
+	[FOO_IRQ1] = {
+		.reg_offset =  0;
+		.mask = BIT(1), /* 0x02 */
+	},
+};
+
+                   Initial time      irq_enable()  irq_enable()
+ Value        (regmap_add_irq_chip)   with IRQ0     with IRQ1
+_______________________________________________________________
+mask_buf_def       0x03                0x03          0x03
+mask_buf           0x03                0xFE          0xFD
+updated bits    0000 0011           xxxx xxx0      xxxx xx0x
+            (IRQ0,1 disabled)     (IRQ0 enabled)  (IRQ1 enabled)
+
+Result: Works well.
+        Only one bit is cleared when the IRQ is enabled.
+
+(Interrupt unmask device)
+Case 1)
+static struct regmap_irq foo_irqs[] = {
+	[FOO_IRQ0] = {
+		.reg_offset =  0;
+		.mask = BIT(0), /* 0x01 */
+	},
+	[FOO_IRQ1] = {
+		.reg_offset =  0;
+		.mask = BIT(1), /* 0x02 */
+	},
+};
+
+                   Initial time      irq_enable()  irq_enable()
+ Value        (regmap_add_irq_chip)   with IRQ0     with IRQ1
+_______________________________________________________________
+mask_buf_def       0x03                0x03          0x03
+mask_buf           0x03                0xFE          0xFD
+updated bits    0000 0011           xxxx xxx0      xxxx xx0x
+            (IRQ0,1 enabled)     (IRQ0 disabled) (IRQ1 disabled)
+
+Result: Not working.
+        Each IRQ is disabled. Other bits can be enabled not intentionally.
+
+Case 2) What if changing the 'mask' to inverted bit as following.
+static struct regmap_irq foo_irqs[] = {
+	[FOO_IRQ0] = {
+		.reg_offset =  0;
+		.mask = ~BIT(0), /* 0xFE */
+	},
+	[FOO_IRQ1] = {
+		.reg_offset =  0;
+		.mask = ~BIT(1), /* 0xFD */
+	},
+};
+
+                   Initial time      irq_enable()  irq_enable()
+ Value        (regmap_add_irq_chip)   with IRQ0     with IRQ1
+_______________________________________________________________
+mask_buf_def       0xFF                0xFF          0xFF
+mask_buf           0xFF                0x01          0x02
+updated bits    1111 1111           0000 0001      0000 0010
+         (All IRQs are enabled)  (IRQ0 enabled,  (IRQ1 enabled,
+                                  others are      but others are disabled)
+                                  disabled)
+
+Result: Not working.
+        Other bits are cleared except flagged IRQ.
+        Only one IRQ exists. Others are ignored. 
+
+In both cases, it doesn't work with interrupt-unmasked-register scheme.
+To fix this issue, two patches were sent.
+The mask and value should be separated -- (1) and different bit operation is required -- (2).
+(1) [PATCH 1/2] regmap-irq: use mask and val rather than using mask_buf_def
+(2) [PATCH 2/2] regmap-irq: support different type of irq register
+
+And then the result will be as following.
+
+(Interrupt mask device)
+
+                   Initial time      irq_enable()  irq_enable()
+ Value        (regmap_add_irq_chip)   with IRQ0     with IRQ1
+_______________________________________________________________
+mask_buf           0x03                0x03          0x03
+val_buf             -                  0xFE          0xFD
+updated bits     0000 0011           xxxx xxx0     xxxx xx0x
+             (IRQ0,1 disabled)    (IRQ0 enabled)  (IRQ1 enabled)
+
+(Interrupt unmask device)
+
+                   Initial time      irq_enable()  irq_enable()
+ Value        (regmap_add_irq_chip)   with IRQ0     with IRQ1
+_______________________________________________________________
+mask_buf           0x03                0x03          0x03
+val_buf             -                  0x01          0x02
+updated bits     1111 1100           xxxx xxx1     xxxx xx1x
+             (IRQ0,1 disabled)    (IRQ0 enabled)  (IRQ1 enabled)
+
+
+I'm not sure there is another device which supports the interrupt-unmasked register.
+As far as I know, LP8788 is the only device :-(
+
+Thanks !
+
+Best Regards,
+Milo
