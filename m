@@ -1,61 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752381Ab2GTDyX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 23:54:23 -0400
-Received: from void.printf.net ([89.145.121.20]:44267 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751890Ab2GTDyU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 23:54:20 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Shashidhar Hiremath <shashidharh@vayavyalabs.com>
-Cc: lkml <linux-kernel@vger.kernel.org>
-Subject: Re: A question on printascii
-References: <CANYdXnrf-f2e=3YKpwweSmvrYdmy7z_yOEyZ11k=La=8b3W6Pw@mail.gmail.com>
-Date: Thu, 19 Jul 2012 23:54:15 -0400
-In-Reply-To: <CANYdXnrf-f2e=3YKpwweSmvrYdmy7z_yOEyZ11k=La=8b3W6Pw@mail.gmail.com>
-	(Shashidhar Hiremath's message of "Wed, 18 Jul 2012 18:33:03 +0530")
-Message-ID: <87hat35bq0.fsf@octavius.laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
+	id S1750929Ab2GTEZu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 00:25:50 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:52025 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750709Ab2GTEZo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 00:25:44 -0400
+X-AuditID: 9c93016f-b7b08ae00000790d-1c-5008ddc57889
+Date: Fri, 20 Jul 2012 13:25:45 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Tim Chen <tim.c.chen@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        "andi.kleen" <andi.kleen@intel.com>, linux-mm <linux-mm@kvack.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Cgroup: Fix memory accounting scalability in
+ shrink_page_list
+Message-ID: <20120720042545.GA24267@bbox>
+References: <1342740866.13492.50.camel@schen9-DESK>
+ <5008CE38.2020300@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5008CE38.2020300@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Shashidhar,
+On Fri, Jul 20, 2012 at 12:19:20PM +0900, Kamezawa Hiroyuki wrote:
+> (2012/07/20 8:34), Tim Chen wrote:
+> >Hi,
+> >
+> >I noticed in a multi-process parallel files reading benchmark I ran on a
+> >8 socket machine,  throughput slowed down by a factor of 8 when I ran
+> >the benchmark within a cgroup container.  I traced the problem to the
+> >following code path (see below) when we are trying to reclaim memory
+> >from file cache.  The res_counter_uncharge function is called on every
+> >page that's reclaimed and created heavy lock contention.  The patch
+> >below allows the reclaimed pages to be uncharged from the resource
+> >counter in batch and recovered the regression.
+> >
+> >Tim
+> >
+> >      40.67%           usemem  [kernel.kallsyms]                   [k] _raw_spin_lock
+> >                       |
+> >                       --- _raw_spin_lock
+> >                          |
+> >                          |--92.61%-- res_counter_uncharge
+> >                          |          |
+> >                          |          |--100.00%-- __mem_cgroup_uncharge_common
+> >                          |          |          |
+> >                          |          |          |--100.00%-- mem_cgroup_uncharge_cache_page
+> >                          |          |          |          __remove_mapping
+> >                          |          |          |          shrink_page_list
+> >                          |          |          |          shrink_inactive_list
+> >                          |          |          |          shrink_mem_cgroup_zone
+> >                          |          |          |          shrink_zone
+> >                          |          |          |          do_try_to_free_pages
+> >                          |          |          |          try_to_free_pages
+> >                          |          |          |          __alloc_pages_nodemask
+> >                          |          |          |          alloc_pages_current
+> >
+> >
+> 
+> Thank you very much !!
+> 
+> When I added batching, I didn't touch page-reclaim path because it delays
+> res_counter_uncharge() and make more threads run into page reclaim.
 
-On Wed, Jul 18 2012, Shashidhar Hiremath wrote:
->   I want to use printascii to debug my serial driver. How do I enable
-> it and use the feature.
->   Currently I have enabled in menuconfig and done an extern on the
-> printascii api, this doesn't seem to work, So any hints for debugging
-> serial drivers ?
+Isn't it really problem? It's same as global reclaim.
+In the short term, you might be right but batch free might prevent
+entering more into reclaim path in the long term because we get lots
+of free pages than nenessary one. And we can reduce lock overhead.
+If it is proved as real problem, maybe we need global reclaim, too.
 
-Sounds like you want this patch, against linux-next:
+> But, from above score, bactching seems required.
+> 
+> And because of current design of per-zone-per-memcg-LRU, batching
+> works very very well....all lru pages shrink_page_list() scans are on
+> the same memcg.
 
-diff --git a/kernel/printk.c b/kernel/printk.c
-index 3991862..36abce8 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -45,6 +45,8 @@
- 
- #include <asm/uaccess.h>
- 
-+extern void printascii(char *);
-+
- #define CREATE_TRACE_POINTS
- #include <trace/events/printk.h>
- 
-@@ -1542,6 +1544,8 @@ asmlinkage int vprintk_emit(int facility, int level,
- 	 */
- 	text_len = vscnprintf(text, sizeof(textbuf), fmt, args);
- 
-+	printascii(text);
-+
- 	/* mark and strip a trailing newline */
- 	if (text_len && text[text_len-1] == '\n') {
- 		text_len--;
+Yes. It's more effective point!
 
 -- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+Kind regards,
+Minchan Kim
