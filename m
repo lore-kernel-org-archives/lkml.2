@@ -1,51 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752510Ab2GTQaR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 12:30:17 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62274 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750969Ab2GTQaO (ORCPT
+	id S1752767Ab2GTQbE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 12:31:04 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:38234 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750925Ab2GTQbB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 12:30:14 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: axboe@kernel.dk, linux-scsi@vger.kernel.org
-Subject: [PATCH] sg_io: allow UNMAP and WRITE SAME without CAP_SYS_RAWIO
-Date: Fri, 20 Jul 2012 18:30:01 +0200
-Message-Id: <1342801801-15617-1-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 20 Jul 2012 12:31:01 -0400
+MIME-Version: 1.0
+In-Reply-To: <1342741421-17956-1-git-send-email-anton.vorontsov@linaro.org>
+References: <20120719142856.GA25184@elgon.mountain>
+	<1342741421-17956-1-git-send-email-anton.vorontsov@linaro.org>
+Date: Fri, 20 Jul 2012 09:31:00 -0700
+X-Google-Sender-Auth: PQkDcS_fq2hcg8MGAj2hnlnsID8
+Message-ID: <CAGXu5j+8f=MMoit8Bi+36h177haVM19W-0xpGeiO27cu+dL9Hg@mail.gmail.com>
+Subject: Re: [PATCH] pstore/ram: Fix possible NULL dereference
+From: Kees Cook <keescook@chromium.org>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Colin Cross <ccross@android.com>, Tony Luck <tony.luck@intel.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        John Stultz <john.stultz@linaro.org>, arve@android.com,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        linaro-kernel@lists.linaro.org, patches@linaro.org,
+        kernel-team@android.com
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These commands cannot be issued right now without giving CAP_SYS_RAWIO to
-the process who wishes to send them.  These commands can be useful also to
-non-privileged programs who have access to the block devices.  For example
-a virtual machine monitor needs them to forward trim/discard to host disks.
+On Thu, Jul 19, 2012 at 4:43 PM, Anton Vorontsov
+<anton.vorontsov@linaro.org> wrote:
+> We can dereference 'cxt->cprz' if console and dump logging are disabled
+> (which is unlikely, but still possible to do). This patch fixes the issue
+> by changing the code so that we don't dereference przs at all, we can
+> just calculate bufsize from console_size and record_size values.
+>
+> Plus, while at it, the patch improves the buffer size calculation.
+>
+> After Kay's printk rework, we know the optimal buffer size for console
+> logging -- it is LOG_LINE_MAX (defined privately in printk.c). Previously,
+> if only console logging was enabled, we would allocate unnecessary large
+> buffer in pstore, while we only need LOG_LINE_MAX. (Pstore console logging
+> is still capable of handling buffers > LOG_LINE_MAX, it will just do
+> multiple calls to psinfo->write).
+>
+> Note that I don't export the constant, since we will do even a better
+> thing soon: we will switch console logging to a new write_buf API, which
+> will eliminate the need for the additional buffer; and so we won't need
+> the constant.
+>
+> Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
- block/scsi_ioctl.c |    3 ++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+Acked-by: Kees Cook <keescook@chromium.org>
 
-diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
-index 260fa80..dd71f18 100644
---- a/block/scsi_ioctl.c
-+++ b/block/scsi_ioctl.c
-@@ -168,13 +168,16 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
- 	/* Basic writing commands */
- 	__set_bit(WRITE_6, filter->write_ok);
- 	__set_bit(WRITE_10, filter->write_ok);
-+	__set_bit(WRITE_SAME, filter->write_ok);
- 	__set_bit(WRITE_VERIFY, filter->write_ok);
- 	__set_bit(WRITE_12, filter->write_ok);
- 	__set_bit(WRITE_VERIFY_12, filter->write_ok);
- 	__set_bit(WRITE_16, filter->write_ok);
-+	__set_bit(WRITE_SAME_16, filter->write_ok);
- 	__set_bit(WRITE_LONG, filter->write_ok);
- 	__set_bit(WRITE_LONG_2, filter->write_ok);
- 	__set_bit(ERASE, filter->write_ok);
-+	__set_bit(UNMAP, filter->write_ok);
- 	__set_bit(GPCMD_MODE_SELECT_10, filter->write_ok);
- 	__set_bit(MODE_SELECT, filter->write_ok);
- 	__set_bit(LOG_SELECT, filter->write_ok);
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
