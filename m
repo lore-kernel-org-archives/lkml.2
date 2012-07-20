@@ -1,91 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752753Ab2GTMSx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 08:18:53 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:41352 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751188Ab2GTMSw (ORCPT
+	id S1753218Ab2GTMb3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 08:31:29 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55638 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751297Ab2GTMb0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 08:18:52 -0400
-Date: Fri, 20 Jul 2012 14:18:48 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Tony Luck <tony.luck@intel.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Chen Gong <gong.chen@linux.intel.com>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Subject: Re: [PATCH 2/2] x86/mce: Add quirk for instruction recovery on Sandy
- Bridge processors
-Message-ID: <20120720121848.GA29183@aftab.osrc.amd.com>
-References: <cover.1342723082.git.tony.luck@intel.com>
- <180a06f3f357cf9f78259ae443a082b14a29535b.1342723082.git.tony.luck@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <180a06f3f357cf9f78259ae443a082b14a29535b.1342723082.git.tony.luck@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 20 Jul 2012 08:31:26 -0400
+From: Michel Lespinasse <walken@google.com>
+To: riel@redhat.com, peterz@infradead.org, daniel.santos@pobox.com,
+        aarcange@redhat.com, dwmw2@infradead.org, akpm@linux-foundation.org
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [RFC PATCH 0/6] augmented rbtree changes
+Date: Fri, 20 Jul 2012 05:31:01 -0700
+Message-Id: <1342787467-5493-1-git-send-email-walken@google.com>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 19, 2012 at 11:28:46AM -0700, Tony Luck wrote:
-> Sandy Bridge processors follow the SDM (Vol 3B, Table 15-20) and set
-> both the RIPV and EIPV bits in the MCG_STATUS register to zero for
-> machine checks during instruction fetch. This is more than a little
-> counter-intuitive and means that Linux cannot recover from these
-> errors. Rather than insert special case code at several places in mce.c
-> and mce-severity.c, we pretend the EIPV bit was set for just this case
-> early in processing the machine check.
-> 
-> Signed-off-by: Tony Luck <tony.luck@intel.com>
+I've been looking at rbtrees with an eye towards improving the augmented
+rbtree support, and even though I don't consider this work done, I am
+getting to the stage where I would like to get feedback.
 
-Looks ok, just minor nitpick below.
+Patches 1-2 are generic rbtree improvements I came up with after sending
+the previous patch series. Patch 1 makes rb_erase easier to read (IMO),
+while patch 2 is another minor optimization in the rbtree rebalancing code.
 
-> ---
->  arch/x86/kernel/cpu/mcheck/mce.c | 43 +++++++++++++++++++++++++++++++++++++---
->  1 file changed, 40 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-> index da27c5d..e65e738 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-> @@ -102,6 +102,8 @@ DEFINE_PER_CPU(mce_banks_t, mce_poll_banks) = {
->  
->  static DEFINE_PER_CPU(struct work_struct, mce_work);
->  
-> +static void (*quirk_no_way_out)(int bank, struct mce *m, struct pt_regs *regs);
-> +
->  /*
->   * CPU/chipset specific EDAC code can register a notifier call here to print
->   * MCE errors in a human-readable form.
-> @@ -649,14 +651,18 @@ EXPORT_SYMBOL_GPL(machine_check_poll);
->   * Do a quick check if any of the events requires a panic.
->   * This decides if we keep the events around or clear them.
->   */
-> -static int mce_no_way_out(struct mce *m, char **msg, unsigned long *validp)
-> +static int mce_no_way_out(struct mce *m, char **msg, unsigned long *validp,
-> +			  struct pt_regs *regs)
->  {
->  	int i, ret = 0;
->  
->  	for (i = 0; i < banks; i++) {
->  		m->status = mce_rdmsrl(MSR_IA32_MCx_STATUS(i));
-> -		if (m->status & MCI_STATUS_VAL)
-> +		if (m->status & MCI_STATUS_VAL) {
->  			__set_bit(i, validp);
-> +			if (quirk_no_way_out)
-> +				quirk_no_way_out(i, m, regs);
+Patch 3 adds an augmented rbtree test, where nodes get a new 'value' field
+in addition to the existing sort key, and we want to maintain an 'augmented'
+field for each node, which should be equal to the max of all 'value' fields
+for nodes within that node's subtree.
 
-Maybe define a default empty quirk_no_way_out() on the remaining
-families/vendors so that the compiler can optimize it away and we save
-ourselves the if-test?
+Patch 4 speeds up augmented rbtree insertion. We make the handcoded search
+function responsible for updating the augmented values on the path to the
+insertion point, then we use a new version of rb_insert_color() which has
+an added callback for updating augmented values on a tree rotation.
+
+Patch 5 speeds up the augmented rbtree erase. Here again we use a tree
+rotation callback during rebalancing; however we also have to propagate
+the augmented node information above nodes being erased and/or stitched,
+and I haven't found a nice enough way to do that. So for now I am proposing
+the simple-stupid way of propagating all the way to the root. More on
+this later.
+
+Patch 6 removes the prior augmented API interface, and migrates its single
+current user to the proposed new interface.
+
+
+IMO patches 1-2 are ready for inclusion in -mm tree along with the
+previous rbtree series.
+
+
+I would like feedback on the rest - but first, I think I should mention
+what use cases I envision for this augmented rbtree support. The way
+I see it, augmented rbtree could be used in:
+
+- Some kind of generic interval tree support, where nodes have explicit
+(start, end) values. The rbtree is sorted by start order, and nodes
+are augmented with a max(node->end for node in subtree) property.
+arch/x86/mm/pat_rbtree.c and mm/kmemleak.c could make use of that
+(instead of an ad-hoc interval tree implementations based on augmented
+rbtree and prio tree respectively);
+
+- The rbtree for all VMAs in a MM could be augmented, as suggested by Rik,
+to maintain a max(empty gap before node's VMA for node in subtree) property
+and support fast virtual address space allocation;
+
+- The prio tree of all VMAs mapping a given file (struct address_space)
+could be switched to an augmented rbtree based interval tree (thus removing
+the prio tree library in favor of augmented rbtrees)
+
+- I would like to introduce yet another interval tree to hold all VMAs
+sharing the same anon_vma (so the linked list of all AVCs with a given
+anon_vma would be replaced with an interval tree).
+
+With these plans, each VMA could be on up to 3 separate augmented rbtrees,
+so that's why I want them to be fast :)
+
+
+As they stand, patches 3-6 don't seem to make a difference for basic rbtree
+support, and they improve my augmented rbtree insertion/erase benchmark
+by a factor of ~2.1 to ~2.3 depending on test machines.
+
+
+In addition to the usual feedback about code sanity or lack thereof, I would
+like to ask if I stroke the right balance on pure speed vs code size.
+I think having generic functions for augmented rbtree rebalancing, with
+a callback for tree rotations, is probably a decent choice given that we
+might have to update several augmented rbtrees in sequence when adding or
+removing VMAs.
+
+
+Another point I am not fully happy with is the way I am propagating augmented
+subtree information in rb_erase_augmented(). I initially tried to stop
+propagating updates up as soon as a node was reached that already had the
+proper augmented value. However, there are a few complications with that.
+
+In case 2 of rb_erase_augmented(), if 'old' had the highest augmented value
+in the subtree and 'node' had the next highest value, node's augmented
+value is still correct after stitching it as the new root of that subtree,
+but its parent's augmented value must still be adjusted as 'old', which
+had the highest value in that subtree, has been removed from the subtree.
+
+In case 3 of rb_erase_augmented(), 'node' gets stitched out of its place
+and relocated to the subtree root, in place of 'old'. As a result, we
+might have to propagate augmented values a few levels above node's old
+location, before reaching a node that already has the right augmented
+value, but is still below the point where 'old' was replaced with 'new'
+which might have a lower augmented value (if 'old' had the highest
+value for that subtree).
+
+So while it would be possible to handle all these cases without propagating
+all the way to the root (and it should be more efficient too - most of the
+nodes in a balanced tree are on the last few levels, so having to go all
+the way back to the root really is wasteful), I have not found a nice
+elegant way to do that yet, let alone in a generic way. If someone wants
+to try their hand at that problem, I would be very interested to see what
+they can come up with.
+
+
+Michel Lespinasse (6):
+  rbtree: rb_erase updates and comments
+  rbtree: optimize fetching of sibling node
+  augmented rbtree test
+  rbtree: faster augmented insert
+  rbtree: faster augmented erase
+  rbtree: remove prior augmented rbtree implementation
+
+ arch/x86/mm/pat_rbtree.c        |   52 ++++++----
+ include/linux/rbtree.h          |    8 --
+ include/linux/rbtree_internal.h |  131 +++++++++++++++++++++++++
+ lib/rbtree.c                    |  206 ++++++++-------------------------------
+ lib/rbtree_test.c               |  120 ++++++++++++++++++++++-
+ 5 files changed, 322 insertions(+), 195 deletions(-)
+ create mode 100644 include/linux/rbtree_internal.h
 
 -- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+1.7.7.3
