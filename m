@@ -1,94 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752812Ab2GTBAW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 21:00:22 -0400
-Received: from mail-vc0-f202.google.com ([209.85.220.202]:50754 "EHLO
-	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752066Ab2GTBAV (ORCPT
+	id S1752384Ab2GTBFC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 21:05:02 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49427 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751856Ab2GTBE7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 21:00:21 -0400
-Date: Thu, 19 Jul 2012 18:00:19 -0700
-From: Todd Poynor <toddpoynor@google.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org, arve@android.com
-Subject: Re: [PATCH] PM / Sleep: Print name of wakeup source that aborts
- suspend
-Message-ID: <20120720010019.GA15701@google.com>
-References: <1342637519-22355-1-git-send-email-toddpoynor@google.com>
- <201207182147.34750.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201207182147.34750.rjw@sisk.pl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 19 Jul 2012 21:04:59 -0400
+From: Joe Millenbach <jmillenbach@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        Gokul Caushik <caushik1@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Joe Millenbach <jmillenbach@gmail.com>, Jesper Juhl <jj@chaosbits.net>,
+        linux-kernel@vger.kernel.org
+Cc: team-fjord@googlegroups.com
+Subject: [PATCH 1/7] x86/boot: Removed quiet flag and switched quiet output to debug flag
+Date: Thu, 19 Jul 2012 18:04:36 -0700
+Message-Id: <1342746282-28497-2-git-send-email-jmillenbach@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1342746282-28497-1-git-send-email-jmillenbach@gmail.com>
+References: <1342746282-28497-1-git-send-email-jmillenbach@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 18, 2012 at 09:47:34PM +0200, Rafael J. Wysocki wrote:
-> On Wednesday, July 18, 2012, Todd Poynor wrote:
-...
-> > +{
-> > +	struct wakeup_source *ws;
-> > +	int active = 0;
-> > +	struct wakeup_source *last_activity_ws = NULL;
-> > +
-> > +	rcu_read_lock();
-> > +	list_for_each_entry_rcu(ws, &wakeup_sources, entry) {
-> > +		if (ws->active) {
-> > +			pr_info("active wakeup source: %s\n", ws->name);
-> > +			active = 1;
-> 
-> Can we do a break here?  Or do we want to get all of them?
+There are only 3 uses of the quiet flag and they all protect output that
+is only useful for debugging the stub, therefore we switched to using the
+debug flag for all extra output.
 
-I haven't seen more than 3 activated during suspend entry at a time, but
-could just list one.  I haven't made that change yet but will if it's
-preferred.
+Signed-off-by: Joe Millenbach <jmillenbach@gmail.com>
+Signed-off-by: Gokul Caushik <caushik1@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+---
+ arch/x86/boot/compressed/misc.c |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
-> 
-> > +		} else if (!active &&
-> > +			   (!last_activity_ws ||
-> > +			    ws->last_time.tv64 >
-> > +			    last_activity_ws->last_time.tv64)) {
-> 
-> ktime_to_ns() anyone?
-
-Sure, I avoided it because some configs do math on each of these, but
-perhaps most implementations implement it as a NOP.
-
-> 
-> > +			last_activity_ws = ws;
-> > +		}
-> > +	}
-> > +
-> > +	if (!active && last_activity_ws)
-> > +		pr_info("last active wakeup source: %s\n",
-> > +			last_activity_ws->name);
-> > +	rcu_read_unlock();
-> > +}
-> > +
-> >  /**
-> >   * pm_wakeup_pending - Check if power transition in progress should be aborted.
-> >   *
-> > @@ -671,6 +696,10 @@ bool pm_wakeup_pending(void)
-> >  		events_check_enabled = !ret;
-> >  	}
-> >  	spin_unlock_irqrestore(&events_lock, flags);
-> > +
-> > +	if (ret)
-> > +		print_active_wakeup_sources();
-> > +
-> >  	return ret;
-> >  }
-> 
-> There is no way this or equivalent can go into v3.6.  It may go into v3.7,
-> but there's a plenty of time for that.
-
-Sounds fine, thanks.
-
-> 
-> Thanks,
-> Rafael
-
-Todd
+diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+index 7116dcb..8f2355d 100644
+--- a/arch/x86/boot/compressed/misc.c
++++ b/arch/x86/boot/compressed/misc.c
+@@ -108,7 +108,6 @@ static void error(char *m);
+  * This is set up by the setup-routine at boot-time
+  */
+ struct boot_params *real_mode;		/* Pointer to real-mode data */
+-static int quiet;
+ static int debug;
+ 
+ void *memset(void *s, int c, size_t n);
+@@ -294,7 +293,7 @@ static void parse_elf(void *output)
+ 		return;
+ 	}
+ 
+-	if (!quiet)
++	if (debug)
+ 		putstr("Parsing ELF... ");
+ 
+ 	phdrs = malloc(sizeof(*phdrs) * ehdr.e_phnum);
+@@ -332,8 +331,6 @@ asmlinkage void decompress_kernel(void *rmode, memptr heap,
+ {
+ 	real_mode = rmode;
+ 
+-	if (cmdline_find_option_bool("quiet"))
+-		quiet = 1;
+ 	if (cmdline_find_option_bool("debug"))
+ 		debug = 1;
+ 
+@@ -369,11 +366,11 @@ asmlinkage void decompress_kernel(void *rmode, memptr heap,
+ 		error("Wrong destination address");
+ #endif
+ 
+-	if (!quiet)
++	if (debug)
+ 		putstr("\nDecompressing Linux... ");
+ 	decompress(input_data, input_len, NULL, NULL, output, NULL, error);
+ 	parse_elf(output);
+-	if (!quiet)
++	if (debug)
+ 		putstr("done.\nBooting the kernel.\n");
+ 	return;
+ }
+-- 
+1.7.9.5
 
