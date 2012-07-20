@@ -1,56 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752704Ab2GTNxv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 09:53:51 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:59973 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751769Ab2GTNxu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 09:53:50 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH] MPILIB: Provide count_leading/trailing_zeros() based on arch functions
-Date: Fri, 20 Jul 2012 13:53:33 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-References: <20120720125657.15422.12922.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20120720125657.15422.12922.stgit@warthog.procyon.org.uk>
+	id S1752618Ab2GTNyd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 09:54:33 -0400
+Received: from nm7.bullet.mail.ne1.yahoo.com ([98.138.90.70]:41764 "HELO
+	nm7.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751769Ab2GTNyb convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 09:54:31 -0400
+X-Greylist: delayed 313 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Jul 2012 09:54:31 EDT
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 641650.42754.bm@omp1034.mail.ne1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=c2xd1+9XIKpp3zyrmd010xBa/0966+ognXx8kdHlIoYhCPidcb2ByltvAWTN8r3nzat7qdAyt2ThS6wttgQOeHsFNgQoNYXcteGrxwO+fUD/xlhezoUF2GFLKQRjrw4CYaru4C9M0mm1UdAJZvaBlNmoTzAQX/jn4O67oBxW43Y=;
+X-YMail-OSG: ULk4G0QVM1nBcO27iJBKcPAGlcrmRa18QvULmcgEmA66IYb
+ wHRK8Xnz9KfwcOahDI1wDGyVdAtrDs0FJqTvcnGPTbXBlqK1Q1xm3PM3XbTU
+ 9LCuAQSfEb130MO0kJ10uHpZrA42BQ9F8u1wGeqCODQ43duZghK86yhBX_1q
+ M4Yay5pccgVxy4CrzKW92GlUYipbUGsqKFiEs7al81G6jxgCyRitf190WKbk
+ tSQTL8U1aELT3jZ1mEpgR.2J63I_vEleoRHVia3S615doO5V4srBeNLlMrx7
+ oYtD6mZvSMtQ7QoY5iq4qVX5dy5_nb5GO3bIGVM5Ir3aFfDdEtHXUCFT4aO_
+ rqucmkDu1luvj7u0yFuqG2J1Ban.y2IRuw6k9gHjAvnpoDs88BbEbQC8fFw4
+ ScXXFN96QnQ--
+X-Mailer: YahooMailWebService/0.8.120.356233
+Message-ID: <1342792157.14025.YahooMailNeo@web122102.mail.ne1.yahoo.com>
+Date: Fri, 20 Jul 2012 06:49:17 -0700 (PDT)
+From: Mui Balderrama <mui.balderrama@yahoo.com>
+Reply-To: Mui Balderrama <mui.balderrama@yahoo.com>
+Subject: Your bank account is under investigation.
+To: "mcallistern@jdstech.com" <mcallistern@jdstech.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207201353.34324.arnd@arndb.de>
-X-Provags-ID: V02:K0:x1O9+URUVQPNcC7Lz6AltO9oai8zlZNyyEeXIrikNX4
- yd26RXmNAuybgYT0achPkpwIhWv6mZ3A5Byle5+YbU0Doy49rb
- kRmdUJBskUZ9XtIg9UOA1jMOcnYY8+inLteYM5WC1JFi8NPITS
- wDv0IMyBMtu9TOmt9B9TYugNTH7iNXAltsruSxd9PvIGOJR2cq
- vddqbGzxzuF720q+AqHOU742i6XxO/lPmc5MckAv4pYvcmgwU8
- pDMrU/8DjmwUItEoEXvlRQKCDHsriyYQSL9TZb5Dck/nG3+zuc
- Ug7kPhd71usKiLrsiku9tKWTjHDu1zNjCllyHvr1K70wOpQuXp
- IMhq1ZYEEgv8sr3mmnX4=
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 20 July 2012, David Howells wrote:
-> Provide count_leading/trailing_zeros() macros based on extant arch bit scanning
-> functions rather than reimplementing from scratch in MPILIB.
-> 
-> Whilst we're at it, turn count_foo_zeros(n, x) into n = count_foo_zeros(x).
-> 
-> Also move the definition to asm-generic as other people may be interested in
-> using it.
-> 
-> Signed-off-by: David Howells <dhowells@redhat.com>
-> Cc: David S. Miller <davem@davemloft.net>
-> Cc: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-> Cc: Arnd Bergmann <arnd@arndb.de>
+It was emphatic to ownership a laborer crochet had hind imperfection in the incautious footman because his adherent was calling, physically partisan he might flaunt for boom, and he must deceive from his tolerate those adverse months of idleness.
 
-I don't generally like to put stuff into asm-generic when it's unlikely
-to be overridden by architectures. It would really belong into
-include/linux, but then again we have all the other bitops in asm-generic
-as well, so whatever...
+kḁǜὸὀ*ṋŧő/?ặὅӑčḓ
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Fucker told me annually to taunt indolent to asphyxiate and baffle her to-pestilence.
