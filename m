@@ -1,76 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753720Ab2GTNeN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 09:34:13 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:33771 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753459Ab2GTNeM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 09:34:12 -0400
-Message-ID: <50095E46.5070207@linux.vnet.ibm.com>
-Date: Fri, 20 Jul 2012 21:33:58 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1752723Ab2GTNg2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 09:36:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36668 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751297Ab2GTNg0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 09:36:26 -0400
+Date: Fri, 20 Jul 2012 09:35:01 -0400
+From: Dave Jones <davej@redhat.com>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Darren Hart <darren@dvhart.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: 3.5-rc6 futex_wait_requeue_pi oops.
+Message-ID: <20120720133501.GA30826@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Darren Hart <dvhart@linux.intel.com>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	Rusty Russell <rusty@rustcorp.com.au>,
+	Darren Hart <darren@dvhart.com>,
+	Peter Zijlstra <peterz@infradead.org>
+References: <20120713180823.GA24972@redhat.com>
+ <alpine.LFD.2.02.1207132032330.32033@ionos>
+ <20120713185402.GA1707@redhat.com>
+ <5008969F.5030901@linux.intel.com>
+ <5008A847.4070006@linux.intel.com>
+ <50090079.1000703@linux.intel.com>
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 5/9] KVM: MMU: fask check write-protect for direct mmu
-References: <50056DB8.7080702@linux.vnet.ibm.com> <50056E59.4090003@linux.vnet.ibm.com> <20120720003917.GA8951@amt.cnet> <5008C3B4.1070006@linux.vnet.ibm.com> <20120720110908.GB16859@amt.cnet>
-In-Reply-To: <20120720110908.GB16859@amt.cnet>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12072013-4790-0000-0000-000003C65286
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50090079.1000703@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/20/2012 07:09 PM, Marcelo Tosatti wrote:
-> On Fri, Jul 20, 2012 at 10:34:28AM +0800, Xiao Guangrong wrote:
->> On 07/20/2012 08:39 AM, Marcelo Tosatti wrote:
->>> On Tue, Jul 17, 2012 at 09:53:29PM +0800, Xiao Guangrong wrote:
->>>> If it have no indirect shadow pages we need not protect any gfn,
->>>> this is always true for direct mmu without nested
->>>>
->>>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
->>>
->>> Xiao,
->>>
->>> What is the motivation? Numbers please.
->>>
->>
->> mmu_need_write_protect is the common path for both soft-mmu and
->> hard-mmu, checking indirect_shadow_pages can skip hash-table walking
->> for the case which is tdp is enabled without nested guest.
-> 
-> I mean motivation as observation that it is a bottleneck.
-> 
->> I will post the Number after I do the performance test.
->>
->>> In fact, what case was the original indirect_shadow_pages conditional in
->>> kvm_mmu_pte_write optimizing again?
->>>
->>
->> They are the different paths, mmu_need_write_protect is the real
->> page fault path, and kvm_mmu_pte_write is caused by mmio emulation.
-> 
-> Sure. What i am asking is, what use case is the indirect_shadow_pages
-> optimizing? What scenario, what workload? 
-> 
+On Thu, Jul 19, 2012 at 11:53:45PM -0700, Darren Hart wrote:
 
-Sorry, Marcelo, i do know why i completely misunderstood your mail. :(
+ 
+ > >> I'll add a fix to that WARN_ON in my futex-fixes branch along with the
+ > >> fix for the bug Dan found.
+ > > 
+ > > I think I have root cause. futex_wait_requeue_pi() doesn't like having
+ > > uaddr == uaddr2. The handle_early_wakeup() doesn't detect a problem
+ > > because key2 IS the same as key1, I think. I've just discovered this and
+ > > quickly hacked in a "if (uaddr==uaddr2) return -EINVAL" fix and the test
+ > > continues to run (with just ops 0, 11, 12) for several minutes now
+ > > (typically fails in a few seconds). I'll let it run for a few hours and
+ > > contemplate the proper fix.
+ > 
+ > Dave, mind giving this a spin? It seems to be doing the trick here,
+ > at least for the *REQUEUE_PI futex op codes in trinity.
 
-I am not sure whether this is a bottleneck, i just got it from
-code review, i will measure it to see if we can get benefit from
-it. :p
+Yeah, looks like that does the trick!
 
-> See the "When to optimize" section of
-> http://en.wikipedia.org/wiki/Program_optimization.
-> 
-> Can't remember why indirect_shadow_pages was introduced in
-> kvm_mmu_pte_write.
-> 
+thanks,
 
-Please refer to:
-	https://lkml.org/lkml/2011/5/18/174
-
+	Dave
