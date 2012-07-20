@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753389Ab2GTKOH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 06:14:07 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56763 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751490Ab2GTKOG (ORCPT
+	id S1753409Ab2GTKOM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 06:14:12 -0400
+Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:1983 "EHLO
+	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751490Ab2GTKOK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 06:14:06 -0400
-Date: Fri, 20 Jul 2012 11:14:04 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: Fabio Estevam <fabio.estevam@freescale.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Arnaud Patard <arnaud.patard@rtp-net.org>, Liam Girdwood <lrg@ti.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: mc13xxx: Remove extern function declaration
- for mc13xxx_sw_regulator
-Message-ID: <20120720101404.GV4495@opensource.wolfsonmicro.com>
-References: <1342758634.6777.1.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZXzThk3vFZecBD04"
-Content-Disposition: inline
-In-Reply-To: <1342758634.6777.1.camel@phoenix>
-X-Cookie: Beware of low-flying butterflies.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 20 Jul 2012 06:14:10 -0400
+Message-ID: <1342779242.26179.65.camel@x61.thuisdomein>
+Subject: Re: [PATCH] [TRIVIAL] treewide: fix four odd angle bracket includes
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Tony Lindgren <tony@atomide.com>
+Date: Fri, 20 Jul 2012 12:14:02 +0200
+In-Reply-To: <alpine.LNX.2.00.1207201026490.21929@pobox.suse.cz>
+References: <1341006775.1911.59.camel@x61.thuisdomein>
+	 <alpine.LNX.2.00.1207201026490.21929@pobox.suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-OriginalArrivalTime: 20 Jul 2012 10:14:08.0304 (UTC) FILETIME=[66503B00:01CD6660]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2012-07-20 at 10:28 +0200, Jiri Kosina wrote:
+> Right, but ... I don't really see the value of switching either way, do 
+> you?
 
---ZXzThk3vFZecBD04
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+0) Sure I do, that's why I submitted this trivial patch in the first
+place.
 
-On Fri, Jul 20, 2012 at 12:30:34PM +0800, Axel Lin wrote:
-> This function does not exist, remove the extern function declaration.
+1) As I mentioned in the patch explanation: why bother using angle
+brackets if one is actually including a header outside of the include
+search patch?
 
-Applied, thanks.
+2) It's unobvious to start the paths of a header in an angle bracket
+include with "..". At least, it took me a while to figure out what these
+four includes were actually doing, simply because they're rather odd.
+(There are over 100000 angle bracket includes, and exactly four that
+start with "..".)
 
---ZXzThk3vFZecBD04
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+3) To me this trivial patch is comparable to trivial patches I submitted
+recently concerning other odd includes. In your for-next branch we now
+have commit 6ac7d11527a31d01b566a5c45369180e326ff4f1 ("treewide: Put a
+space between #include and FILE"), and commit
+cc502bb741e1797290381da14dddb695ec1adbaf ("renesas_usbhs: cleanup quoted
+includes"), and one similar commit. These all change includes that are
+perfectly legal but a bit odd. And that makes these includes a bit
+harder to understand, to git grep for, and to handle correctly in the
+kind of scripts I use to find certain issues in the tree.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQCS9QAAoJEBus8iNuMP3dB80P/05O85xTpsVhCglQ5rOsjtwf
-54o9NZrLMHBsBbo/EauEZCWtDO/LxHFavQxLp6ur42rtqNA9GTKy3c4kG//XI+yR
-GVIq/v+XuNWwHUa3AS+BddAqL7Cvbxrmz0VX6Ro1JFEgJAscd1ldlxVK6BdIbLCW
-D7BuqVBD2rxVDOU+Mcb5334E6+wUlHeeYINZ0Pd710dVkFvWGynEZL1BC/yFzl5t
-JKObpByT4bSwAtrebabRrS1x4Ih5CYXYPJcora+SeXBGF9xB4LoDy5vPQxRh1sZs
-MvQoJA993nidugiB+oVvJU3Ju9nzw4zwPyhh1VXGYLttzeERgKFvnuXrOrQpVFiD
-PEA4hRXTRq1YewJIrh/uuXbYhsa3khMHmRK/15SKMXnThdv7YaUUb06T5l85RCoS
-XUwJ1g1jeVpV5lQjO9WQQ6wchQyl67SJbIo5qDj9tQUAsUBxgPXVHtlvL4uKB7nh
-XiKhifZp/HBfbT6r8SAdhPahBoZqiL2bOEOYY/bJVLIyqn852sWxkx+XETGWBrHf
-wCY4VP54NTVJ29W431/rwjrCa8cHb7kfcn+IafVLyYh6OO6jtBwtD46DCw2aJCYP
-BC5p/6l9q8gXh4YbU7aSbv7BFl8TzQUhGweLuTAdDW/4/vguuva83UNW5Cb5gr90
-Bz3ZzYB/g7g1uacQY0eB
-=GG9X
------END PGP SIGNATURE-----
+Paul Bolle
 
---ZXzThk3vFZecBD04--
