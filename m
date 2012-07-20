@@ -1,63 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752263Ab2GTSiQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 14:38:16 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:56100 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751439Ab2GTSiM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 14:38:12 -0400
+	id S1752300Ab2GTSmB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 14:42:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53304 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751680Ab2GTSl7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 14:41:59 -0400
+Date: Fri, 20 Jul 2012 21:42:28 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Greg KH <greg@kroah.com>
+Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: manual merge of the staging tree with the
+ target-merge tree
+Message-ID: <20120720184228.GA19243@redhat.com>
+References: <20120719145301.b8992aa986b47d7c44651710@canb.auug.org.au>
+ <20120719235523.GA13623@kroah.com>
+ <1342806778.25472.1.camel@haakon2.linux-iscsi.org>
+ <20120720180358.GA9134@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <20120713121053.0637219f@pyramind.ukuu.org.uk>
-References: <20120713141345.f71b7c01f720d616d74721dd@canb.auug.org.au>
-	<20120713121053.0637219f@pyramind.ukuu.org.uk>
-Date: Fri, 20 Jul 2012 20:38:11 +0200
-X-Google-Sender-Auth: WmGuH-U86p9zNLpFIA2TZy7dA-4
-Message-ID: <CAMuHMdWRM0y07r1nL-9fXB3nLKXMgftqhiruEeuEe4QYDA2o9Q@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the tty tree
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>, David Daney <david.daney@cavium.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Greg KH <greg@kroah.com>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120720180358.GA9134@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan, David,
+On Fri, Jul 20, 2012 at 11:03:58AM -0700, Greg KH wrote:
+> On Fri, Jul 20, 2012 at 10:52:58AM -0700, Nicholas A. Bellinger wrote:
+> > Hi Greg,
+> > 
+> > On Thu, 2012-07-19 at 16:55 -0700, Greg KH wrote:
+> > > On Thu, Jul 19, 2012 at 02:53:01PM +1000, Stephen Rothwell wrote:
+> > > > Hi Greg,
+> > > > 
+> > > > Today's linux-next merge of the staging tree got a conflict in
+> > > > drivers/staging/Kconfig between commit d0146d396bfa ("tcm_vhost: Initial
+> > > > merge for vhost level target fabric driver") from the target-merge tree
+> > > > and commit 15a4bc17b7f4 ("Staging: add CSR Wifi "os helper" module") from
+> > > > the staging tree.
+> > > > 
+> > > > Just context changes.  I fixed it up (see below) and can carry the fix as
+> > > > necessary.
+> > > > -- 
+> > > > Cheers,
+> > > > Stephen Rothwell                    sfr@canb.auug.org.au
+> > > > 
+> > > > diff --cc drivers/staging/Kconfig
+> > > > index 67ec9fe,e3402d5..0000000
+> > > > --- a/drivers/staging/Kconfig
+> > > > +++ b/drivers/staging/Kconfig
+> > > > @@@ -132,6 -132,8 +132,10 @@@ source "drivers/staging/ipack/Kconfig
+> > > >   
+> > > >   source "drivers/staging/gdm72xx/Kconfig"
+> > > >   
+> > > > + source "drivers/staging/csr/Kconfig"
+> > > > + 
+> > > > + source "drivers/staging/omap-thermal/Kconfig"
+> > > > + 
+> > > >  +source "drivers/vhost/Kconfig.tcm"
+> > > 
+> > > Why is someone putting a non drivers/staging/ Kconfig file here in
+> > > drivers/staging/Kconfig?  That's not ok at all.
+> > > 
+> > > Target people, please just depend on CONFIG_STAGING if you want to do
+> > > that, but don't mess with files in the drivers/staging/ directory for no
+> > > good reason at all.
+> > > 
+> > 
+> > This was a request from MST (CC'ed) in order to have TCM_VHOST show up
+> > under the staging configuration options..
+> 
+> If you really want it to show up there, then send me a patch adding the
+> code to drivers/staging/.  Otherwise it really makes no sense.
+> 
+> > If that's really not what should be done, I'm happy to drop this part
+> > and just use CONFIG_STAGING again.
+> 
+> Why are you wanting to depend on CONFIG_STAGING in the first place?
+> What is wrong with the code that it can't be merged "properly" now?
+> Don't use CONFIG_STAGING as a "crutch" unless you really need it.
+> 
+> thanks,
+> 
+> greg k-h
 
-On Fri, Jul 13, 2012 at 1:10 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> On Fri, 13 Jul 2012 14:13:45 +1000
-> Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->> After merging the tty tree, today's linux-next build (x86_64 allmodconfig)
->> failed like this:
->>
->> drivers/char/mwave/mwavedd.c: In function 'register_serial_portandirq':
->> drivers/char/mwave/mwavedd.c:472:2: error: implicit declaration of function 'serial8250_register_port' [-Werror=implicit-function-declaration]
->> cc1: some warnings being treated as errors
->> drivers/misc/ibmasm/uart.c: In function 'ibmasm_register_uart':
->> drivers/misc/ibmasm/uart.c:57:2: error: implicit declaration of function 'serial8250_register_port' [-Werror=implicit-function-declaration]
->> cc1: some warnings being treated as errors
->>
->> Caused by commit 2655a2c76f80 ("8250: use the 8250 register interface not
->> the legacy one").  Grep is your friend.
->
-> My fault on that one not GregKH's. I'll wrap that into the updated patch
-> series. I thought I had them all but I forgot to grep off in drivers/misc.
+It's very similar to how it was with nouveau: we are not sure
+we can commit to the userspace ABI yet.
 
-Today's build failed because there's a new user in the MIPS tree:
-arch/mips/cavium-octeon/serial.c
+Most importantly, it still seems not 100% clear whether this driver will
+have major userspace using it. And if not, it would be very hard to
+support a driver when recent userspace does not use it in the end.
 
-http://kisskb.ellerman.id.au/kisskb/buildresult/6739341/
+At the moment arguments on upstream mailing list seem to be
+a bit circular: there's no module in upstream kernel so
+userspace does not want to accept the patches.
 
-Gr{oetje,eeting}s,
+If we put enabling this driver in staging, then it works out in one of
+two ways
+- userspace starts using it then this effectively freezes the ABI and
+  we move it out of staging next release
+- no userspace uses it and we drop it completely or rework ABI
 
-                        Geert
+On the other hand, it is marginally better to not want code in staging
+for two reasons:
+- there are dependencies between this code and other code in
+  drivers/vhost which are easier for me to handle if it's all
+  in one place
+- a bit easier to track history if we do not move code
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+What do you think?
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+MST
