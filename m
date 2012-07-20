@@ -1,84 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752545Ab2GTOE1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 10:04:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42879 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751449Ab2GTOEZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 10:04:25 -0400
-From: Oliver Neukum <oneukum@suse.de>
-To: Johannes Winkelmann <johannes.winkelmann@gmail.com>
-Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
-        Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>,
-        Johannes Winkelmann <johannes.winkelmann@sensirion.com>
-Subject: Re: [RFC][PATCH] hwmon: add support for Sensirion C1 sensor
-Date: Fri, 20 Jul 2012 16:03:38 +0200
-Message-ID: <6190165.D1PKLQQHEK@linux-lqwf.site>
-Organization: SUSE
-User-Agent: KMail/4.8.4 (Linux/3.5.0-rc6-117-g918227b-1-vanilla; KDE/4.8.4; x86_64; ; )
-In-Reply-To: <1342789042-13433-1-git-send-email-johannes.winkelmann@sensirion.com>
-References: <1342789042-13433-1-git-send-email-johannes.winkelmann@sensirion.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1752681Ab2GTOFc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 10:05:32 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:41935 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750944Ab2GTOFb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 10:05:31 -0400
+Date: Fri, 20 Jul 2012 15:09:00 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Zhao Chenhui <chenhui.zhao@freescale.com>
+Cc: <linuxppc-dev@lists.ozlabs.org>, <galak@kernel.crashing.org>,
+        <linux-kernel@vger.kernel.org>, <leoli@freescale.com>
+Subject: Re: [PATCH] mpc85xx_defconfig: add IDE support for MPC85xxCDS
+Message-ID: <20120720150900.082afc7c@pyramind.ukuu.org.uk>
+In-Reply-To: <1342788325-27609-1-git-send-email-chenhui.zhao@freescale.com>
+References: <1342788325-27609-1-git-send-email-chenhui.zhao@freescale.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 20 July 2012 14:57:22 Johannes Winkelmann wrote:
+On Fri, 20 Jul 2012 20:45:25 +0800
+Zhao Chenhui <chenhui.zhao@freescale.com> wrote:
 
-> +/* sysfs attributes */
-> +static struct shtc1_data *shtc1_update_client(struct device *dev)
-> +{
-> +	struct i2c_client *client = to_i2c_client(dev);
-> +	struct shtc1_data *data = i2c_get_clientdata(client);
-> +
-> +	char buf[SHTC1_RESPONSE_LENGTH];
+> Add IDE support for MPC85xxCDS.
+> 
+> Signed-off-by: Zhao Chenhui <chenhui.zhao@freescale.com>
+> ---
+>  arch/powerpc/configs/mpc85xx_defconfig |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/powerpc/configs/mpc85xx_defconfig b/arch/powerpc/configs/mpc85xx_defconfig
+> index 03ee911..45eda33 100644
+> --- a/arch/powerpc/configs/mpc85xx_defconfig
+> +++ b/arch/powerpc/configs/mpc85xx_defconfig
+> @@ -105,6 +105,8 @@ CONFIG_BLK_DEV_RAM=y
+>  CONFIG_BLK_DEV_RAM_SIZE=131072
+>  CONFIG_MISC_DEVICES=y
+>  CONFIG_EEPROM_LEGACY=y
+> +CONFIG_IDE=y
+> +CONFIG_BLK_DEV_VIA82CXXX=y
 
-Is this used for DMA?
-
-> +	int val;
-> +	int ret;
-> +
-> +	mutex_lock(&data->update_lock);
-> +
-> +	/*
-> +	 * initialize 'ret' in case we had a valid result before, but
-> +	 * read too quickly in which case we return the last values
-> +	 */
-> +	ret = !data->valid;
-> +
-> +	if (time_after(jiffies, data->last_updated + HZ / 10)
-> +	    || !data->valid) {
-> +		ret = shtc1_update_values(client, data, buf, sizeof(buf));
-> +
-> +		if (ret)
-> +			goto out;
-> +
-> +		/*
-> +		 * From datasheet:
-> +		 *   T = -45 + 175 * ST / 2^16
-> +		 *   RH = -10 + 120 * SRH / 2^16
-> +		 *
-> +		 * Adapted for integer fixed point (3 digit) arithmetic
-> +		 */
-> +		val = (buf[0] << 8) | buf[1];
-> +		data->temperature = ((21875 * val) >> 13) - 45000;
-> +		val = (buf[3] << 8) | buf[4];
-
-We have dedicated macros for conversion of endianness.
-
-> +		data->humidity = ((15000 * val) >> 13) - 10000;
-> +
-> +		data->last_updated = jiffies;
-> +		data->valid = 1;
-> +	}
-> +
-> +out:
-> +	mutex_unlock(&data->update_lock);
-> +
-> +	return ret == 0 ? data : NULL;
-> +}
-	Regards
-		Oliver
-
+CONFIG_IDE is obsolete we shouldn't be adding it to anything as it will
+eventually go away. Please use the ATA drivers.
