@@ -1,71 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752556Ab2GTIU7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 04:20:59 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:43806 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751653Ab2GTIU4 (ORCPT
+	id S1752624Ab2GTIWS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 04:22:18 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:52740 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751438Ab2GTIWN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 04:20:56 -0400
+	Fri, 20 Jul 2012 04:22:13 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <5009151F.3060903@jp.fujitsu.com>
+Date: Fri, 20 Jul 2012 17:21:51 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-X-Originating-IP: [202.62.83.106]
-In-Reply-To: <87hat35bq0.fsf@octavius.laptop.org>
-References: <CANYdXnrf-f2e=3YKpwweSmvrYdmy7z_yOEyZ11k=La=8b3W6Pw@mail.gmail.com>
-	<87hat35bq0.fsf@octavius.laptop.org>
-Date: Fri, 20 Jul 2012 13:50:55 +0530
-Message-ID: <CANYdXnrQfqhZZaXxPDxkee_RY052CcfEWfNK4vRhM5a6WwuhGw@mail.gmail.com>
-Subject: Re: A question on printascii
-From: Shashidhar Hiremath <shashidharh@vayavyalabs.com>
-To: Chris Ball <cjb@laptop.org>
-Cc: lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Wen Congyang <wency@cn.fujitsu.com>
+CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>,
+        <rientjes@google.com>, <liuj97@gmail.com>, <len.brown@intel.com>,
+        <benh@kernel.crashing.org>, <paulus@samba.org>, <cl@linux.com>,
+        <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
+        <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [RFC PATCH 6/8] memory-hotplug: introduce new function arch_remove_memory()
+References: <5009038A.4090001@cn.fujitsu.com> <500904D6.3030109@cn.fujitsu.com>
+In-Reply-To: <500904D6.3030109@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-thanks a lot Chris. Will try it out.
+2012/07/20 16:12, Wen Congyang wrote:
+> We don't call __add_pages() directly in the function add_memory()
+> because some other architecture related thins needs to be done
+> before or after calling __add_pages(). So we should not call
+> __remove_pages() directly in the function remove_memory.
+> Introduce new function arch_remove_memory() to revert the things done
+> in arch_add_memory().
+>
+> Note: the function for x86_64 will be implemented later. And I don't
+> know how to implement it for s390.
 
-On Fri, Jul 20, 2012 at 9:24 AM, Chris Ball <cjb@laptop.org> wrote:
-> Hi Shashidhar,
+I think you need cc to other arch ML for reviewing the patch.
+
+
+> CC: David Rientjes <rientjes@google.com>
+> CC: Jiang Liu <liuj97@gmail.com>
+> CC: Len Brown <len.brown@intel.com>
+> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> CC: Paul Mackerras <paulus@samba.org>
+> CC: Christoph Lameter <cl@linux.com>
+> Cc: Minchan Kim <minchan.kim@gmail.com>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+> ---
+>   arch/ia64/mm/init.c            |   16 ++++++++++++++++
+>   arch/powerpc/mm/mem.c          |   14 ++++++++++++++
+>   arch/s390/mm/init.c            |    8 ++++++++
+>   arch/sh/mm/init.c              |   15 +++++++++++++++
+>   arch/tile/mm/init.c            |    8 ++++++++
+>   arch/x86/mm/init_32.c          |   10 ++++++++++
+>   arch/x86/mm/init_64.c          |    7 +++++++
+>   include/linux/memory_hotplug.h |    1 +
+>   mm/memory_hotplug.c            |    2 +-
+>   9 files changed, 80 insertions(+), 1 deletions(-)
 >
-> On Wed, Jul 18 2012, Shashidhar Hiremath wrote:
->>   I want to use printascii to debug my serial driver. How do I enable
->> it and use the feature.
->>   Currently I have enabled in menuconfig and done an extern on the
->> printascii api, this doesn't seem to work, So any hints for debugging
->> serial drivers ?
+> diff --git a/arch/ia64/mm/init.c b/arch/ia64/mm/init.c
+> index 0eab454..1e345ed 100644
+> --- a/arch/ia64/mm/init.c
+> +++ b/arch/ia64/mm/init.c
+> @@ -688,6 +688,22 @@ int arch_add_memory(int nid, u64 start, u64 size)
 >
-> Sounds like you want this patch, against linux-next:
->
-> diff --git a/kernel/printk.c b/kernel/printk.c
-> index 3991862..36abce8 100644
-> --- a/kernel/printk.c
-> +++ b/kernel/printk.c
-> @@ -45,6 +45,8 @@
->
->  #include <asm/uaccess.h>
->
-> +extern void printascii(char *);
+>   	return ret;
+>   }
 > +
->  #define CREATE_TRACE_POINTS
->  #include <trace/events/printk.h>
->
-> @@ -1542,6 +1544,8 @@ asmlinkage int vprintk_emit(int facility, int level,
->          */
->         text_len = vscnprintf(text, sizeof(textbuf), fmt, args);
->
-> +       printascii(text);
+> +#ifdef CONFIG_MEMORY_HOTREMOVE
+> +int arch_remove_memory(u64 start, u64 size)
+> +{
+> +	unsigned long start_pfn = start >> PAGE_SHIFT;
+> +	unsigned long nr_pages = size >> PAGE_SHIFT;
+> +	int ret;
 > +
->         /* mark and strip a trailing newline */
->         if (text_len && text[text_len-1] == '\n') {
->                 text_len--;
+> +	ret = __remove_pages(start_pfn, nr_pages);
+> +	if (ret)
+> +		pr_warn("%s: Problem encountered in __remove_pages() as"
+> +			" ret=%d\n", __func__,  ret);
+> +
+> +	return ret;
+> +}
+> +#endif
+>   #endif
 >
-> --
-> Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-> One Laptop Per Child
+>   /*
+> diff --git a/arch/powerpc/mm/mem.c b/arch/powerpc/mm/mem.c
+> index baaafde..249cef4 100644
+> --- a/arch/powerpc/mm/mem.c
+> +++ b/arch/powerpc/mm/mem.c
+> @@ -133,6 +133,20 @@ int arch_add_memory(int nid, u64 start, u64 size)
+>
+>   	return __add_pages(nid, zone, start_pfn, nr_pages);
+>   }
+> +
+> +#ifdef CONFIG_MEMORY_HOTREMOVE
+> +int arch_remove_memory(u64 start, u64 size)
+> +{
+> +	unsigned long start_pfn = start >> PAGE_SHIFT;
+> +	unsigned long nr_pages = size >> PAGE_SHIFT;
+> +
+> +	start = (unsigned long)__va(start);
+> +	if (remove_section_mapping(start, start + size))
+> +		return -EINVAL;
+> +
+> +	return __remove_pages(start_pfn, nr_pages);
+> +}
+> +#endif
+>   #endif /* CONFIG_MEMORY_HOTPLUG */
+>
+>   /*
+> diff --git a/arch/s390/mm/init.c b/arch/s390/mm/init.c
+> index 2bea060..3de0d5b 100644
+> --- a/arch/s390/mm/init.c
+> +++ b/arch/s390/mm/init.c
+> @@ -259,4 +259,12 @@ int arch_add_memory(int nid, u64 start, u64 size)
+>   		vmem_remove_mapping(start, size);
+>   	return rc;
+>   }
+> +
+> +#ifdef CONFIG_MEMORY_HOTREMOVE
+> +int arch_remove_memory(u64 start, u64 size)
+> +{
+> +	/* TODO */
+> +	return -EBUSY;
+> +}
+> +#endif
+>   #endif /* CONFIG_MEMORY_HOTPLUG */
+> diff --git a/arch/sh/mm/init.c b/arch/sh/mm/init.c
+> index 82cc576..fc84491 100644
+> --- a/arch/sh/mm/init.c
+> +++ b/arch/sh/mm/init.c
+> @@ -558,4 +558,19 @@ int memory_add_physaddr_to_nid(u64 addr)
+>   EXPORT_SYMBOL_GPL(memory_add_physaddr_to_nid);
+>   #endif
+>
+> +#ifdef CONFIG_MEMORY_HOTREMOVE
+> +int arch_remove_memory(u64 start, u64 size)
+> +{
+> +	unsigned long start_pfn = start >> PAGE_SHIFT;
+> +	unsigned long nr_pages = size >> PAGE_SHIFT;
+> +	int ret;
+> +
+> +	ret = __remove_pages(start_pfn, nr_pages);
+> +	if (unlikely(ret))
+> +		pr_warn("%s: Failed, __remove_pages() == %d\n", __func__,
+> +			ret);
+> +
+> +	return ret;
+> +}
+> +#endif
+>   #endif /* CONFIG_MEMORY_HOTPLUG */
+> diff --git a/arch/tile/mm/init.c b/arch/tile/mm/init.c
+> index 630dd2c..bdd8a99 100644
+> --- a/arch/tile/mm/init.c
+> +++ b/arch/tile/mm/init.c
+> @@ -947,6 +947,14 @@ int remove_memory(u64 start, u64 size)
+>   {
+>   	return -EINVAL;
+>   }
+> +
+> +#ifdef CONFIG_MEMORY_HOTREMOVE
+> +int arch_remove_memory(u64 start, u64 size)
+> +{
+> +	/* TODO */
+> +	return -EBUSY;
+> +}
+> +#endif
+>   #endif
+>
+>   struct kmem_cache *pgd_cache;
+> diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+> index 575d86f..a690153 100644
+> --- a/arch/x86/mm/init_32.c
+> +++ b/arch/x86/mm/init_32.c
+> @@ -842,6 +842,16 @@ int arch_add_memory(int nid, u64 start, u64 size)
+>
+>   	return __add_pages(nid, zone, start_pfn, nr_pages);
+>   }
+> +
+> +#ifdef CONFIG_MEMORY_HOTREMOVE
+> +int arch_remove_memory(unsigned long start, unsigned long size)
+> +{
+> +	unsigned long start_pfn = start >> PAGE_SHIFT;
+> +	unsigned long nr_pages = size >> PAGE_SHIFT;
+> +
+> +	return __remove_pages(start_pfn, nr_pages);
+> +}
+> +#endif
+>   #endif
+>
+>   /*
+> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+> index 9e635b3..78b94bc 100644
+> --- a/arch/x86/mm/init_64.c
+> +++ b/arch/x86/mm/init_64.c
+> @@ -675,6 +675,13 @@ int arch_add_memory(int nid, u64 start, u64 size)
+>   }
+>   EXPORT_SYMBOL_GPL(arch_add_memory);
+>
+> +#ifdef CONFIG_MEMORY_HOTREMOVE
+> +int arch_remove_memory(unsigned long start, unsigned long size)
+> +{
+> +	/* TODO */
+> +	return -EBUSY;
+> +}
+> +#endif
+
+Why does not the function call __remove_pages()?
+
+Thanks,
+Yasuaki ishimatsu
+
+>   #endif /* CONFIG_MEMORY_HOTPLUG */
+>
+>   static struct kcore_list kcore_vsyscall;
+> diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
+> index 2ba0a1a..8639799 100644
+> --- a/include/linux/memory_hotplug.h
+> +++ b/include/linux/memory_hotplug.h
+> @@ -84,6 +84,7 @@ extern void __online_page_free(struct page *page);
+>
+>   #ifdef CONFIG_MEMORY_HOTREMOVE
+>   extern bool is_pageblock_removable_nolock(struct page *page);
+> +extern int arch_remove_memory(unsigned long start, unsigned long size);
+>   #endif /* CONFIG_MEMORY_HOTREMOVE */
+>
+>   /* reasonably generic interface to expand the physical pages in a zone  */
+> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+> index dccdf71..cc2c8b9 100644
+> --- a/mm/memory_hotplug.c
+> +++ b/mm/memory_hotplug.c
+> @@ -1055,7 +1055,7 @@ int __ref remove_memory(int nid, u64 start, u64 size)
+>   		unregister_one_node(nid);
+>   	}
+>
+> -	__remove_pages(start >> PAGE_SHIFT, size >> PAGE_SHIFT);
+> +	arch_remove_memory(start, size);
+>   out:
+>   	unlock_memory_hotplug();
+>   	return ret;
+>
 
 
-
--- 
-regards,
-Shashidhar Hiremath
