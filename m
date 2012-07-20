@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752205Ab2GTSqe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 14:46:34 -0400
-Received: from 1010ds2-suoe.0.fullrate.dk ([90.184.90.115]:24839 "EHLO
+	id S1752417Ab2GTSr5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 14:47:57 -0400
+Received: from 1010ds2-suoe.0.fullrate.dk ([90.184.90.115]:24865 "EHLO
 	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751439Ab2GTSqd (ORCPT
+	with ESMTP id S1751740Ab2GTSr4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 14:46:33 -0400
-Date: Fri, 20 Jul 2012 20:46:31 +0200 (CEST)
+	Fri, 20 Jul 2012 14:47:56 -0400
+Date: Fri, 20 Jul 2012 20:47:55 +0200 (CEST)
 From: Jesper Juhl <jj@chaosbits.net>
 To: David Airlie <airlied@linux.ie>
-cc: Dave Airlie <airlied@redhat.com>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] drm, ast_fb: Fix a small leak in astfb_create()
-Message-ID: <alpine.LNX.2.00.1207202045020.23164@swampdragon.chaosbits.net>
+cc: Adam Jackson <ajax@redhat.com>, Dave Airlie <airlied@redhat.com>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] drm, cirrus_fbdev: Fix leak in cirrusfb_create()
+Message-ID: <alpine.LNX.2.00.1207202039350.23164@swampdragon.chaosbits.net>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -29,32 +29,35 @@ We have this code:
 		return -ENOMEM;
 
 	info = framebuffer_alloc(0, device);
-	if (!info) {
-		ret = -ENOMEM;
-		goto out;
-	}
+	if (info == NULL)
+		return -ENOMEM;
 ...
 
-We'll leak the memory allocated to 'sysram' if the framebuffer_alloc()
-call fails and the variable goes out of scope.
+If the vmalloc() call succeeds but the framebuffer_alloc() call
+subsequently fails then we'll leak the memory allocated for 'sysram'
+with vmalloc().
 
 Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 ---
- drivers/gpu/drm/ast/ast_fb.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/cirrus/cirrus_fbdev.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/ast/ast_fb.c b/drivers/gpu/drm/ast/ast_fb.c
-index 2fc8e9e..260a760 100644
---- a/drivers/gpu/drm/ast/ast_fb.c
-+++ b/drivers/gpu/drm/ast/ast_fb.c
-@@ -180,6 +180,7 @@ static int astfb_create(struct ast_fbdev *afbdev,
+diff --git a/drivers/gpu/drm/cirrus/cirrus_fbdev.c b/drivers/gpu/drm/cirrus/cirrus_fbdev.c
+index 9a276a5..cdaa270 100644
+--- a/drivers/gpu/drm/cirrus/cirrus_fbdev.c
++++ b/drivers/gpu/drm/cirrus/cirrus_fbdev.c
+@@ -155,8 +155,10 @@ static int cirrusfb_create(struct cirrus_fbdev *gfbdev,
+ 		return -ENOMEM;
  
  	info = framebuffer_alloc(0, device);
- 	if (!info) {
+-	if (info == NULL)
++	if (!info) {
 +		vfree(sysram);
- 		ret = -ENOMEM;
- 		goto out;
- 	}
+ 		return -ENOMEM;
++	}
+ 
+ 	info->par = gfbdev;
+ 
 -- 
 1.7.11.2
 
