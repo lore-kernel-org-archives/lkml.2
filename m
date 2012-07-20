@@ -1,102 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752707Ab2GTOhS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 10:37:18 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:43489 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752019Ab2GTOhQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 10:37:16 -0400
-Date: Fri, 20 Jul 2012 07:36:57 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: WARNING: at kernel/rcutree.c:1550
- __rcu_process_callbacks+0x46f/0x4b0()
-Message-ID: <20120720143657.GC2721@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <5007F8FA.7000203@linux.vnet.ibm.com>
- <20120719171550.GL2507@linux.vnet.ibm.com>
- <500935BC.4040405@linux.vnet.ibm.com>
+	id S1752615Ab2GTOh6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 10:37:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44433 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751912Ab2GTOh5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 10:37:57 -0400
+Date: Fri, 20 Jul 2012 15:37:53 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Linux-MM <linux-mm@kvack.org>, Hugh Dickins <hughd@google.com>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Ken Chen <kenchen@google.com>, Cong Wang <xiyou.wangcong@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm: hugetlbfs: Close race during teardown of hugetlbfs
+ shared page tables V2 (resend)
+Message-ID: <20120720143753.GI9222@suse.de>
+References: <20120720134937.GG9222@suse.de>
+ <20120720141108.GH9222@suse.de>
+ <20120720142920.GD12434@tiehlicka.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <500935BC.4040405@linux.vnet.ibm.com>
+In-Reply-To: <20120720142920.GD12434@tiehlicka.suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12072014-6148-0000-0000-000007D3CC0F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 20, 2012 at 04:11:00PM +0530, Srivatsa S. Bhat wrote:
-> On 07/19/2012 10:45 PM, Paul E. McKenney wrote:
-> > On Thu, Jul 19, 2012 at 05:39:30PM +0530, Srivatsa S. Bhat wrote:
-> >> Hi Paul,
-> >>
-> >> While running a CPU hotplug stress test on v3.5-rc7+
-> >> (mainline commit 8a7298b7805ab) I hit this warning.
-> >> I haven't tried to debug this yet...
-> >>
-> >> Line number 1550 maps to:
-> >>
-> >> WARN_ON_ONCE(cpu_is_offline(smp_processor_id()));
-> >>
-> >> inside rcu_do_batch().
+On Fri, Jul 20, 2012 at 04:29:20PM +0200, Michal Hocko wrote:
+> > <SNIP>
 > > 
-> > Hello, Srivatsa,
-> > 
-> > I believe that you need commit a16b7a69 (Prevent __call_rcu() from
-> > invoking RCU core on offline CPUs), which is currently in -tip, queued
-> > for 3.6.  Please see below for the patch.
-> > 
-> > Does this help?
+> > Signed-off-by: Mel Gorman <mgorman@suse.de>
 > 
-> Yes, that fixed it, thanks! :-)
-> Sorry for the noise...
+> Yes this looks correct. mmap_sem will make sure that unmap_vmas and
+> free_pgtables are executed atomicaly wrt. huge_pmd_share so it doesn't
+> see non-NULL spte on the way out.
 
-May I add your Tested-by?
+Yes.
 
-							Thanx, Paul
+> I am just wondering whether we need
+> the page_table_lock as well. It is not harmful but I guess we can drop
+> it because both exit_mmap and shmdt are not taking it and mmap_sem is
+> sufficient for them.
 
-> Regards,
-> Srivatsa S. Bhat
+While it is true that we don't *really* need page_table_lock here, we are
+still updating page tables and it's in line with the the ordinary locking
+rules.  There are other cases in hugetlb.c where we do pte_same() checks even
+though we are protected from the related races by the instantiation_mutex.
+
+page_table_lock is actually a bit useless for shared page tables. If shared
+page tables were every to be a general thing then I think we'd have to
+revisit how PTE update locking is done but I doubt anyone wants to dive
+down that rat-hole.
+
+For now, I'm going to keep taking it even if strictly speaking it's not
+necessary.
+
+> One more nit bellow.
 > 
-> > 
-> > ------------------------------------------------------------------------
-> > 
-> > rcu: Prevent __call_rcu() from invoking RCU core on offline CPUs
-> > 
-> > The __call_rcu() function will invoke the RCU core, for example, if
-> > it detects that the current CPU has too many callbacks.  However, this
-> > can happen on an offline CPU that is on its way to the idle loop, in
-> > which case it is an error to invoke the RCU core, and the excess callbacks
-> > will be adopted in any case.  This commit therefore adds checks to
-> > __call_rcu() for running on an offline CPU, refraining from invoking
-> > the RCU core in this case.
-> > 
-> > Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> > 
-> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> > index a4a9c91..ceaa959 100644
-> > --- a/kernel/rcutree.c
-> > +++ b/kernel/rcutree.c
-> > @@ -1904,11 +1904,11 @@ __call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
-> >  	 * If called from an extended quiescent state, invoke the RCU
-> >  	 * core in order to force a re-evaluation of RCU's idleness.
-> >  	 */
-> > -	if (rcu_is_cpu_idle())
-> > +	if (rcu_is_cpu_idle() && cpu_online(smp_processor_id()))
-> >  		invoke_rcu_core();
-> > 
-> > -	/* If interrupts were disabled, don't dive into RCU core. */
-> > -	if (irqs_disabled_flags(flags)) {
-> > +	/* If interrupts were disabled or CPU offline, don't invoke RCU core. */
-> > +	if (irqs_disabled_flags(flags) || cpu_is_offline(smp_processor_id())) {
-> >  		local_irq_restore(flags);
+> I will send my version of the fix which took another path as a reply to
+> this email to have something to compare with.
+> 
+
+Thanks.
+
+> [...]
+> > diff --git a/arch/x86/mm/hugetlbpage.c b/arch/x86/mm/hugetlbpage.c
+> > index f6679a7..944b2df 100644
+> > --- a/arch/x86/mm/hugetlbpage.c
+> > +++ b/arch/x86/mm/hugetlbpage.c
+> > @@ -58,7 +58,8 @@ static int vma_shareable(struct vm_area_struct *vma, unsigned long addr)
+> >  /*
+> >   * search for a shareable pmd page for hugetlb.
+> >   */
+> > -static void huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
+> > +static void huge_pmd_share(struct mm_struct *mm, struct mm_struct *locked_mm,
+> > +			   unsigned long addr, pud_t *pud)
+> >  {
+> >  	struct vm_area_struct *vma = find_vma(mm, addr);
+> >  	struct address_space *mapping = vma->vm_file->f_mapping;
+> > @@ -68,14 +69,40 @@ static void huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
+> >  	struct vm_area_struct *svma;
+> >  	unsigned long saddr;
+> >  	pte_t *spte = NULL;
+> > +	spinlock_t *spage_table_lock = NULL;
+> > +	struct rw_semaphore *smmap_sem = NULL;
+> >  
+> >  	if (!vma_shareable(vma, addr))
 > >  		return;
+> >  
+> > +retry:
+> >  	mutex_lock(&mapping->i_mmap_mutex);
+> >  	vma_prio_tree_foreach(svma, &iter, &mapping->i_mmap, idx, idx) {
+> >  		if (svma == vma)
+> >  			continue;
+> > +		if (svma->vm_mm == vma->vm_mm)
+> > +			continue;
+> > +
+> > +		/*
+> > +		 * The target mm could be in the process of tearing down
+> > +		 * its page tables and the i_mmap_mutex on its own is
+> > +		 * not sufficient. To prevent races against teardown and
+> > +		 * pagetable updates, we acquire the mmap_sem and pagetable
+> > +		 * lock of the remote address space. down_read_trylock()
+> > +		 * is necessary as the other process could also be trying
+> > +		 * to share pagetables with the current mm. In the fork
+> > +		 * case, we are already both mm's so check for that
+> > +		 */
+> > +		if (locked_mm != svma->vm_mm) {
+> > +			if (!down_read_trylock(&svma->vm_mm->mmap_sem)) {
+> > +				mutex_unlock(&mapping->i_mmap_mutex);
+> > +				goto retry;
+> > +			}
+> > +			smmap_sem = &svma->vm_mm->mmap_sem;
+> > +		}
+> > +
+> > +		spage_table_lock = &svma->vm_mm->page_table_lock;
+> > +		spin_lock_nested(spage_table_lock, SINGLE_DEPTH_NESTING);
+> >  
+> >  		saddr = page_table_shareable(svma, vma, addr, idx);
+> >  		if (saddr) {
+> [...]
+> > diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> > index ae8f708..4832277 100644
+> > --- a/mm/hugetlb.c
+> > +++ b/mm/hugetlb.c
+> > @@ -2244,7 +2244,7 @@ int copy_hugetlb_page_range(struct mm_struct *dst, struct mm_struct *src,
+> >  		src_pte = huge_pte_offset(src, addr);
+> >  		if (!src_pte)
+> >  			continue;
+> > -		dst_pte = huge_pte_alloc(dst, addr, sz);
+> > +		dst_pte = huge_pte_alloc(dst, src, addr, sz);
+> >  		if (!dst_pte)
+> >  			goto nomem;
+> >  
+> > @@ -2745,7 +2745,7 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+> >  			       VM_FAULT_SET_HINDEX(h - hstates);
 > >  	}
+> >  
+> > -	ptep = huge_pte_alloc(mm, address, huge_page_size(h));
+> > +	ptep = huge_pte_alloc(mm, NULL, address, huge_page_size(h));
+> 
+> strictly speaking we should provide current->mm here because we are in
+> the page fault path and mmap_sem is held for reading. This doesn't
+> matter here though because huge_pmd_share will take it for reading so
+> nesting wouldn't hurt. Maybe a small comment that this is intentional
+> and correct would be nice.
+> 
+
+Fair point. If we go with this version of the fix, I'll improve the
+documentation a bit.
+
+Thanks!
+
+> >  	if (!ptep)
+> >  		return VM_FAULT_OOM;
+> >  
 > > 
 
+-- 
+Mel Gorman
+SUSE Labs
