@@ -1,79 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753343Ab2GTKFK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 06:05:10 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:49451 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753225Ab2GTKFH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 06:05:07 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: [RESEND PATCH] [CPUFREQ] EXYNOS: bugfix on retrieving old_index from freqs.old
-Date: Fri, 20 Jul 2012 12:10:47 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, Jonghwa Lee <jonghwa3.lee@samsung.com>
-References: <1342752842-21368-1-git-send-email-myungjoo.ham@samsung.com>
-In-Reply-To: <1342752842-21368-1-git-send-email-myungjoo.ham@samsung.com>
+	id S1753364Ab2GTKGJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 06:06:09 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:55915 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753269Ab2GTKGH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 06:06:07 -0400
+Message-ID: <50092D3F.5020108@linux.vnet.ibm.com>
+Date: Fri, 20 Jul 2012 15:34:47 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
+To: Neil Horman <nhorman@tuxdriver.com>
+CC: gaofeng@cn.fujitsu.com, eric.dumazet@gmail.com, davem@davemloft.net,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        mark.d.rustad@intel.com, john.r.fastabend@intel.com,
+        lizefan@huawei.com
+Subject: Re: [PATCH] net, cgroup: Fix boot failure due to iteration of uninitialized
+ list
+References: <20120719162532.23505.85946.stgit@srivatsabhat.in.ibm.com> <20120719164407.GA2963@neilslaptop.think-freely.org>
+In-Reply-To: <20120719164407.GA2963@neilslaptop.think-freely.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201207201210.48030.rjw@sisk.pl>
+x-cbid: 12072010-5490-0000-0000-000001CF3254
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, July 20, 2012, MyungJoo Ham wrote:
-> From: Jonghwa Lee <jonghwa3.lee@samsung.com>
-> 
-> The policy might have been changed since last call of target().
-> Thus, using cpufreq_frequency_table_target(), which depends on
-> policy to find the corresponding index from a frequency, may return
-> inconsistent index for freqs.old. Thus, old_index should be
-> calculated not based on the current policy.
-> 
-> We have been observing such issue when scaling_min/max_freq were
-> updated and sometimes cuased system lockups deu to incorrectly
-> configured voltages.
-> 
-> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+On 07/19/2012 10:14 PM, Neil Horman wrote:
+> On Thu, Jul 19, 2012 at 09:57:37PM +0530, Srivatsa S. Bhat wrote:
+>> After commit ef209f15 (net: cgroup: fix access the unallocated memory in
+>> netprio cgroup), boot fails with the following NULL pointer dereference:
+>>
+>> Initializing cgroup subsys devices
+>> Initializing cgroup subsys freezer
+>> Initializing cgroup subsys net_cls
+>> Initializing cgroup subsys blkio
+>> Initializing cgroup subsys perf_event
+>> Initializing cgroup subsys net_prio
+>> BUG: unable to handle kernel NULL pointer dereference at 0000000000000698
+>> IP: [<ffffffff8145e8d6>] cgrp_create+0xf6/0x190
+>> PGD 0
+>> Oops: 0000 [#1] SMP
+>> CPU 0
+>> Modules linked in:
+>>
+>> Pid: 0, comm: swapper/0 Not tainted 3.5.0-rc7-mandeep #1 IBM IBM System x -[7870C4Q]-/68Y8033
+>> RIP: 0010:[<ffffffff8145e8d6>]  [<ffffffff8145e8d6>] cgrp_create+0xf6/0x190
+>> RSP: 0000:ffffffff81a01ea8  EFLAGS: 00010213
+>> RAX: 0000000000000000 RBX: ffffffffffffff10 RCX: 0000000000000000
+>> RDX: 0000000000000000 RSI: 0000000000000246 RDI: ffffffff81aa70a0
+>> RBP: ffffffff81a01ed8 R08: 0000000000000000 R09: 0000000000000000
+>> R10: ffff8808ff8641c0 R11: 6e697a696c616974 R12: 0000000000000001
+>> R13: ffff8808ff8641c0 R14: 0000000000000000 R15: 0000000000093970
+>> FS:  0000000000000000(0000) GS:ffff8808ffc00000(0000) knlGS:0000000000000000
+>> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+>> CR2: 0000000000000698 CR3: 0000000001a0b000 CR4: 00000000000006b0
+>> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+>> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+>> Process swapper/0 (pid: 0, threadinfo ffffffff81a00000, task ffffffff81a13420)
+>> Stack:
+>>  ffffffff81a01eb8 ffffffff818060ff ffffffff81d75ec8 ffffffff81aa8960
+>>  ffffffff81aa8960 ffffffff81b4c2c0 ffffffff81a01ef8 ffffffff81b1cb78
+>>  0000000000000018 0000000000000048 ffffffff81a01f18 ffffffff81b1ce13
+>> Call Trace:
+>>  [<ffffffff81b1cb78>] cgroup_init_subsys+0x83/0x169
+>>  [<ffffffff81b1ce13>] cgroup_init+0x36/0x119
+>>  [<ffffffff81affef7>] start_kernel+0x3ba/0x3ef
+>>  [<ffffffff81aff95b>] ? kernel_init+0x27b/0x27b
+>>  [<ffffffff81aff356>] x86_64_start_reservations+0x131/0x136
+>>  [<ffffffff81aff45e>] x86_64_start_kernel+0x103/0x112
+>> Code: 01 48 3d f8 e1 ec 81 48 8d 98 10 ff ff ff 75 1b eb 73 0f 1f 00 48 8b 83 f0 00 00 00 48 3d f8 e1 ec 81 48 8d 98 10 ff ff ff 74 5a <48> 8b 83 88 07 00 00 48 85 c0 74 de 44 3b 60 10 76 d8 44 89 e6
+>> RIP  [<ffffffff8145e8d6>] cgrp_create+0xf6/0x190
+>>  RSP <ffffffff81a01ea8>
+>> CR2: 0000000000000698
+>> ---[ end trace a7919e7f17c0a725 ]---
+>> Kernel panic - not syncing: Attempted to kill the idle task!
+>>
+>> The code corresponds to:
+>>
+>> update_netdev_tables():
+>>         for_each_netdev(&init_net, dev) {
+>>                 map = rtnl_dereference(dev->priomap);  <---- HERE
+>>
+>>
+>> The list head is initialized in netdev_init(), which is called much
+>> later than cgrp_create(). So the problem is that we are calling
+>> update_netdev_tables() way too early (in cgrp_create()), which will
+>> end up traversing the not-yet-circular linked list. So at some point,
+>> the dev pointer will become NULL and hence dev->priomap becomes an
+>> invalid access.
+>>
+>> To fix this, just remove the update_netdev_tables() function entirely,
+>> since it appears that write_update_netdev_table() will handle things
+>> just fine.
+>>
+>> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+>> ---
+>>
+>> Requesting a thorough review of this patch, since I am not sure whether
+>> removing update_netdev_tables() is perfectly OK and whether that is the
+>> right thing to do.
+>>
+> We could do this I suppose, but this has already been fixed by
+> 734b65417b24d6eea3e3d7457e1f11493890ee1d
 
-Applied to the pm-cpufreq branch of the linux-pm.git tree, will be pushed
-for v3.6.
+Oh good! But don't you think that my patch looks cleaner than that fix?
+(Of course, provided that my patch is correct!)
 
-Thanks,
-Rafael
+Anyway, I'm happy to see that the boot failure is fixed. But if anyone feels
+that the approach of removing the update_netdev_tables() function is correct
+and better, I'll be happy to provide a patch on top of the boot-fix that
+went upstream.
 
-
-> ---
->  drivers/cpufreq/exynos-cpufreq.c |   14 ++++++++++++--
->  1 files changed, 12 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/cpufreq/exynos-cpufreq.c b/drivers/cpufreq/exynos-cpufreq.c
-> index b243a7e..af2d81e 100644
-> --- a/drivers/cpufreq/exynos-cpufreq.c
-> +++ b/drivers/cpufreq/exynos-cpufreq.c
-> @@ -62,8 +62,18 @@ static int exynos_target(struct cpufreq_policy *policy,
->  		goto out;
->  	}
->  
-> -	if (cpufreq_frequency_table_target(policy, freq_table,
-> -					   freqs.old, relation, &old_index)) {
-> +	/*
-> +	 * The policy max have been changed so that we cannot get proper
-> +	 * old_index with cpufreq_frequency_table_target(). Thus, ignore
-> +	 * policy and get the index from the raw freqeuncy table.
-> +	 */
-> +	for (old_index = 0;
-> +		freq_table[old_index].frequency != CPUFREQ_TABLE_END;
-> +		old_index++)
-> +		if (freq_table[old_index].frequency == freqs.old)
-> +			break;
-> +
-> +	if (freq_table[old_index].frequency == CPUFREQ_TABLE_END) {
->  		ret = -EINVAL;
->  		goto out;
->  	}
-> 
+Regards,
+Srivatsa S. Bhat
 
