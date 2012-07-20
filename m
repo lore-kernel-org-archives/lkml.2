@@ -1,62 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752840Ab2GTPMl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 11:12:41 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:54445 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752064Ab2GTPMk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 11:12:40 -0400
-Date: Fri, 20 Jul 2012 17:12:16 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Tim Chen <tim.c.chen@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Minchan Kim <minchan@kernel.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        "andi.kleen" <andi.kleen@intel.com>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Cgroup: Fix memory accounting scalability in
- shrink_page_list
-Message-ID: <20120720151216.GB1426@cmpxchg.org>
-References: <1342740866.13492.50.camel@schen9-DESK>
- <20120720135329.GA12440@tiehlicka.suse.cz>
- <20120720141625.GA1426@cmpxchg.org>
- <20120720143848.GF12434@tiehlicka.suse.cz>
+	id S1752609Ab2GTPNy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 11:13:54 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:36838 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751912Ab2GTPNx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 11:13:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120720143848.GF12434@tiehlicka.suse.cz>
+In-Reply-To: <6190165.D1PKLQQHEK@linux-lqwf.site>
+References: <1342789042-13433-1-git-send-email-johannes.winkelmann@sensirion.com>
+	<6190165.D1PKLQQHEK@linux-lqwf.site>
+Date: Fri, 20 Jul 2012 17:13:51 +0200
+Message-ID: <CAEYbzYsu_xhXJgbYKPj-rz-d26wTTM98+oyEDWbXMO5VNC5sgw@mail.gmail.com>
+Subject: Re: [RFC][PATCH] hwmon: add support for Sensirion C1 sensor
+From: Johannes Winkelmann <johannes.winkelmann@gmail.com>
+To: Oliver Neukum <oneukum@suse.de>
+Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
+        Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>,
+        Johannes Winkelmann <johannes.winkelmann@sensirion.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 20, 2012 at 04:38:48PM +0200, Michal Hocko wrote:
-> On Fri 20-07-12 16:16:25, Johannes Weiner wrote:
-> > On Fri, Jul 20, 2012 at 03:53:29PM +0200, Michal Hocko wrote:
-> > > On Thu 19-07-12 16:34:26, Tim Chen wrote:
-> > > [...]
-> > > > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > > > index 33dc256..aac5672 100644
-> > > > --- a/mm/vmscan.c
-> > > > +++ b/mm/vmscan.c
-> > > > @@ -779,6 +779,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
-> > > >  
-> > > >  	cond_resched();
-> > > >  
-> > > > +	mem_cgroup_uncharge_start();
-> > > >  	while (!list_empty(page_list)) {
-> > > >  		enum page_references references;
-> > > >  		struct address_space *mapping;
-> > > 
-> > > Is this safe? We have a scheduling point few lines below. What prevents
-> > > from task move while we are in the middle of the batch?
-> > 
-> > The batch is accounted in task_struct, so moving a batching task to
-> > another CPU shouldn't be a problem.
-> 
-> But it could also move to a different group, right?
+On Fri, Jul 20, 2012 at 4:03 PM, Oliver Neukum <oneukum@suse.de> wrote:
+> On Friday 20 July 2012 14:57:22 Johannes Winkelmann wrote:
+>
+>> +/* sysfs attributes */
+>> +static struct shtc1_data *shtc1_update_client(struct device *dev)
+>> +{
+>> +     struct i2c_client *client = to_i2c_client(dev);
+>> +     struct shtc1_data *data = i2c_get_clientdata(client);
+>> +
+>> +     char buf[SHTC1_RESPONSE_LENGTH];
+>
+> Is this used for DMA?
 
-The batch-uncharging task will remember the memcg of the first page it
-processes, then pile every subsequent page belonging to the same memcg
-on top.  It doesn't matter which group the task is in.
+No
+
+>
+>> +     int val;
+>> +     int ret;
+>> +
+>> +     mutex_lock(&data->update_lock);
+>> +
+>> +     /*
+>> +      * initialize 'ret' in case we had a valid result before, but
+>> +      * read too quickly in which case we return the last values
+>> +      */
+>> +     ret = !data->valid;
+>> +
+>> +     if (time_after(jiffies, data->last_updated + HZ / 10)
+>> +         || !data->valid) {
+>> +             ret = shtc1_update_values(client, data, buf, sizeof(buf));
+>> +
+>> +             if (ret)
+>> +                     goto out;
+>> +
+>> +             /*
+>> +              * From datasheet:
+>> +              *   T = -45 + 175 * ST / 2^16
+>> +              *   RH = -10 + 120 * SRH / 2^16
+>> +              *
+>> +              * Adapted for integer fixed point (3 digit) arithmetic
+>> +              */
+>> +             val = (buf[0] << 8) | buf[1];
+>> +             data->temperature = ((21875 * val) >> 13) - 45000;
+>> +             val = (buf[3] << 8) | buf[4];
+>
+> We have dedicated macros for conversion of endianness.
+
+Like this:
+		val = swab16p((__le16 *)buf);
+		data->temperature = ((21875 * val) >> 13) - 45000;
+		val = swab16p((__le16 *)(buf+2));
+		data->humidity = ((15000 * val) >> 13) - 10000;
+
+
+>
+>> +             data->humidity = ((15000 * val) >> 13) - 10000;
+>> +
+>> +             data->last_updated = jiffies;
+>> +             data->valid = 1;
+>> +     }
+>> +
+>> +out:
+>> +     mutex_unlock(&data->update_lock);
+>> +
+>> +     return ret == 0 ? data : NULL;
+>> +}
+>         Regards
+>                 Oliver
+>
+
+Thanks, Johannes
