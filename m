@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753510Ab2GTMst (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 08:48:49 -0400
-Received: from mga11.intel.com ([192.55.52.93]:34156 "EHLO mga11.intel.com"
+	id S1753548Ab2GTMuN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 08:50:13 -0400
+Received: from mga14.intel.com ([143.182.124.37]:27940 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753074Ab2GTMss (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 08:48:48 -0400
+	id S1753344Ab2GTMst (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 08:48:49 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="195528958"
+   d="scan'208";a="170798781"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: linux-mm@kvack.org
 Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -24,46 +24,58 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org
-Subject: [PATCH, RFC 0/6] Avoid cache trashing on clearing huge/gigantic page
-Date: Fri, 20 Jul 2012 15:50:16 +0300
-Message-Id: <1342788622-10290-1-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCH, RFC 3/6] THP: Pass real, not rounded, address to clear_huge_page
+Date: Fri, 20 Jul 2012 15:50:19 +0300
+Message-Id: <1342788622-10290-4-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10
+In-Reply-To: <1342788622-10290-1-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1342788622-10290-1-git-send-email-kirill.shutemov@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+From: Andi Kleen <ak@linux.intel.com>
 
-Clearing a 2MB huge page will typically blow away several levels of CPU
-caches.  To avoid this only cache clear the 4K area around the fault
-address and use a cache avoiding clears for the rest of the 2MB area.
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ mm/huge_memory.c |    9 +++++----
+ 1 files changed, 5 insertions(+), 4 deletions(-)
 
-It would be nice to test the patchset with more workloads. Especially if
-you see performance regression with THP.
-
-Any feedback is appreciated.
-
-Andi Kleen (6):
-  THP: Use real address for NUMA policy
-  mm: make clear_huge_page tolerate non aligned address
-  THP: Pass real, not rounded, address to clear_huge_page
-  x86: Add clear_page_nocache
-  mm: make clear_huge_page cache clear only around the fault address
-  x86: switch the 64bit uncached page clear to SSE/AVX v2
-
- arch/x86/include/asm/page.h          |    2 +
- arch/x86/include/asm/string_32.h     |    5 ++
- arch/x86/include/asm/string_64.h     |    5 ++
- arch/x86/lib/Makefile                |    1 +
- arch/x86/lib/clear_page_nocache_32.S |   30 +++++++++++
- arch/x86/lib/clear_page_nocache_64.S |   92 ++++++++++++++++++++++++++++++++++
- arch/x86/mm/fault.c                  |    7 +++
- mm/huge_memory.c                     |   17 +++---
- mm/memory.c                          |   29 ++++++++++-
- 9 files changed, 178 insertions(+), 10 deletions(-)
- create mode 100644 arch/x86/lib/clear_page_nocache_32.S
- create mode 100644 arch/x86/lib/clear_page_nocache_64.S
-
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 70737ec..ecd93f8 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -633,7 +633,8 @@ static inline pmd_t maybe_pmd_mkwrite(pmd_t pmd, struct vm_area_struct *vma)
+ 
+ static int __do_huge_pmd_anonymous_page(struct mm_struct *mm,
+ 					struct vm_area_struct *vma,
+-					unsigned long haddr, pmd_t *pmd,
++					unsigned long haddr,
++					unsigned long address, pmd_t *pmd,
+ 					struct page *page)
+ {
+ 	pgtable_t pgtable;
+@@ -643,7 +644,7 @@ static int __do_huge_pmd_anonymous_page(struct mm_struct *mm,
+ 	if (unlikely(!pgtable))
+ 		return VM_FAULT_OOM;
+ 
+-	clear_huge_page(page, haddr, HPAGE_PMD_NR);
++	clear_huge_page(page, address, HPAGE_PMD_NR);
+ 	__SetPageUptodate(page);
+ 
+ 	spin_lock(&mm->page_table_lock);
+@@ -720,8 +721,8 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 			put_page(page);
+ 			goto out;
+ 		}
+-		if (unlikely(__do_huge_pmd_anonymous_page(mm, vma, haddr, pmd,
+-							  page))) {
++		if (unlikely(__do_huge_pmd_anonymous_page(mm, vma, haddr,
++						address, pmd, page))) {
+ 			mem_cgroup_uncharge_page(page);
+ 			put_page(page);
+ 			goto out;
 -- 
 1.7.7.6
 
