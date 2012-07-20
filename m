@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753570Ab2GTMs4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 08:48:56 -0400
-Received: from mga01.intel.com ([192.55.52.88]:61739 "EHLO mga01.intel.com"
+	id S1753595Ab2GTMtW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 08:49:22 -0400
+Received: from mga02.intel.com ([134.134.136.20]:23890 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753074Ab2GTMsx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 08:48:53 -0400
+	id S1753561Ab2GTMtT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 08:49:19 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="181316901"
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="174742096"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: linux-mm@kvack.org
 Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -24,9 +24,9 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org
-Subject: [PATCH, RFC 6/6] x86: switch the 64bit uncached page clear to SSE/AVX v2
-Date: Fri, 20 Jul 2012 15:50:22 +0300
-Message-Id: <1342788622-10290-7-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCH, RFC 5/6] mm: make clear_huge_page cache clear only around the fault address
+Date: Fri, 20 Jul 2012 15:50:21 +0300
+Message-Id: <1342788622-10290-6-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1342788622-10290-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1342788622-10290-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -36,136 +36,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-With multiple threads vector stores are more efficient, so use them.
-This will cause the page clear to run non preemptable and add some
-overhead. However on 32bit it was already non preempable (due to
-kmap_atomic) and there is an preemption opportunity every 4K unit.
+Clearing a 2MB huge page will typically blow away several levels
+of CPU caches. To avoid this only cache clear the 4K area
+around the fault address and use a cache avoiding clears
+for the rest of the 2MB area.
 
-On a NPB (Nasa Parallel Benchmark) 128GB run on a Westmere this improves
-the performance regression of enabling transparent huge pages
-by ~2% (2.81% to 0.81%), near the runtime variability now.
-On a system with AVX support more is expected.
-
-TBD more tests on other workloads
+TBD add numbers
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
-[kirill.shutemov@linux.intel.com: Properly save/restore arguments]
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- arch/x86/lib/clear_page_nocache_64.S |   91 ++++++++++++++++++++++++++++-----
- 1 files changed, 77 insertions(+), 14 deletions(-)
+ mm/memory.c |   30 +++++++++++++++++++++++++++---
+ 1 files changed, 27 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/lib/clear_page_nocache_64.S b/arch/x86/lib/clear_page_nocache_64.S
-index ee16d15..c092919 100644
---- a/arch/x86/lib/clear_page_nocache_64.S
-+++ b/arch/x86/lib/clear_page_nocache_64.S
-@@ -1,29 +1,92 @@
-+/*
-+ * Clear pages with cache bypass.
-+ * 
-+ * Copyright (C) 2011, 2012 Intel Corporation
-+ * Author: Andi Kleen
-+ *
-+ * This software may be redistributed and/or modified under the terms of
-+ * the GNU General Public License ("GPL") version 2 only as published by the
-+ * Free Software Foundation.
-+ */
-+
- #include <linux/linkage.h>
-+#include <asm/alternative-asm.h>
-+#include <asm/cpufeature.h>
- #include <asm/dwarf2.h>
+diff --git a/mm/memory.c b/mm/memory.c
+index c356ead..b4740cf 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3957,18 +3957,35 @@ EXPORT_SYMBOL(might_fault);
+ #endif
  
-+#define SSE_UNROLL 128
+ #if defined(CONFIG_TRANSPARENT_HUGEPAGE) || defined(CONFIG_HUGETLBFS)
 +
- /*
-  * Zero a page avoiding the caches
-  * rdi	page
-  */
- ENTRY(clear_page_nocache)
- 	CFI_STARTPROC
--	xorl   %eax,%eax
--	movl   $4096/64,%ecx
-+	push   %rdi
-+	call   kernel_fpu_begin
-+	pop    %rdi
-+	sub    $16,%rsp
-+	CFI_ADJUST_CFA_OFFSET 16
-+	movdqu %xmm0,(%rsp)
-+	xorpd  %xmm0,%xmm0
-+	movl   $4096/SSE_UNROLL,%ecx
- 	.p2align 4
- .Lloop:
- 	decl	%ecx
--#define PUT(x) movnti %rax,x*8(%rdi)
--	movnti %rax,(%rdi)
--	PUT(1)
--	PUT(2)
--	PUT(3)
--	PUT(4)
--	PUT(5)
--	PUT(6)
--	PUT(7)
--	leaq	64(%rdi),%rdi
-+	.set x,0
-+	.rept SSE_UNROLL/16
-+	movntdq %xmm0,x(%rdi)
-+	.set x,x+16
-+	.endr
-+	leaq	SSE_UNROLL(%rdi),%rdi
- 	jnz	.Lloop
--	nop
--	ret
-+	movdqu (%rsp),%xmm0
-+	addq   $16,%rsp
-+	CFI_ADJUST_CFA_OFFSET -16
-+	jmp   kernel_fpu_end
- 	CFI_ENDPROC
- ENDPROC(clear_page_nocache)
-+
-+#ifdef CONFIG_AS_AVX
-+
-+	.section .altinstr_replacement,"ax"
-+1:	.byte 0xeb					/* jmp <disp8> */
-+	.byte (clear_page_nocache_avx - clear_page_nocache) - (2f - 1b)
-+	/* offset */
-+2:
-+	.previous
-+	.section .altinstructions,"a"
-+	altinstruction_entry clear_page_nocache,1b,X86_FEATURE_AVX,\
-+	                     16, 2b-1b
-+	.previous
-+
-+#define AVX_UNROLL 256 /* TUNE ME */
-+
-+ENTRY(clear_page_nocache_avx)
-+	CFI_STARTPROC
-+	push   %rdi
-+	call   kernel_fpu_begin
-+	pop    %rdi
-+	sub    $32,%rsp
-+	CFI_ADJUST_CFA_OFFSET 32
-+	vmovdqu %ymm0,(%rsp)
-+	vxorpd  %ymm0,%ymm0,%ymm0
-+	movl   $4096/AVX_UNROLL,%ecx
-+	.p2align 4
-+.Lloop_avx:
-+	decl	%ecx
-+	.set x,0
-+	.rept AVX_UNROLL/32
-+	vmovntdq %ymm0,x(%rdi)
-+	.set x,x+32
-+	.endr
-+	leaq	AVX_UNROLL(%rdi),%rdi
-+	jnz	.Lloop_avx
-+	vmovdqu (%rsp),%ymm0
-+	addq   $32,%rsp
-+	CFI_ADJUST_CFA_OFFSET -32
-+	jmp   kernel_fpu_end
-+	CFI_ENDPROC
-+ENDPROC(clear_page_nocache_avx)
-+
++#ifndef ARCH_HAS_USER_NOCACHE
++#define ARCH_HAS_USER_NOCACHE 0
 +#endif
++
++#if ARCH_HAS_USER_NOCACHE == 0
++#define clear_user_highpage_nocache clear_user_highpage
++#endif
++
+ static void clear_gigantic_page(struct page *page,
+ 				unsigned long addr,
+ 				unsigned int pages_per_huge_page)
+ {
+ 	int i;
+ 	struct page *p = page;
++	unsigned long vaddr;
++	unsigned long haddr = addr & HPAGE_PMD_MASK;
++	int target = (addr - haddr) >> PAGE_SHIFT;
+ 
+ 	might_sleep();
++	vaddr = haddr;
+ 	for (i = 0; i < pages_per_huge_page;
+ 	     i++, p = mem_map_next(p, page, i)) {
+ 		cond_resched();
+-		clear_user_highpage(p, addr + i * PAGE_SIZE);
++		vaddr = haddr + i*PAGE_SIZE;
++		if (!ARCH_HAS_USER_NOCACHE  || i == target)
++			clear_user_highpage(p, vaddr);
++		else
++			clear_user_highpage_nocache(p, vaddr);
+ 	}
+ }
+ void clear_huge_page(struct page *page,
+@@ -3976,16 +3993,23 @@ void clear_huge_page(struct page *page,
+ {
+ 	int i;
+ 	unsigned long haddr = addr & HPAGE_PMD_MASK;
++	unsigned long vaddr;
++	int target = (addr - haddr) >> PAGE_SHIFT;
+ 
+ 	if (unlikely(pages_per_huge_page > MAX_ORDER_NR_PAGES)) {
+-		clear_gigantic_page(page, haddr, pages_per_huge_page);
++		clear_gigantic_page(page, addr, pages_per_huge_page);
+ 		return;
+ 	}
+ 
+ 	might_sleep();
++	vaddr = haddr;
+ 	for (i = 0; i < pages_per_huge_page; i++) {
+ 		cond_resched();
+-		clear_user_highpage(page + i, haddr + i * PAGE_SIZE);
++		vaddr = haddr + i*PAGE_SIZE;
++		if (!ARCH_HAS_USER_NOCACHE || i == target)
++			clear_user_highpage(page + i, vaddr);
++		else
++			clear_user_highpage_nocache(page + i, vaddr);
+ 	}
+ }
+ 
 -- 
 1.7.7.6
 
