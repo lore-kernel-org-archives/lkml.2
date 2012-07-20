@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752858Ab2GTCpm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 22:45:42 -0400
-Received: from mail.lang.hm ([64.81.33.126]:55809 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752354Ab2GTCpj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 22:45:39 -0400
-Date: Thu, 19 Jul 2012 19:44:55 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: Ben Hutchings <ben@decadent.org.uk>
-cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Josh Boyer <jwboyer@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
-        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
-        Debian Kernel Team <debian-kernel@lists.debian.org>,
-        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Fedora Kernel Team <kernel-team@fedoraproject.org>
-Subject: Re: [RFC] Simplifying kernel configuration for distro issues
-In-Reply-To: <20120719211357.GZ1894@decadent.org.uk>
-Message-ID: <alpine.DEB.2.02.1207191942250.20176@asgard.lang.hm>
-References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com> <20120713210240.GG1707@redhat.com> <CA+55aFz_Vv899eXz6F0jtFH=hT4QpB0_2XuS8HySPjHC6s+L7Q@mail.gmail.com> <20120719152618.GD16873@home.goodmis.org> <20120719154521.GC8469@zod.bos.redhat.com>
- <1342714088.12353.33.camel@gandalf.stny.rr.com> <20120719171918.GD8469@zod.bos.redhat.com> <20120719183047.69de3e19@pyramind.ukuu.org.uk> <20120719211357.GZ1894@decadent.org.uk>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	id S1752932Ab2GTCss (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 22:48:48 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:35518 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752007Ab2GTCsr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 22:48:47 -0400
+Date: Fri, 20 Jul 2012 12:48:38 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michael Neuling <mikey@neuling.org>,
+        Christian Riesch <christian.riesch@omicron.at>
+Subject: Re: linux-next: build failure after merge of the net-next tree
+Message-Id: <20120720124838.2bd0f1e5087c4f08c5a65eed@canb.auug.org.au>
+In-Reply-To: <20120720120118.465056f267ab5c3ac5ea45c4@canb.auug.org.au>
+References: <20120720120118.465056f267ab5c3ac5ea45c4@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__20_Jul_2012_12_48_38_+1000_dVB_01ZF0Rp+ajtn"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 19 Jul 2012, Ben Hutchings wrote:
+--Signature=_Fri__20_Jul_2012_12_48_38_+1000_dVB_01ZF0Rp+ajtn
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On Thu, Jul 19, 2012 at 06:30:47PM +0100, Alan Cox wrote:
->>
->> For the end user case you need the distro to plonk the right file in the
->> right place and be done with it, once they do that the rest is
->> bikeshedding a ten line Makefile rule.
+On Fri, 20 Jul 2012 12:01:18 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
 >
-> This might work well for future releases; is there not a need to
-> make this work for past releases too?
+> After merging the net-next tree, today's linux-next build (powerpc
+> pmac32_defconfig) failed like this:
 
-This approach can work for any 3.x kernel version with any distro. The 
-distro provides the file, with a new kernel version you do "make 
-distconfig', with something prior to when this is added you do 'cp 
-/etc/kconfig/filename .config ; make oldconfig' instead.
+This was actually yesterday's linux-next - I guess it is fixed by commit
+215029375c83 ("asix: AX88172A driver depends on phylib") in today's tree.
 
-the make oldconfig papers over a LOT of differences between the kernel 
-that the distro built with and the kernel the user is trying to compile.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-David Lang
+--Signature=_Fri__20_Jul_2012_12_48_38_+1000_dVB_01ZF0Rp+ajtn
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQCMcGAAoJEECxmPOUX5FEMGoP/R9TyRWtqUh+reWTp1A+Fjt9
+6PTqHFo75znSWn7XWCMHrFaU0Iub6rsrwO0MZk4SniDHHk4VFJWpt4tGhYweLpEG
+QEK1DUqJ0AVE29iADxSdFxmxCjX8vnX6Lbm2H8bAnjS20RXLwjDNuzvjvC7MfwGt
+Z+Fb0eeZYXSzxwuxQeV9kZAyuuEultCgMmOV3t1LesD5kQP2nuWYWPokA/oIhTCF
+se98Tw9iNRy9kGLlZzKVA0wtj6pZ/iWYqtlrfsoCk1HHA4sbbn1PChtgTZ8GcT68
+Em1ye807wq7uG8y3Z86dcJEQxlL72yJoyc9i/pGDfWTAwwQOpmnZE9bF5egF1xOV
+bvKHQfFIfMhtFnwiPR9SJqwJHB1T6dj/rRA3xSkn9aVlxOixOOWQfbXwYfyKvosF
+yJKFf5khOPeEOF9ZpemwKRCdR3ahF2Mlnekrh/+b3UTEEygOu10KoLOGKmnamNJi
+XtIbCKZ0OJMiZodSblO7blER7yB6uIt695H/a0IGbeJpHKoDrolShOE6bl8XesHa
+ZfaArDGdmzQCmnQtJyUVz4gSCG1cRqPSbySX0c/hljzg1YpLEwvmB0dO0JnljdSr
+C2chWZimyAKyG3E9Jiv5u1jMiqO437sVTfP5uLV1e6XOhRs2RT8bHFIKtsiSXq1F
+ksl6z8VkLXl5DWC1Mx3n
+=xacN
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__20_Jul_2012_12_48_38_+1000_dVB_01ZF0Rp+ajtn--
