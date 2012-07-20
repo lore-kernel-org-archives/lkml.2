@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751624Ab2GTQcE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 12:32:04 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:57675 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750969Ab2GTQcB (ORCPT
+	id S1752482Ab2GTQdZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 12:33:25 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58229 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751328Ab2GTQdY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 12:32:01 -0400
+	Fri, 20 Jul 2012 12:33:24 -0400
 MIME-Version: 1.0
-In-Reply-To: <1342769360.2984.2.camel@dabdike.int.hansenpartnership.com>
-References: <20120720103254.4a043ea94ef16992466a8b19@canb.auug.org.au> <1342769360.2984.2.camel@dabdike.int.hansenpartnership.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 20 Jul 2012 09:31:39 -0700
-X-Google-Sender-Auth: F6yvEs8E39JvE5ez0xOjoIDW0tg
-Message-ID: <CA+55aFxiichhzqokzAmHMEEUW1286V0d37YaStcOH_e=OutDiA@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the scsi tree with Linus' tree
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <20120720121848.GA29183@aftab.osrc.amd.com>
+References: <cover.1342723082.git.tony.luck@intel.com>
+	<180a06f3f357cf9f78259ae443a082b14a29535b.1342723082.git.tony.luck@intel.com>
+	<20120720121848.GA29183@aftab.osrc.amd.com>
+Date: Fri, 20 Jul 2012 09:33:23 -0700
+X-Google-Sender-Auth: -nRnrEoW1NPnpmKffKnNUAqL6Kk
+Message-ID: <CA+8MBbLX_cLR1+DpjuG-D5=5YhnTy3aGS4RL1iviRYomYoveWg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] x86/mce: Add quirk for instruction recovery on Sandy
+ Bridge processors
+From: Tony Luck <tony.luck@intel.com>
+To: Borislav Petkov <bp@amd64.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Chen Gong <gong.chen@linux.intel.com>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 20, 2012 at 12:29 AM, James Bottomley
-<James.Bottomley@hansenpartnership.com> wrote:
->
-> By the way, Linus, the patch says:
->
->     Cc: Dan Williams <dan.j.williams@gmail.com>
->     Cc: Alan Stern <stern@rowland.harvard.edu>
->     Cc: James Bottomley <jbottomley@parallels.com>
->     Cc: Borislav Petkov <bp@amd64.org>
->     Cc: linux-scsi <linux-scsi@vger.kernel.org>
->
-> But best I can tell it never went to either me or linux-scsi.
+> Maybe define a default empty quirk_no_way_out() on the remaining
+> families/vendors so that the compiler can optimize it away and we save
+> ourselves the if-test?
 
-Both you and linux-scsi were cc'd at least in some of the discussion. Search for
+Perhaps I misunderstood your suggestion. I don't see how the compiler will
+manage to optimize it all away.  I just tried defining
 
-  "a7a20d103994fd760766e6c9d494daa569cbfe06 makes kernel 3.5
-unbootable on an Intel chipset based motherboard"
+static void quirk_no_way_out_nop(int bank, struct mce *m, struct pt_regs *regs)
+{
+}
 
-but most of the noise is in the bugzilla itself:
+and providing that as an initial value for the quirk_no_way_out
+function pointer.
 
-  https://bugzilla.kernel.org/show_bug.cgi?id=44771
+Then I deleted the "if (quirk_no_way_out)".
 
-and it may well be that you weren't listed for the bugzilla entry.
+Looking at the assembly code produced, I now just have an unconditional call:
 
-Ugh, how I hate bugzilla.
+ callq  *0x9fe992(%rip)        # ffffffff81a18668 <quirk_no_way_out>
 
-                Linus
+
+I'd think that a call through a function pointer to an empty function is
+more expensive that testing whether that function pointer was NULL.
+
+-Tony
