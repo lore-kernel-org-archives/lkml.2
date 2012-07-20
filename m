@@ -1,61 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752852Ab2GTOpA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 10:45:00 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:48763 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751805Ab2GTOo7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 10:44:59 -0400
-Date: Fri, 20 Jul 2012 10:36:09 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Ian Campbell <Ian.Campbell@citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "Tim (Xen.org)" <tim@xen.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH WIP 6/6] xen/arm: enable evtchn irqs
-Message-ID: <20120720143609.GA21870@phenom.dumpdata.com>
-References: <alpine.DEB.2.02.1206221644370.27860@kaball.uk.xensource.com>
- <1340381685-22529-1-git-send-email-stefano.stabellini@eu.citrix.com>
- <1340381685-22529-6-git-send-email-stefano.stabellini@eu.citrix.com>
- <20120709144005.GA12102@phenom.dumpdata.com>
- <alpine.DEB.2.02.1207131749470.23783@kaball.uk.xensource.com>
- <20120716145709.GB552@phenom.dumpdata.com>
- <alpine.DEB.2.02.1207181750500.23783@kaball.uk.xensource.com>
- <20120719233045.GA944@phenom.dumpdata.com>
- <alpine.DEB.2.02.1207201208230.23783@kaball.uk.xensource.com>
-MIME-Version: 1.0
+	id S1752918Ab2GTOpL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 10:45:11 -0400
+Received: from plane.gmane.org ([80.91.229.3]:47716 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752795Ab2GTOpH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 10:45:07 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Betty Dall <betty.dall@hp.com>
+Subject: Re: [PATCH] checkpatch: Add checks for do =?utf-8?b?e30=?= while (0) macro misuses
+Date: Fri, 20 Jul 2012 14:40:46 +0000 (UTC)
+Message-ID: <loom.20120720T160308-562@post.gmane.org>
+References: <1342735885.17350.3.camel@joe2Laptop>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1207201208230.23783@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 15.219.153.79 (Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.7 (KHTML, like Gecko) Chrome/16.0.912.77 Safari/535.7)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 20, 2012 at 12:09:56PM +0100, Stefano Stabellini wrote:
-> On Fri, 20 Jul 2012, Konrad Rzeszutek Wilk wrote:
-> > > > OK, please include those questions/answers in the git commit and
-> > > > repost.
-> > 
-> > I seem to be missing the rest of the patches. I see the drivers/xen/events also
-> > has the  xen_init_IRQ_arm... is there a git tree with the base patches?
-> 
-> Yes, the latest git tree, based on
-> 55b02d2f4445ad625213817a1736bf2884d32547, is available here:
-> 
-> git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git xenarmv7-3
+Hi Joe,
 
-Uh there is a bit of stuff there. Can you just repost those you want me to
-review and Ack that touch common code?
-
-Or are you posting them to collect feedback/Acks and then want to post them
-as a bigger set?
+Joe Perches <joe <at> perches.com> writes:
 
 > 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org
-> http://lists.xen.org/xen-devel
+> These types of macros should not be used for either a
+> single statement nor should the macro end with a semi-colon.
+> 
+> Add tests for these conditions.
+> 
+> Signed-off-by: Joe Perches <joe <at> perches.com>
+> ---
+>  scripts/checkpatch.pl |   39 +++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 39 insertions(+), 0 deletions(-)
+
+
+I reviewed this and tested it out on the qib.h file we were looking at yesterday 
+and it worked well. I was worried about a nested do {} while(0), because it will 
+match with the first while. Here is a test case:
+#define qib_devinfo(pcidev, fmt, ...) \
+        do { \
+                do { \
+                        dev_info(&(pcidev)->dev, fmt, ##__VA_ARGS__); \
+                } while (0); \
+        } while (0)
+
+Checkpatch.pl didn't complain about that one. Granted, it is a contrived test 
+case. Your change will catch the real problems.
+
+-Betty
+
+
+
