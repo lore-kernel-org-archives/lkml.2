@@ -1,210 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752916Ab2GTB5S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 21:57:18 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:14682 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752532Ab2GTB5Q (ORCPT
+	id S1752964Ab2GTCBa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 22:01:30 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:59451 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752531Ab2GTCB2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 21:57:16 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6777"; a="212559080"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: "Rafael J . Wysocki" <rjw@sisk.pl>
-Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: [PATCH] cpufreq: Fix sysfs deadlock with concurrent hotplug/frequency switch
-Date: Thu, 19 Jul 2012 18:57:13 -0700
-Message-Id: <1342749433-17676-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.7.11.2.249.g31c7954
+	Thu, 19 Jul 2012 22:01:28 -0400
+Date: Fri, 20 Jul 2012 12:01:18 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michael Neuling <mikey@neuling.org>,
+        Christian Riesch <christian.riesch@omicron.at>
+Subject: linux-next: build failure after merge of the net-next tree
+Message-Id: <20120720120118.465056f267ab5c3ac5ea45c4@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__20_Jul_2012_12_01_18_+1000_yc_XPQQFW=ZoDQyt"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Running one program that continuously hotplugs and replugs a cpu
-concurrently with another program that continuously writes to the
-scaling_setspeed node eventually deadlocks with:
+--Signature=_Fri__20_Jul_2012_12_01_18_+1000_yc_XPQQFW=ZoDQyt
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-=============================================
-[ INFO: possible recursive locking detected ]
-3.4.0 #37 Tainted: G        W
----------------------------------------------
-filemonkey/122 is trying to acquire lock:
- (s_active#13){++++.+}, at: [<c01a3d28>] sysfs_remove_dir+0x9c/0xb4
+Hi all,
 
-but task is already holding lock:
- (s_active#13){++++.+}, at: [<c01a22f0>] sysfs_write_file+0xe8/0x140
+After merging the net-next tree, today's linux-next build (powerpc
+pmac32_defconfig) failed like this:
 
-other info that might help us debug this:
- Possible unsafe locking scenario:
+ERROR: "phy_disconnect" [drivers/net/usb/asix.ko] undefined!
+ERROR: "phy_stop" [drivers/net/usb/asix.ko] undefined!
+ERROR: "phy_ethtool_gset" [drivers/net/usb/asix.ko] undefined!
+ERROR: "mdiobus_unregister" [drivers/net/usb/asix.ko] undefined!
+ERROR: "phy_start_aneg" [drivers/net/usb/asix.ko] undefined!
+ERROR: "phy_print_status" [drivers/net/usb/asix.ko] undefined!
+ERROR: "phy_start" [drivers/net/usb/asix.ko] undefined!
+ERROR: "mdiobus_free" [drivers/net/usb/asix.ko] undefined!
+ERROR: "mdiobus_register" [drivers/net/usb/asix.ko] undefined!
+ERROR: "genphy_resume" [drivers/net/usb/asix.ko] undefined!
+ERROR: "phy_connect" [drivers/net/usb/asix.ko] undefined!
+ERROR: "phy_mii_ioctl" [drivers/net/usb/asix.ko] undefined!
+ERROR: "phy_ethtool_sset" [drivers/net/usb/asix.ko] undefined!
+ERROR: "mdiobus_alloc_size" [drivers/net/usb/asix.ko] undefined!
 
-       CPU0
-       ----
-  lock(s_active#13);
-  lock(s_active#13);
+Caused by commit 16626b0cc3d5 ("asix: Add a new driver for the AX88172A")
+and reverting that commit fixes the build.
 
- *** DEADLOCK ***
+Thanks to Mikey for reporting this porblem.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
- May be due to missing lock nesting notation
+--Signature=_Fri__20_Jul_2012_12_01_18_+1000_yc_XPQQFW=ZoDQyt
+Content-Type: application/pgp-signature
 
-2 locks held by filemonkey/122:
- #0:  (&buffer->mutex){+.+.+.}, at: [<c01a2230>] sysfs_write_file+0x28/0x140
- #1:  (s_active#13){++++.+}, at: [<c01a22f0>] sysfs_write_file+0xe8/0x140
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-stack backtrace:
-[<c0014fcc>] (unwind_backtrace+0x0/0x120) from [<c00ca600>] (validate_chain+0x6f8/0x1054)
-[<c00ca600>] (validate_chain+0x6f8/0x1054) from [<c00cb778>] (__lock_acquire+0x81c/0x8d8)
-[<c00cb778>] (__lock_acquire+0x81c/0x8d8) from [<c00cb9c0>] (lock_acquire+0x18c/0x1e8)
-[<c00cb9c0>] (lock_acquire+0x18c/0x1e8) from [<c01a3ba8>] (sysfs_addrm_finish+0xd0/0x180)
-[<c01a3ba8>] (sysfs_addrm_finish+0xd0/0x180) from [<c01a3d28>] (sysfs_remove_dir+0x9c/0xb4)
-[<c01a3d28>] (sysfs_remove_dir+0x9c/0xb4) from [<c02d0e5c>] (kobject_del+0x10/0x38)
-[<c02d0e5c>] (kobject_del+0x10/0x38) from [<c02d0f74>] (kobject_release+0xf0/0x194)
-[<c02d0f74>] (kobject_release+0xf0/0x194) from [<c0565a98>] (cpufreq_cpu_put+0xc/0x24)
-[<c0565a98>] (cpufreq_cpu_put+0xc/0x24) from [<c05683f0>] (store+0x6c/0x74)
-[<c05683f0>] (store+0x6c/0x74) from [<c01a2314>] (sysfs_write_file+0x10c/0x140)
-[<c01a2314>] (sysfs_write_file+0x10c/0x140) from [<c014af44>] (vfs_write+0xb0/0x128)
-[<c014af44>] (vfs_write+0xb0/0x128) from [<c014b06c>] (sys_write+0x3c/0x68)
-[<c014b06c>] (sys_write+0x3c/0x68) from [<c000e0e0>] (ret_fast_syscall+0x0/0x3c)
+iQIcBAEBCAAGBQJQCLvuAAoJEECxmPOUX5FEOH8P/180Jlo7BIX5dyA9xyM/smgT
+b2TcowgexOejmuA3mTHaSdvDrMNESuS3EhQPeYREA8jKbp90kpfizjybiKc968vy
+WiCh2cYO9jAphC7lihB/IC1Q2ffRg844+c4nJLFd8P6DT+LWMnzjpPfXekhaJNnJ
+hmQvp3OrzPSF/2T/Uy4IW9Q04n7uoW+ttmQ7d+YT+JRfTQi9xhOrKU05UwEh/4Nq
+KCUGzUO549u85JcHqFyGLhcLZC9ekHiVLmSYOoUH6+Y20m7ofcMg9Sczi8pTZelq
+Hvm9maPATtLw+mRxjF6Z+NhGznoRooaorHdD/a3CrMtJ5oeZ76miSuE5euSUrjTr
+m+Dwg8Fa1Jv8FgSBg4EsVYCONuHdwK8LcNosu30PJGB49B1Y8sdLa/LrmUSd3tWC
+KOdg/L1BIeLmar5f93qnvHpN9frNcstNfaMHawBAWuhuItHr3GNOY1RFDIUdcXey
+iSDM8kVep23wicqZXapyGSAgMw+H0Vqv/KooyYpWVYfKTxaYzWi+Dev7tcdKu5Zb
+UftnTlEX+93tAhHR110fKtVzuqxfYPEyaMh52lwzMZGAfXcEyIVqxpzWQ8Em6Oxs
+LU4dL4DU0H0ZHXHZBg9Jrl5FtEK/UnOiKnnY6HvlRD4lLnXyCQ5TzW67ACcGT8+Q
+wYd3gz3PT2p9lBAKXBh0
+=yz+h
+-----END PGP SIGNATURE-----
 
-This is because store() in cpufreq.c indirectly calls
-kobject_get() via cpufreq_cpu_get() and is the last one to call
-kobject_put() via cpufreq_cpu_put(). Sysfs code should not call
-kobject_get() or kobject_put() directly (see the comment around
-sysfs_schedule_callback() for more information).
-
-Fix this deadlock by introducing two new functions:
-
-	struct cpufreq_policy *cpufreq_cpu_get_sysfs(unsigned int cpu)
-	void cpufreq_cpu_put_sysfs(struct cpufreq_policy *data)
-
-which do the same thing as cpufreq_cpu_{get,put}() but don't call
-kobject functions.
-
-To easily trigger this deadlock you can apply a one line patch to
-the store() function in cpufreq.c
-
- diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
- index a290771..62af12d 100644
- --- a/drivers/cpufreq/cpufreq.c
- +++ b/drivers/cpufreq/cpufreq.c
- @@ -675,6 +675,7 @@ static ssize_t store(struct kobject *kobj
-
-         unlock_policy_rwsem_write(policy->cpu);
-  fail:
- +       msleep(10000);
-         cpufreq_cpu_put_sysfs(policy);
-  no_policy:
-         return ret;
-
-and then write scaling_setspeed in one task and offline the cpu
-in another. The first task will hang and be detected by the hung
-task detector.
-
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
-
-Before you ask, I've seen the comment above cpufreq_add_dev() about
-concurrent hotplug/cpufreq.
-
- drivers/cpufreq/cpufreq.c | 35 +++++++++++++++++++++++++++--------
- 1 file changed, 27 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 7f2f149..a290771 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -138,7 +138,7 @@ void disable_cpufreq(void)
- static LIST_HEAD(cpufreq_governor_list);
- static DEFINE_MUTEX(cpufreq_governor_mutex);
- 
--struct cpufreq_policy *cpufreq_cpu_get(unsigned int cpu)
-+static struct cpufreq_policy *__cpufreq_cpu_get(unsigned int cpu, int sysfs)
- {
- 	struct cpufreq_policy *data;
- 	unsigned long flags;
-@@ -162,7 +162,7 @@ struct cpufreq_policy *cpufreq_cpu_get(unsigned int cpu)
- 	if (!data)
- 		goto err_out_put_module;
- 
--	if (!kobject_get(&data->kobj))
-+	if (!sysfs && !kobject_get(&data->kobj))
- 		goto err_out_put_module;
- 
- 	spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
-@@ -175,16 +175,35 @@ err_out_unlock:
- err_out:
- 	return NULL;
- }
-+
-+struct cpufreq_policy *cpufreq_cpu_get(unsigned int cpu)
-+{
-+	return __cpufreq_cpu_get(cpu, 0);
-+}
- EXPORT_SYMBOL_GPL(cpufreq_cpu_get);
- 
-+static struct cpufreq_policy *cpufreq_cpu_get_sysfs(unsigned int cpu)
-+{
-+	return __cpufreq_cpu_get(cpu, 1);
-+}
- 
--void cpufreq_cpu_put(struct cpufreq_policy *data)
-+static void __cpufreq_cpu_put(struct cpufreq_policy *data, int sysfs)
- {
--	kobject_put(&data->kobj);
-+	if (!sysfs)
-+		kobject_put(&data->kobj);
- 	module_put(cpufreq_driver->owner);
- }
-+
-+void cpufreq_cpu_put(struct cpufreq_policy *data)
-+{
-+	__cpufreq_cpu_put(data, 0);
-+}
- EXPORT_SYMBOL_GPL(cpufreq_cpu_put);
- 
-+static void cpufreq_cpu_put_sysfs(struct cpufreq_policy *data)
-+{
-+	__cpufreq_cpu_put(data, 1);
-+}
- 
- /*********************************************************************
-  *            EXTERNALLY AFFECTING FREQUENCY CHANGES                 *
-@@ -617,7 +636,7 @@ static ssize_t show(struct kobject *kobj, struct attribute *attr, char *buf)
- 	struct cpufreq_policy *policy = to_policy(kobj);
- 	struct freq_attr *fattr = to_attr(attr);
- 	ssize_t ret = -EINVAL;
--	policy = cpufreq_cpu_get(policy->cpu);
-+	policy = cpufreq_cpu_get_sysfs(policy->cpu);
- 	if (!policy)
- 		goto no_policy;
- 
-@@ -631,7 +650,7 @@ static ssize_t show(struct kobject *kobj, struct attribute *attr, char *buf)
- 
- 	unlock_policy_rwsem_read(policy->cpu);
- fail:
--	cpufreq_cpu_put(policy);
-+	cpufreq_cpu_put_sysfs(policy);
- no_policy:
- 	return ret;
- }
-@@ -642,7 +661,7 @@ static ssize_t store(struct kobject *kobj, struct attribute *attr,
- 	struct cpufreq_policy *policy = to_policy(kobj);
- 	struct freq_attr *fattr = to_attr(attr);
- 	ssize_t ret = -EINVAL;
--	policy = cpufreq_cpu_get(policy->cpu);
-+	policy = cpufreq_cpu_get_sysfs(policy->cpu);
- 	if (!policy)
- 		goto no_policy;
- 
-@@ -656,7 +675,7 @@ static ssize_t store(struct kobject *kobj, struct attribute *attr,
- 
- 	unlock_policy_rwsem_write(policy->cpu);
- fail:
--	cpufreq_cpu_put(policy);
-+	cpufreq_cpu_put_sysfs(policy);
- no_policy:
- 	return ret;
- }
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+--Signature=_Fri__20_Jul_2012_12_01_18_+1000_yc_XPQQFW=ZoDQyt--
