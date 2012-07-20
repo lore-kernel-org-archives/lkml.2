@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752778Ab2GTUWj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 16:22:39 -0400
-Received: from e24smtp01.br.ibm.com ([32.104.18.85]:46747 "EHLO
-	e24smtp01.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752070Ab2GTUWg (ORCPT
+	id S1752836Ab2GTUYi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 16:24:38 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:63781 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752070Ab2GTUYh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 16:22:36 -0400
-Date: Fri, 20 Jul 2012 17:21:55 -0300
-From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-To: Dave Jones <davej@redhat.com>,
-        nicolas prochazka <prochazka.nicolas@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: oops in kernel ( 3.4.x -> 3.5rc )
-Message-ID: <20120720202155.GB15677@oc1711230544.ibm.com>
-References: <CADdae-i2FWspdm_BPQAeO3HUUyOWj8rDui0cTGR6fkRv7yr2zw@mail.gmail.com>
- <20120720132153.GA26110@redhat.com>
+	Fri, 20 Jul 2012 16:24:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120720132153.GA26110@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12072020-1524-0000-0000-00000328076D
+Date: Sat, 21 Jul 2012 01:54:36 +0530
+Message-ID: <CAF+rN0S5VZ+2fEjacXmtcdU2U1cjJg+EJP4xGAKKX2WFFMXL7g@mail.gmail.com>
+Subject: vfork() / clone() with pthreads / setuid
+From: Vishal K <linuxkernelrocks@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 20, 2012 at 09:21:53AM -0400, Dave Jones wrote:
-> On Fri, Jul 20, 2012 at 11:56:06AM +0200, nicolas prochazka wrote:
-> 
->  > [ 2384.900061] BUG: unable to handle kernel paging request at 000000010000002f
-> 
-> That '1' looks like a random bit flip. Try running memtest86.
-> 
+Hello Kernel experts,
 
-Looks more a 32-bit value of 1 followed by a 32-bit value of 0x2f. Most
-likely a pointer to some other piece of a struct. However, taking a look
-at fs/files.c code, nothing seems suspicious.
+>From http://developers.sun.com/solaris/articles/subprocess/subprocess.html
+, I am curious to know if the following is already addressed in linux
+kernel for vfork() / clone() calls.
 
-Nicolas, it wasn't clear to me if you had problems with 3.4 too. There
-has been some changes in fs/files.c on 3.4-rc1 in the piece of code
-where you hit the problem.
+The vfork(2) system call was also adopted in the Solaris OS. Much
+later, however, when multithreading (MT) became available and widely
+used it was discovered that vfork() may introduce a new problem when
+the application has multiple threads running: deadlock. The deadlock
+can happen due to the dynamic linker ld.so.1 involvement in resolving
+the necessary symbols. Particularly, if the child process calls an
+external function (such as exec()), the dynamic linker may be invoked
+to resolve the Procedure Linkage Table (PLT) entry, for which the
+dynamic linker will acquire a mutex lock. This lock may already be
+held by a different thread in the parent process. If this happens it
+will create a deadlock between the parent and child processes, because
+no thread in the parent can run until the child has called exec() or
+exit(). As a result, both the parent and the child processes will
+hang.
 
-What does your system exercise? Any chance you are using a lot of
-select, which has also been changed in those same patches to fs/files.c?
 
-Regards.
-Cascardo.
+Also, is it allowed to call setuid() after a vfork() or a clone()
+before doing execv() so that the executed command can be run as a
+different user?
 
 
->  > [ 2384.910010] Pid: 23838, comm: queue.sh Tainted: G      D W
-> 
-> This wasn't the first problem either.
-> 
->  > [ 2397.885344] BUG: unable to handle kernel paging request at 000000010000003b
-> 
-> Looks like the same flipped bit.
-> 
-> 	Dave
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+I realize this may not be the right forum for such queries, but looks
+like this is not available anywhere.
 
+Regards,
+Kernel Rocks.
