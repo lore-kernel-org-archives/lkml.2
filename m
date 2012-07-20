@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752885Ab2GTFi3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 01:38:29 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:51272 "EHLO comal.ext.ti.com"
+	id S1752653Ab2GTFiN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 01:38:13 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:57108 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752793Ab2GTFiZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 01:38:25 -0400
+	id S1752490Ab2GTFiJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 01:38:09 -0400
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <kishon@ti.com>, <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
         <rob@landley.net>, <linux@arm.linux.org.uk>,
@@ -14,9 +14,9 @@ To: <kishon@ti.com>, <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
         <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <balbi@ti.com>,
         <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>
-Subject: [PATCH v5 10/11] arm/dts: omap: Add usb_otg and glue data
-Date: Fri, 20 Jul 2012 11:07:30 +0530
-Message-ID: <1342762651-17094-11-git-send-email-kishon@ti.com>
+Subject: [PATCH v5 04/11] arm: omap: hwmod: add a new addr space in otg for writing to control module
+Date: Fri, 20 Jul 2012 11:07:24 +0530
+Message-ID: <1342762651-17094-5-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1342762651-17094-1-git-send-email-kishon@ti.com>
 References: <1342762651-17094-1-git-send-email-kishon@ti.com>
@@ -26,111 +26,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add usb otg data node in omap4/omap3 device tree file. Also update
-the node with board specific setting in omapx-<board>.dts file.
+The mailbox register for usb otg in omap is present in control module.
+On detection of any events VBUS or ID, this register should be written
+to send the notification to musb core.
+
+Till we have a separate control module driver to write to control module,
+omap2430 will handle the register writes to control module by itself. So
+a new address space to represent this control module register is added
+to usb_otg_hs.
 
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- arch/arm/boot/dts/omap3-beagle.dts |    6 ++++++
- arch/arm/boot/dts/omap3-evm.dts    |    6 ++++++
- arch/arm/boot/dts/omap3.dtsi       |    8 ++++++++
- arch/arm/boot/dts/omap4-panda.dts  |    6 ++++++
- arch/arm/boot/dts/omap4-sdp.dts    |    6 ++++++
- arch/arm/boot/dts/omap4.dtsi       |    8 ++++++++
- 6 files changed, 40 insertions(+)
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/arch/arm/boot/dts/omap3-beagle.dts b/arch/arm/boot/dts/omap3-beagle.dts
-index 5b4506c..f3d7076 100644
---- a/arch/arm/boot/dts/omap3-beagle.dts
-+++ b/arch/arm/boot/dts/omap3-beagle.dts
-@@ -67,3 +67,9 @@
- &mmc3 {
- 	status = "disable";
+diff --git a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+index ba24d15..c50d828 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+@@ -5922,6 +5922,11 @@ static struct omap_hwmod_addr_space omap44xx_usb_otg_hs_addrs[] = {
+ 		.pa_end		= 0x4a0ab7ff,
+ 		.flags		= ADDR_TYPE_RT
+ 	},
++	{
++		.pa_start	= 0x4a00233c,
++		.pa_end		= 0x4a00233f,
++		.flags		= ADDR_TYPE_RT
++	},
+ 	{ }
  };
-+
-+&usb_otg_hs {
-+	interface_type = <0>;
-+	mode = <3>;
-+	power = <50>;
-+};
-diff --git a/arch/arm/boot/dts/omap3-evm.dts b/arch/arm/boot/dts/omap3-evm.dts
-index 2eee16e..8963b3d 100644
---- a/arch/arm/boot/dts/omap3-evm.dts
-+++ b/arch/arm/boot/dts/omap3-evm.dts
-@@ -18,3 +18,9 @@
- 		reg = <0x80000000 0x10000000>; /* 256 MB */
- 	};
- };
-+
-+&usb_otg_hs {
-+	interface_type = <0>;
-+	mode = <3>;
-+	power = <50>;
-+};
-diff --git a/arch/arm/boot/dts/omap3.dtsi b/arch/arm/boot/dts/omap3.dtsi
-index 99474fa..4b8c142 100644
---- a/arch/arm/boot/dts/omap3.dtsi
-+++ b/arch/arm/boot/dts/omap3.dtsi
-@@ -215,5 +215,13 @@
- 			compatible = "ti,omap3-hsmmc";
- 			ti,hwmods = "mmc3";
- 		};
-+
-+		usb_otg_hs: usb_otg_hs {
-+			compatible = "ti,omap3-musb";
-+			ti,hwmods = "usb_otg_hs";
-+			multipoint = <1>;
-+			num_eps = <16>;
-+			ram_bits = <12>;
-+		};
- 	};
- };
-diff --git a/arch/arm/boot/dts/omap4-panda.dts b/arch/arm/boot/dts/omap4-panda.dts
-index 7052422..dd19370 100644
---- a/arch/arm/boot/dts/omap4-panda.dts
-+++ b/arch/arm/boot/dts/omap4-panda.dts
-@@ -93,3 +93,9 @@
- &twlusb {
- 	usb-supply = <&vusb>;
- };
-+
-+&usb_otg_hs {
-+	interface_type = <1>;
-+	mode = <3>;
-+	power = <50>;
-+};
-diff --git a/arch/arm/boot/dts/omap4-sdp.dts b/arch/arm/boot/dts/omap4-sdp.dts
-index 6326d7c..0fc10d4 100644
---- a/arch/arm/boot/dts/omap4-sdp.dts
-+++ b/arch/arm/boot/dts/omap4-sdp.dts
-@@ -162,3 +162,9 @@
- &twlusb {
- 	usb-supply = <&vusb>;
- };
-+
-+&usb_otg_hs {
-+	interface_type = <1>;
-+	mode = <3>;
-+	power = <50>;
-+};
-diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
-index 15f1890..7886518 100644
---- a/arch/arm/boot/dts/omap4.dtsi
-+++ b/arch/arm/boot/dts/omap4.dtsi
-@@ -285,5 +285,13 @@
- 				      <0x4a002300 0x1>;
- 			};
- 		};
-+
-+		usb_otg_hs: usb_otg_hs {
-+			compatible = "ti,omap4-musb";
-+			ti,hwmods = "usb_otg_hs";
-+			multipoint = <1>;
-+			num_eps = <16>;
-+			ram_bits = <12>;
-+		};
- 	};
- };
+ 
 -- 
 1.7.9.5
 
