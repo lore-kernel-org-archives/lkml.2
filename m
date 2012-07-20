@@ -1,47 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752713Ab2GTQs2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 12:48:28 -0400
-Received: from casper.infradead.org ([85.118.1.10]:35008 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752348Ab2GTQs1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 12:48:27 -0400
-Message-ID: <1342802895.2583.16.camel@twins>
-Subject: Re: [PATCH] perf/x86: Fix LLC-* and node-* events on Intel
- SandyBridge
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-Cc: mingo@elte.hu, andi@firstfloor.org, linux-kernel@vger.kernel.org,
-        Stephane Eranian <eranian@gmail.com>
-Date: Fri, 20 Jul 2012 18:48:15 +0200
-In-Reply-To: <1342517275-2875-1-git-send-email-zheng.z.yan@intel.com>
-References: <1342517275-2875-1-git-send-email-zheng.z.yan@intel.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1752968Ab2GTQvC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 12:51:02 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:43087 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752498Ab2GTQvA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 12:51:00 -0400
+Message-ID: <1342803059.21447.45.camel@joe2Laptop>
+Subject: Re: [PATCH] sunrpc: clnt: Add missing braces
+From: Joe Perches <joe@perches.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Chuck Lever <chuck.lever@oracle.com>, linux-nfs@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 20 Jul 2012 09:50:59 -0700
+In-Reply-To: <1342635431.9551.41.camel@joe2Laptop>
+References: <1342635431.9551.41.camel@joe2Laptop>
+Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-07-17 at 17:27 +0800, Yan, Zheng wrote:
-> From: "Yan, Zheng" <zheng.z.yan@intel.com>
+On Wed, 2012-07-18 at 11:17 -0700, Joe Perches wrote:
+> Add a missing set of braces that commit 4e0038b6b24
+> ("SUNRPC: Move clnt->cl_server into struct rpc_xprt")
+> forgot.
 > 
-> LLC-* and node-* events require using the OFFCORE_RESPONSE events
-> on SandyBridge, but the hw_cache_extra_regs is left uninitialized.
-> This patch adds the missing extra register configure table for
-> SandyBridge. 
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  net/sunrpc/clnt.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
+> index f56f045..aaf70aa 100644
+> --- a/net/sunrpc/clnt.c
+> +++ b/net/sunrpc/clnt.c
+> @@ -1844,12 +1844,13 @@ call_timeout(struct rpc_task *task)
+>  		return;
+>  	}
+>  	if (RPC_IS_SOFT(task)) {
+> -		if (clnt->cl_chatty)
+> +		if (clnt->cl_chatty) {
+>  			rcu_read_lock();
+>  			printk(KERN_NOTICE "%s: server %s not responding, timed out\n",
+>  				clnt->cl_protname,
+>  				rcu_dereference(clnt->cl_xprt)->servername);
+>  			rcu_read_unlock();
+> +		}
+>  		if (task->tk_flags & RPC_TASK_TIMEOUT)
+>  			rpc_exit(task, -ETIMEDOUT);
+>  		else
 
-Last time I tried this I couldn't get sane numbers out of it..
+Hi David.
 
-Does these encodings work, if so, do explain them.
+I think it'd be good to get this into 3.6 as a bug fix.
 
-Also:
+This is marked in netdev patchwork as "not applicable".
 
-> +#define SNB_REMOTE             (0xffULL << 23)
+Do you need the sunrpc maintainers to apply or ack it
+and then push it to you?
 
-I guess I can take this as an 'official' publication of this fact?
+Trond?  Bruce?
 
-(I knew those bits meant this, but I never got a response if I could
-publish that information.)
