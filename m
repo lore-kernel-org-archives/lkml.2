@@ -1,96 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751995Ab2GTExv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 00:53:51 -0400
-Received: from TYO200.gate.nec.co.jp ([202.32.8.215]:41897 "EHLO
-	tyo200.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750933Ab2GTExu (ORCPT
+	id S1752312Ab2GTFCt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 01:02:49 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:60496 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751449Ab2GTFCr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 00:53:50 -0400
-X-Greylist: delayed 362 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Jul 2012 00:53:50 EDT
-Date: Fri, 20 Jul 2012 13:44:11 +0900
-From: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
-To: vgoyal@redhat.com
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        ebiederm@xmission.com
-Subject: Re: [PATCH] kdump: Append newline to the last lien of vmcoreinfo
- note
-Message-Id: <20120720134411.85fd3f731063e43e52092e1a@mxc.nes.nec.co.jp>
-In-Reply-To: <20120719134920.GA2761@redhat.com>
-References: <20120717173655.GC11031@redhat.com>
-	<20120718150439.48360f16.akpm@linux-foundation.org>
-	<20120719134920.GA2761@redhat.com>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.10.14; i686-pc-mingw32)
+	Fri, 20 Jul 2012 01:02:47 -0400
+Date: Fri, 20 Jul 2012 15:02:37 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@linux.intel.com>
+Subject: linux-next: build failure after merge of the final tree (tty tree
+ related)
+Message-Id: <20120720150237.af0d271624511fc18705f287@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__20_Jul_2012_15_02_37_+1000_ULKuZ18NR9lLw03S"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Vivek,
+--Signature=_Fri__20_Jul_2012_15_02_37_+1000_ULKuZ18NR9lLw03S
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, 19 Jul 2012 09:49:21 -0400
-Vivek Goyal <vgoyal@redhat.com> wrote:
+Hi all,
 
-> On Wed, Jul 18, 2012 at 03:04:39PM -0700, Andrew Morton wrote:
-> > On Tue, 17 Jul 2012 13:36:55 -0400
-> > Vivek Goyal <vgoyal@redhat.com> wrote:
-> > 
-> > > Last line of vmcoreinfo note does not end with \n. Parsing all the lines
-> > > in note becomes easier if all lines end with \n instead of trying to special
-> > > case the last line.
-> > > 
-> > > I know atleast one tool, vmcore-dmesg in kexec-tools tree which made the
-> > > assumption that all lines end with \n. I think it is a good idea to
-> > > fix it.
-> > > 
-> > > Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
-> > > ---
-> > >  kernel/kexec.c |    2 +-
-> > >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > > 
-> > > Index: linux-2.6/kernel/kexec.c
-> > > ===================================================================
-> > > --- linux-2.6.orig/kernel/kexec.c	2012-07-17 19:26:38.844033784 -0400
-> > > +++ linux-2.6/kernel/kexec.c	2012-07-17 23:51:33.311701781 -0400
-> > > @@ -1424,7 +1424,7 @@ static void update_vmcoreinfo_note(void)
-> > >  
-> > >  void crash_save_vmcoreinfo(void)
-> > >  {
-> > > -	vmcoreinfo_append_str("CRASHTIME=%ld", get_seconds());
-> > > +	vmcoreinfo_append_str("CRASHTIME=%ld\n", get_seconds());
-> > >  	update_vmcoreinfo_note();
-> > >  }
-> > 
-> > huh, that was a screwup.  And now we have to make what must be
-> > viewed as a non-back-compatible ABI change.
-> > 
-> > Ho hum, presumably there isn't a lot of code out there which is
-> > dependent upon a non-newline-terminated CRASHTIME record.
-> 
-> I think so. AFAIK, makedumpfile (vmcore filtering utility) is only
-> user of CRASHTIME=.
-> 
-> > 
-> > Why did this work at all, anyway?  Is CRASHTIME always the last-emitted
-> > record?
-> 
-> Yes, CRASHTIME= is always the last emitted line in vmcoreinfo note.
-> 
-> I had a quick look at makedumpfile code and looks like they read the whole
-> note, dump it to a file and then do fgets() on the file in a loop. As it is
-> last line in the file, fgets encounters EOF and reads the CRASHTIME= line
-> successfully. So even after this change makedumpfile should remain
-> unaffected. 
-> 
-> CCing makedumpfile maintainer, Atsushi Kumagai.
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
-As you said, makedumpfile reads VMCOREINFO line by line with fgets().
-So, it's OK that the end of the last line is whether \n or EOF.
+drivers/usb/serial/console.c: In function 'usb_console_setup':
+drivers/usb/serial/console.c:168:16: error: invalid type argument of '->' (=
+have 'struct ktermios')
+drivers/usb/serial/console.c:169:4: error: incompatible type for argument 1=
+ of 'tty_termios_encode_baud_rate'
+include/linux/tty.h:449:13: note: expected 'struct ktermios *' but argument=
+ is of type 'struct ktermios'
 
-Therefore, this change doesn't affect makedumpfile. 
+Caused by commit adc8d746caa6 ("tty: move the termios object into the
+tty").  Hopefully this is the last of them.
 
+I have added the following fix patch for today:
 
-Thanks
-Atsushi Kumagai
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Fri, 20 Jul 2012 14:58:31 +1000
+Subject: [PATCH] tty: fix up usb serial console for termios change.
+
+fixes these errors:
+
+drivers/usb/serial/console.c: In function 'usb_console_setup':
+drivers/usb/serial/console.c:168:16: error: invalid type argument of '->' (=
+have 'struct ktermios')
+drivers/usb/serial/console.c:169:4: error: incompatible type for argument 1=
+ of 'tty_termios_encode_baud_rate'
+include/linux/tty.h:449:13: note: expected 'struct ktermios *' but argument=
+ is of type 'struct ktermios'
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/usb/serial/console.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/usb/serial/console.c b/drivers/usb/serial/console.c
+index b9cca6d..9a56428 100644
+--- a/drivers/usb/serial/console.c
++++ b/drivers/usb/serial/console.c
+@@ -165,8 +165,8 @@ static int usb_console_setup(struct console *co, char *=
+options)
+ 		}
+=20
+ 		if (serial->type->set_termios) {
+-			tty->termios->c_cflag =3D cflag;
+-			tty_termios_encode_baud_rate(tty->termios, baud, baud);
++			tty->termios.c_cflag =3D cflag;
++			tty_termios_encode_baud_rate(&tty->termios, baud, baud);
+ 			memset(&dummy, 0, sizeof(struct ktermios));
+ 			serial->type->set_termios(tty, port, &dummy);
+=20
+--=20
+1.7.10.280.gaa39
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Fri__20_Jul_2012_15_02_37_+1000_ULKuZ18NR9lLw03S
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQCOZtAAoJEECxmPOUX5FEx+UP/2+Fow6D7PWdvZ11gR0LtVtg
+eWHm0yVjFS2TTuZAn7mWcSI9NvDGY3lq+37hl26G45EVpXqcAd1KNr0FQOgAr3Mq
+UqNAu/oThdJPKekosREDihGKURylLX/5M4iPAiYSkMRz9cZrkr/BwYAq+c7Or6nA
+QzK5fijpyquQD/0+UO4tFxuNLlkh/P0S2qCQTRGdmqvLsZxscwSiM//acwuO/x+3
+oXlaxkMnTwW1T+wKjP7cjn7jnIhuz5zqOQ7fMHMenlUa87/kau/ihWUlHfNeFtR3
+LfKlujqep0Fb4CUxJyUoYHioL9k13HhFBOQuYwDyAuYzyE2glJn4n5kMUfpRZy5y
+sHsIBnPuGr+tgDj1HiXL04KzAKe3rVdZzMeRLnUXbs8WMgFxUUiME9e+pN2Otl+j
+GkOIPMxJoi1BxSQ7bmU4qEr1W0thyDMhNBRXKgyC8WOEU/RHZh288h6vX0cGgBoB
+6o7GjSP4Y0k52vOLG8GX/VAQDNSpCvjNGbrim7WL0S9l0gkfa4ujJWcrzOsK5J9g
+rTOGT76S4zQuogL6eT4ayk/5EvfY1A4qWLDqmkpVdZBGL26H9QuzzGzrhJxei7yo
+ckAlqfvrm2AfmyUEuYVh7cOdMyaynDuIeTsvLohWgRnSndEAKeEm+RvEhw8ajuoD
+tcV9ny0kAgx4M2ifT0mo
+=SSKd
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__20_Jul_2012_15_02_37_+1000_ULKuZ18NR9lLw03S--
