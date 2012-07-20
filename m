@@ -1,41 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753210Ab2GTJg6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 05:36:58 -0400
-Received: from router-fw.net-space.pl ([89.174.63.77]:35156 "EHLO
-	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751227Ab2GTJgz (ORCPT
+	id S1753247Ab2GTJm4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 05:42:56 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53052 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753202Ab2GTJmv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 05:36:55 -0400
-Date: Fri, 20 Jul 2012 11:36:48 +0200
-From: Daniel Kiper <dkiper@net-space.pl>
-To: joe shmoe <joeshmoeypeter@yahoo.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        daniel.kiper@oracle.com
-Subject: Re: kdump/kexec vmcore size doubles each time
-Message-ID: <20120720093648.GA3909@router-fw-old.local.net-space.pl>
-References: <1342735724.60460.YahooMailNeo@web160604.mail.bf1.yahoo.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Fri, 20 Jul 2012 05:42:51 -0400
+Date: Fri, 20 Jul 2012 10:42:49 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Paul Mundt <lethal@linux-sh.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: Re: Boot breaks in -next from LEGACY to LINEAR conversion
+Message-ID: <20120720094248.GM4495@opensource.wolfsonmicro.com>
+References: <20120717185749.GJ4477@opensource.wolfsonmicro.com>
+ <20120718161023.GE4495@opensource.wolfsonmicro.com>
+ <CACxGe6utvV6XbJEck_UuVJxsqckPFZXG3psEgeQ1vZSBGAwm9Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="lildS9pRFgpM/xzO"
 Content-Disposition: inline
-In-Reply-To: <1342735724.60460.YahooMailNeo@web160604.mail.bf1.yahoo.com>
-User-Agent: Mutt/1.3.28i
+In-Reply-To: <CACxGe6utvV6XbJEck_UuVJxsqckPFZXG3psEgeQ1vZSBGAwm9Q@mail.gmail.com>
+X-Cookie: Beware of low-flying butterflies.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 19, 2012 at 03:08:44PM -0700, joe shmoe wrote:
-> Hi,
-> I am trying to configure kexec/kdump on 2.6.35-14.
->
->
-> $> kexec --version
-> kexec-tools-testing 20080330 released 30th March 2007
 
-[...]
+--lildS9pRFgpM/xzO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-It is very ancient version. Please use at least Ver. 2.0.3
-(http://kernel.org/pub/linux/utils/kernel/kexec/) or current
-development version (git://git.kernel.org/pub/scm/utils/kernel/kexec/kexec-tools.git).
+On Thu, Jul 19, 2012 at 10:30:11PM -0600, Grant Likely wrote:
 
-Daniel
+> Okay, I've got a theory about what the issue is now. The .map()
+> callback is failing (returning non-zero) for one of the hwirqs. The
+> new code is stricter about associations, and actually unwinds the
+> associations if one of them fails. The old legacy code simply called
+> all the .map() hooks blindly without any error checking. Can you send
+> me the kernel log after backing out those changes.
+
+Looks like the error checking is the issue.  Always knew that was a bad
+idea :)  I've just sent a patch to improve the diagnostics here which
+might help a bit, though I realise now with some of my debug I need to
+send a v2 :/ .
+
+On my system there's only one mapping failed, but it's for one of the
+VIC mappings which is rather unfortunate.  The error is there because
+the VIC is returning -ENOTSUPP to skip invalid IRQs which doesn't
+immediately seem like an awful thing to do for generic code like this.
+
+--lildS9pRFgpM/xzO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQCSgSAAoJEBus8iNuMP3dCiEP/j/vv79SkW8fwCI/BMOBhdwx
+8bu7+P7nJLvWcRsWQMFqKaUkPERIK3KJOSX9oe63qPF90nVpTg5j0FRH1MmnlXVu
+U0HtNbNeilgjNIHMipow/jtOom360r3C63CBZVUGWMeSuw3a9bDJrRVFfKF3Pb8Q
++Khv2IF73D16bY73sBGZ9m/cOV681gWA5u5nBZNXjTpq9QlYAlaiKJ3WlyieZ0Zc
+JV4l0tFlyIUpWTJaRCBez43Xz6BqBg9pyqBRm2twmpOVPgeY8l7zDfr5VrKs6ORM
+CSRIOB1kGeOnLwFsmD0VAJvgifcdUgmyrnyCDe/YIUlyy6YoRqcX+kPao9Sh+XaH
+v0l//Gxb8wRD9jtMTyXEAPRktymGYllrL3oOyzIS0GeF06yq9rlBBV2L2dUMpN5q
+xBzHub51R2RxpK973/9fnIe97zl9mab+x8p70OnSDrWVRHYlWqxiJvC7ZS/PvdXx
+qfMliQ+B4t30JjxNpJUB0RVaQcwO9hjHa9jQHt4nK86T/2xW0FXNxnUglk0f21uK
+T9NKF21RLvOWckTmkaib0v8ydclYqnEn6t6SOSru8m0ErJY7c2lNka4Ezo9adKN+
+RRicJ8hlQXJ9Nhv4Mys6MuuGqvu+Ol/jeRTwfSXneyQlyjsKbIQgl8OhccG2kOvE
+e90nNeavDppA5ODVpCsE
+=UuQS
+-----END PGP SIGNATURE-----
+
+--lildS9pRFgpM/xzO--
