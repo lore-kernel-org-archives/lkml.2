@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752708Ab2GTBSJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 21:18:09 -0400
-Received: from mga09.intel.com ([134.134.136.24]:64850 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751736Ab2GTBSH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 21:18:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="168729936"
-From: Alex Shi <alex.shi@intel.com>
-To: hpa@zytor.com
-Cc: tglx@linutronix.de, mingo@redhat.com, alex.shi@intel.com, tj@kernel.org,
-        akpm@linux-foundation.org, sfr@canb.auug.org.au,
-        linux-kernel@vger.kernel.org, bp@amd64.org,
-        penguin-kernel@I-love.SAKURA.ne.jp
-Subject: [PATCH] x86/tlb: fix allnoconfig building warning
-Date: Fri, 20 Jul 2012 09:18:23 +0800
-Message-Id: <1342747103-19765-1-git-send-email-alex.shi@intel.com>
-X-Mailer: git-send-email 1.7.5.4
+	id S1752774Ab2GTB2C (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 21:28:02 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10048 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752099Ab2GTB2B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 21:28:01 -0400
+X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=kEgnM1vrZgIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=1XJs-Sz2x8cPrqNUI5QA:9 a=PUjeQqilurYA:10 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-ID: <1342747678.12353.84.camel@gandalf.stny.rr.com>
+Subject: Re: [RFC][PATCH 2/4 v4] ftrace/x86: Add save_regs for i386 function
+ calls
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        yrl.pp-manager.tt@hitachi.com
+Date: Thu, 19 Jul 2012 21:27:58 -0400
+In-Reply-To: <50089323.6050203@zytor.com>
+References: <20120711195048.885039013@goodmis.org>
+	   <20120711195745.379060003@goodmis.org> <4FFEC58E.5070202@hitachi.com>
+	   <1342205273.30075.19.camel@gandalf.stny.rr.com>
+	   <1342627145.11900.7.camel@gandalf.stny.rr.com>
+	   <50076ED9.3000100@hitachi.com>
+	   <1342702344.12353.16.camel@gandalf.stny.rr.com>
+	  <1342702682.12353.20.camel@gandalf.stny.rr.com>
+	  <50088FD4.4060401@zytor.com>
+	 <1342739063.12353.82.camel@gandalf.stny.rr.com>
+	 <50089323.6050203@zytor.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The incompatible parameter of flush_tlb_mm_range cause build warning.
-Fix it by correct parameter.
+On Thu, 2012-07-19 at 16:07 -0700, H. Peter Anvin wrote:
+> On 07/19/2012 04:04 PM, Steven Rostedt wrote:
+>  
+> > Basically, all we want to do is add 8 to the stack pointer. And this is
+> > for the x86_32 version of whatever hardware is in use.
+> > 
+> 
+> What I'm telling you is that it depends on the context.
 
-Reported-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Signed-off-by: Alex Shi <alex.shi@intel.com>
----
- arch/x86/include/asm/tlbflush.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+It doesn't really matter anyway. My questions are more academic than
+practical, as I'm just sticking with addl. Quibbling over addl or lea is
+pointless, as addl at least shows us what we want to actually do: add 8
+to the stack pointer.
 
-diff --git a/arch/x86/include/asm/tlbflush.h b/arch/x86/include/asm/tlbflush.h
-index 621b959..4fc8faf 100644
---- a/arch/x86/include/asm/tlbflush.h
-+++ b/arch/x86/include/asm/tlbflush.h
-@@ -105,10 +105,10 @@ static inline void flush_tlb_range(struct vm_area_struct *vma,
- 		__flush_tlb();
- }
- 
--static inline void flush_tlb_mm_range(struct vm_area_struct *vma,
-+static inline void flush_tlb_mm_range(struct mm_struct *mm,
- 	   unsigned long start, unsigned long end, unsigned long vmflag)
- {
--	if (vma->vm_mm == current->active_mm)
-+	if (mm == current->active_mm)
- 		__flush_tlb();
- }
- 
--- 
-1.7.5.4
+-- Steve
+
 
