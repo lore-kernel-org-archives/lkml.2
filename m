@@ -1,344 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753579Ab2GTMvv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 08:51:51 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:32659
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753422Ab2GTMvu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 08:51:50 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(zzc8kzz1202hzz8275bhz2dh2a8h668h839hd24he5bhf0ah107ah)
-From: Zhao Chenhui <chenhui.zhao@freescale.com>
-To: <linuxppc-dev@lists.ozlabs.org>, <galak@kernel.crashing.org>
-CC: <linux-kernel@vger.kernel.org>, <leoli@freescale.com>
-Subject: [PATCH] pm: add power node to dts
-Date: Fri, 20 Jul 2012 20:53:24 +0800
-Message-ID: <1342788804-27770-1-git-send-email-chenhui.zhao@freescale.com>
-X-Mailer: git-send-email 1.6.4.1
+	id S1753589Ab2GTMwR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 08:52:17 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:54094 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753208Ab2GTMwP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 08:52:15 -0400
+Date: Fri, 20 Jul 2012 14:52:13 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-usb <linux-usb@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Oliver Neukum <oneukum@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [RFC] firmware load: defer request_firmware during early boot
+ and resume
+Message-ID: <20120720125213.GA17647@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Ming Lei <tom.leiming@gmail.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	linux-usb <linux-usb@vger.kernel.org>,
+	Alan Stern <stern@rowland.harvard.edu>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Oliver Neukum <oneukum@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>
+References: <CACVXFVNWOcrR9tYhU1wVUSJ_DJ8x+SCk993Sn9dYDe2kzJBDuQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CACVXFVNWOcrR9tYhU1wVUSJ_DJ8x+SCk993Sn9dYDe2kzJBDuQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Power Management device tree stub indicated that the platform
-supports Power Management feature.
+On Fri, Jul 20, 2012 at 08:33:32PM +0800, Ming Lei wrote:
+> The RFC patch is just for discussing if the idea of deferring
+> request_firmware is doable for addressing the issue of
+> request_firmware in resume path, which is caused by driver
+> unbind/rebind during resume.
+> 
+> At least usb bus is involved in such things, one driver may be
+> unbound and rebound in resume path at several situations, and
+> request_firmware is often called inside probe().
+> 
+> Also the idea should be helpful for other hotplug buses too,
+> at least there was the similar problem report on pcmcia bus.
+> 
+> diff --git a/drivers/base/dd.c b/drivers/base/dd.c
+> index 6cd2c6c..fb02eff 100644
+> --- a/drivers/base/dd.c
+> +++ b/drivers/base/dd.c
+> @@ -123,7 +123,7 @@ static bool driver_deferred_probe_enable = false;
+>   * list and schedules the deferred probe workqueue to process them.  It
+>   * should be called anytime a driver is successfully bound to a device.
+>   */
+> -static void driver_deferred_probe_trigger(void)
+> +void driver_deferred_probe_trigger(void)
+>  {
+>  	if (!driver_deferred_probe_enable)
+>  		return;
+> @@ -144,6 +144,7 @@ static void driver_deferred_probe_trigger(void)
+>  	 */
+>  	queue_work(deferred_wq, &deferred_probe_work);
+>  }
+> +EXPORT_SYMBOL_GPL(driver_deferred_probe_trigger);
+> 
+>  /**
+>   * deferred_probe_initcall() - Enable probing of deferred devices
+> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+> index 5401814..4fe742f 100644
+> --- a/drivers/base/firmware_class.c
+> +++ b/drivers/base/firmware_class.c
+> @@ -593,6 +593,9 @@ request_firmware(const struct firmware
+> **firmware_p, const char *name,
+>  	if (IS_ERR_OR_NULL(fw_priv))
+>  		return PTR_RET(fw_priv);
+> 
+> +	if (system_state != SYSTEM_RUNNING)
+> +		return -EPROBE_DEFER;
+> +
+>  	ret = usermodehelper_read_trylock();
+>  	if (WARN_ON(ret)) {
+>  		dev_err(device, "firmware: %s will not be loaded\n", name);
+> diff --git a/include/linux/device.h b/include/linux/device.h
+> index d0e4d99..a63d3171 100644
+> --- a/include/linux/device.h
+> +++ b/include/linux/device.h
+> @@ -244,7 +244,7 @@ extern struct device_driver *driver_find(const char *name,
+>  					 struct bus_type *bus);
+>  extern int driver_probe_done(void);
+>  extern void wait_for_device_probe(void);
+> -
+> +extern void driver_deferred_probe_trigger(void);
+> 
+>  /* sysfs interface for exporting driver attributes */
+> 
+> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+> index e07f5e0..c8d74c6 100644
+> --- a/include/linux/kernel.h
+> +++ b/include/linux/kernel.h
+> @@ -378,6 +378,7 @@ extern enum system_states {
+>  	SYSTEM_POWER_OFF,
+>  	SYSTEM_RESTART,
+>  	SYSTEM_SUSPEND_DISK,
+> +	SYSTEM_SUSPEND,
+>  } system_state;
+> 
+>  #define TAINT_PROPRIETARY_MODULE	0
+> diff --git a/init/main.c b/init/main.c
+> index e60679d..237eae1 100644
+> --- a/init/main.c
+> +++ b/init/main.c
+> @@ -809,6 +809,8 @@ static noinline int init_post(void)
+>  	current->signal->flags |= SIGNAL_UNKILLABLE;
+>  	flush_delayed_fput();
+> 
+> +	driver_deferred_probe_trigger();
+> +
+>  	if (ramdisk_execute_command) {
+>  		run_init_process(ramdisk_execute_command);
+>  		printk(KERN_WARNING "Failed to execute %s\n",
+> diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
+> index 1da39ea..dbf6ffb 100644
+> --- a/kernel/power/suspend.c
+> +++ b/kernel/power/suspend.c
+> @@ -224,6 +224,9 @@ int suspend_devices_and_enter(suspend_state_t state)
+>  		goto Recover_platform;
+>  	}
+>  	suspend_test_finish("suspend devices");
+> +
+> +	system_state = SYSTEM_SUSPEND;
 
-Signed-off-by: Zhao Chenhui <chenhui.zhao@freescale.com>
----
- arch/powerpc/boot/dts/fsl/mpc8536si-post.dtsi |   14 ++++++-
- arch/powerpc/boot/dts/fsl/mpc8544si-post.dtsi |    2 +
- arch/powerpc/boot/dts/fsl/mpc8548si-post.dtsi |    2 +
- arch/powerpc/boot/dts/fsl/mpc8572si-post.dtsi |    2 +
- arch/powerpc/boot/dts/fsl/p1010si-post.dtsi   |    8 ++++
- arch/powerpc/boot/dts/fsl/p1020si-post.dtsi   |    5 +++
- arch/powerpc/boot/dts/fsl/p1021si-post.dtsi   |    5 +++
- arch/powerpc/boot/dts/fsl/p1022si-post.dtsi   |   11 ++++--
- arch/powerpc/boot/dts/fsl/p2020si-post.dtsi   |   14 +++++++
- arch/powerpc/boot/dts/fsl/pq3-power.dtsi      |   48 +++++++++++++++++++++++++
- 10 files changed, 106 insertions(+), 5 deletions(-)
- create mode 100644 arch/powerpc/boot/dts/fsl/pq3-power.dtsi
+This new SYSTEM_SUSPEND state is declared above and only assigned here
+to system_state without being tested anywhere. AFAICT, the only test
+you're doing is system_state != SYSTEM_RUNNING and that works without
+defining a new SYSTEM_SUSPEND state.
 
-diff --git a/arch/powerpc/boot/dts/fsl/mpc8536si-post.dtsi b/arch/powerpc/boot/dts/fsl/mpc8536si-post.dtsi
-index c8b2daa..900f117 100644
---- a/arch/powerpc/boot/dts/fsl/mpc8536si-post.dtsi
-+++ b/arch/powerpc/boot/dts/fsl/mpc8536si-post.dtsi
-@@ -199,6 +199,10 @@
- 
- /include/ "pq3-dma-0.dtsi"
- /include/ "pq3-etsec1-0.dtsi"
-+	enet0: ethernet@24000 {
-+		fsl,wake-on-filer;
-+		fsl,pmc-handle = <&etsec1_clk>;
-+	};
- /include/ "pq3-etsec1-timer-0.dtsi"
- 
- 	usb@22000 {
-@@ -222,9 +226,10 @@
- 	};
- 
- /include/ "pq3-etsec1-2.dtsi"
--
--	ethernet@26000 {
-+	enet2: ethernet@26000 {
- 		cell-index = <1>;
-+		fsl,wake-on-filer;
-+		fsl,pmc-handle = <&etsec3_clk>;
- 	};
- 
- 	usb@2b000 {
-@@ -249,4 +254,9 @@
- 		reg = <0xe0000 0x1000>;
- 		fsl,has-rstcr;
- 	};
-+
-+/include/ "pq3-power.dtsi"
-+	power@e0070 {
-+		compatible = "fsl,mpc8536-pmc", "fsl,mpc8548-pmc";
-+	};
- };
-diff --git a/arch/powerpc/boot/dts/fsl/mpc8544si-post.dtsi b/arch/powerpc/boot/dts/fsl/mpc8544si-post.dtsi
-index b68eb11..ea7416a 100644
---- a/arch/powerpc/boot/dts/fsl/mpc8544si-post.dtsi
-+++ b/arch/powerpc/boot/dts/fsl/mpc8544si-post.dtsi
-@@ -188,4 +188,6 @@
- 		reg = <0xe0000 0x1000>;
- 		fsl,has-rstcr;
- 	};
-+
-+/include/ "pq3-power.dtsi"
- };
-diff --git a/arch/powerpc/boot/dts/fsl/mpc8548si-post.dtsi b/arch/powerpc/boot/dts/fsl/mpc8548si-post.dtsi
-index 579d76c..dddb737 100644
---- a/arch/powerpc/boot/dts/fsl/mpc8548si-post.dtsi
-+++ b/arch/powerpc/boot/dts/fsl/mpc8548si-post.dtsi
-@@ -156,4 +156,6 @@
- 		reg = <0xe0000 0x1000>;
- 		fsl,has-rstcr;
- 	};
-+
-+/include/ "pq3-power.dtsi"
- };
-diff --git a/arch/powerpc/boot/dts/fsl/mpc8572si-post.dtsi b/arch/powerpc/boot/dts/fsl/mpc8572si-post.dtsi
-index d44e25a..7313351 100644
---- a/arch/powerpc/boot/dts/fsl/mpc8572si-post.dtsi
-+++ b/arch/powerpc/boot/dts/fsl/mpc8572si-post.dtsi
-@@ -193,4 +193,6 @@
- 		reg = <0xe0000 0x1000>;
- 		fsl,has-rstcr;
- 	};
-+
-+/include/ "pq3-power.dtsi"
- };
-diff --git a/arch/powerpc/boot/dts/fsl/p1010si-post.dtsi b/arch/powerpc/boot/dts/fsl/p1010si-post.dtsi
-index 0bde9ee..108daa5 100644
---- a/arch/powerpc/boot/dts/fsl/p1010si-post.dtsi
-+++ b/arch/powerpc/boot/dts/fsl/p1010si-post.dtsi
-@@ -171,6 +171,8 @@
- 
- /include/ "pq3-etsec2-0.dtsi"
- 	enet0: ethernet@b0000 {
-+		fsl,pmc-handle = <&etsec1_clk>;
-+
- 		queue-group@b0000 {
- 			fsl,rx-bit-map = <0xff>;
- 			fsl,tx-bit-map = <0xff>;
-@@ -179,6 +181,8 @@
- 
- /include/ "pq3-etsec2-1.dtsi"
- 	enet1: ethernet@b1000 {
-+		fsl,pmc-handle = <&etsec2_clk>;
-+
- 		queue-group@b1000 {
- 			fsl,rx-bit-map = <0xff>;
- 			fsl,tx-bit-map = <0xff>;
-@@ -187,6 +191,8 @@
- 
- /include/ "pq3-etsec2-2.dtsi"
- 	enet2: ethernet@b2000 {
-+		fsl,pmc-handle = <&etsec3_clk>;
-+
- 		queue-group@b2000 {
- 			fsl,rx-bit-map = <0xff>;
- 			fsl,tx-bit-map = <0xff>;
-@@ -199,4 +205,6 @@
- 		reg = <0xe0000 0x1000>;
- 		fsl,has-rstcr;
- 	};
-+
-+/include/ "pq3-power.dtsi"
- };
-diff --git a/arch/powerpc/boot/dts/fsl/p1020si-post.dtsi b/arch/powerpc/boot/dts/fsl/p1020si-post.dtsi
-index 68cc5e7..410e6e5 100644
---- a/arch/powerpc/boot/dts/fsl/p1020si-post.dtsi
-+++ b/arch/powerpc/boot/dts/fsl/p1020si-post.dtsi
-@@ -162,14 +162,17 @@
- 
- /include/ "pq3-etsec2-0.dtsi"
- 	enet0: enet0_grp2: ethernet@b0000 {
-+		fsl,pmc-handle = <&etsec1_clk>;
- 	};
- 
- /include/ "pq3-etsec2-1.dtsi"
- 	enet1: enet1_grp2: ethernet@b1000 {
-+		fsl,pmc-handle = <&etsec2_clk>;
- 	};
- 
- /include/ "pq3-etsec2-2.dtsi"
- 	enet2: enet2_grp2: ethernet@b2000 {
-+		fsl,pmc-handle = <&etsec3_clk>;
- 	};
- 
- 	global-utilities@e0000 {
-@@ -177,6 +180,8 @@
- 		reg = <0xe0000 0x1000>;
- 		fsl,has-rstcr;
- 	};
-+
-+/include/ "pq3-power.dtsi"
- };
- 
- /include/ "pq3-etsec2-grp2-0.dtsi"
-diff --git a/arch/powerpc/boot/dts/fsl/p1021si-post.dtsi b/arch/powerpc/boot/dts/fsl/p1021si-post.dtsi
-index adb82fd..02df574 100644
---- a/arch/powerpc/boot/dts/fsl/p1021si-post.dtsi
-+++ b/arch/powerpc/boot/dts/fsl/p1021si-post.dtsi
-@@ -158,14 +158,17 @@
- 
- /include/ "pq3-etsec2-0.dtsi"
- 	enet0: enet0_grp2: ethernet@b0000 {
-+		fsl,pmc-handle = <&etsec1_clk>;
- 	};
- 
- /include/ "pq3-etsec2-1.dtsi"
- 	enet1: enet1_grp2: ethernet@b1000 {
-+		fsl,pmc-handle = <&etsec2_clk>;
- 	};
- 
- /include/ "pq3-etsec2-2.dtsi"
- 	enet2: enet2_grp2: ethernet@b2000 {
-+		fsl,pmc-handle = <&etsec3_clk>;
- 	};
- 
- 	global-utilities@e0000 {
-@@ -173,6 +176,8 @@
- 		reg = <0xe0000 0x1000>;
- 		fsl,has-rstcr;
- 	};
-+
-+/include/ "pq3-power.dtsi"
- };
- 
- &qe {
-diff --git a/arch/powerpc/boot/dts/fsl/p1022si-post.dtsi b/arch/powerpc/boot/dts/fsl/p1022si-post.dtsi
-index 06216b8..e5c0e27 100644
---- a/arch/powerpc/boot/dts/fsl/p1022si-post.dtsi
-+++ b/arch/powerpc/boot/dts/fsl/p1022si-post.dtsi
-@@ -223,10 +223,14 @@
- 
- /include/ "pq3-etsec2-0.dtsi"
- 	enet0: enet0_grp2: ethernet@b0000 {
-+		fsl,wake-on-filer;
-+		fsl,pmc-handle = <&etsec1_clk>;
- 	};
- 
- /include/ "pq3-etsec2-1.dtsi"
- 	enet1: enet1_grp2: ethernet@b1000 {
-+		fsl,wake-on-filer;
-+		fsl,pmc-handle = <&etsec2_clk>;
- 	};
- 
- 	global-utilities@e0000 {
-@@ -235,9 +239,10 @@
- 		fsl,has-rstcr;
- 	};
- 
--	power@e0070{
--		compatible = "fsl,mpc8536-pmc", "fsl,mpc8548-pmc";
--		reg = <0xe0070 0x20>;
-+/include/ "pq3-power.dtsi"
-+	power@e0070 {
-+		compatible = "fsl,p1022-pmc", "fsl,mpc8536-pmc",
-+				"fsl,mpc8548-pmc";
- 	};
- 
- };
-diff --git a/arch/powerpc/boot/dts/fsl/p2020si-post.dtsi b/arch/powerpc/boot/dts/fsl/p2020si-post.dtsi
-index 884e01b..2c4787c 100644
---- a/arch/powerpc/boot/dts/fsl/p2020si-post.dtsi
-+++ b/arch/powerpc/boot/dts/fsl/p2020si-post.dtsi
-@@ -175,6 +175,10 @@
- 		compatible = "fsl-usb2-dr-v1.6", "fsl-usb2-dr";
- 	};
- /include/ "pq3-etsec1-0.dtsi"
-+	enet0: ethernet@24000 {
-+		fsl,pmc-handle = <&etsec1_clk>;
-+
-+	};
- /include/ "pq3-etsec1-timer-0.dtsi"
- 
- 	ptp_clock@24e00 {
-@@ -183,7 +187,15 @@
- 
- 
- /include/ "pq3-etsec1-1.dtsi"
-+	enet1: ethernet@25000 {
-+		fsl,pmc-handle = <&etsec2_clk>;
-+	};
-+
- /include/ "pq3-etsec1-2.dtsi"
-+	enet2: ethernet@26000 {
-+		fsl,pmc-handle = <&etsec3_clk>;
-+	};
-+
- /include/ "pq3-esdhc-0.dtsi"
- 	sdhc@2e000 {
- 		compatible = "fsl,p2020-esdhc", "fsl,esdhc";
-@@ -198,4 +210,6 @@
- 		reg = <0xe0000 0x1000>;
- 		fsl,has-rstcr;
- 	};
-+
-+/include/ "pq3-power.dtsi"
- };
-diff --git a/arch/powerpc/boot/dts/fsl/pq3-power.dtsi b/arch/powerpc/boot/dts/fsl/pq3-power.dtsi
-new file mode 100644
-index 0000000..5aa854c
---- /dev/null
-+++ b/arch/powerpc/boot/dts/fsl/pq3-power.dtsi
-@@ -0,0 +1,48 @@
-+/*
-+ * PQ3 Power Management device tree stub
-+ *
-+ * Copyright 2012 Freescale Semiconductor Inc.
-+ *
-+ * Redistribution and use in source and binary forms, with or without
-+ * modification, are permitted provided that the following conditions are met:
-+ *     * Redistributions of source code must retain the above copyright
-+ *       notice, this list of conditions and the following disclaimer.
-+ *     * Redistributions in binary form must reproduce the above copyright
-+ *       notice, this list of conditions and the following disclaimer in the
-+ *       documentation and/or other materials provided with the distribution.
-+ *     * Neither the name of Freescale Semiconductor nor the
-+ *       names of its contributors may be used to endorse or promote products
-+ *       derived from this software without specific prior written permission.
-+ *
-+ *
-+ * ALTERNATIVELY, this software may be distributed under the terms of the
-+ * GNU General Public License ("GPL") as published by the Free Software
-+ * Foundation, either version 2 of that License or (at your option) any
-+ * later version.
-+ *
-+ * THIS SOFTWARE IS PROVIDED BY Freescale Semiconductor ``AS IS'' AND ANY
-+ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-+ * DISCLAIMED. IN NO EVENT SHALL Freescale Semiconductor BE LIABLE FOR ANY
-+ * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+ */
-+
-+power@e0070 {
-+	compatible = "fsl,mpc8548-pmc";
-+	reg = <0xe0070 0x20>;
-+
-+	etsec1_clk: soc-clk@24 {
-+		fsl,pmcdr-mask = <0x00000080>;
-+	};
-+	etsec2_clk: soc-clk@25 {
-+		fsl,pmcdr-mask = <0x00000040>;
-+	};
-+	etsec3_clk: soc-clk@26 {
-+		fsl,pmcdr-mask = <0x00000020>;
-+	};
-+};
+So are you sure you really need it?
+
 -- 
-1.6.4.1
-
-
+Regards/Gruss,
+Boris.
