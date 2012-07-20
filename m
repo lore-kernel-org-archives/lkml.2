@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752043Ab2GTTMO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 15:12:14 -0400
-Received: from 1010ds2-suoe.0.fullrate.dk ([90.184.90.115]:25497 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751380Ab2GTTMM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 15:12:12 -0400
-Date: Fri, 20 Jul 2012 21:12:11 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-cc: Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] [IA64] aliasing-test: Remember to close fd on error in
- read_rom()
-Message-ID: <alpine.LNX.2.00.1207202110590.23164@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752203Ab2GTTWb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 15:22:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15145 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751573Ab2GTTWa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 15:22:30 -0400
+Date: Fri, 20 Jul 2012 22:23:03 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Jason Wang <jasowang@redhat.com>, eric.dumazet@gmail.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ebiederm@xmission.com, davem@davemloft.net
+Subject: [PATCHv3 0/6] tun zerocopy support
+Message-ID: <cover.1342812067.git.mst@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- Documentation/ia64/aliasing-test.c | 1 +
- 1 file changed, 1 insertion(+)
+This adds support for experimental zero copy transmit to tun.
 
-diff --git a/Documentation/ia64/aliasing-test.c b/Documentation/ia64/aliasing-test.c
-index 5caa2af..62a190d 100644
---- a/Documentation/ia64/aliasing-test.c
-+++ b/Documentation/ia64/aliasing-test.c
-@@ -132,6 +132,7 @@ static int read_rom(char *path)
- 
- 	rc = write(fd, "1", 2);
- 	if (rc <= 0) {
-+		close(fd);
- 		perror("write");
- 		return -1;
- 	}
+This includes some patches from Ian's patchset to support zerocopy with tun,
+so it should help that work progress: we are still trying to figure out
+how to make everything work properly with tcp but tun seems easier, and
+it's helpful by itself since not everyone can use macvtap.
+
+Same as with macvtap, I get single-percentage wins in CPU utilization
+on guest to external from this patchset, and a performance regression on
+guest to host, so more work is needed until this feature can move out of
+experimental status, but I think it's useful for some people already.
+
+Pls review and consider for 3.6.
+
+There's some code duplication between tun and macvtap now: common code
+could move to net/core/datagram.c, this patch does not do this yet.
+
+Changes from v2:
+	Fixed some bugs so it's stable now
+
+Michael S. Tsirkin (6):
+  skbuff: add an api to orphan frags
+  skbuff: convert to skb_orphan_frags
+  skbuff: export skb_copy_ubufs
+  tun: orphan frags on xmit
+  net: orphan frags on receive
+  tun: experimental zero copy tx support
+
+ drivers/net/tun.c      | 148 +++++++++++++++++++++++++++++++++++++++++++++----
+ include/linux/skbuff.h |  16 ++++++
+ net/core/dev.c         |   7 ++-
+ net/core/skbuff.c      |  24 +++-----
+ 4 files changed, 167 insertions(+), 28 deletions(-)
+
 -- 
-1.7.11.2
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+MST
