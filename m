@@ -1,51 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752424Ab2GTOdB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 10:33:01 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:35124 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751396Ab2GTOdA (ORCPT
+	id S1752542Ab2GTOg1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 10:36:27 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:54139 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752064Ab2GTOg0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 10:33:00 -0400
-Date: Fri, 20 Jul 2012 16:32:47 +0200
-From: Anisse Astier <anisse@astier.eu>
-To: Alan Cox <alan@linux.intel.com>
-Cc: Josh Boyer <jwboyer@redhat.com>, kernel-team@fedoraproject.org,
-        Dave Airlie <airlied@redhat.com>, dkline@redhat.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: gma500 opregion/power init order backtrace
-Message-ID: <20120720163247.19578db4@destiny.ordissimo>
-In-Reply-To: <20120717221242.315f8dfe@bob.linux.org.uk>
-References: <20120717192614.GB18229@zod.bos.redhat.com>
-	<20120717221242.315f8dfe@bob.linux.org.uk>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 20 Jul 2012 10:36:26 -0400
+Date: Fri, 20 Jul 2012 07:35:59 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [Patch 0/7] Per cpu thread hotplug infrastructure - V3
+Message-ID: <20120720143559.GB2721@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120716103749.122800930@linutronix.de>
+ <20120716152224.GF2403@linux.vnet.ibm.com>
+ <5006F434.9010707@linux.vnet.ibm.com>
+ <20120718235402.GP2435@linux.vnet.ibm.com>
+ <50095A6A.4080404@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50095A6A.4080404@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12072014-4242-0000-0000-00000262880C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Jul 2012 22:12:42 +0100, Alan Cox <alan@linux.intel.com> wrote :
-
-> > I'm wondering if the gma_power_init call can be moved up before
-> > chip_setup is called.  Seems so, but I thought I would ping you to see
-> > if you've seen this already.
+On Fri, Jul 20, 2012 at 06:47:30PM +0530, Srivatsa S. Bhat wrote:
+> On 07/19/2012 05:24 AM, Paul E. McKenney wrote:
+> > On Wed, Jul 18, 2012 at 11:06:52PM +0530, Srivatsa S. Bhat wrote:
+> >> On 07/16/2012 08:52 PM, Paul E. McKenney wrote:
+> >>> On Mon, Jul 16, 2012 at 10:42:34AM -0000, Thomas Gleixner wrote:
+> >>>> The following series implements the infrastructure for parking and
+> >>>> unparking kernel threads to avoid the full teardown and fork on cpu
+> >>>> hotplug operations along with management infrastructure for hotplug
+> >>>> and users.
+> >>>>
+> >>>> Changes vs. V2:
+> >>>>
+> >>>>  Use callbacks for all functionality. Thanks to Rusty for pointing
+> >>>>  that out. It makes the use sites nice and simple and keeps all the
+> >>>>  code which would be duplicated otherwise on the core.
+> >>>
+> >>> Hello, Thomas,
+> >>>
+> >>> What version should I apply this patchset to?  I tried v3.5-rc7, but
+> >>> got lots of warnings (one shown below) and the watchdog patch did not
+> >>> apply.
+> >>>
+> >>
+> >> Hi Paul,
+> >>
+> >> This patchset applies cleanly on Thomas' smp/hotplug branch in the -tip
+> >> tree.
+> > 
+> > Thank you, Srivatsa, works much better.  Still get "scheduling while
+> > atomic", looking into that.
+> > 
 > 
-> Fixed in the patches that went to Linus.
-Thanks for this ! I was having this 100 scale brightness issue on anther
-hardware.
+> Got a chance to run this patchset now.. Even I am getting "scheduling while
+> atomic" messages like shown below..  Hmmm...
 
+Here is what little I have done so far (lots of completing demands on time
+this week, but I should have a goodly block of time to focus on this today):
+
+1.	The failure is from the softirq modifications.  Reverting that
+	commit gets rid of the failures.
+
+2.	As one would expect, CONFIG_PREEMPT=n kernels do not have the
+	problem, which of course indicates a preempt_disable() imbalance.
+
+3.	I was unable to spot the problem by inspection, but this is not
+	too surprising given the high level of distraction this week.
+
+4.	Instrumentation shows that preempt_count() grows slowly with
+	time, but with the upper bits zero.  This confirms the
+	preempt_disable imbalance.
+
+5.	I am currently placing WARN_ONCE() calls in the code to track
+	this down.  When I do find it, I fully expect to feel very stupid
+	about my efforts on #3 above.  ;-)
+
+							Thanx, Paul
+
+> Regards,
+> Srivatsa S. Bhat
 > 
-> I don't have the ACPI backlight working on a lot of systems and don't
-> know why to be honest but the native backlight should work. Of course if
-> the acpi keys are plumbed into the ACPI backlight it's less useful 8)
-
-Can't we just "wire" this to psb-bl in the driver ? There are a few
-drivers in drivers/platform/x86 already sending KEY_BRIGHTNESS{UP,DOWN}
-keycodes.
-
-Regards,
-
-Anisse
+> -----------------
+> 
+> BUG: sleeping function called from invalid context at kernel/softirq.c:748
+> in_atomic(): 1, irqs_disabled(): 0, pid: 3, name: ksoftirqd/0
+> INFO: lockdep is turned off.
+> Pid: 3, comm: ksoftirqd/0 Tainted: G        W    3.5.0-rc1-threadhotplugv3-debug #2
+> Call Trace:
+>  [<ffffffff8108e7ac>] __might_sleep+0x18c/0x250
+>  [<ffffffff8105ea4f>] run_ksoftirqd+0x4f/0x70
+>  [<ffffffff810c8b97>] smpboot_thread_fn+0x157/0x1f0
+>  [<ffffffff810c8a40>] ? smpboot_create_threads+0x80/0x80
+>  [<ffffffff8107e7ee>] kthread+0xee/0x100
+>  [<ffffffff8158eb74>] kernel_thread_helper+0x4/0x10
+>  [<ffffffff815844f0>] ? retint_restore_args+0x13/0x13
+>  [<ffffffff8107e700>] ? __init_kthread_worker+0x70/0x70
+>  [<ffffffff8158eb70>] ? gs_change+0x13/0x13
+> BUG: scheduling while atomic: ksoftirqd/0/3/0x1000000b
+> INFO: lockdep is turned off.
+> Modules linked in: ext3 jbd mbcache sd_mod crc_t10dif qla2xxx scsi_transport_fc scsi_tgt mptsas mptscsih mptbase scsi_transport_sas [last unloaded: scsi_wait_scan]
+> Pid: 3, comm: ksoftirqd/0 Tainted: G        W    3.5.0-rc1-threadhotplugv3-debug #2
+> Call Trace:
+>  [<ffffffff8108d1cc>] __schedule_bug+0x6c/0x90
+>  [<ffffffff81582818>] __schedule+0x7c8/0x880
+>  [<ffffffff81092cea>] __cond_resched+0x2a/0x40
+>  [<ffffffff81582960>] _cond_resched+0x30/0x40
+> SELinux: 2048 avtab hash slots, 250818 rules.
+>  [<ffffffff8105ea54>] run_ksoftirqd+0x54/0x70
+>  [<ffffffff810c8b97>] smpboot_thread_fn+0x157/0x1f0
+>  [<ffffffff810c8a40>] ? smpboot_create_threads+0x80/0x80
+>  [<ffffffff8107e7ee>] kthread+0xee/0x100
+>  [<ffffffff8158eb74>] kernel_thread_helper+0x4/0x10
+>  [<ffffffff815844f0>] ? retint_restore_args+0x13/0x13
+>  [<ffffffff8107e700>] ? __init_kthread_worker+0x70/0x70
+>  [<ffffffff8158eb70>] ? gs_change+0x13/0x13
+> 
+> [...]
+> 
+> BUG: sleeping function called from invalid context at kernel/softirq.c:748
+> in_atomic(): 1, irqs_disabled(): 0, pid: 37, name: ksoftirqd/8
+> INFO: lockdep is turned off.
+> Pid: 37, comm: ksoftirqd/8 Tainted: G        W    3.5.0-rc1-threadhotplugv3-debug #2
+> Call Trace:
+>  [<ffffffff8108e7ac>] __might_sleep+0x18c/0x250
+>  [<ffffffff8105ea4f>] run_ksoftirqd+0x4f/0x70
+>  [<ffffffff810c8b97>] smpboot_thread_fn+0x157/0x1f0
+> 		Welcome to  [<ffffffff810c8a40>] ? smpboot_create_threads+0x80/0x80
+>  [<ffffffff8107e7ee>] kthread+0xee/0x100
+> Red Hat [<ffffffff8158eb74>] kernel_thread_helper+0x4/0x10
+>  [<ffffffff815844f0>] ? retint_restore_args+0x13/0x13
+>  [<ffffffff8107e700>] ? __init_kthread_worker+0x70/0x70
+>  [<ffffffff8158eb70>] ? gs_change+0x13/0x13
+> BUG: scheduling while atomic: ksoftirqd/8/37/0x10000004
+> INFO: lockdep is turned off.
+> Modules linked in: ext3 jbd mbcache sd_mod crc_t10dif qla2xxx scsi_transport_fc scsi_tgt mptsas mptscsih mptbase scsi_transport_sas [last unloaded: scsi_wait_scan]
+> Pid: 37, comm: ksoftirqd/8 Tainted: G        W    3.5.0-rc1-threadhotplugv3-debug #2
+> Call Trace:
+>  Enterprise Linu [<ffffffff8108d1cc>] __schedule_bug+0x6c/0x90
+> x Server
+>  [<ffffffff81582818>] __schedule+0x7c8/0x880
+>  [<ffffffff81092cea>] __cond_resched+0x2a/0x40
+>  [<ffffffff81582960>] _cond_resched+0x30/0x40
+>  [<ffffffff8105ea54>] run_ksoftirqd+0x54/0x70
+>  [<ffffffff810c8b97>] smpboot_thread_fn+0x157/0x1f0
+>  [<ffffffff810c8a40>] ? smpboot_create_threads+0x80/0x80
+>  [<ffffffff8107e7ee>] kthread+0xee/0x100
+>  [<ffffffff8158eb74>] kernel_thread_helper+0x4/0x10
+>  [<ffffffff815844f0>] ? retint_restore_args+0x13/0x13
+>  [<ffffffff8107e700>] ? __init_kthread_worker+0x70/0x70
+>  [<ffffffff8158eb70>] ? gs_change+0x13/0x13
+> 
+> [...]
+> 
+> BUG: scheduling while atomic: watchdog/15/64/0x0000009b
+> INFO: lockdep is turned off.
+> Modules linked in: ebtable_nat ebtables ipt_MASQUERADE iptable_nat nf_nat xt_CHECKSUM iptable_mangle bridge stp llc autofs4 cpufreq_powersave sunrpc cpufreq_ondemand acpi_cpufreq freq_table mperf ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables ipv6 dm_mirror dm_region_hash dm_log dm_round_robin scsi_dh_rdac dm_multipath vhost_net macvtap macvlan tun uinput cdc_ether usbnet mii serio_raw kvm_intel kvm microcode i2c_i801 i2c_core lpc_ich mfd_core shpchp ioatdma dca i7core_edac edac_core bnx2 dm_mod sg ext3 jbd mbcache sd_mod crc_t10dif qla2xxx scsi_transport_fc scsi_tgt mptsas mptscsih mptbase scsi_transport_sas [last unloaded: scsi_wait_scan]
+> Pid: 64, comm: watchdog/15 Tainted: G        W    3.5.0-rc1-threadhotplugv3-debug #2
+> Call Trace:
+>  [<ffffffff8108d1cc>] __schedule_bug+0x6c/0x90
+>  [<ffffffff81582818>] __schedule+0x7c8/0x880
+>  [<ffffffff81582bf9>] schedule+0x29/0x70
+>  [<ffffffff81582f77>] schedule_preempt_disabled+0x27/0x40
+>  [<ffffffff810c8b33>] smpboot_thread_fn+0xf3/0x1f0
+>  [<ffffffff810c8a40>] ? smpboot_create_threads+0x80/0x80
+>  [<ffffffff8107e7ee>] kthread+0xee/0x100
+>  [<ffffffff8158eb74>] kernel_thread_helper+0x4/0x10
+>  [<ffffffff815844f0>] ? retint_restore_args+0x13/0x13
+>  [<ffffffff8107e700>] ? __init_kthread_worker+0x70/0x70
+>  [<ffffffff8158eb70>] ? gs_change+0x13/0x13
+> 
 
