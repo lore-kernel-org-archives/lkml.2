@@ -1,73 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752765Ab2GTAPu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 20:15:50 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:61982 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752666Ab2GTAPs (ORCPT
+	id S1752495Ab2GTAdK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 20:33:10 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:57885 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751856Ab2GTAdI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 20:15:48 -0400
-Date: Thu, 19 Jul 2012 17:15:44 -0700
-From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Ian Abbott <abbotti@mev.co.uk>, Ian Abbott <ian.abbott@mev.co.uk>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 15/90] staging: comedi: adv_pci1723: move
- comedi_pci_enable() into the attach
-Message-ID: <20120720001544.GA15590@kroah.com>
-References: <201207181830.48668.hartleys@visionengravers.com>
- <5007D568.2050401@mev.co.uk>
- <ADE657CA350FB648AAC2C43247A983F00206AA916472@AUSP01VMBX24.collaborationhost.net>
- <20120719231723.GA23010@kroah.com>
- <ADE657CA350FB648AAC2C43247A983F00206AA9165BC@AUSP01VMBX24.collaborationhost.net>
- <20120719233506.GA12858@kroah.com>
- <ADE657CA350FB648AAC2C43247A983F00206AA9165C1@AUSP01VMBX24.collaborationhost.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <ADE657CA350FB648AAC2C43247A983F00206AA9165C1@AUSP01VMBX24.collaborationhost.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 19 Jul 2012 20:33:08 -0400
+Date: Fri, 20 Jul 2012 10:32:54 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus <torvalds@linux-foundation.org>
+Subject: linux-next: manual merge of the scsi tree with Linus' tree
+Message-Id: <20120720103254.4a043ea94ef16992466a8b19@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__20_Jul_2012_10_32_54_+1000_Ct/iwzepj84PZVJS"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 19, 2012 at 06:58:38PM -0500, H Hartley Sweeten wrote:
-> On Thursday, July 19, 2012 4:35 PM, gregkh wrote:
-> > On Thu, Jul 19, 2012 at 06:31:23PM -0500, H Hartley Sweeten wrote:
-> >> If the comedi pci drivers have the "attach_pci" callback defined, the
-> >> PCI api does correctly probe the driver. The comedi_pci_auto_config()
-> >> then passes the pci_dev directly to the driver and the search of the
-> >> PCI space for the device is not required.
-> >> 
-> >> If the "attach_pci" callback is not defined, the comedi_pci_auto_config()
-> >> then falls back to passing the bus/slot information to the driver and uses
-> >> the "attach" callback. In this case we could probably fast-track the search
-> >> by using pci_get_slot() instead of doing the for_each_pci_dev() loop.
-> >> 
-> >> I think the problem is the COMEDI_DEVCONFIG ioctl. The userspace
-> >> utility 'comedi_config' uses that ioctl to link a device node to a
-> >> comedi driver. That utility allows passing the bus/slot information
-> >> but it's not required. This means we have to search the PCI space
-> >> for the pci_dev that matches the driver.
-> >
-> > The ioctl shouldn't be needed anymore for PCI or USB devices, as the
-> > kernel handles the matching of the driver to the device.  Even if it
-> > didn't, there are other more "standard" ways that you can bind devices
-> > to drivers (through sysfs.)
-> 
-> I think it's still needed for some of the devices that require external
-> firmware. The comedi_config utility allows the user to remove the
-> driver binding and then reattach to it while passing the firmware blob
-> into the driver.
+--Signature=_Fri__20_Jul_2012_10_32_54_+1000_Ct/iwzepj84PZVJS
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Why would the driver need to be unbound from the device to do this?
+Hi James,
 
-> Not saying any of this is valid... And yes, there probably is a more
-> "standard" way to do this. I just need a hint of what that is... ;-)
+Today's linux-next merge of the scsi tree got a conflict in
+drivers/scsi/scsi_wait_scan.c between commit eea03c20ae38 ("Make
+wait_for_device_probe() also do scsi_complete_async_scans()") from Linus'
+tree and commit 01444e1106cb ("[SCSI] Remove scsi_wait_scan module") from
+the scsi tree.
 
-The "bind" and "unbind" files in sysfs are for that.
+I just removed the file.
 
-thanks,
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-greg k-h
+--Signature=_Fri__20_Jul_2012_10_32_54_+1000_Ct/iwzepj84PZVJS
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQCKc2AAoJEECxmPOUX5FE3XMP+wVoXncPzH4sj7GNA/2nDkuu
+tH3DD0djmhTbFVwwXoyfN5Q38bLy5xjdb5cku/WiqBsVigsC60iU+dz9U0EbEXnJ
+GqlBPmfsypLGybM6KDvV+WmpJCNdVckOBM3uOPoHeHayiRnU5KGmh40tPeJQyWS2
+5mNxh8ZPn0sskXxTYgbVAPToe0Z9IRfw7qZAcZvWC8pVWz1MyJRclXoNPNDMK7ZH
+H7VYTkqbfKXZd4ww6JtgyzV2PRDPpzgQaEmsvvDpbti+5lSeMveh/Qg4dX1wHxOc
+Wi15bO22DGleGjhEjiVnBIKvJ1T0WGNbdani/xywjTFTkIjqLs+Onz4UO28Q5eBD
+sRzIh9p8ggiuzystsIkyENJNnPCZzFf84mXpY49sFUoBAbKPMELZWheVab3FVH+o
+wFdN451zHyyZFWZGspTImOh170wT8cSbzYlTFF0l2VkJOTrCwqwh7x05T4ncLlig
+CesfTOB8HUOhFMOSeMuKhwpgEgbRg+nKfEwU+gY+kwVUfmwWwle/AiAYkFJDCUV8
+HaSEgQWD7pEWYeR+fMmtc55y41ZVnaGF+PrCUxiAL0Dg3tzCpXLOAsEM5JGjeHHC
+s3Bm9tzrQTACTAo/8OFg5C1VqaehejCTSI1dzhi3QgE7O1hg9+7DoZZiW0j8OL+K
+BIbXJCvxHtNYC7kMgie1
+=9ko3
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__20_Jul_2012_10_32_54_+1000_Ct/iwzepj84PZVJS--
