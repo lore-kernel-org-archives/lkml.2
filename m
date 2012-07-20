@@ -1,79 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752750Ab2GTOGf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 10:06:35 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:42196 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751449Ab2GTOGd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 10:06:33 -0400
+	id S1752765Ab2GTOH5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 10:07:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43017 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751583Ab2GTOHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 10:07:55 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Eric Sandeen <sandeen@redhat.com>
+Cc: kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: Stack overrun in 3.5.0-rc7 w/ cfq
+References: <5008C388.2020803@redhat.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Fri, 20 Jul 2012 10:07:54 -0400
+In-Reply-To: <5008C388.2020803@redhat.com> (Eric Sandeen's message of "Thu, 19
+	Jul 2012 21:33:44 -0500")
+Message-ID: <x49vchimsp1.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <cc2022d86834a8798518f9cccc605d45.squirrel@webmail.univie.ac.at>
-References: <e9caf38359467bfa8a1e2ac86f6ef2cc.squirrel@webmail.univie.ac.at>
- <20120713165544.6767ea8f@nehalam.linuxnetplumber.net> <87741204cd72d363d54dadf9a94bb6fe.squirrel@webmail.univie.ac.at>
- <1342439185.23494.19.camel@edumazet-glaptop> <cc2022d86834a8798518f9cccc605d45.squirrel@webmail.univie.ac.at>
-From: Yuchung Cheng <ycheng@google.com>
-Date: Fri, 20 Jul 2012 07:06:12 -0700
-Message-ID: <CAK6E8=dKZUJ3evPDGc3gP0a5bsBbYnL0NGhPZenB=T_t+5Kx5w@mail.gmail.com>
-Subject: Re: resurrecting tcphealth
-To: Piotr Sawuk <a9702387@unet.univie.ac.at>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 16, 2012 at 6:03 AM, Piotr Sawuk <a9702387@unet.univie.ac.at> wrote:
-> On Mo, 16.07.2012, 13:46, Eric Dumazet wrote:
->> On Mon, 2012-07-16 at 13:33 +0200, Piotr Sawuk wrote:
->>> On Sa, 14.07.2012, 01:55, Stephen Hemminger wrote:
->>> > I am not sure if the is really necessary since the most
->>> > of the stats are available elsewhere.
->>>
->>> if by "most" you mean address and port then you're right.
->>> but even the rtt reported by "ss -i" seems to differ from tcphealth.
->>
->> Thats because tcphealth is wrong, it assumes HZ=1000 ?
->>
->> tp->srtt unit is jiffies, not ms.
+Eric Sandeen <sandeen@redhat.com> writes:
+
+> I got this oops & stack overrun warning while running mkfs.ext4 on a sparse 4T file hosted on xfs.
 >
-> thanks. any conversion-functions in the kernel for that?
->>
->> tcphealth is a gross hack.
->
-> what would you do if you tried making it less gross?
->
-> I've not found any similar functionality, in the kernel.
-> I want to know an estimate for the percentage of data lost in tcp.
-> and I want to know that without actually sending much packets.
-> afterall I'm on the receiving end most of the time.
-> percentage of duplicate packets received is nice too.
-> you have any suggestions?
+> Should CFQ be issuing IO here?
 
-counting dupack may not be as reliable as you'd like.
-say the remote sends you 100 packets and only the first one is lost,
-you'll see 99 dupacks. Morover any small degree reordering (<3)
-will generate substantial dupacks but the network is perfectly fine
-(see Craig Patridge's "reordering is not pathological" paper).
-unfortunately receiver can't and does not have to distinguish loss
- or reordering. you can infer that but it should not be kernel's job.
-there are public tools that inspect tcpdump traces to do that
+Yes.  The on-stack plugging gets flushed when a process is scheduled
+out.  Seriously, Eric, all of that xfs stuff in the stack trace, and you
+want to pick on cfq!?!  For shame!
 
-exposing duplicate packets received can be done via getsockopt(TCP_INFO)
-although I don't know what that gives you. the remote can be too
-aggressive in retransmission (not just because of a bad RTO) or
-the network RTT fluctuates.
+Am I reading that wrong, or is there no separate IRQ stack?  Or did
+taking the IRQ cause the stack overrun?
 
-I don't what if tracking last_ack_sent (the latest RCV.NXT) without
-knowing the ISN is useful.
-
-btw the term project paper cited concludes SACK is not useful is simply
-wrong. This makes me suspicious about how rigorous and thoughtful of
-its design.
+Cheers,
+Jeff
 
 >
+> -Eric
+>
+> [10821.639839] BUG: unable to handle kernel paging request at fffffffb900148a0
+> [10821.640820] IP: [<ffffffff810a0a04>] cpuacct_charge+0xb4/0x210
+> [10821.640820] PGD 1c0d067 PUD 0 
+> [10821.640820] Thread overran stack, or stack corrupted
+> [10821.640820] Oops: 0000 [#1] SMP 
+> [10821.640820] CPU 1 
+> [10821.640820] Modules linked in:[10821.640820]  xfs sunrpc ip6table_filter ip6_tables binfmt_misc vhost_net macvtap macvlan tun iTCO_wdt iTCO_vendor_support dcdbas microcode i2c_i801 lpc_ich mfd_core tg3 shpchp i3000_edac edac_core ext3 jbd mbcache ata_generic pata_acpi pata_sil680 radeon ttm drm_kms_helper drm i2c_algo_bit i2c_core [last unloaded: scsi_wait_scan]
+>
+> [10821.640820] Pid: 2914, comm: flush-8:16 Not tainted 3.5.0-rc7+ #65 Dell Computer Corporation PowerEdge 860/0RH817
+> [10821.640820] RIP: 0010:[<ffffffff810a0a04>]  [<ffffffff810a0a04>] cpuacct_charge+0xb4/0x210
+> [10821.640820] RSP: 0018:ffff88007d003d58  EFLAGS: 00010082
+> [10821.640820] RAX: 00000000001d6fe8 RBX: 00000000000b67c5 RCX: 0000000000000003
+> [10821.640820] RDX: 0000000000000001 RSI: ffffffff81c2fae0 RDI: 0000000000000046
+> [10821.640820] RBP: ffff88007d003d88 R08: 0000000000000003 R09: 0000000000000001
+> [10821.640820] R10: 0000000000000001 R11: 0000000000000004 R12: ffff88007b8d0000
+> [10821.640820] R13: ffffffff81c60ee0 R14: ffffffff820f7d40 R15: 00000153b050614b
+> [10821.640820] FS:  0000000000000000(0000) GS:ffff88007d000000(0000) knlGS:0000000000000000
+> [10821.640820] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [10821.640820] CR2: fffffffb900148a0 CR3: 000000007a3ab000 CR4: 00000000000007e0
+> [10821.640820] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [10821.640820] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [10821.640820] Process flush-8:16 (pid: 2914, threadinfo ffff88007981a000, task ffff88007b8d0000)
+> [10821.640820] Stack:
+> [10821.640820]  ffffffff810a0978 000000001dcd6500 ffff88007d1d42b8 00000000000b67c5
+> [10821.640820]  ffff88007b8d0048 ffff88007b8d0000 ffff88007d003dc8 ffffffff810a82ef
+> [10821.640820]  ffffffff81810920 ffff88007d1d42b8 ffff88007b8d0048 0000000000000000
+> [10821.640820] Call Trace:
+> [10821.640820]  <IRQ> 
+> [10821.640820]  [<ffffffff810a0978>] ? cpuacct_charge+0x28/0x210
+> [10821.640820]  [<ffffffff810a82ef>] update_curr+0x13f/0x220
+> [10821.640820]  [<ffffffff810a86cd>] task_tick_fair+0xbd/0x140
+> [10821.640820]  [<ffffffff8109d0ae>] scheduler_tick+0xde/0x150
+> [10821.640820]  [<ffffffff8107477e>] update_process_times+0x6e/0x90
+> [10821.640820]  [<ffffffff810c8606>] tick_sched_timer+0x66/0xc0
+> [10821.640820]  [<ffffffff81092a83>] __run_hrtimer+0x83/0x320
+> [10821.640820]  [<ffffffff810c85a0>] ? tick_nohz_handler+0x100/0x100
+> [10821.640820]  [<ffffffff81092fc6>] hrtimer_interrupt+0x106/0x280
+> [10821.640820]  [<ffffffff810a67e5>] ? sched_clock_local+0x25/0x90
+> [10821.640820]  [<ffffffff81652129>] smp_apic_timer_interrupt+0x69/0x99
+> [10821.640820]  [<ffffffff81650daf>] apic_timer_interrupt+0x6f/0x80
+> [10821.640820]  <EOI> 
+> [10821.640820]  [<ffffffff81647274>] ? _raw_spin_unlock_irq+0x34/0x50
+> [10821.640820]  [<ffffffff813e5f78>] scsi_request_fn+0xc8/0x5b0
+> [10821.640820]  [<ffffffff812a69ae>] __blk_run_queue+0x1e/0x20
+> [10821.640820]  [<ffffffff812cb798>] cfq_insert_request+0x398/0x720
+> [10821.640820]  [<ffffffff812cb44c>] ? cfq_insert_request+0x4c/0x720
+> [10821.640820]  [<ffffffff812b2dc1>] ? attempt_merge+0x21/0x520
+> [10821.640820]  [<ffffffff81650016>] ? ftrace_call+0x5/0x2b
+> [10821.640820]  [<ffffffff812a6130>] __elv_add_request+0x220/0x2e0
+> [10821.640820]  [<ffffffff812ad914>] blk_flush_plug_list+0x1a4/0x260
+> [10821.640820]  [<ffffffff816456a0>] schedule+0x50/0x70
+> [10821.640820]  [<ffffffff81643325>] schedule_timeout+0x315/0x410
+> [10821.640820]  [<ffffffff810cefcd>] ? mark_held_locks+0x8d/0x140
+> [10821.640820]  [<ffffffff81647270>] ? _raw_spin_unlock_irq+0x30/0x50
+> [10821.640820]  [<ffffffff810cf335>] ? trace_hardirqs_on_caller+0x105/0x190
+> [10821.640820]  [<ffffffff8164551b>] wait_for_common+0x12b/0x180
+> [10821.640820]  [<ffffffff810a6070>] ? try_to_wake_up+0x2e0/0x2e0
+> [10821.640820]  [<ffffffff81650016>] ? ftrace_call+0x5/0x2b
+> [10821.640820]  [<ffffffffa02e8561>] ? _xfs_buf_read+0x41/0x50 [xfs]
+> [10821.640820]  [<ffffffffa034d1d5>] ? xfs_trans_read_buf+0x325/0x610 [xfs]
+> [10821.640820]  [<ffffffff8164564d>] wait_for_completion+0x1d/0x20
+> [10821.640820]  [<ffffffffa02e63e5>] xfs_buf_iowait+0xc5/0x1b0 [xfs]
+> [10821.640820]  [<ffffffffa02e8561>] _xfs_buf_read+0x41/0x50 [xfs]
+> [10821.640820]  [<ffffffffa02e8683>] xfs_buf_read+0x113/0x170 [xfs]
+> [10821.640820]  [<ffffffffa034d1d5>] xfs_trans_read_buf+0x325/0x610 [xfs]
+> [10821.640820]  [<ffffffffa031d3be>] xfs_btree_read_buf_block+0x5e/0xd0 [xfs]
+> [10821.640820]  [<ffffffff81650016>] ? ftrace_call+0x5/0x2b
+> [10821.640820]  [<ffffffffa031dac1>] xfs_btree_lookup_get_block+0x81/0xf0 [xfs]
+> [10821.640820]  [<ffffffffa031b72c>] ? xfs_btree_ptr_offset+0x4c/0x90 [xfs]
+> [10821.640820]  [<ffffffffa031e14f>] xfs_btree_lookup+0xbf/0x470 [xfs]
+> [10821.640820]  [<ffffffff81650016>] ? ftrace_call+0x5/0x2b
+> [10821.640820]  [<ffffffffa0301cd9>] xfs_alloc_lookup_eq+0x19/0x20 [xfs]
+> [10821.640820]  [<ffffffffa0301fb9>] xfs_alloc_fixup_trees+0x269/0x340 [xfs]
+> [10821.640820]  [<ffffffffa0304152>] xfs_alloc_ag_vextent_near+0x852/0xe10 [xfs]
+> [10821.640820]  [<ffffffffa0305345>] xfs_alloc_ag_vextent+0xd5/0x100 [xfs]
+> [10821.640820]  [<ffffffffa0305eda>] __xfs_alloc_vextent+0x57a/0x7b0 [xfs]
+> [10821.640820]  [<ffffffff810cc7b9>] ? lockdep_init_map+0x59/0x150
+> [10821.640820]  [<ffffffffa03062a8>] xfs_alloc_vextent+0x198/0x1a0 [xfs]
+> [10821.640820]  [<ffffffffa031b29b>] xfs_bmbt_alloc_block+0xdb/0x210 [xfs]
+> [10821.640820]  [<ffffffffa032033d>] xfs_btree_split+0xbd/0x710 [xfs]
+> [10821.640820]  [<ffffffff81650016>] ? ftrace_call+0x5/0x2b
+> [10821.640820]  [<ffffffffa0320ebd>] xfs_btree_make_block_unfull+0x12d/0x190 [xfs]
+> [10821.640820]  [<ffffffffa032130f>] xfs_btree_insrec+0x3ef/0x5a0 [xfs]
+> [10821.640820]  [<ffffffff81650016>] ? ftrace_call+0x5/0x2b
+> [10821.640820]  [<ffffffffa032152d>] xfs_btree_insert+0x6d/0x190 [xfs]
+> [10821.640820]  [<ffffffffa03166db>] xfs_bmap_add_extent_delay_real+0x72b/0x1cf0 [xfs]
+> [10821.640820]  [<ffffffff811a85c3>] ? kmem_cache_alloc+0x113/0x220
+> [10821.640820]  [<ffffffffa0317ed8>] xfs_bmapi_allocate+0x238/0x2d0 [xfs]
+> [10821.640820]  [<ffffffff81650016>] ? ftrace_call+0x5/0x2b
+> [10821.640820]  [<ffffffffa031a801>] xfs_bmapi_write+0x521/0x790 [xfs]
+> [10821.640820]  [<ffffffffa02f390d>] xfs_iomap_write_allocate+0x13d/0x370 [xfs]
+> [10821.640820]  [<ffffffffa02e48d9>] xfs_map_blocks+0x299/0x310 [xfs]
+> [10821.640820]  [<ffffffffa02e5277>] xfs_vm_writepage+0x197/0x5c0 [xfs]
+> [10821.640820]  [<ffffffff8115da0a>] __writepage+0x1a/0x50
+> [10821.640820]  [<ffffffff8115fc46>] write_cache_pages+0x206/0x5f0
+> [10821.640820]  [<ffffffff8115d9f0>] ? bdi_position_ratio+0x130/0x130
+> [10821.640820]  [<ffffffff81160084>] generic_writepages+0x54/0x80
+> [10821.640820]  [<ffffffffa02e45fc>] xfs_vm_writepages+0x5c/0x80 [xfs]
+> [10821.640820]  [<ffffffff811600d3>] do_writepages+0x23/0x40
+> [10821.640820]  [<ffffffff811ecd16>] __writeback_single_inode+0x46/0x1e0
+> [10821.640820]  [<ffffffff811ef82d>] writeback_sb_inodes+0x27d/0x500
+> [10821.640820]  [<ffffffff8164733b>] ? _raw_spin_unlock+0x2b/0x50
+> [10821.640820]  [<ffffffff811efb4e>] __writeback_inodes_wb+0x9e/0xd0
+> [10821.640820]  [<ffffffff811efefb>] wb_writeback+0x2db/0x5c0
+> [10821.640820]  [<ffffffff81650016>] ? ftrace_call+0x5/0x2b
+> [10821.640820]  [<ffffffff811f0310>] wb_do_writeback+0x130/0x300
+> [10821.640820]  [<ffffffff811f05a3>] bdi_writeback_thread+0xc3/0x410
+> [10821.640820]  [<ffffffff811f04e0>] ? wb_do_writeback+0x300/0x300
+> [10821.640820]  [<ffffffff811f04e0>] ? wb_do_writeback+0x300/0x300
+> [10821.640820]  [<ffffffff8108d496>] kthread+0xc6/0xd0
+> [10821.640820]  [<ffffffff816516b4>] kernel_thread_helper+0x4/0x10
+> [10821.640820]  [<ffffffff81647570>] ? retint_restore_args+0x13/0x13
+> [10821.640820]  [<ffffffff8108d3d0>] ? __init_kthread_worker+0x70/0x70
+> [10821.640820]  [<ffffffff816516b0>] ? gs_change+0x13/0x13
 > --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
