@@ -1,108 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752509Ab2GTWlY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 18:41:24 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:54477 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751920Ab2GTWlW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 18:41:22 -0400
-Date: Fri, 20 Jul 2012 15:41:12 -0700
-From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
-To: santil@linux.vnet.ibm.com
-Cc: anton@samba.org, benh@kernel.crashing.org, paulus@samba.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: ibmveth bug?
-Message-ID: <20120720224112.GD19288@linux.vnet.ibm.com>
-References: <20120515170141.GA14272@linux.vnet.ibm.com>
+	id S1752466Ab2GTWq3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 18:46:29 -0400
+Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:30475 "EHLO
+	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751768Ab2GTWq2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 18:46:28 -0400
+Message-ID: <5009DFBF.7060009@hp.com>
+Date: Fri, 20 Jul 2012 16:46:23 -0600
+From: Khalid Aziz <khalid.aziz@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120515170141.GA14272@linux.vnet.ibm.com>
-X-Operating-System: Linux 3.2.0-27-generic (x86_64)
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12072022-5930-0000-0000-00000A0F668B
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: mjg@redhat.com, mikew@google.com, tony.luck@intel.com,
+        keescook@chromium.org, gong.chen@linux.intel.com,
+        gregkh@linuxfoundation.org, paul.gortmaker@windriver.com,
+        maxin.john@gmail.com, rdunlap@xenotime.net, matt.fleming@intel.com,
+        olof@lixom.net, dhowells@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Shorten constant names for EFI variable attributes
+References: <20120720220841.GA32642@hp.com> <5009D770.1050905@zytor.com> <5009DBEC.5050505@hp.com> <5009DD10.7010205@zytor.com>
+In-Reply-To: <5009DD10.7010205@zytor.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping on this ... we've tripped the same issue on a different system, it
-would appear. Would appreciate if anyone can provide answers to the
-questions below.
+On 07/20/2012 04:34 PM, H. Peter Anvin wrote:
+> On 07/20/2012 03:30 PM, Khalid Aziz wrote:
+>>
+>> This patch is based upon earlier discussion at
+>> <https://lkml.org/lkml/2012/7/13/320>.
+>>
+>> You are right that EFI specification uses exactly these long names for
+>> the constants, but does that mean kernel must also use the exact same
+>> long constant names? I can see doing that for the sake of consistency.
+>> At the same time, can we make the kernel code more readable and retain
+>> compatibility with existing API by using aliases? I slightly prefer
+>> making kernel code more readable, but I could go either way.
+>>
+>
+> I think it makes the kernel code less readable, because now you not 
+> only need to understand the kernel code and the EFI spec, but also how 
+> the two maps onto each other. The fact that you then have to introduce 
+> aliases indicates to me that you're doing something actively broken.
+>
+>     -hpa
+>
+As I think more about it, existence of aliases could also potentially 
+create confusion where someone adding new code to kernel chooses to use 
+the long name instead. Maybe unless we can make a clean break from long 
+names, it is not worth doing this and that is going to be problematic 
+because of the existing usage in userspace programs.
 
-Thanks,
-Nish
-
-On 15.05.2012 [10:01:41 -0700], Nishanth Aravamudan wrote:
-> Hi Santiago,
-> 
-> Are you still working on ibmveth?
-> 
-> I've found a very sporadic bug with ibmveth in some testing. PAPR
-> requires that:
-> 
-> "Validate the Buffer Descriptor of the receive queue buffer (I/O
-> addresses for entire buffer length starting at the spec- ified I/O
-> address are translated by the RTCE table, length is a multiple of 16
-> bytes, and alignment is on a 16 byte boundary) else H_Parameter."
-> 
-> but from what I can tell ibmveth.c is not enforcing this last condition:
-> 
-> 	adapter->rx_queue.queue_addr =
-> 		kmalloc(adapter->rx_queue.queue_len, GFP_KERNEL);
-> 
-> 	...
-> 
-> 	adapter->rx_queue.queue_dma = dma_map_single(dev,
-> 		adapter->rx_queue.queue_addr, adapter->rx_queue.queue_len,
-> 		DMA_BIDIRECTIONAL);
-> 
-> 	...
-> 
-> 	rxq_desc.fields.address = adapter->rx_queue.queue_dma;
-> 
-> 	...
-> 	
-> 
-> 	lpar_rc = ibmveth_register_logical_lan(adapter, rxq_desc,
-> 		mac_address);
-> 	netdev_err(netdev, "buffer TCE:0x%llx filter TCE:0x%llx rxq "
-> 	 	"desc:0x%llx MAC:0x%llx\n", adapter->buffer_list_dma,
-> 	 	adapter->filter_list_dma, rxq_desc.desc, mac_address);
-> 
-> And I got on one install attempt:
-> 
-> [ 39.978430] ibmveth 30000004: eth0: h_register_logical_lan failed with -4
-> [ 39.978449] ibmveth 30000004: eth0: buffer TCE:0x1000 filter TCE:0x10000 rxq desc:0x80006010000200a8 MAC:0x56754de8e904
-> 
-> rxq desc, as you can see is not 16byte aligned. kmalloc() only
-> guarantees 8-byte alignment (as does gcc, I think). Initially, I thought
-> we could just overallocate the queue_addr and ALIGN() down, but then we
-> would need to save the original kmalloc pointer in a new struct member
-> per rx_queue.
-> 
-> So a couple of questions:
-> 
-> 1) Is my analysis accurate? :)
-> 
-> 2) How gross would it be to save an extra pointer for every rx_queue?
-> 
-> 3) Based upon 2), is it better to just go ahead and create our own
-> kmem_cache (which gets an alignment specified)?
-> 
-> For 3), I started coding this, but couldn't find a clean place to
-> allocate the kmem_cache itself, as the size of each object depends on
-> the run-time characteristics (afaict), but needs to be specified at
-> cache creation time. Any insight you could provide would be great!
-> 
-> Thanks,
-> Nish
->  
-> -- 
-> Nishanth Aravamudan <nacc@us.ibm.com>
-> IBM Linux Technology Center
+Matthew, do you have a different point of view?
 
 -- 
-Nishanth Aravamudan <nacc@us.ibm.com>
-IBM Linux Technology Center
+Khalid
+khalid.aziz@hp.com
 
