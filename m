@@ -1,290 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753314Ab2GTPtL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 11:49:11 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:28495 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753161Ab2GTPtJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 11:49:09 -0400
-Message-ID: <1342799346.5138.7.camel@lorien2>
-Subject: Re: [PATCH v2] leds: add new lp8788 led driver
-From: Shuah Khan <shuahkhan@gmail.com>
-Reply-To: shuahkhan@gmail.com
-To: "Kim, Milo" <Milo.Kim@ti.com>
-Cc: shuahkhan@gmail.com, Bryan Wu <bryan.wu@canonical.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 20 Jul 2012 09:49:06 -0600
-In-Reply-To: <A874F61F95741C4A9BA573A70FE3998FDA9E@DQHE02.ent.ti.com>
-References: <A874F61F95741C4A9BA573A70FE3998FDA9E@DQHE02.ent.ti.com>
+	id S1753341Ab2GTPt7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 11:49:59 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:44111 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753179Ab2GTPt6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 11:49:58 -0400
+Message-ID: <1342799397.21447.35.camel@joe2Laptop>
+Subject: Re: [PATCH] checkpatch: Add checks for do {} while (0) macro misuses
+From: Joe Perches <joe@perches.com>
+To: Betty Dall <betty.dall@hp.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Andy Whitcroft <apw@canonical.com>
+Date: Fri, 20 Jul 2012 08:49:57 -0700
+In-Reply-To: <loom.20120720T160308-562@post.gmane.org>
+References: <1342735885.17350.3.camel@joe2Laptop>
+	 <loom.20120720T160308-562@post.gmane.org>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-07-20 at 08:43 +0000, Kim, Milo wrote:
-> TI LP8788 PMU has the current sink as the keyboard led driver.
-> The brightness is controlled by the i2c commands.
-> Configurable parameters can be defined in the platform side.
-> 
-> Patch v2.
-> (a) use workqueue on changing the brightness
-> 
-> (b) use mutex_lock/unlock when the brightness is set
->     and the led block of lp8788 device is enabled
-> 
-> (c) remove err_dev on _probe()
->     : just return as returned value if any errors
-> 
-> (d) replace module_init/exit() with module_platform_driver()
-> 
-> (e) add led configuration structure and loading them by default
->     if platform data is null
-> 
-> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
-> ---
->  drivers/leds/Kconfig       |    7 ++
->  drivers/leds/Makefile      |    1 +
->  drivers/leds/leds-lp8788.c |  192 ++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 200 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/leds/leds-lp8788.c
-> 
-> diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
-> index f028f03..a498deb 100644
-> --- a/drivers/leds/Kconfig
-> +++ b/drivers/leds/Kconfig
-> @@ -200,6 +200,13 @@ config LEDS_LP5523
->  	  Driver provides direct control via LED class and interface for
->  	  programming the engines.
->  
-> +config LEDS_LP8788
-> +	tristate "LED support for the TI LP8788 PMIC"
-> +	depends on LEDS_CLASS
-> +	depends on MFD_LP8788
-> +	help
-> +	  This option enables support for the Keyboard LEDs on the LP8788 PMIC.
-> +
->  config LEDS_CLEVO_MAIL
->  	tristate "Mail LED on Clevo notebook"
->  	depends on LEDS_CLASS
-> diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
-> index 5eebd7b..f156193 100644
-> --- a/drivers/leds/Makefile
-> +++ b/drivers/leds/Makefile
-> @@ -24,6 +24,7 @@ obj-$(CONFIG_LEDS_GPIO)			+= leds-gpio.o
->  obj-$(CONFIG_LEDS_LP3944)		+= leds-lp3944.o
->  obj-$(CONFIG_LEDS_LP5521)		+= leds-lp5521.o
->  obj-$(CONFIG_LEDS_LP5523)		+= leds-lp5523.o
-> +obj-$(CONFIG_LEDS_LP8788)		+= leds-lp8788.o
->  obj-$(CONFIG_LEDS_TCA6507)		+= leds-tca6507.o
->  obj-$(CONFIG_LEDS_CLEVO_MAIL)		+= leds-clevo-mail.o
->  obj-$(CONFIG_LEDS_HP6XX)		+= leds-hp6xx.o
-> diff --git a/drivers/leds/leds-lp8788.c b/drivers/leds/leds-lp8788.c
-> new file mode 100644
-> index 0000000..574b49f
-> --- /dev/null
-> +++ b/drivers/leds/leds-lp8788.c
-> @@ -0,0 +1,192 @@
-> +/*
-> + * TI LP8788 MFD - keyled driver
-> + *
-> + * Copyright 2012 Texas Instruments
-> + *
-> + * Author: Milo(Woogyom) Kim <milo.kim@ti.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/slab.h>
-> +#include <linux/err.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/leds.h>
-> +#include <linux/mutex.h>
-> +#include <linux/mfd/lp8788.h>
-> +#include <linux/mfd/lp8788-isink.h>
-> +
-> +#define MAX_BRIGHTNESS			LP8788_ISINK_MAX_PWM
-> +#define DEFAULT_LED_NAME		"keyboard-backlight"
-> +
-> +struct lp8788_led {
-> +	struct lp8788 *lp;
-> +	struct mutex lock;
-> +	struct work_struct work;
-> +	struct led_classdev led_dev;
-> +	enum lp8788_isink_number isink_num;
-> +	enum led_brightness brightness;
-> +	int on;
-> +};
-> +
-> +struct lp8788_led_config {
-> +	enum lp8788_isink_scale scale;
-> +	enum lp8788_isink_number num;
-> +	int iout;
-> +};
-> +
-> +static struct lp8788_led_config default_led_config = {
-> +	.scale = LP8788_ISINK_SCALE_100mA,
-> +	.num   = LP8788_ISINK_3,
-> +	.iout  = 0,
-> +};
-> +
-> +static int lp8788_led_init_device(struct lp8788_led *led,
-> +				struct lp8788_led_platform_data *pdata)
-> +{
-> +	struct lp8788_led_config *cfg = &default_led_config;
-> +	u8 addr, mask, val;
-> +	int ret;
-> +
-> +	if (pdata) {
-> +		cfg->scale = pdata->scale;
-> +		cfg->num = pdata->num;
-> +		cfg->iout = pdata->iout_code;
-> +	}
-> +
-> +	led->isink_num = cfg->num;
-> +
-> +	/* scale configuration */
-> +	addr = LP8788_ISINK_CTRL;
-> +	mask = 1 << (cfg->num + LP8788_ISINK_SCALE_OFFSET);
-> +	val = cfg->scale << cfg->num;
-> +	ret = lp8788_update_bits(led->lp, addr, mask, val);
-> +	if (ret)
-> +		return ret;
-> +
-> +	/* current configuration */
-> +	addr = lp8788_iout_addr[cfg->num];
-> +	mask = lp8788_iout_mask[cfg->num];
-> +	val = cfg->iout;
-> +
-> +	return lp8788_update_bits(led->lp, addr, mask, val);
-> +}
-> +
-> +static void lp8788_led_enable(struct lp8788_led *led,
-> +			enum lp8788_isink_number num, int on)
-> +{
-> +	u8 mask = 1 << num;
-> +	u8 val = on << num;
-> +
-> +	if (lp8788_update_bits(led->lp, LP8788_ISINK_CTRL, mask, val))
-> +		return;
-> +
-> +	led->on = on;
-> +}
-> +
-> +static void lp8788_led_work(struct work_struct *work)
-> +{
-> +	struct lp8788_led *led = container_of(work, struct lp8788_led, work);
-> +	enum lp8788_isink_number num = led->isink_num;
-> +	int enable;
-> +	u8 val = led->brightness;
-> +
-> +	mutex_lock(&led->lock);
-> +
-> +	switch (num) {
-> +	case LP8788_ISINK_1:
-> +	case LP8788_ISINK_2:
-> +	case LP8788_ISINK_3:
-> +		lp8788_write_byte(led->lp, lp8788_pwm_addr[num], val);
-> +		break;
-> +	default:
-> +		return;
-> +	}
-> +
-> +	enable = (val > 0) ? 1 : 0;
-> +	if (enable != led->on)
-> +		lp8788_led_enable(led, num, enable);
-> +
-> +	mutex_unlock(&led->lock);
-> +}
-> +
-> +static void lp8788_brightness_set(struct led_classdev *led_cdev,
-> +				enum led_brightness brt_val)
-> +{
-> +	struct lp8788_led *led =
-> +			container_of(led_cdev, struct lp8788_led, led_dev);
-> +
-> +	led->brightness = brt_val;
-> +	schedule_work(&led->work);
-> +}
-> +
-> +static __devinit int lp8788_led_probe(struct platform_device *pdev)
-> +{
-> +	struct lp8788 *lp = dev_get_drvdata(pdev->dev.parent);
-> +	struct lp8788_led_platform_data *led_pdata;
-> +	struct lp8788_led *led;
-> +	int ret;
-> +
-> +	led = devm_kzalloc(lp->dev, sizeof(struct lp8788_led), GFP_KERNEL);
-> +	if (!led)
-> +		return -ENOMEM;
-> +
-> +	led->lp = lp;
-> +	led->led_dev.max_brightness = MAX_BRIGHTNESS;
-> +	led->led_dev.brightness_set = lp8788_brightness_set;
-> +
-> +	led_pdata = lp->pdata ? lp->pdata->led_pdata : NULL;
-> +
-> +	if (!led_pdata || !led_pdata->name)
-> +		led->led_dev.name = DEFAULT_LED_NAME;
-> +	else
-> +		led->led_dev.name = led_pdata->name;
-> +
-> +	mutex_init(&led->lock);
-> +	INIT_WORK(&led->work, lp8788_led_work);
-> +
-> +	platform_set_drvdata(pdev, led);
-> +
-> +	ret = lp8788_led_init_device(led, led_pdata);
-> +	if (ret) {
-> +		dev_err(lp->dev, "led init device err: %d\n", ret);
-> +		return ret;
-> +	}
-> +
-> +	ret = led_classdev_register(lp->dev, &led->led_dev);
-> +	if (ret) {
-> +		dev_err(lp->dev, "led register err: %d\n", ret);
-> +		return ret;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int __devexit lp8788_led_remove(struct platform_device *pdev)
-> +{
-> +	struct lp8788_led *led = platform_get_drvdata(pdev);
-> +
-> +	led_classdev_unregister(&led->led_dev);
-> +	flush_work_sync(&led->work);
+On Fri, 2012-07-20 at 14:40 +0000, Betty Dall wrote:
 
-Is flush_work_sync() sufficient or cancel_work_sync() is a better
-choice. I see some led drivers using cancel_work_sync() and some using
-flush_work_sync(). I do see that flush_work_sync() doesn't do any
-del_timer_sync() calls to cancel timers if any running.
+> I reviewed this and tested it out on the qib.h file we were looking at yesterday 
+> and it worked well. I was worried about a nested do {} while(0), because it will 
+> match with the first while. Here is a test case:
+> #define qib_devinfo(pcidev, fmt, ...) \
+>         do { \
+>                 do { \
+>                         dev_info(&(pcidev)->dev, fmt, ##__VA_ARGS__); \
+>                 } while (0); \
+>         } while (0)
+> 
+> Checkpatch.pl didn't complain about that one. Granted, it is a contrived test 
+> case. Your change will catch the real problems.
 
-> +
-> +	return 0;
-> +}
-> +
-> +static struct platform_driver lp8788_led_driver = {
-> +	.probe = lp8788_led_probe,
-> +	.remove = __devexit_p(lp8788_led_remove),
-> +	.driver = {
-> +		.name = LP8788_DEV_KEYLED,
-> +		.owner = THIS_MODULE,
-> +	},
-> +};
-> +module_platform_driver(lp8788_led_driver);
-> +
-> +MODULE_DESCRIPTION("Texas Instruments LP8788 Keyboard LED Driver");
-> +MODULE_AUTHOR("Milo Kim");
-> +MODULE_LICENSE("GPL");
-> +MODULE_ALIAS("platform:lp8788-keyled");
+Hi Betty.
 
+Wow, you're thorough.  Thanks for testing.
+
+I don't mind that it doesn't work in all cases.
+I suppose this would fail for loops too.
+
+checkpatch is a pretty limited tool as it depends on
+the code being compilable and doesn't really understand
+c syntax.  It is just a convenience tool and lots of
+its logic is incomplete and some of its output can be
+happily ignored.
+
+cheers, Joe
 
