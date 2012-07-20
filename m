@@ -1,348 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752697Ab2GTOgl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 10:36:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44353 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752599Ab2GTOgj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 10:36:39 -0400
-Date: Fri, 20 Jul 2012 16:36:35 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, Hugh Dickins <hughd@google.com>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Ken Chen <kenchen@google.com>, Cong Wang <xiyou.wangcong@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH -alternative] mm: hugetlbfs: Close race during teardown of
- hugetlbfs shared page tables V2 (resend)
-Message-ID: <20120720143635.GE12434@tiehlicka.suse.cz>
-References: <20120720134937.GG9222@suse.de>
- <20120720141108.GH9222@suse.de>
+	id S1752707Ab2GTOhS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 10:37:18 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:43489 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752019Ab2GTOhQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 10:37:16 -0400
+Date: Fri, 20 Jul 2012 07:36:57 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: WARNING: at kernel/rcutree.c:1550
+ __rcu_process_callbacks+0x46f/0x4b0()
+Message-ID: <20120720143657.GC2721@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <5007F8FA.7000203@linux.vnet.ibm.com>
+ <20120719171550.GL2507@linux.vnet.ibm.com>
+ <500935BC.4040405@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120720141108.GH9222@suse.de>
+In-Reply-To: <500935BC.4040405@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12072014-6148-0000-0000-000007D3CC0F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-And here is my attempt for the fix (Hugh mentioned something similar
-earlier but he suggested using special flags in ptes or VMAs). I still
-owe doc. update and it hasn't been tested with too many configs and I
-could missed some definition updates.
-I also think that changelog could be much better, I will add (steal) the
-full bug description if people think that this way is worth going rather
-than the one suggested by Mel.
-To be honest I am not quite happy how I had to pollute generic mm code with
-something that is specific to a single architecture.
-Mel hammered it with the test case and it survived.
----
->From d71cd88da83c669beced2aa752847265e896b89b Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Fri, 20 Jul 2012 15:10:40 +0200
-Subject: [PATCH] mm: hugetlbfs: Close race during teardown of hugetlbfs
+On Fri, Jul 20, 2012 at 04:11:00PM +0530, Srivatsa S. Bhat wrote:
+> On 07/19/2012 10:45 PM, Paul E. McKenney wrote:
+> > On Thu, Jul 19, 2012 at 05:39:30PM +0530, Srivatsa S. Bhat wrote:
+> >> Hi Paul,
+> >>
+> >> While running a CPU hotplug stress test on v3.5-rc7+
+> >> (mainline commit 8a7298b7805ab) I hit this warning.
+> >> I haven't tried to debug this yet...
+> >>
+> >> Line number 1550 maps to:
+> >>
+> >> WARN_ON_ONCE(cpu_is_offline(smp_processor_id()));
+> >>
+> >> inside rcu_do_batch().
+> > 
+> > Hello, Srivatsa,
+> > 
+> > I believe that you need commit a16b7a69 (Prevent __call_rcu() from
+> > invoking RCU core on offline CPUs), which is currently in -tip, queued
+> > for 3.6.  Please see below for the patch.
+> > 
+> > Does this help?
+> 
+> Yes, that fixed it, thanks! :-)
+> Sorry for the noise...
 
-The primary problem is that huge_pte_offset called from huge_pmd_share might
-return a spte which is about to be deallocated and the caller doesn't have any
-way to find this out. This means that huge_pmd_share might reuse spte and
-increase the reference count on its page.  i_mmap_mutex is not sufficient
-because the spte is still available after unmap_hugepage_range and free
-free_pgtables which takes care of spte teardown doesn't use any locking.
+May I add your Tested-by?
 
-This patch addresses the issue by marking spte's page that it is due to removal
-(misuse page mapping for that matter because that one is not used for spte page
-during whole life cycle).
-huge_pte_offset then checks is_hugetlb_pmd_page_valid and ignores such sptes.
-The spte page is invalidated after the last pte is unshared and only if
-unmap_vmas is followed by free_pgtables. This is all done under i_mmap_mutex so
-we cannot race.
+							Thanx, Paul
 
-The spte page is cleaned up later in free_pmd_range after pud is cleared and
-before it is handed over to pmd_free_tlb which frees the page. Write memory
-barrier makes sure that other CPUs always see either cleared pud (thus NULL
-pmd) or invalidated spte page.
+> Regards,
+> Srivatsa S. Bhat
+> 
+> > 
+> > ------------------------------------------------------------------------
+> > 
+> > rcu: Prevent __call_rcu() from invoking RCU core on offline CPUs
+> > 
+> > The __call_rcu() function will invoke the RCU core, for example, if
+> > it detects that the current CPU has too many callbacks.  However, this
+> > can happen on an offline CPU that is on its way to the idle loop, in
+> > which case it is an error to invoke the RCU core, and the excess callbacks
+> > will be adopted in any case.  This commit therefore adds checks to
+> > __call_rcu() for running on an offline CPU, refraining from invoking
+> > the RCU core in this case.
+> > 
+> > Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> > 
+> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> > index a4a9c91..ceaa959 100644
+> > --- a/kernel/rcutree.c
+> > +++ b/kernel/rcutree.c
+> > @@ -1904,11 +1904,11 @@ __call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
+> >  	 * If called from an extended quiescent state, invoke the RCU
+> >  	 * core in order to force a re-evaluation of RCU's idleness.
+> >  	 */
+> > -	if (rcu_is_cpu_idle())
+> > +	if (rcu_is_cpu_idle() && cpu_online(smp_processor_id()))
+> >  		invoke_rcu_core();
+> > 
+> > -	/* If interrupts were disabled, don't dive into RCU core. */
+> > -	if (irqs_disabled_flags(flags)) {
+> > +	/* If interrupts were disabled or CPU offline, don't invoke RCU core. */
+> > +	if (irqs_disabled_flags(flags) || cpu_is_offline(smp_processor_id())) {
+> >  		local_irq_restore(flags);
+> >  		return;
+> >  	}
+> > 
 
-[motivated by Hugh's idea]
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- arch/x86/include/asm/hugetlb.h |   30 ++++++++++++++++++++++++++++++
- arch/x86/mm/hugetlbpage.c      |    7 ++++++-
- fs/hugetlbfs/inode.c           |    2 +-
- include/linux/hugetlb.h        |    7 ++++---
- include/linux/mm.h             |    2 +-
- mm/hugetlb.c                   |   10 ++++++----
- mm/memory.c                    |   17 +++++++++++------
- mm/mmap.c                      |    4 ++--
- 8 files changed, 61 insertions(+), 18 deletions(-)
-
-diff --git a/arch/x86/include/asm/hugetlb.h b/arch/x86/include/asm/hugetlb.h
-index 439a9ac..eaff713 100644
---- a/arch/x86/include/asm/hugetlb.h
-+++ b/arch/x86/include/asm/hugetlb.h
-@@ -48,6 +48,36 @@ static inline pte_t huge_ptep_get_and_clear(struct mm_struct *mm,
- 	return ptep_get_and_clear(mm, addr, ptep);
- }
- 
-+static inline bool is_hugetlb_pmd_page_valid(struct page *page)
-+{
-+	smp_rmb();
-+	return page->mapping == NULL;
-+}
-+
-+static inline void invalidate_hugetlb_pmd_page(pmd_t *pmd)
-+{
-+	struct page *pmd_page = virt_to_page(pmd);
-+
-+	/* TODO add comment about the race */
-+	pmd_page->mapping = (struct address_space *)(-1UL);
-+	smp_wmb();
-+}
-+
-+#define ARCH_HAVE_CLEAR_HUGETLB_PMD_PAGE 1
-+static inline void clear_hugetlb_pmd_page(pmd_t *pmd)
-+{
-+	struct page *pmd_page = virt_to_page(pmd);
-+	if (!is_hugetlb_pmd_page_valid(pmd_page)) {
-+		/*
-+		 * Make sure that pud_clear is visible before we remove the
-+		 * invalidate flag here so huge_pte_offset either returns NULL
-+		 * or invalidated pmd page during the tear down.
-+		 */
-+		smp_wmb();
-+		pmd_page->mapping = NULL;
-+	}
-+}
-+
- static inline void huge_ptep_clear_flush(struct vm_area_struct *vma,
- 					 unsigned long addr, pte_t *ptep)
- {
-diff --git a/arch/x86/mm/hugetlbpage.c b/arch/x86/mm/hugetlbpage.c
-index f6679a7..c040089 100644
---- a/arch/x86/mm/hugetlbpage.c
-+++ b/arch/x86/mm/hugetlbpage.c
-@@ -81,7 +81,12 @@ static void huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
- 		if (saddr) {
- 			spte = huge_pte_offset(svma->vm_mm, saddr);
- 			if (spte) {
--				get_page(virt_to_page(spte));
-+				struct page *spte_page = virt_to_page(spte);
-+				if (!is_hugetlb_pmd_page_valid(spte_page)) {
-+					spte = NULL;
-+					continue;
-+				}
-+				get_page(spte_page);
- 				break;
- 			}
- 		}
-diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
-index 001ef01..0d0c235 100644
---- a/fs/hugetlbfs/inode.c
-+++ b/fs/hugetlbfs/inode.c
-@@ -417,7 +417,7 @@ hugetlb_vmtruncate_list(struct prio_tree_root *root, pgoff_t pgoff)
- 			v_offset = 0;
- 
- 		__unmap_hugepage_range(vma,
--				vma->vm_start + v_offset, vma->vm_end, NULL);
-+				vma->vm_start + v_offset, vma->vm_end, NULL, false);
- 	}
- }
- 
-diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-index 000837e..208b662 100644
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -40,9 +40,9 @@ int follow_hugetlb_page(struct mm_struct *, struct vm_area_struct *,
- 			struct page **, struct vm_area_struct **,
- 			unsigned long *, int *, int, unsigned int flags);
- void unmap_hugepage_range(struct vm_area_struct *,
--			unsigned long, unsigned long, struct page *);
-+			unsigned long, unsigned long, struct page *, bool);
- void __unmap_hugepage_range(struct vm_area_struct *,
--			unsigned long, unsigned long, struct page *);
-+			unsigned long, unsigned long, struct page *, bool);
- int hugetlb_prefault(struct address_space *, struct vm_area_struct *);
- void hugetlb_report_meminfo(struct seq_file *);
- int hugetlb_report_node_meminfo(int, char *);
-@@ -98,7 +98,7 @@ static inline unsigned long hugetlb_total_pages(void)
- #define follow_huge_addr(mm, addr, write)	ERR_PTR(-EINVAL)
- #define copy_hugetlb_page_range(src, dst, vma)	({ BUG(); 0; })
- #define hugetlb_prefault(mapping, vma)		({ BUG(); 0; })
--#define unmap_hugepage_range(vma, start, end, page)	BUG()
-+#define unmap_hugepage_range(vma, start, end, page, last)	BUG()
- static inline void hugetlb_report_meminfo(struct seq_file *m)
- {
- }
-@@ -112,6 +112,7 @@ static inline void hugetlb_report_meminfo(struct seq_file *m)
- #define hugetlb_free_pgd_range(tlb, addr, end, floor, ceiling) ({BUG(); 0; })
- #define hugetlb_fault(mm, vma, addr, flags)	({ BUG(); 0; })
- #define huge_pte_offset(mm, address)	0
-+#define clear_hugetlb_pmd_page(pmd)	0
- #define dequeue_hwpoisoned_huge_page(page)	0
- static inline void copy_huge_page(struct page *dst, struct page *src)
- {
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 74aa71b..ba891bb 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -899,7 +899,7 @@ void zap_page_range(struct vm_area_struct *vma, unsigned long address,
- void unmap_vmas(struct mmu_gather *tlb,
- 		struct vm_area_struct *start_vma, unsigned long start_addr,
- 		unsigned long end_addr, unsigned long *nr_accounted,
--		struct zap_details *);
-+		struct zap_details *, bool last);
- 
- /**
-  * mm_walk - callbacks for walk_page_range
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index ae8f708..9952d19 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2299,7 +2299,7 @@ static int is_hugetlb_entry_hwpoisoned(pte_t pte)
- }
- 
- void __unmap_hugepage_range(struct vm_area_struct *vma, unsigned long start,
--			    unsigned long end, struct page *ref_page)
-+			    unsigned long end, struct page *ref_page, bool last)
- {
- 	struct mm_struct *mm = vma->vm_mm;
- 	unsigned long address;
-@@ -2332,6 +2332,8 @@ void __unmap_hugepage_range(struct vm_area_struct *vma, unsigned long start,
- 			continue;
- 
- 		pte = huge_ptep_get(ptep);
-+		if (last)
-+			invalidate_hugetlb_pmd_page((pmd_t*)ptep);
- 		if (huge_pte_none(pte))
- 			continue;
- 
-@@ -2379,10 +2381,10 @@ void __unmap_hugepage_range(struct vm_area_struct *vma, unsigned long start,
- }
- 
- void unmap_hugepage_range(struct vm_area_struct *vma, unsigned long start,
--			  unsigned long end, struct page *ref_page)
-+			  unsigned long end, struct page *ref_page, bool last)
- {
- 	mutex_lock(&vma->vm_file->f_mapping->i_mmap_mutex);
--	__unmap_hugepage_range(vma, start, end, ref_page);
-+	__unmap_hugepage_range(vma, start, end, ref_page, last);
- 	mutex_unlock(&vma->vm_file->f_mapping->i_mmap_mutex);
- }
- 
-@@ -2430,7 +2432,7 @@ static int unmap_ref_private(struct mm_struct *mm, struct vm_area_struct *vma,
- 		if (!is_vma_resv_set(iter_vma, HPAGE_RESV_OWNER))
- 			__unmap_hugepage_range(iter_vma,
- 				address, address + huge_page_size(h),
--				page);
-+				page, false);
- 	}
- 	mutex_unlock(&mapping->i_mmap_mutex);
- 
-diff --git a/mm/memory.c b/mm/memory.c
-index 6105f47..c6c6e83 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -405,6 +405,10 @@ static void free_pte_range(struct mmu_gather *tlb, pmd_t *pmd,
- 	tlb->mm->nr_ptes--;
- }
- 
-+#ifndef ARCH_HAVE_CLEAR_HUGETLB_PMD_PAGE
-+#define clear_hugetlb_pmd_page(pmd)	0
-+#endif
-+
- static inline void free_pmd_range(struct mmu_gather *tlb, pud_t *pud,
- 				unsigned long addr, unsigned long end,
- 				unsigned long floor, unsigned long ceiling)
-@@ -435,6 +439,7 @@ static inline void free_pmd_range(struct mmu_gather *tlb, pud_t *pud,
- 
- 	pmd = pmd_offset(pud, start);
- 	pud_clear(pud);
-+	clear_hugetlb_pmd_page(pmd);
- 	pmd_free_tlb(tlb, pmd, start);
- }
- 
-@@ -1296,7 +1301,7 @@ static void unmap_page_range(struct mmu_gather *tlb,
- static void unmap_single_vma(struct mmu_gather *tlb,
- 		struct vm_area_struct *vma, unsigned long start_addr,
- 		unsigned long end_addr, unsigned long *nr_accounted,
--		struct zap_details *details)
-+		struct zap_details *details, bool last)
- {
- 	unsigned long start = max(vma->vm_start, start_addr);
- 	unsigned long end;
-@@ -1327,7 +1332,7 @@ static void unmap_single_vma(struct mmu_gather *tlb,
- 			 * safe to do nothing in this case.
- 			 */
- 			if (vma->vm_file)
--				unmap_hugepage_range(vma, start, end, NULL);
-+				unmap_hugepage_range(vma, start, end, NULL, last);
- 		} else
- 			unmap_page_range(tlb, vma, start, end, details);
- 	}
-@@ -1356,14 +1361,14 @@ static void unmap_single_vma(struct mmu_gather *tlb,
- void unmap_vmas(struct mmu_gather *tlb,
- 		struct vm_area_struct *vma, unsigned long start_addr,
- 		unsigned long end_addr, unsigned long *nr_accounted,
--		struct zap_details *details)
-+		struct zap_details *details, bool last)
- {
- 	struct mm_struct *mm = vma->vm_mm;
- 
- 	mmu_notifier_invalidate_range_start(mm, start_addr, end_addr);
- 	for ( ; vma && vma->vm_start < end_addr; vma = vma->vm_next)
- 		unmap_single_vma(tlb, vma, start_addr, end_addr, nr_accounted,
--				 details);
-+				 details, last);
- 	mmu_notifier_invalidate_range_end(mm, start_addr, end_addr);
- }
- 
-@@ -1387,7 +1392,7 @@ void zap_page_range(struct vm_area_struct *vma, unsigned long address,
- 	lru_add_drain();
- 	tlb_gather_mmu(&tlb, mm, 0);
- 	update_hiwater_rss(mm);
--	unmap_vmas(&tlb, vma, address, end, &nr_accounted, details);
-+	unmap_vmas(&tlb, vma, address, end, &nr_accounted, details, false);
- 	tlb_finish_mmu(&tlb, address, end);
- }
- 
-@@ -1412,7 +1417,7 @@ static void zap_page_range_single(struct vm_area_struct *vma, unsigned long addr
- 	tlb_gather_mmu(&tlb, mm, 0);
- 	update_hiwater_rss(mm);
- 	mmu_notifier_invalidate_range_start(mm, address, end);
--	unmap_single_vma(&tlb, vma, address, end, &nr_accounted, details);
-+	unmap_single_vma(&tlb, vma, address, end, &nr_accounted, details, false);
- 	mmu_notifier_invalidate_range_end(mm, address, end);
- 	tlb_finish_mmu(&tlb, address, end);
- }
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 848ef52..f4566e4 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1917,7 +1917,7 @@ static void unmap_region(struct mm_struct *mm,
- 	lru_add_drain();
- 	tlb_gather_mmu(&tlb, mm, 0);
- 	update_hiwater_rss(mm);
--	unmap_vmas(&tlb, vma, start, end, &nr_accounted, NULL);
-+	unmap_vmas(&tlb, vma, start, end, &nr_accounted, NULL, true);
- 	vm_unacct_memory(nr_accounted);
- 	free_pgtables(&tlb, vma, prev ? prev->vm_end : FIRST_USER_ADDRESS,
- 				 next ? next->vm_start : 0);
-@@ -2305,7 +2305,7 @@ void exit_mmap(struct mm_struct *mm)
- 	tlb_gather_mmu(&tlb, mm, 1);
- 	/* update_hiwater_rss(mm) here? but nobody should be looking */
- 	/* Use -1 here to ensure all VMAs in the mm are unmapped */
--	unmap_vmas(&tlb, vma, 0, -1, &nr_accounted, NULL);
-+	unmap_vmas(&tlb, vma, 0, -1, &nr_accounted, NULL, true);
- 	vm_unacct_memory(nr_accounted);
- 
- 	free_pgtables(&tlb, vma, FIRST_USER_ADDRESS, 0);
--- 
-1.7.10.4
-
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
