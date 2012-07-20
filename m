@@ -1,185 +1,348 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752542Ab2GTOg1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 10:36:27 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:54139 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752064Ab2GTOg0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 10:36:26 -0400
-Date: Fri, 20 Jul 2012 07:35:59 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [Patch 0/7] Per cpu thread hotplug infrastructure - V3
-Message-ID: <20120720143559.GB2721@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120716103749.122800930@linutronix.de>
- <20120716152224.GF2403@linux.vnet.ibm.com>
- <5006F434.9010707@linux.vnet.ibm.com>
- <20120718235402.GP2435@linux.vnet.ibm.com>
- <50095A6A.4080404@linux.vnet.ibm.com>
+	id S1752697Ab2GTOgl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 10:36:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44353 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752599Ab2GTOgj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 10:36:39 -0400
+Date: Fri, 20 Jul 2012 16:36:35 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, Hugh Dickins <hughd@google.com>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Ken Chen <kenchen@google.com>, Cong Wang <xiyou.wangcong@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH -alternative] mm: hugetlbfs: Close race during teardown of
+ hugetlbfs shared page tables V2 (resend)
+Message-ID: <20120720143635.GE12434@tiehlicka.suse.cz>
+References: <20120720134937.GG9222@suse.de>
+ <20120720141108.GH9222@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50095A6A.4080404@linux.vnet.ibm.com>
+In-Reply-To: <20120720141108.GH9222@suse.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12072014-4242-0000-0000-00000262880C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 20, 2012 at 06:47:30PM +0530, Srivatsa S. Bhat wrote:
-> On 07/19/2012 05:24 AM, Paul E. McKenney wrote:
-> > On Wed, Jul 18, 2012 at 11:06:52PM +0530, Srivatsa S. Bhat wrote:
-> >> On 07/16/2012 08:52 PM, Paul E. McKenney wrote:
-> >>> On Mon, Jul 16, 2012 at 10:42:34AM -0000, Thomas Gleixner wrote:
-> >>>> The following series implements the infrastructure for parking and
-> >>>> unparking kernel threads to avoid the full teardown and fork on cpu
-> >>>> hotplug operations along with management infrastructure for hotplug
-> >>>> and users.
-> >>>>
-> >>>> Changes vs. V2:
-> >>>>
-> >>>>  Use callbacks for all functionality. Thanks to Rusty for pointing
-> >>>>  that out. It makes the use sites nice and simple and keeps all the
-> >>>>  code which would be duplicated otherwise on the core.
-> >>>
-> >>> Hello, Thomas,
-> >>>
-> >>> What version should I apply this patchset to?  I tried v3.5-rc7, but
-> >>> got lots of warnings (one shown below) and the watchdog patch did not
-> >>> apply.
-> >>>
-> >>
-> >> Hi Paul,
-> >>
-> >> This patchset applies cleanly on Thomas' smp/hotplug branch in the -tip
-> >> tree.
-> > 
-> > Thank you, Srivatsa, works much better.  Still get "scheduling while
-> > atomic", looking into that.
-> > 
-> 
-> Got a chance to run this patchset now.. Even I am getting "scheduling while
-> atomic" messages like shown below..  Hmmm...
+And here is my attempt for the fix (Hugh mentioned something similar
+earlier but he suggested using special flags in ptes or VMAs). I still
+owe doc. update and it hasn't been tested with too many configs and I
+could missed some definition updates.
+I also think that changelog could be much better, I will add (steal) the
+full bug description if people think that this way is worth going rather
+than the one suggested by Mel.
+To be honest I am not quite happy how I had to pollute generic mm code with
+something that is specific to a single architecture.
+Mel hammered it with the test case and it survived.
+---
+>From d71cd88da83c669beced2aa752847265e896b89b Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Fri, 20 Jul 2012 15:10:40 +0200
+Subject: [PATCH] mm: hugetlbfs: Close race during teardown of hugetlbfs
 
-Here is what little I have done so far (lots of completing demands on time
-this week, but I should have a goodly block of time to focus on this today):
+The primary problem is that huge_pte_offset called from huge_pmd_share might
+return a spte which is about to be deallocated and the caller doesn't have any
+way to find this out. This means that huge_pmd_share might reuse spte and
+increase the reference count on its page.  i_mmap_mutex is not sufficient
+because the spte is still available after unmap_hugepage_range and free
+free_pgtables which takes care of spte teardown doesn't use any locking.
 
-1.	The failure is from the softirq modifications.  Reverting that
-	commit gets rid of the failures.
+This patch addresses the issue by marking spte's page that it is due to removal
+(misuse page mapping for that matter because that one is not used for spte page
+during whole life cycle).
+huge_pte_offset then checks is_hugetlb_pmd_page_valid and ignores such sptes.
+The spte page is invalidated after the last pte is unshared and only if
+unmap_vmas is followed by free_pgtables. This is all done under i_mmap_mutex so
+we cannot race.
 
-2.	As one would expect, CONFIG_PREEMPT=n kernels do not have the
-	problem, which of course indicates a preempt_disable() imbalance.
+The spte page is cleaned up later in free_pmd_range after pud is cleared and
+before it is handed over to pmd_free_tlb which frees the page. Write memory
+barrier makes sure that other CPUs always see either cleared pud (thus NULL
+pmd) or invalidated spte page.
 
-3.	I was unable to spot the problem by inspection, but this is not
-	too surprising given the high level of distraction this week.
+[motivated by Hugh's idea]
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ arch/x86/include/asm/hugetlb.h |   30 ++++++++++++++++++++++++++++++
+ arch/x86/mm/hugetlbpage.c      |    7 ++++++-
+ fs/hugetlbfs/inode.c           |    2 +-
+ include/linux/hugetlb.h        |    7 ++++---
+ include/linux/mm.h             |    2 +-
+ mm/hugetlb.c                   |   10 ++++++----
+ mm/memory.c                    |   17 +++++++++++------
+ mm/mmap.c                      |    4 ++--
+ 8 files changed, 61 insertions(+), 18 deletions(-)
 
-4.	Instrumentation shows that preempt_count() grows slowly with
-	time, but with the upper bits zero.  This confirms the
-	preempt_disable imbalance.
+diff --git a/arch/x86/include/asm/hugetlb.h b/arch/x86/include/asm/hugetlb.h
+index 439a9ac..eaff713 100644
+--- a/arch/x86/include/asm/hugetlb.h
++++ b/arch/x86/include/asm/hugetlb.h
+@@ -48,6 +48,36 @@ static inline pte_t huge_ptep_get_and_clear(struct mm_struct *mm,
+ 	return ptep_get_and_clear(mm, addr, ptep);
+ }
+ 
++static inline bool is_hugetlb_pmd_page_valid(struct page *page)
++{
++	smp_rmb();
++	return page->mapping == NULL;
++}
++
++static inline void invalidate_hugetlb_pmd_page(pmd_t *pmd)
++{
++	struct page *pmd_page = virt_to_page(pmd);
++
++	/* TODO add comment about the race */
++	pmd_page->mapping = (struct address_space *)(-1UL);
++	smp_wmb();
++}
++
++#define ARCH_HAVE_CLEAR_HUGETLB_PMD_PAGE 1
++static inline void clear_hugetlb_pmd_page(pmd_t *pmd)
++{
++	struct page *pmd_page = virt_to_page(pmd);
++	if (!is_hugetlb_pmd_page_valid(pmd_page)) {
++		/*
++		 * Make sure that pud_clear is visible before we remove the
++		 * invalidate flag here so huge_pte_offset either returns NULL
++		 * or invalidated pmd page during the tear down.
++		 */
++		smp_wmb();
++		pmd_page->mapping = NULL;
++	}
++}
++
+ static inline void huge_ptep_clear_flush(struct vm_area_struct *vma,
+ 					 unsigned long addr, pte_t *ptep)
+ {
+diff --git a/arch/x86/mm/hugetlbpage.c b/arch/x86/mm/hugetlbpage.c
+index f6679a7..c040089 100644
+--- a/arch/x86/mm/hugetlbpage.c
++++ b/arch/x86/mm/hugetlbpage.c
+@@ -81,7 +81,12 @@ static void huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
+ 		if (saddr) {
+ 			spte = huge_pte_offset(svma->vm_mm, saddr);
+ 			if (spte) {
+-				get_page(virt_to_page(spte));
++				struct page *spte_page = virt_to_page(spte);
++				if (!is_hugetlb_pmd_page_valid(spte_page)) {
++					spte = NULL;
++					continue;
++				}
++				get_page(spte_page);
+ 				break;
+ 			}
+ 		}
+diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
+index 001ef01..0d0c235 100644
+--- a/fs/hugetlbfs/inode.c
++++ b/fs/hugetlbfs/inode.c
+@@ -417,7 +417,7 @@ hugetlb_vmtruncate_list(struct prio_tree_root *root, pgoff_t pgoff)
+ 			v_offset = 0;
+ 
+ 		__unmap_hugepage_range(vma,
+-				vma->vm_start + v_offset, vma->vm_end, NULL);
++				vma->vm_start + v_offset, vma->vm_end, NULL, false);
+ 	}
+ }
+ 
+diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+index 000837e..208b662 100644
+--- a/include/linux/hugetlb.h
++++ b/include/linux/hugetlb.h
+@@ -40,9 +40,9 @@ int follow_hugetlb_page(struct mm_struct *, struct vm_area_struct *,
+ 			struct page **, struct vm_area_struct **,
+ 			unsigned long *, int *, int, unsigned int flags);
+ void unmap_hugepage_range(struct vm_area_struct *,
+-			unsigned long, unsigned long, struct page *);
++			unsigned long, unsigned long, struct page *, bool);
+ void __unmap_hugepage_range(struct vm_area_struct *,
+-			unsigned long, unsigned long, struct page *);
++			unsigned long, unsigned long, struct page *, bool);
+ int hugetlb_prefault(struct address_space *, struct vm_area_struct *);
+ void hugetlb_report_meminfo(struct seq_file *);
+ int hugetlb_report_node_meminfo(int, char *);
+@@ -98,7 +98,7 @@ static inline unsigned long hugetlb_total_pages(void)
+ #define follow_huge_addr(mm, addr, write)	ERR_PTR(-EINVAL)
+ #define copy_hugetlb_page_range(src, dst, vma)	({ BUG(); 0; })
+ #define hugetlb_prefault(mapping, vma)		({ BUG(); 0; })
+-#define unmap_hugepage_range(vma, start, end, page)	BUG()
++#define unmap_hugepage_range(vma, start, end, page, last)	BUG()
+ static inline void hugetlb_report_meminfo(struct seq_file *m)
+ {
+ }
+@@ -112,6 +112,7 @@ static inline void hugetlb_report_meminfo(struct seq_file *m)
+ #define hugetlb_free_pgd_range(tlb, addr, end, floor, ceiling) ({BUG(); 0; })
+ #define hugetlb_fault(mm, vma, addr, flags)	({ BUG(); 0; })
+ #define huge_pte_offset(mm, address)	0
++#define clear_hugetlb_pmd_page(pmd)	0
+ #define dequeue_hwpoisoned_huge_page(page)	0
+ static inline void copy_huge_page(struct page *dst, struct page *src)
+ {
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 74aa71b..ba891bb 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -899,7 +899,7 @@ void zap_page_range(struct vm_area_struct *vma, unsigned long address,
+ void unmap_vmas(struct mmu_gather *tlb,
+ 		struct vm_area_struct *start_vma, unsigned long start_addr,
+ 		unsigned long end_addr, unsigned long *nr_accounted,
+-		struct zap_details *);
++		struct zap_details *, bool last);
+ 
+ /**
+  * mm_walk - callbacks for walk_page_range
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index ae8f708..9952d19 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2299,7 +2299,7 @@ static int is_hugetlb_entry_hwpoisoned(pte_t pte)
+ }
+ 
+ void __unmap_hugepage_range(struct vm_area_struct *vma, unsigned long start,
+-			    unsigned long end, struct page *ref_page)
++			    unsigned long end, struct page *ref_page, bool last)
+ {
+ 	struct mm_struct *mm = vma->vm_mm;
+ 	unsigned long address;
+@@ -2332,6 +2332,8 @@ void __unmap_hugepage_range(struct vm_area_struct *vma, unsigned long start,
+ 			continue;
+ 
+ 		pte = huge_ptep_get(ptep);
++		if (last)
++			invalidate_hugetlb_pmd_page((pmd_t*)ptep);
+ 		if (huge_pte_none(pte))
+ 			continue;
+ 
+@@ -2379,10 +2381,10 @@ void __unmap_hugepage_range(struct vm_area_struct *vma, unsigned long start,
+ }
+ 
+ void unmap_hugepage_range(struct vm_area_struct *vma, unsigned long start,
+-			  unsigned long end, struct page *ref_page)
++			  unsigned long end, struct page *ref_page, bool last)
+ {
+ 	mutex_lock(&vma->vm_file->f_mapping->i_mmap_mutex);
+-	__unmap_hugepage_range(vma, start, end, ref_page);
++	__unmap_hugepage_range(vma, start, end, ref_page, last);
+ 	mutex_unlock(&vma->vm_file->f_mapping->i_mmap_mutex);
+ }
+ 
+@@ -2430,7 +2432,7 @@ static int unmap_ref_private(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		if (!is_vma_resv_set(iter_vma, HPAGE_RESV_OWNER))
+ 			__unmap_hugepage_range(iter_vma,
+ 				address, address + huge_page_size(h),
+-				page);
++				page, false);
+ 	}
+ 	mutex_unlock(&mapping->i_mmap_mutex);
+ 
+diff --git a/mm/memory.c b/mm/memory.c
+index 6105f47..c6c6e83 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -405,6 +405,10 @@ static void free_pte_range(struct mmu_gather *tlb, pmd_t *pmd,
+ 	tlb->mm->nr_ptes--;
+ }
+ 
++#ifndef ARCH_HAVE_CLEAR_HUGETLB_PMD_PAGE
++#define clear_hugetlb_pmd_page(pmd)	0
++#endif
++
+ static inline void free_pmd_range(struct mmu_gather *tlb, pud_t *pud,
+ 				unsigned long addr, unsigned long end,
+ 				unsigned long floor, unsigned long ceiling)
+@@ -435,6 +439,7 @@ static inline void free_pmd_range(struct mmu_gather *tlb, pud_t *pud,
+ 
+ 	pmd = pmd_offset(pud, start);
+ 	pud_clear(pud);
++	clear_hugetlb_pmd_page(pmd);
+ 	pmd_free_tlb(tlb, pmd, start);
+ }
+ 
+@@ -1296,7 +1301,7 @@ static void unmap_page_range(struct mmu_gather *tlb,
+ static void unmap_single_vma(struct mmu_gather *tlb,
+ 		struct vm_area_struct *vma, unsigned long start_addr,
+ 		unsigned long end_addr, unsigned long *nr_accounted,
+-		struct zap_details *details)
++		struct zap_details *details, bool last)
+ {
+ 	unsigned long start = max(vma->vm_start, start_addr);
+ 	unsigned long end;
+@@ -1327,7 +1332,7 @@ static void unmap_single_vma(struct mmu_gather *tlb,
+ 			 * safe to do nothing in this case.
+ 			 */
+ 			if (vma->vm_file)
+-				unmap_hugepage_range(vma, start, end, NULL);
++				unmap_hugepage_range(vma, start, end, NULL, last);
+ 		} else
+ 			unmap_page_range(tlb, vma, start, end, details);
+ 	}
+@@ -1356,14 +1361,14 @@ static void unmap_single_vma(struct mmu_gather *tlb,
+ void unmap_vmas(struct mmu_gather *tlb,
+ 		struct vm_area_struct *vma, unsigned long start_addr,
+ 		unsigned long end_addr, unsigned long *nr_accounted,
+-		struct zap_details *details)
++		struct zap_details *details, bool last)
+ {
+ 	struct mm_struct *mm = vma->vm_mm;
+ 
+ 	mmu_notifier_invalidate_range_start(mm, start_addr, end_addr);
+ 	for ( ; vma && vma->vm_start < end_addr; vma = vma->vm_next)
+ 		unmap_single_vma(tlb, vma, start_addr, end_addr, nr_accounted,
+-				 details);
++				 details, last);
+ 	mmu_notifier_invalidate_range_end(mm, start_addr, end_addr);
+ }
+ 
+@@ -1387,7 +1392,7 @@ void zap_page_range(struct vm_area_struct *vma, unsigned long address,
+ 	lru_add_drain();
+ 	tlb_gather_mmu(&tlb, mm, 0);
+ 	update_hiwater_rss(mm);
+-	unmap_vmas(&tlb, vma, address, end, &nr_accounted, details);
++	unmap_vmas(&tlb, vma, address, end, &nr_accounted, details, false);
+ 	tlb_finish_mmu(&tlb, address, end);
+ }
+ 
+@@ -1412,7 +1417,7 @@ static void zap_page_range_single(struct vm_area_struct *vma, unsigned long addr
+ 	tlb_gather_mmu(&tlb, mm, 0);
+ 	update_hiwater_rss(mm);
+ 	mmu_notifier_invalidate_range_start(mm, address, end);
+-	unmap_single_vma(&tlb, vma, address, end, &nr_accounted, details);
++	unmap_single_vma(&tlb, vma, address, end, &nr_accounted, details, false);
+ 	mmu_notifier_invalidate_range_end(mm, address, end);
+ 	tlb_finish_mmu(&tlb, address, end);
+ }
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 848ef52..f4566e4 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -1917,7 +1917,7 @@ static void unmap_region(struct mm_struct *mm,
+ 	lru_add_drain();
+ 	tlb_gather_mmu(&tlb, mm, 0);
+ 	update_hiwater_rss(mm);
+-	unmap_vmas(&tlb, vma, start, end, &nr_accounted, NULL);
++	unmap_vmas(&tlb, vma, start, end, &nr_accounted, NULL, true);
+ 	vm_unacct_memory(nr_accounted);
+ 	free_pgtables(&tlb, vma, prev ? prev->vm_end : FIRST_USER_ADDRESS,
+ 				 next ? next->vm_start : 0);
+@@ -2305,7 +2305,7 @@ void exit_mmap(struct mm_struct *mm)
+ 	tlb_gather_mmu(&tlb, mm, 1);
+ 	/* update_hiwater_rss(mm) here? but nobody should be looking */
+ 	/* Use -1 here to ensure all VMAs in the mm are unmapped */
+-	unmap_vmas(&tlb, vma, 0, -1, &nr_accounted, NULL);
++	unmap_vmas(&tlb, vma, 0, -1, &nr_accounted, NULL, true);
+ 	vm_unacct_memory(nr_accounted);
+ 
+ 	free_pgtables(&tlb, vma, FIRST_USER_ADDRESS, 0);
+-- 
+1.7.10.4
 
-5.	I am currently placing WARN_ONCE() calls in the code to track
-	this down.  When I do find it, I fully expect to feel very stupid
-	about my efforts on #3 above.  ;-)
-
-							Thanx, Paul
-
-> Regards,
-> Srivatsa S. Bhat
-> 
-> -----------------
-> 
-> BUG: sleeping function called from invalid context at kernel/softirq.c:748
-> in_atomic(): 1, irqs_disabled(): 0, pid: 3, name: ksoftirqd/0
-> INFO: lockdep is turned off.
-> Pid: 3, comm: ksoftirqd/0 Tainted: G        W    3.5.0-rc1-threadhotplugv3-debug #2
-> Call Trace:
->  [<ffffffff8108e7ac>] __might_sleep+0x18c/0x250
->  [<ffffffff8105ea4f>] run_ksoftirqd+0x4f/0x70
->  [<ffffffff810c8b97>] smpboot_thread_fn+0x157/0x1f0
->  [<ffffffff810c8a40>] ? smpboot_create_threads+0x80/0x80
->  [<ffffffff8107e7ee>] kthread+0xee/0x100
->  [<ffffffff8158eb74>] kernel_thread_helper+0x4/0x10
->  [<ffffffff815844f0>] ? retint_restore_args+0x13/0x13
->  [<ffffffff8107e700>] ? __init_kthread_worker+0x70/0x70
->  [<ffffffff8158eb70>] ? gs_change+0x13/0x13
-> BUG: scheduling while atomic: ksoftirqd/0/3/0x1000000b
-> INFO: lockdep is turned off.
-> Modules linked in: ext3 jbd mbcache sd_mod crc_t10dif qla2xxx scsi_transport_fc scsi_tgt mptsas mptscsih mptbase scsi_transport_sas [last unloaded: scsi_wait_scan]
-> Pid: 3, comm: ksoftirqd/0 Tainted: G        W    3.5.0-rc1-threadhotplugv3-debug #2
-> Call Trace:
->  [<ffffffff8108d1cc>] __schedule_bug+0x6c/0x90
->  [<ffffffff81582818>] __schedule+0x7c8/0x880
->  [<ffffffff81092cea>] __cond_resched+0x2a/0x40
->  [<ffffffff81582960>] _cond_resched+0x30/0x40
-> SELinux: 2048 avtab hash slots, 250818 rules.
->  [<ffffffff8105ea54>] run_ksoftirqd+0x54/0x70
->  [<ffffffff810c8b97>] smpboot_thread_fn+0x157/0x1f0
->  [<ffffffff810c8a40>] ? smpboot_create_threads+0x80/0x80
->  [<ffffffff8107e7ee>] kthread+0xee/0x100
->  [<ffffffff8158eb74>] kernel_thread_helper+0x4/0x10
->  [<ffffffff815844f0>] ? retint_restore_args+0x13/0x13
->  [<ffffffff8107e700>] ? __init_kthread_worker+0x70/0x70
->  [<ffffffff8158eb70>] ? gs_change+0x13/0x13
-> 
-> [...]
-> 
-> BUG: sleeping function called from invalid context at kernel/softirq.c:748
-> in_atomic(): 1, irqs_disabled(): 0, pid: 37, name: ksoftirqd/8
-> INFO: lockdep is turned off.
-> Pid: 37, comm: ksoftirqd/8 Tainted: G        W    3.5.0-rc1-threadhotplugv3-debug #2
-> Call Trace:
->  [<ffffffff8108e7ac>] __might_sleep+0x18c/0x250
->  [<ffffffff8105ea4f>] run_ksoftirqd+0x4f/0x70
->  [<ffffffff810c8b97>] smpboot_thread_fn+0x157/0x1f0
-> 		Welcome to  [<ffffffff810c8a40>] ? smpboot_create_threads+0x80/0x80
->  [<ffffffff8107e7ee>] kthread+0xee/0x100
-> Red Hat [<ffffffff8158eb74>] kernel_thread_helper+0x4/0x10
->  [<ffffffff815844f0>] ? retint_restore_args+0x13/0x13
->  [<ffffffff8107e700>] ? __init_kthread_worker+0x70/0x70
->  [<ffffffff8158eb70>] ? gs_change+0x13/0x13
-> BUG: scheduling while atomic: ksoftirqd/8/37/0x10000004
-> INFO: lockdep is turned off.
-> Modules linked in: ext3 jbd mbcache sd_mod crc_t10dif qla2xxx scsi_transport_fc scsi_tgt mptsas mptscsih mptbase scsi_transport_sas [last unloaded: scsi_wait_scan]
-> Pid: 37, comm: ksoftirqd/8 Tainted: G        W    3.5.0-rc1-threadhotplugv3-debug #2
-> Call Trace:
->  Enterprise Linu [<ffffffff8108d1cc>] __schedule_bug+0x6c/0x90
-> x Server
->  [<ffffffff81582818>] __schedule+0x7c8/0x880
->  [<ffffffff81092cea>] __cond_resched+0x2a/0x40
->  [<ffffffff81582960>] _cond_resched+0x30/0x40
->  [<ffffffff8105ea54>] run_ksoftirqd+0x54/0x70
->  [<ffffffff810c8b97>] smpboot_thread_fn+0x157/0x1f0
->  [<ffffffff810c8a40>] ? smpboot_create_threads+0x80/0x80
->  [<ffffffff8107e7ee>] kthread+0xee/0x100
->  [<ffffffff8158eb74>] kernel_thread_helper+0x4/0x10
->  [<ffffffff815844f0>] ? retint_restore_args+0x13/0x13
->  [<ffffffff8107e700>] ? __init_kthread_worker+0x70/0x70
->  [<ffffffff8158eb70>] ? gs_change+0x13/0x13
-> 
-> [...]
-> 
-> BUG: scheduling while atomic: watchdog/15/64/0x0000009b
-> INFO: lockdep is turned off.
-> Modules linked in: ebtable_nat ebtables ipt_MASQUERADE iptable_nat nf_nat xt_CHECKSUM iptable_mangle bridge stp llc autofs4 cpufreq_powersave sunrpc cpufreq_ondemand acpi_cpufreq freq_table mperf ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables ipv6 dm_mirror dm_region_hash dm_log dm_round_robin scsi_dh_rdac dm_multipath vhost_net macvtap macvlan tun uinput cdc_ether usbnet mii serio_raw kvm_intel kvm microcode i2c_i801 i2c_core lpc_ich mfd_core shpchp ioatdma dca i7core_edac edac_core bnx2 dm_mod sg ext3 jbd mbcache sd_mod crc_t10dif qla2xxx scsi_transport_fc scsi_tgt mptsas mptscsih mptbase scsi_transport_sas [last unloaded: scsi_wait_scan]
-> Pid: 64, comm: watchdog/15 Tainted: G        W    3.5.0-rc1-threadhotplugv3-debug #2
-> Call Trace:
->  [<ffffffff8108d1cc>] __schedule_bug+0x6c/0x90
->  [<ffffffff81582818>] __schedule+0x7c8/0x880
->  [<ffffffff81582bf9>] schedule+0x29/0x70
->  [<ffffffff81582f77>] schedule_preempt_disabled+0x27/0x40
->  [<ffffffff810c8b33>] smpboot_thread_fn+0xf3/0x1f0
->  [<ffffffff810c8a40>] ? smpboot_create_threads+0x80/0x80
->  [<ffffffff8107e7ee>] kthread+0xee/0x100
->  [<ffffffff8158eb74>] kernel_thread_helper+0x4/0x10
->  [<ffffffff815844f0>] ? retint_restore_args+0x13/0x13
->  [<ffffffff8107e700>] ? __init_kthread_worker+0x70/0x70
->  [<ffffffff8158eb70>] ? gs_change+0x13/0x13
-> 
-
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
