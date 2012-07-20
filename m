@@ -1,276 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753156Ab2GTIeR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 04:34:17 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:39836 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751892Ab2GTIeG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 04:34:06 -0400
-X-IronPort-AV: E=Sophos;i="4.77,621,1336320000"; 
-   d="scan'208";a="5445710"
-Message-ID: <50091911.7080303@cn.fujitsu.com>
-Date: Fri, 20 Jul 2012 16:38:41 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1753117Ab2GTIi4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 04:38:56 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:45109 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751892Ab2GTIix (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 04:38:53 -0400
+Date: Fri, 20 Jul 2012 11:36:19 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        mgalbraith@novell.com, mmokrejs@fold.natur.cuni.cz
+Subject: Re: [QUESTION ON BUG] the rcu stall issue could not be reproduced
+Message-ID: <20120720083619.GM16348@mwanda>
+References: <5008CBD4.6070907@linux.vnet.ibm.com>
+ <20120720064156.GI16348@mwanda>
+ <500915B9.2030104@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
-        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
-        minchan.kim@gmail.com, akpm@linux-foundation.org,
-        kosaki.motohiro@jp.fujitsu.com, linux-s390@vger.kernel.org,
-        linux-ia64@vger.kernel.org, linux-sh@vger.kernel.org,
-        cmetcalf@tilera.com
-Subject: Re: [RFC PATCH 6/8] memory-hotplug: introduce new function arch_remove_memory()
-References: <5009038A.4090001@cn.fujitsu.com> <500904D6.3030109@cn.fujitsu.com> <5009151F.3060903@jp.fujitsu.com>
-In-Reply-To: <5009151F.3060903@jp.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/20 16:34:30,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/20 16:34:43,
-	Serialize complete at 2012/07/20 16:34:43
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <500915B9.2030104@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 07/20/2012 04:21 PM, Yasuaki Ishimatsu Wrote:
-> 2012/07/20 16:12, Wen Congyang wrote:
->> We don't call __add_pages() directly in the function add_memory()
->> because some other architecture related thins needs to be done
->> before or after calling __add_pages(). So we should not call
->> __remove_pages() directly in the function remove_memory.
->> Introduce new function arch_remove_memory() to revert the things done
->> in arch_add_memory().
->>
->> Note: the function for x86_64 will be implemented later. And I don't
->> know how to implement it for s390.
+On Fri, Jul 20, 2012 at 04:24:25PM +0800, Michael Wang wrote:
+> On 07/20/2012 02:41 PM, Dan Carpenter wrote:
+> > My bug was fixed in March.  There was an email thread about it when
+> > the merge window opened but I can't find it...
+> Hi, Dan
 > 
-> I think you need cc to other arch ML for reviewing the patch.
+> Thanks for your reply.
+> 
+> Currently this issue won't appear because the
+> CONFIG_RCU_CPU_STALL_TIMEOUT=60, which is big enough to avoid the
+> warning info.
+> 
+> So is this the fix you mentioned? or someone has find out the true
+> reason and fixed it?
 
-I forgot to do it.
+I don't think there was an email thread on the RCU stall issue after
+all.  I'm not sure what how it was fixed.
 
-> 
-> 
->> CC: David Rientjes <rientjes@google.com>
->> CC: Jiang Liu <liuj97@gmail.com>
->> CC: Len Brown <len.brown@intel.com>
->> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
->> CC: Paul Mackerras <paulus@samba.org>
->> CC: Christoph Lameter <cl@linux.com>
->> Cc: Minchan Kim <minchan.kim@gmail.com>
->> CC: Andrew Morton <akpm@linux-foundation.org>
->> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->> CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
->> ---
->>   arch/ia64/mm/init.c            |   16 ++++++++++++++++
->>   arch/powerpc/mm/mem.c          |   14 ++++++++++++++
->>   arch/s390/mm/init.c            |    8 ++++++++
->>   arch/sh/mm/init.c              |   15 +++++++++++++++
->>   arch/tile/mm/init.c            |    8 ++++++++
->>   arch/x86/mm/init_32.c          |   10 ++++++++++
->>   arch/x86/mm/init_64.c          |    7 +++++++
->>   include/linux/memory_hotplug.h |    1 +
->>   mm/memory_hotplug.c            |    2 +-
->>   9 files changed, 80 insertions(+), 1 deletions(-)
->>
->> diff --git a/arch/ia64/mm/init.c b/arch/ia64/mm/init.c
->> index 0eab454..1e345ed 100644
->> --- a/arch/ia64/mm/init.c
->> +++ b/arch/ia64/mm/init.c
->> @@ -688,6 +688,22 @@ int arch_add_memory(int nid, u64 start, u64 size)
->>
->>       return ret;
->>   }
->> +
->> +#ifdef CONFIG_MEMORY_HOTREMOVE
->> +int arch_remove_memory(u64 start, u64 size)
->> +{
->> +    unsigned long start_pfn = start >> PAGE_SHIFT;
->> +    unsigned long nr_pages = size >> PAGE_SHIFT;
->> +    int ret;
->> +
->> +    ret = __remove_pages(start_pfn, nr_pages);
->> +    if (ret)
->> +        pr_warn("%s: Problem encountered in __remove_pages() as"
->> +            " ret=%d\n", __func__,  ret);
->> +
->> +    return ret;
->> +}
->> +#endif
->>   #endif
->>
->>   /*
->> diff --git a/arch/powerpc/mm/mem.c b/arch/powerpc/mm/mem.c
->> index baaafde..249cef4 100644
->> --- a/arch/powerpc/mm/mem.c
->> +++ b/arch/powerpc/mm/mem.c
->> @@ -133,6 +133,20 @@ int arch_add_memory(int nid, u64 start, u64 size)
->>
->>       return __add_pages(nid, zone, start_pfn, nr_pages);
->>   }
->> +
->> +#ifdef CONFIG_MEMORY_HOTREMOVE
->> +int arch_remove_memory(u64 start, u64 size)
->> +{
->> +    unsigned long start_pfn = start >> PAGE_SHIFT;
->> +    unsigned long nr_pages = size >> PAGE_SHIFT;
->> +
->> +    start = (unsigned long)__va(start);
->> +    if (remove_section_mapping(start, start + size))
->> +        return -EINVAL;
->> +
->> +    return __remove_pages(start_pfn, nr_pages);
->> +}
->> +#endif
->>   #endif /* CONFIG_MEMORY_HOTPLUG */
->>
->>   /*
->> diff --git a/arch/s390/mm/init.c b/arch/s390/mm/init.c
->> index 2bea060..3de0d5b 100644
->> --- a/arch/s390/mm/init.c
->> +++ b/arch/s390/mm/init.c
->> @@ -259,4 +259,12 @@ int arch_add_memory(int nid, u64 start, u64 size)
->>           vmem_remove_mapping(start, size);
->>       return rc;
->>   }
->> +
->> +#ifdef CONFIG_MEMORY_HOTREMOVE
->> +int arch_remove_memory(u64 start, u64 size)
->> +{
->> +    /* TODO */
->> +    return -EBUSY;
->> +}
->> +#endif
->>   #endif /* CONFIG_MEMORY_HOTPLUG */
->> diff --git a/arch/sh/mm/init.c b/arch/sh/mm/init.c
->> index 82cc576..fc84491 100644
->> --- a/arch/sh/mm/init.c
->> +++ b/arch/sh/mm/init.c
->> @@ -558,4 +558,19 @@ int memory_add_physaddr_to_nid(u64 addr)
->>   EXPORT_SYMBOL_GPL(memory_add_physaddr_to_nid);
->>   #endif
->>
->> +#ifdef CONFIG_MEMORY_HOTREMOVE
->> +int arch_remove_memory(u64 start, u64 size)
->> +{
->> +    unsigned long start_pfn = start >> PAGE_SHIFT;
->> +    unsigned long nr_pages = size >> PAGE_SHIFT;
->> +    int ret;
->> +
->> +    ret = __remove_pages(start_pfn, nr_pages);
->> +    if (unlikely(ret))
->> +        pr_warn("%s: Failed, __remove_pages() == %d\n", __func__,
->> +            ret);
->> +
->> +    return ret;
->> +}
->> +#endif
->>   #endif /* CONFIG_MEMORY_HOTPLUG */
->> diff --git a/arch/tile/mm/init.c b/arch/tile/mm/init.c
->> index 630dd2c..bdd8a99 100644
->> --- a/arch/tile/mm/init.c
->> +++ b/arch/tile/mm/init.c
->> @@ -947,6 +947,14 @@ int remove_memory(u64 start, u64 size)
->>   {
->>       return -EINVAL;
->>   }
->> +
->> +#ifdef CONFIG_MEMORY_HOTREMOVE
->> +int arch_remove_memory(u64 start, u64 size)
->> +{
->> +    /* TODO */
->> +    return -EBUSY;
->> +}
->> +#endif
->>   #endif
->>
->>   struct kmem_cache *pgd_cache;
->> diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
->> index 575d86f..a690153 100644
->> --- a/arch/x86/mm/init_32.c
->> +++ b/arch/x86/mm/init_32.c
->> @@ -842,6 +842,16 @@ int arch_add_memory(int nid, u64 start, u64 size)
->>
->>       return __add_pages(nid, zone, start_pfn, nr_pages);
->>   }
->> +
->> +#ifdef CONFIG_MEMORY_HOTREMOVE
->> +int arch_remove_memory(unsigned long start, unsigned long size)
->> +{
->> +    unsigned long start_pfn = start >> PAGE_SHIFT;
->> +    unsigned long nr_pages = size >> PAGE_SHIFT;
->> +
->> +    return __remove_pages(start_pfn, nr_pages);
->> +}
->> +#endif
->>   #endif
->>
->>   /*
->> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
->> index 9e635b3..78b94bc 100644
->> --- a/arch/x86/mm/init_64.c
->> +++ b/arch/x86/mm/init_64.c
->> @@ -675,6 +675,13 @@ int arch_add_memory(int nid, u64 start, u64 size)
->>   }
->>   EXPORT_SYMBOL_GPL(arch_add_memory);
->>
->> +#ifdef CONFIG_MEMORY_HOTREMOVE
->> +int arch_remove_memory(unsigned long start, unsigned long size)
->> +{
->> +    /* TODO */
->> +    return -EBUSY;
->> +}
->> +#endif
-> 
-> Why does not the function call __remove_pages()?
+The 60 second time out would have still triggered with my bug.  It
+was a complete system hang, the RCU stall message was just a
+debugging hint.  I was hitting the bug every couple days reliably on
+all my systems.
 
-arch_remove_memory() should clear the page table after remove pages here.
-I implement this function in patch 8.
-
-Thanks
-Wen Congyang
-
-> 
-> Thanks,
-> Yasuaki ishimatsu
-> 
->>   #endif /* CONFIG_MEMORY_HOTPLUG */
->>
->>   static struct kcore_list kcore_vsyscall;
->> diff --git a/include/linux/memory_hotplug.h
->> b/include/linux/memory_hotplug.h
->> index 2ba0a1a..8639799 100644
->> --- a/include/linux/memory_hotplug.h
->> +++ b/include/linux/memory_hotplug.h
->> @@ -84,6 +84,7 @@ extern void __online_page_free(struct page *page);
->>
->>   #ifdef CONFIG_MEMORY_HOTREMOVE
->>   extern bool is_pageblock_removable_nolock(struct page *page);
->> +extern int arch_remove_memory(unsigned long start, unsigned long size);
->>   #endif /* CONFIG_MEMORY_HOTREMOVE */
->>
->>   /* reasonably generic interface to expand the physical pages in a
->> zone  */
->> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
->> index dccdf71..cc2c8b9 100644
->> --- a/mm/memory_hotplug.c
->> +++ b/mm/memory_hotplug.c
->> @@ -1055,7 +1055,7 @@ int __ref remove_memory(int nid, u64 start, u64
->> size)
->>           unregister_one_node(nid);
->>       }
->>
->> -    __remove_pages(start >> PAGE_SHIFT, size >> PAGE_SHIFT);
->> +    arch_remove_memory(start, size);
->>   out:
->>       unlock_memory_hotplug();
->>       return ret;
->>
-> 
-> 
-> 
+regards,
+dan carpenter
 
