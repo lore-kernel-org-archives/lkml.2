@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753533Ab2GTMl6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 08:41:58 -0400
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:55324
+	id S1753497Ab2GTMmZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 08:42:25 -0400
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:58618
 	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753473Ab2GTMlc (ORCPT
+	by vger.kernel.org with ESMTP id S1753314Ab2GTMlW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 08:41:32 -0400
+	Fri, 20 Jul 2012 08:41:22 -0400
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
 X-SpamScore: 0
 X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h668h839hd24he5bhf0ah107ah)
@@ -14,9 +14,9 @@ From: Zhao Chenhui <chenhui.zhao@freescale.com>
 To: <linuxppc-dev@lists.ozlabs.org>, <scottwood@freescale.com>,
         <galak@kernel.crashing.org>
 CC: <linux-kernel@vger.kernel.org>, <leoli@freescale.com>
-Subject: [PATCH v8 6/7] fsl_pmc: Add API to enable device as wakeup event source
-Date: Fri, 20 Jul 2012 20:42:38 +0800
-Message-ID: <1342788159-27529-7-git-send-email-chenhui.zhao@freescale.com>
+Subject: [PATCH v8 4/7] powerpc/85xx: add HOTPLUG_CPU support
+Date: Fri, 20 Jul 2012 20:42:36 +0800
+Message-ID: <1342788159-27529-5-git-send-email-chenhui.zhao@freescale.com>
 X-Mailer: git-send-email 1.6.4.1
 In-Reply-To: <1342788159-27529-1-git-send-email-chenhui.zhao@freescale.com>
 References: <1342788159-27529-1-git-send-email-chenhui.zhao@freescale.com>
@@ -27,150 +27,270 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add APIs for setting wakeup source and lossless Ethernet in low power modes.
-These APIs can be used by wake-on-packet feature.
+Add support to disable and re-enable individual cores at runtime
+on MPC85xx/QorIQ SMP machines. Currently support e500v1/e500v2 core.
 
-Signed-off-by: Dave Liu <daveliu@freescale.com>
+MPC85xx machines use ePAPR spin-table in boot page for CPU kick-off.
+This patch uses the boot page from bootloader to boot core at runtime.
+It supports 32-bit and 36-bit physical address.
+
 Signed-off-by: Li Yang <leoli@freescale.com>
 Signed-off-by: Jin Qing <b24347@freescale.com>
 Signed-off-by: Zhao Chenhui <chenhui.zhao@freescale.com>
 ---
- arch/powerpc/sysdev/fsl_pmc.c |   77 ++++++++++++++++++++++++++++++++++++++++-
- arch/powerpc/sysdev/fsl_soc.h |   12 ++++++
- 2 files changed, 88 insertions(+), 1 deletions(-)
+ arch/powerpc/Kconfig                  |    6 ++-
+ arch/powerpc/include/asm/cacheflush.h |    2 +
+ arch/powerpc/include/asm/smp.h        |    1 +
+ arch/powerpc/kernel/head_fsl_booke.S  |   28 ++++++++++
+ arch/powerpc/platforms/85xx/smp.c     |   90 ++++++++++++++++++++++++++++-----
+ 5 files changed, 112 insertions(+), 15 deletions(-)
 
-diff --git a/arch/powerpc/sysdev/fsl_pmc.c b/arch/powerpc/sysdev/fsl_pmc.c
-index 45718c5..b6c8c8f 100644
---- a/arch/powerpc/sysdev/fsl_pmc.c
-+++ b/arch/powerpc/sysdev/fsl_pmc.c
-@@ -38,6 +38,7 @@ struct pmc_regs {
- 	__be32 powmgtcsr;
- #define POWMGTCSR_SLP		0x00020000
- #define POWMGTCSR_DPSLP		0x00100000
-+#define POWMGTCSR_LOSSLESS	0x00400000
- 	__be32 res3[2];
- 	/* 0xe008c: Power management clock disable register */
- 	__be32 pmcdr;
-@@ -48,6 +49,77 @@ static unsigned int pmc_flag;
+diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+index 9a5d3cd..a7c6914 100644
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@ -213,7 +213,8 @@ config ARCH_HIBERNATION_POSSIBLE
+ config ARCH_SUSPEND_POSSIBLE
+ 	def_bool y
+ 	depends on ADB_PMU || PPC_EFIKA || PPC_LITE5200 || PPC_83xx || \
+-		   (PPC_85xx && !SMP) || PPC_86xx || PPC_PSERIES || 44x || 40x
++		   (PPC_85xx && !PPC_E500MC) || PPC_86xx || PPC_PSERIES \
++		   || 44x || 40x
  
- #define PMC_SLEEP	0x1
- #define PMC_DEEP_SLEEP	0x2
-+#define PMC_LOSSLESS	0x4
-+
-+#define PMCDR_MASK_INIT		0x00e008e0
-+
-+/**
-+ * mpc85xx_pmc_set_wake - enable devices as wakeup event source
-+ * @dev: a device affected
-+ * @enable: True to enable event generation; false to disable
-+ *
-+ * This enables the device as a wakeup event source, or disables it.
-+ *
-+ * RETURN VALUE:
-+ * 0 is returned on success.
-+ * -EINVAL is returned if device is not supposed to wake up the system.
-+ * -ENODEV is returned if PMC is unavailable.
-+ * Error code depending on the platform is returned if both the platform and
-+ * the native mechanism fail to enable the generation of wake-up events
-+ */
-+int mpc85xx_pmc_set_wake(struct device *dev, bool enable)
-+{
-+	int ret = 0;
-+	struct device_node *clk_np;
-+	const u32 *prop;
-+	u32 pmcdr_mask;
-+
-+	if (!pmc_regs) {
-+		pr_err("%s: PMC is unavailable\n", __func__);
-+		return -ENODEV;
-+	}
-+
-+	if (enable && !device_may_wakeup(dev))
-+		return -EINVAL;
-+
-+	clk_np = of_parse_phandle(dev->of_node, "fsl,pmc-handle", 0);
-+	if (!clk_np)
-+		return -EINVAL;
-+
-+	prop = of_get_property(clk_np, "fsl,pmcdr-mask", NULL);
-+	if (!prop) {
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+	pmcdr_mask = be32_to_cpup(prop);
-+
-+	if (enable)
-+		/* clear to enable clock in low power mode */
-+		clrbits32(&pmc_regs->pmcdr, pmcdr_mask);
-+	else
-+		setbits32(&pmc_regs->pmcdr, pmcdr_mask);
-+
-+out:
-+	of_node_put(clk_np);
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(mpc85xx_pmc_set_wake);
-+
-+/**
-+ * mpc85xx_pmc_set_lossless_ethernet - enable lossless ethernet
-+ * in (deep) sleep mode
-+ * @enable: True to enable event generation; false to disable
-+ */
-+void mpc85xx_pmc_set_lossless_ethernet(int enable)
-+{
-+	if (pmc_flag & PMC_LOSSLESS) {
-+		if (enable)
-+			setbits32(&pmc_regs->powmgtcsr,	POWMGTCSR_LOSSLESS);
-+		else
-+			clrbits32(&pmc_regs->powmgtcsr, POWMGTCSR_LOSSLESS);
-+	}
-+}
-+EXPORT_SYMBOL_GPL(mpc85xx_pmc_set_lossless_ethernet);
+ config PPC_DCR_NATIVE
+ 	bool
+@@ -323,7 +324,8 @@ config SWIOTLB
  
- static int pmc_suspend_enter(suspend_state_t state)
+ config HOTPLUG_CPU
+ 	bool "Support for enabling/disabling CPUs"
+-	depends on SMP && HOTPLUG && EXPERIMENTAL && (PPC_PSERIES || PPC_PMAC || PPC_POWERNV)
++	depends on SMP && HOTPLUG && EXPERIMENTAL && (PPC_PSERIES || \
++	PPC_PMAC || PPC_POWERNV || (PPC_85xx && !PPC_E500MC))
+ 	---help---
+ 	  Say Y here to be able to disable and re-enable individual
+ 	  CPUs at runtime on SMP machines.
+diff --git a/arch/powerpc/include/asm/cacheflush.h b/arch/powerpc/include/asm/cacheflush.h
+index ab9e402..b843e35 100644
+--- a/arch/powerpc/include/asm/cacheflush.h
++++ b/arch/powerpc/include/asm/cacheflush.h
+@@ -30,6 +30,8 @@ extern void flush_dcache_page(struct page *page);
+ #define flush_dcache_mmap_lock(mapping)		do { } while (0)
+ #define flush_dcache_mmap_unlock(mapping)	do { } while (0)
+ 
++extern void __flush_disable_L1(void);
++
+ extern void __flush_icache_range(unsigned long, unsigned long);
+ static inline void flush_icache_range(unsigned long start, unsigned long stop)
  {
-@@ -123,7 +195,10 @@ static int pmc_probe(struct platform_device *pdev)
- 		pmc_flag |= PMC_DEEP_SLEEP;
+diff --git a/arch/powerpc/include/asm/smp.h b/arch/powerpc/include/asm/smp.h
+index ce8e2bd..e807e9d 100644
+--- a/arch/powerpc/include/asm/smp.h
++++ b/arch/powerpc/include/asm/smp.h
+@@ -191,6 +191,7 @@ extern unsigned long __secondary_hold_spinloop;
+ extern unsigned long __secondary_hold_acknowledge;
+ extern char __secondary_hold;
  
- 	if (of_device_is_compatible(np, "fsl,p1022-pmc"))
--		pmc_flag |= PMC_DEEP_SLEEP;
-+		pmc_flag |= PMC_DEEP_SLEEP | PMC_LOSSLESS;
++extern void __early_start(void);
+ #endif /* __ASSEMBLY__ */
+ 
+ #endif /* __KERNEL__ */
+diff --git a/arch/powerpc/kernel/head_fsl_booke.S b/arch/powerpc/kernel/head_fsl_booke.S
+index 0f59863..b221541 100644
+--- a/arch/powerpc/kernel/head_fsl_booke.S
++++ b/arch/powerpc/kernel/head_fsl_booke.S
+@@ -1043,6 +1043,34 @@ _GLOBAL(flush_dcache_L1)
+ 
+ 	blr
+ 
++/* Flush L1 d-cache, invalidate and disable d-cache and i-cache */
++_GLOBAL(__flush_disable_L1)
++	mflr	r10
++	bl	flush_dcache_L1	/* Flush L1 d-cache */
++	mtlr	r10
 +
-+	/* Init the Power Management Clock Disable Register. */
-+	setbits32(&pmc_regs->pmcdr, PMCDR_MASK_INIT);
++	mfspr	r4, SPRN_L1CSR0	/* Invalidate and disable d-cache */
++	li	r5, 2
++	rlwimi	r4, r5, 0, 3
++
++	msync
++	isync
++	mtspr	SPRN_L1CSR0, r4
++	isync
++
++1:	mfspr	r4, SPRN_L1CSR0	/* Wait for the invalidate to finish */
++	andi.	r4, r4, 2
++	bne	1b
++
++	mfspr	r4, SPRN_L1CSR1	/* Invalidate and disable i-cache */
++	li	r5, 2
++	rlwimi	r4, r5, 0, 3
++
++	mtspr	SPRN_L1CSR1, r4
++	isync
++
++	blr
++
+ #ifdef CONFIG_SMP
+ /* When we get here, r24 needs to hold the CPU # */
+ 	.globl __secondary_start
+diff --git a/arch/powerpc/platforms/85xx/smp.c b/arch/powerpc/platforms/85xx/smp.c
+index 7ed52a6..6fcfa12 100644
+--- a/arch/powerpc/platforms/85xx/smp.c
++++ b/arch/powerpc/platforms/85xx/smp.c
+@@ -31,8 +31,6 @@
+ #include <sysdev/mpic.h>
+ #include "smp.h"
  
- 	suspend_set_ops(&pmc_suspend_ops);
+-extern void __early_start(void);
+-
+ struct epapr_spin_table {
+ 	u32	addr_h;
+ 	u32	addr_l;
+@@ -100,15 +98,45 @@ static void mpc85xx_take_timebase(void)
+ 	local_irq_restore(flags);
+ }
  
-diff --git a/arch/powerpc/sysdev/fsl_soc.h b/arch/powerpc/sysdev/fsl_soc.h
-index 11d9f94..b1510ef 100644
---- a/arch/powerpc/sysdev/fsl_soc.h
-+++ b/arch/powerpc/sysdev/fsl_soc.h
-@@ -3,6 +3,7 @@
- #ifdef __KERNEL__
- 
- #include <asm/mmu.h>
-+#include <linux/platform_device.h>
- 
- struct spi_device;
- 
-@@ -21,6 +22,17 @@ struct device_node;
- 
- extern void fsl_rstcr_restart(char *cmd);
- 
-+#ifdef CONFIG_FSL_PMC
-+extern int mpc85xx_pmc_set_wake(struct device *dev, bool enable);
-+extern void mpc85xx_pmc_set_lossless_ethernet(int enable);
-+#else
-+static inline int mpc85xx_pmc_set_wake(struct device *dev, bool enable)
+-static int __init
+-smp_85xx_kick_cpu(int nr)
++#ifdef CONFIG_HOTPLUG_CPU
++static void __cpuinit smp_85xx_mach_cpu_die(void)
 +{
-+	return -ENODEV;
++	unsigned int cpu = smp_processor_id();
++	u32 tmp;
++
++	local_irq_disable();
++	idle_task_exit();
++	generic_set_cpu_dead(cpu);
++	mb();
++
++	mtspr(SPRN_TCR, 0);
++
++	__flush_disable_L1();
++	tmp = (mfspr(SPRN_HID0) & ~(HID0_DOZE|HID0_SLEEP)) | HID0_NAP;
++	mtspr(SPRN_HID0, tmp);
++	isync();
++
++	/* Enter NAP mode. */
++	tmp = mfmsr();
++	tmp |= MSR_WE;
++	mb();
++	mtmsr(tmp);
++	isync();
++
++	while (1)
++		;
 +}
-+#define mpc85xx_pmc_set_lossless_ethernet(enable)	do { } while (0)
 +#endif
 +
- #if defined(CONFIG_FB_FSL_DIU) || defined(CONFIG_FB_FSL_DIU_MODULE)
++static int __cpuinit smp_85xx_kick_cpu(int nr)
+ {
+ 	unsigned long flags;
+ 	const u64 *cpu_rel_addr;
+ 	__iomem struct epapr_spin_table *spin_table;
+ 	struct device_node *np;
+-	int n = 0, hw_cpu = get_hard_smp_processor_id(nr);
++	int hw_cpu = get_hard_smp_processor_id(nr);
+ 	int ioremappable;
++	int ret = 0;
  
- /* The different ports that the DIU can be connected to */
+ 	WARN_ON(nr < 0 || nr >= NR_CPUS);
+ 	WARN_ON(hw_cpu < 0 || hw_cpu >= NR_CPUS);
+@@ -139,9 +167,34 @@ smp_85xx_kick_cpu(int nr)
+ 		spin_table = phys_to_virt(*cpu_rel_addr);
+ 
+ 	local_irq_save(flags);
++#ifdef CONFIG_PPC32
++#ifdef CONFIG_HOTPLUG_CPU
++	/* Corresponding to generic_set_cpu_dead() */
++	generic_set_cpu_up(nr);
++
++	if (system_state == SYSTEM_RUNNING) {
++		out_be32(&spin_table->addr_l, 0);
+ 
++		/*
++		 * We don't set the BPTR register here since it already points
++		 * to the boot page properly.
++		 */
++		mpic_reset_core(hw_cpu);
++
++		/* wait until core is ready... */
++		if (!spin_event_timeout(in_be32(&spin_table->addr_l) == 1,
++						10000, 100)) {
++			pr_err("%s: timeout waiting for core %d to reset\n",
++							__func__, hw_cpu);
++			ret = -ENOENT;
++			goto out;
++		}
++
++		/*  clear the acknowledge status */
++		__secondary_hold_acknowledge = -1;
++	}
++#endif
+ 	out_be32(&spin_table->pir, hw_cpu);
+-#ifdef CONFIG_PPC32
+ 	out_be32(&spin_table->addr_l, __pa(__early_start));
+ 
+ 	if (!ioremappable)
+@@ -149,11 +202,18 @@ smp_85xx_kick_cpu(int nr)
+ 			(ulong)spin_table + sizeof(struct epapr_spin_table));
+ 
+ 	/* Wait a bit for the CPU to ack. */
+-	while ((__secondary_hold_acknowledge != hw_cpu) && (++n < 1000))
+-		mdelay(1);
++	if (!spin_event_timeout(__secondary_hold_acknowledge == hw_cpu,
++					10000, 100)) {
++		pr_err("%s: timeout waiting for core %d to ack\n",
++						__func__, hw_cpu);
++		ret = -ENOENT;
++		goto out;
++	}
++out:
+ #else
+ 	smp_generic_kick_cpu(nr);
+ 
++	out_be32(&spin_table->pir, hw_cpu);
+ 	out_be64((u64 *)(&spin_table->addr_h),
+ 	  __pa((u64)*((unsigned long long *)generic_secondary_smp_init)));
+ 
+@@ -167,13 +227,15 @@ smp_85xx_kick_cpu(int nr)
+ 	if (ioremappable)
+ 		iounmap(spin_table);
+ 
+-	pr_debug("waited %d msecs for CPU #%d.\n", n, nr);
+-
+-	return 0;
++	return ret;
+ }
+ 
+ struct smp_ops_t smp_85xx_ops = {
+ 	.kick_cpu = smp_85xx_kick_cpu,
++#ifdef CONFIG_HOTPLUG_CPU
++	.cpu_disable	= generic_cpu_disable,
++	.cpu_die	= generic_cpu_die,
++#endif
+ #ifdef CONFIG_KEXEC
+ 	.give_timebase	= smp_generic_give_timebase,
+ 	.take_timebase	= smp_generic_take_timebase,
+@@ -277,8 +339,7 @@ static void mpc85xx_smp_machine_kexec(struct kimage *image)
+ }
+ #endif /* CONFIG_KEXEC */
+ 
+-static void __init
+-smp_85xx_setup_cpu(int cpu_nr)
++static void __cpuinit smp_85xx_setup_cpu(int cpu_nr)
+ {
+ 	if (smp_85xx_ops.probe == smp_mpic_probe)
+ 		mpic_setup_this_cpu();
+@@ -329,6 +390,9 @@ void __init mpc85xx_smp_init(void)
+ 		}
+ 		smp_85xx_ops.give_timebase = mpc85xx_give_timebase;
+ 		smp_85xx_ops.take_timebase = mpc85xx_take_timebase;
++#ifdef CONFIG_HOTPLUG_CPU
++		ppc_md.cpu_die = smp_85xx_mach_cpu_die;
++#endif
+ 	}
+ 
+ 	smp_ops = &smp_85xx_ops;
 -- 
 1.6.4.1
 
