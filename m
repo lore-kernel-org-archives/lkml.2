@@ -1,80 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752891Ab2GTHCM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 03:02:12 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:56917 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752189Ab2GTHCJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 03:02:09 -0400
-X-IronPort-AV: E=Sophos;i="4.77,621,1336320000"; 
-   d="scan'208";a="5444811"
-Message-ID: <5009038A.4090001@cn.fujitsu.com>
-Date: Fri, 20 Jul 2012 15:06:50 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org
-CC: rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
-        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
-        minchan.kim@gmail.com, akpm@linux-foundation.org,
-        kosaki.motohiro@jp.fujitsu.com,
-        Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>
-Subject: [RFC PATCH 0/8] memory-hotplug : hot-remove physical memory(clear
- page table)
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/20 15:02:40,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/20 15:02:47,
-	Serialize complete at 2012/07/20 15:02:47
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+	id S1752686Ab2GTHB7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 03:01:59 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48482 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751449Ab2GTHBv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 03:01:51 -0400
+From: Jon Mason <jdmason@kudzu.us>
+To: trivial@kernel.org
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        John Ronciak <john.ronciak@intel.com>
+Subject: [trivial PATCH resend 1/2] ixgb: use PCI_VENDOR_ID_INTEL
+Date: Fri, 20 Jul 2012 00:02:08 -0700
+Message-Id: <1342767729-17788-2-git-send-email-jdmason@kudzu.us>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1342767729-17788-1-git-send-email-jdmason@kudzu.us>
+References: <1342767729-17788-1-git-send-email-jdmason@kudzu.us>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series aims to support physical memory hot-remove(clear page table).
+Use PCI_VENDOR_ID_INTEL from pci_ids.h instead of creating its own
+vendor ID #define.
 
-This patch series base on ishimatsu's patch series. You can get it here:
-http://www.spinics.net/lists/linux-acpi/msg36804.html
+Signed-off-by: Jon Mason <jdmason@kudzu.us>
+Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Cc: Jesse Brandeburg <jesse.brandeburg@intel.com>
+Cc: Bruce Allan <bruce.w.allan@intel.com>
+Cc: Carolyn Wyborny <carolyn.wyborny@intel.com>
+Cc: Don Skidmore <donald.c.skidmore@intel.com>
+Cc: Greg Rose <gregory.v.rose@intel.com>
+Cc: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+Cc: Alex Duyck <alexander.h.duyck@intel.com>
+Cc: John Ronciak <john.ronciak@intel.com>
+---
+ drivers/net/ethernet/intel/ixgb/ixgb_hw.c   |    5 +++--
+ drivers/net/ethernet/intel/ixgb/ixgb_ids.h  |    5 -----
+ drivers/net/ethernet/intel/ixgb/ixgb_main.c |   10 +++++-----
+ 3 files changed, 8 insertions(+), 12 deletions(-)
 
-The patches can remove following things:
-  - page table of removed memory
-
-If you find lack of function for physical memory hot-remove, please let me
-know.
-
-Note:
-* The patch "remove memory info from list before freeing it" is being disccussed
-  in other thread. But for testing the patch series, the patch is needed.
-  So I added the patch as [PATCH 0/8].
-* You need to apply ishimatsu's patch series first before applying this patch
-  series.
-
-Wen Congyang (8):
-  memory-hotplug: store the node id in acpi_memory_device
-  memory-hotplug: offline memory only when it is onlined
-  memory-hotplug: call remove_memory() to cleanup when removing memory
-    device
-  memory-hotplug: export the function acpi_bus_remove()
-  memory-hotplug: call acpi_bus_remove() to remove memory device
-  memory-hotplug: introduce new function arch_remove_memory()
-  x86: make __split_large_page() generally avialable
-  memory-hotplug: implement arch_remove_memory()
-
- arch/ia64/mm/init.c                  |   16 ++++
- arch/powerpc/mm/mem.c                |   14 +++
- arch/s390/mm/init.c                  |    8 ++
- arch/sh/mm/init.c                    |   15 +++
- arch/tile/mm/init.c                  |    8 ++
- arch/x86/include/asm/pgtable_types.h |    1 +
- arch/x86/mm/init_32.c                |   10 ++
- arch/x86/mm/init_64.c                |  160 ++++++++++++++++++++++++++++++++++
- arch/x86/mm/pageattr.c               |   47 +++++-----
- drivers/acpi/acpi_memhotplug.c       |   24 ++++--
- drivers/acpi/scan.c                  |    3 +-
- include/acpi/acpi_bus.h              |    1 +
- include/linux/memory_hotplug.h       |    1 +
- mm/memory_hotplug.c                  |    2 +-
- 14 files changed, 280 insertions(+), 30 deletions(-)
+diff --git a/drivers/net/ethernet/intel/ixgb/ixgb_hw.c b/drivers/net/ethernet/intel/ixgb/ixgb_hw.c
+index 99b69ad..bf9a220 100644
+--- a/drivers/net/ethernet/intel/ixgb/ixgb_hw.c
++++ b/drivers/net/ethernet/intel/ixgb/ixgb_hw.c
+@@ -32,6 +32,7 @@
+ 
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ 
++#include <linux/pci_ids.h>
+ #include "ixgb_hw.h"
+ #include "ixgb_ids.h"
+ 
+@@ -96,7 +97,7 @@ static u32 ixgb_mac_reset(struct ixgb_hw *hw)
+ 	ASSERT(!(ctrl_reg & IXGB_CTRL0_RST));
+ #endif
+ 
+-	if (hw->subsystem_vendor_id == SUN_SUBVENDOR_ID) {
++	if (hw->subsystem_vendor_id == PCI_VENDOR_ID_SUN) {
+ 		ctrl_reg =  /* Enable interrupt from XFP and SerDes */
+ 			   IXGB_CTRL1_GPI0_EN |
+ 			   IXGB_CTRL1_SDP6_DIR |
+@@ -271,7 +272,7 @@ ixgb_identify_phy(struct ixgb_hw *hw)
+ 	}
+ 
+ 	/* update phy type for sun specific board */
+-	if (hw->subsystem_vendor_id == SUN_SUBVENDOR_ID)
++	if (hw->subsystem_vendor_id == PCI_VENDOR_ID_SUN)
+ 		phy_type = ixgb_phy_type_bcm;
+ 
+ 	return phy_type;
+diff --git a/drivers/net/ethernet/intel/ixgb/ixgb_ids.h b/drivers/net/ethernet/intel/ixgb/ixgb_ids.h
+index 2a58847..32c1b30 100644
+--- a/drivers/net/ethernet/intel/ixgb/ixgb_ids.h
++++ b/drivers/net/ethernet/intel/ixgb/ixgb_ids.h
+@@ -33,11 +33,6 @@
+ ** The Device and Vendor IDs for 10 Gigabit MACs
+ **********************************************************************/
+ 
+-#define INTEL_VENDOR_ID             0x8086
+-#define INTEL_SUBVENDOR_ID          0x8086
+-#define SUN_VENDOR_ID               0x108E
+-#define SUN_SUBVENDOR_ID            0x108E
+-
+ #define IXGB_DEVICE_ID_82597EX      0x1048
+ #define IXGB_DEVICE_ID_82597EX_SR   0x1A48
+ #define IXGB_DEVICE_ID_82597EX_LR   0x1B48
+diff --git a/drivers/net/ethernet/intel/ixgb/ixgb_main.c b/drivers/net/ethernet/intel/ixgb/ixgb_main.c
+index 5fce363..4e5a060 100644
+--- a/drivers/net/ethernet/intel/ixgb/ixgb_main.c
++++ b/drivers/net/ethernet/intel/ixgb/ixgb_main.c
+@@ -54,13 +54,13 @@ MODULE_PARM_DESC(copybreak,
+  *   Class, Class Mask, private data (not used) }
+  */
+ static DEFINE_PCI_DEVICE_TABLE(ixgb_pci_tbl) = {
+-	{INTEL_VENDOR_ID, IXGB_DEVICE_ID_82597EX,
++	{PCI_VENDOR_ID_INTEL, IXGB_DEVICE_ID_82597EX,
+ 	 PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
+-	{INTEL_VENDOR_ID, IXGB_DEVICE_ID_82597EX_CX4,
++	{PCI_VENDOR_ID_INTEL, IXGB_DEVICE_ID_82597EX_CX4,
+ 	 PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
+-	{INTEL_VENDOR_ID, IXGB_DEVICE_ID_82597EX_SR,
++	{PCI_VENDOR_ID_INTEL, IXGB_DEVICE_ID_82597EX_SR,
+ 	 PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
+-	{INTEL_VENDOR_ID, IXGB_DEVICE_ID_82597EX_LR,
++	{PCI_VENDOR_ID_INTEL, IXGB_DEVICE_ID_82597EX_LR,
+ 	 PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
+ 
+ 	/* required last entry */
+@@ -195,7 +195,7 @@ ixgb_irq_enable(struct ixgb_adapter *adapter)
+ {
+ 	u32 val = IXGB_INT_RXT0 | IXGB_INT_RXDMT0 |
+ 		  IXGB_INT_TXDW | IXGB_INT_LSC;
+-	if (adapter->hw.subsystem_vendor_id == SUN_SUBVENDOR_ID)
++	if (adapter->hw.subsystem_vendor_id == PCI_VENDOR_ID_SUN)
+ 		val |= IXGB_INT_GPI0;
+ 	IXGB_WRITE_REG(&adapter->hw, IMS, val);
+ 	IXGB_WRITE_FLUSH(&adapter->hw);
+-- 
+1.7.9.5
 
