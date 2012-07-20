@@ -1,56 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753117Ab2GTIi4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 04:38:56 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:45109 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751892Ab2GTIix (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 04:38:53 -0400
-Date: Fri, 20 Jul 2012 11:36:19 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        mgalbraith@novell.com, mmokrejs@fold.natur.cuni.cz
-Subject: Re: [QUESTION ON BUG] the rcu stall issue could not be reproduced
-Message-ID: <20120720083619.GM16348@mwanda>
-References: <5008CBD4.6070907@linux.vnet.ibm.com>
- <20120720064156.GI16348@mwanda>
- <500915B9.2030104@linux.vnet.ibm.com>
+	id S1753176Ab2GTIlB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 04:41:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55680 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752007Ab2GTIk5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 04:40:57 -0400
+Date: Fri, 20 Jul 2012 10:40:49 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Fabio Estevam <fabio.estevam@freescale.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arm,unicore32: Remove obsolete "select MISC_DEVICES"
+In-Reply-To: <1342733260-10737-1-git-send-email-geert@linux-m68k.org>
+Message-ID: <alpine.LNX.2.00.1207201040370.21929@pobox.suse.cz>
+References: <1342733260-10737-1-git-send-email-geert@linux-m68k.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <500915B9.2030104@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 20, 2012 at 04:24:25PM +0800, Michael Wang wrote:
-> On 07/20/2012 02:41 PM, Dan Carpenter wrote:
-> > My bug was fixed in March.  There was an email thread about it when
-> > the merge window opened but I can't find it...
-> Hi, Dan
+On Thu, 19 Jul 2012, Geert Uytterhoeven wrote:
+
+> Obsoleted since commit 7c5763b8453a94871d356f20df30f350f8631e8b ("drivers:
+> misc: Remove MISC_DEVICES config option")
 > 
-> Thanks for your reply.
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+
+Applied, thanks.
+
+> ---
+>  arch/arm/mach-davinci/Kconfig |    6 ------
+>  arch/unicore32/Kconfig        |    1 -
+>  2 files changed, 0 insertions(+), 7 deletions(-)
 > 
-> Currently this issue won't appear because the
-> CONFIG_RCU_CPU_STALL_TIMEOUT=60, which is big enough to avoid the
-> warning info.
+> diff --git a/arch/arm/mach-davinci/Kconfig b/arch/arm/mach-davinci/Kconfig
+> index 32d837d..0e5f0a1 100644
+> --- a/arch/arm/mach-davinci/Kconfig
+> +++ b/arch/arm/mach-davinci/Kconfig
+> @@ -61,7 +61,6 @@ config MACH_DAVINCI_EVM
+>  	bool "TI DM644x EVM"
+>  	default ARCH_DAVINCI_DM644x
+>  	depends on ARCH_DAVINCI_DM644x
+> -	select MISC_DEVICES
+>  	select EEPROM_AT24
+>  	select I2C
+>  	help
+> @@ -71,7 +70,6 @@ config MACH_DAVINCI_EVM
+>  config MACH_SFFSDR
+>  	bool "Lyrtech SFFSDR"
+>  	depends on ARCH_DAVINCI_DM644x
+> -	select MISC_DEVICES
+>  	select EEPROM_AT24
+>  	select I2C
+>  	help
+> @@ -105,7 +103,6 @@ config MACH_DAVINCI_DM6467_EVM
+>  	default ARCH_DAVINCI_DM646x
+>  	depends on ARCH_DAVINCI_DM646x
+>  	select MACH_DAVINCI_DM6467TEVM
+> -	select MISC_DEVICES
+>  	select EEPROM_AT24
+>  	select I2C
+>  	help
+> @@ -119,7 +116,6 @@ config MACH_DAVINCI_DM365_EVM
+>  	bool "TI DM365 EVM"
+>  	default ARCH_DAVINCI_DM365
+>  	depends on ARCH_DAVINCI_DM365
+> -	select MISC_DEVICES
+>  	select EEPROM_AT24
+>  	select I2C
+>  	help
+> @@ -131,7 +127,6 @@ config MACH_DAVINCI_DA830_EVM
+>  	default ARCH_DAVINCI_DA830
+>  	depends on ARCH_DAVINCI_DA830
+>  	select GPIO_PCF857X
+> -	select MISC_DEVICES
+>  	select EEPROM_AT24
+>  	select I2C
+>  	help
+> @@ -218,7 +213,6 @@ config MACH_TNETV107X
+>  config MACH_MITYOMAPL138
+>  	bool "Critical Link MityDSP-L138/MityARM-1808 SoM"
+>  	depends on ARCH_DAVINCI_DA850
+> -	select MISC_DEVICES
+>  	select EEPROM_AT24
+>  	select I2C
+>  	help
+> diff --git a/arch/unicore32/Kconfig b/arch/unicore32/Kconfig
+> index 03c9ff8..b0a4743 100644
+> --- a/arch/unicore32/Kconfig
+> +++ b/arch/unicore32/Kconfig
+> @@ -238,7 +238,6 @@ config I2C_BATTERY_BQ27200
+>  config I2C_EEPROM_AT24
+>  	tristate "I2C EEPROMs AT24 support"
+>  	select I2C_PUV3
+> -	select MISC_DEVICES
+>  	select EEPROM_AT24
+>  
+>  config LCD_BACKLIGHT
+> -- 
+> 1.7.0.4
 > 
-> So is this the fix you mentioned? or someone has find out the true
-> reason and fixed it?
 
-I don't think there was an email thread on the RCU stall issue after
-all.  I'm not sure what how it was fixed.
-
-The 60 second time out would have still triggered with my bug.  It
-was a complete system hang, the RCU stall message was just a
-debugging hint.  I was hitting the bug every couple days reliably on
-all my systems.
-
-regards,
-dan carpenter
-
+-- 
+Jiri Kosina
+SUSE Labs
