@@ -1,55 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753377Ab2GTRUx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 13:20:53 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50725 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753030Ab2GTRUw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 13:20:52 -0400
-Message-ID: <50099361.6050300@zytor.com>
-Date: Fri, 20 Jul 2012 10:20:33 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: Vladimir Davydov <vdavydov@parallels.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Borislav Petkov <borislav.petkov@amd.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] cpu: intel, amd: mask cleared cpuid features
-References: <73e09fb43e37de851acda10dc64bc495a5b68357.1342801662.git.vdavydov@parallels.com> <dd185bfa60b6478e7eb1bce455c9d082ec884abe.1342801662.git.vdavydov@parallels.com>
-In-Reply-To: <dd185bfa60b6478e7eb1bce455c9d082ec884abe.1342801662.git.vdavydov@parallels.com>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753446Ab2GTRV0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 13:21:26 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53506 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752793Ab2GTRVY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 13:21:24 -0400
+Message-ID: <1342804877.2583.42.camel@twins>
+Subject: Re: [PATCHSET] workqueue: reimplement CPU hotplug to keep idle
+ workers
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        tglx@linutronix.de, linux-pm@vger.kernel.org
+Date: Fri, 20 Jul 2012 19:21:17 +0200
+In-Reply-To: <20120720170255.GE32763@google.com>
+References: <1342545149-3515-1-git-send-email-tj@kernel.org>
+	 <1342799311.2583.7.camel@twins> <20120720170255.GE32763@google.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/20/2012 09:37 AM, Vladimir Davydov wrote:
-> If 'clearcpuid=N' is specified in boot options, CPU feature #N won't be
-> reported in /proc/cpuinfo and used by the kernel. However, if a
-> userpsace process checks CPU features directly using the cpuid
-> instruction, it will be reported about all features supported by the CPU
-> irrespective of what features are cleared.
+On Fri, 2012-07-20 at 10:02 -0700, Tejun Heo wrote:
+> Hey, Peter.
 > 
-> The patch makes the clearcpuid boot option not only clear CPU features
-> in kernel but also mask them in hardware for Intel and AMD CPUs that
-> support it so that the features cleared won't be reported even by the
-> cpuid instruction.
+> On Fri, Jul 20, 2012 at 05:48:31PM +0200, Peter Zijlstra wrote:
+> > On Tue, 2012-07-17 at 10:12 -0700, Tejun Heo wrote:
+> > > While this makes rebinding somewhat more complicated, as it has to be
+> > > able to rebind idle workers too, it allows overall hotplug path to be
+> > > much simpler.  
+> > 
+> > I really don't see the point of re-binding.. at that point you've well
+> > and proper violated any per-cpu expectation, so why not complete running
+> > the works on the disassociated thing and let new works accrue on the
+> > per-cpu things again?
 > 
-> This can be useful for migration of virtual machines managed by
-> hypervisors that do not support/use Intel VT/AMD-V hardware-assisted
-> virtualization technology.
+> We've discussed this a couple times now, so the existing reasons were,
 > 
-> If CPUID masking is supported, this will be reported in
-> /proc/cpuinfo:flags as 'cpuidmask'.
+> * Local affinity is more often used as a form of affinity optimization
+>   since the beginning.  This, mixed with queue_work() /
+>   queue_work_on(), does make things muddy.
+> 
+> * With local affinity used for optimization, we better support
+>   detaching running workers - before cmwq, this used to be one of the
+>   sources of trouble during power state changes.
+> 
+> * So, we have unbound workers which started as bound while a CPU is
+>   down.  When the CPU comes back up again, we can do one of the
+>   followings - 1. migrate the unbound ones to WORK_CPU_UNBOUND (can
+>   also do this on CPU_DOWN), 2. leave them unbound and keep them
+>   running in parallel with bound ones, or 3. rebind them.  #2 is the
+>   hariest - it contaminates the usual !hotplug code paths.  #1 or #3,
+>   unsure, but given how global_cwq's don't usually interact with each
+>   other, I thought #3 would be lower impact on hot paths.
+> 
+> So, the above was my rationale before this "we need to stop destroying
+> and re-creating kthreads across CPU hotplug events because phones do
+> it gazillion times".  Now, I don't think we have any other way.
 
-I am a bit concerned about this patch:
+OK, so why can't you splice the list of works from the CPU going down
+onto the list of the CPU doing the down and convert any busy worker
+threads to be bound to the cpu doing down?
 
-1. it silently changes existing behavior.
-2. even on enabled hardware, only some of the bits are maskable.
-
-	-hpa
-
-
+That way there's nothing 'left' to get back to on up.
