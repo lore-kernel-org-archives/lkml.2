@@ -1,87 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752807Ab2GVWhq (ORCPT <rfc822;w@1wt.eu>);
+	id S1752784Ab2GVWhq (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 22 Jul 2012 18:37:46 -0400
-Received: from ozlabs.org ([203.10.76.45]:42772 "EHLO ozlabs.org"
+Received: from ozlabs.org ([203.10.76.45]:55759 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752730Ab2GVWhp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752692Ab2GVWhp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 22 Jul 2012 18:37:45 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Alex Shi <alex.shi@intel.com>
-Cc: kosaki.motohiro@jp.fujitsu.com, akpm@linux-foundation.org,
-        paul.gortmaker@windriver.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] cpumask: cpumask_scnprintf() comments correction
-In-Reply-To: <5003D0E4.2060300@intel.com>
-References: <1342406154-24001-1-git-send-email-alex.shi@intel.com> <87ehocxig6.fsf@rustcorp.com.au> <5003D0E4.2060300@intel.com>
+From: Rusty Russell <rusty@ozlabs.org>
+To: wei_wang@realsil.com.cn, gregkh@linuxfoundation.org,
+        devel@linuxdriverproject.org, linux-kernel@vger.kernel.org
+Cc: Wei WANG <wei_wang@realsil.com.cn>
+Subject: Re: [PATCH 2/3] drivers/misc: Add realtek pci card reader driver
+In-Reply-To: <1342691710-23164-1-git-send-email-wei_wang@realsil.com.cn>
+References: <1342691710-23164-1-git-send-email-wei_wang@realsil.com.cn>
 User-Agent: Notmuch/0.12 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Fri, 20 Jul 2012 15:46:01 +0930
-Message-ID: <87mx2varfi.fsf@rustcorp.com.au>
+Date: Fri, 20 Jul 2012 15:28:40 +0930
+Message-ID: <87sjcnas8f.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Jul 2012 16:29:24 +0800, Alex Shi <alex.shi@intel.com> wrote:
-> On 07/16/2012 03:40 PM, Rusty Russell wrote:
+On Thu, 19 Jul 2012 17:55:10 +0800, <wei_wang@realsil.com.cn> wrote:
+> From: Wei WANG <wei_wang@realsil.com.cn>
 > 
-> > On Mon, 16 Jul 2012 10:35:54 +0800, Alex Shi <alex.shi@intel.com> wrote:
-> >> The function has no parameter @len now, so need to remove it from
-> >> comments to avoid kernel-doc warning:
-> > 
-> > But it still does in my tree.
-> > 
-> > Please push this patch via whoever changed it?
-> > 
-> > Acked-by: Rusty Russell <rusty@rustcorp.com.au>
-> > 
-> 
-> Sorry, my fault, the commit log used a wrong function name, it is cpulist_parse()
-> not cpumask_scnprntf. and find a new error in the comments: used a incorrect 
-> function name: cpulist_parse_user(), the correct one is cpulist_parse().
-> Fix it in updated patch.
-> 
-> Both errors appear in Rusty's commit 29c0177e6a4.
+> Realtek PCI-E card reader driver adapts requests from upper-level
+> sdmmc/memstick layer to the real physical card reader.
 
-OK, I put this last line in the commit message, see below.
+> +static int msi_en = 1;
+> +module_param(msi_en, int, S_IRUGO | S_IWUSR);
+> +MODULE_PARM_DESC(msi_en, "Enable MSI");
+> +
+> +static int adma_mode = 1;
+> +module_param(adma_mode, int, S_IRUGO | S_IWUSR);
+> +MODULE_PARM_DESC(adma_mode, "ADMA Mode");
 
-Thanks!
+These seem like they should be bool?
+
+Cheers,
 Rusty.
-
-From: Alex Shi <alex.shi@intel.com>
-Date: Mon, 16 Jul 2012 10:25:06 +0800
-Subject: [PATCH] cpumask: cpulist_parse() comments correction
-
-As introduced in Rusty's commit 29c0177e6a4, the function has no
-parameter @len, so need to remove it from comments to avoid kernel-doc
-warning:
-
-alexs@debian:~/linux-next$ scripts/kernel-doc -man
-include/linux/cpumask.h | split-man.pl /tmp/man
-....
-Warning(include/linux/cpumask.h:602): Excess function parameter 'len'
-description in 'cpulist_parse'
-
-and correct the function name in comments to cpulist_parse.
-
-Signed-off-by: Alex Shi <alex.shi@intel.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
----
- include/linux/cpumask.h |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/cpumask.h b/include/linux/cpumask.h
-index 8bf1c27..0325602 100644
---- a/include/linux/cpumask.h
-+++ b/include/linux/cpumask.h
-@@ -591,9 +591,8 @@ static inline int cpulist_scnprintf(char *buf, int len,
- }
- 
- /**
-- * cpulist_parse_user - extract a cpumask from a user string of ranges
-+ * cpulist_parse - extract a cpumask from a user string of ranges
-  * @buf: the buffer to extract from
-- * @len: the length of the buffer
-  * @dstp: the cpumask to set.
-  *
-  * Returns -errno, or 0 for success.
