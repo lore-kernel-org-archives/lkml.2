@@ -1,82 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752681Ab2GTAjI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 20:39:08 -0400
-Received: from mga09.intel.com ([134.134.136.24]:44902 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751856Ab2GTAjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 20:39:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="174530806"
-Message-ID: <5008A847.4070006@linux.intel.com>
-Date: Thu, 19 Jul 2012 17:37:27 -0700
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1752763Ab2GTAjq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 20:39:46 -0400
+Received: from usindpps06.hds.com ([207.126.252.19]:52036 "EHLO
+	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752350Ab2GTAjo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 20:39:44 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: "Luck, Tony" <tony.luck@intel.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mikew@google.com" <mikew@google.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>
+CC: "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: RE: [RFC][PATCH v2 2/3] Hold multiple logs
+Thread-Topic: [RFC][PATCH v2 2/3] Hold multiple logs
+Thread-Index: Ac1l82ceH7I0t1QCT1GombsnNxviZAAAK4PgAABTBVAAAP4IQAAA0SRAAAJWEXAAAc9d8A==
+Date: Fri, 20 Jul 2012 00:39:24 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D40FB28206@USINDEM103.corp.hds.com>
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D40FB27FDC@USINDEM103.corp.hds.com>
+ <3908561D78D1C84285E8C5FCA982C28F1936EA5F@ORSMSX104.amr.corp.intel.com>
+ <A5ED84D3BB3A384992CBB9C77DEDA4D40FB28056@USINDEM103.corp.hds.com>
+ <3908561D78D1C84285E8C5FCA982C28F1936EA97@ORSMSX104.amr.corp.intel.com>
+ <A5ED84D3BB3A384992CBB9C77DEDA4D40FB2813D@USINDEM103.corp.hds.com>
+ <3908561D78D1C84285E8C5FCA982C28F1936EADE@ORSMSX104.amr.corp.intel.com>
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F1936EADE@ORSMSX104.amr.corp.intel.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.43.113]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Darren Hart <darren@dvhart.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: 3.5-rc6 futex_wait_requeue_pi oops.
-References: <20120713180823.GA24972@redhat.com> <alpine.LFD.2.02.1207132032330.32033@ionos> <20120713185402.GA1707@redhat.com> <5008969F.5030901@linux.intel.com>
-In-Reply-To: <5008969F.5030901@linux.intel.com>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.260,0.0.0000
+ definitions=2012-07-19_07:2012-07-19,2012-07-19,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
+ definitions=main-1207190317
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+Thank you for describing this in detail.
 
-On 07/19/2012 04:22 PM, Darren Hart wrote:
-> 
-> 
-> On 07/13/2012 11:54 AM, Dave Jones wrote:
->> On Fri, Jul 13, 2012 at 08:47:38PM +0200, Thomas Gleixner wrote:
->>  > On Fri, 13 Jul 2012, Dave Jones wrote:
->>  > 
->>  > > Looks like calling futex() with garbage makes things unhappy.
->>  > 
->>  >                 WARN_ON(!&q.pi_state);
->>  >                 pi_mutex = &q.pi_state->pi_mutex;
->>  >                 ret = rt_mutex_finish_proxy_lock(pi_mutex, to, &rt_waiter, 1);
->>  >                 debug_rt_mutex_free_waiter(&rt_waiter);
->>  > 
->>  > So there is some weird way which causes q.pi_state = NULL. Dave, did
->>  > you see the warning before the oops happened ?
->>
->> No, that didn't seem to trigger.
-> 
-> Well I don't have a fix yet, but I can explain this not triggering.
-> 
-> q is on the stack, so the ADDRESS for q.pi_state is never going to be
-> NULL. However, properly instrumented, we do see this:
-> 
-> [   23.621501] ---[ end trace 20bdfb44db182a17 ]---
-> [   23.622425] q.pi_state @           (null)
-> [   23.623272] &q.pi_state @ ffff880185e2dca8
-> [   23.624119] ------------[ cut here ]------------
-> 
-> Duh.
-> 
-> I'll add a fix to that WARN_ON in my futex-fixes branch along with the
-> fix for the bug Dan found.
-> 
+> Yes - if the OOPs is instrumental in the path leading to the hang/panic - then the OOPS is the first place to look for the root cause of
+> the problem. But it will be a case by case analysis.
+> Sometimes the OOPS might be unconnected. If possible we'd like to log more information to allow detective work to decide whether
+> there is a connection. But as I mentioned above there are severe limits to how much better things are by storing more information.
 
-I think I have root cause. futex_wait_requeue_pi() doesn't like having
-uaddr == uaddr2. The handle_early_wakeup() doesn't detect a problem
-because key2 IS the same as key1, I think. I've just discovered this and
-quickly hacked in a "if (uaddr==uaddr2) return -EINVAL" fix and the test
-continues to run (with just ops 0, 11, 12) for several minutes now
-(typically fails in a few seconds). I'll let it run for a few hours and
-contemplate the proper fix.
+I understand the reason why you think 3 or 4 logs are reasonable.
+There are some cases  2nd or 3rd oops is critical....
 
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Linux Kernel
+I have some enterprise customers who are sensitive for a software failure  and specify panic_on_oops=1.
+In this case, they don't need 3,4 logs. 2 logs  are enough.
 
+So, kernel parameter should be as follows.
 
+Log_num =1
+  - For users who want to hold just one log.
+
+Log_num=2
+  - For users who can handle multiple logs and 1st oops is concerned. (by specifying panic_on_oops=1)
+
+Log_num=3,4
+ -  for users who care about 2nd or 3rd oops.
+
+Log_num=5 or more
+Invalid value.
+
+If there is misunderstanding, please let me know.
+
+Seiji
+
+> -----Original Message-----
+> From: Luck, Tony [mailto:tony.luck@intel.com]
+> Sent: Thursday, July 19, 2012 7:42 PM
+> To: Seiji Aguchi; linux-doc@vger.kernel.org; linux-kernel@vger.kernel.org; mikew@google.com; dzickus@redhat.com; Matthew
+> Garrett (mjg@redhat.com)
+> Cc: dle-develop@lists.sourceforge.net; Satoru Moriya
+> Subject: RE: [RFC][PATCH v2 2/3] Hold multiple logs
+> 
+> > If you are concerned about multiple OOPS case, I think an user app which logs from /dev/pstore to /var/log should be developed.
+> 
+> Agreed - we need an app/daemon to do this.
+> 
+> > Once it is developed, we don't need to care about multiple oops case and the appropriate number is two.
+> 
+> Only if you can guarantee that the app/daemon will run and save the first OOPS before the next occurs. Even if the system were
+> running normally this might be difficult to achieve.. but in this case we know the system isn't running normally (it just OOPSed twice!).
+> 
+> However - there is progressively less value in collecting additional consecutive OOPS. Perhaps one is enough 90% or even 99% of the
+> time. I'm naturally paranoid so having two or three would make me feel happy that most of the remaining 10% or 1% of the cases
+> were covered.
+> 
+> > - In case where system is workable after oops.
+> > The user app will erase an entry in NVRAM.
+> > And we can get the message via /var/log.
+> 
+> Yes - the system can keep running after many types of OOPs - so the OOPS will be logged in /var/log (or by the app/daemon copying
+> from pstore, or both).
+> 
+> > - In case where system hangs up or panics due to the oops.
+> > Oops is the critical message and we don't need care about subsequent events.
+> 
+> Yes - if the OOPs is instrumental in the path leading to the hang/panic - then the OOPS is the first place to look for the root cause of
+> the problem. But it will be a case by case analysis.
+> Sometimes the OOPS might be unconnected. If possible we'd like to log more information to allow detective work to decide whether
+> there is a connection. But as I mentioned above there are severe limits to how much better things are by storing more information.
+> 
+> -Tony
