@@ -1,66 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752885Ab2GTQdj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 12:33:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42300 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751874Ab2GTQdh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 12:33:37 -0400
-From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH v6 0/2] kvm: level irqfd and new eoifd
-To: avi@redhat.com, mst@redhat.com
-Cc: gleb@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jan.kiszka@siemens.com
-Date: Fri, 20 Jul 2012 10:33:34 -0600
-Message-ID: <20120720161841.15119.29653.stgit@bling.home>
-User-Agent: StGIT/0.14.3
+	id S1752913Ab2GTQhw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 12:37:52 -0400
+Received: from relay.parallels.com ([195.214.232.42]:37878 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751912Ab2GTQhu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 12:37:50 -0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+CC: Andi Kleen <ak@linux.intel.com>, Borislav Petkov <borislav.petkov@amd.com>,
+        Vladimir Davydov <vdavydov@parallels.com>, <x86@kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH 2/2] cpu: intel, amd: mask cleared cpuid features
+Date: Fri, 20 Jul 2012 20:37:33 +0400
+Message-ID: <dd185bfa60b6478e7eb1bce455c9d082ec884abe.1342801662.git.vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <73e09fb43e37de851acda10dc64bc495a5b68357.1342801662.git.vdavydov@parallels.com>
+References: <73e09fb43e37de851acda10dc64bc495a5b68357.1342801662.git.vdavydov@parallels.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v6:
+If 'clearcpuid=N' is specified in boot options, CPU feature #N won't be
+reported in /proc/cpuinfo and used by the kernel. However, if a
+userpsace process checks CPU features directly using the cpuid
+instruction, it will be reported about all features supported by the CPU
+irrespective of what features are cleared.
 
-So we're back to just the first two patches, unfortunately the
-diffstat got bigger though.  The reason for that is that I discovered
-we don't do anything on release of an eoifd.  We cleanup if the kvm
-vm is released, but we're dealing with a constrained resource of irq
-source IDs, so I think it's best that we cleanup to make sure those
-are returned.  To do that we need nearly the same infrastructure as
-irqfd, we just only watch for POLLHUP.  So while there's more code
-here, the structure and function names line up identically to irqfd.
+The patch makes the clearcpuid boot option not only clear CPU features
+in kernel but also mask them in hardware for Intel and AMD CPUs that
+support it so that the features cleared won't be reported even by the
+cpuid instruction.
 
-The other big change here is that KVM_IRQFD returns a token when
-setting up a level irqfd.  We use this token to associate the eoifd
-with the right source.  This means we have to put the struct
-_source_ids on a list so we can find them.  This removes the weird
-interaction we were headed to where the eoifd is associated with
-the eventfd of the irqfd.  There's potentially more flexibility for
-the future here too as we might come up with other interfaces that
-can return a source ID "key".  Perhaps some future KVM_IRQFD will
-allow specifying a key for re-attaching.  Anyway, the sequence
-Michael pointed out where an irqfd is de-assigned then re-assigned
-now results in a new key instead of leaving the user wondering if
-it re-associates back to the eoifd.
+This can be useful for migration of virtual machines managed by
+hypervisors that do not support/use Intel VT/AMD-V hardware-assisted
+virtualization technology.
 
-Also added workqueue flushes on assign since releasing either
-object now results in a lazy release via workqueue.  This ensures
-we re-claim any source IDs we can.  Thanks,
-
-Alex
+If CPUID masking is supported, this will be reported in
+/proc/cpuinfo:flags as 'cpuidmask'.
 ---
+ arch/x86/include/asm/cpufeature.h |    1 +
+ arch/x86/kernel/cpu/amd.c         |   22 ++++++++++++++
+ arch/x86/kernel/cpu/intel.c       |   59 +++++++++++++++++++++++++++++++++++++
+ 3 files changed, 82 insertions(+), 0 deletions(-)
 
-Alex Williamson (2):
-      kvm: KVM_EOIFD, an eventfd for EOIs
-      kvm: Extend irqfd to support level interrupts
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index f91e80f..6f061ea 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -97,6 +97,7 @@
+ #define X86_FEATURE_EXTD_APICID	(3*32+26) /* has extended APICID (8 bits) */
+ #define X86_FEATURE_AMD_DCM     (3*32+27) /* multi-node processor */
+ #define X86_FEATURE_APERFMPERF	(3*32+28) /* APERFMPERF */
++#define X86_FEATURE_CPUIDMASK	(3*32+29) /* CPUID feature masking */
+ 
+ /* Intel-defined CPU features, CPUID level 0x00000001 (ecx), word 4 */
+ #define X86_FEATURE_XMM3	(4*32+ 0) /* "pni" SSE-3 */
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index 146bb62..ddc8ea2 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -482,6 +482,26 @@ static void __cpuinit early_init_amd(struct cpuinfo_x86 *c)
+ #endif
+ }
+ 
++#define MSR_AMD_CPUID_FEATURES_OVERRIDE		0xc0011004
++#define MSR_AMD_EXT_CPUID_FEATURES_OVERRIDE	0xc0011005
++
++static void __cpuinit amd_mask_cpu_caps(struct cpuinfo_x86 *c)
++{
++	u64 val;
++
++	if (c->x86 >= 0x0f) {
++		set_cpu_cap(c, X86_FEATURE_CPUIDMASK);
++
++		rdmsrl_amd_safe(MSR_AMD_CPUID_FEATURES_OVERRIDE, &val);
++		val &= ~((u64)cpu_caps_cleared[4] << 32 | cpu_caps_cleared[0]);
++		wrmsrl_amd_safe(MSR_AMD_CPUID_FEATURES_OVERRIDE, val);
++
++		rdmsrl_amd_safe(MSR_AMD_EXT_CPUID_FEATURES_OVERRIDE, &val);
++		val &= ~((u64)cpu_caps_cleared[6] << 32 | cpu_caps_cleared[1]);
++		wrmsrl_amd_safe(MSR_AMD_EXT_CPUID_FEATURES_OVERRIDE, val);
++	}
++}
++
+ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+ {
+ 	u32 dummy;
+@@ -684,6 +704,8 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+ 	}
+ 
+ 	rdmsr_safe(MSR_AMD64_PATCH_LEVEL, &c->microcode, &dummy);
++
++	amd_mask_cpu_caps(c);
+ }
+ 
+ #ifdef CONFIG_X86_32
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index 3e6ff6c..1df1da5 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -358,6 +358,63 @@ static void __cpuinit detect_vmx_virtcap(struct cpuinfo_x86 *c)
+ 	}
+ }
+ 
++static unsigned int __cpuinit intel_cpuid_mask_msr(struct cpuinfo_x86 *c,
++					unsigned int *msr_ext_cpuid_mask)
++{
++	unsigned int msr, msr_ext;
++
++	msr = msr_ext = 0;
++
++	switch (c->x86_model) {
++	case 0x17:
++	case 0x1D:
++		msr = 0x478;
++		break;
++	case 0x1A:
++	case 0x1E:
++	case 0x1F:
++	case 0x25:
++	case 0x2C:
++	case 0x2E:
++	case 0x2F:
++		msr = 0x130;
++		msr_ext = 0x131;
++		break;
++	case 0x2A:
++		msr = 0x132;
++		msr_ext = 0x133;
++		break;
++	}
++
++	if (msr_ext_cpuid_mask)
++		*msr_ext_cpuid_mask = msr_ext;
++
++	return msr;
++}
++
++static void __cpuinit intel_mask_cpu_caps(struct cpuinfo_x86 *c)
++{
++	u32 low, high;
++	unsigned int msr_cpuid_mask, msr_ext_cpuid_mask;
++
++	msr_cpuid_mask = intel_cpuid_mask_msr(c, &msr_ext_cpuid_mask);
++	if (msr_cpuid_mask) {
++		set_cpu_cap(c, X86_FEATURE_CPUIDMASK);
++
++		rdmsr(msr_cpuid_mask, low, high);
++		low &= ~cpu_caps_cleared[4];
++		high &= ~cpu_caps_cleared[0];
++		wrmsr(msr_cpuid_mask, low, high);
++
++		if (msr_ext_cpuid_mask != 0) {
++			rdmsr(msr_ext_cpuid_mask, low, high);
++			low &= ~cpu_caps_cleared[6];
++			high &= ~cpu_caps_cleared[1];
++			wrmsr(msr_ext_cpuid_mask, low, high);
++		}
++	}
++}
++
+ static void __cpuinit init_intel(struct cpuinfo_x86 *c)
+ {
+ 	unsigned int l2 = 0;
+@@ -474,6 +531,8 @@ static void __cpuinit init_intel(struct cpuinfo_x86 *c)
+ 			wrmsrl(MSR_IA32_ENERGY_PERF_BIAS, epb);
+ 		}
+ 	}
++
++	intel_mask_cpu_caps(c);
+ }
+ 
+ #ifdef CONFIG_X86_32
+-- 
+1.7.1
 
-
- Documentation/virtual/kvm/api.txt |   32 ++-
- arch/x86/kvm/x86.c                |    3 
- include/linux/kvm.h               |   18 +
- include/linux/kvm_host.h          |   17 +
- virt/kvm/eventfd.c                |  463 ++++++++++++++++++++++++++++++++++++-
- virt/kvm/kvm_main.c               |   11 +
- 6 files changed, 536 insertions(+), 8 deletions(-)
