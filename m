@@ -1,45 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752466Ab2GTGng (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 02:43:36 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:39383 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751064Ab2GTGne (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 02:43:34 -0400
-Date: Fri, 20 Jul 2012 09:43:20 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: pstore/ram: Add ftrace messages handling
-Message-ID: <20120720064320.GJ16348@mwanda>
-References: <20120719142856.GA25184@elgon.mountain>
- <20120719232030.GA2573@lizard>
+	id S1751857Ab2GTGz2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 02:55:28 -0400
+Received: from mga03.intel.com ([143.182.124.21]:6110 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750991Ab2GTGzY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 02:55:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="170704079"
+Message-ID: <50090079.1000703@linux.intel.com>
+Date: Thu, 19 Jul 2012 23:53:45 -0700
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120719232030.GA2573@lizard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: Dave Jones <davej@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Darren Hart <darren@dvhart.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: 3.5-rc6 futex_wait_requeue_pi oops.
+References: <20120713180823.GA24972@redhat.com> <alpine.LFD.2.02.1207132032330.32033@ionos> <20120713185402.GA1707@redhat.com> <5008969F.5030901@linux.intel.com> <5008A847.4070006@linux.intel.com>
+In-Reply-To: <5008A847.4070006@linux.intel.com>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 19, 2012 at 04:20:32PM -0700, Anton Vorontsov wrote:
-> Hi Dan,
+On 07/19/2012 05:37 PM, Darren Hart wrote:
 > 
-> On Thu, Jul 19, 2012 at 05:28:56PM +0300, Dan Carpenter wrote:
-> > The patch a694d1b5916a: "pstore/ram: Add ftrace messages handling" 
-> > from Jul 9, 2012, leads to the following Smatch complaint:
 > 
-> A nice tool. The homepage of Smatch doesn't explicitly say that, so
-> I have to ask: is it a complete superset of sparse (i.e. does it
-> produce all the warnings that the pure sparse can produce)?
-> If so, I'll probably switch to it from the vanilla sparse.
+> On 07/19/2012 04:22 PM, Darren Hart wrote:
+>>
+>>
+>> On 07/13/2012 11:54 AM, Dave Jones wrote:
+>>> On Fri, Jul 13, 2012 at 08:47:38PM +0200, Thomas Gleixner wrote:
+>>>  > On Fri, 13 Jul 2012, Dave Jones wrote:
+>>>  > 
+>>>  > > Looks like calling futex() with garbage makes things unhappy.
+>>>  > 
+>>>  >                 WARN_ON(!&q.pi_state);
+>>>  >                 pi_mutex = &q.pi_state->pi_mutex;
+>>>  >                 ret = rt_mutex_finish_proxy_lock(pi_mutex, to, &rt_waiter, 1);
+>>>  >                 debug_rt_mutex_free_waiter(&rt_waiter);
+>>>  > 
+>>>  > So there is some weird way which causes q.pi_state = NULL. Dave, did
+>>>  > you see the warning before the oops happened ?
+>>>
+>>> No, that didn't seem to trigger.
+>>
+>> Well I don't have a fix yet, but I can explain this not triggering.
+>>
+>> q is on the stack, so the ADDRESS for q.pi_state is never going to be
+>> NULL. However, properly instrumented, we do see this:
+>>
+>> [   23.621501] ---[ end trace 20bdfb44db182a17 ]---
+>> [   23.622425] q.pi_state @           (null)
+>> [   23.623272] &q.pi_state @ ffff880185e2dca8
+>> [   23.624119] ------------[ cut here ]------------
+>>
+>> Duh.
+>>
+>> I'll add a fix to that WARN_ON in my futex-fixes branch along with the
+>> fix for the bug Dan found.
+>>
 > 
+> I think I have root cause. futex_wait_requeue_pi() doesn't like having
+> uaddr == uaddr2. The handle_early_wakeup() doesn't detect a problem
+> because key2 IS the same as key1, I think. I've just discovered this and
+> quickly hacked in a "if (uaddr==uaddr2) return -EINVAL" fix and the test
+> continues to run (with just ops 0, 11, 12) for several minutes now
+> (typically fails in a few seconds). I'll let it run for a few hours and
+> contemplate the proper fix.
 
-No.  It just uses Sparse as a parser.
+Dave, mind giving this a spin? It seems to be doing the trick here,
+at least for the *REQUEUE_PI futex op codes in trinity.
 
-regards,
-dan carpenter
+ 
+>From d689b1598d67520dd87b30cc1ce7c6b76f566f43 Mon Sep 17 00:00:00 2001
+Message-Id: <d689b1598d67520dd87b30cc1ce7c6b76f566f43.1342766842.git.dvhart@linux.intel.com>
+From: Darren Hart <dvhart@linux.intel.com>
+Date: Thu, 19 Jul 2012 23:40:15 -0700
+Subject: [PATCH] futex: Forbid uaddr == uaddr2 in futex_wait_requeue_pi()
+
+If uaddr == uaddr2, then we have broken the rule of only requeueing from
+a non-pi futex to a pi futex with this call. If we attempt this, as the
+trinity test suite manages to do, we miss early wakeups as q.key is
+equal to key2 (because they are the same uaddr). We will then attempt to
+dereference the pi_mutex (which would exist had the futex_q been
+properly requeued to a pi futex) and trigger a NULL pointer dereference.
+
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+CC: Dave Jones <davej@redhat.com>
+CC: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/futex.c |   13 ++++++++-----
+ 1 files changed, 8 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 5551ada..3717e7b 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -2231,11 +2231,11 @@ int handle_early_requeue_pi_wakeup(struct futex_hash_bucket *hb,
+  * @uaddr2:	the pi futex we will take prior to returning to user-space
+  *
+  * The caller will wait on uaddr and will be requeued by futex_requeue() to
+- * uaddr2 which must be PI aware.  Normal wakeup will wake on uaddr2 and
+- * complete the acquisition of the rt_mutex prior to returning to userspace.
+- * This ensures the rt_mutex maintains an owner when it has waiters; without
+- * one, the pi logic wouldn't know which task to boost/deboost, if there was a
+- * need to.
++ * uaddr2 which must be PI aware and unique from uaddr.  Normal wakeup will wake
++ * on uaddr2 and complete the acquisition of the rt_mutex prior to returning to
++ * userspace.  This ensures the rt_mutex maintains an owner when it has waiters;
++ * without one, the pi logic would not know which task to boost/deboost, if
++ * there was a need to.
+  *
+  * We call schedule in futex_wait_queue_me() when we enqueue and return there
+  * via the following:
+@@ -2272,6 +2272,9 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
+ 	struct futex_q q = futex_q_init;
+ 	int res, ret;
+ 
++	if (uaddr == uaddr2)
++		return -EINVAL;
++
+ 	if (!bitset)
+ 		return -EINVAL;
+ 
+-- 
+1.7.5.4
+
+
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
+
 
