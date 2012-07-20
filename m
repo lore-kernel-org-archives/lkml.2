@@ -1,92 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753455Ab2GTSOX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 14:14:23 -0400
-Received: from mail-vc0-f202.google.com ([209.85.220.202]:50448 "EHLO
-	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752631Ab2GTSOU (ORCPT
+	id S1753479Ab2GTSOm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 14:14:42 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:11666 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752591Ab2GTSOk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 14:14:20 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: linux-mmc@vger.kernel.org
-Cc: Chris Ball <cjb@laptop.org>, Will Newton <will.newton@imgtec.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>, linux-kernel@vger.kernel.org,
-        Doug Anderson <dianders@chromium.org>
-Subject: [PATCH] mmc: dw_mmc: Disable low power mode if SDIO interrupts are used
-Date: Fri, 20 Jul 2012 11:13:58 -0700
-Message-Id: <1342808038-7558-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
+	Fri, 20 Jul 2012 14:14:40 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6778"; a="212825183"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: "Rafael J . Wysocki" <rjw@sisk.pl>
+Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: [PATCHv2] cpufreq: Fix sysfs deadlock with concurrent hotplug/frequency switch
+Date: Fri, 20 Jul 2012 11:14:38 -0700
+Message-Id: <1342808078-5317-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.11.2.249.g31c7954
+In-Reply-To: <201207201205.36635.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The documentation for the dw_mmc part says that the low power
-mode should normally only be set for MMC and SD memory and should
-be turned off for SDIO cards that need interrupts detected.
+Running one program that continuously hotplugs and replugs a cpu
+concurrently with another program that continuously writes to the
+scaling_setspeed node eventually deadlocks with:
 
-The best place I could find to do this is when the SDIO interrupt
-was first enabled.  I rely on the fact that dw_mci_setup_bus()
-will be called when it's time to reenable.
+=============================================
+[ INFO: possible recursive locking detected ]
+3.4.0 #37 Tainted: G        W
+---------------------------------------------
+filemonkey/122 is trying to acquire lock:
+ (s_active#13){++++.+}, at: [<c01a3d28>] sysfs_remove_dir+0x9c/0xb4
 
-Change-Id: Id0e33a4e3a0a77ce8a5053b6e73197d53a5d46bb
-Signed-off-by: Doug Anderson <dianders@chromium.org>
+but task is already holding lock:
+ (s_active#13){++++.+}, at: [<c01a22f0>] sysfs_write_file+0xe8/0x140
+
+other info that might help us debug this:
+ Possible unsafe locking scenario:
+
+       CPU0
+       ----
+  lock(s_active#13);
+  lock(s_active#13);
+
+ *** DEADLOCK ***
+
+ May be due to missing lock nesting notation
+
+2 locks held by filemonkey/122:
+ #0:  (&buffer->mutex){+.+.+.}, at: [<c01a2230>] sysfs_write_file+0x28/0x140
+ #1:  (s_active#13){++++.+}, at: [<c01a22f0>] sysfs_write_file+0xe8/0x140
+
+stack backtrace:
+[<c0014fcc>] (unwind_backtrace+0x0/0x120) from [<c00ca600>] (validate_chain+0x6f8/0x1054)
+[<c00ca600>] (validate_chain+0x6f8/0x1054) from [<c00cb778>] (__lock_acquire+0x81c/0x8d8)
+[<c00cb778>] (__lock_acquire+0x81c/0x8d8) from [<c00cb9c0>] (lock_acquire+0x18c/0x1e8)
+[<c00cb9c0>] (lock_acquire+0x18c/0x1e8) from [<c01a3ba8>] (sysfs_addrm_finish+0xd0/0x180)
+[<c01a3ba8>] (sysfs_addrm_finish+0xd0/0x180) from [<c01a3d28>] (sysfs_remove_dir+0x9c/0xb4)
+[<c01a3d28>] (sysfs_remove_dir+0x9c/0xb4) from [<c02d0e5c>] (kobject_del+0x10/0x38)
+[<c02d0e5c>] (kobject_del+0x10/0x38) from [<c02d0f74>] (kobject_release+0xf0/0x194)
+[<c02d0f74>] (kobject_release+0xf0/0x194) from [<c0565a98>] (cpufreq_cpu_put+0xc/0x24)
+[<c0565a98>] (cpufreq_cpu_put+0xc/0x24) from [<c05683f0>] (store+0x6c/0x74)
+[<c05683f0>] (store+0x6c/0x74) from [<c01a2314>] (sysfs_write_file+0x10c/0x140)
+[<c01a2314>] (sysfs_write_file+0x10c/0x140) from [<c014af44>] (vfs_write+0xb0/0x128)
+[<c014af44>] (vfs_write+0xb0/0x128) from [<c014b06c>] (sys_write+0x3c/0x68)
+[<c014b06c>] (sys_write+0x3c/0x68) from [<c000e0e0>] (ret_fast_syscall+0x0/0x3c)
+
+This is because store() in cpufreq.c indirectly calls
+kobject_get() via cpufreq_cpu_get() and is the last one to call
+kobject_put() via cpufreq_cpu_put(). Sysfs code should not call
+kobject_get() or kobject_put() directly (see the comment around
+sysfs_schedule_callback() for more information).
+
+Fix this deadlock by introducing two new functions:
+
+	struct cpufreq_policy *cpufreq_cpu_get_sysfs(unsigned int cpu)
+	void cpufreq_cpu_put_sysfs(struct cpufreq_policy *data)
+
+which do the same thing as cpufreq_cpu_{get,put}() but don't call
+kobject functions.
+
+To easily trigger this deadlock you can insert an msleep() with a
+reasonably large value right after the fail label at the bottom
+of the store() function in cpufreq.c and then write
+scaling_setspeed in one task and offline the cpu in another. The
+first task will hang and be detected by the hung task detector.
+
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- drivers/mmc/host/dw_mmc.c |   33 +++++++++++++++++++++++++++++++++
- 1 files changed, 33 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index 72dc3cd..0cb2756 100644
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -862,6 +862,31 @@ static int dw_mci_get_cd(struct mmc_host *mmc)
- 	return present;
- }
+Changes from v1:
+ - switch sysfs arg to bool
+ - remove patch from commit text
+
+ drivers/cpufreq/cpufreq.c | 35 +++++++++++++++++++++++++++--------
+ 1 file changed, 27 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 7f2f149..fb8a527 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -138,7 +138,7 @@ void disable_cpufreq(void)
+ static LIST_HEAD(cpufreq_governor_list);
+ static DEFINE_MUTEX(cpufreq_governor_mutex);
  
-+/*
-+ * Disable lower power mode.
-+ *
-+ * Low power mode will stop the card clock when idle.  According to
-+ * documentation we should disable low power mode for SDIO cards if we
-+ * need interrupts to work.
-+ *
-+ * This function is fast if the power mode is already disabled.
-+ */
-+static void dw_mci_disable_low_power(struct mmc_host *mmc)
-+{
-+	struct dw_mci_slot *slot = mmc_priv(mmc);
-+	struct dw_mci *host = slot->host;
-+	u32 clk_en_a;
-+	const u32 clken_low_pwr = SDMMC_CLKEN_LOW_PWR << slot->id;
-+
-+	clk_en_a = mci_readl(host, CLKENA);
-+
-+	if (clk_en_a & clken_low_pwr) {
-+		mci_writel(host, CLKENA, clk_en_a & ~clken_low_pwr);
-+		mci_send_cmd(slot, SDMMC_CMD_UPD_CLK |
-+			     SDMMC_CMD_PRV_DAT_WAIT, 0);
-+	}
-+}
-+
- static void dw_mci_enable_sdio_irq(struct mmc_host *mmc, int enb)
+-struct cpufreq_policy *cpufreq_cpu_get(unsigned int cpu)
++static struct cpufreq_policy *__cpufreq_cpu_get(unsigned int cpu, bool sysfs)
  {
- 	struct dw_mci_slot *slot = mmc_priv(mmc);
-@@ -871,6 +896,14 @@ static void dw_mci_enable_sdio_irq(struct mmc_host *mmc, int enb)
- 	/* Enable/disable Slot Specific SDIO interrupt */
- 	int_mask = mci_readl(host, INTMASK);
- 	if (enb) {
-+		/*
-+		 * Turn off low power mode if it was enabled.  This is a bit of
-+		 * a heavy operation and we disable / enable IRQs a lot, so
-+		 * we'll leave them disabled; they will get re-enabled again in
-+		 * dw_mci_setup_bus().
-+		 */
-+		dw_mci_disable_low_power(mmc);
+ 	struct cpufreq_policy *data;
+ 	unsigned long flags;
+@@ -162,7 +162,7 @@ struct cpufreq_policy *cpufreq_cpu_get(unsigned int cpu)
+ 	if (!data)
+ 		goto err_out_put_module;
+ 
+-	if (!kobject_get(&data->kobj))
++	if (!sysfs && !kobject_get(&data->kobj))
+ 		goto err_out_put_module;
+ 
+ 	spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
+@@ -175,16 +175,35 @@ err_out_unlock:
+ err_out:
+ 	return NULL;
+ }
 +
- 		mci_writel(host, INTMASK,
- 			   (int_mask | SDMMC_INT_SDIO(slot->id)));
- 	} else {
++struct cpufreq_policy *cpufreq_cpu_get(unsigned int cpu)
++{
++	return __cpufreq_cpu_get(cpu, false);
++}
+ EXPORT_SYMBOL_GPL(cpufreq_cpu_get);
+ 
++static struct cpufreq_policy *cpufreq_cpu_get_sysfs(unsigned int cpu)
++{
++	return __cpufreq_cpu_get(cpu, true);
++}
+ 
+-void cpufreq_cpu_put(struct cpufreq_policy *data)
++static void __cpufreq_cpu_put(struct cpufreq_policy *data, bool sysfs)
+ {
+-	kobject_put(&data->kobj);
++	if (!sysfs)
++		kobject_put(&data->kobj);
+ 	module_put(cpufreq_driver->owner);
+ }
++
++void cpufreq_cpu_put(struct cpufreq_policy *data)
++{
++	__cpufreq_cpu_put(data, false);
++}
+ EXPORT_SYMBOL_GPL(cpufreq_cpu_put);
+ 
++static void cpufreq_cpu_put_sysfs(struct cpufreq_policy *data)
++{
++	__cpufreq_cpu_put(data, true);
++}
+ 
+ /*********************************************************************
+  *            EXTERNALLY AFFECTING FREQUENCY CHANGES                 *
+@@ -617,7 +636,7 @@ static ssize_t show(struct kobject *kobj, struct attribute *attr, char *buf)
+ 	struct cpufreq_policy *policy = to_policy(kobj);
+ 	struct freq_attr *fattr = to_attr(attr);
+ 	ssize_t ret = -EINVAL;
+-	policy = cpufreq_cpu_get(policy->cpu);
++	policy = cpufreq_cpu_get_sysfs(policy->cpu);
+ 	if (!policy)
+ 		goto no_policy;
+ 
+@@ -631,7 +650,7 @@ static ssize_t show(struct kobject *kobj, struct attribute *attr, char *buf)
+ 
+ 	unlock_policy_rwsem_read(policy->cpu);
+ fail:
+-	cpufreq_cpu_put(policy);
++	cpufreq_cpu_put_sysfs(policy);
+ no_policy:
+ 	return ret;
+ }
+@@ -642,7 +661,7 @@ static ssize_t store(struct kobject *kobj, struct attribute *attr,
+ 	struct cpufreq_policy *policy = to_policy(kobj);
+ 	struct freq_attr *fattr = to_attr(attr);
+ 	ssize_t ret = -EINVAL;
+-	policy = cpufreq_cpu_get(policy->cpu);
++	policy = cpufreq_cpu_get_sysfs(policy->cpu);
+ 	if (!policy)
+ 		goto no_policy;
+ 
+@@ -656,7 +675,7 @@ static ssize_t store(struct kobject *kobj, struct attribute *attr,
+ 
+ 	unlock_policy_rwsem_write(policy->cpu);
+ fail:
+-	cpufreq_cpu_put(policy);
++	cpufreq_cpu_put_sysfs(policy);
+ no_policy:
+ 	return ret;
+ }
 -- 
-1.7.7.3
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
