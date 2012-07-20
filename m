@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752883Ab2GTNnu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 09:43:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41992 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751874Ab2GTNns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 09:43:48 -0400
-Date: Fri, 20 Jul 2012 14:43:44 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Cong Wang <xiyou.wangcong@gmail.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] mm: hugetlbfs: Close race during teardown of
- hugetlbfs shared page tables
-Message-ID: <20120720134344.GF9222@suse.de>
-References: <20120718104220.GR9222@suse.de>
- <ju8iqh$vvl$1@dough.gmane.org>
+	id S1752446Ab2GTNoP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 09:44:15 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:18980 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751063Ab2GTNoO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 09:44:14 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 20 Jul 2012 06:39:38 -0700
+Date: Fri, 20 Jul 2012 16:43:49 +0300
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] clk: fix return value check in clk_get
+Message-ID: <20120720134349.GC9437@tbergstrom-lnx.Nvidia.com>
+References: <1342791397-11732-1-git-send-email-pdeschrijver@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <ju8iqh$vvl$1@dough.gmane.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1342791397-11732-1-git-send-email-pdeschrijver@nvidia.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 19, 2012 at 09:08:34AM +0000, Cong Wang wrote:
-> On Wed, 18 Jul 2012 at 10:43 GMT, Mel Gorman <mgorman@suse.de> wrote:
-> > +		if (!down_read_trylock(&svma->vm_mm->mmap_sem)) {
-> > +			mutex_unlock(&mapping->i_mmap_mutex);
-> > +			goto retry;
-> > +		}
-> > +
-> > +		smmap_sem = &svma->vm_mm->mmap_sem;
-> > +		spage_table_lock = &svma->vm_mm->page_table_lock;
-> > +		spin_lock_nested(spage_table_lock, SINGLE_DEPTH_NESTING);
-> >  
-> >  		saddr = page_table_shareable(svma, vma, addr, idx);
-> >  		if (saddr) {
-> > @@ -85,6 +108,10 @@ static void huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
-> >  				break;
-> >  			}
-> >  		}
-> > +		up_read(smmap_sem);
-> > +		spin_unlock(spage_table_lock);
+On Fri, Jul 20, 2012 at 03:36:37PM +0200, Peter De Schrijver wrote:
+> of_clk_get_by_name returns an ERR_PTR on failure. Hence we should use IS_ERR()
+> and not just check for a non NULL value.
 > 
-> Looks like we should do spin_unlock() before up_read(),
-> in the reverse order of how they get accquired.
+> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+> ---
+>  drivers/clk/clkdev.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
+> diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
+> index 8f87b0f..d423c9b 100644
+> --- a/drivers/clk/clkdev.c
+> +++ b/drivers/clk/clkdev.c
+> @@ -157,7 +157,7 @@ struct clk *clk_get(struct device *dev, const char *con_id)
+>  
+>  	if (dev) {
+>  		clk = of_clk_get_by_name(dev->of_node, con_id);
+> -		if (clk && __clk_get(clk))
+> +		if (!IS_ERR(clk) && __clk_get(clk))
+>  			return clk;
+>  	}
 
-Will fix, thanks for pointing this out.
+http://www.spinics.net/lists/arm-kernel/msg184794.html introduces this
+behaviour of of_clk_get_by_name()
 
-As an aside, I would prefer if you did not drop people from the CC list. I
-would have missed this mail for a long time if it hadn't been pointed out
-to me privately.
+Cheers,
 
--- 
-Mel Gorman
-SUSE Labs
+Peter.
