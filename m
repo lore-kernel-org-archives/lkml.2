@@ -1,110 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752936Ab2GTOWU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 10:22:20 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:48229 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752889Ab2GTOWJ (ORCPT
+	id S1752974Ab2GTOWe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 10:22:34 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:34042 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752136Ab2GTOWb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 10:22:09 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6777"; a="210405113"
-Message-ID: <5009698C.2020707@codeaurora.org>
-Date: Fri, 20 Jul 2012 10:22:04 -0400
-From: Christopher Covington <cov@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Will Deacon <will.deacon@arm.com>
-Subject: Re: [07/36] AArch64: Assembly macros and definitions
-References: <1341608777-12982-8-git-send-email-catalin.marinas@arm.com>
-In-Reply-To: <1341608777-12982-8-git-send-email-catalin.marinas@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 20 Jul 2012 10:22:31 -0400
+Message-ID: <1342794140.3401.1.camel@phoenix>
+Subject: [PATCH] regulator: lp8788-buck: Remove
+ lp8788_set_default_dvs_ctrl_mode function
+From: Axel Lin <axel.lin@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: "Milo(Woogyom) Kim" <milo.kim@ti.com>, Liam Girdwood <lrg@ti.com>,
+        linux-kernel@vger.kernel.org
+Date: Fri, 20 Jul 2012 22:22:20 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Catalin,
+We already know the mask in lp8788_init_dvs() function, and we can update
+the corresponding bit for default_dvs_mode in lp8788_init_dvs() function.
+This function looks not necessary to me.
 
-On 01/-10/-28163 02:59 PM, Catalin Marinas wrote:
-> This patch introduces several assembly macros and definitions used in
-> the .S files across arch/aarch64/ like IRQ disabling/enabling, together
-> with asm-offsets.c.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/lp8788-buck.c |   25 +++----------------------
+ 1 file changed, 3 insertions(+), 22 deletions(-)
 
-[...]
-
-> diff --git a/arch/aarch64/include/asm/assembler.h b/arch/aarch64/include/asm/assembler.h
-> new file mode 100644
-> index 0000000..c6ac3cf
-> --- /dev/null
-> +++ b/arch/aarch64/include/asm/assembler.h
-
-[...]
-
-> +#define USER(x...)				\
-> +9999:	x;					\
-> +	.section __ex_table,"a";		\
-> +	.align	3;				\
-> +	.quad	9999b,9001f;			\
-> +	.previous
-
-It appears that this macro depends on a 9001 label being defined in the
-source file somewhere after the macro is used. It might be preferable to
-incorporate the label into the macro if possible, or pass the label as
-an argument to the macro.
-
-> +
-> +/*
-> + * User access macros.
-> + */
-> +	.macro	usracc, instr, reg, reg2, ptr, inc, rept, abort
-> +	.rept	\rept
-> +9999:
-> +	.if	\inc == 1
-> +	\instr\()b \reg, [\ptr], #\inc
-> +	.elseif	\inc == 4
-> +	\instr\() \reg, [\ptr], #\inc
-> +	.elseif	\inc == 8
-> +	\instr\() \reg, [\ptr], #\inc
-> +	.elseif \inc == 16
-> +	\instr\() \reg, \reg2, [\ptr], #\inc
-> +	.else
-> +	.error	"Unsupported inc macro argument"
-> +	.endif
-> +
-> +	.section __ex_table,"a"
-> +	.align	3
-> +	.quad	9999b, \abort
-> +	.previous
-
-Could you use the USER preprocessor macro here to reduce this small
-duplication of directives?
-
-> +	.endr
-> +	.endm
-> +
-> +	.macro	ldrusr, reg, ptr, inc, rept=1, abort=9001f
-> +	 usracc	ldr, \reg, \reg, \ptr, \inc, \rept, \abort
-> +	.endm
-> +
-> +	.macro	ldrpusr, reg, reg2, ptr, rept=1, abort=9001f
-> +	 usracc	ldp, \reg, \reg2, \ptr, 16, \rept, \abort
-> +	.endm
-
-How about "ldpusr" to more directly match the assembly?
-
-(Also, the 9001 label strikes again.)
-
-> +
-> +/*
-> + * Register aliases.
-> + */
-> +lr	.req	x30		// link register
-
-Regards,
-Christopher
-
+diff --git a/drivers/regulator/lp8788-buck.c b/drivers/regulator/lp8788-buck.c
+index 6356e82..0c93a6a 100644
+--- a/drivers/regulator/lp8788-buck.c
++++ b/drivers/regulator/lp8788-buck.c
+@@ -459,27 +459,6 @@ static struct regulator_desc lp8788_buck_desc[] = {
+ 	},
+ };
+ 
+-static int lp8788_set_default_dvs_ctrl_mode(struct lp8788 *lp,
+-					enum lp8788_buck_id id)
+-{
+-	u8 mask, val;
+-
+-	switch (id) {
+-	case BUCK1:
+-		mask = LP8788_BUCK1_DVS_SEL_M;
+-		val  = LP8788_BUCK1_DVS_I2C;
+-		break;
+-	case BUCK2:
+-		mask = LP8788_BUCK2_DVS_SEL_M;
+-		val  = LP8788_BUCK2_DVS_I2C;
+-		break;
+-	default:
+-		return 0;
+-	}
+-
+-	return lp8788_update_bits(lp, LP8788_BUCK_DVS_SEL, mask, val);
+-}
+-
+ static int _gpio_request(struct lp8788_buck *buck, int gpio, char *name)
+ {
+ 	struct device *dev = buck->lp->dev;
+@@ -530,6 +509,7 @@ static int lp8788_init_dvs(struct lp8788_buck *buck, enum lp8788_buck_id id)
+ 	struct lp8788_platform_data *pdata = buck->lp->pdata;
+ 	u8 mask[] = { LP8788_BUCK1_DVS_SEL_M, LP8788_BUCK2_DVS_SEL_M };
+ 	u8 val[]  = { LP8788_BUCK1_DVS_PIN, LP8788_BUCK2_DVS_PIN };
++	u8 default_dvs_mode[] = { LP8788_BUCK1_DVS_I2C, LP8788_BUCK2_DVS_I2C };
+ 
+ 	/* no dvs for buck3, 4 */
+ 	if (id == BUCK3 || id == BUCK4)
+@@ -550,7 +530,8 @@ static int lp8788_init_dvs(struct lp8788_buck *buck, enum lp8788_buck_id id)
+ 				val[id]);
+ 
+ set_default_dvs_mode:
+-	return lp8788_set_default_dvs_ctrl_mode(buck->lp, id);
++	return lp8788_update_bits(buck->lp, LP8788_BUCK_DVS_SEL, mask[id],
++				  default_dvs_mode[id]);
+ }
+ 
+ static __devinit int lp8788_buck_probe(struct platform_device *pdev)
 -- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+1.7.9.5
+
+
+
