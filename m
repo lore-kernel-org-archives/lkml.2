@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752918Ab2GTOpL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 10:45:11 -0400
-Received: from plane.gmane.org ([80.91.229.3]:47716 "EHLO plane.gmane.org"
+	id S1752896Ab2GTOv2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 10:51:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44964 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752795Ab2GTOpH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 10:45:07 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Betty Dall <betty.dall@hp.com>
-Subject: Re: [PATCH] checkpatch: Add checks for do =?utf-8?b?e30=?= while (0) macro misuses
-Date: Fri, 20 Jul 2012 14:40:46 +0000 (UTC)
-Message-ID: <loom.20120720T160308-562@post.gmane.org>
-References: <1342735885.17350.3.camel@joe2Laptop>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: sea.gmane.org
-User-Agent: Loom/3.14 (http://gmane.org/)
-X-Loom-IP: 15.219.153.79 (Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.7 (KHTML, like Gecko) Chrome/16.0.912.77 Safari/535.7)
+	id S1752508Ab2GTOv1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 10:51:27 -0400
+Date: Fri, 20 Jul 2012 15:51:21 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Linux-MM <linux-mm@kvack.org>, Hugh Dickins <hughd@google.com>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Ken Chen <kenchen@google.com>, Cong Wang <xiyou.wangcong@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -alternative] mm: hugetlbfs: Close race during teardown
+ of hugetlbfs shared page tables V2 (resend)
+Message-ID: <20120720145121.GJ9222@suse.de>
+References: <20120720134937.GG9222@suse.de>
+ <20120720141108.GH9222@suse.de>
+ <20120720143635.GE12434@tiehlicka.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20120720143635.GE12434@tiehlicka.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joe,
+On Fri, Jul 20, 2012 at 04:36:35PM +0200, Michal Hocko wrote:
+> And here is my attempt for the fix (Hugh mentioned something similar
+> earlier but he suggested using special flags in ptes or VMAs). I still
+> owe doc. update and it hasn't been tested with too many configs and I
+> could missed some definition updates.
+> I also think that changelog could be much better, I will add (steal) the
+> full bug description if people think that this way is worth going rather
+> than the one suggested by Mel.
+> To be honest I am not quite happy how I had to pollute generic mm code with
+> something that is specific to a single architecture.
+> Mel hammered it with the test case and it survived.
 
-Joe Perches <joe <at> perches.com> writes:
+Tested-by: Mel Gorman <mgorman@suse.de>
 
-> 
-> These types of macros should not be used for either a
-> single statement nor should the macro end with a semi-colon.
-> 
-> Add tests for these conditions.
-> 
-> Signed-off-by: Joe Perches <joe <at> perches.com>
-> ---
->  scripts/checkpatch.pl |   39 +++++++++++++++++++++++++++++++++++++++
->  1 files changed, 39 insertions(+), 0 deletions(-)
+This approach looks more or less like what I was expecting. I like that
+the trick was applied to the page table page instead of using PTE tricks
+or by bodging it with a VMA flag like I was thinking so kudos for that. I
+also prefer this approach to trying to free the page tables on or near
+huge_pmd_unshare()
 
+In general I think this patch would execute better than mine because it is
+far less heavy-handed but I share your concern that it changes the core MM
+quite a bit for a corner case that only one architecture cares about. I am
+completely biased of course, but I still prefer my patch because other than
+an API change it keeps the bulk of the madness in arch/x86/mm/hugetlbpage.c
+. I am also not concerned with the scalability of how quickly we can setup
+page table sharing.
 
-I reviewed this and tested it out on the qib.h file we were looking at yesterday 
-and it worked well. I was worried about a nested do {} while(0), because it will 
-match with the first while. Here is a test case:
-#define qib_devinfo(pcidev, fmt, ...) \
-        do { \
-                do { \
-                        dev_info(&(pcidev)->dev, fmt, ##__VA_ARGS__); \
-                } while (0); \
-        } while (0)
+Hugh, I'm afraid you get to choose :)
 
-Checkpatch.pl didn't complain about that one. Granted, it is a contrived test 
-case. Your change will catch the real problems.
-
--Betty
-
-
-
+-- 
+Mel Gorman
+SUSE Labs
