@@ -1,92 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750929Ab2GTEZu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 00:25:50 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:52025 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750709Ab2GTEZo (ORCPT
+	id S1750971Ab2GTEaf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 00:30:35 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36241 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750709Ab2GTEac (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 00:25:44 -0400
-X-AuditID: 9c93016f-b7b08ae00000790d-1c-5008ddc57889
-Date: Fri, 20 Jul 2012 13:25:45 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Tim Chen <tim.c.chen@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        "andi.kleen" <andi.kleen@intel.com>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Cgroup: Fix memory accounting scalability in
- shrink_page_list
-Message-ID: <20120720042545.GA24267@bbox>
-References: <1342740866.13492.50.camel@schen9-DESK>
- <5008CE38.2020300@jp.fujitsu.com>
+	Fri, 20 Jul 2012 00:30:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5008CE38.2020300@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <20120718161023.GE4495@opensource.wolfsonmicro.com>
+References: <20120717185749.GJ4477@opensource.wolfsonmicro.com> <20120718161023.GE4495@opensource.wolfsonmicro.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 19 Jul 2012 22:30:11 -0600
+X-Google-Sender-Auth: lNX2wPf7ZLC0VJLuexympeSAMA8
+Message-ID: <CACxGe6utvV6XbJEck_UuVJxsqckPFZXG3psEgeQ1vZSBGAwm9Q@mail.gmail.com>
+Subject: Re: Boot breaks in -next from LEGACY to LINEAR conversion
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Paul Mundt <lethal@linux-sh.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Kukjin Kim <kgene.kim@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 20, 2012 at 12:19:20PM +0900, Kamezawa Hiroyuki wrote:
-> (2012/07/20 8:34), Tim Chen wrote:
-> >Hi,
-> >
-> >I noticed in a multi-process parallel files reading benchmark I ran on a
-> >8 socket machine,  throughput slowed down by a factor of 8 when I ran
-> >the benchmark within a cgroup container.  I traced the problem to the
-> >following code path (see below) when we are trying to reclaim memory
-> >from file cache.  The res_counter_uncharge function is called on every
-> >page that's reclaimed and created heavy lock contention.  The patch
-> >below allows the reclaimed pages to be uncharged from the resource
-> >counter in batch and recovered the regression.
-> >
-> >Tim
-> >
-> >      40.67%           usemem  [kernel.kallsyms]                   [k] _raw_spin_lock
-> >                       |
-> >                       --- _raw_spin_lock
-> >                          |
-> >                          |--92.61%-- res_counter_uncharge
-> >                          |          |
-> >                          |          |--100.00%-- __mem_cgroup_uncharge_common
-> >                          |          |          |
-> >                          |          |          |--100.00%-- mem_cgroup_uncharge_cache_page
-> >                          |          |          |          __remove_mapping
-> >                          |          |          |          shrink_page_list
-> >                          |          |          |          shrink_inactive_list
-> >                          |          |          |          shrink_mem_cgroup_zone
-> >                          |          |          |          shrink_zone
-> >                          |          |          |          do_try_to_free_pages
-> >                          |          |          |          try_to_free_pages
-> >                          |          |          |          __alloc_pages_nodemask
-> >                          |          |          |          alloc_pages_current
-> >
-> >
-> 
-> Thank you very much !!
-> 
-> When I added batching, I didn't touch page-reclaim path because it delays
-> res_counter_uncharge() and make more threads run into page reclaim.
+On Wed, Jul 18, 2012 at 10:10 AM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Tue, Jul 17, 2012 at 07:57:49PM +0100, Mark Brown wrote:
+>> -next fails to boot for me today on my s3c64xx based systems.  Walking
+>> back to the last time I tried and bisecting likely branches I find that
+>> commit 910139 (irqdomain: Replace LEGACY mapping with LINEAR) is the one
+>> that introduces the build break.  Unfortunately the boot fails before I
+>> get a console which makes diagnosis somewhat more tricky than would be
+>> ideal.  Any ideas?
+>
+> Further data: the irq_domain_associate_many() calls that we're now doing
+> are also causing WARN_ON()s to go off during boot after commit 98aa46
+> (irqdomain: Support for static IRQ mapping and association) causing
+> breakage for my interrupt using MFDs.
 
-Isn't it really problem? It's same as global reclaim.
-In the short term, you might be right but batch free might prevent
-entering more into reclaim path in the long term because we get lots
-of free pages than nenessary one. And we can reduce lock overhead.
-If it is proved as real problem, maybe we need global reclaim, too.
+Okay, I've got a theory about what the issue is now. The .map()
+callback is failing (returning non-zero) for one of the hwirqs. The
+new code is stricter about associations, and actually unwinds the
+associations if one of them fails. The old legacy code simply called
+all the .map() hooks blindly without any error checking. Can you send
+me the kernel log after backing out those changes.
 
-> But, from above score, bactching seems required.
-> 
-> And because of current design of per-zone-per-memcg-LRU, batching
-> works very very well....all lru pages shrink_page_list() scans are on
-> the same memcg.
+The other possibility is that irqs aren't being reserved correctly.
+Seeing the backtrace will tell me which issue it is.
 
-Yes. It's more effective point!
+In the mean time I've backed out the top three commits from irqdomain/next.
 
--- 
-Kind regards,
-Minchan Kim
+g.
