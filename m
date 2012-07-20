@@ -1,75 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752630Ab2GTDDm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 23:03:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16724 "EHLO mx1.redhat.com"
+	id S1752531Ab2GTDG5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 23:06:57 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:40289 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751353Ab2GTDDk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 23:03:40 -0400
-Date: Thu, 19 Jul 2012 23:03:28 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: "Luck, Tony" <tony.luck@intel.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mikew@google.com" <mikew@google.com>,
-        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: Re: [RFC][PATCH v2 2/3] Hold multiple logs
-Message-ID: <20120720030328.GC5637@redhat.com>
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D40FB27FDC@USINDEM103.corp.hds.com>
- <3908561D78D1C84285E8C5FCA982C28F1936EA5F@ORSMSX104.amr.corp.intel.com>
- <A5ED84D3BB3A384992CBB9C77DEDA4D40FB28056@USINDEM103.corp.hds.com>
- <3908561D78D1C84285E8C5FCA982C28F1936EA97@ORSMSX104.amr.corp.intel.com>
- <A5ED84D3BB3A384992CBB9C77DEDA4D40FB2813D@USINDEM103.corp.hds.com>
- <3908561D78D1C84285E8C5FCA982C28F1936EADE@ORSMSX104.amr.corp.intel.com>
- <A5ED84D3BB3A384992CBB9C77DEDA4D40FB28206@USINDEM103.corp.hds.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D40FB28206@USINDEM103.corp.hds.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751353Ab2GTDGy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 23:06:54 -0400
+From: Cody Schafer <cody@linux.vnet.ibm.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Cody Schafer <cody@linux.vnet.ibm.com>
+Subject: [PATCH v3] perf: prevent overflow in size calculation
+Date: Thu, 19 Jul 2012 20:05:25 -0700
+Message-Id: <1342753525-4521-1-git-send-email-cody@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <5008C90A.50705@linux.vnet.ibm.com>
+References: <5008C90A.50705@linux.vnet.ibm.com>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12072003-9360-0000-0000-000008942E8F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 20, 2012 at 12:39:24AM +0000, Seiji Aguchi wrote:
-> 
-> Thank you for describing this in detail.
-> 
-> > Yes - if the OOPs is instrumental in the path leading to the hang/panic - then the OOPS is the first place to look for the root cause of
-> > the problem. But it will be a case by case analysis.
-> > Sometimes the OOPS might be unconnected. If possible we'd like to log more information to allow detective work to decide whether
-> > there is a connection. But as I mentioned above there are severe limits to how much better things are by storing more information.
-> 
-> I understand the reason why you think 3 or 4 logs are reasonable.
-> There are some cases  2nd or 3rd oops is critical....
-> 
-> I have some enterprise customers who are sensitive for a software failure  and specify panic_on_oops=1.
-> In this case, they don't need 3,4 logs. 2 logs  are enough.
-> 
-> So, kernel parameter should be as follows.
-> 
-> Log_num =1
->   - For users who want to hold just one log.
-> 
-> Log_num=2
->   - For users who can handle multiple logs and 1st oops is concerned. (by specifying panic_on_oops=1)
-> 
-> Log_num=3,4
->  -  for users who care about 2nd or 3rd oops.
-> 
-> Log_num=5 or more
-> Invalid value.
+A large enough symbol size causes an overflow in the size parameter to the
+histogram allocation, leading to a segfault in symbol__inc_addr_samples later
+on when this histogram is accessed.
 
-What is the harm of not using this and just letting the number be infinite
-(or until EFI runs out of space)?  Is it a big deal if extra failures are
-logged?
+In the case of being called via perf-report, this returns back and
+gracefully ignores the sample, eventually ignoring the chained return
+value of perf_session_deliver_event in flush_sample_queue.
 
-The hope would be a daemon would clear the old logs out and you never run
-out of space.
+Signed-off-by: Cody Schafer <cody@linux.vnet.ibm.com>
+---
+ tools/perf/util/annotate.c |   13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
-Cheers,
-Don
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index 8069dfb..d88693e 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -426,7 +426,18 @@ int symbol__alloc_hist(struct symbol *sym)
+ {
+ 	struct annotation *notes = symbol__annotation(sym);
+ 	const size_t size = symbol__size(sym);
+-	size_t sizeof_sym_hist = (sizeof(struct sym_hist) + size * sizeof(u64));
++	size_t sizeof_sym_hist;
++
++	/* Check for overflow when calculating sizeof_sym_hist */
++	if (size > (SIZE_MAX - sizeof(struct sym_hist)) / sizeof(u64))
++		return -1;
++
++	sizeof_sym_hist = (sizeof(struct sym_hist) + size * sizeof(u64));
++
++	/* Check for overflow in zalloc argument */
++	if (sizeof_sym_hist > (SIZE_MAX - sizeof(*notes->src))
++				/ symbol_conf.nr_events)
++		return -1;
+ 
+ 	notes->src = zalloc(sizeof(*notes->src) + symbol_conf.nr_events * sizeof_sym_hist);
+ 	if (notes->src == NULL)
+-- 
+1.7.9.5
+
