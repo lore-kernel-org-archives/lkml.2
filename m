@@ -1,186 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752815Ab2GTHIY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 03:08:24 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:59077 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751449Ab2GTHIW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 03:08:22 -0400
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 1/2] regmap-irq: use mask and val rather than using
- mask_buf_def
-Thread-Topic: [PATCH 1/2] regmap-irq: use mask and val rather than using
- mask_buf_def
-Thread-Index: Ac1ljYQFicWxq94xTEeL04V0LuZRav//e3YA//5pgNA=
-Date: Fri, 20 Jul 2012 07:08:15 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998FDA8C@DQHE02.ent.ti.com>
-References: <A874F61F95741C4A9BA573A70FE3998FD99F@DQHE02.ent.ti.com>
- <20120719091011.GI4495@opensource.wolfsonmicro.com>
-In-Reply-To: <20120719091011.GI4495@opensource.wolfsonmicro.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.16.34.32]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753073Ab2GTHIb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 03:08:31 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:44981 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751449Ab2GTHIZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 03:08:25 -0400
+X-IronPort-AV: E=Sophos;i="4.77,621,1336320000"; 
+   d="scan'208";a="5444894"
+Message-ID: <50090509.8000007@cn.fujitsu.com>
+Date: Fri, 20 Jul 2012 15:13:13 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
+To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org
+CC: rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
+        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
+        minchan.kim@gmail.com, akpm@linux-foundation.org,
+        kosaki.motohiro@jp.fujitsu.com,
+        Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>
+Subject: [RFC PATCH 7/8] x86: make __split_large_page() generally avialable
+References: <5009038A.4090001@cn.fujitsu.com>
+In-Reply-To: <5009038A.4090001@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/20 15:09:02,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/20 15:09:05,
+	Serialize complete at 2012/07/20 15:09:05
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Thu, Jul 19, 2012 at 09:04:39AM +0000, Kim, Milo wrote:
-> > Default mask value is used when updating irq registers.
-> > Rather than using mask_buf_def[], use mask and value explicitly.
-> 
-> Why?  What is the problem you are seeing and what is the intended
-> effect
-> of this change?
+We need to clear page table after calling __remove_pages(). We may
+need to clear part of pmd or pud's entry when clearing the page table.
+So we need to split it to small page. Make __split_large_page()
+generally avialable, and we call call this function to split large page.
 
-There are two reasons for this patch.
-One is for better understanding about masking and updated bits.
-The other is related with supporting interrupt-unmasked device.
+CC: David Rientjes <rientjes@google.com>
+CC: Jiang Liu <liuj97@gmail.com>
+CC: Len Brown <len.brown@intel.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Paul Mackerras <paulus@samba.org>
+CC: Christoph Lameter <cl@linux.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+---
+ arch/x86/include/asm/pgtable_types.h |    1 +
+ arch/x86/mm/pageattr.c               |   47 ++++++++++++++++++----------------
+ 2 files changed, 26 insertions(+), 22 deletions(-)
 
-(a) 'mask_buf & val_buf' VS 'mask_buf_def & mask_buf'
-In my opinion, the mask_buf_def[] is 'masking bit' and the mask_buf[] is the 'value' to be updated when the IRQ is enabled/disabled.
-The mask_buf_def[] means which bit is updated - that is exactly *mask bit*.
-The value of mask_buf_def[] is copied from mask_buf[] when regmap_add_irq_chip() is called.
-And then mask_buf_def[] is fixed value.
-On the other hand, the mask_buf[] is variable. The value is updated whenever the IRQ is enabled/disabled.
-Which is better understandable terminology ? 'mask and value' or 'default mask and updated mask'
-I think 'mask & value' is more clear.
+diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
+index 013286a..b725af2 100644
+--- a/arch/x86/include/asm/pgtable_types.h
++++ b/arch/x86/include/asm/pgtable_types.h
+@@ -334,6 +334,7 @@ static inline void update_page_count(int level, unsigned long pages) { }
+  * as a pte too.
+  */
+ extern pte_t *lookup_address(unsigned long address, unsigned int *level);
++extern int __split_large_page(pte_t *kpte, unsigned long address, pte_t *pbase);
+ 
+ #endif	/* !__ASSEMBLY__ */
+ 
+diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+index a718e0d..7dcb6f9 100644
+--- a/arch/x86/mm/pageattr.c
++++ b/arch/x86/mm/pageattr.c
+@@ -501,21 +501,13 @@ out_unlock:
+ 	return do_split;
+ }
+ 
+-static int split_large_page(pte_t *kpte, unsigned long address)
++int __split_large_page(pte_t *kpte, unsigned long address, pte_t *pbase)
+ {
+ 	unsigned long pfn, pfninc = 1;
+ 	unsigned int i, level;
+-	pte_t *pbase, *tmp;
++	pte_t *tmp;
+ 	pgprot_t ref_prot;
+-	struct page *base;
+-
+-	if (!debug_pagealloc)
+-		spin_unlock(&cpa_lock);
+-	base = alloc_pages(GFP_KERNEL | __GFP_NOTRACK, 0);
+-	if (!debug_pagealloc)
+-		spin_lock(&cpa_lock);
+-	if (!base)
+-		return -ENOMEM;
++	struct page *base = virt_to_page(pbase);
+ 
+ 	spin_lock(&pgd_lock);
+ 	/*
+@@ -523,10 +515,11 @@ static int split_large_page(pte_t *kpte, unsigned long address)
+ 	 * up for us already:
+ 	 */
+ 	tmp = lookup_address(address, &level);
+-	if (tmp != kpte)
+-		goto out_unlock;
++	if (tmp != kpte) {
++		spin_unlock(&pgd_lock);
++		return 1;
++	}
+ 
+-	pbase = (pte_t *)page_address(base);
+ 	paravirt_alloc_pte(&init_mm, page_to_pfn(base));
+ 	ref_prot = pte_pgprot(pte_clrhuge(*kpte));
+ 	/*
+@@ -579,17 +572,27 @@ static int split_large_page(pte_t *kpte, unsigned long address)
+ 	 * going on.
+ 	 */
+ 	__flush_tlb_all();
++	spin_unlock(&pgd_lock);
+ 
+-	base = NULL;
++	return 0;
++}
+ 
+-out_unlock:
+-	/*
+-	 * If we dropped out via the lookup_address check under
+-	 * pgd_lock then stick the page back into the pool:
+-	 */
+-	if (base)
++static int split_large_page(pte_t *kpte, unsigned long address)
++{
++	pte_t *pbase;
++	struct page *base;
++
++	if (!debug_pagealloc)
++		spin_unlock(&cpa_lock);
++	base = alloc_pages(GFP_KERNEL | __GFP_NOTRACK, 0);
++	if (!debug_pagealloc)
++		spin_lock(&cpa_lock);
++	if (!base)
++		return -ENOMEM;
++
++	pbase = (pte_t *)page_address(base);
++	if (__split_large_page(kpte, address, pbase))
+ 		__free_page(base);
+-	spin_unlock(&pgd_lock);
+ 
+ 	return 0;
+ }
+-- 
+1.7.1
 
-(b) supporting interrupt-unmasked device
-There is different interrupt concept from interrupt-masked device.
-To enable the IRQ, the register bit should be 1.
-To update this value, the bit of IRQ value should be separated from the mask bit.
-
-< Example >
-Let me assume that enabling the IRQ0 and IRQ1 ... (8 bits register based)
-
-(Interrupt mask device)
-IRQ7 | IRQ6 | IRQ5 | IRQ4 | IRQ3 | IRQ2 | IRQ1 | IRQ0
- 1      1      1      1      1      1      0      0
-Mask  = 0xFC
-Value = 0xFC (same as mask bit)
-
-(Interrupt unmask device)
-IRQ7 | IRQ6 | IRQ5 | IRQ4 | IRQ3 | IRQ2 | IRQ1 | IRQ0
- 0      0      0      0      0      0      1      1
-Mask  = 0xFC
-Value = 0x03 (different from mask bit)
-
-Let's move to regmap_irq data structure with two types.
-
-(Interrupt mask device)
-static struct regmap_irq foo_irqs[] = {
-	[FOO_IRQ0] = {
-		.reg_offset =  0;
-		.mask = BIT(0), /* 0x01 */
-	},
-	[FOO_IRQ1] = {
-		.reg_offset =  0;
-		.mask = BIT(1), /* 0x02 */
-	},
-};
-
-                   Initial time      irq_enable()  irq_enable()
- Value        (regmap_add_irq_chip)   with IRQ0     with IRQ1
-_______________________________________________________________
-mask_buf_def       0x03                0x03          0x03
-mask_buf           0x03                0xFE          0xFD
-updated bits    0000 0011           xxxx xxx0      xxxx xx0x
-            (IRQ0,1 disabled)     (IRQ0 enabled)  (IRQ1 enabled)
-
-Result: Works well.
-        Only one bit is cleared when the IRQ is enabled.
-
-(Interrupt unmask device)
-Case 1)
-static struct regmap_irq foo_irqs[] = {
-	[FOO_IRQ0] = {
-		.reg_offset =  0;
-		.mask = BIT(0), /* 0x01 */
-	},
-	[FOO_IRQ1] = {
-		.reg_offset =  0;
-		.mask = BIT(1), /* 0x02 */
-	},
-};
-
-                   Initial time      irq_enable()  irq_enable()
- Value        (regmap_add_irq_chip)   with IRQ0     with IRQ1
-_______________________________________________________________
-mask_buf_def       0x03                0x03          0x03
-mask_buf           0x03                0xFE          0xFD
-updated bits    0000 0011           xxxx xxx0      xxxx xx0x
-            (IRQ0,1 enabled)     (IRQ0 disabled) (IRQ1 disabled)
-
-Result: Not working.
-        Each IRQ is disabled. Other bits can be enabled not intentionally.
-
-Case 2) What if changing the 'mask' to inverted bit as following.
-static struct regmap_irq foo_irqs[] = {
-	[FOO_IRQ0] = {
-		.reg_offset =  0;
-		.mask = ~BIT(0), /* 0xFE */
-	},
-	[FOO_IRQ1] = {
-		.reg_offset =  0;
-		.mask = ~BIT(1), /* 0xFD */
-	},
-};
-
-                   Initial time      irq_enable()  irq_enable()
- Value        (regmap_add_irq_chip)   with IRQ0     with IRQ1
-_______________________________________________________________
-mask_buf_def       0xFF                0xFF          0xFF
-mask_buf           0xFF                0x01          0x02
-updated bits    1111 1111           0000 0001      0000 0010
-         (All IRQs are enabled)  (IRQ0 enabled,  (IRQ1 enabled,
-                                  others are      but others are disabled)
-                                  disabled)
-
-Result: Not working.
-        Other bits are cleared except flagged IRQ.
-        Only one IRQ exists. Others are ignored. 
-
-In both cases, it doesn't work with interrupt-unmasked-register scheme.
-To fix this issue, two patches were sent.
-The mask and value should be separated -- (1) and different bit operation is required -- (2).
-(1) [PATCH 1/2] regmap-irq: use mask and val rather than using mask_buf_def
-(2) [PATCH 2/2] regmap-irq: support different type of irq register
-
-And then the result will be as following.
-
-(Interrupt mask device)
-
-                   Initial time      irq_enable()  irq_enable()
- Value        (regmap_add_irq_chip)   with IRQ0     with IRQ1
-_______________________________________________________________
-mask_buf           0x03                0x03          0x03
-val_buf             -                  0xFE          0xFD
-updated bits     0000 0011           xxxx xxx0     xxxx xx0x
-             (IRQ0,1 disabled)    (IRQ0 enabled)  (IRQ1 enabled)
-
-(Interrupt unmask device)
-
-                   Initial time      irq_enable()  irq_enable()
- Value        (regmap_add_irq_chip)   with IRQ0     with IRQ1
-_______________________________________________________________
-mask_buf           0x03                0x03          0x03
-val_buf             -                  0x01          0x02
-updated bits     1111 1100           xxxx xxx1     xxxx xx1x
-             (IRQ0,1 disabled)    (IRQ0 enabled)  (IRQ1 enabled)
-
-
-I'm not sure there is another device which supports the interrupt-unmasked register.
-As far as I know, LP8788 is the only device :-(
-
-Thanks !
-
-Best Regards,
-Milo
