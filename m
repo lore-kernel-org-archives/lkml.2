@@ -1,81 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752964Ab2GTCBa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 22:01:30 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:59451 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752531Ab2GTCB2 (ORCPT
+	id S1752904Ab2GTCRp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 22:17:45 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:49884 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752573Ab2GTCRo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 22:01:28 -0400
-Date: Fri, 20 Jul 2012 12:01:18 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michael Neuling <mikey@neuling.org>,
-        Christian Riesch <christian.riesch@omicron.at>
-Subject: linux-next: build failure after merge of the net-next tree
-Message-Id: <20120720120118.465056f267ab5c3ac5ea45c4@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__20_Jul_2012_12_01_18_+1000_yc_XPQQFW=ZoDQyt"
+	Thu, 19 Jul 2012 22:17:44 -0400
+Message-ID: <5008BFC0.4070703@linux.vnet.ibm.com>
+Date: Fri, 20 Jul 2012 10:17:36 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 2/9] KVM: x86: simplify read_emulated
+References: <50056DB8.7080702@linux.vnet.ibm.com> <50056DE6.6020801@linux.vnet.ibm.com> <20120719235828.GA7121@amt.cnet>
+In-Reply-To: <20120719235828.GA7121@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12072002-8256-0000-0000-000003618F11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__20_Jul_2012_12_01_18_+1000_yc_XPQQFW=ZoDQyt
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 07/20/2012 07:58 AM, Marcelo Tosatti wrote:
 
-Hi all,
+>> -	}
+>> +	rc = ctxt->ops->read_emulated(ctxt, addr, mc->data + mc->end, size,
+>> +				      &ctxt->exception);
+>> +	if (rc != X86EMUL_CONTINUE)
+>> +		return rc;
+>> +
+>> +	mc->end += size;
+>> +
+>> +read_cached:
+>> +	memcpy(dest, mc->data + mc->pos, size);
+> 
+> What prevents read_emulated(size > 8) call, with
+> mc->pos == (mc->end - 8) now?
 
-After merging the net-next tree, today's linux-next build (powerpc
-pmac32_defconfig) failed like this:
+Marcelo,
 
-ERROR: "phy_disconnect" [drivers/net/usb/asix.ko] undefined!
-ERROR: "phy_stop" [drivers/net/usb/asix.ko] undefined!
-ERROR: "phy_ethtool_gset" [drivers/net/usb/asix.ko] undefined!
-ERROR: "mdiobus_unregister" [drivers/net/usb/asix.ko] undefined!
-ERROR: "phy_start_aneg" [drivers/net/usb/asix.ko] undefined!
-ERROR: "phy_print_status" [drivers/net/usb/asix.ko] undefined!
-ERROR: "phy_start" [drivers/net/usb/asix.ko] undefined!
-ERROR: "mdiobus_free" [drivers/net/usb/asix.ko] undefined!
-ERROR: "mdiobus_register" [drivers/net/usb/asix.ko] undefined!
-ERROR: "genphy_resume" [drivers/net/usb/asix.ko] undefined!
-ERROR: "phy_connect" [drivers/net/usb/asix.ko] undefined!
-ERROR: "phy_mii_ioctl" [drivers/net/usb/asix.ko] undefined!
-ERROR: "phy_ethtool_sset" [drivers/net/usb/asix.ko] undefined!
-ERROR: "mdiobus_alloc_size" [drivers/net/usb/asix.ko] undefined!
+The splitting has been done in emulator_read_write_onepage:
 
-Caused by commit 16626b0cc3d5 ("asix: Add a new driver for the AX88172A")
-and reverting that commit fixes the build.
+	while (bytes) {
+		unsigned now = min(bytes, 8U);
 
-Thanks to Mikey for reporting this porblem.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+		frag = &vcpu->mmio_fragments[vcpu->mmio_nr_fragments++];
+		frag->gpa = gpa;
+		frag->data = val;
+		frag->len = now;
+		frag->write_readonly_mem = (ret == -EPERM);
 
---Signature=_Fri__20_Jul_2012_12_01_18_+1000_yc_XPQQFW=ZoDQyt
-Content-Type: application/pgp-signature
+		gpa += now;
+		val += now;
+		bytes -= now;
+	}
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+So i think it is safe to remove the splitting in read_emulated.
 
-iQIcBAEBCAAGBQJQCLvuAAoJEECxmPOUX5FEOH8P/180Jlo7BIX5dyA9xyM/smgT
-b2TcowgexOejmuA3mTHaSdvDrMNESuS3EhQPeYREA8jKbp90kpfizjybiKc968vy
-WiCh2cYO9jAphC7lihB/IC1Q2ffRg844+c4nJLFd8P6DT+LWMnzjpPfXekhaJNnJ
-hmQvp3OrzPSF/2T/Uy4IW9Q04n7uoW+ttmQ7d+YT+JRfTQi9xhOrKU05UwEh/4Nq
-KCUGzUO549u85JcHqFyGLhcLZC9ekHiVLmSYOoUH6+Y20m7ofcMg9Sczi8pTZelq
-Hvm9maPATtLw+mRxjF6Z+NhGznoRooaorHdD/a3CrMtJ5oeZ76miSuE5euSUrjTr
-m+Dwg8Fa1Jv8FgSBg4EsVYCONuHdwK8LcNosu30PJGB49B1Y8sdLa/LrmUSd3tWC
-KOdg/L1BIeLmar5f93qnvHpN9frNcstNfaMHawBAWuhuItHr3GNOY1RFDIUdcXey
-iSDM8kVep23wicqZXapyGSAgMw+H0Vqv/KooyYpWVYfKTxaYzWi+Dev7tcdKu5Zb
-UftnTlEX+93tAhHR110fKtVzuqxfYPEyaMh52lwzMZGAfXcEyIVqxpzWQ8Em6Oxs
-LU4dL4DU0H0ZHXHZBg9Jrl5FtEK/UnOiKnnY6HvlRD4lLnXyCQ5TzW67ACcGT8+Q
-wYd3gz3PT2p9lBAKXBh0
-=yz+h
------END PGP SIGNATURE-----
-
---Signature=_Fri__20_Jul_2012_12_01_18_+1000_yc_XPQQFW=ZoDQyt--
