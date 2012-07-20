@@ -1,42 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752966Ab2GTHGq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 03:06:46 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:45362 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751930Ab2GTHGn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 03:06:43 -0400
-Date: Fri, 20 Jul 2012 10:06:34 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [patch] tty: handle NULL parameters in free_tty_struct()
-Message-ID: <20120720070634.GC11710@elgon.mountain>
+	id S1752982Ab2GTHHl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 03:07:41 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:15814 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752298Ab2GTHHi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 03:07:38 -0400
+X-IronPort-AV: E=Sophos;i="4.77,621,1336320000"; 
+   d="scan'208";a="5444883"
+Message-ID: <500904D6.3030109@cn.fujitsu.com>
+Date: Fri, 20 Jul 2012 15:12:22 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org
+CC: rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
+        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
+        minchan.kim@gmail.com, akpm@linux-foundation.org,
+        kosaki.motohiro@jp.fujitsu.com,
+        Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>
+Subject: [RFC PATCH 6/8] memory-hotplug: introduce new function arch_remove_memory()
+References: <5009038A.4090001@cn.fujitsu.com>
+In-Reply-To: <5009038A.4090001@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/20 15:08:11,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/20 15:08:16,
+	Serialize complete at 2012/07/20 15:08:16
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We sometimes pass NULL pointers to free_tty_struct().  One example where
-it can happen is in the error handling code in pty_common_install().
+We don't call __add_pages() directly in the function add_memory()
+because some other architecture related thins needs to be done
+before or after calling __add_pages(). So we should not call
+__remove_pages() directly in the function remove_memory.
+Introduce new function arch_remove_memory() to revert the things done
+in arch_add_memory().
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Note: the function for x86_64 will be implemented later. And I don't
+know how to implement it for s390.
 
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index ca7c25d..e49b839 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -181,6 +181,8 @@ struct tty_struct *alloc_tty_struct(void)
+CC: David Rientjes <rientjes@google.com>
+CC: Jiang Liu <liuj97@gmail.com>
+CC: Len Brown <len.brown@intel.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Paul Mackerras <paulus@samba.org>
+CC: Christoph Lameter <cl@linux.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+---
+ arch/ia64/mm/init.c            |   16 ++++++++++++++++
+ arch/powerpc/mm/mem.c          |   14 ++++++++++++++
+ arch/s390/mm/init.c            |    8 ++++++++
+ arch/sh/mm/init.c              |   15 +++++++++++++++
+ arch/tile/mm/init.c            |    8 ++++++++
+ arch/x86/mm/init_32.c          |   10 ++++++++++
+ arch/x86/mm/init_64.c          |    7 +++++++
+ include/linux/memory_hotplug.h |    1 +
+ mm/memory_hotplug.c            |    2 +-
+ 9 files changed, 80 insertions(+), 1 deletions(-)
+
+diff --git a/arch/ia64/mm/init.c b/arch/ia64/mm/init.c
+index 0eab454..1e345ed 100644
+--- a/arch/ia64/mm/init.c
++++ b/arch/ia64/mm/init.c
+@@ -688,6 +688,22 @@ int arch_add_memory(int nid, u64 start, u64 size)
  
- void free_tty_struct(struct tty_struct *tty)
+ 	return ret;
+ }
++
++#ifdef CONFIG_MEMORY_HOTREMOVE
++int arch_remove_memory(u64 start, u64 size)
++{
++	unsigned long start_pfn = start >> PAGE_SHIFT;
++	unsigned long nr_pages = size >> PAGE_SHIFT;
++	int ret;
++
++	ret = __remove_pages(start_pfn, nr_pages);
++	if (ret)
++		pr_warn("%s: Problem encountered in __remove_pages() as"
++			" ret=%d\n", __func__,  ret);
++
++	return ret;
++}
++#endif
+ #endif
+ 
+ /*
+diff --git a/arch/powerpc/mm/mem.c b/arch/powerpc/mm/mem.c
+index baaafde..249cef4 100644
+--- a/arch/powerpc/mm/mem.c
++++ b/arch/powerpc/mm/mem.c
+@@ -133,6 +133,20 @@ int arch_add_memory(int nid, u64 start, u64 size)
+ 
+ 	return __add_pages(nid, zone, start_pfn, nr_pages);
+ }
++
++#ifdef CONFIG_MEMORY_HOTREMOVE
++int arch_remove_memory(u64 start, u64 size)
++{
++	unsigned long start_pfn = start >> PAGE_SHIFT;
++	unsigned long nr_pages = size >> PAGE_SHIFT;
++
++	start = (unsigned long)__va(start);
++	if (remove_section_mapping(start, start + size))
++		return -EINVAL;
++
++	return __remove_pages(start_pfn, nr_pages);
++}
++#endif
+ #endif /* CONFIG_MEMORY_HOTPLUG */
+ 
+ /*
+diff --git a/arch/s390/mm/init.c b/arch/s390/mm/init.c
+index 2bea060..3de0d5b 100644
+--- a/arch/s390/mm/init.c
++++ b/arch/s390/mm/init.c
+@@ -259,4 +259,12 @@ int arch_add_memory(int nid, u64 start, u64 size)
+ 		vmem_remove_mapping(start, size);
+ 	return rc;
+ }
++
++#ifdef CONFIG_MEMORY_HOTREMOVE
++int arch_remove_memory(u64 start, u64 size)
++{
++	/* TODO */
++	return -EBUSY;
++}
++#endif
+ #endif /* CONFIG_MEMORY_HOTPLUG */
+diff --git a/arch/sh/mm/init.c b/arch/sh/mm/init.c
+index 82cc576..fc84491 100644
+--- a/arch/sh/mm/init.c
++++ b/arch/sh/mm/init.c
+@@ -558,4 +558,19 @@ int memory_add_physaddr_to_nid(u64 addr)
+ EXPORT_SYMBOL_GPL(memory_add_physaddr_to_nid);
+ #endif
+ 
++#ifdef CONFIG_MEMORY_HOTREMOVE
++int arch_remove_memory(u64 start, u64 size)
++{
++	unsigned long start_pfn = start >> PAGE_SHIFT;
++	unsigned long nr_pages = size >> PAGE_SHIFT;
++	int ret;
++
++	ret = __remove_pages(start_pfn, nr_pages);
++	if (unlikely(ret))
++		pr_warn("%s: Failed, __remove_pages() == %d\n", __func__,
++			ret);
++
++	return ret;
++}
++#endif
+ #endif /* CONFIG_MEMORY_HOTPLUG */
+diff --git a/arch/tile/mm/init.c b/arch/tile/mm/init.c
+index 630dd2c..bdd8a99 100644
+--- a/arch/tile/mm/init.c
++++ b/arch/tile/mm/init.c
+@@ -947,6 +947,14 @@ int remove_memory(u64 start, u64 size)
  {
-+	if (!tty)
-+		return;
- 	if (tty->dev)
- 		put_device(tty->dev);
- 	kfree(tty->write_buf);
+ 	return -EINVAL;
+ }
++
++#ifdef CONFIG_MEMORY_HOTREMOVE
++int arch_remove_memory(u64 start, u64 size)
++{
++	/* TODO */
++	return -EBUSY;
++}
++#endif
+ #endif
+ 
+ struct kmem_cache *pgd_cache;
+diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+index 575d86f..a690153 100644
+--- a/arch/x86/mm/init_32.c
++++ b/arch/x86/mm/init_32.c
+@@ -842,6 +842,16 @@ int arch_add_memory(int nid, u64 start, u64 size)
+ 
+ 	return __add_pages(nid, zone, start_pfn, nr_pages);
+ }
++
++#ifdef CONFIG_MEMORY_HOTREMOVE
++int arch_remove_memory(unsigned long start, unsigned long size)
++{
++	unsigned long start_pfn = start >> PAGE_SHIFT;
++	unsigned long nr_pages = size >> PAGE_SHIFT;
++
++	return __remove_pages(start_pfn, nr_pages);
++}
++#endif
+ #endif
+ 
+ /*
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 9e635b3..78b94bc 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -675,6 +675,13 @@ int arch_add_memory(int nid, u64 start, u64 size)
+ }
+ EXPORT_SYMBOL_GPL(arch_add_memory);
+ 
++#ifdef CONFIG_MEMORY_HOTREMOVE
++int arch_remove_memory(unsigned long start, unsigned long size)
++{
++	/* TODO */
++	return -EBUSY;
++}
++#endif
+ #endif /* CONFIG_MEMORY_HOTPLUG */
+ 
+ static struct kcore_list kcore_vsyscall;
+diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
+index 2ba0a1a..8639799 100644
+--- a/include/linux/memory_hotplug.h
++++ b/include/linux/memory_hotplug.h
+@@ -84,6 +84,7 @@ extern void __online_page_free(struct page *page);
+ 
+ #ifdef CONFIG_MEMORY_HOTREMOVE
+ extern bool is_pageblock_removable_nolock(struct page *page);
++extern int arch_remove_memory(unsigned long start, unsigned long size);
+ #endif /* CONFIG_MEMORY_HOTREMOVE */
+ 
+ /* reasonably generic interface to expand the physical pages in a zone  */
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index dccdf71..cc2c8b9 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -1055,7 +1055,7 @@ int __ref remove_memory(int nid, u64 start, u64 size)
+ 		unregister_one_node(nid);
+ 	}
+ 
+-	__remove_pages(start >> PAGE_SHIFT, size >> PAGE_SHIFT);
++	arch_remove_memory(start, size);
+ out:
+ 	unlock_memory_hotplug();
+ 	return ret;
+-- 
+1.7.1
+
