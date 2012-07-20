@@ -1,222 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752587Ab2GTAhl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 20:37:41 -0400
-Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:26969
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752320Ab2GTAhj convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 20:37:39 -0400
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC102.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-X-SpamScore: -10
-X-BigFish: VS-10(zzbb2dI98dI9371I148cI542M1432Izz1202hzz8275dhz2fh2a8h683h839h944hd25hf0ah107ah)
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT003.namprd03.prod.outlook.com;R:internal;EFV:INT
-From: KY Srinivasan <kys@microsoft.com>
-To: Anthony Liguori <anthony@codemonkey.ws>
-CC: "Greg KH (gregkh@linuxfoundation.org)" <gregkh@linuxfoundation.org>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: RE: 0xB16B00B5? Really? (was Re: Move hyperv out of the
- drivers/staging/ directory)
-Thread-Topic: 0xB16B00B5? Really? (was Re: Move hyperv out of the
- drivers/staging/ directory)
-Thread-Index: AQHNYOGVQIU8WaEGMU+rzjsXSQqoHZcv427wgAE/uYCAAABWIIAADugAgAAAffCAABTZAIAAFRjA
-Date: Fri, 20 Jul 2012 00:37:21 +0000
-Message-ID: <426367E2313C2449837CD2DE46E7EAF9235476A1@SN2PRD0310MB382.namprd03.prod.outlook.com>
-References: <6E21E5352C11B742B20C142EB499E048081E935D@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <20110922173618.GA5624@suse.de>
- <6E21E5352C11B742B20C142EB499E048081EB789@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <20111004170415.GA1320@suse.de>
- <6E21E5352C11B742B20C142EB499E048081EB86F@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <20111004193414.GA15672@suse.de> <4FFFF711.8040003@redhat.com>
- <426367E2313C2449837CD2DE46E7EAF923547292@SN2PRD0310MB382.namprd03.prod.outlook.com>
- <20120719210709.GA32031@kroah.com>
- <426367E2313C2449837CD2DE46E7EAF9235475EE@SN2PRD0310MB382.namprd03.prod.outlook.com>
- <20120719220142.GA1513@kroah.com>
- <426367E2313C2449837CD2DE46E7EAF923547620@SN2PRD0310MB382.namprd03.prod.outlook.com>
- <500895AC.7020303@codemonkey.ws>
-In-Reply-To: <500895AC.7020303@codemonkey.ws>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [108.24.39.100]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752681Ab2GTAjI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 20:39:08 -0400
+Received: from mga09.intel.com ([134.134.136.24]:44902 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751856Ab2GTAjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 19 Jul 2012 20:39:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="174530806"
+Message-ID: <5008A847.4070006@linux.intel.com>
+Date: Thu, 19 Jul 2012 17:37:27 -0700
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PRD0310HT003.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%CODEMONKEY.WS$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LISTS.OSDL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14HUBC102.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14HUBC102.redmond.corp.microsoft.com
-X-OriginatorOrg: microsoft.com
+To: Dave Jones <davej@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Darren Hart <darren@dvhart.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: 3.5-rc6 futex_wait_requeue_pi oops.
+References: <20120713180823.GA24972@redhat.com> <alpine.LFD.2.02.1207132032330.32033@ionos> <20120713185402.GA1707@redhat.com> <5008969F.5030901@linux.intel.com>
+In-Reply-To: <5008969F.5030901@linux.intel.com>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 
-> -----Original Message-----
-> From: Anthony Liguori [mailto:anthony@codemonkey.ws]
-> Sent: Thursday, July 19, 2012 7:18 PM
-> To: KY Srinivasan
-> Cc: Greg KH (gregkh@linuxfoundation.org); Paolo Bonzini;
-> devel@linuxdriverproject.org; linux-kernel@vger.kernel.org;
-> virtualization@lists.osdl.org
-> Subject: Re: 0xB16B00B5? Really? (was Re: Move hyperv out of the
-> drivers/staging/ directory)
+On 07/19/2012 04:22 PM, Darren Hart wrote:
 > 
-> On 07/19/2012 05:30 PM, KY Srinivasan wrote:
-> >
-> >
-> >> -----Original Message-----
-> >> From: Greg KH (gregkh@linuxfoundation.org)
-> >> [mailto:gregkh@linuxfoundation.org]
-> >> Sent: Thursday, July 19, 2012 6:02 PM
-> >> To: KY Srinivasan
-> >> Cc: Paolo Bonzini; devel@linuxdriverproject.org; linux-
-> kernel@vger.kernel.org;
-> >> virtualization@lists.osdl.org
-> >> Subject: Re: 0xB16B00B5? Really? (was Re: Move hyperv out of the
-> >> drivers/staging/ directory)
-> >>
-> >> On Thu, Jul 19, 2012 at 09:22:53PM +0000, KY Srinivasan wrote:
-> >>>
-> >>>
-> >>>> -----Original Message-----
-> >>>> From: Greg KH (gregkh@linuxfoundation.org)
-> >>>> [mailto:gregkh@linuxfoundation.org]
-> >>>> Sent: Thursday, July 19, 2012 5:07 PM
-> >>>> To: KY Srinivasan
-> >>>> Cc: Paolo Bonzini; devel@linuxdriverproject.org; linux-
-> >> kernel@vger.kernel.org;
-> >>>> virtualization@lists.osdl.org
-> >>>> Subject: Re: 0xB16B00B5? Really? (was Re: Move hyperv out of the
-> >>>> drivers/staging/ directory)
-> >>>>
-> >>>> On Thu, Jul 19, 2012 at 02:11:47AM +0000, KY Srinivasan wrote:
-> >>>>>
-> >>>>>
-> >>>>>> -----Original Message-----
-> >>>>>> From: Paolo Bonzini [mailto:paolo.bonzini@gmail.com] On Behalf Of
-> Paolo
-> >>>>>> Bonzini
-> >>>>>> Sent: Friday, July 13, 2012 6:23 AM
-> >>>>>> To: KY Srinivasan
-> >>>>>> Cc: Greg KH; devel@linuxdriverproject.org; linux-
-> kernel@vger.kernel.org;
-> >>>>>> virtualization@lists.osdl.org
-> >>>>>> Subject: 0xB16B00B5? Really? (was Re: Move hyperv out of the
-> >>>> drivers/staging/
-> >>>>>> directory)
-> >>>>>>
-> >>>>>> Il 04/10/2011 21:34, Greg KH ha scritto:
-> >>>>>>> diff --git a/drivers/staging/hv/hyperv_vmbus.h
-> >>>> b/drivers/hv/hyperv_vmbus.h
-> >>>>>>> similarity index 99%
-> >>>>>>> rename from drivers/staging/hv/hyperv_vmbus.h
-> >>>>>>> rename to drivers/hv/hyperv_vmbus.h
-> >>>>>>> index 3d2d836..8261cb6 100644
-> >>>>>>> --- a/drivers/staging/hv/hyperv_vmbus.h
-> >>>>>>> +++ b/drivers/hv/hyperv_vmbus.h
-> >>>>>>> @@ -28,8 +28,7 @@
-> >>>>>>>   #include<linux/list.h>
-> >>>>>>>   #include<asm/sync_bitops.h>
-> >>>>>>>   #include<linux/atomic.h>
-> >>>>>>> -
-> >>>>>>> -#include "hyperv.h"
-> >>>>>>> +#include<linux/hyperv.h>
-> >>>>>>>
-> >>>>>>>   /*
-> >>>>>>>    * The below CPUID leaves are present if
-> >>>>>> VersionAndFeatures.HypervisorPresent
-> >>>>>>
-> >>>>>> git's rename detection snips away this gem:
-> >>>>>>
-> >>>>>> +#define HV_LINUX_GUEST_ID_LO		0x00000000
-> >>>>>> +#define HV_LINUX_GUEST_ID_HI		0xB16B00B5
-> >>>>>> +#define HV_LINUX_GUEST_ID
-> 	(((u64)HV_LINUX_GUEST_ID_HI
-> >>>>>> <<  32) | \
-> >>>>>> +					   HV_LINUX_GUEST_ID_LO)
-> >>>>>>
-> >>>>>> Somone was trying to be funny, I guess.
-> >>>>>>
-> >>>>>> KY, I suppose you have access to Hyper-V code or can ask someone who
-> >>>> does.
-> >>>>>> Is this signature actually used in the Hyper-V host code?
-> >>>>>
-> >>>>> Paolo,
-> >>>>>
-> >>>>> As I noted earlier, this is just a guest ID that needs to be registered with
-> the
-> >>>>> hypervisor.  Thanks  for reporting this issue and on behalf of Microsoft, I
-> >> would
-> >>>>> like to  apologize for this offensive string. I have submitted a patch to fix
-> this
-> >>>> issue.
-> >>>>
-> >>>> You only changed it to be in decimal, you did not change the id at all.
-> >>>> Is there some reason why you can not change it?  You said there was a
-> >>>> reserved range of ids that could be used, perhaps just pick another one?
-> >>>> What is the valid range that can be used here?
-> >>>
-> >>> Greg,
-> >>>
-> >>> As you know, this ID has been in use for a long time now. While the
-> hypervisor
-> >>> does not interpret the guest ID that is registered, I am not sure what
-> >> dependencies
-> >>> there might be on this value.
-> >>
-> >> Could you please go find out the answer to this?
-> >
-> > That is easier said than done. I have sent emails out asking this very question
-> and I have
-> > not received a definitive answer yet. Not knowing if and when I can get a
-> definitive
-> > answer here, I chose the least risky approach in my patch.
-> >>
-> >> If, as you originally stated, there is a range of values we can use,
-> >> then we should probably use another one, right?
-> >
-> > On the Windows side this ID namespace is managed well. However on the Linux
-> > side, we have really had this current ID in use for almost five years now. I am
-> not
-> > aware of any pool of IDs available for Linux usage except that Linux IDs be
-> distinct from
-> > the guest IDs in use by MSFT operating systems. If I were to change the guest
-> ID, I would
-> > probably want to comply with the MSFT guidance on constructing these IDs
-> (although not
-> > all fields may be relevant for Linux).
 > 
-> Presumably, Hyper-V can deal with unexpected values here, no?  Otherwise, it
-> wouldn't be future proof against new types of guests.
-
-Anthony,
-
-As I noted earlier, the current versions of MSFT hypervisors don't interpret the guest ID
-value although future versions might. However, this ID may be retrieved from the
-parent partition and can be used by the management stack (today).
+> On 07/13/2012 11:54 AM, Dave Jones wrote:
+>> On Fri, Jul 13, 2012 at 08:47:38PM +0200, Thomas Gleixner wrote:
+>>  > On Fri, 13 Jul 2012, Dave Jones wrote:
+>>  > 
+>>  > > Looks like calling futex() with garbage makes things unhappy.
+>>  > 
+>>  >                 WARN_ON(!&q.pi_state);
+>>  >                 pi_mutex = &q.pi_state->pi_mutex;
+>>  >                 ret = rt_mutex_finish_proxy_lock(pi_mutex, to, &rt_waiter, 1);
+>>  >                 debug_rt_mutex_free_waiter(&rt_waiter);
+>>  > 
+>>  > So there is some weird way which causes q.pi_state = NULL. Dave, did
+>>  > you see the warning before the oops happened ?
+>>
+>> No, that didn't seem to trigger.
 > 
-> So worst case scenario, Hyper-V disables optimizations on Linux guests that
-> report then new ID until they patch Hyper-V to know about the new ID.
+> Well I don't have a fix yet, but I can explain this not triggering.
 > 
-> That seems like a reasonable trade off to me.  I'm sure there's sufficient
-> incentive to patch Hyper-V for this at Microsoft...
+> q is on the stack, so the ADDRESS for q.pi_state is never going to be
+> NULL. However, properly instrumented, we do see this:
+> 
+> [   23.621501] ---[ end trace 20bdfb44db182a17 ]---
+> [   23.622425] q.pi_state @           (null)
+> [   23.623272] &q.pi_state @ ffff880185e2dca8
+> [   23.624119] ------------[ cut here ]------------
+> 
+> Duh.
+> 
+> I'll add a fix to that WARN_ON in my futex-fixes branch along with the
+> fix for the bug Dan found.
+> 
 
-This is something I want to do once I am sure that nothing will break.
+I think I have root cause. futex_wait_requeue_pi() doesn't like having
+uaddr == uaddr2. The handle_early_wakeup() doesn't detect a problem
+because key2 IS the same as key1, I think. I've just discovered this and
+quickly hacked in a "if (uaddr==uaddr2) return -EINVAL" fix and the test
+continues to run (with just ops 0, 11, 12) for several minutes now
+(typically fails in a few seconds). I'll let it run for a few hours and
+contemplate the proper fix.
 
-Regards,
-
-K. Y
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
 
 
