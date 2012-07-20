@@ -1,87 +1,589 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752221Ab2GTTwM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 15:52:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34812 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751573Ab2GTTwK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 15:52:10 -0400
-Date: Fri, 20 Jul 2012 16:52:03 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 2/9] KVM: x86: simplify read_emulated
-Message-ID: <20120720195203.GA25355@amt.cnet>
-References: <50056DB8.7080702@linux.vnet.ibm.com>
- <50056DE6.6020801@linux.vnet.ibm.com>
- <20120719235828.GA7121@amt.cnet>
- <5008BFC0.4070703@linux.vnet.ibm.com>
- <20120720105840.GA16859@amt.cnet>
- <50095A00.7010606@linux.vnet.ibm.com>
+	id S1752249Ab2GTT4x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 15:56:53 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:54139 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751619Ab2GTT4w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 15:56:52 -0400
+X-Forefront-Antispam-Report: CIP:160.36.179.112;KIP:(null);UIP:(null);IPV:NLI;H:kedge2.utk.tennessee.edu;RD:kedge2.utk.tennessee.edu;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(zzzz1202hzzz2dh87h2a8h668h839h8e2h8e3h944he96h107ahbe9i)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Fri, 20 Jul 2012 15:56:46 -0400
+From: Vince Weaver <vweaver1@eecs.utk.edu>
+X-X-Sender: vweaver1@cl320.icl.utk.edu
+To: <linux-kernel@vger.kernel.org>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Stephane Eranian <eranian@gmail.com>
+Subject: rdpmc read performance issue
+Message-ID: <alpine.DEB.2.00.1207201551250.27782@cl320.icl.utk.edu>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50095A00.7010606@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 20, 2012 at 09:15:44PM +0800, Xiao Guangrong wrote:
-> On 07/20/2012 06:58 PM, Marcelo Tosatti wrote:
-> > On Fri, Jul 20, 2012 at 10:17:36AM +0800, Xiao Guangrong wrote:
-> >> On 07/20/2012 07:58 AM, Marcelo Tosatti wrote:
-> >>
-> >>>> -	}
-> >>>> +	rc = ctxt->ops->read_emulated(ctxt, addr, mc->data + mc->end, size,
-> >>>> +				      &ctxt->exception);
-> >>>> +	if (rc != X86EMUL_CONTINUE)
-> >>>> +		return rc;
-> >>>> +
-> >>>> +	mc->end += size;
-> >>>> +
-> >>>> +read_cached:
-> >>>> +	memcpy(dest, mc->data + mc->pos, size);
-> >>>
-> >>> What prevents read_emulated(size > 8) call, with
-> >>> mc->pos == (mc->end - 8) now?
-> >>
-> >> Marcelo,
-> >>
-> >> The splitting has been done in emulator_read_write_onepage:
-> >>
-> >> 	while (bytes) {
-> >> 		unsigned now = min(bytes, 8U);
-> >>
-> >> 		frag = &vcpu->mmio_fragments[vcpu->mmio_nr_fragments++];
-> >> 		frag->gpa = gpa;
-> >> 		frag->data = val;
-> >> 		frag->len = now;
-> >> 		frag->write_readonly_mem = (ret == -EPERM);
-> >>
-> >> 		gpa += now;
-> >> 		val += now;
-> >> 		bytes -= now;
-> >> 	}
-> >>
-> >> So i think it is safe to remove the splitting in read_emulated.
-> > 
-> > Yes, it is fine to remove it.
-> > 
-> > But splitting in emulate.c prevented the case of _cache read_ with size
-> >> 8 beyond end of mc->data. Must handle that case in read_emulated.
-> > 
-> > "What prevents read_emulated(size > 8) call, with mc->pos == (mc->end - 8) now?"
-> 
-> You mean the mmio region is partly cached?
-> 
-> I think it can not happen. Now, we pass the whole size to emulator_read_write_onepage(),
-> after it is finished, it saves the whole data into mc->data[], so, the cache-read
-> can always get the whole data from mc->data[].
+Hello
 
-I mean that nothing prevents a caller from reading beyond the end of
-mc->data array (but then again this was the previous behavior).
+I was testing out the newish "rdpmc from userspace" patches that made it 
+into 3.4.  (I was considering adding support to PAPI).  However I've found 
+that using rdpmc is *slower* than just using regular read.
 
-ACK
+Am I doing something wrong?  At least on this core2 system it's never 
+faster to use rdpmc, and it gets worse as you add more than one event.
+
+Core2 Average Read Overhead (Cycles)
+
+Events	rdpmc	read
+1	2935	2104
+2	4934	2902
+3	7088	3751
+4	9158	4597
+
+
+Vince
+
+
+Below is the test code.  You have to specify one of the architectures 
+supported (core2, nehalem, atom, amd0fh) to get usable events.
+
+
+
+
+/* by Vince Weaver, vweaver1@eecs.utk.edu                        */
+/* Compile with gcc -O2 -o rdpmc_overhead rdpmc_overhead.c       */
+/* You need at least a 3.4 kernel for this to run.               */
+/* Ideally you'll turn off NMI watchdog too.                     */
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+
+#include <sys/utsname.h>
+
+#include <time.h>
+
+#include "perf_event.h"
+#include <unistd.h>
+#include <asm/unistd.h>
+
+#include <sys/ioctl.h>
+#include <errno.h>
+
+#include <sys/mman.h>
+
+#ifndef __NR_perf_event_open
+
+#if defined(__i386__)
+#define __NR_perf_event_open    336
+#elif defined(__x86_64__) 
+#define __NR_perf_event_open    298
+#elif defined __powerpc__
+#define __NR_perf_event_open    319
+#elif defined __arm__
+#define __NR_perf_event_open    364
+#endif
+#endif
+
+
+int perf_event_open(struct perf_event_attr *hw_event_uptr,
+                    pid_t pid, int cpu, int group_fd, unsigned long flags) {
+   
+  return syscall(__NR_perf_event_open,hw_event_uptr, pid, cpu,
+                 group_fd, flags);
+}
+
+#define MAX_EVENTS 16
+
+int core2_events[MAX_EVENTS]={
+  0x53003c, //"UNHALTED_CORE_CYCLES",         /* PAPI_TOT_CYC */
+  0x5300c0, //"INSTRUCTIONS_RETIRED",         /* PAPI_TOT_INS */
+  0x5300c4, //"BRANCH_INSTRUCTIONS_RETIRED",  /* PAPI_BR_INS  */
+  0x5300c5, //"MISPREDICTED_BRANCH_RETIRED",  /* PAPI_BR_MSP  */
+  0x531282, //"ITLB:MISSES",                  /* PAPI_TLB_IM  */
+  0x530108, //"DTLB_MISSES:ANY",              /* PAPI_TLB_DM  */
+  0x530080, //"L1I_READS",                    /* PAPI_L1_ICA  */
+  0x530081, //"L1I_MISSES",                   /* PAPI_L1_ICM  */
+  0x530143, //"L1D_ALL_REF",                  /* PAPI_L1_DCA  */
+  0x530f45, //"L1D_REPL",                     /* PAPI_L1_DCM  */
+  0x5300c8, //"HW_INT_RCV",                   /* PAPI_HW_INT  */
+  0x530010, //"FP_COMP_OPS_EXE",              /* PAPI_FP_OPS  */
+  0x5301c0, //"INST_RETIRED:LOADS",           /* PAPI_LD_INS  */
+  0x5302c0, //"INST_RETIRED:STORES",          /* PAPI_SR_INS  */
+  0x537f2e, //"L2_RQSTS:SELF:ANY:MESI",       /* PAPI_L2_TCA  */
+  0x537024, //"L2_LINES_IN:SELF:ANY",         /* PAPI_L2_TCM  */
+};
+
+int atom_events[MAX_EVENTS]={
+  0x53003c, //"UNHALTED_CORE_CYCLES",         /* PAPI_TOT_CYC */
+  0x5300c0, // "INSTRUCTIONS_RETIRED",         /* PAPI_TOT_INS */
+  0x5300c4, // "BRANCH_INSTRUCTIONS_RETIRED",  /* PAPI_BR_INS  */
+  0x5300c5, // "MISPREDICTED_BRANCH_RETIRED",  /* PAPI_BR_MSP  */
+  0x530282, // "ITLB:MISSES",                  /* PAPI_TLB_IM  */
+  0x530708, // "DATA_TLB_MISSES:DTLB_MISS",    /* PAPI_TLB_DM  */
+  0x530380, //"ICACHE:ACCESSES",              /* PAPI_L1_ICA  */
+  0x530280, // "ICACHE:MISSES",                /* PAPI_L1_ICM  */
+  0x532140, // "L1D_CACHE:LD",                 /* PAPI_L1_DCA  */
+  0x537f2e, // "L2_RQSTS:SELF",                /* PAPI_L1_DCM  */
+  0x5301c8, //"HW_INT_RCV",                   /* PAPI_HW_INT  */
+  0x531fc7, // "SIMD_INST_RETIRED:ANY",        /* PAPI_FP_OPS  */
+  0x537f29, //"L2_LD:SELF:ANY:MESI",          /* PAPI_LD_INS  */
+  0x534f2a, //"L2_ST:SELF:MESI",              /* PAPI_SR_INS  */
+  0x537f29, //"L2_LD:SELF:ANY:MESI",          /* PAPI_L2_TCA  */
+  0x537024, //"L2_LINES_IN:SELF:ANY",         /* PAPI_L2_TCM  */
+};
+
+int amd10h_events[MAX_EVENTS]={
+  0x530076, // "CPU_CLK_UNHALTED",                         /* PAPI_TOT_CYC */
+  0x5300c0, // "RETIRED_INSTRUCTIONS",                     /* PAPI_TOT_INS */
+  0x5300c2, // "RETIRED_BRANCH_INSTRUCTIONS",              /* PAPI_BR_INS  */
+  0x5300c3, // "RETIRED_MISPREDICTED_BRANCH_INSTRUCTIONS", /* PAPI_BR_MSP  */
+  0x530385, // "L1_ITLB_MISS_AND_L2_ITLB_MISS:ALL",        /* PAPI_TLB_IM  */
+  0x530746, // "L1_DTLB_AND_L2_DTLB_MISS",                 /* PAPI_TLB_DM  */
+  0x530080, // "INSTRUCTION_CACHE_FETCHES",                /* PAPI_L1_ICA  */
+  0x530081, // "INSTRUCTION_CACHE_MISSES",                 /* PAPI_L1_ICM  */
+  0x530040, // "DATA_CACHE_ACCESSES",                      /* PAPI_L1_DCA  */
+  0x530041, // "DATA_CACHE_MISSES",                        /* PAPI_L1_DCM  */
+  0x5300cf, // "INTERRUPTS_TAKEN",                         /* PAPI_HW_INT  */
+  0x530300, // "DISPATCHED_FPU:OPS_MULTIPLY:OPS_ADD",      /* PAPI_FP_OPS  */
+  0x5300d0, // "DECODER_EMPTY",                            /* PAPI_LD_INS  */ /* nope */
+  0x5300d1, // "DISPATCH_STALLS",                          /* PAPI_SR_INS  */ /* nope */
+  0x533f7d, // "REQUESTS_TO_L2:ALL",                       /* PAPI_L2_TCA  */
+  0x53037e, // "L2_CACHE_MISS:INSTRUCTIONS:DATA",          /* PAPI_L2_TCM  */
+};
+
+int nehalem_events[MAX_EVENTS]={
+  0x53003c, // "UNHALTED_CORE_CYCLES",         /* PAPI_TOT_CYC */
+  0x5300c0, // "INSTRUCTIONS_RETIRED",         /* PAPI_TOT_INS */
+  0x537f88, // "BR_INST_EXEC:ANY",             /* PAPI_BR_INS  */
+  0x537f89, // "BR_MISP_EXEC:ANY",             /* PAPI_BR_MSP  */
+  0x530185, // "ITLB_MISSES:ANY",              /* PAPI_TLB_IM  */
+  0x530149, // "DTLB_MISSES:ANY",              /* PAPI_TLB_DM  */
+  0x530380, // "L1I:READS",                    /* PAPI_L1_ICA  */
+  0x530280, // "L1I:MISSES",                   /* PAPI_L1_ICM  */
+  0x530143, // "L1D_ALL_REF:ANY",              /* PAPI_L1_DCA  */
+  0x530151, // "L1D:REPL",                     /* PAPI_L1_DCM  */
+  0x53011d, // "HW_INT:RCV",                   /* PAPI_HW_INT  */
+  0x530410, // "FP_COMP_OPS_EXE:SSE_FP",       /* PAPI_FP_OPS  */
+  0x53010b, // "MEM_INST_RETIRED:LOADS",       /* PAPI_LD_INS  */
+  0x53020b, // "MEM_INST_RETIRED:STORES",      /* PAPI_SR_INS  */
+  0x53ff24, // "L2_RQSTS:REFERENCES",          /* PAPI_L2_TCA  */
+  0x53c024, // "L2_RQSTS:PREFETCHES",          /* PAPI_L2_TCM  */
+};
+
+
+int events[MAX_EVENTS];
+
+static unsigned long long rdtsc(void) {
+  unsigned a,d;
+
+  __asm__ volatile("rdtsc" : "=a" (a), "=d" (d));
+
+  return ((unsigned long long)a) | (((unsigned long long)d) << 32);
+}
+
+static unsigned long long rdpmc(unsigned int counter) {
+  unsigned int low, high;
+
+  __asm__ volatile("rdpmc" : "=a" (low), "=d" (high) : "c" (counter));
+
+  return (unsigned long long)low | ((unsigned long long)high) <<32;
+}
+
+#define barrier() __asm__ volatile("" ::: "memory")
+
+
+/* Ingo's code for using rdpmc */
+static inline unsigned long long mmap_read_self(void *addr) {
+  
+    struct perf_event_mmap_page *pc = addr;
+    unsigned int seq,idx;
+
+    unsigned long long count;
+
+    do {
+      seq=pc->lock;
+      barrier();
+
+      idx=pc->index;
+      count=pc->offset;
+
+      if (idx) {
+	count+=rdpmc(pc->index-1);
+      }
+      barrier();
+    } while (pc->lock != seq);
+  
+
+  return count;
+}
+
+
+int test_rdpmc(int count) {
+
+   int i;
+   static long page_size=4096;
+   
+   long long before,after;
+   long long start_before,start_after;
+   long long stop_before,stop_after;
+   long long read_before,read_after;
+
+   long long init_ns=0,eventset_ns=0;
+   void *addr[MAX_EVENTS];
+
+   struct perf_event_attr pe;
+   int fd[MAX_EVENTS],ret1,ret2;
+
+   unsigned long long now[MAX_EVENTS],stamp[MAX_EVENTS];
+
+   /************************/
+   /* measure init latency */
+   /************************/
+
+   before=rdtsc();
+
+   after=rdtsc();
+
+   init_ns=after-before;
+
+   /*****************************/
+   /* measure eventset creation */
+   /*****************************/
+
+   before=rdtsc();
+
+   memset(&pe,0,sizeof(struct perf_event_attr));
+
+   pe.type=PERF_TYPE_RAW;
+   pe.size=sizeof(struct perf_event_attr);
+   pe.read_format=PERF_FORMAT_GROUP|PERF_FORMAT_ID;
+
+   fd[0]=-1;
+
+   for(i=0;i<count;i++) {
+     pe.config=events[i];
+
+     if (i==0) {
+        pe.disabled=1;
+        pe.pinned=1;
+     }
+     else {
+        pe.disabled=0;
+        pe.pinned=0;
+     }
+
+     fd[i]=perf_event_open(&pe,0,-1,fd[0],0);
+     if (fd[i]<0) {
+        printf("error perf_event_opening\n");
+	exit(1);
+      }
+   
+      addr[i]=mmap(NULL,page_size, PROT_READ, MAP_SHARED,fd[i],0);
+      if (addr[i] == (void *)(-1)) {
+        printf("Error mmaping!\n");
+        exit(1);
+      }
+   }
+
+   after=rdtsc();
+
+   eventset_ns=after-before;
+
+   /*********/
+   /* start */
+   /*********/
+   start_before=rdtsc();
+
+   ret1=ioctl(fd[0], PERF_EVENT_IOC_ENABLE,0);
+
+   start_after=rdtsc();
+
+   /********/
+   /* read */
+   /********/
+
+   /* read before values */
+   for(i=0;i<count;i++) {
+     stamp[i] = mmap_read_self(addr[i]);
+   }
+
+   /* NULL */
+
+   /* read after values */
+   for(i=0;i<count;i++) {
+     now[i] = mmap_read_self(addr[i]);
+   }
+
+   read_after=rdtsc();
+   
+   /********/
+   /* stop */
+   /********/
+
+   ret2=ioctl(fd[0], PERF_EVENT_IOC_DISABLE,0);
+
+   stop_after=rdtsc();
+
+   /* ALL DONE */
+
+   stop_before=read_after;
+   read_before=start_after;
+
+   printf("init/create/start/stop/read: %lld,%lld,%lld,%lld,%lld\n",
+          init_ns,eventset_ns, 
+          start_after-start_before,
+          stop_after-stop_before,
+          read_after-read_before);
+
+   if (ret1<0) {
+      printf("Error starting!\n");
+      exit(1);
+   }
+   
+   if (ret2<0) {
+      printf("Error stopping!\n");
+      exit(1);
+   }
+   
+   
+   for(i=0;i<count;i++) {
+     printf("%x %lld\n",
+	    events[i],now[i]-stamp[i]);
+   }
+
+   for(i=0;i<count;i++) {
+      munmap(addr[i],page_size);
+   }
+
+   for(i=0;i<count;i++) {
+      close(fd[i]);
+   }
+
+   return read_after-read_before;
+}
+
+int test_read(int count) {
+
+   int i;
+   static long page_size=4096;
+   
+   long long before,after;
+   long long start_before,start_after;
+   long long stop_before,stop_after;
+   long long read_before,read_after;
+
+   long long init_ns=0,eventset_ns=0;
+   void *addr[MAX_EVENTS];
+
+   struct perf_event_attr pe;
+   int fd[MAX_EVENTS],ret1,ret2;
+
+   /************************/
+   /* measure init latency */
+   /************************/
+
+   before=rdtsc();
+
+   after=rdtsc();
+
+   init_ns=after-before;
+
+   /*****************************/
+   /* measure eventset creation */
+   /*****************************/
+
+   before=rdtsc();
+
+   memset(&pe,0,sizeof(struct perf_event_attr));
+
+   pe.type=PERF_TYPE_RAW;
+   pe.size=sizeof(struct perf_event_attr);
+   pe.read_format=PERF_FORMAT_GROUP|PERF_FORMAT_ID;
+
+   fd[0]=-1;
+
+   for(i=0;i<count;i++) {
+     pe.config=events[i];
+
+     if (i==0) {
+        pe.disabled=1;
+        pe.pinned=1;
+     }
+     else {
+        pe.disabled=0;
+        pe.pinned=0;
+     }
+
+     fd[i]=perf_event_open(&pe,0,-1,fd[0],0);
+     if (fd[i]<0) {
+        printf("error perf_event_opening\n");
+	exit(1);
+      }
+   
+      addr[i]=mmap(NULL,page_size, PROT_READ, MAP_SHARED,fd[i],0);
+      if (addr[i] == (void *)(-1)) {
+        printf("Error mmaping!\n");
+        exit(1);
+      }
+   }
+
+   after=rdtsc();
+
+   eventset_ns=after-before;
+
+   /*********/
+   /* start */
+   /*********/
+   start_before=rdtsc();
+
+   ret1=ioctl(fd[0], PERF_EVENT_IOC_ENABLE,0);
+
+   start_after=rdtsc();
+
+   /* NULL */
+
+   /********/
+   /* read */
+   /********/
+
+   #define BUFFER_SIZE 256
+   long long buffer[BUFFER_SIZE];
+
+   read(fd[0],buffer,BUFFER_SIZE*sizeof(long long));
+
+   read_after=rdtsc();
+   
+   /********/
+   /* stop */
+   /********/
+
+   ret2=ioctl(fd[0], PERF_EVENT_IOC_DISABLE,0);
+
+   stop_after=rdtsc();
+
+   /* ALL DONE */
+
+   stop_before=read_after;
+   read_before=start_after;
+
+   printf("init/create/start/stop/read: %lld,%lld,%lld,%lld,%lld\n",
+          init_ns,eventset_ns, 
+          start_after-start_before,
+          stop_after-stop_before,
+          read_after-read_before);
+
+   if (ret1<0) {
+      printf("Error starting!\n");
+      exit(1);
+   }
+   
+   if (ret2<0) {
+      printf("Error stopping!\n");
+      exit(1);
+   }
+   
+   
+   for(i=0;i<count;i++) {
+     printf("%x %lld\n",
+	    events[i],buffer[1+(i*2)]);
+   }
+
+   for(i=0;i<count;i++) {
+      munmap(addr[i],page_size);
+   }
+
+   for(i=0;i<count;i++) {
+      close(fd[i]);
+   }
+
+   return read_after-read_before;
+}
+
+int main(int argc, char **argv) {
+
+
+   char *machine_name;
+   int i,j;
+
+   /* Get machine type */
+
+   if (argc>1) {
+     machine_name=strdup(argv[1]);
+   }
+   else {
+     machine_name=strdup("core2");
+   }
+
+   if (!strncmp(machine_name,"core2",5)) {
+      memcpy(events,core2_events,MAX_EVENTS*sizeof(int));
+   }
+   else if (!strncmp(machine_name,"nehalem",7)) {
+     memcpy(events,nehalem_events,MAX_EVENTS*sizeof(int));
+   }
+   else if (!strncmp(machine_name,"atom",4)) {
+     memcpy(events,atom_events,MAX_EVENTS*sizeof(int));
+   }
+   else if (!strncmp(machine_name,"amd10h",6)) {
+     memcpy(events,amd10h_events,MAX_EVENTS*sizeof(int));
+   }
+   else if (!strncmp(machine_name,"amd0fh",6)) {
+     memcpy(events,amd10h_events,MAX_EVENTS*sizeof(int));
+   }
+   else {
+      fprintf(stderr,"Unknown machine name %s\n",machine_name);
+      exit(0);
+   }
+
+#define NUM_RUNS 100
+#define NUM_COUNTS 5
+
+   long long rdpmc_data[NUM_RUNS][NUM_COUNTS];
+   long long read_data[NUM_RUNS][NUM_COUNTS];
+   long long rdpmc_average[NUM_COUNTS];
+   long long read_average[NUM_COUNTS];
+
+   /* do rdpmc runs */
+   for(i=0;i<NUM_RUNS;i++) {
+     for(j=1;j<NUM_COUNTS;j++) {
+        rdpmc_data[i][j]=test_rdpmc(j);
+     }
+   }
+
+   /* do read runs */
+   for(i=0;i<NUM_RUNS;i++) {
+     for(j=1;j<NUM_COUNTS;j++) {
+        read_data[i][j]=test_read(j);
+     }
+   }
+
+   /* calculate averages */
+   for(j=1;j<NUM_COUNTS;j++) {
+      rdpmc_average[j]=0;
+      read_average[j]=0;
+      for(i=0;i<NUM_RUNS;i++) {
+         rdpmc_average[j]+=rdpmc_data[i][j];
+         read_average[j]+=read_data[i][j];
+     }
+     rdpmc_average[j]/=NUM_RUNS;
+     read_average[j]/=NUM_RUNS;
+   }
+
+   /* print results */
+   printf("\n\nAverage Read Overhead (Cycles)\n\n");
+   printf("Events\trdpmc\tread\n");
+   for(j=1;j<NUM_COUNTS;j++) {
+     printf("%d\t%lld\t%lld\n",j,rdpmc_average[j],read_average[j]);
+   }
+
+   return 0;
+}
+
+
 
