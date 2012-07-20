@@ -1,66 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752853Ab2GTHKN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 03:10:13 -0400
-Received: from edison.jonmasters.org ([173.255.233.168]:57326 "EHLO
-	edison.jonmasters.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751353Ab2GTHKJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 03:10:09 -0400
-Message-ID: <5009044E.9060908@jonmasters.org>
-Date: Fri, 20 Jul 2012 03:10:06 -0400
-From: Jon Masters <jonathan@jonmasters.org>
-Organization: World Organi{s,z}ation of Broken Dreams
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Christopher Covington <cov@codeaurora.org>
-CC: Catalin Marinas <catalin.marinas@arm.com>, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Will Deacon <will.deacon@arm.com>
-References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com> <1341608777-12982-9-git-send-email-catalin.marinas@arm.com> <50065E6B.3060602@jonmasters.org> <5008445B.2010109@codeaurora.org>
-In-Reply-To: <5008445B.2010109@codeaurora.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 74.92.29.237
-X-SA-Exim-Mail-From: jonathan@jonmasters.org
-Subject: Re: [PATCH 08/36] AArch64: Kernel booting and initialisation
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Nov 2009 07:31:22 +0000)
-X-SA-Exim-Scanned: Yes (on edison.jonmasters.org)
+	id S1752845Ab2GTHLU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 03:11:20 -0400
+Received: from mga11.intel.com ([192.55.52.93]:41816 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751106Ab2GTHLS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 03:11:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="195426766"
+Message-ID: <1342768277.2616.22.camel@jtkirshe-mobl>
+Subject: Re: [trivial PATCH resend 1/2] ixgb: use PCI_VENDOR_ID_INTEL
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Reply-To: jeffrey.t.kirsher@intel.com
+To: Jon Mason <jdmason@kudzu.us>
+Cc: trivial@kernel.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        John Ronciak <john.ronciak@intel.com>
+Date: Fri, 20 Jul 2012 00:11:17 -0700
+In-Reply-To: <1342767729-17788-2-git-send-email-jdmason@kudzu.us>
+References: <1342767729-17788-1-git-send-email-jdmason@kudzu.us>
+	 <1342767729-17788-2-git-send-email-jdmason@kudzu.us>
+Organization: Intel Corporation
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-JRF3GNWKTgG/tfwV2Qpe"
+X-Mailer: Evolution 3.4.3 (3.4.3-2.fc17) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/19/2012 01:31 PM, Christopher Covington wrote:
-> On 07/18/2012 02:57 AM, Jon Masters wrote:
->> On 07/06/2012 05:05 PM, Catalin Marinas wrote:
->>
->>> +- CPU mode
->>> +  All forms of interrupts must be masked in PSTATE.DAIF (Debug, SError,
->>> +  IRQ and FIQ).
->>> +  The CPU must be in either EL2 (RECOMMENDED) or non-secure EL1.
-> 
-> Why not secure EL1?
 
-Because secure world and non-secure world are separated. Although ARMv8
-does define EL0 and EL1 in both secure and non-secure worlds, they're
-really two different things. General purpose OSes run their kernel in
-EL1 (userspace in EL0). We don't ever even see the secure EL1.
+--=-JRF3GNWKTgG/tfwV2Qpe
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
->> Even though this stuff is likely to be replaced with the result of some
->> of the other standardization, I'd like it if you'd strongly consider
->> removing the "or non-secure EL1". If you give an inch, someone will take
->> a mile and build a system that enters other than in EL2. Or, something
->> to the effect of "the highest non-secure exception level implemented"
->> would be my preference if you don't want to specify.
-> 
-> I think it would be best to list the technical limitations, from the
-> kernel's perspective, of the unsupported exception levels and the
-> advantages of the supported exception levels here. If you want to guide
-> system builders towards EL2, I think it'd be more convincing to document
-> the relevant technical aspects (perhaps KVM needs facilities only
-> available in EL2) than just providing an unexplained requirement.
+On Fri, 2012-07-20 at 00:02 -0700, Jon Mason wrote:
+> Use PCI_VENDOR_ID_INTEL from pci_ids.h instead of creating its own
+> vendor ID #define.
+>=20
+> Signed-off-by: Jon Mason <jdmason@kudzu.us>
+> Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+> Cc: Jesse Brandeburg <jesse.brandeburg@intel.com>
+> Cc: Bruce Allan <bruce.w.allan@intel.com>
+> Cc: Carolyn Wyborny <carolyn.wyborny@intel.com>
+> Cc: Don Skidmore <donald.c.skidmore@intel.com>
+> Cc: Greg Rose <gregory.v.rose@intel.com>
+> Cc: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+> Cc: Alex Duyck <alexander.h.duyck@intel.com>
+> Cc: John Ronciak <john.ronciak@intel.com>
+> ---
+>  drivers/net/ethernet/intel/ixgb/ixgb_hw.c   |    5 +++--
+>  drivers/net/ethernet/intel/ixgb/ixgb_ids.h  |    5 -----
+>  drivers/net/ethernet/intel/ixgb/ixgb_main.c |   10 +++++-----
+>  3 files changed, 8 insertions(+), 12 deletions(-)=20
 
-Unless you enter at EL2 you can never install a hypervisor. That's the
-reason for the requirement for generally entering at EL2 when possible.
+Like I said before, I do not consider this patch "trivial" so it is
+interesting that you submitted again as a trivial patch.  At least you
+CC'd netdev like I asked.
 
-Jon.
+Acked-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+
+--=-JRF3GNWKTgG/tfwV2Qpe
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABCgAGBQJQCQSVAAoJEOVv75VaS+3OulQP/jtHWbY4eqYpvFHutpiO87he
+d4lsTrCFQHNA4YQvO5JMISxrwAZZJ9EhZBxQhkIJqVVcWerYmuKW3cYhmeLmc1pu
+aou+A1/togbpad1EgKL/Ph17dKVlcLGVT5ZPe03jtjCxYfiYmKNkBebubP1vK7v9
+8O45WwkDHbBeVNvdpYTFgnek5qSlt2xc5Qbk5mspj1H6wmU42b4+clDmGrSoqw2A
+AHGoNmpPs76FxL/InfXtjqasP36jkJmxErr3myK9xv3RHR79WB45bHOuDsRHANwn
+m0fuYybaXTmv/CdVHRrUHgocr3LrGxB0lRbIhzsSp/xxvcnMoxOeotMT9gdcIJQB
+FduBENqQIiC9CRpbHo2AgGxXOSyBbc9oNY2IGbNP03cLTNWzewLbfQUR6scW4xkK
+frPscMabZYkp6ftI+rL5cPpcCnKdcaIr+RlJU1OutALkw1NPRDg8IXlcHII9HE/h
+tLUndoA5ZzCXoG4kiW08CP3Q5On0KhfqvFZ7J8JF8u6rc8Kz+TAwtiIqJ0NG2g6y
+Y6H68fCcjSh7K05WMwdPdHrbbF/k/8UN+qEoVfQAQR1wYWbh9yJO47XL98e/DZ2y
+LH4dJVX23uMeVXKAZSLodqE8GnCs+88NutdjhYKJAdS+qs4CCGwd2xV+QTe7unDI
+Cijb3p2Pr4LCxoqkxdvo
+=G4ST
+-----END PGP SIGNATURE-----
+
+--=-JRF3GNWKTgG/tfwV2Qpe--
 
