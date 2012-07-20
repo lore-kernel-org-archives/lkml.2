@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752519Ab2GTQIW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 12:08:22 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:54816 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751768Ab2GTQIV (ORCPT
+	id S1752764Ab2GTQJQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 12:09:16 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51044 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752508Ab2GTQJO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 12:08:21 -0400
-Message-ID: <5009823B.2010700@xenotime.net>
-Date: Fri, 20 Jul 2012 09:07:23 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        cluster-devel@redhat.com, Steven Whitehouse <swhiteho@redhat.com>
-Subject: Re: linux-next: Tree for July 20 (gfs2)
-References: <20120720151322.d952c13390b3078b2a5505bd@canb.auug.org.au>
-In-Reply-To: <20120720151322.d952c13390b3078b2a5505bd@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Fri, 20 Jul 2012 12:09:14 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@liniux.intel.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] mfd: arizona: Add debug trace on entering and leaving runtime suspend
+Date: Fri, 20 Jul 2012 17:09:12 +0100
+Message-Id: <1342800552-10436-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/19/2012 10:13 PM, Stephen Rothwell wrote:
+There doesn't appear to be any useful diagnostic information from the
+core.
 
-> Hi all,
-> 
-> Changes since 20120719:
-> 
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/arizona-core.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-
-
-
-on i386 (modular):
-
-ERROR: "__divdi3" [fs/gfs2/gfs2.ko] undefined!
-
-or builtin:
-
-fs/built-in.o: In function `gfs2_fallocate':
-file.c:(.text+0x232086): undefined reference to `__divdi3'
-
-
-
-
-
+diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
+index 6e70d3d..c7983e8 100644
+--- a/drivers/mfd/arizona-core.c
++++ b/drivers/mfd/arizona-core.c
+@@ -223,6 +223,8 @@ static int arizona_runtime_resume(struct device *dev)
+ 	struct arizona *arizona = dev_get_drvdata(dev);
+ 	int ret;
+ 
++	dev_dbg(arizona->dev, "Leaving AoD mode\n");
++
+ 	ret = regulator_enable(arizona->dcvdd);
+ 	if (ret != 0) {
+ 		dev_err(arizona->dev, "Failed to enable DCVDD: %d\n", ret);
+@@ -246,6 +248,8 @@ static int arizona_runtime_suspend(struct device *dev)
+ {
+ 	struct arizona *arizona = dev_get_drvdata(dev);
+ 
++	dev_dbg(arizona->dev, "Entering AoD mode\n");
++
+ 	regulator_disable(arizona->dcvdd);
+ 	regcache_cache_only(arizona->regmap, true);
+ 	regcache_mark_dirty(arizona->regmap);
 -- 
-~Randy
+1.7.10.4
+
