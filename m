@@ -1,364 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753484Ab2GTMdG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 08:33:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26705 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752758Ab2GTMdB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 08:33:01 -0400
-Date: Fri, 20 Jul 2012 15:33:20 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: mashirle@us.ibm.com, krkumar2@in.ibm.com, habanero@linux.vnet.ibm.com,
-        rusty@rustcorp.com.au, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, edumazet@google.com,
-        tahm@linux.vnet.ibm.com, jwhan@filewood.snu.ac.kr, davem@davemloft.net,
-        akong@redhat.com, kvm@vger.kernel.org, sri@us.ibm.com
-Subject: Re: [net-next RFC V5 5/5] virtio_net: support negotiating the number
- of queues through ctrl vq
-Message-ID: <20120720123320.GC16550@redhat.com>
-References: <1341484194-8108-1-git-send-email-jasowang@redhat.com>
- <1341484194-8108-6-git-send-email-jasowang@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1341484194-8108-6-git-send-email-jasowang@redhat.com>
+	id S1753454Ab2GTMdd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 08:33:33 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55638 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751297Ab2GTMbd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 08:31:33 -0400
+From: Michel Lespinasse <walken@google.com>
+To: riel@redhat.com, peterz@infradead.org, daniel.santos@pobox.com,
+        aarcange@redhat.com, dwmw2@infradead.org, akpm@linux-foundation.org
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/6] rbtree: optimize fetching of sibling node
+Date: Fri, 20 Jul 2012 05:31:03 -0700
+Message-Id: <1342787467-5493-3-git-send-email-walken@google.com>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1342787467-5493-1-git-send-email-walken@google.com>
+References: <1342787467-5493-1-git-send-email-walken@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 05, 2012 at 06:29:54PM +0800, Jason Wang wrote:
-> This patch let the virtio_net driver can negotiate the number of queues it
-> wishes to use through control virtqueue and export an ethtool interface to let
-> use tweak it.
-> 
-> As current multiqueue virtio-net implementation has optimizations on per-cpu
-> virtuqueues, so only two modes were support:
-> 
-> - single queue pair mode
-> - multiple queue paris mode, the number of queues matches the number of vcpus
-> 
-> The single queue mode were used by default currently due to regression of
-> multiqueue mode in some test (especially in stream test).
-> 
-> Since virtio core does not support paritially deleting virtqueues, so during
-> mode switching the whole virtqueue were deleted and the driver would re-create
-> the virtqueues it would used.
-> 
-> btw. The queue number negotiating were defered to .ndo_open(), this is because
-> only after feature negotitaion could we send the command to control virtqueue
-> (as it may also use event index).
-> 
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> ---
->  drivers/net/virtio_net.c   |  171 ++++++++++++++++++++++++++++++++++---------
->  include/linux/virtio_net.h |    7 ++
->  2 files changed, 142 insertions(+), 36 deletions(-)
-> 
-> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> index 7410187..3339eeb 100644
-> --- a/drivers/net/virtio_net.c
-> +++ b/drivers/net/virtio_net.c
-> @@ -88,6 +88,7 @@ struct receive_queue {
->  
->  struct virtnet_info {
->  	u16 num_queue_pairs;		/* # of RX/TX vq pairs */
-> +	u16 total_queue_pairs;
->  
->  	struct send_queue *sq[MAX_QUEUES] ____cacheline_aligned_in_smp;
->  	struct receive_queue *rq[MAX_QUEUES] ____cacheline_aligned_in_smp;
-> @@ -137,6 +138,8 @@ struct padded_vnet_hdr {
->  	char padding[6];
->  };
->  
-> +static const struct ethtool_ops virtnet_ethtool_ops;
-> +
->  static inline int txq_get_qnum(struct virtnet_info *vi, struct virtqueue *vq)
->  {
->  	int ret = virtqueue_get_queue_index(vq);
-> @@ -802,22 +805,6 @@ static void virtnet_netpoll(struct net_device *dev)
->  }
->  #endif
->  
-> -static int virtnet_open(struct net_device *dev)
-> -{
-> -	struct virtnet_info *vi = netdev_priv(dev);
-> -	int i;
-> -
-> -	for (i = 0; i < vi->num_queue_pairs; i++) {
-> -		/* Make sure we have some buffers: if oom use wq. */
-> -		if (!try_fill_recv(vi->rq[i], GFP_KERNEL))
-> -			queue_delayed_work(system_nrt_wq,
-> -					   &vi->rq[i]->refill, 0);
-> -		virtnet_napi_enable(vi->rq[i]);
-> -	}
-> -
-> -	return 0;
-> -}
-> -
->  /*
->   * Send command via the control virtqueue and check status.  Commands
->   * supported by the hypervisor, as indicated by feature bits, should
-> @@ -873,6 +860,43 @@ static void virtnet_ack_link_announce(struct virtnet_info *vi)
->  	rtnl_unlock();
->  }
->  
-> +static int virtnet_set_queues(struct virtnet_info *vi)
-> +{
-> +	struct scatterlist sg;
-> +	struct net_device *dev = vi->dev;
-> +	sg_init_one(&sg, &vi->num_queue_pairs, sizeof(vi->num_queue_pairs));
-> +
-> +	if (!vi->has_cvq)
-> +		return -EINVAL;
-> +
-> +	if (!virtnet_send_command(vi, VIRTIO_NET_CTRL_MULTIQUEUE,
-> +				  VIRTIO_NET_CTRL_MULTIQUEUE_QNUM, &sg, 1, 0)){
-> +		dev_warn(&dev->dev, "Fail to set the number of queue pairs to"
-> +			 " %d\n", vi->num_queue_pairs);
-> +		return -EINVAL;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int virtnet_open(struct net_device *dev)
-> +{
-> +	struct virtnet_info *vi = netdev_priv(dev);
-> +	int i;
-> +
-> +	for (i = 0; i < vi->num_queue_pairs; i++) {
-> +		/* Make sure we have some buffers: if oom use wq. */
-> +		if (!try_fill_recv(vi->rq[i], GFP_KERNEL))
-> +			queue_delayed_work(system_nrt_wq,
-> +					   &vi->rq[i]->refill, 0);
-> +		virtnet_napi_enable(vi->rq[i]);
-> +	}
-> +
-> +	virtnet_set_queues(vi);
-> +
-> +	return 0;
-> +}
-> +
->  static int virtnet_close(struct net_device *dev)
->  {
->  	struct virtnet_info *vi = netdev_priv(dev);
-> @@ -1013,12 +1037,6 @@ static void virtnet_get_drvinfo(struct net_device *dev,
->  
->  }
->  
-> -static const struct ethtool_ops virtnet_ethtool_ops = {
-> -	.get_drvinfo = virtnet_get_drvinfo,
-> -	.get_link = ethtool_op_get_link,
-> -	.get_ringparam = virtnet_get_ringparam,
-> -};
-> -
->  #define MIN_MTU 68
->  #define MAX_MTU 65535
->  
-> @@ -1235,7 +1253,7 @@ static int virtnet_find_vqs(struct virtnet_info *vi)
->  
->  err:
->  	if (ret && names)
-> -		for (i = 0; i < vi->num_queue_pairs * 2; i++)
-> +		for (i = 0; i < total_vqs * 2; i++)
->  			kfree(names[i]);
->  
->  	kfree(names);
-> @@ -1373,7 +1391,6 @@ static int virtnet_probe(struct virtio_device *vdev)
->  	mutex_init(&vi->config_lock);
->  	vi->config_enable = true;
->  	INIT_WORK(&vi->config_work, virtnet_config_changed_work);
-> -	vi->num_queue_pairs = num_queue_pairs;
->  
->  	/* If we can receive ANY GSO packets, we must allocate large ones. */
->  	if (virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_TSO4) ||
-> @@ -1387,6 +1404,10 @@ static int virtnet_probe(struct virtio_device *vdev)
->  	if (virtio_has_feature(vdev, VIRTIO_NET_F_CTRL_VQ))
->  		vi->has_cvq = true;
->  
-> +	/* Use single tx/rx queue pair as default */
-> +	vi->num_queue_pairs = 1;
-> +	vi->total_queue_pairs = num_queue_pairs;
-> +
->  	/* Allocate/initialize the rx/tx queues, and invoke find_vqs */
->  	err = virtnet_setup_vqs(vi);
->  	if (err)
-> @@ -1396,6 +1417,9 @@ static int virtnet_probe(struct virtio_device *vdev)
->  	    virtio_has_feature(vi->vdev, VIRTIO_NET_F_CTRL_VLAN))
->  		dev->features |= NETIF_F_HW_VLAN_FILTER;
->  
-> +	netif_set_real_num_tx_queues(dev, 1);
-> +	netif_set_real_num_rx_queues(dev, 1);
-> +
->  	err = register_netdev(dev);
->  	if (err) {
->  		pr_debug("virtio_net: registering device failed\n");
-> @@ -1403,7 +1427,7 @@ static int virtnet_probe(struct virtio_device *vdev)
->  	}
->  
->  	/* Last of all, set up some receive buffers. */
-> -	for (i = 0; i < num_queue_pairs; i++) {
-> +	for (i = 0; i < vi->num_queue_pairs; i++) {
->  		try_fill_recv(vi->rq[i], GFP_KERNEL);
->  
->  		/* If we didn't even get one input buffer, we're useless. */
-> @@ -1474,10 +1498,8 @@ static void __devexit virtnet_remove(struct virtio_device *vdev)
->  	free_netdev(vi->dev);
->  }
->  
-> -#ifdef CONFIG_PM
-> -static int virtnet_freeze(struct virtio_device *vdev)
-> +static void virtnet_stop(struct virtnet_info *vi)
->  {
-> -	struct virtnet_info *vi = vdev->priv;
->  	int i;
->  
->  	/* Prevent config work handler from accessing the device */
-> @@ -1493,17 +1515,10 @@ static int virtnet_freeze(struct virtio_device *vdev)
->  		for (i = 0; i < vi->num_queue_pairs; i++)
->  			napi_disable(&vi->rq[i]->napi);
->  
-> -
-> -	remove_vq_common(vi);
-> -
-> -	flush_work(&vi->config_work);
-> -
-> -	return 0;
->  }
->  
-> -static int virtnet_restore(struct virtio_device *vdev)
-> +static int virtnet_start(struct virtnet_info *vi)
->  {
-> -	struct virtnet_info *vi = vdev->priv;
->  	int err, i;
->  
->  	err = virtnet_setup_vqs(vi);
-> @@ -1527,6 +1542,29 @@ static int virtnet_restore(struct virtio_device *vdev)
->  
->  	return 0;
->  }
-> +
-> +#ifdef CONFIG_PM
-> +static int virtnet_freeze(struct virtio_device *vdev)
-> +{
-> +	struct virtnet_info *vi = vdev->priv;
-> +
-> +	virtnet_stop(vi);
-> +
-> +	remove_vq_common(vi);
-> +
-> +	flush_work(&vi->config_work);
-> +
-> +	return 0;
-> +}
-> +
-> +static int virtnet_restore(struct virtio_device *vdev)
-> +{
-> +	struct virtnet_info *vi = vdev->priv;
-> +
-> +	virtnet_start(vi);
-> +
-> +	return 0;
-> +}
->  #endif
->  
->  static struct virtio_device_id id_table[] = {
-> @@ -1560,6 +1598,67 @@ static struct virtio_driver virtio_net_driver = {
->  #endif
->  };
->  
-> +static int virtnet_set_channels(struct net_device *dev,
-> +				struct ethtool_channels *channels)
-> +{
-> +	struct virtnet_info *vi = netdev_priv(dev);
-> +	u16 queues = channels->rx_count;
-> +	unsigned status = VIRTIO_CONFIG_S_ACKNOWLEDGE | VIRTIO_CONFIG_S_DRIVER;
-> +
-> +	if (channels->rx_count != channels->tx_count)
-> +		return -EINVAL;
-> +	/* Only two modes were support currently */
+When looking to fetch a node's sibling, we went through a sequence of:
+- check if node is the parent's left child
+- if it is, then fetch the parent's right child
 
-s/were/are/ ?
+This can be replaced with:
+- fetch the parent's right child as an assumed sibling
+- check that node is NOT the fetched child
 
-> +	if (queues != vi->total_queue_pairs && queues != 1)
-> +		return -EINVAL;
+This avoids fetching the parent's left child when node is actually
+that child. Saves a bit on code size, though it doesn't seem to make
+a large difference in speed.
 
-So userspace has to get queue number right. How does it know
-what the valid value is?
+Signed-off-by: Michel Lespinasse <walken@google.com>
+---
+ lib/rbtree.c |   21 +++++++++++++--------
+ 1 files changed, 13 insertions(+), 8 deletions(-)
 
-> +	if (!vi->has_cvq)
-> +		return -EINVAL;
-> +
-> +	virtnet_stop(vi);
-> +
-> +	netif_set_real_num_tx_queues(dev, queues);
-> +	netif_set_real_num_rx_queues(dev, queues);
-> +
-> +	remove_vq_common(vi);
-> +	flush_work(&vi->config_work);
-> +
-> +	vi->num_queue_pairs = queues;
-> +	virtnet_start(vi);
-> +
-> +	vi->vdev->config->finalize_features(vi->vdev);
-> +
-> +	if (virtnet_set_queues(vi))
-> +		status |= VIRTIO_CONFIG_S_FAILED;
-> +	else
-> +		status |= VIRTIO_CONFIG_S_DRIVER_OK;
-> +
-> +	vi->vdev->config->set_status(vi->vdev, status);
-> +
+diff --git a/lib/rbtree.c b/lib/rbtree.c
+index 3b6ec98..8b111cc 100644
+--- a/lib/rbtree.c
++++ b/lib/rbtree.c
+@@ -108,8 +108,8 @@ void rb_insert_color(struct rb_node *node, struct rb_root *root)
+ 
+ 		gparent = rb_red_parent(parent);
+ 
+-		if (parent == gparent->rb_left) {
+-			tmp = gparent->rb_right;
++		tmp = gparent->rb_right;
++		if (parent != tmp) {	/* parent == gparent->rb_left */
+ 			if (tmp && rb_is_red(tmp)) {
+ 				/*
+ 				 * Case 1 - color flips
+@@ -132,7 +132,8 @@ void rb_insert_color(struct rb_node *node, struct rb_root *root)
+ 				continue;
+ 			}
+ 
+-			if (parent->rb_right == node) {
++			tmp = parent->rb_right;
++			if (node == tmp) {
+ 				/*
+ 				 * Case 2 - left rotate at parent
+ 				 *
+@@ -152,6 +153,7 @@ void rb_insert_color(struct rb_node *node, struct rb_root *root)
+ 							    RB_BLACK);
+ 				rb_set_parent_color(parent, node, RB_RED);
+ 				parent = node;
++				tmp = node->rb_right;
+ 			}
+ 
+ 			/*
+@@ -163,7 +165,7 @@ void rb_insert_color(struct rb_node *node, struct rb_root *root)
+ 			 *     /                 \
+ 			 *    n                   U
+ 			 */
+-			gparent->rb_left = tmp = parent->rb_right;
++			gparent->rb_left = tmp;  /* == parent->rb_right */
+ 			parent->rb_right = gparent;
+ 			if (tmp)
+ 				rb_set_parent_color(tmp, gparent, RB_BLACK);
+@@ -181,7 +183,8 @@ void rb_insert_color(struct rb_node *node, struct rb_root *root)
+ 				continue;
+ 			}
+ 
+-			if (parent->rb_left == node) {
++			tmp = parent->rb_left;
++			if (node == tmp) {
+ 				/* Case 2 - right rotate at parent */
+ 				parent->rb_left = tmp = node->rb_right;
+ 				node->rb_right = parent;
+@@ -190,10 +193,11 @@ void rb_insert_color(struct rb_node *node, struct rb_root *root)
+ 							    RB_BLACK);
+ 				rb_set_parent_color(parent, node, RB_RED);
+ 				parent = node;
++				tmp = node->rb_left;
+ 			}
+ 
+ 			/* Case 3 - left rotate at gparent */
+-			gparent->rb_right = tmp = parent->rb_left;
++			gparent->rb_right = tmp;  /* == parent->rb_left */
+ 			parent->rb_left = gparent;
+ 			if (tmp)
+ 				rb_set_parent_color(tmp, gparent, RB_BLACK);
+@@ -224,8 +228,9 @@ static void __rb_erase_color(struct rb_node *node, struct rb_node *parent,
+ 			break;
+ 		} else if (!parent) {
+ 			break;
+-		} else if (parent->rb_left == node) {
+-			sibling = parent->rb_right;
++		}
++		sibling = parent->rb_right;
++		if (node != sibling) {	/* node == parent->rb_left */
+ 			if (rb_is_red(sibling)) {
+ 				/*
+ 				 * Case 1 - left rotate at parent
+-- 
+1.7.7.3
 
-Why do we need to tweak status like that?
-Can we maybe just roll changes back on error?
-
-> +	return 0;
-> +}
-> +
-> +static void virtnet_get_channels(struct net_device *dev,
-> +				 struct ethtool_channels *channels)
-> +{
-> +	struct virtnet_info *vi = netdev_priv(dev);
-> +
-> +	channels->max_rx = vi->total_queue_pairs;
-> +	channels->max_tx = vi->total_queue_pairs;
-> +	channels->max_other = 0;
-> +	channels->max_combined = 0;
-> +	channels->rx_count = vi->num_queue_pairs;
-> +	channels->tx_count = vi->num_queue_pairs;
-> +	channels->other_count = 0;
-> +	channels->combined_count = 0;
-> +}
-> +
-> +static const struct ethtool_ops virtnet_ethtool_ops = {
-> +	.get_drvinfo = virtnet_get_drvinfo,
-> +	.get_link = ethtool_op_get_link,
-> +	.get_ringparam = virtnet_get_ringparam,
-> +	.set_channels = virtnet_set_channels,
-> +	.get_channels = virtnet_get_channels,
-> +};
-> +
->  static int __init init(void)
->  {
->  	return register_virtio_driver(&virtio_net_driver);
-> diff --git a/include/linux/virtio_net.h b/include/linux/virtio_net.h
-> index 60f09ff..0d21e08 100644
-> --- a/include/linux/virtio_net.h
-> +++ b/include/linux/virtio_net.h
-> @@ -169,4 +169,11 @@ struct virtio_net_ctrl_mac {
->  #define VIRTIO_NET_CTRL_ANNOUNCE       3
->   #define VIRTIO_NET_CTRL_ANNOUNCE_ACK         0
->  
-> +/*
-> + * Control multiqueue
-> + *
-> + */
-> +#define VIRTIO_NET_CTRL_MULTIQUEUE       4
-> + #define VIRTIO_NET_CTRL_MULTIQUEUE_QNUM         0
-> +
->  #endif /* _LINUX_VIRTIO_NET_H */
-> -- 
-> 1.7.1
