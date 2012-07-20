@@ -1,83 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357Ab2GTSOL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 14:14:11 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:59776 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753040Ab2GTSOI (ORCPT
+	id S1753455Ab2GTSOX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 14:14:23 -0400
+Received: from mail-vc0-f202.google.com ([209.85.220.202]:50448 "EHLO
+	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752631Ab2GTSOU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 14:14:08 -0400
-Subject: Re: linux-next: manual merge of the staging tree with the
- target-merge tree
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Greg KH <greg@kroah.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Michael S. Tsirkin" <mst@redhat.com>
-In-Reply-To: <20120720180358.GA9134@kroah.com>
-References: <20120719145301.b8992aa986b47d7c44651710@canb.auug.org.au>
-	 <20120719235523.GA13623@kroah.com>
-	 <1342806778.25472.1.camel@haakon2.linux-iscsi.org>
-	 <20120720180358.GA9134@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 20 Jul 2012 11:14:04 -0700
-Message-ID: <1342808044.25472.28.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 20 Jul 2012 14:14:20 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: linux-mmc@vger.kernel.org
+Cc: Chris Ball <cjb@laptop.org>, Will Newton <will.newton@imgtec.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, linux-kernel@vger.kernel.org,
+        Doug Anderson <dianders@chromium.org>
+Subject: [PATCH] mmc: dw_mmc: Disable low power mode if SDIO interrupts are used
+Date: Fri, 20 Jul 2012 11:13:58 -0700
+Message-Id: <1342808038-7558-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-07-20 at 11:03 -0700, Greg KH wrote:
-> On Fri, Jul 20, 2012 at 10:52:58AM -0700, Nicholas A. Bellinger wrote:
-> > Hi Greg,
-> > 
+The documentation for the dw_mmc part says that the low power
+mode should normally only be set for MMC and SD memory and should
+be turned off for SDIO cards that need interrupts detected.
 
-<SNIP>
+The best place I could find to do this is when the SDIO interrupt
+was first enabled.  I rely on the fact that dw_mci_setup_bus()
+will be called when it's time to reenable.
 
-> -- a/drivers/staging/Kconfig
-> > > > +++ b/drivers/staging/Kconfig
-> > > > @@@ -132,6 -132,8 +132,10 @@@ source "drivers/staging/ipack/Kconfig
-> > > >   
-> > > >   source "drivers/staging/gdm72xx/Kconfig"
-> > > >   
-> > > > + source "drivers/staging/csr/Kconfig"
-> > > > + 
-> > > > + source "drivers/staging/omap-thermal/Kconfig"
-> > > > + 
-> > > >  +source "drivers/vhost/Kconfig.tcm"
-> > > 
-> > > Why is someone putting a non drivers/staging/ Kconfig file here in
-> > > drivers/staging/Kconfig?  That's not ok at all.
-> > > 
-> > > Target people, please just depend on CONFIG_STAGING if you want to do
-> > > that, but don't mess with files in the drivers/staging/ directory for no
-> > > good reason at all.
-> > > 
-> > 
-> > This was a request from MST (CC'ed) in order to have TCM_VHOST show up
-> > under the staging configuration options..
-> 
-> If you really want it to show up there, then send me a patch adding the
-> code to drivers/staging/.  Otherwise it really makes no sense.
-> 
+Change-Id: Id0e33a4e3a0a77ce8a5053b6e73197d53a5d46bb
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+---
+ drivers/mmc/host/dw_mmc.c |   33 +++++++++++++++++++++++++++++++++
+ 1 files changed, 33 insertions(+), 0 deletions(-)
 
-<nod>
-
-> > If that's really not what should be done, I'm happy to drop this part
-> > and just use CONFIG_STAGING again.
-> 
-> Why are you wanting to depend on CONFIG_STAGING in the first place?
-> What is wrong with the code that it can't be merged "properly" now?
-> Don't use CONFIG_STAGING as a "crutch" unless you really need it.
-> 
-
-This was a request by MST because we've not agreed on the upstream
-userspace bits yet, so he asked to mark this code as STAGING so that it
-can be removed if we can't end up agreeing with the QEMU folks.
-
-At this point I don't see why we can't work out of userspace bits, but
-MST preferred adding the STAGING bit for tcm_vhost to just to be sure.
-
---nab 
+diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+index 72dc3cd..0cb2756 100644
+--- a/drivers/mmc/host/dw_mmc.c
++++ b/drivers/mmc/host/dw_mmc.c
+@@ -862,6 +862,31 @@ static int dw_mci_get_cd(struct mmc_host *mmc)
+ 	return present;
+ }
+ 
++/*
++ * Disable lower power mode.
++ *
++ * Low power mode will stop the card clock when idle.  According to
++ * documentation we should disable low power mode for SDIO cards if we
++ * need interrupts to work.
++ *
++ * This function is fast if the power mode is already disabled.
++ */
++static void dw_mci_disable_low_power(struct mmc_host *mmc)
++{
++	struct dw_mci_slot *slot = mmc_priv(mmc);
++	struct dw_mci *host = slot->host;
++	u32 clk_en_a;
++	const u32 clken_low_pwr = SDMMC_CLKEN_LOW_PWR << slot->id;
++
++	clk_en_a = mci_readl(host, CLKENA);
++
++	if (clk_en_a & clken_low_pwr) {
++		mci_writel(host, CLKENA, clk_en_a & ~clken_low_pwr);
++		mci_send_cmd(slot, SDMMC_CMD_UPD_CLK |
++			     SDMMC_CMD_PRV_DAT_WAIT, 0);
++	}
++}
++
+ static void dw_mci_enable_sdio_irq(struct mmc_host *mmc, int enb)
+ {
+ 	struct dw_mci_slot *slot = mmc_priv(mmc);
+@@ -871,6 +896,14 @@ static void dw_mci_enable_sdio_irq(struct mmc_host *mmc, int enb)
+ 	/* Enable/disable Slot Specific SDIO interrupt */
+ 	int_mask = mci_readl(host, INTMASK);
+ 	if (enb) {
++		/*
++		 * Turn off low power mode if it was enabled.  This is a bit of
++		 * a heavy operation and we disable / enable IRQs a lot, so
++		 * we'll leave them disabled; they will get re-enabled again in
++		 * dw_mci_setup_bus().
++		 */
++		dw_mci_disable_low_power(mmc);
++
+ 		mci_writel(host, INTMASK,
+ 			   (int_mask | SDMMC_INT_SDIO(slot->id)));
+ 	} else {
+-- 
+1.7.7.3
 
