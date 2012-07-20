@@ -1,78 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753669Ab2GTNQI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 09:16:08 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:43883 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753511Ab2GTNQG (ORCPT
+	id S1753683Ab2GTNRF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 09:17:05 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:60726 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753493Ab2GTNRD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 09:16:06 -0400
-Message-ID: <50095A00.7010606@linux.vnet.ibm.com>
-Date: Fri, 20 Jul 2012 21:15:44 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Fri, 20 Jul 2012 09:17:03 -0400
+Date: Fri, 20 Jul 2012 14:16:35 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Jon Masters <jonathan@jonmasters.org>,
+        Christopher Covington <cov@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>
+Subject: Re: [PATCH 08/36] AArch64: Kernel booting and initialisation
+Message-ID: <20120720131635.GA6947@arm.com>
+References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
+ <5008445B.2010109@codeaurora.org>
+ <5009044E.9060908@jonmasters.org>
+ <201207200828.13128.arnd@arndb.de>
+ <20120720105248.GA2692@arm.com>
+ <CAMuHMdU24_7AScHyS+-xD+6rw-pw_6sP19TME4ZOpNxC+MLe_g@mail.gmail.com>
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 2/9] KVM: x86: simplify read_emulated
-References: <50056DB8.7080702@linux.vnet.ibm.com> <50056DE6.6020801@linux.vnet.ibm.com> <20120719235828.GA7121@amt.cnet> <5008BFC0.4070703@linux.vnet.ibm.com> <20120720105840.GA16859@amt.cnet>
-In-Reply-To: <20120720105840.GA16859@amt.cnet>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12072013-6102-0000-0000-000001E8644C
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdU24_7AScHyS+-xD+6rw-pw_6sP19TME4ZOpNxC+MLe_g@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/20/2012 06:58 PM, Marcelo Tosatti wrote:
-> On Fri, Jul 20, 2012 at 10:17:36AM +0800, Xiao Guangrong wrote:
->> On 07/20/2012 07:58 AM, Marcelo Tosatti wrote:
->>
->>>> -	}
->>>> +	rc = ctxt->ops->read_emulated(ctxt, addr, mc->data + mc->end, size,
->>>> +				      &ctxt->exception);
->>>> +	if (rc != X86EMUL_CONTINUE)
->>>> +		return rc;
->>>> +
->>>> +	mc->end += size;
->>>> +
->>>> +read_cached:
->>>> +	memcpy(dest, mc->data + mc->pos, size);
->>>
->>> What prevents read_emulated(size > 8) call, with
->>> mc->pos == (mc->end - 8) now?
->>
->> Marcelo,
->>
->> The splitting has been done in emulator_read_write_onepage:
->>
->> 	while (bytes) {
->> 		unsigned now = min(bytes, 8U);
->>
->> 		frag = &vcpu->mmio_fragments[vcpu->mmio_nr_fragments++];
->> 		frag->gpa = gpa;
->> 		frag->data = val;
->> 		frag->len = now;
->> 		frag->write_readonly_mem = (ret == -EPERM);
->>
->> 		gpa += now;
->> 		val += now;
->> 		bytes -= now;
->> 	}
->>
->> So i think it is safe to remove the splitting in read_emulated.
+On Fri, Jul 20, 2012 at 01:32:39PM +0100, Geert Uytterhoeven wrote:
+> On Fri, Jul 20, 2012 at 12:52 PM, Catalin Marinas
+> <catalin.marinas@arm.com> wrote:
+> > On Fri, Jul 20, 2012 at 09:28:12AM +0100, Arnd Bergmann wrote:
+> >> On Friday 20 July 2012, Jon Masters wrote:
+> >> > > I think it would be best to list the technical limitations, from the
+> >> > > kernel's perspective, of the unsupported exception levels and the
+> >> > > advantages of the supported exception levels here. If you want to guide
+> >> > > system builders towards EL2, I think it'd be more convincing to document
+> >> > > the relevant technical aspects (perhaps KVM needs facilities only
+> >> > > available in EL2) than just providing an unexplained requirement.
+> >> >
+> >> > Unless you enter at EL2 you can never install a hypervisor. That's the
+> >> > reason for the requirement for generally entering at EL2 when possible.
+> >>
+> >> How do nested hypervisors work in this scenario? Does the first-level
+> >> hypervisor (counting from most priviledged) provide a guest that starts
+> >> in an emulated EL2 state, or is this done differently?
+> >
+> > Your favourite topic :). Self virtualisation is not easily possible, at
+> > least not with how KVM on ARM is being implemented. The hardware does
+> > not allow code running at EL1 to be told that it is at EL2 (or code
+> > running at EL2 to be trapped at EL2). So for normal virtualisation,
+> > guest OSes start at EL1 and they benefit of all the hardware
+> > acceleration. If a guest OS wants to run KVM again, it won't have access
+> > to the virtualisation extensions (EL2 system register access would cause
+> > an undefined trap). The best it can do is run the nested guest OS in EL0
+> > and trap accesses to system registers (no that different from Qemu).
+> >
+> > If such feature is needed, the best approach is for all kernels, host or
+> > guest, to always enter at (non-secure) EL1. The EL2 would have a clearly
+> > defined HVC API for nested page tables, virtual interrupts, context
+> > switching etc. This way, the host OS can inform the hypervisor that
+> > guest OSes are allowed to use this API for their own nested guests. But
+> > getting such hypervisor API right is a bit tricky and the feedback from
+> > the KVM guys so far is that they need the flexibility of running their
+> > own code at EL2. I guess another benefit is that both KVM and Xen could
+> > use the same API.
+> >
+> > But is this feature really needed?
 > 
-> Yes, it is fine to remove it.
+> Sure :-)
 > 
-> But splitting in emulate.c prevented the case of _cache read_ with size
->> 8 beyond end of mc->data. Must handle that case in read_emulated.
+> A sysadmin can prevent me from running my own virtualization layer and
+> managing my own virtual machines (that's why UserModeLinux is so interesting).
 > 
-> "What prevents read_emulated(size > 8) call, with mc->pos == (mc->end - 8) now?"
+> Can software detect if it's running in EL1 or EL2 (and e.g. refuse to run)?
 
-You mean the mmio region is partly cached?
+Yes, if it's running at EL1 on higher. It can read the CurrentEL
+register which is not virtualised. If it's running at EL0, CurrentEL
+access can be trapped into the kernel at EL1 and return something else.
+But when you run a guest in EL0 you don't benefit from the
+virtualisation extensions, so UML may actually be faster.
 
-I think it can not happen. Now, we pass the whole size to emulator_read_write_onepage(),
-after it is finished, it saves the whole data into mc->data[], so, the cache-read
-can always get the whole data from mc->data[].
+For the second solution I mentioned above, the real host kernel still
+starts in EL2 and installs the hypervisor code that is later used by the
+the same host kernel running at EL1 (via HVC calls; that's already the
+case with KVM on ARM). Other guests could use the same HVC calls to
+create/switch nested page tables, deliver virtual interrupts, handle
+faults etc. The hypervisor code needs to be aware of the multiple
+nesting (and host-guest relation between the running OSes) as the
+hardware only supports two stages of translation tables.
 
+The advantage of the standardised API (and with open source code in the
+kernel tree) is that other virtualisation solutions (e.g. vmware) could
+use it as well.
+
+-- 
+Catalin
