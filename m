@@ -1,68 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752901Ab2GTUk6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 16:40:58 -0400
-Received: from mga03.intel.com ([143.182.124.21]:14375 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751908Ab2GTUk5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 16:40:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="170961217"
-From: Tony Luck <tony.luck@intel.com>
-Date: Fri, 20 Jul 2012 13:15:20 -0700
-Subject: [PATCH] dmi: Feed DMI table to /dev/random driver
-In-Reply-To: <1341511933-11169-1-git-send-email-tytso@mit.edu>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org, w@1wt.eu,
-        ewust@umich.edu, zakir@umich.edu, greg@kroah.com, mpm@selenic.com,
-        nadiah@cs.ucsd.edu, jhalderm@umich.edu, tglx@linutronix.de,
-        davem@davemloft.net, "Theodore Ts'o" <tytso@mit.edu>
-Message-Id: <0107910@agluck-desktop.sc.intel.com>
+	id S1752386Ab2GTUvw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 16:51:52 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:42460 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751451Ab2GTUvu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 16:51:50 -0400
+Date: Fri, 20 Jul 2012 21:55:16 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: David Daney <david.daney@cavium.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Greg KH <greg@kroah.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>
+Subject: Re: linux-next: build failure after merge of the tty tree
+Message-ID: <20120720215516.03abd164@pyramind.ukuu.org.uk>
+In-Reply-To: <CAMuHMdWRM0y07r1nL-9fXB3nLKXMgftqhiruEeuEe4QYDA2o9Q@mail.gmail.com>
+References: <20120713141345.f71b7c01f720d616d74721dd@canb.auug.org.au>
+	<20120713121053.0637219f@pyramind.ukuu.org.uk>
+	<CAMuHMdWRM0y07r1nL-9fXB3nLKXMgftqhiruEeuEe4QYDA2o9Q@mail.gmail.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Send the entire DMI (SMBIOS) table to the /dev/random driver to
-help seed its pools.
+> Today's build failed because there's a new user in the MIPS tree:
+> arch/mips/cavium-octeon/serial.c
+> 
+> http://kisskb.ellerman.id.au/kisskb/buildresult/6739341/
 
-Signed-off-by: Tony Luck <tony.luck@intel.com>
----
+The version in the tree I have registers a platform device rather than
+calling into 8250 directly. That appears to be rather better mannered
+than whatever you are building.
 
-This looks a useful addition to your /dev/random series. There are
-lots of platform specific goodies in this table (BIOS version, system
-serial number and UUID, count and version number of processors, DIMM
-slot population and serial numbers, etc.)
-
-On the system I tested the patch on the table is 9866 bytes. Is it
-OK to dump that much into add_device_randomness() in one shot? The
-alternative is to select the 'useful' bits deeper into the routines
-that parse the entries in the table.
-
- drivers/firmware/dmi_scan.c | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/drivers/firmware/dmi_scan.c b/drivers/firmware/dmi_scan.c
-index 153980b..b298158 100644
---- a/drivers/firmware/dmi_scan.c
-+++ b/drivers/firmware/dmi_scan.c
-@@ -6,6 +6,7 @@
- #include <linux/dmi.h>
- #include <linux/efi.h>
- #include <linux/bootmem.h>
-+#include <linux/random.h>
- #include <asm/dmi.h>
- 
- /*
-@@ -111,6 +112,8 @@ static int __init dmi_walk_early(void (*decode)(const struct dmi_header *,
- 
- 	dmi_table(buf, dmi_len, dmi_num, decode, NULL);
- 
-+	add_device_randomness(buf, dmi_len);
-+
- 	dmi_iounmap(buf, dmi_len);
- 	return 0;
- }
--- 
-1.7.10.2.552.gaa3bb87
-
+If someone has moved from the platform device could they kindly explain
+*why* ?
