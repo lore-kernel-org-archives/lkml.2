@@ -1,59 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752374Ab2GTNpH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 09:45:07 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:5846 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750925Ab2GTNpG (ORCPT
+	id S1752497Ab2GTNrk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 09:47:40 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:51461 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750925Ab2GTNrj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 09:45:06 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Fri, 20 Jul 2012 06:44:43 -0700
-Date: Fri, 20 Jul 2012 16:44:41 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] clk: fix return value check in clk_get
-Message-ID: <20120720134441.GD9437@tbergstrom-lnx.Nvidia.com>
-References: <1342791397-11732-1-git-send-email-pdeschrijver@nvidia.com>
+	Fri, 20 Jul 2012 09:47:39 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6777"; a="210392788"
+Message-ID: <50096178.9060902@codeaurora.org>
+Date: Fri, 20 Jul 2012 09:47:36 -0400
+From: Christopher Covington <cov@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1342791397-11732-1-git-send-email-pdeschrijver@nvidia.com>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jon Masters <jonathan@jonmasters.org>
+CC: Catalin Marinas <catalin.marinas@arm.com>, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH 08/36] AArch64: Kernel booting and initialisation
+References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com> <1341608777-12982-9-git-send-email-catalin.marinas@arm.com> <50065E6B.3060602@jonmasters.org> <5008445B.2010109@codeaurora.org> <5009044E.9060908@jonmasters.org>
+In-Reply-To: <5009044E.9060908@jonmasters.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 20, 2012 at 03:36:37PM +0200, Peter De Schrijver wrote:
-> of_clk_get_by_name returns an ERR_PTR on failure. Hence we should use IS_ERR()
-> and not just check for a non NULL value.
+Hi Jon,
+
+On 07/20/2012 03:10 AM, Jon Masters wrote:
+> On 07/19/2012 01:31 PM, Christopher Covington wrote:
+>> On 07/18/2012 02:57 AM, Jon Masters wrote:
+>>> On 07/06/2012 05:05 PM, Catalin Marinas wrote:
+>>>
+>>>> +- CPU mode
+>>>> +  All forms of interrupts must be masked in PSTATE.DAIF (Debug, SError,
+>>>> +  IRQ and FIQ).
+>>>> +  The CPU must be in either EL2 (RECOMMENDED) or non-secure EL1.
+>>
+>> Why not secure EL1?
 > 
-> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
-> ---
->  drivers/clk/clkdev.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> Because secure world and non-secure world are separated. Although ARMv8
+> does define EL0 and EL1 in both secure and non-secure worlds, they're
+> really two different things. General purpose OSes run their kernel in
+> EL1 (userspace in EL0). We don't ever even see the secure EL1.
+
+I do not understand how the separation between the secure world and
+non-secure world affects the ability of separate instances of Linux to
+run as the non-secure OS, the secure OS, or both. Is there something
+different about secure EL1 that makes it unsuitable for a general
+purpose OS? I consider your assumption that the people on this mailing
+list will never see their code executed in secure EL1 to be wrong.
+Surely on the simulators and development boards that will eventually be
+available, the possibility will be there, and explored by somebody.
+
+What I really mean to suggest is that if there's a clear technical
+reason for a requirement, give it. If the requirement is really more of
+a convention, then say so. If there might be a technical reason but
+nobody has bothered to investigate, write that it's untested. Some very
+basic explanation of the requirements would make them better, and give
+someone looking to support a more exotic use case a helpful starting point.
+
+>>> Even though this stuff is likely to be replaced with the result of some
+>>> of the other standardization, I'd like it if you'd strongly consider
+>>> removing the "or non-secure EL1". If you give an inch, someone will take
+>>> a mile and build a system that enters other than in EL2. Or, something
+>>> to the effect of "the highest non-secure exception level implemented"
+>>> would be my preference if you don't want to specify.
+>>
+>> I think it would be best to list the technical limitations, from the
+>> kernel's perspective, of the unsupported exception levels and the
+>> advantages of the supported exception levels here. If you want to guide
+>> system builders towards EL2, I think it'd be more convincing to document
+>> the relevant technical aspects (perhaps KVM needs facilities only
+>> available in EL2) than just providing an unexplained requirement.
 > 
-> diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
-> index 8f87b0f..d423c9b 100644
-> --- a/drivers/clk/clkdev.c
-> +++ b/drivers/clk/clkdev.c
-> @@ -157,7 +157,7 @@ struct clk *clk_get(struct device *dev, const char *con_id)
->  
->  	if (dev) {
->  		clk = of_clk_get_by_name(dev->of_node, con_id);
-> -		if (clk && __clk_get(clk))
-> +		if (!IS_ERR(clk) && __clk_get(clk))
->  			return clk;
->  	}
+> Unless you enter at EL2 you can never install a hypervisor. That's the
+> reason for the requirement for generally entering at EL2 when possible.
 
-http://www.spinics.net/lists/arm-kernel/msg184794.html introduces this
-behaviour of of_clk_get_by_name()
+That brief explanation would make a useful addition to the documentation
+in my opinion.
 
-Cheers,
+Christopher
 
-Peter.
-
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
