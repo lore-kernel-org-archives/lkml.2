@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752395Ab2GTDo0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 23:44:26 -0400
-Received: from smtprelay01.ispgateway.de ([80.67.29.23]:51001 "EHLO
-	smtprelay01.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751353Ab2GTDoY (ORCPT
+	id S1752436Ab2GTDqi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 23:46:38 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:56073 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752054Ab2GTDqh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 23:44:24 -0400
-X-Greylist: delayed 996 seconds by postgrey-1.27 at vger.kernel.org; Thu, 19 Jul 2012 23:44:24 EDT
-Message-ID: <5008CEC9.2050908@omicron.at>
-Date: Fri, 20 Jul 2012 05:21:45 +0200
-From: Christian Riesch <christian.riesch@omicron.at>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
+	Thu, 19 Jul 2012 23:46:37 -0400
+Message-ID: <5008D477.2020007@linux.vnet.ibm.com>
+Date: Fri, 20 Jul 2012 11:45:59 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michael Neuling <mikey@neuling.org>
-Subject: Re: linux-next: build failure after merge of the net-next tree
-References: <20120720120118.465056f267ab5c3ac5ea45c4@canb.auug.org.au>
-In-Reply-To: <20120720120118.465056f267ab5c3ac5ea45c4@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 5/9] KVM: MMU: fask check write-protect for direct mmu
+References: <50056DB8.7080702@linux.vnet.ibm.com> <50056E59.4090003@linux.vnet.ibm.com> <20120720003917.GA8951@amt.cnet>
+In-Reply-To: <20120720003917.GA8951@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Df-Sender: Y2hyaXN0aWFuQHJpZXNjaC5hdA==
+x-cbid: 12071917-1396-0000-0000-00000194EB22
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Sent again due to problems with email client]
+BTW, they are some bug fix patches on -master branch, but
+it is not existed on -next branch:
+commit: f411930442e01f9cf1bf4df41ff7e89476575c4d
+commit: 85b7059169e128c57a3a8a3e588fb89cb2031da1
 
-Hi,
+It causes code conflict if we do the development on -next.
 
-On 07/20/2012 04:01 AM, Stephen Rothwell wrote:
-> Hi all,
->
-> After merging the net-next tree, today's linux-next build (powerpc
-> pmac32_defconfig) failed like this:
->
-> ERROR: "phy_disconnect" [drivers/net/usb/asix.ko] undefined!
-> ERROR: "phy_stop" [drivers/net/usb/asix.ko] undefined!
-> ERROR: "phy_ethtool_gset" [drivers/net/usb/asix.ko] undefined!
-> ERROR: "mdiobus_unregister" [drivers/net/usb/asix.ko] undefined!
-> ERROR: "phy_start_aneg" [drivers/net/usb/asix.ko] undefined!
-> ERROR: "phy_print_status" [drivers/net/usb/asix.ko] undefined!
-> ERROR: "phy_start" [drivers/net/usb/asix.ko] undefined!
-> ERROR: "mdiobus_free" [drivers/net/usb/asix.ko] undefined!
-> ERROR: "mdiobus_register" [drivers/net/usb/asix.ko] undefined!
-> ERROR: "genphy_resume" [drivers/net/usb/asix.ko] undefined!
-> ERROR: "phy_connect" [drivers/net/usb/asix.ko] undefined!
-> ERROR: "phy_mii_ioctl" [drivers/net/usb/asix.ko] undefined!
-> ERROR: "phy_ethtool_sset" [drivers/net/usb/asix.ko] undefined!
-> ERROR: "mdiobus_alloc_size" [drivers/net/usb/asix.ko] undefined!
->
-> Caused by commit 16626b0cc3d5 ("asix: Add a new driver for the AX88172A")
-> and reverting that commit fixes the build.
+On 07/20/2012 08:39 AM, Marcelo Tosatti wrote:can
+> On Tue, Jul 17, 2012 at 09:53:29PM +0800, Xiao Guangrong wrote:
+>> If it have no indirect shadow pages we need not protect any gfn,
+>> this is always true for direct mmu without nested
+>>
+>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> 
+> Xiao,
+> 
+> What is the motivation? Numbers please.
+> 
+> In fact, what case was the original indirect_shadow_pages conditional in
+> kvm_mmu_pte_write optimizing again?
+> 
+> 
+> 
 
-Sorry about that. I missed the dependency of the new driver on phylib. A 
-fix for this problem is already in net-next, see commit 215029375c83.
-
-Thanks, Christian
-
->
-> Thanks to Mikey for reporting this porblem.
 
