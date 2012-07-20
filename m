@@ -1,130 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753324Ab2GTJyk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 05:54:40 -0400
-Received: from na3sys009aog129.obsmtp.com ([74.125.149.142]:58792 "EHLO
-	na3sys009aog129.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753225Ab2GTJyi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 05:54:38 -0400
-Date: Fri, 20 Jul 2012 12:51:35 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Vivek Gautam <gautam.vivek@samsung.com>
-Cc: stern@rowland.harvard.edu, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        l.majewski@samsung.com, a.kesavan@samsung.com, prashanth.g@samsung.com,
-        kmpark@infradead.org, joshi@samsung.com, olofj@google.com,
-        thomas.abraham@linaro.org, sshtylyov@mvista.com,
-        av.tikhomirov@samsung.com
-Subject: Re: [PATCH 2/2 v3] USB: dwc3-exynos: Add vbus setup function to the
- exynos dwc3 glue layer
-Message-ID: <20120720095134.GG24414@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
-References: <1342418259-23802-1-git-send-email-gautam.vivek@samsung.com>
- <1342418259-23802-3-git-send-email-gautam.vivek@samsung.com>
+	id S1753347Ab2GTJyy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 05:54:54 -0400
+Received: from mga03.intel.com ([143.182.124.21]:57859 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753248Ab2GTJyj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 05:54:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="124715423"
+From: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] power_supply: Added support for power supply attribute
+ sources
+Thread-Topic: [PATCH] power_supply: Added support for power supply attribute
+ sources
+Thread-Index: AQHNYyv6fCGnxML9Ekqw5AEAaOWgeZcx6yvQ
+Date: Fri, 20 Jul 2012 09:54:33 +0000
+Message-ID: <D854C92F57B1B347B57E531E78D05EAD1B3B5F@BGSMSX102.gar.corp.intel.com>
+References: <1340627842-31908-1-git-send-email-ramakrishna.pallala@intel.com>
+ <20120716082119.GA26238@lizard>
+In-Reply-To: <20120716082119.GA26238@lizard>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="WIIRZ1HQ6FgrlPgb"
-Content-Disposition: inline
-In-Reply-To: <1342418259-23802-3-git-send-email-gautam.vivek@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q6K9t1cB023060
 
 
---WIIRZ1HQ6FgrlPgb
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Anton,
 
-Hi,
+Sorry for replying late. But please find my response below.
 
-On Mon, Jul 16, 2012 at 11:27:39AM +0530, Vivek Gautam wrote:
-> This patch retrieves and configures the vbus control gpio via
-> the device tree. The suspend/resume callbacks will be later
-> modified for vbus control.
->=20
-> Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
-> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-> ---
->  drivers/usb/dwc3/dwc3-exynos.c |   25 +++++++++++++++++++++++++
->  1 files changed, 25 insertions(+), 0 deletions(-)
->=20
-> diff --git a/drivers/usb/dwc3/dwc3-exynos.c b/drivers/usb/dwc3/dwc3-exyno=
-s.c
-> index a293c69..9b0238f 100644
-> --- a/drivers/usb/dwc3/dwc3-exynos.c
-> +++ b/drivers/usb/dwc3/dwc3-exynos.c
-> @@ -20,6 +20,7 @@
->  #include <linux/dma-mapping.h>
->  #include <linux/clk.h>
->  #include <linux/of.h>
-> +#include <linux/of_gpio.h>
-> =20
->  #include "core.h"
-> =20
-> @@ -30,6 +31,28 @@ struct dwc3_exynos {
->  	struct clk		*clk;
->  };
-> =20
-> +static int dwc3_setup_vbus_gpio(struct platform_device *pdev)
-> +{
-> +	int err;
-> +	int gpio;
-> +
-> +	if (!pdev->dev.of_node)
-> +		return 0;
-> +
-> +	gpio =3D of_get_named_gpio(pdev->dev.of_node,
-> +				"samsung,vbus-gpio", 0);
-> +	if (!gpio_is_valid(gpio))
-> +		return 0;
-> +
-> +	err =3D gpio_request_one(gpio, GPIOF_OUT_INIT_HIGH, "dwc3_vbus_gpio");
-> +	if (err) {
-> +		dev_err(&pdev->dev, "can't request dwc3 vbus gpio %d", gpio);
-> +		return err;
-> +	}
-> +
-> +	return err;
-> +}
-> +
->  static u64 dwc3_exynos_dma_mask =3D DMA_BIT_MASK(32);
-> =20
->  static int __devinit dwc3_exynos_probe(struct platform_device *pdev)
-> @@ -58,6 +81,8 @@ static int __devinit dwc3_exynos_probe(struct platform_=
-device *pdev)
->  	if (!pdev->dev.coherent_dma_mask)
->  		pdev->dev.coherent_dma_mask =3D DMA_BIT_MASK(32);
-> =20
-> +	dwc3_setup_vbus_gpio(pdev);
+> > This patch adds the generic support to register the drivers as power
+> > supply attribute(properties) sources and adds an interface to read
+> > these attributes from power supply class drivers.
+> 
+> So, you would add power_supply_attributes_register() calls into ADC drivers?
+> This is not right.
+> 
+> The right approach would be to write a power supply driver that would accept
+> ADC device/channel (or just a callback) for getting needed information to report.
+> 
+> I.e.
+> 
+> /*
+>  * Here I just made up adc_channel struct for simplicity of the
+>  * example; For real ADC dev, you really want to use Industrial IO
+>  * framework, i.e. include/linux/iio/iio.h.
+>  */
+> struct adc_channel {
+> 	...
+> 	int (*get_value)(struct *adc_channel);
+> };
+> 
+> struct adc_power_supply_platform_data {
+> 	struct adc_channel *voltage;
+> 	struct adc_channel *current;
+> };
+> 
+> And the "adc power supply" driver would then call:
+> 
+> ...
+> case POWER_SUPPLY_PROP_CURRENT:
+> 	prop->intval = voltage->get_value(voltage); ...
+> 
+> Sure, sometimes it's not only ADC, but sensors, regulators and so forth. So pass
+> all the devices to the power_supply driver, and teach the driver to work with the
+> facilities.
 
-I think this should be handled by the gpio-vbus transceiver. No ?
+I got your point in IIO framework, but the main reason for submitting this patch was to avoid adding platform level hooks.
+If we have 5 such parameters we have to add 5 different hooks to the platform code. With this patch the driver code need not be changed or
+Its platform code or data structures.
 
---=20
-balbi
+Also IMO this approach will be functionally and logically correct. We can view the power supply subsystem is collection of power supply classes
+and each class is collection of power supply attributes. And these attributes can be provided by same power supply driver or it can get from other drivers
+in a generic way through power supply subsystem.
 
---WIIRZ1HQ6FgrlPgb
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> [..]
+> > +struct power_supply_attr_query {
+> > +	enum power_supply_property property;
+> > +	enum power_supply_type type;
+> > +	/* variable to store result */
+> > +	union power_supply_propval res;
+> > +};
+> [...]
+> > +extern int power_supply_get_external_attr(
+> > +				struct power_supply_attr_query *query);
+> 
+> And even if we'd consider adding this feature, the interface seems very limited.
+> What if there are two, say, batteries?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+I thought through point when I was submitting this patch. My initial thought was to add a
+name variable in the query structure which will mention the source name. If the data is available
+only from this source we get the data otherwise not.
+If a user does not provide this name(NULL) we still give whatever is available.
+If we have multiple batteries we have to do source selection and this has to go to platform code.
 
-iQIcBAEBAgAGBQJQCSomAAoJEIaOsuA1yqRE7J8P/A29Zx7roSCMCj5yXegDFuEI
-MtlFlhaFIPZyN9uvzwjOiuUzOO2ZgDq3uie3Ve8bZLGReU+qyHvb1IkxjzVm/cOa
-c6Pl+69bMJZXC7qCX2IDF+TTGnoCEpgr3DRSJgY12UkZlcAuQuHI8QMq8IpVJbao
-rDoUoCYOEy+gKHJgNHRa/+F9JUPIY+AIKHUxVFBVumb2KpfLNHkBpSwwiFGy3Ilc
-Qb0bAmkycT3oTyLiw1d6fIoUiuR01PNC+uMzkwbZc6LGqI6Dg18JQo/68In46vj/
-wuCzHomCPwCzzt05OQy53ESXyw/i4RBbSrv+r09sTuJ77mEMBl/P+YqJuFp6VMHi
-P6P/b2H+R0/06Fz7AGeHyE02BiiKxbnRzboerpoXtgztMaHsYiR7B13chWhqSd/A
-NLFCNJBCRK4seRz2X7CgyCwqeWh79A4KkGj+3TY/pDJsBTrIfppcGHHfMfPjDzl2
-KNJZmMnOYeVJBgvUGcX8gjPEQ3YMATV/QuVssP5aYM6hN1LAi2D8T5pCvUtVR98x
-+Oym+9Wr73m5nFoMMBkP8qlstsE39BUUF456bRuYWka5APZBi0uZCIlHBXWI1ufB
-O5Ks8/K3Bc6AXAzMrbqwMxCpxffefRdXKe4plHtx9kfDukw2fRqjpdbvgSAKR4q0
-xywia9jHrOTw0ZeDXar4
-=JdIW
------END PGP SIGNATURE-----
+Please let me know your thoughts on it.
+If you think  something can be improved in this approach please let me know I would be happy to implement it.
 
---WIIRZ1HQ6FgrlPgb--
+Thanks,
+Ram
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
