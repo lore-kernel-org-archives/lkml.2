@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752158Ab2GTG4m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 02:56:42 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:43887 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750991Ab2GTG4k (ORCPT
+	id S1752131Ab2GTHAe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 03:00:34 -0400
+Received: from charybdis-ext.suse.de ([195.135.221.2]:44450 "EHLO
+	nat.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751173Ab2GTHAd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 02:56:40 -0400
-Date: Fri, 20 Jul 2012 09:56:23 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Rob Herring <rob.herring@calxeda.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Lars-Peter Clausen <lars@metafoo.de>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, kernel-janitors@vger.kernel.org
-Subject: [patch] driver-core: dev_to_node() should handle NULL pointers
-Message-ID: <20120720065622.GA11710@elgon.mountain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Fri, 20 Jul 2012 03:00:33 -0400
+Message-ID: <1342767624.7432.54.camel@marge.simpson.net>
+Subject: Re: [QUESTION ON BUG] the rcu stall issue could not be reproduced
+From: Mike Galbraith <mgalbraith@novell.com>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        mmokrejs@fold.natur.cuni.cz, dan.carpenter@oracle.com
+Date: Fri, 20 Jul 2012 09:00:24 +0200
+In-Reply-To: <5008CBD4.6070907@linux.vnet.ibm.com>
+References: <5008CBD4.6070907@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-What prompted this patch is that in dma_pool_create() we call
-dev_to_node() before checking whether "dev" is NULL.  It looks like
-there are places which call dma_pool_create() with a NULL pointer.  An
-example is in drivers/usb/gadget/amd5536udc.c.
+On Fri, 2012-07-20 at 11:09 +0800, Michael Wang wrote: 
+> Hi, Mike, Martin, Dan
+> 
+> I'm currently taking an eye on the rcu stall issue which was reported by
+> you in the mail:
+> 
+> rcu: endless stalls
+> 	From: Mike Galbraith
+> linux-3.4-rc7: rcu_sched self-detected stall on CPU
+> 	From: Martin Mokrejs
+> RCU stalls in linux-next
+> 	From: Dan Carpenter
+> 
+> I try to reproduce the issue on my X86 server with 12 cpu
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
----
-Static checker fix.
+The 'endless stalls' box was 341.33333 times larger.  Dunno if you can
+even set a serial port slow enough to approximate all cores trying to
+gripe through a single pinhole simultaneously.
 
-diff --git a/include/linux/device.h b/include/linux/device.h
-index aa7b3b4..c80e7a8d 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -714,7 +714,9 @@ int dev_set_name(struct device *dev, const char *name, ...);
- #ifdef CONFIG_NUMA
- static inline int dev_to_node(struct device *dev)
- {
--	return dev->numa_node;
-+	if (dev)
-+		return dev->numa_node;
-+	return -1;
- }
- static inline void set_dev_node(struct device *dev, int node)
- {
+-Mike
+
