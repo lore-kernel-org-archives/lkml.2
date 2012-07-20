@@ -1,31 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753247Ab2GTJm4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 05:42:56 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53052 "EHLO
+	id S1753256Ab2GTJnh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 05:43:37 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53061 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753202Ab2GTJmv (ORCPT
+	by vger.kernel.org with ESMTP id S1752479Ab2GTJng (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 05:42:51 -0400
-Date: Fri, 20 Jul 2012 10:42:49 +0100
+	Fri, 20 Jul 2012 05:43:36 -0400
+Date: Fri, 20 Jul 2012 10:43:34 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Paul Mundt <lethal@linux-sh.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: Re: Boot breaks in -next from LEGACY to LINEAR conversion
-Message-ID: <20120720094248.GM4495@opensource.wolfsonmicro.com>
-References: <20120717185749.GJ4477@opensource.wolfsonmicro.com>
- <20120718161023.GE4495@opensource.wolfsonmicro.com>
- <CACxGe6utvV6XbJEck_UuVJxsqckPFZXG3psEgeQ1vZSBGAwm9Q@mail.gmail.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] irqdomain: Improve diagnostics when a domain mapping
+ fails
+Message-ID: <20120720094333.GN4495@opensource.wolfsonmicro.com>
+References: <1342776799-8482-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="lildS9pRFgpM/xzO"
+	protocol="application/pgp-signature"; boundary="xjamM5M9kpPM/bcu"
 Content-Disposition: inline
-In-Reply-To: <CACxGe6utvV6XbJEck_UuVJxsqckPFZXG3psEgeQ1vZSBGAwm9Q@mail.gmail.com>
+In-Reply-To: <1342776799-8482-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 X-Cookie: Beware of low-flying butterflies.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -33,49 +29,38 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---lildS9pRFgpM/xzO
+--xjamM5M9kpPM/bcu
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Thu, Jul 19, 2012 at 10:30:11PM -0600, Grant Likely wrote:
+On Fri, Jul 20, 2012 at 10:33:19AM +0100, Mark Brown wrote:
+> When the map operation fails log the error code we get and add a WARN_ON()
+> so we get a backtrace (which should help work out which interrupt is the
+> source of the issue).
 
-> Okay, I've got a theory about what the issue is now. The .map()
-> callback is failing (returning non-zero) for one of the hwirqs. The
-> new code is stricter about associations, and actually unwinds the
-> associations if one of them fails. The old legacy code simply called
-> all the .map() hooks blindly without any error checking. Can you send
-> me the kernel log after backing out those changes.
+This needs a v2 - I had some other stuff in there which I'd forgotten
+added the ret variable, will resend shortly.
 
-Looks like the error checking is the issue.  Always knew that was a bad
-idea :)  I've just sent a patch to improve the diagnostics here which
-might help a bit, though I realise now with some of my debug I need to
-send a v2 :/ .
-
-On my system there's only one mapping failed, but it's for one of the
-VIC mappings which is rather unfortunate.  The error is there because
-the VIC is returning -ENOTSUPP to skip invalid IRQs which doesn't
-immediately seem like an awful thing to do for generic code like this.
-
---lildS9pRFgpM/xzO
+--xjamM5M9kpPM/bcu
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQCSgSAAoJEBus8iNuMP3dCiEP/j/vv79SkW8fwCI/BMOBhdwx
-8bu7+P7nJLvWcRsWQMFqKaUkPERIK3KJOSX9oe63qPF90nVpTg5j0FRH1MmnlXVu
-U0HtNbNeilgjNIHMipow/jtOom360r3C63CBZVUGWMeSuw3a9bDJrRVFfKF3Pb8Q
-+Khv2IF73D16bY73sBGZ9m/cOV681gWA5u5nBZNXjTpq9QlYAlaiKJ3WlyieZ0Zc
-JV4l0tFlyIUpWTJaRCBez43Xz6BqBg9pyqBRm2twmpOVPgeY8l7zDfr5VrKs6ORM
-CSRIOB1kGeOnLwFsmD0VAJvgifcdUgmyrnyCDe/YIUlyy6YoRqcX+kPao9Sh+XaH
-v0l//Gxb8wRD9jtMTyXEAPRktymGYllrL3oOyzIS0GeF06yq9rlBBV2L2dUMpN5q
-xBzHub51R2RxpK973/9fnIe97zl9mab+x8p70OnSDrWVRHYlWqxiJvC7ZS/PvdXx
-qfMliQ+B4t30JjxNpJUB0RVaQcwO9hjHa9jQHt4nK86T/2xW0FXNxnUglk0f21uK
-T9NKF21RLvOWckTmkaib0v8ydclYqnEn6t6SOSru8m0ErJY7c2lNka4Ezo9adKN+
-RRicJ8hlQXJ9Nhv4Mys6MuuGqvu+Ol/jeRTwfSXneyQlyjsKbIQgl8OhccG2kOvE
-e90nNeavDppA5ODVpCsE
-=UuQS
+iQIcBAEBAgAGBQJQCSg3AAoJEBus8iNuMP3dblYP+wQSxrv9Nqi6egU5X5V2+H29
+L2QBBps1BXNEn9mmXBUB9xxOA6nqzG6welujfV3PUjtqoT9Cn7aDWouz/0MD7nRO
+APAD4T24N4kCJzoZLW6jqv4Wx46Ch0kIHXBdhPOsHJ5qpZiTSmb8EcnEWpg3mAio
+WpjbJlq60wbtiioZ0Uq7d4Z2Ii2kqqGljlwz6u8UsKzxhozWtYhhrywMKNAHYXN9
+uIJroSP74FAxvF2ENJ4X1aFfu8rimw6b5nS2DeVILx+2bWn0kF28bVhB8n4rv1Cp
+S2rQVrb8x2T81AH2pTf/KGO6ljcf2Ld4pOnaGcfE7QoZ2RKSQq5nEA79OV+6NdsQ
+wLfmYNi5Jd5qmauZCQbmcwWjMQaQQaVp0HyhP5TZjPGE4GUykIldiHDkQnV5ffoM
+Ro0ZIi22jX24K6EO9ExcriU7XXLukWppokeh57LgqNm6iRDddRrD1rkGDmwd7rRV
+qddKG9PW7WUZQpC5CiERWJJBEQFLVVXpEowyrgnoYgzIeQPGOtSWD43ohepSFviq
+KzPeCzvGFgJEEuabC46vxxJUYclH2BH5T3csMewpFEo8gaIjKZvbeND+f1SVu9f3
+3/Zi/itFo/lDhjqF6mtKkLOqE1zhi47taEl5pCDkYLQuD/O0f6v3PxcztxF0toia
+qK7o7Mtw4FQDvQK0KGBL
+=8QOU
 -----END PGP SIGNATURE-----
 
---lildS9pRFgpM/xzO--
+--xjamM5M9kpPM/bcu--
