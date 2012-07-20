@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753183Ab2GTFj4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 01:39:56 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:57149 "EHLO bear.ext.ti.com"
+	id S1752964Ab2GTFid (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 01:38:33 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:51271 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752978Ab2GTFie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 01:38:34 -0400
+	id S1752519Ab2GTFiZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 01:38:25 -0400
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <kishon@ti.com>, <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
         <rob@landley.net>, <linux@arm.linux.org.uk>,
@@ -14,9 +14,9 @@ To: <kishon@ti.com>, <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
         <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <balbi@ti.com>,
         <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>
-Subject: [PATCH v5 02/11] arm/dts: omap: Add omap-usb2 dt data
-Date: Fri, 20 Jul 2012 11:07:22 +0530
-Message-ID: <1342762651-17094-3-git-send-email-kishon@ti.com>
+Subject: [PATCH v5 07/11] drivers: usb: twl4030: Add device tree support for twl4030 usb
+Date: Fri, 20 Jul 2012 11:07:27 +0530
+Message-ID: <1342762651-17094-8-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1342762651-17094-1-git-send-email-kishon@ti.com>
 References: <1342762651-17094-1-git-send-email-kishon@ti.com>
@@ -26,29 +26,103 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add omap-usb2 data node in omap4 device tree file.
+Add device tree support for twl4030 usb driver.
+Update the Documentation with device tree binding information.
 
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- arch/arm/boot/dts/omap4.dtsi |    5 +++++
- 1 file changed, 5 insertions(+)
+ .../devicetree/bindings/usb/twlxxxx-usb.txt        |   19 ++++++++++++++
+ drivers/usb/otg/twl4030-usb.c                      |   26 +++++++++++++++-----
+ 2 files changed, 39 insertions(+), 6 deletions(-)
 
-diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
-index 29c6243..15f1890 100644
---- a/arch/arm/boot/dts/omap4.dtsi
-+++ b/arch/arm/boot/dts/omap4.dtsi
-@@ -279,6 +279,11 @@
- 			#size-cells = <1>;
- 			ranges;
- 			ti,hwmods = "ocp2scp_usb_phy";
-+			usb2phy@4a0ad080 {
-+				compatible = "ti,omap-usb2";
-+				reg = <0x4a0ad080 0x58>,
-+				      <0x4a002300 0x1>;
-+			};
- 		};
- 	};
+diff --git a/Documentation/devicetree/bindings/usb/twlxxxx-usb.txt b/Documentation/devicetree/bindings/usb/twlxxxx-usb.txt
+index e3f6d73..bdf1dd4 100644
+--- a/Documentation/devicetree/bindings/usb/twlxxxx-usb.txt
++++ b/Documentation/devicetree/bindings/usb/twlxxxx-usb.txt
+@@ -20,3 +20,22 @@ Board specific device node entry
+ &twl6030-usb {
+ 	usb-supply = <&vusb>;
  };
++
++TWL4030 USB PHY AND COMPARATOR
++ - compatible : Should be "ti,twl4030-usb"
++ - interrupts : The interrupt numbers to the cpu should be specified. First
++   interrupt number is the otg interrupt number that raises ID interrupts
++   and VBUS interrupts. The second interrupt number is optional.
++ - <supply-name>-supply : phandle to the regulator device tree node.
++   <supply-name> should be vusb1v5, vusb1v8 and vusb3v1
++ - usb_mode : The mode used by the phy to connect to the controller. "1"
++   specifies "ULPI" mode and "2" specifies "CEA2011_3PIN" mode.
++
++twl4030-usb {
++	compatible = "ti,twl4030-usb";
++	interrupts = < 10 4 >;
++	usb1v5-supply = <&vusb1v5>;
++	usb1v8-supply = <&vusb1v8>;
++	usb3v1-supply = <&vusb3v1>;
++	usb_mode = <1>;
++};
+diff --git a/drivers/usb/otg/twl4030-usb.c b/drivers/usb/otg/twl4030-usb.c
+index 523cad5..f0d2e75 100644
+--- a/drivers/usb/otg/twl4030-usb.c
++++ b/drivers/usb/otg/twl4030-usb.c
+@@ -585,23 +585,28 @@ static int __devinit twl4030_usb_probe(struct platform_device *pdev)
+ 	struct twl4030_usb	*twl;
+ 	int			status, err;
+ 	struct usb_otg		*otg;
+-
+-	if (!pdata) {
+-		dev_dbg(&pdev->dev, "platform_data not available\n");
+-		return -EINVAL;
+-	}
++	struct device_node	*np = pdev->dev.of_node;
+ 
+ 	twl = devm_kzalloc(&pdev->dev, sizeof *twl, GFP_KERNEL);
+ 	if (!twl)
+ 		return -ENOMEM;
+ 
++	if (np)
++		of_property_read_u32(np, "usb_mode",
++				(enum twl4030_usb_mode *)&twl->usb_mode);
++	else if (pdata)
++		twl->usb_mode = pdata->usb_mode;
++	else {
++		dev_err(&pdev->dev, "twl4030 initialized without pdata\n");
++		return -EINVAL;
++	}
++
+ 	otg = devm_kzalloc(&pdev->dev, sizeof *otg, GFP_KERNEL);
+ 	if (!otg)
+ 		return -ENOMEM;
+ 
+ 	twl->dev		= &pdev->dev;
+ 	twl->irq		= platform_get_irq(pdev, 0);
+-	twl->usb_mode		= pdata->usb_mode;
+ 	twl->vbus_supplied	= false;
+ 	twl->asleep		= 1;
+ 	twl->linkstat		= OMAP_MUSB_UNKNOWN;
+@@ -690,12 +695,21 @@ static int __exit twl4030_usb_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_OF
++static const struct of_device_id twl4030_usb_id_table[] = {
++	{ .compatible = "ti,twl4030-usb" },
++	{}
++};
++MODULE_DEVICE_TABLE(of, twl4030_usb_id_table);
++#endif
++
+ static struct platform_driver twl4030_usb_driver = {
+ 	.probe		= twl4030_usb_probe,
+ 	.remove		= __exit_p(twl4030_usb_remove),
+ 	.driver		= {
+ 		.name	= "twl4030_usb",
+ 		.owner	= THIS_MODULE,
++		.of_match_table = of_match_ptr(twl4030_usb_id_table),
+ 	},
+ };
+ 
 -- 
 1.7.9.5
 
