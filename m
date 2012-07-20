@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753323Ab2GTRII (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 13:08:08 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33761 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753168Ab2GTRIG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 13:08:06 -0400
-Date: Fri, 20 Jul 2012 10:08:02 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        tglx@linutronix.de, linux-pm@vger.kernel.org
-Subject: Re: [PATCHSET] workqueue: reimplement CPU hotplug to keep idle
- workers
-Message-ID: <20120720170802.GF32763@google.com>
-References: <1342545149-3515-1-git-send-email-tj@kernel.org>
- <1342802391.2583.11.camel@twins>
- <20120720165213.GD32763@google.com>
- <1342803700.2583.29.camel@twins>
+	id S1753374Ab2GTRKF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 13:10:05 -0400
+Received: from mga11.intel.com ([192.55.52.93]:46683 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753140Ab2GTRKD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 13:10:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="181493698"
+Date: Fri, 20 Jul 2012 10:10:02 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Borislav Petkov <borislav.petkov@amd.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] cpu: intel, amd: mask cleared cpuid features
+Message-ID: <20120720171002.GE13032@tassilo.jf.intel.com>
+References: <73e09fb43e37de851acda10dc64bc495a5b68357.1342801662.git.vdavydov@parallels.com>
+ <dd185bfa60b6478e7eb1bce455c9d082ec884abe.1342801662.git.vdavydov@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1342803700.2583.29.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <dd185bfa60b6478e7eb1bce455c9d082ec884abe.1342801662.git.vdavydov@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Peter.
+> +					unsigned int *msr_ext_cpuid_mask)
+> +{
+> +	unsigned int msr, msr_ext;
+> +
+> +	msr = msr_ext = 0;
+> +
+> +	switch (c->x86_model) {
 
-On Fri, Jul 20, 2012 at 07:01:40PM +0200, Peter Zijlstra wrote:
-> On Fri, 2012-07-20 at 09:52 -0700, Tejun Heo wrote:
-> > Ooh, yeah, I agree.  That's next on the wq to-do list.  The problem is
-> > that queue_work() is implemented in terms of queue_work_on().  
-> 
-> But that's trivial to fix, both could use __queue_work() without too
-> much bother, right?
+You have to check the family too.
 
-Hmmm?  Not really.  We need to keep count of the ones which reqested
-fixed binding - ie. the ones which explicitly used queue_work_on() -
-and then flush on wq CPU_DOWN.  Then, we need to audit the current
-users which are using queue_work{_on}() + explicit FLUSH on CPU_DOWN
-and convert them.
+> +
+> +	return msr;
+> +}
+> +
+> +static void __cpuinit intel_mask_cpu_caps(struct cpuinfo_x86 *c)
+> +{
+> +	u32 low, high;
+> +	unsigned int msr_cpuid_mask, msr_ext_cpuid_mask;
+> +
+> +	msr_cpuid_mask = intel_cpuid_mask_msr(c, &msr_ext_cpuid_mask);
+> +	if (msr_cpuid_mask) {
+> +		set_cpu_cap(c, X86_FEATURE_CPUIDMASK);
+> +
+> +		rdmsr(msr_cpuid_mask, low, high);
 
-> > The assumption was that they should flush during CPU_DOWN but it
-> > probably will be much better to require users which need CPU affinity
-> > to always use queue_work_on() - instead of implicit local affinity
-> > from queue_work() - and flush them automatically from wq callback.
-> 
-> Right, and when you create this new mode, which you need to know to
-> flush on DOWN, you can simply put a BUG_ON in queue_work_on() when this
-> mode is set.
+And please use rdmsrl(), rdmsr() is so 90ies
 
-BUG_ON() on queue_work_on()?  Do you mean if the target CPU is down?
-If so, yeah, I'd probably go with WARN_ON_ONCE() but we should whine
-on it.
+Other than that patch looks good. I presume it will be useful for
+other things than just migration too.
 
-Thanks.
+-Andi
 
 -- 
-tejun
+ak@linux.intel.com -- Speaking for myself only
