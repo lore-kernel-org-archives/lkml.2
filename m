@@ -1,70 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753404Ab2GTK0t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 06:26:49 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:63197 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751490Ab2GTK0r (ORCPT
+	id S1753399Ab2GTKbd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 06:31:33 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51809 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751490Ab2GTKb1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 06:26:47 -0400
-Date: Fri, 20 Jul 2012 12:26:44 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Greg Kroah-Hartman <greg@kroah.com>,
-        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
-        Debian Kernel Team <debian-kernel@lists.debian.org>,
-        OpenSUSE Kernel Team <opensuse-kernel@opensuse.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] Simplifying kernel configuration for distro issues
-Message-ID: <20120720102644.GA23636@merkur.ravnborg.org>
-References: <CA+55aFxw8pY1KMjobp=dKJd+g4B9KGhe4+fsfSPA3ofCGVhkPQ@mail.gmail.com> <alpine.LRH.2.00.1207201145310.16218@twin.jikos.cz>
+	Fri, 20 Jul 2012 06:31:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.00.1207201145310.16218@twin.jikos.cz>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20120719130957.GD9303@redhat.com>
+References: <1342169711-12386-1-git-send-email-asias@redhat.com>
+	<1342169711-12386-6-git-send-email-asias@redhat.com>
+	<87mx2vrjdl.fsf@codemonkey.ws>
+	<20120719130957.GD9303@redhat.com>
+Date: Fri, 20 Jul 2012 11:31:26 +0100
+Message-ID: <CAJSP0QWWKdLCMw1_A=W85iUTFgOu15gEpEOs7hg7ULjxcbMLRA@mail.gmail.com>
+Subject: Re: [PATCH RESEND 5/5] vhost-blk: Add vhost-blk support
+From: Stefan Hajnoczi <stefanha@gmail.com>
+To: Khoa Huynh <khoa@us.ibm.com>
+Cc: Anthony Liguori <anthony@codemonkey.ws>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        "Michael S. Tsirkin" <mst@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> But we'll first have to make 'select' to actually work, right? It 
-> currently doesn't resolve the dependencies of the selected configs, so it 
-> will just produce some very broken config.
+On Thu, Jul 19, 2012 at 2:09 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
+> On Thu, Jul 19, 2012 at 08:05:42AM -0500, Anthony Liguori wrote:
+>> Of course, the million dollar question is why would using AIO in the
+>> kernel be faster than using AIO in userspace?
+>
+> Actually for me a more important question is how does it compare
+> with virtio-blk dataplane?
 
-We could restrict "select" to only select symbols with no dependencies,
-or *exactly* the same dependencies as the symbol containing the select.
+Hi Khoa,
+I think you have results of data-plane and vhost-blk?  Is the
+vhost-blk version identical to Asias' recent patches?
 
-So we could have something like:
-
-config FEDORA
-	select WANT_TMPFS
-
-
-config WANT_TMPFS
-	bool
-
-config TMPFS
-	defbool y if WANT_TMPFS
-
-
-This is a pattern used today in many places.
-But fixing up all the current select XXX would not be trivial...
-I have no idea how many of the select we have today that would fail
-the above semantic restrictions - but I guess it is a lot.
-
-We could also come up with something new like:
-
-config FEDORA
-	require TMPFS
-	require EXT4 = m
-	require EXT3 = y
-
-This would set TMPS to y if TMPFS dependencies are met.
-And EXT3 to y and EXT4 to m if their dependencies are met.
-
-This should be more or less the same as setting the value to y/m
-in the user interface, which is only possible if the value is visible.
-
-	Sam
+Stefan
