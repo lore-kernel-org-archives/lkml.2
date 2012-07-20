@@ -1,101 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752772Ab2GTLSU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 07:18:20 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:54263 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752612Ab2GTLSQ (ORCPT
+	id S1752628Ab2GTLTl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 07:19:41 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:42442 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751189Ab2GTLTj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 07:18:16 -0400
-From: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
-To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, isimatu.yasuaki@jp.fujitsu.com,
-        wency@cn.fujitsu.com
-Cc: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
-Subject: [RFC PATCH] memory-hotplug: Add memblock_state notifier
-Date: Fri, 20 Jul 2012 13:18:08 +0200
-Message-Id: <1342783088-29970-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
-X-Mailer: git-send-email 1.7.9
+	Fri, 20 Jul 2012 07:19:39 -0400
+Message-ID: <50093E7E.6050203@linux.vnet.ibm.com>
+Date: Fri, 20 Jul 2012 16:48:22 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+MIME-Version: 1.0
+To: Neil Horman <nhorman@tuxdriver.com>
+CC: gaofeng@cn.fujitsu.com, eric.dumazet@gmail.com, davem@davemloft.net,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        mark.d.rustad@intel.com, john.r.fastabend@intel.com,
+        lizefan@huawei.com
+Subject: Re: [PATCH] net, cgroup: Fix boot failure due to iteration of uninitialized
+ list
+References: <20120719162532.23505.85946.stgit@srivatsabhat.in.ibm.com> <20120719164407.GA2963@neilslaptop.think-freely.org> <50092D3F.5020108@linux.vnet.ibm.com> <20120720110016.GA22367@hmsreliant.think-freely.org>
+In-Reply-To: <20120720110016.GA22367@hmsreliant.think-freely.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12072011-2000-0000-0000-00000855DF14
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hot-remove initiated by acpi_memhotplug driver tries to offline pages and then
-remove section/sysfs files in remove_memory(). remove_memory() will only proceed
-if is_memblk_offline() returns true, i.e. only if the corresponding memblock
-is in MEM_OFFLINE state. However, the memblock state is currently only updated
-if the offlining has been initiated from the sysfs interface (echo offline >
-/sys/devices/system/memory/memoryXX/state). The acpi hot-remove codepath does
-not use the sysfs interface but directly calls offline_pages. So remove_memory()
-will always fail, even if offline_pages has succeeded.
+On 07/20/2012 04:30 PM, Neil Horman wrote:
+> On Fri, Jul 20, 2012 at 03:34:47PM +0530, Srivatsa S. Bhat wrote:
+>> On 07/19/2012 10:14 PM, Neil Horman wrote:
+>>> On Thu, Jul 19, 2012 at 09:57:37PM +0530, Srivatsa S. Bhat wrote:
+>>>> After commit ef209f15 (net: cgroup: fix access the unallocated memory in
+>>>> netprio cgroup), boot fails with the following NULL pointer dereference:
+>>>>
+>>>> Initializing cgroup subsys devices
+>>>> Initializing cgroup subsys freezer
+>>>> Initializing cgroup subsys net_cls
+>>>> Initializing cgroup subsys blkio
+>>>> Initializing cgroup subsys perf_event
+>>>> Initializing cgroup subsys net_prio
+>>>> BUG: unable to handle kernel NULL pointer dereference at 0000000000000698
+>>>> IP: [<ffffffff8145e8d6>] cgrp_create+0xf6/0x190
+>>>> PGD 0
+>>>> Oops: 0000 [#1] SMP
+>>>> CPU 0
+>>>> Modules linked in:
+>>>>
+>>>> Pid: 0, comm: swapper/0 Not tainted 3.5.0-rc7-mandeep #1 IBM IBM System x -[7870C4Q]-/68Y8033
+>>>> RIP: 0010:[<ffffffff8145e8d6>]  [<ffffffff8145e8d6>] cgrp_create+0xf6/0x190
+>>>> RSP: 0000:ffffffff81a01ea8  EFLAGS: 00010213
+>>>> RAX: 0000000000000000 RBX: ffffffffffffff10 RCX: 0000000000000000
+>>>> RDX: 0000000000000000 RSI: 0000000000000246 RDI: ffffffff81aa70a0
+>>>> RBP: ffffffff81a01ed8 R08: 0000000000000000 R09: 0000000000000000
+>>>> R10: ffff8808ff8641c0 R11: 6e697a696c616974 R12: 0000000000000001
+>>>> R13: ffff8808ff8641c0 R14: 0000000000000000 R15: 0000000000093970
+>>>> FS:  0000000000000000(0000) GS:ffff8808ffc00000(0000) knlGS:0000000000000000
+>>>> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+>>>> CR2: 0000000000000698 CR3: 0000000001a0b000 CR4: 00000000000006b0
+>>>> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+>>>> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+>>>> Process swapper/0 (pid: 0, threadinfo ffffffff81a00000, task ffffffff81a13420)
+>>>> Stack:
+>>>>  ffffffff81a01eb8 ffffffff818060ff ffffffff81d75ec8 ffffffff81aa8960
+>>>>  ffffffff81aa8960 ffffffff81b4c2c0 ffffffff81a01ef8 ffffffff81b1cb78
+>>>>  0000000000000018 0000000000000048 ffffffff81a01f18 ffffffff81b1ce13
+>>>> Call Trace:
+>>>>  [<ffffffff81b1cb78>] cgroup_init_subsys+0x83/0x169
+>>>>  [<ffffffff81b1ce13>] cgroup_init+0x36/0x119
+>>>>  [<ffffffff81affef7>] start_kernel+0x3ba/0x3ef
+>>>>  [<ffffffff81aff95b>] ? kernel_init+0x27b/0x27b
+>>>>  [<ffffffff81aff356>] x86_64_start_reservations+0x131/0x136
+>>>>  [<ffffffff81aff45e>] x86_64_start_kernel+0x103/0x112
+>>>> Code: 01 48 3d f8 e1 ec 81 48 8d 98 10 ff ff ff 75 1b eb 73 0f 1f 00 48 8b 83 f0 00 00 00 48 3d f8 e1 ec 81 48 8d 98 10 ff ff ff 74 5a <48> 8b 83 88 07 00 00 48 85 c0 74 de 44 3b 60 10 76 d8 44 89 e6
+>>>> RIP  [<ffffffff8145e8d6>] cgrp_create+0xf6/0x190
+>>>>  RSP <ffffffff81a01ea8>
+>>>> CR2: 0000000000000698
+>>>> ---[ end trace a7919e7f17c0a725 ]---
+>>>> Kernel panic - not syncing: Attempted to kill the idle task!
+>>>>
+>>>> The code corresponds to:
+>>>>
+>>>> update_netdev_tables():
+>>>>         for_each_netdev(&init_net, dev) {
+>>>>                 map = rtnl_dereference(dev->priomap);  <---- HERE
+>>>>
+>>>>
+>>>> The list head is initialized in netdev_init(), which is called much
+>>>> later than cgrp_create(). So the problem is that we are calling
+>>>> update_netdev_tables() way too early (in cgrp_create()), which will
+>>>> end up traversing the not-yet-circular linked list. So at some point,
+>>>> the dev pointer will become NULL and hence dev->priomap becomes an
+>>>> invalid access.
+>>>>
+>>>> To fix this, just remove the update_netdev_tables() function entirely,
+>>>> since it appears that write_update_netdev_table() will handle things
+>>>> just fine.
+>>>>
+>>>> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+>>>> ---
+>>>>
+>>>> Requesting a thorough review of this patch, since I am not sure whether
+>>>> removing update_netdev_tables() is perfectly OK and whether that is the
+>>>> right thing to do.
+>>>>
+>>> We could do this I suppose, but this has already been fixed by
+>>> 734b65417b24d6eea3e3d7457e1f11493890ee1d
+>>
+>> Oh good! But don't you think that my patch looks cleaner than that fix?
+>> (Of course, provided that my patch is correct!)
+>>
+>> Anyway, I'm happy to see that the boot failure is fixed. But if anyone feels
+>> that the approach of removing the update_netdev_tables() function is correct
+>> and better, I'll be happy to provide a patch on top of the boot-fix that
+>> went upstream.
+>>
+> We're almost at the end of a release.  The fix that went in has been tesetd and
+> fixes the specific problem that was reported, with almost zero likelyhood of
+> causing other regressions. While this fix looks like it might be preferable,
+> this isn't a time to go doing something like this without alot more testing, as
+> it may cause unforseen problems.
+> 
 
-This patch solves this by registering a memblock_state notifier function in the
-memory_notify chain. This will change state of memblocks independently of sysfs
-usage.
+Oh definitely! I didn't mean to suggest doing these changes right away.
+It can surely wait.. :)
 
-The patch is based on work-in-progress patches for memory hot-remove, see:
-http://lwn.net/Articles/507244/
+> Theres also a larger issue of initalization order that I'll be looking at in the
+> next few weeks.  Based on the outcome of that I may roll this change in.
+> 
 
-Signed-off-by: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
----
- drivers/base/memory.c |   37 +++++++++++++++++++++++++++++++++++++
- 1 files changed, 37 insertions(+), 0 deletions(-)
+Sure, thanks!
 
-diff --git a/drivers/base/memory.c b/drivers/base/memory.c
-index 8981568..4095f3f 100644
---- a/drivers/base/memory.c
-+++ b/drivers/base/memory.c
-@@ -706,6 +706,42 @@ int unregister_memory_section(struct mem_section *section)
- 	return remove_memory_block(0, section, 0);
- }
- 
-+static int memblock_state_notifier_nb(struct notifier_block *nb, unsigned long
-+		val, void *v)
-+{
-+	struct memory_notify *arg = (struct memory_notify *)v;
-+	struct memory_block *mem = NULL;
-+	struct mem_section *ms;
-+	unsigned long section_nr;
-+
-+	section_nr = pfn_to_section_nr(arg->start_pfn);
-+	ms = __nr_to_section(section_nr);
-+	mem = find_memory_block(ms);
-+	if (!mem)
-+		goto out;
-+
-+	switch (val) {
-+	case MEM_GOING_OFFLINE:
-+	case MEM_OFFLINE:
-+	case MEM_GOING_ONLINE:
-+	case MEM_ONLINE:
-+	case MEM_CANCEL_ONLINE:
-+	case MEM_CANCEL_OFFLINE:
-+		mem->state = val;
-+		break;
-+	default:
-+		printk(KERN_WARNING "invalid memblock state\n");
-+		break;
-+	}
-+out:
-+	return NOTIFY_OK;
-+}
-+
-+static struct notifier_block memblock_state_nb = {
-+	.notifier_call = memblock_state_notifier_nb,
-+	.priority = 0
-+};
-+
- /*
-  * Initialize the sysfs support for memory devices...
-  */
-@@ -724,6 +760,7 @@ int __init memory_dev_init(void)
- 	block_sz = get_memory_block_size();
- 	sections_per_block = block_sz / MIN_MEMORY_BLOCK_SIZE;
- 
-+	register_memory_notifier(&memblock_state_nb);
- 	/*
- 	 * Create entries for memory sections that were found
- 	 * during boot and have been initialized
--- 
-1.7.9
+Regards,
+Srivatsa S. Bhat
 
