@@ -1,98 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752468Ab2GTIKg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 04:10:36 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:5494 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751449Ab2GTIKb (ORCPT
+	id S1752744Ab2GTIOZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 04:14:25 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:52030 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752298Ab2GTIOS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 04:10:31 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Fri, 20 Jul 2012 01:10:30 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>
-CC: <swarren@nvidia.com>, <linux-kernel@vger.kernel.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V2] dma: tegra: enable/disable dma clock
-Date: Fri, 20 Jul 2012 13:31:08 +0530
-Message-ID: <1342771268-5252-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	Fri, 20 Jul 2012 04:14:18 -0400
+X-AuditID: 9c93016f-b7b08ae00000790d-8e-50091357e570
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, andi@firstfloor.org,
+        drepper@gmail.com
+Subject: Re: [PATCHv4 0/4] perf tool: Add new event group management
+References: <1342734837-1825-1-git-send-email-jolsa@redhat.com>
+Date: Fri, 20 Jul 2012 17:09:33 +0900
+In-Reply-To: <1342734837-1825-1-git-send-email-jolsa@redhat.com> (Jiri Olsa's
+	message of "Thu, 19 Jul 2012 23:53:53 +0200")
+Message-ID: <87629i3lc2.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable the DMA clock when allocating channel and
-disable clock when freeing channels.
+Hi, Jiri
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
-Changes from V1 to V2:
-- Enable/disable clock when allocating/freeing channels.
-- rewrite the description to reflect change.
+On Thu, 19 Jul 2012 23:53:53 +0200, Jiri Olsa wrote:
+> hi,
+> adding support for creating event groups based on the way they
+> are specified on the command line.
+>
+> This patchset adds the '{}' style grammar to express event group,
+> allowing so far only the 'event modifier' as group modifier.
+>
+> v4 changes:
+>   - group modifier updates events modifiers (not overwrite as in v3)
+>
+> Attached patches:
+>   perf, tool: Add support to parse event group syntax
+>   perf, tool: Add support to update event modifier
+>   perf, tool: Enable grouping logic for parsed events
+>   perf, test: Add automated tests for event group parsing
+>
 
- drivers/dma/tegra20-apb-dma.c |   18 +++++++++++++++++-
- 1 files changed, 17 insertions(+), 1 deletions(-)
+Thanks for keeping working on this. You can add my
 
-diff --git a/drivers/dma/tegra20-apb-dma.c b/drivers/dma/tegra20-apb-dma.c
-index d52dbc6..24acd71 100644
---- a/drivers/dma/tegra20-apb-dma.c
-+++ b/drivers/dma/tegra20-apb-dma.c
-@@ -1119,15 +1119,21 @@ struct dma_async_tx_descriptor *tegra_dma_prep_dma_cyclic(
- static int tegra_dma_alloc_chan_resources(struct dma_chan *dc)
- {
- 	struct tegra_dma_channel *tdc = to_tegra_dma_chan(dc);
-+	struct tegra_dma *tdma = tdc->tdma;
-+	int ret;
- 
- 	dma_cookie_init(&tdc->dma_chan);
- 	tdc->config_init = false;
--	return 0;
-+	ret = clk_prepare_enable(tdma->dma_clk);
-+	if (ret < 0)
-+		dev_err(tdc2dev(tdc), "clk_prepare_enable failed: %d\n", ret);
-+	return ret;
- }
- 
- static void tegra_dma_free_chan_resources(struct dma_chan *dc)
- {
- 	struct tegra_dma_channel *tdc = to_tegra_dma_chan(dc);
-+	struct tegra_dma *tdma = tdc->tdma;
- 
- 	struct tegra_dma_desc *dma_desc;
- 	struct tegra_dma_sg_req *sg_req;
-@@ -1163,6 +1169,7 @@ static void tegra_dma_free_chan_resources(struct dma_chan *dc)
- 		list_del(&sg_req->node);
- 		kfree(sg_req);
- 	}
-+	clk_disable_unprepare(tdma->dma_clk);
- }
- 
- /* Tegra20 specific DMA controller information */
-@@ -1255,6 +1262,13 @@ static int __devinit tegra_dma_probe(struct platform_device *pdev)
- 		}
- 	}
- 
-+	/* Enable clock before accessing registers */
-+	ret = clk_prepare_enable(tdma->dma_clk);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "clk_prepare_enable failed: %d\n", ret);
-+		goto err_pm_disable;
-+	}
-+
- 	/* Reset DMA controller */
- 	tegra_periph_reset_assert(tdma->dma_clk);
- 	udelay(2);
-@@ -1265,6 +1279,8 @@ static int __devinit tegra_dma_probe(struct platform_device *pdev)
- 	tdma_write(tdma, TEGRA_APBDMA_CONTROL, 0);
- 	tdma_write(tdma, TEGRA_APBDMA_IRQ_MASK_SET, 0xFFFFFFFFul);
- 
-+	clk_disable_unprepare(tdma->dma_clk);
-+
- 	INIT_LIST_HEAD(&tdma->dma_dev.channels);
- 	for (i = 0; i < cdata->nr_channels; i++) {
- 		struct tegra_dma_channel *tdc = &tdma->channels[i];
--- 
-1.7.1.1
+  Reviewed-by: Namhyung Kim <namhyung@kernel.org>
 
+for all of the patches if you want.
+
+Btw, is it all of your user-space changes?
+
+Thanks,
+Namhyung
+
+
+> wbr,
+> jirka
+> ---
+>  tools/perf/builtin-record.c         |   13 ++-
+>  tools/perf/builtin-stat.c           |   13 ++-
+>  tools/perf/builtin-test.c           |    8 +-
+>  tools/perf/builtin-top.c            |   12 +--
+>  tools/perf/util/evlist.c            |   20 ++---
+>  tools/perf/util/evlist.h            |    3 +-
+>  tools/perf/util/evsel.c             |   51 +++++++----
+>  tools/perf/util/evsel.h             |   13 +--
+>  tools/perf/util/parse-events-test.c |  303 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
+>  tools/perf/util/parse-events.c      |  104 +++++++++++++++++++---
+>  tools/perf/util/parse-events.h      |    5 +-
+>  tools/perf/util/parse-events.l      |    2 +
+>  tools/perf/util/parse-events.y      |   93 +++++++++++++++++---
+>  tools/perf/util/python.c            |    7 +-
+>  14 files changed, 552 insertions(+), 95 deletions(-)
