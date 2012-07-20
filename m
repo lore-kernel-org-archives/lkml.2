@@ -1,93 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752791Ab2GTQJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 12:09:59 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:55055 "EHLO
+	id S1751979Ab2GTQXX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 12:23:23 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:63754 "EHLO
 	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751768Ab2GTQJ6 (ORCPT
+	with ESMTP id S1750925Ab2GTQXW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 12:09:58 -0400
-Date: Fri, 20 Jul 2012 09:09:53 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers: hv: use Linux version in guest ID
-Message-ID: <20120720160953.GA5802@kroah.com>
-References: <87fw8mlv7e.fsf@nemi.mork.no>
- <1342771388-24389-1-git-send-email-bjorn@mork.no>
- <20120720152650.GA5201@kroah.com>
- <426367E2313C2449837CD2DE46E7EAF923547836@SN2PRD0310MB382.namprd03.prod.outlook.com>
+	Fri, 20 Jul 2012 12:23:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <426367E2313C2449837CD2DE46E7EAF923547836@SN2PRD0310MB382.namprd03.prod.outlook.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998FDA9E@DQHE02.ent.ti.com>
+References: <A874F61F95741C4A9BA573A70FE3998FDA9E@DQHE02.ent.ti.com>
+Date: Fri, 20 Jul 2012 22:08:21 +0545
+Message-ID: <CAHdPZaPBocAybfr8cnxWh4cP7pC6=1r+65Nt_+Ajxz7G9J9x1Q@mail.gmail.com>
+Subject: Re: [PATCH v2] leds: add new lp8788 led driver
+From: "devendra.aaru" <devendra.aaru@gmail.com>
+To: "Kim, Milo" <Milo.Kim@ti.com>
+Cc: Bryan Wu <bryan.wu@canonical.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 20, 2012 at 04:02:44PM +0000, KY Srinivasan wrote:
-> > On Fri, Jul 20, 2012 at 10:03:08AM +0200, Bjørn Mork wrote:
-> > > Use OS version number in the guest ID as recommended by Microsoft
-> > >
-> > > Signed-off-by: Bjørn Mork <bjorn@mork.no>
-> > > ---
-> > > So how about something like this?  Yes, I know including
-> > > linux/version.h often is unwanted, but the spec does
-> > > recommend using the actual OS version in the guest ID
-> > >
-> > > Yes, this will be offensive again when Linux is at
-> > > version 181.0, but we might have found a better solution by
-> > > then :-)
-> > >
-> > >
-> > >  drivers/hv/hyperv_vmbus.h |   20 ++++++++++++++++----
-> > >  1 file changed, 16 insertions(+), 4 deletions(-)
-> > >
-> > > diff --git a/drivers/hv/hyperv_vmbus.h b/drivers/hv/hyperv_vmbus.h
-> > > index b9426a6..cc0c3f0 100644
-> > > --- a/drivers/hv/hyperv_vmbus.h
-> > > +++ b/drivers/hv/hyperv_vmbus.h
-> > > @@ -29,6 +29,7 @@
-> > >  #include <asm/sync_bitops.h>
-> > >  #include <linux/atomic.h>
-> > >  #include <linux/hyperv.h>
-> > > +#include <linux/version.h>
-> > >
-> > >  /*
-> > >   * The below CPUID leaves are present if
-> > VersionAndFeatures.HypervisorPresent
-> > > @@ -410,10 +411,21 @@ enum {
-> > >
-> > >  #define HV_PRESENT_BIT			0x80000000
-> > >
-> > > -#define HV_LINUX_GUEST_ID_LO		0x00000000
-> > > -#define HV_LINUX_GUEST_ID_HI		0xB16B00B5
-> > > -#define HV_LINUX_GUEST_ID		(((u64)HV_LINUX_GUEST_ID_HI
-> > << 32) | \
-> > > -					   HV_LINUX_GUEST_ID_LO)
-> > > +/* Linux vendor ID allocated by Microsoft */
-> > > +#define HV_LINUX_GUEST_ID_VENDOR	0xB16B
-> > > +
-> > > +/* Creating a guest ID conforming to the encoding recommended by
-> > > + * Microsoft, with variant and build fixed to 0
-> > 
-> > We could use the kernel build number here as well, if we really wanted
-> > it, right?
-> > 
-> > Otherwise, I like this patch, KY, any objection to me taking it?
-> 
-> Greg,
-> 
-> If it is ok with you can we wait a couple of days. I am pushing to get information
-> back from folks within MSFT. I am hoping  we can fix this issue soon.
+Hi,
 
-Ok, I'll hold on to it for a week or so.
+I think a mutex_unlock is missed out,
 
-thanks,
+On Fri, Jul 20, 2012 at 2:28 PM, Kim, Milo <Milo.Kim@ti.com> wrote:
+> +
+> +static void lp8788_led_work(struct work_struct *work)
+> +{
+> +       struct lp8788_led *led = container_of(work, struct lp8788_led, work);
+> +       enum lp8788_isink_number num = led->isink_num;
+> +       int enable;
+> +       u8 val = led->brightness;
+> +
+> +       mutex_lock(&led->lock);
+> +
+> +       switch (num) {
+> +       case LP8788_ISINK_1:
+> +       case LP8788_ISINK_2:
+> +       case LP8788_ISINK_3:
+> +               lp8788_write_byte(led->lp, lp8788_pwm_addr[num], val);
+> +               break;
+> +       default:
+                    missed mutex_unlock
+> +               return;
+> +       }
+> +
+> +       enable = (val > 0) ? 1 : 0;
+> +       if (enable != led->on)
+> +               lp8788_led_enable(led, num, enable);
+> +
+> +       mutex_unlock(&led->lock);
+> +}
+> +
 
-greg k-h
+Thanks,
+Devendra
