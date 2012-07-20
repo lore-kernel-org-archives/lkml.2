@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752417Ab2GTSr5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 14:47:57 -0400
-Received: from 1010ds2-suoe.0.fullrate.dk ([90.184.90.115]:24865 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751740Ab2GTSr4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 14:47:56 -0400
-Date: Fri, 20 Jul 2012 20:47:55 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: David Airlie <airlied@linux.ie>
-cc: Adam Jackson <ajax@redhat.com>, Dave Airlie <airlied@redhat.com>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] drm, cirrus_fbdev: Fix leak in cirrusfb_create()
-Message-ID: <alpine.LNX.2.00.1207202039350.23164@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752677Ab2GTSsj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 14:48:39 -0400
+Received: from mga14.intel.com ([143.182.124.37]:22096 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752016Ab2GTSsi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 14:48:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="124864000"
+From: Darren Hart <dvhart@linux.intel.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH 2/3] futex: Fix bug in WARN_ON for NULL q.pi_state
+Date: Fri, 20 Jul 2012 11:46:30 -0700
+Message-Id: <1c85d97f6e5f79ec389a4ead3e367363c74bd09a.1342809673.git.dvhart@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <cover.1342809673.git.dvhart@linux.intel.com>
+References: <cover.1342809673.git.dvhart@linux.intel.com>
+In-Reply-To: <cover.1342809673.git.dvhart@linux.intel.com>
+References: <cover.1342809673.git.dvhart@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have this code:
+The WARN_ON in futex_wait_requeue_pi() for a NULL q.pi_state was testing
+the address (&q.pi_state) of the pointer instead of the value
+(q.pi_state) of the pointer. Correct it accordingly.
 
-...
-	sysram = vmalloc(size);
-	if (!sysram)
-		return -ENOMEM;
-
-	info = framebuffer_alloc(0, device);
-	if (info == NULL)
-		return -ENOMEM;
-...
-
-If the vmalloc() call succeeds but the framebuffer_alloc() call
-subsequently fails then we'll leak the memory allocated for 'sysram'
-with vmalloc().
-
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+CC: Dave Jones <davej@redhat.com>
+CC: Thomas Gleixner <tglx@linutronix.de>
 ---
- drivers/gpu/drm/cirrus/cirrus_fbdev.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ kernel/futex.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/cirrus/cirrus_fbdev.c b/drivers/gpu/drm/cirrus/cirrus_fbdev.c
-index 9a276a5..cdaa270 100644
---- a/drivers/gpu/drm/cirrus/cirrus_fbdev.c
-+++ b/drivers/gpu/drm/cirrus/cirrus_fbdev.c
-@@ -155,8 +155,10 @@ static int cirrusfb_create(struct cirrus_fbdev *gfbdev,
- 		return -ENOMEM;
- 
- 	info = framebuffer_alloc(0, device);
--	if (info == NULL)
-+	if (!info) {
-+		vfree(sysram);
- 		return -ENOMEM;
-+	}
- 
- 	info->par = gfbdev;
- 
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 05018bf..5551ada 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -2343,7 +2343,7 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
+ 		 * signal.  futex_unlock_pi() will not destroy the lock_ptr nor
+ 		 * the pi_state.
+ 		 */
+-		WARN_ON(!&q.pi_state);
++		WARN_ON(!q.pi_state);
+ 		pi_mutex = &q.pi_state->pi_mutex;
+ 		ret = rt_mutex_finish_proxy_lock(pi_mutex, to, &rt_waiter, 1);
+ 		debug_rt_mutex_free_waiter(&rt_waiter);
 -- 
-1.7.11.2
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+1.7.10.4
 
