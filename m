@@ -1,59 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752830Ab2GTBst (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 19 Jul 2012 21:48:49 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:56668 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752087Ab2GTBsq (ORCPT
+	id S1752854Ab2GTBwl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 19 Jul 2012 21:52:41 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:57958 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752589Ab2GTBwk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 19 Jul 2012 21:48:46 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID q6K1mZmN004614, This message is released by code: ctaloc0852
-Message-ID: <5008B8F3.20502@realsil.com.cn>
-Date: Fri, 20 Jul 2012 09:48:35 +0800
-From: wwang <wei_wang@realsil.com.cn>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Thu, 19 Jul 2012 21:52:40 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AmsKACG5CFB5LBuu/2dsb2JhbABFhQ6zAAOBKoEIgiABAQQBOhwjBQsIAw4GAQMuFCUDIROIBwW+eBSLOIE3hSkDlUOBFIgWhmCCcQ
+Date: Fri, 20 Jul 2012 11:52:26 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Paulo Alcantara <pcacjr@zytor.com>
+Cc: hch@infradead.org, baozich@gmail.com, bpm@sgi.com,
+        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: [PATCH] xfs: fix comment typo of struct xfs_da_blkinfo.
+Message-ID: <20120720015226.GJ23387@dastard>
+References: <20120716151038.GI29979@sgi.com>
+ <5292013E-6FF3-47F6-BE9F-FD7BA2BB2AA9@gmail.com>
+ <20120717070643.GA4958@infradead.org>
+ <20120717.224021.707783566146599004.pcacjr@zytor.com>
 MIME-Version: 1.0
-To: Oliver Neukum <oliver@neukum.org>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] drivers/mmc/host: Add realtek sdmmc interface driver
-References: <1342691718-23199-1-git-send-email-wei_wang@realsil.com.cn> <1752528.JW0yMAA2dq@linux-lqwf.site>
-In-Reply-To: <1752528.JW0yMAA2dq@linux-lqwf.site>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120717.224021.707783566146599004.pcacjr@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Oliver:
+On Tue, Jul 17, 2012 at 10:40:21PM -0300, Paulo Alcantara wrote:
+> From: Christoph Hellwig <hch@infradead.org>
+> Date: Tue, 17 Jul 2012 03:06:43 -0400
+> 
+> > Btw, if you need more reviers for the syslinus support feel free to pass
+> > it by me (or the list).
+> 
+> This is the branch I'm maintaing for the XFS readonly driver:
+> 
+> git://zytor.com/users/pcacjr/syslinux.git (branch: xfs)
+> 
+> The current status is:
+> 
+>     - We are able to find the root inode by reading rootino field from
+>       superblock (xfs_iget_root() function).
+>     - We are able to find inodes that have core's format set to "local" only at
+>       the moment, which is by reading leaf entries from inode btrees. The
+>       function that looks up for an inode is the xfs_iget() one. We're looking
+>       forward to implement the handling of keys in inode btrees (extents) also.
+> 
+> Baoszi is currently working on the inode btree's key part (extents), and I'm
+> working on the data part of the file inode, which is the xfs_next_extent()
+> function.
+> 
+> The xfs_next_extent() function must be able to read the inode (cast to the data
+> fork) and populate a structure that stores physical starting number sector and
+> number of consecutive sectors that contain the inode's data so that Syslinux
+> will know where to read from.
 
-I will fix it. Should I resend all three patches, or just this one?
+As we discussed on #xfs, I'm still not convinced that parsing the
+filesystem metadata in the bootloader is the way to go. Far better,
+IMO, is simply to supply the bootloader with a list of extents for
+the blocks it needs to read to get the files it needs. You can get
+them via fiemap(), and it'll work for XFS, btrfs, ext3, ext4, etc
+without needing to write code to parse the on-disk format of every
+filesystem.
 
-BR,
-Wei WANG
+Especially as we are in the process of making major changes to the
+XFS on-disk format, which means you'll have to make significant
+changes to support a second XFS disk format in the not-to-distant
+future...
 
-于 2012年07月19日 20:26, Oliver Neukum 写道:
-> On Thursday 19 July 2012 17:55:18 wei_wang@realsil.com.cn wrote:
->
->> +static void sd_normal_rw(struct realtek_sdmmc *host, struct mmc_request *mrq)
->> +{
->> +	struct mmc_command *cmd = mrq->cmd;
->> +	struct mmc_data *data = mrq->data;
->> +	u8 _cmd[5], *buf;
->> +
->> +	_cmd[0] = 0x40 | (u8)cmd->opcode;
->> +	_cmd[1] = (u8)(cmd->arg >> 24);
->> +	_cmd[2] = (u8)(cmd->arg >> 16);
->> +	_cmd[3] = (u8)(cmd->arg >> 8);
->> +	_cmd[4] = (u8)cmd->arg;
-> Please use the predefined macro for endianness conversion.
->
->> +	buf = kzalloc(data->blksz, GFP_KERNEL);
-> 1. You must handle a failure to allocate a buffer
-> 2. You must use GFP_NOIO as you are in a block driver
->
-> 	Regards
-> 		Oliver
->
+> Thanks for the interest in helping us!
 
+We want it to work! ;)
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
