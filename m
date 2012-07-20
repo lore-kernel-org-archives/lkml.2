@@ -1,75 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752961Ab2GTOxx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 10:53:53 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:13924 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752766Ab2GTOxv (ORCPT
+	id S1751665Ab2GTO6X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 10:58:23 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:32773 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750925Ab2GTO6W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 10:53:51 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6777"; a="210418350"
-Message-ID: <500970F3.4010606@codeaurora.org>
-Date: Fri, 20 Jul 2012 10:53:39 -0400
-From: Christopher Covington <cov@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Fri, 20 Jul 2012 10:58:22 -0400
+Message-ID: <500971C6.4040204@linux.vnet.ibm.com>
+Date: Fri, 20 Jul 2012 20:27:10 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: Jon Masters <jonathan@jonmasters.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Will Deacon <Will.Deacon@arm.com>
-Subject: Re: [PATCH 08/36] AArch64: Kernel booting and initialisation
-References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com> <1341608777-12982-9-git-send-email-catalin.marinas@arm.com> <50065E6B.3060602@jonmasters.org> <5008445B.2010109@codeaurora.org> <20120720134824.GC6947@arm.com>
-In-Reply-To: <20120720134824.GC6947@arm.com>
+To: paulmck@linux.vnet.ibm.com
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: WARNING: at kernel/rcutree.c:1550 __rcu_process_callbacks+0x46f/0x4b0()
+References: <5007F8FA.7000203@linux.vnet.ibm.com> <20120719171550.GL2507@linux.vnet.ibm.com> <500935BC.4040405@linux.vnet.ibm.com> <20120720143657.GC2721@linux.vnet.ibm.com>
+In-Reply-To: <20120720143657.GC2721@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+x-cbid: 12072014-5564-0000-0000-000003AEDB83
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Catalin,
-
-On 07/20/2012 09:48 AM, Catalin Marinas wrote:
-> On Thu, Jul 19, 2012 at 06:31:07PM +0100, Christopher Covington wrote:
->> On 07/18/2012 02:57 AM, Jon Masters wrote:
->>> On 07/06/2012 05:05 PM, Catalin Marinas wrote:
+On 07/20/2012 08:06 PM, Paul E. McKenney wrote:
+> On Fri, Jul 20, 2012 at 04:11:00PM +0530, Srivatsa S. Bhat wrote:
+>> On 07/19/2012 10:45 PM, Paul E. McKenney wrote:
+>>> On Thu, Jul 19, 2012 at 05:39:30PM +0530, Srivatsa S. Bhat wrote:
+>>>> Hi Paul,
+>>>>
+>>>> While running a CPU hotplug stress test on v3.5-rc7+
+>>>> (mainline commit 8a7298b7805ab) I hit this warning.
+>>>> I haven't tried to debug this yet...
+>>>>
+>>>> Line number 1550 maps to:
+>>>>
+>>>> WARN_ON_ONCE(cpu_is_offline(smp_processor_id()));
+>>>>
+>>>> inside rcu_do_batch().
 >>>
->>>> +- CPU mode
->>>> +  All forms of interrupts must be masked in PSTATE.DAIF (Debug, SError,
->>>> +  IRQ and FIQ).
->>>> +  The CPU must be in either EL2 (RECOMMENDED) or non-secure EL1.
+>>> Hello, Srivatsa,
+>>>
+>>> I believe that you need commit a16b7a69 (Prevent __call_rcu() from
+>>> invoking RCU core on offline CPUs), which is currently in -tip, queued
+>>> for 3.6.  Please see below for the patch.
+>>>
+>>> Does this help?
 >>
->> Why not secure EL1?
+>> Yes, that fixed it, thanks! :-)
+>> Sorry for the noise...
 > 
-> Because the secure side does not have virtualisation extensions so you
-> won't be able to run something like KVM.
+> May I add your Tested-by?
 
-This is another useful explanation to include, in my opinion.
+Of course, go ahead! :-)
 
->>> Even though this stuff is likely to be replaced with the result of some
->>> of the other standardization, I'd like it if you'd strongly consider
->>> removing the "or non-secure EL1". If you give an inch, someone will take
->>> a mile and build a system that enters other than in EL2. Or, something
->>> to the effect of "the highest non-secure exception level implemented"
->>> would be my preference if you don't want to specify.
+Regards,
+Srivatsa S. Bhat
+
 >>
->> I think it would be best to list the technical limitations, from the
->> kernel's perspective, of the unsupported exception levels and the
->> advantages of the supported exception levels here. If you want to guide
->> system builders towards EL2, I think it'd be more convincing to document
->> the relevant technical aspects (perhaps KVM needs facilities only
->> available in EL2) than just providing an unexplained requirement.
-> 
-> That's not meant to be an official document for SoC designers. It just
-> states the requirements from the Linux kernel perspective. But ARM is
-> producing platform design documents covering hardware and firmware
-> requirements and these will be made available.
+>>>
+>>> ------------------------------------------------------------------------
+>>>
+>>> rcu: Prevent __call_rcu() from invoking RCU core on offline CPUs
+>>>
+>>> The __call_rcu() function will invoke the RCU core, for example, if
+>>> it detects that the current CPU has too many callbacks.  However, this
+>>> can happen on an offline CPU that is on its way to the idle loop, in
+>>> which case it is an error to invoke the RCU core, and the excess callbacks
+>>> will be adopted in any case.  This commit therefore adds checks to
+>>> __call_rcu() for running on an offline CPU, refraining from invoking
+>>> the RCU core in this case.
+>>>
+>>> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+>>> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>>> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+>>>
+>>> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+>>> index a4a9c91..ceaa959 100644
+>>> --- a/kernel/rcutree.c
+>>> +++ b/kernel/rcutree.c
+>>> @@ -1904,11 +1904,11 @@ __call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
+>>>  	 * If called from an extended quiescent state, invoke the RCU
+>>>  	 * core in order to force a re-evaluation of RCU's idleness.
+>>>  	 */
+>>> -	if (rcu_is_cpu_idle())
+>>> +	if (rcu_is_cpu_idle() && cpu_online(smp_processor_id()))
+>>>  		invoke_rcu_core();
+>>>
+>>> -	/* If interrupts were disabled, don't dive into RCU core. */
+>>> -	if (irqs_disabled_flags(flags)) {
+>>> +	/* If interrupts were disabled or CPU offline, don't invoke RCU core. */
+>>> +	if (irqs_disabled_flags(flags) || cpu_is_offline(smp_processor_id())) {
+>>>  		local_irq_restore(flags);
+>>>  		return;
+>>>  	}
+>>>
 
-I agree that the main audience for this document should be kernel and
-bootloader hackers and I now think I concentrated a little too much on
-how my suggestions, meant to advocate for that audience, could be seen
-as aligned with Jon's comment.
-
-Christopher
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
