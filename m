@@ -1,356 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752109Ab2GUCLd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 22:11:33 -0400
-Received: from fep01.xtra.co.nz ([210.54.141.245]:37027 "EHLO fep01.xtra.co.nz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751669Ab2GUCLH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 22:11:07 -0400
-X-Greylist: delayed 620 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Jul 2012 22:11:07 EDT
-From: Tony Prisk <linux@prisktech.co.nz>
-To: linux-usb@vger.kernel.org
-Cc: Tony Prisk <linux@prisktech.co.nz>,
-        VT8500 mailing list 
-	<vt8500-wm8505-linux-kernel@googlegroups.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Hauke Mehrtens <hauke@hauke-m.de>,
-        Felipe Balbi <balbi@ti.com>, Neil Zhang <zhangwm@marvell.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCHv3 2/2] ARM: vt8500: Add support for UHCI companion controller
-Date: Sat, 21 Jul 2012 14:00:39 +1200
-Message-Id: <1342836039-9273-2-git-send-email-linux@prisktech.co.nz>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1342836039-9273-1-git-send-email-linux@prisktech.co.nz>
-References: <1342836039-9273-1-git-send-email-linux@prisktech.co.nz>
+	id S1752184Ab2GUCVK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 22:21:10 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26516 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751669Ab2GUCVI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 22:21:08 -0400
+X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=9JffKFENbIYA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=VwQbUJbxAAAA:8 a=zUdNcWRJiuJ6KYwvtrwA:9 a=QEXdDO2ut3YA:10 a=YbNPXYEMyD8QA41JLDoA:9 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 72.230.195.127
+Message-Id: <20120721021943.274162381@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Fri, 20 Jul 2012 22:19:43 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: [PATCH 00/19] [GIT PULL][v3.6] ftrace: Allow kprobes to work with ftace
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for a generic non-pci UHCI companion controller.
-Existing board files for arch-vt8500 updated to include UHCI
-support.
+--00GvhwF7k39YY
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
----
-V3:
-Added the missing commits for the board files.
 
- arch/arm/mach-vt8500/bv07.c           |    1 +
- arch/arm/mach-vt8500/devices-vt8500.c |    5 +
- arch/arm/mach-vt8500/devices-wm8505.c |    4 +
- arch/arm/mach-vt8500/devices.c        |   11 +++
- arch/arm/mach-vt8500/devices.h        |    1 +
- arch/arm/mach-vt8500/wm8505_7in.c     |    1 +
- drivers/usb/host/Kconfig              |   12 ++-
- drivers/usb/host/uhci-hcd.c           |    5 +
- drivers/usb/host/uhci-platform.c      |  157 +++++++++++++++++++++++++++++++++
- 9 files changed, 195 insertions(+), 2 deletions(-)
- create mode 100644 drivers/usb/host/uhci-platform.c
+Ingo,
 
-diff --git a/arch/arm/mach-vt8500/bv07.c b/arch/arm/mach-vt8500/bv07.c
-index a464c75..19d20d9 100644
---- a/arch/arm/mach-vt8500/bv07.c
-+++ b/arch/arm/mach-vt8500/bv07.c
-@@ -32,6 +32,7 @@ static struct platform_device *devices[] __initdata = {
- 	&vt8500_device_uart0,
- 	&vt8500_device_lcdc,
- 	&vt8500_device_ehci,
-+	&vt8500_device_uhci,
- 	&vt8500_device_ge_rops,
- 	&vt8500_device_pwm,
- 	&vt8500_device_pwmbl,
-diff --git a/arch/arm/mach-vt8500/devices-vt8500.c b/arch/arm/mach-vt8500/devices-vt8500.c
-index 19519ae..def7fe3 100644
---- a/arch/arm/mach-vt8500/devices-vt8500.c
-+++ b/arch/arm/mach-vt8500/devices-vt8500.c
-@@ -48,6 +48,11 @@ void __init vt8500_set_resources(void)
- 	tmp[1] = wmt_irq_res(IRQ_EHCI);
- 	wmt_res_add(&vt8500_device_ehci, tmp, 2);
- 
-+	/* vt8500 uses a single IRQ for both EHCI and UHCI controllers */
-+	tmp[0] = wmt_mmio_res(VT8500_UHCI_BASE, SZ_512);
-+	tmp[1] = wmt_irq_res(IRQ_EHCI);
-+	wmt_res_add(&vt8500_device_uhci, tmp, 2);
-+
- 	tmp[0] = wmt_mmio_res(VT8500_GEGEA_BASE, SZ_256);
- 	wmt_res_add(&vt8500_device_ge_rops, tmp, 1);
- 
-diff --git a/arch/arm/mach-vt8500/devices-wm8505.c b/arch/arm/mach-vt8500/devices-wm8505.c
-index db4594e..c810454 100644
---- a/arch/arm/mach-vt8500/devices-wm8505.c
-+++ b/arch/arm/mach-vt8500/devices-wm8505.c
-@@ -55,6 +55,10 @@ void __init wm8505_set_resources(void)
- 	tmp[1] = wmt_irq_res(IRQ_EHCI);
- 	wmt_res_add(&vt8500_device_ehci, tmp, 2);
- 
-+	tmp[0] = wmt_mmio_res(WM8505_UHCI_BASE, SZ_512);
-+	tmp[1] = wmt_irq_res(IRQ_UHCI);
-+	wmt_res_add(&vt8500_device_uhci, tmp, 2);
-+
- 	tmp[0] = wmt_mmio_res(WM8505_GEGEA_BASE, SZ_256);
- 	wmt_res_add(&vt8500_device_ge_rops, tmp, 1);
- 
-diff --git a/arch/arm/mach-vt8500/devices.c b/arch/arm/mach-vt8500/devices.c
-index 1fcdc36..46ff82d 100644
---- a/arch/arm/mach-vt8500/devices.c
-+++ b/arch/arm/mach-vt8500/devices.c
-@@ -204,6 +204,17 @@ struct platform_device vt8500_device_ehci = {
- 	},
- };
- 
-+static u64 uhci_dma_mask = DMA_BIT_MASK(32);
-+
-+struct platform_device vt8500_device_uhci = {
-+	.name		= "platform-uhci",
-+	.id		= 0,
-+	.dev		= {
-+		.dma_mask	= &uhci_dma_mask,
-+		.coherent_dma_mask = DMA_BIT_MASK(32),
-+	},
-+};
-+
- struct platform_device vt8500_device_ge_rops = {
- 	.name		= "wmt_ge_rops",
- 	.id		= -1,
-diff --git a/arch/arm/mach-vt8500/devices.h b/arch/arm/mach-vt8500/devices.h
-index 188d4e1..0e6d9f9 100644
---- a/arch/arm/mach-vt8500/devices.h
-+++ b/arch/arm/mach-vt8500/devices.h
-@@ -81,6 +81,7 @@ extern struct platform_device vt8500_device_uart5;
- extern struct platform_device vt8500_device_lcdc;
- extern struct platform_device vt8500_device_wm8505_fb;
- extern struct platform_device vt8500_device_ehci;
-+extern struct platform_device vt8500_device_uhci;
- extern struct platform_device vt8500_device_ge_rops;
- extern struct platform_device vt8500_device_pwm;
- extern struct platform_device vt8500_device_pwmbl;
-diff --git a/arch/arm/mach-vt8500/wm8505_7in.c b/arch/arm/mach-vt8500/wm8505_7in.c
-index cf910a9..302ae2f 100644
---- a/arch/arm/mach-vt8500/wm8505_7in.c
-+++ b/arch/arm/mach-vt8500/wm8505_7in.c
-@@ -31,6 +31,7 @@ static void __iomem *pmc_hiber;
- static struct platform_device *devices[] __initdata = {
- 	&vt8500_device_uart0,
- 	&vt8500_device_ehci,
-+	&vt8500_device_uhci,
- 	&vt8500_device_wm8505_fb,
- 	&vt8500_device_ge_rops,
- 	&vt8500_device_pwm,
-diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-index 83e58df..3d153d0 100644
---- a/drivers/usb/host/Kconfig
-+++ b/drivers/usb/host/Kconfig
-@@ -450,7 +450,7 @@ config USB_OHCI_LITTLE_ENDIAN
- 
- config USB_UHCI_HCD
- 	tristate "UHCI HCD (most Intel and VIA) support"
--	depends on USB && (PCI || SPARC_LEON)
-+	depends on USB && (PCI || SPARC_LEON || ARCH_VT8500)
- 	---help---
- 	  The Universal Host Controller Interface is a standard by Intel for
- 	  accessing the USB hardware in the PC (which is also called the USB
-@@ -468,7 +468,15 @@ config USB_UHCI_HCD
- config USB_UHCI_SUPPORT_NON_PCI_HC
- 	bool
- 	depends on USB_UHCI_HCD
--	default y if SPARC_LEON
-+	default y if (SPARC_LEON || ARCH_VT8500)
-+
-+config USB_UHCI_PLATFORM
-+	bool "Generic UHCI Platform Driver support"
-+	depends on USB_UHCI_SUPPORT_NON_PCI_HC
-+	default y if ARCH_VT8500
-+	---help---
-+	  Enable support for generic UHCI platform devices that require no
-+	  additional configuration.
- 
- config USB_UHCI_BIG_ENDIAN_MMIO
- 	bool
-diff --git a/drivers/usb/host/uhci-hcd.c b/drivers/usb/host/uhci-hcd.c
-index e4db350..4b9e9ab 100644
---- a/drivers/usb/host/uhci-hcd.c
-+++ b/drivers/usb/host/uhci-hcd.c
-@@ -846,6 +846,11 @@ static const char hcd_name[] = "uhci_hcd";
- #define PLATFORM_DRIVER		uhci_grlib_driver
- #endif
- 
-+#ifdef CONFIG_USB_UHCI_PLATFORM
-+#include "uhci-platform.c"
-+#define PLATFORM_DRIVER		uhci_platform_driver
-+#endif
-+
- #if !defined(PCI_DRIVER) && !defined(PLATFORM_DRIVER)
- #error "missing bus glue for uhci-hcd"
- #endif
-diff --git a/drivers/usb/host/uhci-platform.c b/drivers/usb/host/uhci-platform.c
-new file mode 100644
-index 0000000..dafe42a
---- /dev/null
-+++ b/drivers/usb/host/uhci-platform.c
-@@ -0,0 +1,157 @@
-+/*
-+ * Generic UHCI HCD (Host Controller Driver) for Platform Devices
-+ *
-+ * Copyright (c) 2011 Tony Prisk <linux@prisktech.co.nz>
-+ *
-+ * This file is based on uhci-grlib.c
-+ * (C) Copyright 2004-2007 Alan Stern, stern@rowland.harvard.edu
-+ */
-+
-+#include <linux/of.h>
-+#include <linux/platform_device.h>
-+
-+static int uhci_platform_init(struct usb_hcd *hcd)
-+{
-+	struct uhci_hcd *uhci = hcd_to_uhci(hcd);
-+
-+	uhci->rh_numports = uhci_count_ports(hcd);
-+
-+	/* Set up pointers to to generic functions */
-+	uhci->reset_hc = uhci_generic_reset_hc;
-+	uhci->check_and_reset_hc = uhci_generic_check_and_reset_hc;
-+
-+	/* No special actions need to be taken for the functions below */
-+	uhci->configure_hc = NULL;
-+	uhci->resume_detect_interrupts_are_broken = NULL;
-+	uhci->global_suspend_mode_is_broken = NULL;
-+
-+	/* Reset if the controller isn't already safely quiescent. */
-+	check_and_reset_hc(uhci);
-+	return 0;
-+}
-+
-+static const struct hc_driver uhci_platform_hc_driver = {
-+	.description =		hcd_name,
-+	.product_desc =		"Generic UHCI Host Controller",
-+	.hcd_priv_size =	sizeof(struct uhci_hcd),
-+
-+	/* Generic hardware linkage */
-+	.irq =			uhci_irq,
-+	.flags =		HCD_MEMORY | HCD_USB11,
-+
-+	/* Basic lifecycle operations */
-+	.reset =		uhci_platform_init,
-+	.start =		uhci_start,
-+#ifdef CONFIG_PM
-+	.pci_suspend =		NULL,
-+	.pci_resume =		NULL,
-+	.bus_suspend =		uhci_rh_suspend,
-+	.bus_resume =		uhci_rh_resume,
-+#endif
-+	.stop =			uhci_stop,
-+
-+	.urb_enqueue =		uhci_urb_enqueue,
-+	.urb_dequeue =		uhci_urb_dequeue,
-+
-+	.endpoint_disable =	uhci_hcd_endpoint_disable,
-+	.get_frame_number =	uhci_hcd_get_frame_number,
-+
-+	.hub_status_data =	uhci_hub_status_data,
-+	.hub_control =		uhci_hub_control,
-+};
-+
-+
-+static int __devinit uhci_hcd_platform_probe(struct platform_device *pdev)
-+{
-+	struct usb_hcd *hcd;
-+	struct uhci_hcd	*uhci;
-+	struct resource *res;
-+	int ret;
-+
-+	if (usb_disabled())
-+		return -ENODEV;
-+
-+	hcd = usb_create_hcd(&uhci_platform_hc_driver, &pdev->dev,
-+			pdev->name);
-+	if (!hcd)
-+		return -ENOMEM;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	hcd->rsrc_start = res->start;
-+	hcd->rsrc_len = resource_size(res);
-+
-+	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len, hcd_name)) {
-+		pr_err("%s: request_mem_region failed\n", __func__);
-+		ret = -EBUSY;
-+		goto err_rmr;
-+	}
-+
-+	hcd->regs = ioremap(hcd->rsrc_start, hcd->rsrc_len);
-+	if (!hcd->regs) {
-+		pr_err("%s: ioremap failed\n", __func__);
-+		ret = -ENOMEM;
-+		goto err_irq;
-+	}
-+	uhci = hcd_to_uhci(hcd);
-+
-+	uhci->regs = hcd->regs;
-+
-+	ret = usb_add_hcd(hcd, pdev->resource[1].start, IRQF_DISABLED |
-+								IRQF_SHARED);
-+	if (ret)
-+		goto err_uhci;
-+
-+	return 0;
-+
-+err_uhci:
-+	iounmap(hcd->regs);
-+err_irq:
-+	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
-+err_rmr:
-+	usb_put_hcd(hcd);
-+
-+	return ret;
-+}
-+
-+static int uhci_hcd_platform_remove(struct platform_device *pdev)
-+{
-+	struct usb_hcd *hcd = platform_get_drvdata(pdev);
-+
-+	usb_remove_hcd(hcd);
-+	iounmap(hcd->regs);
-+	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
-+	usb_put_hcd(hcd);
-+	platform_set_drvdata(pdev, NULL);
-+
-+	return 0;
-+}
-+
-+/* Make sure the controller is quiescent and that we're not using it
-+ * any more.  This is mainly for the benefit of programs which, like kexec,
-+ * expect the hardware to be idle: not doing DMA or generating IRQs.
-+ *
-+ * This routine may be called in a damaged or failing kernel.  Hence we
-+ * do not acquire the spinlock before shutting down the controller.
-+ */
-+static void uhci_hcd_platform_shutdown(struct platform_device *op)
-+{
-+	struct usb_hcd *hcd = dev_get_drvdata(&op->dev);
-+
-+	uhci_hc_died(hcd_to_uhci(hcd));
-+}
-+
-+static const struct of_device_id platform_uhci_ids[] = {
-+	{ .compatible = "of-uhci", },
-+	{}
-+};
-+
-+static struct platform_driver uhci_platform_driver = {
-+	.probe		= uhci_hcd_platform_probe,
-+	.remove		= uhci_hcd_platform_remove,
-+	.shutdown	= uhci_hcd_platform_shutdown,
-+	.driver = {
-+		.name = "platform-uhci",
-+		.owner = THIS_MODULE,
-+		.of_match_table = of_match_ptr(platform_uhci_ids),
-+	},
-+};
--- 
-1.7.2.5
+This patch series extends ftrace function tracing utility to be
+more dynamic for its users. It allows for data passing to the callback
+functions, as well as reading regs as if a breakpoint were to trigger
+at function entry.
 
+The main goal of this patch series was to allow kprobes to use ftrace
+as an optimized probe point when a probe is placed on an ftrace nop.
+With lots of help from Masami Hiramatsu, and going through lots of
+iterations, we finally came up with a good solution.
+
+I've tested it vigorously (although, like always, there may be some
+subtle bug), but I feel it is ready for inclussion for the 3.6 merge
+window.
+
+Please pull the latest tip/perf/core tree, which can be found at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+tip/perf/core
+
+Head SHA1: aa5e57294ac5614ac395a9733d3e050eace4764e
+
+
+Masami Hiramatsu (5):
+      ftrace: add ftrace_set_filter_ip() for address based filter
+      kprobes: cleanup to separate probe-able check
+      kprobes: Move locks into appropriate functions
+      kprobes: introduce ftrace based optimization
+      kprobes/x86: ftrace based optimization for x86
+
+Steven Rostedt (13):
+      ftrace: Pass ftrace_ops as third parameter to function trace callback
+      ftrace: Consolidate arch dependent functions with 'list' function
+      ftrace: Return pt_regs to function trace callback
+      ftrace/x86_32: Push ftrace_ops in as 3rd parameter to function tracer
+      ftrace/x86: Add separate function to save regs
+      ftrace/x86: Add save_regs for i386 function calls
+      ftrace/x86: Remove function_trace_stop check from graph caller
+      ftrace: Add default recursion protection for function tracing
+      ftrace: Only compile ftrace selftest if selftests are enabled
+      ftrace: Add selftest to test function trace recursion protection
+      ftrace: Add selftest to test function save-regs support
+      kprobes: Inverse taking of module_mutex with kprobe_mutex
+      ftrace: Make ftrace_location() a nop on !DYNAMIC_FTRACE
+
+Uros Bizjak (1):
+      ftrace/x86_32: Simplify parameter setup for ftrace_regs_caller
+
+----
+ arch/x86/include/asm/ftrace.h     |   49 +++---
+ arch/x86/include/asm/kprobes.h    |    1 +
+ arch/x86/kernel/entry_32.S        |   75 ++++++++-
+ arch/x86/kernel/entry_64.S        |   96 +++++++++--
+ arch/x86/kernel/ftrace.c          |   73 ++++++++-
+ arch/x86/kernel/kprobes.c         |   48 ++++++
+ include/linux/ftrace.h            |  158 ++++++++++++++++--
+ include/linux/kprobes.h           |   27 ++++
+ kernel/kprobes.c                  |  250 ++++++++++++++++++++--------
+ kernel/trace/Makefile             |    2 +
+ kernel/trace/ftrace.c             |  322 ++++++++++++++++++++++++++++-----=
+----
+ kernel/trace/trace.h              |    2 +-
+ kernel/trace/trace_event_perf.c   |    3 +-
+ kernel/trace/trace_events.c       |    4 +-
+ kernel/trace/trace_functions.c    |   14 +-
+ kernel/trace/trace_irqsoff.c      |    5 +-
+ kernel/trace/trace_sched_wakeup.c |    5 +-
+ kernel/trace/trace_selftest.c     |  277 ++++++++++++++++++++++++++++++-
+ kernel/trace/trace_stack.c        |    4 +-
+ 19 files changed, 1199 insertions(+), 216 deletions(-)
+
+--00GvhwF7k39YY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJQChINAAoJEIy3vGnGbaoAe7sP/RHTGWHhal+hi/pfTJL1Q/YA
+Iw1WGlLqKy+9TExttIYv5GLQO8wmaxAP6P5XOyw1Xevc8gPp3Zx8Y6Kp8aG/ptoH
+a7cFI+QtErbn32VY0Q4M4JAcvLSCOGhZ9TgKpOry8sHJ4P/45CGtNZorvZmFVkea
+6MXGS7LSXO3teO7yM9o9xcTjh9JtQKL6NHjpRved7mJl6fUD+rxJJMk4tHNHjFbH
+LXLRc8EKXo3aWazmHf2byNW65o++SICcbdG6u6KczLGFhl7lhhiglkYoiy2/Lk9j
+BuMn5PRVMIKaOMYbGJ0qmqYytvZ/+XlcXVAMoJ3euuP2hoJJjQKb5JCax1wVzvuu
+/4a5AwohlCpYiyY9aivkUeJX9UQ89s4akwScYBgbvKjtp4Wzd62itJwKjD75vGcX
+utpNM4raX4mVEBQnBevhLuG8P/QxqGyv9Di+x0YJGBOYs8De95oxbbfPx+6BvwDh
+dmhFtQU8Nk7X2VjOy2d4d8moT8PbBuaD/hBSVdN6UYS0stbyv9AYwGEZk+aipeZj
+lIDfBPGHIBeJNV1+iGfC4qf+8nVif04jM6Klq8MdSsKruFwu5ClPFUmecews39wK
+aO33BdGT8WPvJW1Ra2O9BNTFQQLkB/DeY7fwOB7erh1VHcKfuv2j/sCG6AhSnyv+
+YpheGXdTNYMeszgvPnAK
+=Uiwj
+-----END PGP SIGNATURE-----
+
+--00GvhwF7k39YY--
