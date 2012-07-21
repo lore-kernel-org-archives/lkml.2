@@ -1,30 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753787Ab2GUCWN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 22:22:13 -0400
+	id S1753763Ab2GUCWL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 22:22:11 -0400
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26516 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752362Ab2GUCVN (ORCPT
+	with ESMTP id S1752224Ab2GUCVL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 22:21:13 -0400
-X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=cuvWuhSpAVQA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=3nbZYyFuAAAA:8 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=oGMlB6cnAAAA:8 a=VnNF1IyMAAAA:8 a=Z4Rwk6OoAAAA:8 a=pGLkceISAAAA:8 a=k7Q1rW-QWTxsl8EJ898A:9 a=QEXdDO2ut3YA:10 a=EvKJbDF4Ut8A:10 a=Zh68SRI7RUMA:10 a=jEp0ucaQiEUA:10 a=CY6gl2JlH4YA:10 a=jbrJJM5MRmoA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=orE_kbzUAhhRI1be:21 a=-RSyHwQ8SqA0C7ha:21 a=ecQpxQombMd-3vTlDdoA:9 a=s5Htg7xnQOKvHEu9STBOug==:117
+	Fri, 20 Jul 2012 22:21:11 -0400
+X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=R-VO9erGiE4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=2yy7z9ee9AFxJZM3T4oA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=hjMDBj44-Z88cRaBKZYA:9 a=s5Htg7xnQOKvHEu9STBOug==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 72.230.195.127
-Message-Id: <20120721022110.305453763@goodmis.org>
+Message-Id: <20120721022108.597891394@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 20 Jul 2012 22:19:56 -0400
+Date: Fri, 20 Jul 2012 22:19:51 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>
-Subject: [PATCH 13/19] ftrace: add ftrace_set_filter_ip() for address based filter
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: [PATCH 08/19] ftrace/x86: Remove function_trace_stop check from graph caller
 References: <20120721021943.274162381@goodmis.org>
-Content-Disposition: inline; filename=0013-ftrace-add-ftrace_set_filter_ip-for-address-based-fi.patch
+Content-Disposition: inline; filename=0008-ftrace-x86-Remove-function_trace_stop-check-from-gra.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -34,138 +31,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+From: Steven Rostedt <srostedt@redhat.com>
 
-Add a new filter update interface ftrace_set_filter_ip()
-to set ftrace filter by ip address, not only glob pattern.
+The graph caller is called by the mcount callers, which already does
+the check against the function_trace_stop variable. No reason to
+check it again.
 
-Link: http://lkml.kernel.org/r/20120605102808.27845.67952.stgit@localhost.l=
-ocaldomain
+Link: http://lkml.kernel.org/r/20120711195745.588538769@goodmis.org
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: "Frank Ch. Eigler" <fche@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/ftrace.h |    3 +++
- kernel/trace/ftrace.c  |   59 ++++++++++++++++++++++++++++++++++++++++++++=
-++--
- 2 files changed, 60 insertions(+), 2 deletions(-)
+ arch/x86/kernel/entry_32.S |    3 ---
+ arch/x86/kernel/entry_64.S |    3 ---
+ 2 files changed, 6 deletions(-)
 
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index 9962e95..3e71112 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -317,6 +317,8 @@ struct dyn_ftrace {
- };
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index 4dc3017..061ac17 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -1241,9 +1241,6 @@ END(mcount)
 =20
- int ftrace_force_update(void);
-+int ftrace_set_filter_ip(struct ftrace_ops *ops, unsigned long ip,
-+			 int remove, int reset);
- int ftrace_set_filter(struct ftrace_ops *ops, unsigned char *buf,
- 		       int len, int reset);
- int ftrace_set_notrace(struct ftrace_ops *ops, unsigned char *buf,
-@@ -544,6 +546,7 @@ static inline int ftrace_text_reserved(void *start, voi=
-d *end)
-  */
- #define ftrace_regex_open(ops, flag, inod, file) ({ -ENODEV; })
- #define ftrace_set_early_filter(ops, buf, enable) do { } while (0)
-+#define ftrace_set_filter_ip(ops, ip, remove, reset) ({ -ENODEV; })
- #define ftrace_set_filter(ops, buf, len, reset) ({ -ENODEV; })
- #define ftrace_set_notrace(ops, buf, len, reset) ({ -ENODEV; })
- #define ftrace_free_filter(ops) do { } while (0)
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 528d997..9dcf15d 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -3242,8 +3242,27 @@ ftrace_notrace_write(struct file *file, const char _=
-_user *ubuf,
- }
+ #ifdef CONFIG_FUNCTION_GRAPH_TRACER
+ ENTRY(ftrace_graph_caller)
+-	cmpl $0, function_trace_stop
+-	jne ftrace_stub
+-
+ 	pushl %eax
+ 	pushl %ecx
+ 	pushl %edx
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 52bda2e..38308fa 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -213,9 +213,6 @@ END(mcount)
 =20
- static int
--ftrace_set_regex(struct ftrace_ops *ops, unsigned char *buf, int len,
--		 int reset, int enable)
-+ftrace_match_addr(struct ftrace_hash *hash, unsigned long ip, int remove)
-+{
-+	struct ftrace_func_entry *entry;
-+
-+	if (!ftrace_location(ip))
-+		return -EINVAL;
-+
-+	if (remove) {
-+		entry =3D ftrace_lookup_ip(hash, ip);
-+		if (!entry)
-+			return -ENOENT;
-+		free_hash_entry(hash, entry);
-+		return 0;
-+	}
-+
-+	return add_hash_entry(hash, ip);
-+}
-+
-+static int
-+ftrace_set_hash(struct ftrace_ops *ops, unsigned char *buf, int len,
-+		unsigned long ip, int remove, int reset, int enable)
- {
- 	struct ftrace_hash **orig_hash;
- 	struct ftrace_hash *hash;
-@@ -3272,6 +3291,11 @@ ftrace_set_regex(struct ftrace_ops *ops, unsigned ch=
-ar *buf, int len,
- 		ret =3D -EINVAL;
- 		goto out_regex_unlock;
- 	}
-+	if (ip) {
-+		ret =3D ftrace_match_addr(hash, ip, remove);
-+		if (ret < 0)
-+			goto out_regex_unlock;
-+	}
+ #ifdef CONFIG_FUNCTION_GRAPH_TRACER
+ ENTRY(ftrace_graph_caller)
+-	cmpl $0, function_trace_stop
+-	jne ftrace_stub
+-
+ 	MCOUNT_SAVE_FRAME
 =20
- 	mutex_lock(&ftrace_lock);
- 	ret =3D ftrace_hash_move(ops, enable, orig_hash, hash);
-@@ -3288,6 +3312,37 @@ ftrace_set_regex(struct ftrace_ops *ops, unsigned ch=
-ar *buf, int len,
- 	return ret;
- }
-=20
-+static int
-+ftrace_set_addr(struct ftrace_ops *ops, unsigned long ip, int remove,
-+		int reset, int enable)
-+{
-+	return ftrace_set_hash(ops, 0, 0, ip, remove, reset, enable);
-+}
-+
-+/**
-+ * ftrace_set_filter_ip - set a function to filter on in ftrace by address
-+ * @ops - the ops to set the filter with
-+ * @ip - the address to add to or remove from the filter.
-+ * @remove - non zero to remove the ip from the filter
-+ * @reset - non zero to reset all filters before applying this filter.
-+ *
-+ * Filters denote which functions should be enabled when tracing is enabled
-+ * If @ip is NULL, it failes to update filter.
-+ */
-+int ftrace_set_filter_ip(struct ftrace_ops *ops, unsigned long ip,
-+			 int remove, int reset)
-+{
-+	return ftrace_set_addr(ops, ip, remove, reset, 1);
-+}
-+EXPORT_SYMBOL_GPL(ftrace_set_filter_ip);
-+
-+static int
-+ftrace_set_regex(struct ftrace_ops *ops, unsigned char *buf, int len,
-+		 int reset, int enable)
-+{
-+	return ftrace_set_hash(ops, buf, len, 0, 0, reset, enable);
-+}
-+
- /**
-  * ftrace_set_filter - set a function to filter on in ftrace
-  * @ops - the ops to set the filter with
+ 	leaq 8(%rbp), %rdi
 --=20
 1.7.10.4
 
@@ -178,19 +85,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABAgAGBQJQChIWAAoJEIy3vGnGbaoAynYP/joAQZBm9WInv3OYtVqATcH0
-n6rn5/0TVZFK9SCEpeCr0m9cbJ7RRQp8mrDsMwv8X1QjuGD60C5vGR3PflFmoFoJ
-2SfDxfV2JNOwUlbNQWVHi4HAR2s8z42N6aEP0v8Dks3toDuA/eIOCHoxue5L9vG4
-LE5Kn6bsekjoyqXWoCJNjmOK3+ZgagIYwb1D6AGtN3IOquCquRf9RXlNdM3jciCa
-ePB/cLANWeVfIq+Nw9YtwPbVTAD5vfEl7iG/xITkFt3UzgUdnS5Yurt6Ig1DZ0mV
-UDqIyZU/cL263Uw2V4zOXLboLQoH6v5x3jIN0gxKqcRGJHu8PccPcTfJVbiXDyMv
-KRUnqP3g60DkH/byAfNRsST1bC/BPefGzUp2K2fp/K5pUpctkKEUnX7kNBQgFlSn
-sPgUsmDzi4o4GWuKKl9LzU9BoJNl3eaqEm68VGRGH9UZqkvsT+T8/i7D2VOwJOyF
-1YeiM7fL2nGS1rlGy+5A9hSlJfJ7O6jPlHi/BqtiRnYHf6fuVtHaY1+Qk2tWABgv
-0gtZTe0Euzt5eUmptaRoaKXpaEK7Xpin78HXOwtYfvPHRcaThch0wGpJGjc/LIEF
-xORH6Nf4tE83EPwxN0pvk6yueo64EoinIoT7VnPvyQZUveEvDo85dnBLh99NAGoz
-5C6iFs1eZPhm290z9Qjg
-=dd6b
+iQIcBAABAgAGBQJQChIUAAoJEIy3vGnGbaoAxzoP/0MgwqYNSF7tM0yd6o0IzKDP
+rU8ylajhWX2wlNRb6OxATFYX70RJ+WGPjojB6dQnq0etk10WcKnThNunQP7crovQ
+ZSHgZfCXl430o9J7foHuojguOQmRsjbaJnAsWGApja9gudVR7mnzFC11FfuH5JmJ
+p7TFbUJDWkAmVxKSmOKALndwYZm+A49JI3BhL8Rp4id1v/3UFlmqcNEywbFVIpsV
+M79Wqpwz41wvt3G7CUsKI1MCwNcEmZxyMmH6o/ZszHmokw3+qihqe+dKMa7Yders
+v9cHwZ1aaOLIOnF1UgwAuv5JPTKTVbOgxscI45Wpdbwk+zrl5P2G+T0j7sc68YIb
+Mbt5/axj0JPNyzqyjT3sihQTQ3wbqEle70NXBgIih0n109vZQVNIw6+TFGrcz1XE
+pI2uRLasT9q5JI6s5PjwcLSiOrnDRRIVVTfJB8BpE76NPbXGqKlTzGXoAqMxLvwi
+XjtvAweENOQsj4VMr9/ZbJPgtnQTclZna5sParTQHxJjV7tTnftFd/EUBLFodNVD
+Xe4ZuuksRirzXn6iYGNHdNoJ4KQxRKSmN8OjGTBPkFzADElVyNQxdcod7nOYOmzS
+KeSbh1osIQSnw5qBckM3CbRfiUuP5Ux13vCZ2IqVZR1sQchmHKC84BcUXLtI4+10
+7zIPDcy6kgZz92/uSxUD
+=k6xk
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
