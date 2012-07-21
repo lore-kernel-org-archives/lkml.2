@@ -1,42 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752590Ab2GUAqR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 20:46:17 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:42586 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751618Ab2GUAqQ (ORCPT
+	id S1753105Ab2GUArK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 20:47:10 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:56726 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752708Ab2GUAqu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 20:46:16 -0400
-MIME-Version: 1.0
-Date: Fri, 20 Jul 2012 17:46:14 -0700
-X-Google-Sender-Auth: SKAKYCneP4MShY0eQqjjrWeKXfA
-Message-ID: <CAMbhsRTX=t4UMfmrJRyXidSTWXvaC5L9aFdTFL03wYYKrUE5qw@mail.gmail.com>
-Subject: sysfs permissions on dynamic attributes (led delay_on and delay_off)
-From: Colin Cross <ccross@android.com>
-To: lkml <linux-kernel@vger.kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
-        Bryan Wu <bryan.wu@canonical.com>, Richard Purdie <rpurdie@rpsys.net>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	Fri, 20 Jul 2012 20:46:50 -0400
+Date: Fri, 20 Jul 2012 17:46:41 -0700 (PDT)
+Message-Id: <20120720.174641.159144353919647856.davem@davemloft.net>
+To: dhowells@redhat.com
+Cc: arnd@arndb.de, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dmitry.kasatkin@intel.com
+Subject: Re: [PATCH] MPILIB: Provide count_leading/trailing_zeros() based
+ on arch functions
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <5723.1342794099@warthog.procyon.org.uk>
+References: <201207201353.34324.arnd@arndb.de>
+	<20120720125657.15422.12922.stgit@warthog.procyon.org.uk>
+	<5723.1342794099@warthog.procyon.org.uk>
+X-Mailer: Mew version 6.5 on Emacs 24.0.97 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm trying to use the standard ledtrig-timer.c code to handle led
-blinking for notifications on an Android device, and I'm hitting some
-issues with setting permissions on the dynamically created delay_on
-and delay_off attributes.  For most sysfs files, we have userspace
-uevent parser that watches for device add notifications and
-chowns/chmods attributes.  This doesn't work for delay_on and
-delay_off, because they are created later, when "timer" is written to
-the trigger attribute.  There is no uevent when the new files are
-created, and sysfs doesn't support inotify, so I don't see any way to
-receive an event to set the permissions.  This issue exists any time
-that device_create_file is called after device_add.
+From: David Howells <dhowells@redhat.com>
+Date: Fri, 20 Jul 2012 15:21:39 +0100
 
-What is the appropriate way to get an event to set the permissions?
-Add inotify support for sysfs file creation?  Send a KOBJ_CHANGE
-uevent in device_create_file? Send a KOBJ_CHANGE uevent from the
-driver after calling device_create_file?  Dynamically create a timer
-device under /sys/class/leds/<led> so a new add uevent gets sent?
-Promote blinking to be a core led feature instead of a trigger, so the
-files are always present?
+> Arnd Bergmann <arnd@arndb.de> wrote:
+> 
+>> I don't generally like to put stuff into asm-generic when it's unlikely
+>> to be overridden by architectures. It would really belong into
+>> include/linux, but then again we have all the other bitops in asm-generic
+>> as well, so whatever...
+> 
+> Some arches (such as Sparc, I think) have count-leading-zero instructions.
+
+Yes, newer sparc64 chips have leading-zero-detect, and I was pretty
+sure that powerpc had something similar.  It's called count-leading-
+zeros or something like that.
+
