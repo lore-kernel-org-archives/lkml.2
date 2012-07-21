@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753671Ab2GUCWE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 22:22:04 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28027 "EHLO
+	id S1753632Ab2GUCWC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 22:22:02 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26516 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752104Ab2GUCVK (ORCPT
+	with ESMTP id S1752306Ab2GUCVM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 22:21:10 -0400
-X-Authority-Analysis: v=2.0 cv=StQSGYy0 c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=iN743hZM_R4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=gRYtyi3C0LEDaDZG5tEA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=Y8ZmLAAtlNnELQHCeYQA:9 a=s5Htg7xnQOKvHEu9STBOug==:117
+	Fri, 20 Jul 2012 22:21:12 -0400
+X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=y06crO3_utoA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=ctmHyIZZZ4fUTRTe8nMA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=lTMhFNQu17ZMn4WVYxwA:9 a=s5Htg7xnQOKvHEu9STBOug==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 72.230.195.127
-Message-Id: <20120721022109.971524546@goodmis.org>
+Message-Id: <20120721022109.317243995@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 20 Jul 2012 22:19:55 -0400
+Date: Fri, 20 Jul 2012 22:19:53 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 12/19] ftrace: Add selftest to test function save-regs support
+Subject: [PATCH 10/19] ftrace: Only compile ftrace selftest if selftests are enabled
 References: <20120721021943.274162381@goodmis.org>
-Content-Disposition: inline; filename=0012-ftrace-Add-selftest-to-test-function-save-regs-suppo.patch
+Content-Disposition: inline; filename=0010-ftrace-Only-compile-ftrace-selftest-if-selftests-are.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -33,174 +33,31 @@ Content-Transfer-Encoding: quoted-printable
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-Add selftests to test the save-regs functionality of ftrace.
-
-If the arch supports saving regs, then it will make sure that regs is
-at least not NULL in the callback.
-
-If the arch does not support saving regs, it makes sure that the
-registering of the ftrace_ops that requests saving regs fails.
-It then tests the registering of the ftrace_ops succeeds if the
-'IF_SUPPORTED' flag is set. Then it makes sure that the regs passed to
-the function is NULL.
+No need to compile in the ftrace selftest helper file if selftests are
+not being executed.
 
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace.h          |    2 +-
- kernel/trace/trace_selftest.c |  114 +++++++++++++++++++++++++++++++++++++=
-++++
- 2 files changed, 115 insertions(+), 1 deletion(-)
+ kernel/trace/Makefile |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 55e1f7f..593debe 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -472,11 +472,11 @@ extern void trace_find_cmdline(int pid, char comm[]);
+diff --git a/kernel/trace/Makefile b/kernel/trace/Makefile
+index b831087..8370908 100644
+--- a/kernel/trace/Makefile
++++ b/kernel/trace/Makefile
+@@ -5,10 +5,12 @@ ifdef CONFIG_FUNCTION_TRACER
+ ORIG_CFLAGS :=3D $(KBUILD_CFLAGS)
+ KBUILD_CFLAGS =3D $(subst -pg,,$(ORIG_CFLAGS))
 =20
- #ifdef CONFIG_DYNAMIC_FTRACE
- extern unsigned long ftrace_update_tot_cnt;
-+#endif
- #define DYN_FTRACE_TEST_NAME trace_selftest_dynamic_test_func
- extern int DYN_FTRACE_TEST_NAME(void);
- #define DYN_FTRACE_TEST_NAME2 trace_selftest_dynamic_test_func2
- extern int DYN_FTRACE_TEST_NAME2(void);
--#endif
++ifdef CONFIG_FTRACE_SELFTEST
+ # selftest needs instrumentation
+ CFLAGS_trace_selftest_dynamic.o =3D -pg
+ obj-y +=3D trace_selftest_dynamic.o
+ endif
++endif
 =20
- extern int ring_buffer_expanded;
- extern bool tracing_selftest_disabled;
-diff --git a/kernel/trace/trace_selftest.c b/kernel/trace/trace_selftest.c
-index 86422f9..1003a4d 100644
---- a/kernel/trace/trace_selftest.c
-+++ b/kernel/trace/trace_selftest.c
-@@ -543,6 +543,116 @@ out:
- # define trace_selftest_function_recursion() ({ 0; })
- #endif /* CONFIG_DYNAMIC_FTRACE */
-=20
-+static enum {
-+	TRACE_SELFTEST_REGS_START,
-+	TRACE_SELFTEST_REGS_FOUND,
-+	TRACE_SELFTEST_REGS_NOT_FOUND,
-+} trace_selftest_regs_stat;
-+
-+static void trace_selftest_test_regs_func(unsigned long ip,
-+					  unsigned long pip,
-+					  struct ftrace_ops *op,
-+					  struct pt_regs *pt_regs)
-+{
-+	if (pt_regs)
-+		trace_selftest_regs_stat =3D TRACE_SELFTEST_REGS_FOUND;
-+	else
-+		trace_selftest_regs_stat =3D TRACE_SELFTEST_REGS_NOT_FOUND;
-+}
-+
-+static struct ftrace_ops test_regs_probe =3D {
-+	.func		=3D trace_selftest_test_regs_func,
-+	.flags		=3D FTRACE_OPS_FL_RECURSION_SAFE | FTRACE_OPS_FL_SAVE_REGS,
-+};
-+
-+static int
-+trace_selftest_function_regs(void)
-+{
-+	int save_ftrace_enabled =3D ftrace_enabled;
-+	int save_tracer_enabled =3D tracer_enabled;
-+	char *func_name;
-+	int len;
-+	int ret;
-+	int supported =3D 0;
-+
-+#ifdef ARCH_SUPPORTS_FTRACE_SAVE_REGS
-+	supported =3D 1;
-+#endif
-+
-+	/* The previous test PASSED */
-+	pr_cont("PASSED\n");
-+	pr_info("Testing ftrace regs%s: ",
-+		!supported ? "(no arch support)" : "");
-+
-+	/* enable tracing, and record the filter function */
-+	ftrace_enabled =3D 1;
-+	tracer_enabled =3D 1;
-+
-+	/* Handle PPC64 '.' name */
-+	func_name =3D "*" __stringify(DYN_FTRACE_TEST_NAME);
-+	len =3D strlen(func_name);
-+
-+	ret =3D ftrace_set_filter(&test_regs_probe, func_name, len, 1);
-+	/*
-+	 * If DYNAMIC_FTRACE is not set, then we just trace all functions.
-+	 * This test really doesn't care.
-+	 */
-+	if (ret && ret !=3D -ENODEV) {
-+		pr_cont("*Could not set filter* ");
-+		goto out;
-+	}
-+
-+	ret =3D register_ftrace_function(&test_regs_probe);
-+	/*
-+	 * Now if the arch does not support passing regs, then this should
-+	 * have failed.
-+	 */
-+	if (!supported) {
-+		if (!ret) {
-+			pr_cont("*registered save-regs without arch support* ");
-+			goto out;
-+		}
-+		test_regs_probe.flags |=3D FTRACE_OPS_FL_SAVE_REGS_IF_SUPPORTED;
-+		ret =3D register_ftrace_function(&test_regs_probe);
-+	}
-+	if (ret) {
-+		pr_cont("*could not register callback* ");
-+		goto out;
-+	}
-+
-+
-+	DYN_FTRACE_TEST_NAME();
-+
-+	unregister_ftrace_function(&test_regs_probe);
-+
-+	ret =3D -1;
-+
-+	switch (trace_selftest_regs_stat) {
-+	case TRACE_SELFTEST_REGS_START:
-+		pr_cont("*callback never called* ");
-+		goto out;
-+
-+	case TRACE_SELFTEST_REGS_FOUND:
-+		if (supported)
-+			break;
-+		pr_cont("*callback received regs without arch support* ");
-+		goto out;
-+
-+	case TRACE_SELFTEST_REGS_NOT_FOUND:
-+		if (!supported)
-+			break;
-+		pr_cont("*callback received NULL regs* ");
-+		goto out;
-+	}
-+
-+	ret =3D 0;
-+out:
-+	ftrace_enabled =3D save_ftrace_enabled;
-+	tracer_enabled =3D save_tracer_enabled;
-+
-+	return ret;
-+}
-+
- /*
-  * Simple verification test of ftrace function tracer.
-  * Enable ftrace, sleep 1/10 second, and then read the trace
-@@ -592,6 +702,10 @@ trace_selftest_startup_function(struct tracer *trace, =
-struct trace_array *tr)
- 		goto out;
-=20
- 	ret =3D trace_selftest_function_recursion();
-+	if (ret)
-+		goto out;
-+
-+	ret =3D trace_selftest_function_regs();
-  out:
- 	ftrace_enabled =3D save_ftrace_enabled;
- 	tracer_enabled =3D save_tracer_enabled;
+ # If unlikely tracing is enabled, do not trace these files
+ ifdef CONFIG_TRACING_BRANCHES
 --=20
 1.7.10.4
 
@@ -213,19 +70,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABAgAGBQJQChIWAAoJEIy3vGnGbaoABVkP/3SPHGiMurbW7NstI37eV2xq
-NfzlRl/qwoVVu2cH/bQ2UR0X74/ZcuZoUOfcr3zrDv0PVRDEwM4sgTpsjzhuUk+x
-fRw17lH5/veJH8Bnj1zeJr5oCzkZvO9RX7Z+pUXk5cEDlFHO7/H7cdDnxld67VHp
-sCcYeYldKM7w74zREwq9K0K3+v36fwHfd6p43uPG82TWknFTLoK8a0coTbngsPTB
-QWVGRAq8Wc4M30E13M7LX06yMitEdxGVN4FDBRvOsIrEFWtInvw5dbf1BvAj4zfc
-SCJtbZmIHNYNTu9gtwvyhd5UglFRQwlBhcW4siW+/NAIsUt/VspMJdzv0kZ+klqO
-oaY6oBZ0ltVfMaGfetEsNo/IIihd9PtDsQj1rF5dDUHe/MhtDuk7s2NVU5ztWm8P
-Sppammo9uNE3ywdJtKuuUmqhEM/76K3xkYmLom3UuGVa9aDoxWz5amlaLrxnUoN8
-H9hEiIXqK3bhnEBgT+i/FU/hAXTYWUQd3/egPagTouPPzz83l+Y+Roy4tXgyrxGu
-CccLtmkoJqaa9w7q82ZSz4Med45wh/4u9BffcG09rV5QEjQpWZLqjfbYsuOXWEaU
-QmQyElTI3OClalEBec5Rnr1512tA65DdUQzHwVeca8fLcQijHWbAiBRDOgCSLZ8j
-SQRWIKULs7e1Ezt1ucFf
-=UGnb
+iQIcBAABAgAGBQJQChIVAAoJEIy3vGnGbaoAwUIP/1/JrunT4oKEBRUl52e9Jq5u
+Blu4t2Ijm2q03eXlmCSdSoHbprRa3852Q3/jVokZ8dcUszDJ4xFAvwArq3y+tKzL
+61Nu81/Zp/4vYMtGVhyXlLpPpM41mUgXYQHUrAj5myMthYI1ud/JnuKQ1ldrDRRr
+6bWmoqdJ3vP3VKHH44sODx1bF/AMrHzt1jmKG8zI/0JgGOXU4t8X9y68uDR5koIe
+6hEB3ylkm4Qg63kowY+U3QbJNQgx6AwsSh/4oF9va/ur0tpCcvbYKQPVH48fixHP
+aaAQYzRfrtovmVCdtDrDVvRlWOF+D30GacUblNVRB2fdaY8fCsenHfii28V2NGAG
+ra7ttdnL5tz1KhhMhsD1kDdvN5nnl3hMBcNcN8VCp1cXOjFrc2iAF863DrM2p3+1
+WT8lD8O3gv+WPt4PF3d9Gg0AnWOHmrOAN+QHu8Yx3LbtNdaIYJu6z1hrr8HkPXxM
+wqf0RxbNppOpb6yoCCG2kLEcjHRoFkzgG9wVi79Q+GrZebx6fUeJjFQRlo8oDD2F
+1LBEJnxMviHn80RfKLrrwedYXMLByDqlY9Cnr8Zpa9kHp4QspRxGl7HkIRNPi7/5
+FKzv5PlMr//kmXnJPoV6vuvGt2o0DDpvJ6QSzCDSM42NCwPMJWU4vk2K/bie2YMV
+CNL4GgqOKw8EMjxhyuzU
+=55qg
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
