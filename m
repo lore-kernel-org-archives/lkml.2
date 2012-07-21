@@ -1,74 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751507Ab2GUPHP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jul 2012 11:07:15 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:61607 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751318Ab2GUPHN (ORCPT
+	id S1751542Ab2GUPKo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jul 2012 11:10:44 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:62190 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751323Ab2GUPKn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jul 2012 11:07:13 -0400
-Date: Sat, 21 Jul 2012 08:07:09 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Colin Cross <ccross@android.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, Bryan Wu <bryan.wu@canonical.com>,
-        Richard Purdie <rpurdie@rpsys.net>
-Subject: Re: sysfs permissions on dynamic attributes (led delay_on and
- delay_off)
-Message-ID: <20120721150709.GB17126@kroah.com>
-References: <CAMbhsRTX=t4UMfmrJRyXidSTWXvaC5L9aFdTFL03wYYKrUE5qw@mail.gmail.com>
- <20120721040816.GA7313@kroah.com>
- <CAMbhsRTjEn4ZSir-N2DX5HM9fueagAXpDFnx8OpPM2m6hgOXXQ@mail.gmail.com>
+	Sat, 21 Jul 2012 11:10:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMbhsRTjEn4ZSir-N2DX5HM9fueagAXpDFnx8OpPM2m6hgOXXQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120720100959.GS4495@opensource.wolfsonmicro.com>
+References: <1342720012-3709-1-git-send-email-shubhrajyoti@ti.com>
+	<20120720100959.GS4495@opensource.wolfsonmicro.com>
+Date: Sat, 21 Jul 2012 20:40:42 +0530
+Message-ID: <CAM=Q2cs5G5g2LzHbC+dU4GSUrjG49Sc50xpHWNNVkfxPi9Ki2g@mail.gmail.com>
+Subject: Re: [PATCH] spi: omap2-mcspi: Fix the below warning
+From: Shubhrajyoti Datta <omaplinuxkernel@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Shubhrajyoti D <shubhrajyoti@ti.com>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 20, 2012 at 10:14:27PM -0700, Colin Cross wrote:
-> On Fri, Jul 20, 2012 at 9:08 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Fri, Jul 20, 2012 at 05:46:14PM -0700, Colin Cross wrote:
-> >> I'm trying to use the standard ledtrig-timer.c code to handle led
-> >> blinking for notifications on an Android device, and I'm hitting some
-> >> issues with setting permissions on the dynamically created delay_on
-> >> and delay_off attributes.  For most sysfs files, we have userspace
-> >> uevent parser that watches for device add notifications and
-> >> chowns/chmods attributes.  This doesn't work for delay_on and
-> >> delay_off, because they are created later, when "timer" is written to
-> >> the trigger attribute.  There is no uevent when the new files are
-> >> created, and sysfs doesn't support inotify, so I don't see any way to
-> >> receive an event to set the permissions.  This issue exists any time
-> >> that device_create_file is called after device_add.
-> >>
-> >> What is the appropriate way to get an event to set the permissions?
-> >> Add inotify support for sysfs file creation?  Send a KOBJ_CHANGE
-> >> uevent in device_create_file?
-> >
-> > No.
-> >
-> >> Send a KOBJ_CHANGE uevent from the driver after calling
-> >> device_create_file?
-> >
-> > Yes.
-> >
-> >> Dynamically create a timer device under /sys/class/leds/<led> so a new
-> >> add uevent gets sent?
-> >
-> > Ick.
-> >
-> >> Promote blinking to be a core led feature instead of a trigger, so the
-> >> files are always present?
-> >
-> > That's the best thing, why not just do that?
-> 
-> It doesn't solve the general case.  For example, any driver that is
-> loaded as a module and then calls device_create_file will suffer the
-> same problem.
-
-That's very true, and is why they shouldn't be doing that :)
-
+On Fri, Jul 20, 2012 at 3:40 PM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Thu, Jul 19, 2012 at 11:16:52PM +0530, Shubhrajyoti D wrote:
+>> The dma_map and dma_unmap should have same parameter
+>> passed otherwise we get the below warn.
+>
+> Applied, thanks.
 thanks,
-
-greg k-h
