@@ -1,86 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752055Ab2GULWB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jul 2012 07:22:01 -0400
-Received: from 93-97-173-237.zone5.bethere.co.uk ([93.97.173.237]:52869 "EHLO
-	tim.rpsys.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751717Ab2GULV7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jul 2012 07:21:59 -0400
-Message-ID: <1342869707.21788.50.camel@ted>
-Subject: Re: sysfs permissions on dynamic attributes (led delay_on and
- delay_off)
-From: Richard Purdie <richard.purdie@linuxfoundation.org>
-To: Colin Cross <ccross@android.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, lkml <linux-kernel@vger.kernel.org>,
-        Bryan Wu <bryan.wu@canonical.com>
-Date: Sat, 21 Jul 2012 12:21:47 +0100
-In-Reply-To: <CAMbhsRREVcqf+pnamY62wGcd2mBif8W8_CRXdJQCQvL14Dy3Eg@mail.gmail.com>
-References: <CAMbhsRTX=t4UMfmrJRyXidSTWXvaC5L9aFdTFL03wYYKrUE5qw@mail.gmail.com>
-	 <20120721040816.GA7313@kroah.com> <1342856010.21788.47.camel@ted>
-	 <CAMbhsRREVcqf+pnamY62wGcd2mBif8W8_CRXdJQCQvL14Dy3Eg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752128Ab2GULWU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jul 2012 07:22:20 -0400
+Received: from mta05.xtra.co.nz ([210.54.141.250]:40983 "EHLO mta02.xtra.co.nz"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751850Ab2GULWS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jul 2012 07:22:18 -0400
+From: Tony Prisk <linux@prisktech.co.nz>
+To: Alan Cox <alan@linux.intel.com>
+Cc: Tony Prisk <linux@prisktech.co.nz>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        VT8500 mailing list 
+	<vt8500-wm8505-linux-kernel@googlegroups.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-serial@vger.kernel.org
+Subject: [PATCHv2 2/2] ARM: vt8500: Minor update to vt8500-uart for devicetree support
+Date: Sat, 21 Jul 2012 23:22:12 +1200
+Message-Id: <1342869732-11232-1-git-send-email-linux@prisktech.co.nz>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-07-21 at 01:26 -0700, Colin Cross wrote:
-> On Sat, Jul 21, 2012 at 12:33 AM, Richard Purdie
-> <richard.purdie@linuxfoundation.org> wrote:
-> > On Fri, 2012-07-20 at 21:08 -0700, Greg KH wrote:
-> >> On Fri, Jul 20, 2012 at 05:46:14PM -0700, Colin Cross wrote:
-> >> > I'm trying to use the standard ledtrig-timer.c code to handle led
-> >> > blinking for notifications on an Android device, and I'm hitting some
-> >> > issues with setting permissions on the dynamically created delay_on
-> >> > and delay_off attributes.  For most sysfs files, we have userspace
-> >> > uevent parser that watches for device add notifications and
-> >> > chowns/chmods attributes.  This doesn't work for delay_on and
-> >> > delay_off, because they are created later, when "timer" is written to
-> >> > the trigger attribute.  There is no uevent when the new files are
-> >> > created, and sysfs doesn't support inotify, so I don't see any way to
-> >> > receive an event to set the permissions.  This issue exists any time
-> >> > that device_create_file is called after device_add.
-> >> >
-> >> > What is the appropriate way to get an event to set the permissions?
-> >> > Add inotify support for sysfs file creation?  Send a KOBJ_CHANGE
-> >> > uevent in device_create_file?
-> >>
-> >> No.
-> >>
-> >> > Send a KOBJ_CHANGE uevent from the driver after calling
-> >> > device_create_file?
-> >>
-> >> Yes.
-> >>
-> >> > Dynamically create a timer device under /sys/class/leds/<led> so a new
-> >> > add uevent gets sent?
-> >>
-> >> Ick.
-> >>
-> >> > Promote blinking to be a core led feature instead of a trigger, so the
-> >> > files are always present?
-> >>
-> >> That's the best thing, why not just do that?
-> >
-> > This implies we should make every trigger a core led feature and
-> > effectively do away with triggers. I'm not sure that makes sense.
-> 
-> Blinking is already effectively a core feature.  It is implemented in
-> led-core.c so it can be used by other triggers besides timer, it's
-> state is stored in the led_classdev structure, not in the trigger
-> data, and the only thing left in ledtrig-timer.c is the sysfs files.
+Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+---
+v2:
+Split single patch into seperate patches.
+ .../devicetree/bindings/tty/serial/vt8500-uart.txt |   14 ++++++++++++++
+ drivers/tty/serial/vt8500_serial.c                 |    8 ++++++++
+ 2 files changed, 22 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/tty/serial/vt8500-uart.txt
 
-Having the attributes present all the time leads to some nasty questions
-like how the on/off delays interact with things like say a network
-activity trigger. Not all triggers are going to respect these delay
-values and I can imagine a whole new set of nasty bug reports with no
-easy solutions if this change is made...
-
-Cheers,
-
-Richard
-
-
+diff --git a/Documentation/devicetree/bindings/tty/serial/vt8500-uart.txt b/Documentation/devicetree/bindings/tty/serial/vt8500-uart.txt
+new file mode 100644
+index 0000000..745070a
+--- /dev/null
++++ b/Documentation/devicetree/bindings/tty/serial/vt8500-uart.txt
+@@ -0,0 +1,14 @@
++* VIA/Wondermedia Universal Asynchronous Receiver/Transmitter (UART)
++
++Required properties:
++- compatible: Should be "via,vt8500-uart"
++- reg: Should contain registers location and length
++- interrupts: Should contain interrupt
++
++Example:
++	uart0: serial@d8200000 {
++		compatible = "via,vt8500-uart";
++		reg = <0xd8200000 0x1040>;
++		interrupts = <32>;
++	};
++
+diff --git a/drivers/tty/serial/vt8500_serial.c b/drivers/tty/serial/vt8500_serial.c
+index 2be006f..b9ea0b9 100644
+--- a/drivers/tty/serial/vt8500_serial.c
++++ b/drivers/tty/serial/vt8500_serial.c
+@@ -34,6 +34,7 @@
+ #include <linux/slab.h>
+ #include <linux/clk.h>
+ #include <linux/platform_device.h>
++#include <linux/of.h>
+ 
+ /*
+  * UART Register offsets
+@@ -603,12 +604,18 @@ static int __devexit vt8500_serial_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++static const struct of_device_id vt8500_uart_ids[] = {
++	{ .compatible = "via,vt8500-uart", },
++	{}
++};
++
+ static struct platform_driver vt8500_platform_driver = {
+ 	.probe  = vt8500_serial_probe,
+ 	.remove = __devexit_p(vt8500_serial_remove),
+ 	.driver = {
+ 		.name = "vt8500_serial",
+ 		.owner = THIS_MODULE,
++		.of_match_table = of_match_ptr(vt8500_uart_ids),
+ 	},
+ };
+ 
+@@ -643,3 +650,4 @@ module_exit(vt8500_serial_exit);
+ MODULE_AUTHOR("Alexey Charkov <alchark@gmail.com>");
+ MODULE_DESCRIPTION("Driver for vt8500 serial device");
+ MODULE_LICENSE("GPL");
++MODULE_DEVICE_TABLE(of, vt8500_uart_ids);
+-- 
+1.7.2.5
 
