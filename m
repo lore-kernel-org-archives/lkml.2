@@ -1,52 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752336Ab2GURr4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jul 2012 13:47:56 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:50835 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751401Ab2GURry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jul 2012 13:47:54 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC] firmware load: defer request_firmware during early boot and resume
-Date: Sat, 21 Jul 2012 19:53:35 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: Ming Lei <tom.leiming@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-usb" <linux-usb@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Oliver Neukum <oneukum@suse.de>,
-        Linux PM list <linux-pm@vger.kernel.org>
-References: <CACVXFVNWOcrR9tYhU1wVUSJ_DJ8x+SCk993Sn9dYDe2kzJBDuQ@mail.gmail.com> <CA+55aFwZRvtpE2e3zNqvtobpPROqw_bOwNt+=DBzmScV0_rq=w@mail.gmail.com>
-In-Reply-To: <CA+55aFwZRvtpE2e3zNqvtobpPROqw_bOwNt+=DBzmScV0_rq=w@mail.gmail.com>
+	id S1752486Ab2GUSCe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jul 2012 14:02:34 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:57528 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752088Ab2GUSCd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jul 2012 14:02:33 -0400
+Message-ID: <500AEE6C.8060506@linux.vnet.ibm.com>
+Date: Sat, 21 Jul 2012 23:31:16 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [Patch 3/7] smpboot: Provide infrastructure for percpu hotplug
+ threads
+References: <20120716103749.122800930@linutronix.de> <20120716103948.352501068@linutronix.de> <500A75D7.3070706@linux.vnet.ibm.com>
+In-Reply-To: <500A75D7.3070706@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201207211953.35791.rjw@sisk.pl>
+x-cbid: 12072118-1618-0000-0000-0000021C3246
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, July 21, 2012, Linus Torvalds wrote:
-> On Fri, Jul 20, 2012 at 5:33 AM, Ming Lei <tom.leiming@gmail.com> wrote:
-> > The RFC patch is just for discussing if the idea of deferring
-> > request_firmware is doable for addressing the issue of
-> > request_firmware in resume path, which is caused by driver
-> > unbind/rebind during resume.
+On 07/21/2012 02:56 PM, Srivatsa S. Bhat wrote:
+> On 07/16/2012 04:12 PM, Thomas Gleixner wrote:
+>> Provide a generic interface for setting up and tearing down percpu
+>> threads.
+>>
+>> On registration the threads for already online cpus are created and
+>> started. On deregistration (modules) the threads are stoppped.
+>>
+>> During hotplug operations the threads are created, started, parked and
+>> unparked. The datastructure for registration provides a pointer to
+>> percpu storage space and optional setup, cleanup, park, unpark
+>> functions. These functions are called when the thread state changes.
+>>
+>> Each implementation has to provide a function which is queried and
+>> returns whether the thread should run and the thread function itself.
+>>
+>> The core code handles all state transitions and avoids duplicated code
+>> in the call sites.
+>>
+>> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 > 
-> NAK.
+> Elegant design and very beautiful code!
+> It was such a pleasure to read and review it :-)
+> 
+> Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> 
 
-[...]
+Of course, the preempt imbalance needs to get resolved, as pointed out
+by Paul... Your patchset + his fix worked fine, without throwing any
+scheduling-while-atomic splats.
 
-> Seriously. People should load their firmware *before* the
-> suspend/resume cycle. And if that isn't possible, then the system
-> should ABSOLUTELY NOT silently say "whatever" and defer it until
-> later.  We should have that big failure and the big noisy warning, and
-> drivers that need to defer need to do so themselves, so that we never
-> *ever* have that silent automatic defer situation.
+Regards,
+Srivatsa S. Bhat
 
-Well, thanks.  I totally agree, but didn't know how to say this. :-)
+> [ A minor nit below ]
+> 
+>> ---
+>>  include/linux/smpboot.h |   43 +++++++++
+>>  kernel/cpu.c            |   10 +-
+>>  kernel/smpboot.c        |  229 ++++++++++++++++++++++++++++++++++++++++++++++++
+>>  kernel/smpboot.h        |    4 
+>>  4 files changed, 285 insertions(+), 1 deletion(-)
+>>
+>> +
+>> +/**
+>> + * smpboot_thread_fn - percpu hotplug thread loop function
+>> + * @void:	thread data pointer
+> 
+> s/void/data
+> 
+>> + *
+>> + * Checks for thread stop and park conditions. Calls the necessary
+>> + * setup, cleanup, park and unpark functions for the registered
+>> + * thread.
+>> + *
+>> + * Returns 1 when the thread should exit, 0 otherwise.
+>> + */
+>> +static int smpboot_thread_fn(void *data)
+>> +{
+>> +	struct smpboot_thread_data *td = data;
+>> +	struct smp_hotplug_thread *ht = td->ht;
+>> +
+> 
+> Regards,
+> Srivatsa S. Bhat
+> 
 
-Rafael
+
+-- 
+Regards,
+Srivatsa S. Bhat
+IBM Linux Technology Center
+
+
