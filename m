@@ -1,47 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751651Ab2GUKNr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jul 2012 06:13:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16851 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750754Ab2GUKNq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jul 2012 06:13:46 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20120720215738.14854.55273.stgit@warthog.procyon.org.uk>
-References: <20120720215738.14854.55273.stgit@warthog.procyon.org.uk> <20120720215636.14854.41208.stgit@warthog.procyon.org.uk>
-To: linux-arch@vger.kernel.org
-Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org, arnd@arndb.de,
-        tglx@linutronix.de, mingo@kernel.org, davej@redhat.com,
-        viro@ZenIV.linux.org.uk
-Subject: Re: [PATCH 05/13] UAPI: Partition the header include path sets and add uapi/ header directories
-Date: Sat, 21 Jul 2012 11:13:27 +0100
-Message-ID: <28231.1342865607@warthog.procyon.org.uk>
+	id S1751735Ab2GUKek (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jul 2012 06:34:40 -0400
+Received: from grace.univie.ac.at ([131.130.3.115]:57616 "EHLO
+	grace.univie.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750754Ab2GUKeh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jul 2012 06:34:37 -0400
+Message-ID: <284fca6c9490200d9c48bba46fb3f7e6.squirrel@webmail.univie.ac.at>
+In-Reply-To: <CAK6E8=dKZUJ3evPDGc3gP0a5bsBbYnL0NGhPZenB=T_t+5Kx5w@mail.gmail.com>
+References: <e9caf38359467bfa8a1e2ac86f6ef2cc.squirrel@webmail.univie.ac.at>
+    <20120713165544.6767ea8f@nehalam.linuxnetplumber.net>
+    <87741204cd72d363d54dadf9a94bb6fe.squirrel@webmail.univie.ac.at>
+    <1342439185.23494.19.camel@edumazet-glaptop>
+    <cc2022d86834a8798518f9cccc605d45.squirrel@webmail.univie.ac.at>
+    <CAK6E8=dKZUJ3evPDGc3gP0a5bsBbYnL0NGhPZenB=T_t+5Kx5w@mail.gmail.com>
+Date: Sat, 21 Jul 2012 12:34:34 +0200
+Subject: Re: resurrecting tcphealth
+From: "Piotr Sawuk" <a9702387@unet.univie.ac.at>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.19
+MIME-Version: 1.0
+Content-Type: text/plain;charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Univie-Virus-Scan: scanned by ClamAV on jarvis.univie.ac.at
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fr, 20.07.2012, 16:06, Yuchung Cheng wrote:
+> On Mon, Jul 16, 2012 at 6:03 AM, Piotr Sawuk <a9702387@unet.univie.ac.at>
+> wrote:
+>> On Mo, 16.07.2012, 13:46, Eric Dumazet wrote:
+>>> On Mon, 2012-07-16 at 13:33 +0200, Piotr Sawuk wrote:
+>>>> On Sa, 14.07.2012, 01:55, Stephen Hemminger wrote:
+>>>> > I am not sure if the is really necessary since the most
+>>>> > of the stats are available elsewhere.
+>>>>
+>>>> if by "most" you mean address and port then you're right.
+>>>> but even the rtt reported by "ss -i" seems to differ from tcphealth.
+>>>
+>>> Thats because tcphealth is wrong, it assumes HZ=1000 ?
+>>>
+>>> tp->srtt unit is jiffies, not ms.
+>>
+>> thanks. any conversion-functions in the kernel for that?
+>>>
+>>> tcphealth is a gross hack.
+>>
+>> what would you do if you tried making it less gross?
+>>
+>> I've not found any similar functionality, in the kernel.
+>> I want to know an estimate for the percentage of data lost in tcp.
+>> and I want to know that without actually sending much packets.
+>> afterall I'm on the receiving end most of the time.
+>> percentage of duplicate packets received is nice too.
+>> you have any suggestions?
+>
+> counting dupack may not be as reliable as you'd like.
+> say the remote sends you 100 packets and only the first one is lost,
+> you'll see 99 dupacks. Morover any small degree reordering (<3)
+> will generate substantial dupacks but the network is perfectly fine
 
-And thanks to Al for pointing out that the UM arch needed fixing.  The
-attached patch should do the trick.
+I understand that.
+but you must consider the difference between network-health and tcp-health.
+network-health on my end I can see by looking at wlan-signal strength.
+slow downloads can have many causes, some loose cable is only one possibility.
 
-David
----
-diff --git a/arch/um/Makefile b/arch/um/Makefile
-index 0970910..133f7de 100644
---- a/arch/um/Makefile
-+++ b/arch/um/Makefile
-@@ -66,7 +66,9 @@ USER_CFLAGS = $(patsubst $(KERNEL_DEFINES),,$(patsubst -D__KERNEL__,,\
- include $(srctree)/$(ARCH_DIR)/Makefile-os-$(OS)
- 
- KBUILD_CPPFLAGS += -I$(srctree)/$(HOST_DIR)/include \
--		   -I$(HOST_DIR)/include/generated
-+		   -I$(srctree)/$(HOST_DIR)/include/uapi \
-+		   -I$(HOST_DIR)/include/generated \
-+		   -I$(HOST_DIR)/include/generated/uapi
- 
- # -Derrno=kernel_errno - This turns all kernel references to errno into
- # kernel_errno to separate them from the libc errno.  This allows -fno-common
+for example I once played a lan-game, 2 computers connected directly.
+however, one computer was 10 times slower than the other.
+so when the slow computer would act as server, the game would never start.
+the reason wasn't bad connection, it was packet-loss caused by slowness.
+and it had to do with the protocol being used (i.e. not tcp).
+
+so when in tcp I get high percentage of dupack I see something's wrong.
+not necessarily with the physical connection, but with protocol-handling.
+the paper showed dupacks indicate spikes in network-usage.
+and as we all know the bottleneck isn't the cable, it's data-processing.
+when there is a spike, lots of users connecting, network itself is ok.
+however, reordering and lost packets indicate something's up with the server.
+and that's actually the info I'm after.
+
+if I were the net-admin I would be interested in network-health too.
+bad connection indicated by packet-loss itself means I've got to check cables.
+but a user might have much wider area of interest.
+the user can't do anything about the cables, but yet is interested in them.
+i.e. useless info for the net-admin could be interesting for the user.
+that's why I do not recommend tcphealth for servers, useless overhead.
+
+so, if you want to judge usefulness of this patch, consider the situation:
+you are powerless but interested in responsiveness of thousands of servers.
+you want to learn how those servers behave at different times of a day.
+isn't dupacks and dup-packets the best info on that you can possibly get?
+
+> (see Craig Patridge's "reordering is not pathological" paper).
+
+thanks, will look into that.
+
+> unfortunately receiver can't and does not have to distinguish loss
+
+true, not needed for the protocol.
+on a higher level it sill can be interesting though.
+most of the work for preventing packetloss must be done by the sender.
+but as I said before, the receiver can do something too: avoid traffic-jams!
+in a network many things are predictable, can be reprogrammed.
+this way a network could become more efficient as a whole.
+that's what spikes my interest in tcphealth, thinking more globally.
+
+>  or reordering. you can infer that but it should not be kernel's job.
+
+that's why I made it an option as opposed to what the original author did.
+theoretically it should be possible to get the same functionality without it.
+just read the raw network-data and emulate the work of tcp and tcphealth.
+but that definitely would add a big overhead as tcp-handling is duplicated.
+
+> there are public tools that inspect tcpdump traces to do that
+
+good example. so to figure out dupacks you filter out the acks.
+and you must somehow compare them, or you parse them the way the kernel does.
+in the latter case you'll have to recreate the kernel's internal data.
+definitely faster, but could result in duplicate code, that requires space.
+
+also you should consider that not all users have privilegues for tcpdump.
+and if they had, it would add another security-risk to their computer.
+and you'd have to consider multiple users on one computer, using that service.
+I can imagine a daemon in the background doing what tcphealth does.
+that's the alternative, allows for more fine-grained security.
+it could disallow spying on what connections other users have.
+(of course then you'd need to remove /proc/net/tcp output too.)
+but imagine the nightmare of keeping that daemon secure.
+afterall it must be privilegued to read all network data.
+
+if the kernel would provide what I'm looking for, this daemon could still run.
+but then it wouldn't need that risky privilegues, could focus on other stuff.
+the task of preventing users from seeing eachothers connections is enough...
+>
+> exposing duplicate packets received can be done via getsockopt(TCP_INFO)
+> although I don't know what that gives you. the remote can be too
+> aggressive in retransmission (not just because of a bad RTO) or
+> the network RTT fluctuates.
+
+TCP_INFO contains only duplicate packets *sent* (retransmits), not received!
+am I missing something? can you give a code-example that can obtain such info?
+if running that code in userspace results in same values as tcphealth...
+well, actually dupacks is more interesting than dup-packets.
+afterall in usual usage the latter will always be zero.
+>
+> I don't what if tracking last_ack_sent (the latest RCV.NXT) without
+> knowing the ISN is useful.
+
+so you suggest I should store and compare ISN too, for accuracy?
+you think the gain in accuracy justifies the added overhead?
+>
+> btw the term project paper cited concludes SACK is not useful is simply
+> wrong. This makes me suspicious about how rigorous and thoughtful of
+> its design.
+
+isn't my paper.
+but I'd guess the usefulness of SACK is only doubted from pov of users.
+remember, users connect to many servers.
+if a server behaves badly, choose another one.
+servers do not have such a choice, for them SACK naturally is important.
+
+a server would just need to look at TCP_INFO to see how useful SACK is.
+so I would conclude the author was quite thoughtful about users' pov.
+(and quite ignorant about the servers.)
+
+no matter how little knowledge the authors have, tcphealth is interesting.
+maybe it was a random discovery by sheer luck.
+the correlation between the data it provides and reality is compelling.
+if we'd judge inventions by the stupidity of their inventors...
+
