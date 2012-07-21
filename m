@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751562Ab2GUFO3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jul 2012 01:14:29 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:39238 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750731Ab2GUFO2 (ORCPT
+	id S1751492Ab2GUGmn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jul 2012 02:42:43 -0400
+Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:41311 "EHLO
+	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750954Ab2GUGmm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jul 2012 01:14:28 -0400
+	Sat, 21 Jul 2012 02:42:42 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120721040816.GA7313@kroah.com>
-References: <CAMbhsRTX=t4UMfmrJRyXidSTWXvaC5L9aFdTFL03wYYKrUE5qw@mail.gmail.com>
-	<20120721040816.GA7313@kroah.com>
-Date: Fri, 20 Jul 2012 22:14:27 -0700
-X-Google-Sender-Auth: ygsa93UBSX-oyKCgOYQ012ss3t0
-Message-ID: <CAMbhsRTjEn4ZSir-N2DX5HM9fueagAXpDFnx8OpPM2m6hgOXXQ@mail.gmail.com>
-Subject: Re: sysfs permissions on dynamic attributes (led delay_on and delay_off)
-From: Colin Cross <ccross@android.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, Bryan Wu <bryan.wu@canonical.com>,
-        Richard Purdie <rpurdie@rpsys.net>
+In-Reply-To: <201207202144.05154.rjw@sisk.pl>
+References: <1342545149-3515-1-git-send-email-tj@kernel.org>
+ <1342808550.2583.48.camel@twins> <20120720183400.GL32763@google.com> <201207202144.05154.rjw@sisk.pl>
+From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Date: Sat, 21 Jul 2012 12:12:13 +0530
+Message-ID: <CAMQu2gy0OtMaYZzPwJqO+VbVbd_y-cCE8sXowrhmqWWxzimu=g@mail.gmail.com>
+Subject: Re: [PATCHSET] workqueue: reimplement CPU hotplug to keep idle workers
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Tejun Heo <tj@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        tglx@linutronix.de, linux-pm@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 20, 2012 at 9:08 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Fri, Jul 20, 2012 at 05:46:14PM -0700, Colin Cross wrote:
->> I'm trying to use the standard ledtrig-timer.c code to handle led
->> blinking for notifications on an Android device, and I'm hitting some
->> issues with setting permissions on the dynamically created delay_on
->> and delay_off attributes.  For most sysfs files, we have userspace
->> uevent parser that watches for device add notifications and
->> chowns/chmods attributes.  This doesn't work for delay_on and
->> delay_off, because they are created later, when "timer" is written to
->> the trigger attribute.  There is no uevent when the new files are
->> created, and sysfs doesn't support inotify, so I don't see any way to
->> receive an event to set the permissions.  This issue exists any time
->> that device_create_file is called after device_add.
->>
->> What is the appropriate way to get an event to set the permissions?
->> Add inotify support for sysfs file creation?  Send a KOBJ_CHANGE
->> uevent in device_create_file?
->
-> No.
->
->> Send a KOBJ_CHANGE uevent from the driver after calling
->> device_create_file?
->
-> Yes.
->
->> Dynamically create a timer device under /sys/class/leds/<led> so a new
->> add uevent gets sent?
->
-> Ick.
->
->> Promote blinking to be a core led feature instead of a trigger, so the
->> files are always present?
->
-> That's the best thing, why not just do that?
+Rafael,
 
-It doesn't solve the general case.  For example, any driver that is
-loaded as a module and then calls device_create_file will suffer the
-same problem.  But since it solves the one I care about, I'll look
-into it.
+On Sat, Jul 21, 2012 at 1:14 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Friday, July 20, 2012, Tejun Heo wrote:
+>> Hello,
+>>
+>> On Fri, Jul 20, 2012 at 08:22:30PM +0200, Peter Zijlstra wrote:
+>> > I really think people who use hotplug at high frequencies are on drugs
+>> > and doing it wrong.
+>>
+>> I don't know.  It does make some sense.  It's not like we have any
+>> other mechanism to keep some processors completely quiesient, which
+>> could make a noticeable difference from powersaving POV compared to
+>> mostly idle.  Rafael, can you please chime in and explain how / where
+>> / how freqeuntly / etc CPU hotplug is used for powersaving?
+>
+> Well, there are use cases I'm not really familiar with.
+>
+> Pretty much the only use case I'm sufficiently familiar with is
+> suspend/hibernate where we unplug all of the nonboot CPUs at one point.
+>
+> The other use cases, which I don't really think are entirely valid,
+> are on some ARM platforms where CPUs are unplugged instead of being put into
+> C-states or equivalent (because we don't have a good mechanism for handling
+> multiprocessor C-states; there's a set of patches for that waiting for
+> the merge window in the Len's tree).  I'm hoping to get rid of those
+> use cases in future entirely.
+>
+Not sure if you are talking about couple idle series waiting in Len's tree for
+the merge.
+
+That series actually trying add infrastructure for the hardwares
+where CPU's need co-ordination which is needed on few ARM hardwares
+to get into deeper CPU cluster C-states. It is indeed true that without
+that approach, cpu-hotplug was used to overcome the ordering issue
+I guess Exynos, Tegra and OMAP are the few ARM architectures I
+know who has been using the couple cpuidle infrastructure.
+
+Regards
+Santosh
+Regards
+Santosh
