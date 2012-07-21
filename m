@@ -1,313 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751399Ab2GUNA4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jul 2012 09:00:56 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46334 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751011Ab2GUNAz (ORCPT
+	id S1751417Ab2GUNZj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jul 2012 09:25:39 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:36744 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751193Ab2GUNZi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jul 2012 09:00:55 -0400
-From: Toshiaki Yamane <yamanetoshi@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Martyn Welch <martyn.welch@ge.com>,
-        Manohar Vanga <manohar.vanga@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Cc: Toshiaki Yamane <yamanetoshi@gmail.com>
-Subject: [PATCH] staging/vme: fix checkpatch warnings
-Date: Sat, 21 Jul 2012 22:00:51 +0900
-Message-Id: <1342875651-16961-1-git-send-email-yamanetoshi@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	Sat, 21 Jul 2012 09:25:38 -0400
+MIME-Version: 1.0
+In-Reply-To: <201207211156.04335.rjw@sisk.pl>
+References: <CACVXFVNWOcrR9tYhU1wVUSJ_DJ8x+SCk993Sn9dYDe2kzJBDuQ@mail.gmail.com>
+	<CACVXFVM0bWOzzPyL7ja2c4Uj56eEjA+-Qm744FBKxWP9j3MOrA@mail.gmail.com>
+	<201207211156.04335.rjw@sisk.pl>
+Date: Sat, 21 Jul 2012 21:25:37 +0800
+Message-ID: <CACVXFVM0hZcA8TPpydODpVsQjYP=w5PpvB4-3PZYdDu+r6SchQ@mail.gmail.com>
+Subject: Re: [RFC] firmware load: defer request_firmware during early boot and resume
+From: Ming Lei <tom.leiming@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-usb <linux-usb@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Oliver Neukum <oneukum@suse.de>, Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Matthew Garrett <mjg@redhat.com>, Jack Stone <jwjstone@fastmail.fm>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now checkpatch clean.
+On Sat, Jul 21, 2012 at 5:56 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Saturday, July 21, 2012, Ming Lei wrote:
+>> CC guys who discussed the problem in the below link in Jan. :
+>>
+>>       http://marc.info/?t=132528956000002&r=10&w=2
+>>
+>> On Fri, Jul 20, 2012 at 8:33 PM, Ming Lei <tom.leiming@gmail.com> wrote:
+>> > The RFC patch is just for discussing if the idea of deferring
+>> > request_firmware is doable for addressing the issue of
+>> > request_firmware in resume path, which is caused by driver
+>> > unbind/rebind during resume.
+>> >
+>> > At least usb bus is involved in such things, one driver may be
+>> > unbound and rebound in resume path at several situations, and
+>> > request_firmware is often called inside probe().
+>> >
+>> > Also the idea should be helpful for other hotplug buses too,
+>> > at least there was the similar problem report on pcmcia bus.
+>>
+>> Looks it works well in my two test cases: one is to call request_firmware
+>> in early boot(initcall), another one is to call request_firmware in probe()
+>> of resume path(caused by unbind & rebind).  And without the patch, both
+>> two request_firmware return failure and can't complete the loading.
+>
+> And that's precisely why you're not supposed to use request_firmware() in
+> those two situations.
 
-$ find drivers/staging/vme -name "*.[ch]"|xargs ./scripts/checkpatch.pl \
--f --terse --nosummary|cut -f3- -d":"|sort |uniq -c|sort -n
-      1  ERROR: trailing whitespace
-      2  WARNING: Prefer pr_debug(... to printk(KERN_DEBUG, ...
-      5  WARNING: Prefer pr_info(... to printk(KERN_INFO, ...
-      7  WARNING: Prefer pr_err(... to printk(KERN_ERR, ...
-      9  WARNING: quoted string split across lines
-     13  WARNING: Prefer pr_warn(... to printk(KERN_WARNING, ...
+So you mean we should do as below?
 
-Signed-off-by: Toshiaki Yamane <yamanetoshi@gmail.com>
----
- drivers/staging/vme/devices/vme_pio2_core.c |    9 ++--
- drivers/staging/vme/devices/vme_user.c      |   70 ++++++++++++---------------
- 2 files changed, 35 insertions(+), 44 deletions(-)
+For the early boot situation, the driver which calls request_firmware in probe()
+can't be built in kernel image.
 
-diff --git a/drivers/staging/vme/devices/vme_pio2_core.c b/drivers/staging/vme/devices/vme_pio2_core.c
-index 4bf8e05..b5f942a 100644
---- a/drivers/staging/vme/devices/vme_pio2_core.c
-+++ b/drivers/staging/vme/devices/vme_pio2_core.c
-@@ -163,15 +163,14 @@ static int __init pio2_init(void)
- 	int retval = 0;
- 
- 	if (bus_num == 0) {
--		printk(KERN_ERR "%s: No cards, skipping registration\n",
--			driver_name);
-+		pr_err("%s: No cards, skipping registration\n",
-+		       driver_name);
- 		goto err_nocard;
- 	}
- 
- 	if (bus_num > PIO2_CARDS_MAX) {
--		printk(KERN_ERR
--			"%s: Driver only able to handle %d PIO2 Cards\n",
--			driver_name, PIO2_CARDS_MAX);
-+		pr_err("%s: Driver only able to handle %d PIO2 Cards\n",
-+		       driver_name, PIO2_CARDS_MAX);
- 		bus_num = PIO2_CARDS_MAX;
- 	}
- 
-diff --git a/drivers/staging/vme/devices/vme_user.c b/drivers/staging/vme/devices/vme_user.c
-index e25645e..1c82938 100644
---- a/drivers/staging/vme/devices/vme_user.c
-+++ b/drivers/staging/vme/devices/vme_user.c
-@@ -170,7 +170,7 @@ static int vme_user_open(struct inode *inode, struct file *file)
- 	mutex_lock(&image[minor].mutex);
- 	/* Allow device to be opened if a resource is needed and allocated. */
- 	if (minor < CONTROL_MINOR && image[minor].resource == NULL) {
--		printk(KERN_ERR "No resources allocated for device\n");
-+		pr_err("No resources allocated for device\n");
- 		err = -EINVAL;
- 		goto err_res;
- 	}
-@@ -225,13 +225,13 @@ static ssize_t resource_to_user(int minor, char __user *buf, size_t count,
- 			(unsigned long)copied);
- 		if (retval != 0) {
- 			copied = (copied - retval);
--			printk(KERN_INFO "User copy failed\n");
-+			pr_info("User copy failed\n");
- 			return -EINVAL;
- 		}
- 
- 	} else {
- 		/* XXX Need to write this */
--		printk(KERN_INFO "Currently don't support large transfers\n");
-+		pr_info("Currently don't support large transfers\n");
- 		/* Map in pages from userspace */
- 
- 		/* Call vme_master_read to do the transfer */
-@@ -265,7 +265,7 @@ static ssize_t resource_from_user(unsigned int minor, const char __user *buf,
- 			image[minor].kern_buf, copied, *ppos);
- 	} else {
- 		/* XXX Need to write this */
--		printk(KERN_INFO "Currently don't support large transfers\n");
-+		pr_info("Currently don't support large transfers\n");
- 		/* Map in pages from userspace */
- 
- 		/* Call vme_master_write to do the transfer */
-@@ -286,7 +286,7 @@ static ssize_t buffer_to_user(unsigned int minor, char __user *buf,
- 	retval = __copy_to_user(buf, image_ptr, (unsigned long)count);
- 	if (retval != 0) {
- 		retval = (count - retval);
--		printk(KERN_WARNING "Partial copy to userspace\n");
-+		pr_warn("Partial copy to userspace\n");
- 	} else
- 		retval = count;
- 
-@@ -305,7 +305,7 @@ static ssize_t buffer_from_user(unsigned int minor, const char __user *buf,
- 	retval = __copy_from_user(image_ptr, buf, (unsigned long)count);
- 	if (retval != 0) {
- 		retval = (count - retval);
--		printk(KERN_WARNING "Partial copy to userspace\n");
-+		pr_warn("Partial copy to userspace\n");
- 	} else
- 		retval = count;
- 
-@@ -396,7 +396,7 @@ static ssize_t vme_user_write(struct file *file, const char __user *buf,
- 	default:
- 		retval = -EINVAL;
- 	}
--	
-+
- 	mutex_unlock(&image[minor].mutex);
- 
- 	if (retval > 0)
-@@ -476,7 +476,7 @@ static int vme_user_ioctl(struct inode *inode, struct file *file,
- 			copied = copy_from_user(&irq_req, argp,
- 						sizeof(struct vme_irq_id));
- 			if (copied != 0) {
--				printk(KERN_WARNING "Partial copy from userspace\n");
-+				pr_warn("Partial copy from userspace\n");
- 				return -EFAULT;
- 			}
- 
-@@ -503,8 +503,7 @@ static int vme_user_ioctl(struct inode *inode, struct file *file,
- 			copied = copy_to_user(argp, &master,
- 				sizeof(struct vme_master));
- 			if (copied != 0) {
--				printk(KERN_WARNING "Partial copy to "
--					"userspace\n");
-+				pr_warn("Partial copy to userspace\n");
- 				return -EFAULT;
- 			}
- 
-@@ -515,8 +514,7 @@ static int vme_user_ioctl(struct inode *inode, struct file *file,
- 
- 			copied = copy_from_user(&master, argp, sizeof(master));
- 			if (copied != 0) {
--				printk(KERN_WARNING "Partial copy from "
--					"userspace\n");
-+				pr_warn("Partial copy from userspace\n");
- 				return -EFAULT;
- 			}
- 
-@@ -546,8 +544,7 @@ static int vme_user_ioctl(struct inode *inode, struct file *file,
- 			copied = copy_to_user(argp, &slave,
- 				sizeof(struct vme_slave));
- 			if (copied != 0) {
--				printk(KERN_WARNING "Partial copy to "
--					"userspace\n");
-+				pr_warn("Partial copy to userspace\n");
- 				return -EFAULT;
- 			}
- 
-@@ -558,8 +555,7 @@ static int vme_user_ioctl(struct inode *inode, struct file *file,
- 
- 			copied = copy_from_user(&slave, argp, sizeof(slave));
- 			if (copied != 0) {
--				printk(KERN_WARNING "Partial copy from "
--					"userspace\n");
-+				pr_warn("Partial copy from userspace\n");
- 				return -EFAULT;
- 			}
- 
-@@ -599,8 +595,8 @@ static void buf_unalloc(int num)
- {
- 	if (image[num].kern_buf) {
- #ifdef VME_DEBUG
--		printk(KERN_DEBUG "UniverseII:Releasing buffer at %p\n",
--			image[num].pci_buf);
-+		pr_debug("UniverseII:Releasing buffer at %p\n",
-+			 image[num].pci_buf);
- #endif
- 
- 		vme_free_consistent(image[num].resource, image[num].size_buf,
-@@ -612,7 +608,7 @@ static void buf_unalloc(int num)
- 
- #ifdef VME_DEBUG
- 	} else {
--		printk(KERN_DEBUG "UniverseII: Buffer not allocated\n");
-+		pr_debug("UniverseII: Buffer not allocated\n");
- #endif
- 	}
- }
-@@ -629,11 +625,11 @@ static int __init vme_user_init(void)
- {
- 	int retval = 0;
- 
--	printk(KERN_INFO "VME User Space Access Driver\n");
-+	pr_info("VME User Space Access Driver\n");
- 
- 	if (bus_num == 0) {
--		printk(KERN_ERR "%s: No cards, skipping registration\n",
--			driver_name);
-+		pr_err("%s: No cards, skipping registration\n",
-+		       driver_name);
- 		retval = -ENODEV;
- 		goto err_nocard;
- 	}
-@@ -642,8 +638,8 @@ static int __init vme_user_init(void)
- 	 * in future revisions if that ever becomes necessary.
- 	 */
- 	if (bus_num > VME_USER_BUS_MAX) {
--		printk(KERN_ERR "%s: Driver only able to handle %d buses\n",
--			driver_name, VME_USER_BUS_MAX);
-+		pr_err("%s: Driver only able to handle %d buses\n",
-+		       driver_name, VME_USER_BUS_MAX);
- 		bus_num = VME_USER_BUS_MAX;
- 	}
- 
-@@ -683,8 +679,8 @@ static int __devinit vme_user_probe(struct vme_dev *vdev)
- 
- 	/* Save pointer to the bridge device */
- 	if (vme_user_bridge != NULL) {
--		printk(KERN_ERR "%s: Driver can only be loaded for 1 device\n",
--			driver_name);
-+		pr_err("%s: Driver can only be loaded for 1 device\n",
-+		       driver_name);
- 		err = -EINVAL;
- 		goto err_dev;
- 	}
-@@ -707,8 +703,8 @@ static int __devinit vme_user_probe(struct vme_dev *vdev)
- 	err = register_chrdev_region(MKDEV(VME_MAJOR, 0), VME_DEVS,
- 		driver_name);
- 	if (err) {
--		printk(KERN_WARNING "%s: Error getting Major Number %d for "
--		"driver.\n", driver_name, VME_MAJOR);
-+		pr_warn("%s: Error getting Major Number %d for driver.\n",
-+			driver_name, VME_MAJOR);
- 		goto err_region;
- 	}
- 
-@@ -718,7 +714,7 @@ static int __devinit vme_user_probe(struct vme_dev *vdev)
- 	vme_user_cdev->owner = THIS_MODULE;
- 	err = cdev_add(vme_user_cdev, MKDEV(VME_MAJOR, 0), VME_DEVS);
- 	if (err) {
--		printk(KERN_WARNING "%s: cdev_all failed\n", driver_name);
-+		pr_warn("%s: cdev_all failed\n", driver_name);
- 		goto err_char;
- 	}
- 
-@@ -732,16 +728,14 @@ static int __devinit vme_user_probe(struct vme_dev *vdev)
- 		image[i].resource = vme_slave_request(vme_user_bridge,
- 			VME_A24, VME_SCT);
- 		if (image[i].resource == NULL) {
--			printk(KERN_WARNING "Unable to allocate slave "
--				"resource\n");
-+			pr_warn("Unable to allocate slave resource\n");
- 			goto err_slave;
- 		}
- 		image[i].size_buf = PCI_BUF_SIZE;
- 		image[i].kern_buf = vme_alloc_consistent(image[i].resource,
- 			image[i].size_buf, &image[i].pci_buf);
- 		if (image[i].kern_buf == NULL) {
--			printk(KERN_WARNING "Unable to allocate memory for "
--				"buffer\n");
-+			pr_warn("Unable to allocate memory for buffer\n");
- 			image[i].pci_buf = 0;
- 			vme_slave_free(image[i].resource);
- 			err = -ENOMEM;
-@@ -758,15 +752,13 @@ static int __devinit vme_user_probe(struct vme_dev *vdev)
- 		image[i].resource = vme_master_request(vme_user_bridge,
- 			VME_A32, VME_SCT, VME_D32);
- 		if (image[i].resource == NULL) {
--			printk(KERN_WARNING "Unable to allocate master "
--				"resource\n");
-+			pr_warn("Unable to allocate master resource\n");
- 			goto err_master;
- 		}
- 		image[i].size_buf = PCI_BUF_SIZE;
- 		image[i].kern_buf = kmalloc(image[i].size_buf, GFP_KERNEL);
- 		if (image[i].kern_buf == NULL) {
--			printk(KERN_WARNING "Unable to allocate memory for "
--				"master window buffers\n");
-+			pr_warn("Unable to allocate memory for master window buffers\n");
- 			err = -ENOMEM;
- 			goto err_master_buf;
- 		}
-@@ -775,7 +767,7 @@ static int __devinit vme_user_probe(struct vme_dev *vdev)
- 	/* Create sysfs entries - on udev systems this creates the dev files */
- 	vme_user_sysfs_class = class_create(THIS_MODULE, driver_name);
- 	if (IS_ERR(vme_user_sysfs_class)) {
--		printk(KERN_ERR "Error creating vme_user class.\n");
-+		pr_err("Error creating vme_user class.\n");
- 		err = PTR_ERR(vme_user_sysfs_class);
- 		goto err_class;
- 	}
-@@ -803,7 +795,7 @@ static int __devinit vme_user_probe(struct vme_dev *vdev)
- 		image[i].device = device_create(vme_user_sysfs_class, NULL,
- 					MKDEV(VME_MAJOR, i), NULL, name, num);
- 		if (IS_ERR(image[i].device)) {
--			printk(KERN_INFO "%s: Error creating sysfs device\n",
-+			pr_info("%s: Error creating sysfs device\n",
- 				driver_name);
- 			err = PTR_ERR(image[i].device);
- 			goto err_sysfs;
+For the second situation, some drivers can't be allowed to call
+request_firmware()
+in its probe() because these drivers may be unbound and rebound inside resume()
+or complete_resume(),  for example, see usb_resume_complete().
+
+IMO, the 1st one is very unfriendly and the 2nd one can't be avoided for some
+hotplug buses.
+
+That is just the motivation of this patch to make request_firmware() workable in
+both the two above situations.
+
+>
+> My opinion is that, at least for the suspend/hibernate case, the firmware
+> data should be loaded into memory before suspend (e.g. using a PM notifier)
+> and released only after the corresponding resume (or suspend failure), so
+> that it's present in memory during the entire suspend-resume cycle.
+
+The patch isn't to replace caching firmware data during suspend-resume cycle,
+and just a supplement for it.
+
+It is not easy to cache firmware data during suspend-resume cycle for
+the above 2nd situation because of the lifetime problem of firmware data:
+the driver may be unbound and rebound inside resume path, even the
+device may vanish and appear again.
+
+Also, Matthew had a below case[1] which can't be solved with caching
+firmware data at all, not to mention consuming much memory by caching
+firmware:
+
+       1) user boots from cold. Device comes up with generic USB ID.
+       2) isight_firmware loads and binds. Firmware is loaded. Device
+           disconnects and reconnects with an ID that's bound by the UVC
+           driver.
+       3) user reboots. Device comes up with UVC ID. isight_firmware
+           doesn't bind.
+       4) user suspends.
+       5) user resumes. isight_firmware binds and attempts to load firmware.
+
+But it can be dealt with easily by the simple patch.
+
+Finally, suppose caching firmware may work well for the 2nd situation, we still
+have to cache all the firmwares of all hotplug devices(in one system) which
+need firmware before suspending, because these devices may be unplugged
+and plugged again during suspend-resume cycle or be powered off by system.
+
+>
+> The early bood situation may be handled through deferred probing.
+
+Yes, deferring it will make drivers more friendly and be easy to use.
+
+
+[1], http://marc.info/?l=linux-usb&m=132554118928398&w=2
+
+thanks,
 -- 
-1.7.5.4
-
+Ming Lei
