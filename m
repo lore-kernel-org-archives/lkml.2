@@ -1,48 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751628Ab2GUPir (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jul 2012 11:38:47 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:58039 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751299Ab2GUPiq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jul 2012 11:38:46 -0400
-From: zwu.kernel@gmail.com
-To: viro@zeniv.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: [PATCH] vfs: simply the code logic
-Date: Sat, 21 Jul 2012 23:38:19 +0800
-Message-Id: <1342885099-22662-1-git-send-email-zwu.kernel@gmail.com>
-X-Mailer: git-send-email 1.7.6
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12072115-8974-0000-0000-00000B610027
+	id S1751712Ab2GUPmO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jul 2012 11:42:14 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:33301 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751491Ab2GUPmN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jul 2012 11:42:13 -0400
+MIME-Version: 1.0
+In-Reply-To: <1342869707.21788.50.camel@ted>
+References: <CAMbhsRTX=t4UMfmrJRyXidSTWXvaC5L9aFdTFL03wYYKrUE5qw@mail.gmail.com>
+	<20120721040816.GA7313@kroah.com>
+	<1342856010.21788.47.camel@ted>
+	<CAMbhsRREVcqf+pnamY62wGcd2mBif8W8_CRXdJQCQvL14Dy3Eg@mail.gmail.com>
+	<1342869707.21788.50.camel@ted>
+Date: Sat, 21 Jul 2012 08:42:12 -0700
+X-Google-Sender-Auth: xlUVK4_9n-n4CBqjiUw3bnHbKyA
+Message-ID: <CAMbhsRQ2EPEW+=0bhE6N9-dr44H8G_gzQ7h5LqOp7Lntr2RhTg@mail.gmail.com>
+Subject: Re: sysfs permissions on dynamic attributes (led delay_on and delay_off)
+From: Colin Cross <ccross@android.com>
+To: Richard Purdie <richard.purdie@linuxfoundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, lkml <linux-kernel@vger.kernel.org>,
+        Bryan Wu <bryan.wu@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+On Sat, Jul 21, 2012 at 4:21 AM, Richard Purdie
+<richard.purdie@linuxfoundation.org> wrote:
+> On Sat, 2012-07-21 at 01:26 -0700, Colin Cross wrote:
+>> On Sat, Jul 21, 2012 at 12:33 AM, Richard Purdie
+>> <richard.purdie@linuxfoundation.org> wrote:
+>> > On Fri, 2012-07-20 at 21:08 -0700, Greg KH wrote:
+>> >> On Fri, Jul 20, 2012 at 05:46:14PM -0700, Colin Cross wrote:
+>> >> > I'm trying to use the standard ledtrig-timer.c code to handle led
+>> >> > blinking for notifications on an Android device, and I'm hitting some
+>> >> > issues with setting permissions on the dynamically created delay_on
+>> >> > and delay_off attributes.  For most sysfs files, we have userspace
+>> >> > uevent parser that watches for device add notifications and
+>> >> > chowns/chmods attributes.  This doesn't work for delay_on and
+>> >> > delay_off, because they are created later, when "timer" is written to
+>> >> > the trigger attribute.  There is no uevent when the new files are
+>> >> > created, and sysfs doesn't support inotify, so I don't see any way to
+>> >> > receive an event to set the permissions.  This issue exists any time
+>> >> > that device_create_file is called after device_add.
+>> >> >
+>> >> > What is the appropriate way to get an event to set the permissions?
+>> >> > Add inotify support for sysfs file creation?  Send a KOBJ_CHANGE
+>> >> > uevent in device_create_file?
+>> >>
+>> >> No.
+>> >>
+>> >> > Send a KOBJ_CHANGE uevent from the driver after calling
+>> >> > device_create_file?
+>> >>
+>> >> Yes.
+>> >>
+>> >> > Dynamically create a timer device under /sys/class/leds/<led> so a new
+>> >> > add uevent gets sent?
+>> >>
+>> >> Ick.
+>> >>
+>> >> > Promote blinking to be a core led feature instead of a trigger, so the
+>> >> > files are always present?
+>> >>
+>> >> That's the best thing, why not just do that?
+>> >
+>> > This implies we should make every trigger a core led feature and
+>> > effectively do away with triggers. I'm not sure that makes sense.
+>>
+>> Blinking is already effectively a core feature.  It is implemented in
+>> led-core.c so it can be used by other triggers besides timer, it's
+>> state is stored in the led_classdev structure, not in the trigger
+>> data, and the only thing left in ledtrig-timer.c is the sysfs files.
+>
+> Having the attributes present all the time leads to some nasty questions
+> like how the on/off delays interact with things like say a network
+> activity trigger. Not all triggers are going to respect these delay
+> values and I can imagine a whole new set of nasty bug reports with no
+> easy solutions if this change is made...
 
-Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
----
- fs/block_dev.c |    5 +----
- 1 files changed, 1 insertions(+), 4 deletions(-)
+The delay_on and delay_off files could easily override the values from
+the trigger.
 
-diff --git a/fs/block_dev.c b/fs/block_dev.c
-index c2bbe1f..0f268d3 100644
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -396,10 +396,7 @@ static loff_t block_llseek(struct file *file, loff_t offset, int origin)
- 			goto out;
- 	}
- 	if (offset >= 0 && offset <= size) {
--		if (offset != file->f_pos) {
--			file->f_pos = offset;
--		}
--		retval = offset;
-+		retval = file->f_pos = offset;
- 	}
- out:
- 	mutex_unlock(&bd_inode->i_mutex);
--- 
-1.7.6
-
+Sending a KOBJ_CHANGE uevent is not a great solution, it's still
+horribly racy in userspace.  This script would never work reliably:
+echo timer > trigger
+echo 1000 > delay_on
+echo 1000 > delay_off
+echo 255 > brightness
