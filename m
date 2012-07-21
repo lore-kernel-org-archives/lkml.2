@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752184Ab2GUCVK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 22:21:10 -0400
+	id S1753302Ab2GUCV4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 22:21:56 -0400
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26516 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751669Ab2GUCVI (ORCPT
+	with ESMTP id S1752044Ab2GUCVK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 22:21:08 -0400
-X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=9JffKFENbIYA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=VwQbUJbxAAAA:8 a=zUdNcWRJiuJ6KYwvtrwA:9 a=QEXdDO2ut3YA:10 a=YbNPXYEMyD8QA41JLDoA:9 a=s5Htg7xnQOKvHEu9STBOug==:117
+	Fri, 20 Jul 2012 22:21:10 -0400
+X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=XicWcjS2jNMA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=3nbZYyFuAAAA:8 a=GjAVGftxM8zNLmDx44IA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=EvKJbDF4Ut8A:10 a=ZDjuBl2gbY-Vs9086xcA:9 a=s5Htg7xnQOKvHEu9STBOug==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 72.230.195.127
-Message-Id: <20120721021943.274162381@goodmis.org>
+Message-Id: <20120721022107.916913855@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 20 Jul 2012 22:19:43 -0400
+Date: Fri, 20 Jul 2012 22:19:49 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 00/19] [GIT PULL][v3.6] ftrace: Allow kprobes to work with ftace
+Subject: [PATCH 06/19] ftrace/x86: Add save_regs for i386 function calls
+References: <20120721021943.274162381@goodmis.org>
+Content-Disposition: inline; filename=0006-ftrace-x86-Add-save_regs-for-i386-function-calls.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,78 +31,165 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
+From: Steven Rostedt <srostedt@redhat.com>
 
-Ingo,
+Add saving full regs for function tracing on i386.
+The saving of regs was influenced by patches sent out by
+Masami Hiramatsu.
 
-This patch series extends ftrace function tracing utility to be
-more dynamic for its users. It allows for data passing to the callback
-functions, as well as reading regs as if a breakpoint were to trigger
-at function entry.
+Link: Link: http://lkml.kernel.org/r/20120711195745.379060003@goodmis.org
 
-The main goal of this patch series was to allow kprobes to use ftrace
-as an optimized probe point when a probe is placed on an ftrace nop.
-With lots of help from Masami Hiramatsu, and going through lots of
-iterations, we finally came up with a good solution.
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ arch/x86/include/asm/ftrace.h |    2 --
+ arch/x86/kernel/entry_32.S    |   68 +++++++++++++++++++++++++++++++++++++=
+++++
+ arch/x86/kernel/ftrace.c      |    4 ---
+ 3 files changed, 68 insertions(+), 6 deletions(-)
 
-I've tested it vigorously (although, like always, there may be some
-subtle bug), but I feel it is ready for inclussion for the 3.6 merge
-window.
+diff --git a/arch/x86/include/asm/ftrace.h b/arch/x86/include/asm/ftrace.h
+index a847501..a6cae0c 100644
+--- a/arch/x86/include/asm/ftrace.h
++++ b/arch/x86/include/asm/ftrace.h
+@@ -40,10 +40,8 @@
+=20
+ #ifdef CONFIG_DYNAMIC_FTRACE
+ #define ARCH_SUPPORTS_FTRACE_OPS 1
+-#ifdef CONFIG_X86_64
+ #define ARCH_SUPPORTS_FTRACE_SAVE_REGS
+ #endif
+-#endif
+=20
+ #ifndef __ASSEMBLY__
+ extern void mcount(void);
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index 5da11d1..46caa56 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -1123,6 +1123,7 @@ ftrace_call:
+ 	popl %edx
+ 	popl %ecx
+ 	popl %eax
++ftrace_ret:
+ #ifdef CONFIG_FUNCTION_GRAPH_TRACER
+ .globl ftrace_graph_call
+ ftrace_graph_call:
+@@ -1134,6 +1135,73 @@ ftrace_stub:
+ 	ret
+ END(ftrace_caller)
+=20
++ENTRY(ftrace_regs_caller)
++	pushf	/* push flags before compare (in cs location) */
++	cmpl $0, function_trace_stop
++	jne ftrace_restore_flags
++
++	/*
++	 * i386 does not save SS and ESP when coming from kernel.
++	 * Instead, to get sp, &regs->sp is used (see ptrace.h).
++	 * Unfortunately, that means eflags must be at the same location
++	 * as the current return ip is. We move the return ip into the
++	 * ip location, and move flags into the return ip location.
++	 */
++	pushl 4(%esp)	/* save return ip into ip slot */
++	subl $MCOUNT_INSN_SIZE, (%esp)	/* Adjust ip */
++
++	pushl $0	/* Load 0 into orig_ax */
++	pushl %gs
++	pushl %fs
++	pushl %es
++	pushl %ds
++	pushl %eax
++	pushl %ebp
++	pushl %edi
++	pushl %esi
++	pushl %edx
++	pushl %ecx
++	pushl %ebx
++
++	movl 13*4(%esp), %eax	/* Get the saved flags */
++	movl %eax, 14*4(%esp)	/* Move saved flags into regs->flags location */
++				/* clobbering return ip */
++	movl $__KERNEL_CS,13*4(%esp)
++
++	movl 12*4(%esp), %eax	/* Load ip (1st parameter) */
++	movl 0x4(%ebp), %edx	/* Load parent ip (2cd parameter) */
++	lea  (%esp), %ecx
++	pushl %ecx		/* Save pt_regs as 4th parameter */
++	leal function_trace_op, %ecx /* Save ftrace_pos in 3rd parameter */
++
++GLOBAL(ftrace_regs_call)
++	call ftrace_stub
++
++	addl $4, %esp		/* Skip pt_regs */
++	movl 14*4(%esp), %eax	/* Move flags back into cs */
++	movl %eax, 13*4(%esp)	/* Needed to keep addl from modifying flags */
++	movl 12*4(%esp), %eax	/* Get return ip from regs->ip */
++	addl $MCOUNT_INSN_SIZE, %eax
++	movl %eax, 14*4(%esp)	/* Put return ip back for ret */
++
++	popl %ebx
++	popl %ecx
++	popl %edx
++	popl %esi
++	popl %edi
++	popl %ebp
++	popl %eax
++	popl %ds
++	popl %es
++	popl %fs
++	popl %gs
++	addl $8, %esp		/* Skip orig_ax and ip */
++	popf			/* Pop flags at end (no addl to corrupt flags) */
++	jmp ftrace_ret
++
++ftrace_restore_flags:
++	popf
++	jmp  ftrace_stub
+ #else /* ! CONFIG_DYNAMIC_FTRACE */
+=20
+ ENTRY(mcount)
+diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
+index b90eb1a..1d41402 100644
+--- a/arch/x86/kernel/ftrace.c
++++ b/arch/x86/kernel/ftrace.c
+@@ -206,7 +206,6 @@ static int
+ ftrace_modify_code(unsigned long ip, unsigned const char *old_code,
+ 		   unsigned const char *new_code);
+=20
+-#ifdef ARCH_SUPPORTS_FTRACE_SAVE_REGS
+ /*
+  * Should never be called:
+  *  As it is only called by __ftrace_replace_code() which is called by
+@@ -221,7 +220,6 @@ int ftrace_modify_call(struct dyn_ftrace *rec, unsigned=
+ long old_addr,
+ 	WARN_ON(1);
+ 	return -EINVAL;
+ }
+-#endif
+=20
+ int ftrace_update_ftrace_func(ftrace_func_t func)
+ {
+@@ -237,7 +235,6 @@ int ftrace_update_ftrace_func(ftrace_func_t func)
+=20
+ 	ret =3D ftrace_modify_code(ip, old, new);
+=20
+-#ifdef ARCH_SUPPORTS_FTRACE_SAVE_REGS
+ 	/* Also update the regs callback function */
+ 	if (!ret) {
+ 		ip =3D (unsigned long)(&ftrace_regs_call);
+@@ -245,7 +242,6 @@ int ftrace_update_ftrace_func(ftrace_func_t func)
+ 		new =3D ftrace_call_replace(ip, (unsigned long)func);
+ 		ret =3D ftrace_modify_code(ip, old, new);
+ 	}
+-#endif
+=20
+ 	atomic_dec(&modifying_ftrace_code);
+=20
+--=20
+1.7.10.4
 
-Please pull the latest tip/perf/core tree, which can be found at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-tip/perf/core
-
-Head SHA1: aa5e57294ac5614ac395a9733d3e050eace4764e
-
-
-Masami Hiramatsu (5):
-      ftrace: add ftrace_set_filter_ip() for address based filter
-      kprobes: cleanup to separate probe-able check
-      kprobes: Move locks into appropriate functions
-      kprobes: introduce ftrace based optimization
-      kprobes/x86: ftrace based optimization for x86
-
-Steven Rostedt (13):
-      ftrace: Pass ftrace_ops as third parameter to function trace callback
-      ftrace: Consolidate arch dependent functions with 'list' function
-      ftrace: Return pt_regs to function trace callback
-      ftrace/x86_32: Push ftrace_ops in as 3rd parameter to function tracer
-      ftrace/x86: Add separate function to save regs
-      ftrace/x86: Add save_regs for i386 function calls
-      ftrace/x86: Remove function_trace_stop check from graph caller
-      ftrace: Add default recursion protection for function tracing
-      ftrace: Only compile ftrace selftest if selftests are enabled
-      ftrace: Add selftest to test function trace recursion protection
-      ftrace: Add selftest to test function save-regs support
-      kprobes: Inverse taking of module_mutex with kprobe_mutex
-      ftrace: Make ftrace_location() a nop on !DYNAMIC_FTRACE
-
-Uros Bizjak (1):
-      ftrace/x86_32: Simplify parameter setup for ftrace_regs_caller
-
-----
- arch/x86/include/asm/ftrace.h     |   49 +++---
- arch/x86/include/asm/kprobes.h    |    1 +
- arch/x86/kernel/entry_32.S        |   75 ++++++++-
- arch/x86/kernel/entry_64.S        |   96 +++++++++--
- arch/x86/kernel/ftrace.c          |   73 ++++++++-
- arch/x86/kernel/kprobes.c         |   48 ++++++
- include/linux/ftrace.h            |  158 ++++++++++++++++--
- include/linux/kprobes.h           |   27 ++++
- kernel/kprobes.c                  |  250 ++++++++++++++++++++--------
- kernel/trace/Makefile             |    2 +
- kernel/trace/ftrace.c             |  322 ++++++++++++++++++++++++++++-----=
-----
- kernel/trace/trace.h              |    2 +-
- kernel/trace/trace_event_perf.c   |    3 +-
- kernel/trace/trace_events.c       |    4 +-
- kernel/trace/trace_functions.c    |   14 +-
- kernel/trace/trace_irqsoff.c      |    5 +-
- kernel/trace/trace_sched_wakeup.c |    5 +-
- kernel/trace/trace_selftest.c     |  277 ++++++++++++++++++++++++++++++-
- kernel/trace/trace_stack.c        |    4 +-
- 19 files changed, 1199 insertions(+), 216 deletions(-)
 
 --00GvhwF7k39YY
 Content-Type: application/pgp-signature; name="signature.asc"
@@ -109,19 +198,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABAgAGBQJQChINAAoJEIy3vGnGbaoAe7sP/RHTGWHhal+hi/pfTJL1Q/YA
-Iw1WGlLqKy+9TExttIYv5GLQO8wmaxAP6P5XOyw1Xevc8gPp3Zx8Y6Kp8aG/ptoH
-a7cFI+QtErbn32VY0Q4M4JAcvLSCOGhZ9TgKpOry8sHJ4P/45CGtNZorvZmFVkea
-6MXGS7LSXO3teO7yM9o9xcTjh9JtQKL6NHjpRved7mJl6fUD+rxJJMk4tHNHjFbH
-LXLRc8EKXo3aWazmHf2byNW65o++SICcbdG6u6KczLGFhl7lhhiglkYoiy2/Lk9j
-BuMn5PRVMIKaOMYbGJ0qmqYytvZ/+XlcXVAMoJ3euuP2hoJJjQKb5JCax1wVzvuu
-/4a5AwohlCpYiyY9aivkUeJX9UQ89s4akwScYBgbvKjtp4Wzd62itJwKjD75vGcX
-utpNM4raX4mVEBQnBevhLuG8P/QxqGyv9Di+x0YJGBOYs8De95oxbbfPx+6BvwDh
-dmhFtQU8Nk7X2VjOy2d4d8moT8PbBuaD/hBSVdN6UYS0stbyv9AYwGEZk+aipeZj
-lIDfBPGHIBeJNV1+iGfC4qf+8nVif04jM6Klq8MdSsKruFwu5ClPFUmecews39wK
-aO33BdGT8WPvJW1Ra2O9BNTFQQLkB/DeY7fwOB7erh1VHcKfuv2j/sCG6AhSnyv+
-YpheGXdTNYMeszgvPnAK
-=Uiwj
+iQIcBAABAgAGBQJQChIUAAoJEIy3vGnGbaoACw8P/jwvHJQ2fIgZiJu8sQDssgcc
+YpDRRn0gW5MaUYDItE87HdqZFbEvJ1u3Z31VIeJ5v9yamRYd8WBYLltq/kAUVzYn
+xe38C4tmYyOMnCs8CdDMbeb2Ebc49MxUw0uuANgtgeAYggONK8/VJb1NCa0SzmUB
+OZn/WTzAFkbsERtPYdHmgEmGdojxmTd4gFcZ4ANzVeiygs43lPzSEp52abHS6SGS
+algU/Rg/KxNX1/1CIR1WZaOWItylEpbpL5xwYWybYoYOccYqCUTrDiCjjPqtDDBw
+ZFyfeDRpAWDtjWLzC7I3u11nQejGSdx3ToMBby9t27TiZoWvhdD9e4kdZBfjntlI
+DNSB3NU+z4azVqfpolwOeLmdZV0AdfvuVKj60cYFh/5m2ewslTiU9sjALRVfNfxD
+ugAyRfdtBQzso2iVvdxtl5jfKql5kBlZbZ6O9ATRY8/JaUBs+Y+WxBN/no5atZ5H
+KSHRCm4WJuf/40OHz6q1fmpilIbKS46rcMibBl8kEYvWffRjYoSVSC42suvsnfaG
+i6QrnqKzXw0BijlJT8NXqbWNmsBXDQE4Ayo1Ddxn+B/0qozUE+95bvikmJLMxM6W
+yG2Kypu5aX0UWk39xxI205LTTtoJoS3J1jaikRecSoMS0/N5W9O+wz96VNXIr0v8
+jM5IoDQadpY6S//Z998L
+=3lAP
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
