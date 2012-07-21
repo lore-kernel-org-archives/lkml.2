@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752004Ab2GULUc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jul 2012 07:20:32 -0400
-Received: from mta05.xtra.co.nz ([210.54.141.250]:40512 "EHLO mta02.xtra.co.nz"
+	id S1752085Ab2GULUh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jul 2012 07:20:37 -0400
+Received: from mta05.xtra.co.nz ([210.54.141.250]:40535 "EHLO mta02.xtra.co.nz"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751686Ab2GULUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jul 2012 07:20:31 -0400
+	id S1751686Ab2GULUf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jul 2012 07:20:35 -0400
 From: Tony Prisk <linux@prisktech.co.nz>
 To: Alessandro Zumoo <a.zummo@towertech.it>, Alan Cox <alan@linux.intel.com>
 Cc: Tony Prisk <linux@prisktech.co.nz>,
@@ -16,10 +16,12 @@ Cc: Tony Prisk <linux@prisktech.co.nz>,
 	<vt8500-wm8505-linux-kernel@googlegroups.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-serial@vger.kernel.org
-Subject: [PATCHv2 1/2] ARM: vt8500: Minor update to vt8500-rtc for devicetree support
-Date: Sat, 21 Jul 2012 23:20:21 +1200
-Message-Id: <1342869622-11171-1-git-send-email-linux@prisktech.co.nz>
+Subject: [PATCH 2/2] ARM: vt8500: Minor update to vt8500-uart for devicetree support
+Date: Sat, 21 Jul 2012 23:20:22 +1200
+Message-Id: <1342869622-11171-2-git-send-email-linux@prisktech.co.nz>
 X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1342869622-11171-1-git-send-email-linux@prisktech.co.nz>
+References: <1342869622-11171-1-git-send-email-linux@prisktech.co.nz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,68 +31,67 @@ Acked-by: Arnd Bergmann <arnd@arndb.de>
 ---
 v2:
 Split single patch into seperate patches.
-Correct documentation.
- .../devicetree/bindings/rtc/vt8500-rtc.txt         |   14 ++++++++++++++
- drivers/rtc/rtc-vt8500.c                           |    8 ++++++++
+ .../devicetree/bindings/tty/serial/vt8500-uart.txt |   14 ++++++++++++++
+ drivers/tty/serial/vt8500_serial.c                 |    8 ++++++++
  2 files changed, 22 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/rtc/vt8500-rtc.txt
+ create mode 100644 Documentation/devicetree/bindings/tty/serial/vt8500-uart.txt
 
-diff --git a/Documentation/devicetree/bindings/rtc/vt8500-rtc.txt b/Documentation/devicetree/bindings/rtc/vt8500-rtc.txt
+diff --git a/Documentation/devicetree/bindings/tty/serial/vt8500-uart.txt b/Documentation/devicetree/bindings/tty/serial/vt8500-uart.txt
 new file mode 100644
-index 0000000..c764d4d
+index 0000000..745070a
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/rtc/vt8500-rtc.txt
++++ b/Documentation/devicetree/bindings/tty/serial/vt8500-uart.txt
 @@ -0,0 +1,14 @@
-+* VIA VT8500 and Wondermedia WM8xxx SoC Real-time clock (RTC) Controller
++* VIA/Wondermedia Universal Asynchronous Receiver/Transmitter (UART)
 +
 +Required properties:
-+- compatible : "via,vt8500-rtc"
-+- reg : Address range of the rtc registers
-+- interrupt: Should contain the rtc interrupt number
++- compatible: Should be "via,vt8500-uart"
++- reg: Should contain registers location and length
++- interrupts: Should contain interrupt
 +
 +Example:
-+
-+	rtc@d8100000 {
-+		compatible = "via,vt8500-rtc";
-+		reg = <0xd8100000 0x2c>;
-+		interrupts = <48>;
++	uart0: serial@d8200000 {
++		compatible = "via,vt8500-uart";
++		reg = <0xd8200000 0x1040>;
++		interrupts = <32>;
 +	};
-diff --git a/drivers/rtc/rtc-vt8500.c b/drivers/rtc/rtc-vt8500.c
-index 9e94fb1..d21fcd3 100644
---- a/drivers/rtc/rtc-vt8500.c
-+++ b/drivers/rtc/rtc-vt8500.c
-@@ -23,6 +23,7 @@
- #include <linux/bcd.h>
- #include <linux/platform_device.h>
++
+diff --git a/drivers/tty/serial/vt8500_serial.c b/drivers/tty/serial/vt8500_serial.c
+index 2be006f..b9ea0b9 100644
+--- a/drivers/tty/serial/vt8500_serial.c
++++ b/drivers/tty/serial/vt8500_serial.c
+@@ -34,6 +34,7 @@
  #include <linux/slab.h>
+ #include <linux/clk.h>
+ #include <linux/platform_device.h>
 +#include <linux/of.h>
  
  /*
-  * Register definitions
-@@ -302,12 +303,18 @@ static int __devexit vt8500_rtc_remove(struct platform_device *pdev)
+  * UART Register offsets
+@@ -603,12 +604,18 @@ static int __devexit vt8500_serial_remove(struct platform_device *pdev)
  	return 0;
  }
  
-+static const struct of_device_id vt8500_rtc_ids[] = {
-+	{ .compatible = "via,vt8500-rtc", },
++static const struct of_device_id vt8500_uart_ids[] = {
++	{ .compatible = "via,vt8500-uart", },
 +	{}
 +};
 +
- static struct platform_driver vt8500_rtc_driver = {
- 	.probe		= vt8500_rtc_probe,
- 	.remove		= __devexit_p(vt8500_rtc_remove),
- 	.driver		= {
- 		.name	= "vt8500-rtc",
- 		.owner	= THIS_MODULE,
-+		.of_match_table = of_match_ptr(vt8500_rtc_ids),
+ static struct platform_driver vt8500_platform_driver = {
+ 	.probe  = vt8500_serial_probe,
+ 	.remove = __devexit_p(vt8500_serial_remove),
+ 	.driver = {
+ 		.name = "vt8500_serial",
+ 		.owner = THIS_MODULE,
++		.of_match_table = of_match_ptr(vt8500_uart_ids),
  	},
  };
  
-@@ -317,3 +324,4 @@ MODULE_AUTHOR("Alexey Charkov <alchark@gmail.com>");
- MODULE_DESCRIPTION("VIA VT8500 SoC Realtime Clock Driver (RTC)");
+@@ -643,3 +650,4 @@ module_exit(vt8500_serial_exit);
+ MODULE_AUTHOR("Alexey Charkov <alchark@gmail.com>");
+ MODULE_DESCRIPTION("Driver for vt8500 serial device");
  MODULE_LICENSE("GPL");
- MODULE_ALIAS("platform:vt8500-rtc");
-+MODULE_DEVICE_TABLE(of, vt8500_rtc_ids);
++MODULE_DEVICE_TABLE(of, vt8500_uart_ids);
 -- 
 1.7.2.5
 
