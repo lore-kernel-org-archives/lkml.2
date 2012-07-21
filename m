@@ -1,121 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751417Ab2GUNZj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jul 2012 09:25:39 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:36744 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751193Ab2GUNZi (ORCPT
+	id S1751461Ab2GUObX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jul 2012 10:31:23 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:51478 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750885Ab2GUObW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jul 2012 09:25:38 -0400
+	Sat, 21 Jul 2012 10:31:22 -0400
+X-Sasl-enc: srXJ/HqMohmpUViBXG0pjquDWv7sSYTYdUPcT2GLvHu9 1342881081
+Date: Sat, 21 Jul 2012 11:31:16 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Richard Purdie <richard.purdie@linuxfoundation.org>
+Cc: Colin Cross <ccross@android.com>, Greg KH <gregkh@linuxfoundation.org>,
+        lkml <linux-kernel@vger.kernel.org>, Bryan Wu <bryan.wu@canonical.com>
+Subject: Re: sysfs permissions on dynamic attributes (led delay_on and
+ delay_off)
+Message-ID: <20120721143116.GA3426@khazad-dum.debian.net>
+References: <CAMbhsRTX=t4UMfmrJRyXidSTWXvaC5L9aFdTFL03wYYKrUE5qw@mail.gmail.com>
+ <20120721040816.GA7313@kroah.com>
+ <1342856010.21788.47.camel@ted>
+ <CAMbhsRREVcqf+pnamY62wGcd2mBif8W8_CRXdJQCQvL14Dy3Eg@mail.gmail.com>
+ <1342869707.21788.50.camel@ted>
 MIME-Version: 1.0
-In-Reply-To: <201207211156.04335.rjw@sisk.pl>
-References: <CACVXFVNWOcrR9tYhU1wVUSJ_DJ8x+SCk993Sn9dYDe2kzJBDuQ@mail.gmail.com>
-	<CACVXFVM0bWOzzPyL7ja2c4Uj56eEjA+-Qm744FBKxWP9j3MOrA@mail.gmail.com>
-	<201207211156.04335.rjw@sisk.pl>
-Date: Sat, 21 Jul 2012 21:25:37 +0800
-Message-ID: <CACVXFVM0hZcA8TPpydODpVsQjYP=w5PpvB4-3PZYdDu+r6SchQ@mail.gmail.com>
-Subject: Re: [RFC] firmware load: defer request_firmware during early boot and resume
-From: Ming Lei <tom.leiming@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-usb <linux-usb@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Oliver Neukum <oneukum@suse.de>, Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Matthew Garrett <mjg@redhat.com>, Jack Stone <jwjstone@fastmail.fm>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1342869707.21788.50.camel@ted>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 21, 2012 at 5:56 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Saturday, July 21, 2012, Ming Lei wrote:
->> CC guys who discussed the problem in the below link in Jan. :
->>
->>       http://marc.info/?t=132528956000002&r=10&w=2
->>
->> On Fri, Jul 20, 2012 at 8:33 PM, Ming Lei <tom.leiming@gmail.com> wrote:
->> > The RFC patch is just for discussing if the idea of deferring
->> > request_firmware is doable for addressing the issue of
->> > request_firmware in resume path, which is caused by driver
->> > unbind/rebind during resume.
->> >
->> > At least usb bus is involved in such things, one driver may be
->> > unbound and rebound in resume path at several situations, and
->> > request_firmware is often called inside probe().
->> >
->> > Also the idea should be helpful for other hotplug buses too,
->> > at least there was the similar problem report on pcmcia bus.
->>
->> Looks it works well in my two test cases: one is to call request_firmware
->> in early boot(initcall), another one is to call request_firmware in probe()
->> of resume path(caused by unbind & rebind).  And without the patch, both
->> two request_firmware return failure and can't complete the loading.
->
-> And that's precisely why you're not supposed to use request_firmware() in
-> those two situations.
+On Sat, 21 Jul 2012, Richard Purdie wrote:
+> On Sat, 2012-07-21 at 01:26 -0700, Colin Cross wrote:
+> > On Sat, Jul 21, 2012 at 12:33 AM, Richard Purdie
+> > <richard.purdie@linuxfoundation.org> wrote:
+> > > On Fri, 2012-07-20 at 21:08 -0700, Greg KH wrote:
+> > >> On Fri, Jul 20, 2012 at 05:46:14PM -0700, Colin Cross wrote:
+> > >> > I'm trying to use the standard ledtrig-timer.c code to handle led
+> > >> > blinking for notifications on an Android device, and I'm hitting some
+> > >> > issues with setting permissions on the dynamically created delay_on
+> > >> > and delay_off attributes.  For most sysfs files, we have userspace
+> > >> > uevent parser that watches for device add notifications and
+> > >> > chowns/chmods attributes.  This doesn't work for delay_on and
+> > >> > delay_off, because they are created later, when "timer" is written to
+> > >> > the trigger attribute.  There is no uevent when the new files are
+> > >> > created, and sysfs doesn't support inotify, so I don't see any way to
+> > >> > receive an event to set the permissions.  This issue exists any time
+> > >> > that device_create_file is called after device_add.
+> > >> >
+> > >> > What is the appropriate way to get an event to set the permissions?
+> > >> > Add inotify support for sysfs file creation?  Send a KOBJ_CHANGE
+> > >> > uevent in device_create_file?
+> > >>
+> > >> No.
+> > >>
+> > >> > Send a KOBJ_CHANGE uevent from the driver after calling
+> > >> > device_create_file?
+> > >>
+> > >> Yes.
 
-So you mean we should do as below?
+...
 
-For the early boot situation, the driver which calls request_firmware in probe()
-can't be built in kernel image.
+> > Blinking is already effectively a core feature.  It is implemented in
+> > led-core.c so it can be used by other triggers besides timer, it's
+> > state is stored in the led_classdev structure, not in the trigger
+> > data, and the only thing left in ledtrig-timer.c is the sysfs files.
+> 
+> Having the attributes present all the time leads to some nasty questions
+> like how the on/off delays interact with things like say a network
+> activity trigger. Not all triggers are going to respect these delay
+> values and I can imagine a whole new set of nasty bug reports with no
+> easy solutions if this change is made...
 
-For the second situation, some drivers can't be allowed to call
-request_firmware()
-in its probe() because these drivers may be unbound and rebound inside resume()
-or complete_resume(),  for example, see usb_resume_complete().
+Agreed.  Let's just fix this properly and issue KOBJ_CHANGE when any sysfs
+attributes are added or removed to an already registered LED class, please?
+It is the proper thing to do, and it is a valid fix for all trigger types.
 
-IMO, the 1st one is very unfriendly and the 2nd one can't be avoided for some
-hotplug buses.
-
-That is just the motivation of this patch to make request_firmware() workable in
-both the two above situations.
-
->
-> My opinion is that, at least for the suspend/hibernate case, the firmware
-> data should be loaded into memory before suspend (e.g. using a PM notifier)
-> and released only after the corresponding resume (or suspend failure), so
-> that it's present in memory during the entire suspend-resume cycle.
-
-The patch isn't to replace caching firmware data during suspend-resume cycle,
-and just a supplement for it.
-
-It is not easy to cache firmware data during suspend-resume cycle for
-the above 2nd situation because of the lifetime problem of firmware data:
-the driver may be unbound and rebound inside resume path, even the
-device may vanish and appear again.
-
-Also, Matthew had a below case[1] which can't be solved with caching
-firmware data at all, not to mention consuming much memory by caching
-firmware:
-
-       1) user boots from cold. Device comes up with generic USB ID.
-       2) isight_firmware loads and binds. Firmware is loaded. Device
-           disconnects and reconnects with an ID that's bound by the UVC
-           driver.
-       3) user reboots. Device comes up with UVC ID. isight_firmware
-           doesn't bind.
-       4) user suspends.
-       5) user resumes. isight_firmware binds and attempts to load firmware.
-
-But it can be dealt with easily by the simple patch.
-
-Finally, suppose caching firmware may work well for the 2nd situation, we still
-have to cache all the firmwares of all hotplug devices(in one system) which
-need firmware before suspending, because these devices may be unplugged
-and plugged again during suspend-resume cycle or be powered off by system.
-
->
-> The early bood situation may be handled through deferred probing.
-
-Yes, deferring it will make drivers more friendly and be easy to use.
-
-
-[1], http://marc.info/?l=linux-usb&m=132554118928398&w=2
-
-thanks,
 -- 
-Ming Lei
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
