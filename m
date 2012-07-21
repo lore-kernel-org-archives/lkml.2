@@ -1,64 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751034Ab2GUEIZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jul 2012 00:08:25 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45339 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750710Ab2GUEIY (ORCPT
+	id S1751402Ab2GUENy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jul 2012 00:13:54 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:59715 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750749Ab2GUENw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jul 2012 00:08:24 -0400
-Date: Fri, 20 Jul 2012 21:08:16 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Colin Cross <ccross@android.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, Bryan Wu <bryan.wu@canonical.com>,
-        Richard Purdie <rpurdie@rpsys.net>
-Subject: Re: sysfs permissions on dynamic attributes (led delay_on and
- delay_off)
-Message-ID: <20120721040816.GA7313@kroah.com>
-References: <CAMbhsRTX=t4UMfmrJRyXidSTWXvaC5L9aFdTFL03wYYKrUE5qw@mail.gmail.com>
+	Sat, 21 Jul 2012 00:13:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMbhsRTX=t4UMfmrJRyXidSTWXvaC5L9aFdTFL03wYYKrUE5qw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CACVXFVNWOcrR9tYhU1wVUSJ_DJ8x+SCk993Sn9dYDe2kzJBDuQ@mail.gmail.com>
+References: <CACVXFVNWOcrR9tYhU1wVUSJ_DJ8x+SCk993Sn9dYDe2kzJBDuQ@mail.gmail.com>
+Date: Sat, 21 Jul 2012 12:13:51 +0800
+Message-ID: <CACVXFVM0bWOzzPyL7ja2c4Uj56eEjA+-Qm744FBKxWP9j3MOrA@mail.gmail.com>
+Subject: Re: [RFC] firmware load: defer request_firmware during early boot and resume
+From: Ming Lei <tom.leiming@gmail.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-usb <linux-usb@vger.kernel.org>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Oliver Neukum <oneukum@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Matthew Garrett <mjg@redhat.com>, Jack Stone <jwjstone@fastmail.fm>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Ming Lei <ming.lei@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 20, 2012 at 05:46:14PM -0700, Colin Cross wrote:
-> I'm trying to use the standard ledtrig-timer.c code to handle led
-> blinking for notifications on an Android device, and I'm hitting some
-> issues with setting permissions on the dynamically created delay_on
-> and delay_off attributes.  For most sysfs files, we have userspace
-> uevent parser that watches for device add notifications and
-> chowns/chmods attributes.  This doesn't work for delay_on and
-> delay_off, because they are created later, when "timer" is written to
-> the trigger attribute.  There is no uevent when the new files are
-> created, and sysfs doesn't support inotify, so I don't see any way to
-> receive an event to set the permissions.  This issue exists any time
-> that device_create_file is called after device_add.
-> 
-> What is the appropriate way to get an event to set the permissions?
-> Add inotify support for sysfs file creation?  Send a KOBJ_CHANGE
-> uevent in device_create_file?
+CC guys who discussed the problem in the below link in Jan. :
 
-No.
+      http://marc.info/?t=132528956000002&r=10&w=2
 
-> Send a KOBJ_CHANGE uevent from the driver after calling
-> device_create_file?
+On Fri, Jul 20, 2012 at 8:33 PM, Ming Lei <tom.leiming@gmail.com> wrote:
+> The RFC patch is just for discussing if the idea of deferring
+> request_firmware is doable for addressing the issue of
+> request_firmware in resume path, which is caused by driver
+> unbind/rebind during resume.
+>
+> At least usb bus is involved in such things, one driver may be
+> unbound and rebound in resume path at several situations, and
+> request_firmware is often called inside probe().
+>
+> Also the idea should be helpful for other hotplug buses too,
+> at least there was the similar problem report on pcmcia bus.
 
-Yes.
+Looks it works well in my two test cases: one is to call request_firmware
+in early boot(initcall), another one is to call request_firmware in probe()
+of resume path(caused by unbind & rebind).  And without the patch, both
+two request_firmware return failure and can't complete the loading.
 
-> Dynamically create a timer device under /sys/class/leds/<led> so a new
-> add uevent gets sent?
+V1:
+        only defer handling the requests called from probe()
 
-Ick.
+diff --git a/drivers/base/dd.c b/drivers/base/dd.c
+index 6cd2c6c..fb02eff 100644
+--- a/drivers/base/dd.c
++++ b/drivers/base/dd.c
+@@ -123,7 +123,7 @@ static bool driver_deferred_probe_enable = false;
+  * list and schedules the deferred probe workqueue to process them.  It
+  * should be called anytime a driver is successfully bound to a device.
+  */
+-static void driver_deferred_probe_trigger(void)
++void driver_deferred_probe_trigger(void)
+ {
+ 	if (!driver_deferred_probe_enable)
+ 		return;
+@@ -144,6 +144,7 @@ static void driver_deferred_probe_trigger(void)
+ 	 */
+ 	queue_work(deferred_wq, &deferred_probe_work);
+ }
++EXPORT_SYMBOL_GPL(driver_deferred_probe_trigger);
 
-> Promote blinking to be a core led feature instead of a trigger, so the
-> files are always present?
+ /**
+  * deferred_probe_initcall() - Enable probing of deferred devices
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index 5401814..1b13536 100644
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -21,6 +21,7 @@
+ #include <linux/firmware.h>
+ #include <linux/slab.h>
+ #include <linux/sched.h>
++#include "base.h"
 
-That's the best thing, why not just do that?
+ #define to_dev(obj) container_of(obj, struct device, kobj)
 
-thanks,
+@@ -593,6 +594,11 @@ request_firmware(const struct firmware
+**firmware_p, const char *name,
+ 	if (IS_ERR_OR_NULL(fw_priv))
+ 		return PTR_RET(fw_priv);
 
-greg k-h
++	/* only defer handling the requests called from probe() */
++	if (!klist_node_attached(&device->p->knode_driver) &&
++			system_state != SYSTEM_RUNNING)
++		return -EPROBE_DEFER;
++
+ 	ret = usermodehelper_read_trylock();
+ 	if (WARN_ON(ret)) {
+ 		dev_err(device, "firmware: %s will not be loaded\n", name);
+diff --git a/include/linux/device.h b/include/linux/device.h
+index d0e4d99..a63d3171 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -244,7 +244,7 @@ extern struct device_driver *driver_find(const char *name,
+ 					 struct bus_type *bus);
+ extern int driver_probe_done(void);
+ extern void wait_for_device_probe(void);
+-
++extern void driver_deferred_probe_trigger(void);
+
+ /* sysfs interface for exporting driver attributes */
+
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index e07f5e0..c8d74c6 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -378,6 +378,7 @@ extern enum system_states {
+ 	SYSTEM_POWER_OFF,
+ 	SYSTEM_RESTART,
+ 	SYSTEM_SUSPEND_DISK,
++	SYSTEM_SUSPEND,
+ } system_state;
+
+ #define TAINT_PROPRIETARY_MODULE	0
+diff --git a/init/main.c b/init/main.c
+index e60679d..02fc1c2 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -809,6 +809,9 @@ static noinline int init_post(void)
+ 	current->signal->flags |= SIGNAL_UNKILLABLE;
+ 	flush_delayed_fput();
+
++	/* defer handling request_firmware in probe of initcall path */
++	driver_deferred_probe_trigger();
++
+ 	if (ramdisk_execute_command) {
+ 		run_init_process(ramdisk_execute_command);
+ 		printk(KERN_WARNING "Failed to execute %s\n",
+diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
+index 1da39ea..61c723f 100644
+--- a/kernel/power/suspend.c
++++ b/kernel/power/suspend.c
+@@ -224,6 +224,9 @@ int suspend_devices_and_enter(suspend_state_t state)
+ 		goto Recover_platform;
+ 	}
+ 	suspend_test_finish("suspend devices");
++
++	system_state = SYSTEM_SUSPEND;
++
+ 	if (suspend_test(TEST_DEVICES))
+ 		goto Recover_platform;
+
+@@ -301,6 +304,12 @@ static int enter_state(suspend_state_t state)
+  Finish:
+ 	pr_debug("PM: Finishing wakeup.\n");
+ 	suspend_finish();
++
++	system_state = SYSTEM_RUNNING;
++
++	/* defer handling request_firmware in probe of resume path */
++	driver_deferred_probe_trigger();
++
+  Unlock:
+ 	mutex_unlock(&pm_mutex);
+ 	return error;
+
+
+
+Thanks,
+-- 
+Ming Lei
