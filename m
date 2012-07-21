@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753915Ab2GUCW2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 22:22:28 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26516 "EHLO
+	id S1753882Ab2GUCWZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 22:22:25 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22835 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751768Ab2GUCVI (ORCPT
+	with ESMTP id S1751619Ab2GUCVI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 20 Jul 2012 22:21:08 -0400
-X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=2wuEWFKPlS0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=3nbZYyFuAAAA:8 a=dwWg9rdAu8B17VaaaNQA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=EvKJbDF4Ut8A:10 a=i1N4HCg-vScRYloSbH0A:9 a=s5Htg7xnQOKvHEu9STBOug==:117
+X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=q2qhuQaDOAIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=3nbZYyFuAAAA:8 a=egbXytTyCphF2Q8p3_gA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=EvKJbDF4Ut8A:10 a=WIoExMB8uMVIVIVXXz0A:9 a=s5Htg7xnQOKvHEu9STBOug==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 72.230.195.127
-Message-Id: <20120721022105.958443021@goodmis.org>
+Message-Id: <20120721022105.584384124@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 20 Jul 2012 22:19:45 -0400
+Date: Fri, 20 Jul 2012 22:19:44 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 02/19] ftrace: Consolidate arch dependent functions with list function
+Subject: [PATCH 01/19] ftrace: Pass ftrace_ops as third parameter to function trace
+ callback
 References: <20120721021943.274162381@goodmis.org>
-Content-Disposition: inline; filename=0002-ftrace-Consolidate-arch-dependent-functions-with-lis.patch
+Content-Disposition: inline; filename=0001-ftrace-Pass-ftrace_ops-as-third-parameter-to-functio.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -33,168 +34,506 @@ Content-Transfer-Encoding: quoted-printable
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-As the function tracer starts to get more features, the support for
-theses features will spread out throughout the different architectures
-over time. These features boil down to what each arch does in the
-mcount trampoline (the ftrace_caller).
+Currently the function trace callback receives only the ip and parent_ip
+of the function that it traced. It would be more powerful to also return
+the ops that registered the function as well. This allows the same function
+to act differently depending on what ftrace_ops registered it.
 
-Currently there's two features that are not the same throughout the
-archs.
-
- 1) Support to stop function tracing before the callback
- 2) passing of the ftrace ops
-
-Both of these require placing an indirect function to support the
-features if the mcount trampoline does not.
-
-On a side note, for all architectures, when more than one callback
-is registered to the function tracer, an intermediate 'list' function
-is called by the mcount trampoline to iterate through the callbacks
-that are registered.
-
-Instead of making a separate function for each of these features,
-and requiring several indirect calls, just use the single 'list' function
-as the intermediate, to handle all cases. If an arch does not support
-the 'stop function tracing' or the passing of ftrace ops, just force
-it to use the list function that will handle the features required.
-
-This makes the code cleaner and simpler and removes a lot of
- #ifdefs in the code.
-
-Link: http://lkml.kernel.org/r/20120612225424.495625483@goodmis.org
+Link: http://lkml.kernel.org/r/20120612225424.267254552@goodmis.org
 
 Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/ftrace.h |   13 +++++++++++++
- kernel/trace/ftrace.c  |   45 ++++-----------------------------------------
- 2 files changed, 17 insertions(+), 41 deletions(-)
+ arch/x86/include/asm/ftrace.h     |    4 ++
+ arch/x86/kernel/entry_64.S        |    1 +
+ include/linux/ftrace.h            |   16 +++++-
+ kernel/trace/ftrace.c             |  101 +++++++++++++++++++++++++--------=
+----
+ kernel/trace/trace_event_perf.c   |    3 +-
+ kernel/trace/trace_events.c       |    3 +-
+ kernel/trace/trace_functions.c    |    9 ++--
+ kernel/trace/trace_irqsoff.c      |    3 +-
+ kernel/trace/trace_sched_wakeup.c |    2 +-
+ kernel/trace/trace_selftest.c     |   15 ++++--
+ kernel/trace/trace_stack.c        |    2 +-
+ 11 files changed, 113 insertions(+), 46 deletions(-)
 
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index 2d59641..3651fdc 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -27,6 +27,19 @@
- #define ARCH_SUPPORTS_FTRACE_OPS 0
- #endif
+diff --git a/arch/x86/include/asm/ftrace.h b/arch/x86/include/asm/ftrace.h
+index b0767bc..783b107 100644
+--- a/arch/x86/include/asm/ftrace.h
++++ b/arch/x86/include/asm/ftrace.h
+@@ -32,6 +32,10 @@
+ #define MCOUNT_ADDR		((long)(mcount))
+ #define MCOUNT_INSN_SIZE	5 /* sizeof mcount call */
 =20
-+/*
-+ * If the arch's mcount caller does not support all of ftrace's
-+ * features, then it must call an indirect function that
-+ * does. Or at least does enough to prevent any unwelcomed side effects.
-+ */
-+#if !defined(CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST) || \
-+	!ARCH_SUPPORTS_FTRACE_OPS
-+# define FTRACE_FORCE_LIST_FUNC 1
-+#else
-+# define FTRACE_FORCE_LIST_FUNC 0
++#if defined(CONFIG_DYNAMIC_FTRACE) && defined(CONFIG_X86_64)
++#define ARCH_SUPPORTS_FTRACE_OPS 1
 +#endif
 +
+ #ifndef __ASSEMBLY__
+ extern void mcount(void);
+ extern atomic_t modifying_ftrace_code;
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 7d65133..2b4f94c 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -79,6 +79,7 @@ ENTRY(ftrace_caller)
+=20
+ 	MCOUNT_SAVE_FRAME
+=20
++	leaq function_trace_op, %rdx
+ 	movq 0x38(%rsp), %rdi
+ 	movq 8(%rbp), %rsi
+ 	subq $MCOUNT_INSN_SIZE, %rdi
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index 55e6d63..2d59641 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -18,6 +18,15 @@
+=20
+ #include <asm/ftrace.h>
+=20
++/*
++ * If the arch supports passing the variable contents of
++ * function_trace_op as the third parameter back from the
++ * mcount call, then the arch should define this as 1.
++ */
++#ifndef ARCH_SUPPORTS_FTRACE_OPS
++#define ARCH_SUPPORTS_FTRACE_OPS 0
++#endif
 +
  struct module;
  struct ftrace_hash;
 =20
+@@ -29,7 +38,10 @@ ftrace_enable_sysctl(struct ctl_table *table, int write,
+ 		     void __user *buffer, size_t *lenp,
+ 		     loff_t *ppos);
+=20
+-typedef void (*ftrace_func_t)(unsigned long ip, unsigned long parent_ip);
++struct ftrace_ops;
++
++typedef void (*ftrace_func_t)(unsigned long ip, unsigned long parent_ip,
++			      struct ftrace_ops *op);
+=20
+ /*
+  * FTRACE_OPS_FL_* bits denote the state of ftrace_ops struct and are
+@@ -163,7 +175,7 @@ static inline int ftrace_function_local_disabled(struct=
+ ftrace_ops *ops)
+ 	return *this_cpu_ptr(ops->disabled);
+ }
+=20
+-extern void ftrace_stub(unsigned long a0, unsigned long a1);
++extern void ftrace_stub(unsigned long a0, unsigned long a1, struct ftrace_=
+ops *op);
+=20
+ #else /* !CONFIG_FUNCTION_TRACER */
+ /*
 diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 4f2ab93..4cbca2e 100644
+index b4f20fb..4f2ab93 100644
 --- a/kernel/trace/ftrace.c
 +++ b/kernel/trace/ftrace.c
-@@ -97,8 +97,6 @@ static struct ftrace_ops *ftrace_global_list __read_mostl=
-y =3D &ftrace_list_end;
+@@ -64,12 +64,19 @@
+=20
+ #define FL_GLOBAL_CONTROL_MASK (FTRACE_OPS_FL_GLOBAL | FTRACE_OPS_FL_CONTR=
+OL)
+=20
++static struct ftrace_ops ftrace_list_end __read_mostly =3D {
++	.func		=3D ftrace_stub,
++};
++
+ /* ftrace_enabled is a method to turn ftrace on or off */
+ int ftrace_enabled __read_mostly;
+ static int last_ftrace_enabled;
+=20
+ /* Quick disabling of function tracer. */
+-int function_trace_stop;
++int function_trace_stop __read_mostly;
++
++/* Current function tracing op */
++struct ftrace_ops *function_trace_op __read_mostly =3D &ftrace_list_end;
+=20
+ /* List for set_ftrace_pid's pids. */
+ LIST_HEAD(ftrace_pids);
+@@ -86,10 +93,6 @@ static int ftrace_disabled __read_mostly;
+=20
+ static DEFINE_MUTEX(ftrace_lock);
+=20
+-static struct ftrace_ops ftrace_list_end __read_mostly =3D {
+-	.func		=3D ftrace_stub,
+-};
+-
+ static struct ftrace_ops *ftrace_global_list __read_mostly =3D &ftrace_lis=
+t_end;
  static struct ftrace_ops *ftrace_control_list __read_mostly =3D &ftrace_li=
 st_end;
  static struct ftrace_ops *ftrace_ops_list __read_mostly =3D &ftrace_list_e=
 nd;
- ftrace_func_t ftrace_trace_function __read_mostly =3D ftrace_stub;
--static ftrace_func_t __ftrace_trace_function_delay __read_mostly =3D ftrac=
-e_stub;
--ftrace_func_t __ftrace_trace_function __read_mostly =3D ftrace_stub;
- ftrace_func_t ftrace_pid_function __read_mostly =3D ftrace_stub;
+@@ -100,8 +103,14 @@ ftrace_func_t ftrace_pid_function __read_mostly =3D ft=
+race_stub;
  static struct ftrace_ops global_ops;
  static struct ftrace_ops control_ops;
-@@ -162,26 +160,9 @@ static void set_ftrace_pid_function(ftrace_func_t func)
- void clear_ftrace_function(void)
+=20
+-static void
+-ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip);
++#if ARCH_SUPPORTS_FTRACE_OPS
++static void ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip,
++				 struct ftrace_ops *op);
++#else
++/* See comment below, where ftrace_ops_list_func is defined */
++static void ftrace_ops_no_ops(unsigned long ip, unsigned long parent_ip);
++#define ftrace_ops_list_func ((ftrace_func_t)ftrace_ops_no_ops)
++#endif
+=20
+ /*
+  * Traverse the ftrace_global_list, invoking all entries.  The reason that=
+ we
+@@ -112,29 +121,29 @@ ftrace_ops_list_func(unsigned long ip, unsigned long =
+parent_ip);
+  *
+  * Silly Alpha and silly pointer-speculation compiler optimizations!
+  */
+-static void ftrace_global_list_func(unsigned long ip,
+-				    unsigned long parent_ip)
++static void
++ftrace_global_list_func(unsigned long ip, unsigned long parent_ip,
++			struct ftrace_ops *op)
  {
- 	ftrace_trace_function =3D ftrace_stub;
--	__ftrace_trace_function =3D ftrace_stub;
--	__ftrace_trace_function_delay =3D ftrace_stub;
- 	ftrace_pid_function =3D ftrace_stub;
+-	struct ftrace_ops *op;
+-
+ 	if (unlikely(trace_recursion_test(TRACE_GLOBAL_BIT)))
+ 		return;
+=20
+ 	trace_recursion_set(TRACE_GLOBAL_BIT);
+ 	op =3D rcu_dereference_raw(ftrace_global_list); /*see above*/
+ 	while (op !=3D &ftrace_list_end) {
+-		op->func(ip, parent_ip);
++		op->func(ip, parent_ip, op);
+ 		op =3D rcu_dereference_raw(op->next); /*see above*/
+ 	};
+ 	trace_recursion_clear(TRACE_GLOBAL_BIT);
  }
 =20
--#ifndef CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST
--/*
-- * For those archs that do not test ftrace_trace_stop in their
-- * mcount call site, we need to do it from C.
-- */
--static void ftrace_test_stop_func(unsigned long ip, unsigned long parent_i=
-p,
--				  struct ftrace_ops *op)
--{
--	if (function_trace_stop)
--		return;
--
--	__ftrace_trace_function(ip, parent_ip, op);
--}
--#endif
--
- static void control_ops_disable_all(struct ftrace_ops *ops)
+-static void ftrace_pid_func(unsigned long ip, unsigned long parent_ip)
++static void ftrace_pid_func(unsigned long ip, unsigned long parent_ip,
++			    struct ftrace_ops *op)
  {
- 	int cpu;
-@@ -246,7 +227,7 @@ static void update_ftrace_function(void)
+ 	if (!test_tsk_trace_trace(current))
+ 		return;
+=20
+-	ftrace_pid_function(ip, parent_ip);
++	ftrace_pid_function(ip, parent_ip, op);
+ }
+=20
+ static void set_ftrace_pid_function(ftrace_func_t func)
+@@ -163,12 +172,13 @@ void clear_ftrace_function(void)
+  * For those archs that do not test ftrace_trace_stop in their
+  * mcount call site, we need to do it from C.
+  */
+-static void ftrace_test_stop_func(unsigned long ip, unsigned long parent_i=
+p)
++static void ftrace_test_stop_func(unsigned long ip, unsigned long parent_i=
+p,
++				  struct ftrace_ops *op)
+ {
+ 	if (function_trace_stop)
+ 		return;
+=20
+-	__ftrace_trace_function(ip, parent_ip);
++	__ftrace_trace_function(ip, parent_ip, op);
+ }
+ #endif
+=20
+@@ -230,15 +240,24 @@ static void update_ftrace_function(void)
+=20
+ 	/*
+ 	 * If we are at the end of the list and this ops is
+-	 * not dynamic, then have the mcount trampoline call
+-	 * the function directly
++	 * not dynamic and the arch supports passing ops, then have the
++	 * mcount trampoline call the function directly.
+ 	 */
  	if (ftrace_ops_list =3D=3D &ftrace_list_end ||
  	    (ftrace_ops_list->next =3D=3D &ftrace_list_end &&
- 	     !(ftrace_ops_list->flags & FTRACE_OPS_FL_DYNAMIC) &&
--	     ARCH_SUPPORTS_FTRACE_OPS)) {
-+	     !FTRACE_FORCE_LIST_FUNC)) {
- 		/* Set the ftrace_ops that the arch callback uses */
- 		if (ftrace_ops_list =3D=3D &global_ops)
- 			function_trace_op =3D ftrace_global_list;
-@@ -259,18 +240,7 @@ static void update_ftrace_function(void)
+-	     !(ftrace_ops_list->flags & FTRACE_OPS_FL_DYNAMIC)))
++	     !(ftrace_ops_list->flags & FTRACE_OPS_FL_DYNAMIC) &&
++	     ARCH_SUPPORTS_FTRACE_OPS)) {
++		/* Set the ftrace_ops that the arch callback uses */
++		if (ftrace_ops_list =3D=3D &global_ops)
++			function_trace_op =3D ftrace_global_list;
++		else
++			function_trace_op =3D ftrace_ops_list;
+ 		func =3D ftrace_ops_list->func;
+-	else
++	} else {
++		/* Just use the default ftrace_ops */
++		function_trace_op =3D &ftrace_list_end;
  		func =3D ftrace_ops_list_func;
- 	}
++	}
 =20
--#ifdef CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST
+ #ifdef CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST
  	ftrace_trace_function =3D func;
--#else
--#ifdef CONFIG_DYNAMIC_FTRACE
--	/* do not update till all functions have been modified */
--	__ftrace_trace_function_delay =3D func;
--#else
--	__ftrace_trace_function =3D func;
--#endif
--	ftrace_trace_function =3D
--		(func =3D=3D ftrace_stub) ? func : ftrace_test_stop_func;
--#endif
+@@ -773,7 +792,8 @@ ftrace_profile_alloc(struct ftrace_profile_stat *stat, =
+unsigned long ip)
  }
 =20
- static void add_ftrace_ops(struct ftrace_ops **list, struct ftrace_ops *op=
-s)
-@@ -1902,16 +1872,6 @@ static void ftrace_run_update_code(int command)
- 	 */
- 	arch_ftrace_update_code(command);
+ static void
+-function_profile_call(unsigned long ip, unsigned long parent_ip)
++function_profile_call(unsigned long ip, unsigned long parent_ip,
++		      struct ftrace_ops *ops)
+ {
+ 	struct ftrace_profile_stat *stat;
+ 	struct ftrace_profile *rec;
+@@ -803,7 +823,7 @@ function_profile_call(unsigned long ip, unsigned long p=
+arent_ip)
+ #ifdef CONFIG_FUNCTION_GRAPH_TRACER
+ static int profile_graph_entry(struct ftrace_graph_ent *trace)
+ {
+-	function_profile_call(trace->func, 0);
++	function_profile_call(trace->func, 0, NULL);
+ 	return 1;
+ }
 =20
--#ifndef CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST
--	/*
--	 * For archs that call ftrace_test_stop_func(), we must
--	 * wait till after we update all the function callers
--	 * before we update the callback. This keeps different
--	 * ops that record different functions from corrupting
--	 * each other.
--	 */
--	__ftrace_trace_function =3D __ftrace_trace_function_delay;
--#endif
- 	function_trace_stop--;
+@@ -2790,8 +2810,8 @@ static int __init ftrace_mod_cmd_init(void)
+ }
+ device_initcall(ftrace_mod_cmd_init);
 =20
- 	ret =3D ftrace_arch_code_modify_post_process();
-@@ -3996,6 +3956,9 @@ __ftrace_ops_list_func(unsigned long ip, unsigned lon=
-g parent_ip,
+-static void
+-function_trace_probe_call(unsigned long ip, unsigned long parent_ip)
++static void function_trace_probe_call(unsigned long ip, unsigned long pare=
+nt_ip,
++				      struct ftrace_ops *op)
+ {
+ 	struct ftrace_func_probe *entry;
+ 	struct hlist_head *hhd;
+@@ -3942,10 +3962,9 @@ ftrace_ops_test(struct ftrace_ops *ops, unsigned lon=
+g ip)
+ #endif /* CONFIG_DYNAMIC_FTRACE */
+=20
+ static void
+-ftrace_ops_control_func(unsigned long ip, unsigned long parent_ip)
++ftrace_ops_control_func(unsigned long ip, unsigned long parent_ip,
++			struct ftrace_ops *op)
+ {
+-	struct ftrace_ops *op;
+-
+ 	if (unlikely(trace_recursion_test(TRACE_CONTROL_BIT)))
+ 		return;
+=20
+@@ -3959,7 +3978,7 @@ ftrace_ops_control_func(unsigned long ip, unsigned lo=
+ng parent_ip)
+ 	while (op !=3D &ftrace_list_end) {
+ 		if (!ftrace_function_local_disabled(op) &&
+ 		    ftrace_ops_test(op, ip))
+-			op->func(ip, parent_ip);
++			op->func(ip, parent_ip, op);
+=20
+ 		op =3D rcu_dereference_raw(op->next);
+ 	};
+@@ -3971,8 +3990,9 @@ static struct ftrace_ops control_ops =3D {
+ 	.func =3D ftrace_ops_control_func,
+ };
+=20
+-static void
+-ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip)
++static inline void
++__ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip,
++		       struct ftrace_ops *ignored)
  {
  	struct ftrace_ops *op;
 =20
-+	if (function_trace_stop)
-+		return;
+@@ -3988,13 +4008,32 @@ ftrace_ops_list_func(unsigned long ip, unsigned lon=
+g parent_ip)
+ 	op =3D rcu_dereference_raw(ftrace_ops_list);
+ 	while (op !=3D &ftrace_list_end) {
+ 		if (ftrace_ops_test(op, ip))
+-			op->func(ip, parent_ip);
++			op->func(ip, parent_ip, op);
+ 		op =3D rcu_dereference_raw(op->next);
+ 	};
+ 	preempt_enable_notrace();
+ 	trace_recursion_clear(TRACE_INTERNAL_BIT);
+ }
+=20
++/*
++ * Some archs only support passing ip and parent_ip. Even though
++ * the list function ignores the op parameter, we do not want any
++ * C side effects, where a function is called without the caller
++ * sending a third parameter.
++ */
++#if ARCH_SUPPORTS_FTRACE_OPS
++static void ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip,
++				 struct ftrace_ops *op)
++{
++	__ftrace_ops_list_func(ip, parent_ip, NULL);
++}
++#else
++static void ftrace_ops_no_ops(unsigned long ip, unsigned long parent_ip)
++{
++	__ftrace_ops_list_func(ip, parent_ip, NULL);
++}
++#endif
 +
- 	if (unlikely(trace_recursion_test(TRACE_INTERNAL_BIT)))
- 		return;
+ static void clear_ftrace_swapper(void)
+ {
+ 	struct task_struct *p;
+diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_per=
+f.c
+index fee3752..a872a9a 100644
+--- a/kernel/trace/trace_event_perf.c
++++ b/kernel/trace/trace_event_perf.c
+@@ -258,7 +258,8 @@ EXPORT_SYMBOL_GPL(perf_trace_buf_prepare);
+=20
+ #ifdef CONFIG_FUNCTION_TRACER
+ static void
+-perf_ftrace_function_call(unsigned long ip, unsigned long parent_ip)
++perf_ftrace_function_call(unsigned long ip, unsigned long parent_ip,
++			  struct ftrace_ops *ops)
+ {
+ 	struct ftrace_entry *entry;
+ 	struct hlist_head *head;
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 29111da..88daa51 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -1681,7 +1681,8 @@ static __init void event_trace_self_tests(void)
+ static DEFINE_PER_CPU(atomic_t, ftrace_test_event_disable);
+=20
+ static void
+-function_test_events_call(unsigned long ip, unsigned long parent_ip)
++function_test_events_call(unsigned long ip, unsigned long parent_ip,
++			  struct ftrace_ops *op)
+ {
+ 	struct ring_buffer_event *event;
+ 	struct ring_buffer *buffer;
+diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
+index c7b0c6a..fceb7a9 100644
+--- a/kernel/trace/trace_functions.c
++++ b/kernel/trace/trace_functions.c
+@@ -48,7 +48,8 @@ static void function_trace_start(struct trace_array *tr)
+ }
+=20
+ static void
+-function_trace_call_preempt_only(unsigned long ip, unsigned long parent_ip)
++function_trace_call_preempt_only(unsigned long ip, unsigned long parent_ip,
++				 struct ftrace_ops *op)
+ {
+ 	struct trace_array *tr =3D func_trace;
+ 	struct trace_array_cpu *data;
+@@ -75,7 +76,8 @@ function_trace_call_preempt_only(unsigned long ip, unsign=
+ed long parent_ip)
+ }
+=20
+ static void
+-function_trace_call(unsigned long ip, unsigned long parent_ip)
++function_trace_call(unsigned long ip, unsigned long parent_ip,
++		    struct ftrace_ops *op)
+ {
+ 	struct trace_array *tr =3D func_trace;
+ 	struct trace_array_cpu *data;
+@@ -106,7 +108,8 @@ function_trace_call(unsigned long ip, unsigned long par=
+ent_ip)
+ }
+=20
+ static void
+-function_stack_trace_call(unsigned long ip, unsigned long parent_ip)
++function_stack_trace_call(unsigned long ip, unsigned long parent_ip,
++			  struct ftrace_ops *op)
+ {
+ 	struct trace_array *tr =3D func_trace;
+ 	struct trace_array_cpu *data;
+diff --git a/kernel/trace/trace_irqsoff.c b/kernel/trace/trace_irqsoff.c
+index 99d20e9..2862c77 100644
+--- a/kernel/trace/trace_irqsoff.c
++++ b/kernel/trace/trace_irqsoff.c
+@@ -136,7 +136,8 @@ static int func_prolog_dec(struct trace_array *tr,
+  * irqsoff uses its own tracer function to keep the overhead down:
+  */
+ static void
+-irqsoff_tracer_call(unsigned long ip, unsigned long parent_ip)
++irqsoff_tracer_call(unsigned long ip, unsigned long parent_ip,
++		    struct ftrace_ops *op)
+ {
+ 	struct trace_array *tr =3D irqsoff_trace;
+ 	struct trace_array_cpu *data;
+diff --git a/kernel/trace/trace_sched_wakeup.c b/kernel/trace/trace_sched_w=
+akeup.c
+index ff791ea..0caf4f5 100644
+--- a/kernel/trace/trace_sched_wakeup.c
++++ b/kernel/trace/trace_sched_wakeup.c
+@@ -108,7 +108,7 @@ out_enable:
+  * wakeup uses its own tracer function to keep the overhead down:
+  */
+ static void
+-wakeup_tracer_call(unsigned long ip, unsigned long parent_ip)
++wakeup_tracer_call(unsigned long ip, unsigned long parent_ip, struct ftrac=
+e_ops *op)
+ {
+ 	struct trace_array *tr =3D wakeup_trace;
+ 	struct trace_array_cpu *data;
+diff --git a/kernel/trace/trace_selftest.c b/kernel/trace/trace_selftest.c
+index 288541f..9ae40c8 100644
+--- a/kernel/trace/trace_selftest.c
++++ b/kernel/trace/trace_selftest.c
+@@ -103,35 +103,40 @@ static inline void warn_failed_init_tracer(struct tra=
+cer *trace, int init_ret)
+=20
+ static int trace_selftest_test_probe1_cnt;
+ static void trace_selftest_test_probe1_func(unsigned long ip,
+-					    unsigned long pip)
++					    unsigned long pip,
++					    struct ftrace_ops *op)
+ {
+ 	trace_selftest_test_probe1_cnt++;
+ }
+=20
+ static int trace_selftest_test_probe2_cnt;
+ static void trace_selftest_test_probe2_func(unsigned long ip,
+-					    unsigned long pip)
++					    unsigned long pip,
++					    struct ftrace_ops *op)
+ {
+ 	trace_selftest_test_probe2_cnt++;
+ }
+=20
+ static int trace_selftest_test_probe3_cnt;
+ static void trace_selftest_test_probe3_func(unsigned long ip,
+-					    unsigned long pip)
++					    unsigned long pip,
++					    struct ftrace_ops *op)
+ {
+ 	trace_selftest_test_probe3_cnt++;
+ }
+=20
+ static int trace_selftest_test_global_cnt;
+ static void trace_selftest_test_global_func(unsigned long ip,
+-					    unsigned long pip)
++					    unsigned long pip,
++					    struct ftrace_ops *op)
+ {
+ 	trace_selftest_test_global_cnt++;
+ }
+=20
+ static int trace_selftest_test_dyn_cnt;
+ static void trace_selftest_test_dyn_func(unsigned long ip,
+-					 unsigned long pip)
++					 unsigned long pip,
++					 struct ftrace_ops *op)
+ {
+ 	trace_selftest_test_dyn_cnt++;
+ }
+diff --git a/kernel/trace/trace_stack.c b/kernel/trace/trace_stack.c
+index d4545f4..e20006d 100644
+--- a/kernel/trace/trace_stack.c
++++ b/kernel/trace/trace_stack.c
+@@ -111,7 +111,7 @@ static inline void check_stack(void)
+ }
+=20
+ static void
+-stack_trace_call(unsigned long ip, unsigned long parent_ip)
++stack_trace_call(unsigned long ip, unsigned long parent_ip, struct ftrace_=
+ops *op)
+ {
+ 	int cpu;
 =20
 --=20
 1.7.10.4
@@ -208,19 +547,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABAgAGBQJQChISAAoJEIy3vGnGbaoAISAQANALfEGnc5dA+ZC88DFbYN8g
-31Z1CJ3TWrMUhb9pGeyaAQzbV8fVTViH9+MzcTcG7qri25AeQ9m/IUeXESjAvLfV
-Xz/7K40xBsDpbh2AV4MlVbhKAENivwfo90AFP6RSglBydBDIi2l32JU7HFbL0iPT
-oDsrBUGDy30Rt6tltTiG1NEep1lxk2O9SrbrF0tw/pn4Swe0oa3is22Y5jINDFIQ
-hoScjCF4mvPu1ppo6zgf0DmigSH0INIzcnXy1BSC5EXB9DHClpAeJVJCdnuI1I3d
-qpvfGyllF4jczzpmrXntscJsmASAhGVXl1g2fe/tiJaaPuTp6cJeeJyjCSVZQYmY
-/YtvDnONCNr+k7+uMWUvKxOOd9cySK1IPzdXcmlI8CTZ38XoDkeQ1/BGaxJ4QGok
-fVdgmfuTg6X9NIJwwmzsjXpaCd93X4F4fuNstFZWB76WeG5DHNdfw+Ij9AXDOpVn
-8zTTzm/IOBiZ60/zmGgWKRyn7RDRvBErw1OcXIZf1YfxXRrchXhh+SFKinLxIBgX
-g8GWDb1SfvpnbTu77DU5cNlJHQrETDQ77OmP+aJI15yugHCtLe/0IY5okFhJVINR
-T0CrVrVz87vrHpy+wMOXR0MzLyVJd28ieIm+ePra855RtkX57briqaxIxb/74znJ
-jUXf2UwZgh4x0Epa+zGb
-=y30s
+iQIcBAABAgAGBQJQChIRAAoJEIy3vGnGbaoA5r8QAKphZqRTZUxtkma6gFYN4k7L
+ay44ZVwIhsczMfYG5uR3kME78D+qRNvY2ANmFDadCa1bAvi9ByIE+eTced7Xb1+s
+WBe3ENIzrhWDgm3gjbKlCdoQpWMZkM4FqVzBiBDGPiJhOlKM2Ryvk78NZ+O4p8/y
+jvj40te95QdZzPZ55f5ZxrOFkYj/bvI3cKCIOe2xmzRhThfu4LATe/KMPjUe2CYI
+3HQb02hvmJ/gyOckQ+W2EuHfVXgfQmUfo+hWI1lnoBRXLLI8Q4Am/gJzcnmYtxb4
+4aKt4Rm66EaWOQ6r724LjS40+0N1lm3YvKXX2h8PEF65pCDpaw4++6Gl2WZBrNZ0
+yYzNsMI/sNdEtc8dcFkHFIMjR+RxXVAqcKQUPXR1uZdDwYHRflN4O6mwx7lo7hbB
+FNsy/dlmkbnuDiVcgUaOHHdz53H4/XGParPMrge+ncGR2GpFGzTqbYgp3zTbVNHy
+2t0KQM1CvA4D6cbieqXkDsEqoCjN7IE960iJJU9Uq5AVsRbFe0WSFMc/keI+4xH4
+V/+lOHpIfeaI0sA53p1VRuOhizs6O7OujsE0YKzNBoib2cp6u7fSi1fBDSH+uGc6
+asNf3QzyWIJDDO7sArrm35PUGJyxq4pVX7FGc5+03G2xikj1MWDnowK/w5kcDy6/
+SAv75abOSe3EgWx6GxZ2
+=SOrW
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
