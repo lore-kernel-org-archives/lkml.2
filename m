@@ -1,120 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753142Ab2GUAxF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 20:53:05 -0400
-Received: from gate.crashing.org ([63.228.1.57]:56384 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751619Ab2GUAxD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 20:53:03 -0400
-Message-ID: <1342831966.29855.6.camel@pasglop>
-Subject: Re: ibmveth bug?
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
-Cc: santil@linux.vnet.ibm.com, anton@samba.org, paulus@samba.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Anton Blanchard <anton@au1.ibm.com>
-Date: Sat, 21 Jul 2012 10:52:46 +1000
-In-Reply-To: <20120720224112.GD19288@linux.vnet.ibm.com>
-References: <20120515170141.GA14272@linux.vnet.ibm.com>
-	 <20120720224112.GD19288@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752891Ab2GUA4k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 20:56:40 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:40229 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751619Ab2GUA4i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 20:56:38 -0400
+Date: Fri, 20 Jul 2012 20:56:10 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Tony Luck <tony.luck@intel.com>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org, w@1wt.eu,
+        ewust@umich.edu, zakir@umich.edu, greg@kroah.com, mpm@selenic.com,
+        nadiah@cs.ucsd.edu, jhalderm@umich.edu, tglx@linutronix.de,
+        davem@davemloft.net
+Subject: Re: [PATCH] dmi: Feed DMI table to /dev/random driver
+Message-ID: <20120721005610.GB9399@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
+	torvalds@linux-foundation.org, w@1wt.eu, ewust@umich.edu,
+	zakir@umich.edu, greg@kroah.com, mpm@selenic.com,
+	nadiah@cs.ucsd.edu, jhalderm@umich.edu, tglx@linutronix.de,
+	davem@davemloft.net
+References: <1341511933-11169-1-git-send-email-tytso@mit.edu>
+ <0107910@agluck-desktop.sc.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0107910@agluck-desktop.sc.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-07-20 at 15:41 -0700, Nishanth Aravamudan wrote:
-> Ping on this ... we've tripped the same issue on a different system, it
-> would appear. Would appreciate if anyone can provide answers to the
-> questions below.
-
-Well, I haven't hit it but your description makes sense. Why not use
-dma_alloc_coherent though ? Rather than kmalloc followed by map ?
-
-At least on power we give you page alignment for these, so the problem
-is solved magically :-) Another option is GFP + dma_map_page which is
-roughly equivalent.
-
-If you think it's a waste of space based on the queue size, then just
-add an extra pointer, I wouldn't bother with a cache for something only
-allocated when the driver initializes.
-
-Cheers,
-Ben.
-
-> Thanks,
-> Nish
+On Fri, Jul 20, 2012 at 01:15:20PM -0700, Tony Luck wrote:
+> Send the entire DMI (SMBIOS) table to the /dev/random driver to
+> help seed its pools.
 > 
-> On 15.05.2012 [10:01:41 -0700], Nishanth Aravamudan wrote:
-> > Hi Santiago,
-> > 
-> > Are you still working on ibmveth?
-> > 
-> > I've found a very sporadic bug with ibmveth in some testing. PAPR
-> > requires that:
-> > 
-> > "Validate the Buffer Descriptor of the receive queue buffer (I/O
-> > addresses for entire buffer length starting at the spec- ified I/O
-> > address are translated by the RTCE table, length is a multiple of 16
-> > bytes, and alignment is on a 16 byte boundary) else H_Parameter."
-> > 
-> > but from what I can tell ibmveth.c is not enforcing this last condition:
-> > 
-> > 	adapter->rx_queue.queue_addr =
-> > 		kmalloc(adapter->rx_queue.queue_len, GFP_KERNEL);
-> > 
-> > 	...
-> > 
-> > 	adapter->rx_queue.queue_dma = dma_map_single(dev,
-> > 		adapter->rx_queue.queue_addr, adapter->rx_queue.queue_len,
-> > 		DMA_BIDIRECTIONAL);
-> > 
-> > 	...
-> > 
-> > 	rxq_desc.fields.address = adapter->rx_queue.queue_dma;
-> > 
-> > 	...
-> > 	
-> > 
-> > 	lpar_rc = ibmveth_register_logical_lan(adapter, rxq_desc,
-> > 		mac_address);
-> > 	netdev_err(netdev, "buffer TCE:0x%llx filter TCE:0x%llx rxq "
-> > 	 	"desc:0x%llx MAC:0x%llx\n", adapter->buffer_list_dma,
-> > 	 	adapter->filter_list_dma, rxq_desc.desc, mac_address);
-> > 
-> > And I got on one install attempt:
-> > 
-> > [ 39.978430] ibmveth 30000004: eth0: h_register_logical_lan failed with -4
-> > [ 39.978449] ibmveth 30000004: eth0: buffer TCE:0x1000 filter TCE:0x10000 rxq desc:0x80006010000200a8 MAC:0x56754de8e904
-> > 
-> > rxq desc, as you can see is not 16byte aligned. kmalloc() only
-> > guarantees 8-byte alignment (as does gcc, I think). Initially, I thought
-> > we could just overallocate the queue_addr and ALIGN() down, but then we
-> > would need to save the original kmalloc pointer in a new struct member
-> > per rx_queue.
-> > 
-> > So a couple of questions:
-> > 
-> > 1) Is my analysis accurate? :)
-> > 
-> > 2) How gross would it be to save an extra pointer for every rx_queue?
-> > 
-> > 3) Based upon 2), is it better to just go ahead and create our own
-> > kmem_cache (which gets an alignment specified)?
-> > 
-> > For 3), I started coding this, but couldn't find a clean place to
-> > allocate the kmem_cache itself, as the size of each object depends on
-> > the run-time characteristics (afaict), but needs to be specified at
-> > cache creation time. Any insight you could provide would be great!
-> > 
-> > Thanks,
-> > Nish
-> >  
-> > -- 
-> > Nishanth Aravamudan <nacc@us.ibm.com>
-> > IBM Linux Technology Center
+> Signed-off-by: Tony Luck <tony.luck@intel.com>
+> ---
 > 
+> This looks a useful addition to your /dev/random series. There are
+> lots of platform specific goodies in this table (BIOS version, system
+> serial number and UUID, count and version number of processors, DIMM
+> slot population and serial numbers, etc.)
+> 
+> On the system I tested the patch on the table is 9866 bytes. Is it
+> OK to dump that much into add_device_randomness() in one shot? The
+> alternative is to select the 'useful' bits deeper into the routines
+> that parse the entries in the table.
+> 
+>  drivers/firmware/dmi_scan.c | 3 +++
+>  1 file changed, 3 insertions(+)
 
+This was something I was looking at doing, but I had considered the
+approach you used, and had abandoned it because dmi_walk_early() gets
+called ultimately via the setup_arch() call, and the random pools only
+get initialized much later in the boot process.  
 
+The fact that you didn't crash when you tested it is simply because
+we're not allocating any memory or initializing any criticla data
+structures in rand_initialize().  (We used to, but not any more.)
+
+I'm a little nervous enshrining the fact that it's OK to call the
+random driver before rand_initialize is called(), but it does work
+today.  If we are going to do this, we need to put a big fat comment
+in front of rand_initialize() indicating that it's important that we
+not depend on any data structures getting initialized by
+rand_initialize() before it's safe to call add_device_randomness().
+
+The other approach was to add some new interface that random.c would
+call which would grab the dmi data from rand_initialize().  But that's
+going to be a lot more complicated, so I guess we should go with the
+simple/stupid approach.
+
+						- Ted
