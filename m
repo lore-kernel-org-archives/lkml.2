@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752158Ab2GUQqx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jul 2012 12:46:53 -0400
+	id S1752240Ab2GUQrR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jul 2012 12:47:17 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:44547 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752096Ab2GUQqu (ORCPT
+	with ESMTP id S1752059Ab2GUQqx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jul 2012 12:46:50 -0400
+	Sat, 21 Jul 2012 12:46:53 -0400
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 3/5] perf header: Make feat_ops->print use processed result
-Date: Sun, 22 Jul 2012 01:45:33 +0900
-Message-Id: <1342889135-14825-3-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 4/5] perf header: Remove unused @fd arg from ->print callback
+Date: Sun, 22 Jul 2012 01:45:34 +0900
+Message-Id: <1342889135-14825-4-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1342889135-14825-1-git-send-email-namhyung@kernel.org>
 References: <1342889135-14825-1-git-send-email-namhyung@kernel.org>
@@ -22,328 +22,133 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now we have all of necessary information in the perf_header so just
-use it for printing.
+As we don't need the @fd in the ->print any more, get rid of it from
+the signature.
 
 Cc: Stephane Eranian <eranian@google.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/header.c |  219 +++++++++++++++++++---------------------------
- 1 file changed, 92 insertions(+), 127 deletions(-)
+ tools/perf/util/header.c |   31 +++++++++++++++----------------
+ 1 file changed, 15 insertions(+), 16 deletions(-)
 
 diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 1a30f2831616..9ab1803d601d 100644
+index 9ab1803d601d..4484a80c20ba 100644
 --- a/tools/perf/util/header.c
 +++ b/tools/perf/util/header.c
-@@ -6,6 +6,7 @@
- #include <unistd.h>
- #include <stdio.h>
- #include <stdlib.h>
-+#include <string.h>
- #include <linux/list.h>
- #include <linux/kernel.h>
- #include <linux/bitops.h>
-@@ -972,118 +973,104 @@ static int write_branch_stack(int fd __used, struct perf_header *h __used,
+@@ -973,38 +973,38 @@ static int write_branch_stack(int fd __used, struct perf_header *h __used,
  	return 0;
  }
  
--static void print_hostname(struct perf_header *ph, int fd, FILE *fp)
-+static void print_hostname(struct perf_header *ph, int fd __used, FILE *fp)
+-static void print_hostname(struct perf_header *ph, int fd __used, FILE *fp)
++static void print_hostname(struct perf_header *ph, FILE *fp)
  {
--	char *str = do_read_string(fd, ph);
--	fprintf(fp, "# hostname : %s\n", str);
--	free(str);
-+	fprintf(fp, "# hostname : %s\n", ph->hostname);
+ 	fprintf(fp, "# hostname : %s\n", ph->hostname);
  }
  
--static void print_osrelease(struct perf_header *ph, int fd, FILE *fp)
-+static void print_osrelease(struct perf_header *ph, int fd __used, FILE *fp)
+-static void print_osrelease(struct perf_header *ph, int fd __used, FILE *fp)
++static void print_osrelease(struct perf_header *ph, FILE *fp)
  {
--	char *str = do_read_string(fd, ph);
--	fprintf(fp, "# os release : %s\n", str);
--	free(str);
-+	fprintf(fp, "# os release : %s\n", ph->os_release);
+ 	fprintf(fp, "# os release : %s\n", ph->os_release);
  }
  
--static void print_arch(struct perf_header *ph, int fd, FILE *fp)
-+static void print_arch(struct perf_header *ph, int fd __used, FILE *fp)
+-static void print_arch(struct perf_header *ph, int fd __used, FILE *fp)
++static void print_arch(struct perf_header *ph, FILE *fp)
  {
--	char *str = do_read_string(fd, ph);
--	fprintf(fp, "# arch : %s\n", str);
--	free(str);
-+	fprintf(fp, "# arch : %s\n", ph->arch);
+ 	fprintf(fp, "# arch : %s\n", ph->arch);
  }
  
--static void print_cpudesc(struct perf_header *ph, int fd, FILE *fp)
-+static void print_cpudesc(struct perf_header *ph, int fd __used, FILE *fp)
+-static void print_cpudesc(struct perf_header *ph, int fd __used, FILE *fp)
++static void print_cpudesc(struct perf_header *ph, FILE *fp)
  {
--	char *str = do_read_string(fd, ph);
--	fprintf(fp, "# cpudesc : %s\n", str);
--	free(str);
-+	fprintf(fp, "# cpudesc : %s\n", ph->cpu_desc);
+ 	fprintf(fp, "# cpudesc : %s\n", ph->cpu_desc);
  }
  
--static void print_nrcpus(struct perf_header *ph, int fd, FILE *fp)
-+static void print_nrcpus(struct perf_header *ph, int fd __used, FILE *fp)
+-static void print_nrcpus(struct perf_header *ph, int fd __used, FILE *fp)
++static void print_nrcpus(struct perf_header *ph, FILE *fp)
  {
--	ssize_t ret;
--	u32 nr;
--
--	ret = read(fd, &nr, sizeof(nr));
--	if (ret != (ssize_t)sizeof(nr))
--		nr = -1; /* interpreted as error */
--
--	if (ph->needs_swap)
--		nr = bswap_32(nr);
--
--	fprintf(fp, "# nrcpus online : %u\n", nr);
--
--	ret = read(fd, &nr, sizeof(nr));
--	if (ret != (ssize_t)sizeof(nr))
--		nr = -1; /* interpreted as error */
--
--	if (ph->needs_swap)
--		nr = bswap_32(nr);
--
--	fprintf(fp, "# nrcpus avail : %u\n", nr);
-+	fprintf(fp, "# nrcpus online : %u\n", ph->nr_cpus_online);
-+	fprintf(fp, "# nrcpus avail : %u\n", ph->nr_cpus_avail);
+ 	fprintf(fp, "# nrcpus online : %u\n", ph->nr_cpus_online);
+ 	fprintf(fp, "# nrcpus avail : %u\n", ph->nr_cpus_avail);
  }
  
--static void print_version(struct perf_header *ph, int fd, FILE *fp)
-+static void print_version(struct perf_header *ph, int fd __used, FILE *fp)
+-static void print_version(struct perf_header *ph, int fd __used, FILE *fp)
++static void print_version(struct perf_header *ph, FILE *fp)
  {
--	char *str = do_read_string(fd, ph);
--	fprintf(fp, "# perf version : %s\n", str);
--	free(str);
-+	fprintf(fp, "# perf version : %s\n", ph->version);
+ 	fprintf(fp, "# perf version : %s\n", ph->version);
  }
  
--static void print_cmdline(struct perf_header *ph, int fd, FILE *fp)
-+static void print_cmdline(struct perf_header *ph, int fd __used, FILE *fp)
+-static void print_cmdline(struct perf_header *ph, int fd __used, FILE *fp)
++static void print_cmdline(struct perf_header *ph, FILE *fp)
  {
--	ssize_t ret;
  	char *str;
--	u32 nr, i;
--
--	ret = read(fd, &nr, sizeof(nr));
--	if (ret != (ssize_t)sizeof(nr))
--		return;
--
--	if (ph->needs_swap)
--		nr = bswap_32(nr);
-+	int i;
+ 	int i;
+@@ -1023,7 +1023,7 @@ static void print_cmdline(struct perf_header *ph, int fd __used, FILE *fp)
+ #define TOPO_STR_DELIM ':'
  
- 	fprintf(fp, "# cmdline : ");
- 
--	for (i = 0; i < nr; i++) {
--		str = do_read_string(fd, ph);
-+	str = ph->cmdline;
-+	for (i = 0; i < ph->cmdline_argc; i++) {
-+		/* each argv is null-terminated */
- 		fprintf(fp, "%s ", str);
--		free(str);
-+		str += strlen(str) + 1;
- 	}
- 	fputc('\n', fp);
- }
- 
--static void print_cpu_topology(struct perf_header *ph, int fd, FILE *fp)
-+#define TOPO_STR_DELIM ':'
-+
-+/* For string formatting, see process_cpu_topology() */
-+static void print_cpu_topology(struct perf_header *ph, int fd __used, FILE *fp)
+ /* For string formatting, see process_cpu_topology() */
+-static void print_cpu_topology(struct perf_header *ph, int fd __used, FILE *fp)
++static void print_cpu_topology(struct perf_header *ph, FILE *fp)
  {
--	ssize_t ret;
  	u32 nr, i;
  	char *str;
-+	char *delim;
- 
--	ret = read(fd, &nr, sizeof(nr));
--	if (ret != (ssize_t)sizeof(nr))
--		return;
-+	str = ph->cpu_topology;
- 
--	if (ph->needs_swap)
--		nr = bswap_32(nr);
-+	nr = strtoul(str, &delim, 0);
-+	if (*delim != TOPO_STR_DELIM)
-+		return;
- 
-+	str = delim + 1;
- 	for (i = 0; i < nr; i++) {
--		str = do_read_string(fd, ph);
-+		char c;
-+
-+		delim = strpbrk(str, ":\n");
-+		if (!delim)
-+			return;
-+
-+		c = *delim;
-+		*delim = '\0';
- 		fprintf(fp, "# sibling cores   : %s\n", str);
--		free(str);
-+		*delim = c;
-+
-+		str = delim + 1;
- 	}
- 
--	ret = read(fd, &nr, sizeof(nr));
--	if (ret != (ssize_t)sizeof(nr))
--		return;
-+	BUG_ON(*(str-1) != '\n');
- 
--	if (ph->needs_swap)
--		nr = bswap_32(nr);
-+	nr = strtoul(str, &delim, 0);
-+	if (*delim != TOPO_STR_DELIM)
-+		return;
- 
-+	str = delim + 1;
- 	for (i = 0; i < nr; i++) {
--		str = do_read_string(fd, ph);
-+		char c;
-+
-+		delim = strpbrk(str, ":\n");
-+		if (!delim)
-+			return;
-+
-+		c = *delim;
-+		*delim = '\0';
- 		fprintf(fp, "# sibling threads : %s\n", str);
--		free(str);
-+		*delim = c;
-+
-+		str = delim + 1;
+@@ -1074,7 +1074,7 @@ static void print_cpu_topology(struct perf_header *ph, int fd __used, FILE *fp)
  	}
  }
  
-@@ -1126,82 +1113,61 @@ static void print_event_desc(struct perf_header *ph, int fd __used, FILE *fp)
- 	}
- }
- 
--static void print_total_mem(struct perf_header *h __used, int fd, FILE *fp)
-+static void print_total_mem(struct perf_header *ph, int fd __used, FILE *fp)
+-static void print_event_desc(struct perf_header *ph, int fd __used, FILE *fp)
++static void print_event_desc(struct perf_header *ph, FILE *fp)
  {
--	uint64_t mem;
--	ssize_t ret;
--
--	ret = read(fd, &mem, sizeof(mem));
--	if (ret != sizeof(mem))
--		goto error;
--
--	if (h->needs_swap)
--		mem = bswap_64(mem);
--
--	fprintf(fp, "# total memory : %"PRIu64" kB\n", mem);
--	return;
--error:
--	fprintf(fp, "# total memory : unknown\n");
-+	fprintf(fp, "# total memory : %"PRIu64" kB\n", ph->total_mem);
- }
- 
--static void print_numa_topology(struct perf_header *h __used, int fd, FILE *fp)
-+/* For string formatting, see process_numa_topology() */
-+static void print_numa_topology(struct perf_header *ph, int fd __used, FILE *fp)
- {
--	ssize_t ret;
--	u32 nr, c, i;
-+	u32 nr, i, node;
-+	u64 mem_total, mem_free;
- 	char *str;
--	uint64_t mem_total, mem_free;
-+	char *delim;
- 
--	/* nr nodes */
--	ret = read(fd, &nr, sizeof(nr));
--	if (ret != (ssize_t)sizeof(nr))
--		goto error;
-+	str = ph->numa_topology;
- 
--	if (h->needs_swap)
--		nr = bswap_32(nr);
-+	nr = strtoul(str, &delim, 0);
-+	if (*delim != '\n')
-+		return;
- 
-+	str = delim + 1;
- 	for (i = 0; i < nr; i++) {
-+		char c;
- 
--		/* node number */
--		ret = read(fd, &c, sizeof(c));
--		if (ret != (ssize_t)sizeof(c))
--			goto error;
-+		node = strtoul(str, &delim, 0);
-+		if (*delim != TOPO_STR_DELIM)
-+			return;
- 
--		if (h->needs_swap)
--			c = bswap_32(c);
-+		str = delim + 1;
-+		mem_total = strtoull(str, &delim, 0);
-+		if (*delim != TOPO_STR_DELIM)
-+			return;
- 
--		ret = read(fd, &mem_total, sizeof(u64));
--		if (ret != sizeof(u64))
--			goto error;
-+		str = delim + 1;
-+		mem_free = strtoull(str, &delim, 0);
-+		if (*delim != TOPO_STR_DELIM)
-+			return;
- 
--		ret = read(fd, &mem_free, sizeof(u64));
--		if (ret != sizeof(u64))
--			goto error;
--
--		if (h->needs_swap) {
--			mem_total = bswap_64(mem_total);
--			mem_free = bswap_64(mem_free);
--		}
-+		delim = strchr(str, '\n');
-+		if (!delim)
-+			return;
- 
-+		c = *delim;
-+		*delim = '\0';
- 		fprintf(fp, "# node%u meminfo  : total = %"PRIu64" kB,"
--			    " free = %"PRIu64" kB\n",
--			c,
--			mem_total,
--			mem_free);
-+			" free = %"PRIu64" kB\n", node, mem_total, mem_free);
-+		fprintf(fp, "# node%u cpu list : %s\n", node, str);
-+		*delim = c;
- 
--		str = do_read_string(fd, h);
--		fprintf(fp, "# node%u cpu list : %s\n", c, str);
--		free(str);
-+		str = delim + 1;
+ 	struct perf_session *session;
+ 	struct perf_evsel *evsel;
+@@ -1113,13 +1113,13 @@ static void print_event_desc(struct perf_header *ph, int fd __used, FILE *fp)
  	}
--	return;
--error:
--	fprintf(fp, "# numa topology : not available\n");
  }
  
--static void print_cpuid(struct perf_header *ph, int fd, FILE *fp)
-+static void print_cpuid(struct perf_header *ph, int fd __used, FILE *fp)
+-static void print_total_mem(struct perf_header *ph, int fd __used, FILE *fp)
++static void print_total_mem(struct perf_header *ph, FILE *fp)
  {
--	char *str = do_read_string(fd, ph);
--	fprintf(fp, "# cpuid : %s\n", str);
--	free(str);
-+	fprintf(fp, "# cpuid : %s\n", ph->cpuid);
+ 	fprintf(fp, "# total memory : %"PRIu64" kB\n", ph->total_mem);
  }
  
- static void print_branch_stack(struct perf_header *ph __used, int fd __used,
-@@ -1492,7 +1458,6 @@ error:
+ /* For string formatting, see process_numa_topology() */
+-static void print_numa_topology(struct perf_header *ph, int fd __used, FILE *fp)
++static void print_numa_topology(struct perf_header *ph, FILE *fp)
+ {
+ 	u32 nr, i, node;
+ 	u64 mem_total, mem_free;
+@@ -1165,13 +1165,12 @@ static void print_numa_topology(struct perf_header *ph, int fd __used, FILE *fp)
+ 	}
  }
  
- #define TOPO_STR_LEN  ((size_t) 256)
--#define TOPO_STR_DELIM ':'
+-static void print_cpuid(struct perf_header *ph, int fd __used, FILE *fp)
++static void print_cpuid(struct perf_header *ph, FILE *fp)
+ {
+ 	fprintf(fp, "# cpuid : %s\n", ph->cpuid);
+ }
  
- #define check_topo_len(topo, allocated, used, len)			\
- ({									\
+-static void print_branch_stack(struct perf_header *ph __used, int fd __used,
+-			       FILE *fp)
++static void print_branch_stack(struct perf_header *ph __used, FILE *fp)
+ {
+ 	fprintf(fp, "# contains samples with branch stack\n");
+ }
+@@ -1684,7 +1683,7 @@ static int process_total_mem(struct perf_file_section *section __used,
+ 
+ struct feature_ops {
+ 	int (*write)(int fd, struct perf_header *h, struct perf_evlist *evlist);
+-	void (*print)(struct perf_header *h, int fd, FILE *fp);
++	void (*print)(struct perf_header *h, FILE *fp);
+ 	int (*process)(struct perf_file_section *section,
+ 		       struct perf_header *h, int feat, int fd, void *data);
+ 	const char *name;
+@@ -1746,7 +1745,7 @@ static int perf_file_section__fprintf_info(struct perf_file_section *section,
+ 		return 0;
+ 
+ 	if (!feat_ops[feat].full_only || hd->full)
+-		feat_ops[feat].print(ph, fd, hd->fp);
++		feat_ops[feat].print(ph, hd->fp);
+ 	else
+ 		fprintf(hd->fp, "# %s info available, use -I to display\n",
+ 			feat_ops[feat].name);
 -- 
 1.7.9.2
 
