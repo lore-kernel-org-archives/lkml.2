@@ -1,70 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752131Ab2GUQ5z (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jul 2012 12:57:55 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:54995 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751549Ab2GUQ5y (ORCPT
+	id S1752222Ab2GUQ6y (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jul 2012 12:58:54 -0400
+Received: from na3sys009aog120.obsmtp.com ([74.125.149.140]:59098 "EHLO
+	na3sys009aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752134Ab2GUQ6G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jul 2012 12:57:54 -0400
-Date: Sat, 21 Jul 2012 11:57:41 -0500
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: David Howells <dhowells@redhat.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-cachefs@redhat.com, linux-kernel@vger.kernel.org,
-        Jeff Layton <jlayton@redhat.com>
-Subject: Re: [PATCH 17/17] NFS: nfs_migrate_page() does not wait for FS-Cache
- to finish with a page
-Message-ID: <20120721165741.GA9308@burratino>
-References: <20120208211640.15607.58537.stgit@warthog.procyon.org.uk>
- <20120208211935.15607.16821.stgit@warthog.procyon.org.uk>
+	Sat, 21 Jul 2012 12:58:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120208211935.15607.16821.stgit@warthog.procyon.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201207202151.49537.rjw@sisk.pl>
+References: <1342808078-5317-1-git-send-email-sboyd@codeaurora.org> <201207202151.49537.rjw@sisk.pl>
+From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Date: Sat, 21 Jul 2012 22:27:44 +0530
+Message-ID: <CAMQu2gw33jMMW-U6KmkU4xhjBErEjBEDrMaP1t0kkm8aEgRyrQ@mail.gmail.com>
+Subject: Re: [PATCHv2] cpufreq: Fix sysfs deadlock with concurrent
+ hotplug/frequency switch
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-In February, David Howells wrote:
-
-> nfs_migrate_page() does not wait for FS-Cache to finish with a page, probably
-> leading to the following bad-page-state:
-[...]
-> nfs_migrate_page() calls nfs_fscache_release_page() which doesn't actually wait
-> - even if __GFP_WAIT is set.  The reason that doesn't wait is that
-> fscache_maybe_release_page() might deadlock the allocator as the work threads
-> writing to the cache may all end up sleeping on memory allocation.
-[...]
->  (1) Make nfs_migrate_page() wait.
+On Sat, Jul 21, 2012 at 1:21 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Friday, July 20, 2012, Stephen Boyd wrote:
+>> Running one program that continuously hotplugs and replugs a cpu
+>> concurrently with another program that continuously writes to the
+>> scaling_setspeed node eventually deadlocks with:
+>>
+>> =============================================
+>> [ INFO: possible recursive locking detected ]
+>> 3.4.0 #37 Tainted: G        W
+>> ---------------------------------------------
+>> filemonkey/122 is trying to acquire lock:
+>>  (s_active#13){++++.+}, at: [<c01a3d28>] sysfs_remove_dir+0x9c/0xb4
+>>
+>> but task is already holding lock:
+>>  (s_active#13){++++.+}, at: [<c01a22f0>] sysfs_write_file+0xe8/0x140
+>>
+>> other info that might help us debug this:
+>>  Possible unsafe locking scenario:
+>>
+>>        CPU0
+>>        ----
+>>   lock(s_active#13);
+>>   lock(s_active#13);
+>>
+>>  *** DEADLOCK ***
+>>
+>>  May be due to missing lock nesting notation
+>>
+>> 2 locks held by filemonkey/122:
+>>  #0:  (&buffer->mutex){+.+.+.}, at: [<c01a2230>] sysfs_write_file+0x28/0x140
+>>  #1:  (s_active#13){++++.+}, at: [<c01a22f0>] sysfs_write_file+0xe8/0x140
+>>
+>> stack backtrace:
+>> [<c0014fcc>] (unwind_backtrace+0x0/0x120) from [<c00ca600>] (validate_chain+0x6f8/0x1054)
+>> [<c00ca600>] (validate_chain+0x6f8/0x1054) from [<c00cb778>] (__lock_acquire+0x81c/0x8d8)
+>> [<c00cb778>] (__lock_acquire+0x81c/0x8d8) from [<c00cb9c0>] (lock_acquire+0x18c/0x1e8)
+>> [<c00cb9c0>] (lock_acquire+0x18c/0x1e8) from [<c01a3ba8>] (sysfs_addrm_finish+0xd0/0x180)
+>> [<c01a3ba8>] (sysfs_addrm_finish+0xd0/0x180) from [<c01a3d28>] (sysfs_remove_dir+0x9c/0xb4)
+>> [<c01a3d28>] (sysfs_remove_dir+0x9c/0xb4) from [<c02d0e5c>] (kobject_del+0x10/0x38)
+>> [<c02d0e5c>] (kobject_del+0x10/0x38) from [<c02d0f74>] (kobject_release+0xf0/0x194)
+>> [<c02d0f74>] (kobject_release+0xf0/0x194) from [<c0565a98>] (cpufreq_cpu_put+0xc/0x24)
+>> [<c0565a98>] (cpufreq_cpu_put+0xc/0x24) from [<c05683f0>] (store+0x6c/0x74)
+>> [<c05683f0>] (store+0x6c/0x74) from [<c01a2314>] (sysfs_write_file+0x10c/0x140)
+>> [<c01a2314>] (sysfs_write_file+0x10c/0x140) from [<c014af44>] (vfs_write+0xb0/0x128)
+>> [<c014af44>] (vfs_write+0xb0/0x128) from [<c014b06c>] (sys_write+0x3c/0x68)
+>> [<c014b06c>] (sys_write+0x3c/0x68) from [<c000e0e0>] (ret_fast_syscall+0x0/0x3c)
+>>
+>> This is because store() in cpufreq.c indirectly calls
+>> kobject_get() via cpufreq_cpu_get() and is the last one to call
+>> kobject_put() via cpufreq_cpu_put(). Sysfs code should not call
+>> kobject_get() or kobject_put() directly (see the comment around
+>> sysfs_schedule_callback() for more information).
+>>
+>> Fix this deadlock by introducing two new functions:
+>>
+>>       struct cpufreq_policy *cpufreq_cpu_get_sysfs(unsigned int cpu)
+>>       void cpufreq_cpu_put_sysfs(struct cpufreq_policy *data)
+>>
+>> which do the same thing as cpufreq_cpu_{get,put}() but don't call
+>> kobject functions.
+>>
+>> To easily trigger this deadlock you can insert an msleep() with a
+>> reasonably large value right after the fail label at the bottom
+>> of the store() function in cpufreq.c and then write
+>> scaling_setspeed in one task and offline the cpu in another. The
+>> first task will hang and be detected by the hung task detector.
+>>
+>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 >
->  (2) Make fscache_maybe_release_page() honour the __GFP_WAIT flag.
+> Thanks, applied to the pm-cpufreq branch of the linux-pm.git tree, will be
+> pushed for v3.6.
 >
->  (3) Set a timeout around the wait.
->
->  (4) Make nfs_migrate_page() return an error if the page is still busy.
->
-> For the moment, I'll select (2) and (4).
-[...]
-> --- a/fs/nfs/write.c
-> +++ b/fs/nfs/write.c
-> @@ -1701,7 +1701,9 @@ int nfs_migrate_page(struct address_space *mapping, struct page *newpage,
->  	if (PagePrivate(page))
->  		return -EBUSY;
->  
-> -	nfs_fscache_release_page(page, GFP_KERNEL);
-> +	ret = -EBUSY;
-> +	if (!nfs_fscache_release_page(page, GFP_KERNEL))
-> +		goto out;
->  
->  	return migrate_page(mapping, newpage, page, mode);
->  }
+Should this fix go to stable as well ?
 
-Small thing, but it looks like this was forward-ported incorrectly.
-Was this ever tested with CONFIG_MIGRATION enabled?
-
-Hope that helps,
-Jonathan
+Regards
+Santosh
