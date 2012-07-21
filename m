@@ -1,58 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751168Ab2GUM2s (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jul 2012 08:28:48 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:37314 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750766Ab2GUM2q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jul 2012 08:28:46 -0400
-Message-ID: <1342873722.2981.5.camel@dabdike.int.hansenpartnership.com>
-Subject: efitools rpm up on opensuse build service: contains useful tools
- for taking control of UEFI secure boot platforms
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: linux-efi@vger.kernel.org
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Date: Sat, 21 Jul 2012 13:28:42 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	id S1751302Ab2GUMpW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jul 2012 08:45:22 -0400
+Received: from osrc3.amd.com ([217.9.48.20]:48783 "EHLO mail.x86-64.org"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750925Ab2GUMpV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jul 2012 08:45:21 -0400
+Date: Sat, 21 Jul 2012 14:45:16 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Tony Luck <tony.luck@intel.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Chen Gong <gong.chen@linux.intel.com>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Subject: Re: [PATCH 2/2] x86/mce: Add quirk for instruction recovery on Sandy
+ Bridge processors
+Message-ID: <20120721124516.GB3632@aftab.osrc.amd.com>
+References: <cover.1342723082.git.tony.luck@intel.com>
+ <180a06f3f357cf9f78259ae443a082b14a29535b.1342723082.git.tony.luck@intel.com>
+ <20120720121848.GA29183@aftab.osrc.amd.com>
+ <CA+8MBbLX_cLR1+DpjuG-D5=5YhnTy3aGS4RL1iviRYomYoveWg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+8MBbLX_cLR1+DpjuG-D5=5YhnTy3aGS4RL1iviRYomYoveWg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All the tools are in the git repository
+On Fri, Jul 20, 2012 at 09:33:23AM -0700, Tony Luck wrote:
+> > Maybe define a default empty quirk_no_way_out() on the remaining
+> > families/vendors so that the compiler can optimize it away and we save
+> > ourselves the if-test?
+> 
+> Perhaps I misunderstood your suggestion. I don't see how the compiler will
+> manage to optimize it all away.  I just tried defining
+> 
+> static void quirk_no_way_out_nop(int bank, struct mce *m, struct pt_regs *regs)
+> {
+> }
+> 
+> and providing that as an initial value for the quirk_no_way_out
+> function pointer.
+> 
+> Then I deleted the "if (quirk_no_way_out)".
+> 
+> Looking at the assembly code produced, I now just have an unconditional call:
+> 
+>  callq  *0x9fe992(%rip)        # ffffffff81a18668 <quirk_no_way_out>
+> 
+> 
+> I'd think that a call through a function pointer to an empty function is
+> more expensive that testing whether that function pointer was NULL.
 
-http://git.kernel.org/?p=linux/kernel/git/jejb/efitools.git;a=summary
+Agreed.
 
-But for ease of consumption, this is now packaged and build by the
-opensuse build server as installable rpm files.
+Right, so I was thinking about something along the lines of what tglx
+did for the CMCI poll timer: http://lkml.org/lkml/2012/7/18/79 and
+I've been playing with this for a bit now and am seeing the same thing
+as you: obviously the compiler cannot optimize away an unconditional
+function call to an empty function *through* a function pointer
+(tried gcc 4.6 and 4.7). Maybe because it is a function pointer we're
+calling...
 
-http://download.opensuse.org/repositories/home:/jejb1:/UEFI/openSUSE_12.1/
+If you make the function pointer const like this:
 
-If you install the efitools-0.1.rpm package, it will automatically
-provision you with Platform Key, Key Exchange Key and db key.  The
-README file in /usr/share/efitools/ explains what’s going on, but you
-can also do a quick lockdown of your UEFI plaform (or simply boot out
-the old keys) if you copy all the efi files in /usr/share/efitools/efi/
-and the *.auth files from /usr/share/efitools/keys/ into a partition
-accessible to the efi boot loader.  Then in Setup Mode (must be Setup
-Mode to alter the keys) do
+static void default_quirk_no_way_out(int bank, struct mce *m,
+                                           struct pt_regs *regs) { }
 
-UpdateVars db db.auth
-UpdateVars KEK KEK.auth
-UpdateVars PK PK.auth
+static void (* const quirk_no_way_out)(int bank, struct mce *m, struct pt_regs *regs) =
+        default_quirk_no_way_out;
 
-After the PK update, the platform should once again be in user mode.
-Verify by trying to run the HelloWorld efi binary (should fail) and it’s
-signed counterpart HelloWorld-signed (should print Hello World!).
+The "call... " is not issued but you cannot assign to it later in
+__mcheck_cpu_apply_quirks().
 
-I've also summarised the current state, plus a useful collection of odd
-information on my blog:
+Other things which could probably be used are alternatives or jump
+labels but one if-test is simply not worth the complexity.
 
-http://blog.hansenpartnership.com/
+Oh well, enough games.
 
-James
+Thanks.
 
+-- 
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
