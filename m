@@ -1,100 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752027Ab2GUXQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jul 2012 19:16:29 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:59197 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751396Ab2GUXQ2 (ORCPT
+	id S1752043Ab2GUXVQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jul 2012 19:21:16 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:49094 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751396Ab2GUXVO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jul 2012 19:16:28 -0400
-Date: Sun, 22 Jul 2012 09:16:16 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Sage Weil <sage@newdream.net>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alex Elder <elder@inktank.com>
-Subject: linux-next: manual merge of the ceph tree with Linus' tree
-Message-Id: <20120722091616.3b543b935ad1febeedc3e79f@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	Sat, 21 Jul 2012 19:21:14 -0400
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.4-dev
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+Cc: KY Srinivasan <kys@microsoft.com>,
+        =?ISO-8859-1?Q?Bj=F8rn_Mork?= <bjorn@mork.no>,
+        "Greg KH (gregkh@linuxfoundation.org)" <gregkh@linuxfoundation.org>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: Re: 0xB16B00B5? Really? (was Re: Move hyperv out of the drivers/staging/ directory)
+In-Reply-To: Your message of "Fri, 20 Jul 2012 17:03:59 +0200."
+             <CAFLxGvwqKLhPWNfUJYm1KDXWEX1DNhPBGGApYFqMM0BsB87iig@mail.gmail.com>
+From: valdis.kletnieks@vt.edu
+References: <6E21E5352C11B742B20C142EB499E048081EB789@TK5EX14MBXC124.redmond.corp.microsoft.com> <20111004170415.GA1320@suse.de> <6E21E5352C11B742B20C142EB499E048081EB86F@TK5EX14MBXC124.redmond.corp.microsoft.com> <20111004193414.GA15672@suse.de> <4FFFF711.8040003@redhat.com> <426367E2313C2449837CD2DE46E7EAF923547292@SN2PRD0310MB382.namprd03.prod.outlook.com> <20120719210709.GA32031@kroah.com> <426367E2313C2449837CD2DE46E7EAF9235475EE@SN2PRD0310MB382.namprd03.prod.outlook.com> <20120719220142.GA1513@kroah.com> <426367E2313C2449837CD2DE46E7EAF923547620@SN2PRD0310MB382.namprd03.prod.outlook.com> <20120719232832.GA6317@kroah.com> <426367E2313C2449837CD2DE46E7EAF9235476BC@SN2PRD0310MB382.namprd03.prod.outlook.com> <87fw8mlv7e.fsf@nemi.mork.no> <426367E2313C2449837CD2DE46E7EAF923547782@SN2PRD0310MB382.namprd03.prod.outlook.com>
+            <CAFLxGvwqKLhPWNfUJYm1KDXWEX1DNhPBGGApYFqMM0BsB87iig@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Sun__22_Jul_2012_09_16_16_+1000_QlFtgz=XX1pyGj_+"
+Content-Type: multipart/signed; boundary="==_Exmh_1342912870_3823P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Sat, 21 Jul 2012 19:21:10 -0400
+Message-ID: <60467.1342912870@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 209.85.216.180 mail-qc0-f180.google.com valdis@vt.edu 4 softfail
+X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A02020B.500B3969.004F,ss=1,re=0.000,fgs=0,
+	ip=71.62.120.57,
+	so=2011-07-25 19:15:43,
+	dmn=2011-05-27 18:58:46,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sun__22_Jul_2012_09_16_16_+1000_QlFtgz=XX1pyGj_+
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+--==_Exmh_1342912870_3823P
+Content-Type: text/plain; charset=us-ascii
 
-Hi Sage,
+On Fri, 20 Jul 2012 17:03:59 +0200, richard -rw- weinberger said:
+> On Fri, Jul 20, 2012 at 4:00 PM, KY Srinivasan <kys@microsoft.com> wrote:
+> > Thank you for your interest in fixing this problem. When we decide to change this
+> > ID, we will conform to the MSFT guidelines on constructing this guest ID.
+> >
+>
+> I'm wondering why it hasn't been conform to the MSFT guidelines from
+> the very beginning on?
 
-Today's linux-next merge of the ceph tree got a conflict in
-net/ceph/messenger.c between commit 5bdca4e0768d ("libceph: fix messenger
-retry") from Linus' tree and commit e22004235a90 ("libceph: rename
-kvec_reset and kvec_add functions") from the ceph tree.
+It's a lot easier to sneak something cute into code when it isn't maintained in
+git repositories and mailing lists readable by everybody and their pet llama.
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+I'll admit to not doing a *lot* of extensive review, but I try to at least read
+Kconfig patches (mostly out of self-defense so when I do a 'make oldconfig' I
+get presented with something useful ;)  - and it's amazing how often I spot
+issues in stuff that's presumably already had several pair of eyeballs look at
+it already.
 
-diff --cc net/ceph/messenger.c
-index 10255e8,23073cf..0000000
---- a/net/ceph/messenger.c
-+++ b/net/ceph/messenger.c
-@@@ -1450,11 -1530,11 +1530,11 @@@ static int process_connect(struct ceph_
-  		 * If we sent a smaller connect_seq than the peer has, try
-  		 * again with a larger value.
-  		 */
- -		dout("process_connect got RETRY my seq =3D %u, peer_seq =3D %u\n",
- +		dout("process_connect got RETRY_SESSION my seq %u, peer %u\n",
-  		     le32_to_cpu(con->out_connect.connect_seq),
- -		     le32_to_cpu(con->in_connect.connect_seq));
- -		con->connect_seq =3D le32_to_cpu(con->in_connect.connect_seq);
- +		     le32_to_cpu(con->in_reply.connect_seq));
- +		con->connect_seq =3D le32_to_cpu(con->in_reply.connect_seq);
-- 		ceph_con_out_kvec_reset(con);
-+ 		con_out_kvec_reset(con);
-  		ret =3D prepare_write_connect(con);
-  		if (ret < 0)
-  			return ret;
-@@@ -1468,10 -1548,10 +1548,10 @@@
-  		 */
-  		dout("process_connect got RETRY_GLOBAL my %u peer_gseq %u\n",
-  		     con->peer_global_seq,
- -		     le32_to_cpu(con->in_connect.global_seq));
- +		     le32_to_cpu(con->in_reply.global_seq));
-  		get_global_seq(con->msgr,
- -			       le32_to_cpu(con->in_connect.global_seq));
- +			       le32_to_cpu(con->in_reply.global_seq));
-- 		ceph_con_out_kvec_reset(con);
-+ 		con_out_kvec_reset(con);
-  		ret =3D prepare_write_connect(con);
-  		if (ret < 0)
-  			return ret;
+Probably what happened - some programmer had a 60 hour week, wrote the code on
+a Friday and had a sudden attack of the sillies, and it went through a code
+review meeting, but they had to cover 800 lines of code in a one-hour meeting
+so nobody looked *too* close...
 
---Signature=_Sun__22_Jul_2012_09_16_16_+1000_QlFtgz=XX1pyGj_+
+
+--==_Exmh_1342912870_3823P
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
-iQIcBAEBCAAGBQJQCzhAAAoJEECxmPOUX5FEhxAP/0Qr6zeoEEIDn9sfy8+ieyYu
-+oQEAQiiUFA/zzj5v02Rjmd7bfYueWocTCE1nBOqwNV3pBMyjdmi3hSY+/Nrl7m3
-vsDar2/8E8NNV5H8QPDl/MFN2PmZp/CKnn70dhU6epDBxk28GPkDa0kxi/aLRfL9
-xijeIIvR/G5BOgfUvt/4sRAQaEtMmT+QI5CfMB9DsbFStX8lNOaPK9yI++ZGzjSx
-Bi9uG5IBvz/75nOzGuPxDuzi7Pfl0W/dJmMKn1sjsGuhK+W1k36ZotnSpuN1YBlJ
-6qwbp0rhh/uizCZECLjgRgSgoGhKG6KtNMuN3wKMSv4xtpwBDXSxy/gUXf8ec4yb
-/pRIubEr7Yi0eNi1C5TbbLn3mMZcJtgtgAm+HevWprXhFNi/H2iLP8RD1pkhRrY1
-HwVO+DOc8W0Px2sPBOeygGKBOGZe8avXJh7ObaBrBUUJbG+4Kdo6AYRuDfsu0MT3
-uCjSw1LD1FTCIRq5H4CkbWx5Z4bHeFMrcC0fBeMDMN6Uv5Gu4oLpQYP96eLDgswT
-VgWJUwmVtPkIlSsjZjWyE+arizPcpRDFQ9aI6vbDF8BBNLvEDqQ8qvCVxan8OLKT
-QgPXsyZT3BjomPWLxbmjWYsaDwSBEvlI2vI6RPPBgNEczGCq0za7eObYhWBIrRrl
-8nrkLtriMxbK5Dgbx9eW
-=WUTA
+iQIVAwUBUAs5ZgdmEQWDXROgAQJL6w/5Ada8xxcbAa6Tb9mS79W5p4oz8Pma8O8L
+B2hEMuBVhRci3DoxKYUel/g52ZbsNYcKI4dSV3u0O2XjJi7/ZxuGIDtX2zh18x1u
+OVr/A92jwI9ZtIhPe9+hrZaMhPLe29/4lHP7aFV3WDl6hus0ZuL57KaYU9+P7vSk
+Bqxk+8ZF1WclGn/t/rMmL6VIPzeFRmZTtQl4wUWuP9v343mJtDj5yYIOr9M2h3+z
+pLDodg8gCx8+FiRjowmImDlB40+708cRbfcI4NSvUNo6sN4s/4Bg0+y2Tby1QqJU
+FcSVIEcQ90j888IHyN/Wcx4AnhtTkH4WtpKPA5zaRsuJmdXspoowy+zDiwZe0BOc
+lm+ylYgY/srZ8lT4DE+zv6+zoZf+9mxJVQv1mfEo1UmQOcn9TNfgpspJkkFi3oum
+58bY9TQbiZDNHtMUjiiqIws2mh48ZWZZ9Uih/Z27rCntrDD1sL/oj2dMKls1nxtZ
+UxRbDSIc0xrwzvF4usvrgu9w4FIwbfR+S5ytrETBFvAlX/xukNOJ+/H6ogJ+2P8b
+K1yaSAyVxNA7kwY48r8QNDlyBw426SSmiRSmtAyU3CIfgUXqO1LAPNlr2LrijGNz
+2fDV5BB/n3Ld7dvBkBGflo+CyawT1JRoVXmgBpsCHUAhlI5+YSlZ3dqPVT1zc6D4
+Mhe9fV66G0Y=
+=5eQL
 -----END PGP SIGNATURE-----
 
---Signature=_Sun__22_Jul_2012_09_16_16_+1000_QlFtgz=XX1pyGj_+--
+--==_Exmh_1342912870_3823P--
+
