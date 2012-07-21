@@ -1,149 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752088Ab2GUTzj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jul 2012 15:55:39 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:55671 "EHLO
+	id S1752046Ab2GUUJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jul 2012 16:09:28 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:43230 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751682Ab2GUTzh (ORCPT
+	with ESMTP id S1751477Ab2GUUJ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jul 2012 15:55:37 -0400
+	Sat, 21 Jul 2012 16:09:27 -0400
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFwZRvtpE2e3zNqvtobpPROqw_bOwNt+=DBzmScV0_rq=w@mail.gmail.com>
+In-Reply-To: <201207211949.13944.rjw@sisk.pl>
 References: <CACVXFVNWOcrR9tYhU1wVUSJ_DJ8x+SCk993Sn9dYDe2kzJBDuQ@mail.gmail.com>
-	<CA+55aFwZRvtpE2e3zNqvtobpPROqw_bOwNt+=DBzmScV0_rq=w@mail.gmail.com>
-Date: Sun, 22 Jul 2012 03:55:35 +0800
-Message-ID: <CACVXFVPupumYqeBwTwgK3C04VQBxOjkFMbaKQ-Gsz3teCWqQ=w@mail.gmail.com>
+	<201207211949.13944.rjw@sisk.pl>
+Date: Sun, 22 Jul 2012 04:09:26 +0800
+Message-ID: <CACVXFVM+yJeDanZaSVc-snxu6edaOy+47oMSmcDr8zngUw4DnA@mail.gmail.com>
 Subject: Re: [RFC] firmware load: defer request_firmware during early boot and resume
 From: Ming Lei <tom.leiming@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         linux-usb <linux-usb@vger.kernel.org>,
         Alan Stern <stern@rowland.harvard.edu>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Oliver Neukum <oneukum@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>
+        Oliver Neukum <oneukum@suse.de>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for your so detailed comments.
+On Sun, Jul 22, 2012 at 1:49 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Friday, July 20, 2012, Ming Lei wrote:
 
-On Sun, Jul 22, 2012 at 1:31 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Fri, Jul 20, 2012 at 5:33 AM, Ming Lei <tom.leiming@gmail.com> wrote:
->> The RFC patch is just for discussing if the idea of deferring
->> request_firmware is doable for addressing the issue of
->> request_firmware in resume path, which is caused by driver
->> unbind/rebind during resume.
+>> +     if (system_state != SYSTEM_RUNNING)
+>> +             return -EPROBE_DEFER;
 >
-> NAK.
+> You can't just return here, _request_firmware_cleanup() has to be done still.
 
-Suppose it is not good for resume case, I think it still makes sense
-for early boot
-situation, at least the patch will support to request firmware inside
-init call, and
-allow drivers to be built in kernel in case of requesting firmware from probe().
+Good catch, thanks.
 
 >
-> It really *has* to be handled some other way.
+>> +
+>>       ret = usermodehelper_read_trylock();
 >
-> This whole approach seems to actively try to *silently* fix up broken
-> drivers. And it's wrong.
+> So why don't you do this here, actually, like:
 >
-> There's a reason we warn, and there's a reason we *have* to warn: to
-> let driver writers know that what they are attempting to do MAY NOT
-> WORK.
->
-> Really.
->
-> Sure, for a lot of devices it's fine to load the firmware later. But
-> some devices may be part of the resume sequence in very critical ways,
-> and deferring the firmware loading will just mean that the resume will
-> fail.
->
-> This we *need* the WARN_ON() - so that even in the case where it
-> happens to work, people are very much told that "sure, your
-> suspend/resume may have worked, but it was doing fundamentally wrong
-> things that may mean that for other people it *won't* work".
->
-> For example, maybe it's a USB network dongle, and for *YOU* it is
-> perfectly fine to defer the firmware loading, so that the network
-> comes back up a few seconds after the system is up and running.
->
-> But in another machine, that exact same USB network dongle may
-> actually be hardwired on the motherboard (it's fairly common to use
-> USB as a "system bus" in some laptop and embedded devices), and maybe
-> that other machine actually is a thin client that has some tiny rdinit
-> thing, and then everything else is NFS-mounted, and if you resume
-> without networking, the machine is simply *dead*.
->
-> Ok, so that was a completely made-up example, but we have actually had
-> situations kind of like that, where a device is just not that
-> important for lots of people, but in other situations it's critical
-> for the rest of the suspend/resume to succeed.
->
-> This is why I'm so vehemently against silently "hiding" these issues.
+>         if (ret) {
+>                 ret = -EPROBE_DEFER;
 
-OK, I see your concerns.
+The problem is that the 'ret' is zero for early boot situation.
+
+>         } else {
+>
+> instead of the WARN_ON()?
+>
+> Arguably, all cases in which usermodehelper_read_trylock() returns error
+> codes will require deferred probing.
+
+Yes, looks !SYSTEM_RUNNING has covered all the cases already.
 
 >
-> If you have a driver that has problems, make THAT ONE PARTICULAR
-> driver do the deferral explicitly. Don't make some generic "silently
-> defer if there are problems" patch.
+>>       if (WARN_ON(ret)) {
+>>               dev_err(device, "firmware: %s will not be loaded\n", name);
+>> diff --git a/include/linux/device.h b/include/linux/device.h
+>> index d0e4d99..a63d3171 100644
+>> --- a/include/linux/device.h
+>> +++ b/include/linux/device.h
+>> @@ -244,7 +244,7 @@ extern struct device_driver *driver_find(const char *name,
+>>                                        struct bus_type *bus);
+>>  extern int driver_probe_done(void);
+>>  extern void wait_for_device_probe(void);
+>> -
+>> +extern void driver_deferred_probe_trigger(void);
+>>
+>>  /* sysfs interface for exporting driver attributes */
+>>
+>> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+>> index e07f5e0..c8d74c6 100644
+>> --- a/include/linux/kernel.h
+>> +++ b/include/linux/kernel.h
+>> @@ -378,6 +378,7 @@ extern enum system_states {
+>>       SYSTEM_POWER_OFF,
+>>       SYSTEM_RESTART,
+>>       SYSTEM_SUSPEND_DISK,
+>> +     SYSTEM_SUSPEND,
+>
+> First off, SYSTEM_SUSPEND_DISK is not used and probably should be removed.
+> Second, both SYSTEM_SUSPEND and SYSTEM_SUSPEND_DISK would require the same
+> kind of handling in the respect of device probing, so it is not sufficient
+> to change the state in suspend_devices_and_enter().
 
-It is a good idea to let the driver defer request explicitly, but still need
-some changes in generic code to support it.
+suspend_devices_and_enter is used by hibernation too, and the state is just
+updated to RUNNING after suspend_finish.
 
 >
-> See what I'm saying? You're solving things in exactly the wrong place,
-> and in exactly the wrong way. You're papering things over, and making
-> the generic code silently just make broken cases work. That's really
-> really bad, because it makes it *easier* for driver writers to do the
-> wrong thing without even thinking about it, and without ever seeing
-> the problem. And then when people say "suspend/resume doesn't work",
-> the driver author says "it works for me" and ignores the problem.
-> Because you've systemically made it easy to ignore the problem, and
-> made it easy to do the wrong thing by default.
->
-> So we should make driver writers do the right thing by default, and if
-> they cannot do the right thing (and the "isight" camera always comes
-> up, and f*ck it, just fix that driver) then they should do extra work.
+> Moreover, there are other situations in which tasks are frozen and
+> request_firmware() won't work just as well, so I don't think using
+> system_state for that is going to work in general.
 
-So we can let isight driver to defer its request_firmware explicitly.
+Looks system_state becoming SYSTEM_RUNNING means all tasks has
+been thawed completely.
 
->
-> Seriously. People should load their firmware *before* the
-> suspend/resume cycle. And if that isn't possible, then the system
-> should ABSOLUTELY NOT silently say "whatever" and defer it until
-> later.  We should have that big failure and the big noisy warning, and
-> drivers that need to defer need to do so themselves, so that we never
-> *ever* have that silent automatic defer situation.
-
-In my opinion,  we should cache firmware data for all hotplug
-devices or devices which may experience power loss automatically
-in kernel during suspend-resume cycle because all such devices may be
-disconnected and connected again during suspend-resume cycle.
-
-Looks it is not difficult to cache firmware data by kernel, for example, just
-call the
-
-           cache_firmware(fw_name)
-
-for each device which need firmware before suspending,
-then call the below to uncache firmware after resume:
-
-           uncache_firmware(fw_name)
-
-The problem is that many firmwares may consume much
-memory, so we still may let drivers to choose if they need to
-let kernel cache firmware automatically or just defer the
-request_firmware in resume path by unbind & rebind driver to save
-memory space, suppose the device is not important wrt. system
-resume.  Maybe just a few devices can't be allowed to defer
-requesting firmware.
-
-So saving memory space is another advantage of the deferral
-of request_firmware.
 
 
 Thanks,
