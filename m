@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753806Ab2GUCWO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 22:22:14 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28027 "EHLO
+	id S1753787Ab2GUCWN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 22:22:13 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26516 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752231Ab2GUCVM (ORCPT
+	with ESMTP id S1752362Ab2GUCVN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 22:21:12 -0400
-X-Authority-Analysis: v=2.0 cv=StQSGYy0 c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=t-Vslu4qGckA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=oGMlB6cnAAAA:8 a=VnNF1IyMAAAA:8 a=Z4Rwk6OoAAAA:8 a=pGLkceISAAAA:8 a=3nbZYyFuAAAA:8 a=PgWMebuInx1RzEPmWVUA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=Zh68SRI7RUMA:10 a=CY6gl2JlH4YA:10 a=jbrJJM5MRmoA:10 a=MSl-tDqOz04A:10 a=EvKJbDF4Ut8A:10 a=jeBq3FmKZ4MA:10 a=VkNXRRI44iGB_DlCy-sA:9 a=s5Htg7xnQOKvHEu9STBOug==:117
+	Fri, 20 Jul 2012 22:21:13 -0400
+X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=cuvWuhSpAVQA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=3nbZYyFuAAAA:8 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=oGMlB6cnAAAA:8 a=VnNF1IyMAAAA:8 a=Z4Rwk6OoAAAA:8 a=pGLkceISAAAA:8 a=k7Q1rW-QWTxsl8EJ898A:9 a=QEXdDO2ut3YA:10 a=EvKJbDF4Ut8A:10 a=Zh68SRI7RUMA:10 a=jEp0ucaQiEUA:10 a=CY6gl2JlH4YA:10 a=jbrJJM5MRmoA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=orE_kbzUAhhRI1be:21 a=-RSyHwQ8SqA0C7ha:21 a=ecQpxQombMd-3vTlDdoA:9 a=s5Htg7xnQOKvHEu9STBOug==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 72.230.195.127
-Message-Id: <20120721022110.650726104@goodmis.org>
+Message-Id: <20120721022110.305453763@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 20 Jul 2012 22:19:57 -0400
+Date: Fri, 20 Jul 2012 22:19:56 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
@@ -22,9 +22,9 @@ Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Ingo Molnar <mingo@redhat.com>,
         Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         "Frank Ch. Eigler" <fche@redhat.com>
-Subject: [PATCH 14/19] kprobes: Inverse taking of module_mutex with kprobe_mutex
+Subject: [PATCH 13/19] ftrace: add ftrace_set_filter_ip() for address based filter
 References: <20120721021943.274162381@goodmis.org>
-Content-Disposition: inline; filename=0014-kprobes-Inverse-taking-of-module_mutex-with-kprobe_m.patch
+Content-Disposition: inline; filename=0013-ftrace-add-ftrace_set_filter_ip-for-address-based-fi.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -34,21 +34,12 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-Currently module_mutex is taken before kprobe_mutex, but this
-can cause issues when we have kprobes register ftrace, as the ftrace
-mutex is taken before enabling a tracepoint, which currently takes
-the module mutex.
+Add a new filter update interface ftrace_set_filter_ip()
+to set ftrace filter by ip address, not only glob pattern.
 
-If module_mutex is taken before kprobe_mutex, then we can not
-have kprobes use the ftrace infrastructure.
-
-There seems to be no reason that the kprobe_mutex can't be taken
-before the module_mutex. Running lockdep shows that it is safe
-among the kernels I've run.
-
-Link: http://lkml.kernel.org/r/20120605102814.27845.21047.stgit@localhost.l=
+Link: http://lkml.kernel.org/r/20120605102808.27845.67952.stgit@localhost.l=
 ocaldomain
 
 Cc: Thomas Gleixner <tglx@linutronix.de>
@@ -58,39 +49,123 @@ Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
 Cc: "Frank Ch. Eigler" <fche@redhat.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/kprobes.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ include/linux/ftrace.h |    3 +++
+ kernel/trace/ftrace.c  |   59 ++++++++++++++++++++++++++++++++++++++++++++=
+++--
+ 2 files changed, 60 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index c62b854..7a8a122 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -561,9 +561,9 @@ static __kprobes void kprobe_optimizer(struct work_stru=
-ct *work)
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index 9962e95..3e71112 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -317,6 +317,8 @@ struct dyn_ftrace {
+ };
+=20
+ int ftrace_force_update(void);
++int ftrace_set_filter_ip(struct ftrace_ops *ops, unsigned long ip,
++			 int remove, int reset);
+ int ftrace_set_filter(struct ftrace_ops *ops, unsigned char *buf,
+ 		       int len, int reset);
+ int ftrace_set_notrace(struct ftrace_ops *ops, unsigned char *buf,
+@@ -544,6 +546,7 @@ static inline int ftrace_text_reserved(void *start, voi=
+d *end)
+  */
+ #define ftrace_regex_open(ops, flag, inod, file) ({ -ENODEV; })
+ #define ftrace_set_early_filter(ops, buf, enable) do { } while (0)
++#define ftrace_set_filter_ip(ops, ip, remove, reset) ({ -ENODEV; })
+ #define ftrace_set_filter(ops, buf, len, reset) ({ -ENODEV; })
+ #define ftrace_set_notrace(ops, buf, len, reset) ({ -ENODEV; })
+ #define ftrace_free_filter(ops) do { } while (0)
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 528d997..9dcf15d 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -3242,8 +3242,27 @@ ftrace_notrace_write(struct file *file, const char _=
+_user *ubuf,
+ }
+=20
+ static int
+-ftrace_set_regex(struct ftrace_ops *ops, unsigned char *buf, int len,
+-		 int reset, int enable)
++ftrace_match_addr(struct ftrace_hash *hash, unsigned long ip, int remove)
++{
++	struct ftrace_func_entry *entry;
++
++	if (!ftrace_location(ip))
++		return -EINVAL;
++
++	if (remove) {
++		entry =3D ftrace_lookup_ip(hash, ip);
++		if (!entry)
++			return -ENOENT;
++		free_hash_entry(hash, entry);
++		return 0;
++	}
++
++	return add_hash_entry(hash, ip);
++}
++
++static int
++ftrace_set_hash(struct ftrace_ops *ops, unsigned char *buf, int len,
++		unsigned long ip, int remove, int reset, int enable)
  {
- 	LIST_HEAD(free_list);
+ 	struct ftrace_hash **orig_hash;
+ 	struct ftrace_hash *hash;
+@@ -3272,6 +3291,11 @@ ftrace_set_regex(struct ftrace_ops *ops, unsigned ch=
+ar *buf, int len,
+ 		ret =3D -EINVAL;
+ 		goto out_regex_unlock;
+ 	}
++	if (ip) {
++		ret =3D ftrace_match_addr(hash, ip, remove);
++		if (ret < 0)
++			goto out_regex_unlock;
++	}
 =20
-+	mutex_lock(&kprobe_mutex);
- 	/* Lock modules while optimizing kprobes */
- 	mutex_lock(&module_mutex);
--	mutex_lock(&kprobe_mutex);
+ 	mutex_lock(&ftrace_lock);
+ 	ret =3D ftrace_hash_move(ops, enable, orig_hash, hash);
+@@ -3288,6 +3312,37 @@ ftrace_set_regex(struct ftrace_ops *ops, unsigned ch=
+ar *buf, int len,
+ 	return ret;
+ }
 =20
- 	/*
- 	 * Step 1: Unoptimize kprobes and collect cleaned (unused and disarmed)
-@@ -586,8 +586,8 @@ static __kprobes void kprobe_optimizer(struct work_stru=
-ct *work)
- 	/* Step 4: Free cleaned kprobes after quiesence period */
- 	do_free_cleaned_kprobes(&free_list);
-=20
--	mutex_unlock(&kprobe_mutex);
- 	mutex_unlock(&module_mutex);
-+	mutex_unlock(&kprobe_mutex);
-=20
- 	/* Step 5: Kick optimizer again if needed */
- 	if (!list_empty(&optimizing_list) || !list_empty(&unoptimizing_list))
++static int
++ftrace_set_addr(struct ftrace_ops *ops, unsigned long ip, int remove,
++		int reset, int enable)
++{
++	return ftrace_set_hash(ops, 0, 0, ip, remove, reset, enable);
++}
++
++/**
++ * ftrace_set_filter_ip - set a function to filter on in ftrace by address
++ * @ops - the ops to set the filter with
++ * @ip - the address to add to or remove from the filter.
++ * @remove - non zero to remove the ip from the filter
++ * @reset - non zero to reset all filters before applying this filter.
++ *
++ * Filters denote which functions should be enabled when tracing is enabled
++ * If @ip is NULL, it failes to update filter.
++ */
++int ftrace_set_filter_ip(struct ftrace_ops *ops, unsigned long ip,
++			 int remove, int reset)
++{
++	return ftrace_set_addr(ops, ip, remove, reset, 1);
++}
++EXPORT_SYMBOL_GPL(ftrace_set_filter_ip);
++
++static int
++ftrace_set_regex(struct ftrace_ops *ops, unsigned char *buf, int len,
++		 int reset, int enable)
++{
++	return ftrace_set_hash(ops, buf, len, 0, 0, reset, enable);
++}
++
+ /**
+  * ftrace_set_filter - set a function to filter on in ftrace
+  * @ops - the ops to set the filter with
 --=20
 1.7.10.4
 
@@ -103,19 +178,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABAgAGBQJQChIWAAoJEIy3vGnGbaoAacIQAI5Mvxj3McWYh6rl0DCP8f1+
-bp1Lw4ADhprGYAktKy4GROlNo6XGY1A1C/oPd/6YY/1cN59FWnMcjJdihNv/Gi4H
-O0uep5ILfvp68/VMvhCamGxttAUzfVUb1C9u839EaFZ6Xy6CvHGaGm50WJRNT/Dx
-kTFZ/u/ABZCcv1ZSwmsqZsHaQnEryaBoo+zEcmcTgnJxoBytYfqRs+Zurhz19x4f
-s4HMRlbmPMaHwsV5XFuZ95SsaZeOnfMrG/iFdEvRReNqguZFaMKF0ASOwjSyWMSj
-f6mviG7ZGND6xuYzv5VG1v7qk7yfd5r2qe1jTgEpbUzbw9gUfQ9s7bB6cBK/T9UN
-RcTHsu+emPUo/xNnzp9ds2eANeETeHXaJMCKpr4VZeKIzlZ7qrSMFaFqYR3ibYLd
-xWtNCSGsYx1JTK5X6eHrt9VGNlKwLAqFKNlPQHyphVeii8ndjFcGkrQ33yep+L8N
-+e0F7d+ZMlPlxrGXDxVnpvm/NVXo2XGCKHHwhFF0kTc/fqsC3CRPwUar0ULq3kJz
-0RA9jz+7Ly9DL32qesE2C038B8KeJu9pB4Gp8K33/2cv4fWiBbpkGoL92yUAHXmH
-WtWu9s3iCOyr9ufN8AhR9WRE/bWirpgawD5uXSsTrC5racjPWJlv9BxfD4bfMoYG
-H/qj4RjzpnNPtNcJp5rY
-=XtU0
+iQIcBAABAgAGBQJQChIWAAoJEIy3vGnGbaoAynYP/joAQZBm9WInv3OYtVqATcH0
+n6rn5/0TVZFK9SCEpeCr0m9cbJ7RRQp8mrDsMwv8X1QjuGD60C5vGR3PflFmoFoJ
+2SfDxfV2JNOwUlbNQWVHi4HAR2s8z42N6aEP0v8Dks3toDuA/eIOCHoxue5L9vG4
+LE5Kn6bsekjoyqXWoCJNjmOK3+ZgagIYwb1D6AGtN3IOquCquRf9RXlNdM3jciCa
+ePB/cLANWeVfIq+Nw9YtwPbVTAD5vfEl7iG/xITkFt3UzgUdnS5Yurt6Ig1DZ0mV
+UDqIyZU/cL263Uw2V4zOXLboLQoH6v5x3jIN0gxKqcRGJHu8PccPcTfJVbiXDyMv
+KRUnqP3g60DkH/byAfNRsST1bC/BPefGzUp2K2fp/K5pUpctkKEUnX7kNBQgFlSn
+sPgUsmDzi4o4GWuKKl9LzU9BoJNl3eaqEm68VGRGH9UZqkvsT+T8/i7D2VOwJOyF
+1YeiM7fL2nGS1rlGy+5A9hSlJfJ7O6jPlHi/BqtiRnYHf6fuVtHaY1+Qk2tWABgv
+0gtZTe0Euzt5eUmptaRoaKXpaEK7Xpin78HXOwtYfvPHRcaThch0wGpJGjc/LIEF
+xORH6Nf4tE83EPwxN0pvk6yueo64EoinIoT7VnPvyQZUveEvDo85dnBLh99NAGoz
+5C6iFs1eZPhm290z9Qjg
+=dd6b
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
