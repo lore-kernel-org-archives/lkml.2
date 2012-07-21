@@ -1,30 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753495Ab2GUCV5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 22:21:57 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28689 "EHLO
+	id S1753048Ab2GUCVy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 22:21:54 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22835 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752324Ab2GUCVM (ORCPT
+	with ESMTP id S1751958Ab2GUCVK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 22:21:12 -0400
-X-Authority-Analysis: v=2.0 cv=AtpsLZBP c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=-j_IYZszZLoA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=3nbZYyFuAAAA:8 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=oGMlB6cnAAAA:8 a=VnNF1IyMAAAA:8 a=Z4Rwk6OoAAAA:8 a=pGLkceISAAAA:8 a=WoGK4d_3FuubdTwUpJUA:9 a=QEXdDO2ut3YA:10 a=EvKJbDF4Ut8A:10 a=Zh68SRI7RUMA:10 a=jEp0ucaQiEUA:10 a=CY6gl2JlH4YA:10 a=jbrJJM5MRmoA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=4ZkelQdyRBR4cV6o:21 a=EzC1ys5tiW-Qnklw:21 a=bo_gSTEkvhv5yP1TNu8A:9 a=s5Htg7xnQOKvHEu9STBOug==:117
+	Fri, 20 Jul 2012 22:21:10 -0400
+X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=FUJXACS5bz8A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=3nbZYyFuAAAA:8 a=TsNgXkvQm6id9O5xiMMA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=EvKJbDF4Ut8A:10 a=s0Dg3XkGZUyswKr378AA:9 a=s5Htg7xnQOKvHEu9STBOug==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 72.230.195.127
-Message-Id: <20120721022110.977966398@goodmis.org>
+Message-Id: <20120721022107.235836623@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 20 Jul 2012 22:19:58 -0400
+Date: Fri, 20 Jul 2012 22:19:47 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>
-Subject: [PATCH 15/19] kprobes: cleanup to separate probe-able check
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: [PATCH 04/19] ftrace/x86_32: Push ftrace_ops in as 3rd parameter to function
+ tracer
 References: <20120721021943.274162381@goodmis.org>
-Content-Disposition: inline; filename=0015-kprobes-cleanup-to-separate-probe-able-check.patch
+Content-Disposition: inline; filename=0004-ftrace-x86_32-Push-ftrace_ops-in-as-3rd-parameter-to.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -34,158 +32,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+From: Steven Rostedt <srostedt@redhat.com>
 
-Separate probe-able address checking code from
-register_kprobe().
+Add support of passing the current ftrace_ops into the 3rd parameter
+of the callback to the function tracer.
 
-Link: http://lkml.kernel.org/r/20120605102820.27845.90133.stgit@localhost.l=
-ocaldomain
+Link: http://lkml.kernel.org/r/20120612225424.942411318@goodmis.org
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: "Frank Ch. Eigler" <fche@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/kprobes.c |   82 ++++++++++++++++++++++++++++++--------------------=
-----
- 1 file changed, 45 insertions(+), 37 deletions(-)
+ arch/x86/include/asm/ftrace.h |    2 +-
+ arch/x86/kernel/entry_32.S    |    1 +
+ 2 files changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index 7a8a122..6137fe3 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -1313,67 +1313,80 @@ static inline int check_kprobe_rereg(struct kprobe =
-*p)
- 	return ret;
- }
+diff --git a/arch/x86/include/asm/ftrace.h b/arch/x86/include/asm/ftrace.h
+index 783b107..b3bb1f3 100644
+--- a/arch/x86/include/asm/ftrace.h
++++ b/arch/x86/include/asm/ftrace.h
+@@ -32,7 +32,7 @@
+ #define MCOUNT_ADDR		((long)(mcount))
+ #define MCOUNT_INSN_SIZE	5 /* sizeof mcount call */
 =20
--int __kprobes register_kprobe(struct kprobe *p)
-+static __kprobes int check_kprobe_address_safe(struct kprobe *p,
-+					       struct module **probed_mod)
- {
- 	int ret =3D 0;
--	struct kprobe *old_p;
--	struct module *probed_mod;
--	kprobe_opcode_t *addr;
--
--	addr =3D kprobe_addr(p);
--	if (IS_ERR(addr))
--		return PTR_ERR(addr);
--	p->addr =3D addr;
--
--	ret =3D check_kprobe_rereg(p);
--	if (ret)
--		return ret;
+-#if defined(CONFIG_DYNAMIC_FTRACE) && defined(CONFIG_X86_64)
++#ifdef CONFIG_DYNAMIC_FTRACE
+ #define ARCH_SUPPORTS_FTRACE_OPS 1
+ #endif
 =20
- 	jump_label_lock();
- 	preempt_disable();
-+
-+	/* Ensure it is not in reserved area nor out of text */
- 	if (!kernel_text_address((unsigned long) p->addr) ||
- 	    in_kprobes_functions((unsigned long) p->addr) ||
- 	    ftrace_text_reserved(p->addr, p->addr) ||
- 	    jump_label_text_reserved(p->addr, p->addr)) {
- 		ret =3D -EINVAL;
--		goto cannot_probe;
-+		goto out;
- 	}
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index 623f288..e3e17a0 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -1111,6 +1111,7 @@ ENTRY(ftrace_caller)
+ 	pushl %edx
+ 	movl 0xc(%esp), %eax
+ 	movl 0x4(%ebp), %edx
++	leal function_trace_op, %ecx
+ 	subl $MCOUNT_INSN_SIZE, %eax
 =20
--	/* User can pass only KPROBE_FLAG_DISABLED to register_kprobe */
--	p->flags &=3D KPROBE_FLAG_DISABLED;
--
--	/*
--	 * Check if are we probing a module.
--	 */
--	probed_mod =3D __module_text_address((unsigned long) p->addr);
--	if (probed_mod) {
--		/* Return -ENOENT if fail. */
--		ret =3D -ENOENT;
-+	/* Check if are we probing a module */
-+	*probed_mod =3D __module_text_address((unsigned long) p->addr);
-+	if (*probed_mod) {
- 		/*
- 		 * We must hold a refcount of the probed module while updating
- 		 * its code to prohibit unexpected unloading.
- 		 */
--		if (unlikely(!try_module_get(probed_mod)))
--			goto cannot_probe;
-+		if (unlikely(!try_module_get(*probed_mod))) {
-+			ret =3D -ENOENT;
-+			goto out;
-+		}
-=20
- 		/*
- 		 * If the module freed .init.text, we couldn't insert
- 		 * kprobes in there.
- 		 */
--		if (within_module_init((unsigned long)p->addr, probed_mod) &&
--		    probed_mod->state !=3D MODULE_STATE_COMING) {
--			module_put(probed_mod);
--			goto cannot_probe;
-+		if (within_module_init((unsigned long)p->addr, *probed_mod) &&
-+		    (*probed_mod)->state !=3D MODULE_STATE_COMING) {
-+			module_put(*probed_mod);
-+			*probed_mod =3D NULL;
-+			ret =3D -ENOENT;
- 		}
--		/* ret will be updated by following code */
- 	}
-+out:
- 	preempt_enable();
- 	jump_label_unlock();
-=20
-+	return ret;
-+}
-+
-+int __kprobes register_kprobe(struct kprobe *p)
-+{
-+	int ret;
-+	struct kprobe *old_p;
-+	struct module *probed_mod;
-+	kprobe_opcode_t *addr;
-+
-+	/* Adjust probe address from symbol */
-+	addr =3D kprobe_addr(p);
-+	if (IS_ERR(addr))
-+		return PTR_ERR(addr);
-+	p->addr =3D addr;
-+
-+	ret =3D check_kprobe_rereg(p);
-+	if (ret)
-+		return ret;
-+
-+	/* User can pass only KPROBE_FLAG_DISABLED to register_kprobe */
-+	p->flags &=3D KPROBE_FLAG_DISABLED;
- 	p->nmissed =3D 0;
- 	INIT_LIST_HEAD(&p->list);
--	mutex_lock(&kprobe_mutex);
-=20
-+	ret =3D check_kprobe_address_safe(p, &probed_mod);
-+	if (ret)
-+		return ret;
-+
-+	mutex_lock(&kprobe_mutex);
- 	jump_label_lock(); /* needed to call jump_label_text_reserved() */
-=20
- 	get_online_cpus();	/* For avoiding text_mutex deadlock. */
-@@ -1410,11 +1423,6 @@ out:
- 		module_put(probed_mod);
-=20
- 	return ret;
--
--cannot_probe:
--	preempt_enable();
--	jump_label_unlock();
--	return ret;
- }
- EXPORT_SYMBOL_GPL(register_kprobe);
-=20
+ .globl ftrace_call
 --=20
 1.7.10.4
 
@@ -198,19 +83,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABAgAGBQJQChIXAAoJEIy3vGnGbaoAgUAQAN6y4AUMphb8ZXZKBHQKOmwx
-GWcZ+ce8gLKBzLTLucIw0l2tJT6txGWqv8DTacct1w3kf3YozqPCG76DcMY0H2kc
-DMr5cm+OEwWzy9SbF0riVMqKObX+emEqEdZ9+sQeab6568BlM+VNCEhS3bkvBrPd
-7ZdFGGdwB/0NmsovfxFg58YUsAU4W6WroutiObi9/xnlrhOFYxOTlB1gRqiN0htM
-ToYQxz4K3xXHE172e40EVAdGFYTNhEbNLHowidiHDcHuf/4VZ+SFRiyMrGB1z7+K
-+5qlujWqGUE7Jm8SrhjibOMy7Y3yW7zVHjr/P7pyCG2BS0wruik4CuFV8EUWDmDu
-ub7fjm1p7pO94pGODZbc9ZOc0kp1PXlM/vTcBxHKT6uhwSnKYhEQGGcTPer7DhM8
-oSzO0tNU4fW2mxQIGI0rgkzZpW++4LlePf0K21Pz8HetSD2AdDbOSkMp3sU418CG
-a+B+FodGSYrJpelcuoQBEcFenRgAgYt3PpwjwedqQxz7ZrN8CASHFywdMMcNcE/r
-Mu0KbKb5kaV/G3bcDERO8ZBUIFsVfMsO+zbRHdwhxScjcqJHZa48o2iP1UO90Bd/
-ALFhdMPbnYtp99DrWbBGdeKMbJKig7BPbozVM4toeS7EJtMCHQxbJ04i+C6O7L90
-Ra6nXE8+QifHpI8TTHkU
-=IauO
+iQIcBAABAgAGBQJQChITAAoJEIy3vGnGbaoAwIYP/j1H37r3CVFZqIybXSgSejPD
+tcgbZ78fSHAJKkaGj/KB1ogN2K4YJcQRyPtmExdF6eNQn+nobc3KTMbM220509G5
+WpIT8Y9j4SaAVeCpNwT8lmwXypRlOWX/eRKB+TdYaGaosogHGRMGdfKllC2ZBEH7
+EvgW4BNmdLjgoeHyYADIvd58yQT93AtKDQGV/Xiu7tnw5EZ71L0obcImsTfHa0oi
+4T/Asu444sUyXO32qkrUykDgYPWmAJ0NDtYgdleS0avzLlnQeMpYclOG29dEpoo3
+xMxuojz4gYxzeQnaeY0tcbx2Ow3KBEUTOm+LAvmfdX3Rwo1cnAmKMPiRLAp5cT7E
+7SZXSOwsmEIGcE59bxnzNPzbvMFcN1+YEi/1W285jgixjt3cZAM0oU2oM4Jx2u7c
+AtV3mfyFX8zXHw4lSnkDNyFt+FLqS0/bMqgdoO15cl7Nutto3I+yGBaeNCmlMNb7
+VxBjL3Ebl4yzuuXqXKfBhtevpubxJVErpDbSQ4o77bf0H1zk5yokJaH5kdkNQ7Fz
+ZXg7uG0CwWO/h/lRxpkmIMV0nTHeh73dMG0xEZVpqji1pa2YedPG2rAOjoXZ0MF8
+4MWw8Hy3cLVFofwaWoADPijZT/Prx0JLKhOLbRHVyCQZY8pTsNrwyaHEkQNKNpIV
+YpOeNkCteOcqVCZpO1C9
+=2IO6
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
