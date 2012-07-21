@@ -1,48 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751924Ab2GULF5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jul 2012 07:05:57 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46786 "EHLO
+	id S1751894Ab2GULLe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jul 2012 07:11:34 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44284 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751394Ab2GULF4 (ORCPT
+	with ESMTP id S1750724Ab2GULLc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jul 2012 07:05:56 -0400
-From: Ashish Sangwan <ashishsangwan2@gmail.com>
-To: Jan Kara <jack@suse.cz>
-Cc: linux-kernel@vger.kernel.org, Ashish Sangwan <ashish.sangwan2@gmail.com>,
-        Namjae Jeon <linkinjeon@gmail.com>
-Subject: [PATCH] UDF: During mount free lvid_bh before rescanning with different blocksize
-Date: Sat, 21 Jul 2012 16:35:17 +0530
-Message-Id: <1342868717-1712-1-git-send-email-ashish.sangwan2@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Sat, 21 Jul 2012 07:11:32 -0400
+From: Namhyung Kim <namhyung@kernel.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [Question] perf header: Why the HEADER_EVENT_DESC is needed?
+Date: Sat, 21 Jul 2012 20:11:24 +0900
+Message-ID: <87txx1qsgz.fsf@kernel.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If s_lvid_bh is not freed and set to NULL before re-scanning partition 
-with default block size, we might end up using wrong lvid in case
-s_lvid_bh is not updated in udf_load_logicalvolint during rescan.
+Hi Stephane,
 
-Signed-off-by: Ashish Sangwan <ashish.sangwan2@gmail.com>
-Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+I wonder why we need to save the event descriptions in the feature area
+of file header. Since the perf_event_attr, its ids and the event name
+are already saved in the header, it seems a duplicate work to do that.
+For printing the information, we might reuse those info or evlist
+directly IMHO.
 
----
- fs/udf/super.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+Am I missing something?
 
-diff --git a/fs/udf/super.c b/fs/udf/super.c
-index ac8a348..4a95c56 100644
---- a/fs/udf/super.c
-+++ b/fs/udf/super.c
-@@ -1961,6 +1961,8 @@ static int udf_fill_super(struct super_block *sb, void *options, int silent)
- 			if (!silent)
- 				pr_notice("Rescanning with blocksize %d\n",
- 					  UDF_DEFAULT_BLOCKSIZE);
-+			brelse(sbi->s_lvid_bh);
-+			sbi->s_lvid_bh = NULL;
- 			uopt.blocksize = UDF_DEFAULT_BLOCKSIZE;
- 			ret = udf_load_vrs(sb, &uopt, silent, &fileset);
- 		}
--- 
-1.7.2.3
-
+Thanks,
+Namhyung
