@@ -1,128 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752226Ab2GUXbA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jul 2012 19:31:00 -0400
-Received: from void.printf.net ([89.145.121.20]:47318 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751975Ab2GUXa7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jul 2012 19:30:59 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Viresh Kumar <viresh.kumar@st.com>,
-        Manuel Lauss <manuel.lauss@googlemail.com>, linux-mmc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1 2/2] mmc: sdhci-dove: Prepare for common clock framework
-References: <1341483241-18300-1-git-send-email-sebastian.hesselbarth@googlemail.com>
-	<1341483241-18300-2-git-send-email-sebastian.hesselbarth@googlemail.com>
-Date: Sat, 21 Jul 2012 19:30:54 -0400
-In-Reply-To: <1341483241-18300-2-git-send-email-sebastian.hesselbarth@googlemail.com>
-	(Sebastian Hesselbarth's message of "Thu, 5 Jul 2012 12:14:01 +0200")
-Message-ID: <87boj83d5d.fsf@octavius.laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
+	id S1752118Ab2GUXhW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jul 2012 19:37:22 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:45273 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751563Ab2GUXhU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jul 2012 19:37:20 -0400
+Date: Sat, 21 Jul 2012 16:37:14 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] acpi: fix pwr_btn_event_pending build error
+Message-ID: <20120721233714.GL2435@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120721214156.GA2515@linux.vnet.ibm.com>
+ <20120721215243.GA15362@shutemov.name>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120721215243.GA15362@shutemov.name>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12072123-4242-0000-0000-0000026551A1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, Jul 22, 2012 at 12:52:43AM +0300, Kirill A. Shutemov wrote:
+> On Sat, Jul 21, 2012 at 02:41:56PM -0700, Paul E. McKenney wrote:
+> > Hello!
+> > 
+> > A recent build for KVM on x86 resulted in the following build error:
+> > 
+> > drivers/acpi/sleep.c:60:13: warning: ‘pwr_btn_event_pending’ defined but not
+> > +used [-Wunused-variable]
+> > 
+> > This patch silences this error.
+> > 
+> > Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> > 
+> > diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
+> > index 8856102..18347aa 100644
+> > --- a/drivers/acpi/sleep.c
+> > +++ b/drivers/acpi/sleep.c
+> > @@ -57,7 +57,9 @@ MODULE_PARM_DESC(gts, "Enable evaluation of _GTS on suspend.");
+> >  MODULE_PARM_DESC(bfs, "Enable evaluation of _BFS on resume".);
+> >  
+> >  static u8 sleep_states[ACPI_S_STATE_COUNT];
+> > +#ifdef CONFIG_ACPI_SLEEP
+> >  static bool pwr_btn_event_pending;
+> > +#endif /* #ifdef CONFIG_ACPI_SLEEP */
+> 
+> __maybe_unused ?
 
-On Thu, Jul 05 2012, Sebastian Hesselbarth wrote:
-> As mach-dove is moving towards common clock framework prepare
-> the sdhci driver to grab it's clock.
->
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>
-> Cc: Chris Ball <cjb@laptop.org>
-> Cc: Anton Vorontsov <cbouatmailru@gmail.com>
-> Cc: Shawn Guo <shawn.guo@linaro.org>
-> Cc: Viresh Kumar <viresh.kumar@st.com>
-> Cc: Manuel Lauss <manuel.lauss@googlemail.com>
-> Cc: linux-mmc@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  drivers/mmc/host/sdhci-dove.c |   48 ++++++++++++++++++++++++++++++++++++++++-
->  1 file changed, 47 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/mmc/host/sdhci-dove.c b/drivers/mmc/host/sdhci-dove.c
-> index 9c85368..a6e53a1 100644
-> --- a/drivers/mmc/host/sdhci-dove.c
-> +++ b/drivers/mmc/host/sdhci-dove.c
-> @@ -20,11 +20,17 @@
->   */
->  
->  #include <linux/io.h>
-> +#include <linux/clk.h>
-> +#include <linux/err.h>
->  #include <linux/module.h>
->  #include <linux/mmc/host.h>
->  
->  #include "sdhci-pltfm.h"
->  
-> +struct sdhci_dove_priv {
-> +	struct clk *clk;
-> +};
-> +
->  static u16 sdhci_dove_readw(struct sdhci_host *host, int reg)
->  {
->  	u16 ret;
-> @@ -72,11 +78,51 @@ static struct sdhci_pltfm_data sdhci_dove_pdata = {
->  
->  static int __devinit sdhci_dove_probe(struct platform_device *pdev)
->  {
-> -	return sdhci_pltfm_register(pdev, &sdhci_dove_pdata);
-> +	struct sdhci_host *host;
-> +	struct sdhci_pltfm_host *pltfm_host;
-> +	struct sdhci_dove_priv *priv;
-> +	int ret;
-> +
-> +	ret = sdhci_pltfm_register(pdev, &sdhci_dove_pdata);
-> +	if (ret)
-> +		goto sdhci_dove_register_fail;
-> +
-> +	priv = devm_kzalloc(&pdev->dev, sizeof(struct sdhci_dove_priv),
-> +			    GFP_KERNEL);
-> +	if (!priv) {
-> +		dev_err(&pdev->dev, "unable to allocate private data");
-> +		ret = -ENOMEM;
-> +		goto sdhci_dove_allocate_fail;
-> +	}
-> +
-> +	host = platform_get_drvdata(pdev);
-> +	pltfm_host = sdhci_priv(host);
-> +	pltfm_host->priv = priv;
-> +
-> +	priv->clk = clk_get(&pdev->dev, NULL);
-> +	if (!IS_ERR(priv->clk))
-> +		clk_prepare_enable(priv->clk);
-> +	return 0;
-> +
-> +sdhci_dove_allocate_fail:
-> +	sdhci_pltfm_unregister(pdev);
-> +sdhci_dove_register_fail:
-> +	return ret;
->  }
->  
->  static int __devexit sdhci_dove_remove(struct platform_device *pdev)
->  {
-> +	struct sdhci_host *host = platform_get_drvdata(pdev);
-> +	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
-> +	struct sdhci_dove_priv *priv = pltfm_host->priv;
-> +
-> +	if (priv->clk) {
-> +		if (!IS_ERR(priv->clk)) {
-> +			clk_disable_unprepare(priv->clk);
-> +			clk_put(priv->clk);
-> +		}
-> +		devm_kfree(&pdev->dev, priv->clk);
-> +	}
->  	return sdhci_pltfm_unregister(pdev);
->  }
+Are the compiler and linker smart enough to get rid of the storage in
+case it really isn't used?  (Not that the storage for a bool is worth
+worrying about, but...)
 
-Thanks, pushed to mmc-next for 3.6.
+							Thanx, Paul
 
-- Chris.
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
