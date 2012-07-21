@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751561Ab2GUPVs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jul 2012 11:21:48 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58340 "EHLO mail.zytor.com"
+	id S1751628Ab2GUPir (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jul 2012 11:38:47 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:58039 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751085Ab2GUPVp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jul 2012 11:21:45 -0400
-Message-ID: <500AC8F6.4010802@zytor.com>
-Date: Sat, 21 Jul 2012 08:21:26 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Thomas Renninger <trenn@suse.de>
-CC: linux-kernel@vger.kernel.org, lenb@kernel.org, linux-acpi@vger.kernel.org,
-        initramfs@vger.kernel.org, bigeasy@linutronix.de,
-        Fenghua Yu <fenghua.yu@intel.com>
-Subject: Re: [PATCH 1/2] init: Introduce early initrd files through uncompressed
- cpio passing
-References: <1342607764-66747-1-git-send-email-trenn@suse.de> <1342607764-66747-2-git-send-email-trenn@suse.de>
-In-Reply-To: <1342607764-66747-2-git-send-email-trenn@suse.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751299Ab2GUPiq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jul 2012 11:38:46 -0400
+From: zwu.kernel@gmail.com
+To: viro@zeniv.linux.org.uk
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: [PATCH] vfs: simply the code logic
+Date: Sat, 21 Jul 2012 23:38:19 +0800
+Message-Id: <1342885099-22662-1-git-send-email-zwu.kernel@gmail.com>
+X-Mailer: git-send-email 1.7.6
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12072115-8974-0000-0000-00000B610027
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2012 03:36 AM, Thomas Renninger wrote:
-> cpio parsing code comes from  H. Peter Anvin.
-> The CONFIG_EARLY_INITRD feature is architecture independent, but
-> for now only enabled/called for X86.
-> The problem is that initrd_start must be valid, but there is no
-> architecture independent reserve_initrd() call in init/main.c or
-> similiar.
-> + * Add here new callback functions and the path relevant files show up in an
-> + * uncompressed cpio
-> + */
-> +static __initdata struct initrd_early_data initrd_early_callbacks[] =
-> +{
-> +	{
-> +		.namesp = NULL,
-> +	}
-> +};
-> +
+From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-I don't like your callback interface at all.  In fact, it is actively 
-broken, because it assumes that all early users are runnable at the same 
-time, which is trivially shown false -- the microcode work that Fenghua 
-Yu is working on needs access to its early data much, much earlier than 
-your ACPI code.
+Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+---
+ fs/block_dev.c |    5 +----
+ 1 files changed, 1 insertions(+), 4 deletions(-)
 
-So big NAK on this change.  Instead we should stick to the imperative 
-interface that I had in my original code (call the search function with 
-a filename and let it return a pointer if found.)
-
-	-hpa
-
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index c2bbe1f..0f268d3 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -396,10 +396,7 @@ static loff_t block_llseek(struct file *file, loff_t offset, int origin)
+ 			goto out;
+ 	}
+ 	if (offset >= 0 && offset <= size) {
+-		if (offset != file->f_pos) {
+-			file->f_pos = offset;
+-		}
+-		retval = offset;
++		retval = file->f_pos = offset;
+ 	}
+ out:
+ 	mutex_unlock(&bd_inode->i_mutex);
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+1.7.6
 
