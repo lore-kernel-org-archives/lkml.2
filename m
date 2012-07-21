@@ -1,69 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751733Ab2GUCDV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 22:03:21 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:40244 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750993Ab2GUCDU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 22:03:20 -0400
-Date: Fri, 20 Jul 2012 22:02:58 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Tony Luck <tony.luck@intel.com>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org, w@1wt.eu,
-        ewust@umich.edu, zakir@umich.edu, greg@kroah.com, mpm@selenic.com,
-        nadiah@cs.ucsd.edu, jhalderm@umich.edu, tglx@linutronix.de,
-        davem@davemloft.net
-Subject: Re: [PATCH] dmi: Feed DMI table to /dev/random driver
-Message-ID: <20120721020258.GA12898@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
-	torvalds@linux-foundation.org, w@1wt.eu, ewust@umich.edu,
-	zakir@umich.edu, greg@kroah.com, mpm@selenic.com,
-	nadiah@cs.ucsd.edu, jhalderm@umich.edu, tglx@linutronix.de,
-	davem@davemloft.net
-References: <1341511933-11169-1-git-send-email-tytso@mit.edu>
- <0107910@agluck-desktop.sc.intel.com>
- <20120721005610.GB9399@thunk.org>
- <CA+8MBbKroxc1p8+QOhEd6+gn2BD4ymcS7n7SOMR2=aiMW8waqA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+8MBbKroxc1p8+QOhEd6+gn2BD4ymcS7n7SOMR2=aiMW8waqA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1752243Ab2GUCLf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 22:11:35 -0400
+Received: from fep01.xtra.co.nz ([210.54.141.245]:37027 "EHLO fep01.xtra.co.nz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751695Ab2GUCLN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 20 Jul 2012 22:11:13 -0400
+X-Greylist: delayed 620 seconds by postgrey-1.27 at vger.kernel.org; Fri, 20 Jul 2012 22:11:07 EDT
+From: Tony Prisk <linux@prisktech.co.nz>
+To: linux-usb@vger.kernel.org
+Cc: Tony Prisk <linux@prisktech.co.nz>,
+        VT8500 mailing list 
+	<vt8500-wm8505-linux-kernel@googlegroups.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Hauke Mehrtens <hauke@hauke-m.de>,
+        Felipe Balbi <balbi@ti.com>, Neil Zhang <zhangwm@marvell.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 1/2] ARM: vt8500: Update vt8500-ehci driver to support device tree.
+Date: Sat, 21 Jul 2012 14:00:38 +1200
+Message-Id: <1342836039-9273-1-git-send-email-linux@prisktech.co.nz>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 20, 2012 at 06:19:33PM -0700, Tony Luck wrote:
-> On Fri, Jul 20, 2012 at 5:56 PM, Theodore Ts'o <tytso@mit.edu> wrote:
-> > The other approach was to add some new interface that random.c would
-> > call which would grab the dmi data from rand_initialize().  But that's
-> > going to be a lot more complicated, so I guess we should go with the
-> > simple/stupid approach.
-> 
-> It wouldn't be all that hard ... we'd just need to add a new entry point
-> to the dmi codefor random to call (and a stub somewhere so that
-> CONFIG_DMI=n kernels still build). But getting some per-platform
-> data into the random pools earlier is a good thing ... it means that
-> users of random data will see the benefit earlier than they do now.
+Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+---
+ .../devicetree/bindings/usb/vt8500-ehci.txt        |   10 ++++++++++
+ drivers/usb/host/ehci-vt8500.c                     |    9 +++++++++
+ 2 files changed, 19 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/usb/vt8500-ehci.txt
 
-Yeah, what makes it tricky is if we wanted to do things in an arch
-independent way, since I assume there are architectures out there
-which have something which has the same sort of information as the DMI
-tables, but which would be something else.  So we'd need to have some
-interface which could be defined by each architecture, and a no-op
-function for architectures that didn't provide such a thing.
-
-> So add the big fat comment so that people know not to break this
-> useful (if not entirely intentional) functionality.
-
-I agree.  Want to send a revised patch with the comment, and I'll drop
-it into the random.git tree?
-
-Thanks,
-
-						- Ted
+diff --git a/Documentation/devicetree/bindings/usb/vt8500-ehci.txt b/Documentation/devicetree/bindings/usb/vt8500-ehci.txt
+new file mode 100644
+index 0000000..74f75c6
+--- /dev/null
++++ b/Documentation/devicetree/bindings/usb/vt8500-ehci.txt
+@@ -0,0 +1,10 @@
++VIA VT8500 and Wondermedia WM8xxx SoC USB controllers.
++
++Required properties:
++ - compatible: Should be "via,vt8500-ehci" or "wm,prizm-ehci".
++
++usb: ehci@D8007100 {
++	compatible = "wm,prizm-ehci", "usb-ehci";
++	reg = <0xD8007100 0x200>;
++	interrupts = <1>;
++};
+diff --git a/drivers/usb/host/ehci-vt8500.c b/drivers/usb/host/ehci-vt8500.c
+index c1eda73..4ba8f0c 100644
+--- a/drivers/usb/host/ehci-vt8500.c
++++ b/drivers/usb/host/ehci-vt8500.c
+@@ -16,6 +16,7 @@
+  *
+  */
+ 
++#include <linux/of.h>
+ #include <linux/platform_device.h>
+ 
+ static int ehci_update_device(struct usb_hcd *hcd, struct usb_device *udev)
+@@ -162,6 +163,12 @@ static int vt8500_ehci_drv_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++static const struct of_device_id vt8500_ehci_ids[] = {
++	{ .compatible = "via,vt8500-ehci", },
++	{ .compatible = "wm,prizm-ehci", },
++	{}
++};
++
+ static struct platform_driver vt8500_ehci_driver = {
+ 	.probe		= vt8500_ehci_drv_probe,
+ 	.remove		= vt8500_ehci_drv_remove,
+@@ -169,7 +176,9 @@ static struct platform_driver vt8500_ehci_driver = {
+ 	.driver = {
+ 		.name	= "vt8500-ehci",
+ 		.owner	= THIS_MODULE,
++		.of_match_table = of_match_ptr(vt8500_ehci_ids),
+ 	}
+ };
+ 
+ MODULE_ALIAS("platform:vt8500-ehci");
++MODULE_DEVICE_TABLE(of, vt8500_ehci_ids);
+-- 
+1.7.2.5
 
