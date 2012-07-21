@@ -1,30 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753850Ab2GUCWV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 20 Jul 2012 22:22:21 -0400
+	id S1753832Ab2GUCWT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 20 Jul 2012 22:22:19 -0400
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28689 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752671Ab2GUCVO (ORCPT
+	with ESMTP id S1752286Ab2GUCVM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 20 Jul 2012 22:21:14 -0400
-X-Authority-Analysis: v=2.0 cv=AtpsLZBP c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=ZQvrKFj6Z-gA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=3nbZYyFuAAAA:8 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=oGMlB6cnAAAA:8 a=VnNF1IyMAAAA:8 a=Z4Rwk6OoAAAA:8 a=pGLkceISAAAA:8 a=Y1Ot2RuyV6B7H7rStpgA:9 a=QEXdDO2ut3YA:10 a=EvKJbDF4Ut8A:10 a=Zh68SRI7RUMA:10 a=jEp0ucaQiEUA:10 a=CY6gl2JlH4YA:10 a=jbrJJM5MRmoA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=t7H-DIIlBou0qIWqXKsA:9 a=s5Htg7xnQOKvHEu9STBOug==:117
+	Fri, 20 Jul 2012 22:21:12 -0400
+X-Authority-Analysis: v=2.0 cv=AtpsLZBP c=1 sm=0 a=s5Htg7xnQOKvHEu9STBOug==:17 a=OpT9cpI26MMA:10 a=Ciwy3NGCPMMA:10 a=zWScXzqMWvIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=ywr9Lfw1UOhYjjAWiyIA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=1sZ5UlT5ZBE_QGE7:21 a=PykllXfriNwsTAQ0:21 a=XhgKmp_9P01-hH-vVGkA:9 a=s5Htg7xnQOKvHEu9STBOug==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 72.230.195.127
-Message-Id: <20120721022112.621498660@goodmis.org>
+Message-Id: <20120721022109.652033022@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 20 Jul 2012 22:20:02 -0400
+Date: Fri, 20 Jul 2012 22:19:54 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>
-Subject: [PATCH 19/19] kprobes/x86: ftrace based optimization for x86
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: [PATCH 11/19] ftrace: Add selftest to test function trace recursion protection
 References: <20120721021943.274162381@goodmis.org>
-Content-Disposition: inline; filename=0019-kprobes-x86-ftrace-based-optimization-for-x86.patch
+Content-Disposition: inline; filename=0011-ftrace-Add-selftest-to-test-function-trace-recursion.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -34,137 +31,241 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+From: Steven Rostedt <srostedt@redhat.com>
 
-Add function tracer based kprobe optimization support
-handlers on x86. This allows kprobes to use function
-tracer for probing on mcount call.
-
-Link: http://lkml.kernel.org/r/20120605102838.27845.26317.stgit@localhost.l=
-ocaldomain
-
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: "Frank Ch. Eigler" <fche@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-
-[ Updated to new port of ftrace save regs functions ]
+Add selftests to test the function tracing recursion protection actually
+does work. It also tests if a ftrace_ops states it will perform its own
+protection. Although, even if the ftrace_ops states it will protect itself,
+the ftrace infrastructure may still provide protection if the arch does
+not support all features or another ftrace_ops is registered.
 
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/x86/include/asm/kprobes.h |    1 +
- arch/x86/kernel/kprobes.c      |   48 ++++++++++++++++++++++++++++++++++++=
+ include/linux/ftrace.h        |    6 ++
+ kernel/trace/ftrace.c         |   21 +++++++
+ kernel/trace/trace_selftest.c |  136 +++++++++++++++++++++++++++++++++++++=
 ++++
- include/linux/kprobes.h        |    2 +-
- kernel/kprobes.c               |    2 +-
- 4 files changed, 51 insertions(+), 2 deletions(-)
+ 3 files changed, 163 insertions(+)
 
-diff --git a/arch/x86/include/asm/kprobes.h b/arch/x86/include/asm/kprobes.h
-index 5478825..d3ddd17 100644
---- a/arch/x86/include/asm/kprobes.h
-+++ b/arch/x86/include/asm/kprobes.h
-@@ -27,6 +27,7 @@
- #include <asm/insn.h>
-=20
- #define  __ARCH_WANT_KPROBES_INSN_SLOT
-+#define  ARCH_SUPPORTS_KPROBES_ON_FTRACE
-=20
- struct pt_regs;
- struct kprobe;
-diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
-index e2f751e..47ae102 100644
---- a/arch/x86/kernel/kprobes.c
-+++ b/arch/x86/kernel/kprobes.c
-@@ -1052,6 +1052,54 @@ int __kprobes longjmp_break_handler(struct kprobe *p=
-, struct pt_regs *regs)
- 	return 0;
- }
-=20
-+#ifdef KPROBES_CAN_USE_FTRACE
-+/* Ftrace callback handler for kprobes */
-+void __kprobes kprobe_ftrace_handler(unsigned long ip, unsigned long paren=
-t_ip,
-+				     struct ftrace_ops *ops, struct pt_regs *regs)
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index 65a14e4..9962e95 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -220,6 +220,10 @@ extern void ftrace_stub(unsigned long a0, unsigned lon=
+g a1,
+  */
+ #define register_ftrace_function(ops) ({ 0; })
+ #define unregister_ftrace_function(ops) ({ 0; })
++static inline int ftrace_nr_registered_ops(void)
 +{
-+	struct kprobe *p;
-+	struct kprobe_ctlblk *kcb;
-+	unsigned long flags;
-+
-+	/* Disable irq for emulating a breakpoint and avoiding preempt */
-+	local_irq_save(flags);
-+
-+	p =3D get_kprobe((kprobe_opcode_t *)ip);
-+	if (unlikely(!p) || kprobe_disabled(p))
-+		goto end;
-+
-+	kcb =3D get_kprobe_ctlblk();
-+	if (kprobe_running()) {
-+		kprobes_inc_nmissed_count(p);
-+	} else {
-+		regs->ip +=3D sizeof(kprobe_opcode_t);
-+
-+		__this_cpu_write(current_kprobe, p);
-+		kcb->kprobe_status =3D KPROBE_HIT_ACTIVE;
-+		if (p->pre_handler)
-+			p->pre_handler(p, regs);
-+
-+		if (unlikely(p->post_handler)) {
-+			/* Emulate singlestep as if there is a 5byte nop */
-+			regs->ip =3D ip + MCOUNT_INSN_SIZE;
-+			kcb->kprobe_status =3D KPROBE_HIT_SSDONE;
-+			p->post_handler(p, regs, 0);
-+		}
-+		__this_cpu_write(current_kprobe, NULL);
-+		regs->ip =3D ip;	/* Recover for next callback */
-+	}
-+end:
-+	local_irq_restore(flags);
-+}
-+
-+int __kprobes arch_prepare_kprobe_ftrace(struct kprobe *p)
-+{
-+	p->ainsn.insn =3D NULL;
-+	p->ainsn.boostable =3D -1;
 +	return 0;
 +}
-+#endif
+ static inline void clear_ftrace_function(void) { }
+ static inline void ftrace_kill(void) { }
+ static inline void ftrace_stop(void) { }
+@@ -275,6 +279,8 @@ extern void unregister_ftrace_function_probe_all(char *=
+glob);
+=20
+ extern int ftrace_text_reserved(void *start, void *end);
+=20
++extern int ftrace_nr_registered_ops(void);
 +
- int __init arch_init_kprobes(void)
- {
- 	return arch_init_optprobes();
-diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
-index aa0d05e..23755ba 100644
---- a/include/linux/kprobes.h
-+++ b/include/linux/kprobes.h
-@@ -318,7 +318,7 @@ extern int proc_kprobes_optimization_handler(struct ctl=
-_table *table,
- #endif /* CONFIG_OPTPROBES */
- #ifdef KPROBES_CAN_USE_FTRACE
- extern void kprobe_ftrace_handler(unsigned long ip, unsigned long parent_i=
-p,
--				  struct pt_regs *regs);
-+				  struct ftrace_ops *ops, struct pt_regs *regs);
- extern int arch_prepare_kprobe_ftrace(struct kprobe *p);
+ /*
+  * The dyn_ftrace record's flags field is split into two parts.
+  * the first part which is '0-FTRACE_REF_MAX' is a counter of
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index ad765b4..528d997 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -111,6 +111,27 @@ static void ftrace_ops_no_ops(unsigned long ip, unsign=
+ed long parent_ip);
+ #define ftrace_ops_list_func ((ftrace_func_t)ftrace_ops_no_ops)
  #endif
 =20
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index 69c16ef..35b4315 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -921,7 +921,7 @@ static __kprobes struct kprobe *alloc_aggr_kprobe(struc=
-t kprobe *p)
++/**
++ * ftrace_nr_registered_ops - return number of ops registered
++ *
++ * Returns the number of ftrace_ops registered and tracing functions
++ */
++int ftrace_nr_registered_ops(void)
++{
++	struct ftrace_ops *ops;
++	int cnt =3D 0;
++
++	mutex_lock(&ftrace_lock);
++
++	for (ops =3D ftrace_ops_list;
++	     ops !=3D &ftrace_list_end; ops =3D ops->next)
++		cnt++;
++
++	mutex_unlock(&ftrace_lock);
++
++	return cnt;
++}
++
+ /*
+  * Traverse the ftrace_global_list, invoking all entries.  The reason that=
+ we
+  * can use rcu_dereference_raw() is that elements removed from this list
+diff --git a/kernel/trace/trace_selftest.c b/kernel/trace/trace_selftest.c
+index 1fb6da8..86422f9 100644
+--- a/kernel/trace/trace_selftest.c
++++ b/kernel/trace/trace_selftest.c
+@@ -406,8 +406,141 @@ int trace_selftest_startup_dynamic_tracing(struct tra=
+cer *trace,
 =20
- #ifdef KPROBES_CAN_USE_FTRACE
- static struct ftrace_ops kprobe_ftrace_ops __read_mostly =3D {
--	.regs_func =3D kprobe_ftrace_handler,
-+	.func =3D kprobe_ftrace_handler,
- 	.flags =3D FTRACE_OPS_FL_SAVE_REGS,
- };
- static int kprobe_ftrace_enabled;
+ 	return ret;
+ }
++
++static int trace_selftest_recursion_cnt;
++static void trace_selftest_test_recursion_func(unsigned long ip,
++					       unsigned long pip,
++					       struct ftrace_ops *op,
++					       struct pt_regs *pt_regs)
++{
++	/*
++	 * This function is registered without the recursion safe flag.
++	 * The ftrace infrastructure should provide the recursion
++	 * protection. If not, this will crash the kernel!
++	 */
++	trace_selftest_recursion_cnt++;
++	DYN_FTRACE_TEST_NAME();
++}
++
++static void trace_selftest_test_recursion_safe_func(unsigned long ip,
++						    unsigned long pip,
++						    struct ftrace_ops *op,
++						    struct pt_regs *pt_regs)
++{
++	/*
++	 * We said we would provide our own recursion. By calling
++	 * this function again, we should recurse back into this function
++	 * and count again. But this only happens if the arch supports
++	 * all of ftrace features and nothing else is using the function
++	 * tracing utility.
++	 */
++	if (trace_selftest_recursion_cnt++)
++		return;
++	DYN_FTRACE_TEST_NAME();
++}
++
++static struct ftrace_ops test_rec_probe =3D {
++	.func			=3D trace_selftest_test_recursion_func,
++};
++
++static struct ftrace_ops test_recsafe_probe =3D {
++	.func			=3D trace_selftest_test_recursion_safe_func,
++	.flags			=3D FTRACE_OPS_FL_RECURSION_SAFE,
++};
++
++static int
++trace_selftest_function_recursion(void)
++{
++	int save_ftrace_enabled =3D ftrace_enabled;
++	int save_tracer_enabled =3D tracer_enabled;
++	char *func_name;
++	int len;
++	int ret;
++	int cnt;
++
++	/* The previous test PASSED */
++	pr_cont("PASSED\n");
++	pr_info("Testing ftrace recursion: ");
++
++
++	/* enable tracing, and record the filter function */
++	ftrace_enabled =3D 1;
++	tracer_enabled =3D 1;
++
++	/* Handle PPC64 '.' name */
++	func_name =3D "*" __stringify(DYN_FTRACE_TEST_NAME);
++	len =3D strlen(func_name);
++
++	ret =3D ftrace_set_filter(&test_rec_probe, func_name, len, 1);
++	if (ret) {
++		pr_cont("*Could not set filter* ");
++		goto out;
++	}
++
++	ret =3D register_ftrace_function(&test_rec_probe);
++	if (ret) {
++		pr_cont("*could not register callback* ");
++		goto out;
++	}
++
++	DYN_FTRACE_TEST_NAME();
++
++	unregister_ftrace_function(&test_rec_probe);
++
++	ret =3D -1;
++	if (trace_selftest_recursion_cnt !=3D 1) {
++		pr_cont("*callback not called once (%d)* ",
++			trace_selftest_recursion_cnt);
++		goto out;
++	}
++
++	trace_selftest_recursion_cnt =3D 1;
++
++	pr_cont("PASSED\n");
++	pr_info("Testing ftrace recursion safe: ");
++
++	ret =3D ftrace_set_filter(&test_recsafe_probe, func_name, len, 1);
++	if (ret) {
++		pr_cont("*Could not set filter* ");
++		goto out;
++	}
++
++	ret =3D register_ftrace_function(&test_recsafe_probe);
++	if (ret) {
++		pr_cont("*could not register callback* ");
++		goto out;
++	}
++
++	DYN_FTRACE_TEST_NAME();
++
++	unregister_ftrace_function(&test_recsafe_probe);
++
++	/*
++	 * If arch supports all ftrace features, and no other task
++	 * was on the list, we should be fine.
++	 */
++	if (!ftrace_nr_registered_ops() && !FTRACE_FORCE_LIST_FUNC)
++		cnt =3D 2; /* Should have recursed */
++	else
++		cnt =3D 1;
++
++	ret =3D -1;
++	if (trace_selftest_recursion_cnt !=3D cnt) {
++		pr_cont("*callback not called expected %d times (%d)* ",
++			cnt, trace_selftest_recursion_cnt);
++		goto out;
++	}
++
++	ret =3D 0;
++out:
++	ftrace_enabled =3D save_ftrace_enabled;
++	tracer_enabled =3D save_tracer_enabled;
++
++	return ret;
++}
+ #else
+ # define trace_selftest_startup_dynamic_tracing(trace, tr, func) ({ 0; })
++# define trace_selftest_function_recursion() ({ 0; })
+ #endif /* CONFIG_DYNAMIC_FTRACE */
+=20
+ /*
+@@ -455,7 +588,10 @@ trace_selftest_startup_function(struct tracer *trace, =
+struct trace_array *tr)
+=20
+ 	ret =3D trace_selftest_startup_dynamic_tracing(trace, tr,
+ 						     DYN_FTRACE_TEST_NAME);
++	if (ret)
++		goto out;
+=20
++	ret =3D trace_selftest_function_recursion();
+  out:
+ 	ftrace_enabled =3D save_ftrace_enabled;
+ 	tracer_enabled =3D save_tracer_enabled;
 --=20
 1.7.10.4
 
@@ -177,19 +278,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABAgAGBQJQChIYAAoJEIy3vGnGbaoAmCkP/3sXUdsLmdqOU139jVpMuGz0
-9ufWUfllWaMa3BpSwFoPfjMOCoG+jjmpn2ahddNCotS13t6to85LwljtNcJvk3ZK
-mjNALIGAFbWSDlY23nk589hLinnOoFinyDGVFhNVsE4IEjKkKc6q2IAql/vLpBo5
-ztwwHOIS54NxJz+hUPLjbdahsIuTm4qU+iQojSHYyyN+V20HjzgU32lwLOreqmw+
-Y3eg5169ERdtSpMqrY0FbetdSGwGqyhOG3AuURdcieJFSqYE/VCXSmrx21t8eNy8
-qfbp/AZ445LYftq0Vi4tnsmnGZKgV6XxjDswfDl3u6MoeEnP34VUeYSeytedcf/2
-R6nG6jolwFyHKGoBA96dnHUNHaMkpVMhK+GoXe9GnFsWK2y4OWCiT3hvgw83pHPr
-Yn0DAFYVuoprWQ4swuZCiA9d6TdZ6hTgSLPDseDtylpO2qypimqhgMkbcFVD1ML4
-709MOYYJdcCpC9jlAXsP7hObepRAKynm1LmRJFkHH/q8LK/lQkhgEtj+thVQmKtn
-dpCVBc8QbhM48d7GgiD8HWeKK2+qVktmJJF+IheOHNqT9v5cFiy0IkAdavTVQGzD
-3DkcE1z6fbAJdP1SSDh3pP1iEUuFjyRqy7oY7Skn5o+0TPIe2PToPcpW3rF3QKPg
-Gwsp28v9kXYZwmq08qK+
-=/uBU
+iQIcBAABAgAGBQJQChIVAAoJEIy3vGnGbaoAOIUQAK0i5j1Acjgqy94ddKtmgeRi
+LM0veHF8okx+eBHGxrRGLe43bBJVgmakK/IAj3+ETRAF0dzNrm1j8bXqQmqYiu5F
+jyHG245MyzLQlqeCQFlLs1fsU8zhfXRfXn0gYYktfzb9WkLApaWmMUInC6lTB38s
+dbZEFj6azCiDU2CR4+XwhgxO3vbOWErB7uMmytnzFTTHUM/FgNDXUWbbTCgAemZs
+c9axtZ/uwORsl3RTnsfMfKGSMW9eMKiLhjIv9ccCXx8oxhfk3Fm0KlSLAXLUN2oy
+BNZaUWQC5Q3X6fAV1ska0x50+e2Hr8rSkHARFja10jZMauci1aoyZ+hhXO5afZKz
+XHT8j3clKB0ich3RiNH1TnnhEXbD+dMwgXot3xynDFLPrtaKZPSLYNH6nxorWz+l
+SW/PFy6XDW8MYVTo4QnPEBFKpvO3Y0tD0JAvscYx6LQpy+KhnZ/XQrVQsBYhufHr
+UGJtbX1GVtTiAH/6j0A/lw8CThtnhvINAGCLx6gVVKtRp7kR5S1NuciFXC7FIvw4
+S8dfeI0gFSfwKXNIY+QtlE50CBzIdok2w+LWXFFKmxoLhF1nFy5PwpuBssYFgJTM
+5/b3k0BKLnorTWu63wMfC3YnlftTeHD7o1AbnDsbV1HAUxzoEHZAOCR4qC4PPaSv
+T9DPtSLfLu1avg8aLL9c
+=YkUo
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
