@@ -1,72 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752060Ab2GUI0o (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jul 2012 04:26:44 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:43353 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751563Ab2GUI0j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jul 2012 04:26:39 -0400
+	id S1752189Ab2GUIgv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jul 2012 04:36:51 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:37282 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751848Ab2GUIgr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jul 2012 04:36:47 -0400
+X-IronPort-AV: E=Sophos;i="4.77,629,1336320000"; 
+   d="scan'208";a="5450481"
+Message-ID: <500A6B41.3030901@cn.fujitsu.com>
+Date: Sat, 21 Jul 2012 16:41:37 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <1342856010.21788.47.camel@ted>
-References: <CAMbhsRTX=t4UMfmrJRyXidSTWXvaC5L9aFdTFL03wYYKrUE5qw@mail.gmail.com>
-	<20120721040816.GA7313@kroah.com>
-	<1342856010.21788.47.camel@ted>
-Date: Sat, 21 Jul 2012 01:26:38 -0700
-X-Google-Sender-Auth: pIaGavlova3NjMgqNj16tJc_rgs
-Message-ID: <CAMbhsRREVcqf+pnamY62wGcd2mBif8W8_CRXdJQCQvL14Dy3Eg@mail.gmail.com>
-Subject: Re: sysfs permissions on dynamic attributes (led delay_on and delay_off)
-From: Colin Cross <ccross@android.com>
-To: Richard Purdie <richard.purdie@linuxfoundation.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>, lkml <linux-kernel@vger.kernel.org>,
-        Bryan Wu <bryan.wu@canonical.com>
+To: Jan Kiszka <jan.kiszka@web.de>
+CC: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Gleb Natapov <gleb@redhat.com>
+Subject: Re: [PATCH v7] kvm: notify host when the guest is panicked
+References: <500A565A.8080403@cn.fujitsu.com> <500A580D.1010301@web.de>
+In-Reply-To: <500A580D.1010301@web.de>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/21 16:37:23,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/21 16:37:24,
+	Serialize complete at 2012/07/21 16:37:24
+Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 21, 2012 at 12:33 AM, Richard Purdie
-<richard.purdie@linuxfoundation.org> wrote:
-> On Fri, 2012-07-20 at 21:08 -0700, Greg KH wrote:
->> On Fri, Jul 20, 2012 at 05:46:14PM -0700, Colin Cross wrote:
->> > I'm trying to use the standard ledtrig-timer.c code to handle led
->> > blinking for notifications on an Android device, and I'm hitting some
->> > issues with setting permissions on the dynamically created delay_on
->> > and delay_off attributes.  For most sysfs files, we have userspace
->> > uevent parser that watches for device add notifications and
->> > chowns/chmods attributes.  This doesn't work for delay_on and
->> > delay_off, because they are created later, when "timer" is written to
->> > the trigger attribute.  There is no uevent when the new files are
->> > created, and sysfs doesn't support inotify, so I don't see any way to
->> > receive an event to set the permissions.  This issue exists any time
->> > that device_create_file is called after device_add.
->> >
->> > What is the appropriate way to get an event to set the permissions?
->> > Add inotify support for sysfs file creation?  Send a KOBJ_CHANGE
->> > uevent in device_create_file?
+At 07/21/2012 03:19 PM, Jan Kiszka Wrote:
+> On 2012-07-21 09:12, Wen Congyang wrote:
+>> We can know the guest is panicked when the guest runs on xen.
+>> But we do not have such feature on kvm.
 >>
->> No.
+>> Another purpose of this feature is: management app(for example:
+>> libvirt) can do auto dump when the guest is panicked. If management
+>> app does not do auto dump, the guest's user can do dump by hand if
+>> he sees the guest is panicked.
 >>
->> > Send a KOBJ_CHANGE uevent from the driver after calling
->> > device_create_file?
+>> We have three solutions to implement this feature:
+>> 1. use vmcall
+>> 2. use I/O port
+>> 3. use virtio-serial.
 >>
->> Yes.
+>> We have decided to avoid touching hypervisor. The reason why I choose
+>> choose the I/O port is:
+>> 1. it is easier to implememt
+>> 2. it does not depend any virtual device
+>> 3. it can work when startint the kernel
 >>
->> > Dynamically create a timer device under /sys/class/leds/<led> so a new
->> > add uevent gets sent?
+>> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+>> ---
+>>  arch/ia64/include/asm/kvm_para.h    |    5 +++++
+>>  arch/powerpc/include/asm/kvm_para.h |    5 +++++
+>>  arch/s390/include/asm/kvm_para.h    |    5 +++++
+>>  arch/x86/include/asm/kvm_para.h     |    7 +++++++
+>>  arch/x86/kernel/kvm.c               |   14 ++++++++++++++
+>>  include/linux/kvm_para.h            |   13 +++++++++++++
+>>  6 files changed, 49 insertions(+), 0 deletions(-)
 >>
->> Ick.
->>
->> > Promote blinking to be a core led feature instead of a trigger, so the
->> > files are always present?
->>
->> That's the best thing, why not just do that?
->
-> This implies we should make every trigger a core led feature and
-> effectively do away with triggers. I'm not sure that makes sense.
+>> diff --git a/arch/ia64/include/asm/kvm_para.h b/arch/ia64/include/asm/kvm_para.h
+>> index 2019cb9..187c0e2 100644
+>> --- a/arch/ia64/include/asm/kvm_para.h
+>> +++ b/arch/ia64/include/asm/kvm_para.h
+>> @@ -31,6 +31,11 @@ static inline bool kvm_check_and_clear_guest_paused(void)
+>>  	return false;
+>>  }
+>>  
+>> +static inline unsigned int kvm_arch_pv_features(void)
+>> +{
+>> +	return 0;
+>> +}
+>> +
+>>  #endif
+>>  
+>>  #endif
+>> diff --git a/arch/powerpc/include/asm/kvm_para.h b/arch/powerpc/include/asm/kvm_para.h
+>> index c18916b..be81aac 100644
+>> --- a/arch/powerpc/include/asm/kvm_para.h
+>> +++ b/arch/powerpc/include/asm/kvm_para.h
+>> @@ -211,6 +211,11 @@ static inline bool kvm_check_and_clear_guest_paused(void)
+>>  	return false;
+>>  }
+>>  
+>> +static inline unsigned int kvm_arch_pv_features(void)
+>> +{
+>> +	return 0;
+>> +}
+>> +
+>>  #endif /* __KERNEL__ */
+>>  
+>>  #endif /* __POWERPC_KVM_PARA_H__ */
+>> diff --git a/arch/s390/include/asm/kvm_para.h b/arch/s390/include/asm/kvm_para.h
+>> index a988329..3d993b7 100644
+>> --- a/arch/s390/include/asm/kvm_para.h
+>> +++ b/arch/s390/include/asm/kvm_para.h
+>> @@ -154,6 +154,11 @@ static inline bool kvm_check_and_clear_guest_paused(void)
+>>  	return false;
+>>  }
+>>  
+>> +static inline unsigned int kvm_arch_pv_features(void)
+>> +{
+>> +	return 0;
+>> +}
+>> +
+>>  #endif
+>>  
+>>  #endif /* __S390_KVM_PARA_H */
+>> diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
+>> index 63ab166..c8ad86e 100644
+>> --- a/arch/x86/include/asm/kvm_para.h
+>> +++ b/arch/x86/include/asm/kvm_para.h
+>> @@ -89,6 +89,8 @@ struct kvm_vcpu_pv_apf_data {
+>>  	__u32 enabled;
+>>  };
+>>  
+>> +#define KVM_PV_PORT	(0x505UL)
+>> +
+>>  #ifdef __KERNEL__
+>>  #include <asm/processor.h>
+>>  
+>> @@ -221,6 +223,11 @@ static inline void kvm_disable_steal_time(void)
+>>  }
+>>  #endif
+>>  
+>> +static inline unsigned int kvm_arch_pv_features(void)
+>> +{
+>> +	return inl(KVM_PV_PORT);
+>> +}
+>> +
+>>  #endif /* __KERNEL__ */
+>>  
+>>  #endif /* _ASM_X86_KVM_PARA_H */
+>> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+>> index e554e5a..9a97f7e 100644
+>> --- a/arch/x86/kernel/kvm.c
+>> +++ b/arch/x86/kernel/kvm.c
+>> @@ -328,6 +328,17 @@ static struct notifier_block kvm_pv_reboot_nb = {
+>>  	.notifier_call = kvm_pv_reboot_notify,
+>>  };
+>>  
+>> +static int
+>> +kvm_pv_panic_notify(struct notifier_block *nb, unsigned long code, void *unused)
+>> +{
+>> +	outl(KVM_PV_PANICKED, KVM_PV_PORT);
+>> +	return NOTIFY_DONE;
+>> +}
+>> +
+>> +static struct notifier_block kvm_pv_panic_nb = {
+>> +	.notifier_call = kvm_pv_panic_notify,
+>> +};
+>> +
+>>  static u64 kvm_steal_clock(int cpu)
+>>  {
+>>  	u64 steal;
+>> @@ -414,6 +425,9 @@ void __init kvm_guest_init(void)
+>>  
+>>  	paravirt_ops_setup();
+>>  	register_reboot_notifier(&kvm_pv_reboot_nb);
+>> +	if (kvm_pv_has_feature(KVM_PV_FEATURE_PANICKED))
+>> +		atomic_notifier_chain_register(&panic_notifier_list,
+>> +			&kvm_pv_panic_nb);
+>>  	for (i = 0; i < KVM_TASK_SLEEP_HASHSIZE; i++)
+>>  		spin_lock_init(&async_pf_sleepers[i].lock);
+>>  	if (kvm_para_has_feature(KVM_FEATURE_ASYNC_PF))
+>> diff --git a/include/linux/kvm_para.h b/include/linux/kvm_para.h
+>> index ff476dd..e73efcf 100644
+>> --- a/include/linux/kvm_para.h
+>> +++ b/include/linux/kvm_para.h
+>> @@ -20,6 +20,12 @@
+>>  #define KVM_HC_FEATURES			3
+>>  #define KVM_HC_PPC_MAP_MAGIC_PAGE	4
+>>  
+>> +/* The bit of the value read from KVM_PV_PORT */
+>> +#define KVM_PV_FEATURE_PANICKED	0
+>> +
+>> +/* The value writen to KVM_PV_PORT */
+>> +#define KVM_PV_PANICKED		1
+>> +
+>>  /*
+>>   * hypercalls use architecture specific
+>>   */
+>> @@ -33,5 +39,12 @@ static inline int kvm_para_has_feature(unsigned int feature)
+>>  		return 1;
+>>  	return 0;
+>>  }
+>> +
+>> +static inline int kvm_pv_has_feature(unsigned int feature)
+>> +{
+>> +	if (kvm_arch_pv_features() & (1UL << feature))
+> 
+> Reading from an invalid I/O port will return -1. So your test will
+> deliver a wrong result on a platform that doesn't support this PV channel.
 
-Blinking is already effectively a core feature.  It is implemented in
-led-core.c so it can be used by other triggers besides timer, it's
-state is stored in the led_classdev structure, not in the trigger
-data, and the only thing left in ledtrig-timer.c is the sysfs files.
+Yes, you are right. I will update it.
+
+Thanks
+Wen Congyang
+
+> 
+> Jan
+> 
+>> +		return 1;
+>> +	return 0;
+>> +}
+>>  #endif /* __KERNEL__ */
+>>  #endif /* __LINUX_KVM_PARA_H */
+>>
+> 
+> 
+> 
+> 
+
