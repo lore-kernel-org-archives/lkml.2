@@ -1,174 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751735Ab2GUKek (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jul 2012 06:34:40 -0400
-Received: from grace.univie.ac.at ([131.130.3.115]:57616 "EHLO
-	grace.univie.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750754Ab2GUKeh (ORCPT
+	id S1751551Ab2GUKkO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jul 2012 06:40:14 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:32804 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750724Ab2GUKkM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jul 2012 06:34:37 -0400
-Message-ID: <284fca6c9490200d9c48bba46fb3f7e6.squirrel@webmail.univie.ac.at>
-In-Reply-To: <CAK6E8=dKZUJ3evPDGc3gP0a5bsBbYnL0NGhPZenB=T_t+5Kx5w@mail.gmail.com>
-References: <e9caf38359467bfa8a1e2ac86f6ef2cc.squirrel@webmail.univie.ac.at>
-    <20120713165544.6767ea8f@nehalam.linuxnetplumber.net>
-    <87741204cd72d363d54dadf9a94bb6fe.squirrel@webmail.univie.ac.at>
-    <1342439185.23494.19.camel@edumazet-glaptop>
-    <cc2022d86834a8798518f9cccc605d45.squirrel@webmail.univie.ac.at>
-    <CAK6E8=dKZUJ3evPDGc3gP0a5bsBbYnL0NGhPZenB=T_t+5Kx5w@mail.gmail.com>
-Date: Sat, 21 Jul 2012 12:34:34 +0200
-Subject: Re: resurrecting tcphealth
-From: "Piotr Sawuk" <a9702387@unet.univie.ac.at>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.19
+	Sat, 21 Jul 2012 06:40:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Univie-Virus-Scan: scanned by ClamAV on jarvis.univie.ac.at
+In-Reply-To: <1342808038-7558-1-git-send-email-dianders@chromium.org>
+References: <1342808038-7558-1-git-send-email-dianders@chromium.org>
+Date: Sat, 21 Jul 2012 11:40:10 +0100
+Message-ID: <CAFbHwiQh-Cwo4xo6-vCbvWsmz_cheZK1m3SnwkvSziunV1ShBA@mail.gmail.com>
+Subject: Re: [PATCH] mmc: dw_mmc: Disable low power mode if SDIO interrupts
+ are used
+From: Will Newton <will.newton@gmail.com>
+To: Doug Anderson <dianders@chromium.org>
+Cc: linux-mmc@vger.kernel.org, Chris Ball <cjb@laptop.org>,
+        James Hogan <james.hogan@imgtec.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fr, 20.07.2012, 16:06, Yuchung Cheng wrote:
-> On Mon, Jul 16, 2012 at 6:03 AM, Piotr Sawuk <a9702387@unet.univie.ac.at>
-> wrote:
->> On Mo, 16.07.2012, 13:46, Eric Dumazet wrote:
->>> On Mon, 2012-07-16 at 13:33 +0200, Piotr Sawuk wrote:
->>>> On Sa, 14.07.2012, 01:55, Stephen Hemminger wrote:
->>>> > I am not sure if the is really necessary since the most
->>>> > of the stats are available elsewhere.
->>>>
->>>> if by "most" you mean address and port then you're right.
->>>> but even the rtt reported by "ss -i" seems to differ from tcphealth.
->>>
->>> Thats because tcphealth is wrong, it assumes HZ=1000 ?
->>>
->>> tp->srtt unit is jiffies, not ms.
->>
->> thanks. any conversion-functions in the kernel for that?
->>>
->>> tcphealth is a gross hack.
->>
->> what would you do if you tried making it less gross?
->>
->> I've not found any similar functionality, in the kernel.
->> I want to know an estimate for the percentage of data lost in tcp.
->> and I want to know that without actually sending much packets.
->> afterall I'm on the receiving end most of the time.
->> percentage of duplicate packets received is nice too.
->> you have any suggestions?
+On Fri, Jul 20, 2012 at 7:13 PM, Doug Anderson <dianders@chromium.org> wrote:
+> The documentation for the dw_mmc part says that the low power
+> mode should normally only be set for MMC and SD memory and should
+> be turned off for SDIO cards that need interrupts detected.
 >
-> counting dupack may not be as reliable as you'd like.
-> say the remote sends you 100 packets and only the first one is lost,
-> you'll see 99 dupacks. Morover any small degree reordering (<3)
-> will generate substantial dupacks but the network is perfectly fine
-
-I understand that.
-but you must consider the difference between network-health and tcp-health.
-network-health on my end I can see by looking at wlan-signal strength.
-slow downloads can have many causes, some loose cable is only one possibility.
-
-for example I once played a lan-game, 2 computers connected directly.
-however, one computer was 10 times slower than the other.
-so when the slow computer would act as server, the game would never start.
-the reason wasn't bad connection, it was packet-loss caused by slowness.
-and it had to do with the protocol being used (i.e. not tcp).
-
-so when in tcp I get high percentage of dupack I see something's wrong.
-not necessarily with the physical connection, but with protocol-handling.
-the paper showed dupacks indicate spikes in network-usage.
-and as we all know the bottleneck isn't the cable, it's data-processing.
-when there is a spike, lots of users connecting, network itself is ok.
-however, reordering and lost packets indicate something's up with the server.
-and that's actually the info I'm after.
-
-if I were the net-admin I would be interested in network-health too.
-bad connection indicated by packet-loss itself means I've got to check cables.
-but a user might have much wider area of interest.
-the user can't do anything about the cables, but yet is interested in them.
-i.e. useless info for the net-admin could be interesting for the user.
-that's why I do not recommend tcphealth for servers, useless overhead.
-
-so, if you want to judge usefulness of this patch, consider the situation:
-you are powerless but interested in responsiveness of thousands of servers.
-you want to learn how those servers behave at different times of a day.
-isn't dupacks and dup-packets the best info on that you can possibly get?
-
-> (see Craig Patridge's "reordering is not pathological" paper).
-
-thanks, will look into that.
-
-> unfortunately receiver can't and does not have to distinguish loss
-
-true, not needed for the protocol.
-on a higher level it sill can be interesting though.
-most of the work for preventing packetloss must be done by the sender.
-but as I said before, the receiver can do something too: avoid traffic-jams!
-in a network many things are predictable, can be reprogrammed.
-this way a network could become more efficient as a whole.
-that's what spikes my interest in tcphealth, thinking more globally.
-
->  or reordering. you can infer that but it should not be kernel's job.
-
-that's why I made it an option as opposed to what the original author did.
-theoretically it should be possible to get the same functionality without it.
-just read the raw network-data and emulate the work of tcp and tcphealth.
-but that definitely would add a big overhead as tcp-handling is duplicated.
-
-> there are public tools that inspect tcpdump traces to do that
-
-good example. so to figure out dupacks you filter out the acks.
-and you must somehow compare them, or you parse them the way the kernel does.
-in the latter case you'll have to recreate the kernel's internal data.
-definitely faster, but could result in duplicate code, that requires space.
-
-also you should consider that not all users have privilegues for tcpdump.
-and if they had, it would add another security-risk to their computer.
-and you'd have to consider multiple users on one computer, using that service.
-I can imagine a daemon in the background doing what tcphealth does.
-that's the alternative, allows for more fine-grained security.
-it could disallow spying on what connections other users have.
-(of course then you'd need to remove /proc/net/tcp output too.)
-but imagine the nightmare of keeping that daemon secure.
-afterall it must be privilegued to read all network data.
-
-if the kernel would provide what I'm looking for, this daemon could still run.
-but then it wouldn't need that risky privilegues, could focus on other stuff.
-the task of preventing users from seeing eachothers connections is enough...
+> The best place I could find to do this is when the SDIO interrupt
+> was first enabled.  I rely on the fact that dw_mci_setup_bus()
+> will be called when it's time to reenable.
 >
-> exposing duplicate packets received can be done via getsockopt(TCP_INFO)
-> although I don't know what that gives you. the remote can be too
-> aggressive in retransmission (not just because of a bad RTO) or
-> the network RTT fluctuates.
-
-TCP_INFO contains only duplicate packets *sent* (retransmits), not received!
-am I missing something? can you give a code-example that can obtain such info?
-if running that code in userspace results in same values as tcphealth...
-well, actually dupacks is more interesting than dup-packets.
-afterall in usual usage the latter will always be zero.
+> Change-Id: Id0e33a4e3a0a77ce8a5053b6e73197d53a5d46bb
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> ---
+>  drivers/mmc/host/dw_mmc.c |   33 +++++++++++++++++++++++++++++++++
+>  1 files changed, 33 insertions(+), 0 deletions(-)
 >
-> I don't what if tracking last_ack_sent (the latest RCV.NXT) without
-> knowing the ISN is useful.
-
-so you suggest I should store and compare ISN too, for accuracy?
-you think the gain in accuracy justifies the added overhead?
+> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+> index 72dc3cd..0cb2756 100644
+> --- a/drivers/mmc/host/dw_mmc.c
+> +++ b/drivers/mmc/host/dw_mmc.c
+> @@ -862,6 +862,31 @@ static int dw_mci_get_cd(struct mmc_host *mmc)
+>         return present;
+>  }
 >
-> btw the term project paper cited concludes SACK is not useful is simply
-> wrong. This makes me suspicious about how rigorous and thoughtful of
-> its design.
+> +/*
+> + * Disable lower power mode.
+> + *
+> + * Low power mode will stop the card clock when idle.  According to
+> + * documentation we should disable low power mode for SDIO cards if we
+> + * need interrupts to work.
+> + *
+> + * This function is fast if the power mode is already disabled.
+> + */
+> +static void dw_mci_disable_low_power(struct mmc_host *mmc)
+> +{
+> +       struct dw_mci_slot *slot = mmc_priv(mmc);
+> +       struct dw_mci *host = slot->host;
+> +       u32 clk_en_a;
+> +       const u32 clken_low_pwr = SDMMC_CLKEN_LOW_PWR << slot->id;
+> +
+> +       clk_en_a = mci_readl(host, CLKENA);
+> +
+> +       if (clk_en_a & clken_low_pwr) {
+> +               mci_writel(host, CLKENA, clk_en_a & ~clken_low_pwr);
+> +               mci_send_cmd(slot, SDMMC_CMD_UPD_CLK |
+> +                            SDMMC_CMD_PRV_DAT_WAIT, 0);
+> +       }
+> +}
+> +
+>  static void dw_mci_enable_sdio_irq(struct mmc_host *mmc, int enb)
+>  {
+>         struct dw_mci_slot *slot = mmc_priv(mmc);
+> @@ -871,6 +896,14 @@ static void dw_mci_enable_sdio_irq(struct mmc_host *mmc, int enb)
+>         /* Enable/disable Slot Specific SDIO interrupt */
+>         int_mask = mci_readl(host, INTMASK);
+>         if (enb) {
+> +               /*
+> +                * Turn off low power mode if it was enabled.  This is a bit of
+> +                * a heavy operation and we disable / enable IRQs a lot, so
+> +                * we'll leave them disabled; they will get re-enabled again in
+> +                * dw_mci_setup_bus().
+> +                */
+> +               dw_mci_disable_low_power(mmc);
+> +
+>                 mci_writel(host, INTMASK,
+>                            (int_mask | SDMMC_INT_SDIO(slot->id)));
+>         } else {
+> --
+> 1.7.7.3
 
-isn't my paper.
-but I'd guess the usefulness of SACK is only doubted from pov of users.
-remember, users connect to many servers.
-if a server behaves badly, choose another one.
-servers do not have such a choice, for them SACK naturally is important.
-
-a server would just need to look at TCP_INFO to see how useful SACK is.
-so I would conclude the author was quite thoughtful about users' pov.
-(and quite ignorant about the servers.)
-
-no matter how little knowledge the authors have, tcphealth is interesting.
-maybe it was a random discovery by sheer luck.
-the correlation between the data it provides and reality is compelling.
-if we'd judge inventions by the stupidity of their inventors...
-
+Is it safe to just disable low power here or could the setting be
+overwritten in setup_bus?
