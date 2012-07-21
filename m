@@ -1,93 +1,313 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751302Ab2GUMpW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 21 Jul 2012 08:45:22 -0400
-Received: from osrc3.amd.com ([217.9.48.20]:48783 "EHLO mail.x86-64.org"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750925Ab2GUMpV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 21 Jul 2012 08:45:21 -0400
-Date: Sat, 21 Jul 2012 14:45:16 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Tony Luck <tony.luck@intel.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Chen Gong <gong.chen@linux.intel.com>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Subject: Re: [PATCH 2/2] x86/mce: Add quirk for instruction recovery on Sandy
- Bridge processors
-Message-ID: <20120721124516.GB3632@aftab.osrc.amd.com>
-References: <cover.1342723082.git.tony.luck@intel.com>
- <180a06f3f357cf9f78259ae443a082b14a29535b.1342723082.git.tony.luck@intel.com>
- <20120720121848.GA29183@aftab.osrc.amd.com>
- <CA+8MBbLX_cLR1+DpjuG-D5=5YhnTy3aGS4RL1iviRYomYoveWg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+8MBbLX_cLR1+DpjuG-D5=5YhnTy3aGS4RL1iviRYomYoveWg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751399Ab2GUNA4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 21 Jul 2012 09:00:56 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46334 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751011Ab2GUNAz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 21 Jul 2012 09:00:55 -0400
+From: Toshiaki Yamane <yamanetoshi@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Martyn Welch <martyn.welch@ge.com>,
+        Manohar Vanga <manohar.vanga@gmail.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Cc: Toshiaki Yamane <yamanetoshi@gmail.com>
+Subject: [PATCH] staging/vme: fix checkpatch warnings
+Date: Sat, 21 Jul 2012 22:00:51 +0900
+Message-Id: <1342875651-16961-1-git-send-email-yamanetoshi@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 20, 2012 at 09:33:23AM -0700, Tony Luck wrote:
-> > Maybe define a default empty quirk_no_way_out() on the remaining
-> > families/vendors so that the compiler can optimize it away and we save
-> > ourselves the if-test?
-> 
-> Perhaps I misunderstood your suggestion. I don't see how the compiler will
-> manage to optimize it all away.  I just tried defining
-> 
-> static void quirk_no_way_out_nop(int bank, struct mce *m, struct pt_regs *regs)
-> {
-> }
-> 
-> and providing that as an initial value for the quirk_no_way_out
-> function pointer.
-> 
-> Then I deleted the "if (quirk_no_way_out)".
-> 
-> Looking at the assembly code produced, I now just have an unconditional call:
-> 
->  callq  *0x9fe992(%rip)        # ffffffff81a18668 <quirk_no_way_out>
-> 
-> 
-> I'd think that a call through a function pointer to an empty function is
-> more expensive that testing whether that function pointer was NULL.
+Now checkpatch clean.
 
-Agreed.
+$ find drivers/staging/vme -name "*.[ch]"|xargs ./scripts/checkpatch.pl \
+-f --terse --nosummary|cut -f3- -d":"|sort |uniq -c|sort -n
+      1  ERROR: trailing whitespace
+      2  WARNING: Prefer pr_debug(... to printk(KERN_DEBUG, ...
+      5  WARNING: Prefer pr_info(... to printk(KERN_INFO, ...
+      7  WARNING: Prefer pr_err(... to printk(KERN_ERR, ...
+      9  WARNING: quoted string split across lines
+     13  WARNING: Prefer pr_warn(... to printk(KERN_WARNING, ...
 
-Right, so I was thinking about something along the lines of what tglx
-did for the CMCI poll timer: http://lkml.org/lkml/2012/7/18/79 and
-I've been playing with this for a bit now and am seeing the same thing
-as you: obviously the compiler cannot optimize away an unconditional
-function call to an empty function *through* a function pointer
-(tried gcc 4.6 and 4.7). Maybe because it is a function pointer we're
-calling...
+Signed-off-by: Toshiaki Yamane <yamanetoshi@gmail.com>
+---
+ drivers/staging/vme/devices/vme_pio2_core.c |    9 ++--
+ drivers/staging/vme/devices/vme_user.c      |   70 ++++++++++++---------------
+ 2 files changed, 35 insertions(+), 44 deletions(-)
 
-If you make the function pointer const like this:
-
-static void default_quirk_no_way_out(int bank, struct mce *m,
-                                           struct pt_regs *regs) { }
-
-static void (* const quirk_no_way_out)(int bank, struct mce *m, struct pt_regs *regs) =
-        default_quirk_no_way_out;
-
-The "call... " is not issued but you cannot assign to it later in
-__mcheck_cpu_apply_quirks().
-
-Other things which could probably be used are alternatives or jump
-labels but one if-test is simply not worth the complexity.
-
-Oh well, enough games.
-
-Thanks.
-
+diff --git a/drivers/staging/vme/devices/vme_pio2_core.c b/drivers/staging/vme/devices/vme_pio2_core.c
+index 4bf8e05..b5f942a 100644
+--- a/drivers/staging/vme/devices/vme_pio2_core.c
++++ b/drivers/staging/vme/devices/vme_pio2_core.c
+@@ -163,15 +163,14 @@ static int __init pio2_init(void)
+ 	int retval = 0;
+ 
+ 	if (bus_num == 0) {
+-		printk(KERN_ERR "%s: No cards, skipping registration\n",
+-			driver_name);
++		pr_err("%s: No cards, skipping registration\n",
++		       driver_name);
+ 		goto err_nocard;
+ 	}
+ 
+ 	if (bus_num > PIO2_CARDS_MAX) {
+-		printk(KERN_ERR
+-			"%s: Driver only able to handle %d PIO2 Cards\n",
+-			driver_name, PIO2_CARDS_MAX);
++		pr_err("%s: Driver only able to handle %d PIO2 Cards\n",
++		       driver_name, PIO2_CARDS_MAX);
+ 		bus_num = PIO2_CARDS_MAX;
+ 	}
+ 
+diff --git a/drivers/staging/vme/devices/vme_user.c b/drivers/staging/vme/devices/vme_user.c
+index e25645e..1c82938 100644
+--- a/drivers/staging/vme/devices/vme_user.c
++++ b/drivers/staging/vme/devices/vme_user.c
+@@ -170,7 +170,7 @@ static int vme_user_open(struct inode *inode, struct file *file)
+ 	mutex_lock(&image[minor].mutex);
+ 	/* Allow device to be opened if a resource is needed and allocated. */
+ 	if (minor < CONTROL_MINOR && image[minor].resource == NULL) {
+-		printk(KERN_ERR "No resources allocated for device\n");
++		pr_err("No resources allocated for device\n");
+ 		err = -EINVAL;
+ 		goto err_res;
+ 	}
+@@ -225,13 +225,13 @@ static ssize_t resource_to_user(int minor, char __user *buf, size_t count,
+ 			(unsigned long)copied);
+ 		if (retval != 0) {
+ 			copied = (copied - retval);
+-			printk(KERN_INFO "User copy failed\n");
++			pr_info("User copy failed\n");
+ 			return -EINVAL;
+ 		}
+ 
+ 	} else {
+ 		/* XXX Need to write this */
+-		printk(KERN_INFO "Currently don't support large transfers\n");
++		pr_info("Currently don't support large transfers\n");
+ 		/* Map in pages from userspace */
+ 
+ 		/* Call vme_master_read to do the transfer */
+@@ -265,7 +265,7 @@ static ssize_t resource_from_user(unsigned int minor, const char __user *buf,
+ 			image[minor].kern_buf, copied, *ppos);
+ 	} else {
+ 		/* XXX Need to write this */
+-		printk(KERN_INFO "Currently don't support large transfers\n");
++		pr_info("Currently don't support large transfers\n");
+ 		/* Map in pages from userspace */
+ 
+ 		/* Call vme_master_write to do the transfer */
+@@ -286,7 +286,7 @@ static ssize_t buffer_to_user(unsigned int minor, char __user *buf,
+ 	retval = __copy_to_user(buf, image_ptr, (unsigned long)count);
+ 	if (retval != 0) {
+ 		retval = (count - retval);
+-		printk(KERN_WARNING "Partial copy to userspace\n");
++		pr_warn("Partial copy to userspace\n");
+ 	} else
+ 		retval = count;
+ 
+@@ -305,7 +305,7 @@ static ssize_t buffer_from_user(unsigned int minor, const char __user *buf,
+ 	retval = __copy_from_user(image_ptr, buf, (unsigned long)count);
+ 	if (retval != 0) {
+ 		retval = (count - retval);
+-		printk(KERN_WARNING "Partial copy to userspace\n");
++		pr_warn("Partial copy to userspace\n");
+ 	} else
+ 		retval = count;
+ 
+@@ -396,7 +396,7 @@ static ssize_t vme_user_write(struct file *file, const char __user *buf,
+ 	default:
+ 		retval = -EINVAL;
+ 	}
+-	
++
+ 	mutex_unlock(&image[minor].mutex);
+ 
+ 	if (retval > 0)
+@@ -476,7 +476,7 @@ static int vme_user_ioctl(struct inode *inode, struct file *file,
+ 			copied = copy_from_user(&irq_req, argp,
+ 						sizeof(struct vme_irq_id));
+ 			if (copied != 0) {
+-				printk(KERN_WARNING "Partial copy from userspace\n");
++				pr_warn("Partial copy from userspace\n");
+ 				return -EFAULT;
+ 			}
+ 
+@@ -503,8 +503,7 @@ static int vme_user_ioctl(struct inode *inode, struct file *file,
+ 			copied = copy_to_user(argp, &master,
+ 				sizeof(struct vme_master));
+ 			if (copied != 0) {
+-				printk(KERN_WARNING "Partial copy to "
+-					"userspace\n");
++				pr_warn("Partial copy to userspace\n");
+ 				return -EFAULT;
+ 			}
+ 
+@@ -515,8 +514,7 @@ static int vme_user_ioctl(struct inode *inode, struct file *file,
+ 
+ 			copied = copy_from_user(&master, argp, sizeof(master));
+ 			if (copied != 0) {
+-				printk(KERN_WARNING "Partial copy from "
+-					"userspace\n");
++				pr_warn("Partial copy from userspace\n");
+ 				return -EFAULT;
+ 			}
+ 
+@@ -546,8 +544,7 @@ static int vme_user_ioctl(struct inode *inode, struct file *file,
+ 			copied = copy_to_user(argp, &slave,
+ 				sizeof(struct vme_slave));
+ 			if (copied != 0) {
+-				printk(KERN_WARNING "Partial copy to "
+-					"userspace\n");
++				pr_warn("Partial copy to userspace\n");
+ 				return -EFAULT;
+ 			}
+ 
+@@ -558,8 +555,7 @@ static int vme_user_ioctl(struct inode *inode, struct file *file,
+ 
+ 			copied = copy_from_user(&slave, argp, sizeof(slave));
+ 			if (copied != 0) {
+-				printk(KERN_WARNING "Partial copy from "
+-					"userspace\n");
++				pr_warn("Partial copy from userspace\n");
+ 				return -EFAULT;
+ 			}
+ 
+@@ -599,8 +595,8 @@ static void buf_unalloc(int num)
+ {
+ 	if (image[num].kern_buf) {
+ #ifdef VME_DEBUG
+-		printk(KERN_DEBUG "UniverseII:Releasing buffer at %p\n",
+-			image[num].pci_buf);
++		pr_debug("UniverseII:Releasing buffer at %p\n",
++			 image[num].pci_buf);
+ #endif
+ 
+ 		vme_free_consistent(image[num].resource, image[num].size_buf,
+@@ -612,7 +608,7 @@ static void buf_unalloc(int num)
+ 
+ #ifdef VME_DEBUG
+ 	} else {
+-		printk(KERN_DEBUG "UniverseII: Buffer not allocated\n");
++		pr_debug("UniverseII: Buffer not allocated\n");
+ #endif
+ 	}
+ }
+@@ -629,11 +625,11 @@ static int __init vme_user_init(void)
+ {
+ 	int retval = 0;
+ 
+-	printk(KERN_INFO "VME User Space Access Driver\n");
++	pr_info("VME User Space Access Driver\n");
+ 
+ 	if (bus_num == 0) {
+-		printk(KERN_ERR "%s: No cards, skipping registration\n",
+-			driver_name);
++		pr_err("%s: No cards, skipping registration\n",
++		       driver_name);
+ 		retval = -ENODEV;
+ 		goto err_nocard;
+ 	}
+@@ -642,8 +638,8 @@ static int __init vme_user_init(void)
+ 	 * in future revisions if that ever becomes necessary.
+ 	 */
+ 	if (bus_num > VME_USER_BUS_MAX) {
+-		printk(KERN_ERR "%s: Driver only able to handle %d buses\n",
+-			driver_name, VME_USER_BUS_MAX);
++		pr_err("%s: Driver only able to handle %d buses\n",
++		       driver_name, VME_USER_BUS_MAX);
+ 		bus_num = VME_USER_BUS_MAX;
+ 	}
+ 
+@@ -683,8 +679,8 @@ static int __devinit vme_user_probe(struct vme_dev *vdev)
+ 
+ 	/* Save pointer to the bridge device */
+ 	if (vme_user_bridge != NULL) {
+-		printk(KERN_ERR "%s: Driver can only be loaded for 1 device\n",
+-			driver_name);
++		pr_err("%s: Driver can only be loaded for 1 device\n",
++		       driver_name);
+ 		err = -EINVAL;
+ 		goto err_dev;
+ 	}
+@@ -707,8 +703,8 @@ static int __devinit vme_user_probe(struct vme_dev *vdev)
+ 	err = register_chrdev_region(MKDEV(VME_MAJOR, 0), VME_DEVS,
+ 		driver_name);
+ 	if (err) {
+-		printk(KERN_WARNING "%s: Error getting Major Number %d for "
+-		"driver.\n", driver_name, VME_MAJOR);
++		pr_warn("%s: Error getting Major Number %d for driver.\n",
++			driver_name, VME_MAJOR);
+ 		goto err_region;
+ 	}
+ 
+@@ -718,7 +714,7 @@ static int __devinit vme_user_probe(struct vme_dev *vdev)
+ 	vme_user_cdev->owner = THIS_MODULE;
+ 	err = cdev_add(vme_user_cdev, MKDEV(VME_MAJOR, 0), VME_DEVS);
+ 	if (err) {
+-		printk(KERN_WARNING "%s: cdev_all failed\n", driver_name);
++		pr_warn("%s: cdev_all failed\n", driver_name);
+ 		goto err_char;
+ 	}
+ 
+@@ -732,16 +728,14 @@ static int __devinit vme_user_probe(struct vme_dev *vdev)
+ 		image[i].resource = vme_slave_request(vme_user_bridge,
+ 			VME_A24, VME_SCT);
+ 		if (image[i].resource == NULL) {
+-			printk(KERN_WARNING "Unable to allocate slave "
+-				"resource\n");
++			pr_warn("Unable to allocate slave resource\n");
+ 			goto err_slave;
+ 		}
+ 		image[i].size_buf = PCI_BUF_SIZE;
+ 		image[i].kern_buf = vme_alloc_consistent(image[i].resource,
+ 			image[i].size_buf, &image[i].pci_buf);
+ 		if (image[i].kern_buf == NULL) {
+-			printk(KERN_WARNING "Unable to allocate memory for "
+-				"buffer\n");
++			pr_warn("Unable to allocate memory for buffer\n");
+ 			image[i].pci_buf = 0;
+ 			vme_slave_free(image[i].resource);
+ 			err = -ENOMEM;
+@@ -758,15 +752,13 @@ static int __devinit vme_user_probe(struct vme_dev *vdev)
+ 		image[i].resource = vme_master_request(vme_user_bridge,
+ 			VME_A32, VME_SCT, VME_D32);
+ 		if (image[i].resource == NULL) {
+-			printk(KERN_WARNING "Unable to allocate master "
+-				"resource\n");
++			pr_warn("Unable to allocate master resource\n");
+ 			goto err_master;
+ 		}
+ 		image[i].size_buf = PCI_BUF_SIZE;
+ 		image[i].kern_buf = kmalloc(image[i].size_buf, GFP_KERNEL);
+ 		if (image[i].kern_buf == NULL) {
+-			printk(KERN_WARNING "Unable to allocate memory for "
+-				"master window buffers\n");
++			pr_warn("Unable to allocate memory for master window buffers\n");
+ 			err = -ENOMEM;
+ 			goto err_master_buf;
+ 		}
+@@ -775,7 +767,7 @@ static int __devinit vme_user_probe(struct vme_dev *vdev)
+ 	/* Create sysfs entries - on udev systems this creates the dev files */
+ 	vme_user_sysfs_class = class_create(THIS_MODULE, driver_name);
+ 	if (IS_ERR(vme_user_sysfs_class)) {
+-		printk(KERN_ERR "Error creating vme_user class.\n");
++		pr_err("Error creating vme_user class.\n");
+ 		err = PTR_ERR(vme_user_sysfs_class);
+ 		goto err_class;
+ 	}
+@@ -803,7 +795,7 @@ static int __devinit vme_user_probe(struct vme_dev *vdev)
+ 		image[i].device = device_create(vme_user_sysfs_class, NULL,
+ 					MKDEV(VME_MAJOR, i), NULL, name, num);
+ 		if (IS_ERR(image[i].device)) {
+-			printk(KERN_INFO "%s: Error creating sysfs device\n",
++			pr_info("%s: Error creating sysfs device\n",
+ 				driver_name);
+ 			err = PTR_ERR(image[i].device);
+ 			goto err_sysfs;
 -- 
-Regards/Gruss,
-Boris.
+1.7.5.4
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
